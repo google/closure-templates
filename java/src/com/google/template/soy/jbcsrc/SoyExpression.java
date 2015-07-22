@@ -452,14 +452,14 @@ class SoyExpression extends Expression {
       // operation
       final Label ifNull = new Label();
       Expression nonNullDelegate =
-          new Expression(resultType(), features().plus(Feature.NON_NULLABLE)) {
+          new Expression(resultType(), features()) {
             @Override void doGen(CodeBuilder adapter) {
               delegate.gen(adapter);
               adapter.dup();
               adapter.ifNull(ifNull);
             }
           };
-      final SoyExpression unboxAs = withSource(nonNullDelegate).unboxAs(asType);
+      final SoyExpression unboxAs = withSource(nonNullDelegate).asNonNullable().unboxAs(asType);
       return withSource(new Expression(resultType(), features()) {
         @Override void doGen(CodeBuilder adapter) {
           unboxAs.gen(adapter);

@@ -342,6 +342,17 @@ public class BytecodeCompilerTest extends TestCase {
             ImmutableMap.of("map", ImmutableMap.of("a", 1, "b", 2)));
   }
 
+  public void testForEachNode_nullableList() {
+    // The compiler should be rejected this :(
+    assertThatTemplateBody(
+        "{@param map : map<string, list<int>>}",
+        "{foreach $item in $map?['key']}",
+        "  {$item}",
+        "{/foreach}")
+        .rendersAs("123",
+            ImmutableMap.of("map", ImmutableMap.of("key", ImmutableList.of(1, 2, 3))));
+  }
+
   public void testSwitchNode() {
     assertThatTemplateBody(
         "{switch 1}", 
