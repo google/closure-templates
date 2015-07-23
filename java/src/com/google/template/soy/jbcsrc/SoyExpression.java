@@ -538,51 +538,6 @@ class SoyExpression extends Expression {
   }
 
   /**
-   * A generic unbox operator.  Doesn't always work since not every type has a canonical unboxed
-   * representation and we don't always have enough type information.
-   *
-   * <p>For example, unboxed 'int' is always a java {@code long}, but unboxed '?' is undefined.
-   */
-  Optional<SoyExpression> tryUnbox() {
-    if (!isBoxed()) {
-      return Optional.of(this);
-    }
-    switch (soyType.getKind()) {
-      case OBJECT:
-      case RECORD:
-      case UNKNOWN:
-      case ANY:
-      case MAP:
-        return Optional.absent();
-      case CSS:
-      case ATTRIBUTES:
-      case HTML:
-      case JS:
-      case URI:
-      case STRING:
-        return Optional.of(unboxAs(String.class));
-      case BOOL:
-        return Optional.of(unboxAs(boolean.class));
-      case ENUM:
-      case INT:
-        return Optional.of(unboxAs(long.class));
-      case UNION:
-        // TODO(lukes): special case nullable reference types
-        // fall-through
-        return Optional.absent();
-      case FLOAT:
-        return Optional.of(unboxAs(double.class));
-      case LIST:
-        return Optional.of(unboxAs(List.class));
-      case NULL:
-        return Optional.of(NULL);
-      case ERROR:
-      default:
-        throw new AssertionError();
-    }
-  }
-
-  /**
    * Returns a new {@link SoyExpression} with the same type but a new delegate expression.
    */
   SoyExpression withSource(Expression expr) {
