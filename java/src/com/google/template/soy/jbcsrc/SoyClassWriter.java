@@ -36,7 +36,6 @@ import java.util.List;
  * defaults for all classwriters used by {@code jbcsrc}.
  */
 final class SoyClassWriter extends ClassVisitor {
-
   /** Returns a new SoyClassWriter for writing a new class of the given type. */
   static Builder builder(TypeInfo type) {
     return new Builder(type);
@@ -143,3 +142,4 @@ final class SoyClassWriter extends ClassVisitor {
     }
   }
 }
+
