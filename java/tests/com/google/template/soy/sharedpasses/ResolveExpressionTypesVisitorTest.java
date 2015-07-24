@@ -433,7 +433,7 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
             "{@param pf: float}",
             "{let $list: [$pi, $pf]/}",
             "{$list}",
-            "{$list.length}"))
+            "{length($list)}"))
         .declaredSyntaxVersion(SyntaxVersion.V2_0)
         .doRunInitialParsingPasses(false)
         .typeRegistry(typeRegistry)
@@ -443,7 +443,7 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
     List<SoyType> types = getPrintStatementTypes(soyTree);
     assertThat(types.get(0))
         .isEqualTo(ListType.of(UnionType.of(IntType.getInstance(), FloatType.getInstance())));
-    assertThat(types.get(1)).isEqualTo(IntType.getInstance());
+    assertThat(types.get(1)).isEqualTo(UnknownType.getInstance());
   }
 
   public void testMapLiteral() {

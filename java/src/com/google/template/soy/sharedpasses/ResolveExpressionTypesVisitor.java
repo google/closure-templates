@@ -24,6 +24,7 @@ import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.basetree.SyntaxVersionBound;
@@ -87,6 +88,7 @@ import com.google.template.soy.types.aggregate.ListType;
 import com.google.template.soy.types.aggregate.MapType;
 import com.google.template.soy.types.aggregate.UnionType;
 import com.google.template.soy.types.primitive.BoolType;
+import com.google.template.soy.types.primitive.ErrorType;
 import com.google.template.soy.types.primitive.FloatType;
 import com.google.template.soy.types.primitive.IntType;
 import com.google.template.soy.types.primitive.NullType;
@@ -109,6 +111,12 @@ import javax.annotation.Nullable;
 public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
   private static final SoyError DUPLICATE_KEY_IN_RECORD_LITERAL =
       SoyError.of("Record literals with duplicate keys are not allowed.  Duplicate key: ''{0}''");
+
+  private static final SoyError LIST_LENGTH_ERROR =
+      SoyError.of("Soy lists do not have a ''length'' field. Use function length(...) instead.");
+
+  private static final SoyError STRING_LENGTH_ERROR =
+      SoyError.of("Soy strings do not have a ''length'' field. Use function strLen(...) instead.");
 
   /** User-declared syntax version. */
   private final SyntaxVersion declaredSyntaxVersion;
@@ -441,7 +449,8 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
     @Override protected void visitFieldAccessNode(FieldAccessNode node) {
       visit(node.getBaseExprChild());
       node.setType(getFieldType(
-          node.getBaseExprChild().getType(), node.getFieldName(), node.isNullSafe()));
+          node.getBaseExprChild().getType(), node.getFieldName(), node.isNullSafe(),
+          node.getSourceLocation()));
       tryApplySubstitution(node);
     }
 
@@ -736,9 +745,11 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
      * Given a base type and a field name, compute the field type.
      * @param baseType The base type.
      * @param fieldName The name of the field.
+     * @param sourceLocation The source location of the expression
      * @return The type of the field.
      */
-    private SoyType getFieldType(SoyType baseType, String fieldName, boolean isNullSafe) {
+    private SoyType getFieldType(SoyType baseType, String fieldName, boolean isNullSafe,
+        SourceLocation sourceLocation) {
       Preconditions.checkNotNull(baseType);
       switch (baseType.getKind()) {
         case UNKNOWN:
@@ -756,18 +767,26 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
           return fieldType;
         }
 
-        case LIST: {
+        // calling .length on strings/lists is common in v1 templates. So provide better error
+        // messages for when users are migrating.
+        case STRING:
+        case CSS:
+        case JS:
+        case ATTRIBUTES:
+        case HTML:
+        case URI:
           if (fieldName.equals("length")) {
-            // Backwards compatibility hack - allow list.length.
-            currExprRootNode.maybeSetSyntaxVersionBound(new SyntaxVersionBound(
-                SyntaxVersion.V2_3,
-                "Soy lists do not have field 'length'. Use function length() instead."));
-            return IntType.getInstance();
-          } else {
-            throw createExceptionForInvalidExpr(
-                "Undefined field '" + fieldName + "' in type: " + baseType);
+            errorReporter.report(sourceLocation, STRING_LENGTH_ERROR);
+            return new ErrorType(".length is not supported");
           }
-        }
+          break;
+
+        case LIST:
+          if (fieldName.equals("length")) {
+            errorReporter.report(sourceLocation, LIST_LENGTH_ERROR);
+            return new ErrorType(".length is not supported");
+          }
+          break;
 
         case RECORD: {
           SoyType fieldType = ((SoyObjectType) baseType).getFieldType(fieldName);
@@ -794,15 +813,15 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
             if (unionMember.getKind() == SoyType.Kind.NULL) {
               continue;
             }
-            fieldTypes.add(getFieldType(unionMember, fieldName, isNullSafe));
+            fieldTypes.add(getFieldType(unionMember, fieldName, isNullSafe, sourceLocation));
           }
           return typeOps.computeLowestCommonType(fieldTypes);
         }
 
         default:
-          throw createExceptionForInvalidExpr(
-              "Dot-access not supported for type " + baseType + ".");
+          // fall-through
       }
+      throw createExceptionForInvalidExpr("Dot-access not supported for type " + baseType + ".");
     }
 
     /**
