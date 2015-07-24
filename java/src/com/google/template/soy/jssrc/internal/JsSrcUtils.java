@@ -23,6 +23,7 @@ import com.google.common.collect.Sets;
 import com.google.template.soy.base.SoyBackendKind;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
+import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.types.SoyEnumType;
 import com.google.template.soy.types.SoyObjectType;
 import com.google.template.soy.types.SoyType;
@@ -32,10 +33,10 @@ import com.google.template.soy.types.aggregate.RecordType;
 import com.google.template.soy.types.aggregate.UnionType;
 import com.google.template.soy.types.primitive.SanitizedType;
 
+import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
-
 
 /**
  * Shared utilities specific to the JS Src backend.
@@ -248,6 +249,27 @@ public class JsSrcUtils {
    */
   public static boolean isReservedWord(String key) {
     return JS_RESERVED_WORDS.contains(key);
+  }
+
+
+  /**
+   * Traverses up the stack of local variable name mappings to get the generated local variable
+   * name for the given variable.
+   *
+   * @param identity The local name of the variable
+   * @param localVarTranslations The translations from local variables to generated variable name
+   * @return The generated name of the variable if it is found, or null if it is not
+   */
+  public static String getVariableName(String identity,
+      Deque<Map<String, JsExpr>> localVarTranslations) {
+    for (Map<String, JsExpr> localVarTranslationsFrame : localVarTranslations) {
+      JsExpr translation = localVarTranslationsFrame.get(identity);
+      if (translation != null) {
+        return translation.getText();
+      }
+    }
+
+    return null;
   }
 
 

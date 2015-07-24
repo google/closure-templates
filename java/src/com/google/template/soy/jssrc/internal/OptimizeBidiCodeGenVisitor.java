@@ -51,7 +51,7 @@ import javax.inject.Inject;
  * <p> {@link #exec} must be called on a full parse tree.
  *
  */
-class OptimizeBidiCodeGenVisitor extends AbstractSoyNodeVisitor<Void> {
+public class OptimizeBidiCodeGenVisitor extends AbstractSoyNodeVisitor<Void> {
 
 
   // Names of the bidi functions for which we optimize code generation.

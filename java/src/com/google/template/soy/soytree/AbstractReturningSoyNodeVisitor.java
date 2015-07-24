@@ -114,15 +114,6 @@ public abstract class AbstractReturningSoyNodeVisitor<R>
       case LOG_NODE: return visitLogNode((LogNode) node);
       case DEBUGGER_NODE: return visitDebuggerNode((DebuggerNode) node);
 
-      case HTML_ATTRIBUTE: return visitGenericHtmlNode(node);
-      case HTML_OPEN_TAG: return visitGenericHtmlNode(node);
-      case HTML_OPEN_TAG_START: return visitGenericHtmlNode(node);
-      case HTML_OPEN_TAG_END: return visitGenericHtmlNode(node);
-      case HTML_CLOSE_TAG: return visitGenericHtmlNode(node);
-      case HTML_VOID_TAG: return visitGenericHtmlNode(node);
-      case HTML_TEXT: return visitGenericHtmlNode(node);
-      case HTML_PRINT_NODE: return visitGenericHtmlNode(node);
-
       default: return visitSoyNode(node);
     }
   }
@@ -322,11 +313,5 @@ public abstract class AbstractReturningSoyNodeVisitor<R>
    */
   protected R visitSoyNode(SoyNode node) {
     throw new UnsupportedOperationException();
-  }
-
-  private final R visitGenericHtmlNode(SoyNode node) {
-    throw new IllegalStateException("This visitor does not handle nodes created by "
-        + "HtmlTransformVisitor. This visitor should implement AbstractReturningHtmlSoyNodeVisitor "
-        + "instead. The visited node was" + node + ".");
   }
 }

@@ -31,6 +31,7 @@ import com.google.template.soy.msgs.internal.MsgUtils;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPlaceholderPart;
 import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
+import com.google.template.soy.shared.internal.CodeBuilder;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
@@ -87,7 +88,7 @@ class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
   private final GenJsExprsVisitor genJsExprsVisitor;
 
   /** The JsCodeBuilder to build the current JS file being generated (during a run). */
-  private final JsCodeBuilder jsCodeBuilder;
+  private final CodeBuilder<JsExpr> jsCodeBuilder;
 
   /** The current stack of replacement JS expressions for the local variables (and foreach-loop
    *  special functions) current in scope. */
@@ -109,7 +110,7 @@ class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
       JsExprTranslator jsExprTranslator,
       GenCallCodeUtils genCallCodeUtils,
       IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor,
-      JsCodeBuilder jsCodeBuilder,
+      CodeBuilder<JsExpr> jsCodeBuilder,
       Deque<Map<String, JsExpr>> localVarTranslations,
       GenJsExprsVisitor genJsExprsVisitor,
       ErrorReporter errorReporter) {
@@ -144,14 +145,14 @@ class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
 
   /**
    * Example:
-   * <xmp>
+   * <pre>
    *   {msg desc="Link to help content."}Learn more{/msg}
    *   {msg desc="Tells user how to access a product." hidden="true"}
-   *     Click <a href="}{$url}">here</a> to access {$productName}.
+   *     Click &lt;a href="}{$url}"&gt;here&lt;/a&gt; to access {$productName}.
    *   {/msg}
-   * </xmp>
+   * </pre>
    * might generate
-   * <xmp>
+   * <pre>
    *   /** @desc Link to help content. *{@literal /}
    *   var MSG_UNNAMED_9 = goog.getMsg('Learn more');
    *   var msg_s9 = MSG_UNNAMED_9;
@@ -159,11 +160,11 @@ class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
    *    *  @hidden *{@literal /}
    *   var MSG_UNNAMED_10 = goog.getMsg(
    *       'Click {$startLink}here{$endLink} to access {$productName}.',
-   *       {startLink: '<a href="' + opt_data.url + '">',
-   *        endLink: '</a>',
+   *       {startLink: '&lt;a href="' + opt_data.url + '"&gt;',
+   *        endLink: '&lt;/a&gt;',
    *        productName: opt_data.productName});
    *   var msg_s10 = MSG_UNNAMED_10;
-   * </xmp>
+   * </pre>
    */
   @Override protected void visitGoogMsgDefNode(GoogMsgDefNode node) {
 
@@ -572,15 +573,18 @@ class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
 
   /**
    * Private helper for visitGoogMsgDefNode().
+   * <p>
    * Converts a Soy placeholder name (in upper underscore format) into a JS variable name (in lower
    * camel case format) used by goog.getMsg(). If the original name has a numeric suffix, it will
    * be preserved with an underscore.
-   *
+   * </p>
+   * <p>
    * For example, the following transformations happen:
    * <li> N : n
    * <li> NUM_PEOPLE : numPeople
    * <li> PERSON_2 : person_2
    * <li>GENDER_OF_THE_MAIN_PERSON_3 : genderOfTheMainPerson_3
+   * </p>
    *
    * @param placeholderName The placeholder name to convert.
    * @return The generated goog.getMsg name for the given (standard) Soy name.
@@ -646,21 +650,20 @@ class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
 
   /**
    * Example:
-   * <xmp>
-   *   <a href="http://www.google.com/search?hl=en
+   * <pre>
+   *   &lt;a href="http://www.google.com/search?hl=en
    *     {for $i in range(3)}
    *       &amp;param{$i}={$i}
    *     {/for}
-   *   ">
-   * </xmp>
+   *   "&gt;
    * might generate
-   * <xmp>
-   *   var htmlTag84 = (new soy.StringBuilder()).append('<a href="');
+   * </pre>
+   *   var htmlTag84 = (new soy.StringBuilder()).append('&lt;a href="');
    *   for (var i80 = 1; i80 &lt; 3; i80++) {
    *     htmlTag84.append('&amp;param', i80, '=', i80);
    *   }
-   *   htmlTag84.append('">');
-   * </xmp>
+   *   htmlTag84.append('"&gt;');
+   * </pre>
    */
   @Override protected void visitMsgHtmlTagNode(MsgHtmlTagNode node) {
 

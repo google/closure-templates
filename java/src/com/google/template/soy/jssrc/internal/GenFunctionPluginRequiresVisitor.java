@@ -36,7 +36,7 @@ import javax.inject.Inject;
  * this template.
  *
  */
-final class GenFunctionPluginRequiresVisitor {
+public final class GenFunctionPluginRequiresVisitor {
 
   /** Map of all SoyLibraryAssistedJsSrcFunctions */
   private final Map<String, SoyLibraryAssistedJsSrcFunction> soyLibraryAssistedJsSrcFunctionsMap;

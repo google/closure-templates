@@ -30,7 +30,7 @@ import com.google.template.soy.soytree.SoyNode;
  * <p> Precondition: MsgNode should not exist in the tree.
  *
  */
-class CanInitOutputVarVisitor extends AbstractReturningSoyNodeVisitor<Boolean> {
+public final class CanInitOutputVarVisitor extends AbstractReturningSoyNodeVisitor<Boolean> {
 
   /** The IsComputableAsJsExprsVisitor used by this instance (when needed). */
   private final IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor;

@@ -41,7 +41,7 @@ import javax.inject.Inject;
  * Utilities for generating JS code for calls.
  *
  */
-final class GenCallCodeUtils {
+public class GenCallCodeUtils {
 
   /** All registered JS print directives. */
   private final Map<String, SoyJsSrcPrintDirective> soyJsSrcDirectivesMap;
@@ -65,6 +65,7 @@ final class GenCallCodeUtils {
    * @param genJsExprsVisitorFactory Factory for creating an instance of GenJsExprsVisitor.
    */
   @Inject
+  protected
   GenCallCodeUtils(
       Map<String, SoyJsSrcPrintDirective> soyJsSrcDirectivesMap,
       @IsUsingIjData boolean isUsingIjData, JsExprTranslator jsExprTranslator,
@@ -83,7 +84,7 @@ final class GenCallCodeUtils {
    *
    * <p> Important: If there are CallParamContentNode children whose contents are not computable as
    * JS expressions, then this function assumes that, elsewhere, code has been generated to define
-   * their respective 'param<n>' temporary variables.
+   * their respective 'param&lt;n&gt;' temporary variables.
    *
    * @see #genCallExprHelper for code gen examples.
    *
@@ -103,7 +104,7 @@ final class GenCallCodeUtils {
    *
    * <p> Important: If there are CallParamContentNode children whose contents are not computable as
    * JS expressions, then this function assumes that, elsewhere, code has been generated to define
-   * their respective 'param<n>' temporary variables.
+   * their respective 'param&lt;n&gt;' temporary variables.
    *
    * <p> Here are five example calls:
    * <pre>
@@ -130,7 +131,7 @@ final class GenCallCodeUtils {
    *   some.func({goo: param65})
    * </pre>
    * Note that in the last case, the param content is not computable as JS expressions, so we assume
-   * that code has been generated to define the temporary variable 'param<n>'.
+   * that code has been generated to define the temporary variable 'param&lt;n&gt;'.
    *
    * @param callNode The call to generate code for.
    * @param localVarTranslations The current stack of replacement JS expressions for the local
@@ -205,7 +206,7 @@ final class GenCallCodeUtils {
    *
    * <p> Important: If there are CallParamContentNode children whose contents are not computable as
    * JS expressions, then this function assumes that, elsewhere, code has been generated to define
-   * their respective 'param<n>' temporary variables.
+   * their respective 'param&lt;n&gt;' temporary variables.
    *
    * <p> Here are five example calls:
    * <pre>
@@ -232,7 +233,7 @@ final class GenCallCodeUtils {
    *   {goo: param65}
    * </pre>
    * Note that in the last case, the param content is not computable as JS expressions, so we assume
-   * that code has been generated to define the temporary variable 'param<n>'.
+   * that code has been generated to define the temporary variable 'param&lt;n&gt;'.
    *
    * @param callNode The call to generate code for.
    * @param localVarTranslations The current stack of replacement JS expressions for the local
@@ -292,16 +293,7 @@ final class GenCallCodeUtils {
           valueJsExpr = new JsExpr(paramExpr, Integer.MAX_VALUE);
         }
 
-        // If the param node had a content kind specified, it was autoescaped in the
-        // corresponding context. Hence the result of evaluating the param block is wrapped
-        // in a SanitizedContent instance of the appropriate kind.
-
-        // The expression for the constructor of SanitizedContent of the appropriate kind (e.g.,
-        // "new SanitizedHtml"), or null if the node has no 'kind' attribute.  This uses the
-        // variant used in internal blocks.
-        valueJsExpr = JsExprUtils.maybeWrapAsSanitizedContentForInternalBlocks(
-            cpcn.getContentKind(), valueJsExpr);
-
+        valueJsExpr = maybeWrapContent(cpcn, valueJsExpr);
         paramsObjSb.append(valueJsExpr.getText());
       }
     }
@@ -317,4 +309,19 @@ final class GenCallCodeUtils {
     }
   }
 
+  /**
+   * If the param node had a content kind specified, it was autoescaped in the
+   * corresponding context. Hence the result of evaluating the param block is wrapped
+   * in a SanitizedContent instance of the appropriate kind.
+   * <p>
+   * The expression for the constructor of SanitizedContent of the appropriate kind (e.g.,
+   * "new SanitizedHtml"), or null if the node has no 'kind' attribute.  This uses the
+   * variant used in internal blocks.
+   * </p>
+   */
+  protected JsExpr maybeWrapContent(CallParamContentNode node, JsExpr valueJsExpr) {
+    return JsExprUtils.maybeWrapAsSanitizedContentForInternalBlocks(
+        node.getContentKind(),
+        valueJsExpr);
+  }
 }

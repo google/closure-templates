@@ -198,13 +198,13 @@ public final class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<JsExpr>
 
   /**
    * Example:
-   * <xmp>
-   *   <a href="{$url}">
-   * </xmp>
+   * <pre>
+   *   &lt;a href="{$url}"&gt;
+   * </pre>
    * might generate
-   * <xmp>
-   *   '<a href="' + opt_data.url + '">'
-   * </xmp>
+   * <pre>
+   *   '&lt;a href="' + opt_data.url + '"&gt;'
+   * </pre>
    */
   @Override protected void visitMsgHtmlTagNode(MsgHtmlTagNode node) {
     visitChildren(node);
@@ -280,7 +280,7 @@ public final class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<JsExpr>
 
   /**
    * Note: We would only see a CssNode if the css-handling scheme is BACKEND_SPECIFIC.
-   *
+   * <p>
    * Example:
    * <pre>
    *   {css selected-option}
@@ -291,6 +291,7 @@ public final class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<JsExpr>
    *   goog.getCssName('selected-option')
    *   goog.getCssName(opt_data.foo, 'bar')
    * </pre>
+   * </p>
    */
   @Override protected void visitCssNode(CssNode node) {
 

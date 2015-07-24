@@ -35,17 +35,18 @@ import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
+import com.google.template.soy.html.AbstractHtmlSoyNodeVisitor;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.internal.GenJsExprsVisitor.GenJsExprsVisitorFactory;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.JsExprUtils;
+import com.google.template.soy.shared.internal.CodeBuilder;
 import com.google.template.soy.shared.internal.FindCalleesNotInFileVisitor;
 import com.google.template.soy.shared.internal.HasNodeTypesVisitor;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.IsUsingIjData;
 import com.google.template.soy.sharedpasses.FindIndirectParamsVisitor;
 import com.google.template.soy.sharedpasses.FindIndirectParamsVisitor.IndirectParamsInfo;
 import com.google.template.soy.sharedpasses.ShouldEnsureDataIsDefinedVisitor;
-import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallNode;
@@ -119,7 +120,7 @@ import javax.inject.Inject;
  * generated JS file (corresponding to one Soy file).
  *
  */
-final class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
+public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
 
   private static final SoyError NON_NAMESPACED_TEMPLATE =
       SoyError.of("Using the option to provide/require Soy namespaces, but called template "
@@ -150,10 +151,10 @@ final class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   private final JsExprTranslator jsExprTranslator;
 
   /** Instance of GenCallCodeUtils to use. */
-  private final GenCallCodeUtils genCallCodeUtils;
+  protected final GenCallCodeUtils genCallCodeUtils;
 
   /** The IsComputableAsJsExprsVisitor used by this instance. */
-  private final IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor;
+  protected final IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor;
 
   /** The CanInitOutputVarVisitor used by this instance. */
   private final CanInitOutputVarVisitor canInitOutputVarVisitor;
@@ -164,8 +165,8 @@ final class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   /** The contents of the generated JS files. */
   private List<String> jsFilesContents;
 
-  /** The JsCodeBuilder to build the current JS file being generated (during a run). */
-  @VisibleForTesting protected JsCodeBuilder jsCodeBuilder;
+  /** The CodeBuilder to build the current JS file being generated (during a run). */
+  @VisibleForTesting protected CodeBuilder<JsExpr> jsCodeBuilder;
 
   /** The current stack of replacement JS expressions for the local variables (and foreach-loop
    *  special functions) current in scope. */
@@ -190,7 +191,7 @@ final class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   private final SoyTypeOps typeOps;
 
   @Inject
-  GenJsCodeVisitor(
+  protected GenJsCodeVisitor(
       SoyJsSrcOptions jsSrcOptions, @IsUsingIjData boolean isUsingIjData,
       JsExprTranslator jsExprTranslator, GenCallCodeUtils genCallCodeUtils,
       IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor,
@@ -287,6 +288,13 @@ final class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   }
 
   /**
+   * @return A new CodeBuilder to create the contents of a file with.
+   */
+  protected CodeBuilder<JsExpr> createCodeBuilder() {
+    return new JsCodeBuilder();
+  }
+
+  /**
    * Example:
    * <pre>
    * // This file was automatically generated from my-templates.soy.
@@ -304,7 +312,7 @@ final class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       return;  // don't generate code for deps
     }
 
-    jsCodeBuilder = new JsCodeBuilder();
+    jsCodeBuilder = createCodeBuilder();
 
     jsCodeBuilder.appendLine("// This file was automatically generated from ",
                              node.getFileName(), ".");
@@ -461,7 +469,7 @@ final class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    * Helper for visitSoyFileNode(SoyFileNode) to add code to require general dependencies.
    * @param soyFile The node we're visiting.
    */
-  private void addCodeToRequireGeneralDeps(SoyFileNode soyFile) {
+  protected void addCodeToRequireGeneralDeps(SoyFileNode soyFile) {
 
     jsCodeBuilder.appendLine("goog.require('soy');");
     jsCodeBuilder.appendLine("goog.require('soydata');");
@@ -602,6 +610,11 @@ final class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       jsCodeBuilder.appendLine("var $$temp;");
     }
 
+    // Generate statement to ensure data is defined, if necessary.
+    if (new ShouldEnsureDataIsDefinedVisitor(errorReporter).exec(node)) {
+      jsCodeBuilder.appendLine("opt_data = opt_data || {};");
+    }
+
     // ------ Generate function body. ------
     generateFunctionBody(node);
 
@@ -634,13 +647,8 @@ final class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   /**
    * Generates the function body.
    */
-  private void generateFunctionBody(TemplateNode node) {
+  protected void generateFunctionBody(TemplateNode node) {
     localVarTranslations.push(Maps.<String, JsExpr>newHashMap());
-
-    // Generate statement to ensure data is defined, if necessary.
-    if (new ShouldEnsureDataIsDefinedVisitor(errorReporter).exec(node)) {
-      jsCodeBuilder.appendLine("opt_data = opt_data || {};");
-    }
 
     // Type check parameters.
     genParamTypeChecks(node);
@@ -1359,7 +1367,7 @@ final class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    * input parameters and assigns them to local variables for use in the template.
    * @param node the template node.
    */
-  private void genParamTypeChecks(TemplateNode node) {
+  protected void genParamTypeChecks(TemplateNode node) {
     for (TemplateParam param : node.getAllParams()) {
       if (param.declLoc() != TemplateParam.DeclLoc.HEADER) {
         continue;

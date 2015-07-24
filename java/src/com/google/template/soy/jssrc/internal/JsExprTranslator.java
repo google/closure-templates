@@ -38,7 +38,7 @@ import javax.inject.Inject;
  * Translator of Soy expressions to their equivalent JS expressions.
  *
  */
-class JsExprTranslator {
+public class JsExprTranslator {
 
 
   /** Map of all SoyJsSrcFunctions (name to function). */
