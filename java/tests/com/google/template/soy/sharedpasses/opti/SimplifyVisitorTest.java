@@ -18,10 +18,10 @@ package com.google.template.soy.sharedpasses.opti;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.google.template.soy.ErrorReporterModule;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basicdirectives.BasicDirectivesModule;
+import com.google.template.soy.shared.internal.ErrorReporterModule;
 import com.google.template.soy.shared.internal.SharedModule;
 import com.google.template.soy.sharedpasses.SharedPassesModule;
 import com.google.template.soy.soytree.ForNode;

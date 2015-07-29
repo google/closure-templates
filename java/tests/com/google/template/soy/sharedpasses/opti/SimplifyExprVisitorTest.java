@@ -22,12 +22,12 @@ import com.google.common.truth.SubjectFactory;
 import com.google.common.truth.Truth;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.google.template.soy.ErrorReporterModule;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basicfunctions.BasicFunctionsModule;
 import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.shared.internal.ErrorReporterModule;
 import com.google.template.soy.shared.internal.SharedModule;
 import com.google.template.soy.sharedpasses.SharedPassesModule;
 

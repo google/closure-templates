@@ -13,10 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.template.soy;
+package com.google.template.soy.shared.internal;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.google.template.soy.ErrorReporterImpl;
 import com.google.template.soy.error.ErrorReporter;
 
 import javax.inject.Singleton;

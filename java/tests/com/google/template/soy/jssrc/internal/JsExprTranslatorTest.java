@@ -20,7 +20,6 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.google.template.soy.ErrorReporterModule;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basicfunctions.BasicFunctionsModule;
 import com.google.template.soy.exprtree.FunctionNode;
@@ -28,6 +27,7 @@ import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
 import com.google.template.soy.jssrc.restricted.JsExpr;
+import com.google.template.soy.shared.internal.ErrorReporterModule;
 
 import junit.framework.TestCase;
 
