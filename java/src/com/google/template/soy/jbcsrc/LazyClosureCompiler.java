@@ -46,6 +46,7 @@ import com.google.template.soy.data.internal.RenderableThunk;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.jbcsrc.SoyNodeCompiler.CompiledMethodBody;
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import com.google.template.soy.jbcsrc.api.RenderContext;
 import com.google.template.soy.jbcsrc.runtime.DetachableContentProvider;
@@ -62,7 +63,6 @@ import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 
-import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -186,6 +186,7 @@ final class LazyClosureCompiler {
         SoyClassWriter.builder(type)
             .setAccess(LAZY_CLOSURE_ACCESS)
             .extending(DETACHABLE_VALUE_PROVIDER_TYPE)
+            .sourceFileName(declaringNode.getSourceLocation().getFileName())
             .build();
     Expression expr =
         new CompilationUnit(writer, type, DETACHABLE_VALUE_PROVIDER_TYPE, declaringNode)
@@ -209,6 +210,7 @@ final class LazyClosureCompiler {
         SoyClassWriter.builder(type)
             .setAccess(LAZY_CLOSURE_ACCESS)
             .extending(DETACHABLE_CONTENT_PROVIDER_TYPE)
+            .sourceFileName(renderUnit.getSourceLocation().getFileName())
             .build();
     Expression expr =
         new CompilationUnit(writer, type, DETACHABLE_CONTENT_PROVIDER_TYPE, renderUnit)
@@ -256,17 +258,13 @@ final class LazyClosureCompiler {
     final TypeInfo type;
     final TypeInfo baseClass;
     final SoyNode node;
-    final ClassVisitor visitor;
+    final SoyClassWriter writer;
 
-    CompilationUnit(ClassVisitor visitor, TypeInfo type, TypeInfo baseClass, SoyNode node) {
-      this.visitor = visitor;
+    CompilationUnit(SoyClassWriter writer, TypeInfo type, TypeInfo baseClass, SoyNode node) {
+      this.writer = writer;
       this.type = type;
       this.baseClass = baseClass;
       this.node = node;
-      visitor.visitSource(
-        node.getSourceLocation().getFileName(),
-        // No JSR-45 style source maps, instead we write the line numbers in the normal locations.
-        null);
     }
 
     Expression compileExpression(ExprNode exprNode) {
@@ -292,7 +290,7 @@ final class LazyClosureCompiler {
           adapter.mark(end);
         }
       };
-      Statement fieldInitializers = variableSet.defineFields(visitor);
+      Statement fieldInitializers = variableSet.defineFields(writer);
       Expression constructExpr = generateConstructor(
           new Statement() {
             @Override void doGen(CodeBuilder adapter) {
@@ -303,13 +301,13 @@ final class LazyClosureCompiler {
           fieldInitializers,
           lookup.getCapturedFields());
 
-      doResolveImpl.writeMethod(Opcodes.ACC_PROTECTED, DO_RESOLVE, visitor);
+      doResolveImpl.writeMethod(Opcodes.ACC_PROTECTED, DO_RESOLVE, writer);
       return constructExpr;
     }
 
     Expression compileRenderable(RenderUnitNode renderUnit) {
       FieldRef stateField = createField(type, STATE_FIELD, Type.INT_TYPE);
-      stateField.defineField(visitor);
+      stateField.defineField(writer);
       fieldNames.claimName(STATE_FIELD);
 
       final Label start = new Label();
@@ -324,7 +322,9 @@ final class LazyClosureCompiler {
       SoyNodeCompiler soyNodeCompiler = SoyNodeCompiler.create(registry, innerClasses, stateField,
           thisVar, AppendableExpression.forLocal(appendableVar), variableSet, lookup,
           errorReporter);
-      final Statement nodeBody = soyNodeCompiler.compileChildren(renderUnit);
+      CompiledMethodBody compileChildren = soyNodeCompiler.compileChildren(renderUnit);
+      writer.setNumDetachStates(compileChildren.numberOfDetachStates());
+      final Statement nodeBody = compileChildren.body();
       final Statement returnDone = returnExpression(MethodRef.RENDER_RESULT_DONE.invoke());
       Statement fullMethodBody = new Statement() {
         @Override void doGen(CodeBuilder adapter) {
@@ -343,7 +343,7 @@ final class LazyClosureCompiler {
           (kind == null)
               ? BytecodeUtils.constantNull(CONTENT_KIND_TYPE)
               : FieldRef.enumReference(kind).accessor();
-      Statement fieldInitializers = variableSet.defineFields(visitor);
+      Statement fieldInitializers = variableSet.defineFields(writer);
       Statement superClassContstructor = new Statement() {
         @Override void doGen(CodeBuilder adapter) {
           adapter.loadThis();
@@ -356,7 +356,7 @@ final class LazyClosureCompiler {
               fieldInitializers, 
               lookup.getCapturedFields());
 
-      fullMethodBody.writeMethod(Opcodes.ACC_PROTECTED, DO_RENDER, visitor);
+      fullMethodBody.writeMethod(Opcodes.ACC_PROTECTED, DO_RENDER, writer);
       return constructExpr;
     }
 
@@ -379,7 +379,7 @@ final class LazyClosureCompiler {
       int index = 1;  // start at 1 since 'this' occupied slot 0
       for (ParentCapture capture : captures) {
         FieldRef field = capture.field();
-        field.defineField(visitor);
+        field.defineField(writer);
         LocalVariable var = createLocal(field.name(), index, field.type(), start, end);
         assignments.add(field.putInstanceField(thisVar, var));
         argExpressions.add(capture.parentExpression());
@@ -409,7 +409,7 @@ final class LazyClosureCompiler {
       };
 
       ConstructorRef constructor = ConstructorRef.create(type, paramTypes);
-      constructorBody.writeMethod(Opcodes.ACC_PUBLIC, constructor.method(), visitor);
+      constructorBody.writeMethod(Opcodes.ACC_PUBLIC, constructor.method(), writer);
       return constructor.construct(argExpressions);
     }
   }

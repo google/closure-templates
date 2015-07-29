@@ -173,16 +173,29 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     this.lazyClosureCompiler = checkNotNull(lazyClosureCompiler);
   }
 
-  Statement compile(TemplateNode node) {
-    Statement templateBody = visit(node);
-    Statement jumpTable = detachState.generateReattachTable();
-    return Statement.concat(jumpTable, templateBody);
+  @AutoValue abstract static class CompiledMethodBody {
+    static CompiledMethodBody create(Statement body, int numDetaches) {
+      return new AutoValue_SoyNodeCompiler_CompiledMethodBody(body, numDetaches);
+    }
+    abstract Statement body();
+    abstract int numberOfDetachStates();
   }
 
-  Statement compileChildren(RenderUnitNode node) {
+  CompiledMethodBody compile(TemplateNode node) {
+    Statement templateBody = visit(node);
+    return getCompiledBody(templateBody);
+  }
+
+  CompiledMethodBody compileChildren(RenderUnitNode node) {
     Statement templateBody = visitChildrenInNewScope(node);
+    return getCompiledBody(templateBody);
+  }
+
+  private CompiledMethodBody getCompiledBody(Statement templateBody) {
     Statement jumpTable = detachState.generateReattachTable();
-    return Statement.concat(jumpTable, templateBody);
+    return CompiledMethodBody.create(
+        Statement.concat(jumpTable, templateBody),
+        detachState.getNumberOfDetaches());
   }
 
   @Override protected Statement visit(SoyNode node) {

@@ -66,17 +66,20 @@ public final class BytecodeCompiler {
     logger.log(
         Level.INFO,
         "Compilation took {0}\n"
-            + "  templates: {1}\n"
-            + "    classes: {2}\n"
-            + "      bytes: {3}\n"
-            + "     fields: {4}",
+            + "     templates: {1}\n"
+            + "       classes: {2}\n"
+            + "         bytes: {3}\n"
+            + "        fields: {4}\n"
+            + "  detachStates: {5}",
         new Object[] {
           stopwatch.toString(),
           results.numTemplates(),
           results.numClasses(),
           results.numBytes(),
-          results.numFields()
+          results.numFields(),
+          results.numDetachStates()
         });
+    stopwatch.reset().start();
     ImmutableMap.Builder<String, CompiledTemplate.Factory> factories = ImmutableMap.builder();
     for (TemplateNode node : registry.getAllTemplates()) {
       String name = node.getTemplateName();
@@ -128,6 +131,8 @@ public final class BytecodeCompiler {
     abstract int numBytes();
 
     abstract int numFields();
+
+    abstract int numDetachStates();
   }
 
   /**
@@ -142,6 +147,7 @@ public final class BytecodeCompiler {
     int numClasses = 0;
     int numBytes = 0;
     int numFields = 0;
+    int numDetachStates = 0;
     MemoryClassLoader.Builder builder = new MemoryClassLoader.Builder();
     // We generate all the classes and then start loading them.  This 2 phase process ensures that
     // we don't have to worry about ordering (where a class we have generated references a class we
@@ -159,13 +165,14 @@ public final class BytecodeCompiler {
           if (logger.isLoggable(Level.FINE)) {
             logger.log(
                 Level.FINE,
-                "Generated class {0}.  size: {1}, fields: {2}",
+                "Generated class {0}.  size: {1}, fields: {2}, detachStates: {3}",
                 new Object[] {clazz.type().className(), clazz.data().length,
-                    clazz.numberOfFields()});
+                    clazz.numberOfFields(), clazz.numberOfDetachStates()});
           }
           numClasses++;
           numBytes += clazz.data().length;
           numFields += clazz.numberOfFields();
+          numDetachStates += clazz.numberOfDetachStates();
           if (Flags.DEBUG) {
             clazz.checkClass();
           }
@@ -188,7 +195,7 @@ public final class BytecodeCompiler {
       }
     }
     return new AutoValue_BytecodeCompiler_CompilationResult(
-        builder.build(), numTemplates, numClasses, numBytes, numFields);
+        builder.build(), numTemplates, numClasses, numBytes, numFields, numDetachStates);
   }
 
   private BytecodeCompiler() {}

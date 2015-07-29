@@ -33,6 +33,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.jbcsrc.SoyNodeCompiler.CompiledMethodBody;
 import com.google.template.soy.jbcsrc.api.CompiledTemplate;
 import com.google.template.soy.jbcsrc.api.TemplateMetadata;
 import com.google.template.soy.soytree.CallParamContentNode;
@@ -125,16 +126,9 @@ final class TemplateCompiler {
         SoyClassWriter.builder(template.typeInfo())
             .setAccess(Opcodes.ACC_PUBLIC + Opcodes.ACC_SUPER + Opcodes.ACC_FINAL)
             .implementing(TEMPLATE_TYPE)
+            .sourceFileName(template.node().getSourceLocation().getFileName())
             .build();
     generateTemplateMetadata();
-    // TODO(lukes): this associates a file name that will ultimately appear in exceptions as well
-    // as be used by debuggers to 'attach source'.  We may want to consider placing our generated
-    // classes in packages such that they are in the same classpath relative location as the source
-    // files.  More investigation into this needs to be done.
-    writer.visitSource(
-        template.node().getSourceLocation().getFileName(),
-        // No JSR-45 style source maps, instead we write the line numbers in the normal locations.
-        null);
     
     stateField.defineField(writer);
     paramsField.defineField(writer);
@@ -180,7 +174,7 @@ final class TemplateCompiler {
     TemplateNode node = template.node();
     TemplateVariables variables = 
         new TemplateVariables(variableSet, thisVar, contextVar);
-    final Statement methodBody =
+    final CompiledMethodBody methodBody =
         SoyNodeCompiler.create(
             registry,
             innerClasses,
@@ -195,7 +189,7 @@ final class TemplateCompiler {
       @Override
       void doGen(CodeBuilder adapter) {
         adapter.mark(start);
-        methodBody.gen(adapter);
+        methodBody.body().gen(adapter);
         adapter.mark(end);
         returnDone.gen(adapter);
 
@@ -205,6 +199,7 @@ final class TemplateCompiler {
         variableSet.generateTableEntries(adapter);
       }
     }.writeIOExceptionMethod(Opcodes.ACC_PUBLIC, template.renderMethod().method(), writer);
+    writer.setNumDetachStates(methodBody.numberOfDetachStates());
     return variableSet.defineFields(writer);
   }
 

@@ -16,6 +16,7 @@
 
 package com.google.template.soy.jbcsrc;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.OBJECT;
 
@@ -46,6 +47,7 @@ final class SoyClassWriter extends ClassVisitor {
     private int access = Opcodes.ACC_FINAL | Opcodes.ACC_SUPER;
     private TypeInfo baseClass = OBJECT;
     private List<String> interfaces = new ArrayList<>();
+    private String fileName;  // optional
 
     private Builder(TypeInfo type) {
       this.type = checkNotNull(type);
@@ -74,6 +76,11 @@ final class SoyClassWriter extends ClassVisitor {
       interfaces.add(typeInfo.internalName());
       return this;
     }
+    
+    Builder sourceFileName(String fileName) {
+      this.fileName = checkNotNull(fileName);
+      return this;
+    }
 
     SoyClassWriter build() {
       return new SoyClassWriter(new Writer(), this);
@@ -83,6 +90,7 @@ final class SoyClassWriter extends ClassVisitor {
   private final Writer writer;
   private final TypeInfo typeInfo;
   private int numFields;
+  private int numDetachStates;
 
   private SoyClassWriter(Writer writer, Builder builder) {
     super(writer.api(), Flags.DEBUG ? new CheckClassAdapter(writer, false) : writer);
@@ -95,6 +103,30 @@ final class SoyClassWriter extends ClassVisitor {
         null /* not generic */,
         builder.baseClass.internalName(),
         builder.interfaces.toArray(new String[builder.interfaces.size()]));
+    if (builder.fileName != null) {
+      super.visitSource(
+          builder.fileName,
+          // No JSR-45 style source maps, instead we write the line numbers in the normal locations.
+          null);
+    }
+  }
+
+  /**
+   * Sets the number of 'detach states' needed by the compiled class.
+   */
+  void setNumDetachStates(int numDetachStates) {
+    checkArgument(numDetachStates >= 0);
+    this.numDetachStates = numDetachStates;
+  }
+
+  /**
+   * @deprecated Don't call visitSource(), SoyClassWriter calls it for you during construction.
+   */
+  @Deprecated
+  @Override
+  public void visitSource(String source, String debug) {
+    throw new UnsupportedOperationException(
+        "Don't call visitSource(), SoyClassWriter calls it for you");
   }
 
   /**
@@ -115,7 +147,7 @@ final class SoyClassWriter extends ClassVisitor {
 
   /** Returns the bytecode of the class that was build with this class writer. */
   ClassData toClassData() {
-    return ClassData.create(typeInfo, writer.toByteArray(), numFields);
+    return ClassData.create(typeInfo, writer.toByteArray(), numFields, numDetachStates);
   }
 
   private static final class Writer extends ClassWriter {

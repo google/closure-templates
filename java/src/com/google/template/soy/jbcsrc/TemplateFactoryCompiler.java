@@ -74,6 +74,7 @@ final class TemplateFactoryCompiler {
         SoyClassWriter.builder(factoryType)
             .implementing(FACTORY_TYPE)
             .setAccess(FACTORY_ACCESS)
+            .sourceFileName(template.node().getSourceLocation().getFileName())
             .build();
     innerClasses.registerAsInnerClass(cw, factoryType);
 
