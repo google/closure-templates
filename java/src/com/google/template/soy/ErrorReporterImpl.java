@@ -53,7 +53,7 @@ public final class ErrorReporterImpl implements ErrorReporter {
   }
 
   /** Returns the full list of errors reported to this error reporter. */
-  ImmutableCollection<? extends SoySyntaxException> getErrors() {
+  public ImmutableCollection<? extends SoySyntaxException> getErrors() {
     ImmutableCollection<? extends SoySyntaxException> copy = ImmutableList.copyOf(errors);
     // TODO(user): remove. ErrorReporter is currently injected as a singleton in SharedModule.
     // This is not a problem for JS and Python compilations, which are traditional short-lived

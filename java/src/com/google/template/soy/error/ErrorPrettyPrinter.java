@@ -44,8 +44,14 @@ public final class ErrorPrettyPrinter {
    * was found.
    */
   public void print(SoySyntaxException e, PrintStream err) {
+    // We build the full error message into a buffer and then print so that we issue one write
+    // operation to the print stream.  The most likely printstream is System.err which tends to be
+    // used concurrently.  By issuing a single write we ensure that our message doesn't get
+    // scrambled with concurrent writes.
+    StringBuilder builder = new StringBuilder();
+
     // Start by printing the actual text of the exception.
-    err.println(e.getMessage());
+    builder.append(e.getMessage()).append("\n");
 
     // Try to find a snippet of source code associated with the exception and print it.
     SourceLocation sourceLocation = e.getSourceLocation();
@@ -53,20 +59,19 @@ public final class ErrorPrettyPrinter {
     try {
       snippet = snippetFormatter.getSnippet(sourceLocation);
     } catch (IOException exception) {
-      return;
+      snippet = Optional.absent();
     }
-    if (!snippet.isPresent()) {
-      // TODO(user): this is a result of calling SoySyntaxException#createWithoutMetaInfo,
-      // which occurs almost 100 times. Clean them up.
-      return;
+    // TODO(user): this is a result of calling SoySyntaxException#createWithoutMetaInfo,
+    // which occurs almost 100 times. Clean them up.
+    if (snippet.isPresent()) {
+      builder.append(snippet.get()).append("\n");
+      // Print a caret below the error.
+      // TODO(brndn): SourceLocation.beginColumn is occasionally -1. Review all SoySyntaxException
+      // instantiations and ensure the SourceLocation is well-formed.
+      int beginColumn = Math.max(e.getSourceLocation().getBeginColumn(), 1);
+      String caretLine = Strings.repeat(" ", beginColumn - 1) + "^";
+      builder.append(caretLine).append("\n");
     }
-
-    err.println(snippet.get());
-    // Print a caret below the error.
-    // TODO(brndn): SourceLocation.beginColumn is occasionally -1. Review all SoySyntaxException
-    // instantiations and ensure the SourceLocation is well-formed.
-    int beginColumn = Math.max(e.getSourceLocation().getBeginColumn(), 1);
-    String caretLine = Strings.repeat(" ", beginColumn - 1) + "^";
-    err.println(caretLine);
+    err.print(builder.toString());
   }
 }

@@ -113,7 +113,7 @@ public final class SoyFileSetParser {
    * @param doRunInitialParsingPasses Whether to run initial parsing passes.
    * @param doRunCheckingPasses Whether to run checking passes.
    */
-  SoyFileSetParser(
+  public SoyFileSetParser(
       SoyTypeRegistry typeRegistry,
       @Nullable SoyAstCache astCache,
       SyntaxVersion declaredSyntaxVersion,
