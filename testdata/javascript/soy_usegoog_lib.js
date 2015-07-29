@@ -25028,6 +25028,20 @@ soy.$$stripHtmlTags = function(value, opt_tagWhitelist) {
 
 
 /**
+ * Make sure that tag boundaries are not broken by Safe CSS when embedded in a
+ * {@code <style>} element.
+ * @param {string} css
+ * @return {string}
+ * @private
+ */
+soy.$$embedCssIntoHtml_ = function(css) {
+  // Port of a method of the same name in
+  // com.google.template.soy.shared.restricted.Sanitizers
+  return css.replace(/<\//g, '<\\/').replace(/\]\]>/g, ']]\\>');
+};
+
+
+/**
  * Throw out any close tags that don't correspond to start tags.
  * If {@code <table>} is used for formatting, embedded HTML shouldn't be able
  * to use a mismatched {@code </table>} to break page layout.
@@ -25341,14 +25355,14 @@ soy.$$escapeCssString = function(value) {
 soy.$$filterCssValue = function(value) {
   if (soydata.isContentKind(value, soydata.SanitizedContentKind.CSS)) {
     goog.asserts.assert(value.constructor === soydata.SanitizedCss);
-    return value.getContent();
+    return soy.$$embedCssIntoHtml_(value.getContent());
   }
   // Uses == to intentionally match null and undefined for Java compatibility.
   if (value == null) {
     return '';
   }
   if (value instanceof goog.html.SafeStyle) {
-    return goog.html.SafeStyle.unwrap(value);
+    return soy.$$embedCssIntoHtml_(goog.html.SafeStyle.unwrap(value));
   }
   return soy.esc.$$filterCssValueHelper(value);
 };

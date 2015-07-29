@@ -69,6 +69,18 @@ _NEWLINE_RE = re.compile('(\r\n|\r|\n)')
 # Regex for finding replacement tags.
 _REPLACEMENT_TAG_RE = re.compile(r'\[(\d+)\]')
 
+# Regex for finding patterns that could start a token which ends a
+# raw content block.
+_HTML_RAW_CONTENT_HAZARD_RE = re.compile(r'<\/|\]\]>')
+
+# Replacement strings for matches of _HTML_RAW_CONTENT_HAZARD_RE
+# that are semantically equivalent in CSS stylesheets.
+# See Sanitizers.java for a more detailed analysis.
+_HTML_RAW_CONTENT_HAZARD_REPLACEMENTS = {
+  '</': r'<\/',
+  ']]>': r']]\>'
+}
+
 
 #######################################
 # Soy public directives and functions #
@@ -172,7 +184,7 @@ def escape_uri(value):
 
 def filter_css_value(value):
   if is_content_kind(value, CONTENT_KIND.CSS):
-    return value.content
+    return _embed_css_into_html(value.content)
 
   if value is None:
     return ''
@@ -315,6 +327,24 @@ def _strip_html_tags(value, tag_whitelist=None):
   # This prevents unclosed formatting elements like <ol> and <table> from
   # breaking the layout of containing HTML.
   return html + final_close_tags
+
+
+def _embed_css_into_html(css):
+  """
+  Make sure that tag boundaries are not broken by Safe CSS when embedded in an
+  HTML <style> element.
+
+  Args:
+    css: Safe CSS content
+  Returns:
+    Embeddable safe CSS content
+  """
+  return _HTML_RAW_CONTENT_HAZARD_RE.sub(_defang_raw_content_hazard, css)
+
+
+def _defang_raw_content_hazard(match):
+  """Maps _HTML_RAW_CONTENT_HAZARD_RE matches to safe alternatives"""
+  return _HTML_RAW_CONTENT_HAZARD_REPLACEMENTS[match.group(0)]
 
 
 def _tag_sub_handler(tag_whitelist, tags, match):

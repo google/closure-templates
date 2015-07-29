@@ -697,4 +697,25 @@ public class SanitizersTest extends TestCase {
     assertEquals(StringData.forValue("123"),
         Sanitizers.filterNoAutoescape(IntegerData.forValue(123)));
   }
+
+  public final void testEmbedCssIntoHtml() {
+    assertEquals(
+        "",
+        Sanitizers.embedCssIntoHtml(""));
+    assertEquals(
+        "foo",
+        Sanitizers.embedCssIntoHtml("foo"));
+    assertEquals(
+        "a[foo]>b",
+        Sanitizers.embedCssIntoHtml("a[foo]>b"));
+    assertEquals(
+        "/* <\\/style> */",
+        Sanitizers.embedCssIntoHtml("/* </style> */"));
+    assertEquals(
+        "content: '<\\/STYLE >'",  // Semantically equivalent
+        Sanitizers.embedCssIntoHtml("content: '</STYLE >'"));
+    assertEquals(
+        "background: url(<\\/style/>)",  // Semantically equivalent
+        Sanitizers.embedCssIntoHtml("background: url(</style/>)"));
+  }
 }

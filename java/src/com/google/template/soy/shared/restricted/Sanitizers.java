@@ -19,6 +19,7 @@ package com.google.template.soy.shared.restricted;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.escape.Escaper;
@@ -339,7 +340,13 @@ public final class Sanitizers {
    */
   public static String filterCssValue(SoyValue value) {
     if (isSanitizedContentOfKind(value, SanitizedContent.ContentKind.CSS)) {
-      return value.coerceToString();
+      // We don't need to do this when the CSS is embedded in a
+      // style attribute since then the HTML escaper kicks in.
+      // TODO(user): Maybe change the autoescaper to generate
+      //   |filterCssValue:attrib
+      // for style attributes and thread the parameter here so that
+      // we can skip this check when its unnecessary.
+      return embedCssIntoHtml(value.coerceToString());
     }
     return NullData.INSTANCE == value ? "" : filterCssValue(value.coerceToString());
   }
@@ -741,4 +748,51 @@ public final class Sanitizers {
 
   private static final Escaper URI_ESCAPER_NO_PLUS =
       new PercentEscaper(SAFECHARS_URLENCODER, false);
+
+
+  private static final Pattern HTML_RAW_CONTENT_HAZARD_RE = Pattern.compile(
+      Pattern.quote("</") + "|" + Pattern.quote("]]>"));
+
+  private static final ImmutableMap<String, String> HTML_RAW_CONTENT_HAZARD_REPLACEMENT =
+      ImmutableMap.of(
+          "</", "<\\/",
+          "]]>", "]]\\>");
+
+
+  /**
+   * Make sure that tag boundaries are not broken by Safe CSS when embedded in a
+   * {@code <style>} element.
+   */
+  @VisibleForTesting
+  static String embedCssIntoHtml(String css) {
+    // `</style` can close a containing style element in HTML.
+    // `]]>` can similarly close a CDATA element in XHTML.
+
+    // Scan for "</" and "]]>" and escape enough to remove the token seen by
+    // the HTML parser.
+
+    // For well-formed CSS, these string might validly appear in a few contexts:
+    // 1. comments
+    // 2. string bodies
+    // 3. url(...) bodies.
+
+    // Appending \ should be semantics preserving in comments and string bodies.
+    // This may not be semantics preserving in url content.
+    // The substring "]>" can validly appear in a selector
+    //   a[href]>b
+    // but the substring "]]>" cannot.
+
+    // This should not affect how a CSS parser recovers from syntax errors.
+    Matcher m = HTML_RAW_CONTENT_HAZARD_RE.matcher(css);
+    if (!m.find()) {
+      return css;
+    }
+    StringBuffer sb = new StringBuffer(css.length() + 16);
+    do {
+      m.appendReplacement(sb, "");
+      sb.append(HTML_RAW_CONTENT_HAZARD_REPLACEMENT.get(m.group()));
+    } while (m.find());
+    m.appendTail(sb);
+    return sb.toString();
+  }
 }
