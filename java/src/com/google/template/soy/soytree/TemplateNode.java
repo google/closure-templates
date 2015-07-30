@@ -16,6 +16,7 @@
 
 package com.google.template.soy.soytree;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -77,16 +78,17 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
     @Nullable public final String namespace;
     public final AutoescapeMode defaultAutoescapeMode;
 
-    public SoyFileHeaderInfo(SoyFileNode soyFileNode) {
-      this(soyFileNode.getDelPackageName(), soyFileNode.getNamespace(),
-          soyFileNode.getDefaultAutoescapeMode());
+    public SoyFileHeaderInfo(
+        @Nullable String delpackageName, NamespaceDeclaration soyFileNode) {
+      this(delpackageName, soyFileNode.getNamespace(), soyFileNode.getDefaultAutoescapeMode());
     }
 
+    @VisibleForTesting
     public SoyFileHeaderInfo(String namespace) {
       this(null, namespace, AutoescapeMode.NONCONTEXTUAL);
     }
 
-    public SoyFileHeaderInfo(
+    private SoyFileHeaderInfo(
         @Nullable String delPackageName, String namespace, AutoescapeMode defaultAutoescapeMode) {
       this.delPackageName = delPackageName;
       this.priority = (delPackageName == null) ? Priority.STANDARD : Priority.HIGH_PRIORITY;

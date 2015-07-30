@@ -27,6 +27,9 @@ options {
   JDK_VERSION = "1.7";
   STATIC = false;
   UNICODE_INPUT = true;
+  DEBUG_TOKEN_MANAGER = false;
+  DEBUG_PARSER = false;
+  SUPPORT_CLASS_VISIBILITY_PUBLIC = false;
 }
 
 
@@ -259,8 +262,16 @@ public class TemplateParser {
   // Should be marked 'final' (except JavaCC-generated constructors do not init it).
   private int lineNumOffset;
 
+  /**
+   * The number of columns that precede the start of the template being parsed.  Only use if the
+   * current non-adjusted line == 0.
+   */
+  private int line0ColOffset;
+
   /** For reporting syntax errors. */
   private ErrorReporter errorReporter;
+
+  // TODO(lukes): this class shouldn't have so many constructors trim it down to one
 
   /**
    * Constructor that takes a reader object providing the input.
@@ -277,6 +288,7 @@ public class TemplateParser {
       Reader input,
       String filePath,
       int templateContentStartLine,
+      int templateContentStartColumn,
       ErrorReporter errorReporter) {
     this(input);
     Preconditions.checkNotNull(nodeIdGen);
@@ -284,6 +296,7 @@ public class TemplateParser {
     this.filePath = filePath;
     // Line numbers are 1-indexed but offsets are not.
     this.lineNumOffset = templateContentStartLine - 1;
+    this.line0ColOffset = templateContentStartColumn;
     this.errorReporter = errorReporter;
   }
 
@@ -303,8 +316,10 @@ public class TemplateParser {
       String input,
       String filePath,
       int templateContentStartLine,
+      int templateContentStartColumn,
       ErrorReporter errorReporter) {
-    this(nodeIdGen, new StringReader(input), filePath, templateContentStartLine, errorReporter);
+    this(nodeIdGen, new StringReader(input), filePath, templateContentStartLine,
+        templateContentStartColumn, errorReporter);
   }
 
   /**
@@ -320,8 +335,10 @@ public class TemplateParser {
       IdGenerator nodeIdGen,
       String input,
       String filePath,
-      int templateContentStartLine) {
-    this(nodeIdGen, input, filePath, templateContentStartLine, new ErrorReporterImpl());
+      int templateContentStartLine,
+      int templateContentStartColumn) {
+    this(nodeIdGen, input, filePath, templateContentStartLine,
+        templateContentStartColumn, new ErrorReporterImpl());
   }
 
 
@@ -344,7 +361,8 @@ public class TemplateParser {
           .build();
 
   private <T> SourceItemInfo<T> newSourceItemInfo(T parsed, Token token) {
-    return new SourceItemInfo<T>(filePath, lineNumOffset, parsed, token);
+    return newSourceItemInfo(
+        parsed, token.beginLine, token.beginColumn, token.endLine, token.endColumn);
   }
 
   private <T> SourceItemInfo<T> newSourceItemInfo(T parsed, SourceItemInfo<?> begin,
@@ -354,8 +372,13 @@ public class TemplateParser {
 
   private <T> SourceItemInfo<T> newSourceItemInfo(
       T parsed, int lineNum, int columnNum, int lineNumEnd, int columnNumEnd) {
-    return new SourceItemInfo<T>(filePath, parsed, lineNumOffset + lineNum, columnNum,
-        lineNumOffset + lineNumEnd, columnNumEnd);
+    return new SourceItemInfo<T>(
+        filePath,
+        parsed,
+        lineNumOffset + lineNum,
+        (lineNum == 0 ? line0ColOffset : 0 ) + columnNum,
+        lineNumOffset + lineNumEnd,
+        (lineNumEnd == 0 ? line0ColOffset : 0 ) + columnNumEnd);
   }
 
   private SourceLocation createSrcLoc(Token token) {

@@ -16,8 +16,6 @@
 
 package com.google.template.soy.soytree;
 
-import com.google.common.base.Function;
-import com.google.common.collect.Iterables;
 import com.google.common.truth.FailureStrategy;
 import com.google.common.truth.Subject;
 import com.google.common.truth.SubjectFactory;
@@ -124,14 +122,11 @@ final class TemplateRegistrySubject extends Subject<TemplateRegistrySubject, Tem
     }
 
     void definedAt(SourceLocation sourceLocation) {
-      Iterable<SourceLocation> sourceLocations = Iterables.transform(getSubject(),
-          new Function<TemplateDelegateNode, SourceLocation>() {
-            @Override
-            public SourceLocation apply(TemplateDelegateNode node) {
-              return node.getSourceLocation();
-            }
-          });
-      Truth.assertThat(sourceLocations).contains(sourceLocation);
+      List<SourceLocation> locations = new ArrayList<>();
+      for (TemplateDelegateNode delegateNode : getSubject()) {
+        locations.add(delegateNode.getSourceLocation());
+      }
+      Truth.assertThat(locations).contains(sourceLocation);
     }
   }
 }

@@ -21,9 +21,13 @@ import static com.google.template.soy.parseinfo.passes.GenerateParseInfoVisitor.
 import static com.google.template.soy.parseinfo.passes.GenerateParseInfoVisitor.JavaClassNameSource.SOY_FILE_NAME;
 import static com.google.template.soy.parseinfo.passes.GenerateParseInfoVisitor.JavaClassNameSource.SOY_NAMESPACE_LAST_PART;
 
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.IndentedLinesBuilder;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.error.ExplodingErrorReporter;
+import com.google.template.soy.soytree.AliasDeclaration;
+import com.google.template.soy.soytree.NameAttributePair;
+import com.google.template.soy.soytree.NamespaceDeclaration;
 import com.google.template.soy.soytree.SoyFileNode;
 
 import junit.framework.TestCase;
@@ -98,8 +102,9 @@ public final class GenerateParseInfoVisitorTest extends TestCase {
         filePath,
         SoyFileKind.SRC,
         ExplodingErrorReporter.get(),
-        null /* delpackageCmdText */,
-        namespace,
-        null /* aliasCmdTexts */);
+        null /* delpackageName */,
+        new NamespaceDeclaration(
+            namespace, ImmutableList.<NameAttributePair>of(), ExplodingErrorReporter.get()),
+        ImmutableList.<AliasDeclaration>of());
   }
 }

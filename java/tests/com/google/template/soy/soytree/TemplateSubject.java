@@ -32,7 +32,6 @@ import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.SoyError;
 import com.google.template.soy.soyparse.ParseException;
 import com.google.template.soy.soyparse.TemplateParser;
-import com.google.template.soy.soyparse.TokenMgrError;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -65,7 +64,7 @@ public final class TemplateSubject extends Subject<TemplateSubject, String> {
   public TemplateSubject causesError(SoyError error) {
     ErrorReporterImpl errorReporter = new ErrorReporterImpl();
     try {
-      new TemplateParser(new FixedIdGenerator(), getSubject(), "example.soy", 1, errorReporter)
+      new TemplateParser(new FixedIdGenerator(), getSubject(), "example.soy", 1, 0, errorReporter)
           .parseTemplateContent();
     } finally {
       Truth.assertThat(errorReporter.locationsForError.keySet()).contains(error);
@@ -77,7 +76,7 @@ public final class TemplateSubject extends Subject<TemplateSubject, String> {
   public void isWellFormed() {
     ErrorReporterImpl errorReporter = new ErrorReporterImpl();
     try {
-      new TemplateParser(new FixedIdGenerator(), getSubject(), "example.soy", 1, errorReporter)
+      new TemplateParser(new FixedIdGenerator(), getSubject(), "example.soy", 1, 0, errorReporter)
           .parseTemplateContent();
     } catch (ParseException e) {
       throw Throwables.propagate(e);
@@ -88,9 +87,9 @@ public final class TemplateSubject extends Subject<TemplateSubject, String> {
   public void isNotWellFormed() {
     ErrorReporterImpl errorReporter = new ErrorReporterImpl();
     try {
-      new TemplateParser(new FixedIdGenerator(), getSubject(), "example.soy", 1, errorReporter)
+      new TemplateParser(new FixedIdGenerator(), getSubject(), "example.soy", 1, 0, errorReporter)
           .parseTemplateContent();
-    } catch (ParseException | TokenMgrError e) {
+    } catch (Throwable e) {
       return; // expected
     }
     Truth.assertThat(errorReporter.locationsForError).isNotEmpty();

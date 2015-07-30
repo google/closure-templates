@@ -19,11 +19,11 @@ package com.google.template.soy.html.passes;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.shared.SharedTestUtils.getNode;
 
-import com.google.template.soy.FormattingErrorReporter;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ExplodingErrorReporter;
+import com.google.template.soy.error.FormattingErrorReporter;
 import com.google.template.soy.html.HtmlAttributeNode;
 import com.google.template.soy.html.HtmlOpenTagEndNode;
 import com.google.template.soy.html.HtmlOpenTagStartNode;

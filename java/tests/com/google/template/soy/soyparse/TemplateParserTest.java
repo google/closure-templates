@@ -18,12 +18,12 @@ package com.google.template.soy.soyparse;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import com.google.template.soy.FormattingErrorReporter;
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ExplodingErrorReporter;
+import com.google.template.soy.error.FormattingErrorReporter;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.IntegerNode;
@@ -105,11 +105,12 @@ public final class TemplateParserTest extends TestCase {
     // The line number is correct even when the template doesn't start on line 1.
     try {
       new TemplateParser(
-          new IncrementingIdGenerator(),
-          "foo",
-          "test.soy",
-          /* start line number */ 2,
-          ExplodingErrorReporter.get())
+              new IncrementingIdGenerator(),
+              "foo",
+              "test.soy",
+              2, // start line number
+              0, // start col number
+              ExplodingErrorReporter.get())
           .MaybeWhitespace("ErrorMessage");
       fail("Should have failed with a ParseException");
     } catch (ParseException pe) {
@@ -1787,13 +1788,14 @@ public final class TemplateParserTest extends TestCase {
    */
   private static TemplateParseResult parseTemplateContent(String input, ErrorReporter errorReporter)
       throws ParseException {
-      return new TemplateParser(
-          new IncrementingIdGenerator(),
-          input,
-          "test.soy",
-          1 /* start line number */,
-          errorReporter)
-          .parseTemplateContent();
+    return new TemplateParser(
+            new IncrementingIdGenerator(),
+            input,
+            "test.soy",
+            1, // start line number
+            0, // start col number
+            errorReporter)
+        .parseTemplateContent();
   }
 
 
@@ -1807,11 +1809,12 @@ public final class TemplateParserTest extends TestCase {
   private static void parseMaybeWhitespace(String errorMessage, String input)
       throws TokenMgrError, ParseException {
     new TemplateParser(
-        new IncrementingIdGenerator(),
-        input,
-        "test.soy",
-        /* start line number */ 1,
-        ExplodingErrorReporter.get())
+            new IncrementingIdGenerator(),
+            input,
+            "test.soy",
+            1, // start line number
+            0, // start col number
+            ExplodingErrorReporter.get())
         .MaybeWhitespace(errorMessage);
   }
 

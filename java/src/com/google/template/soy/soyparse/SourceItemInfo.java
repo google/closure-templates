@@ -33,11 +33,6 @@ final class SourceItemInfo<T> {
   private final T parsedContent;
   private final SourceLocation location;
 
-  SourceItemInfo(String filePath, int lineOffset, T parsedContent, Token token) {
-    this(filePath, parsedContent, lineOffset + token.beginLine, token.beginColumn, 
-        lineOffset + token.endLine, token.endColumn);
-  }
-
   SourceItemInfo(T parsedContent, SourceItemInfo<?> begin, SourceItemInfo<?> end) {
     this(begin.location.getFilePath(), parsedContent, 
         begin.location.getLineNumber(), begin.location.getBeginColumn(), 

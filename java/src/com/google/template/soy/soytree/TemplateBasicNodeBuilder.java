@@ -142,10 +142,6 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder {
             + "and visibility=\"" + visibilityName + "\".");
       }
       visibility = Visibility.forAttributeValue(visibilityName);
-      if (visibility == null) {
-        throw SoySyntaxException.createWithoutMetaInfo(
-            "Invalid visibility type \"" + visibilityName + "\".");
-      }
     }
 
     // If the visibility hasn't been set, through either the old "private" attr

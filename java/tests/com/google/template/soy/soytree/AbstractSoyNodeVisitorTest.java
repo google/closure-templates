@@ -16,6 +16,7 @@
 
 package com.google.template.soy.soytree;
 
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.SoyFileKind;
@@ -38,14 +39,15 @@ public final class AbstractSoyNodeVisitorTest extends TestCase {
 
     SoyFileSetNode soyTree = new SoyFileSetNode(0, null);
 
-    SoyFileNode soyFile = new SoyFileNode(
-        0,
-        "",
-        SoyFileKind.SRC,
-        FAIL,
-        null /* delpackageCmdText */,
-        "boo" /* namespaceCmdText */,
-        null /* aliasCmdTexts */);
+    SoyFileNode soyFile =
+        new SoyFileNode(
+            0,
+            "",
+            SoyFileKind.SRC,
+            FAIL,
+            null /* delpackageCmdText */,
+            new NamespaceDeclaration("boo", ImmutableList.<NameAttributePair>of(), FAIL),
+            ImmutableList.<AliasDeclaration>of() /* aliasCmdTexts */);
     soyTree.addChild(soyFile);
 
     SoyFileHeaderInfo testSoyFileHeaderInfo = new SoyFileHeaderInfo("testNs");

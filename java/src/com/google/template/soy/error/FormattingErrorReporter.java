@@ -14,12 +14,10 @@
  * limitations under the License.
  */
 
-package com.google.template.soy;
+package com.google.template.soy.error;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyError;
 
 import java.util.ArrayList;
 import java.util.List;
