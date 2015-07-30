@@ -48,7 +48,7 @@ interface VariableLookup {
 
   /** 
    * Returns an expression that produces the current 
-   * {@link com.google.template.soy.jbcsrc.api.RenderContext}. 
+   * {@link com.google.template.soy.jbcsrc.shared.RenderContext}. 
    */
   Expression getRenderContext();
 

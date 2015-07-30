@@ -42,7 +42,7 @@ import com.google.template.soy.jbcsrc.MsgCompiler.SoyNodeToStringCompiler;
 import com.google.template.soy.jbcsrc.VariableSet.SaveStrategy;
 import com.google.template.soy.jbcsrc.VariableSet.Scope;
 import com.google.template.soy.jbcsrc.VariableSet.Variable;
-import com.google.template.soy.jbcsrc.api.RenderContext;
+import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.msgs.internal.MsgUtils;
 import com.google.template.soy.msgs.internal.MsgUtils.MsgPartsAndIds;
 import com.google.template.soy.soytree.AbstractReturningSoyNodeVisitor;

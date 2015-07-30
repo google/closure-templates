@@ -27,7 +27,7 @@ import com.google.auto.value.AutoValue;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.jbcsrc.VariableSet.VarKey.Kind;
 import com.google.template.soy.jbcsrc.api.AdvisingStringBuilder;
-import com.google.template.soy.jbcsrc.api.CompiledTemplate;
+import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Label;

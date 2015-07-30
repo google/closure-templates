@@ -18,7 +18,7 @@ package com.google.template.soy.jbcsrc.api;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.template.soy.jbcsrc.api.Names.rewriteStackTrace;
+import static com.google.template.soy.jbcsrc.shared.Names.rewriteStackTrace;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
@@ -33,6 +33,10 @@ import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueHelper;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
+import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
+import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
+import com.google.template.soy.jbcsrc.shared.DelTemplateSelectorImpl;
+import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.restricted.MsgPartUtils;
 import com.google.template.soy.msgs.restricted.SoyMsg;

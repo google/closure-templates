@@ -20,9 +20,9 @@ import static com.google.template.soy.jbcsrc.BytecodeUtils.SOY_RECORD_TYPE;
 
 import com.google.auto.value.AutoValue;
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
-import com.google.template.soy.jbcsrc.api.CompiledTemplate;
-import com.google.template.soy.jbcsrc.api.Names;
-import com.google.template.soy.jbcsrc.api.RenderContext;
+import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
+import com.google.template.soy.jbcsrc.shared.Names;
+import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.soytree.TemplateNode;
 
 import org.objectweb.asm.Type;
@@ -75,7 +75,7 @@ import org.objectweb.asm.commons.Method;
    * The template constructor.
    * 
    * <p>The constructor has the same interface as 
-   * {@link com.google.template.soy.jbcsrc.api.CompiledTemplate.Factory#create}
+   * {@link com.google.template.soy.jbcsrc.shared.CompiledTemplate.Factory#create}
    */
   abstract ConstructorRef constructor();
   

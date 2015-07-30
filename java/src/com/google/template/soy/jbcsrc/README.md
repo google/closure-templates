@@ -15,6 +15,34 @@ The general strategy is to generate a new Java class for each Soy `{template}`.
 Full details on how different pieces of Soy syntax map to Java code are detailed
 below.
 
+##Package design
+
+The jbcsrc implementation is split across several packages.
+
+ * `com.google.template.soy.jbcsrc`
+
+   The base package contains the core compiler implementation and the public
+   compiler entry point: `BytecodeCompiler`
+
+ * `com.google.template.soy.jbcsrc.runtime`
+
+   This package contains helper classes and utility routines that are only
+   accessed by the generated code.  A lot of the `jbcsrc` runtime is actually
+   defined in other soy packages (such as
+   `com.google.template.soy.shared.internal.SharedRuntime` or
+   `com.google.template.soy.shared.data`), when it is possible to share with
+   Tofu.  So this package is really intended for jbcsrc specific functionality.
+
+ * `com.google.template.soy.jbcsrc.api`
+
+   This package contains the public api for rendering jbcsrc compiled templates
+   via the `SoySauce` class.
+
+ * `com.google.template.soy.jbcsrc.shared`
+
+   This package contains functionality that is shared by the compiler and
+   runtime, but is meant to be private to soy.
+
 Background
 ----------
 The Soy server side renderer is currently implemented as a

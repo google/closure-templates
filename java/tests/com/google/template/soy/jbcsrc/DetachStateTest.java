@@ -27,8 +27,8 @@ import com.google.common.util.concurrent.SettableFuture;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import com.google.template.soy.jbcsrc.api.AdvisingStringBuilder;
-import com.google.template.soy.jbcsrc.api.CompiledTemplate;
 import com.google.template.soy.jbcsrc.api.RenderResult;
+import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 
 import junit.framework.TestCase;
 

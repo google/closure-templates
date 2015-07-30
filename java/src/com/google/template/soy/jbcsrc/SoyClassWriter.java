@@ -20,7 +20,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.OBJECT;
 
-import com.google.template.soy.jbcsrc.api.Names;
+import com.google.template.soy.jbcsrc.shared.Names;
 
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;

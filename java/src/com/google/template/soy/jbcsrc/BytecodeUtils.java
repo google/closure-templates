@@ -34,9 +34,9 @@ import com.google.template.soy.jbcsrc.Expression.Feature;
 import com.google.template.soy.jbcsrc.Expression.Features;
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import com.google.template.soy.jbcsrc.api.AdvisingStringBuilder;
-import com.google.template.soy.jbcsrc.api.CompiledTemplate;
-import com.google.template.soy.jbcsrc.api.RenderContext;
 import com.google.template.soy.jbcsrc.api.RenderResult;
+import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
+import com.google.template.soy.jbcsrc.shared.RenderContext;
 
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Label;

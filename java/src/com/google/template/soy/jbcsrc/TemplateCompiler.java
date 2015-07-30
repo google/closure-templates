@@ -34,8 +34,8 @@ import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jbcsrc.SoyNodeCompiler.CompiledMethodBody;
-import com.google.template.soy.jbcsrc.api.CompiledTemplate;
-import com.google.template.soy.jbcsrc.api.TemplateMetadata;
+import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
+import com.google.template.soy.jbcsrc.shared.TemplateMetadata;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.LetContentNode;
@@ -99,7 +99,7 @@ final class TemplateCompiler {
    *
    * <p>For each template, we generate:
    * <ul>
-   *     <li>A {@link com.google.template.soy.jbcsrc.api.CompiledTemplate.Factory}
+   *     <li>A {@link com.google.template.soy.jbcsrc.shared.CompiledTemplate.Factory}
    *     <li>A {@link CompiledTemplate}
    *     <li>A SoyAbstractCachingProvider subclass for each {@link LetValueNode} and 
    *         {@link CallParamValueNode}

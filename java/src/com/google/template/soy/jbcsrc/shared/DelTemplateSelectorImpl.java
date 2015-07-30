@@ -14,12 +14,14 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.jbcsrc.api;
+package com.google.template.soy.jbcsrc.shared;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SoyRecord;
+import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
+import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateDelegateNode.DelTemplateKey;
 import com.google.template.soy.soytree.TemplateRegistry;

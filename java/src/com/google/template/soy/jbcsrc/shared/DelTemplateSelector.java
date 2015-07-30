@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.jbcsrc.api;
+package com.google.template.soy.jbcsrc.shared;
 
 /**
  * Defines a strategy for looking up deltemplates by callee name and variant.

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.jbcsrc.api;
+package com.google.template.soy.jbcsrc.shared;
 
 import static com.google.common.base.Preconditions.checkArgument;
 

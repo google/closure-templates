@@ -23,7 +23,7 @@ import static com.google.template.soy.jbcsrc.LocalVariable.createThisVar;
 import static com.google.template.soy.jbcsrc.StandardNames.FACTORY_CLASS;
 
 import com.google.template.soy.data.SoyRecord;
-import com.google.template.soy.jbcsrc.api.CompiledTemplate;
+import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Label;
@@ -32,7 +32,7 @@ import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.commons.Method;
 
 /**
- * Generates {@link com.google.template.soy.jbcsrc.api.CompiledTemplate.Factory} implementations.
+ * Generates {@link com.google.template.soy.jbcsrc.shared.CompiledTemplate.Factory} implementations.
  *
  * <p>Each factory is incredibly simple, essentially we are generating this class: <pre>{@code
  *   public final class FooFactory implements CompiledTemplate.Factory {

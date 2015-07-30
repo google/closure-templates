@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.jbcsrc.api;
+package com.google.template.soy.jbcsrc.shared;
 
 import com.google.template.soy.data.SoyRecord;
+import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
+import com.google.template.soy.jbcsrc.api.RenderResult;
 
 import java.io.IOException;
 

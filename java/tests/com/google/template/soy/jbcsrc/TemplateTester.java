@@ -36,12 +36,12 @@ import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueHelper;
 import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.jbcsrc.api.AdvisingStringBuilder;
-import com.google.template.soy.jbcsrc.api.CompiledTemplate;
-import com.google.template.soy.jbcsrc.api.CompiledTemplate.Factory;
-import com.google.template.soy.jbcsrc.api.CompiledTemplates;
-import com.google.template.soy.jbcsrc.api.DelTemplateSelector;
-import com.google.template.soy.jbcsrc.api.RenderContext;
 import com.google.template.soy.jbcsrc.api.RenderResult;
+import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
+import com.google.template.soy.jbcsrc.shared.CompiledTemplate.Factory;
+import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
+import com.google.template.soy.jbcsrc.shared.DelTemplateSelector;
+import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.internal.ExtractMsgsVisitor;
 import com.google.template.soy.shared.internal.ErrorReporterModule;
@@ -117,7 +117,7 @@ public final class TemplateTester {
   }
 
   /**
-   * Returns a {@link com.google.template.soy.jbcsrc.api.CompiledTemplate.Factory} for the given 
+   * Returns a {@link com.google.template.soy.jbcsrc.shared.CompiledTemplate.Factory} for the given 
    * template body.
    */
   public static CompiledTemplate.Factory compileTemplateBody(String ...body) {

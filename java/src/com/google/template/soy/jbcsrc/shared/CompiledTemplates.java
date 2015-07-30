@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.jbcsrc.api;
+package com.google.template.soy.jbcsrc.shared;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -53,7 +53,7 @@ public final class CompiledTemplates {
     }
     return factory;
   }
-  
+
   private TemplateMetadata getTemplateMetadata(String name) {
     // TODO(lukes): cache this in a map?
     // Each template factory is an inner class of its corresponding template file and the annotation

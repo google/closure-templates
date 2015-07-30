@@ -43,7 +43,7 @@ import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.jbcsrc.ExpressionTester.ExpressionSubject;
-import com.google.template.soy.jbcsrc.api.RenderContext;
+import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
