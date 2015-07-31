@@ -19,6 +19,7 @@ package com.google.template.soy.parseinfo.passes;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.CaseFormat;
 import com.google.common.base.Joiner;
+import com.google.common.base.Optional;
 import com.google.common.base.Splitter;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMap;
@@ -32,7 +33,6 @@ import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.IndentedLinesBuilder;
 import com.google.template.soy.base.internal.SoyFileKind;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.parseinfo.SoyFileInfo.CssTagsPrefixPresence;
@@ -193,8 +193,6 @@ public final class GenerateParseInfoVisitor
   /** The package name of the generated files. */
   private final String javaPackage;
 
-  private final ErrorReporter errorReporter;
-
   /** The source of the generated Java class names. */
   private final JavaClassNameSource javaClassNameSource;
 
@@ -217,14 +215,11 @@ public final class GenerateParseInfoVisitor
    * @param javaPackage The Java package for the generated classes.
    * @param javaClassNameSource Source of the generated class names. Must be one of "filename",
    *     "namespace", or "generic".
-   * @param errorReporter For reporting errors.
    */
   public GenerateParseInfoVisitor(
       String javaPackage,
       String javaClassNameSource,
-      TemplateRegistry registry,
-      ErrorReporter errorReporter) {
-    this.errorReporter = errorReporter;
+      TemplateRegistry registry) {
     this.javaPackage = javaPackage;
     this.templateRegistry = registry;
 
@@ -561,7 +556,7 @@ public final class GenerateParseInfoVisitor
     // ------ *SoyTemplateInfo class start. ------
     ilb.appendLine();
     ilb.appendLine();
-    appendJavadoc(ilb, node.getSoyDocDesc(), true, false);
+    appendJavadoc(ilb, Optional.fromNullable(node.getSoyDocDesc()).or(""), true, false);
     ilb.appendLine(
         "public static final class ", templateInfoClassName, " extends SoyTemplateInfo {");
     ilb.increaseIndent();

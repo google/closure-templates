@@ -302,12 +302,12 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
   }
 
   /** Returns the SoyDoc, or null. */
-  public String getSoyDoc() {
+  @Nullable public String getSoyDoc() {
     return soyDoc;
   }
 
   /** Returns the description portion of the SoyDoc (before @param tags), or null. */
-  public String getSoyDocDesc() {
+  @Nullable public String getSoyDocDesc() {
     return soyDocDesc;
   }
 
