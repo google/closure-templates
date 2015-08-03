@@ -32,7 +32,6 @@ import static com.google.template.soy.jbcsrc.StandardNames.STATE_FIELD;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueProvider;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jbcsrc.SoyNodeCompiler.CompiledMethodBody;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.TemplateMetadata;
@@ -69,14 +68,11 @@ final class TemplateCompiler {
   private final ImmutableMap<String, FieldRef> paramFields;
   private final CompiledTemplateMetadata template;
   private final InnerClasses innerClasses;
-  private final ErrorReporter errorReporter;
   private SoyClassWriter writer;
 
-  TemplateCompiler(CompiledTemplateRegistry registry, CompiledTemplateMetadata template,
-      ErrorReporter errorReporter) {
+  TemplateCompiler(CompiledTemplateRegistry registry, CompiledTemplateMetadata template) {
     this.registry = registry;
     this.template = template;
-    this.errorReporter = errorReporter;
     TypeInfo ownerType = template.typeInfo();
     this.paramsField = createFinalField(ownerType, PARAMS_FIELD, SoyRecord.class).asNonNull();
     this.ijField = createFinalField(ownerType, IJ_FIELD, SoyRecord.class).asNonNull();
@@ -182,8 +178,7 @@ final class TemplateCompiler {
             thisVar,
             AppendableExpression.forLocal(appendableVar),
             variableSet,
-            variables,
-            errorReporter).compile(node);
+            variables).compile(node);
     final Statement returnDone = Statement.returnExpression(MethodRef.RENDER_RESULT_DONE.invoke());
     new Statement() {
       @Override

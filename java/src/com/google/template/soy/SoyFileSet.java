@@ -864,16 +864,10 @@ public final class SoyFileSet {
       //(new AssertNoExternalCallsVisitor()).exec(soyTree);
     }
 
-    // Note: Globals should have been substituted already. The pass below is just a check.
-    new SubstituteGlobalsVisitor(
-        generalOptions.getCompileTimeGlobals(),
-        typeRegistry,
-        true /* shouldAssertNoUnboundGlobals */,
-        errorReporter)
-        .exec(soyTree);
-
-    // Clear the SoyDoc strings because they use unnecessary memory.
-    new ClearSoyDocStringsVisitor(errorReporter).exec(soyTree);
+    if (cache == null) {
+      // Clear the SoyDoc strings because they use unnecessary memory.
+      new ClearSoyDocStringsVisitor(errorReporter).exec(soyTree);
+    }
 
     ((ErrorReporterImpl) errorReporter).throwIfErrorsPresent();
 
@@ -909,28 +903,23 @@ public final class SoyFileSet {
       ((ErrorReporterImpl) errorReporter).throwIfErrorsPresent();
     }
 
-    checkpoint = errorReporter.checkpoint();
     runMiddleendPasses(soyTree, declaredSyntaxVersion);
     new StrictDepsVisitor(errorReporter).exec(soyTree);
     if (errorReporter.errorsSince(checkpoint)) {
       ((ErrorReporterImpl) errorReporter).throwIfErrorsPresent();
     }
 
-    checkpoint = errorReporter.checkpoint();
-    // Note: Globals should have been substituted already. The pass below is just a check.
-    new SubstituteGlobalsVisitor(
-        generalOptions.getCompileTimeGlobals(),
-        typeRegistry,
-        true /* shouldAssertNoUnboundGlobals */,
-        errorReporter)
-        .exec(soyTree);
     if (errorReporter.errorsSince(checkpoint)) {
       ((ErrorReporterImpl) errorReporter).throwIfErrorsPresent();
     }
 
-    checkpoint = errorReporter.checkpoint();
     TemplateRegistry registry = new TemplateRegistry(soyTree, errorReporter);
-    Optional<CompiledTemplates> templates = BytecodeCompiler.compile(registry, errorReporter);
+    Optional<CompiledTemplates> templates =
+        BytecodeCompiler.compile(
+            registry,
+            // if there is an AST cache, assume we are in 'dev mode' and trigger lazy compilation.
+            cache != null,
+            errorReporter);
     if (errorReporter.errorsSince(checkpoint)) {
       ((ErrorReporterImpl) errorReporter).throwIfErrorsPresent();
     }

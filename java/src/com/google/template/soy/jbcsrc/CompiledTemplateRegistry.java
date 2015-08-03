@@ -18,6 +18,7 @@ package com.google.template.soy.jbcsrc;
 
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
@@ -32,15 +33,21 @@ import javax.annotation.Nullable;
  * A registry of information about every compiled template.
  */
 final class CompiledTemplateRegistry {
-  private final ImmutableBiMap<String, CompiledTemplateMetadata> templateNameToGeneratedClassName;
+  private final ImmutableBiMap<String, CompiledTemplateMetadata> templateNameToMetadata;
+  private final ImmutableBiMap<String, CompiledTemplateMetadata> classNameToMetadata;
   private final ImmutableMap<String, ContentKind> deltemplateNameToContentKind;
 
   CompiledTemplateRegistry(TemplateRegistry registry) {
     Map<String, ContentKind> deltemplateNameToContentKind = new HashMap<>();
-    ImmutableBiMap.Builder<String, CompiledTemplateMetadata> builder = ImmutableBiMap.builder();
+    ImmutableBiMap.Builder<String, CompiledTemplateMetadata> templateToMetadata =
+        ImmutableBiMap.builder();
+    ImmutableBiMap.Builder<String, CompiledTemplateMetadata> classToMetadata =
+        ImmutableBiMap.builder();
     for (TemplateNode template : registry.getAllTemplates()) {
-      builder.put(template.getTemplateName(), 
-          CompiledTemplateMetadata.create(template.getTemplateName(), template));
+      CompiledTemplateMetadata metadata = 
+          CompiledTemplateMetadata.create(template.getTemplateName(), template);
+      templateToMetadata.put(template.getTemplateName(), metadata);
+      classToMetadata.put(metadata.typeInfo().className(), metadata);
       if (template instanceof TemplateDelegateNode && template.getContentKind() != null) {
         // all delegates are guaranteed to have the same content kind by the checkdelegatesvisitor
         deltemplateNameToContentKind.put(
@@ -48,15 +55,27 @@ final class CompiledTemplateRegistry {
             template.getContentKind());
       }
     }
-    this.templateNameToGeneratedClassName = builder.build();
+    this.templateNameToMetadata = templateToMetadata.build();
+    this.classNameToMetadata = classToMetadata.build();
     this.deltemplateNameToContentKind = ImmutableMap.copyOf(deltemplateNameToContentKind);
+  }
+
+  ImmutableSet<String> getTemplateNames() {
+    return templateNameToMetadata.keySet();
   }
 
   /**
    * Returns information about the generated class for the given fully qualified template name.
    */
-  CompiledTemplateMetadata getTemplateInfo(String templateName) {
-    return templateNameToGeneratedClassName.get(templateName);
+  CompiledTemplateMetadata getTemplateInfoByTemplateName(String templateName) {
+    return templateNameToMetadata.get(templateName);
+  }
+
+  /**
+   * Returns information about the generated class for the given fully qualified template name.
+   */
+  CompiledTemplateMetadata getTemplateInfoByClassName(String templateName) {
+    return classNameToMetadata.get(templateName);
   }
 
   /**

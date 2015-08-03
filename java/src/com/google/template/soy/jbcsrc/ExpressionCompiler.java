@@ -30,7 +30,6 @@ import com.google.common.collect.Iterables;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.DataAccessNode;
@@ -91,9 +90,9 @@ final class ExpressionCompiler {
   static final class BasicExpressionCompiler {
     private final CompilerVisitor compilerVisitor;
 
-    private BasicExpressionCompiler(VariableLookup variables, ErrorReporter errorReporter) {
+    private BasicExpressionCompiler(VariableLookup variables) {
       this.compilerVisitor =
-          new CompilerVisitor(errorReporter, variables, new PluginFunctionCompiler(variables),
+          new CompilerVisitor(variables, new PluginFunctionCompiler(variables),
               Suppliers.ofInstance(BasicDetacher.INSTANCE));
     }
 
@@ -126,9 +125,8 @@ final class ExpressionCompiler {
    */
   static ExpressionCompiler create(
       ExpressionDetacher.Factory detacherFactory,
-      VariableLookup variables,
-      ErrorReporter errorReporter) {
-    return new ExpressionCompiler(detacherFactory, variables, errorReporter);
+      VariableLookup variables) {
+    return new ExpressionCompiler(detacherFactory, variables);
   }
 
   /**
@@ -137,21 +135,17 @@ final class ExpressionCompiler {
    * <p>All generated detach points are implemented as {@code return} statements and the returned
    * value is boxed, so it is only valid for use by the {@link LazyClosureCompiler}.
    */
-  static BasicExpressionCompiler createBasicCompiler(VariableLookup variables,
-      ErrorReporter reporter) {
-    return new BasicExpressionCompiler(variables, reporter);
+  static BasicExpressionCompiler createBasicCompiler(VariableLookup variables) {
+    return new BasicExpressionCompiler(variables);
   }
 
   private final VariableLookup variables;
-  private final ErrorReporter reporter;
   private final ExpressionDetacher.Factory detacherFactory;
 
   private ExpressionCompiler(
       ExpressionDetacher.Factory detacherFactory,
-      VariableLookup variables,
-      ErrorReporter errorReporter) {
+      VariableLookup variables) {
     this.detacherFactory = detacherFactory;
-    this.reporter = errorReporter;
     this.variables = variables;
   }
 
@@ -182,7 +176,7 @@ final class ExpressionCompiler {
     };
     return Optional.of(
         new CompilerVisitor(
-            reporter, variables, new PluginFunctionCompiler(variables), throwingSupplier)
+            variables, new PluginFunctionCompiler(variables), throwingSupplier)
                 .exec(node));
   }
 
@@ -192,7 +186,7 @@ final class ExpressionCompiler {
    */
   BasicExpressionCompiler asBasicCompiler(final Label reattachPoint) {
     return new BasicExpressionCompiler(
-        new CompilerVisitor(reporter, variables, new PluginFunctionCompiler(variables),
+        new CompilerVisitor(variables, new PluginFunctionCompiler(variables),
             // Use a lazy supplier to allocate the expression detacher on demand.  Allocating the
             // detacher eagerly creates detach points so we want to delay until definitely
             // neccesary.
@@ -223,10 +217,10 @@ final class ExpressionCompiler {
     final VariableLookup variables;
     final PluginFunctionCompiler functions;
 
-    CompilerVisitor(ErrorReporter errorReporter, VariableLookup variables,
+    CompilerVisitor(VariableLookup variables,
         PluginFunctionCompiler functions,
         Supplier<? extends ExpressionDetacher> detacher) {
-      super(errorReporter);
+      super(ExplodingErrorReporter.get());
       this.detacher = detacher;
       this.variables = variables;
       this.functions = functions;

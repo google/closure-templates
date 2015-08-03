@@ -34,7 +34,7 @@ import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.restricted.IntegerData;
-import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.jbcsrc.ControlFlow.IfBlock;
 import com.google.template.soy.jbcsrc.ExpressionCompiler.BasicExpressionCompiler;
@@ -118,13 +118,12 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       Expression thisVar,
       AppendableExpression appendableVar,
       VariableSet variableSet,
-      VariableLookup variables,
-      ErrorReporter errorReporter) {
+      VariableLookup variables) {
     DetachState detachState = new DetachState(variableSet, thisVar, stateField);
     ExpressionCompiler expressionCompiler =
-        ExpressionCompiler.create(detachState, variables, errorReporter);
+        ExpressionCompiler.create(detachState, variables);
     ExpressionToSoyValueProviderCompiler soyValueProviderCompiler =
-        ExpressionToSoyValueProviderCompiler.create(expressionCompiler, variables, errorReporter);
+        ExpressionToSoyValueProviderCompiler.create(expressionCompiler, variables);
     return new SoyNodeCompiler(
         thisVar,
         registry,
@@ -134,9 +133,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         appendableVar,
         expressionCompiler,
         soyValueProviderCompiler,
-        new LazyClosureCompiler(
-            registry, innerClasses, variables, errorReporter, soyValueProviderCompiler),
-        errorReporter);
+        new LazyClosureCompiler(registry, innerClasses, variables, soyValueProviderCompiler));
   }
 
   private final Expression thisVar;
@@ -159,9 +156,8 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       AppendableExpression appendableExpression,
       ExpressionCompiler exprCompiler,
       ExpressionToSoyValueProviderCompiler expressionToSoyValueProviderCompiler,
-      LazyClosureCompiler lazyClosureCompiler,
-      ErrorReporter errorReporter) {
-    super(errorReporter);
+      LazyClosureCompiler lazyClosureCompiler) {
+    super(ExplodingErrorReporter.get());
     this.thisVar = checkNotNull(thisVar);
     this.registry = checkNotNull(registry);
     this.detachState = checkNotNull(detachState);
@@ -679,7 +675,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
 
   @Override protected Statement visitCallBasicNode(CallBasicNode node) {
     // Basic nodes are basic! We can just call the node directly.
-    CompiledTemplateMetadata callee = registry.getTemplateInfo(node.getCalleeName());
+    CompiledTemplateMetadata callee = registry.getTemplateInfoByTemplateName(node.getCalleeName());
     Label reattachPoint = new Label();
     Expression calleeExpression =
         callee.constructor()
@@ -860,7 +856,6 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         appendable,
         exprCompiler,
         expressionToSoyValueProviderCompiler,
-        lazyClosureCompiler,
-        errorReporter);
+        lazyClosureCompiler);
   }
 }

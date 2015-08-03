@@ -114,7 +114,7 @@ public class ExpressionCompilerTest extends TestCase {
         @Override public Expression getIjRecord() {
           throw new UnsupportedOperationException();
         }
-      }, ExplodingErrorReporter.get());
+      });
 
   public void testConstants() {
     assertExpression("1").evaluatesTo(1L);

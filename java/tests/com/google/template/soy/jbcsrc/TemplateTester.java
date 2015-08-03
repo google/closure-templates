@@ -266,13 +266,14 @@ public final class TemplateTester {
         TemplateRegistry registry = new TemplateRegistry(fileSet, ExplodingErrorReporter.get());
         CompiledTemplateRegistry compilerRegistry = new CompiledTemplateRegistry(registry);
         String templateName = Iterables.getOnlyElement(registry.getBasicTemplatesMap().keySet());
-        CompiledTemplateMetadata classInfo = compilerRegistry.getTemplateInfo(templateName);
-        classData = new TemplateCompiler(compilerRegistry, classInfo,
-            ExplodingErrorReporter.get()).compile();
+        classData = new TemplateCompiler(
+            compilerRegistry,
+            compilerRegistry.getTemplateInfoByTemplateName(templateName)).compile();
         checkClasses(classData);
-        factory = BytecodeCompiler.loadFactory(
-            classInfo,
-            new MemoryClassLoader.Builder().addAll(classData).build());
+        factory = new CompiledTemplates(
+            compilerRegistry.getTemplateNames(), 
+            new MemoryClassLoader.Builder().addAll(classData).build())
+                .getTemplateFactory(templateName);
       }
     }
 
@@ -329,6 +330,7 @@ public final class TemplateTester {
     return BytecodeCompiler.compile(
         new TemplateRegistry(SoyFileSetParserBuilder.forFileContents(file).parse(),
             ExplodingErrorReporter.get()),
+        false,
         ExplodingErrorReporter.get()).get();
   }
 }

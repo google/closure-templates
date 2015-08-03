@@ -44,7 +44,6 @@ import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyAbstractCachingValueProvider;
 import com.google.template.soy.data.internal.RenderableThunk;
 import com.google.template.soy.data.restricted.StringData;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.jbcsrc.SoyNodeCompiler.CompiledMethodBody;
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
@@ -157,19 +156,16 @@ final class LazyClosureCompiler {
   private final CompiledTemplateRegistry registry;
   private final InnerClasses innerClasses;
   private final VariableLookup parentVariables;
-  private final ErrorReporter errorReporter;
   private final ExpressionToSoyValueProviderCompiler expressionToSoyValueProviderCompiler;
 
   LazyClosureCompiler(
       CompiledTemplateRegistry registry, 
       InnerClasses innerClasses,
       VariableLookup parentVariables, 
-      ErrorReporter errorReporter,
       ExpressionToSoyValueProviderCompiler expressionToSoyValueProviderCompiler) {
     this.registry = registry;
     this.innerClasses = innerClasses;
     this.parentVariables = parentVariables;
-    this.errorReporter = errorReporter;
     this.expressionToSoyValueProviderCompiler = expressionToSoyValueProviderCompiler;
   }
   
@@ -275,7 +271,7 @@ final class LazyClosureCompiler {
       LazyClosureVariableLookup lookup = 
           new LazyClosureVariableLookup(this, parentVariables, variableSet, thisVar);
       SoyExpression compile =
-          ExpressionCompiler.createBasicCompiler(lookup, errorReporter).compile(exprNode);
+          ExpressionCompiler.createBasicCompiler(lookup).compile(exprNode);
       SoyExpression expression = compile.box();
       final Statement storeExpr =
           RESOLVED_VALUE
@@ -320,8 +316,7 @@ final class LazyClosureCompiler {
       LazyClosureVariableLookup lookup = 
           new LazyClosureVariableLookup(this, parentVariables, variableSet, thisVar);
       SoyNodeCompiler soyNodeCompiler = SoyNodeCompiler.create(registry, innerClasses, stateField,
-          thisVar, AppendableExpression.forLocal(appendableVar), variableSet, lookup,
-          errorReporter);
+          thisVar, AppendableExpression.forLocal(appendableVar), variableSet, lookup);
       CompiledMethodBody compileChildren = soyNodeCompiler.compileChildren(renderUnit);
       writer.setNumDetachStates(compileChildren.numberOfDetachStates());
       final Statement nodeBody = compileChildren.body();
