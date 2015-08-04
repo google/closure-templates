@@ -164,7 +164,7 @@ public abstract class SanitizedContent extends SoyData implements SoyString {
   /**
    * Returns the string value.
    *
-   * In contexts where a string value is required, SanitizedCOntent is permitted.
+   * <p>In contexts where a string value is required, SanitizedContent is permitted.
    */
   @Override
   public String stringValue() {
