@@ -20,9 +20,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.basetree.SyntaxVersion;
-import com.google.template.soy.basetree.SyntaxVersionBound;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyError;
 import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.internal.base.Pair;
@@ -57,6 +56,8 @@ public final class CssNode extends AbstractCommandNode
   private static final Pattern SELECTOR_TEXT_PATTERN = Pattern.compile(
       "^(" + CSS_CLASS_NAME_RE + "|" + "[$]?" + BaseUtils.DOTTED_IDENT_RE + ")$");
 
+  private static final SoyError INVALID_CSS_ARGUMENT = SoyError.of(
+      "Invalid argument to CSS command. Argument must be a valid CSS class name or identifier.");
 
   /**
    * Component name expression of a CSS command. Null if CSS command has no expression.
@@ -91,11 +92,6 @@ public final class CssNode extends AbstractCommandNode
     super(id, sourceLocation, "css", commandText);
     this.componentNameExpr = componentNameExpr;
     this.selectorText = selectorText;
-
-    if (!SELECTOR_TEXT_PATTERN.matcher(selectorText).matches()) {
-      maybeSetSyntaxVersionBound(new SyntaxVersionBound(
-          SyntaxVersion.V2_1, "Invalid 'css' command text."));
-    }
   }
 
 
@@ -216,8 +212,10 @@ public final class CssNode extends AbstractCommandNode
                 .parseExpression());
         selectorText = commandText.substring(delimPos + 1).trim();
       }
-      return new CssNode(id, commandText, componentNameExpr, selectorText,
-          sourceLocation);
+      if (!SELECTOR_TEXT_PATTERN.matcher(selectorText).matches()) {
+        errorReporter.report(sourceLocation, INVALID_CSS_ARGUMENT);
+      }
+      return new CssNode(id, commandText, componentNameExpr, selectorText, sourceLocation);
     }
   }
 }
