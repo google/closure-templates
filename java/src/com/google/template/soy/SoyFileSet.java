@@ -864,10 +864,15 @@ public final class SoyFileSet {
       //(new AssertNoExternalCallsVisitor()).exec(soyTree);
     }
 
-    if (cache == null) {
-      // Clear the SoyDoc strings because they use unnecessary memory.
-      new ClearSoyDocStringsVisitor(errorReporter).exec(soyTree);
-    }
+    // Note: Globals should have been substituted already. The pass below is just a check.
+    new SubstituteGlobalsVisitor(
+        generalOptions.getCompileTimeGlobals(),
+        typeRegistry,
+        true /* shouldAssertNoUnboundGlobals */,
+        errorReporter)
+        .exec(soyTree);
+    // Clear the SoyDoc strings because they use unnecessary memory.
+    new ClearSoyDocStringsVisitor(errorReporter).exec(soyTree);
 
     ((ErrorReporterImpl) errorReporter).throwIfErrorsPresent();
 
@@ -908,6 +913,14 @@ public final class SoyFileSet {
     if (errorReporter.errorsSince(checkpoint)) {
       ((ErrorReporterImpl) errorReporter).throwIfErrorsPresent();
     }
+
+    // Note: Globals should have been substituted already. The pass below is just a check.
+    new SubstituteGlobalsVisitor(
+        generalOptions.getCompileTimeGlobals(),
+        typeRegistry,
+        true /* shouldAssertNoUnboundGlobals */,
+        errorReporter)
+        .exec(soyTree);
 
     if (errorReporter.errorsSince(checkpoint)) {
       ((ErrorReporterImpl) errorReporter).throwIfErrorsPresent();
