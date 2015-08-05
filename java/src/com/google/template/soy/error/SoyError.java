@@ -42,7 +42,7 @@ public final class SoyError {
   }
 
   public String format(Object... args) {
-    Preconditions.checkState(args.length == requiredArgs, 
+    Preconditions.checkState(args.length == requiredArgs,
         "Error format required %s parameters, %s were supplied.", requiredArgs, args.length);
     return messageFormat.format(args);
   }

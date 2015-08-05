@@ -99,6 +99,9 @@ public final class RecordType implements SoyObjectType {
     return members.get(fieldName);
   }
 
+  @Override public ImmutableSet<String> getFieldNames() {
+    return members.keySet();
+  }
 
   @Override public String getFieldAccessExpr(
       String fieldContainerExpr, String fieldName, SoyBackendKind backendKind) {

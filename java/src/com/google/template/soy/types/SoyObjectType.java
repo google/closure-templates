@@ -55,6 +55,11 @@ public interface SoyObjectType extends SoyType {
   SoyType getFieldType(String fieldName);
 
   /**
+   * Return all the possible field names that can be referenced from this ObjectType.
+   */
+  ImmutableSet<String> getFieldNames();
+
+  /**
    * Return the expression used to access the value of the field, for a given output context.
    *
    * @param fieldContainerExpr An expression that evaluates to the container of the named field.

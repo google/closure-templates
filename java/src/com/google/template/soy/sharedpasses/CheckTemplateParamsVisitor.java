@@ -37,8 +37,10 @@ import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.defn.TemplateParam;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.Set;
 
 /**
  * Visitor for checking that in each template, the parameters declared in the SoyDoc match the data
@@ -58,7 +60,7 @@ import java.util.Map.Entry;
  */
 public final class CheckTemplateParamsVisitor extends AbstractSoyNodeVisitor<Void> {
 
-  private static final SoyError UNDECLARED_DATA_KEY = SoyError.of("Unknown data key ''{0}''.");
+  private static final SoyError UNDECLARED_DATA_KEY = SoyError.of("Unknown data key ''{0}''.{1}");
   private static final SoyError UNUSED_PARAM = SoyError.of("Param {0} unused in template body.");
 
   /** User-declared syntax version. */
@@ -118,8 +120,10 @@ public final class CheckTemplateParamsVisitor extends AbstractSoyNodeVisitor<Voi
     IndirectParamsInfo ipi
         = new FindIndirectParamsVisitor(templateRegistry, errorReporter).exec(node);
 
+    Set<String> allParamNames = new HashSet<>();
     List<String> unusedParams = new ArrayList<>();
     for (TemplateParam param : node.getAllParams()) {
+      allParamNames.add(param.name());
       if (dataKeys.containsKey(param.name())) {
         // Good: Declared and referenced in template. We remove these from dataKeys so
         // that at the end of the for-loop, dataKeys will only contain the keys that are referenced
@@ -139,7 +143,9 @@ public final class CheckTemplateParamsVisitor extends AbstractSoyNodeVisitor<Voi
 
     // At this point, the only keys left in dataKeys are undeclared.
     for (Entry<String, SourceLocation> undeclared : dataKeys.entries()) {
-      errorReporter.report(undeclared.getValue(), UNDECLARED_DATA_KEY, undeclared.getKey());
+      String extraErrorMessage = "";
+      errorReporter.report(
+          undeclared.getValue(), UNDECLARED_DATA_KEY, undeclared.getKey(), extraErrorMessage);
     }
 
     // Delegate templates can declare unused params because other implementations

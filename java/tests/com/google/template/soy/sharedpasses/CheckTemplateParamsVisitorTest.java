@@ -176,7 +176,7 @@ public final class CheckTemplateParamsVisitorTest extends TestCase {
     String templateBody = "{$boo.foo}";
     ImmutableList<String> errors = soyDocErrorsForTemplate(soyDoc, templateBody);
     assertThat(errors).hasSize(2);
-    assertThat(errors.get(0)).isEqualTo("Unknown data key 'boo'.");
+    assertThat(errors.get(0)).contains("Unknown data key 'boo'.");
     assertThat(errors.get(1)).isEqualTo("Param foo unused in template body.");
   }
 
@@ -288,7 +288,7 @@ public final class CheckTemplateParamsVisitorTest extends TestCase {
 
     ImmutableList<String> errors = soyDocErrorsFor(fileContent0, fileContent1, fileContent2);
     assertThat(errors).hasSize(1);
-    assertThat(errors.get(0)).isEqualTo("Unknown data key 'goo2'.");
+    assertThat(errors.get(0)).contains("Unknown data key 'goo2'.");
   }
 
   public void testWithHeaderParams() {

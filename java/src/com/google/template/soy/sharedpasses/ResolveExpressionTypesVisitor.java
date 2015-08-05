@@ -759,10 +759,13 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
 
         case OBJECT: {
           // The base type is an object, so look up the field.
-          SoyType fieldType = ((SoyObjectType) baseType).getFieldType(fieldName);
+          SoyObjectType objectType = (SoyObjectType) baseType;
+          SoyType fieldType = objectType.getFieldType(fieldName);
           if (fieldType == null) {
+            String extraErrorMessage = "";
             throw createExceptionForInvalidExpr(
-                "Undefined field '" + fieldName + "' for object type " + baseType);
+                "Undefined field '" + fieldName + "' for object type "
+                + baseType + extraErrorMessage);
           }
           return fieldType;
         }
