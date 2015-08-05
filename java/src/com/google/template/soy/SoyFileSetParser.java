@@ -19,13 +19,11 @@ package com.google.template.soy;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Sets;
-import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyError;
 import com.google.template.soy.parsepasses.CheckCallsVisitor;
 import com.google.template.soy.parsepasses.CheckDelegatesVisitor;
 import com.google.template.soy.parsepasses.InferRequiredSyntaxVersionVisitor;
@@ -62,9 +60,6 @@ import javax.annotation.Nullable;
  *
  */
 public final class SoyFileSetParser {
-
-  private static final SoyError VERSION_SKEW_IN_SOY_FILE =
-      SoyError.of("Version skew in Soy file {0}");
 
   /** The type registry to resolve type names. */
   private final SoyTypeRegistry typeRegistry;
@@ -173,34 +168,38 @@ public final class SoyFileSetParser {
         (cache != null) ? cache.getNodeIdGenerator() : new IncrementingIdGenerator();
     SoyFileSetNode soyTree = new SoyFileSetNode(nodeIdGen.genId(), nodeIdGen);
 
-    for (SoyFileSupplier soyFileSupplier : soyFileSuppliers) {
-      VersionedFile fileAndVersion = (cache != null) ? cache.get(soyFileSupplier) : null;
-      if (fileAndVersion == null) {
+    for (SoyFileSupplier fileSupplier : soyFileSuppliers) {
+      SoyFileSupplier.Version version = fileSupplier.getVersion();
+      VersionedFile cachedFile = cache != null
+          ? cache.get(fileSupplier.getFilePath(), version)
+          : null;
+      SoyFileNode node;
+      if (cachedFile == null) {
         //noinspection SynchronizationOnLocalVariableOrMethodParameter IntelliJ
         synchronized (nodeIdGen) {  // Avoid using the same ID generator in multiple threads.
-          fileAndVersion = parseSoyFileHelper(soyFileSupplier, nodeIdGen, typeRegistry);
+          node = parseSoyFileHelper(fileSupplier, nodeIdGen, typeRegistry);
           // TODO(user): implement error recovery and keep on trucking in order to display
           // as many errors as possible. Currently, the later passes just spew NPEs if run on
           // a malformed parse tree.
-          if (fileAndVersion.file() == null) {
+          if (node == null) {
             return soyTree;
           }
           if (doRunInitialParsingPasses) {
             // Run passes that are considered part of initial parsing.
-            runSingleFileParsingPasses(fileAndVersion.file(), nodeIdGen);
+            runSingleFileParsingPasses(node, nodeIdGen);
           }
         }
         if (doRunCheckingPasses) {
           // Run passes that check the tree.
-          runSingleFileCheckingPasses(fileAndVersion.file());
+          runSingleFileCheckingPasses(node);
         }
         if (cache != null) {
-          cache.put(soyFileSupplier, fileAndVersion);
+          cache.put(fileSupplier.getFilePath(), VersionedFile.of(node, version));
         }
+      } else {
+        node = cachedFile.file();
       }
-      if (fileAndVersion.file() != null) {
-        soyTree.addChild(fileAndVersion.file());
-      }
+      soyTree.addChild(node);
     }
 
     // Run passes that check the tree.
@@ -219,25 +218,18 @@ public final class SoyFileSetParser {
    * @param nodeIdGen The generator of node ids.
    * @return The resulting parse tree for one Soy file and the version from which it was parsed.
    */
-  private VersionedFile parseSoyFileHelper(
+  private SoyFileNode parseSoyFileHelper(
       SoyFileSupplier soyFileSupplier, IdGenerator nodeIdGen, SoyTypeRegistry typeRegistry)
       throws IOException {
-    String filePath = soyFileSupplier.getFilePath();
-    SoyFileSupplier.Version version = soyFileSupplier.getVersion();
     try (Reader soyFileReader = soyFileSupplier.open()) {
-      SoyFileNode soyFileNode = new SoyFileParser(
+      return new SoyFileParser(
           typeRegistry,
           nodeIdGen,
           soyFileReader,
           soyFileSupplier.getSoyFileKind(),
-          filePath,
+          soyFileSupplier.getFilePath(),
           errorReporter)
           .parseSoyFile();
-      if (soyFileSupplier.hasChangedSince(version)) {
-        errorReporter.report(
-            new SourceLocation(filePath, -1, -1, -1, -1), VERSION_SKEW_IN_SOY_FILE, filePath);
-      }
-      return VersionedFile.of(soyFileNode, version);
     }
   }
 

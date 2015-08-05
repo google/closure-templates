@@ -69,23 +69,23 @@ public final class SoyAstCacheTest extends TestCase {
   public void testGetSet() {
 
     // Matching version.
-    cache.put(supplier1, VersionedFile.of(fileNode1, version2));
-    VersionedFile versionedFile = cache.get(supplier1);
+    cache.put("foo", VersionedFile.of(fileNode1, version2));
+    VersionedFile versionedFile = cache.get("foo", version2);
     assertThat(versionedFile.file().getId()).isEqualTo(0xdeadbeef);
     assertThat(versionedFile.file()).isNotSameAs(fileNode1);
     assertThat(versionedFile.version()).isEqualTo(version2);
 
-    assertThat(cache.get(supplier2)).isNull();
+    assertThat(cache.get("bar", version1)).isNull();
 
-    versionedFile = cache.get(supplier1);
+    versionedFile = cache.get("foo", version2);
     assertThat(versionedFile.file().getId()).isEqualTo(0xdeadbeef);
     assertThat(versionedFile.file()).isNotSameAs(fileNode1);
     assertThat(versionedFile.version()).isEqualTo(version2);
 
     // Non matching version.
-    cache.put(supplier1, VersionedFile.of(fileNode1, version1));
-    assertThat(cache.get(supplier1)).isNull();
-    assertThat(cache.get(supplier2)).isNull();
+    cache.put("foo", VersionedFile.of(fileNode1, version1));
+    assertThat(cache.get("foo", version2)).isNull();
+    assertThat(cache.get("bar", version1)).isNull();
   }
 
   public void testIdGenerator() {
