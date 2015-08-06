@@ -40,7 +40,7 @@ public interface Node {
    *     (V2_1, "Function hasData() is unnecessary and no longer allowed.")
    * Returns null if there is no known upper bound on this node's syntax version.
    */
-  @Nullable SyntaxVersionBound getSyntaxVersionBound();
+  @Nullable SyntaxVersionUpperBound getSyntaxVersionUpperBound();
 
 
   /**
@@ -48,7 +48,7 @@ public interface Node {
    * @param newSyntaxVersionBound A newly discovered upper bound (exclusive!) for the syntax version
    *     of this node.
    */
-  void maybeSetSyntaxVersionBound(SyntaxVersionBound newSyntaxVersionBound);
+  void maybeSetSyntaxVersionUpperBound(SyntaxVersionUpperBound newSyntaxVersionBound);
 
 
   /**

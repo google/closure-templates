@@ -158,7 +158,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
       Visibility visibility,
       @Nullable ImmutableList<TemplateParam> params) {
     super(nodeBuilder.getId(), nodeBuilder.sourceLocation, cmdName, nodeBuilder.getCmdText());
-    maybeSetSyntaxVersionBound(nodeBuilder.getSyntaxVersionBound());
+    maybeSetSyntaxVersionUpperBound(nodeBuilder.getSyntaxVersionBound());
     this.soyFileHeaderInfo = soyFileHeaderInfo;
     this.templateName = nodeBuilder.getTemplateName();
     this.partialTemplateName = nodeBuilder.getPartialTemplateName();

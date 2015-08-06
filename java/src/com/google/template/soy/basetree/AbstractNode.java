@@ -32,7 +32,7 @@ public abstract class AbstractNode implements Node {
 
 
   /** The lowest known upper bound (exclusive!) for the syntax version of this node. */
-  @Nullable private SyntaxVersionBound syntaxVersionBound;
+  @Nullable private SyntaxVersionUpperBound syntaxVersionBound;
 
   /** The parent of this node. */
   private ParentNode<?> parent;
@@ -54,12 +54,14 @@ public abstract class AbstractNode implements Node {
   }
 
 
-  @Override public void maybeSetSyntaxVersionBound(SyntaxVersionBound newSyntaxVersionBound) {
-    syntaxVersionBound = SyntaxVersionBound.selectLower(syntaxVersionBound, newSyntaxVersionBound);
+  @Override public void maybeSetSyntaxVersionUpperBound(
+      SyntaxVersionUpperBound newSyntaxVersionBound) {
+    syntaxVersionBound =
+        SyntaxVersionUpperBound.selectLower(syntaxVersionBound, newSyntaxVersionBound);
   }
 
 
-  @Override @Nullable public SyntaxVersionBound getSyntaxVersionBound() {
+  @Override @Nullable public SyntaxVersionUpperBound getSyntaxVersionUpperBound() {
     return syntaxVersionBound;
   }
 

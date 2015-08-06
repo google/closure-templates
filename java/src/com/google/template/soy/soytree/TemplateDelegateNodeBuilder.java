@@ -68,7 +68,8 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
           new Attribute("autoescape", AutoescapeMode.getAttributeValues(), null),
           new Attribute("kind", NodeContentKinds.getAttributeValues(), null),
           new Attribute("requirecss", Attribute.ALLOW_ALL_VALUES, null),
-          new Attribute("cssbase", Attribute.ALLOW_ALL_VALUES, null));
+          new Attribute("cssbase", Attribute.ALLOW_ALL_VALUES, null),
+          new Attribute("deprecatedV1", Attribute.BOOLEAN_VALUES, "false"));
 
   /** The delegate template name. */
   private String delTemplateName;
@@ -164,6 +165,7 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
     setAutoescapeCmdText(attributes);
     setRequireCssCmdText(attributes);
     setCssBaseCmdText(attributes);
+    setV1Marker(attributes);
 
     genInternalTemplateNameHelper();
 
@@ -201,7 +203,6 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
     this.delPriority = delPriority;
     setAutoescapeInfo(autoescapeMode, contentKind);
     setRequiredCssNamespaces(requiredCssNamespaces);
-
     String cmdText = delTemplateName +
         ((delTemplateVariant.length() == 0) ? "" : " variant=\"" + delTemplateVariant + "\"") +
         " autoescape=\"" + autoescapeMode.getAttributeValue() + "\"";

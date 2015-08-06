@@ -28,7 +28,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.basetree.SyntaxVersion;
-import com.google.template.soy.basetree.SyntaxVersionBound;
+import com.google.template.soy.basetree.SyntaxVersionUpperBound;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.error.ErrorReporter;
@@ -139,7 +139,7 @@ public abstract class TemplateNodeBuilder {
   protected Integer id;
 
   /** The lowest known syntax version bound. Value may be adjusted multiple times. */
-  @Nullable protected SyntaxVersionBound syntaxVersionBound;
+  @Nullable protected SyntaxVersionUpperBound syntaxVersionBound;
 
   /** The command text. */
   protected String cmdText;
@@ -251,19 +251,19 @@ public abstract class TemplateNodeBuilder {
       SoyDocDeclsInfo soyDocDeclsInfo = parseSoyDocDeclsHelper(cleanedSoyDoc);
       this.addParams(soyDocDeclsInfo.params);
       if (soyDocDeclsInfo.lowestSyntaxVersionBound != null) {
-        SyntaxVersionBound newSyntaxVersionBound = new SyntaxVersionBound(
+        SyntaxVersionUpperBound newSyntaxVersionBound = new SyntaxVersionUpperBound(
             soyDocDeclsInfo.lowestSyntaxVersionBound,
             "Template SoyDoc has incorrect param declarations where the param name is not a valid" +
                 " identifier: " + soyDocDeclsInfo.incorrectSoyDocParamSrcs);
         this.syntaxVersionBound =
-            SyntaxVersionBound.selectLower(this.syntaxVersionBound, newSyntaxVersionBound);
+            SyntaxVersionUpperBound.selectLower(this.syntaxVersionBound, newSyntaxVersionBound);
       }
 
     } else {
-      SyntaxVersionBound newSyntaxVersionBound = new SyntaxVersionBound(
+      SyntaxVersionUpperBound newSyntaxVersionBound = new SyntaxVersionUpperBound(
           SyntaxVersion.V2_0, "Template is missing SoyDoc.");
       this.syntaxVersionBound =
-          SyntaxVersionBound.selectLower(this.syntaxVersionBound, newSyntaxVersionBound);
+          SyntaxVersionUpperBound.selectLower(this.syntaxVersionBound, newSyntaxVersionBound);
       this.soyDocDesc = null;
       // Note: Don't set this.params to null here because params can also come from header decls.
     }
@@ -368,7 +368,7 @@ public abstract class TemplateNodeBuilder {
   // -----------------------------------------------------------------------------------------------
   // Protected helpers for fields that need extra logic when being set.
 
-  protected void setAutoescapeCmdText(Map<String, String> attributes) {
+  protected final void setAutoescapeCmdText(Map<String, String> attributes) {
     AutoescapeMode autoescapeMode;
     String autoescapeModeStr = attributes.get("autoescape");
     if (autoescapeModeStr != null) {
@@ -383,11 +383,11 @@ public abstract class TemplateNodeBuilder {
     setAutoescapeInfo(autoescapeMode, contentKind);
   }
 
-  protected void setRequireCssCmdText(Map<String, String> attributes) {
+  protected final void setRequireCssCmdText(Map<String, String> attributes) {
     setRequiredCssNamespaces(RequirecssUtils.parseRequirecssAttr(attributes.get("requirecss")));
   }
 
-  protected void setCssBaseCmdText(Map<String, String> attributes) {
+  protected final void setCssBaseCmdText(Map<String, String> attributes) {
     String cssBaseNamespace = attributes.get("cssbase");
     if (cssBaseNamespace != null) {
       if (!BaseUtils.isDottedIdentifier(cssBaseNamespace)) {
@@ -395,6 +395,15 @@ public abstract class TemplateNodeBuilder {
             "Invalid CSS base namespace name \"" + cssBaseNamespace + "\".");
       }
       setCssBaseNamespace(cssBaseNamespace);
+    }
+  }
+
+  protected final void setV1Marker(Map<String, String> attributes) {
+    if ("true".equals(attributes.get("deprecatedV1"))) {
+      SyntaxVersionUpperBound newSyntaxVersionBound = new SyntaxVersionUpperBound(
+          SyntaxVersion.V2_0, "Template is marked as deprecatedV1.");
+      this.syntaxVersionBound =
+          SyntaxVersionUpperBound.selectLower(this.syntaxVersionBound, newSyntaxVersionBound);
     }
   }
 
@@ -421,7 +430,7 @@ public abstract class TemplateNodeBuilder {
   }
 
   /** @return The lowest known syntax version bound. */
-  SyntaxVersionBound getSyntaxVersionBound() {
+  SyntaxVersionUpperBound getSyntaxVersionBound() {
     return syntaxVersionBound;
   }
 

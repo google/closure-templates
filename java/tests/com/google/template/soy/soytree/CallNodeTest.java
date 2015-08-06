@@ -81,12 +81,12 @@ public final class CallNodeTest extends TestCase {
         .sourceCalleeName(callNode.getSrcCalleeName())
         .dataAttribute(callNode.dataAttribute())
         .userSuppliedPlaceholderName(callNode.getUserSuppliedPhName())
-        .syntaxVersionBound(callNode.getSyntaxVersionBound())
+        .syntaxVersionBound(callNode.getSyntaxVersionUpperBound())
         .escapingDirectiveNames(NO_ESCAPERS)
         .build(ExplodingErrorReporter.get());
 
     assertThat(normCallNode.getCommandText()).isEqualTo(expectedCommandText);
-    assertThat(normCallNode.getSyntaxVersionBound()).isEqualTo(callNode.getSyntaxVersionBound());
+    assertThat(normCallNode.getSyntaxVersionUpperBound()).isEqualTo(callNode.getSyntaxVersionUpperBound());
     assertThat(normCallNode.getCalleeName()).isEqualTo(callNode.getCalleeName());
     assertThat(normCallNode.dataAttribute()).isEqualTo(callNode.dataAttribute());
   }

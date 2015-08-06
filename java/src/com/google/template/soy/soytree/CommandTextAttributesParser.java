@@ -51,7 +51,7 @@ public final class CommandTextAttributesParser {
    *  Note group(1) is attribute name, group(2) is attribute value.
    *  E.g. data="$boo" parses into group(1)="data" and group(2)="$boo". */
   private static final Pattern ATTRIBUTE_TEXT =
-      Pattern.compile("([a-z][a-z-]*) = \" ([^\"]*) \" \\s*", Pattern.COMMENTS);
+      Pattern.compile("([a-zA-Z][a-zA-Z0-9-]*) = \" ([^\"]*) \" \\s*", Pattern.COMMENTS);
 
   /** The name of the Soy command handled by this parser. Only used in error messages. */
   private final String commandName;

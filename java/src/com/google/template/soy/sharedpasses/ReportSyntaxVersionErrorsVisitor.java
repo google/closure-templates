@@ -20,7 +20,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.basetree.SyntaxVersion;
-import com.google.template.soy.basetree.SyntaxVersionBound;
+import com.google.template.soy.basetree.SyntaxVersionUpperBound;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
@@ -124,7 +124,7 @@ public final class ReportSyntaxVersionErrorsVisitor extends AbstractSoyNodeVisit
                   (node instanceof PrintDirectiveNode) ?
                       "Print directive \"" + node.toSourceString() + "\"" :
                       "Node " + node.toSourceString();
-      SyntaxVersionBound syntaxVersionBound = node.getSyntaxVersionBound();
+      SyntaxVersionUpperBound syntaxVersionBound = node.getSyntaxVersionUpperBound();
       assert syntaxVersionBound != null;
       addError(nodeStringForErrorMsg + ": " + syntaxVersionBound.reasonStr, node);
     }
@@ -228,7 +228,7 @@ public final class ReportSyntaxVersionErrorsVisitor extends AbstractSoyNodeVisit
     @Override public void visitExprNode(ExprNode node) {
 
       if (! node.couldHaveSyntaxVersionAtLeast(requiredSyntaxVersion)) {
-        SyntaxVersionBound syntaxVersionBound = node.getSyntaxVersionBound();
+        SyntaxVersionUpperBound syntaxVersionBound = node.getSyntaxVersionUpperBound();
         assert syntaxVersionBound != null;
         addError(
             String.format(

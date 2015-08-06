@@ -27,7 +27,7 @@ import com.google.common.collect.Maps;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.basetree.SyntaxVersion;
-import com.google.template.soy.basetree.SyntaxVersionBound;
+import com.google.template.soy.basetree.SyntaxVersionUpperBound;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyError;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
@@ -155,7 +155,8 @@ public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<
             " instead of bool, please use the binary null-coalescing operator '?:' instead)";
       }
       errorMsg += ".";
-      node.maybeSetSyntaxVersionBound(new SyntaxVersionBound(SyntaxVersion.V2_3, errorMsg));
+      node.maybeSetSyntaxVersionUpperBound(
+          new SyntaxVersionUpperBound(SyntaxVersion.V2_3, errorMsg));
     }
   }
 

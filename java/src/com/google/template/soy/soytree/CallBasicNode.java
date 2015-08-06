@@ -21,7 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.basetree.SyntaxVersionBound;
+import com.google.template.soy.basetree.SyntaxVersionUpperBound;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.ExplodingErrorReporter;
@@ -63,7 +63,7 @@ public final class CallBasicNode extends CallNode {
     CommandTextInfo(
         String commandText, String srcCalleeName, DataAttribute dataAttr,
         @Nullable String userSuppliedPlaceholderName,
-        @Nullable SyntaxVersionBound syntaxVersionBound) {
+        @Nullable SyntaxVersionUpperBound syntaxVersionBound) {
       super(commandText, dataAttr, userSuppliedPlaceholderName, syntaxVersionBound);
       this.srcCalleeName = srcCalleeName;
     }
@@ -184,7 +184,7 @@ public final class CallBasicNode extends CallNode {
     @Nullable private String userSuppliedPlaceholderName;
     @Nullable private String calleeName;
     @Nullable private String sourceCalleeName;
-    @Nullable private SyntaxVersionBound syntaxVersionBound;
+    @Nullable private SyntaxVersionUpperBound syntaxVersionBound;
 
     public Builder(int id, SourceLocation sourceLocation) {
       this.id = id;
@@ -216,7 +216,7 @@ public final class CallBasicNode extends CallNode {
       return this;
     }
 
-    public Builder syntaxVersionBound(SyntaxVersionBound syntaxVersionBound) {
+    public Builder syntaxVersionBound(SyntaxVersionUpperBound syntaxVersionBound) {
       this.syntaxVersionBound = syntaxVersionBound;
       return this;
     }
@@ -248,7 +248,7 @@ public final class CallBasicNode extends CallNode {
 
       String cmdTextForParsing = commandText;
 
-      SyntaxVersionBound syntaxVersionBound = null;
+      SyntaxVersionUpperBound syntaxVersionBound = null;
 
       Matcher ncnMatcher = NONATTRIBUTE_CALLEE_NAME.matcher(cmdTextForParsing);
       if (ncnMatcher.find()) {

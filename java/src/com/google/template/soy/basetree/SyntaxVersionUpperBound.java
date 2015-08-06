@@ -23,15 +23,15 @@ import javax.annotation.Nullable;
  * Value class representing a known upper bound for the syntax version of a node.
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  */
-public final class SyntaxVersionBound {
+public final class SyntaxVersionUpperBound {
 
 
   /**
    * Returns the lower of the two given bounds. If they are the same syntax version, then returns
    * the orig bound.
    */
-  public static SyntaxVersionBound selectLower(
-      @Nullable SyntaxVersionBound origBound, SyntaxVersionBound newBound) {
+  public static SyntaxVersionUpperBound selectLower(
+      @Nullable SyntaxVersionUpperBound origBound, SyntaxVersionUpperBound newBound) {
     if (origBound != null && origBound.syntaxVersion.num <= newBound.syntaxVersion.num) {
       return origBound;
     } else {
@@ -51,7 +51,7 @@ public final class SyntaxVersionBound {
    * @param syntaxVersion The syntax version upper bound (exclusive!).
    * @param reasonStr A user-friendly explanation of the reason for the bound.
    */
-  public SyntaxVersionBound(SyntaxVersion syntaxVersion, String reasonStr) {
+  public SyntaxVersionUpperBound(SyntaxVersion syntaxVersion, String reasonStr) {
     this.syntaxVersion = syntaxVersion;
     this.reasonStr = reasonStr;
   }

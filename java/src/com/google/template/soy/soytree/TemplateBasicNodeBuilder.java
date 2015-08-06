@@ -23,7 +23,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.basetree.SyntaxVersion;
-import com.google.template.soy.basetree.SyntaxVersionBound;
+import com.google.template.soy.basetree.SyntaxVersionUpperBound;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.error.ErrorReporter;
@@ -57,7 +57,8 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder {
           new Attribute("kind", NodeContentKinds.getAttributeValues(), null),
           new Attribute("requirecss", Attribute.ALLOW_ALL_VALUES, null),
           new Attribute("cssbase", Attribute.ALLOW_ALL_VALUES, null),
-          new Attribute("visibility", Visibility.getAttributeValues(), null));
+          new Attribute("visibility", Visibility.getAttributeValues(), null),
+          new Attribute("deprecatedV1", Attribute.BOOLEAN_VALUES, "false"));
 
   /**
    * @param soyFileHeaderInfo Info from the containing Soy file's header declarations.
@@ -115,12 +116,12 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder {
       }
       setTemplateNames(soyFileHeaderInfo.namespace + nameAttr, nameAttr);
     } else if (BaseUtils.isDottedIdentifier(nameAttr)) {
-      SyntaxVersionBound newSyntaxVersionBound = new SyntaxVersionBound(
+      SyntaxVersionUpperBound newSyntaxVersionBound = new SyntaxVersionUpperBound(
           SyntaxVersion.V2_0,
           "Soy V2 template names must be relative to the namespace, i.e. a dot followed by an" +
               " identifier.");
       this.syntaxVersionBound =
-          SyntaxVersionBound.selectLower(this.syntaxVersionBound, newSyntaxVersionBound);
+          SyntaxVersionUpperBound.selectLower(this.syntaxVersionBound, newSyntaxVersionBound);
       setTemplateNames(nameAttr, null);
     } else {
       throw SoySyntaxException.createWithoutMetaInfo("Invalid template name \"" + nameAttr + "\".");
@@ -153,6 +154,8 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder {
     setAutoescapeCmdText(attributes);
     setRequireCssCmdText(attributes);
     setCssBaseCmdText(attributes);
+    setV1Marker(attributes);
+
     return this;
   }
 
