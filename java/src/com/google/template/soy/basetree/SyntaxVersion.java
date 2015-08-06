@@ -41,17 +41,10 @@ public enum SyntaxVersion {
   V2_0,
       // V2.0 is the syntax that has historically been enforced by the Soy compiler.
 
-  V2_1,
-      // V2.1 disallows some items that really should have been disallowed in V2.0.
-      // Checks:
-      //   + Disallows some forms of incorrect 'css' tags that weren't checked previously.
-
   V2_2,
       // V2.2 disallows some syntax that was deprecated after V2.0.
       // Behavior changes if V2.2+ is declared (not inferred):
       //   + Default value of 'delcall' tag attribute 'allowemptydefault' changes to false.
-      // Checks:
-      //   + Disallows function hasData().
 
   V2_3,
       // Syntax that causes V2.3+ to be inferred:
@@ -59,7 +52,6 @@ public enum SyntaxVersion {
       // Behavior changes if V2.3+ is declared (not inferred):
       //   + Logical operators ('and', 'or') output type bool instead of unknown.
       // Checks:
-      //   + Disallows '.length' on lists.
       //   + Type bool can no longer be used in nonbool contexts.
       //   + Type bool can no longer be printed.
 

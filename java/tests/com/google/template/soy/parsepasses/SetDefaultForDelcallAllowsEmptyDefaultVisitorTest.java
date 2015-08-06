@@ -36,9 +36,9 @@ public class SetDefaultForDelcallAllowsEmptyDefaultVisitorTest extends TestCase 
     String testTemplateContent = "" +
         "  {delcall my.delegate.template /}\n";
 
-    // Test with declared syntax version 2.1.
+    // Test with declared syntax version 2.0.
     SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(testTemplateContent)
-        .declaredSyntaxVersion(SyntaxVersion.V2_1)
+        .declaredSyntaxVersion(SyntaxVersion.V2_0)
         .parse();
     CallDelegateNode delcall = (CallDelegateNode) soyTree.getChild(0).getChild(0).getChild(0);
     assertThat(delcall.allowsEmptyDefault()).isTrue();

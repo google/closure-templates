@@ -768,7 +768,7 @@ public final class TemplateParserTest extends TestCase {
     assertEquals(1, pn2.getChildren().size());
     PrintDirectiveNode pn2d0 = pn2.getChild(0);
     assertTrue(pn2d0.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0));
-    assertTrue(pn2d0.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_1));
+    assertTrue(pn2d0.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_2));
     assertEquals("|noAutoescape", pn2d0.getName());
     assertEquals("XXX", pn2.genBasePhName());
     assertTrue(pn2.getExprUnion().getExpr().getRoot() instanceof PlusOpNode);
