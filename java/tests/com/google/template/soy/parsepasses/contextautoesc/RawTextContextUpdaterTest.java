@@ -31,6 +31,7 @@ import java.util.Queue;
 public class RawTextContextUpdaterTest extends TestCase {
   // The letter 'M' repeated 1500 times.
   private static final String M1500 = Strings.repeat("M", 1500);
+  private static final int ANY_SLICES = -1;
 
   public final void testPcdata() throws Exception {
     assertTransition("HTML_PCDATA", "", "HTML_PCDATA");
@@ -128,23 +129,25 @@ public class RawTextContextUpdaterTest extends TestCase {
     assertTransition("HTML_TAG NORMAL", " -->", "ERROR");
     assertTransition("HTML_TAG NORMAL", "=foo>", "ERROR");
     // As in <foo on{$handlerType}="jsHere()">
-    assertTransition("HTML_TAG NORMAL", " on", "HTML_ATTRIBUTE_NAME NORMAL SCRIPT");
-    assertTransition("HTML_TAG NORMAL", " ONCLICK", "HTML_ATTRIBUTE_NAME NORMAL SCRIPT");
-    assertTransition("HTML_TAG NORMAL", " style", "HTML_ATTRIBUTE_NAME NORMAL STYLE");
-    assertTransition("HTML_TAG NORMAL", " HREF", "HTML_ATTRIBUTE_NAME NORMAL URI");
-    assertTransition("HTML_TAG XMP", " title", "HTML_ATTRIBUTE_NAME XMP PLAIN_TEXT");
-    assertTransition("HTML_TAG NORMAL", " checked ", "HTML_TAG NORMAL");
-    assertTransition("HTML_TAG NORMAL", " xlink:href", "HTML_ATTRIBUTE_NAME NORMAL URI");
-    assertTransition("HTML_TAG NORMAL", " g:url", "HTML_ATTRIBUTE_NAME NORMAL URI");
-    assertTransition("HTML_TAG NORMAL", " g:iconUri", "HTML_ATTRIBUTE_NAME NORMAL URI");
-    assertTransition("HTML_TAG NORMAL", " g:urlItem", "HTML_ATTRIBUTE_NAME NORMAL URI");
-    assertTransition("HTML_TAG NORMAL", " g:hourly", "HTML_ATTRIBUTE_NAME NORMAL PLAIN_TEXT");
-    assertTransition("HTML_TAG NORMAL", " xmlns", "HTML_ATTRIBUTE_NAME NORMAL URI");
-    assertTransition("HTML_TAG NORMAL", " xmlns:foo", "HTML_ATTRIBUTE_NAME NORMAL URI");
-    assertTransition("HTML_TAG NORMAL", " xmlnsxyz", "HTML_ATTRIBUTE_NAME NORMAL PLAIN_TEXT");
-    assertTransition("HTML_TAG NORMAL", " xmlnsxyz?", "HTML_ATTRIBUTE_NAME NORMAL PLAIN_TEXT");
-    assertTransition("HTML_TAG NORMAL", " xml?nsxyz", "HTML_ATTRIBUTE_NAME NORMAL PLAIN_TEXT");
-    assertTransition("HTML_TAG NORMAL", " svg:style='", "CSS NORMAL STYLE SINGLE_QUOTE");
+    assertTransition("HTML_TAG NORMAL", " on", "HTML_ATTRIBUTE_NAME NORMAL SCRIPT", 1);
+    assertTransition("HTML_TAG NORMAL", " ONCLICK", "HTML_ATTRIBUTE_NAME NORMAL SCRIPT", 1);
+    assertTransition("HTML_TAG NORMAL", " style", "HTML_ATTRIBUTE_NAME NORMAL STYLE", 1);
+    assertTransition("HTML_TAG NORMAL", " HREF", "HTML_ATTRIBUTE_NAME NORMAL URI", 1);
+    assertTransition("HTML_TAG XMP", " title", "HTML_ATTRIBUTE_NAME XMP PLAIN_TEXT", 1);
+    assertTransition("HTML_TAG NORMAL", " checked ", "HTML_TAG NORMAL", 3);
+    assertTransition("HTML_TAG NORMAL", " xlink:href", "HTML_ATTRIBUTE_NAME NORMAL URI", 1);
+    assertTransition("HTML_TAG NORMAL", " g:url", "HTML_ATTRIBUTE_NAME NORMAL URI", 1);
+    assertTransition("HTML_TAG NORMAL", " g:iconUri", "HTML_ATTRIBUTE_NAME NORMAL URI", 1);
+    assertTransition("HTML_TAG NORMAL", " g:urlItem", "HTML_ATTRIBUTE_NAME NORMAL URI", 1);
+    assertTransition("HTML_TAG NORMAL", " g:hourly", "HTML_ATTRIBUTE_NAME NORMAL PLAIN_TEXT", 1);
+    assertTransition("HTML_TAG NORMAL", " xmlns", "HTML_ATTRIBUTE_NAME NORMAL URI", 1);
+    assertTransition("HTML_TAG NORMAL", " xmlns:foo", "HTML_ATTRIBUTE_NAME NORMAL URI", 1);
+    assertTransition("HTML_TAG NORMAL", " xmlnsxyz", "HTML_ATTRIBUTE_NAME NORMAL PLAIN_TEXT", 1);
+    assertTransition("HTML_TAG NORMAL", " xmlnsxyz?", "HTML_ATTRIBUTE_NAME NORMAL PLAIN_TEXT", 1);
+    assertTransition("HTML_TAG NORMAL", " xml?nsxyz", "HTML_ATTRIBUTE_NAME NORMAL PLAIN_TEXT", 1);
+    assertTransition("HTML_TAG NORMAL", " xmlnsxyz$", "HTML_ATTRIBUTE_NAME NORMAL PLAIN_TEXT", 1);
+    assertTransition("HTML_TAG NORMAL", " xml$nsxyz", "HTML_ATTRIBUTE_NAME NORMAL PLAIN_TEXT", 1);
+    assertTransition("HTML_TAG NORMAL", " svg:style='", "CSS NORMAL STYLE SINGLE_QUOTE", 3);
   }
 
   public final void testHtmlComment() throws Exception {
@@ -573,10 +576,15 @@ public class RawTextContextUpdaterTest extends TestCase {
   }
 
   private static void assertTransition(String from, String rawText, String to) throws Exception {
-    Context after;
+    assertTransition(from, rawText, to, ANY_SLICES);
+  }
+
+  private static void assertTransition(
+      String from, String rawText, String to, int numSlices) throws Exception {
+    SlicedRawTextNode node;
     try {
-      after = RawTextContextUpdater.processRawText(
-          new RawTextNode(0, rawText, SourceLocation.UNKNOWN), parseContext(from)).getEndContext();
+      node = RawTextContextUpdater.processRawText(
+          new RawTextNode(0, rawText, SourceLocation.UNKNOWN), parseContext(from));
     } catch (SoyAutoescapeException e) {
       if (!to.equals("ERROR")) {
         throw new AssertionError("Expected context (" + to + ") but got an exception", e);
@@ -586,7 +594,12 @@ public class RawTextContextUpdaterTest extends TestCase {
     }
     // Assert against the toString() for simpler test authoring -- if a developer misspells the
     // "to" context, they'll see a useful string-based diff.
-    assertWithMessage(rawText).that(after.toString()).isEqualTo("(Context " + to + ")");
+    assertWithMessage(rawText)
+        .that(node.getEndContext().toString())
+        .isEqualTo("(Context " + to + ")");
+    if (numSlices != ANY_SLICES) {
+      assertWithMessage(rawText).that(node.getSlices().size()).isEqualTo(numSlices);
+    }
   }
 
   private static Context parseContext(String text) {

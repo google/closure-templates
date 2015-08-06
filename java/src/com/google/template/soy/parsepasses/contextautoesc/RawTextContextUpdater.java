@@ -699,10 +699,17 @@ final class RawTextContextUpdater {
           makeTransitionToSelf("^[a-zA-Z0-9:-]*(?:[a-zA-Z0-9]|\\z)"),
           makeTransitionToTag("^(?=[/\\s>])", Context.ElementType.NORMAL)))
       .put(Context.State.HTML_TAG, ImmutableList.of(
+          // Regex for allowed attribute names. Intentionally more restrictive than spec:
+          // https://html.spec.whatwg.org/multipage/syntax.html#attribute-name-state
           // Allows {@code data-foo} and other dashed attribute names, but intentionally disallows
           // "--" as an attribute name so that a tag ending after a value-less attribute named "--"
           // cannot be confused with an HTML comment end ("-->").
-          makeTransitionToAttrName("(?i)^\\s*([a-z](?:[a-z0-9_:\\-]*[a-z0-9?])?)"),
+          // Also prevents unicode normalized characters.
+          // Regular expression is a case insensitive match of any number of whitespace characters
+          // followed by a capture group for an attribute name composed of an alphabetic character
+          // followed by any number of alpha, numeric, underscore color and dash, ending in alpha,
+          // numeric, question or dollar characters.
+          makeTransitionToAttrName("(?i)^\\s*([a-z](?:[a-z0-9_:?$\\-]*[a-z0-9?$])?)"),
           new Transition("^\\s*/?>") {
             @Override
             Context computeNextContext(Context prior, Matcher matcher) {
