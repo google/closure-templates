@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.sharedpasses;
+package com.google.template.soy.parsepasses;
 
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.types.SoyTypes.removeNull;
@@ -108,7 +108,7 @@ import javax.annotation.Nullable;
  * Visitor which resolves all expression types.
  *
  */
-public final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
+final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
   private static final SoyError DUPLICATE_KEY_IN_RECORD_LITERAL =
       SoyError.of("Record literals with duplicate keys are not allowed.  Duplicate key: ''{0}''");
 

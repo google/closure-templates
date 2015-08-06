@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.sharedpasses;
+package com.google.template.soy.parsepasses;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.types.SoyTypes.makeNullable;

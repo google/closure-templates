@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.sharedpasses;
+package com.google.template.soy.parsepasses;
 
 import static com.google.common.base.Preconditions.checkState;
 
@@ -58,7 +58,7 @@ import java.util.Map;
  * the corresponding declaration object.
  *
  */
-public final class ResolveNamesVisitor extends AbstractSoyNodeVisitor<Void> {
+final class ResolveNamesVisitor extends AbstractSoyNodeVisitor<Void> {
 
   /**
    * A data structure that assigns a unique (small) integer to all local variable definitions that
@@ -212,7 +212,7 @@ public final class ResolveNamesVisitor extends AbstractSoyNodeVisitor<Void> {
   private final SyntaxVersion declaredSyntaxVersion;
   private String currentTemplateName;
 
-  public ResolveNamesVisitor(SyntaxVersion declaredSyntaxVersion, ErrorReporter errorReporter) {
+  ResolveNamesVisitor(SyntaxVersion declaredSyntaxVersion, ErrorReporter errorReporter) {
     super(errorReporter);
     this.declaredSyntaxVersion = declaredSyntaxVersion;
   }

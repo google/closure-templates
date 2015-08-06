@@ -45,7 +45,7 @@ import javax.annotation.Nullable;
  * levels of 'select'.
  *
  */
-public final class RewriteGenderMsgsVisitor extends AbstractSoyNodeVisitor<Void> {
+final class RewriteGenderMsgsVisitor extends AbstractSoyNodeVisitor<Void> {
 
   private static final SoyError GENDER_AND_SELECT_NOT_ALLOWED = SoyError.of(
       "Cannot mix ''genders'' attribute with ''select'' command in the same message.");

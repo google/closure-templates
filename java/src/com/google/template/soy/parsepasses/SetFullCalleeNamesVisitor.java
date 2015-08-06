@@ -39,7 +39,7 @@ import java.util.Map;
  * {@code CallBasicNode}s. There is no return value.
  *
  */
-public final class SetFullCalleeNamesVisitor extends AbstractSoyNodeVisitor<Void> {
+final class SetFullCalleeNamesVisitor extends AbstractSoyNodeVisitor<Void> {
 
 
   /** The namespace of the current file that we're in (during the pass). */
@@ -48,7 +48,7 @@ public final class SetFullCalleeNamesVisitor extends AbstractSoyNodeVisitor<Void
   /** Alias-to-namespace map of the current file (during the pass). */
   private Map<String, String> currAliasToNamespaceMap;
 
-  public SetFullCalleeNamesVisitor(ErrorReporter errorReporter) {
+  SetFullCalleeNamesVisitor(ErrorReporter errorReporter) {
     super(errorReporter);
   }
 

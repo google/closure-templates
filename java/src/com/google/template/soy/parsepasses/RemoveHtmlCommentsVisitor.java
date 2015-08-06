@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.sharedpasses;
+package com.google.template.soy.parsepasses;
 
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
@@ -33,7 +33,7 @@ import java.util.regex.Pattern;
  * RawTextNode.
  *
  */
-public class RemoveHtmlCommentsVisitor extends AbstractSoyNodeVisitor<Void> {
+final class RemoveHtmlCommentsVisitor extends AbstractSoyNodeVisitor<Void> {
 
   // TODO: Make sure this doesn't remove escaping text spans in CSS or JavaScript.
   // E.g. <style><!-- ... --></style>
@@ -58,7 +58,7 @@ public class RemoveHtmlCommentsVisitor extends AbstractSoyNodeVisitor<Void> {
   /**
    * Constructor when working on tree fragments that are not part of a SoyFileSet.
    */
-  public RemoveHtmlCommentsVisitor(IdGenerator nodeIdGen, ErrorReporter errorReporter) {
+  RemoveHtmlCommentsVisitor(IdGenerator nodeIdGen, ErrorReporter errorReporter) {
     super(errorReporter);
     explicitNodeIdGen = nodeIdGen;
   }

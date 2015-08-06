@@ -1,0 +1,155 @@
+/*
+ * Copyright 2015 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.google.template.soy.parsepasses;
+
+import static com.google.common.base.Preconditions.checkNotNull;
+
+import com.google.common.collect.ImmutableList;
+import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.basetree.SyntaxVersion;
+import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.passes.CompilerFilePass;
+import com.google.template.soy.soytree.SoyFileNode;
+import com.google.template.soy.types.SoyTypeRegistry;
+
+/**
+ * Configures all the parsing passes.
+ * 
+ * <p>The parsing passes are a collection of operations that mutate/rewrite parts of the parse tree
+ * in trivial/obvious ways.  These passes are logically part of parsing the literal text of the soy
+ * file and each one could theoretically be done as part of the parser, but for maintainability it
+ * is easier to pull them out into separate passes.  It is expected that each of these passes will
+ * mutate the AST in critical ways.
+ * 
+ * <p>The default initial parsing passes are:
+ * <ul>
+ *   <li>{@link RewriteGenderMsgsVisitor}
+ *   <li>{@link RewriteRemaindersVisitor}
+ *   <li>{@link SetDefaultForDelcallAllowsEmptyDefaultVisitor}
+ *   <li>{@link SetFullCalleeNamesVisitor}
+ *   <li>{@link RemoveHtmlCommentsVisitor}
+ *   <li>{@link ResolveExpressionTypesVisitor}
+ *   <li>{@link ResolveNamesVisitor}
+ * </ul>
+ * 
+ * <p>TODO(lukes): There are a number of passes that belong here, but are run at somewhat arbitrary
+ * times.  e.g. {@link ResolvePackageRelativeCssNamesVisitor}.  Move such things here.
+ */
+public final class ParsePasses {
+  private final ImmutableList<CompilerFilePass> passes;
+  private final SoyTypeRegistry registry;
+  private final ErrorReporter errorReporter;
+  private final SyntaxVersion declaredSyntaxVersion;
+  
+  private ParsePasses(Builder builder) {
+    this.registry = checkNotNull(builder.registry);
+    this.errorReporter = checkNotNull(builder.errorReporter);
+    this.declaredSyntaxVersion = checkNotNull(builder.declaredSyntaxVersion);
+
+    ImmutableList.Builder<CompilerFilePass> passesBuilder = ImmutableList.builder();
+    // Note: RewriteGenderMsgsVisitor must be run first due to the assertion in
+    // MsgNode.getAllExprUnions().
+    passesBuilder
+        .add(new RewriteGendersPass())
+        .add(new RewriteRemaindersPass())
+        .add(new SetFullCalleeNamesPass())
+        .add(new SetDefaultForDelcallAllowsEmptyDefaultPass());
+    if (builder.declaredSyntaxVersion == SyntaxVersion.V1_0) {
+      passesBuilder.add(new RemoveHtmlCommentsPass());
+    }
+    passesBuilder.add(new ResolveNamesPass());
+    passesBuilder.add(new ResolveExpressionTypesPass());
+    this.passes = passesBuilder.build();
+  }
+
+  public void run(SoyFileNode file, IdGenerator nodeIdGen) {
+    for (CompilerFilePass pass : passes) {
+      pass.run(file, nodeIdGen);
+    }
+  }
+
+  public static final class Builder {
+    private SoyTypeRegistry registry;
+    private ErrorReporter errorReporter;
+    private SyntaxVersion declaredSyntaxVersion;
+
+    public Builder setErrorReporter(ErrorReporter errorReporter) {
+      this.errorReporter = checkNotNull(errorReporter);
+      return this;
+    }
+
+    public Builder setTypeRegistry(SoyTypeRegistry registry) {
+      this.registry = checkNotNull(registry);
+      return this;
+    }
+
+    public Builder setDeclaredSyntaxVersion(SyntaxVersion declaredSyntaxVersion) {
+      this.declaredSyntaxVersion = checkNotNull(declaredSyntaxVersion);
+      return this;
+    }
+
+    public ParsePasses build() {
+      return new ParsePasses(this);
+    }
+  }
+
+  private final class RewriteGendersPass extends CompilerFilePass {
+    @Override public void run(SoyFileNode file, IdGenerator nodeIdGen) {
+      new RewriteGenderMsgsVisitor(nodeIdGen, errorReporter).exec(file);
+    }
+  }
+
+  private final class RewriteRemaindersPass extends CompilerFilePass {
+    @Override public void run(SoyFileNode file, IdGenerator nodeIdGen) {
+      new RewriteRemaindersVisitor(errorReporter).exec(file);
+    }
+  }
+
+  private final class RemoveHtmlCommentsPass extends CompilerFilePass {
+    @Override public void run(SoyFileNode file, IdGenerator nodeIdGen) {
+      new RemoveHtmlCommentsVisitor(nodeIdGen, errorReporter).exec(file);
+    }
+  }
+  
+  private final class SetDefaultForDelcallAllowsEmptyDefaultPass extends CompilerFilePass {
+    // visitor is stateless so we can store a single version
+    final SetDefaultForDelcallAllowsEmptyDefaultVisitor visitor =
+        new SetDefaultForDelcallAllowsEmptyDefaultVisitor(declaredSyntaxVersion, errorReporter);
+
+    @Override public void run(SoyFileNode file, IdGenerator nodeIdGen) {
+      visitor.exec(file);
+    }
+  }
+  
+  private final class SetFullCalleeNamesPass extends CompilerFilePass {
+    @Override public void run(SoyFileNode file, IdGenerator nodeIdGen) {
+      new SetFullCalleeNamesVisitor(errorReporter).exec(file);
+    }
+  }
+
+  private final class ResolveNamesPass extends CompilerFilePass {
+    @Override public void run(SoyFileNode file, IdGenerator nodeIdGen) {
+      new ResolveNamesVisitor(declaredSyntaxVersion, errorReporter).exec(file);
+    }
+  }
+
+  private final class ResolveExpressionTypesPass extends CompilerFilePass {
+    @Override public void run(SoyFileNode file, IdGenerator nodeIdGen) {
+      new ResolveExpressionTypesVisitor(registry, declaredSyntaxVersion, errorReporter).exec(file);
+    }
+  }
+}

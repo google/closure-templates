@@ -134,7 +134,7 @@ public final class SoyFileSetParserBuilder {
    *   <li>{@link com.google.template.soy.parsepasses.SetDefaultForDelcallAllowsEmptyDefaultVisitor}
    *   <li>{@link com.google.template.soy.parsepasses.SetFullCalleeNamesVisitor}</li>
    *   </li>
-   *   <li>{@link com.google.template.soy.sharedpasses.RemoveHtmlCommentsVisitor}</li>
+   *   <li>{@link com.google.template.soy.parsepasses.RemoveHtmlCommentsVisitor}</li>
    *   <li>{@link com.google.template.soy.sharedpasses.ResolveExpressionTypesVisitor}</li>
    *   <li>{@link com.google.template.soy.sharedpasses.ResolveNamesVisitor}</li>
    * </ul>
