@@ -17,8 +17,8 @@
 package com.google.template.soy.sharedpasses;
 
 import com.google.common.collect.Sets;
+import com.google.template.soy.basetree.AbstractNodeVisitor;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.VarRefNode;
@@ -30,7 +30,7 @@ import java.util.Set;
  * injected params used in an expression.
  *
  */
-final class FindIjParamsInExprHelperVisitor extends AbstractExprNodeVisitor<Set<String>> {
+final class FindIjParamsInExprHelperVisitor extends AbstractNodeVisitor<ExprNode, Set<String>> {
 
   /** The set of used injected params found so far. */
   private final Set<String> usedIjParamsInExpr;
@@ -58,23 +58,13 @@ final class FindIjParamsInExprHelperVisitor extends AbstractExprNodeVisitor<Set<
     return usedIjParamsInExpr;
   }
 
-
-  // ------ Implementations for specific nodes. ------
-
-
-  @Override protected void visitVarRefNode(VarRefNode node) {
-
-    if (node.isInjected()) {
-      usedIjParamsInExpr.add(node.getName());
-    }
-  }
-
-
-  // ------ Fallback implementation. ------
-
-
-  @Override protected void visitExprNode(ExprNode node) {
-    if (node instanceof ParentExprNode) {
+  @Override protected void visit(ExprNode node) {
+    if (node instanceof VarRefNode) {
+      VarRefNode varRef = (VarRefNode) node;
+      if (varRef.isInjected()) {
+        usedIjParamsInExpr.add(varRef.getName());
+      }
+    } else if (node instanceof ParentExprNode) {
       visitChildren((ParentExprNode) node);
     }
   }

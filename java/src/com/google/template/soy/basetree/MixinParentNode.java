@@ -45,16 +45,11 @@ public final class MixinParentNode<N extends Node> {
   /** The children of the master node (accessed via this instance). */
   private final List<N> children;
 
-  /** Whether the master node needs an env frame when being interpreted, or null if unknown. */
-  private Boolean needsEnvFrameDuringInterp;
-
-
   /**
    * @param master The master node that delegates to this instance.
    */
   public MixinParentNode(ParentNode<N> master) {
     this.master = master;
-    needsEnvFrameDuringInterp = null;
     children = Lists.newArrayList();
   }
 
@@ -66,9 +61,6 @@ public final class MixinParentNode<N extends Node> {
    */
   public MixinParentNode(MixinParentNode<N> orig, ParentNode<N> newMaster, CopyState copyState) {
     this.master = newMaster;
-
-    this.needsEnvFrameDuringInterp = orig.needsEnvFrameDuringInterp;
-
     this.children = Lists.newArrayListWithCapacity(orig.children.size());
     for (N origChild : orig.children) {
       @SuppressWarnings("unchecked")

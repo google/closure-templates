@@ -17,8 +17,10 @@
 package com.google.template.soy.basetree;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Lists;
 import com.google.template.soy.error.ErrorReporter;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Base class for {@code AbstractXxxNodeVisitor} classes.
@@ -60,11 +62,8 @@ public abstract class AbstractNodeVisitor<N extends Node, R> implements NodeVisi
    * @see #visitChildrenAllowingConcurrentModification
    */
   protected void visitChildren(ParentNode<? extends N> node) {
-    for (N child : node.getChildren()) {
-      visit(child);
-    }
+    visitAll(node.getChildren());
   }
-
 
   /**
    * Helper to visit all the children of a node, in order.
@@ -76,9 +75,16 @@ public abstract class AbstractNodeVisitor<N extends Node, R> implements NodeVisi
    * @see #visitChildren
    */
   protected void visitChildrenAllowingConcurrentModification(ParentNode<? extends N> node) {
-    for (N child : Lists.newArrayList(node.getChildren()) /*copy*/) {
-      visit(child);
-    }
+    // TODO(lukes): consider using CopyOnWriteArrayList for .getChildre and we could avoid this
+    // or possibly introduce dedicated tree mutation apis to allow us to apply mutations after
+    // iteration
+    visitAll(new ArrayList<>(node.getChildren()));
   }
 
+  private void visitAll(List<? extends N> children) {
+    int size = children.size();
+    for (int i = 0; i < size; i++) {
+      visit(children.get(i));
+    }
+  }
 }

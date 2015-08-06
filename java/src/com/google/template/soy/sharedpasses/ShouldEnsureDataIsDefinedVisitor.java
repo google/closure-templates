@@ -16,6 +16,7 @@
 
 package com.google.template.soy.sharedpasses;
 
+import com.google.template.soy.basetree.AbstractNodeVisitor;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
@@ -65,7 +66,7 @@ public final class ShouldEnsureDataIsDefinedVisitor {
         helperVisitor,
         new Shortcircuiter<Void>() {
           @Override
-          public boolean shouldShortcircuit(AbstractExprNodeVisitor<Void> exprNodeVisitor) {
+          public boolean shouldShortcircuit(AbstractNodeVisitor<ExprNode, Void> exprNodeVisitor) {
             return ((ExistsRegDataRefInExprVisitor) exprNodeVisitor).foundRegDataRef();
           }
         },

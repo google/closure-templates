@@ -16,8 +16,9 @@
 
 package com.google.template.soy.sharedpasses;
 
+import com.google.template.soy.basetree.AbstractNodeVisitor;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
+import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoytreeUtils;
 import com.google.template.soy.soytree.SoytreeUtils.Shortcircuiter;
@@ -51,7 +52,8 @@ public final class IsUsingIjDataVisitor {
         helperVisitor,
         new Shortcircuiter<Set<String>>() {
           @Override
-          public boolean shouldShortcircuit(AbstractExprNodeVisitor<Set<String>> exprNodeVisitor) {
+          public boolean shouldShortcircuit(
+              AbstractNodeVisitor<ExprNode, Set<String>> exprNodeVisitor) {
             return !((FindIjParamsInExprHelperVisitor) exprNodeVisitor).getResult().isEmpty();
           }
         },

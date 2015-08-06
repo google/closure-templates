@@ -21,11 +21,11 @@ import static com.google.common.base.Preconditions.checkState;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.basetree.AbstractNodeVisitor;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.Node;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ExplodingErrorReporter;
-import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
@@ -84,25 +84,27 @@ public final class SoytreeUtils {
 
     final ImmutableList.Builder<T> matchedNodesBuilder = ImmutableList.builder();
 
-    final AbstractExprNodeVisitor<Void> exprVisitor =
-        new AbstractExprNodeVisitor<Void>(ExplodingErrorReporter.get()) {
-          @Override protected void visitExprNode(ExprNode exprNode) {
-            if (classObject.isInstance(exprNode)) {
-              matchedNodesBuilder.add(classObject.cast(exprNode));
-              if (!doSearchSubtreesOfMatchedNodes) {
-                return;
+    final boolean exploreExpressions = ExprNode.class.isAssignableFrom(classObject);
+    final AbstractNodeVisitor<ExprNode, Void> exprVisitor =
+        exploreExpressions
+            ? new AbstractNodeVisitor<ExprNode, Void>(ExplodingErrorReporter.get()) {
+              @Override protected void visit(ExprNode exprNode) {
+                if (classObject.isInstance(exprNode)) {
+                  matchedNodesBuilder.add(classObject.cast(exprNode));
+                  if (!doSearchSubtreesOfMatchedNodes) {
+                    return;
+                  }
+                }
+                if (exprNode instanceof ParentExprNode) {
+                  visitChildren((ParentExprNode) exprNode);
+                }
               }
             }
-            if (exprNode instanceof ParentExprNode) {
-              visitChildren((ParentExprNode) exprNode);
-            }
-          }
-        };
+            : null;
 
-    AbstractSoyNodeVisitor<Void> visitor = new AbstractSoyNodeVisitor<Void>(
+      AbstractNodeVisitor<SoyNode, Void> visitor = new AbstractNodeVisitor<SoyNode, Void>(
         ExplodingErrorReporter.get()) {
-      @Override
-      public void visitSoyNode(SoyNode soyNode) {
+      @Override protected void visit(SoyNode soyNode) {
         if (classObject.isInstance(soyNode)) {
           matchedNodesBuilder.add(classObject.cast(soyNode));
           if (!doSearchSubtreesOfMatchedNodes) {
@@ -112,7 +114,7 @@ public final class SoytreeUtils {
         if (soyNode instanceof ParentSoyNode<?>) {
           visitChildren((ParentSoyNode<?>) soyNode);
         }
-        if (ExprNode.class.isAssignableFrom(classObject) && soyNode instanceof ExprHolderNode) {
+        if (exploreExpressions && soyNode instanceof ExprHolderNode) {
           for (ExprUnion exprUnion : ((ExprHolderNode) soyNode).getAllExprUnions()) {
             if (exprUnion.getExpr() != null) {
               exprVisitor.exec(exprUnion.getExpr());
@@ -144,7 +146,7 @@ public final class SoytreeUtils {
    */
   public static <R> void execOnAllV2Exprs(
       SoyNode node,
-      AbstractExprNodeVisitor<R> exprNodeVisitor,
+      AbstractNodeVisitor<ExprNode, R> exprNodeVisitor,
       ErrorReporter errorReporter) {
     execOnAllV2ExprsShortcircuitably(
         node, exprNodeVisitor, null /* shortcircuiter */, errorReporter);
@@ -169,10 +171,10 @@ public final class SoytreeUtils {
    */
   public static <R> void execOnAllV2ExprsShortcircuitably(
       SoyNode node,
-      AbstractExprNodeVisitor<R> exprNodeVisitor,
+      AbstractNodeVisitor<ExprNode, R> exprNodeVisitor,
       Shortcircuiter<R> shortcircuiter,
       ErrorReporter errorReporter) {
-    new VisitAllV2ExprsVisitor<>(exprNodeVisitor, shortcircuiter, errorReporter).exec(node);
+    new VisitAllV2ExprsVisitor<R>(exprNodeVisitor, shortcircuiter, errorReporter).exec(node);
   }
 
 
@@ -191,7 +193,7 @@ public final class SoytreeUtils {
      * @param exprNodeVisitor The expression visitor being used by visitAllExprsShortcircuitably.
      * @return Whether to shortcircuit the pass (at the current point in the pass).
      */
-    boolean shouldShortcircuit(AbstractExprNodeVisitor<R> exprNodeVisitor);
+    boolean shouldShortcircuit(AbstractNodeVisitor<ExprNode, R> exprNodeVisitor);
   }
 
 
@@ -200,13 +202,13 @@ public final class SoytreeUtils {
    *
    * @param <R> The ExprNode visitor's return type.
    */
-  private static final class VisitAllV2ExprsVisitor<R> extends AbstractSoyNodeVisitor<R> {
+  private static final class VisitAllV2ExprsVisitor<R> extends AbstractNodeVisitor<SoyNode, R> {
 
-    private final AbstractExprNodeVisitor<R> exprNodeVisitor;
+    private final AbstractNodeVisitor<ExprNode, R> exprNodeVisitor;
     private final Shortcircuiter<R> shortcircuiter;
 
     private VisitAllV2ExprsVisitor(
-        AbstractExprNodeVisitor<R> exprNodeVisitor,
+        AbstractNodeVisitor<ExprNode, R> exprNodeVisitor,
         @Nullable Shortcircuiter<R> shortcircuiter,
         ErrorReporter errorReporter) {
       super(errorReporter);
@@ -214,7 +216,7 @@ public final class SoytreeUtils {
       this.shortcircuiter = shortcircuiter;
     }
 
-    @Override protected void visitSoyNode(SoyNode node) {
+    @Override protected void visit(SoyNode node) {
 
       if (node instanceof ParentSoyNode<?>) {
         for (SoyNode child : ((ParentSoyNode<?>) node).getChildren()) {
@@ -342,7 +344,7 @@ public final class SoytreeUtils {
   /**
    * Private helper for cloneWithNewIds() to set new ids on a cloned subtree.
    */
-  private static class GenNewIdsVisitor extends AbstractSoyNodeVisitor<Void> {
+  private static class GenNewIdsVisitor extends AbstractNodeVisitor<SoyNode, Void> {
 
     /** The generator for new node ids. */
     private IdGenerator nodeIdGen;
@@ -355,7 +357,7 @@ public final class SoytreeUtils {
       this.nodeIdGen = nodeIdGen;
     }
 
-    @Override protected void visitSoyNode(SoyNode node) {
+    @Override protected void visit(SoyNode node) {
       node.setId(nodeIdGen.genId());
       if (node instanceof ParentSoyNode<?>) {
         visitChildren((ParentSoyNode<?>) node);
