@@ -538,14 +538,14 @@ public final class SoyFileSet {
   /**
    * Injectable factory for creating an instance of this class.
    */
-  static interface SoyFileSetFactory {
+  public interface SoyFileSetFactory {
 
     /**
      * @param soyFileSuppliers The suppliers for the input Soy files.
      * @param cache Optional (nullable) AST cache for faster recompile times.
      * @param options The general compiler options.
      */
-    public SoyFileSet create(
+    SoyFileSet create(
         List<SoyFileSupplier> soyFileSuppliers,
         SoyAstCache cache,
         SoyGeneralOptions options,

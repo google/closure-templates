@@ -57,12 +57,12 @@ import java.util.Map;
  * <p> Precondition: MsgNode should not exist in the tree.
  *
  */
-final class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<JsExpr>> {
+public final class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<JsExpr>> {
 
   /**
    * Injectable factory for creating an instance of this class.
    */
-  interface GenJsExprsVisitorFactory {
+  public interface GenJsExprsVisitorFactory {
 
     /**
      * @param localVarTranslations The current stack of replacement JS expressions for the local

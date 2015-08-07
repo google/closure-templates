@@ -70,7 +70,7 @@ import java.util.Map;
  * equivalent Python expression.
  *
  */
-final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVisitor<PyExpr> {
+public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVisitor<PyExpr> {
 
   private static final SoyError SOY_PY_SRC_FUNCTION_NOT_FOUND =
       SoyError.of("Failed to find SoyPySrcFunction ''{0}''.");
@@ -88,7 +88,7 @@ final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVisitor<Py
   /**
    * Injectable factory for creating an instance of this class.
    */
-  interface TranslateToPyExprVisitorFactory {
+  public interface TranslateToPyExprVisitorFactory {
     TranslateToPyExprVisitor create(LocalVariableStack localVarExprs);
   }
 
