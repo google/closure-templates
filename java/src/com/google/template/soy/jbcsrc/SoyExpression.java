@@ -200,6 +200,22 @@ class SoyExpression extends Expression {
     return soyType.getKind() == Kind.INT;
   }
 
+  boolean assignableToNullableInt() {
+    return assignableToNullableType(IntType.getInstance());
+  }
+
+  boolean assignableToNullableFloat() {
+    return assignableToNullableType(FloatType.getInstance());
+  }
+
+  boolean assignableToNullableNumber() {
+    return assignableToNullableType(SoyTypes.NUMBER_TYPE);
+  }
+
+  private boolean assignableToNullableType(SoyType type) {
+    return type.isAssignableFrom(soyType)
+        || (soyType.getKind() == Kind.UNION && type.isAssignableFrom(SoyTypes.removeNull(soyType)));
+  }
   /**
    * Returns {@code true} if the expression is known to be a float at compile time.
    *
@@ -428,7 +444,7 @@ class SoyExpression extends Expression {
     }
     if (!isBoxed()) {
       throw new IllegalStateException(
-          "Trying to unbox an unboxed value doesn't make sense, "
+          "Trying to unbox an unboxed value (" + clazz + ") doesn't make sense, "
               + "should you be using a type coercion? e.g. .coerceToBoolean()");
     }
     if (asType.equals(boolean.class)) {

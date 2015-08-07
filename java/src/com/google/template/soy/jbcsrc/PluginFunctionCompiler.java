@@ -277,10 +277,10 @@ final class PluginFunctionCompiler {
    * @see com.google.template.soy.basicfunctions.MaxFunction
    */
   private SoyExpression invokeMaxFunction(SoyExpression left, SoyExpression right) {
-    if (left.isKnownInt() && right.isKnownInt()) {
+    if (left.assignableToNullableInt() && right.assignableToNullableInt()) {
       return SoyExpression.forInt(
           MATH_MAX_LONG.invoke(left.unboxAs(long.class), right.unboxAs(long.class)));
-    } else if (left.isKnownFloat() && right.isKnownFloat()) {
+    } else if (left.assignableToNullableFloat() && right.assignableToNullableFloat()) {
       return SoyExpression.forInt(
           MATH_MAX_DOUBLE.invoke(left.unboxAs(double.class), right.unboxAs(double.class)));
     } else {
@@ -292,10 +292,10 @@ final class PluginFunctionCompiler {
    * @see com.google.template.soy.basicfunctions.MinFunction
    */
   private SoyExpression invokeMinFunction(SoyExpression left, SoyExpression right) {
-    if (left.isKnownInt() && right.isKnownInt()) {
+    if (left.assignableToNullableInt() && right.assignableToNullableInt()) {
       return SoyExpression.forInt(
           MATH_MIN_LONG.invoke(left.unboxAs(long.class), right.unboxAs(long.class)));
-    } else if (left.isKnownFloat() && right.isKnownFloat()) {
+    } else if (left.assignableToNullableFloat() && right.assignableToNullableFloat()) {
       return SoyExpression.forInt(
           MATH_MIN_DOUBLE.invoke(left.unboxAs(double.class), right.unboxAs(double.class)));
     } else {
@@ -314,10 +314,10 @@ final class PluginFunctionCompiler {
    * @see com.google.template.soy.basicfunctions.RoundFunction
    */
   private SoyExpression invokeRoundFunction(SoyExpression soyExpression) {
-    if (soyExpression.isKnownInt()) {
+    if (soyExpression.assignableToNullableInt()) {
       return soyExpression;
     }
-    if (soyExpression.isKnownFloat()) {
+    if (soyExpression.assignableToNullableFloat()) {
       return SoyExpression.forInt(MATH_ROUND.invoke(soyExpression.unboxAs(double.class)));
     }
     return SoyExpression.forInt(ROUND_FN.invoke(soyExpression.box()));
@@ -337,7 +337,7 @@ final class PluginFunctionCompiler {
         MethodRef.RENDER_CONTEXT_GET_FUNCTION
             .invoke(variables.getRenderContext(), constant(node.getFunctionName()));
     Expression list = SoyExpression.asBoxedList(args);
-    return SoyExpression.forSoyValue(node.getType(),
+    return SoyExpression.forSoyValue(UnknownType.getInstance(),
         MethodRef.RUNTIME_CALL_SOY_FUNCTION.invoke(soyJavaFunctionExpr, list));
   }
 

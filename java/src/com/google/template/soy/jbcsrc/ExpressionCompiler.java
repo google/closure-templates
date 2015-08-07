@@ -35,6 +35,7 @@ import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.DataAccessNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
+import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FloatNode;
@@ -74,6 +75,7 @@ import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.aggregate.ListType;
 import com.google.template.soy.types.primitive.SanitizedType;
+import com.google.template.soy.types.primitive.UnknownType;
 
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
@@ -84,6 +86,18 @@ import java.util.List;
 
 /**
  * Compiles a {@link ExprNode} to a {@link SoyExpression}.
+ *
+ * <p>A note on how we use soy types.  We generally try to limit the places where we read type
+ * information from the AST.  This is because it tends to be not very accurate.  Specifically, the
+ * places where we rely on type information from the ast are:
+ * <ul>
+ *     <li>{@link VarRefNode}
+ *     <li>{@link PrimitiveNode}
+ *     <li>{@link DataAccessNode}
+ * </ul>
+ *
+ * <p>This is because these are the points that are most likely to be in direct control of the user.
+ * All other type information is derived directly from operations on SoyExpression objects.
  */
 final class ExpressionCompiler {
 
@@ -303,11 +317,11 @@ final class ExpressionCompiler {
     @Override protected final SoyExpression visitLessThanOpNode(LessThanOpNode node) {
       SoyExpression left = visit(node.getChild(0));
       SoyExpression right = visit(node.getChild(1));
-      if (left.isKnownInt() && right.isKnownInt()) {
+      if (left.assignableToNullableInt() && right.assignableToNullableInt()) {
         return SoyExpression.forBool(
             compare(Opcodes.IFLT, left.unboxAs(long.class), right.unboxAs(long.class)));
       }
-      if (left.isKnownNumber() && right.isKnownNumber()) {
+      if (left.assignableToNullableNumber() && right.assignableToNullableNumber()) {
         return SoyExpression.forBool(
             compare(Opcodes.IFLT, left.coerceToDouble(), right.coerceToDouble()));
       }
@@ -317,11 +331,11 @@ final class ExpressionCompiler {
     @Override protected final SoyExpression visitGreaterThanOpNode(GreaterThanOpNode node) {
       SoyExpression left = visit(node.getChild(0));
       SoyExpression right = visit(node.getChild(1));
-      if (left.isKnownInt() && right.isKnownInt()) {
+      if (left.assignableToNullableInt() && right.assignableToNullableInt()) {
         return SoyExpression.forBool(
             compare(Opcodes.IFGT, left.unboxAs(long.class), right.unboxAs(long.class)));
       }
-      if (left.isKnownNumber() && right.isKnownNumber()) {
+      if (left.assignableToNullableNumber() && right.assignableToNullableNumber()) {
         return SoyExpression.forBool(
             compare(Opcodes.IFGT, left.coerceToDouble(), right.coerceToDouble()));
       }
@@ -333,11 +347,11 @@ final class ExpressionCompiler {
     @Override protected final SoyExpression visitLessThanOrEqualOpNode(LessThanOrEqualOpNode node) {
       SoyExpression left = visit(node.getChild(0));
       SoyExpression right = visit(node.getChild(1));
-      if (left.isKnownInt() && right.isKnownInt()) {
+      if (left.assignableToNullableInt() && right.assignableToNullableInt()) {
         return SoyExpression.forBool(
             compare(Opcodes.IFLE, left.unboxAs(long.class), right.unboxAs(long.class)));
       }
-      if (left.isKnownNumber() && right.isKnownNumber()) {
+      if (left.assignableToNullableNumber() && right.assignableToNullableNumber()) {
         return SoyExpression.forBool(
             compare(Opcodes.IFLE, left.coerceToDouble(), right.coerceToDouble()));
       }
@@ -349,11 +363,11 @@ final class ExpressionCompiler {
         GreaterThanOrEqualOpNode node) {
       SoyExpression left = visit(node.getChild(0));
       SoyExpression right = visit(node.getChild(1));
-      if (left.isKnownInt() && right.isKnownInt()) {
+      if (left.assignableToNullableInt() && right.assignableToNullableInt()) {
         return SoyExpression.forBool(
             compare(Opcodes.IFGE, left.unboxAs(long.class), right.unboxAs(long.class)));
       }
-      if (left.isKnownNumber() && right.isKnownNumber()) {
+      if (left.assignableToNullableNumber() && right.assignableToNullableNumber()) {
         return SoyExpression.forBool(
             compare(Opcodes.IFGE, left.coerceToDouble(), right.coerceToDouble()));
       }
@@ -367,10 +381,10 @@ final class ExpressionCompiler {
     @Override protected final SoyExpression visitPlusOpNode(PlusOpNode node) {
       SoyExpression left = visit(node.getChild(0));
       SoyExpression right = visit(node.getChild(1));
-      if (left.isKnownInt() && right.isKnownInt()) {
+      if (left.assignableToNullableInt() && right.assignableToNullableInt()) {
         return applyBinaryIntOperator(Opcodes.LADD, left, right);
       }
-      if (left.isKnownNumber() && right.isKnownNumber()) {
+      if (left.assignableToNullableNumber() && right.assignableToNullableNumber()) {
         return applyBinaryFloatOperator(Opcodes.DADD, left, right);
       }
       // '+' is overloaded for string arguments to mean concatenation.
@@ -379,34 +393,34 @@ final class ExpressionCompiler {
         SoyExpression rightString = right.coerceToString();
         return SoyExpression.forString(leftString.invoke(MethodRef.STRING_CONCAT, rightString));
       }
-      return SoyExpression.forSoyValue(node.getType(),
-          MethodRef.RUNTIME_PLUS.invoke(left.box(), right.box()).cast(node.getType().javaType()));
+      return SoyExpression.forSoyValue(SoyTypes.NUMBER_TYPE,
+          MethodRef.RUNTIME_PLUS.invoke(left.box(), right.box()));
     }
 
     @Override protected final SoyExpression visitMinusOpNode(MinusOpNode node) {
       final SoyExpression left = visit(node.getChild(0));
       final SoyExpression right = visit(node.getChild(1));
-      if (left.isKnownInt() && right.isKnownInt()) {
+      if (left.assignableToNullableInt() && right.assignableToNullableInt()) {
         return applyBinaryIntOperator(Opcodes.LSUB, left, right);
       }
-      if (left.isKnownNumber() && right.isKnownNumber()) {
+      if (left.assignableToNullableNumber() && right.assignableToNullableNumber()) {
         return applyBinaryFloatOperator(Opcodes.DSUB, left, right);
       }
-      return SoyExpression.forSoyValue(node.getType(),
+      return SoyExpression.forSoyValue(SoyTypes.NUMBER_TYPE,
           MethodRef.RUNTIME_MINUS.invoke(left.box(), right.box()));
     }
 
     @Override protected final SoyExpression visitTimesOpNode(TimesOpNode node) {
       final SoyExpression left = visit(node.getChild(0));
       final SoyExpression right = visit(node.getChild(1));
-      if (left.isKnownInt() && right.isKnownInt()) {
+      if (left.assignableToNullableInt() && right.assignableToNullableInt()) {
         return applyBinaryIntOperator(Opcodes.LMUL, left, right);
       }
-      if (left.isKnownNumber() && right.isKnownNumber()) {
+      if (left.assignableToNullableNumber() && right.assignableToNullableNumber()) {
         return applyBinaryFloatOperator(Opcodes.DMUL, left, right);
       }
 
-      return SoyExpression.forSoyValue(node.getType(),
+      return SoyExpression.forSoyValue(SoyTypes.NUMBER_TYPE,
           MethodRef.RUNTIME_TIMES.invoke(left.box(), right.box()));
     }
 
@@ -457,7 +471,7 @@ final class ExpressionCompiler {
 
     @Override protected final SoyExpression visitNegativeOpNode(NegativeOpNode node) {
       final SoyExpression child = visit(node.getChild(0));
-      if (child.isKnownInt()) {
+      if (child.assignableToNullableInt()) {
         final SoyExpression intExpr = child.unboxAs(long.class);
         return SoyExpression.forInt(new Expression(Type.LONG_TYPE, child.features()) {
           @Override void doGen(CodeBuilder mv) {
@@ -466,7 +480,7 @@ final class ExpressionCompiler {
           }
         });
       }
-      if (child.isKnownNumber()) {
+      if (child.assignableToNullableNumber()) {
         final SoyExpression floatExpr = child.coerceToDouble();
         return SoyExpression.forFloat(new Expression(Type.DOUBLE_TYPE, child.features()) {
           @Override void doGen(CodeBuilder mv) {
@@ -475,7 +489,7 @@ final class ExpressionCompiler {
           }
         });
       }
-      return SoyExpression.forSoyValue(node.getType(),
+      return SoyExpression.forSoyValue(SoyTypes.NUMBER_TYPE,
           MethodRef.RUNTIME_NEGATIVE.invoke(child.box()));
     }
 
@@ -565,7 +579,8 @@ final class ExpressionCompiler {
       }
       // Now we need to do some boxing conversions.  soy expression boxes null -> null so this is
       // safe (and I assume that the jit can eliminate the resulting redundant branches)
-      return SoyExpression.forSoyValue(node.getType(), firstNonNull(left.box(), right.box()));
+      return SoyExpression.forSoyValue(UnknownType.getInstance(),
+          firstNonNull(left.box().cast(SoyValue.class), right.box().cast(SoyValue.class)));
     }
 
     @Override protected final SoyExpression visitConditionalOpNode(ConditionalOpNode node) {
@@ -610,11 +625,10 @@ final class ExpressionCompiler {
         }
         return SoyExpression.forString(ternary);
       }
-      // Fallback to boxing and use the type from the type checker as our node type.
-      Class<? extends SoyValue> javaType = node.getType().javaType();
-      final Expression trueBoxed = trueBranch.box().cast(javaType);
-      final Expression falseBoxed = falseBranch.box().cast(javaType);
-      return SoyExpression.forSoyValue(node.getType(), ternary(condition, trueBoxed, falseBoxed));
+      final Expression trueBoxed = trueBranch.box().cast(SoyValue.class);
+      final Expression falseBoxed = falseBranch.box().cast(SoyValue.class);
+      return SoyExpression.forSoyValue(UnknownType.getInstance(),
+          ternary(condition, trueBoxed, falseBoxed));
     }
 
     @Override SoyExpression visitForLoopIndex(VarRefNode varRef, LocalVar local) {
@@ -726,9 +740,8 @@ final class ExpressionCompiler {
       // there is only ever a single child
       final ExprNode childNode = Iterables.getOnlyElement(node.getChildren());
       final SoyExpression childExpr = visit(childNode);
-      return SoyExpression.forSoyValue(
-              node.getType(),
-              new Expression(Type.getType(node.getType().javaType()), childExpr.features()) {
+      return childExpr.withSource(
+              new Expression(childExpr.resultType(), childExpr.features()) {
                 @Override
                 void doGen(CodeBuilder adapter) {
                   childExpr.gen(adapter);
