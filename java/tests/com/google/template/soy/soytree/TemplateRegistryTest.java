@@ -20,10 +20,8 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.soytree.TemplateRegistrySubject.assertThatRegistry;
 
 import com.google.common.collect.Iterables;
-import com.google.template.soy.SoyFileSet;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.error.ErrorReporter;
@@ -60,23 +58,6 @@ public final class TemplateRegistryTest extends TestCase {
     assertThatRegistry(registry).containsDelTemplate("bar.baz")
         .definedAt(new SourceLocation("example.soy", 6, 1, 7, 14));
     assertThatRegistry(registry).doesNotContainDelTemplate("ns.bar.baz");
-  }
-
-  public void testGenerateTemplateRegistryRequiresSyntaxV2() {
-    try {
-      SoyFileSet.builder()
-          .add(
-              "{namespace ns}\n"
-                  + "{template .foo}\n"
-                  + "{/template}\n",
-              "bar.soy")
-          .build()
-          .generateTemplateRegistry();
-      fail();
-    } catch (SoySyntaxException e) {
-      assertThat(e.getMessage())
-          .contains("Found error where declared syntax version 2.0 is not satisfied");
-    }
   }
 
   public void testBasicTemplatesWithSameNamesInDifferentFiles() {

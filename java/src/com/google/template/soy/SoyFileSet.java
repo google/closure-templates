@@ -718,22 +718,6 @@ public final class SoyFileSet {
   }
 
   /**
-   * Parses the templates in this file set and generates a template registry. Useful for tools
-   * that want to index Soy files without performing further compilation.
-   *
-   * @throws SoySyntaxException if the templates in this file set cannot be parsed according to
-   *     {@link SyntaxVersion#V2_0}.
-   */
-  public TemplateRegistry generateTemplateRegistry() {
-    // If you want your Soy templates to be indexed, you have to use modern syntax.
-    SyntaxVersion version = generalOptions.getDeclaredSyntaxVersion(SyntaxVersion.V2_0);
-    SoyFileSetNode soyTree = new SoyFileSetParser(
-        typeRegistry, cache, version, soyFileSuppliers, errorReporter)
-        .parse();
-    return new TemplateRegistry(soyTree, errorReporter);
-  }
-
-  /**
    * Extracts all messages from this Soy file set into a SoyMsgBundle (which can then be turned
    * into an extracted messages file with the help of a SoyMsgBundleHandler).
    *
