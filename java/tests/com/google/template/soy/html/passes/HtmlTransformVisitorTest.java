@@ -141,7 +141,19 @@ public final class HtmlTransformVisitorTest extends TestCase {
     assertThat(((LetContentNode) getNode(n, 0)).getContentKind()).isEqualTo(ContentKind.TEXT);
     assertThat(((RawTextNode) getNode(n, 0, 0)).getRawText()).isEqualTo("<div id=\"foo\"></div>");
   }
+  
+  public void testTemplateKindText() {
+    String fileBody = ""
+        + "{namespace test}"
+        + "/** */"
+        + "{template .foo kind=\"text\"}"
+        + "  <div id=\"foo\"></div>\n"
+        + "{/template}";
 
+    SoyFileSetNode n = SoyFileSetParserBuilder.forFileContents(fileBody).parse();
+    new HtmlTransformVisitor(FAIL).exec(n);
+    assertThat(((RawTextNode) getNode(n, 0)).getRawText()).isEqualTo("<div id=\"foo\"></div>");
+  }
 
   public void testConsecutiveIf() {
     String templateBody = ""

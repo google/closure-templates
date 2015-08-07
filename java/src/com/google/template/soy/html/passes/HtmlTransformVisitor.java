@@ -609,9 +609,15 @@ public final class HtmlTransformVisitor extends AbstractSoyNodeVisitor<Void> {
   }
 
   /**
-   * Visits a {@link TemplateNode}, making sure that the autoescape mode is strict.
+   * Visits a {@link TemplateNode}, processing those that have kind html or
+   * attributes and making sure that the autoescape mode is strict.
    */
   @Override protected void visitTemplateNode(TemplateNode node) {
+    if (node.getContentKind() != ContentKind.HTML
+        && node.getContentKind() != ContentKind.ATTRIBUTES) {
+      return;
+    }
+
     if (node.getAutoescapeMode() != AutoescapeMode.STRICT) {
       errorReporter.report(node.getSourceLocation(), NON_STRICT_TEMPLATE);
     }
