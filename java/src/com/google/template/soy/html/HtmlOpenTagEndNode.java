@@ -30,12 +30,16 @@ import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 public final class HtmlOpenTagEndNode extends AbstractSoyNode
     implements StandaloneNode {
 
+  private final String tagName;
+  
   /**
    * @param id The id for this node.
+   * @param tagName The tagName for this tag.
    * @param sourceLocation The node's source location.
    */
-  public HtmlOpenTagEndNode(int id, SourceLocation sourceLocation) {
+  public HtmlOpenTagEndNode(int id, String tagName, SourceLocation sourceLocation) {
     super(id, sourceLocation);
+    this.tagName = tagName;
   }
 
   /**
@@ -45,6 +49,11 @@ public final class HtmlOpenTagEndNode extends AbstractSoyNode
    */
   private HtmlOpenTagEndNode(HtmlOpenTagEndNode orig, CopyState copyState) {
     super(orig, copyState);
+    tagName = orig.tagName;
+  }
+
+  public String getTagName() {
+    return tagName;
   }
 
   @Override public Kind getKind() {

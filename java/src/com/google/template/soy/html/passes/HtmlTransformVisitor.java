@@ -286,10 +286,7 @@ public final class HtmlTransformVisitor extends AbstractSoyNodeVisitor<Void> {
       // closing tag, then an open tag needs to be started.
       if (!currentTag.startsWith("/")) {
         SourceLocation sl = deriveSourceLocation(node);
-        transformMapping.put(node, new HtmlOpenTagStartNode(
-            idGen.genId(),
-            currentTag,
-            sl));
+        transformMapping.put(node, new HtmlOpenTagStartNode(idGen.genId(), currentTag, sl));
       }
 
       if (c == '>') {
@@ -323,7 +320,7 @@ public final class HtmlTransformVisitor extends AbstractSoyNodeVisitor<Void> {
             currentTag.substring(1),
             sl));
       } else {
-        transformMapping.put(node, new HtmlOpenTagEndNode(idGen.genId(), sl));
+        transformMapping.put(node, new HtmlOpenTagEndNode(idGen.genId(), currentTag, sl));
       }
 
       setState(HtmlState.PCDATA);
