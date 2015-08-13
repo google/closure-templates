@@ -1090,11 +1090,18 @@ public final class SoyFileSet {
       return failure();
     }
 
-    checkpoint = errorReporter.checkpoint();
     runMiddleendPasses(soyTree, declaredSyntaxVersion);
     if (errorReporter.errorsSince(checkpoint)) {
       return failure();
     }
+    // TODO(lukes): move into a standard pass (in ParsePasses)
+    // Note: Globals should have been substituted already. The pass below is just a check.
+    new SubstituteGlobalsVisitor(
+        generalOptions.getCompileTimeGlobals(),
+        typeRegistry,
+        true /* shouldAssertNoUnboundGlobals */,
+        errorReporter)
+        .exec(soyTree);
 
     pySrcMainProvider.get().genPyFiles(
         soyTree, pySrcOptions, outputPathFormat, inputFilePathPrefix);
