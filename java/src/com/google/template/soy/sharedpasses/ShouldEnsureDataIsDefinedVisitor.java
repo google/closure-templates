@@ -17,18 +17,16 @@
 package com.google.template.soy.sharedpasses;
 
 import com.google.template.soy.basetree.AbstractNodeVisitor;
-import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
-import com.google.template.soy.exprtree.ExprNode;
-import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
+import com.google.template.soy.basetree.Node;
+import com.google.template.soy.basetree.ParentNode;
+import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
-import com.google.template.soy.soytree.SoytreeUtils;
-import com.google.template.soy.soytree.SoytreeUtils.Shortcircuiter;
+import com.google.template.soy.soytree.CallNode;
+import com.google.template.soy.soytree.ExprUnion;
+import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
-
-import java.util.List;
 
 /**
  * Visitor for determining whether a template needs to ensure that its data is defined.
@@ -38,78 +36,77 @@ import java.util.List;
  */
 public final class ShouldEnsureDataIsDefinedVisitor {
 
-  private final ErrorReporter errorReporter;
-
-  public ShouldEnsureDataIsDefinedVisitor(ErrorReporter errorReporter) {
-    this.errorReporter = errorReporter;
-  }
-
   /**
    * Runs this pass on the given template.
    */
   public boolean exec(TemplateNode template) {
 
-    // If there exists a required param, then data should already be defined (no need to ensure).
-    List<TemplateParam> params = template.getParams();
-    for (TemplateParam param : params) {
+    boolean hasOptional = false;
+    for (TemplateParam param : template.getParams()) {
       if (param.isRequired()) {
+        // If there exists a required param, then data should already be defined (no need to
+        // ensure).
         return false;
+      } else {
+        hasOptional = true;
       }
     }
+    if (hasOptional) {
+      // If all params are optional (and there is at least one), then we need to ensure data is
+      // defined.  This is because the only legal way to have an optional param is if you reference
+      // it somewhere in the template, so there is no need to check.
+      return true;
+    }
+    // If we get here then the template has no declared params and we are observing a v1 compatible
+    // template.  Search for things that could be data references:
+    // * possibleParams
+    // * data=All calls
+    // others?
+    return new AbstractNodeVisitor<Node, Boolean>(ExplodingErrorReporter.get()) {
+      boolean shouldEnsureDataIsDefined;
 
-    // Run the ExistsRegDataRefInExprVisitor on all expressions in the template, shortcircuiting as
-    // soon as we find one regular data ref.
-    ExistsRegDataRefInExprVisitor helperVisitor = new ExistsRegDataRefInExprVisitor(errorReporter);
+      @Override public Boolean exec(Node node) {
+        visit(node);
+        return shouldEnsureDataIsDefined;
+      }
 
-    SoytreeUtils.execOnAllV2ExprsShortcircuitably(
-        template,
-        helperVisitor,
-        new Shortcircuiter<Void>() {
-          @Override
-          public boolean shouldShortcircuit(AbstractNodeVisitor<ExprNode, Void> exprNodeVisitor) {
-            return ((ExistsRegDataRefInExprVisitor) exprNodeVisitor).foundRegDataRef();
+      @Override public void visit(Node node) {
+        if (node instanceof VarRefNode) {
+          VarRefNode varRefNode = (VarRefNode) node;
+          VarDefn var = varRefNode.getDefnDecl();
+          // Don't include injected params in this analysis
+          if (varRefNode.isPossibleParam()
+              && (var.kind() != VarDefn.Kind.PARAM  // a soydoc param -> not ij
+                  || !((TemplateParam) var).isInjected())) {  // an {@param but not {@inject
+            shouldEnsureDataIsDefined = true;
+            return;
           }
-        },
-        errorReporter);
-
-    return helperVisitor.foundRegDataRef();
-  }
-
-  /**
-   * Private helper class for ShouldEnsureDataIsDefinedVisitor to determine whether there exists a
-   * regular data ref in an expression, where regular in this case means not injected and not local
-   * var.
-   *
-   * <p> Note: This visitor assumes VarRefNodes in the expression are correctly marked as being
-   * local var data refs as appropriate (i.e. variable name resolution has been performed).
-   */
-  private static final class ExistsRegDataRefInExprVisitor extends AbstractExprNodeVisitor<Void> {
-
-    private ExistsRegDataRefInExprVisitor(ErrorReporter errorReporter) {
-      super(errorReporter);
-    }
-
-    /** Whether this visitor has found a regular data ref in all the exec() calls so far. */
-    private boolean foundRegDataRef = false;
-
-    public boolean foundRegDataRef() {
-      return foundRegDataRef;
-    }
-
-    @Override protected void visitVarRefNode(VarRefNode node) {
-      if (node.isPossibleParam()) {
-        VarDefn var = node.getDefnDecl();
-        // Don't include injected params in this analysis
-        if (var.kind() != VarDefn.Kind.PARAM || !((TemplateParam) var).isInjected()) {
-          foundRegDataRef = true;
+        }
+        if (node instanceof CallNode) {
+          if (((CallNode) node).dataAttribute().isPassingAllData()) {
+            shouldEnsureDataIsDefined = true;
+            return;
+          }
+        }
+        if (node instanceof ParentNode) {
+          for (Node child : ((ParentNode<?>) node).getChildren()) {
+            visit(child);
+            if (shouldEnsureDataIsDefined) {
+              return;
+            }
+          }
+        }
+        if (node instanceof ExprHolderNode) {
+          for (ExprUnion exprUnion : ((ExprHolderNode) node).getAllExprUnions()) {
+            if (exprUnion.getExpr() != null) {
+              visit(exprUnion.getExpr());
+              if (shouldEnsureDataIsDefined) {
+                return;
+              }
+            }
+          }
         }
       }
-    }
-
-    @Override protected void visitExprNode(ExprNode node) {
-      if (node instanceof ParentExprNode) {
-        visitChildren((ParentExprNode) node);
-      }
-    }
+    }.exec(template);
   }
 }

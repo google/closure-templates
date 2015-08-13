@@ -611,7 +611,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
     }
 
     // Generate statement to ensure data is defined, if necessary.
-    if (new ShouldEnsureDataIsDefinedVisitor(errorReporter).exec(node)) {
+    if (new ShouldEnsureDataIsDefinedVisitor().exec(node)) {
       jsCodeBuilder.appendLine("opt_data = opt_data || {};");
     }
 
