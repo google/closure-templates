@@ -34,6 +34,7 @@ import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
@@ -256,6 +257,11 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
       }
     }
   }
+
+  @Override protected PyExpr visitGlobalNode(GlobalNode node) {
+    throw new UnsupportedOperationException(node.toSourceString() + " is an unknown node type.");
+  }
+
 
   // -----------------------------------------------------------------------------------------------
   // Implementations for operators.
