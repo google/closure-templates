@@ -2376,6 +2376,7 @@ private DeclInfo Decl() :
 private DeclInfo ParamDecl() :
 {
   SourceItemInfo<Void> tagOpen;
+  SourceItemInfo<Void> tagClose;
   String cmdText;
   Token blockDocComment;
   DeclInfo.OptionalStatus optionalStatus = DeclInfo.OptionalStatus.REQUIRED;
@@ -2394,11 +2395,12 @@ private DeclInfo ParamDecl() :
   <WS_AFTER_CMD_NAME>
 
   cmdText = CmdText()
-  RegSoyTagClose()
+  tagClose = RegSoyTagClose()
 
     {
       String desc;
-      SourceLocation sourceLocation;
+      SourceLocation sourceLocation =
+          tagOpen.srcLocation().extend(tagClose.srcLocation());
     }
   (
     LOOKAHEAD( ( <TOKEN_WS_NOT_NL> )* <BLOCK_DOC_COMMENT> )
@@ -2410,13 +2412,10 @@ private DeclInfo ParamDecl() :
     blockDocComment = <BLOCK_DOC_COMMENT>
     {
       desc = blockDocComment.image;
-      sourceLocation = createSrcLoc(blockDocComment);
     }
   |
     {
       desc = null;
-      // If there is no doc comment, just use the tag's source location.
-      sourceLocation = tagOpen.srcLocation();
     }
   )
 

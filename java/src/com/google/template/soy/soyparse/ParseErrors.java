@@ -16,7 +16,9 @@
 
 package com.google.template.soy.soyparse;
 
-import com.google.common.base.CharMatcher;
+import static com.google.template.soy.base.internal.BaseUtils.formatParseExceptionDetails;
+
+import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.error.ErrorReporter;
@@ -36,25 +38,15 @@ final class ParseErrors {
     if (errorToken.next != null) {
       errorToken = errorToken.next;
     }
-    String details;
-    int numExpectedTokens = e.expectedTokenSequences.length;
-    if (numExpectedTokens != 0) {
-      StringBuilder builder = new StringBuilder(": expected ");
-      for (int i = 0; i < numExpectedTokens; i++) {
-        builder.append(getSoyFileParserTokenDisplayName(e.expectedTokenSequences[i][0]));
-        if (i != numExpectedTokens - 1) {
-          builder.append(", ");
-        }
-        if (i == numExpectedTokens - 2) {
-          builder.append("or ");
-        }
-      }
-      details = builder.toString();
-    } else {
-      details = "";
+    ImmutableSet.Builder<String> expectedTokenImages = ImmutableSet.builder();
+    for (int[] expected : e.expectedTokenSequences) {
+      // We only display the first token
+      expectedTokenImages.add(getSoyFileParserTokenDisplayName(expected[0]));
     }
-    SourceLocation location = Tokens.createSrcLoc(filePath, errorToken);
-    reporter.report(location, SoyError.of("parse error at ''{0}''{1}"), errorToken.image, details);
+    reporter.report(
+        Tokens.createSrcLoc(filePath, errorToken), 
+        SoyError.of("{0}"), 
+        formatParseExceptionDetails(errorToken.image, expectedTokenImages.build().asList()));
   }
 
   /** 
@@ -64,31 +56,19 @@ final class ParseErrors {
   private static String getSoyFileParserTokenDisplayName(int tokenId) {
     switch (tokenId) {
       case SoyFileParserConstants.ATTRIBUTE_VALUE:
-        return "quoted attribute value";
+        return "attribute-value";
       case SoyFileParserConstants.DELTEMPLATE_OPEN:
         return "{deltemplate";
       case SoyFileParserConstants.TEMPLATE_OPEN:
         return "{template";
       case SoyFileParserConstants.DOTTED_IDENT:
-        return "an identifier";
+        return "identifier";
       case SoyFileParserConstants.EOF:
         return "eof";
       case SoyFileParserConstants.UNEXPECTED_TOKEN:
         throw new AssertionError("we should never expect the unexpected token");
       default:
-        String defaultImage = SoyFileParserConstants.tokenImage[tokenId];
-        // the literal matches are surrounded in double quotes, remove them, unless the token starts
-        // or ends with a whitespace character
-        if (defaultImage.charAt(0) == '"' 
-            && defaultImage.charAt(defaultImage.length() - 1) == '"') {
-          String withoutQuotes = defaultImage.substring(1, defaultImage.length() - 1);
-          if (CharMatcher.WHITESPACE.matches(withoutQuotes.charAt(0)) 
-              || CharMatcher.WHITESPACE.matches(withoutQuotes.charAt(withoutQuotes.length() - 1))) {
-            return "'" + withoutQuotes + "'";
-          }
-          return withoutQuotes;
-        }
-        return defaultImage;
+        return SoyFileParserConstants.tokenImage[tokenId];
     }
   }
 
@@ -97,7 +77,7 @@ final class ParseErrors {
     if (!sourceLocation.isKnown()) {
       sourceLocation = new SourceLocation(filePath);
     }
-    reporter.report(sourceLocation, SoyError.of("{0}"), exception.getMessage());
+    reporter.report(sourceLocation, SoyError.of("{0}"), exception.getOriginalMessage());
   }
 
   static void report(ErrorReporter reporter, String filePath, TokenMgrError exception) {

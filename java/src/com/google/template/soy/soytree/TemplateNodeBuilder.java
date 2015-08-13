@@ -41,7 +41,6 @@ import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.aggregate.UnionType;
-import com.google.template.soy.types.parse.ParseException;
 import com.google.template.soy.types.parse.TypeParser;
 import com.google.template.soy.types.primitive.NullType;
 
@@ -123,6 +122,10 @@ public abstract class TemplateNodeBuilder {
 
     @Nullable public String soyDoc() {
       return soyDoc;
+    }
+
+    public SourceLocation location() {
+      return sourceLocation;
     }
   }
 
@@ -302,29 +305,27 @@ public abstract class TemplateNodeBuilder {
   private HeaderParam forDeclInfo(DeclInfo declInfo) {
     Matcher cmdTextMatcher = HEADER_PARAM_DECL_CMD_TEXT_PATTERN.matcher(declInfo.cmdText);
     if (!cmdTextMatcher.matches()) {
-      throw SoySyntaxException.createWithoutMetaInfo(
-          "Invalid " + declInfo.type + " declaration command text \"" + declInfo.cmdText + "\".");
+      throw SoySyntaxException.createWithMetaInfo(
+          "Invalid " + declInfo.type + " declaration command text \"" + declInfo.cmdText + "\".",
+          declInfo.location());
     }
     String key = cmdTextMatcher.group(1);
     if (!BaseUtils.isIdentifier(key)) {
-      throw SoySyntaxException.createWithoutMetaInfo(
-          "Invalid " + declInfo.type + " key '" + key + "' (must be an identifier).");
+      throw SoySyntaxException.createWithMetaInfo(
+          "Invalid " + declInfo.type + " key '" + key + "' (must be an identifier).",
+          declInfo.location());
     }
     String typeSrc = cmdTextMatcher.group(2);
     SoyType type;
     boolean isInjected = declInfo.type == Type.INJECTED_PARAM;
     boolean isRequired = true;
-    try {
-      Preconditions.checkNotNull(typeRegistry);
-      type = new TypeParser(typeSrc, typeRegistry).parseTypeDeclaration();
-      if (declInfo.optionalStatus == OptionalStatus.OPTIONAL) {
-        isRequired = false;
-        type = typeRegistry.getOrCreateUnionType(type, NullType.getInstance());
-      } else if (type instanceof UnionType && ((UnionType) type).isNullable()) {
-        isRequired = false;
-      }
-    } catch (ParseException e) {
-      throw SoySyntaxException.createWithoutMetaInfo(e.getMessage());
+    Preconditions.checkNotNull(typeRegistry);
+    type = new TypeParser(typeSrc, declInfo.location(), typeRegistry).parseTypeDeclaration();
+    if (declInfo.optionalStatus == OptionalStatus.OPTIONAL) {
+      isRequired = false;
+      type = typeRegistry.getOrCreateUnionType(type, NullType.getInstance());
+    } else if (type instanceof UnionType && ((UnionType) type).isNullable()) {
+      isRequired = false;
     }
     return new HeaderParam(key, typeSrc, type, isRequired, isInjected, declInfo.soyDoc);
   }

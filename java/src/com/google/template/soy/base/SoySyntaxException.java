@@ -201,6 +201,10 @@ public class SoySyntaxException extends RuntimeException {
     return templateName;
   }
 
+  /** Returns the original exception message, without any source location formatting. */
+  public String getOriginalMessage() {
+    return super.getMessage();
+  }
 
   @Override public String getMessage() {
     boolean locationKnown = srcLoc.isKnown();

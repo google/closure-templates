@@ -39,6 +39,8 @@ PARSER_BEGIN(TypeParser)
 package com.google.template.soy.types.parse;
 
 import com.google.common.collect.Maps;
+import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.aggregate.ListType;
@@ -66,35 +68,42 @@ public class TypeParser {
   /** Private constant used by some parse rules. */
   private static final List<SoyType> EMPTY_TYPE_ARGS = Collections.emptyList();
 
-  /** Node id generator for the tree being built. */
   private SoyTypeRegistry typeRegistry;
+
+  private SourceLocation sourceLocation;
 
   /**
    * Constructor that takes a string input.
    * @param input The input to parse.
+   * @param sourceLocation The location.
    * @param typeRegistry The type registry.
    */
-  public TypeParser(String input, SoyTypeRegistry typeRegistry) {
+  public TypeParser(
+      String input,
+      SourceLocation sourceLocation,
+      SoyTypeRegistry typeRegistry) {
     this(new StringReader(input));
+    this.sourceLocation = sourceLocation;
     this.typeRegistry = typeRegistry;
-  }
-
-  /**
-   * Attempts to parse the input as a type expression.
-   * @throws TokenMgrError When the input has a token error.
-   * @throws ParseException When the input has a parse error.
-   */
-  public SoyType parseTypeExpression() throws TokenMgrError, ParseException {
-    return TypeExpr();
   }
 
   /**
    * Attempts to parse the input as a type declaration.
    * @throws TokenMgrError When the input has a token error.
-   * @throws ParseException When the input has a parse error.
+   * @throws SoySyntaxException When the input has a parse error.
    */
-  public SoyType parseTypeDeclaration() throws TokenMgrError, ParseException {
-    return TypeDecl();
+  public SoyType parseTypeDeclaration() {
+    try {
+      return TypeDecl();
+    } catch (ParseException e) {
+      // TODO(lukes): we need to 'offset' the source location, however this is
+      // essentially impossible because the TemplateParser/TemplateNodeBuilder
+      // has 'pre stripped' whitespace then so anything we do here would be
+      // wrong  ... so we don't try :(
+      throw SoySyntaxException.createWithMetaInfo(
+          ParseErrors.formatParseException(e),
+          sourceLocation);
+    }
   }
 }
 
@@ -149,6 +158,12 @@ TOKEN:
 SKIP:
 {
   < WS: " " | "\t" | "\n" | "\r" | "\r\n" >
+}
+
+// Match everything else as an 'unexpected' token to prevent TokenMgrErrors from being thrown and
+// instead this will get turned into ParseExceptions which have more debugging information.
+TOKEN : {
+    < UNEXPECTED_TOKEN : ~[] >
 }
 
 
@@ -234,66 +249,43 @@ private SoyType Primary() :
 
 
 /**
- * ListType -> "list" ( "<" TypeList ">" )?
- *
- * Note: At some point, we may want to support generalized generic types,
- * rather than having special parsing rules just for list and map types.
- * When that happens, we'll want these types to be templates that are
- * registered in the type registry, and thus treated like any other generic
- * type. We'll also want to allow any type name to be followed by type args.
- *
- * (We can't do this now because there's no way to represent an unbound
- * template parameter in the current type system, and thus there's no way to
- * represent a list or map that has not yet been parametrized.)
+ * ListType -> "list" "<" TypeExpr ">"
  */
 private SoyType ListType() :
 {
-  List<SoyType> typeArgs = EMPTY_TYPE_ARGS;
+  SoyType typeArg;
 }
 {
   <GENERIC_LIST>
+  <LANGLE>
+  typeArg = TypeExpr()
+  <RANGLE>
 
-  (
-    <LANGLE>
-    typeArgs = TypeList()
-    <RANGLE>
-  )?
-
-  { if (typeArgs.size() == 1) {
-      return typeRegistry.getOrCreateListType(typeArgs.get(0));
-    } else {
-      throw new ParseException("Expected 1 type parameter for type 'list', not " + typeArgs.size());
-    }
-  }
+  { return typeRegistry.getOrCreateListType(typeArg); }
 }
 
 
 /**
- * MapType -> "map" ( "<" TypeList ">" )?
+ * MapType -> "map" "<" TypeExpr "," TypeExpr ">"
  */
 private SoyType MapType() :
 {
-  List<SoyType> typeArgs = EMPTY_TYPE_ARGS;
+  SoyType key, value;
 }
 {
   <GENERIC_MAP>
+  <LANGLE>
+  key= TypeExpr()
+  <COMMA>
+  value = TypeExpr()
+  <RANGLE>
 
-  (
-    <LANGLE>
-    typeArgs = TypeList()
-    <RANGLE>
-  )?
-
-  { if (typeArgs.size() != 2) {
-      throw new ParseException("Expected 2 type parameters for type 'map', not " + typeArgs.size());
-    }
-    return typeRegistry.getOrCreateMapType(typeArgs.get(0), typeArgs.get(1));
-  }
+  { return typeRegistry.getOrCreateMapType(key, value); }
 }
 
 
 /**
- * RecordType -> "{" ( RecordField ( "," RecordField )* )? "}"
+ * RecordType -> "[" ( RecordField ( "," RecordField )* )? "]"
  */
 private SoyType RecordType() :
 {
@@ -335,7 +327,9 @@ private void RecordField(Map<String, SoyType> fields) :
 
   {
     if (fields.containsKey(fieldName.image)) {
-      throw new ParseException("Duplicate field definition for record: " + fieldName.image);
+      throw SoySyntaxException.createWithMetaInfo(
+          "Duplicate field definition for record: " + fieldName.image,
+          sourceLocation);
     }
     fields.put(fieldName.image, fieldType);
   }
@@ -356,17 +350,12 @@ private SoyType TypeName() :
   {
     typeName = typeRegistry.getType(ident);
     if (typeName == null) {
-      throw new ParseException("Unknown type '" + ident + "'.");
+      // TODO(lukes): typo detection/suggestions would be nice here
+      throw SoySyntaxException.createWithMetaInfo(
+          "Unknown type '" + ident + "'.",
+          sourceLocation);
     }
   }
-
-  (
-    <LANGLE>
-    {
-      throw new ParseException(
-          "Template parameters not allowed for type ' " + ident + "'");
-    }
-  )?
 
   { return typeName; }
 }
@@ -407,27 +396,4 @@ private String DottedIdent() :
   )*
 
   { return sb.toString(); }
-}
-
-
-/**
- * TypeList -> TypeExpr ("," TypeExpr)
- */
-private List<SoyType> TypeList() :
-{
-  SoyType type;
-}
-{
-  { List<SoyType> args = new ArrayList<SoyType>(); }
-
-  type = TypeExpr()
-  { args.add(type); }
-
-  (
-    <COMMA>
-    type = TypeExpr()
-    { args.add(type); }
-  )*
-
-  { return args; }
 }

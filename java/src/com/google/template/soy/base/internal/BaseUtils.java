@@ -18,11 +18,13 @@ package com.google.template.soy.base.internal;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+import com.google.common.base.CharMatcher;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 import com.google.common.hash.Hashing;
 
 import java.io.File;
+import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -292,4 +294,45 @@ public class BaseUtils {
         .toString().substring(0, numBytes * 2);
   }
 
+
+  private static final CharMatcher whitespaceOrComma =
+      CharMatcher.WHITESPACE.or(CharMatcher.is(',')).precomputed();
+
+  /**
+   * A helper method for formating javacc ParseExceptions.
+   * @param errorToken The piece of text that we were unable to parse.
+   * @param expectedTokens The set of formatted tokens that we were expecting next.
+   */
+  public static String formatParseExceptionDetails(String errorToken, List<String> expectedTokens) {
+    String details;
+    int numExpectedTokens = expectedTokens.size();
+    if (numExpectedTokens != 0) {
+      StringBuilder builder = new StringBuilder(": expected ");
+      for (int i = 0; i < numExpectedTokens; i++) {
+        builder.append(maybeQuoteForParseError(expectedTokens.get(i)));
+        if (i != numExpectedTokens - 1) {
+          builder.append(", ");
+        }
+        if (i == numExpectedTokens - 2) {
+          builder.append("or ");
+        }
+      }
+      details = builder.toString();
+    } else {
+      details = "";
+    }
+    return String.format("parse error at '%s'%s", errorToken, details);
+  }
+
+  private static String maybeQuoteForParseError(String token) {
+    // the literal matches are surrounded in double quotes, remove them, unless the token starts
+    // or ends with a whitespace character or contains a comma
+    if (token.charAt(0) == '"'  && token.charAt(token.length() - 1) == '"') {
+      token = token.substring(1, token.length() - 1);
+    }
+    if (whitespaceOrComma.matchesAnyOf(token)) {
+      token = "'" + token + "'";
+    }
+    return token;
+  }
 }

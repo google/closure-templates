@@ -20,12 +20,13 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.types.aggregate.ListType;
 import com.google.template.soy.types.aggregate.MapType;
 import com.google.template.soy.types.aggregate.RecordType;
 import com.google.template.soy.types.aggregate.UnionType;
-import com.google.template.soy.types.parse.ParseException;
 import com.google.template.soy.types.parse.TypeParser;
 import com.google.template.soy.types.primitive.AnyType;
 import com.google.template.soy.types.primitive.BoolType;
@@ -81,7 +82,7 @@ public class TypeParserTest extends TestCase {
   }
 
 
-  public void testParseTypeNames() throws ParseException {
+  public void testParseTypeNames() {
     assertTypeEquals(AnyType.getInstance(), "any");
     assertTypeEquals(AnyType.getInstance(), " any ");
     assertTypeEquals(IntType.getInstance(), "int");
@@ -93,7 +94,7 @@ public class TypeParserTest extends TestCase {
   }
 
 
-  public void testParseUnionTypes() throws ParseException {
+  public void testParseUnionTypes() {
     assertTypeEquals(
         UnionType.of(IntType.getInstance(), BoolType.getInstance()),
         "int|bool");
@@ -106,7 +107,7 @@ public class TypeParserTest extends TestCase {
   }
 
 
-  public void testParseRecordTypes() throws ParseException {
+  public void testParseRecordTypes() {
     assertTypeEquals(
         RecordType.of(ImmutableMap.<String, SoyType>builder()
             .put("a", IntType.getInstance())
@@ -127,7 +128,7 @@ public class TypeParserTest extends TestCase {
   }
 
 
-  public void testParameterizedTypes() throws ParseException {
+  public void testParameterizedTypes() {
     assertTypeEquals(ListType.of(StringType.getInstance()), "list<string>");
     assertTypeEquals(ListType.of(StringType.getInstance()), "list < string > ");
     assertTypeEquals(MapType.of(IntType.getInstance(), BoolType.getInstance()), "map<int, bool>");
@@ -135,16 +136,18 @@ public class TypeParserTest extends TestCase {
 
 
   public void testParseErrors() {
-    assertParseError("foo", "Unknown type");
-    assertParseError("any any");
-    assertParseError("any<string>", "parameters not allowed");
-    assertParseError("list<");
-    assertParseError("list<>");
-    assertParseError("list<string");
-    assertParseError("list", "Expected 1");
-    assertParseError("list<string, string>", "Expected 1");
-    assertParseError("map", "Expected 2");
-    assertParseError("map<string>", "Expected 2");
+    // Look on my errors, ye Mighty, and despair
+    // In particular our messages when we reach an unexpected end of string are poor.
+    assertParseError("foo", "Unknown type 'foo'.");
+    assertParseError("any any", "parse error at 'any': expected eof, |, or .");
+    assertParseError("any<string>", "parse error at '<': expected eof, |, or .");
+    assertParseError("list<", "parse error at '': expected [, ?, list, map, or identifier");
+    assertParseError("list<>", "parse error at '>': expected [, ?, list, map, or identifier");
+    assertParseError("list<string", "parse error at '': expected >, |, or .");
+    assertParseError("list", "parse error at '': expected <");
+    assertParseError("list<string, string>", "parse error at ',': expected >, |, or .");
+    assertParseError("map", "parse error at '': expected <");
+    assertParseError("map<string>", "parse error at '>': expected ',', |, or .");
   }
 
 
@@ -152,18 +155,8 @@ public class TypeParserTest extends TestCase {
   // Helpers.
 
 
-  private void assertTypeEquals(SoyType expected, String typeInput) throws ParseException {
+  private void assertTypeEquals(SoyType expected, String typeInput) {
     assertThat(parseType(typeInput)).isEqualTo(expected);
-  }
-
-
-  private void assertParseError(String typeInput) {
-    try {
-      parseType(typeInput);
-      fail("Input string '" + typeInput + "' should have failed to parse.");
-    } catch (Exception e) {
-      // Success
-    }
   }
 
 
@@ -171,13 +164,12 @@ public class TypeParserTest extends TestCase {
     try {
       parseType(typeInput);
       fail("Input string '" + typeInput + "' should have failed to parse.");
-    } catch (ParseException e) {
-      assertThat(e.getMessage()).contains(msg);
+    } catch (SoySyntaxException e) {
+      assertThat(e.getMessage()).isEqualTo(msg);
     }
   }
 
-
-  private SoyType parseType(String input) throws ParseException {
-    return (new TypeParser(input, typeRegistry)).parseTypeDeclaration();
+  private SoyType parseType(String input) throws SoySyntaxException {
+    return (new TypeParser(input, SourceLocation.UNKNOWN, typeRegistry)).parseTypeDeclaration();
   }
 }
