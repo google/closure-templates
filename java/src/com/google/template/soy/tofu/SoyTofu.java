@@ -62,27 +62,14 @@ public interface SoyTofu {
 
 
   /**
-   * Gets whether this instance caches intermediate Soy trees after substitutions from the
-   * SoyMsgBundle and the SoyCssRenamingMap.
-   *
-   * @return Whether this instance caches intermediate Soy trees after substitutions from the
-   *     SoyMsgBundle and the SoyCssRenamingMap.
+   * @deprecated The caching feature has been deleted
    */
-  public boolean isCaching();
-
+  @Deprecated public boolean isCaching();
 
   /**
-   * Primes the cache with the given combination of SoyMsgBundle and SoyCssRenamingMap. Priming the
-   * cache will eliminate the slowness for the first render. This method must be called separately
-   * for each distinct combination of SoyMsgBundle and SoyCssRenamingMap for which you wish to prime
-   * the cache.
-   *
-   * Only applicable when {@code isCaching()} is true.
-   *
-   * @param msgBundle The message bundle to prime the cache with.
-   * @param cssRenamingMap The CSS renaming map to prime the cache with.
+   * @deprecated The caching feature has been deleted
    */
-  public void addToCache(
+  @Deprecated public void addToCache(
       @Nullable SoyMsgBundle msgBundle, @Nullable SoyCssRenamingMap cssRenamingMap);
 
 
@@ -203,24 +190,9 @@ public interface SoyTofu {
     public Renderer setCssRenamingMap(SoyCssRenamingMap cssRenamingMap);
 
     /**
-     * If set to true, indicates that we should not add the current combination of
-     * {@code SoyMsgBundle} and {@code SoyCssRenamingMap} to the cache if it's not already there.
-     * Only applicable when the associated {@code SoyTofu} instance uses caching. Default value is
-     * false, i.e. by default we always add to cache when not already present.
-     *
-     * <p> Specifically, if {@code dontAddToCache} is set to true, then after checking the cache for
-     * the current combination of {@code SoyMsgBundle} and {@code SoyCssRenamingMap}:
-     * (a) if found in cache, we will use the cached intermediate results for faster rendering,
-     * (b) if not found in cache, we will fall back to the no-caching method of rendering.
-     *
-     * <p> If your app uses many different {@code SoyMsgBundle}s or {@code SoyCssRenamingMap}s and
-     * you're finding that the caching mode of {@code SoyTofu} is using too much memory, one
-     * strategy may be to first prime the cache with the most common combinations by calling
-     * {@link SoyTofu#addToCache}, and then when rendering, always {@code setDontAddToCache(true)}.
-     * This way, most of your renders will use the cached results, yet your cache will never grow
-     * beyond the size that you initially primed it to be.
+     * @deprecated The caching feature has been deleted
      */
-    public Renderer setDontAddToCache(boolean dontAddToCache);
+    @Deprecated public Renderer setDontAddToCache(boolean dontAddToCache);
 
     /**
      * Sets the expected content kind.

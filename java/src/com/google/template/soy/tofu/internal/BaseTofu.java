@@ -19,7 +19,6 @@ package com.google.template.soy.tofu.internal;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedSet;
-import com.google.common.collect.Maps;
 import com.google.inject.assistedinject.Assisted;
 import com.google.inject.assistedinject.AssistedInject;
 import com.google.template.soy.data.SanitizedContent;
@@ -28,9 +27,7 @@ import com.google.template.soy.data.SoyValueHelper;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.msgs.SoyMsgBundle;
-import com.google.template.soy.msgs.internal.InsertMsgsVisitor;
 import com.google.template.soy.parseinfo.SoyTemplateInfo;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
@@ -40,7 +37,6 @@ import com.google.template.soy.shared.internal.GuiceSimpleScope.WithScope;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.ApiCall;
 import com.google.template.soy.sharedpasses.FindIjParamsVisitor;
 import com.google.template.soy.sharedpasses.FindIjParamsVisitor.IjParamsInfo;
-import com.google.template.soy.sharedpasses.RenameCssVisitor;
 import com.google.template.soy.sharedpasses.opti.SimplifyVisitor;
 import com.google.template.soy.sharedpasses.render.RenderException;
 import com.google.template.soy.sharedpasses.render.RenderVisitor;
@@ -76,11 +72,9 @@ public class BaseTofu implements SoyTofu {
 
     /**
      * @param soyTree The Soy parse tree containing all the files in the Soy file set.
-     * @param isCaching Whether this instance caches intermediate Soy trees after substitutions from
-     *     the msgBundle and the cssRenamingMap.
      * @param errorReporter For reporting errors.
      */
-    public BaseTofu create(SoyFileSetNode soyTree, boolean isCaching, ErrorReporter errorReporter);
+    public BaseTofu create(SoyFileSetNode soyTree, ErrorReporter errorReporter);
   }
 
 
@@ -99,16 +93,7 @@ public class BaseTofu implements SoyTofu {
   /** The Soy parse tree containing all the files in the Soy file set. */
   private final SoyFileSetNode soyTree;
 
-  /** Whether this instance caches intermediate Soy trees after substitutions from the msgBundle
-   *  and the cssRenamingMap. */
-  private final boolean isCaching;
-
-  /** Map of cached template registries. Only applicable when isCaching is true. */
-  private final
-  Map<Pair<SoyMsgBundle, SoyCssRenamingMap>, TemplateRegistry> cachedTemplateRegistries;
-
-  /** The template registry used for no-caching mode of rendering. Applicable when isCaching is
-   *  false or when isCaching is true but doAddToCache is false. */
+  /** The template registry. */
   private final TemplateRegistry templateRegistryForNoCaching;
 
   /** Map from template node to injected params info for all templates. */
@@ -123,8 +108,6 @@ public class BaseTofu implements SoyTofu {
    * @param tofuRenderVisitorFactory Factory for creating an instance of TofuRenderVisitor.
    * @param simplifyVisitor The instance of SimplifyVisitor to use.
    * @param soyTree The Soy parse tree containing all the files in the Soy file set.
-   * @param isCaching Whether this instance caches intermediate Soy trees after substitutions from
-   *     the msgBundle and the cssRenamingMap.
    */
   @AssistedInject
   public BaseTofu(
@@ -133,7 +116,6 @@ public class BaseTofu implements SoyTofu {
       TofuRenderVisitorFactory tofuRenderVisitorFactory,
       SimplifyVisitor simplifyVisitor,
       @Assisted SoyFileSetNode soyTree,
-      @Assisted boolean isCaching,
       @Assisted ErrorReporter errorReporter) {
 
     this.valueHelper = valueHelper;
@@ -141,17 +123,10 @@ public class BaseTofu implements SoyTofu {
     this.tofuRenderVisitorFactory = tofuRenderVisitorFactory;
     this.simplifyVisitor = simplifyVisitor;
     this.soyTree = soyTree;
-    this.isCaching = isCaching;
     this.errorReporter = errorReporter;
 
-    if (isCaching) {
-      cachedTemplateRegistries = Maps.newHashMap();
-      addToCache(null, null);
-    } else {
-      cachedTemplateRegistries = null;
-    }
     SoyFileSetNode soyTreeForNoCaching = SoytreeUtils.cloneNode(soyTree);
-    templateRegistryForNoCaching = buildTemplateRegistry(soyTreeForNoCaching);
+    templateRegistryForNoCaching = new TemplateRegistry(soyTreeForNoCaching, errorReporter);
     templateToIjParamsInfoMap =
         new FindIjParamsVisitor(templateRegistryForNoCaching, errorReporter)
             .execOnAllTemplates(soyTreeForNoCaching);
@@ -174,20 +149,12 @@ public class BaseTofu implements SoyTofu {
 
 
   @Override public boolean isCaching() {
-    return isCaching;
+    return false;
   }
 
 
   @Override public void addToCache(
       @Nullable SoyMsgBundle msgBundle, @Nullable SoyCssRenamingMap cssRenamingMap) {
-    if (!isCaching) {
-      throw new SoyTofuException("Cannot addToCache() when isCaching is false.");
-    }
-
-    try (WithScope withScope = apiCallScope.enter()) {
-      ApiCallScopeUtils.seedSharedParams(apiCallScope, msgBundle);
-      getCachedTemplateRegistry(Pair.of(msgBundle, cssRenamingMap), true);
-    }
   }
 
 
@@ -236,50 +203,6 @@ public class BaseTofu implements SoyTofu {
 
 
   /**
-   * Gets the template registry associated with the given key (a key is a pair of SoyMsgBundle and
-   * SoyCssRenamingMap), optionally adding the mapping to the cache if it's not already there.
-   *
-   * <p> Specifically, if doAddToCache is true, then the mapping will be added to the cache if it's
-   * not already there. Thus, after calling this method with doAddToCache set to true, the given key
-   * is guaranteed to be found in the cache. On the other hand, if doAddToCache is false and the key
-   * is not already in the cache, then this method simply returns null without modifying the cache.
-   *
-   * @param key The pair of SoyMsgBundle and SoyCssRenamingMap for which to retrieve the
-   *     corresponding template registry.
-   * @param doAddToCache Whether to add this combination to the cache in the case that it's not
-   *     found in the cache.
-   * @return The corresponding template registry, or null if not found in cache and doAddToCache is
-   *     false.
-   */
-  private TemplateRegistry getCachedTemplateRegistry(
-      Pair<SoyMsgBundle, SoyCssRenamingMap> key, boolean doAddToCache) {
-
-    // This precondition check is for SimplifyVisitor, which we use below after making substitutions
-    // from the SoyMsgBundle and SoyCssRenamingMap. While SimplifyVisitor will work correctly
-    // outside of an active apiCallScope, always running it within the apiCallScope allows it to
-    // potentially do more, such as apply bidi functions/directives that require bidiGlobalDir to be
-    // in scope.
-    Preconditions.checkState(apiCallScope.isActive());
-
-    TemplateRegistry templateRegistry = cachedTemplateRegistries.get(key);
-    if (templateRegistry == null) {
-      if (!doAddToCache) {
-        return null;
-      }
-      SoyFileSetNode soyTreeClone = SoytreeUtils.cloneNode(soyTree);
-      new InsertMsgsVisitor(key.first, true /* dontErrorOnPlrselMsgs */ , errorReporter)
-          .exec(soyTreeClone);
-      new RenameCssVisitor(key.second, errorReporter)
-          .exec(soyTreeClone);
-      simplifyVisitor.exec(soyTreeClone);
-      templateRegistry = buildTemplateRegistry(soyTreeClone);
-      cachedTemplateRegistries.put(key, templateRegistry);
-    }
-    return templateRegistry;
-  }
-
-
-  /**
    * @param outputBuf The Appendable to write the output to.
    * @param templateName The full name of the template to render.
    * @param data The data to call the template with. Can be null if the template has no parameters.
@@ -288,18 +211,13 @@ public class BaseTofu implements SoyTofu {
    * @param msgBundle The bundle of translated messages, or null to use the messages from the Soy
    *     source.
    * @param cssRenamingMap Map for renaming selectors in 'css' tags, or null if not used.
-   * @param doAddToCache Whether to add the current combination of msgBundle and cssRenamingMap to
-   *     the cache if it's not already there. If set to false, then falls back to the no-caching
-   *     mode of rendering when not found in cache. Only applicable if isCaching is true for this
-   *     BaseTofu instance.
    * @return The template that was rendered.
    */
   private TemplateNode renderMain(
       Appendable outputBuf, String templateName, @Nullable SoyRecord data,
       @Nullable SoyRecord ijData, @Nullable Set<String> activeDelPackageNames,
       @Nullable SoyMsgBundle msgBundle, @Nullable SoyIdRenamingMap idRenamingMap,
-      @Nullable SoyCssRenamingMap cssRenamingMap,
-      boolean doAddToCache) {
+      @Nullable SoyCssRenamingMap cssRenamingMap) {
 
     if (activeDelPackageNames == null) {
       activeDelPackageNames = Collections.emptySet();
@@ -310,20 +228,9 @@ public class BaseTofu implements SoyTofu {
       ApiCallScopeUtils.seedSharedParams(apiCallScope, msgBundle);
 
       // Do the rendering.
-      TemplateRegistry cachedTemplateRegistry = isCaching ?
-          getCachedTemplateRegistry(Pair.of(msgBundle, cssRenamingMap), doAddToCache) : null;
-      // Note: cachedTemplateRegistry may be null even when isCaching is true (specifically, if
-      // doAddToCache is false).
-      if (cachedTemplateRegistry != null) {
-        // Note: Still need to pass msgBundle because we currently don't cache plural/select msgs.
-        return renderMainHelper(
-            cachedTemplateRegistry, outputBuf, templateName, data, ijData, activeDelPackageNames,
-            msgBundle, null, null);
-      } else {
-        return renderMainHelper(
-            templateRegistryForNoCaching, outputBuf, templateName, data, ijData,
-            activeDelPackageNames, msgBundle, idRenamingMap, cssRenamingMap);
-      }
+      return renderMainHelper(
+          templateRegistryForNoCaching, outputBuf, templateName, data, ijData,
+          activeDelPackageNames, msgBundle, idRenamingMap, cssRenamingMap);
     }
   }
 
@@ -397,7 +304,6 @@ public class BaseTofu implements SoyTofu {
     private SoyIdRenamingMap idRenamingMap;
     private SoyCssRenamingMap cssRenamingMap;
     private Set<String> activeDelPackageNames;
-    private boolean doAddToCache;
     private SanitizedContent.ContentKind expectedContentKind;
     private boolean contentKindExplicitlySet;
 
@@ -414,7 +320,6 @@ public class BaseTofu implements SoyTofu {
       this.msgBundle = null;
       this.cssRenamingMap = null;
       this.idRenamingMap = null;
-      this.doAddToCache = true;
       this.expectedContentKind = SanitizedContent.ContentKind.HTML;
       this.contentKindExplicitlySet = false;
     }
@@ -463,7 +368,6 @@ public class BaseTofu implements SoyTofu {
     }
 
     @Override public Renderer setDontAddToCache(boolean dontAddToCache) {
-      this.doAddToCache = !dontAddToCache;
       return this;
     }
 
@@ -482,7 +386,7 @@ public class BaseTofu implements SoyTofu {
     @Override public SanitizedContent.ContentKind render(Appendable out) {
       TemplateNode template = baseTofu.renderMain(
           out, templateName, data, ijData, activeDelPackageNames, msgBundle, idRenamingMap,
-          cssRenamingMap, doAddToCache);
+          cssRenamingMap);
       if (contentKindExplicitlySet || template.getContentKind() != null) {
         // Enforce the content kind if:
         // - The caller explicitly set a content kind to validate.
@@ -497,7 +401,7 @@ public class BaseTofu implements SoyTofu {
       StringBuilder sb = new StringBuilder();
       TemplateNode template = baseTofu.renderMain(
           sb, templateName, data, ijData, activeDelPackageNames, msgBundle, idRenamingMap,
-          cssRenamingMap, doAddToCache);
+          cssRenamingMap);
       enforceContentKind(template);
       // Use the expected instead of actual content kind; that way, if an HTML template is rendered
       // as TEXT, we will return TEXT.
