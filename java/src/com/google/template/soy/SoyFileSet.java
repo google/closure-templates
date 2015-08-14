@@ -85,7 +85,6 @@ import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.tofu.SoyTofu;
-import com.google.template.soy.tofu.SoyTofuOptions;
 import com.google.template.soy.tofu.internal.BaseTofu.BaseTofuFactory;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeProvider;
@@ -805,22 +804,6 @@ public final class SoyFileSet {
         origTransMsgBundle.getLocaleString(), prunedTransMsgsBuilder.build());
   }
 
-
-  /**
-   * Compiles this Soy file set into a Java object (type {@code SoyTofu}) capable of rendering the
-   * compiled templates. The resulting {@code SoyTofu} does not cache intermediate results after
-   * substitutions from the SoyMsgBundle and the SoyCssRenamingMap.
-   *
-   * @see #compileToTofu(com.google.template.soy.tofu.SoyTofuOptions)
-   *
-   * @return The resulting {@code SoyTofu} object.
-   * @throws SoySyntaxException If a syntax error is found.
-   */
-  public SoyTofu compileToTofu() throws SoySyntaxException {
-    return compileToTofu(new SoyTofuOptions());
-  }
-
-
   /**
    * Compiles this Soy file set into a Java object (type {@code SoyTofu}) capable of rendering the
    * compiled templates.
@@ -829,10 +812,7 @@ public final class SoyFileSet {
    * @return The resulting {@code SoyTofu} object.
    * @throws SoySyntaxException If a syntax error is found.
    */
-  public SoyTofu compileToTofu(SoyTofuOptions tofuOptions) throws SoySyntaxException {
-
-    // Defensive copy of options. (Doesn't matter now, but might forget later when it matters.)
-    tofuOptions = tofuOptions.copy();
+  public SoyTofu compileToTofu() throws SoySyntaxException {
 
     SyntaxVersion declaredSyntaxVersion =
         generalOptions.getDeclaredSyntaxVersion(SyntaxVersion.V2_0);
@@ -860,7 +840,7 @@ public final class SoyFileSet {
 
     ((ErrorReporterImpl) errorReporter).throwIfErrorsPresent();
 
-    return baseTofuFactory.create(soyTree, tofuOptions.useCaching(), errorReporter);
+    return baseTofuFactory.create(soyTree, errorReporter);
   }
 
   /**
@@ -955,7 +935,7 @@ public final class SoyFileSet {
    * @deprecated Use {@link #compileToTofu()}.
    */
   @Deprecated public SoyTofu compileToJavaObj() throws SoySyntaxException {
-    return compileToTofu(new SoyTofuOptions());
+    return compileToTofu();
   }
 
 
