@@ -360,10 +360,30 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
       addCodeToDefineJsNamespaces(node);
     }
 
+    boolean useClosure = jsSrcOptions.shouldProvideRequireSoyNamespaces()
+        || jsSrcOptions.shouldProvideRequireJsFunctions();
+
+    // In order to import code from goog.modules when not generating a goog.module, we need to add
+    // calls to goog.module.get in a scope other than the file scope. If goog.modules need to be
+    // imported, we need to create a goog.scope to import the modules in. See
+    // http://google.github.io/closure-library/api/namespace_goog_module.html#get for more
+    // information.
+    if (useClosure && requiresGoogModuleDeps()) {
+      jsCodeBuilder.appendLine("goog.scope(function() {");
+      addCodeToRequireGoogModuleDeps(node);
+    }
+
+    addCodeToAliasFunctions();
+
     // Add code for each template.
     for (TemplateNode template : node.getChildren()) {
       jsCodeBuilder.appendLine().appendLine();
       visit(template);
+    }
+
+    // Close the goog.scope for modules if necessary.
+    if (useClosure && requiresGoogModuleDeps()) {
+      jsCodeBuilder.appendLine("});");
     }
 
     jsFilesContents.add(jsCodeBuilder.getCode());
@@ -507,6 +527,32 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
         jsCodeBuilder.appendLine("goog.require('" + requiredType + "');");
       }
     }
+  }
+
+  /**
+   * @return Whether or not any goog module dependencies are required.
+   */
+  protected boolean requiresGoogModuleDeps() {
+    return false;
+  }
+
+  /**
+   * Helper for visitSoyFileNode(SoyFileNode) to add code to require goog.module dependencies. This
+   * file should produce one or more calls to goog.module.get. Note that this does not cause the
+   * modules to be pulled in by Closure and an additional goog.require for the same namespace is
+   * needed in addCodeToRequireGeneralDeps.
+   * @param soyFile The node we're visiting.
+   */
+  protected void addCodeToRequireGoogModuleDeps(SoyFileNode soyFile) {
+    // NO-OP
+  }
+
+  /**
+   * Helper for visitSoyFileNode(SoyFileNode) to create aliased functions, typically from a module
+   * dependency.
+   */
+  protected void addCodeToAliasFunctions() {
+    // NO-OP
   }
 
   /**
