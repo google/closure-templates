@@ -148,16 +148,6 @@ public class BaseTofu implements SoyTofu {
   }
 
 
-  @Override public boolean isCaching() {
-    return false;
-  }
-
-
-  @Override public void addToCache(
-      @Nullable SoyMsgBundle msgBundle, @Nullable SoyCssRenamingMap cssRenamingMap) {
-  }
-
-
   @Override public Renderer newRenderer(SoyTemplateInfo templateInfo) {
     return new RendererImpl(this, templateInfo.getName());
   }
@@ -364,10 +354,6 @@ public class BaseTofu implements SoyTofu {
 
     @Override public Renderer setCssRenamingMap(SoyCssRenamingMap cssRenamingMap) {
       this.cssRenamingMap = cssRenamingMap;
-      return this;
-    }
-
-    @Override public Renderer setDontAddToCache(boolean dontAddToCache) {
       return this;
     }
 

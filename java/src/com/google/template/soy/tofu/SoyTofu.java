@@ -60,19 +60,6 @@ public interface SoyTofu {
    */
   public SoyTofu forNamespace(@Nullable String namespace);
 
-
-  /**
-   * @deprecated The caching feature has been deleted
-   */
-  @Deprecated public boolean isCaching();
-
-  /**
-   * @deprecated The caching feature has been deleted
-   */
-  @Deprecated public void addToCache(
-      @Nullable SoyMsgBundle msgBundle, @Nullable SoyCssRenamingMap cssRenamingMap);
-
-
   /**
    * Gets a new Renderer for a template.
    *
@@ -188,11 +175,6 @@ public interface SoyTofu {
      * Sets the CSS renaming map.
      */
     public Renderer setCssRenamingMap(SoyCssRenamingMap cssRenamingMap);
-
-    /**
-     * @deprecated The caching feature has been deleted
-     */
-    @Deprecated public Renderer setDontAddToCache(boolean dontAddToCache);
 
     /**
      * Sets the expected content kind.

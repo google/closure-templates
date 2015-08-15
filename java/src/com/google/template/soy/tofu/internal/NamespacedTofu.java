@@ -23,7 +23,6 @@ import com.google.common.collect.ImmutableSortedSet;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.parseinfo.SoyTemplateInfo;
-import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.tofu.SoyTofu;
 
 import java.util.Map;
@@ -85,18 +84,6 @@ class NamespacedTofu implements SoyTofu {
   private String getFullTemplateName(String templateName) {
     return (templateName.charAt(0) == '.') ? namespace + templateName : templateName;
   }
-
-
-  @Override public boolean isCaching() {
-    return baseTofu.isCaching();
-  }
-
-
-  @Override public void addToCache(
-      @Nullable SoyMsgBundle msgBundle, @Nullable SoyCssRenamingMap cssRenamingMap) {
-    baseTofu.addToCache(msgBundle, cssRenamingMap);
-  }
-
 
   @Override public Renderer newRenderer(SoyTemplateInfo templateInfo) {
     return baseTofu.newRenderer(templateInfo);
