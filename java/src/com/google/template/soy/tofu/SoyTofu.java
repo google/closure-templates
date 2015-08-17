@@ -48,7 +48,7 @@ public interface SoyTofu {
    *
    * @return The namespace of this SoyTofu object, or null if no namespace.
    */
-  public String getNamespace();
+  String getNamespace();
 
 
   /**
@@ -58,7 +58,7 @@ public interface SoyTofu {
    * @param namespace The namespace for the new SoyTofu instance, or null for no namespace.
    * @return A new SoyTofu instance with a different namespace (or no namespace).
    */
-  public SoyTofu forNamespace(@Nullable String namespace);
+  SoyTofu forNamespace(@Nullable String namespace);
 
   /**
    * Gets a new Renderer for a template.
@@ -70,7 +70,7 @@ public interface SoyTofu {
    * @param templateInfo Info for the template to render.
    * @return A new renderer for the given template.
    */
-  public Renderer newRenderer(SoyTemplateInfo templateInfo);
+  Renderer newRenderer(SoyTemplateInfo templateInfo);
 
 
   /**
@@ -86,7 +86,7 @@ public interface SoyTofu {
    *     name beginning with a dot (e.g. ".fooTemplate").
    * @return A new renderer for the given template.
    */
-  public Renderer newRenderer(String templateName);
+  Renderer newRenderer(String templateName);
 
 
   /**
@@ -100,7 +100,7 @@ public interface SoyTofu {
    * @param templateInfo Info for the template to get injected params of.
    * @return The set of injected param keys used by the given template.
    */
-  public ImmutableSortedSet<String> getUsedIjParamsForTemplate(SoyTemplateInfo templateInfo);
+  ImmutableSortedSet<String> getUsedIjParamsForTemplate(SoyTemplateInfo templateInfo);
 
 
   /**
@@ -109,7 +109,7 @@ public interface SoyTofu {
    * @param templateName The name of the template to get injected params of.
    * @return The set of injected param keys used by the given template.
    */
-  public ImmutableSortedSet<String> getUsedIjParamsForTemplate(String templateName);
+  ImmutableSortedSet<String> getUsedIjParamsForTemplate(String templateName);
 
 
   // -----------------------------------------------------------------------------------------------
@@ -122,7 +122,7 @@ public interface SoyTofu {
    * <p> Important: If you're a user of Soy, you should use the methods here (on a Renderer object
    * created by Soy), but should not create your own implementations of this interface.
    */
-  public static interface Renderer {
+  interface Renderer {
 
     /**
      * Sets the data to call the template with. Can be null if the template has no parameters.
@@ -133,12 +133,12 @@ public interface SoyTofu {
      * multiple calls, it's more efficient to build your own {@code SoyRecord} object and reuse it
      * with {@link #setData(SoyRecord)}.
      */
-    public Renderer setData(Map<String, ?> data);
+    Renderer setData(Map<String, ?> data);
 
     /**
      * Sets the data to call the template with. Can be null if the template has no parameters.
      */
-    public Renderer setData(SoyRecord data);
+    Renderer setData(SoyRecord data);
 
     /**
      * Sets the injected data to call the template with. Can be null if not used.
@@ -149,32 +149,32 @@ public interface SoyTofu {
      * multiple calls, it's more efficient to build your own {@code SoyRecord} object and reuse it
      * with {@link #setIjData(SoyRecord)}.
      */
-    public Renderer setIjData(Map<String, ?> ijData);
+    Renderer setIjData(Map<String, ?> ijData);
 
     /**
      * Sets the injected data to call the template with. Can be null if not used.
      */
-    public Renderer setIjData(SoyRecord ijData);
+    Renderer setIjData(SoyRecord ijData);
 
     /**
      * Sets the set of active delegate package names.
      */
-    public Renderer setActiveDelegatePackageNames(Set<String> activeDelegatePackageNames);
+    Renderer setActiveDelegatePackageNames(Set<String> activeDelegatePackageNames);
 
     /**
      * Sets the bundle of translated messages, or null to use the messages from the Soy source.
      */
-    public Renderer setMsgBundle(SoyMsgBundle msgBundle);
+    Renderer setMsgBundle(SoyMsgBundle msgBundle);
 
     /**
      * Sets the ID renaming map.
      */
-    public Renderer setIdRenamingMap(SoyIdRenamingMap idRenamingMap);
+    Renderer setIdRenamingMap(SoyIdRenamingMap idRenamingMap);
 
     /**
      * Sets the CSS renaming map.
      */
-    public Renderer setCssRenamingMap(SoyCssRenamingMap cssRenamingMap);
+    Renderer setCssRenamingMap(SoyCssRenamingMap cssRenamingMap);
 
     /**
      * Sets the expected content kind.
@@ -182,7 +182,7 @@ public interface SoyTofu {
      * <p>An attempt to render a non-strict template or a strict template with a different kind
      * will fail if this has been called.
      */
-    public Renderer setContentKind(SanitizedContent.ContentKind contentKind);
+    Renderer setContentKind(SanitizedContent.ContentKind contentKind);
 
     /**
      * Renders the template using the data, injected data, and message bundle previously set.
@@ -193,7 +193,7 @@ public interface SoyTofu {
      *
      * @throws SoyTofuException if an error occurs during rendering.
      */
-    public String render();
+    String render();
 
     /**
      * Renders the strict-mode template as a SanitizedContent object, which can be used as an input
@@ -207,7 +207,7 @@ public interface SoyTofu {
      *     the expected kind (from setContentKind, or the default of HTML).
      * @throws SoyTofuException if an error occurs during rendering.
      */
-    public SanitizedContent renderStrict();
+    SanitizedContent renderStrict();
 
     /**
      * Renders the template using the data, injected data, and message bundle previously set
@@ -219,7 +219,7 @@ public interface SoyTofu {
      *
      * @throws SoyTofuException if an error occurs during rendering.
      */
-    public SanitizedContent.ContentKind render(Appendable out);
+    SanitizedContent.ContentKind render(Appendable out);
   }
 
 
@@ -238,7 +238,7 @@ public interface SoyTofu {
    * @deprecated Use {@link #newRenderer(SoyTemplateInfo)}.
    */
   @Deprecated
-  public String render(
+  String render(
       SoyTemplateInfo templateInfo, @Nullable SoyRecord data, @Nullable SoyMsgBundle msgBundle);
 
 
@@ -260,7 +260,7 @@ public interface SoyTofu {
    * @deprecated Use {@link #newRenderer(String)}.
    */
   @Deprecated
-  public String render(
+  String render(
       String templateName, @Nullable Map<String, ?> data, @Nullable SoyMsgBundle msgBundle);
 
 
@@ -276,7 +276,7 @@ public interface SoyTofu {
    * @deprecated Use {@link #newRenderer(String)}.
    */
   @Deprecated
-  public String render(
+  String render(
       String templateName, @Nullable SoyRecord data, @Nullable SoyMsgBundle msgBundle);
 
 }

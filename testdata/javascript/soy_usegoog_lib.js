@@ -8378,7 +8378,7 @@ goog.object.clone = function(obj) {
 goog.object.unsafeClone = function(obj) {
   var type = goog.typeOf(obj);
   if (type == 'object' || type == 'array') {
-    if (obj.clone) {
+    if (goog.isFunction(obj.clone)) {
       return obj.clone();
     }
     var clone = type == 'array' ? [] : {};
