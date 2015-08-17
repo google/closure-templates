@@ -32,6 +32,7 @@ import com.google.template.soy.basetree.SyntaxVersionUpperBound;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyError;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 import com.google.template.soy.soytree.TemplateNodeBuilder.DeclInfo.OptionalStatus;
 import com.google.template.soy.soytree.TemplateNodeBuilder.DeclInfo.Type;
@@ -62,6 +63,15 @@ import javax.annotation.Nullable;
  *
  */
 public abstract class TemplateNodeBuilder {
+
+  private static final SoyError INVALID_SOYDOC_PARAM =
+      SoyError.of("Found invalid soydoc param name ''{0}''");
+
+  private static final SoyError LEGACY_COMPATIBLE_PARAM_TAG =
+      SoyError.of("Found invalid SoyDoc param tag ''{0}'', tags like this are only allowed in "
+          + "legacy templates marked ''deprecatedV1=\"true\"''.  The proper soydoc @param syntax "
+          + "is: ''@param <name> <optional comment>''. Soy does not understand JsDoc style type "
+          + "declarations in SoyDoc.");
 
   /**
    * Value class used in the input to method {@link #setHeaderDecls}.
@@ -187,6 +197,8 @@ public abstract class TemplateNodeBuilder {
   /** The params from template header and/or SoyDoc. Null if no decls and no SoyDoc. */
   @Nullable protected ImmutableList<TemplateParam> params;
 
+  private boolean isMarkedV1;
+
   final SourceLocation sourceLocation;
 
   /**
@@ -241,8 +253,8 @@ public abstract class TemplateNodeBuilder {
    * @return This builder.
    */
   public TemplateNodeBuilder setSoyDoc(String soyDoc) {
-    Preconditions.checkState(! isSoyDocSet);
-    Preconditions.checkState(cmdText != null);  // not strictly necessary
+    Preconditions.checkState(!isSoyDocSet);
+    Preconditions.checkState(cmdText != null);
 
     this.isSoyDocSet = true;
     this.soyDoc = soyDoc;
@@ -251,22 +263,8 @@ public abstract class TemplateNodeBuilder {
       Preconditions.checkArgument(soyDoc.startsWith("/**") && soyDoc.endsWith("*/"));
       String cleanedSoyDoc = cleanSoyDocHelper(soyDoc);
       this.soyDocDesc = parseSoyDocDescHelper(cleanedSoyDoc);
-      SoyDocDeclsInfo soyDocDeclsInfo = parseSoyDocDeclsHelper(cleanedSoyDoc);
-      this.addParams(soyDocDeclsInfo.params);
-      if (soyDocDeclsInfo.lowestSyntaxVersionBound != null) {
-        SyntaxVersionUpperBound newSyntaxVersionBound = new SyntaxVersionUpperBound(
-            soyDocDeclsInfo.lowestSyntaxVersionBound,
-            "Template SoyDoc has incorrect param declarations where the param name is not a valid" +
-                " identifier: " + soyDocDeclsInfo.incorrectSoyDocParamSrcs);
-        this.syntaxVersionBound =
-            SyntaxVersionUpperBound.selectLower(this.syntaxVersionBound, newSyntaxVersionBound);
-      }
-
+      this.addParams(parseSoyDocDeclsHelper(cleanedSoyDoc));
     } else {
-      SyntaxVersionUpperBound newSyntaxVersionBound = new SyntaxVersionUpperBound(
-          SyntaxVersion.V2_0, "Template is missing SoyDoc.");
-      this.syntaxVersionBound =
-          SyntaxVersionUpperBound.selectLower(this.syntaxVersionBound, newSyntaxVersionBound);
       this.soyDocDesc = null;
       // Note: Don't set this.params to null here because params can also come from header decls.
     }
@@ -401,6 +399,7 @@ public abstract class TemplateNodeBuilder {
 
   protected final void setV1Marker(Map<String, String> attributes) {
     if ("true".equals(attributes.get("deprecatedV1"))) {
+      this.isMarkedV1 = true;
       SyntaxVersionUpperBound newSyntaxVersionBound = new SyntaxVersionUpperBound(
           SyntaxVersion.V2_0, "Template is marked as deprecatedV1.");
       this.syntaxVersionBound =
@@ -642,31 +641,13 @@ public abstract class TemplateNodeBuilder {
   }
 
   /**
-   * Return value for {@code parseSoyDocDeclsHelper()}.
-   */
-  private static class SoyDocDeclsInfo {
-    /** The params successfully parsed from the SoyDoc. */
-    public List<SoyDocParam> params;
-    /** SoyDoc param decl source strings with incorrect syntax. */
-    public List<String> incorrectSoyDocParamSrcs;
-    /** Lowest syntax version bound (exclusive) for incorrect SoyDoc param decls. */
-    public SyntaxVersion lowestSyntaxVersionBound;
-
-    public SoyDocDeclsInfo() {
-      this.params = new ArrayList<>();
-      this.incorrectSoyDocParamSrcs = new ArrayList<>(0);
-      this.lowestSyntaxVersionBound = null;
-    }
-  }
-
-  /**
    * Private helper for the constructor to parse the SoyDoc declarations.
    *
    * @param cleanedSoyDoc The cleaned SoyDoc text. Must not be null.
    * @return A SoyDocDeclsInfo object with the parsed info.
    */
-  private static SoyDocDeclsInfo parseSoyDocDeclsHelper(String cleanedSoyDoc) {
-    SoyDocDeclsInfo result = new SoyDocDeclsInfo();
+  private List<SoyDocParam> parseSoyDocDeclsHelper(String cleanedSoyDoc) {
+    List<SoyDocParam> params = new ArrayList<>();
 
     Matcher matcher = SOY_DOC_DECL_PATTERN.matcher(cleanedSoyDoc);
     // Important: This statement finds the param for the first iteration of the loop.
@@ -688,17 +669,18 @@ public abstract class TemplateNodeBuilder {
       if (declKeyword.equals("@param") || declKeyword.equals("@param?")) {
 
         if (SOY_DOC_PARAM_TEXT_PATTERN.matcher(declText).matches()) {
-          result.params.add(new SoyDocParam(declText, declKeyword.equals("@param"), desc));
+          params.add(new SoyDocParam(declText, declKeyword.equals("@param"), desc));
 
         } else {
-          result.incorrectSoyDocParamSrcs.add(declKeyword + " " + declText);
           if (declText.startsWith("{")) {
-            // In V1.0, allow incorrect syntax where '{' is the start of the declText.
-            if (result.lowestSyntaxVersionBound == null) {
-              result.lowestSyntaxVersionBound = SyntaxVersion.V2_0;
+            // v1 is allowed for compatibility reasons
+            if (!isMarkedV1) {
+              errorReporter.report(sourceLocation, LEGACY_COMPATIBLE_PARAM_TAG, declText);
             }
           } else {
-            result.lowestSyntaxVersionBound = SyntaxVersion.V1_0;
+            // TODO(lukes): the source location here is not accurate (points to the template, not
+            // the doc line.
+            errorReporter.report(sourceLocation, INVALID_SOYDOC_PARAM, declText);
           }
         }
 
@@ -707,6 +689,6 @@ public abstract class TemplateNodeBuilder {
       }
     }
 
-    return result;
+    return params;
   }
 }

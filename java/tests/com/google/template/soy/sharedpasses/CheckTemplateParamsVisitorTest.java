@@ -264,8 +264,8 @@ public final class CheckTemplateParamsVisitorTest extends TestCase {
   public void testOnlyCheckFilesInV2() {
     String fileContent0 =
         "{namespace boo0 autoescape=\"deprecated-noncontextual\"}\n" +
-        "\n" +  // file is missing SoyDoc
-        "{template .foo0}\n" +
+        "\n" +  // template is tagged as v1
+        "{template .foo0 deprecatedV1=\"true\"}\n" +
         "  {$goo0.moo0}\n" +
         "{/template}\n";
 

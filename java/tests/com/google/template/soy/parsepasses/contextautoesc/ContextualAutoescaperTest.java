@@ -2154,6 +2154,7 @@ public final class ContextualAutoescaperTest extends TestCase {
         join(
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"strict\" kind=\"attributes\"}\n",
+            "  {@param x : ?}\n",
               "foo=\"{$x}",
             "\n{/template}"));
   }
@@ -2224,6 +2225,7 @@ public final class ContextualAutoescaperTest extends TestCase {
         join(
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"strict\" kind=\"attributes\"}\n",
+            "  {@param x : ?}\n",
               "onclick={$x}",
             "\n{/template}"));
 
@@ -2236,6 +2238,7 @@ public final class ContextualAutoescaperTest extends TestCase {
         join(
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"strict\" kind=\"attributes\"}\n",
+            "  {@param x : ?}\n",
               "title={$x}",
             "\n{/template}"));
   }
