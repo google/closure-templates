@@ -14,9 +14,12 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.sharedpasses;
+package com.google.template.soy.parsepasses;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.data.internalutils.InternalValueUtils;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.PrimitiveData;
@@ -26,15 +29,13 @@ import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.GlobalNode;
-import com.google.template.soy.soytree.SoyFileSetNode;
+import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoytreeUtils;
 import com.google.template.soy.types.SoyEnumType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
 
 import java.util.Map;
-
-import javax.annotation.Nullable;
 
 /**
  * Visitor for substituting values of compile-time globals and/or for checking that all globals are
@@ -46,6 +47,7 @@ import javax.annotation.Nullable;
  * constructor. To do substitution and checking, set  {@code shouldAssertNoUnboundGlobals} to true.
  *
  */
+@VisibleForTesting
 public final class SubstituteGlobalsVisitor {
 
   private static final SoyError UNBOUND_GLOBAL =
@@ -54,7 +56,7 @@ public final class SubstituteGlobalsVisitor {
       SoyError.of("''{0}'' is not a member of enum ''{1}''.");
 
   /** Map from compile-time global name to value. */
-  private Map<String, PrimitiveData> compileTimeGlobals;
+  private final ImmutableMap<String, PrimitiveData> compileTimeGlobals;
 
   /** Whether to throw an exception if we encounter an unbound global. */
   private final boolean shouldAssertNoUnboundGlobals;
@@ -70,18 +72,18 @@ public final class SubstituteGlobalsVisitor {
    *     global.
    */
   public SubstituteGlobalsVisitor(
-      @Nullable Map<String, PrimitiveData> compileTimeGlobals,
-      @Nullable SoyTypeRegistry typeRegistry,
+      Map<String, PrimitiveData> compileTimeGlobals,
+      SoyTypeRegistry typeRegistry,
       boolean shouldAssertNoUnboundGlobals,
       ErrorReporter errorReporter) {
-    this.compileTimeGlobals = compileTimeGlobals;
-    this.typeRegistry = typeRegistry;
+    this.compileTimeGlobals = ImmutableMap.copyOf(compileTimeGlobals);
+    this.typeRegistry = checkNotNull(typeRegistry);
     this.shouldAssertNoUnboundGlobals = shouldAssertNoUnboundGlobals;
     this.errorReporter = errorReporter;
   }
 
   /** Runs this pass on the given Soy tree. */
-  public void exec(SoyFileSetNode soyTree) {
+  public void exec(SoyNode soyTree) {
     SoytreeUtils.execOnAllV2Exprs(soyTree, new SubstituteGlobalsInExprVisitor(), errorReporter);
   }
 

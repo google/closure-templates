@@ -17,6 +17,7 @@
 package com.google.template.soy.parsepasses;
 
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyError;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.MsgPlaceholderNode;
@@ -24,7 +25,6 @@ import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.MsgPlaceholderInitialNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
-import com.google.template.soy.soytree.SoySyntaxExceptionUtils;
 
 /**
  * Visitor to verify that all occurrences of the 'phname' attribute are on message placeholders.
@@ -34,6 +34,8 @@ import com.google.template.soy.soytree.SoySyntaxExceptionUtils;
  *
  */
 public final class VerifyPhnameAttrOnlyOnPlaceholdersVisitor extends AbstractSoyNodeVisitor<Void> {
+  private static final SoyError INVALID_PLACEHOLDER =
+      SoyError.of("''phname'' attributes are only valid inside '''{'msg...'' tags");
 
   public VerifyPhnameAttrOnlyOnPlaceholdersVisitor(ErrorReporter errorReporter) {
     super(errorReporter);
@@ -51,11 +53,8 @@ public final class VerifyPhnameAttrOnlyOnPlaceholdersVisitor extends AbstractSoy
 
 
   private void visitMsgPlaceholderInitialContentNodeHelper(MsgPlaceholderInitialNode node) {
-    if (node.getUserSuppliedPhName() != null &&
-        ! (node.getParent() instanceof MsgPlaceholderNode)) {
-      throw SoySyntaxExceptionUtils.createWithNode(
-          "Found 'phname' attribute not on a msg placeholder (tag " + node.toSourceString() + ").",
-          node);
+    if (node.getUserSuppliedPhName() != null && !(node.getParent() instanceof MsgPlaceholderNode)) {
+      errorReporter.report(node.getSourceLocation(), INVALID_PLACEHOLDER);
     }
   }
 

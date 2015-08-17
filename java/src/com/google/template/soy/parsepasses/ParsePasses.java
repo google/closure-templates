@@ -23,18 +23,19 @@ import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.passes.CompilerFilePass;
+import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.types.SoyTypeRegistry;
 
 /**
  * Configures all the parsing passes.
- * 
+ *
  * <p>The parsing passes are a collection of operations that mutate/rewrite parts of the parse tree
  * in trivial/obvious ways.  These passes are logically part of parsing the literal text of the soy
  * file and each one could theoretically be done as part of the parser, but for maintainability it
  * is easier to pull them out into separate passes.  It is expected that each of these passes will
  * mutate the AST in critical ways.
- * 
+ *
  * <p>The default initial parsing passes are:
  * <ul>
  *   <li>{@link RewriteGenderMsgsVisitor}
@@ -44,25 +45,30 @@ import com.google.template.soy.types.SoyTypeRegistry;
  *   <li>{@link RemoveHtmlCommentsVisitor}
  *   <li>{@link ResolveExpressionTypesVisitor}
  *   <li>{@link ResolveNamesVisitor}
+ *   <li>{@link ResolvePackageRelativeCssNamesVisitor}
+ *   <li>{@link VerifyPhnameAttrOnlyOnPlaceholdersVisitor}
+ *   <li>{@link SubstitueGlobalsVisitorPass}
  * </ul>
- * 
- * <p>TODO(lukes): There are a number of passes that belong here, but are run at somewhat arbitrary
- * times.  e.g. {@link ResolvePackageRelativeCssNamesVisitor}.  Move such things here.
  */
 public final class ParsePasses {
   private final ImmutableList<CompilerFilePass> passes;
   private final SoyTypeRegistry registry;
   private final ErrorReporter errorReporter;
   private final SyntaxVersion declaredSyntaxVersion;
+  private final SoyGeneralOptions options;
+  private final boolean allowUnknownGlobals;
   
   private ParsePasses(Builder builder) {
     this.registry = checkNotNull(builder.registry);
     this.errorReporter = checkNotNull(builder.errorReporter);
     this.declaredSyntaxVersion = checkNotNull(builder.declaredSyntaxVersion);
+    this.options = checkNotNull(builder.opts);
+    this.allowUnknownGlobals = builder.allowUnknownGlobals;
 
     ImmutableList.Builder<CompilerFilePass> passesBuilder = ImmutableList.builder();
     // Note: RewriteGenderMsgsVisitor must be run first due to the assertion in
     // MsgNode.getAllExprUnions().
+    // TODO(lukes): document all ordering dependencies between the passes. 
     passesBuilder
         .add(new RewriteGendersPass())
         .add(new RewriteRemaindersPass())
@@ -71,8 +77,11 @@ public final class ParsePasses {
     if (builder.declaredSyntaxVersion == SyntaxVersion.V1_0) {
       passesBuilder.add(new RemoveHtmlCommentsPass());
     }
-    passesBuilder.add(new ResolveNamesPass());
-    passesBuilder.add(new ResolveExpressionTypesPass());
+    passesBuilder.add(new ResolveNamesPass())
+        .add(new ResolveExpressionTypesPass())
+        .add(new ResolvePackageRelativeCssNamesPass())
+        .add(new VerifyPhnameAttrOnlyOnPlaceholdersPass())
+        .add(new SubstitueGlobalsVisitorPass());
     this.passes = passesBuilder.build();
   }
 
@@ -86,6 +95,8 @@ public final class ParsePasses {
     private SoyTypeRegistry registry;
     private ErrorReporter errorReporter;
     private SyntaxVersion declaredSyntaxVersion;
+    private SoyGeneralOptions opts;
+    private boolean allowUnknownGlobals;
 
     public Builder setErrorReporter(ErrorReporter errorReporter) {
       this.errorReporter = checkNotNull(errorReporter);
@@ -99,6 +110,21 @@ public final class ParsePasses {
 
     public Builder setDeclaredSyntaxVersion(SyntaxVersion declaredSyntaxVersion) {
       this.declaredSyntaxVersion = checkNotNull(declaredSyntaxVersion);
+      return this;
+    }
+
+    public Builder setGeneralOptions(SoyGeneralOptions opts) {
+      this.opts = opts;
+      return this;
+    }
+
+    /**
+     * Allows unknown global references.
+     *
+     * <p>This option is only available for backwards compatibility with legacy js only templates.
+     */
+    public Builder allowUnknownGlobals() {
+      this.allowUnknownGlobals = true;
       return this;
     }
 
@@ -150,6 +176,34 @@ public final class ParsePasses {
   private final class ResolveExpressionTypesPass extends CompilerFilePass {
     @Override public void run(SoyFileNode file, IdGenerator nodeIdGen) {
       new ResolveExpressionTypesVisitor(registry, declaredSyntaxVersion, errorReporter).exec(file);
+    }
+  }
+
+  private final class ResolvePackageRelativeCssNamesPass extends CompilerFilePass {
+    @Override
+    public void run(SoyFileNode file, IdGenerator nodeIdGen) {
+      new ResolvePackageRelativeCssNamesVisitor(errorReporter).exec(file);
+    }
+  }
+
+  private final class VerifyPhnameAttrOnlyOnPlaceholdersPass extends CompilerFilePass {
+    @Override
+    public void run(SoyFileNode file, IdGenerator nodeIdGen) {
+      new VerifyPhnameAttrOnlyOnPlaceholdersVisitor(errorReporter).exec(file);
+    }
+  }
+
+  private final class SubstitueGlobalsVisitorPass extends CompilerFilePass {
+    SubstituteGlobalsVisitor substituteGlobalsVisitor =
+        new SubstituteGlobalsVisitor(
+            options.getCompileTimeGlobals(),
+            registry,
+            !allowUnknownGlobals, // shouldAssertNoUnboundGlobals
+            errorReporter);
+
+    @Override
+    public void run(SoyFileNode file, IdGenerator nodeIdGen) {
+      substituteGlobalsVisitor.exec(file);
     }
   }
 }

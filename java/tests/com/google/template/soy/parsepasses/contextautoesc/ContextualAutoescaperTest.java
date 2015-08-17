@@ -2518,9 +2518,11 @@ public final class ContextualAutoescaperTest extends TestCase {
       throws SoyAutoescapeException {
 
     ErrorReporter boom = ExplodingErrorReporter.get();
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(inputs)
-        .errorReporter(boom)
-        .parse();
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(inputs)
+            .errorReporter(boom)
+            .allowUnboundGlobals(true)
+            .parse();
 
     String source = rewrittenSource(soyTree);
     assertThat(source.trim()).isEqualTo(expectedOutput);
@@ -2542,11 +2544,13 @@ public final class ContextualAutoescaperTest extends TestCase {
       soyFileSuppliers[i] = SoyFileSupplier.Factory.create(
           inputs[i], SoyFileKind.SRC, inputs.length == 1 ? "no-path" : "no-path-" + i);
     }
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forSuppliers(soyFileSuppliers)
-        .declaredSyntaxVersion(SyntaxVersion.V1_0)
-        .doRunInitialParsingPasses(true)
-        .doRunCheckingPasses(true)
-        .parse();
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forSuppliers(soyFileSuppliers)
+            .declaredSyntaxVersion(SyntaxVersion.V1_0)
+            .doRunInitialParsingPasses(true)
+            .doRunCheckingPasses(true)
+            .allowUnboundGlobals(true)
+            .parse();
 
     try {
       rewrittenSource(soyTree);

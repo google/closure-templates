@@ -57,14 +57,7 @@ public final class SoyGeneralOptions implements Cloneable {
   /** Whether to automatically mark scripts that appear literally in templates as allowed to run. */
   private boolean supportContentSecurityPolicy;
 
-
-  public SoyGeneralOptions() {
-    declaredSyntaxVersion = null;
-    allowExternalCalls = null;
-    strictAutoescapingRequired = false;
-    compileTimeGlobals = null;
-    supportContentSecurityPolicy = false;
-  }
+  public SoyGeneralOptions() {}
 
   private SoyGeneralOptions(SoyGeneralOptions orig) {
     this.declaredSyntaxVersion = orig.declaredSyntaxVersion;
@@ -201,7 +194,9 @@ public final class SoyGeneralOptions implements Cloneable {
    * Returns the map from compile-time global name to value.
    */
   public ImmutableMap<String, PrimitiveData> getCompileTimeGlobals() {
-    return compileTimeGlobals;
+    return compileTimeGlobals == null
+        ? ImmutableMap.<String, PrimitiveData>of()
+        : compileTimeGlobals;
   }
 
   /**

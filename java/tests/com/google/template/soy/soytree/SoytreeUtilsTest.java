@@ -16,16 +16,15 @@
 
 package com.google.template.soy.soytree;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import com.google.common.io.CharSource;
-import com.google.template.soy.SoyFileSetParser;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
 import com.google.template.soy.base.internal.SoyFileKind;
-import com.google.template.soy.base.internal.StableSoyFileSupplier;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ExplodingErrorReporter;
@@ -177,17 +176,11 @@ public final class SoytreeUtilsTest extends TestCase {
 
 
   public final void testClone() throws Exception {
-    SoyFileSetNode soyTree = new SoyFileSetParser(
-            new SoyTypeRegistry(),
-            null,  // ast cache
-            SyntaxVersion.V2_4,
-            ImmutableList.of(
-                new StableSoyFileSupplier(
-                    CharSource.wrap(SOY_SOURCE_FOR_TESTING_CLONING),
-                    SoyFileKind.SRC,
-                    "test.soy")),
-            ExplodingErrorReporter.get())
-        .parse();
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(SOY_SOURCE_FOR_TESTING_CLONING)
+            .doRunCheckingPasses(true)
+            .declaredSyntaxVersion(SyntaxVersion.V2_4)
+            .parse();
 
     SoyFileSetNode clone = SoytreeUtils.cloneNode(soyTree);
     assertEquals(1, clone.numChildren());
@@ -267,7 +260,7 @@ public final class SoytreeUtilsTest extends TestCase {
 
     List<StandaloneNode> clones = SoytreeUtils.cloneListWithNewIds(
         template.getChildren(), nodeIdGen);
-    assertEquals(numChildren, clones.size());
+    assertThat(clones).hasSize(numChildren);
 
     for (int i = 0; i < numChildren; i++) {
       StandaloneNode clone = clones.get(i);
@@ -308,7 +301,7 @@ public final class SoytreeUtilsTest extends TestCase {
     FindNodeByTypeVisitor<MsgHtmlTagNode> visitor =
         new FindNodeByTypeVisitor<>(MsgHtmlTagNode.class, boom);
     List<MsgHtmlTagNode> msgHtmlTagNodes = visitor.exec(soyFile);
-    assertFalse(msgHtmlTagNodes.isEmpty());
+    assertThat(msgHtmlTagNodes).isNotEmpty();
 
     for (MsgHtmlTagNode origMsgHtmlTagNode : msgHtmlTagNodes) {
       MsgHtmlTagNode clonedMsgHtmlTagNode = SoytreeUtils.cloneNode(origMsgHtmlTagNode);

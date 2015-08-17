@@ -23,9 +23,11 @@ import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ExplodingErrorReporter;
+import com.google.template.soy.parsepasses.ParsePasses;
 import com.google.template.soy.shared.AutoEscapingType;
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.shared.SoyAstCache;
+import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.types.SoyTypeRegistry;
 
@@ -48,6 +50,7 @@ public final class SoyFileSetParserBuilder {
   private SyntaxVersion declaredSyntaxVersion = SyntaxVersion.V2_0;
   @Nullable private SoyAstCache astCache = null;
   private ErrorReporter errorReporter = ExplodingErrorReporter.get(); // See #parse for discussion.
+  private boolean allowUnboundGlobals;
 
   /**
    * Returns a builder that gets its Soy inputs from the given strings, treating each string
@@ -124,20 +127,7 @@ public final class SoyFileSetParserBuilder {
   }
 
   /**
-   * Turns the parser's initial parsing passes on or off. Returns this object, for chaining.
-   *
-   * <p>The initial parsing passes include:
-   * <ul>
-   *   <li>{@link com.google.template.soy.parsepasses.RewriteGenderMsgsVisitor}</li>
-   *   <li>{@link com.google.template.soy.parsepasses.RewriteRemaindersVisitor}</li>
-   *   <li>{@link com.google.template.soy.parsepasses.RewriteNullCoalescingOpVisitor}</li>
-   *   <li>{@link com.google.template.soy.parsepasses.SetDefaultForDelcallAllowsEmptyDefaultVisitor}
-   *   <li>{@link com.google.template.soy.parsepasses.SetFullCalleeNamesVisitor}</li>
-   *   </li>
-   *   <li>{@link com.google.template.soy.parsepasses.RemoveHtmlCommentsVisitor}</li>
-   *   <li>{@link com.google.template.soy.sharedpasses.ResolveExpressionTypesVisitor}</li>
-   *   <li>{@link com.google.template.soy.sharedpasses.ResolveNamesVisitor}</li>
-   * </ul>
+   * Turns the parser's initial parsing passes on or off, see {@link ParsePasses}.
    */
   public SoyFileSetParserBuilder doRunInitialParsingPasses(boolean doRunInitialParsingPasses) {
     this.doRunInitialParsingPasses = doRunInitialParsingPasses;
@@ -157,6 +147,11 @@ public final class SoyFileSetParserBuilder {
    */
   public SoyFileSetParserBuilder typeRegistry(SoyTypeRegistry typeRegistry) {
     this.typeRegistry = typeRegistry;
+    return this;
+  }
+  
+  public SoyFileSetParserBuilder allowUnboundGlobals(boolean allowUnboundGlobals) {
+    this.allowUnboundGlobals = allowUnboundGlobals;
     return this;
   }
 
@@ -183,14 +178,27 @@ public final class SoyFileSetParserBuilder {
    * to {@link #errorReporter}.
    */
   public SoyFileSetNode parse() {
+    ParsePasses parsePasses = null;
+    if (doRunInitialParsingPasses) {
+      ParsePasses.Builder builder =
+          new ParsePasses.Builder()
+              .setDeclaredSyntaxVersion(declaredSyntaxVersion)
+              .setErrorReporter(errorReporter)
+              .setTypeRegistry(typeRegistry)
+              .setGeneralOptions(new SoyGeneralOptions());
+      if (allowUnboundGlobals) {
+        builder.allowUnknownGlobals();
+      }
+      parsePasses = builder.build();
+    }
     return new SoyFileSetParser(
-        typeRegistry,
-        astCache,
-        declaredSyntaxVersion,
-        soyFileSuppliers,
-        errorReporter,
-        doRunInitialParsingPasses,
-        doRunCheckingPasses)
+            typeRegistry,
+            astCache,
+            declaredSyntaxVersion,
+            soyFileSuppliers,
+            errorReporter,
+            parsePasses,
+            doRunCheckingPasses)
         .parse();
   }
 }

@@ -58,6 +58,7 @@ import com.google.template.soy.msgs.restricted.SoyMsgBundleImpl;
 import com.google.template.soy.parseinfo.passes.GenerateParseInfoVisitor;
 import com.google.template.soy.parsepasses.ChangeCallsToPassAllDataVisitor;
 import com.google.template.soy.parsepasses.CheckFunctionCallsVisitor.CheckFunctionCallsVisitorFactory;
+import com.google.template.soy.parsepasses.ParsePasses;
 import com.google.template.soy.parsepasses.contextautoesc.ContentSecurityPolicyPass;
 import com.google.template.soy.parsepasses.contextautoesc.ContextualAutoescaper;
 import com.google.template.soy.parsepasses.contextautoesc.DerivedTemplateUtils;
@@ -73,9 +74,7 @@ import com.google.template.soy.sharedpasses.FindIjParamsVisitor;
 import com.google.template.soy.sharedpasses.FindIjParamsVisitor.IjParamsInfo;
 import com.google.template.soy.sharedpasses.FindTransitiveDepTemplatesVisitor;
 import com.google.template.soy.sharedpasses.FindTransitiveDepTemplatesVisitor.TransitiveDepTemplatesInfo;
-import com.google.template.soy.sharedpasses.ResolvePackageRelativeCssNamesVisitor;
 import com.google.template.soy.sharedpasses.StrictDepsVisitor;
-import com.google.template.soy.sharedpasses.SubstituteGlobalsVisitor;
 import com.google.template.soy.sharedpasses.opti.SimplifyVisitor;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -86,10 +85,7 @@ import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.tofu.SoyTofu;
 import com.google.template.soy.tofu.internal.BaseTofu.BaseTofuFactory;
-import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.SoyTypeProvider;
 import com.google.template.soy.types.SoyTypeRegistry;
-import com.google.template.soy.types.primitive.UnknownType;
 import com.google.template.soy.xliffmsgplugin.XliffMsgPlugin;
 
 import java.io.File;
@@ -693,14 +689,13 @@ public final class SoyFileSet {
    */
   ParseInfo generateParseInfo(String javaPackage, String javaClassNameSource) {
 
-    SyntaxVersion declaredSyntaxVersion =
-        generalOptions.getDeclaredSyntaxVersion(SyntaxVersion.V2_0);
-    SoyFileSetNode soyTree = new SoyFileSetParser(
-        typeRegistry, cache, declaredSyntaxVersion, soyFileSuppliers, errorReporter)
-        .parse();
+    // TODO(lukes): see if we can enforce that globals are provided at compile time here. given that
+    // types have to be, this should be possible.  Currently it is disabled for backwards
+    // compatibility
+    SoyFileSetNode soyTree = parse(
+        SyntaxVersion.V2_0, true /* allow unknown globals */, typeRegistry);
 
     // Do renaming of package-relative class names.
-    new ResolvePackageRelativeCssNamesVisitor(errorReporter).exec(soyTree);
     ImmutableMap<String, String> parseInfo =
         new GenerateParseInfoVisitor(javaPackage, javaClassNameSource, errorReporter).exec(soyTree);
     return new ParseInfo(result(), parseInfo);
@@ -724,15 +719,9 @@ public final class SoyFileSet {
    * @throws SoySyntaxException If a syntax error is found.
    */
   public SoyMsgBundle extractMsgs() throws SoySyntaxException {
-
-    SyntaxVersion declaredSyntaxVersion =
-        generalOptions.getDeclaredSyntaxVersion(SyntaxVersion.V1_0);
-    // Override the type registry with a version that simply returns unknown
-    // for any named type.
-    SoyTypeRegistry typeRegistry = createDummyTypeRegistry();
-    SoyFileSetNode soyTree = new SoyFileSetParser(
-        typeRegistry, cache, declaredSyntaxVersion, soyFileSuppliers, errorReporter)
-        .parse();
+    SoyFileSetNode soyTree =
+        parse(
+            SyntaxVersion.V1_0, true /* allow unknown globals */, SoyTypeRegistry.DEFAULT_UNKNOWN);
     return new ExtractMsgsVisitor(errorReporter).exec(soyTree);
   }
 
@@ -759,13 +748,11 @@ public final class SoyFileSet {
     // user to provide a root set.
 
     if (memoizedExtractedMsgIdsForPruning == null) {
-
-      SyntaxVersion declaredSyntaxVersion =
-          generalOptions.getDeclaredSyntaxVersion(SyntaxVersion.V1_0);
-      SoyTypeRegistry typeRegistry = createDummyTypeRegistry();
-      SoyFileSetNode soyTree = new SoyFileSetParser(
-          typeRegistry, cache, declaredSyntaxVersion, soyFileSuppliers, errorReporter)
-          .parse();
+      SoyFileSetNode soyTree =
+          parse(
+              SyntaxVersion.V1_0,
+              true /* allow unknown globals */,
+              SoyTypeRegistry.DEFAULT_UNKNOWN);
 
       List<TemplateNode> allPublicTemplates = Lists.newArrayList();
       for (SoyFileNode soyFile : soyTree.getChildren()) {
@@ -808,7 +795,6 @@ public final class SoyFileSet {
    * Compiles this Soy file set into a Java object (type {@code SoyTofu}) capable of rendering the
    * compiled templates.
    *
-   * @param tofuOptions The compilation options for the Tofu backend.
    * @return The resulting {@code SoyTofu} object.
    * @throws SoySyntaxException If a syntax error is found.
    */
@@ -817,9 +803,8 @@ public final class SoyFileSet {
     SyntaxVersion declaredSyntaxVersion =
         generalOptions.getDeclaredSyntaxVersion(SyntaxVersion.V2_0);
 
-    SoyFileSetNode soyTree = new SoyFileSetParser(
-        typeRegistry, cache, declaredSyntaxVersion, soyFileSuppliers, errorReporter)
-        .parse();
+    SoyFileSetNode soyTree = parse(SyntaxVersion.V2_0);
+    ((ErrorReporterImpl) errorReporter).throwIfErrorsPresent();
     runMiddleendPasses(soyTree, declaredSyntaxVersion);
 
     // If allowExternalCalls is not explicitly set, then disallow by default for Tofu backend.
@@ -828,13 +813,6 @@ public final class SoyFileSet {
       //(new AssertNoExternalCallsVisitor()).exec(soyTree);
     }
 
-    // Note: Globals should have been substituted already. The pass below is just a check.
-    new SubstituteGlobalsVisitor(
-        generalOptions.getCompileTimeGlobals(),
-        typeRegistry,
-        true /* shouldAssertNoUnboundGlobals */,
-        errorReporter)
-        .exec(soyTree);
     // Clear the SoyDoc strings because they use unnecessary memory.
     new ClearSoyDocStringsVisitor(errorReporter).exec(soyTree);
 
@@ -865,31 +843,12 @@ public final class SoyFileSet {
     }
     SyntaxVersion declaredSyntaxVersion =
         generalOptions.getDeclaredSyntaxVersion(SyntaxVersion.V2_0);
-    Checkpoint checkpoint = errorReporter.checkpoint();
-    SoyFileSetNode soyTree = new SoyFileSetParser(
-        typeRegistry, cache, declaredSyntaxVersion, soyFileSuppliers, errorReporter)
-        .parse();
-    if (errorReporter.errorsSince(checkpoint)) {
-      ((ErrorReporterImpl) errorReporter).throwIfErrorsPresent();
-    }
+    SoyFileSetNode soyTree = parse(SyntaxVersion.V2_0);
+    ((ErrorReporterImpl) errorReporter).throwIfErrorsPresent();
 
     runMiddleendPasses(soyTree, declaredSyntaxVersion);
     new StrictDepsVisitor(errorReporter).exec(soyTree);
-    if (errorReporter.errorsSince(checkpoint)) {
-      ((ErrorReporterImpl) errorReporter).throwIfErrorsPresent();
-    }
-
-    // Note: Globals should have been substituted already. The pass below is just a check.
-    new SubstituteGlobalsVisitor(
-        generalOptions.getCompileTimeGlobals(),
-        typeRegistry,
-        true /* shouldAssertNoUnboundGlobals */,
-        errorReporter)
-        .exec(soyTree);
-
-    if (errorReporter.errorsSince(checkpoint)) {
-      ((ErrorReporterImpl) errorReporter).throwIfErrorsPresent();
-    }
+    ((ErrorReporterImpl) errorReporter).throwIfErrorsPresent();
 
     TemplateRegistry registry = new TemplateRegistry(soyTree, errorReporter);
     Optional<CompiledTemplates> templates =
@@ -898,9 +857,7 @@ public final class SoyFileSet {
             // if there is an AST cache, assume we are in 'dev mode' and trigger lazy compilation.
             cache != null,
             errorReporter);
-    if (errorReporter.errorsSince(checkpoint)) {
-      ((ErrorReporterImpl) errorReporter).throwIfErrorsPresent();
-    }
+    ((ErrorReporterImpl) errorReporter).throwIfErrorsPresent();
     CompiledTemplates compiledTemplates = templates.get();
     return soyTemplatesFactory.create(
         compiledTemplates,
@@ -962,10 +919,11 @@ public final class SoyFileSet {
     }
     SyntaxVersion declaredSyntaxVersion =
         generalOptions.getDeclaredSyntaxVersion(SyntaxVersion.V2_0);
-
-    SoyFileSetNode soyTree = new SoyFileSetParser(
-        typeRegistry, cache, declaredSyntaxVersion, soyFileSuppliers, errorReporter)
-        .parse();
+    // JS has traditionally allowed unknown globals, as a way for soy to reference normal js enums
+    // and constants.  For consistency/reusability of templates it would be nice to not allow that
+    // but the cat is out of the bag.
+    SoyFileSetNode soyTree =
+        parse(SyntaxVersion.V2_0, true /* allow unknown globals */, typeRegistry);
     runMiddleendPasses(soyTree, declaredSyntaxVersion);
 
     return jsSrcMainProvider.get().genJsSrc(soyTree, jsSrcOptions, msgBundle);
@@ -998,14 +956,14 @@ public final class SoyFileSet {
         generalOptions.getDeclaredSyntaxVersion(SyntaxVersion.V2_0);
 
     Checkpoint checkpoint = errorReporter.checkpoint();
-    SoyFileSetNode soyTree = new SoyFileSetParser(
-        typeRegistry, cache, declaredSyntaxVersion, soyFileSuppliers, errorReporter)
-        .parse();
+
+    // Allow unknown globals for backwards compatibility
+    SoyFileSetNode soyTree =
+        parse(SyntaxVersion.V2_0, true /* allow unknown globals */, typeRegistry);
     if (errorReporter.errorsSince(checkpoint)) {
       return failure();
     }
 
-    checkpoint = errorReporter.checkpoint();
     runMiddleendPasses(soyTree, declaredSyntaxVersion);
     if (errorReporter.errorsSince(checkpoint)) {
       return failure();
@@ -1063,9 +1021,7 @@ public final class SoyFileSet {
         generalOptions.getDeclaredSyntaxVersion(SyntaxVersion.V2_2);
 
     Checkpoint checkpoint = errorReporter.checkpoint();
-    SoyFileSetNode soyTree = new SoyFileSetParser(
-        typeRegistry, cache, declaredSyntaxVersion, soyFileSuppliers, errorReporter)
-        .parse();
+    SoyFileSetNode soyTree = parse(SyntaxVersion.V2_2);
     if (errorReporter.errorsSince(checkpoint)) {
       return failure();
     }
@@ -1074,14 +1030,6 @@ public final class SoyFileSet {
     if (errorReporter.errorsSince(checkpoint)) {
       return failure();
     }
-    // TODO(lukes): move into a standard pass (in ParsePasses)
-    // Note: Globals should have been substituted already. The pass below is just a check.
-    new SubstituteGlobalsVisitor(
-        generalOptions.getCompileTimeGlobals(),
-        typeRegistry,
-        true /* shouldAssertNoUnboundGlobals */,
-        errorReporter)
-        .exec(soyTree);
 
     pySrcMainProvider.get().genPyFiles(
         soyTree, pySrcOptions, outputPathFormat, inputFilePathPrefix);
@@ -1101,6 +1049,41 @@ public final class SoyFileSet {
     Preconditions.checkState(!errors.isEmpty());
     return new CompilationResult(
         errors, new ErrorPrettyPrinter(new SnippetFormatter(soyFileSuppliers)));
+  }
+
+  // Parse the current file set with the given default syntax version.
+  private SoyFileSetNode parse(SyntaxVersion defaultVersion) {
+    return parse(defaultVersion, false, typeRegistry);
+  }
+
+  /**
+   * A parse method that allows disabling certain features.  All callers should prefer the
+   * {@link #parse(SyntaxVersion)} overload whenever possible.
+   *
+   * @param defaultVersion The default declared syntax version
+   * @param allowUknownGlobals Whether to allow unknown globals
+   * @param typeRegistry The type registry to use
+   */
+  private SoyFileSetNode parse(
+      SyntaxVersion defaultVersion, boolean allowUknownGlobals, SoyTypeRegistry typeRegistry) {
+    SyntaxVersion declaredSyntaxVersion = generalOptions.getDeclaredSyntaxVersion(defaultVersion);
+    ParsePasses.Builder builder =
+        new ParsePasses.Builder()
+            .setTypeRegistry(typeRegistry)
+            .setGeneralOptions(generalOptions)
+            .setDeclaredSyntaxVersion(declaredSyntaxVersion)
+            .setErrorReporter(errorReporter);
+    if (allowUknownGlobals) {
+      builder.allowUnknownGlobals();
+    }
+    return new SoyFileSetParser(
+            typeRegistry,
+            cache,
+            declaredSyntaxVersion,
+            soyFileSuppliers,
+            builder.build(),
+            errorReporter)
+        .parse();
   }
 
   // TODO(gboyer): There are several fields on this class that end up saving around some state, and
@@ -1127,9 +1110,6 @@ public final class SoyFileSet {
     // need to be injected, and that feels like overkill at this time.
     checkFunctionCallsVisitorFactory.create(declaredSyntaxVersion, errorReporter).exec(soyTree);
 
-    // Do renaming of package-relative class names.
-    new ResolvePackageRelativeCssNamesVisitor(errorReporter).exec(soyTree);
-
     // If disallowing external calls, perform the check.
     if (generalOptions.allowExternalCalls() == Boolean.FALSE) {
       (new StrictDepsVisitor(errorReporter)).exec(soyTree);
@@ -1138,16 +1118,6 @@ public final class SoyFileSet {
     // If requiring strict autoescaping, check and enforce it.
     if (generalOptions.isStrictAutoescapingRequired()) {
       (new AssertStrictAutoescapingVisitor(errorReporter)).exec(soyTree);
-    }
-
-    // Handle CSS commands (if not backend-specific) and substitute compile-time globals.
-    if (generalOptions.getCompileTimeGlobals() != null || typeRegistry != null) {
-      new SubstituteGlobalsVisitor(
-          generalOptions.getCompileTimeGlobals(),
-          typeRegistry,
-          false /* shouldAssertNoUnboundGlobals */,
-          errorReporter)
-          .exec(soyTree);
     }
 
     // Run contextual escaping after CSS and substitutions have been done.
@@ -1200,15 +1170,5 @@ public final class SoyFileSet {
         containingFile.get(DerivedTemplateUtils.getBaseName(name)).addChild(extraTemplate);
       }
     }
-  }
-
-  private SoyTypeRegistry createDummyTypeRegistry() {
-    return new SoyTypeRegistry(ImmutableSet.<SoyTypeProvider>of(
-      new SoyTypeProvider() {
-        @Override
-        public SoyType getType(String typeName, SoyTypeRegistry typeRegistry) {
-          return UnknownType.getInstance();
-        }
-      }));
   }
 }

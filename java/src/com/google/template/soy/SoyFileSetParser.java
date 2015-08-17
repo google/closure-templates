@@ -16,6 +16,8 @@
 
 package com.google.template.soy;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Sets;
@@ -28,7 +30,6 @@ import com.google.template.soy.parsepasses.CheckCallsVisitor;
 import com.google.template.soy.parsepasses.CheckDelegatesVisitor;
 import com.google.template.soy.parsepasses.InferRequiredSyntaxVersionVisitor;
 import com.google.template.soy.parsepasses.ParsePasses;
-import com.google.template.soy.parsepasses.VerifyPhnameAttrOnlyOnPlaceholdersVisitor;
 import com.google.template.soy.shared.SoyAstCache;
 import com.google.template.soy.shared.SoyAstCache.VersionedFile;
 import com.google.template.soy.sharedpasses.CheckCallingParamTypesVisitor;
@@ -87,10 +88,17 @@ public final class SoyFileSetParser {
       @Nullable SoyAstCache astCache,
       SyntaxVersion declaredSyntaxVersion,
       List<? extends SoyFileSupplier> soyFileSuppliers,
+      ParsePasses parsePasses,
       ErrorReporter errorReporter) {
     // By default, run all the parsing and checking passes.
     this(
-        typeRegistry, astCache, declaredSyntaxVersion, soyFileSuppliers, errorReporter, true, true);
+        typeRegistry,
+        astCache,
+        declaredSyntaxVersion,
+        soyFileSuppliers,
+        errorReporter,
+        checkNotNull(parsePasses),
+        true);
   }
 
   /**
@@ -99,7 +107,7 @@ public final class SoyFileSetParser {
    * @param declaredSyntaxVersion User-declared syntax version.
    * @param soyFileSuppliers The suppliers for the Soy files. Each must have a unique file name.
    * @param errorReporter For reporting errors during parsing.
-   * @param doRunInitialParsingPasses Whether to run initial parsing passes.
+   * @param parsingPasses The parsing passes to run.
    * @param doRunCheckingPasses Whether to run checking passes.
    */
   public SoyFileSetParser(
@@ -108,12 +116,12 @@ public final class SoyFileSetParser {
       SyntaxVersion declaredSyntaxVersion,
       List<? extends SoyFileSupplier> soyFileSuppliers,
       ErrorReporter errorReporter,
-      boolean doRunInitialParsingPasses,
+      @Nullable ParsePasses parsingPasses,
       boolean doRunCheckingPasses) {
     Preconditions.checkArgument(
-        (astCache == null) || (doRunInitialParsingPasses && doRunCheckingPasses),
-        "AST caching is only allowed when all parsing and checking passes are enabled, to avoid " +
-            "caching inconsistent versions");
+        (astCache == null) || (parsingPasses != null && doRunCheckingPasses),
+        "AST caching is only allowed when all parsing and checking passes are enabled, to avoid "
+            + "caching inconsistent versions");
     this.typeRegistry = typeRegistry;
     this.cache = astCache;
     this.declaredSyntaxVersion = declaredSyntaxVersion;
@@ -121,14 +129,7 @@ public final class SoyFileSetParser {
     this.errorReporter = errorReporter;
     verifyUniquePaths(soyFileSuppliers);
 
-    this.parsingPasses =
-        doRunInitialParsingPasses
-            ? new ParsePasses.Builder()
-                  .setDeclaredSyntaxVersion(declaredSyntaxVersion)
-                  .setErrorReporter(errorReporter)
-                  .setTypeRegistry(typeRegistry)
-                  .build()
-            : null;
+    this.parsingPasses = parsingPasses;
     this.doRunCheckingPasses = doRunCheckingPasses;
   }
 
@@ -242,8 +243,6 @@ public final class SoyFileSetParser {
    * Private helper for {@code parseWithVersion()} that operate on single files.
    */
   private void runSingleFileCheckingPasses(SoyFileNode fileNode) {
-    new VerifyPhnameAttrOnlyOnPlaceholdersVisitor(errorReporter)
-        .exec(fileNode);
     new ReportSyntaxVersionErrorsVisitor(declaredSyntaxVersion, true, errorReporter)
         .exec(fileNode);
     // Check for errors based on inferred (as opposed to declared) required syntax version.

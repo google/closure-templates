@@ -32,14 +32,15 @@ import com.google.template.soy.data.restricted.PrimitiveData;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.parsepasses.SubstituteGlobalsVisitor;
 import com.google.template.soy.pysrc.internal.GenPyExprsVisitor.GenPyExprsVisitorFactory;
 import com.google.template.soy.pysrc.internal.TranslateToPyExprVisitor.TranslateToPyExprVisitorFactory;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.shared.SharedTestUtils;
-import com.google.template.soy.sharedpasses.SubstituteGlobalsVisitor;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
+import com.google.template.soy.types.SoyTypeRegistry;
 
 import java.util.List;
 import java.util.Map;
@@ -146,11 +147,16 @@ public final class SoyExprForPySubject extends Subject<SoyExprForPySubject, Stri
    */
   public void translatesTo(PyExpr expectedPyExpr, Class<? extends PyExpr> expectedClass) {
     String soyExpr = String.format("{print %s}", getSubject());
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(soyExpr).parse();
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forTemplateContents(soyExpr).allowUnboundGlobals(true).parse();
     if (this.globals != null) {
       ErrorReporter boom = ExplodingErrorReporter.get();
-      new SubstituteGlobalsVisitor(globals, null /* typeRegistry */,
-          true /* shouldAssertNoUnboundGlobals */, boom).exec(soyTree);
+      new SubstituteGlobalsVisitor(
+              globals,
+              new SoyTypeRegistry() /* typeRegistry */,
+              true /* shouldAssertNoUnboundGlobals */,
+              boom)
+          .exec(soyTree);
     }
     PrintNode node = (PrintNode)SharedTestUtils.getNode(soyTree, 0);
     ExprNode exprNode = node.getExprUnion().getExpr();

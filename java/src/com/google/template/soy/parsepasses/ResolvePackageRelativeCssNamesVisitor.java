@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.sharedpasses;
+package com.google.template.soy.parsepasses;
 
 import com.google.common.base.CaseFormat;
 import com.google.template.soy.basetree.CopyState;
@@ -30,7 +30,7 @@ import com.google.template.soy.soytree.TemplateNode;
 /**
  * Visitor class which converts package-relative CSS class names to absolute names.
  */
-public final class ResolvePackageRelativeCssNamesVisitor extends AbstractSoyNodeVisitor<Void> {
+final class ResolvePackageRelativeCssNamesVisitor extends AbstractSoyNodeVisitor<Void> {
 
     private String packagePrefix = null;
 

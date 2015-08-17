@@ -86,10 +86,7 @@ public final class ChangeCallsToPassAllDataVisitorTest extends TestCase {
         "{/call}\n";
     testUnchangedCallHelper(callCode);
 
-    callCode =
-        "{call .foo}\n" +
-        "  {param xxx: xxx /}\n" +
-        "{/call}\n";
+    callCode = "{call .foo}\n" + "  {param xxx: 'xxx' /}\n" + "{/call}\n";
     testUnchangedCallHelper(callCode);
 
     callCode =

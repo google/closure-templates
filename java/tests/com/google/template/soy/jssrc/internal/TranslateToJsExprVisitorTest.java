@@ -274,13 +274,17 @@ public final class TranslateToJsExprVisitorTest extends TestCase {
    */
   private void assertTranslation(
       String soyExpr, JsExpr expectedJsExpr, SoyJsSrcOptions jsSrcOptions) {
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(
-        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n" +
-        "/***/\n" +
-        "{template .aaa}\n" +
-        "{print \n" + soyExpr + "}\n" +
-        "{/template}\n")
-        .parse();
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(
+                "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
+                    + "/***/\n"
+                    + "{template .aaa}\n"
+                    + "{print \n"
+                    + soyExpr
+                    + "}\n"
+                    + "{/template}\n")
+            .allowUnboundGlobals(true)
+            .parse();
     List<PrintNode> printNodes = SoytreeUtils.getAllNodesOfType(soyTree, PrintNode.class);
     ExprNode exprNode = printNodes.get(0).getExprUnion().getExpr();
     JsExpr actualJsExpr = new TranslateToJsExprVisitor(

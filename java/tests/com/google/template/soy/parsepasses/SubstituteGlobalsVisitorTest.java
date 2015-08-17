@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.sharedpasses;
+package com.google.template.soy.parsepasses;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -67,10 +67,10 @@ public final class SubstituteGlobalsVisitorTest extends TestCase {
             "BOO", StringData.forValue("boo"), "foo.GOO", StringData.forValue("goo"),
             "foo.MOO", StringData.forValue("moo"));
     new SubstituteGlobalsVisitor(
-        globals,
-        null /* typeRegistry */,
-        false /* shouldAssertNoUnboundGlobals */,
-        boom)
+            globals,
+            new SoyTypeRegistry() /* typeRegistry */,
+            false /* shouldAssertNoUnboundGlobals */,
+            boom)
         .new SubstituteGlobalsInExprVisitor()
         .exec(expr);
 
@@ -136,10 +136,10 @@ public final class SubstituteGlobalsVisitorTest extends TestCase {
     // Create a registry with the enum type
     SoyTypeRegistry typeRegistry = new SoyTypeRegistry(ImmutableSet.of(enumTypeProvider));
     new SubstituteGlobalsVisitor(
-        null /* compileTimeGlobals */,
-        typeRegistry,
-        false /* shouldAssertNoUnboundGlobals */,
-        boom)
+            ImmutableMap.<String, PrimitiveData>of() /* compileTimeGlobals */,
+            typeRegistry,
+            false /* shouldAssertNoUnboundGlobals */,
+            boom)
         .new SubstituteGlobalsInExprVisitor()
         .exec(expr);
 
@@ -161,9 +161,7 @@ public final class SubstituteGlobalsVisitorTest extends TestCase {
 
     FormattingErrorReporter errorReporter = new FormattingErrorReporter();
     new SubstituteGlobalsVisitor(
-        globals, null /* typeRegistry */,
-        true /* shouldAssertNoUnboundGlobals */,
-        errorReporter)
+            globals, new SoyTypeRegistry(), true /* shouldAssertNoUnboundGlobals */, errorReporter)
         .new SubstituteGlobalsInExprVisitor()
         .exec(expr);
 
