@@ -18,7 +18,6 @@ package com.google.template.soy.sharedpasses.opti;
 
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueHelper;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.shared.restricted.SoyPurePrintDirective;
 import com.google.template.soy.sharedpasses.render.Environment;
@@ -56,20 +55,17 @@ final class PrerenderVisitor extends RenderVisitor {
    *     directive).
    * @param preevalVisitorFactory Factory for creating an instance of PreevalVisitor.
    * @param outputBuf The Appendable to append the output to.
-   * @param errorReporter For reporting errors.
    * @param templateRegistry A registry of all templates.
    */
   PrerenderVisitor(
       Map<String, SoyJavaPrintDirective> soyJavaDirectivesMap,
       PreevalVisitorFactory preevalVisitorFactory,
       Appendable outputBuf,
-      ErrorReporter errorReporter,
       @Nullable TemplateRegistry templateRegistry) {
     super(
         soyJavaDirectivesMap,
         preevalVisitorFactory,
         outputBuf,
-        errorReporter,
         templateRegistry,
         SoyValueHelper.EMPTY_DICT,
         null /* ijData */,
@@ -86,7 +82,6 @@ final class PrerenderVisitor extends RenderVisitor {
         soyJavaDirectivesMap,
         (PreevalVisitorFactory) evalVisitorFactory,
         outputBuf,
-        errorReporter,
         templateRegistry);
   }
 

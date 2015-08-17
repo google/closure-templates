@@ -17,7 +17,6 @@
 package com.google.template.soy.sharedpasses.render;
 
 import com.google.template.soy.data.SoyRecord;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
@@ -48,17 +47,12 @@ public final class RenderVisitorFactory {
   /** Factory for creating an instance of EvalVisitor. */
   private final EvalVisitorFactory evalVisitorFactory;
 
-  /** For reporting errors. */
-  private final ErrorReporter errorReporter;
-
   @Inject
   public RenderVisitorFactory(
       @Shared Map<String, SoyJavaPrintDirective> soyJavaDirectivesMap,
-      EvalVisitorFactory evalVisitorFactory,
-      ErrorReporter errorReporter) {
+      EvalVisitorFactory evalVisitorFactory) {
     this.soyJavaDirectivesMap = soyJavaDirectivesMap;
     this.evalVisitorFactory = evalVisitorFactory;
-    this.errorReporter = errorReporter;
   }
 
 
@@ -87,7 +81,6 @@ public final class RenderVisitorFactory {
         soyJavaDirectivesMap,
         evalVisitorFactory,
         outputBuf,
-        errorReporter,
         templateRegistry,
         data,
         ijData,

@@ -17,7 +17,6 @@
 package com.google.template.soy.tofu.internal;
 
 import com.google.template.soy.data.SoyRecord;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
@@ -62,7 +61,6 @@ class TofuRenderVisitorFactory {
    * @param outputBuf The Appendable to append the output to.
    * @param templateRegistry A registry of all templates.
    * @param data The current template data.
-   * @param errorReporter For reporting errors during the visit.
    * @param ijData The current injected data.
    * @param activeDelPackageNames The set of active delegate package names. Allowed to be null
    *     when known to be irrelevant, i.e. when not using delegates feature.
@@ -76,7 +74,6 @@ class TofuRenderVisitorFactory {
       Appendable outputBuf,
       TemplateRegistry templateRegistry,
       SoyRecord data,
-      ErrorReporter errorReporter,
       @Nullable SoyRecord ijData,
       @Nullable Set<String> activeDelPackageNames,
       @Nullable SoyMsgBundle msgBundle,
@@ -87,7 +84,6 @@ class TofuRenderVisitorFactory {
         soyJavaDirectivesMap,
         tofuEvalVisitorFactory,
         outputBuf,
-        errorReporter,
         templateRegistry,
         data,
         ijData,

@@ -19,7 +19,6 @@ package com.google.template.soy.sharedpasses.opti;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueHelper;
 import com.google.template.soy.data.restricted.UndefinedData;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
@@ -49,14 +48,12 @@ final class PreevalVisitor extends EvalVisitor {
    * @param valueHelper Instance of SoyValueHelper to use.
    * @param soyJavaFunctionsMap Map of all SoyJavaFunctions (name to function).
    * @param env The current environment.
-   * @param errorReporter For reporting errors.
    */
   PreevalVisitor(
       SoyValueHelper valueHelper,
       Map<String, SoyJavaFunction> soyJavaFunctionsMap,
-      Environment env,
-      ErrorReporter errorReporter) {
-    super(valueHelper, soyJavaFunctionsMap, null /* ijData */, env, errorReporter);
+      Environment env) {
+    super(valueHelper, soyJavaFunctionsMap, null /* ijData */, env);
   }
 
 

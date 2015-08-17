@@ -23,7 +23,7 @@ import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.ImmutableSetMultimap;
+import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.io.CharSource;
@@ -838,9 +838,10 @@ public final class SoyFileSet {
     // Clear the SoyDoc strings because they use unnecessary memory.
     new ClearSoyDocStringsVisitor(errorReporter).exec(soyTree);
 
+    TemplateRegistry registry = new TemplateRegistry(soyTree, errorReporter);
     ((ErrorReporterImpl) errorReporter).throwIfErrorsPresent();
 
-    return baseTofuFactory.create(soyTree, errorReporter);
+    return baseTofuFactory.create(registry, getTransitiveIjs(soyTree, registry));
   }
 
   /**
@@ -908,19 +909,18 @@ public final class SoyFileSet {
         getTransitiveIjs(soyTree, registry));
   }
 
-  private ImmutableSetMultimap<String, String> getTransitiveIjs(
+  private ImmutableMap<String, ImmutableSortedSet<String>> getTransitiveIjs(
       SoyFileSetNode soyTree, TemplateRegistry registry) {
     ImmutableMap<TemplateNode, IjParamsInfo> templateToIjParamsInfoMap =
         new FindIjParamsVisitor(registry, errorReporter)
             .execOnAllTemplates(soyTree);
-    ImmutableSetMultimap.Builder<String, String> templateToTranstivieIjParams =
-        ImmutableSetMultimap.builder();
+    ImmutableMap.Builder<String, ImmutableSortedSet<String>> templateToTransitiveIjParams =
+        ImmutableMap.builder();
     for (Map.Entry<TemplateNode, IjParamsInfo> entry : templateToIjParamsInfoMap.entrySet()) {
-      templateToTranstivieIjParams.putAll(
-          entry.getKey().getTemplateName(),
-          entry.getValue().ijParamSet);
+      templateToTransitiveIjParams.put(
+          entry.getKey().getTemplateName(), entry.getValue().ijParamSet);
     }
-    return templateToTranstivieIjParams.build();
+    return templateToTransitiveIjParams.build();
   }
 
   /**

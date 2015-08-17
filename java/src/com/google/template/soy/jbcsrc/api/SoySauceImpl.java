@@ -25,8 +25,7 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.ImmutableSetMultimap;
-import com.google.common.collect.SetMultimap;
+import com.google.common.collect.ImmutableSortedSet;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyRecord;
@@ -85,13 +84,19 @@ public final class SoySauceImpl implements SoySauce {
     }
 
     public SoySauceImpl create(
-        CompiledTemplates templates, 
-        TemplateRegistry registry, 
-        SoyMsgBundle defaultMsgBundle, 
-        SetMultimap<String, String> templateToTransitiveUsedIjParams) {
-      return new SoySauceImpl(templates, registry, defaultMsgBundle,
-          templateToTransitiveUsedIjParams, apiCallScopeProvider, converterProvider.get(),
-          functionsProvider.get(), printDirectivesProvider.get());
+        CompiledTemplates templates,
+        TemplateRegistry registry,
+        SoyMsgBundle defaultMsgBundle,
+        ImmutableMap<String, ImmutableSortedSet<String>> templateToTransitiveUsedIjParams) {
+      return new SoySauceImpl(
+          templates,
+          registry,
+          defaultMsgBundle,
+          templateToTransitiveUsedIjParams,
+          apiCallScopeProvider,
+          converterProvider.get(),
+          functionsProvider.get(),
+          printDirectivesProvider.get());
     }
   }
   
@@ -102,21 +107,20 @@ public final class SoySauceImpl implements SoySauce {
   private final SoyValueHelper converter;
   private final ImmutableMap<String, SoyJavaFunction> functions;
   private final ImmutableMap<String, SoyJavaPrintDirective> printDirectives;
-  private final ImmutableSetMultimap<String, String> templateToTransitiveUsedIjParams;
+  private final ImmutableMap<String, ImmutableSortedSet<String>> templateToTransitiveUsedIjParams;
 
   private SoySauceImpl(
       CompiledTemplates templates,
       TemplateRegistry registry,
       SoyMsgBundle defaultMsgBundle,
-      SetMultimap<String, String> templateToTransitiveUsedIjParams,
+      ImmutableMap<String, ImmutableSortedSet<String>> templateToTransitiveUsedIjParams,
       GuiceSimpleScope apiCallScope,
       SoyValueHelper converter,
       Map<String, SoyJavaFunction> functions,
       Map<String, SoyJavaPrintDirective> printDirectives) {
     this.templates = checkNotNull(templates);
     this.defaultMsgBundle = replaceLocale(defaultMsgBundle);
-    this.templateToTransitiveUsedIjParams = 
-        ImmutableSetMultimap.copyOf(templateToTransitiveUsedIjParams);  
+    this.templateToTransitiveUsedIjParams = templateToTransitiveUsedIjParams;
     this.apiCallScope = checkNotNull(apiCallScope);
     this.converter = checkNotNull(converter);
     this.functions = ImmutableMap.copyOf(functions);
@@ -144,8 +148,13 @@ public final class SoySauceImpl implements SoySauce {
     return new SoyMsgBundleImpl("en", builder.build());
   }
 
-  @Override public ImmutableSet<String> getTransitiveIjParamsForTemplate(String templateName) {
-    return templateToTransitiveUsedIjParams.get(templateName);  
+  @Override
+  public ImmutableSortedSet<String> getTransitiveIjParamsForTemplate(String templateName) {
+    ImmutableSortedSet<String> ijParams = templateToTransitiveUsedIjParams.get(templateName);
+    if (ijParams == null) {
+      throw new IllegalArgumentException("Template '" + templateName + "' not found.");
+    }
+    return ijParams;
   }
 
   @Override public RendererImpl renderTemplate(String template) {

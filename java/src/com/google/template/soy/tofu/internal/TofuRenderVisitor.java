@@ -17,7 +17,6 @@
 package com.google.template.soy.tofu.internal;
 
 import com.google.template.soy.data.SoyRecord;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
@@ -45,7 +44,6 @@ final class TofuRenderVisitor extends RenderVisitor {
    * @param soyJavaDirectivesMap Map of all SoyJavaPrintDirectives (name to directive).
    * @param tofuEvalVisitorFactory Factory for creating an instance of TofuEvalVisitor.
    * @param outputBuf The Appendable to append the output to.
-   * @param errorReporter For reporting errors.
    * @param templateRegistry A registry of all templates. Should never be null (except in some unit
    *     tests).
    * @param data The current template data.
@@ -57,11 +55,10 @@ final class TofuRenderVisitor extends RenderVisitor {
    * @param xidRenamingMap The 'xid' renaming map, or null if not applicable.
    * @param cssRenamingMap The CSS renaming map, or null if not applicable.
    */
-  protected TofuRenderVisitor(
+  TofuRenderVisitor(
       Map<String, SoyJavaPrintDirective> soyJavaDirectivesMap,
       TofuEvalVisitorFactory tofuEvalVisitorFactory,
       Appendable outputBuf,
-      ErrorReporter errorReporter,
       @Nullable TemplateRegistry templateRegistry,
       SoyRecord data,
       @Nullable SoyRecord ijData,
@@ -73,7 +70,6 @@ final class TofuRenderVisitor extends RenderVisitor {
         soyJavaDirectivesMap,
         tofuEvalVisitorFactory,
         outputBuf,
-        errorReporter,
         templateRegistry,
         data,
         ijData,
@@ -89,7 +85,6 @@ final class TofuRenderVisitor extends RenderVisitor {
         soyJavaDirectivesMap,
         (TofuEvalVisitorFactory) evalVisitorFactory,
         outputBuf,
-        errorReporter,
         templateRegistry,
         data,
         ijData,

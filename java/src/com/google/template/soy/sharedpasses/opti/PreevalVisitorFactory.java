@@ -19,7 +19,6 @@ package com.google.template.soy.sharedpasses.opti;
 import com.google.common.base.Preconditions;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueHelper;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.shared.internal.SharedModule.Shared;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.sharedpasses.render.Environment;
@@ -46,25 +45,19 @@ public final class PreevalVisitorFactory implements EvalVisitorFactory {
   /** Map of all SoyJavaFunctions (name to function). */
   private final Map<String, SoyJavaFunction> soyJavaFunctionsMap;
 
-  /** For reporting errors. */
-  private final ErrorReporter errorReporter;
-
   /**
    * @param soyJavaFunctionsMap Map of all SoyJavaFunctions (name to function).
    */
   @Inject
   public PreevalVisitorFactory(
-      SoyValueHelper valueHelper,
-      @Shared Map<String, SoyJavaFunction> soyJavaFunctionsMap,
-      ErrorReporter errorReporter) {
+      SoyValueHelper valueHelper, @Shared Map<String, SoyJavaFunction> soyJavaFunctionsMap) {
     this.valueHelper = valueHelper;
     this.soyJavaFunctionsMap = soyJavaFunctionsMap;
-    this.errorReporter = errorReporter;
   }
 
 
   public PreevalVisitor create(Environment env) {
-    return new PreevalVisitor(valueHelper, soyJavaFunctionsMap,  env, errorReporter);
+    return new PreevalVisitor(valueHelper, soyJavaFunctionsMap, env);
   }
 
 
@@ -74,6 +67,6 @@ public final class PreevalVisitorFactory implements EvalVisitorFactory {
     // PreevalVisitor cannot handle ijData references.
     Preconditions.checkArgument(ijData == null);
 
-    return new PreevalVisitor(valueHelper, soyJavaFunctionsMap, env, errorReporter);
+    return new PreevalVisitor(valueHelper, soyJavaFunctionsMap, env);
   }
 }

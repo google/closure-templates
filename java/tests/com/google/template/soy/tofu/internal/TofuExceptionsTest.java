@@ -20,6 +20,8 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
 
 import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.util.concurrent.Futures;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -32,6 +34,7 @@ import com.google.template.soy.shared.internal.ErrorReporterModule;
 import com.google.template.soy.shared.internal.SharedModule;
 import com.google.template.soy.sharedpasses.SharedPassesModule;
 import com.google.template.soy.soytree.SoyFileSetNode;
+import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.tofu.SoyTofu;
 import com.google.template.soy.tofu.SoyTofuException;
 import com.google.template.soy.tofu.internal.BaseTofu.BaseTofuFactory;
@@ -76,8 +79,12 @@ public final class TofuExceptionsTest extends TestCase {
 
   @Override protected void setUp() throws Exception {
     SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(SOY_FILE).parse();
-    tofu = INJECTOR.getInstance(BaseTofuFactory.class)
-        .create(soyTree, ExplodingErrorReporter.get());
+    tofu =
+        INJECTOR
+            .getInstance(BaseTofuFactory.class)
+            .create(
+                new TemplateRegistry(soyTree, ExplodingErrorReporter.get()),
+                ImmutableMap.<String, ImmutableSortedSet<String>>of());
   }
 
   public void testExceptions_undefined() throws Exception {

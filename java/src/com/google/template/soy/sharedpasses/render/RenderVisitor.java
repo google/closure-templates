@@ -39,7 +39,7 @@ import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
-import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.jbcsrc.api.RenderResult;
@@ -183,7 +183,6 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       Map<String, SoyJavaPrintDirective> soyJavaDirectivesMap,
       EvalVisitorFactory evalVisitorFactory,
       Appendable outputBuf,
-      ErrorReporter errorReporter,
       @Nullable TemplateRegistry templateRegistry,
       SoyRecord data,
       @Nullable SoyRecord ijData,
@@ -191,7 +190,9 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       @Nullable SoyMsgBundle msgBundle,
       @Nullable SoyIdRenamingMap xidRenamingMap,
       @Nullable SoyCssRenamingMap cssRenamingMap) {
-    super(errorReporter);
+    // This class doesn't report syntax errors.  It does throw exceptions for runtime errors, but
+    // the error reporter isn't part of that mechanism.
+    super(ExplodingErrorReporter.get());
     Preconditions.checkNotNull(data);
 
     this.soyJavaDirectivesMap = soyJavaDirectivesMap;
@@ -245,7 +246,6 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
         soyJavaDirectivesMap,
         evalVisitorFactory,
         outputBuf,
-        errorReporter,
         templateRegistry,
         data,
         ijData,

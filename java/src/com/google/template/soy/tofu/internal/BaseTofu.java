@@ -26,7 +26,6 @@ import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueHelper;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.parseinfo.SoyTemplateInfo;
 import com.google.template.soy.shared.SoyCssRenamingMap;
@@ -35,13 +34,8 @@ import com.google.template.soy.shared.internal.ApiCallScopeUtils;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
 import com.google.template.soy.shared.internal.GuiceSimpleScope.WithScope;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.ApiCall;
-import com.google.template.soy.sharedpasses.FindIjParamsVisitor;
-import com.google.template.soy.sharedpasses.FindIjParamsVisitor.IjParamsInfo;
-import com.google.template.soy.sharedpasses.opti.SimplifyVisitor;
 import com.google.template.soy.sharedpasses.render.RenderException;
 import com.google.template.soy.sharedpasses.render.RenderVisitor;
-import com.google.template.soy.soytree.SoyFileSetNode;
-import com.google.template.soy.soytree.SoytreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.Visibility;
@@ -71,10 +65,12 @@ public class BaseTofu implements SoyTofu {
   public static interface BaseTofuFactory {
 
     /**
-     * @param soyTree The Soy parse tree containing all the files in the Soy file set.
-     * @param errorReporter For reporting errors.
+     * @param templates The full set of templates.
+     * @param templateToIjParamsInfoMap the ij params for each tempalte.
      */
-    public BaseTofu create(SoyFileSetNode soyTree, ErrorReporter errorReporter);
+    BaseTofu create(
+        TemplateRegistry templates,
+        ImmutableMap<String, ImmutableSortedSet<String>> templateToIjParamsInfoMap);
   }
 
 
@@ -87,51 +83,31 @@ public class BaseTofu implements SoyTofu {
   /** Factory for creating an instance of TofuRenderVisitor. */
   private final TofuRenderVisitorFactory tofuRenderVisitorFactory;
 
-  /** The instanceof of SimplifyVisitor to use. */
-  private final SimplifyVisitor simplifyVisitor;
-
-  /** The Soy parse tree containing all the files in the Soy file set. */
-  private final SoyFileSetNode soyTree;
-
   /** The template registry. */
-  private final TemplateRegistry templateRegistryForNoCaching;
+  private final TemplateRegistry templateRegistry;
 
   /** Map from template node to injected params info for all templates. */
-  private final ImmutableMap<TemplateNode, IjParamsInfo> templateToIjParamsInfoMap;
-
-  /** For reporting errors. */
-  private final ErrorReporter errorReporter;
+  private final ImmutableMap<String, ImmutableSortedSet<String>> templateToIjParamsInfoMap;
 
   /**
    * @param valueHelper Instance of SoyValueHelper to use.
    * @param apiCallScope The scope object that manages the API call scope.
    * @param tofuRenderVisitorFactory Factory for creating an instance of TofuRenderVisitor.
-   * @param simplifyVisitor The instance of SimplifyVisitor to use.
-   * @param soyTree The Soy parse tree containing all the files in the Soy file set.
    */
   @AssistedInject
   public BaseTofu(
       SoyValueHelper valueHelper,
       @ApiCall GuiceSimpleScope apiCallScope,
       TofuRenderVisitorFactory tofuRenderVisitorFactory,
-      SimplifyVisitor simplifyVisitor,
-      @Assisted SoyFileSetNode soyTree,
-      @Assisted ErrorReporter errorReporter) {
+      @Assisted TemplateRegistry templates,
+      @Assisted ImmutableMap<String, ImmutableSortedSet<String>> templateToIjParamsInfoMap) {
 
     this.valueHelper = valueHelper;
     this.apiCallScope = apiCallScope;
     this.tofuRenderVisitorFactory = tofuRenderVisitorFactory;
-    this.simplifyVisitor = simplifyVisitor;
-    this.soyTree = soyTree;
-    this.errorReporter = errorReporter;
-
-    SoyFileSetNode soyTreeForNoCaching = SoytreeUtils.cloneNode(soyTree);
-    templateRegistryForNoCaching = new TemplateRegistry(soyTreeForNoCaching, errorReporter);
-    templateToIjParamsInfoMap =
-        new FindIjParamsVisitor(templateRegistryForNoCaching, errorReporter)
-            .execOnAllTemplates(soyTreeForNoCaching);
+    this.templateRegistry = templates;
+    this.templateToIjParamsInfoMap = templateToIjParamsInfoMap;
   }
-
 
   /**
    * {@inheritDoc}
@@ -165,31 +141,20 @@ public class BaseTofu implements SoyTofu {
 
 
   @Override public ImmutableSortedSet<String> getUsedIjParamsForTemplate(String templateName) {
-    TemplateNode template = templateRegistryForNoCaching.getBasicTemplate(templateName);
-    if (template == null) {
+    ImmutableSortedSet<String> ijParams = templateToIjParamsInfoMap.get(templateName);
+    if (ijParams == null) {
       throw new SoyTofuException("Template '" + templateName + "' not found.");
     }
-    IjParamsInfo ijParamsInfo = templateToIjParamsInfoMap.get(template);
     // TODO: Ideally we'd check that there are no external calls, but we find that in practice many
     // users have written templates that conditionally call to undefined templates. Instead,
     // we'll return a best effor set of what we have here, and over time, we'll encourage users to
     // enforce the "assertNoExternalCalls" flag.
-    return ijParamsInfo.ijParamSet;
+    return ijParams;
   }
 
 
   // -----------------------------------------------------------------------------------------------
   // Private methods.
-
-
-  /**
-   * Builds a template registry for the given Soy tree.
-   * @param soyTree The Soy tree to build a template registry for.
-   * @return The newly built template registry.
-   */
-  private TemplateRegistry buildTemplateRegistry(SoyFileSetNode soyTree) {
-    return new TemplateRegistry(soyTree, errorReporter);
-  }
 
 
   /**
@@ -219,8 +184,15 @@ public class BaseTofu implements SoyTofu {
 
       // Do the rendering.
       return renderMainHelper(
-          templateRegistryForNoCaching, outputBuf, templateName, data, ijData,
-          activeDelPackageNames, msgBundle, idRenamingMap, cssRenamingMap);
+          templateRegistry,
+          outputBuf,
+          templateName,
+          data,
+          ijData,
+          activeDelPackageNames,
+          msgBundle,
+          idRenamingMap,
+          cssRenamingMap);
     }
   }
 
@@ -261,7 +233,6 @@ public class BaseTofu implements SoyTofu {
           outputBuf,
           templateRegistry,
           data,
-          errorReporter,
           ijData,
           activeDelPackageNames,
           msgBundle,
