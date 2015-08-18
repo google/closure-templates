@@ -186,15 +186,6 @@ public final class SoyToJsSrcCompiler {
                   " evaluating goog.i18n.bidi.IS_RTL. Do not combine with --bidiGlobalDir.")
   private boolean useGoogIsRtlForBidiGlobalDir = false;
 
-  // TODO(user): remove
-  @Option(name = "--cssHandlingScheme",
-          usage = "The scheme to use for handling 'css' commands. Specifying 'literal' will" +
-                  " cause command text to be inserted as literal text. Specifying 'reference'" +
-                  " will cause command text to be evaluated as a data or global reference." +
-                  " Specifying 'goog' will cause generation of calls goog.getCssName. This" +
-                  " option has no effect if the Soy code does not contain 'css' commands.")
-  private String cssHandlingScheme = "literal";
-
   @Option(name = "--compileTimeGlobalsFile",
           usage = "The path to a file containing the mappings for global names to be substituted" +
                   " at compile time. Each line of the file should have the format" +

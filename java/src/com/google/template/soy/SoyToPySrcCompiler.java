@@ -108,15 +108,6 @@ public final class SoyToPySrcCompiler {
           usage = "User-declared syntax version for the Soy file bundle (e.g. 2.2, 2.3).")
   private String syntaxVersion = "";
 
-  // TODO(user): remove
-  @Option(name = "--cssHandlingScheme",
-          usage = "The scheme to use for handling 'css' commands. Specifying 'literal' will"
-                  + " cause command text to be inserted as literal text. Specifying 'reference'"
-                  + " will cause command text to be evaluated as a data or global reference."
-                  + " The 'goog' scheme is not supported in Python. This option has no effect if"
-                  + " the Soy code does not contain 'css' commands.")
-  private String cssHandlingScheme = "literal";
-
   @Option(name = "--compileTimeGlobalsFile",
           usage = "The path to a file containing the mappings for global names to be substituted"
                   + " at compile time. Each line of the file should have the format"
@@ -195,11 +186,6 @@ public final class SoyToPySrcCompiler {
     sfsBuilder.setAllowExternalCalls(false);
     // Require strict templates in Python.
     sfsBuilder.setStrictAutoescapingRequired(true);
-    // Setup the CSS handling scheme.
-    String cssHandlingSchemeUc = cssHandlingScheme.toUpperCase();
-    if (cssHandlingSchemeUc.equals("GOOG")) {
-      exitWithErrorFn.apply("CSS handling scheme 'GOOG' is not support in Python.");
-    }
     if (compileTimeGlobalsFile.length() > 0) {
       sfsBuilder.setCompileTimeGlobals(new File(compileTimeGlobalsFile));
     }
