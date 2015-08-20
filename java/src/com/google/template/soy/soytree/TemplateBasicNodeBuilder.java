@@ -22,13 +22,13 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.BaseUtils;
-import com.google.template.soy.basetree.SyntaxVersion;
-import com.google.template.soy.basetree.SyntaxVersionUpperBound;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyError;
 import com.google.template.soy.soytree.CommandTextAttributesParser.Attribute;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
+import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.SoyTypeRegistry;
 
 import java.util.Map;
@@ -44,6 +44,10 @@ import javax.annotation.Nullable;
  *
  */
 public class TemplateBasicNodeBuilder extends TemplateNodeBuilder {
+  private static final SoyError FULLY_QUALIFIED_NAME =
+      SoyError.of("Soy V2 template names must be relative to the file namespace, i.e. a dot "
+          + "followed by an identifier.  Templates with fully qualified names are only allowed in "
+          + "legacy templates marked with the deprecatedV1=\"true\" attribute.");
 
   /** Pattern for a template name. */
   private static final Pattern NONATTRIBUTE_TEMPLATE_NAME =
@@ -108,27 +112,6 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder {
     Map<String, String> attributes = ATTRIBUTES_PARSER.parse(
         commandTextForParsing, errorReporter, sourceLocation);
 
-    if (BaseUtils.isIdentifierWithLeadingDot(nameAttr)) {
-      if (soyFileHeaderInfo.namespace == null) {
-        throw SoySyntaxException.createWithoutMetaInfo(
-            "Missing namespace in Soy file containing 'template' with namespace-relative name" +
-                " ({template " + cmdText + "}).");
-      }
-      setTemplateNames(soyFileHeaderInfo.namespace + nameAttr, nameAttr);
-    } else if (BaseUtils.isDottedIdentifier(nameAttr)) {
-      SyntaxVersionUpperBound newSyntaxVersionBound = new SyntaxVersionUpperBound(
-          SyntaxVersion.V2_0,
-          "Soy V2 template names must be relative to the namespace, i.e. a dot followed by an" +
-              " identifier.");
-      this.syntaxVersionBound =
-          SyntaxVersionUpperBound.selectLower(this.syntaxVersionBound, newSyntaxVersionBound);
-      setTemplateNames(nameAttr, null);
-    } else {
-      throw SoySyntaxException.createWithoutMetaInfo("Invalid template name \"" + nameAttr + "\".");
-    }
-
-    this.templateNameForUserMsgs = getTemplateName();
-
     // See go/soy-visibility for why this is considered "legacy private".
     if (attributes.get("private").equals("true")) {
       visibility = Visibility.LEGACY_PRIVATE;
@@ -140,7 +123,7 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder {
       if (visibility != null) {
         throw SoySyntaxException.createWithoutMetaInfo(
             "Template cannot specify both private=\"true\""
-            + "and visibility=\"" + visibilityName + "\".");
+                + "and visibility=\"" + visibilityName + "\".");
       }
       visibility = Visibility.forAttributeValue(visibilityName);
     }
@@ -155,6 +138,27 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder {
     setRequireCssCmdText(attributes);
     setCssBaseCmdText(attributes);
     setV1Marker(attributes);
+
+    if (BaseUtils.isIdentifierWithLeadingDot(nameAttr)) {
+      if (soyFileHeaderInfo.namespace == null) {
+        throw SoySyntaxException.createWithMetaInfo(
+            "Missing namespace in Soy file containing a template with a namespace-relative name",
+            sourceLocation);
+      }
+      setTemplateNames(soyFileHeaderInfo.namespace + nameAttr, nameAttr);
+    } else if (BaseUtils.isDottedIdentifier(nameAttr)) {
+      if (!isMarkedV1) {
+        // only allow fully qualified template names if it is also marked as v1
+        errorReporter.report(sourceLocation, FULLY_QUALIFIED_NAME);
+      }
+      setTemplateNames(nameAttr, null);
+    } else {
+      throw SoySyntaxException.createWithMetaInfo(
+          "Invalid template name \"" + nameAttr + "\".",
+          sourceLocation);
+    }
+
+    this.templateNameForUserMsgs = getTemplateName();
 
     return this;
   }
@@ -215,8 +219,12 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder {
     return (TemplateBasicNodeBuilder) super.setHeaderDecls(declInfos);
   }
 
+  @Override public TemplateBasicNodeBuilder addParams(Iterable<? extends TemplateParam> allParams) {
+    return (TemplateBasicNodeBuilder) super.addParams(allParams);
+  }
+
   @Override public TemplateBasicNode build() {
-    Preconditions.checkState(id != null && isSoyDocSet && cmdText != null);
+    Preconditions.checkState(id != null && cmdText != null);
     return new TemplateBasicNode(this, soyFileHeaderInfo, visibility, params);
   }
 }

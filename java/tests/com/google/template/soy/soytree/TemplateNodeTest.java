@@ -661,7 +661,7 @@ public class TemplateNodeTest extends TestCase {
             " */\n" +
             "{template .boo}\n" +
             "  {@param moo: bool}  /** Something milky. */\n" +
-            "  {@param too: string|null}\n" +
+            "  {@param? too: string|null}\n" +
             "{sp} {$foo}{$goo} {sp}\n" +
             "{/template}\n",
         tn.toSourceString());

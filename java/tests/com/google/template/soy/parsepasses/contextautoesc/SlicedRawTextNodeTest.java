@@ -48,11 +48,11 @@ public final class SlicedRawTextNodeTest extends TestCase {
   public void testTrivialTemplate() throws Exception {
     assertInjected(
         join(
-            "{template foo}\n",
+            "{template .foo}\n",
             "Hello, World!\n",
             "{/template}"),
         join(
-            "{template foo}\n",
+            "{template .foo}\n",
             "Hello, World!\n",
             "{/template}"));
   }
@@ -60,11 +60,11 @@ public final class SlicedRawTextNodeTest extends TestCase {
   public void testOneScriptWithBody() throws Exception {
     assertInjected(
         join(
-            "{template foo}\n",
+            "{template .foo}\n",
             "<script INJE='CTED'>alert('Hello, World!')</script>\n",
             "{/template}"),
         join(
-            "{template foo}\n",
+            "{template .foo}\n",
             "<script>alert('Hello, World!')</script>\n",
             "{/template}"));
   }
@@ -72,11 +72,11 @@ public final class SlicedRawTextNodeTest extends TestCase {
   public void testOneSrcedScript() throws Exception {
     assertInjected(
         join(
-            "{template foo}\n",
+            "{template .foo}\n",
             "<script src=\"app.js\" INJE='CTED'></script>\n",
             "{/template}"),
         join(
-            "{template foo}\n",
+            "{template .foo}\n",
             "<script src=\"app.js\"></script>\n",
             "{/template}"));
   }
@@ -84,7 +84,7 @@ public final class SlicedRawTextNodeTest extends TestCase {
   public void testManyScripts() throws Exception {
     assertInjected(
         join(
-            "{template foo}\n",
+            "{template .foo}\n",
             "<script src=\"one.js\" INJE='CTED'></script>",
             "<script src=two.js INJE='CTED'></script>",
             "<script src=three.js  INJE='CTED'/></script>",
@@ -92,7 +92,7 @@ public final class SlicedRawTextNodeTest extends TestCase {
             "<script type='text/javascript' INJE='CTED'>main()</script>\n",
             "{/template}"),
         join(
-            "{template foo}\n",
+            "{template .foo}\n",
             "<script src=\"one.js\"></script>",
             "<script src=two.js></script>",
             "<script src=three.js /></script>",
@@ -104,7 +104,7 @@ public final class SlicedRawTextNodeTest extends TestCase {
   public void testFakeScripts() throws Exception {
     assertInjected(
         join(
-            "{template foo}\n",
+            "{template .foo}\n",
             "<noscript></noscript>",
             "<script INJE='CTED'>alert('Hi');</script>",
             "<!-- <script>notAScript()</script> -->",
@@ -113,7 +113,7 @@ public final class SlicedRawTextNodeTest extends TestCase {
             "<a href=\"//google.com/search?q=<script>hi()</script>\">Link</a>\n",
             "{/template}"),
         join(
-            "{template foo}\n",
+            "{template .foo}\n",
             "<noscript></noscript>",
             // An actual script in a sea of imposters.
             "<script>alert('Hi');</script>",
@@ -128,12 +128,12 @@ public final class SlicedRawTextNodeTest extends TestCase {
   public void testPrintDirectiveInScriptTag() throws Exception {
     assertInjected(
         join(
-            "{template foo}\n",
+            "{template .foo}\n",
             "<script src='{$appScriptUrl |filterNormalizeUri |escapeHtmlAttribute}' INJE='CTED'>",
             "alert('Hello, World!')</script>\n",
             "{/template}"),
         join(
-            "{template foo}\n",
+            "{template .foo}\n",
             "<script src='{$appScriptUrl}'>",
             "alert('Hello, World!')</script>\n",
             "{/template}"));
@@ -143,12 +143,12 @@ public final class SlicedRawTextNodeTest extends TestCase {
     try {
       parseAndInjectIntoScriptTags(
                                    join(
-                                        "{template foo}\n",
+                                        "{template .foo}\n",
                                         "<script src='foo.js'></script>\n",
                                         "{/template}"),
                                    " title='unclosed");
     } catch (SoyAutoescapeException ex) {
-      assertThat(ex).hasMessage("In file no-path:4:1, template foo:"
+      assertThat(ex).hasMessage("In file no-path:4:1, template ns.foo:"
           + " Inserting ` title='unclosed` would cause text node to end in context"
           + " (Context HTML_NORMAL_ATTR_VALUE SCRIPT PLAIN_TEXT SINGLE_QUOTE) instead of"
           + " (Context HTML_PCDATA)");

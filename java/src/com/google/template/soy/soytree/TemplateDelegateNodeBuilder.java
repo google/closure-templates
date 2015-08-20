@@ -34,6 +34,7 @@ import com.google.template.soy.soytree.CommandTextAttributesParser.Attribute;
 import com.google.template.soy.soytree.TemplateDelegateNode.DelTemplateKey;
 import com.google.template.soy.soytree.TemplateNode.Priority;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
+import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.SoyTypeRegistry;
 
 import java.util.Map;
@@ -257,8 +258,13 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
     return (TemplateDelegateNodeBuilder) super.setHeaderDecls(declInfos);
   }
 
+  @Override public TemplateDelegateNodeBuilder addParams(
+      Iterable<? extends TemplateParam> allParams) {
+    return (TemplateDelegateNodeBuilder) super.addParams(allParams);
+  }
+
   @Override public TemplateDelegateNode build() {
-    Preconditions.checkState(id != null && isSoyDocSet && cmdText != null);
+    Preconditions.checkState(id != null && cmdText != null);
 
     return new TemplateDelegateNode(
         this, soyFileHeaderInfo, delTemplateName, delTemplateVariant,

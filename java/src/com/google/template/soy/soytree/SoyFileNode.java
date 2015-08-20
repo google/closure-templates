@@ -24,8 +24,6 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.basetree.SyntaxVersion;
-import com.google.template.soy.basetree.SyntaxVersionUpperBound;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyError;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
@@ -97,12 +95,6 @@ public final class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
     this.soyFileKind = soyFileKind;
     this.delPackageName = delPackageName;
     this.namespaceDeclaration = namespaceDeclaration;
-
-    if (!namespaceDeclaration.isDefined()) {
-      maybeSetSyntaxVersionUpperBound(
-          new SyntaxVersionUpperBound(
-              SyntaxVersion.V2_0, "Soy V2 files must have a namespace declaration."));
-    }
 
     Map<String, String> tempAliasToNamespaceMap = Maps.newLinkedHashMap();
     String aliasForFileNamespace =

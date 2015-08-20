@@ -43,16 +43,17 @@ public final class SourceLocationTest extends TestCase {
         Joiner.on('\n').join(
             "SoyFileSetNode                 @ unknown",
             "  SoyFileNode                  @ /example/file.soy",
-            "    TemplateBasicNode          @ /example/file.soy:1:1",
-            "      RawTextNode              @ /example/file.soy:2:1",
-            "      PrintNode                @ /example/file.soy:4:3",
-            "      RawTextNode              @ /example/file.soy:5:1",
-            "      CallBasicNode            @ /example/file.soy:7:3",
-            "    TemplateBasicNode          @ /example/file.soy:9:1",
-            "      RawTextNode              @ /example/file.soy:10:1",
+            "    TemplateBasicNode          @ /example/file.soy:2:1",
+            "      RawTextNode              @ /example/file.soy:3:1",
+            "      PrintNode                @ /example/file.soy:5:3",
+            "      RawTextNode              @ /example/file.soy:6:1",
+            "      CallBasicNode            @ /example/file.soy:8:3",
+            "    TemplateBasicNode          @ /example/file.soy:10:1",
+            "      RawTextNode              @ /example/file.soy:11:1",
             ""),
         Joiner.on('\n').join(
-            "{template foo autoescape=\"deprecated-noncontextual\"}",     // 1
+            "{namespace ns}",
+            "{template .foo autoescape=\"deprecated-noncontextual\"}",     // 1
             "  Hello",            // 2
             "  {lb}",             // 3
             "  {print $world}",   // 4
@@ -60,7 +61,7 @@ public final class SourceLocationTest extends TestCase {
             "",                   // 6
             "  {call bar /}",     // 7
             "{/template}",        // 8
-            "{template bar autoescape=\"deprecated-noncontextual\"}",     // 9
+            "{template .bar autoescape=\"deprecated-noncontextual\"}",     // 9
             "  Gooodbye",         // 10
             "{/template}"         // 11
             )
@@ -72,21 +73,22 @@ public final class SourceLocationTest extends TestCase {
         Joiner.on('\n').join(
             "SoyFileSetNode                 @ unknown",
             "  SoyFileNode                  @ /example/file.soy",
-            "    TemplateBasicNode          @ /example/file.soy:1:1",
-            "      RawTextNode              @ /example/file.soy:2:1",
-            "      SwitchNode               @ /example/file.soy:3:3",
-            "        SwitchCaseNode         @ /example/file.soy:4:5",
-            "          RawTextNode          @ /example/file.soy:5:1",
-            "        SwitchCaseNode         @ /example/file.soy:6:5",
-            "          RawTextNode          @ /example/file.soy:7:1",
-            "        SwitchCaseNode         @ /example/file.soy:8:5",
-            "          RawTextNode          @ /example/file.soy:9:1",
-            "        SwitchDefaultNode      @ /example/file.soy:10:5",
-            "          RawTextNode          @ /example/file.soy:11:1",
-            "      RawTextNode              @ /example/file.soy:13:1",
+            "    TemplateBasicNode          @ /example/file.soy:2:1",
+            "      RawTextNode              @ /example/file.soy:3:1",
+            "      SwitchNode               @ /example/file.soy:4:3",
+            "        SwitchCaseNode         @ /example/file.soy:5:5",
+            "          RawTextNode          @ /example/file.soy:6:1",
+            "        SwitchCaseNode         @ /example/file.soy:7:5",
+            "          RawTextNode          @ /example/file.soy:8:1",
+            "        SwitchCaseNode         @ /example/file.soy:9:5",
+            "          RawTextNode          @ /example/file.soy:10:1",
+            "        SwitchDefaultNode      @ /example/file.soy:11:5",
+            "          RawTextNode          @ /example/file.soy:12:1",
+            "      RawTextNode              @ /example/file.soy:14:1",
             ""),
         Joiner.on('\n').join(
-            "{template foo autoescape=\"deprecated-noncontextual\"}",  // 1
+            "{namespace ns}",
+            "{template .foo autoescape=\"deprecated-noncontextual\"}",  // 1
             "  Hello,",        // 2
             "  {switch $i}",   // 3
             "    {case 0}",    // 4
@@ -109,15 +111,16 @@ public final class SourceLocationTest extends TestCase {
         Joiner.on('\n').join(
             "SoyFileSetNode                 @ unknown",
             "  SoyFileNode                  @ /example/file.soy",
-            "    TemplateBasicNode          @ /example/file.soy:1:1",
-            "      RawTextNode              @ /example/file.soy:2:1",
-            "      ForNode                  @ /example/file.soy:3:3",
-            "        RawTextNode            @ /example/file.soy:4:1",
-            "        PrintNode              @ /example/file.soy:5:5",
-            "      RawTextNode              @ /example/file.soy:7:1",
+            "    TemplateBasicNode          @ /example/file.soy:2:1",
+            "      RawTextNode              @ /example/file.soy:3:1",
+            "      ForNode                  @ /example/file.soy:4:3",
+            "        RawTextNode            @ /example/file.soy:5:1",
+            "        PrintNode              @ /example/file.soy:6:5",
+            "      RawTextNode              @ /example/file.soy:8:1",
             ""),
         Joiner.on('\n').join(
-            "{template foo autoescape=\"deprecated-noncontextual\"}",                   // 1
+            "{namespace ns}",
+            "{template .foo autoescape=\"deprecated-noncontextual\"}",                   // 1
             "  Hello",                          // 2
             "  {for $i in range($s, $e, $t)}",  // 3
             "    ,",                            // 4
@@ -134,18 +137,19 @@ public final class SourceLocationTest extends TestCase {
         Joiner.on('\n').join(
             "SoyFileSetNode                 @ unknown",
             "  SoyFileNode                  @ /example/file.soy",
-            "    TemplateBasicNode          @ /example/file.soy:1:1",
-            "      RawTextNode              @ /example/file.soy:2:1",
-            "      ForeachNode              @ /example/file.soy:3:3",
-            "        ForeachNonemptyNode    @ /example/file.soy:3:3",
-            "          RawTextNode          @ /example/file.soy:4:1",
-            "          PrintNode            @ /example/file.soy:5:5",
-            "        ForeachIfemptyNode     @ /example/file.soy:6:3",
-            "          RawTextNode          @ /example/file.soy:7:1",
-            "      RawTextNode              @ /example/file.soy:9:1",
+            "    TemplateBasicNode          @ /example/file.soy:2:1",
+            "      RawTextNode              @ /example/file.soy:3:1",
+            "      ForeachNode              @ /example/file.soy:4:3",
+            "        ForeachNonemptyNode    @ /example/file.soy:4:3",
+            "          RawTextNode          @ /example/file.soy:5:1",
+            "          PrintNode            @ /example/file.soy:6:5",
+            "        ForeachIfemptyNode     @ /example/file.soy:7:3",
+            "          RawTextNode          @ /example/file.soy:8:1",
+            "      RawTextNode              @ /example/file.soy:10:1",
             ""),
         Joiner.on('\n').join(
-            "{template foo autoescape=\"deprecated-noncontextual\"}",                   // 1
+            "{namespace ns}",
+            "{template .foo autoescape=\"deprecated-noncontextual\"}",                   // 1
             "  Hello",                          // 2
             "  {foreach $planet in $planets}",  // 3
             "    ,",                            // 4
@@ -164,19 +168,20 @@ public final class SourceLocationTest extends TestCase {
         Joiner.on('\n').join(
             "SoyFileSetNode                 @ unknown",
             "  SoyFileNode                  @ /example/file.soy",
-            "    TemplateBasicNode          @ /example/file.soy:1:1",
-            "      RawTextNode              @ /example/file.soy:2:1",
-            "      IfNode                   @ /example/file.soy:3:3",
-            "        IfCondNode             @ /example/file.soy:3:3",
-            "          RawTextNode          @ /example/file.soy:4:1",
-            "        IfCondNode             @ /example/file.soy:5:3",
-            "          RawTextNode          @ /example/file.soy:6:1",
-            "        IfElseNode             @ /example/file.soy:7:3",
-            "          RawTextNode          @ /example/file.soy:8:1",
-            "      RawTextNode              @ /example/file.soy:10:1",
+            "    TemplateBasicNode          @ /example/file.soy:2:1",
+            "      RawTextNode              @ /example/file.soy:3:1",
+            "      IfNode                   @ /example/file.soy:4:3",
+            "        IfCondNode             @ /example/file.soy:4:3",
+            "          RawTextNode          @ /example/file.soy:5:1",
+            "        IfCondNode             @ /example/file.soy:6:3",
+            "          RawTextNode          @ /example/file.soy:7:1",
+            "        IfElseNode             @ /example/file.soy:8:3",
+            "          RawTextNode          @ /example/file.soy:9:1",
+            "      RawTextNode              @ /example/file.soy:11:1",
             ""),
         Joiner.on('\n').join(
-            "{template foo autoescape=\"deprecated-noncontextual\"}",                 // 1
+            "{namespace ns}",
+            "{template .foo autoescape=\"deprecated-noncontextual\"}",                 // 1
             "  Hello,",                       // 2
             "  {if $skyIsBlue}",              // 3
             "    Earth",                      // 4

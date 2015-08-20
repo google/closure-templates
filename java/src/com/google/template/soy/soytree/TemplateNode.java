@@ -348,7 +348,11 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
           continue;
         }
         HeaderParam headerParam = (HeaderParam) param;
-        sb.append("  {@param ").append(headerParam.name()).append(": ")
+        sb.append("  {@param");
+        if (!headerParam.isRequired()) {
+          sb.append('?');
+        }
+        sb.append(' ').append(headerParam.name()).append(": ")
             .append(headerParam.typeSrc()).append("}");
         if (headerParam.desc() != null) {
           sb.append("  /** ").append(headerParam.desc()).append(" */");

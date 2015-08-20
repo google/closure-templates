@@ -197,7 +197,7 @@ public abstract class TemplateNodeBuilder {
   /** The params from template header and/or SoyDoc. Null if no decls and no SoyDoc. */
   @Nullable protected ImmutableList<TemplateParam> params;
 
-  private boolean isMarkedV1;
+  protected boolean isMarkedV1;
 
   final SourceLocation sourceLocation;
 
@@ -333,7 +333,7 @@ public abstract class TemplateNodeBuilder {
    * called at most once for SoyDoc params and at most once for header params.
    * @param params The params to add.
    */
-  private void addParams(Collection<? extends TemplateParam> params) {
+  protected TemplateNodeBuilder addParams(Iterable<? extends TemplateParam> params) {
 
     if (this.params == null) {
       this.params = ImmutableList.copyOf(params);
@@ -357,6 +357,7 @@ public abstract class TemplateNodeBuilder {
       }
       seenParamKeys.add(param.name());
     }
+    return this;
   }
 
   /**

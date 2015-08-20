@@ -29,9 +29,7 @@ import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.PrintNode;
-import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoytreeUtils;
 import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateBasicNodeBuilder;
@@ -259,7 +257,12 @@ final class Inferences {
     for (TemplateNode tn : lookupTemplates(baseName)) {
       SoyFileHeaderInfo soyFileHeaderInfo = tn.getSoyFileHeaderInfo();
 
-      int cloneId = tn.getNearestAncestor(SoyFileSetNode.class).getNodeIdGenerator().genId();
+      // We trivially clone the template with new ids, this ensures that all the varrefs have proper
+      // vardefns assigned.  Then we manually recopy to a new template in order to modify the name.
+      // TODO(lukes): we should add direct support for swapping template names to TemplateNode
+      // or just eliminate usecases for this method.
+      TemplateNode trivialClonedTemplate = SoytreeUtils.cloneWithNewIds(tn, idGen);
+      int cloneId = trivialClonedTemplate.getId();
 
       // We need to use the unnamespaced name in the command text since we'll be inserting this
       // template into a file node that already has a namespace declaration.
@@ -275,7 +278,7 @@ final class Inferences {
                 derivedName, derivedPartialName,
                 tn.getVisibility(), tn.getAutoescapeMode(), tn.getContentKind(),
                 tn.getRequiredCssNamespaces())
-            .setSoyDoc(tn.getSoyDoc())
+            .addParams(trivialClonedTemplate.getAllParams())
             .build();
 
         if (! (derivedName.equals(clone.getTemplateName()) &&
@@ -291,7 +294,7 @@ final class Inferences {
             .setCmdTextInfo(
                 derivedName, tdn.getDelTemplateVariant(), tdn.getDelPriority(),
                 tn.getAutoescapeMode(), tn.getContentKind(), tn.getRequiredCssNamespaces())
-            .setSoyDoc(tn.getSoyDoc())
+            .addParams(trivialClonedTemplate.getAllParams())
             .build();
         if (! (derivedName.equals(((TemplateDelegateNode) clone).getDelTemplateName()))) {
           throw new AssertionError();
@@ -300,16 +303,14 @@ final class Inferences {
       } else {
         throw new AssertionError("Unknown template node type: " + tn.getClass());
       }
+      clone.addChildren(trivialClonedTemplate.getChildren());
+
       // Reassign all the local variable data which isn't maintained by the cloning process above.
       clone.setMaxLocalVariableTableSize(tn.getMaxLocalVariableTableSize());
       Iterator<TemplateParam> tnIterator = tn.getAllParams().iterator();
       Iterator<TemplateParam> cloneIterator = clone.getAllParams().iterator();
       while (tnIterator.hasNext()) {
         cloneIterator.next().setLocalVariableIndex(tnIterator.next().localVariableIndex());
-      }
-
-      for (StandaloneNode child : tn.getChildren()) {
-        clone.addChild(SoytreeUtils.cloneWithNewIds(child, idGen));
       }
 
       b.add(clone);
