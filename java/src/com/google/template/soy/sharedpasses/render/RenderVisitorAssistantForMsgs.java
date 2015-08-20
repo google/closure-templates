@@ -17,7 +17,6 @@
 package com.google.template.soy.sharedpasses.render;
 
 import com.google.template.soy.data.SoyDataException;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.internal.MsgUtils;
@@ -62,11 +61,8 @@ final class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
    * @param master The master RenderVisitor instance.
    * @param msgBundle The bundle of translated messages, or null to use the messages from the Soy
    *     source.
-   * @param errorReporter For reporting errors.
    */
-  RenderVisitorAssistantForMsgs(
-      RenderVisitor master, SoyMsgBundle msgBundle, ErrorReporter errorReporter) {
-    super(errorReporter);
+  RenderVisitorAssistantForMsgs(RenderVisitor master, SoyMsgBundle msgBundle) {
     this.master = master;
     this.msgBundle = msgBundle;
   }

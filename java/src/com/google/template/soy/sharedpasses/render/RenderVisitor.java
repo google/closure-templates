@@ -39,7 +39,6 @@ import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
-import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.jbcsrc.api.RenderResult;
@@ -190,9 +189,6 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       @Nullable SoyMsgBundle msgBundle,
       @Nullable SoyIdRenamingMap xidRenamingMap,
       @Nullable SoyCssRenamingMap cssRenamingMap) {
-    // This class doesn't report syntax errors.  It does throw exceptions for runtime errors, but
-    // the error reporter isn't part of that mechanism.
-    super(ExplodingErrorReporter.get());
     Preconditions.checkNotNull(data);
 
     this.soyJavaDirectivesMap = soyJavaDirectivesMap;
@@ -290,7 +286,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
   @Override protected void visitMsgFallbackGroupNode(MsgFallbackGroupNode node) {
     if (assistantForMsgs == null) {
-      assistantForMsgs = new RenderVisitorAssistantForMsgs(this, msgBundle, errorReporter);
+      assistantForMsgs = new RenderVisitorAssistantForMsgs(this, msgBundle);
     }
     if (!node.getEscapingDirectiveNames().isEmpty()) {
       // The entire message needs to be escaped, so we need to render to a temporary buffer.

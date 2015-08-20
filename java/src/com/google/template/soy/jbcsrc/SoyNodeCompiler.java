@@ -34,7 +34,6 @@ import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.restricted.IntegerData;
-import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.jbcsrc.ControlFlow.IfBlock;
 import com.google.template.soy.jbcsrc.ExpressionCompiler.BasicExpressionCompiler;
@@ -157,7 +156,6 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       ExpressionCompiler exprCompiler,
       ExpressionToSoyValueProviderCompiler expressionToSoyValueProviderCompiler,
       LazyClosureCompiler lazyClosureCompiler) {
-    super(ExplodingErrorReporter.get());
     this.thisVar = checkNotNull(thisVar);
     this.registry = checkNotNull(registry);
     this.detachState = checkNotNull(detachState);

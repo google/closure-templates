@@ -223,7 +223,6 @@ final class InferenceEngine {
     private Context context;
 
     public ContextPropagatingVisitor(Context context) {
-      super(InferenceEngine.this.errorReporter);
       this.context = context;
     }
 

@@ -84,7 +84,7 @@ public final class SubstituteGlobalsVisitor {
 
   /** Runs this pass on the given Soy tree. */
   public void exec(SoyNode soyTree) {
-    SoytreeUtils.execOnAllV2Exprs(soyTree, new SubstituteGlobalsInExprVisitor(), errorReporter);
+    SoytreeUtils.execOnAllV2Exprs(soyTree, new SubstituteGlobalsInExprVisitor());
   }
 
   /**
@@ -93,10 +93,6 @@ public final class SubstituteGlobalsVisitor {
    */
   @VisibleForTesting
   final class SubstituteGlobalsInExprVisitor extends AbstractExprNodeVisitor<Void> {
-
-    SubstituteGlobalsInExprVisitor() {
-      super(SubstituteGlobalsVisitor.this.errorReporter);
-    }
 
     @Override protected void visitGlobalNode(GlobalNode node) {
 

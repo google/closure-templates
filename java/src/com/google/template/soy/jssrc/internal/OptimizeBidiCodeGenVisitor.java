@@ -19,7 +19,6 @@ package com.google.template.soy.jssrc.internal;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.coredirectives.CoreDirectiveUtils;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
@@ -76,14 +75,11 @@ public class OptimizeBidiCodeGenVisitor extends AbstractSoyNodeVisitor<Void> {
   /**
    * @param soyJsSrcFunctionsMap Map of all SoyJsSrcFunctions (name to function).
    * @param bidiGlobalDir The bidi global directionality.
-   * @param errorReporter For reporting errors.
    */
   @Inject
   public OptimizeBidiCodeGenVisitor(
       Map<String, SoyJsSrcFunction> soyJsSrcFunctionsMap,
-      BidiGlobalDir bidiGlobalDir,
-      ErrorReporter errorReporter) {
-    super(errorReporter);
+      BidiGlobalDir bidiGlobalDir) {
     this.soyJsSrcFunctionsMap = soyJsSrcFunctionsMap;
     this.bidiGlobalDir = bidiGlobalDir;
   }
@@ -111,7 +107,7 @@ public class OptimizeBidiCodeGenVisitor extends AbstractSoyNodeVisitor<Void> {
 
     // If we made any replacements, we may have created consecutive RawTextNodes, so clean them up.
     if (madeReplacement) {
-      new CombineConsecutiveRawTextNodesVisitor(errorReporter).exec(node);
+      new CombineConsecutiveRawTextNodesVisitor().exec(node);
     }
   }
 

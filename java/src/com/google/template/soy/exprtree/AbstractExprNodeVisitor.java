@@ -18,7 +18,6 @@ package com.google.template.soy.exprtree;
 
 import com.google.template.soy.basetree.AbstractNodeVisitor;
 import com.google.template.soy.basetree.ParentNode;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode.OperatorNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
@@ -68,10 +67,6 @@ import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
  * @see AbstractReturningExprNodeVisitor
  */
 public abstract class AbstractExprNodeVisitor<R> extends AbstractNodeVisitor<ExprNode, R> {
-
-  public AbstractExprNodeVisitor(ErrorReporter errorReporter) {
-    super(errorReporter);
-  }
 
   @Override protected final void visit(ExprNode node) {
 

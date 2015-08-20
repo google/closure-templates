@@ -54,6 +54,7 @@ final class PerformDeprecatedNonContextualAutoescapeVisitor
    * {@link SoyPrintDirective#shouldCancelAutoescape()}).
    */
   private final ImmutableSet<String> autoescapeCancellingDirectives;
+  private final ErrorReporter errorReporter;
 
   /** The node id generator for the parse tree. Retrieved from the root SoyFileSetNode. */
   private final IdGenerator nodeIdGen;
@@ -69,7 +70,7 @@ final class PerformDeprecatedNonContextualAutoescapeVisitor
       ImmutableSet<String> autoescapeCancellingDirectives,
       ErrorReporter errorReporter,
       IdGenerator nodeIdGen) {
-    super(errorReporter);
+    this.errorReporter = errorReporter;
     this.autoescapeCancellingDirectives = autoescapeCancellingDirectives;
     this.nodeIdGen = nodeIdGen;
   }

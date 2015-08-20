@@ -99,11 +99,11 @@ public class CanInitOutputVarVisitorTest extends TestCase {
     SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(soyCode)
         .errorReporter(boom)
         .parse();
-    new ReplaceMsgsWithGoogMsgsVisitor(boom).exec(soyTree);
+    new ReplaceMsgsWithGoogMsgsVisitor().exec(soyTree);
     SoyNode node = SharedTestUtils.getNode(soyTree, indicesToNode);
 
-    IsComputableAsJsExprsVisitor icajev = new IsComputableAsJsExprsVisitor(boom);
-    CanInitOutputVarVisitor ciovv = new CanInitOutputVarVisitor(icajev, boom);
+    IsComputableAsJsExprsVisitor icajev = new IsComputableAsJsExprsVisitor();
+    CanInitOutputVarVisitor ciovv = new CanInitOutputVarVisitor(icajev);
     assertThat(ciovv.exec(node) == icajev.exec(node))
         .isEqualTo(isSameValueAsIsComputableAsJsExprsVisitor);
   }

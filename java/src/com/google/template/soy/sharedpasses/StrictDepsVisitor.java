@@ -49,9 +49,10 @@ public final class StrictDepsVisitor extends AbstractSoyNodeVisitor<Void> {
 
   /** Registry of all templates in the Soy tree. */
   private TemplateRegistry templateRegistry;
+  private final ErrorReporter errorReporter;
 
   public StrictDepsVisitor(ErrorReporter errorReporter) {
-    super(errorReporter);
+    this.errorReporter = errorReporter;
   }
 
   @Override public Void exec(SoyNode soyNode) {

@@ -51,9 +51,10 @@ public final class CheckCallsVisitor extends AbstractSoyNodeVisitor<List<String>
 
   /** A template registry built from the Soy tree. */
   private TemplateRegistry templateRegistry;
+  private final ErrorReporter errorReporter;
 
   public CheckCallsVisitor(ErrorReporter errorReporter) {
-    super(errorReporter);
+    this.errorReporter = errorReporter;
   }
 
   @Override public List<String> exec(SoyNode soyNode) {

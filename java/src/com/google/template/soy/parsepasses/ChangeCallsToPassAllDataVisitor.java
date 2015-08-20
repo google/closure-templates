@@ -17,7 +17,7 @@
 package com.google.template.soy.parsepasses;
 
 import com.google.common.base.Preconditions;
-import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
@@ -43,10 +43,6 @@ import com.google.template.soy.soytree.TemplateNode;
  *
  */
 public final class ChangeCallsToPassAllDataVisitor extends AbstractSoyNodeVisitor<Void> {
-
-  public ChangeCallsToPassAllDataVisitor(ErrorReporter errorReporter) {
-    super(errorReporter);
-  }
 
   @Override public Void exec(SoyNode node) {
 
@@ -109,7 +105,8 @@ public final class ChangeCallsToPassAllDataVisitor extends AbstractSoyNodeVisito
           .dataAttribute(DataAttribute.all())
           .userSuppliedPlaceholderName(node.getUserSuppliedPhName())
           .escapingDirectiveNames(node.getEscapingDirectiveNames())
-          .build(errorReporter);
+          // Use the exploding reporter since we know it won't report any errors
+          .build(ExplodingErrorReporter.get());
     } else {
       CallDelegateNode nodeCast = (CallDelegateNode) node;
       newCallNode = new CallDelegateNode.Builder(node.getId(), node.getSourceLocation())
@@ -119,7 +116,8 @@ public final class ChangeCallsToPassAllDataVisitor extends AbstractSoyNodeVisito
           .dataAttribute(DataAttribute.all())
           .userSuppliedPlaceholderName(node.getUserSuppliedPhName())
           .escapingDirectiveNames(node.getEscapingDirectiveNames())
-          .build(errorReporter);
+          // Use the exploding reporter since we know it won't report any errors
+          .build(ExplodingErrorReporter.get());
     }
     node.getParent().replaceChild(node, newCallNode);
   }

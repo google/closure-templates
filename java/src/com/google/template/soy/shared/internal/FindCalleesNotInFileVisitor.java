@@ -17,7 +17,6 @@
 package com.google.template.soy.shared.internal;
 
 import com.google.common.base.Preconditions;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -51,10 +50,6 @@ public final class FindCalleesNotInFileVisitor extends AbstractSoyNodeVisitor<Se
 
   /** The call nodes of templates not defined in this file (the result). */
   private Set<CallBasicNode> calleesNotInFile;
-
-  public FindCalleesNotInFileVisitor(ErrorReporter errorReporter) {
-    super(errorReporter);
-  }
 
   @Override public Set<CallBasicNode> exec(SoyNode node) {
     Preconditions.checkArgument(node instanceof SoyFileNode);

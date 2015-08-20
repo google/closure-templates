@@ -17,7 +17,6 @@
 package com.google.template.soy.parsepasses;
 
 import com.google.template.soy.base.internal.IdGenerator;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -58,17 +57,12 @@ final class RemoveHtmlCommentsVisitor extends AbstractSoyNodeVisitor<Void> {
   /**
    * Constructor when working on tree fragments that are not part of a SoyFileSet.
    */
-  RemoveHtmlCommentsVisitor(IdGenerator nodeIdGen, ErrorReporter errorReporter) {
-    super(errorReporter);
+  RemoveHtmlCommentsVisitor(IdGenerator nodeIdGen) {
     explicitNodeIdGen = nodeIdGen;
   }
 
-
-  /**
-   * Constructor when working with full soy file sets.
-   */
-  public RemoveHtmlCommentsVisitor(ErrorReporter errorReporter) {
-    this(null, errorReporter);
+  public RemoveHtmlCommentsVisitor() {
+    this(null);
   }
 
 

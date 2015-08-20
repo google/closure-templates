@@ -18,7 +18,6 @@ package com.google.template.soy.sharedpasses;
 
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -41,10 +40,6 @@ public final class CombineConsecutiveRawTextNodesVisitor extends AbstractSoyNode
 
   /** The node id generator for the parse tree. Retrieved from the root SoyFileSetNode. */
   private IdGenerator nodeIdGen;
-
-  public CombineConsecutiveRawTextNodesVisitor(ErrorReporter errorReporter) {
-    super(errorReporter);
-  }
 
   @Override public Void exec(SoyNode node) {
 

@@ -16,7 +16,6 @@
 
 package com.google.template.soy.jssrc.internal;
 
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.html.AbstractReturningHtmlSoyNodeVisitor;
 import com.google.template.soy.html.HtmlAttributeNode;
 import com.google.template.soy.html.HtmlCloseTagNode;
@@ -78,12 +77,8 @@ class IsComputableAsJsExprsVisitor extends AbstractReturningHtmlSoyNodeVisitor<B
   private final Map<SoyNode, Boolean> memoizedResults;
 
 
-  /**
-   * @param errorReporter For reporting errors.
-   */
   @Inject
-  IsComputableAsJsExprsVisitor(ErrorReporter errorReporter) {
-    super(errorReporter);
+  IsComputableAsJsExprsVisitor() {
     memoizedResults = new HashMap<>();
   }
 

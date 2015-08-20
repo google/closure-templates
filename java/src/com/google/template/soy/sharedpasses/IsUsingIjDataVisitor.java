@@ -17,7 +17,6 @@
 package com.google.template.soy.sharedpasses;
 
 import com.google.template.soy.basetree.AbstractNodeVisitor;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoytreeUtils;
@@ -31,19 +30,12 @@ import java.util.Set;
  */
 public final class IsUsingIjDataVisitor {
 
-  private final ErrorReporter errorReporter;
-
-  public IsUsingIjDataVisitor(ErrorReporter errorReporter) {
-    this.errorReporter = errorReporter;
-  }
-
   /**
    * Runs this pass on the given Soy tree.
    */
   public boolean exec(SoyFileSetNode soyTree) {
 
-    FindIjParamsInExprHelperVisitor helperVisitor
-        = new FindIjParamsInExprHelperVisitor(errorReporter);
+    FindIjParamsInExprHelperVisitor helperVisitor = new FindIjParamsInExprHelperVisitor();
 
     // We only care whether the result set is empty, so shortcircuit the pass as soon as the result
     // set is nonempty.
@@ -56,8 +48,7 @@ public final class IsUsingIjDataVisitor {
               AbstractNodeVisitor<ExprNode, Set<String>> exprNodeVisitor) {
             return !((FindIjParamsInExprHelperVisitor) exprNodeVisitor).getResult().isEmpty();
           }
-        },
-    errorReporter);
+        });
 
     return !helperVisitor.getResult().isEmpty();
   }

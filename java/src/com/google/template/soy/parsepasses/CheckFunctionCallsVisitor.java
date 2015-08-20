@@ -75,6 +75,7 @@ public final class CheckFunctionCallsVisitor extends AbstractSoyNodeVisitor<Void
 
   /** Injected Soy function definitions. */
   private final Map<String, SoyFunction> soyFunctionsByName;
+  private final ErrorReporter errorReporter;
 
   /** User-declared syntax version. */
   private SyntaxVersion declaredSyntaxVersion;
@@ -85,7 +86,7 @@ public final class CheckFunctionCallsVisitor extends AbstractSoyNodeVisitor<Void
       Map<String, SoyFunction> soyFunctionsByName,
       @Assisted SyntaxVersion declaredSyntaxVersion,
       @Assisted ErrorReporter errorReporter) {
-    super(errorReporter);
+    this.errorReporter = errorReporter;
     this.soyFunctionsByName = ImmutableMap.copyOf(soyFunctionsByName);
     this.declaredSyntaxVersion = declaredSyntaxVersion;
   }
@@ -117,10 +118,6 @@ public final class CheckFunctionCallsVisitor extends AbstractSoyNodeVisitor<Void
    * Used to visit expr nodes to find nonplugin functions and check their signatures.
    */
   private final class CheckFunctionCallsExprVisitor extends AbstractExprNodeVisitor<Void> {
-
-    CheckFunctionCallsExprVisitor() {
-      super(CheckFunctionCallsVisitor.this.errorReporter);
-    }
 
     /**
      * Recurse to children.

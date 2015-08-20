@@ -58,8 +58,8 @@ public final class MoveGoogMsgDefNodesEarlierVisitorTest extends TestCase {
     SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(soyCode)
         .errorReporter(FAIL)
         .parse();
-    new ReplaceMsgsWithGoogMsgsVisitor(FAIL).exec(soyTree);
-    new MoveGoogMsgDefNodesEarlierVisitor(FAIL).exec(soyTree);
+    new ReplaceMsgsWithGoogMsgsVisitor().exec(soyTree);
+    new MoveGoogMsgDefNodesEarlierVisitor().exec(soyTree);
     TemplateNode template = soyTree.getChild(0).getChild(0);
 
     // Expected:
@@ -97,8 +97,8 @@ public final class MoveGoogMsgDefNodesEarlierVisitorTest extends TestCase {
     SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(soyCode)
         .errorReporter(FAIL)
         .parse();
-    new ReplaceMsgsWithGoogMsgsVisitor(FAIL).exec(soyTree);
-    new MoveGoogMsgDefNodesEarlierVisitor(FAIL).exec(soyTree);
+    new ReplaceMsgsWithGoogMsgsVisitor().exec(soyTree);
+    new MoveGoogMsgDefNodesEarlierVisitor().exec(soyTree);
     TemplateNode template = soyTree.getChild(0).getChild(0);
 
     // Expected:
@@ -156,8 +156,8 @@ public final class MoveGoogMsgDefNodesEarlierVisitorTest extends TestCase {
     SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(soyCode)
         .errorReporter(FAIL)
         .parse();
-    new ReplaceMsgsWithGoogMsgsVisitor(FAIL).exec(soyTree);
-    new MoveGoogMsgDefNodesEarlierVisitor(FAIL).exec(soyTree);
+    new ReplaceMsgsWithGoogMsgsVisitor().exec(soyTree);
+    new MoveGoogMsgDefNodesEarlierVisitor().exec(soyTree);
     TemplateNode template = soyTree.getChild(0).getChild(0);
 
     // Expected:
@@ -213,8 +213,8 @@ public final class MoveGoogMsgDefNodesEarlierVisitorTest extends TestCase {
     SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(soyCode)
         .errorReporter(FAIL)
         .parse();
-    new ReplaceMsgsWithGoogMsgsVisitor(FAIL).exec(soyTree);
-    new MoveGoogMsgDefNodesEarlierVisitor(FAIL).exec(soyTree);
+    new ReplaceMsgsWithGoogMsgsVisitor().exec(soyTree);
+    new MoveGoogMsgDefNodesEarlierVisitor().exec(soyTree);
     TemplateNode template = soyTree.getChild(0).getChild(0);
 
     // Expected:
@@ -264,8 +264,8 @@ public final class MoveGoogMsgDefNodesEarlierVisitorTest extends TestCase {
     SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(soyCode)
         .errorReporter(FAIL)
         .parse();
-    new ReplaceMsgsWithGoogMsgsVisitor(FAIL).exec(soyTree);
-    new MoveGoogMsgDefNodesEarlierVisitor(FAIL).exec(soyTree);
+    new ReplaceMsgsWithGoogMsgsVisitor().exec(soyTree);
+    new MoveGoogMsgDefNodesEarlierVisitor().exec(soyTree);
     TemplateNode template = soyTree.getChild(0).getChild(0);
 
     // Expected:
@@ -313,8 +313,8 @@ public final class MoveGoogMsgDefNodesEarlierVisitorTest extends TestCase {
     SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(soyCode)
         .errorReporter(FAIL)
         .parse();
-    new ReplaceMsgsWithGoogMsgsVisitor(FAIL).exec(soyTree);
-    new MoveGoogMsgDefNodesEarlierVisitor(FAIL).exec(soyTree);
+    new ReplaceMsgsWithGoogMsgsVisitor().exec(soyTree);
+    new MoveGoogMsgDefNodesEarlierVisitor().exec(soyTree);
     TemplateNode template = soyTree.getChild(0).getChild(0);
 
     // Expected:

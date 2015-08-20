@@ -16,7 +16,6 @@
 
 package com.google.template.soy.sharedpasses;
 
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
@@ -30,11 +29,6 @@ import com.google.template.soy.soytree.TemplateNode;
  *
  */
 public final class ClearSoyDocStringsVisitor extends AbstractSoyNodeVisitor<Void> {
-
-  public ClearSoyDocStringsVisitor(ErrorReporter errorReporter) {
-    super(errorReporter);
-  }
-
   // -----------------------------------------------------------------------------------------------
   // Implementations for specific nodes.
 

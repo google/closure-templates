@@ -46,7 +46,7 @@ public final class ChangeCallsToPassAllDataVisitorTest extends TestCase {
     SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(callCode)
         .errorReporter(FAIL)
         .parse();
-    new ChangeCallsToPassAllDataVisitor(FAIL).exec(soyTree);
+    new ChangeCallsToPassAllDataVisitor().exec(soyTree);
     assertThat(SharedTestUtils.getNode(soyTree, 0).toSourceString())
         .isEqualTo("{call .foo data=\"all\" /}");
 
@@ -57,7 +57,7 @@ public final class ChangeCallsToPassAllDataVisitorTest extends TestCase {
     soyTree = SoyFileSetParserBuilder.forTemplateContents(callCode)
         .errorReporter(FAIL)
         .parse();
-    new ChangeCallsToPassAllDataVisitor(FAIL).exec(soyTree);
+    new ChangeCallsToPassAllDataVisitor().exec(soyTree);
     assertThat(SharedTestUtils.getNode(soyTree, 0).toSourceString())
         .isEqualTo("{call .foo data=\"all\" /}");
   }
@@ -134,7 +134,7 @@ public final class ChangeCallsToPassAllDataVisitorTest extends TestCase {
         .parse();
     CallNode callNodeBeforePass = (CallNode) SharedTestUtils.getNode(soyTree, 0);
     callNodeBeforePass.setEscapingDirectiveNames(ImmutableList.of("|escapeHtml"));
-    new ChangeCallsToPassAllDataVisitor(FAIL).exec(soyTree);
+    new ChangeCallsToPassAllDataVisitor().exec(soyTree);
     CallNode callNodeAfterPass = (CallNode) SharedTestUtils.getNode(soyTree, 0);
     assertThat(callNodeAfterPass).isEqualTo(callNodeBeforePass);
     assertWithMessage("Escaping directives should be preserved")
@@ -159,7 +159,7 @@ public final class ChangeCallsToPassAllDataVisitorTest extends TestCase {
 
     CallNode callNodeOutsideLoopBeforePass = (CallNode) SharedTestUtils.getNode(soyTree, 0);
     CallNode callNodeInsideLoopBeforePass = (CallNode) SharedTestUtils.getNode(soyTree, 1, 0, 0);
-    new ChangeCallsToPassAllDataVisitor(FAIL).exec(soyTree);
+    new ChangeCallsToPassAllDataVisitor().exec(soyTree);
     CallNode callNodeOutsideLoopAfterPass = (CallNode) SharedTestUtils.getNode(soyTree, 0);
     CallNode callNodeInsideLoopAfterPass = (CallNode) SharedTestUtils.getNode(soyTree, 1, 0, 0);
 

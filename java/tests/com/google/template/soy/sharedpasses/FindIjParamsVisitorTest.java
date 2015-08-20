@@ -73,7 +73,7 @@ public final class FindIjParamsVisitorTest extends TestCase {
 
     // Test with exec(aaa).
     // Exercises: processCalleeHelper case 5 with incorporateCalleeVisitInfo case 1 (aaa -> bbb).
-    FindIjParamsVisitor visitor = new FindIjParamsVisitor(templateRegistry, FAIL);
+    FindIjParamsVisitor visitor = new FindIjParamsVisitor(templateRegistry);
     visitor.exec(aaa);
     assertThat(visitor.exec(ddd).ijParamToCalleesMultimap).hasSize(3);
     assertThat(visitor.exec(ccc).ijParamToCalleesMultimap).hasSize(3);
@@ -84,7 +84,7 @@ public final class FindIjParamsVisitorTest extends TestCase {
 
     // Test with exec(bbb) then exec(aaa).
     // Exercises: processCalleeHelper case 1 (aaa -> bbb).
-    visitor = new FindIjParamsVisitor(templateRegistry, FAIL);
+    visitor = new FindIjParamsVisitor(templateRegistry);
     visitor.exec(bbb);
     assertThat(visitor.exec(ddd).ijParamToCalleesMultimap).hasSize(3);
     assertThat(visitor.exec(bbb).ijParamToCalleesMultimap).hasSize(5);
@@ -129,7 +129,7 @@ public final class FindIjParamsVisitorTest extends TestCase {
 
     // Test with exec(aaa).
     // Exercises: processCalleeHelper case 4 with incorporateCalleeVisitInfo case 1 (ccc -> bbb).
-    FindIjParamsVisitor visitor = new FindIjParamsVisitor(templateRegistry, FAIL);
+    FindIjParamsVisitor visitor = new FindIjParamsVisitor(templateRegistry);
     visitor.exec(aaa);
     assertThat(visitor.exec(bbb).ijParamToCalleesMultimap).hasSize(2);
     assertThat(visitor.exec(ccc).ijParamToCalleesMultimap).hasSize(5);
@@ -173,7 +173,7 @@ public final class FindIjParamsVisitorTest extends TestCase {
     // Exercises: processCalleeHelper case 2 (bbb -> bbb).
     // Exercises: processCalleeHelper case 3 (ccc -> bbb).
     // Exercises: processCalleeHelper case 5 with incorporateCalleeVisitInfo case 2 (bbb -> ccc).
-    FindIjParamsVisitor visitor = new FindIjParamsVisitor(templateRegistry, FAIL);
+    FindIjParamsVisitor visitor = new FindIjParamsVisitor(templateRegistry);
     visitor.exec(aaa);
     assertThat(visitor.exec(ccc).ijParamToCalleesMultimap).hasSize(4);
     assertThat(visitor.exec(ccc).ijParamToCalleesMultimap.keySet()).hasSize(3);
@@ -218,7 +218,7 @@ public final class FindIjParamsVisitorTest extends TestCase {
     // Exercises: processCalleeHelper case 3 (ccc-> aaa).
     // Exercises: processCalleeHelper case 5 with incorporateCalleeVisitInfo case 3 (bbb -> ccc).
     // Exercises: processCalleeHelper case 5 with incorporateCalleeVisitInfo case 2 (aaa -> bbb).
-    FindIjParamsVisitor visitor = new FindIjParamsVisitor(templateRegistry, FAIL);
+    FindIjParamsVisitor visitor = new FindIjParamsVisitor(templateRegistry);
     visitor.exec(aaa);
     assertThat(visitor.exec(ccc).ijParamToCalleesMultimap).hasSize(6);
     assertThat(visitor.exec(ccc).ijParamToCalleesMultimap.keySet()).hasSize(4);
@@ -265,7 +265,7 @@ public final class FindIjParamsVisitorTest extends TestCase {
 
     // Test with exec(aaa).
     // Exercises: processCalleeHelper case 4 with incorporateCalleeVisitInfo case 4 (ccc -> ddd).
-    FindIjParamsVisitor visitor = new FindIjParamsVisitor(templateRegistry, FAIL);
+    FindIjParamsVisitor visitor = new FindIjParamsVisitor(templateRegistry);
     visitor.exec(aaa);
     assertThat(visitor.exec(bbb).ijParamToCalleesMultimap).hasSize(4);
     assertThat(visitor.exec(bbb).ijParamToCalleesMultimap.keySet()).hasSize(3);
@@ -308,7 +308,7 @@ public final class FindIjParamsVisitorTest extends TestCase {
 
     // Test with exec(aaa).
     // Exercises: processCalleeHelper case 4 with incorporateCalleeVisitInfo case 3 (ccc -> bbb).
-    FindIjParamsVisitor visitor = new FindIjParamsVisitor(templateRegistry, FAIL);
+    FindIjParamsVisitor visitor = new FindIjParamsVisitor(templateRegistry);
     visitor.exec(aaa);
     assertThat(visitor.exec(ccc).ijParamToCalleesMultimap).hasSize(6);
     assertThat(visitor.exec(ccc).ijParamToCalleesMultimap.keySet()).hasSize(4);
@@ -347,14 +347,14 @@ public final class FindIjParamsVisitorTest extends TestCase {
 
 
     SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(fileContent).parse();
-
+    TemplateRegistry templateRegistry = new TemplateRegistry(soyTree, FAIL);
     TemplateNode bbb = soyTree.getChild(0).getChild(0);
     TemplateNode aaa = soyTree.getChild(0).getChild(1);
     TemplateNode ccc = soyTree.getChild(0).getChild(2);
     TemplateNode ddd = soyTree.getChild(0).getChild(3);
 
     ImmutableMap<TemplateNode, IjParamsInfo> templateToIjParamsInfoMap =
-        new FindIjParamsVisitor(null /* templateRegistry */, FAIL).execOnAllTemplates(soyTree);
+        new FindIjParamsVisitor(templateRegistry).execOnAllTemplates(soyTree);
     assertThat(templateToIjParamsInfoMap).hasSize(4);
     assertThat(templateToIjParamsInfoMap.get(ddd).ijParamToCalleesMultimap).hasSize(3);
     assertThat(templateToIjParamsInfoMap.get(ccc).ijParamToCalleesMultimap).hasSize(3);

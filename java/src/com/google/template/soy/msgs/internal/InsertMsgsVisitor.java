@@ -87,7 +87,6 @@ public final class InsertMsgsVisitor extends AbstractSoyNodeVisitor<Void> {
   /** The replacement nodes for the current MsgFallbackGroupNode we're visiting (during a pass). */
   private List<StandaloneNode> currReplacementNodes;
 
-
   /**
    * @param msgBundle The bundle of translated messages, or null to use the messages from the Soy
    *     source.
@@ -101,7 +100,6 @@ public final class InsertMsgsVisitor extends AbstractSoyNodeVisitor<Void> {
       @Nullable SoyMsgBundle msgBundle,
       boolean dontErrorOnPlrselMsgs,
       ErrorReporter errorReporter) {
-    super(errorReporter);
     this.msgBundle = msgBundle;
     this.dontErrorOnPlrselMsgs = dontErrorOnPlrselMsgs;
   }

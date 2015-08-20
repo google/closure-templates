@@ -16,9 +16,6 @@
 
 package com.google.template.soy.basetree;
 
-import com.google.common.base.Preconditions;
-import com.google.template.soy.error.ErrorReporter;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -36,12 +33,6 @@ import java.util.List;
  * @see AbstractReturningNodeVisitor
  */
 public abstract class AbstractNodeVisitor<N extends Node, R> implements NodeVisitor<N, R> {
-
-  protected final ErrorReporter errorReporter;
-
-  public AbstractNodeVisitor(ErrorReporter errorReporter) {
-    this.errorReporter = Preconditions.checkNotNull(errorReporter);
-  }
 
   @Override public R exec(N node) {
     visit(node);

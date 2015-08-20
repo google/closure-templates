@@ -22,7 +22,6 @@ import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Table;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.DataAccessNode;
 import com.google.template.soy.exprtree.ExprNode;
@@ -101,8 +100,7 @@ final class CollectTypeHelpersExprVisitor extends AbstractExprNodeVisitor<Void> 
    * @param closureNamespace namespace used to generate paths for generated helper functions.
    *     This is typically derived from the first template's Soy namespace.
    */
-  CollectTypeHelpersExprVisitor(String closureNamespace, ErrorReporter errorReporter) {
-    super(errorReporter);
+  CollectTypeHelpersExprVisitor(String closureNamespace) {
     this.closureNamespace = closureNamespace;
   }
 

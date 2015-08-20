@@ -18,7 +18,6 @@ package com.google.template.soy.msgs.internal;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.internal.MsgUtils.MsgPartsAndIds;
 import com.google.template.soy.msgs.restricted.SoyMsg;
@@ -49,10 +48,6 @@ public final class ExtractMsgsVisitor extends AbstractSoyNodeVisitor<SoyMsgBundl
 
   /** Current Soy file path (during a pass). */
   private String currentSource;
-
-  public ExtractMsgsVisitor(ErrorReporter errorReporter) {
-    super(errorReporter);
-  }
 
   /**
    * Returns a SoyMsgBundle containing all messages extracted from the given SoyFileSetNode or

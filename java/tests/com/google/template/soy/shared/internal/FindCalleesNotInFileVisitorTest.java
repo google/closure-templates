@@ -72,7 +72,7 @@ public final class FindCalleesNotInFileVisitorTest extends TestCase {
     SoyFileNode soyFile = soyTree.getChild(0);
 
     Iterable<String> calleesNotInFile = Iterables.transform(
-        new FindCalleesNotInFileVisitor(boom).exec(soyFile),
+        new FindCalleesNotInFileVisitor().exec(soyFile),
         new Function<CallBasicNode, String>() {
           @Override
           public String apply(CallBasicNode node) {

@@ -20,7 +20,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
@@ -94,10 +93,6 @@ public final class BuildAllDependeesMapVisitor
   /** Map from each node to the list of all its dependees, ordered by distance from the depender
    *  (nearest dependee is first). */
   private Map<SoyNode, List<SoyNode>> allDependeesMap;
-
-  public BuildAllDependeesMapVisitor(ErrorReporter errorReporter) {
-    super(errorReporter);
-  }
 
   @Override public Map<SoyNode, List<SoyNode>> exec(SoyNode node) {
 
@@ -288,7 +283,7 @@ public final class BuildAllDependeesMapVisitor
 
     if (exprUnion.getExpr() != null) {
       // V2 expression.
-      return new GetTopLevelRefsInExprVisitor(errorReporter).exec(exprUnion.getExpr());
+      return new GetTopLevelRefsInExprVisitor().exec(exprUnion.getExpr());
     } else {
       // V1 expression.
       return getTopLevelRefsInV1Expr(exprUnion.getExprText());
@@ -304,10 +299,6 @@ public final class BuildAllDependeesMapVisitor
       extends AbstractExprNodeVisitor<Set<String>> {
 
     private Set<String> topLevelRefs;
-
-    GetTopLevelRefsInExprVisitor(ErrorReporter errorReporter) {
-      super(errorReporter);
-    }
 
     @Override public Set<String> exec(ExprNode node) {
       topLevelRefs = Sets.newHashSet();

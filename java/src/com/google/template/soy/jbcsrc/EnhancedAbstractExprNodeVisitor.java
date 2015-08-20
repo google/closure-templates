@@ -19,7 +19,6 @@ package com.google.template.soy.jbcsrc;
 import static com.google.template.soy.jbcsrc.SyntheticVarName.foreachLoopIndex;
 import static com.google.template.soy.jbcsrc.SyntheticVarName.foreachLoopLength;
 
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.AbstractReturningExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
@@ -38,10 +37,6 @@ import com.google.template.soy.soytree.defn.TemplateParam;
  * on their subtypes.
  */
 abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprNodeVisitor<T> {
-
-  protected EnhancedAbstractExprNodeVisitor(ErrorReporter errorReporter) {
-    super(errorReporter);
-  }
 
   @Override protected final T visit(ExprNode node) {
     try {

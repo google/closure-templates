@@ -147,14 +147,14 @@ public final class ParsePasses {
 
   private final class RemoveHtmlCommentsPass extends CompilerFilePass {
     @Override public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-      new RemoveHtmlCommentsVisitor(nodeIdGen, errorReporter).exec(file);
+      new RemoveHtmlCommentsVisitor(nodeIdGen).exec(file);
     }
   }
   
   private final class SetDefaultForDelcallAllowsEmptyDefaultPass extends CompilerFilePass {
     // visitor is stateless so we can store a single version
     final SetDefaultForDelcallAllowsEmptyDefaultVisitor visitor =
-        new SetDefaultForDelcallAllowsEmptyDefaultVisitor(declaredSyntaxVersion, errorReporter);
+        new SetDefaultForDelcallAllowsEmptyDefaultVisitor(declaredSyntaxVersion);
 
     @Override public void run(SoyFileNode file, IdGenerator nodeIdGen) {
       visitor.exec(file);

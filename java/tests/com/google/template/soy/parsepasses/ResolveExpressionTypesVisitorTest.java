@@ -23,18 +23,15 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.basetree.SyntaxVersion;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.error.FormattingErrorReporter;
-import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import com.google.template.soy.soytree.SoytreeUtils;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeProvider;
 import com.google.template.soy.types.SoyTypeRegistry;
@@ -51,6 +48,7 @@ import com.google.template.soy.types.primitive.UnknownType;
 
 import junit.framework.TestCase;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -794,35 +792,10 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
    * @return A list of expression types.
    */
   private List<SoyType> getPrintStatementTypes(SoyNode node) {
-    CollectPrintStatementTypesVisitor visitor = new CollectPrintStatementTypesVisitor(
-        ExplodingErrorReporter.get());
-    visitor.exec(node);
-    return visitor.getTypes();
-  }
-
-  /**
-   * Test helper class that scarfs up all soy print nodes, and records the type of
-   * the expression printed.
-   */
-  public static class CollectPrintStatementTypesVisitor extends AbstractSoyNodeVisitor<Void> {
-    private final List<SoyType> types = Lists.newArrayList();
-
-    public CollectPrintStatementTypesVisitor(ErrorReporter errorReporter) {
-      super(errorReporter);
+    List<SoyType> types = new ArrayList<>();
+    for (PrintNode printNode : SoytreeUtils.getAllNodesOfType(node, PrintNode.class)) {
+      types.add(printNode.getExprUnion().getExpr().getType());
     }
-
-    public List<SoyType> getTypes() {
-      return types;
-    }
-
-    @Override protected void visitPrintNode(PrintNode node) {
-      types.add(node.getExprUnion().getExpr().getType());
-    }
-
-    @Override protected void visitSoyNode(SoyNode node) {
-      if (node instanceof ParentSoyNode<?>) {
-        visitChildren((ParentSoyNode<?>) node);
-      }
-    }
+    return types;
   }
 }

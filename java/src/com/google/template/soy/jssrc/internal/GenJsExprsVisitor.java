@@ -98,6 +98,8 @@ public final class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<JsExpr>
   /** List to collect the results. */
   private List<JsExpr> jsExprs;
 
+  private final ErrorReporter errorReporter;
+
   /**
    * @param soyJsSrcDirectivesMap Map of all SoyJsSrcPrintDirectives (name to directive).
    * @param jsExprTranslator Instance of JsExprTranslator to use.
@@ -116,7 +118,7 @@ public final class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<JsExpr>
       GenJsExprsVisitorFactory genJsExprsVisitorFactory,
       ErrorReporter errorReporter,
       @Assisted Deque<Map<String, JsExpr>> localVarTranslations) {
-    super(errorReporter);
+    this.errorReporter = errorReporter;
     this.soyJsSrcDirectivesMap = soyJsSrcDirectivesMap;
     this.jsExprTranslator = jsExprTranslator;
     this.genCallCodeUtils = genCallCodeUtils;

@@ -17,7 +17,6 @@
 package com.google.template.soy.jssrc.internal;
 
 import com.google.common.collect.Sets;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
@@ -44,14 +43,10 @@ public final class GenFunctionPluginRequiresVisitor {
   /** Set storage for the i18n namespaces */
   private SortedSet<String> requiredJsLibNames;
 
-  private final ErrorReporter errorReporter;
-
   @Inject
   public GenFunctionPluginRequiresVisitor(
-      Map<String, SoyLibraryAssistedJsSrcFunction> soyLibraryAssistedJsSrcFunctionsMap,
-      ErrorReporter errorReporter) {
+      Map<String, SoyLibraryAssistedJsSrcFunction> soyLibraryAssistedJsSrcFunctionsMap) {
     this.soyLibraryAssistedJsSrcFunctionsMap = soyLibraryAssistedJsSrcFunctionsMap;
-    this.errorReporter = errorReporter;
   }
 
 
@@ -61,7 +56,7 @@ public final class GenFunctionPluginRequiresVisitor {
     GenFunctionPluginRequiresHelperVisitor helperVisitor =
         new GenFunctionPluginRequiresHelperVisitor();
 
-    SoytreeUtils.execOnAllV2Exprs(soyFile, helperVisitor, errorReporter);
+    SoytreeUtils.execOnAllV2Exprs(soyFile, helperVisitor);
 
     return requiredJsLibNames;
   }
@@ -69,10 +64,6 @@ public final class GenFunctionPluginRequiresVisitor {
 
   private final class GenFunctionPluginRequiresHelperVisitor
      extends AbstractExprNodeVisitor<SortedSet<String>> {
-
-    public GenFunctionPluginRequiresHelperVisitor() {
-      super(GenFunctionPluginRequiresVisitor.this.errorReporter);
-    }
 
     @Override protected void visitFunctionNode(FunctionNode node) {
       String functionName = node.getFunctionName();

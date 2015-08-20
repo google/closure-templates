@@ -18,7 +18,6 @@ package com.google.template.soy.exprtree;
 
 import com.google.common.base.Equivalence;
 import com.google.common.primitives.Doubles;
-import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.exprtree.ExprNode.OperatorNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 
@@ -43,7 +42,7 @@ public final class ExprEquivalence extends Equivalence<ExprNode> {
   }
 
   private final AbstractReturningExprNodeVisitor<Integer> hashCodeVisitor = 
-      new AbstractReturningExprNodeVisitor<Integer>(ExplodingErrorReporter.get()) {
+      new AbstractReturningExprNodeVisitor<Integer>() {
     @Override protected Integer visitVarRefNode(VarRefNode node) {
       return Objects.hashCode(node.getDefnDecl());
     }
@@ -118,7 +117,6 @@ public final class ExprEquivalence extends Equivalence<ExprNode> {
     private final ExprNode other;
 
     EqualsVisitor(ExprNode other) {
-      super(ExplodingErrorReporter.get());
       this.other = other;
     }
 

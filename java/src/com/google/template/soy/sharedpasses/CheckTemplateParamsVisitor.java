@@ -65,6 +65,7 @@ public final class CheckTemplateParamsVisitor extends AbstractSoyNodeVisitor<Voi
 
   /** User-declared syntax version. */
   private final SyntaxVersion declaredSyntaxVersion;
+  private final ErrorReporter errorReporter;
 
   /** Registry of all templates in the Soy tree. */
   private TemplateRegistry templateRegistry;
@@ -74,7 +75,7 @@ public final class CheckTemplateParamsVisitor extends AbstractSoyNodeVisitor<Voi
    */
   public CheckTemplateParamsVisitor(SyntaxVersion declaredSyntaxVersion,
       ErrorReporter errorReporter) {
-    super(errorReporter);
+    this.errorReporter = errorReporter;
     this.declaredSyntaxVersion = declaredSyntaxVersion;
   }
 
@@ -117,8 +118,7 @@ public final class CheckTemplateParamsVisitor extends AbstractSoyNodeVisitor<Voi
       }
     }
 
-    IndirectParamsInfo ipi
-        = new FindIndirectParamsVisitor(templateRegistry, errorReporter).exec(node);
+    IndirectParamsInfo ipi = new FindIndirectParamsVisitor(templateRegistry).exec(node);
 
     Set<String> allParamNames = new HashSet<>();
     List<String> unusedParams = new ArrayList<>();

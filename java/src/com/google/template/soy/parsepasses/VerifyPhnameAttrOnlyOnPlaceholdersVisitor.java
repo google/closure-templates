@@ -36,9 +36,10 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 public final class VerifyPhnameAttrOnlyOnPlaceholdersVisitor extends AbstractSoyNodeVisitor<Void> {
   private static final SoyError INVALID_PLACEHOLDER =
       SoyError.of("''phname'' attributes are only valid inside '''{'msg...'' tags");
+  private final ErrorReporter errorReporter;
 
   public VerifyPhnameAttrOnlyOnPlaceholdersVisitor(ErrorReporter errorReporter) {
-    super(errorReporter);
+    this.errorReporter = errorReporter;
   }
 
   @Override protected void visitPrintNode(PrintNode node) {

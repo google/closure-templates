@@ -18,7 +18,6 @@ package com.google.template.soy.parsepasses;
 
 import com.google.common.base.Preconditions;
 import com.google.template.soy.basetree.SyntaxVersion;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
@@ -39,10 +38,6 @@ public final class InferRequiredSyntaxVersionVisitor extends AbstractSoyNodeVisi
 
   /** The highest known required syntax version so far (during a pass). */
   private SyntaxVersion knownRequiredSyntaxVersion;
-
-  public InferRequiredSyntaxVersionVisitor(ErrorReporter errorReporter) {
-    super(errorReporter);
-  }
 
   @Override public SyntaxVersion exec(SoyNode node) {
     Preconditions.checkArgument(node instanceof SoyFileNode);

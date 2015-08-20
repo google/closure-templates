@@ -79,7 +79,7 @@ public final class FindTransitiveDepTemplatesVisitorTest extends TestCase {
     // Test with exec(aaa).
     // Exercises: processCalleeHelper case 5 with incorporateCalleeVisitInfo case 1 (aaa -> bbb).
     FindTransitiveDepTemplatesVisitor visitor =
-        new FindTransitiveDepTemplatesVisitor(templateRegistry, FAIL);
+        new FindTransitiveDepTemplatesVisitor(templateRegistry);
     Map<TemplateNode, TransitiveDepTemplatesInfo> memoizedInfoMap =
         visitor.templateToFinishedInfoMap;
     visitor.exec(aaa);
@@ -92,7 +92,7 @@ public final class FindTransitiveDepTemplatesVisitorTest extends TestCase {
 
     // Test with exec(bbb) then exec(aaa).
     // Exercises: processCalleeHelper case 1 (aaa -> bbb).
-    visitor = new FindTransitiveDepTemplatesVisitor(templateRegistry, FAIL);
+    visitor = new FindTransitiveDepTemplatesVisitor(templateRegistry);
     memoizedInfoMap = visitor.templateToFinishedInfoMap;
     visitor.exec(bbb);
     assertThat(memoizedInfoMap).hasSize(2);
@@ -141,7 +141,7 @@ public final class FindTransitiveDepTemplatesVisitorTest extends TestCase {
     // Test with exec(aaa).
     // Exercises: processCalleeHelper case 4 with incorporateCalleeVisitInfo case 1 (ccc -> bbb).
     FindTransitiveDepTemplatesVisitor visitor =
-        new FindTransitiveDepTemplatesVisitor(templateRegistry, FAIL);
+        new FindTransitiveDepTemplatesVisitor(templateRegistry);
     Map<TemplateNode, TransitiveDepTemplatesInfo> memoizedInfoMap =
         visitor.templateToFinishedInfoMap;
     visitor.exec(aaa);
@@ -189,7 +189,7 @@ public final class FindTransitiveDepTemplatesVisitorTest extends TestCase {
     // Exercises: processCalleeHelper case 3 (ccc -> bbb).
     // Exercises: processCalleeHelper case 5 with incorporateCalleeVisitInfo case 2 (bbb -> ccc).
     FindTransitiveDepTemplatesVisitor visitor =
-        new FindTransitiveDepTemplatesVisitor(templateRegistry, FAIL);
+        new FindTransitiveDepTemplatesVisitor(templateRegistry);
     Map<TemplateNode, TransitiveDepTemplatesInfo> memoizedInfoMap =
         visitor.templateToFinishedInfoMap;
     visitor.exec(aaa);
@@ -237,7 +237,7 @@ public final class FindTransitiveDepTemplatesVisitorTest extends TestCase {
     // Exercises: processCalleeHelper case 5 with incorporateCalleeVisitInfo case 3 (bbb -> ccc).
     // Exercises: processCalleeHelper case 5 with incorporateCalleeVisitInfo case 2 (aaa -> bbb).
     FindTransitiveDepTemplatesVisitor visitor =
-        new FindTransitiveDepTemplatesVisitor(templateRegistry, FAIL);
+        new FindTransitiveDepTemplatesVisitor(templateRegistry);
     Map<TemplateNode, TransitiveDepTemplatesInfo> memoizedInfoMap =
         visitor.templateToFinishedInfoMap;
     visitor.exec(aaa);
@@ -287,7 +287,7 @@ public final class FindTransitiveDepTemplatesVisitorTest extends TestCase {
     // Test with exec(aaa).
     // Exercises: processCalleeHelper case 4 with incorporateCalleeVisitInfo case 4 (ccc -> ddd).
     FindTransitiveDepTemplatesVisitor visitor =
-        new FindTransitiveDepTemplatesVisitor(templateRegistry, FAIL);
+        new FindTransitiveDepTemplatesVisitor(templateRegistry);
     Map<TemplateNode, TransitiveDepTemplatesInfo> memoizedInfoMap =
         visitor.templateToFinishedInfoMap;
     visitor.exec(aaa);
@@ -333,7 +333,7 @@ public final class FindTransitiveDepTemplatesVisitorTest extends TestCase {
     // Test with exec(aaa).
     // Exercises: processCalleeHelper case 4 with incorporateCalleeVisitInfo case 3 (ccc -> bbb).
     FindTransitiveDepTemplatesVisitor visitor =
-        new FindTransitiveDepTemplatesVisitor(templateRegistry, FAIL);
+        new FindTransitiveDepTemplatesVisitor(templateRegistry);
     Map<TemplateNode, TransitiveDepTemplatesInfo> memoizedInfoMap =
         visitor.templateToFinishedInfoMap;
     visitor.exec(aaa);
@@ -373,6 +373,7 @@ public final class FindTransitiveDepTemplatesVisitorTest extends TestCase {
     SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(fileContent)
         .errorReporter(FAIL)
         .parse();
+    TemplateRegistry templateRegistry = new TemplateRegistry(soyTree, FAIL);
 
     TemplateNode bbb = soyTree.getChild(0).getChild(0);
     TemplateNode aaa = soyTree.getChild(0).getChild(1);
@@ -380,7 +381,7 @@ public final class FindTransitiveDepTemplatesVisitorTest extends TestCase {
     TemplateNode ddd = soyTree.getChild(0).getChild(3);
 
     ImmutableMap<TemplateNode, TransitiveDepTemplatesInfo> resultMap =
-        new FindTransitiveDepTemplatesVisitor(null /* templateRegistry */, FAIL)
+        new FindTransitiveDepTemplatesVisitor(templateRegistry)
             .execOnAllTemplates(soyTree);
     assertThat(resultMap).hasSize(4);
     assertThat(resultMap.get(ddd).depTemplateSet).isEqualTo(ImmutableSet.of(ddd));

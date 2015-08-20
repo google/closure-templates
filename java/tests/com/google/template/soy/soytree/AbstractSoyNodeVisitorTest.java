@@ -80,17 +80,13 @@ public final class AbstractSoyNodeVisitorTest extends TestCase {
             .exprText("'moo'")
             .build(FAIL));
 
-    IncompleteOutputVisitor iov = new IncompleteOutputVisitor(FAIL);
+    IncompleteOutputVisitor iov = new IncompleteOutputVisitor();
     assertEquals("[Parent][SoyFile][Parent][Print][Print][Parent][Print]", iov.exec(soyTree));
   }
 
   private static class IncompleteOutputVisitor extends AbstractSoyNodeVisitor<String> {
 
     private StringBuilder outputSb;
-
-    private IncompleteOutputVisitor(ErrorReporter errorReporter) {
-      super(errorReporter);
-    }
 
     @Override public String exec(SoyNode node) {
       outputSb = new StringBuilder();

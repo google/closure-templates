@@ -52,8 +52,10 @@ public final class RewriteRemaindersVisitor extends AbstractSoyNodeVisitor<Void>
   /** The MsgPluralNode most recently visited. */
   private MsgPluralNode currPluralNode;
 
+  private final ErrorReporter errorReporter;
+
   public RewriteRemaindersVisitor(ErrorReporter errorReporter) {
-    super(errorReporter);
+    this.errorReporter = errorReporter;
   }
 
   // -----------------------------------------------------------------------------------------------

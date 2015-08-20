@@ -164,7 +164,7 @@ public final class ContextualAutoescaper {
     ImmutableList.Builder<SlicedRawTextNode> slicedRawTextNodesBuilder = ImmutableList.builder();
 
     Collection<TemplateNode> allTemplates = inferences.getAllTemplates();
-    TemplateCallGraph callGraph = new TemplateCallGraph(templatesByName, errorReporter);
+    TemplateCallGraph callGraph = new TemplateCallGraph(templatesByName);
     // Generate a call graph, creating a dummy root that calls all non-private template in
     // Context.PCDATA, and then type the minimal ancestor set needed to reach all contextual
     // templates whether private or not.
@@ -353,10 +353,6 @@ public final class ContextualAutoescaper {
 
   private final class NonContextualTypedRenderUnitNodesVisitor
       extends AbstractSoyNodeVisitor<Void> {
-
-    NonContextualTypedRenderUnitNodesVisitor() {
-      super(ContextualAutoescaper.this.errorReporter);
-    }
 
     @Override protected void visitTemplateNode(TemplateNode node) {
       if (node.getAutoescapeMode() == AutoescapeMode.NONCONTEXTUAL) {

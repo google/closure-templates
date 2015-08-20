@@ -211,9 +211,10 @@ final class ResolveNamesVisitor extends AbstractSoyNodeVisitor<Void> {
   /** User-declared syntax version. */
   private final SyntaxVersion declaredSyntaxVersion;
   private String currentTemplateName;
+  private final ErrorReporter errorReporter;
 
   ResolveNamesVisitor(SyntaxVersion declaredSyntaxVersion, ErrorReporter errorReporter) {
-    super(errorReporter);
+    this.errorReporter = errorReporter;
     this.declaredSyntaxVersion = declaredSyntaxVersion;
   }
 
@@ -330,7 +331,6 @@ final class ResolveNamesVisitor extends AbstractSoyNodeVisitor<Void> {
      *     expression being scanned.
      */
     ResolveNamesExprVisitor(ExprHolderNode owningSoyNode) {
-      super(ResolveNamesVisitor.this.errorReporter);
       this.owningSoyNode = owningSoyNode;
     }
 

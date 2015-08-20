@@ -41,8 +41,10 @@ public final class VoidElementVerifyingVisitor extends AbstractHtmlSoyNodeVisito
       + "Elements are not allowed to have any content. See: "
       + "http://www.w3.org/TR/html-markup/syntax.html#void-element");
 
+  private final ErrorReporter errorReporter;
+
   public VoidElementVerifyingVisitor(ErrorReporter errorReporter) {
-    super(errorReporter);
+    this.errorReporter = errorReporter;
   }
 
   @Override

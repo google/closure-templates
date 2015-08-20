@@ -16,7 +16,6 @@
 
 package com.google.template.soy.html;
 
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.soytree.AbstractReturningSoyNodeVisitor;
 import com.google.template.soy.soytree.SoyNode;
 
@@ -27,13 +26,6 @@ import com.google.template.soy.soytree.SoyNode;
 public abstract class AbstractReturningHtmlSoyNodeVisitor<R>
     extends AbstractReturningSoyNodeVisitor<R> {
 
-  /**
-   * @param errorReporter For reporting syntax errors.
-   */
-  public AbstractReturningHtmlSoyNodeVisitor(ErrorReporter errorReporter) {
-    super(errorReporter);
-  }
-  
   @Override protected R visit(SoyNode node) {
     switch (node.getKind()) {
       case HTML_ATTRIBUTE: return visitHtmlAttributeNode((HtmlAttributeNode) node);

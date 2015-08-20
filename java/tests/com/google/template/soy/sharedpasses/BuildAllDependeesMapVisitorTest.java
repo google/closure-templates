@@ -101,8 +101,7 @@ public final class BuildAllDependeesMapVisitorTest extends TestCase {
     PrintNode fo = (PrintNode) cpcn.getChild(1);
 
     // Build the nearest-dependee map.
-    Map<SoyNode, List<SoyNode>> allDependeesMap
-        = new BuildAllDependeesMapVisitor(boom).exec(soyTree);
+    Map<SoyNode, List<SoyNode>> allDependeesMap = new BuildAllDependeesMapVisitor().exec(soyTree);
 
     assertThat(allDependeesMap.get(a)).containsExactly(template);
     assertThat(allDependeesMap.get(bc)).containsExactly(template);

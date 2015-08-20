@@ -36,9 +36,10 @@ public final class AssertStrictAutoescapingVisitor extends AbstractSoyNodeVisito
 
   private static final SoyError INVALID_AUTOESCAPING =
       SoyError.of("Invalid use of non-strict when strict autoescaping is required.");
+  private final ErrorReporter errorReporter;
 
   public AssertStrictAutoescapingVisitor(ErrorReporter errorReporter) {
-    super(errorReporter);
+    this.errorReporter = errorReporter;
   }
 
   @Override public Void exec(SoyNode soyNode) {

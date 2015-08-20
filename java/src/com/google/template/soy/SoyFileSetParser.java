@@ -246,8 +246,7 @@ public final class SoyFileSetParser {
     new ReportSyntaxVersionErrorsVisitor(declaredSyntaxVersion, true, errorReporter)
         .exec(fileNode);
     // Check for errors based on inferred (as opposed to declared) required syntax version.
-    SyntaxVersion inferredSyntaxVersion = new InferRequiredSyntaxVersionVisitor(errorReporter)
-        .exec(fileNode);
+    SyntaxVersion inferredSyntaxVersion = new InferRequiredSyntaxVersionVisitor().exec(fileNode);
     if (inferredSyntaxVersion.num > declaredSyntaxVersion.num) {
       new ReportSyntaxVersionErrorsVisitor(inferredSyntaxVersion, false, errorReporter)
           .exec(fileNode);

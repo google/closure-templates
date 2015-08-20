@@ -55,7 +55,7 @@ public final class ReplaceMsgsWithGoogMsgsVisitorTest extends TestCase {
     SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(soyCode)
         .errorReporter(boom)
         .parse();
-    new ReplaceMsgsWithGoogMsgsVisitor(boom).exec(soyTree);
+    new ReplaceMsgsWithGoogMsgsVisitor().exec(soyTree);
     TemplateNode template = soyTree.getChild(0).getChild(0);
 
     GoogMsgDefNode gmd0 = (GoogMsgDefNode) template.getChild(0);

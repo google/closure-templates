@@ -30,7 +30,6 @@ import com.google.common.collect.Iterables;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.DataAccessNode;
 import com.google.template.soy.exprtree.ExprNode;
@@ -234,7 +233,6 @@ final class ExpressionCompiler {
     CompilerVisitor(VariableLookup variables,
         PluginFunctionCompiler functions,
         Supplier<? extends ExpressionDetacher> detacher) {
-      super(ExplodingErrorReporter.get());
       this.detacher = detacher;
       this.variables = variables;
       this.functions = functions;
@@ -910,10 +908,6 @@ final class ExpressionCompiler {
   private static final class RequiresDetachVisitor extends
       EnhancedAbstractExprNodeVisitor<Boolean> {
     static final RequiresDetachVisitor INSTANCE = new RequiresDetachVisitor();
-
-    RequiresDetachVisitor() {
-      super(ExplodingErrorReporter.get());
-    }
 
     @Override Boolean visitForeachLoopVar(VarRefNode varRef, LocalVar local) {
       return true;

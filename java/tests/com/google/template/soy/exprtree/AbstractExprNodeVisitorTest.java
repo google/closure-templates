@@ -19,7 +19,6 @@ package com.google.template.soy.exprtree;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
-import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.exprtree.ExprNode.OperatorNode;
 import com.google.template.soy.exprtree.OperatorNodes.MinusOpNode;
 
@@ -89,7 +88,6 @@ public final class AbstractExprNodeVisitorTest extends TestCase {
     private Deque<Double> resultStack;
 
     IncompleteEvalVisitor(Map<String, Double> env) {
-      super(ExplodingErrorReporter.get());
       this.env = env;
     }
 

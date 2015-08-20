@@ -18,7 +18,6 @@ package com.google.template.soy.sharedpasses;
 
 import com.google.common.collect.Sets;
 import com.google.template.soy.basetree.AbstractNodeVisitor;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.VarRefNode;
@@ -36,8 +35,8 @@ final class FindIjParamsInExprHelperVisitor extends AbstractNodeVisitor<ExprNode
   private final Set<String> usedIjParamsInExpr;
 
 
-  public FindIjParamsInExprHelperVisitor(ErrorReporter errorReporter) {
-    super(errorReporter);
+  public FindIjParamsInExprHelperVisitor() {
+    super();
     // Must initialize values here instead of in setup() since we call exec() multiple times on
     // one instance of this class, and we need to keep state across those calls to exec().
     usedIjParamsInExpr = Sets.newHashSet();

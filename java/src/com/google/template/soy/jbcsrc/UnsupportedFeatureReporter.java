@@ -36,20 +36,22 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
  */
 final class UnsupportedFeatureReporter {
   private final SoyNodeVisitor errorChecker;
+  private final ErrorReporter errorReporter;
 
   UnsupportedFeatureReporter(ErrorReporter errorReporter) {
-    this.errorChecker = new SoyNodeVisitor(errorReporter);
+    this.errorReporter = errorReporter;
+    this.errorChecker = new SoyNodeVisitor();
   }
 
   void check(SoyNode node) {
     errorChecker.exec(node);
   }
-  
-  private static class SoyNodeVisitor extends AbstractSoyNodeVisitor<Void> {
+
+  private class SoyNodeVisitor extends AbstractSoyNodeVisitor<Void> {
     final ExprNodeVisitor exprVisitor;
-    SoyNodeVisitor(ErrorReporter errorReporter) {
-      super(errorReporter);
-      this.exprVisitor = new ExprNodeVisitor(errorReporter);
+
+    SoyNodeVisitor() {
+      this.exprVisitor = new ExprNodeVisitor();
     }
 
     @Override protected void visitSoyFileNode(SoyFileNode node) {
@@ -80,10 +82,7 @@ final class UnsupportedFeatureReporter {
     }
   }
 
-  private static class ExprNodeVisitor extends AbstractExprNodeVisitor<Void> {
-    ExprNodeVisitor(ErrorReporter errorReporter) {
-      super(errorReporter);
-    }
+  private class ExprNodeVisitor extends AbstractExprNodeVisitor<Void> {
 
     @Override protected final void visitVarRefNode(VarRefNode node) {
       VarDefn defn = node.getDefnDecl();

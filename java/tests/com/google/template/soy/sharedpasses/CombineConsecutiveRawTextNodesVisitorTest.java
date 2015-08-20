@@ -53,7 +53,7 @@ public final class CombineConsecutiveRawTextNodesVisitorTest extends TestCase {
 
     assertThat(template.numChildren()).isEqualTo(5);
 
-    new CombineConsecutiveRawTextNodesVisitor(boom).exec(soyTree);
+    new CombineConsecutiveRawTextNodesVisitor().exec(soyTree);
 
     assertThat(template.numChildren()).isEqualTo(3);
     assertThat(((RawTextNode) template.getChild(0)).getRawText()).isEqualTo("Blah");

@@ -120,6 +120,7 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
 
   /** User-declared syntax version. */
   private final SyntaxVersion declaredSyntaxVersion;
+  private final ErrorReporter errorReporter;
 
   /** Common operations on Soy types. */
   private final SoyTypeOps typeOps;
@@ -131,7 +132,7 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
       SoyTypeRegistry typeRegistry,
       SyntaxVersion declaredSyntaxVersion,
       ErrorReporter errorReporter) {
-    super(errorReporter);
+    this.errorReporter = errorReporter;
     this.typeOps = new SoyTypeOps(typeRegistry);
     this.declaredSyntaxVersion = declaredSyntaxVersion;
   }
@@ -322,7 +323,7 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
   private final class ResolveTypesExprVisitor extends AbstractExprNodeVisitor<Void> {
 
     private final AbstractExprNodeVisitor<Void> checkAllTypesAssignedVisitor =
-        new AbstractExprNodeVisitor<Void>(errorReporter) {
+        new AbstractExprNodeVisitor<Void>() {
           @Override protected void visitExprNode(ExprNode node) {
             if (node instanceof ParentExprNode) {
               visitChildren((ParentExprNode) node);
@@ -343,7 +344,6 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
      *     expression being scanned.
      */
     public ResolveTypesExprVisitor(ExprHolderNode owningSoyNode) {
-      super(ResolveExpressionTypesVisitor.this.errorReporter);
       this.owningSoyNode = owningSoyNode;
     }
 
@@ -938,10 +938,6 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
 
     // Type constraints that are valid if the condition is false.
     Map<Wrapper<ExprNode>, SoyType> negativeTypeConstraints = Maps.newHashMap();
-
-    TypeNarrowingConditionVisitor() {
-      super(ResolveExpressionTypesVisitor.this.errorReporter);
-    }
 
     @Override public Void exec(ExprNode node) {
       visit(node);

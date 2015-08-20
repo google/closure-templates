@@ -121,7 +121,7 @@ public class JsSrcMain {
     // Generate code with the opt_ijData param if either (a) the user specified the compiler flag
     // --isUsingIjData or (b) any of the Soy code in the file set references injected data.
     boolean isUsingIjData = jsSrcOptions.isUsingIjData()
-        || new IsUsingIjDataVisitor(errorReporter).exec(soyTree);
+        || new IsUsingIjDataVisitor().exec(soyTree);
 
     // Make sure that we don't try to use goog.i18n.bidi when we aren't supposed to use Closure.
     Preconditions.checkState(
@@ -142,8 +142,8 @@ public class JsSrcMain {
 
       // Replace MsgNodes.
       if (jsSrcOptions.shouldGenerateGoogMsgDefs()) {
-        new ReplaceMsgsWithGoogMsgsVisitor(errorReporter).exec(soyTree);
-        new MoveGoogMsgDefNodesEarlierVisitor(errorReporter).exec(soyTree);
+        new ReplaceMsgsWithGoogMsgsVisitor().exec(soyTree);
+        new MoveGoogMsgDefNodesEarlierVisitor().exec(soyTree);
         Preconditions.checkState(
             bidiGlobalDir != null,
             "If enabling shouldGenerateGoogMsgDefs, must also set bidi global directionality.");

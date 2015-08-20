@@ -105,6 +105,7 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   private final TranslateToPyExprVisitorFactory translateToPyExprVisitorFactory;
 
   private final GenPyCallExprVisitor genPyCallExprVisitor;
+  private final ErrorReporter errorReporter;
 
   /**
    * @see LocalVariableStack
@@ -124,7 +125,7 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       TranslateToPyExprVisitorFactory translateToPyExprVisitorFactory,
       GenPyCallExprVisitor genPyCallExprVisitor,
       ErrorReporter errorReporter) {
-    super(errorReporter);
+    this.errorReporter = errorReporter;
     this.runtimePath = runtimePath;
     this.bidiIsRtlFn = bidiIsRtlFn;
     this.translationClass = translationClass;
@@ -779,7 +780,7 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    */
     private void addCodeToRequireSoyNamespaces(SoyFileNode soyFile) {
       SortedSet<String> calleeModules = new TreeSet<>();
-      for (CallBasicNode node : new FindCalleesNotInFileVisitor(errorReporter).exec(soyFile)) {
+      for (CallBasicNode node : new FindCalleesNotInFileVisitor().exec(soyFile)) {
         String calleeNotInFile = node.getCalleeName();
         int lastDotIndex = calleeNotInFile.lastIndexOf('.');
         if (lastDotIndex == -1) {

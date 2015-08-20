@@ -83,7 +83,7 @@ public class JsExprTranslator {
 
     if (expr != null &&
         (exprText == null ||
-         new CheckAllFunctionsSupportedVisitor(soyJsSrcFunctionsMap, errorReporter).exec(expr))) {
+         new CheckAllFunctionsSupportedVisitor(soyJsSrcFunctionsMap).exec(expr))) {
       // V2 expression.
       return translateToJsExprVisitorFactory.create(localVarTranslations).exec(expr);
     } else {
@@ -111,8 +111,7 @@ public class JsExprTranslator {
     private boolean areAllFunctionsSupported;
 
     private CheckAllFunctionsSupportedVisitor(
-        Map<String, SoyJsSrcFunction> soyJsSrcFunctionsMap, ErrorReporter errorReporter) {
-      super(errorReporter);
+        Map<String, SoyJsSrcFunction> soyJsSrcFunctionsMap) {
       this.soyJsSrcFunctionsMap = soyJsSrcFunctionsMap;
     }
 

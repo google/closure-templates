@@ -17,7 +17,6 @@
 package com.google.template.soy.jssrc.internal;
 
 import com.google.common.collect.Sets;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.html.AbstractHtmlSoyNodeVisitor;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcPrintDirective;
 import com.google.template.soy.soytree.PrintDirectiveNode;
@@ -45,9 +44,7 @@ public final class GenDirectivePluginRequiresVisitor
 
   @Inject
   public GenDirectivePluginRequiresVisitor(
-      Map<String, SoyLibraryAssistedJsSrcPrintDirective> soyLibraryAssistedJsSrcDirectivesMap,
-      ErrorReporter errorReporter) {
-    super(errorReporter);
+      Map<String, SoyLibraryAssistedJsSrcPrintDirective> soyLibraryAssistedJsSrcDirectivesMap) {
     this.soyLibraryAssistedJsSrcDirectivesMap = soyLibraryAssistedJsSrcDirectivesMap;
   }
 

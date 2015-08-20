@@ -55,6 +55,7 @@ final class RewriteGenderMsgsVisitor extends AbstractSoyNodeVisitor<Void> {
 
   /** Fallback base select var name. */
   public static final String FALLBACK_BASE_SELECT_VAR_NAME = "GENDER";
+  private final ErrorReporter errorReporter;
 
 
   /** Node id generator for the Soy tree being visited. */
@@ -67,7 +68,7 @@ final class RewriteGenderMsgsVisitor extends AbstractSoyNodeVisitor<Void> {
    * @param nodeIdGen The same node ID generator used to generate the existing tree nodes.
    */
   public RewriteGenderMsgsVisitor(IdGenerator nodeIdGen, ErrorReporter errorReporter) {
-    super(errorReporter);
+    this.errorReporter = errorReporter;
     this.nodeIdGen = Preconditions.checkNotNull(nodeIdGen);
   }
 

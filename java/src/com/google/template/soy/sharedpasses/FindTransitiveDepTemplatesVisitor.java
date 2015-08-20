@@ -16,6 +16,8 @@
 
 package com.google.template.soy.sharedpasses;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
@@ -23,7 +25,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.sharedpasses.FindTransitiveDepTemplatesVisitor.TransitiveDepTemplatesInfo;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
@@ -44,8 +45,6 @@ import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import javax.annotation.Nullable;
 
 /**
  * Visitor for finding the set of templates transitively called by a given template.
@@ -247,7 +246,7 @@ public final class FindTransitiveDepTemplatesVisitor
 
 
   /** Registry of all templates in the Soy tree. */
-  private TemplateRegistry templateRegistry;
+  private final TemplateRegistry templateRegistry;
 
   /** Map from template node to finished info containing memoized info that was found in previous
    *  passes (previous calls to exec). */
@@ -270,12 +269,9 @@ public final class FindTransitiveDepTemplatesVisitor
 
   /**
    * @param templateRegistry Map from template name to TemplateNode to use during the pass.
-   * @param errorReporter For reporting errors.
    */
-  public FindTransitiveDepTemplatesVisitor(
-      @Nullable TemplateRegistry templateRegistry, ErrorReporter errorReporter) {
-    super(errorReporter);
-    this.templateRegistry = templateRegistry;
+  public FindTransitiveDepTemplatesVisitor(TemplateRegistry templateRegistry) {
+    this.templateRegistry = checkNotNull(templateRegistry);
     templateToFinishedInfoMap = Maps.newHashMap();
   }
 
@@ -290,12 +286,6 @@ public final class FindTransitiveDepTemplatesVisitor
 
     Preconditions.checkArgument(rootTemplate instanceof TemplateNode);
     TemplateNode rootTemplateCast = (TemplateNode) rootTemplate;
-
-    // Build templateRegistry and initialize templateToFinishedInfoMap if necessary.
-    if (templateRegistry == null) {
-      SoyFileSetNode soyTree = rootTemplateCast.getParent().getParent();
-      templateRegistry = new TemplateRegistry(soyTree, errorReporter);
-    }
 
     // If finished in a previous pass (previous call to exec), just return the finished info.
     if (templateToFinishedInfoMap.containsKey(rootTemplateCast)) {

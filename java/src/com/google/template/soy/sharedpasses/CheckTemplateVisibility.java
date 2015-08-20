@@ -40,6 +40,8 @@ public final class CheckTemplateVisibility extends AbstractSoyNodeVisitor<Void> 
   private static final SoyError CALLEE_NOT_VISIBLE = SoyError.of(
     "Template {0} has {1} visibility, not visible from here.");
 
+  private final ErrorReporter errorReporter;
+
   /** Registry of all templates in the Soy tree. */
   private TemplateRegistry templateRegistry;
 
@@ -47,7 +49,7 @@ public final class CheckTemplateVisibility extends AbstractSoyNodeVisitor<Void> 
   private String currentFileName;
 
   public CheckTemplateVisibility(ErrorReporter errorReporter) {
-    super(errorReporter);
+    this.errorReporter = errorReporter;
   }
 
   @Override protected void visitSoyFileSetNode(SoyFileSetNode node) {

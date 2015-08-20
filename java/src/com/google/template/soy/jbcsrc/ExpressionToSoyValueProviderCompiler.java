@@ -21,7 +21,6 @@ import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
 
 import com.google.common.base.Optional;
 import com.google.template.soy.data.SoyValueProvider;
-import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.exprtree.DataAccessNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
@@ -119,7 +118,6 @@ final class ExpressionToSoyValueProviderCompiler {
 
     CompilerVisitor(VariableLookup variables,
         ExpressionCompiler exprCompiler,  BasicExpressionCompiler detachingExprCompiler) {
-      super(ExplodingErrorReporter.get());
       this.variables = variables;
       checkArgument((exprCompiler == null) != (detachingExprCompiler == null));
       this.exprCompiler = exprCompiler;

@@ -109,9 +109,9 @@ public final class IsComputableAsJsExprsVisitorTest extends TestCase {
         .errorReporter(boom)
         .parse();
     // Several tests have msg nodes.
-    new ReplaceMsgsWithGoogMsgsVisitor(boom).exec(soyTree);
+    new ReplaceMsgsWithGoogMsgsVisitor().exec(soyTree);
     SoyNode node = SharedTestUtils.getNode(soyTree, indicesToNode);
-    assertThat(new IsComputableAsJsExprsVisitor(boom).exec(node))
+    assertThat(new IsComputableAsJsExprsVisitor().exec(node))
         .isEqualTo(expectedResult);
   }
 

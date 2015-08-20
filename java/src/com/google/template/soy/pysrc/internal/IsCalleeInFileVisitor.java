@@ -16,7 +16,6 @@
 
 package com.google.template.soy.pysrc.internal;
 
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.shared.internal.ApiCallScope;
 import com.google.template.soy.soytree.AbstractReturningSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
@@ -48,8 +47,7 @@ final class IsCalleeInFileVisitor extends AbstractReturningSoyNodeVisitor<Boolea
 
 
   @Inject
-  IsCalleeInFileVisitor(ErrorReporter errorReporter) {
-    super(errorReporter);
+  IsCalleeInFileVisitor() {
     memoizedResults = new HashMap<>();
   }
 

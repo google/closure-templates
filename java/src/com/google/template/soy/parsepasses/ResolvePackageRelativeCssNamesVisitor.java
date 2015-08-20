@@ -32,10 +32,11 @@ import com.google.template.soy.soytree.TemplateNode;
  */
 final class ResolvePackageRelativeCssNamesVisitor extends AbstractSoyNodeVisitor<Void> {
 
+    private final ErrorReporter errorReporter;
     private String packagePrefix = null;
 
     public ResolvePackageRelativeCssNamesVisitor(ErrorReporter errorReporter) {
-        super(errorReporter);
+      this.errorReporter = errorReporter;
     }
 
     @Override protected void visitTemplateNode(TemplateNode node) {

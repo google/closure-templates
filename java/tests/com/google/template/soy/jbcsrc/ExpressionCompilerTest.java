@@ -467,7 +467,7 @@ public class ExpressionCompilerTest extends TestCase {
         new ExpressionParser(soyExpr, SourceLocation.UNKNOWN, ExplodingErrorReporter.get())
             .parseExpression();
     final StringBuilder templateBody = new StringBuilder();
-    new AbstractExprNodeVisitor<Void>(ExplodingErrorReporter.get()) {
+    new AbstractExprNodeVisitor<Void>() {
       final Set<String> names = new HashSet<>();
       @Override protected void visitVarRefNode(VarRefNode node) {
         if (names.add(node.getName())) {

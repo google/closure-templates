@@ -62,7 +62,7 @@ public final class RemoveHtmlCommentsVisitorTest extends TestCase {
     // Before.
     assertThat(template.numChildren()).isEqualTo(7);
 
-    new RemoveHtmlCommentsVisitor(boom).exec(soyTree);
+    new RemoveHtmlCommentsVisitor().exec(soyTree);
 
     // After.
     assertThat(template.numChildren()).isEqualTo(4);

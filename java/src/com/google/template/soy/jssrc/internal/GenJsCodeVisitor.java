@@ -190,6 +190,8 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
   /** Type operators. */
   private final SoyTypeOps typeOps;
 
+  protected final ErrorReporter errorReporter;
+
   @Inject
   protected GenJsCodeVisitor(
       SoyJsSrcOptions jsSrcOptions, @IsUsingIjData boolean isUsingIjData,
@@ -201,7 +203,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
       GenFunctionPluginRequiresVisitor genFunctionPluginRequiresVisitor,
       SoyTypeOps typeOps,
       ErrorReporter errorReporter) {
-    super(errorReporter);
+    this.errorReporter = errorReporter;
     this.jsSrcOptions = jsSrcOptions;
     this.isUsingIjData = isUsingIjData;
     this.jsExprTranslator = jsExprTranslator;
@@ -563,7 +565,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
 
     String prevCalleeNamespace = null;
     Set<String> calleeNamespaces = Sets.newTreeSet();
-    for (CallBasicNode node : new FindCalleesNotInFileVisitor(errorReporter).exec(soyFile)) {
+    for (CallBasicNode node : new FindCalleesNotInFileVisitor().exec(soyFile)) {
       String calleeNotInFile = node.getCalleeName();
       int lastDotIndex = calleeNotInFile.lastIndexOf('.');
       if (lastDotIndex == -1) {
@@ -587,7 +589,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
    */
   private void addCodeToRequireJsFunctions(SoyFileNode soyFile) {
     SortedSet<String> requires = new TreeSet<>();
-    for (CallBasicNode node : new FindCalleesNotInFileVisitor(errorReporter).exec(soyFile)) {
+    for (CallBasicNode node : new FindCalleesNotInFileVisitor().exec(soyFile)) {
       requires.add(node.getCalleeName());
     }
     for (String require : requires) {
@@ -761,8 +763,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
           isComputableAsJsExprsVisitor,
           jsCodeBuilder,
           localVarTranslations,
-          genJsExprsVisitor,
-          errorReporter);
+          genJsExprsVisitor);
     }
     assistantForMsgs.visitForUseByMaster(node);
   }
@@ -1367,8 +1368,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
     // inferred from the indirect params, then the explicit type wins.
     // Also note that indirect param types may not be inferrable if the target
     // is not in the current compilation file set.
-    IndirectParamsInfo ipi
-        = new FindIndirectParamsVisitor(templateRegistry, errorReporter).exec(node);
+    IndirectParamsInfo ipi = new FindIndirectParamsVisitor(templateRegistry).exec(node);
     // If there are any calls outside of the file set, then we can't know
     // the complete types of any indirect params. In such a case, we can simply
     // omit the indirect params from the function type signature, since record
@@ -1680,7 +1680,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
   // of generic types.
   @SuppressWarnings({"rawtypes", "unchecked"})
   private boolean hasNodeTypes(SoyFileNode soyFile, Class... nodeTypes) {
-    return new HasNodeTypesVisitor(nodeTypes, errorReporter).exec(soyFile);
+    return new HasNodeTypesVisitor(nodeTypes).exec(soyFile);
   }
 
   /**
@@ -1732,9 +1732,9 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
   private SortedSet<String> getRequiredObjectTypes(SoyFileNode soyFile) {
     SortedSet<String> requiredObjectTypes = Sets.newTreeSet();
     FieldImportsVisitor fieldImportsVisitor
-        = new FieldImportsVisitor(requiredObjectTypes, errorReporter);
+        = new FieldImportsVisitor(requiredObjectTypes);
     for (TemplateNode template : soyFile.getChildren()) {
-      SoytreeUtils.execOnAllV2Exprs(template, fieldImportsVisitor, errorReporter);
+      SoytreeUtils.execOnAllV2Exprs(template, fieldImportsVisitor);
       for (TemplateParam param : template.getAllParams()) {
         if (param.declLoc() != TemplateParam.DeclLoc.HEADER) {
           continue;
@@ -1761,8 +1761,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
   private static final class FieldImportsVisitor extends AbstractExprNodeVisitor<Void> {
     private final SortedSet<String> imports;
 
-    FieldImportsVisitor(SortedSet<String> imports, ErrorReporter errorReporter) {
-      super(errorReporter);
+    FieldImportsVisitor(SortedSet<String> imports) {
       this.imports = imports;
     }
 

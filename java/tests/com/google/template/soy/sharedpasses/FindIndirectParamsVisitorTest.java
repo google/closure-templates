@@ -27,6 +27,7 @@ import com.google.template.soy.sharedpasses.FindIndirectParamsVisitor.IndirectPa
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.defn.TemplateParam;
 
 import junit.framework.TestCase;
@@ -117,6 +118,8 @@ public final class FindIndirectParamsVisitorTest extends TestCase {
         .errorReporter(boom)
         .parse();
 
+    TemplateRegistry registry = new TemplateRegistry(soyTree, boom);
+
     SoyFileNode a = soyTree.getChild(0);
     TemplateNode a0 = a.getChild(0);
     TemplateNode a1 = a.getChild(1);
@@ -132,8 +135,7 @@ public final class FindIndirectParamsVisitorTest extends TestCase {
     TemplateNode b3 = b.getChild(3);
     TemplateNode b4 = b.getChild(4);
 
-    IndirectParamsInfo ipi
-        = new FindIndirectParamsVisitor(null /* templateRegistry */, boom).exec(a0);
+    IndirectParamsInfo ipi = new FindIndirectParamsVisitor(registry).exec(a0);
     assertThat(ipi.mayHaveIndirectParamsInExternalCalls).isFalse();
     assertThat(ipi.mayHaveIndirectParamsInExternalDelCalls).isFalse();
 

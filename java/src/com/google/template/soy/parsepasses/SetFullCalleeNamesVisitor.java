@@ -47,9 +47,10 @@ final class SetFullCalleeNamesVisitor extends AbstractSoyNodeVisitor<Void> {
 
   /** Alias-to-namespace map of the current file (during the pass). */
   private Map<String, String> currAliasToNamespaceMap;
+  private final ErrorReporter errorReporter;
 
   SetFullCalleeNamesVisitor(ErrorReporter errorReporter) {
-    super(errorReporter);
+    this.errorReporter = errorReporter;
   }
 
   @Override public Void exec(SoyNode soyNode) {

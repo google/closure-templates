@@ -22,7 +22,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.BaseUtils;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.JsExprUtils;
@@ -112,9 +111,7 @@ class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
       IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor,
       CodeBuilder<JsExpr> jsCodeBuilder,
       Deque<Map<String, JsExpr>> localVarTranslations,
-      GenJsExprsVisitor genJsExprsVisitor,
-      ErrorReporter errorReporter) {
-    super(errorReporter);
+      GenJsExprsVisitor genJsExprsVisitor) {
     this.master = master;
     this.jsSrcOptions = jsSrcOptions;
     this.jsExprTranslator = jsExprTranslator;

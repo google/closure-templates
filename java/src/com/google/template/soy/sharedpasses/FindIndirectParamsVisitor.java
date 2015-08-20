@@ -16,6 +16,8 @@
 
 package com.google.template.soy.sharedpasses;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMultimap;
@@ -24,14 +26,12 @@ import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.sharedpasses.FindIndirectParamsVisitor.IndirectParamsInfo;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamNode;
-import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.TemplateBasicNode;
@@ -48,8 +48,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
-
-import javax.annotation.Nullable;
 
 /**
  * Visitor for finding the indirect params of a given template.
@@ -232,12 +230,9 @@ public class FindIndirectParamsVisitor extends AbstractSoyNodeVisitor<IndirectPa
 
   /**
    * @param templateRegistry Map from template name to TemplateNode to use during the pass.
-   * @param errorReporter For reporting errors.
    */
-  public FindIndirectParamsVisitor(
-      @Nullable TemplateRegistry templateRegistry, ErrorReporter errorReporter) {
-    super(errorReporter);
-    this.templateRegistry = templateRegistry;
+  public FindIndirectParamsVisitor(TemplateRegistry templateRegistry) {
+    this.templateRegistry = checkNotNull(templateRegistry);
   }
 
 
@@ -271,12 +266,6 @@ public class FindIndirectParamsVisitor extends AbstractSoyNodeVisitor<IndirectPa
 
 
   @Override protected void visitTemplateNode(TemplateNode node) {
-
-    // Build templateRegistry if necessary.
-    if (templateRegistry == null) {
-      SoyFileSetNode soyTree = node.getParent().getParent();
-      templateRegistry = new TemplateRegistry(soyTree, errorReporter);
-    }
 
     if (isStartOfPass) {
       isStartOfPass = false;

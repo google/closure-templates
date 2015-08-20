@@ -19,7 +19,6 @@ package com.google.template.soy.soytree;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.base.Joiner;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.internal.IdGenerator;
@@ -34,7 +33,6 @@ import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soyparse.SoyFileParser;
-import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.types.SoyTypeRegistry;
@@ -73,8 +71,8 @@ public final class SoytreeUtilsTest extends TestCase {
         .errorReporter(boom)
         .parse();
 
-    CountingVisitor countingVisitor = new CountingVisitor(boom);
-    SoytreeUtils.execOnAllV2Exprs(soyTree, countingVisitor, boom);
+    CountingVisitor countingVisitor = new CountingVisitor();
+    SoytreeUtils.execOnAllV2Exprs(soyTree, countingVisitor);
     CountingVisitor.Counts counts = countingVisitor.getCounts();
     assertEquals(3, counts.numExecs);
     assertEquals(10, counts.numVisitedNodes);
@@ -94,12 +92,7 @@ public final class SoytreeUtilsTest extends TestCase {
       public int numVisitedNodes;
     }
 
-    private final Counts counts;
-
-    public CountingVisitor(ErrorReporter errorReporter) {
-      super(errorReporter);
-      counts = new Counts();
-    }
+    private final Counts counts = new Counts();
 
     public Counts getCounts() {
       return counts;
@@ -298,10 +291,8 @@ public final class SoytreeUtilsTest extends TestCase {
         .parseSoyFile();
     soyTree.addChild(soyFile);
 
-    FindNodeByTypeVisitor<MsgHtmlTagNode> visitor =
-        new FindNodeByTypeVisitor<>(MsgHtmlTagNode.class, boom);
-    List<MsgHtmlTagNode> msgHtmlTagNodes = visitor.exec(soyFile);
-    assertThat(msgHtmlTagNodes).isNotEmpty();
+    List<MsgHtmlTagNode> msgHtmlTagNodes =
+        SoytreeUtils.getAllNodesOfType(soyFile, MsgHtmlTagNode.class);
 
     for (MsgHtmlTagNode origMsgHtmlTagNode : msgHtmlTagNodes) {
       MsgHtmlTagNode clonedMsgHtmlTagNode = SoytreeUtils.cloneNode(origMsgHtmlTagNode);
@@ -313,38 +304,6 @@ public final class SoytreeUtilsTest extends TestCase {
       assertEquals(
           clonedMsgHtmlTagNode.getSyntaxVersionUpperBound(),
           origMsgHtmlTagNode.getSyntaxVersionUpperBound());
-    }
-  }
-
-
-  /**
-   * Private helper visitor for testMsgHtmlTagNode().
-   */
-  private static class FindNodeByTypeVisitor<T extends AbstractSoyNode>
-      extends AbstractSoyNodeVisitor<List<T>> {
-
-    /** Result list. */
-    final ImmutableList.Builder<T> foundNodes = ImmutableList.builder();
-    /** The type of nodes to look for. */
-    final Class<? extends T> type;
-
-    FindNodeByTypeVisitor(Class<? extends T> type, ErrorReporter errorReporter) {
-      super(errorReporter);
-      this.type = type;
-    }
-
-    @Override public List<T> exec(SoyNode node) {
-      visit(node);
-      return foundNodes.build();
-    }
-
-    @Override protected void visitSoyNode(SoyNode node) {
-      if (type.isInstance(node)) {
-        foundNodes.add(type.cast(node));
-      }
-      if (node instanceof ParentSoyNode<?>) {
-        visitChildren((ParentSoyNode<?>) node);
-      }
     }
   }
 

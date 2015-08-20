@@ -76,9 +76,10 @@ public final class CheckDelegatesVisitor extends AbstractSoyNodeVisitor<Void> {
 
   /** Current delegate package name, or null if none (during pass). */
   private String currDelPackageName;
+  private final ErrorReporter errorReporter;
 
   public CheckDelegatesVisitor(ErrorReporter errorReporter) {
-    super(errorReporter);
+    this.errorReporter = errorReporter;
   }
 
   @Override public Void exec(SoyNode soyNode) {

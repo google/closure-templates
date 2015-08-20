@@ -158,6 +158,7 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
   /** The current stack of replacement JS expressions for the local variables (and foreach-loop
    *  special functions) current in scope. */
   private final Deque<Map<String, JsExpr>> localVarTranslations;
+  private final ErrorReporter errorReporter;
 
   /**
    * @param soyJsSrcFunctionsMap Map of all SoyJsSrcFunctions (name to function).
@@ -170,7 +171,7 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
       SoyJsSrcOptions jsSrcOptions,
       @Assisted Deque<Map<String, JsExpr>> localVarTranslations,
       ErrorReporter errorReporter) {
-    super(errorReporter);
+    this.errorReporter = errorReporter;
     this.soyJsSrcFunctionsMap = soyJsSrcFunctionsMap;
     this.jsSrcOptions = jsSrcOptions;
     this.localVarTranslations = localVarTranslations;

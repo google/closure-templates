@@ -722,7 +722,7 @@ public final class SoyFileSet {
     SoyFileSetNode soyTree =
         parse(
             SyntaxVersion.V1_0, true /* allow unknown globals */, SoyTypeRegistry.DEFAULT_UNKNOWN);
-    return new ExtractMsgsVisitor(errorReporter).exec(soyTree);
+    return new ExtractMsgsVisitor().exec(soyTree);
   }
 
 
@@ -762,14 +762,14 @@ public final class SoyFileSet {
           }
         }
       }
-
+      TemplateRegistry registry = new TemplateRegistry(soyTree, errorReporter);
       Map<TemplateNode, TransitiveDepTemplatesInfo> depsInfoMap =
-          new FindTransitiveDepTemplatesVisitor(null /* templateRegistry */, errorReporter)
+          new FindTransitiveDepTemplatesVisitor(registry)
               .execOnMultipleTemplates(allPublicTemplates);
       TransitiveDepTemplatesInfo mergedDepsInfo =
           TransitiveDepTemplatesInfo.merge(depsInfoMap.values());
 
-      SoyMsgBundle extractedMsgBundle = new ExtractMsgsVisitor(errorReporter)
+      SoyMsgBundle extractedMsgBundle = new ExtractMsgsVisitor()
           .execOnMultipleNodes(mergedDepsInfo.depTemplateSet);
 
       ImmutableSet.Builder<Long> extractedMsgIdsBuilder = ImmutableSet.builder();
@@ -814,7 +814,7 @@ public final class SoyFileSet {
     }
 
     // Clear the SoyDoc strings because they use unnecessary memory.
-    new ClearSoyDocStringsVisitor(errorReporter).exec(soyTree);
+    new ClearSoyDocStringsVisitor().exec(soyTree);
 
     TemplateRegistry registry = new TemplateRegistry(soyTree, errorReporter);
     ((ErrorReporterImpl) errorReporter).throwIfErrorsPresent();
@@ -869,7 +869,7 @@ public final class SoyFileSet {
   private ImmutableMap<String, ImmutableSortedSet<String>> getTransitiveIjs(
       SoyFileSetNode soyTree, TemplateRegistry registry) {
     ImmutableMap<TemplateNode, IjParamsInfo> templateToIjParamsInfoMap =
-        new FindIjParamsVisitor(registry, errorReporter)
+        new FindIjParamsVisitor(registry)
             .execOnAllTemplates(soyTree);
     ImmutableMap.Builder<String, ImmutableSortedSet<String>> templateToTransitiveIjParams =
         ImmutableMap.builder();
@@ -1140,7 +1140,7 @@ public final class SoyFileSet {
     }
 
     // Attempt to simplify the tree.
-    new ChangeCallsToPassAllDataVisitor(errorReporter).exec(soyTree);
+    new ChangeCallsToPassAllDataVisitor().exec(soyTree);
     simplifyVisitor.exec(soyTree);
   }
 

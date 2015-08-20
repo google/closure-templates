@@ -19,7 +19,6 @@ package com.google.template.soy.sharedpasses;
 import com.google.template.soy.basetree.AbstractNodeVisitor;
 import com.google.template.soy.basetree.Node;
 import com.google.template.soy.basetree.ParentNode;
-import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.CallNode;
@@ -62,7 +61,7 @@ public final class ShouldEnsureDataIsDefinedVisitor {
     // * possibleParams
     // * data=All calls
     // others?
-    return new AbstractNodeVisitor<Node, Boolean>(ExplodingErrorReporter.get()) {
+    return new AbstractNodeVisitor<Node, Boolean>() {
       boolean shouldEnsureDataIsDefined;
 
       @Override public Boolean exec(Node node) {

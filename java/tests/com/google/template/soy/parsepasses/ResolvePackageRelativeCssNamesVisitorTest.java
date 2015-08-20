@@ -18,17 +18,15 @@ package com.google.template.soy.parsepasses;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import com.google.common.collect.Lists;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.shared.SharedTestUtils;
-import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CssNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import com.google.template.soy.soytree.SoytreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
 
 import junit.framework.TestCase;
@@ -126,37 +124,7 @@ public class ResolvePackageRelativeCssNamesVisitorTest extends TestCase {
    * Helper function that gathers all of the CSS nodes within a tree.
    * @return A list of CSS nodes.
    */
-  private <T extends SoyNode> List<T> getCssNodes(SoyNode root) {
-    CollectNodesVisitor visitor
-        = new CollectNodesVisitor(CssNode.class, ExplodingErrorReporter.get());
-    visitor.exec(root);
-    return (List<T>) visitor.getNodes();
-  }
-
-  /**
-   * Test helper class that scarfs up all nodes of a given type.
-   * TODO(user): Move this to someplace more general.
-   */
-  public static class CollectNodesVisitor extends AbstractSoyNodeVisitor<Void> {
-    private final List<SoyNode> nodes = Lists.newArrayList();
-    private final Class<?> nodeType;
-
-    CollectNodesVisitor(Class<?> nodeType, ErrorReporter errorReporter) {
-      super(errorReporter);
-      this.nodeType = nodeType;
-    }
-
-    public List<SoyNode> getNodes() {
-      return nodes;
-    }
-
-    @Override protected void visitSoyNode(SoyNode node) {
-      if (nodeType.isInstance(node)) {
-        nodes.add(node);
-      }
-      if (node instanceof ParentSoyNode<?>) {
-        visitChildren((ParentSoyNode<?>) node);
-      }
-    }
+  private List<CssNode> getCssNodes(SoyNode root) {
+    return SoytreeUtils.getAllNodesOfType(root, CssNode.class);
   }
 }

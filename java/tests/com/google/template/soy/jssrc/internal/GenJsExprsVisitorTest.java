@@ -233,7 +233,7 @@ public final class GenJsExprsVisitorTest extends TestCase {
         .errorReporter(boom)
         .parse();
     // Required by testPrintGoogMsg.
-    new ReplaceMsgsWithGoogMsgsVisitor(boom).exec(soyTree);
+    new ReplaceMsgsWithGoogMsgsVisitor().exec(soyTree);
     SoyNode node = SharedTestUtils.getNode(soyTree, indicesToNode);
 
     GenJsExprsVisitor gjev = INJECTOR.getInstance(GenJsExprsVisitorFactory.class)

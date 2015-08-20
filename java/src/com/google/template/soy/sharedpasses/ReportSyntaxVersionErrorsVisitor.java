@@ -61,7 +61,7 @@ public final class ReportSyntaxVersionErrorsVisitor extends AbstractSoyNodeVisit
 
   /** Syntax exceptions for errors found (during a pass). */
   private List<SoySyntaxException> syntaxExceptions;
-
+  private final ErrorReporter errorReporter;
 
   /**
    * @param requiredSyntaxVersion The required minimum syntax version to check for.
@@ -71,7 +71,7 @@ public final class ReportSyntaxVersionErrorsVisitor extends AbstractSoyNodeVisit
    */
   public ReportSyntaxVersionErrorsVisitor(
       SyntaxVersion requiredSyntaxVersion, boolean isDeclared, ErrorReporter errorReporter) {
-    super(errorReporter);
+    this.errorReporter = errorReporter;
     this.requiredSyntaxVersion = requiredSyntaxVersion;
     this.isDeclared = isDeclared;
     this.syntaxExceptions = null;
@@ -210,7 +210,6 @@ public final class ReportSyntaxVersionErrorsVisitor extends AbstractSoyNodeVisit
 
 
     ReportSyntaxVersionErrorsExprVisitor(ExprHolderNode exprHolder) {
-      super(ReportSyntaxVersionErrorsVisitor.this.errorReporter);
       this.exprHolder = exprHolder;
     }
 

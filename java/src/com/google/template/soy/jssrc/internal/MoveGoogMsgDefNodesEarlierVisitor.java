@@ -17,7 +17,6 @@
 package com.google.template.soy.jssrc.internal;
 
 import com.google.common.collect.Lists;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.sharedpasses.BuildAllDependeesMapVisitor;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -44,10 +43,6 @@ final class MoveGoogMsgDefNodesEarlierVisitor extends AbstractSoyNodeVisitor<Voi
   /** The list of GoogMsgDefNodes found. */
   private List<GoogMsgDefNode> googMsgDefNodes;
 
-  MoveGoogMsgDefNodesEarlierVisitor(ErrorReporter errorReporter) {
-    super(errorReporter);
-  }
-
   @Override public Void exec(SoyNode node) {
     googMsgDefNodes = Lists.newArrayList();
     visit(node);
@@ -69,7 +64,7 @@ final class MoveGoogMsgDefNodesEarlierVisitor extends AbstractSoyNodeVisitor<Voi
 
     // Move each GoogMsgDefNode to the earliest point it can go.
     Map<SoyNode, List<SoyNode>> allDependeesMap
-        = new BuildAllDependeesMapVisitor(errorReporter).exec(node);
+        = new BuildAllDependeesMapVisitor().exec(node);
     for (GoogMsgDefNode googMsgDefNode : googMsgDefNodes) {
       moveGoogMsgDefNodeEarlierHelper(
           googMsgDefNode, allDependeesMap.get(googMsgDefNode));

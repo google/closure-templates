@@ -78,6 +78,7 @@ public final class SimplifyVisitor extends AbstractSoyNodeVisitor<Void> {
 
   /** A registry of all templates in the Soy tree. */
   private TemplateRegistry templateRegistry;
+  private final ErrorReporter errorReporter;
 
 
   @Inject
@@ -85,7 +86,7 @@ public final class SimplifyVisitor extends AbstractSoyNodeVisitor<Void> {
       SimplifyExprVisitor simplifyExprVisitor,
       PrerenderVisitorFactory prerenderVisitorFactory,
       ErrorReporter errorReporter) {
-    super(errorReporter);
+    this.errorReporter = errorReporter;
     this.simplifyExprVisitor = simplifyExprVisitor;
     this.prerenderVisitorFactory = prerenderVisitorFactory;
   }
@@ -97,7 +98,7 @@ public final class SimplifyVisitor extends AbstractSoyNodeVisitor<Void> {
     SoyFileSetNode nodeAsRoot = (SoyFileSetNode) node;
 
     // First simplify all expressions in the subtree.
-    SoytreeUtils.execOnAllV2Exprs(nodeAsRoot, simplifyExprVisitor, errorReporter);
+    SoytreeUtils.execOnAllV2Exprs(nodeAsRoot, simplifyExprVisitor);
 
     // Setup.
     nodeIdGen = nodeAsRoot.getNodeIdGenerator();

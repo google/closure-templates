@@ -17,7 +17,6 @@
 package com.google.template.soy.shared.internal;
 
 import com.google.common.base.Preconditions;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
@@ -45,8 +44,7 @@ public final class HasNodeTypesVisitor extends AbstractSoyNodeVisitor<Boolean> {
   private final Class<? extends SoyNode>[] nodeTypes;
 
 
-  public HasNodeTypesVisitor(Class<? extends SoyNode>[] nodeTypes, ErrorReporter errorReporter) {
-    super(errorReporter);
+  public HasNodeTypesVisitor(Class<? extends SoyNode>[] nodeTypes) {
     this.nodeTypes = nodeTypes;
   }
 

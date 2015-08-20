@@ -56,9 +56,10 @@ final class CheckEscapingSanityVisitor extends AbstractSoyNodeVisitor<Void> {
 
   /** Registry of all templates in the Soy tree. */
   private TemplateRegistry templateRegistry;
+  private final ErrorReporter errorReporter;
 
   public CheckEscapingSanityVisitor(ErrorReporter errorReporter) {
-    super(errorReporter);
+    this.errorReporter = errorReporter;
   }
 
   // -----------------------------------------------------------------------------------------------

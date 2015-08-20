@@ -252,7 +252,7 @@ public final class TemplateTester {
         fileSet = SoytreeUtils.cloneNode(fileSet);
         
         // Extract messages, to make it easy to test translations and get default (english) strings
-        SoyMsgBundle messages = new ExtractMsgsVisitor(ExplodingErrorReporter.get()).exec(fileSet);
+        SoyMsgBundle messages = new ExtractMsgsVisitor().exec(fileSet);
         SoyMsgBundle defaultBundle = messages;
         if (this.msgBundle != null) {
           messages = this.msgBundle;

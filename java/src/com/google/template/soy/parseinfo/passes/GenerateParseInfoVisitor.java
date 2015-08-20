@@ -33,10 +33,6 @@ import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.IndentedLinesBuilder;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
-import com.google.template.soy.exprtree.ExprNode;
-import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
-import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.parseinfo.SoyFileInfo.CssTagsPrefixPresence;
@@ -46,13 +42,12 @@ import com.google.template.soy.sharedpasses.FindIndirectParamsVisitor;
 import com.google.template.soy.sharedpasses.FindIndirectParamsVisitor.IndirectParamsInfo;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CssNode;
-import com.google.template.soy.soytree.ExprUnion;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoySyntaxExceptionUtils;
+import com.google.template.soy.soytree.SoytreeUtils;
 import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
@@ -198,6 +193,8 @@ public final class GenerateParseInfoVisitor
   /** The package name of the generated files. */
   private final String javaPackage;
 
+  private final ErrorReporter errorReporter;
+
   /** The source of the generated Java class names. */
   private final JavaClassNameSource javaClassNameSource;
 
@@ -226,7 +223,7 @@ public final class GenerateParseInfoVisitor
       String javaPackage,
       String javaClassNameSource,
       ErrorReporter errorReporter) {
-    super(errorReporter);
+    this.errorReporter = errorReporter;
     this.javaPackage = javaPackage;
 
     switch (javaClassNameSource) {
@@ -336,7 +333,16 @@ public final class GenerateParseInfoVisitor
           findProtoTypesRecurse(paramType, protoTypes);
         }
       }
-      new FindUsedProtoTypesVisitor(protoTypes, errorReporter).exec(template);
+      for (FieldAccessNode fieldAccess :
+          SoytreeUtils.getAllNodesOfType(template, FieldAccessNode.class)) {
+        SoyType baseType = fieldAccess.getBaseExprChild().getType();
+        if (baseType instanceof SoyObjectType) {
+          SoyObjectType objectType = (SoyObjectType) baseType;
+          Set<String> importedNames = objectType.getFieldAccessImports(
+              fieldAccess.getFieldName(), SoyBackendKind.TOFU);
+          protoTypes.addAll(importedNames);
+        }
+      }
     }
     // allParamKeysMap is a map from upper-underscore key to original key.
     SortedMap<String, String> allParamKeysMap = Maps.newTreeMap();
@@ -481,7 +487,7 @@ public final class GenerateParseInfoVisitor
 
     // CSS names.
     SortedMap<String, CssTagsPrefixPresence> cssNameMap
-        = new CollectCssNamesVisitor(errorReporter).exec(node);
+        = new CollectCssNamesVisitor().exec(node);
     List<Pair<String, String>> entrySnippetPairs = Lists.newArrayList();
     for (Map.Entry<String, CssTagsPrefixPresence> entry : cssNameMap.entrySet()) {
       entrySnippetPairs.add(Pair.of(
@@ -534,7 +540,7 @@ public final class GenerateParseInfoVisitor
 
     // Indirect params.
     IndirectParamsInfo indirectParamsInfo =
-        new FindIndirectParamsVisitor(templateRegistry, errorReporter).exec(node);
+        new FindIndirectParamsVisitor(templateRegistry).exec(node);
     for (TemplateParam param : indirectParamsInfo.indirectParams.values()) {
       TemplateParam existingParam = transitiveParamMap.get(param.name());
       if (existingParam == null) {
@@ -544,7 +550,7 @@ public final class GenerateParseInfoVisitor
     }
 
     // Get info on injected params.
-    IjParamsInfo ijParamsInfo = new FindIjParamsVisitor(templateRegistry, errorReporter).exec(node);
+    IjParamsInfo ijParamsInfo = new FindIjParamsVisitor(templateRegistry).exec(node);
 
     @SuppressWarnings("ConstantConditions")  // for IntelliJ
     String upperUnderscoreName =
@@ -929,8 +935,7 @@ public final class GenerateParseInfoVisitor
     /** Map from each CSS name to its CssTagsPrefixPresence state. */
     private SortedMap<String, CssTagsPrefixPresence> cssNamesMap;
 
-    private CollectCssNamesVisitor(ErrorReporter errorReporter) {
-      super(errorReporter);
+    private CollectCssNamesVisitor() {
       cssNamesMap = Maps.newTreeMap();
     }
 
@@ -959,83 +964,6 @@ public final class GenerateParseInfoVisitor
     @Override protected void visitSoyNode(SoyNode node) {
       if (node instanceof ParentSoyNode<?>) {
         visitChildren((ParentSoyNode<?>) node);
-      }
-    }
-  }
-
-  // -----------------------------------------------------------------------------------------------
-  // Helper visitor to collect CSS names.
-
-  /**
-   * Private helper class for visitSoyFileNode() to collect all of the proto
-   * extension types used in the template.
-   */
-  private static class FindUsedProtoTypesVisitor extends AbstractSoyNodeVisitor<Void> {
-    private final SortedSet<String> protoTypes;
-
-    private FindUsedProtoTypesVisitor(SortedSet<String> protoTypes, ErrorReporter errorReporter) {
-      super(errorReporter);
-      this.protoTypes = protoTypes;
-    }
-
-    @Override public Void exec(SoyNode node) {
-      visit(node);
-      return null;
-    }
-
-    @Override protected void visitSoyNode(SoyNode node) {
-      if (node instanceof ExprHolderNode) {
-        visitExpressions((ExprHolderNode) node);
-      }
-
-      if (node instanceof ParentSoyNode<?>) {
-        visitChildren((ParentSoyNode<?>) node);
-      }
-    }
-
-    private void visitExpressions(ExprHolderNode node) {
-      FindUsedProtoTypesExprVisitor exprVisitor
-          = new FindUsedProtoTypesExprVisitor(protoTypes, errorReporter);
-      for (ExprUnion exprUnion : node.getAllExprUnions()) {
-        if (exprUnion.getExpr() != null) {
-          exprVisitor.exec(exprUnion.getExpr());
-        }
-      }
-    }
-  }
-
-  /**
-   * Private helper class to collect all of the proto extension types used in
-   * an expression.
-   */
-  private static final class FindUsedProtoTypesExprVisitor extends AbstractExprNodeVisitor<Void> {
-    private final SortedSet<String> protoTypes;
-
-    FindUsedProtoTypesExprVisitor(SortedSet<String> protoTypes, ErrorReporter errorReporter) {
-      super(errorReporter);
-      this.protoTypes = protoTypes;
-    }
-
-    @Override protected void visitExprRootNode(ExprRootNode node) {
-      visitChildren(node);
-      ExprNode expr = node.getRoot();
-      node.setType(expr.getType());
-    }
-
-    @Override protected void visitExprNode(ExprNode node) {
-      if (node instanceof ParentExprNode) {
-        visitChildren((ParentExprNode) node);
-      }
-    }
-
-    @Override protected void visitFieldAccessNode(FieldAccessNode node) {
-      visit(node.getBaseExprChild());
-      SoyType baseType = node.getBaseExprChild().getType();
-      if (baseType instanceof SoyObjectType) {
-        SoyObjectType objectType = (SoyObjectType) baseType;
-        Set<String> importedNames = objectType.getFieldAccessImports(
-            node.getFieldName(), SoyBackendKind.TOFU);
-        protoTypes.addAll(importedNames);
       }
     }
   }

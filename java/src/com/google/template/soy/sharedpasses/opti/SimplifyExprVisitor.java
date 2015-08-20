@@ -24,7 +24,6 @@ import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.PrimitiveData;
 import com.google.template.soy.data.restricted.StringData;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.ExprNode;
@@ -60,9 +59,7 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
 
 
   @Inject
-  SimplifyExprVisitor(
-      PreevalVisitorFactory preevalVisitorFactory, ErrorReporter errorReporter) {
-    super(errorReporter);
+  SimplifyExprVisitor(PreevalVisitorFactory preevalVisitorFactory) {
     this.preevalVisitor = preevalVisitorFactory.create(Environment.prerenderingEnvironment());
   }
 

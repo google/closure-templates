@@ -98,13 +98,14 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
   /** Map of all SoyPySrcFunctions (name to function). */
   private final ImmutableMap<String, SoyPySrcFunction> soyPySrcFunctionsMap;
 
+  private final ErrorReporter errorReporter;
 
   @AssistedInject
   TranslateToPyExprVisitor(
       ImmutableMap<String, SoyPySrcFunction> soyPySrcFunctionsMap,
       @Assisted LocalVariableStack localVarExprs,
       ErrorReporter errorReporter) {
-    super(errorReporter);
+    this.errorReporter = errorReporter;
     this.localVarExprs = localVarExprs;
     this.soyPySrcFunctionsMap = soyPySrcFunctionsMap;
   }

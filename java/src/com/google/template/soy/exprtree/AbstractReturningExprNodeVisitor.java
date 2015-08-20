@@ -18,7 +18,6 @@ package com.google.template.soy.exprtree;
 
 import com.google.template.soy.basetree.AbstractReturningNodeVisitor;
 import com.google.template.soy.basetree.ParentNode;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode.OperatorNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
@@ -71,10 +70,6 @@ import java.util.List;
  */
 public abstract class AbstractReturningExprNodeVisitor<R>
     extends AbstractReturningNodeVisitor<ExprNode, R> {
-
-  protected AbstractReturningExprNodeVisitor(ErrorReporter errorReporter) {
-    super(errorReporter);
-  }
 
   @Override protected R visit(ExprNode node) {
 

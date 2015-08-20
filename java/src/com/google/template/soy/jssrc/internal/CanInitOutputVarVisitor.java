@@ -17,11 +17,9 @@
 package com.google.template.soy.jssrc.internal;
 
 import com.google.inject.Inject;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.soytree.AbstractReturningSoyNodeVisitor;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.SoyNode;
-
 
 /**
  * Visitor for determining whther the code generated from a given node's subtree can be made to
@@ -39,13 +37,9 @@ public final class CanInitOutputVarVisitor extends AbstractReturningSoyNodeVisit
   /**
    * @param isComputableAsJsExprsVisitor The IsComputableAsJsExprsVisitor used by this instance
    *     (when needed).
-   * @param errorReporter For reporting errors.
    */
   @Inject
-  CanInitOutputVarVisitor(
-      IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor,
-      ErrorReporter errorReporter) {
-    super(errorReporter);
+  CanInitOutputVarVisitor(IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor) {
     this.isComputableAsJsExprsVisitor = isComputableAsJsExprsVisitor;
   }
 

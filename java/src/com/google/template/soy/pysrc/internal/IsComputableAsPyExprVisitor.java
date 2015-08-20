@@ -16,7 +16,6 @@
 
 package com.google.template.soy.pysrc.internal;
 
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.shared.internal.ApiCallScope;
 import com.google.template.soy.soytree.AbstractReturningSoyNodeVisitor;
 import com.google.template.soy.soytree.CallNode;
@@ -44,7 +43,6 @@ import java.util.Map;
 
 import javax.inject.Inject;
 
-
 /**
  * Visitor to determine whether the output string for the subtree rooted at a given node is
  * computable as the concatenation of one or more Python expressions. If this is false, it means the
@@ -64,8 +62,7 @@ class IsComputableAsPyExprVisitor extends AbstractReturningSoyNodeVisitor<Boolea
   private final Map<SoyNode, Boolean> memoizedResults;
 
   @Inject
-  IsComputableAsPyExprVisitor(ErrorReporter errorReporter) {
-    super(errorReporter);
+  IsComputableAsPyExprVisitor() {
     memoizedResults = new HashMap<>();
   }
 

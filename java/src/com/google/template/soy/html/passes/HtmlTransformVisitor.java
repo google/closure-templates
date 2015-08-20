@@ -140,12 +140,11 @@ public final class HtmlTransformVisitor extends AbstractSoyNodeVisitor<Void> {
    * a flood of errors being generated.
    */
   private boolean suppressExpectedAttributeValueError = false;
+  
+  private final ErrorReporter errorReporter;
 
-  /**
-   * @param errorReporter
-   */
   public HtmlTransformVisitor(ErrorReporter errorReporter) {
-    super(errorReporter);
+    this.errorReporter = errorReporter;
   }
 
   /**

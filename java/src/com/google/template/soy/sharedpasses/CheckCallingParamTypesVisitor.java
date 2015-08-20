@@ -87,9 +87,10 @@ public final class CheckCallingParamTypesVisitor extends AbstractSoyNodeVisitor<
 
   /** Map of all template parameters, both explicit and implicit, organized by template. */
   private final Map<TemplateNode, TemplateParamTypes> paramTypesMap = new HashMap<>();
+  private final ErrorReporter errorReporter;
 
   public CheckCallingParamTypesVisitor(ErrorReporter errorReporter) {
-    super(errorReporter);
+    this.errorReporter = errorReporter;
   }
 
   /**
@@ -325,8 +326,7 @@ public final class CheckCallingParamTypesVisitor extends AbstractSoyNodeVisitor<
       // Note that we don't check here whether the explicit type and the implicit
       // types are in agreement - that will be done when it's this template's
       // turn to be analyzed as a caller.
-      IndirectParamsInfo ipi
-          = new FindIndirectParamsVisitor(templateRegistry, errorReporter).exec(node);
+      IndirectParamsInfo ipi = new FindIndirectParamsVisitor(templateRegistry).exec(node);
       for (String indirectParamName: ipi.indirectParamTypes.keySet()) {
         if (paramTypes.params.containsKey(indirectParamName)) {
           continue;
