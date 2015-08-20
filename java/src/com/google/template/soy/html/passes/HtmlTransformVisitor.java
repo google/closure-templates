@@ -53,7 +53,9 @@ import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.XidNode;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Translates fragments of HTML tags, text nodes and attributes found in {@link RawTextNode}s to
@@ -129,6 +131,9 @@ public final class HtmlTransformVisitor extends AbstractSoyNodeVisitor<Void> {
   private final ListMultimap<RawTextNode, StandaloneNode> transformMapping =
       ArrayListMultimap.create();
 
+  /** The {@link RawTextNode}s that have been visited and should be removed. */
+  private final Set<RawTextNode> visitedRawTextNodes = new HashSet<>();
+  
   /**
    * Used to prevent reporting an error on each token after an equals if a non-quoted attribute
    * value is used, allowing the visitor to visit the rest of the tree looking for issues without
@@ -158,16 +163,14 @@ public final class HtmlTransformVisitor extends AbstractSoyNodeVisitor<Void> {
   }
 
   /**
-   * Applies the built up transforms, changing {@link RawTextNode}s to the
-   * corresponding Html*Nodes.
+   * Applies the built up transforms, changing {@link RawTextNode}s to the corresponding Html*Nodes,
+   * if any. If a node itself does not correspond to any new nodes, it is simply removed.
    */
   private void applyTransforms() {
-    for (RawTextNode node : transformMapping.keySet()) {
-      List<StandaloneNode> newNodes = transformMapping.get(node);
+    for (RawTextNode node : visitedRawTextNodes) {
       ParentSoyNode<StandaloneNode> parent = node.getParent();
-
-      int currentIndex = parent.getChildIndex(node);
-      parent.addChildren(currentIndex, newNodes);
+      
+      parent.addChildren(parent.getChildIndex(node), transformMapping.get(node));
       parent.removeChild(node);
     }
   }
@@ -214,6 +217,8 @@ public final class HtmlTransformVisitor extends AbstractSoyNodeVisitor<Void> {
   private void createAttributeValueNode(RawTextNode node) {
     String currentString = consumeText(false);
 
+    // Check to see if the currentText is empty. This may occur when we have something like
+    // disabled="" or disabled="{$foo}" after the print tag is finished.
     if (currentString.length() > 0) {
       SourceLocation sl = deriveSourceLocation(node);
       currentAttributeValues.add(new RawTextNode(idGen.genId(), currentString, sl));
@@ -393,15 +398,7 @@ public final class HtmlTransformVisitor extends AbstractSoyNodeVisitor<Void> {
    */
   private void handleHtmlNormalAttrValue(RawTextNode node, char c) {
     if (c == '"') {
-      String attributeText = consumeText(false);
-
-      // Check to see if the currentText is empty. This may occur when we have something like
-      // disabled="" or disabled="{$foo}" after the print tag is finished.
-      if (attributeText.length() > 0) {
-        SourceLocation sl = deriveSourceLocation(node);
-        currentAttributeValues.add(new RawTextNode(idGen.genId(), attributeText, sl));
-      }
-
+      createAttributeValueNode(node);
       createAttribute(node);
       setState(HtmlState.TAG);
     } else {
@@ -449,9 +446,12 @@ public final class HtmlTransformVisitor extends AbstractSoyNodeVisitor<Void> {
   @Override protected void visitRawTextNode(RawTextNode node) {
     String content = node.getRawText();
 
-    // Just remove empty raw text nodes.
+    // Mark all visited RawTextNodes for removal. A single RawTextNode may not map to any Html*Nodes
+    // by itself, but we still want to remove it.
+    visitedRawTextNodes.add(node);
+    
+    // Just skip empty nodes
     if (CharMatcher.WHITESPACE.matchesAllOf(content)) {
-      node.getParent().removeChild(node);
       return;
     }
 

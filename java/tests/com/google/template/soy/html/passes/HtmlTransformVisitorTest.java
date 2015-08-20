@@ -35,6 +35,8 @@ import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
+import com.google.template.soy.soytree.TemplateNode;
+
 
 import junit.framework.TestCase;
 
@@ -77,6 +79,20 @@ public final class HtmlTransformVisitorTest extends TestCase {
     assertThat(getNode(n, 3)).isInstanceOf(HtmlOpenTagEndNode.class);
   }
 
+  public void testAttributeWithPrintNodes() {
+    String templateBody = "<div class=\"Class1 {$foo} Class2 {$bar}\">\n";
+
+    SoyFileSetNode n = performVisitor(templateBody, FAIL);
+    assertThat(((HtmlOpenTagStartNode) getNode(n, 0)).getTagName()).isEqualTo("div");
+    assertThat(((HtmlAttributeNode) getNode(n, 1)).getName()).isEqualTo("class");
+    assertThat(((RawTextNode) getNode(n, 1, 0)).getRawText()).isEqualTo("Class1 ");
+    assertThat(((PrintNode) getNode(n, 1, 1)).getExprText()).isEqualTo("$foo");
+    assertThat(((RawTextNode) getNode(n, 1, 2)).getRawText()).isEqualTo(" Class2 ");
+    assertThat(((PrintNode) getNode(n, 1, 3)).getExprText()).isEqualTo("$bar");
+    assertThat(getNode(n, 2)).isInstanceOf(HtmlOpenTagEndNode.class);
+    assertThat(((TemplateNode) getNode(n)).getChildren()).hasSize(3);
+  }
+  
   public void testCssNodeInAttributeValue() {
     String templateBody = "<div class=\"{css Foobar} Baz\"></div>\n";
 
