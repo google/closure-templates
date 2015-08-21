@@ -30,7 +30,6 @@ import com.google.template.soy.soytree.SoyFileSetNode;
 
 import junit.framework.TestCase;
 
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -214,7 +213,7 @@ public final class CheckFunctionCallsVisitorTest extends TestCase {
   private FormattingErrorReporter applyCheckFunctionCallsVisitor(
       String soyContent, SyntaxVersion declaredSyntaxVersion) {
     SoyFileSetNode fileSet = SoyFileSetParserBuilder.forFileContents(soyContent).parse().fileSet();
-    Map<String, SoyFunction> soyFunctions =
+    ImmutableMap<String, SoyFunction> soyFunctions =
         ImmutableMap.<String, SoyFunction>of(
             "min",
             new SoyFunction() {

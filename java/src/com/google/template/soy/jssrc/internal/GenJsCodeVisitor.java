@@ -181,9 +181,6 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
   /** The GenDirectivePluginRequiresVisitor for the current template. */
   private GenDirectivePluginRequiresVisitor genDirectivePluginRequiresVisitor;
 
-  /** The GenFunctionPluginRequiresVisitor for the current template. */
-  private GenFunctionPluginRequiresVisitor genFunctionPluginRequiresVisitor;
-
   /** Registry of all templates in the Soy tree. */
   private TemplateRegistry templateRegistry;
 
@@ -200,7 +197,6 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
       CanInitOutputVarVisitor canInitOutputVarVisitor,
       GenJsExprsVisitorFactory genJsExprsVisitorFactory,
       GenDirectivePluginRequiresVisitor genDirectivePluginRequiresVisitor,
-      GenFunctionPluginRequiresVisitor genFunctionPluginRequiresVisitor,
       SoyTypeOps typeOps,
       ErrorReporter errorReporter) {
     this.errorReporter = errorReporter;
@@ -212,7 +208,6 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
     this.canInitOutputVarVisitor = canInitOutputVarVisitor;
     this.genJsExprsVisitorFactory = genJsExprsVisitorFactory;
     this.genDirectivePluginRequiresVisitor = genDirectivePluginRequiresVisitor;
-    this.genFunctionPluginRequiresVisitor = genFunctionPluginRequiresVisitor;
     this.typeOps = typeOps;
   }
 
@@ -518,7 +513,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
 
     SortedSet<String> pluginRequiredJsLibNames = Sets.newTreeSet();
     pluginRequiredJsLibNames.addAll(genDirectivePluginRequiresVisitor.exec(soyFile));
-    pluginRequiredJsLibNames.addAll(genFunctionPluginRequiresVisitor.exec(soyFile));
+    pluginRequiredJsLibNames.addAll(new GenFunctionPluginRequiresVisitor().exec(soyFile));
     for (String namespace : pluginRequiredJsLibNames) {
       jsCodeBuilder.appendLine("goog.require('" + namespace + "');");
     }
