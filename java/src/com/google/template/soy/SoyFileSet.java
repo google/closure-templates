@@ -43,6 +43,7 @@ import com.google.template.soy.error.ErrorPrettyPrinter;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.SnippetFormatter;
+import com.google.template.soy.incrementaldomsrc.IncrementalDomSrcMain;
 import com.google.template.soy.jbcsrc.BytecodeCompiler;
 import com.google.template.soy.jbcsrc.api.SoySauce;
 import com.google.template.soy.jbcsrc.api.SoySauceImpl;
@@ -566,6 +567,9 @@ public final class SoyFileSet {
   /** Provider for getting an instance of JsSrcMain. */
   private final Provider<JsSrcMain> jsSrcMainProvider;
 
+  /** Provider for getting an instance of IncrementalDomSrcMain. */
+  private final Provider<IncrementalDomSrcMain> incrementalDomSrcMainProvider;
+
   /** Provider for getting an instance of PySrcMain. */
   private final Provider<PySrcMain> pySrcMainProvider;
 
@@ -602,6 +606,7 @@ public final class SoyFileSet {
   /**
    * @param baseTofuFactory Factory for creating an instance of BaseTofu.
    * @param jsSrcMainProvider Provider for getting an instance of JsSrcMain.
+   * @param incrementalDomSrcMainProvider Provider for getting an instance of IncrementalDomSrcMain.
    * @param pySrcMainProvider Provider for getting an instance of PySrcMain.
    * @param checkFunctionCallsVisitorFactory Factory for creating an instance of
    *     CheckFunctionCallsVisitor.
@@ -620,6 +625,7 @@ public final class SoyFileSet {
       BaseTofuFactory baseTofuFactory,
       SoySauceImpl.Factory soyTemplatesFactory,
       Provider<JsSrcMain> jsSrcMainProvider,
+      Provider<IncrementalDomSrcMain> incrementalDomSrcMainProvider,
       Provider<PySrcMain> pySrcMainProvider,
       CheckFunctionCallsVisitorFactory checkFunctionCallsVisitorFactory,
       ContextualAutoescaper contextualAutoescaper,
@@ -636,6 +642,7 @@ public final class SoyFileSet {
     this.soyTemplatesFactory = soyTemplatesFactory;
     this.baseTofuFactory = baseTofuFactory;
     this.jsSrcMainProvider = jsSrcMainProvider;
+    this.incrementalDomSrcMainProvider = incrementalDomSrcMainProvider;
     this.pySrcMainProvider = pySrcMainProvider;
     this.checkFunctionCallsVisitorFactory = checkFunctionCallsVisitorFactory;
     this.contextualAutoescaper = contextualAutoescaper;
@@ -998,6 +1005,47 @@ public final class SoyFileSet {
             soyTreeClone, jsSrcOptions, locale, msgBundle, outputPathFormat, inputFilePathPrefix);
       }
     }
+    return result();
+  }
+
+  /**
+   * Compiles this Soy file set into JS source code files and writes these JS files to disk.
+   *
+   * @param outputPathFormat The format string defining how to build the output file path
+   *     corresponding to an input file path.
+   * @param jsSrcOptions The compilation options for the JS Src output target.
+   * @throws SoySyntaxException If a syntax error is found.
+   * @throws IOException If there is an error in opening/reading a message file or opening/writing
+   *     an output JS file.
+   */
+  @SuppressWarnings("deprecation")
+  CompilationResult compileToIncrementalDomSrcFiles(
+      String outputPathFormat,
+      SoyJsSrcOptions jsSrcOptions)
+      throws SoySyntaxException, IOException {
+
+    SyntaxVersion declaredSyntaxVersion =
+        generalOptions.getDeclaredSyntaxVersion(SyntaxVersion.V2_0);
+
+    Checkpoint checkpoint = errorReporter.checkpoint();
+    SoyFileSetNode soyTree = parse(SyntaxVersion.V2_0);
+
+    if (errorReporter.errorsSince(checkpoint)) {
+      return failure();
+    }
+
+    checkFunctionCallsVisitorFactory.create(declaredSyntaxVersion, errorReporter).exec(soyTree);
+    new StrictDepsVisitor(errorReporter).exec(soyTree);
+    new AssertStrictAutoescapingVisitor(errorReporter).exec(soyTree);
+    new ChangeCallsToPassAllDataVisitor().exec(soyTree);
+    simplifyVisitor.exec(soyTree);
+
+    if (errorReporter.errorsSince(checkpoint)) {
+      return failure();
+    }
+
+    incrementalDomSrcMainProvider.get().genJsFiles(soyTree, jsSrcOptions, outputPathFormat);
+
     return result();
   }
 
