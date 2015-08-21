@@ -66,9 +66,11 @@ public final class FindCalleesNotInFileVisitorTest extends TestCase {
         "{/deltemplate}\n";
 
     ErrorReporter boom = ExplodingErrorReporter.get();
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(testFileContent)
-        .errorReporter(boom)
-        .parse();
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(testFileContent)
+            .errorReporter(boom)
+            .parse()
+            .fileSet();
     SoyFileNode soyFile = soyTree.getChild(0);
 
     Iterable<String> calleesNotInFile = Iterables.transform(

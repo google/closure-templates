@@ -19,6 +19,7 @@ package com.google.template.soy.parsepasses;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.Iterables;
+import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.error.ErrorReporter;
@@ -26,6 +27,7 @@ import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.error.FormattingErrorReporter;
 import com.google.template.soy.sharedpasses.CheckTemplateParamsVisitor;
 import com.google.template.soy.soytree.SoyFileSetNode;
+import com.google.template.soy.soytree.TemplateRegistry;
 
 import junit.framework.TestCase;
 
@@ -370,23 +372,25 @@ public final class CheckDelegatesVisitorTest extends TestCase {
 
   private void assertValidSoyFiles(String... soyFileContents) {
     ErrorReporter boom = ExplodingErrorReporter.get();
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(soyFileContents)
-        .errorReporter(boom)
-        .parse();
-    new CheckTemplateParamsVisitor(SyntaxVersion.V2_0, boom).exec(soyTree);
+    ParseResult result =
+        SoyFileSetParserBuilder.forFileContents(soyFileContents).errorReporter(boom).parse();
+    TemplateRegistry registry = result.registry();
+    SoyFileSetNode soyTree = result.fileSet();
+    new CheckTemplateParamsVisitor(registry, SyntaxVersion.V2_0, boom).exec(soyTree);
     FormattingErrorReporter errorReporter = new FormattingErrorReporter();
-    new CheckDelegatesVisitor(errorReporter).exec(soyTree);
+    new CheckDelegatesVisitor(registry, errorReporter).exec(soyTree);
     assertThat(errorReporter.getErrorMessages()).isEmpty();
   }
 
   private void assertInvalidSoyFiles(String expectedErrorMsgSubstr, String... soyFileContents) {
     ErrorReporter boom = ExplodingErrorReporter.get();
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(soyFileContents)
-        .errorReporter(boom)
-        .parse();
-    new CheckTemplateParamsVisitor(SyntaxVersion.V2_0, boom).exec(soyTree);
+    ParseResult result =
+        SoyFileSetParserBuilder.forFileContents(soyFileContents).errorReporter(boom).parse();
+    TemplateRegistry registry = result.registry();
+    SoyFileSetNode soyTree = result.fileSet();
+    new CheckTemplateParamsVisitor(registry, SyntaxVersion.V2_0, boom).exec(soyTree);
     FormattingErrorReporter errorReporter = new FormattingErrorReporter();
-    new CheckDelegatesVisitor(errorReporter).exec(soyTree);
+    new CheckDelegatesVisitor(registry, errorReporter).exec(soyTree);
     assertThat(errorReporter.getErrorMessages()).hasSize(1);
     assertThat(Iterables.getOnlyElement(errorReporter.getErrorMessages()))
         .contains(expectedErrorMsgSubstr);

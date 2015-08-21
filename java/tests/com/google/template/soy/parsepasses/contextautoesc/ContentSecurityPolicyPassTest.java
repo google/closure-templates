@@ -221,9 +221,11 @@ public final class ContentSecurityPolicyPassTest extends TestCase {
   private SoyFileSetNode parseAndApplyCspPass(String input) {
     String namespace = "{namespace ns autoescape=\"deprecated-contextual\"}\n\n";
     ErrorReporter boom = ExplodingErrorReporter.get();
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(namespace + input)
-        .errorReporter(boom)
-        .parse();
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(namespace + input)
+            .errorReporter(boom)
+            .parse()
+            .fileSet();
 
     ContextualAutoescaper contextualAutoescaper
         = new ContextualAutoescaper(ImmutableMap.<String, SoyPrintDirective>of(), boom);

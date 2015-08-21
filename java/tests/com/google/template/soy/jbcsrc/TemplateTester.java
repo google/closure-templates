@@ -242,9 +242,11 @@ public final class TemplateTester {
 
     private void compile() {
       if (classData == null) {
-        SoyFileSetNode fileSet = 
+        SoyFileSetNode fileSet =
             SoyFileSetParserBuilder.forFileContents(getSubject())
-                .typeRegistry(typeRegistry).parse();
+                .typeRegistry(typeRegistry)
+                .parse()
+                .fileSet();
         new UnsupportedFeatureReporter(ExplodingErrorReporter.get()).check(fileSet);
         // Clone the tree, there tend to be bugs in the AST clone implementations that don't show
         // up until development time when we do a lot of AST cloning, so clone here to try to flush
@@ -328,9 +330,9 @@ public final class TemplateTester {
   static CompiledTemplates compileFile(String ...fileBody) {
     String file = Joiner.on('\n').join(fileBody);
     return BytecodeCompiler.compile(
-        new TemplateRegistry(SoyFileSetParserBuilder.forFileContents(file).parse(),
-            ExplodingErrorReporter.get()),
-        false,
-        ExplodingErrorReporter.get()).get();
+            SoyFileSetParserBuilder.forFileContents(file).parse().registry(),
+            false,
+            ExplodingErrorReporter.get())
+        .get();
   }
 }

@@ -35,9 +35,10 @@ public final class VoidElementVerifyingVisitorTest extends TestCase {
       + "http://www.w3.org/TR/html-markup/syntax.html#void-element";
 
   private static SoyFileSetNode performVisitor(String templateBody, ErrorReporter er) {
-    SoyFileSetNode sfsn = SoyFileSetParserBuilder.forTemplateContents(
-        AutoEscapingType.STRICT,
-        templateBody).parse();
+    SoyFileSetNode sfsn =
+        SoyFileSetParserBuilder.forTemplateContents(AutoEscapingType.STRICT, templateBody)
+            .parse()
+            .fileSet();
 
     new HtmlTransformVisitor(er).exec(sfsn);
     new VoidElementVerifyingVisitor(er).exec(sfsn);

@@ -63,9 +63,9 @@ public final class OptimizeBidiCodeGenVisitorTest extends TestCase {
         // These 4 nodes don't get replaced.
         "{$goo}{bidiDirAttr($moo)}{bidiMark() |insertWordBreaks:5}{bidiStartEdge() |escapeUri}\n";
 
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(soyCode).parse();
-    OptimizeBidiCodeGenVisitor optimizer = new OptimizeBidiCodeGenVisitor(
-        SOY_JS_SRC_FUNCTIONS_MAP, BidiGlobalDir.LTR);
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(soyCode).parse().fileSet();
+    OptimizeBidiCodeGenVisitor optimizer =
+        new OptimizeBidiCodeGenVisitor(SOY_JS_SRC_FUNCTIONS_MAP, BidiGlobalDir.LTR);
     optimizer.exec(soyTree);
     TemplateNode template = (TemplateNode) SharedTestUtils.getNode(soyTree);
 
@@ -85,9 +85,10 @@ public final class OptimizeBidiCodeGenVisitorTest extends TestCase {
         "{bidiMark()}{bidiStartEdge() |noAutoescape}{bidiEndEdge() |escapeHtml}\n" +
         "{$goo}{bidiDirAttr($moo)}{bidiMark() |insertWordBreaks:5}{bidiStartEdge() |escapeUri}\n";
 
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(soyCode).parse();
-    OptimizeBidiCodeGenVisitor optimizer = new OptimizeBidiCodeGenVisitor(
-        SOY_JS_SRC_FUNCTIONS_MAP, BIDI_GLOBAL_DIR_FOR_ISRTL_CODE_SNIPPET);
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(soyCode).parse().fileSet();
+    OptimizeBidiCodeGenVisitor optimizer =
+        new OptimizeBidiCodeGenVisitor(
+            SOY_JS_SRC_FUNCTIONS_MAP, BIDI_GLOBAL_DIR_FOR_ISRTL_CODE_SNIPPET);
     optimizer.exec(soyTree);
     TemplateNode template = (TemplateNode) SharedTestUtils.getNode(soyTree);
 

@@ -2113,12 +2113,15 @@ public final class ContextualAutoescaperTest extends TestCase {
 
 
   public void testStrictModeAllowsNonAutoescapeCancellingDirectives() {
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(join(
-        "{namespace ns}\n\n",
-        "{template .main autoescape=\"strict\"}\n",
-        "<b>{$foo |customOtherDirective}</b>\n",
-        "{/template}"))
-        .parse();
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(
+                join(
+                    "{namespace ns}\n\n",
+                    "{template .main autoescape=\"strict\"}\n",
+                    "<b>{$foo |customOtherDirective}</b>\n",
+                    "{/template}"))
+            .parse()
+            .fileSet();
     String rewrittenTemplate = rewrittenSource(soyTree);
     assertThat(rewrittenTemplate.trim())
         .isEqualTo(join(
@@ -2424,9 +2427,8 @@ public final class ContextualAutoescaperTest extends TestCase {
         "\n{/template}";
 
     ErrorReporter boom = ExplodingErrorReporter.get();
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(source)
-        .errorReporter(boom)
-        .parse();
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(source).errorReporter(boom).parse().fileSet();
     new ContextualAutoescaper(SOY_PRINT_DIRECTIVES, boom).rewrite(soyTree);
     TemplateNode mainTemplate = soyTree.getChild(0).getChild(0);
     assertWithMessage("Sanity check").that(mainTemplate.getTemplateName()).isEqualTo("ns.main");
@@ -2465,9 +2467,8 @@ public final class ContextualAutoescaperTest extends TestCase {
         "\n{/deltemplate}";
 
     ErrorReporter boom = ExplodingErrorReporter.get();
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(source)
-        .errorReporter(boom)
-        .parse();
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(source).errorReporter(boom).parse().fileSet();
     new ContextualAutoescaper(SOY_PRINT_DIRECTIVES, boom).rewrite(soyTree);
     TemplateNode mainTemplate = soyTree.getChild(0).getChild(0);
     assertWithMessage("Sanity check").that(mainTemplate.getTemplateName()).isEqualTo("ns.main");
@@ -2645,7 +2646,8 @@ public final class ContextualAutoescaperTest extends TestCase {
         SoyFileSetParserBuilder.forFileContents(inputs)
             .errorReporter(boom)
             .allowUnboundGlobals(true)
-            .parse();
+            .parse()
+            .fileSet();
 
     String source = rewrittenSource(soyTree);
     assertThat(source.trim()).isEqualTo(expectedOutput);
@@ -2673,7 +2675,8 @@ public final class ContextualAutoescaperTest extends TestCase {
             .doRunInitialParsingPasses(true)
             .doRunCheckingPasses(true)
             .allowUnboundGlobals(true)
-            .parse();
+            .parse()
+            .fileSet();
 
     try {
       rewrittenSource(soyTree);

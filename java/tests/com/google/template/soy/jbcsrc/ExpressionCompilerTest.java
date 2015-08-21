@@ -449,12 +449,14 @@ public class ExpressionCompilerTest extends TestCase {
 
   private SoyExpression compileExpression(String soyExpr) {
     String createTemplateBody = createTemplateBody(soyExpr);
-    PrintNode code = (PrintNode) SoyFileSetParserBuilder.forTemplateContents(
-        createTemplateBody)
-        .parse()
-        .getChild(0)
-        .getChild(0)
-        .getChild(0);
+    PrintNode code =
+        (PrintNode)
+            SoyFileSetParserBuilder.forTemplateContents(createTemplateBody)
+                .parse()
+                .fileSet()
+                .getChild(0)
+                .getChild(0)
+                .getChild(0);
     return testExpressionCompiler.compile(code.getExprUnion().getExpr());
   }
 

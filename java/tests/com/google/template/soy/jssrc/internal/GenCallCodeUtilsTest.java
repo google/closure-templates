@@ -180,7 +180,8 @@ public class GenCallCodeUtilsTest extends TestCase {
   private String getCallExprTextHelper(
       String callSource, ImmutableList<String> escapingDirectives) {
 
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(callSource).parse();
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forTemplateContents(callSource).parse().fileSet();
     CallNode callNode = (CallNode) SharedTestUtils.getNode(soyTree, 0);
     // Manually setting the escaping directives.
     callNode.setEscapingDirectiveNames(escapingDirectives);

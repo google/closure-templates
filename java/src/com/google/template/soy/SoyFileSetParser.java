@@ -18,9 +18,11 @@ package com.google.template.soy;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Sets;
+import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
 import com.google.template.soy.base.internal.SoyFileSupplier;
@@ -39,6 +41,7 @@ import com.google.template.soy.sharedpasses.ReportSyntaxVersionErrorsVisitor;
 import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
+import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.types.SoyTypeRegistry;
 
 import java.io.IOException;
@@ -55,6 +58,17 @@ import javax.annotation.Nullable;
  *
  */
 public final class SoyFileSetParser {
+  /** A simple tuple for the result of a parse operation. */
+  @AutoValue
+  public abstract static class ParseResult {
+    static ParseResult create(SoyFileSetNode soyTree, TemplateRegistry registry) {
+      return new AutoValue_SoyFileSetParser_ParseResult(soyTree, registry);
+    }
+
+    public abstract SoyFileSetNode fileSet();
+
+    public abstract TemplateRegistry registry();
+  }
 
   /** The type registry to resolve type names. */
   private final SoyTypeRegistry typeRegistry;
@@ -137,7 +151,7 @@ public final class SoyFileSetParser {
   /**
    * Parses a set of Soy files, returning a structure containing the parse tree and any errors.
    */
-  public SoyFileSetNode parse() {
+  public ParseResult parse() {
     try {
       return parseWithVersions();
     } catch (IOException e) {
@@ -163,16 +177,18 @@ public final class SoyFileSetParser {
 
 
   /**
-   * Parses a set of Soy files, returning a structure containing the parse tree and any errors.
+   * Parses a set of Soy files, returning a structure containing the parse tree and template
+   * registry.
    */
-  private SoyFileSetNode parseWithVersions() throws IOException {
-    Preconditions.checkState((cache == null) || (parsingPasses != null && doRunCheckingPasses),
-        "AST caching is only allowed when all parsing and checking passes are enabled, to avoid " +
-            "caching inconsistent versions");
+  private ParseResult parseWithVersions() throws IOException {
+    Preconditions.checkState(
+        (cache == null) || (parsingPasses != null && doRunCheckingPasses),
+        "AST caching is only allowed when all parsing and checking passes are enabled, to avoid "
+            + "caching inconsistent versions");
     IdGenerator nodeIdGen =
         (cache != null) ? cache.getNodeIdGenerator() : new IncrementingIdGenerator();
     SoyFileSetNode soyTree = new SoyFileSetNode(nodeIdGen.genId(), nodeIdGen);
-
+    boolean filesWereSkipped = false;
     for (SoyFileSupplier fileSupplier : soyFileSuppliers) {
       SoyFileSupplier.Version version = fileSupplier.getVersion();
       VersionedFile cachedFile = cache != null
@@ -187,7 +203,8 @@ public final class SoyFileSetParser {
           // as many errors as possible. Currently, the later passes just spew NPEs if run on
           // a malformed parse tree.
           if (node == null) {
-            return soyTree;
+            filesWereSkipped = true;
+            continue;
           }
           if (parsingPasses != null) {
             // Run passes that are considered part of initial parsing.
@@ -207,14 +224,13 @@ public final class SoyFileSetParser {
       soyTree.addChild(node);
     }
 
-    // Run passes that check the tree.
-    if (doRunCheckingPasses) {
-      runWholeFileSetCheckingPasses(soyTree);
+    TemplateRegistry registry = new TemplateRegistry(soyTree, errorReporter);
+    // Run passes that check the tree iff we successfully parsed every file.
+    if (!filesWereSkipped && doRunCheckingPasses) {
+      runWholeFileSetCheckingPasses(registry, soyTree);
     }
-
-    return soyTree;
+    return ParseResult.create(soyTree, registry);
   }
-
 
   /**
    * Private helper for {@code parseWithVersions()} to parse one Soy file.
@@ -258,16 +274,11 @@ public final class SoyFileSetParser {
    * Private helper for {@code parseWithVersions()} to run checking passes that require the whole
    * tree.
    */
-  private void runWholeFileSetCheckingPasses(SoyFileSetNode soyTree) {
-    new CheckTemplateParamsVisitor(declaredSyntaxVersion, errorReporter)
-        .exec(soyTree);
-    new CheckDelegatesVisitor(errorReporter)
-        .exec(soyTree);
-    new CheckCallsVisitor(errorReporter)
-        .exec(soyTree);
-    new CheckCallingParamTypesVisitor(errorReporter)
-        .exec(soyTree);
-    new CheckTemplateVisibility(errorReporter)
-        .exec(soyTree);
+  private void runWholeFileSetCheckingPasses(TemplateRegistry registry, SoyFileSetNode soyTree) {
+    new CheckTemplateParamsVisitor(registry, declaredSyntaxVersion, errorReporter).exec(soyTree);
+    new CheckDelegatesVisitor(registry, errorReporter).exec(soyTree);
+    new CheckCallsVisitor(registry, errorReporter).exec(soyTree);
+    new CheckCallingParamTypesVisitor(registry, errorReporter).exec(soyTree);
+    new CheckTemplateVisibility(registry, errorReporter).exec(soyTree);
   }
 }

@@ -111,7 +111,7 @@ public final class SoyExprForPySubject extends Subject<SoyExprForPySubject, Stri
    */
   public void compilesTo(List<PyExpr> expectedPyExprs) {
     SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forTemplateContents(getSubject()).parse();
+        SoyFileSetParserBuilder.forTemplateContents(getSubject()).parse().fileSet();
     SoyNode node = SharedTestUtils.getNode(soyTree, 0);
 
     SharedTestUtils.simulateNewApiCall(injector);
@@ -148,7 +148,10 @@ public final class SoyExprForPySubject extends Subject<SoyExprForPySubject, Stri
   public void translatesTo(PyExpr expectedPyExpr, Class<? extends PyExpr> expectedClass) {
     String soyExpr = String.format("{print %s}", getSubject());
     SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forTemplateContents(soyExpr).allowUnboundGlobals(true).parse();
+        SoyFileSetParserBuilder.forTemplateContents(soyExpr)
+            .allowUnboundGlobals(true)
+            .parse()
+            .fileSet();
     if (this.globals != null) {
       ErrorReporter boom = ExplodingErrorReporter.get();
       new SubstituteGlobalsVisitor(

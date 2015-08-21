@@ -19,11 +19,13 @@ package com.google.template.soy.sharedpasses;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.error.FormattingErrorReporter;
 import com.google.template.soy.soytree.SoyFileSetNode;
+import com.google.template.soy.soytree.TemplateRegistry;
 
 import junit.framework.TestCase;
 
@@ -333,11 +335,14 @@ public final class CheckTemplateParamsVisitorTest extends TestCase {
   }
 
   private static ImmutableList<String> soyDocErrorsFor(String... soyFileContents) {
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(soyFileContents)
-        .errorReporter(ExplodingErrorReporter.get())
-        .parse();
+    ParseResult result =
+        SoyFileSetParserBuilder.forFileContents(soyFileContents)
+            .errorReporter(ExplodingErrorReporter.get())
+            .parse();
+    TemplateRegistry registry = result.registry();
+    SoyFileSetNode soyTree = result.fileSet();
     FormattingErrorReporter errorReporter = new FormattingErrorReporter();
-    new CheckTemplateParamsVisitor(SyntaxVersion.V1_0, errorReporter).exec(soyTree);
+    new CheckTemplateParamsVisitor(registry, SyntaxVersion.V1_0, errorReporter).exec(soyTree);
     return errorReporter.getErrorMessages();
   }
 }

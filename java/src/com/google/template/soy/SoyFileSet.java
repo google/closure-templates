@@ -32,6 +32,7 @@ import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.assistedinject.Assisted;
 import com.google.inject.util.Providers;
+import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
@@ -63,7 +64,6 @@ import com.google.template.soy.parsepasses.ParsePasses;
 import com.google.template.soy.parsepasses.contextautoesc.ContentSecurityPolicyPass;
 import com.google.template.soy.parsepasses.contextautoesc.ContextualAutoescaper;
 import com.google.template.soy.parsepasses.contextautoesc.DerivedTemplateUtils;
-import com.google.template.soy.parsepasses.contextautoesc.SoyAutoescapeException;
 import com.google.template.soy.pysrc.SoyPySrcOptions;
 import com.google.template.soy.pysrc.internal.PySrcMain;
 import com.google.template.soy.shared.SoyAstCache;
@@ -95,6 +95,7 @@ import java.net.URL;
 import java.util.List;
 import java.util.Map;
 
+import javax.annotation.CheckReturnValue;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -699,12 +700,13 @@ public final class SoyFileSet {
     // TODO(lukes): see if we can enforce that globals are provided at compile time here. given that
     // types have to be, this should be possible.  Currently it is disabled for backwards
     // compatibility
-    SoyFileSetNode soyTree = parse(
-        SyntaxVersion.V2_0, true /* allow unknown globals */, typeRegistry);
+    ParseResult result = parse(SyntaxVersion.V2_0, true /* allow unknown globals */, typeRegistry);
 
     // Do renaming of package-relative class names.
     ImmutableMap<String, String> parseInfo =
-        new GenerateParseInfoVisitor(javaPackage, javaClassNameSource, errorReporter).exec(soyTree);
+        new GenerateParseInfoVisitor(
+                javaPackage, javaClassNameSource, result.registry(), errorReporter)
+            .exec(result.fileSet());
     return new ParseInfo(result(), parseInfo);
   }
 
@@ -727,8 +729,8 @@ public final class SoyFileSet {
    */
   public SoyMsgBundle extractMsgs() throws SoySyntaxException {
     SoyFileSetNode soyTree =
-        parse(
-            SyntaxVersion.V1_0, true /* allow unknown globals */, SoyTypeRegistry.DEFAULT_UNKNOWN);
+        parse(SyntaxVersion.V1_0, true /* allow unknown globals */, SoyTypeRegistry.DEFAULT_UNKNOWN)
+            .fileSet();
     return new ExtractMsgsVisitor().exec(soyTree);
   }
 
@@ -755,11 +757,14 @@ public final class SoyFileSet {
     // user to provide a root set.
 
     if (memoizedExtractedMsgIdsForPruning == null) {
-      SoyFileSetNode soyTree =
+      ParseResult result =
           parse(
               SyntaxVersion.V1_0,
               true /* allow unknown globals */,
               SoyTypeRegistry.DEFAULT_UNKNOWN);
+
+      SoyFileSetNode soyTree = result.fileSet();
+      TemplateRegistry registry = result.registry();
 
       List<TemplateNode> allPublicTemplates = Lists.newArrayList();
       for (SoyFileNode soyFile : soyTree.getChildren()) {
@@ -769,7 +774,6 @@ public final class SoyFileSet {
           }
         }
       }
-      TemplateRegistry registry = new TemplateRegistry(soyTree, errorReporter);
       Map<TemplateNode, TransitiveDepTemplatesInfo> depsInfoMap =
           new FindTransitiveDepTemplatesVisitor(registry)
               .execOnMultipleTemplates(allPublicTemplates);
@@ -810,9 +814,11 @@ public final class SoyFileSet {
     SyntaxVersion declaredSyntaxVersion =
         generalOptions.getDeclaredSyntaxVersion(SyntaxVersion.V2_0);
 
-    SoyFileSetNode soyTree = parse(SyntaxVersion.V2_0);
+    ParseResult result = parse(SyntaxVersion.V2_0);
     ((ErrorReporterImpl) errorReporter).throwIfErrorsPresent();
-    runMiddleendPasses(soyTree, declaredSyntaxVersion);
+    SoyFileSetNode soyTree = result.fileSet();
+    TemplateRegistry registry = result.registry();
+    registry = runMiddleendPasses(registry, soyTree, declaredSyntaxVersion);
 
     // If allowExternalCalls is not explicitly set, then disallow by default for Tofu backend.
     if (generalOptions.allowExternalCalls() == null) {
@@ -820,10 +826,12 @@ public final class SoyFileSet {
       //(new AssertNoExternalCallsVisitor()).exec(soyTree);
     }
 
-    // Clear the SoyDoc strings because they use unnecessary memory.
-    new ClearSoyDocStringsVisitor().exec(soyTree);
+    // Clear the SoyDoc strings because they use unnecessary memory, unless we have a cache, in
+    // which case it is pointless.
+    if (cache != null) {
+      new ClearSoyDocStringsVisitor().exec(soyTree);
+    }
 
-    TemplateRegistry registry = new TemplateRegistry(soyTree, errorReporter);
     ((ErrorReporterImpl) errorReporter).throwIfErrorsPresent();
 
     return baseTofuFactory.create(registry, getTransitiveIjs(soyTree, registry));
@@ -850,14 +858,15 @@ public final class SoyFileSet {
     }
     SyntaxVersion declaredSyntaxVersion =
         generalOptions.getDeclaredSyntaxVersion(SyntaxVersion.V2_0);
-    SoyFileSetNode soyTree = parse(SyntaxVersion.V2_0);
+    ParseResult result = parse(SyntaxVersion.V2_0);
+    ((ErrorReporterImpl) errorReporter).throwIfErrorsPresent();
+    SoyFileSetNode soyTree = result.fileSet();
+    TemplateRegistry registry = result.registry();
+
+    registry = runMiddleendPasses(registry, soyTree, declaredSyntaxVersion);
+    new StrictDepsVisitor(registry, errorReporter).exec(soyTree);
     ((ErrorReporterImpl) errorReporter).throwIfErrorsPresent();
 
-    runMiddleendPasses(soyTree, declaredSyntaxVersion);
-    new StrictDepsVisitor(errorReporter).exec(soyTree);
-    ((ErrorReporterImpl) errorReporter).throwIfErrorsPresent();
-
-    TemplateRegistry registry = new TemplateRegistry(soyTree, errorReporter);
     Optional<CompiledTemplates> templates =
         BytecodeCompiler.compile(
             registry,
@@ -929,11 +938,12 @@ public final class SoyFileSet {
     // JS has traditionally allowed unknown globals, as a way for soy to reference normal js enums
     // and constants.  For consistency/reusability of templates it would be nice to not allow that
     // but the cat is out of the bag.
-    SoyFileSetNode soyTree =
+    ParseResult parseResult =
         parse(SyntaxVersion.V2_0, true /* allow unknown globals */, typeRegistry);
-    runMiddleendPasses(soyTree, declaredSyntaxVersion);
-
-    return jsSrcMainProvider.get().genJsSrc(soyTree, jsSrcOptions, msgBundle);
+    TemplateRegistry registry = parseResult.registry();
+    registry = runMiddleendPasses(registry, parseResult.fileSet(), declaredSyntaxVersion);
+    // TODO(lukes): pass the template registry to jsSrcMain
+    return jsSrcMainProvider.get().genJsSrc(parseResult.fileSet(), jsSrcOptions, msgBundle);
   }
 
   /**
@@ -965,13 +975,15 @@ public final class SoyFileSet {
     Checkpoint checkpoint = errorReporter.checkpoint();
 
     // Allow unknown globals for backwards compatibility
-    SoyFileSetNode soyTree =
-        parse(SyntaxVersion.V2_0, true /* allow unknown globals */, typeRegistry);
+    ParseResult result = parse(SyntaxVersion.V2_0, true /* allow unknown globals */, typeRegistry);
     if (errorReporter.errorsSince(checkpoint)) {
       return failure();
     }
 
-    runMiddleendPasses(soyTree, declaredSyntaxVersion);
+    SoyFileSetNode soyTree = result.fileSet();
+    TemplateRegistry registry = result.registry();
+    registry = runMiddleendPasses(registry, soyTree, declaredSyntaxVersion);
+    // TODO(lukes): pass the template registry to jsSrcMain
     if (errorReporter.errorsSince(checkpoint)) {
       return failure();
     }
@@ -1028,14 +1040,15 @@ public final class SoyFileSet {
         generalOptions.getDeclaredSyntaxVersion(SyntaxVersion.V2_0);
 
     Checkpoint checkpoint = errorReporter.checkpoint();
-    SoyFileSetNode soyTree = parse(SyntaxVersion.V2_0);
+    ParseResult result = parse(SyntaxVersion.V2_0);
 
     if (errorReporter.errorsSince(checkpoint)) {
       return failure();
     }
-
+    SoyFileSetNode soyTree = result.fileSet();
+    TemplateRegistry registry = result.registry();
     checkFunctionCallsVisitorFactory.create(declaredSyntaxVersion, errorReporter).exec(soyTree);
-    new StrictDepsVisitor(errorReporter).exec(soyTree);
+    new StrictDepsVisitor(registry, errorReporter).exec(soyTree);
     new AssertStrictAutoescapingVisitor(errorReporter).exec(soyTree);
     new ChangeCallsToPassAllDataVisitor().exec(soyTree);
     simplifyVisitor.exec(soyTree);
@@ -1069,12 +1082,15 @@ public final class SoyFileSet {
         generalOptions.getDeclaredSyntaxVersion(SyntaxVersion.V2_2);
 
     Checkpoint checkpoint = errorReporter.checkpoint();
-    SoyFileSetNode soyTree = parse(SyntaxVersion.V2_2);
+    ParseResult result = parse(SyntaxVersion.V2_2);
     if (errorReporter.errorsSince(checkpoint)) {
       return failure();
     }
+    SoyFileSetNode soyTree = result.fileSet();
 
-    runMiddleendPasses(soyTree, declaredSyntaxVersion);
+    TemplateRegistry registry = result.registry();
+    registry = runMiddleendPasses(registry, result.fileSet(), declaredSyntaxVersion);
+    // TODO(lukes): pass the template registry to pySrcMain
     if (errorReporter.errorsSince(checkpoint)) {
       return failure();
     }
@@ -1100,7 +1116,7 @@ public final class SoyFileSet {
   }
 
   // Parse the current file set with the given default syntax version.
-  private SoyFileSetNode parse(SyntaxVersion defaultVersion) {
+  private ParseResult parse(SyntaxVersion defaultVersion) {
     return parse(defaultVersion, false, typeRegistry);
   }
 
@@ -1112,7 +1128,7 @@ public final class SoyFileSet {
    * @param allowUknownGlobals Whether to allow unknown globals
    * @param typeRegistry The type registry to use
    */
-  private SoyFileSetNode parse(
+  private ParseResult parse(
       SyntaxVersion defaultVersion, boolean allowUknownGlobals, SoyTypeRegistry typeRegistry) {
     SyntaxVersion declaredSyntaxVersion = generalOptions.getDeclaredSyntaxVersion(defaultVersion);
     ParsePasses.Builder builder =
@@ -1143,12 +1159,13 @@ public final class SoyFileSet {
    *
    * @param soyTree The Soy tree to run middleend passes on.
    * @param declaredSyntaxVersion User-declared syntax version.
+   * @return A new TemplateRegistry.  The contextual autoescaper occasionally adds new templates and
+   *     so the TemplateRegistry needs to be recreated.
    * @throws SoySyntaxException If a syntax error is found.
-   * @throws SoyAutoescapeException If there is a problem determining the context for an
-   *     {@code autoescape="contextual"} template or one of its callers.
    */
-  private synchronized void runMiddleendPasses(
-      SoyFileSetNode soyTree, SyntaxVersion declaredSyntaxVersion)
+  @CheckReturnValue
+  private synchronized TemplateRegistry runMiddleendPasses(
+      TemplateRegistry registry, SoyFileSetNode soyTree, SyntaxVersion declaredSyntaxVersion)
       throws SoySyntaxException {
 
     Checkpoint checkpoint = errorReporter.checkpoint();
@@ -1160,7 +1177,7 @@ public final class SoyFileSet {
 
     // If disallowing external calls, perform the check.
     if (generalOptions.allowExternalCalls() == Boolean.FALSE) {
-      (new StrictDepsVisitor(errorReporter)).exec(soyTree);
+      (new StrictDepsVisitor(registry, errorReporter)).exec(soyTree);
     }
 
     // If requiring strict autoescaping, check and enforce it.
@@ -1173,9 +1190,11 @@ public final class SoyFileSet {
     if (errorReporter.errorsSince(checkpoint)) {
       // Further passes that rely on sliced raw text nodes, such as conformance and CSP, can't
       // proceed if contextual escaping failed.
-      return;
+      return registry;
     }
-
+    // contextual autoescaping may actually add new templates to the tree so we need to reconstruct
+    // the registry
+    registry = new TemplateRegistry(soyTree, errorReporter);
     if (checkConformance != null) {
       checkConformance.check(ConformanceInput.create(
           soyTree, contextualAutoescaper.getSlicedRawTextNodes()));
@@ -1190,6 +1209,7 @@ public final class SoyFileSet {
     // Attempt to simplify the tree.
     new ChangeCallsToPassAllDataVisitor().exec(soyTree);
     simplifyVisitor.exec(soyTree);
+    return registry;
   }
 
 

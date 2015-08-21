@@ -111,9 +111,11 @@ public class BytecodeCompilerTest extends TestCase {
         "  {$boo}",
         "{/template}",
         "");
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder
-        .forFileContents(soyFileContent1, soyFileContent2, soyFileContent3, soyFileContent4)
-        .parse();
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(
+                soyFileContent1, soyFileContent2, soyFileContent3, soyFileContent4)
+            .parse()
+            .fileSet();
     TemplateRegistry templateRegistry = new TemplateRegistry(soyTree, ExplodingErrorReporter.get());
     CompiledTemplates templates = 
         BytecodeCompiler.compile(templateRegistry, false, ExplodingErrorReporter.get()).get();
@@ -171,7 +173,8 @@ public class BytecodeCompilerTest extends TestCase {
         "{/deltemplate}",
         "");
 
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(soyFileContent1).parse();
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(soyFileContent1).parse().fileSet();
     TemplateRegistry templateRegistry = new TemplateRegistry(soyTree, ExplodingErrorReporter.get());
     CompiledTemplates templates = 
         BytecodeCompiler.compile(templateRegistry, false, ExplodingErrorReporter.get()).get();

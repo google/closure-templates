@@ -238,10 +238,12 @@ public final class SourceLocationTest extends TestCase {
 
 
   private void assertSourceLocations(String asciiArtExpectedOutput, String soySourceCode) {
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forSuppliers(
-        SoyFileSupplier.Factory.create(soySourceCode, SoyFileKind.SRC, "/example/file.soy"))
-        .doRunInitialParsingPasses(false)
-        .parse();
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forSuppliers(
+                SoyFileSupplier.Factory.create(soySourceCode, SoyFileKind.SRC, "/example/file.soy"))
+            .doRunInitialParsingPasses(false)
+            .parse()
+            .fileSet();
     String actual = new AsciiArtVisitor().exec(soyTree);
     assertEquals(asciiArtExpectedOutput, actual);
   }

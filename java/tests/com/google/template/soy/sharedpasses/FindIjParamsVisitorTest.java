@@ -63,7 +63,7 @@ public final class FindIjParamsVisitorTest extends TestCase {
         "  {$ij.boo} {$ij.moo} {round($ij.zoo)}\n" +
         "{/template}\n";
 
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(fileContent).parse();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(fileContent).parse().fileSet();
     TemplateRegistry templateRegistry = new TemplateRegistry(soyTree, FAIL);
 
     TemplateNode aaa = soyTree.getChild(0).getChild(0);
@@ -120,7 +120,7 @@ public final class FindIjParamsVisitorTest extends TestCase {
         "  {$ij.boo} {$ij.moo + $ij.woo} {call .bbb /}\n" +
         "{/template}\n";
 
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(fileContent).parse();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(fileContent).parse().fileSet();
     TemplateRegistry templateRegistry = new TemplateRegistry(soyTree, FAIL);
 
     TemplateNode aaa = soyTree.getChild(0).getChild(0);
@@ -162,7 +162,7 @@ public final class FindIjParamsVisitorTest extends TestCase {
         "  {$ij.boo} {call .bbb /} {$ij.moo}\n" +
         "{/template}\n";
 
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(fileContent).parse();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(fileContent).parse().fileSet();
     TemplateRegistry templateRegistry = new TemplateRegistry(soyTree, FAIL);
 
     TemplateNode aaa = soyTree.getChild(0).getChild(0);
@@ -207,7 +207,7 @@ public final class FindIjParamsVisitorTest extends TestCase {
         "  {call .aaa /} {$ij.moo} {$ij.boo}\n" +
         "{/template}\n";
 
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(fileContent).parse();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(fileContent).parse().fileSet();
     TemplateRegistry templateRegistry = new TemplateRegistry(soyTree, FAIL);
 
     TemplateNode aaa = soyTree.getChild(0).getChild(0);
@@ -255,7 +255,7 @@ public final class FindIjParamsVisitorTest extends TestCase {
         "  {$ij.boo} {$ij.too} {call .bbb /}\n" +
         "{/template}\n";
 
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(fileContent).parse();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(fileContent).parse().fileSet();
     TemplateRegistry templateRegistry = new TemplateRegistry(soyTree, FAIL);
 
     TemplateNode aaa = soyTree.getChild(0).getChild(0);
@@ -299,7 +299,7 @@ public final class FindIjParamsVisitorTest extends TestCase {
         "  {$ij.moo} {$ij.boo} {call .bbb /}\n" +
         "{/template}\n";
 
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(fileContent).parse();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(fileContent).parse().fileSet();
     TemplateRegistry templateRegistry = new TemplateRegistry(soyTree, FAIL);
 
     TemplateNode aaa = soyTree.getChild(0).getChild(0);
@@ -346,7 +346,7 @@ public final class FindIjParamsVisitorTest extends TestCase {
         "{/template}\n";
 
 
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(fileContent).parse();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(fileContent).parse().fileSet();
     TemplateRegistry templateRegistry = new TemplateRegistry(soyTree, FAIL);
     TemplateNode bbb = soyTree.getChild(0).getChild(0);
     TemplateNode aaa = soyTree.getChild(0).getChild(1);

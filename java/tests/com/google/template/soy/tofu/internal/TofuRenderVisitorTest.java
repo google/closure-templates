@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-
 package com.google.template.soy.tofu.internal;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -32,7 +31,6 @@ import com.google.template.soy.shared.internal.SharedModule;
 import com.google.template.soy.sharedpasses.SharedPassesModule;
 import com.google.template.soy.sharedpasses.render.RenderVisitor;
 import com.google.template.soy.sharedpasses.render.RenderVisitorFactory;
-import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 
 import junit.framework.TestCase;
@@ -74,10 +72,11 @@ public class TofuRenderVisitorTest extends TestCase {
         "{/template}\n";
 
     ErrorReporter boom = ExplodingErrorReporter.get();
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(soyFileContent)
-        .errorReporter(boom)
-        .parse();
-    TemplateRegistry templateRegistry = new TemplateRegistry(soyTree, boom);
+    TemplateRegistry templateRegistry =
+        SoyFileSetParserBuilder.forFileContents(soyFileContent)
+            .errorReporter(boom)
+            .parse()
+            .registry();
 
     // Important: This test will be doing its intended job only if we run
     // MarkParentNodesNeedingEnvFramesVisitor, because otherwise the 'let' within the 'param' block

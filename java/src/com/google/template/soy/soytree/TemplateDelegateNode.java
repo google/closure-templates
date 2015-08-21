@@ -55,6 +55,9 @@ public final class TemplateDelegateNode extends TemplateNode implements ExprHold
       return create(name, checkNotNull(variant), null);
     }
 
+    // TODO(lukes): we should be able to remove this now that the substitute globals pass is always
+    // run prior to when the first TemplateRegistry is created.  furthermore we can assert that
+    // all globals in variant expressions are always substituted.
     /**
      * This constructor adds support a temporary solution to using globals as deltemplate variants.
      * During parsing, TemplateRegistry instances must be built for validation, but the expression
@@ -62,8 +65,8 @@ public final class TemplateDelegateNode extends TemplateNode implements ExprHold
      * allows a partial validation, but this should be removed once TemplateRegistry is refactored
      * to support this.
      */
-    private static DelTemplateKey create(String name, @Nullable String variant,
-        @Nullable String variantExpr) {
+    private static DelTemplateKey create(
+        String name, @Nullable String variant, @Nullable String variantExpr) {
       return new AutoValue_TemplateDelegateNode_DelTemplateKey(name, variant, variantExpr);
     }
 

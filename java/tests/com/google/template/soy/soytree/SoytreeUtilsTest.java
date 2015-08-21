@@ -67,9 +67,11 @@ public final class SoytreeUtilsTest extends TestCase {
         "{/template}\n";
 
     ErrorReporter boom = ExplodingErrorReporter.get();
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(testFileContent)
-        .errorReporter(boom)
-        .parse();
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(testFileContent)
+            .errorReporter(boom)
+            .parse()
+            .fileSet();
 
     CountingVisitor countingVisitor = new CountingVisitor();
     SoytreeUtils.execOnAllV2Exprs(soyTree, countingVisitor);
@@ -173,7 +175,8 @@ public final class SoytreeUtilsTest extends TestCase {
         SoyFileSetParserBuilder.forFileContents(SOY_SOURCE_FOR_TESTING_CLONING)
             .doRunCheckingPasses(true)
             .declaredSyntaxVersion(SyntaxVersion.V2_4)
-            .parse();
+            .parse()
+            .fileSet();
 
     SoyFileSetNode clone = SoytreeUtils.cloneNode(soyTree);
     assertEquals(1, clone.numChildren());

@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Multimap;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyError;
@@ -35,7 +34,6 @@ import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.CallParamValueNode;
-import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
@@ -80,7 +78,7 @@ public final class CheckCallingParamTypesVisitor extends AbstractSoyNodeVisitor<
       SoyError.of("Passing protobuf {0} of type {1} to non-strict template not allowed.");
 
   /** Registry of all templates in the Soy tree. */
-  private TemplateRegistry templateRegistry;
+  private final TemplateRegistry templateRegistry;
 
   /** The current template being checked. */
   private TemplateNode callerTemplate;
@@ -89,21 +87,9 @@ public final class CheckCallingParamTypesVisitor extends AbstractSoyNodeVisitor<
   private final Map<TemplateNode, TemplateParamTypes> paramTypesMap = new HashMap<>();
   private final ErrorReporter errorReporter;
 
-  public CheckCallingParamTypesVisitor(ErrorReporter errorReporter) {
+  public CheckCallingParamTypesVisitor(TemplateRegistry registry, ErrorReporter errorReporter) {
+    this.templateRegistry = registry;
     this.errorReporter = errorReporter;
-  }
-
-  /**
-   * {@inheritDoc}
-   * @throws SoySyntaxException If the arguments in a call operation are incompatible
-   *    with the declared types of the callee's parameters.
-   */
-  @Override protected void visitSoyFileSetNode(SoyFileSetNode node) {
-
-    // Build templateRegistry.
-    templateRegistry = new TemplateRegistry(node, errorReporter);
-    visitChildren(node);
-    templateRegistry = null;
   }
 
   @Override protected void visitCallBasicNode(CallBasicNode node) {

@@ -268,7 +268,8 @@ public final class PerformDeprecatedNonContextualAutoescapeVisitorTest extends T
         testPrintTags + "\n" +
         "{/template}\n";
 
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(testFileContent).parse();
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(testFileContent).parse().fileSet();
     SoyFileNode soyFile = soyTree.getChild(0);
 
     List<PrintNode> printNodes = Lists.newArrayList();

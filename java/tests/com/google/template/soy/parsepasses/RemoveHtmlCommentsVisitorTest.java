@@ -53,10 +53,12 @@ public final class RemoveHtmlCommentsVisitorTest extends TestCase {
         "{/template}\n";
 
     ErrorReporter boom = ExplodingErrorReporter.get();
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(testFileContent)
-        .errorReporter(boom)
-        .doRunInitialParsingPasses(false)
-        .parse();
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(testFileContent)
+            .errorReporter(boom)
+            .doRunInitialParsingPasses(false)
+            .parse()
+            .fileSet();
     TemplateNode template = (TemplateNode) SharedTestUtils.getNode(soyTree);
 
     // Before.

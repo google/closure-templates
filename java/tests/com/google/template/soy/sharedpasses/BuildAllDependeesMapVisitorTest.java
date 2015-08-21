@@ -74,9 +74,11 @@ public final class BuildAllDependeesMapVisitorTest extends TestCase {
 
     ErrorReporter boom = ExplodingErrorReporter.get();
 
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(testFileContent)
-        .errorReporter(boom)
-        .parse();
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(testFileContent)
+            .errorReporter(boom)
+            .parse()
+            .fileSet();
 
     TemplateNode template = soyTree.getChild(0).getChild(0);
     PrintNode a = (PrintNode) template.getChild(0);

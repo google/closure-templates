@@ -48,9 +48,10 @@ public final class HtmlTransformVisitorTest extends TestCase {
 
   private static SoyFileSetNode performVisitor(String templateBody,
       ErrorReporter er) {
-    SoyFileSetNode sfsn = SoyFileSetParserBuilder.forTemplateContents(
-        AutoEscapingType.STRICT,
-        templateBody).parse();
+    SoyFileSetNode sfsn =
+        SoyFileSetParserBuilder.forTemplateContents(AutoEscapingType.STRICT, templateBody)
+            .parse()
+            .fileSet();
 
     new HtmlTransformVisitor(er).exec(sfsn);
 
@@ -166,7 +167,7 @@ public final class HtmlTransformVisitorTest extends TestCase {
         + "  <div id=\"foo\"></div>\n"
         + "{/template}";
 
-    SoyFileSetNode n = SoyFileSetParserBuilder.forFileContents(fileBody).parse();
+    SoyFileSetNode n = SoyFileSetParserBuilder.forFileContents(fileBody).parse().fileSet();
     new HtmlTransformVisitor(FAIL).exec(n);
     assertThat(((RawTextNode) getNode(n, 0)).getRawText()).isEqualTo("<div id=\"foo\"></div>");
   }

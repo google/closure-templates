@@ -92,12 +92,12 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
   }
 
   public void testOptionalParamTypes() {
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(constructTemplateSource(
-        "{@param? pa: bool}",
-        "{@param? pb: list<int>}",
-        "{$pa}",
-        "{$pb}"))
-        .parse();
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(
+                constructTemplateSource(
+                    "{@param? pa: bool}", "{@param? pb: list<int>}", "{$pa}", "{$pb}"))
+            .parse()
+            .fileSet();
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getPrintStatementTypes(soyTree);
@@ -108,17 +108,20 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
   }
 
   public void testDataRefTypes() {
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(constructTemplateSource(
-        "{@param pa: bool}",
-        "{@param pb: list<int>}",
-        "{@param pe: map<int, map<int, string>>}",
-        "{$pa}",
-        "{$pb}",
-        "{$pb[0]}",
-        "{$pe}",
-        "{$pe[0]}",
-        "{$pe[1 + 1][2]}"))
-        .parse();
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(
+                constructTemplateSource(
+                    "{@param pa: bool}",
+                    "{@param pb: list<int>}",
+                    "{@param pe: map<int, map<int, string>>}",
+                    "{$pa}",
+                    "{$pb}",
+                    "{$pb[0]}",
+                    "{$pe}",
+                    "{$pe[0]}",
+                    "{$pe[1 + 1][2]}"))
+            .parse()
+            .fileSet();
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getPrintStatementTypes(soyTree);
@@ -133,11 +136,11 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
   }
 
   public void testRecordTypes() {
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(constructTemplateSource(
-        "{@param pa: [a:int, b:string]}",
-        "{$pa.a}",
-        "{$pa.b}"))
-        .parse();
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(
+                constructTemplateSource("{@param pa: [a:int, b:string]}", "{$pa.a}", "{$pa.b}"))
+            .parse()
+            .fileSet();
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getPrintStatementTypes(soyTree);
@@ -147,20 +150,22 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
 
   public void testDataRefTypesWithUnknown() {
     // Test that data with the 'unknown' type is allowed to function as a map or list.
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(
-        constructTemplateSource(
-            "{@param pa: unknown}",
-            "{@param pb: map<string, float>}",
-            "{@param pc: map<int, string>}",
-            "{$pa[0]}",
-            "{$pa.xxx}",
-            "{$pa.xxx.yyy}",
-            "{$pb[$pa]}",
-            "{$pc[$pa]}"))
-        .declaredSyntaxVersion(SyntaxVersion.V2_0)
-        .doRunInitialParsingPasses(false)
-        .typeRegistry(typeRegistry)
-        .parse();
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(
+                constructTemplateSource(
+                    "{@param pa: unknown}",
+                    "{@param pb: map<string, float>}",
+                    "{@param pc: map<int, string>}",
+                    "{$pa[0]}",
+                    "{$pa.xxx}",
+                    "{$pa.xxx.yyy}",
+                    "{$pb[$pa]}",
+                    "{$pc[$pa]}"))
+            .declaredSyntaxVersion(SyntaxVersion.V2_0)
+            .doRunInitialParsingPasses(false)
+            .typeRegistry(typeRegistry)
+            .parse()
+            .fileSet();
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getPrintStatementTypes(soyTree);
@@ -198,38 +203,40 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
   }
 
   public void testArithmeticOps() {
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(
-        constructTemplateSource(
-            "{@param pa: unknown}",
-            "{@param pi: int}",
-            "{@param pf: float}",
-            "{@param ps: string}",
-            "{$pa + $pa}",
-            "{$pi + $pi}",
-            "{$pf + $pf}",
-            "{$pa - $pa}",
-            "{$pi - $pi}",
-            "{$pf - $pf}",
-            "{$pa * $pa}",
-            "{$pi * $pi}",
-            "{$pf * $pf}",
-            "{$pa / $pa}",
-            "{$pi / $pi}",
-            "{$pf / $pf}",
-            "{$pa % $pa}",
-            "{$pi % $pi}",
-            "{$pf % $pf}",
-            "{-$pa}",
-            "{-$pi}",
-            "{-$pf}",
-            // The remainder are all logically template errors but are not enforced by the compiler
-            "{-$ps}",
-            "{$ps / $pf}"
-            ))
-        .declaredSyntaxVersion(SyntaxVersion.V2_0)
-        .doRunInitialParsingPasses(false)
-        .typeRegistry(typeRegistry)
-        .parse();
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(
+                constructTemplateSource(
+                    "{@param pa: unknown}",
+                    "{@param pi: int}",
+                    "{@param pf: float}",
+                    "{@param ps: string}",
+                    "{$pa + $pa}",
+                    "{$pi + $pi}",
+                    "{$pf + $pf}",
+                    "{$pa - $pa}",
+                    "{$pi - $pi}",
+                    "{$pf - $pf}",
+                    "{$pa * $pa}",
+                    "{$pi * $pi}",
+                    "{$pf * $pf}",
+                    "{$pa / $pa}",
+                    "{$pi / $pi}",
+                    "{$pf / $pf}",
+                    "{$pa % $pa}",
+                    "{$pi % $pi}",
+                    "{$pf % $pf}",
+                    "{-$pa}",
+                    "{-$pi}",
+                    "{-$pf}",
+                    // The remainder are all logically template errors but are not enforced by the
+                    // compiler
+                    "{-$ps}",
+                    "{$ps / $pf}"))
+            .declaredSyntaxVersion(SyntaxVersion.V2_0)
+            .doRunInitialParsingPasses(false)
+            .typeRegistry(typeRegistry)
+            .parse()
+            .fileSet();
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getPrintStatementTypes(soyTree);
@@ -265,24 +272,26 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
   }
 
   public void testStringConcatenation() {
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(
-        constructTemplateSource(
-            "{@param ps: string}",
-            "{@param pi: int}",
-            "{@param pf: float}",
-            "{@param pb: bool}",
-            "{$ps + $ps}",
-            "{$ps + $pi}",
-            "{$ps + $pf}",
-            "{$ps + $pb}",
-            "{$pi + $ps}",
-            "{$pf + $ps}",
-            "{$pb + $ps}",
-            "{$pb + $pi}"))
-        .declaredSyntaxVersion(SyntaxVersion.V2_0)
-        .doRunInitialParsingPasses(false)
-        .typeRegistry(typeRegistry)
-        .parse();
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(
+                constructTemplateSource(
+                    "{@param ps: string}",
+                    "{@param pi: int}",
+                    "{@param pf: float}",
+                    "{@param pb: bool}",
+                    "{$ps + $ps}",
+                    "{$ps + $pi}",
+                    "{$ps + $pf}",
+                    "{$ps + $pb}",
+                    "{$pi + $ps}",
+                    "{$pf + $ps}",
+                    "{$pb + $ps}",
+                    "{$pb + $pi}"))
+            .declaredSyntaxVersion(SyntaxVersion.V2_0)
+            .doRunInitialParsingPasses(false)
+            .typeRegistry(typeRegistry)
+            .parse()
+            .fileSet();
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getPrintStatementTypes(soyTree);
@@ -312,11 +321,13 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
         "{not $pi}",
         "{not $pf}");
 
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(testTemplateContent)
-        .declaredSyntaxVersion(SyntaxVersion.V2_0)
-        .doRunInitialParsingPasses(false)
-        .typeRegistry(typeRegistry)
-        .parse();
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(testTemplateContent)
+            .declaredSyntaxVersion(SyntaxVersion.V2_0)
+            .doRunInitialParsingPasses(false)
+            .typeRegistry(typeRegistry)
+            .parse()
+            .fileSet();
     createResolveNamesVisitor(SyntaxVersion.V2_0).exec(soyTree);
     createResolveExpressionTypesVisitor(SyntaxVersion.V2_0).exec(soyTree);
     List<SoyType> types = getPrintStatementTypes(soyTree);
@@ -330,11 +341,13 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
     assertThat(types.get(7)).isEqualTo(BoolType.getInstance());
     assertThat(types.get(8)).isEqualTo(BoolType.getInstance());
 
-    soyTree = SoyFileSetParserBuilder.forFileContents(testTemplateContent)
-        .declaredSyntaxVersion(SyntaxVersion.V2_3)
-        .doRunInitialParsingPasses(false)
-        .typeRegistry(typeRegistry)
-        .parse();
+    soyTree =
+        SoyFileSetParserBuilder.forFileContents(testTemplateContent)
+            .declaredSyntaxVersion(SyntaxVersion.V2_3)
+            .doRunInitialParsingPasses(false)
+            .typeRegistry(typeRegistry)
+            .parse()
+            .fileSet();
     createResolveNamesVisitor(SyntaxVersion.V2_3).exec(soyTree);
     createResolveExpressionTypesVisitor(SyntaxVersion.V2_3).exec(soyTree);
     types = getPrintStatementTypes(soyTree);
@@ -350,33 +363,35 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
   }
 
   public void testComparisonOps() {
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(
-        constructTemplateSource(
-            "{@param pa: unknown}",
-            "{@param pi: int}",
-            "{@param pf: float}",
-            "{$pa > $pa}",
-            "{$pi > $pi}",
-            "{$pf > $pf}",
-            "{$pa >= $pa}",
-            "{$pi >= $pi}",
-            "{$pf >= $pf}",
-            "{$pa < $pa}",
-            "{$pi < $pi}",
-            "{$pf < $pf}",
-            "{$pa <= $pa}",
-            "{$pi <= $pi}",
-            "{$pf <= $pf}",
-            "{$pa == $pa}",
-            "{$pi == $pi}",
-            "{$pf == $pf}",
-            "{$pa != $pa}",
-            "{$pi != $pi}",
-            "{$pf != $pf}"))
-        .declaredSyntaxVersion(SyntaxVersion.V2_0)
-        .doRunInitialParsingPasses(false)
-        .typeRegistry(typeRegistry)
-        .parse();
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(
+                constructTemplateSource(
+                    "{@param pa: unknown}",
+                    "{@param pi: int}",
+                    "{@param pf: float}",
+                    "{$pa > $pa}",
+                    "{$pi > $pi}",
+                    "{$pf > $pf}",
+                    "{$pa >= $pa}",
+                    "{$pi >= $pi}",
+                    "{$pf >= $pf}",
+                    "{$pa < $pa}",
+                    "{$pi < $pi}",
+                    "{$pf < $pf}",
+                    "{$pa <= $pa}",
+                    "{$pi <= $pi}",
+                    "{$pf <= $pf}",
+                    "{$pa == $pa}",
+                    "{$pi == $pi}",
+                    "{$pf == $pf}",
+                    "{$pa != $pa}",
+                    "{$pi != $pi}",
+                    "{$pf != $pf}"))
+            .declaredSyntaxVersion(SyntaxVersion.V2_0)
+            .doRunInitialParsingPasses(false)
+            .typeRegistry(typeRegistry)
+            .parse()
+            .fileSet();
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     ImmutableSet<SoyType> types = ImmutableSet.copyOf(getPrintStatementTypes(soyTree));
@@ -384,20 +399,22 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
   }
 
   public void testNullCoalescingAndConditionalOps() {
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(
-        constructTemplateSource(
-            "{@param pa: unknown}",
-            "{@param pi: int}",
-            "{@param pf: float}",
-            "{@param? ni: int}",
-            "{$pa ?: $pi}",
-            "{$pi ?: $pf}",
-            "{$pa ? $pi : $pf}",
-            "{$ni ?: 0}"))
-        .declaredSyntaxVersion(SyntaxVersion.V2_0)
-        .doRunInitialParsingPasses(false)
-        .typeRegistry(typeRegistry)
-        .parse();
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(
+                constructTemplateSource(
+                    "{@param pa: unknown}",
+                    "{@param pi: int}",
+                    "{@param pf: float}",
+                    "{@param? ni: int}",
+                    "{$pa ?: $pi}",
+                    "{$pi ?: $pf}",
+                    "{$pa ? $pi : $pf}",
+                    "{$ni ?: 0}"))
+            .declaredSyntaxVersion(SyntaxVersion.V2_0)
+            .doRunInitialParsingPasses(false)
+            .typeRegistry(typeRegistry)
+            .parse()
+            .fileSet();
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getPrintStatementTypes(soyTree);
@@ -410,14 +427,14 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
   }
 
   public void testNullCoalescingAndConditionalOps_complexCondition() {
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(
-        constructTemplateSource(
-            "{@param? l: [a :int]}",
-            "{$l?.a ?: 0}"))
-        .declaredSyntaxVersion(SyntaxVersion.V2_0)
-        .doRunInitialParsingPasses(false)
-        .typeRegistry(typeRegistry)
-        .parse();
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(
+                constructTemplateSource("{@param? l: [a :int]}", "{$l?.a ?: 0}"))
+            .declaredSyntaxVersion(SyntaxVersion.V2_0)
+            .doRunInitialParsingPasses(false)
+            .typeRegistry(typeRegistry)
+            .parse()
+            .fileSet();
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getPrintStatementTypes(soyTree);
@@ -425,17 +442,19 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
   }
 
   public void testListLiteral() {
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(
-        constructTemplateSource(
-            "{@param pi: int}",
-            "{@param pf: float}",
-            "{let $list: [$pi, $pf]/}",
-            "{$list}",
-            "{length($list)}"))
-        .declaredSyntaxVersion(SyntaxVersion.V2_0)
-        .doRunInitialParsingPasses(false)
-        .typeRegistry(typeRegistry)
-        .parse();
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(
+                constructTemplateSource(
+                    "{@param pi: int}",
+                    "{@param pf: float}",
+                    "{let $list: [$pi, $pf]/}",
+                    "{$list}",
+                    "{length($list)}"))
+            .declaredSyntaxVersion(SyntaxVersion.V2_0)
+            .doRunInitialParsingPasses(false)
+            .typeRegistry(typeRegistry)
+            .parse()
+            .fileSet();
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getPrintStatementTypes(soyTree);
@@ -445,16 +464,18 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
   }
 
   public void testMapLiteral() {
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(
-        constructTemplateSource(
-            "{@param pi: int}",
-            "{@param pf: float}",
-            "{let $map: [1: $pi, 2:$pf]/}",
-            "{$map}"))
-        .declaredSyntaxVersion(SyntaxVersion.V2_0)
-        .doRunInitialParsingPasses(false)
-        .typeRegistry(typeRegistry)
-        .parse();
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(
+                constructTemplateSource(
+                    "{@param pi: int}",
+                    "{@param pf: float}",
+                    "{let $map: [1: $pi, 2:$pf]/}",
+                    "{$map}"))
+            .declaredSyntaxVersion(SyntaxVersion.V2_0)
+            .doRunInitialParsingPasses(false)
+            .typeRegistry(typeRegistry)
+            .parse()
+            .fileSet();
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     SoyType type = Iterables.getOnlyElement(getPrintStatementTypes(soyTree));
@@ -464,17 +485,19 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
   }
 
   public void testMapLiteralWithStringKeysAsMap() {
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(
-        constructTemplateSource(
-            "{@param v1: int}",
-            "{@param v2: string}",
-            "{@param k1: string}",
-            "{let $map: [$k1: $v1, 'b': $v2] /}",
-            "{$map}"))
-        .declaredSyntaxVersion(SyntaxVersion.V2_0)
-        .doRunInitialParsingPasses(false)
-        .typeRegistry(typeRegistry)
-        .parse();
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(
+                constructTemplateSource(
+                    "{@param v1: int}",
+                    "{@param v2: string}",
+                    "{@param k1: string}",
+                    "{let $map: [$k1: $v1, 'b': $v2] /}",
+                    "{$map}"))
+            .declaredSyntaxVersion(SyntaxVersion.V2_0)
+            .doRunInitialParsingPasses(false)
+            .typeRegistry(typeRegistry)
+            .parse()
+            .fileSet();
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     SoyType type = Iterables.getOnlyElement(getPrintStatementTypes(soyTree));
@@ -486,16 +509,18 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
   }
 
   public void testMapLiteralAsRecord() {
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(
-        constructTemplateSource(
-            "{@param pi: int}",
-            "{@param pf: float}",
-            "{let $map: ['a': $pi, 'b':$pf]/}",
-            "{$map}"))
-        .declaredSyntaxVersion(SyntaxVersion.V2_0)
-        .doRunInitialParsingPasses(false)
-        .typeRegistry(typeRegistry)
-        .parse();
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(
+                constructTemplateSource(
+                    "{@param pi: int}",
+                    "{@param pf: float}",
+                    "{let $map: ['a': $pi, 'b':$pf]/}",
+                    "{$map}"))
+            .declaredSyntaxVersion(SyntaxVersion.V2_0)
+            .doRunInitialParsingPasses(false)
+            .typeRegistry(typeRegistry)
+            .parse()
+            .fileSet();
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getPrintStatementTypes(soyTree);
@@ -505,13 +530,14 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
   }
 
   public void testMapLiteralAsRecord_duplicateKeys() {
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(
-        constructTemplateSource(
-            "{let $map: ['a': 1, 'a': 2]/}"))
-        .declaredSyntaxVersion(SyntaxVersion.V2_0)
-        .doRunInitialParsingPasses(false)
-        .typeRegistry(typeRegistry)
-        .parse();
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(
+                constructTemplateSource("{let $map: ['a': 1, 'a': 2]/}"))
+            .declaredSyntaxVersion(SyntaxVersion.V2_0)
+            .doRunInitialParsingPasses(false)
+            .typeRegistry(typeRegistry)
+            .parse()
+            .fileSet();
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     FormattingErrorReporter reporter = new FormattingErrorReporter();
     new ResolveExpressionTypesVisitor(typeRegistry, SyntaxVersion.V9_9, reporter).exec(soyTree);
@@ -521,62 +547,65 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
 
   public void testDataFlowTypeNarrowing() {
     SoyType boolOrNullType = makeNullable(BoolType.getInstance());
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(constructTemplateSource(
-        "{@param pa: bool|null}",
-        "{@param pb: bool}",
-        "{if $pa != null}",
-        "  {$pa}", // #0 must be non-null
-        "{/if}",
-        "{if $pa == null}",
-        "  {$pa}", // #1 must be null
-        "{else}",
-        "  {$pa}", // #2 must be non-null
-        "{/if}",
-        "{if $pa == null or $pb}",
-        "  {$pa}", // #3 don't know
-        "{else}",
-        "  {$pa}", // #4 must be non-null
-        "{/if}",
-        "{if $pa == null and $pb}",
-        "  {$pa}", // #5 must be null
-        "{else}",
-        "  {$pa}", // #6 don't know
-        "{/if}",
-        "{if null != $pa}", // Reverse order
-        "  {$pa}", // #7 must be non-null
-        "{/if}",
-        "{if not ($pa == null)}", // Not operator
-        "  {$pa}", // #8 must be non-null
-        "{/if}",
-        "{if $pa}", // Implicit != null
-        "  {$pa}", // #9 must be non-null
-        "{/if}",
-        "{if $pa and $pb}", // Implicit != null
-        "  {$pa}", // #10 must be non-null
-        "{/if}",
-        "{if $pa}", // Chained conditions
-        "{elseif $pb}",
-        "  {$pa}", // #11 must be falsy
-        "{else}",
-        "  {$pa}", // #12 must be falsy
-        "{/if}",
-        "{if $pa}", // Nested if
-        "  {if $pa}",
-        "    {$pa}", // #13 must be non-null
-        "  {/if}",
-        "{/if}",
-        "{if isNonnull($pa)}", // isNonnull function
-        "  {$pa}", // #14 must be non-null
-        "{else}",
-        "  {$pa}", // #15 must be null
-        "{/if}",
-        "{if $pb or $pa == null}",
-        "  {$pa}",  // #16 don't know
-        "{else}",
-        "  {$pa}",  // #17 must be null
-        "{/if}",
-        ""))
-        .parse();
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(
+                constructTemplateSource(
+                    "{@param pa: bool|null}",
+                    "{@param pb: bool}",
+                    "{if $pa != null}",
+                    "  {$pa}", // #0 must be non-null
+                    "{/if}",
+                    "{if $pa == null}",
+                    "  {$pa}", // #1 must be null
+                    "{else}",
+                    "  {$pa}", // #2 must be non-null
+                    "{/if}",
+                    "{if $pa == null or $pb}",
+                    "  {$pa}", // #3 don't know
+                    "{else}",
+                    "  {$pa}", // #4 must be non-null
+                    "{/if}",
+                    "{if $pa == null and $pb}",
+                    "  {$pa}", // #5 must be null
+                    "{else}",
+                    "  {$pa}", // #6 don't know
+                    "{/if}",
+                    "{if null != $pa}", // Reverse order
+                    "  {$pa}", // #7 must be non-null
+                    "{/if}",
+                    "{if not ($pa == null)}", // Not operator
+                    "  {$pa}", // #8 must be non-null
+                    "{/if}",
+                    "{if $pa}", // Implicit != null
+                    "  {$pa}", // #9 must be non-null
+                    "{/if}",
+                    "{if $pa and $pb}", // Implicit != null
+                    "  {$pa}", // #10 must be non-null
+                    "{/if}",
+                    "{if $pa}", // Chained conditions
+                    "{elseif $pb}",
+                    "  {$pa}", // #11 must be falsy
+                    "{else}",
+                    "  {$pa}", // #12 must be falsy
+                    "{/if}",
+                    "{if $pa}", // Nested if
+                    "  {if $pa}",
+                    "    {$pa}", // #13 must be non-null
+                    "  {/if}",
+                    "{/if}",
+                    "{if isNonnull($pa)}", // isNonnull function
+                    "  {$pa}", // #14 must be non-null
+                    "{else}",
+                    "  {$pa}", // #15 must be null
+                    "{/if}",
+                    "{if $pb or $pa == null}",
+                    "  {$pa}", // #16 don't know
+                    "{else}",
+                    "  {$pa}", // #17 must be null
+                    "{/if}",
+                    ""))
+            .parse()
+            .fileSet();
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getPrintStatementTypes(soyTree);
@@ -603,18 +632,22 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
   }
 
   public void testDataFlowTypeNarrowing_complexExpressions() {
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(constructTemplateSource(
-        "{@param map: map<string, int|null>}",
-        "{@param record: [a : [nullableInt : int|null, nullableBool : bool|null]|null]}",
-        "{@param pb: bool}",
-        "{if $map['a']}",
-        "  {$map['a']}",
-        "{/if}",
-        "{if $record.a?.nullableInt}",
-        "  {$record.a?.nullableInt}",
-        "{/if}",
-        ""))
-        .parse();
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(
+                constructTemplateSource(
+                    "{@param map: map<string, int|null>}",
+                    "{@param record: "
+                        + "[a : [nullableInt : int|null, nullableBool : bool|null]|null]}",
+                    "{@param pb: bool}",
+                    "{if $map['a']}",
+                    "  {$map['a']}",
+                    "{/if}",
+                    "{if $record.a?.nullableInt}",
+                    "  {$record.a?.nullableInt}",
+                    "{/if}",
+                    ""))
+            .parse()
+            .fileSet();
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getPrintStatementTypes(soyTree);
@@ -623,17 +656,20 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
   }
 
   public void testDataFlowTypeNarrowing_deadExpression() {
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(constructTemplateSource(
-        "{@param record: ?}",
-        "{if $record.unknownField}",
-        "  {$record.unknownField}",
-        "{else}",
-        "  {if $record.unknownField}",
-        "    {$record.unknownField}",  // This code is dead, but we can't prove it
-        "  {/if}",
-        "{/if}",
-        ""))
-        .parse();
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(
+                constructTemplateSource(
+                    "{@param record: ?}",
+                    "{if $record.unknownField}",
+                    "  {$record.unknownField}",
+                    "{else}",
+                    "  {if $record.unknownField}",
+                    "    {$record.unknownField}", // This code is dead, but we can't prove it
+                    "  {/if}",
+                    "{/if}",
+                    ""))
+            .parse()
+            .fileSet();
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getPrintStatementTypes(soyTree);
@@ -642,16 +678,19 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
   }
 
   public void testDataFlowTypeNarrowing_logicalExpressions() {
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(constructTemplateSource(
-        "{@param? record: [active : bool|null]}",
-        "{@param? selected: map<string,bool>}",
-        "{$selected and $selected['a']}",
-        "{$selected == null or $selected['a']}",
-        "{if isNonnull($record.active) and (not $record.active)}",
-        "  {$record.active}",
-        "{/if}",
-        ""))
-        .parse();
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(
+                constructTemplateSource(
+                    "{@param? record: [active : bool|null]}",
+                    "{@param? selected: map<string,bool>}",
+                    "{$selected and $selected['a']}",
+                    "{$selected == null or $selected['a']}",
+                    "{if isNonnull($record.active) and (not $record.active)}",
+                    "  {$record.active}",
+                    "{/if}",
+                    ""))
+            .parse()
+            .fileSet();
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getPrintStatementTypes(soyTree);
@@ -663,21 +702,24 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
   public void testDataFlowTypeNarrowingFailure() {
     // Test for places where type narrowing shouldn't work
     SoyType boolOrNullType = makeNullable(BoolType.getInstance());
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(constructTemplateSource(
-        "{@param pa: bool|null}",
-        "{@param pb: bool}",
-        "{if ($pa != null) != ($pb != null)}",
-        "  {$pa}", // #0 don't know
-        "{else}",
-        "  {$pa}", // #1 don't know
-        "{/if}",
-        "{if $pa ?: $pb}",
-        "  {$pa}", // #2 don't know
-        "{/if}",
-        "{if $pb ? $pa : false}",
-        "  {$pa}", // #3 don't know
-        "{/if}"))
-        .parse();
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(
+                constructTemplateSource(
+                    "{@param pa: bool|null}",
+                    "{@param pb: bool}",
+                    "{if ($pa != null) != ($pb != null)}",
+                    "  {$pa}", // #0 don't know
+                    "{else}",
+                    "  {$pa}", // #1 don't know
+                    "{/if}",
+                    "{if $pa ?: $pb}",
+                    "  {$pa}", // #2 don't know
+                    "{/if}",
+                    "{if $pb ? $pa : false}",
+                    "  {$pa}", // #3 don't know
+                    "{/if}"))
+            .parse()
+            .fileSet();
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getPrintStatementTypes(soyTree);
@@ -688,16 +730,19 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
   }
 
   public void testConditionalOperatorDataFlowTypeNarrowing() {
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(constructTemplateSource(
-        "{@param pa: bool|null}",
-        "{@param pb: bool}",
-        "{@param pc: [a : int|null]}",
-        "{$pa ? $pa : $pb}", // #0 must be non-null
-        "{$pa != null ?: $pb}", // #1 must be non-null
-        "{$pa ?: $pb}",
-        "{$pc.a ? $pc.a : 0}",
-        "{if not $pc.a}{$pc.a}{/if}"))
-        .parse(); // #2 must be non-null (re-written to (isNonnull($pa) ? $pa : $pb))
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(
+                constructTemplateSource(
+                    "{@param pa: bool|null}",
+                    "{@param pb: bool}",
+                    "{@param pc: [a : int|null]}",
+                    "{$pa ? $pa : $pb}", // #0 must be non-null
+                    "{$pa != null ?: $pb}", // #1 must be non-null
+                    "{$pa ?: $pb}",
+                    "{$pc.a ? $pc.a : 0}",
+                    "{if not $pc.a}{$pc.a}{/if}"))
+            .parse()
+            .fileSet(); // #2 must be non-null (re-written to (isNonnull($pa) ? $pa : $pb))
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getPrintStatementTypes(soyTree);
@@ -709,16 +754,19 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
   }
 
   public void testFunctionTyping() {
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(constructTemplateSource(
-        "{@inject list: list<int|null>}",
-        "{foreach $item in $list}",
-        "   {index($item)}",
-        "   {isLast($item)}",
-        "   {isFirst($item)}",
-        "   {$item}",
-        "   {checkNotNull($item)}",
-        "{/foreach}"))
-        .parse();
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(
+                constructTemplateSource(
+                    "{@inject list: list<int|null>}",
+                    "{foreach $item in $list}",
+                    "   {index($item)}",
+                    "   {isLast($item)}",
+                    "   {isFirst($item)}",
+                    "   {$item}",
+                    "   {checkNotNull($item)}",
+                    "{/foreach}"))
+            .parse()
+            .fileSet();
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getPrintStatementTypes(soyTree);
@@ -730,12 +778,12 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
   }
 
   public void testInjectedParamTypes() {
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(constructTemplateSource(
-        "{@inject pa: bool}",
-        "{@inject? pb: list<int>}",
-        "{$pa}",
-        "{$pb}"))
-        .parse();
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(
+                constructTemplateSource(
+                    "{@inject pa: bool}", "{@inject? pb: list<int>}", "{$pa}", "{$pb}"))
+            .parse()
+            .fileSet();
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getPrintStatementTypes(soyTree);
@@ -766,11 +814,13 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
    * @param expectedError The expected failure message (a substring).
    */
   private void assertResolveExpressionTypesFails(String expectedError, String fileContent) {
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(fileContent)
-        .declaredSyntaxVersion(SyntaxVersion.V2_0)
-        .doRunInitialParsingPasses(false)
-        .typeRegistry(typeRegistry)
-        .parse();
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(fileContent)
+            .declaredSyntaxVersion(SyntaxVersion.V2_0)
+            .doRunInitialParsingPasses(false)
+            .typeRegistry(typeRegistry)
+            .parse()
+            .fileSet();
     createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     try {
       createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);

@@ -105,9 +105,8 @@ public final class IsComputableAsJsExprsVisitorTest extends TestCase {
   private static void runTestHelper(
       String soyCode, boolean expectedResult, int... indicesToNode) {
     ErrorReporter boom = ExplodingErrorReporter.get();
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(soyCode)
-        .errorReporter(boom)
-        .parse();
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forTemplateContents(soyCode).errorReporter(boom).parse().fileSet();
     // Several tests have msg nodes.
     new ReplaceMsgsWithGoogMsgsVisitor().exec(soyTree);
     SoyNode node = SharedTestUtils.getNode(soyTree, indicesToNode);

@@ -114,9 +114,11 @@ public final class FindIndirectParamsVisitorTest extends TestCase {
         "{/template}\n";
 
     ErrorReporter boom = ExplodingErrorReporter.get();
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(fileContent1, fileContent2)
-        .errorReporter(boom)
-        .parse();
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(fileContent1, fileContent2)
+            .errorReporter(boom)
+            .parse()
+            .fileSet();
 
     TemplateRegistry registry = new TemplateRegistry(soyTree, boom);
 

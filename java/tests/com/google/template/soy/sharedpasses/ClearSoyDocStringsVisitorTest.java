@@ -49,9 +49,11 @@ public final class ClearSoyDocStringsVisitorTest extends TestCase {
         "{/template}\n";
 
     ErrorReporter boom = ExplodingErrorReporter.get();
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(testFileContent)
-        .errorReporter(boom)
-        .parse();
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(testFileContent)
+            .errorReporter(boom)
+            .parse()
+            .fileSet();
     TemplateNode template = (TemplateNode) SharedTestUtils.getNode(soyTree);
 
     assertThat(template.getSoyDoc()).contains("blah");

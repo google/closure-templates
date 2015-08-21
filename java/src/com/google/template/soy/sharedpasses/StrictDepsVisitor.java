@@ -16,14 +16,12 @@
 
 package com.google.template.soy.sharedpasses;
 
-import com.google.common.base.Preconditions;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyError;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.SoyFileNode;
-import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.TemplateNode;
@@ -48,20 +46,13 @@ public final class StrictDepsVisitor extends AbstractSoyNodeVisitor<Void> {
       + "not the other way around.");
 
   /** Registry of all templates in the Soy tree. */
-  private TemplateRegistry templateRegistry;
+  private final TemplateRegistry templateRegistry;
+
   private final ErrorReporter errorReporter;
 
-  public StrictDepsVisitor(ErrorReporter errorReporter) {
+  public StrictDepsVisitor(TemplateRegistry templateRegistry, ErrorReporter errorReporter) {
+    this.templateRegistry = templateRegistry;
     this.errorReporter = errorReporter;
-  }
-
-  @Override public Void exec(SoyNode soyNode) {
-    Preconditions.checkArgument(
-        soyNode instanceof SoyFileSetNode || soyNode instanceof SoyFileNode);
-    templateRegistry = new TemplateRegistry(
-        soyNode.getNearestAncestor(SoyFileSetNode.class), errorReporter);
-    super.exec(soyNode);
-    return null;
   }
 
 

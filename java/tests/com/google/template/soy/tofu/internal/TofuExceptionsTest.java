@@ -29,12 +29,9 @@ import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.data.SoyEasyDict;
 import com.google.template.soy.data.SoyFutureException;
 import com.google.template.soy.data.SoyValueHelper;
-import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.shared.internal.ErrorReporterModule;
 import com.google.template.soy.shared.internal.SharedModule;
 import com.google.template.soy.sharedpasses.SharedPassesModule;
-import com.google.template.soy.soytree.SoyFileSetNode;
-import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.tofu.SoyTofu;
 import com.google.template.soy.tofu.SoyTofuException;
 import com.google.template.soy.tofu.internal.BaseTofu.BaseTofuFactory;
@@ -78,12 +75,11 @@ public final class TofuExceptionsTest extends TestCase {
   private SoyTofu tofu;
 
   @Override protected void setUp() throws Exception {
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(SOY_FILE).parse();
     tofu =
         INJECTOR
             .getInstance(BaseTofuFactory.class)
             .create(
-                new TemplateRegistry(soyTree, ExplodingErrorReporter.get()),
+                SoyFileSetParserBuilder.forFileContents(SOY_FILE).parse().registry(),
                 ImmutableMap.<String, ImmutableSortedSet<String>>of());
   }
 

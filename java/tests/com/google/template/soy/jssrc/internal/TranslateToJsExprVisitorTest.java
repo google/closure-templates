@@ -284,7 +284,8 @@ public final class TranslateToJsExprVisitorTest extends TestCase {
                     + "}\n"
                     + "{/template}\n")
             .allowUnboundGlobals(true)
-            .parse();
+            .parse()
+            .fileSet();
     List<PrintNode> printNodes = SoytreeUtils.getAllNodesOfType(soyTree, PrintNode.class);
     ExprNode exprNode = printNodes.get(0).getExprUnion().getExpr();
     JsExpr actualJsExpr = new TranslateToJsExprVisitor(

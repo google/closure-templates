@@ -69,7 +69,7 @@ public final class CheckDelegatesVisitor extends AbstractSoyNodeVisitor<Void> {
           + "with the same content kind: {0} != {1}. Conflicting definition at {2}.");
 
   /** A template registry built from the Soy tree. */
-  private TemplateRegistry templateRegistry;
+  private final TemplateRegistry templateRegistry;
 
   /** The current enclosing template's name, as suitable for user messages (during pass). */
   private String currTemplateNameForUserMsgs;
@@ -78,15 +78,14 @@ public final class CheckDelegatesVisitor extends AbstractSoyNodeVisitor<Void> {
   private String currDelPackageName;
   private final ErrorReporter errorReporter;
 
-  public CheckDelegatesVisitor(ErrorReporter errorReporter) {
+  public CheckDelegatesVisitor(TemplateRegistry templateRegistry, ErrorReporter errorReporter) {
+    this.templateRegistry = templateRegistry;
     this.errorReporter = errorReporter;
   }
 
   @Override public Void exec(SoyNode soyNode) {
 
     Preconditions.checkArgument(soyNode instanceof SoyFileSetNode);
-    templateRegistry = new TemplateRegistry((SoyFileSetNode) soyNode, errorReporter);
-
     // Perform checks that only involve templates (uses templateRegistry only, no traversal).
     checkTemplates();
 

@@ -23,7 +23,6 @@ import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.SoyFileNode;
-import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.TemplateNode;
@@ -43,19 +42,14 @@ public final class CheckTemplateVisibility extends AbstractSoyNodeVisitor<Void> 
   private final ErrorReporter errorReporter;
 
   /** Registry of all templates in the Soy tree. */
-  private TemplateRegistry templateRegistry;
+  private final TemplateRegistry templateRegistry;
 
   /** Save the name of the file and template currently being visited. */
   private String currentFileName;
 
-  public CheckTemplateVisibility(ErrorReporter errorReporter) {
+  public CheckTemplateVisibility(TemplateRegistry templateRegistry, ErrorReporter errorReporter) {
+    this.templateRegistry = templateRegistry;
     this.errorReporter = errorReporter;
-  }
-
-  @Override protected void visitSoyFileSetNode(SoyFileSetNode node) {
-    templateRegistry = new TemplateRegistry(node, errorReporter);
-    visitChildren(node);
-    templateRegistry = null;
   }
 
   @Override protected void visitSoyFileNode(SoyFileNode node) {

@@ -16,7 +16,6 @@
 
 package com.google.template.soy.parsepasses;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -28,7 +27,6 @@ import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamNode;
-import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.TemplateNode;
@@ -50,21 +48,13 @@ public final class CheckCallsVisitor extends AbstractSoyNodeVisitor<List<String>
   private static final SoyError MISSING_PARAM = SoyError.of("Call missing required {0}.");
 
   /** A template registry built from the Soy tree. */
-  private TemplateRegistry templateRegistry;
+  private final TemplateRegistry templateRegistry;
+
   private final ErrorReporter errorReporter;
 
-  public CheckCallsVisitor(ErrorReporter errorReporter) {
+  public CheckCallsVisitor(TemplateRegistry templateRegistry, ErrorReporter errorReporter) {
+    this.templateRegistry = templateRegistry;
     this.errorReporter = errorReporter;
-  }
-
-  @Override public List<String> exec(SoyNode soyNode) {
-
-    Preconditions.checkArgument(soyNode instanceof SoyFileSetNode);
-
-    templateRegistry = new TemplateRegistry((SoyFileSetNode) soyNode, errorReporter);
-    super.exec(soyNode);
-
-    return null;
   }
 
 

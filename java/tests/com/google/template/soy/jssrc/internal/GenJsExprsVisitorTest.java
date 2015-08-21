@@ -229,9 +229,8 @@ public final class GenJsExprsVisitorTest extends TestCase {
   private static void assertGeneratedJsExprs(
       String soyCode, List<JsExpr> expectedJsExprs, int... indicesToNode) {
     ErrorReporter boom = ExplodingErrorReporter.get();
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(soyCode)
-        .errorReporter(boom)
-        .parse();
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forTemplateContents(soyCode).errorReporter(boom).parse().fileSet();
     // Required by testPrintGoogMsg.
     new ReplaceMsgsWithGoogMsgsVisitor().exec(soyTree);
     SoyNode node = SharedTestUtils.getNode(soyTree, indicesToNode);

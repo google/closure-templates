@@ -113,8 +113,9 @@ public class GenDirectivePluginRequiresVisitorTest extends TestCase {
 
   private static void assertGeneratedLibs(
       Set<String> expectedLibs, String soyCode) {
-    SoyNode node = SharedTestUtils.getNode(
-        SoyFileSetParserBuilder.forTemplateContents(soyCode).parse());
+    SoyNode node =
+        SharedTestUtils.getNode(
+            SoyFileSetParserBuilder.forTemplateContents(soyCode).parse().fileSet());
     GenDirectivePluginRequiresVisitor gdprv =
         new GenDirectivePluginRequiresVisitor(testDirectivesMap);
     Set<String> actualLibs = gdprv.exec(node);

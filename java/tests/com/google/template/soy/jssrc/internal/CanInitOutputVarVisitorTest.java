@@ -96,9 +96,8 @@ public class CanInitOutputVarVisitorTest extends TestCase {
   private static void runTestHelper(
       String soyCode, boolean isSameValueAsIsComputableAsJsExprsVisitor, int... indicesToNode) {
     ErrorReporter boom = ExplodingErrorReporter.get();
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(soyCode)
-        .errorReporter(boom)
-        .parse();
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forTemplateContents(soyCode).errorReporter(boom).parse().fileSet();
     new ReplaceMsgsWithGoogMsgsVisitor().exec(soyTree);
     SoyNode node = SharedTestUtils.getNode(soyTree, indicesToNode);
 

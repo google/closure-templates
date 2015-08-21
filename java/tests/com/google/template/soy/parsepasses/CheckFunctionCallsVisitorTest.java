@@ -213,18 +213,19 @@ public final class CheckFunctionCallsVisitorTest extends TestCase {
 
   private FormattingErrorReporter applyCheckFunctionCallsVisitor(
       String soyContent, SyntaxVersion declaredSyntaxVersion) {
-    SoyFileSetNode fileSet = SoyFileSetParserBuilder.forFileContents(soyContent).parse();
-    Map<String, SoyFunction> soyFunctions = ImmutableMap.<String, SoyFunction>of(
-        "min",
-        new SoyFunction() {
-          public @Override String getName() {
-            return "min";
-          }
+    SoyFileSetNode fileSet = SoyFileSetParserBuilder.forFileContents(soyContent).parse().fileSet();
+    Map<String, SoyFunction> soyFunctions =
+        ImmutableMap.<String, SoyFunction>of(
+            "min",
+            new SoyFunction() {
+              public @Override String getName() {
+                return "min";
+              }
 
-          public @Override Set<Integer> getValidArgsSizes() {
-            return ImmutableSet.of(2);
-          }
-        });
+              public @Override Set<Integer> getValidArgsSizes() {
+                return ImmutableSet.of(2);
+              }
+            });
     FormattingErrorReporter errorReporter = new FormattingErrorReporter();
     CheckFunctionCallsVisitor visitor =
         new CheckFunctionCallsVisitor(soyFunctions, declaredSyntaxVersion, errorReporter);

@@ -18,6 +18,7 @@ package com.google.template.soy;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.basetree.SyntaxVersion;
@@ -28,7 +29,6 @@ import com.google.template.soy.shared.AutoEscapingType;
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.shared.SoyAstCache;
 import com.google.template.soy.shared.SoyGeneralOptions;
-import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.types.SoyTypeRegistry;
 
 import java.util.Arrays;
@@ -177,7 +177,7 @@ public final class SoyFileSetParserBuilder {
    * errors encountered during compilation), pass a different {@link ErrorReporter} implementation
    * to {@link #errorReporter}.
    */
-  public SoyFileSetNode parse() {
+  public ParseResult parse() {
     ParsePasses parsePasses = null;
     if (doRunInitialParsingPasses) {
       ParsePasses.Builder builder =

@@ -20,6 +20,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.Iterables;
+import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.error.ErrorReporter;
@@ -330,22 +331,24 @@ public final class CheckCallingParamTypesVisitorTest extends TestCase {
 
   private SoyFileSetNode assertValidSoyFiles(String... soyFileContents) {
     ErrorReporter errorReporter = ExplodingErrorReporter.get();
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(soyFileContents)
-        .errorReporter(errorReporter)
-        .parse();
-    new CheckTemplateParamsVisitor(SyntaxVersion.V2_0, errorReporter).exec(soyTree);
-    new CheckCallingParamTypesVisitor(errorReporter).exec(soyTree);
-    return soyTree;
+    ParseResult result =
+        SoyFileSetParserBuilder.forFileContents(soyFileContents)
+            .errorReporter(errorReporter)
+            .parse();
+    new CheckTemplateParamsVisitor(result.registry(), SyntaxVersion.V2_0, errorReporter)
+        .exec(result.fileSet());
+    new CheckCallingParamTypesVisitor(result.registry(), errorReporter).exec(result.fileSet());
+    return result.fileSet();
   }
 
   private void assertInvalidSoyFiles(String expectedErrorMsgSubstr, String... soyFileContents) {
     ErrorReporter boom = ExplodingErrorReporter.get();
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(soyFileContents)
-        .errorReporter(boom)
-        .parse();
-    new CheckTemplateParamsVisitor(SyntaxVersion.V2_0, boom).exec(soyTree);
+    ParseResult result =
+        SoyFileSetParserBuilder.forFileContents(soyFileContents).errorReporter(boom).parse();
+    new CheckTemplateParamsVisitor(result.registry(), SyntaxVersion.V2_0, boom)
+        .exec(result.fileSet());
     FormattingErrorReporter errorReporter = new FormattingErrorReporter();
-    new CheckCallingParamTypesVisitor(errorReporter).exec(soyTree);
+    new CheckCallingParamTypesVisitor(result.registry(), errorReporter).exec(result.fileSet());
     assertThat(errorReporter.getErrorMessages()).hasSize(1);
     assertThat(Iterables.getOnlyElement(errorReporter.getErrorMessages()))
         .contains(expectedErrorMsgSubstr);

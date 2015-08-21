@@ -75,10 +75,12 @@ public final class AssertStrictAutoescapingVisitorTest extends TestCase {
    */
   private boolean causesStrictException(String soyCode) {
     ErrorReporter boom = ExplodingErrorReporter.get();
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(soyCode)
-        .doRunInitialParsingPasses(false)
-        .errorReporter(boom)
-        .parse();
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(soyCode)
+            .doRunInitialParsingPasses(false)
+            .errorReporter(boom)
+            .parse()
+            .fileSet();
     try {
       new AssertStrictAutoescapingVisitor(boom).exec(soyTree);
     } catch (IllegalStateException e) {

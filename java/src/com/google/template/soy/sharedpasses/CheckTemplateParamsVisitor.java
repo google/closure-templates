@@ -68,13 +68,16 @@ public final class CheckTemplateParamsVisitor extends AbstractSoyNodeVisitor<Voi
   private final ErrorReporter errorReporter;
 
   /** Registry of all templates in the Soy tree. */
-  private TemplateRegistry templateRegistry;
+  private final TemplateRegistry templateRegistry;
 
   /**
    * @param declaredSyntaxVersion User-declared syntax version,
    */
-  public CheckTemplateParamsVisitor(SyntaxVersion declaredSyntaxVersion,
+  public CheckTemplateParamsVisitor(
+      TemplateRegistry templateRegistry,
+      SyntaxVersion declaredSyntaxVersion,
       ErrorReporter errorReporter) {
+    this.templateRegistry = templateRegistry;
     this.errorReporter = errorReporter;
     this.declaredSyntaxVersion = declaredSyntaxVersion;
   }
@@ -83,9 +86,6 @@ public final class CheckTemplateParamsVisitor extends AbstractSoyNodeVisitor<Voi
   // Implementations for specific nodes.
 
   @Override protected void visitSoyFileSetNode(SoyFileSetNode node) {
-    // Build templateRegistry.
-    templateRegistry = new TemplateRegistry(node, errorReporter);
-
     // Run pass only on the Soy files that are all in V2 syntax.
     for (SoyFileNode soyFile : node.getChildren()) {
       // First determine if Soy file is all in V2 syntax.

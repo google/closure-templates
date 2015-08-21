@@ -202,7 +202,7 @@ public final class GenerateParseInfoVisitor
   private Map<SoyFileNode, String> soyFileToJavaClassNameMap;
 
   /** Registry of all templates in the Soy tree. */
-  private TemplateRegistry templateRegistry;
+  private final TemplateRegistry templateRegistry;
 
   /** Cache for results of calls to {@code Utils.convertToUpperUnderscore()}. */
   private final Map<String, String> convertedIdents = Maps.newHashMap();
@@ -222,9 +222,11 @@ public final class GenerateParseInfoVisitor
   public GenerateParseInfoVisitor(
       String javaPackage,
       String javaClassNameSource,
+      TemplateRegistry registry,
       ErrorReporter errorReporter) {
     this.errorReporter = errorReporter;
     this.javaPackage = javaPackage;
+    this.templateRegistry = registry;
 
     switch (javaClassNameSource) {
       case "filename":
@@ -278,9 +280,6 @@ public final class GenerateParseInfoVisitor
         }
       }
     }
-
-    // Build template registry.
-    templateRegistry = new TemplateRegistry(node, errorReporter);
 
     // Run the pass.
     for (SoyFileNode soyFile : node.getChildren()) {

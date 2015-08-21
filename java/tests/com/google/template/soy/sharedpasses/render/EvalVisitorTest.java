@@ -103,11 +103,13 @@ public class EvalVisitorTest extends TestCase {
    */
   private SoyValue eval(String expression) throws Exception {
     PrintNode code =
-        (PrintNode) SoyFileSetParserBuilder.forTemplateContents("{" + expression + "}")
-            .parse()
-            .getChild(0)
-            .getChild(0)
-            .getChild(0);
+        (PrintNode)
+            SoyFileSetParserBuilder.forTemplateContents("{" + expression + "}")
+                .parse()
+                .fileSet()
+                .getChild(0)
+                .getChild(0)
+                .getChild(0);
     ExprRootNode expr = code.getExprUnion().getExpr();
 
     EvalVisitor evalVisitor =

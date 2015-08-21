@@ -40,9 +40,8 @@ public class ResolvePackageRelativeCssNamesVisitorTest extends TestCase {
 
   public List<CssNode> compileTemplate(String templateText) {
     ErrorReporter boom = ExplodingErrorReporter.get();
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(templateText)
-        .errorReporter(boom)
-        .parse();
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(templateText).errorReporter(boom).parse().fileSet();
     TemplateNode template = (TemplateNode) SharedTestUtils.getNode(soyTree);
     new ResolvePackageRelativeCssNamesVisitor(boom).exec(template);
     return getCssNodes(template);

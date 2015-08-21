@@ -75,9 +75,11 @@ public final class InsertMsgsVisitorTest extends TestCase {
 
   public void testBasicMsgsUsingSoySource() {
 
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(BASIC_TEST_FILE_CONTENT)
-        .errorReporter(FAIL)
-        .parse();
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(BASIC_TEST_FILE_CONTENT)
+            .errorReporter(FAIL)
+            .parse()
+            .fileSet();
     TemplateNode template = (TemplateNode) SharedTestUtils.getNode(soyTree);
 
     // Before.
@@ -115,9 +117,11 @@ public final class InsertMsgsVisitorTest extends TestCase {
 
   public void testBasicMsgsUsingMsgBundle() {
 
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(BASIC_TEST_FILE_CONTENT)
-        .errorReporter(FAIL)
-        .parse();
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(BASIC_TEST_FILE_CONTENT)
+            .errorReporter(FAIL)
+            .parse()
+            .fileSet();
     TemplateNode template = (TemplateNode) SharedTestUtils.getNode(soyTree);
 
     // Before.
@@ -193,9 +197,11 @@ public final class InsertMsgsVisitorTest extends TestCase {
 
   public void testPlrselMsgsUsingSoySource() {
 
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(PLRSEL_TEST_FILE_CONTENT)
-        .errorReporter(FAIL)
-        .parse();
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(PLRSEL_TEST_FILE_CONTENT)
+            .errorReporter(FAIL)
+            .parse()
+            .fileSet();
     TemplateNode template = (TemplateNode) SharedTestUtils.getNode(soyTree);
 
     // Before.
@@ -220,9 +226,11 @@ public final class InsertMsgsVisitorTest extends TestCase {
 
   public void testPlrselMsgsUsingMsgBundle() {
 
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(PLRSEL_TEST_FILE_CONTENT)
-        .errorReporter(FAIL)
-        .parse();
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(PLRSEL_TEST_FILE_CONTENT)
+            .errorReporter(FAIL)
+            .parse()
+            .fileSet();
     TemplateNode template = (TemplateNode) SharedTestUtils.getNode(soyTree);
 
     // Before.
@@ -341,9 +349,11 @@ public final class InsertMsgsVisitorTest extends TestCase {
 
   public void testFallbackMsgsUsingSoySource() {
 
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(FALLBACK_TEST_FILE_CONTENT)
-        .errorReporter(FAIL)
-        .parse();
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(FALLBACK_TEST_FILE_CONTENT)
+            .errorReporter(FAIL)
+            .parse()
+            .fileSet();
     TemplateNode template = (TemplateNode) SharedTestUtils.getNode(soyTree);
 
     // Before.
@@ -372,9 +382,11 @@ public final class InsertMsgsVisitorTest extends TestCase {
 
   public void testFallbackMsgsUsingMsgBundle() {
 
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(FALLBACK_TEST_FILE_CONTENT)
-        .errorReporter(FAIL)
-        .parse();
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(FALLBACK_TEST_FILE_CONTENT)
+            .errorReporter(FAIL)
+            .parse()
+            .fileSet();
     TemplateNode template = (TemplateNode) SharedTestUtils.getNode(soyTree);
 
     // Before.

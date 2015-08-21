@@ -67,7 +67,8 @@ public class IsComputableAsPyExprVisitorTest extends TestCase {
   }
 
   private static void runTestHelper(String soyNodeCode, boolean expectedResult) {
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(soyNodeCode).parse();
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forTemplateContents(soyNodeCode).parse().fileSet();
     SoyNode node = SharedTestUtils.getNode(soyTree, 0);
     assertThat(new IsComputableAsPyExprVisitor().exec(node)).isEqualTo(expectedResult);
   }
