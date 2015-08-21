@@ -38,6 +38,7 @@ import com.google.template.soy.html.HtmlVoidTagNode;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.internal.CanInitOutputVarVisitor;
 import com.google.template.soy.jssrc.internal.GenDirectivePluginRequiresVisitor;
+import com.google.template.soy.jssrc.internal.GenFunctionPluginRequiresVisitor;
 import com.google.template.soy.jssrc.internal.GenJsCodeVisitor;
 import com.google.template.soy.jssrc.internal.GenJsExprsVisitor.GenJsExprsVisitorFactory;
 import com.google.template.soy.jssrc.internal.IsComputableAsJsExprsVisitor;
@@ -82,6 +83,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       CanInitOutputVarVisitor canInitOutputVarVisitor,
       GenJsExprsVisitorFactory genJsExprsVisitorFactory,
       GenDirectivePluginRequiresVisitor genDirectivePluginRequiresVisitor,
+      GenFunctionPluginRequiresVisitor genFunctionPluginRequiresVisitor,
       SoyTypeOps typeOps,
       ErrorReporter errorReporter) {
     super(jsSrcOptions,
@@ -92,6 +94,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
         canInitOutputVarVisitor,
         genJsExprsVisitorFactory,
         genDirectivePluginRequiresVisitor,
+        genFunctionPluginRequiresVisitor,
         typeOps,
         errorReporter);
   }

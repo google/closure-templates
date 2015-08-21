@@ -69,7 +69,6 @@ import com.google.template.soy.pysrc.internal.PySrcMain;
 import com.google.template.soy.shared.SoyAstCache;
 import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.shared.internal.MainEntryPointUtils;
-import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.sharedpasses.AssertStrictAutoescapingVisitor;
 import com.google.template.soy.sharedpasses.ClearSoyDocStringsVisitor;
 import com.google.template.soy.sharedpasses.FindIjParamsVisitor;
@@ -601,8 +600,6 @@ public final class SoyFileSet {
   /** For private use by pruneTranslatedMsgs(). */
   private ImmutableSet<Long> memoizedExtractedMsgIdsForPruning;
 
-  private final ImmutableMap<String, SoyFunction> soyFunctionMap;
-
   /** For reporting errors during parsing. */
   private final ErrorReporter errorReporter;
 
@@ -635,7 +632,6 @@ public final class SoyFileSet {
       ContextualAutoescaper contextualAutoescaper,
       SimplifyVisitor simplifyVisitor,
       SoyTypeRegistry typeRegistry,
-      ImmutableMap<String, SoyFunction> soyFunctionMap,
       ErrorReporter errorReporter,
       @Assisted List<SoyFileSupplier> soyFileSuppliers,
       @Assisted SoyGeneralOptions generalOptions,
@@ -659,7 +655,6 @@ public final class SoyFileSet {
     this.soyFileSuppliers = soyFileSuppliers;
     this.cache = cache;
     this.generalOptions = generalOptions.clone();
-    this.soyFunctionMap = soyFunctionMap;
     this.errorReporter = errorReporter;
   }
 
@@ -1125,7 +1120,6 @@ public final class SoyFileSet {
             .setTypeRegistry(typeRegistry)
             .setGeneralOptions(generalOptions)
             .setDeclaredSyntaxVersion(declaredSyntaxVersion)
-            .setSoyFunctionMap(soyFunctionMap)
             .setErrorReporter(errorReporter);
     if (allowUknownGlobals) {
       builder.allowUnknownGlobals();

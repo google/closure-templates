@@ -39,6 +39,7 @@ import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.defn.LoopVar;
 
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -73,7 +74,7 @@ public final class CheckFunctionCallsVisitor extends AbstractSoyNodeVisitor<Void
 
 
   /** Injected Soy function definitions. */
-  private final ImmutableMap<String, SoyFunction> soyFunctionsByName;
+  private final Map<String, SoyFunction> soyFunctionsByName;
   private final ErrorReporter errorReporter;
 
   /** User-declared syntax version. */
@@ -82,7 +83,7 @@ public final class CheckFunctionCallsVisitor extends AbstractSoyNodeVisitor<Void
 
   @AssistedInject
   public CheckFunctionCallsVisitor(
-      ImmutableMap<String, SoyFunction> soyFunctionsByName,
+      Map<String, SoyFunction> soyFunctionsByName,
       @Assisted SyntaxVersion declaredSyntaxVersion,
       @Assisted ErrorReporter errorReporter) {
     this.errorReporter = errorReporter;

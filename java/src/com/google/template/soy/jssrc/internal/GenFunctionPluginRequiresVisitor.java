@@ -22,11 +22,13 @@ import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
-import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoytreeUtils;
 
+import java.util.Map;
 import java.util.SortedSet;
+
+import javax.inject.Inject;
 
 /**
  * A visitor to generate a set of Closure JS library names required by the function plugins used by
@@ -35,8 +37,18 @@ import java.util.SortedSet;
  */
 public final class GenFunctionPluginRequiresVisitor {
 
+  /** Map of all SoyLibraryAssistedJsSrcFunctions */
+  private final Map<String, SoyLibraryAssistedJsSrcFunction> soyLibraryAssistedJsSrcFunctionsMap;
+
   /** Set storage for the i18n namespaces */
   private SortedSet<String> requiredJsLibNames;
+
+  @Inject
+  public GenFunctionPluginRequiresVisitor(
+      Map<String, SoyLibraryAssistedJsSrcFunction> soyLibraryAssistedJsSrcFunctionsMap) {
+    this.soyLibraryAssistedJsSrcFunctionsMap = soyLibraryAssistedJsSrcFunctionsMap;
+  }
+
 
   public SortedSet<String> exec(SoyFileNode soyFile) {
     requiredJsLibNames = Sets.newTreeSet();
@@ -49,17 +61,20 @@ public final class GenFunctionPluginRequiresVisitor {
     return requiredJsLibNames;
   }
 
+
   private final class GenFunctionPluginRequiresHelperVisitor
      extends AbstractExprNodeVisitor<SortedSet<String>> {
 
     @Override protected void visitFunctionNode(FunctionNode node) {
-      SoyFunction soyFunction = node.getSoyFunction();
-      if (soyFunction instanceof SoyLibraryAssistedJsSrcFunction) {
+      String functionName = node.getFunctionName();
+      if (soyLibraryAssistedJsSrcFunctionsMap.containsKey(functionName)) {
         requiredJsLibNames.addAll(
-            ((SoyLibraryAssistedJsSrcFunction) soyFunction).getRequiredJsLibNames());
+            soyLibraryAssistedJsSrcFunctionsMap.get(functionName).getRequiredJsLibNames());
       }
+
       visitChildren(node);
     }
+
 
     @Override protected void visitExprNode(ExprNode node) {
       if (node instanceof ParentExprNode) {
@@ -67,4 +82,6 @@ public final class GenFunctionPluginRequiresVisitor {
       }
     }
   }
+
+
 }
