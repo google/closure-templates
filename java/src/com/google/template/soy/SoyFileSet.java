@@ -897,22 +897,6 @@ public final class SoyFileSet {
   }
 
   /**
-   * Compiles this Soy file set into a Java object (type {@code SoyTofu}) capable of rendering the
-   * compiled templates. The resulting {@code SoyTofu} does not cache intermediate results after
-   * substitutions from the SoyMsgBundle and the SoyCssRenamingMap.
-   *
-   * @see #compileToTofu()
-   *
-   * @return The result of compiling this Soy file set into a Java object.
-   * @throws SoySyntaxException If a syntax error is found.
-   * @deprecated Use {@link #compileToTofu()}.
-   */
-  @Deprecated public SoyTofu compileToJavaObj() throws SoySyntaxException {
-    return compileToTofu();
-  }
-
-
-  /**
    * Compiles this Soy file set into JS source code files and returns these JS files as a list of
    * strings, one per file.
    *
