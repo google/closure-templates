@@ -107,8 +107,7 @@ public final class SharedModule extends AbstractModule {
    */
   @Provides
   @Singleton
-  Map<String, SoyFunction> provideSoyFunctionsMap(Set<SoyFunction> soyFunctionsSet) {
-
+  ImmutableMap<String, SoyFunction> provideSoyFunctionsMap(Set<SoyFunction> soyFunctionsSet) {
     ImmutableMap.Builder<String, SoyFunction> mapBuilder = ImmutableMap.builder();
     for (SoyFunction function : soyFunctionsSet) {
       mapBuilder.put(function.getName(), function);

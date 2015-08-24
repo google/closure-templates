@@ -17,6 +17,7 @@
 package com.google.template.soy;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.base.internal.SoyFileKind;
@@ -29,6 +30,7 @@ import com.google.template.soy.shared.AutoEscapingType;
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.shared.SoyAstCache;
 import com.google.template.soy.shared.SoyGeneralOptions;
+import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.types.SoyTypeRegistry;
 
 import java.util.Arrays;
@@ -51,6 +53,7 @@ public final class SoyFileSetParserBuilder {
   @Nullable private SoyAstCache astCache = null;
   private ErrorReporter errorReporter = ExplodingErrorReporter.get(); // See #parse for discussion.
   private boolean allowUnboundGlobals;
+  private ImmutableMap<String, SoyFunction> soyFunctionMap = ImmutableMap.of();
 
   /**
    * Returns a builder that gets its Soy inputs from the given strings, treating each string
@@ -143,6 +146,14 @@ public final class SoyFileSetParserBuilder {
   }
 
   /**
+   * Sets the parser's Soy function map. Returns this object, for chaining.
+   */
+  public SoyFileSetParserBuilder soyFunctionMap(ImmutableMap<String, SoyFunction> soyFunctionMap) {
+    this.soyFunctionMap = soyFunctionMap;
+    return this;
+  }
+
+  /**
    * Sets the parser's type registry. Returns this object, for chaining.
    */
   public SoyFileSetParserBuilder typeRegistry(SoyTypeRegistry typeRegistry) {
@@ -183,6 +194,7 @@ public final class SoyFileSetParserBuilder {
       ParsePasses.Builder builder =
           new ParsePasses.Builder()
               .setDeclaredSyntaxVersion(declaredSyntaxVersion)
+              .setSoyFunctionMap(soyFunctionMap)
               .setErrorReporter(errorReporter)
               .setTypeRegistry(typeRegistry)
               .setGeneralOptions(new SoyGeneralOptions());

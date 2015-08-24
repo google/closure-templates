@@ -19,12 +19,15 @@ package com.google.template.soy.parsepasses;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.passes.CompilerFilePass;
 import com.google.template.soy.shared.SoyGeneralOptions;
+import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.SoyFileNode;
+import com.google.template.soy.soytree.SoytreeUtils;
 import com.google.template.soy.types.SoyTypeRegistry;
 
 /**
@@ -53,6 +56,7 @@ import com.google.template.soy.types.SoyTypeRegistry;
 public final class ParsePasses {
   private final ImmutableList<CompilerFilePass> passes;
   private final SoyTypeRegistry registry;
+  private final ImmutableMap<String, SoyFunction> soyFunctionMap;
   private final ErrorReporter errorReporter;
   private final SyntaxVersion declaredSyntaxVersion;
   private final SoyGeneralOptions options;
@@ -60,6 +64,7 @@ public final class ParsePasses {
   
   private ParsePasses(Builder builder) {
     this.registry = checkNotNull(builder.registry);
+    this.soyFunctionMap = checkNotNull(builder.soyFunctionMap);
     this.errorReporter = checkNotNull(builder.errorReporter);
     this.declaredSyntaxVersion = checkNotNull(builder.declaredSyntaxVersion);
     this.options = checkNotNull(builder.opts);
@@ -78,6 +83,7 @@ public final class ParsePasses {
       passesBuilder.add(new RemoveHtmlCommentsPass());
     }
     passesBuilder.add(new ResolveNamesPass())
+        .add(new ResolveFunctionsPass())
         .add(new ResolveExpressionTypesPass())
         .add(new ResolvePackageRelativeCssNamesPass())
         .add(new VerifyPhnameAttrOnlyOnPlaceholdersPass())
@@ -93,6 +99,7 @@ public final class ParsePasses {
 
   public static final class Builder {
     private SoyTypeRegistry registry;
+    private ImmutableMap<String, SoyFunction> soyFunctionMap;
     private ErrorReporter errorReporter;
     private SyntaxVersion declaredSyntaxVersion;
     private SoyGeneralOptions opts;
@@ -100,6 +107,11 @@ public final class ParsePasses {
 
     public Builder setErrorReporter(ErrorReporter errorReporter) {
       this.errorReporter = checkNotNull(errorReporter);
+      return this;
+    }
+
+    public Builder setSoyFunctionMap(ImmutableMap<String, SoyFunction> functionMap) {
+      this.soyFunctionMap = checkNotNull(functionMap);
       return this;
     }
 
@@ -164,6 +176,13 @@ public final class ParsePasses {
   private final class SetFullCalleeNamesPass extends CompilerFilePass {
     @Override public void run(SoyFileNode file, IdGenerator nodeIdGen) {
       new SetFullCalleeNamesVisitor(errorReporter).exec(file);
+    }
+  }
+
+  private final class ResolveFunctionsPass extends CompilerFilePass {
+    @Override
+    public void run(SoyFileNode file, IdGenerator nodeIdGen) {
+      SoytreeUtils.execOnAllV2Exprs(file, new ResolveFunctionsVisitor(soyFunctionMap));
     }
   }
 
