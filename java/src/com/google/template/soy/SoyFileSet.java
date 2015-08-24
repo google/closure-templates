@@ -815,31 +815,13 @@ public final class SoyFileSet {
    * @throws SoySyntaxException If a syntax error is found.
    */
   public SoyTofu compileToTofu() throws SoySyntaxException {
+    ServerCompilationPrimitives primitives = compileForServerRendering();
+    return doCompileToTofu(primitives);
+  }
 
-    SyntaxVersion declaredSyntaxVersion =
-        generalOptions.getDeclaredSyntaxVersion(SyntaxVersion.V2_0);
-
-    ParseResult result = parse(SyntaxVersion.V2_0);
-    ((ErrorReporterImpl) errorReporter).throwIfErrorsPresent();
-    SoyFileSetNode soyTree = result.fileSet();
-    TemplateRegistry registry = result.registry();
-    registry = runMiddleendPasses(registry, soyTree, declaredSyntaxVersion);
-
-    // If allowExternalCalls is not explicitly set, then disallow by default for Tofu backend.
-    if (generalOptions.allowExternalCalls() == null) {
-      // TODO: Enable this check when all Google internal projects are compliant.
-      //(new AssertNoExternalCallsVisitor()).exec(soyTree);
-    }
-
-    // Clear the SoyDoc strings because they use unnecessary memory, unless we have a cache, in
-    // which case it is pointless.
-    if (cache != null) {
-      new ClearSoyDocStringsVisitor().exec(soyTree);
-    }
-
-    ((ErrorReporterImpl) errorReporter).throwIfErrorsPresent();
-
-    return baseTofuFactory.create(registry, getTransitiveIjs(soyTree, registry));
+  /** Helper method to compile SoyTofu from {@link ServerCompilationPrimitives} */
+  private SoyTofu doCompileToTofu(ServerCompilationPrimitives primitives) {
+    return baseTofuFactory.create(primitives.registry, primitives.transitiveIjs);
   }
 
   /**
@@ -856,35 +838,66 @@ public final class SoyFileSet {
    * @throws SoySyntaxException If a syntax error is found.
    */
   public SoySauce compileTemplates() throws SoySyntaxException {
-    // allow null (the default) or false
-    if (generalOptions.allowExternalCalls() == Boolean.TRUE) {
-      throw new UnsupportedOperationException(
-          "jbcsrc doesn't support the allowExternalCalls option");
-    }
-    SyntaxVersion declaredSyntaxVersion =
-        generalOptions.getDeclaredSyntaxVersion(SyntaxVersion.V2_0);
-    ParseResult result = parse(SyntaxVersion.V2_0);
-    ((ErrorReporterImpl) errorReporter).throwIfErrorsPresent();
-    SoyFileSetNode soyTree = result.fileSet();
-    TemplateRegistry registry = result.registry();
+    ServerCompilationPrimitives primitives = compileForServerRendering();
+    return doCompileSoySauce(primitives);
+  }
 
-    registry = runMiddleendPasses(registry, soyTree, declaredSyntaxVersion);
-    new StrictDepsVisitor(registry, errorReporter).exec(soyTree);
-    ((ErrorReporterImpl) errorReporter).throwIfErrorsPresent();
-
+  /** Helper method to compile SoySauce from {@link ServerCompilationPrimitives} */
+  private SoySauce doCompileSoySauce(ServerCompilationPrimitives primitives) {
     Optional<CompiledTemplates> templates =
         BytecodeCompiler.compile(
-            registry,
+            primitives.registry,
             // if there is an AST cache, assume we are in 'dev mode' and trigger lazy compilation.
             cache != null,
             errorReporter);
+
     ((ErrorReporterImpl) errorReporter).throwIfErrorsPresent();
-    CompiledTemplates compiledTemplates = templates.get();
+
     return soyTemplatesFactory.create(
-        compiledTemplates,
-        registry,
-        extractMsgs(),
-        getTransitiveIjs(soyTree, registry));
+        templates.get(),
+        primitives.registry,
+        new ExtractMsgsVisitor().exec(primitives.soyTree),
+        primitives.transitiveIjs);
+  }
+
+  /**
+   * A tuple of the outputs of shared compiler passes that are needed to produce SoyTofu or
+   * SoySauce.
+   */
+  private static final class ServerCompilationPrimitives {
+    final SoyFileSetNode soyTree;
+    final ImmutableMap<String, ImmutableSortedSet<String>> transitiveIjs;
+    final TemplateRegistry registry;
+
+    ServerCompilationPrimitives(SoyFileSetNode soyTree, TemplateRegistry registry,
+        ImmutableMap<String, ImmutableSortedSet<String>> transitiveIjs) {
+      this.soyTree = soyTree;
+      this.registry = registry;
+      this.transitiveIjs = transitiveIjs;
+    }
+  }
+
+  private ServerCompilationPrimitives compileForServerRendering() {
+    SyntaxVersion declaredSyntaxVersion =
+        generalOptions.getDeclaredSyntaxVersion(SyntaxVersion.V2_0);
+
+    ParseResult result = parse(SyntaxVersion.V2_0);
+    ((ErrorReporterImpl) errorReporter).throwIfErrorsPresent();
+
+    SoyFileSetNode soyTree = result.fileSet();
+    TemplateRegistry registry = result.registry();
+    registry = runMiddleendPasses(registry, soyTree, declaredSyntaxVersion);
+
+    // Clear the SoyDoc strings because they use unnecessary memory, unless we have a cache, in
+    // which case it is pointless.
+    if (cache == null) {
+      new ClearSoyDocStringsVisitor().exec(soyTree);
+    }
+
+    ((ErrorReporterImpl) errorReporter).throwIfErrorsPresent();
+    ImmutableMap<String, ImmutableSortedSet<String>> transitiveIjs =
+        getTransitiveIjs(soyTree, registry);
+    return new ServerCompilationPrimitives(soyTree, registry, transitiveIjs);
   }
 
   private ImmutableMap<String, ImmutableSortedSet<String>> getTransitiveIjs(
