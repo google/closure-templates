@@ -47,8 +47,7 @@ import java.util.Map;
  * constructor. To do substitution and checking, set  {@code shouldAssertNoUnboundGlobals} to true.
  *
  */
-@VisibleForTesting
-public final class SubstituteGlobalsVisitor {
+final class SubstituteGlobalsVisitor {
 
   private static final SoyError UNBOUND_GLOBAL =
       SoyError.of("Unbound global ''{0}''.");
@@ -64,6 +63,8 @@ public final class SubstituteGlobalsVisitor {
   /** Type registry used to look up enum values. */
   private final SoyTypeRegistry typeRegistry;
 
+  private final SubstituteGlobalsInExprVisitor exprVisitor = new SubstituteGlobalsInExprVisitor();
+
   private final ErrorReporter errorReporter;
 
   /**
@@ -71,7 +72,7 @@ public final class SubstituteGlobalsVisitor {
    * @param shouldAssertNoUnboundGlobals Whether to throw an exception if we encounter an unbound
    *     global.
    */
-  public SubstituteGlobalsVisitor(
+  SubstituteGlobalsVisitor(
       Map<String, PrimitiveData> compileTimeGlobals,
       SoyTypeRegistry typeRegistry,
       boolean shouldAssertNoUnboundGlobals,
@@ -84,7 +85,7 @@ public final class SubstituteGlobalsVisitor {
 
   /** Runs this pass on the given Soy tree. */
   public void exec(SoyNode soyTree) {
-    SoytreeUtils.execOnAllV2Exprs(soyTree, new SubstituteGlobalsInExprVisitor());
+    SoytreeUtils.execOnAllV2Exprs(soyTree, exprVisitor);
   }
 
   /**

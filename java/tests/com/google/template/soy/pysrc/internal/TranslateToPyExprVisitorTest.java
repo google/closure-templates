@@ -20,10 +20,6 @@ import static com.google.template.soy.pysrc.internal.SoyExprForPySubject.assertT
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
-import com.google.template.soy.data.restricted.BooleanData;
-import com.google.template.soy.data.restricted.IntegerData;
-import com.google.template.soy.data.restricted.PrimitiveData;
-import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyExprUtils;
@@ -89,10 +85,10 @@ public class TranslateToPyExprVisitorTest extends TestCase {
   }
 
   public void testGlobals() {
-    ImmutableMap<String, PrimitiveData> globals = ImmutableMap.<String, PrimitiveData>builder()
-        .put("STR", StringData.forValue("Hello World"))
-        .put("NUM", IntegerData.forValue(55))
-        .put("BOOL", BooleanData.forValue(true))
+    ImmutableMap<String, Object> globals = ImmutableMap.<String, Object>builder()
+        .put("STR", "Hello World")
+        .put("NUM", 55)
+        .put("BOOL", true)
         .build();
 
     assertThatSoyExpr("STR").withGlobals(globals).translatesTo(

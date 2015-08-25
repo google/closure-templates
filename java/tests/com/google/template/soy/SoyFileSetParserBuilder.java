@@ -16,6 +16,8 @@
 
 package com.google.template.soy;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -54,6 +56,7 @@ public final class SoyFileSetParserBuilder {
   private ErrorReporter errorReporter = ExplodingErrorReporter.get(); // See #parse for discussion.
   private boolean allowUnboundGlobals;
   private ImmutableMap<String, SoyFunction> soyFunctionMap = ImmutableMap.of();
+  private SoyGeneralOptions options = new SoyGeneralOptions();
 
   /**
    * Returns a builder that gets its Soy inputs from the given strings, treating each string
@@ -137,25 +140,21 @@ public final class SoyFileSetParserBuilder {
     return this;
   }
 
-  /**
-   * Sets the parser's error reporter. Returns this object, for chaining.
-   */
   public SoyFileSetParserBuilder errorReporter(ErrorReporter errorReporter) {
     this.errorReporter = errorReporter;
     return this;
   }
 
-  /**
-   * Sets the parser's Soy function map. Returns this object, for chaining.
-   */
   public SoyFileSetParserBuilder soyFunctionMap(ImmutableMap<String, SoyFunction> soyFunctionMap) {
     this.soyFunctionMap = soyFunctionMap;
     return this;
   }
 
-  /**
-   * Sets the parser's type registry. Returns this object, for chaining.
-   */
+  public SoyFileSetParserBuilder options(SoyGeneralOptions options) {
+    this.options = checkNotNull(options);
+    return this;
+  }
+
   public SoyFileSetParserBuilder typeRegistry(SoyTypeRegistry typeRegistry) {
     this.typeRegistry = typeRegistry;
     return this;
@@ -197,7 +196,7 @@ public final class SoyFileSetParserBuilder {
               .setSoyFunctionMap(soyFunctionMap)
               .setErrorReporter(errorReporter)
               .setTypeRegistry(typeRegistry)
-              .setGeneralOptions(new SoyGeneralOptions());
+              .setGeneralOptions(options);
       if (allowUnboundGlobals) {
         builder.allowUnknownGlobals();
       }
