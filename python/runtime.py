@@ -24,7 +24,6 @@ from __future__ import unicode_literals
 
 __author__ = 'dcphillips@google.com (David Phillips)'
 
-import imp
 import importlib
 import os
 import re
@@ -183,14 +182,11 @@ def namespaced_import(name, namespace=None):
   except ImportError:
     # If the module isn't found, search without the namespace and check the
     # namespaces.
-    # TODO(dcphillips): After namespace sharing limits are in place, remove the
-    # logic to combine modules (b/16628735).
     if namespace:
       regex_safe_namespace = full_namespace.replace('.', r'\.')
       namespace_key = re.compile(
           r"^SOY_NAMESPACE: '%s'.$" % regex_safe_namespace, flags=re.MULTILINE)
-      full_module = imp.new_module(full_namespace)
-      found = False
+      module = None
       for sys_path, f_path, f_name in _find_modules(name):
         # Verify the file namespace with a regex before loading.
         with open('%s/%s' % (f_path, f_name), 'r') as f:
@@ -203,12 +199,11 @@ def namespaced_import(name, namespace=None):
         module = getattr(
             __import__(module_path, globals(), locals(), [module_name], -1),
             module_name)
-        full_module.__dict__.update(module.__dict__)
-        found = True
-      if found:
+        break
+      if module:
         # Add this to the global modules list for faster loading in the future.
-        _cache_module(full_namespace, full_module)
-        return full_module
+        _cache_module(full_namespace, module)
+        return module
     raise
 
 
