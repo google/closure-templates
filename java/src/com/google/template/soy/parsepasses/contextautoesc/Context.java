@@ -16,15 +16,19 @@
 
 package com.google.template.soy.parsepasses.contextautoesc;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 
+import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Queue;
 
 import javax.annotation.Nullable;
 
@@ -554,89 +558,105 @@ public final class Context {
   }
 
   /**
+   * Determines the correct URI part if two branches are joined.
+   */
+  private static UriPart unionUriParts(UriPart a, UriPart b) {
+    Preconditions.checkArgument(a != b);
+    if (a == UriPart.DANGEROUS_SCHEME || b == UriPart.DANGEROUS_SCHEME) {
+      // Dangerous schemes (like javascript:) are poison -- if either side is dangerous, the whole
+      // thing is.
+      return UriPart.DANGEROUS_SCHEME;
+    } else if (a == UriPart.FRAGMENT || b == UriPart.FRAGMENT
+        || a == UriPart.UNKNOWN || b == UriPart.UNKNOWN) {
+      // UNKNOWN means one part is in the #fragment and one is not. This is the case if one is
+      // FRAGMENT and the other is not, or if one of the branches was UNKNOWN to begin with.
+      return UriPart.UNKNOWN;
+    } else if ((a == UriPart.MAYBE_VARIABLE_SCHEME || b == UriPart.MAYBE_VARIABLE_SCHEME)
+        && a != UriPart.UNKNOWN_PRE_FRAGMENT && b != UriPart.UNKNOWN_PRE_FRAGMENT) {
+      // This is the case you might see on a URL that starts with a print statement, and one
+      // branch has a slash or ampersand but the other doesn't.  Re-entering
+      // MAYBE_VARIABLE_SCHEME allows us to pretend that the last branch was just part of the
+      // leading print statement, which leaves us in a relatively-unknown state, but no more
+      // unknown had it just been completely opaque.
+      //
+      // Good Example 1: {$urlWithQuery}{if $a}&a={$a}{/if}{if $b}&b={$b}{/if}
+      // In this example, the first "if" statement has two branches:
+      // - "true": {$urlWithQuey}&a={$a} looks like a QUERY due to hueristics
+      // - "false": {$urlWithQuery} only, which Soy doesn't know at compile-time to actually
+      // have a query, and it remains in MAYBE_VARIABLE_SCHEME.
+      // Instead of yielding UNKNOWN, this yields MAYBE_VARIABLE_SCHEME, which the second
+      // {if $b} can safely deal with.
+      //
+      // Good Example 2: {$base}{if $a}/a{/if}{if $b}/b{/if}
+      // In this, one branch transitions definitely into an authority or path, but the other
+      // might not. However, we can remain in MAYBE_VARIABLE_SCHEME safely.
+      return UriPart.MAYBE_VARIABLE_SCHEME;
+    } else {
+      // The part is unknown, but we think it's before the fragment. In this case, it's clearly
+      // ambiguous at compile-time that it's not clear what to do. Examples:
+      //
+      // /foo/{if $cond}?a={/if}
+      // {$base}{if $cond}?a={$a}{else}/b{/if}
+      // {if $cond}{$base}{else}/a{if $cond2}?b=1{/if}{/if}
+      //
+      // Unlike MAYBE_VARIABLE_SCHEME, we don't need to try to gracefully recover here, because
+      // the template author can easily disambiguate this.
+      return UriPart.UNKNOWN_PRE_FRAGMENT;
+    }
+  }
+
+  /**
    * A context which is consistent with both contexts.
    * This should be used when multiple execution paths join, such as the path through the
    * then-clause of an <code>{if}</code> command and the path through the else-clause.
    * @return Optional.absent() when there is no such context consistent with both.
    */
   static Optional<Context> union(Context a, Context b) {
-    // TODO(gboyer): Add a test that TEXT doesn't union with any other type.
-    if (a.equals(b)) {
-      return Optional.of(a);
+    // Try to reconcile each property one-by-one.
+    if (a.slashType != b.slashType) {
+      a = a.derive(JsFollowingSlash.UNKNOWN);
+      b = b.derive(JsFollowingSlash.UNKNOWN);
     }
 
-    if (a.templateNestDepth != b.templateNestDepth) {
-      return Optional.absent();
+    if (a.uriPart != b.uriPart) {
+      UriPart unionedUriPart = unionUriParts(a.uriPart, b.uriPart);
+      a = a.derive(unionedUriPart);
+      b = b.derive(unionedUriPart);
     }
 
-    if (a.equals(b.derive(a.slashType))) {
-      return Optional.of(a.derive(JsFollowingSlash.UNKNOWN));
-    }
-
-    if (a.equals(b.derive(a.uriPart))) {
-      if (a.uriPart == UriPart.DANGEROUS_SCHEME || b.uriPart == UriPart.DANGEROUS_SCHEME) {
-        // Dangerous schemes are poison.
-        return Optional.of(a.derive(UriPart.DANGEROUS_SCHEME));
+    if (a.state != b.state) {
+      // Order by state so that we don't have to duplicate tests below.
+      if (a.state.compareTo(b.state) > 0) {
+        Context swap = a;
+        a = b;
+        b = swap;
       }
-      if (a.uriPart != UriPart.FRAGMENT && b.uriPart != UriPart.FRAGMENT
-          && a.uriPart != UriPart.UNKNOWN && b.uriPart != UriPart.UNKNOWN) {
-        if (a.uriPart == UriPart.MAYBE_VARIABLE_SCHEME
-            || b.uriPart == UriPart.MAYBE_VARIABLE_SCHEME) {
-          // This is the case you might see on a URL that starts with a print statement, and one
-          // branch has a slash or ampersand but the other doesn't.  Re-entering
-          // MAYBE_VARIABLE_SCHEME allows us to pretend that the last branch was just part of the
-          // leading print statement, which leaves us in a relatively-unknown state, but no more
-          // unknown had it just been completely opaque.
-          //
-          // Good Example 1: {$urlWithQuery}{if $a}&a={$a}{/if}{if $b}&b={$b}{/if}
-          // In this example, the first "if" statement has two branches:
-          // - "true": {$urlWithQuey}&a={$a} looks like a QUERY due to hueristics
-          // - "false": {$urlWithQuery} only, which Soy doesn't know at compile-time to actually
-          // have a query, and it remains in MAYBE_VARIABLE_SCHEME.
-          // Instead of yielding UNKNOWN, this yields MAYBE_VARIABLE_SCHEME, which the second
-          // {if $b} can safely deal with.
-          //
-          // Good Example 2: {$base}{if $a}/a{/if}{if $b}/b{/if}
-          // In this, one branch transitions definitely into an authority or path, but the other
-          // might not. However, we can remain in MAYBE_VARIABLE_SCHEME safely.
-          //
-          // Malformed, but still safe from XSS: {$base}{if $a}?a={$a}{else}/b{/if}?c={$c}
-          // In this, the resulting URL is non-sensical. However, in all paths, because a question
-          // mark or slash is seen, it is impossible to set scheme, and safe from XSS. Furthermore,
-          // $a and $c are percent-encoded like a query param, so are limited in scope.
-          return Optional.of(a.derive(UriPart.MAYBE_VARIABLE_SCHEME));
+
+      // If we start in a tag name and end between attributes, then treat us as between attributes.
+      // This handles <b{if $bool} attrName="value"{/if}>.
+      if (a.state == State.HTML_TAG_NAME && b.state == State.HTML_TAG) {
+        // Note we only change the state; if the element type is different, we don't want it to
+        // join.
+        // TODO(gboyer): The withoutAttrContext() doesn't make any sense, since HTML_TAG_NAME can't
+        // have an attribute context.
+        a = a.toBuilder().withState(State.HTML_TAG).withoutAttrContext().build();
+      }
+
+      if (a.state == State.HTML_TAG && a.elType == b.elType) {
+        // If one branch is waiting for an attribute name, and the other is waiting for an equal
+        // sign before an attribute value OR the end of an unquoted attribute value, then commit to
+        // the view that the attribute name was a valueless attribute and transition to a state
+        // waiting for another attribute name or the end of a tag.
+        if (b.state == State.HTML_ATTRIBUTE_NAME ||
+            b.delimType == AttributeEndDelimiter.SPACE_OR_TAG_END) {
+          // TODO(gboyer): do we need to require a space before any new attribute name after an
+          // unquoted attribute?
+          b = b.toBuilder().withState(State.HTML_TAG).withoutAttrContext().build();
         }
-        return Optional.of(a.derive(UriPart.UNKNOWN_PRE_FRAGMENT));
-      }
-      return Optional.of(a.derive(UriPart.UNKNOWN));
-    }
-
-    // Order by state so that we don't have to duplicate tests below.
-    if (a.state.compareTo(b.state) > 0) {
-      Context swap = a;
-      a = b;
-      b = swap;
-    }
-
-    // If we start in a tag name and end between attributes, then treat us as between attributes.
-    // This handles <b{if $bool} attrName="value"{/if}>.
-    if (a.state == State.HTML_TAG_NAME && b.state == State.HTML_TAG && a.elType == b.elType) {
-      return Optional.of(b);
-    }
-
-    if (a.state == State.HTML_TAG && a.elType == b.elType) {
-      // If one branch is waiting for an attribute name and the other is waiting for an equal sign
-      // before an attribute value, then commit to the view that the attribute name was a valueless
-      // attribute and transition to a state waiting for another attribute name or the end of a tag.
-      if (b.state == State.HTML_ATTRIBUTE_NAME ||
-          // In an attribute value ended by a delimiter.
-          b.delimType == AttributeEndDelimiter.SPACE_OR_TAG_END) {
-        // TODO: do we need to require a space before any new attribute name?
-        return Optional.of(a);
       }
     }
 
-    return Optional.absent();
+    return a.equals(b) ? Optional.of(a) : Optional.<Context>absent();
   }
 
   static Optional<Context> union(Iterable<Context> contexts) {
@@ -670,6 +690,74 @@ public final class Context {
       sb.append(" templateNestDepth=").append(templateNestDepth);
     }
     return sb.append(')').toString();
+  }
+
+  /**
+   * Parses a condensed string version of a context, for use in tests.
+   */
+  @VisibleForTesting
+  static Context parse(String text) {
+    Queue<String> parts = Lists.newLinkedList(Arrays.asList(text.split(" ")));
+    Context.Builder builder = HTML_PCDATA.toBuilder();
+    builder.withState(State.valueOf(parts.remove()));
+    if (!parts.isEmpty()) {
+      try {
+        builder.withElType(ElementType.valueOf(parts.element()));
+        parts.remove();
+      } catch (IllegalArgumentException ex) {
+        // OK
+      }
+    }
+    if (!parts.isEmpty()) {
+      try {
+        builder.withAttrType(AttributeType.valueOf(parts.element()));
+        parts.remove();
+      } catch (IllegalArgumentException ex) {
+        // OK
+      }
+    }
+    if (!parts.isEmpty()) {
+      try {
+        builder.withDelimType(AttributeEndDelimiter.valueOf(parts.element()));
+        parts.remove();
+      } catch (IllegalArgumentException ex) {
+        // OK
+      }
+    }
+    if (!parts.isEmpty()) {
+      try {
+        builder.withSlashType(JsFollowingSlash.valueOf(parts.element()));
+        parts.remove();
+      } catch (IllegalArgumentException ex) {
+        // OK
+      }
+    }
+    if (!parts.isEmpty()) {
+      try {
+        builder.withUriPart(UriPart.valueOf(parts.element()));
+        parts.remove();
+      } catch (IllegalArgumentException ex) {
+        // OK
+      }
+    }
+    if (!parts.isEmpty()) {
+      String part = parts.element();
+      String prefix = "templateNestDepth=";
+      if (part.startsWith(prefix)) {
+        try {
+          builder.withTemplateNestDepth(Integer.parseInt(part.substring(prefix.length())));
+          parts.remove();
+        } catch (NumberFormatException ex) {
+          // OK
+        }
+      }
+    }
+    if (!parts.isEmpty()) {
+      throw new IllegalArgumentException(
+          "Unable to parse context \"" + text + "\". Unparsed portion: " + parts);
+    }
+    Context result = builder.build();
+    return result;
   }
 
 

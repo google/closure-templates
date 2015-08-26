@@ -9699,7 +9699,7 @@ goog.string.Const.from = function(s) {
 /**
  * Type marker for the Const type, used to implement additional run-time
  * type checking.
- * @const
+ * @const {!Object}
  * @private
  */
 goog.string.Const.TYPE_MARKER_ = {};
@@ -9865,7 +9865,7 @@ goog.html.SafeStyle.prototype.implementsGoogStringTypedString = true;
 /**
  * Type marker for the SafeStyle type, used to implement additional
  * run-time type checking.
- * @const
+ * @const {!Object}
  * @private
  */
 goog.html.SafeStyle.TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_ = {};
@@ -10266,7 +10266,7 @@ goog.html.SafeStyleSheet.prototype.implementsGoogStringTypedString = true;
 /**
  * Type marker for the SafeStyleSheet type, used to implement additional
  * run-time type checking.
- * @const
+ * @const {!Object}
  * @private
  */
 goog.html.SafeStyleSheet.TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_ = {};
@@ -10927,7 +10927,7 @@ goog.html.SafeUrl.sanitize = function(url) {
 /**
  * Type marker for the SafeUrl type, used to implement additional run-time
  * type checking.
- * @const
+ * @const {!Object}
  * @private
  */
 goog.html.SafeUrl.TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_ = {};
@@ -11150,7 +11150,7 @@ goog.html.TrustedResourceUrl.fromConstant = function(url) {
 /**
  * Type marker for the TrustedResourceUrl type, used to implement additional
  * run-time type checking.
- * @const
+ * @const {!Object}
  * @private
  */
 goog.html.TrustedResourceUrl.TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_ = {};
@@ -11772,7 +11772,7 @@ goog.html.SafeHtml.concatWithDir = function(dir, var_args) {
 /**
  * Type marker for the SafeHtml type, used to implement additional run-time
  * type checking.
- * @const
+ * @const {!Object}
  * @private
  */
 goog.html.SafeHtml.TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_ = {};
@@ -12031,7 +12031,7 @@ goog.html.SafeScript.prototype.implementsGoogStringTypedString = true;
 /**
  * Type marker for the SafeScript type, used to implement additional
  * run-time type checking.
- * @const
+ * @const {!Object}
  * @private
  */
 goog.html.SafeScript.TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_ = {};

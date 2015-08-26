@@ -19,14 +19,10 @@ package com.google.template.soy.parsepasses.contextautoesc;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import com.google.common.base.Strings;
-import com.google.common.collect.Lists;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.soytree.RawTextNode;
 
 import junit.framework.TestCase;
-
-import java.util.Arrays;
-import java.util.Queue;
 
 public class RawTextContextUpdaterTest extends TestCase {
   // The letter 'M' repeated 1500 times.
@@ -620,63 +616,6 @@ public class RawTextContextUpdaterTest extends TestCase {
   }
 
   private static Context parseContext(String text) {
-    Queue<String> parts = Lists.newLinkedList(Arrays.asList(text.split(" ")));
-    Context.Builder builder = Context.HTML_PCDATA.toBuilder();
-    builder.withState(Context.State.valueOf(parts.remove()));
-    if (!parts.isEmpty()) {
-      try {
-        builder.withElType(Context.ElementType.valueOf(parts.element()));
-        parts.remove();
-      } catch (IllegalArgumentException ex) {
-        // OK
-      }
-      if (!parts.isEmpty()) {
-        try {
-          builder.withAttrType(Context.AttributeType.valueOf(parts.element()));
-          parts.remove();
-        } catch (IllegalArgumentException ex) {
-          // OK
-        }
-        if (!parts.isEmpty()) {
-          try {
-            builder.withDelimType(Context.AttributeEndDelimiter.valueOf(parts.element()));
-            parts.remove();
-          } catch (IllegalArgumentException ex) {
-            // OK
-          }
-          if (!parts.isEmpty()) {
-            try {
-              builder.withSlashType(Context.JsFollowingSlash.valueOf(parts.element()));
-              parts.remove();
-            } catch (IllegalArgumentException ex) {
-              // OK
-            }
-            if (!parts.isEmpty()) {
-              try {
-                builder.withUriPart(Context.UriPart.valueOf(parts.element()));
-                parts.remove();
-              } catch (IllegalArgumentException ex) {
-                // OK
-              }
-              if (!parts.isEmpty()) {
-                String part = parts.element();
-                String prefix = "templateNestDepth=";
-                if (part.startsWith(prefix)) {
-                  try {
-                    builder.withTemplateNestDepth(
-                        Integer.parseInt(part.substring(prefix.length())));
-                    parts.remove();
-                  } catch (NumberFormatException ex) {
-                    // OK
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-    assertWithMessage("Got [" + text + "]").that(parts).isEmpty();
-    return builder.build();
+    return Context.parse(text);
   }
 }
