@@ -16,29 +16,35 @@
 
 package com.google.template.soy.parsepasses;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.restricted.SoyFunction;
 
 /**
  * Decorates {@link FunctionNode}s with corresponding {@link SoyFunction}s,
  * so that later passes can simply read the functions off the AST.
  */
-final class ResolveFunctionsVisitor extends AbstractExprNodeVisitor<Void> {
+@VisibleForTesting
+public final class ResolveFunctionsVisitor extends AbstractExprNodeVisitor<Void> {
 
   private final ImmutableMap<String, SoyFunction> soyFunctionMap;
 
-  ResolveFunctionsVisitor(ImmutableMap<String, SoyFunction> soyFunctionMap) {
+  public ResolveFunctionsVisitor(ImmutableMap<String, SoyFunction> soyFunctionMap) {
     this.soyFunctionMap = soyFunctionMap;
   }
 
   @Override
   protected void visitFunctionNode(FunctionNode node) {
-    SoyFunction function = soyFunctionMap.get(node.getFunctionName());
-    if (function != null) {
+    String functionName = node.getFunctionName();
+    SoyFunction function;
+    if ((function = soyFunctionMap.get(functionName)) != null) {
+      node.setSoyFunction(function);
+    } else if ((function = BuiltinFunction.forFunctionName(functionName)) != null) {
       node.setSoyFunction(function);
     }
     visitChildren(node);

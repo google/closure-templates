@@ -51,7 +51,8 @@ import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsCodeUtils;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
-import com.google.template.soy.shared.internal.NonpluginFunction;
+import com.google.template.soy.shared.internal.BuiltinFunction;
+import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.SoyObjectType;
 import com.google.template.soy.types.SoyType;
@@ -149,9 +150,6 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
     TranslateToJsExprVisitor create(Deque<Map<String, JsExpr>> localVarTranslations);
   }
 
-  /** Map of all SoyJsSrcFunctions (name to function). */
-  private final Map<String, SoyJsSrcFunction> soyJsSrcFunctionsMap;
-
   /** The options for generating JS source code. */
   private final SoyJsSrcOptions jsSrcOptions;
 
@@ -161,18 +159,15 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
   private final ErrorReporter errorReporter;
 
   /**
-   * @param soyJsSrcFunctionsMap Map of all SoyJsSrcFunctions (name to function).
    * @param localVarTranslations The current stack of replacement JS expressions for the local
    *     variables (and foreach-loop special functions) current in scope.
    */
   @AssistedInject
   TranslateToJsExprVisitor(
-      Map<String, SoyJsSrcFunction> soyJsSrcFunctionsMap,
       SoyJsSrcOptions jsSrcOptions,
       @Assisted Deque<Map<String, JsExpr>> localVarTranslations,
       ErrorReporter errorReporter) {
     this.errorReporter = errorReporter;
-    this.soyJsSrcFunctionsMap = soyJsSrcFunctionsMap;
     this.jsSrcOptions = jsSrcOptions;
     this.localVarTranslations = localVarTranslations;
   }
@@ -526,12 +521,9 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
   // Implementations for functions.
 
   @Override protected JsExpr visitFunctionNode(FunctionNode node) {
-    String fnName = node.getFunctionName();
-
-    // Handle nonplugin functions.
-    NonpluginFunction nonpluginFn = NonpluginFunction.forFunctionName(fnName);
-    if (nonpluginFn != null) {
-      switch (nonpluginFn) {
+    SoyFunction soyFunction = node.getSoyFunction();
+    if (soyFunction instanceof BuiltinFunction) {
+      switch ((BuiltinFunction) soyFunction) {
         case IS_FIRST:
           return visitIsFirstFunction(node);
         case IS_LAST:
@@ -545,18 +537,14 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
         default:
           throw new AssertionError();
       }
-    }
-
-    // Handle plugin functions.
-    SoyJsSrcFunction fn = soyJsSrcFunctionsMap.get(fnName);
-    // Function not found.
-    if (fn == null) {
-      errorReporter.report(node.getSourceLocation(), SOY_JS_SRC_FUNCTION_NOT_FOUND, fnName);
+    } else if (soyFunction instanceof SoyJsSrcFunction) {
+      List<JsExpr> args = visitChildren(node);
+      return ((SoyJsSrcFunction) soyFunction).computeForJsSrc(args);
+    } else {
+      errorReporter.report(
+          node.getSourceLocation(), SOY_JS_SRC_FUNCTION_NOT_FOUND, node.getFunctionName());
       return ERROR;
     }
-
-    List<JsExpr> args = visitChildren(node);
-    return fn.computeForJsSrc(args);
   }
 
   private JsExpr visitCheckNotNullFunction(ExprNode child) {

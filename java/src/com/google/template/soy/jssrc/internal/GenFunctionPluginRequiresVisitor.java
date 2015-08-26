@@ -33,12 +33,12 @@ import java.util.SortedSet;
  * this template.
  *
  */
-public final class GenFunctionPluginRequiresVisitor {
+final class GenFunctionPluginRequiresVisitor {
 
   /** Set storage for the i18n namespaces */
   private SortedSet<String> requiredJsLibNames;
 
-  public SortedSet<String> exec(SoyFileNode soyFile) {
+  SortedSet<String> exec(SoyFileNode soyFile) {
     requiredJsLibNames = Sets.newTreeSet();
 
     GenFunctionPluginRequiresHelperVisitor helperVisitor =

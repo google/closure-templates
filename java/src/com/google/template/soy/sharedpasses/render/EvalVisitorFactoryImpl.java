@@ -18,11 +18,7 @@ package com.google.template.soy.sharedpasses.render;
 
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueHelper;
-import com.google.template.soy.shared.internal.SharedModule.Shared;
-import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.sharedpasses.render.EvalVisitor.EvalVisitorFactory;
-
-import java.util.Map;
 
 import javax.annotation.Nullable;
 import javax.inject.Inject;
@@ -40,20 +36,12 @@ public final class EvalVisitorFactoryImpl implements EvalVisitorFactory {
   /** Instance of SoyValueHelper to use. */
   private final SoyValueHelper valueHelper;
 
-  /** Map of all SoyJavaFunctions (name to function). */
-  private final Map<String, SoyJavaFunction> soyJavaFunctionsMap;
-
   @Inject
-  public EvalVisitorFactoryImpl(
-      SoyValueHelper valueHelper,
-      @Shared Map<String, SoyJavaFunction> soyJavaFunctionsMap) {
+  public EvalVisitorFactoryImpl(SoyValueHelper valueHelper) {
     this.valueHelper = valueHelper;
-    this.soyJavaFunctionsMap = soyJavaFunctionsMap;
   }
-
 
   @Override public EvalVisitor create(@Nullable SoyRecord ijData, Environment env) {
-    return new EvalVisitor(valueHelper, soyJavaFunctionsMap, ijData, env);
+    return new EvalVisitor(valueHelper, ijData, env);
   }
-
 }

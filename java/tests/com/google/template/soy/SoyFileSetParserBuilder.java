@@ -21,10 +21,13 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import com.google.inject.Guice;
+import com.google.inject.Key;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.basetree.SyntaxVersion;
+import com.google.template.soy.basicfunctions.BasicFunctionsModule;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.parsepasses.ParsePasses;
@@ -32,6 +35,7 @@ import com.google.template.soy.shared.AutoEscapingType;
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.shared.SoyAstCache;
 import com.google.template.soy.shared.SoyGeneralOptions;
+import com.google.template.soy.shared.internal.SharedModule;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.types.SoyTypeRegistry;
 
@@ -55,7 +59,9 @@ public final class SoyFileSetParserBuilder {
   @Nullable private SoyAstCache astCache = null;
   private ErrorReporter errorReporter = ExplodingErrorReporter.get(); // See #parse for discussion.
   private boolean allowUnboundGlobals;
-  private ImmutableMap<String, SoyFunction> soyFunctionMap = ImmutableMap.of();
+  private ImmutableMap<String, SoyFunction> soyFunctionMap =
+      Guice.createInjector(new SharedModule(), new BasicFunctionsModule())
+          .getInstance(new Key<ImmutableMap<String, SoyFunction>>() {});
   private SoyGeneralOptions options = new SoyGeneralOptions();
 
   /**
