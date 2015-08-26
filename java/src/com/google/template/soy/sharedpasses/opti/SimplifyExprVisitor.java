@@ -39,7 +39,7 @@ import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.StringNode;
-import com.google.template.soy.shared.internal.BuiltinFunction;
+import com.google.template.soy.shared.internal.NonpluginFunction;
 import com.google.template.soy.sharedpasses.render.Environment;
 import com.google.template.soy.sharedpasses.render.RenderException;
 
@@ -168,8 +168,7 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
   @Override protected void visitFunctionNode(FunctionNode node) {
 
     // Cannot simplify nonplugin functions.
-    // TODO(brndn): we can actually simplify checkNotNull and quoteKeysIfJs.
-    if (node.getSoyFunction() instanceof BuiltinFunction) {
+    if (NonpluginFunction.forFunctionName(node.getFunctionName()) != null) {
       return;
     }
 

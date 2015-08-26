@@ -17,12 +17,12 @@
 package com.google.template.soy.parsepasses;
 
 import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.inject.assistedinject.Assisted;
 import com.google.inject.assistedinject.AssistedInject;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.SoyError;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
@@ -30,7 +30,7 @@ import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.VarRefNode;
-import com.google.template.soy.shared.internal.BuiltinFunction;
+import com.google.template.soy.shared.internal.NonpluginFunction;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.ExprUnion;
@@ -61,17 +61,19 @@ public final class CheckFunctionCallsVisitor extends AbstractSoyNodeVisitor<Void
   /**
    * Injectable factory for creating an instance of this class.
    */
-  public interface CheckFunctionCallsVisitorFactory {
+  public static interface CheckFunctionCallsVisitorFactory {
 
     /**
      * @param declaredSyntaxVersion User-declared syntax version.
      * @param errorReporter For reporting errors during the visit.
      */
-    CheckFunctionCallsVisitor create(
+    public CheckFunctionCallsVisitor create(
         SyntaxVersion declaredSyntaxVersion, ErrorReporter errorReporter);
   }
 
 
+  /** Injected Soy function definitions. */
+  private final ImmutableMap<String, SoyFunction> soyFunctionsByName;
   private final ErrorReporter errorReporter;
 
   /** User-declared syntax version. */
@@ -80,9 +82,11 @@ public final class CheckFunctionCallsVisitor extends AbstractSoyNodeVisitor<Void
 
   @AssistedInject
   public CheckFunctionCallsVisitor(
+      ImmutableMap<String, SoyFunction> soyFunctionsByName,
       @Assisted SyntaxVersion declaredSyntaxVersion,
       @Assisted ErrorReporter errorReporter) {
     this.errorReporter = errorReporter;
+    this.soyFunctionsByName = ImmutableMap.copyOf(soyFunctionsByName);
     this.declaredSyntaxVersion = declaredSyntaxVersion;
   }
 
@@ -126,29 +130,36 @@ public final class CheckFunctionCallsVisitor extends AbstractSoyNodeVisitor<Void
     /** Check the function signature. */
     @Override protected void visitFunctionNode(FunctionNode node) {
       String fnName = node.getFunctionName();
-      SoyFunction function = node.getSoyFunction();
-      if (function == null) {
-        if (declaredSyntaxVersion != SyntaxVersion.V1_0) {
-          // In Soy V2, all functions must be available as SoyFunctions at compile time.
-          errorReporter.report(node.getSourceLocation(), UNKNOWN_FUNCTION, fnName);
-        }
-        return;
-      }
+      NonpluginFunction nonpluginFn;
+      SoyFunction pluginFn;
 
-      Checkpoint checkpoint = errorReporter.checkpoint();
-      checkNumArgs(function, node);
-
-      // If there were arity errors, don't run visitNonpluginFunction (it would NPE).
-      if (function instanceof BuiltinFunction && !errorReporter.errorsSince(checkpoint)) {
-        visitNonpluginFunction((BuiltinFunction) function, node);
+      if ((nonpluginFn = NonpluginFunction.forFunctionName(fnName)) != null) {
+        visitNonpluginFunction(nonpluginFn, node);
+      } else if ((pluginFn = soyFunctionsByName.get(fnName)) != null) {
+        visitPluginFunction(pluginFn, node);
+      } else if (declaredSyntaxVersion != SyntaxVersion.V1_0) {
+        // In Soy V2, all functions must be available as SoyFunctions at compile time.
+        errorReporter.report(node.getSourceLocation(), UNKNOWN_FUNCTION, fnName);
       }
 
       // Recurse to operands.
       visitChildren(node);
     }
 
-    private void visitNonpluginFunction(BuiltinFunction nonpluginFn, FunctionNode node) {
-      String fnName = nonpluginFn.getName();
+    private void visitNonpluginFunction(NonpluginFunction nonpluginFn, FunctionNode node) {
+      int numArgs = node.numChildren();
+      String fnName = nonpluginFn.getFunctionName();
+      // Check arity.
+      if (numArgs != nonpluginFn.getNumArgs()) {
+        errorReporter.report(
+            node.getSourceLocation(),
+            INCORRECT_NUM_ARGS,
+            fnName,
+            numArgs,
+            nonpluginFn.getNumArgs());
+        // Return early to avoid NPEs when dereferencing the children below.
+        return;
+      }
       // Check argument types.
       ExprNode firstChild = Iterables.getFirst(node.getChildren(), null);
       switch (nonpluginFn) {
@@ -173,14 +184,16 @@ public final class CheckFunctionCallsVisitor extends AbstractSoyNodeVisitor<Void
       }
     }
 
-    private void checkNumArgs(SoyFunction function, FunctionNode node) {
+    private void visitPluginFunction(SoyFunction pluginFn, FunctionNode node) {
       int numArgs = node.numChildren();
-      Set<Integer> arities = function.getValidArgsSizes();
+      String fnName = pluginFn.getName();
+      Set<Integer> arities = pluginFn.getValidArgsSizes();
+      // Check arity.
       if (!arities.contains(numArgs)) {
         errorReporter.report(
             node.getSourceLocation(),
             INCORRECT_NUM_ARGS,
-            function.getName(),
+            fnName,
             numArgs,
             Joiner.on(" or ").join(arities));
       }

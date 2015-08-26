@@ -18,10 +18,8 @@ package com.google.template.soy.jssrc.internal;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.google.inject.Key;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basicfunctions.BasicFunctionsModule;
 import com.google.template.soy.exprtree.FunctionNode;
@@ -29,9 +27,7 @@ import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
 import com.google.template.soy.jssrc.restricted.JsExpr;
-import com.google.template.soy.parsepasses.ResolveFunctionsVisitor;
 import com.google.template.soy.shared.internal.ErrorReporterModule;
-import com.google.template.soy.shared.restricted.SoyFunction;
 
 import junit.framework.TestCase;
 
@@ -47,8 +43,6 @@ public final class JsExprTranslatorTest extends TestCase {
 
   private static final Injector INJECTOR = Guice.createInjector(
       new ErrorReporterModule(), new JsSrcModule(), new BasicFunctionsModule());
-  private static final ImmutableMap<String, SoyFunction> SOY_FUNCTIONS =
-      INJECTOR.getInstance(new Key<ImmutableMap<String, SoyFunction>>() {});
 
   public void testTranslateToJsExpr() {
     JsSrcTestUtils.simulateNewApiCall(INJECTOR);
@@ -69,14 +63,12 @@ public final class JsExprTranslatorTest extends TestCase {
 
     // Test unsupported function (Soy V1 syntax).
     expr.replaceChild(1, userFnNode);
-    new ResolveFunctionsVisitor(SOY_FUNCTIONS).exec(expr);
     String exprText = "3   *   userFn(5)";
     assertThat(jsExprTranslator.translateToJsExpr(expr, exprText, localVarTranslations).getText())
         .isEqualTo("3 * userFn(5)");
 
     // Test supported function.
     expr.replaceChild(1, randomIntFnNode);
-    new ResolveFunctionsVisitor(SOY_FUNCTIONS).exec(expr);
     exprText = "3   *   randomInt(4)";
     assertThat(jsExprTranslator.translateToJsExpr(expr, exprText, localVarTranslations).getText())
         .isEqualTo("3 * Math.floor(Math.random() * 4)");

@@ -26,8 +26,7 @@ import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.jssrc.internal.TranslateToJsExprVisitor.TranslateToJsExprVisitorFactory;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
-import com.google.template.soy.shared.internal.BuiltinFunction;
-import com.google.template.soy.shared.restricted.SoyFunction;
+import com.google.template.soy.shared.internal.NonpluginFunction;
 
 import java.util.Deque;
 import java.util.Map;
@@ -39,7 +38,11 @@ import javax.inject.Inject;
  * Translator of Soy expressions to their equivalent JS expressions.
  *
  */
-public final class JsExprTranslator {
+public class JsExprTranslator {
+
+
+  /** Map of all SoyJsSrcFunctions (name to function). */
+  private final Map<String, SoyJsSrcFunction> soyJsSrcFunctionsMap;
 
   /** Factory for creating an instance of TranslateToJsExprVisitor. */
   private final TranslateToJsExprVisitorFactory translateToJsExprVisitorFactory;
@@ -47,13 +50,16 @@ public final class JsExprTranslator {
   private final ErrorReporter errorReporter;
 
   /**
+   * @param soyJsSrcFunctionsMap Map of all SoyJsSrcFunctions (name to function).
    * @param translateToJsExprVisitorFactory Factory for creating an instance of
    *     TranslateToJsExprVisitor.
    */
   @Inject
   JsExprTranslator(
+      Map<String, SoyJsSrcFunction> soyJsSrcFunctionsMap,
       TranslateToJsExprVisitorFactory translateToJsExprVisitorFactory,
       ErrorReporter errorReporter) {
+    this.soyJsSrcFunctionsMap = soyJsSrcFunctionsMap;
     this.translateToJsExprVisitorFactory = translateToJsExprVisitorFactory;
     this.errorReporter = errorReporter;
   }
@@ -77,7 +83,7 @@ public final class JsExprTranslator {
 
     if (expr != null &&
         (exprText == null ||
-         new CheckAllFunctionsSupportedVisitor().exec(expr))) {
+         new CheckAllFunctionsSupportedVisitor(soyJsSrcFunctionsMap).exec(expr))) {
       // V2 expression.
       return translateToJsExprVisitorFactory.create(localVarTranslations).exec(expr);
     } else {
@@ -94,13 +100,20 @@ public final class JsExprTranslator {
 
   /**
    * Private helper class to check whether all functions in an expression are supported
-   * (implemented by an available {@link SoyJsSrcFunction}).
+   * (implemented by an available SoyJsSrcFunction).
    */
-  private static final class CheckAllFunctionsSupportedVisitor
-      extends AbstractExprNodeVisitor<Boolean> {
+  private static class CheckAllFunctionsSupportedVisitor extends AbstractExprNodeVisitor<Boolean> {
+
+    /** Map of all SoyJsSrcFunctions (name to function). */
+    private final Map<String, SoyJsSrcFunction> soyJsSrcFunctionsMap;
 
     /** Whether all functions in the expression are supported. */
     private boolean areAllFunctionsSupported;
+
+    private CheckAllFunctionsSupportedVisitor(
+        Map<String, SoyJsSrcFunction> soyJsSrcFunctionsMap) {
+      this.soyJsSrcFunctionsMap = soyJsSrcFunctionsMap;
+    }
 
     @Override public Boolean exec(ExprNode node) {
       areAllFunctionsSupported = true;
@@ -109,11 +122,14 @@ public final class JsExprTranslator {
     }
 
     @Override protected void visitFunctionNode(FunctionNode node) {
-      SoyFunction function = node.getSoyFunction();
-      if (!(function instanceof SoyJsSrcFunction) && !(function instanceof BuiltinFunction)) {
+
+      String fnName = node.getFunctionName();
+      if (NonpluginFunction.forFunctionName(fnName) == null &&
+          ! soyJsSrcFunctionsMap.containsKey(fnName)) {
         areAllFunctionsSupported = false;
         return;  // already found an unsupported function, so don't keep looking
       }
+
       visitChildren(node);
     }
 

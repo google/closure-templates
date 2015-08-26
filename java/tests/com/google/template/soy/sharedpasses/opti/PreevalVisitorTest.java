@@ -39,7 +39,8 @@ import java.util.HashMap;
  * Unit tests for PreevalVisitor.
  *
  */
-public final class PreevalVisitorTest extends TestCase {
+public class PreevalVisitorTest extends TestCase {
+
 
   public void testPreevalNoData() throws Exception {
 

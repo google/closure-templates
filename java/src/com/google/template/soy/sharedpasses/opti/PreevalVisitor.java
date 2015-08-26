@@ -28,6 +28,7 @@ import com.google.template.soy.sharedpasses.render.EvalVisitor;
 import com.google.template.soy.sharedpasses.render.RenderException;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Visitor for preevaluating expressions in which all data values known at compile time.
@@ -45,10 +46,14 @@ final class PreevalVisitor extends EvalVisitor {
 
   /**
    * @param valueHelper Instance of SoyValueHelper to use.
+   * @param soyJavaFunctionsMap Map of all SoyJavaFunctions (name to function).
    * @param env The current environment.
    */
-  PreevalVisitor(SoyValueHelper valueHelper, Environment env) {
-    super(valueHelper, null /* ijData */, env);
+  PreevalVisitor(
+      SoyValueHelper valueHelper,
+      Map<String, SoyJavaFunction> soyJavaFunctionsMap,
+      Environment env) {
+    super(valueHelper, soyJavaFunctionsMap, null /* ijData */, env);
   }
 
 

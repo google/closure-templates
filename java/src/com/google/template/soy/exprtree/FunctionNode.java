@@ -34,6 +34,11 @@ public final class FunctionNode extends AbstractParentExprNode {
   /** The function name. */
   private final String functionName;
 
+  /**
+   * TODO(brndn): a null soyFunction can mean either the function name is unrecognized
+   * or the function is a {@link com.google.template.soy.shared.internal.NonpluginFunction}.
+   * Remove this confusion.
+   */
   @Nullable private SoyFunction soyFunction;
 
   /**
