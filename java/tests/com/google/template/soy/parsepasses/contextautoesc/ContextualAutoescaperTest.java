@@ -364,11 +364,13 @@ public final class ContextualAutoescaperTest extends TestCase {
   public void testPrintInsideJsCommentRejected() throws Exception {
     assertRewriteFails(
         "In file no-path:5:12, template ns.foo: " +
-        "Soy doesn't support dynamic values in JS and CSS comments.",
+        "JS comments cannot contain dynamic values.",
         join(
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"deprecated-contextual\"}\n",
             "  {@param x: ?}\n",
+              // NOTE: Lack of whitespace before "//" makes sure it's not interpreted as a Soy
+              // comment.
               "<script>// {$x}</script>\n",
             "{/template}"));
   }
@@ -577,14 +579,14 @@ public final class ContextualAutoescaperTest extends TestCase {
             "  {@param world: ?}\n",
               "{call .bar data=\"all\" /}",
               "<script>",
-              "alert('{call ns.bar__C14 data=\"all\" /}');",
+              "alert('{call ns.bar__C15 data=\"all\" /}');",
               "</script>\n",
             "{/template}\n\n",
             "{template .bar autoescape=\"deprecated-contextual\"}\n",
             "  {@param world: ?}\n",
               "Hello, {$world |escapeHtml}!\n",
             "{/template}\n\n",
-            "{template .bar__C14 autoescape=\"deprecated-contextual\"}\n",
+            "{template .bar__C15 autoescape=\"deprecated-contextual\"}\n",
             "  {@param world: ?}\n",
               "Hello, {$world |escapeJsString}!\n",
             "{/template}"),
@@ -610,7 +612,7 @@ public final class ContextualAutoescaperTest extends TestCase {
             "{template .foo autoescape=\"deprecated-contextual\"}\n",
             "  {@param x: ?}\n",
               "<script>",
-                "x = [{call ns.countDown__C2010 data=\"all\" /}]",
+                "x = [{call ns.countDown__C2011 data=\"all\" /}]",
               "</script>\n",
             "{/template}\n\n",
             "{template .countDown autoescape=\"deprecated-contextual\"}\n",
@@ -620,11 +622,11 @@ public final class ContextualAutoescaperTest extends TestCase {
                 "{call .countDown /}",
               "{/if}\n",
             "{/template}\n\n",
-            "{template .countDown__C2010 autoescape=\"deprecated-contextual\"}\n",
+            "{template .countDown__C2011 autoescape=\"deprecated-contextual\"}\n",
             "  {@param x: ?}\n",
               "{if $x gt 0}",
                 "{print --$x |escapeJsValue},",
-                "{call ns.countDown__C2010 /}",
+                "{call ns.countDown__C2011 /}",
               "{/if}\n",
             "{/template}"),
         join(
@@ -649,7 +651,7 @@ public final class ContextualAutoescaperTest extends TestCase {
             "  {@param declare: ?}\n",
               "<script>",
                 "{if $declare}var {/if}",
-                "x = {call ns.bar__C2010 /}{\\n}",
+                "x = {call ns.bar__C2011 /}{\\n}",
                 "y = 2",
             "  </script>\n",
             "{/template}\n\n",
@@ -660,7 +662,7 @@ public final class ContextualAutoescaperTest extends TestCase {
                 " , ",
               "{/if}\n",
             "{/template}\n\n",
-            "{template .bar__C2010 autoescape=\"deprecated-contextual\"}\n",
+            "{template .bar__C2011 autoescape=\"deprecated-contextual\"}\n",
             "  {@param? declare: ?}\n",
               "42",
               "{if $declare}",
@@ -874,9 +876,9 @@ public final class ContextualAutoescaperTest extends TestCase {
     assertRewriteFails(
         "In file no-path:5:5, template ns.foo: Error while re-contextualizing template ns.quot in"
         + " context (Context JS REGEX):"
-        + "\n- In file no-path:10:27, template ns.quot__C2010: Error while re-contextualizing"
+        + "\n- In file no-path:10:27, template ns.quot__C2011: Error while re-contextualizing"
         + " template ns.quot in context (Context JS_DQ_STRING):"
-        + "\n- In file no-path:10:5, template ns.quot__C13: {if} command without {else} changes"
+        + "\n- In file no-path:10:5, template ns.quot__C14: {if} command without {else} changes"
         + " context : {if randomInt(10) < 5}{call .quot data=\"all\" /}{/if}",
         join(
             "{namespace ns}\n\n",
@@ -1100,7 +1102,7 @@ public final class ContextualAutoescaperTest extends TestCase {
               "<title>{call soy.examples.codelab.pagenum__C81 data=\"all\" /}</title>",
               "",
               "<script>",
-                "var pagenum = \"{call soy.examples.codelab.pagenum__C13 data=\"all\" /}\"; ",
+                "var pagenum = \"{call soy.examples.codelab.pagenum__C14 data=\"all\" /}\"; ",
                 "...",
               "</script>\n",
             "{/template}\n\n",
@@ -1114,7 +1116,7 @@ public final class ContextualAutoescaperTest extends TestCase {
             "{template .pagenum__C81 autoescape=\"deprecated-contextual\" private=\"true\"}\n",
               "{$pageIndex |escapeHtmlRcdata} of {$pageCount |escapeHtmlRcdata}\n",
             "{/template}\n\n",
-            "{template .pagenum__C13 autoescape=\"deprecated-contextual\" private=\"true\"}\n",
+            "{template .pagenum__C14 autoescape=\"deprecated-contextual\" private=\"true\"}\n",
               "{$pageIndex |escapeJsString} of {$pageCount |escapeJsString}\n",
             "{/template}"),
         join(
@@ -1257,14 +1259,82 @@ public final class ContextualAutoescaperTest extends TestCase {
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
-            "{template .foo autoescape=\"deprecated-contextual\"}\n",
-              "<h{$headerLevel |filterHtmlElementName}>Header" +
-              "</h{$headerLevel |filterHtmlElementName}>\n",
+            "{template .foo}\n",
+              "<{$x |filterHtmlElementName}>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
-            "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "{template .foo}\n",
+              "<{$x}>\n",
+            "{/template}"));
+    assertRewriteFails(
+        "In file no-path:5:3, template ns.foo: Dynamic values are not permitted in the middle"
+            + " of an HTML tag name; try adding a space before.",
+        join(
+            "{namespace ns}\n\n",
+            "/** @param headerLevel */\n",
+            "{template .foo}\n",
               "<h{$headerLevel}>Header</h{$headerLevel}>\n",
+            "{/template}"));
+    assertRewriteFails(
+        "In file no-path:5:10, template ns.foo: Tag names should not be split up. "
+            + "For example, Soy can't easily understand that <s{if 1}cript{/if}> is a script tag.",
+        join(
+            "{namespace ns}\n\n",
+            "/** @param x */\n",
+            "{template .foo}\n",
+              "<s{if $x}cript{else}ub{/if}>Content</s{if $x}cript{else}ub{/if}>\n",
+            "{/template}"));
+    assertRewriteFails(
+        "In file no-path:5:15, template ns.foo: {if} command branch ends in a different "
+            + "context than preceding branches: {else}div",
+        join(
+            "{namespace ns}\n\n",
+            "/** @param x */\n",
+            "{template .foo}\n",
+              "<{if $x}script{else}div{/if}>Test<{if $x}/script{else}div{/if}>\n",
+            "{/template}"));
+  }
+
+  public void testTagNameEdgeCases() {
+    assertRewriteFails(
+        "In file no-path:5:2, template ns.foo: {if} command without {else} changes context : "
+            + "{if $x}/{/if}",
+        join(
+            "{namespace ns}\n\n",
+            "/** @param x */\n",
+            "{template .foo}\n",
+              "<{if $x}/{/if}div>\n",
+            "{/template}"));
+    assertRewriteFails(
+        "In file no-path:4:1, template ns.foo: "
+            + "Saw unmatched close tag for context-changing tag: script",
+        join(
+            "{namespace ns}\n\n",
+            "{template .foo}\n",
+              "</script>\n",
+            "{/template}"));
+    assertRewriteFails(
+        "In file no-path:4:1, template ns.foo: "
+            + "Saw unmatched close tag for context-changing tag: xmp",
+        join(
+            "{namespace ns}\n\n",
+            "{template .foo}\n",
+              "</xmp>\n",
+            "{/template}"));
+    assertRewriteFails(
+        "In file no-path:4:1, template ns.foo: Invalid end-tag name.",
+        join(
+            "{namespace ns}\n\n",
+            "{template .foo}\n",
+              "</3>\n",
+            "{/template}"));
+    assertRewriteFails(
+        "In file no-path:4:1, template ns.foo: Invalid end-tag name.",
+        join(
+            "{namespace ns}\n\n",
+            "{template .foo}\n",
+              "</ div>\n",
             "{/template}"));
   }
 
@@ -2547,14 +2617,14 @@ public final class ContextualAutoescaperTest extends TestCase {
             "  <div {msg desc=\"foo\"}attributes{/msg}>Test</div>\n",
             "{/template}"));
     assertRewriteFails(
-        getForbiddenMsgError("no-path:4:4", "main", "HTML_BEFORE_TAG_NAME"),
+        getForbiddenMsgError("no-path:4:4", "main", "HTML_BEFORE_OPEN_TAG_NAME"),
         join(
             "{namespace ns}\n\n",
             "{template .main autoescape=\"deprecated-contextual\"}\n",
             "  <{msg desc=\"foo\"}tagname{/msg}>\n",
             "{/template}"));
     assertRewriteFails(
-        getForbiddenMsgError("no-path:4:5", "main", "HTML_BEFORE_TAG_NAME"),
+        getForbiddenMsgError("no-path:4:5", "main", "HTML_BEFORE_CLOSE_TAG_NAME"),
         join(
             "{namespace ns}\n\n",
             "{template .main autoescape=\"deprecated-contextual\"}\n",

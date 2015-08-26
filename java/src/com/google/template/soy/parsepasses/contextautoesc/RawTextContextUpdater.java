@@ -16,6 +16,7 @@
 
 package com.google.template.soy.parsepasses.contextautoesc;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -310,26 +311,54 @@ final class RawTextContextUpdater {
   }
 
   /**
-   * A transition from the start of a tag with the given name to a context in the body of an open
-   * tag for the given element.
+   * Map of special tag names to their element types.
    */
-  private static Transition makeTransitionToTagNamed(String tagName, final Context.ElementType el) {
-    String regex = regexForSpecialTagNamed(tagName, false);
-    return makeTransitionToTag(regex, el);
-  }
+  private static final Map<String, Context.ElementType> SPECIAL_ELEMENT_TYPES = ImmutableMap.of(
+      "script", Context.ElementType.SCRIPT,
+      "style", Context.ElementType.STYLE,
+      "textarea", Context.ElementType.TEXTAREA,
+      "title", Context.ElementType.TITLE,
+      "xmp", Context.ElementType.XMP);
 
-  /** A transition to a context in the body of an open tag for the given element. */
-  private static Transition makeTransitionToTag(String regex, final Context.ElementType el) {
-    return new Transition(regex) {
-      @Override Context computeNextContext(Context prior, Matcher matcher) {
-        return prior.toBuilder()
-            .withState(Context.State.HTML_TAG)
-            .withElType(el)
-            .withoutAttrContext()
-            .build();
+  /**
+   * Transition from left angle bracket (and optional slash) to a tag name.
+   *
+   * <p>Note that this will not match things like < script because the space breaks the tag name.
+   *
+   * <p>Spec: http://www.w3.org/TR/html5/syntax.html#tag-name-state -- however, unlike the spec,
+   * which appears to allow arbitrary Unicode chars after the first char, we only parse ASCII
+   * identifier tag names.
+   */
+  private static final Transition TRANSITION_TO_TAG_NAME =
+      new Transition("(?i)^([a-z][a-z0-9:-]*)") {
+    @Override Context computeNextContext(Context prior, Matcher matcher) {
+      String tagName = matcher.group(1).toLowerCase(Locale.ENGLISH);
+      Context.ElementType elType = SPECIAL_ELEMENT_TYPES.get(tagName);
+      if (prior.state == Context.State.HTML_BEFORE_CLOSE_TAG_NAME && elType != null) {
+        throw SoyAutoescapeException.createWithoutMetaInfo(
+            "Saw unmatched close tag for context-changing tag: " + tagName);
       }
-    };
-  }
+      return prior.toBuilder()
+          .withState(Context.State.HTML_TAG_NAME)
+          .withoutAttrContext()
+          .withElType(elType != null ? elType : Context.ElementType.NORMAL)
+          .build();
+    }
+  };
+
+  /**
+   * Transitions from tag name to tag body after seeing a space.
+   */
+  private static final Transition TRANSITION_TO_TAG_BODY = new Transition("^(?=[/\\s>])") {
+    @Override Context computeNextContext(Context prior, Matcher matcher) {
+      // Make sure the element type was pre-determined when setting the tag name.
+      Preconditions.checkArgument(prior.elType != Context.ElementType.NONE);
+      return prior.toBuilder()
+          .withState(Context.State.HTML_TAG)
+          .withoutAttrContext()
+          .build();
+    }
+  };
 
   /** A transition on a template tag that updates the template nest depth. */
   private static Transition makeTemplateTagTransition() {
@@ -684,20 +713,24 @@ final class RawTextContextUpdater {
       ImmutableMap.<Context.State, List<Transition>>builder()
       .put(Context.State.HTML_PCDATA, ImmutableList.of(
           makeTransitionToState("<!--", Context.State.HTML_COMMENT),
-          makeTransitionToTagNamed("script", Context.ElementType.SCRIPT),
-          makeTransitionToTagNamed("style", Context.ElementType.STYLE),
-          makeTransitionToTagNamed("textarea", Context.ElementType.TEXTAREA),
-          makeTransitionToTagNamed("title", Context.ElementType.TITLE),
-          makeTransitionToTagNamed("xmp", Context.ElementType.XMP),
           makeTemplateTagTransition(),
-          makeTransitionToState("</?", Context.State.HTML_BEFORE_TAG_NAME),
+          makeTransitionToState("<", Context.State.HTML_BEFORE_OPEN_TAG_NAME),
           makeTransitionToSelf("[^<]+")))
-      .put(Context.State.HTML_BEFORE_TAG_NAME, ImmutableList.of(
-          makeTransitionToState("^[a-zA-Z]+", Context.State.HTML_TAG_NAME),
-          makeTransitionTo("^(?=[^a-zA-Z])", ContentKind.HTML)))
+      .put(Context.State.HTML_BEFORE_OPEN_TAG_NAME, ImmutableList.of(
+          TRANSITION_TO_TAG_NAME,
+          // Or, maybe it's a close-tag!
+          makeTransitionToState("^/", Context.State.HTML_BEFORE_CLOSE_TAG_NAME),
+          // This is for things like "I <3 Kittens" or "Styles < Scripts"
+          makeTransitionTo("", ContentKind.HTML)))
+      .put(Context.State.HTML_BEFORE_CLOSE_TAG_NAME, ImmutableList.of(
+          TRANSITION_TO_TAG_NAME,
+          makeTransitionToError("", "Invalid end-tag name.")))
       .put(Context.State.HTML_TAG_NAME, ImmutableList.of(
-          makeTransitionToSelf("^[a-zA-Z0-9:-]*(?:[a-zA-Z0-9]|\\z)"),
-          makeTransitionToTag("^(?=[/\\s>])", Context.ElementType.NORMAL)))
+          TRANSITION_TO_TAG_BODY,
+          // Anything else:
+          makeTransitionToError("\\z",
+              "Tag names should not be split up. For example, Soy can't easily understand that "
+                  + "<s{if 1}cript{/if}> is a script tag.")))
       .put(Context.State.HTML_TAG, ImmutableList.of(
           // Regex for allowed attribute names. Intentionally more restrictive than spec:
           // https://html.spec.whatwg.org/multipage/syntax.html#attribute-name-state

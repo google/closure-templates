@@ -162,8 +162,10 @@ public final class Context {
           break;  // Error out below.
       }
       throw new IllegalStateException(slashType.name());
-    } else if (state == State.HTML_BEFORE_TAG_NAME) {
-      return derive(State.HTML_TAG_NAME);
+    } else if (state == State.HTML_BEFORE_OPEN_TAG_NAME
+        || state == State.HTML_BEFORE_CLOSE_TAG_NAME) {
+      // We assume ElementType.NORMAL, because filterHtmlElementName filters dangerous tag names.
+      return toBuilder().withState(State.HTML_TAG_NAME).withElType(ElementType.NORMAL).build();
     } else if (state == State.HTML_TAG) {
       // To handle a substitution that starts an attribute name <tag {$attrName}=...>
       return toBuilder()
@@ -256,8 +258,7 @@ public final class Context {
 
     // Short circuit on the error case first.
     if (escapingMode == null) {
-      throw SoyAutoescapeException.createWithoutMetaInfo(
-          "Soy doesn't support dynamic values in JS and CSS comments.");
+      throw SoyAutoescapeException.createWithoutMetaInfo(state.errorMessage);
     }
 
     // Any additional mode that allows the primary escaping mode's output language to be
@@ -619,9 +620,7 @@ public final class Context {
 
     // If we start in a tag name and end between attributes, then treat us as between attributes.
     // This handles <b{if $bool} attrName="value"{/if}>.
-    if (a.state == State.HTML_TAG_NAME && b.state == State.HTML_TAG) {
-      // We do not need to compare a.elType and b.elType since in HTML_TAG_NAME,
-      // there is no tag name, so no loss of information.
+    if (a.state == State.HTML_TAG_NAME && b.state == State.HTML_TAG && a.elType == b.elType) {
       return Optional.of(b);
     }
 
@@ -866,11 +865,20 @@ public final class Context {
      */
     HTML_RCDATA(EscapingMode.ESCAPE_HTML_RCDATA),
 
-    /** Just before a tag name. */
-    HTML_BEFORE_TAG_NAME(EscapingMode.FILTER_HTML_ELEMENT_NAME),
+    /** Just before a tag name on an open tag. */
+    HTML_BEFORE_OPEN_TAG_NAME(EscapingMode.FILTER_HTML_ELEMENT_NAME),
 
-    /** Inside a tag name. */
-    HTML_TAG_NAME(EscapingMode.FILTER_HTML_ELEMENT_NAME),
+    /** Just before a tag name on an close tag. */
+    HTML_BEFORE_CLOSE_TAG_NAME(EscapingMode.FILTER_HTML_ELEMENT_NAME),
+
+    /**
+     * Just after a tag name, e.g. in ^ in <script^> or <div^>.
+     *
+     * <p>Note tag names must be printed all at once since we can't otherwise
+     * easily handle <s{if 1}cript{/if}>.
+     */
+    HTML_TAG_NAME("Dynamic values are not permitted in the middle of an HTML tag name;"
+        + " try adding a space before."),
 
     /** Before an HTML attribute or the end of a tag. */
     HTML_TAG(EscapingMode.FILTER_HTML_ATTRIBUTES),
@@ -880,7 +888,7 @@ public final class Context {
     HTML_ATTRIBUTE_NAME(EscapingMode.FILTER_HTML_ATTRIBUTES),
 
     /** Following an equals sign (<tt>=</tt>) after an attribute name in an HTML tag. */
-    HTML_BEFORE_ATTRIBUTE_VALUE,
+    HTML_BEFORE_ATTRIBUTE_VALUE("(unexpected state)"),
 
     /** Inside an HTML comment. */
     HTML_COMMENT(EscapingMode.ESCAPE_HTML_RCDATA),
@@ -892,7 +900,7 @@ public final class Context {
     CSS(EscapingMode.FILTER_CSS_VALUE),
 
     /** In CSS inside a comment. */
-    CSS_COMMENT,
+    CSS_COMMENT("CSS comments cannot contain dynamic values."),
 
     /** In CSS inside a double quoted string. */
     CSS_DQ_STRING(EscapingMode.ESCAPE_CSS_STRING),
@@ -913,10 +921,10 @@ public final class Context {
     JS(EscapingMode.ESCAPE_JS_VALUE),
 
     /** In JavaScript inside a line comment. */
-    JS_LINE_COMMENT,
+    JS_LINE_COMMENT("JS comments cannot contain dynamic values."),
 
     /** In JavaScript inside a block comment. */
-    JS_BLOCK_COMMENT,
+    JS_BLOCK_COMMENT("JS comments cannot contain dynamic values."),
 
     /** In JavaScript inside a double quoted string. */
     JS_DQ_STRING(EscapingMode.ESCAPE_JS_STRING),
@@ -941,11 +949,18 @@ public final class Context {
      */
     private final @Nullable EscapingMode escapingMode;
 
+    /**
+     * Error message to show when trying to print a dynamic value inside of this state.
+     */
+    private final @Nullable String errorMessage;
+
     State(EscapingMode escapingMode) {
       this.escapingMode = escapingMode;
+      this.errorMessage = null;
     }
 
-    State() {
+    State(String errorMessage) {
+      this.errorMessage = errorMessage;
       this.escapingMode = null;
     }
   }

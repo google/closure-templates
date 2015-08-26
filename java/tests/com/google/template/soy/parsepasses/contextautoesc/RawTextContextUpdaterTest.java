@@ -39,9 +39,9 @@ public class RawTextContextUpdaterTest extends TestCase {
     assertTransition("HTML_PCDATA", "Jad loves ponies <3 <3 <3 !!!", "HTML_PCDATA");
     assertTransition("HTML_PCDATA", "OMG! Ponies, Ponies, Ponies &lt;3", "HTML_PCDATA");
     // Entering a tag
-    assertTransition("HTML_PCDATA", "<", "HTML_BEFORE_TAG_NAME");
-    assertTransition("HTML_PCDATA", "Hello, <", "HTML_BEFORE_TAG_NAME");
-    assertTransition("HTML_PCDATA", "<h", "HTML_TAG_NAME");
+    assertTransition("HTML_PCDATA", "<", "HTML_BEFORE_OPEN_TAG_NAME");
+    assertTransition("HTML_PCDATA", "Hello, <", "HTML_BEFORE_OPEN_TAG_NAME");
+    assertTransition("HTML_PCDATA", "<h1", "HTML_TAG_NAME NORMAL");
     // Make sure that encoded HTML doesn't enter TAG.
     assertTransition("HTML_PCDATA", "&lt;a", "HTML_PCDATA");
     assertTransition("HTML_PCDATA", "<!--", "HTML_COMMENT");
@@ -88,34 +88,51 @@ public class RawTextContextUpdaterTest extends TestCase {
   }
 
   public final void testBeforeTagName() throws Exception {
-    assertTransition("HTML_BEFORE_TAG_NAME", "", "HTML_BEFORE_TAG_NAME");
-    assertTransition("HTML_BEFORE_TAG_NAME", "h", "HTML_TAG_NAME");
-    assertTransition("HTML_BEFORE_TAG_NAME", "svg:font-face id='x'", "HTML_TAG NORMAL");
-    assertTransition("HTML_BEFORE_TAG_NAME", ">", "HTML_PCDATA");
-    assertTransition("HTML_BEFORE_TAG_NAME", "><", "HTML_BEFORE_TAG_NAME");
+    assertTransition("HTML_BEFORE_OPEN_TAG_NAME", "", "HTML_BEFORE_OPEN_TAG_NAME");
+    assertTransition("HTML_BEFORE_OPEN_TAG_NAME", "/", "HTML_BEFORE_CLOSE_TAG_NAME");
+    assertTransition("HTML_BEFORE_OPEN_TAG_NAME", "h1", "HTML_TAG_NAME NORMAL");
+    assertTransition("HTML_BEFORE_OPEN_TAG_NAME", "svg:font-face id='x'", "HTML_TAG NORMAL");
+    assertTransition("HTML_BEFORE_OPEN_TAG_NAME", ">", "HTML_PCDATA");
+    assertTransition("HTML_BEFORE_OPEN_TAG_NAME", "><", "HTML_BEFORE_OPEN_TAG_NAME");
+    // Abort tag name if we see things that aren't really tag names.
+    assertTransition("HTML_BEFORE_OPEN_TAG_NAME", "3 Kitties!", "HTML_PCDATA");
+    assertTransition("HTML_BEFORE_OPEN_TAG_NAME", " script", "HTML_PCDATA");
+
+    assertTransition("HTML_BEFORE_CLOSE_TAG_NAME", "", "HTML_BEFORE_CLOSE_TAG_NAME");
+    assertTransition("HTML_BEFORE_CLOSE_TAG_NAME", "9", "ERROR");
+    assertTransition("HTML_BEFORE_CLOSE_TAG_NAME", "/", "ERROR");
+    assertTransition("HTML_BEFORE_CLOSE_TAG_NAME", "h1", "HTML_TAG_NAME NORMAL");
+    assertTransition("HTML_BEFORE_CLOSE_TAG_NAME", "svg:font-face", "HTML_TAG_NAME NORMAL");
+    assertTransition("HTML_BEFORE_CLOSE_TAG_NAME", "div><", "HTML_BEFORE_OPEN_TAG_NAME");
+    assertTransition("HTML_BEFORE_CLOSE_TAG_NAME", ">", "ERROR");
+    assertTransition("HTML_BEFORE_CLOSE_TAG_NAME", "><", "ERROR");
   }
 
   public final void testTagName() throws Exception {
-    assertTransition("HTML_TAG_NAME", "", "HTML_TAG_NAME");
-    assertTransition("HTML_TAG_NAME", "1", "HTML_TAG_NAME");
-    assertTransition("HTML_TAG_NAME", "-foo", "HTML_TAG_NAME");
-    assertTransition("HTML_TAG_NAME", " id='x'", "HTML_TAG NORMAL");
-    assertTransition("HTML_TAG_NAME", "\rid='x'", "HTML_TAG NORMAL");
-    assertTransition("HTML_TAG_NAME", "\tid='x'", "HTML_TAG NORMAL");
-    assertTransition("HTML_TAG_NAME", ">", "HTML_PCDATA");
-    assertTransition("HTML_TAG_NAME", "/>", "HTML_PCDATA");
-    assertTransition("HTML_TAG_NAME", " href=", "HTML_BEFORE_ATTRIBUTE_VALUE NORMAL URI");
-    assertTransition("HTML_TAG_NAME", " href=\"", "URI NORMAL URI DOUBLE_QUOTE START");
-    assertTransition("HTML_TAG_NAME", " href='", "URI NORMAL URI SINGLE_QUOTE START");
-    assertTransition("HTML_TAG_NAME", " href=#", "URI NORMAL URI SPACE_OR_TAG_END FRAGMENT");
-    assertTransition("HTML_TAG_NAME", " href=>", "HTML_PCDATA");
-    assertTransition("HTML_TAG_NAME", " onclick=\"", "JS NORMAL SCRIPT DOUBLE_QUOTE REGEX");
-    assertTransition("HTML_TAG_NAME", " style=\"", "CSS NORMAL STYLE DOUBLE_QUOTE");
+    assertTransition("HTML_TAG_NAME NORMAL", "", "HTML_TAG_NAME NORMAL");
+    // Now, it's banned to do something like: <h{if 1}1{/if}>; instead the full tag name must be
+    // specified.
+    assertTransition("HTML_TAG_NAME NORMAL", "1", "ERROR");
+    assertTransition("HTML_TAG_NAME NORMAL", "-foo", "ERROR");
+    assertTransition("HTML_TAG_NAME NORMAL", " id='x'", "HTML_TAG NORMAL");
+    assertTransition("HTML_TAG_NAME NORMAL", "\rid='x'", "HTML_TAG NORMAL");
+    assertTransition("HTML_TAG_NAME NORMAL", "\tid='x'", "HTML_TAG NORMAL");
+    assertTransition("HTML_TAG_NAME NORMAL", ">", "HTML_PCDATA");
+    assertTransition("HTML_TAG_NAME NORMAL", "/>", "HTML_PCDATA");
+    assertTransition("HTML_TAG_NAME NORMAL", " href=", "HTML_BEFORE_ATTRIBUTE_VALUE NORMAL URI");
+    assertTransition("HTML_TAG_NAME NORMAL", " href=\"", "URI NORMAL URI DOUBLE_QUOTE START");
+    assertTransition("HTML_TAG_NAME NORMAL", " href='", "URI NORMAL URI SINGLE_QUOTE START");
+    assertTransition("HTML_TAG_NAME NORMAL", " href=#", "URI NORMAL URI SPACE_OR_TAG_END FRAGMENT");
+    assertTransition("HTML_TAG_NAME NORMAL", " href=>", "HTML_PCDATA");
+    assertTransition("HTML_TAG_NAME NORMAL", " onclick=\"", "JS NORMAL SCRIPT DOUBLE_QUOTE REGEX");
+    assertTransition("HTML_TAG_NAME NORMAL", " style=\"", "CSS NORMAL STYLE DOUBLE_QUOTE");
     assertTransition(
-        "HTML_TAG_NAME", " stylez=\"", "HTML_NORMAL_ATTR_VALUE NORMAL PLAIN_TEXT DOUBLE_QUOTE");
+        "HTML_TAG_NAME NORMAL", " stylez=\"",
+        "HTML_NORMAL_ATTR_VALUE NORMAL PLAIN_TEXT DOUBLE_QUOTE");
     assertTransition(
-        "HTML_TAG_NAME", " title=\"", "HTML_NORMAL_ATTR_VALUE NORMAL PLAIN_TEXT DOUBLE_QUOTE");
-    assertTransition("HTML_TAG_NAME", "=foo>", "ERROR");
+        "HTML_TAG_NAME NORMAL", " title=\"",
+        "HTML_NORMAL_ATTR_VALUE NORMAL PLAIN_TEXT DOUBLE_QUOTE");
+    assertTransition("HTML_TAG_NAME NORMAL", "=foo>", "ERROR");
   }
 
   public final void testTag() throws Exception {
