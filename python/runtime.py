@@ -183,14 +183,14 @@ def namespaced_import(name, namespace=None):
     # If the module isn't found, search without the namespace and check the
     # namespaces.
     if namespace:
-      regex_safe_namespace = full_namespace.replace('.', r'\.')
-      namespace_key = re.compile(
-          r"^SOY_NAMESPACE: '%s'.$" % regex_safe_namespace, flags=re.MULTILINE)
+      namespace_key = "SOY_NAMESPACE: '%s'." % full_namespace
       module = None
       for sys_path, f_path, f_name in _find_modules(name):
-        # Verify the file namespace with a regex before loading.
+        # Verify the file namespace by comparing the 5th line.
         with open('%s/%s' % (f_path, f_name), 'r') as f:
-          if not namespace_key.search(f.read(300)):
+          for _ in range(4):
+            next(f)
+          if namespace_key != next(f).rstrip():
             continue
 
         # Strip the root path and the file extension.
@@ -442,7 +442,7 @@ def _find_modules(name):
   """
   # TODO(dcphillips): Allow for loading of compiled source once namespaces are
   # limited to one file (b/16628735).
-  module_file_name = re.compile(r'^%s.*\.(?:py|pyc)$' % name)
+  module_file_name = re.compile(r'^%s.*\.py$' % name)
   for path in sys.path:
     try:
       for root, _, files in os.walk(path):
