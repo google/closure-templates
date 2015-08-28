@@ -29,6 +29,11 @@ import os
 import re
 import sys
 
+try:
+  import scandir
+except ImportError:
+  scandir = None
+
 # To allow the rest of the file to assume Python 3 strings, we will assign str
 # to unicode for Python 2. This will error in 3 and be ignored.
 try:
@@ -443,9 +448,11 @@ def _find_modules(name):
   # TODO(dcphillips): Allow for loading of compiled source once namespaces are
   # limited to one file (b/16628735).
   module_file_name = re.compile(r'^%s.*\.py$' % name)
+  # If scandir is available, it offers 5-20x improvement of walk performance.
+  walk = scandir.walk if scandir else os.walk
   for path in sys.path:
     try:
-      for root, _, files in os.walk(path):
+      for root, _, files in walk(path):
         for f in files:
           if module_file_name.match(f):
             yield path, root, f
