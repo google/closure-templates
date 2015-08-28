@@ -235,6 +235,19 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   }
 
   @Override protected Statement visitSwitchNode(SwitchNode node) {
+    // A few special cases:
+    // 1. only a {default} block.  In this case we can skip all the switch logic and temporaries
+    // 2. no children.  Just return the empty statement
+    // Note that in both of these cases we do not evalutate (or generate code) for the switch
+    // expression.
+    List<SoyNode> children = node.getChildren();
+    if (children.isEmpty()) {
+      return Statement.NULL_STATEMENT;
+    }
+    if (children.size() == 1 && children.get(0) instanceof SwitchDefaultNode) {
+      return visitChildrenInNewScope((SwitchDefaultNode) children.get(0));
+    }
+    // otherwise we need to evaluate the predicate and generate dispatching logic.
     SoyExpression expression = exprCompiler.compile(node.getExpr());
     Statement init;
     List<IfBlock> cases = new ArrayList<>();
@@ -244,7 +257,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     init = variable.initializer();
     expression = expression.withSource(variable.local());
 
-    for (SoyNode child : node.getChildren()) {
+    for (SoyNode child : children) {
       if (child instanceof SwitchCaseNode) {
         SwitchCaseNode caseNode = (SwitchCaseNode) child;
         Label reattachPoint = new Label();

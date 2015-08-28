@@ -432,6 +432,14 @@ public class ExpressionCompilerTest extends TestCase {
     assertExpression("$nullRecord?.a").evaluatesTo(null);
   }
 
+  public void testMaxAndMin() {
+    assertExpression("min(2, 3)").evaluatesTo(2L);
+    assertExpression("max(2, 3)").evaluatesTo(3L);
+
+    assertExpression("min(0.1, 1.1)").evaluatesTo(0.1);
+    assertExpression("max(0.1, 1.1)").evaluatesTo(1.1);
+  }
+
   private void assertExprEquals(String left, String right) {
     assertExpression(left + " == " + right).evaluatesTo(true);
     assertExpression(left + " != " + right).evaluatesTo(false);

@@ -198,7 +198,7 @@ public class BytecodeCompilerTest extends TestCase {
     assertEquals(RenderResult.done(),
         factory.create(TemplateTester.asRecord(ImmutableMap.of("variant", "unknown")), EMPTY_DICT)
             .render(builder, context));
-    assertThat(builder.toString()).isEqualTo("");
+    assertThat(builder.toString()).isEmpty();
   }
 
   public void testCallBasicNode() throws IOException {
@@ -385,6 +385,14 @@ public class BytecodeCompilerTest extends TestCase {
         "  {default}",
         "    default",
         "{/switch}").rendersAs("default");
+  }
+
+  public void testSwitchNode_empty() {
+    assertThatTemplateBody("{switch 1}", "{/switch}").rendersAs("");
+  }
+
+  public void testSwitchNode_defaultOnly() {
+    assertThatTemplateBody("{switch 1}", "  {default}Hello", "{/switch}").rendersAs("Hello");
   }
 
   public void testNestedSwitch() {

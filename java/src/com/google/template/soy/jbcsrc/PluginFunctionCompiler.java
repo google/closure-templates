@@ -281,7 +281,7 @@ final class PluginFunctionCompiler {
       return SoyExpression.forInt(
           MATH_MAX_LONG.invoke(left.unboxAs(long.class), right.unboxAs(long.class)));
     } else if (left.assignableToNullableFloat() && right.assignableToNullableFloat()) {
-      return SoyExpression.forInt(
+      return SoyExpression.forFloat(
           MATH_MAX_DOUBLE.invoke(left.unboxAs(double.class), right.unboxAs(double.class)));
     } else {
       return SoyExpression.forSoyValue(NUMBER_TYPE, MAX_FN.invoke(left.box(), right.box()));
@@ -296,7 +296,7 @@ final class PluginFunctionCompiler {
       return SoyExpression.forInt(
           MATH_MIN_LONG.invoke(left.unboxAs(long.class), right.unboxAs(long.class)));
     } else if (left.assignableToNullableFloat() && right.assignableToNullableFloat()) {
-      return SoyExpression.forInt(
+      return SoyExpression.forFloat(
           MATH_MIN_DOUBLE.invoke(left.unboxAs(double.class), right.unboxAs(double.class)));
     } else {
       return SoyExpression.forSoyValue(NUMBER_TYPE, MIN_FN.invoke(left.box(), right.box()));
