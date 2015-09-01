@@ -93,14 +93,17 @@ public final class Context {
   /** Determines how we encode interpolations in URI attributes and CSS {@code uri(...)}. */
   public final UriPart uriPart;
 
+  /** Determines the context in which this URI is being used. */
+  public final UriType uriType;
+
   /** The count of {@code <template>} elements entered and not subsequently exited. */
   public final int templateNestDepth;
 
 
   /** Use {@link Builder} to construct instances. */
   private Context(
-      State state, ElementType elType, AttributeType attrType,
-      AttributeEndDelimiter delimType, JsFollowingSlash slashType, UriPart uriPart,
+      State state, ElementType elType, AttributeType attrType, AttributeEndDelimiter delimType,
+      JsFollowingSlash slashType, UriPart uriPart, UriType uriType,
       int templateNestDepth) {
     this.state = state;
     this.elType = elType;
@@ -108,6 +111,13 @@ public final class Context {
     this.delimType = delimType;
     this.slashType = slashType;
     this.uriPart = uriPart;
+    this.uriType = uriType;
+    // NOTE: The constraint is one-way; once we see the src attribute we may set the UriType before
+    // we start actually parsing the URI.
+    Preconditions.checkArgument(
+        !(uriPart != UriPart.NONE && uriType == UriType.NONE),
+        "If in a URI, the type of URI must be specified. UriType = %s but UriPart = %s",
+        uriType, uriPart);
     this.templateNestDepth = templateNestDepth;
   }
 
@@ -116,7 +126,7 @@ public final class Context {
    */
   private Context(State state) {
     this(state, ElementType.NONE, AttributeType.NONE, AttributeEndDelimiter.NONE,
-         JsFollowingSlash.NONE, UriPart.NONE, 0);
+         JsFollowingSlash.NONE, UriPart.NONE, UriType.NONE, 0);
   }
 
   /**
@@ -205,7 +215,7 @@ public final class Context {
     // before an attribute value.
     if (state == State.HTML_BEFORE_ATTRIBUTE_VALUE) {
       return computeContextAfterAttributeDelimiter(
-          elType, attrType, AttributeEndDelimiter.SPACE_OR_TAG_END, templateNestDepth);
+          elType, attrType, AttributeEndDelimiter.SPACE_OR_TAG_END, uriType, templateNestDepth);
     }
     return this;
   }
@@ -222,33 +232,35 @@ public final class Context {
    */
   static Context computeContextAfterAttributeDelimiter(
       ElementType elType, AttributeType attrType, AttributeEndDelimiter delim,
-      int templateNestDepth) {
-    Context.State state;
-    Context.JsFollowingSlash slash = Context.JsFollowingSlash.NONE;
-    Context.UriPart uriPart = Context.UriPart.NONE;
+      UriType uriType, int templateNestDepth) {
+    State state;
+    JsFollowingSlash slash = JsFollowingSlash.NONE;
+    UriPart uriPart = UriPart.NONE;
     switch (attrType) {
       case PLAIN_TEXT:
-        state = Context.State.HTML_NORMAL_ATTR_VALUE;
+        state = State.HTML_NORMAL_ATTR_VALUE;
         break;
       case SCRIPT:
-        state = Context.State.JS;
+        state = State.JS;
         // Start a JS block in a regex state since
         //   /foo/.test(str) && doSideEffect();
         // which starts with a regular expression literal is a valid and possibly useful program,
         // but there is no valid program which starts with a division operator.
-        slash = Context.JsFollowingSlash.REGEX;
+        slash = JsFollowingSlash.REGEX;
         break;
       case STYLE:
-        state = Context.State.CSS;
+        state = State.CSS;
         break;
       case URI:
-        state = Context.State.URI;
-        uriPart = Context.UriPart.START;
+        state = State.URI;
+        uriPart = UriPart.START;
         break;
       // NONE is not a valid AttributeType inside an attribute value.
       default: throw new AssertionError("Unexpected attribute type " + attrType);
     }
-    return new Context(state, elType, attrType, delim, slash, uriPart, templateNestDepth);
+    Preconditions.checkArgument((uriType != UriType.NONE) == (attrType == AttributeType.URI),
+        "uriType=%s but attrType=%s", uriType, attrType);
+    return new Context(state, elType, attrType, delim, slash, uriPart, uriType, templateNestDepth);
   }
 
 
@@ -280,7 +292,12 @@ public final class Context {
         if (escapingMode != EscapingMode.NORMALIZE_URI) {
           extraEscapingMode = escapingMode;
         }
-        escapingMode = EscapingMode.FILTER_NORMALIZE_URI;
+        // Use a different escaping mode depending on what kind of URL is being used.
+        if (uriType == UriType.MEDIA) {
+          escapingMode = EscapingMode.FILTER_NORMALIZE_MEDIA_URI;
+        } else {
+          escapingMode = EscapingMode.FILTER_NORMALIZE_URI;
+        }
         break;
       case UNKNOWN:
       case UNKNOWN_PRE_FRAGMENT:
@@ -483,9 +500,10 @@ public final class Context {
 
 
   /**
-   * @deprecated Prefer comparing states or predicates like isValidEndContext
+   * Checks if two states are completely identical.
+   *
+   * <p>Note it's better to compare either states, or use predicates like isValidEndContext.
    */
-  @Deprecated
   @Override
   public boolean equals(Object o) {
     if (!(o instanceof Context)) {
@@ -498,6 +516,7 @@ public final class Context {
         && this.delimType == that.delimType
         && this.slashType == that.slashType
         && this.uriPart == that.uriPart
+        && this.uriType == that.uriType
         && this.templateNestDepth == that.templateNestDepth;
   }
 
@@ -512,8 +531,9 @@ public final class Context {
    * so do not use as a long-lived serialized form.
    */
   public int packedBits() {
-    return ((((((((((((
+    return ((((((((((((((
         templateNestDepth
+        << N_URI_TYPE_BITS) | uriType.ordinal())
         << N_URI_PART_BITS) | uriPart.ordinal())
         << N_JS_SLASH_BITS) | slashType.ordinal())
         << N_DELIM_BITS) | delimType.ordinal())
@@ -526,7 +546,7 @@ public final class Context {
   private static final int N_STATE_BITS = 5;
 
   /** The number of bits needed to store a {@link ElementType} value. */
-  private static final int N_ELEMENT_BITS = 3;
+  private static final int N_ELEMENT_BITS = 4;
 
   /** The number of bits needed to store a {@link AttributeType} value. */
   private static final int N_ATTR_BITS = 3;
@@ -540,19 +560,23 @@ public final class Context {
   /** The number of bits needed to store a {@link UriPart} value. */
   private static final int N_URI_PART_BITS = 4;
 
+  /** The number of bits needed to store a {@link UriType} value. */
+  private static final int N_URI_TYPE_BITS = 2;
+
   static {
     // We'd better have enough bits in an int.
     if ((N_STATE_BITS + N_ELEMENT_BITS + N_ATTR_BITS + N_DELIM_BITS + N_JS_SLASH_BITS +
-         N_URI_PART_BITS) > 32) {
+         N_URI_PART_BITS + N_URI_TYPE_BITS) > 32) {
       throw new AssertionError();
     }
     // And each enum's ordinals must fit in the bits allocated.
-    if ((1 << N_STATE_BITS) < State.values().length ||
-        (1 << N_ELEMENT_BITS) < ElementType.values().length ||
-        (1 << N_ATTR_BITS) < AttributeType.values().length ||
-        (1 << N_DELIM_BITS) < AttributeEndDelimiter.values().length ||
-        (1 << N_JS_SLASH_BITS) < JsFollowingSlash.values().length ||
-        (1 << N_URI_PART_BITS) < UriPart.values().length) {
+    if ((1 << N_STATE_BITS) < State.values().length
+        || (1 << N_ELEMENT_BITS) < ElementType.values().length
+        || (1 << N_ATTR_BITS) < AttributeType.values().length
+        || (1 << N_DELIM_BITS) < AttributeEndDelimiter.values().length
+        || (1 << N_JS_SLASH_BITS) < JsFollowingSlash.values().length
+        || (1 << N_URI_PART_BITS) < UriPart.values().length
+        || (1 << N_URI_TYPE_BITS) < UriType.values().length) {
       throw new AssertionError();
     }
   }
@@ -686,6 +710,9 @@ public final class Context {
     if (uriPart != UriPart.NONE) {
       sb.append(' ').append(uriPart.name());
     }
+    if (uriType != UriType.NONE) {
+      sb.append(' ').append(uriType.name());
+    }
     if (templateNestDepth != 0) {
       sb.append(" templateNestDepth=").append(templateNestDepth);
     }
@@ -735,6 +762,14 @@ public final class Context {
     if (!parts.isEmpty()) {
       try {
         builder.withUriPart(UriPart.valueOf(parts.element()));
+        parts.remove();
+      } catch (IllegalArgumentException ex) {
+        // OK
+      }
+    }
+    if (!parts.isEmpty()) {
+      try {
+        builder.withUriType(UriType.valueOf(parts.element()));
         parts.remove();
       } catch (IllegalArgumentException ex) {
         // OK
@@ -870,8 +905,9 @@ public final class Context {
         // Just ensure the state is JS -- don't worry about whether a regex is coming or not.
         return state == State.JS && elType == ElementType.NONE;
       case URI:
-        // Ensure that the URI content is non-empty.
-        return state == State.URI && uriPart != UriPart.START;
+        // Ensure that the URI content is non-empty and the URI type remains normal (which is
+        // the assumed type of the URI content kind).
+        return state == State.URI && uriType == UriType.NORMAL && uriPart != UriPart.START;
       case TEXT:
         return state == State.TEXT;
       default:
@@ -1080,6 +1116,9 @@ public final class Context {
     /** An XMP element whose content is raw CDATA. */
     XMP,
 
+    /** An image element, so that we can process the src attribute specially. */
+    MEDIA,
+
     /** An element whose content is normal mixed PCDATA and child elements. */
     NORMAL,
     ;
@@ -1248,6 +1287,54 @@ public final class Context {
 
 
   /**
+   * Describes the type or context of a URI that is currently being or about to be parsed.
+   *
+   * <p>This distinguishes between the types of URI safety concerns, which vary between images,
+   * scripts, and other types.
+   */
+  public enum UriType {
+
+    /**
+     * Not in or about to be in a URI.
+     *
+     * <p>Note the URI type can be set even if we haven't entered the URI itself yet.
+     */
+    NONE,
+
+    /**
+     * General URI context suitable for most URI types.
+     *
+     * <p>The biggest use-case here is for anchors, where we want to prevent Javascript URLs that
+     * can cause XSS. However, this grabs other types of URIs such as stylesheets, prefetch,
+     * SEO metadata, and attributes that look like they're supposed to contain URIs but might just
+     * be harmless metadata because they end with "url".
+     *
+     * <p>It's expected that this will be split up over time to address the different safety levels
+     * of the different URI types.
+     */
+    NORMAL,
+
+    /**
+     * Image URL type.
+     *
+     * <p>Here, we can relax some some rules. For example, a data URI in an image is unlikely to
+     * do anything that loading an image from a 3rd party http/https site.
+     *
+     * <p>At present, note that Soy doesn't do anything to prevent referer[r]er leakage. At some
+     * future point, we may want to provide configuration options to avoid 3rd party or
+     * http-in-the-clear image loading.
+     *
+     * <p>In the future, this might also encompass video and audio, if we can find ways to reduce
+     * the risk of social engineering.
+     */
+    MEDIA
+
+    // TODO(gboyer): Add TRUSTED for things like scripts and stylesheets that cannot be
+    // attacker-controlled.
+  }
+
+
+  /**
    * A mutable builder for {@link Context}s.
    */
   static final class Builder {
@@ -1257,6 +1344,7 @@ public final class Context {
     private AttributeEndDelimiter delimType;
     private JsFollowingSlash slashType;
     private UriPart uriPart;
+    private UriType uriType;
     private int templateNestDepth;
 
     private Builder(Context context) {
@@ -1266,6 +1354,7 @@ public final class Context {
       this.delimType = context.delimType;
       this.slashType = context.slashType;
       this.uriPart = context.uriPart;
+      this.uriType = context.uriType;
       this.templateNestDepth = context.templateNestDepth;
     }
 
@@ -1299,6 +1388,11 @@ public final class Context {
       return this;
     }
 
+    Builder withUriType(UriType uriType) {
+      this.uriType = Preconditions.checkNotNull(uriType);
+      return this;
+    }
+
     Builder withTemplateNestDepth(int templateNestDepth) {
       Preconditions.checkArgument(templateNestDepth >= 0);
       this.templateNestDepth = templateNestDepth;
@@ -1310,7 +1404,8 @@ public final class Context {
           .withAttrType(Context.AttributeType.NONE)
           .withDelimType(Context.AttributeEndDelimiter.NONE)
           .withSlashType(Context.JsFollowingSlash.NONE)
-          .withUriPart(Context.UriPart.NONE);
+          .withUriPart(Context.UriPart.NONE)
+          .withUriType(Context.UriType.NONE);
     }
 
     /**
@@ -1339,6 +1434,8 @@ public final class Context {
         case URI:
           withState(State.URI);
           withUriPart(UriPart.START);
+          // Assume a let block of kind="uri" is a "normal" URI.
+          withUriType(UriType.NORMAL);
           break;
         case TEXT:
           withState(State.TEXT);
@@ -1353,7 +1450,8 @@ public final class Context {
     }
 
     Context build() {
-      return new Context(state, elType, attrType, delimType, slashType, uriPart, templateNestDepth);
+      return new Context(state, elType, attrType, delimType, slashType, uriPart, uriType,
+          templateNestDepth);
     }
   }
 }

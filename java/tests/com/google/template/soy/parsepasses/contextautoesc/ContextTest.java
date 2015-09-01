@@ -79,19 +79,19 @@ public class ContextTest {
     assertUnionFails("JS NORMAL SCRIPT DOUBLE_QUOTE REGEX", "JS REGEX");
   }
 
-  @Test public void testUriUnions() {
+  @Test public void testUriPartUnions() {
     // The more well-formed states:
-    String start = "URI START";
-    String maybeScheme = "URI MAYBE_SCHEME";
-    String authorityOrPath = "URI AUTHORITY_OR_PATH";
-    String query = "URI QUERY";
-    String fragment = "URI FRAGMENT";
+    String start = "URI START NORMAL";
+    String maybeScheme = "URI MAYBE_SCHEME NORMAL";
+    String authorityOrPath = "URI AUTHORITY_OR_PATH NORMAL";
+    String query = "URI QUERY NORMAL";
+    String fragment = "URI FRAGMENT NORMAL";
     // The more nebulous and sticky states:
-    String maybeVariableScheme = "URI MAYBE_VARIABLE_SCHEME";
-    String unknownPreFragment = "URI UNKNOWN_PRE_FRAGMENT";
+    String maybeVariableScheme = "URI MAYBE_VARIABLE_SCHEME NORMAL";
+    String unknownPreFragment = "URI UNKNOWN_PRE_FRAGMENT NORMAL";
     // NOTE: "NONE" needed to disambiguate from JsFollowingSlash.UNKNOWN
-    String unknown = "URI NONE NONE NONE NONE UNKNOWN";
-    String dangerousScheme = "URI DANGEROUS_SCHEME";
+    String unknown = "URI NONE NONE NONE NONE UNKNOWN NORMAL";
+    String dangerousScheme = "URI DANGEROUS_SCHEME NORMAL";
 
     // Well-formed states, identity:
     assertUnionNoop(start, start);
@@ -149,6 +149,13 @@ public class ContextTest {
     assertUnionNoop(dangerousScheme, unknownPreFragment);
     assertUnionNoop(dangerousScheme, fragment);
     assertUnionNoop(dangerousScheme, unknown);
+  }
+
+  @Test public void testUriTypeUnions() {
+    assertUnionNoop("URI START NORMAL", "URI START NORMAL");
+    assertUnionNoop("URI START MEDIA", "URI START MEDIA");
+    // For now, we don't allow unioning these two types.
+    assertUnionFails("URI START MEDIA", "URI START NORMAL");
   }
 
   @Test

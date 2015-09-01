@@ -965,16 +965,77 @@ public final class EscapingConventions {
 
     @Override
     public String getInnocuousOutput() {
+      // TODO(b/23290608, gboyer): Use about:invalid here, to prevent any content from loading.
       return "#" + INNOCUOUS_OUTPUT;
     }
   }
 
 
   /**
-   * Like {@link FilterNormalizeUri} except only accepts data URI's that contain an image.
+   * Like {@link FilterNormalizeUri}, but also accepts {@code data:} and {@code blob:} URIs, since
+   * image sources don't execute script in the same origin as the page (although image handling
+   * 0-days are available from time to time, but a templating language can't realistically try to
+   * protect against such a thing).
+   *
+   * <p>Only intended to be used with images; for videos and audio we expect some sort of further
+   * review since they can more easily be used for social engineering.  Video and audio still
+   * accept http/https because remote video and audio can still be protected against via CSP,
+   * but data URIs don't have self-evident provenance.
+   */
+  public static final class FilterNormalizeMediaUri extends CrossLanguageStringXform {
+    /** Implements the {@code |filterNormalizeMediaUri} directive. */
+    public static final FilterNormalizeMediaUri INSTANCE = new FilterNormalizeMediaUri();
+
+    private FilterNormalizeMediaUri() {
+      // For image URIs, we use a relatively permissive filter. We accept:
+      // - http and https URLs
+      // - data URLs of supported types
+      // We don't worry about sequences of "/../" here, because path traversal isn't a worry for
+      // images, and detecting /../ sequences would add unnecessary complexity here.
+      super(
+          Pattern.compile(
+              // Allow relative URIs.
+              "^[^&:/?#]*(?:[/?#]|\\z)"
+              // Allow http and https URIs.
+              + "|^https?:"
+              // Allow image data URIs. Ignore the subtype because browsers ignore them anyways.
+              // In fact, most browsers happily accept text/html or a completely empty MIME, but it
+              // doesn't hurt to verify that it at least looks vaguely correct.
+              + "|^data:image/[a-z0-9+]+"
+              + ";base64,[a-z0-9+/]+=*\\z"
+              // Blob URIs -- while there's no saying what's in them, (a) they are created on the
+              // same origin, and (b) no worse than loading a random http/https link.
+              + "|^blob:",
+              Pattern.CASE_INSENSITIVE),
+          null);
+    }
+
+    @Override
+    protected ImmutableList<Escape> defineEscapes() {
+      return NormalizeUri.INSTANCE.defineEscapes();
+    }
+
+    @Override
+    public String getInnocuousOutput() {
+      // NOTE: about:invalid is registered in http://www.w3.org/TR/css3-values/#about-invalid :
+      // "The about:invalid URI references a non-existent document with a generic error condition.
+      // It can be used when a URI is necessary, but the default value shouldn't be resolveable as
+      // any type of document."
+      return "about:invalid#" + INNOCUOUS_OUTPUT;
+    }
+  }
+
+
+  /**
+   * Accepts only data URI's that contain an image.
    *
    * <p>Developers use this simultaneously to allow data URI's, but also to ensure that the image
    * tag won't initiate any HTTP requests.
+   *
+   * <p>NOTE: We may consider deprecating this now that img/data URIs are allowed by default, since
+   * it's unlikely too many projects need a mechanism to double-check that images are only loaded
+   * from data URIs; anyone else that does can simply scan the URL and fail if it detects
+   * http/https.
    */
   public static final class FilterImageDataUri extends CrossLanguageStringXform {
     /** Implements the {@code |filterNormalizeUri} directive. */
@@ -1059,15 +1120,15 @@ public final class EscapingConventions {
     private FilterHtmlAttributes() {
       super(
           Pattern.compile(
-              "^" +
+              "^"
               // Disallow special attribute names
-              "(?!style|on|action|archive|background|cite|classid|codebase|data|dsync|href" +
-              "|longdesc|src|usemap)" +
-              "(?:" +
+              + "(?!style|on|action|archive|background|cite|classid|codebase|data|dsync|href"
+              + "|longdesc|src|usemap)"
+              + "(?:"
               // Must match letters
-              "[a-z0-9_$:-]*" +
+              + "[a-z0-9_$:-]*"
               // Match until the end.
-              ")\\z",
+              + ")\\z",
               Pattern.CASE_INSENSITIVE),
           null);
     }
@@ -1122,6 +1183,7 @@ public final class EscapingConventions {
         EscapeUri.INSTANCE,
         NormalizeUri.INSTANCE,
         FilterNormalizeUri.INSTANCE,
+        FilterNormalizeMediaUri.INSTANCE,
         FilterImageDataUri.INSTANCE,
         FilterHtmlAttributes.INSTANCE,
         FilterHtmlElementName.INSTANCE

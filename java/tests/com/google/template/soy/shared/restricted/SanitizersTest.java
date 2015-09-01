@@ -304,46 +304,43 @@ public class SanitizersTest extends TestCase {
     assertEquals(escapedFullWidth, Sanitizers.normalizeUri(fullWidth));
     assertEquals(escapedFullWidth, Sanitizers.filterNormalizeUri(fullWidth));
 
-    // Test filtering of URI starts.
-    assertEquals("#zSoyz", Sanitizers.filterNormalizeUri("javascript:"));
-    assertEquals("#zSoyz", Sanitizers.filterNormalizeUri("javascript:alert(1337)"));
-    assertEquals("#zSoyz", Sanitizers.filterNormalizeUri("vbscript:alert(1337)"));
-    assertEquals("#zSoyz", Sanitizers.filterNormalizeUri("livescript:alert(1337)"));
-    assertEquals("#zSoyz", Sanitizers.filterNormalizeUri("data:,alert(1337)"));
-    assertEquals("#zSoyz", Sanitizers.filterNormalizeUri("data:text/javascript,alert%281337%29"));
-    assertEquals("#zSoyz", Sanitizers.filterNormalizeUri("file:///etc/passwd"));
+    String[] badForAllFilters = new String[] {
+      // Test filtering of URI starts.
+      "javascript:",
+      "javascript:alert(1337)",
+      "vbscript:alert(1337)",
+      "livescript:alert(1337)",
+      "data:,alert(1337)",
+      "data:text/javascript,alert%281337%29",
+      "file:///etc/passwd",
+      // Testcases from http://ha.ckers.org/xss.html
+      "JaVaScRiPt:alert(1337)",
+      // Using HTML entities to obfuscate javascript:alert('XSS');
+      "&#106;&#97;&#118;&#97;&#115;&#99;&#114;&#105;&#112;&#116;" +
+          "&#58;&#97;&#108;&#101;&#114;&#116;&#40;&#39;&#88;&#83;&#83;&#39;&#41;",
+      // Using longer HTML entities to obfuscate the same.
+      "&#0000106&#0000097&#0000118&#0000097&#0000115&#0000099&#0000114&#0000105" +
+          "&#0000112&#0000116&#0000058&#0000097&#0000108&#0000101&#0000114&#0000116" +
+          "&#0000040&#0000039&#0000088&#0000083&#0000083&#0000039&#0000041",
+      // Using hex HTML entities to obfuscate the same.
+      "&#x6A&#x61&#x76&#x61&#x73&#x63&#x72&#x69&#x70&#x74" +
+          "&#x3A&#x61&#x6C&#x65&#x72&#x74&#x28&#x27&#x58&#x53&#x53&#x27&#x29",
+      "jav\tascript:alert('XSS');",
+      "jav&#x09;ascript:alert('XSS');",
+      "jav&#x0A;ascript:alert('XSS');",
+      "jav&#x0D;ascript:alert('XSS');",
+      "\nj\n\na\nv\na\ns\nc\nr\ni\np\nt\n:\na\nl\ne\nr\nt\n(\n1\n3\n3\n7\n)",
+      "\u000e  javascript:alert('XSS');"
+    };
+
+    for (String badCase : badForAllFilters) {
+      assertEquals("#zSoyz", Sanitizers.filterNormalizeUri(badCase));
+      assertInvalidMediaUri(badCase);
+    }
+
     assertFalse(
         Sanitizers.filterNormalizeUri("javascript\uff1aalert(1337);")
         .contains("javascript\uff1a"));
-
-    // Testcases from http://ha.ckers.org/xss.html
-    assertEquals("#zSoyz", Sanitizers.filterNormalizeUri("JaVaScRiPt:alert(1337)"));
-    assertEquals(
-        "#zSoyz",
-        Sanitizers.filterNormalizeUri(
-            // Using HTML entities to obfuscate javascript:alert('XSS');
-            "&#106;&#97;&#118;&#97;&#115;&#99;&#114;&#105;&#112;&#116;" +
-            "&#58;&#97;&#108;&#101;&#114;&#116;&#40;&#39;&#88;&#83;&#83;&#39;&#41;"));
-    assertEquals(
-        "#zSoyz",
-        Sanitizers.filterNormalizeUri(  // Using longer HTML entities to obfuscate the same.
-            "&#0000106&#0000097&#0000118&#0000097&#0000115&#0000099&#0000114&#0000105" +
-            "&#0000112&#0000116&#0000058&#0000097&#0000108&#0000101&#0000114&#0000116" +
-            "&#0000040&#0000039&#0000088&#0000083&#0000083&#0000039&#0000041"));
-    assertEquals(
-        "#zSoyz",
-        Sanitizers.filterNormalizeUri(  // Using hex HTML entities to obfuscate the same.
-            "&#x6A&#x61&#x76&#x61&#x73&#x63&#x72&#x69&#x70&#x74" +
-            "&#x3A&#x61&#x6C&#x65&#x72&#x74&#x28&#x27&#x58&#x53&#x53&#x27&#x29"));
-    assertEquals("#zSoyz", Sanitizers.filterNormalizeUri("jav\tascript:alert('XSS');"));
-    assertEquals("#zSoyz", Sanitizers.filterNormalizeUri("jav&#x09;ascript:alert('XSS');"));
-    assertEquals("#zSoyz", Sanitizers.filterNormalizeUri("jav&#x0A;ascript:alert('XSS');"));
-    assertEquals("#zSoyz", Sanitizers.filterNormalizeUri("jav&#x0D;ascript:alert('XSS');"));
-    assertEquals(
-        "#zSoyz",
-        Sanitizers.filterNormalizeUri(
-            "\nj\n\na\nv\na\ns\nc\nr\ni\np\nt\n:\na\nl\ne\nr\nt\n(\n1\n3\n3\n7\n)"));
-    assertEquals("#zSoyz", Sanitizers.filterNormalizeUri("\u000e  javascript:alert('XSS');"));
 
     // Tests of filtering heirarchy within uri path (/.. etc )
     assertEquals("#zSoyz", Sanitizers.filterNormalizeUri("a/../"));
@@ -351,39 +348,72 @@ public class SanitizersTest extends TestCase {
     assertEquals("#zSoyz", Sanitizers.filterNormalizeUri("http://bad.url.com../../s../.#.."));
     assertEquals("#zSoyz", Sanitizers.filterNormalizeUri("http://badurl.com/normal/../unsafe"));
 
-
     // Things we should accept.
-    assertEquals("http://google.com/", Sanitizers.filterNormalizeUri("http://google.com/"));
-    assertEquals("https://google.com/", Sanitizers.filterNormalizeUri("https://google.com/"));
-    assertEquals("HTTP://google.com/", Sanitizers.filterNormalizeUri("HTTP://google.com/"));
-    assertEquals("?a=b&c=d", Sanitizers.filterNormalizeUri("?a=b&c=d"));
-    assertEquals("?a=b:c&d=e", Sanitizers.filterNormalizeUri("?a=b:c&d=e"));
-    assertEquals("//foo.com:80/", Sanitizers.filterNormalizeUri("//foo.com:80/"));
-    assertEquals("//foo.com/", Sanitizers.filterNormalizeUri("//foo.com/"));
-    assertEquals("/foo:bar/", Sanitizers.filterNormalizeUri("/foo:bar/"));
-    assertEquals("#a:b", Sanitizers.filterNormalizeUri("#a:b"));
-    assertEquals("#", Sanitizers.filterNormalizeUri("#"));
-    assertEquals("/", Sanitizers.filterNormalizeUri("/"));
-    assertEquals("", Sanitizers.filterNormalizeUri(""));
+    String[] goodForAllFilters = new String[] {
+      "http://google.com/",
+      "https://google.com/",
+      "HTTP://google.com/",
+      "?a=b&c=d",
+      "?a=b:c&d=e",
+      "//foo.com:80/",
+      "//foo.com/",
+      "/foo:bar/",
+      "#a:b",
+      "#",
+      "/",
+      "",
+      "../",
+      ".%2E",
+      "..",
+      "%2E%2E",
+      "%2e%2e",
+      "%2e.",
+      "http://goodurl.com/.stuff/?/../.",
+      "http://good.url.com../..s../.#..",
+      "http://goodurl.com/normal/%2e/unsafe?",
+    };
+
+    for (String goodCase : goodForAllFilters) {
+      assertEquals(goodCase, Sanitizers.filterNormalizeUri(goodCase));
+      assertValidMediaUri(goodCase);
+    }
+
+    // Test normalization.
     assertEquals("javascript:handleClick%28%29", Sanitizers.filterNormalizeUri(
         UnsafeSanitizedContentOrdainer.ordainAsSafe(
             "javascript:handleClick()", SanitizedContent.ContentKind.URI)));
+    // Except doesn't handle HTML.
     assertEquals("#zSoyz", Sanitizers.filterNormalizeUri(
         UnsafeSanitizedContentOrdainer.ordainAsSafe(
             "javascript:handleClick()", SanitizedContent.ContentKind.HTML)));
-    assertEquals("../", Sanitizers.filterNormalizeUri("../"));
-    assertEquals(".%2E", Sanitizers.filterNormalizeUri(".%2E"));
-    assertEquals("..", Sanitizers.filterNormalizeUri(".."));
-    assertEquals("%2E%2E", Sanitizers.filterNormalizeUri("%2E%2E"));
-    assertEquals("%2e%2e", Sanitizers.filterNormalizeUri("%2e%2e"));
-    assertEquals("%2e.", Sanitizers.filterNormalizeUri("%2e."));
-    assertEquals("http://goodurl.com/.stuff/?/../.",
-        Sanitizers.filterNormalizeUri("http://goodurl.com/.stuff/?/../."));
-    assertEquals("http://good.url.com../..s../.#..",
-        Sanitizers.filterNormalizeUri("http://good.url.com../..s../.#.."));
-    assertEquals("http://goodurl.com/normal/%2e/unsafe?",
-        Sanitizers.filterNormalizeUri("http://goodurl.com/normal/%2e/unsafe?"));
+
     Logger.getLogger(Sanitizers.class.getName()).setLevel(Level.INFO);
+  }
+
+  private static void assertValidImageDataUri(String uri) {
+    assertImageDataUri(uri, true);
+  }
+
+  private static void assertInvalidImageDataUri(String uri) {
+    assertImageDataUri(uri, false);
+  }
+
+  private static void assertImageDataUri(String uri, boolean valid) {
+    SanitizedContent result = Sanitizers.filterImageDataUri(uri);
+    assertEquals(valid ? uri : "data:image/gif;base64,zSoyz", result.toString());
+    assertEquals(SanitizedContent.ContentKind.URI, result.getContentKind());
+  }
+
+  private static void assertValidMediaUri(String uri) {
+    assertMediaUri(uri, true);
+  }
+
+  private static void assertInvalidMediaUri(String uri) {
+    assertMediaUri(uri, false);
+  }
+  
+  private static void assertMediaUri(String uri, boolean valid) {
+    assertEquals(valid ? uri : "about:invalid#zSoyz", Sanitizers.filterNormalizeMediaUri(uri));
   }
 
   public final void testFilterImageDataUri() {
@@ -399,20 +429,39 @@ public class SanitizersTest extends TestCase {
       "data:image/webp;base64," + allBase64Chars,
       "data:image/bmp;base64," + allBase64Chars
     };
-    String[] invalidImageDataUris = new String[] {
+    // These are safe specifically in the src of img, but not in other URI contexts where they
+    // could be risky.
+    String[] acceptableMediaUrisButNotImageDataUris = new String[] {
+      // Blobs, now allowed!
+      "blob:http%3A//www.example.com/e00aa4f2-d86e-40ed-8b15-ad09c91b8989",
+      // SVG (not dangerous in <img> but dangerous in object, etc)
+      "data:image/svg+xml;base64," + allBase64Chars,
+      // Wrong MIME type (image/foo)
+      "data:image/blargyblarg99;base64," + allBase64Chars,
+      "data:image/foo;base64," + allBase64Chars,
+      // Relative and remote URLs.
+      "/foo",
+      "https://www.google.com",
+      "https://www.google.com/foo.png"
+    };
+    String[] invalidMediaDataUris = new String[] {
+      // Video URIs are not yet supported until we can resolve whether they present a social
+      // engineering risk, as videos might be assumed to be page-controlled instead of
+      // user-controlled.
+      "data:video/mp4;base64," + allBase64Chars,
+      "data:video/mp4;base64," + allBase64Chars + allBase64Chars,
+      "data:video/mp4;base64," + allBase64Chars + "==",
+      "data:video/ogg;base64," + allBase64Chars,
+      "data:video/webm;base64," + allBase64Chars,
+      "data:video/mpeg;base64," + allBase64Chars,
+      // Audio isn't yet supported, until we can resolve whether they present a phishing risk.
+      "data:audio/ogg;base64," + allBase64Chars,
       // Wrong protocol type (beta)
       "beta:image/foo;base64," + allBase64Chars,
-      // Wrong MIME type (image/foo)
-      "data:image/foo;base64," + allBase64Chars,
       // bake64 instead of base64
       "data:image/png;bake64," + allBase64Chars,
       // Invalid chars .()
       "data:image/png;base64,ABCD.()",
-      // Remote URL's.
-      "https://www.google.com",
-      "https://www.google.com/foo.png",
-      // Relative URL's.
-      "/foo",
       // Extra junk at beginning and end. To ensure regexp is multiline-safe.
       "\ndata:image/png;base64," + allBase64Chars,
       "xdata:image/png;base64," + allBase64Chars,
@@ -420,25 +469,29 @@ public class SanitizersTest extends TestCase {
       "data:image/png;base64," + allBase64Chars + "\n",
       "data:image/png;base64," + allBase64Chars + "=x",
       "data:image/png;base64," + allBase64Chars + ".",
+      "NOTblob:http%3A//www.example.com/e00aa4f2-d86e-40ed-8b15-ad09c91b8989",
+      "\nblob:http%3A//www.example.com/e00aa4f2-d86e-40ed-8b15-ad09c91b8989",
+      "NOThttps://www.google.com",
+      "\nhttps://www.google.com/foo.png",
       // "=" in wrong place:
       "data:image/png;base64," + allBase64Chars + "=" + allBase64Chars,
-      // MIME types that are fundamentally insecure.
-      "data:image/svg+xml;base64," + allBase64Chars
+      // Junk in MIME type.
+      "data:image/png*;base64," + allBase64Chars,
     };
 
-    for (int i = 0; i < validImageDataUris.length; i++) {
-      String validStr = validImageDataUris[i];
-      SanitizedContent result = Sanitizers.filterImageDataUri(validStr);
-      assertEquals("Failed invalidImageDataUris[" + i + "]", validStr, result.toString());
-      assertEquals(SanitizedContent.ContentKind.URI, result.getContentKind());
+    for (String uri : validImageDataUris) {
+      assertValidImageDataUri(uri);
+      assertValidMediaUri(uri);
     }
 
-    for (int i = 0; i < invalidImageDataUris.length; i++) {
-      String invalidStr = invalidImageDataUris[i];
-      SanitizedContent result = Sanitizers.filterImageDataUri(invalidStr);
-      assertEquals("Failed invalidImageDataUris[" + i + "]",
-          "data:image/gif;base64,zSoyz", result.toString());
-      assertEquals(SanitizedContent.ContentKind.URI, result.getContentKind());
+    for (String uri : acceptableMediaUrisButNotImageDataUris) {
+      assertInvalidImageDataUri(uri);
+      assertValidMediaUri(uri);
+    }
+
+    for (String uri : invalidMediaDataUris) {
+      assertInvalidImageDataUri(uri);
+      assertInvalidMediaUri(uri);
     }
   }
 

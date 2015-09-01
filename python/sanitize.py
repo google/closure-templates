@@ -236,6 +236,13 @@ def filter_normalize_uri(value):
   return generated_sanitize.filter_normalize_uri_helper(value)
 
 
+def filter_normalize_media_uri(value):
+  if is_content_kind(value, CONTENT_KIND.URI):
+    return normalize_uri(value)
+
+  return generated_sanitize.filter_normalize_media_uri_helper(value)
+
+
 def normalize_html(value):
   return generated_sanitize.normalize_html_helper(value)
 

@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.internal.base.UnescapeUtils;
 import com.google.template.soy.parsepasses.contextautoesc.Context.UriPart;
+import com.google.template.soy.parsepasses.contextautoesc.Context.UriType;
 import com.google.template.soy.soytree.RawTextNode;
 
 import java.util.List;
@@ -313,12 +314,18 @@ final class RawTextContextUpdater {
   /**
    * Map of special tag names to their element types.
    */
-  private static final Map<String, Context.ElementType> SPECIAL_ELEMENT_TYPES = ImmutableMap.of(
-      "script", Context.ElementType.SCRIPT,
-      "style", Context.ElementType.STYLE,
-      "textarea", Context.ElementType.TEXTAREA,
-      "title", Context.ElementType.TITLE,
-      "xmp", Context.ElementType.XMP);
+  private static final Map<String, Context.ElementType> SPECIAL_ELEMENT_TYPES =
+      ImmutableMap.<String, Context.ElementType>builder()
+          // We currently only treat <img> as a media type, since for <video> and <audio> there are
+          // concerns that attackers could introduce rich video or audio that facilitates social
+          // engineering.  Upon further review, it's possible we may allow them.
+          .put("img", Context.ElementType.MEDIA)
+          .put("script", Context.ElementType.SCRIPT)
+          .put("style", Context.ElementType.STYLE)
+          .put("textarea", Context.ElementType.TEXTAREA)
+          .put("title", Context.ElementType.TITLE)
+          .put("xmp", Context.ElementType.XMP)
+          .build();
 
   /**
    * Transition from left angle bracket (and optional slash) to a tag name.
@@ -334,14 +341,21 @@ final class RawTextContextUpdater {
     @Override Context computeNextContext(Context prior, Matcher matcher) {
       String tagName = matcher.group(1).toLowerCase(Locale.ENGLISH);
       Context.ElementType elType = SPECIAL_ELEMENT_TYPES.get(tagName);
-      if (prior.state == Context.State.HTML_BEFORE_CLOSE_TAG_NAME && elType != null) {
+      if (elType == null) {
+        elType = Context.ElementType.NORMAL;
+      }
+      if (prior.state == Context.State.HTML_BEFORE_CLOSE_TAG_NAME
+          && elType != Context.ElementType.NORMAL && elType != Context.ElementType.MEDIA) {
+        // For special tags that change context (other than normal and media) we flag it as an
+        // error when seeing an unmatched close tag.  e.g. </script> suggests something fishy
+        // happened earlier.
         throw SoyAutoescapeException.createWithoutMetaInfo(
             "Saw unmatched close tag for context-changing tag: " + tagName);
       }
       return prior.toBuilder()
           .withState(Context.State.HTML_TAG_NAME)
           .withoutAttrContext()
-          .withElType(elType != null ? elType : Context.ElementType.NORMAL)
+          .withElType(elType)
           .build();
     }
   };
@@ -412,14 +426,20 @@ final class RawTextContextUpdater {
         String localName = attrName.substring(colon + 1);
 
         Context.AttributeType attr;
+        UriType uriType = UriType.NONE;
         if (localName.startsWith("on")) {
           attr = Context.AttributeType.SCRIPT;
         } else if ("style".equals(localName)) {
           attr = Context.AttributeType.STYLE;
+        // TODO(gboyer): We should treat script srcs as trusted and impose additional restrictions.
+        } else if (prior.elType == Context.ElementType.MEDIA && "src".equals(attrName)) {
+          attr = Context.AttributeType.URI;
+          uriType = UriType.MEDIA;
         } else if (URI_ATTR_NAMES.contains(localName)
                    || CUSTOM_URI_ATTR_NAMING_CONVENTION.matcher(localName).find()
                    || "xmlns".equals(attrName) || attrName.startsWith("xmlns:")) {
           attr = Context.AttributeType.URI;
+          uriType = UriType.NORMAL;
         } else {
           attr = Context.AttributeType.PLAIN_TEXT;
         }
@@ -427,6 +447,7 @@ final class RawTextContextUpdater {
             .withState(Context.State.HTML_ATTRIBUTE_NAME)
             .withoutAttrContext()
             .withAttrType(attr)
+            .withUriType(uriType)
             .build();
       }
     };
@@ -438,7 +459,7 @@ final class RawTextContextUpdater {
     return new Transition(regex) {
       @Override Context computeNextContext(Context prior, Matcher matcher) {
         return Context.computeContextAfterAttributeDelimiter(
-            prior.elType, prior.attrType, delim, prior.templateNestDepth);
+            prior.elType, prior.attrType, delim, prior.uriType, prior.templateNestDepth);
       }
     };
   }
@@ -470,13 +491,20 @@ final class RawTextContextUpdater {
   private static Transition makeTransitionToState(String regex, final Context.State state) {
     return new Transition(regex) {
       @Override Context computeNextContext(Context prior, Matcher matcher) {
-        return prior.derive(state).derive(UriPart.NONE);
+        Context.Builder builder = prior.toBuilder().withState(state).withUriPart(UriPart.NONE);
+        if (prior.uriPart != UriPart.NONE) {
+          // Only reset the URI type if we're leaving a URI; intentionally, URI type needs to
+          // remain prior to the URI, for example, to maintain state between "src", the "=", and
+          // the opening quotes (if any).
+          builder.withUriType(UriType.NONE);
+        }
+        return builder.build();
       }
     };
   }
 
   /**
-   * A transition to an error state.
+   * A transition to an  state.
    */
   private static Transition makeTransitionToError(String regex, final String message) {
     return new Transition(regex) {
@@ -541,11 +569,11 @@ final class RawTextContextUpdater {
                 + "disambiguating characters (e.g. http://{$x}:{$y}, ./{$x}:{$y}, or "
                 + "{$x}?foo=:{$y})");
           } else {
-            // At the start of the URL, and we just saw some hard-coded characters and a colon, like
-            // http:. This is safe (assuming it's a good scheme), and now we're on our way to the
-            // authority.
-            // TODO(gboyer): Transition to a stricter state if we end up seeing a dangerous scheme
-            // like javascript:, and only allow hard-coded paths.
+            // At the start of the URL, and we just saw some hard-coded characters and a colon,
+            // like http:. This is safe (assuming it's a good scheme), and now we're on our way to
+            // the authority. Note if javascript: was seen, we would have scanned it already and
+            // entered a separate state (unless the developer is malicious and tries to obscure it
+            // via a conditional).
             return UriPart.AUTHORITY_OR_PATH;
           }
         }
@@ -636,7 +664,6 @@ final class RawTextContextUpdater {
     }
 
     @Override Context computeNextContext(Context prior, Matcher matcher) {
-      // TODO(gboyer): Perhaps we can make exceptions for image URIs, etc.
       // TODO(gboyer): Ban other unsafe schemes, like filesystem:, blob:, and maybe file:.
       return prior.derive(UriPart.DANGEROUS_SCHEME);
     }
@@ -666,7 +693,7 @@ final class RawTextContextUpdater {
   /**
    * Matches the beginning of a CSS URI with the delimiter, if any, in group 1.
    */
-  private static Transition makeCssUriTransition(String regex) {
+  private static Transition makeCssUriTransition(String regex, final UriType uriType) {
     return new Transition(regex) {
       @Override Context computeNextContext(Context prior, Matcher matcher) {
         String delim = matcher.group(1);
@@ -680,6 +707,7 @@ final class RawTextContextUpdater {
         }
         return prior.toBuilder()
             .withState(state)
+            .withUriType(uriType)
             .withUriPart(UriPart.START)
             .build();
       }
@@ -758,12 +786,14 @@ final class RawTextContextUpdater {
                   builder.withState(Context.State.CSS)
                       .withElType(Context.ElementType.NONE);
                   break;
-                case NORMAL:
-                  builder.withState(Context.State.HTML_PCDATA)
-                      .withElType(Context.ElementType.NONE);
-                  break;
                 case LISTING: case TEXTAREA: case TITLE: case XMP:
                   builder.withState(Context.State.HTML_RCDATA);
+                  break;
+                // All normal or void tags fit here.
+                case NORMAL:
+                case MEDIA:
+                  builder.withState(Context.State.HTML_PCDATA)
+                      .withElType(Context.ElementType.NONE);
                   break;
                 case NONE:
                   throw new IllegalStateException();
@@ -804,7 +834,20 @@ final class RawTextContextUpdater {
           // TODO: Do we need to support non-standard but widely supported C++ style comments?
           makeTransitionToState("\"", Context.State.CSS_DQ_STRING),
           makeTransitionToState("'", Context.State.CSS_SQ_STRING),
-          makeCssUriTransition("(?i)\\burl\\s*\\(\\s*([\'\"]?)"),
+          // Although we don't contextually parse CSS, certain property names are only used in
+          // conjunction with images.  This pretty basic regexp does a decent job on CSS that is
+          // not attempting to be malicious (for example, doesn't handle comments).  Note that
+          // this can be fooled with {if 1}foo-{/if}background, but it's not worth really
+          // worrying about.
+          makeCssUriTransition(
+              "(?i)(?:[^a-z0-9-]|^)\\s*"
+                  + "(?:background|background-image|border-image|content"
+                  + "|cursor|list-style|list-style-image)"
+                  + "\\s*:\\s*url\\s*\\(\\s*(['\"]?)",
+              UriType.MEDIA),
+          // TODO(gboyer): We should treat @import, @font-face src, etc as trusted resources, once
+          // trusted URLs are implemented.
+          makeCssUriTransition("(?i)\\burl\\s*\\(\\s*(['\"]?)", UriType.NORMAL),
           makeEndTagTransition("style"),
           TRANSITION_TO_SELF))
       .put(Context.State.CSS_COMMENT, ImmutableList.of(

@@ -116,9 +116,17 @@ public enum EscapingMode {
   NORMALIZE_URI(false, ContentKind.URI),
 
   /**
-   * Like {@link #NORMALIZE_URI}, but filters out schemes like {@code javascript:} that load code.
+   * Like {@link #NORMALIZE_URI}, but filters out everything except relative and http/https URIs.
    */
   FILTER_NORMALIZE_URI(false, ContentKind.URI),
+
+  /**
+   * Like {@link #FILTER_NORMALIZE_URI}, but also accepts some {@code data:} URIs, since image
+   * sources don't execute script in the same origin as the page.  Although image decoding
+   * 0-days are discovered from time to time, a templating language can't realistically try to
+   * protect against such a thing.
+   */
+  FILTER_NORMALIZE_MEDIA_URI(false, ContentKind.URI),
 
   /**
    * The explicit rejection of escaping.

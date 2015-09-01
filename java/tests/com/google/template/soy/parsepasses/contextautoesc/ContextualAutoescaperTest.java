@@ -173,7 +173,10 @@ public final class ContextualAutoescaperTest extends TestCase {
               "<button formaction='{$x |filterNormalizeUri |escapeHtmlAttribute}'>do</button>",
               "<command icon='{$x |filterNormalizeUri |escapeHtmlAttribute}'></command>",
               "<object data='{$x |filterNormalizeUri |escapeHtmlAttribute}'></object>",
-              "<video poster='{$x |filterNormalizeUri |escapeHtmlAttribute}'></video>\n",
+              "<video poster='{$x |filterNormalizeUri |escapeHtmlAttribute}'></video>",
+              "<video src='{$x |filterNormalizeUri |escapeHtmlAttribute}'></video>",
+              "<source src='{$x |filterNormalizeUri |escapeHtmlAttribute}'>",
+              "<audio src='{$x |filterNormalizeUri |escapeHtmlAttribute}'></audio>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
@@ -187,6 +190,9 @@ public final class ContextualAutoescaperTest extends TestCase {
               "<command icon='{$x}'></command>\n",
               "<object data='{$x}'></object>\n",
               "<video poster='{$x}'></video>\n",
+              "<video src='{$x}'></video>\n",
+              "<source src='{$x}'>\n",
+              "<audio src='{$x}'></audio>",
             "{/template}\n"));
   }
 
@@ -612,7 +618,7 @@ public final class ContextualAutoescaperTest extends TestCase {
             "{template .foo autoescape=\"deprecated-contextual\"}\n",
             "  {@param x: ?}\n",
               "<script>",
-                "x = [{call ns.countDown__C2011 data=\"all\" /}]",
+                "x = [{call ns.countDown__C4011 data=\"all\" /}]",
               "</script>\n",
             "{/template}\n\n",
             "{template .countDown autoescape=\"deprecated-contextual\"}\n",
@@ -622,11 +628,11 @@ public final class ContextualAutoescaperTest extends TestCase {
                 "{call .countDown /}",
               "{/if}\n",
             "{/template}\n\n",
-            "{template .countDown__C2011 autoescape=\"deprecated-contextual\"}\n",
+            "{template .countDown__C4011 autoescape=\"deprecated-contextual\"}\n",
             "  {@param x: ?}\n",
               "{if $x gt 0}",
                 "{print --$x |escapeJsValue},",
-                "{call ns.countDown__C2011 /}",
+                "{call ns.countDown__C4011 /}",
               "{/if}\n",
             "{/template}"),
         join(
@@ -651,7 +657,7 @@ public final class ContextualAutoescaperTest extends TestCase {
             "  {@param declare: ?}\n",
               "<script>",
                 "{if $declare}var {/if}",
-                "x = {call ns.bar__C2011 /}{\\n}",
+                "x = {call ns.bar__C4011 /}{\\n}",
                 "y = 2",
             "  </script>\n",
             "{/template}\n\n",
@@ -662,7 +668,7 @@ public final class ContextualAutoescaperTest extends TestCase {
                 " , ",
               "{/if}\n",
             "{/template}\n\n",
-            "{template .bar__C2011 autoescape=\"deprecated-contextual\"}\n",
+            "{template .bar__C4011 autoescape=\"deprecated-contextual\"}\n",
             "  {@param? declare: ?}\n",
               "42",
               "{if $declare}",
@@ -876,7 +882,7 @@ public final class ContextualAutoescaperTest extends TestCase {
     assertRewriteFails(
         "In file no-path:5:5, template ns.foo: Error while re-contextualizing template ns.quot in"
         + " context (Context JS REGEX):"
-        + "\n- In file no-path:10:27, template ns.quot__C2011: Error while re-contextualizing"
+        + "\n- In file no-path:10:27, template ns.quot__C4011: Error while re-contextualizing"
         + " template ns.quot in context (Context JS_DQ_STRING):"
         + "\n- In file no-path:10:5, template ns.quot__C14: {if} command without {else} changes"
         + " context : {if randomInt(10) < 5}{call .quot data=\"all\" /}{/if}",
@@ -899,7 +905,7 @@ public final class ContextualAutoescaperTest extends TestCase {
             "{template .bar autoescape=\"deprecated-contextual\"}\n",
               // We use filterNormalizeUri at the beginning,
               "<a href='{$url |filterNormalizeUri |escapeHtmlAttribute}'",
-              " style='background:url({$bgimage |filterNormalizeUri |escapeHtmlAttribute})'>",
+              " style='background:url({$bgimage |filterNormalizeMediaUri |escapeHtmlAttribute})'>",
               "Hi</a>",
               "<a href='#{$anchor |escapeHtmlAttribute}'",
               // escapeUri for substitutions into queries.
@@ -907,7 +913,7 @@ public final class ContextualAutoescaperTest extends TestCase {
                 "Hi",
               "</a>",
               "<style>",
-                "body {lb} background-image: url(\"{$bg |filterNormalizeUri}\"); {rb}",
+                "body {lb} background-image: url(\"{$bg |filterNormalizeMediaUri}\"); {rb}",
                 // and normalizeUri without the filter in the path.
                 "table {lb} border-image: url(\"borders/{$brdr |normalizeUri}\"); {rb}",
               "</style>\n",
@@ -1181,7 +1187,7 @@ public final class ContextualAutoescaperTest extends TestCase {
               "{/if}",
               " src=",
               "{if $iconPath}",
-                "\"{$iconPath |filterNormalizeUri |escapeHtmlAttribute}\"",
+                "\"{$iconPath |filterNormalizeMediaUri |escapeHtmlAttribute}\"",
               "{else}",
                 "\"images/cleardot.gif\"",
               "{/if}",
@@ -2276,7 +2282,7 @@ public final class ContextualAutoescaperTest extends TestCase {
   public void testStrictUriMustNotBeEmpty() {
     assertRewriteFails(
         "In file no-path:3:1, template ns.main: " +
-        "A strict block of kind=\"uri\" cannot end in context (Context URI START). " +
+        "A strict block of kind=\"uri\" cannot end in context (Context URI START NORMAL). " +
         "Likely cause is an unterminated or empty URI: " +
         "{template .main autoescape=\"strict\" kind=\"uri\"}",
         join(
@@ -2562,21 +2568,21 @@ public final class ContextualAutoescaperTest extends TestCase {
 
   public void testMsgForbiddenUriStartContext() {
     assertRewriteFails(
-        getForbiddenMsgError("no-path:4:12", "main", "URI NORMAL URI DOUBLE_QUOTE START"),
+        getForbiddenMsgError("no-path:4:12", "main", "URI NORMAL URI DOUBLE_QUOTE START NORMAL"),
         join(
             "{namespace ns}\n\n",
             "{template .main}\n",
             "  <a href=\"{msg desc=\"foo\"}message{/msg}\">test</a>\n",
             "{/template}"));
     assertRewriteFails(
-        getForbiddenMsgError("no-path:4:12", "main", "URI NORMAL URI DOUBLE_QUOTE START"),
+        getForbiddenMsgError("no-path:4:12", "main", "URI NORMAL URI DOUBLE_QUOTE START NORMAL"),
         join(
             "{namespace ns}\n\n",
             "{template .main autoescape=\"deprecated-contextual\"}\n",
             "  <a href=\"{msg desc=\"foo\"}message{/msg}\">test</a>\n",
             "{/template}"));
     assertRewriteFails(
-        getForbiddenMsgError("no-path:4:3", "main", "URI START"),
+        getForbiddenMsgError("no-path:4:3", "main", "URI START NORMAL"),
         join(
             "{namespace ns}\n\n",
             "{template .main kind=\"uri\"}\n",

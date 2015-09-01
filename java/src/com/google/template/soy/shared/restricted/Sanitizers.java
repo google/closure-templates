@@ -425,6 +425,33 @@ public final class Sanitizers {
 
 
   /**
+   * Checks that a URI is safe to be an image source.
+   *
+   * <p>Does not return SanitizedContent as there isn't an appropriate type for this.
+   */
+  public static String filterNormalizeMediaUri(SoyValue value) {
+    if (isSanitizedContentOfKind(value, SanitizedContent.ContentKind.URI)) {
+      return normalizeUri(value);
+    }
+    return filterNormalizeMediaUri(value.coerceToString());
+  }
+
+
+  /**
+   * Checks that a URI is safe to be an image source.
+   *
+   * <p>Does not return SanitizedContent as there isn't an appropriate type for this.
+   */
+  public static String filterNormalizeMediaUri(String value) {
+    if (EscapingConventions.FilterNormalizeMediaUri.INSTANCE.getValueFilter().matcher(value).find()) {
+      return EscapingConventions.FilterNormalizeMediaUri.INSTANCE.escape(value);
+    }
+    LOGGER.log(Level.WARNING, "|filterNormalizeMediaUri received bad value {0}", value);
+    return EscapingConventions.FilterNormalizeMediaUri.INSTANCE.getInnocuousOutput();
+  }
+
+
+  /**
    * Makes sure that the given input is a data URI corresponding to an image.
    *
    * SanitizedContent kind does not apply -- the directive is also used to ensure no foreign
