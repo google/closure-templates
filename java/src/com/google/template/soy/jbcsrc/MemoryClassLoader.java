@@ -17,11 +17,11 @@
 package com.google.template.soy.jbcsrc;
 
 import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableMap;
 
+import java.net.URL;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 /**
  * A {@link ClassLoader} that can load classes from a configured set of {@code byte[]}s. 
@@ -63,16 +63,16 @@ final class MemoryClassLoader extends ClassLoader {
    * 
    * <p>The classloader will request classes via {@link #findClass(String)} as loading proceeds.
    */
-  private final ConcurrentMap<String, ClassData> classesByName;
+  private final ImmutableMap<String, ClassData> classesByName;
 
   private MemoryClassLoader(Map<String, ClassData> generatedClasses) {
     super(ClassLoader.getSystemClassLoader());
-    this.classesByName = new ConcurrentHashMap<>(generatedClasses);
+    this.classesByName = ImmutableMap.copyOf(generatedClasses);
   }
 
   @Override protected Class<?> findClass(String name) throws ClassNotFoundException {
     // replace so we don't hang onto the bytes for no reason
-    ClassData classDef = classesByName.remove(name);
+    ClassData classDef = classesByName.get(name);
     if (classDef == null) {
       throw new ClassNotFoundException(name);
     }
@@ -84,5 +84,17 @@ final class MemoryClassLoader extends ClassLoader {
       Throwables.propagateIfInstanceOf(t, ClassNotFoundException.class);
       throw Throwables.propagate(t);
     }
+  }
+  
+  @Override protected URL findResource(final String name) {
+    if (!name.endsWith(".class")) {
+      return null;
+    }
+    String className = name.substring(0, name.length() - ".class".length()).replace('/', '.');
+    ClassData classDef = classesByName.get(className);
+    if (classDef == null) {
+      return null;
+    }
+    return classDef.asUrl();
   }
 }

@@ -18,6 +18,7 @@ package com.google.template.soy.jbcsrc;
 
 import com.google.common.base.Throwables;
 
+import java.net.URL;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -44,8 +45,7 @@ final class CompilingClassLoader extends ClassLoader {
   }
 
   @Override protected Class<?> findClass(String name) throws ClassNotFoundException {
-    // replace so we don't hang onto the bytes for no reason
-    ClassData classDef = classesByName.remove(name);
+    ClassData classDef = classesByName.get(name);
     if (classDef == null) {
       // We haven't already compiled it (and haven't already loaded it) so try to find the matching
       // template.
@@ -62,6 +62,23 @@ final class CompilingClassLoader extends ClassLoader {
       Throwables.propagateIfInstanceOf(t, ClassNotFoundException.class);
       throw Throwables.propagate(t);
     }
+  }
+
+  @Override protected URL findResource(final String name) {
+    if (!name.endsWith(".class")) {
+      return null;
+    }
+    String className = name.substring(0, name.length() - ".class".length()).replace('/', '.');
+    ClassData classDef = classesByName.get(className);
+    if (classDef == null) {
+      // We haven't already compiled it (and haven't already loaded it) so try to find the matching
+      // template.
+      classDef = compile(name);
+      if (classDef == null) {
+        return null;
+      }
+    }
+    return classDef.asUrl();
   }
 
   private ClassData compile(String name) {

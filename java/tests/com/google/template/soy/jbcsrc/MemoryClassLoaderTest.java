@@ -18,11 +18,17 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.template.soy.jbcsrc.SoyExpression.FALSE;
 
+import com.google.common.io.ByteStreams;
 import com.google.common.testing.GcFinalization;
 import com.google.template.soy.jbcsrc.ExpressionTester.BooleanInvoker;
 
 import junit.framework.TestCase;
 
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.Type;
+import org.objectweb.asm.tree.ClassNode;
+
+import java.io.IOException;
 import java.lang.ref.WeakReference;
 
 /**
@@ -40,5 +46,15 @@ public class MemoryClassLoaderTest extends TestCase {
     invoker = null;  // unpin
     loader = null;
     GcFinalization.awaitClear(loaderRef);
+  }
+
+  public void testAsResource() throws IOException {
+    BooleanInvoker invoker = ExpressionTester.createInvoker(BooleanInvoker.class, FALSE);
+    byte[] classBytes = ByteStreams.toByteArray(
+        invoker.getClass().getClassLoader().getResourceAsStream(
+            invoker.getClass().getName().replace('.', '/') + ".class"));
+    ClassNode node = new ClassNode();
+    new ClassReader(classBytes).accept(node, 0);
+    assertEquals(Type.getInternalName(invoker.getClass()), node.name);
   }
 }
