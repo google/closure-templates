@@ -1110,9 +1110,6 @@ public final class Context {
     /** A title element whose content is encoded HTML but which cannot contain elements. */
     TITLE,
 
-    /** A listing element whose content is raw CDATA. */
-    LISTING,
-
     /** An XMP element whose content is raw CDATA. */
     XMP,
 

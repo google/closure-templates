@@ -786,7 +786,7 @@ final class RawTextContextUpdater {
                   builder.withState(Context.State.CSS)
                       .withElType(Context.ElementType.NONE);
                   break;
-                case LISTING: case TEXTAREA: case TITLE: case XMP:
+                case TEXTAREA: case TITLE: case XMP:
                   builder.withState(Context.State.HTML_RCDATA);
                   break;
                 // All normal or void tags fit here.
