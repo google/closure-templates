@@ -312,6 +312,9 @@ final class ExpressionCompiler {
               BytecodeUtils.compareSoyEquals(visit(node.getChild(0)), visit(node.getChild(1)))));
     }
 
+    // binary comparison operators.  N.B. it is ok to coerce 'number' values to floats because that
+    // coercion preserves ordering
+
     @Override protected final SoyExpression visitLessThanOpNode(LessThanOpNode node) {
       SoyExpression left = visit(node.getChild(0));
       SoyExpression right = visit(node.getChild(1));
@@ -374,16 +377,24 @@ final class ExpressionCompiler {
           MethodRef.RUNTIME_LESS_THAN_OR_EQUAL.invoke(right.box(), left.box()));
     }
 
-  // Binary operators
+    // Binary operators
+    // For the binary math operators we try to do unboxed arithmetic as much as possible.
+    // If both args are definitely ints -> do int math
+    // If both args are definitely numbers and at least one is definitely a float -> do float math
+    // otherwise use our boxed runtime methods.
 
     @Override protected final SoyExpression visitPlusOpNode(PlusOpNode node) {
       SoyExpression left = visit(node.getChild(0));
       SoyExpression right = visit(node.getChild(1));
-      if (left.assignableToNullableInt() && right.assignableToNullableInt()) {
-        return applyBinaryIntOperator(Opcodes.LADD, left, right);
-      }
+      // They are both definitely numbers
       if (left.assignableToNullableNumber() && right.assignableToNullableNumber()) {
-        return applyBinaryFloatOperator(Opcodes.DADD, left, right);
+        if (left.assignableToNullableInt() && right.assignableToNullableInt()) {
+          return applyBinaryIntOperator(Opcodes.LADD, left, right);
+        }
+        // if either is definitely a float, then we are definitely coercing so just do it now
+        if (left.assignableToNullableFloat() || right.assignableToNullableFloat()) {
+          return applyBinaryFloatOperator(Opcodes.DADD, left, right);
+        }
       }
       // '+' is overloaded for string arguments to mean concatenation.
       if (left.isKnownString() || right.isKnownString()) {
@@ -398,11 +409,15 @@ final class ExpressionCompiler {
     @Override protected final SoyExpression visitMinusOpNode(MinusOpNode node) {
       final SoyExpression left = visit(node.getChild(0));
       final SoyExpression right = visit(node.getChild(1));
-      if (left.assignableToNullableInt() && right.assignableToNullableInt()) {
-        return applyBinaryIntOperator(Opcodes.LSUB, left, right);
-      }
+      // They are both definitely numbers
       if (left.assignableToNullableNumber() && right.assignableToNullableNumber()) {
-        return applyBinaryFloatOperator(Opcodes.DSUB, left, right);
+        if (left.assignableToNullableInt() && right.assignableToNullableInt()) {
+          return applyBinaryIntOperator(Opcodes.LSUB, left, right);
+        }
+        // if either is definitely a float, then we are definitely coercing so just do it now
+        if (left.assignableToNullableFloat() || right.assignableToNullableFloat()) {
+          return applyBinaryFloatOperator(Opcodes.DSUB, left, right);
+        }
       }
       return SoyExpression.forSoyValue(SoyTypes.NUMBER_TYPE,
           MethodRef.RUNTIME_MINUS.invoke(left.box(), right.box()));
@@ -411,13 +426,16 @@ final class ExpressionCompiler {
     @Override protected final SoyExpression visitTimesOpNode(TimesOpNode node) {
       final SoyExpression left = visit(node.getChild(0));
       final SoyExpression right = visit(node.getChild(1));
-      if (left.assignableToNullableInt() && right.assignableToNullableInt()) {
-        return applyBinaryIntOperator(Opcodes.LMUL, left, right);
-      }
+      // They are both definitely numbers
       if (left.assignableToNullableNumber() && right.assignableToNullableNumber()) {
-        return applyBinaryFloatOperator(Opcodes.DMUL, left, right);
+        if (left.assignableToNullableInt() && right.assignableToNullableInt()) {
+          return applyBinaryIntOperator(Opcodes.LMUL, left, right);
+        }
+        // if either is definitely a float, then we are definitely coercing so just do it now
+        if (left.assignableToNullableFloat() || right.assignableToNullableFloat()) {
+          return applyBinaryFloatOperator(Opcodes.DMUL, left, right);
+        }
       }
-
       return SoyExpression.forSoyValue(SoyTypes.NUMBER_TYPE,
           MethodRef.RUNTIME_TIMES.invoke(left.box(), right.box()));
     }
