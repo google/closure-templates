@@ -1,0 +1,95 @@
+/*
+ * Copyright 2015 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.google.template.soy.jssrc.internal;
+
+import com.google.common.collect.ImmutableMap;
+import com.google.template.soy.soytree.CallBasicNode;
+import com.google.template.soy.soytree.SoyFileNode;
+import com.google.template.soy.soytree.SoytreeUtils;
+import com.google.template.soy.soytree.TemplateBasicNode;
+
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
+final class AliasUtils {
+  private AliasUtils() {}
+  
+  private static final String TEMPLATE_ALIAS_PREFIX = "$templateAlias";
+
+  static boolean isExternalFunction(String alias) {
+    return alias.startsWith(TEMPLATE_ALIAS_PREFIX);
+  }
+  
+  /**
+   * Creates a mapping for assigning and looking up the variable alias for templates both within
+   * a file and referenced from external files. For local files, the alias is just the local
+   * template's name. For external templates, the alias is an identifier that is unique for that
+   * template.
+   * 
+   * <p>For V1 templates, no alias is generated and the template should be called by the fully
+   * qualified name.
+   * 
+   * @param fileNode The {@link SoyFileNode} to create an alias mapping for.
+   * @return A mapping of a fully qualified name to an alias.
+   */
+  static ImmutableMap<String, String> createAliasMapping(SoyFileNode fileNode) {
+    Map<String, String> aliasMap = new HashMap<>();
+    Set<String> localTemplates = new HashSet<>();
+    int counter = 0;
+    
+    // Go through templates first and just alias them to their local name.
+    for (TemplateBasicNode templateBasicNode : 
+        SoytreeUtils.getAllNodesOfType(fileNode, TemplateBasicNode.class)) {
+      String partialName = templateBasicNode.getPartialTemplateName();
+      String fullyQualifiedName = templateBasicNode.getTemplateName();
+      localTemplates.add(fullyQualifiedName);
+      
+      /* 
+       * For v1 templates, don't alias local template calls since we don't have a partialName. This
+       * is different than aliasing to the fully qualified name. Since the aliases will be created
+       * prior to the template being added to the namespace, aliasing them would result in the alias
+       * being undefined.
+       */
+      if (partialName == null) {
+        continue;
+      }
+      
+      String alias = partialName.substring(1);
+      aliasMap.put(fullyQualifiedName, alias);
+    }
+    
+    // Go through all call sites looking for foreign template calls and create an alias for them.
+    for (CallBasicNode callBasicNode :
+        SoytreeUtils.getAllNodesOfType(fileNode, CallBasicNode.class)) {
+      String fullyQualifiedName = callBasicNode.getCalleeName();
+      
+      // We could have either encountered the foreign fully qualified name before or it could belong
+      // to a local template.
+      if (localTemplates.contains(fullyQualifiedName) || aliasMap.containsKey(fullyQualifiedName)) {
+        continue;
+      }
+      
+      String alias = TEMPLATE_ALIAS_PREFIX + (++counter);
+      aliasMap.put(fullyQualifiedName, alias);
+    }
+    
+    return ImmutableMap.copyOf(aliasMap);
+  }
+}
+
