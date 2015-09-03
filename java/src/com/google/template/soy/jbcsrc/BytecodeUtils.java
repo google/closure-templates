@@ -434,7 +434,8 @@ final class BytecodeUtils {
     if (left.isKnownInt() && right.isKnownInt()) {
       return compare(Opcodes.IFEQ, left.unboxAs(long.class), right.unboxAs(long.class));
     }
-    if (left.isKnownNumber() && right.isKnownNumber()) {
+    if (left.isKnownNumber() && right.isKnownNumber() 
+        && (left.isKnownFloat() || right.isKnownFloat())) {
       return compare(Opcodes.IFEQ, left.coerceToDouble(), right.coerceToDouble());
     }
     return MethodRef.RUNTIME_EQUAL.invoke(left.box(), right.box());

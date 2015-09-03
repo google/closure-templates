@@ -322,8 +322,8 @@ public class ExpressionCompilerTest extends TestCase {
     assertExpression("false ? 1 : 2").evaluatesTo(2L);
     assertExpression("true ? 1 : 2").evaluatesTo(1L);
 
-    assertExpression("false ? 1.0 : 2").evaluatesTo(2.0);
-    assertExpression("true ? 1 : 2.0").evaluatesTo(1.0);
+    assertExpression("false ? 1.0 : 2").evaluatesTo(IntegerData.forValue(2));
+    assertExpression("true ? 1 : 2.0").evaluatesTo(IntegerData.forValue(1));
 
     assertExpression("false ? 'a' : 'b'").evaluatesTo("b");
     assertExpression("true ? 'a' : 'b'").evaluatesTo("a");

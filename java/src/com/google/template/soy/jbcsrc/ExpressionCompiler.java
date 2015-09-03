@@ -496,8 +496,8 @@ final class ExpressionCompiler {
           }
         });
       }
-      if (child.assignableToNullableNumber()) {
-        final SoyExpression floatExpr = child.coerceToDouble();
+      if (child.assignableToNullableFloat()) {
+        final SoyExpression floatExpr = child.unboxAs(double.class);
         return SoyExpression.forFloat(new Expression(Type.DOUBLE_TYPE, child.features()) {
           @Override void doGen(CodeBuilder mv) {
             floatExpr.gen(mv);
@@ -625,9 +625,9 @@ final class ExpressionCompiler {
         final SoyExpression falseAsLong = falseBranch.unboxAs(long.class);
         return SoyExpression.forInt(ternary(condition, trueAsLong, falseAsLong));
       }
-      if (trueBranch.isKnownNumber() && falseBranch.isKnownNumber()) {
-        final SoyExpression trueAsFloat = trueBranch.coerceToDouble();
-        final SoyExpression falseAsFloat = falseBranch.coerceToDouble();
+      if (trueBranch.isKnownFloat() && falseBranch.isKnownFloat()) {
+        final SoyExpression trueAsFloat = trueBranch.unboxAs(double.class);
+        final SoyExpression falseAsFloat = falseBranch.unboxAs(double.class);
         return SoyExpression.forFloat(ternary(condition, trueAsFloat, falseAsFloat));
       }
       if (typesEqual && trueBranch.isKnownStringOrSanitizedContent()
