@@ -1774,12 +1774,28 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
     @Override
     protected void visitFieldAccessNode(FieldAccessNode node) {
       SoyType baseType = node.getBaseExprChild().getType();
+      extractImportsFromType(baseType, node.getFieldName(), SoyBackendKind.JS_SRC);
+      visit(node.getBaseExprChild());
+    }
+
+    /**
+     * Finds imports required for a field access looking through aggregate
+     * types.
+     */
+    private void extractImportsFromType(
+        SoyType baseType, String fieldName, SoyBackendKind backendKind) {
       if (baseType instanceof SoyObjectType) {
         Set<String> importedSymbols = ((SoyObjectType) baseType).getFieldAccessImports(
-            node.getFieldName(), SoyBackendKind.JS_SRC);
+            fieldName, backendKind);
         imports.addAll(importedSymbols);
+      } else {
+        // TODO: Is there any way to fold over sub-types of aggregate types?
+        if (baseType instanceof UnionType) {
+          for (SoyType memberBaseType : ((UnionType) baseType).getMembers()) {
+            extractImportsFromType(memberBaseType, fieldName, backendKind);
+          }
+        }
       }
-      visit(node.getBaseExprChild());
     }
   }
 }
