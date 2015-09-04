@@ -107,8 +107,9 @@ public final class SoyExprForPySubject extends Subject<SoyExprForPySubject, Stri
    * @param expectedPyExprs the expected result of compilation
    */
   public void compilesTo(List<PyExpr> expectedPyExprs) {
-    SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forTemplateContents(getSubject()).parse().fileSet();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(getSubject())
+        .parse()
+        .fileSet();
     SoyNode node = SharedTestUtils.getNode(soyTree, 0);
 
     SharedTestUtils.simulateNewApiCall(injector);

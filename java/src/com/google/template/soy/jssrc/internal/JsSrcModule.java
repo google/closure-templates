@@ -27,8 +27,8 @@ import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcPrintDirective;
 import com.google.template.soy.shared.internal.ApiCallScope;
+import com.google.template.soy.shared.internal.FunctionAdapters;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
-import com.google.template.soy.shared.internal.ModuleUtils;
 import com.google.template.soy.shared.internal.SharedModule;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
@@ -84,7 +84,7 @@ public class JsSrcModule extends AbstractModule {
   @Singleton
   Map<String, SoyJsSrcFunction> provideSoyJsSrcFunctionsMap(Set<SoyFunction> soyFunctionsSet) {
 
-    return ModuleUtils.buildSpecificSoyFunctionsMap(soyFunctionsSet, SoyJsSrcFunction.class);
+    return FunctionAdapters.buildSpecificSoyFunctionsMap(soyFunctionsSet, SoyJsSrcFunction.class);
   }
 
 
@@ -98,7 +98,7 @@ public class JsSrcModule extends AbstractModule {
   Map<String, SoyLibraryAssistedJsSrcFunction> provideSoyLibraryAssistedJsSrcFunctionsMap(
       Set<SoyFunction> soyFunctionsSet) {
 
-    return ModuleUtils.buildSpecificSoyFunctionsMap(
+    return FunctionAdapters.buildSpecificSoyFunctionsMap(
         soyFunctionsSet, SoyLibraryAssistedJsSrcFunction.class);
   }
 
@@ -113,7 +113,7 @@ public class JsSrcModule extends AbstractModule {
   Map<String, SoyJsSrcPrintDirective> provideSoyJsSrcDirectivesMap(
       Set<SoyPrintDirective> soyDirectivesSet) {
 
-    return ModuleUtils.buildSpecificSoyDirectivesMap(
+    return FunctionAdapters.buildSpecificSoyDirectivesMap(
         soyDirectivesSet, SoyJsSrcPrintDirective.class);
   }
 
@@ -128,7 +128,7 @@ public class JsSrcModule extends AbstractModule {
   Map<String, SoyLibraryAssistedJsSrcPrintDirective> provideSoyLibraryAssistedJsSrcDirectivesMap(
       Set<SoyPrintDirective> soyDirectivesSet) {
 
-    return ModuleUtils.buildSpecificSoyDirectivesMap(
+    return FunctionAdapters.buildSpecificSoyDirectivesMap(
         soyDirectivesSet, SoyLibraryAssistedJsSrcPrintDirective.class);
   }
 

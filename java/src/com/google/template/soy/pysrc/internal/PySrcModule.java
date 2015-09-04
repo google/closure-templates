@@ -27,8 +27,8 @@ import com.google.template.soy.pysrc.internal.TranslateToPyExprVisitor.Translate
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.pysrc.restricted.SoyPySrcPrintDirective;
 import com.google.template.soy.shared.internal.ApiCallScope;
+import com.google.template.soy.shared.internal.FunctionAdapters;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
-import com.google.template.soy.shared.internal.ModuleUtils;
 import com.google.template.soy.shared.internal.SharedModule;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.PyBidiIsRtlFn;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.PyRuntimePath;
@@ -91,7 +91,7 @@ public final class PySrcModule extends AbstractModule {
   @Singleton
   ImmutableMap<String, SoyPySrcFunction> provideSoyPySrcFunctionsMap(
       Set<SoyFunction> soyFunctionsSet) {
-    return ModuleUtils.buildSpecificSoyFunctionsMap(soyFunctionsSet, SoyPySrcFunction.class);
+    return FunctionAdapters.buildSpecificSoyFunctionsMap(soyFunctionsSet, SoyPySrcFunction.class);
   }
 
   /**
@@ -103,7 +103,7 @@ public final class PySrcModule extends AbstractModule {
   @Singleton
   ImmutableMap<String, SoyPySrcPrintDirective> provideSoyPySrcDirectivesMap(
       Set<SoyPrintDirective> soyDirectivesSet) {
-    return ModuleUtils.buildSpecificSoyDirectivesMap(soyDirectivesSet,
+    return FunctionAdapters.buildSpecificSoyDirectivesMap(soyDirectivesSet,
         SoyPySrcPrintDirective.class);
   }
 }

@@ -18,7 +18,6 @@ package com.google.template.soy.pysrc.internal;
 
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.inject.assistedinject.Assisted;
 import com.google.inject.assistedinject.AssistedInject;
@@ -55,8 +54,9 @@ import com.google.template.soy.pysrc.restricted.PyExprUtils;
 import com.google.template.soy.pysrc.restricted.PyFunctionExprBuilder;
 import com.google.template.soy.pysrc.restricted.PyStringExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
-import com.google.template.soy.shared.internal.NonpluginFunction;
+import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.internal.SharedModule;
+import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.types.SoyObjectType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
@@ -95,19 +95,14 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
 
   private final LocalVariableStack localVarExprs;
 
-  /** Map of all SoyPySrcFunctions (name to function). */
-  private final ImmutableMap<String, SoyPySrcFunction> soyPySrcFunctionsMap;
-
   private final ErrorReporter errorReporter;
 
   @AssistedInject
   TranslateToPyExprVisitor(
-      ImmutableMap<String, SoyPySrcFunction> soyPySrcFunctionsMap,
       @Assisted LocalVariableStack localVarExprs,
       ErrorReporter errorReporter) {
     this.errorReporter = errorReporter;
     this.localVarExprs = localVarExprs;
-    this.soyPySrcFunctionsMap = soyPySrcFunctionsMap;
   }
 
   /**
@@ -340,29 +335,24 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
    * <p>The source of available functions is a look-up map provided by Guice in
    * {@link SharedModule#provideSoyFunctionsMap}.
    *
-   * @see NonpluginFunction
+   * @see BuiltinFunction
    * @see SoyPySrcFunction
    */
-  @Override protected PyExpr visitFunctionNode(FunctionNode node)  {
-    String fnName = node.getFunctionName();
-
-    // Handle nonplugin functions.
-    NonpluginFunction nonpluginFn = NonpluginFunction.forFunctionName(fnName);
-    if (nonpluginFn != null) {
-      return visitNonPluginFunction(node, nonpluginFn);
-    }
-
-    // Handle plugin functions.
-    SoyPySrcFunction pluginFn = soyPySrcFunctionsMap.get(fnName);
-    if (pluginFn == null) {
-      errorReporter.report(node.getSourceLocation(), SOY_PY_SRC_FUNCTION_NOT_FOUND, fnName);
+  @Override protected PyExpr visitFunctionNode(FunctionNode node) {
+    SoyFunction soyFunction = node.getSoyFunction();
+    if (soyFunction instanceof BuiltinFunction) {
+      return visitNonPluginFunction(node, (BuiltinFunction) soyFunction);
+    } else if (soyFunction instanceof SoyPySrcFunction) {
+      List<PyExpr> args = visitChildren(node);
+      return ((SoyPySrcFunction) soyFunction).computeForPySrc(args);
+    } else {
+      errorReporter.report(
+          node.getSourceLocation(), SOY_PY_SRC_FUNCTION_NOT_FOUND, node.getFunctionName());
       return ERROR;
     }
-    List<PyExpr> args = visitChildren(node);
-    return pluginFn.computeForPySrc(args);
   }
 
-  private PyExpr visitNonPluginFunction(FunctionNode node, NonpluginFunction nonpluginFn) {
+  private PyExpr visitNonPluginFunction(FunctionNode node, BuiltinFunction nonpluginFn) {
     switch (nonpluginFn) {
       case IS_FIRST:
         return visitForEachFunction(node, "__isFirst");

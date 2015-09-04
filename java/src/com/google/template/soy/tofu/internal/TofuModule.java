@@ -29,13 +29,10 @@ import com.google.inject.Provides;
 import com.google.inject.assistedinject.FactoryModuleBuilder;
 import com.google.template.soy.data.SoyData;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.shared.internal.ModuleUtils;
-import com.google.template.soy.shared.restricted.SoyFunction;
-import com.google.template.soy.shared.restricted.SoyJavaFunction;
+import com.google.template.soy.shared.internal.FunctionAdapters;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.tofu.internal.BaseTofu.BaseTofuFactory;
-import com.google.template.soy.tofu.restricted.SoyTofuFunction;
 import com.google.template.soy.tofu.restricted.SoyTofuPrintDirective;
 
 import java.lang.annotation.Retention;
@@ -53,8 +50,7 @@ import javax.inject.Singleton;
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public class TofuModule extends AbstractModule {
-
+public final class TofuModule extends AbstractModule {
 
   /**
    * Annotation for values provided by TofuModule (that need to be distinguished).
@@ -76,58 +72,6 @@ public class TofuModule extends AbstractModule {
 
 
   /**
-   * Builds and provides the map of SoyJavaFunctions (name to function).
-   *
-   * This actually collects all SoyFunctions that implement either SoyJavaFunction or
-   * SoyTofuFunction (deprecated). The latter are adapted to the former interface.
-   *
-   * @param soyFunctionsSet The installed set of SoyFunctions (from Guice Multibinder). Each
-   *     SoyFunction may or may not implement SoyJavaFunction or SoyTofuFunction.
-   */
-  @Provides
-  @Singleton
-  @Tofu Map<String, SoyJavaFunction> provideSoyJavaFunctionsMap(
-      Set<SoyFunction> soyFunctionsSet) {
-
-    return ModuleUtils.buildSpecificSoyFunctionsMapWithAdaptation(
-        soyFunctionsSet, SoyJavaFunction.class, SoyTofuFunction.class,
-        new Function<SoyTofuFunction, SoyJavaFunction>() {
-          @Override
-          public SoyJavaFunction apply(SoyTofuFunction input) {
-            return new SoyTofuFunctionAdapter(input);
-          }
-        });
-  }
-
-
-  /**
-   * Private helper class for provideSoyJavaFunctionsMap() to adapt SoyTofuFunction to
-   * SoyJavaFunction.
-   */
-  private static class SoyTofuFunctionAdapter implements SoyJavaFunction {
-
-    /** The underlying SoyTofuFunction that is being adapted. */
-    private final SoyTofuFunction adaptee;
-
-    public SoyTofuFunctionAdapter(SoyTofuFunction adaptee) {
-      this.adaptee = adaptee;
-    }
-
-    @Override public SoyValue computeForJava(List<SoyValue> args) {
-      List<SoyData> castArgs = Lists.newArrayListWithCapacity(args.size());
-      for (SoyValue arg : args) {
-        castArgs.add((SoyData) arg);
-      }
-      return adaptee.computeForTofu(castArgs);
-    }
-
-    @Override public String getName() { return adaptee.getName(); }
-
-    @Override public Set<Integer> getValidArgsSizes() { return adaptee.getValidArgsSizes(); }
-  }
-
-
-  /**
    * Builds and provides the map of SoyJavaPrintDirectives (name to directive).
    *
    * This actually collects all SoyPrintDirectives that implement either SoyJavaPrintDirective or
@@ -142,10 +86,11 @@ public class TofuModule extends AbstractModule {
   @Tofu Map<String, SoyJavaPrintDirective> provideSoyJavaDirectivesMap(
       Set<SoyPrintDirective> soyDirectivesSet) {
 
-    return ModuleUtils.buildSpecificSoyDirectivesMapWithAdaptation(
+    return FunctionAdapters.buildSpecificSoyDirectivesMapWithAdaptation(
         soyDirectivesSet, SoyJavaPrintDirective.class, SoyTofuPrintDirective.class,
         new Function<SoyTofuPrintDirective, SoyJavaPrintDirective>() {
-          @Override public SoyJavaPrintDirective apply(SoyTofuPrintDirective input) {
+          @Override
+          public SoyJavaPrintDirective apply(SoyTofuPrintDirective input) {
             return new SoyTofuPrintDirectiveAdapter(input);
           }
         });

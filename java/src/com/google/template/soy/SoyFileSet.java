@@ -40,6 +40,8 @@ import com.google.template.soy.base.internal.VolatileSoyFileSupplier;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.conformance.CheckConformance;
 import com.google.template.soy.conformance.ConformanceInput;
+import com.google.template.soy.data.SoyData;
+import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.error.ErrorPrettyPrinter;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
@@ -69,7 +71,10 @@ import com.google.template.soy.pysrc.internal.PySrcMain;
 import com.google.template.soy.shared.SoyAstCache;
 import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.shared.internal.MainEntryPointUtils;
+import com.google.template.soy.shared.internal.SharedModule.SoyJavaRuntimeFunctionAdapter;
 import com.google.template.soy.shared.restricted.SoyFunction;
+import com.google.template.soy.shared.restricted.SoyJavaFunction;
+import com.google.template.soy.shared.restricted.SoyJavaRuntimeFunction;
 import com.google.template.soy.sharedpasses.AssertStrictAutoescapingVisitor;
 import com.google.template.soy.sharedpasses.ClearSoyDocStringsVisitor;
 import com.google.template.soy.sharedpasses.FindIjParamsVisitor;
@@ -87,6 +92,7 @@ import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.tofu.SoyTofu;
 import com.google.template.soy.tofu.internal.BaseTofu.BaseTofuFactory;
+import com.google.template.soy.tofu.restricted.SoyTofuFunction;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.xliffmsgplugin.XliffMsgPlugin;
 
@@ -95,6 +101,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nonnull;
@@ -126,7 +133,6 @@ public final class SoyFileSet {
         Guice.createInjector(new SoyModule()).getInstance(SoyFileSetFactory.class));
     return builder;
   }
-
 
   /**
    * Builder for a {@code SoyFileSet}.
@@ -705,7 +711,8 @@ public final class SoyFileSet {
     // TODO(lukes): see if we can enforce that globals are provided at compile time here. given that
     // types have to be, this should be possible.  Currently it is disabled for backwards
     // compatibility
-    ParseResult result = parse(SyntaxVersion.V2_0, true /* allow unknown globals */, typeRegistry);
+    ParseResult result =
+        parse(SyntaxVersion.V2_0, true /* allow unknown globals */, typeRegistry, soyFunctionMap);
 
     // Do renaming of package-relative class names.
     ImmutableMap<String, String> parseInfo =
@@ -732,9 +739,12 @@ public final class SoyFileSet {
    * @throws SoySyntaxException If a syntax error is found.
    */
   public SoyMsgBundle extractMsgs() throws SoySyntaxException {
-    SoyFileSetNode soyTree =
-        parse(SyntaxVersion.V1_0, true /* allow unknown globals */, SoyTypeRegistry.DEFAULT_UNKNOWN)
-            .fileSet();
+    SoyFileSetNode soyTree = parse(
+        SyntaxVersion.V1_0,
+        true /* allow unknown globals */,
+        SoyTypeRegistry.DEFAULT_UNKNOWN,
+        soyFunctionMap)
+        .fileSet();
     return new ExtractMsgsVisitor().exec(soyTree);
   }
 
@@ -761,11 +771,11 @@ public final class SoyFileSet {
     // user to provide a root set.
 
     if (memoizedExtractedMsgIdsForPruning == null) {
-      ParseResult result =
-          parse(
-              SyntaxVersion.V1_0,
-              true /* allow unknown globals */,
-              SoyTypeRegistry.DEFAULT_UNKNOWN);
+      ParseResult result = parse(
+          SyntaxVersion.V1_0,
+          true /* allow unknown globals */,
+          SoyTypeRegistry.DEFAULT_UNKNOWN,
+          soyFunctionMap);
 
       SoyFileSetNode soyTree = result.fileSet();
       TemplateRegistry registry = result.registry();
@@ -852,10 +862,22 @@ public final class SoyFileSet {
 
     ((ErrorReporterImpl) errorReporter).throwIfErrorsPresent();
 
+    // SoySauce has no need for SoyFunctions that are not SoyJavaFunctions
+    // (it generates Java source code implementing BuiltinFunctions).
+    // Filter them out.
+    ImmutableMap.Builder<String, SoyJavaFunction> soyJavaFunctions = ImmutableMap.builder();
+    for (Map.Entry<String, ? extends SoyFunction> entry : primitives.soyFunctions.entrySet()) {
+      SoyFunction function = entry.getValue();
+      if (function instanceof SoyJavaFunction) {
+        soyJavaFunctions.put(entry.getKey(), (SoyJavaFunction) function);
+      }
+    }
+
     return soyTemplatesFactory.create(
         templates.get(),
         primitives.registry,
         new ExtractMsgsVisitor().exec(primitives.soyTree),
+        soyJavaFunctions.build(),
         primitives.transitiveIjs);
   }
 
@@ -866,21 +888,39 @@ public final class SoyFileSet {
   private static final class ServerCompilationPrimitives {
     final SoyFileSetNode soyTree;
     final ImmutableMap<String, ImmutableSortedSet<String>> transitiveIjs;
+    final ImmutableMap<String, ? extends SoyFunction> soyFunctions;
     final TemplateRegistry registry;
 
-    ServerCompilationPrimitives(SoyFileSetNode soyTree, TemplateRegistry registry,
-        ImmutableMap<String, ImmutableSortedSet<String>> transitiveIjs) {
+    ServerCompilationPrimitives(
+        SoyFileSetNode soyTree,
+        TemplateRegistry registry,
+        ImmutableMap<String, ImmutableSortedSet<String>> transitiveIjs,
+        ImmutableMap<String, ? extends SoyFunction> soyFunctions) {
       this.soyTree = soyTree;
       this.registry = registry;
       this.transitiveIjs = transitiveIjs;
+      this.soyFunctions = soyFunctions;
     }
   }
 
   private ServerCompilationPrimitives compileForServerRendering() {
     SyntaxVersion declaredSyntaxVersion =
         generalOptions.getDeclaredSyntaxVersion(SyntaxVersion.V2_0);
-
-    ParseResult result = parse(SyntaxVersion.V2_0);
+    // This parse tree will be used for Java execution, so its FunctionNodes need to be decorated
+    // with appropriate SoyFunction implementations. The canonical SoyFunction implementation
+    // for Java is SoyFunction, but there are also two legacy implementations,
+    // SoyTofuFunction and SoyJavaRuntimeFunction, that could be lurking in the soyFunctionMap.
+    // They have to be adapted to SoyJavaFunctions before parsing.
+    //
+    // TODO(user): delete all adaptation logic once SoyTofuFunction and SoyJavaRuntimeFunction
+    // are gone.
+    ImmutableMap<String, ? extends SoyFunction> adaptedSoyFunctions
+        = adaptSoyJavaRuntimeFunctionsAndSoyTofuFunctions(soyFunctionMap);
+    ParseResult result = parse(
+        SyntaxVersion.V2_0,
+        false /* allowUnknownGlobals */,
+        typeRegistry,
+        adaptedSoyFunctions);
     ((ErrorReporterImpl) errorReporter).throwIfErrorsPresent();
 
     SoyFileSetNode soyTree = result.fileSet();
@@ -896,7 +936,7 @@ public final class SoyFileSet {
     ((ErrorReporterImpl) errorReporter).throwIfErrorsPresent();
     ImmutableMap<String, ImmutableSortedSet<String>> transitiveIjs =
         getTransitiveIjs(soyTree, registry);
-    return new ServerCompilationPrimitives(soyTree, registry, transitiveIjs);
+    return new ServerCompilationPrimitives(soyTree, registry, transitiveIjs, adaptedSoyFunctions);
   }
 
   private ImmutableMap<String, ImmutableSortedSet<String>> getTransitiveIjs(
@@ -939,8 +979,8 @@ public final class SoyFileSet {
     // JS has traditionally allowed unknown globals, as a way for soy to reference normal js enums
     // and constants.  For consistency/reusability of templates it would be nice to not allow that
     // but the cat is out of the bag.
-    ParseResult parseResult =
-        parse(SyntaxVersion.V2_0, true /* allow unknown globals */, typeRegistry);
+    ParseResult parseResult = parse(
+        SyntaxVersion.V2_0, true /* allow unknown globals */, typeRegistry, soyFunctionMap);
     TemplateRegistry registry = parseResult.registry();
     registry = runMiddleendPasses(registry, parseResult.fileSet(), declaredSyntaxVersion);
     // TODO(lukes): pass the template registry to jsSrcMain
@@ -976,7 +1016,8 @@ public final class SoyFileSet {
     Checkpoint checkpoint = errorReporter.checkpoint();
 
     // Allow unknown globals for backwards compatibility
-    ParseResult result = parse(SyntaxVersion.V2_0, true /* allow unknown globals */, typeRegistry);
+    ParseResult result = parse(
+        SyntaxVersion.V2_0, true /* allow unknown globals */, typeRegistry, soyFunctionMap);
     if (errorReporter.errorsSince(checkpoint)) {
       return failure();
     }
@@ -1118,7 +1159,7 @@ public final class SoyFileSet {
 
   // Parse the current file set with the given default syntax version.
   private ParseResult parse(SyntaxVersion defaultVersion) {
-    return parse(defaultVersion, false, typeRegistry);
+    return parse(defaultVersion, false, typeRegistry, soyFunctionMap);
   }
 
   /**
@@ -1128,9 +1169,13 @@ public final class SoyFileSet {
    * @param defaultVersion The default declared syntax version
    * @param allowUknownGlobals Whether to allow unknown globals
    * @param typeRegistry The type registry to use
+   * @param soyFunctionMap The map of Soy functions to use
    */
   private ParseResult parse(
-      SyntaxVersion defaultVersion, boolean allowUknownGlobals, SoyTypeRegistry typeRegistry) {
+      SyntaxVersion defaultVersion,
+      boolean allowUknownGlobals,
+      SoyTypeRegistry typeRegistry,
+      ImmutableMap<String, ? extends SoyFunction> soyFunctionMap) {
     SyntaxVersion declaredSyntaxVersion = generalOptions.getDeclaredSyntaxVersion(defaultVersion);
     ParsePasses.Builder builder =
         new ParsePasses.Builder()
@@ -1240,5 +1285,60 @@ public final class SoyFileSet {
         containingFile.get(DerivedTemplateUtils.getBaseName(name)).addChild(extraTemplate);
       }
     }
+  }
+
+  /**
+   * Given a map of Soy functions, returns an equivalent map, where
+   * all {@link SoyJavaRuntimeFunction} and {@link SoyTofuFunction} implementations
+   * have been adapted to canonical {@link SoyJavaFunction}s.
+   *
+   * <p>TODO(user): remove once the legacy SoyFunctions are gone.
+   */
+  @VisibleForTesting
+  public static ImmutableMap<String, ? extends SoyFunction>
+  adaptSoyJavaRuntimeFunctionsAndSoyTofuFunctions(
+      ImmutableMap<String, SoyFunction> input) {
+    ImmutableMap.Builder<String, SoyFunction> output = ImmutableMap.builder();
+    for (Map.Entry<String, SoyFunction> entry : input.entrySet()) {
+      String functionName = entry.getKey();
+      SoyFunction function = entry.getValue();
+      if (function instanceof SoyJavaRuntimeFunction) {
+        output.put(
+            functionName, new SoyJavaRuntimeFunctionAdapter((SoyJavaRuntimeFunction) function));
+      } else if (function instanceof SoyTofuFunction) {
+        output.put(
+            functionName, new SoyTofuFunctionAdapter((SoyTofuFunction) function));
+      } else {
+        output.put(
+            functionName, function);
+      }
+    }
+    return output.build();
+  }
+
+  /**
+   * Private helper class for provideSoyJavaFunctionsMap() to adapt SoyTofuFunction to
+   * SoyJavaFunction.
+   */
+  private static class SoyTofuFunctionAdapter implements SoyJavaFunction {
+
+    /** The underlying SoyTofuFunction that is being adapted. */
+    private final SoyTofuFunction adaptee;
+
+    public SoyTofuFunctionAdapter(SoyTofuFunction adaptee) {
+      this.adaptee = adaptee;
+    }
+
+    @Override public SoyValue computeForJava(List<SoyValue> args) {
+      List<SoyData> castArgs = Lists.newArrayListWithCapacity(args.size());
+      for (SoyValue arg : args) {
+        castArgs.add((SoyData) arg);
+      }
+      return adaptee.computeForTofu(castArgs);
+    }
+
+    @Override public String getName() { return adaptee.getName(); }
+
+    @Override public Set<Integer> getValidArgsSizes() { return adaptee.getValidArgsSizes(); }
   }
 }

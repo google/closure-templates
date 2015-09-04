@@ -18,32 +18,34 @@ package com.google.template.soy.shared.internal;
 
 import com.google.common.base.CaseFormat;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.template.soy.shared.restricted.SoyFunction;
 
 import java.util.Map;
+import java.util.Set;
 
 
 /**
- * Enum of nonplugin functions supported in Soy expressions.
+ * Enum of built-in functions supported in Soy expressions.
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public enum NonpluginFunction {
+public enum BuiltinFunction implements SoyFunction {
 
-
-  IS_FIRST(1),
-  IS_LAST(1),
-  INDEX(1),
-  QUOTE_KEYS_IF_JS(1),
-  CHECK_NOT_NULL(1);
+  IS_FIRST,
+  IS_LAST,
+  INDEX,
+  QUOTE_KEYS_IF_JS,
+  CHECK_NOT_NULL;
 
 
   /** Map of NonpluginFunctions by function name. */
-  private static final Map<String, NonpluginFunction> NONPLUGIN_FUNCTIONS_BY_NAME;
+  private static final Map<String, BuiltinFunction> NONPLUGIN_FUNCTIONS_BY_NAME;
   static {
-    ImmutableMap.Builder<String, NonpluginFunction> mapBuilder = ImmutableMap.builder();
-    for (NonpluginFunction nonpluginFn : values()) {
-      mapBuilder.put(nonpluginFn.getFunctionName(), nonpluginFn);
+    ImmutableMap.Builder<String, BuiltinFunction> mapBuilder = ImmutableMap.builder();
+    for (BuiltinFunction nonpluginFn : values()) {
+      mapBuilder.put(nonpluginFn.functionName, nonpluginFn);
     }
     NONPLUGIN_FUNCTIONS_BY_NAME = mapBuilder.build();
   }
@@ -53,7 +55,7 @@ public enum NonpluginFunction {
    * Returns the NonpluginFunction for the given function name, or null if not found.
    * @param functionName The function name to retrieve.
    */
-  public static NonpluginFunction forFunctionName(String functionName) {
+  public static BuiltinFunction forFunctionName(String functionName) {
     return NONPLUGIN_FUNCTIONS_BY_NAME.get(functionName);
   }
 
@@ -61,24 +63,17 @@ public enum NonpluginFunction {
   /** The function name. */
   private final String functionName;
 
-  /** The number of arguments. */
-  private final int numArgs;
-
-
-  private NonpluginFunction(int numArgs) {
+  BuiltinFunction() {
     this.functionName = CaseFormat.UPPER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, name());
-    this.numArgs = numArgs;
   }
 
-
-  /** Returns the function name. */
-  public String getFunctionName() {
+  @Override
+  public String getName() {
     return functionName;
   }
 
-  /** Returns the number of arguments. */
-  public int getNumArgs() {
-    return numArgs;
+  @Override
+  public Set<Integer> getValidArgsSizes() {
+    return ImmutableSet.of(1); // All built-in functions are unary.
   }
-
 }

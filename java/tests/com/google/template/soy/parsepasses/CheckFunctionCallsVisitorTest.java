@@ -19,18 +19,13 @@ package com.google.template.soy.parsepasses;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.base.Joiner;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.error.FormattingErrorReporter;
-import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.SoyFileSetNode;
 
 import junit.framework.TestCase;
-
-import java.util.Set;
 
 /**
  */
@@ -212,22 +207,12 @@ public final class CheckFunctionCallsVisitorTest extends TestCase {
 
   private FormattingErrorReporter applyCheckFunctionCallsVisitor(
       String soyContent, SyntaxVersion declaredSyntaxVersion) {
-    SoyFileSetNode fileSet = SoyFileSetParserBuilder.forFileContents(soyContent).parse().fileSet();
-    ImmutableMap<String, SoyFunction> soyFunctions =
-        ImmutableMap.<String, SoyFunction>of(
-            "min",
-            new SoyFunction() {
-              public @Override String getName() {
-                return "min";
-              }
-
-              public @Override Set<Integer> getValidArgsSizes() {
-                return ImmutableSet.of(2);
-              }
-            });
+    SoyFileSetNode fileSet = SoyFileSetParserBuilder.forFileContents(soyContent)
+        .parse()
+        .fileSet();
     FormattingErrorReporter errorReporter = new FormattingErrorReporter();
     CheckFunctionCallsVisitor visitor =
-        new CheckFunctionCallsVisitor(soyFunctions, declaredSyntaxVersion, errorReporter);
+        new CheckFunctionCallsVisitor(declaredSyntaxVersion, errorReporter);
     visitor.exec(fileSet);
     return errorReporter;
   }

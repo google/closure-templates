@@ -146,21 +146,21 @@ public final class SharedModule extends AbstractModule {
   @Shared Map<String, SoyJavaFunction> provideSoyJavaFunctionsMap(
       Set<SoyFunction> soyFunctionsSet) {
 
-    return ModuleUtils.buildSpecificSoyFunctionsMapWithAdaptation(
+    return FunctionAdapters.buildSpecificSoyFunctionsMapWithAdaptation(
         soyFunctionsSet, SoyJavaFunction.class, SoyJavaRuntimeFunction.class,
         new Function<SoyJavaRuntimeFunction, SoyJavaFunction>() {
-          @Override public SoyJavaFunction apply(SoyJavaRuntimeFunction input) {
+          @Override
+          public SoyJavaFunction apply(SoyJavaRuntimeFunction input) {
             return new SoyJavaRuntimeFunctionAdapter(input);
           }
         });
   }
 
-
   /**
    * Private helper class for provideSoyJavaFunctionsMap() to adapt SoyJavaRuntimeFunction to
    * SoyJavaFunction.
    */
-  private static class SoyJavaRuntimeFunctionAdapter implements SoyJavaFunction {
+  public static class SoyJavaRuntimeFunctionAdapter implements SoyJavaFunction {
 
     /** The underlying SoyJavaRuntimeFunction that is being adapted. */
     private final SoyJavaRuntimeFunction adaptee;
@@ -198,10 +198,11 @@ public final class SharedModule extends AbstractModule {
   @Shared Map<String, SoyJavaPrintDirective> provideSoyJavaDirectivesMap(
       Set<SoyPrintDirective> soyDirectivesSet) {
 
-    return ModuleUtils.buildSpecificSoyDirectivesMapWithAdaptation(
+    return FunctionAdapters.buildSpecificSoyDirectivesMapWithAdaptation(
         soyDirectivesSet, SoyJavaPrintDirective.class, SoyJavaRuntimePrintDirective.class,
         new Function<SoyJavaRuntimePrintDirective, SoyJavaPrintDirective>() {
-          @Override public SoyJavaPrintDirective apply(SoyJavaRuntimePrintDirective input) {
+          @Override
+          public SoyJavaPrintDirective apply(SoyJavaRuntimePrintDirective input) {
             return new SoyJavaRuntimePrintDirectiveAdapter(input);
           }
         });
@@ -211,7 +212,7 @@ public final class SharedModule extends AbstractModule {
    * Private helper class for provideSoyJavaDirectivesMap() to adapt SoyJavaRuntimePrintDirective to
    * SoyJavaPrintDirective.
    */
-  private static class SoyJavaRuntimePrintDirectiveAdapter implements SoyJavaPrintDirective {
+  static class SoyJavaRuntimePrintDirectiveAdapter implements SoyJavaPrintDirective {
 
     /** The underlying SoyJavaRuntimePrintDirective that is being adapted. */
     private final SoyJavaRuntimePrintDirective adaptee;

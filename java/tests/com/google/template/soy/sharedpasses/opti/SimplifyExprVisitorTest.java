@@ -16,26 +16,30 @@
 
 package com.google.template.soy.sharedpasses.opti;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.truth.FailureStrategy;
 import com.google.common.truth.Subject;
 import com.google.common.truth.SubjectFactory;
 import com.google.common.truth.Truth;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.google.inject.Key;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basicfunctions.BasicFunctionsModule;
 import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.parsepasses.ResolveFunctionsVisitor;
 import com.google.template.soy.shared.internal.ErrorReporterModule;
 import com.google.template.soy.shared.internal.SharedModule;
+import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.sharedpasses.SharedPassesModule;
 
 import junit.framework.TestCase;
 
 
 /**
- * Unit tests for SimplifyExprVisitor.
+ * Unit tests for {@link SimplifyExprVisitor}.
  *
  */
 public final class SimplifyExprVisitorTest extends TestCase {
@@ -142,6 +146,8 @@ public final class SimplifyExprVisitorTest extends TestCase {
       new SharedModule(),
       new SharedPassesModule(),
       new BasicFunctionsModule());
+  private static final ImmutableMap<String, SoyFunction> SOY_FUNCTIONS =
+      INJECTOR.getInstance(new Key<ImmutableMap<String, SoyFunction>>() {});
 
   private static final class SimplifySubject extends Subject<SimplifySubject, String> {
     private SimplifySubject(FailureStrategy failureStrategy, String s) {
@@ -152,6 +158,7 @@ public final class SimplifyExprVisitorTest extends TestCase {
       ExprRootNode exprRoot = new ExprRootNode(
           new ExpressionParser(getSubject(), SourceLocation.UNKNOWN, ExplodingErrorReporter.get())
           .parseExpression());
+      new ResolveFunctionsVisitor(SOY_FUNCTIONS).exec(exprRoot);
       INJECTOR.getInstance(SimplifyExprVisitor.class).exec(exprRoot);
       Truth.assertThat(exprRoot.toSourceString()).isEqualTo(expected);
     }

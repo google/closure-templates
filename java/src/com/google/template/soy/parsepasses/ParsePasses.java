@@ -56,7 +56,7 @@ import com.google.template.soy.types.SoyTypeRegistry;
 public final class ParsePasses {
   private final ImmutableList<CompilerFilePass> passes;
   private final SoyTypeRegistry registry;
-  private final ImmutableMap<String, SoyFunction> soyFunctionMap;
+  private final ImmutableMap<String, ? extends SoyFunction> soyFunctionMap;
   private final ErrorReporter errorReporter;
   private final SyntaxVersion declaredSyntaxVersion;
   private final SoyGeneralOptions options;
@@ -99,7 +99,7 @@ public final class ParsePasses {
 
   public static final class Builder {
     private SoyTypeRegistry registry;
-    private ImmutableMap<String, SoyFunction> soyFunctionMap;
+    private ImmutableMap<String, ? extends SoyFunction> soyFunctionMap;
     private ErrorReporter errorReporter;
     private SyntaxVersion declaredSyntaxVersion;
     private SoyGeneralOptions opts;
@@ -110,7 +110,7 @@ public final class ParsePasses {
       return this;
     }
 
-    public Builder setSoyFunctionMap(ImmutableMap<String, SoyFunction> functionMap) {
+    public Builder setSoyFunctionMap(ImmutableMap<String, ? extends SoyFunction> functionMap) {
       this.soyFunctionMap = checkNotNull(functionMap);
       return this;
     }

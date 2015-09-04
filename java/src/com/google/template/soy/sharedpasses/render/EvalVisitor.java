@@ -72,13 +72,13 @@ import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
-import com.google.template.soy.shared.internal.NonpluginFunction;
+import com.google.template.soy.shared.internal.BuiltinFunction;
+import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.soytree.defn.LoopVar;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 
 import javax.annotation.Nullable;
 
@@ -97,7 +97,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
   /**
    * Interface for a factory that creates an EvalVisitor.
    */
-  public static interface EvalVisitorFactory {
+  public interface EvalVisitorFactory {
 
     /**
      * Creates an EvalVisitor.
@@ -106,15 +106,12 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
      * @param env The current environment.
      * @return The newly created EvalVisitor instance.
      */
-    public EvalVisitor create(@Nullable SoyRecord ijData, Environment env);
+    EvalVisitor create(@Nullable SoyRecord ijData, Environment env);
   }
 
 
   /** Instance of SoyValueHelper to use. */
   private final SoyValueHelper valueHelper;
-
-  /** Map of all SoyJavaFunctions (name to function). */
-  private final Map<String, SoyJavaFunction> soyJavaFunctionsMap;
 
   /** The current injected data. */
   private final SoyRecord ijData;
@@ -123,19 +120,11 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
   private final Environment env;
 
   /**
-   * @param soyJavaFunctionsMap Map of all SoyJavaFunctions (name to function). Can be
-   *     null if the subclass that is calling this constructor plans to override the default
-   *     implementation of {@code computeFunction()}.
    * @param ijData The current injected data.
    * @param env The current environment.
    */
-  protected EvalVisitor(
-      SoyValueHelper valueHelper,
-      @Nullable Map<String, SoyJavaFunction> soyJavaFunctionsMap,
-      @Nullable SoyRecord ijData,
-      Environment env) {
+  protected EvalVisitor(SoyValueHelper valueHelper, @Nullable SoyRecord ijData, Environment env) {
     this.valueHelper = valueHelper;
-    this.soyJavaFunctionsMap = soyJavaFunctionsMap;
     this.ijData = ijData;
     this.env = checkNotNull(env);
   }
@@ -496,12 +485,10 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
 
 
   @Override protected SoyValue visitFunctionNode(FunctionNode node) {
-
-    String fnName = node.getFunctionName();
-
+    SoyFunction soyFunction = node.getSoyFunction();
     // Handle nonplugin functions.
-    NonpluginFunction nonpluginFn = NonpluginFunction.forFunctionName(fnName);
-    if (nonpluginFn != null) {
+    if (soyFunction instanceof BuiltinFunction) {
+      BuiltinFunction nonpluginFn = (BuiltinFunction) soyFunction;
       switch (nonpluginFn) {
         case IS_FIRST:
           return visitIsFirstFunction(node);
@@ -516,17 +503,18 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
         default:
           throw new AssertionError();
       }
+    } else if (soyFunction instanceof SoyJavaFunction) {
+      List<SoyValue> args = this.visitChildren(node);
+      SoyJavaFunction fn = (SoyJavaFunction) soyFunction;
+      // Note: Arity has already been checked by CheckFunctionCallsVisitor.
+      return computeFunctionHelper(fn, args, node);
+    } else {
+      throw RenderException.create("Failed to find Soy function with name '"
+          + node.getFunctionName() + "'"
+          + " (function call \""
+          + node.toSourceString()
+          + "\").");
     }
-
-    // Handle plugin functions.
-    List<SoyValue> args = this.visitChildren(node);
-    SoyJavaFunction fn = soyJavaFunctionsMap.get(fnName);
-    if (fn == null) {
-      throw RenderException.create("Failed to find Soy function with name '" + fnName + "'" +
-      " (function call \"" + node.toSourceString() + "\").");
-    }
-    // Note: Arity has already been checked by CheckFunctionCallsVisitor.
-    return computeFunctionHelper(fn, args, node);
   }
 
   private SoyValue visitCheckNotNull(ExprNode child) {
@@ -654,7 +642,11 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     private NullSafetySentinel() {}
 
     @Override public boolean equals(Object other) {
-      return other == INSTANCE;
+      return other == this;
+    }
+
+    @Override public int hashCode() {
+      return System.identityHashCode(this);
     }
 
     @Override public boolean coerceToBoolean() {

@@ -19,7 +19,6 @@ package com.google.template.soy.jssrc.internal;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SourceLocation;
@@ -30,7 +29,6 @@ import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.restricted.JsExpr;
-import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoytreeUtils;
@@ -47,8 +45,6 @@ import java.util.Map;
  *
  */
 public final class TranslateToJsExprVisitorTest extends TestCase {
-
-  private static final Map<String, SoyJsSrcFunction> SOY_JS_SRC_FUNCTIONS_MAP = ImmutableMap.of();
 
   private static final Deque<Map<String, JsExpr>> LOCAL_VAR_TRANSLATIONS = new ArrayDeque<>();
   static {
@@ -289,7 +285,6 @@ public final class TranslateToJsExprVisitorTest extends TestCase {
     List<PrintNode> printNodes = SoytreeUtils.getAllNodesOfType(soyTree, PrintNode.class);
     ExprNode exprNode = printNodes.get(0).getExprUnion().getExpr();
     JsExpr actualJsExpr = new TranslateToJsExprVisitor(
-        SOY_JS_SRC_FUNCTIONS_MAP,
         jsSrcOptions,
         LOCAL_VAR_TRANSLATIONS,
         ExplodingErrorReporter.get())
@@ -324,7 +319,6 @@ public final class TranslateToJsExprVisitorTest extends TestCase {
         .parseExpression();
     FormattingErrorReporter errorReporter = new FormattingErrorReporter();
     new TranslateToJsExprVisitor(
-        SOY_JS_SRC_FUNCTIONS_MAP,
         jsSrcOptions,
         LOCAL_VAR_TRANSLATIONS,
         errorReporter)

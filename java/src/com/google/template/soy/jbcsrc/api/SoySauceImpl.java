@@ -66,20 +66,17 @@ public final class SoySauceImpl implements SoySauce {
     // TODO(lukes): switch all of soy to @AutoFactory when its opensource situation is cleaned up
     private final GuiceSimpleScope apiCallScopeProvider;
     private final Provider<SoyValueHelper> converterProvider;
-    private final Provider<Map<String, SoyJavaFunction>> functionsProvider;
     private final Provider<Map<String, SoyJavaPrintDirective>> printDirectivesProvider;
 
     @Inject Factory(
         @ApiCall GuiceSimpleScope apiCallScopeProvider, 
         Provider<SoyValueHelper> converterProvider,
         // TODO(lukes): we rely on the @Tofu bindings here for compatibility with servers using
-        // SoyTofuFunction/SoyTofuPrintDirective.  Those interfaces need to be deleted and the 
+        // SoyTofuPrintDirective.  Those interfaces need to be deleted and the
         // adapters provided by these bindings removed
-        @Tofu Provider<Map<String, SoyJavaFunction>> functionsProvider, 
         @Tofu Provider<Map<String, SoyJavaPrintDirective>> printDirectivesProvider) {
       this.apiCallScopeProvider = apiCallScopeProvider;
       this.converterProvider = converterProvider;
-      this.functionsProvider = functionsProvider;
       this.printDirectivesProvider = printDirectivesProvider;
     }
 
@@ -87,6 +84,7 @@ public final class SoySauceImpl implements SoySauce {
         CompiledTemplates templates,
         TemplateRegistry registry,
         SoyMsgBundle defaultMsgBundle,
+        ImmutableMap<String, SoyJavaFunction> functions,
         ImmutableMap<String, ImmutableSortedSet<String>> templateToTransitiveUsedIjParams) {
       return new SoySauceImpl(
           templates,
@@ -95,7 +93,7 @@ public final class SoySauceImpl implements SoySauce {
           templateToTransitiveUsedIjParams,
           apiCallScopeProvider,
           converterProvider.get(),
-          functionsProvider.get(),
+          functions,
           printDirectivesProvider.get());
     }
   }

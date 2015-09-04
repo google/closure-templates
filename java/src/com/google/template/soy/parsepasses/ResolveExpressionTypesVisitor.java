@@ -63,7 +63,8 @@ import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
-import com.google.template.soy.shared.internal.NonpluginFunction;
+import com.google.template.soy.shared.internal.BuiltinFunction;
+import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.ExprUnion;
 import com.google.template.soy.soytree.ForNode;
@@ -658,9 +659,9 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
 
     @Override protected void visitFunctionNode(FunctionNode node) {
       visitChildren(node);
-      NonpluginFunction knownFunction = NonpluginFunction.forFunctionName(node.getFunctionName());
-      if (knownFunction != null) {
-        switch (knownFunction) {
+      SoyFunction knownFunction = node.getSoyFunction();
+      if (knownFunction instanceof BuiltinFunction) {
+        switch ((BuiltinFunction) knownFunction) {
           case CHECK_NOT_NULL:
             SoyType type = node.getChild(0).getType();
             if (type.equals(NullType.getInstance())) {

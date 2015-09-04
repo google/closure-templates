@@ -1,5 +1,5 @@
 /*
- * Copyright 2009 Google Inc.
+ * Copyright 2015 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,22 +20,21 @@ import com.google.common.base.Function;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import com.google.template.soy.shared.restricted.SoyFunction;
+import com.google.template.soy.shared.restricted.SoyJavaFunction;
+import com.google.template.soy.shared.restricted.SoyJavaRuntimeFunction;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 
 import java.util.Set;
 
-
 /**
- * Utilities for Guice modules (SharedModule, TofuModule, JsSrcModule, etc).
+ * Functions for adapting the legacy Java {@link SoyFunction} implementations
+ * ({@link SoyJavaRuntimeFunction}
+ * and {@link com.google.template.soy.tofu.restricted.SoyTofuFunction}) to the canonical
+ * implementation ({@link SoyJavaFunction}).
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
- *
+ * <p>TODO(user): migrate the legacy impls and remove this class.
  */
-public class ModuleUtils {
-
-
-  private ModuleUtils() {}
-
+public final class FunctionAdapters {
 
   /**
    * Given the set of all Soy function implementations and a specific Soy function type (subtype
@@ -58,7 +57,7 @@ public class ModuleUtils {
       if (specificSoyFunctionType.isAssignableFrom(fn.getClass())) {
         String fnName = fn.getName();
 
-        if (seenFnNames.contains(fnName) || NonpluginFunction.forFunctionName(fnName) != null) {
+        if (seenFnNames.contains(fnName) || BuiltinFunction.forFunctionName(fnName) != null) {
           throw new IllegalStateException(
               "Found two implementations of " + specificSoyFunctionType.getSimpleName() +
               " with the same function name '" + fnName + "'.");
@@ -71,7 +70,6 @@ public class ModuleUtils {
 
     return mapBuilder.build();
   }
-
 
   /**
    * Given the set of all Soy function implementations, a specific Soy function type (subtype of
@@ -123,7 +121,6 @@ public class ModuleUtils {
     return resultMapBuilder.build();
   }
 
-
   /**
    * Given the set of all Soy directive implementations and a specific Soy directive type (subtype
    * of SoyPrintDirective) to look for, finds the Soy directives that implement the specific type
@@ -158,7 +155,6 @@ public class ModuleUtils {
 
     return mapBuilder.build();
   }
-
 
   /**
    * Given the set of all Soy directive implementations, a specific Soy directive type (subtype of
