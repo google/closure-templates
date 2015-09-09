@@ -34,9 +34,6 @@ import static com.google.template.soy.soytree.SoytreeUtils.isDescendantOf;
 import static java.util.Arrays.asList;
 
 import com.google.auto.value.AutoValue;
-import com.google.common.base.CaseFormat;
-import com.google.common.base.Converter;
-import com.google.common.base.Enums;
 import com.google.common.base.Optional;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.data.SanitizedContent;
@@ -56,7 +53,6 @@ import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.SoyNode.Kind;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.defn.LocalVar;
@@ -148,11 +144,6 @@ final class LazyClosureCompiler {
     }
   }
 
-  private static final Converter<Kind, String> KIND_CLASS_FROMAT = 
-      Enums.stringConverter(Kind.class)
-          .reverse()
-          .andThen(CaseFormat.UPPER_UNDERSCORE.converterTo(CaseFormat.UPPER_CAMEL));
-  
   private final CompiledTemplateRegistry registry;
   private final InnerClasses innerClasses;
   private final VariableLookup parentVariables;
@@ -169,14 +160,15 @@ final class LazyClosureCompiler {
     this.expressionToSoyValueProviderCompiler = expressionToSoyValueProviderCompiler;
   }
   
-  Expression compileLazyExpression(SoyNode declaringNode, String varName, ExprNode exprNode) {
+  Expression compileLazyExpression(String namePrefix, SoyNode declaringNode, String varName,
+      ExprNode exprNode) {
     Optional<Expression> asSoyValueProvider =
         expressionToSoyValueProviderCompiler.compileAvoidingDetaches(exprNode);
     if (asSoyValueProvider.isPresent()) {
       return asSoyValueProvider.get();
     }
     TypeInfo type = innerClasses.registerInnerClassWithGeneratedName(
-        getProposedName(declaringNode, varName),
+        getProposedName(namePrefix, varName),
         LAZY_CLOSURE_ACCESS);
     SoyClassWriter writer =
         SoyClassWriter.builder(type)
@@ -194,13 +186,13 @@ final class LazyClosureCompiler {
     return expr;
   }
 
-  Expression compileLazyContent(RenderUnitNode renderUnit, String varName) {
+  Expression compileLazyContent(String namePrefix, RenderUnitNode renderUnit, String varName) {
     Optional<Expression> asRawText = asRawTextOnly(renderUnit);
     if (asRawText.isPresent()) {
       return asRawText.get();
     }
     TypeInfo type = innerClasses.registerInnerClassWithGeneratedName(
-        getProposedName(renderUnit, varName),
+        getProposedName(namePrefix, varName),
         LAZY_CLOSURE_ACCESS);
     SoyClassWriter writer =
         SoyClassWriter.builder(type)
@@ -242,8 +234,8 @@ final class LazyClosureCompiler {
     }
   }
 
-  private String getProposedName(SoyNode declaringNode, String varName) {
-    return KIND_CLASS_FROMAT.convert(declaringNode.getKind()) + "_" + varName;
+  private String getProposedName(String prefix, String varName) {
+    return prefix + "_" + varName;
   }
 
   /**

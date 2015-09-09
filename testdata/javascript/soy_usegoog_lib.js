@@ -2770,7 +2770,7 @@ goog.addDependency('dom/vendor.js', ['goog.dom.vendor'], ['goog.string', 'goog.u
 goog.addDependency('dom/vendor_test.js', ['goog.dom.vendorTest'], ['goog.array', 'goog.dom.vendor', 'goog.labs.userAgent.util', 'goog.testing.MockUserAgent', 'goog.testing.PropertyReplacer', 'goog.testing.jsunit', 'goog.userAgent', 'goog.userAgentTestUtil'], false);
 goog.addDependency('dom/viewportsizemonitor.js', ['goog.dom.ViewportSizeMonitor'], ['goog.dom', 'goog.events', 'goog.events.EventTarget', 'goog.events.EventType', 'goog.math.Size'], false);
 goog.addDependency('dom/viewportsizemonitor_test.js', ['goog.dom.ViewportSizeMonitorTest'], ['goog.dom.ViewportSizeMonitor', 'goog.events', 'goog.events.Event', 'goog.events.EventTarget', 'goog.events.EventType', 'goog.math.Size', 'goog.testing.MockClock', 'goog.testing.PropertyReplacer', 'goog.testing.jsunit'], false);
-goog.addDependency('dom/xml.js', ['goog.dom.xml'], ['goog.dom', 'goog.dom.NodeType'], false);
+goog.addDependency('dom/xml.js', ['goog.dom.xml'], ['goog.dom', 'goog.dom.NodeType', 'goog.userAgent'], false);
 goog.addDependency('dom/xml_test.js', ['goog.dom.xmlTest'], ['goog.dom.TagName', 'goog.dom.xml', 'goog.testing.jsunit', 'goog.userAgent'], false);
 goog.addDependency('editor/browserfeature.js', ['goog.editor.BrowserFeature'], ['goog.editor.defines', 'goog.userAgent', 'goog.userAgent.product', 'goog.userAgent.product.isVersion'], false);
 goog.addDependency('editor/browserfeature_test.js', ['goog.editor.BrowserFeatureTest'], ['goog.dom', 'goog.dom.Range', 'goog.dom.TagName', 'goog.editor.BrowserFeature', 'goog.testing.ExpectedFailures', 'goog.testing.jsunit'], false);
@@ -5209,9 +5209,13 @@ goog.string.regExpEscape = function(s) {
  * @return {string} A string containing {@code length} repetitions of
  *     {@code string}.
  */
-goog.string.repeat = function(string, length) {
-  return new Array(length + 1).join(string);
-};
+goog.string.repeat = (String.prototype.repeat) ?
+    function(string, length) {
+      return string.repeat(length);
+    } :
+    function(string, length) {
+      return new Array(length + 1).join(string);
+    };
 
 
 /**
@@ -10519,6 +10523,10 @@ goog.fs.url.getUrlObject_ = function() {
  *
  * @return {?goog.fs.url.UrlObject_} The object for this browser or null if the
  *     browser does not support Object Urls.
+ * @suppress {unnecessaryCasts} Depending on how the code is compiled, casting
+ *     goog.global to UrlObject_ may result in unnecessary cast warning.
+ *     However, the cast cannot be removed because with different set of
+ *     compiler flags, the cast is indeed necessary.  As such, silencing it.
  * @private
  */
 goog.fs.url.findUrlObject_ = function() {

@@ -747,10 +747,10 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         Expression valueExpr;
         if (child instanceof CallParamContentNode) {
           valueExpr = lazyClosureCompiler.compileLazyContent(
-              (CallParamContentNode) child, paramKey);
+              "param", (CallParamContentNode) child, paramKey);
         } else {
           valueExpr = lazyClosureCompiler.compileLazyExpression(
-              child, paramKey, ((CallParamValueNode) child).getValueExprUnion().getExpr());
+              "param", child, paramKey, ((CallParamValueNode) child).getValueExprUnion().getExpr());
         }
         // ParamStore.setField return 'this' so we can just chain the invocations together.
         paramStoreExpression =
@@ -797,13 +797,14 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
 
   @Override protected Statement visitLetValueNode(LetValueNode node) {
     Expression newLetValue =
-        lazyClosureCompiler.compileLazyExpression(node, node.getVarName(), node.getValueExpr());
+        lazyClosureCompiler.compileLazyExpression(
+            "let", node, node.getVarName(), node.getValueExpr());
     return currentScope.create(node.getVarName(), newLetValue, STORE).initializer();
   }
 
   @Override protected Statement visitLetContentNode(LetContentNode node) {
     Expression newLetValue =
-        lazyClosureCompiler.compileLazyContent(node, node.getVarName());
+        lazyClosureCompiler.compileLazyContent("let", node, node.getVarName());
     return currentScope.create(node.getVarName(), newLetValue, STORE).initializer();
   }
 

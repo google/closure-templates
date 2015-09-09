@@ -100,6 +100,9 @@ public final class Runtime {
    * {@link #NULL_PROVIDER} for missing fields.
    */
   public static SoyValueProvider getFieldProvider(SoyRecord record, String field) {
+    if (record == null) {
+      throw new NullPointerException("Attempted to access field '" + field + "' of null");
+    }
     // TODO(lukes): ideally this would be the behavior of getFieldProvider, but Tofu relies on it
     SoyValueProvider provider = record.getFieldProvider(field);
     return provider == null | provider instanceof NullData ? NULL_PROVIDER : provider;
@@ -172,6 +175,9 @@ public final class Runtime {
   }
 
   public static SoyValueProvider getSoyListItem(List<SoyValueProvider> list, long index) {
+    if (list == null) {
+      throw new NullPointerException("Attempted to access list item '" + index + "' of null");
+    }
     int size = list.size();
     if (index < size & index >= 0) {
       SoyValueProvider soyValueProvider = list.get((int) index);
@@ -181,6 +187,9 @@ public final class Runtime {
   }
 
   public static SoyValueProvider getSoyMapItem(SoyMap soyMap, SoyValue key) {
+    if (soyMap == null) {
+      throw new NullPointerException("Attempted to access map item '" + key + "' of null");
+    }
     SoyValueProvider soyValueProvider = soyMap.getItemProvider(key);
     return soyValueProvider == null ? NULL_PROVIDER : soyValueProvider;
   }

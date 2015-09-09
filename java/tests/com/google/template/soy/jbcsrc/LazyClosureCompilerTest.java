@@ -191,7 +191,7 @@ public class LazyClosureCompilerTest extends TestCase {
     List<Class<?>> innerClasses = Lists.newArrayList(template.getClass().getDeclaredClasses());
     innerClasses.remove(factory.getClass());
     Class<?> let = Iterables.getOnlyElement(innerClasses);
-    assertEquals("LetValueNode_foo", let.getSimpleName());
+    assertEquals("let_foo", let.getSimpleName());
     assertEquals(template.getClass(), let.getDeclaringClass());
   }
 }
