@@ -45,7 +45,6 @@ import com.google.template.soy.types.SoyTypeRegistry;
  *   <li>{@link RewriteRemaindersVisitor}
  *   <li>{@link SetDefaultForDelcallAllowsEmptyDefaultVisitor}
  *   <li>{@link SetFullCalleeNamesVisitor}
- *   <li>{@link RemoveHtmlCommentsVisitor}
  *   <li>{@link ResolveExpressionTypesVisitor}
  *   <li>{@link ResolveNamesVisitor}
  *   <li>{@link ResolvePackageRelativeCssNamesVisitor}
@@ -79,9 +78,6 @@ public final class ParsePasses {
         .add(new RewriteRemaindersPass())
         .add(new SetFullCalleeNamesPass())
         .add(new SetDefaultForDelcallAllowsEmptyDefaultPass());
-    if (builder.declaredSyntaxVersion == SyntaxVersion.V1_0) {
-      passesBuilder.add(new RemoveHtmlCommentsPass());
-    }
     passesBuilder.add(new ResolveNamesPass())
         .add(new ResolveFunctionsPass())
         .add(new ResolveExpressionTypesPass())
@@ -157,12 +153,6 @@ public final class ParsePasses {
     }
   }
 
-  private final class RemoveHtmlCommentsPass extends CompilerFilePass {
-    @Override public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-      new RemoveHtmlCommentsVisitor(nodeIdGen).exec(file);
-    }
-  }
-  
   private final class SetDefaultForDelcallAllowsEmptyDefaultPass extends CompilerFilePass {
     // visitor is stateless so we can store a single version
     final SetDefaultForDelcallAllowsEmptyDefaultVisitor visitor =
