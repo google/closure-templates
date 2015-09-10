@@ -109,7 +109,8 @@ public final class ContextualAutoescaper {
    */
   @Inject
   ContextualAutoescaper(
-      final Map<String, SoyPrintDirective> soyDirectivesMap, ErrorReporter errorReporter) {
+      final ImmutableMap<String, ? extends SoyPrintDirective> soyDirectivesMap,
+      ErrorReporter errorReporter) {
     // Compute the set of directives that are escaping directives.
     this(ImmutableSet.copyOf(Collections2.filter(
         soyDirectivesMap.keySet(),
@@ -339,7 +340,7 @@ public final class ContextualAutoescaper {
 
 
   private static Map<String, SanitizedContent.ContentKind> makeOperatorKindMap(
-      final Map<String, SoyPrintDirective> soyDirectivesMap) {
+      final ImmutableMap<String, ? extends SoyPrintDirective> soyDirectivesMap) {
     ImmutableMap.Builder<String, SanitizedContent.ContentKind> operatorKindMapBuilder
         = ImmutableMap.builder();
     for (SoyPrintDirective directive : soyDirectivesMap.values()) {

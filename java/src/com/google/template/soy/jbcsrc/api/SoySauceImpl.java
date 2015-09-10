@@ -49,7 +49,6 @@ import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.soytree.TemplateRegistry;
-import com.google.template.soy.tofu.internal.TofuModule.Tofu;
 
 import java.io.IOException;
 import java.util.Map;
@@ -66,25 +65,20 @@ public final class SoySauceImpl implements SoySauce {
     // TODO(lukes): switch all of soy to @AutoFactory when its opensource situation is cleaned up
     private final GuiceSimpleScope apiCallScopeProvider;
     private final Provider<SoyValueHelper> converterProvider;
-    private final Provider<Map<String, SoyJavaPrintDirective>> printDirectivesProvider;
 
     @Inject Factory(
-        @ApiCall GuiceSimpleScope apiCallScopeProvider, 
-        Provider<SoyValueHelper> converterProvider,
-        // TODO(lukes): we rely on the @Tofu bindings here for compatibility with servers using
-        // SoyTofuPrintDirective.  Those interfaces need to be deleted and the
-        // adapters provided by these bindings removed
-        @Tofu Provider<Map<String, SoyJavaPrintDirective>> printDirectivesProvider) {
+        @ApiCall GuiceSimpleScope apiCallScopeProvider,
+        Provider<SoyValueHelper> converterProvider) {
       this.apiCallScopeProvider = apiCallScopeProvider;
       this.converterProvider = converterProvider;
-      this.printDirectivesProvider = printDirectivesProvider;
     }
 
     public SoySauceImpl create(
         CompiledTemplates templates,
         TemplateRegistry registry,
         SoyMsgBundle defaultMsgBundle,
-        ImmutableMap<String, SoyJavaFunction> functions,
+        ImmutableMap<String, ? extends SoyJavaFunction> functions,
+        ImmutableMap<String, ? extends SoyJavaPrintDirective> printDirectives,
         ImmutableMap<String, ImmutableSortedSet<String>> templateToTransitiveUsedIjParams) {
       return new SoySauceImpl(
           templates,
@@ -94,7 +88,7 @@ public final class SoySauceImpl implements SoySauce {
           apiCallScopeProvider,
           converterProvider.get(),
           functions,
-          printDirectivesProvider.get());
+          printDirectives);
     }
   }
   
@@ -114,8 +108,8 @@ public final class SoySauceImpl implements SoySauce {
       ImmutableMap<String, ImmutableSortedSet<String>> templateToTransitiveUsedIjParams,
       GuiceSimpleScope apiCallScope,
       SoyValueHelper converter,
-      Map<String, SoyJavaFunction> functions,
-      Map<String, SoyJavaPrintDirective> printDirectives) {
+      ImmutableMap<String, ? extends SoyJavaFunction> functions,
+      ImmutableMap<String, ? extends SoyJavaPrintDirective> printDirectives) {
     this.templates = checkNotNull(templates);
     this.defaultMsgBundle = replaceLocale(defaultMsgBundle);
     this.templateToTransitiveUsedIjParams = templateToTransitiveUsedIjParams;

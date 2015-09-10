@@ -16,6 +16,7 @@
 
 package com.google.template.soy.tofu.internal;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.shared.SoyCssRenamingMap;
@@ -24,7 +25,6 @@ import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.sharedpasses.render.RenderVisitor;
 import com.google.template.soy.soytree.TemplateRegistry;
 
-import java.util.Map;
 import java.util.Set;
 
 import javax.annotation.Nullable;
@@ -56,7 +56,7 @@ final class TofuRenderVisitor extends RenderVisitor {
    * @param cssRenamingMap The CSS renaming map, or null if not applicable.
    */
   TofuRenderVisitor(
-      Map<String, SoyJavaPrintDirective> soyJavaDirectivesMap,
+      ImmutableMap<String, ? extends SoyJavaPrintDirective> soyJavaDirectivesMap,
       TofuEvalVisitorFactory tofuEvalVisitorFactory,
       Appendable outputBuf,
       @Nullable TemplateRegistry templateRegistry,

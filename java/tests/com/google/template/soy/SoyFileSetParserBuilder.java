@@ -61,7 +61,7 @@ public final class SoyFileSetParserBuilder {
   private boolean allowUnboundGlobals;
   private ImmutableMap<String, ? extends SoyFunction> soyFunctionMap =
       Guice.createInjector(new SharedModule(), new BasicFunctionsModule())
-          .getInstance(new Key<ImmutableMap<String, SoyFunction>>() {});
+          .getInstance(new Key<ImmutableMap<String, ? extends SoyFunction>>() {});
   private SoyGeneralOptions options = new SoyGeneralOptions();
 
   /**

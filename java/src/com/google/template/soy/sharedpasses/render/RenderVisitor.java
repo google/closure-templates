@@ -18,6 +18,7 @@ package com.google.template.soy.sharedpasses.render;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.template.soy.data.LazySanitizedContents;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
@@ -96,7 +97,6 @@ import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import javax.annotation.Nullable;
@@ -112,7 +112,7 @@ import javax.annotation.Nullable;
 public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
   /** Map of all SoyJavaPrintDirectives (name to directive). */
-  protected final Map<String, SoyJavaPrintDirective> soyJavaDirectivesMap;
+  protected final ImmutableMap<String, ? extends SoyJavaPrintDirective> soyJavaDirectivesMap;
 
   /** Factory for creating an instance of EvalVisitor. */
   protected final EvalVisitorFactory evalVisitorFactory;
@@ -179,7 +179,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
    * @param xidRenamingMap The 'xid' renaming map, or null if not applicable.
    */
   protected RenderVisitor(
-      Map<String, SoyJavaPrintDirective> soyJavaDirectivesMap,
+      ImmutableMap<String, ? extends SoyJavaPrintDirective> soyJavaDirectivesMap,
       EvalVisitorFactory evalVisitorFactory,
       Appendable outputBuf,
       @Nullable TemplateRegistry templateRegistry,

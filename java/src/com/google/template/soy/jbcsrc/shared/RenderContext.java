@@ -156,7 +156,7 @@ public final class RenderContext {
       return this;
     }
 
-    public Builder withSoyPrintDirectives(Map<String, SoyJavaPrintDirective> directives) {
+    public Builder withSoyPrintDirectives(Map<String, ? extends SoyJavaPrintDirective> directives) {
       this.soyJavaDirectivesMap = ImmutableMap.copyOf(directives);
       return this;
     }

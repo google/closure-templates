@@ -107,7 +107,8 @@ public final class SharedModule extends AbstractModule {
    */
   @Provides
   @Singleton
-  ImmutableMap<String, SoyFunction> provideSoyFunctionsMap(Set<SoyFunction> soyFunctionsSet) {
+  ImmutableMap<String, ? extends SoyFunction> provideSoyFunctionsMap(
+      Set<SoyFunction> soyFunctionsSet) {
     ImmutableMap.Builder<String, SoyFunction> mapBuilder = ImmutableMap.builder();
     for (SoyFunction function : soyFunctionsSet) {
       mapBuilder.put(function.getName(), function);
@@ -122,8 +123,8 @@ public final class SharedModule extends AbstractModule {
    */
   @Provides
   @Singleton
-  Map<String, SoyPrintDirective> provideSoyDirectivesMap(Set<SoyPrintDirective> soyDirectivesSet) {
-
+  ImmutableMap<String, ? extends SoyPrintDirective> provideSoyDirectivesMap(
+      Set<SoyPrintDirective> soyDirectivesSet) {
     ImmutableMap.Builder<String, SoyPrintDirective> mapBuilder = ImmutableMap.builder();
     for (SoyPrintDirective directive : soyDirectivesSet) {
       mapBuilder.put(directive.getName(), directive);
@@ -145,7 +146,6 @@ public final class SharedModule extends AbstractModule {
   @Singleton
   @Shared Map<String, SoyJavaFunction> provideSoyJavaFunctionsMap(
       Set<SoyFunction> soyFunctionsSet) {
-
     return FunctionAdapters.buildSpecificSoyFunctionsMapWithAdaptation(
         soyFunctionsSet, SoyJavaFunction.class, SoyJavaRuntimeFunction.class,
         new Function<SoyJavaRuntimeFunction, SoyJavaFunction>() {
@@ -195,9 +195,8 @@ public final class SharedModule extends AbstractModule {
    */
   @Provides
   @Singleton
-  @Shared Map<String, SoyJavaPrintDirective> provideSoyJavaDirectivesMap(
+  @Shared ImmutableMap<String, ? extends SoyJavaPrintDirective> provideSoyJavaDirectivesMap(
       Set<SoyPrintDirective> soyDirectivesSet) {
-
     return FunctionAdapters.buildSpecificSoyDirectivesMapWithAdaptation(
         soyDirectivesSet, SoyJavaPrintDirective.class, SoyJavaRuntimePrintDirective.class,
         new Function<SoyJavaRuntimePrintDirective, SoyJavaPrintDirective>() {
@@ -212,7 +211,7 @@ public final class SharedModule extends AbstractModule {
    * Private helper class for provideSoyJavaDirectivesMap() to adapt SoyJavaRuntimePrintDirective to
    * SoyJavaPrintDirective.
    */
-  static class SoyJavaRuntimePrintDirectiveAdapter implements SoyJavaPrintDirective {
+  public static class SoyJavaRuntimePrintDirectiveAdapter implements SoyJavaPrintDirective {
 
     /** The underlying SoyJavaRuntimePrintDirective that is being adapted. */
     private final SoyJavaRuntimePrintDirective adaptee;

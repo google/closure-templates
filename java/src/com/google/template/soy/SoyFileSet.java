@@ -72,9 +72,13 @@ import com.google.template.soy.shared.SoyAstCache;
 import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.shared.internal.MainEntryPointUtils;
 import com.google.template.soy.shared.internal.SharedModule.SoyJavaRuntimeFunctionAdapter;
+import com.google.template.soy.shared.internal.SharedModule.SoyJavaRuntimePrintDirectiveAdapter;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
+import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.shared.restricted.SoyJavaRuntimeFunction;
+import com.google.template.soy.shared.restricted.SoyJavaRuntimePrintDirective;
+import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.sharedpasses.AssertStrictAutoescapingVisitor;
 import com.google.template.soy.sharedpasses.ClearSoyDocStringsVisitor;
 import com.google.template.soy.sharedpasses.FindIjParamsVisitor;
@@ -93,6 +97,7 @@ import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.tofu.SoyTofu;
 import com.google.template.soy.tofu.internal.BaseTofu.BaseTofuFactory;
 import com.google.template.soy.tofu.restricted.SoyTofuFunction;
+import com.google.template.soy.tofu.restricted.SoyTofuPrintDirective;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.xliffmsgplugin.XliffMsgPlugin;
 
@@ -607,7 +612,8 @@ public final class SoyFileSet {
   /** For private use by pruneTranslatedMsgs(). */
   private ImmutableSet<Long> memoizedExtractedMsgIdsForPruning;
 
-  private final ImmutableMap<String, SoyFunction> soyFunctionMap;
+  private final ImmutableMap<String, ? extends SoyFunction> soyFunctionMap;
+  private final ImmutableMap<String, ? extends SoyPrintDirective> printDirectives;
 
   /** For reporting errors during parsing. */
   private final ErrorReporter errorReporter;
@@ -641,7 +647,8 @@ public final class SoyFileSet {
       ContextualAutoescaper contextualAutoescaper,
       SimplifyVisitor simplifyVisitor,
       SoyTypeRegistry typeRegistry,
-      ImmutableMap<String, SoyFunction> soyFunctionMap,
+      ImmutableMap<String, ? extends SoyFunction> soyFunctionMap,
+      ImmutableMap<String, ? extends SoyPrintDirective> printDirectives,
       ErrorReporter errorReporter,
       @Assisted List<SoyFileSupplier> soyFileSuppliers,
       @Assisted SoyGeneralOptions generalOptions,
@@ -666,6 +673,7 @@ public final class SoyFileSet {
     this.cache = cache;
     this.generalOptions = generalOptions.clone();
     this.soyFunctionMap = soyFunctionMap;
+    this.printDirectives = printDirectives;
     this.errorReporter = errorReporter;
   }
 
@@ -830,7 +838,10 @@ public final class SoyFileSet {
 
   /** Helper method to compile SoyTofu from {@link ServerCompilationPrimitives} */
   private SoyTofu doCompileToTofu(ServerCompilationPrimitives primitives) {
-    return baseTofuFactory.create(primitives.registry, primitives.transitiveIjs);
+    return baseTofuFactory.create(
+        primitives.registry,
+        primitives.transitiveIjs,
+        primitives.printDirectives);
   }
 
   /**
@@ -873,11 +884,24 @@ public final class SoyFileSet {
       }
     }
 
+    // SoySauce has no need for SoyPrintDirectives that are not SoyJavaPrintDirectives.
+    // Filter them out.
+    ImmutableMap.Builder<String, SoyJavaPrintDirective> soyJavaPrintDirectives =
+        ImmutableMap.builder();
+    for (Map.Entry<String, ? extends SoyPrintDirective> entry :
+        primitives.printDirectives.entrySet()) {
+      SoyPrintDirective printDirective = entry.getValue();
+      if (printDirective instanceof SoyJavaPrintDirective) {
+        soyJavaPrintDirectives.put(entry.getKey(), (SoyJavaPrintDirective) printDirective);
+      }
+    }
+
     return soyTemplatesFactory.create(
         templates.get(),
         primitives.registry,
         new ExtractMsgsVisitor().exec(primitives.soyTree),
         soyJavaFunctions.build(),
+        soyJavaPrintDirectives.build(),
         primitives.transitiveIjs);
   }
 
@@ -889,17 +913,20 @@ public final class SoyFileSet {
     final SoyFileSetNode soyTree;
     final ImmutableMap<String, ImmutableSortedSet<String>> transitiveIjs;
     final ImmutableMap<String, ? extends SoyFunction> soyFunctions;
+    final ImmutableMap<String, ? extends SoyPrintDirective> printDirectives;
     final TemplateRegistry registry;
 
     ServerCompilationPrimitives(
         SoyFileSetNode soyTree,
         TemplateRegistry registry,
         ImmutableMap<String, ImmutableSortedSet<String>> transitiveIjs,
-        ImmutableMap<String, ? extends SoyFunction> soyFunctions) {
+        ImmutableMap<String, ? extends SoyFunction> soyFunctions,
+        ImmutableMap<String, ? extends SoyPrintDirective> printDirectives) {
       this.soyTree = soyTree;
       this.registry = registry;
       this.transitiveIjs = transitiveIjs;
       this.soyFunctions = soyFunctions;
+      this.printDirectives = printDirectives;
     }
   }
 
@@ -936,7 +963,10 @@ public final class SoyFileSet {
     ((ErrorReporterImpl) errorReporter).throwIfErrorsPresent();
     ImmutableMap<String, ImmutableSortedSet<String>> transitiveIjs =
         getTransitiveIjs(soyTree, registry);
-    return new ServerCompilationPrimitives(soyTree, registry, transitiveIjs, adaptedSoyFunctions);
+    ImmutableMap<String, ? extends SoyPrintDirective> adaptedPrintDirectives
+        = adaptSoyJavaRuntimePrintDirectivesAndSoyTofuPrintDirectives(printDirectives);
+    return new ServerCompilationPrimitives(
+        soyTree, registry, transitiveIjs, adaptedSoyFunctions, adaptedPrintDirectives);
   }
 
   private ImmutableMap<String, ImmutableSortedSet<String>> getTransitiveIjs(
@@ -1301,9 +1331,9 @@ public final class SoyFileSet {
   @VisibleForTesting
   public static ImmutableMap<String, ? extends SoyFunction>
   adaptSoyJavaRuntimeFunctionsAndSoyTofuFunctions(
-      ImmutableMap<String, SoyFunction> input) {
+      ImmutableMap<String, ? extends SoyFunction> input) {
     ImmutableMap.Builder<String, SoyFunction> output = ImmutableMap.builder();
-    for (Map.Entry<String, SoyFunction> entry : input.entrySet()) {
+    for (Map.Entry<String, ? extends SoyFunction> entry : input.entrySet()) {
       String functionName = entry.getKey();
       SoyFunction function = entry.getValue();
       if (function instanceof SoyJavaRuntimeFunction) {
@@ -1321,10 +1351,36 @@ public final class SoyFileSet {
   }
 
   /**
-   * Private helper class for provideSoyJavaFunctionsMap() to adapt SoyTofuFunction to
-   * SoyJavaFunction.
+   * Given a map of print directives, returns an equivalent map, where
+   * all {@link SoyJavaRuntimePrintDirective} and {@link SoyTofuPrintDirective} implementations
+   * have been adapted to canonical {@link SoyJavaPrintDirective}s.
+   *
+   * <p>TODO(user): remove once the legacy SoyPrintDirectives are gone.
    */
-  private static class SoyTofuFunctionAdapter implements SoyJavaFunction {
+  @VisibleForTesting
+  public static ImmutableMap<String, ? extends SoyJavaPrintDirective>
+  adaptSoyJavaRuntimePrintDirectivesAndSoyTofuPrintDirectives(
+      ImmutableMap<String, ? extends SoyPrintDirective> input) {
+    ImmutableMap.Builder<String, SoyJavaPrintDirective> output = ImmutableMap.builder();
+    for (Map.Entry<String, ? extends SoyPrintDirective> entry : input.entrySet()) {
+      String name = entry.getKey();
+      SoyPrintDirective directive = entry.getValue();
+      if (directive instanceof SoyJavaRuntimePrintDirective) {
+        output.put(
+            name,
+            new SoyJavaRuntimePrintDirectiveAdapter((SoyJavaRuntimePrintDirective) directive));
+      } else if (directive instanceof SoyTofuPrintDirective) {
+        output.put(
+            name,
+            new SoyTofuPrintDirectiveAdapter((SoyTofuPrintDirective) directive));
+      } else if (directive instanceof SoyJavaPrintDirective) {
+        output.put(name, (SoyJavaPrintDirective) directive);
+      }
+    }
+    return output.build();
+  }
+
+  private static final class SoyTofuFunctionAdapter implements SoyJavaFunction {
 
     /** The underlying SoyTofuFunction that is being adapted. */
     private final SoyTofuFunction adaptee;
@@ -1344,5 +1400,30 @@ public final class SoyFileSet {
     @Override public String getName() { return adaptee.getName(); }
 
     @Override public Set<Integer> getValidArgsSizes() { return adaptee.getValidArgsSizes(); }
+  }
+
+  private static final class SoyTofuPrintDirectiveAdapter implements SoyJavaPrintDirective {
+
+    /** The underlying SoyTofuPrintDirective that is being adapted. */
+    final SoyTofuPrintDirective adaptee;
+
+    public SoyTofuPrintDirectiveAdapter(SoyTofuPrintDirective adaptee) {
+      this.adaptee = adaptee;
+    }
+
+    @Override public SoyValue applyForJava(SoyValue value, List<SoyValue> args) {
+      SoyData castValue = (SoyData) value;
+      List<SoyData> castArgs = Lists.newArrayListWithCapacity(args.size());
+      for (SoyValue arg : args) {
+        castArgs.add((SoyData) arg);
+      }
+      return adaptee.applyForTofu(castValue, castArgs);
+    }
+
+    @Override public String getName() { return adaptee.getName(); }
+
+    @Override public Set<Integer> getValidArgsSizes() { return adaptee.getValidArgsSizes(); }
+
+    @Override public boolean shouldCancelAutoescape() { return adaptee.shouldCancelAutoescape(); }
   }
 }

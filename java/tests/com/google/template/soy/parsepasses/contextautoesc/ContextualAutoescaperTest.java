@@ -42,7 +42,6 @@ import junit.framework.ComparisonFailure;
 import junit.framework.TestCase;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import javax.annotation.Nonnull;
@@ -51,7 +50,8 @@ import javax.annotation.Nullable;
 public final class ContextualAutoescaperTest extends TestCase {
 
   /** Custom print directives used in tests below. */
-  private static final Map<String, SoyPrintDirective> SOY_PRINT_DIRECTIVES = ImmutableMap.of(
+  private static final ImmutableMap<String, SoyPrintDirective> SOY_PRINT_DIRECTIVES =
+      ImmutableMap.of(
       "|customEscapeDirective", new SoyPrintDirective() {
         @Override public String getName() {
           return "|customEscapeDirective";

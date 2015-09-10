@@ -146,8 +146,8 @@ public final class SimplifyExprVisitorTest extends TestCase {
       new SharedModule(),
       new SharedPassesModule(),
       new BasicFunctionsModule());
-  private static final ImmutableMap<String, SoyFunction> SOY_FUNCTIONS =
-      INJECTOR.getInstance(new Key<ImmutableMap<String, SoyFunction>>() {});
+  private static final ImmutableMap<String, ? extends SoyFunction> SOY_FUNCTIONS =
+      INJECTOR.getInstance(new Key<ImmutableMap<String, ? extends SoyFunction>>() {});
 
   private static final class SimplifySubject extends Subject<SimplifySubject, String> {
     private SimplifySubject(FailureStrategy failureStrategy, String s) {

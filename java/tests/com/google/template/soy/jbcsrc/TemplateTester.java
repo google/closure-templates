@@ -19,6 +19,7 @@ package com.google.template.soy.jbcsrc;
 import static com.google.template.soy.data.SoyValueHelper.EMPTY_DICT;
 
 import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.truth.FailureStrategy;
 import com.google.common.truth.Subject;
@@ -77,7 +78,7 @@ public final class TemplateTester {
             @Provides RenderContext provideContext(
                 SoyValueHelper converter,
                 @Shared Map<String, SoyJavaFunction> functions,
-                @Shared Map<String, SoyJavaPrintDirective> printDirectives) {
+                @Shared ImmutableMap<String, ? extends SoyJavaPrintDirective> printDirectives) {
               return new RenderContext.Builder()
                   .withSoyFunctions(functions)
                   .withSoyPrintDirectives(printDirectives)

@@ -34,7 +34,6 @@ import com.google.template.soy.soytree.TemplateNode;
 import junit.framework.TestCase;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * Test for {@link SlicedRawTextNode}.
@@ -43,7 +42,8 @@ import java.util.Map;
 public final class SlicedRawTextNodeTest extends TestCase {
 
   /** Custom print directives used in tests below. */
-  private static final Map<String, SoyPrintDirective> SOY_PRINT_DIRECTIVES = ImmutableMap.of();
+  private static final ImmutableMap<String, SoyPrintDirective> SOY_PRINT_DIRECTIVES =
+      ImmutableMap.of();
 
   public void testTrivialTemplate() throws Exception {
     assertInjected(

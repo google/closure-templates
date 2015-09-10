@@ -47,8 +47,8 @@ public final class JsExprTranslatorTest extends TestCase {
 
   private static final Injector INJECTOR = Guice.createInjector(
       new ErrorReporterModule(), new JsSrcModule(), new BasicFunctionsModule());
-  private static final ImmutableMap<String, SoyFunction> SOY_FUNCTIONS =
-      INJECTOR.getInstance(new Key<ImmutableMap<String, SoyFunction>>() {});
+  private static final ImmutableMap<String, ? extends SoyFunction> SOY_FUNCTIONS =
+      INJECTOR.getInstance(new Key<ImmutableMap<String, ? extends SoyFunction>>() {});
 
   public void testTranslateToJsExpr() {
     JsSrcTestUtils.simulateNewApiCall(INJECTOR);

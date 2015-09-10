@@ -16,15 +16,14 @@
 
 package com.google.template.soy.tofu.internal;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.soytree.TemplateRegistry;
-import com.google.template.soy.tofu.internal.TofuModule.Tofu;
 
-import java.util.Map;
 import java.util.Set;
 
 import javax.annotation.Nullable;
@@ -38,19 +37,11 @@ import javax.inject.Singleton;
 @Singleton
 class TofuRenderVisitorFactory {
 
-
-  /** Map of all SoyJavaPrintDirectives (name to directive). */
-  private final Map<String, SoyJavaPrintDirective> soyJavaDirectivesMap;
-
   /** Factory for creating an instance of TofuEvalVisitor. */
   private final TofuEvalVisitorFactory tofuEvalVisitorFactory;
 
-
   @Inject
-  public TofuRenderVisitorFactory(
-      @Tofu Map<String, SoyJavaPrintDirective> soyJavaDirectivesMap,
-      TofuEvalVisitorFactory tofuEvalVisitorFactory) {
-    this.soyJavaDirectivesMap = soyJavaDirectivesMap;
+  public TofuRenderVisitorFactory(TofuEvalVisitorFactory tofuEvalVisitorFactory) {
     this.tofuEvalVisitorFactory = tofuEvalVisitorFactory;
   }
 
@@ -73,6 +64,7 @@ class TofuRenderVisitorFactory {
   public TofuRenderVisitor create(
       Appendable outputBuf,
       TemplateRegistry templateRegistry,
+      ImmutableMap<String, ? extends SoyJavaPrintDirective> printDirectives,
       SoyRecord data,
       @Nullable SoyRecord ijData,
       @Nullable Set<String> activeDelPackageNames,
@@ -81,7 +73,7 @@ class TofuRenderVisitorFactory {
       @Nullable SoyCssRenamingMap cssRenamingMap) {
 
     return new TofuRenderVisitor(
-        soyJavaDirectivesMap,
+        printDirectives,
         tofuEvalVisitorFactory,
         outputBuf,
         templateRegistry,
