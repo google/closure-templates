@@ -1081,6 +1081,10 @@ public final class SoyFileSet {
     SyntaxVersion declaredSyntaxVersion =
         generalOptions.getDeclaredSyntaxVersion(SyntaxVersion.V2_0);
 
+    Preconditions.checkState(
+        declaredSyntaxVersion.num >= SyntaxVersion.V2_0.num,
+        "Incremental DOM code generation only supports syntax version of V2 or higher.");
+
     Checkpoint checkpoint = errorReporter.checkpoint();
     ParseResult result = parse(SyntaxVersion.V2_0);
 
