@@ -658,13 +658,13 @@ final class RawTextContextUpdater {
    * Transition to detect dangerous URI schemes.
    */
   private static final Transition URI_START_TRANSITION =
-      new Transition("(?i)^(javascript:)") {
+      new Transition("(?i)^(javascript|data|blob|filesystem):") {
     @Override boolean isApplicableTo(Context prior, Matcher matcher) {
       return prior.uriPart == UriPart.START;
     }
 
     @Override Context computeNextContext(Context prior, Matcher matcher) {
-      // TODO(gboyer): Ban other unsafe schemes, like filesystem:, blob:, and maybe file:.
+      // TODO(gboyer): Ban all but whitelisted schemes.
       return prior.derive(UriPart.DANGEROUS_SCHEME);
     }
   };

@@ -550,6 +550,12 @@ public class RawTextContextUpdaterTest extends TestCase {
     assertTransition("URI START NORMAL", "javascript:", "URI DANGEROUS_SCHEME NORMAL");
     assertTransition("URI START NORMAL", "JavaScript:", "URI DANGEROUS_SCHEME NORMAL");
     assertTransition("URI START NORMAL", "not-javascript:", "URI AUTHORITY_OR_PATH NORMAL");
+    assertTransition("URI START NORMAL", "data:", "URI DANGEROUS_SCHEME NORMAL");
+    // NOTE(gboyer): Perhaps in media URIs we can consider allowing data if followed by an image
+    // mime type, but it doesn't seem critical and is easy to work around.
+    assertTransition("URI START MEDIA", "data:", "URI DANGEROUS_SCHEME MEDIA");
+    assertTransition("URI START NORMAL", "bloB:", "URI DANGEROUS_SCHEME NORMAL");
+    assertTransition("URI START NORMAL", "FiLeSystem:", "URI DANGEROUS_SCHEME NORMAL");
 
     assertTransition("URI QUERY NORMAL", "", "URI QUERY NORMAL");
     assertTransition("URI QUERY NORMAL", ".", "URI QUERY NORMAL");

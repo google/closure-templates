@@ -335,9 +335,10 @@ public final class Context {
       case DANGEROUS_SCHEME:
         // After javascript: or other dangerous schemes.
         throw SoyAutoescapeException.createWithoutMetaInfo(
-            "Dynamic values are not permitted in javascript: URIs; either hard-code the"
-            + " entire URI, or pass in a SanitizedContent or SafeUri object, or use an existing"
-            + " filter like |filterImageDataUri.");
+            "Soy can't properly escape for this URI scheme. For image sources, you can print full"
+            + " data and blob URIs directly (e.g. src=\"{$someDataUri}\")."
+            + " Otherwise, hardcode the full URI in the template or pass a complete"
+            + " SanitizedContent or SafeUri object.");
       default:
         break;
     }

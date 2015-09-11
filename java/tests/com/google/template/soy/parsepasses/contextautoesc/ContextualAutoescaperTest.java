@@ -803,9 +803,18 @@ public final class ContextualAutoescaperTest extends TestCase {
 
   public void testUrlDangerousSchemeForbidden() throws Exception {
     String message =
-        "Dynamic values are not permitted in javascript: URIs; either hard-code the"
-        + " entire URI, or pass in a SanitizedContent or SafeUri object, or use an existing"
-        + " filter like |filterImageDataUri.";
+        "Soy can't properly escape for this URI scheme. For image sources, you can print full"
+        + " data and blob URIs directly (e.g. src=\"{$someDataUri}\")."
+        + " Otherwise, hardcode the full URI in the template or pass a complete"
+        + " SanitizedContent or SafeUri object.";
+    assertRewriteFails(
+        "In file no-path:5:26, template ns.foo: " + message,
+        join(
+            "{namespace ns}\n\n",
+            "{template .foo autoescape=\"strict\"}\n",
+            "  {@param x: ?}\n",
+              "<a href=\"javas{nil}cript:{$x}\">\n",
+            "{/template}"));
     assertRewriteFails(
         "In file no-path:5:29, template ns.foo: " + message,
         join(
@@ -839,6 +848,39 @@ public final class ContextualAutoescaperTest extends TestCase {
               "<style>url(javascript:{$x})</style>\n",
             "{/template}"));
 
+    assertRewriteFails(
+        "In file no-path:5:17, template ns.foo: " + message,
+        join(
+            "{namespace ns}\n\n",
+            "{template .foo autoescape=\"strict\"}\n",
+            "  {@param x: ?}\n",
+              "<style>url(data:{$x})</style>\n",
+            "{/template}"));
+    assertRewriteFails(
+        "In file no-path:5:15, template ns.foo: " + message,
+        join(
+            "{namespace ns}\n\n",
+            "{template .foo autoescape=\"strict\"}\n",
+            "  {@param x: ?}\n",
+              "<a href=\"data:{$x}\">\n",
+            "{/template}"));
+    assertRewriteFails(
+        "In file no-path:5:15, template ns.foo: " + message,
+        join(
+            "{namespace ns}\n\n",
+            "{template .foo autoescape=\"strict\"}\n",
+            "  {@param x: ?}\n",
+              "<a href=\"blob:{$x}\">\n",
+            "{/template}"));
+    assertRewriteFails(
+        "In file no-path:5:21, template ns.foo: " + message,
+        join(
+            "{namespace ns}\n\n",
+            "{template .foo autoescape=\"strict\"}\n",
+            "  {@param x: ?}\n",
+              "<a href=\"filesystem:{$x}\">\n",
+            "{/template}"));
+
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
@@ -851,6 +893,19 @@ public final class ContextualAutoescaperTest extends TestCase {
             "{template .foo autoescape=\"strict\"}\n",
             "  {@param x: ?}\n",
               "<a href=\"not-javascript:{$x}\">Test</a>\n",
+            "{/template}"));
+    assertContextualRewriting(
+        join(
+            "{namespace ns}\n\n",
+            "{template .foo autoescape=\"strict\"}\n",
+            "  {@param x: ?}\n",
+              "<a href=\"javascript-foo:{$x |escapeHtmlAttribute}\">Test</a>\n",
+            "{/template}"),
+        join(
+            "{namespace ns}\n\n",
+            "{template .foo autoescape=\"strict\"}\n",
+            "  {@param x: ?}\n",
+              "<a href=\"javascript-foo:{$x}\">Test</a>\n",
             "{/template}"));
     assertContextualRewriting(
         join(
