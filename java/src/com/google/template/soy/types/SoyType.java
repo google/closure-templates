@@ -64,6 +64,7 @@ public interface SoyType {
     JS,
     CSS,
     URI,
+    TRUSTED_RESOURCE_URI,
 
     // Aggregate types
 

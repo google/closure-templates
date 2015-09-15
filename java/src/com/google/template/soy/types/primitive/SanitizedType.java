@@ -69,6 +69,9 @@ public abstract class SanitizedType extends PrimitiveType {
       case URI:
         return UriType.getInstance();
 
+      case TRUSTED_RESOURCE_URI:
+        return TrustedResourceUriType.getInstance();
+
       case TEXT:
         return StringType.getInstance();
 
@@ -142,6 +145,28 @@ public abstract class SanitizedType extends PrimitiveType {
 
     /** Return the single instance of this type. */
     public static UriType getInstance() {
+      return INSTANCE;
+    }
+  }
+
+  /** Type produced by templates whose kind is "trustedResourceUri". */
+  public static final class TrustedResourceUriType extends SanitizedType {
+
+    private static final TrustedResourceUriType INSTANCE = new TrustedResourceUriType();
+
+    // Not constructible - use getInstance().
+    private TrustedResourceUriType() {}
+
+    @Override public Kind getKind() {
+      return Kind.TRUSTED_RESOURCE_URI;
+    }
+
+    @Override public ContentKind getContentKind() {
+      return ContentKind.TRUSTED_RESOURCE_URI;
+    }
+
+    /** Return the single instance of this type. */
+    public static TrustedResourceUriType getInstance() {
       return INSTANCE;
     }
   }

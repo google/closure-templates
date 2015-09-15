@@ -46,6 +46,7 @@ public class NodeContentKinds {
               .put("js", ContentKind.JS)
               .put("text", ContentKind.TEXT)
               .put("uri", ContentKind.URI)
+              .put("trusted_resource_uri", ContentKind.TRUSTED_RESOURCE_URI)
               .build();
 
   private static final ImmutableMap<ContentKind, String> KIND_TO_JS_CTOR_NAME =
@@ -55,6 +56,7 @@ public class NodeContentKinds {
           .put(ContentKind.JS, "soydata.SanitizedJs")
           .put(ContentKind.URI, "soydata.SanitizedUri")
           .put(ContentKind.CSS, "soydata.SanitizedCss")
+          .put(ContentKind.TRUSTED_RESOURCE_URI, "soydata.SanitizedTrustedResourceUri")
           // NOTE: Text intentionally doesn't follow the convention. Note that we don't just
           // convert them to a string, because the UnsanitizedText wrapper helps prevent the
           // content from getting used elsewhere in a noAutoescape.
@@ -69,6 +71,8 @@ public class NodeContentKinds {
           .put(ContentKind.JS, "soydata.VERY_UNSAFE.ordainSanitizedJs")
           .put(ContentKind.URI, "soydata.VERY_UNSAFE.ordainSanitizedUri")
           .put(ContentKind.CSS, "soydata.VERY_UNSAFE.ordainSanitizedCss")
+          .put(ContentKind.TRUSTED_RESOURCE_URI,
+              "soydata.VERY_UNSAFE.ordainSanitizedTrustedResourceUri")
           .put(ContentKind.TEXT, "soydata.markUnsanitizedText")
           .build();
 
@@ -85,6 +89,8 @@ public class NodeContentKinds {
           .put(ContentKind.JS, "soydata.VERY_UNSAFE.$$ordainSanitizedJsForInternalBlocks")
           .put(ContentKind.URI, "soydata.VERY_UNSAFE.$$ordainSanitizedUriForInternalBlocks")
           .put(ContentKind.CSS, "soydata.VERY_UNSAFE.$$ordainSanitizedCssForInternalBlocks")
+          .put(ContentKind.TRUSTED_RESOURCE_URI,
+              "soydata.VERY_UNSAFE.$$ordainSanitizedTrustedResourceUriForInternalBlocks")
           .put(ContentKind.TEXT, "soydata.$$markUnsanitizedTextForInternalBlocks")
           .build();
 
@@ -96,6 +102,7 @@ public class NodeContentKinds {
           .put(ContentKind.JS, "sanitize.SanitizedJs")
           .put(ContentKind.URI, "sanitize.SanitizedUri")
           .put(ContentKind.CSS, "sanitize.SanitizedCss")
+          .put(ContentKind.TRUSTED_RESOURCE_URI, "sanitize.SanitizedTrustedResourceUri")
           .put(ContentKind.TEXT, "sanitize.UnsanitizedText")
           .build();
 

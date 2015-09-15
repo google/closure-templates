@@ -38,7 +38,7 @@ public class NodeContentKindsTest extends TestCase {
   public void testGetAttributeValues() {
     Set<String> attributeValues = NodeContentKinds.getAttributeValues();
     assertEquals(
-        ImmutableSet.of("attributes", "css", "html", "js", "text", "uri"),
+        ImmutableSet.of("attributes", "css", "html", "js", "text", "uri", "trusted_resource_uri"),
         attributeValues);
   }
 
@@ -51,6 +51,8 @@ public class NodeContentKindsTest extends TestCase {
          NodeContentKinds.toJsSanitizedContentCtorName(ContentKind.CSS));
     assertEquals("soydata.SanitizedUri",
          NodeContentKinds.toJsSanitizedContentCtorName(ContentKind.URI));
+    assertEquals("soydata.SanitizedTrustedResourceUri",
+         NodeContentKinds.toJsSanitizedContentCtorName(ContentKind.TRUSTED_RESOURCE_URI));
     assertEquals("soydata.SanitizedJs",
          NodeContentKinds.toJsSanitizedContentCtorName(ContentKind.JS));
     assertEquals("soydata.UnsanitizedText",
@@ -66,6 +68,8 @@ public class NodeContentKindsTest extends TestCase {
          NodeContentKinds.toJsSanitizedContentOrdainer(ContentKind.CSS));
     assertEquals("soydata.VERY_UNSAFE.ordainSanitizedUri",
          NodeContentKinds.toJsSanitizedContentOrdainer(ContentKind.URI));
+    assertEquals("soydata.VERY_UNSAFE.ordainSanitizedTrustedResourceUri",
+         NodeContentKinds.toJsSanitizedContentOrdainer(ContentKind.TRUSTED_RESOURCE_URI));
     assertEquals("soydata.VERY_UNSAFE.ordainSanitizedJs",
          NodeContentKinds.toJsSanitizedContentOrdainer(ContentKind.JS));
     assertEquals("soydata.markUnsanitizedText",
@@ -81,6 +85,9 @@ public class NodeContentKindsTest extends TestCase {
          NodeContentKinds.toJsSanitizedContentOrdainerForInternalBlocks(ContentKind.CSS));
     assertEquals("soydata.VERY_UNSAFE.$$ordainSanitizedUriForInternalBlocks",
          NodeContentKinds.toJsSanitizedContentOrdainerForInternalBlocks(ContentKind.URI));
+    assertEquals("soydata.VERY_UNSAFE.$$ordainSanitizedTrustedResourceUriForInternalBlocks",
+         NodeContentKinds.toJsSanitizedContentOrdainerForInternalBlocks(
+             ContentKind.TRUSTED_RESOURCE_URI));
     assertEquals("soydata.VERY_UNSAFE.$$ordainSanitizedJsForInternalBlocks",
          NodeContentKinds.toJsSanitizedContentOrdainerForInternalBlocks(ContentKind.JS));
     assertEquals("soydata.$$markUnsanitizedTextForInternalBlocks",

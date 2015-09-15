@@ -41,6 +41,7 @@ goog.provide('soydata.SanitizedHtml');
 goog.provide('soydata.SanitizedHtmlAttribute');
 goog.provide('soydata.SanitizedJs');
 goog.provide('soydata.SanitizedJsStrChars');
+goog.provide('soydata.SanitizedTrustedResourceUri');
 goog.provide('soydata.SanitizedUri');
 goog.provide('soydata.VERY_UNSAFE');
 
@@ -230,6 +231,28 @@ soydata.SanitizedUri.prototype.contentKind = soydata.SanitizedContentKind.URI;
 /** @override */
 soydata.SanitizedUri.prototype.contentDir = goog.i18n.bidi.Dir.LTR;
 
+/**
+ * Content of type {@link soydata.SanitizedContentKind.TRUSTED_RESOURCE_URI}.
+ *
+ * The content is a TrustedResourceUri chunk that is not under attacker control.
+ * The content direction is LTR.
+ *
+ * @constructor
+ * @extends {goog.soy.data.SanitizedContent}
+ */
+soydata.SanitizedTrustedResourceUri = function() {
+  goog.soy.data.SanitizedContent.call(this);  // Throws an exception.
+};
+goog.inherits(soydata.SanitizedTrustedResourceUri,
+    goog.soy.data.SanitizedContent);
+
+/** @override */
+soydata.SanitizedTrustedResourceUri.prototype.contentKind =
+    soydata.SanitizedContentKind.TRUSTED_RESOURCE_URI;
+
+/** @override */
+soydata.SanitizedTrustedResourceUri.prototype.contentDir =
+    goog.i18n.bidi.Dir.LTR;
 
 /**
  * Content of type {@link soydata.SanitizedContentKind.ATTRIBUTES}.
@@ -474,6 +497,24 @@ soydata.VERY_UNSAFE.ordainSanitizedJs =
 soydata.VERY_UNSAFE.ordainSanitizedUri =
     soydata.$$makeSanitizedContentFactoryWithDefaultDirOnly_(
         soydata.SanitizedUri);
+
+
+/**
+ * Takes a leap of faith that the provided content is "safe" to use as a
+ * TrustedResourceUri in a Soy template.
+ *
+ * This creates a Soy SanitizedContent object which indicates to Soy there is
+ * no need to filter it when printed as a TrustedResourceUri.
+ *
+ * @param {*} content A chunk of TrustedResourceUri such as that the caller
+ *     knows is safe to emit in a template.
+ * @return {!soydata.SanitizedTrustedResourceUri} Sanitized content wrapper that
+ *     indicates to Soy not to escape or filter when printed in
+ *     TrustedResourceUri context.
+ */
+soydata.VERY_UNSAFE.ordainSanitizedTrustedResourceUri =
+    soydata.$$makeSanitizedContentFactoryWithDefaultDirOnly_(
+        soydata.SanitizedTrustedResourceUri);
 
 
 /**
@@ -939,6 +980,18 @@ soydata.VERY_UNSAFE.$$ordainSanitizedHtmlForInternalBlocks =
 soydata.VERY_UNSAFE.$$ordainSanitizedJsForInternalBlocks =
     soydata.$$makeSanitizedContentFactoryWithDefaultDirOnlyForInternalBlocks_(
         soydata.SanitizedJs);
+
+
+/**
+ * Creates kind="trustedResourceUri" block contents (internal use only).
+ *
+ * @param {*} content Text.
+ * @return {soydata.SanitizedTrustedResourceUri|soydata.$$EMPTY_STRING_} Wrapped
+ *     result.
+ */
+soydata.VERY_UNSAFE.$$ordainSanitizedTrustedResourceUriForInternalBlocks =
+    soydata.$$makeSanitizedContentFactoryWithDefaultDirOnlyForInternalBlocks_(
+        soydata.SanitizedTrustedResourceUri);
 
 
 /**
@@ -1486,6 +1539,8 @@ soy.$$filterNormalizeMediaUri = function(value) {
   return soy.esc.$$filterNormalizeMediaUriHelper(value);
 };
 
+
+// TODO(shwetakarwa): Add filterTrustedResourceUri function.
 
 /**
  * Allows only data-protocol image URI's.

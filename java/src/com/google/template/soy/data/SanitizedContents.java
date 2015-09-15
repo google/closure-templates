@@ -98,8 +98,8 @@ public final class SanitizedContents {
       if (dir == Dir.NEUTRAL) {
         // neutral + x -> x
         dir = content.getContentDirection();
-      } else if (content.getContentDirection() == dir ||
-          content.getContentDirection() == Dir.NEUTRAL) {
+      } else if (content.getContentDirection() == dir
+          || content.getContentDirection() == Dir.NEUTRAL) {
         // x + x|neutral -> x, so leave dir unchanged.
       } else {
         // LTR|unknown + RTL|unknown -> unknown
@@ -202,6 +202,7 @@ public final class SanitizedContents {
       case URI:
       case ATTRIBUTES:
       case CSS:
+      case TRUSTED_RESOURCE_URI:
         return Dir.LTR;
       default:
         return null;

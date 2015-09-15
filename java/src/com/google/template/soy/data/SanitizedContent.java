@@ -87,6 +87,9 @@ public abstract class SanitizedContent extends SoyData implements SoyString {
     /** A properly encoded portion of a URI. */
     URI,
 
+    /** Resource URIs used in scrips sources, stylesheets, etc which are not in attacker control. */
+    TRUSTED_RESOURCE_URI,
+
     /** An attribute name and value, such as {@code dir="ltr"}. */
     ATTRIBUTES,
 
@@ -174,10 +177,10 @@ public abstract class SanitizedContent extends SoyData implements SoyString {
 
   @Override
   public boolean equals(@Nullable Object other) {
-    return other instanceof SanitizedContent &&
-        this.contentKind == ((SanitizedContent) other).contentKind &&
-        this.contentDir == ((SanitizedContent) other).contentDir &&
-        this.getContent().equals(((SanitizedContent) other).getContent());
+    return other instanceof SanitizedContent
+        && this.contentKind == ((SanitizedContent) other).contentKind
+        && this.contentDir == ((SanitizedContent) other).contentDir
+        && this.getContent().equals(((SanitizedContent) other).getContent());
   }
 
 

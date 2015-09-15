@@ -424,12 +424,14 @@ class IActuallyUnderstandSoyTypeSafetyAndHaveSecurityApproval:
 
 
 class CONTENT_KIND:
-  HTML, JS, JS_STR_CHARS, URI, ATTRIBUTES, CSS, TEXT = range(1, 8)
+  (HTML, JS, JS_STR_CHARS, URI, TRUSTED_RESOURCE_URI, ATTRIBUTES, CSS,
+   TEXT) = range(1, 9)
 
   @staticmethod
   def decodeKind(i):
     i = i - 1;
-    return ['HTML', 'JS', 'JS_STR_CHARS', 'URI', 'ATTRIBUTES', 'CSS', 'TEXT'][i]
+    return ['HTML', 'JS', 'JS_STR_CHARS', 'URI', 'TRUSTED_RESOURCE_URI',
+            'ATTRIBUTES', 'CSS', 'TEXT'][i]
 
 
 class DIR:
@@ -509,6 +511,14 @@ class SanitizedUri(SanitizedContent):
 
   def __init__(self, content=None, approval=None):
     super(SanitizedUri, self).__init__(content, DIR.LTR, approval)
+
+
+class SanitizedTrustedResourceUri(SanitizedContent):
+  content_kind = CONTENT_KIND.TRUSTED_RESOURCE_URI
+
+  def __init__(self, content=None, approval=None):
+    super(SanitizedTrustedResourceUri, self).__init__(content, DIR.LTR,
+                                                      approval)
 
 
 class UnsanitizedText(SanitizedContent):
