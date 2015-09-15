@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
-import com.google.template.soy.shared.restricted.SoyJavaRuntimeFunction;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 
 import java.util.Set;
@@ -69,56 +68,6 @@ public final class FunctionAdapters {
     }
 
     return mapBuilder.build();
-  }
-
-  /**
-   * Given the set of all Soy function implementations, a specific Soy function type (subtype of
-   * SoyFunction) to look for, another Soy function type to look for that is an equivalent
-   * deprecated version of the specific Soy function type, and an adapt function for adapting the
-   * deprecated type to the specific type, finds the Soy functions that implement either type and
-   * returns them in the form of a map from function name to function, where the functions with
-   * the deprecated type have been adapted using the adapt function.
-   *
-   * @param <T> The specific Soy function type to look for.
-   * @param <D> The equivalent deprecated Soy function type to also look for.
-   * @param soyFunctionsSet The set of all Soy functions.
-   * @param specificSoyFunctionType The class of the specific Soy function type to look for.
-   * @param equivDeprecatedSoyFunctionType The class of the equivalent deprecated Soy function
-   *     type to also look for.
-   * @param adaptFn The adapt function that adapts the deprecated type to the specific type.
-   * @return A map of the relevant specific Soy functions (name to function).
-   */
-  public static <T extends SoyFunction, D extends SoyFunction>
-      ImmutableMap<String, T> buildSpecificSoyFunctionsMapWithAdaptation(
-      Set<SoyFunction> soyFunctionsSet, Class<T> specificSoyFunctionType,
-      Class<D> equivDeprecatedSoyFunctionType, Function<D, T> adaptFn) {
-
-    ImmutableMap<String, T> tMap =
-        buildSpecificSoyFunctionsMap(soyFunctionsSet, specificSoyFunctionType);
-    ImmutableMap<String, D> dMap =
-        buildSpecificSoyFunctionsMap(soyFunctionsSet, equivDeprecatedSoyFunctionType);
-
-    ImmutableMap.Builder<String, T> resultMapBuilder = ImmutableMap.builder();
-    resultMapBuilder.putAll(tMap);
-    for (String functionName : dMap.keySet()) {
-      if (tMap.containsKey(functionName)) {
-        if (tMap.get(functionName).equals(dMap.get(functionName))) {
-          throw new IllegalStateException(String.format(
-              "Found function named '%s' that implements both %s and" +
-                  " %s -- please remove the latter deprecated interface.",
-              functionName, specificSoyFunctionType.getSimpleName(),
-              equivDeprecatedSoyFunctionType.getSimpleName()));
-        } else {
-          throw new IllegalStateException(String.format(
-              "Found two functions with the same name '%s', one implementing %s and the" +
-                  " other implementing %s",
-              functionName, specificSoyFunctionType.getSimpleName(),
-              equivDeprecatedSoyFunctionType.getSimpleName()));
-        }
-      }
-      resultMapBuilder.put(functionName, adaptFn.apply(dMap.get(functionName)));
-    }
-    return resultMapBuilder.build();
   }
 
   /**

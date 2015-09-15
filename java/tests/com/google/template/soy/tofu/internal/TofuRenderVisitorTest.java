@@ -20,7 +20,6 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -31,22 +30,21 @@ import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.basicdirectives.BasicDirectivesModule;
 import com.google.template.soy.basicfunctions.BasicFunctionsModule;
 import com.google.template.soy.data.SoyData;
+import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueHelper;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.shared.internal.ErrorReporterModule;
 import com.google.template.soy.shared.internal.SharedModule;
 import com.google.template.soy.shared.restricted.SoyFunction;
+import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
-import com.google.template.soy.shared.restricted.SoyJavaRuntimeFunction;
 import com.google.template.soy.shared.restricted.SoyJavaRuntimePrintDirective;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.sharedpasses.SharedPassesModule;
 import com.google.template.soy.sharedpasses.render.RenderVisitor;
 import com.google.template.soy.sharedpasses.render.RenderVisitorFactory;
 import com.google.template.soy.soytree.TemplateRegistry;
-import com.google.template.soy.tofu.restricted.SoyAbstractTofuFunction;
 import com.google.template.soy.tofu.restricted.SoyAbstractTofuPrintDirective;
-import com.google.template.soy.tofu.restricted.SoyTofuFunction;
 import com.google.template.soy.tofu.restricted.SoyTofuPrintDirective;
 
 import junit.framework.TestCase;
@@ -61,72 +59,18 @@ import java.util.Set;
  */
 public class TofuRenderVisitorTest extends TestCase {
 
-  // These three reverse plugins have identical behavior. They differ only in their
-  // class hierarchies (which, unfortunately, is important to test, because
-  // the legacy SoyTofuFunction and SoyJavaRuntimeFunction have to be adapted to the canonical
-  // SoyJavaFunction).
+  private static final class Reverse implements SoyJavaFunction {
 
-  private static final class Reverse1 extends SoyAbstractTofuFunction {
-
-    static final SoyFunction INSTANCE = new Reverse1();
+    static final SoyJavaFunction INSTANCE = new Reverse();
 
     @Override
-    public SoyData compute(List<SoyData> args) {
-      return StringData.forValue(
-          new StringBuilder(Iterables.getOnlyElement(args).coerceToString())
-              .reverse()
-              .toString());
+    public SoyValue computeForJava(List<SoyValue> args) {
+      return StringData.forValue(new StringBuilder(args.get(0).stringValue()).reverse().toString());
     }
 
     @Override
     public String getName() {
-      return "reverse1";
-    }
-
-    @Override
-    public Set<Integer> getValidArgsSizes() {
-      return ImmutableSet.of(1);
-    }
-  }
-
-  private static final class Reverse2 implements SoyJavaRuntimeFunction {
-
-    static final SoyFunction INSTANCE = new Reverse2();
-
-    @Override
-    public SoyData compute(List<SoyData> args) {
-      return StringData.forValue(
-          new StringBuilder(Iterables.getOnlyElement(args).coerceToString())
-          .reverse()
-          .toString());
-    }
-
-    @Override
-    public String getName() {
-      return "reverse2";
-    }
-
-    @Override
-    public Set<Integer> getValidArgsSizes() {
-      return ImmutableSet.of(1);
-    }
-  }
-
-  private static final class Reverse3 implements SoyTofuFunction {
-
-    static final SoyFunction INSTANCE = new Reverse3();
-
-    @Override
-    public SoyData computeForTofu(List<SoyData> args) {
-      return StringData.forValue(
-          new StringBuilder(Iterables.getOnlyElement(args).coerceToString())
-              .reverse()
-              .toString());
-    }
-
-    @Override
-    public String getName() {
-      return "reverse3";
+      return "reverse";
     }
 
     @Override
@@ -226,10 +170,7 @@ public class TofuRenderVisitorTest extends TestCase {
         protected void configure() {
           Multibinder<SoyFunction> functionMultibinder =
               Multibinder.newSetBinder(binder(), SoyFunction.class);
-          functionMultibinder.addBinding().to(Reverse1.class);
-          functionMultibinder.addBinding().to(Reverse2.class);
-          functionMultibinder.addBinding().to(Reverse3.class);
-
+          functionMultibinder.addBinding().to(Reverse.class);
           Multibinder<SoyPrintDirective> directiveMultibinder =
               Multibinder.newSetBinder(binder(), SoyPrintDirective.class);
           directiveMultibinder.addBinding().to(Caps1.class);
@@ -284,23 +225,16 @@ public class TofuRenderVisitorTest extends TestCase {
   }
 
   // Regression test covering rollback of cl/101592053.
-  public void testTofuFunctions() {
+  public void testJavaFunctions() {
     String soyFileContent =
         "{namespace ns autoescape=\"strict\"}\n"
             + "/***/\n"
             + "{template .foo kind=\"html\"}\n"
-            + "  {reverse1('hello')}\n"
-            + "  {reverse2('hello')}\n"
-            + "  {reverse3('hello')}\n"
+            + "  {reverse('hello')}\n"
             + "{/template}\n";
 
     ParseResult result = SoyFileSetParserBuilder.forFileContents(soyFileContent)
-        .soyFunctionMap(
-            SoyFileSet.adaptSoyJavaRuntimeFunctionsAndSoyTofuFunctions(
-                ImmutableMap.of(
-                    Reverse1.INSTANCE.getName(), Reverse1.INSTANCE,
-                    Reverse2.INSTANCE.getName(), Reverse2.INSTANCE,
-                    Reverse3.INSTANCE.getName(), Reverse3.INSTANCE)))
+        .soyFunctionMap(ImmutableMap.of(Reverse.INSTANCE.getName(), Reverse.INSTANCE))
         .parse();
     TemplateRegistry registry = result.registry();
 
@@ -315,7 +249,7 @@ public class TofuRenderVisitorTest extends TestCase {
         null /* xidRenamingMap */,
         null /* cssRenamingMap */);
     rv.exec(registry.getBasicTemplate("ns.foo"));
-    assertThat(out.toString()).isEqualTo("olleholleholleh");
+    assertThat(out.toString()).isEqualTo("olleh");
   }
 
   public void testTofuPrintDirectives() {

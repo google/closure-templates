@@ -38,7 +38,6 @@ import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
-import com.google.template.soy.shared.restricted.SoyJavaRuntimeFunction;
 import com.google.template.soy.shared.restricted.SoyJavaRuntimePrintDirective;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.types.SoyTypeProvider;
@@ -146,42 +145,8 @@ public final class SharedModule extends AbstractModule {
   @Singleton
   @Shared Map<String, SoyJavaFunction> provideSoyJavaFunctionsMap(
       Set<SoyFunction> soyFunctionsSet) {
-    return FunctionAdapters.buildSpecificSoyFunctionsMapWithAdaptation(
-        soyFunctionsSet, SoyJavaFunction.class, SoyJavaRuntimeFunction.class,
-        new Function<SoyJavaRuntimeFunction, SoyJavaFunction>() {
-          @Override
-          public SoyJavaFunction apply(SoyJavaRuntimeFunction input) {
-            return new SoyJavaRuntimeFunctionAdapter(input);
-          }
-        });
+    return FunctionAdapters.buildSpecificSoyFunctionsMap(soyFunctionsSet, SoyJavaFunction.class);
   }
-
-  /**
-   * Private helper class for provideSoyJavaFunctionsMap() to adapt SoyJavaRuntimeFunction to
-   * SoyJavaFunction.
-   */
-  public static class SoyJavaRuntimeFunctionAdapter implements SoyJavaFunction {
-
-    /** The underlying SoyJavaRuntimeFunction that is being adapted. */
-    private final SoyJavaRuntimeFunction adaptee;
-
-    public SoyJavaRuntimeFunctionAdapter(SoyJavaRuntimeFunction adaptee) {
-      this.adaptee = adaptee;
-    }
-
-    @Override public SoyValue computeForJava(List<SoyValue> args) {
-      List<SoyData> castArgs = Lists.newArrayListWithCapacity(args.size());
-      for (SoyValue arg : args) {
-        castArgs.add((SoyData) arg);
-      }
-      return adaptee.compute(castArgs);
-    }
-
-    @Override public String getName() { return adaptee.getName(); }
-
-    @Override public Set<Integer> getValidArgsSizes() { return adaptee.getValidArgsSizes(); }
-  }
-
 
   /**
    * Builds and provides the map of SoyJavaPrintDirectives (name to directive).

@@ -71,12 +71,10 @@ import com.google.template.soy.pysrc.internal.PySrcMain;
 import com.google.template.soy.shared.SoyAstCache;
 import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.shared.internal.MainEntryPointUtils;
-import com.google.template.soy.shared.internal.SharedModule.SoyJavaRuntimeFunctionAdapter;
 import com.google.template.soy.shared.internal.SharedModule.SoyJavaRuntimePrintDirectiveAdapter;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
-import com.google.template.soy.shared.restricted.SoyJavaRuntimeFunction;
 import com.google.template.soy.shared.restricted.SoyJavaRuntimePrintDirective;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.sharedpasses.AssertStrictAutoescapingVisitor;
@@ -96,7 +94,6 @@ import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.tofu.SoyTofu;
 import com.google.template.soy.tofu.internal.BaseTofu.BaseTofuFactory;
-import com.google.template.soy.tofu.restricted.SoyTofuFunction;
 import com.google.template.soy.tofu.restricted.SoyTofuPrintDirective;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.xliffmsgplugin.XliffMsgPlugin;
@@ -931,27 +928,14 @@ public final class SoyFileSet {
   }
 
   private ServerCompilationPrimitives compileForServerRendering() {
-    SyntaxVersion declaredSyntaxVersion =
-        generalOptions.getDeclaredSyntaxVersion(SyntaxVersion.V2_0);
-    // This parse tree will be used for Java execution, so its FunctionNodes need to be decorated
-    // with appropriate SoyFunction implementations. The canonical SoyFunction implementation
-    // for Java is SoyFunction, but there are also two legacy implementations,
-    // SoyTofuFunction and SoyJavaRuntimeFunction, that could be lurking in the soyFunctionMap.
-    // They have to be adapted to SoyJavaFunctions before parsing.
-    //
-    // TODO(user): delete all adaptation logic once SoyTofuFunction and SoyJavaRuntimeFunction
-    // are gone.
-    ImmutableMap<String, ? extends SoyFunction> adaptedSoyFunctions
-        = adaptSoyJavaRuntimeFunctionsAndSoyTofuFunctions(soyFunctionMap);
     ParseResult result = parse(
-        SyntaxVersion.V2_0,
-        false /* allowUnknownGlobals */,
-        typeRegistry,
-        adaptedSoyFunctions);
+        SyntaxVersion.V2_0, false /* allowUnknownGlobals */, typeRegistry, soyFunctionMap);
     ((ErrorReporterImpl) errorReporter).throwIfErrorsPresent();
 
     SoyFileSetNode soyTree = result.fileSet();
     TemplateRegistry registry = result.registry();
+    SyntaxVersion declaredSyntaxVersion =
+        generalOptions.getDeclaredSyntaxVersion(SyntaxVersion.V2_0);
     registry = runMiddleendPasses(registry, soyTree, declaredSyntaxVersion);
 
     // Clear the SoyDoc strings because they use unnecessary memory, unless we have a cache, in
@@ -966,7 +950,7 @@ public final class SoyFileSet {
     ImmutableMap<String, ? extends SoyPrintDirective> adaptedPrintDirectives
         = adaptSoyJavaRuntimePrintDirectivesAndSoyTofuPrintDirectives(printDirectives);
     return new ServerCompilationPrimitives(
-        soyTree, registry, transitiveIjs, adaptedSoyFunctions, adaptedPrintDirectives);
+        soyTree, registry, transitiveIjs, soyFunctionMap, adaptedPrintDirectives);
   }
 
   private ImmutableMap<String, ImmutableSortedSet<String>> getTransitiveIjs(
@@ -1322,35 +1306,6 @@ public final class SoyFileSet {
   }
 
   /**
-   * Given a map of Soy functions, returns an equivalent map, where
-   * all {@link SoyJavaRuntimeFunction} and {@link SoyTofuFunction} implementations
-   * have been adapted to canonical {@link SoyJavaFunction}s.
-   *
-   * <p>TODO(user): remove once the legacy SoyFunctions are gone.
-   */
-  @VisibleForTesting
-  public static ImmutableMap<String, ? extends SoyFunction>
-  adaptSoyJavaRuntimeFunctionsAndSoyTofuFunctions(
-      ImmutableMap<String, ? extends SoyFunction> input) {
-    ImmutableMap.Builder<String, SoyFunction> output = ImmutableMap.builder();
-    for (Map.Entry<String, ? extends SoyFunction> entry : input.entrySet()) {
-      String functionName = entry.getKey();
-      SoyFunction function = entry.getValue();
-      if (function instanceof SoyJavaRuntimeFunction) {
-        output.put(
-            functionName, new SoyJavaRuntimeFunctionAdapter((SoyJavaRuntimeFunction) function));
-      } else if (function instanceof SoyTofuFunction) {
-        output.put(
-            functionName, new SoyTofuFunctionAdapter((SoyTofuFunction) function));
-      } else {
-        output.put(
-            functionName, function);
-      }
-    }
-    return output.build();
-  }
-
-  /**
    * Given a map of print directives, returns an equivalent map, where
    * all {@link SoyJavaRuntimePrintDirective} and {@link SoyTofuPrintDirective} implementations
    * have been adapted to canonical {@link SoyJavaPrintDirective}s.
@@ -1378,28 +1333,6 @@ public final class SoyFileSet {
       }
     }
     return output.build();
-  }
-
-  private static final class SoyTofuFunctionAdapter implements SoyJavaFunction {
-
-    /** The underlying SoyTofuFunction that is being adapted. */
-    private final SoyTofuFunction adaptee;
-
-    public SoyTofuFunctionAdapter(SoyTofuFunction adaptee) {
-      this.adaptee = adaptee;
-    }
-
-    @Override public SoyValue computeForJava(List<SoyValue> args) {
-      List<SoyData> castArgs = Lists.newArrayListWithCapacity(args.size());
-      for (SoyValue arg : args) {
-        castArgs.add((SoyData) arg);
-      }
-      return adaptee.computeForTofu(castArgs);
-    }
-
-    @Override public String getName() { return adaptee.getName(); }
-
-    @Override public Set<Integer> getValidArgsSizes() { return adaptee.getValidArgsSizes(); }
   }
 
   private static final class SoyTofuPrintDirectiveAdapter implements SoyJavaPrintDirective {
