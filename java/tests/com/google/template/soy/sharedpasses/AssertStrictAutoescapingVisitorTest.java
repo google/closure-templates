@@ -30,40 +30,50 @@ import junit.framework.TestCase;
 public final class AssertStrictAutoescapingVisitorTest extends TestCase {
 
   public void testStrictTemplate() {
-    String soyCode = "{namespace foo.bar autoescape=\"strict\"}\n"
-        + "{template .foo autoescape=\"strict\"}\n"
-        + "  {$boo}\n"
-        + "{/template}\n";
+    String soyCode =
+        "{namespace foo.bar autoescape=\"strict\"}\n"
+            + "{template .foo autoescape=\"strict\"}\n"
+            + "{@param boo : ?}\n"
+            + "  {$boo}\n"
+            + "{/template}\n";
     assertFalse(causesStrictException(soyCode));
 
-    soyCode = "{namespace foo.bar}\n"
-        + "{template .foo}\n"
-        + "  {$boo}\n"
-        + "{/template}\n";
+    soyCode =
+        "{namespace foo.bar}\n"
+            + "{template .foo}\n"
+            + "{@param boo : ?}\n"
+            + "  {$boo}\n"
+            + "{/template}\n";
     assertFalse(causesStrictException(soyCode));
   }
 
   public void testNonStrictNamespace() {
-    String soyCode = "{namespace foo.bar autoescape=\"deprecated-contextual\"}\n"
-        + "{template .foo autoescape=\"strict\"}\n"
-        + "  {$boo}\n"
-        + "{/template}\n";
+    String soyCode =
+        "{namespace foo.bar autoescape=\"deprecated-contextual\"}\n"
+            + "{template .foo autoescape=\"strict\"}\n"
+            + "{@param boo : ?}\n"
+            + "  {$boo}\n"
+            + "{/template}\n";
     assertTrue(causesStrictException(soyCode));
   }
 
   public void testNonStrictTemplate() {
-    String soyCode = "{namespace foo.bar autoescape=\"strict\"}\n"
-        + "{template .foo autoescape=\"deprecated-contextual\"}\n"
-        + "  {$boo}\n"
-        + "{/template}\n";
+    String soyCode =
+        "{namespace foo.bar autoescape=\"strict\"}\n"
+            + "{template .foo autoescape=\"deprecated-contextual\"}\n"
+            + "{@param boo : ?}\n"
+            + "  {$boo}\n"
+            + "{/template}\n";
     assertTrue(causesStrictException(soyCode));
   }
 
   public void testNonDeclaredTemplate() {
-    String soyCode = "{namespace foo.bar autoescape=\"deprecated-noncontextual\"}\n"
-        + "{template .foo}\n"
-        + "  {$boo}\n"
-        + "{/template}\n";
+    String soyCode =
+        "{namespace foo.bar autoescape=\"deprecated-noncontextual\"}\n"
+            + "{template .foo}\n"
+            + "{@param boo : ?}\n"
+            + "  {$boo}\n"
+            + "{/template}\n";
     assertTrue(causesStrictException(soyCode));
   }
 

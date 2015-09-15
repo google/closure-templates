@@ -48,45 +48,49 @@ public class ResolvePackageRelativeCssNamesVisitorTest extends TestCase {
   }
 
   public void testBaseCssOnNamespace() {
-    List<CssNode> cssNodes = compileTemplate(
-        "{namespace boo cssbase=\"some.test.package\"}\n\n" +
-        "/** Test template. @param goo */\n" +
-        "{template .foo}\n" +
-        "  <div class=\"{css %AAA}\">\n" +
-        "{/template}\n");
+    List<CssNode> cssNodes =
+        compileTemplate(
+            "{namespace boo cssbase=\"some.test.package\"}\n\n"
+                + "/** Test template.*/\n"
+                + "{template .foo}\n"
+                + "  <div class=\"{css %AAA}\">\n"
+                + "{/template}\n");
 
     assertThat(cssNodes.get(0).getSelectorText()).isEqualTo("someTestPackageAAA");
   }
 
   public void testBaseCssOnTemplate() {
-    List<CssNode> cssNodes = compileTemplate(
-        "{namespace boo}\n\n" +
-        "/** Test template. @param goo */\n" +
-        "{template .foo cssbase=\"some.test.package\"}\n" +
-        "  <div class=\"{css %AAA}\">\n" +
-        "{/template}\n");
+    List<CssNode> cssNodes =
+        compileTemplate(
+            "{namespace boo}\n\n"
+                + "/** Test template.  */\n"
+                + "{template .foo cssbase=\"some.test.package\"}\n"
+                + "  <div class=\"{css %AAA}\">\n"
+                + "{/template}\n");
 
     assertThat(cssNodes.get(0).getSelectorText()).isEqualTo("someTestPackageAAA");
   }
 
   public void testRequireCssOnNamespace() {
-    List<CssNode> cssNodes = compileTemplate(
-        "{namespace boo requirecss=\"some.test.package,some.other.package\"}\n\n" +
-        "/** Test template. @param goo */\n" +
-        "{template .foo}\n" +
-        "  <div class=\"{css %AAA}\">\n" +
-        "{/template}\n");
+    List<CssNode> cssNodes =
+        compileTemplate(
+            "{namespace boo requirecss=\"some.test.package,some.other.package\"}\n\n"
+                + "/** Test template. */\n"
+                + "{template .foo}\n"
+                + "  <div class=\"{css %AAA}\">\n"
+                + "{/template}\n");
 
     assertThat(cssNodes.get(0).getSelectorText()).isEqualTo("someTestPackageAAA");
   }
 
   public void testUnprefixedNode() {
-    List<CssNode> cssNodes = compileTemplate(
-        "{namespace boo cssbase=\"some.test.package\"}\n\n" +
-        "/** Test template. @param goo */\n" +
-        "{template .foo}\n" +
-        "  <div class=\"{css AAA}\">\n" +
-        "{/template}\n");
+    List<CssNode> cssNodes =
+        compileTemplate(
+            "{namespace boo cssbase=\"some.test.package\"}\n\n"
+                + "/** Test template. */\n"
+                + "{template .foo}\n"
+                + "  <div class=\"{css AAA}\">\n"
+                + "{/template}\n");
 
     assertThat(cssNodes.get(0).getSelectorText()).isEqualTo("AAA");
   }
@@ -94,11 +98,11 @@ public class ResolvePackageRelativeCssNamesVisitorTest extends TestCase {
   public void testMissingCssBase() {
     try {
       compileTemplate(
-          "{namespace boo}\n\n" +
-          "/** Test template. @param goo */\n" +
-          "{template .foo}\n" +
-          "  <div class=\"{css %AAA}\">\n" +
-          "{/template}\n");
+          "{namespace boo}\n\n"
+              + "/** Test template. */\n"
+              + "{template .foo}\n"
+              + "  <div class=\"{css %AAA}\">\n"
+              + "{/template}\n");
       fail("Exception expected");
     } catch (SoySyntaxException e) {
       assertThat(e.getMessage()).contains("No CSS package");
@@ -108,11 +112,11 @@ public class ResolvePackageRelativeCssNamesVisitorTest extends TestCase {
   public void testWithComponentName() {
     try {
       compileTemplate(
-          "{namespace boo}\n\n" +
-          "/** Test template. @param goo */\n" +
-          "{template .foo}\n" +
-          "  <div class=\"{css $goo, %AAA}\">\n" +
-          "{/template}\n");
+          "{namespace boo}\n\n"
+              + "/** Test template. */\n"
+              + "{template .foo}\n"
+              + "  <div class=\"{css $goo, %AAA}\">\n"
+              + "{/template}\n");
       fail("Exception expected");
     } catch (SoySyntaxException e) {
       assertThat(e.getMessage()).contains("component expression");

@@ -124,12 +124,14 @@ public final class ContentSecurityPolicyPassTest extends TestCase {
     assertInjected(
         join(
             "{template .foo}\n",
+            "  {@param appScriptUrl: ?}\n",
             "<script src='{$appScriptUrl |filterNormalizeUri |escapeHtmlAttribute}'",
             NONCE + ">",
             "alert('Hello, World!')</script>\n",
             "{/template}"),
         join(
             "{template .foo}\n",
+            "  {@param appScriptUrl: ?}\n",
             "<script src='{$appScriptUrl}'>",
             "alert('Hello, World!')</script>\n",
             "{/template}"));

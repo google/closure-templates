@@ -20,15 +20,8 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.SoyFileSetParserBuilder;
-import com.google.template.soy.basetree.SyntaxVersion;
-import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.error.FormattingErrorReporter;
-import com.google.template.soy.sharedpasses.CheckTemplateParamsVisitor;
-import com.google.template.soy.soytree.SoyFileSetNode;
-import com.google.template.soy.soytree.TemplateRegistry;
 
 import junit.framework.TestCase;
 
@@ -170,23 +163,14 @@ public final class CheckCallsVisitorTest extends TestCase {
 
 
   private void assertValidSoyFiles(String... soyFileContents) {
-    ErrorReporter boom = ExplodingErrorReporter.get();
-    ParseResult result =
-        SoyFileSetParserBuilder.forFileContents(soyFileContents).errorReporter(boom).parse();
-    TemplateRegistry registry = result.registry();
-    SoyFileSetNode soyTree = result.fileSet();
-    new CheckTemplateParamsVisitor(registry, SyntaxVersion.V2_0, boom).exec(soyTree);
-    new CheckCallsVisitor(registry, boom).exec(soyTree);
+    // Throws IllegalStateException on parse error.
+    SoyFileSetParserBuilder.forFileContents(soyFileContents).parse();
   }
 
 
   private void assertInvalidSoyFiles(String expectedErrorMsgSubstr, String... soyFileContents) {
     FormattingErrorReporter errorReporter = new FormattingErrorReporter();
-    ParseResult result = SoyFileSetParserBuilder.forFileContents(soyFileContents).parse();
-    TemplateRegistry registry = result.registry();
-    SoyFileSetNode soyTree = result.fileSet();
-    new CheckTemplateParamsVisitor(registry, SyntaxVersion.V2_0, errorReporter).exec(soyTree);
-    new CheckCallsVisitor(registry, errorReporter).exec(soyTree);
+    SoyFileSetParserBuilder.forFileContents(soyFileContents).errorReporter(errorReporter).parse();
     ImmutableList<String> errorMessages = errorReporter.getErrorMessages();
     assertThat(errorMessages).hasSize(1);
     assertThat(Iterables.getFirst(errorMessages, null)).contains(expectedErrorMsgSubstr);

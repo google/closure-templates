@@ -58,10 +58,14 @@ public final class OptimizeBidiCodeGenVisitorTest extends TestCase {
   public void testOptimizeBidiCodeGenForStaticDir() {
 
     String soyCode =
-        // These 3 nodes should combine into one RawTextNode.
-        "{bidiMark()}{bidiStartEdge() |noAutoescape}{bidiEndEdge() |escapeHtml}\n" +
-        // These 4 nodes don't get replaced.
-        "{$goo}{bidiDirAttr($moo)}{bidiMark() |insertWordBreaks:5}{bidiStartEdge() |escapeUri}\n";
+        "{@param moo: ?}\n"
+            + "{@param goo: ?}\n"
+            +
+            // These 3 nodes should combine into one RawTextNode.
+            "{bidiMark()}{bidiStartEdge() |noAutoescape}{bidiEndEdge() |escapeHtml}\n"
+            +
+            // These 4 nodes don't get replaced.
+            "{$goo}{bidiDirAttr($moo)}{bidiMark() |insertWordBreaks:5}{bidiStartEdge() |escapeUri}";
 
     SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(soyCode).parse().fileSet();
     OptimizeBidiCodeGenVisitor optimizer =
@@ -81,9 +85,12 @@ public final class OptimizeBidiCodeGenVisitorTest extends TestCase {
   public void testOptimizeBidiCodeGenForCodeSnippetDir() {
 
     String soyCode =
-        // None of these nodes should get replaced.
-        "{bidiMark()}{bidiStartEdge() |noAutoescape}{bidiEndEdge() |escapeHtml}\n" +
-        "{$goo}{bidiDirAttr($moo)}{bidiMark() |insertWordBreaks:5}{bidiStartEdge() |escapeUri}\n";
+        "{@param moo: ?}\n"
+            + "{@param goo: ?}\n"
+            // None of these nodes should get replaced.
+            + "{bidiMark()}{bidiStartEdge() |noAutoescape}{bidiEndEdge() |escapeHtml}\n"
+            + "{$goo}{bidiDirAttr($moo)}"
+            + "{bidiMark() |insertWordBreaks:5}{bidiStartEdge() |escapeUri}";
 
     SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(soyCode).parse().fileSet();
     OptimizeBidiCodeGenVisitor optimizer =

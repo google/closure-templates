@@ -3933,8 +3933,8 @@ goog.addDependency('ui/zippy.js', ['goog.ui.Zippy', 'goog.ui.Zippy.Events', 'goo
 goog.addDependency('ui/zippy_test.js', ['goog.ui.ZippyTest'], ['goog.a11y.aria', 'goog.dom', 'goog.dom.TagName', 'goog.dom.classlist', 'goog.events', 'goog.object', 'goog.testing.events', 'goog.testing.jsunit', 'goog.ui.Zippy'], false);
 goog.addDependency('uri/uri.js', ['goog.Uri', 'goog.Uri.QueryData'], ['goog.array', 'goog.string', 'goog.structs', 'goog.structs.Map', 'goog.uri.utils', 'goog.uri.utils.ComponentIndex', 'goog.uri.utils.StandardQueryParam'], false);
 goog.addDependency('uri/uri_test.js', ['goog.UriTest'], ['goog.Uri', 'goog.testing.jsunit'], false);
-goog.addDependency('uri/utils.js', ['goog.uri.utils', 'goog.uri.utils.ComponentIndex', 'goog.uri.utils.QueryArray', 'goog.uri.utils.QueryValue', 'goog.uri.utils.StandardQueryParam'], ['goog.asserts', 'goog.string', 'goog.userAgent'], false);
-goog.addDependency('uri/utils_test.js', ['goog.uri.utilsTest'], ['goog.functions', 'goog.string', 'goog.testing.PropertyReplacer', 'goog.testing.jsunit', 'goog.uri.utils'], false);
+goog.addDependency('uri/utils.js', ['goog.uri.utils', 'goog.uri.utils.ComponentIndex', 'goog.uri.utils.QueryArray', 'goog.uri.utils.QueryValue', 'goog.uri.utils.StandardQueryParam'], ['goog.asserts', 'goog.string'], false);
+goog.addDependency('uri/utils_test.js', ['goog.uri.utilsTest'], ['goog.functions', 'goog.string', 'goog.testing.jsunit', 'goog.uri.utils'], false);
 goog.addDependency('useragent/adobereader.js', ['goog.userAgent.adobeReader'], ['goog.string', 'goog.userAgent'], false);
 goog.addDependency('useragent/adobereader_test.js', ['goog.userAgent.adobeReaderTest'], ['goog.testing.jsunit', 'goog.userAgent.adobeReader'], false);
 goog.addDependency('useragent/flash.js', ['goog.userAgent.flash'], ['goog.string'], false);
@@ -5368,14 +5368,6 @@ goog.string.compareElements_ = function(left, right) {
 
 
 /**
- * Maximum value of #goog.string.hashCode, exclusive. 2^32.
- * @type {number}
- * @private
- */
-goog.string.HASHCODE_MAX_ = 0x100000000;
-
-
-/**
  * String hash function similar to java.lang.String.hashCode().
  * The hash code for a string is computed as
  * s[0] * 31 ^ (n - 1) + s[1] * 31 ^ (n - 2) + ... + s[n - 1],
@@ -5389,9 +5381,8 @@ goog.string.HASHCODE_MAX_ = 0x100000000;
 goog.string.hashCode = function(str) {
   var result = 0;
   for (var i = 0; i < str.length; ++i) {
-    result = 31 * result + str.charCodeAt(i);
     // Normalize to 4 byte range, 0 ... 2^32.
-    result %= goog.string.HASHCODE_MAX_;
+    result = (31 * result + str.charCodeAt(i)) >>> 0;
   }
   return result;
 };

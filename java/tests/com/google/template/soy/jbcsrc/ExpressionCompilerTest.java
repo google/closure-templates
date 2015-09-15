@@ -41,6 +41,7 @@ import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
+import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.jbcsrc.ExpressionTester.ExpressionSubject;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
@@ -456,7 +457,8 @@ public class ExpressionCompilerTest extends TestCase {
   }
 
   private SoyExpression compileExpression(String soyExpr) {
-    String createTemplateBody = createTemplateBody(soyExpr);
+    // The fake function allows us to work around the 'can't print bool' restrictions
+    String createTemplateBody = createTemplateBody("fakeFunction(" + soyExpr + ")");
     PrintNode code =
         (PrintNode)
             SoyFileSetParserBuilder.forTemplateContents(createTemplateBody)
@@ -465,7 +467,8 @@ public class ExpressionCompilerTest extends TestCase {
                 .getChild(0)
                 .getChild(0)
                 .getChild(0);
-    return testExpressionCompiler.compile(code.getExprUnion().getExpr());
+    return testExpressionCompiler.compile(
+        ((FunctionNode) code.getExprUnion().getExpr().getChild(0)).getChild(0));
   }
 
   private String createTemplateBody(String soyExpr) {

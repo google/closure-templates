@@ -115,16 +115,19 @@ public final class GenPyCodeVisitorTest extends TestCase {
   }
 
   public void testOutputScope() {
-    String soyFile = SOY_NAMESPACE
-        + "{template .helloWorld}\n"
-        + "  {if $foo}\n"
-        + "    {for $i in range(5)}\n"
-        + "      {$boo[$i]}\n"
-        + "    {/for}\n"
-        + "  {else}\n"
-        + "    Blah\n"
-        + "  {/if}\n"
-        + "{/template}\n";
+    String soyFile =
+        SOY_NAMESPACE
+            + "{template .helloWorld}\n"
+            + "  {@param foo : ?}\n"
+            + "  {@param boo : ?}\n"
+            + "  {if $foo}\n"
+            + "    {for $i in range(5)}\n"
+            + "      {$boo[$i]}\n"
+            + "    {/for}\n"
+            + "  {else}\n"
+            + "    Blah\n"
+            + "  {/if}\n"
+            + "{/template}\n";
 
     String expectedPyFile = EXPECTED_PYFILE_START + "\n\n"
         + "def helloWorld(data={}, ijData={}):\n"
@@ -141,14 +144,15 @@ public final class GenPyCodeVisitorTest extends TestCase {
 
   public void testSwitch() {
     String soyCode =
-        "{switch $boo}\n"
-        + "  {case 0}\n"
-        + "     Hello\n"
-        + "  {case 1}\n"
-        + "     World\n"
-        + "  {default}\n"
-        + "     !\n"
-        + "{/switch}\n";
+        "{@param boo : ?}\n"
+            + "{switch $boo}\n"
+            + "  {case 0}\n"
+            + "     Hello\n"
+            + "  {case 1}\n"
+            + "     World\n"
+            + "  {default}\n"
+            + "     !\n"
+            + "{/switch}\n";
     String expectedPyCode =
         "switchValue = data.get('boo')\n"
         + "if runtime.type_safe_eq(switchValue, 0):\n"
@@ -162,10 +166,11 @@ public final class GenPyCodeVisitorTest extends TestCase {
 
   public void testSwitch_defaultOnly() {
     String soyCode =
-        "{switch $boo}\n"
-        + "  {default}\n"
-        + "     Hello World!\n"
-        + "{/switch}\n";
+        "{@param boo : ?}\n"
+            + "{switch $boo}\n"
+            + "  {default}\n"
+            + "     Hello World!\n"
+            + "{/switch}\n";
     String expectedPyCode =
         "switchValue = data.get('boo')\n"
         + "output.append('Hello World!')\n";
@@ -174,27 +179,25 @@ public final class GenPyCodeVisitorTest extends TestCase {
 
   public void testFor() {
     String soyCode =
-        "{for $i in range(5)}\n"
-        + "  {$boo[$i]}\n"
-        + "{/for}\n";
+        "{@param boo : ?}\n" + "{for $i in range(5)}\n" + "  {$boo[$i]}\n" + "{/for}\n";
     String expectedPyCode =
         "for i### in xrange(5):\n"
         + "  output.append(str(runtime.key_safe_data_access(data.get('boo'), i###)))\n";
     assertThatSoyCode(soyCode).compilesTo(expectedPyCode);
 
-    soyCode =
-        "{for $i in range(5, 10)}\n"
-        + "  {$boo[$i]}\n"
-        + "{/for}\n";
+    soyCode = "{@param boo : ?}\n" + "{for $i in range(5, 10)}\n" + "  {$boo[$i]}\n" + "{/for}\n";
     expectedPyCode =
         "for i### in xrange(5, 10):\n"
         + "  output.append(str(runtime.key_safe_data_access(data.get('boo'), i###)))\n";
     assertThatSoyCode(soyCode).compilesTo(expectedPyCode);
 
     soyCode =
-        "{for $i in range($foo, $boo, $goo)}\n"
-        + "  {$boo[$i]}\n"
-        + "{/for}\n";
+        "  {@param boo : ?}\n"
+            + "  {@param goo : ?}\n"
+            + "  {@param foo : ?}\n"
+            + "{for $i in range($foo, $boo, $goo)}\n"
+            + "  {$boo[$i]}\n"
+            + "{/for}\n";
     expectedPyCode =
         "for i### in xrange(data.get('foo'), data.get('boo'), data.get('goo')):\n"
         + "  output.append(str(runtime.key_safe_data_access(data.get('boo'), i###)))\n";
@@ -203,9 +206,10 @@ public final class GenPyCodeVisitorTest extends TestCase {
 
   public void testForeach() {
     String soyCode =
-        "{foreach $operand in $operands}\n"
-        + "  {$operand}\n"
-        + "{/foreach}\n";
+        "{@param operands : ?}\n"
+            + "{foreach $operand in $operands}\n"
+            + "  {$operand}\n"
+            + "{/foreach}\n";
 
     // There's no simple way to account for all instances of the id in these variables, so for now
     // we just hardcode '3'.
@@ -217,29 +221,32 @@ public final class GenPyCodeVisitorTest extends TestCase {
     assertThatSoyCode(soyCode).compilesTo(expectedPyCode);
 
     soyCode =
-        "{foreach $operand in $operands}\n"
-        + "  {isFirst($operand)}\n"
-        + "  {isLast($operand)}\n"
-        + "  {index($operand)}\n"
-        + "{/foreach}\n";
+        "{@param operands : ?}\n"
+            + "{foreach $operand in $operands}\n"
+            + "  {isFirst($operand) ? 1 : 0}\n"
+            + "  {isLast($operand) ? 1 : 0}\n"
+            + "  {index($operand)}\n"
+            + "{/foreach}\n";
 
     expectedPyCode =
         "operandList### = data.get('operands')\n"
-        + "for operandIndex###, operandData### in enumerate(operandList###):\n"
-        + "  output.extend([str(operandIndex### == 0),"
-                         + "str(operandIndex### == len(operandList###) - 1),"
-                         + "str(operandIndex###)])\n";
+            + "for operandIndex###, operandData### in enumerate(operandList###):\n"
+            + "  output.extend([str(1 if operandIndex### == 0 else 0),"
+            + "str(1 if operandIndex### == len(operandList###) - 1 else 0),"
+            + "str(operandIndex###)])\n";
 
     assertThatSoyCode(soyCode).compilesTo(expectedPyCode);
   }
 
   public void testForeach_ifempty() {
     String soyCode =
-        "{foreach $operand in $operands}\n"
-        + "  {$operand}\n"
-        + "{ifempty}\n"
-        + "  {$foo}"
-        + "{/foreach}\n";
+        "{@param operands : ?}\n"
+            + "{@param foo : ?}\n"
+            + "{foreach $operand in $operands}\n"
+            + "  {$operand}\n"
+            + "{ifempty}\n"
+            + "  {$foo}"
+            + "{/foreach}\n";
 
     String expectedPyCode =
         "operandList### = data.get('operands')\n"
@@ -253,14 +260,13 @@ public final class GenPyCodeVisitorTest extends TestCase {
   }
 
   public void testLetValue() {
-    assertThatSoyCode("{let $foo: $boo /}\n").compilesTo("foo__soy### = data.get('boo')\n");
+    assertThatSoyCode("{@param boo : ?}\n" + "{let $foo: $boo /}\n")
+        .compilesTo("foo__soy### = data.get('boo')\n");
   }
 
   public void testLetContent() {
     String soyCode =
-        "{let $foo kind=\"html\"}\n"
-        + "  Hello {$boo}\n"
-        + "{/let}\n";
+        "{@param boo : ?}\n" + "{let $foo kind=\"html\"}\n" + "  Hello {$boo}\n" + "{/let}\n";
 
     String expectedPyCode =
         "foo__soy### = ['Hello ',str(data.get('boo'))]\n"
@@ -272,12 +278,13 @@ public final class GenPyCodeVisitorTest extends TestCase {
 
   public void testLetContent_notComputableAsExpr() {
     String soyCode =
-        "{let $foo kind=\"html\"}\n"
-        + "  {for $num in range(5)}\n"
-        + "    {$num}\n"
-        + "  {/for}\n"
-        + "  Hello {$boo}\n"
-        + "{/let}\n";
+        "{@param boo : ?}\n"
+            + "{let $foo kind=\"html\"}\n"
+            + "  {for $num in range(5)}\n"
+            + "    {$num}\n"
+            + "  {/for}\n"
+            + "  Hello {$boo}\n"
+            + "{/let}\n";
 
     String expectedPyCode =
         "foo__soy### = []\n"
@@ -291,10 +298,7 @@ public final class GenPyCodeVisitorTest extends TestCase {
   }
 
   public void testLetContent_noContentKind() {
-    String soyCode =
-        "{let $foo}\n"
-        + "  Hello {$boo}\n"
-        + "{/let}\n";
+    String soyCode = "{@param boo : ?}\n" + "{let $foo}\n" + "  Hello {$boo}\n" + "{/let}\n";
 
     assertThatSoyCode(soyCode).compilesWithException(SoySyntaxException.class);
   }

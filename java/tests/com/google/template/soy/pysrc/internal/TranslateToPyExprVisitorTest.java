@@ -144,10 +144,10 @@ public class TranslateToPyExprVisitorTest extends TestCase {
   }
 
   public void testEqualOperator() {
-    assertThatSoyExpr("'5' == 5").translatesTo(
-        new PyExpr("runtime.type_safe_eq('5', 5)", Integer.MAX_VALUE));
-    assertThatSoyExpr("'5' == $boo").translatesTo(
-        new PyExpr("runtime.type_safe_eq('5', data.get('boo'))", Integer.MAX_VALUE));
+    assertThatSoyExpr("'5' == 5 ? 1 : 0")
+        .translatesTo(new PyExpr("1 if runtime.type_safe_eq('5', 5) else 0", 1));
+    assertThatSoyExpr("'5' == $boo ? 1 : 0")
+        .translatesTo(new PyExpr("1 if runtime.type_safe_eq('5', data.get('boo')) else 0", 1));
   }
 
   public void testNotEqualOperator() {

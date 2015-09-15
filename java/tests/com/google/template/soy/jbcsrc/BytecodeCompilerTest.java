@@ -92,15 +92,18 @@ public class BytecodeCompilerTest extends TestCase {
         "{/deltemplate}",
         "");
 
-    String soyFileContent3 = Joiner.on("\n").join(
-        "{delpackage AlternateSecretFeature}",
-        "{namespace ns3 autoescape=\"strict\"}",
-        "",
-        "/** */",
-        "{deltemplate myApp.myDelegate}",  // implementation in AlternateSecretFeature
-        "  222 {call .helper data=\"all\" /}",
-        "{/deltemplate}",
-        "");
+    String soyFileContent3 =
+        Joiner.on("\n")
+            .join(
+                "{delpackage AlternateSecretFeature}",
+                "{namespace ns3 autoescape=\"strict\"}",
+                "",
+                "/** */",
+                "{deltemplate myApp.myDelegate}", // implementation in AlternateSecretFeature
+                "  {@param boo : string}",
+                "  222 {call .helper data=\"all\" /}",
+                "{/deltemplate}",
+                "");
 
     String soyFileContent4 = Joiner.on("\n").join(
         "{namespace ns3 autoescape=\"strict\"}",
@@ -641,7 +644,8 @@ public class BytecodeCompilerTest extends TestCase {
         TemplateTester.compileTemplateBody(
             "{@param foo : string}",
             "{@param baz : string}",
-            "{@inject bar : string}");
+            "{@inject bar : string}",
+            "{$foo + $baz + $bar}");
     EasyDictImpl params = new EasyDictImpl(SoyValueHelper.UNCUSTOMIZED_INSTANCE);
     params.setField("foo", StringData.forValue("foo"));
     params.setField("bar", StringData.forValue("bar"));

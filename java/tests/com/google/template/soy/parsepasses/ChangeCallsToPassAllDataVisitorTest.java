@@ -39,10 +39,12 @@ public final class ChangeCallsToPassAllDataVisitorTest extends TestCase {
 
   public void testChangedCall() {
     String callCode =
-        "{call .foo}\n" +
-        "  {param xxx: $xxx /}\n" +
-        "  {param yyyZzz: $yyyZzz /}\n" +
-        "{/call}\n";
+        "{@param xxx : ? }\n"
+            + "{@param yyyZzz : ? }\n"
+            + "{call .foo}\n"
+            + "  {param xxx: $xxx /}\n"
+            + "  {param yyyZzz: $yyyZzz /}\n"
+            + "{/call}\n";
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forTemplateContents(callCode).errorReporter(FAIL).parse().fileSet();
     new ChangeCallsToPassAllDataVisitor().exec(soyTree);
@@ -50,9 +52,10 @@ public final class ChangeCallsToPassAllDataVisitorTest extends TestCase {
         .isEqualTo("{call .foo data=\"all\" /}");
 
     callCode =
-        "{call .foo data=\"all\"}\n" +
-        "  {param xxx: $xxx /}\n" +
-        "{/call}\n";
+        "{@param xxx : ? }\n"
+            + "{call .foo data=\"all\"}\n"
+            + "  {param xxx: $xxx /}\n"
+            + "{/call}\n";
     soyTree =
         SoyFileSetParserBuilder.forTemplateContents(callCode).errorReporter(FAIL).parse().fileSet();
     new ChangeCallsToPassAllDataVisitor().exec(soyTree);
@@ -67,48 +70,34 @@ public final class ChangeCallsToPassAllDataVisitorTest extends TestCase {
         "{call .foo /}\n";
     testUnchangedCallHelper(callCode);
 
-    callCode =
-        "{call .foo data=\"$goo\" /}\n";
+    callCode = "{@param goo : ? }\n" + "{call .foo data=\"$goo\" /}\n";
     testUnchangedCallHelper(callCode);
 
     callCode =
-        "{call .foo data=\"$goo\"}\n" +
-        "  {param xxx: $xxx /}\n" +
-        "  {param yyyZzz: $yyyZzz /}\n" +
-        "{/call}\n";
+        "{@param goo : ? }\n"
+            + "{@param xxx : ? }\n"
+            + "{@param yyyZzz : ? }\n"
+            + "{call .foo data=\"$goo\"}\n"
+            + "  {param xxx: $xxx /}\n"
+            + "  {param yyyZzz: $yyyZzz /}\n"
+            + "{/call}\n";
     testUnchangedCallHelper(callCode);
 
-    callCode =
-        "{call .foo}\n" +
-        "  {param xxx: $xxx0 /}\n" +
-        "{/call}\n";
+    callCode = "{@param xxx0 : ? }\n" + "{call .foo}\n" + "  {param xxx: $xxx0 /}\n" + "{/call}\n";
     testUnchangedCallHelper(callCode);
 
     callCode = "{call .foo}\n" + "  {param xxx: 'xxx' /}\n" + "{/call}\n";
     testUnchangedCallHelper(callCode);
 
-    callCode =
-        "{call .foo}\n" +
-        "  {param xxx: $goo.xxx /}\n" +
-        "{/call}\n";
+    callCode = "{@param goo: ? }\n" + "{call .foo}\n" + "  {param xxx: $goo.xxx /}\n" + "{/call}\n";
     testUnchangedCallHelper(callCode);
 
     callCode =
-        "{call .foo}\n" +
-        "  {param xxx: $xxx.goo /}\n" +
-        "{/call}\n";
+        "{@param xxx : ? }\n" + "{call .foo}\n" + "  {param xxx: $xxx.goo /}\n" + "{/call}\n";
     testUnchangedCallHelper(callCode);
 
     callCode =
-        "{call .foo}\n" +
-        "  {param xxx: 'xxx' /}\n" +
-        "{/call}\n";
-    testUnchangedCallHelper(callCode);
-
-    callCode =
-        "{call .foo}\n" +
-        "  {param xxx}{$xxx}{/param}\n" +
-        "{/call}\n";
+        "{@param xxx : ? }\n" + "{call .foo}\n" + "  {param xxx}{$xxx}{/param}\n" + "{/call}\n";
     testUnchangedCallHelper(callCode);
 
     callCode =
@@ -118,10 +107,11 @@ public final class ChangeCallsToPassAllDataVisitorTest extends TestCase {
     testUnchangedCallHelper(callCode);
 
     callCode =
-        "{call .foo}\n" +
-        "  {param xxx: $xxx /}\n" +
-        "  {param yyyZzz: $xxx.yyyZzz /}\n" +
-        "{/call}\n";
+        "{@param xxx : ? }\n"
+            + "{call .foo}\n"
+            + "  {param xxx: $xxx /}\n"
+            + "  {param yyyZzz: $xxx.yyyZzz /}\n"
+            + "{/call}\n";
     testUnchangedCallHelper(callCode);
   }
 
@@ -142,24 +132,20 @@ public final class ChangeCallsToPassAllDataVisitorTest extends TestCase {
 
   public void testUnchangedCallWithLoopVar() {
     String soyCode =
-        "{call .foo}\n" +  // should be changed
-        "  {param xxx: $xxx /}\n" +
-        "{/call}\n" +
-        "{foreach $xxx in $xxxs}\n" +
-        "  {call .foo}\n" +  // should not be changed (param references loop var)
-        "    {param xxx: $xxx /}\n" +
-        "  {/call}\n" +
-        "{/foreach}";
+        "{@param xxxs : ? }\n"
+            + "{foreach $xxx in $xxxs}\n"
+            + "  {call .foo}\n"
+            + // should not be changed (param references loop var)
+            "    {param xxx: $xxx /}\n"
+            + "  {/call}\n"
+            + "{/foreach}";
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forTemplateContents(soyCode).errorReporter(FAIL).parse().fileSet();
 
-    CallNode callNodeOutsideLoopBeforePass = (CallNode) SharedTestUtils.getNode(soyTree, 0);
-    CallNode callNodeInsideLoopBeforePass = (CallNode) SharedTestUtils.getNode(soyTree, 1, 0, 0);
+    CallNode callNodeInsideLoopBeforePass = (CallNode) SharedTestUtils.getNode(soyTree, 0, 0, 0);
     new ChangeCallsToPassAllDataVisitor().exec(soyTree);
-    CallNode callNodeOutsideLoopAfterPass = (CallNode) SharedTestUtils.getNode(soyTree, 0);
-    CallNode callNodeInsideLoopAfterPass = (CallNode) SharedTestUtils.getNode(soyTree, 1, 0, 0);
+    CallNode callNodeInsideLoopAfterPass = (CallNode) SharedTestUtils.getNode(soyTree, 0, 0, 0);
 
-    assertThat(callNodeOutsideLoopAfterPass).isNotSameAs(callNodeOutsideLoopBeforePass);
     assertThat(callNodeInsideLoopAfterPass).isSameAs(callNodeInsideLoopBeforePass);
   }
 

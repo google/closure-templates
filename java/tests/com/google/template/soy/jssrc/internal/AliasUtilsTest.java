@@ -20,6 +20,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.SoyFileSetParserBuilder;
+import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.soytree.SoyFileSetNode;
 
 import junit.framework.TestCase;
@@ -47,7 +48,11 @@ public class AliasUtilsTest extends TestCase {
         + "  {call name.space.localOne /}\n"
         + "{/template}\n";
 
-    SoyFileSetNode n = SoyFileSetParserBuilder.forFileContents(fileBody).parse().fileSet();
+    SoyFileSetNode n =
+        SoyFileSetParserBuilder.forFileContents(fileBody)
+            .declaredSyntaxVersion(SyntaxVersion.V1_0)
+            .parse()
+            .fileSet();
     ImmutableMap<String, String> templateAliases = AliasUtils.createAliasMapping(n.getChild(0));
     assertThat(templateAliases).isEmpty();
   }

@@ -18,6 +18,7 @@ package com.google.template.soy.jssrc.internal;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import com.google.common.base.Joiner;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ExplodingErrorReporter;
@@ -41,46 +42,67 @@ public class CanInitOutputVarVisitorTest extends TestCase {
 
     runTestHelper("{msg desc=\"\"}Blah{/msg}", true, 1);  // GoogMsgRefNode
 
-    runTestHelper("{msg desc=\"\"}<a href=\"{$url}\">Click here</a>{/msg}",
-                  true, 0, 0, 0);  // MsgHtmlTagNode
+    runTestHelper(
+        "{@param url: ? }\n{msg desc=\"\"}<a href=\"{$url}\">Click here</a>{/msg}",
+        true,
+        0,
+        0,
+        0); // MsgHtmlTagNode
 
-    runTestHelper("{msg desc=\"\"}<a href=\"{$url}\">Click here</a>{/msg}",
-                  true, 0, 0, 2);  // MsgHtmlTagNode
+    runTestHelper(
+        "{@param url: ? }\n{msg desc=\"\"}<a href=\"{$url}\">Click here</a>{/msg}",
+        true,
+        0,
+        0,
+        2); // MsgHtmlTagNode
 
     runTestHelper("{msg desc=\"\"}<span id=\"{for $i in range(3)}{$i}{/for}\">{/msg}",
                   true, 0, 0, 0);  // MsgHtmlTagNode
 
-    runTestHelper("{$boo.foo}", true);
+    runTestHelper("{@param boo: ? }\n{$boo.foo}", true);
 
     runTestHelper("{xid selected-option}", true);
 
     runTestHelper("{css selected-option}", true);
 
-    runTestHelper("{switch $boo}{case 0}Blah{case 1}Bleh{default}Bluh{/switch}", true);
+    runTestHelper(
+        "{@param boo: ? }\n{switch $boo}{case 0}Blah{case 1}Bleh{default}Bluh{/switch}", true);
 
-    runTestHelper("{foreach $boo in $booze}{$boo}{/foreach}", true);
+    runTestHelper("{@param booze: ? }\n{foreach $boo in $booze}{$boo}{/foreach}", true);
 
     runTestHelper("{for $i in range(4)}{$i + 1}{/for}", true);
 
-    runTestHelper("{if $boo}Blah{elseif $foo}Bleh{else}Bluh{/if}", true);
+    runTestHelper(
+        "{@param boo: ?}\n{@param foo: ?}\n{if $boo}Blah{elseif $foo}Bleh{else}Bluh{/if}", true);
 
-    runTestHelper("{if $goo}{foreach $moo in $moose}{$moo}{/foreach}{/if}", true);
+    runTestHelper(
+        "{@param goo: ?}\n"
+            + "{@param moose: ?}\n"
+            + "{if $goo}{foreach $moo in $moose}{$moo}{/foreach}{/if}",
+        true);
 
     runTestHelper("{call .foo data=\"all\" /}", true);
 
-    runTestHelper("{call .foo data=\"$boo\"}{param goo : $moo /}{/call}",
-                  true);
+    runTestHelper(
+        "{@param boo: ?}\n"
+            + "{@param moo: ?}\n"
+            + "{call .foo data=\"$boo\"}{param goo : $moo /}{/call}",
+        true);
 
-    runTestHelper("{call .foo data=\"$boo\"}{param goo}Blah{/param}{/call}",
-                  true);
+    runTestHelper("{@param boo: ?}\n{call .foo data=\"$boo\"}{param goo}Blah{/param}{/call}", true);
   }
 
 
   public void testNotSameValueAsIsComputableAsJsExprsVisitor() {
-    runTestHelper("{call .foo data=\"$boo\"}" +
-                  "{param goo}{foreach $moo in $moose}{$moo}{/foreach}{/param}" +
-                  "{/call}",
-                  false);
+    runTestHelper(
+        Joiner.on('\n')
+            .join(
+                "{@param boo : ?}",
+                "{@param moose : ?}",
+                "{call .foo data=\"$boo\"}",
+                "{param goo}{foreach $moo in $moose}{$moo}{/foreach}{/param}",
+                "{/call}"),
+        false);
   }
 
 

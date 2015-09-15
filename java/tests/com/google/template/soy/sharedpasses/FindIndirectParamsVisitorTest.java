@@ -44,74 +44,89 @@ public final class FindIndirectParamsVisitorTest extends TestCase {
   public void testFindIndirectParams() {
 
     String fileContent1 =
-        "{namespace alpha autoescape=\"deprecated-noncontextual\"}\n" +
-        "\n" +
-        "/** @param a0 @param b3 */\n" +  // 'b3' listed by alpha.zero
-        "{template .zero}\n" +
-        "  {call .zero data=\"all\" /}\n" +  // recursive call should not cause 'a0' to be added
-        "  {call .one data=\"all\" /}\n" +
-        "  {call .two /}\n" +
-        "  {call beta.zero /}\n" +
-        "  {call .five data=\"all\"}\n" +
-        "    {param a5: $a0 /}\n" +
-        "    {param b2: 88 /}\n" +
-        "  {/call}\n" +
-        "{/template}\n" +
-        "\n" +
-        "/** @param a1 */\n" +
-        "{template .one}\n" +
-        "  {call .three data=\"all\" /}\n" +
-        "  {call .four /}\n" +
-        "{/template}\n" +
-        "\n" +
-        "/** @param a2 */\n" +
-        "{template .two}\n" +
-        "{/template}\n" +
-        "\n" +
-        "/** @param a3 */\n" +
-        "{template .three}\n" +
-        "  {call beta.one data=\"all\" /}\n" +
-        "{/template}\n" +
-        "\n" +
-        "/** @param a4 */\n" +
-        "{template .four}\n" +
-        "  {call external.one /}\n" +
-        "{/template}\n" +
-        "\n" +
-        "/** @param a5 @param b4 */\n" +  // 'b4' listed by alpha.five
-        "{template .five}\n" +
-        "  {call beta.two data=\"all\" /}\n" +
-        "  {call beta.three data=\"all\" /}\n" +
-        "  {call beta.four data=\"all\" /}\n" +
-        "{/template}\n" +
-        "\n" +
-        "/** @param a6 */\n" +
-        "{template .six}\n" +
-        "{/template}\n";
+        "{namespace alpha autoescape=\"deprecated-noncontextual\"}\n"
+            + "\n"
+            + "/** @param? a0 @param? b3 */\n"
+            + // 'b3' listed by alpha.zero
+            "{template .zero}\n"
+            + "  {call .zero data=\"all\" /}\n"
+            + // recursive call should not cause 'a0' to be added
+            "  {call .one data=\"all\" /}\n"
+            + "  {call .two /}\n"
+            + "  {call beta.zero /}\n"
+            + "  {call .five data=\"all\"}\n"
+            + "    {param a5: $a0 /}\n"
+            + "    {param b2: 88 /}\n"
+            + "  {/call}\n"
+            + "{/template}\n"
+            + "\n"
+            + "/** @param? a1 */\n"
+            + "{template .one}\n"
+            + "  {call .three data=\"all\" /}\n"
+            + "  {call .four /}\n"
+            + "  {$a1}\n"
+            + "{/template}\n"
+            + "\n"
+            + "/** @param? a2 */\n"
+            + "{template .two}\n"
+            + "  {$a2}\n"
+            + "{/template}\n"
+            + "\n"
+            + "/** @param? a3 */\n"
+            + "{template .three}\n"
+            + "  {call beta.one data=\"all\" /}\n"
+            + "  {$a3}\n"
+            + "{/template}\n"
+            + "\n"
+            + "/** @param? a4 */\n"
+            + "{template .four}\n"
+            + "  {call external.one /}\n"
+            + "  {$a4}\n"
+            + "{/template}\n"
+            + "\n"
+            + "/** @param? a5 @param? b4 */\n"
+            + // 'b4' listed by alpha.five
+            "{template .five}\n"
+            + "  {call beta.two data=\"all\" /}\n"
+            + "  {call beta.three data=\"all\" /}\n"
+            + "  {call beta.four data=\"all\" /}\n"
+            + "  {$b4}\n"
+            + "  {$a5}\n"
+            + "{/template}\n"
+            + "\n"
+            + "/** @param? a6 */\n"
+            + "{template .six}\n"
+            + "  {$a6}\n"
+            + "{/template}\n";
 
     String fileContent2 =
-        "{namespace beta autoescape=\"deprecated-noncontextual\"}\n" +
-        "\n" +
-        "/** @param b0 */\n" +
-        "{template .zero}\n" +
-        "{/template}\n" +
-        "\n" +
-        "/** @param b1 */\n" +
-        "{template .one}\n" +
-        "  {call alpha.six data=\"all\" /}\n" +
-        "{/template}\n" +
-        "\n" +
-        "/** @param b2 */\n" +
-        "{template .two}\n" +
-        "{/template}\n" +
-        "\n" +
-        "/** @param b3 */\n" +
-        "{template .three}\n" +
-        "{/template}\n" +
-        "\n" +
-        "/** @param b4 */\n" +
-        "{template .four}\n" +
-        "{/template}\n";
+        "{namespace beta autoescape=\"deprecated-noncontextual\"}\n"
+            + "\n"
+            + "/** @param? b0 */\n"
+            + "{template .zero}\n"
+            + "  {$b0}\n"
+            + "{/template}\n"
+            + "\n"
+            + "/** @param? b1 */\n"
+            + "{template .one}\n"
+            + "  {call alpha.six data=\"all\" /}\n"
+            + "  {$b1}\n"
+            + "{/template}\n"
+            + "\n"
+            + "/** @param? b2 */\n"
+            + "{template .two}\n"
+            + "  {$b2}\n"
+            + "{/template}\n"
+            + "\n"
+            + "/** @param? b3 */\n"
+            + "{template .three}\n"
+            + "  {$b3}\n"
+            + "{/template}\n"
+            + "\n"
+            + "/** @param? b4 */\n"
+            + "{template .four}\n"
+            + "  {$b4}\n"
+            + "{/template}\n";
 
     ErrorReporter boom = ExplodingErrorReporter.get();
     SoyFileSetNode soyTree =

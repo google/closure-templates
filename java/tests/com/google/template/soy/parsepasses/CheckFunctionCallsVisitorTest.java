@@ -146,18 +146,19 @@ public final class CheckFunctionCallsVisitorTest extends TestCase {
   public void testLoopVariableNotInScopeWhenEmpty() {
     assertFunctionCallsInvalid(
         "Function 'index' must have a foreach loop variable as its argument",
-        Joiner.on('\n').join(
-            "{namespace ns autoescape=\"deprecated-noncontextual\"}\n",
-            "/**",
-            " * @param elements",
-            " */",
-            "{template .foo}",
-            "  {foreach $z in $elements}",
-            "    Lorem Ipsum...",
-            "  {ifempty}",
-            "    {print index($z)}",  // Loop variable not in scope when empty.
-            "  {/foreach}",
-            "{/template}"));
+        Joiner.on('\n')
+            .join(
+                "{namespace ns autoescape=\"deprecated-noncontextual\"}\n",
+                "/**",
+                " * @param elements",
+                " */",
+                "{template .foo}",
+                "  {foreach $z in $elements}",
+                "    Lorem Ipsum...",
+                "  {ifempty}",
+                "    {print index($elements)}", // Loop variable not in scope when empty.
+                "  {/foreach}",
+                "{/template}"));
   }
 
   public void testQuoteKeysIfJsFunction() {

@@ -42,7 +42,6 @@ public final class CheckTemplateVisibilityTest extends TestCase {
       + "{template .bar}\n"
       + "{call .foo /}\n"
       + "{/template}")
-        .doRunCheckingPasses(true)
         .errorReporter(ExplodingErrorReporter.get())
         .parse();
   }
@@ -58,7 +57,6 @@ public final class CheckTemplateVisibilityTest extends TestCase {
       + "{template .bar}\n"
       + "{call .foo /}\n"
       + "{/template}")
-        .doRunCheckingPasses(true)
         .errorReporter(errorReporter)
         .parse();
     assertThat(errorReporter.getErrorMessages()).hasSize(1);
@@ -77,7 +75,6 @@ public final class CheckTemplateVisibilityTest extends TestCase {
       + "{template .bar}\n"
       + "{call ns.foo /}\n"
       + "{/template}")
-        .doRunCheckingPasses(true)
         .errorReporter(errorReporter)
         .parse();
     assertThat(errorReporter.getErrorMessages()).hasSize(1);

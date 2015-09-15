@@ -19,7 +19,6 @@ package com.google.template.soy.jssrc.internal;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.template.soy.SoyFileSetParserBuilder;
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.soytree.ForNode;
@@ -43,13 +42,16 @@ public final class ReplaceMsgsWithGoogMsgsVisitorTest extends TestCase {
 
   public void testReplaceMsgsWithGoogMsgsVisitor() {
 
-    String soyCode = "" +
-        "{msg desc=\"Tells the user to click a link.\"}\n" +
-        "  Hello {$userName}, please click <a href=\"{$url}\">here</a>.\n" +
-        "{/msg}\n" +
-        "{msg meaning=\"blah\" desc=\"A span with generated id.\" hidden=\"true\"}\n" +
-        "  <span id=\"{for $i in range(3)}{$i}{/for}\">\n" +
-        "{/msg}\n";
+    String soyCode =
+        ""
+            + "{@param userName: ?}\n"
+            + "{@param url: ?}\n"
+            + "{msg desc=\"Tells the user to click a link.\"}\n"
+            + "  Hello {$userName}, please click <a href=\"{$url}\">here</a>.\n"
+            + "{/msg}\n"
+            + "{msg meaning=\"blah\" desc=\"A span with generated id.\" hidden=\"true\"}\n"
+            + "  <span id=\"{for $i in range(3)}{$i}{/for}\">\n"
+            + "{/msg}\n";
 
     ErrorReporter boom = ExplodingErrorReporter.get();
     SoyFileSetNode soyTree =
@@ -111,24 +113,4 @@ public final class ReplaceMsgsWithGoogMsgsVisitorTest extends TestCase {
     GoogMsgRefNode gmr3 = (GoogMsgRefNode) template.getChild(3);
     assertThat(gmr3.getRenderedGoogMsgVarName()).isEqualTo(gmd2.getRenderedGoogMsgVarName());
   }
-
-
-  public void testDisallowsIcuEscapingInRawText() throws Exception {
-
-    String soyCode = "" +
-        "{msg genders=\"$gender\" desc=\"\"}\n" +
-        "  Gender is '{$gender}'.\n" +
-        "{/msg}\n";
-
-    try {
-      SoyFileSetParserBuilder.forTemplateContents(soyCode).parse();
-    } catch (SoySyntaxException sse) {
-      assertThat(sse.getMessage())
-          .contains(
-              "Apologies, Soy currently does not support a single quote character at the end of a"
-              + " text part in plural/gender source msgs (including immediately preceding an HTML"
-              + " tag or Soy tag).");
-    }
-  }
-
 }

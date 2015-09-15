@@ -58,19 +58,23 @@ public final class InsertMsgsVisitorTest extends TestCase {
   // -----------------------------------------------------------------------------------------------
   // Test basic messages.
 
-
-  private static final String BASIC_TEST_FILE_CONTENT = "" +
-      "{namespace boo autoescape=\"deprecated-noncontextual\"}\n" +
-      "\n" +
-      "/** Test template. */\n" +
-      "{template .foo}\n" +
-      "  {$boo}scary{sp}\n" +
-      "  {msg desc=\"Test.\"}\n" +
-      "    random{$foo}\n" +
-      "    <a href=\"{$goo}\">slimy</a>\n" +
-      "  {/msg}{sp}\n" +
-      "  {msg desc=\"\"}dairy{$moo}{/msg}\n" +
-      "{/template}\n";
+  private static final String BASIC_TEST_FILE_CONTENT =
+      ""
+          + "{namespace boo autoescape=\"deprecated-noncontextual\"}\n"
+          + "\n"
+          + "/** Test template. */\n"
+          + "{template .foo}\n"
+          + "  {@param boo: ?}\n"
+          + "  {@param foo: ?}\n"
+          + "  {@param moo: ?}\n"
+          + "  {@param goo: ?}\n"
+          + "  {$boo}scary{sp}\n"
+          + "  {msg desc=\"Test.\"}\n"
+          + "    random{$foo}\n"
+          + "    <a href=\"{$goo}\">slimy</a>\n"
+          + "  {/msg}{sp}\n"
+          + "  {msg desc=\"\"}dairy{$moo}{/msg}\n"
+          + "{/template}\n";
 
 
   public void testBasicMsgsUsingSoySource() {
@@ -174,25 +178,27 @@ public final class InsertMsgsVisitorTest extends TestCase {
   // -----------------------------------------------------------------------------------------------
   // Test plural/select messages.
 
-
-  private static final String PLRSEL_TEST_FILE_CONTENT = "" +
-      "{namespace boo autoescape=\"deprecated-noncontextual\"}\n" +
-      "\n" +
-      "/** Test template with plural/select msgs. */\n" +
-      "{template .foo}\n" +
-      "  {msg desc=\"Plural message.\"}\n" +
-      "    {plural $numFriends}\n" +
-      "      {case 1}Added a friend to your circle.\n" +
-      "      {default}Added {$numFriends} friends to your circle.\n" +
-      "    {/plural}\n" +
-      "  {/msg}\n" +
-      "  {msg desc=\"Select message.\"}\n" +
-      "    {select $gender}\n" +
-      "      {case 'female'}She is in your circles.\n" +
-      "      {default}He is in your circles.\n" +
-      "    {/select}\n" +
-      "  {/msg}\n" +
-      "{/template}\n";
+  private static final String PLRSEL_TEST_FILE_CONTENT =
+      ""
+          + "{namespace boo autoescape=\"deprecated-noncontextual\"}\n"
+          + "\n"
+          + "/** Test template with plural/select msgs. */\n"
+          + "{template .foo}\n"
+          + "  {@param gender: ?}\n"
+          + "  {@param numFriends: ?}\n"
+          + "  {msg desc=\"Plural message.\"}\n"
+          + "    {plural $numFriends}\n"
+          + "      {case 1}Added a friend to your circle.\n"
+          + "      {default}Added {$numFriends} friends to your circle.\n"
+          + "    {/plural}\n"
+          + "  {/msg}\n"
+          + "  {msg desc=\"Select message.\"}\n"
+          + "    {select $gender}\n"
+          + "      {case 'female'}She is in your circles.\n"
+          + "      {default}He is in your circles.\n"
+          + "    {/select}\n"
+          + "  {/msg}\n"
+          + "{/template}\n";
 
 
   public void testPlrselMsgsUsingSoySource() {
@@ -302,49 +308,56 @@ public final class InsertMsgsVisitorTest extends TestCase {
   // -----------------------------------------------------------------------------------------------
   // Test messages with fallback.
 
-
-  private static final String FALLBACK_TEST_FILE_CONTENT = "" +
-      "{namespace boo autoescape=\"deprecated-noncontextual\"}\n" +
-      "\n" +
-      "/** Test template. */\n" +
-      "{template .foo}\n" +
-      "  {msg desc=\"\"}\n" +  // no trans + no trans
-      "    noTrans1\n" +
-      "  {fallbackmsg desc=\"\"}\n" +
-      "    noTrans2\n" +
-      "  {/msg}\n" +
-      "  {msg desc=\"\"}\n" +  // trans + no trans
-      "    trans1\n" +
-      "  {fallbackmsg desc=\"\"}\n" +
-      "    noTrans2\n" +
-      "  {/msg}\n" +
-      "  {msg desc=\"\"}\n" +  // no trans + trans
-      "    noTrans1\n" +
-      "  {fallbackmsg desc=\"\"}\n" +
-      "    trans2\n" +
-      "  {/msg}\n" +
-      "  {msg desc=\"\"}\n" +  // trans + trans
-      "    trans1\n" +
-      "  {fallbackmsg desc=\"\"}\n" +
-      "    trans2\n" +
-      "  {/msg}\n" +
-      "  {msg desc=\"\"}\n" +  // trans + plursel
-      "    trans1\n" +
-      "  {fallbackmsg desc=\"\"}\n" +
-      "    {select $gender}\n" +
-      "      {case 'female'}She is in your circles.\n" +
-      "      {default}He is in your circles.\n" +
-      "    {/select}\n" +
-      "  {/msg}\n" +
-      "  {msg desc=\"\"}\n" +  // plrsel + trans
-      "    {select $gender}\n" +
-      "      {case 'female'}She is in your circles.\n" +
-      "      {default}He is in your circles.\n" +
-      "    {/select}\n" +
-      "  {fallbackmsg desc=\"\"}\n" +
-      "    trans2\n" +
-      "  {/msg}\n" +
-      "{/template}\n";
+  private static final String FALLBACK_TEST_FILE_CONTENT =
+      ""
+          + "{namespace boo autoescape=\"deprecated-noncontextual\"}\n"
+          + "\n"
+          + "/** Test template. */\n"
+          + "{template .foo}\n"
+          + "  {@param gender: ?}\n"
+          + "  {msg desc=\"\"}\n"
+          + // no trans + no trans
+          "    noTrans1\n"
+          + "  {fallbackmsg desc=\"\"}\n"
+          + "    noTrans2\n"
+          + "  {/msg}\n"
+          + "  {msg desc=\"\"}\n"
+          + // trans + no trans
+          "    trans1\n"
+          + "  {fallbackmsg desc=\"\"}\n"
+          + "    noTrans2\n"
+          + "  {/msg}\n"
+          + "  {msg desc=\"\"}\n"
+          + // no trans + trans
+          "    noTrans1\n"
+          + "  {fallbackmsg desc=\"\"}\n"
+          + "    trans2\n"
+          + "  {/msg}\n"
+          + "  {msg desc=\"\"}\n"
+          + // trans + trans
+          "    trans1\n"
+          + "  {fallbackmsg desc=\"\"}\n"
+          + "    trans2\n"
+          + "  {/msg}\n"
+          + "  {msg desc=\"\"}\n"
+          + // trans + plursel
+          "    trans1\n"
+          + "  {fallbackmsg desc=\"\"}\n"
+          + "    {select $gender}\n"
+          + "      {case 'female'}She is in your circles.\n"
+          + "      {default}He is in your circles.\n"
+          + "    {/select}\n"
+          + "  {/msg}\n"
+          + "  {msg desc=\"\"}\n"
+          + // plrsel + trans
+          "    {select $gender}\n"
+          + "      {case 'female'}She is in your circles.\n"
+          + "      {default}He is in your circles.\n"
+          + "    {/select}\n"
+          + "  {fallbackmsg desc=\"\"}\n"
+          + "    trans2\n"
+          + "  {/msg}\n"
+          + "{/template}\n";
 
 
   public void testFallbackMsgsUsingSoySource() {

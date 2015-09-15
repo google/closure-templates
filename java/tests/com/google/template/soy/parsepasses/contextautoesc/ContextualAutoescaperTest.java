@@ -120,11 +120,13 @@ public final class ContextualAutoescaperTest extends TestCase {
         join(
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "  {@param world: ?}\n",
             "Hello, {$world |escapeHtml}!\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "  {@param world: ?}\n",
             "Hello, {$world}!\n",
             "{/template}"));
   }
@@ -134,11 +136,13 @@ public final class ContextualAutoescaperTest extends TestCase {
         join(
             "{namespace ns}\n\n",
             "{template .privateFoo autoescape=\"deprecated-contextual\" private=\"true\"}\n",
+            "  {@param world: ?}\n",
             "Hello, {$world |escapeHtml}!\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
             "{template .privateFoo autoescape=\"deprecated-contextual\" private=\"true\"}\n",
+            "  {@param world: ?}\n",
             "Hello, {$world}!\n",
             "{/template}"));
   }
@@ -148,18 +152,20 @@ public final class ContextualAutoescaperTest extends TestCase {
         join(
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"deprecated-contextual\"}\n",
-              "Hello,",
-              "<a href='worlds?world={$world |escapeUri}'>",
-                "{$world |escapeHtml}",
-              "</a>!\n",
+            "  {@param world: ?}\n",
+            "Hello,",
+            "<a href='worlds?world={$world |escapeUri}'>",
+            "{$world |escapeHtml}",
+            "</a>!\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"deprecated-contextual\"}\n",
-              "Hello,\n",
-              "<a href='worlds?world={$world}'>\n",
-                "{$world}\n",
-              "</a>!\n",
+            "  {@param world: ?}\n",
+            "Hello,\n",
+            "<a href='worlds?world={$world}'>\n",
+            "{$world}\n",
+            "</a>!\n",
             "{/template}\n"));
   }
 
@@ -168,31 +174,33 @@ public final class ContextualAutoescaperTest extends TestCase {
         join(
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "  {@param x: ?}\n",
             //"<meta http-equiv=refresh content='{$x |filterNormalizeUri |escapeHtmlAttribute}'>",
-              "<a xml:base='{$x |filterNormalizeUri |escapeHtmlAttribute}' href='/foo'>link</a>",
-              "<button formaction='{$x |filterNormalizeUri |escapeHtmlAttribute}'>do</button>",
-              "<command icon='{$x |filterNormalizeUri |escapeHtmlAttribute}'></command>",
-              "<object data='{$x |filterNormalizeUri |escapeHtmlAttribute}'></object>",
-              "<video poster='{$x |filterNormalizeUri |escapeHtmlAttribute}'></video>",
-              "<video src='{$x |filterNormalizeUri |escapeHtmlAttribute}'></video>",
-              "<source src='{$x |filterNormalizeUri |escapeHtmlAttribute}'>",
-              "<audio src='{$x |filterNormalizeUri |escapeHtmlAttribute}'></audio>\n",
+            "<a xml:base='{$x |filterNormalizeUri |escapeHtmlAttribute}' href='/foo'>link</a>",
+            "<button formaction='{$x |filterNormalizeUri |escapeHtmlAttribute}'>do</button>",
+            "<command icon='{$x |filterNormalizeUri |escapeHtmlAttribute}'></command>",
+            "<object data='{$x |filterNormalizeUri |escapeHtmlAttribute}'></object>",
+            "<video poster='{$x |filterNormalizeUri |escapeHtmlAttribute}'></video>",
+            "<video src='{$x |filterNormalizeUri |escapeHtmlAttribute}'></video>",
+            "<source src='{$x |filterNormalizeUri |escapeHtmlAttribute}'>",
+            "<audio src='{$x |filterNormalizeUri |escapeHtmlAttribute}'></audio>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "  {@param x: ?}\n",
             // TODO(user): Re-enable content since it is often (but often not) used to convey
             // URLs in place of <link rel> once we can figure out a good way to distinguish the
             // URL use-cases from others.
             //"<meta http-equiv=refresh content='{$x}'>\n",
-              "<a xml:base='{$x}' href='/foo'>link</a>\n",
-              "<button formaction='{$x}'>do</button>\n",
-              "<command icon='{$x}'></command>\n",
-              "<object data='{$x}'></object>\n",
-              "<video poster='{$x}'></video>\n",
-              "<video src='{$x}'></video>\n",
-              "<source src='{$x}'>\n",
-              "<audio src='{$x}'></audio>",
+            "<a xml:base='{$x}' href='/foo'>link</a>\n",
+            "<button formaction='{$x}'>do</button>\n",
+            "<command icon='{$x}'></command>\n",
+            "<object data='{$x}'></object>\n",
+            "<video poster='{$x}'></video>\n",
+            "<video src='{$x}'></video>\n",
+            "<source src='{$x}'>\n",
+            "<audio src='{$x}'></audio>",
             "{/template}\n"));
   }
 
@@ -201,18 +209,24 @@ public final class ContextualAutoescaperTest extends TestCase {
         join(
             "{namespace ns}\n\n",
             "{template .bar autoescape=\"deprecated-contextual\"}\n",
+            "  {@param x: ?}\n",
+            "  {@param y: ?}\n",
+            "  {@param z: ?}\n",
             "Hello,",
             "{if $x == 1}",
-              "{$y |escapeHtml}",
+            "{$y |escapeHtml}",
             "{elseif $x == 2}",
-              "<script>foo({$z |escapeJsValue})</script>",
+            "<script>foo({$z |escapeJsValue})</script>",
             "{else}",
-              "World!",
+            "World!",
             "{/if}\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
             "{template .bar autoescape=\"deprecated-contextual\"}\n",
+            "  {@param x: ?}\n",
+            "  {@param y: ?}\n",
+            "  {@param z: ?}\n",
             "Hello,\n",
             "{if $x == 1}\n",
             "  {$y}\n",
@@ -231,32 +245,38 @@ public final class ContextualAutoescaperTest extends TestCase {
         join(
             "{namespace ns}\n\n",
             "{template .bar autoescape=\"deprecated-contextual\"}\n",
-              "<a",
-              "{if $url}",
-                " href='{$url |filterNormalizeUri |escapeHtmlAttribute}'>",
-              "{elseif $name}",
-                " name='{$name |escapeHtmlAttribute}'>",
-              "{else}",
-                ">",
-              "{/if}",
-              " onclick='alert({$value |escapeHtml})'\n",  // Not escapeJsValue.
+            "  {@param url: ?}\n",
+            "  {@param name: ?}\n",
+            "  {@param value: ?}\n",
+            "<a",
+            "{if $url}",
+            " href='{$url |filterNormalizeUri |escapeHtmlAttribute}'>",
+            "{elseif $name}",
+            " name='{$name |escapeHtmlAttribute}'>",
+            "{else}",
+            ">",
+            "{/if}",
+            " onclick='alert({$value |escapeHtml})'\n", // Not escapeJsValue.
             "{/template}"),
         join(
             "{namespace ns}\n\n",
             "{template .bar autoescape=\"deprecated-contextual\"}\n",
-              "<a",
-              // Each of these branches independently closes the tag.
-              "{if $url}",
-                " href='{$url}'>",
-              "{elseif $name}",
-                " name='{$name}'>",
-              "{else}",
-                ">",
-              "{/if}",
-              // So now make something that looks like a script attribute but which actually
-              // appears in a PCDATA.  If the context merge has properly happened is is escaped as
-              // PCDATA.
-              " onclick='alert({$value})'\n",
+            "  {@param url: ?}\n",
+            "  {@param name: ?}\n",
+            "  {@param value: ?}\n",
+            "<a",
+            // Each of these branches independently closes the tag.
+            "{if $url}",
+            " href='{$url}'>",
+            "{elseif $name}",
+            " name='{$name}'>",
+            "{else}",
+            ">",
+            "{/if}",
+            // So now make something that looks like a script attribute but which actually
+            // appears in a PCDATA.  If the context merge has properly happened is is escaped as
+            // PCDATA.
+            " onclick='alert({$value})'\n",
             "{/template}"));
   }
 
@@ -347,23 +367,35 @@ public final class ContextualAutoescaperTest extends TestCase {
         join(
             "{namespace ns}\n\n",
             "{template .bar autoescape=\"deprecated-contextual\"}\n",
-              "<script>",
-                "foo({$a |escapeJsValue}); ",
-                "bar(\"{$b |escapeJsString}\"); ",
-                "baz(\'{$c |escapeJsString}\'); ",
-                "boo(/{$d |escapeJsRegex}/.test(s) ? 1 / {$e |escapeJsValue}",
-                   " : /{$f |escapeJsRegex}/);",
-              "</script>\n",
+            "  {@param a: ?}\n",
+            "  {@param b: ?}\n",
+            "  {@param c: ?}\n",
+            "  {@param d: ?}\n",
+            "  {@param e: ?}\n",
+            "  {@param f: ?}\n",
+            "<script>",
+            "foo({$a |escapeJsValue}); ",
+            "bar(\"{$b |escapeJsString}\"); ",
+            "baz(\'{$c |escapeJsString}\'); ",
+            "boo(/{$d |escapeJsRegex}/.test(s) ? 1 / {$e |escapeJsValue}",
+            " : /{$f |escapeJsRegex}/);",
+            "</script>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
             "{template .bar autoescape=\"deprecated-contextual\"}\n",
-              "<script>\n",
-                "foo({$a});\n",
-                "bar(\"{$b}\");\n",
-                "baz(\'{$c}\');\n",
-                "boo(/{$d}/.test(s) ? 1 / {$e} : /{$f}/);\n",
-              "</script>\n",
+            "  {@param a: ?}\n",
+            "  {@param b: ?}\n",
+            "  {@param c: ?}\n",
+            "  {@param d: ?}\n",
+            "  {@param e: ?}\n",
+            "  {@param f: ?}\n",
+            "<script>\n",
+            "foo({$a});\n",
+            "bar(\"{$b}\");\n",
+            "baz(\'{$c}\');\n",
+            "boo(/{$d}/.test(s) ? 1 / {$e} : /{$f}/);\n",
+            "</script>\n",
             "{/template}"));
   }
 
@@ -617,23 +649,23 @@ public final class ContextualAutoescaperTest extends TestCase {
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"deprecated-contextual\"}\n",
             "  {@param x: ?}\n",
-              "<script>",
-                "x = [{call ns.countDown__C4011 data=\"all\" /}]",
-              "</script>\n",
+            "<script>",
+            "x = [{call ns.countDown__C4011 data=\"all\" /}]",
+            "</script>\n",
             "{/template}\n\n",
             "{template .countDown autoescape=\"deprecated-contextual\"}\n",
             "  {@param x: ?}\n",
-              "{if $x gt 0}",
-                "{print --$x |escapeHtml},",
-                "{call .countDown /}",
-              "{/if}\n",
+            "{if $x > 0}",
+            "{print --$x |escapeHtml},",
+            "{call .countDown}{param x : $x - 1 /}{/call}",
+            "{/if}\n",
             "{/template}\n\n",
             "{template .countDown__C4011 autoescape=\"deprecated-contextual\"}\n",
             "  {@param x: ?}\n",
-              "{if $x gt 0}",
-                "{print --$x |escapeJsValue},",
-                "{call ns.countDown__C4011 /}",
-              "{/if}\n",
+            "{if $x > 0}",
+            "{print --$x |escapeJsValue},",
+            "{call ns.countDown__C4011}{param x : $x - 1 /}{/call}",
+            "{/if}\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
@@ -645,7 +677,7 @@ public final class ContextualAutoescaperTest extends TestCase {
             "{/template}\n\n",
             "{template .countDown autoescape=\"deprecated-contextual\"}\n",
             "  {@param x: ?}\n",
-            "  {if $x gt 0}{print --$x},{call .countDown /}{/if}\n",
+            "  {if $x > 0}{print --$x},{call .countDown}{param x : $x - 1 /}{/call}{/if}\n",
             "{/template}"));
   }
 
@@ -730,30 +762,32 @@ public final class ContextualAutoescaperTest extends TestCase {
         join(
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"deprecated-contextual\"}\n",
-              "<a href=\"",
-                "{if c}",
-                  "/foo?bar=baz",
-                "{else}",
-                  "/boo",
-                "{/if}",
-              "\">\n",
+            "  {@param c: ?}\n",
+            "<a href=\"",
+            "{if $c}",
+            "/foo?bar=baz",
+            "{else}",
+            "/boo",
+            "{/if}",
+            "\">\n",
             "{/template}"));
     assertRewriteFails(
-        "In file no-path:5:49, template ns.foo: Cannot determine which part of the URL this dynamic"
-        + " value is in. Most likely, a preceding conditional block began a ?query or #fragment,"
-        + " but only on one branch.",
+        "In file no-path:6:50, template ns.foo: Cannot determine which part of the URL this dynamic"
+            + " value is in. Most likely, a preceding conditional block began a ?query or "
+            + "#fragment, but only on one branch.",
         join(
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"deprecated-contextual\"}\n",
             "  {@param x: ?}\n",
-              "<a href=\"",
-                "{if c}",
-                  "/foo?bar=baz&boo=",
-                "{else}",
-                  "/boo/",
-                "{/if}",
-                "{$x}",
-              "\">\n",
+            "  {@param c: ?}\n",
+            "<a href=\"",
+            "{if $c}",
+            "/foo?bar=baz&boo=",
+            "{else}",
+            "/boo/",
+            "{/if}",
+            "{$x}",
+            "\">\n",
             "{/template}"));
   }
 
@@ -958,31 +992,41 @@ public final class ContextualAutoescaperTest extends TestCase {
         join(
             "{namespace ns}\n\n",
             "{template .bar autoescape=\"deprecated-contextual\"}\n",
-              // We use filterNormalizeUri at the beginning,
-              "<a href='{$url |filterNormalizeUri |escapeHtmlAttribute}'",
-              " style='background:url({$bgimage |filterNormalizeMediaUri |escapeHtmlAttribute})'>",
-              "Hi</a>",
-              "<a href='#{$anchor |escapeHtmlAttribute}'",
-              // escapeUri for substitutions into queries.
-              " style='background:url(&apos;/pic?q={$file |escapeUri}&apos;)'>",
-                "Hi",
-              "</a>",
-              "<style>",
-                "body {lb} background-image: url(\"{$bg |filterNormalizeMediaUri}\"); {rb}",
-                // and normalizeUri without the filter in the path.
-                "table {lb} border-image: url(\"borders/{$brdr |normalizeUri}\"); {rb}",
-              "</style>\n",
+            "  {@param url: ?}\n",
+            "  {@param bgimage: ?}\n",
+            "  {@param anchor: ?}\n",
+            "  {@param file: ?}\n",
+            "  {@param brdr: ?}\n",
+            // We use filterNormalizeUri at the beginning,
+            "<a href='{$url |filterNormalizeUri |escapeHtmlAttribute}'",
+            " style='background:url({$bgimage |filterNormalizeMediaUri |escapeHtmlAttribute})'>",
+            "Hi</a>",
+            "<a href='#{$anchor |escapeHtmlAttribute}'",
+            // escapeUri for substitutions into queries.
+            " style='background:url(&apos;/pic?q={$file |escapeUri}&apos;)'>",
+            "Hi",
+            "</a>",
+            "<style>",
+            "body {lb} background-image: url(\"{$bgimage |filterNormalizeMediaUri}\"); {rb}",
+            // and normalizeUri without the filter in the path.
+            "table {lb} border-image: url(\"borders/{$brdr |normalizeUri}\"); {rb}",
+            "</style>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
             "{template .bar autoescape=\"deprecated-contextual\"}\n",
-              "<a href='{$url}' style='background:url({$bgimage})'>Hi</a>\n",
-              "<a href='#{$anchor}'\n",
-              " style='background:url(&apos;/pic?q={$file}&apos;)'>Hi</a>\n",
-              "<style>\n",
-                "body {lb} background-image: url(\"{$bg}\"); {rb}\n",
-                "table {lb} border-image: url(\"borders/{$brdr}\"); {rb}\n",
-              "</style>\n",
+            "  {@param url: ?}\n",
+            "  {@param bgimage: ?}\n",
+            "  {@param anchor: ?}\n",
+            "  {@param file: ?}\n",
+            "  {@param brdr: ?}\n",
+            "<a href='{$url}' style='background:url({$bgimage})'>Hi</a>\n",
+            "<a href='#{$anchor}'\n",
+            " style='background:url(&apos;/pic?q={$file}&apos;)'>Hi</a>\n",
+            "<style>\n",
+            "body {lb} background-image: url(\"{$bgimage}\"); {rb}\n",
+            "table {lb} border-image: url(\"borders/{$brdr}\"); {rb}\n",
+            "</style>\n",
             "{/template}"));
   }
 
@@ -1009,7 +1053,8 @@ public final class ContextualAutoescaperTest extends TestCase {
         join(
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"deprecated-contextual\"}\n",
-              "<script>a = \"{$FOO |escapeUri}\";</script>\n",
+            "  {@param FOO: ?}\n",
+            "<script>a = \"{$FOO |escapeUri}\";</script>\n",
             "{/template}"));
   }
 
@@ -1018,7 +1063,8 @@ public final class ContextualAutoescaperTest extends TestCase {
         join(
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"deprecated-contextual\"}\n",
-              "<script>a = \"{$FOO |noAutoescape}\";</script>\n",
+            "  {@param FOO: ?}\n",
+            "<script>a = \"{$FOO |noAutoescape}\";</script>\n",
             "{/template}"));
   }
 
@@ -1027,11 +1073,15 @@ public final class ContextualAutoescaperTest extends TestCase {
         join(
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"deprecated-contextual\"}\n",
-              "{$x |customEscapeDirective} - {$y |customOtherDirective |escapeHtml}\n",
+            "  {@param x: ?}\n",
+            "  {@param y: ?}\n",
+            "{$x |customEscapeDirective} - {$y |customOtherDirective |escapeHtml}\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "  {@param x: ?}\n",
+            "  {@param y: ?}\n",
             "  {$x |customEscapeDirective} - {$y |customOtherDirective}\n",
             "{/template}"));
   }
@@ -1076,18 +1126,20 @@ public final class ContextualAutoescaperTest extends TestCase {
         join(
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"deprecated-contextual\"}\n",
-              "<script>",
-                "var x = {call .bar /},",  // Not defined in this compilation unit.
-                "y = {$y |escapeJsValue};",
-              "</script>\n",
+            "  {@param y: ?}\n",
+            "<script>",
+            "var x = {call .bar /},", // Not defined in this compilation unit.
+            "y = {$y |escapeJsValue};",
+            "</script>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"deprecated-contextual\"}\n",
-              "<script>",
-                "var x = {call .bar /},",  // Not defined in this compilation unit.
-                "y = {$y};",
-              "</script>\n",
+            "  {@param y: ?}\n",
+            "<script>",
+            "var x = {call .bar /},", // Not defined in this compilation unit.
+            "y = {$y};",
+            "</script>\n",
             "{/template}"));
   }
 
@@ -1096,36 +1148,44 @@ public final class ContextualAutoescaperTest extends TestCase {
         join(
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"deprecated-contextual\" private=\"true\"}\n",
-              "{$x |escapeHtml}\n",
+            "  {@param? x: ?}\n",
+            "{$x |escapeHtml}\n",
             "{/template}\n\n",
             "{template .bar autoescape=\"deprecated-noncontextual\"}\n",
-              "<b>{call .foo /}</b> {$y |escapeHtml}\n",
+            "  {@param y: ?}\n",
+            "<b>{call .foo /}</b> {$y |escapeHtml}\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"deprecated-contextual\" private=\"true\"}\n",
-              "{$x}\n",
+            "  {@param? x: ?}\n",
+            "{$x}\n",
             "{/template}\n\n",
             "{template .bar autoescape=\"deprecated-noncontextual\"}\n",
-              "<b>{call .foo /}</b> {$y}\n",
+            "  {@param y: ?}\n",
+            "<b>{call .foo /}</b> {$y}\n",
             "{/template}"));
 
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"deprecated-contextual\" private=\"true\"}\n",
-              "{$x |escapeHtml}\n",
+            "  {@param? x: ?}\n",
+            "{$x |escapeHtml}\n",
             "{/template}\n\n",
             "{template .bar autoescape=\"deprecated-noautoescape\"}\n",
-              "<b>{call .foo /}</b> {$y}\n",
+            "  {@param y: ?}\n",
+            "<b>{call .foo /}</b> {$y}\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"deprecated-contextual\" private=\"true\"}\n",
-              "{$x}\n",
+            "  {@param? x: ?}\n",
+            "{$x}\n",
             "{/template}\n\n",
             "{template .bar autoescape=\"deprecated-noautoescape\"}\n",
-              "<b>{call .foo /}</b> {$y}\n",
+            "  {@param y: ?}\n",
+            "<b>{call .foo /}</b> {$y}\n",
             "{/template}"));
   }
 
@@ -1134,13 +1194,15 @@ public final class ContextualAutoescaperTest extends TestCase {
         join(
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"deprecated-contextual\"}\n",
-              "<button onclick=alert({$msg |escapeJsValue |escapeHtmlAttributeNospace})>",
-              "Launch</button>\n",
+            "  {@param msg: ?}\n",
+            "<button onclick=alert({$msg |escapeJsValue |escapeHtmlAttributeNospace})>",
+            "Launch</button>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"deprecated-contextual\"}\n",
-              "<button onclick=alert({$msg})>Launch</button>\n",
+            "  {@param msg: ?}\n",
+            "<button onclick=alert({$msg})>Launch</button>\n",
             "{/template}"));
   }
 
@@ -1204,12 +1266,14 @@ public final class ContextualAutoescaperTest extends TestCase {
         join(
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"deprecated-contextual\"}\n",
-              "<div{if $className} class=\"{$className |escapeHtmlAttribute}\"{/if}>\n",
+            "  {@param className: ?}\n",
+            "<div{if $className} class=\"{$className |escapeHtmlAttribute}\"{/if}>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"deprecated-contextual\"}\n",
-              "<div{if $className} class=\"{$className}\"{/if}>\n",
+            "  {@param className: ?}\n",
+            "<div{if $className} class=\"{$className}\"{/if}>\n",
             "{/template}"));
   }
 
@@ -1218,12 +1282,14 @@ public final class ContextualAutoescaperTest extends TestCase {
         join(
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"deprecated-contextual\"}\n",
-              "<div {if $className} class=\"{$className |escapeHtmlAttribute}\"{/if} id=x>\n",
+            "  {@param className: ?}\n",
+            "<div {if $className} class=\"{$className |escapeHtmlAttribute}\"{/if} id=x>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"deprecated-contextual\"}\n",
-              "<div {if $className} class=\"{$className}\"{/if} id=x>\n",
+            "  {@param className: ?}\n",
+            "<div {if $className} class=\"{$className}\"{/if} id=x>\n",
             "{/template}"));
   }
 
@@ -1233,58 +1299,60 @@ public final class ContextualAutoescaperTest extends TestCase {
             "{namespace ns}\n\n",
             "{template .icontemplate autoescape=\"deprecated-contextual\"}\n",
             "  {@param iconId: ?}\n",
+            "  {@param iconClass: ?}\n",
             "  {@param iconPath: ?}\n",
             "  {@param title: ?}\n",
             "  {@param alt: ?}\n",
-              "<img class=\"{$iconClass |escapeHtmlAttribute}\"",
-              "{if $iconId}",
-                " id=\"{$iconId |escapeHtmlAttribute}\"",
-              "{/if}",
-              " src=",
-              "{if $iconPath}",
-                "\"{$iconPath |filterNormalizeMediaUri |escapeHtmlAttribute}\"",
-              "{else}",
-                "\"images/cleardot.gif\"",
-              "{/if}",
-              "{if $title}",
-                " title=\"{$title |escapeHtmlAttribute}\"",
-              "{/if}",
-              " alt=\"",
-                "{if $alt || $alt == ''}",
-                  "{$alt |escapeHtmlAttribute}",
-                "{elseif $title}",
-                  "{$title |escapeHtmlAttribute}",
-                "{/if}\"",
-              ">\n",
+            "<img class=\"{$iconClass |escapeHtmlAttribute}\"",
+            "{if $iconId}",
+            " id=\"{$iconId |escapeHtmlAttribute}\"",
+            "{/if}",
+            " src=",
+            "{if $iconPath}",
+            "\"{$iconPath |filterNormalizeMediaUri |escapeHtmlAttribute}\"",
+            "{else}",
+            "\"images/cleardot.gif\"",
+            "{/if}",
+            "{if $title}",
+            " title=\"{$title |escapeHtmlAttribute}\"",
+            "{/if}",
+            " alt=\"",
+            "{if $alt or $alt == ''}",
+            "{$alt |escapeHtmlAttribute}",
+            "{elseif $title}",
+            "{$title |escapeHtmlAttribute}",
+            "{/if}\"",
+            ">\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
             "{template .icontemplate autoescape=\"deprecated-contextual\"}\n",
             "  {@param iconId: ?}\n",
+            "  {@param iconClass: ?}\n",
             "  {@param iconPath: ?}\n",
             "  {@param title: ?}\n",
             "  {@param alt: ?}\n",
-              "<img class=\"{$iconClass}\"",
-              "{if $iconId}",
-                " id=\"{$iconId}\"",
-              "{/if}",
-              // Double quotes inside if/else.
-              " src=",
-              "{if $iconPath}",
-                "\"{$iconPath}\"",
-              "{else}",
-                "\"images/cleardot.gif\"",
-              "{/if}",
-              "{if $title}",
-                " title=\"{$title}\"",
-              "{/if}",
-              " alt=\"",
-                "{if $alt || $alt == ''}",
-                  "{$alt}",
-                "{elseif $title}",
-                  "{$title}",
-                "{/if}\"",
-              ">\n",
+            "<img class=\"{$iconClass}\"",
+            "{if $iconId}",
+            " id=\"{$iconId}\"",
+            "{/if}",
+            // Double quotes inside if/else.
+            " src=",
+            "{if $iconPath}",
+            "\"{$iconPath}\"",
+            "{else}",
+            "\"images/cleardot.gif\"",
+            "{/if}",
+            "{if $title}",
+            " title=\"{$title}\"",
+            "{/if}",
+            " alt=\"",
+            "{if $alt or $alt == ''}",
+            "{$alt}",
+            "{elseif $title}",
+            "{$title}",
+            "{/if}\"",
+            ">\n",
             "{/template}"));
   }
 
@@ -1293,12 +1361,14 @@ public final class ContextualAutoescaperTest extends TestCase {
         join(
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"deprecated-contextual\"}\n",
-              "<img src=\"bar\" {$baz |filterHtmlAttributes}=\"boo\">\n",
+            "  {@param baz: ?}\n",
+            "<img src=\"bar\" {$baz |filterHtmlAttributes}=\"boo\">\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"deprecated-contextual\"}\n",
-              "<img src=\"bar\" {$baz}=\"boo\">\n",
+            "  {@param baz: ?}\n",
+            "<img src=\"bar\" {$baz}=\"boo\">\n",
             "{/template}"));
   }
 
@@ -1307,12 +1377,14 @@ public final class ContextualAutoescaperTest extends TestCase {
         join(
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"deprecated-contextual\"}\n",
-              "<img src=\"bar\" {$baz |filterHtmlAttributes}>\n",
+            "  {@param baz: ?}\n",
+            "<img src=\"bar\" {$baz |filterHtmlAttributes}>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"deprecated-contextual\"}\n",
-              "<img src=\"bar\" {$baz}>\n",
+            "  {@param baz: ?}\n",
+            "<img src=\"bar\" {$baz}>\n",
             "{/template}"));
   }
 
@@ -1321,12 +1393,14 @@ public final class ContextualAutoescaperTest extends TestCase {
         join(
             "{namespace ns}\n\n",
             "{template .foo}\n",
-              "<{$x |filterHtmlElementName}>\n",
+            "  {@param x: ?}\n",
+            "<{$x |filterHtmlElementName}>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
             "{template .foo}\n",
-              "<{$x}>\n",
+            "  {@param x: ?}\n",
+            "<{$x}>\n",
             "{/template}"));
     assertRewriteFails(
         "In file no-path:5:3, template ns.foo: Dynamic values are not permitted in the middle"
@@ -1416,12 +1490,14 @@ public final class ContextualAutoescaperTest extends TestCase {
         join(
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"deprecated-contextual\"}\n",
-              "{$x |escapeHtml |bidiSpanWrap}\n",
+            "  {@param x: ?}\n",
+            "{$x |escapeHtml |bidiSpanWrap}\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"deprecated-contextual\"}\n",
-              "{$x |bidiSpanWrap}\n",
+            "  {@param x: ?}\n",
+            "{$x |bidiSpanWrap}\n",
             "{/template}"));
 
     // But if we have a |bidiSpanWrap directive in a non HTML context, then don't reorder.
@@ -1429,12 +1505,14 @@ public final class ContextualAutoescaperTest extends TestCase {
         join(
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"deprecated-contextual\"}\n",
-              "<script>var html = {$x |bidiSpanWrap |escapeJsValue}</script>\n",
+            "  {@param x: ?}\n",
+            "<script>var html = {$x |bidiSpanWrap |escapeJsValue}</script>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"deprecated-contextual\"}\n",
-              "<script>var html = {$x |bidiSpanWrap}</script>\n",
+            "  {@param x: ?}\n",
+            "<script>var html = {$x |bidiSpanWrap}</script>\n",
             "{/template}"));
   }
 
@@ -1559,18 +1637,20 @@ public final class ContextualAutoescaperTest extends TestCase {
         join(
             "{namespace ns}\n\n",
             "{template .t autoescape=\"deprecated-contextual\"}\n",
+            "  {@param y: ?}\n",
             "<script> var y = '",
             "{let $l}",
-              "<div>{$y |escapeJsString}</div>",
+            "<div>{$y |escapeJsString}</div>",
             "{/let}",
             "{$y |escapeJsString}'</script>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
             "{template .t autoescape=\"deprecated-contextual\"}\n",
+            "  {@param y: ?}\n",
             "<script> var y = '\n",
             "{let $l}\n",
-              "<div>{$y}</div>",
+            "<div>{$y}</div>",
             "{/let}",
             "{$y}'</script>\n",
             "{/template}"));
@@ -1733,21 +1813,24 @@ public final class ContextualAutoescaperTest extends TestCase {
         join(
             "{namespace ns}\n\n",
             "{template .caller autoescape=\"deprecated-contextual\"}\n",
-              "{call .callee}",
-                "{param fooHtml}",
-                  "<a href=\"http://google.com/search?q={$query |escapeUri}\" ",
-                    "onclick=\"alert('{$query |escapeJsString |escapeHtmlAttribute}')\">",
-                    "Search for {$query |escapeHtml}",
-                  "</a>",
-                "{/param}",
-              "{/call}",
+            "  {@param query: ?}\n",
+            "{call .callee}",
+            "{param fooHtml}",
+            "<a href=\"http://google.com/search?q={$query |escapeUri}\" ",
+            "onclick=\"alert('{$query |escapeJsString |escapeHtmlAttribute}')\">",
+            "Search for {$query |escapeHtml}",
+            "</a>",
+            "{/param}",
+            "{/call}",
             "\n{/template}\n\n",
             "{template .callee autoescape=\"deprecated-contextual\"}\n",
-              "{$fooHTML |noAutoescape}",
+            "  {@param? fooHTML: ?}\n",
+            "{$fooHTML |noAutoescape}",
             "\n{/template}"),
         join(
             "{namespace ns}\n\n",
             "{template .caller autoescape=\"deprecated-contextual\"}\n",
+            "  {@param query: ?}\n",
             "  {call .callee}\n",
             "    {param fooHtml}\n",
             "      <a href=\"http://google.com/search?q={$query}\"\n",
@@ -1758,6 +1841,7 @@ public final class ContextualAutoescaperTest extends TestCase {
             "  {/call}\n",
             "{/template}\n\n",
             "{template .callee autoescape=\"deprecated-contextual\"}\n",
+            "  {@param? fooHTML: ?}\n",
             "  {$fooHTML |noAutoescape}\n",
             "{/template}"));
   }
@@ -1768,28 +1852,32 @@ public final class ContextualAutoescaperTest extends TestCase {
         join(
             "{namespace ns}\n\n",
             "{template .caller autoescape=\"deprecated-contextual\"}\n",
+            "  {@param y: ?}\n",
             "<div>",
-              "{call .callee}",
-                "{param x kind=\"html\"}",
-                  "<script> var y ='{$y |escapeJsString}';</script>",
-                "{/param}",
-              "{/call}",
+            "{call .callee}",
+            "{param x kind=\"html\"}",
+            "<script> var y ='{$y |escapeJsString}';</script>",
+            "{/param}",
+            "{/call}",
             "</div>\n",
             "{/template}\n\n",
             "{template .callee autoescape=\"deprecated-contextual\" private=\"true\"}\n",
+            "  {@param x: ?}\n",
             "<b>{$x |escapeHtml}</b>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
             "{template .caller autoescape=\"deprecated-contextual\"}\n",
-              "<div>",
-                "{call .callee}{param x kind=\"html\"}",
-                  "<script> var y ='{$y}';</script>",
-                "{/param}{/call}",
-              "</div>\n",
+            "  {@param y: ?}\n",
+            "<div>",
+            "{call .callee}{param x kind=\"html\"}",
+            "<script> var y ='{$y}';</script>",
+            "{/param}{/call}",
+            "</div>\n",
             "{/template}\n\n",
             "{template .callee autoescape=\"deprecated-contextual\" private=\"true\"}\n",
-              "<b>{$x}</b>\n",
+            "  {@param x: ?}\n",
+            "<b>{$x}</b>\n",
             "{/template}"));
   }
 
@@ -2031,30 +2119,38 @@ public final class ContextualAutoescaperTest extends TestCase {
         join(
             "{namespace ns}\n\n",
             "{template .caller autoescape=\"deprecated-contextual\"}\n",
+            "  {@param x: ?}\n",
+            "  {@param y: ?}\n",
+            "  {@param z: ?}\n",
             "<div>",
-              "{call .callee}",
-                "{param x kind=\"text\"}",
-                  "Hello {$x |text} <{$y |text}, \"{$z |text}\">",
-                "{/param}",
-              "{/call}",
+            "{call .callee}",
+            "{param x kind=\"text\"}",
+            "Hello {$x |text} <{$y |text}, \"{$z |text}\">",
+            "{/param}",
+            "{/call}",
             "</div>\n",
-          "{/template}\n",
-          "\n",
-          "{template .callee autoescape=\"deprecated-contextual\" private=\"true\"}\n",
-            "<b>{$x |escapeHtml}</b>\n",
-          "{/template}"),
-        join(
-            "{namespace ns}\n\n",
-            "{template .caller autoescape=\"deprecated-contextual\"}\n",
-              "<div>",
-                "{call .callee}{param x kind=\"text\"}",
-                  "Hello {$x} <{$y}, \"{$z}\">",
-                "{/param}{/call}",
-              "</div>\n",
             "{/template}\n",
             "\n",
             "{template .callee autoescape=\"deprecated-contextual\" private=\"true\"}\n",
-              "<b>{$x}</b>\n",
+            "  {@param x: ?}\n",
+            "<b>{$x |escapeHtml}</b>\n",
+            "{/template}"),
+        join(
+            "{namespace ns}\n\n",
+            "{template .caller autoescape=\"deprecated-contextual\"}\n",
+            "  {@param x: ?}\n",
+            "  {@param y: ?}\n",
+            "  {@param z: ?}\n",
+            "<div>",
+            "{call .callee}{param x kind=\"text\"}",
+            "Hello {$x} <{$y}, \"{$z}\">",
+            "{/param}{/call}",
+            "</div>\n",
+            "{/template}\n",
+            "\n",
+            "{template .callee autoescape=\"deprecated-contextual\" private=\"true\"}\n",
+            "  {@param x: ?}\n",
+            "<b>{$x}</b>\n",
             "{/template}"));
   }
 
@@ -2064,18 +2160,24 @@ public final class ContextualAutoescaperTest extends TestCase {
         join(
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"deprecated-contextual\"}\n",
-              "{let $a kind=\"text\"}",
-                "Hello {$x |text} <{$y |text}, \"{$z |text}\">",
-              "{/let}",
-              "{$a |escapeHtml}",
+            "  {@param x: ?}\n",
+            "  {@param y: ?}\n",
+            "  {@param z: ?}\n",
+            "{let $a kind=\"text\"}",
+            "Hello {$x |text} <{$y |text}, \"{$z |text}\">",
+            "{/let}",
+            "{$a |escapeHtml}",
             "\n{/template}"),
         join(
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"deprecated-contextual\"}\n",
-              "{let $a kind=\"text\"}",
-                "Hello {$x} <{$y}, \"{$z}\">",
-              "{/let}",
-              "{$a}",
+            "  {@param x: ?}\n",
+            "  {@param y: ?}\n",
+            "  {@param z: ?}\n",
+            "{let $a kind=\"text\"}",
+            "Hello {$x} <{$y}, \"{$z}\">",
+            "{/let}",
+            "{$a}",
             "\n{/template}"));
   }
 
@@ -2249,17 +2351,20 @@ public final class ContextualAutoescaperTest extends TestCase {
                 join(
                     "{namespace ns}\n\n",
                     "{template .main autoescape=\"strict\"}\n",
+                    "  {@param foo: ?}\n",
                     "<b>{$foo |customOtherDirective}</b>\n",
                     "{/template}"))
             .parse()
             .fileSet();
     String rewrittenTemplate = rewrittenSource(soyTree);
     assertThat(rewrittenTemplate.trim())
-        .isEqualTo(join(
-            "{namespace ns}\n\n",
-            "{template .main autoescape=\"strict\"}\n",
-            "<b>{$foo |customOtherDirective |escapeHtml}</b>\n",
-            "{/template}"));
+        .isEqualTo(
+            join(
+                "{namespace ns}\n\n",
+                "{template .main autoescape=\"strict\"}\n",
+                "  {@param foo: ?}\n",
+                "<b>{$foo |customOtherDirective |escapeHtml}</b>\n",
+                "{/template}"));
   }
 
 
@@ -2356,18 +2461,20 @@ public final class ContextualAutoescaperTest extends TestCase {
         join(
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"deprecated-contextual\"}\n",
-              "<a href=\"{call .bar data=\"all\" /}\">Test</a>",
+            "<a href=\"{call .bar data=\"all\" /}\">Test</a>",
             "\n{/template}\n\n",
             "{template .bar autoescape=\"strict\" kind=\"uri\"}\n",
-              "http://www.google.com/search?q={$x |escapeUri}",
+            "  {@param x: ?}\n",
+            "http://www.google.com/search?q={$x |escapeUri}",
             "\n{/template}"),
         join(
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"deprecated-contextual\"}\n",
-              "<a href=\"{call .bar data=\"all\" /}\">Test</a>",
+            "<a href=\"{call .bar data=\"all\" /}\">Test</a>",
             "\n{/template}\n\n",
             "{template .bar autoescape=\"strict\" kind=\"uri\"}\n",
-              "http://www.google.com/search?q={$x}",
+            "  {@param x: ?}\n",
+            "http://www.google.com/search?q={$x}",
             "\n{/template}"));
   }
 
@@ -2377,20 +2484,26 @@ public final class ContextualAutoescaperTest extends TestCase {
         join(
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"strict\" kind=\"attributes\"}\n",
-              "onclick={$x |escapeJsValue |escapeHtmlAttributeNospace} ",
-              "style='{$y |filterCssValue |escapeHtmlAttribute}' ",
-              "checked ",
-              "foo=\"bar\" ",
-              "title='{$z |escapeHtmlAttribute}'",
+            "  {@param x: ?}\n",
+            "  {@param y: ?}\n",
+            "  {@param z: ?}\n",
+            "onclick={$x |escapeJsValue |escapeHtmlAttributeNospace} ",
+            "style='{$y |filterCssValue |escapeHtmlAttribute}' ",
+            "checked ",
+            "foo=\"bar\" ",
+            "title='{$z |escapeHtmlAttribute}'",
             "\n{/template}"),
         join(
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"strict\" kind=\"attributes\"}\n",
-              "onclick={$x} ",
-              "style='{$y}' ",
-              "checked ",
-              "foo=\"bar\" ",
-              "title='{$z}'",
+            "  {@param x: ?}\n",
+            "  {@param y: ?}\n",
+            "  {@param z: ?}\n",
+            "onclick={$x} ",
+            "style='{$y}' ",
+            "checked ",
+            "foo=\"bar\" ",
+            "title='{$z}'",
             "\n{/template}"));
   }
 
@@ -2527,16 +2640,18 @@ public final class ContextualAutoescaperTest extends TestCase {
         join(
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"strict\"}\n",
-              "<script>",
-                "{call .bar /}/{$x |escapeJsValue}+/{$x |escapeJsRegex}/g",
-              "</script>",
+            "  {@param x: ?}\n",
+            "<script>",
+            "{call .bar /}/{$x |escapeJsValue}+/{$x |escapeJsRegex}/g",
+            "</script>",
             "\n{/template}"),
         join(
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"strict\"}\n",
-              "<script>",
-                "{call .bar /}/{$x}+/{$x}/g",
-              "</script>",
+            "  {@param x: ?}\n",
+            "<script>",
+            "{call .bar /}/{$x}+/{$x}/g",
+            "</script>",
             "\n{/template}"));
   }
 
@@ -2804,8 +2919,6 @@ public final class ContextualAutoescaperTest extends TestCase {
         SoyFileSetParserBuilder.forSuppliers(soyFileSuppliers)
             .declaredSyntaxVersion(SyntaxVersion.V2_0)
             .doRunInitialParsingPasses(true)
-            .doRunCheckingPasses(true)
-            .allowUnboundGlobals(true)
             .parse()
             .fileSet();
 

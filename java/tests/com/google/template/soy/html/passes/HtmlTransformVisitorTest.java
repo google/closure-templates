@@ -81,7 +81,10 @@ public final class HtmlTransformVisitorTest extends TestCase {
   }
 
   public void testAttributeWithPrintNodes() {
-    String templateBody = "<div class=\"Class1 {$foo} Class2 {$bar}\">\n";
+    String templateBody =
+        "{@param foo : ?}\n"
+            + "{@param bar : ?}\n"
+            + "<div class=\"Class1 {$foo} Class2 {$bar}\">\n";
 
     SoyFileSetNode n = performVisitor(templateBody, FAIL);
     assertThat(((HtmlOpenTagStartNode) getNode(n, 0)).getTagName()).isEqualTo("div");
@@ -104,7 +107,7 @@ public final class HtmlTransformVisitorTest extends TestCase {
   }
 
   public void testPrintNodeInAttributeValue() {
-    String templateBody = "<div id=\"foo {$foo} bar\"></div>\n";
+    String templateBody = "{@param foo : ?}\n<div id=\"foo {$foo} bar\"></div>\n";
 
     SoyFileSetNode n = performVisitor(templateBody, FAIL);
     assertThat(((RawTextNode) getNode(n, 1, 0)).getRawText()).isEqualTo("foo ");
@@ -113,7 +116,7 @@ public final class HtmlTransformVisitorTest extends TestCase {
   }
 
   public void testConditionalInAttributes() {
-    String templateBody = "<div{if $foo} id=\"foo\"{/if}></div>\n";
+    String templateBody = "{@param foo : ?}\n<div{if $foo} id=\"foo\"{/if}></div>\n";
 
     SoyFileSetNode n = performVisitor(templateBody, FAIL);
     assertThat(((IfCondNode) getNode(n, 1, 0)).getCommandText()).isEqualTo("$foo");
@@ -133,13 +136,15 @@ public final class HtmlTransformVisitorTest extends TestCase {
   }
 
   public void testLetKindAttributes() {
-    String templateBody = ""
-        + "{let $content kind=\"attributes\"}\n"
-        + "  foo=\"bar\"\n"
-        + "  {if $disabled}\n"
-        + "    disabled=\"true\"\n"
-        + "  {/if}\n"
-        + "{/let}";
+    String templateBody =
+        ""
+            + "{@param disabled : ?}\n"
+            + "{let $content kind=\"attributes\"}\n"
+            + "  foo=\"bar\"\n"
+            + "  {if $disabled}\n"
+            + "    disabled=\"true\"\n"
+            + "  {/if}\n"
+            + "{/let}";
 
     SoyFileSetNode n = performVisitor(templateBody, FAIL);
     assertThat(((HtmlAttributeNode) getNode(n, 0, 0)).getName()).isEqualTo("foo");
@@ -173,15 +178,17 @@ public final class HtmlTransformVisitorTest extends TestCase {
   }
 
   public void testConsecutiveIf() {
-    String templateBody = ""
-        + "{let $content kind=\"html\"}\n"
-        + "  <div>\n"
-        + "    {if $foo}Hello world{/if}"
-        + "    {if $foo}\n"
-        + "      <div>Hello world</div>\n"
-        + "    {/if}\n"
-        + "  </div>\n"
-        + "{/let}";
+    String templateBody =
+        ""
+            + "{@param foo : ?}\n"
+            + "{let $content kind=\"html\"}\n"
+            + "  <div>\n"
+            + "    {if $foo}Hello world{/if}"
+            + "    {if $foo}\n"
+            + "      <div>Hello world</div>\n"
+            + "    {/if}\n"
+            + "  </div>\n"
+            + "{/let}";
 
     SoyFileSetNode n = performVisitor(templateBody, FAIL);
     assertThat(((IfCondNode) getNode(n, 0, 2, 0)).getCommandText()).isEqualTo("$foo");
@@ -201,7 +208,7 @@ public final class HtmlTransformVisitorTest extends TestCase {
   }
 
   public void testIfInAttributeName() {
-    String templateBody = "<div go{if $foo}oooo{/if}ogle=\"foo\"></div>";
+    String templateBody = "{@param foo : ?}\n<div go{if $foo}oooo{/if}ogle=\"foo\"></div>";
 
     FormattingErrorReporter fer = new FormattingErrorReporter();
     performVisitor(templateBody, fer);
@@ -211,7 +218,7 @@ public final class HtmlTransformVisitorTest extends TestCase {
   }
 
   public void testIfBeforeQuotedValue() {
-    String templateBody = "<div id={if $foo}\"foo\"{/if}></div>";
+    String templateBody = "{@param foo : ?}\n<div id={if $foo}\"foo\"{/if}></div>";
 
     FormattingErrorReporter fer = new FormattingErrorReporter();
     performVisitor(templateBody, fer);

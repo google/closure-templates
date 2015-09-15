@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-
 package com.google.template.soy.sharedpasses.render;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.template.soy.shared.SharedTestUtils.untypedTemplateBodyForExpression;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
@@ -40,7 +40,8 @@ import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.exprparse.ExpressionParser;
-import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.shared.internal.ErrorReporterModule;
 import com.google.template.soy.shared.internal.SharedModule;
@@ -104,16 +105,19 @@ public class EvalVisitorTest extends TestCase {
   private SoyValue eval(String expression) throws Exception {
     PrintNode code =
         (PrintNode)
-            SoyFileSetParserBuilder.forTemplateContents("{" + expression + "}")
+            SoyFileSetParserBuilder.forTemplateContents(
+                    // wrap in a function so we don't run into the 'can't print bools' error message
+                    untypedTemplateBodyForExpression("fakeFunction(" + expression + ")"))
                 .parse()
                 .fileSet()
                 .getChild(0)
                 .getChild(0)
                 .getChild(0);
-    ExprRootNode expr = code.getExprUnion().getExpr();
+    ExprNode expr = ((FunctionNode) code.getExprUnion().getExpr().getChild(0)).getChild(0);
 
     EvalVisitor evalVisitor =
-        INJECTOR.getInstance(EvalVisitorFactory.class)
+        INJECTOR
+            .getInstance(EvalVisitorFactory.class)
             .create(TEST_IJ_DATA, TestingEnvironment.createForTest(testData, locals));
     return evalVisitor.exec(expr);
   }

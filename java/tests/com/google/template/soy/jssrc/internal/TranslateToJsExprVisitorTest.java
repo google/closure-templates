@@ -29,6 +29,7 @@ import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.restricted.JsExpr;
+import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoytreeUtils;
@@ -243,12 +244,15 @@ public final class TranslateToJsExprVisitorTest extends TestCase {
   }
 
   public void testGeneralFunctions() {
-    assertTranslation("isFirst($goo)",
-        new JsExpr("gooIndex8 == 0", Operator.EQUAL.getPrecedence()));
-    assertTranslation("not isLast($goo)",
-        new JsExpr("! (gooIndex8 == gooListLen8 - 1)", Operator.NOT.getPrecedence()));
-    assertTranslation("index($goo) + 1",
-        new JsExpr("gooIndex8 + 1", Operator.PLUS.getPrecedence()));
+    assertTranslation(
+        "isFirst($goo) ? 1 : 0",
+        new JsExpr("gooIndex8 == 0 ? 1 : 0", Operator.CONDITIONAL.getPrecedence()));
+    assertTranslation(
+        "not isLast($goo) ? 1 : 0",
+        new JsExpr(
+            "! (gooIndex8 == gooListLen8 - 1) ? 1 : 0", Operator.CONDITIONAL.getPrecedence()));
+    assertTranslation(
+        "index($goo) + 1", new JsExpr("gooIndex8 + 1", Operator.PLUS.getPrecedence()));
   }
 
 
@@ -270,14 +274,13 @@ public final class TranslateToJsExprVisitorTest extends TestCase {
    */
   private void assertTranslation(
       String soyExpr, JsExpr expectedJsExpr, SoyJsSrcOptions jsSrcOptions) {
+    String templateBody = SharedTestUtils.untypedTemplateBodyForExpression(soyExpr);
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
                 "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
                     + "/***/\n"
                     + "{template .aaa}\n"
-                    + "{print \n"
-                    + soyExpr
-                    + "}\n"
+                    + templateBody
                     + "{/template}\n")
             .allowUnboundGlobals(true)
             .parse()

@@ -31,9 +31,9 @@ import junit.framework.TestCase;
 public final class VerifyPhnameAttrOnlyOnPlaceholdersVisitorTest extends TestCase {
 
   public void testVerifyPhnameAttrOnlyOnPlaceholders() {
-    assertInvalidSoyCode("{$boo phname=\"foo\"}");
+    assertInvalidSoyCode("{@param boo : ?}\n{$boo phname=\"foo\"}");
     assertInvalidSoyCode("{call .helper phname=\"foo\" /}");
-    assertValidSoyCode("{msg desc=\"\"}{$boo phname=\"foo\"}{/msg}");
+    assertValidSoyCode("{@param boo : ?}\n{msg desc=\"\"}{$boo phname=\"foo\"}{/msg}");
     assertValidSoyCode("{msg desc=\"\"}{call .helper phname=\"foo\" /}{/msg}");
   }
 

@@ -37,7 +37,7 @@ import com.google.template.soy.shared.internal.GuiceSimpleScope.WithScope;
 import com.google.template.soy.shared.internal.MainEntryPointUtils;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.ApiCall;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.IsUsingIjData;
-import com.google.template.soy.sharedpasses.IsUsingIjDataVisitor;
+import com.google.template.soy.sharedpasses.IjDataQueries;
 import com.google.template.soy.sharedpasses.opti.SimplifyVisitor;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -114,7 +114,7 @@ public class IncrementalDomSrcMain {
     // Generate code with the opt_ijData param if either (a) the user specified the compiler flag
     // --isUsingIjData or (b) any of the Soy code in the file set references injected data.
     boolean isUsingIjData = jsSrcOptions.isUsingIjData()
-        || new IsUsingIjDataVisitor().exec(soyTree);
+        || IjDataQueries.isUsingIj(soyTree);
 
     // Make sure that we don't try to use goog.i18n.bidi when we aren't supposed to use Closure.
     Preconditions.checkState(

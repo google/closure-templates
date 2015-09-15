@@ -19,13 +19,15 @@ package com.google.template.soy.sharedpasses;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.basetree.Node;
+import com.google.template.soy.basetree.NodeVisitor;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyError;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.sharedpasses.FindIndirectParamsVisitor.IndirectParamsInfo;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
+import com.google.template.soy.soytree.ExprUnion;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
@@ -41,6 +43,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Visitor for checking that in each template, the parameters declared in the SoyDoc match the data
@@ -88,25 +91,38 @@ public final class CheckTemplateParamsVisitor extends AbstractSoyNodeVisitor<Voi
   @Override protected void visitSoyFileSetNode(SoyFileSetNode node) {
     // Run pass only on the Soy files that are all in V2 syntax.
     for (SoyFileNode soyFile : node.getChildren()) {
-      // First determine if Soy file is all in V2 syntax.
-      boolean doCheckSoyDocInFile;
-      if (declaredSyntaxVersion.num >= SyntaxVersion.V2_0.num) {
-        doCheckSoyDocInFile = true;
-      } else {
-        try {
-          // TODO SOON: Use a simpler visitor that doesn't report errors and shortcircuits.
-          new ReportSyntaxVersionErrorsVisitor(SyntaxVersion.V2_0, true, errorReporter)
-              .exec(soyFile);
-          doCheckSoyDocInFile = true;
-        } catch (SoySyntaxException sse) {
-          doCheckSoyDocInFile = false;
-        }
-      }
       // Run pass on Soy file if it is all in V2 syntax.
-      if (doCheckSoyDocInFile) {
+      if (declaredSyntaxVersion.num >= SyntaxVersion.V2_0.num || allNodesInferredAboveV2(soyFile)) {
         visit(soyFile);
       }
     }
+  }
+
+  private boolean allNodesInferredAboveV2(SoyNode node) {
+    final AtomicBoolean allV2 = new AtomicBoolean(true);
+    SoytreeUtils.visitAllNodes(
+        node,
+        new NodeVisitor<Node, Boolean>() {
+          @Override
+          public Boolean exec(Node node) {
+            if (!node.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0)) {
+              allV2.set(false);
+              return false;
+            }
+            // TODO(lukes): it would be nice if the fact that an ExprHolderNode contains v1
+            // expressions was reflected in its inferred syntax version.
+            if (node instanceof SoyNode.ExprHolderNode) {
+              for (ExprUnion union : ((SoyNode.ExprHolderNode) node).getAllExprUnions()) {
+                if (union.getExpr() == null) {
+                  allV2.set(false);
+                  return false;
+                }
+              }
+            }
+            return true;
+          }
+        });
+    return allV2.get();
   }
 
   @Override protected void visitTemplateNode(TemplateNode node) {

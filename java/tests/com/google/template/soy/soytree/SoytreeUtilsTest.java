@@ -173,7 +173,6 @@ public final class SoytreeUtilsTest extends TestCase {
   public final void testClone() throws Exception {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(SOY_SOURCE_FOR_TESTING_CLONING)
-            .doRunCheckingPasses(true)
             .declaredSyntaxVersion(SyntaxVersion.V2_4)
             .parse()
             .fileSet();

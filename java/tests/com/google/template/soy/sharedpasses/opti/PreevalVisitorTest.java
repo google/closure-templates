@@ -41,7 +41,7 @@ import java.util.HashMap;
  */
 public final class PreevalVisitorTest extends TestCase {
 
-  public void testPreevalNoData() throws Exception {
+  public void testPreevalNoData() {
 
     assertEquals(-210, preeval("-99+-111").integerValue());
     assertEquals("-99-111", preeval("-99 + '-111'").stringValue());
@@ -65,12 +65,12 @@ public final class PreevalVisitorTest extends TestCase {
   }
 
 
-  public void testPreevalWithData() throws Exception {
+  public void testPreevalWithData() {
 
-    assertEquals(8, preeval("$boo").integerValue());
-    assertEquals(2, preeval("$boo % 3").integerValue());
-    assertEquals(false, preeval("not $boo").booleanValue());
-    assertEquals("8", preeval("$boo + ''").stringValue());
+    assertEquals(8, preeval("$boo", "boo").integerValue());
+    assertEquals(2, preeval("$boo % 3", "boo").integerValue());
+    assertEquals(2, preeval("not $boo ? 1 : 2", "boo").integerValue());
+    assertEquals("8", preeval("$boo + ''", "boo").stringValue());
 
     // With functions.
     // TODO SOON: Uncomment these tests when basic functions have been changed to SoyJavaFunction.
@@ -80,7 +80,7 @@ public final class PreevalVisitorTest extends TestCase {
 
     // With undefined data.
     try {
-      preeval("4 + $foo");
+      preeval("4 + $foo", "foo");
       fail();
     } catch (RenderException re) {
       // Test passes.
@@ -88,7 +88,7 @@ public final class PreevalVisitorTest extends TestCase {
   }
 
 
-  public void testPreevalWithIjData() throws Exception {
+  public void testPreevalWithIjData() {
 
     try {
       preeval("6 + $ij.foo");
@@ -113,12 +113,15 @@ public final class PreevalVisitorTest extends TestCase {
    * Evaluates the given expression and returns the result.
    * @param expression The expression to preevaluate.
    * @return The expression result.
-   * @throws Exception If there's an error.
    */
-  private static SoyValue preeval(String expression) throws Exception {
+  private static SoyValue preeval(String expression, String... params) {
+    String header = "";
+    for (String param : params) {
+      header += "{@param " + param + " : ?}\n";
+    }
     PrintNode code =
         (PrintNode)
-            SoyFileSetParserBuilder.forTemplateContents("{" + expression + "}")
+            SoyFileSetParserBuilder.forTemplateContents(header + "{" + expression + "}")
                 .parse()
                 .fileSet()
                 .getChild(0)

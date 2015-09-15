@@ -47,7 +47,7 @@ public final class VoidElementVerifyingVisitorTest extends TestCase {
   }
 
   public void testNonVoidElement() {
-    String templateBody = "<span></span>{if $foo}<div>{/if}</div>";
+    String templateBody = "{@param foo : ?}\n" + "<span></span>{if $foo}<div>{/if}</div>";
 
     FormattingErrorReporter fer = new FormattingErrorReporter();
     performVisitor(templateBody, fer);
@@ -74,7 +74,7 @@ public final class VoidElementVerifyingVisitorTest extends TestCase {
   }
 
   public void testAtStartOfBlock() {
-    String templateBody = "<input>{if $foo}</input>{/if}";
+    String templateBody = "{@param foo : ?}\n<input>{if $foo}</input>{/if}";
 
     FormattingErrorReporter fer = new FormattingErrorReporter();
     performVisitor(templateBody, fer);

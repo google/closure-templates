@@ -16,13 +16,10 @@
 
 package com.google.template.soy;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Sets;
-import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
 import com.google.template.soy.base.internal.SoyFileSupplier;
@@ -85,9 +82,6 @@ public final class SoyFileSetParser {
   /** Parsing passes. null means that they are disabled.*/
   @Nullable private final ParsePasses parsingPasses;
 
-  /** Whether to run checking passes. */
-  private final boolean doRunCheckingPasses;
-
   /** For reporting parse errors. */
   private final ErrorReporter errorReporter;
 
@@ -102,38 +96,10 @@ public final class SoyFileSetParser {
       @Nullable SoyAstCache astCache,
       SyntaxVersion declaredSyntaxVersion,
       List<? extends SoyFileSupplier> soyFileSuppliers,
-      ParsePasses parsePasses,
+      ParsePasses parsingPasses,
       ErrorReporter errorReporter) {
-    // By default, run all the parsing and checking passes.
-    this(
-        typeRegistry,
-        astCache,
-        declaredSyntaxVersion,
-        soyFileSuppliers,
-        errorReporter,
-        checkNotNull(parsePasses),
-        true);
-  }
-
-  /**
-   * @param typeRegistry The type registry to resolve type names.
-   * @param astCache The AST cache to use, if any.
-   * @param declaredSyntaxVersion User-declared syntax version.
-   * @param soyFileSuppliers The suppliers for the Soy files. Each must have a unique file name.
-   * @param errorReporter For reporting errors during parsing.
-   * @param parsingPasses The parsing passes to run.
-   * @param doRunCheckingPasses Whether to run checking passes.
-   */
-  public SoyFileSetParser(
-      SoyTypeRegistry typeRegistry,
-      @Nullable SoyAstCache astCache,
-      SyntaxVersion declaredSyntaxVersion,
-      List<? extends SoyFileSupplier> soyFileSuppliers,
-      ErrorReporter errorReporter,
-      @Nullable ParsePasses parsingPasses,
-      boolean doRunCheckingPasses) {
     Preconditions.checkArgument(
-        (astCache == null) || (parsingPasses != null && doRunCheckingPasses),
+        (astCache == null) || (parsingPasses != null),
         "AST caching is only allowed when all parsing and checking passes are enabled, to avoid "
             + "caching inconsistent versions");
     this.typeRegistry = typeRegistry;
@@ -144,7 +110,6 @@ public final class SoyFileSetParser {
     verifyUniquePaths(soyFileSuppliers);
 
     this.parsingPasses = parsingPasses;
-    this.doRunCheckingPasses = doRunCheckingPasses;
   }
 
 
@@ -182,7 +147,7 @@ public final class SoyFileSetParser {
    */
   private ParseResult parseWithVersions() throws IOException {
     Preconditions.checkState(
-        (cache == null) || (parsingPasses != null && doRunCheckingPasses),
+        (cache == null) || parsingPasses != null,
         "AST caching is only allowed when all parsing and checking passes are enabled, to avoid "
             + "caching inconsistent versions");
     IdGenerator nodeIdGen =
@@ -211,10 +176,8 @@ public final class SoyFileSetParser {
             parsingPasses.run(node, nodeIdGen);
           }
         }
-        if (doRunCheckingPasses) {
-          // Run passes that check the tree.
-          runSingleFileCheckingPasses(node);
-        }
+        // Run passes that check the tree.
+        runSingleFileCheckingPasses(node);
         if (cache != null) {
           cache.put(fileSupplier.getFilePath(), VersionedFile.of(node, version));
         }
@@ -226,7 +189,7 @@ public final class SoyFileSetParser {
 
     TemplateRegistry registry = new TemplateRegistry(soyTree, errorReporter);
     // Run passes that check the tree iff we successfully parsed every file.
-    if (!filesWereSkipped && doRunCheckingPasses) {
+    if (!filesWereSkipped) {
       runWholeFileSetCheckingPasses(registry, soyTree);
     }
     return ParseResult.create(soyTree, registry);

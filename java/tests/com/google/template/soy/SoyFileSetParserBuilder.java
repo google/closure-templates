@@ -52,7 +52,6 @@ import javax.annotation.Nullable;
 public final class SoyFileSetParserBuilder {
 
   private final ImmutableList<SoyFileSupplier> soyFileSuppliers;
-  private boolean doRunCheckingPasses = false;
   private boolean doRunInitialParsingPasses = true; // Non-standard default
   private SoyTypeRegistry typeRegistry = new SoyTypeRegistry();
   private SyntaxVersion declaredSyntaxVersion = SyntaxVersion.V2_0;
@@ -114,27 +113,6 @@ public final class SoyFileSetParserBuilder {
    */
   public SoyFileSetParserBuilder declaredSyntaxVersion(SyntaxVersion version) {
     this.declaredSyntaxVersion = version;
-    return this;
-  }
-
-  /**
-   * Turns the parser's checking passes on or off. Returns this object, for chaining.
-   *
-   * <p>The checking passes include:
-   * <ul>
-   *   <li>{@link com.google.template.soy.parsepasses.CheckCallsVisitor}</li>
-   *   <li>{@link com.google.template.soy.parsepasses.CheckDelegatesVisitor}</li>
-   *   <li>{@link com.google.template.soy.parsepasses.InferRequiredSyntaxVersionVisitor}</li>
-   *   <li>{@link com.google.template.soy.parsepasses.VerifyPhnameAttrOnlyOnPlaceholdersVisitor}
-   *   </li>
-   *   <li>{@link com.google.template.soy.sharedpasses.CheckCallingParamTypesVisitor}</li>
-   *   <li>{@link  com.google.template.soy.sharedpasses.CheckTemplateParamsVisitor}</li>
-   *   <li>{@link com.google.template.soy.sharedpasses.CheckTemplateVisibility}</li>
-   *   <li>{@link com.google.template.soy.sharedpasses.ReportSyntaxVersionErrorsVisitor}</li>
-   * </ul>
-   */
-  public SoyFileSetParserBuilder doRunCheckingPasses(boolean doRunCheckingPasses) {
-    this.doRunCheckingPasses = doRunCheckingPasses;
     return this;
   }
 
@@ -214,9 +192,8 @@ public final class SoyFileSetParserBuilder {
             astCache,
             declaredSyntaxVersion,
             soyFileSuppliers,
-            errorReporter,
             parsePasses,
-            doRunCheckingPasses)
+            errorReporter)
         .parse();
   }
 }

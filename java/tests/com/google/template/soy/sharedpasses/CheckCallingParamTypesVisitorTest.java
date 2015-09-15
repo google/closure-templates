@@ -342,13 +342,8 @@ public final class CheckCallingParamTypesVisitorTest extends TestCase {
   }
 
   private void assertInvalidSoyFiles(String expectedErrorMsgSubstr, String... soyFileContents) {
-    ErrorReporter boom = ExplodingErrorReporter.get();
-    ParseResult result =
-        SoyFileSetParserBuilder.forFileContents(soyFileContents).errorReporter(boom).parse();
-    new CheckTemplateParamsVisitor(result.registry(), SyntaxVersion.V2_0, boom)
-        .exec(result.fileSet());
     FormattingErrorReporter errorReporter = new FormattingErrorReporter();
-    new CheckCallingParamTypesVisitor(result.registry(), errorReporter).exec(result.fileSet());
+    SoyFileSetParserBuilder.forFileContents(soyFileContents).errorReporter(errorReporter).parse();
     assertThat(errorReporter.getErrorMessages()).hasSize(1);
     assertThat(Iterables.getOnlyElement(errorReporter.getErrorMessages()))
         .contains(expectedErrorMsgSubstr);

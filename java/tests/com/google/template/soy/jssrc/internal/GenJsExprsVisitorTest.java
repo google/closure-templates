@@ -97,32 +97,36 @@ public final class GenJsExprsVisitorTest extends TestCase {
   public void testMsgHtmlTag() {
 
     assertGeneratedJsExprs(
-        "{msg desc=\"\"}<a href=\"{$url}\">Click here</a>{/msg}",
+        "{@param url : ?}\n" + "{msg desc=\"\"}<a href=\"{$url}\">Click here</a>{/msg}",
         ImmutableList.of(
             new JsExpr("'<a href=\"'", Integer.MAX_VALUE),
             new JsExpr("opt_data.url", Integer.MAX_VALUE),
             new JsExpr("'\">'", Integer.MAX_VALUE)),
-        0, 0, 0);
+        0,
+        0,
+        0);
 
     assertGeneratedJsExprs(
-        "{msg desc=\"\"}<a href=\"{$url}\">Click here</a>{/msg}",
+        "{@param url : ?}\n" + "{msg desc=\"\"}<a href=\"{$url}\">Click here</a>{/msg}",
         ImmutableList.of(new JsExpr("'</a>'", Integer.MAX_VALUE)),
-        0, 0, 2);
+        0,
+        0,
+        2);
   }
 
 
   public void testPrint() {
 
     assertGeneratedJsExprs(
-        "{$boo.foo}",
+        "{@param boo : ?}\n" + "{$boo.foo}",
         ImmutableList.of(new JsExpr("opt_data.boo.foo", Integer.MAX_VALUE)));
 
     assertGeneratedJsExprs(
-        "{$goo.moo}",
+        "{@param goo : ?}\n" + "{$goo.moo}",
         ImmutableList.of(new JsExpr("gooData8.moo", Integer.MAX_VALUE)));
 
     assertGeneratedJsExprs(
-        "{index($goo)+1}",
+        "{@param goo : ?}\n" + "{index($goo)+1}",
         ImmutableList.of(new JsExpr("gooIndex8 + 1", Operator.PLUS.getPrecedence())));
   }
 
@@ -144,22 +148,23 @@ public final class GenJsExprsVisitorTest extends TestCase {
         ImmutableList.of(new JsExpr("goog.getCssName('selected-option')", Integer.MAX_VALUE)));
 
     assertGeneratedJsExprs(
-        "{css $foo, bar}",
+        "{@param foo : ?}\n" + "{css $foo, bar}",
         ImmutableList.of(new JsExpr("goog.getCssName(opt_data.foo, 'bar')", Integer.MAX_VALUE)));
   }
 
   public void testIf() {
 
     String soyNodeCode =
-        "{if $boo}\n" +
-        "  Blah\n" +
-        "{elseif not isFirst($goo)}\n" +
-        "  Bleh\n" +
-        "{else}\n" +
-        "  Bluh\n" +
-        "{/if}\n";
-    String expectedJsExprText =
-        "(opt_data.boo) ? 'Blah' : (! (gooIndex8 == 0)) ? 'Bleh' : 'Bluh'";
+        "{@param boo : ?}\n"
+            + "{@param goo : ?}\n"
+            + "{if $boo}\n"
+            + "  Blah\n"
+            + "{elseif not isFirst($goo)}\n"
+            + "  Bleh\n"
+            + "{else}\n"
+            + "  Bluh\n"
+            + "{/if}\n";
+    String expectedJsExprText = "(opt_data.boo) ? 'Blah' : (! (gooIndex8 == 0)) ? 'Bleh' : 'Bluh'";
     assertGeneratedJsExprs(
         soyNodeCode,
         ImmutableList.of(new JsExpr(expectedJsExprText, Operator.CONDITIONAL.getPrecedence())));
@@ -172,46 +177,42 @@ public final class GenJsExprsVisitorTest extends TestCase {
         ImmutableList.of(new JsExpr("some.func(opt_data)", Integer.MAX_VALUE)));
 
     assertGeneratedJsExprs(
-        "{call some.func data=\"$boo.foo\" /}",
+        "{@param boo : ?}\n" + "{call some.func data=\"$boo.foo\" /}",
         ImmutableList.of(new JsExpr("some.func(opt_data.boo.foo)", Integer.MAX_VALUE)));
 
     String soyNodeCode =
-        "{call some.func}" +
-        "  {param goo: $moo /}" +
-        "{/call}";
+        "{@param moo : ?}\n" + "{call some.func}" + "  {param goo: $moo /}" + "{/call}";
     assertGeneratedJsExprs(
         soyNodeCode,
         ImmutableList.of(new JsExpr("some.func({goo: opt_data.moo})", Integer.MAX_VALUE)));
 
     soyNodeCode =
-        "{call some.func data=\"$boo\"}" +
-        "  {param goo}Blah{/param}" +
-        "{/call}";
+        "{@param boo : ?}\n"
+            + "{call some.func data=\"$boo\"}"
+            + "  {param goo}Blah{/param}"
+            + "{/call}";
     assertGeneratedJsExprs(
         soyNodeCode,
-        ImmutableList.of(new JsExpr(
-            "some.func(soy.$$augmentMap(opt_data.boo, {goo: 'Blah'}))", Integer.MAX_VALUE)));
+        ImmutableList.of(
+            new JsExpr(
+                "some.func(soy.$$augmentMap(opt_data.boo, {goo: 'Blah'}))", Integer.MAX_VALUE)));
   }
 
 
   public void testBlocks() {
 
-    String soyNodeCode =
-        "{if $boo}\n" +
-        "  Blah {$boo} bleh.\n" +
-        "{/if}\n";
-    String expectedJsExprText =
-        "(opt_data.boo) ? 'Blah ' + opt_data.boo + ' bleh.' : ''";
+    String soyNodeCode = "{@param boo : ?}\n" + "{if $boo}\n" + "  Blah {$boo} bleh.\n" + "{/if}\n";
+    String expectedJsExprText = "(opt_data.boo) ? 'Blah ' + opt_data.boo + ' bleh.' : ''";
     assertGeneratedJsExprs(
         soyNodeCode,
         ImmutableList.of(new JsExpr(expectedJsExprText, Operator.CONDITIONAL.getPrecedence())));
 
     soyNodeCode =
-        "{call some.func}" +
-        "  {param goo}{lb}{index($goo)}{rb} is {$goo.moo}{/param}" +
-        "{/call}";
-    expectedJsExprText =
-        "some.func({goo: '{' + gooIndex8 + '} is ' + gooData8.moo})";
+        "{@param goo : ?}\n"
+            + "{call some.func}"
+            + "  {param goo}{lb}{index($goo)}{rb} is {$goo.moo}{/param}"
+            + "{/call}";
+    expectedJsExprText = "some.func({goo: '{' + gooIndex8 + '} is ' + gooData8.moo})";
     assertGeneratedJsExprs(
         soyNodeCode,
         ImmutableList.of(new JsExpr(expectedJsExprText, Integer.MAX_VALUE)));

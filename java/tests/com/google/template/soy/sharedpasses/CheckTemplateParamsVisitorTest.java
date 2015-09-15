@@ -19,13 +19,9 @@ package com.google.template.soy.sharedpasses;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.basetree.SyntaxVersion;
-import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.error.FormattingErrorReporter;
-import com.google.template.soy.soytree.SoyFileSetNode;
-import com.google.template.soy.soytree.TemplateRegistry;
 
 import junit.framework.TestCase;
 
@@ -167,10 +163,9 @@ public final class CheckTemplateParamsVisitorTest extends TestCase {
         "  {$x}{$y}\n" +
         "{/template}\n";
 
-    // This is actually not reported as an error right now because param 'y' in the callee may be
-    // optional, even though the SoyDoc does not list the param as optional (many people don't use
-    // the @param? tag at all).
-    assertThat(soyDocErrorsFor(fileContent)).isEmpty();
+    // This is actually not reported as an error by this visitor CheckTemplateParams doesn't check
+    // calls
+    assertThat(soyDocErrorsFor(fileContent)).containsExactly("Call missing required param 'y'.");
   }
 
   public void testUndeclaredParam() {
@@ -335,14 +330,11 @@ public final class CheckTemplateParamsVisitorTest extends TestCase {
   }
 
   private static ImmutableList<String> soyDocErrorsFor(String... soyFileContents) {
-    ParseResult result =
-        SoyFileSetParserBuilder.forFileContents(soyFileContents)
-            .errorReporter(ExplodingErrorReporter.get())
-            .parse();
-    TemplateRegistry registry = result.registry();
-    SoyFileSetNode soyTree = result.fileSet();
     FormattingErrorReporter errorReporter = new FormattingErrorReporter();
-    new CheckTemplateParamsVisitor(registry, SyntaxVersion.V1_0, errorReporter).exec(soyTree);
+    SoyFileSetParserBuilder.forFileContents(soyFileContents)
+        .declaredSyntaxVersion(SyntaxVersion.V1_0)
+        .errorReporter(errorReporter)
+        .parse();
     return errorReporter.getErrorMessages();
   }
 }

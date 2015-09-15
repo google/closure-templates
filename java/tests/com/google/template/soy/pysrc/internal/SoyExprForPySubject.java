@@ -18,6 +18,7 @@ package com.google.template.soy.pysrc.internal;
 
 import static com.google.common.truth.Truth.assertAbout;
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.template.soy.shared.SharedTestUtils.untypedTemplateBodyForExpression;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -144,13 +145,13 @@ public final class SoyExprForPySubject extends Subject<SoyExprForPySubject, Stri
    * @param expectedClass the expected class of the resulting PyExpr
    */
   public void translatesTo(PyExpr expectedPyExpr, Class<? extends PyExpr> expectedClass) {
-    String soyExpr = String.format("{print %s}", getSubject());
+
     SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forTemplateContents(soyExpr)
+        SoyFileSetParserBuilder.forTemplateContents(untypedTemplateBodyForExpression(getSubject()))
             .options(opts)
             .parse()
             .fileSet();
-    PrintNode node = (PrintNode)SharedTestUtils.getNode(soyTree, 0);
+    PrintNode node = (PrintNode) SharedTestUtils.getNode(soyTree, 0);
     ExprNode exprNode = node.getExprUnion().getExpr();
 
     PyExpr actualPyExpr = injector.getInstance(TranslateToPyExprVisitorFactory.class)

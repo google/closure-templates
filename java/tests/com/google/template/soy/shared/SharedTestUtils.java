@@ -16,8 +16,16 @@
 
 package com.google.template.soy.shared;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.Injector;
 import com.google.inject.Key;
+import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.error.ExplodingErrorReporter;
+import com.google.template.soy.exprparse.ExpressionParser;
+import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
+import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
+import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.shared.internal.ApiCallScopeUtils;
@@ -26,8 +34,13 @@ import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.primitive.UnknownType;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import javax.annotation.Nullable;
 
@@ -133,6 +146,52 @@ public final class SharedTestUtils {
     return soyFileContentBuilder.toString();
   }
 
+  /**
+   * Returns a template body for the given soy expression.  e.g. for the soy expression
+   * {@code $foo + 2} this will return <pre><code>
+   *   {{@literal @}param foo : ?}
+   *   {$foo + 2}
+   * </code></pre>
+   *
+   * <p>To supply types call the other overload {@link #untypedTemplateBodyForExpression(String)}
+   */
+  public static String untypedTemplateBodyForExpression(String soyExpr) {
+    return createTemplateBodyForExpression(soyExpr, ImmutableMap.<String, SoyType>of());
+  }
+
+  /**
+   * Returns a template body for the given soy expression. With type specializations.
+   */
+  public static String createTemplateBodyForExpression(
+      String soyExpr, final Map<String, SoyType> typeMap) {
+    ExprNode expr =
+        new ExpressionParser(soyExpr, SourceLocation.UNKNOWN, ExplodingErrorReporter.get())
+            .parseExpression();
+    final StringBuilder templateBody = new StringBuilder();
+    new AbstractExprNodeVisitor<Void>() {
+      final Set<String> names = new HashSet<>();
+
+      @Override
+      protected void visitVarRefNode(VarRefNode node) {
+        if (!node.isInjected() && names.add(node.getName())) {
+          SoyType type = typeMap.get(node.getName());
+          if (type == null) {
+            type = UnknownType.getInstance();
+          }
+          templateBody.append("{@param " + node.getName() + ": " + type + "}\n");
+        }
+      }
+
+      @Override
+      protected void visitExprNode(ExprNode node) {
+        if (node instanceof ParentExprNode) {
+          visitChildren((ParentExprNode) node);
+        }
+      }
+    }.exec(expr);
+    templateBody.append("{" + soyExpr + "}\n");
+    return templateBody.toString();
+  }
 
   /**
    * Retrieves the node within the given Soy tree indicated by the given indices to reach the

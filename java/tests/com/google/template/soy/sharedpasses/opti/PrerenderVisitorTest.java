@@ -110,10 +110,7 @@ public class PrerenderVisitorTest extends TestCase {
   public void testPrerenderWithUndefinedData() throws Exception {
 
     String templateBody =
-        "{let $boo: 8 /}\n" +
-        "{if $boo > 4}\n" +
-        "  {$foo}\n" +
-        "{/if}\n";
+        "{@param foo : ? }\n" + "{let $boo: 8 /}\n" + "{if $boo > 4}\n" + "  {$foo}\n" + "{/if}\n";
     try {
       prerender(templateBody);
       fail();
@@ -123,11 +120,12 @@ public class PrerenderVisitorTest extends TestCase {
 
     // This should work because the if-condition is false, thus skipping the undefined data.
     templateBody =
-        "{let $boo: 8 /}\n" +
-        "{$boo}\n" +
-        "{if $boo < 4}\n" +
-        "  {$foo}\n" +
-        "{/if}\n";
+        "{@param foo : ? }\n"
+            + "{let $boo: 8 /}\n"
+            + "{$boo}\n"
+            + "{if $boo < 4}\n"
+            + "  {$foo}\n"
+            + "{/if}\n";
     assertEquals("8", prerender(templateBody));
   }
 

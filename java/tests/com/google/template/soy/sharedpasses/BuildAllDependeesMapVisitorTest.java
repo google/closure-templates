@@ -52,25 +52,33 @@ public final class BuildAllDependeesMapVisitorTest extends TestCase {
   public void testGetTopLevelRefsVisitor() {
 
     String testFileContent =
-        "{namespace boo autoescape=\"deprecated-noncontextual\"}\n" +
-        "\n" +
-        "/** Test template */\n" +
-        "{template .foo}\n" +
-        "  {$a}{$b.c}\n" +
-        "  {if $b.d}\n" +
-        "    {$e}\n" +
-        "    {foreach $f in $fs}\n" +
-        "      {$f}{$g.h|noAutoescape}\n" +
-        "      {msg desc=\"\"}\n" +
-        "        {$i}\n" +
-        "        {call some.func}\n" +
-        "          {param j: $k.l /}\n" +
-        "          {param m}{$n}{$f.o}{/param}\n" +
-        "        {/call}\n" +
-        "      {/msg}\n" +
-        "    {/foreach}\n" +
-        "  {/if}\n" +
-        "{/template}\n";
+        "{namespace boo autoescape=\"deprecated-noncontextual\"}\n"
+            + "\n"
+            + "/** Test template */\n"
+            + "{template .foo}\n"
+            + "  {@param a : ?}\n"
+            + "  {@param b : ?}\n"
+            + "  {@param e : ?}\n"
+            + "  {@param fs : ?}\n"
+            + "  {@param g : ?}\n"
+            + "  {@param i : ?}\n"
+            + "  {@param k : ?}\n"
+            + "  {@param n : ?}\n"
+            + "  {$a}{$b.c}\n"
+            + "  {if $b.d}\n"
+            + "    {$e}\n"
+            + "    {foreach $f in $fs}\n"
+            + "      {$f}{$g.h|noAutoescape}\n"
+            + "      {msg desc=\"\"}\n"
+            + "        {$i}\n"
+            + "        {call some.func}\n"
+            + "          {param j: $k.l /}\n"
+            + "          {param m}{$n}{$f.o}{/param}\n"
+            + "        {/call}\n"
+            + "      {/msg}\n"
+            + "    {/foreach}\n"
+            + "  {/if}\n"
+            + "{/template}\n";
 
     ErrorReporter boom = ExplodingErrorReporter.get();
 

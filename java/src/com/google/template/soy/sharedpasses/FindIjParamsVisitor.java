@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableSortedSet;
 import com.google.template.soy.sharedpasses.FindTransitiveDepTemplatesVisitor.TransitiveDepTemplatesInfo;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
-import com.google.template.soy.soytree.SoytreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.defn.TemplateParam;
@@ -115,10 +114,7 @@ public class FindIjParamsVisitor {
       for (TemplateNode template : depsInfo.depTemplateSet) {
 
         if (! templateToLocalIjParamsMap.containsKey(template)) {
-          FindIjParamsInExprHelperVisitor helperVisitor = new FindIjParamsInExprHelperVisitor();
-          SoytreeUtils.execOnAllV2Exprs(template, helperVisitor);
-          Set<String> localIjParams = helperVisitor.getResult();
-          templateToLocalIjParamsMap.put(template, localIjParams);
+          templateToLocalIjParamsMap.put(template, IjDataQueries.getAllIjs(template));
         }
 
         for (String localIjParam : templateToLocalIjParamsMap.get(template)) {

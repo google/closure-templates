@@ -24,6 +24,8 @@ import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.basetree.AbstractNodeVisitor;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.Node;
+import com.google.template.soy.basetree.NodeVisitor;
+import com.google.template.soy.basetree.ParentNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
@@ -33,12 +35,12 @@ import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.LocalVarNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
-
-import javax.annotation.Nullable;
 
 /**
  * Shared utilities for the 'soytree' package.
@@ -51,6 +53,33 @@ public final class SoytreeUtils {
 
   private SoytreeUtils() {}
 
+  /**
+   * Runs the visitor on all nodes (including {@link ExprNode expr nodes}) reachable from the given
+   * node.  The order of visiting is undefined.
+   *
+   * <p>If the visitor return {@code false} from {@link NodeVisitor#exec(Node)} we will short
+   * circuit visiting.
+   */
+  public static void visitAllNodes(Node node, NodeVisitor<? super Node, Boolean> visitor) {
+    Deque<Node> queue = new ArrayDeque<>();
+    queue.add(node);
+    Node current;
+    while ((current = queue.pollLast()) != null) {
+      if (!visitor.exec(current)) {
+        return;
+      }
+      if (current instanceof ParentNode<?>) {
+        queue.addAll(((ParentNode<?>) current).getChildren());
+      }
+      if (current instanceof ExprHolderNode) {
+        for (ExprUnion union : ((ExprHolderNode) current).getAllExprUnions()) {
+          if (union.getExpr() != null) {
+            queue.add(union.getExpr());
+          }
+        }
+      }
+    }
+  }
 
   /**
    * Retrieves all nodes in a tree that are an instance of a particular class.
@@ -143,51 +172,8 @@ public final class SoytreeUtils {
   public static <R> void execOnAllV2Exprs(
       SoyNode node,
       AbstractNodeVisitor<ExprNode, R> exprNodeVisitor) {
-    execOnAllV2ExprsShortcircuitably(node, exprNodeVisitor, null /* shortcircuiter */);
+    new VisitAllV2ExprsVisitor<R>(exprNodeVisitor).exec(node);
   }
-
-
-  /**
-   * Given a Soy node and a visitor for expression trees, traverses the subtree of the node and
-   * executes the visitor on all expressions held by nodes in the subtree.
-   *
-   * <p> Only processes expressions in V2 syntax. Ignores all expressions in V1 syntax.
-   *
-   * <p> Same as {@code visitAllExprs} except that this pass can be shortcircuited by providing a
-   * {@link Shortcircuiter}.
-   *
-   * @param <R> The ExprNode visitor's return type.
-   * @param node The root of the subtree to visit all expressions in.
-   * @param exprNodeVisitor The visitor to execute on all expressions.
-   * @param shortcircuiter The Shortcircuiter to tell us when to shortcircuit the pass.
-   * @see Shortcircuiter
-   */
-  public static <R> void execOnAllV2ExprsShortcircuitably(
-      SoyNode node,
-      AbstractNodeVisitor<ExprNode, R> exprNodeVisitor,
-      Shortcircuiter<R> shortcircuiter) {
-    new VisitAllV2ExprsVisitor<R>(exprNodeVisitor, shortcircuiter).exec(node);
-  }
-
-
-  /**
-   * Helper interface for {@code visitAllExprsShortcircuitably}.
-   *
-   * @param <R> The ExprNode visitor's return type.
-   */
-  public interface Shortcircuiter<R> {
-
-    /**
-     * Called at various points during a pass initiated by visitAllExprsShortcircuitably.
-     * This method should return whether or not to shortcircuit the pass (at the current point in
-     * the pass).
-     *
-     * @param exprNodeVisitor The expression visitor being used by visitAllExprsShortcircuitably.
-     * @return Whether to shortcircuit the pass (at the current point in the pass).
-     */
-    boolean shouldShortcircuit(AbstractNodeVisitor<ExprNode, R> exprNodeVisitor);
-  }
-
 
   /**
    * Private helper class for {@code visitAllExprs} and {@code visitAllExprsShortcircuitably}.
@@ -197,24 +183,15 @@ public final class SoytreeUtils {
   private static final class VisitAllV2ExprsVisitor<R> extends AbstractNodeVisitor<SoyNode, R> {
 
     private final AbstractNodeVisitor<ExprNode, R> exprNodeVisitor;
-    private final Shortcircuiter<R> shortcircuiter;
 
-    private VisitAllV2ExprsVisitor(
-        AbstractNodeVisitor<ExprNode, R> exprNodeVisitor,
-        @Nullable Shortcircuiter<R> shortcircuiter) {
+    private VisitAllV2ExprsVisitor(AbstractNodeVisitor<ExprNode, R> exprNodeVisitor) {
       this.exprNodeVisitor = exprNodeVisitor;
-      this.shortcircuiter = shortcircuiter;
     }
 
     @Override protected void visit(SoyNode node) {
 
       if (node instanceof ParentSoyNode<?>) {
-        for (SoyNode child : ((ParentSoyNode<?>) node).getChildren()) {
-          visit(child);
-          if (shortcircuiter != null && shortcircuiter.shouldShortcircuit(exprNodeVisitor)) {
-            return;
-          }
-        }
+        visitChildren((ParentSoyNode<?>) node);
       }
 
       if (node instanceof ExprHolderNode) {
