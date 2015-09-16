@@ -24,28 +24,24 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.multibindings.Multibinder;
-import com.google.template.soy.SoyFileSet;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.basicdirectives.BasicDirectivesModule;
 import com.google.template.soy.basicfunctions.BasicFunctionsModule;
-import com.google.template.soy.data.SoyData;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueHelper;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.shared.internal.ErrorReporterModule;
+import com.google.template.soy.shared.internal.FunctionAdapters;
 import com.google.template.soy.shared.internal.SharedModule;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
-import com.google.template.soy.shared.restricted.SoyJavaRuntimePrintDirective;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.sharedpasses.SharedPassesModule;
 import com.google.template.soy.sharedpasses.render.RenderVisitor;
 import com.google.template.soy.sharedpasses.render.RenderVisitorFactory;
 import com.google.template.soy.soytree.TemplateRegistry;
-import com.google.template.soy.tofu.restricted.SoyAbstractTofuPrintDirective;
-import com.google.template.soy.tofu.restricted.SoyTofuPrintDirective;
 
 import junit.framework.TestCase;
 
@@ -79,23 +75,18 @@ public class TofuRenderVisitorTest extends TestCase {
     }
   }
 
-  // These three caps plugins have identical behavior. They differ only in their
-  // class hierarchies (which, unfortunately, is important to test, because
-  // the legacy SoyTofuPrintDirective and SoyJavaRuntimePrintDirective have to be adapted
-  // to the canonical SoyJavaPrintDirective).
+  private static final class Caps implements SoyJavaPrintDirective {
 
-  private static final class Caps1 extends SoyAbstractTofuPrintDirective {
-
-    static final SoyPrintDirective INSTANCE = new Caps1();
+    static final SoyPrintDirective INSTANCE = new Caps();
 
     @Override
-    public SoyData apply(SoyData value, List<SoyData> args) {
-      return StringData.forValue(value.coerceToString().toUpperCase());
+    public SoyValue applyForJava(SoyValue value, List<SoyValue> args) {
+      return StringData.forValue(value.stringValue().toUpperCase());
     }
 
     @Override
     public String getName() {
-      return "|caps1";
+      return "|caps";
     }
 
     @Override
@@ -109,55 +100,6 @@ public class TofuRenderVisitorTest extends TestCase {
     }
   }
 
-  private static final class Caps2 implements SoyJavaRuntimePrintDirective {
-
-    static final SoyPrintDirective INSTANCE = new Caps2();
-
-    @Override
-    public SoyData apply(SoyData value, List<SoyData> args) {
-      return StringData.forValue(value.coerceToString().toUpperCase());
-    }
-
-    @Override
-    public String getName() {
-      return "|caps2";
-    }
-
-    @Override
-    public Set<Integer> getValidArgsSizes() {
-      return ImmutableSet.of(0);
-    }
-
-    @Override
-    public boolean shouldCancelAutoescape() {
-      return false;
-    }
-  }
-
-  private static final class Caps3 implements SoyTofuPrintDirective {
-
-    static final SoyPrintDirective INSTANCE = new Caps3();
-
-    @Override
-    public SoyData applyForTofu(SoyData value, List<SoyData> args) {
-      return StringData.forValue(value.coerceToString().toUpperCase());
-    }
-
-    @Override
-    public String getName() {
-      return "|caps3";
-    }
-
-    @Override
-    public Set<Integer> getValidArgsSizes() {
-      return ImmutableSet.of(0);
-    }
-
-    @Override
-    public boolean shouldCancelAutoescape() {
-      return false;
-    }
-  }
 
   private static final Injector INJECTOR = Guice.createInjector(
       new ErrorReporterModule(),
@@ -173,9 +115,7 @@ public class TofuRenderVisitorTest extends TestCase {
           functionMultibinder.addBinding().to(Reverse.class);
           Multibinder<SoyPrintDirective> directiveMultibinder =
               Multibinder.newSetBinder(binder(), SoyPrintDirective.class);
-          directiveMultibinder.addBinding().to(Caps1.class);
-          directiveMultibinder.addBinding().to(Caps2.class);
-          directiveMultibinder.addBinding().to(Caps3.class);
+          directiveMultibinder.addBinding().to(Caps.class);
         }
       });
 
@@ -257,17 +197,12 @@ public class TofuRenderVisitorTest extends TestCase {
         "{namespace ns autoescape=\"strict\"}\n"
         + "/***/\n"
         + "{template .foo kind=\"html\"}\n"
-        + "  {'hello' |caps1}\n"
-        + "  {'hello' |caps2}\n"
-        + "  {'hello' |caps3}\n"
+        + "  {'hello' |caps}\n"
         + "{/template}\n";
 
     ImmutableMap<String, ? extends SoyJavaPrintDirective> printDirectives =
-        SoyFileSet.adaptSoyJavaRuntimePrintDirectivesAndSoyTofuPrintDirectives(
-            ImmutableMap.of(
-                Caps1.INSTANCE.getName(), Caps1.INSTANCE,
-                Caps2.INSTANCE.getName(), Caps2.INSTANCE,
-                Caps3.INSTANCE.getName(), Caps3.INSTANCE));
+        FunctionAdapters.buildSpecificSoyDirectivesMap(
+            ImmutableSet.of(Caps.INSTANCE), SoyJavaPrintDirective.class);
     ParseResult result = SoyFileSetParserBuilder.forFileContents(soyFileContent).parse();
     TemplateRegistry registry = result.registry();
     StringBuilder out = new StringBuilder();
@@ -282,6 +217,6 @@ public class TofuRenderVisitorTest extends TestCase {
         null /* xidRenamingMap */,
         null /* cssRenamingMap */);
     rv.exec(registry.getBasicTemplate("ns.foo"));
-    assertThat(out.toString()).isEqualTo("HELLOHELLOHELLO");
+    assertThat(out.toString()).isEqualTo("HELLO");
   }
 }

@@ -16,7 +16,6 @@
 
 package com.google.template.soy.shared.internal;
 
-import com.google.common.base.Function;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import com.google.template.soy.shared.restricted.SoyFunction;
@@ -104,55 +103,4 @@ public final class FunctionAdapters {
 
     return mapBuilder.build();
   }
-
-  /**
-   * Given the set of all Soy directive implementations, a specific Soy directive type (subtype of
-   * SoyPrintDirective) to look for, another Soy directive type to look for that is an equivalent
-   * deprecated version of the specific Soy directive type, and an adapt function for adapting the
-   * deprecated type to the specific type, finds the Soy directives that implement either type and
-   * returns them in the form of a map from directive name to directive, where the directives with
-   * the deprecated type have been adapted using the adapt function.
-   *
-   * @param <T> The specific Soy directive type to look for.
-   * @param <D> The equivalent deprecated Soy directive type to also look for.
-   * @param soyDirectivesSet The set of all Soy directives.
-   * @param specificSoyDirectiveType The class of the specific Soy directive type to look for.
-   * @param equivDeprecatedSoyDirectiveType The class of the equivalent deprecated Soy directive
-   *     type to also look for.
-   * @param adaptFn The adapt function that adapts the deprecated type to the specific type.
-   * @return A map of the relevant specific Soy directives (name to directive).
-   */
-  public static <T extends SoyPrintDirective, D extends SoyPrintDirective>
-      ImmutableMap<String, T> buildSpecificSoyDirectivesMapWithAdaptation(
-      Set<SoyPrintDirective> soyDirectivesSet, Class<T> specificSoyDirectiveType,
-      Class<D> equivDeprecatedSoyDirectiveType, Function<D, T> adaptFn) {
-
-    ImmutableMap<String, T> tMap =
-        buildSpecificSoyDirectivesMap(soyDirectivesSet, specificSoyDirectiveType);
-    ImmutableMap<String, D> dMap =
-        buildSpecificSoyDirectivesMap(soyDirectivesSet, equivDeprecatedSoyDirectiveType);
-
-    ImmutableMap.Builder<String, T> resultMapBuilder = ImmutableMap.builder();
-    resultMapBuilder.putAll(tMap);
-    for (String directiveName : dMap.keySet()) {
-      if (tMap.containsKey(directiveName)) {
-        if (tMap.get(directiveName).equals(dMap.get(directiveName))) {
-          throw new IllegalStateException(String.format(
-              "Found print directive named '%s' that implements both %s and" +
-                  " %s -- please remove the latter deprecated interface.",
-              directiveName, specificSoyDirectiveType.getSimpleName(),
-              equivDeprecatedSoyDirectiveType.getSimpleName()));
-        } else {
-          throw new IllegalStateException(String.format(
-              "Found two print directives with the same name '%s', one implementing %s and the" +
-                  " other implementing %s",
-              directiveName, specificSoyDirectiveType.getSimpleName(),
-              equivDeprecatedSoyDirectiveType.getSimpleName()));
-        }
-      }
-      resultMapBuilder.put(directiveName, adaptFn.apply(dMap.get(directiveName)));
-    }
-    return resultMapBuilder.build();
-  }
-
 }

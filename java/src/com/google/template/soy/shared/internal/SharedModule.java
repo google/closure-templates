@@ -21,16 +21,12 @@ import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-import com.google.common.base.Function;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
 import com.google.inject.AbstractModule;
 import com.google.inject.BindingAnnotation;
 import com.google.inject.Provides;
 import com.google.inject.multibindings.Multibinder;
 import com.google.template.soy.coredirectives.CoreDirectivesModule;
-import com.google.template.soy.data.SoyData;
-import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.ApiCall;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.IsUsingIjData;
@@ -38,14 +34,12 @@ import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
-import com.google.template.soy.shared.restricted.SoyJavaRuntimePrintDirective;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.types.SoyTypeProvider;
 import com.google.template.soy.types.SoyTypeRegistry;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -162,45 +156,9 @@ public final class SharedModule extends AbstractModule {
   @Singleton
   @Shared ImmutableMap<String, ? extends SoyJavaPrintDirective> provideSoyJavaDirectivesMap(
       Set<SoyPrintDirective> soyDirectivesSet) {
-    return FunctionAdapters.buildSpecificSoyDirectivesMapWithAdaptation(
-        soyDirectivesSet, SoyJavaPrintDirective.class, SoyJavaRuntimePrintDirective.class,
-        new Function<SoyJavaRuntimePrintDirective, SoyJavaPrintDirective>() {
-          @Override
-          public SoyJavaPrintDirective apply(SoyJavaRuntimePrintDirective input) {
-            return new SoyJavaRuntimePrintDirectiveAdapter(input);
-          }
-        });
+    return FunctionAdapters.buildSpecificSoyDirectivesMap(
+        soyDirectivesSet, SoyJavaPrintDirective.class);
   }
-
-  /**
-   * Private helper class for provideSoyJavaDirectivesMap() to adapt SoyJavaRuntimePrintDirective to
-   * SoyJavaPrintDirective.
-   */
-  public static class SoyJavaRuntimePrintDirectiveAdapter implements SoyJavaPrintDirective {
-
-    /** The underlying SoyJavaRuntimePrintDirective that is being adapted. */
-    private final SoyJavaRuntimePrintDirective adaptee;
-
-    public SoyJavaRuntimePrintDirectiveAdapter(SoyJavaRuntimePrintDirective adaptee) {
-      this.adaptee = adaptee;
-    }
-
-    @Override public SoyValue applyForJava(SoyValue value, List<SoyValue> args) {
-      SoyData castValue = (SoyData) value;
-      List<SoyData> castArgs = Lists.newArrayListWithCapacity(args.size());
-      for (SoyValue arg : args) {
-        castArgs.add((SoyData) arg);
-      }
-      return adaptee.apply(castValue, castArgs);
-    }
-
-    @Override public String getName() { return adaptee.getName(); }
-
-    @Override public Set<Integer> getValidArgsSizes() { return adaptee.getValidArgsSizes(); }
-
-    @Override public boolean shouldCancelAutoescape() { return adaptee.shouldCancelAutoescape(); }
-  }
-
 
   @Override public boolean equals(Object other) {
     return other != null && this.getClass().equals(other.getClass());
