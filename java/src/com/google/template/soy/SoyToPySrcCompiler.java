@@ -177,8 +177,8 @@ public final class SoyToPySrcCompiler {
         indirectDeps, exitWithErrorFn);
     if (syntaxVersion.length() > 0) {
       SyntaxVersion parsedVersion = SyntaxVersion.forName(syntaxVersion);
-      if (parsedVersion.num < SyntaxVersion.V2_2.num) {
-        exitWithErrorFn.apply("Declared syntax version must be 2.2 or greater.");
+      if (parsedVersion.num < SyntaxVersion.V2_0.num) {
+        exitWithErrorFn.apply("Declared syntax version must be 2.0 or greater.");
       }
       sfsBuilder.setDeclaredSyntaxVersionName(syntaxVersion);
     }

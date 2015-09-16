@@ -123,21 +123,21 @@ public final class GenPyCallExprVisitorTest extends TestCase {
 
   public void testDelegateCall() {
     String soyCode = "{@param bar : ?}\n" + "{delcall moo.goo data=\"$bar\" /}";
-    String expectedPyCode = "runtime.get_delegate_fn('moo.goo', '', True)(data.get('bar'), ijData)";
+    String expectedPyCode = "runtime.get_delegate_fn('moo.goo', '', False)(data.get('bar'), ijData)";
 
     assertThatSoyFile(String.format(SOY_BASE, soyCode)).compilesToSourceContaining(expectedPyCode);
 
 
     soyCode = "{@param bar : ?}\n" + "{delcall moo.goo data=\"$bar\" variant=\"'beta'\" /}";
-    expectedPyCode = "runtime.get_delegate_fn('moo.goo', 'beta', True)(data.get('bar'), ijData)";
+    expectedPyCode = "runtime.get_delegate_fn('moo.goo', 'beta', False)(data.get('bar'), ijData)";
 
     assertThatSoyFile(String.format(SOY_BASE, soyCode)).compilesToSourceContaining(expectedPyCode);
 
 
     soyCode =
         "{@param bar : ?}\n"
-            + "{delcall moo.goo data=\"$bar\" variant=\"'beta'\" allowemptydefault=\"false\" /}";
-    expectedPyCode = "runtime.get_delegate_fn('moo.goo', 'beta', False)(data.get('bar'), ijData)";
+            + "{delcall moo.goo data=\"$bar\" variant=\"'beta'\" allowemptydefault=\"true\" /}";
+    expectedPyCode = "runtime.get_delegate_fn('moo.goo', 'beta', True)(data.get('bar'), ijData)";
 
     assertThatSoyFile(String.format(SOY_BASE, soyCode)).compilesToSourceContaining(expectedPyCode);
   }

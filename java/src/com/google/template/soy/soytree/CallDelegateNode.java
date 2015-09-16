@@ -312,14 +312,6 @@ public final class CallDelegateNode extends CallNode {
     return delCalleeVariantExpr;
   }
 
-
-  /** Sets allowsEmptyDefault to the given default value if it wasn't already user-specified. */
-  public void maybeSetAllowsEmptyDefault(boolean defaultValueForAllowsEmptyDefault) {
-    if (allowsEmptyDefault == null) {
-      allowsEmptyDefault = defaultValueForAllowsEmptyDefault;
-    }
-  }
-
   /**
    * Sets the template params that require runtime type checking for each possible delegate target.
    */
@@ -342,7 +334,10 @@ public final class CallDelegateNode extends CallNode {
 
   /** Returns whether this delegate call defaults to empty string if there's no active impl. */
   public boolean allowsEmptyDefault() {
-    Preconditions.checkState(allowsEmptyDefault != null);
+    // Default to 'false' if not specified.
+    if (allowsEmptyDefault == null) {
+      return false;
+    }
     return allowsEmptyDefault;
   }
 

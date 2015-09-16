@@ -43,7 +43,6 @@ import com.google.template.soy.types.SoyTypeRegistry;
  * <ul>
  *   <li>{@link RewriteGenderMsgsVisitor}
  *   <li>{@link RewriteRemaindersVisitor}
- *   <li>{@link SetDefaultForDelcallAllowsEmptyDefaultVisitor}
  *   <li>{@link SetFullCalleeNamesVisitor}
  *   <li>{@link ResolveExpressionTypesVisitor}
  *   <li>{@link ResolveNamesVisitor}
@@ -76,8 +75,7 @@ public final class ParsePasses {
     passesBuilder
         .add(new RewriteGendersPass())
         .add(new RewriteRemaindersPass())
-        .add(new SetFullCalleeNamesPass())
-        .add(new SetDefaultForDelcallAllowsEmptyDefaultPass());
+        .add(new SetFullCalleeNamesPass());
     passesBuilder.add(new ResolveNamesPass())
         .add(new ResolveFunctionsPass())
         .add(new ResolveExpressionTypesPass())
@@ -153,16 +151,6 @@ public final class ParsePasses {
     }
   }
 
-  private final class SetDefaultForDelcallAllowsEmptyDefaultPass extends CompilerFilePass {
-    // visitor is stateless so we can store a single version
-    final SetDefaultForDelcallAllowsEmptyDefaultVisitor visitor =
-        new SetDefaultForDelcallAllowsEmptyDefaultVisitor(declaredSyntaxVersion);
-
-    @Override public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-      visitor.exec(file);
-    }
-  }
-  
   private final class SetFullCalleeNamesPass extends CompilerFilePass {
     @Override public void run(SoyFileNode file, IdGenerator nodeIdGen) {
       new SetFullCalleeNamesVisitor(errorReporter).exec(file);

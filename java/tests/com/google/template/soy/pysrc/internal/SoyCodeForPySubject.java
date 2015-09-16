@@ -161,7 +161,7 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
     SoyNode node =
         SharedTestUtils.getNode(
             SoyFileSetParserBuilder.forTemplateContents(AutoEscapingType.STRICT, getSubject())
-                .declaredSyntaxVersion(SyntaxVersion.V2_2)
+                .declaredSyntaxVersion(SyntaxVersion.V2_0)
                 .parse()
                 .fileSet(),
             0);

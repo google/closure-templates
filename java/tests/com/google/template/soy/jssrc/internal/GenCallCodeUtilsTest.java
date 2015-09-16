@@ -110,12 +110,12 @@ public class GenCallCodeUtilsTest extends TestCase {
 
   public void testGenCallExprForDelegateCalls() {
     assertThat(getCallExprTextHelper("{delcall myDelegate data=\"all\" /}"))
-        .isEqualTo("soy.$$getDelegateFn(soy.$$getDelTemplateId('myDelegate'), '', true)(opt_data)");
+        .isEqualTo("soy.$$getDelegateFn(soy.$$getDelTemplateId('myDelegate'), '', false)(opt_data)");
 
     assertThat(
-        getCallExprTextHelper("{delcall myDelegate data=\"all\" allowemptydefault=\"false\" /}"))
+        getCallExprTextHelper("{delcall myDelegate data=\"all\" allowemptydefault=\"true\" /}"))
         .isEqualTo(
-            "soy.$$getDelegateFn(soy.$$getDelTemplateId('myDelegate'), '', false)(opt_data)");
+            "soy.$$getDelegateFn(soy.$$getDelTemplateId('myDelegate'), '', true)(opt_data)");
 
     assertThat(
             getCallExprTextHelper(
@@ -125,21 +125,21 @@ public class GenCallCodeUtilsTest extends TestCase {
                 "{/delcall}"))
         .isEqualTo(
             "soy.$$getDelegateFn("
-                + "soy.$$getDelTemplateId('my.other.delegate'), '', true)({goo: opt_data.moo})");
+                + "soy.$$getDelTemplateId('my.other.delegate'), '', false)({goo: opt_data.moo})");
   }
 
 
   public void testGenCallExprForDelegateVariantCalls() {
     assertThat(getCallExprTextHelper("{delcall myDelegate variant=\"'voo'\" data=\"all\" /}"))
         .isEqualTo(
-            "soy.$$getDelegateFn(soy.$$getDelTemplateId('myDelegate'), 'voo', true)(opt_data)");
+            "soy.$$getDelegateFn(soy.$$getDelTemplateId('myDelegate'), 'voo', false)(opt_data)");
 
     assertThat(
             getCallExprTextHelper(
                 "{@param voo : ?}",
-                "{delcall myDelegate variant=\"$voo\" data=\"all\" allowemptydefault=\"false\" /}"))
+                "{delcall myDelegate variant=\"$voo\" data=\"all\" allowemptydefault=\"true\" /}"))
         .isEqualTo(
-            "soy.$$getDelegateFn(soy.$$getDelTemplateId('myDelegate'), opt_data.voo, false)"
+            "soy.$$getDelegateFn(soy.$$getDelTemplateId('myDelegate'), opt_data.voo, true)"
                 + "(opt_data)");
 
     assertThat(
@@ -150,7 +150,7 @@ public class GenCallCodeUtilsTest extends TestCase {
                 "{/delcall}"))
         .isEqualTo(
             "soy.$$getDelegateFn("
-                + "soy.$$getDelTemplateId('my.other.delegate'), 'voo' + opt_ijData.voo, true)"
+                + "soy.$$getDelTemplateId('my.other.delegate'), 'voo' + opt_ijData.voo, false)"
                 + "({goo: opt_data.moo})");
   }
 
@@ -162,7 +162,7 @@ public class GenCallCodeUtilsTest extends TestCase {
                 "  {param goo kind=\"html\"}Blah{/param}",
                 "{/delcall}"))
         .isEqualTo(
-            "soy.$$getDelegateFn(soy.$$getDelTemplateId('my.other.delegate'), '', true)("
+            "soy.$$getDelegateFn(soy.$$getDelTemplateId('my.other.delegate'), '', false)("
                 + "{goo: soydata.VERY_UNSAFE.$$ordainSanitizedHtmlForInternalBlocks('Blah')})");
 
     {
@@ -177,7 +177,7 @@ public class GenCallCodeUtilsTest extends TestCase {
           .that(
               callExprText.matches(
                   "soy.\\$\\$getDelegateFn\\("
-                      + "soy.\\$\\$getDelTemplateId\\('my.other.delegate'\\), '', true\\)"
+                      + "soy.\\$\\$getDelTemplateId\\('my.other.delegate'\\), '', false\\)"
                       + "[(][{]goo: soydata.VERY_UNSAFE.[$][$]ordainSanitizedHtmlForInternalBlocks"
                       + "[(]param[0-9]+[)][}][)]"))
           .isTrue();

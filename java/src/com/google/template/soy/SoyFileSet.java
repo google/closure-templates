@@ -1131,10 +1131,10 @@ public final class SoyFileSet {
       throws SoySyntaxException, IOException {
 
     SyntaxVersion declaredSyntaxVersion =
-        generalOptions.getDeclaredSyntaxVersion(SyntaxVersion.V2_2);
+        generalOptions.getDeclaredSyntaxVersion(SyntaxVersion.V2_0);
 
     Checkpoint checkpoint = errorReporter.checkpoint();
-    ParseResult result = parse(SyntaxVersion.V2_2);
+    ParseResult result = parse(SyntaxVersion.V2_0);
     if (errorReporter.errorsSince(checkpoint)) {
       return failure();
     }

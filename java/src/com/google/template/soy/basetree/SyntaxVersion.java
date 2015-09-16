@@ -30,21 +30,12 @@ public enum SyntaxVersion {
   V1_0,
       // V1.0 allows these legacy deprecated items:
       //   + No 'namespace' declaration in Soy file.
-      //   + No SoyDoc on a template.
       //   + Some prevalent forms of incorrect param declarations in template SoyDoc.
       //   + Template name that isn't a dot followed by an identifier (i.e. relative to namespace).
-      //   + The 'override' attribute in a 'template tag.
       //   + Expressions that cannot be parsed as a Soy V2 expression.
-      // Behavior changes if V1.0- is declared (not inferred):
-      //   + HTML comments in Soy raw text are removed.
 
   V2_0,
       // V2.0 is the syntax that has historically been enforced by the Soy compiler.
-
-  V2_2,
-      // V2.2 disallows some syntax that was deprecated after V2.0.
-      // Behavior changes if V2.2+ is declared (not inferred):
-      //   + Default value of 'delcall' tag attribute 'allowemptydefault' changes to false.
 
   V2_3,
       // Syntax that causes V2.3+ to be inferred:
