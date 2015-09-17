@@ -58,12 +58,19 @@ import com.google.template.soy.msgs.internal.ExtractMsgsVisitor;
 import com.google.template.soy.msgs.restricted.SoyMsg;
 import com.google.template.soy.msgs.restricted.SoyMsgBundleImpl;
 import com.google.template.soy.parseinfo.passes.GenerateParseInfoVisitor;
-import com.google.template.soy.parsepasses.ChangeCallsToPassAllDataVisitor;
-import com.google.template.soy.parsepasses.CheckFunctionCallsVisitor.CheckFunctionCallsVisitorFactory;
-import com.google.template.soy.parsepasses.ParsePasses;
 import com.google.template.soy.parsepasses.contextautoesc.ContentSecurityPolicyPass;
 import com.google.template.soy.parsepasses.contextautoesc.ContextualAutoescaper;
 import com.google.template.soy.parsepasses.contextautoesc.DerivedTemplateUtils;
+import com.google.template.soy.passes.AssertStrictAutoescapingVisitor;
+import com.google.template.soy.passes.ChangeCallsToPassAllDataVisitor;
+import com.google.template.soy.passes.ClearSoyDocStringsVisitor;
+import com.google.template.soy.passes.FindIjParamsVisitor;
+import com.google.template.soy.passes.FindTransitiveDepTemplatesVisitor;
+import com.google.template.soy.passes.PassManager;
+import com.google.template.soy.passes.StrictDepsVisitor;
+import com.google.template.soy.passes.CheckFunctionCallsVisitor.CheckFunctionCallsVisitorFactory;
+import com.google.template.soy.passes.FindIjParamsVisitor.IjParamsInfo;
+import com.google.template.soy.passes.FindTransitiveDepTemplatesVisitor.TransitiveDepTemplatesInfo;
 import com.google.template.soy.pysrc.SoyPySrcOptions;
 import com.google.template.soy.pysrc.internal.PySrcMain;
 import com.google.template.soy.shared.SoyAstCache;
@@ -73,13 +80,6 @@ import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
-import com.google.template.soy.sharedpasses.AssertStrictAutoescapingVisitor;
-import com.google.template.soy.sharedpasses.ClearSoyDocStringsVisitor;
-import com.google.template.soy.sharedpasses.FindIjParamsVisitor;
-import com.google.template.soy.sharedpasses.FindIjParamsVisitor.IjParamsInfo;
-import com.google.template.soy.sharedpasses.FindTransitiveDepTemplatesVisitor;
-import com.google.template.soy.sharedpasses.FindTransitiveDepTemplatesVisitor.TransitiveDepTemplatesInfo;
-import com.google.template.soy.sharedpasses.StrictDepsVisitor;
 import com.google.template.soy.sharedpasses.opti.SimplifyVisitor;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -1187,8 +1187,8 @@ public final class SoyFileSet {
       SoyTypeRegistry typeRegistry,
       ImmutableMap<String, ? extends SoyFunction> soyFunctionMap) {
     SyntaxVersion declaredSyntaxVersion = generalOptions.getDeclaredSyntaxVersion(defaultVersion);
-    ParsePasses.Builder builder =
-        new ParsePasses.Builder()
+    PassManager.Builder builder =
+        new PassManager.Builder()
             .setTypeRegistry(typeRegistry)
             .setGeneralOptions(generalOptions)
             .setDeclaredSyntaxVersion(declaredSyntaxVersion)

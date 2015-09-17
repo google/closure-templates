@@ -23,7 +23,7 @@ import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
-import com.google.template.soy.sharedpasses.CombineConsecutiveRawTextNodesVisitor;
+import com.google.template.soy.passes.CombineConsecutiveRawTextNodesVisitor;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.PrintNode;

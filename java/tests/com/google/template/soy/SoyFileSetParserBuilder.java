@@ -30,7 +30,7 @@ import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.basicfunctions.BasicFunctionsModule;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ExplodingErrorReporter;
-import com.google.template.soy.parsepasses.ParsePasses;
+import com.google.template.soy.passes.PassManager;
 import com.google.template.soy.shared.AutoEscapingType;
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.shared.SoyAstCache;
@@ -173,10 +173,10 @@ public final class SoyFileSetParserBuilder {
    * to {@link #errorReporter}.
    */
   public ParseResult parse() {
-    ParsePasses parsePasses = null;
+    PassManager passManager = null;
     if (doRunInitialParsingPasses) {
-      ParsePasses.Builder builder =
-          new ParsePasses.Builder()
+      PassManager.Builder builder =
+          new PassManager.Builder()
               .setDeclaredSyntaxVersion(declaredSyntaxVersion)
               .setSoyFunctionMap(soyFunctionMap)
               .setErrorReporter(errorReporter)
@@ -185,14 +185,14 @@ public final class SoyFileSetParserBuilder {
       if (allowUnboundGlobals) {
         builder.allowUnknownGlobals();
       }
-      parsePasses = builder.build();
+      passManager = builder.build();
     }
     return new SoyFileSetParser(
             typeRegistry,
             astCache,
             declaredSyntaxVersion,
             soyFileSuppliers,
-            parsePasses,
+            passManager,
             errorReporter)
         .parse();
   }

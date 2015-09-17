@@ -17,7 +17,7 @@
 package com.google.template.soy.jssrc.internal;
 
 import com.google.common.collect.Lists;
-import com.google.template.soy.sharedpasses.BuildAllDependeesMapVisitor;
+import com.google.template.soy.passes.BuildAllDependeesMapVisitor;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;

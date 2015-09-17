@@ -29,7 +29,7 @@ import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
 import com.google.template.soy.jssrc.restricted.JsExpr;
-import com.google.template.soy.parsepasses.ResolveFunctionsVisitor;
+import com.google.template.soy.passes.ResolveFunctionsVisitor;
 import com.google.template.soy.shared.internal.ErrorReporterModule;
 import com.google.template.soy.shared.restricted.SoyFunction;
 

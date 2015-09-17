@@ -42,10 +42,10 @@ import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.passes.SharedPassesModule;
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.shared.internal.ErrorReporterModule;
 import com.google.template.soy.shared.internal.SharedModule;
-import com.google.template.soy.sharedpasses.SharedPassesModule;
 import com.google.template.soy.sharedpasses.render.EvalVisitor.EvalVisitorFactory;
 import com.google.template.soy.soytree.PrintNode;
 

@@ -46,7 +46,7 @@ public final class FunctionNodeTest extends TestCase {
   }
 
   /**
-   * Tests that {@link com.google.template.soy.parsepasses.ResolveFunctionsVisitor}
+   * Tests that {@link com.google.template.soy.passes.ResolveFunctionsVisitor}
    * recurses into {@link FunctionNode}s that are descendants of other FunctionNodes.
    * (This omission caused cl/101255365 to be rolled back.)
    */

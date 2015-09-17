@@ -25,16 +25,16 @@ import com.google.template.soy.base.internal.IncrementingIdGenerator;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.parsepasses.CheckCallsVisitor;
-import com.google.template.soy.parsepasses.CheckDelegatesVisitor;
-import com.google.template.soy.parsepasses.InferRequiredSyntaxVersionVisitor;
-import com.google.template.soy.parsepasses.ParsePasses;
+import com.google.template.soy.passes.CheckCallingParamTypesVisitor;
+import com.google.template.soy.passes.CheckCallsVisitor;
+import com.google.template.soy.passes.CheckDelegatesVisitor;
+import com.google.template.soy.passes.CheckTemplateParamsVisitor;
+import com.google.template.soy.passes.CheckTemplateVisibility;
+import com.google.template.soy.passes.InferRequiredSyntaxVersionVisitor;
+import com.google.template.soy.passes.PassManager;
+import com.google.template.soy.passes.ReportSyntaxVersionErrorsVisitor;
 import com.google.template.soy.shared.SoyAstCache;
 import com.google.template.soy.shared.SoyAstCache.VersionedFile;
-import com.google.template.soy.sharedpasses.CheckCallingParamTypesVisitor;
-import com.google.template.soy.sharedpasses.CheckTemplateParamsVisitor;
-import com.google.template.soy.sharedpasses.CheckTemplateVisibility;
-import com.google.template.soy.sharedpasses.ReportSyntaxVersionErrorsVisitor;
 import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -80,7 +80,7 @@ public final class SoyFileSetParser {
   private final List<? extends SoyFileSupplier> soyFileSuppliers;
 
   /** Parsing passes. null means that they are disabled.*/
-  @Nullable private final ParsePasses parsingPasses;
+  @Nullable private final PassManager passManager;
 
   /** For reporting parse errors. */
   private final ErrorReporter errorReporter;
@@ -96,10 +96,10 @@ public final class SoyFileSetParser {
       @Nullable SoyAstCache astCache,
       SyntaxVersion declaredSyntaxVersion,
       List<? extends SoyFileSupplier> soyFileSuppliers,
-      ParsePasses parsingPasses,
+      PassManager passManager,
       ErrorReporter errorReporter) {
     Preconditions.checkArgument(
-        (astCache == null) || (parsingPasses != null),
+        (astCache == null) || (passManager != null),
         "AST caching is only allowed when all parsing and checking passes are enabled, to avoid "
             + "caching inconsistent versions");
     this.typeRegistry = typeRegistry;
@@ -109,7 +109,7 @@ public final class SoyFileSetParser {
     this.errorReporter = errorReporter;
     verifyUniquePaths(soyFileSuppliers);
 
-    this.parsingPasses = parsingPasses;
+    this.passManager = passManager;
   }
 
 
@@ -147,7 +147,7 @@ public final class SoyFileSetParser {
    */
   private ParseResult parseWithVersions() throws IOException {
     Preconditions.checkState(
-        (cache == null) || parsingPasses != null,
+        (cache == null) || passManager != null,
         "AST caching is only allowed when all parsing and checking passes are enabled, to avoid "
             + "caching inconsistent versions");
     IdGenerator nodeIdGen =
@@ -171,9 +171,9 @@ public final class SoyFileSetParser {
             filesWereSkipped = true;
             continue;
           }
-          if (parsingPasses != null) {
+          if (passManager != null) {
             // Run passes that are considered part of initial parsing.
-            parsingPasses.run(node, nodeIdGen);
+            passManager.run(node, nodeIdGen);
           }
         }
         // Run passes that check the tree.

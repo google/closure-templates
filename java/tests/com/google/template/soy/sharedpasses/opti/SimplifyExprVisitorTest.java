@@ -29,11 +29,11 @@ import com.google.template.soy.basicfunctions.BasicFunctionsModule;
 import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprtree.ExprRootNode;
-import com.google.template.soy.parsepasses.ResolveFunctionsVisitor;
+import com.google.template.soy.passes.ResolveFunctionsVisitor;
+import com.google.template.soy.passes.SharedPassesModule;
 import com.google.template.soy.shared.internal.ErrorReporterModule;
 import com.google.template.soy.shared.internal.SharedModule;
 import com.google.template.soy.shared.restricted.SoyFunction;
-import com.google.template.soy.sharedpasses.SharedPassesModule;
 
 import junit.framework.TestCase;
 
