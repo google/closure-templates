@@ -1121,9 +1121,11 @@ public final class EscapingConventions {
       super(
           Pattern.compile(
               "^"
-              // Disallow special attribute names
-              + "(?!style|on|action|archive|background|cite|classid|codebase|data|dsync|href"
-              + "|longdesc|src|usemap)"
+              // Disallow on* and src* attribute names.
+              + "(?!on|src|"
+              // Disallow specific other attribute names.
+              + "(?:style|action|archive|background|cite|classid|codebase|data|dsync|href"
+              + "|longdesc|usemap)\\s*$)"
               + "(?:"
               // Must match letters
               + "[a-z0-9_$:-]*"

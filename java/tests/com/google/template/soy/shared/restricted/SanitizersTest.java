@@ -190,6 +190,9 @@ public class SanitizersTest extends TestCase {
 
   public final void testFilterHtmlAttributes() {
     assertEquals("dir", Sanitizers.filterHtmlAttributes("dir"));
+    assertEquals("data-foo", Sanitizers.filterHtmlAttributes("data-foo"));
+    assertEquals("hamburger", Sanitizers.filterHtmlAttributes("hamburger"));
+    assertEquals("action-packed", Sanitizers.filterHtmlAttributes("action-packed"));
     assertEquals("dir", Sanitizers.filterHtmlAttributes(StringData.forValue("dir")));
     assertEquals("zSoyz", Sanitizers.filterHtmlAttributes("><script>alert('foo')</script"));
     assertEquals("zSoyz", Sanitizers.filterHtmlAttributes("style"));

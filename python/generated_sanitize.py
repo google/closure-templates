@@ -212,7 +212,7 @@ _FILTER_FOR_FILTER_NORMALIZE_MEDIA_URI = re.compile(r"""^[^&:/?#]*(?:[/?#]|\Z)|^
 
 _FILTER_FOR_FILTER_IMAGE_DATA_URI = re.compile(r"""^data:image/(?:bmp|gif|jpe?g|png|tiff|webp);base64,[a-z0-9+/]+=*\Z""", re.U | re.I)
 
-_FILTER_FOR_FILTER_HTML_ATTRIBUTES = re.compile(r"""^(?!style|on|action|archive|background|cite|classid|codebase|data|dsync|href|longdesc|src|usemap)(?:[a-z0-9_$:-]*)\Z""", re.U | re.I)
+_FILTER_FOR_FILTER_HTML_ATTRIBUTES = re.compile(r"""^(?!on|src|(?:style|action|archive|background|cite|classid|codebase|data|dsync|href|longdesc|usemap)\s*$)(?:[a-z0-9_$:-]*)\Z""", re.U | re.I)
 
 _FILTER_FOR_FILTER_HTML_ELEMENT_NAME = re.compile(r"""^(?!script|style|title|textarea|xmp|no)[a-z0-9_$:-]*\Z""", re.U | re.I)
 
