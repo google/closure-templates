@@ -61,6 +61,7 @@ goog.require('goog.object');
 goog.require('goog.soy');
 goog.require('goog.soy.data.SanitizedContent');
 goog.require('goog.soy.data.SanitizedContentKind');
+goog.require('goog.soy.data.UnsanitizedText');
 goog.require('goog.string');
 goog.require('goog.string.Const');
 goog.require('goog.string.StringBuffer');
@@ -309,14 +310,14 @@ soydata.SanitizedCss.prototype.contentDir = goog.i18n.bidi.Dir.LTR;
  * @param {?goog.i18n.bidi.Dir=} opt_contentDir The content direction; null if
  *     unknown and thus to be estimated when necessary. Default: null.
  * @constructor
- * @extends {goog.soy.data.SanitizedContent}
+ * @extends {goog.soy.data.UnsanitizedText}
  */
 soydata.UnsanitizedText = function(content, opt_contentDir) {
   /** @override */
   this.content = String(content);
   this.contentDir = opt_contentDir != null ? opt_contentDir : null;
 };
-goog.inherits(soydata.UnsanitizedText, goog.soy.data.SanitizedContent);
+goog.inherits(soydata.UnsanitizedText, goog.soy.data.UnsanitizedText);
 
 /** @override */
 soydata.UnsanitizedText.prototype.contentKind =

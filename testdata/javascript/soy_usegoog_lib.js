@@ -3390,7 +3390,7 @@ goog.addDependency('result/dependentresult.js', ['goog.result.DependentResult'],
 goog.addDependency('result/result_interface.js', ['goog.result.Result'], ['goog.Thenable'], false);
 goog.addDependency('result/resultutil.js', ['goog.result'], ['goog.array', 'goog.result.DependentResult', 'goog.result.Result', 'goog.result.SimpleResult'], false);
 goog.addDependency('result/simpleresult.js', ['goog.result.SimpleResult', 'goog.result.SimpleResult.StateError'], ['goog.Promise', 'goog.Thenable', 'goog.debug.Error', 'goog.result.Result'], false);
-goog.addDependency('soy/data.js', ['goog.soy.data.SanitizedContent', 'goog.soy.data.SanitizedContentKind'], ['goog.html.SafeHtml', 'goog.html.uncheckedconversions', 'goog.string.Const'], false);
+goog.addDependency('soy/data.js', ['goog.soy.data.SanitizedContent', 'goog.soy.data.SanitizedContentKind', 'goog.soy.data.UnsanitizedText'], ['goog.html.SafeHtml', 'goog.html.uncheckedconversions', 'goog.string.Const'], false);
 goog.addDependency('soy/data_test.js', ['goog.soy.dataTest'], ['goog.html.SafeHtml', 'goog.soy.testHelper', 'goog.testing.jsunit'], false);
 goog.addDependency('soy/renderer.js', ['goog.soy.InjectedDataSupplier', 'goog.soy.Renderer'], ['goog.asserts', 'goog.dom', 'goog.soy', 'goog.soy.data.SanitizedContent', 'goog.soy.data.SanitizedContentKind'], false);
 goog.addDependency('soy/renderer_test.js', ['goog.soy.RendererTest'], ['goog.dom', 'goog.dom.NodeType', 'goog.dom.TagName', 'goog.html.SafeHtml', 'goog.i18n.bidi.Dir', 'goog.soy.Renderer', 'goog.soy.data.SanitizedContentKind', 'goog.soy.testHelper', 'goog.testing.jsunit', 'goog.testing.recordFunction'], false);
@@ -23403,6 +23403,7 @@ goog.i18n.BidiFormatter.prototype.endEdge = function() {
 
 goog.provide('goog.soy.data.SanitizedContent');
 goog.provide('goog.soy.data.SanitizedContentKind');
+goog.provide('goog.soy.data.UnsanitizedText');
 
 goog.require('goog.html.SafeHtml');
 goog.require('goog.html.uncheckedconversions');
@@ -23542,6 +23543,20 @@ goog.soy.data.SanitizedContent.prototype.toSafeHtml = function() {
                   'SafeHtml-contract-compliant value.'),
           this.toString(), this.contentDir);
 };
+
+
+
+/**
+ * An intermediary base class to allow the type system to sepcify text templates
+ * without referencing the soydata package.
+ * @extends {goog.soy.data.SanitizedContent}
+ * @constructor
+ */
+goog.soy.data.UnsanitizedText = function() {
+  // TODO(gboyer): Delete this class after moving soydata to Closure.
+  goog.soy.data.UnsanitizedText.base(this, 'constructor');
+};
+goog.inherits(goog.soy.data.UnsanitizedText, goog.soy.data.SanitizedContent);
 
 //javascript/closure/soy/soy.js
 // Copyright 2011 The Closure Library Authors. All Rights Reserved.
@@ -23980,6 +23995,7 @@ goog.require('goog.object');
 goog.require('goog.soy');
 goog.require('goog.soy.data.SanitizedContent');
 goog.require('goog.soy.data.SanitizedContentKind');
+goog.require('goog.soy.data.UnsanitizedText');
 goog.require('goog.string');
 goog.require('goog.string.Const');
 goog.require('goog.string.StringBuffer');
@@ -24228,14 +24244,14 @@ soydata.SanitizedCss.prototype.contentDir = goog.i18n.bidi.Dir.LTR;
  * @param {?goog.i18n.bidi.Dir=} opt_contentDir The content direction; null if
  *     unknown and thus to be estimated when necessary. Default: null.
  * @constructor
- * @extends {goog.soy.data.SanitizedContent}
+ * @extends {goog.soy.data.UnsanitizedText}
  */
 soydata.UnsanitizedText = function(content, opt_contentDir) {
   /** @override */
   this.content = String(content);
   this.contentDir = opt_contentDir != null ? opt_contentDir : null;
 };
-goog.inherits(soydata.UnsanitizedText, goog.soy.data.SanitizedContent);
+goog.inherits(soydata.UnsanitizedText, goog.soy.data.UnsanitizedText);
 
 /** @override */
 soydata.UnsanitizedText.prototype.contentKind =
