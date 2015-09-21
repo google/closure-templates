@@ -480,15 +480,13 @@ class SoyExpression extends Expression {
             }
           };
       final SoyExpression unboxAs = withSource(nonNullDelegate).asNonNullable().unboxAs(asType);
-      return unboxAs.withSource(
-          new Expression(unboxAs.resultType(), features()) {
-            @Override
-            void doGen(CodeBuilder adapter) {
-              unboxAs.gen(adapter);
-              adapter.mark(ifNull);
-              adapter.checkCast(unboxAs.resultType()); // insert a cast to force type agreement
-            }
-          });
+      return withSource(new Expression(resultType(), features()) {
+        @Override void doGen(CodeBuilder adapter) {
+          unboxAs.gen(adapter);
+          adapter.mark(ifNull);
+          adapter.checkCast(unboxAs.resultType());  // insert a cast to force type agreement
+        }
+      });
     }
     throw new UnsupportedOperationException("Can't unbox " + clazz + " as " + asType);
   }

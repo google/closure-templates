@@ -20,7 +20,6 @@ import static com.google.template.soy.jbcsrc.BytecodeUtils.STRING_TYPE;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.constantNull;
 import static com.google.template.soy.jbcsrc.FieldRef.staticFieldReference;
-import static com.google.template.soy.jbcsrc.TemplateTester.assertThatTemplateBody;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -45,7 +44,6 @@ import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.jbcsrc.ExpressionTester.ExpressionSubject;
-import com.google.template.soy.jbcsrc.TemplateTester.CompiledTemplateSubject;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.defn.LocalVar;
@@ -64,7 +62,6 @@ import junit.framework.TestCase;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Type;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -339,38 +336,6 @@ public class ExpressionCompilerTest extends TestCase {
     assertExpression("true ? 'a' : 2").evaluatesTo(StringData.forValue("a"));
   }
 
-  // conditional op expression have had a number of bugs due previous implementations that
-  // aggressively unboxed operands
-  public void testConditionalOpNode_advanced() {
-    CompiledTemplateSubject tester =
-        assertThatTemplateBody(
-            "{@param? p : string}",
-            "{$p ? $p : '' }");
-    tester.rendersAs("", ImmutableMap.<String, Object>of());
-    tester.rendersAs("hello", ImmutableMap.<String, Object>of("p", "hello"));
-    tester =
-        assertThatTemplateBody(
-            "{@param? p : map<string, string>}",
-            "{if $p}",
-            "  {$p['key']}",
-            "{/if}");
-    tester.rendersAs("", ImmutableMap.<String, Object>of());
-    tester =
-        assertThatTemplateBody(
-            "{@param? p : string}",
-            "{$p ? $p : 1 }");
-    tester.rendersAs("1", ImmutableMap.<String, Object>of());
-    tester.rendersAs("hello", ImmutableMap.<String, Object>of("p", "hello"));
-
-    tester =
-        assertThatTemplateBody(
-            "{@param b : bool}",
-            "{@param v : list<int>}",
-            "{$b ? $v[0] : $v[1] + 1}");
-    tester.rendersAs("null", ImmutableMap.<String, Object>of("b", true, "v", Arrays.asList()));
-    tester.rendersAs("3", ImmutableMap.<String, Object>of("b", false, "v", Arrays.asList(1, 2)));
-  }
-
   public void testNullCoalescingOpNode() {
     assertExpression("1 ?: 2").evaluatesTo(1L);
     // force the type checker to interpret the left hand side as a nullable string, the literal null
@@ -383,18 +348,6 @@ public class ExpressionCompilerTest extends TestCase {
         "p1", untypedBoxedSoyExpression(SoyExpression.forString(constantNull(STRING_TYPE))));
     variables.put("p2", SoyExpression.forString(constant("a")).box());
     assertExpression("$p1 ?: $p2").evaluatesTo("a");
-  }
-
-  // null coalescing op expression have had a number of bugs due to the advanced unboxing
-  // conversions forcing unnecessary NullPointerExceptions
-  public void testNullCoalescingOpNode_advanced() {
-    CompiledTemplateSubject tester =
-        assertThatTemplateBody(
-            "{@param v : list<string>}",
-            "{$v[0] ?: $v[1] }");
-    tester.rendersAs("null", ImmutableMap.<String, Object>of("v", Arrays.asList()));
-    tester.rendersAs("b", ImmutableMap.<String, Object>of("v", Arrays.asList(null, "b")));
-    tester.rendersAs("a", ImmutableMap.<String, Object>of("v", Arrays.asList("a", "b")));
   }
 
   public void testCheckNotNull() {
