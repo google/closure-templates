@@ -73,7 +73,6 @@ import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.aggregate.ListType;
-import com.google.template.soy.types.primitive.SanitizedType;
 import com.google.template.soy.types.primitive.UnknownType;
 
 import org.objectweb.asm.Label;
@@ -552,12 +551,12 @@ final class ExpressionCompiler {
           // no conversions!
           return right.withSource(firstNonNull(left, right));
         }
-        // try to unbox the right hand side
         if (right.isBoxed()) {
-          Optional<SoyExpression> unboxedRight = right.tryUnbox();
-          if (unboxedRight.isPresent()) {
-            return left.withSource(firstNonNull(left, unboxedRight.get()));
-          }
+          // right is boxed and left is unboxed so just box the left hand side.
+          // TODO(lukes): I cannot trigger this case in a test currently, it may in fact be
+          // impossible
+          SoyExpression boxedLeft = left.box();
+          return boxedLeft.withSource(firstNonNull(boxedLeft, right));
         } else {
           // left is boxed and right is unboxed, try to avoid unboxing the right hand side by
           // attempting an unboxing conversion on the left hand side.  However, we cannot do the
@@ -575,6 +574,7 @@ final class ExpressionCompiler {
                         }
                       })
                   .asNonNullable()
+                  // TODO(lukes): consider inlining the tryUnbox logic here, this is the only use
                   .tryUnbox();
           if (nullCheckedUnboxedLeft.isPresent()) {
             return right.withSource(
@@ -605,46 +605,33 @@ final class ExpressionCompiler {
       SoyExpression falseBranch = visit(node.getChild(2));
       // If types are == and they are both boxed (or both not boxed) then we can just use them
       // directly.
+      // Otherwise we need to do boxing conversions.
+      // In the past there have been several attempts to eliminate unnecessary boxing operations
+      // in these conditions however it is too difficult given the type information we have
+      // available to us and the primitive operations available on SoyExpression.  For example, the
+      // expressions may have non-nullable types and yet take on null values at runtime, if we were
+      // to introduce aggressive unboxing operations it could result in unexpected
+      // NullPointerExceptions at runtime.  To fix these issues we would need to have a better
+      // notion of what expressions are nullable (or really, non-nullable) at runtime.
+      // TODO(lukes): Simple ideas that could help the above:
+      // 1. expose the 'non-null' prover from ResolveExpressionTypesVisitor, this can in fact be
+      //    relied on.  However it is currently mixed in with other parts of the type system which
+      //    cannot be trusted
+      // 2. compute a least common upper bound for these types. At least that way we would preserve
+      //    more type information
       boolean typesEqual = trueBranch.soyType().equals(falseBranch.soyType());
       if (typesEqual) {
         if (trueBranch.isBoxed() == falseBranch.isBoxed()) {
           return trueBranch.withSource(ternary(condition, trueBranch, falseBranch));
         }
-        // one is unboxed and one is boxed, try to unbox the odd man out
-        Optional<SoyExpression> unboxedTrue = trueBranch.tryUnbox();
-        Optional<SoyExpression> unboxedFalse = falseBranch.tryUnbox();
-        if (unboxedTrue.isPresent() && unboxedFalse.isPresent()) {
-          return unboxedTrue
-              .get()
-              .withSource(ternary(condition, unboxedTrue.get(), unboxedFalse.get()));
-        }
+        return trueBranch.withSource(ternary(condition, trueBranch.box(), falseBranch.box()));
       }
-      // Otherwise try some simple unboxing conversions to get bytecode compatible types.
-      if (trueBranch.isKnownInt() && falseBranch.isKnownInt()) {
-        final SoyExpression trueAsLong = trueBranch.unboxAs(long.class);
-        final SoyExpression falseAsLong = falseBranch.unboxAs(long.class);
-        return SoyExpression.forInt(ternary(condition, trueAsLong, falseAsLong));
-      }
-      if (trueBranch.isKnownFloat() && falseBranch.isKnownFloat()) {
-        final SoyExpression trueAsFloat = trueBranch.unboxAs(double.class);
-        final SoyExpression falseAsFloat = falseBranch.unboxAs(double.class);
-        return SoyExpression.forFloat(ternary(condition, trueAsFloat, falseAsFloat));
-      }
-      if (typesEqual && trueBranch.isKnownStringOrSanitizedContent()
-          && falseBranch.isKnownStringOrSanitizedContent()) {
-        final SoyExpression trueAsString = trueBranch.coerceToString();
-        final SoyExpression falseAsString = falseBranch.coerceToString();
-        Expression ternary = ternary(condition, trueAsString, falseAsString);
-        if (trueBranch.isKnownSanitizedContent()) {
-          return SoyExpression.forSanitizedString(ternary,
-              ((SanitizedType) trueBranch.soyType()).getContentKind());
-        }
-        return SoyExpression.forString(ternary);
-      }
-      final Expression trueBoxed = trueBranch.box().cast(SoyValue.class);
-      final Expression falseBoxed = falseBranch.box().cast(SoyValue.class);
-      return SoyExpression.forSoyValue(UnknownType.getInstance(),
-          ternary(condition, trueBoxed, falseBoxed));
+      return SoyExpression.forSoyValue(
+          UnknownType.getInstance(),
+          ternary(
+              condition,
+              trueBranch.box().cast(SoyValue.class),
+              falseBranch.box().cast(SoyValue.class)));
     }
 
     @Override SoyExpression visitForLoopIndex(VarRefNode varRef, LocalVar local) {

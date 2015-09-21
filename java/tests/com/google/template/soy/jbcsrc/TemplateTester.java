@@ -57,7 +57,6 @@ import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.types.SoyTypeRegistry;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
@@ -209,10 +208,7 @@ public final class TemplateTester {
       RenderResult result;
       try (SystemOutRestorer restorer = logOutput.enter()) {
         result = template.render(builder, context);
-      } catch (IOException e) {
-        // AdvisingStringBuilder doesn't throw IOE
-        throw new AssertionError(e);
-      } catch (Exception e) {
+      } catch (Throwable e) {
         failureStrategy.fail(String.format("Unexpected failure for %s", getDisplaySubject()), e);
         result = null;
       }
