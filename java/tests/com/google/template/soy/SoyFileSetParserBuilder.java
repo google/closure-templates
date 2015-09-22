@@ -117,8 +117,13 @@ public final class SoyFileSetParserBuilder {
   }
 
   /**
-   * Turns the parser's initial parsing passes on or off, see {@link ParsePasses}.
+   * Turns the parser's initial parsing passes on or off, see {@link PassManager}.
+   * 
+   * @deprecated There should be no reason to need this.  All tests that wish to run a subset of
+   * passes should be able to demonstrate similar behavior by running all passes.  (If you cannot
+   * then the thing you are trying to test doesn't make sense).
    */
+  @Deprecated
   public SoyFileSetParserBuilder doRunInitialParsingPasses(boolean doRunInitialParsingPasses) {
     this.doRunInitialParsingPasses = doRunInitialParsingPasses;
     return this;
@@ -190,7 +195,6 @@ public final class SoyFileSetParserBuilder {
     return new SoyFileSetParser(
             typeRegistry,
             astCache,
-            declaredSyntaxVersion,
             soyFileSuppliers,
             passManager,
             errorReporter)

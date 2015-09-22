@@ -88,7 +88,6 @@ public final class AssertStrictAutoescapingVisitorTest extends TestCase {
     ErrorReporter boom = ExplodingErrorReporter.get();
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(soyCode)
-            .doRunInitialParsingPasses(false)
             .errorReporter(boom)
             .parse()
             .fileSet();

@@ -43,7 +43,7 @@ import java.util.Set;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public final class CheckCallsVisitor extends AbstractSoyNodeVisitor<List<String>> {
+final class CheckCallsVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
   private static final SoyError MISSING_PARAM = SoyError.of("Call missing required {0}.");
 
@@ -52,7 +52,7 @@ public final class CheckCallsVisitor extends AbstractSoyNodeVisitor<List<String>
 
   private final ErrorReporter errorReporter;
 
-  public CheckCallsVisitor(TemplateRegistry templateRegistry, ErrorReporter errorReporter) {
+  CheckCallsVisitor(TemplateRegistry templateRegistry, ErrorReporter errorReporter) {
     this.templateRegistry = templateRegistry;
     this.errorReporter = errorReporter;
   }

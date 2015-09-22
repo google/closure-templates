@@ -26,7 +26,9 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.SoyFileNode;
+import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoytreeUtils;
+import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.types.SoyTypeRegistry;
 
 /**
@@ -47,11 +49,12 @@ import com.google.template.soy.types.SoyTypeRegistry;
  *   <li>{@link ResolveNamesVisitor}
  *   <li>{@link ResolvePackageRelativeCssNamesVisitor}
  *   <li>{@link VerifyPhnameAttrOnlyOnPlaceholdersVisitor}
- *   <li>{@link SubstitueGlobalsVisitorPass}
+ *   <li>{@link SubstituteGlobalsVisitorPass}
  * </ul>
  */
 public final class PassManager {
-  private final ImmutableList<CompilerFilePass> passes;
+  private final ImmutableList<CompilerFilePass> singleFilePasses;
+  private final ImmutableList<CompilerFileSetPass> fileSetPasses;
   private final SoyTypeRegistry registry;
   private final ImmutableMap<String, ? extends SoyFunction> soyFunctionMap;
   private final ErrorReporter errorReporter;
@@ -67,11 +70,7 @@ public final class PassManager {
     this.options = checkNotNull(builder.opts);
     this.allowUnknownGlobals = builder.allowUnknownGlobals;
 
-    ImmutableList.Builder<CompilerFilePass> passesBuilder = ImmutableList.builder();
-    // Note: RewriteGenderMsgsVisitor must be run first due to the assertion in
-    // MsgNode.getAllExprUnions().
-    // TODO(lukes): document all ordering dependencies between the passes. 
-    passesBuilder
+    this.singleFilePasses = ImmutableList.<CompilerFilePass>builder()
         .add(new RewriteGendersPass())
         .add(new RewriteRemaindersPass())
         .add(new SetFullCalleeNamesPass())
@@ -80,16 +79,31 @@ public final class PassManager {
         .add(new ResolveExpressionTypesPass())
         .add(new ResolvePackageRelativeCssNamesPass())
         .add(new VerifyPhnameAttrOnlyOnPlaceholdersPass())
-        .add(new SubstitueGlobalsVisitorPass());
-    this.passes = passesBuilder.build();
+        .add(new SubstituteGlobalsVisitorPass())
+        .add(new CheckSyntaxVersionPass())
+        .build();
+    // Fileset passes run on the whole tree and should be reserved for checks that need transitive
+    // call information (or full delegate sets).
+    this.fileSetPasses = ImmutableList.<CompilerFileSetPass>builder()
+        .add(new CheckTemplateParamsPass())
+        .add(new CheckCallsPass())
+        .add(new CheckVisibilityPass())
+        .add(new CheckDelegatesPass())
+        .build();
   }
 
-  public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-    for (CompilerFilePass pass : passes) {
+  public void runSingleFilePasses(SoyFileNode file, IdGenerator nodeIdGen) {
+    for (CompilerFilePass pass : singleFilePasses) {
       pass.run(file, nodeIdGen);
     }
   }
 
+  public void runWholeFilesetPasses(TemplateRegistry registry, SoyFileSetNode soyTree) {
+    for (CompilerFileSetPass pass : fileSetPasses) {
+      pass.run(soyTree, registry);
+    }
+  }
+  
   public static final class Builder {
     private SoyTypeRegistry registry;
     private ImmutableMap<String, ? extends SoyFunction> soyFunctionMap;
@@ -138,6 +152,23 @@ public final class PassManager {
     }
   }
 
+  private final class CheckSyntaxVersionPass extends CompilerFilePass {
+    final ReportSyntaxVersionErrorsVisitor reportDeclaredVersionErrors = 
+        new ReportSyntaxVersionErrorsVisitor(declaredSyntaxVersion, true, errorReporter);
+    final InferRequiredSyntaxVersionVisitor inferenceVisitor =
+        new InferRequiredSyntaxVersionVisitor();
+
+    @Override public void run(SoyFileNode file, IdGenerator nodeIdGen) {
+      reportDeclaredVersionErrors.exec(file);
+      // Check for errors based on inferred (as opposed to declared) required syntax version.
+      SyntaxVersion inferredSyntaxVersion = inferenceVisitor.exec(file);
+      if (inferredSyntaxVersion.num > declaredSyntaxVersion.num) {
+        new ReportSyntaxVersionErrorsVisitor(inferredSyntaxVersion, false, errorReporter)
+            .exec(file);
+      }
+    }
+  }
+  
   private final class RewriteGendersPass extends CompilerFilePass {
     @Override public void run(SoyFileNode file, IdGenerator nodeIdGen) {
       new RewriteGenderMsgsVisitor(nodeIdGen, errorReporter).exec(file);
@@ -189,7 +220,7 @@ public final class PassManager {
     }
   }
 
-  private final class SubstitueGlobalsVisitorPass extends CompilerFilePass {
+  private final class SubstituteGlobalsVisitorPass extends CompilerFilePass {
     SubstituteGlobalsVisitor substituteGlobalsVisitor =
         new SubstituteGlobalsVisitor(
             options.getCompileTimeGlobals(),
@@ -200,6 +231,33 @@ public final class PassManager {
     @Override
     public void run(SoyFileNode file, IdGenerator nodeIdGen) {
       substituteGlobalsVisitor.exec(file);
+    }
+  }
+
+  private final class CheckTemplateParamsPass extends CompilerFileSetPass {
+    @Override public void run(SoyFileSetNode fileSet, TemplateRegistry registry) {
+      new CheckTemplateParamsVisitor(registry, declaredSyntaxVersion, errorReporter).exec(fileSet);
+    }
+  }
+  
+  private final class CheckCallsPass extends CompilerFileSetPass {
+    @Override public void run(SoyFileSetNode fileSet, TemplateRegistry registry) {
+      // TODO(lukes): consider merging these passes.  They are very very similar
+      new CheckCallsVisitor(registry, errorReporter).exec(fileSet);
+      new CheckCallingParamTypesVisitor(registry, errorReporter).exec(fileSet);
+    }
+  }
+
+  private final class CheckDelegatesPass extends CompilerFileSetPass {
+    @Override public void run(SoyFileSetNode fileSet, TemplateRegistry registry) {
+      new CheckDelegatesVisitor(registry, errorReporter).exec(fileSet);
+    }
+  }
+
+  private final class CheckVisibilityPass extends CompilerFileSetPass {
+    @Override public void run(SoyFileSetNode fileSet, TemplateRegistry registry) {
+      // TODO(lukes): make this part of CheckCallsPass?
+      new CheckTemplateVisibility(registry, errorReporter).exec(fileSet);
     }
   }
 }

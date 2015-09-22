@@ -2918,7 +2918,6 @@ public final class ContextualAutoescaperTest extends TestCase {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forSuppliers(soyFileSuppliers)
             .declaredSyntaxVersion(SyntaxVersion.V2_0)
-            .doRunInitialParsingPasses(true)
             .parse()
             .fileSet();
 

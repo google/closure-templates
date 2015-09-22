@@ -23,16 +23,8 @@ import com.google.common.collect.Sets;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
 import com.google.template.soy.base.internal.SoyFileSupplier;
-import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.passes.CheckCallingParamTypesVisitor;
-import com.google.template.soy.passes.CheckCallsVisitor;
-import com.google.template.soy.passes.CheckDelegatesVisitor;
-import com.google.template.soy.passes.CheckTemplateParamsVisitor;
-import com.google.template.soy.passes.CheckTemplateVisibility;
-import com.google.template.soy.passes.InferRequiredSyntaxVersionVisitor;
 import com.google.template.soy.passes.PassManager;
-import com.google.template.soy.passes.ReportSyntaxVersionErrorsVisitor;
 import com.google.template.soy.shared.SoyAstCache;
 import com.google.template.soy.shared.SoyAstCache.VersionedFile;
 import com.google.template.soy.soyparse.SoyFileParser;
@@ -73,9 +65,6 @@ public final class SoyFileSetParser {
   /** Optional file cache. */
   @Nullable private final SoyAstCache cache;
 
-  /** User-declared syntax version. */
-  private final SyntaxVersion declaredSyntaxVersion;
-
   /** The suppliers of the Soy files to parse. */
   private final List<? extends SoyFileSupplier> soyFileSuppliers;
 
@@ -88,15 +77,13 @@ public final class SoyFileSetParser {
   /**
    * @param typeRegistry The type registry to resolve type names.
    * @param astCache The AST cache to use, if any.
-   * @param declaredSyntaxVersion User-declared syntax version.
    * @param soyFileSuppliers The suppliers for the Soy files. Each must have a unique file name.
    */
   public SoyFileSetParser(
       SoyTypeRegistry typeRegistry,
       @Nullable SoyAstCache astCache,
-      SyntaxVersion declaredSyntaxVersion,
       List<? extends SoyFileSupplier> soyFileSuppliers,
-      PassManager passManager,
+      @Nullable PassManager passManager,
       ErrorReporter errorReporter) {
     Preconditions.checkArgument(
         (astCache == null) || (passManager != null),
@@ -104,7 +91,6 @@ public final class SoyFileSetParser {
             + "caching inconsistent versions");
     this.typeRegistry = typeRegistry;
     this.cache = astCache;
-    this.declaredSyntaxVersion = declaredSyntaxVersion;
     this.soyFileSuppliers = soyFileSuppliers;
     this.errorReporter = errorReporter;
     verifyUniquePaths(soyFileSuppliers);
@@ -173,11 +159,10 @@ public final class SoyFileSetParser {
           }
           if (passManager != null) {
             // Run passes that are considered part of initial parsing.
-            passManager.run(node, nodeIdGen);
+            passManager.runSingleFilePasses(node, nodeIdGen);
           }
         }
         // Run passes that check the tree.
-        runSingleFileCheckingPasses(node);
         if (cache != null) {
           cache.put(fileSupplier.getFilePath(), VersionedFile.of(node, version));
         }
@@ -189,8 +174,8 @@ public final class SoyFileSetParser {
 
     TemplateRegistry registry = new TemplateRegistry(soyTree, errorReporter);
     // Run passes that check the tree iff we successfully parsed every file.
-    if (!filesWereSkipped) {
-      runWholeFileSetCheckingPasses(registry, soyTree);
+    if (!filesWereSkipped && passManager != null) {
+      passManager.runWholeFilesetPasses(registry, soyTree);
     }
     return ParseResult.create(soyTree, registry);
   }
@@ -215,33 +200,5 @@ public final class SoyFileSetParser {
           errorReporter)
           .parseSoyFile();
     }
-  }
-
-
-  /**
-   * Private helper for {@code parseWithVersion()} that operate on single files.
-   */
-  private void runSingleFileCheckingPasses(SoyFileNode fileNode) {
-    new ReportSyntaxVersionErrorsVisitor(declaredSyntaxVersion, true, errorReporter)
-        .exec(fileNode);
-    // Check for errors based on inferred (as opposed to declared) required syntax version.
-    SyntaxVersion inferredSyntaxVersion = new InferRequiredSyntaxVersionVisitor().exec(fileNode);
-    if (inferredSyntaxVersion.num > declaredSyntaxVersion.num) {
-      new ReportSyntaxVersionErrorsVisitor(inferredSyntaxVersion, false, errorReporter)
-          .exec(fileNode);
-    }
-  }
-
-
-  /**
-   * Private helper for {@code parseWithVersions()} to run checking passes that require the whole
-   * tree.
-   */
-  private void runWholeFileSetCheckingPasses(TemplateRegistry registry, SoyFileSetNode soyTree) {
-    new CheckTemplateParamsVisitor(registry, declaredSyntaxVersion, errorReporter).exec(soyTree);
-    new CheckDelegatesVisitor(registry, errorReporter).exec(soyTree);
-    new CheckCallsVisitor(registry, errorReporter).exec(soyTree);
-    new CheckCallingParamTypesVisitor(registry, errorReporter).exec(soyTree);
-    new CheckTemplateVisibility(registry, errorReporter).exec(soyTree);
   }
 }

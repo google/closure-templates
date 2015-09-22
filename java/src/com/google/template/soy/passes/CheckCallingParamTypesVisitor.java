@@ -70,7 +70,7 @@ import java.util.Set;
  * been run.
  *
  */
-public final class CheckCallingParamTypesVisitor extends AbstractSoyNodeVisitor<Void> {
+final class CheckCallingParamTypesVisitor extends AbstractSoyNodeVisitor<Void> {
 
   private static final SoyError ARGUMENT_TYPE_MISMATCH =
       SoyError.of("Type mismatch on param {0}: expected: {1}, actual: {2}.");
@@ -87,7 +87,7 @@ public final class CheckCallingParamTypesVisitor extends AbstractSoyNodeVisitor<
   private final Map<TemplateNode, TemplateParamTypes> paramTypesMap = new HashMap<>();
   private final ErrorReporter errorReporter;
 
-  public CheckCallingParamTypesVisitor(TemplateRegistry registry, ErrorReporter errorReporter) {
+  CheckCallingParamTypesVisitor(TemplateRegistry registry, ErrorReporter errorReporter) {
     this.templateRegistry = registry;
     this.errorReporter = errorReporter;
   }

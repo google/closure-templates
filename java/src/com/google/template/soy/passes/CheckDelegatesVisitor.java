@@ -51,7 +51,7 @@ import java.util.Set;
  * {@code SoySyntaxException} is thrown if an error is found.
  *
  */
-public final class CheckDelegatesVisitor extends AbstractSoyNodeVisitor<Void> {
+final class CheckDelegatesVisitor extends AbstractSoyNodeVisitor<Void> {
 
   private static final SoyError BASIC_AND_DELTEMPLATE_WITH_SAME_NAME = SoyError.of(
       "Found template name {0} being reused for both basic and delegate templates.");
@@ -78,7 +78,7 @@ public final class CheckDelegatesVisitor extends AbstractSoyNodeVisitor<Void> {
   private String currDelPackageName;
   private final ErrorReporter errorReporter;
 
-  public CheckDelegatesVisitor(TemplateRegistry templateRegistry, ErrorReporter errorReporter) {
+  CheckDelegatesVisitor(TemplateRegistry templateRegistry, ErrorReporter errorReporter) {
     this.templateRegistry = templateRegistry;
     this.errorReporter = errorReporter;
   }

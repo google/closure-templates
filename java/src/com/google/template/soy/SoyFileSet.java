@@ -1200,7 +1200,6 @@ public final class SoyFileSet {
     return new SoyFileSetParser(
             typeRegistry,
             cache,
-            declaredSyntaxVersion,
             soyFileSuppliers,
             builder.build(),
             errorReporter)

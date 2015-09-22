@@ -34,7 +34,7 @@ import com.google.template.soy.soytree.Visibility;
  *
  * @author brndn@google.com (Brendan Linn)
  */
-public final class CheckTemplateVisibility extends AbstractSoyNodeVisitor<Void> {
+final class CheckTemplateVisibility extends AbstractSoyNodeVisitor<Void> {
 
   private static final SoyError CALLEE_NOT_VISIBLE = SoyError.of(
     "Template {0} has {1} visibility, not visible from here.");
@@ -47,7 +47,7 @@ public final class CheckTemplateVisibility extends AbstractSoyNodeVisitor<Void> 
   /** Save the name of the file and template currently being visited. */
   private String currentFileName;
 
-  public CheckTemplateVisibility(TemplateRegistry templateRegistry, ErrorReporter errorReporter) {
+  CheckTemplateVisibility(TemplateRegistry templateRegistry, ErrorReporter errorReporter) {
     this.templateRegistry = templateRegistry;
     this.errorReporter = errorReporter;
   }
@@ -92,6 +92,8 @@ public final class CheckTemplateVisibility extends AbstractSoyNodeVisitor<Void> 
     if (definition.getVisibility() != Visibility.PRIVATE) {
       return true;
     }
+    // TODO(lukes): this check isn't right, it is only checking file names, it should be checking
+    // file paths (or really, it should be checking that both templates have the same parent)
     // Templates marked visibility="private" are only visible to other templates in the same file.
     return currentFileName.equals(definition.getSourceLocation().getFileName());
   }

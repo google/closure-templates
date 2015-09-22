@@ -61,7 +61,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * declared in some template's SoyDoc do not match the data keys referenced in that template.
  *
  */
-public final class CheckTemplateParamsVisitor extends AbstractSoyNodeVisitor<Void> {
+final class CheckTemplateParamsVisitor extends AbstractSoyNodeVisitor<Void> {
 
   private static final SoyError UNDECLARED_DATA_KEY = SoyError.of("Unknown data key ''{0}''.{1}");
   private static final SoyError UNUSED_PARAM = SoyError.of("Param {0} unused in template body.");
@@ -76,7 +76,7 @@ public final class CheckTemplateParamsVisitor extends AbstractSoyNodeVisitor<Voi
   /**
    * @param declaredSyntaxVersion User-declared syntax version,
    */
-  public CheckTemplateParamsVisitor(
+  CheckTemplateParamsVisitor(
       TemplateRegistry templateRegistry,
       SyntaxVersion declaredSyntaxVersion,
       ErrorReporter errorReporter) {
