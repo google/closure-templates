@@ -100,27 +100,9 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     return new IncrementalDomCodeBuilder();
   }
 
-  @Override protected boolean requiresGoogModuleDeps() {
-    return true;
-  }
-
   @Override protected void addCodeToRequireGeneralDeps(SoyFileNode soyFile) {
     super.addCodeToRequireGeneralDeps(soyFile);
-    // Also require incrementaldom so that anything using requires to calculate deps works as
-    // expected.
-    jsCodeBuilder.appendLine("goog.require('incrementaldom');");
-  }
-
-  @Override protected void addCodeToRequireGoogModuleDeps(SoyFileNode soyFile) {
-    super.addCodeToRequireGoogModuleDeps(soyFile);
-    jsCodeBuilder.appendLine("var IncrementalDom = goog.module.get('incrementaldom');");
-  }
-
-  @Override protected void addCodeToAliasFunctions() {
-    // The aliased functions that are used by Incremental DOM. We could determine up front which
-    // aliased functions are used but they can easily removed by dead code removal as well. The
-    // aliasing is done separately from requiring the module so that templates can be generated
-    // that aren't built by closure with Incremental DOM provided as a global.
+    jsCodeBuilder.appendLine("var IncrementalDom = goog.require('incrementaldom');");
     jsCodeBuilder.appendLine("var ie_open = IncrementalDom.elementOpen;");
     jsCodeBuilder.appendLine("var ie_close = IncrementalDom.elementClose;");
     jsCodeBuilder.appendLine("var ie_void = IncrementalDom.elementVoid;");
@@ -229,7 +211,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       }
     }
 
-    JsExpr callExpr = genCallCodeUtils.genCallExpr(node, localVarTranslations);
+    JsExpr callExpr = genCallCodeUtils.genCallExpr(node, localVarTranslations, templateAliases);
 
     // If the template is of kind="html" or kind="attributes", we just want to
     // invoke the template call so that it renders the HTML in the current

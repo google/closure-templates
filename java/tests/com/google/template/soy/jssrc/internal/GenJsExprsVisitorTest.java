@@ -237,7 +237,7 @@ public final class GenJsExprsVisitorTest extends TestCase {
     SoyNode node = SharedTestUtils.getNode(soyTree, indicesToNode);
 
     GenJsExprsVisitor gjev = INJECTOR.getInstance(GenJsExprsVisitorFactory.class)
-        .create(LOCAL_VAR_TRANSLATIONS);
+        .create(LOCAL_VAR_TRANSLATIONS, AliasUtils.IDENTITY_ALIASES);
     List<JsExpr> actualJsExprs = gjev.exec(node);
 
     assertThat(actualJsExprs).hasSize(expectedJsExprs.size());

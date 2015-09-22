@@ -18,9 +18,7 @@ package com.google.template.soy.jssrc.internal;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.SoyFileSetParserBuilder;
-import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.soytree.SoyFileSetNode;
 
 import junit.framework.TestCase;
@@ -33,28 +31,11 @@ public class AliasUtilsTest extends TestCase {
         + "{template .localOne}{/template}\n";
 
     SoyFileSetNode n = SoyFileSetParserBuilder.forFileContents(fileBody).parse().fileSet();
-    ImmutableMap<String, String> templateAliases = AliasUtils.createAliasMapping(n.getChild(0));
-    assertThat(templateAliases).hasSize(1);
+    TemplateAliases templateAliases = AliasUtils.createTemplateAliases(n.getChild(0));
     
     String alias = templateAliases.get("foo.bar.baz.localOne");
-    assertThat(alias).isEqualTo("localOne");
+    assertThat(alias).isEqualTo("$localOne");
     assertThat(AliasUtils.isExternalFunction(alias)).isFalse();
-  }
-  
-  public void testLocalFunctionAliasingForV1() {
-    String fileBody = ""
-        + "{template name.space.localOne deprecatedV1=\"true\"}{/template}\n"
-        + "{template name.space.localTwo deprecatedV1=\"true\"}\n"
-        + "  {call name.space.localOne /}\n"
-        + "{/template}\n";
-
-    SoyFileSetNode n =
-        SoyFileSetParserBuilder.forFileContents(fileBody)
-            .declaredSyntaxVersion(SyntaxVersion.V1_0)
-            .parse()
-            .fileSet();
-    ImmutableMap<String, String> templateAliases = AliasUtils.createAliasMapping(n.getChild(0));
-    assertThat(templateAliases).isEmpty();
   }
   
   /*
@@ -69,12 +50,10 @@ public class AliasUtilsTest extends TestCase {
 
 
     SoyFileSetNode n = SoyFileSetParserBuilder.forFileContents(fileBody).parse().fileSet();
-    ImmutableMap<String, String> templateAliases = AliasUtils.createAliasMapping(n.getChild(0));
-    // One alias for foo.bar.baz.localOne and one for foo.bar.baz.localTwo.
-    assertThat(templateAliases).hasSize(2);
+    TemplateAliases templateAliases = AliasUtils.createTemplateAliases(n.getChild(0));
     
     String alias = templateAliases.get("foo.bar.baz.localTwo");
-    assertThat(alias).isEqualTo("localTwo");
+    assertThat(alias).isEqualTo("$localTwo");
     assertThat(AliasUtils.isExternalFunction(alias)).isFalse();
   }
   
@@ -87,9 +66,7 @@ public class AliasUtilsTest extends TestCase {
         + "{/template}\n";
 
     SoyFileSetNode n = SoyFileSetParserBuilder.forFileContents(fileBody).parse().fileSet();
-    ImmutableMap<String, String> templateAliases = AliasUtils.createAliasMapping(n.getChild(0));
-    // One alias for foo.bar.baz.bam and one for other.name.space.bam.
-    assertThat(templateAliases).hasSize(2);
+    TemplateAliases templateAliases = AliasUtils.createTemplateAliases(n.getChild(0));
     
     String alias = templateAliases.get("other.name.space.bam");
     assertThat(alias).isEqualTo("$templateAlias1");
@@ -109,9 +86,7 @@ public class AliasUtilsTest extends TestCase {
         + "{/template}\n";
 
     SoyFileSetNode n = SoyFileSetParserBuilder.forFileContents(fileBody).parse().fileSet();
-    ImmutableMap<String, String> templateAliases = AliasUtils.createAliasMapping(n.getChild(0));
-    // One alias for foo.bar.baz.bam and one for other.name.space.bam.
-    assertThat(templateAliases).hasSize(2);
+    TemplateAliases templateAliases = AliasUtils.createTemplateAliases(n.getChild(0));
     
     String alias = templateAliases.get("other.name.space.bam");
     assertThat(alias).isEqualTo("$templateAlias1");

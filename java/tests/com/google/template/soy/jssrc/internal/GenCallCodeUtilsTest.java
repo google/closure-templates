@@ -207,7 +207,8 @@ public class GenCallCodeUtilsTest extends TestCase {
 
     JsSrcTestUtils.simulateNewApiCall(INJECTOR);
     GenCallCodeUtils genCallCodeUtils = INJECTOR.getInstance(GenCallCodeUtils.class);
-    JsExpr callExpr = genCallCodeUtils.genCallExpr(callNode, LOCAL_VAR_TRANSLATIONS);
+    JsExpr callExpr =
+        genCallCodeUtils.genCallExpr(callNode, LOCAL_VAR_TRANSLATIONS, AliasUtils.IDENTITY_ALIASES);
     return callExpr.getText();
   }
 

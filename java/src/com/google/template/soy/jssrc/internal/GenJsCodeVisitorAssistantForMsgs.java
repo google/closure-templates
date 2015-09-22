@@ -93,6 +93,12 @@ class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
    *  special functions) current in scope. */
   private final Deque<Map<String, JsExpr>> localVarTranslations;
 
+  /**
+   * Used for looking up the local name for a given template call to a fully qualified template
+   * name.
+   */
+  private final TemplateAliases templateAliases;
+
 
   /**
    * @param master The master GenJsCodeVisitor instance.
@@ -111,6 +117,7 @@ class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
       IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor,
       CodeBuilder<JsExpr> jsCodeBuilder,
       Deque<Map<String, JsExpr>> localVarTranslations,
+      TemplateAliases functionAliases,
       GenJsExprsVisitor genJsExprsVisitor) {
     this.master = master;
     this.jsSrcOptions = jsSrcOptions;
@@ -119,6 +126,7 @@ class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
     this.isComputableAsJsExprsVisitor = isComputableAsJsExprsVisitor;
     this.jsCodeBuilder = jsCodeBuilder;
     this.localVarTranslations = localVarTranslations;
+    this.templateAliases = functionAliases;
     this.genJsExprsVisitor = genJsExprsVisitor;
   }
 
@@ -630,7 +638,8 @@ class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
             visit(grandchild);
           }
         }
-        contentJsExprs.add(genCallCodeUtils.genCallExpr(callNode, localVarTranslations));
+        contentJsExprs.add(
+            genCallCodeUtils.genCallExpr(callNode, localVarTranslations, templateAliases));
 
       } else {
         contentJsExprs.addAll(genJsExprsVisitor.exec(contentNode));

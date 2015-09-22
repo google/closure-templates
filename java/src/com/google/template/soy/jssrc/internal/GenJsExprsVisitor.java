@@ -67,8 +67,12 @@ public final class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<JsExpr>
     /**
      * @param localVarTranslations The current stack of replacement JS expressions for the local
      *     variables (and foreach-loop special functions) current in scope.
+     * @param templateAliases A mapping for looking up the function name for a given fully
+     *     qualified name.
      */
-    GenJsExprsVisitor create(Deque<Map<String, JsExpr>> localVarTranslations);
+    GenJsExprsVisitor create(
+        Deque<Map<String, JsExpr>> localVarTranslations,
+        TemplateAliases templateAliases);
   }
 
   private static final SoyError ARITY_MISMATCH =
@@ -101,6 +105,12 @@ public final class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<JsExpr>
   private final ErrorReporter errorReporter;
 
   /**
+   * Used for looking up the local name for a given template call to a fully qualified template
+   * name.
+   */
+  private final TemplateAliases templateAliases;
+
+  /**
    * @param soyJsSrcDirectivesMap Map of all SoyJsSrcPrintDirectives (name to directive).
    * @param jsExprTranslator Instance of JsExprTranslator to use.
    * @param genCallCodeUtils Instance of GenCallCodeUtils to use.
@@ -110,6 +120,8 @@ public final class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<JsExpr>
    * @param errorReporter For reporting errors.
    * @param localVarTranslations The current stack of replacement JS expressions for the local
    *     variables (and foreach-loop special functions) current in scope.
+   * @param templateAliases A mapping for looking up the function name for a given fully
+   *     qualified name.
    */
   @AssistedInject
   GenJsExprsVisitor(
@@ -117,7 +129,8 @@ public final class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<JsExpr>
       GenCallCodeUtils genCallCodeUtils, IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor,
       GenJsExprsVisitorFactory genJsExprsVisitorFactory,
       ErrorReporter errorReporter,
-      @Assisted Deque<Map<String, JsExpr>> localVarTranslations) {
+      @Assisted Deque<Map<String, JsExpr>> localVarTranslations,
+      @Assisted TemplateAliases templateAliases) {
     this.errorReporter = errorReporter;
     this.soyJsSrcDirectivesMap = soyJsSrcDirectivesMap;
     this.jsExprTranslator = jsExprTranslator;
@@ -125,6 +138,7 @@ public final class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<JsExpr>
     this.isComputableAsJsExprsVisitor = isComputableAsJsExprsVisitor;
     this.genJsExprsVisitorFactory = genJsExprsVisitorFactory;
     this.localVarTranslations = localVarTranslations;
+    this.templateAliases = templateAliases;
   }
 
   @Override public List<JsExpr> exec(SoyNode node) {
@@ -331,7 +345,8 @@ public final class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<JsExpr>
   @Override protected void visitIfNode(IfNode node) {
 
     // Create another instance of this visitor class for generating JS expressions from children.
-    GenJsExprsVisitor genJsExprsVisitor = genJsExprsVisitorFactory.create(localVarTranslations);
+    GenJsExprsVisitor genJsExprsVisitor =
+        genJsExprsVisitorFactory.create(localVarTranslations, templateAliases);
 
     StringBuilder jsExprTextSb = new StringBuilder();
 
@@ -398,7 +413,7 @@ public final class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<JsExpr>
    * </pre>
    */
   @Override protected void visitCallNode(CallNode node) {
-    jsExprs.add(genCallCodeUtils.genCallExpr(node, localVarTranslations));
+    jsExprs.add(genCallCodeUtils.genCallExpr(node, localVarTranslations, templateAliases));
   }
 
   @Override protected void visitCallParamContentNode(CallParamContentNode node) {

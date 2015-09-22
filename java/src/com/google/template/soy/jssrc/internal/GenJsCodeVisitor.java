@@ -22,7 +22,9 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
+import com.google.common.collect.TreeMultimap;
 import com.google.template.soy.base.SoyBackendKind;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
@@ -99,6 +101,7 @@ import java.text.MessageFormat;
 import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.Deque;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -188,6 +191,12 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
   private final SoyTypeOps typeOps;
 
   protected final ErrorReporter errorReporter;
+
+  /**
+   * Used for looking up the local name for a given template call to a fully qualified template
+   * name. This is created on a per {@link SoyFileNode} basis.
+   */
+  @VisibleForTesting protected TemplateAliases templateAliases;
 
   @Inject
   protected GenJsCodeVisitor(
@@ -334,8 +343,15 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
 
     // Add code to define JS namespaces or add provide/require calls for Closure Library.
     jsCodeBuilder.appendLine();
+    templateAliases = AliasUtils.IDENTITY_ALIASES;
 
-    if (jsSrcOptions.shouldProvideRequireSoyNamespaces()) {
+    if (jsSrcOptions.shouldGenerateGoogModules()) {
+      templateAliases = AliasUtils.createTemplateAliases(node);
+
+      addCodeToDeclareGoogModule(node);
+      addCodeToRequireGeneralDeps(node);
+      addCodeToRequireGoogModules(node);
+    } else if (jsSrcOptions.shouldProvideRequireSoyNamespaces()) {
       addCodeToProvideSoyNamespace(node);
       if (jsSrcOptions.shouldProvideBothSoyNamespacesAndJsFunctions()) {
         addCodeToProvideJsFunctions(node);
@@ -343,7 +359,6 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
       jsCodeBuilder.appendLine();
       addCodeToRequireGeneralDeps(node);
       addCodeToRequireSoyNamespaces(node);
-
     } else if (jsSrcOptions.shouldProvideRequireJsFunctions()) {
       if (jsSrcOptions.shouldProvideBothSoyNamespacesAndJsFunctions()) {
         addCodeToProvideSoyNamespace(node);
@@ -352,35 +367,14 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
       jsCodeBuilder.appendLine();
       addCodeToRequireGeneralDeps(node);
       addCodeToRequireJsFunctions(node);
-
     } else {
       addCodeToDefineJsNamespaces(node);
     }
-
-    boolean useClosure = jsSrcOptions.shouldProvideRequireSoyNamespaces()
-        || jsSrcOptions.shouldProvideRequireJsFunctions();
-
-    // In order to import code from goog.modules when not generating a goog.module, we need to add
-    // calls to goog.module.get in a scope other than the file scope. If goog.modules need to be
-    // imported, we need to create a goog.scope to import the modules in. See
-    // http://google.github.io/closure-library/api/namespace_goog_module.html#get for more
-    // information.
-    if (useClosure && requiresGoogModuleDeps()) {
-      jsCodeBuilder.appendLine("goog.scope(function() {");
-      addCodeToRequireGoogModuleDeps(node);
-    }
-
-    addCodeToAliasFunctions();
 
     // Add code for each template.
     for (TemplateNode template : node.getChildren()) {
       jsCodeBuilder.appendLine().appendLine();
       visit(template);
-    }
-
-    // Close the goog.scope for modules if necessary.
-    if (useClosure && requiresGoogModuleDeps()) {
-      jsCodeBuilder.appendLine("});");
     }
 
     jsFilesContents.add(jsCodeBuilder.getCode());
@@ -439,6 +433,61 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
   private void addCodeToProvideSoyNamespace(SoyFileNode soyFile) {
     if (soyFile.getNamespace() != null) {
       jsCodeBuilder.appendLine("goog.provide('", soyFile.getNamespace(), "');");
+    }
+  }
+
+  /**
+   * Helper for visitSoyFileNode(SoyFileNode) to generate a module definition.
+   * @param soyFile The node we're visiting.
+   */
+  private void addCodeToDeclareGoogModule(SoyFileNode soyFile) {
+    jsCodeBuilder.appendLine("goog.module('", soyFile.getNamespace(), "');\n");
+  }
+
+  /**
+   * Generates the module imports and aliasing. This generates code like the following:
+   *
+   * <pre>
+   * var $import1 = goog.require('some.namespace');
+   * var $templateAlias1 = $import1.tmplOne;
+   * var $templateAlias2 = $import1.tmplTwo;
+   * var $import2 = goog.require('other.namespace');
+   * ...
+   * </pre>
+   *
+   * @param soyFile The node we're visiting.
+   */
+  protected void addCodeToRequireGoogModules(SoyFileNode soyFile) {
+    int counter = 1;
+
+    // Get all the unique calls in the file.
+    Set<String> calls = new HashSet<>();
+    for (CallBasicNode callNode : SoytreeUtils.getAllNodesOfType(soyFile, CallBasicNode.class)) {
+      calls.add(callNode.getCalleeName());
+    }
+
+    // Map all the unique namespaces to the templates in those namespaces.
+    SetMultimap<String, String> namespaceToTemplates = TreeMultimap.create();
+    for (String call : calls) {
+      namespaceToTemplates.put(call.substring(0, call.lastIndexOf('.')), call);
+    }
+
+    for (String namespace : namespaceToTemplates.keySet()) {
+      // Skip the file's own namespace as there is nothing to import/alias.
+      if (namespace.equals(soyFile.getNamespace())) {
+        continue;
+      }
+
+      // Add a require of the module
+      String namespaceAlias = "$import" + counter++;
+      jsCodeBuilder.appendLine("var ", namespaceAlias, " = goog.require('", namespace, "');");
+
+      // Alias all the templates used from the module
+      for (String fullyQualifiedName : namespaceToTemplates.get(namespace)) {
+        String alias = templateAliases.get(fullyQualifiedName);
+        String shortName = fullyQualifiedName.substring(fullyQualifiedName.lastIndexOf('.'));
+        jsCodeBuilder.appendLine("var ", alias, " = ", namespaceAlias, shortName, ";");
+      }
     }
   }
 
@@ -527,13 +576,6 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
   }
 
   /**
-   * @return Whether or not any goog module dependencies are required.
-   */
-  protected boolean requiresGoogModuleDeps() {
-    return false;
-  }
-
-  /**
    * Helper for visitSoyFileNode(SoyFileNode) to add code to require goog.module dependencies. This
    * file should produce one or more calls to goog.module.get. Note that this does not cause the
    * modules to be pulled in by Closure and an additional goog.require for the same namespace is
@@ -541,14 +583,6 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
    * @param soyFile The node we're visiting.
    */
   protected void addCodeToRequireGoogModuleDeps(SoyFileNode soyFile) {
-    // NO-OP
-  }
-
-  /**
-   * Helper for visitSoyFileNode(SoyFileNode) to create aliased functions, typically from a module
-   * dependency.
-   */
-  protected void addCodeToAliasFunctions() {
     // NO-OP
   }
 
@@ -593,21 +627,42 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
   }
 
   /**
-   * Example:
+   * Outputs a {@link TemplateNode}, generating the function open and close, along with a a debug
+   * template name.
+   *
+   * <p>If aliasing is not performed (which is always the case for V1 templates), this looks like:
    * <pre>
-   * my.func = function(opt_data, opt_sb) {
-   *   var output = opt_sb || new soy.StringBuilder();
+   * my.namespace.func = function(opt_data, opt_sb) {
    *   ...
-   *   ...
-   *   return opt_sb ? '' : output.toString();
    * };
+   * if (goog.DEBUG) {
+   *   my.namespace.func.soyTemplateName = 'my.namespace.func';
+   * }
+   * </pre>
+   *
+   * <p>If aliasing is performed, this looks like:
+   * <pre>
+   * function $func(opt_data, opt_sb) {
+   *   ...
+   * }
+   * exports.func = $func;
+   * if (goog.DEBUG) {
+   *   $func.soyTemplateName = 'my.namespace.func';
+   * }
+   * <p>Note that the alias is not exactly the function name as in may conflict with a reserved
+   * JavaScript identifier.
    * </pre>
    */
   @Override protected void visitTemplateNode(TemplateNode node) {
     boolean useStrongTyping = hasStrictParams(node);
 
+    String templateName = node.getTemplateName();
+    String partialName = node.getPartialTemplateName();
+    String alias = templateAliases.get(templateName);
+    boolean addToExports = jsSrcOptions.shouldGenerateGoogModules();
+
     localVarTranslations = new ArrayDeque<>();
-    genJsExprsVisitor = genJsExprsVisitorFactory.create(localVarTranslations);
+    genJsExprsVisitor = genJsExprsVisitorFactory.create(localVarTranslations, templateAliases);
     assistantForMsgs = null;
 
     if (!node.getInjectedParams().isEmpty() && !isUsingIjData) {
@@ -641,10 +696,12 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
     }
 
     // ------ Generate function definition up to opening brace. ------
-    jsCodeBuilder.appendLine(
-        node.getTemplateName(), " = function(opt_data",
-        ", opt_ignored",
-        (isUsingIjData ? ", opt_ijData" : ""), ") {");
+    String ijParam = isUsingIjData ? ", opt_ijData" : "";
+    if (addToExports) {
+      jsCodeBuilder.appendLine("function ", alias, "(opt_data, opt_ignored", ijParam, ") {");
+    } else {
+      jsCodeBuilder.appendLine(alias, " = function(opt_data, opt_ignored", ijParam, ") {");
+    }
     jsCodeBuilder.increaseIndent();
     // If there are any null coalescing operators or switch nodes then we need to generate an
     // additional temporary variable.
@@ -661,15 +718,19 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
     // ------ Generate function body. ------
     generateFunctionBody(node);
 
-    // ------ Generate function closing brace. ------
+    // ------ Generate function closing brace and add to exports if necessary. ------
     jsCodeBuilder.decreaseIndent();
-    jsCodeBuilder.appendLine("};");
+    if (addToExports) {
+      jsCodeBuilder.appendLine("}");
+      jsCodeBuilder.appendLine("exports.", partialName.substring(1), " = ", alias, ";");
+    } else {
+      jsCodeBuilder.appendLine("};");
+    }
 
     // ------ Add the fully qualified template name to the function to use in debug code. ------
     jsCodeBuilder.appendLine("if (goog.DEBUG) {");
     jsCodeBuilder.increaseIndent();
-    jsCodeBuilder.appendLine(
-        node.getTemplateName() + ".soyTemplateName = '" + node.getTemplateName() + "';");
+    jsCodeBuilder.appendLine(alias + ".soyTemplateName = '" + templateName + "';");
     jsCodeBuilder.decreaseIndent();
     jsCodeBuilder.appendLine("}");
 
@@ -758,6 +819,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
           isComputableAsJsExprsVisitor,
           jsCodeBuilder,
           localVarTranslations,
+          templateAliases,
           genJsExprsVisitor);
     }
     assistantForMsgs.visitForUseByMaster(node);
@@ -1224,7 +1286,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
     }
 
     // Add the call's result to the current output var.
-    JsExpr callExpr = genCallCodeUtils.genCallExpr(node, localVarTranslations);
+    JsExpr callExpr = genCallCodeUtils.genCallExpr(node, localVarTranslations, templateAliases);
     jsCodeBuilder.addToOutputVar(ImmutableList.of(callExpr));
   }
 

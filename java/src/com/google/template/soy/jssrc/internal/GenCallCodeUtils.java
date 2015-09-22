@@ -34,7 +34,6 @@ import com.google.template.soy.soytree.CallParamValueNode;
 import java.util.Deque;
 import java.util.Map;
 
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 
 /**
@@ -78,29 +77,8 @@ public class GenCallCodeUtils {
     this.soyJsSrcDirectivesMap = soyJsSrcDirectivesMap;
   }
 
-
   /**
-   * Generates the JS expression for a given call (the version that doesn't pass a StringBuilder).
-   *
-   * <p> Important: If there are CallParamContentNode children whose contents are not computable as
-   * JS expressions, then this function assumes that, elsewhere, code has been generated to define
-   * their respective 'param&lt;n&gt;' temporary variables.
-   *
-   * @see #genCallExprHelper for code gen examples.
-   *
-   * @param callNode The call to generate code for.
-   * @param localVarTranslations The current stack of replacement JS expressions for the local
-   *     variables (and foreach-loop special functions) current in scope.
-   * @return The JS expression for the call (the version that doesn't pass a StringBuilder).
-   */
-  public JsExpr genCallExpr(
-      CallNode callNode, Deque<Map<String, JsExpr>> localVarTranslations) {
-    return genCallExprHelper(callNode, localVarTranslations, null);
-  }
-
-
-  /**
-   * Private helper for {@code genCallExpr()} and {@code genAndAppendCallStmt()}.
+   * Generates the JS expression for a given call.
    *
    * <p> Important: If there are CallParamContentNode children whose contents are not computable as
    * JS expressions, then this function assumes that, elsewhere, code has been generated to define
@@ -136,24 +114,21 @@ public class GenCallCodeUtils {
    * @param callNode The call to generate code for.
    * @param localVarTranslations The current stack of replacement JS expressions for the local
    *     variables (and foreach-loop special functions) current in scope.
-   * @param outputVarNameForStringbuilder If set to null, then this method generates a call
-   *     expression that returns the output. If nonnull, then this method generates a a call
-   *     expression that passes this given stringbuilder object to receive the output. (Note that if
-   *     this param is nonnull, then this method will assume the code style is stringbuilder without
-   *     checking it.)
-   * @return The JS expression for the call (the version that doesn't pass a StringBuilder).
+   * @param templateAliases A mapping of fully qualified calls to a variable in scope.
+   * @return The JS expression for the call.
    */
-  private JsExpr genCallExprHelper(
-      CallNode callNode, Deque<Map<String, JsExpr>> localVarTranslations,
-      @Nullable String outputVarNameForStringbuilder) {
+  public JsExpr genCallExpr(
+      CallNode callNode,
+      Deque<Map<String, JsExpr>> localVarTranslations,
+      TemplateAliases templateAliases) {
 
-    JsExpr objToPass = genObjToPass(callNode, localVarTranslations);
+    JsExpr objToPass = genObjToPass(callNode, localVarTranslations, templateAliases);
 
     // Build the JS expr text for the callee.
     String calleeExprText;
     if (callNode instanceof CallBasicNode) {
       // Case 1: Basic call.
-      calleeExprText = ((CallBasicNode) callNode).getCalleeName();
+      calleeExprText = templateAliases.get(((CallBasicNode) callNode).getCalleeName());
     } else {
       // Case 2: Delegate call.
       CallDelegateNode callDelegateNode = (CallDelegateNode) callNode;
@@ -177,16 +152,8 @@ public class GenCallCodeUtils {
     }
 
     // Generate the main call expression.
-    String callExprText;
-    if (outputVarNameForStringbuilder != null) {
-      callExprText = calleeExprText + "(" +
-          objToPass.getText() + ", " + outputVarNameForStringbuilder +
-          (isUsingIjData ? ", opt_ijData" : "") + ")";
-    } else {
-      callExprText = calleeExprText + "(" +
-          objToPass.getText() + (isUsingIjData ? ", null, opt_ijData" : "") + ")";
-    }
-
+    String ijParam = isUsingIjData ? ", null, opt_ijData" : "";
+    String callExprText = calleeExprText + "(" + objToPass.getText() + ijParam + ")";
     JsExpr result = new JsExpr(callExprText, Integer.MAX_VALUE);
 
     // In strict mode, escaping directives may apply to the call site.
@@ -238,9 +205,13 @@ public class GenCallCodeUtils {
    * @param callNode The call to generate code for.
    * @param localVarTranslations The current stack of replacement JS expressions for the local
    *     variables (and foreach-loop special functions) current in scope.
+   * @param templateAliases A mapping of fully qualified calls to a variable in scope.
    * @return The JS expression for the object to pass in the call.
    */
-  public JsExpr genObjToPass(CallNode callNode, Deque<Map<String, JsExpr>> localVarTranslations) {
+  public JsExpr genObjToPass(
+      CallNode callNode,
+      Deque<Map<String, JsExpr>> localVarTranslations,
+      TemplateAliases templateAliases) {
 
     // ------ Generate the expression for the original data to pass ------
     JsExpr dataToPass;
@@ -285,7 +256,7 @@ public class GenCallCodeUtils {
         JsExpr valueJsExpr;
         if (isComputableAsJsExprsVisitor.exec(cpcn)) {
           valueJsExpr = JsExprUtils.concatJsExprsForceString(
-              genJsExprsVisitorFactory.create(localVarTranslations).exec(cpcn));
+              genJsExprsVisitorFactory.create(localVarTranslations, templateAliases).exec(cpcn));
         } else {
           // This is a param with content that cannot be represented as JS expressions, so we assume
           // that code has been generated to define the temporary variable 'param<n>'.

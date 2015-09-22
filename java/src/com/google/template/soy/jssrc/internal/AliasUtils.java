@@ -16,6 +16,7 @@
 
 package com.google.template.soy.jssrc.internal;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -30,8 +31,30 @@ import java.util.Set;
 final class AliasUtils {
   private AliasUtils() {}
   
+  private static final class Aliases implements TemplateAliases {
+    final ImmutableMap<String, String> aliasMapping;
+
+    Aliases(Map<String, String> aliasMapping) {
+      this.aliasMapping = ImmutableMap.copyOf(aliasMapping);
+    }
+
+    @Override
+    public String get(String fullyQualifiedName) {
+      String alias = aliasMapping.get(fullyQualifiedName);
+      Preconditions.checkState(alias != null);
+      return alias;
+    }
+  }
+  
   private static final String TEMPLATE_ALIAS_PREFIX = "$templateAlias";
 
+  static final TemplateAliases IDENTITY_ALIASES = new TemplateAliases() {
+    @Override
+    public String get(String fullyQualifiedName) {
+      return fullyQualifiedName;
+    }
+  };
+  
   static boolean isExternalFunction(String alias) {
     return alias.startsWith(TEMPLATE_ALIAS_PREFIX);
   }
@@ -46,9 +69,9 @@ final class AliasUtils {
    * qualified name.
    * 
    * @param fileNode The {@link SoyFileNode} to create an alias mapping for.
-   * @return A mapping of a fully qualified name to an alias.
+   * @return A {@link TemplateAliases} to look up aliases with.
    */
-  static ImmutableMap<String, String> createAliasMapping(SoyFileNode fileNode) {
+  static TemplateAliases createTemplateAliases(SoyFileNode fileNode) {
     Map<String, String> aliasMap = new HashMap<>();
     Set<String> localTemplates = new HashSet<>();
     int counter = 0;
@@ -60,17 +83,11 @@ final class AliasUtils {
       String fullyQualifiedName = templateBasicNode.getTemplateName();
       localTemplates.add(fullyQualifiedName);
       
-      /* 
-       * For v1 templates, don't alias local template calls since we don't have a partialName. This
-       * is different than aliasing to the fully qualified name. Since the aliases will be created
-       * prior to the template being added to the namespace, aliasing them would result in the alias
-       * being undefined.
-       */
-      if (partialName == null) {
-        continue;
-      }
-      
-      String alias = partialName.substring(1);
+      Preconditions.checkState(partialName != null, "Aliasing not supported for V1 templates");
+
+      // Need to start the alias with something that cannot be a part of a reserved 
+      // JavaScript identifier like 'function' or 'catch'.
+      String alias = "$" + partialName.substring(1);
       aliasMap.put(fullyQualifiedName, alias);
     }
     
@@ -89,7 +106,7 @@ final class AliasUtils {
       aliasMap.put(fullyQualifiedName, alias);
     }
     
-    return ImmutableMap.copyOf(aliasMap);
+    return new Aliases(aliasMap);
   }
 }
 

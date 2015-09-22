@@ -120,9 +120,11 @@ public class IncrementalDomSrcMain {
     Preconditions.checkState(
         !jsSrcOptions.getUseGoogIsRtlForBidiGlobalDir()
         || jsSrcOptions.shouldProvideRequireSoyNamespaces()
-        || jsSrcOptions.shouldProvideRequireJsFunctions(),
-        "Do not specify useGoogIsRtlForBidiGlobalDir without either"
-        + " shouldProvideRequireSoyNamespaces or shouldProvideRequireJsFunctions.");
+        || jsSrcOptions.shouldProvideRequireJsFunctions()
+        || jsSrcOptions.shouldGenerateGoogModules(),
+        "Do not specify useGoogIsRtlForBidiGlobalDir without one of "
+        + "shouldProvideRequireSoyNamespaces, shouldProvideRequireJsFunctions or "
+        + "shouldGenerateGoogModules.");
 
     try (WithScope withScope = apiCallScope.enter()) {
       // Seed the scoped parameters.
