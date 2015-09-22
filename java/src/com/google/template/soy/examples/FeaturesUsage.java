@@ -23,6 +23,7 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.template.soy.SoyFileSet;
 import com.google.template.soy.SoyModule;
+import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyListData;
 import com.google.template.soy.data.SoyMapData;
 import com.google.template.soy.examples.FeaturesSoyInfo.DemoAutoescapeTrueSoyTemplateInfo;
@@ -156,7 +157,10 @@ public class FeaturesUsage {
     System.out.println(tofu.newRenderer(DEMO_LINE_JOINING).setMsgBundle(msgBundle).render());
 
     writeExampleHeader("demoRawTextCommands");
-    System.out.println(tofu.newRenderer(DEMO_RAW_TEXT_COMMANDS).setMsgBundle(msgBundle).render());
+    System.out.println(tofu.newRenderer(DEMO_RAW_TEXT_COMMANDS)
+      .setMsgBundle(msgBundle)
+      .setContentKind(SanitizedContent.ContentKind.TEXT)
+      .render());
 
     writeExampleHeader("demoPrint");
     System.out.println(tofu.newRenderer(DEMO_PRINT)
@@ -257,6 +261,7 @@ public class FeaturesUsage {
                                  DemoDoubleBracesSoyTemplateInfo.SET_MEMBERS,
                                      ImmutableList.of(2, 3, 5, 7, 11, 13)))
          .setMsgBundle(msgBundle)
+         .setContentKind(SanitizedContent.ContentKind.TEXT)
          .render());
 
     // The Hebrew in the following example comes out as question marks in the output because
