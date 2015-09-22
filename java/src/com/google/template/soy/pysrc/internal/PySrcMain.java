@@ -28,14 +28,15 @@ import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.internal.i18n.SoyBidiUtils;
 import com.google.template.soy.pysrc.SoyPySrcOptions;
+import com.google.template.soy.pysrc.internal.PyApiCallScopeBindingAnnotations.PyBidiIsRtlFn;
+import com.google.template.soy.pysrc.internal.PyApiCallScopeBindingAnnotations.PyEnvironmentModulePath;
+import com.google.template.soy.pysrc.internal.PyApiCallScopeBindingAnnotations.PyRuntimePath;
+import com.google.template.soy.pysrc.internal.PyApiCallScopeBindingAnnotations.PyTranslationClass;
 import com.google.template.soy.shared.internal.ApiCallScopeUtils;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
 import com.google.template.soy.shared.internal.GuiceSimpleScope.WithScope;
 import com.google.template.soy.shared.internal.MainEntryPointUtils;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.ApiCall;
-import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.PyBidiIsRtlFn;
-import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.PyRuntimePath;
-import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.PyTranslationClass;
 import com.google.template.soy.sharedpasses.opti.SimplifyVisitor;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -98,6 +99,8 @@ public final class PySrcMain {
       // Seed the scoped parameters.
       apiCallScope.seed(SoyPySrcOptions.class, pySrcOptions);
       apiCallScope.seed(Key.get(String.class, PyRuntimePath.class), pySrcOptions.getRuntimePath());
+      apiCallScope.seed(Key.get(String.class, PyEnvironmentModulePath.class),
+          pySrcOptions.getEnvironmentModulePath());
       apiCallScope.seed(Key.get(String.class, PyBidiIsRtlFn.class), pySrcOptions.getBidiIsRtlFn());
       apiCallScope.seed(Key.get(String.class, PyTranslationClass.class),
           pySrcOptions.getTranslationClass());

@@ -63,6 +63,12 @@ public final class SoyToPySrcCompiler {
               + " should be in dot notation format.")
   private String runtimePath = "";
 
+  @Option(name = "--environmentModulePath",
+          usage = "A custom python module which will override the environment.py module if custom"
+              + " functionality is required for interacting with your runtime environment. This"
+              + " module must implement all functions of the environment module if provided.")
+  private String environmentModulePath = "";
+
   @Option(name = "--inputPrefix",
           usage = "If provided, this path prefix will be prepended to each input file path"
               + " listed on the command line. This is a literal string prefix, so you'll need"
@@ -192,7 +198,8 @@ public final class SoyToPySrcCompiler {
     SoyFileSet sfs = sfsBuilder.build();
 
     // Create SoyPySrcOptions.
-    SoyPySrcOptions pySrcOptions = new SoyPySrcOptions(runtimePath, bidiIsRtlFn, translationClass);
+    SoyPySrcOptions pySrcOptions = new SoyPySrcOptions(runtimePath, environmentModulePath,
+        bidiIsRtlFn, translationClass);
 
     // Compile.
     return sfs.compileToPySrcFiles(outputPathFormat, inputPrefix, pySrcOptions);

@@ -27,14 +27,15 @@ import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.internal.i18n.SoyBidiUtils;
 import com.google.template.soy.pysrc.internal.GenPyExprsVisitor.GenPyExprsVisitorFactory;
+import com.google.template.soy.pysrc.internal.PyApiCallScopeBindingAnnotations.PyBidiIsRtlFn;
+import com.google.template.soy.pysrc.internal.PyApiCallScopeBindingAnnotations.PyEnvironmentModulePath;
+import com.google.template.soy.pysrc.internal.PyApiCallScopeBindingAnnotations.PyRuntimePath;
+import com.google.template.soy.pysrc.internal.PyApiCallScopeBindingAnnotations.PyTranslationClass;
 import com.google.template.soy.pysrc.internal.TranslateToPyExprVisitor.TranslateToPyExprVisitorFactory;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyExprUtils;
 import com.google.template.soy.pysrc.restricted.PyFunctionExprBuilder;
 import com.google.template.soy.shared.internal.FindCalleesNotInFileVisitor;
-import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.PyBidiIsRtlFn;
-import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.PyRuntimePath;
-import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.PyTranslationClass;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallNode;
@@ -85,6 +86,9 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   /** The module path for the runtime libraries. */
   private final String runtimePath;
 
+  /** The module path for custom environment libraries. */
+  private final String environmentModulePath;
+
   /** The module and function name for the bidi isRtl function. */
   private final String bidiIsRtlFn;
 
@@ -118,6 +122,7 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    */
   @Inject
   GenPyCodeVisitor(@PyRuntimePath String runtimePath,
+      @PyEnvironmentModulePath String environmentModulePath,
       @PyBidiIsRtlFn String bidiIsRtlFn,
       @PyTranslationClass String translationClass,
       IsComputableAsPyExprVisitor isComputableAsPyExprVisitor,
@@ -127,6 +132,7 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       ErrorReporter errorReporter) {
     this.errorReporter = errorReporter;
     this.runtimePath = runtimePath;
+    this.environmentModulePath = environmentModulePath;
     this.bidiIsRtlFn = bidiIsRtlFn;
     this.translationClass = translationClass;
     this.isComputableAsPyExprVisitor = isComputableAsPyExprVisitor;
@@ -797,8 +803,12 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
           Pair<String, String> nameSpaceAndName = namespaceAndNameFromModule(calleeModule);
           String calleeNamespace = nameSpaceAndName.first;
           String calleeName = nameSpaceAndName.second;
-          pyCodeBuilder.appendLine(calleeName, " = runtime.namespaced_import('", calleeName,
-               "', namespace='", calleeNamespace, "')");
+          pyCodeBuilder.appendLineStart(calleeName, " = runtime.namespaced_import('", calleeName,
+               "', namespace='", calleeNamespace, "'");
+          if (!environmentModulePath.isEmpty()) {
+            pyCodeBuilder.append(", environment_path='", environmentModulePath, "'");
+          }
+          pyCodeBuilder.appendLineEnd(")");
         }
       pyCodeBuilder.appendLine();
     }

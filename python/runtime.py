@@ -29,6 +29,8 @@ import os
 import re
 import sys
 
+from . import environment
+
 try:
   import scandir
 except ImportError:
@@ -156,7 +158,7 @@ def merge_into_dict(original, secondary):
   return original
 
 
-def namespaced_import(name, namespace=None):
+def namespaced_import(name, namespace=None, environment_path=None):
   """A function to import compiled soy modules using the Soy namespace.
 
   This function attempts to first import the module directly. If it isn't found
@@ -176,6 +178,8 @@ def namespaced_import(name, namespace=None):
   Args:
     name: The name of the module to import.
     namespace: The namespace of the module to import.
+    environment_path: A custom environment module path for interacting with the
+        runtime environment.
 
   Returns:
     The Module object.
@@ -190,9 +194,13 @@ def namespaced_import(name, namespace=None):
     if namespace:
       namespace_key = "SOY_NAMESPACE: '%s'." % full_namespace
       module = None
+      if environment_path:
+        file_loader = importlib.import_module(environment_path).file_loader
+      else:
+        file_loader = environment.file_loader
       for sys_path, f_path, f_name in _find_modules(name):
         # Verify the file namespace by comparing the 5th line.
-        with open('%s/%s' % (f_path, f_name), 'r') as f:
+        with file_loader(f_path, f_name, 'r') as f:
           for _ in range(4):
             next(f)
           if namespace_key != next(f).rstrip():

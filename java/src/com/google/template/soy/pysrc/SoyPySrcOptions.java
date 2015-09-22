@@ -28,17 +28,23 @@ public final class SoyPySrcOptions implements Cloneable {
   /** The base module path for loading the runtime modules. */
   private final String runtimePath;
 
+  /** The custom environment module path. */
+  private final String environmentModulePath;
+
   /** The full module and class path to a runtime library for translation. */
   private final String translationClass;
 
-  public SoyPySrcOptions(String runtimePath, String bidiIsRtlFn, String translationClass) {
+  public SoyPySrcOptions(String runtimePath, String environmentModulePath, String bidiIsRtlFn,
+      String translationClass) {
     this.runtimePath = runtimePath;
+    this.environmentModulePath = environmentModulePath;
     this.bidiIsRtlFn = bidiIsRtlFn;
     this.translationClass = translationClass;
   }
 
   private SoyPySrcOptions(SoyPySrcOptions orig) {
     this.runtimePath = orig.runtimePath;
+    this.environmentModulePath = orig.environmentModulePath;
     this.bidiIsRtlFn = orig.bidiIsRtlFn;
     this.translationClass = orig.translationClass;
   }
@@ -49,6 +55,10 @@ public final class SoyPySrcOptions implements Cloneable {
 
   public String getRuntimePath() {
     return runtimePath;
+  }
+
+  public String getEnvironmentModulePath() {
+    return environmentModulePath;
   }
 
   public String getTranslationClass() {

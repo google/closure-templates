@@ -71,6 +71,28 @@ public final class GenPyCodeVisitorTest extends TestCase {
     // TODO(dcphillips): Add external template dependency import test once templates are supported.
   }
 
+  public void testNamespacedImport() {
+    String soyFile = SOY_NAMESPACE
+        + "{template .helloWorld}\n"
+        + "  {call foo.bar.baz.quz /}\n"
+        + "{/template}\n";
+    String expectedImport = "namespaced_import('baz', namespace='foo.bar')";
+
+    assertThatSoyFile(soyFile).compilesToSourceContaining(expectedImport);
+  }
+
+  public void testEnvironmentConfiguration() {
+    String soyFile = SOY_NAMESPACE
+        + "{template .helloWorld}\n"
+        + "  {call foo.bar.baz.quz /}\n"
+        + "{/template}\n";
+    String expectedEnviromentConfirmation = "namespaced_import('baz', namespace='foo.bar', "
+        + "environment_path='runtime.custom_environment')";
+
+    assertThatSoyFile(soyFile).withEnvironmentModule("runtime.custom_environment")
+        .compilesToSourceContaining(expectedEnviromentConfirmation);
+  }
+
   public void testBidiConfiguration() {
     String exptectedBidiConfig = "from example import bidi as external_bidi\n";
 

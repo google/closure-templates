@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.shared.restricted;
+package com.google.template.soy.pysrc.internal;
 
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.METHOD;
@@ -26,41 +26,43 @@ import com.google.inject.BindingAnnotation;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-
 /**
- * Binding annotations related to the ApiCallScope.
- *
- * <p> Important: This class may only be used in implementing plugins (e.g. functions, directives).
+ * Binding annotations related to the ApiCallScope for the Python runtime.
  *
  */
-public class ApiCallScopeBindingAnnotations {
+class PyApiCallScopeBindingAnnotations {
 
-  private ApiCallScopeBindingAnnotations() {}
-
+  private PyApiCallScopeBindingAnnotations() {}
 
   /**
-   * Annotation for a GuiceSimpleScope parameter that should receive the ApiCallScope.
+   * Annotation for the runtimePath parameter in the ApiCallScope.
    */
   @BindingAnnotation
   @Target({FIELD, PARAMETER, METHOD})
   @Retention(RUNTIME)
-  public @interface ApiCall {}
-
+  public @interface PyRuntimePath {}
 
   /**
-   * Annotation for the isIsingIjData parameter in the ApiCallScope.
+   * Annotation for the environmentModulePath parameter in the ApiCallScope.
    */
   @BindingAnnotation
   @Target({FIELD, PARAMETER, METHOD})
   @Retention(RUNTIME)
-  public @interface IsUsingIjData {}
-
+  public @interface PyEnvironmentModulePath {}
 
   /**
-   * Annotation for the localeString parameter in the ApiCallScope.
+   * Annotation for the bidiIsRtlFn parameter in the ApiCallScope.
    */
   @BindingAnnotation
   @Target({FIELD, PARAMETER, METHOD})
   @Retention(RUNTIME)
-  public @interface LocaleString {}
+  public @interface PyBidiIsRtlFn {}
+
+  /**
+   * Annotation for the translationClass parameter in the ApiCallScope.
+   */
+  @BindingAnnotation
+  @Target({FIELD, PARAMETER, METHOD})
+  @Retention(RUNTIME)
+  public @interface PyTranslationClass {}
 }

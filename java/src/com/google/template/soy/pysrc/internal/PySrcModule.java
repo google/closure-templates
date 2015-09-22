@@ -24,6 +24,10 @@ import com.google.template.soy.passes.SharedPassesModule;
 import com.google.template.soy.pysrc.SoyPySrcOptions;
 import com.google.template.soy.pysrc.internal.GenPyExprsVisitor.GenPyExprsVisitorFactory;
 import com.google.template.soy.pysrc.internal.MsgFuncGenerator.MsgFuncGeneratorFactory;
+import com.google.template.soy.pysrc.internal.PyApiCallScopeBindingAnnotations.PyBidiIsRtlFn;
+import com.google.template.soy.pysrc.internal.PyApiCallScopeBindingAnnotations.PyEnvironmentModulePath;
+import com.google.template.soy.pysrc.internal.PyApiCallScopeBindingAnnotations.PyRuntimePath;
+import com.google.template.soy.pysrc.internal.PyApiCallScopeBindingAnnotations.PyTranslationClass;
 import com.google.template.soy.pysrc.internal.TranslateToPyExprVisitor.TranslateToPyExprVisitorFactory;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.pysrc.restricted.SoyPySrcPrintDirective;
@@ -31,9 +35,6 @@ import com.google.template.soy.shared.internal.ApiCallScope;
 import com.google.template.soy.shared.internal.FunctionAdapters;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
 import com.google.template.soy.shared.internal.SharedModule;
-import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.PyBidiIsRtlFn;
-import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.PyRuntimePath;
-import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.PyTranslationClass;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 
@@ -74,6 +75,9 @@ public final class PySrcModule extends AbstractModule {
     bind(String.class).annotatedWith(PyRuntimePath.class)
         .toProvider(GuiceSimpleScope.<String>getUnscopedProvider())
         .in(ApiCallScope.class);
+    bind(String.class).annotatedWith(PyEnvironmentModulePath.class)
+      .toProvider(GuiceSimpleScope.<String>getUnscopedProvider())
+      .in(ApiCallScope.class);
     bind(String.class).annotatedWith(PyBidiIsRtlFn.class)
         .toProvider(GuiceSimpleScope.<String>getUnscopedProvider())
         .in(ApiCallScope.class);
