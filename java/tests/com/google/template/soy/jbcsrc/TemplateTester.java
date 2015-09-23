@@ -19,8 +19,10 @@ package com.google.template.soy.jbcsrc;
 import static com.google.template.soy.data.SoyValueHelper.EMPTY_DICT;
 
 import com.google.common.base.Joiner;
+import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Maps;
 import com.google.common.truth.FailureStrategy;
 import com.google.common.truth.Subject;
 import com.google.common.truth.SubjectFactory;
@@ -49,6 +51,7 @@ import com.google.template.soy.passes.SharedPassesModule;
 import com.google.template.soy.shared.internal.ErrorReporterModule;
 import com.google.template.soy.shared.internal.SharedModule;
 import com.google.template.soy.shared.internal.SharedModule.Shared;
+import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -75,11 +78,14 @@ public final class TemplateTester {
           new BasicFunctionsModule(), 
           new AbstractModule() {
             @Provides RenderContext provideContext(
+                ImmutableMap<String, ? extends SoyFunction> functions,
                 SoyValueHelper converter,
-                @Shared Map<String, SoyJavaFunction> functions,
                 @Shared ImmutableMap<String, ? extends SoyJavaPrintDirective> printDirectives) {
+              ImmutableMap<String, SoyJavaFunction> soyJavaFunctions = ImmutableMap.copyOf(
+                  (Map<String, SoyJavaFunction>) Maps.filterValues(
+                      functions, Predicates.instanceOf(SoyJavaFunction.class)));
               return new RenderContext.Builder()
-                  .withSoyFunctions(functions)
+                  .withSoyFunctions(soyJavaFunctions)
                   .withSoyPrintDirectives(printDirectives)
                   .withConverter(converter)
                   .withTemplateSelector(new DelTemplateSelector() {

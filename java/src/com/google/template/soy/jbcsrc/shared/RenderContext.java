@@ -151,8 +151,8 @@ public final class RenderContext {
       return this;
     }
 
-    public Builder withSoyFunctions(Map<String, SoyJavaFunction> functions) {
-      this.soyJavaFunctionsMap = ImmutableMap.copyOf(functions);
+    public Builder withSoyFunctions(ImmutableMap<String, SoyJavaFunction> functions) {
+      this.soyJavaFunctionsMap = functions;
       return this;
     }
 

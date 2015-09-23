@@ -32,7 +32,6 @@ import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.IsUsingIjData;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.LocaleString;
 import com.google.template.soy.shared.restricted.SoyFunction;
-import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.types.SoyTypeProvider;
@@ -40,7 +39,6 @@ import com.google.template.soy.types.SoyTypeRegistry;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
-import java.util.Map;
 import java.util.Set;
 
 import javax.inject.Singleton;
@@ -123,23 +121,6 @@ public final class SharedModule extends AbstractModule {
       mapBuilder.put(directive.getName(), directive);
     }
     return mapBuilder.build();
-  }
-
-
-  /**
-   * Builds and provides the map of SoyJavaFunctions (name to function).
-   *
-   * This actually collects all SoyFunctions that implement either SoyJavaFunction or
-   * SoyJavaRuntimeFunction (deprecated). The latter are adapted to the former interface.
-   *
-   * @param soyFunctionsSet The installed set of SoyFunctions (from Guice Multibinder). Each
-   *     SoyFunction may or may not implement SoyJavaFunction or SoyJavaRuntimeFunction.
-   */
-  @Provides
-  @Singleton
-  @Shared Map<String, SoyJavaFunction> provideSoyJavaFunctionsMap(
-      Set<SoyFunction> soyFunctionsSet) {
-    return FunctionAdapters.buildSpecificSoyFunctionsMap(soyFunctionsSet, SoyJavaFunction.class);
   }
 
   /**
