@@ -102,7 +102,7 @@ public class JsSrcUtils {
       SoyType type,
       boolean addParensIfNeeded,
       boolean addRequiredIfNeeded) {
-    String nonNullablePrefix = addRequiredIfNeeded ? "!" : "";
+    String nonNullablePrefix = addRequiredIfNeeded ? "!" : "?";
     switch (type.getKind()) {
       case ANY:
         return "*";
@@ -166,7 +166,7 @@ public class JsSrcUtils {
             continue;
           }
           if (memberType instanceof SanitizedType) {
-            typeNames.add(getJsTypeName(memberType));
+            typeNames.add((isNullable ? "?" : "!") + getJsTypeName(memberType));
             typeNames.add("string");
             hasNullableMember = true;
             continue;
@@ -199,7 +199,7 @@ public class JsSrcUtils {
 
       default:
         if (type instanceof SanitizedType) {
-          String result = NodeContentKinds.toJsSanitizedContentCtorName(
+          String result = nonNullablePrefix + NodeContentKinds.toJsSanitizedContentCtorName(
               ((SanitizedType) type).getContentKind()) + "|string";
           if (addParensIfNeeded) {
             result = "(" + result + ")";
