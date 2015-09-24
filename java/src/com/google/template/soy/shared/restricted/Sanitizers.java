@@ -452,6 +452,25 @@ public final class Sanitizers {
 
 
   /**
+   * This is supposed to make sure the the given input is an instance of either trustedResourceUrl
+   * or trustedString. But for now only calls filterNormalizeUri.
+   */
+  public static String filterTrustedResourceUri(SoyValue value) {
+    // TODO(shwetakarwa): This needs to be changed once all the legacy URLs are taken care of.
+    return value.coerceToString();
+  }
+
+
+  /**
+   * Makes sure that the given input doesn't specify a dangerous protocol and also
+   * {@link #normalizeUri normalizes} it.
+   */
+  public static String filterTrustedResourceUri(String value) {
+    return value;
+  }
+
+
+  /**
    * Makes sure that the given input is a data URI corresponding to an image.
    *
    * SanitizedContent kind does not apply -- the directive is also used to ensure no foreign

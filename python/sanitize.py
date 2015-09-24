@@ -243,6 +243,12 @@ def filter_normalize_media_uri(value):
   return generated_sanitize.filter_normalize_media_uri_helper(value)
 
 
+def filter_trusted_resource_uri(value):
+  # TODO(shwetakarwa): This needs to be changed once all the legacy URLs are
+  # taken care of.
+  return value
+
+
 def normalize_html(value):
   return generated_sanitize.normalize_html_helper(value)
 

@@ -320,6 +320,22 @@ public abstract class BasicEscapeDirective
     }
   }
 
+  /**
+   * Implements the |filterTrustedResourceUri directive.
+   */
+  @Singleton
+  @SoyPurePrintDirective
+  static final class FilterTrustedResourceUri extends BasicEscapeDirective {
+
+    FilterTrustedResourceUri() {
+      super("|filterTrustedResourceUri");
+    }
+
+    @Override protected String escape(SoyValue value) {
+      return Sanitizers.filterTrustedResourceUri(value);
+    }
+  }
+
 
   /**
    * Implements the |normalizeUri directive.
