@@ -437,11 +437,20 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
   }
 
   /**
+   * @param soyNamespace The namespace as declared by the user.
+   * @return The namespace to import/export templates.
+   */
+  protected String getGoogModuleNamespace(String soyNamespace) {
+    return soyNamespace;
+  }
+
+  /**
    * Helper for visitSoyFileNode(SoyFileNode) to generate a module definition.
    * @param soyFile The node we're visiting.
    */
   private void addCodeToDeclareGoogModule(SoyFileNode soyFile) {
-    jsCodeBuilder.appendLine("goog.module('", soyFile.getNamespace(), "');\n");
+    String exportNamespace = getGoogModuleNamespace(soyFile.getNamespace());
+    jsCodeBuilder.appendLine("goog.module('", exportNamespace, "');\n");
   }
 
   /**
@@ -457,7 +466,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
    *
    * @param soyFile The node we're visiting.
    */
-  protected void addCodeToRequireGoogModules(SoyFileNode soyFile) {
+  private void addCodeToRequireGoogModules(SoyFileNode soyFile) {
     int counter = 1;
 
     // Get all the unique calls in the file.
@@ -480,7 +489,8 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
 
       // Add a require of the module
       String namespaceAlias = "$import" + counter++;
-      jsCodeBuilder.appendLine("var ", namespaceAlias, " = goog.require('", namespace, "');");
+      String importNamespace = getGoogModuleNamespace(namespace);
+      jsCodeBuilder.appendLine("var ", namespaceAlias, " = goog.require('", importNamespace, "');");
 
       // Alias all the templates used from the module
       for (String fullyQualifiedName : namespaceToTemplates.get(namespace)) {
