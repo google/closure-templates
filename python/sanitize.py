@@ -445,7 +445,7 @@ class SanitizedContent(object):
     if cls is SanitizedContent or not cls.content_kind:
       raise TypeError('SanitizedContent cannot be instantiated directly. '
                       'Instantiate a child class with a valid content_kind.')
-    return object.__new__(cls, *args, **kwargs)
+    return object.__new__(cls)
 
   def __init__(self, content=None, content_dir=None, approval=None):
     if not isinstance(approval,
