@@ -19,6 +19,7 @@ package com.google.template.soy.msgs.internal;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyError;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.restricted.SoyMsg;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
@@ -62,27 +63,15 @@ import javax.annotation.Nullable;
  */
 public final class InsertMsgsVisitor extends AbstractSoyNodeVisitor<Void> {
 
-  /**
-   * Exception thrown when a plural or select message is encountered.
-   */
-  public static class EncounteredPlrselMsgException extends RuntimeException {
+  private static final SoyError ENCOUNTERED_PLURAL_OR_SELECT =
+      SoyError.of("JS code generation currently only supports plural/select messages when "
+          + "shouldGenerateGoogMsgDefs is true.");
 
-    public final MsgNode msgNode;
+  @Nullable private final SoyMsgBundle msgBundle;
+  private final ErrorReporter errorReporter;
 
-    public EncounteredPlrselMsgException(MsgNode msgNode) {
-      this.msgNode = msgNode;
-    }
-  }
-
-
-  /** The bundle of translated messages, or null to use the messages from the Soy source. */
-  private final SoyMsgBundle msgBundle;
-
-  /** If set to true, then don't report an error when encountering plural or select messages. */
-  private final boolean dontErrorOnPlrselMsgs;
-
-  /** The node id generator for the parse tree. Retrieved from the root SoyFileSetNode. */
   private IdGenerator nodeIdGen;
+
 
   /** The replacement nodes for the current MsgFallbackGroupNode we're visiting (during a pass). */
   private List<StandaloneNode> currReplacementNodes;
@@ -90,18 +79,11 @@ public final class InsertMsgsVisitor extends AbstractSoyNodeVisitor<Void> {
   /**
    * @param msgBundle The bundle of translated messages, or null to use the messages from the Soy
    *     source.
-   * @param dontErrorOnPlrselMsgs If set to true, then this pass won't report an error when
-   *     encountering a plural or select message. Instead, plural and select messages will simply
-   *     not be replaced ({@code MsgNode} left in the tree as-is). If set to false, then this pass
-   *     will throw an {@link EncounteredPlrselMsgException} when encountering a plural or
-   *     select message.
+   * @param errorReporter For reporting errors.
    */
-  public InsertMsgsVisitor(
-      @Nullable SoyMsgBundle msgBundle,
-      boolean dontErrorOnPlrselMsgs,
-      ErrorReporter errorReporter) {
+  public InsertMsgsVisitor(@Nullable SoyMsgBundle msgBundle, ErrorReporter errorReporter) {
     this.msgBundle = msgBundle;
-    this.dontErrorOnPlrselMsgs = dontErrorOnPlrselMsgs;
+    this.errorReporter = errorReporter;
   }
 
 
@@ -125,13 +107,11 @@ public final class InsertMsgsVisitor extends AbstractSoyNodeVisitor<Void> {
 
     // Check for plural or select message. Either report error or don't replace.
     for (MsgNode msg : node.getChildren()) {
-      if (msg.numChildren() == 1 &&
-          (msg.getChild(0) instanceof MsgSelectNode || msg.getChild(0) instanceof MsgPluralNode)) {
-        if (dontErrorOnPlrselMsgs) {
-          return;
-        } else {
-          throw new EncounteredPlrselMsgException(msg);
-        }
+      if (msg.numChildren() == 1
+          && (msg.getChild(0) instanceof MsgSelectNode
+              || msg.getChild(0) instanceof MsgPluralNode)) {
+        errorReporter.report(node.getSourceLocation(), ENCOUNTERED_PLURAL_OR_SELECT);
+        return;
       }
     }
 
