@@ -101,7 +101,7 @@ public interface Node {
 
   /**
    * Builds a Soy source string that could be the source for this node. Note that this is not the
-   * actual original source string, but a (sort of) canonical equivalent.
+   * actual original source string, but a (SORT OF, NOT QUITE) canonical equivalent.
    *
    * Note: Some nodes do not have a direct mapping to Soy source (such as nodes created during
    * some optimization passes). Thus this method may not always be supported.
