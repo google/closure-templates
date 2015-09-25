@@ -50,7 +50,6 @@ import com.google.template.soy.msgs.internal.ExtractMsgsVisitor;
 import com.google.template.soy.passes.SharedPassesModule;
 import com.google.template.soy.shared.internal.ErrorReporterModule;
 import com.google.template.soy.shared.internal.SharedModule;
-import com.google.template.soy.shared.internal.SharedModule.Shared;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
@@ -80,7 +79,7 @@ public final class TemplateTester {
             @Provides RenderContext provideContext(
                 ImmutableMap<String, ? extends SoyFunction> functions,
                 SoyValueHelper converter,
-                @Shared ImmutableMap<String, ? extends SoyJavaPrintDirective> printDirectives) {
+                ImmutableMap<String, ? extends SoyJavaPrintDirective> printDirectives) {
               ImmutableMap<String, SoyJavaFunction> soyJavaFunctions = ImmutableMap.copyOf(
                   (Map<String, SoyJavaFunction>) Maps.filterValues(
                       functions, Predicates.instanceOf(SoyJavaFunction.class)));

@@ -17,7 +17,6 @@
 package com.google.template.soy.sharedpasses.opti;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.template.soy.shared.internal.SharedModule.Shared;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.soytree.TemplateRegistry;
 
@@ -42,7 +41,7 @@ public final class PrerenderVisitorFactory {
 
   @Inject
   public PrerenderVisitorFactory(
-      @Shared ImmutableMap<String, ? extends SoyJavaPrintDirective> soyJavaDirectivesMap,
+      ImmutableMap<String, ? extends SoyJavaPrintDirective> soyJavaDirectivesMap,
       PreevalVisitorFactory preevalVisitorFactory) {
     this.soyJavaDirectivesMap = soyJavaDirectivesMap;
     this.preevalVisitorFactory = preevalVisitorFactory;

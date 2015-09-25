@@ -21,7 +21,6 @@ import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
-import com.google.template.soy.shared.internal.SharedModule.Shared;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.sharedpasses.render.EvalVisitor.EvalVisitorFactory;
 import com.google.template.soy.soytree.TemplateRegistry;
@@ -49,7 +48,7 @@ public final class RenderVisitorFactory {
 
   @Inject
   public RenderVisitorFactory(
-      @Shared ImmutableMap<String, ? extends SoyJavaPrintDirective> soyJavaDirectivesMap,
+      ImmutableMap<String, ? extends SoyJavaPrintDirective> soyJavaDirectivesMap,
       EvalVisitorFactory evalVisitorFactory) {
     this.soyJavaDirectivesMap = soyJavaDirectivesMap;
     this.evalVisitorFactory = evalVisitorFactory;

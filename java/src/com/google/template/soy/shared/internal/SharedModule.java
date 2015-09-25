@@ -16,14 +16,8 @@
 
 package com.google.template.soy.shared.internal;
 
-import static java.lang.annotation.ElementType.FIELD;
-import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.ElementType.PARAMETER;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
-
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.AbstractModule;
-import com.google.inject.BindingAnnotation;
 import com.google.inject.Provides;
 import com.google.inject.multibindings.Multibinder;
 import com.google.template.soy.coredirectives.CoreDirectivesModule;
@@ -37,8 +31,6 @@ import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.types.SoyTypeProvider;
 import com.google.template.soy.types.SoyTypeRegistry;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
 import java.util.Set;
 
 import javax.inject.Singleton;
@@ -50,15 +42,6 @@ import javax.inject.Singleton;
  *
  */
 public final class SharedModule extends AbstractModule {
-
-  /**
-   * Annotation for values provided by SharedModule (that need to be distinguished).
-   */
-  @BindingAnnotation
-  @Target({FIELD, PARAMETER, METHOD})
-  @Retention(RUNTIME)
-  public @interface Shared {}
-
 
   @Override protected void configure() {
 
@@ -135,7 +118,7 @@ public final class SharedModule extends AbstractModule {
    */
   @Provides
   @Singleton
-  @Shared ImmutableMap<String, ? extends SoyJavaPrintDirective> provideSoyJavaDirectivesMap(
+  ImmutableMap<String, ? extends SoyJavaPrintDirective> provideSoyJavaDirectivesMap(
       Set<SoyPrintDirective> soyDirectivesSet) {
     return FunctionAdapters.buildSpecificSoyDirectivesMap(
         soyDirectivesSet, SoyJavaPrintDirective.class);
