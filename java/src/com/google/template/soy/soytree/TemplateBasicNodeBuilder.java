@@ -48,6 +48,9 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder {
       SoyError.of("Soy V2 template names must be relative to the file namespace, i.e. a dot "
           + "followed by an identifier.  Templates with fully qualified names are only allowed in "
           + "legacy templates marked with the deprecatedV1=\"true\" attribute.");
+  private static final SoyError MISSING_TEMPLATE_NAME = SoyError.of("Missing template name.");
+  private static final SoyError PRIVATE_AND_VISIBILITY =
+      SoyError.of("Cannot specify both private=\"true\" and visibility=\"{0}\".");
 
   /** Pattern for a template name. */
   private static final Pattern NONATTRIBUTE_TEMPLATE_NAME =
@@ -105,8 +108,8 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder {
       nameAttr = ntnMatcher.group();
       commandTextForParsing = commandTextForParsing.substring(ntnMatcher.end()).trim();
     } else {
-      throw SoySyntaxException.createWithoutMetaInfo(
-          "Invalid 'template' command missing template name: {template " + cmdText + "}.");
+      errorReporter.report(sourceLocation, MISSING_TEMPLATE_NAME);
+      return this; // to prevent NPEs dereferencing nameAttr below
     }
 
     Map<String, String> attributes = ATTRIBUTES_PARSER.parse(
@@ -121,9 +124,7 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder {
     if (visibilityName != null) {
       // It is an error to specify both "private" and "visibility" attrs.
       if (visibility != null) {
-        throw SoySyntaxException.createWithoutMetaInfo(
-            "Template cannot specify both private=\"true\""
-                + "and visibility=\"" + visibilityName + "\".");
+        errorReporter.report(sourceLocation, PRIVATE_AND_VISIBILITY, visibilityName);
       }
       visibility = Visibility.forAttributeValue(visibilityName);
     }
@@ -141,21 +142,22 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder {
 
     if (BaseUtils.isIdentifierWithLeadingDot(nameAttr)) {
       if (soyFileHeaderInfo.namespace == null) {
+        // In this case, throwing a SoySyntaxException and halting compilation of the current file
+        // is preferable to reporting a SoyError and continuing. To continue, we could make up
+        // an "error" template name/namespace, but that would cause spurious duplicate template
+        // errors (for every namespace-relative name in a non-namespaced file).
+        // It's also dangerous, since "error" is a common real-world template/namespace name.
         throw SoySyntaxException.createWithMetaInfo(
-            "Missing namespace in Soy file containing a template with a namespace-relative name",
+            "Template has namespace-relative name, but file has no namespace declaration.",
             sourceLocation);
       }
       setTemplateNames(soyFileHeaderInfo.namespace + nameAttr, nameAttr);
-    } else if (BaseUtils.isDottedIdentifier(nameAttr)) {
-      if (!isMarkedV1) {
+    } else {
+      if (!isMarkedV1 && BaseUtils.isDottedIdentifier(nameAttr)) {
         // only allow fully qualified template names if it is also marked as v1
         errorReporter.report(sourceLocation, FULLY_QUALIFIED_NAME);
       }
       setTemplateNames(nameAttr, null);
-    } else {
-      throw SoySyntaxException.createWithMetaInfo(
-          "Invalid template name \"" + nameAttr + "\".",
-          sourceLocation);
     }
 
     this.templateNameForUserMsgs = getTemplateName();
@@ -197,14 +199,18 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder {
     cmdTextBuilder.append((partialTemplateName != null) ? partialTemplateName : templateName);
     cmdTextBuilder.append(" autoescape=\"").append(autoescapeMode.getAttributeValue()).append('"');
     if (contentKind != null) {
-      cmdTextBuilder.append(" kind=\"" + NodeContentKinds.toAttributeValue(contentKind) + '"');
+      cmdTextBuilder.append(" kind=\"")
+          .append(NodeContentKinds.toAttributeValue(contentKind))
+          .append('"');
     }
     if (visibility == Visibility.LEGACY_PRIVATE) {
       // TODO(brndn): generate code for other visibility levels. b/15190131
       cmdTextBuilder.append(" private=\"true\"");
     }
     if (!requiredCssNamespaces.isEmpty()) {
-      cmdTextBuilder.append(" requirecss=\"" + Joiner.on(", ").join(requiredCssNamespaces) + "\"");
+      cmdTextBuilder.append(" requirecss=\"")
+          .append(Joiner.on(", ").join(requiredCssNamespaces))
+          .append("\"");
     }
     this.cmdText = cmdTextBuilder.toString();
 

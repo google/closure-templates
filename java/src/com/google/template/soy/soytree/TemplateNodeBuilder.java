@@ -20,12 +20,12 @@ import static com.google.template.soy.soytree.AutoescapeMode.parseAutoEscapeMode
 
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Joiner;
+import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.basetree.SyntaxVersionUpperBound;
@@ -64,14 +64,27 @@ import javax.annotation.Nullable;
  */
 public abstract class TemplateNodeBuilder {
 
+  private static final SoyError INVALID_CSS_BASE_NAMESPACE_NAME =
+      SoyError.of("Invalid CSS base namespace name ''{0}''");
+  private static final SoyError INVALID_PARAM_TEXT =
+      SoyError.of("Invalid {0} text ''{1}''");
   private static final SoyError INVALID_SOYDOC_PARAM =
       SoyError.of("Found invalid soydoc param name ''{0}''");
-
+  private static final SoyError INVALID_TEMPLATE_NAME =
+      SoyError.of("Invalid template name ''{0}''");
+  private static final SoyError INVALID_PARAM_NAME =
+      SoyError.of("Invalid {0} name ''{1}''");
+  private static final SoyError INVALID_PARAM_NAMED_IJ =
+      SoyError.of("Invalid param name ''ij'' (''ij'' is for injected data).");
+  private static final SoyError KIND_BUT_NOT_STRICT =
+      SoyError.of("kind=\"...\" attribute is only valid with autoescape=\"strict\".");
   private static final SoyError LEGACY_COMPATIBLE_PARAM_TAG =
       SoyError.of("Found invalid SoyDoc param tag ''{0}'', tags like this are only allowed in "
           + "legacy templates marked ''deprecatedV1=\"true\"''.  The proper soydoc @param syntax "
           + "is: ''@param <name> <optional comment>''. Soy does not understand JsDoc style type "
           + "declarations in SoyDoc.");
+  private static final SoyError PARAM_ALREADY_DECLARED =
+      SoyError.of("Param ''{0}'' already declared");
 
   /**
    * Value class used in the input to method {@link #setHeaderDecls}.
@@ -280,7 +293,10 @@ public abstract class TemplateNodeBuilder {
   public TemplateNodeBuilder setHeaderDecls(Collection<DeclInfo> declInfos) {
     List<TemplateParam> params = new ArrayList<>(declInfos.size());
     for (DeclInfo declInfo : declInfos) {
-      params.add(forDeclInfo(declInfo));
+      Optional<HeaderParam> headerParam = forDeclInfo(declInfo);
+      if (headerParam.isPresent()) {
+        params.add(headerParam.get());
+      }
     }
     this.addParams(params);
     return this;
@@ -294,24 +310,25 @@ public abstract class TemplateNodeBuilder {
   public TemplateNodeBuilder setHeaderDecls(DeclInfo... declInfos) {
     List<TemplateParam> params = new ArrayList<>(declInfos.length);
     for (DeclInfo declInfo : declInfos) {
-      params.add(forDeclInfo(declInfo));
+      Optional<HeaderParam> headerParam = forDeclInfo(declInfo);
+      if (headerParam.isPresent()) {
+        params.add(headerParam.get());
+      }
     }
     this.addParams(params);
     return this;
   }
 
-  private HeaderParam forDeclInfo(DeclInfo declInfo) {
+  private Optional<HeaderParam> forDeclInfo(DeclInfo declInfo) {
     Matcher cmdTextMatcher = HEADER_PARAM_DECL_CMD_TEXT_PATTERN.matcher(declInfo.cmdText);
     if (!cmdTextMatcher.matches()) {
-      throw SoySyntaxException.createWithMetaInfo(
-          "Invalid " + declInfo.type + " declaration command text \"" + declInfo.cmdText + "\".",
-          declInfo.location());
+      errorReporter.report(
+          declInfo.sourceLocation, INVALID_PARAM_TEXT, declInfo.type, declInfo.cmdText);
+      return Optional.absent();
     }
     String key = cmdTextMatcher.group(1);
     if (!BaseUtils.isIdentifier(key)) {
-      throw SoySyntaxException.createWithMetaInfo(
-          "Invalid " + declInfo.type + " key '" + key + "' (must be an identifier).",
-          declInfo.location());
+      errorReporter.report(declInfo.sourceLocation, INVALID_PARAM_NAME, declInfo.type, key);
     }
     String typeSrc = cmdTextMatcher.group(2);
     SoyType type;
@@ -325,7 +342,8 @@ public abstract class TemplateNodeBuilder {
     } else if (type instanceof UnionType && ((UnionType) type).isNullable()) {
       isRequired = false;
     }
-    return new HeaderParam(key, typeSrc, type, isRequired, isInjected, declInfo.soyDoc);
+    return Optional.of(
+        new HeaderParam(key, typeSrc, type, isRequired, isInjected, declInfo.soyDoc));
   }
 
   /**
@@ -348,12 +366,10 @@ public abstract class TemplateNodeBuilder {
     Set<String> seenParamKeys = new HashSet<>();
     for (TemplateParam param : this.params) {
       if (param.name().equals("ij")) {
-        throw SoySyntaxException.createWithoutMetaInfo(
-            "Invalid param name 'ij' ('ij' is for injected data ref).");
+        errorReporter.report(sourceLocation, INVALID_PARAM_NAMED_IJ);
       }
       if (seenParamKeys.contains(param.name())) {
-        throw SoySyntaxException.createWithoutMetaInfo(
-            "Duplicate declaration of param '" + param.name() + "'.");
+        errorReporter.report(sourceLocation, PARAM_ALREADY_DECLARED, param.name());
       }
       seenParamKeys.add(param.name());
     }
@@ -391,8 +407,7 @@ public abstract class TemplateNodeBuilder {
     String cssBaseNamespace = attributes.get("cssbase");
     if (cssBaseNamespace != null) {
       if (!BaseUtils.isDottedIdentifier(cssBaseNamespace)) {
-        throw SoySyntaxException.createWithoutMetaInfo(
-            "Invalid CSS base namespace name \"" + cssBaseNamespace + "\".");
+        errorReporter.report(sourceLocation, INVALID_CSS_BASE_NAMESPACE_NAME, cssBaseNamespace);
       }
       setCssBaseNamespace(cssBaseNamespace);
     }
@@ -419,8 +434,7 @@ public abstract class TemplateNodeBuilder {
       contentKind = ContentKind.HTML;
     } else if (contentKind != null && autoescapeMode != AutoescapeMode.STRICT) {
       // TODO: Perhaps this could imply strict escaping?
-      throw SoySyntaxException.createWithoutMetaInfo(
-          "kind=\"...\" attribute is only valid with autoescape=\"strict\".");
+      errorReporter.report(sourceLocation, KIND_BUT_NOT_STRICT);
     }
     this.contentKind = contentKind;
   }
@@ -479,21 +493,16 @@ public abstract class TemplateNodeBuilder {
     this.cssBaseNamespace = cssBaseNamespace;
   }
 
-  protected void setTemplateNames(String templateName, @Nullable String partialTemplateName) {
-
+  protected final void setTemplateNames(String templateName, @Nullable String partialTemplateName) {
     this.templateName = templateName;
     this.partialTemplateName = partialTemplateName;
 
-    if (partialTemplateName != null) {
-      if (! BaseUtils.isIdentifierWithLeadingDot(partialTemplateName)) {
-        throw SoySyntaxException.createWithoutMetaInfo(
-            "Invalid template name \"" + partialTemplateName + "\".");
-      }
-    } else {
-      if (! BaseUtils.isDottedIdentifier(templateName)) {
-        throw SoySyntaxException.createWithoutMetaInfo(
-            "Invalid template name \"" + templateName + "\".");
-      }
+    if (partialTemplateName != null && !BaseUtils.isIdentifierWithLeadingDot(partialTemplateName)) {
+      errorReporter.report(sourceLocation, INVALID_TEMPLATE_NAME, partialTemplateName);
+    }
+
+    if (!BaseUtils.isDottedIdentifier(templateName)) {
+      errorReporter.report(sourceLocation, INVALID_TEMPLATE_NAME, templateName);
     }
   }
 
