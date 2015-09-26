@@ -281,15 +281,6 @@ public final class Context {
     // embedded in the specific quoting context in which it appears.
     EscapingMode extraEscapingMode = null;
 
-    // Keep track of whether an URI is a TrustedResource. We want some resource URIs like sources to
-    // be safe and not in attacker control. Hence, a restriction that these resouce URIs need to be
-    // compile time constasts is being set. To makes sure these are compile time constants these
-    // either need to be of type string or TrustedResourceUrl.
-    EscapingMode truMode = null;
-    if (uriType == UriType.TRUSTED_RESOURCE) {
-      truMode = EscapingMode.FILTER_TRUSTED_RESOURCE_URI;
-    }
-
     // Make sure we're using the right part for a URI context.
     switch (uriPart) {
       case QUERY:
@@ -362,8 +353,8 @@ public final class Context {
         //     <input name=was&#32;checked>
         // instead of
         //     <input name=was checked>
-        if (escapingMode == EscapingMode.ESCAPE_HTML_ATTRIBUTE
-            || escapingMode == EscapingMode.NORMALIZE_URI) {
+        if (escapingMode == EscapingMode.ESCAPE_HTML_ATTRIBUTE ||
+            escapingMode == EscapingMode.NORMALIZE_URI) {
           escapingMode = EscapingMode.ESCAPE_HTML_ATTRIBUTE_NOSPACE;
         } else {
           extraEscapingMode = EscapingMode.ESCAPE_HTML_ATTRIBUTE_NOSPACE;
@@ -393,17 +384,8 @@ public final class Context {
         break;
     }
 
-    // Return and immutable list of (truMode, escapingMode, extraEscapingMode)
-    ImmutableList.Builder<EscapingMode> escapingListBuilder = new ImmutableList.Builder<>();
-    if (truMode != null) {
-      escapingListBuilder.add(truMode);
-    }
-    escapingListBuilder.add(escapingMode);
-    if (extraEscapingMode != null) {
-      escapingListBuilder.add(extraEscapingMode);
-    }
-
-    return escapingListBuilder.build();
+    return extraEscapingMode == null ?
+        ImmutableList.of(escapingMode) : ImmutableList.of(escapingMode, extraEscapingMode);
   }
 
 
@@ -1343,13 +1325,10 @@ public final class Context {
      * <p>In the future, this might also encompass video and audio, if we can find ways to reduce
      * the risk of social engineering.
      */
-    MEDIA,
+    MEDIA
 
-    /**
-     * A URI which loads resources. This is intended to be used in scrips, stylesheets, etc which
-     * should not be in attacker control.
-     */
-    TRUSTED_RESOURCE
+    // TODO(gboyer): Add TRUSTED for things like scripts and stylesheets that cannot be
+    // attacker-controlled.
   }
 
 

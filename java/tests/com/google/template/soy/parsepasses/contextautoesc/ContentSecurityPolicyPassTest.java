@@ -125,8 +125,7 @@ public final class ContentSecurityPolicyPassTest extends TestCase {
         join(
             "{template .foo}\n",
             "  {@param appScriptUrl: ?}\n",
-            "<script src=",
-            "'{$appScriptUrl |filterTrustedResourceUri |filterNormalizeUri |escapeHtmlAttribute}'",
+            "<script src='{$appScriptUrl |filterNormalizeUri |escapeHtmlAttribute}'",
             NONCE + ">",
             "alert('Hello, World!')</script>\n",
             "{/template}"),

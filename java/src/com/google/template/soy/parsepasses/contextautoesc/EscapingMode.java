@@ -129,12 +129,6 @@ public enum EscapingMode {
   FILTER_NORMALIZE_MEDIA_URI(false, ContentKind.URI),
 
   /**
-   * Makes sure there URIs are trusted and not input variables. Currently used only for script
-   * sources.
-   */
-  FILTER_TRUSTED_RESOURCE_URI(false, ContentKind.TRUSTED_RESOURCE_URI),
-
-  /**
    * The explicit rejection of escaping.
    */
   NO_AUTOESCAPE(false, ContentKind.TEXT),

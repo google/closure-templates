@@ -435,9 +435,6 @@ final class RawTextContextUpdater {
         } else if (prior.elType == Context.ElementType.MEDIA && "src".equals(attrName)) {
           attr = Context.AttributeType.URI;
           uriType = UriType.MEDIA;
-        } else if (prior.elType == Context.ElementType.SCRIPT && "src".equals(attrName)) {
-          attr = Context.AttributeType.URI;
-          uriType = Context.UriType.TRUSTED_RESOURCE;
         } else if (URI_ATTR_NAMES.contains(localName)
                    || CUSTOM_URI_ATTR_NAMING_CONVENTION.matcher(localName).find()
                    || "xmlns".equals(attrName) || attrName.startsWith("xmlns:")) {

@@ -1541,21 +1541,7 @@ soy.$$filterNormalizeMediaUri = function(value) {
 };
 
 
-/**
- * Vets a URI for usage as an resource.
- *
- * @param {*} value The value to filter. Might not be a string, but the value
- *     will be coerced to a string.
- * @return {string} current just the value.
- */
-soy.$$filterTrustedResourceUri = function(value) {
-  // Makes sure this is a compile time constant or a TrustedResouce not in
-  // attacker's control.
-  // TODO(shwetakarwa): This needs to be changed once all the legacy URLs are
-  // taken care of.
-  return String(value);
-};
-
+// TODO(shwetakarwa): Add filterTrustedResourceUri function.
 
 /**
  * Allows only data-protocol image URI's.

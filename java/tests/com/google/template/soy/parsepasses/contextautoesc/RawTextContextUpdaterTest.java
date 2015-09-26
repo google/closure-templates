@@ -70,15 +70,11 @@ public class RawTextContextUpdaterTest extends TestCase {
     assertTransition("HTML_PCDATA", "<xmp style=\"", "CSS XMP STYLE DOUBLE_QUOTE");
     assertTransition("HTML_PCDATA", "<xmp style='/*", "CSS_COMMENT XMP STYLE SINGLE_QUOTE");
     assertTransition("HTML_PCDATA", "<script src=",
-        "HTML_BEFORE_ATTRIBUTE_VALUE SCRIPT URI TRUSTED_RESOURCE");
+        "HTML_BEFORE_ATTRIBUTE_VALUE SCRIPT URI NORMAL");
     assertTransition(
-        "HTML_PCDATA",
-        "<script src=/search?q=",
-        "URI SCRIPT URI SPACE_OR_TAG_END QUERY TRUSTED_RESOURCE");
+        "HTML_PCDATA", "<script src=/search?q=", "URI SCRIPT URI SPACE_OR_TAG_END QUERY NORMAL");
     assertTransition(
-        "HTML_PCDATA",
-        "<script src=/foo#",
-        "URI SCRIPT URI SPACE_OR_TAG_END FRAGMENT TRUSTED_RESOURCE");
+        "HTML_PCDATA", "<script src=/foo#", "URI SCRIPT URI SPACE_OR_TAG_END FRAGMENT NORMAL");
     assertTransition("HTML_PCDATA", "<img src=", "HTML_BEFORE_ATTRIBUTE_VALUE MEDIA URI MEDIA");
     assertTransition("HTML_PCDATA", "<img url src=", "HTML_BEFORE_ATTRIBUTE_VALUE MEDIA URI MEDIA");
     // Make sure the URI type doesn't carry over if a URI has no attribute value.

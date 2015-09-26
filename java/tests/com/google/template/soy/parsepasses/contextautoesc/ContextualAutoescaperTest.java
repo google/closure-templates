@@ -183,9 +183,7 @@ public final class ContextualAutoescaperTest extends TestCase {
             "<video poster='{$x |filterNormalizeUri |escapeHtmlAttribute}'></video>",
             "<video src='{$x |filterNormalizeUri |escapeHtmlAttribute}'></video>",
             "<source src='{$x |filterNormalizeUri |escapeHtmlAttribute}'>",
-            "<audio src='{$x |filterNormalizeUri |escapeHtmlAttribute}'></audio>",
-            "<script src='{$x |filterTrustedResourceUri |filterNormalizeUri |escapeHtmlAttribute}'",
-            "></script>\n",
+            "<audio src='{$x |filterNormalizeUri |escapeHtmlAttribute}'></audio>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
@@ -202,8 +200,7 @@ public final class ContextualAutoescaperTest extends TestCase {
             "<video poster='{$x}'></video>\n",
             "<video src='{$x}'></video>\n",
             "<source src='{$x}'>\n",
-            "<audio src='{$x}'></audio>\n",
-            "<script src='{$x}'></script>",
+            "<audio src='{$x}'></audio>",
             "{/template}\n"));
   }
 
@@ -1031,31 +1028,6 @@ public final class ContextualAutoescaperTest extends TestCase {
             "table {lb} border-image: url(\"borders/{$brdr}\"); {rb}\n",
             "</style>\n",
             "{/template}"));
-  }
-
-  public void testTrustedResourceUri() throws Exception {
-    assertContextualRewriting(
-        join(
-            "{namespace ns}\n\n",
-            "{template .foo autoescape=\"deprecated-contextual\"}\n",
-            "  {@param start: ?}\n",
-            "  {@param path: ?}\n",
-            "  {@param query: ?}\n",
-            "  {@param fragment: ?}\n",
-            "<script src='{$start |filterTrustedResourceUri |filterNormalizeUri ",
-            "|escapeHtmlAttribute}/{$path |filterTrustedResourceUri |escapeHtmlAttribute}?",
-            "q={$query |filterTrustedResourceUri |escapeUri}#{$fragment |filterTrustedResourceUri ",
-            "|escapeHtmlAttribute}'></script>\n",
-            "{/template}"),
-        join(
-            "{namespace ns}\n\n",
-            "{template .foo autoescape=\"deprecated-contextual\"}\n",
-            "  {@param start: ?}\n",
-            "  {@param path: ?}\n",
-            "  {@param query: ?}\n",
-            "  {@param fragment: ?}\n",
-            "<script src='{$start}/{$path}?q={$query}#{$fragment}'></script>",
-            "{/template}\n"));
   }
 
   public void testCss() throws Exception {

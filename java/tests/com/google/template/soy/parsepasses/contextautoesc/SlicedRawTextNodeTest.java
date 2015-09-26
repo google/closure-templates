@@ -130,9 +130,7 @@ public final class SlicedRawTextNodeTest extends TestCase {
         join(
             "{template .foo}\n",
             "  {@param appScriptUrl: ?}\n",
-            "<script src=",
-            "'{$appScriptUrl |filterTrustedResourceUri |filterNormalizeUri |escapeHtmlAttribute}' ",
-            "INJE='CTED'>",
+            "<script src='{$appScriptUrl |filterNormalizeUri |escapeHtmlAttribute}' INJE='CTED'>",
             "alert('Hello, World!')</script>\n",
             "{/template}"),
         join(
