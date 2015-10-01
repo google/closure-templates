@@ -17,26 +17,15 @@
 package com.google.template.soy.passes;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Lists;
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.basetree.SyntaxVersionUpperBound;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
-import com.google.template.soy.exprtree.ExprNode;
-import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
-import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.error.SoyError;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.ExprUnion;
-import com.google.template.soy.soytree.PrintDirectiveNode;
-import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.SoyNode.CommandNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
-import com.google.template.soy.soytree.SoySyntaxExceptionUtils;
-
-import java.util.List;
 
 /**
  * Visitor for asserting that all the nodes in a parse tree or subtree conform to the user-declared
@@ -49,19 +38,22 @@ import java.util.List;
  * user-declared syntax version.
  *
  */
-public final class ReportSyntaxVersionErrorsVisitor extends AbstractSoyNodeVisitor<Void> {
+final class ReportSyntaxVersionErrorsVisitor extends AbstractSoyNodeVisitor<Void> {
 
+  private static final SoyError DOUBLE_AMPERSAND_DOUBLE_PIPE_OR_BANG_IN_EXPR =
+      SoyError.of("{0}: bad expression: ''{1}'', possibly due to using &&/||/! "
+          + "instead of and/or/not operators.");
+  private static final SoyError DOUBLE_QUOTED_STRING =
+      SoyError.of("{0}: bad expression: ''{1}'', possibly due to using double quotes "
+          + "instead of single quotes for string literal.");
+  private static final SoyError GENERIC_NOT_PARSABLE_AS_V2_EXPR =
+      SoyError.of("{0}: bad expression: ''{1}''.");
+  private static final SoyError SYNTAX_VERSION_OUT_OF_BOUNDS =
+      SoyError.of("{0}: {1}");
 
-  /** The required minimum syntax version to check for. */
   private final SyntaxVersion requiredSyntaxVersion;
-
-  /** True if the required syntax version that we're checking for is user-declared. False if it is
-   *  inferred. */
-  private final boolean isDeclared;
-
-  /** Syntax exceptions for errors found (during a pass). */
-  private List<SoySyntaxException> syntaxExceptions;
   private final ErrorReporter errorReporter;
+  private final String errorPreamble;
 
   /**
    * @param requiredSyntaxVersion The required minimum syntax version to check for.
@@ -69,114 +61,60 @@ public final class ReportSyntaxVersionErrorsVisitor extends AbstractSoyNodeVisit
    *     False if it is inferred.
    * @param errorReporter For reporting errors.
    */
-  public ReportSyntaxVersionErrorsVisitor(
+  ReportSyntaxVersionErrorsVisitor(
       SyntaxVersion requiredSyntaxVersion, boolean isDeclared, ErrorReporter errorReporter) {
     this.errorReporter = errorReporter;
     this.requiredSyntaxVersion = requiredSyntaxVersion;
-    this.isDeclared = isDeclared;
-    this.syntaxExceptions = null;
+    this.errorPreamble = (requiredSyntaxVersion == SyntaxVersion.V1_0)
+        ? "incorrect v1 syntax"
+        : ((isDeclared ? "declared" : "inferred")
+            + " syntax version " + requiredSyntaxVersion + " not satisfied");
   }
 
-
-  /**
-   * {@inheritDoc}
-   * @throws SoySyntaxException If the given node or a descendant does not satisfy the user-declared
-   *     syntax version.
-   */
-  @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
   @Override public Void exec(SoyNode node) {
-
-    syntaxExceptions = Lists.newArrayList();
     visitSoyNode(node);
-
-    int numErrors = syntaxExceptions.size();
-    if (numErrors != 0) {
-      StringBuilder errorMsgBuilder = new StringBuilder();
-      errorMsgBuilder.append(String.format(
-          "Found %s where %s:",
-          (numErrors == 1) ? "error" : numErrors + " errors",
-          (requiredSyntaxVersion == SyntaxVersion.V1_0) ? "syntax is incorrect" :
-              (isDeclared ? "declared" : "inferred") + " syntax version " + requiredSyntaxVersion +
-                  " is not satisfied"));
-      if (numErrors == 1) {
-        errorMsgBuilder.append(' ').append(syntaxExceptions.get(0).getMessage());
-      } else {
-        for (int i = 0; i < numErrors; i++) {
-          errorMsgBuilder.append(String.format(
-              "\n%s. %s", i + 1, syntaxExceptions.get(i).getMessage()));
-        }
-      }
-      throw SoySyntaxException.createWithoutMetaInfo(errorMsgBuilder.toString());
-    }
-
-    syntaxExceptions = null;
     return null;
   }
 
-
   @Override protected void visitSoyNode(SoyNode node) {
-
     // ------ Record errors for this Soy node. ------
-    if (! node.couldHaveSyntaxVersionAtLeast(requiredSyntaxVersion)) {
-      String nodeStringForErrorMsg =
-          (node instanceof CommandNode) ? "Tag " + ((CommandNode) node).getTagString() :
-              (node instanceof SoyFileNode) ? "File " + ((SoyFileNode) node).getFileName() :
-                  (node instanceof PrintDirectiveNode) ?
-                      "Print directive \"" + node.toSourceString() + "\"" :
-                      "Node " + node.toSourceString();
+    if (!node.couldHaveSyntaxVersionAtLeast(requiredSyntaxVersion)) {
       SyntaxVersionUpperBound syntaxVersionBound = node.getSyntaxVersionUpperBound();
-      assert syntaxVersionBound != null;
-      addError(nodeStringForErrorMsg + ": " + syntaxVersionBound.reasonStr, node);
+      Preconditions.checkNotNull(syntaxVersionBound);
+      errorReporter.report(
+          node.getSourceLocation(),
+          SYNTAX_VERSION_OUT_OF_BOUNDS,
+          errorPreamble,
+          syntaxVersionBound.reasonStr);
     }
 
     // ------ Record errors for expressions held by this Soy node. ------
     if (node instanceof ExprHolderNode) {
-
-      ReportSyntaxVersionErrorsExprVisitor exprVisitor =
-          new ReportSyntaxVersionErrorsExprVisitor((ExprHolderNode) node);
-
       for (ExprUnion exprUnion : ((ExprHolderNode) node).getAllExprUnions()) {
-
-        if (exprUnion.getExpr() != null) {
-          // This expression is parsable as V2. Visit the expr tree to collect errors.
-          exprVisitor.exec(exprUnion.getExpr());
-
-        } else {
-          // This expression is not parsable as V2. This is only an error for V2.0+.
-          if (requiredSyntaxVersion.num < SyntaxVersion.V2_0.num) {
-            continue;
-          }
-
+        // The required syntax version is at least V2, but the expression is not parsable as V2.
+        // That's an error. Consider a couple of specific errors based on the expression text,
+        // then fall back to a generic error message.
+        if (exprUnion.getExpr() == null && requiredSyntaxVersion.num >= SyntaxVersion.V2_0.num) {
           String exprText = exprUnion.getExprText();
-          String errorMsgPrefix = "Invalid expression \"" + exprText + "\"";
-
-          // Specific error message for possible double-quoted string in expression.
-          int numSingleQuotes = 0;
-          int numDoubleQuotes = 0;
-          for (int i = 0; i < exprText.length(); i++) {
-            switch (exprText.charAt(i)) {
-              case '\'': numSingleQuotes++; break;
-              case '"': numDoubleQuotes++; break;
-            }
+          if (possiblyContainsDoubleQuotedString(exprText)) {
+            errorReporter.report(
+                node.getSourceLocation(),
+                DOUBLE_QUOTED_STRING,
+                errorPreamble,
+                exprText);
+          } else if (exprText.contains("&&") || exprText.contains("||") || exprText.contains("!")) {
+            errorReporter.report(
+                node.getSourceLocation(),
+                DOUBLE_AMPERSAND_DOUBLE_PIPE_OR_BANG_IN_EXPR,
+                errorPreamble,
+                exprText);
+          } else {
+            errorReporter.report(
+                node.getSourceLocation(),
+                GENERIC_NOT_PARSABLE_AS_V2_EXPR,
+                errorPreamble,
+                exprText);
           }
-          if (numDoubleQuotes >= 2 && numSingleQuotes <= 1) {
-            addError(
-                errorMsgPrefix + ", possibly due to using double quotes instead of single quotes" +
-                    " for string literal.",
-                node);
-            continue;
-          }
-
-          // Specific error message for &&/||/! in expression.
-          if (exprText.contains("&&") || exprText.contains("||") || exprText.contains("!")) {
-            addError(
-                errorMsgPrefix + ", possibly due to using &&/||/! instead of and/or/not operators.",
-                node);
-            continue;
-          }
-
-          // General error message for V1 expression.
-          addError(errorMsgPrefix + ".", node);
         }
       }
     }
@@ -187,60 +125,23 @@ public final class ReportSyntaxVersionErrorsVisitor extends AbstractSoyNodeVisit
     }
   }
 
-
   /**
-   * Private helper for visitSoyNode().
+   * A heuristic is used instead of a simple regex, because Soy V2 allows quoting
+   * double-quotes with single-quotes.
    */
-  private void addError(String errorMsg, SoyNode node) {
-    syntaxExceptions.add(SoySyntaxExceptionUtils.createWithNode(errorMsg, node));
-  }
-
-
-  // -----------------------------------------------------------------------------------------------
-
-
-  private final class ReportSyntaxVersionErrorsExprVisitor extends AbstractExprNodeVisitor<Void> {
-
-
-    /** The ExprHolderNode that this visitor was created for. */
-    private final ExprHolderNode exprHolder;
-
-    /** The root of the expression that we're traversing (during a pass). */
-    private ExprRootNode exprRoot;
-
-
-    ReportSyntaxVersionErrorsExprVisitor(ExprHolderNode exprHolder) {
-      this.exprHolder = exprHolder;
-    }
-
-
-    @Override public Void exec(ExprNode node) {
-
-      Preconditions.checkArgument(node instanceof ExprRootNode);
-      exprRoot = (ExprRootNode) node;
-      visit(node);
-      exprRoot = null;
-      return null;
-    }
-
-
-    @Override public void visitExprNode(ExprNode node) {
-
-      if (! node.couldHaveSyntaxVersionAtLeast(requiredSyntaxVersion)) {
-        SyntaxVersionUpperBound syntaxVersionBound = node.getSyntaxVersionUpperBound();
-        assert syntaxVersionBound != null;
-        addError(
-            String.format(
-                "Invalid expression \"%s\": %s", exprRoot.toSourceString(),
-                syntaxVersionBound.reasonStr),
-            exprHolder);
-      }
-
-      if (node instanceof ParentExprNode) {
-        visitChildren((ParentExprNode) node);
+  private static boolean possiblyContainsDoubleQuotedString(String exprText) {
+    int numSingleQuotes = 0;
+    int numDoubleQuotes = 0;
+    for (int i = 0; i < exprText.length(); i++) {
+      switch (exprText.charAt(i)) {
+        case '\'':
+          numSingleQuotes++;
+          break;
+        case '"':
+          numDoubleQuotes++;
+          break;
       }
     }
-
+    return numDoubleQuotes >= 2 && numSingleQuotes <= 1;
   }
-
 }

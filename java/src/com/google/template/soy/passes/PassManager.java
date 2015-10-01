@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -158,13 +159,20 @@ public final class PassManager {
     final InferRequiredSyntaxVersionVisitor inferenceVisitor =
         new InferRequiredSyntaxVersionVisitor();
 
-    @Override public void run(SoyFileNode file, IdGenerator nodeIdGen) {
+    @Override
+    public void run(SoyFileNode file, IdGenerator nodeIdGen) {
+      Checkpoint checkpoint = errorReporter.checkpoint();
       reportDeclaredVersionErrors.exec(file);
-      // Check for errors based on inferred (as opposed to declared) required syntax version.
-      SyntaxVersion inferredSyntaxVersion = inferenceVisitor.exec(file);
-      if (inferredSyntaxVersion.num > declaredSyntaxVersion.num) {
-        new ReportSyntaxVersionErrorsVisitor(inferredSyntaxVersion, false, errorReporter)
-            .exec(file);
+      // If there were no errors against the declared syntax version, check for errors against
+      // the inferred syntax version too. (If there were errors against the declared syntax version,
+      // skip the inferred error checking, because it could produce duplicate errors and in any case
+      // it's confusing for the user to have to deal with both declared and inferred errors.)
+      if (!errorReporter.errorsSince(checkpoint)) {
+        SyntaxVersion inferredSyntaxVersion = inferenceVisitor.exec(file);
+        if (inferredSyntaxVersion.num > declaredSyntaxVersion.num) {
+          new ReportSyntaxVersionErrorsVisitor(inferredSyntaxVersion, false, errorReporter)
+              .exec(file);
+        }
       }
     }
   }
