@@ -817,8 +817,7 @@ if (goog.DEPENDENCIES_ENABLED) {
   goog.inHtmlDocument_ = function() {
     /** @type {Document} */
     var doc = goog.global.document;
-    return typeof doc != 'undefined' &&
-           'write' in doc;  // XULDocument misses write.
+    return doc != null && 'write' in doc;  // XULDocument misses write.
   };
 
 
@@ -1395,7 +1394,7 @@ goog.retrieveAndExecModule_ = function(src) {
 /**
  * This is a "fixed" version of the typeof operator.  It differs from the typeof
  * operator in such a way that null returns 'null' and arrays return 'array'.
- * @param {*} value The value to get the type of.
+ * @param {?} value The value to get the type of.
  * @return {string} The name of the type.
  */
 goog.typeOf = function(value) {
@@ -1417,7 +1416,7 @@ goog.typeOf = function(value) {
       //   value, the compiler requires the value be cast to type Object,
       //   even though the ECMA spec explicitly allows it.
       var className = Object.prototype.toString.call(
-          /** @type {Object} */ (value));
+          /** @type {!Object} */ (value));
       // In Firefox 3.6, attempting to access iframe window objects' length
       // property throws an NS_ERROR_FAILURE, so we need to special-case it
       // here.
@@ -1648,7 +1647,7 @@ goog.removeUid = function(obj) {
 
   // In IE, DOM nodes are not instances of Object and throw an exception if we
   // try to delete.  Instead we try to use removeAttribute.
-  if ('removeAttribute' in obj) {
+  if ('removeAttribute' in /** @type {!Object} */ (obj)) {
     obj.removeAttribute(goog.UID_PROPERTY_);
   }
   /** @preserveTry */
@@ -2085,7 +2084,8 @@ if (!COMPILED && goog.global.CLOSURE_CSS_NAME_MAPPING) {
 goog.getMsg = function(str, opt_values) {
   if (opt_values) {
     str = str.replace(/\{\$([^}]+)}/g, function(match, key) {
-      return key in opt_values ? opt_values[key] : match;
+      return (opt_values != null && key in opt_values) ?
+          opt_values[key] : match;
     });
   }
   return str;
@@ -5979,7 +5979,7 @@ goog.asserts.assertElement = function(value, opt_message, var_args) {
  *
  * The compiler may tighten the type returned by this function.
  *
- * @param {*} value The value to check.
+ * @param {?} value The value to check.
  * @param {function(new: T, ...)} type A user-defined constructor.
  * @param {string=} opt_message Error message in case of failure.
  * @param {...*} var_args The items to substitute into the failure message.
@@ -7612,18 +7612,20 @@ goog.array.zip = function(var_args) {
     return [];
   }
   var result = [];
-  for (var i = 0; true; i++) {
+  var minLen = arguments[0].length;
+  for (var i = 1; i < arguments.length; i++) {
+    if (arguments[i].length < minLen) {
+      minLen = arguments[i].length;
+    }
+  }
+  for (var i = 0; i < minLen; i++) {
     var value = [];
     for (var j = 0; j < arguments.length; j++) {
-      var arr = arguments[j];
-      // If i is larger than the array length, this is the shortest array.
-      if (i >= arr.length) {
-        return result;
-      }
-      value.push(arr[i]);
+      value.push(arguments[j][i]);
     }
     result.push(value);
   }
+  return result;
 };
 
 
@@ -8102,11 +8104,11 @@ goog.object.getValueByKeys = function(obj, var_args) {
  * Whether the object/map/hash contains the given key.
  *
  * @param {Object} obj The object in which to look for key.
- * @param {*} key The key for which to check.
+ * @param {?} key The key for which to check.
  * @return {boolean} true If the map contains the key.
  */
 goog.object.containsKey = function(obj, key) {
-  return key in obj;
+  return obj !== null && key in obj;
 };
 
 
@@ -8203,7 +8205,7 @@ goog.object.clear = function(obj) {
  */
 goog.object.remove = function(obj, key) {
   var rv;
-  if ((rv = key in obj)) {
+  if (rv = key in /** @type {!Object} */ (obj)) {
     delete obj[key];
   }
   return rv;
@@ -8220,7 +8222,7 @@ goog.object.remove = function(obj, key) {
  * @template K,V
  */
 goog.object.add = function(obj, key, val) {
-  if (key in obj) {
+  if (obj !== null && key in obj) {
     throw Error('The object already contains the key "' + key + '"');
   }
   goog.object.set(obj, key, val);
@@ -8238,7 +8240,7 @@ goog.object.add = function(obj, key, val) {
  * @template K,V,R
  */
 goog.object.get = function(obj, key, opt_val) {
-  if (key in obj) {
+  if (obj !== null && key in obj) {
     return obj[key];
   }
   return opt_val;
@@ -8268,7 +8270,7 @@ goog.object.set = function(obj, key, value) {
  * @template K,V
  */
 goog.object.setIfUndefined = function(obj, key, value) {
-  return key in obj ? obj[key] : (obj[key] = value);
+  return key in /** @type {!Object} */ (obj) ? obj[key] : (obj[key] = value);
 };
 
 
@@ -15136,7 +15138,7 @@ goog.require('goog.object');
  * @return {number} The number of values in the collection-like object.
  */
 goog.structs.getCount = function(col) {
-  if (typeof col.getCount == 'function') {
+  if (col.getCount && typeof col.getCount == 'function') {
     return col.getCount();
   }
   if (goog.isArrayLike(col) || goog.isString(col)) {
@@ -15152,7 +15154,7 @@ goog.structs.getCount = function(col) {
  * @return {!Array<?>} The values in the collection-like object.
  */
 goog.structs.getValues = function(col) {
-  if (typeof col.getValues == 'function') {
+  if (col.getValues && typeof col.getValues == 'function') {
     return col.getValues();
   }
   if (goog.isString(col)) {
@@ -15177,11 +15179,11 @@ goog.structs.getValues = function(col) {
  * @return {!Array|undefined} The keys in the collection.
  */
 goog.structs.getKeys = function(col) {
-  if (typeof col.getKeys == 'function') {
+  if (col.getKeys && typeof col.getKeys == 'function') {
     return col.getKeys();
   }
   // if we have getValues but no getKeys we know this is a key-less collection
-  if (typeof col.getValues == 'function') {
+  if (col.getValues && typeof col.getValues == 'function') {
     return undefined;
   }
   if (goog.isArrayLike(col) || goog.isString(col)) {
@@ -15205,10 +15207,10 @@ goog.structs.getKeys = function(col) {
  * @return {boolean} True if the map contains the value.
  */
 goog.structs.contains = function(col, val) {
-  if (typeof col.contains == 'function') {
+  if (col.contains && typeof col.contains == 'function') {
     return col.contains(val);
   }
-  if (typeof col.containsValue == 'function') {
+  if (col.containsValue && typeof col.containsValue == 'function') {
     return col.containsValue(val);
   }
   if (goog.isArrayLike(col) || goog.isString(col)) {
@@ -15224,7 +15226,7 @@ goog.structs.contains = function(col, val) {
  * @return {boolean} True if empty.
  */
 goog.structs.isEmpty = function(col) {
-  if (typeof col.isEmpty == 'function') {
+  if (col.isEmpty && typeof col.isEmpty == 'function') {
     return col.isEmpty();
   }
 
@@ -15244,7 +15246,7 @@ goog.structs.isEmpty = function(col) {
  */
 goog.structs.clear = function(col) {
   // NOTE(arv): This should not contain strings because strings are immutable
-  if (typeof col.clear == 'function') {
+  if (col.clear && typeof col.clear == 'function') {
     col.clear();
   } else if (goog.isArrayLike(col)) {
     goog.array.clear(/** @type {goog.array.ArrayLike} */ (col));
@@ -15271,7 +15273,7 @@ goog.structs.clear = function(col) {
  * @template T,S
  */
 goog.structs.forEach = function(col, f, opt_obj) {
-  if (typeof col.forEach == 'function') {
+  if (col.forEach && typeof col.forEach == 'function') {
     col.forEach(f, opt_obj);
   } else if (goog.isArrayLike(col) || goog.isString(col)) {
     goog.array.forEach(/** @type {!Array<?>} */ (col), f, opt_obj);
