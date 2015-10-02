@@ -32,13 +32,13 @@ import com.google.template.soy.soytree.TemplateNode;
  * can choose to disallow all other types of autoescaping besides strict.
  *
  */
-public final class AssertStrictAutoescapingVisitor extends AbstractSoyNodeVisitor<Void> {
+final class AssertStrictAutoescapingVisitor extends AbstractSoyNodeVisitor<Void> {
 
   private static final SoyError INVALID_AUTOESCAPING =
       SoyError.of("Invalid use of non-strict when strict autoescaping is required.");
   private final ErrorReporter errorReporter;
 
-  public AssertStrictAutoescapingVisitor(ErrorReporter errorReporter) {
+  AssertStrictAutoescapingVisitor(ErrorReporter errorReporter) {
     this.errorReporter = errorReporter;
   }
 

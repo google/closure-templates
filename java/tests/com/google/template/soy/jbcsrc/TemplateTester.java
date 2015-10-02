@@ -16,6 +16,7 @@
 
 package com.google.template.soy.jbcsrc;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.template.soy.data.SoyValueHelper.EMPTY_DICT;
 
 import com.google.common.base.Joiner;
@@ -38,6 +39,7 @@ import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueHelper;
 import com.google.template.soy.error.ExplodingErrorReporter;
+import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.jbcsrc.api.AdvisingStringBuilder;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
@@ -62,6 +64,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -144,6 +149,7 @@ public final class TemplateTester {
     private SoyValueConverter converter = SoyValueHelper.UNCUSTOMIZED_INSTANCE;
     private CompiledTemplate.Factory factory;
     private RenderContext defaultContext = DEFAULT_CONTEXT;
+    private List<SoyFunction> soyFunctions = new ArrayList<>();
 
     private CompiledTemplateSubject(FailureStrategy failureStrategy, String subject) {
       super(failureStrategy, subject);
@@ -160,6 +166,13 @@ public final class TemplateTester {
       classData = null;
       factory = null;
       this.converter = converter;
+      return this;
+    }
+    
+    CompiledTemplateSubject withSoyFunction(SoyFunction soyFunction) {
+      classData = null;
+      factory = null;
+      this.soyFunctions.add(checkNotNull(soyFunction));
       return this;
     }
 
@@ -244,26 +257,36 @@ public final class TemplateTester {
 
     private void compile() {
       if (classData == null) {
-        SoyFileSetNode fileSet =
-            SoyFileSetParserBuilder.forFileContents(getSubject())
-                .typeRegistry(typeRegistry)
-                .parse()
-                .fileSet();
+        SoyFileSetParserBuilder builder = SoyFileSetParserBuilder.forFileContents(getSubject());
+        for (SoyFunction function : soyFunctions) {
+          builder.addSoyFunction(function);
+        }
+        SoyFileSetNode fileSet = builder.typeRegistry(typeRegistry).parse().fileSet();
         new UnsupportedFeatureReporter(ExplodingErrorReporter.get()).check(fileSet);
         // Clone the tree, there tend to be bugs in the AST clone implementations that don't show
         // up until development time when we do a lot of AST cloning, so clone here to try to flush
         // them out.
         fileSet = SoytreeUtils.cloneNode(fileSet);
         
+        Map<String, SoyJavaFunction> functions = new LinkedHashMap<>();
+        for (FunctionNode fnNode : SoytreeUtils.getAllNodesOfType(fileSet, FunctionNode.class)) {
+          if (fnNode.getSoyFunction() instanceof SoyJavaFunction) {
+            functions.put(fnNode.getFunctionName(), (SoyJavaFunction) fnNode.getSoyFunction());
+          }
+        }
+
         // Extract messages, to make it easy to test translations and get default (english) strings
         SoyMsgBundle messages = new ExtractMsgsVisitor().exec(fileSet);
         SoyMsgBundle defaultBundle = messages;
         if (this.msgBundle != null) {
           messages = this.msgBundle;
         }
-        defaultContext = defaultContext.toBuilder()
-            .withMessageBundles(messages, defaultBundle)
-            .build();
+        defaultContext =
+            defaultContext
+                .toBuilder()
+                .withSoyFunctions(ImmutableMap.copyOf(functions))
+                .withMessageBundles(messages, defaultBundle)
+                .build();
 
         // N.B. we are reproducing some of BytecodeCompiler here to make it easier to look at
         // intermediate data structures.

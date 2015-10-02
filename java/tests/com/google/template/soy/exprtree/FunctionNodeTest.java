@@ -18,7 +18,6 @@ package com.google.template.soy.exprtree;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SourceLocation;
@@ -75,10 +74,12 @@ public final class FunctionNodeTest extends TestCase {
       }
     };
 
-    SoyFileSetNode root = SoyFileSetParserBuilder.forTemplateContents("<a class=\"{foo(bar(1))}\"")
-        .soyFunctionMap(ImmutableMap.of(foo.getName(), foo, bar.getName(), bar))
-        .parse()
-        .fileSet();
+    SoyFileSetNode root =
+        SoyFileSetParserBuilder.forTemplateContents("<a class=\"{foo(bar(1))}\"")
+            .addSoyFunction(foo)
+            .addSoyFunction(bar)
+            .parse()
+            .fileSet();
     List<FunctionNode> functionNodes = SoytreeUtils.getAllNodesOfType(root, FunctionNode.class);
     assertThat(functionNodes).hasSize(2);
     assertThat(functionNodes.get(0).getSoyFunction()).isSameAs(foo);

@@ -173,9 +173,10 @@ public class TofuRenderVisitorTest extends TestCase {
             + "  {reverse('hello')}\n"
             + "{/template}\n";
 
-    ParseResult result = SoyFileSetParserBuilder.forFileContents(soyFileContent)
-        .soyFunctionMap(ImmutableMap.of(Reverse.INSTANCE.getName(), Reverse.INSTANCE))
-        .parse();
+    ParseResult result =
+        SoyFileSetParserBuilder.forFileContents(soyFileContent)
+            .addSoyFunction(Reverse.INSTANCE)
+            .parse();
     TemplateRegistry registry = result.registry();
 
     StringBuilder out = new StringBuilder();

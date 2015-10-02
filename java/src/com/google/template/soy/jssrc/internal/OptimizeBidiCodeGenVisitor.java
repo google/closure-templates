@@ -22,8 +22,8 @@ import com.google.template.soy.coredirectives.CoreDirectiveUtils;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
-import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
 import com.google.template.soy.passes.CombineConsecutiveRawTextNodesVisitor;
+import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.PrintNode;
@@ -33,8 +33,6 @@ import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
-
-import java.util.Map;
 
 import javax.inject.Inject;
 
@@ -59,9 +57,6 @@ public class OptimizeBidiCodeGenVisitor extends AbstractSoyNodeVisitor<Void> {
   private static final String BIDI_END_EDGE_FN_NAME = "bidiEndEdge";
 
 
-  /** Map of all SoyJsSrcFunctions (name to function). */
-  private final Map<String, SoyJsSrcFunction> soyJsSrcFunctionsMap;
-
   /** The bidi global directionality. */
   private BidiGlobalDir bidiGlobalDir;
 
@@ -73,14 +68,10 @@ public class OptimizeBidiCodeGenVisitor extends AbstractSoyNodeVisitor<Void> {
 
 
   /**
-   * @param soyJsSrcFunctionsMap Map of all SoyJsSrcFunctions (name to function).
    * @param bidiGlobalDir The bidi global directionality.
    */
   @Inject
-  public OptimizeBidiCodeGenVisitor(
-      Map<String, SoyJsSrcFunction> soyJsSrcFunctionsMap,
-      BidiGlobalDir bidiGlobalDir) {
-    this.soyJsSrcFunctionsMap = soyJsSrcFunctionsMap;
+  public OptimizeBidiCodeGenVisitor(BidiGlobalDir bidiGlobalDir) {
     this.bidiGlobalDir = bidiGlobalDir;
   }
 
@@ -90,11 +81,8 @@ public class OptimizeBidiCodeGenVisitor extends AbstractSoyNodeVisitor<Void> {
 
 
   @Override protected void visitSoyFileSetNode(SoyFileSetNode node) {
-
-    // Only run this optimization if the bidi functions being optimized actually exist.
-    if (! (soyJsSrcFunctionsMap.containsKey(BIDI_MARK_FN_NAME) &&
-           soyJsSrcFunctionsMap.containsKey(BIDI_START_EDGE_FN_NAME) &&
-           soyJsSrcFunctionsMap.containsKey(BIDI_END_EDGE_FN_NAME))) {
+    // if don't have a static value, skip
+    if (!bidiGlobalDir.isStaticValue()) {
       return;
     }
 
@@ -136,20 +124,23 @@ public class OptimizeBidiCodeGenVisitor extends AbstractSoyNodeVisitor<Void> {
       return;  // don't replace this node
     }
 
-    if (!bidiGlobalDir.isStaticValue()) {
-      return;  // don't replace this node
+    SoyFunction fn = ((FunctionNode) expr).getSoyFunction();
+    if (fn == null) {
+      return;
     }
-
-    String fnName = ((FunctionNode) expr).getFunctionName();
     String rawText;
-    if (fnName.equals(BIDI_MARK_FN_NAME)) {
-      rawText = (bidiGlobalDir.getStaticValue() < 0) ? "\\u200F" /*RLM*/ : "\\u200E" /*LRM*/;
-    } else if (fnName.equals(BIDI_START_EDGE_FN_NAME)) {
-      rawText = (bidiGlobalDir.getStaticValue() < 0) ? "right" : "left";
-    } else if (fnName.equals(BIDI_END_EDGE_FN_NAME)) {
-      rawText = (bidiGlobalDir.getStaticValue() < 0) ? "left" : "right";
-    } else {
-      return;  // don't replace this node
+    switch (fn.getName()) {
+      case BIDI_MARK_FN_NAME:
+        rawText = (bidiGlobalDir.getStaticValue() < 0) ? "\\u200F" /*RLM*/ : "\\u200E" /*LRM*/;
+        break;
+      case BIDI_START_EDGE_FN_NAME:
+        rawText = (bidiGlobalDir.getStaticValue() < 0) ? "right" : "left";
+        break;
+      case BIDI_END_EDGE_FN_NAME:
+        rawText = (bidiGlobalDir.getStaticValue() < 0) ? "left" : "right";
+        break;
+      default:
+        return;  // don't replace this node
     }
 
     for (PrintDirectiveNode directiveNode : node.getChildren()) {

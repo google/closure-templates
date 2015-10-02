@@ -24,6 +24,7 @@ import static com.google.template.soy.jbcsrc.TemplateTester.assertThatTemplateBo
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.data.SoyDataException;
@@ -47,6 +48,7 @@ import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.jbcsrc.ExpressionTester.ExpressionSubject;
 import com.google.template.soy.jbcsrc.TemplateTester.CompiledTemplateSubject;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
+import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
@@ -516,6 +518,18 @@ public class ExpressionCompilerTest extends TestCase {
     PrintNode code =
         (PrintNode)
             SoyFileSetParserBuilder.forTemplateContents(createTemplateBody)
+                .addSoyFunction(
+                    new SoyFunction() {
+                      @Override
+                      public String getName() {
+                        return "fakeFunction";
+                      }
+
+                      @Override
+                      public Set<Integer> getValidArgsSizes() {
+                        return ImmutableSet.of(1);
+                      }
+                    })
                 .parse()
                 .fileSet()
                 .getChild(0)

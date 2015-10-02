@@ -31,6 +31,7 @@ import com.google.template.soy.error.FormattingErrorReporter;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.passes.ResolveExpressionTypesVisitor;
 import com.google.template.soy.passes.ResolveNamesVisitor;
+import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoytreeUtils;
@@ -52,12 +53,25 @@ import junit.framework.TestCase;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Unit tests for ResolveNamesVisitor.
  *
  */
 public final class ResolveExpressionTypesVisitorTest extends TestCase {
+  private static final SoyFunction CAPTURE_TYPE_FUNCTION =
+      new SoyFunction() {
+        @Override
+        public String getName() {
+          return "captureType";
+        }
+
+        @Override
+        public Set<Integer> getValidArgsSizes() {
+          return ImmutableSet.of(1);
+        }
+      };
 
   private static final SoyTypeProvider typeProvider =
       new SoyTypeProvider() {
@@ -73,18 +87,9 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
   private static final SoyTypeRegistry typeRegistry =
       new SoyTypeRegistry(ImmutableSet.of(typeProvider));
 
-  private static ResolveNamesVisitor createResolveNamesVisitorForMaxSyntaxVersion() {
-    return createResolveNamesVisitor(SyntaxVersion.V9_9);
-  }
-
   private static ResolveNamesVisitor createResolveNamesVisitor(
       SyntaxVersion declaredSyntaxVersion) {
     return new ResolveNamesVisitor(declaredSyntaxVersion, ExplodingErrorReporter.get());
-  }
-
-  private static ResolveExpressionTypesVisitor
-      createResolveExpressionTypesVisitorForMaxSyntaxVersion() {
-    return createResolveExpressionTypesVisitor(SyntaxVersion.V9_9);
   }
 
   private static ResolveExpressionTypesVisitor createResolveExpressionTypesVisitor(
@@ -101,10 +106,9 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
                     "{@param? pb: list<int>}",
                     "{captureType($pa)}",
                     "{captureType($pb)}"))
+            .addSoyFunction(CAPTURE_TYPE_FUNCTION)
             .parse()
             .fileSet();
-    createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
-    createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getCapturedTypes(soyTree);
     assertThat(types.get(0)).isEqualTo(makeNullable(BoolType.getInstance()));
     assertThat(types.get(1)).isEqualTo(makeNullable(ListType.of(IntType.getInstance())));
@@ -123,10 +127,9 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
                     "{captureType($pe)}",
                     "{captureType($pe[0])}",
                     "{captureType($pe[1 + 1][2])}"))
+            .addSoyFunction(CAPTURE_TYPE_FUNCTION)
             .parse()
             .fileSet();
-    createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
-    createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getCapturedTypes(soyTree);
     assertThat(types.get(0)).isEqualTo(BoolType.getInstance());
     assertThat(types.get(1)).isEqualTo(ListType.of(IntType.getInstance()));
@@ -145,10 +148,9 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
                     "{@param pa: [a:int, b:string]}",
                     "{captureType($pa.a)}",
                     "{captureType($pa.b)}"))
+            .addSoyFunction(CAPTURE_TYPE_FUNCTION)
             .parse()
             .fileSet();
-    createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
-    createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getCapturedTypes(soyTree);
     assertThat(types.get(0)).isEqualTo(IntType.getInstance());
     assertThat(types.get(1)).isEqualTo(StringType.getInstance());
@@ -168,12 +170,10 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
                     "{captureType($pb[$pa])}",
                     "{captureType($pc[$pa])}"))
             .declaredSyntaxVersion(SyntaxVersion.V2_0)
-            .doRunInitialParsingPasses(false)
+            .addSoyFunction(CAPTURE_TYPE_FUNCTION)
             .typeRegistry(typeRegistry)
             .parse()
             .fileSet();
-    createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
-    createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getCapturedTypes(soyTree);
     assertThat(types.get(0)).isEqualTo(UnknownType.getInstance());
     assertThat(types.get(1)).isEqualTo(UnknownType.getInstance());
@@ -239,11 +239,10 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
                     "{captureType(-$ps)}",
                     "{captureType($ps / $pf)}"))
             .declaredSyntaxVersion(SyntaxVersion.V2_0)
+            .addSoyFunction(CAPTURE_TYPE_FUNCTION)
             .typeRegistry(typeRegistry)
             .parse()
             .fileSet();
-    createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
-    createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getCapturedTypes(soyTree);
     assertThat(types.get(0)).isEqualTo(UnknownType.getInstance());
     assertThat(types.get(1)).isEqualTo(IntType.getInstance());
@@ -293,12 +292,10 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
                     "{captureType($pb + $ps)}",
                     "{captureType($pb + $pi)}"))
             .declaredSyntaxVersion(SyntaxVersion.V2_0)
-            .doRunInitialParsingPasses(false)
             .typeRegistry(typeRegistry)
+            .addSoyFunction(CAPTURE_TYPE_FUNCTION)
             .parse()
             .fileSet();
-    createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
-    createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getCapturedTypes(soyTree);
     assertThat(types.get(0)).isEqualTo(StringType.getInstance());
     assertThat(types.get(1)).isEqualTo(StringType.getInstance());
@@ -394,12 +391,10 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
                     "{captureType($pi != $pi)}",
                     "{captureType($pf != $pf)}"))
             .declaredSyntaxVersion(SyntaxVersion.V2_0)
-            .doRunInitialParsingPasses(false)
             .typeRegistry(typeRegistry)
+            .addSoyFunction(CAPTURE_TYPE_FUNCTION)
             .parse()
             .fileSet();
-    createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
-    createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     ImmutableSet<SoyType> types = ImmutableSet.copyOf(getCapturedTypes(soyTree));
     assertThat(types).containsExactly(BoolType.getInstance());
   }
@@ -417,12 +412,10 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
                     "{captureType($pa ? $pi : $pf)}",
                     "{captureType($ni ?: 0)}"))
             .declaredSyntaxVersion(SyntaxVersion.V2_0)
-            .doRunInitialParsingPasses(false)
             .typeRegistry(typeRegistry)
+            .addSoyFunction(CAPTURE_TYPE_FUNCTION)
             .parse()
             .fileSet();
-    createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
-    createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getCapturedTypes(soyTree);
     assertThat(types.get(0)).isEqualTo(UnknownType.getInstance());
     assertThat(types.get(1))
@@ -437,12 +430,10 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
         SoyFileSetParserBuilder.forFileContents(
                 constructTemplateSource("{@param? l: [a :int]}", "{captureType($l?.a ?: 0)}"))
             .declaredSyntaxVersion(SyntaxVersion.V2_0)
-            .doRunInitialParsingPasses(false)
             .typeRegistry(typeRegistry)
+            .addSoyFunction(CAPTURE_TYPE_FUNCTION)
             .parse()
             .fileSet();
-    createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
-    createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getCapturedTypes(soyTree);
     assertThat(types.get(0)).isEqualTo(IntType.getInstance());
   }
@@ -456,12 +447,11 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
                     "{let $list: [$pi, $pf]/}",
                     "{captureType($list)}",
                     "{captureType(length($list))}"))
-            .declaredSyntaxVersion(SyntaxVersion.V2_0)
+            .declaredSyntaxVersion(SyntaxVersion.V2_4)
             .typeRegistry(typeRegistry)
+            .addSoyFunction(CAPTURE_TYPE_FUNCTION)
             .parse()
             .fileSet();
-    createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
-    createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getCapturedTypes(soyTree);
     assertThat(types.get(0))
         .isEqualTo(ListType.of(UnionType.of(IntType.getInstance(), FloatType.getInstance())));
@@ -478,10 +468,9 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
                     "{captureType($map)}"))
             .declaredSyntaxVersion(SyntaxVersion.V2_0)
             .typeRegistry(typeRegistry)
+            .addSoyFunction(CAPTURE_TYPE_FUNCTION)
             .parse()
             .fileSet();
-    createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
-    createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     SoyType type = Iterables.getOnlyElement(getCapturedTypes(soyTree));
     assertThat(type)
         .isEqualTo(
@@ -501,10 +490,9 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
                     "{captureType($map)}"))
             .declaredSyntaxVersion(SyntaxVersion.V2_0)
             .typeRegistry(typeRegistry)
+            .addSoyFunction(CAPTURE_TYPE_FUNCTION)
             .parse()
             .fileSet();
-    createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
-    createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     SoyType type = Iterables.getOnlyElement(getCapturedTypes(soyTree));
     assertThat(type)
         .isEqualTo(
@@ -523,10 +511,9 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
                     "{captureType($map)}"))
             .declaredSyntaxVersion(SyntaxVersion.V2_0)
             .typeRegistry(typeRegistry)
+            .addSoyFunction(CAPTURE_TYPE_FUNCTION)
             .parse()
             .fileSet();
-    createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
-    createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getCapturedTypes(soyTree);
     assertThat(types.get(0))
         .isEqualTo(
@@ -536,17 +523,14 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
   }
 
   public void testMapLiteralAsRecord_duplicateKeys() {
-    SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forFileContents(
-                constructTemplateSource("{let $map: ['a': 1, 'a': 2]/}"))
-            .declaredSyntaxVersion(SyntaxVersion.V2_0)
-            .doRunInitialParsingPasses(false)
-            .typeRegistry(typeRegistry)
-            .parse()
-            .fileSet();
-    createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
     FormattingErrorReporter reporter = new FormattingErrorReporter();
-    new ResolveExpressionTypesVisitor(typeRegistry, SyntaxVersion.V9_9, reporter).exec(soyTree);
+    SoyFileSetParserBuilder.forFileContents(
+            constructTemplateSource("{let $map: ['a': 1, 'a': 2]/}"))
+        .declaredSyntaxVersion(SyntaxVersion.V2_0)
+        .errorReporter(reporter)
+        .typeRegistry(typeRegistry)
+        .parse()
+        .fileSet();
     assertThat(Iterables.getOnlyElement(reporter.getErrorMessages()))
         .isEqualTo("Record literals with duplicate keys are not allowed.  Duplicate key: 'a'");
   }
@@ -612,10 +596,9 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
                     // TODO(lukes): uncomment this and fix the error
                     // "{if null == null or null != null}{/if}",
                     ""))
+            .addSoyFunction(CAPTURE_TYPE_FUNCTION)
             .parse()
             .fileSet();
-    createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
-    createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getCapturedTypes(soyTree);
     assertThat(types.get(0)).isEqualTo(BoolType.getInstance());
     assertThat(types.get(1)).isEqualTo(NullType.getInstance());
@@ -653,10 +636,9 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
                     "  {captureType($record.a?.nullableInt)}",
                     "{/if}",
                     ""))
+            .addSoyFunction(CAPTURE_TYPE_FUNCTION)
             .parse()
             .fileSet();
-    createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
-    createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getCapturedTypes(soyTree);
     assertThat(types.get(0)).isEqualTo(IntType.getInstance());
     assertThat(types.get(1)).isEqualTo(IntType.getInstance());
@@ -676,10 +658,9 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
                     "  {/if}",
                     "{/if}",
                     ""))
+            .addSoyFunction(CAPTURE_TYPE_FUNCTION)
             .parse()
             .fileSet();
-    createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
-    createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getCapturedTypes(soyTree);
     assertThat(types.get(0)).isEqualTo(UnknownType.getInstance());
     assertThat(types.get(1)).isEqualTo(UnknownType.getInstance());
@@ -697,10 +678,10 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
                     "  {captureType($record.active)}",
                     "{/if}",
                     ""))
+            .addSoyFunction(CAPTURE_TYPE_FUNCTION)
+            .declaredSyntaxVersion(SyntaxVersion.V2_4)
             .parse()
             .fileSet();
-    createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
-    createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getCapturedTypes(soyTree);
     assertThat(types.get(0)).isEqualTo(BoolType.getInstance());
     assertThat(types.get(1)).isEqualTo(BoolType.getInstance());
@@ -726,10 +707,9 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
                     "{if $pb ? $pa : false}",
                     "  {captureType($pa)}", // #3 don't know
                     "{/if}"))
+            .addSoyFunction(CAPTURE_TYPE_FUNCTION)
             .parse()
             .fileSet();
-    createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
-    createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getCapturedTypes(soyTree);
     assertThat(types.get(0)).isEqualTo(boolOrNullType);
     assertThat(types.get(1)).isEqualTo(boolOrNullType);
@@ -749,10 +729,9 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
                     "{captureType($pa ?: $pb)}",
                     "{captureType($pc.a ? $pc.a : 0)}",
                     "{if not $pc.a}{captureType($pc.a)}{/if}"))
+            .addSoyFunction(CAPTURE_TYPE_FUNCTION)
             .parse()
             .fileSet(); // #2 must be non-null (re-written to (isNonnull($pa) ? $pa : $pb))
-    createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
-    createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getCapturedTypes(soyTree);
     assertThat(types.get(0)).isEqualTo(BoolType.getInstance());
     assertThat(types.get(1)).isEqualTo(BoolType.getInstance());
@@ -773,10 +752,9 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
                     "   {captureType($item)}",
                     "   {captureType(checkNotNull($item))}",
                     "{/foreach}"))
+            .addSoyFunction(CAPTURE_TYPE_FUNCTION)
             .parse()
             .fileSet();
-    createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
-    createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getCapturedTypes(soyTree);
     assertThat(types.get(0)).isEqualTo(IntType.getInstance());
     assertThat(types.get(1)).isEqualTo(BoolType.getInstance());
@@ -793,10 +771,9 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
                     "{@inject? pb: list<int>}",
                     "{captureType($pa)}",
                     "{captureType($pb)}"))
+            .addSoyFunction(CAPTURE_TYPE_FUNCTION)
             .parse()
             .fileSet();
-    createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
-    createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
     List<SoyType> types = getCapturedTypes(soyTree);
     assertThat(types.get(0)).isEqualTo(BoolType.getInstance());
     assertThat(types.get(1)).isEqualTo(makeNullable(ListType.of(IntType.getInstance())));
@@ -825,16 +802,12 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
    * @param expectedError The expected failure message (a substring).
    */
   private void assertResolveExpressionTypesFails(String expectedError, String fileContent) {
-    SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forFileContents(fileContent)
-            .declaredSyntaxVersion(SyntaxVersion.V2_0)
-            .doRunInitialParsingPasses(false)
-            .typeRegistry(typeRegistry)
-            .parse()
-            .fileSet();
-    createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
+
     try {
-      createResolveExpressionTypesVisitorForMaxSyntaxVersion().exec(soyTree);
+      SoyFileSetParserBuilder.forFileContents(fileContent)
+          .declaredSyntaxVersion(SyntaxVersion.V2_0)
+          .typeRegistry(typeRegistry)
+          .parse();
       fail("Expected SoySyntaxException");
     } catch (SoySyntaxException e) {
       assertThat(e.getMessage()).contains(expectedError);

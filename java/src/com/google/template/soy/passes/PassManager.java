@@ -62,7 +62,8 @@ public final class PassManager {
   private final SyntaxVersion declaredSyntaxVersion;
   private final SoyGeneralOptions options;
   private final boolean allowUnknownGlobals;
-  
+  private final boolean allowUnknownFunctions;
+
   private PassManager(Builder builder) {
     this.registry = checkNotNull(builder.registry);
     this.soyFunctionMap = checkNotNull(builder.soyFunctionMap);
@@ -70,27 +71,44 @@ public final class PassManager {
     this.declaredSyntaxVersion = checkNotNull(builder.declaredSyntaxVersion);
     this.options = checkNotNull(builder.opts);
     this.allowUnknownGlobals = builder.allowUnknownGlobals;
+    this.allowUnknownFunctions = builder.allowUnknownFunctions;
 
-    this.singleFilePasses = ImmutableList.<CompilerFilePass>builder()
-        .add(new RewriteGendersPass())
-        .add(new RewriteRemaindersPass())
-        .add(new SetFullCalleeNamesPass())
-        .add(new ResolveNamesPass())
-        .add(new ResolveFunctionsPass())
-        .add(new ResolveExpressionTypesPass())
-        .add(new ResolvePackageRelativeCssNamesPass())
-        .add(new VerifyPhnameAttrOnlyOnPlaceholdersPass())
-        .add(new SubstituteGlobalsVisitorPass())
-        .add(new CheckSyntaxVersionPass())
-        .build();
+    ImmutableList.Builder<CompilerFilePass> singleFilePassesBuilder =
+        ImmutableList.<CompilerFilePass>builder()
+            .add(new RewriteGendersPass())
+            .add(new RewriteRemaindersPass())
+            .add(new SetFullCalleeNamesPass())
+            .add(new ResolveNamesPass())
+            .add(new ResolveFunctionsPass())
+            .add(new ResolveExpressionTypesPass())
+            .add(new ResolvePackageRelativeCssNamesPass())
+            .add(new VerifyPhnameAttrOnlyOnPlaceholdersPass())
+            .add(new SubstituteGlobalsVisitorPass())
+            .add(new CheckSyntaxVersionPass());
+    if (!allowUnknownFunctions) {
+      singleFilePassesBuilder.add(new CheckFunctionCallsPass());
+    }
+    // If requiring strict autoescaping, check and enforce it.
+    if (options.isStrictAutoescapingRequired()) {
+      singleFilePassesBuilder.add(new EnforceStrictAutoescapingPass());
+    }
+
+    this.singleFilePasses = singleFilePassesBuilder.build();
     // Fileset passes run on the whole tree and should be reserved for checks that need transitive
     // call information (or full delegate sets).
-    this.fileSetPasses = ImmutableList.<CompilerFileSetPass>builder()
-        .add(new CheckTemplateParamsPass())
-        .add(new CheckCallsPass())
-        .add(new CheckVisibilityPass())
-        .add(new CheckDelegatesPass())
-        .build();
+    // Notably, the results of these passes cannot be cached in the AST cache.  So minimize their
+    // use.
+    ImmutableList.Builder<CompilerFileSetPass> fileSetPassBuilder =
+        ImmutableList.<CompilerFileSetPass>builder()
+            .add(new CheckTemplateParamsPass())
+            .add(new CheckCallsPass())
+            .add(new CheckVisibilityPass())
+            .add(new CheckDelegatesPass());
+    // If disallowing external calls, perform the check.
+    if (options.allowExternalCalls() == Boolean.FALSE) {
+      fileSetPassBuilder.add(new StrictDepsPass());
+    }
+    this.fileSetPasses = fileSetPassBuilder.build();
   }
 
   public void runSingleFilePasses(SoyFileNode file, IdGenerator nodeIdGen) {
@@ -99,12 +117,17 @@ public final class PassManager {
     }
   }
 
+  // TODO(lukes): consider changing this to create the registry here and then return some tuple
+  // object that contains the registry, the file set and ijparams info.  This would make it easier
+  // to move ContextualAutoescaping into this file (alternatively, eliminate deprecated-contextual
+  // autoescaping, which would make it so the autoescaper no longer modifies calls and adds
+  // templates.
   public void runWholeFilesetPasses(TemplateRegistry registry, SoyFileSetNode soyTree) {
     for (CompilerFileSetPass pass : fileSetPasses) {
       pass.run(soyTree, registry);
     }
   }
-  
+
   public static final class Builder {
     private SoyTypeRegistry registry;
     private ImmutableMap<String, ? extends SoyFunction> soyFunctionMap;
@@ -112,6 +135,7 @@ public final class PassManager {
     private SyntaxVersion declaredSyntaxVersion;
     private SoyGeneralOptions opts;
     private boolean allowUnknownGlobals;
+    private boolean allowUnknownFunctions;
 
     public Builder setErrorReporter(ErrorReporter errorReporter) {
       this.errorReporter = checkNotNull(errorReporter);
@@ -141,15 +165,37 @@ public final class PassManager {
     /**
      * Allows unknown global references.
      *
-     * <p>This option is only available for backwards compatibility with legacy js only templates.
+     * <p>This option is only available for backwards compatibility with legacy js only templates
+     * and for parseinfo generation.
      */
     public Builder allowUnknownGlobals() {
       this.allowUnknownGlobals = true;
       return this;
     }
+    
+    /**
+     * Allows unknown functions.
+     *
+     * <p>This option is only available for the parseinfo generator which historically has not had
+     * proper build dependencies and thus often references unknown functions.
+     */
+    public Builder allowUnknownFunctions() {
+      this.allowUnknownFunctions = true;
+      return this;
+    }
 
     public PassManager build() {
       return new PassManager(this);
+    }
+  }
+
+  private final class CheckFunctionCallsPass extends CompilerFilePass {
+    final CheckFunctionCallsVisitor functionCallsVisitor =
+        new CheckFunctionCallsVisitor(declaredSyntaxVersion, errorReporter);
+
+    @Override
+    public void run(SoyFileNode file, IdGenerator nodeIdGen) {
+      functionCallsVisitor.exec(file);
     }
   }
 
@@ -176,7 +222,7 @@ public final class PassManager {
       }
     }
   }
-  
+
   private final class RewriteGendersPass extends CompilerFilePass {
     @Override public void run(SoyFileNode file, IdGenerator nodeIdGen) {
       new RewriteGenderMsgsVisitor(nodeIdGen, errorReporter).exec(file);
@@ -242,6 +288,16 @@ public final class PassManager {
     }
   }
 
+  private final class EnforceStrictAutoescapingPass extends CompilerFilePass {
+    final AssertStrictAutoescapingVisitor visitor =
+        new AssertStrictAutoescapingVisitor(errorReporter);
+
+    @Override
+    public void run(SoyFileNode file, IdGenerator nodeIdGen) {
+      visitor.exec(file);
+    }
+  }
+
   private final class CheckTemplateParamsPass extends CompilerFileSetPass {
     @Override public void run(SoyFileSetNode fileSet, TemplateRegistry registry) {
       new CheckTemplateParamsVisitor(registry, declaredSyntaxVersion, errorReporter).exec(fileSet);
@@ -266,6 +322,13 @@ public final class PassManager {
     @Override public void run(SoyFileSetNode fileSet, TemplateRegistry registry) {
       // TODO(lukes): make this part of CheckCallsPass?
       new CheckTemplateVisibility(registry, errorReporter).exec(fileSet);
+    }
+  }
+
+  private final class StrictDepsPass extends CompilerFileSetPass {
+    @Override
+    public void run(SoyFileSetNode fileSet, TemplateRegistry registry) {
+      new StrictDepsVisitor(registry, errorReporter).exec(fileSet);
     }
   }
 }

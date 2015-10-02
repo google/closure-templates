@@ -18,8 +18,6 @@ package com.google.template.soy.passes;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.Iterables;
-import com.google.inject.assistedinject.Assisted;
-import com.google.inject.assistedinject.AssistedInject;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
@@ -47,7 +45,7 @@ import java.util.Set;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public final class CheckFunctionCallsVisitor extends AbstractSoyNodeVisitor<Void> {
+final class CheckFunctionCallsVisitor extends AbstractSoyNodeVisitor<Void> {
 
   private static final SoyError INCORRECT_NUM_ARGS = SoyError.of(
       "Function ''{0}'' called with {1} arguments (expected {2}).");
@@ -58,30 +56,12 @@ public final class CheckFunctionCallsVisitor extends AbstractSoyNodeVisitor<Void
   private static final SoyError UNKNOWN_FUNCTION = SoyError.of(
       "Unknown function ''{0}''.");
 
-  /**
-   * Injectable factory for creating an instance of this class.
-   */
-  public interface CheckFunctionCallsVisitorFactory {
-
-    /**
-     * @param declaredSyntaxVersion User-declared syntax version.
-     * @param errorReporter For reporting errors during the visit.
-     */
-    CheckFunctionCallsVisitor create(
-        SyntaxVersion declaredSyntaxVersion, ErrorReporter errorReporter);
-  }
-
-
   private final ErrorReporter errorReporter;
 
   /** User-declared syntax version. */
   private SyntaxVersion declaredSyntaxVersion;
 
-
-  @AssistedInject
-  public CheckFunctionCallsVisitor(
-      @Assisted SyntaxVersion declaredSyntaxVersion,
-      @Assisted ErrorReporter errorReporter) {
+  CheckFunctionCallsVisitor(SyntaxVersion declaredSyntaxVersion, ErrorReporter errorReporter) {
     this.errorReporter = errorReporter;
     this.declaredSyntaxVersion = declaredSyntaxVersion;
   }

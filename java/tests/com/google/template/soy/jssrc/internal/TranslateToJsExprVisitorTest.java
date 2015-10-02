@@ -286,6 +286,7 @@ public final class TranslateToJsExprVisitorTest extends TestCase {
             .parse()
             .fileSet();
     List<PrintNode> printNodes = SoytreeUtils.getAllNodesOfType(soyTree, PrintNode.class);
+    assertThat(printNodes).hasSize(1);
     ExprNode exprNode = printNodes.get(0).getExprUnion().getExpr();
     JsExpr actualJsExpr = new TranslateToJsExprVisitor(
         jsSrcOptions,

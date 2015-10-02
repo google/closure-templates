@@ -517,23 +517,24 @@ public class BytecodeCompilerTest extends TestCase {
   }
 
   public void testCallCustomFunction() {
-    RenderContext ctx = DEFAULT_CONTEXT.toBuilder()
-        .withSoyFunctions(ImmutableMap.<String, SoyJavaFunction>of("plusOne", 
-            new SoyJavaFunction() {
-              @Override public Set<Integer> getValidArgsSizes() {
-                return ImmutableSet.of(1);
-              }
-    
-              @Override public String getName() {
-                return "plusOne";
-              }
-    
-              @Override public SoyValue computeForJava(List<SoyValue> args) {
-                return IntegerData.forValue(args.get(0).integerValue() + 1);
-              }
-            }))
-        .build();
-    assertThatTemplateBody("{plusOne(1)}").rendersAs("2", ctx);
+    SoyJavaFunction plusOneFunction =
+        new SoyJavaFunction() {
+          @Override
+          public Set<Integer> getValidArgsSizes() {
+            return ImmutableSet.of(1);
+          }
+
+          @Override
+          public String getName() {
+            return "plusOne";
+          }
+
+          @Override
+          public SoyValue computeForJava(List<SoyValue> args) {
+            return IntegerData.forValue(args.get(0).integerValue() + 1);
+          }
+        };
+    assertThatTemplateBody("{plusOne(1)}").withSoyFunction(plusOneFunction).rendersAs("2");
   }
 
   public void testIsNonNull() {

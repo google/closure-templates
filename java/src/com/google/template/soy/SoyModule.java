@@ -28,7 +28,6 @@ import com.google.template.soy.i18ndirectives.I18nDirectivesModule;
 import com.google.template.soy.jbcsrc.api.SoySauceImpl;
 import com.google.template.soy.jssrc.internal.JsSrcModule;
 import com.google.template.soy.parsepasses.contextautoesc.ContextualAutoescaper;
-import com.google.template.soy.passes.CheckFunctionCallsVisitor.CheckFunctionCallsVisitorFactory;
 import com.google.template.soy.pysrc.internal.PySrcModule;
 import com.google.template.soy.shared.internal.ErrorReporterModule;
 import com.google.template.soy.shared.internal.SharedModule;
@@ -67,7 +66,6 @@ public class SoyModule extends AbstractModule {
     install(new I18nDirectivesModule());
 
     // Bind providers of factories (created via assisted inject).
-    install((new FactoryModuleBuilder()).build(CheckFunctionCallsVisitorFactory.class));
     install((new FactoryModuleBuilder()).build(SoyFileSetFactory.class));
 
     // This requests "static" initialization as soon as whatever Injector we are in is created.  If

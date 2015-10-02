@@ -46,6 +46,16 @@ final class CompilationResult {
   boolean isSuccess() {
     return errors.isEmpty();
   }
+  
+  void checkSuccessful() {
+    if (!errors.isEmpty()) {
+      SoySyntaxException combined = new SoySyntaxException("errors during Soy compilation");
+      for (SoySyntaxException e : errors) {
+        combined.addSuppressed(e);
+      }
+      throw combined;
+    }
+  }
 
   void printErrors(PrintStream out) {
     Preconditions.checkState(!isSuccess());

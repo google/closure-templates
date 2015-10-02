@@ -133,10 +133,13 @@ public final class SoyFileSetParserBuilder {
     this.errorReporter = errorReporter;
     return this;
   }
-
-  public SoyFileSetParserBuilder soyFunctionMap(
-      ImmutableMap<String, ? extends SoyFunction> soyFunctionMap) {
-    this.soyFunctionMap = soyFunctionMap;
+  
+  public SoyFileSetParserBuilder addSoyFunction(SoyFunction function) {
+    this.soyFunctionMap =
+        ImmutableMap.<String, SoyFunction>builder()
+            .putAll(soyFunctionMap)
+            .put(function.getName(), function)
+            .build();
     return this;
   }
 

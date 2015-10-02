@@ -17,6 +17,7 @@
 package com.google.template.soy.shared;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Sets;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.template.soy.base.SourceLocation;
@@ -25,6 +26,7 @@ import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
+import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.msgs.SoyMsgBundle;
@@ -167,19 +169,27 @@ public final class SharedTestUtils {
     ExprNode expr =
         new ExpressionParser(soyExpr, SourceLocation.UNKNOWN, ExplodingErrorReporter.get())
             .parseExpression();
-    final StringBuilder templateBody = new StringBuilder();
+    final Set<String> loopVarNames = new HashSet<>();
+    final Set<String> names = new HashSet<>();
     new AbstractExprNodeVisitor<Void>() {
-      final Set<String> names = new HashSet<>();
 
       @Override
       protected void visitVarRefNode(VarRefNode node) {
-        if (!node.isInjected() && names.add(node.getName())) {
-          SoyType type = typeMap.get(node.getName());
-          if (type == null) {
-            type = UnknownType.getInstance();
-          }
-          templateBody.append("{@param " + node.getName() + ": " + type + "}\n");
+        if (!node.isInjected()) {
+          names.add(node.getName());
         }
+      }
+
+      @Override
+      protected void visitFunctionNode(FunctionNode node) {
+        switch (node.getFunctionName()) {
+          case "index":
+          case "isFirst":
+          case "isLast":
+            loopVarNames.add(((VarRefNode) node.getChild(0)).getName());
+            break; // dont visitChildren
+        }
+        visitChildren(node);
       }
 
       @Override
@@ -189,7 +199,19 @@ public final class SharedTestUtils {
         }
       }
     }.exec(expr);
-    templateBody.append("{" + soyExpr + "}\n");
+    final StringBuilder templateBody = new StringBuilder();
+    for (String varName : Sets.difference(names, loopVarNames)) {
+      SoyType type = typeMap.get(varName);
+      if (type == null) {
+        type = UnknownType.getInstance();
+      }
+      templateBody.append("{@param " + varName + ": " + type + "}\n");
+    }
+    String contents = "{" + soyExpr + "}\n";
+    for (String loopVar : loopVarNames) {
+      contents = "{foreach $" + loopVar + " in []}\n" + contents + "\n{/foreach}";
+    }
+    templateBody.append(contents);
     return templateBody.toString();
   }
 

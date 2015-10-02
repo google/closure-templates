@@ -20,6 +20,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.shared.SharedTestUtils.untypedTemplateBodyForExpression;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -46,12 +47,14 @@ import com.google.template.soy.passes.SharedPassesModule;
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.shared.internal.ErrorReporterModule;
 import com.google.template.soy.shared.internal.SharedModule;
+import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.sharedpasses.render.EvalVisitor.EvalVisitorFactory;
 import com.google.template.soy.soytree.PrintNode;
 
 import junit.framework.TestCase;
 
 import java.util.Map;
+import java.util.Set;
 
 import javax.annotation.Nullable;
 
@@ -108,6 +111,18 @@ public class EvalVisitorTest extends TestCase {
             SoyFileSetParserBuilder.forTemplateContents(
                     // wrap in a function so we don't run into the 'can't print bools' error message
                     untypedTemplateBodyForExpression("fakeFunction(" + expression + ")"))
+                .addSoyFunction(
+                    new SoyFunction() {
+                      @Override
+                      public String getName() {
+                        return "fakeFunction";
+                      }
+
+                      @Override
+                      public Set<Integer> getValidArgsSizes() {
+                        return ImmutableSet.of(1);
+                      }
+                    })
                 .parse()
                 .fileSet()
                 .getChild(0)

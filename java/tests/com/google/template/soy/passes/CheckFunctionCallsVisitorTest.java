@@ -23,8 +23,6 @@ import com.google.common.collect.Iterables;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.error.FormattingErrorReporter;
-import com.google.template.soy.passes.CheckFunctionCallsVisitor;
-import com.google.template.soy.soytree.SoyFileSetNode;
 
 import junit.framework.TestCase;
 
@@ -33,7 +31,7 @@ import junit.framework.TestCase;
 public final class CheckFunctionCallsVisitorTest extends TestCase {
 
   public void testPureFunctionOk() {
-    applyCheckFunctionCallsVisitor(Joiner.on('\n').join(
+    assertSuccess(
         "{namespace ns autoescape=\"deprecated-noncontextual\"}\n",
         "/**",
         " * @param x",
@@ -41,98 +39,91 @@ public final class CheckFunctionCallsVisitorTest extends TestCase {
         " */",
         "{template .foo}",
         "  {print min($x, $y)}",
-        "{/template}"));
+        "{/template}");
   }
 
   public void testIncorrectArity() {
     assertFunctionCallsInvalid(
         "Function 'min' called with 1 arguments (expected 2).",
-        Joiner.on('\n').join(
-            "{namespace ns autoescape=\"deprecated-noncontextual\"}\n",
-            "/**",
-            " * @param x",
-            " */",
-            "{template .foo}",
-            "  {print min($x)}",
-            "{/template}"));
+        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n",
+        "/**",
+        " * @param x",
+        " */",
+        "{template .foo}",
+        "  {print min($x)}",
+        "{/template}");
     assertFunctionCallsInvalid(
         "Function 'index' called with 0 arguments (expected 1).",
-        Joiner.on('\n').join(
-            "{namespace ns autoescape=\"deprecated-noncontextual\"}\n",
-            "/**",
-            " */",
-            "{template .foo}",
-            "  {print index()}",
-            "{/template}"));
+        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n",
+        "/**",
+        " */",
+        "{template .foo}",
+        "  {print index()}",
+        "{/template}");
   }
 
   public void testNestedFunctionCall() {
     assertFunctionCallsInvalid(
         "Function 'min' called with 1 arguments (expected 2).",
-        Joiner.on('\n').join(
-            "{namespace ns autoescape=\"deprecated-noncontextual\"}\n",
-            "/**",
-            " * @param x",
-            " * @param y",
-            " */",
-            "{template .foo}",
-            "  {print min(min($x), min($x, $y))}",
-            "{/template}"));
+        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n",
+        "/**",
+        " * @param x",
+        " * @param y",
+        " */",
+        "{template .foo}",
+        "  {print min(min($x), min($x, $y))}",
+        "{/template}");
   }
 
   public void testNotALoopVariable1() {
     assertFunctionCallsInvalid(
         "Function 'index' must have a foreach loop variable as its argument",
-        Joiner.on('\n').join(
-            "{namespace ns autoescape=\"deprecated-noncontextual\"}\n",
-            "/**",
-            " * @param x",
-            " */",
-            "{template .foo}",
-            "  {print index($x)}",
-            "{/template}"));
+        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n",
+        "/**",
+        " * @param x",
+        " */",
+        "{template .foo}",
+        "  {print index($x)}",
+        "{/template}");
   }
 
   public void testNotALoopVariable2() {
     assertFunctionCallsInvalid(
         "Function 'index' must have a foreach loop variable as its argument",
-        Joiner.on('\n').join(
-            "{namespace ns autoescape=\"deprecated-noncontextual\"}\n",
-            "/**",
-            " * @param x",
-            " */",
-            "{template .foo}",
-            "  {print index($x.y)}",
-            "{/template}"));
+        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n",
+        "/**",
+        " * @param x",
+        " */",
+        "{template .foo}",
+        "  {print index($x.y)}",
+        "{/template}");
   }
 
   public void testNotALoopVariable3() {
     assertFunctionCallsInvalid(
         "Function 'index' must have a foreach loop variable as its argument",
-        Joiner.on('\n').join(
-            "{namespace ns autoescape=\"deprecated-noncontextual\"}\n",
-            "/**",
-            " */",
-            "{template .foo}",
-            "  {print index($ij.data)}",
-            "{/template}"));
+        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n",
+        "/**",
+        " */",
+        "{template .foo}",
+        "  {print index($ij.data)}",
+        "{/template}");
   }
 
   public void testNotALoopVariable4() {
     assertFunctionCallsInvalid(
         "Function 'index' must have a foreach loop variable as its argument",
-        Joiner.on('\n').join(
-            "{namespace ns autoescape=\"deprecated-noncontextual\"}\n",
-            "/**",
-            " * @param x",
-            " */",
-            "{template .foo}",
-            "  {print index($x + 1)}",
-            "{/template}"));
+        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n",
+        "/**",
+        " * @param x",
+        " */",
+        "{template .foo}",
+        "  {print index($x + 1)}",
+        "{/template}");
   }
 
   public void testLoopVariableOk() {
-    applyCheckFunctionCallsVisitor(Joiner.on('\n').join(
+    assertSuccess(
         "{namespace ns autoescape=\"deprecated-noncontextual\"}\n",
         "/**",
         " * @param elements",
@@ -141,86 +132,78 @@ public final class CheckFunctionCallsVisitorTest extends TestCase {
         "  {foreach $z in $elements}",
         "    {if isLast($z)}Lorem Ipsum{/if}",
         "  {/foreach}",
-        "{/template}"));
+        "{/template}");
   }
 
   public void testLoopVariableNotInScopeWhenEmpty() {
     assertFunctionCallsInvalid(
         "Function 'index' must have a foreach loop variable as its argument",
-        Joiner.on('\n')
-            .join(
-                "{namespace ns autoescape=\"deprecated-noncontextual\"}\n",
-                "/**",
-                " * @param elements",
-                " */",
-                "{template .foo}",
-                "  {foreach $z in $elements}",
-                "    Lorem Ipsum...",
-                "  {ifempty}",
-                "    {print index($elements)}", // Loop variable not in scope when empty.
-                "  {/foreach}",
-                "{/template}"));
+        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n",
+        "/**",
+        " * @param elements",
+        " */",
+        "{template .foo}",
+        "  {foreach $z in $elements}",
+        "    Lorem Ipsum...",
+        "  {ifempty}",
+        "    {print index($elements)}", // Loop variable not in scope when empty.
+        "  {/foreach}",
+        "{/template}");
   }
 
   public void testQuoteKeysIfJsFunction() {
-    applyCheckFunctionCallsVisitor(
-        Joiner.on('\n').join(
-            "{namespace ns autoescape=\"deprecated-noncontextual\"}\n",
-            "/***/",
-            "{template .foo}",
-            "  {let $m: quoteKeysIfJs(['a': 1, 'b': 'blah']) /}",
-            "{/template}"));
+    assertSuccess(
+        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n",
+        "/***/",
+        "{template .foo}",
+        "  {let $m: quoteKeysIfJs(['a': 1, 'b': 'blah']) /}",
+        "{/template}");
 
     assertFunctionCallsInvalid(
         "Function 'quoteKeysIfJs' called with argument of type string (expected map literal).",
-        Joiner.on('\n').join(
-            "{namespace ns autoescape=\"deprecated-noncontextual\"}\n",
-            "/***/",
-            "{template .foo}",
-            "  {let $m: quoteKeysIfJs('blah') /}",
-            "{/template}"));
+        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n",
+        "/***/",
+        "{template .foo}",
+        "  {let $m: quoteKeysIfJs('blah') /}",
+        "{/template}");
   }
 
   public void testUnrecognizedFunction() {
     assertFunctionCallsInvalid(
         "Unknown function 'bogus'.",
-        Joiner.on('\n').join(
-            "{namespace ns autoescape=\"deprecated-noncontextual\"}\n",
-            "/**",
-            " */",
-            "{template .foo}",
-            "  {print bogus()}",
-            "{/template}"));
+        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n",
+        "/**",
+        " */",
+        "{template .foo}",
+        "  {print bogus()}",
+        "{/template}");
   }
 
   public void testUnrecognizedFunctionOkInV1() {
-    applyCheckFunctionCallsVisitor(
-        Joiner.on('\n').join(
-            "{namespace ns autoescape=\"deprecated-noncontextual\"}\n",
-            "{template .foo}",
-            "  {print bogus()}",
-            "{/template}"),
-        SyntaxVersion.V1_0);
+    assertPasses(
+        SyntaxVersion.V1_0,
+        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n",
+        "{template .foo}",
+        "  {print bogus()}",
+        "{/template}");
   }
 
-  private FormattingErrorReporter applyCheckFunctionCallsVisitor(String soyContent) {
-    return applyCheckFunctionCallsVisitor(soyContent, SyntaxVersion.V2_0);
+  private void assertSuccess(String... lines) {
+    assertPasses(SyntaxVersion.V2_0, lines);
   }
 
-  private FormattingErrorReporter applyCheckFunctionCallsVisitor(
-      String soyContent, SyntaxVersion declaredSyntaxVersion) {
-    SoyFileSetNode fileSet = SoyFileSetParserBuilder.forFileContents(soyContent)
+  private void assertPasses(SyntaxVersion declaredSyntaxVersion, String... lines) {
+    SoyFileSetParserBuilder.forFileContents(Joiner.on('\n').join(lines))
+        .declaredSyntaxVersion(declaredSyntaxVersion)
         .parse()
         .fileSet();
-    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
-    CheckFunctionCallsVisitor visitor =
-        new CheckFunctionCallsVisitor(declaredSyntaxVersion, errorReporter);
-    visitor.exec(fileSet);
-    return errorReporter;
   }
 
-  private void assertFunctionCallsInvalid(String errorMessage, String soyContent) {
-    FormattingErrorReporter errorReporter = applyCheckFunctionCallsVisitor(soyContent);
+  private void assertFunctionCallsInvalid(String errorMessage, String... lines) {
+    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+    SoyFileSetParserBuilder.forFileContents(Joiner.on('\n').join(lines))
+        .errorReporter(errorReporter)
+        .parse();
     assertThat(errorReporter.getErrorMessages()).hasSize(1);
     assertThat(Iterables.getOnlyElement(errorReporter.getErrorMessages())).contains(errorMessage);
   }
