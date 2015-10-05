@@ -17,16 +17,14 @@
 package com.google.template.soy.passes;
 
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.common.truth.Truth.assertWithMessage;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.SoyFileSetParserBuilder;
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.error.ExplodingErrorReporter;
+import com.google.template.soy.error.FormattingErrorReporter;
 import com.google.template.soy.exprtree.VarRefNode;
-import com.google.template.soy.passes.ResolveNamesVisitor;
 import com.google.template.soy.soytree.ForeachNode;
 import com.google.template.soy.soytree.ForeachNonemptyNode;
 import com.google.template.soy.soytree.IfCondNode;
@@ -62,22 +60,13 @@ public final class ResolveNamesVisitorTest extends TestCase {
   private static final SoyTypeRegistry typeRegistry =
       new SoyTypeRegistry(ImmutableSet.of(typeProvider));
 
-  private static ResolveNamesVisitor createResolveNamesVisitorForMaxSyntaxVersion() {
-    return createResolveNamesVisitor(SyntaxVersion.V9_9);
-  }
-
-  private static ResolveNamesVisitor createResolveNamesVisitor(
-      SyntaxVersion declaredSyntaxVersion) {
-    return new ResolveNamesVisitor(declaredSyntaxVersion, ExplodingErrorReporter.get());
-  }
-
   public void testParamNameLookupSuccess() {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
                 constructTemplateSource("{@param pa: bool}", "{$pa ? 1 : 0}"))
             .parse()
             .fileSet();
-    createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
+    new ResolveNamesVisitor(ExplodingErrorReporter.get()).exec(soyTree);
     TemplateNode n = soyTree.getChild(0).getChild(0);
     assertThat(n.getMaxLocalVariableTableSize()).isEqualTo(1);
     assertThat(n.getParams().get(0).localVariableIndex()).isEqualTo(0);
@@ -89,7 +78,7 @@ public final class ResolveNamesVisitorTest extends TestCase {
                 constructTemplateSource("{@inject pa: bool}", "{$pa ? 1 : 0}"))
             .parse()
             .fileSet();
-    createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
+    new ResolveNamesVisitor(ExplodingErrorReporter.get()).exec(soyTree);
     TemplateNode n = soyTree.getChild(0).getChild(0);
     assertThat(n.getMaxLocalVariableTableSize()).isEqualTo(1);
     assertThat(n.getInjectedParams().get(0).localVariableIndex()).isEqualTo(0);
@@ -100,7 +89,7 @@ public final class ResolveNamesVisitorTest extends TestCase {
         SoyFileSetParserBuilder.forFileContents(constructTemplateSource("{let $pa: 1 /}", "{$pa}"))
             .parse()
             .fileSet();
-    createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
+    new ResolveNamesVisitor(ExplodingErrorReporter.get()).exec(soyTree);
     TemplateNode n = soyTree.getChild(0).getChild(0);
     assertThat(n.getMaxLocalVariableTableSize()).isEqualTo(1);
     assertThat(((LetValueNode) n.getChild(0)).getVar().localVariableIndex()).isEqualTo(0);
@@ -119,7 +108,7 @@ public final class ResolveNamesVisitorTest extends TestCase {
                     "{let $lb: 1 /}"))
             .parse()
             .fileSet();
-    createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
+    new ResolveNamesVisitor(ExplodingErrorReporter.get()).exec(soyTree);
     TemplateNode n = soyTree.getChild(0).getChild(0);
     // 6 because we have 2 params, 1 let and a foreach loop var which needs 3 slots (variable,
     // index, lastIndex) active within the foreach loop.  the $lb can reuse a slot for the foreach
@@ -143,7 +132,7 @@ public final class ResolveNamesVisitorTest extends TestCase {
                 constructTemplateSource("{let $la: 1 /}", "{let $lb: $la /}", "{let $lc: $lb /}"))
             .parse()
             .fileSet();
-    createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
+    new ResolveNamesVisitor(ExplodingErrorReporter.get()).exec(soyTree);
     TemplateNode n = soyTree.getChild(0).getChild(0);
     // 3 because each new $la binding is a 'new variable'
     assertThat(n.getMaxLocalVariableTableSize()).isEqualTo(3);
@@ -161,17 +150,17 @@ public final class ResolveNamesVisitorTest extends TestCase {
 
   public void testVariableNameRedefinition() {
     assertResolveNamesFails(
-        "variable $la was already defined",
+        "variable '$la' already defined at line 4",
         constructTemplateSource(
             "{let $la: 1 /}",
             "{let $la: $la /}"));
     assertResolveNamesFails(
-        "variable $pa was already defined",
+        "variable '$pa' already defined",
         constructTemplateSource(
             "{@param pa: bool}",
             "{let $pa: not $pa /}"));
     assertResolveNamesFails(
-        "variable $la was already defined",
+        "variable '$la' already defined at line 4",
         constructTemplateSource(
             "{let $la: 1 /}",
             "{foreach $item in ['a', 'b']}",
@@ -203,7 +192,7 @@ public final class ResolveNamesVisitorTest extends TestCase {
                     "{$a}"))
             .parse()
             .fileSet();
-    createResolveNamesVisitorForMaxSyntaxVersion().exec(soyTree);
+    new ResolveNamesVisitor(ExplodingErrorReporter.get()).exec(soyTree);
     TemplateNode n = soyTree.getChild(0).getChild(0);
     // 1 because each new $la binding overwrites the prior one
     assertThat(n.getMaxLocalVariableTableSize()).isEqualTo(2);
@@ -240,24 +229,14 @@ public final class ResolveNamesVisitorTest extends TestCase {
         "{/template}\n";
   }
 
-  /**
-   * Assertions function that checks to make sure that name resolution fails with the
-   * expected exception.
-   * @param fileContent The template source.
-   * @param expectedError The expected failure message (a substring).
-   */
   private void assertResolveNamesFails(String expectedError, String fileContent) {
-    try {
-      SoyFileSetParserBuilder.forFileContents(fileContent)
-          .declaredSyntaxVersion(SyntaxVersion.V2_0)
-          .typeRegistry(typeRegistry)
-          .parse();
-      fail("Expected SoySyntaxException");
-    } catch (SoySyntaxException e) {
-      String message = e.getMessage();
-      assertWithMessage("Expected :'" + message + "' to contain '" + expectedError + "'")
-          .that(message.contains(expectedError))
-          .isTrue();
-    }
+    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+    SoyFileSetParserBuilder.forFileContents(fileContent)
+        .declaredSyntaxVersion(SyntaxVersion.V2_0)
+        .errorReporter(errorReporter)
+        .typeRegistry(typeRegistry)
+        .parse();
+    assertThat(errorReporter.getErrorMessages()).hasSize(1);
+    assertThat(errorReporter.getErrorMessages().get(0)).isEqualTo(expectedError);
   }
 }

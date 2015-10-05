@@ -18,10 +18,11 @@ package com.google.template.soy.passes;
 
 import static com.google.common.base.Preconditions.checkState;
 
+import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
-import com.google.template.soy.base.SoySyntaxException;
-import com.google.template.soy.basetree.SyntaxVersion;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyError;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
@@ -39,9 +40,9 @@ import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
-import com.google.template.soy.soytree.SoySyntaxExceptionUtils;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.InjectedParam;
+import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.LoopVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.UndeclaredVar;
@@ -59,6 +60,9 @@ import java.util.Map;
  *
  */
 final class ResolveNamesVisitor extends AbstractSoyNodeVisitor<Void> {
+
+  private static final SoyError VARIABLE_ALREADY_DEFINED =
+      SoyError.of("variable ''${0}'' already defined{1}");
 
   /**
    * A data structure that assigns a unique (small) integer to all local variable definitions that
@@ -164,16 +168,18 @@ final class ResolveNamesVisitor extends AbstractSoyNodeVisitor<Void> {
       // Search for the name to see if it is being redefined.
       VarDefn preexisting = lookup(defn.name());
       if (preexisting != null) {
-        throw SoySyntaxException
-            .createWithMetaInfo(
-                "variable $" + defn.name() + " was already defined",
-                definingNode.getSourceLocation(),
-                null,  // file location
-                currentTemplateName);
+        Optional<SourceLocation> sourceLocation = forVarDefn(preexisting);
+        String location = sourceLocation.isPresent()
+            ? " at line " + sourceLocation.get().getLineNumber()
+            : "";
+        errorReporter.report(
+            definingNode.getSourceLocation(), VARIABLE_ALREADY_DEFINED, defn.name(), location);
+        return;
       }
       currentScope.peek().put(defn.name(), defn);
       defn.setLocalVariableIndex(claimSlot());
     }
+
 
     /**
      * Returns the smallest available local variable slot or claims a new one if there is none
@@ -208,18 +214,13 @@ final class ResolveNamesVisitor extends AbstractSoyNodeVisitor<Void> {
   private LocalVariables localVariables;
   private Map<String, InjectedParam> ijParams;
 
-  /** User-declared syntax version. */
-  private final SyntaxVersion declaredSyntaxVersion;
-  private String currentTemplateName;
   private final ErrorReporter errorReporter;
 
-  ResolveNamesVisitor(SyntaxVersion declaredSyntaxVersion, ErrorReporter errorReporter) {
+  ResolveNamesVisitor(ErrorReporter errorReporter) {
     this.errorReporter = errorReporter;
-    this.declaredSyntaxVersion = declaredSyntaxVersion;
   }
 
   @Override protected void visitTemplateNode(TemplateNode node) {
-    currentTemplateName = node.getTemplateNameForUserMsgs();
     // Create a scope for all parameters.
     localVariables = new LocalVariables();
     localVariables.enterScope();
@@ -302,11 +303,20 @@ final class ResolveNamesVisitor extends AbstractSoyNodeVisitor<Void> {
   }
 
   private void visitExpressions(ExprHolderNode node) {
-    ResolveNamesExprVisitor exprVisitor = new ResolveNamesExprVisitor(node);
+    ResolveNamesExprVisitor exprVisitor = new ResolveNamesExprVisitor();
     for (ExprUnion exprUnion : node.getAllExprUnions()) {
       if (exprUnion.getExpr() != null) {
         exprVisitor.exec(exprUnion.getExpr());
       }
+    }
+  }
+
+  private static Optional<SourceLocation> forVarDefn(VarDefn varDefn) {
+    if (varDefn instanceof LocalVar) {
+      return Optional.of(((LocalVar) varDefn).declaringNode().getSourceLocation());
+    } else {
+      // TODO(user): plumb source locations through to other VarDefn impls.
+      return Optional.absent();
     }
   }
 
@@ -319,26 +329,9 @@ final class ResolveNamesVisitor extends AbstractSoyNodeVisitor<Void> {
    */
   private final class ResolveNamesExprVisitor extends AbstractExprNodeVisitor<Void> {
 
-    /** SoyNode owning the expression; Used for error reporting. */
-    private final ExprHolderNode owningSoyNode;
-
-    /** The root node of the current expression being visited (during an exec call). */
-    private ExprRootNode currExprRootNode;
-
-    /**
-     * Construct a new ResolveNamesExprVisitor.
-     * @param owningSoyNode The current error context, in other words the SoyNode owning the
-     *     expression being scanned.
-     */
-    ResolveNamesExprVisitor(ExprHolderNode owningSoyNode) {
-      this.owningSoyNode = owningSoyNode;
-    }
-
     @Override public Void exec(ExprNode node) {
       Preconditions.checkArgument(node instanceof ExprRootNode);
-      this.currExprRootNode = (ExprRootNode) node;
       visit(node);
-      this.currExprRootNode = null;
       return null;
     }
 
@@ -364,30 +357,11 @@ final class ResolveNamesVisitor extends AbstractSoyNodeVisitor<Void> {
       }
       VarDefn varDefn = localVariables.lookup(varRef.getName());
       if (varDefn == null) {
-        // TODO: Disallow untyped variables starting with some future syntax version.
-        if (declaredSyntaxVersion.num >= SyntaxVersion.V9_9.num) {
-          throw createExceptionForInvalidExpr("Undefined variable: " + varRef.getName());
-        } else {
-          // TODO(lukes): eliminate this case.  It is common in tests because the tests are too lazy
-          // to declare params.  I'm not sure how common it is in general
-          // If this is a legacy template, and we can't find a definition for the variable,
-          // then create an undefined variable as a placeholder.
-          // Undeclared vars behave more like ijs, and do not get registered in the local variable
-          // table.
-          varDefn = new UndeclaredVar(varRef.getName());
-        }
+        // this case is mostly about supporting v1 templates.  Undeclared vars for v2 templates are
+        // flagged as errors in the CheckTemplateParamsVisitor
+        varDefn = new UndeclaredVar(varRef.getName());
       }
       varRef.setDefn(varDefn);
-    }
-
-    /**
-     * Private helper to create a SoySyntaxException whose error message incorporates both the
-     * owningSoyNode and the currExprRootNode.
-     */
-    private SoySyntaxException createExceptionForInvalidExpr(String errorMsg) {
-      return SoySyntaxExceptionUtils.createWithNode(
-          "Invalid expression \"" + currExprRootNode.toSourceString() + "\": " + errorMsg,
-          owningSoyNode);
     }
   }
 }

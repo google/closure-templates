@@ -250,7 +250,7 @@ public final class PassManager {
 
   private final class ResolveNamesPass extends CompilerFilePass {
     @Override public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-      new ResolveNamesVisitor(declaredSyntaxVersion, errorReporter).exec(file);
+      new ResolveNamesVisitor(errorReporter).exec(file);
     }
   }
 
