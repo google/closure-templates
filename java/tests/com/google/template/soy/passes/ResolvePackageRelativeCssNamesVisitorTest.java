@@ -19,14 +19,12 @@ package com.google.template.soy.passes;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.template.soy.SoyFileSetParserBuilder;
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ExplodingErrorReporter;
-import com.google.template.soy.passes.ResolvePackageRelativeCssNamesVisitor;
+import com.google.template.soy.error.FormattingErrorReporter;
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.soytree.CssNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
-import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoytreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
 
@@ -34,19 +32,8 @@ import junit.framework.TestCase;
 
 import java.util.List;
 
-/**
- * Unit test for resolivng package-relative class names.
- */
-public class ResolvePackageRelativeCssNamesVisitorTest extends TestCase {
-
-  public List<CssNode> compileTemplate(String templateText) {
-    ErrorReporter boom = ExplodingErrorReporter.get();
-    SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forFileContents(templateText).errorReporter(boom).parse().fileSet();
-    TemplateNode template = (TemplateNode) SharedTestUtils.getNode(soyTree);
-    new ResolvePackageRelativeCssNamesVisitor(boom).exec(template);
-    return getCssNodes(template);
-  }
+/** Tests for {@link ResolvePackageRelativeCssNamesVisitor}. */
+public final class ResolvePackageRelativeCssNamesVisitorTest extends TestCase {
 
   public void testBaseCssOnNamespace() {
     List<CssNode> cssNodes =
@@ -97,38 +84,45 @@ public class ResolvePackageRelativeCssNamesVisitorTest extends TestCase {
   }
 
   public void testMissingCssBase() {
-    try {
-      compileTemplate(
-          "{namespace boo}\n\n"
-              + "/** Test template. */\n"
-              + "{template .foo}\n"
-              + "  <div class=\"{css %AAA}\">\n"
-              + "{/template}\n");
-      fail("Exception expected");
-    } catch (SoySyntaxException e) {
-      assertThat(e.getMessage()).contains("No CSS package");
-    }
+    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+    compileTemplate(
+        "{namespace boo}\n\n"
+            + "/** Test template. */\n"
+            + "{template .foo}\n"
+            + "  <div class=\"{css %AAA}\">\n"
+            + "{/template}\n",
+        errorReporter);
+    assertThat(errorReporter.getErrorMessages()).hasSize(1);
+    assertThat(errorReporter.getErrorMessages().get(0))
+        .isEqualTo("No CSS package defined for package-relative class name '%AAA'");
   }
 
   public void testWithComponentName() {
-    try {
-      compileTemplate(
-          "{namespace boo}\n\n"
-              + "/** Test template. */\n"
-              + "{template .foo}\n"
-              + "  <div class=\"{css $goo, %AAA}\">\n"
-              + "{/template}\n");
-      fail("Exception expected");
-    } catch (SoySyntaxException e) {
-      assertThat(e.getMessage()).contains("component expression");
-    }
+    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+    compileTemplate(
+        "{namespace boo}\n\n"
+            + "/** Test template. */\n"
+            + "{template .foo}\n"
+            + "  {@param goo: string}\n"
+            + "  <div class=\"{css $goo, %AAA}\">\n"
+            + "{/template}\n", errorReporter);
+    assertThat(errorReporter.getErrorMessages()).hasSize(2);
+    assertThat(errorReporter.getErrorMessages().get(0))
+        .isEqualTo("Package-relative class name '%AAA' cannot be used with component expression");
+    assertThat(errorReporter.getErrorMessages().get(1))
+        .isEqualTo("No CSS package defined for package-relative class name '%AAA'");
   }
 
-  /**
-   * Helper function that gathers all of the CSS nodes within a tree.
-   * @return A list of CSS nodes.
-   */
-  private List<CssNode> getCssNodes(SoyNode root) {
-    return SoytreeUtils.getAllNodesOfType(root, CssNode.class);
+  private List<CssNode> compileTemplate(String templateText, ErrorReporter errorReporter) {
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(templateText)
+        .errorReporter(errorReporter)
+        .parse()
+        .fileSet();
+    TemplateNode template = (TemplateNode) SharedTestUtils.getNode(soyTree);
+    return SoytreeUtils.getAllNodesOfType(template, CssNode.class);
+  }
+
+  private List<CssNode> compileTemplate(String templateText) {
+    return compileTemplate(templateText, ExplodingErrorReporter.get());
   }
 }

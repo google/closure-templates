@@ -19,25 +19,30 @@ package com.google.template.soy.passes;
 import com.google.common.base.CaseFormat;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyError;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CssNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
-import com.google.template.soy.soytree.SoySyntaxExceptionUtils;
 import com.google.template.soy.soytree.TemplateNode;
 
 /**
- * Visitor class which converts package-relative CSS class names to absolute names.
+ * Converts package-relative CSS class names to absolute names.
  */
 final class ResolvePackageRelativeCssNamesVisitor extends AbstractSoyNodeVisitor<Void> {
 
-    private final ErrorReporter errorReporter;
-    private String packagePrefix = null;
+  private static final SoyError PACKAGE_RELATIVE_CLASS_NAME_USED_WITH_COMPONENT_NAME =
+      SoyError.of("Package-relative class name ''{0}'' cannot be used with component expression");
+  private static final SoyError NO_CSS_PACKAGE =
+      SoyError.of("No CSS package defined for package-relative class name ''{0}''");
 
-    public ResolvePackageRelativeCssNamesVisitor(ErrorReporter errorReporter) {
-      this.errorReporter = errorReporter;
-    }
+  private final ErrorReporter errorReporter;
+  private String packagePrefix = null;
+
+  ResolvePackageRelativeCssNamesVisitor(ErrorReporter errorReporter) {
+    this.errorReporter = errorReporter;
+  }
 
     @Override protected void visitTemplateNode(TemplateNode node) {
     // Compute the CSS package prefix for this template. The search order is:
@@ -65,14 +70,14 @@ final class ResolvePackageRelativeCssNamesVisitor extends AbstractSoyNodeVisitor
 
     // Don't apply renaming to nodes with a component name.
     if (node.getComponentNameExpr() != null) {
-      throw SoySyntaxExceptionUtils.createWithNode(
-          "Package-relative class name '" + selectorText +
-          "' cannot be used with a component expression", node);
+      errorReporter.report(
+          node.getSourceLocation(),
+          PACKAGE_RELATIVE_CLASS_NAME_USED_WITH_COMPONENT_NAME,
+          selectorText);
     }
 
     if (packagePrefix == null) {
-      throw SoySyntaxExceptionUtils.createWithNode(
-          "No CSS package defined for package-relative class name '" + selectorText + "'", node);
+      errorReporter.report(node.getSourceLocation(), NO_CSS_PACKAGE, selectorText);
     }
 
     // Remove this CssNode. Save the index because we'll need it for inserting the new nodes.
