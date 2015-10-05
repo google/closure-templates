@@ -3591,6 +3591,7 @@ goog.addDependency('testing/net/xhrio.js', ['goog.testing.net.XhrIo'], ['goog.ar
 goog.addDependency('testing/net/xhrio_test.js', ['goog.testing.net.XhrIoTest'], ['goog.dom.xml', 'goog.events', 'goog.events.Event', 'goog.net.ErrorCode', 'goog.net.EventType', 'goog.net.XmlHttp', 'goog.object', 'goog.testing.MockControl', 'goog.testing.asserts', 'goog.testing.jsunit', 'goog.testing.mockmatchers.InstanceOf', 'goog.testing.net.XhrIo'], false);
 goog.addDependency('testing/net/xhriopool.js', ['goog.testing.net.XhrIoPool'], ['goog.net.XhrIoPool', 'goog.testing.net.XhrIo'], false);
 goog.addDependency('testing/objectpropertystring.js', ['goog.testing.ObjectPropertyString'], [], false);
+goog.addDependency('testing/parallel_closure_test_suite.js', ['goog.testing.parallelClosureTestSuite'], ['goog.Promise', 'goog.events', 'goog.testing.MultiTestRunner', 'goog.testing.TestCase', 'goog.testing.jsunit'], false);
 goog.addDependency('testing/performancetable.js', ['goog.testing.PerformanceTable'], ['goog.dom', 'goog.dom.TagName', 'goog.testing.PerformanceTimer'], false);
 goog.addDependency('testing/performancetimer.js', ['goog.testing.PerformanceTimer', 'goog.testing.PerformanceTimer.Task'], ['goog.array', 'goog.async.Deferred', 'goog.math'], false);
 goog.addDependency('testing/performancetimer_test.js', ['goog.testing.PerformanceTimerTest'], ['goog.async.Deferred', 'goog.dom', 'goog.math', 'goog.testing.MockClock', 'goog.testing.PerformanceTimer', 'goog.testing.jsunit'], false);
@@ -4497,31 +4498,18 @@ goog.string.caseInsensitiveCompare = function(str1, str2) {
 
 
 /**
- * Regular expression used for splitting a string into substrings of fractional
- * numbers, integers, and non-numeric characters.
- * @type {RegExp}
+ * Compares two strings interpreting their numeric substrings as numbers.
+ *
+ * @param {string} str1 First string.
+ * @param {string} str2 Second string.
+ * @param {!RegExp} tokenizerRegExp Splits a string into substrings of
+ *     non-negative integers, non-numeric characters and optionally fractional
+ *     numbers starting with a decimal point.
+ * @return {number} Negative if str1 < str2, 0 is str1 == str2, positive if
+ *     str1 > str2.
  * @private
  */
-goog.string.numerateCompareRegExp_ = /(\.\d+)|(\d+)|(\D+)/g;
-
-
-/**
- * String comparison function that handles numbers in a way humans might expect.
- * Using this function, the string "File 2.jpg" sorts before "File 10.jpg". The
- * comparison is mostly case-insensitive, though strings that are identical
- * except for case are sorted with the upper-case strings before lower-case.
- *
- * This comparison function is significantly slower (about 500x) than either
- * the default or the case-insensitive compare. It should not be used in
- * time-critical code, but should be fast enough to sort several hundred short
- * strings (like filenames) with a reasonable delay.
- *
- * @param {string} str1 The string to compare in a numerically sensitive way.
- * @param {string} str2 The string to compare {@code str1} to.
- * @return {number} less than 0 if str1 < str2, 0 if str1 == str2, greater than
- *     0 if str1 > str2.
- */
-goog.string.numerateCompare = function(str1, str2) {
+goog.string.numberAwareCompare_ = function(str1, str2, tokenizerRegExp) {
   if (str1 == str2) {
     return 0;
   }
@@ -4534,8 +4522,8 @@ goog.string.numerateCompare = function(str1, str2) {
 
   // Using match to split the entire string ahead of time turns out to be faster
   // for most inputs than using RegExp.exec or iterating over each character.
-  var tokens1 = str1.toLowerCase().match(goog.string.numerateCompareRegExp_);
-  var tokens2 = str2.toLowerCase().match(goog.string.numerateCompareRegExp_);
+  var tokens1 = str1.toLowerCase().match(tokenizerRegExp);
+  var tokens2 = str2.toLowerCase().match(tokenizerRegExp);
 
   var count = Math.min(tokens1.length, tokens2.length);
 
@@ -4545,7 +4533,6 @@ goog.string.numerateCompare = function(str1, str2) {
 
     // Compare pairs of tokens, returning if one token sorts before the other.
     if (a != b) {
-
       // Only if both tokens are integers is a special comparison required.
       // Decimal numbers are sorted as strings (e.g., '.09' < '.1').
       var num1 = parseInt(a, 10);
@@ -4565,10 +4552,59 @@ goog.string.numerateCompare = function(str1, str2) {
   }
 
   // The two strings must be equivalent except for case (perfect equality is
-  // tested at the head of the function.) Revert to default ASCII-betical string
-  // comparison to stablize the sort.
+  // tested at the head of the function.) Revert to default ASCII string
+  // comparison to stabilize the sort.
   return str1 < str2 ? -1 : 1;
 };
+
+
+/**
+ * String comparison function that handles non-negative integer numbers in a
+ * way humans might expect. Using this function, the string 'File 2.jpg' sorts
+ * before 'File 10.jpg', and 'Version 1.9' before 'Version 1.10'. The comparison
+ * is mostly case-insensitive, though strings that are identical except for case
+ * are sorted with the upper-case strings before lower-case.
+ *
+ * This comparison function is up to 50x slower than either the default or the
+ * case-insensitive compare. It should not be used in time-critical code, but
+ * should be fast enough to sort several hundred short strings (like filenames)
+ * with a reasonable delay.
+ *
+ * @param {string} str1 The string to compare in a numerically sensitive way.
+ * @param {string} str2 The string to compare {@code str1} to.
+ * @return {number} less than 0 if str1 < str2, 0 if str1 == str2, greater than
+ *     0 if str1 > str2.
+ */
+goog.string.intAwareCompare = function(str1, str2) {
+  return goog.string.numberAwareCompare_(str1, str2, /\d+|\D+/g);
+};
+
+
+/**
+ * String comparison function that handles non-negative integer and fractional
+ * numbers in a way humans might expect. Using this function, the string
+ * 'File 2.jpg' sorts before 'File 10.jpg', and '3.14' before '3.2'. Equivalent
+ * to {@link goog.string.intAwareCompare} apart from the way how it interprets
+ * dots.
+ *
+ * @param {string} str1 The string to compare in a numerically sensitive way.
+ * @param {string} str2 The string to compare {@code str1} to.
+ * @return {number} less than 0 if str1 < str2, 0 if str1 == str2, greater than
+ *     0 if str1 > str2.
+ */
+goog.string.floatAwareCompare = function(str1, str2) {
+  return goog.string.numberAwareCompare_(str1, str2, /\d+|\.\d+|\D+/g);
+};
+
+
+/**
+ * Alias for {@link goog.string.floatAwareCompare}.
+ *
+ * @param {string} str1
+ * @param {string} str2
+ * @return {number}
+ */
+goog.string.numerateCompare = goog.string.floatAwareCompare;
 
 
 /**
@@ -12822,18 +12858,19 @@ goog.functions.once = function(f) {
  * calls fired repeatedly so long as they are fired less than a specified
  * interval apart (in milliseconds). Whether it receives one signal or multiple,
  * it will always wait until a full interval has elapsed since the last signal
- * before performing the action.
+ * before performing the action, passing the arguments from the last call of the
+ * debouncing decorator into the decorated function.
  *
  * This is particularly useful for bulking up repeated user actions (e.g. only
  * refreshing a view once a user finishes typing rather than updating with every
  * keystroke). For more stateful debouncing with support for pausing, resuming,
  * and canceling debounced actions, use {@code goog.async.Debouncer}.
  *
- * @param {function(this:SCOPE):*} f Function to call.
+ * @param {function(this:SCOPE, ...?)} f Function to call.
  * @param {number} interval Interval over which to debounce. The function will
  *     only be called after the full interval has elapsed since the last call.
  * @param {SCOPE=} opt_scope Object in whose scope to call the function.
- * @return {function():undefined} Wrapped function.
+ * @return {function(...?): undefined} Wrapped function.
  * @template SCOPE
  */
 goog.functions.debounce = function(f, interval, opt_scope) {
@@ -12841,28 +12878,33 @@ goog.functions.debounce = function(f, interval, opt_scope) {
     f = goog.bind(f, opt_scope);
   }
   var timeout = null;
-  return function() {
+  return /** @type {function(...?)} */ (function(var_args) {
     goog.global.clearTimeout(timeout);
-    timeout = goog.global.setTimeout(f, interval);
-  };
+    var args = arguments;
+    timeout = goog.global.setTimeout(function() {
+      f.apply(null, args);
+    }, interval);
+  });
 };
 
 
 /**
  * Wraps a function to allow it to be called, at most, once per interval
  * (specified in milliseconds). If it is called multiple times while it is
- * waiting, it will only perform the action once at the end of the interval.
+ * waiting, it will only perform the action once at the end of the interval,
+ * passing the arguments from the last call of the throttling decorator into the
+ * decorated function.
  *
  * This is particularly useful for limiting repeated user requests (e.g.
  * preventing a user from spamming a server with frequent view refreshes). For
  * more stateful throttling with support for pausing, resuming, and canceling
  * throttled actions, use {@code goog.async.Throttle}.
  *
- * @param {function(this:SCOPE):*} f Function to call.
+ * @param {function(this:SCOPE, ...?)} f Function to call.
  * @param {number} interval Interval over which to throttle. The function can
  *     only be called once per interval.
  * @param {SCOPE=} opt_scope Object in whose scope to call the function.
- * @return {function():undefined} Wrapped function.
+ * @return {function(...?): undefined} Wrapped function.
  * @template SCOPE
  */
 goog.functions.throttle = function(f, interval, opt_scope) {
@@ -12871,10 +12913,8 @@ goog.functions.throttle = function(f, interval, opt_scope) {
   }
   var timeout = null;
   var shouldFire = false;
-  var fire = function() {
-    timeout = goog.global.setTimeout(handleTimeout, interval);
-    f();
-  };
+  var args = [];
+
   var handleTimeout = function() {
     timeout = null;
     if (shouldFire) {
@@ -12883,13 +12923,19 @@ goog.functions.throttle = function(f, interval, opt_scope) {
     }
   };
 
-  return function() {
+  var fire = function() {
+    timeout = goog.global.setTimeout(handleTimeout, interval);
+    f.apply(null, args);
+  };
+
+  return /** @type {function(...?)} */ (function(var_args) {
+    args = arguments;
     if (!timeout) {
       fire();
     } else {
       shouldFire = true;
     }
-  };
+  });
 };
 
 //javascript/closure/math/math.js
