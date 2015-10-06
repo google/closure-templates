@@ -17,30 +17,34 @@
 package com.google.template.soy.passes;
 
 import com.google.common.base.Preconditions;
-import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyError;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
-import com.google.template.soy.soytree.SoySyntaxExceptionUtils;
 
 import java.util.Map;
 
 /**
- * Visitor for setting the full callee name on each CallBasicNode whose callee name in the source
- * code either (a) is a partial template name or (b) starts with an alias.
- *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * Sets the full callee name on each {@link CallBasicNode} whose callee name
+ * in the source code either is a partial template name or starts with an alias.
  *
  * <p> {@link #exec} should be called on a full parse tree or a Soy file. This pass mutates
- * {@code CallBasicNode}s. There is no return value.
+ * CallBasicNodes. There is no return value.
+ *
+ * <p>TODO(brndn): consider folding into TemplateParser.
  *
  */
 final class SetFullCalleeNamesVisitor extends AbstractSoyNodeVisitor<Void> {
 
+  private static final SoyError CALL_COLLIDES_WITH_NAMESPACE_ALIAS =
+      SoyError.of("Call collides with namespace alias ''{0}''");
+  private static final SoyError NAMESPACE_RELATIVE_CALL_IN_FILE_WITHOUT_NAMESPACE_DECL =
+      SoyError.of("Namespace-relative template calls are allowed only in files "
+          + "with namespace declarations");
 
   /** The namespace of the current file that we're in (during the pass). */
   private String currNamespace;
@@ -76,11 +80,10 @@ final class SetFullCalleeNamesVisitor extends AbstractSoyNodeVisitor<Void> {
     if (currNamespace == null) {
       String srcCalleeName = node.getSrcCalleeName();
       // TODO: If feasible, change existing instances and remove the startsWith(".") part below.
-      if (node.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0) && srcCalleeName.startsWith(".")) {
-        throw SoySyntaxExceptionUtils.createWithNode(
-            "Missing namespace in Soy file containing 'call' with namespace-relative callee name" +
-                " (" + node.getTagString() + ").",
-            node);
+      if (srcCalleeName.startsWith(".")) {
+        errorReporter.report(
+            node.getSourceLocation(), NAMESPACE_RELATIVE_CALL_IN_FILE_WITHOUT_NAMESPACE_DECL);
+        return; // To prevent IllegalStateException in setCalleeName below
       }
       node.setCalleeName(node.getSrcCalleeName());
 
@@ -103,10 +106,8 @@ final class SetFullCalleeNamesVisitor extends AbstractSoyNodeVisitor<Void> {
       } else {
         // Case 3: Source callee name is a single ident (not dotted).
         if (currAliasToNamespaceMap.containsKey(srcCalleeName)) {
-          throw SoySyntaxExceptionUtils.createWithNode(
-              "In 'call' tag, found callee that is a single identifier (not dotted) and matches" +
-                  " a namespace alias ('" + srcCalleeName + "'), which is not allowed.",
-              node);
+          errorReporter.report(
+              node.getSourceLocation(), CALL_COLLIDES_WITH_NAMESPACE_ALIAS, srcCalleeName);
         }
         node.setCalleeName(srcCalleeName);
       }
