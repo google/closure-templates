@@ -49,8 +49,6 @@ public class BasicDirectivesModule extends AbstractModule {
     soyDirectivesSetBinder.addBinding().toInstance(new BasicEscapeDirective.FilterNormalizeUri());
     soyDirectivesSetBinder.addBinding().toInstance(
         new BasicEscapeDirective.FilterNormalizeMediaUri());
-    soyDirectivesSetBinder.addBinding().toInstance(
-        new BasicEscapeDirective.FilterTrustedResourceUri());
     soyDirectivesSetBinder.addBinding().toInstance(new BasicEscapeDirective.NormalizeUri());
     soyDirectivesSetBinder.addBinding().toInstance(new BasicEscapeDirective.EscapeUri());
 
@@ -61,6 +59,7 @@ public class BasicDirectivesModule extends AbstractModule {
     soyDirectivesSetBinder.addBinding().to(TextDirective.class);
     soyDirectivesSetBinder.addBinding().to(CleanHtmlDirective.class);
     soyDirectivesSetBinder.addBinding().to(FilterImageDataUriDirective.class);
+    soyDirectivesSetBinder.addBinding().to(FilterTrustedResourceUriDirective.class);
   }
 
 }

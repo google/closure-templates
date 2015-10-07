@@ -230,14 +230,16 @@ def filter_no_auto_escape(value):
 
 
 def filter_normalize_uri(value):
-  if is_content_kind(value, CONTENT_KIND.URI):
+  if (is_content_kind(value, CONTENT_KIND.URI)
+      or is_content_kind(value, CONTENT_KIND.TRUSTED_RESOURCE_URI)):
     return normalize_uri(value)
 
   return generated_sanitize.filter_normalize_uri_helper(value)
 
 
 def filter_normalize_media_uri(value):
-  if is_content_kind(value, CONTENT_KIND.URI):
+  if (is_content_kind(value, CONTENT_KIND.URI)
+      or is_content_kind(value, CONTENT_KIND.TRUSTED_RESOURCE_URI)):
     return normalize_uri(value)
 
   return generated_sanitize.filter_normalize_media_uri_helper(value)

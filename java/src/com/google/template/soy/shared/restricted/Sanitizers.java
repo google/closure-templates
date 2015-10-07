@@ -404,7 +404,8 @@ public final class Sanitizers {
    * {@link #normalizeUri normalizes} it.
    */
   public static String filterNormalizeUri(SoyValue value) {
-    if (isSanitizedContentOfKind(value, SanitizedContent.ContentKind.URI)) {
+    if (isSanitizedContentOfKind(value, SanitizedContent.ContentKind.URI)
+        || isSanitizedContentOfKind(value, SanitizedContent.ContentKind.TRUSTED_RESOURCE_URI)) {
       return normalizeUri(value);
     }
     return filterNormalizeUri(value.coerceToString());
@@ -430,7 +431,8 @@ public final class Sanitizers {
    * <p>Does not return SanitizedContent as there isn't an appropriate type for this.
    */
   public static String filterNormalizeMediaUri(SoyValue value) {
-    if (isSanitizedContentOfKind(value, SanitizedContent.ContentKind.URI)) {
+    if (isSanitizedContentOfKind(value, SanitizedContent.ContentKind.URI)
+        || isSanitizedContentOfKind(value, SanitizedContent.ContentKind.TRUSTED_RESOURCE_URI)) {
       return normalizeUri(value);
     }
     return filterNormalizeMediaUri(value.coerceToString());
@@ -455,9 +457,9 @@ public final class Sanitizers {
    * This is supposed to make sure the the given input is an instance of either trustedResourceUrl
    * or trustedString. But for now only calls filterNormalizeUri.
    */
-  public static String filterTrustedResourceUri(SoyValue value) {
+  public static SoyValue filterTrustedResourceUri(SoyValue value) {
     // TODO(shwetakarwa): This needs to be changed once all the legacy URLs are taken care of.
-    return value.coerceToString();
+    return value;
   }
 
 
@@ -465,8 +467,10 @@ public final class Sanitizers {
    * Makes sure that the given input doesn't specify a dangerous protocol and also
    * {@link #normalizeUri normalizes} it.
    */
-  public static String filterTrustedResourceUri(String value) {
-    return value;
+  public static SoyValue filterTrustedResourceUri(String value) {
+    // TODO(shwetakarwa): This needs to be changed once all the legacy URLs are taken care of. Will
+    // probably need to return string.
+    return StringData.forValue(value);
   }
 
 
