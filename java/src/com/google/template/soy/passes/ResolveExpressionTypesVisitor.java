@@ -22,10 +22,8 @@ import static com.google.template.soy.types.SoyTypes.removeNull;
 import com.google.common.base.Equivalence.Wrapper;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.basetree.SyntaxVersionUpperBound;
 import com.google.template.soy.error.ErrorReporter;
@@ -78,7 +76,6 @@ import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
-import com.google.template.soy.soytree.SoySyntaxExceptionUtils;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.types.SoyObjectType;
 import com.google.template.soy.types.SoyType;
@@ -97,6 +94,7 @@ import com.google.template.soy.types.primitive.SanitizedType;
 import com.google.template.soy.types.primitive.StringType;
 import com.google.template.soy.types.primitive.UnknownType;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -110,26 +108,43 @@ import javax.annotation.Nullable;
  *
  */
 final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
+
+  private static final SoyError BAD_INDEX_TYPE =
+      SoyError.of("bad index type {0} for {1}");
+  private static final SoyError BAD_KEY_TYPE =
+      SoyError.of("bad key type {0} for {1}");
+  private static final SoyError BRACKET_ACCESS_NOT_SUPPORTED =
+      SoyError.of("type {0} does not support bracket access");
+  private static final SoyError CHECK_NOT_NULL_ON_COMPILE_TIME_NULL =
+      SoyError.of("Cannot call checkNotNull on a parameter with a static type of ''null''");
+  private static final SoyError DOT_ACCESS_NOT_SUPPORTED =
+      SoyError.of("type {0} does not support dot access");
+  private static final SoyError DOT_ACCESS_NOT_SUPPORTED_CONSIDER_RECORD =
+      SoyError.of("type {0} does not support dot access (consider record instead of map)");
   private static final SoyError DUPLICATE_KEY_IN_RECORD_LITERAL =
       SoyError.of("Record literals with duplicate keys are not allowed.  Duplicate key: ''{0}''");
-
   private static final SoyError LIST_LENGTH_ERROR =
       SoyError.of("Soy lists do not have a ''length'' field. Use function length(...) instead.");
-
+  private static final SoyError MISSING_SOY_TYPE =
+      SoyError.of("Missing Soy type for node {0}");
   private static final SoyError STRING_LENGTH_ERROR =
       SoyError.of("Soy strings do not have a ''length'' field. Use function strLen(...) instead.");
+  private static final SoyError UNDEFINED_FIELD_FOR_OBJECT_TYPE =
+      SoyError.of("undefined field ''{0}'' for object type {1}");
+  private static final SoyError UNDEFINED_FIELD_FOR_RECORD_TYPE =
+      SoyError.of("undefined field ''{0}'' for record type {1}");
+  private static final SoyError VAR_REF_MISSING_SOY_TYPE =
+      SoyError.of("Missing Soy type for variable");
 
   /** User-declared syntax version. */
   private final SyntaxVersion declaredSyntaxVersion;
   private final ErrorReporter errorReporter;
-
   /** Common operations on Soy types. */
   private final SoyTypeOps typeOps;
-
   /** Current set of type substitutions. */
   private TypeSubstitution substitutions;
 
-  public ResolveExpressionTypesVisitor(
+  ResolveExpressionTypesVisitor(
       SoyTypeRegistry typeRegistry,
       SyntaxVersion declaredSyntaxVersion,
       ErrorReporter errorReporter) {
@@ -299,7 +314,7 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
         // If it's a union, then do the field type calculation for each member of
         // the union and combine the result.
         UnionType unionType = (UnionType) collectionType;
-        List<SoyType> fieldTypes = Lists.newArrayList();
+        List<SoyType> fieldTypes = new ArrayList<>(unionType.getMembers().size());
         for (SoyType unionMember : unionType.getMembers()) {
           fieldTypes.add(getElementType(unionMember, owningNode));
         }
@@ -307,8 +322,10 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
       }
 
       default:
-        throw SoySyntaxExceptionUtils.createWithNode(
-            "Cannot compute element type for collection of type '" + collectionType, owningNode);
+        // If we're here, there's a bug in Soy. collectionType can't be set by template authors.
+        // It comes from the ForeachNonemptyNode.
+        throw new AssertionError(
+            "Cannot compute element type for collection of type '" + collectionType);
     }
   }
 
@@ -336,25 +353,20 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
     /** SoyNode owning the expression; Used for error reporting. */
     private final ExprHolderNode owningSoyNode;
 
-    /** The root node of the current expression being visited (during an exec call). */
-    private ExprRootNode currExprRootNode;
-
     /**
      * Construct a new ResolveNamesExprVisitor.
      * @param owningSoyNode The current error context, in other words the SoyNode owning the
      *     expression being scanned.
      */
-    public ResolveTypesExprVisitor(ExprHolderNode owningSoyNode) {
+    ResolveTypesExprVisitor(ExprHolderNode owningSoyNode) {
       this.owningSoyNode = owningSoyNode;
     }
 
     @Override public Void exec(ExprNode node) {
       Preconditions.checkArgument(node instanceof ExprRootNode);
-      this.currExprRootNode = (ExprRootNode) node;
       visit(node);
       // Check that every node in the tree had a type assigned
-      checkAllTypesAssignedVisitor.exec(currExprRootNode);
-      this.currExprRootNode = null;
+      checkAllTypesAssignedVisitor.exec(node);
       return null;
     }
 
@@ -371,7 +383,7 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
 
     @Override protected void visitListLiteralNode(ListLiteralNode node) {
       visitChildren(node);
-      List<SoyType> elementTypes = Lists.newArrayList();
+      List<SoyType> elementTypes = new ArrayList<>(node.getChildren().size());
       for (ExprNode child : node.getChildren()) {
         requireNodeType(child);
         elementTypes.add(child.getType());
@@ -402,8 +414,8 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
         commonKeyType = UnknownType.getInstance();
         commonValueType = UnknownType.getInstance();
       } else {
-        List<SoyType> keyTypes = Lists.newArrayListWithCapacity(numChildren / 2);
-        List<SoyType> valueTypes = Lists.newArrayListWithCapacity(numChildren / 2);
+        List<SoyType> keyTypes = new ArrayList<>(numChildren / 2);
+        List<SoyType> valueTypes = new ArrayList<>(numChildren / 2);
         for (int i = 0; i < numChildren; i += 2) {
           ExprNode key = node.getChild(i);
           ExprNode value = node.getChild(i + 1);
@@ -426,7 +438,8 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
       if (StringType.getInstance().isAssignableFrom(commonKeyType)
           && recordFieldTypes.size() == numChildren / 2) {
         // Case 1: Keys are all strings (or unknown). We should be creating a record for the user.
-        Map<String, SoyType> leastCommonFieldTypes = Maps.newHashMap();
+        Map<String, SoyType> leastCommonFieldTypes =
+            Maps.newHashMapWithExpectedSize(recordFieldTypes.size());
         for (String fieldName : recordFieldTypes.keySet()) {
           leastCommonFieldTypes.put(fieldName, recordFieldTypes.get(fieldName));
         }
@@ -440,7 +453,7 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
 
     @Override protected void visitVarRefNode(VarRefNode varRef) {
       if (varRef.getType() == null) {
-        throw createExceptionForInvalidExpr("Missing Soy type for variable: " + varRef.getName());
+        errorReporter.report(varRef.getSourceLocation(), VAR_REF_MISSING_SOY_TYPE);
       }
       SoyType newType = getTypeSubstitution(varRef);
       if (newType != null) {
@@ -451,7 +464,9 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
     @Override protected void visitFieldAccessNode(FieldAccessNode node) {
       visit(node.getBaseExprChild());
       node.setType(getFieldType(
-          node.getBaseExprChild().getType(), node.getFieldName(), node.isNullSafe(),
+          node.getBaseExprChild().getType(),
+          node.getFieldName(),
+          node.isNullSafe(),
           node.getSourceLocation()));
       tryApplySubstitution(node);
     }
@@ -459,8 +474,11 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
     @Override protected void visitItemAccessNode(ItemAccessNode node) {
       visit(node.getBaseExprChild());
       visit(node.getKeyExprChild());
-      node.setType(getItemType(
-          node.getBaseExprChild().getType(), node.getKeyExprChild().getType()));
+      SoyType itemType = getItemType(
+          node.getBaseExprChild().getType(),
+          node.getKeyExprChild().getType(),
+          node.getSourceLocation());
+      node.setType(itemType);
       tryApplySubstitution(node);
     }
 
@@ -665,8 +683,7 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
           case CHECK_NOT_NULL:
             SoyType type = node.getChild(0).getType();
             if (type.equals(NullType.getInstance())) {
-              throw createExceptionForInvalidExpr(
-                  "Cannot call checkNotNull on a parameter with a static type of 'null'");
+              errorReporter.report(node.getSourceLocation(), CHECK_NOT_NULL_ON_COMPILE_TIME_NULL);
             } else {
               // Same type as its child but with nulls removed
               node.setType(removeNull(type));
@@ -731,15 +748,13 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
     }
 
     /**
-     * Helper function that throws an exception if a node's type field is {@code null}.
-     * The exception will show what kind of node it was, and where in the template it
-     * was found.
-     * @param node The node to check.
+     * Helper function that reports an error if a node's type field is {@code null}.
+     * The error will show what kind of node it was, and where in the template
+     * it was found.
      */
     private void requireNodeType(ExprNode node) {
       if (node.getType() == null) {
-        throw createExceptionForInvalidExpr(
-            "Missing Soy type for node: " + node.getClass().getName());
+        errorReporter.report(node.getSourceLocation(), MISSING_SOY_TYPE, node.getClass().getName());
       }
     }
 
@@ -750,8 +765,8 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
      * @param sourceLocation The source location of the expression
      * @return The type of the field.
      */
-    private SoyType getFieldType(SoyType baseType, String fieldName, boolean isNullSafe,
-        SourceLocation sourceLocation) {
+    private SoyType getFieldType(
+        SoyType baseType, String fieldName, boolean isNullSafe, SourceLocation sourceLocation) {
       Preconditions.checkNotNull(baseType);
       switch (baseType.getKind()) {
         case UNKNOWN:
@@ -763,13 +778,16 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
           // The base type is an object, so look up the field.
           SoyObjectType objectType = (SoyObjectType) baseType;
           SoyType fieldType = objectType.getFieldType(fieldName);
-          if (fieldType == null) {
-            String extraErrorMessage = "";
-            throw createExceptionForInvalidExpr(
-                "Undefined field '" + fieldName + "' for object type "
-                + baseType + extraErrorMessage);
+          if (fieldType != null) {
+            return fieldType;
           }
-          return fieldType;
+          String extraErrorMessage = "";
+          errorReporter.report(
+              sourceLocation,
+              UNDEFINED_FIELD_FOR_OBJECT_TYPE,
+              fieldName,
+              baseType + extraErrorMessage);
+          return ErrorType.getInstance();
         }
 
         // calling .length on strings/lists is common in v1 templates. So provide better error
@@ -782,43 +800,52 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
         case URI:
           if (fieldName.equals("length")) {
             errorReporter.report(sourceLocation, STRING_LENGTH_ERROR);
-            return new ErrorType(".length is not supported");
+            return ErrorType.getInstance();
           }
           break;
 
         case LIST:
           if (fieldName.equals("length")) {
             errorReporter.report(sourceLocation, LIST_LENGTH_ERROR);
-            return new ErrorType(".length is not supported");
+            return ErrorType.getInstance();
           }
           break;
 
         case RECORD: {
           SoyType fieldType = ((SoyObjectType) baseType).getFieldType(fieldName);
-          if (fieldType == null) {
-            throw createExceptionForInvalidExpr(
-                "Undefined field '" + fieldName + "' for record type " + baseType);
+          if (fieldType != null) {
+            return fieldType;
+          } else {
+            errorReporter.report(
+                sourceLocation, UNDEFINED_FIELD_FOR_RECORD_TYPE, fieldName, baseType);
+            return ErrorType.getInstance();
           }
-          return fieldType;
         }
 
         case MAP: {
-          throw createExceptionForInvalidExpr(
-              "Dot-access not supported for type " + baseType + " (consider dict instead of map)");
+          errorReporter.report(sourceLocation, DOT_ACCESS_NOT_SUPPORTED_CONSIDER_RECORD, baseType);
+          return ErrorType.getInstance();
         }
 
         case UNION: {
           // If it's a union, then do the field type calculation for each member of
           // the union and combine the result.
           UnionType unionType = (UnionType) baseType;
-          List<SoyType> fieldTypes = Lists.newArrayList();
+          List<SoyType> fieldTypes = new ArrayList<>(unionType.getMembers().size());
           for (SoyType unionMember : unionType.getMembers()) {
             // TODO: In the future when we have flow-based type analysis, only
             // exclude nulls when isNullSafe is true.
             if (unionMember.getKind() == SoyType.Kind.NULL) {
               continue;
             }
-            fieldTypes.add(getFieldType(unionMember, fieldName, isNullSafe, sourceLocation));
+
+            SoyType fieldType = getFieldType(unionMember, fieldName, isNullSafe, sourceLocation);
+            // If this member's field type resolved to an error, bail out to avoid spamming
+            // the user with multiple error messages for the same line.
+            if (fieldType == ErrorType.getInstance()) {
+              return fieldType;
+            }
+            fieldTypes.add(fieldType);
           }
           return typeOps.computeLowestCommonType(fieldTypes);
         }
@@ -826,16 +853,13 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
         default:
           // fall-through
       }
-      throw createExceptionForInvalidExpr("Dot-access not supported for type " + baseType + ".");
+      errorReporter.report(sourceLocation, DOT_ACCESS_NOT_SUPPORTED, baseType);
+      return ErrorType.getInstance();
     }
 
-    /**
-     * Given a base type and an item key type, compute the item value type.
-     * @param baseType The base type.
-     * @param keyType The type of the item key.
-     * @return The type of the item value.
-     */
-    private SoyType getItemType(SoyType baseType, SoyType keyType) {
+    /** Given a base type and an item key type, compute the item value type. */
+    private SoyType getItemType(
+        SoyType baseType, SoyType keyType, SourceLocation sourceLocation) {
       Preconditions.checkNotNull(baseType);
       Preconditions.checkNotNull(keyType);
       switch (baseType.getKind()) {
@@ -849,8 +873,8 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
           // For lists, the key type must either be unknown or assignable to integer.
           if (keyType.getKind() != SoyType.Kind.UNKNOWN &&
               !IntType.getInstance().isAssignableFrom(keyType)) {
-            throw createExceptionForInvalidExpr(
-                "Invalid index type " + keyType + " for list of type " + baseType);
+            errorReporter.report(sourceLocation, BAD_INDEX_TYPE, keyType, baseType);
+            return ErrorType.getInstance();
           }
           return listType.getElementType();
 
@@ -859,8 +883,8 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
           // For maps, the key type must either be unknown or assignable to the declared key type.
           if (keyType.getKind() != SoyType.Kind.UNKNOWN &&
               !mapType.getKeyType().isAssignableFrom(keyType)) {
-            throw createExceptionForInvalidExpr(
-                "Invalid key type " + keyType + " for map of type " + baseType);
+            errorReporter.report(sourceLocation, BAD_KEY_TYPE, keyType, baseType);
+            return ErrorType.getInstance();
           }
           return mapType.getValueType();
 
@@ -868,16 +892,22 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
           // If it's a union, then do the item type calculation for each member of
           // the union and combine the result.
           UnionType unionType = (UnionType) baseType;
-          List<SoyType> itemTypes = Lists.newArrayList();
+          List<SoyType> itemTypes = new ArrayList<>(unionType.getMembers().size());
           for (SoyType unionMember : unionType.getMembers()) {
-            itemTypes.add(getItemType(unionMember, keyType));
+            SoyType itemType = getItemType(unionMember, keyType, sourceLocation);
+            // If this member's item type resolved to an error, bail out to avoid spamming
+            // the user with multiple error messages for the same line.
+            if (itemType == ErrorType.getInstance()) {
+              return itemType;
+            }
+            itemTypes.add(itemType);
           }
           return typeOps.computeLowestCommonType(itemTypes);
         }
 
         default:
-          throw createExceptionForInvalidExpr(
-              "Type " + baseType + " does not support bracket-access.");
+          errorReporter.report(sourceLocation, BRACKET_ACCESS_NOT_SUPPORTED, baseType);
+          return ErrorType.getInstance();
       }
     }
 
@@ -899,16 +929,6 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
         }
       }
       return null;
-    }
-
-    /**
-     * Private helper to create a SoySyntaxException whose error message incorporates both the
-     * owningSoyNode and the currExprRootNode.
-     */
-    private SoySyntaxException createExceptionForInvalidExpr(String errorMsg) {
-      return SoySyntaxExceptionUtils.createWithNode(
-          "Invalid expression \"" + currExprRootNode.toSourceString() + "\": " + errorMsg,
-          owningSoyNode);
     }
   }
 
@@ -935,10 +955,10 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
    */
   private final class TypeNarrowingConditionVisitor extends AbstractExprNodeVisitor<Void> {
     // Type constraints that are valid if the condition is true.
-    Map<Wrapper<ExprNode>, SoyType> positiveTypeConstraints = Maps.newHashMap();
+    Map<Wrapper<ExprNode>, SoyType> positiveTypeConstraints = new LinkedHashMap<>();
 
     // Type constraints that are valid if the condition is false.
-    Map<Wrapper<ExprNode>, SoyType> negativeTypeConstraints = Maps.newHashMap();
+    Map<Wrapper<ExprNode>, SoyType> negativeTypeConstraints = new LinkedHashMap<>();
 
     @Override public Void exec(ExprNode node) {
       visit(node);
@@ -1078,7 +1098,7 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
       if (right.isEmpty()) {
         return left;
       }
-      Map<T, SoyType> result = Maps.newHashMap(left);
+      Map<T, SoyType> result = new LinkedHashMap<>(left);
       for (Map.Entry<T, SoyType> entry : right.entrySet()) {
         // The union of two constraints is a *stricter* constraint.
         // Thus "((a instanceof any) AND (a instanceof bool)) == (a instanceof bool)"
@@ -1111,7 +1131,7 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
       if (right.isEmpty()) {
         return right;
       }
-      Map<Wrapper<ExprNode>, SoyType> result = Maps.newHashMap();
+      Map<Wrapper<ExprNode>, SoyType> result = Maps.newHashMapWithExpectedSize(left.size());
       for (Map.Entry<Wrapper<ExprNode>, SoyType> entry : left.entrySet()) {
         // A variable must be present in both the left and right sides in order to be
         // included in the output.
@@ -1138,15 +1158,15 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
    */
   private static final class TypeSubstitution {
     /** Parent substitution. */
-    public final TypeSubstitution parent;
+    @Nullable final TypeSubstitution parent;
 
     /** The expression whose type we are overriding. */
-    public final ExprNode expression;
+    final ExprNode expression;
 
     /** The new type of the variable. */
-    public final SoyType type;
+    final SoyType type;
 
-    public TypeSubstitution(@Nullable TypeSubstitution parent, ExprNode expression, SoyType type) {
+    TypeSubstitution(@Nullable TypeSubstitution parent, ExprNode expression, SoyType type) {
       this.parent = parent;
       this.expression = expression;
       this.type = type;

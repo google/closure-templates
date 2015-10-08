@@ -24,14 +24,13 @@ import com.google.template.soy.types.SoyType;
  */
 public final class ErrorType implements SoyType {
 
+  private static final ErrorType INSTANCE = new ErrorType();
 
-  private final String name;
+  private ErrorType() {}
 
-
-  public ErrorType(String name) {
-    this.name = name;
+  public static ErrorType getInstance() {
+    return INSTANCE;
   }
-
 
   @Override public Kind getKind() {
     return Kind.ERROR;
@@ -42,7 +41,6 @@ public final class ErrorType implements SoyType {
     return false;
   }
 
-
   @Override public boolean isInstance(SoyValue value) {
     // TODO(lukes): have this throw an exception? while it is true that nothing is equal to the
     // error type... this comparison should probably never happen in the first place.
@@ -51,18 +49,5 @@ public final class ErrorType implements SoyType {
 
   @Override public Class<? extends SoyValue> javaType() {
     throw new UnsupportedOperationException("ErrorType doesn't have a runtime representation");
-  }
-
-  @Override public String toString() {
-    return name;
-  }
-
-
-  @Override public boolean equals(Object other) {
-    // We don't need to override hashCode() since we're only using equals()
-    // for assertions in unit tests.
-    return other != null &&
-        other.getClass() == ErrorType.class &&
-        ((ErrorType) other).name.equals(name);
   }
 }

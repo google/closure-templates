@@ -24,7 +24,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.SoyFileSetParserBuilder;
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.error.FormattingErrorReporter;
@@ -54,7 +53,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Unit tests for ResolveNamesVisitor.
+ * Unit tests for {@link ResolveExpressionTypesVisitor}.
  *
  */
 public final class ResolveExpressionTypesVisitorTest extends TestCase {
@@ -176,16 +175,14 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
   }
 
   public void testDataRefTypesError() {
-    // Should fail because pa key type should be string, not int
     assertResolveExpressionTypesFails(
-        "Invalid key type",
+        "bad key type int for map<string,float>",
         constructTemplateSource(
             "{@param pa: map<string, float>}",
             "{$pa[0]}"));
 
-    // Should fail because pa key type should be int, not bool
     assertResolveExpressionTypesFails(
-        "Invalid key type",
+        "bad key type bool for map<int,float>",
         constructTemplateSource(
             "{@param pa: map<int, float>}",
             "{@param pb: bool}",
@@ -193,9 +190,8 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
   }
 
   public void testRecordTypesError() {
-    // Should fail because key 'c' does not exist.
     assertResolveExpressionTypesFails(
-        "Undefined field",
+        "undefined field 'c' for record type [a: int, b: float]",
         constructTemplateSource(
             "{@param pa: [a:int, b:float]}",
             "{$pa.c}"));
@@ -686,20 +682,20 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
     SoyType boolOrNullType = makeNullable(BoolType.getInstance());
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
-                constructTemplateSource(
-                    "{@param pa: bool|null}",
-                    "{@param pb: bool}",
-                    "{if ($pa != null) != ($pb != null)}",
-                    "  {captureType($pa)}", // #0 don't know
-                    "{else}",
-                    "  {captureType($pa)}", // #1 don't know
-                    "{/if}",
-                    "{if $pa ?: $pb}",
-                    "  {captureType($pa)}", // #2 don't know
-                    "{/if}",
-                    "{if $pb ? $pa : false}",
-                    "  {captureType($pa)}", // #3 don't know
-                    "{/if}"))
+            constructTemplateSource(
+                "{@param pa: bool|null}",
+                "{@param pb: bool}",
+                "{if ($pa != null) != ($pb != null)}",
+                "  {captureType($pa)}", // #0 don't know
+                "{else}",
+                "  {captureType($pa)}", // #1 don't know
+                "{/if}",
+                "{if $pa ?: $pb}",
+                "  {captureType($pa)}", // #2 don't know
+                "{/if}",
+                "{if $pb ? $pa : false}",
+                "  {captureType($pa)}", // #3 don't know
+                "{/if}"))
             .addSoyFunction(CAPTURE_TYPE_FUNCTION)
             .parse()
             .fileSet();
@@ -772,6 +768,20 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
     assertThat(types.get(1)).isEqualTo(makeNullable(ListType.of(IntType.getInstance())));
   }
 
+  public void testErrorMessagesInUnionTypes() {
+    assertResolveExpressionTypesFails(
+        "type float does not support bracket access",
+        constructTemplateSource(
+            "{@param p: float|int}",
+            "{$p[1]}"));
+
+    assertResolveExpressionTypesFails(
+        "type float does not support dot access",
+        constructTemplateSource(
+            "{@param p: float|int}",
+            "{$p.a}"));
+  }
+
   /**
    * Helper function that constructs a boilerplate template given a list of body
    * statements to insert into the middle of the template. The body statements will be
@@ -795,20 +805,14 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
    * @param expectedError The expected failure message (a substring).
    */
   private void assertResolveExpressionTypesFails(String expectedError, String fileContent) {
-
-    try {
-      SoyFileSetParserBuilder.forFileContents(fileContent)
-          .declaredSyntaxVersion(SyntaxVersion.V2_0)
-          .typeRegistry(typeRegistry)
-          .parse();
-      fail("Expected SoySyntaxException");
-    } catch (SoySyntaxException e) {
-      assertThat(e.getMessage()).contains(expectedError);
-    } catch (IllegalStateException e) {
-      // from the exploding error reporter
-      assertThat(e.getMessage()).startsWith("Unexpected SoyError:");
-      assertThat(e.getMessage()).contains(expectedError);
-    }
+    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+    SoyFileSetParserBuilder.forFileContents(fileContent)
+        .declaredSyntaxVersion(SyntaxVersion.V2_0)
+        .errorReporter(errorReporter)
+        .typeRegistry(typeRegistry)
+        .parse();
+    assertThat(errorReporter.getErrorMessages()).hasSize(1);
+    assertThat(errorReporter.getErrorMessages().get(0)).isEqualTo(expectedError);
   }
 
   /**
