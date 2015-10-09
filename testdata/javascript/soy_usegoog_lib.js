@@ -3305,8 +3305,11 @@ goog.addDependency('net/multiiframeloadmonitor_test.js', ['goog.net.MultiIframeL
 goog.addDependency('net/networkstatusmonitor.js', ['goog.net.NetworkStatusMonitor'], ['goog.events.Listenable'], false);
 goog.addDependency('net/networktester.js', ['goog.net.NetworkTester'], ['goog.Timer', 'goog.Uri', 'goog.log'], false);
 goog.addDependency('net/networktester_test.js', ['goog.net.NetworkTesterTest'], ['goog.Uri', 'goog.net.NetworkTester', 'goog.testing.MockClock', 'goog.testing.jsunit'], false);
+goog.addDependency('net/streams/jsonstreamparser.js', ['goog.net.streams.JsonStreamParser'], ['goog.json', 'goog.net.streams.StreamParser'], false);
+goog.addDependency('net/streams/jsonstreamparser_test.js', ['goog.net.streams.JsonStreamParserTest'], ['goog.net.streams.JsonStreamParser', 'goog.testing.asserts', 'goog.testing.jsunit'], false);
 goog.addDependency('net/streams/nodereadablestream.js', ['goog.net.streams.NodeReadableStream'], [], false);
 goog.addDependency('net/streams/streamfactory.js', ['goog.net.streams.createNodeReadableStream'], ['goog.asserts', 'goog.net.XhrIo', 'goog.net.streams.NodeReadableStream'], false);
+goog.addDependency('net/streams/streamparser.js', ['goog.net.streams.StreamParser'], [], false);
 goog.addDependency('net/testdata/jsloader_test1.js', ['goog.net.testdata.jsloader_test1'], [], false);
 goog.addDependency('net/testdata/jsloader_test2.js', ['goog.net.testdata.jsloader_test2'], [], false);
 goog.addDependency('net/testdata/jsloader_test3.js', ['goog.net.testdata.jsloader_test3'], [], false);
@@ -25482,6 +25485,12 @@ soy.$$filterNormalizeUri = function(value) {
     goog.asserts.assert(value.constructor === soydata.SanitizedUri);
     return soy.$$normalizeUri(value);
   }
+  if (soydata.isContentKind(value,
+      soydata.SanitizedContentKind.TRUSTED_RESOURCE_URI)) {
+    goog.asserts.assert(
+        value.constructor === soydata.SanitizedTrustedResourceUri);
+    return soy.$$normalizeUri(value);
+  }
   if (value instanceof goog.html.SafeUrl) {
     return soy.$$normalizeUri(goog.html.SafeUrl.unwrap(value));
   }
@@ -25501,8 +25510,16 @@ soy.$$filterNormalizeUri = function(value) {
  */
 soy.$$filterNormalizeMediaUri = function(value) {
   // Image URIs are filtered strictly more loosely than other types of URIs.
+  // TODO(shwetakarwa): Add tests for this in soyutils_test_helper while adding
+  // tests for filterTrustedResourceUri.
   if (soydata.isContentKind(value, soydata.SanitizedContentKind.URI)) {
     goog.asserts.assert(value.constructor === soydata.SanitizedUri);
+    return soy.$$normalizeUri(value);
+  }
+  if (soydata.isContentKind(value,
+      soydata.SanitizedContentKind.TRUSTED_RESOURCE_URI)) {
+    goog.asserts.assert(
+        value.constructor === soydata.SanitizedTrustedResourceUri);
     return soy.$$normalizeUri(value);
   }
   if (value instanceof goog.html.SafeUrl) {
@@ -25518,8 +25535,7 @@ soy.$$filterNormalizeMediaUri = function(value) {
 /**
  * Vets a URI for usage as a resource.
  *
- * @param {*} value The value to filter. Might not be a string, but the value
- *     will be coerced to a string.
+ * @param {*} value The value to filter.
  * @return {*} current just the value.
  */
 soy.$$filterTrustedResourceUri = function(value) {
@@ -25527,6 +25543,21 @@ soy.$$filterTrustedResourceUri = function(value) {
   // attacker's control.
   // TODO(shwetakarwa): This needs to be changed once all the legacy URLs are
   // taken care of.
+  return value;
+};
+
+
+/**
+ * For any resource string/variable which has
+ * |blessStringAsTrustedResuorceUrlForLegacy directive unsafely change it to
+ * sanitizedContent of kind TRUSTED_RESOURCE_URI.
+ *
+ * @param {*} value The value to be blessed. Might not be a string
+ * @return {*} current just the value.
+ */
+soy.$$blessStringAsTrustedResourceUrlForLegacy = function(value) {
+  // TODO(shwetakarwa): Implement this while implementing
+  // filterTrustedResourceUri.
   return value;
 };
 

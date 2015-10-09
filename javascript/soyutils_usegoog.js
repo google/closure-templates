@@ -1508,6 +1508,12 @@ soy.$$filterNormalizeUri = function(value) {
     goog.asserts.assert(value.constructor === soydata.SanitizedUri);
     return soy.$$normalizeUri(value);
   }
+  if (soydata.isContentKind(value,
+      soydata.SanitizedContentKind.TRUSTED_RESOURCE_URI)) {
+    goog.asserts.assert(
+        value.constructor === soydata.SanitizedTrustedResourceUri);
+    return soy.$$normalizeUri(value);
+  }
   if (value instanceof goog.html.SafeUrl) {
     return soy.$$normalizeUri(goog.html.SafeUrl.unwrap(value));
   }
@@ -1527,8 +1533,16 @@ soy.$$filterNormalizeUri = function(value) {
  */
 soy.$$filterNormalizeMediaUri = function(value) {
   // Image URIs are filtered strictly more loosely than other types of URIs.
+  // TODO(shwetakarwa): Add tests for this in soyutils_test_helper while adding
+  // tests for filterTrustedResourceUri.
   if (soydata.isContentKind(value, soydata.SanitizedContentKind.URI)) {
     goog.asserts.assert(value.constructor === soydata.SanitizedUri);
+    return soy.$$normalizeUri(value);
+  }
+  if (soydata.isContentKind(value,
+      soydata.SanitizedContentKind.TRUSTED_RESOURCE_URI)) {
+    goog.asserts.assert(
+        value.constructor === soydata.SanitizedTrustedResourceUri);
     return soy.$$normalizeUri(value);
   }
   if (value instanceof goog.html.SafeUrl) {
@@ -1544,8 +1558,7 @@ soy.$$filterNormalizeMediaUri = function(value) {
 /**
  * Vets a URI for usage as a resource.
  *
- * @param {*} value The value to filter. Might not be a string, but the value
- *     will be coerced to a string.
+ * @param {*} value The value to filter.
  * @return {*} current just the value.
  */
 soy.$$filterTrustedResourceUri = function(value) {
@@ -1553,6 +1566,21 @@ soy.$$filterTrustedResourceUri = function(value) {
   // attacker's control.
   // TODO(shwetakarwa): This needs to be changed once all the legacy URLs are
   // taken care of.
+  return value;
+};
+
+
+/**
+ * For any resource string/variable which has
+ * |blessStringAsTrustedResuorceUrlForLegacy directive unsafely change it to
+ * sanitizedContent of kind TRUSTED_RESOURCE_URI.
+ *
+ * @param {*} value The value to be blessed. Might not be a string
+ * @return {*} current just the value.
+ */
+soy.$$blessStringAsTrustedResourceUrlForLegacy = function(value) {
+  // TODO(shwetakarwa): Implement this while implementing
+  // filterTrustedResourceUri.
   return value;
 };
 

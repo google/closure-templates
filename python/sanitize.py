@@ -251,6 +251,12 @@ def filter_trusted_resource_uri(value):
   return value
 
 
+def bless_string_as_trusted_resource_url_for_legacy(value):
+  # TODO(shwetakarwa): Change this to sanitized content of kind
+  # TRUSTED_RESOURCE_URI.
+  return value
+
+
 def normalize_html(value):
   return generated_sanitize.normalize_html_helper(value)
 

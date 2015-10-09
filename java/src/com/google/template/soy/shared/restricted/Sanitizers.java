@@ -454,8 +454,8 @@ public final class Sanitizers {
 
 
   /**
-   * This is supposed to make sure the the given input is an instance of either trustedResourceUrl
-   * or trustedString. But for now only calls filterNormalizeUri.
+   * This is supposed to make sure the given input is an instance of either trustedResourceUrl
+   * or trustedString. But for now only return the value coerced to string.
    */
   public static SoyValue filterTrustedResourceUri(SoyValue value) {
     // TODO(shwetakarwa): This needs to be changed once all the legacy URLs are taken care of.
@@ -464,12 +464,32 @@ public final class Sanitizers {
 
 
   /**
-   * Makes sure that the given input doesn't specify a dangerous protocol and also
-   * {@link #normalizeUri normalizes} it.
+   * For string inputs this function just returns the input string itself change to SoyValue.
    */
   public static SoyValue filterTrustedResourceUri(String value) {
     // TODO(shwetakarwa): This needs to be changed once all the legacy URLs are taken care of. Will
     // probably need to return string.
+    return StringData.forValue(value);
+  }
+
+  /**
+   * For any resource string/variable which has
+   * |blessStringAsTrustedResuorceUrlForLegacy directive unsafely changes it to
+   * sanitizedContent of kind TRUSTED_RESOURCE_URI.
+   */
+  public static SoyValue blessStringAsTrustedResourceUrlForLegacy(SoyValue value) {
+    // TODO(shwetakarwa): Implement this while implementing filterTrustedResourceUri.
+    return value;
+  }
+
+
+  /**
+   * For any resource string/variable which has
+   * |blessStringAsTrustedResuorceUrlForLegacy directive unsafely changes it to
+   * sanitizedContent of kind TRUSTED_RESOURCE_URI.
+   */
+  public static SoyValue blessStringAsTrustedResourceUrlForLegacy(String value) {
+    // TODO(shwetakarwa): Implement this while implementing filterTrustedResourceUri.
     return StringData.forValue(value);
   }
 

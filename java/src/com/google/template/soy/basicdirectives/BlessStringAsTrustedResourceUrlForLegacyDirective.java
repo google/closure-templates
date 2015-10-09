@@ -33,8 +33,8 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * Implements the |filterTrustedResourceUri directive, which only accepts resource URIs like script
- * scr to be a string or of kind TrustedResourceUri.
+ * Implements the |blessStringAsTrustedResourceUrlForLegacy directive, which accepts resource
+ * URIs like script src and blesses them as TrustedResourceUri.
  *
  * <p>
  * Note that this directive is not autoescape cancelling, and can thus be used in strict templates.
@@ -42,17 +42,16 @@ import javax.inject.Singleton;
  */
 @Singleton
 @SoyPurePrintDirective
-final class FilterTrustedResourceUriDirective implements SoyJavaPrintDirective,
+final class BlessStringAsTrustedResourceUrlForLegacyDirective implements SoyJavaPrintDirective,
     SoyJsSrcPrintDirective, SoyPySrcPrintDirective {
 
   private static final Set<Integer> VALID_ARGS_SIZES = ImmutableSet.of(0);
 
   @Inject
-  public FilterTrustedResourceUriDirective() {}
-
+  public BlessStringAsTrustedResourceUrlForLegacyDirective() {}
 
   @Override public String getName() {
-    return "|filterTrustedResourceUri";
+    return "|blessStringAsTrustedResourceUrlForLegacy";
   }
 
   @Override public final Set<Integer> getValidArgsSizes() {
@@ -64,15 +63,18 @@ final class FilterTrustedResourceUriDirective implements SoyJavaPrintDirective,
   }
 
   @Override public SoyValue applyForJava(SoyValue value, List<SoyValue> args) {
-    return Sanitizers.filterTrustedResourceUri(value);
+    return Sanitizers.blessStringAsTrustedResourceUrlForLegacy(value);
   }
 
   @Override public JsExpr applyForJsSrc(JsExpr value, List<JsExpr> args) {
-    return new JsExpr("soy.$$filterTrustedResourceUri(" + value.getText() + ")", Integer.MAX_VALUE);
+    return new JsExpr("soy.$$blessStringAsTrustedResourceUrlForLegacy(" + value.getText() + ")",
+        Integer.MAX_VALUE);
   }
 
   @Override public PyExpr applyForPySrc(PyExpr value, List<PyExpr> args) {
-    return new PyExpr("sanitize.filter_trusted_resource_uri(" + value.getText() + ")",
+    return new PyExpr(
+        "sanitize.bless_string_as_trusted_resource_url_for_legacy(" + value.getText() + ")",
         Integer.MAX_VALUE);
   }
+
 }
