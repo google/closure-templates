@@ -169,17 +169,17 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
   private List<String> jsFilesContents;
 
   /** The CodeBuilder to build the current JS file being generated (during a run). */
-  @VisibleForTesting protected CodeBuilder<JsExpr> jsCodeBuilder;
+  @VisibleForTesting CodeBuilder<JsExpr> jsCodeBuilder;
 
   /** The current stack of replacement JS expressions for the local variables (and foreach-loop
    *  special functions) current in scope. */
-  @VisibleForTesting protected Deque<Map<String, JsExpr>> localVarTranslations;
+  protected Deque<Map<String, JsExpr>> localVarTranslations;
 
   /** The GenJsExprsVisitor used for the current template. */
-  @VisibleForTesting protected GenJsExprsVisitor genJsExprsVisitor;
+  protected GenJsExprsVisitor genJsExprsVisitor;
 
   /** The assistant visitor for msgs used for the current template (lazily initialized). */
-  @VisibleForTesting protected GenJsCodeVisitorAssistantForMsgs assistantForMsgs;
+  @VisibleForTesting GenJsCodeVisitorAssistantForMsgs assistantForMsgs;
 
   /** The GenDirectivePluginRequiresVisitor for the current template. */
   private GenDirectivePluginRequiresVisitor genDirectivePluginRequiresVisitor;
@@ -298,6 +298,13 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
    */
   protected CodeBuilder<JsExpr> createCodeBuilder() {
     return new JsCodeBuilder();
+  }
+
+  /**
+   * @return The CodeBuilder used for generating file contents.
+   */
+  protected CodeBuilder<JsExpr> getJsCodeBuilder() {
+    return jsCodeBuilder;
   }
 
   /**

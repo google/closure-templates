@@ -101,6 +101,10 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   @Override protected CodeBuilder<JsExpr> createCodeBuilder() {
     return new IncrementalDomCodeBuilder();
   }
+  
+  @Override protected IncrementalDomCodeBuilder getJsCodeBuilder() {
+    return (IncrementalDomCodeBuilder) super.getJsCodeBuilder();
+  }
 
   /**
    * Changes module namespaces, adding an extension of '.incrementaldom' to allow it to co-exist
@@ -112,22 +116,23 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
 
   @Override protected void addCodeToRequireGeneralDeps(SoyFileNode soyFile) {
     super.addCodeToRequireGeneralDeps(soyFile);
-    jsCodeBuilder.appendLine("var IncrementalDom = goog.require('incrementaldom');");
-    jsCodeBuilder.appendLine("var ie_open = IncrementalDom.elementOpen;");
-    jsCodeBuilder.appendLine("var ie_close = IncrementalDom.elementClose;");
-    jsCodeBuilder.appendLine("var ie_void = IncrementalDom.elementVoid;");
-    jsCodeBuilder.appendLine("var ie_open_start = IncrementalDom.elementOpenStart;");
-    jsCodeBuilder.appendLine("var ie_open_end = IncrementalDom.elementOpenEnd;");
-    jsCodeBuilder.appendLine("var itext = IncrementalDom.text;");
-    jsCodeBuilder.appendLine("var iattr = IncrementalDom.attr;");
+    getJsCodeBuilder().appendLine("var IncrementalDom = goog.require('incrementaldom');")
+      .appendLine("var ie_open = IncrementalDom.elementOpen;")
+      .appendLine("var ie_close = IncrementalDom.elementClose;")
+      .appendLine("var ie_void = IncrementalDom.elementVoid;")
+      .appendLine("var ie_open_start = IncrementalDom.elementOpenStart;")
+      .appendLine("var ie_open_end = IncrementalDom.elementOpenEnd;")
+      .appendLine("var itext = IncrementalDom.text;")
+      .appendLine("var iattr = IncrementalDom.attr;");
   }
 
   @Override protected void visitTemplateNode(TemplateNode node) {
-    jsCodeBuilder.setContentKind(node.getContentKind());
+    getJsCodeBuilder().setContentKind(node.getContentKind());
     super.visitTemplateNode(node);
   }
 
   @Override protected void generateFunctionBody(TemplateNode node) {
+    IncrementalDomCodeBuilder jsCodeBuilder = getJsCodeBuilder();
     boolean isTextTemplate = isTextContent(node.getContentKind());
     localVarTranslations.push(Maps.<String, JsExpr>newHashMap());
 
@@ -167,6 +172,9 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
    * other kinds of let statements are generated as a simple variable.
    */
   private void visitLetParamContentNode(RenderUnitNode node, String generatedVarName) {
+    IncrementalDomCodeBuilder jsCodeBuilder = getJsCodeBuilder();
+    ContentKind prevContentKind = jsCodeBuilder.getContentKind();
+
     localVarTranslations.push(Maps.<String, JsExpr>newHashMap());
     jsCodeBuilder.pushOutputVar(generatedVarName);
     jsCodeBuilder.setContentKind(node.getContentKind());
@@ -190,6 +198,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
         break;
     }
 
+    jsCodeBuilder.setContentKind(prevContentKind);
     jsCodeBuilder.popOutputVar();
     localVarTranslations.pop();
   }
@@ -227,6 +236,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     // invoke the template call so that it renders the HTML in the current
     // location. For text templates, we always want to concatenate the result
     // to the output variable.
+    IncrementalDomCodeBuilder jsCodeBuilder = getJsCodeBuilder();
     if (isTextContent(jsCodeBuilder.getContentKind())) {
       jsCodeBuilder.addToOutputVar(ImmutableList.of(callExpr));
     } else {
@@ -248,6 +258,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
    * @param parentNode
    */
   private void printAttributes(ParentNode<HtmlAttributeNode> parentNode) {
+    IncrementalDomCodeBuilder jsCodeBuilder = getJsCodeBuilder();
     List<HtmlAttributeNode> attributes = parentNode.getChildren();
 
     // For now, no separating of static and dynamic attributes
@@ -265,6 +276,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
    * @param node The node containing the attribute values
    */
   private void printAttributeValues(HtmlAttributeNode node) {
+    IncrementalDomCodeBuilder jsCodeBuilder = getJsCodeBuilder();
     List<StandaloneNode> children = node.getChildren();
 
     if (children.isEmpty()) {
@@ -293,6 +305,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
    * @param attributes The attributes to print
    */
   private void printAttributeList(List<HtmlAttributeNode> attributes) {
+    IncrementalDomCodeBuilder jsCodeBuilder = getJsCodeBuilder();
     HtmlAttributeNode lastAttribute = (attributes.get(attributes.size() - 1));
     jsCodeBuilder.increaseIndent();
 
@@ -341,6 +354,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
    * </pre>
    */
   @Override protected void visitHtmlAttributeNode(HtmlAttributeNode node) {
+    IncrementalDomCodeBuilder jsCodeBuilder = getJsCodeBuilder();
     jsCodeBuilder.appendLineStart("iattr('", node.getName(), "', ");
     printAttributeValues(node);
     jsCodeBuilder.appendLineEnd(");");
@@ -360,6 +374,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
    * </pre>
    */
   @Override protected void visitHtmlOpenTagNode(HtmlOpenTagNode node) {
+    IncrementalDomCodeBuilder jsCodeBuilder = getJsCodeBuilder();
     jsCodeBuilder.appendLineStart("ie_open('", node.getTagName(), "', null");
     printAttributes(node);
     jsCodeBuilder.appendLineEnd(");");
@@ -378,6 +393,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
    *
    */
   @Override protected void visitHtmlCloseTagNode(HtmlCloseTagNode node) {
+    IncrementalDomCodeBuilder jsCodeBuilder = getJsCodeBuilder();
     jsCodeBuilder.decreaseIndent();
     jsCodeBuilder.appendLine("ie_close('", node.getTagName(), "');");
   }
@@ -395,6 +411,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
    * </pre>
    */
   @Override protected void visitHtmlOpenTagStartNode(HtmlOpenTagStartNode node) {
+    IncrementalDomCodeBuilder jsCodeBuilder = getJsCodeBuilder();
     jsCodeBuilder.appendLine("ie_open_start('", node.getTagName(), "');");
     jsCodeBuilder.increaseIndentTwice();
   }
@@ -412,6 +429,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
    * </pre>
    */
   @Override protected void visitHtmlOpenTagEndNode(HtmlOpenTagEndNode node) {
+    IncrementalDomCodeBuilder jsCodeBuilder = getJsCodeBuilder();
     jsCodeBuilder.decreaseIndentTwice();
     jsCodeBuilder.appendLine("ie_open_end();");
     jsCodeBuilder.increaseIndent();
@@ -433,6 +451,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
    * </pre>
    */
   @Override protected void visitHtmlVoidTagNode(HtmlVoidTagNode node) {
+    IncrementalDomCodeBuilder jsCodeBuilder = getJsCodeBuilder();
     jsCodeBuilder.appendLineStart("ie_void('", node.getTagName(), "', null");
     printAttributes(node);
     jsCodeBuilder.appendLineEnd(");");
@@ -451,7 +470,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
    * </pre>
    */
   @Override protected void visitHtmlTextNode(HtmlTextNode node) {
-    jsCodeBuilder.appendLine("itext('", node.getRawText(), "');");
+    getJsCodeBuilder().appendLine("itext('", node.getRawText(), "');");
   }
 
   /**
@@ -467,6 +486,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
    * </p>
    */
   @Override protected void visitHtmlPrintNode(HtmlPrintNode node) {
+    IncrementalDomCodeBuilder jsCodeBuilder = getJsCodeBuilder();
     PrintNode printNode = node.getPrintNode();
     ExprUnion exprUnion = printNode.getExprUnion();
     ExprRootNode expr = exprUnion.getExpr();

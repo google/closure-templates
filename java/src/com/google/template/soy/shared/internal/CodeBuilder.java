@@ -17,7 +17,6 @@
 package com.google.template.soy.shared.internal;
 
 import com.google.common.base.Preconditions;
-import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.internal.targetexpr.TargetExpr;
 
@@ -56,8 +55,6 @@ public abstract class CodeBuilder<E extends TargetExpr> {
   /** Whether the current output variable is initialized. */
   private boolean currOutputVarIsInited;
 
-  /** Used to track what kind of content is currently being processed. */
-  private ContentKind contentKind;
 
 
   /**
@@ -234,19 +231,5 @@ public abstract class CodeBuilder<E extends TargetExpr> {
    */
   protected boolean getOutputVarIsInited() {
     return currOutputVarIsInited;
-  }
-
-  /**
-   * @param contentKind The current kind of content being processed.
-   */
-  public void setContentKind(ContentKind contentKind) {
-    this.contentKind = contentKind;
-  }
-
-  /**
-   * @return The current kind of content being processed.
-   */
-  public ContentKind getContentKind() {
-    return contentKind;
   }
 }
