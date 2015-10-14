@@ -297,9 +297,9 @@ public final class TemplateTester {
             compilerRegistry,
             compilerRegistry.getTemplateInfoByTemplateName(templateName)).compile();
         checkClasses(classData);
-        factory = new CompiledTemplates(
-            compilerRegistry.getTemplateNames(), 
-            new MemoryClassLoader.Builder().addAll(classData).build())
+        factory =
+            new CompiledTemplates(
+                    compilerRegistry.getTemplateNames(), new MemoryClassLoader(classData))
                 .getTemplateFactory(templateName);
       }
     }

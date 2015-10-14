@@ -16,46 +16,18 @@
 
 package com.google.template.soy.jbcsrc;
 
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 
-import java.net.URL;
-import java.util.LinkedHashMap;
-import java.util.Map;
-
 /**
- * A {@link ClassLoader} that can load classes from a configured set of {@code byte[]}s. 
+ * A {@link ClassLoader} that can load classes from a configured set of {@code byte[]}s.
  */
-final class MemoryClassLoader extends ClassLoader {
+final class MemoryClassLoader extends AbstractMemoryClassLoader {
   static {
     // Since we only override findClass(), we can call this method to get fine grained locking
     // support with no additional work. Our superclass will lock all calls to findClass with a per
     // class to load lock, so we will never see concurrent loads of a single class. 
     // See http://docs.oracle.com/javase/7/docs/technotes/guides/lang/cl-mt.html
     ClassLoader.registerAsParallelCapable();
-  }
-  
-  static final class Builder {
-    private final Map<String, ClassData> generatedClasses = new LinkedHashMap<>();
-
-    Builder addAll(Iterable<ClassData> classes) {
-      for (ClassData item : classes) {
-        add(item);
-      }
-      return this;
-    }
-
-    Builder add(ClassData classData) {
-      ClassData prev = generatedClasses.put(classData.type().className(), classData);
-      if (prev != null) {
-        throw new IllegalStateException("multiple classes generated named: " + classData.type());
-      }
-      return this;
-    }
-
-    MemoryClassLoader build() {
-      return new MemoryClassLoader(generatedClasses);
-    }
   }
 
   /**
@@ -65,36 +37,16 @@ final class MemoryClassLoader extends ClassLoader {
    */
   private final ImmutableMap<String, ClassData> classesByName;
 
-  private MemoryClassLoader(Map<String, ClassData> generatedClasses) {
-    super(ClassLoader.getSystemClassLoader());
-    this.classesByName = ImmutableMap.copyOf(generatedClasses);
+  MemoryClassLoader(Iterable<ClassData> classes) {
+    ImmutableMap.Builder<String, ClassData> builder = ImmutableMap.builder();
+    for (ClassData classData : classes) {
+      builder.put(classData.type().className(), classData);
+    }
+    this.classesByName = builder.build();
   }
 
-  @Override protected Class<?> findClass(String name) throws ClassNotFoundException {
-    // replace so we don't hang onto the bytes for no reason
-    ClassData classDef = classesByName.get(name);
-    if (classDef == null) {
-      throw new ClassNotFoundException(name);
-    }
-    try {
-      return super.defineClass(name, classDef.data(), 0, classDef.data().length);
-    } catch (Throwable t) {
-      // Attach additional information in a suppressed exception to make debugging easier.
-      t.addSuppressed(new RuntimeException("Failed to load generated class:\n" + classDef));
-      Throwables.propagateIfInstanceOf(t, ClassNotFoundException.class);
-      throw Throwables.propagate(t);
-    }
-  }
-  
-  @Override protected URL findResource(final String name) {
-    if (!name.endsWith(".class")) {
-      return null;
-    }
-    String className = name.substring(0, name.length() - ".class".length()).replace('/', '.');
-    ClassData classDef = classesByName.get(className);
-    if (classDef == null) {
-      return null;
-    }
-    return classDef.asUrl();
+  @Override
+  ClassData getClassData(String name) {
+    return classesByName.get(name);
   }
 }

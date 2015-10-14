@@ -26,6 +26,8 @@ import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -69,10 +71,9 @@ public final class BytecodeCompiler {
     if (reporter.errorsSince(checkpoint)) {
       return Optional.absent();
     }
-    CompiledTemplates templates = 
+    CompiledTemplates templates =
         new CompiledTemplates(
-            compilerRegistry.getTemplateNames(),
-            results.loader());
+            compilerRegistry.getTemplateNames(), new MemoryClassLoader(results.classes()));
     logger.log(
         Level.INFO,
         "Compilation took {0}\n"
@@ -83,8 +84,8 @@ public final class BytecodeCompiler {
             + "  detachStates: {5}",
         new Object[] {
           stopwatch.toString(),
-          results.numTemplates(),
-          results.numClasses(),
+          registry.getAllTemplates().size(),
+          results.classes().size(),
           results.numBytes(),
           results.numFields(),
           results.numDetachStates()
@@ -107,11 +108,7 @@ public final class BytecodeCompiler {
 
   @AutoValue
   abstract static class CompilationResult {
-    abstract MemoryClassLoader loader();
-
-    abstract int numTemplates();
-
-    abstract int numClasses();
+    abstract List<ClassData> classes();
 
     abstract int numBytes();
 
@@ -128,17 +125,14 @@ public final class BytecodeCompiler {
       TemplateRegistry registry,
       CompiledTemplateRegistry compilerRegistry,
       ErrorReporter errorReporter) {
-    int numTemplates = 0;
-    int numClasses = 0;
+    List<ClassData> classes = new ArrayList<>();
     int numBytes = 0;
     int numFields = 0;
     int numDetachStates = 0;
-    MemoryClassLoader.Builder builder = new MemoryClassLoader.Builder();
     // We generate all the classes and then start loading them.  This 2 phase process ensures that
     // we don't have to worry about ordering (where a class we have generated references a class we
     // haven't generated yet), because none of the classes are loadable until they all are.
     for (TemplateNode template : registry.getAllTemplates()) {
-      numTemplates++;
       String name = template.getTemplateName();
       logger.log(Level.FINE, "Compiling template: {0}", name);
       try {
@@ -153,14 +147,13 @@ public final class BytecodeCompiler {
                 new Object[] {clazz.type().className(), clazz.data().length,
                     clazz.numberOfFields(), clazz.numberOfDetachStates()});
           }
-          numClasses++;
           numBytes += clazz.data().length;
           numFields += clazz.numberOfFields();
           numDetachStates += clazz.numberOfDetachStates();
           if (Flags.DEBUG) {
             clazz.checkClass();
           }
-          builder.add(clazz);
+          classes.add(clazz);
         }
       // Report unexpected errors and keep going to try to collect more.
       } catch (UnexpectedCompilerFailureException e) {
@@ -179,7 +172,7 @@ public final class BytecodeCompiler {
       }
     }
     return new AutoValue_BytecodeCompiler_CompilationResult(
-        builder.build(), numTemplates, numClasses, numBytes, numFields, numDetachStates);
+        classes, numBytes, numFields, numDetachStates);
   }
 
   private BytecodeCompiler() {}

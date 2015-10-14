@@ -16,9 +16,6 @@
 
 package com.google.template.soy.jbcsrc;
 
-import com.google.common.base.Throwables;
-
-import java.net.URL;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -26,7 +23,7 @@ import java.util.Map;
 /**
  * A classloader that can compile templates on demand.
  */
-final class CompilingClassLoader extends ClassLoader {
+final class CompilingClassLoader extends AbstractMemoryClassLoader {
   static {
     // See http://docs.oracle.com/javase/7/docs/technotes/guides/lang/cl-mt.html
     ClassLoader.registerAsParallelCapable();
@@ -40,48 +37,18 @@ final class CompilingClassLoader extends ClassLoader {
   private final CompiledTemplateRegistry registry;
 
   CompilingClassLoader(CompiledTemplateRegistry registry) {
-    super(ClassLoader.getSystemClassLoader());
     this.registry = registry;
   }
-
-  @Override protected Class<?> findClass(String name) throws ClassNotFoundException {
+  
+  @Override
+  ClassData getClassData(String name) {
     ClassData classDef = classesByName.get(name);
-    if (classDef == null) {
-      // We haven't already compiled it (and haven't already loaded it) so try to find the matching
-      // template.
-      classDef = compile(name);
-      if (classDef == null) {
-        throw new ClassNotFoundException(name);
-      }
+    if (classDef != null) {
+      return classDef;
     }
-    try {
-      return super.defineClass(name, classDef.data(), 0, classDef.data().length);
-    } catch (Throwable t) {
-      // Attach additional information in a suppressed exception to make debugging easier.
-      t.addSuppressed(new RuntimeException("Failed to load generated class:\n" + classDef));
-      Throwables.propagateIfInstanceOf(t, ClassNotFoundException.class);
-      throw Throwables.propagate(t);
-    }
-  }
+    // We haven't already compiled it (and haven't already loaded it) so try to find the matching
+    // template.
 
-  @Override protected URL findResource(final String name) {
-    if (!name.endsWith(".class")) {
-      return null;
-    }
-    String className = name.substring(0, name.length() - ".class".length()).replace('/', '.');
-    ClassData classDef = classesByName.get(className);
-    if (classDef == null) {
-      // We haven't already compiled it (and haven't already loaded it) so try to find the matching
-      // template.
-      classDef = compile(name);
-      if (classDef == null) {
-        return null;
-      }
-    }
-    return classDef.asUrl();
-  }
-
-  private ClassData compile(String name) {
     // For each template we compile there are only two 'public' classes that could be loaded prior
     // to compiling the template. The CompiledTemplate.Factory class and the CompiledTemplate itself
     boolean isFactory = name.endsWith("$" + StandardNames.FACTORY_CLASS);

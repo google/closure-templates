@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
+import com.google.common.collect.ImmutableList;
 import com.google.common.truth.FailureStrategy;
 import com.google.common.truth.Subject;
 import com.google.common.truth.SubjectFactory;
@@ -232,7 +233,7 @@ public final class ExpressionTester {
   }
 
   private static <T> T load(Class<T> clazz, ClassData data) {
-    MemoryClassLoader loader = new MemoryClassLoader.Builder().add(data).build();
+    MemoryClassLoader loader = new MemoryClassLoader(ImmutableList.of(data));
     Class<?> generatedClass;
     try {
       generatedClass = loader.loadClass(data.type().className());
