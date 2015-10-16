@@ -29,6 +29,7 @@ import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.html.HtmlAttributeNode;
 import com.google.template.soy.html.HtmlCloseTagNode;
+import com.google.template.soy.html.HtmlDefinitions;
 import com.google.template.soy.html.HtmlOpenTagEndNode;
 import com.google.template.soy.html.HtmlOpenTagNode;
 import com.google.template.soy.html.HtmlOpenTagStartNode;
@@ -322,6 +323,19 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   }
 
   /**
+   * Emits a close tag. For example:
+   *
+   * <pre>
+   * &lt;ie_close('div');&gt;
+   * </pre>
+   */
+  private void emitClose(String tagName) {
+    IncrementalDomCodeBuilder jsCodeBuilder = getJsCodeBuilder();
+    jsCodeBuilder.decreaseIndent();
+    jsCodeBuilder.appendLine("ie_close('", tagName, "');");
+  }
+
+  /**
    * Visits the {@link HtmlAttributeNode}, this only occurs when we have something like:
    *
    * <pre>
@@ -379,6 +393,10 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     printAttributes(node);
     jsCodeBuilder.appendLineEnd(");");
     jsCodeBuilder.increaseIndent();
+
+    if (HtmlDefinitions.HTML5_VOID_ELEMENTS.contains(node.getTagName())) {
+      emitClose(node.getTagName());
+    }
   }
 
   /**
@@ -393,9 +411,9 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
    *
    */
   @Override protected void visitHtmlCloseTagNode(HtmlCloseTagNode node) {
-    IncrementalDomCodeBuilder jsCodeBuilder = getJsCodeBuilder();
-    jsCodeBuilder.decreaseIndent();
-    jsCodeBuilder.appendLine("ie_close('", node.getTagName(), "');");
+    if (!HtmlDefinitions.HTML5_VOID_ELEMENTS.contains(node.getTagName())) {
+      emitClose(node.getTagName());
+    }
   }
 
   /**
@@ -433,6 +451,10 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     jsCodeBuilder.decreaseIndentTwice();
     jsCodeBuilder.appendLine("ie_open_end();");
     jsCodeBuilder.increaseIndent();
+
+    if (HtmlDefinitions.HTML5_VOID_ELEMENTS.contains(node.getTagName())) {
+      emitClose(node.getTagName());
+    }
   }
 
   /**
