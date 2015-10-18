@@ -448,11 +448,6 @@ public final class HtmlTransformVisitor extends AbstractSoyNodeVisitor<Void> {
     // Mark all visited RawTextNodes for removal. A single RawTextNode may not map to any Html*Nodes
     // by itself, but we still want to remove it.
     visitedRawTextNodes.add(node);
-    
-    // Just skip empty nodes
-    if (CharMatcher.WHITESPACE.matchesAllOf(content)) {
-      return;
-    }
 
     for (int i = 0; i < content.length(); i += 1) {
       consumeCharacter(node, content.charAt(i));
