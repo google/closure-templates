@@ -152,7 +152,7 @@ public final class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<JsExpr>
    * Executes this visitor on the children of the given node, without visiting the given node
    * itself.
    */
-  List<JsExpr> execOnChildren(ParentSoyNode<?> node) {
+  public List<JsExpr> execOnChildren(ParentSoyNode<?> node) {
     Preconditions.checkArgument(isComputableAsJsExprsVisitor.execOnChildren(node));
     jsExprs = new ArrayList<>();
     visitChildren(node);

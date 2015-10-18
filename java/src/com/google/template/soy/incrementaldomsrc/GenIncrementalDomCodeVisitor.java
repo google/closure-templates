@@ -285,12 +285,12 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       // the runtime knows to create an attribute.
       jsCodeBuilder.append("''");
     } else {
-      visit(children.get(0));
+      Preconditions.checkState(
+          isComputableAsJsExprsVisitor.execOnChildren(node),
+          "Attribute values that cannot be evalutated to simple expressions is not yet supported "
+              + "for Incremental DOM code generation");
 
-      for (int i = 1; i < children.size(); i++) {
-        jsCodeBuilder.append(" + ");
-        visit(children.get(i));
-      }
+      jsCodeBuilder.addToOutput(genJsExprsVisitor.execOnChildren(node));
     }
   }
 
