@@ -28,7 +28,6 @@ import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.commons.Method;
 
 /**
@@ -91,26 +90,17 @@ final class TemplateFactoryCompiler {
    *   static {
    *     Class<?> clz = GeneratedTemplateClass.class;
    *   }}</pre>
-   *
-   * <p>TODO(lukes): this is useful for now since it will trigger verification errors during
-   * compilation (since we load all factories). But we should consider deleting it when the compiler
-   * is more mature since it is likely that servers ship dead templates and there is no point
-   * loading them.
    */
   private void generateStaticInitializer(ClassVisitor cv) {
     if (Flags.DEBUG) {
-      GeneratorAdapter ga =
-          new GeneratorAdapter(
-              Opcodes.ACC_STATIC,
-              BytecodeUtils.CLASS_INIT,
-              null /* no generic signature */,
-              null /* no checked exceptions */,
-              cv);
-      ga.visitCode();
-      ga.push(template.typeInfo().type());
-      ga.visitVarInsn(Opcodes.ASTORE, 0);
-      ga.returnValue();
-      ga.endMethod();
+      new Statement() {
+        @Override
+        void doGen(CodeBuilder adapter) {
+          adapter.pushType(template.typeInfo().type());
+          adapter.visitVarInsn(Opcodes.ASTORE, 0);
+          adapter.returnValue();
+        }
+      }.writeMethod(Opcodes.ACC_STATIC, BytecodeUtils.CLASS_INIT, cv);
     }
   }
 

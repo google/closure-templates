@@ -35,6 +35,10 @@ public final class SoyMsgPluralRemainderPart extends SoyMsgPart {
     this.pluralVarName = pluralVarName;
   }
 
+  public String getPluralVarName() {
+    return pluralVarName;
+  }
+
   @Override public boolean equals(Object other) {
     return other instanceof SoyMsgPluralRemainderPart
         && pluralVarName.equals(((SoyMsgPluralRemainderPart) other).pluralVarName);

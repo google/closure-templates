@@ -3362,7 +3362,7 @@ goog.addDependency('net/xhrmanager_test.js', ['goog.net.XhrManagerTest'], ['goog
 goog.addDependency('net/xmlhttp.js', ['goog.net.DefaultXmlHttpFactory', 'goog.net.XmlHttp', 'goog.net.XmlHttp.OptionType', 'goog.net.XmlHttp.ReadyState', 'goog.net.XmlHttpDefines'], ['goog.asserts', 'goog.net.WrapperXmlHttpFactory', 'goog.net.XmlHttpFactory'], false);
 goog.addDependency('net/xmlhttpfactory.js', ['goog.net.XmlHttpFactory'], ['goog.net.XhrLike'], false);
 goog.addDependency('net/xpc/crosspagechannel.js', ['goog.net.xpc.CrossPageChannel'], ['goog.Uri', 'goog.async.Deferred', 'goog.async.Delay', 'goog.dispose', 'goog.dom', 'goog.dom.TagName', 'goog.events', 'goog.events.EventHandler', 'goog.events.EventType', 'goog.json', 'goog.log', 'goog.messaging.AbstractChannel', 'goog.net.xpc', 'goog.net.xpc.CfgFields', 'goog.net.xpc.ChannelStates', 'goog.net.xpc.CrossPageChannelRole', 'goog.net.xpc.DirectTransport', 'goog.net.xpc.FrameElementMethodTransport', 'goog.net.xpc.IframePollingTransport', 'goog.net.xpc.IframeRelayTransport', 'goog.net.xpc.NativeMessagingTransport', 'goog.net.xpc.NixTransport', 'goog.net.xpc.TransportTypes', 'goog.net.xpc.UriCfgFields', 'goog.string', 'goog.uri.utils', 'goog.userAgent'], false);
-goog.addDependency('net/xpc/crosspagechannel_test.js', ['goog.net.xpc.CrossPageChannelTest'], ['goog.Disposable', 'goog.Uri', 'goog.async.Deferred', 'goog.dom', 'goog.dom.TagName', 'goog.labs.userAgent.browser', 'goog.log', 'goog.log.Level', 'goog.net.xpc', 'goog.net.xpc.CfgFields', 'goog.net.xpc.CrossPageChannel', 'goog.net.xpc.CrossPageChannelRole', 'goog.net.xpc.TransportTypes', 'goog.object', 'goog.testing.AsyncTestCase', 'goog.testing.PropertyReplacer', 'goog.testing.jsunit'], false);
+goog.addDependency('net/xpc/crosspagechannel_test.js', ['goog.net.xpc.CrossPageChannelTest'], ['goog.Disposable', 'goog.Promise', 'goog.Timer', 'goog.Uri', 'goog.dom', 'goog.dom.TagName', 'goog.labs.userAgent.browser', 'goog.log', 'goog.log.Level', 'goog.net.xpc', 'goog.net.xpc.CfgFields', 'goog.net.xpc.CrossPageChannel', 'goog.net.xpc.CrossPageChannelRole', 'goog.net.xpc.TransportTypes', 'goog.object', 'goog.testing.PropertyReplacer', 'goog.testing.TestCase', 'goog.testing.jsunit'], false);
 goog.addDependency('net/xpc/crosspagechannelrole.js', ['goog.net.xpc.CrossPageChannelRole'], [], false);
 goog.addDependency('net/xpc/directtransport.js', ['goog.net.xpc.DirectTransport'], ['goog.Timer', 'goog.async.Deferred', 'goog.events.EventHandler', 'goog.log', 'goog.net.xpc', 'goog.net.xpc.CfgFields', 'goog.net.xpc.CrossPageChannelRole', 'goog.net.xpc.Transport', 'goog.net.xpc.TransportTypes', 'goog.object'], false);
 goog.addDependency('net/xpc/directtransport_test.js', ['goog.net.xpc.DirectTransportTest'], ['goog.Promise', 'goog.dom', 'goog.dom.TagName', 'goog.labs.userAgent.browser', 'goog.log', 'goog.log.Level', 'goog.net.xpc', 'goog.net.xpc.CfgFields', 'goog.net.xpc.CrossPageChannel', 'goog.net.xpc.CrossPageChannelRole', 'goog.net.xpc.TransportTypes', 'goog.testing.TestCase', 'goog.testing.jsunit'], false);
@@ -3630,6 +3630,7 @@ goog.addDependency('testing/net/xhrio_test.js', ['goog.testing.net.XhrIoTest'], 
 goog.addDependency('testing/net/xhriopool.js', ['goog.testing.net.XhrIoPool'], ['goog.net.XhrIoPool', 'goog.testing.net.XhrIo'], false);
 goog.addDependency('testing/objectpropertystring.js', ['goog.testing.ObjectPropertyString'], [], false);
 goog.addDependency('testing/parallel_closure_test_suite.js', ['goog.testing.parallelClosureTestSuite'], ['goog.Promise', 'goog.events', 'goog.testing.MultiTestRunner', 'goog.testing.TestCase', 'goog.testing.jsunit', 'goog.testing.testSuite'], true);
+goog.addDependency('testing/parallel_closure_test_suite_test.js', ['goog.testing.parallelClosureTestSuiteTest'], ['goog.testing.MockControl', 'goog.testing.MultiTestRunner', 'goog.testing.PropertyReplacer', 'goog.testing.TestCase', 'goog.testing.jsunit', 'goog.testing.mockmatchers', 'goog.testing.mockmatchers.ArgumentMatcher', 'goog.testing.parallelClosureTestSuite', 'goog.testing.testSuite'], true);
 goog.addDependency('testing/performancetable.js', ['goog.testing.PerformanceTable'], ['goog.dom', 'goog.dom.TagName', 'goog.testing.PerformanceTimer'], false);
 goog.addDependency('testing/performancetimer.js', ['goog.testing.PerformanceTimer', 'goog.testing.PerformanceTimer.Task'], ['goog.array', 'goog.async.Deferred', 'goog.math'], false);
 goog.addDependency('testing/performancetimer_test.js', ['goog.testing.PerformanceTimerTest'], ['goog.async.Deferred', 'goog.dom', 'goog.math', 'goog.testing.MockClock', 'goog.testing.PerformanceTimer', 'goog.testing.jsunit'], false);
@@ -6184,14 +6185,6 @@ goog.array.peek = function(array) {
  */
 goog.array.last = goog.array.peek;
 
-
-/**
- * Reference to the original {@code Array.prototype}.
- * @private {!Object}
- */
-goog.array.ARRAY_PROTOTYPE_ = Array.prototype;
-
-
 // NOTE(arv): Since most of the array functions are generic it allows you to
 // pass an array-like object. Strings have a length and are considered array-
 // like. However, the 'in' operator does not work on strings so we cannot just
@@ -6214,11 +6207,11 @@ goog.array.ARRAY_PROTOTYPE_ = Array.prototype;
  */
 goog.array.indexOf = goog.NATIVE_ARRAY_PROTOTYPES &&
                      (goog.array.ASSUME_NATIVE_FUNCTIONS ||
-                      goog.array.ARRAY_PROTOTYPE_.indexOf) ?
+                      Array.prototype.indexOf) ?
     function(arr, obj, opt_fromIndex) {
       goog.asserts.assert(arr.length != null);
 
-      return goog.array.ARRAY_PROTOTYPE_.indexOf.call(arr, obj, opt_fromIndex);
+      return Array.prototype.indexOf.call(arr, obj, opt_fromIndex);
     } :
     function(arr, obj, opt_fromIndex) {
       var fromIndex = opt_fromIndex == null ?
@@ -6256,14 +6249,14 @@ goog.array.indexOf = goog.NATIVE_ARRAY_PROTOTYPES &&
  */
 goog.array.lastIndexOf = goog.NATIVE_ARRAY_PROTOTYPES &&
                          (goog.array.ASSUME_NATIVE_FUNCTIONS ||
-                          goog.array.ARRAY_PROTOTYPE_.lastIndexOf) ?
+                          Array.prototype.lastIndexOf) ?
     function(arr, obj, opt_fromIndex) {
       goog.asserts.assert(arr.length != null);
 
       // Firefox treats undefined and null as 0 in the fromIndex argument which
       // leads it to always return -1
       var fromIndex = opt_fromIndex == null ? arr.length - 1 : opt_fromIndex;
-      return goog.array.ARRAY_PROTOTYPE_.lastIndexOf.call(arr, obj, fromIndex);
+      return Array.prototype.lastIndexOf.call(arr, obj, fromIndex);
     } :
     function(arr, obj, opt_fromIndex) {
       var fromIndex = opt_fromIndex == null ? arr.length - 1 : opt_fromIndex;
@@ -6302,11 +6295,11 @@ goog.array.lastIndexOf = goog.NATIVE_ARRAY_PROTOTYPES &&
  */
 goog.array.forEach = goog.NATIVE_ARRAY_PROTOTYPES &&
                      (goog.array.ASSUME_NATIVE_FUNCTIONS ||
-                      goog.array.ARRAY_PROTOTYPE_.forEach) ?
+                      Array.prototype.forEach) ?
     function(arr, f, opt_obj) {
       goog.asserts.assert(arr.length != null);
 
-      goog.array.ARRAY_PROTOTYPE_.forEach.call(arr, f, opt_obj);
+      Array.prototype.forEach.call(arr, f, opt_obj);
     } :
     function(arr, f, opt_obj) {
       var l = arr.length;  // must be fixed during loop... see docs
@@ -6365,11 +6358,11 @@ goog.array.forEachRight = function(arr, f, opt_obj) {
  */
 goog.array.filter = goog.NATIVE_ARRAY_PROTOTYPES &&
                     (goog.array.ASSUME_NATIVE_FUNCTIONS ||
-                     goog.array.ARRAY_PROTOTYPE_.filter) ?
+                     Array.prototype.filter) ?
     function(arr, f, opt_obj) {
       goog.asserts.assert(arr.length != null);
 
-      return goog.array.ARRAY_PROTOTYPE_.filter.call(arr, f, opt_obj);
+      return Array.prototype.filter.call(arr, f, opt_obj);
     } :
     function(arr, f, opt_obj) {
       var l = arr.length;  // must be fixed during loop... see docs
@@ -6406,11 +6399,11 @@ goog.array.filter = goog.NATIVE_ARRAY_PROTOTYPES &&
  */
 goog.array.map = goog.NATIVE_ARRAY_PROTOTYPES &&
                  (goog.array.ASSUME_NATIVE_FUNCTIONS ||
-                  goog.array.ARRAY_PROTOTYPE_.map) ?
+                  Array.prototype.map) ?
     function(arr, f, opt_obj) {
       goog.asserts.assert(arr.length != null);
 
-      return goog.array.ARRAY_PROTOTYPE_.map.call(arr, f, opt_obj);
+      return Array.prototype.map.call(arr, f, opt_obj);
     } :
     function(arr, f, opt_obj) {
       var l = arr.length;  // must be fixed during loop... see docs
@@ -6451,13 +6444,13 @@ goog.array.map = goog.NATIVE_ARRAY_PROTOTYPES &&
  */
 goog.array.reduce = goog.NATIVE_ARRAY_PROTOTYPES &&
                     (goog.array.ASSUME_NATIVE_FUNCTIONS ||
-                     goog.array.ARRAY_PROTOTYPE_.reduce) ?
+                     Array.prototype.reduce) ?
     function(arr, f, val, opt_obj) {
       goog.asserts.assert(arr.length != null);
       if (opt_obj) {
         f = goog.bind(f, opt_obj);
       }
-      return goog.array.ARRAY_PROTOTYPE_.reduce.call(arr, f, val);
+      return Array.prototype.reduce.call(arr, f, val);
     } :
     function(arr, f, val, opt_obj) {
       var rval = val;
@@ -6496,13 +6489,13 @@ goog.array.reduce = goog.NATIVE_ARRAY_PROTOTYPES &&
  */
 goog.array.reduceRight = goog.NATIVE_ARRAY_PROTOTYPES &&
                          (goog.array.ASSUME_NATIVE_FUNCTIONS ||
-                          goog.array.ARRAY_PROTOTYPE_.reduceRight) ?
+                          Array.prototype.reduceRight) ?
     function(arr, f, val, opt_obj) {
       goog.asserts.assert(arr.length != null);
       if (opt_obj) {
         f = goog.bind(f, opt_obj);
       }
-      return goog.array.ARRAY_PROTOTYPE_.reduceRight.call(arr, f, val);
+      return Array.prototype.reduceRight.call(arr, f, val);
     } :
     function(arr, f, val, opt_obj) {
       var rval = val;
@@ -6532,11 +6525,11 @@ goog.array.reduceRight = goog.NATIVE_ARRAY_PROTOTYPES &&
  */
 goog.array.some = goog.NATIVE_ARRAY_PROTOTYPES &&
                   (goog.array.ASSUME_NATIVE_FUNCTIONS ||
-                   goog.array.ARRAY_PROTOTYPE_.some) ?
+                   Array.prototype.some) ?
     function(arr, f, opt_obj) {
       goog.asserts.assert(arr.length != null);
 
-      return goog.array.ARRAY_PROTOTYPE_.some.call(arr, f, opt_obj);
+      return Array.prototype.some.call(arr, f, opt_obj);
     } :
     function(arr, f, opt_obj) {
       var l = arr.length;  // must be fixed during loop... see docs
@@ -6569,11 +6562,11 @@ goog.array.some = goog.NATIVE_ARRAY_PROTOTYPES &&
  */
 goog.array.every = goog.NATIVE_ARRAY_PROTOTYPES &&
                    (goog.array.ASSUME_NATIVE_FUNCTIONS ||
-                    goog.array.ARRAY_PROTOTYPE_.every) ?
+                    Array.prototype.every) ?
     function(arr, f, opt_obj) {
       goog.asserts.assert(arr.length != null);
 
-      return goog.array.ARRAY_PROTOTYPE_.every.call(arr, f, opt_obj);
+      return Array.prototype.every.call(arr, f, opt_obj);
     } :
     function(arr, f, opt_obj) {
       var l = arr.length;  // must be fixed during loop... see docs
@@ -6825,7 +6818,7 @@ goog.array.removeAt = function(arr, i) {
   // use generic form of splice
   // splice returns the removed items and if successful the length of that
   // will be 1
-  return goog.array.ARRAY_PROTOTYPE_.splice.call(arr, i, 1).length == 1;
+  return Array.prototype.splice.call(arr, i, 1).length == 1;
 };
 
 
@@ -6904,8 +6897,8 @@ goog.array.removeAllIf = function(arr, f, opt_obj) {
  * @return {!Array<?>} The new resultant array.
  */
 goog.array.concat = function(var_args) {
-  return goog.array.ARRAY_PROTOTYPE_.concat.apply(
-      goog.array.ARRAY_PROTOTYPE_, arguments);
+  return Array.prototype.concat.apply(
+      Array.prototype, arguments);
 };
 
 
@@ -6916,8 +6909,8 @@ goog.array.concat = function(var_args) {
  * @template T
  */
 goog.array.join = function(var_args) {
-  return goog.array.ARRAY_PROTOTYPE_.concat.apply(
-      goog.array.ARRAY_PROTOTYPE_, arguments);
+  return Array.prototype.concat.apply(
+      Array.prototype, arguments);
 };
 
 
@@ -7010,7 +7003,7 @@ goog.array.extend = function(arr1, var_args) {
 goog.array.splice = function(arr, index, howMany, var_args) {
   goog.asserts.assert(arr.length != null);
 
-  return goog.array.ARRAY_PROTOTYPE_.splice.apply(
+  return Array.prototype.splice.apply(
       arr, goog.array.slice(arguments, 1));
 };
 
@@ -7036,9 +7029,9 @@ goog.array.slice = function(arr, start, opt_end) {
   // we could use slice on the arguments object and then use apply instead of
   // testing the length
   if (arguments.length <= 2) {
-    return goog.array.ARRAY_PROTOTYPE_.slice.call(arr, start);
+    return Array.prototype.slice.call(arr, start);
   } else {
-    return goog.array.ARRAY_PROTOTYPE_.slice.call(arr, start, opt_end);
+    return Array.prototype.slice.call(arr, start, opt_end);
   }
 };
 
@@ -7647,9 +7640,9 @@ goog.array.rotate = function(array, n) {
   if (array.length) {
     n %= array.length;
     if (n > 0) {
-      goog.array.ARRAY_PROTOTYPE_.unshift.apply(array, array.splice(-n, n));
+      Array.prototype.unshift.apply(array, array.splice(-n, n));
     } else if (n < 0) {
-      goog.array.ARRAY_PROTOTYPE_.push.apply(array, array.splice(0, -n));
+      Array.prototype.push.apply(array, array.splice(0, -n));
     }
   }
   return array;
@@ -7670,9 +7663,9 @@ goog.array.moveItem = function(arr, fromIndex, toIndex) {
   goog.asserts.assert(fromIndex >= 0 && fromIndex < arr.length);
   goog.asserts.assert(toIndex >= 0 && toIndex < arr.length);
   // Remove 1 item at fromIndex.
-  var removedItems = goog.array.ARRAY_PROTOTYPE_.splice.call(arr, fromIndex, 1);
+  var removedItems = Array.prototype.splice.call(arr, fromIndex, 1);
   // Insert the removed item at toIndex.
-  goog.array.ARRAY_PROTOTYPE_.splice.call(arr, toIndex, 0, removedItems[0]);
+  Array.prototype.splice.call(arr, toIndex, 0, removedItems[0]);
   // We don't use goog.array.insertAt and goog.array.removeAt, because they're
   // significantly slower than splice.
 };
@@ -7956,7 +7949,7 @@ goog.provide('goog.object');
  */
 goog.object.forEach = function(obj, f, opt_obj) {
   for (var key in obj) {
-    f.call(opt_obj, obj[key], key, obj);
+    f.call(/** @type {?} */ (opt_obj), obj[key], key, obj);
   }
 };
 
@@ -7980,7 +7973,7 @@ goog.object.forEach = function(obj, f, opt_obj) {
 goog.object.filter = function(obj, f, opt_obj) {
   var res = {};
   for (var key in obj) {
-    if (f.call(opt_obj, obj[key], key, obj)) {
+    if (f.call(/** @type {?} */ (opt_obj), obj[key], key, obj)) {
       res[key] = obj[key];
     }
   }
@@ -8005,7 +7998,7 @@ goog.object.filter = function(obj, f, opt_obj) {
 goog.object.map = function(obj, f, opt_obj) {
   var res = {};
   for (var key in obj) {
-    res[key] = f.call(opt_obj, obj[key], key, obj);
+    res[key] = f.call(/** @type {?} */ (opt_obj), obj[key], key, obj);
   }
   return res;
 };
@@ -8027,7 +8020,7 @@ goog.object.map = function(obj, f, opt_obj) {
  */
 goog.object.some = function(obj, f, opt_obj) {
   for (var key in obj) {
-    if (f.call(opt_obj, obj[key], key, obj)) {
+    if (f.call(/** @type {?} */ (opt_obj), obj[key], key, obj)) {
       return true;
     }
   }
@@ -8051,7 +8044,7 @@ goog.object.some = function(obj, f, opt_obj) {
  */
 goog.object.every = function(obj, f, opt_obj) {
   for (var key in obj) {
-    if (!f.call(opt_obj, obj[key], key, obj)) {
+    if (!f.call(/** @type {?} */ (opt_obj), obj[key], key, obj)) {
       return false;
     }
   }
@@ -8228,7 +8221,7 @@ goog.object.containsValue = function(obj, val) {
  */
 goog.object.findKey = function(obj, f, opt_this) {
   for (var key in obj) {
-    if (f.call(opt_this, obj[key], key, obj)) {
+    if (f.call(/** @type {?} */ (opt_this), obj[key], key, obj)) {
       return key;
     }
   }
@@ -8284,7 +8277,7 @@ goog.object.clear = function(obj) {
  * Removes a key-value pair based on the key.
  *
  * @param {Object} obj The object from which to remove the key.
- * @param {*} key The key to remove.
+ * @param {?} key The key to remove.
  * @return {boolean} Whether an element was removed.
  */
 goog.object.remove = function(obj, key) {
@@ -15378,7 +15371,7 @@ goog.structs.forEach = function(col, f, opt_obj) {
     var values = goog.structs.getValues(col);
     var l = values.length;
     for (var i = 0; i < l; i++) {
-      f.call(opt_obj, values[i], keys && keys[i], col);
+      f.call(/** @type {?} */ (opt_obj), values[i], keys && keys[i], col);
     }
   }
 };
@@ -15417,7 +15410,7 @@ goog.structs.filter = function(col, f, opt_obj) {
   if (keys) {
     rv = {};
     for (var i = 0; i < l; i++) {
-      if (f.call(opt_obj, values[i], keys[i], col)) {
+      if (f.call(/** @type {?} */ (opt_obj), values[i], keys[i], col)) {
         rv[keys[i]] = values[i];
       }
     }
@@ -15467,7 +15460,7 @@ goog.structs.map = function(col, f, opt_obj) {
   if (keys) {
     rv = {};
     for (var i = 0; i < l; i++) {
-      rv[keys[i]] = f.call(opt_obj, values[i], keys[i], col);
+      rv[keys[i]] = f.call(/** @type {?} */ (opt_obj), values[i], keys[i], col);
     }
   } else {
     // We should not use goog.array.map here since we want to make sure that
@@ -15475,7 +15468,7 @@ goog.structs.map = function(col, f, opt_obj) {
     // function.
     rv = [];
     for (var i = 0; i < l; i++) {
-      rv[i] = f.call(opt_obj, values[i], undefined, col);
+      rv[i] = f.call(/** @type {?} */ (opt_obj), values[i], undefined, col);
     }
   }
   return rv;
@@ -15507,7 +15500,7 @@ goog.structs.some = function(col, f, opt_obj) {
   var values = goog.structs.getValues(col);
   var l = values.length;
   for (var i = 0; i < l; i++) {
-    if (f.call(opt_obj, values[i], keys && keys[i], col)) {
+    if (f.call(/** @type {?} */ (opt_obj), values[i], keys && keys[i], col)) {
       return true;
     }
   }
@@ -15541,7 +15534,7 @@ goog.structs.every = function(col, f, opt_obj) {
   var values = goog.structs.getValues(col);
   var l = values.length;
   for (var i = 0; i < l; i++) {
-    if (!f.call(opt_obj, values[i], keys && keys[i], col)) {
+    if (!f.call(/** @type {?} */ (opt_obj), values[i], keys && keys[i], col)) {
       return false;
     }
   }

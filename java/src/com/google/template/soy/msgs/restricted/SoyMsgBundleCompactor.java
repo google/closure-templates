@@ -41,7 +41,7 @@ public final class SoyMsgBundleCompactor {
 
   /** The default case spec for plural blocks. */
   private static final SoyMsgPluralCaseSpec DEFAULT_PLURAL_CASE_SPEC =
-      new SoyMsgPluralCaseSpec("other");
+      new SoyMsgPluralCaseSpec(SoyMsgPluralCaseSpec.Type.OTHER);
 
   /** The default case spec for select blocks. */
   private static final String DEFAULT_SELECT_CASE_SPEC = null;

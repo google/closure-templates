@@ -18,16 +18,20 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.template.soy.jbcsrc.BytecodeUtils.STRING_TYPE;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
+import static com.google.template.soy.jbcsrc.BytecodeUtils.constantNull;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.msgs.internal.MsgUtils.MsgPartsAndIds;
+import com.google.template.soy.msgs.restricted.SoyMsg;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPart.Case;
 import com.google.template.soy.msgs.restricted.SoyMsgPlaceholderPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPluralCaseSpec;
+import com.google.template.soy.msgs.restricted.SoyMsgPluralCaseSpec.Type;
 import com.google.template.soy.msgs.restricted.SoyMsgPluralPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPluralRemainderPart;
 import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
@@ -45,6 +49,7 @@ import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 
 import org.objectweb.asm.Label;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -53,6 +58,25 @@ import java.util.Map;
  * A helper for compiling {@link MsgNode messages}
  */
 final class MsgCompiler {
+  private static final ConstructorRef SOY_MSG =
+      ConstructorRef.create(SoyMsg.class, long.class, String.class, boolean.class, Iterable.class);
+  private static final ConstructorRef SOY_MSG_PLACEHOLDER_PART =
+      ConstructorRef.create(SoyMsgPlaceholderPart.class, String.class);
+  private static final ConstructorRef SOY_MSG_PLURAL_REMAINDER_PART =
+      ConstructorRef.create(SoyMsgPluralRemainderPart.class, String.class);
+  private static final ConstructorRef SOY_MSG_PURAL_PART =
+      ConstructorRef.create(SoyMsgPluralPart.class, String.class, int.class, Iterable.class);
+  private static final ConstructorRef SOY_MSG_SELECT_PART =
+      ConstructorRef.create(SoyMsgSelectPart.class, String.class, Iterable.class);
+  private static final MethodRef SOY_MSG_RAW_TEXT_PART_OF =
+      MethodRef.forMethod(SoyMsgRawTextPart.class, "of", String.class);
+  private static final MethodRef CASE_CREATE =
+      MethodRef.forMethod(Case.class, "create", Object.class, Iterable.class);
+  private static final ConstructorRef SOY_MSG_PLURAL_CASE_SPEC_TYPE =
+      ConstructorRef.create(SoyMsgPluralCaseSpec.class, SoyMsgPluralCaseSpec.Type.class);
+  private static final ConstructorRef SOY_MSG_PLURAL_CASE_SPEC_INT =
+      ConstructorRef.create(SoyMsgPluralCaseSpec.class, int.class);
+  
 
   /**
    * A helper interface that allows the MsgCompiler to interact with the SoyNodeCompiler in a 
@@ -128,10 +152,11 @@ final class MsgCompiler {
    */
   Statement compileMessage(
       MsgPartsAndIds partsAndId, MsgNode msg, List<String> escapingDirectives) {
+    Expression soyMsgDefault = compileDefaultMessageConstant(partsAndId, msg);
     Expression soyMsg =
         variableLookup
             .getRenderContext()
-            .invoke(MethodRef.RENDER_CONTEXT_GET_SOY_MSG, constant(partsAndId.id));
+            .invoke(MethodRef.RENDER_CONTEXT_GET_SOY_MSG, constant(partsAndId.id), soyMsgDefault);
     Statement printMsg;
     if (msg.isRawTextMsg()) {
       // Simplest case, just a static string translation
@@ -144,6 +169,80 @@ final class MsgCompiler {
     return Statement.concat(
         printMsg.withSourceLocation(msg.getSourceLocation()),
         detachState.detachLimited(appendableExpression));
+  }
+
+  /**
+   * Returns an expression the evaluates to a constant SoyMsg object used as the default message for
+   * when translations don't exist.
+   *
+   * <p>For each msg we generate a static final field that holds a SoyMsg object which means we have
+   * to go through the somewhat awkward process of generating code to construct objects we have at
+   * compile time.  We could do something like use java serialization, but just invoking the
+   * constructors isn't too hard.
+   */
+  private Expression compileDefaultMessageConstant(MsgPartsAndIds partsAndId, MsgNode msgNode) {
+    Expression constructSoyMsg =
+        SOY_MSG.construct(
+            constant(partsAndId.id), // id
+            // locale, technically uknown so pass null
+            BytecodeUtils.constantNull(BytecodeUtils.STRING_TYPE),
+            BytecodeUtils.constant(msgNode.isPlrselMsg()),
+            partsToPartsList(partsAndId.parts));
+    return variables.addStaticField("msg_" + partsAndId.id, constructSoyMsg).accessor();
+  }
+
+  private Expression partsToPartsList(ImmutableList<SoyMsgPart> parts) throws AssertionError {
+    List<Expression> partsExprs = new ArrayList<>(parts.size());
+    for (SoyMsgPart part : parts) {
+      partsExprs.add(partToPartExpression(part));
+    }
+    return BytecodeUtils.asList(partsExprs);
+  }
+
+  /**
+   * Returns an {@link Expression} that evaluates to an equivalent SoyMsgPart as the argument.
+   */
+  private Expression partToPartExpression(SoyMsgPart part) {
+    if (part instanceof SoyMsgPlaceholderPart) {
+      return SOY_MSG_PLACEHOLDER_PART.construct(
+          constant(((SoyMsgPlaceholderPart) part).getPlaceholderName()));
+    } else if (part instanceof SoyMsgPluralPart) {
+      SoyMsgPluralPart pluralPart = (SoyMsgPluralPart) part;
+      List<Expression> caseExprs = new ArrayList<>(pluralPart.getCases().size());
+      for (Case<SoyMsgPluralCaseSpec> item : pluralPart.getCases()) {
+        Expression spec;
+        if (item.spec().getType() == Type.EXPLICIT) {
+          spec = SOY_MSG_PLURAL_CASE_SPEC_INT.construct(constant(item.spec().getExplicitValue()));
+        } else {
+          spec =
+              SOY_MSG_PLURAL_CASE_SPEC_TYPE.construct(
+                  FieldRef.enumReference(item.spec().getType()).accessor());
+        }
+        caseExprs.add(CASE_CREATE.invoke(spec, partsToPartsList(item.parts())));
+      }
+      return SOY_MSG_PURAL_PART.construct(
+          constant(pluralPart.getPluralVarName()),
+          constant(pluralPart.getOffset()),
+          BytecodeUtils.asList(caseExprs));
+    } else if (part instanceof SoyMsgPluralRemainderPart) {
+      return SOY_MSG_PLURAL_REMAINDER_PART.construct(
+          constant(((SoyMsgPluralRemainderPart) part).getPluralVarName()));
+    } else if (part instanceof SoyMsgRawTextPart) {
+      return SOY_MSG_RAW_TEXT_PART_OF.invoke(constant(((SoyMsgRawTextPart) part).getRawText()));
+    } else if (part instanceof SoyMsgSelectPart) {
+      SoyMsgSelectPart selectPart = (SoyMsgSelectPart) part;
+      List<Expression> caseExprs = new ArrayList<>(selectPart.getCases().size());
+      for (Case<String> item : selectPart.getCases()) {
+        caseExprs.add(
+            CASE_CREATE.invoke(
+                item.spec() == null ? constantNull(STRING_TYPE) : constant(item.spec()),
+                partsToPartsList(item.parts())));
+      }
+      return SOY_MSG_SELECT_PART.construct(
+          constant(selectPart.getSelectVarName()), BytecodeUtils.asList(caseExprs));
+    } else {
+      throw new AssertionError("unrecognized part: " + part);
+    }
   }
 
   /**

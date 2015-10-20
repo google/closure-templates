@@ -255,6 +255,11 @@ final class CodeBuilder extends MethodVisitor {
     adapter.putField(owner, name, type);
   }
 
+  /** See {@link GeneratorAdapter#putStatic(Type, String, Type)} */
+  public void putStatic(Type owner, String name, Type type) {
+    adapter.putStatic(owner, name, type);
+  }
+
   /** See {@link GeneratorAdapter#invokeVirtual(Type, Method)} */
   public void invokeVirtual(Type owner, Method method) {
     adapter.invokeVirtual(owner, method);

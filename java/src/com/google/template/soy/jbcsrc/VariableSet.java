@@ -31,6 +31,7 @@ import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Label;
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
 
@@ -206,9 +207,17 @@ final class VariableSet {
 
     @Override void maybeDefineField(ClassVisitor writer) {}
   }
+  
+  @AutoValue
+  abstract static class StaticFieldVariable {
+    abstract FieldRef field();
+
+    abstract Expression initializer();
+  }
 
   private final List<Variable> allVariables = new ArrayList<>();
   private final Deque<Map<VarKey, Variable>> frames = new ArrayDeque<>();
+  private final List<StaticFieldVariable> staticFields = new ArrayList<>();
   private final UniqueNameGenerator fieldNames;
   private final BitSet availableSlots = new BitSet();
   private final TypeInfo owner;
@@ -321,6 +330,27 @@ final class VariableSet {
     }
   }
 
+  
+  /**
+   * Adds a private static final field and returns a reference to it.
+   *
+   * @param proposedName  The proposed name,  the actual name will be this plus an optional suffix
+   *     to ensure uniqueness
+   * @param initializer An expression to initialize the field.
+   */
+  FieldRef addStaticField(String proposedName, Expression initializer) {
+    String name = fieldNames.generateName(proposedName);
+    FieldRef ref =
+        new AutoValue_FieldRef(
+            owner,
+            name,
+            initializer.resultType(),
+            Opcodes.ACC_STATIC | Opcodes.ACC_FINAL | Opcodes.ACC_PRIVATE,
+            !initializer.isNonNullable());
+    staticFields.add(new AutoValue_VariableSet_StaticFieldVariable(ref, initializer));
+    return ref;
+  }
+
   // TODO(lukes): consider moving all these optional 'one per template' fields to a different object
   // for management.
 
@@ -369,6 +399,25 @@ final class VariableSet {
       });
     }
     return Statement.concat(initializers);
+  }
+  
+  /**
+   * Adds definitions for all the static fields managed by this variable set and adds a
+   * {@code <clinit>} method to the given class.
+   *
+   * @param writer The class to add the fields and static initializer to.
+   */
+  void defineStaticFields(ClassVisitor writer) {
+    if (staticFields.isEmpty()) {
+      return;
+    }
+    List<Statement> statements = new ArrayList<>();
+    for (StaticFieldVariable staticField : staticFields) {
+      staticField.field().defineField(writer);
+      statements.add(staticField.field().putStaticField(staticField.initializer()));
+    }
+    statements.add(Statement.RETURN);
+    Statement.concat(statements).writeMethod(Opcodes.ACC_STATIC, BytecodeUtils.CLASS_INIT, writer);
   }
 
   /**

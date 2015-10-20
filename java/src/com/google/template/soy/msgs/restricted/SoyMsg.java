@@ -155,13 +155,15 @@ public final class SoyMsg {
 
 
   /** Returns the language/locale string. */
+  @Nullable
   public String getLocaleString() {
     return localeString;
   }
 
+  @Nullable
   public ULocale getLocale() {
     // TODO(lukes): Consider storing this in preference to the localeString
-    return new ULocale(localeString);
+    return localeString == null ? null : new ULocale(localeString);
   }
 
   /** Returns the unique id for this message (same across all translations). */

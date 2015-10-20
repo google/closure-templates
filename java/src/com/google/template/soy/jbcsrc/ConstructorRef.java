@@ -62,7 +62,7 @@ import java.util.LinkedHashMap;
         new Method("<init>", Type.VOID_TYPE, Iterables.toArray(argTypes, Type.class)));
   }
 
-  private static ConstructorRef create(Class<?> clazz, Class<?> ...argTypes) {
+  static ConstructorRef create(Class<?> clazz, Class<?>... argTypes) {
     TypeInfo type = TypeInfo.create(clazz);
     Constructor<?> c;
     try {

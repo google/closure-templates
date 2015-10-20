@@ -51,17 +51,20 @@ public class SoyMsgIdComputerTest extends TestCase {
 
   private static final ImmutableList<SoyMsgPart> PLURAL_MSG_PARTS =
       ImmutableList.<SoyMsgPart>of(
-          new SoyMsgPluralPart("NUM_0", 0, ImmutableList.of(
-              SoyMsgPluralPart.Case.create(
-                  new SoyMsgPluralCaseSpec(1),
-                  ImmutableList.<SoyMsgPart>of(SoyMsgRawTextPart.of("Once"))),
-              SoyMsgPluralPart.Case.create(
-                  new SoyMsgPluralCaseSpec("few"),
-                  ImmutableList.<SoyMsgPart>of(
-                      new SoyMsgPlaceholderPart("NUM_1"), SoyMsgRawTextPart.of(" times"))),
-              SoyMsgPluralPart.Case.create(
-                  new SoyMsgPluralCaseSpec("other"),
-                  ImmutableList.<SoyMsgPart>of(SoyMsgRawTextPart.of("Lots"))))));
+          new SoyMsgPluralPart(
+              "NUM_0",
+              0,
+              ImmutableList.of(
+                  SoyMsgPluralPart.Case.create(
+                      new SoyMsgPluralCaseSpec(1),
+                      ImmutableList.<SoyMsgPart>of(SoyMsgRawTextPart.of("Once"))),
+                  SoyMsgPluralPart.Case.create(
+                      new SoyMsgPluralCaseSpec(SoyMsgPluralCaseSpec.Type.FEW),
+                      ImmutableList.<SoyMsgPart>of(
+                          new SoyMsgPlaceholderPart("NUM_1"), SoyMsgRawTextPart.of(" times"))),
+                  SoyMsgPluralPart.Case.create(
+                      new SoyMsgPluralCaseSpec(SoyMsgPluralCaseSpec.Type.OTHER),
+                      ImmutableList.<SoyMsgPart>of(SoyMsgRawTextPart.of("Lots"))))));
 
 
   public void testFingerprint() {

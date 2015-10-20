@@ -45,7 +45,6 @@ public final class RenderContext {
   private final SoyValueConverter converter;
   /** The bundle of translated messages */
   private final SoyMsgBundle msgBundle;
-  private final SoyMsgBundle defaultBundle;
 
   private RenderContext(Builder builder) {
     this.templateSelector = checkNotNull(builder.templateSelector);
@@ -55,7 +54,6 @@ public final class RenderContext {
     this.soyJavaDirectivesMap = builder.soyJavaDirectivesMap;
     this.converter = builder.converter;
     this.msgBundle = builder.msgBundle;
-    this.defaultBundle = builder.defaultBundle;
   }
 
   public String renameCssSelector(String selector) {
@@ -102,13 +100,10 @@ public final class RenderContext {
    * Returns the {@link SoyMsg} associated with the {@code msgId} or the fallback (aka english)
    * translation if there is no such message.
    */
-  public SoyMsg getSoyMsg(long msgId) {
+  public SoyMsg getSoyMsg(long msgId, SoyMsg defaultMsg) {
     SoyMsg msg = msgBundle.getMsg(msgId);
     if (msg == null) {
-      msg = defaultBundle.getMsg(msgId);
-      if (msg == null) {
-        throw new IllegalArgumentException("unknown messageId: " + msgId);
-      }
+      return defaultMsg;
     }
     return msg;
   }
@@ -122,7 +117,7 @@ public final class RenderContext {
         .withCssRenamingMap(cssRenamingMap)
         .withXidRenamingMap(xidRenamingMap)
         .withConverter(converter)
-        .withMessageBundles(msgBundle, defaultBundle);
+        .withMessageBundle(msgBundle);
   }
 
   /** A builder for configuring the context. */
@@ -134,7 +129,6 @@ public final class RenderContext {
     private ImmutableMap<String, SoyJavaPrintDirective> soyJavaDirectivesMap = ImmutableMap.of();
     private SoyValueConverter converter = SoyValueHelper.UNCUSTOMIZED_INSTANCE;
     private SoyMsgBundle msgBundle = SoyMsgBundle.EMPTY;
-    private SoyMsgBundle defaultBundle = SoyMsgBundle.EMPTY;
 
     public Builder withTemplateSelector(DelTemplateSelector selector) {
       this.templateSelector = checkNotNull(selector);
@@ -166,11 +160,8 @@ public final class RenderContext {
       return this;
     }
 
-    public Builder withMessageBundles(
-        SoyMsgBundle msgBundle,
-        SoyMsgBundle defaultBundle) {
+    public Builder withMessageBundle(SoyMsgBundle msgBundle) {
       this.msgBundle = checkNotNull(msgBundle);
-      this.defaultBundle = checkNotNull(defaultBundle);
       return this;
     }
 

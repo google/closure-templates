@@ -44,6 +44,7 @@ import java.lang.reflect.Modifier;
   static FieldRef createFinalField(TypeInfo owner, String name, Class<?> type) {
     return createFinalField(owner, name, Type.getType(type));
   }
+
   static FieldRef createFinalField(TypeInfo owner, String name, Type type) {
     return new AutoValue_FieldRef(
         owner,
@@ -192,7 +193,24 @@ import java.lang.reflect.Modifier;
 
     };
   }
-  
+  /**
+   * Returns a {@link Statement} that stores the {@code value} in this field on the given
+   * {@code instance}.
+   *
+   * @throws IllegalStateException if this is a static field
+   */
+  Statement putStaticField(final Expression value) {
+    checkState(isStatic(), "This field is not static!");
+    value.checkAssignableTo(type());
+    return new Statement() {
+      @Override
+      void doGen(CodeBuilder adapter) {
+        value.gen(adapter);
+        adapter.putStatic(owner().type(), name(), type());
+      }
+    };
+  }
+
   /**
    * Adds code to place the top item of the stack into this field.
    * 

@@ -39,10 +39,9 @@ public final class SoyMsgSelectPart extends SoyMsgPart {
    * @param selectVarName The select variable name.
    * @param cases The list of cases for this select statement.
    */
-  public SoyMsgSelectPart(
-      String selectVarName, ImmutableList<Case<String>> cases) {
+  public SoyMsgSelectPart(String selectVarName, Iterable<Case<String>> cases) {
     this.selectVarName = selectVarName;
-    this.cases = cases;
+    this.cases = ImmutableList.copyOf(cases);
   }
 
 

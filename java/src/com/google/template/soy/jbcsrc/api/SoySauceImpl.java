@@ -22,7 +22,6 @@ import static com.google.template.soy.jbcsrc.shared.Names.rewriteStackTrace;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
@@ -37,9 +36,6 @@ import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.jbcsrc.shared.DelTemplateSelectorImpl;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.msgs.SoyMsgBundle;
-import com.google.template.soy.msgs.restricted.MsgPartUtils;
-import com.google.template.soy.msgs.restricted.SoyMsg;
-import com.google.template.soy.msgs.restricted.SoyMsgBundleImpl;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.internal.ApiCallScopeUtils;
@@ -76,14 +72,12 @@ public final class SoySauceImpl implements SoySauce {
     public SoySauceImpl create(
         CompiledTemplates templates,
         TemplateRegistry registry,
-        SoyMsgBundle defaultMsgBundle,
         ImmutableMap<String, ? extends SoyJavaFunction> functions,
         ImmutableMap<String, ? extends SoyJavaPrintDirective> printDirectives,
         ImmutableMap<String, ImmutableSortedSet<String>> templateToTransitiveUsedIjParams) {
       return new SoySauceImpl(
           templates,
           registry,
-          defaultMsgBundle,
           templateToTransitiveUsedIjParams,
           apiCallScopeProvider,
           converterProvider.get(),
@@ -93,7 +87,6 @@ public final class SoySauceImpl implements SoySauce {
   }
   
   private final CompiledTemplates templates;
-  private final SoyMsgBundle defaultMsgBundle;
   private final GuiceSimpleScope apiCallScope;
   private final DelTemplateSelectorImpl.Factory factory;
   private final SoyValueHelper converter;
@@ -104,14 +97,12 @@ public final class SoySauceImpl implements SoySauce {
   private SoySauceImpl(
       CompiledTemplates templates,
       TemplateRegistry registry,
-      SoyMsgBundle defaultMsgBundle,
       ImmutableMap<String, ImmutableSortedSet<String>> templateToTransitiveUsedIjParams,
       GuiceSimpleScope apiCallScope,
       SoyValueHelper converter,
       ImmutableMap<String, ? extends SoyJavaFunction> functions,
       ImmutableMap<String, ? extends SoyJavaPrintDirective> printDirectives) {
     this.templates = checkNotNull(templates);
-    this.defaultMsgBundle = replaceLocale(defaultMsgBundle);
     this.templateToTransitiveUsedIjParams = templateToTransitiveUsedIjParams;
     this.apiCallScope = checkNotNull(apiCallScope);
     this.converter = checkNotNull(converter);
@@ -119,25 +110,6 @@ public final class SoySauceImpl implements SoySauce {
     this.printDirectives = ImmutableMap.copyOf(printDirectives);
     
     this.factory = new DelTemplateSelectorImpl.Factory(registry, templates);
-  }
-
-  // Currently the defaultBundle is coming straight from extractMsgs which means the SoyMsgs are
-  // not associated with a locale, however a locale is needed for plurals support.  To compensate
-  // we just apply 'en' here.
-  // TODO(lukes): technically we don't know that the template author is writing in english (or even
-  // an LTR language).  Normally, this is provided as a flag to the msg extractor.  consider adding
-  // an explicit flag to the runtime, or allowing the user to pass an explicit default bundle (with
-  // an associated locale).  Note, Tofu avoids this problem by having 2 implementations of msg 
-  // rendering. 1 that uses the bundle and one that walks the AST directly.  To compensate for a
-  // lack of locale the AST implementation doesn't use complex plural rules.  Consider just changing
-  // the msg renderer for jbcsrc to deal with missing locale information 'gracefully'.
-  private SoyMsgBundle replaceLocale(SoyMsgBundle input) {
-    ImmutableList.Builder<SoyMsg> builder = ImmutableList.builder();
-    for (SoyMsg msg : input) {
-      builder.add(new SoyMsg(msg.getId(), "en", 
-          MsgPartUtils.hasPlrselPart(msg.getParts()), msg.getParts()));
-    }
-    return new SoyMsgBundleImpl("en", builder.build());
   }
 
   @Override
@@ -249,10 +221,11 @@ public final class SoySauceImpl implements SoySauce {
     }
 
     private <T> WriteContinuation startRender(AdvisingAppendable out) throws IOException {
-      RenderContext context = contextBuilder
-          .withMessageBundles(msgs, defaultMsgBundle)
-          .withTemplateSelector(factory.create(activeDelegatePackages))
-          .build();
+      RenderContext context =
+          contextBuilder
+              .withMessageBundle(msgs)
+              .withTemplateSelector(factory.create(activeDelegatePackages))
+              .build();
       BidiGlobalDir dir = BidiGlobalDir.forStaticLocale(msgs.getLocaleString());
       Scoper scoper = new Scoper(apiCallScope, dir, msgs.getLocaleString());
       CompiledTemplate template = templateFactory.create(data, ij);

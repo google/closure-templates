@@ -47,6 +47,14 @@ abstract class Statement extends BytecodeProducer {
         void doGen(CodeBuilder adapter) {}
       };
 
+  static final Statement RETURN =
+      new Statement() {
+        @Override
+        void doGen(CodeBuilder adapter) {
+          adapter.returnValue();
+        }
+      };
+
   /**
    * Generates a statement that returns the value produced by the given expression.
    * 

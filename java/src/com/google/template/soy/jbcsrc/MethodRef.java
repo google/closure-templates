@@ -148,7 +148,7 @@ import java.util.Map;
       create(RenderContext.class, "getPrintDirective", String.class);
 
   static final MethodRef RENDER_CONTEXT_GET_SOY_MSG =
-      create(RenderContext.class, "getSoyMsg", long.class);
+      create(RenderContext.class, "getSoyMsg", long.class, SoyMsg.class);
 
   static final MethodRef RENDER_CONTEXT_RENAME_CSS_SELECTOR =
       forMethod(RenderContext.class, "renameCssSelector", String.class).asNonNullable();

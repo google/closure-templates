@@ -889,7 +889,6 @@ public final class SoyFileSet {
     return soyTemplatesFactory.create(
         templates.get(),
         primitives.registry,
-        new ExtractMsgsVisitor().exec(primitives.soyTree),
         soyJavaFunctions.build(),
         soyJavaPrintDirectives.build(),
         primitives.transitiveIjs);
@@ -900,19 +899,16 @@ public final class SoyFileSet {
    * SoySauce.
    */
   private static final class ServerCompilationPrimitives {
-    final SoyFileSetNode soyTree;
     final ImmutableMap<String, ImmutableSortedSet<String>> transitiveIjs;
     final ImmutableMap<String, ? extends SoyFunction> soyFunctions;
     final ImmutableMap<String, ? extends SoyPrintDirective> printDirectives;
     final TemplateRegistry registry;
 
     ServerCompilationPrimitives(
-        SoyFileSetNode soyTree,
         TemplateRegistry registry,
         ImmutableMap<String, ImmutableSortedSet<String>> transitiveIjs,
         ImmutableMap<String, ? extends SoyFunction> soyFunctions,
         ImmutableMap<String, ? extends SoyPrintDirective> printDirectives) {
-      this.soyTree = soyTree;
       this.registry = registry;
       this.transitiveIjs = transitiveIjs;
       this.soyFunctions = soyFunctions;
@@ -938,7 +934,7 @@ public final class SoyFileSet {
     ImmutableMap<String, ImmutableSortedSet<String>> transitiveIjs =
         getTransitiveIjs(soyTree, registry);
     return new ServerCompilationPrimitives(
-        soyTree, registry, transitiveIjs, soyFunctionMap, printDirectives);
+        registry, transitiveIjs, soyFunctionMap, printDirectives);
   }
 
   private ImmutableMap<String, ImmutableSortedSet<String>> getTransitiveIjs(

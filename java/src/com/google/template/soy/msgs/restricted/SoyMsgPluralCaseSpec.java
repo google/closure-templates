@@ -16,6 +16,8 @@
 
 package com.google.template.soy.msgs.restricted;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.google.template.soy.msgs.SoyMsgException;
 
 import java.util.EnumMap;
@@ -53,17 +55,20 @@ public class SoyMsgPluralCaseSpec {
 
   /**
    * Constructs an object from a non-numeric value.
-   * The field type is set to an enum value corresponding to the string given, and explicitValue
-   * is set to -1.
+   *
    * @param typeStr String representation of the non-numeric value.
    * @throws IllegalArgumentException if typeStr (after converting to upper
    *     case) does not match with any of the enum types.
    */
   public SoyMsgPluralCaseSpec(String typeStr) {
-    type = Type.valueOf(typeStr.toUpperCase(Locale.ENGLISH));
-    explicitValue = -1;
+    this(Type.valueOf(typeStr.toUpperCase(Locale.ENGLISH)));
   }
 
+  /** Constructs an object from a non-numeric value. */
+  public SoyMsgPluralCaseSpec(Type type) {
+    this.type = checkNotNull(type);
+    this.explicitValue = -1;
+  }
 
   /**
    * Constructs an object from a numeric value.

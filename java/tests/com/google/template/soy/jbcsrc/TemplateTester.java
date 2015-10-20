@@ -48,7 +48,6 @@ import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.jbcsrc.shared.DelTemplateSelector;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.msgs.SoyMsgBundle;
-import com.google.template.soy.msgs.internal.ExtractMsgsVisitor;
 import com.google.template.soy.passes.SharedPassesModule;
 import com.google.template.soy.shared.internal.ErrorReporterModule;
 import com.google.template.soy.shared.internal.SharedModule;
@@ -76,31 +75,39 @@ public final class TemplateTester {
   private static final Injector INJECTOR =
       Guice.createInjector(
           new ErrorReporterModule(),
-          new SharedModule(), 
+          new SharedModule(),
           new SharedPassesModule(),
-          new BasicDirectivesModule(), 
-          new BasicFunctionsModule(), 
+          new BasicDirectivesModule(),
+          new BasicFunctionsModule(),
           new AbstractModule() {
-            @Provides RenderContext provideContext(
+            @Provides
+            RenderContext provideContext(
                 ImmutableMap<String, ? extends SoyFunction> functions,
                 SoyValueHelper converter,
                 ImmutableMap<String, ? extends SoyJavaPrintDirective> printDirectives) {
-              ImmutableMap<String, SoyJavaFunction> soyJavaFunctions = ImmutableMap.copyOf(
-                  (Map<String, SoyJavaFunction>) Maps.filterValues(
-                      functions, Predicates.instanceOf(SoyJavaFunction.class)));
+              @SuppressWarnings("unchecked")
+              ImmutableMap<String, SoyJavaFunction> soyJavaFunctions =
+                  ImmutableMap.copyOf(
+                      (Map<String, SoyJavaFunction>)
+                          Maps.filterValues(
+                              functions, Predicates.instanceOf(SoyJavaFunction.class)));
               return new RenderContext.Builder()
                   .withSoyFunctions(soyJavaFunctions)
                   .withSoyPrintDirectives(printDirectives)
                   .withConverter(converter)
-                  .withTemplateSelector(new DelTemplateSelector() {
-                    @Override public Factory selectDelTemplate(String calleeName, String variant,
-                        boolean allowEmpty) {
-                      throw new UnsupportedOperationException();
-                    }
-                  })
+                  .withTemplateSelector(
+                      new DelTemplateSelector() {
+                        @Override
+                        public Factory selectDelTemplate(
+                            String calleeName, String variant, boolean allowEmpty) {
+                          throw new UnsupportedOperationException();
+                        }
+                      })
                   .build();
             }
-            @Override protected void configure() {}
+
+            @Override
+            protected void configure() {}
           });
 
   static final RenderContext DEFAULT_CONTEXT = INJECTOR.getInstance(RenderContext.class);
@@ -144,7 +151,7 @@ public final class TemplateTester {
   // TODO(lukes): add a fluent api for specifying all the parameters to render
   static final class CompiledTemplateSubject extends Subject<CompiledTemplateSubject, String> {
     private Iterable<ClassData> classData;
-    private SoyMsgBundle msgBundle;
+    private SoyMsgBundle msgBundle = SoyMsgBundle.EMPTY;
     private SoyTypeRegistry typeRegistry = new SoyTypeRegistry();
     private SoyValueConverter converter = SoyValueHelper.UNCUSTOMIZED_INSTANCE;
     private CompiledTemplate.Factory factory;
@@ -276,16 +283,11 @@ public final class TemplateTester {
         }
 
         // Extract messages, to make it easy to test translations and get default (english) strings
-        SoyMsgBundle messages = new ExtractMsgsVisitor().exec(fileSet);
-        SoyMsgBundle defaultBundle = messages;
-        if (this.msgBundle != null) {
-          messages = this.msgBundle;
-        }
         defaultContext =
             defaultContext
                 .toBuilder()
                 .withSoyFunctions(ImmutableMap.copyOf(functions))
-                .withMessageBundles(messages, defaultBundle)
+                .withMessageBundle(msgBundle)
                 .build();
 
         // N.B. we are reproducing some of BytecodeCompiler here to make it easier to look at

@@ -195,6 +195,7 @@ final class TemplateCompiler {
       }
     }.writeIOExceptionMethod(Opcodes.ACC_PUBLIC, template.renderMethod().method(), writer);
     writer.setNumDetachStates(methodBody.numberOfDetachStates());
+    variableSet.defineStaticFields(writer);
     return variableSet.defineFields(writer);
   }
 

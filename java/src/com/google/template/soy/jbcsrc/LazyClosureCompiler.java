@@ -278,6 +278,7 @@ final class LazyClosureCompiler {
           adapter.mark(end);
         }
       };
+      variableSet.defineStaticFields(writer);
       Statement fieldInitializers = variableSet.defineFields(writer);
       Expression constructExpr = generateConstructor(
           new Statement() {
@@ -330,6 +331,7 @@ final class LazyClosureCompiler {
           (kind == null)
               ? BytecodeUtils.constantNull(CONTENT_KIND_TYPE)
               : FieldRef.enumReference(kind).accessor();
+      variableSet.defineStaticFields(writer);
       Statement fieldInitializers = variableSet.defineFields(writer);
       Statement superClassContstructor = new Statement() {
         @Override void doGen(CodeBuilder adapter) {
