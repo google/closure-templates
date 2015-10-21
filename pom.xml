@@ -10,12 +10,6 @@
   <url>https://github.com/google/closure-templates</url>
   <inceptionYear>2009</inceptionYear>
 
-  <parent>
-    <groupId>org.sonatype.oss</groupId>
-    <artifactId>oss-parent</artifactId>
-    <version>9</version>
-  </parent>
-
   <organization>
     <name>Google</name>
     <url>https://www.google.com</url>
