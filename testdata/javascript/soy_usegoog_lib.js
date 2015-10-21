@@ -3276,6 +3276,7 @@ goog.addDependency('messaging/portcaller.js', ['goog.messaging.PortCaller'], ['g
 goog.addDependency('messaging/portcaller_test.js', ['goog.messaging.PortCallerTest'], ['goog.events.EventTarget', 'goog.messaging.PortCaller', 'goog.messaging.PortNetwork', 'goog.testing.MockControl', 'goog.testing.jsunit', 'goog.testing.messaging.MockMessageChannel'], false);
 goog.addDependency('messaging/portchannel.js', ['goog.messaging.PortChannel'], ['goog.Timer', 'goog.array', 'goog.async.Deferred', 'goog.debug', 'goog.events', 'goog.events.EventType', 'goog.json', 'goog.log', 'goog.messaging.AbstractChannel', 'goog.messaging.DeferredChannel', 'goog.object', 'goog.string', 'goog.userAgent'], false);
 goog.addDependency('messaging/portnetwork.js', ['goog.messaging.PortNetwork'], [], false);
+goog.addDependency('messaging/portnetwork_test.js', ['goog.messaging.PortNetworkTest'], ['goog.Promise', 'goog.Timer', 'goog.messaging.PortChannel', 'goog.messaging.PortOperator', 'goog.testing.jsunit'], false);
 goog.addDependency('messaging/portoperator.js', ['goog.messaging.PortOperator'], ['goog.Disposable', 'goog.asserts', 'goog.log', 'goog.messaging.PortChannel', 'goog.messaging.PortNetwork', 'goog.object'], false);
 goog.addDependency('messaging/portoperator_test.js', ['goog.messaging.PortOperatorTest'], ['goog.messaging.PortNetwork', 'goog.messaging.PortOperator', 'goog.testing.MockControl', 'goog.testing.PropertyReplacer', 'goog.testing.jsunit', 'goog.testing.messaging.MockMessageChannel', 'goog.testing.messaging.MockMessagePort'], false);
 goog.addDependency('messaging/respondingchannel.js', ['goog.messaging.RespondingChannel'], ['goog.Disposable', 'goog.log', 'goog.messaging.MultiChannel'], false);
@@ -5098,10 +5099,10 @@ goog.string.specialEscapeChars_ = {
   '\x0B': '\\x0B', // '\v' is not supported in JScript
   '"': '\\"',
   '\\': '\\\\',
-  // To support the use case of embedding quoted strings inside of <script>
-  // tags, we have to make sure "<!--", "<script", and "</script" does not
-  // appear in the resulting string. The specific strings that must be escaped
-  // are documented at:
+  // To support the use case of embedding quoted strings inside of script
+  // tags, we have to make sure HTML comments and opening/closing script tags do
+  // not appear in the resulting string. The specific strings that must be
+  // escaped are documented at:
   // http://www.w3.org/TR/html51/semantics.html#restrictions-for-contents-of-script-elements
   '<': '\x3c'
 };
