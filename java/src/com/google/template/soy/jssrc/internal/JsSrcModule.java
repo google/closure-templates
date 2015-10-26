@@ -22,16 +22,13 @@ import com.google.inject.assistedinject.FactoryModuleBuilder;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.internal.GenJsExprsVisitor.GenJsExprsVisitorFactory;
 import com.google.template.soy.jssrc.internal.TranslateToJsExprVisitor.TranslateToJsExprVisitorFactory;
-import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
-import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcPrintDirective;
 import com.google.template.soy.passes.SharedPassesModule;
 import com.google.template.soy.shared.internal.ApiCallScope;
 import com.google.template.soy.shared.internal.FunctionAdapters;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
 import com.google.template.soy.shared.internal.SharedModule;
-import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 
 import java.util.Map;
@@ -72,34 +69,6 @@ public class JsSrcModule extends AbstractModule {
     bind(SoyJsSrcOptions.class)
         .toProvider(GuiceSimpleScope.<SoyJsSrcOptions>getUnscopedProvider())
         .in(ApiCallScope.class);
-  }
-
-
-  /**
-   * Builds and provides the map of SoyJsSrcFunctions (name to function).
-   * @param soyFunctionsSet The installed set of SoyFunctions (from Guice Multibinder). Each
-   *     SoyFunction may or may not implement SoyJsSrcFunction.
-   */
-  @Provides
-  @Singleton
-  Map<String, SoyJsSrcFunction> provideSoyJsSrcFunctionsMap(Set<SoyFunction> soyFunctionsSet) {
-
-    return FunctionAdapters.buildSpecificSoyFunctionsMap(soyFunctionsSet, SoyJsSrcFunction.class);
-  }
-
-
-  /**
-   * Builds and provides the map of SoyLibraryAssistedJsSrcFunctions (name to function).
-   * @param soyFunctionsSet The installed set of SoyFunctions (from Guice Multibinder). Each
-   *     SoyFunction may or may not implement SoyLibraryAssistedJsSrcFunction.
-   */
-  @Provides
-  @Singleton
-  Map<String, SoyLibraryAssistedJsSrcFunction> provideSoyLibraryAssistedJsSrcFunctionsMap(
-      Set<SoyFunction> soyFunctionsSet) {
-
-    return FunctionAdapters.buildSpecificSoyFunctionsMap(
-        soyFunctionsSet, SoyLibraryAssistedJsSrcFunction.class);
   }
 
 

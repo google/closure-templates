@@ -33,42 +33,6 @@ import java.util.Set;
  * <p>TODO(user): migrate the legacy impls and remove this class.
  */
 public final class FunctionAdapters {
-
-  /**
-   * Given the set of all Soy function implementations and a specific Soy function type (subtype
-   * of SoyFunction) to look for, finds the Soy functions that implement the specific type
-   * and returns them in the form of a map from function name to function.
-   *
-   * @param <T> The specific Soy function type to look for.
-   * @param soyFunctionsSet The set of all Soy functions.
-   * @param specificSoyFunctionType The class of the specific Soy function type to look for.
-   * @return A map of the relevant specific Soy functions (name to function).
-   */
-  public static <T extends SoyFunction> ImmutableMap<String, T> buildSpecificSoyFunctionsMap(
-      Set<SoyFunction> soyFunctionsSet, Class<T> specificSoyFunctionType) {
-
-    ImmutableMap.Builder<String, T> mapBuilder = ImmutableMap.builder();
-
-    Set<String> seenFnNames = Sets.newHashSetWithExpectedSize(soyFunctionsSet.size());
-
-    for (SoyFunction fn : soyFunctionsSet) {
-      if (specificSoyFunctionType.isAssignableFrom(fn.getClass())) {
-        String fnName = fn.getName();
-
-        if (seenFnNames.contains(fnName) || BuiltinFunction.forFunctionName(fnName) != null) {
-          throw new IllegalStateException(
-              "Found two implementations of " + specificSoyFunctionType.getSimpleName() +
-              " with the same function name '" + fnName + "'.");
-        }
-        seenFnNames.add(fnName);
-
-        mapBuilder.put(fnName, specificSoyFunctionType.cast(fn));
-      }
-    }
-
-    return mapBuilder.build();
-  }
-
   /**
    * Given the set of all Soy directive implementations and a specific Soy directive type (subtype
    * of SoyPrintDirective) to look for, finds the Soy directives that implement the specific type

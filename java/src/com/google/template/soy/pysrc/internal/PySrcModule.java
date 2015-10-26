@@ -29,13 +29,11 @@ import com.google.template.soy.pysrc.internal.PyApiCallScopeBindingAnnotations.P
 import com.google.template.soy.pysrc.internal.PyApiCallScopeBindingAnnotations.PyRuntimePath;
 import com.google.template.soy.pysrc.internal.PyApiCallScopeBindingAnnotations.PyTranslationClass;
 import com.google.template.soy.pysrc.internal.TranslateToPyExprVisitor.TranslateToPyExprVisitorFactory;
-import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.pysrc.restricted.SoyPySrcPrintDirective;
 import com.google.template.soy.shared.internal.ApiCallScope;
 import com.google.template.soy.shared.internal.FunctionAdapters;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
 import com.google.template.soy.shared.internal.SharedModule;
-import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 
 import java.util.Set;
@@ -86,17 +84,6 @@ public final class PySrcModule extends AbstractModule {
         .in(ApiCallScope.class);
   }
 
-  /**
-   * Builds and provides the map of SoyPySrcFunctions (name to function).
-   * @param soyFunctionsSet The installed set of SoyFunctions (from Guice Multibinder). Each
-   *     SoyFunction may or may not implement SoyPySrcFunction.
-   */
-  @Provides
-  @Singleton
-  ImmutableMap<String, SoyPySrcFunction> provideSoyPySrcFunctionsMap(
-      Set<SoyFunction> soyFunctionsSet) {
-    return FunctionAdapters.buildSpecificSoyFunctionsMap(soyFunctionsSet, SoyPySrcFunction.class);
-  }
 
   /**
    * Builds and provides the map of SoyPySrcDirectives (name to directive).
