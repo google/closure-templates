@@ -2920,7 +2920,7 @@ goog.addDependency('events/mousewheelhandler_test.js', ['goog.events.MouseWheelH
 goog.addDependency('events/onlinehandler.js', ['goog.events.OnlineHandler', 'goog.events.OnlineHandler.EventType'], ['goog.Timer', 'goog.events.BrowserFeature', 'goog.events.EventHandler', 'goog.events.EventTarget', 'goog.events.EventType', 'goog.net.NetworkStatusMonitor'], false);
 goog.addDependency('events/onlinelistener_test.js', ['goog.events.OnlineHandlerTest'], ['goog.events', 'goog.events.BrowserFeature', 'goog.events.Event', 'goog.events.EventHandler', 'goog.events.OnlineHandler', 'goog.net.NetworkStatusMonitor', 'goog.testing.MockClock', 'goog.testing.PropertyReplacer', 'goog.testing.jsunit', 'goog.testing.recordFunction'], false);
 goog.addDependency('events/pastehandler.js', ['goog.events.PasteHandler', 'goog.events.PasteHandler.EventType', 'goog.events.PasteHandler.State'], ['goog.Timer', 'goog.async.ConditionalDelay', 'goog.events.BrowserEvent', 'goog.events.EventHandler', 'goog.events.EventTarget', 'goog.events.EventType', 'goog.events.KeyCodes', 'goog.log', 'goog.userAgent'], false);
-goog.addDependency('events/pastehandler_test.js', ['goog.events.PasteHandlerTest'], ['goog.dom', 'goog.events', 'goog.events.BrowserEvent', 'goog.events.EventTarget', 'goog.events.EventType', 'goog.events.KeyCodes', 'goog.events.PasteHandler', 'goog.testing.MockClock', 'goog.testing.MockUserAgent', 'goog.testing.jsunit', 'goog.userAgent'], false);
+goog.addDependency('events/pastehandler_test.js', ['goog.events.PasteHandlerTest'], ['goog.dom', 'goog.events', 'goog.events.BrowserEvent', 'goog.events.EventTarget', 'goog.events.EventType', 'goog.events.KeyCodes', 'goog.events.PasteHandler', 'goog.testing.MockClock', 'goog.testing.jsunit', 'goog.userAgent'], false);
 goog.addDependency('events/wheelevent.js', ['goog.events.WheelEvent'], ['goog.asserts', 'goog.events.BrowserEvent'], false);
 goog.addDependency('events/wheelhandler.js', ['goog.events.WheelHandler'], ['goog.dom', 'goog.events', 'goog.events.EventTarget', 'goog.events.WheelEvent', 'goog.style', 'goog.userAgent', 'goog.userAgent.product', 'goog.userAgent.product.isVersion'], false);
 goog.addDependency('events/wheelhandler_test.js', ['goog.events.WheelHandlerTest'], ['goog.dom', 'goog.events', 'goog.events.BrowserEvent', 'goog.events.WheelEvent', 'goog.events.WheelHandler', 'goog.string', 'goog.testing.PropertyReplacer', 'goog.testing.events', 'goog.testing.jsunit', 'goog.userAgent', 'goog.userAgent.product'], false);
@@ -2950,7 +2950,7 @@ goog.addDependency('fs/url_test.js', ['goog.urlTest'], ['goog.fs.url', 'goog.tes
 goog.addDependency('functions/functions.js', ['goog.functions'], [], false);
 goog.addDependency('functions/functions_test.js', ['goog.functionsTest'], ['goog.array', 'goog.functions', 'goog.testing.MockClock', 'goog.testing.PropertyReplacer', 'goog.testing.jsunit', 'goog.testing.recordFunction'], false);
 goog.addDependency('fx/abstractdragdrop.js', ['goog.fx.AbstractDragDrop', 'goog.fx.AbstractDragDrop.EventType', 'goog.fx.DragDropEvent', 'goog.fx.DragDropItem'], ['goog.asserts', 'goog.dom', 'goog.dom.classlist', 'goog.events', 'goog.events.Event', 'goog.events.EventHandler', 'goog.events.EventTarget', 'goog.events.EventType', 'goog.fx.Dragger', 'goog.math.Box', 'goog.math.Coordinate', 'goog.style'], false);
-goog.addDependency('fx/abstractdragdrop_test.js', ['goog.fx.AbstractDragDropTest'], ['goog.array', 'goog.dom.TagName', 'goog.events.EventType', 'goog.functions', 'goog.fx.AbstractDragDrop', 'goog.fx.DragDropItem', 'goog.math.Box', 'goog.math.Coordinate', 'goog.style', 'goog.testing.events', 'goog.testing.jsunit'], false);
+goog.addDependency('fx/abstractdragdrop_test.js', ['goog.fx.AbstractDragDropTest'], ['goog.array', 'goog.dom.TagName', 'goog.events', 'goog.events.EventType', 'goog.functions', 'goog.fx.AbstractDragDrop', 'goog.fx.DragDropItem', 'goog.math.Box', 'goog.math.Coordinate', 'goog.style', 'goog.testing.events', 'goog.testing.jsunit'], false);
 goog.addDependency('fx/anim/anim.js', ['goog.fx.anim', 'goog.fx.anim.Animated'], ['goog.async.AnimationDelay', 'goog.async.Delay', 'goog.object'], false);
 goog.addDependency('fx/anim/anim_test.js', ['goog.fx.animTest'], ['goog.async.AnimationDelay', 'goog.async.Delay', 'goog.events', 'goog.functions', 'goog.fx.Animation', 'goog.fx.anim', 'goog.object', 'goog.testing.MockClock', 'goog.testing.PropertyReplacer', 'goog.testing.jsunit', 'goog.testing.recordFunction', 'goog.userAgent'], false);
 goog.addDependency('fx/animation.js', ['goog.fx.Animation', 'goog.fx.Animation.EventType', 'goog.fx.Animation.State', 'goog.fx.AnimationEvent'], ['goog.array', 'goog.events.Event', 'goog.fx.Transition', 'goog.fx.TransitionBase', 'goog.fx.anim', 'goog.fx.anim.Animated'], false);
@@ -3277,7 +3277,7 @@ goog.addDependency('messaging/portcaller_test.js', ['goog.messaging.PortCallerTe
 goog.addDependency('messaging/portchannel.js', ['goog.messaging.PortChannel'], ['goog.Timer', 'goog.array', 'goog.async.Deferred', 'goog.debug', 'goog.events', 'goog.events.EventType', 'goog.json', 'goog.log', 'goog.messaging.AbstractChannel', 'goog.messaging.DeferredChannel', 'goog.object', 'goog.string', 'goog.userAgent'], false);
 goog.addDependency('messaging/portchannel_test.js', ['goog.messaging.PortChannelTest'], ['goog.Promise', 'goog.Timer', 'goog.dom', 'goog.events', 'goog.events.EventTarget', 'goog.events.EventType', 'goog.json', 'goog.messaging.PortChannel', 'goog.testing.MockControl', 'goog.testing.TestCase', 'goog.testing.jsunit', 'goog.testing.messaging.MockMessageEvent'], false);
 goog.addDependency('messaging/portnetwork.js', ['goog.messaging.PortNetwork'], [], false);
-goog.addDependency('messaging/portnetwork_test.js', ['goog.messaging.PortNetworkTest'], ['goog.Promise', 'goog.Timer', 'goog.messaging.PortChannel', 'goog.messaging.PortOperator', 'goog.testing.jsunit'], false);
+goog.addDependency('messaging/portnetwork_test.js', ['goog.messaging.PortNetworkTest'], ['goog.Promise', 'goog.Timer', 'goog.messaging.PortChannel', 'goog.messaging.PortOperator', 'goog.testing.TestCase', 'goog.testing.jsunit'], false);
 goog.addDependency('messaging/portoperator.js', ['goog.messaging.PortOperator'], ['goog.Disposable', 'goog.asserts', 'goog.log', 'goog.messaging.PortChannel', 'goog.messaging.PortNetwork', 'goog.object'], false);
 goog.addDependency('messaging/portoperator_test.js', ['goog.messaging.PortOperatorTest'], ['goog.messaging.PortNetwork', 'goog.messaging.PortOperator', 'goog.testing.MockControl', 'goog.testing.PropertyReplacer', 'goog.testing.jsunit', 'goog.testing.messaging.MockMessageChannel', 'goog.testing.messaging.MockMessagePort'], false);
 goog.addDependency('messaging/respondingchannel.js', ['goog.messaging.RespondingChannel'], ['goog.Disposable', 'goog.log', 'goog.messaging.MultiChannel'], false);
@@ -3328,7 +3328,7 @@ goog.addDependency('net/iframeio_test.js', ['goog.net.IframeIoTest'], ['goog.deb
 goog.addDependency('net/iframeloadmonitor.js', ['goog.net.IframeLoadMonitor'], ['goog.dom', 'goog.events', 'goog.events.EventTarget', 'goog.events.EventType', 'goog.userAgent'], false);
 goog.addDependency('net/iframeloadmonitor_test.js', ['goog.net.IframeLoadMonitorTest'], ['goog.Promise', 'goog.Timer', 'goog.dom', 'goog.dom.TagName', 'goog.events', 'goog.net.IframeLoadMonitor', 'goog.testing.jsunit', 'goog.testing.testSuite'], true);
 goog.addDependency('net/imageloader.js', ['goog.net.ImageLoader'], ['goog.array', 'goog.dom', 'goog.dom.TagName', 'goog.events.EventHandler', 'goog.events.EventTarget', 'goog.events.EventType', 'goog.net.EventType', 'goog.object', 'goog.userAgent'], false);
-goog.addDependency('net/imageloader_test.js', ['goog.net.ImageLoaderTest'], ['goog.Promise', 'goog.Timer', 'goog.array', 'goog.dispose', 'goog.events', 'goog.events.Event', 'goog.events.EventType', 'goog.net.EventType', 'goog.net.ImageLoader', 'goog.object', 'goog.string', 'goog.testing.jsunit', 'goog.testing.recordFunction'], false);
+goog.addDependency('net/imageloader_test.js', ['goog.net.ImageLoaderTest'], ['goog.Promise', 'goog.Timer', 'goog.array', 'goog.dispose', 'goog.events', 'goog.events.Event', 'goog.events.EventType', 'goog.net.EventType', 'goog.net.ImageLoader', 'goog.object', 'goog.string', 'goog.testing.TestCase', 'goog.testing.jsunit', 'goog.testing.recordFunction'], false);
 goog.addDependency('net/ipaddress.js', ['goog.net.IpAddress', 'goog.net.Ipv4Address', 'goog.net.Ipv6Address'], ['goog.array', 'goog.math.Integer', 'goog.object', 'goog.string'], false);
 goog.addDependency('net/ipaddress_test.js', ['goog.net.IpAddressTest'], ['goog.math.Integer', 'goog.net.IpAddress', 'goog.net.Ipv4Address', 'goog.net.Ipv6Address', 'goog.testing.jsunit'], false);
 goog.addDependency('net/jsloader.js', ['goog.net.jsloader', 'goog.net.jsloader.Error', 'goog.net.jsloader.ErrorCode', 'goog.net.jsloader.Options'], ['goog.array', 'goog.async.Deferred', 'goog.debug.Error', 'goog.dom', 'goog.dom.TagName', 'goog.object'], false);
@@ -3344,8 +3344,12 @@ goog.addDependency('net/networktester_test.js', ['goog.net.NetworkTesterTest'], 
 goog.addDependency('net/streams/jsonstreamparser.js', ['goog.net.streams.JsonStreamParser'], ['goog.json', 'goog.net.streams.StreamParser'], false);
 goog.addDependency('net/streams/jsonstreamparser_test.js', ['goog.net.streams.JsonStreamParserTest'], ['goog.net.streams.JsonStreamParser', 'goog.testing.asserts', 'goog.testing.jsunit'], false);
 goog.addDependency('net/streams/nodereadablestream.js', ['goog.net.streams.NodeReadableStream'], [], false);
-goog.addDependency('net/streams/streamfactory.js', ['goog.net.streams.createNodeReadableStream'], ['goog.asserts', 'goog.net.XhrIo', 'goog.net.streams.NodeReadableStream'], false);
+goog.addDependency('net/streams/streamfactory.js', ['goog.net.streams.createXhrNodeReadableStream'], ['goog.asserts', 'goog.net.streams.XhrNodeReadableStream', 'goog.net.streams.XhrStreamReader'], false);
 goog.addDependency('net/streams/streamparser.js', ['goog.net.streams.StreamParser'], [], false);
+goog.addDependency('net/streams/xhrnodereadablestream.js', ['goog.net.streams.XhrNodeReadableStream'], ['goog.array', 'goog.log', 'goog.net.streams.NodeReadableStream', 'goog.net.streams.XhrStreamReader'], false);
+goog.addDependency('net/streams/xhrnodereadablestream_test.js', ['goog.net.streams.XhrNodeReadableStreamTest'], ['goog.net.streams.XhrNodeReadableStream', 'goog.net.streams.XhrStreamReader', 'goog.testing.asserts', 'goog.testing.jsunit'], false);
+goog.addDependency('net/streams/xhrstreamreader.js', ['goog.net.streams.XhrStreamReader'], ['goog.events.EventHandler', 'goog.log', 'goog.net.ErrorCode', 'goog.net.EventType', 'goog.net.XhrIo', 'goog.net.XmlHttp', 'goog.net.streams.JsonStreamParser', 'goog.userAgent'], false);
+goog.addDependency('net/streams/xhrstreamreader_test.js', ['goog.net.streams.XhrStreamReaderTest'], ['goog.net.ErrorCode', 'goog.net.XmlHttp', 'goog.net.streams.XhrStreamReader', 'goog.testing.MockClock', 'goog.testing.asserts', 'goog.testing.jsunit', 'goog.testing.net.XhrIo'], false);
 goog.addDependency('net/testdata/jsloader_test1.js', ['goog.net.testdata.jsloader_test1'], [], false);
 goog.addDependency('net/testdata/jsloader_test2.js', ['goog.net.testdata.jsloader_test2'], [], false);
 goog.addDependency('net/testdata/jsloader_test3.js', ['goog.net.testdata.jsloader_test3'], [], false);
@@ -3590,7 +3594,7 @@ goog.addDependency('testing/fs/filesystem.js', ['goog.testing.fs.FileSystem'], [
 goog.addDependency('testing/fs/filewriter.js', ['goog.testing.fs.FileWriter'], ['goog.Timer', 'goog.events.EventTarget', 'goog.fs.Error', 'goog.fs.FileSaver', 'goog.string', 'goog.testing.fs.ProgressEvent'], false);
 goog.addDependency('testing/fs/filewriter_test.js', ['goog.testing.fs.FileWriterTest'], ['goog.Promise', 'goog.array', 'goog.events', 'goog.fs.Error', 'goog.fs.FileSaver', 'goog.object', 'goog.testing.MockClock', 'goog.testing.events.EventObserver', 'goog.testing.fs.Blob', 'goog.testing.fs.FileSystem', 'goog.testing.jsunit'], false);
 goog.addDependency('testing/fs/fs.js', ['goog.testing.fs'], ['goog.Timer', 'goog.array', 'goog.async.Deferred', 'goog.fs', 'goog.testing.fs.Blob', 'goog.testing.fs.FileSystem'], false);
-goog.addDependency('testing/fs/fs_test.js', ['goog.testing.fsTest'], ['goog.testing.AsyncTestCase', 'goog.testing.fs', 'goog.testing.fs.Blob', 'goog.testing.jsunit'], false);
+goog.addDependency('testing/fs/fs_test.js', ['goog.testing.fsTest'], ['goog.testing.fs', 'goog.testing.fs.Blob', 'goog.testing.jsunit'], false);
 goog.addDependency('testing/fs/integration_test.js', ['goog.testing.fs.integrationTest'], ['goog.Promise', 'goog.events', 'goog.fs', 'goog.fs.DirectoryEntry', 'goog.fs.Error', 'goog.fs.FileSaver', 'goog.testing.PropertyReplacer', 'goog.testing.fs', 'goog.testing.jsunit'], false);
 goog.addDependency('testing/fs/progressevent.js', ['goog.testing.fs.ProgressEvent'], ['goog.events.Event'], false);
 goog.addDependency('testing/functionmock.js', ['goog.testing', 'goog.testing.FunctionMock', 'goog.testing.GlobalFunctionMock', 'goog.testing.MethodMock'], ['goog.object', 'goog.testing.LooseMock', 'goog.testing.Mock', 'goog.testing.PropertyReplacer', 'goog.testing.StrictMock'], false);
@@ -20386,19 +20390,28 @@ goog.dom.getOwnerDocument = function(node) {
  * @return {!Document} The frame content document.
  */
 goog.dom.getFrameContentDocument = function(frame) {
-  var doc = frame.contentDocument || frame.contentWindow.document;
-  return doc;
+  return frame.contentDocument || frame.contentWindow.document;
 };
 
 
 /**
  * Cross-browser function for getting the window of a frame or iframe.
  * @param {Element} frame Frame element.
- * @return {Window} The window associated with the given frame.
+ * @return {Window} The window associated with the given frame, or null if none
+ *     exists.
  */
 goog.dom.getFrameContentWindow = function(frame) {
-  return frame.contentWindow ||
-      goog.dom.getWindow(goog.dom.getFrameContentDocument(frame));
+  try {
+    return frame.contentWindow ||
+           (frame.contentDocument ? goog.dom.getWindow(frame.contentDocument) :
+                                    null);
+  } catch (e) {
+    // NOTE(user): In IE8, checking the contentWindow or contentDocument
+    // properties will throw a "Unspecified Error" exception if the iframe is
+    // not inserted in the DOM. If we get this we can be sure that no window
+    // exists, so return null.
+  }
+  return null;
 };
 
 
