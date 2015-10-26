@@ -45,8 +45,15 @@ public class SoyFileInfo {
   /** The Soy file's namespace. */
   private final String namespace;
 
-  /** List of templates in this Soy file. */
+  /** List of public basic templates in this Soy file. */
   private final ImmutableList<SoyTemplateInfo> templates;
+
+  /**
+   * List of all deltemplate names in the Soy file.
+   *
+   * <p>These are the mangled names.
+   */
+  private final ImmutableList<String> deltemplateNames;
 
   /** Map from each CSS name appearing in this file to its CssTagsPrefixPresence state. */
   private final ImmutableMap<String, CssTagsPrefixPresence> cssNameMap;
@@ -65,11 +72,13 @@ public class SoyFileInfo {
   public SoyFileInfo(
       String fileName, String namespace,
       ImmutableList<SoyTemplateInfo> templates,
-      ImmutableMap<String, CssTagsPrefixPresence> cssNameMap) {
+      ImmutableMap<String, CssTagsPrefixPresence> cssNameMap,
+      ImmutableList<String> deltemplateNames) {
     this.fileName = fileName;
     this.namespace = namespace;
     this.templates = templates;
     this.cssNameMap = cssNameMap;
+    this.deltemplateNames = deltemplateNames;
   }
 
 
@@ -99,5 +108,12 @@ public class SoyFileInfo {
    */
   public ImmutableList<Object> getProtoTypes() {
     return ImmutableList.of();
+  }
+
+  /**
+   * Returns the fully qualified names of all deltemplates in the file.
+   */
+  public ImmutableList<String> getAllTemplateNames() {
+    return deltemplateNames;
   }
 }

@@ -63,6 +63,7 @@ import com.google.template.soy.types.aggregate.RecordType;
 import com.google.template.soy.types.aggregate.UnionType;
 import com.google.template.soy.types.proto.SoyProtoType;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -307,6 +308,7 @@ public final class GenerateParseInfoVisitor
     // + for each param key, the list of templates that list it directly.
     // + for any params whose type is a proto, get the proto name and Java class name.
     LinkedHashMap<String, TemplateNode> publicBasicTemplateMap = Maps.newLinkedHashMap();
+    List<String> deltemplates = new ArrayList<>();
     Set<String> allParamKeys = Sets.newHashSet();
     LinkedHashMultimap<String, TemplateNode> paramKeyToTemplatesMultimap =
         LinkedHashMultimap.create();
@@ -316,6 +318,9 @@ public final class GenerateParseInfoVisitor
           && template instanceof TemplateBasicNode) {
         publicBasicTemplateMap.put(
             convertToUpperUnderscore(template.getPartialTemplateName().substring(1)), template);
+      }
+      if (template instanceof TemplateDelegateNode) {
+        deltemplates.add("\"" + template.getTemplateName() + "\"");
       }
       for (TemplateParam param : template.getAllParams()) {
         if (!param.isInjected()) {
@@ -489,6 +494,8 @@ public final class GenerateParseInfoVisitor
           "CssTagsPrefixPresence." + entry.getValue().name()));
     }
     appendImmutableMap(ilb, "<String, CssTagsPrefixPresence>", entrySnippetPairs);
+    ilb.appendLineEnd(",");
+    appendImmutableList(ilb, "<String>", deltemplates);
     ilb.appendLineEnd(");");
 
     ilb.decreaseIndent(2);

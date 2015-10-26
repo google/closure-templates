@@ -193,7 +193,8 @@ public final class ParseInfoExampleSoyInfo extends SoyFileInfo {
             .put("_eee_fff", CssTagsPrefixPresence.ALWAYS)
             .put("aaa-bbb", CssTagsPrefixPresence.NEVER)
             .put("cccDdd", CssTagsPrefixPresence.SOMETIMES)
-            .build());
+            .build(),
+        ImmutableList.<String>of());
   }
 
 

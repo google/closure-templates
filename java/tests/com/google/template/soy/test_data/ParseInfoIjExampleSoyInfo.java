@@ -203,7 +203,9 @@ public final class ParseInfoIjExampleSoyInfo extends SoyFileInfo {
             HELLO,
             AAA,
             BBB_CCC),
-        ImmutableMap.<String, CssTagsPrefixPresence>of());
+        ImmutableMap.<String, CssTagsPrefixPresence>of(),
+        ImmutableList.<String>of(
+            "examples.abc.__deltemplate_s19_ce8ad760"));
   }
 
 
