@@ -48,7 +48,6 @@ import com.google.template.soy.passes.FindIndirectParamsVisitor.IndirectParamsIn
 import com.google.template.soy.shared.internal.CodeBuilder;
 import com.google.template.soy.shared.internal.FindCalleesNotInFileVisitor;
 import com.google.template.soy.shared.internal.HasNodeTypesVisitor;
-import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.IsUsingIjData;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallNode;
@@ -128,8 +127,6 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
   private static final SoyError NON_NAMESPACED_TEMPLATE =
       SoyError.of("Using the option to provide/require Soy namespaces, but called template "
           + "does not reside in a namespace.");
-  private static final SoyError IJ_PARAMS_DECLARED_BUT_IJ_DATA_NOT_ENABLED =
-      SoyError.of("Template declares injected params but injected data is not enabled");
 
   /** Regex pattern to look for dots in a template name. */
   private static final Pattern DOT = Pattern.compile("\\.");
@@ -146,9 +143,6 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
 
   /** The options for generating JS source code. */
   private final SoyJsSrcOptions jsSrcOptions;
-
-  /** Whether any of the Soy code uses injected data. */
-  private final boolean isUsingIjData;
 
   /** Instance of JsExprTranslator to use. */
   private final JsExprTranslator jsExprTranslator;
@@ -200,7 +194,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
 
   @Inject
   protected GenJsCodeVisitor(
-      SoyJsSrcOptions jsSrcOptions, @IsUsingIjData boolean isUsingIjData,
+      SoyJsSrcOptions jsSrcOptions,
       JsExprTranslator jsExprTranslator, GenCallCodeUtils genCallCodeUtils,
       IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor,
       CanInitOutputVarVisitor canInitOutputVarVisitor,
@@ -210,7 +204,6 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
       ErrorReporter errorReporter) {
     this.errorReporter = errorReporter;
     this.jsSrcOptions = jsSrcOptions;
-    this.isUsingIjData = isUsingIjData;
     this.jsExprTranslator = jsExprTranslator;
     this.genCallCodeUtils = genCallCodeUtils;
     this.isComputableAsJsExprsVisitor = isComputableAsJsExprsVisitor;
@@ -682,10 +675,6 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
     genJsExprsVisitor = genJsExprsVisitorFactory.create(localVarTranslations, templateAliases);
     assistantForMsgs = null;
 
-    if (!node.getInjectedParams().isEmpty() && !isUsingIjData) {
-      errorReporter.report(node.getSourceLocation(), IJ_PARAMS_DECLARED_BUT_IJ_DATA_NOT_ENABLED);
-    }
-
     // ------ Generate JS Doc. ------
     if (jsSrcOptions.shouldGenerateJsdoc()) {
       jsCodeBuilder.appendLine("/**");
@@ -695,9 +684,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
         jsCodeBuilder.appendLine(" * @param {Object<string, *>=} opt_data");
       }
       jsCodeBuilder.appendLine(" * @param {(null|undefined)=} opt_ignored");
-      if (isUsingIjData) {
-        jsCodeBuilder.appendLine(" * @param {Object<string, *>=} opt_ijData");
-      }
+      jsCodeBuilder.appendLine(" * @param {Object<string, *>=} opt_ijData");
       // For strict autoescaping templates, the result is actually a typesafe wrapper.
       // We prepend "!" to indicate it is non-nullable.
       String returnType = (node.getContentKind() == null)
@@ -713,11 +700,10 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
     }
 
     // ------ Generate function definition up to opening brace. ------
-    String ijParam = isUsingIjData ? ", opt_ijData" : "";
     if (addToExports) {
-      jsCodeBuilder.appendLine("function ", alias, "(opt_data, opt_ignored", ijParam, ") {");
+      jsCodeBuilder.appendLine("function ", alias, "(opt_data, opt_ignored, opt_ijData) {");
     } else {
-      jsCodeBuilder.appendLine(alias, " = function(opt_data, opt_ignored", ijParam, ") {");
+      jsCodeBuilder.appendLine(alias, " = function(opt_data, opt_ignored, opt_ijData) {");
     }
     jsCodeBuilder.increaseIndent();
     // If there are any null coalescing operators or switch nodes then we need to generate an

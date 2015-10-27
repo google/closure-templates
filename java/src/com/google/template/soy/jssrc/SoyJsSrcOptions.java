@@ -28,9 +28,6 @@ public final class SoyJsSrcOptions implements Cloneable {
   /** Whether to allow deprecated syntax (semi backwards compatible mode). */
   private boolean shouldAllowDeprecatedSyntax;
 
-  /** Whether to enable use of injected data. */
-  private boolean isUsingIjData;
-
   /** Whether we should generate JSDoc with type info for the Closure Compiler. */
   private boolean shouldGenerateJsdoc;
 
@@ -73,7 +70,6 @@ public final class SoyJsSrcOptions implements Cloneable {
 
   public SoyJsSrcOptions() {
     shouldAllowDeprecatedSyntax = false;
-    isUsingIjData = false;
     shouldGenerateJsdoc = false;
     shouldProvideRequireSoyNamespaces = false;
     shouldProvideRequireJsFunctions = false;
@@ -88,7 +84,6 @@ public final class SoyJsSrcOptions implements Cloneable {
 
   private SoyJsSrcOptions(SoyJsSrcOptions orig) {
     this.shouldAllowDeprecatedSyntax = orig.shouldAllowDeprecatedSyntax;
-    this.isUsingIjData = orig.isUsingIjData;
     this.shouldGenerateJsdoc = orig.shouldGenerateJsdoc;
     this.shouldProvideRequireSoyNamespaces = orig.shouldProvideRequireSoyNamespaces;
     this.shouldProvideRequireJsFunctions = orig.shouldProvideRequireJsFunctions;
@@ -122,19 +117,11 @@ public final class SoyJsSrcOptions implements Cloneable {
   }
 
 
+  // TODO(lukes): delete this
   /**
-   * Sets whether to enable use of injected data (syntax is '$ij.*').
-   * @param isUsingIjData The code style to set.
+   * @deprecated This is ignored and it is no longer possible to disable ij
    */
-  public void setIsUsingIjData(boolean isUsingIjData) {
-    this.isUsingIjData = isUsingIjData;
-  }
-
-
-  /** Returns whether use of injected data is currently enabled. */
-  public boolean isUsingIjData() {
-    return isUsingIjData;
-  }
+  @Deprecated public void setIsUsingIjData(boolean isUsingIjData) {}
 
 
   /**

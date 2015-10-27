@@ -17,13 +17,11 @@
 package com.google.template.soy.jssrc.internal;
 
 import com.google.inject.Injector;
-import com.google.inject.Key;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
-import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.IsUsingIjData;
 
 import javax.annotation.Nullable;
 
@@ -76,6 +74,5 @@ final class JsSrcTestUtils {
     GuiceSimpleScope apiCallScope =
         SharedTestUtils.simulateNewApiCall(injector, msgBundle, bidiGlobalDir);
     apiCallScope.seed(SoyJsSrcOptions.class, jsSrcOptions);
-    apiCallScope.seed(Key.get(Boolean.class, IsUsingIjData.class), jsSrcOptions.isUsingIjData());
   }
 }

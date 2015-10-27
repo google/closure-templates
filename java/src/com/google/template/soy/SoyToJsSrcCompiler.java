@@ -94,6 +94,7 @@ public final class SoyToJsSrcCompiler {
           usage = "User-declared syntax version for the Soy file bundle (e.g. 2.0, 2.3).")
   private String syntaxVersion = "";
 
+  // TODO(lukes): remove, this is no longer used
   @Option(name = "--isUsingIjData",
           usage = "Whether to enable use of injected data (syntax is '$ij.*').",
           handler = MainClassUtils.BooleanOptionHandler.class)
@@ -277,7 +278,6 @@ public final class SoyToJsSrcCompiler {
 
     // Create SoyJsSrcOptions.
     SoyJsSrcOptions jsSrcOptions = new SoyJsSrcOptions();
-    jsSrcOptions.setIsUsingIjData(isUsingIjData);
     jsSrcOptions.setShouldGenerateJsdoc(shouldGenerateJsdoc);
     jsSrcOptions.setShouldProvideRequireSoyNamespaces(shouldProvideRequireSoyNamespaces);
     jsSrcOptions.setShouldDeclareTopLevelNamespaces(shouldDeclareTopLevelNamespaces);

@@ -175,17 +175,17 @@ public final class GenJsExprsVisitorTest extends TestCase {
   public void testCall() {
     assertGeneratedJsExprs(
         "{call some.func data=\"all\" /}",
-        ImmutableList.of(new JsExpr("some.func(opt_data)", Integer.MAX_VALUE)));
+        ImmutableList.of(new JsExpr("some.func(opt_data, null, opt_ijData)", Integer.MAX_VALUE)));
 
     assertGeneratedJsExprs(
         "{@param boo : ?}\n" + "{call some.func data=\"$boo.foo\" /}",
-        ImmutableList.of(new JsExpr("some.func(opt_data.boo.foo)", Integer.MAX_VALUE)));
+        ImmutableList.of(new JsExpr("some.func(opt_data.boo.foo, null, opt_ijData)", Integer.MAX_VALUE)));
 
     String soyNodeCode =
         "{@param moo : ?}\n" + "{call some.func}" + "  {param goo: $moo /}" + "{/call}";
     assertGeneratedJsExprs(
         soyNodeCode,
-        ImmutableList.of(new JsExpr("some.func({goo: opt_data.moo})", Integer.MAX_VALUE)));
+        ImmutableList.of(new JsExpr("some.func({goo: opt_data.moo}, null, opt_ijData)", Integer.MAX_VALUE)));
 
     soyNodeCode =
         "{@param boo : ?}\n"
@@ -196,7 +196,7 @@ public final class GenJsExprsVisitorTest extends TestCase {
         soyNodeCode,
         ImmutableList.of(
             new JsExpr(
-                "some.func(soy.$$augmentMap(opt_data.boo, {goo: 'Blah'}))", Integer.MAX_VALUE)));
+                "some.func(soy.$$augmentMap(opt_data.boo, {goo: 'Blah'}), null, opt_ijData)", Integer.MAX_VALUE)));
   }
 
 
@@ -213,7 +213,8 @@ public final class GenJsExprsVisitorTest extends TestCase {
             + "{call some.func}"
             + "  {param goo}{lb}{isNonnull($goo)}{rb} is {$goo.moo}{/param}"
             + "{/call}";
-    expectedJsExprText = "some.func({goo: '{' + (gooData8 != null) + '} is ' + gooData8.moo})";
+    expectedJsExprText =
+        "some.func({goo: '{' + (gooData8 != null) + '} is ' + gooData8.moo}, null, opt_ijData)";
     assertGeneratedJsExprs(
         soyNodeCode,
         ImmutableList.of(new JsExpr(expectedJsExprText, Integer.MAX_VALUE)));

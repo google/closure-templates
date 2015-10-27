@@ -22,7 +22,6 @@ import com.google.template.soy.jssrc.internal.IsComputableAsJsExprsVisitor;
 import com.google.template.soy.jssrc.internal.JsExprTranslator;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
-import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.IsUsingIjData;
 import com.google.template.soy.soytree.CallParamContentNode;
 
 import java.util.Map;
@@ -37,7 +36,6 @@ import javax.inject.Inject;
 public class IncrementalDomGenCallCodeUtils extends GenCallCodeUtils {
 
   /**
-   * @param isUsingIjData Whether any of the Soy code uses injected data.
    * @param jsExprTranslator Instance of JsExprTranslator to use.
    * @param isComputableAsJsExprsVisitor The IsComputableAsJsExprsVisitor to be used.
    * @param genJsExprsVisitorFactory Factory for creating an instance of GenJsExprsVisitor.
@@ -45,12 +43,10 @@ public class IncrementalDomGenCallCodeUtils extends GenCallCodeUtils {
   @Inject
   IncrementalDomGenCallCodeUtils(
       Map<String, SoyJsSrcPrintDirective> soyJsSrcDirectivesMap,
-      @IsUsingIjData boolean isUsingIjData,
       JsExprTranslator jsExprTranslator,
       IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor,
       GenJsExprsVisitorFactory genJsExprsVisitorFactory) {
     super(soyJsSrcDirectivesMap,
-        isUsingIjData,
         jsExprTranslator,
         isComputableAsJsExprsVisitor,
         genJsExprsVisitorFactory);

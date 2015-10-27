@@ -23,7 +23,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.google.common.io.Files;
-import com.google.inject.Key;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.html.passes.HtmlTransformVisitor;
@@ -31,13 +30,11 @@ import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.internal.i18n.SoyBidiUtils;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.internal.OptimizeBidiCodeGenVisitor;
-import com.google.template.soy.passes.IjDataQueries;
 import com.google.template.soy.shared.internal.ApiCallScopeUtils;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
 import com.google.template.soy.shared.internal.GuiceSimpleScope.WithScope;
 import com.google.template.soy.shared.internal.MainEntryPointUtils;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.ApiCall;
-import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.IsUsingIjData;
 import com.google.template.soy.sharedpasses.opti.SimplifyVisitor;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -111,10 +108,6 @@ public class IncrementalDomSrcMain {
       SoyJsSrcOptions jsSrcOptions)
       throws SoySyntaxException {
 
-    // Generate code with the opt_ijData param if either (a) the user specified the compiler flag
-    // --isUsingIjData or (b) any of the Soy code in the file set references injected data.
-    boolean isUsingIjData = jsSrcOptions.isUsingIjData()
-        || IjDataQueries.isUsingIj(soyTree);
 
     // Make sure that we don't try to use goog.i18n.bidi when we aren't supposed to use Closure.
     Preconditions.checkState(
@@ -129,7 +122,6 @@ public class IncrementalDomSrcMain {
     try (WithScope withScope = apiCallScope.enter()) {
       // Seed the scoped parameters.
       apiCallScope.seed(SoyJsSrcOptions.class, jsSrcOptions);
-      apiCallScope.seed(Key.get(Boolean.class, IsUsingIjData.class), isUsingIjData);
       BidiGlobalDir bidiGlobalDir = SoyBidiUtils.decodeBidiGlobalDirFromJsOptions(
           jsSrcOptions.getBidiGlobalDir(),
           jsSrcOptions.getUseGoogIsRtlForBidiGlobalDir());

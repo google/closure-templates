@@ -23,7 +23,6 @@ import com.google.template.soy.jssrc.internal.GenJsExprsVisitor.GenJsExprsVisito
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.JsExprUtils;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
-import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.IsUsingIjData;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallNode;
@@ -45,9 +44,6 @@ public class GenCallCodeUtils {
   /** All registered JS print directives. */
   private final Map<String, SoyJsSrcPrintDirective> soyJsSrcDirectivesMap;
 
-  /** Whether any of the Soy code uses injected data. */
-  private final boolean isUsingIjData;
-
   /** Instance of JsExprTranslator to use. */
   private final JsExprTranslator jsExprTranslator;
 
@@ -58,7 +54,6 @@ public class GenCallCodeUtils {
   private final GenJsExprsVisitorFactory genJsExprsVisitorFactory;
 
   /**
-   * @param isUsingIjData Whether any of the Soy code uses injected data.
    * @param jsExprTranslator Instance of JsExprTranslator to use.
    * @param isComputableAsJsExprsVisitor The IsComputableAsJsExprsVisitor to be used.
    * @param genJsExprsVisitorFactory Factory for creating an instance of GenJsExprsVisitor.
@@ -67,10 +62,9 @@ public class GenCallCodeUtils {
   protected
   GenCallCodeUtils(
       Map<String, SoyJsSrcPrintDirective> soyJsSrcDirectivesMap,
-      @IsUsingIjData boolean isUsingIjData, JsExprTranslator jsExprTranslator,
+      JsExprTranslator jsExprTranslator,
       IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor,
       GenJsExprsVisitorFactory genJsExprsVisitorFactory) {
-    this.isUsingIjData = isUsingIjData;
     this.jsExprTranslator = jsExprTranslator;
     this.isComputableAsJsExprsVisitor = isComputableAsJsExprsVisitor;
     this.genJsExprsVisitorFactory = genJsExprsVisitorFactory;
@@ -152,8 +146,7 @@ public class GenCallCodeUtils {
     }
 
     // Generate the main call expression.
-    String ijParam = isUsingIjData ? ", null, opt_ijData" : "";
-    String callExprText = calleeExprText + "(" + objToPass.getText() + ijParam + ")";
+    String callExprText = calleeExprText + "(" + objToPass.getText() + ", null, opt_ijData)";
     JsExpr result = new JsExpr(callExprText, Integer.MAX_VALUE);
 
     // In strict mode, escaping directives may apply to the call site.

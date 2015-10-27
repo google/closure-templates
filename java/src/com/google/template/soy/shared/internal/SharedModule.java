@@ -23,7 +23,6 @@ import com.google.inject.multibindings.Multibinder;
 import com.google.template.soy.coredirectives.CoreDirectivesModule;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.ApiCall;
-import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.IsUsingIjData;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.LocaleString;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
@@ -60,9 +59,6 @@ public final class SharedModule extends AbstractModule {
         .toInstance(apiCallScope);
 
     // Bind unscoped providers for parameters in ApiCallScope (these throw exceptions).
-    bind(Boolean.class).annotatedWith(IsUsingIjData.class)
-        .toProvider(GuiceSimpleScope.<Boolean>getUnscopedProvider())
-        .in(ApiCallScope.class);
     bind(String.class).annotatedWith(LocaleString.class)
         .toProvider(GuiceSimpleScope.<String>getUnscopedProvider())
         .in(ApiCallScope.class);

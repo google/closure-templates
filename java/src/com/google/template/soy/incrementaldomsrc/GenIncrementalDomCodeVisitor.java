@@ -88,7 +88,6 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       SoyTypeOps typeOps,
       ErrorReporter errorReporter) {
     super(jsSrcOptions,
-        true,
         jsExprTranslator,
         genCallCodeUtils,
         isComputableAsJsExprsVisitor,

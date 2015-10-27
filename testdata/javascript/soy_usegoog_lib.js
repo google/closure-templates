@@ -1167,7 +1167,7 @@ if (goog.DEPENDENCIES_ENABLED) {
    */
   goog.writeScriptTag_ = function(src, opt_sourceText) {
     if (goog.inHtmlDocument_()) {
-      /** @type {Document} */
+      /** @type {!HTMLDocument} */
       var doc = goog.global.document;
 
       // If the user tries to require a new symbol after document load,
@@ -1680,7 +1680,7 @@ goog.removeUid = function(obj) {
 
   // In IE, DOM nodes are not instances of Object and throw an exception if we
   // try to delete.  Instead we try to use removeAttribute.
-  if ('removeAttribute' in /** @type {!Object} */ (obj)) {
+  if (obj !== null && 'removeAttribute' in obj) {
     obj.removeAttribute(goog.UID_PROPERTY_);
   }
   /** @preserveTry */
@@ -2409,10 +2409,10 @@ goog.defineClass = function(superClass, def) {
 
 
 /**
- * @typedef {
- *     !Object|
- *     {constructor:!Function}|
- *     {constructor:!Function, statics:(Object|function(Function):void)}}
+ * @typedef {{
+ *   constructor: (!Function|undefined),
+ *   statics: (Object|undefined|function(Function):void)
+ * }}
  * @suppress {missingProvide}
  */
 goog.defineClass.ClassDescriptor;
@@ -3347,9 +3347,9 @@ goog.addDependency('net/streams/nodereadablestream.js', ['goog.net.streams.NodeR
 goog.addDependency('net/streams/streamfactory.js', ['goog.net.streams.createXhrNodeReadableStream'], ['goog.asserts', 'goog.net.streams.XhrNodeReadableStream', 'goog.net.streams.XhrStreamReader'], false);
 goog.addDependency('net/streams/streamparser.js', ['goog.net.streams.StreamParser'], [], false);
 goog.addDependency('net/streams/xhrnodereadablestream.js', ['goog.net.streams.XhrNodeReadableStream'], ['goog.array', 'goog.log', 'goog.net.streams.NodeReadableStream', 'goog.net.streams.XhrStreamReader'], false);
-goog.addDependency('net/streams/xhrnodereadablestream_test.js', ['goog.net.streams.XhrNodeReadableStreamTest'], ['goog.net.streams.XhrNodeReadableStream', 'goog.net.streams.XhrStreamReader', 'goog.testing.asserts', 'goog.testing.jsunit'], false);
-goog.addDependency('net/streams/xhrstreamreader.js', ['goog.net.streams.XhrStreamReader'], ['goog.events.EventHandler', 'goog.log', 'goog.net.ErrorCode', 'goog.net.EventType', 'goog.net.XhrIo', 'goog.net.XmlHttp', 'goog.net.streams.JsonStreamParser', 'goog.userAgent'], false);
-goog.addDependency('net/streams/xhrstreamreader_test.js', ['goog.net.streams.XhrStreamReaderTest'], ['goog.net.ErrorCode', 'goog.net.XmlHttp', 'goog.net.streams.XhrStreamReader', 'goog.testing.MockClock', 'goog.testing.asserts', 'goog.testing.jsunit', 'goog.testing.net.XhrIo'], false);
+goog.addDependency('net/streams/xhrnodereadablestream_test.js', ['goog.net.streams.XhrNodeReadableStreamTest'], ['goog.net.streams.NodeReadableStream', 'goog.net.streams.XhrNodeReadableStream', 'goog.net.streams.XhrStreamReader', 'goog.testing.asserts', 'goog.testing.jsunit'], false);
+goog.addDependency('net/streams/xhrstreamreader.js', ['goog.net.streams.XhrStreamReader'], ['goog.events.EventHandler', 'goog.log', 'goog.net.ErrorCode', 'goog.net.EventType', 'goog.net.HttpStatus', 'goog.net.XhrIo', 'goog.net.XmlHttp', 'goog.net.streams.JsonStreamParser', 'goog.userAgent'], false);
+goog.addDependency('net/streams/xhrstreamreader_test.js', ['goog.net.streams.XhrStreamReaderTest'], ['goog.net.ErrorCode', 'goog.net.XmlHttp', 'goog.net.streams.XhrStreamReader', 'goog.testing.asserts', 'goog.testing.jsunit', 'goog.testing.net.XhrIo'], false);
 goog.addDependency('net/testdata/jsloader_test1.js', ['goog.net.testdata.jsloader_test1'], [], false);
 goog.addDependency('net/testdata/jsloader_test2.js', ['goog.net.testdata.jsloader_test2'], [], false);
 goog.addDependency('net/testdata/jsloader_test3.js', ['goog.net.testdata.jsloader_test3'], [], false);
@@ -3425,8 +3425,8 @@ goog.addDependency('proto2/test.pb.js', ['proto2.TestAllTypes', 'proto2.TestAllT
 goog.addDependency('proto2/textformatserializer.js', ['goog.proto2.TextFormatSerializer'], ['goog.array', 'goog.asserts', 'goog.json', 'goog.math', 'goog.object', 'goog.proto2.FieldDescriptor', 'goog.proto2.Message', 'goog.proto2.Serializer', 'goog.string'], false);
 goog.addDependency('proto2/textformatserializer_test.js', ['goog.proto2.TextFormatSerializerTest'], ['goog.proto2.ObjectSerializer', 'goog.proto2.TextFormatSerializer', 'goog.testing.jsunit', 'proto2.TestAllTypes'], false);
 goog.addDependency('proto2/util.js', ['goog.proto2.Util'], ['goog.asserts'], false);
-goog.addDependency('pubsub/pubsub.js', ['goog.pubsub.PubSub'], ['goog.Disposable', 'goog.array', 'goog.async.run'], false);
-goog.addDependency('pubsub/pubsub_test.js', ['goog.pubsub.PubSubTest'], ['goog.array', 'goog.pubsub.PubSub', 'goog.testing.MockClock', 'goog.testing.jsunit'], false);
+goog.addDependency('pubsub/pubsub.js', ['goog.pubsub.PubSub'], ['goog.Disposable', 'goog.array'], false);
+goog.addDependency('pubsub/pubsub_test.js', ['goog.pubsub.PubSubTest'], ['goog.array', 'goog.pubsub.PubSub', 'goog.testing.jsunit'], false);
 goog.addDependency('pubsub/topicid.js', ['goog.pubsub.TopicId'], [], false);
 goog.addDependency('pubsub/typedpubsub.js', ['goog.pubsub.TypedPubSub'], ['goog.Disposable', 'goog.pubsub.PubSub'], false);
 goog.addDependency('pubsub/typedpubsub_test.js', ['goog.pubsub.TypedPubSubTest'], ['goog.array', 'goog.pubsub.TopicId', 'goog.pubsub.TypedPubSub', 'goog.testing.jsunit'], false);
@@ -6312,7 +6312,7 @@ goog.array.forEach = goog.NATIVE_ARRAY_PROTOTYPES &&
       var arr2 = goog.isString(arr) ? arr.split('') : arr;
       for (var i = 0; i < l; i++) {
         if (i in arr2) {
-          f.call(opt_obj, arr2[i], i, arr);
+          f.call(/** @type {?} */ (opt_obj), arr2[i], i, arr);
         }
       }
     };
@@ -6337,7 +6337,7 @@ goog.array.forEachRight = function(arr, f, opt_obj) {
   var arr2 = goog.isString(arr) ? arr.split('') : arr;
   for (var i = l - 1; i >= 0; --i) {
     if (i in arr2) {
-      f.call(opt_obj, arr2[i], i, arr);
+      f.call(/** @type {?} */ (opt_obj), arr2[i], i, arr);
     }
   }
 };
@@ -6378,7 +6378,7 @@ goog.array.filter = goog.NATIVE_ARRAY_PROTOTYPES &&
       for (var i = 0; i < l; i++) {
         if (i in arr2) {
           var val = arr2[i];  // in case f mutates arr2
-          if (f.call(opt_obj, val, i, arr)) {
+          if (f.call(/** @type {?} */ (opt_obj), val, i, arr)) {
             res[resLength++] = val;
           }
         }
@@ -6417,7 +6417,7 @@ goog.array.map = goog.NATIVE_ARRAY_PROTOTYPES &&
       var arr2 = goog.isString(arr) ? arr.split('') : arr;
       for (var i = 0; i < l; i++) {
         if (i in arr2) {
-          res[i] = f.call(opt_obj, arr2[i], i, arr);
+          res[i] = f.call(/** @type {?} */ (opt_obj), arr2[i], i, arr);
         }
       }
       return res;
@@ -6461,7 +6461,7 @@ goog.array.reduce = goog.NATIVE_ARRAY_PROTOTYPES &&
     function(arr, f, val, opt_obj) {
       var rval = val;
       goog.array.forEach(arr, function(val, index) {
-        rval = f.call(opt_obj, rval, val, index, arr);
+        rval = f.call(/** @type {?} */ (opt_obj), rval, val, index, arr);
       });
       return rval;
     };
@@ -6498,6 +6498,7 @@ goog.array.reduceRight = goog.NATIVE_ARRAY_PROTOTYPES &&
                           Array.prototype.reduceRight) ?
     function(arr, f, val, opt_obj) {
       goog.asserts.assert(arr.length != null);
+      goog.asserts.assert(f != null);
       if (opt_obj) {
         f = goog.bind(f, opt_obj);
       }
@@ -6506,7 +6507,7 @@ goog.array.reduceRight = goog.NATIVE_ARRAY_PROTOTYPES &&
     function(arr, f, val, opt_obj) {
       var rval = val;
       goog.array.forEachRight(arr, function(val, index) {
-        rval = f.call(opt_obj, rval, val, index, arr);
+        rval = f.call(/** @type {?} */ (opt_obj), rval, val, index, arr);
       });
       return rval;
     };
@@ -6541,7 +6542,7 @@ goog.array.some = goog.NATIVE_ARRAY_PROTOTYPES &&
       var l = arr.length;  // must be fixed during loop... see docs
       var arr2 = goog.isString(arr) ? arr.split('') : arr;
       for (var i = 0; i < l; i++) {
-        if (i in arr2 && f.call(opt_obj, arr2[i], i, arr)) {
+        if (i in arr2 && f.call(/** @type {?} */ (opt_obj), arr2[i], i, arr)) {
           return true;
         }
       }
@@ -6578,7 +6579,7 @@ goog.array.every = goog.NATIVE_ARRAY_PROTOTYPES &&
       var l = arr.length;  // must be fixed during loop... see docs
       var arr2 = goog.isString(arr) ? arr.split('') : arr;
       for (var i = 0; i < l; i++) {
-        if (i in arr2 && !f.call(opt_obj, arr2[i], i, arr)) {
+        if (i in arr2 && !f.call(/** @type {?} */ (opt_obj), arr2[i], i, arr)) {
           return false;
         }
       }
@@ -6601,7 +6602,7 @@ goog.array.every = goog.NATIVE_ARRAY_PROTOTYPES &&
 goog.array.count = function(arr, f, opt_obj) {
   var count = 0;
   goog.array.forEach(arr, function(element, index, arr) {
-    if (f.call(opt_obj, element, index, arr)) {
+    if (f.call(/** @type {?} */ (opt_obj), element, index, arr)) {
       ++count;
     }
   }, opt_obj);
@@ -6646,7 +6647,7 @@ goog.array.findIndex = function(arr, f, opt_obj) {
   var l = arr.length;  // must be fixed during loop... see docs
   var arr2 = goog.isString(arr) ? arr.split('') : arr;
   for (var i = 0; i < l; i++) {
-    if (i in arr2 && f.call(opt_obj, arr2[i], i, arr)) {
+    if (i in arr2 && f.call(/** @type {?} */ (opt_obj), arr2[i], i, arr)) {
       return i;
     }
   }
@@ -6692,7 +6693,7 @@ goog.array.findIndexRight = function(arr, f, opt_obj) {
   var l = arr.length;  // must be fixed during loop... see docs
   var arr2 = goog.isString(arr) ? arr.split('') : arr;
   for (var i = l - 1; i >= 0; i--) {
-    if (i in arr2 && f.call(opt_obj, arr2[i], i, arr)) {
+    if (i in arr2 && f.call(/** @type {?} */ (opt_obj), arr2[i], i, arr)) {
       return i;
     }
   }
@@ -6865,7 +6866,7 @@ goog.array.removeIf = function(arr, f, opt_obj) {
 goog.array.removeAllIf = function(arr, f, opt_obj) {
   var removedCount = 0;
   goog.array.forEachRight(arr, function(val, index) {
-    if (f.call(opt_obj, val, index, arr)) {
+    if (f.call(/** @type {?} */ (opt_obj), val, index, arr)) {
       if (goog.array.removeAt(arr, index)) {
         removedCount++;
       }
@@ -7191,7 +7192,10 @@ goog.array.binarySearch_ = function(arr, compareFn, isEvaluator, opt_target,
     if (isEvaluator) {
       compareResult = compareFn.call(opt_selfObj, arr[middle], middle, arr);
     } else {
-      compareResult = compareFn(opt_target, arr[middle]);
+      // NOTE(dimvar): To avoid this cast, we'd have to use function overloading
+      // for the type of binarySearch_, which the type system can't express yet.
+      compareResult = /** @type {function(?, ?): number} */ (
+          compareFn)(opt_target, arr[middle]);
     }
     if (compareResult > 0) {
       left = middle + 1;
@@ -7495,7 +7499,7 @@ goog.array.bucket = function(array, sorter, opt_obj) {
 
   for (var i = 0; i < array.length; i++) {
     var value = array[i];
-    var key = sorter.call(opt_obj, value, i, array);
+    var key = sorter.call(/** @type {?} */ (opt_obj), value, i, array);
     if (goog.isDef(key)) {
       // Push the value to the right bucket, creating it if necessary.
       var bucket = buckets[key] || (buckets[key] = []);
@@ -7526,7 +7530,7 @@ goog.array.bucket = function(array, sorter, opt_obj) {
 goog.array.toObject = function(arr, keyFunc, opt_obj) {
   var ret = {};
   goog.array.forEach(arr, function(element, index) {
-    ret[keyFunc.call(opt_obj, element, index, arr)] = element;
+    ret[keyFunc.call(/** @type {?} */ (opt_obj), element, index, arr)] = element;
   });
   return ret;
 };
