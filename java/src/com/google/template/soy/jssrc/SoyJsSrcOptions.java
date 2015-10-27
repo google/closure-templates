@@ -117,13 +117,6 @@ public final class SoyJsSrcOptions implements Cloneable {
   }
 
 
-  // TODO(lukes): delete this
-  /**
-   * @deprecated This is ignored and it is no longer possible to disable ij
-   */
-  @Deprecated public void setIsUsingIjData(boolean isUsingIjData) {}
-
-
   /**
    * Sets whether we should generate JSDoc with type info for the Closure Compiler.
    * @param shouldGenerateJsdoc The value to set.
