@@ -289,12 +289,8 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       if (ijData != null) {
         result = ijData.getField(varRef.getName());
       } else {
-        if (varRef.isNullSafeInjected()) {
-          return NullSafetySentinel.INSTANCE;
-        } else {
-          throw RenderException.create(
-              "Injected data not provided, yet referenced (" + varRef.toSourceString() + ").");
-        }
+        throw RenderException.create(
+            "Injected data not provided, yet referenced (" + varRef.toSourceString() + ").");
       }
     } else {
       return env.getVar(varRef.getDefnDecl());

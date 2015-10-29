@@ -16,6 +16,8 @@
 
 package com.google.template.soy.tofu.internal;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.msgs.SoyMsgBundle;
@@ -66,7 +68,7 @@ class TofuRenderVisitorFactory {
       TemplateRegistry templateRegistry,
       ImmutableMap<String, ? extends SoyJavaPrintDirective> printDirectives,
       SoyRecord data,
-      @Nullable SoyRecord ijData,
+      SoyRecord ijData,
       @Nullable Set<String> activeDelPackageNames,
       @Nullable SoyMsgBundle msgBundle,
       @Nullable SoyIdRenamingMap xidRenamingMap,
@@ -77,8 +79,8 @@ class TofuRenderVisitorFactory {
         tofuEvalVisitorFactory,
         outputBuf,
         templateRegistry,
-        data,
-        ijData,
+        checkNotNull(data),
+        checkNotNull(ijData),
         activeDelPackageNames,
         msgBundle,
         xidRenamingMap,

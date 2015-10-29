@@ -212,7 +212,7 @@ public class TofuRenderVisitorTest extends TestCase {
         registry,
         printDirectives,
         SoyValueHelper.EMPTY_DICT,
-        null /* ijData */,
+        SoyValueHelper.EMPTY_DICT /* ijData */,
         null /* activeDelPackageNames */,
         null /* msgBundle */,
         null /* xidRenamingMap */,

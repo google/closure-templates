@@ -236,6 +236,9 @@ public class BaseTofu implements SoyTofu {
     if (data == null) {
       data = SoyValueHelper.EMPTY_DICT;
     }
+    if (ijData == null) {
+      ijData = SoyValueHelper.EMPTY_DICT;
+    }
 
     try {
       RenderVisitor rv = tofuRenderVisitorFactory.create(
