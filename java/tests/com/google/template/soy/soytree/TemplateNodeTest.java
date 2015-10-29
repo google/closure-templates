@@ -468,7 +468,6 @@ public class TemplateNodeTest extends TestCase {
     assertEquals("namespace.boo", node.getDelTemplateName());
     assertEquals("abc", node.getDelTemplateVariant());
     assertEquals("abc", node.getDelTemplateKey().variant());
-    assertNull(node.getDelTemplateKey().variantExpr());
 
     // Variant is a global, that was not yet resolved.
     node = templateDelegateNode()
@@ -477,8 +476,8 @@ public class TemplateNodeTest extends TestCase {
         .setSoyDoc("/** Boo. */")
         .build();
     assertEquals("namespace.boo", node.getDelTemplateName());
-    assertNull(node.getDelTemplateVariant());
-    assertEquals("test.GLOBAL_CONSTANT", node.getDelTemplateKey().variantExpr());
+    assertEquals("test.GLOBAL_CONSTANT", node.getDelTemplateVariant());
+    assertEquals("test.GLOBAL_CONSTANT", node.getDelTemplateKey().variant());
     // Verify the global expression.
     List<ExprUnion> exprUnions = node.getAllExprUnions();
     assertEquals(1, exprUnions.size());

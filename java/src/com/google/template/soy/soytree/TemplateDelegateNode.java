@@ -16,8 +16,6 @@
 
 package com.google.template.soy.soytree;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -33,8 +31,6 @@ import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
 
 import java.util.List;
-
-import javax.annotation.Nullable;
 
 /**
  * Node representing a delegate template.
@@ -52,33 +48,16 @@ public final class TemplateDelegateNode extends TemplateNode implements ExprHold
   @AutoValue public abstract static class DelTemplateKey {
 
     public static DelTemplateKey create(String name, String variant) {
-      return create(name, checkNotNull(variant), null);
-    }
-
-    // TODO(lukes): we should be able to remove this now that the substitute globals pass is always
-    // run prior to when the first TemplateRegistry is created.  furthermore we can assert that
-    // all globals in variant expressions are always substituted.
-    /**
-     * This constructor adds support a temporary solution to using globals as deltemplate variants.
-     * During parsing, TemplateRegistry instances must be built for validation, but the expression
-     * values are not yet available at that stage. Maintaining the expression as a temporary key
-     * allows a partial validation, but this should be removed once TemplateRegistry is refactored
-     * to support this.
-     */
-    private static DelTemplateKey create(
-        String name, @Nullable String variant, @Nullable String variantExpr) {
-      return new AutoValue_TemplateDelegateNode_DelTemplateKey(name, variant, variantExpr);
+      return new AutoValue_TemplateDelegateNode_DelTemplateKey(name, variant);
     }
 
     DelTemplateKey() {}
 
     public abstract String name();
-    @Nullable public abstract String variant();
-    @Nullable public abstract String variantExpr();
+    public abstract String variant();
 
     @Override public String toString() {
-      return name() + ((variant() == null || variant().length() == 0) ? "" : ":" + variant())
-          + ((variantExpr() == null || variantExpr().length() == 0) ? "" : ":" + variantExpr());
+      return name() + (variant().isEmpty() ? "" : ":" + variant());
       }
   }
 
@@ -223,14 +202,11 @@ public final class TemplateDelegateNode extends TemplateNode implements ExprHold
       delTemplateKey = DelTemplateKey.create(delTemplateName, delTemplateVariant);
       return delTemplateKey;
     } else if (exprNode instanceof GlobalNode) {
-      // Globals were not yet substituted, but the variant value or deltemplate key was requested.
-      // This happens when a TemplateRegistry must be built during the template parsing phase, for
-      // instance. To address that, we can temporarily create a key that uses the expression literal
-      // as variant value. This allows us to catch conflicts of variant values if the expressions
-      // match during parsing, but not if we have value conflicts. If two different globals with the
-      // same values are used, will only able to catch that on later stages of the template
-      // processing.
-      return DelTemplateKey.create(delTemplateName, null, ((GlobalNode) exprNode).getName());
+      // This global was not substituted.  This happens when TemplateRegistries are built for
+      // message extraction and parseinfo generation.  To make this 'work' we just use the Global
+      // name for the variant value.  This is fine and will help catch some errors.
+      // Because these nodes won't be used for code generation this should be safe.
+      return DelTemplateKey.create(delTemplateName, ((GlobalNode) exprNode).getName());
     } else {
       throw invalidExpressionError();
     }

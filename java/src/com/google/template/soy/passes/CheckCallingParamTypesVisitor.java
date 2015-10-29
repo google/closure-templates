@@ -20,6 +20,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Multimap;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
@@ -39,7 +40,6 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
-import com.google.template.soy.soytree.TemplateRegistry.DelegateTemplateDivision;
 import com.google.template.soy.soytree.defn.HeaderParam;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplateParam.DeclLoc;
@@ -104,12 +104,11 @@ final class CheckCallingParamTypesVisitor extends AbstractSoyNodeVisitor<Void> {
   @Override protected void visitCallDelegateNode(CallDelegateNode node) {
     ImmutableMap.Builder<TemplateDelegateNode, ImmutableList<TemplateParam>>
         paramsToCheckByTemplate = ImmutableMap.builder();
-    for (DelegateTemplateDivision division : templateRegistry.getDelTemplateDivisionsForAllVariants(
-        node.getDelCalleeName())) {
-      for (TemplateDelegateNode delTemplate : division.delPackageNameToDelTemplateMap.values()) {
-        Set<TemplateParam> params = checkCallParamTypes(node, delTemplate);
-        paramsToCheckByTemplate.put(delTemplate, ImmutableList.copyOf(params));
-      }
+    ImmutableMultimap<String, TemplateDelegateNode> delTemplateNameToValues =
+        templateRegistry.getDelTemplateSelector().delTemplateNameToValues();
+    for (TemplateDelegateNode delTemplate : delTemplateNameToValues.get(node.getDelCalleeName())) {
+      Set<TemplateParam> params = checkCallParamTypes(node, delTemplate);
+      paramsToCheckByTemplate.put(delTemplate, ImmutableList.copyOf(params));
     }
     node.setParamsToRuntimeCheck(paramsToCheckByTemplate.build());
 

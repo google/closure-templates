@@ -16,7 +16,7 @@
 
 package com.google.template.soy.parsepasses.contextautoesc;
 
-import com.google.common.collect.Iterables;
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
@@ -30,11 +30,9 @@ import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
+import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
-import com.google.template.soy.soytree.TemplateRegistry.DelegateTemplateDivision;
-
-import java.util.Set;
 
 /**
  * Visitor performing escaping sanity checks over all input -- not just input affected by the
@@ -108,15 +106,15 @@ final class CheckEscapingSanityVisitor extends AbstractSoyNodeVisitor<Void> {
 
   @Override protected void visitCallDelegateNode(CallDelegateNode node) {
     if (autoescapeMode == AutoescapeMode.NONCONTEXTUAL) {
-      TemplateNode callee;
-      Set<DelegateTemplateDivision> divisions =
-          templateRegistry.getDelTemplateDivisionsForAllVariants((node).getDelCalleeName());
-      if (divisions != null && !divisions.isEmpty()) {
+      ImmutableList<TemplateDelegateNode> divisions =
+          templateRegistry
+              .getDelTemplateSelector()
+              .delTemplateNameToValues()
+              .get(node.getDelCalleeName());
+      if (!divisions.isEmpty()) {
         // As the callee is required only to know the kind of the content and as all templates in
         // delPackage are of the same kind it is sufficient to choose only the first template.
-        DelegateTemplateDivision division = Iterables.getFirst(divisions, null);
-        callee = Iterables.get(
-            division.delPackageNameToDelTemplateMap.values(), 0);
+        TemplateNode callee = divisions.get(0);
         if (callee.getContentKind() == SanitizedContent.ContentKind.TEXT) {
           throw SoyAutoescapeException.createWithNode(
               "Calls to strict templates with 'kind=\"text\"' attribute is not permitted in "

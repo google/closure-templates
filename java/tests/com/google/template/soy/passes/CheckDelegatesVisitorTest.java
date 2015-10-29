@@ -99,90 +99,97 @@ public final class CheckDelegatesVisitorTest extends TestCase {
 
   public void testErrorReusedTemplateName() {
     assertInvalidSoyFiles(
-        "Found template name ns1.boo being reused for both basic and delegate templates.",
-        "" +
-            "{namespace ns1 autoescape=\"deprecated-noncontextual\"}\n" +
-            "\n" +
-            "/***/\n" +
-            "{template .boo}\n" +
-            "  blah\n" +
-            "{/template}\n",
-        "" +
-            "{delpackage SecretFeature}\n" +
-            "{namespace ns2 autoescape=\"deprecated-noncontextual\"}\n" +
-            "\n" +
-            "/***/\n" +
-            "{deltemplate ns1.boo}\n" +  // reused name ns1.boo
-            "  111\n" +
-            "{/deltemplate}\n");
+        "Found deltemplate ns1.boo with the same name as a basic template at no-path:4:1.",
+        ""
+            + "{namespace ns1 autoescape=\"deprecated-noncontextual\"}\n"
+            + "\n"
+            + "/***/\n"
+            + "{template .boo}\n"
+            + "  blah\n"
+            + "{/template}\n",
+        ""
+            + "{delpackage SecretFeature}\n"
+            + "{namespace ns2 autoescape=\"deprecated-noncontextual\"}\n"
+            + "\n"
+            + "/***/\n"
+            + "{deltemplate ns1.boo}\n"
+            + // reused name ns1.boo
+            "  111\n"
+            + "{/deltemplate}\n");
   }
 
   public void testErrorParamsMismatch() {
     assertInvalidSoyFiles(
-            "Found delegate template with same name 'MagicButton' " +
-            "but different param declarations compared to the " +
-            "definition at no-path-2:5:1.",
-        "" +
-            "{namespace ns1 autoescape=\"deprecated-noncontextual\"}\n" +
-            "\n" +
-            "/***/\n" +
-            "{template .boo}\n" +
-            "  blah\n" +
-            "{/template}\n" +
-            "\n" +
-            "/***/\n" +  // no params
-            "{deltemplate MagicButton}\n" +
-            "  000\n" +
-            "{/deltemplate}\n",
-        "" +
-            "{delpackage SecretFeature}\n" +
-            "{namespace ns2 autoescape=\"deprecated-noncontextual\"}\n" +
-            "\n" +
-            "/** @param foo */\n" +  // has param 'foo'
-            "{deltemplate MagicButton}\n" +
-            "  111 {$foo}\n" +
-            "{/deltemplate}\n");
+        "Found delegate template with same name 'MagicButton' "
+            + "but different param declarations compared to the "
+            + "definition at no-path:9:1.",
+        ""
+            + "{namespace ns1 autoescape=\"deprecated-noncontextual\"}\n"
+            + "\n"
+            + "/***/\n"
+            + "{template .boo}\n"
+            + "  blah\n"
+            + "{/template}\n"
+            + "\n"
+            + "/***/\n"
+            + // no params
+            "{deltemplate MagicButton}\n"
+            + "  000\n"
+            + "{/deltemplate}\n",
+        ""
+            + "{delpackage SecretFeature}\n"
+            + "{namespace ns2 autoescape=\"deprecated-noncontextual\"}\n"
+            + "\n"
+            + "/** @param foo */\n"
+            + // has param 'foo'
+            "{deltemplate MagicButton}\n"
+            + "  111 {$foo}\n"
+            + "{/deltemplate}\n");
 
     assertInvalidSoyFiles(
-        "Found delegate template with same name 'MagicButton' but different param " +
-            "declarations compared to the definition at no-path-2:5:1.",
-        "" +
-            "{namespace ns1 autoescape=\"deprecated-noncontextual\"}\n" +
-            "\n" +
-            "/***/\n" +
-            "{template .boo}\n" +
-            "  blah\n" +
-            "{/template}\n" +
-            "\n" +
-            "/** @param? foo */\n" +  // param 'foo' is optional
-            "{deltemplate MagicButton}\n" +
-            "  000\n" +
-            "{/deltemplate}\n",
-        "" +
-            "{delpackage SecretFeature}\n" +
-            "{namespace ns2 autoescape=\"deprecated-noncontextual\"}\n" +
-            "\n" +
-            "/** @param foo */\n" +  // param 'foo' is required
-            "{deltemplate MagicButton}\n" +
-            "  111 {$foo}\n" +
-            "{/deltemplate}\n");
+        "Found delegate template with same name 'MagicButton' but different param "
+            + "declarations compared to the definition at no-path:9:1.",
+        ""
+            + "{namespace ns1 autoescape=\"deprecated-noncontextual\"}\n"
+            + "\n"
+            + "/***/\n"
+            + "{template .boo}\n"
+            + "  blah\n"
+            + "{/template}\n"
+            + "\n"
+            + "/** @param? foo */\n"
+            + // param 'foo' is optional
+            "{deltemplate MagicButton}\n"
+            + "  000\n"
+            + "{/deltemplate}\n",
+        ""
+            + "{delpackage SecretFeature}\n"
+            + "{namespace ns2 autoescape=\"deprecated-noncontextual\"}\n"
+            + "\n"
+            + "/** @param foo */\n"
+            + // param 'foo' is required
+            "{deltemplate MagicButton}\n"
+            + "  111 {$foo}\n"
+            + "{/deltemplate}\n");
   }
 
   public void testErrorParamsMismatchAcrossVariants() {
     assertInvalidSoyFiles(
-            "Found delegate template with same name 'MagicButton' " +
-            "but different param declarations compared to the definition at no-path:4:1.",
-        "" +
-            "{namespace ns1 autoescape=\"deprecated-noncontextual\"}\n" +
-            "\n" +
-            "/***/\n" +  // no params
-            "{deltemplate MagicButton}\n" +
-            "  vanilla\n" +
-            "{/deltemplate}\n" +
-            "/** @param foo */\n" +  // some params params
-            "{deltemplate MagicButton variant=\"'something'\"}\n" +
-            "  something\n" +
-            "{/deltemplate}\n");
+        "Found delegate template with same name 'MagicButton' "
+            + "but different param declarations compared to the definition at no-path:4:1.",
+        ""
+            + "{namespace ns1 autoescape=\"deprecated-noncontextual\"}\n"
+            + "\n"
+            + "/***/\n"
+            + // no params
+            "{deltemplate MagicButton}\n"
+            + "  vanilla\n"
+            + "{/deltemplate}\n"
+            + "/** @param foo */\n"
+            + // some params params
+            "{deltemplate MagicButton variant=\"'something'\"}\n"
+            + "  something\n"
+            + "{/deltemplate}\n");
   }
 
   public void testOkNonRequiredParamsMismatchAcrossVariants() {
@@ -337,30 +344,30 @@ public final class CheckDelegatesVisitorTest extends TestCase {
 
     // Both are strict, but have non-matching kinds.
     assertInvalidSoyFiles(
-            "If one deltemplate has strict autoescaping, all its peers must also be strictly " +
-            "autoescaped with the same content kind: TEXT != HTML. " +
-            "Conflicting definition at no-path-3:5:1.",
-        "" +
-            "{namespace ns}\n\n" +
-            "/***/\n" +
-            "{template .main autoescape=\"deprecated-contextual\"}\n" +
-              "{delcall foo}\n" +
-                "{param x: '' /}\n" +
-              "{/delcall}\n" +
-            "{/template}",
-        "" +
-            "{namespace ns.default}\n\n" +
-            "/** @param x */\n" +
-            "{deltemplate foo autoescape=\"strict\" kind=\"html\"}\n" +
-              "<b>{$x}</b>\n" +
-            "{/deltemplate}",
-        "" +
-            "{delpackage dp2}\n" +
-            "{namespace ns}\n\n" +
-            "/** @param x */\n" +
-            "{deltemplate foo autoescape=\"strict\" kind=\"text\"}\n" +
-              "<i>{$x}</i>\n" +
-            "{/deltemplate}");
+        "If one deltemplate has strict autoescaping, all its peers must also be strictly "
+            + "autoescaped with the same content kind: HTML != TEXT. "
+            + "Conflicting definition at no-path-2:4:1.",
+        ""
+            + "{namespace ns}\n\n"
+            + "/***/\n"
+            + "{template .main autoescape=\"deprecated-contextual\"}\n"
+            + "{delcall foo}\n"
+            + "{param x: '' /}\n"
+            + "{/delcall}\n"
+            + "{/template}",
+        ""
+            + "{namespace ns.default}\n\n"
+            + "/** @param x */\n"
+            + "{deltemplate foo autoescape=\"strict\" kind=\"html\"}\n"
+            + "<b>{$x}</b>\n"
+            + "{/deltemplate}",
+        ""
+            + "{delpackage dp2}\n"
+            + "{namespace ns}\n\n"
+            + "/** @param x */\n"
+            + "{deltemplate foo autoescape=\"strict\" kind=\"text\"}\n"
+            + "<i>{$x}</i>\n"
+            + "{/deltemplate}");
   }
 
   private void assertValidSoyFiles(String... soyFileContents) {
@@ -372,6 +379,6 @@ public final class CheckDelegatesVisitorTest extends TestCase {
     SoyFileSetParserBuilder.forFileContents(soyFileContents).errorReporter(errorReporter).parse();
     assertThat(errorReporter.getErrorMessages()).hasSize(1);
     assertThat(Iterables.getOnlyElement(errorReporter.getErrorMessages()))
-        .contains(expectedErrorMsgSubstr);
+        .isEqualTo(expectedErrorMsgSubstr);
   }
 }

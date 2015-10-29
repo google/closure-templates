@@ -84,7 +84,6 @@ import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateDelegateNode.DelTemplateKey;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
-import com.google.template.soy.soytree.TemplateRegistry.DelegateTemplateConflictException;
 import com.google.template.soy.soytree.XidNode;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.LoopVar;
@@ -538,7 +537,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     TemplateDelegateNode callee;
     try {
       callee = templateRegistry.selectDelTemplate(delegateKey, activeDelPackageNames);
-    } catch (DelegateTemplateConflictException e) {
+    } catch (IllegalArgumentException e) {
       throw RenderException.createWithSource(e.getMessage(), e, node);
     }
 

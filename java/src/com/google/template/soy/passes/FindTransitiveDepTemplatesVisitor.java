@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
@@ -37,7 +38,6 @@ import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
-import com.google.template.soy.soytree.TemplateRegistry.DelegateTemplateDivision;
 
 import java.util.ArrayDeque;
 import java.util.Comparator;
@@ -418,12 +418,13 @@ public final class FindTransitiveDepTemplatesVisitor
     visitChildren(node);
 
     // Visit all the possible callee templates.
-    ImmutableSet<DelegateTemplateDivision> delTemplateDivisions =
-        templateRegistry.getDelTemplateDivisionsForAllVariants(node.getDelCalleeName());
-    for (DelegateTemplateDivision division : delTemplateDivisions) {
-      for (TemplateDelegateNode delCallee : division.delPackageNameToDelTemplateMap.values()) {
-        processCalleeHelper(delCallee);
-      }
+    ImmutableList<TemplateDelegateNode> potentialCallees =
+        templateRegistry
+            .getDelTemplateSelector()
+            .delTemplateNameToValues()
+            .get(node.getDelCalleeName());
+    for (TemplateDelegateNode delCallee : potentialCallees) {
+      processCalleeHelper(delCallee);
     }
   }
 

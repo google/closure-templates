@@ -16,17 +16,15 @@
 
 package com.google.template.soy.soytree;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.truth.FailureStrategy;
 import com.google.common.truth.Subject;
 import com.google.common.truth.SubjectFactory;
 import com.google.common.truth.Truth;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.soytree.TemplateDelegateNode.DelTemplateKey;
-import com.google.template.soy.soytree.TemplateRegistry.DelegateTemplateDivision;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 /**
  * Custom Truth subject for {@link TemplateRegistry}.
@@ -63,21 +61,15 @@ final class TemplateRegistrySubject extends Subject<TemplateRegistrySubject, Tem
   }
 
   TemplateDelegateNodesSubject containsDelTemplate(String name) {
-    Truth.assertThat(getSubject().getDelTemplateNameToKeysMap()).containsKey(name);
-    Set<DelTemplateKey> keys = getSubject().getDelTemplateNameToKeysMap().get(name);
-    List<TemplateDelegateNode> nodes = new ArrayList<>();
-    for (DelTemplateKey key : keys) {
-      List<DelegateTemplateDivision> divisions = getSubject().getDelTemplatesMap().get(key);
-      for (DelegateTemplateDivision division : divisions) {
-        nodes.addAll(division.delPackageNameToDelTemplateMap.values());
-      }
-    }
-    return Truth.assertAbout(
-        TemplateDelegateNodesSubject.TEMPLATE_DELEGATE_NODES).that(nodes);
+    ImmutableList<TemplateDelegateNode> delTemplates =
+        getSubject().getDelTemplateSelector().delTemplateNameToValues().get(name);
+    Truth.assertThat(delTemplates).isNotEmpty();
+    return Truth.assertAbout(TemplateDelegateNodesSubject.TEMPLATE_DELEGATE_NODES)
+        .that(delTemplates);
   }
 
   void doesNotContainDelTemplate(String name) {
-    Truth.assertThat(getSubject().getDelTemplateNameToKeysMap()).doesNotContainKey(name);
+    Truth.assertThat(getSubject().getDelTemplateSelector().hasDelTemplateNamed(name)).isFalse();
   }
 
   static class TemplateBasicNodeSubject

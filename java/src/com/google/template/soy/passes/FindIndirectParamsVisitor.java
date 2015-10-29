@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedMap;
@@ -38,7 +39,6 @@ import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
-import com.google.template.soy.soytree.TemplateRegistry.DelegateTemplateDivision;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.SoyType;
 
@@ -337,12 +337,13 @@ public class FindIndirectParamsVisitor extends AbstractSoyNodeVisitor<IndirectPa
     mayHaveIndirectParamsInExternalDelCalls = true;
 
     // Visit all the possible callee templates.
-    ImmutableSet<DelegateTemplateDivision> delTemplateDivisions =
-        templateRegistry.getDelTemplateDivisionsForAllVariants(node.getDelCalleeName());
-    for (DelegateTemplateDivision division : delTemplateDivisions) {
-      for (TemplateDelegateNode delCallee : division.delPackageNameToDelTemplateMap.values()) {
-        visitCalleeHelper(node, delCallee);
-      }
+    ImmutableList<TemplateDelegateNode> potentialCallees =
+        templateRegistry
+            .getDelTemplateSelector()
+            .delTemplateNameToValues()
+            .get(node.getDelCalleeName());
+    for (TemplateDelegateNode delCallee : potentialCallees) {
+      visitCalleeHelper(node, delCallee);
     }
   }
 

@@ -25,7 +25,6 @@ import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateDelegateNode.DelTemplateKey;
 import com.google.template.soy.soytree.TemplateRegistry;
-import com.google.template.soy.soytree.TemplateRegistry.DelegateTemplateConflictException;
 
 /**
  * A helper for performing deltemplate selection.
@@ -84,13 +83,7 @@ public final class DelTemplateSelectorImpl implements DelTemplateSelector {
       String calleeName, String variant, boolean allowEmpty) {
     DelTemplateKey delegateKey = DelTemplateKey.create(calleeName, variant);
 
-    TemplateDelegateNode callee;
-    try {
-      callee = registry.selectDelTemplate(delegateKey, activeDelPackages);
-    } catch (DelegateTemplateConflictException e) {
-      // TODO(lukes): better exception type? make DelegateTemplateConflictException unchecked?
-      throw new RuntimeException(e);
-    }
+    TemplateDelegateNode callee = registry.selectDelTemplate(delegateKey, activeDelPackages);
     if (callee == null) {
       if (allowEmpty) {
         return EMPTY_FACTORY;
