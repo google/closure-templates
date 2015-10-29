@@ -28,17 +28,24 @@ import static com.google.template.soy.jbcsrc.LocalVariable.createThisVar;
 import static com.google.template.soy.jbcsrc.StandardNames.IJ_FIELD;
 import static com.google.template.soy.jbcsrc.StandardNames.PARAMS_FIELD;
 import static com.google.template.soy.jbcsrc.StandardNames.STATE_FIELD;
+import static com.google.template.soy.soytree.SoytreeUtils.getAllNodesOfType;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueProvider;
+import com.google.template.soy.exprtree.VarDefn;
+import com.google.template.soy.exprtree.VarDefn.Kind;
+import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.jbcsrc.SoyNodeCompiler.CompiledMethodBody;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.TemplateMetadata;
+import com.google.template.soy.soytree.CallBasicNode;
+import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
+import com.google.template.soy.soytree.SoytreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
@@ -49,7 +56,9 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Compiles the top level {@link CompiledTemplate} class for a single template and all related
@@ -154,6 +163,28 @@ final class TemplateCompiler {
         ? ""
         : template.node().getContentKind().name(); 
     annotationWriter.visit("contentKind", kind);
+
+    AnnotationVisitor ijsVisitor = annotationWriter.visitArray("injectedParams");
+    Set<String> uniqueIjs = new HashSet<>();
+    for (VarRefNode var : getAllNodesOfType(template.node(), VarRefNode.class)) {
+      if (var.isInjected() && uniqueIjs.add(var.getName())) {
+        ijsVisitor.visit(null /* ignored for array values */, var.getName());
+      }
+    }
+    ijsVisitor.visitEnd();
+
+    AnnotationVisitor calleesVisitor = annotationWriter.visitArray("callees");
+    for (CallBasicNode call : getAllNodesOfType(template.node(), CallBasicNode.class)) {
+      calleesVisitor.visit(null /* ignored for array values */, call.getCalleeName());
+    }
+    calleesVisitor.visitEnd();
+
+    AnnotationVisitor delCalleesVisitor = annotationWriter.visitArray("delCallees");
+    for (CallDelegateNode call : getAllNodesOfType(template.node(), CallDelegateNode.class)) {
+      delCalleesVisitor.visit(null /* ignored for array values */, call.getDelCalleeName());
+    }
+    delCalleesVisitor.visitEnd();
+
     annotationWriter.visitEnd();
   }
 

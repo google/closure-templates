@@ -202,6 +202,10 @@ public class BytecodeCompilerTest extends TestCase {
         factory.create(TemplateTester.asRecord(ImmutableMap.of("variant", "unknown")), EMPTY_DICT)
             .render(builder, context));
     assertThat(builder.toString()).isEmpty();
+
+    TemplateMetadata templateMetadata = getTemplateMetadata(templates, "ns1.callerTemplate");
+    assertThat(templateMetadata.callees()).isEmpty();
+    assertThat(templateMetadata.delCallees()).asList().containsExactly("ns1.del");
   }
 
   public void testCallBasicNode() throws IOException {
@@ -251,21 +255,30 @@ public class BytecodeCompilerTest extends TestCase {
     params.setField("boo", StringData.forValue("boo"));
     assertThat(render(templates, params, "ns.callerDataAll")).isEqualTo("Foo: foo\nBoo: boo\n");
     
+    assertThat(getTemplateMetadata(templates, "ns.callerDataAll").callees()).asList().containsExactly("ns.callee");
+    
     params = new BasicParamStore(2);
     params.setField("rec", new BasicParamStore(2).setField("foo", StringData.forValue("foo")));
     assertThat(render(templates, params, "ns.callerDataExpr")).isEqualTo("Foo: foo\nBoo: null\n");
     ((ParamStore) params.getField("rec")).setField("boo", StringData.forValue("boo"));
     assertThat(render(templates, params, "ns.callerDataExpr")).isEqualTo("Foo: foo\nBoo: boo\n");
+    assertThat(getTemplateMetadata(templates, "ns.callerDataExpr").callees()).asList().containsExactly("ns.callee");
     
     params = new BasicParamStore(2);
     params.setField("p1", StringData.forValue("foo"));
     assertThat(render(templates, params, "ns.callerParams")).isEqualTo("Foo: foo\nBoo: a1b\n");
+    assertThat(getTemplateMetadata(templates, "ns.callerParams").callees()).asList().containsExactly("ns.callee");
     
     params = new BasicParamStore(2);
     params.setField("p1", StringData.forValue("foo"));
     params.setField("boo", StringData.forValue("boo"));
     assertThat(render(templates, params, "ns.callerParamsAndData"))
         .isEqualTo("Foo: foo\nBoo: boo\n");
+    assertThat(getTemplateMetadata(templates, "ns.callerParamsAndData").callees()).asList().containsExactly("ns.callee");
+  }
+
+  private static TemplateMetadata getTemplateMetadata(CompiledTemplates templates, String name) {
+    return templates.getTemplateFactory(name).getClass().getDeclaringClass().getAnnotation(TemplateMetadata.class);
   }
 
   private String render(CompiledTemplates templates, SoyRecord params, String name)
@@ -655,6 +668,11 @@ public class BytecodeCompilerTest extends TestCase {
     assertEquals(StringData.forValue("foo"), getField("foo", template));
     assertEquals(StringData.forValue("bar"), getField("bar", template));
     assertEquals(StringData.forValue("baz"), getField("baz", template));
+
+    TemplateMetadata templateMetadata = template.getClass().getAnnotation(TemplateMetadata.class);
+    assertThat(templateMetadata.injectedParams()).asList().containsExactly("bar");
+    assertThat(templateMetadata.callees()).isEmpty();
+    assertThat(templateMetadata.delCallees()).isEmpty();
   }
 
   private Object getField(String name, CompiledTemplate template) throws Exception {
@@ -674,7 +692,12 @@ public class BytecodeCompilerTest extends TestCase {
         factory.create(EMPTY_DICT, EMPTY_DICT).getClass();
     assertEquals("com.google.template.soy.jbcsrc.gen.ns.foo", templateClass.getName());
     assertEquals("foo", templateClass.getSimpleName());
-    assertEquals("HTML", templateClass.getAnnotation(TemplateMetadata.class).contentKind());
+
+    TemplateMetadata templateMetadata = templateClass.getAnnotation(TemplateMetadata.class);
+    assertEquals("HTML", templateMetadata.contentKind());
+    assertThat(templateMetadata.injectedParams()).isEmpty();
+    assertThat(templateMetadata.callees()).isEmpty();
+    assertThat(templateMetadata.delCallees()).isEmpty();
 
     // ensure that the factory is an inner class of the template.
     assertEquals(templateClass, factory.getClass().getEnclosingClass());

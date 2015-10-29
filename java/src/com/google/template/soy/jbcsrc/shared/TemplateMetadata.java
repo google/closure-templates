@@ -40,4 +40,19 @@ public @interface TemplateMetadata {
    * or {@code ""} which means that this isn't a strict template.
    */
   String contentKind();
+
+  /**
+   * Returns the list of injected params, both {@code $ij.foo} variables and {@code @inject} params
+   */ 
+  String[] injectedParams();
+
+  /** 
+   * Returns the fully qualified names of all the basic templates called by this template.
+   */
+  String[] callees();
+
+  /** 
+   * Returns the fully qualified names of all the delegate templates called by this template.
+   */
+  String[] delCallees();
 }
