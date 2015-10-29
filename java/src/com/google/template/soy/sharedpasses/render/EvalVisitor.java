@@ -282,7 +282,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
 
   private SoyValue visitNullSafeVarRefNode(VarRefNode varRef) {
     SoyValue result = null;
-    if (varRef.isInjected()) {
+    if (varRef.isDollarSignIjParameter()) {
       // TODO(lukes): it would be nice to move this logic into Environment or even eliminate the
       // ijData == null case.  It seems like this case is mostly for prerendering, though im not
       // sure.

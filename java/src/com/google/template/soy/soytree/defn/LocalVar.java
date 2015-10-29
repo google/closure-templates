@@ -63,4 +63,9 @@ public class LocalVar extends AbstractVarDefn {
   public LocalVarNode declaringNode() {
     return declaringNode;
   }
+
+  @Override
+  public boolean isInjected() {
+    return false;
+  }
 }

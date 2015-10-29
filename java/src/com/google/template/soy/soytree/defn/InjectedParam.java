@@ -47,4 +47,9 @@ public final class InjectedParam extends AbstractVarDefn {
   @Override public void setLocalVariableIndex(int i) {
     throw new UnsupportedOperationException();
   }
+
+  @Override
+  public boolean isInjected() {
+    return true;
+  }
 }

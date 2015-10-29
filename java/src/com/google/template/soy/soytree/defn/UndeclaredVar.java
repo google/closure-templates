@@ -42,4 +42,9 @@ public final class UndeclaredVar extends AbstractVarDefn {
   @Override public UndeclaredVar clone() {
     return new UndeclaredVar(this);
   }
+
+  @Override
+  public boolean isInjected() {
+    return false;
+  }
 }

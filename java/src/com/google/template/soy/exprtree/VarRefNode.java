@@ -38,7 +38,7 @@ public final class VarRefNode extends AbstractExprNode {
   private final String name;
 
   /** Whether this is an injected parameter reference. */
-  private final boolean isInjected;
+  private final boolean isDollarSignIjParameter;
 
   /** Whether this a null-safe access to an injected parameter. */
   private final boolean isNullSafeInjected;
@@ -55,20 +55,20 @@ public final class VarRefNode extends AbstractExprNode {
   /**
    * @param name The name of the variable.
    * @param sourceLocation The node's source location.
-   * @param injected Whether this is an injected variable.
+   * @param isDollarSignIjParameter Whether this is an {@code $ij} variable.
    * @param nullSafeInjected Whether this a null-safe access to an injected parameter.
    * @param defn (optional) The variable declaration for this variable.
    */
   public VarRefNode(
       String name,
       SourceLocation sourceLocation,
-      boolean injected,
+      boolean isDollarSignIjParameter,
       boolean nullSafeInjected,
       @Nullable VarDefn defn) {
     super(sourceLocation);
     Preconditions.checkArgument(name != null);
     this.name = name;
-    this.isInjected = injected;
+    this.isDollarSignIjParameter = isDollarSignIjParameter;
     this.isNullSafeInjected = nullSafeInjected;
     this.defn = defn;
   }
@@ -76,7 +76,7 @@ public final class VarRefNode extends AbstractExprNode {
   private VarRefNode(VarRefNode orig, CopyState copyState) {
     super(orig, copyState);
     this.name = orig.name;
-    this.isInjected = orig.isInjected;
+    this.isDollarSignIjParameter = orig.isDollarSignIjParameter;
     this.isNullSafeInjected = orig.isNullSafeInjected;
     this.subtituteType = orig.subtituteType;
     // N.B. don't clone here.  If the tree is getting cloned then our defn will also need to be
@@ -104,9 +104,18 @@ public final class VarRefNode extends AbstractExprNode {
     return name;
   }
 
+  /**
+   * Returns Whether this is an {@code $ij} parameter reference.
+   *
+   * <p>You almost certainly don't want to use this method and instead want {@link #isInjected()}.
+   */
+  public boolean isDollarSignIjParameter() {
+    return isDollarSignIjParameter;
+  }
+
   /** Returns Whether this is an injected parameter reference. */
   public boolean isInjected() {
-    return isInjected;
+    return defn.isInjected();
   }
 
   /** Returns whether this a null-safe access to an injected parameter. */
@@ -129,8 +138,8 @@ public final class VarRefNode extends AbstractExprNode {
   }
 
   /** Returns whether this is a local variable reference. */
-  public Boolean isLocalVar() {
-    return defn == null ? null : defn.kind() == VarDefn.Kind.LOCAL_VAR;
+  public boolean isLocalVar() {
+    return defn.kind() == VarDefn.Kind.LOCAL_VAR;
   }
 
   /**
@@ -138,9 +147,7 @@ public final class VarRefNode extends AbstractExprNode {
    * is unknown, then it returns true.
    */
   public Boolean isPossibleParam() {
-    // TODO: Get rid of the null check - needs to revise EvalVisitorTest to run
-    // the resolve names pass in order for this to be true.
-    return defn == null || defn.kind() == VarDefn.Kind.PARAM ||
+    return defn.kind() == VarDefn.Kind.PARAM ||
         defn.kind() == VarDefn.Kind.UNDECLARED;
   }
 
@@ -154,7 +161,7 @@ public final class VarRefNode extends AbstractExprNode {
   }
 
   @Override public String toSourceString() {
-    return "$" + (isInjected ? (isNullSafeInjected ? "ij?." : "ij.") : "") + name;
+    return "$" + (isDollarSignIjParameter ? (isNullSafeInjected ? "ij?." : "ij.") : "") + name;
   }
 
   @Override public VarRefNode copy(CopyState copyState) {
@@ -165,11 +172,11 @@ public final class VarRefNode extends AbstractExprNode {
     if (other == null || other.getClass() != this.getClass()) { return false; }
     VarRefNode otherVar = (VarRefNode) other;
     return name.equals(otherVar.name) &&
-        isInjected == otherVar.isInjected &&
+        isDollarSignIjParameter == otherVar.isDollarSignIjParameter &&
         isNullSafeInjected == otherVar.isNullSafeInjected;
   }
 
   @Override public int hashCode() {
-    return Objects.hash(this.getClass(), name, isInjected, isNullSafeInjected);
+    return Objects.hash(this.getClass(), name, isDollarSignIjParameter, isNullSafeInjected);
   }
 }

@@ -65,6 +65,7 @@ public final class SoyDocParam extends TemplateParam {
     return super.abstractHashCode();
   }
 
+  @Override
   public SoyDocParam clone() {
     return new SoyDocParam(this);
   }

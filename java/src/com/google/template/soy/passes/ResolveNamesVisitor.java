@@ -346,7 +346,7 @@ final class ResolveNamesVisitor extends AbstractSoyNodeVisitor<Void> {
     }
 
     @Override protected void visitVarRefNode(VarRefNode varRef) {
-      if (varRef.isInjected()) {
+      if (varRef.isDollarSignIjParameter()) {
         InjectedParam ijParam = ijParams.get(varRef.getName());
         if (ijParam == null) {
           ijParam = new InjectedParam(varRef.getName());

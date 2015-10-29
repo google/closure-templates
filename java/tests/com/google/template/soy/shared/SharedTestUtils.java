@@ -175,7 +175,7 @@ public final class SharedTestUtils {
 
       @Override
       protected void visitVarRefNode(VarRefNode node) {
-        if (!node.isInjected()) {
+        if (!node.isDollarSignIjParameter()) {
           names.add(node.getName());
         }
       }

@@ -84,6 +84,7 @@ public abstract class TemplateParam extends AbstractVarDefn {
   }
 
   /** Returns whether the param is required. */
+  @Override
   public boolean isInjected() {
     return isInjected;
   }

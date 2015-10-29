@@ -347,7 +347,7 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
     switch (node.getKind()) {
       case VAR_REF_NODE: {
         VarRefNode varRef = (VarRefNode) node;
-        if (varRef.isInjected()) {
+        if (varRef.isDollarSignIjParameter()) {
           // Case 1: Injected data reference.
           if (varRef.isNullSafeInjected()) {
             nullSafetyPrefix.append("(opt_ijData == null) ? null : ");
