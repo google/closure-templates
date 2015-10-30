@@ -3629,7 +3629,7 @@ goog.addDependency('testing/mockstorage.js', ['goog.testing.MockStorage'], ['goo
 goog.addDependency('testing/mockstorage_test.js', ['goog.testing.MockStorageTest'], ['goog.testing.MockStorage', 'goog.testing.jsunit'], false);
 goog.addDependency('testing/mockuseragent.js', ['goog.testing.MockUserAgent'], ['goog.Disposable', 'goog.labs.userAgent.util', 'goog.testing.PropertyReplacer', 'goog.userAgent'], false);
 goog.addDependency('testing/mockuseragent_test.js', ['goog.testing.MockUserAgentTest'], ['goog.dispose', 'goog.testing.MockUserAgent', 'goog.testing.jsunit', 'goog.userAgent'], false);
-goog.addDependency('testing/multitestrunner.js', ['goog.testing.MultiTestRunner', 'goog.testing.MultiTestRunner.TestFrame'], ['goog.Timer', 'goog.array', 'goog.asserts', 'goog.dom', 'goog.dom.TagName', 'goog.dom.classlist', 'goog.events.EventHandler', 'goog.functions', 'goog.object', 'goog.string', 'goog.ui.Component', 'goog.ui.ServerChart', 'goog.ui.TableSorter'], false);
+goog.addDependency('testing/multitestrunner.js', ['goog.testing.MultiTestRunner', 'goog.testing.MultiTestRunner.TestFrame'], ['goog.Timer', 'goog.array', 'goog.asserts', 'goog.dom', 'goog.dom.TagName', 'goog.dom.classlist', 'goog.events.EventHandler', 'goog.functions', 'goog.string', 'goog.ui.Component', 'goog.ui.ServerChart', 'goog.ui.TableSorter'], false);
 goog.addDependency('testing/multitestrunner_test.js', ['goog.testing.MultiTestRunnerTest'], ['goog.Promise', 'goog.events', 'goog.testing.MockControl', 'goog.testing.MultiTestRunner', 'goog.testing.PropertyReplacer', 'goog.testing.TestCase', 'goog.testing.jsunit', 'goog.testing.testSuite'], true);
 goog.addDependency('testing/net/xhrio.js', ['goog.testing.net.XhrIo'], ['goog.array', 'goog.dom.xml', 'goog.events', 'goog.events.EventTarget', 'goog.json', 'goog.net.ErrorCode', 'goog.net.EventType', 'goog.net.HttpStatus', 'goog.net.XhrIo', 'goog.net.XmlHttp', 'goog.object', 'goog.structs.Map', 'goog.uri.utils'], false);
 goog.addDependency('testing/net/xhrio_test.js', ['goog.testing.net.XhrIoTest'], ['goog.dom.xml', 'goog.events', 'goog.events.Event', 'goog.net.ErrorCode', 'goog.net.EventType', 'goog.net.XmlHttp', 'goog.object', 'goog.testing.MockControl', 'goog.testing.asserts', 'goog.testing.jsunit', 'goog.testing.mockmatchers.InstanceOf', 'goog.testing.net.XhrIo'], false);
@@ -23743,7 +23743,7 @@ goog.soy.renderElement = function(element, template, opt_templateData,
   goog.asserts.assert(template, 'Soy template may not be null.');
   element.innerHTML = goog.soy.ensureTemplateOutputHtml_(template(
       opt_templateData || goog.soy.defaultTemplateData_, undefined,
-      opt_injectedData || goog.soy.defaultTemplateData_));
+      opt_injectedData));
 };
 
 
@@ -23770,8 +23770,7 @@ goog.soy.renderAsFragment = function(template, opt_templateData,
   var dom = opt_domHelper || goog.dom.getDomHelper();
   var html = goog.soy.ensureTemplateOutputHtml_(
       template(opt_templateData || goog.soy.defaultTemplateData_,
-               undefined,
-               opt_injectedData || goog.soy.defaultTemplateData_));
+               undefined, opt_injectedData));
   goog.soy.assertFirstTagValid_(html);
   return dom.htmlToDocumentFragment(html);
 };
@@ -23798,8 +23797,7 @@ goog.soy.renderAsElement = function(template, opt_templateData,
   goog.asserts.assert(template, 'Soy template may not be null.');
   return goog.soy.convertToElement_(template(
       opt_templateData || goog.soy.defaultTemplateData_,
-      undefined,
-      opt_injectedData || goog.soy.defaultTemplateData_), opt_domHelper);
+      undefined, opt_injectedData), opt_domHelper);
 };
 
 
