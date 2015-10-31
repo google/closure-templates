@@ -94,12 +94,6 @@ public final class SoyToJsSrcCompiler {
           usage = "User-declared syntax version for the Soy file bundle (e.g. 2.0, 2.3).")
   private String syntaxVersion = "";
 
-  // TODO(lukes): remove, this is no longer used
-  @Option(name = "--isUsingIjData",
-          usage = "Whether to enable use of injected data (syntax is '$ij.*').",
-          handler = MainClassUtils.BooleanOptionHandler.class)
-  private boolean isUsingIjData = false;
-
   // TODO(user): remove
   @Option(name = "--codeStyle",
           usage = "The code style to use when generating JS code ('stringbuilder' or 'concat').")
