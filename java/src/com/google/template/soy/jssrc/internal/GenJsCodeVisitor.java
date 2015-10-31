@@ -179,7 +179,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
   private GenDirectivePluginRequiresVisitor genDirectivePluginRequiresVisitor;
 
   /** Registry of all templates in the Soy tree. */
-  private TemplateRegistry templateRegistry;
+  protected TemplateRegistry templateRegistry;
 
   /** Type operators. */
   private final SoyTypeOps typeOps;

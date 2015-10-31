@@ -46,6 +46,7 @@ import com.google.template.soy.jssrc.internal.JsExprTranslator;
 import com.google.template.soy.jssrc.internal.JsSrcUtils;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.shared.internal.CodeBuilder;
+import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamNode;
@@ -222,6 +223,9 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   }
 
   @Override protected void visitCallNode(CallNode node) {
+    Preconditions.checkState(node instanceof CallBasicNode, "Delegate template calls not yet "
+        + "supported for Incremental DOM.");
+
     // If this node has any CallParamContentNode children those contents are not computable as JS
     // expressions, visit them to generate code to define their respective 'param<n>' variables.
     for (CallParamNode child : node.getChildren()) {
@@ -231,15 +235,24 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     }
 
     JsExpr callExpr = genCallCodeUtils.genCallExpr(node, localVarTranslations, templateAliases);
-
-    // If the template is of kind="html" or kind="attributes", we just want to
-    // invoke the template call so that it renders the HTML in the current
-    // location. For text templates, we always want to concatenate the result
-    // to the output variable.
     IncrementalDomCodeBuilder jsCodeBuilder = getJsCodeBuilder();
-    if (isTextContent(jsCodeBuilder.getContentKind())) {
+    String templateName = ((CallBasicNode)node).getCalleeName();
+    ContentKind currentContentKind = jsCodeBuilder.getContentKind();
+    ContentKind callContentKind = templateRegistry.getBasicTemplate(templateName).getContentKind();
+
+    // TODO(sparhami) Need to also check the current context to make sure things like calls to
+    // attributes are not placed where HTML / text is expected. Incremental DOM has runtime asserts,
+    // but better to catch it at compile time.
+    if (isTextContent(currentContentKind)) {
+      // If the current content kind (due to a let, param or template) is a text, simply
+      // concatentate the result of the call to the current output variable.
       jsCodeBuilder.addToOutputVar(ImmutableList.of(callExpr));
+    } else if (isTextContent(callContentKind)) {
+      // The function returns a string, wrap it with itext so that a Text node is generated.
+      jsCodeBuilder.appendLine("itext(", callExpr.getText(), ");");
     } else {
+      // The function contains Incremental DOM instructions that need to be run at the current
+      // location in the DOM, so just invoke it.
       jsCodeBuilder.appendLine(callExpr.getText() + ";");
     }
   }
