@@ -94,11 +94,6 @@ public final class SoyToJsSrcCompiler {
           usage = "User-declared syntax version for the Soy file bundle (e.g. 2.0, 2.3).")
   private String syntaxVersion = "";
 
-  // TODO(user): remove
-  @Option(name = "--codeStyle",
-          usage = "The code style to use when generating JS code ('stringbuilder' or 'concat').")
-  private String codeStyle = "concat";
-
   @Option(name = "--shouldGenerateJsdoc",
           usage = "Whether we should generate JSDoc with type info for the Closure Compiler." +
                   " Note the generated JSDoc does not have description text, only types for the" +
