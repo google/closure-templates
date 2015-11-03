@@ -197,16 +197,6 @@ public final class HtmlTransformVisitorTest extends TestCase {
     assertThat(((HtmlOpenTagStartNode) getNode(n, 0, 3, 0, 0)).getTagName()).isEqualTo("div");
   }
 
-  public void testCallInAttributesDeclaration() {
-    String templateBody = "<div id=\"foo\" {call .someTemplate /}></div>";
-
-    FormattingErrorReporter fer = new FormattingErrorReporter();
-    performVisitor(templateBody, fer);
-
-    assertThat(fer.getErrorMessages()).containsExactly("The incremental HTML Soy backend does not "
-        + "support template calls within HTML tag declarations.");
-  }
-
   public void testIfInAttributeName() {
     String templateBody = "{@param foo : ?}\n<div go{if $foo}oooo{/if}ogle=\"foo\"></div>";
 

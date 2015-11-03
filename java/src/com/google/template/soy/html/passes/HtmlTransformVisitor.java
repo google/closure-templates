@@ -95,9 +95,6 @@ public final class HtmlTransformVisitor extends AbstractSoyNodeVisitor<Void> {
   private static final SoyError NON_STRICT_TEMPLATE = SoyError.of("The incremental HTML Soy "
       + "backend requires strict autoescape mode for all templates.");
 
-  private static final SoyError TEMPLATE_CALL_IN_TAG = SoyError.of("The incremental HTML Soy "
-      + "backend does not support template calls within HTML tag declarations.");
-
   private static final SoyError UNKNOWN_CONTENT_KIND = SoyError.of("The incremental HTML Soy "
       + "backend requires all let statements and parameters with content to have a content kind");
 
@@ -604,9 +601,15 @@ public final class HtmlTransformVisitor extends AbstractSoyNodeVisitor<Void> {
    * attributes and making sure that the autoescape mode is strict.
    */
   @Override protected void visitTemplateNode(TemplateNode node) {
-    if (node.getContentKind() != ContentKind.HTML
-        && node.getContentKind() != ContentKind.ATTRIBUTES) {
-      return;
+    switch (node.getContentKind()) {
+      case HTML:
+        currentState = HtmlState.PCDATA;
+        break;
+      case ATTRIBUTES:
+        currentState = HtmlState.TAG;
+        break;
+      default:
+        return; // only need to do transformations for HTML / attributes
     }
 
     if (node.getAutoescapeMode() != AutoescapeMode.STRICT) {
@@ -617,16 +620,10 @@ public final class HtmlTransformVisitor extends AbstractSoyNodeVisitor<Void> {
   }
 
   /**
-   * Visits a {@link CallNode} - makes sure that the node does not occur within an attribute state
-   * (e.g. after {@code <div} and before {@code >}).
+   * Visits a {@link CallNode} - makes sure that the node does not occur in an invalid location.
    */
   @Override protected void visitCallNode(CallNode node) {
     checkForValidSoyNodeLocation(node);
-
-    if (getState().isAttributeState()) {
-      errorReporter.report(node.getSourceLocation(), TEMPLATE_CALL_IN_TAG);
-    }
-
     visitChildren(node);
   }
 
