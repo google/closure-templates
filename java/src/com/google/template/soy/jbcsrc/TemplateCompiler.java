@@ -30,11 +30,11 @@ import static com.google.template.soy.jbcsrc.StandardNames.PARAMS_FIELD;
 import static com.google.template.soy.jbcsrc.StandardNames.STATE_FIELD;
 import static com.google.template.soy.soytree.SoytreeUtils.getAllNodesOfType;
 
+import com.google.auto.value.AutoAnnotation;
 import com.google.common.collect.ImmutableMap;
+import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueProvider;
-import com.google.template.soy.exprtree.VarDefn;
-import com.google.template.soy.exprtree.VarDefn.Kind;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.jbcsrc.SoyNodeCompiler.CompiledMethodBody;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
@@ -45,18 +45,18 @@ import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
-import com.google.template.soy.soytree.SoytreeUtils;
+import com.google.template.soy.soytree.SoyNode;
+import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 
-import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -65,8 +65,8 @@ import java.util.Set;
  * classes.
  */
 final class TemplateCompiler {
-  private static final String TEMPLATE_METADATA_DESCRIPTOR =
-      Type.getDescriptor(TemplateMetadata.class);
+  private static final AnnotationRef<TemplateMetadata> TEMPLATE_METADATA_REF =
+      AnnotationRef.forType(TemplateMetadata.class);
   private static final TypeInfo TEMPLATE_TYPE = TypeInfo.create(CompiledTemplate.class);
 
   private final CompiledTemplateRegistry registry;
@@ -157,35 +157,66 @@ final class TemplateCompiler {
 
   /** Writes a {@link TemplateMetadata} to the generated class. */
   private void generateTemplateMetadata() {
-    AnnotationVisitor annotationWriter =
-        writer.visitAnnotation(TEMPLATE_METADATA_DESCRIPTOR, true /* visible at runtime */);
-    String kind = template.node().getContentKind() == null 
-        ? ""
-        : template.node().getContentKind().name(); 
-    annotationWriter.visit("contentKind", kind);
+    ContentKind contentKind = template.node().getContentKind();
+    String kind = contentKind == null  ? "" : contentKind.name(); 
 
-    AnnotationVisitor ijsVisitor = annotationWriter.visitArray("injectedParams");
-    Set<String> uniqueIjs = new HashSet<>();
+    // using linked hash sets below for determinism
+    Set<String> uniqueIjs = new LinkedHashSet<>();
     for (VarRefNode var : getAllNodesOfType(template.node(), VarRefNode.class)) {
-      if (var.isInjected() && uniqueIjs.add(var.getName())) {
-        ijsVisitor.visit(null /* ignored for array values */, var.getName());
+      if (var.isInjected()) {
+        uniqueIjs.add(var.getName());
       }
     }
-    ijsVisitor.visitEnd();
 
-    AnnotationVisitor calleesVisitor = annotationWriter.visitArray("callees");
+    Set<String> callees = new LinkedHashSet<>();
     for (CallBasicNode call : getAllNodesOfType(template.node(), CallBasicNode.class)) {
-      calleesVisitor.visit(null /* ignored for array values */, call.getCalleeName());
+      callees.add(call.getCalleeName());
     }
-    calleesVisitor.visitEnd();
 
-    AnnotationVisitor delCalleesVisitor = annotationWriter.visitArray("delCallees");
+    Set<String> delCallees = new LinkedHashSet<>();
     for (CallDelegateNode call : getAllNodesOfType(template.node(), CallDelegateNode.class)) {
-      delCalleesVisitor.visit(null /* ignored for array values */, call.getDelCalleeName());
+      delCallees.add(call.getDelCalleeName());
     }
-    delCalleesVisitor.visitEnd();
 
-    annotationWriter.visitEnd();
+    TemplateMetadata.DelTemplateMetadata deltemplateMetadata;
+    if (template.node().getKind() == SoyNode.Kind.TEMPLATE_DELEGATE_NODE) {
+      TemplateDelegateNode delegateNode = (TemplateDelegateNode) template.node();
+      deltemplateMetadata = createDelTemplateMetadata(
+          delegateNode.getDelPackageName() == null ? "" : delegateNode.getDelPackageName(), 
+          delegateNode.getDelTemplateName(), 
+          delegateNode.getDelTemplateVariant());
+    } else {
+      deltemplateMetadata = createDefaultDelTemplateMetadata();
+    }
+    TemplateMetadata metadata = createTemplateMetadata(
+        kind,
+        uniqueIjs,
+        callees,
+        delCallees,
+        deltemplateMetadata);
+    TEMPLATE_METADATA_REF.write(metadata, writer);
+  }
+
+  @AutoAnnotation
+  static TemplateMetadata createTemplateMetadata(
+      String contentKind,
+      Set<String> injectedParams,
+      Set<String> callees,
+      Set<String> delCallees, 
+      TemplateMetadata.DelTemplateMetadata deltemplateMetadata) {
+    return new AutoAnnotation_TemplateCompiler_createTemplateMetadata(
+        contentKind, injectedParams, callees, delCallees, deltemplateMetadata);
+  }
+
+  @AutoAnnotation
+  static TemplateMetadata.DelTemplateMetadata createDefaultDelTemplateMetadata() {
+    return new AutoAnnotation_TemplateCompiler_createDefaultDelTemplateMetadata();
+  }
+
+  @AutoAnnotation
+  static TemplateMetadata.DelTemplateMetadata createDelTemplateMetadata(
+      String delPackage, String name, String variant) {
+    return new AutoAnnotation_TemplateCompiler_createDelTemplateMetadata(delPackage, name, variant);
   }
 
   private Statement generateRenderMethod() {
