@@ -38,7 +38,7 @@ import java.util.List;
  */
 public final class ContentSecurityPolicyPassTest extends TestCase {
 
-  private static final String NONCE = "{if $ij.csp_nonce} nonce=\"{$ij.csp_nonce}\"{/if}";
+  private static final String NONCE = "{if $ij?.csp_nonce} nonce=\"{$ij?.csp_nonce}\"{/if}";
 
   public void testTrivialTemplate() {
     assertInjected(
@@ -170,13 +170,13 @@ public final class ContentSecurityPolicyPassTest extends TestCase {
             "{template .foo}\n",
             "  {@param height: int}\n",
             "<a href='#' style='",
-            "{if $ij.csp_nonce}",
-              "/*{$ij.csp_nonce}*/",
+            "{if $ij?.csp_nonce}",
+              "/*{$ij?.csp_nonce}*/",
             "{/if}",
             "height:{$height |filterCssValue |escapeHtmlAttribute}px;'",
             " onclick='",
-            "{if $ij.csp_nonce}",
-              "/*{$ij.csp_nonce}*/",
+            "{if $ij?.csp_nonce}",
+              "/*{$ij?.csp_nonce}*/",
             "{/if}",
             "foo() &amp;& bar(\"baz\")'",
             ">",
@@ -189,19 +189,19 @@ public final class ContentSecurityPolicyPassTest extends TestCase {
             " style=color:red>",
 
             "<input checked ONCHANGE = \"",
-            "{if $ij.csp_nonce}",
-              "/*{$ij.csp_nonce}*/",
+            "{if $ij?.csp_nonce}",
+              "/*{$ij?.csp_nonce}*/",
             "{/if}",
             "Panic()\"",
             ">",
 
             "<script onerror= '",
-            "{if $ij.csp_nonce}",
-              "/*{$ij.csp_nonce}*/",
+            "{if $ij?.csp_nonce}",
+              "/*{$ij?.csp_nonce}*/",
             "{/if}",
             "scriptError()'",
-            "{if $ij.csp_nonce}",
-              " nonce=\"{$ij.csp_nonce}\"",
+            "{if $ij?.csp_nonce}",
+              " nonce=\"{$ij?.csp_nonce}\"",
             "{/if}",
             ">baz()</script>\n",
 

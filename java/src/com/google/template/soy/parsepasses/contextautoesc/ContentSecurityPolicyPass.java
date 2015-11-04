@@ -570,6 +570,7 @@ public final class ContentSecurityPolicyPass {
         CSP_NONCE_VARIABLE_NAME,
         SourceLocation.UNKNOWN,
         true /*injected*/,
+        true /* nullSafeInjected */,
         IMPLICIT_CSP_NONCE_DEFN);
   }
 
