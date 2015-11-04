@@ -70,7 +70,7 @@ public class ExpressionParserTest extends TestCase {
   public void testRecognizeDataReference() {
     String[] dataRefs =
         {"$aaa", "$ij.aaa", "$a0a0.b1b1", "$aaa[0].bbb[12]", "$aaa[0].bbb['ccc'][$eee]",
-         "$aaa?.bbb", "$aaa.bbb?[0]?.ccc?['ddd']", "$ij?.aaa",
+         "$aaa?.bbb", "$aaa.bbb?[0]?.ccc?['ddd']", "$ij.aaa",
          "$aaa [1] [2] .bbb [ 3 + 4 ]['ccc']. ddd [$eee * $fff]",
          "functionCall($arg).field",
          "['a' : 'b'].a"};
@@ -279,13 +279,13 @@ public class ExpressionParserTest extends TestCase {
 
     ExprNode dataRef = assertThatExpression("$boo").isValidExpression();
     assertNodeEquals(
-        new VarRefNode("boo", loc, false, false, null),
+        new VarRefNode("boo", loc, false, null),
         dataRef);
 
     dataRef = assertThatExpression("$boo.foo").isValidExpression();
     assertNodeEquals(
         new FieldAccessNode(
-            new VarRefNode("boo", loc, false, false, null),
+            new VarRefNode("boo", loc, false, null),
             "foo",
             false),
         dataRef);
@@ -294,10 +294,10 @@ public class ExpressionParserTest extends TestCase {
     assertNodeEquals(
         new ItemAccessNode(
             new ItemAccessNode(
-                new VarRefNode("boo", loc, false, false, null),
+                new VarRefNode("boo", loc, false, null),
                 new IntegerNode(0, loc),
                 false),
-            new VarRefNode("foo", loc, false, false, null),
+            new VarRefNode("foo", loc, false, null),
             false),
         dataRef);
 
@@ -305,21 +305,21 @@ public class ExpressionParserTest extends TestCase {
     assertNodeEquals(
         new ItemAccessNode(
             new ItemAccessNode(
-                new VarRefNode("boo", loc, false, false, null),
+                new VarRefNode("boo", loc, false, null),
                 new IntegerNode(0, loc),
                 true),
-            new VarRefNode("foo", loc, false, false, null),
+            new VarRefNode("foo", loc, false, null),
             true),
         dataRef);
 
-    dataRef = assertThatExpression("$ij?.boo?[0][$ij.foo]").isValidExpression();
+    dataRef = assertThatExpression("$ij.boo?[0][$ij.foo]").isValidExpression();
     assertNodeEquals(
         new ItemAccessNode(
             new ItemAccessNode(
-                new VarRefNode("boo", loc, true, true, null),
+                new VarRefNode("boo", loc, true, null),
                 new IntegerNode(0, loc),
                 true),
-            new VarRefNode("foo", loc, true, false, null),
+            new VarRefNode("foo", loc, true, null),
             false),
         dataRef);
   }
