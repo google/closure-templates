@@ -56,9 +56,10 @@ public final class BytecodeCompiler {
     }
     CompiledTemplateRegistry compilerRegistry = new CompiledTemplateRegistry(registry);
     if (developmentMode) {
-      CompiledTemplates templates = new CompiledTemplates(
-          compilerRegistry.getTemplateNames(), 
-          new CompilingClassLoader(compilerRegistry));
+      CompiledTemplates templates =
+          new CompiledTemplates(
+              compilerRegistry.getDelegateTemplateNames(),
+              new CompilingClassLoader(compilerRegistry));
       // TODO(lukes): consider spawning a thread to load all the generated classes in the background
       return Optional.of(templates);
     }
@@ -73,7 +74,7 @@ public final class BytecodeCompiler {
     }
     CompiledTemplates templates =
         new CompiledTemplates(
-            compilerRegistry.getTemplateNames(), new MemoryClassLoader(results.classes()));
+            compilerRegistry.getDelegateTemplateNames(), new MemoryClassLoader(results.classes()));
     logger.log(
         Level.INFO,
         "Compilation took {0}\n"
@@ -91,9 +92,7 @@ public final class BytecodeCompiler {
           results.numDetachStates()
         });
     stopwatch.reset().start();
-    for (String template : compilerRegistry.getTemplateNames()) {
-      templates.getTemplateFactory(template);  // triggers classloading
-    }
+    templates.loadAll(compilerRegistry.getTemplateNames());
     logger.log(Level.INFO, "Loaded all classes in {0}", stopwatch);
     return Optional.of(templates);
   }

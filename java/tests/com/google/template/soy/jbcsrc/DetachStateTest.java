@@ -18,8 +18,8 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.data.SoyValueHelper.EMPTY_DICT;
-import static com.google.template.soy.jbcsrc.TemplateTester.DEFAULT_CONTEXT;
 import static com.google.template.soy.jbcsrc.TemplateTester.asRecord;
+import static com.google.template.soy.jbcsrc.TemplateTester.getDefaultContext;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -29,6 +29,8 @@ import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import com.google.template.soy.jbcsrc.api.AdvisingStringBuilder;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
+import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
+import com.google.template.soy.jbcsrc.shared.RenderContext;
 
 import junit.framework.TestCase;
 
@@ -68,107 +70,115 @@ public final class DetachStateTest extends TestCase {
   }
 
   public void testDetach_singleRawTextNode() throws IOException {
-    CompiledTemplate.Factory factory = TemplateTester.compileTemplateBody("hello world");
+    CompiledTemplates templates = TemplateTester.compileTemplateBody("hello world");
+    CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.foo");
+    RenderContext context = getDefaultContext(templates);
     CompiledTemplate template = factory.create(EMPTY_DICT, EMPTY_DICT);
     // Basic stuff works
     TestAppendable output = new TestAppendable();
-    assertEquals(RenderResult.done(), template.render(output, DEFAULT_CONTEXT));
+    assertEquals(RenderResult.done(), template.render(output, context));
     assertEquals("hello world", output.toString());
 
     output = new TestAppendable();
     output.softLimitReached = true;
     // detached!!!
-    assertEquals(RenderResult.limited(), template.render(output, DEFAULT_CONTEXT));
+    assertEquals(RenderResult.limited(), template.render(output, context));
     assertEquals("hello world", output.toString());
-    assertEquals(RenderResult.done(), template.render(output, DEFAULT_CONTEXT));
+    assertEquals(RenderResult.done(), template.render(output, context));
     assertEquals("hello world", output.toString());  // nothing was added
   }
 
   public void testDetach_multipleNodes() throws IOException {
-    CompiledTemplate.Factory factory = TemplateTester.compileTemplateBody(
-        "hello",
-        // this print node inserts a space character and ensures that our raw text nodes don't get
-        // merged
-        "{' '}",
-        "world");
+    CompiledTemplates templates =
+        TemplateTester.compileTemplateBody(
+            "hello",
+            // this print node inserts a space character and ensures that our raw text nodes don't 
+            // get merged
+            "{' '}", "world");
+    CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.foo");
+    RenderContext context = getDefaultContext(templates);
     CompiledTemplate template = factory.create(EMPTY_DICT, EMPTY_DICT);
     // Basic stuff works
     TestAppendable output = new TestAppendable();
-    assertEquals(RenderResult.done(), template.render(output, DEFAULT_CONTEXT));
+    assertEquals(RenderResult.done(), template.render(output, context));
     assertEquals("hello world", output.toString());
 
     output = new TestAppendable();
     output.softLimitReached = true;
     // detached!!!
-    assertEquals(RenderResult.limited(), template.render(output, DEFAULT_CONTEXT));
+    assertEquals(RenderResult.limited(), template.render(output, context));
     assertEquals("hello", output.toString());
-    assertEquals(RenderResult.limited(), template.render(output, DEFAULT_CONTEXT));
+    assertEquals(RenderResult.limited(), template.render(output, context));
     assertEquals("hello ", output.toString());
-    assertEquals(RenderResult.limited(), template.render(output, DEFAULT_CONTEXT));
+    assertEquals(RenderResult.limited(), template.render(output, context));
     assertEquals("hello world", output.toString());
-    assertEquals(RenderResult.done(), template.render(output, DEFAULT_CONTEXT));
+    assertEquals(RenderResult.done(), template.render(output, context));
     assertEquals("hello world", output.toString());  // nothing was added
   }
 
   // ensure that when we call back in, locals are restored
   public void testDetach_saveRestore() throws IOException {
-    CompiledTemplate.Factory factory = TemplateTester.compileTemplateBody(
-        "{for $i in range(10)}",
-        "  {$i}",
-        "{/for}");
+    CompiledTemplates templates =
+        TemplateTester.compileTemplateBody("{for $i in range(10)}", "  {$i}", "{/for}");
+    CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.foo");
+    RenderContext context = getDefaultContext(templates);
     CompiledTemplate template = factory.create(EMPTY_DICT, EMPTY_DICT);
     // Basic stuff works
     TestAppendable output = new TestAppendable();
-    assertEquals(RenderResult.done(), template.render(output, DEFAULT_CONTEXT));
+    assertEquals(RenderResult.done(), template.render(output, context));
     assertEquals("0123456789", output.toString());
 
     output = new TestAppendable();
     output.softLimitReached = true;
     for (int i = 0; i < 10; i++) {
-      assertEquals(RenderResult.limited(), template.render(output, DEFAULT_CONTEXT));
+      assertEquals(RenderResult.limited(), template.render(output, context));
       assertEquals(String.valueOf(i), output.toString());
       output.delegate.setLength(0);
     }
-    assertEquals(RenderResult.done(), template.render(output, DEFAULT_CONTEXT));
+    assertEquals(RenderResult.done(), template.render(output, context));
     assertThat(output.toString()).isEmpty(); // last render was empty
   }
 
   public void testDetachOnUnResolvedProvider() throws IOException {
     SettableFuture<String> future = SettableFuture.create();
-    CompiledTemplate.Factory factory = TemplateTester.compileTemplateBody(
-        "{@param foo : string}",
-        "prefix{sp}{$foo}{sp}suffix");
+    CompiledTemplates templates =
+        TemplateTester.compileTemplateBody("{@param foo : string}", "prefix{sp}{$foo}{sp}suffix");
+    CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.foo");
+    RenderContext context = getDefaultContext(templates);
     CompiledTemplate template = factory.create(
         asRecord(ImmutableMap.of("foo", future)), EMPTY_DICT);
     
     AdvisingStringBuilder output = new AdvisingStringBuilder();
-    RenderResult result = template.render(output, DEFAULT_CONTEXT);
+    RenderResult result = template.render(output, context);
     assertEquals(RenderResult.Type.DETACH, result.type());
     assertEquals(future, result.future());
     assertEquals("prefix ", output.toString());
 
     // No progress is made, our caller is an idiot and didn't wait for the future
-    result = template.render(output, DEFAULT_CONTEXT);
+    result = template.render(output, context);
     assertEquals(RenderResult.Type.DETACH, result.type());
     assertEquals(future, result.future());
     assertEquals("prefix ", output.toString());
 
     future.set("future");
-    result = template.render(output, DEFAULT_CONTEXT);
+    result = template.render(output, context);
     assertEquals(RenderResult.done(), result);
     assertEquals("prefix future suffix", output.toString());
   }
 
   public void testDetachOnEachIteration() throws IOException {
-    CompiledTemplate.Factory factory = TemplateTester.compileTemplateBody(
-        "{@param list : list<string>}",
-        "prefix{\\n}",
-        "{foreach $item in $list}",
-        "  loop-prefix{\\n}",
-        "  {$item}{\\n}",
-        "  loop-suffix{\\n}",
-        "{/foreach}",
-        "suffix");
+    CompiledTemplates templates =
+        TemplateTester.compileTemplateBody(
+            "{@param list : list<string>}",
+            "prefix{\\n}",
+            "{foreach $item in $list}",
+            "  loop-prefix{\\n}",
+            "  {$item}{\\n}",
+            "  loop-suffix{\\n}",
+            "{/foreach}",
+            "suffix");
+    CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.foo");
+    RenderContext context = getDefaultContext(templates);
     List<SettableFuture<String>> futures = ImmutableList.of(
         SettableFuture.<String>create(),
         SettableFuture.<String>create(),
@@ -177,25 +187,25 @@ public final class DetachStateTest extends TestCase {
         asRecord(ImmutableMap.of("list", futures)), EMPTY_DICT);
 
     AdvisingStringBuilder output = new AdvisingStringBuilder();
-    RenderResult result = template.render(output, DEFAULT_CONTEXT);
+    RenderResult result = template.render(output, context);
     assertEquals(RenderResult.Type.DETACH, result.type());
     assertEquals(futures.get(0), result.future());
     assertEquals("prefix\nloop-prefix\n", output.getAndClearBuffer());
 
     futures.get(0).set("first");
-    result = template.render(output, DEFAULT_CONTEXT);
+    result = template.render(output, context);
     assertEquals(RenderResult.Type.DETACH, result.type());
     assertEquals(futures.get(1), result.future());
     assertEquals("first\nloop-suffix\nloop-prefix\n", output.getAndClearBuffer());
 
     futures.get(1).set("second");
-    result = template.render(output, DEFAULT_CONTEXT);
+    result = template.render(output, context);
     assertEquals(RenderResult.Type.DETACH, result.type());
     assertEquals(futures.get(2), result.future());
     assertEquals("second\nloop-suffix\nloop-prefix\n", output.getAndClearBuffer());
 
     futures.get(2).set("third");
-    result = template.render(output, DEFAULT_CONTEXT);
+    result = template.render(output, context);
     assertEquals(RenderResult.done(), result);
     assertEquals("third\nloop-suffix\nsuffix", output.toString());
   }
@@ -204,78 +214,82 @@ public final class DetachStateTest extends TestCase {
   // but it caused stack merge errors because the runtime stack wasn't consistent across all detach
   // points.  See http://mail.ow2.org/wws/arc/asm/2015-04/msg00001.html
   public void testDetachOnMultipleParamsInOneExpression() throws IOException {
-    CompiledTemplate.Factory factory = TemplateTester.compileTemplateBody(
-        "{@param list : list<int>}",
-        "{@param foo : int}",
-        "{foreach $item in $list}",
-        "  {$item + $foo}",
-        "{/foreach}");
+    CompiledTemplates templates =
+        TemplateTester.compileTemplateBody(
+            "{@param list : list<int>}",
+            "{@param foo : int}",
+            "{foreach $item in $list}",
+            "  {$item + $foo}",
+            "{/foreach}");
+    CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.foo");
+    RenderContext context = getDefaultContext(templates);
     SoyRecord params = asRecord(ImmutableMap.of("list", ImmutableList.of(1, 2, 3, 4), "foo", 1));
     AdvisingStringBuilder output = new AdvisingStringBuilder();
-    assertEquals(RenderResult.done(), 
-        factory.create(params, EMPTY_DICT).render(output, DEFAULT_CONTEXT));
+    assertEquals(RenderResult.done(), factory.create(params, EMPTY_DICT).render(output, context));
     assertEquals("2345", output.toString());
   }
 
   public void testDetachOnCall() throws IOException {
-    CompiledTemplate.Factory factory = TemplateTester.compileFile(
-        "{namespace ns autoescape=\"strict\"}",
-        "",
-        "/** */",
-        "{template .caller}",
-        "  {@param callerParam : string}",
-        "  {call .callee data=\"all\"}",
-        "    {param calleeParam: $callerParam /}",
-        "  {/call}",
-        "{/template}",
-        "",
-        "/** */",
-        "{template .callee}",
-        "  {@param calleeParam : string}",
-        "  prefix {$calleeParam} suffix",
-        "{/template}",
-        ""
-        ).getTemplateFactory("ns.caller");
+    CompiledTemplates templates =
+        TemplateTester.compileFile(
+            "{namespace ns}",
+            "",
+            "{template .caller}",
+            "  {@param callerParam : string}",
+            "  {call .callee data=\"all\"}",
+            "    {param calleeParam: $callerParam /}",
+            "  {/call}",
+            "{/template}",
+            "",
+            "{template .callee}",
+            "  {@param calleeParam : string}",
+            "  prefix {$calleeParam} suffix",
+            "{/template}",
+            "");
+    CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.caller");
     SettableFuture<String> param = SettableFuture.create();
     SoyRecord params = asRecord(ImmutableMap.of("callerParam", param));
     CompiledTemplate template = factory.create(params, EMPTY_DICT);
     AdvisingStringBuilder output = new AdvisingStringBuilder();
-    assertEquals(RenderResult.continueAfter(param), template.render(output, DEFAULT_CONTEXT));
+    assertEquals(
+        RenderResult.continueAfter(param), template.render(output, getDefaultContext(templates)));
     assertEquals("prefix ", output.toString());
     param.set("foo");
-    assertEquals(RenderResult.done(), template.render(output, DEFAULT_CONTEXT));
+    assertEquals(RenderResult.done(), template.render(output, getDefaultContext(templates)));
     assertEquals("prefix foo suffix", output.toString());
   }
 
   public void testDetachOnParamTransclusion() throws IOException {
-    CompiledTemplate.Factory factory = TemplateTester.compileFile(
-        "{namespace ns autoescape=\"strict\"}",
-        "",
-        "/** */",
-        "{template .caller}",
-        "  {@param callerParam : string}",
-        "  {call .callee}",
-        "    {param calleeParam}",
-        "      prefix {$callerParam} suffix",
-        "    {/param}",
-        "  {/call}",
-        "{/template}",
-        "",
-        "/** */",
-        "{template .callee}",
-        "  {@param calleeParam : string}",
-        "  {$calleeParam}",
-        "{/template}",
-        ""
-        ).getTemplateFactory("ns.caller");
+    CompiledTemplates templates =
+        TemplateTester.compileFile(
+            "{namespace ns autoescape=\"strict\"}",
+            "",
+            "/** */",
+            "{template .caller}",
+            "  {@param callerParam : string}",
+            "  {call .callee}",
+            "    {param calleeParam}",
+            "      prefix {$callerParam} suffix",
+            "    {/param}",
+            "  {/call}",
+            "{/template}",
+            "",
+            "/** */",
+            "{template .callee}",
+            "  {@param calleeParam : string}",
+            "  {$calleeParam}",
+            "{/template}",
+            "");
+    CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.caller");
+    RenderContext context = getDefaultContext(templates);
     SettableFuture<String> param = SettableFuture.create();
     SoyRecord params = asRecord(ImmutableMap.of("callerParam", param));
     CompiledTemplate template = factory.create(params, EMPTY_DICT);
     AdvisingStringBuilder output = new AdvisingStringBuilder();
-    assertEquals(RenderResult.continueAfter(param), template.render(output, DEFAULT_CONTEXT));
+    assertEquals(RenderResult.continueAfter(param), template.render(output, context));
     assertEquals("prefix ", output.toString());
     param.set("foo");
-    assertEquals(RenderResult.done(), template.render(output, DEFAULT_CONTEXT));
+    assertEquals(RenderResult.done(), template.render(output, context));
     assertEquals("prefix foo suffix", output.toString());
   }
 }

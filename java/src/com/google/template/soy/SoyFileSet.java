@@ -830,7 +830,7 @@ public final class SoyFileSet {
   private SoyTofu doCompileToTofu(ServerCompilationPrimitives primitives) {
     return baseTofuFactory.create(
         primitives.registry,
-        primitives.transitiveIjs,
+        getTransitiveIjs(primitives.soyTree, primitives.registry),
         primitives.printDirectives);
   }
 
@@ -887,11 +887,7 @@ public final class SoyFileSet {
     }
 
     return soyTemplatesFactory.create(
-        templates.get(),
-        primitives.registry,
-        soyJavaFunctions.build(),
-        soyJavaPrintDirectives.build(),
-        primitives.transitiveIjs);
+        templates.get(), soyJavaFunctions.build(), soyJavaPrintDirectives.build());
   }
 
   /**
@@ -899,18 +895,18 @@ public final class SoyFileSet {
    * SoySauce.
    */
   private static final class ServerCompilationPrimitives {
-    final ImmutableMap<String, ImmutableSortedSet<String>> transitiveIjs;
+    final SoyFileSetNode soyTree;
     final ImmutableMap<String, ? extends SoyFunction> soyFunctions;
     final ImmutableMap<String, ? extends SoyPrintDirective> printDirectives;
     final TemplateRegistry registry;
 
     ServerCompilationPrimitives(
         TemplateRegistry registry,
-        ImmutableMap<String, ImmutableSortedSet<String>> transitiveIjs,
+        SoyFileSetNode soyTree,
         ImmutableMap<String, ? extends SoyFunction> soyFunctions,
         ImmutableMap<String, ? extends SoyPrintDirective> printDirectives) {
       this.registry = registry;
-      this.transitiveIjs = transitiveIjs;
+      this.soyTree = soyTree;
       this.soyFunctions = soyFunctions;
       this.printDirectives = printDirectives;
     }
@@ -931,10 +927,7 @@ public final class SoyFileSet {
     }
 
     ((ErrorReporterImpl) errorReporter).throwIfErrorsPresent();
-    ImmutableMap<String, ImmutableSortedSet<String>> transitiveIjs =
-        getTransitiveIjs(soyTree, registry);
-    return new ServerCompilationPrimitives(
-        registry, transitiveIjs, soyFunctionMap, printDirectives);
+    return new ServerCompilationPrimitives(registry, soyTree, soyFunctionMap, printDirectives);
   }
 
   private ImmutableMap<String, ImmutableSortedSet<String>> getTransitiveIjs(

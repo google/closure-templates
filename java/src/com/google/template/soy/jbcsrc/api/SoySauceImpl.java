@@ -33,7 +33,6 @@ import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
-import com.google.template.soy.jbcsrc.shared.DelTemplateSelectorImpl;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.shared.SoyCssRenamingMap;
@@ -44,7 +43,6 @@ import com.google.template.soy.shared.internal.GuiceSimpleScope.WithScope;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.ApiCall;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
-import com.google.template.soy.soytree.TemplateRegistry;
 
 import java.io.IOException;
 import java.util.Map;
@@ -71,14 +69,10 @@ public final class SoySauceImpl implements SoySauce {
 
     public SoySauceImpl create(
         CompiledTemplates templates,
-        TemplateRegistry registry,
         ImmutableMap<String, ? extends SoyJavaFunction> functions,
-        ImmutableMap<String, ? extends SoyJavaPrintDirective> printDirectives,
-        ImmutableMap<String, ImmutableSortedSet<String>> templateToTransitiveUsedIjParams) {
+        ImmutableMap<String, ? extends SoyJavaPrintDirective> printDirectives) {
       return new SoySauceImpl(
           templates,
-          registry,
-          templateToTransitiveUsedIjParams,
           apiCallScopeProvider,
           converterProvider.get(),
           functions,
@@ -88,37 +82,26 @@ public final class SoySauceImpl implements SoySauce {
   
   private final CompiledTemplates templates;
   private final GuiceSimpleScope apiCallScope;
-  private final DelTemplateSelectorImpl.Factory factory;
   private final SoyValueHelper converter;
   private final ImmutableMap<String, SoyJavaFunction> functions;
   private final ImmutableMap<String, SoyJavaPrintDirective> printDirectives;
-  private final ImmutableMap<String, ImmutableSortedSet<String>> templateToTransitiveUsedIjParams;
 
   private SoySauceImpl(
       CompiledTemplates templates,
-      TemplateRegistry registry,
-      ImmutableMap<String, ImmutableSortedSet<String>> templateToTransitiveUsedIjParams,
       GuiceSimpleScope apiCallScope,
       SoyValueHelper converter,
       ImmutableMap<String, ? extends SoyJavaFunction> functions,
       ImmutableMap<String, ? extends SoyJavaPrintDirective> printDirectives) {
     this.templates = checkNotNull(templates);
-    this.templateToTransitiveUsedIjParams = templateToTransitiveUsedIjParams;
     this.apiCallScope = checkNotNull(apiCallScope);
     this.converter = checkNotNull(converter);
     this.functions = ImmutableMap.copyOf(functions);
     this.printDirectives = ImmutableMap.copyOf(printDirectives);
-    
-    this.factory = new DelTemplateSelectorImpl.Factory(registry, templates);
   }
 
   @Override
   public ImmutableSortedSet<String> getTransitiveIjParamsForTemplate(String templateName) {
-    ImmutableSortedSet<String> ijParams = templateToTransitiveUsedIjParams.get(templateName);
-    if (ijParams == null) {
-      throw new IllegalArgumentException("Template '" + templateName + "' not found.");
-    }
-    return ijParams;
+    return templates.getTransitiveIjParamsForTemplate(templateName);
   }
 
   @Override public RendererImpl renderTemplate(String template) {
@@ -132,12 +115,14 @@ public final class SoySauceImpl implements SoySauce {
     private final Optional<ContentKind> contentKind;
     private ImmutableSet<String> activeDelegatePackages = ImmutableSet.of();
     private SoyMsgBundle msgs = SoyMsgBundle.EMPTY;
-    private final RenderContext.Builder contextBuilder = new RenderContext.Builder()
-        .withSoyFunctions(functions)
-        .withSoyPrintDirectives(printDirectives)
-        .withConverter(converter);
+    private final RenderContext.Builder contextBuilder =
+        new RenderContext.Builder()
+            .withCompiledTemplates(templates)
+            .withSoyFunctions(functions)
+            .withSoyPrintDirectives(printDirectives)
+            .withConverter(converter);
+
     private SoyRecord data = SoyValueHelper.EMPTY_DICT;
-    // Unlike Tofu we default to empty, not null.
     private SoyRecord ij = SoyValueHelper.EMPTY_DICT;
     private ContentKind expectedContentKind = ContentKind.HTML;
     private boolean contentKindExplicitlySet;
@@ -224,7 +209,7 @@ public final class SoySauceImpl implements SoySauce {
       RenderContext context =
           contextBuilder
               .withMessageBundle(msgs)
-              .withTemplateSelector(factory.create(activeDelegatePackages))
+              .withActiveDelPackages(activeDelegatePackages)
               .build();
       BidiGlobalDir dir = BidiGlobalDir.forStaticLocale(msgs.getLocaleString());
       Scoper scoper = new Scoper(apiCallScope, dir, msgs.getLocaleString());

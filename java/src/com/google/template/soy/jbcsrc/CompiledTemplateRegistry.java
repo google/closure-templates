@@ -36,6 +36,7 @@ final class CompiledTemplateRegistry {
   private final ImmutableBiMap<String, CompiledTemplateMetadata> templateNameToMetadata;
   private final ImmutableBiMap<String, CompiledTemplateMetadata> classNameToMetadata;
   private final ImmutableMap<String, ContentKind> deltemplateNameToContentKind;
+  private final ImmutableSet<String> delegateTemplateNames;
 
   CompiledTemplateRegistry(TemplateRegistry registry) {
     Map<String, ContentKind> deltemplateNameToContentKind = new HashMap<>();
@@ -43,25 +44,35 @@ final class CompiledTemplateRegistry {
         ImmutableBiMap.builder();
     ImmutableBiMap.Builder<String, CompiledTemplateMetadata> classToMetadata =
         ImmutableBiMap.builder();
+    ImmutableSet.Builder<String> delegateTemplateNames = ImmutableSet.builder();
     for (TemplateNode template : registry.getAllTemplates()) {
       CompiledTemplateMetadata metadata = 
           CompiledTemplateMetadata.create(template.getTemplateName(), template);
       templateToMetadata.put(template.getTemplateName(), metadata);
       classToMetadata.put(metadata.typeInfo().className(), metadata);
-      if (template instanceof TemplateDelegateNode && template.getContentKind() != null) {
-        // all delegates are guaranteed to have the same content kind by the checkdelegatesvisitor
-        deltemplateNameToContentKind.put(
-            ((TemplateDelegateNode) template).getDelTemplateName(),
-            template.getContentKind());
+      if (template instanceof TemplateDelegateNode) {
+        delegateTemplateNames.add(template.getTemplateName());
+        if (template.getContentKind() != null) {
+          // all delegates are guaranteed to have the same content kind by the
+          // checkdelegatesvisitor
+          deltemplateNameToContentKind.put(
+              ((TemplateDelegateNode) template).getDelTemplateName(), template.getContentKind());
+        }
       }
     }
     this.templateNameToMetadata = templateToMetadata.build();
     this.classNameToMetadata = classToMetadata.build();
     this.deltemplateNameToContentKind = ImmutableMap.copyOf(deltemplateNameToContentKind);
+    this.delegateTemplateNames = delegateTemplateNames.build();
   }
 
   ImmutableSet<String> getTemplateNames() {
     return templateNameToMetadata.keySet();
+  }
+  
+  /** Returns the names of all delegate template implementations. */
+  ImmutableSet<String> getDelegateTemplateNames() {
+    return delegateTemplateNames;
   }
 
   /**

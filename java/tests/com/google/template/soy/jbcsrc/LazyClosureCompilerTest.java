@@ -18,10 +18,10 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.data.SoyValueHelper.EMPTY_DICT;
-import static com.google.template.soy.jbcsrc.TemplateTester.DEFAULT_CONTEXT;
 import static com.google.template.soy.jbcsrc.TemplateTester.asRecord;
 import static com.google.template.soy.jbcsrc.TemplateTester.assertThatTemplateBody;
 import static com.google.template.soy.jbcsrc.TemplateTester.compileTemplateBody;
+import static com.google.template.soy.jbcsrc.TemplateTester.getDefaultContext;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -32,6 +32,8 @@ import com.google.template.soy.jbcsrc.TemplateTester.CompiledTemplateSubject;
 import com.google.template.soy.jbcsrc.api.AdvisingStringBuilder;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
+import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
+import com.google.template.soy.jbcsrc.shared.RenderContext;
 
 import junit.framework.TestCase;
 
@@ -69,27 +71,26 @@ public class LazyClosureCompilerTest extends TestCase {
 
   public void testLetContentNode_detaching() throws IOException {
     SettableFuture<String> bar = SettableFuture.create();
-    CompiledTemplate.Factory factory = compileTemplateBody(
-        "{@param bar : string }",
-        "{let $foo}",
-        "  hello {$bar}",
-        "{/let}",
-        "{$foo}");
+    CompiledTemplates templates =
+        compileTemplateBody(
+            "{@param bar : string }", "{let $foo}", "  hello {$bar}", "{/let}", "{$foo}");
+    CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.foo");
+    RenderContext context = getDefaultContext(templates);
     CompiledTemplate template = factory.create(asRecord(ImmutableMap.of("bar", bar)), EMPTY_DICT);
     AdvisingStringBuilder output = new AdvisingStringBuilder();
-    RenderResult result = template.render(output, DEFAULT_CONTEXT);
+    RenderResult result = template.render(output, context);
     assertEquals(RenderResult.Type.DETACH, result.type());
     assertSame(bar, result.future());  // we found bar!
     assertEquals("hello ", output.toString());
 
     // make sure no progress is made
-    result = template.render(output, DEFAULT_CONTEXT);
+    result = template.render(output, context);
     assertEquals(RenderResult.Type.DETACH, result.type());
     assertSame(bar, result.future());
     assertEquals("hello ", output.toString());
     bar.set("bar");
 
-    assertEquals(RenderResult.done(), template.render(output, DEFAULT_CONTEXT));
+    assertEquals(RenderResult.done(), template.render(output, context));
     assertEquals("hello bar", output.toString());
   }
 
@@ -156,35 +157,34 @@ public class LazyClosureCompilerTest extends TestCase {
 
   public void testDetachOnFutureLazily() throws IOException {
     SettableFuture<String> bar = SettableFuture.create();
-    CompiledTemplate.Factory factory = compileTemplateBody(
-        "{@param bar : string }",
-        "{let $foo : $bar + $bar /}",
-        "before use",
-        "{$foo}");
-
+    CompiledTemplates templates =
+        compileTemplateBody(
+            "{@param bar : string }", "{let $foo : $bar + $bar /}", "before use", "{$foo}");
+    CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.foo");
+    RenderContext context = getDefaultContext(templates);
     CompiledTemplate template = factory.create(asRecord(ImmutableMap.of("bar", bar)), EMPTY_DICT);
     AdvisingStringBuilder output = new AdvisingStringBuilder();
-    RenderResult result = template.render(output, DEFAULT_CONTEXT);
+    RenderResult result = template.render(output, context);
     assertEquals(RenderResult.Type.DETACH, result.type());
     assertSame(bar, result.future());  // we found bar!
     assertEquals("before use", output.toString());
     
     // make sure no progress is made
-    result = template.render(output, DEFAULT_CONTEXT);
+    result = template.render(output, context);
     assertEquals(RenderResult.Type.DETACH, result.type());
     assertSame(bar, result.future());
     assertEquals("before use", output.toString());
     bar.set(" bar");
 
-    assertEquals(RenderResult.done(), template.render(output, DEFAULT_CONTEXT));
+    assertEquals(RenderResult.done(), template.render(output, context));
     assertEquals("before use bar bar", output.toString());
   }
 
   public void testLetValueNodeStructure() {
     // make sure we don't break normal reflection apis
-    CompiledTemplate.Factory factory = compileTemplateBody(
-        "{let $bar : 'a' /}",
-        "{let $foo : $bar + 1 /}");
+    CompiledTemplates templates =
+        compileTemplateBody("{let $bar : 'a' /}", "{let $foo : $bar + 1 /}");
+    CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.foo");
     CompiledTemplate template = factory.create(EMPTY_DICT, EMPTY_DICT);
     
     assertThat(template.getClass().getDeclaredClasses()).asList().hasSize(2);

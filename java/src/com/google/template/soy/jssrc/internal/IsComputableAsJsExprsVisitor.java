@@ -91,7 +91,6 @@ class IsComputableAsJsExprsVisitor extends AbstractReturningHtmlSoyNodeVisitor<B
     return areChildrenComputableAsJsExprs(node);
   }
 
-
   @Override protected Boolean visit(SoyNode node) {
 
     if (memoizedResults.containsKey(node)) {

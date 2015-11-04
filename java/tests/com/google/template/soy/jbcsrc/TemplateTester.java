@@ -22,6 +22,7 @@ import static com.google.template.soy.data.SoyValueHelper.EMPTY_DICT;
 import com.google.common.base.Joiner;
 import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.truth.FailureStrategy;
@@ -31,6 +32,7 @@ import com.google.common.truth.Truth;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.google.inject.Provider;
 import com.google.inject.Provides;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.basicdirectives.BasicDirectivesModule;
@@ -40,15 +42,16 @@ import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueHelper;
 import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.jbcsrc.TemplateTester.CompiledTemplateSubject;
 import com.google.template.soy.jbcsrc.api.AdvisingStringBuilder;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
-import com.google.template.soy.jbcsrc.shared.CompiledTemplate.Factory;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
-import com.google.template.soy.jbcsrc.shared.DelTemplateSelector;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.passes.SharedPassesModule;
+import com.google.template.soy.shared.SoyCssRenamingMap;
+import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.internal.ErrorReporterModule;
 import com.google.template.soy.shared.internal.SharedModule;
 import com.google.template.soy.shared.restricted.SoyFunction;
@@ -81,7 +84,7 @@ public final class TemplateTester {
           new BasicFunctionsModule(),
           new AbstractModule() {
             @Provides
-            RenderContext provideContext(
+            RenderContext.Builder provideContext(
                 ImmutableMap<String, ? extends SoyFunction> functions,
                 SoyValueHelper converter,
                 ImmutableMap<String, ? extends SoyJavaPrintDirective> printDirectives) {
@@ -94,23 +97,28 @@ public final class TemplateTester {
               return new RenderContext.Builder()
                   .withSoyFunctions(soyJavaFunctions)
                   .withSoyPrintDirectives(printDirectives)
-                  .withConverter(converter)
-                  .withTemplateSelector(
-                      new DelTemplateSelector() {
-                        @Override
-                        public Factory selectDelTemplate(
-                            String calleeName, String variant, boolean allowEmpty) {
-                          throw new UnsupportedOperationException();
-                        }
-                      })
-                  .build();
+                  .withConverter(converter);
             }
 
             @Override
             protected void configure() {}
           });
 
-  static final RenderContext DEFAULT_CONTEXT = INJECTOR.getInstance(RenderContext.class);
+  static final Provider<RenderContext.Builder> DEFAULT_CONTEXT_BUILDER =
+      INJECTOR.getProvider(RenderContext.Builder.class);
+
+  static RenderContext getDefaultContext(CompiledTemplates templates) {
+    return getDefaultContext(templates, ImmutableSet.<String>of());
+  }
+
+  static RenderContext getDefaultContext(
+      CompiledTemplates templates, ImmutableSet<String> activeDelPackages) {
+    return DEFAULT_CONTEXT_BUILDER
+        .get()
+        .withActiveDelPackages(activeDelPackages)
+        .withCompiledTemplates(templates)
+        .build();
+  }
 
   private static final SubjectFactory<CompiledTemplateSubject, String> FACTORY =
       new SubjectFactory<CompiledTemplateSubject, String>() {
@@ -134,14 +142,11 @@ public final class TemplateTester {
   }
 
   /**
-   * Returns a {@link com.google.template.soy.jbcsrc.shared.CompiledTemplate.Factory} for the given 
-   * template body.
+   * Returns a {@link com.google.template.soy.jbcsrc.shared.CompiledTemplates} for the given
+   * template body. Containing a single template {@code ns.foo} with the given body
    */
-  public static CompiledTemplate.Factory compileTemplateBody(String ...body) {
-    // a little hacky to use the subject to do this...
-    CompiledTemplateSubject that = Truth.assertAbout(FACTORY).that(toTemplate(body));
-    that.compile();
-    return that.factory;
+  public static CompiledTemplates compileTemplateBody(String... body) {
+    return compileFile(toTemplate(body));
   }
   
   static SoyRecord asRecord(Map<String, ?> params) {
@@ -155,7 +160,8 @@ public final class TemplateTester {
     private SoyTypeRegistry typeRegistry = new SoyTypeRegistry();
     private SoyValueConverter converter = SoyValueHelper.UNCUSTOMIZED_INSTANCE;
     private CompiledTemplate.Factory factory;
-    private RenderContext defaultContext = DEFAULT_CONTEXT;
+    private RenderContext defaultContext;
+    private RenderContext.Builder defaultContextBuilder = DEFAULT_CONTEXT_BUILDER.get();
     private List<SoyFunction> soyFunctions = new ArrayList<>();
 
     private CompiledTemplateSubject(FailureStrategy failureStrategy, String subject) {
@@ -173,6 +179,7 @@ public final class TemplateTester {
       classData = null;
       factory = null;
       this.converter = converter;
+      defaultContextBuilder.withConverter(converter);
       return this;
     }
     
@@ -180,6 +187,16 @@ public final class TemplateTester {
       classData = null;
       factory = null;
       this.soyFunctions.add(checkNotNull(soyFunction));
+      return this;
+    }
+
+    CompiledTemplateSubject withCssRenamingMap(SoyCssRenamingMap renamingMap) {
+      this.defaultContextBuilder.withCssRenamingMap(renamingMap);
+      return this;
+    }
+
+    CompiledTemplateSubject withXidRenamingMap(SoyIdRenamingMap renamingMap) {
+      this.defaultContextBuilder.withXidRenamingMap(renamingMap);
       return this;
     }
 
@@ -282,13 +299,6 @@ public final class TemplateTester {
           }
         }
 
-        // Extract messages, to make it easy to test translations and get default (english) strings
-        defaultContext =
-            defaultContext
-                .toBuilder()
-                .withSoyFunctions(ImmutableMap.copyOf(functions))
-                .withMessageBundle(msgBundle)
-                .build();
 
         // N.B. we are reproducing some of BytecodeCompiler here to make it easier to look at
         // intermediate data structures.
@@ -299,10 +309,16 @@ public final class TemplateTester {
             compilerRegistry,
             compilerRegistry.getTemplateInfoByTemplateName(templateName)).compile();
         checkClasses(classData);
-        factory =
+        CompiledTemplates compiledTemplates =
             new CompiledTemplates(
-                    compilerRegistry.getTemplateNames(), new MemoryClassLoader(classData))
-                .getTemplateFactory(templateName);
+                compilerRegistry.getDelegateTemplateNames(), new MemoryClassLoader(classData));
+        factory = compiledTemplates.getTemplateFactory(templateName);
+        defaultContext =
+            defaultContextBuilder
+                .withCompiledTemplates(compiledTemplates)
+                .withSoyFunctions(ImmutableMap.copyOf(functions))
+                .withMessageBundle(msgBundle)
+                .build();
       }
     }
 

@@ -48,17 +48,25 @@ import javax.annotation.Nullable;
  */
 public final class DelTemplateSelector<T> {
   private final ImmutableTable<String, String, Group<T>> nameAndVariantToGroup;
-  // initialized lazily.  This is only needed when this is being used by the compiler.  If use
-  private ImmutableListMultimap<String, T> delTemplateNameToValues;
+  private final ImmutableListMultimap<String, T> delTemplateNameToValues;
 
   private DelTemplateSelector(Builder<T> builder) {
     ImmutableTable.Builder<String, String, Group<T>> nameAndVariantBuilder =
         ImmutableTable.builder();
+    ImmutableListMultimap.Builder<String, T> delTemplateNameToValuesBuilder =
+        ImmutableListMultimap.builder();
     for (Table.Cell<String, String, Group.Builder<T>> entry :
         builder.nameAndVariantToGroup.cellSet()) {
-      nameAndVariantBuilder.put(entry.getRowKey(), entry.getColumnKey(), entry.getValue().build());
+      Group<T> group = entry.getValue().build();
+      nameAndVariantBuilder.put(entry.getRowKey(), entry.getColumnKey(), group);
+      String delTemplateName = entry.getRowKey();
+      if (group.defaultValue != null) {
+        delTemplateNameToValuesBuilder.put(delTemplateName, group.defaultValue);
+      }
+      delTemplateNameToValuesBuilder.putAll(delTemplateName, group.delpackageToValue.values());
     }
     this.nameAndVariantToGroup = nameAndVariantBuilder.build();
+    this.delTemplateNameToValues = delTemplateNameToValuesBuilder.build();
   }
 
   /**
@@ -67,22 +75,7 @@ public final class DelTemplateSelector<T> {
    * <p>This is useful for compiler passes that need to validate all members of deltemplate group.
    */
   public ImmutableListMultimap<String, T> delTemplateNameToValues() {
-    // lazy init
-    ImmutableListMultimap<String, T> local = delTemplateNameToValues;
-    if (local == null) {
-      ImmutableListMultimap.Builder<String, T> builder = ImmutableListMultimap.builder();
-      for (Table.Cell<String, String, Group<T>> entry : nameAndVariantToGroup.cellSet()) {
-        Group<T> group = entry.getValue();
-        String delTemplateName = entry.getRowKey();
-        if (group.defaultValue != null) {
-          builder.put(delTemplateName, group.defaultValue);
-        }
-        builder.putAll(delTemplateName, group.delpackageToValue.values());
-      }
-      local = builder.build();
-      this.delTemplateNameToValues = local;
-    }
-    return local;
+    return delTemplateNameToValues;
   }
 
   public boolean hasDelTemplateNamed(String delTemplateName) {
