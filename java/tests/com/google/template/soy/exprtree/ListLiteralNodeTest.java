@@ -32,7 +32,7 @@ public final class ListLiteralNodeTest extends TestCase {
 
   public void testToSourceString() {
 
-    VarRefNode dataRef = new VarRefNode("foo", X, false, false, null);
+    VarRefNode dataRef = new VarRefNode("foo", X, false, null);
 
     ListLiteralNode listLit = new ListLiteralNode(
         ImmutableList.<ExprNode>of(

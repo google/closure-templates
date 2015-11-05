@@ -31,8 +31,8 @@ public final class MapLiteralNodeTest extends TestCase {
   private static final SourceLocation X = SourceLocation.UNKNOWN;
 
   public void testToSourceString() {
-    VarRefNode booDataRef = new VarRefNode("boo", X, false, false, null);
-    VarRefNode fooDataRef = new VarRefNode("foo", X, false, false, null);
+    VarRefNode booDataRef = new VarRefNode("boo", X, false, null);
+    VarRefNode fooDataRef = new VarRefNode("foo", X, false, null);
 
     MapLiteralNode mapLit = new MapLiteralNode(ImmutableList.<ExprNode>of(
         new StringNode("aaa", X),

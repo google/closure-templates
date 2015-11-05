@@ -32,16 +32,13 @@ import javax.annotation.Nullable;
 public final class VarRefNode extends AbstractExprNode {
 
   public static final VarRefNode ERROR
-      = new VarRefNode("error", SourceLocation.UNKNOWN, false, false, null);
+      = new VarRefNode("error", SourceLocation.UNKNOWN, false, null);
 
   /** The name of the variable. */
   private final String name;
 
   /** Whether this is an injected parameter reference. */
   private final boolean isDollarSignIjParameter;
-
-  /** Whether this a null-safe access to an injected parameter. */
-  private final boolean isNullSafeInjected;
 
   /** Reference to the variable declaration. */
   private VarDefn defn;
@@ -56,20 +53,17 @@ public final class VarRefNode extends AbstractExprNode {
    * @param name The name of the variable.
    * @param sourceLocation The node's source location.
    * @param isDollarSignIjParameter Whether this is an {@code $ij} variable.
-   * @param nullSafeInjected Whether this a null-safe access to an injected parameter.
    * @param defn (optional) The variable declaration for this variable.
    */
   public VarRefNode(
       String name,
       SourceLocation sourceLocation,
       boolean isDollarSignIjParameter,
-      boolean nullSafeInjected,
       @Nullable VarDefn defn) {
     super(sourceLocation);
     Preconditions.checkArgument(name != null);
     this.name = name;
     this.isDollarSignIjParameter = isDollarSignIjParameter;
-    this.isNullSafeInjected = nullSafeInjected;
     this.defn = defn;
   }
 
@@ -77,7 +71,6 @@ public final class VarRefNode extends AbstractExprNode {
     super(orig, copyState);
     this.name = orig.name;
     this.isDollarSignIjParameter = orig.isDollarSignIjParameter;
-    this.isNullSafeInjected = orig.isNullSafeInjected;
     this.subtituteType = orig.subtituteType;
     // N.B. don't clone here.  If the tree is getting cloned then our defn will also need to be
     // reset.  However, defns are problematic because they create non-tree edges in the AST.
@@ -118,11 +111,6 @@ public final class VarRefNode extends AbstractExprNode {
     return defn.isInjected();
   }
 
-  /** Returns whether this a null-safe access to an injected parameter. */
-  public boolean isNullSafeInjected() {
-    return isNullSafeInjected;
-  }
-
   /**
    * @param defn the varDecl to set
    */
@@ -161,7 +149,7 @@ public final class VarRefNode extends AbstractExprNode {
   }
 
   @Override public String toSourceString() {
-    return "$" + (isDollarSignIjParameter ? (isNullSafeInjected ? "ij?." : "ij.") : "") + name;
+    return "$" + (isDollarSignIjParameter ? "ij." : "") + name;
   }
 
   @Override public VarRefNode copy(CopyState copyState) {
@@ -172,11 +160,10 @@ public final class VarRefNode extends AbstractExprNode {
     if (other == null || other.getClass() != this.getClass()) { return false; }
     VarRefNode otherVar = (VarRefNode) other;
     return name.equals(otherVar.name) &&
-        isDollarSignIjParameter == otherVar.isDollarSignIjParameter &&
-        isNullSafeInjected == otherVar.isNullSafeInjected;
+        isDollarSignIjParameter == otherVar.isDollarSignIjParameter;
   }
 
   @Override public int hashCode() {
-    return Objects.hash(this.getClass(), name, isDollarSignIjParameter, isNullSafeInjected);
+    return Objects.hash(this.getClass(), name, isDollarSignIjParameter);
   }
 }

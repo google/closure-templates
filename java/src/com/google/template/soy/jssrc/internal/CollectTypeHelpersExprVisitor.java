@@ -138,7 +138,7 @@ final class CollectTypeHelpersExprVisitor extends AbstractExprNodeVisitor<Void> 
   // Implementations for data references.
 
   @Override protected void visitVarRefNode(VarRefNode node) {
-    updateTablesBasedOnValueType(node.getType(), node.isNullSafeInjected());
+    updateTablesBasedOnValueType(node.getType(), false);
     // TODO: If we have a type for $data or $opt_ijData, examine it here.
   }
 

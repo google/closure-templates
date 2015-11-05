@@ -94,7 +94,6 @@ import java.util.List;
  *      injected data, and the reference is considered to start from the second key (i.e. the second
  *      key actually becomes the first key in the parsed node).
  *    Examples:   $aaa   $ij.aaa   $aaa.bbb.0.ccc.12   $aaa[0]['bbb'].ccc   $aaa[$bbb + $ccc]
- *                $aaa?.bbb   $aaa.bbb?[0]?.ccc?['ddd']   $ij?.aaa
  *
  * C. Global:
  *    + One or more identifiers. If more than one, a dot "." is used to separate them.
@@ -844,7 +843,7 @@ private VarNode Var():
 
 
 /**
- * DataRef ->  ( "$ij." Ident | "$ij?." Ident | DollarIdent )
+ * DataRef ->  ( "$ij." Ident | DollarIdent )
  */
 private ExprNode DataRef() :
 {
@@ -858,14 +857,10 @@ private ExprNode DataRef() :
   (
     "$ij."
     ident = <IDENT>
-    { dataRef = new VarRefNode(ident.image, createSrcLoc(ident), true, false, null); }
-  |
-    "$ij?."
-    ident = <IDENT>
-    { dataRef = new VarRefNode(ident.image, createSrcLoc(ident), true, true, null); }
+    { dataRef = new VarRefNode(ident.image, createSrcLoc(ident), true, null); }
   |
     varNode = Var()
-    { dataRef = new VarRefNode(varNode.getName(), varNode.getSourceLocation(), false, false, null); }
+    { dataRef = new VarRefNode(varNode.getName(), varNode.getSourceLocation(), false, null); }
   )
 
   { return dataRef; }

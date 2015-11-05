@@ -349,9 +349,6 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
         VarRefNode varRef = (VarRefNode) node;
         if (varRef.isDollarSignIjParameter()) {
           // Case 1: Injected data reference.
-          if (varRef.isNullSafeInjected()) {
-            nullSafetyPrefix.append("(opt_ijData == null) ? null : ");
-          }
           SoyType type = node.getType();
           return genCodeForKeyAccess(
               UnknownType.getInstance(), type, "opt_ijData", varRef.getName());

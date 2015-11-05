@@ -843,8 +843,6 @@ final class ExpressionCompiler {
 
       SoyExpression visitNullSafeNodeRecurse(ExprNode node) {
         switch (node.getKind()) {
-          // Note: unlike the other backends we don't support nullsafe injected data (i.e. $ij?.foo)
-          // because we generally don't support $ij!
           case FIELD_ACCESS_NODE:
           case ITEM_ACCESS_NODE:
             SoyExpression baseExpr =
