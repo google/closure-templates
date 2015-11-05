@@ -80,9 +80,6 @@ public final class HtmlTransformVisitor extends AbstractSoyNodeVisitor<Void> {
   private static final SoyError EXPECTED_ATTRIBUTE_VALUE = SoyError.of("Expected to find a quoted "
       + "attribute value, but found \"{0}\".");
 
-  private static final SoyError SOY_TAG_IN_ATTR_NAME = SoyError.of("Soy statements are not allowed "
-      + "in an attribute name declaration.");
-
   private static final SoyError SOY_TAG_BEFORE_ATTR_VALUE = SoyError.of("Soy statements are not "
       + "allowed before an attribute value. They should be moved inside a quotation mark.");
 
@@ -461,6 +458,10 @@ public final class HtmlTransformVisitor extends AbstractSoyNodeVisitor<Void> {
       case PCDATA:
         createTextNode(node);
         break;
+      case ATTRIBUTE_NAME:
+        // Value-less attribute inside a soy block, e.g. {if $condition}disabled{/if}
+        consumeCharacter(node, ' ');
+        break;
       case ATTR_VALUE:
         /*
          * Reached the end of a RawTextNode with some text, for example from:
@@ -483,9 +484,6 @@ public final class HtmlTransformVisitor extends AbstractSoyNodeVisitor<Void> {
    */
   private void checkForValidSoyNodeLocation(SoyNode node) {
     switch(getState()) {
-      case ATTRIBUTE_NAME:
-        errorReporter.report(node.getSourceLocation(), SOY_TAG_IN_ATTR_NAME);
-        break;
       case BEFORE_ATTRIBUTE_VALUE:
         errorReporter.report(node.getSourceLocation(), SOY_TAG_BEFORE_ATTR_VALUE);
         break;
@@ -650,9 +648,6 @@ public final class HtmlTransformVisitor extends AbstractSoyNodeVisitor<Void> {
 
   private void visitSoyNode(SoyNode node, boolean enforceState) {
     switch(getState()) {
-      case ATTRIBUTE_NAME:
-        errorReporter.report(node.getSourceLocation(), SOY_TAG_IN_ATTR_NAME);
-        break;
       case BEFORE_ATTRIBUTE_VALUE:
         errorReporter.report(node.getSourceLocation(), SOY_TAG_BEFORE_ATTR_VALUE);
         break;
