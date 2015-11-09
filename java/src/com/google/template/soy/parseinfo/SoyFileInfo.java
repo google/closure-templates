@@ -83,22 +83,22 @@ public class SoyFileInfo {
 
 
   /** Returns the source Soy file's name. */
-  public String getFileName() {
+  public final String getFileName() {
     return fileName;
   }
 
   /** Returns the Soy file's namespace. */
-  public String getNamespace() {
+  public final String getNamespace() {
     return namespace;
   }
 
   /** Returns the list of templates in this Soy file. */
-  public ImmutableList<SoyTemplateInfo> getTemplates() {
+  public final ImmutableList<SoyTemplateInfo> getTemplates() {
     return templates;
   }
 
   /** Returns a map from each CSS name appearing in this file to its CssTagsPrefixPresence state. */
-  public ImmutableMap<String, CssTagsPrefixPresence> getCssNames() {
+  public final ImmutableMap<String, CssTagsPrefixPresence> getCssNames() {
     return cssNameMap;
   }
 
@@ -113,7 +113,7 @@ public class SoyFileInfo {
   /**
    * Returns the fully qualified names of all deltemplates in the file.
    */
-  public ImmutableList<String> getAllTemplateNames() {
+  public final ImmutableList<String> getDelTemplateNames() {
     return deltemplateNames;
   }
 }
