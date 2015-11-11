@@ -43,11 +43,10 @@ import com.google.template.soy.jssrc.internal.GenJsExprsVisitor.GenJsExprsVisito
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.JsExprUtils;
 import com.google.template.soy.passes.FindIndirectParamsVisitor;
-import com.google.template.soy.passes.ShouldEnsureDataIsDefinedVisitor;
 import com.google.template.soy.passes.FindIndirectParamsVisitor.IndirectParamsInfo;
+import com.google.template.soy.passes.ShouldEnsureDataIsDefinedVisitor;
 import com.google.template.soy.shared.internal.CodeBuilder;
 import com.google.template.soy.shared.internal.FindCalleesNotInFileVisitor;
-import com.google.template.soy.shared.internal.HasNodeTypesVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallNode;
@@ -562,11 +561,11 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
       jsCodeBuilder.appendLine("goog.require('", GOOG_IS_RTL_NAMESPACE, "');");
     }
 
-    if (hasNodeTypes(soyFile, MsgPluralNode.class, MsgSelectNode.class)) {
+    if (SoytreeUtils.hasNodesOfType(soyFile, MsgPluralNode.class, MsgSelectNode.class)) {
       jsCodeBuilder.appendLine("goog.require('", GOOG_MESSAGE_FORMAT_NAMESPACE, "');");
     }
 
-    if (hasNodeTypes(soyFile, XidNode.class)) {
+    if (SoytreeUtils.hasNodesOfType(soyFile, XidNode.class)) {
       jsCodeBuilder.appendLine("goog.require('xid');");
     }
 
@@ -1730,18 +1729,6 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
     return "(" + mapVal + " && " + mapVal + ".$jspbMessageInstance || " + mapVal + ")";
   }
 
-
-  /**
-   * Returns true if the file contains any nodes of the listed types.
-   * @param soyFile The soy file.
-   * @param nodeTypes The types to look for
-   */
-  // Need the @SuppressWarnings because Java doesn't like varargs arrays
-  // of generic types.
-  @SuppressWarnings({"rawtypes", "unchecked"})
-  private boolean hasNodeTypes(SoyFileNode soyFile, Class... nodeTypes) {
-    return new HasNodeTypesVisitor(nodeTypes).exec(soyFile);
-  }
 
   /**
    * Returns true if the union contains a proto object (not enum) type.

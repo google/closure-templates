@@ -49,9 +49,29 @@ import java.util.Map;
  *
  */
 public final class SoytreeUtils {
-
-
   private SoytreeUtils() {}
+
+  /** Returns true if the given {@code node} contains any children of the given types. */
+  @SafeVarargs
+  public static boolean hasNodesOfType(Node node, final Class<? extends Node>... types) {
+    class Visitor implements NodeVisitor<Node, Boolean> {
+      boolean found;
+
+      @Override
+      public Boolean exec(Node node) {
+        for (Class type : types) {
+          if (type.isInstance(node)) {
+            found = true;
+            return false; // short circuit
+          }
+        }
+        return true; // keep going
+      }
+    }
+    Visitor v = new Visitor();
+    visitAllNodes(node, v);
+    return v.found;
+  }
 
   /**
    * Runs the visitor on all nodes (including {@link ExprNode expr nodes}) reachable from the given
