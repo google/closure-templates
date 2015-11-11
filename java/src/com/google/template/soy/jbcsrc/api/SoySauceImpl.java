@@ -41,8 +41,10 @@ import com.google.template.soy.shared.internal.ApiCallScopeUtils;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
 import com.google.template.soy.shared.internal.GuiceSimpleScope.WithScope;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.ApiCall;
+import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
+import com.google.template.soy.shared.restricted.SoyPrintDirective;
 
 import java.io.IOException;
 import java.util.Map;
@@ -69,14 +71,35 @@ public final class SoySauceImpl implements SoySauce {
 
     public SoySauceImpl create(
         CompiledTemplates templates,
-        ImmutableMap<String, ? extends SoyJavaFunction> functions,
-        ImmutableMap<String, ? extends SoyJavaPrintDirective> printDirectives) {
+        ImmutableMap<String, ? extends SoyFunction> soyFunctionMap,
+        ImmutableMap<String, ? extends SoyPrintDirective> printDirectives) {
+      // SoySauce has no need for SoyFunctions that are not SoyJavaFunctions
+      // (it generates Java source code implementing BuiltinFunctions).
+      // Filter them out.
+      ImmutableMap.Builder<String, SoyJavaFunction> soyJavaFunctions = ImmutableMap.builder();
+      for (Map.Entry<String, ? extends SoyFunction> entry : soyFunctionMap.entrySet()) {
+        SoyFunction function = entry.getValue();
+        if (function instanceof SoyJavaFunction) {
+          soyJavaFunctions.put(entry.getKey(), (SoyJavaFunction) function);
+        }
+      }
+
+      // SoySauce has no need for SoyPrintDirectives that are not SoyJavaPrintDirectives.
+      // Filter them out.
+      ImmutableMap.Builder<String, SoyJavaPrintDirective> soyJavaPrintDirectives =
+          ImmutableMap.builder();
+      for (Map.Entry<String, ? extends SoyPrintDirective> entry : printDirectives.entrySet()) {
+        SoyPrintDirective printDirective = entry.getValue();
+        if (printDirective instanceof SoyJavaPrintDirective) {
+          soyJavaPrintDirectives.put(entry.getKey(), (SoyJavaPrintDirective) printDirective);
+        }
+      }
       return new SoySauceImpl(
           templates,
           apiCallScopeProvider,
           converterProvider.get(),
-          functions,
-          printDirectives);
+          soyJavaFunctions.build(),
+          soyJavaPrintDirectives.build());
     }
   }
   

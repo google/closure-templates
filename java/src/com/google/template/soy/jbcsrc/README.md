@@ -689,7 +689,7 @@ operator.  This will cause a variety of problems for the compiler:
     static `SoyValue` type
   * Soy has both `null` values and a `null` type
   * The Soy type system is pluggable (notably for protos).
-  * The soy type system is not completely accurate (e.g. nullability is not 
+  * The soy type system is not completely accurate (e.g. nullability is not
     trustable)
 
 Due to these issues we take a conservative approach to how we make use of the
@@ -697,12 +697,33 @@ type system.  The key principals we will use are:
 
   * If the user declared it, we should enforce it. (with `checkcast` operations)
     This way type errors will get caught early and often.
-  * Nullability information from the type system cannot be relied on.  For 
+  * Nullability information from the type system cannot be relied on.  For
     example, if `map` contains integer values, then `$map['key]'` will be
     assigned the type `int` by the type system, but `int|null` is probably more
     accurate since we don't know whether or not the key exists.  So in general
     we need to be careful when dealing with possibly null expressions.  To deal
     with this we have our own concept of nullability (`Expression.isNullable()`).
+
+## Runtime Dependencies
+
+The generated `Soy` classes will need access to a number of runtime libraries to
+perform basic logic.  The most obvious ones are:
+
+ * `com.google.template.soy.jbcsrc.runtime`:
+   Contains `jbcsrc` specific runtime libraries
+ * `com.google.template.soy.jbcsrc.shared`:
+   Defines common interfaces for normal java code to interact with the generated
+   code.
+ * `com.google.template.soy.data`:
+   Defines common data representations for passing data to/from soy
+ * `com.google.template.soy.shared.internal.SharedRuntime`
+   Defines runtime libraries that are shared between jbcsrc and tofu.
+
+There is a long tail of additional libraries that are needed that are scattered
+across soy packages.  In the long run we should seek to consolidate this kind of
+runtime support into a smaller set of packages and then eventually release a
+separate maven artifact to encapsulate them.  In this way servers can avoid
+depending on the compiler at runtime.
 
 ## Non-Functional Requirements
 

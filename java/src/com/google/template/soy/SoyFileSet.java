@@ -26,6 +26,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.io.ByteSink;
 import com.google.common.io.CharSource;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
@@ -74,8 +75,6 @@ import com.google.template.soy.shared.SoyAstCache;
 import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.shared.internal.MainEntryPointUtils;
 import com.google.template.soy.shared.restricted.SoyFunction;
-import com.google.template.soy.shared.restricted.SoyJavaFunction;
-import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.sharedpasses.opti.SimplifyVisitor;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -823,6 +822,7 @@ public final class SoyFileSet {
    */
   public SoyTofu compileToTofu() throws SoySyntaxException {
     ServerCompilationPrimitives primitives = compileForServerRendering();
+    ((ErrorReporterImpl) errorReporter).throwIfErrorsPresent();
     return doCompileToTofu(primitives);
   }
 
@@ -831,7 +831,7 @@ public final class SoyFileSet {
     return baseTofuFactory.create(
         primitives.registry,
         getTransitiveIjs(primitives.soyTree, primitives.registry),
-        primitives.printDirectives);
+        printDirectives);
   }
 
   /**
@@ -849,7 +849,25 @@ public final class SoyFileSet {
    */
   public SoySauce compileTemplates() throws SoySyntaxException {
     ServerCompilationPrimitives primitives = compileForServerRendering();
+    // In this mode we should throw SoySyntaxException
+    ((ErrorReporterImpl) errorReporter).throwIfErrorsPresent();
     return doCompileSoySauce(primitives);
+  }
+
+  /**
+   * <p>Compiles this Soy file set into a set of java classes implementing the
+   * {@link CompiledTemplate} interface and writes them out to the given ByteSink as a JAR file.
+   *
+   * @return The compilation result
+   */
+  CompilationResult compileToJar(ByteSink jarTarget) throws IOException {
+    ServerCompilationPrimitives primitives = compileForServerRendering();
+    if (primitives == null) {
+      // we encountered an error, return early.
+      return result();
+    }
+    BytecodeCompiler.compileToJar(primitives.registry, errorReporter, jarTarget);
+    return result();
   }
 
   /** Helper method to compile SoySauce from {@link ServerCompilationPrimitives} */
@@ -863,31 +881,7 @@ public final class SoyFileSet {
 
     ((ErrorReporterImpl) errorReporter).throwIfErrorsPresent();
 
-    // SoySauce has no need for SoyFunctions that are not SoyJavaFunctions
-    // (it generates Java source code implementing BuiltinFunctions).
-    // Filter them out.
-    ImmutableMap.Builder<String, SoyJavaFunction> soyJavaFunctions = ImmutableMap.builder();
-    for (Map.Entry<String, ? extends SoyFunction> entry : primitives.soyFunctions.entrySet()) {
-      SoyFunction function = entry.getValue();
-      if (function instanceof SoyJavaFunction) {
-        soyJavaFunctions.put(entry.getKey(), (SoyJavaFunction) function);
-      }
-    }
-
-    // SoySauce has no need for SoyPrintDirectives that are not SoyJavaPrintDirectives.
-    // Filter them out.
-    ImmutableMap.Builder<String, SoyJavaPrintDirective> soyJavaPrintDirectives =
-        ImmutableMap.builder();
-    for (Map.Entry<String, ? extends SoyPrintDirective> entry :
-        primitives.printDirectives.entrySet()) {
-      SoyPrintDirective printDirective = entry.getValue();
-      if (printDirective instanceof SoyJavaPrintDirective) {
-        soyJavaPrintDirectives.put(entry.getKey(), (SoyJavaPrintDirective) printDirective);
-      }
-    }
-
-    return soyTemplatesFactory.create(
-        templates.get(), soyJavaFunctions.build(), soyJavaPrintDirectives.build());
+    return soyTemplatesFactory.create(templates.get(), soyFunctionMap, printDirectives);
   }
 
   /**
@@ -896,25 +890,26 @@ public final class SoyFileSet {
    */
   private static final class ServerCompilationPrimitives {
     final SoyFileSetNode soyTree;
-    final ImmutableMap<String, ? extends SoyFunction> soyFunctions;
-    final ImmutableMap<String, ? extends SoyPrintDirective> printDirectives;
     final TemplateRegistry registry;
 
-    ServerCompilationPrimitives(
-        TemplateRegistry registry,
-        SoyFileSetNode soyTree,
-        ImmutableMap<String, ? extends SoyFunction> soyFunctions,
-        ImmutableMap<String, ? extends SoyPrintDirective> printDirectives) {
+    ServerCompilationPrimitives(TemplateRegistry registry, SoyFileSetNode soyTree) {
       this.registry = registry;
       this.soyTree = soyTree;
-      this.soyFunctions = soyFunctions;
-      this.printDirectives = printDirectives;
     }
   }
 
-  private ServerCompilationPrimitives compileForServerRendering() {
+  /**
+   * Runs common compiler logic shared by tofu and jbcsrc backends.
+   *
+   * <p>Returns null if errors are encountered during compilation.  All errors will be written to
+   * the errorReporter.
+   */
+  @Nullable private ServerCompilationPrimitives compileForServerRendering() {
+    ErrorReporter.Checkpoint checkpoint = errorReporter.checkpoint();
     ParseResult result = parse(SyntaxVersion.V2_0);
-    ((ErrorReporterImpl) errorReporter).throwIfErrorsPresent();
+    if (errorReporter.errorsSince(checkpoint)) {
+      return null;
+    }
 
     SoyFileSetNode soyTree = result.fileSet();
     TemplateRegistry registry = result.registry();
@@ -926,8 +921,10 @@ public final class SoyFileSet {
       new ClearSoyDocStringsVisitor().exec(soyTree);
     }
 
-    ((ErrorReporterImpl) errorReporter).throwIfErrorsPresent();
-    return new ServerCompilationPrimitives(registry, soyTree, soyFunctionMap, printDirectives);
+    if (errorReporter.errorsSince(checkpoint)) {
+      return null;
+    }
+    return new ServerCompilationPrimitives(registry, soyTree);
   }
 
   private ImmutableMap<String, ImmutableSortedSet<String>> getTransitiveIjs(

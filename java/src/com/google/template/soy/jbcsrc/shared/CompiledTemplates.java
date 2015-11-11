@@ -40,6 +40,10 @@ public final class CompiledTemplates {
       new ConcurrentHashMap<>();
   private final DelTemplateSelector<TemplateData> selector;
 
+  public CompiledTemplates(ImmutableSet<String> delTemplateNames) {
+    this(delTemplateNames, CompiledTemplates.class.getClassLoader());
+  }
+
   /**
    * @param delTemplateNames The names of all the compiled deltemplates (the mangled names).  This
    *     is needed to construct a valid deltemplate selector.
