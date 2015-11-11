@@ -35,34 +35,10 @@ class PyApiCallScopeBindingAnnotations {
   private PyApiCallScopeBindingAnnotations() {}
 
   /**
-   * Annotation for the runtimePath parameter in the ApiCallScope.
+   * Annotation for the currentManifest parameter in the ApiCallScope.
    */
   @BindingAnnotation
   @Target({FIELD, PARAMETER, METHOD})
   @Retention(RUNTIME)
-  public @interface PyRuntimePath {}
-
-  /**
-   * Annotation for the environmentModulePath parameter in the ApiCallScope.
-   */
-  @BindingAnnotation
-  @Target({FIELD, PARAMETER, METHOD})
-  @Retention(RUNTIME)
-  public @interface PyEnvironmentModulePath {}
-
-  /**
-   * Annotation for the bidiIsRtlFn parameter in the ApiCallScope.
-   */
-  @BindingAnnotation
-  @Target({FIELD, PARAMETER, METHOD})
-  @Retention(RUNTIME)
-  public @interface PyBidiIsRtlFn {}
-
-  /**
-   * Annotation for the translationClass parameter in the ApiCallScope.
-   */
-  @BindingAnnotation
-  @Target({FIELD, PARAMETER, METHOD})
-  @Retention(RUNTIME)
-  public @interface PyTranslationClass {}
+  public @interface PyCurrentManifest {}
 }

@@ -18,6 +18,7 @@ package com.google.template.soy.pysrc.internal;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.error.ErrorReporter;
@@ -26,11 +27,9 @@ import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.internal.i18n.SoyBidiUtils;
+import com.google.template.soy.pysrc.SoyPySrcOptions;
 import com.google.template.soy.pysrc.internal.GenPyExprsVisitor.GenPyExprsVisitorFactory;
-import com.google.template.soy.pysrc.internal.PyApiCallScopeBindingAnnotations.PyBidiIsRtlFn;
-import com.google.template.soy.pysrc.internal.PyApiCallScopeBindingAnnotations.PyEnvironmentModulePath;
-import com.google.template.soy.pysrc.internal.PyApiCallScopeBindingAnnotations.PyRuntimePath;
-import com.google.template.soy.pysrc.internal.PyApiCallScopeBindingAnnotations.PyTranslationClass;
+import com.google.template.soy.pysrc.internal.PyApiCallScopeBindingAnnotations.PyCurrentManifest;
 import com.google.template.soy.pysrc.internal.TranslateToPyExprVisitor.TranslateToPyExprVisitorFactory;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyExprUtils;
@@ -65,6 +64,7 @@ import com.google.template.soy.soytree.TemplateNode;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
@@ -83,17 +83,11 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   private static final SoyError NON_NAMESPACED_TEMPLATE =
       SoyError.of("Called template does not reside in a namespace.");
 
-  /** The module path for the runtime libraries. */
-  private final String runtimePath;
+  /** The options configuration for this run. */
+  private final SoyPySrcOptions pySrcOptions;
 
-  /** The module path for custom environment libraries. */
-  private final String environmentModulePath;
-
-  /** The module and function name for the bidi isRtl function. */
-  private final String bidiIsRtlFn;
-
-  /** The module and class name for the translation class used at runtime. */
-  private final String translationClass;
+  /** The namespace manifest for current sources. */
+  private final ImmutableMap<String, String> currentManifest;
 
   /** The contents of the generated Python files. */
   private List<String> pyFilesContents;
@@ -116,25 +110,17 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    */
   @VisibleForTesting protected LocalVariableStack localVarExprs;
 
-  /**
-   * @param runtimePath The module path for the runtime libraries.
-   * @param translationClass Python class path used in python runtime to execute translation.
-   */
   @Inject
-  GenPyCodeVisitor(@PyRuntimePath String runtimePath,
-      @PyEnvironmentModulePath String environmentModulePath,
-      @PyBidiIsRtlFn String bidiIsRtlFn,
-      @PyTranslationClass String translationClass,
+  GenPyCodeVisitor(SoyPySrcOptions pySrcOptions,
+      @PyCurrentManifest ImmutableMap<String, String> currentManifest,
       IsComputableAsPyExprVisitor isComputableAsPyExprVisitor,
       GenPyExprsVisitorFactory genPyExprsVisitorFactory,
       TranslateToPyExprVisitorFactory translateToPyExprVisitorFactory,
       GenPyCallExprVisitor genPyCallExprVisitor,
       ErrorReporter errorReporter) {
     this.errorReporter = errorReporter;
-    this.runtimePath = runtimePath;
-    this.environmentModulePath = environmentModulePath;
-    this.bidiIsRtlFn = bidiIsRtlFn;
-    this.translationClass = translationClass;
+    this.pySrcOptions = pySrcOptions;
+    this.currentManifest = currentManifest;
     this.isComputableAsPyExprVisitor = isComputableAsPyExprVisitor;
     this.genPyExprsVisitorFactory = genPyExprsVisitorFactory;
     this.translateToPyExprVisitorFactory = translateToPyExprVisitorFactory;
@@ -752,16 +738,16 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     pyCodeBuilder.appendLine("import sys");
 
     // TODO(dcphillips): limit this based on usage?
-    pyCodeBuilder.appendLine("from ", runtimePath, " import bidi");
-    pyCodeBuilder.appendLine("from ", runtimePath, " import directives");
-    pyCodeBuilder.appendLine("from ", runtimePath, " import runtime");
-    pyCodeBuilder.appendLine("from ", runtimePath, " import sanitize");
+    pyCodeBuilder.appendLine("from ", pySrcOptions.getRuntimePath(), " import bidi");
+    pyCodeBuilder.appendLine("from ", pySrcOptions.getRuntimePath(), " import directives");
+    pyCodeBuilder.appendLine("from ", pySrcOptions.getRuntimePath(), " import runtime");
+    pyCodeBuilder.appendLine("from ", pySrcOptions.getRuntimePath(), " import sanitize");
     pyCodeBuilder.appendLine();
 
-    if (!bidiIsRtlFn.isEmpty()) {
-      int dotIndex = bidiIsRtlFn.lastIndexOf('.');
+    if (!pySrcOptions.getBidiIsRtlFn().isEmpty()) {
+      int dotIndex = pySrcOptions.getBidiIsRtlFn().lastIndexOf('.');
       // When importing the module, we'll use the constant name to avoid potential conflicts.
-      String bidiModulePath = bidiIsRtlFn.substring(0, dotIndex);
+      String bidiModulePath = pySrcOptions.getBidiIsRtlFn().substring(0, dotIndex);
       Pair<String, String> nameSpaceAndName = namespaceAndNameFromModule(bidiModulePath);
       String bidiNamespace = nameSpaceAndName.first;
       String bidiModuleName = nameSpaceAndName.second;
@@ -771,8 +757,9 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
     // Add import and instantiate statements for translator module
     // TODO(steveyang): remember the check when implementing MsgNode
-    if (!translationClass.isEmpty()) {
-      Pair<String, String> nameSpaceAndName = namespaceAndNameFromModule(translationClass);
+    if (!pySrcOptions.getTranslationClass().isEmpty()) {
+      Pair<String, String> nameSpaceAndName = namespaceAndNameFromModule(
+          pySrcOptions.getTranslationClass());
       String translationNamespace = nameSpaceAndName.first;
       String translationName = nameSpaceAndName.second;
       pyCodeBuilder.appendLine("from ", translationNamespace, " import ", translationName);
@@ -799,17 +786,27 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         }
       }
 
+      Map<String, String> namespaceManifest = pySrcOptions.getNamespaceManifest();
       for (String calleeModule : calleeModules) {
-          Pair<String, String> nameSpaceAndName = namespaceAndNameFromModule(calleeModule);
-          String calleeNamespace = nameSpaceAndName.first;
-          String calleeName = nameSpaceAndName.second;
+        Pair<String, String> nameSpaceAndName = namespaceAndNameFromModule(calleeModule);
+        String calleeNamespace = nameSpaceAndName.first;
+        String calleeName = nameSpaceAndName.second;
+        if (currentManifest.containsKey(calleeModule)) {
+          pyCodeBuilder.appendLine("import ", currentManifest.get(calleeModule),
+              " as ", calleeName);
+        } else if (namespaceManifest.containsKey(calleeModule)) {
+          pyCodeBuilder.appendLine("import ", namespaceManifest.get(calleeModule),
+              " as ", calleeName);
+        } else {
           pyCodeBuilder.appendLineStart(calleeName, " = runtime.namespaced_import('", calleeName,
-               "', namespace='", calleeNamespace, "'");
-          if (!environmentModulePath.isEmpty()) {
-            pyCodeBuilder.append(", environment_path='", environmentModulePath, "'");
+              "', namespace='", calleeNamespace, "'");
+          if (!pySrcOptions.getEnvironmentModulePath().isEmpty()) {
+            pyCodeBuilder.append(", environment_path='")
+                .append(pySrcOptions.getEnvironmentModulePath(), "'");
           }
           pyCodeBuilder.appendLineEnd(")");
         }
+      }
       pyCodeBuilder.appendLine();
     }
 

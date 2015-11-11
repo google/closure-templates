@@ -16,6 +16,9 @@
 
 package com.google.template.soy.pysrc;
 
+import com.google.common.collect.ImmutableMap;
+
+import java.util.Map;
 
 /**
  * Compilation options for the Python backend.
@@ -34,12 +37,21 @@ public final class SoyPySrcOptions implements Cloneable {
   /** The full module and class path to a runtime library for translation. */
   private final String translationClass;
 
+  /** A namespace manifest mapping soy namespaces to their python path. */
+  private final ImmutableMap<String, String> namespaceManifest;
+
+  /** Whether a namespace manifest should be generated. */
+  private final boolean outputNamespaceManifest;
+
   public SoyPySrcOptions(String runtimePath, String environmentModulePath, String bidiIsRtlFn,
-      String translationClass) {
+      String translationClass, ImmutableMap<String, String> namespaceManifest,
+      boolean outputNamespaceManifest) {
     this.runtimePath = runtimePath;
     this.environmentModulePath = environmentModulePath;
     this.bidiIsRtlFn = bidiIsRtlFn;
     this.translationClass = translationClass;
+    this.namespaceManifest = namespaceManifest;
+    this.outputNamespaceManifest = outputNamespaceManifest;
   }
 
   private SoyPySrcOptions(SoyPySrcOptions orig) {
@@ -47,6 +59,8 @@ public final class SoyPySrcOptions implements Cloneable {
     this.environmentModulePath = orig.environmentModulePath;
     this.bidiIsRtlFn = orig.bidiIsRtlFn;
     this.translationClass = orig.translationClass;
+    this.namespaceManifest = orig.namespaceManifest;
+    this.outputNamespaceManifest = orig.outputNamespaceManifest;
   }
 
   public String getBidiIsRtlFn() {
@@ -63,6 +77,14 @@ public final class SoyPySrcOptions implements Cloneable {
 
   public String getTranslationClass() {
     return translationClass;
+  }
+
+  public Map<String, String> getNamespaceManifest() {
+    return namespaceManifest;
+  }
+
+  public boolean doesOutputNamespaceManifest() {
+    return outputNamespaceManifest;
   }
 
   @Override public final SoyPySrcOptions clone() {

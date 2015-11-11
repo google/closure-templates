@@ -116,6 +116,9 @@ public class MainEntryPointUtils {
       path = path.replace("{INPUT_FILE_NAME_NO_EXT}", fileNameNoExt);
     }
 
+    // Remove redundant /'s if any placeholder representing a directory was empty.
+    path = path.replaceAll("//", "/");
+
     return path;
   }
 

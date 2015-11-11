@@ -18,16 +18,14 @@ package com.google.template.soy.pysrc.internal;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.AbstractModule;
+import com.google.inject.Key;
 import com.google.inject.Provides;
 import com.google.inject.assistedinject.FactoryModuleBuilder;
 import com.google.template.soy.passes.SharedPassesModule;
 import com.google.template.soy.pysrc.SoyPySrcOptions;
 import com.google.template.soy.pysrc.internal.GenPyExprsVisitor.GenPyExprsVisitorFactory;
 import com.google.template.soy.pysrc.internal.MsgFuncGenerator.MsgFuncGeneratorFactory;
-import com.google.template.soy.pysrc.internal.PyApiCallScopeBindingAnnotations.PyBidiIsRtlFn;
-import com.google.template.soy.pysrc.internal.PyApiCallScopeBindingAnnotations.PyEnvironmentModulePath;
-import com.google.template.soy.pysrc.internal.PyApiCallScopeBindingAnnotations.PyRuntimePath;
-import com.google.template.soy.pysrc.internal.PyApiCallScopeBindingAnnotations.PyTranslationClass;
+import com.google.template.soy.pysrc.internal.PyApiCallScopeBindingAnnotations.PyCurrentManifest;
 import com.google.template.soy.pysrc.internal.TranslateToPyExprVisitor.TranslateToPyExprVisitorFactory;
 import com.google.template.soy.pysrc.restricted.SoyPySrcPrintDirective;
 import com.google.template.soy.shared.internal.ApiCallScope;
@@ -70,17 +68,8 @@ public final class PySrcModule extends AbstractModule {
     bind(SoyPySrcOptions.class)
         .toProvider(GuiceSimpleScope.<SoyPySrcOptions>getUnscopedProvider())
         .in(ApiCallScope.class);
-    bind(String.class).annotatedWith(PyRuntimePath.class)
-        .toProvider(GuiceSimpleScope.<String>getUnscopedProvider())
-        .in(ApiCallScope.class);
-    bind(String.class).annotatedWith(PyEnvironmentModulePath.class)
-      .toProvider(GuiceSimpleScope.<String>getUnscopedProvider())
-      .in(ApiCallScope.class);
-    bind(String.class).annotatedWith(PyBidiIsRtlFn.class)
-        .toProvider(GuiceSimpleScope.<String>getUnscopedProvider())
-        .in(ApiCallScope.class);
-    bind(String.class).annotatedWith(PyTranslationClass.class)
-        .toProvider(GuiceSimpleScope.<String>getUnscopedProvider())
+    bind(new Key<ImmutableMap<String, String>>(PyCurrentManifest.class){})
+        .toProvider(GuiceSimpleScope.<ImmutableMap<String, String>>getUnscopedProvider())
         .in(ApiCallScope.class);
   }
 

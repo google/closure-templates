@@ -19,6 +19,7 @@ package com.google.template.soy.pysrc.internal;
 import static com.google.common.truth.Truth.assertAbout;
 import static com.google.common.truth.Truth.assertThat;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.truth.FailureStrategy;
 import com.google.common.truth.Subject;
 import com.google.common.truth.SubjectFactory;
@@ -29,10 +30,7 @@ import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.pysrc.SoyPySrcOptions;
 import com.google.template.soy.pysrc.internal.GenPyExprsVisitor.GenPyExprsVisitorFactory;
-import com.google.template.soy.pysrc.internal.PyApiCallScopeBindingAnnotations.PyBidiIsRtlFn;
-import com.google.template.soy.pysrc.internal.PyApiCallScopeBindingAnnotations.PyEnvironmentModulePath;
-import com.google.template.soy.pysrc.internal.PyApiCallScopeBindingAnnotations.PyRuntimePath;
-import com.google.template.soy.pysrc.internal.PyApiCallScopeBindingAnnotations.PyTranslationClass;
+import com.google.template.soy.pysrc.internal.PyApiCallScopeBindingAnnotations.PyCurrentManifest;
 import com.google.template.soy.shared.AutoEscapingType;
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.shared.internal.ErrorReporterModule;
@@ -55,6 +53,8 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
   private String environmentModulePath = "";
 
   private String translationClass = "";
+
+  private ImmutableMap<String, String> namespaceManifest = ImmutableMap.<String, String>of();
 
   private boolean isFile;
 
@@ -90,6 +90,11 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
 
   public SoyCodeForPySubject withTranslationClass(String translationClass) {
     this.translationClass = translationClass;
+    return this;
+  }
+
+  public SoyCodeForPySubject withNamespaceManifest(ImmutableMap<String, String> namespaceManifest) {
+    this.namespaceManifest = namespaceManifest;
     return this;
   }
 
@@ -148,15 +153,11 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
   private GenPyCodeVisitor getGenPyCodeVisitor() {
     // Setup default configs.
     SoyPySrcOptions pySrcOptions = new SoyPySrcOptions(RUNTIME_PATH, environmentModulePath,
-        bidiIsRtlFn, translationClass);
+        bidiIsRtlFn, translationClass, namespaceManifest, false);
     GuiceSimpleScope apiCallScope = SharedTestUtils.simulateNewApiCall(injector);
     apiCallScope.seed(SoyPySrcOptions.class, pySrcOptions);
-    apiCallScope.seed(Key.get(String.class, PyRuntimePath.class), RUNTIME_PATH);
-
-    // Add customizable environment, bidi fn, and translation module.
-    apiCallScope.seed(Key.get(String.class, PyEnvironmentModulePath.class), environmentModulePath);
-    apiCallScope.seed(Key.get(String.class, PyBidiIsRtlFn.class), bidiIsRtlFn);
-    apiCallScope.seed(Key.get(String.class, PyTranslationClass.class), translationClass);
+    apiCallScope.seed(new Key<ImmutableMap<String, String>>(PyCurrentManifest.class){},
+        ImmutableMap.<String, String>of());
 
     // Execute the compiler.
     return injector.getInstance(GenPyCodeVisitor.class);
