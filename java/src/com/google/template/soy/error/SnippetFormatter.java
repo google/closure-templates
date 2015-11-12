@@ -16,15 +16,15 @@
 
 package com.google.template.soy.error;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableMap.Builder;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.util.List;
 
 /**
  * Fetches a snippet of source code surrounding a given {@link SourceLocation}.
@@ -37,12 +37,8 @@ public final class SnippetFormatter {
 
   private final ImmutableMap<String, SoyFileSupplier> filePathsToSuppliers;
 
-  public SnippetFormatter(List<SoyFileSupplier> suppliers) {
-    ImmutableMap.Builder<String, SoyFileSupplier> builder = new Builder<>();
-    for (SoyFileSupplier supplier : suppliers) {
-      builder.put(supplier.getFilePath(), supplier);
-    }
-    filePathsToSuppliers = builder.build();
+  public SnippetFormatter(ImmutableMap<String, SoyFileSupplier> filePathsToSuppliers) {
+    this.filePathsToSuppliers = checkNotNull(filePathsToSuppliers);
   }
 
   /**

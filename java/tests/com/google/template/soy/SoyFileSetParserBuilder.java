@@ -51,7 +51,7 @@ import javax.annotation.Nullable;
  */
 public final class SoyFileSetParserBuilder {
 
-  private final ImmutableList<SoyFileSupplier> soyFileSuppliers;
+  private final ImmutableMap<String, SoyFileSupplier> soyFileSuppliers;
   private boolean doRunInitialParsingPasses = true; // Non-standard default
   private SoyTypeRegistry typeRegistry = new SoyTypeRegistry();
   private SyntaxVersion declaredSyntaxVersion = SyntaxVersion.V2_0;
@@ -101,11 +101,15 @@ public final class SoyFileSetParserBuilder {
   }
 
   private SoyFileSetParserBuilder(String... soyCode) {
-    this.soyFileSuppliers = ImmutableList.copyOf(buildTestSoyFileSuppliers(soyCode));
+    this(ImmutableList.copyOf(buildTestSoyFileSuppliers(soyCode)));
   }
 
   private SoyFileSetParserBuilder(ImmutableList<SoyFileSupplier> suppliers) {
-    this.soyFileSuppliers = suppliers;
+    ImmutableMap.Builder<String, SoyFileSupplier> builder = ImmutableMap.builder();
+    for (SoyFileSupplier supplier : suppliers) {
+      builder.put(supplier.getFilePath(), supplier);
+    }
+    this.soyFileSuppliers = builder.build();
   }
 
   /**

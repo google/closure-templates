@@ -19,18 +19,27 @@ package com.google.template.soy.jbcsrc;
 import com.google.common.base.Optional;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.io.ByteSink;
+import com.google.common.io.CharStreams;
 import com.google.template.soy.base.internal.SoyFileKind;
+import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyError;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
+import com.google.template.soy.jbcsrc.shared.Names;
+import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.Reader;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.jar.Attributes;
 import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
@@ -146,11 +155,8 @@ public final class BytecodeCompiler {
     if (reporter.errorsSince(checkpoint)) {
       return;
     }
-    Manifest mf = new Manifest();
-    mf.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
-    mf.getMainAttributes().put(new Attributes.Name("Created-By"), "soy");
     try (OutputStream stream = sink.openStream();
-        JarOutputStream jarOutput = new JarOutputStream(stream, mf)) {
+        JarOutputStream jarOutput = new JarOutputStream(stream, getJarManifest())) {
       compileTemplates(
           compilerRegistry,
           reporter,
@@ -163,6 +169,70 @@ public final class BytecodeCompiler {
             }
           });
     }
+  }
+
+  /**
+   * Writes the source files out to a {@code -src.jar}.  This places the soy files at the same
+   * classpath relative location as their generated classes.  Ultimately this can be used by
+   * debuggers for source level debugging.
+   *
+   * <p>It is a little weird that the relative locations of the generated classes are not identical
+   * to the input source files.  This is due to the disconnect between java packages and soy
+   * namespaces.  We should consider using the soy namespace directly as a java package in the
+   * future.
+   *
+   * @param registry  All the templates in the current compilation unit
+   * @param files The source files by file path
+   * @param sink The source to write the jar file
+   */
+  public static void writeSrcJar(
+      TemplateRegistry registry,
+      ImmutableMap<String, SoyFileSupplier> files,
+      ByteSink sink) throws IOException {
+    Set<SoyFileNode> seenFiles = new HashSet<>();
+    try (OutputStream stream = sink.openStream();
+        JarOutputStream jarOutput = new JarOutputStream(stream, getJarManifest())) {
+      for (TemplateNode template : registry.getAllTemplates()) {
+        SoyFileNode file = template.getParent();
+        if (file.getSoyFileKind() == SoyFileKind.SRC && seenFiles.add(file)) {
+          String namespace = file.getNamespace();
+          String fileName = file.getFileName();
+          jarOutput.putNextEntry(new ZipEntry(Names.javaFileName(namespace, fileName)));
+          copyFileToOutput(files.get(file.getFilePath()), jarOutput);
+          jarOutput.closeEntry();
+        }
+      }
+    }
+  }
+
+  /** Copies the file to the output stream */
+  private static void copyFileToOutput(SoyFileSupplier from, OutputStream to)
+      throws IOException {
+    // 'from' contains a Reader which allows streaming reads of characters and 'to' is an 
+    // OutputStream which allows for streaming writes of bytes.  This disconnect means we need to do
+    // some character encoding.  The classic way to do this is to use OutputStreamWriter to wrap the
+    // outputStream and apply an encoder.  This introduces some wierdness because OutputStreamWriter
+    // can hold on to a few bytes to deal with unmatched surrogate pairs.  So we would need to
+    // close/flush it inorder to not corrupt the files.  This is undesirable since the output is
+    // actually a JarOutputStream and we are writing multiple files (we would over flush).  So 
+    // instead we do the naive thing and read the whole file as a string, convert the whole string
+    // to a byte array and then write the whole byte array.
+    //
+    // The real fix is to avoid the Reader and add methods to SoyFileSupplier to give us a 
+    // ByteSource then we can avoid the error prone decode/encode dance.
+    String file;
+    try (Reader contents = from.open()) {
+      file = CharStreams.toString(contents);
+    }
+    to.write(file.getBytes(StandardCharsets.UTF_8));
+  }
+
+  /** Returns a simple jar manifest. */
+  private static Manifest getJarManifest() {
+    Manifest mf = new Manifest();
+    mf.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
+    mf.getMainAttributes().put(new Attributes.Name("Created-By"), "soy");
+    return mf;
   }
 
   private static void checkForUnsupportedFeatures(TemplateRegistry registry,

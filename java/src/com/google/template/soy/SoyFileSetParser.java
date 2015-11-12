@@ -19,7 +19,7 @@ package com.google.template.soy;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
-import com.google.common.collect.Sets;
+import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
 import com.google.template.soy.base.internal.SoyFileSupplier;
@@ -35,8 +35,6 @@ import com.google.template.soy.types.SoyTypeRegistry;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.util.List;
-import java.util.Set;
 
 import javax.annotation.Nullable;
 
@@ -66,7 +64,7 @@ public final class SoyFileSetParser {
   @Nullable private final SoyAstCache cache;
 
   /** The suppliers of the Soy files to parse. */
-  private final List<? extends SoyFileSupplier> soyFileSuppliers;
+  private final ImmutableMap<String, ? extends SoyFileSupplier> soyFileSuppliers;
 
   /** Parsing passes. null means that they are disabled.*/
   @Nullable private final PassManager passManager;
@@ -82,7 +80,7 @@ public final class SoyFileSetParser {
   public SoyFileSetParser(
       SoyTypeRegistry typeRegistry,
       @Nullable SoyAstCache astCache,
-      List<? extends SoyFileSupplier> soyFileSuppliers,
+      ImmutableMap<String, ? extends SoyFileSupplier> soyFileSuppliers,
       @Nullable PassManager passManager,
       ErrorReporter errorReporter) {
     Preconditions.checkArgument(
@@ -93,7 +91,6 @@ public final class SoyFileSetParser {
     this.cache = astCache;
     this.soyFileSuppliers = soyFileSuppliers;
     this.errorReporter = errorReporter;
-    verifyUniquePaths(soyFileSuppliers);
 
     this.passManager = passManager;
   }
@@ -114,20 +111,6 @@ public final class SoyFileSetParser {
 
 
   /**
-   * Ensures all SoyFileSuppliers have unique paths.
-   */
-  private static void verifyUniquePaths(Iterable<? extends SoyFileSupplier> soyFileSuppliers) {
-    Set<String> paths = Sets.newHashSet();
-    for (SoyFileSupplier supplier : soyFileSuppliers) {
-      Preconditions.checkArgument(
-          !paths.contains(supplier.getFilePath()), "Two file suppliers have the same path: %s",
-          supplier.getFilePath());
-      paths.add(supplier.getFilePath());
-    }
-  }
-
-
-  /**
    * Parses a set of Soy files, returning a structure containing the parse tree and template
    * registry.
    */
@@ -140,7 +123,7 @@ public final class SoyFileSetParser {
         (cache != null) ? cache.getNodeIdGenerator() : new IncrementingIdGenerator();
     SoyFileSetNode soyTree = new SoyFileSetNode(nodeIdGen.genId(), nodeIdGen);
     boolean filesWereSkipped = false;
-    for (SoyFileSupplier fileSupplier : soyFileSuppliers) {
+    for (SoyFileSupplier fileSupplier : soyFileSuppliers.values()) {
       SoyFileSupplier.Version version = fileSupplier.getVersion();
       VersionedFile cachedFile = cache != null
           ? cache.get(fileSupplier.getFilePath(), version)

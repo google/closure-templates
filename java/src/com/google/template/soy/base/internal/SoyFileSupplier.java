@@ -34,6 +34,8 @@ import java.net.URL;
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
+ * <p>TODO(lukes): This should either be a subtype of CharSource or hold a CharSource
+ *
  */
 public interface SoyFileSupplier {
 

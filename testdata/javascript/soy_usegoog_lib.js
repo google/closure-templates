@@ -3759,7 +3759,7 @@ goog.addDependency('ui/custombuttonrenderer.js', ['goog.ui.CustomButtonRenderer'
 goog.addDependency('ui/customcolorpalette.js', ['goog.ui.CustomColorPalette'], ['goog.color', 'goog.dom', 'goog.dom.TagName', 'goog.dom.classlist', 'goog.ui.ColorPalette', 'goog.ui.Component'], false);
 goog.addDependency('ui/customcolorpalette_test.js', ['goog.ui.CustomColorPaletteTest'], ['goog.dom.TagName', 'goog.dom.classlist', 'goog.testing.jsunit', 'goog.ui.CustomColorPalette'], false);
 goog.addDependency('ui/datepicker.js', ['goog.ui.DatePicker', 'goog.ui.DatePicker.Events', 'goog.ui.DatePickerEvent'], ['goog.a11y.aria', 'goog.asserts', 'goog.date.Date', 'goog.date.DateRange', 'goog.date.Interval', 'goog.dom', 'goog.dom.NodeType', 'goog.dom.TagName', 'goog.dom.classlist', 'goog.events.Event', 'goog.events.EventType', 'goog.events.KeyHandler', 'goog.i18n.DateTimeFormat', 'goog.i18n.DateTimePatterns', 'goog.i18n.DateTimeSymbols', 'goog.style', 'goog.ui.Component', 'goog.ui.DefaultDatePickerRenderer', 'goog.ui.IdGenerator'], false);
-goog.addDependency('ui/datepicker_test.js', ['goog.ui.DatePickerTest'], ['goog.a11y.aria', 'goog.a11y.aria.Role', 'goog.date.Date', 'goog.date.DateRange', 'goog.dom', 'goog.dom.TagName', 'goog.dom.classlist', 'goog.events', 'goog.i18n.DateTimeSymbols', 'goog.i18n.DateTimeSymbols_en_US', 'goog.i18n.DateTimeSymbols_zh_HK', 'goog.style', 'goog.testing.jsunit', 'goog.ui.DatePicker'], false);
+goog.addDependency('ui/datepicker_test.js', ['goog.ui.DatePickerTest'], ['goog.a11y.aria', 'goog.a11y.aria.Role', 'goog.date.Date', 'goog.date.DateRange', 'goog.dom', 'goog.dom.TagName', 'goog.dom.classlist', 'goog.events', 'goog.events.KeyCodes', 'goog.i18n.DateTimeSymbols', 'goog.i18n.DateTimeSymbols_en_US', 'goog.i18n.DateTimeSymbols_zh_HK', 'goog.style', 'goog.testing.events', 'goog.testing.jsunit', 'goog.testing.recordFunction', 'goog.ui.DatePicker'], false);
 goog.addDependency('ui/datepickerrenderer.js', ['goog.ui.DatePickerRenderer'], [], false);
 goog.addDependency('ui/decorate.js', ['goog.ui.decorate'], ['goog.ui.registry'], false);
 goog.addDependency('ui/decorate_test.js', ['goog.ui.decorateTest'], ['goog.testing.jsunit', 'goog.ui.decorate', 'goog.ui.registry'], false);
@@ -9204,15 +9204,6 @@ goog.i18n.bidi.isRtlLanguage = function(lang) {
 
 
 /**
- * Regular expression for bracket guard replacement in html.
- * @type {RegExp}
- * @private
- */
-goog.i18n.bidi.bracketGuardHtmlRe_ =
-    /(\(.*?\)+)|(\[.*?\]+)|(\{.*?\}+)|(&lt;.*?(&gt;)+)/g;
-
-
-/**
  * Regular expression for bracket guard replacement in text.
  * @type {RegExp}
  * @private
@@ -9222,32 +9213,11 @@ goog.i18n.bidi.bracketGuardTextRe_ =
 
 
 /**
- * Apply bracket guard using html span tag. This is to address the problem of
- * messy bracket display frequently happens in RTL layout.
- * @param {string} s The string that need to be processed.
- * @param {boolean=} opt_isRtlContext specifies default direction (usually
- *     direction of the UI).
- * @return {string} The processed string, with all bracket guarded.
- * @deprecated This function is broken. Use
- *     {@link  goog.i18n.BidiFormatter#spanWrap} if necessary.
- */
-goog.i18n.bidi.guardBracketInHtml = function(s, opt_isRtlContext) {
-  var useRtl = opt_isRtlContext === undefined ?
-      goog.i18n.bidi.hasAnyRtl(s) : opt_isRtlContext;
-  if (useRtl) {
-    return s.replace(goog.i18n.bidi.bracketGuardHtmlRe_,
-        '<span dir=rtl>$&</span>');
-  }
-  return s.replace(goog.i18n.bidi.bracketGuardHtmlRe_,
-      '<span dir=ltr>$&</span>');
-};
-
-
-/**
  * Apply bracket guard using LRM and RLM. This is to address the problem of
  * messy bracket display frequently happens in RTL layout.
- * This version works for both plain text and html. But it does not work as
- * good as guardBracketInHtml in some cases.
+ * This function works for plain text, not for HTML. In HTML, the opening
+ * bracket might be in a different context than the closing bracket (such as
+ * an attribute value).
  * @param {string} s The string that need to be processed.
  * @param {boolean=} opt_isRtlContext specifies default direction (usually
  *     direction of the UI).

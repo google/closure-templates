@@ -17,7 +17,9 @@
 package com.google.template.soy;
 
 import com.google.common.base.Function;
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.io.ByteSink;
 import com.google.common.io.Files;
 import com.google.inject.Injector;
 import com.google.template.soy.MainClassUtils.Main;
@@ -33,8 +35,6 @@ import java.util.List;
 
 /**
  * Executable for compiling a set of Soy files into corresponding Java class files in a jar.
- *
- * <p>TODO(lukes): add support for writing out a src jar to support debugging workflows.
  */
 public final class SoyToJbcSrcCompiler {
 
@@ -78,6 +78,16 @@ public final class SoyToJbcSrcCompiler {
             + " invocation will produce exactly one file"
   )
   private String output = "";
+
+  @Option(
+    name = "--outputSrcJar",
+    required = false,
+    usage =
+        "[Optional] The file name of the JAR containing sources to be written.  Each compiler"
+            + " invocation will produce exactly one such file.  This may be useful for enabling"
+            + "IDE debugging scenarios"
+  )
+  private String outputSrcJar = "";
 
   @Option(
     name = "--globals_file",
@@ -156,7 +166,10 @@ public final class SoyToJbcSrcCompiler {
       sfsBuilder.setCompileTimeGlobals(new File(globalsFile));
     }
     SoyFileSet sfs = sfsBuilder.build();
-
-    return sfs.compileToJar(Files.asByteSink(new File(output)));
+    Optional<ByteSink> srcJarSink = Optional.absent();
+    if (!outputSrcJar.isEmpty()) {
+      srcJarSink = Optional.of(Files.asByteSink(new File(outputSrcJar)));
+    }
+    return sfs.compileToJar(Files.asByteSink(new File(output)), srcJarSink);
   }
 }

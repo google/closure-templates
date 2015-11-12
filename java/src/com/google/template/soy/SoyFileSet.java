@@ -141,7 +141,7 @@ public final class SoyFileSet {
     /**
      * The SoyFileSuppliers collected so far in added order, as a set to prevent dupes.
      */
-    private final ImmutableSet.Builder<SoyFileSupplier> setBuilder;
+    private final ImmutableMap.Builder<String, SoyFileSupplier> filesBuilder;
 
     /** Optional AST cache. */
     private SoyAstCache cache;
@@ -163,7 +163,7 @@ public final class SoyFileSet {
     @Inject
     @Deprecated
     public Builder() {
-      this.setBuilder = ImmutableSet.builder();
+      this.filesBuilder = ImmutableMap.builder();
       this.cache = null;
       this.lazyGeneralOptions = null;
     }
@@ -212,7 +212,7 @@ public final class SoyFileSet {
         factory = GuiceInitializer.getHackySoyFileSetFactory();
       }
       return factory.create(
-          setBuilder.build().asList(), cache, getGeneralOptions(), localTypeRegistry);
+          filesBuilder.build(), cache, getGeneralOptions(), localTypeRegistry);
     }
 
 
@@ -227,8 +227,7 @@ public final class SoyFileSet {
      */
     public Builder addWithKind(
         CharSource contentSource, SoyFileKind soyFileKind, String filePath) {
-      setBuilder.add(SoyFileSupplier.Factory.create(contentSource, soyFileKind, filePath));
-      return this;
+      return addFile(SoyFileSupplier.Factory.create(contentSource, soyFileKind, filePath));
     }
 
 
@@ -253,8 +252,7 @@ public final class SoyFileSet {
      * @return This builder.
      */
     public Builder addWithKind(File inputFile, SoyFileKind soyFileKind) {
-      setBuilder.add(SoyFileSupplier.Factory.create(inputFile, soyFileKind));
-      return this;
+      return addFile(SoyFileSupplier.Factory.create(inputFile, soyFileKind));
     }
 
 
@@ -281,8 +279,7 @@ public final class SoyFileSet {
      * @return This builder.
      */
     public Builder addVolatileWithKind(File inputFile, SoyFileKind soyFileKind) {
-      setBuilder.add(new VolatileSoyFileSupplier(inputFile, soyFileKind));
-      return this;
+      return addFile(new VolatileSoyFileSupplier(inputFile, soyFileKind));
     }
 
 
@@ -311,8 +308,7 @@ public final class SoyFileSet {
      * @return This builder.
      */
     public Builder addWithKind(URL inputFileUrl, SoyFileKind soyFileKind, String filePath) {
-      setBuilder.add(SoyFileSupplier.Factory.create(inputFileUrl, soyFileKind, filePath));
-      return this;
+      return addFile(SoyFileSupplier.Factory.create(inputFileUrl, soyFileKind, filePath));
     }
 
 
@@ -342,8 +338,7 @@ public final class SoyFileSet {
      * @return This builder.
      */
     public Builder addWithKind(URL inputFileUrl, SoyFileKind soyFileKind) {
-      setBuilder.add(SoyFileSupplier.Factory.create(inputFileUrl, soyFileKind));
-      return this;
+      return addFile(SoyFileSupplier.Factory.create(inputFileUrl, soyFileKind));
     }
 
 
@@ -373,8 +368,7 @@ public final class SoyFileSet {
      * @return This builder.
      */
     public Builder addWithKind(CharSequence content, SoyFileKind soyFileKind, String filePath) {
-      setBuilder.add(SoyFileSupplier.Factory.create(content, soyFileKind, filePath));
-      return this;
+      return addFile(SoyFileSupplier.Factory.create(content, soyFileKind, filePath));
     }
 
 
@@ -529,6 +523,11 @@ public final class SoyFileSet {
       localTypeRegistry = typeRegistry;
       return this;
     }
+
+    private Builder addFile(SoyFileSupplier supplier) {
+      filesBuilder.put(supplier.getFilePath(), supplier);
+      return this;
+    }
   }
 
 
@@ -543,7 +542,7 @@ public final class SoyFileSet {
      * @param options The general compiler options.
      */
     SoyFileSet create(
-        List<SoyFileSupplier> soyFileSuppliers,
+        ImmutableMap<String, SoyFileSupplier> soyFileSuppliers,
         SoyAstCache cache,
         SoyGeneralOptions options,
         @Assisted("localTypeRegistry") SoyTypeRegistry localTypeRegistry);
@@ -583,7 +582,7 @@ public final class SoyFileSet {
   private final SoyTypeRegistry typeRegistry;
 
   /** The suppliers for the input Soy files. */
-  private final List<SoyFileSupplier> soyFileSuppliers;
+  private final ImmutableMap<String, SoyFileSupplier> soyFileSuppliers;
 
   /** Optional soy tree cache for faster recompile times. */
   private final SoyAstCache cache;
@@ -631,7 +630,7 @@ public final class SoyFileSet {
       ImmutableMap<String, ? extends SoyFunction> soyFunctionMap,
       ImmutableMap<String, ? extends SoyPrintDirective> printDirectives,
       ErrorReporter errorReporter,
-      @Assisted List<SoyFileSupplier> soyFileSuppliers,
+      @Assisted ImmutableMap<String, SoyFileSupplier> soyFileSuppliers,
       @Assisted SoyGeneralOptions generalOptions,
       @Assisted @Nullable SoyAstCache cache,
       @Assisted("localTypeRegistry") @Nullable SoyTypeRegistry localTypeRegistry) {
@@ -670,7 +669,7 @@ public final class SoyFileSet {
   }
 
   /** Returns the list of suppliers for the input Soy files. For testing use only! */
-  @VisibleForTesting List<SoyFileSupplier> getSoyFileSuppliersForTesting() {
+  @VisibleForTesting ImmutableMap<String, SoyFileSupplier> getSoyFileSuppliersForTesting() {
     return soyFileSuppliers;
   }
 
@@ -860,13 +859,17 @@ public final class SoyFileSet {
    *
    * @return The compilation result
    */
-  CompilationResult compileToJar(ByteSink jarTarget) throws IOException {
+  CompilationResult compileToJar(ByteSink jarTarget, Optional<ByteSink> srcJarTarget)
+      throws IOException {
     ServerCompilationPrimitives primitives = compileForServerRendering();
     if (primitives == null) {
       // we encountered an error, return early.
       return result();
     }
     BytecodeCompiler.compileToJar(primitives.registry, errorReporter, jarTarget);
+    if (srcJarTarget.isPresent()) {
+      BytecodeCompiler.writeSrcJar(primitives.registry, soyFileSuppliers, srcJarTarget.get());
+    }
     return result();
   }
 
