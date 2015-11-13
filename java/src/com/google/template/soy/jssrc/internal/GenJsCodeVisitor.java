@@ -100,6 +100,7 @@ import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -182,6 +183,9 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
 
   /** Type operators. */
   private final SoyTypeOps typeOps;
+
+  /** The accumulated set of all JS namespaces required so far. */
+  private Set<String> alreadyRequiredNamespaces;
 
   protected final ErrorReporter errorReporter;
 
@@ -318,6 +322,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
     }
 
     jsCodeBuilder = createCodeBuilder();
+    alreadyRequiredNamespaces = new LinkedHashSet<>();
 
     jsCodeBuilder.appendLine("// This file was automatically generated from ",
                              node.getFileName(), ".");
@@ -546,41 +551,57 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
    */
   protected void addCodeToRequireGeneralDeps(SoyFileNode soyFile) {
 
-    jsCodeBuilder.appendLine("goog.require('soy');");
-    jsCodeBuilder.appendLine("goog.require('soydata');");
+    addGoogRequire("soy", false);
+    addGoogRequire("soydata", false);
 
     SortedSet<String> requiredObjectTypes = ImmutableSortedSet.of();
     if (hasStrictParams(soyFile)) {
       requiredObjectTypes = getRequiredObjectTypes(soyFile);
-      jsCodeBuilder.appendLine("/** @suppress {extraRequire} */");
-      jsCodeBuilder.appendLine("goog.require('goog.asserts');");
+      addGoogRequire("goog.asserts", true);
     }
 
     if (jsSrcOptions.getUseGoogIsRtlForBidiGlobalDir()) {
-      jsCodeBuilder.appendLine("/** @suppress {extraRequire} */");
-      jsCodeBuilder.appendLine("goog.require('", GOOG_IS_RTL_NAMESPACE, "');");
+      // Suppress extraRequire because it may be unused (b/25672094).
+      addGoogRequire(GOOG_IS_RTL_NAMESPACE, true);
     }
 
     if (SoytreeUtils.hasNodesOfType(soyFile, MsgPluralNode.class, MsgSelectNode.class)) {
-      jsCodeBuilder.appendLine("goog.require('", GOOG_MESSAGE_FORMAT_NAMESPACE, "');");
+      addGoogRequire(GOOG_MESSAGE_FORMAT_NAMESPACE, false);
     }
 
     if (SoytreeUtils.hasNodesOfType(soyFile, XidNode.class)) {
-      jsCodeBuilder.appendLine("goog.require('xid');");
+      addGoogRequire("xid", false);
     }
 
     SortedSet<String> pluginRequiredJsLibNames = Sets.newTreeSet();
     pluginRequiredJsLibNames.addAll(genDirectivePluginRequiresVisitor.exec(soyFile));
     pluginRequiredJsLibNames.addAll(new GenFunctionPluginRequiresVisitor().exec(soyFile));
     for (String namespace : pluginRequiredJsLibNames) {
-      jsCodeBuilder.appendLine("goog.require('" + namespace + "');");
+      addGoogRequire(namespace, false);
     }
 
     if (!requiredObjectTypes.isEmpty()) {
       jsCodeBuilder.appendLine();
       for (String requiredType : requiredObjectTypes) {
-        jsCodeBuilder.appendLine("goog.require('" + requiredType + "');");
+        addGoogRequire(requiredType, false);
       }
+    }
+  }
+
+  /**
+   * Emit goog.require for namespace if namespace has not already been emitted.
+   *
+   * @param namespace The JS namespace to require if not already required.
+   * @param suppressExtra Whether to add a {@code @suppress {extraRequire}} annotation for requires
+   *     that may be unused.
+   */
+  private void addGoogRequire(String namespace, boolean suppressExtra) {
+    if (!alreadyRequiredNamespaces.contains(namespace)) {
+      if (suppressExtra) {
+        jsCodeBuilder.appendLine("/** @suppress {extraRequire} */");
+      }
+      jsCodeBuilder.appendLine("goog.require('" + namespace + "');");
+      alreadyRequiredNamespaces.add(namespace);
     }
   }
 
@@ -615,7 +636,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
 
     for (String calleeNamespace : calleeNamespaces) {
       if (calleeNamespace.length() > 0 && !calleeNamespace.equals(prevCalleeNamespace)) {
-        jsCodeBuilder.appendLine("goog.require('", calleeNamespace, "');");
+        addGoogRequire(calleeNamespace, false);
         prevCalleeNamespace = calleeNamespace;
       }
     }
@@ -631,7 +652,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
       requires.add(node.getCalleeName());
     }
     for (String require : requires) {
-      jsCodeBuilder.appendLine("goog.require('", require, "');");
+      addGoogRequire(require, false);
     }
   }
 
