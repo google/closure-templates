@@ -34,6 +34,7 @@ import com.google.template.soy.types.primitive.SanitizedType.AttributesType;
 import com.google.template.soy.types.primitive.SanitizedType.CssType;
 import com.google.template.soy.types.primitive.SanitizedType.HtmlType;
 import com.google.template.soy.types.primitive.SanitizedType.JsType;
+import com.google.template.soy.types.primitive.SanitizedType.TrustedResourceUriType;
 import com.google.template.soy.types.primitive.SanitizedType.UriType;
 import com.google.template.soy.types.primitive.StringType;
 import com.google.template.soy.types.primitive.UnknownType;
@@ -66,6 +67,7 @@ public final class SoyTypeRegistry {
                 }
               }));
 
+  // TODO(shwetakarwa): Rename consistently to use "URL".
   private static final Map<String, SoyType> BUILTIN_TYPES =
       ImmutableMap.<String, SoyType>builder()
           .put("any", AnyType.getInstance())
@@ -79,6 +81,7 @@ public final class SoyTypeRegistry {
           .put("attributes", AttributesType.getInstance())
           .put("css", CssType.getInstance())
           .put("uri", UriType.getInstance())
+          .put("trusted_resource_url", TrustedResourceUriType.getInstance())
           .put("js", JsType.getInstance())
           .build();
 
