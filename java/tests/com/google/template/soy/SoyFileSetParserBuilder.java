@@ -27,7 +27,6 @@ import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.basetree.SyntaxVersion;
-import com.google.template.soy.basicfunctions.BasicFunctionsModule;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.passes.PassManager;
@@ -59,7 +58,7 @@ public final class SoyFileSetParserBuilder {
   private ErrorReporter errorReporter = ExplodingErrorReporter.get(); // See #parse for discussion.
   private boolean allowUnboundGlobals;
   private ImmutableMap<String, ? extends SoyFunction> soyFunctionMap =
-      Guice.createInjector(new SharedModule(), new BasicFunctionsModule())
+      Guice.createInjector(new SharedModule())
           .getInstance(new Key<ImmutableMap<String, ? extends SoyFunction>>() {});
   private SoyGeneralOptions options = new SoyGeneralOptions();
 

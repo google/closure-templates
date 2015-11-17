@@ -23,6 +23,7 @@ import com.google.common.collect.Maps;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.template.soy.SoyFileSetParserBuilder;
+import com.google.template.soy.SoyModule;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.exprtree.Operator;
@@ -30,7 +31,6 @@ import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.internal.GenJsExprsVisitor.GenJsExprsVisitorFactory;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.shared.SharedTestUtils;
-import com.google.template.soy.shared.internal.ErrorReporterModule;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 
@@ -47,8 +47,7 @@ import java.util.Map;
  */
 public final class GenJsExprsVisitorTest extends TestCase {
 
-  private static final Injector INJECTOR =
-      Guice.createInjector(new ErrorReporterModule(), new JsSrcModule());
+  private static final Injector INJECTOR = Guice.createInjector(new SoyModule());
 
   private static final Deque<Map<String, JsExpr>> LOCAL_VAR_TRANSLATIONS =
       new ArrayDeque<Map<String, JsExpr>>();

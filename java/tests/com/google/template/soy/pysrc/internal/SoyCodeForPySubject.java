@@ -27,13 +27,13 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.template.soy.SoyFileSetParserBuilder;
+import com.google.template.soy.SoyModule;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.pysrc.SoyPySrcOptions;
 import com.google.template.soy.pysrc.internal.GenPyExprsVisitor.GenPyExprsVisitorFactory;
 import com.google.template.soy.pysrc.internal.PyApiCallScopeBindingAnnotations.PyCurrentManifest;
 import com.google.template.soy.shared.AutoEscapingType;
 import com.google.template.soy.shared.SharedTestUtils;
-import com.google.template.soy.shared.internal.ErrorReporterModule;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
 import com.google.template.soy.soytree.SoyNode;
 
@@ -73,7 +73,7 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
   SoyCodeForPySubject(FailureStrategy failureStrategy, String code, boolean isFile) {
     super(failureStrategy, code);
     this.isFile = isFile;
-    this.injector = Guice.createInjector(new ErrorReporterModule(), new PySrcModule());
+    this.injector = Guice.createInjector(new SoyModule());
   }
 
 

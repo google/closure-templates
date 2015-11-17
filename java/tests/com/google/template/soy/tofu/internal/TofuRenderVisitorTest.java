@@ -26,15 +26,11 @@ import com.google.inject.Injector;
 import com.google.inject.multibindings.Multibinder;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.SoyFileSetParserBuilder;
-import com.google.template.soy.basicdirectives.BasicDirectivesModule;
-import com.google.template.soy.basicfunctions.BasicFunctionsModule;
+import com.google.template.soy.SoyModule;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueHelper;
 import com.google.template.soy.data.restricted.StringData;
-import com.google.template.soy.passes.SharedPassesModule;
-import com.google.template.soy.shared.internal.ErrorReporterModule;
 import com.google.template.soy.shared.internal.FunctionAdapters;
-import com.google.template.soy.shared.internal.SharedModule;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
@@ -101,23 +97,20 @@ public class TofuRenderVisitorTest extends TestCase {
   }
 
 
-  private static final Injector INJECTOR = Guice.createInjector(
-      new ErrorReporterModule(),
-      new SharedModule(),
-      new SharedPassesModule(),
-      new BasicDirectivesModule(),
-      new BasicFunctionsModule(),
-      new AbstractModule() {
-        @Override
-        protected void configure() {
-          Multibinder<SoyFunction> functionMultibinder =
-              Multibinder.newSetBinder(binder(), SoyFunction.class);
-          functionMultibinder.addBinding().to(Reverse.class);
-          Multibinder<SoyPrintDirective> directiveMultibinder =
-              Multibinder.newSetBinder(binder(), SoyPrintDirective.class);
-          directiveMultibinder.addBinding().to(Caps.class);
-        }
-      });
+  private static final Injector INJECTOR =
+      Guice.createInjector(
+          new SoyModule(),
+          new AbstractModule() {
+            @Override
+            protected void configure() {
+              Multibinder<SoyFunction> functionMultibinder =
+                  Multibinder.newSetBinder(binder(), SoyFunction.class);
+              functionMultibinder.addBinding().to(Reverse.class);
+              Multibinder<SoyPrintDirective> directiveMultibinder =
+                  Multibinder.newSetBinder(binder(), SoyPrintDirective.class);
+              directiveMultibinder.addBinding().to(Caps.class);
+            }
+          });
 
   // TODO: Does this belong in RenderVisitorTest instead?
   public void testLetWithinParam() throws Exception {

@@ -20,7 +20,12 @@ import com.google.common.collect.ImmutableMap;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.multibindings.Multibinder;
+import com.google.template.soy.basicdirectives.BasicDirectivesModule;
+import com.google.template.soy.basicfunctions.BasicFunctionsModule;
+import com.google.template.soy.bididirectives.BidiDirectivesModule;
+import com.google.template.soy.bidifunctions.BidiFunctionsModule;
 import com.google.template.soy.coredirectives.CoreDirectivesModule;
+import com.google.template.soy.i18ndirectives.I18nDirectivesModule;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.ApiCall;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.LocaleString;
@@ -37,19 +42,23 @@ import javax.inject.Singleton;
 /**
  * Guice module for shared classes.
  *
+ * <p>Contains all the bindings shared between the runtime and compiler
+ *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public final class SharedModule extends AbstractModule {
 
   @Override protected void configure() {
-
     // Install the core directives.
     install(new CoreDirectivesModule());
 
-    // If no functions or print directives are bound, we want an empty set instead of an error.
-    Multibinder.newSetBinder(binder(), SoyFunction.class);
-    Multibinder.newSetBinder(binder(), SoyPrintDirective.class);
+    // Install default directive and function modules.
+    install(new BasicDirectivesModule());
+    install(new BidiDirectivesModule());
+    install(new BasicFunctionsModule());
+    install(new BidiFunctionsModule());
+    install(new I18nDirectivesModule());
 
     // Create the API call scope.
     GuiceSimpleScope apiCallScope = new GuiceSimpleScope();

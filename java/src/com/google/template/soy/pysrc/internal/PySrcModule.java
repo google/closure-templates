@@ -21,7 +21,6 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Key;
 import com.google.inject.Provides;
 import com.google.inject.assistedinject.FactoryModuleBuilder;
-import com.google.template.soy.passes.SharedPassesModule;
 import com.google.template.soy.pysrc.SoyPySrcOptions;
 import com.google.template.soy.pysrc.internal.GenPyExprsVisitor.GenPyExprsVisitorFactory;
 import com.google.template.soy.pysrc.internal.MsgFuncGenerator.MsgFuncGeneratorFactory;
@@ -31,7 +30,6 @@ import com.google.template.soy.pysrc.restricted.SoyPySrcPrintDirective;
 import com.google.template.soy.shared.internal.ApiCallScope;
 import com.google.template.soy.shared.internal.FunctionAdapters;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
-import com.google.template.soy.shared.internal.SharedModule;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 
 import java.util.Set;
@@ -48,10 +46,6 @@ import javax.inject.Singleton;
 public final class PySrcModule extends AbstractModule {
 
   @Override protected void configure() {
-    // Install requisite modules.
-    install(new SharedModule());
-    install(new SharedPassesModule());
-
     // Bindings for when explicit dependencies are required.
     bind(PySrcMain.class);
     bind(GenPyCodeVisitor.class);

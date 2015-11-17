@@ -25,9 +25,8 @@ import com.google.common.collect.Maps;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.template.soy.SoyFileSetParserBuilder;
+import com.google.template.soy.SoyModule;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.basicdirectives.BasicDirectivesModule;
-import com.google.template.soy.basicfunctions.BasicFunctionsModule;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyDict;
 import com.google.template.soy.data.SoyList;
@@ -43,10 +42,7 @@ import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
-import com.google.template.soy.passes.SharedPassesModule;
 import com.google.template.soy.shared.SharedTestUtils;
-import com.google.template.soy.shared.internal.ErrorReporterModule;
-import com.google.template.soy.shared.internal.SharedModule;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.sharedpasses.render.EvalVisitor.EvalVisitorFactory;
 import com.google.template.soy.soytree.PrintNode;
@@ -64,12 +60,7 @@ import javax.annotation.Nullable;
  */
 public class EvalVisitorTest extends TestCase {
 
-  private static final Injector INJECTOR = Guice.createInjector(
-      new ErrorReporterModule(),
-      new SharedModule(),
-      new SharedPassesModule(),
-      new BasicDirectivesModule(),
-      new BasicFunctionsModule());
+  private static final Injector INJECTOR = Guice.createInjector(new SoyModule());
 
   protected static final SoyValueHelper VALUE_HELPER = INJECTOR.getInstance(SoyValueHelper.class);
 

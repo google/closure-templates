@@ -35,8 +35,7 @@ import com.google.inject.Injector;
 import com.google.inject.Provider;
 import com.google.inject.Provides;
 import com.google.template.soy.SoyFileSetParserBuilder;
-import com.google.template.soy.basicdirectives.BasicDirectivesModule;
-import com.google.template.soy.basicfunctions.BasicFunctionsModule;
+import com.google.template.soy.SoyModule;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueHelper;
@@ -49,11 +48,8 @@ import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.msgs.SoyMsgBundle;
-import com.google.template.soy.passes.SharedPassesModule;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
-import com.google.template.soy.shared.internal.ErrorReporterModule;
-import com.google.template.soy.shared.internal.SharedModule;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
@@ -77,11 +73,7 @@ import java.util.Map;
 public final class TemplateTester {
   private static final Injector INJECTOR =
       Guice.createInjector(
-          new ErrorReporterModule(),
-          new SharedModule(),
-          new SharedPassesModule(),
-          new BasicDirectivesModule(),
-          new BasicFunctionsModule(),
+          new SoyModule(),
           new AbstractModule() {
             @Provides
             RenderContext.Builder provideContext(

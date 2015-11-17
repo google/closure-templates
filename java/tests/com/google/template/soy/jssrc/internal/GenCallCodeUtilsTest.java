@@ -24,9 +24,9 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.template.soy.SoyFileSetParserBuilder;
+import com.google.template.soy.SoyModule;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.shared.SharedTestUtils;
-import com.google.template.soy.shared.internal.ErrorReporterModule;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 
@@ -41,10 +41,7 @@ import java.util.Map;
  *
  */
 public class GenCallCodeUtilsTest extends TestCase {
-
-
-  private static final Injector INJECTOR =
-      Guice.createInjector(new ErrorReporterModule(), new JsSrcModule());
+  private static final Injector INJECTOR = Guice.createInjector(new SoyModule());
 
   private static final Deque<Map<String, JsExpr>> LOCAL_VAR_TRANSLATIONS =
       new ArrayDeque<Map<String, JsExpr>>();

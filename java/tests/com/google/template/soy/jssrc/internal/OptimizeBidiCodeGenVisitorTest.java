@@ -19,12 +19,9 @@ package com.google.template.soy.jssrc.internal;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SoyBackendKind;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
-import com.google.template.soy.jssrc.restricted.JsExpr;
-import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
@@ -32,9 +29,6 @@ import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateNode;
 
 import junit.framework.TestCase;
-
-import java.util.List;
-import java.util.Set;
 
 /**
  * Unit tests for OptimizeBidiCodeGenVisitor.
@@ -100,36 +94,7 @@ public final class OptimizeBidiCodeGenVisitorTest extends TestCase {
 
   private SoyFileSetNode parse(String soyCode) {
     return SoyFileSetParserBuilder.forTemplateContents(soyCode)
-        .addSoyFunction(new FakeJsSrcFunction("bidiDirAttr", 1))
-        .addSoyFunction(new FakeJsSrcFunction("bidiMark", 0))
-        .addSoyFunction(new FakeJsSrcFunction("bidiStartEdge", 0))
-        .addSoyFunction(new FakeJsSrcFunction("bidiEndEdge", 0))
         .parse()
         .fileSet();
-  }
-
-  private static final class FakeJsSrcFunction implements SoyJsSrcFunction {
-    final String name;
-    final int args;
-
-    FakeJsSrcFunction(String name, int args) {
-      this.name = name;
-      this.args = args;
-    }
-
-    @Override
-    public String getName() {
-      return name;
-    }
-
-    @Override
-    public Set<Integer> getValidArgsSizes() {
-      return ImmutableSet.of(args);
-    }
-
-    @Override
-    public JsExpr computeForJsSrc(List<JsExpr> args) {
-      throw new UnsupportedOperationException();
-    }
   }
 }

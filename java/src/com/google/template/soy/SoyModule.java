@@ -18,21 +18,23 @@ package com.google.template.soy;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.assistedinject.FactoryModuleBuilder;
+import com.google.inject.multibindings.Multibinder;
 import com.google.template.soy.SoyFileSet.SoyFileSetFactory;
-import com.google.template.soy.basicdirectives.BasicDirectivesModule;
-import com.google.template.soy.basicfunctions.BasicFunctionsModule;
-import com.google.template.soy.bididirectives.BidiDirectivesModule;
-import com.google.template.soy.bidifunctions.BidiFunctionsModule;
 import com.google.template.soy.data.SoyValueHelper;
-import com.google.template.soy.i18ndirectives.I18nDirectivesModule;
+import com.google.template.soy.incrementaldomsrc.IncrementalDomSrcModule;
 import com.google.template.soy.jbcsrc.api.SoySauceImpl;
 import com.google.template.soy.jssrc.internal.JsSrcModule;
 import com.google.template.soy.parsepasses.contextautoesc.ContextualAutoescaper;
+import com.google.template.soy.passes.SharedPassesModule;
 import com.google.template.soy.pysrc.internal.PySrcModule;
 import com.google.template.soy.shared.internal.ErrorReporterModule;
 import com.google.template.soy.shared.internal.SharedModule;
 import com.google.template.soy.tofu.internal.TofuModule;
 import com.google.template.soy.types.SoyTypeOps;
+import com.google.template.soy.types.SoyTypeProvider;
+import com.google.template.soy.types.SoyTypeRegistry;
+
+import javax.inject.Singleton;
 
 /**
  * Guice module for Soy's programmatic interface.
@@ -40,15 +42,26 @@ import com.google.template.soy.types.SoyTypeOps;
  */
 public class SoyModule extends AbstractModule {
 
-
   @Override protected void configure() {
+    // This module is mostly available for configuring the compiler (SoyFileSet).  Consider
+    // splitting SoyFileSet into a smaller number of objects and backend specific apis so this isn't
+    // so monolithic (compiling JS shouldn't require Tofu and python backends).
+    // eliminating injection points from the backends would help with this effort also.
 
     // Install requisite modules.
     install(new ErrorReporterModule());
-    install(new SharedModule());
     install(new TofuModule());
     install(new JsSrcModule());
     install(new PySrcModule());
+    install(new IncrementalDomSrcModule());
+
+    // TODO(user): get rid of guice injection in passes.
+    install(new SharedPassesModule());
+
+    install(new SharedModule());
+
+    Multibinder.newSetBinder(binder(), SoyTypeProvider.class);
+    bind(SoyTypeRegistry.class).in(Singleton.class);
 
     // Bindings for when explicit dependencies are required.
     // Note: We don't promise to support this. We actually frown upon requireExplicitBindings.
@@ -57,13 +70,6 @@ public class SoyModule extends AbstractModule {
     bind(SoyTypeOps.class);
     bind(SoyValueHelper.class);
     bind(SoySauceImpl.Factory.class);
-
-    // Install default directive and function modules.
-    install(new BasicDirectivesModule());
-    install(new BidiDirectivesModule());
-    install(new BasicFunctionsModule());
-    install(new BidiFunctionsModule());
-    install(new I18nDirectivesModule());
 
     // Bind providers of factories (created via assisted inject).
     install((new FactoryModuleBuilder()).build(SoyFileSetFactory.class));

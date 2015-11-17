@@ -19,11 +19,8 @@ package com.google.template.soy.sharedpasses.opti;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.template.soy.SoyFileSetParserBuilder;
+import com.google.template.soy.SoyModule;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.basicdirectives.BasicDirectivesModule;
-import com.google.template.soy.passes.SharedPassesModule;
-import com.google.template.soy.shared.internal.ErrorReporterModule;
-import com.google.template.soy.shared.internal.SharedModule;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.MsgNode;
@@ -248,12 +245,7 @@ public class SimplifyVisitorTest extends TestCase {
   // -----------------------------------------------------------------------------------------------
   // Helpers.
 
-
-  private static final Injector INJECTOR = Guice.createInjector(
-      new ErrorReporterModule(),
-      new SharedModule(),
-      new SharedPassesModule(),
-      new BasicDirectivesModule());
+  private static final Injector INJECTOR = Guice.createInjector(new SoyModule());
 
 
   private static List<StandaloneNode> simplifySoyCode(String soyCode) throws Exception {
