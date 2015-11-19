@@ -2207,7 +2207,7 @@ goog.exportProperty = function(object, publicName, symbol) {
  */
 goog.inherits = function(childCtor, parentCtor) {
   /** @constructor */
-  function tempCtor() {};
+  function tempCtor() {}
   tempCtor.prototype = parentCtor.prototype;
   childCtor.superClass_ = parentCtor.prototype;
   childCtor.prototype = new tempCtor();
@@ -7263,7 +7263,7 @@ goog.array.stableSort = function(arr, opt_compareFn) {
   var valueCompareFn = opt_compareFn || goog.array.defaultCompare;
   function stableCompareFn(obj1, obj2) {
     return valueCompareFn(obj1.value, obj2.value) || obj1.index - obj2.index;
-  };
+  }
   goog.array.sort(arr, stableCompareFn);
   for (var i = 0; i < arr.length; i++) {
     arr[i] = arr[i].value;
@@ -7530,7 +7530,8 @@ goog.array.bucket = function(array, sorter, opt_obj) {
 goog.array.toObject = function(arr, keyFunc, opt_obj) {
   var ret = {};
   goog.array.forEach(arr, function(element, index) {
-    ret[keyFunc.call(/** @type {?} */ (opt_obj), element, index, arr)] = element;
+    ret[keyFunc.call(/** @type {?} */ (opt_obj), element, index, arr)] =
+        element;
   });
   return ret;
 };
