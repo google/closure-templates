@@ -135,7 +135,7 @@ public final class SoyMsgExtractor {
       }
     };
 
-    Injector injector = MainClassUtils.createInjector(messagePluginModule, null);
+    Injector injector = MainClassUtils.createInjectorForMsgPlugin(messagePluginModule);
 
     SoyFileSet.Builder sfsBuilder = injector.getInstance(SoyFileSet.Builder.class);
     MainClassUtils.addSoyFilesToBuilder(sfsBuilder, inputPrefix, srcs, arguments,

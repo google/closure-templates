@@ -147,7 +147,7 @@ public final class SoyToJbcSrcCompiler {
           "Must provide a JAR file name (--jar <file name>).", cmdLineParser, USAGE_PREFIX);
     }
 
-    Injector injector = MainClassUtils.createInjector(pluginModules);
+    Injector injector = MainClassUtils.createInjectorForPlugins(pluginModules);
 
     // Create SoyFileSet.
     SoyFileSet.Builder sfsBuilder = injector.getInstance(SoyFileSet.Builder.class);

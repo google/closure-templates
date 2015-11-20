@@ -144,7 +144,7 @@ public class SoyMsgPruner {
           cmdLineParser, USAGE_PREFIX);
     }
 
-    Injector injector = MainClassUtils.createInjector(msgPluginModule, null);
+    Injector injector = MainClassUtils.createInjectorForMsgPlugin(msgPluginModule);
 
     // Create SoyFileSet.
     Builder sfsBuilder = injector.getInstance(Builder.class);

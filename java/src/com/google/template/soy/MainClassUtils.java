@@ -22,7 +22,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -39,11 +38,10 @@ import org.kohsuke.args4j.spi.Setter;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
-
-import javax.annotation.Nullable;
 
 /**
  * Utilities for classes with a {@code main()} method.
@@ -60,7 +58,6 @@ final class MainClassUtils {
   }
 
   private MainClassUtils() {}
-
 
 
   /**
@@ -130,8 +127,12 @@ final class MainClassUtils {
     abstract T parseItem(String item);
 
     @Override public int parseArguments(Parameters params) throws CmdLineException {
-      for (String item : params.getParameter(0).split(",")) {
-        setter.addValue(parseItem(item));
+      String parameter = params.getParameter(0);
+      // An empty string should be an empty list, not a list containing the empty item
+      if (!parameter.isEmpty()) {
+        for (String item : parameter.split(",")) {
+          setter.addValue(parseItem(item));
+        }
       }
       return 1;
     }
@@ -169,14 +170,13 @@ final class MainClassUtils {
    *     usage text for flags when reporting errors).
    */
   static CmdLineParser parseFlags(Object objWithFlags, String[] args, String usagePrefix) {
-
     CmdLineParser cmdLineParser = new CmdLineParser(objWithFlags);
     cmdLineParser.setUsageWidth(100);
 
     try {
       cmdLineParser.parseArgument(args);
 
-    } catch(CmdLineException cle) {
+    } catch (CmdLineException cle) {
       exitWithError(cle.getMessage(), cmdLineParser, usagePrefix);
     }
 
@@ -229,7 +229,7 @@ final class MainClassUtils {
   }
 
   /**
-   * Creates a Guice injector that includes the SoyModule, a message plugin module, and maybe
+   * Returns a Guice injector that includes the SoyModule, a message plugin module, and maybe
    * additional plugin modules, and maybe additional modules.
    *
    * @param msgPluginModuleName The full class name of the message plugin module. Required.
@@ -238,43 +238,47 @@ final class MainClassUtils {
    * @return A Guice injector that includes the SoyModule, the given message plugin module, and the
    *     given additional plugin modules (if any).
    */
-  static Injector createInjector(String msgPluginModuleName, @Nullable String pluginModuleNames) {
-
-    List<Module> guiceModules = Lists.newArrayListWithCapacity(2);
-
-    guiceModules.add(new SoyModule());
-
-    checkArgument(msgPluginModuleName != null && msgPluginModuleName.length() > 0);
-    guiceModules.add(instantiatePluginModule(msgPluginModuleName));
-
-    if (pluginModuleNames != null && !pluginModuleNames.isEmpty()) {
-      for (String pluginModuleName : Splitter.on(',').split(pluginModuleNames)) {
-        guiceModules.add(instantiatePluginModule(pluginModuleName));
-      }
-    }
-
-    return Guice.createInjector(guiceModules);
+  static Injector createInjector(String msgPluginModuleName, String pluginModuleNames) {
+    checkArgument(!msgPluginModuleName.isEmpty());
+    return doCreateInjector(msgPluginModuleName, pluginModuleNames);
   }
 
   /**
-   * Creates a Guice injector that includes the SoyModule, a message plugin module, and maybe
-   * additional plugin modules, and maybe additional modules.
+   * Returns a Guice injector that includes the SoyModule, and maybe additional plugin modules.
    *
    * @param pluginModuleNames Comma-delimited list of full class names of additional plugin modules
    *     to include. Optional.
    * @return A Guice injector that includes the SoyModule, the given message plugin module, and the
    *     given additional plugin modules (if any).
    */
-  static Injector createInjector(@Nullable String pluginModuleNames) {
+  static Injector createInjectorForPlugins(String pluginModuleNames) {
+    return doCreateInjector("", pluginModuleNames);
+  }
 
-    List<Module> guiceModules = Lists.newArrayListWithCapacity(2);
+  /**
+   * Returns a Guice injector that includes the SoyModule, and maybe additional plugin modules.
+   *
+   * @param msgPluginModuleName The full class name of the message plugin module. Required.
+   */
+  static Injector createInjectorForMsgPlugin(String msgPluginModuleName) {
+    return doCreateInjector(msgPluginModuleName, "");
+  }
 
+  /**
+   * Returns an injector configured with the given plugins
+   * @param msgPluginModuleName The name of a guice module binding a msgplugin, may be empty
+   * @param pluginModuleNames A comma delimited list of plugin modules name, may be empty
+   */
+  private static Injector doCreateInjector(String msgPluginModuleName, String pluginModuleNames) {
+    List<Module> guiceModules = new ArrayList<>();
     guiceModules.add(new SoyModule());
 
-    if (pluginModuleNames != null && !pluginModuleNames.isEmpty()) {
-      for (String pluginModuleName : Splitter.on(',').split(pluginModuleNames)) {
-        guiceModules.add(instantiatePluginModule(pluginModuleName));
-      }
+    if (!msgPluginModuleName.isEmpty()) {
+      guiceModules.add(instantiatePluginModule(msgPluginModuleName));
+    }
+
+    for (String pluginModuleName : Splitter.on(',').omitEmptyStrings().split(pluginModuleNames)) {
+      guiceModules.add(instantiatePluginModule(pluginModuleName));
     }
 
     return Guice.createInjector(guiceModules);
@@ -291,11 +295,7 @@ final class MainClassUtils {
     try {
       return (Module) Class.forName(moduleName).newInstance();
 
-    } catch (ClassNotFoundException e) {
-      throw new RuntimeException("Cannot find plugin module \"" + moduleName + "\".", e);
-    } catch (IllegalAccessException e) {
-      throw new RuntimeException("Cannot access plugin module \"" + moduleName + "\".", e);
-    } catch (InstantiationException e) {
+    } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
       throw new RuntimeException("Cannot instantiate plugin module \"" + moduleName + "\".", e);
     }
   }

@@ -191,7 +191,7 @@ public final class SoyToPySrcCompiler {
       exitWithErrorFn.apply("Must provide the output path format.");
     }
 
-    Injector injector = MainClassUtils.createInjector(pluginModules);
+    Injector injector = MainClassUtils.createInjectorForPlugins(pluginModules);
 
     // Create SoyFileSet.
     SoyFileSet.Builder sfsBuilder = injector.getInstance(SoyFileSet.Builder.class);
