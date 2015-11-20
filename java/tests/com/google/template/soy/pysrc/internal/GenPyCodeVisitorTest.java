@@ -54,6 +54,8 @@ public final class GenPyCodeVisitorTest extends TestCase {
       + "from example.runtime import runtime\n"
       + "from example.runtime import sanitize\n"
       + "\n"
+      + "NAMESPACE_MANIFEST = {\n"
+      + "}\n"
       + "\n"
       + "try:\n"
       + "  str = unicode\n"
@@ -94,6 +96,22 @@ public final class GenPyCodeVisitorTest extends TestCase {
 
     assertThatSoyFile(soyFile).withNamespaceManifest(namespaceManifest.build())
         .compilesToSourceContaining(expectedImport);
+  }
+
+  public void testNamespaceManifest() {
+    String soyFile = SOY_NAMESPACE
+        + "{template .helloWorld}\n"
+        + "  {call foo.bar.baz.quz /}\n"
+        + "{/template}\n";
+    String expectedManifest = "NAMESPACE_MANIFEST = {\n"
+        + "    'foo.bar.baz': 'google.foo.bar.baz',\n"
+        + "}\n";
+
+    ImmutableMap.Builder<String, String> namespaceManifest = new ImmutableMap.Builder<>();
+    namespaceManifest.put("foo.bar.baz", "google.foo.bar.baz");
+
+    assertThatSoyFile(soyFile).withNamespaceManifest(namespaceManifest.build())
+        .compilesToSourceContaining(expectedManifest);
   }
 
   public void testEnvironmentConfiguration() {

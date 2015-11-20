@@ -220,6 +220,17 @@ def namespaced_import(name, namespace=None, environment_path=None):
     raise
 
 
+def manifest_import(namespace, manifest):
+  """Imports a module using a namespace manifest to find the module.
+  """
+  if not manifest:
+    raise ImportError('No manifest provided')
+  elif namespace not in manifest:
+    raise ImportError('Manfest does not contain namespace: %s' % namespace)
+
+  return importlib.import_module(manifest[namespace])
+
+
 def key_safe_data_access(data, key):
   """Safe key based data access.
 

@@ -86,8 +86,8 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   /** The options configuration for this run. */
   private final SoyPySrcOptions pySrcOptions;
 
-  /** The namespace manifest for current sources. */
-  private final ImmutableMap<String, String> currentManifest;
+  /** The namespace manifest for all current and dependent sources. */
+  private final ImmutableMap<String, String> namespaceManifest;
 
   /** The contents of the generated Python files. */
   private List<String> pyFilesContents;
@@ -120,11 +120,14 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       ErrorReporter errorReporter) {
     this.errorReporter = errorReporter;
     this.pySrcOptions = pySrcOptions;
-    this.currentManifest = currentManifest;
     this.isComputableAsPyExprVisitor = isComputableAsPyExprVisitor;
     this.genPyExprsVisitorFactory = genPyExprsVisitorFactory;
     this.translateToPyExprVisitorFactory = translateToPyExprVisitorFactory;
     this.genPyCallExprVisitor = genPyCallExprVisitor;
+
+    this.namespaceManifest = new ImmutableMap.Builder<String, String>()
+        .putAll(pySrcOptions.getNamespaceManifest())
+        .putAll(currentManifest).build();
   }
 
 
@@ -786,15 +789,11 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         }
       }
 
-      Map<String, String> namespaceManifest = pySrcOptions.getNamespaceManifest();
       for (String calleeModule : calleeModules) {
         Pair<String, String> nameSpaceAndName = namespaceAndNameFromModule(calleeModule);
         String calleeNamespace = nameSpaceAndName.first;
         String calleeName = nameSpaceAndName.second;
-        if (currentManifest.containsKey(calleeModule)) {
-          pyCodeBuilder.appendLine("import ", currentManifest.get(calleeModule),
-              " as ", calleeName);
-        } else if (namespaceManifest.containsKey(calleeModule)) {
+        if (namespaceManifest.containsKey(calleeModule)) {
           pyCodeBuilder.appendLine("import ", namespaceManifest.get(calleeModule),
               " as ", calleeName);
         } else {
@@ -807,6 +806,15 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
           pyCodeBuilder.appendLineEnd(")");
         }
       }
+
+      // Store the entire manifest for use at runtime.
+      pyCodeBuilder.appendLine("NAMESPACE_MANIFEST = {");
+      pyCodeBuilder.increaseIndentTwice();
+      for (Map.Entry<String, String> entry : namespaceManifest.entrySet()) {
+        pyCodeBuilder.appendLine("'", entry.getKey(), "': '", entry.getValue(), "',");
+      }
+      pyCodeBuilder.decreaseIndentTwice();
+      pyCodeBuilder.appendLine("}");
       pyCodeBuilder.appendLine();
     }
 
