@@ -400,7 +400,8 @@ public abstract class TemplateNodeBuilder {
   }
 
   protected final void setRequireCssCmdText(Map<String, String> attributes) {
-    setRequiredCssNamespaces(RequirecssUtils.parseRequirecssAttr(attributes.get("requirecss")));
+    setRequiredCssNamespaces(RequirecssUtils.parseRequirecssAttr(attributes.get("requirecss"),
+        sourceLocation));
   }
 
   protected final void setCssBaseCmdText(Map<String, String> attributes) {

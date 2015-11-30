@@ -472,8 +472,9 @@ class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
             (parentNode instanceof CommandNode)
                 ? "Tag " + ((CommandNode) parentNode).getTagString()
                 : "Node " + parentNode;
-        throw SoySyntaxException.createWithoutMetaInfo(
-            nodeStringForErrorMsg + " is not allowed to be a direct child of a 'msg' tag.");
+        throw SoySyntaxException.createWithMetaInfo(
+            nodeStringForErrorMsg + " is not allowed to be a direct child of a 'msg' tag.",
+            parentNode.getSourceLocation());
       }
     }
   }

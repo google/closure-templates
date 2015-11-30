@@ -57,7 +57,8 @@ public final class NamespaceDeclaration {
               parseAutoEscapeMode(attr.getValue(), attr.getLocation(), errorReporter);
           break;
         case "requirecss":
-          requiredCssNamespaces = RequirecssUtils.parseRequirecssAttr(attr.getValue());
+          requiredCssNamespaces = RequirecssUtils.parseRequirecssAttr(attr.getValue(),
+              attr.getLocation());
           break;
         case "cssbase":
           cssBaseNamespace = attr.getValue();

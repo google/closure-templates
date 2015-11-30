@@ -17,6 +17,7 @@
 package com.google.template.soy.soytree;
 
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.BaseUtils;
 
@@ -26,10 +27,8 @@ import javax.annotation.Nullable;
 /**
  * Utilities for processing the 'requirecss' attribute (for a Soy file or for a template).
  *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  */
-public class RequirecssUtils {
+final class RequirecssUtils {
 
 
   // Disallow instantiation.
@@ -42,7 +41,8 @@ public class RequirecssUtils {
    * @param requirecssAttr The 'requirecss' attribute value to parse.
    * @return A list of required CSS namespaces parsed from the given attribute value.
    */
-  public static ImmutableList<String> parseRequirecssAttr(@Nullable String requirecssAttr) {
+  static ImmutableList<String> parseRequirecssAttr(@Nullable String requirecssAttr,
+      SourceLocation srcLoc) {
 
     if (requirecssAttr == null) {
       return ImmutableList.of();
@@ -50,9 +50,9 @@ public class RequirecssUtils {
 
     String[] namespaces = requirecssAttr.trim().split("\\s*,\\s*");
     for (String namespace : namespaces) {
-      if (! BaseUtils.isDottedIdentifier(namespace)) {
-        throw SoySyntaxException.createWithoutMetaInfo(
-            "Invalid required CSS namespace name \"" + namespace + "\".");
+      if (!BaseUtils.isDottedIdentifier(namespace)) {
+        throw SoySyntaxException.createWithMetaInfo(
+            "Invalid required CSS namespace name \"" + namespace + "\".", srcLoc);
       }
     }
     return ImmutableList.copyOf(namespaces);

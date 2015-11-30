@@ -142,7 +142,7 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
         // A string literal is being used as template variant, so the expression value can
         // immediately be evaluated.
         this.delTemplateVariant = ((StringNode) variantExpr).getValue();
-        TemplateDelegateNode.verifyVariantName(delTemplateVariant);
+        TemplateDelegateNode.verifyVariantName(delTemplateVariant, sourceLocation);
       } else if (variantExpr instanceof GlobalNode) {
         // A global expression was used as template variant. The expression will be stored and later
         // resolved into a value when the global expressions are resolved.
