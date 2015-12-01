@@ -1058,6 +1058,39 @@ public final class ContextualAutoescaperTest extends TestCase {
             "{/template}\n"));
   }
 
+  public void testBlessStringAsTrustedResourceUrlForLegacy() throws Exception {
+    assertContextualRewriting(
+        join(
+            "{namespace ns}\n\n",
+            "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "  {@param start: ?}\n",
+            "  {@param path: ?}\n",
+            "  {@param query: ?}\n",
+            "  {@param fragment: ?}\n",
+            "<script src='",
+            "{$start |blessStringAsTrustedResourceUrlForLegacy |filterTrustedResourceUri ",
+            "|filterNormalizeUri |escapeHtmlAttribute}",
+            "/{$path |blessStringAsTrustedResourceUrlForLegacy |filterTrustedResourceUri ",
+            "|escapeHtmlAttribute}",
+            "?q={$query |blessStringAsTrustedResourceUrlForLegacy |filterTrustedResourceUri ",
+            "|escapeUri}",
+            "#{$fragment |blessStringAsTrustedResourceUrlForLegacy |filterTrustedResourceUri ",
+            "|escapeHtmlAttribute}'></script>\n",
+            "{/template}"),
+        join(
+            "{namespace ns}\n\n",
+            "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "  {@param start: ?}\n",
+            "  {@param path: ?}\n",
+            "  {@param query: ?}\n",
+            "  {@param fragment: ?}\n",
+            "<script src='{$start |blessStringAsTrustedResourceUrlForLegacy}",
+            "/{$path |blessStringAsTrustedResourceUrlForLegacy}",
+            "?q={$query |blessStringAsTrustedResourceUrlForLegacy}",
+            "#{$fragment |blessStringAsTrustedResourceUrlForLegacy}'></script>",
+            "{/template}\n"));
+  }
+
   public void testCss() throws Exception {
     assertContextualRewritingNoop(
         join(

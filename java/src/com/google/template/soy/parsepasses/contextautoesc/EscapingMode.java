@@ -136,12 +136,6 @@ public enum EscapingMode {
   FILTER_TRUSTED_RESOURCE_URI(false, null),
 
   /**
-   * Makes sure that legacy resource URI are not filtered for being not marked as trusted.
-   */
-  // TODO(shwetakarwa): Change second argument when function is implemented.
-  BLESS_STRING_AS_TRUSTED_RESOURCE_URL_FOR_LEGACY(false, null),
-
-  /**
    * The explicit rejection of escaping.
    */
   NO_AUTOESCAPE(false, ContentKind.TEXT),
