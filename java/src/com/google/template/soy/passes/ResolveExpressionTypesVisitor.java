@@ -109,6 +109,8 @@ import javax.annotation.Nullable;
  */
 final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
 
+  private static final SoyError BAD_FOREACH_TYPE =
+      SoyError.of("cannot iterate over {0} of type {1}");
   private static final SoyError BAD_INDEX_TYPE =
       SoyError.of("bad index type {0} for {1}");
   private static final SoyError BAD_KEY_TYPE =
@@ -267,7 +269,7 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
     // Visit the foreach iterator expression
     visitExpressions(node.getParent());
     // Set the inferred type of the loop variable.
-    node.getVar().setType(getElementType(node.getExpr().getType(), node.getParent()));
+    node.getVar().setType(getElementType(node.getExpr().getType(), node));
     // Visit the node body
     visitChildren(node);
   }
@@ -295,11 +297,10 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
   /**
    * Given a collection type, compute the element type.
    * @param collectionType The base type.
-   * @param owningNode The current error context, in other words the SoyNode owning the
-   *     expression being scanned.
+   * @param node The ForeachNonemptyNode being iterated.
    * @return The type of the elements of the collection.
    */
-  private SoyType getElementType(SoyType collectionType, ExprHolderNode owningNode) {
+  private SoyType getElementType(SoyType collectionType, ForeachNonemptyNode node) {
     Preconditions.checkNotNull(collectionType);
     switch (collectionType.getKind()) {
       case UNKNOWN:
@@ -316,16 +317,20 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
         UnionType unionType = (UnionType) collectionType;
         List<SoyType> fieldTypes = new ArrayList<>(unionType.getMembers().size());
         for (SoyType unionMember : unionType.getMembers()) {
-          fieldTypes.add(getElementType(unionMember, owningNode));
+          SoyType elementType = getElementType(unionMember, node);
+          if (elementType.getKind() == SoyType.Kind.ERROR) {
+            return ErrorType.getInstance();
+          }
+          fieldTypes.add(elementType);
         }
         return typeOps.computeLowestCommonType(fieldTypes);
       }
 
       default:
-        // If we're here, there's a bug in Soy. collectionType can't be set by template authors.
-        // It comes from the ForeachNonemptyNode.
-        throw new AssertionError(
-            "Cannot compute element type for collection of type '" + collectionType);
+        errorReporter.report(node.getParent().getSourceLocation(),
+            BAD_FOREACH_TYPE, node.getExpr().toSourceString(),
+            node.getExpr().getType());  // Report the outermost union type in the error.
+        return ErrorType.getInstance();
     }
   }
 

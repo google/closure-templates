@@ -752,6 +752,24 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
     assertThat(types.get(4)).isEqualTo(IntType.getInstance());
   }
 
+  public void testBadForEach() {
+    assertResolveExpressionTypesFails(
+        "cannot iterate over $p of type int",
+        constructTemplateSource(
+            "{@param p: int}",
+            "{foreach $item in $p}{/foreach}"));
+    assertResolveExpressionTypesFails(
+        "cannot iterate over $p of type int|string",
+        constructTemplateSource(
+            "{@param p: int|string}",
+            "{foreach $item in $p}{/foreach}"));
+    assertResolveExpressionTypesFails(
+        "cannot iterate over $p of type list<string>|string|uri",
+        constructTemplateSource(
+            "{@param p: list<string>|string|uri}",
+            "{foreach $item in $p}{/foreach}"));
+  }
+
   public void testInjectedParamTypes() {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
