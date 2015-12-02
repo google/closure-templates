@@ -32,7 +32,7 @@ import com.google.template.soy.basetree.SyntaxVersionUpperBound;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyError;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 import com.google.template.soy.soytree.TemplateNodeBuilder.DeclInfo.OptionalStatus;
 import com.google.template.soy.soytree.TemplateNodeBuilder.DeclInfo.Type;
@@ -64,27 +64,28 @@ import javax.annotation.Nullable;
  */
 public abstract class TemplateNodeBuilder {
 
-  private static final SoyError INVALID_CSS_BASE_NAMESPACE_NAME =
-      SoyError.of("Invalid CSS base namespace name ''{0}''");
-  private static final SoyError INVALID_PARAM_TEXT =
-      SoyError.of("Invalid {0} text ''{1}''");
-  private static final SoyError INVALID_SOYDOC_PARAM =
-      SoyError.of("Found invalid soydoc param name ''{0}''");
-  private static final SoyError INVALID_TEMPLATE_NAME =
-      SoyError.of("Invalid template name ''{0}''");
-  private static final SoyError INVALID_PARAM_NAME =
-      SoyError.of("Invalid {0} name ''{1}''");
-  private static final SoyError INVALID_PARAM_NAMED_IJ =
-      SoyError.of("Invalid param name ''ij'' (''ij'' is for injected data).");
-  private static final SoyError KIND_BUT_NOT_STRICT =
-      SoyError.of("kind=\"...\" attribute is only valid with autoescape=\"strict\".");
-  private static final SoyError LEGACY_COMPATIBLE_PARAM_TAG =
-      SoyError.of("Found invalid SoyDoc param tag ''{0}'', tags like this are only allowed in "
-          + "legacy templates marked ''deprecatedV1=\"true\"''.  The proper soydoc @param syntax "
-          + "is: ''@param <name> <optional comment>''. Soy does not understand JsDoc style type "
-          + "declarations in SoyDoc.");
-  private static final SoyError PARAM_ALREADY_DECLARED =
-      SoyError.of("Param ''{0}'' already declared");
+  private static final SoyErrorKind INVALID_CSS_BASE_NAMESPACE_NAME =
+      SoyErrorKind.of("Invalid CSS base namespace name ''{0}''");
+  private static final SoyErrorKind INVALID_PARAM_TEXT =
+      SoyErrorKind.of("Invalid {0} text ''{1}''");
+  private static final SoyErrorKind INVALID_SOYDOC_PARAM =
+      SoyErrorKind.of("Found invalid soydoc param name ''{0}''");
+  private static final SoyErrorKind INVALID_TEMPLATE_NAME =
+      SoyErrorKind.of("Invalid template name ''{0}''");
+  private static final SoyErrorKind INVALID_PARAM_NAME =
+      SoyErrorKind.of("Invalid {0} name ''{1}''");
+  private static final SoyErrorKind INVALID_PARAM_NAMED_IJ =
+      SoyErrorKind.of("Invalid param name ''ij'' (''ij'' is for injected data).");
+  private static final SoyErrorKind KIND_BUT_NOT_STRICT =
+      SoyErrorKind.of("kind=\"...\" attribute is only valid with autoescape=\"strict\".");
+  private static final SoyErrorKind LEGACY_COMPATIBLE_PARAM_TAG =
+      SoyErrorKind.of(
+          "Found invalid SoyDoc param tag ''{0}'', tags like this are only allowed in "
+              + "legacy templates marked ''deprecatedV1=\"true\"''.  The proper soydoc @param "
+              + "syntax is: ''@param <name> <optional comment>''. Soy does not understand JsDoc "
+              + "style type declarations in SoyDoc.");
+  private static final SoyErrorKind PARAM_ALREADY_DECLARED =
+      SoyErrorKind.of("Param ''{0}'' already declared");
 
   /**
    * Value class used in the input to method {@link #setHeaderDecls}.

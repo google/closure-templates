@@ -51,7 +51,7 @@ import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier.Version;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
-import com.google.template.soy.error.SoyError;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.NameAttributePair;
 import com.google.template.soy.soytree.AliasDeclaration;
@@ -151,7 +151,7 @@ public class SoyFileParser {
   private static final Pattern ERROR_MSG_LINE_NUM_PAT =
       Pattern.compile("(?<=line )\\d+(?=, column )");
 
-  private static final SoyError UNCATEGORIZED = SoyError.of("In file {0}, template {1}: {2}");
+  private static final SoyErrorKind UNCATEGORIZED = SoyErrorKind.of("In file {0}, template {1}: {2}");
 
 
   /** Type registry for resolving type names. */

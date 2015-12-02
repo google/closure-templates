@@ -28,7 +28,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContentOperator;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyError;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.AutoescapeMode;
@@ -76,8 +76,8 @@ public final class ContextualAutoescaper {
   static final String AUTOESCAPE_ERROR_PREFIX =
       "Invalid or ambiguous syntax prevents Soy from escaping this template correctly:\n";
 
-  private static final SoyError AUTOESCAPE_ERROR = SoyError.of(
-      AUTOESCAPE_ERROR_PREFIX + "{0}");
+  private static final SoyErrorKind AUTOESCAPE_ERROR =
+      SoyErrorKind.of(AUTOESCAPE_ERROR_PREFIX + "{0}");
 
   /**
    * Soy directives that cancel autoescaping (see

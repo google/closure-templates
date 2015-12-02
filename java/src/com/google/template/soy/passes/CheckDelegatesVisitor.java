@@ -19,7 +19,7 @@ package com.google.template.soy.passes;
 import com.google.common.base.Preconditions;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyError;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.shared.internal.DelTemplateSelector;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
@@ -49,18 +49,22 @@ import java.util.Set;
  */
 final class CheckDelegatesVisitor extends AbstractSoyNodeVisitor<Void> {
 
-  private static final SoyError CALL_TO_DELTEMPLATE = SoyError.of(
-      "''call'' to delegate template ''{0}'' (expected ''delcall'').");
-  private static final SoyError CROSS_PACKAGE_DELCALL = SoyError.of(
-      "Found illegal call from ''{0}'' to ''{1}'', which is in a different delegate package.");
-  private static final SoyError DELCALL_TO_BASIC_TEMPLATE = SoyError.of(
-      "''delcall'' to basic template ''{0}'' (expected ''call'').");
-  private static final SoyError DELTEMPLATES_WITH_DIFFERENT_PARAM_DECLARATIONS = SoyError.of(
-      "Found delegate template with same name ''{0}'' but different param declarations "
-          + "compared to the definition at {1}.");
-  private static final SoyError STRICT_DELTEMPLATES_WITH_DIFFERENT_CONTENT_KIND = SoyError.of(
-      "If one deltemplate has strict autoescaping, all its peers must also be strictly autoescaped "
-          + "with the same content kind: {0} != {1}. Conflicting definition at {2}.");
+  private static final SoyErrorKind CALL_TO_DELTEMPLATE =
+      SoyErrorKind.of("''call'' to delegate template ''{0}'' (expected ''delcall'').");
+  private static final SoyErrorKind CROSS_PACKAGE_DELCALL =
+      SoyErrorKind.of(
+          "Found illegal call from ''{0}'' to ''{1}'', which is in a different delegate package.");
+  private static final SoyErrorKind DELCALL_TO_BASIC_TEMPLATE =
+      SoyErrorKind.of("''delcall'' to basic template ''{0}'' (expected ''call'').");
+  private static final SoyErrorKind DELTEMPLATES_WITH_DIFFERENT_PARAM_DECLARATIONS =
+      SoyErrorKind.of(
+          "Found delegate template with same name ''{0}'' but different param declarations "
+              + "compared to the definition at {1}.");
+  private static final SoyErrorKind STRICT_DELTEMPLATES_WITH_DIFFERENT_CONTENT_KIND =
+      SoyErrorKind.of(
+          "If one deltemplate has strict autoescaping, all its peers must also be strictly"
+              + " autoescaped with the same content kind: {0} != {1}. Conflicting definition at"
+              + " {2}.");
 
   /** A template registry built from the Soy tree. */
   private final TemplateRegistry templateRegistry;

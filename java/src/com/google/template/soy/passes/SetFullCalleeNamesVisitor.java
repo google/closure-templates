@@ -18,7 +18,7 @@ package com.google.template.soy.passes;
 
 import com.google.common.base.Preconditions;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyError;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -40,11 +40,12 @@ import java.util.Map;
  */
 final class SetFullCalleeNamesVisitor extends AbstractSoyNodeVisitor<Void> {
 
-  private static final SoyError CALL_COLLIDES_WITH_NAMESPACE_ALIAS =
-      SoyError.of("Call collides with namespace alias ''{0}''");
-  private static final SoyError NAMESPACE_RELATIVE_CALL_IN_FILE_WITHOUT_NAMESPACE_DECL =
-      SoyError.of("Namespace-relative template calls are allowed only in files "
-          + "with namespace declarations");
+  private static final SoyErrorKind CALL_COLLIDES_WITH_NAMESPACE_ALIAS =
+      SoyErrorKind.of("Call collides with namespace alias ''{0}''");
+  private static final SoyErrorKind NAMESPACE_RELATIVE_CALL_IN_FILE_WITHOUT_NAMESPACE_DECL =
+      SoyErrorKind.of(
+          "Namespace-relative template calls are allowed only in files "
+              + "with namespace declarations");
 
   /** The namespace of the current file that we're in (during the pass). */
   private String currNamespace;

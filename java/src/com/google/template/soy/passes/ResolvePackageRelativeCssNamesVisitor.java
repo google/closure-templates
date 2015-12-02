@@ -19,7 +19,7 @@ package com.google.template.soy.passes;
 import com.google.common.base.CaseFormat;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyError;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CssNode;
 import com.google.template.soy.soytree.SoyNode;
@@ -32,10 +32,11 @@ import com.google.template.soy.soytree.TemplateNode;
  */
 final class ResolvePackageRelativeCssNamesVisitor extends AbstractSoyNodeVisitor<Void> {
 
-  private static final SoyError PACKAGE_RELATIVE_CLASS_NAME_USED_WITH_COMPONENT_NAME =
-      SoyError.of("Package-relative class name ''{0}'' cannot be used with component expression");
-  private static final SoyError NO_CSS_PACKAGE =
-      SoyError.of("No CSS package defined for package-relative class name ''{0}''");
+  private static final SoyErrorKind PACKAGE_RELATIVE_CLASS_NAME_USED_WITH_COMPONENT_NAME =
+      SoyErrorKind.of(
+          "Package-relative class name ''{0}'' cannot be used with component expression");
+  private static final SoyErrorKind NO_CSS_PACKAGE =
+      SoyErrorKind.of("No CSS package defined for package-relative class name ''{0}''");
 
   private final ErrorReporter errorReporter;
   private String packagePrefix = null;

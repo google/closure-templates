@@ -21,7 +21,7 @@ import com.google.common.collect.Iterables;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
-import com.google.template.soy.error.SoyError;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
@@ -47,14 +47,14 @@ import java.util.Set;
  */
 final class CheckFunctionCallsVisitor extends AbstractSoyNodeVisitor<Void> {
 
-  private static final SoyError INCORRECT_NUM_ARGS = SoyError.of(
-      "Function ''{0}'' called with {1} arguments (expected {2}).");
-  private static final SoyError LOOP_VARIABLE_NOT_IN_SCOPE = SoyError.of(
-      "Function ''{0}'' must have a foreach loop variable as its argument.");
-  private static final SoyError QUOTE_KEYS_IF_JS_REQUIRES_MAP_LITERAL_ARG = SoyError.of(
-      "Function ''quoteKeysIfJs'' called with argument of type {0} (expected map literal).");
-  private static final SoyError UNKNOWN_FUNCTION = SoyError.of(
-      "Unknown function ''{0}''.");
+  private static final SoyErrorKind INCORRECT_NUM_ARGS =
+      SoyErrorKind.of("Function ''{0}'' called with {1} arguments (expected {2}).");
+  private static final SoyErrorKind LOOP_VARIABLE_NOT_IN_SCOPE =
+      SoyErrorKind.of("Function ''{0}'' must have a foreach loop variable as its argument.");
+  private static final SoyErrorKind QUOTE_KEYS_IF_JS_REQUIRES_MAP_LITERAL_ARG =
+      SoyErrorKind.of(
+          "Function ''quoteKeysIfJs'' called with argument of type {0} (expected map literal).");
+  private static final SoyErrorKind UNKNOWN_FUNCTION = SoyErrorKind.of("Unknown function ''{0}''.");
 
   private final ErrorReporter errorReporter;
 

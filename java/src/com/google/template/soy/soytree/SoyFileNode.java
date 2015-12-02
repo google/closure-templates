@@ -25,7 +25,7 @@ import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyError;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
 
 import java.util.Collection;
@@ -42,17 +42,18 @@ import javax.annotation.Nullable;
 public final class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
     implements SplitLevelTopNode<TemplateNode> {
 
-  private static final SoyError ALIAS_USED_WITHOUT_NAMESPACE =
-      SoyError.of(
+  private static final SoyErrorKind ALIAS_USED_WITHOUT_NAMESPACE =
+      SoyErrorKind.of(
           "''{alias...'' can only be used in files with valid ''{namespace ...'' "
               + "declarations");
 
-  private static final SoyError INVALID_ALIAS_FOR_LAST_PART_OF_NAMESPACE =
-      SoyError.of("Not allowed to alias the last part of the file''s namespace ({0}) "
-          + "to another namespace ({1}).");
+  private static final SoyErrorKind INVALID_ALIAS_FOR_LAST_PART_OF_NAMESPACE =
+      SoyErrorKind.of(
+          "Not allowed to alias the last part of the file''s namespace ({0}) "
+              + "to another namespace ({1}).");
 
-  private static final SoyError DIFFERENT_NAMESPACES_WITH_SAME_ALIAS =
-      SoyError.of("Found two namespaces with the same alias (''{0}'' and ''{1}'').");
+  private static final SoyErrorKind DIFFERENT_NAMESPACES_WITH_SAME_ALIAS =
+      SoyErrorKind.of("Found two namespaces with the same alias (''{0}'' and ''{1}'').");
 
   public static final Predicate<SoyFileNode> MATCH_SRC_FILENODE = new Predicate<SoyFileNode>() {
     @Override

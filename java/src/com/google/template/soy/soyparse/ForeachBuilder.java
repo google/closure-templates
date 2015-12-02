@@ -21,7 +21,7 @@ import static com.google.common.base.Preconditions.checkState;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyError;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.ForeachIfemptyNode;
@@ -39,8 +39,8 @@ import java.util.regex.Pattern;
  */
 final class ForeachBuilder {
 
-  static final SoyError INVALID_COMMAND_TEXT
-      = SoyError.of("Invalid ''foreach'' command text \"{0}\".");
+  static final SoyErrorKind INVALID_COMMAND_TEXT =
+      SoyErrorKind.of("Invalid ''foreach'' command text \"{0}\".");
 
   /** Regex pattern for the command text. */
   // 2 capturing groups: local var name, expression

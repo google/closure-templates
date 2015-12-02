@@ -22,7 +22,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyError;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.internal.base.Pair;
@@ -80,8 +80,8 @@ import javax.inject.Inject;
  */
 final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
-  private static final SoyError NON_NAMESPACED_TEMPLATE =
-      SoyError.of("Called template does not reside in a namespace.");
+  private static final SoyErrorKind NON_NAMESPACED_TEMPLATE =
+      SoyErrorKind.of("Called template does not reside in a namespace.");
 
   /** The options configuration for this run. */
   private final SoyPySrcOptions pySrcOptions;

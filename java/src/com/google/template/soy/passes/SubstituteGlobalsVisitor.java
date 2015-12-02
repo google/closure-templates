@@ -24,7 +24,7 @@ import com.google.template.soy.data.internalutils.InternalValueUtils;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.PrimitiveData;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyError;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
@@ -49,10 +49,9 @@ import java.util.Map;
  */
 final class SubstituteGlobalsVisitor {
 
-  private static final SoyError UNBOUND_GLOBAL =
-      SoyError.of("Unbound global ''{0}''.");
-  private static final SoyError ENUM_MEMBERSHIP_ERROR =
-      SoyError.of("''{0}'' is not a member of enum ''{1}''.");
+  private static final SoyErrorKind UNBOUND_GLOBAL = SoyErrorKind.of("Unbound global ''{0}''.");
+  private static final SoyErrorKind ENUM_MEMBERSHIP_ERROR =
+      SoyErrorKind.of("''{0}'' is not a member of enum ''{1}''.");
 
   /** Map from compile-time global name to value. */
   private final ImmutableMap<String, PrimitiveData> compileTimeGlobals;

@@ -22,7 +22,7 @@ import com.google.common.collect.Lists;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
-import com.google.template.soy.error.SoyError;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.MsgNode;
@@ -47,11 +47,13 @@ import javax.annotation.Nullable;
  */
 final class RewriteGenderMsgsVisitor extends AbstractSoyNodeVisitor<Void> {
 
-  private static final SoyError GENDER_AND_SELECT_NOT_ALLOWED = SoyError.of(
-      "Cannot mix ''genders'' attribute with ''select'' command in the same message.");
-  private static final SoyError MORE_THAN_TWO_GENDER_EXPRS = SoyError.of(
-      "In a msg with ''plural'', the ''genders'' attribute can contain at most 2 expressions "
-      + "(otherwise, combinatorial explosion would cause a gigantic generated message).");
+  private static final SoyErrorKind GENDER_AND_SELECT_NOT_ALLOWED =
+      SoyErrorKind.of(
+          "Cannot mix ''genders'' attribute with ''select'' command in the same message.");
+  private static final SoyErrorKind MORE_THAN_TWO_GENDER_EXPRS =
+      SoyErrorKind.of(
+          "In a msg with ''plural'', the ''genders'' attribute can contain at most 2 expressions "
+              + "(otherwise, combinatorial explosion would cause a gigantic generated message).");
 
   /** Fallback base select var name. */
   public static final String FALLBACK_BASE_SELECT_VAR_NAME = "GENDER";

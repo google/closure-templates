@@ -29,7 +29,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.FixedIdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
-import com.google.template.soy.error.SoyError;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soyparse.ParseException;
 import com.google.template.soy.soyparse.TemplateParser;
 
@@ -61,7 +61,7 @@ public final class TemplateSubject extends Subject<TemplateSubject, String> {
     return Truth.assertAbout(FACTORY).that(input);
   }
 
-  public TemplateSubject causesError(SoyError error) {
+  public TemplateSubject causesError(SoyErrorKind error) {
     ErrorReporterImpl errorReporter = new ErrorReporterImpl();
     try {
       new TemplateParser(new FixedIdGenerator(), getSubject(), "example.soy", 1, 0, errorReporter)
@@ -109,9 +109,9 @@ public final class TemplateSubject extends Subject<TemplateSubject, String> {
 
   private static final class ErrorReporterImpl implements ErrorReporter {
 
-    private final List<SoyError> soyErrors = new ArrayList<>();
-    private final ListMultimap<SoyError, SourceLocation> locationsForError
-        = ArrayListMultimap.create();
+    private final List<SoyErrorKind> soyErrors = new ArrayList<>();
+    private final ListMultimap<SoyErrorKind, SourceLocation> locationsForError =
+        ArrayListMultimap.create();
 
     @Override
     public Checkpoint checkpoint() {
@@ -125,7 +125,7 @@ public final class TemplateSubject extends Subject<TemplateSubject, String> {
     }
 
     @Override
-    public void report(SourceLocation sourceLocation, SoyError error, Object... args) {
+    public void report(SourceLocation sourceLocation, SoyErrorKind error, Object... args) {
       soyErrors.add(error);
       locationsForError.put(error, sourceLocation);
     }

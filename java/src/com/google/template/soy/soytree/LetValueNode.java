@@ -22,7 +22,7 @@ import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.ExplodingErrorReporter;
-import com.google.template.soy.error.SoyError;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 
@@ -36,12 +36,14 @@ import java.util.List;
  */
 public final class LetValueNode extends LetNode implements ExprHolderNode {
 
-  public static final SoyError SELF_ENDING_WITHOUT_VALUE
-      = SoyError.of("A ''let'' tag should be self-ending (with a trailing ''/'') if and only if "
-          + "it also contains a value (invalid tag is '{'let {0} /'}').");
-  private static final SoyError KIND_ATTRIBUTE_NOT_ALLOWED_WITH_VALUE
-      = SoyError.of("The ''kind'' attribute is not allowed on self-ending ''let'' tags that "
-          + "contain a value (invalid tag is '{'let {0} /'}').");
+  public static final SoyErrorKind SELF_ENDING_WITHOUT_VALUE =
+      SoyErrorKind.of(
+          "A ''let'' tag should be self-ending (with a trailing ''/'') if and only if "
+              + "it also contains a value (invalid tag is '{'let {0} /'}').");
+  private static final SoyErrorKind KIND_ATTRIBUTE_NOT_ALLOWED_WITH_VALUE =
+      SoyErrorKind.of(
+          "The ''kind'' attribute is not allowed on self-ending ''let'' tags that "
+              + "contain a value (invalid tag is '{'let {0} /'}').");
 
 
   /** The value expression that the variable is set to. */

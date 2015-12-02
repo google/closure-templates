@@ -21,7 +21,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyError;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 
@@ -42,8 +42,8 @@ import javax.annotation.Nullable;
  */
 final class V1JsExprTranslator {
 
-  private static final SoyError MALFORMED_FUNCTION_CALL =
-      SoyError.of("Malformed function call.");
+  private static final SoyErrorKind MALFORMED_FUNCTION_CALL =
+      SoyErrorKind.of("Malformed function call.");
 
   /** Regex for a template variable or data reference. */
   // 2 capturing groups: first part (excluding '$'), rest

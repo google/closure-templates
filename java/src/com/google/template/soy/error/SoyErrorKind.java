@@ -26,17 +26,17 @@ import java.text.MessageFormat;
  * (In particular, this class is not intended to convey errors in the Soy implementation itself.)
  * The error can be customized with {@link #format string arguments}.
  *
- * <p>Classes that report SoyErrors should declare them as static final fields, making it easy
+ * <p>Classes that report SoyErrorKinds should declare them as static final fields, making it easy
  * for readers to inspect the errors that the class could report.
  *
  * @author brndn@google.com (Brendan Linn)
  */
-public final class SoyError {
+public final class SoyErrorKind {
 
   private final MessageFormat messageFormat;
   private final int requiredArgs;
 
-  private SoyError(MessageFormat messageFormat) {
+  private SoyErrorKind(MessageFormat messageFormat) {
     this.messageFormat = messageFormat;
     this.requiredArgs = messageFormat.getFormatsByArgumentIndex().length;
   }
@@ -47,9 +47,9 @@ public final class SoyError {
     return messageFormat.format(args);
   }
 
-  public static SoyError of(String format) {
+  public static SoyErrorKind of(String format) {
     checkFormat(format);
-    return new SoyError(new MessageFormat(format));
+    return new SoyErrorKind(new MessageFormat(format));
   }
 
   private static void checkFormat(String format) {

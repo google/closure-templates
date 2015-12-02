@@ -26,7 +26,7 @@ import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.ExplodingErrorReporter;
-import com.google.template.soy.error.SoyError;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
@@ -52,14 +52,16 @@ import javax.annotation.concurrent.Immutable;
  */
 public final class CallDelegateNode extends CallNode {
 
-  private static final SoyError MISSING_CALLEE_NAME
-      = SoyError.of("The ''delcall'' command text must contain the callee name "
-          + "(encountered command text \"{0}\").");
-  public static final SoyError INVALID_DELEGATE_NAME
-      = SoyError.of("Invalid delegate name \"{0}\" for ''delcall'' command.");
-  private static final SoyError INVALID_VARIANT_EXPRESSION
-      = SoyError.of("Invalid variant expression \"{0}\" in ''delcall''"
-          + " (variant expression must evaluate to an identifier).");
+  private static final SoyErrorKind MISSING_CALLEE_NAME =
+      SoyErrorKind.of(
+          "The ''delcall'' command text must contain the callee name "
+              + "(encountered command text \"{0}\").");
+  public static final SoyErrorKind INVALID_DELEGATE_NAME =
+      SoyErrorKind.of("Invalid delegate name \"{0}\" for ''delcall'' command.");
+  private static final SoyErrorKind INVALID_VARIANT_EXPRESSION =
+      SoyErrorKind.of(
+          "Invalid variant expression \"{0}\" in ''delcall''"
+              + " (variant expression must evaluate to an identifier).");
 
   /**
    * Private helper class used by constructors. Encapsulates all the info derived from the command

@@ -25,7 +25,7 @@ import com.google.common.collect.Multimap;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyError;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.passes.FindIndirectParamsVisitor.IndirectParamsInfo;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
@@ -72,10 +72,10 @@ import java.util.Set;
  */
 final class CheckCallingParamTypesVisitor extends AbstractSoyNodeVisitor<Void> {
 
-  private static final SoyError ARGUMENT_TYPE_MISMATCH =
-      SoyError.of("Type mismatch on param {0}: expected: {1}, actual: {2}.");
-  private static final SoyError PASSING_PROTOBUF_FROM_STRICT_TO_NON_STRICT =
-      SoyError.of("Passing protobuf {0} of type {1} to non-strict template not allowed.");
+  private static final SoyErrorKind ARGUMENT_TYPE_MISMATCH =
+      SoyErrorKind.of("Type mismatch on param {0}: expected: {1}, actual: {2}.");
+  private static final SoyErrorKind PASSING_PROTOBUF_FROM_STRICT_TO_NON_STRICT =
+      SoyErrorKind.of("Passing protobuf {0} of type {1} to non-strict template not allowed.");
 
   /** Registry of all templates in the Soy tree. */
   private final TemplateRegistry templateRegistry;

@@ -29,7 +29,7 @@ public interface ErrorReporter {
    * Reports the given {@code error}, formatted according to {@code args} and associated with
    * the given {@code sourceLocation}.
    */
-  void report(SourceLocation sourceLocation, SoyError error, Object... args);
+  void report(SourceLocation sourceLocation, SoyErrorKind error, Object... args);
 
   /**
    * Returns an opaque token (the checkpoint) that callers can later pass back into

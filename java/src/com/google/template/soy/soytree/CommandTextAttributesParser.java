@@ -21,7 +21,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyError;
+import com.google.template.soy.error.SoyErrorKind;
 
 import java.util.Collection;
 import java.util.Map;
@@ -35,17 +35,18 @@ import java.util.regex.Pattern;
  */
 public final class CommandTextAttributesParser {
 
-  public static final SoyError MALFORMED_ATTRIBUTES
-      = SoyError.of("Malformed attributes in ''{0}'' command text ({1}).");
-  public static final SoyError UNSUPPORTED_ATTRIBUTE
-      = SoyError.of("Unsupported attribute ''{0}'' in ''{1}'' command text ({2}).");
-  private static final SoyError DUPLICATE_ATTRIBUTE
-      = SoyError.of("Duplicate attribute ''{0}'' in ''{1}'' command text ({2}).");
-  private static final SoyError INVALID_ATTRIBUTE_VALUE = SoyError.of(
-      "Invalid value for attribute ''{0}'' in ''{1}'' command text ({2}). "
-      + "Valid values are {3}.");
-  private static final SoyError MISSING_REQUIRED_ATTRIBUTE
-      = SoyError.of("Missing required attribute ''{0}'' in ''{1}'' command text ({2}).");
+  public static final SoyErrorKind MALFORMED_ATTRIBUTES =
+      SoyErrorKind.of("Malformed attributes in ''{0}'' command text ({1}).");
+  public static final SoyErrorKind UNSUPPORTED_ATTRIBUTE =
+      SoyErrorKind.of("Unsupported attribute ''{0}'' in ''{1}'' command text ({2}).");
+  private static final SoyErrorKind DUPLICATE_ATTRIBUTE =
+      SoyErrorKind.of("Duplicate attribute ''{0}'' in ''{1}'' command text ({2}).");
+  private static final SoyErrorKind INVALID_ATTRIBUTE_VALUE =
+      SoyErrorKind.of(
+          "Invalid value for attribute ''{0}'' in ''{1}'' command text ({2}). "
+              + "Valid values are {3}.");
+  private static final SoyErrorKind MISSING_REQUIRED_ATTRIBUTE =
+      SoyErrorKind.of("Missing required attribute ''{0}'' in ''{1}'' command text ({2}).");
 
   /** Regex pattern for an attribute in command text.
    *  Note group(1) is attribute name, group(2) is attribute value.

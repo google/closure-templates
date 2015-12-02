@@ -115,7 +115,7 @@ public final class TranslateToJsExprVisitorTest extends TestCase {
     // ------ Errors. ------
 
     // Non-string key is error.
-    assertSoyErrors(
+    assertSoyErrorKinds(
         "[0: 123, 1: 'oops']",
         "Keys in map literals cannot be constants (found constant '0').",
         "Keys in map literals cannot be constants (found constant '1').");
@@ -129,7 +129,7 @@ public final class TranslateToJsExprVisitorTest extends TestCase {
         "['0': 123, '1': $foo]",
         new JsExpr("{'0': 123, '1': opt_data.foo}", Integer.MAX_VALUE),
         jsSrcOptionsWithoutCompiler);
-    assertSoyErrors(
+    assertSoyErrorKinds(
         "['0': 123, '1': '123']",
         jsSrcOptionsWithCompiler,
         "Map literal with non-identifier key '0' must be wrapped in quoteKeysIfJs().",
@@ -144,7 +144,7 @@ public final class TranslateToJsExprVisitorTest extends TestCase {
                 " return map_s; })()",
             Integer.MAX_VALUE),
         jsSrcOptionsWithoutCompiler);
-    assertSoyErrors(
+    assertSoyErrorKinds(
         "['aaa': 123, $boo: $foo]",
         jsSrcOptionsWithCompiler,
         "Expression key '$boo' in map literal must be wrapped in quoteKeysIfJs().");
@@ -304,8 +304,8 @@ public final class TranslateToJsExprVisitorTest extends TestCase {
    * @param soyExpr The Soy expression to test.
    * @param expectedErrorMsgSubstrings An expected substring of the expected exception's message.
    */
-  private void assertSoyErrors(String soyExpr, String... expectedErrorMsgSubstrings) {
-    assertSoyErrors(soyExpr, new SoyJsSrcOptions(), expectedErrorMsgSubstrings);
+  private void assertSoyErrorKinds(String soyExpr, String... expectedErrorMsgSubstrings) {
+    assertSoyErrorKinds(soyExpr, new SoyJsSrcOptions(), expectedErrorMsgSubstrings);
   }
 
 
@@ -316,7 +316,7 @@ public final class TranslateToJsExprVisitorTest extends TestCase {
    * @param expectedErrorMsgSubstrings An expected substring of the expected exception's message.
    * @param jsSrcOptions The JsSrc compiler options.
    */
-  private void assertSoyErrors(
+  private void assertSoyErrorKinds(
       String soyExpr, SoyJsSrcOptions jsSrcOptions, String... expectedErrorMsgSubstrings) {
     ExprNode exprNode = new ExpressionParser(
         soyExpr, SourceLocation.UNKNOWN, ExplodingErrorReporter.get())

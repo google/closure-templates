@@ -20,7 +20,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyError;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
@@ -44,7 +44,7 @@ import java.util.Set;
  */
 final class CheckCallsVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
-  private static final SoyError MISSING_PARAM = SoyError.of("Call missing required {0}.");
+  private static final SoyErrorKind MISSING_PARAM = SoyErrorKind.of("Call missing required {0}.");
 
   /** A template registry built from the Soy tree. */
   private final TemplateRegistry templateRegistry;

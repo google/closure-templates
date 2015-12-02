@@ -23,7 +23,7 @@ import com.google.common.collect.ListMultimap;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyError;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.internal.base.Pair;
@@ -58,8 +58,8 @@ import javax.annotation.Nullable;
 public final class MsgNode extends AbstractBlockCommandNode
     implements ExprHolderNode, MsgBlockNode {
 
-  static final SoyError WRONG_NUMBER_OF_GENDER_EXPRS = SoyError.of(
-      "Attribute ''genders'' does not contain 1-3 expressions");
+  static final SoyErrorKind WRONG_NUMBER_OF_GENDER_EXPRS =
+      SoyErrorKind.of("Attribute ''genders'' does not contain 1-3 expressions");
 
   /**
    * Returns a new {@link Builder} representing a {@code msg} MsgNode.

@@ -21,7 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyError;
+import com.google.template.soy.error.SoyErrorKind;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,7 +35,7 @@ public final class ErrorReporterImpl implements ErrorReporter {
   private final List<SoySyntaxException> errors = new ArrayList<>();
 
   @Override
-  public void report(SourceLocation sourceLocation, SoyError error, Object... args) {
+  public void report(SourceLocation sourceLocation, SoyErrorKind error, Object... args) {
     errors.add(SoySyntaxException.createWithMetaInfo(error.format(args), sourceLocation));
   }
 
@@ -71,7 +71,7 @@ public final class ErrorReporterImpl implements ErrorReporter {
    * all of the errors as suppressed exceptions.
    *
    * <p>This should only be used for entry points that cannot be converted to pretty-print
-   * the {@link SoyError}s directly (example: {@link SoyFileSet#compileToTofu()}).
+   * the {@link SoyErrorKind}s directly (example: {@link SoyFileSet#compileToTofu()}).
    */
   void throwIfErrorsPresent() throws SoySyntaxException {
     if (!errors.isEmpty()) {

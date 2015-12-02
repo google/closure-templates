@@ -18,7 +18,7 @@ package com.google.template.soy.passes;
 
 import com.google.common.base.Preconditions;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyError;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.AutoescapeMode;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -34,8 +34,8 @@ import com.google.template.soy.soytree.TemplateNode;
  */
 final class AssertStrictAutoescapingVisitor extends AbstractSoyNodeVisitor<Void> {
 
-  private static final SoyError INVALID_AUTOESCAPING =
-      SoyError.of("Invalid use of non-strict when strict autoescaping is required.");
+  private static final SoyErrorKind INVALID_AUTOESCAPING =
+      SoyErrorKind.of("Invalid use of non-strict when strict autoescaping is required.");
   private final ErrorReporter errorReporter;
 
   AssertStrictAutoescapingVisitor(ErrorReporter errorReporter) {

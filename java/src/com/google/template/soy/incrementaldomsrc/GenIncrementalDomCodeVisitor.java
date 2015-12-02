@@ -23,7 +23,7 @@ import com.google.inject.Inject;
 import com.google.template.soy.basetree.ParentNode;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyError;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.VarRefNode;
@@ -72,8 +72,10 @@ import java.util.List;
  */
 public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
 
-  private static final SoyError PRINT_ATTR_INVALID_KIND = SoyError.of("Cannot have a print "
-      + "statement in an attributes list of kind {0}, it must be of kind attributes.");
+  private static final SoyErrorKind PRINT_ATTR_INVALID_KIND =
+      SoyErrorKind.of(
+          "Cannot have a print "
+              + "statement in an attributes list of kind {0}, it must be of kind attributes.");
 
   private static final String NAMESPACE_EXTENSION = ".incrementaldom";
 

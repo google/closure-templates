@@ -26,7 +26,7 @@ import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.PrimitiveData;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ExplodingErrorReporter;
-import com.google.template.soy.error.SoyError;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
@@ -84,9 +84,9 @@ public final class SoyUtils {
    * Error types for bad lines in the compile-time globals file.
    */
   private static final class CompileTimeGlobalsFileErrors {
-    static final SoyError INVALID_FORMAT = SoyError.of("Invalid line format: {0}");
-    static final SoyError INVALID_VALUE = SoyError.of("Invalid value: {0}");
-    static final SoyError NON_PRIMITIVE_VALUE = SoyError.of("Non-primitive value: {0}");
+    static final SoyErrorKind INVALID_FORMAT = SoyErrorKind.of("Invalid line format: {0}");
+    static final SoyErrorKind INVALID_VALUE = SoyErrorKind.of("Invalid value: {0}");
+    static final SoyErrorKind NON_PRIMITIVE_VALUE = SoyErrorKind.of("Non-primitive value: {0}");
   }
 
 

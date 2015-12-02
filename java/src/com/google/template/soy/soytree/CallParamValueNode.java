@@ -23,7 +23,7 @@ import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.ExplodingErrorReporter;
-import com.google.template.soy.error.SoyError;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 
 import java.util.List;
@@ -36,12 +36,14 @@ import java.util.List;
  */
 public final class CallParamValueNode extends CallParamNode implements ExprHolderNode {
 
-  private static final SoyError SELF_ENDING_TAG_WITHOUT_VALUE
-      = SoyError.of("A ''param'' tag should be self-ending (with a trailing ''/'') if and only if "
-          + "it also contains a value (invalid tag is '{'param {0} /'}').");
-  private static final SoyError SELF_ENDING_TAG_WITH_KIND_ATTRIBUTE
-      = SoyError.of("The ''kind'' attribute is not allowed on self-ending ''param'' tags "
-          + "(invalid tag is '{'param {0} /'}').");
+  private static final SoyErrorKind SELF_ENDING_TAG_WITHOUT_VALUE =
+      SoyErrorKind.of(
+          "A ''param'' tag should be self-ending (with a trailing ''/'') if and only if "
+              + "it also contains a value (invalid tag is '{'param {0} /'}').");
+  private static final SoyErrorKind SELF_ENDING_TAG_WITH_KIND_ATTRIBUTE =
+      SoyErrorKind.of(
+          "The ''kind'' attribute is not allowed on self-ending ''param'' tags "
+              + "(invalid tag is '{'param {0} /'}').");
 
   /** The param key. */
   private final String key;

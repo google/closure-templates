@@ -23,7 +23,7 @@ import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.ExplodingErrorReporter;
-import com.google.template.soy.error.SoyError;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 
 import java.util.List;
@@ -38,9 +38,10 @@ import javax.annotation.Nullable;
  */
 public final class LetContentNode extends LetNode implements RenderUnitNode {
 
-  public static final SoyError NON_SELF_ENDING_WITH_VALUE
-      = SoyError.of("A ''let'' tag should contain a value if and only if it is also self-ending "
-          + "(with a trailing ''/'').");
+  public static final SoyErrorKind NON_SELF_ENDING_WITH_VALUE =
+      SoyErrorKind.of(
+          "A ''let'' tag should contain a value if and only if it is also self-ending "
+              + "(with a trailing ''/'').");
 
   /** The mixin object that implements the ParentNode functionality. */
   private final MixinParentNode<StandaloneNode> parentMixin;

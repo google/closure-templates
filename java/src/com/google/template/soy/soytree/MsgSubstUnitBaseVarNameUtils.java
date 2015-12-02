@@ -24,7 +24,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyError;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.DataAccessNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
@@ -44,10 +44,11 @@ import java.util.List;
  */
 public final class MsgSubstUnitBaseVarNameUtils {
 
-  private static final SoyError COLLIDING_EXPRESSIONS = SoyError.of(
-      "Cannot generate noncolliding base names for vars. "
-      + "Colliding expressions: ''{0}'' and ''{1}''. "
-      + "Add explicit base names with the ''phname'' attribute.");
+  private static final SoyErrorKind COLLIDING_EXPRESSIONS =
+      SoyErrorKind.of(
+          "Cannot generate noncolliding base names for vars. "
+              + "Colliding expressions: ''{0}'' and ''{1}''. "
+              + "Add explicit base names with the ''phname'' attribute.");
 
   // Disallow instantiation.
   private MsgSubstUnitBaseVarNameUtils() {}

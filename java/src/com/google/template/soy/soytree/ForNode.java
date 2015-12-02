@@ -23,7 +23,7 @@ import com.google.common.collect.Iterables;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyError;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
@@ -97,10 +97,10 @@ public final class ForNode extends AbstractBlockCommandNode
     }
   }
 
-  private static final SoyError INVALID_COMMAND_TEXT
-      = SoyError.of("Invalid ''for'' command text");
-  private static final SoyError INVALID_RANGE_SPECIFICATION
-      = SoyError.of("Invalid range specification");
+  private static final SoyErrorKind INVALID_COMMAND_TEXT =
+      SoyErrorKind.of("Invalid ''for'' command text");
+  private static final SoyErrorKind INVALID_RANGE_SPECIFICATION =
+      SoyErrorKind.of("Invalid range specification");
 
   /** Regex pattern for the command text. */
   // 2 capturing groups: local var name, arguments to range()

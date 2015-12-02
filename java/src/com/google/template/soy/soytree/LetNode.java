@@ -22,7 +22,7 @@ import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyError;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.CommandTextAttributesParser.Attribute;
@@ -46,7 +46,8 @@ import javax.annotation.Nullable;
 public abstract class LetNode extends AbstractCommandNode
     implements StandaloneNode, StatementNode, LocalVarInlineNode {
 
-  public static final SoyError INVALID_COMMAND_TEXT = SoyError.of("Invalid ''let'' command text.");
+  public static final SoyErrorKind INVALID_COMMAND_TEXT =
+      SoyErrorKind.of("Invalid ''let'' command text.");
 
   /**
    * Return value for {@code parseCommandTextHelper()}.

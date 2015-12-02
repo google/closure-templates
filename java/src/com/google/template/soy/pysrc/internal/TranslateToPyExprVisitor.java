@@ -23,7 +23,7 @@ import com.google.inject.assistedinject.Assisted;
 import com.google.inject.assistedinject.AssistedInject;
 import com.google.template.soy.base.SoyBackendKind;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyError;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.AbstractReturningExprNodeVisitor;
 import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.DataAccessNode;
@@ -72,8 +72,8 @@ import java.util.Map;
  */
 public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVisitor<PyExpr> {
 
-  private static final SoyError SOY_PY_SRC_FUNCTION_NOT_FOUND =
-      SoyError.of("Failed to find SoyPySrcFunction ''{0}''.");
+  private static final SoyErrorKind SOY_PY_SRC_FUNCTION_NOT_FOUND =
+      SoyErrorKind.of("Failed to find SoyPySrcFunction ''{0}''.");
 
   /**
    * Errors in this visitor generate Python source that immediately explodes.

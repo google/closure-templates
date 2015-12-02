@@ -19,7 +19,7 @@ package com.google.template.soy.msgs.internal;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyError;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.restricted.SoyMsg;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
@@ -63,9 +63,10 @@ import javax.annotation.Nullable;
  */
 public final class InsertMsgsVisitor extends AbstractSoyNodeVisitor<Void> {
 
-  private static final SoyError ENCOUNTERED_PLURAL_OR_SELECT =
-      SoyError.of("JS code generation currently only supports plural/select messages when "
-          + "shouldGenerateGoogMsgDefs is true.");
+  private static final SoyErrorKind ENCOUNTERED_PLURAL_OR_SELECT =
+      SoyErrorKind.of(
+          "JS code generation currently only supports plural/select messages when "
+              + "shouldGenerateGoogMsgDefs is true.");
 
   @Nullable private final SoyMsgBundle msgBundle;
   private final ErrorReporter errorReporter;

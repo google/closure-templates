@@ -18,7 +18,7 @@ package com.google.template.soy.passes;
 
 
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyError;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallNode;
@@ -36,8 +36,8 @@ import com.google.template.soy.soytree.Visibility;
  */
 final class CheckTemplateVisibility extends AbstractSoyNodeVisitor<Void> {
 
-  private static final SoyError CALLEE_NOT_VISIBLE = SoyError.of(
-    "Template {0} has {1} visibility, not visible from here.");
+  private static final SoyErrorKind CALLEE_NOT_VISIBLE =
+      SoyErrorKind.of("Template {0} has {1} visibility, not visible from here.");
 
   private final ErrorReporter errorReporter;
 

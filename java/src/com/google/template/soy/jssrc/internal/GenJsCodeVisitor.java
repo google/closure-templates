@@ -29,7 +29,7 @@ import com.google.template.soy.base.SoyBackendKind;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyError;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
@@ -124,9 +124,10 @@ import javax.inject.Inject;
  */
 public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
 
-  private static final SoyError NON_NAMESPACED_TEMPLATE =
-      SoyError.of("Using the option to provide/require Soy namespaces, but called template "
-          + "does not reside in a namespace.");
+  private static final SoyErrorKind NON_NAMESPACED_TEMPLATE =
+      SoyErrorKind.of(
+          "Using the option to provide/require Soy namespaces, but called template "
+              + "does not reside in a namespace.");
 
   /** Regex pattern to look for dots in a template name. */
   private static final Pattern DOT = Pattern.compile("\\.");

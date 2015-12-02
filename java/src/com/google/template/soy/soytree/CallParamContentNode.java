@@ -23,7 +23,7 @@ import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.ExplodingErrorReporter;
-import com.google.template.soy.error.SoyError;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 
 import java.util.List;
@@ -38,9 +38,10 @@ import javax.annotation.Nullable;
  */
 public final class CallParamContentNode extends CallParamNode implements RenderUnitNode {
 
-  private static final SoyError PARAM_HAS_VALUE_BUT_IS_NOT_SELF_CLOSING
-      = SoyError.of("A ''param'' tag should contain a value if and only if it is also self-ending "
-          + "(with a trailing ''/'') (invalid tag is '{'param {0}'}').");
+  private static final SoyErrorKind PARAM_HAS_VALUE_BUT_IS_NOT_SELF_CLOSING =
+      SoyErrorKind.of(
+          "A ''param'' tag should contain a value if and only if it is also self-ending "
+              + "(with a trailing ''/'') (invalid tag is '{'param {0}'}').");
 
   /** The mixin object that implements the ParentNode functionality. */
   private final MixinParentNode<StandaloneNode> parentMixin;

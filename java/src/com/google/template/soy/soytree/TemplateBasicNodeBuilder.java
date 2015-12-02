@@ -25,7 +25,7 @@ import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyError;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.CommandTextAttributesParser.Attribute;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 import com.google.template.soy.soytree.defn.TemplateParam;
@@ -44,13 +44,15 @@ import javax.annotation.Nullable;
  *
  */
 public class TemplateBasicNodeBuilder extends TemplateNodeBuilder {
-  private static final SoyError FULLY_QUALIFIED_NAME =
-      SoyError.of("Soy V2 template names must be relative to the file namespace, i.e. a dot "
-          + "followed by an identifier.  Templates with fully qualified names are only allowed in "
-          + "legacy templates marked with the deprecatedV1=\"true\" attribute.");
-  private static final SoyError MISSING_TEMPLATE_NAME = SoyError.of("Missing template name.");
-  private static final SoyError PRIVATE_AND_VISIBILITY =
-      SoyError.of("Cannot specify both private=\"true\" and visibility=\"{0}\".");
+  private static final SoyErrorKind FULLY_QUALIFIED_NAME =
+      SoyErrorKind.of(
+          "Soy V2 template names must be relative to the file namespace, i.e. a dot "
+              + "followed by an identifier.  Templates with fully qualified names are only allowed "
+              + "in legacy templates marked with the deprecatedV1=\"true\" attribute.");
+  private static final SoyErrorKind MISSING_TEMPLATE_NAME =
+      SoyErrorKind.of("Missing template name.");
+  private static final SoyErrorKind PRIVATE_AND_VISIBILITY =
+      SoyErrorKind.of("Cannot specify both private=\"true\" and visibility=\"{0}\".");
 
   /** Pattern for a template name. */
   private static final Pattern NONATTRIBUTE_TEMPLATE_NAME =
@@ -143,7 +145,7 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder {
     if (BaseUtils.isIdentifierWithLeadingDot(nameAttr)) {
       if (soyFileHeaderInfo.namespace == null) {
         // In this case, throwing a SoySyntaxException and halting compilation of the current file
-        // is preferable to reporting a SoyError and continuing. To continue, we could make up
+        // is preferable to reporting a SoyErrorKind and continuing. To continue, we could make up
         // an "error" template name/namespace, but that would cause spurious duplicate template
         // errors (for every namespace-relative name in a non-namespaced file).
         // It's also dangerous, since "error" is a common real-world template/namespace name.

@@ -25,7 +25,7 @@ import com.google.common.io.CharStreams;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyError;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -270,9 +270,11 @@ public final class BytecodeCompiler {
         }
       // Report unexpected errors and keep going to try to collect more.
       } catch (UnexpectedCompilerFailureException e) {
-        errorReporter.report(e.getOriginalLocation(), 
-            SoyError.of("Unexpected error while compiling template: ''{0}''\nSoy Stack:\n{1}"
-                + "\nCompiler Stack:{2}"), 
+        errorReporter.report(
+            e.getOriginalLocation(),
+            SoyErrorKind.of(
+                "Unexpected error while compiling template: ''{0}''\nSoy Stack:\n{1}"
+                    + "\nCompiler Stack:{2}"),
             name,
             e.printSoyStack(),
             Throwables.getStackTraceAsString(e));
@@ -280,7 +282,7 @@ public final class BytecodeCompiler {
       } catch (Throwable t) {
         errorReporter.report(
             classInfo.node().getSourceLocation(),
-            SoyError.of("Unexpected error while compiling template: ''{0}''\n{1}"),
+            SoyErrorKind.of("Unexpected error while compiling template: ''{0}''\n{1}"),
             name,
             Throwables.getStackTraceAsString(t));
       }

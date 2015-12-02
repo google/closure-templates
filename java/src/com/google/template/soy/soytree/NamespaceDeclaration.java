@@ -21,7 +21,7 @@ import static com.google.template.soy.soytree.AutoescapeMode.parseAutoEscapeMode
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyError;
+import com.google.template.soy.error.SoyErrorKind;
 
 import java.util.List;
 
@@ -37,8 +37,8 @@ public final class NamespaceDeclaration {
 
   // A 'null' instance for classes with no namespace tag.
   public static final NamespaceDeclaration NULL = new NamespaceDeclaration();
-  private static final SoyError UNSUPPORTED_ATTRIBUTE_KEY =
-      SoyError.of("Unsupported attribute ''{0}'', expected one of [{1}].");
+  private static final SoyErrorKind UNSUPPORTED_ATTRIBUTE_KEY =
+      SoyErrorKind.of("Unsupported attribute ''{0}'', expected one of [{1}].");
 
   private final String namespace;
   private final Optional<AutoescapeMode> namespaceAutoescapeMode;

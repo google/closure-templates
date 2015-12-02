@@ -24,7 +24,7 @@ import com.google.template.soy.base.SoyBackendKind;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
-import com.google.template.soy.error.SoyError;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.AbstractReturningExprNodeVisitor;
 import com.google.template.soy.exprtree.DataAccessNode;
 import com.google.template.soy.exprtree.ExprNode;
@@ -115,17 +115,19 @@ import java.util.Map;
  */
 public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<JsExpr> {
 
-  private static final SoyError CONSTANT_USED_AS_KEY_IN_MAP_LITERAL =
-      SoyError.of("Keys in map literals cannot be constants (found constant ''{0}'').");
-  private static final SoyError EXPR_IN_MAP_LITERAL_REQUIRES_QUOTE_KEYS_IF_JS =
-      SoyError.of("Expression key ''{0}'' in map literal must be wrapped in quoteKeysIfJs().");
-  private static final SoyError MAP_LITERAL_WITH_NON_ID_KEY_REQUIRES_QUOTE_KEYS_IF_JS =
-      SoyError.of("Map literal with non-identifier key {0} must be wrapped in quoteKeysIfJs().");
-  private static final SoyError SOY_JS_SRC_FUNCTION_NOT_FOUND =
-      SoyError.of("Failed to find SoyJsSrcFunction ''{0}''.");
-  private static final SoyError UNION_ACCESSOR_MISMATCH =
-      SoyError.of("Cannot access field ''{0}'' of type ''{1}'', "
-          + "because the different union member types have different access methods.");
+  private static final SoyErrorKind CONSTANT_USED_AS_KEY_IN_MAP_LITERAL =
+      SoyErrorKind.of("Keys in map literals cannot be constants (found constant ''{0}'').");
+  private static final SoyErrorKind EXPR_IN_MAP_LITERAL_REQUIRES_QUOTE_KEYS_IF_JS =
+      SoyErrorKind.of("Expression key ''{0}'' in map literal must be wrapped in quoteKeysIfJs().");
+  private static final SoyErrorKind MAP_LITERAL_WITH_NON_ID_KEY_REQUIRES_QUOTE_KEYS_IF_JS =
+      SoyErrorKind.of(
+          "Map literal with non-identifier key {0} must be wrapped in quoteKeysIfJs().");
+  private static final SoyErrorKind SOY_JS_SRC_FUNCTION_NOT_FOUND =
+      SoyErrorKind.of("Failed to find SoyJsSrcFunction ''{0}''.");
+  private static final SoyErrorKind UNION_ACCESSOR_MISMATCH =
+      SoyErrorKind.of(
+          "Cannot access field ''{0}'' of type ''{1}'', "
+              + "because the different union member types have different access methods.");
 
   /**
    * Errors in this visitor generate JS source that immediately explodes.

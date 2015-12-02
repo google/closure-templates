@@ -21,7 +21,7 @@ import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
-import com.google.template.soy.error.SoyError;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
@@ -35,7 +35,7 @@ import com.google.template.soy.soytree.SoyNode.StatementNode;
  */
 public final class XidNode extends AbstractCommandNode implements StandaloneNode, StatementNode {
 
-  private static final SoyError INVALID_XID_VALUE = SoyError.of("Invalid xid value");
+  private static final SoyErrorKind INVALID_XID_VALUE = SoyErrorKind.of("Invalid xid value");
 
   /** The text of the identifier. */
   private final String text;

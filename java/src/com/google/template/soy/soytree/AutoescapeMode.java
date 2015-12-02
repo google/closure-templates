@@ -19,7 +19,7 @@ package com.google.template.soy.soytree;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyError;
+import com.google.template.soy.error.SoyErrorKind;
 
 import java.util.Set;
 
@@ -46,8 +46,8 @@ public enum AutoescapeMode {
   STRICT("strict"),
   ;
 
-  private static final SoyError INVALID_AUTOESCAPE_ERROR =
-      SoyError.of("invalid ''autoescape'' value ''{0}'', expected one of {1}");
+  private static final SoyErrorKind INVALID_AUTOESCAPE_ERROR =
+      SoyErrorKind.of("invalid ''autoescape'' value ''{0}'', expected one of {1}");
   private static final ImmutableMap<String, AutoescapeMode> valueToModeMap;
 
   static {

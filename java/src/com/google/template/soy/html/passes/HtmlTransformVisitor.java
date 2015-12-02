@@ -23,7 +23,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyError;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.html.HtmlAttributeNode;
 import com.google.template.soy.html.HtmlCloseTagNode;
 import com.google.template.soy.html.HtmlOpenTagEndNode;
@@ -74,26 +74,34 @@ import java.util.Set;
  * {@link XidNode}, are left alone.
  */
 public final class HtmlTransformVisitor extends AbstractSoyNodeVisitor<Void> {
-  private static final SoyError ENDING_STATE_MISMATCH = SoyError.of("Ending context of the content "
-      + "within a Soy tag must match the starting context. Transition was from {0} to {1}");
+  private static final SoyErrorKind ENDING_STATE_MISMATCH =
+      SoyErrorKind.of(
+          "Ending context of the content within a Soy tag must match the starting context. "
+              + "Transition was from {0} to {1}");
 
-  private static final SoyError EXPECTED_ATTRIBUTE_VALUE = SoyError.of("Expected to find a quoted "
-      + "attribute value, but found \"{0}\".");
+  private static final SoyErrorKind EXPECTED_ATTRIBUTE_VALUE =
+      SoyErrorKind.of("Expected to find a quoted " + "attribute value, but found \"{0}\".");
 
-  private static final SoyError SOY_TAG_BEFORE_ATTR_VALUE = SoyError.of("Soy statements are not "
-      + "allowed before an attribute value. They should be moved inside a quotation mark.");
+  private static final SoyErrorKind SOY_TAG_BEFORE_ATTR_VALUE =
+      SoyErrorKind.of(
+          "Soy statements are not "
+              + "allowed before an attribute value. They should be moved inside a quotation mark.");
 
-  private static final SoyError MISSING_TAG_NAME = SoyError.of("Found a tag with an empty tag "
-      + "name.");
+  private static final SoyErrorKind MISSING_TAG_NAME =
+      SoyErrorKind.of("Found a tag with an empty tag " + "name.");
 
-  private static final SoyError NON_STRICT_FILE = SoyError.of("The incremental HTML Soy backend "
-      + "requires strict autoescape mode");
+  private static final SoyErrorKind NON_STRICT_FILE =
+      SoyErrorKind.of("The incremental HTML Soy backend " + "requires strict autoescape mode");
 
-  private static final SoyError NON_STRICT_TEMPLATE = SoyError.of("The incremental HTML Soy "
-      + "backend requires strict autoescape mode for all templates.");
+  private static final SoyErrorKind NON_STRICT_TEMPLATE =
+      SoyErrorKind.of(
+          "The incremental HTML Soy "
+              + "backend requires strict autoescape mode for all templates.");
 
-  private static final SoyError UNKNOWN_CONTENT_KIND = SoyError.of("The incremental HTML Soy "
-      + "backend requires all let statements and parameters with content to have a content kind");
+  private static final SoyErrorKind UNKNOWN_CONTENT_KIND =
+      SoyErrorKind.of(
+          "The incremental HTML Soy backend requires all let statements and parameters with "
+              + "content to have a content kind");
 
   /** The last {@link HtmlState} encountered. */
   private HtmlState currentState = HtmlState.PCDATA;

@@ -20,7 +20,7 @@ import com.google.common.base.Preconditions;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.basetree.SyntaxVersionUpperBound;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyError;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.ExprUnion;
 import com.google.template.soy.soytree.SoyNode;
@@ -40,16 +40,17 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
  */
 final class ReportSyntaxVersionErrorsVisitor extends AbstractSoyNodeVisitor<Void> {
 
-  private static final SoyError DOUBLE_AMPERSAND_DOUBLE_PIPE_OR_BANG_IN_EXPR =
-      SoyError.of("{0}: bad expression: ''{1}'', possibly due to using &&/||/! "
-          + "instead of and/or/not operators.");
-  private static final SoyError DOUBLE_QUOTED_STRING =
-      SoyError.of("{0}: bad expression: ''{1}'', possibly due to using double quotes "
-          + "instead of single quotes for string literal.");
-  private static final SoyError GENERIC_NOT_PARSABLE_AS_V2_EXPR =
-      SoyError.of("{0}: bad expression: ''{1}''.");
-  private static final SoyError SYNTAX_VERSION_OUT_OF_BOUNDS =
-      SoyError.of("{0}: {1}");
+  private static final SoyErrorKind DOUBLE_AMPERSAND_DOUBLE_PIPE_OR_BANG_IN_EXPR =
+      SoyErrorKind.of(
+          "{0}: bad expression: ''{1}'', possibly due to using &&/||/! "
+              + "instead of and/or/not operators.");
+  private static final SoyErrorKind DOUBLE_QUOTED_STRING =
+      SoyErrorKind.of(
+          "{0}: bad expression: ''{1}'', possibly due to using double quotes "
+              + "instead of single quotes for string literal.");
+  private static final SoyErrorKind GENERIC_NOT_PARSABLE_AS_V2_EXPR =
+      SoyErrorKind.of("{0}: bad expression: ''{1}''.");
+  private static final SoyErrorKind SYNTAX_VERSION_OUT_OF_BOUNDS = SoyErrorKind.of("{0}: {1}");
 
   private final SyntaxVersion requiredSyntaxVersion;
   private final ErrorReporter errorReporter;

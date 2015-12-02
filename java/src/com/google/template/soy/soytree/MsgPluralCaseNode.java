@@ -20,7 +20,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
-import com.google.template.soy.error.SoyError;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
 
 /**
@@ -31,10 +31,10 @@ import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
  */
 public final class MsgPluralCaseNode extends CaseOrDefaultNode implements MsgBlockNode {
 
-  private static final SoyError PLURAL_CASE_OUT_OF_BOUNDS
-      = SoyError.of("Plural cases must be nonnegative integers.");
-  private static final SoyError MALFORMED_PLURAL_CASE
-      = SoyError.of("Invalid number in ''plural case'' command text");
+  private static final SoyErrorKind PLURAL_CASE_OUT_OF_BOUNDS =
+      SoyErrorKind.of("Plural cases must be nonnegative integers.");
+  private static final SoyErrorKind MALFORMED_PLURAL_CASE =
+      SoyErrorKind.of("Invalid number in ''plural case'' command text");
 
   // A plural 'case' can only have a number in the command text.
   /** The number for this case */

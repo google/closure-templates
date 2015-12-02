@@ -18,7 +18,7 @@ package com.google.template.soy.passes;
 
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyError;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -37,13 +37,15 @@ import com.google.template.soy.soytree.TemplateRegistry;
  */
 public final class StrictDepsVisitor extends AbstractSoyNodeVisitor<Void> {
 
-  private static final SoyError CALL_TO_UNDEFINED_TEMPLATE = SoyError.of(
-      "Undefined template ''{0}''.");
-  private static final SoyError CALL_TO_INDIRECT_DEPENDENCY = SoyError.of(
-      "Call is satisfied only by indirect dependency {0}. Add it as a direct dependency.");
-  private static final SoyError CALL_FROM_DEP_TO_SRC = SoyError.of(
-      "Illegal call to ''{0}'', because according to the dependency graph, {1} depends on {2}, "
-      + "not the other way around.");
+  private static final SoyErrorKind CALL_TO_UNDEFINED_TEMPLATE =
+      SoyErrorKind.of("Undefined template ''{0}''.");
+  private static final SoyErrorKind CALL_TO_INDIRECT_DEPENDENCY =
+      SoyErrorKind.of(
+          "Call is satisfied only by indirect dependency {0}. Add it as a direct dependency.");
+  private static final SoyErrorKind CALL_FROM_DEP_TO_SRC =
+      SoyErrorKind.of(
+          "Illegal call to ''{0}'', because according to the dependency graph, {1} depends on {2}, "
+              + "not the other way around.");
 
   /** Registry of all templates in the Soy tree. */
   private final TemplateRegistry templateRegistry;

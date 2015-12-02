@@ -27,7 +27,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.basetree.SyntaxVersionUpperBound;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyError;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.AbstractOperatorNode;
 import com.google.template.soy.exprtree.AbstractParentExprNode;
@@ -109,34 +109,35 @@ import javax.annotation.Nullable;
  */
 final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
 
-  private static final SoyError BAD_FOREACH_TYPE =
-      SoyError.of("cannot iterate over {0} of type {1}");
-  private static final SoyError BAD_INDEX_TYPE =
-      SoyError.of("bad index type {0} for {1}");
-  private static final SoyError BAD_KEY_TYPE =
-      SoyError.of("bad key type {0} for {1}");
-  private static final SoyError BRACKET_ACCESS_NOT_SUPPORTED =
-      SoyError.of("type {0} does not support bracket access");
-  private static final SoyError CHECK_NOT_NULL_ON_COMPILE_TIME_NULL =
-      SoyError.of("Cannot call checkNotNull on a parameter with a static type of ''null''");
-  private static final SoyError DOT_ACCESS_NOT_SUPPORTED =
-      SoyError.of("type {0} does not support dot access");
-  private static final SoyError DOT_ACCESS_NOT_SUPPORTED_CONSIDER_RECORD =
-      SoyError.of("type {0} does not support dot access (consider record instead of map)");
-  private static final SoyError DUPLICATE_KEY_IN_RECORD_LITERAL =
-      SoyError.of("Record literals with duplicate keys are not allowed.  Duplicate key: ''{0}''");
-  private static final SoyError LIST_LENGTH_ERROR =
-      SoyError.of("Soy lists do not have a ''length'' field. Use function length(...) instead.");
-  private static final SoyError MISSING_SOY_TYPE =
-      SoyError.of("Missing Soy type for node {0}");
-  private static final SoyError STRING_LENGTH_ERROR =
-      SoyError.of("Soy strings do not have a ''length'' field. Use function strLen(...) instead.");
-  private static final SoyError UNDEFINED_FIELD_FOR_OBJECT_TYPE =
-      SoyError.of("undefined field ''{0}'' for object type {1}");
-  private static final SoyError UNDEFINED_FIELD_FOR_RECORD_TYPE =
-      SoyError.of("undefined field ''{0}'' for record type {1}");
-  private static final SoyError VAR_REF_MISSING_SOY_TYPE =
-      SoyError.of("Missing Soy type for variable");
+  private static final SoyErrorKind BAD_FOREACH_TYPE =
+      SoyErrorKind.of("cannot iterate over {0} of type {1}");
+  private static final SoyErrorKind BAD_INDEX_TYPE = SoyErrorKind.of("bad index type {0} for {1}");
+  private static final SoyErrorKind BAD_KEY_TYPE = SoyErrorKind.of("bad key type {0} for {1}");
+  private static final SoyErrorKind BRACKET_ACCESS_NOT_SUPPORTED =
+      SoyErrorKind.of("type {0} does not support bracket access");
+  private static final SoyErrorKind CHECK_NOT_NULL_ON_COMPILE_TIME_NULL =
+      SoyErrorKind.of("Cannot call checkNotNull on a parameter with a static type of ''null''");
+  private static final SoyErrorKind DOT_ACCESS_NOT_SUPPORTED =
+      SoyErrorKind.of("type {0} does not support dot access");
+  private static final SoyErrorKind DOT_ACCESS_NOT_SUPPORTED_CONSIDER_RECORD =
+      SoyErrorKind.of("type {0} does not support dot access (consider record instead of map)");
+  private static final SoyErrorKind DUPLICATE_KEY_IN_RECORD_LITERAL =
+      SoyErrorKind.of(
+          "Record literals with duplicate keys are not allowed.  Duplicate key: ''{0}''");
+  private static final SoyErrorKind LIST_LENGTH_ERROR =
+      SoyErrorKind.of(
+          "Soy lists do not have a ''length'' field. Use function length(...) instead.");
+  private static final SoyErrorKind MISSING_SOY_TYPE =
+      SoyErrorKind.of("Missing Soy type for node {0}");
+  private static final SoyErrorKind STRING_LENGTH_ERROR =
+      SoyErrorKind.of(
+          "Soy strings do not have a ''length'' field. Use function strLen(...) instead.");
+  private static final SoyErrorKind UNDEFINED_FIELD_FOR_OBJECT_TYPE =
+      SoyErrorKind.of("undefined field ''{0}'' for object type {1}");
+  private static final SoyErrorKind UNDEFINED_FIELD_FOR_RECORD_TYPE =
+      SoyErrorKind.of("undefined field ''{0}'' for record type {1}");
+  private static final SoyErrorKind VAR_REF_MISSING_SOY_TYPE =
+      SoyErrorKind.of("Missing Soy type for variable");
 
   /** User-declared syntax version. */
   private final SyntaxVersion declaredSyntaxVersion;

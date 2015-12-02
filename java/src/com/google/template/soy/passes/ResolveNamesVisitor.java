@@ -22,7 +22,7 @@ import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyError;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
@@ -61,8 +61,8 @@ import java.util.Map;
  */
 final class ResolveNamesVisitor extends AbstractSoyNodeVisitor<Void> {
 
-  private static final SoyError VARIABLE_ALREADY_DEFINED =
-      SoyError.of("variable ''${0}'' already defined{1}");
+  private static final SoyErrorKind VARIABLE_ALREADY_DEFINED =
+      SoyErrorKind.of("variable ''${0}'' already defined{1}");
 
   /**
    * A data structure that assigns a unique (small) integer to all local variable definitions that

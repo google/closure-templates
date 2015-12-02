@@ -21,12 +21,12 @@ import static com.google.common.base.Preconditions.checkArgument;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyError;
+import com.google.template.soy.error.SoyErrorKind;
 
 /** An {@code {alias ..}} declaration. */
 public final class AliasDeclaration {
-  private static final SoyError INVALID_ALIAS_NAME =
-      SoyError.of("An alias must be a single identifier. Found ''{0}''.");
+  private static final SoyErrorKind INVALID_ALIAS_NAME =
+      SoyErrorKind.of("An alias must be a single identifier. Found ''{0}''.");
 
   private final String namespace;
   private final String alias;

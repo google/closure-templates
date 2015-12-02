@@ -20,7 +20,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
-import com.google.template.soy.error.SoyError;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.StringNode;
@@ -34,8 +34,8 @@ import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
  */
 public final class MsgSelectCaseNode extends CaseOrDefaultNode implements MsgBlockNode {
 
-  private static final SoyError INVALID_STRING_FOR_SELECT_CASE
-      = SoyError.of("Invalid string for select ''case''.");
+  private static final SoyErrorKind INVALID_STRING_FOR_SELECT_CASE =
+      SoyErrorKind.of("Invalid string for select ''case''.");
 
   /** The value for this case. */
   private final String caseValue;

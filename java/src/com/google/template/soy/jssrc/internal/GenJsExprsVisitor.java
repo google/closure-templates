@@ -22,7 +22,7 @@ import com.google.inject.assistedinject.Assisted;
 import com.google.inject.assistedinject.AssistedInject;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyError;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.jssrc.restricted.JsExpr;
@@ -75,10 +75,10 @@ public final class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<JsExpr>
         TemplateAliases templateAliases);
   }
 
-  private static final SoyError ARITY_MISMATCH =
-      SoyError.of("Print directive ''{0}'' called with {1} arguments, expected {2}.");
-  private static final SoyError UNKNOWN_SOY_JS_SRC_PRINT_DIRECTIVE =
-      SoyError.of("Unknown SoyJsSrcPrintDirective ''{0}''.");
+  private static final SoyErrorKind ARITY_MISMATCH =
+      SoyErrorKind.of("Print directive ''{0}'' called with {1} arguments, expected {2}.");
+  private static final SoyErrorKind UNKNOWN_SOY_JS_SRC_PRINT_DIRECTIVE =
+      SoyErrorKind.of("Unknown SoyJsSrcPrintDirective ''{0}''.");
 
   /** Map of all SoyJsSrcPrintDirectives (name to directive). */
   private final Map<String, SoyJsSrcPrintDirective> soyJsSrcDirectivesMap;

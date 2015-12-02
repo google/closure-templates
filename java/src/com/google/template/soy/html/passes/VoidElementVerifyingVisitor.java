@@ -17,7 +17,7 @@
 package com.google.template.soy.html.passes;
 
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyError;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.html.AbstractHtmlSoyNodeVisitor;
 import com.google.template.soy.html.HtmlCloseTagNode;
 import com.google.template.soy.html.HtmlDefinitions;
@@ -36,10 +36,12 @@ import com.google.template.soy.soytree.SoyNode.StandaloneNode;
  * for people who like XML.
  */
 public final class VoidElementVerifyingVisitor extends AbstractHtmlSoyNodeVisitor<Void>  {
-  private static final SoyError INVALID_CLOSE_TAG = SoyError.of("Closing tag for a void HTML "
-      + "Element was not immediately preceeded by an open tag for the same element. Void HTML "
-      + "Elements are not allowed to have any content. See: "
-      + "http://www.w3.org/TR/html-markup/syntax.html#void-element");
+  private static final SoyErrorKind INVALID_CLOSE_TAG =
+      SoyErrorKind.of(
+          "Closing tag for a void HTML "
+              + "Element was not immediately preceeded by an open tag for the same element. Void"
+              + " HTML Elements are not allowed to have any content. See: "
+              + "http://www.w3.org/TR/html-markup/syntax.html#void-element");
 
   private final ErrorReporter errorReporter;
 

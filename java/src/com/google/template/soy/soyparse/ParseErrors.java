@@ -22,7 +22,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyError;
+import com.google.template.soy.error.SoyErrorKind;
 
 /**
  * Helpers for interpreting parse errors as soy errors.
@@ -44,8 +44,8 @@ final class ParseErrors {
       expectedTokenImages.add(getSoyFileParserTokenDisplayName(expected[0]));
     }
     reporter.report(
-        Tokens.createSrcLoc(filePath, errorToken), 
-        SoyError.of("{0}"), 
+        Tokens.createSrcLoc(filePath, errorToken),
+        SoyErrorKind.of("{0}"),
         formatParseExceptionDetails(errorToken.image, expectedTokenImages.build().asList()));
   }
 
@@ -77,10 +77,10 @@ final class ParseErrors {
     if (!sourceLocation.isKnown()) {
       sourceLocation = new SourceLocation(filePath);
     }
-    reporter.report(sourceLocation, SoyError.of("{0}"), exception.getOriginalMessage());
+    reporter.report(sourceLocation, SoyErrorKind.of("{0}"), exception.getOriginalMessage());
   }
 
   static void report(ErrorReporter reporter, String filePath, TokenMgrError exception) {
-    reporter.report(new SourceLocation(filePath), SoyError.of("{0}"), exception.getMessage());
+    reporter.report(new SourceLocation(filePath), SoyErrorKind.of("{0}"), exception.getMessage());
   }
 }

@@ -24,7 +24,7 @@ import java.util.List;
 
 /**
  * {@link com.google.template.soy.error.ErrorReporter} implementation that formats
- * {@link com.google.template.soy.error.SoyError}s without attaching source locations.
+ * {@link com.google.template.soy.error.SoyErrorKind}s without attaching source locations.
  *
  * @author brndn@google.com (Brendan Linn)
  */
@@ -33,7 +33,7 @@ public final class FormattingErrorReporter implements ErrorReporter {
   private final List<String> errorMessages = new ArrayList<>();
 
   @Override
-  public void report(SourceLocation sourceLocation, SoyError error, Object... args) {
+  public void report(SourceLocation sourceLocation, SoyErrorKind error, Object... args) {
     errorMessages.add(error.format(args));
   }
 

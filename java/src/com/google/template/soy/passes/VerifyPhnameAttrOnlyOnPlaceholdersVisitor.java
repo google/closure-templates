@@ -17,7 +17,7 @@
 package com.google.template.soy.passes;
 
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyError;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.MsgPlaceholderNode;
@@ -34,8 +34,8 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
  *
  */
 public final class VerifyPhnameAttrOnlyOnPlaceholdersVisitor extends AbstractSoyNodeVisitor<Void> {
-  private static final SoyError INVALID_PLACEHOLDER =
-      SoyError.of("''phname'' attributes are only valid inside '''{'msg...'' tags");
+  private static final SoyErrorKind INVALID_PLACEHOLDER =
+      SoyErrorKind.of("''phname'' attributes are only valid inside '''{'msg...'' tags");
   private final ErrorReporter errorReporter;
 
   public VerifyPhnameAttrOnlyOnPlaceholdersVisitor(ErrorReporter errorReporter) {

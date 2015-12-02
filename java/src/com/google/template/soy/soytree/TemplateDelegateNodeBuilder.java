@@ -24,7 +24,7 @@ import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyError;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
@@ -49,13 +49,16 @@ import java.util.regex.Pattern;
  */
 public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
 
-  private static final SoyError INVALID_DELTEMPLATE_COMMAND_TEXT = SoyError.of(
-      "Invalid delegate template command text.");
-  private static final SoyError INVALID_DELTEMPLATE_NAME = SoyError.of(
-      "Invalid delegate template name");
-  private static final SoyError INVALID_VARIANT_EXPR = SoyError.of("Invalid variant expression "
-          + "(must be a string literal containing an identifier or global expression).");
-  private static final SoyError NO_SOY_DOC = SoyError.of("Delegate templates require SoyDoc.");
+  private static final SoyErrorKind INVALID_DELTEMPLATE_COMMAND_TEXT =
+      SoyErrorKind.of("Invalid delegate template command text.");
+  private static final SoyErrorKind INVALID_DELTEMPLATE_NAME =
+      SoyErrorKind.of("Invalid delegate template name");
+  private static final SoyErrorKind INVALID_VARIANT_EXPR =
+      SoyErrorKind.of(
+          "Invalid variant expression "
+              + "(must be a string literal containing an identifier or global expression).");
+  private static final SoyErrorKind NO_SOY_DOC =
+      SoyErrorKind.of("Delegate templates require SoyDoc.");
 
   /** Pattern for the command text. */
   // 2 capturing groups: del template name, attributes.

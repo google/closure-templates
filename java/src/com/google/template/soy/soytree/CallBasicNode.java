@@ -25,7 +25,7 @@ import com.google.template.soy.basetree.SyntaxVersionUpperBound;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.ExplodingErrorReporter;
-import com.google.template.soy.error.SoyError;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.CommandTextAttributesParser.Attribute;
 import com.google.template.soy.soytree.defn.TemplateParam;
 
@@ -45,10 +45,10 @@ import javax.annotation.concurrent.Immutable;
  */
 public final class CallBasicNode extends CallNode {
 
-  public static final SoyError MISSING_CALLEE_NAME
-      = SoyError.of("Invalid ''call'' command missing callee name: '{'call {0}'}'.");
-  public static final SoyError BAD_CALLEE_NAME
-      = SoyError.of("Invalid callee name \"{0}\" for ''call'' command.");
+  public static final SoyErrorKind MISSING_CALLEE_NAME =
+      SoyErrorKind.of("Invalid ''call'' command missing callee name: '{'call {0}'}'.");
+  public static final SoyErrorKind BAD_CALLEE_NAME =
+      SoyErrorKind.of("Invalid callee name \"{0}\" for ''call'' command.");
 
   /**
    * Helper class used by constructors. Encapsulates all the info derived from the command

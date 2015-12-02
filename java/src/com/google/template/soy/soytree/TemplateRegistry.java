@@ -21,7 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Multimap;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyError;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.shared.internal.DelTemplateSelector;
 import com.google.template.soy.soytree.TemplateDelegateNode.DelTemplateKey;
 
@@ -39,14 +39,14 @@ import javax.annotation.Nullable;
  */
 public final class TemplateRegistry {
 
-  private static final SoyError DUPLICATE_TEMPLATES =
-      SoyError.of("Template ''{0}'' already defined at {1}");
-  private static final SoyError BASIC_AND_DELTEMPLATE_WITH_SAME_NAME =
-      SoyError.of("Found deltemplate {0} with the same name as a basic template at {1}.");
-  private static final SoyError DUPLICATE_DEFAULT_DELEGATE_TEMPLATES = SoyError.of(
-      "Delegate template ''{0}'' already has a default defined at {1}");
-  private static final SoyError DUPLICATE_DELEGATE_TEMPLATES_IN_DELPACKAGE = SoyError.of(
-      "Delegate template ''{0}'' already defined in delpackage {1}: {2}");
+  private static final SoyErrorKind DUPLICATE_TEMPLATES =
+      SoyErrorKind.of("Template ''{0}'' already defined at {1}");
+  private static final SoyErrorKind BASIC_AND_DELTEMPLATE_WITH_SAME_NAME =
+      SoyErrorKind.of("Found deltemplate {0} with the same name as a basic template at {1}.");
+  private static final SoyErrorKind DUPLICATE_DEFAULT_DELEGATE_TEMPLATES =
+      SoyErrorKind.of("Delegate template ''{0}'' already has a default defined at {1}");
+  private static final SoyErrorKind DUPLICATE_DELEGATE_TEMPLATES_IN_DELPACKAGE =
+      SoyErrorKind.of("Delegate template ''{0}'' already defined in delpackage {1}: {2}");
 
   /** Map from basic template name to node. */
   private final ImmutableMap<String, TemplateBasicNode> basicTemplatesMap;

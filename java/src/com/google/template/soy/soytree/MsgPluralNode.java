@@ -22,7 +22,7 @@ import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.ExplodingErrorReporter;
-import com.google.template.soy.error.SoyError;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
@@ -45,12 +45,12 @@ import java.util.regex.Pattern;
 public final class MsgPluralNode extends AbstractParentCommandNode<CaseOrDefaultNode>
     implements MsgSubstUnitNode, SplitLevelTopNode<CaseOrDefaultNode>, ExprHolderNode {
 
-  private static final SoyError INVALID_PLURAL_COMMAND_TEXT
-      = SoyError.of("Invalid ''plural'' command text \"{0}\".");
-  private static final SoyError PLURAL_OFFSET_OUT_OF_BOUNDS
-      = SoyError.of("The ''offset'' for plural must be a nonnegative integer.");
-  private static final SoyError MALFORMED_PLURAL_OFFSET
-      = SoyError.of("Invalid offset in ''plural'' command text \"{0}\".");
+  private static final SoyErrorKind INVALID_PLURAL_COMMAND_TEXT =
+      SoyErrorKind.of("Invalid ''plural'' command text \"{0}\".");
+  private static final SoyErrorKind PLURAL_OFFSET_OUT_OF_BOUNDS =
+      SoyErrorKind.of("The ''offset'' for plural must be a nonnegative integer.");
+  private static final SoyErrorKind MALFORMED_PLURAL_OFFSET =
+      SoyErrorKind.of("Invalid offset in ''plural'' command text \"{0}\".");
 
   /** An expression, and optional "offset" attribute. */
   private static final Pattern COMMAND_TEXT_PATTERN =

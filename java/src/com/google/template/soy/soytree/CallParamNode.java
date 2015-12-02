@@ -24,7 +24,7 @@ import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
-import com.google.template.soy.error.SoyError;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.soytree.CommandTextAttributesParser.Attribute;
@@ -43,8 +43,8 @@ import javax.annotation.Nullable;
  */
 public abstract class CallParamNode extends AbstractCommandNode {
 
-  private static final SoyError INVALID_COMMAND_TEXT
-      = SoyError.of("Invalid param command text \"{0}\"");
+  private static final SoyErrorKind INVALID_COMMAND_TEXT =
+      SoyErrorKind.of("Invalid param command text \"{0}\"");
 
   /**
    * Return value for {@code parseCommandTextHelper()}.

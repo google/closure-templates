@@ -17,7 +17,7 @@
 package com.google.template.soy.jbcsrc;
 
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyError;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
@@ -58,8 +58,8 @@ final class UnsupportedFeatureReporter {
       super.visitSoyFileNode(node);
       if (node.getDefaultAutoescapeMode() != AutoescapeMode.STRICT) {
         errorReporter.report(
-            node.getSourceLocation(), 
-            SoyError.of("jbcsrc only supports strict autoescape templates, found : ''{0}''"), 
+            node.getSourceLocation(),
+            SoyErrorKind.of("jbcsrc only supports strict autoescape templates, found : ''{0}''"),
             node.getDefaultAutoescapeMode());
       }
     }
@@ -71,8 +71,9 @@ final class UnsupportedFeatureReporter {
       if (node instanceof ExprHolderNode) {
         for (ExprUnion exprUnion : ((ExprHolderNode) node).getAllExprUnions()) {
           if (exprUnion.getExpr() == null) {
-            errorReporter.report(node.getSourceLocation(), 
-                SoyError.of("jbcsrc does not support soy v1 expressions: {0}"), 
+            errorReporter.report(
+                node.getSourceLocation(),
+                SoyErrorKind.of("jbcsrc does not support soy v1 expressions: {0}"),
                 exprUnion.getExprText());
           } else {
             exprVisitor.exec(exprUnion.getExpr());
@@ -92,8 +93,9 @@ final class UnsupportedFeatureReporter {
         case PARAM:
           break;
         case UNDECLARED:
-          errorReporter.report(node.getSourceLocation(),
-              SoyError.of("jbcsrc does not support undeclared template params"));
+          errorReporter.report(
+              node.getSourceLocation(),
+              SoyErrorKind.of("jbcsrc does not support undeclared template params"));
           break;
         default:
           throw new AssertionError();

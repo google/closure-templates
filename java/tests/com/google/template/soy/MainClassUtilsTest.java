@@ -69,7 +69,7 @@ public final class MainClassUtilsTest extends TestCase {
     })).isEqualTo(1);
   }
 
-  public void testMainMethodReturnsSoyErrors() {
+  public void testMainMethodReturnsSoyErrorKinds() {
     assertThat(runInternal(new Main() {
       @Override
       public CompilationResult main() throws IOException {
