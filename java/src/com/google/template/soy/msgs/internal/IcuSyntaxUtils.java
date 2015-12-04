@@ -20,7 +20,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.ImmutableMap;
-import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.base.internal.LegacyInternalSyntaxException;
 import com.google.template.soy.msgs.restricted.MsgPartUtils;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPart.Case;
@@ -309,9 +309,9 @@ public class IcuSyntaxUtils {
     }
 
     if (ICU_SYNTAX_CHAR_NOT_SINGLE_QUOTE_PATTERN.matcher(rawText).find()) {
-      throw SoySyntaxException.createWithoutMetaInfo(
-          "Apologies, Soy currently does not support open/close brace characters in plural/gender" +
-              " source msgs.");
+      throw LegacyInternalSyntaxException.createWithoutMetaInfo(
+          "Apologies, Soy currently does not support open/close brace characters in plural/gender"
+              + " source msgs.");
     } else {
       if (! matcher.group().equals("'")) {
         throw new AssertionError();
@@ -320,18 +320,21 @@ public class IcuSyntaxUtils {
           " One possible workaround is to use the Unicode RIGHT SINGLE QUOTATION MARK character" +
               " (\\u2019) instead of a basic apostrophe.";
       if (matcher.end() == rawText.length()) {
-        throw SoySyntaxException.createWithoutMetaInfo(
-            "Apologies, Soy currently does not support a single quote character at the end of a" +
-                " text part in plural/gender source msgs (including immediately preceding an HTML" +
-                " tag or Soy tag)." + errorMsgSuffix);
+        throw LegacyInternalSyntaxException.createWithoutMetaInfo(
+            "Apologies, Soy currently does not support a single quote character at the end of a"
+                + " text part in plural/gender source msgs (including immediately preceding an HTML"
+                + " tag or Soy tag)."
+                + errorMsgSuffix);
       } else if (rawText.charAt(matcher.end()) == '#') {
-        throw SoySyntaxException.createWithoutMetaInfo(
-            "Apologies, Soy currently does not support a single quote character preceding a hash" +
-                " character in plural/gender source msgs." + errorMsgSuffix);
+        throw LegacyInternalSyntaxException.createWithoutMetaInfo(
+            "Apologies, Soy currently does not support a single quote character preceding a hash"
+                + " character in plural/gender source msgs."
+                + errorMsgSuffix);
       } else if (rawText.charAt(matcher.end()) == '\'') {
-        throw SoySyntaxException.createWithoutMetaInfo(
-            "Apologies, Soy currently does not support consecutive single quote characters in" +
-                " plural/gender source msgs." + errorMsgSuffix);
+        throw LegacyInternalSyntaxException.createWithoutMetaInfo(
+            "Apologies, Soy currently does not support consecutive single quote characters in"
+                + " plural/gender source msgs."
+                + errorMsgSuffix);
       } else {
         throw new AssertionError();
       }

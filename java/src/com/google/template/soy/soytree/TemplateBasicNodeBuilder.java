@@ -20,8 +20,8 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.BaseUtils;
+import com.google.template.soy.base.internal.LegacyInternalSyntaxException;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.error.ErrorReporter;
@@ -149,7 +149,7 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder {
         // an "error" template name/namespace, but that would cause spurious duplicate template
         // errors (for every namespace-relative name in a non-namespaced file).
         // It's also dangerous, since "error" is a common real-world template/namespace name.
-        throw SoySyntaxException.createWithMetaInfo(
+        throw LegacyInternalSyntaxException.createWithMetaInfo(
             "Template has namespace-relative name, but file has no namespace declaration.",
             sourceLocation);
       }

@@ -18,7 +18,7 @@ package com.google.template.soy.parsepasses.contextautoesc;
 
 import com.google.common.base.Preconditions;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.base.internal.LegacyInternalSyntaxException;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoySyntaxExceptionUtils;
 
@@ -28,15 +28,16 @@ import javax.annotation.Nullable;
  * Indicates failure to propagate contexts through a template or an existing escaping directive on a
  * 'print' tag that is inconsistent with the contexts in which it appears.
  */
-public final class SoyAutoescapeException extends SoySyntaxException {
-
+public final class SoyAutoescapeException extends LegacyInternalSyntaxException {
 
   /**
    * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
    *
    * @param message The error message.
    * @return The new SoyAutoescapeException object.
+   * @deprecated
    */
+  @Deprecated
   public static SoyAutoescapeException createWithoutMetaInfo(String message) {
     return new SoyAutoescapeException(message);
   }
@@ -48,7 +49,9 @@ public final class SoyAutoescapeException extends SoySyntaxException {
    * @param message The error message, or null to use the message from the cause.
    * @param cause The cause of this exception.
    * @return The new SoyAutoescapeException object.
+   * @deprecated
    */
+  @Deprecated
   public static SoyAutoescapeException createCausedWithoutMetaInfo(
       @Nullable String message, Throwable cause) {
 

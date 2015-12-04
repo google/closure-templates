@@ -35,6 +35,7 @@ import com.google.inject.assistedinject.Assisted;
 import com.google.inject.util.Providers;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.base.internal.LegacyInternalSyntaxException;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.base.internal.VolatileSoyFileSupplier;
@@ -1145,8 +1146,8 @@ public final class SoyFileSet {
   }
 
   private CompilationResult failure() {
-    ImmutableCollection<? extends SoySyntaxException> errors
-        = ((ErrorReporterImpl) errorReporter).getErrors();
+    ImmutableCollection<? extends LegacyInternalSyntaxException> errors =
+        ((ErrorReporterImpl) errorReporter).getErrors();
     Preconditions.checkState(!errors.isEmpty());
     return new CompilationResult(
         errors, new ErrorPrettyPrinter(new SnippetFormatter(soyFileSuppliers)));

@@ -18,8 +18,8 @@ package com.google.template.soy.soytree;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.BaseUtils;
+import com.google.template.soy.base.internal.LegacyInternalSyntaxException;
 
 import javax.annotation.Nullable;
 
@@ -51,7 +51,7 @@ final class RequirecssUtils {
     String[] namespaces = requirecssAttr.trim().split("\\s*,\\s*");
     for (String namespace : namespaces) {
       if (!BaseUtils.isDottedIdentifier(namespace)) {
-        throw SoySyntaxException.createWithMetaInfo(
+        throw LegacyInternalSyntaxException.createWithMetaInfo(
             "Invalid required CSS namespace name \"" + namespace + "\".", srcLoc);
       }
     }

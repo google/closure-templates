@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.inject.assistedinject.Assisted;
 import com.google.inject.assistedinject.AssistedInject;
 import com.google.template.soy.base.internal.BaseUtils;
+import com.google.template.soy.base.internal.LegacyInternalSyntaxException;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.msgs.internal.MsgUtils;
@@ -44,7 +45,6 @@ import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
-import com.google.template.soy.soytree.SoySyntaxExceptionUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -176,19 +176,27 @@ public class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>> {
       // Get directive.
       SoyPySrcPrintDirective directive = soyPySrcDirectivesMap.get(directiveNode.getName());
       if (directive == null) {
-        throw SoySyntaxExceptionUtils.createWithNode(
-            "Failed to find SoyPySrcPrintDirective with name '" + directiveNode.getName() + "'"
-                + " (tag " + node.toSourceString() + ")",
-            directiveNode);
+        throw LegacyInternalSyntaxException.createWithMetaInfo(
+            "Failed to find SoyPySrcPrintDirective with name '"
+                + directiveNode.getName()
+                + "'"
+                + " (tag "
+                + node.toSourceString()
+                + ")",
+            directiveNode.getSourceLocation());
       }
 
       // Get directive args.
       List<ExprRootNode> args = directiveNode.getArgs();
       if (!directive.getValidArgsSizes().contains(args.size())) {
-        throw SoySyntaxExceptionUtils.createWithNode(
-            "Print directive '" + directiveNode.getName() + "' used with the wrong number of"
-                + " arguments (tag " + node.toSourceString() + ").",
-            directiveNode);
+        throw LegacyInternalSyntaxException.createWithMetaInfo(
+            "Print directive '"
+                + directiveNode.getName()
+                + "' used with the wrong number of"
+                + " arguments (tag "
+                + node.toSourceString()
+                + ").",
+            directiveNode.getSourceLocation());
       }
 
       // Translate directive args.

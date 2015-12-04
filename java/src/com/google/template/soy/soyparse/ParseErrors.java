@@ -20,7 +20,7 @@ import static com.google.template.soy.base.internal.BaseUtils.formatParseExcepti
 
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.base.internal.LegacyInternalSyntaxException;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 
@@ -72,7 +72,8 @@ final class ParseErrors {
     }
   }
 
-  static void report(ErrorReporter reporter, String filePath, SoySyntaxException exception) {
+  static void report(
+      ErrorReporter reporter, String filePath, LegacyInternalSyntaxException exception) {
     SourceLocation sourceLocation = exception.getSourceLocation();
     if (!sourceLocation.isKnown()) {
       sourceLocation = new SourceLocation(filePath);

@@ -29,9 +29,9 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import com.google.template.soy.base.SoyBackendKind;
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.IndentedLinesBuilder;
+import com.google.template.soy.base.internal.LegacyInternalSyntaxException;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.internal.base.Pair;
@@ -46,7 +46,6 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
-import com.google.template.soy.soytree.SoySyntaxExceptionUtils;
 import com.google.template.soy.soytree.SoytreeUtils;
 import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
@@ -279,11 +278,7 @@ public final class GenerateParseInfoVisitor
 
     // Run the pass.
     for (SoyFileNode soyFile : node.getChildren()) {
-      try {
-        visit(soyFile);
-      } catch (SoySyntaxException sse) {
-        throw sse.associateMetaInfo(null, soyFile.getFilePath(), null);
-      }
+      visit(soyFile);
     }
   }
 
@@ -293,10 +288,10 @@ public final class GenerateParseInfoVisitor
     }
 
     if (node.getFilePath() == null) {
-      throw SoySyntaxExceptionUtils.createWithNode(
-          "In order to generate parse info, all Soy files must have paths (file name is" +
-              " extracted from the path).",
-          node);
+      throw LegacyInternalSyntaxException.createWithMetaInfo(
+          "In order to generate parse info, all Soy files must have paths (file name is"
+              + " extracted from the path).",
+          node.getSourceLocation());
     }
 
     String javaClassName = soyFileToJavaClassNameMap.get(node);
@@ -348,11 +343,15 @@ public final class GenerateParseInfoVisitor
     for (String key : allParamKeys) {
       String upperUnderscoreKey = convertToUpperUnderscore(key);
       if (allParamKeysMap.containsKey(upperUnderscoreKey)) {
-        throw SoySyntaxExceptionUtils.createWithNode(
-            "Cannot generate parse info because two param keys '" +
-                allParamKeysMap.get(upperUnderscoreKey) + "' and '" + key +
-                "' generate the same upper-underscore name '" + upperUnderscoreKey + "'.",
-            node);
+        throw LegacyInternalSyntaxException.createWithMetaInfo(
+            "Cannot generate parse info because two param keys '"
+                + allParamKeysMap.get(upperUnderscoreKey)
+                + "' and '"
+                + key
+                + "' generate the same upper-underscore name '"
+                + upperUnderscoreKey
+                + "'.",
+            node.getSourceLocation());
       }
       allParamKeysMap.put(upperUnderscoreKey, key);
     }
@@ -460,11 +459,7 @@ public final class GenerateParseInfoVisitor
 
     // ------ Templates. ------
     for (TemplateNode template : publicBasicTemplateMap.values()) {
-      try {
-        visit(template);
-      } catch (SoySyntaxException sse) {
-        throw sse.associateMetaInfo(null, null, template.getTemplateNameForUserMsgs());
-      }
+      visit(template);
     }
 
     // ------ Constructor. ------

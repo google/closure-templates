@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.base.internal.LegacyInternalSyntaxException;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 
@@ -32,11 +33,12 @@ import java.util.List;
  * @author brndn@google.com (Brendan Linn)
  */
 public final class ErrorReporterImpl implements ErrorReporter {
-  private final List<SoySyntaxException> errors = new ArrayList<>();
+  private final List<LegacyInternalSyntaxException> errors = new ArrayList<>();
 
   @Override
   public void report(SourceLocation sourceLocation, SoyErrorKind error, Object... args) {
-    errors.add(SoySyntaxException.createWithMetaInfo(error.format(args), sourceLocation));
+    errors.add(
+        LegacyInternalSyntaxException.createWithMetaInfo(error.format(args), sourceLocation));
   }
 
   @Override
@@ -53,8 +55,9 @@ public final class ErrorReporterImpl implements ErrorReporter {
   }
 
   /** Returns the full list of errors reported to this error reporter. */
-  public ImmutableCollection<? extends SoySyntaxException> getErrors() {
-    ImmutableCollection<? extends SoySyntaxException> copy = ImmutableList.copyOf(errors);
+  public ImmutableCollection<? extends LegacyInternalSyntaxException> getErrors() {
+    ImmutableCollection<? extends LegacyInternalSyntaxException> copy =
+        ImmutableList.copyOf(errors);
     // TODO(user): remove. ErrorReporter is currently injected as a singleton in SharedModule.
     // This is not a problem for JS and Python compilations, which are traditional short-lived
     // binaries, but it is very bad for local development servers that can compile Tofu multiple

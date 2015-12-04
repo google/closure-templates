@@ -20,8 +20,8 @@ import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.BaseUtils;
+import com.google.template.soy.base.internal.LegacyInternalSyntaxException;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
@@ -121,9 +121,12 @@ public final class TemplateDelegateNode extends TemplateNode implements ExprHold
 
   static void verifyVariantName(String delTemplateVariant, SourceLocation srcLoc) {
     if (delTemplateVariant.length() > 0 && !(BaseUtils.isIdentifier(delTemplateVariant))) {
-      throw SoySyntaxException.createWithMetaInfo(
-          "Invalid variant \"" + delTemplateVariant + "\" in 'deltemplate'"
-        + " (when a string literal is used, value must be an identifier).", srcLoc);
+      throw LegacyInternalSyntaxException.createWithMetaInfo(
+          "Invalid variant \""
+              + delTemplateVariant
+              + "\" in 'deltemplate'"
+              + " (when a string literal is used, value must be an identifier).",
+          srcLoc);
     }
   }
 

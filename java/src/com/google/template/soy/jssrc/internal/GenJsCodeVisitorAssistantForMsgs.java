@@ -20,7 +20,6 @@ import com.google.common.base.CaseFormat;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.restricted.JsExpr;
@@ -472,9 +471,10 @@ class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
             (parentNode instanceof CommandNode)
                 ? "Tag " + ((CommandNode) parentNode).getTagString()
                 : "Node " + parentNode;
-        throw SoySyntaxException.createWithMetaInfo(
-            nodeStringForErrorMsg + " is not allowed to be a direct child of a 'msg' tag.",
-            parentNode.getSourceLocation());
+        throw new AssertionError(
+            nodeStringForErrorMsg
+                + " is not allowed to be a direct child of a 'msg' tag. At :"
+                + parentNode.getSourceLocation());
       }
     }
   }

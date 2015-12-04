@@ -17,7 +17,7 @@
 package com.google.template.soy.soytree;
 
 import com.google.template.soy.SoyFileSetParserBuilder;
-import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.base.internal.LegacyInternalSyntaxException;
 
 import junit.framework.TestCase;
 
@@ -42,21 +42,19 @@ public final class SoySyntaxExceptionUtilsTest extends TestCase {
         SoyFileSetParserBuilder.forFileContents(testFileContent).parse().fileSet();
 
     String message = "Some error happened.";
-    Throwable cause = new Throwable();
     PrintNode pn = (PrintNode) soyTree.getChild(0).getChild(0).getChild(0);
-    SoySyntaxException sse = SoySyntaxExceptionUtils.createCausedWithNode(message, cause, pn);
+    LegacyInternalSyntaxException sse =
+        LegacyInternalSyntaxException.createWithMetaInfo(message, pn.getSourceLocation());
     assertTrue(sse.getMessage().contains(message));
-    assertEquals(cause, sse.getCause());
     assertEquals("no-path", sse.getSourceLocation().getFilePath());
-    assertEquals("boo.foo", sse.getTemplateName());
   }
 
 
   public void testAssociateNode() {
 
     String message = "Some error happened.";
-    Throwable cause = new Throwable();
-    SoySyntaxException sse = SoySyntaxException.createCausedWithoutMetaInfo(message, cause);
+    LegacyInternalSyntaxException sse =
+        LegacyInternalSyntaxException.createWithoutMetaInfo(message);
 
     String testFileContent =
         "{namespace boo autoescape=\"deprecated-noncontextual\"}\n" +
@@ -71,17 +69,13 @@ public final class SoySyntaxExceptionUtilsTest extends TestCase {
 
     // Before.
     assertTrue(sse.getMessage().contains(message));
-    assertEquals(cause, sse.getCause());
     assertEquals("unknown", sse.getSourceLocation().getFilePath());
-    assertEquals(null, sse.getTemplateName());
 
-    SoySyntaxExceptionUtils.associateNode(sse, pn);
+    sse.associateMetaInfo(pn.getSourceLocation(), null, null);
 
     // After.
     assertTrue(sse.getMessage().contains(message));
-    assertEquals(cause, sse.getCause());
     assertEquals("no-path", sse.getSourceLocation().getFilePath());
-    assertEquals("boo.foo", sse.getTemplateName());
   }
 
 }

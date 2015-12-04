@@ -16,13 +16,10 @@
 
 package com.google.template.soy.soytree;
 
-import com.google.template.soy.base.SoySyntaxException;
-
-import javax.annotation.Nullable;
-
+import com.google.template.soy.base.internal.LegacyInternalSyntaxException;
 
 /**
- * Utilities for creating and modifying SoySyntaxException objects.
+ * Utilities for creating and modifying LegacyInternalSyntaxException objects.
  *
  * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
  *
@@ -34,7 +31,7 @@ public class SoySyntaxExceptionUtils {
 
 
   /**
-   * Creates a SoySyntaxException, with meta info filled in based on the given Soy node.
+   * Creates a LegacyInternalSyntaxException, with meta info filled in based on the given Soy node.
    *
    * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
    *
@@ -42,31 +39,15 @@ public class SoySyntaxExceptionUtils {
    * @param node The node from which to derive the exception meta info.
    * @return The new SoySyntaxException object.
    */
-  public static SoySyntaxException createWithNode(String message, SoyNode node) {
+  public static LegacyInternalSyntaxException createWithNode(String message, SoyNode node) {
 
-    return associateNode(SoySyntaxException.createWithoutMetaInfo(message), node);
+    return associateNode(LegacyInternalSyntaxException.createWithoutMetaInfo(message), node);
   }
 
 
   /**
-   * Creates a SoySyntaxException, with meta info filled in based on the given Soy node.
-   *
-   * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
-   *
-   * @param message The error message, or null to use the message from the cause.
-   * @param cause The cause of this exception.
-   * @param node The node from which to derive the exception meta info.
-   * @return The new SoySyntaxException object.
-   */
-  public static SoySyntaxException createCausedWithNode(
-      @Nullable String message, Throwable cause, SoyNode node) {
-
-    return associateNode(SoySyntaxException.createCausedWithoutMetaInfo(message, cause), node);
-  }
-
-
-  /**
-   * Adds meta info to an existing SoySyntaxException. The meta info is derived from a Soy node.
+   * Adds meta info to an existing LegacyInternalSyntaxException. The meta info is derived from
+   * a Soy node.
    *
    * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
    *
@@ -74,7 +55,8 @@ public class SoySyntaxExceptionUtils {
    * @param node The node from which to derive the exception meta info.
    * @return The same SoySyntaxException object, for convenience.
    */
-  public static SoySyntaxException associateNode(SoySyntaxException sse, SoyNode node) {
+  public static LegacyInternalSyntaxException associateNode(
+      LegacyInternalSyntaxException sse, SoyNode node) {
 
     TemplateNode template = node.getNearestAncestor(TemplateNode.class);
     String templateName = (template != null) ? template.getTemplateNameForUserMsgs() : null;

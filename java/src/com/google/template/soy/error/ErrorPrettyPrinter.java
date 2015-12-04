@@ -19,14 +19,14 @@ package com.google.template.soy.error;
 import com.google.common.base.Optional;
 import com.google.common.base.Strings;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.base.internal.LegacyInternalSyntaxException;
 
 import java.io.IOException;
 import java.io.PrintStream;
 
 /**
- * Displays {@link SoySyntaxException}s in a useful way, with a snippet of Soy source code
- * containing the error and a caret pointing at the exact place where the error was found.
+ * Displays {@link LegacyInternalSyntaxException}s in a useful way, with a snippet of Soy source
+ * code containing the error and a caret pointing at the exact place where the error was found.
  *
  * @author brndn@google.com (Brendan Linn)
  */
@@ -43,7 +43,7 @@ public final class ErrorPrettyPrinter {
    * of Soy source code containing the error and a caret pointing at the exact place where the error
    * was found.
    */
-  public void print(SoySyntaxException e, PrintStream err) {
+  public void print(LegacyInternalSyntaxException e, PrintStream err) {
     // We build the full error message into a buffer and then print so that we issue one write
     // operation to the print stream.  The most likely printstream is System.err which tends to be
     // used concurrently.  By issuing a single write we ensure that our message doesn't get

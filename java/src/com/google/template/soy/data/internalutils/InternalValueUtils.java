@@ -19,6 +19,7 @@ package com.google.template.soy.data.internalutils;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.base.internal.LegacyInternalSyntaxException;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueHelper;
@@ -128,7 +129,7 @@ public class InternalValueUtils {
         value = null;  // make compiler happy
       }
       if (!isValidValue) {
-        throw SoySyntaxException.createWithoutMetaInfo(
+        throw LegacyInternalSyntaxException.createWithoutMetaInfo(
             "Compile-time globals map contains invalid value: " + valueObj + ".");
       }
 

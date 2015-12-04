@@ -19,7 +19,7 @@ package com.google.template.soy.pysrc.internal;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
-import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.base.internal.LegacyInternalSyntaxException;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -55,7 +55,6 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
-import com.google.template.soy.soytree.SoySyntaxExceptionUtils;
 import com.google.template.soy.soytree.SwitchCaseNode;
 import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
@@ -187,11 +186,7 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
   @Override protected void visitSoyFileSetNode(SoyFileSetNode node) {
     for (SoyFileNode soyFile : node.getChildren()) {
-      try {
-        visit(soyFile);
-      } catch (SoySyntaxException sse) {
-        throw sse.associateMetaInfo(null, soyFile.getFilePath(), null);
-      }
+      visit(soyFile);
     }
   }
 
@@ -249,11 +244,7 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     // Add code for each template.
     for (TemplateNode template : node.getChildren()) {
       pyCodeBuilder.appendLine().appendLine();
-      try {
-        visit(template);
-      } catch (SoySyntaxException sse) {
-        throw sse.associateMetaInfo(null, null, template.getTemplateNameForUserMsgs());
-      }
+      visit(template);
     }
 
     pyFilesContents.add(pyCodeBuilder.getCode());
@@ -652,9 +643,10 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    */
   @Override protected void visitLetContentNode(LetContentNode node) {
     if (node.getContentKind() == null) {
-      throw SoySyntaxExceptionUtils.createWithNode(
+      throw LegacyInternalSyntaxException.createWithMetaInfo(
           "Let content node is missing a content kind. This may be due to using a non-strict "
-              + "template, which is unsupported in the Python compiler.", node);
+              + "template, which is unsupported in the Python compiler.",
+          node.getSourceLocation());
     }
 
     String generatedVarName = node.getUniqueVarName();

@@ -19,6 +19,7 @@ package com.google.template.soy;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableCollection;
 import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.base.internal.LegacyInternalSyntaxException;
 import com.google.template.soy.error.ErrorPrettyPrinter;
 
 import java.io.PrintStream;
@@ -33,11 +34,11 @@ import java.io.PrintStream;
  */
 final class CompilationResult {
 
-  private final ImmutableCollection<? extends SoySyntaxException> errors;
+  private final ImmutableCollection<? extends LegacyInternalSyntaxException> errors;
   private final ErrorPrettyPrinter prettyPrinter;
 
   CompilationResult(
-      ImmutableCollection<? extends SoySyntaxException> errors,
+      ImmutableCollection<? extends LegacyInternalSyntaxException> errors,
       ErrorPrettyPrinter prettyPrinter) {
     this.errors = errors;
     this.prettyPrinter = prettyPrinter;
@@ -59,7 +60,7 @@ final class CompilationResult {
 
   void printErrors(PrintStream out) {
     Preconditions.checkState(!isSuccess());
-    for (SoySyntaxException e : errors) {
+    for (LegacyInternalSyntaxException e : errors) {
       prettyPrinter.print(e, out);
     }
   }

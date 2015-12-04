@@ -45,7 +45,7 @@ package com.google.template.soy.soyparse;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.base.internal.LegacyInternalSyntaxException;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier.Version;
@@ -206,7 +206,7 @@ public class SoyFileParser {
       soyFileNode = SoyFile();
     } catch (ParseException e) {
       ParseErrors.reportSoyFileParseException(errorReporter, filePath, e);
-    } catch (SoySyntaxException e) {
+    } catch (LegacyInternalSyntaxException e) {
       ParseErrors.report(errorReporter, filePath, e);
     } catch (TokenMgrError e) {
       // This is only thrown by TemplateParser (and ExpressionParser) SoyFileParser never throws this
@@ -609,7 +609,7 @@ private TemplateNode Template(SoyFileHeaderInfo soyFileHeaderInfo) :
           filePath,
           templateNodeBuilder.getTemplateNameForUserMsgs(),
           adjustedErrorMsg);
-    } catch (SoySyntaxException sse) {
+    } catch (LegacyInternalSyntaxException sse) {
       errorReporter.report(
           SourceLocation.UNKNOWN,
           UNCATEGORIZED,

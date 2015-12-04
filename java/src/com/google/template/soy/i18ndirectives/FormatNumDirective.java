@@ -19,7 +19,6 @@ package com.google.template.soy.i18ndirectives;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
@@ -146,9 +145,10 @@ class FormatNumDirective implements SoyJavaPrintDirective, SoyLibraryAssistedJsS
       compactNumberFormat.setMaximumSignificantDigits(3);
       numberFormat = compactNumberFormat;
     } else {
-      throw SoySyntaxException.createWithoutMetaInfo("First argument to formatNum must be "
-          + "constant, and one of: 'decimal', 'currency', 'percent', 'scientific', "
-          + "'compact_short', or 'compact_long'.");
+      throw new IllegalArgumentException(
+          "First argument to formatNum must be "
+              + "constant, and one of: 'decimal', 'currency', 'percent', 'scientific', "
+              + "'compact_short', or 'compact_long'.");
     }
 
     return StringData.forValue(numberFormat.format(((NumberData) value).toFloat()));
@@ -193,8 +193,8 @@ class FormatNumDirective implements SoyJavaPrintDirective, SoyLibraryAssistedJsS
 
     if (!JS_ARGS_TO_ENUM.containsKey(numberFormatType)) {
       String validKeys = Joiner.on("', '").join(JS_ARGS_TO_ENUM.keySet());
-      throw SoySyntaxException.createWithoutMetaInfo("First argument to formatNum must be "
-          + "constant, and one of: '" + validKeys + "'.");
+      throw new IllegalArgumentException(
+          "First argument to formatNum must be " + "constant, and one of: '" + validKeys + "'.");
     }
 
     return numberFormatType;

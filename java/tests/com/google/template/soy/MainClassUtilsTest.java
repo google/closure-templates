@@ -22,7 +22,7 @@ import static com.google.template.soy.MainClassUtils.runInternal;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.MainClassUtils.Main;
-import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.base.internal.LegacyInternalSyntaxException;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.error.ErrorPrettyPrinter;
 import com.google.template.soy.error.SnippetFormatter;
@@ -39,16 +39,18 @@ import java.io.IOException;
 public final class MainClassUtilsTest extends TestCase {
 
   public void testMainMethodThrowsNothing() {
-    assertThat(runInternal(new Main() {
-      @Override
-      public CompilationResult main() throws IOException {
-        return new CompilationResult(
-            ImmutableList.<SoySyntaxException>of(),
-            new ErrorPrettyPrinter(
-                new SnippetFormatter(
-                    ImmutableMap.<String, SoyFileSupplier>of())));
-      }
-    })).isEqualTo(0);
+    assertThat(
+            runInternal(
+                new Main() {
+                  @Override
+                  public CompilationResult main() throws IOException {
+                    return new CompilationResult(
+                        ImmutableList.<LegacyInternalSyntaxException>of(),
+                        new ErrorPrettyPrinter(
+                            new SnippetFormatter(ImmutableMap.<String, SoyFileSupplier>of())));
+                  }
+                }))
+        .isEqualTo(0);
   }
 
   public void testMainMethodThrowsIOException() {
@@ -70,16 +72,19 @@ public final class MainClassUtilsTest extends TestCase {
   }
 
   public void testMainMethodReturnsSoyErrorKinds() {
-    assertThat(runInternal(new Main() {
-      @Override
-      public CompilationResult main() throws IOException {
-        return new CompilationResult(
-            ImmutableList.of(SoySyntaxException.createWithoutMetaInfo("OOPS")),
-            new ErrorPrettyPrinter(
-                new SnippetFormatter(
-                    ImmutableMap.<String, SoyFileSupplier>of())));
-      }
-    })).isEqualTo(1);
+    assertThat(
+            runInternal(
+                new Main() {
+                  @Override
+                  public CompilationResult main() throws IOException {
+                    return new CompilationResult(
+                        ImmutableList.of(
+                            LegacyInternalSyntaxException.createWithoutMetaInfo("OOPS")),
+                        new ErrorPrettyPrinter(
+                            new SnippetFormatter(ImmutableMap.<String, SoyFileSupplier>of())));
+                  }
+                }))
+        .isEqualTo(1);
   }
 
 }

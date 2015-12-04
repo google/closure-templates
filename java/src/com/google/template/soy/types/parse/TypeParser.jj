@@ -40,7 +40,7 @@ package com.google.template.soy.types.parse;
 
 import com.google.common.collect.Maps;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.base.internal.LegacyInternalSyntaxException;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.aggregate.ListType;
@@ -100,7 +100,7 @@ public class TypeParser {
       // essentially impossible because the TemplateParser/TemplateNodeBuilder
       // has 'pre stripped' whitespace then so anything we do here would be
       // wrong  ... so we don't try :(
-      throw SoySyntaxException.createWithMetaInfo(
+      throw LegacyInternalSyntaxException.createWithMetaInfo(
           ParseErrors.formatParseException(e),
           sourceLocation);
     }
@@ -327,7 +327,7 @@ private void RecordField(Map<String, SoyType> fields) :
 
   {
     if (fields.containsKey(fieldName.image)) {
-      throw SoySyntaxException.createWithMetaInfo(
+      throw LegacyInternalSyntaxException.createWithMetaInfo(
           "Duplicate field definition for record: " + fieldName.image,
           sourceLocation);
     }
@@ -351,7 +351,7 @@ private SoyType TypeName() :
     typeName = typeRegistry.getType(ident);
     if (typeName == null) {
       // TODO(lukes): typo detection/suggestions would be nice here
-      throw SoySyntaxException.createWithMetaInfo(
+      throw LegacyInternalSyntaxException.createWithMetaInfo(
           "Unknown type '" + ident + "'.",
           sourceLocation);
     }
