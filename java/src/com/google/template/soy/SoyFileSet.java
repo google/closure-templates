@@ -630,7 +630,6 @@ public final class SoyFileSet {
       SoyTypeRegistry typeRegistry,
       ImmutableMap<String, ? extends SoyFunction> soyFunctionMap,
       ImmutableMap<String, ? extends SoyPrintDirective> printDirectives,
-      ErrorReporter errorReporter,
       @Assisted ImmutableMap<String, SoyFileSupplier> soyFileSuppliers,
       @Assisted SoyGeneralOptions generalOptions,
       @Assisted @Nullable SoyAstCache cache,
@@ -654,7 +653,8 @@ public final class SoyFileSet {
     this.generalOptions = generalOptions.clone();
     this.soyFunctionMap = soyFunctionMap;
     this.printDirectives = printDirectives;
-    this.errorReporter = errorReporter;
+    // TODO(lukes): restrict access to this constructor
+    this.errorReporter = new ErrorReporterImpl();
   }
 
 
@@ -977,9 +977,11 @@ public final class SoyFileSet {
             typeRegistry,
             soyFunctionMap);
     TemplateRegistry registry = parseResult.registry();
-    registry = runMiddleendPasses(registry, parseResult.fileSet());
-    // TODO(lukes): pass the template registry to jsSrcMain
-    return jsSrcMainProvider.get().genJsSrc(parseResult.fileSet(), jsSrcOptions, msgBundle);
+    SoyFileSetNode fileSet = parseResult.fileSet();
+    registry = runMiddleendPasses(registry, fileSet);
+    return jsSrcMainProvider
+        .get()
+        .genJsSrc(fileSet, registry, jsSrcOptions, msgBundle, errorReporter);
   }
 
   /**
@@ -1023,15 +1025,23 @@ public final class SoyFileSet {
     SoyFileSetNode soyTree = result.fileSet();
     TemplateRegistry registry = result.registry();
     registry = runMiddleendPasses(registry, soyTree);
-    // TODO(lukes): pass the template registry to jsSrcMain
     if (errorReporter.errorsSince(checkpoint)) {
       return failure();
     }
 
     if (locales.isEmpty()) {
       // Not generating localized JS.
-      jsSrcMainProvider.get().genJsFiles(
-          soyTree, jsSrcOptions, null, null, outputPathFormat, inputFilePathPrefix);
+      jsSrcMainProvider
+          .get()
+          .genJsFiles(
+              soyTree,
+              registry,
+              jsSrcOptions,
+              null,
+              null,
+              outputPathFormat,
+              inputFilePathPrefix,
+              errorReporter);
 
     } else {
       // Generating localized JS.
@@ -1053,8 +1063,17 @@ public final class SoyFileSet {
           }
         }
 
-        jsSrcMainProvider.get().genJsFiles(
-            soyTreeClone, jsSrcOptions, locale, msgBundle, outputPathFormat, inputFilePathPrefix);
+        jsSrcMainProvider
+            .get()
+            .genJsFiles(
+                soyTreeClone,
+                registry,
+                jsSrcOptions,
+                locale,
+                msgBundle,
+                outputPathFormat,
+                inputFilePathPrefix,
+                errorReporter);
       }
     }
     return result();
@@ -1091,13 +1110,15 @@ public final class SoyFileSet {
     }
     SoyFileSetNode soyTree = result.fileSet();
     new ChangeCallsToPassAllDataVisitor().exec(soyTree);
-    simplifyVisitor.exec(soyTree);
+    simplifyVisitor.simplify(soyTree, result.registry());
 
     if (errorReporter.errorsSince(checkpoint)) {
       return failure();
     }
 
-    incrementalDomSrcMainProvider.get().genJsFiles(soyTree, jsSrcOptions, outputPathFormat);
+    incrementalDomSrcMainProvider
+        .get()
+        .genJsFiles(soyTree, result.registry(), jsSrcOptions, outputPathFormat, errorReporter);
 
     return result();
   }
@@ -1128,13 +1149,14 @@ public final class SoyFileSet {
 
     TemplateRegistry registry = result.registry();
     registry = runMiddleendPasses(registry, result.fileSet());
-    // TODO(lukes): pass the template registry to pySrcMain
     if (errorReporter.errorsSince(checkpoint)) {
       return failure();
     }
 
-    pySrcMainProvider.get().genPyFiles(
-        soyTree, pySrcOptions, outputPathFormat, inputFilePathPrefix);
+    pySrcMainProvider
+        .get()
+        .genPyFiles(
+            soyTree, registry, pySrcOptions, outputPathFormat, inputFilePathPrefix, errorReporter);
 
     return result();
   }
@@ -1219,7 +1241,7 @@ public final class SoyFileSet {
 
     Checkpoint checkpoint = errorReporter.checkpoint();
     // Run contextual escaping after CSS and substitutions have been done.
-    doContextualEscaping(soyTree);
+    doContextualEscaping(soyTree, registry);
     if (errorReporter.errorsSince(checkpoint)) {
       // Further passes that rely on sliced raw text nodes, such as conformance and CSP, can't
       // proceed if contextual escaping failed.
@@ -1229,8 +1251,9 @@ public final class SoyFileSet {
     // the registry
     registry = new TemplateRegistry(soyTree, errorReporter);
     if (checkConformance != null) {
-      checkConformance.check(ConformanceInput.create(
-          soyTree, contextualAutoescaper.getSlicedRawTextNodes()));
+      checkConformance.check(
+          ConformanceInput.create(soyTree, contextualAutoescaper.getSlicedRawTextNodes()),
+          errorReporter);
     }
 
     // Add print directives that mark inline-scripts as safe to run.
@@ -1241,14 +1264,15 @@ public final class SoyFileSet {
 
     // Attempt to simplify the tree.
     new ChangeCallsToPassAllDataVisitor().exec(soyTree);
-    simplifyVisitor.exec(soyTree);
+    simplifyVisitor.simplify(soyTree, registry);
     return registry;
   }
 
 
-  private void doContextualEscaping(SoyFileSetNode soyTree)
+  private void doContextualEscaping(SoyFileSetNode soyTree, TemplateRegistry registry)
       throws SoySyntaxException {
-    List<TemplateNode> extraTemplates = contextualAutoescaper.rewrite(soyTree);
+    List<TemplateNode> extraTemplates =
+        contextualAutoescaper.rewrite(soyTree, registry, errorReporter);
     // TODO: Run the redundant template remover here and rename after CL 16642341 is in.
     if (!extraTemplates.isEmpty()) {
       // TODO: pull out somewhere else.  Ideally do the merge as part of the redundant template

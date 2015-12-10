@@ -21,6 +21,7 @@ import static com.google.common.truth.Truth.assertThat;
 import com.google.common.base.Joiner;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableMap;
+import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.error.ErrorReporter;
@@ -224,15 +225,13 @@ public final class SlicedRawTextNodeTest extends TestCase {
   private SoyFileSetNode parseAndInjectIntoScriptTags(String input, String toInject) {
     String namespace = "{namespace ns autoescape=\"deprecated-contextual\"}\n\n";
     ErrorReporter boom = ExplodingErrorReporter.get();
-    SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forFileContents(namespace + input)
-            .errorReporter(boom)
-            .parse()
-            .fileSet();
+    ParseResult parseResult =
+        SoyFileSetParserBuilder.forFileContents(namespace + input).errorReporter(boom).parse();
+    SoyFileSetNode soyTree = parseResult.fileSet();
 
-    ContextualAutoescaper contextualAutoescaper
-        = new ContextualAutoescaper(SOY_PRINT_DIRECTIVES, boom);
-    List<TemplateNode> extras = contextualAutoescaper.rewrite(soyTree);
+    ContextualAutoescaper contextualAutoescaper = new ContextualAutoescaper(SOY_PRINT_DIRECTIVES);
+    List<TemplateNode> extras =
+        contextualAutoescaper.rewrite(soyTree, parseResult.registry(), boom);
 
     SoyFileNode file = soyTree.getChild(soyTree.numChildren() - 1);
     file.addChildren(file.numChildren(), extras);

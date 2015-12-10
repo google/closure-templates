@@ -16,6 +16,8 @@
 
 package com.google.template.soy.jssrc.internal;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.google.common.base.Preconditions;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.error.ErrorReporter;
@@ -28,6 +30,7 @@ import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.restricted.SoyFunction;
+import com.google.template.soy.soytree.ExprUnion;
 
 import java.util.Deque;
 import java.util.Map;
@@ -44,18 +47,13 @@ public final class JsExprTranslator {
   /** Factory for creating an instance of TranslateToJsExprVisitor. */
   private final TranslateToJsExprVisitorFactory translateToJsExprVisitorFactory;
 
-  private final ErrorReporter errorReporter;
-
   /**
    * @param translateToJsExprVisitorFactory Factory for creating an instance of
    *     TranslateToJsExprVisitor.
    */
   @Inject
-  JsExprTranslator(
-      TranslateToJsExprVisitorFactory translateToJsExprVisitorFactory,
-      ErrorReporter errorReporter) {
+  JsExprTranslator(TranslateToJsExprVisitorFactory translateToJsExprVisitorFactory) {
     this.translateToJsExprVisitorFactory = translateToJsExprVisitorFactory;
-    this.errorReporter = errorReporter;
   }
 
 
@@ -71,15 +69,17 @@ public final class JsExprTranslator {
    *     variables (and foreach-loop special functions) current in scope.
    * @return The built JS expression.
    */
-  public JsExpr translateToJsExpr(
-      @Nullable ExprNode expr, @Nullable String exprText,
-      Deque<Map<String, JsExpr>> localVarTranslations) {
+  JsExpr translateToJsExpr(
+      @Nullable ExprNode expr,
+      @Nullable String exprText,
+      Deque<Map<String, JsExpr>> localVarTranslations,
+      ErrorReporter errorReporter) {
 
     if (expr != null &&
         (exprText == null ||
          new CheckAllFunctionsSupportedVisitor().exec(expr))) {
       // V2 expression.
-      return translateToJsExprVisitorFactory.create(localVarTranslations).exec(expr);
+      return translateToJsExprVisitorFactory.create(localVarTranslations, errorReporter).exec(expr);
     } else {
       // V1 expression.
       SourceLocation sourceLocation = expr != null
@@ -91,6 +91,26 @@ public final class JsExprTranslator {
     }
   }
 
+  /**
+   * Translates a Soy expression to the equivalent JS expression. Only supports V2 exprs.
+   */
+  JsExpr translateToJsExpr(
+      ExprNode expr, Deque<Map<String, JsExpr>> localVarTranslations, ErrorReporter errorReporter) {
+    checkNotNull(expr);
+    return translateToJsExpr(expr, null, localVarTranslations, errorReporter);
+  }
+
+  /**
+   * Translates a Soy expression to the equivalent JS expression. Detects whether an expression
+   * is Soy V2 or V1 syntax and performs the translation accordingly.
+   */
+  JsExpr translateToJsExpr(
+      ExprUnion union,
+      Deque<Map<String, JsExpr>> localVarTranslations,
+      ErrorReporter errorReporter) {
+    return translateToJsExpr(
+        union.getExpr(), union.getExprText(), localVarTranslations, errorReporter);
+  }
 
   /**
    * Private helper class to check whether all functions in an expression are supported

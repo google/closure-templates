@@ -20,6 +20,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
+import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ExplodingErrorReporter;
@@ -224,22 +225,20 @@ public final class ContentSecurityPolicyPassTest extends TestCase {
   private SoyFileSetNode parseAndApplyCspPass(String input) {
     String namespace = "{namespace ns autoescape=\"deprecated-contextual\"}\n\n";
     ErrorReporter boom = ExplodingErrorReporter.get();
-    SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forFileContents(namespace + input)
-            .errorReporter(boom)
-            .parse()
-            .fileSet();
+    ParseResult parseResult =
+        SoyFileSetParserBuilder.forFileContents(namespace + input).errorReporter(boom).parse();
 
-    ContextualAutoescaper contextualAutoescaper
-        = new ContextualAutoescaper(ImmutableMap.<String, SoyPrintDirective>of(), boom);
-    List<TemplateNode> extras = contextualAutoescaper.rewrite(soyTree);
+    ContextualAutoescaper contextualAutoescaper =
+        new ContextualAutoescaper(ImmutableMap.<String, SoyPrintDirective>of());
+    List<TemplateNode> extras =
+        contextualAutoescaper.rewrite(parseResult.fileSet(), parseResult.registry(), boom);
 
-    SoyFileNode file = soyTree.getChild(soyTree.numChildren() - 1);
+    SoyFileNode file = parseResult.fileSet().getChild(parseResult.fileSet().numChildren() - 1);
     file.addChildren(file.numChildren(), extras);
 
     ContentSecurityPolicyPass.blessAuthorSpecifiedScripts(
         contextualAutoescaper.getSlicedRawTextNodes());
-    return soyTree;
+    return parseResult.fileSet();
   }
 
   /**

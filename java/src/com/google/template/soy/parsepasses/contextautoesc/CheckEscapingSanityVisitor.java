@@ -53,10 +53,14 @@ final class CheckEscapingSanityVisitor extends AbstractSoyNodeVisitor<Void> {
   private AutoescapeMode autoescapeMode;
 
   /** Registry of all templates in the Soy tree. */
-  private TemplateRegistry templateRegistry;
+  private final TemplateRegistry templateRegistry;
+  // TODO(user): replace the exceptions with invocations of the error reporter
+  @SuppressWarnings("unused")
   private final ErrorReporter errorReporter;
 
-  public CheckEscapingSanityVisitor(ErrorReporter errorReporter) {
+  public CheckEscapingSanityVisitor(
+      TemplateRegistry templateRegistry, ErrorReporter errorReporter) {
+    this.templateRegistry = templateRegistry;
     this.errorReporter = errorReporter;
   }
 
@@ -64,10 +68,7 @@ final class CheckEscapingSanityVisitor extends AbstractSoyNodeVisitor<Void> {
   // Implementations for specific nodes.
 
   @Override protected void visitSoyFileSetNode(SoyFileSetNode node) {
-    // Build templateRegistry.
-    templateRegistry = new TemplateRegistry(node, errorReporter);
     visitChildren(node);
-    templateRegistry = null;
   }
 
   @Override protected void visitTemplateNode(TemplateNode node) {

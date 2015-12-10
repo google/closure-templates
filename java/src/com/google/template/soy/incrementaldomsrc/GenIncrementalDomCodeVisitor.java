@@ -22,7 +22,6 @@ import com.google.common.collect.Maps;
 import com.google.inject.Inject;
 import com.google.template.soy.basetree.ParentNode;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
@@ -88,17 +87,16 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       CanInitOutputVarVisitor canInitOutputVarVisitor,
       GenJsExprsVisitorFactory genJsExprsVisitorFactory,
       GenDirectivePluginRequiresVisitor genDirectivePluginRequiresVisitor,
-      SoyTypeOps typeOps,
-      ErrorReporter errorReporter) {
-    super(jsSrcOptions,
+      SoyTypeOps typeOps) {
+    super(
+        jsSrcOptions,
         jsExprTranslator,
         genCallCodeUtils,
         isComputableAsJsExprsVisitor,
         canInitOutputVarVisitor,
         genJsExprsVisitorFactory,
         genDirectivePluginRequiresVisitor,
-        typeOps,
-        errorReporter);
+        typeOps);
   }
 
   @Override protected CodeBuilder<JsExpr> createCodeBuilder() {
@@ -236,7 +234,8 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       }
     }
 
-    JsExpr callExpr = genCallCodeUtils.genCallExpr(node, localVarTranslations, templateAliases);
+    JsExpr callExpr =
+        genCallCodeUtils.genCallExpr(node, localVarTranslations, templateAliases, errorReporter);
     IncrementalDomCodeBuilder jsCodeBuilder = getJsCodeBuilder();
     String templateName = ((CallBasicNode)node).getCalleeName();
     ContentKind currentContentKind = jsCodeBuilder.getContentKind();

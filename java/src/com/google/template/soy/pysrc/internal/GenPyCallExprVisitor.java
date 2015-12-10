@@ -19,9 +19,9 @@ package com.google.template.soy.pysrc.internal;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.pysrc.internal.GenPyExprsVisitor.GenPyExprsVisitorFactory;
-import com.google.template.soy.pysrc.internal.TranslateToPyExprVisitor.TranslateToPyExprVisitorFactory;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyExprUtils;
 import com.google.template.soy.pysrc.restricted.PyFunctionExprBuilder;
@@ -55,22 +55,20 @@ final class GenPyCallExprVisitor extends AbstractReturningSoyNodeVisitor<PyExpr>
 
   private final GenPyExprsVisitorFactory genPyExprsVisitorFactory;
 
-  private final TranslateToPyExprVisitorFactory translateToPyExprVisitorFactory;
 
   private LocalVariableStack localVarStack;
+  private ErrorReporter errorReporter;
 
   @Inject
   GenPyCallExprVisitor(
       ImmutableMap<String, SoyPySrcPrintDirective> soyPySrcDirectivesMap,
       IsComputableAsPyExprVisitor isComputableAsPyExprVisitor,
       IsCalleeInFileVisitor isCalleeInFileVisitor,
-      GenPyExprsVisitorFactory genPyExprsVisitorFactory,
-      TranslateToPyExprVisitorFactory translateToPyExprVisitorFactory) {
+      GenPyExprsVisitorFactory genPyExprsVisitorFactory) {
     this.soyPySrcDirectivesMap = soyPySrcDirectivesMap;
     this.isComputableAsPyExprVisitor = isComputableAsPyExprVisitor;
     this.isCalleeInFileVisitor = isCalleeInFileVisitor;
     this.genPyExprsVisitorFactory = genPyExprsVisitorFactory;
-    this.translateToPyExprVisitorFactory = translateToPyExprVisitorFactory;
   }
 
   /**
@@ -112,10 +110,12 @@ final class GenPyCallExprVisitor extends AbstractReturningSoyNodeVisitor<PyExpr>
    *     variables (and foreach-loop special functions) current in scope.
    * @return The Python expression for the call.
    */
-  PyExpr exec(CallNode callNode, LocalVariableStack localVarStack) {
+  PyExpr exec(CallNode callNode, LocalVariableStack localVarStack, ErrorReporter errorReporter) {
     this.localVarStack = localVarStack;
+    this.errorReporter = errorReporter;
     PyExpr callExpr = visit(callNode);
     this.localVarStack = null;
+    this.errorReporter = null;
     return callExpr;
   }
 
@@ -159,7 +159,8 @@ final class GenPyCallExprVisitor extends AbstractReturningSoyNodeVisitor<PyExpr>
       variantPyExpr = new PyStringExpr("''");
     } else {
       // Case 2: Delegate call with variant expression.
-      TranslateToPyExprVisitor translator = translateToPyExprVisitorFactory.create(localVarStack);
+      TranslateToPyExprVisitor translator =
+          new TranslateToPyExprVisitor(localVarStack, errorReporter);
       variantPyExpr = translator.exec(variantSoyExpr);
     }
     String calleeExprText = new PyFunctionExprBuilder("runtime.get_delegate_fn")
@@ -181,7 +182,8 @@ final class GenPyCallExprVisitor extends AbstractReturningSoyNodeVisitor<PyExpr>
    * @return The Python expression for the object to pass in the call.
    */
   public String genObjToPass(CallNode callNode) {
-    TranslateToPyExprVisitor translator = translateToPyExprVisitorFactory.create(localVarStack);
+    TranslateToPyExprVisitor translator =
+        new TranslateToPyExprVisitor(localVarStack, errorReporter);
 
     // Generate the expression for the original data to pass.
     String dataToPass;
@@ -211,8 +213,9 @@ final class GenPyCallExprVisitor extends AbstractReturningSoyNodeVisitor<PyExpr>
         CallParamContentNode cpcn = (CallParamContentNode) child;
         PyExpr valuePyExpr;
         if (isComputableAsPyExprVisitor.exec(cpcn)) {
-          valuePyExpr = PyExprUtils.concatPyExprs(
-              genPyExprsVisitorFactory.create(localVarStack).exec(cpcn));
+          valuePyExpr =
+              PyExprUtils.concatPyExprs(
+                  genPyExprsVisitorFactory.create(localVarStack, errorReporter).exec(cpcn));
         } else {
           // This is a param with content that cannot be represented as Python expressions, so we
           // assume that code has been generated to define the temporary variable 'param<n>'.

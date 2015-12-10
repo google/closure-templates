@@ -38,6 +38,7 @@ import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.
 import com.google.template.soy.sharedpasses.opti.SimplifyVisitor;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
+import com.google.template.soy.soytree.TemplateRegistry;
 
 import java.io.File;
 import java.io.IOException;
@@ -69,9 +70,6 @@ public class JsSrcMain {
   /** Provider for getting an instance of GenJsCodeVisitor. */
   private final Provider<GenJsCodeVisitor> genJsCodeVisitorProvider;
 
-  /** For reporting errors during code generation. */
-  private final ErrorReporter errorReporter;
-
 
   /**
    * @param apiCallScope The scope object that manages the API call scope.
@@ -85,13 +83,11 @@ public class JsSrcMain {
       @ApiCall GuiceSimpleScope apiCallScope,
       SimplifyVisitor simplifyVisitor,
       Provider<OptimizeBidiCodeGenVisitor> optimizeBidiCodeGenVisitorProvider,
-      Provider<GenJsCodeVisitor> genJsCodeVisitorProvider,
-      ErrorReporter errorReporter) {
+      Provider<GenJsCodeVisitor> genJsCodeVisitorProvider) {
     this.apiCallScope = apiCallScope;
     this.simplifyVisitor = simplifyVisitor;
     this.optimizeBidiCodeGenVisitorProvider = optimizeBidiCodeGenVisitorProvider;
     this.genJsCodeVisitorProvider = genJsCodeVisitorProvider;
-    this.errorReporter = errorReporter;
   }
 
 
@@ -107,7 +103,11 @@ public class JsSrcMain {
    *     JS file. The generated JS files correspond one-to-one to the original Soy source files.
    */
   public List<String> genJsSrc(
-      SoyFileSetNode soyTree, SoyJsSrcOptions jsSrcOptions, @Nullable SoyMsgBundle msgBundle) {
+      SoyFileSetNode soyTree,
+      TemplateRegistry templateRegistry,
+      SoyJsSrcOptions jsSrcOptions,
+      @Nullable SoyMsgBundle msgBundle,
+      ErrorReporter errorReporter) {
 
     // Make sure that we don't try to use goog.i18n.bidi when we aren't supposed to use Closure.
     Preconditions.checkState(
@@ -141,8 +141,8 @@ public class JsSrcMain {
 
       // Do the code generation.
       optimizeBidiCodeGenVisitorProvider.get().exec(soyTree);
-      simplifyVisitor.exec(soyTree);
-      return genJsCodeVisitorProvider.get().exec(soyTree);
+      simplifyVisitor.simplify(soyTree, templateRegistry);
+      return genJsCodeVisitorProvider.get().gen(soyTree, templateRegistry, errorReporter);
     }
   }
 
@@ -163,14 +163,17 @@ public class JsSrcMain {
    */
   public void genJsFiles(
       SoyFileSetNode soyTree,
+      TemplateRegistry templateRegistry,
       SoyJsSrcOptions jsSrcOptions,
       @Nullable String locale,
       @Nullable SoyMsgBundle msgBundle,
       String outputPathFormat,
-      String inputPathsPrefix)
+      String inputPathsPrefix,
+      ErrorReporter errorReporter)
       throws SoySyntaxException, IOException {
 
-    List<String> jsFileContents = genJsSrc(soyTree, jsSrcOptions, msgBundle);
+    List<String> jsFileContents =
+        genJsSrc(soyTree, templateRegistry, jsSrcOptions, msgBundle, errorReporter);
 
     ImmutableList<SoyFileNode> srcsToCompile = ImmutableList.copyOf(Iterables.filter(
         soyTree.getChildren(), SoyFileNode.MATCH_SRC_FILENODE));

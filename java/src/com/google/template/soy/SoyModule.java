@@ -27,7 +27,6 @@ import com.google.template.soy.jssrc.internal.JsSrcModule;
 import com.google.template.soy.parsepasses.contextautoesc.ContextualAutoescaper;
 import com.google.template.soy.passes.SharedPassesModule;
 import com.google.template.soy.pysrc.internal.PySrcModule;
-import com.google.template.soy.shared.internal.ErrorReporterModule;
 import com.google.template.soy.shared.internal.SharedModule;
 import com.google.template.soy.tofu.internal.TofuModule;
 import com.google.template.soy.types.SoyTypeOps;
@@ -49,7 +48,6 @@ public class SoyModule extends AbstractModule {
     // eliminating injection points from the backends would help with this effort also.
 
     // Install requisite modules.
-    install(new ErrorReporterModule());
     install(new TofuModule());
     install(new JsSrcModule());
     install(new PySrcModule());

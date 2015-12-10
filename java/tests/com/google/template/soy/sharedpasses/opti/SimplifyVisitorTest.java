@@ -18,9 +18,11 @@ package com.google.template.soy.sharedpasses.opti;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.SoyModule;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.MsgNode;
@@ -29,6 +31,7 @@ import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.TemplateRegistry;
 
 import junit.framework.TestCase;
 
@@ -60,7 +63,7 @@ public class SimplifyVisitorTest extends TestCase {
     assertEquals(5, forNode.numChildren());
 
     SimplifyVisitor simplifyVisitor = INJECTOR.getInstance(SimplifyVisitor.class);
-    simplifyVisitor.exec(soyTree);
+    simplifyVisitor.simplify(soyTree, new TemplateRegistry(soyTree, ExplodingErrorReporter.get()));
 
     assertEquals(4, template.numChildren());
     assertEquals(3, forNode.numChildren());
@@ -250,20 +253,19 @@ public class SimplifyVisitorTest extends TestCase {
 
   private static List<StandaloneNode> simplifySoyCode(String soyCode) throws Exception {
 
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(soyCode).parse().fileSet();
+    ParseResult parse = SoyFileSetParserBuilder.forTemplateContents(soyCode).parse();
     SimplifyVisitor simplifyVisitor = INJECTOR.getInstance(SimplifyVisitor.class);
-    simplifyVisitor.exec(soyTree);
-    return soyTree.getChild(0).getChild(0).getChildren();
+    simplifyVisitor.simplify(parse.fileSet(), parse.registry());
+    return parse.fileSet().getChild(0).getChild(0).getChildren();
   }
 
 
   private static SoyFileSetNode simplifySoyFiles(String... soyFileContents) throws Exception {
 
-    SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forFileContents(soyFileContents).parse().fileSet();
+    ParseResult parse = SoyFileSetParserBuilder.forFileContents(soyFileContents).parse();
     SimplifyVisitor simplifyVisitor = INJECTOR.getInstance(SimplifyVisitor.class);
-    simplifyVisitor.exec(soyTree);
-    return soyTree;
+    simplifyVisitor.simplify(parse.fileSet(), parse.registry());
+    return parse.fileSet();
   }
 
 }

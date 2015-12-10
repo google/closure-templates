@@ -237,8 +237,10 @@ public final class GenJsExprsVisitorTest extends TestCase {
     new ReplaceMsgsWithGoogMsgsVisitor().exec(soyTree);
     SoyNode node = SharedTestUtils.getNode(soyTree, indicesToNode);
 
-    GenJsExprsVisitor gjev = INJECTOR.getInstance(GenJsExprsVisitorFactory.class)
-        .create(LOCAL_VAR_TRANSLATIONS, AliasUtils.IDENTITY_ALIASES);
+    GenJsExprsVisitor gjev =
+        INJECTOR
+            .getInstance(GenJsExprsVisitorFactory.class)
+            .create(LOCAL_VAR_TRANSLATIONS, AliasUtils.IDENTITY_ALIASES, boom);
     List<JsExpr> actualJsExprs = gjev.exec(node);
 
     assertThat(actualJsExprs).hasSize(expectedJsExprs.size());

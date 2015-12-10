@@ -16,12 +16,14 @@
 
 package com.google.template.soy.conformance;
 
+import com.google.template.soy.error.ErrorReporter;
+
 /**
- * Marker interface for collecting Soy conformance violations.
+ * Collects Soy conformance violations.
  *
  * @author brndn@google.com (Brendan Linn)
  */
 public interface CheckConformance {
 
-  void check(ConformanceInput input);
+  void check(ConformanceInput input, ErrorReporter errorReporter);
 }

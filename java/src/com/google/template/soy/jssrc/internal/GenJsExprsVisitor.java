@@ -72,7 +72,8 @@ public final class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<JsExpr>
      */
     GenJsExprsVisitor create(
         Deque<Map<String, JsExpr>> localVarTranslations,
-        TemplateAliases templateAliases);
+        TemplateAliases templateAliases,
+        ErrorReporter errorReporter);
   }
 
   private static final SoyErrorKind ARITY_MISMATCH =
@@ -80,29 +81,21 @@ public final class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<JsExpr>
   private static final SoyErrorKind UNKNOWN_SOY_JS_SRC_PRINT_DIRECTIVE =
       SoyErrorKind.of("Unknown SoyJsSrcPrintDirective ''{0}''.");
 
-  /** Map of all SoyJsSrcPrintDirectives (name to directive). */
   private final Map<String, SoyJsSrcPrintDirective> soyJsSrcDirectivesMap;
-
-  /** Instance of JsExprTranslator to use. */
   private final JsExprTranslator jsExprTranslator;
-
-  /** Instance of GenCallCodeUtils to use. */
   private final GenCallCodeUtils genCallCodeUtils;
-
-  /** The IsComputableAsJsExprsVisitor used by this instance (when needed). */
   private final IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor;
-
-  /** Factory for creating an instance of GenJsExprsVisitor. */
   private final GenJsExprsVisitorFactory genJsExprsVisitorFactory;
+  private final ErrorReporter errorReporter;
 
-  /** The current stack of replacement JS expressions for the local variables (and foreach-loop
-   *  special functions) current in scope. */
+  /**
+   * The current stack of replacement JS expressions for the local variables (and foreach-loop
+   * special functions) current in scope.
+   */
   private final Deque<Map<String, JsExpr>> localVarTranslations;
 
   /** List to collect the results. */
   private List<JsExpr> jsExprs;
-
-  private final ErrorReporter errorReporter;
 
   /**
    * Used for looking up the local name for a given template call to a fully qualified template
@@ -125,10 +118,12 @@ public final class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<JsExpr>
    */
   @AssistedInject
   GenJsExprsVisitor(
-      Map<String, SoyJsSrcPrintDirective> soyJsSrcDirectivesMap, JsExprTranslator jsExprTranslator,
-      GenCallCodeUtils genCallCodeUtils, IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor,
+      Map<String, SoyJsSrcPrintDirective> soyJsSrcDirectivesMap,
+      JsExprTranslator jsExprTranslator,
+      GenCallCodeUtils genCallCodeUtils,
+      IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor,
       GenJsExprsVisitorFactory genJsExprsVisitorFactory,
-      ErrorReporter errorReporter,
+      @Assisted ErrorReporter errorReporter,
       @Assisted Deque<Map<String, JsExpr>> localVarTranslations,
       @Assisted TemplateAliases templateAliases) {
     this.errorReporter = errorReporter;
@@ -240,8 +235,9 @@ public final class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<JsExpr>
    */
   @Override protected void visitPrintNode(PrintNode node) {
 
-    JsExpr jsExpr = jsExprTranslator.translateToJsExpr(
-        node.getExprUnion().getExpr(), node.getExprText(), localVarTranslations);
+    JsExpr jsExpr =
+        jsExprTranslator.translateToJsExpr(
+            node.getExprUnion(), localVarTranslations, errorReporter);
 
     // Process directives.
     for (PrintDirectiveNode directiveNode : node.getChildren()) {
@@ -268,7 +264,8 @@ public final class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<JsExpr>
       // Translate directive args.
       List<JsExpr> argsJsExprs = new ArrayList<>(args.size());
       for (ExprRootNode arg : args) {
-        argsJsExprs.add(jsExprTranslator.translateToJsExpr(arg, null, localVarTranslations));
+        argsJsExprs.add(
+            jsExprTranslator.translateToJsExpr(arg, localVarTranslations, errorReporter));
       }
 
       // Apply directive.
@@ -316,8 +313,9 @@ public final class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<JsExpr>
 
     ExprRootNode componentNameExpr = node.getComponentNameExpr();
     if (componentNameExpr != null) {
-      JsExpr baseJsExpr = jsExprTranslator.translateToJsExpr(
-          componentNameExpr, node.getComponentNameText(), localVarTranslations);
+      JsExpr baseJsExpr =
+          jsExprTranslator.translateToJsExpr(
+              componentNameExpr, localVarTranslations, errorReporter);
       sb.append(baseJsExpr.getText()).append(", ");
     }
 
@@ -346,7 +344,7 @@ public final class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<JsExpr>
 
     // Create another instance of this visitor class for generating JS expressions from children.
     GenJsExprsVisitor genJsExprsVisitor =
-        genJsExprsVisitorFactory.create(localVarTranslations, templateAliases);
+        genJsExprsVisitorFactory.create(localVarTranslations, templateAliases, errorReporter);
 
     StringBuilder jsExprTextSb = new StringBuilder();
 
@@ -356,8 +354,9 @@ public final class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<JsExpr>
       if (child instanceof IfCondNode) {
         IfCondNode icn = (IfCondNode) child;
 
-        JsExpr condJsExpr = jsExprTranslator.translateToJsExpr(
-            icn.getExprUnion().getExpr(), icn.getExprText(), localVarTranslations);
+        JsExpr condJsExpr =
+            jsExprTranslator.translateToJsExpr(
+                icn.getExprUnion(), localVarTranslations, errorReporter);
         jsExprTextSb.append('(').append(condJsExpr.getText()).append(") ? ");
 
         List<JsExpr> condBlockJsExprs = genJsExprsVisitor.exec(icn);
@@ -413,7 +412,8 @@ public final class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<JsExpr>
    * </pre>
    */
   @Override protected void visitCallNode(CallNode node) {
-    jsExprs.add(genCallCodeUtils.genCallExpr(node, localVarTranslations, templateAliases));
+    jsExprs.add(
+        genCallCodeUtils.genCallExpr(node, localVarTranslations, templateAliases, errorReporter));
   }
 
   @Override protected void visitCallParamContentNode(CallParamContentNode node) {

@@ -24,6 +24,7 @@ import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.template.soy.SoyModule;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.NullNode;
@@ -69,14 +70,22 @@ public final class JsExprTranslatorTest extends TestCase {
     expr.replaceChild(1, userFnNode);
     new ResolveFunctionsVisitor(SOY_FUNCTIONS).exec(expr);
     String exprText = "3   *   userFn(5)";
-    assertThat(jsExprTranslator.translateToJsExpr(expr, exprText, localVarTranslations).getText())
+    assertThat(
+            jsExprTranslator
+                .translateToJsExpr(
+                    expr, exprText, localVarTranslations, ExplodingErrorReporter.get())
+                .getText())
         .isEqualTo("3 * userFn(5)");
 
     // Test supported function.
     expr.replaceChild(1, randomIntFnNode);
     new ResolveFunctionsVisitor(SOY_FUNCTIONS).exec(expr);
     exprText = "3   *   randomInt(4)";
-    assertThat(jsExprTranslator.translateToJsExpr(expr, exprText, localVarTranslations).getText())
+    assertThat(
+            jsExprTranslator
+                .translateToJsExpr(
+                    expr, exprText, localVarTranslations, ExplodingErrorReporter.get())
+                .getText())
         .isEqualTo("3 * Math.floor(Math.random() * 4)");
   }
 }

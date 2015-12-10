@@ -16,6 +16,8 @@
 
 package com.google.template.soy.jssrc.internal;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
@@ -117,7 +119,7 @@ import javax.inject.Inject;
  *
  * <p> Precondition: MsgNode should not exist in the tree.
  *
- * <p> {@link #exec} should be called on a full parse tree. JS source code will be generated for
+ * <p> {@link #gen} should be called on a full parse tree. JS source code will be generated for
  * all the Soy files. The return value is a list of strings, each string being the content of one
  * generated JS file (corresponding to one Soy file).
  *
@@ -179,7 +181,6 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
   /** The GenDirectivePluginRequiresVisitor for the current template. */
   private GenDirectivePluginRequiresVisitor genDirectivePluginRequiresVisitor;
 
-  /** Registry of all templates in the Soy tree. */
   protected TemplateRegistry templateRegistry;
 
   /** Type operators. */
@@ -188,7 +189,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
   /** The accumulated set of all JS namespaces required so far. */
   private Set<String> alreadyRequiredNamespaces;
 
-  protected final ErrorReporter errorReporter;
+  protected ErrorReporter errorReporter;
 
   /**
    * Used for looking up the local name for a given template call to a fully qualified template
@@ -199,14 +200,13 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
   @Inject
   protected GenJsCodeVisitor(
       SoyJsSrcOptions jsSrcOptions,
-      JsExprTranslator jsExprTranslator, GenCallCodeUtils genCallCodeUtils,
+      JsExprTranslator jsExprTranslator,
+      GenCallCodeUtils genCallCodeUtils,
       IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor,
       CanInitOutputVarVisitor canInitOutputVarVisitor,
       GenJsExprsVisitorFactory genJsExprsVisitorFactory,
       GenDirectivePluginRequiresVisitor genDirectivePluginRequiresVisitor,
-      SoyTypeOps typeOps,
-      ErrorReporter errorReporter) {
-    this.errorReporter = errorReporter;
+      SoyTypeOps typeOps) {
     this.jsSrcOptions = jsSrcOptions;
     this.jsExprTranslator = jsExprTranslator;
     this.genCallCodeUtils = genCallCodeUtils;
@@ -217,14 +217,29 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
     this.typeOps = typeOps;
   }
 
-  @Override public List<String> exec(SoyNode node) {
-    jsFilesContents = Lists.newArrayList();
-    jsCodeBuilder = null;
-    localVarTranslations = null;
-    genJsExprsVisitor = null;
-    assistantForMsgs = null;
-    visit(node);
-    return jsFilesContents;
+  public List<String> gen(
+      SoyFileSetNode node, TemplateRegistry registry, ErrorReporter errorReporter) {
+    this.templateRegistry = checkNotNull(registry);
+    this.errorReporter = checkNotNull(errorReporter);
+    try {
+      jsFilesContents = Lists.newArrayList();
+      jsCodeBuilder = null;
+      localVarTranslations = null;
+      genJsExprsVisitor = null;
+      assistantForMsgs = null;
+      visit(node);
+      return jsFilesContents;
+    } finally {
+      this.templateRegistry = null;
+      this.errorReporter = null;
+    }
+  }
+
+  /** @deprecated Call {@link #gen} instead. */
+  @Override
+  @Deprecated
+  public final List<String> exec(SoyNode node) {
+    throw new UnsupportedOperationException();
   }
 
   /**
@@ -235,10 +250,13 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
     visit(node);
   }
 
+  /** TODO: tests should use {@link #gen} instead. */
   @VisibleForTesting
-  void visitForTesting(SoyNode node) {
+  void visitForTesting(SoyNode node, ErrorReporter errorReporter) {
+    this.errorReporter = errorReporter;
     visit(node);
   }
+
 
   @Override protected void visitChildren(ParentSoyNode<?> node) {
 
@@ -281,10 +299,6 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
   // Implementations for specific nodes.
 
   @Override protected void visitSoyFileSetNode(SoyFileSetNode node) {
-
-    // Build templateRegistry.
-    templateRegistry = new TemplateRegistry(node, errorReporter);
-
     for (SoyFileNode soyFile : node.getChildren()) {
       visit(soyFile);
     }
@@ -693,7 +707,8 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
     boolean addToExports = jsSrcOptions.shouldGenerateGoogModules();
 
     localVarTranslations = new ArrayDeque<>();
-    genJsExprsVisitor = genJsExprsVisitorFactory.create(localVarTranslations, templateAliases);
+    genJsExprsVisitor =
+        genJsExprsVisitorFactory.create(localVarTranslations, templateAliases, errorReporter);
     assistantForMsgs = null;
 
     // ------ Generate JS Doc. ------
@@ -835,16 +850,18 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
 
   @Override protected void visitGoogMsgDefNode(GoogMsgDefNode node) {
     if (assistantForMsgs == null) {
-      assistantForMsgs = new GenJsCodeVisitorAssistantForMsgs(
-          this /* master */,
-          jsSrcOptions,
-          jsExprTranslator,
-          genCallCodeUtils,
-          isComputableAsJsExprsVisitor,
-          jsCodeBuilder,
-          localVarTranslations,
-          templateAliases,
-          genJsExprsVisitor);
+      assistantForMsgs =
+          new GenJsCodeVisitorAssistantForMsgs(
+              this /* master */,
+              jsSrcOptions,
+              jsExprTranslator,
+              genCallCodeUtils,
+              isComputableAsJsExprsVisitor,
+              jsCodeBuilder,
+              localVarTranslations,
+              templateAliases,
+              genJsExprsVisitor,
+              errorReporter);
     }
     assistantForMsgs.visitForUseByMaster(node);
   }
@@ -873,7 +890,8 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
 
     // Generate code to define the local var.
     JsExpr valueJsExpr =
-        jsExprTranslator.translateToJsExpr(node.getValueExpr(), null, localVarTranslations);
+        jsExprTranslator.translateToJsExpr(
+            node.getValueExpr(), localVarTranslations, errorReporter);
     jsCodeBuilder.appendLine("var ", generatedVarName, " = ", valueJsExpr.getText(), ";");
 
     // Add a mapping for generating future references to this local var.
@@ -953,8 +971,9 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
       if (child instanceof IfCondNode) {
         IfCondNode icn = (IfCondNode) child;
 
-        JsExpr condJsExpr = jsExprTranslator.translateToJsExpr(
-            icn.getExprUnion().getExpr(), icn.getExprText(), localVarTranslations);
+        JsExpr condJsExpr =
+            jsExprTranslator.translateToJsExpr(
+                icn.getExprUnion(), localVarTranslations, errorReporter);
         if (icn.getCommandName().equals("if")) {
           jsCodeBuilder.appendLine("if (", condJsExpr.getText(), ") {");
         } else {  // "elseif" block
@@ -1022,7 +1041,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
 
         for (ExprNode caseExpr : scn.getExprList()) {
           JsExpr caseJsExpr =
-              jsExprTranslator.translateToJsExpr(caseExpr, null, localVarTranslations);
+              jsExprTranslator.translateToJsExpr(caseExpr, localVarTranslations, errorReporter);
           jsCodeBuilder.appendLine("case ", caseJsExpr.getText(), ":");
         }
 
@@ -1055,8 +1074,10 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
   private String coerceTypeForSwitchComparison(
       @Nullable ExprRootNode v2Expr,
       @Nullable String v1Expr) {
-    String jsExpr = jsExprTranslator.translateToJsExpr(
-        v2Expr, v1Expr, localVarTranslations).getText();
+    String jsExpr =
+        jsExprTranslator
+            .translateToJsExpr(v2Expr, v1Expr, localVarTranslations, errorReporter)
+            .getText();
     if (v2Expr != null) {
       SoyType type = v2Expr.getType();
       // If the type is possibly a sanitized content type then we need to toString it.
@@ -1104,8 +1125,9 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
     String listLenVarName = baseVarName + "ListLen" + nodeId;
 
     // Define list var and list-len var.
-    JsExpr dataRefJsExpr = jsExprTranslator.translateToJsExpr(
-        node.getExpr(), node.getExprText(), localVarTranslations);
+    JsExpr dataRefJsExpr =
+        jsExprTranslator.translateToJsExpr(
+            node.getExpr(), node.getExprText(), localVarTranslations, errorReporter);
     jsCodeBuilder.appendLine("var ", listVarName, " = ", dataRefJsExpr.getText(), ";");
     jsCodeBuilder.appendLine("var ", listLenVarName, " = ", listVarName, ".length;");
 
@@ -1214,16 +1236,22 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
 
     // Get the JS expression text for the init/limit/increment values.
     RangeArgs range = node.getRangeArgs();
-    String incrementJsExprText = range.increment().isPresent()
-        ? jsExprTranslator.translateToJsExpr(range.increment().get(), null, localVarTranslations)
-            .getText()
-        : "1" /* default */;
-    String initJsExprText = range.start().isPresent()
-        ? jsExprTranslator.translateToJsExpr(range.start().get(), null, localVarTranslations)
-            .getText()
-        : "0" /* default */;
+    String incrementJsExprText =
+        range.increment().isPresent()
+            ? jsExprTranslator
+                .translateToJsExpr(range.increment().get(), localVarTranslations, errorReporter)
+                .getText()
+            : "1" /* default */;
+    String initJsExprText =
+        range.start().isPresent()
+            ? jsExprTranslator
+                .translateToJsExpr(range.start().get(), localVarTranslations, errorReporter)
+                .getText()
+            : "0" /* default */;
     String limitJsExprText =
-        jsExprTranslator.translateToJsExpr(range.limit(), null, localVarTranslations).getText();
+        jsExprTranslator
+            .translateToJsExpr(range.limit(), localVarTranslations, errorReporter)
+            .getText();
 
     // If any of the JS expressions for init/limit/increment isn't an integer, precompute its value.
     String initCode;
@@ -1310,7 +1338,8 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
     }
 
     // Add the call's result to the current output var.
-    JsExpr callExpr = genCallCodeUtils.genCallExpr(node, localVarTranslations, templateAliases);
+    JsExpr callExpr =
+        genCallCodeUtils.genCallExpr(node, localVarTranslations, templateAliases, errorReporter);
     jsCodeBuilder.addToOutputVar(ImmutableList.of(callExpr));
   }
 

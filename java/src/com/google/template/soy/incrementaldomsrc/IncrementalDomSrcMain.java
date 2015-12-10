@@ -38,6 +38,8 @@ import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.
 import com.google.template.soy.sharedpasses.opti.SimplifyVisitor;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
+import com.google.template.soy.soytree.TemplateRegistry;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
@@ -66,16 +68,13 @@ public class IncrementalDomSrcMain {
   /** Provider for getting an instance of GenJsCodeVisitor. */
   private final Provider<GenIncrementalDomCodeVisitor> genIncrementalDomCodeVisitorProvider;
 
-  /** For reporting errors during code generation. */
-  private final ErrorReporter errorReporter;
-
 
   /**
    * @param apiCallScope The scope object that manages the API call scope.
    * @param simplifyVisitor The instance of SimplifyVisitor to use.
    * @param optimizeBidiCodeGenVisitorProvider Provider for getting an instance of
    *     OptimizeBidiCodeGenVisitor.
-   * @param genIncrementalDomCodeVisitorProvider Provider for getting an instance of 
+   * @param genIncrementalDomCodeVisitorProvider Provider for getting an instance of
    *     GenIncrementalDomCodeVisitor.
    */
   @Inject
@@ -83,13 +82,11 @@ public class IncrementalDomSrcMain {
       @ApiCall GuiceSimpleScope apiCallScope,
       SimplifyVisitor simplifyVisitor,
       Provider<OptimizeBidiCodeGenVisitor> optimizeBidiCodeGenVisitorProvider,
-      Provider<GenIncrementalDomCodeVisitor> genIncrementalDomCodeVisitorProvider,
-      ErrorReporter errorReporter) {
+      Provider<GenIncrementalDomCodeVisitor> genIncrementalDomCodeVisitorProvider) {
     this.apiCallScope = apiCallScope;
     this.simplifyVisitor = simplifyVisitor;
     this.optimizeBidiCodeGenVisitorProvider = optimizeBidiCodeGenVisitorProvider;
     this.genIncrementalDomCodeVisitorProvider = genIncrementalDomCodeVisitorProvider;
-    this.errorReporter = errorReporter;
   }
 
 
@@ -105,7 +102,9 @@ public class IncrementalDomSrcMain {
    */
   public List<String> genJsSrc(
       SoyFileSetNode soyTree,
-      SoyJsSrcOptions jsSrcOptions)
+      TemplateRegistry registry,
+      SoyJsSrcOptions jsSrcOptions,
+      ErrorReporter errorReporter)
       throws SoySyntaxException {
 
 
@@ -137,13 +136,13 @@ public class IncrementalDomSrcMain {
 
       // Do the code generation.
       optimizeBidiCodeGenVisitorProvider.get().exec(soyTree);
-      simplifyVisitor.exec(soyTree);
+      simplifyVisitor.simplify(soyTree, registry);
 
       new HtmlTransformVisitor(errorReporter).exec(soyTree);
       IncrementalDomOutputOptimizers.collapseOpenTags(soyTree);
       IncrementalDomOutputOptimizers.collapseElements(soyTree);
 
-      return genIncrementalDomCodeVisitorProvider.get().exec(soyTree);
+      return genIncrementalDomCodeVisitorProvider.get().gen(soyTree, registry, errorReporter);
     }
   }
 
@@ -160,11 +159,13 @@ public class IncrementalDomSrcMain {
    */
   public void genJsFiles(
       SoyFileSetNode soyTree,
+      TemplateRegistry templateRegistry,
       SoyJsSrcOptions jsSrcOptions,
-      String outputPathFormat)
+      String outputPathFormat,
+      ErrorReporter errorReporter)
       throws SoySyntaxException, IOException {
 
-    List<String> jsFileContents = genJsSrc(soyTree, jsSrcOptions);
+    List<String> jsFileContents = genJsSrc(soyTree, templateRegistry, jsSrcOptions, errorReporter);
 
     ImmutableList<SoyFileNode> srcsToCompile = ImmutableList.copyOf(Iterables.filter(
         soyTree.getChildren(), SoyFileNode.MATCH_SRC_FILENODE));

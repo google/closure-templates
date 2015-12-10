@@ -42,6 +42,7 @@ import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.TemplateRegistry;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -88,9 +89,6 @@ public final class ContextualAutoescaper {
   /** Maps print directive names to the content kinds they consume and produce. */
   private final Map<String, SanitizedContent.ContentKind> sanitizedContentOperators;
 
-  /** For reporting errors. */
-  private final ErrorReporter errorReporter;
-
   /** The conclusions drawn by the last {@link #rewrite}. */
   private Inferences inferences;
 
@@ -105,23 +103,21 @@ public final class ContextualAutoescaper {
    * @param soyDirectivesMap Map of all SoyPrintDirectives (name to directive) such that
    *     {@code soyDirectivesMap.get(key).getName().equals(key)} for all key in
    *     {@code soyDirectivesMap.keySet()}.
-   * @param errorReporter For reporting errors.
    */
   @Inject
-  ContextualAutoescaper(
-      final ImmutableMap<String, ? extends SoyPrintDirective> soyDirectivesMap,
-      ErrorReporter errorReporter) {
+  ContextualAutoescaper(final ImmutableMap<String, ? extends SoyPrintDirective> soyDirectivesMap) {
     // Compute the set of directives that are escaping directives.
-    this(ImmutableSet.copyOf(Collections2.filter(
-        soyDirectivesMap.keySet(),
-        new Predicate<String>() {
-          @Override
-          public boolean apply(String directiveName) {
-            return soyDirectivesMap.get(directiveName).shouldCancelAutoescape();
-          }
-        })),
-        makeOperatorKindMap(soyDirectivesMap),
-        errorReporter);
+    this(
+        ImmutableSet.copyOf(
+            Collections2.filter(
+                soyDirectivesMap.keySet(),
+                new Predicate<String>() {
+                  @Override
+                  public boolean apply(String directiveName) {
+                    return soyDirectivesMap.get(directiveName).shouldCancelAutoescape();
+                  }
+                })),
+        makeOperatorKindMap(soyDirectivesMap));
   }
 
   /**
@@ -132,11 +128,9 @@ public final class ContextualAutoescaper {
    */
   public ContextualAutoescaper(
       Iterable<String> autoescapeCancellingDirectives,
-      Map<String, SanitizedContent.ContentKind> sanitizedContentOperators,
-      ErrorReporter errorReporter) {
+      Map<String, SanitizedContent.ContentKind> sanitizedContentOperators) {
     this.autoescapeCancellingDirectives = ImmutableSet.copyOf(autoescapeCancellingDirectives);
     this.sanitizedContentOperators = ImmutableMap.copyOf(sanitizedContentOperators);
-    this.errorReporter = errorReporter;
   }
 
 
@@ -149,9 +143,10 @@ public final class ContextualAutoescaper {
    *     compiled with fileSet to produce a correct output.  See {@link DerivedTemplateUtils} for an
    *     explanation of these.
    */
-  public List<TemplateNode> rewrite(SoyFileSetNode fileSet) {
+  public List<TemplateNode> rewrite(
+      SoyFileSetNode fileSet, TemplateRegistry registry, ErrorReporter errorReporter) {
     // Do preliminary sanity checks.
-    new CheckEscapingSanityVisitor(errorReporter).exec(fileSet);
+    new CheckEscapingSanityVisitor(registry, errorReporter).exec(fileSet);
 
     // Defensively copy so our loops below hold.
     List<SoyFileNode> files = ImmutableList.copyOf(fileSet.getChildren());
@@ -192,7 +187,7 @@ public final class ContextualAutoescaper {
             slicedRawTextNodesBuilder,
             errorReporter);
       } catch (SoyAutoescapeException e) {
-        reportError(errorLocations, e);
+        reportError(errorReporter, errorLocations, e);
       }
     }
 
@@ -209,7 +204,7 @@ public final class ContextualAutoescaper {
     this.slicedRawTextNodes = slicedRawTextNodesBuilder.build();
 
     runVisitorOnAllTemplatesIncludingNewOnes(
-        inferences, new NonContextualTypedRenderUnitNodesVisitor());
+        inferences, new NonContextualTypedRenderUnitNodesVisitor(errorReporter));
 
     // Now that we know we don't fail with exceptions, apply the changes to the given files.
     List<TemplateNode> extraTemplates = new Rewriter(
@@ -263,7 +258,8 @@ public final class ContextualAutoescaper {
   /**
    * Reports an autoescape exception.
    */
-  void reportError(Set<SourceLocation> errorLocations, SoyAutoescapeException e) {
+  private void reportError(
+      ErrorReporter errorReporter, Set<SourceLocation> errorLocations, SoyAutoescapeException e) {
     // First, get to the root cause of the exception, and assemble an error message indicating
     // the full call stack that led to the failure.
     String message = "- " + e.getMessage();
@@ -354,6 +350,12 @@ public final class ContextualAutoescaper {
 
   private final class NonContextualTypedRenderUnitNodesVisitor
       extends AbstractSoyNodeVisitor<Void> {
+
+    final ErrorReporter errorReporter;
+
+    NonContextualTypedRenderUnitNodesVisitor(ErrorReporter errorReporter) {
+      this.errorReporter = errorReporter;
+    }
 
     @Override protected void visitTemplateNode(TemplateNode node) {
       if (node.getAutoescapeMode() == AutoescapeMode.NONCONTEXTUAL) {

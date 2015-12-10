@@ -25,6 +25,7 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.SoyModule;
+import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.soytree.CallNode;
@@ -209,7 +210,11 @@ public class GenCallCodeUtilsTest extends TestCase {
     JsSrcTestUtils.simulateNewApiCall(INJECTOR);
     GenCallCodeUtils genCallCodeUtils = INJECTOR.getInstance(GenCallCodeUtils.class);
     JsExpr callExpr =
-        genCallCodeUtils.genCallExpr(callNode, LOCAL_VAR_TRANSLATIONS, AliasUtils.IDENTITY_ALIASES);
+        genCallCodeUtils.genCallExpr(
+            callNode,
+            LOCAL_VAR_TRANSLATIONS,
+            AliasUtils.IDENTITY_ALIASES,
+            ExplodingErrorReporter.get());
     return callExpr.getText();
   }
 

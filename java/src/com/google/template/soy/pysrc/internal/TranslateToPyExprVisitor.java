@@ -19,8 +19,6 @@ package com.google.template.soy.pysrc.internal;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
-import com.google.inject.assistedinject.Assisted;
-import com.google.inject.assistedinject.AssistedInject;
 import com.google.template.soy.base.SoyBackendKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -85,22 +83,11 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
   private static final PyExpr ERROR =
       new PyExpr("raise Exception('Soy compilation failed')", Integer.MAX_VALUE);
 
-  /**
-   * Injectable factory for creating an instance of this class.
-   */
-  public interface TranslateToPyExprVisitorFactory {
-    TranslateToPyExprVisitor create(LocalVariableStack localVarExprs);
-  }
-
-
   private final LocalVariableStack localVarExprs;
 
   private final ErrorReporter errorReporter;
 
-  @AssistedInject
-  TranslateToPyExprVisitor(
-      @Assisted LocalVariableStack localVarExprs,
-      ErrorReporter errorReporter) {
+  TranslateToPyExprVisitor(LocalVariableStack localVarExprs, ErrorReporter errorReporter) {
     this.errorReporter = errorReporter;
     this.localVarExprs = localVarExprs;
   }

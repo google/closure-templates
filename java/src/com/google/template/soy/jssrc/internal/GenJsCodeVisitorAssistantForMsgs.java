@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.template.soy.base.internal.BaseUtils;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.JsExprUtils;
@@ -98,6 +99,7 @@ class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
    */
   private final TemplateAliases templateAliases;
 
+  private final ErrorReporter errorReporter;
 
   /**
    * @param master The master GenJsCodeVisitor instance.
@@ -117,7 +119,8 @@ class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
       CodeBuilder<JsExpr> jsCodeBuilder,
       Deque<Map<String, JsExpr>> localVarTranslations,
       TemplateAliases functionAliases,
-      GenJsExprsVisitor genJsExprsVisitor) {
+      GenJsExprsVisitor genJsExprsVisitor,
+      ErrorReporter errorReporter) {
     this.master = master;
     this.jsSrcOptions = jsSrcOptions;
     this.jsExprTranslator = jsExprTranslator;
@@ -127,6 +130,7 @@ class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
     this.localVarTranslations = localVarTranslations;
     this.templateAliases = functionAliases;
     this.genJsExprsVisitor = genJsExprsVisitor;
+    this.errorReporter = errorReporter;
   }
 
 
@@ -495,8 +499,9 @@ class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
     updatePlrselVarCodeBits(
         googMsgCodeGenInfo,
         msgNode.getPluralVarName(pluralNode),
-        jsExprTranslator.translateToJsExpr(
-            pluralNode.getExpr(), null, localVarTranslations).getText());
+        jsExprTranslator
+            .translateToJsExpr(pluralNode.getExpr(), localVarTranslations, errorReporter)
+            .getText());
 
     for (CaseOrDefaultNode child : pluralNode.getChildren()) {
       genGoogMsgCodeBitsForChildren(child, msgNode, googMsgCodeGenInfo);
@@ -519,8 +524,9 @@ class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
     updatePlrselVarCodeBits(
         googMsgCodeGenInfo,
         msgNode.getSelectVarName(selectNode),
-        jsExprTranslator.translateToJsExpr(
-            selectNode.getExpr(), null, localVarTranslations).getText());
+        jsExprTranslator
+            .translateToJsExpr(selectNode.getExpr(), localVarTranslations, errorReporter)
+            .getText());
 
     for (CaseOrDefaultNode child : selectNode.getChildren()) {
       genGoogMsgCodeBitsForChildren(child, msgNode, googMsgCodeGenInfo);
@@ -640,7 +646,8 @@ class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
           }
         }
         contentJsExprs.add(
-            genCallCodeUtils.genCallExpr(callNode, localVarTranslations, templateAliases));
+            genCallCodeUtils.genCallExpr(
+                callNode, localVarTranslations, templateAliases, errorReporter));
 
       } else {
         contentJsExprs.addAll(genJsExprsVisitor.exec(contentNode));

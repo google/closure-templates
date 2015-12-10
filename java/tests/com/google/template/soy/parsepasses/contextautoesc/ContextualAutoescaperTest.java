@@ -23,6 +23,7 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
@@ -37,6 +38,7 @@ import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoytreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.TemplateRegistry;
 
 import junit.framework.ComparisonFailure;
 import junit.framework.TestCase;
@@ -2734,9 +2736,10 @@ public final class ContextualAutoescaperTest extends TestCase {
         "\n{/template}";
 
     ErrorReporter boom = ExplodingErrorReporter.get();
-    SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forFileContents(source).errorReporter(boom).parse().fileSet();
-    new ContextualAutoescaper(SOY_PRINT_DIRECTIVES, boom).rewrite(soyTree);
+    ParseResult parseResult =
+        SoyFileSetParserBuilder.forFileContents(source).errorReporter(boom).parse();
+    SoyFileSetNode soyTree = parseResult.fileSet();
+    new ContextualAutoescaper(SOY_PRINT_DIRECTIVES).rewrite(soyTree, parseResult.registry(), boom);
     TemplateNode mainTemplate = soyTree.getChild(0).getChild(0);
     assertWithMessage("Sanity check").that(mainTemplate.getTemplateName()).isEqualTo("ns.main");
     final List<CallNode> callNodes = SoytreeUtils.getAllNodesOfType(
@@ -2774,9 +2777,11 @@ public final class ContextualAutoescaperTest extends TestCase {
         "\n{/deltemplate}";
 
     ErrorReporter boom = ExplodingErrorReporter.get();
-    SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forFileContents(source).errorReporter(boom).parse().fileSet();
-    new ContextualAutoescaper(SOY_PRINT_DIRECTIVES, boom).rewrite(soyTree);
+
+    ParseResult parseResult =
+        SoyFileSetParserBuilder.forFileContents(source).errorReporter(boom).parse();
+    SoyFileSetNode soyTree = parseResult.fileSet();
+    new ContextualAutoescaper(SOY_PRINT_DIRECTIVES).rewrite(soyTree, parseResult.registry(), boom);
     TemplateNode mainTemplate = soyTree.getChild(0).getChild(0);
     assertWithMessage("Sanity check").that(mainTemplate.getTemplateName()).isEqualTo("ns.main");
     final List<CallNode> callNodes = SoytreeUtils.getAllNodesOfType(
@@ -2916,9 +2921,9 @@ public final class ContextualAutoescaperTest extends TestCase {
       throws SoyAutoescapeException {
 
     FormattingErrorReporter reporter = new FormattingErrorReporter();
-    List<TemplateNode> tmpls
-        = new ContextualAutoescaper(SOY_PRINT_DIRECTIVES, reporter)
-        .rewrite(soyTree);
+    List<TemplateNode> tmpls =
+        new ContextualAutoescaper(SOY_PRINT_DIRECTIVES)
+            .rewrite(soyTree, new TemplateRegistry(soyTree, reporter), reporter);
 
     if (!reporter.getErrorMessages().isEmpty()) {
       String message = reporter.getErrorMessages().get(0);

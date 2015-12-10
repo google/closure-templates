@@ -29,12 +29,14 @@ import com.google.inject.Key;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.SoyModule;
 import com.google.template.soy.basetree.SyntaxVersion;
+import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.pysrc.SoyPySrcOptions;
 import com.google.template.soy.pysrc.internal.GenPyExprsVisitor.GenPyExprsVisitorFactory;
 import com.google.template.soy.pysrc.internal.PyApiCallScopeBindingAnnotations.PyCurrentManifest;
 import com.google.template.soy.shared.AutoEscapingType;
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
+import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 
 import java.util.List;
@@ -164,8 +166,8 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
   }
 
   private String compileFile() {
-    SoyNode node = SoyFileSetParserBuilder.forFileContents(getSubject()).parse().fileSet();
-    List<String> fileContents = getGenPyCodeVisitor().exec(node);
+    SoyFileSetNode node = SoyFileSetParserBuilder.forFileContents(getSubject()).parse().fileSet();
+    List<String> fileContents = getGenPyCodeVisitor().gen(node, ExplodingErrorReporter.get());
     return fileContents.get(0).replaceAll("([a-zA-Z]+)\\d+", "$1###");
   }
 
@@ -186,9 +188,11 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
     genPyCodeVisitor.localVarExprs = new LocalVariableStack();
     genPyCodeVisitor.localVarExprs.pushFrame();
     genPyCodeVisitor.genPyExprsVisitor =
-        injector.getInstance(GenPyExprsVisitorFactory.class).create(genPyCodeVisitor.localVarExprs);
+        injector
+            .getInstance(GenPyExprsVisitorFactory.class)
+            .create(genPyCodeVisitor.localVarExprs, ExplodingErrorReporter.get());
 
-    genPyCodeVisitor.visitForTesting(node); // note: we're calling visit(), not exec()
+    genPyCodeVisitor.visitForTesting(node, ExplodingErrorReporter.get());
 
     return genPyCodeVisitor.pyCodeBuilder.getCode().replaceAll("([a-zA-Z]+)\\d+", "$1###");
   }

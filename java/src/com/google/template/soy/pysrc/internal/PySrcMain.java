@@ -25,6 +25,7 @@ import com.google.inject.Inject;
 import com.google.inject.Key;
 import com.google.inject.Provider;
 import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.internal.i18n.SoyBidiUtils;
 import com.google.template.soy.pysrc.SoyPySrcOptions;
@@ -37,6 +38,7 @@ import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.
 import com.google.template.soy.sharedpasses.opti.SimplifyVisitor;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
+import com.google.template.soy.soytree.TemplateRegistry;
 
 import java.io.File;
 import java.io.IOException;
@@ -93,8 +95,12 @@ public final class PySrcMain {
    *     source files.
    * @throws SoySyntaxException If a syntax error is found.
    */
-  public List<String> genPySrc(SoyFileSetNode soyTree, SoyPySrcOptions pySrcOptions,
-      ImmutableMap<String, String> currentManifest)
+  public List<String> genPySrc(
+      SoyFileSetNode soyTree,
+      TemplateRegistry templateRegistry,
+      SoyPySrcOptions pySrcOptions,
+      ImmutableMap<String, String> currentManifest,
+      ErrorReporter errorReporter)
       throws SoySyntaxException {
 
     try (WithScope withScope = apiCallScope.enter()) {
@@ -107,8 +113,8 @@ public final class PySrcMain {
           pySrcOptions.getBidiIsRtlFn());
       ApiCallScopeUtils.seedSharedParams(apiCallScope, null, bidiGlobalDir);
 
-      simplifyVisitor.exec(soyTree);
-      return genPyCodeVisitorProvider.get().exec(soyTree);
+      simplifyVisitor.simplify(soyTree, templateRegistry);
+      return genPyCodeVisitorProvider.get().gen(soyTree, errorReporter);
     }
   }
 
@@ -124,8 +130,14 @@ public final class PySrcMain {
    * @throws SoySyntaxException If a syntax error is found.
    * @throws IOException If there is an error in opening/writing an output Python file.
    */
-  public void genPyFiles(SoyFileSetNode soyTree, SoyPySrcOptions pySrcOptions,
-      String outputPathFormat, String inputPathsPrefix) throws SoySyntaxException, IOException {
+  public void genPyFiles(
+      SoyFileSetNode soyTree,
+      TemplateRegistry templateRegistry,
+      SoyPySrcOptions pySrcOptions,
+      String outputPathFormat,
+      String inputPathsPrefix,
+      ErrorReporter errorReporter)
+      throws SoySyntaxException, IOException {
 
     ImmutableList<SoyFileNode> srcsToCompile = ImmutableList.copyOf(Iterables.filter(
         soyTree.getChildren(), SoyFileNode.MATCH_SRC_FILENODE));
@@ -139,7 +151,8 @@ public final class PySrcMain {
     ImmutableMap<String, String> manifest = generateManifest(soyNamespaces, outputs);
 
     // Generate the Python source.
-    List<String> pyFileContents = genPySrc(soyTree, pySrcOptions, manifest);
+    List<String> pyFileContents =
+        genPySrc(soyTree, templateRegistry, pySrcOptions, manifest, errorReporter);
 
     if (srcsToCompile.size() != pyFileContents.size()) {
       throw new AssertionError(String.format("Expected to generate %d code chunk(s), got %d",

@@ -2932,7 +2932,7 @@ goog.addDependency('format/htmlprettyprinter.js', ['goog.format.HtmlPrettyPrinte
 goog.addDependency('format/htmlprettyprinter_test.js', ['goog.format.HtmlPrettyPrinterTest'], ['goog.format.HtmlPrettyPrinter', 'goog.testing.MockClock', 'goog.testing.jsunit'], false);
 goog.addDependency('format/internationalizedemailaddress.js', ['goog.format.InternationalizedEmailAddress'], ['goog.format.EmailAddress', 'goog.string'], false);
 goog.addDependency('format/internationalizedemailaddress_test.js', ['goog.format.InternationalizedEmailAddressTest'], ['goog.array', 'goog.format.InternationalizedEmailAddress', 'goog.testing.jsunit'], false);
-goog.addDependency('format/jsonprettyprinter.js', ['goog.format.JsonPrettyPrinter', 'goog.format.JsonPrettyPrinter.HtmlDelimiters', 'goog.format.JsonPrettyPrinter.SafeHtmlDelimiters', 'goog.format.JsonPrettyPrinter.TextDelimiters'], ['goog.html.SafeHtml', 'goog.json', 'goog.json.Serializer', 'goog.string', 'goog.string.format'], false);
+goog.addDependency('format/jsonprettyprinter.js', ['goog.format.JsonPrettyPrinter', 'goog.format.JsonPrettyPrinter.SafeHtmlDelimiters', 'goog.format.JsonPrettyPrinter.TextDelimiters'], ['goog.html.SafeHtml', 'goog.json', 'goog.json.Serializer', 'goog.string', 'goog.string.format'], false);
 goog.addDependency('format/jsonprettyprinter_test.js', ['goog.format.JsonPrettyPrinterTest'], ['goog.format.JsonPrettyPrinter', 'goog.testing.jsunit'], false);
 goog.addDependency('fs/entry.js', ['goog.fs.DirectoryEntry', 'goog.fs.DirectoryEntry.Behavior', 'goog.fs.Entry', 'goog.fs.FileEntry'], [], false);
 goog.addDependency('fs/entryimpl.js', ['goog.fs.DirectoryEntryImpl', 'goog.fs.EntryImpl', 'goog.fs.FileEntryImpl'], ['goog.array', 'goog.async.Deferred', 'goog.fs.DirectoryEntry', 'goog.fs.Entry', 'goog.fs.Error', 'goog.fs.FileEntry', 'goog.fs.FileWriter', 'goog.functions', 'goog.string'], false);
@@ -3024,7 +3024,7 @@ goog.addDependency('html/flash.js', ['goog.html.flash'], ['goog.asserts', 'goog.
 goog.addDependency('html/flash_test.js', ['goog.html.flashTest'], ['goog.html.SafeHtml', 'goog.html.TrustedResourceUrl', 'goog.html.flash', 'goog.string.Const', 'goog.testing.jsunit'], false);
 goog.addDependency('html/legacyconversions.js', ['goog.html.legacyconversions'], ['goog.html.SafeHtml', 'goog.html.SafeStyle', 'goog.html.SafeUrl', 'goog.html.TrustedResourceUrl'], false);
 goog.addDependency('html/legacyconversions_test.js', ['goog.html.legacyconversionsTest'], ['goog.html.SafeHtml', 'goog.html.SafeUrl', 'goog.html.TrustedResourceUrl', 'goog.html.legacyconversions', 'goog.testing.PropertyReplacer', 'goog.testing.jsunit'], false);
-goog.addDependency('html/safehtml.js', ['goog.html.SafeHtml'], ['goog.array', 'goog.asserts', 'goog.dom.TagName', 'goog.dom.tags', 'goog.html.SafeStyle', 'goog.html.SafeStyleSheet', 'goog.html.SafeUrl', 'goog.html.TrustedResourceUrl', 'goog.i18n.bidi.Dir', 'goog.i18n.bidi.DirectionalString', 'goog.object', 'goog.string', 'goog.string.Const', 'goog.string.TypedString'], false);
+goog.addDependency('html/safehtml.js', ['goog.html.SafeHtml'], ['goog.array', 'goog.asserts', 'goog.dom.TagName', 'goog.dom.tags', 'goog.html.SafeStyle', 'goog.html.SafeStyleSheet', 'goog.html.SafeUrl', 'goog.html.TrustedResourceUrl', 'goog.i18n.bidi.Dir', 'goog.i18n.bidi.DirectionalString', 'goog.labs.userAgent.browser', 'goog.object', 'goog.string', 'goog.string.Const', 'goog.string.TypedString'], false);
 goog.addDependency('html/safehtml_test.js', ['goog.html.safeHtmlTest'], ['goog.html.SafeHtml', 'goog.html.SafeStyle', 'goog.html.SafeStyleSheet', 'goog.html.SafeUrl', 'goog.html.TrustedResourceUrl', 'goog.html.testing', 'goog.i18n.bidi.Dir', 'goog.string.Const', 'goog.testing.jsunit'], false);
 goog.addDependency('html/safescript.js', ['goog.html.SafeScript'], ['goog.asserts', 'goog.string.Const', 'goog.string.TypedString'], false);
 goog.addDependency('html/safescript_test.js', ['goog.html.safeScriptTest'], ['goog.html.SafeScript', 'goog.string.Const', 'goog.testing.jsunit'], false);
@@ -3351,7 +3351,7 @@ goog.addDependency('net/streams/streamfactory.js', ['goog.net.streams.createXhrN
 goog.addDependency('net/streams/streamparser.js', ['goog.net.streams.StreamParser'], [], false);
 goog.addDependency('net/streams/xhrnodereadablestream.js', ['goog.net.streams.XhrNodeReadableStream'], ['goog.array', 'goog.log', 'goog.net.streams.NodeReadableStream', 'goog.net.streams.XhrStreamReader'], false);
 goog.addDependency('net/streams/xhrnodereadablestream_test.js', ['goog.net.streams.XhrNodeReadableStreamTest'], ['goog.net.streams.NodeReadableStream', 'goog.net.streams.XhrNodeReadableStream', 'goog.net.streams.XhrStreamReader', 'goog.testing.PropertyReplacer', 'goog.testing.asserts', 'goog.testing.jsunit'], false);
-goog.addDependency('net/streams/xhrstreamreader.js', ['goog.net.streams.XhrStreamReader'], ['goog.events.EventHandler', 'goog.log', 'goog.net.ErrorCode', 'goog.net.EventType', 'goog.net.HttpStatus', 'goog.net.XhrIo', 'goog.net.XmlHttp', 'goog.net.streams.JsonStreamParser', 'goog.net.streams.PbStreamParser', 'goog.userAgent'], false);
+goog.addDependency('net/streams/xhrstreamreader.js', ['goog.net.streams.XhrStreamReader'], ['goog.events.EventHandler', 'goog.log', 'goog.net.ErrorCode', 'goog.net.EventType', 'goog.net.HttpStatus', 'goog.net.XhrIo', 'goog.net.XmlHttp', 'goog.net.streams.JsonStreamParser', 'goog.userAgent'], false);
 goog.addDependency('net/streams/xhrstreamreader_test.js', ['goog.net.streams.XhrStreamReaderTest'], ['goog.net.ErrorCode', 'goog.net.XmlHttp', 'goog.net.streams.XhrStreamReader', 'goog.testing.asserts', 'goog.testing.jsunit', 'goog.testing.net.XhrIo'], false);
 goog.addDependency('net/testdata/jsloader_test1.js', ['goog.net.testdata.jsloader_test1'], [], false);
 goog.addDependency('net/testdata/jsloader_test2.js', ['goog.net.testdata.jsloader_test2'], [], false);
@@ -9542,6 +9542,509 @@ goog.i18n.bidi.DirectionalString.prototype.
  */
 goog.i18n.bidi.DirectionalString.prototype.getDirection;
 
+//javascript/closure/labs/useragent/util.js
+// Copyright 2013 The Closure Library Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS-IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+/**
+ * @fileoverview Utilities used by goog.labs.userAgent tools. These functions
+ * should not be used outside of goog.labs.userAgent.*.
+ *
+ * MOE:begin_intracomment_strip
+ * @visibility {//javascript/abc/libs/objects3d:__subpackages__}
+ * @visibility {//javascript/closure/bin/sizetests:__pkg__}
+ * @visibility {//javascript/closure/dom:__subpackages__}
+ * @visibility {//javascript/closure/style:__pkg__}
+ * @visibility {//javascript/closure/testing:__pkg__}
+ * @visibility {//javascript/closure/useragent:__subpackages__}
+ * @visibility {//testing/puppet/modules:__pkg__}
+ * MOE:end_intracomment_strip
+ *
+ * @author nnaze@google.com (Nathan Naze)
+ */
+
+goog.provide('goog.labs.userAgent.util');
+
+goog.require('goog.string');
+
+
+/**
+ * Gets the native userAgent string from navigator if it exists.
+ * If navigator or navigator.userAgent string is missing, returns an empty
+ * string.
+ * @return {string}
+ * @private
+ */
+goog.labs.userAgent.util.getNativeUserAgentString_ = function() {
+  var navigator = goog.labs.userAgent.util.getNavigator_();
+  if (navigator) {
+    var userAgent = navigator.userAgent;
+    if (userAgent) {
+      return userAgent;
+    }
+  }
+  return '';
+};
+
+
+/**
+ * Getter for the native navigator.
+ * This is a separate function so it can be stubbed out in testing.
+ * @return {Navigator}
+ * @private
+ */
+goog.labs.userAgent.util.getNavigator_ = function() {
+  return goog.global.navigator;
+};
+
+
+/**
+ * A possible override for applications which wish to not check
+ * navigator.userAgent but use a specified value for detection instead.
+ * @private {string}
+ */
+goog.labs.userAgent.util.userAgent_ =
+    goog.labs.userAgent.util.getNativeUserAgentString_();
+
+
+/**
+ * Applications may override browser detection on the built in
+ * navigator.userAgent object by setting this string. Set to null to use the
+ * browser object instead.
+ * @param {?string=} opt_userAgent The User-Agent override.
+ */
+goog.labs.userAgent.util.setUserAgent = function(opt_userAgent) {
+  goog.labs.userAgent.util.userAgent_ = opt_userAgent ||
+      goog.labs.userAgent.util.getNativeUserAgentString_();
+};
+
+
+/**
+ * @return {string} The user agent string.
+ */
+goog.labs.userAgent.util.getUserAgent = function() {
+  return goog.labs.userAgent.util.userAgent_;
+};
+
+
+/**
+ * @param {string} str
+ * @return {boolean} Whether the user agent contains the given string, ignoring
+ *     case.
+ */
+goog.labs.userAgent.util.matchUserAgent = function(str) {
+  var userAgent = goog.labs.userAgent.util.getUserAgent();
+  return goog.string.contains(userAgent, str);
+};
+
+
+/**
+ * @param {string} str
+ * @return {boolean} Whether the user agent contains the given string.
+ */
+goog.labs.userAgent.util.matchUserAgentIgnoreCase = function(str) {
+  var userAgent = goog.labs.userAgent.util.getUserAgent();
+  return goog.string.caseInsensitiveContains(userAgent, str);
+};
+
+
+/**
+ * Parses the user agent into tuples for each section.
+ * @param {string} userAgent
+ * @return {!Array<!Array<string>>} Tuples of key, version, and the contents
+ *     of the parenthetical.
+ */
+goog.labs.userAgent.util.extractVersionTuples = function(userAgent) {
+  // Matches each section of a user agent string.
+  // Example UA:
+  // Mozilla/5.0 (iPad; U; CPU OS 3_2_1 like Mac OS X; en-us)
+  // AppleWebKit/531.21.10 (KHTML, like Gecko) Mobile/7B405
+  // This has three version tuples: Mozilla, AppleWebKit, and Mobile.
+
+  var versionRegExp = new RegExp(
+      // Key. Note that a key may have a space.
+      // (i.e. 'Mobile Safari' in 'Mobile Safari/5.0')
+      '(\\w[\\w ]+)' +
+
+      '/' +                // slash
+      '([^\\s]+)' +        // version (i.e. '5.0b')
+      '\\s*' +             // whitespace
+      '(?:\\((.*?)\\))?',  // parenthetical info. parentheses not matched.
+      'g');
+
+  var data = [];
+  var match;
+
+  // Iterate and collect the version tuples.  Each iteration will be the
+  // next regex match.
+  while (match = versionRegExp.exec(userAgent)) {
+    data.push([
+      match[1],  // key
+      match[2],  // value
+      // || undefined as this is not undefined in IE7 and IE8
+      match[3] || undefined  // info
+    ]);
+  }
+
+  return data;
+};
+
+
+//javascript/closure/labs/useragent/browser.js
+// Copyright 2013 The Closure Library Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS-IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+/**
+ * @fileoverview Closure user agent detection (Browser).
+ * @see <a href="http://www.useragentstring.com/">User agent strings</a>
+ * For more information on rendering engine, platform, or device see the other
+ * sub-namespaces in goog.labs.userAgent, goog.labs.userAgent.platform,
+ * goog.labs.userAgent.device respectively.)
+ *
+ * @author vbhasin@google.com (Vipul Bhasin)
+ * @author martone@google.com (Andy Martone)
+ */
+
+goog.provide('goog.labs.userAgent.browser');
+
+goog.require('goog.array');
+goog.require('goog.labs.userAgent.util');
+goog.require('goog.object');
+goog.require('goog.string');
+
+
+// TODO(nnaze): Refactor to remove excessive exclusion logic in matching
+// functions.
+
+
+/**
+ * @return {boolean} Whether the user's browser is Opera.
+ * @private
+ */
+goog.labs.userAgent.browser.matchOpera_ = function() {
+  return goog.labs.userAgent.util.matchUserAgent('Opera') ||
+      goog.labs.userAgent.util.matchUserAgent('OPR');
+};
+
+
+/**
+ * @return {boolean} Whether the user's browser is IE.
+ * @private
+ */
+goog.labs.userAgent.browser.matchIE_ = function() {
+  return goog.labs.userAgent.util.matchUserAgent('Trident') ||
+      goog.labs.userAgent.util.matchUserAgent('MSIE');
+};
+
+
+/**
+ * @return {boolean} Whether the user's browser is Edge.
+ * @private
+ */
+goog.labs.userAgent.browser.matchEdge_ = function() {
+  return goog.labs.userAgent.util.matchUserAgent('Edge');
+};
+
+
+/**
+ * @return {boolean} Whether the user's browser is Firefox.
+ * @private
+ */
+goog.labs.userAgent.browser.matchFirefox_ = function() {
+  return goog.labs.userAgent.util.matchUserAgent('Firefox');
+};
+
+
+/**
+ * @return {boolean} Whether the user's browser is Safari.
+ * @private
+ */
+goog.labs.userAgent.browser.matchSafari_ = function() {
+  return goog.labs.userAgent.util.matchUserAgent('Safari') &&
+      !(goog.labs.userAgent.browser.matchChrome_() ||
+        goog.labs.userAgent.browser.matchCoast_() ||
+        goog.labs.userAgent.browser.matchOpera_() ||
+        goog.labs.userAgent.browser.matchEdge_() ||
+        goog.labs.userAgent.browser.isSilk() ||
+        goog.labs.userAgent.util.matchUserAgent('Android'));
+};
+
+
+/**
+ * @return {boolean} Whether the user's browser is Coast (Opera's Webkit-based
+ *     iOS browser).
+ * @private
+ */
+goog.labs.userAgent.browser.matchCoast_ = function() {
+  return goog.labs.userAgent.util.matchUserAgent('Coast');
+};
+
+
+/**
+ * @return {boolean} Whether the user's browser is iOS Webview.
+ * @private
+ */
+goog.labs.userAgent.browser.matchIosWebview_ = function() {
+  // iOS Webview does not show up as Chrome or Safari. Also check for Opera's
+  // WebKit-based iOS browser, Coast.
+  return (goog.labs.userAgent.util.matchUserAgent('iPad') ||
+          goog.labs.userAgent.util.matchUserAgent('iPhone')) &&
+      !goog.labs.userAgent.browser.matchSafari_() &&
+      !goog.labs.userAgent.browser.matchChrome_() &&
+      !goog.labs.userAgent.browser.matchCoast_() &&
+      goog.labs.userAgent.util.matchUserAgent('AppleWebKit');
+};
+
+
+/**
+ * @return {boolean} Whether the user's browser is Chrome.
+ * @private
+ */
+goog.labs.userAgent.browser.matchChrome_ = function() {
+  return (goog.labs.userAgent.util.matchUserAgent('Chrome') ||
+      goog.labs.userAgent.util.matchUserAgent('CriOS')) &&
+      !goog.labs.userAgent.browser.matchOpera_() &&
+      !goog.labs.userAgent.browser.matchEdge_();
+};
+
+
+/**
+ * @return {boolean} Whether the user's browser is the Android browser.
+ * @private
+ */
+goog.labs.userAgent.browser.matchAndroidBrowser_ = function() {
+  // Android can appear in the user agent string for Chrome on Android.
+  // This is not the Android standalone browser if it does.
+  return goog.labs.userAgent.util.matchUserAgent('Android') &&
+      !(goog.labs.userAgent.browser.isChrome() ||
+        goog.labs.userAgent.browser.isFirefox() ||
+        goog.labs.userAgent.browser.isOpera() ||
+        goog.labs.userAgent.browser.isSilk());
+};
+
+
+/**
+ * @return {boolean} Whether the user's browser is Opera.
+ */
+goog.labs.userAgent.browser.isOpera = goog.labs.userAgent.browser.matchOpera_;
+
+
+/**
+ * @return {boolean} Whether the user's browser is IE.
+ */
+goog.labs.userAgent.browser.isIE = goog.labs.userAgent.browser.matchIE_;
+
+
+/**
+ * @return {boolean} Whether the user's browser is Edge.
+ */
+goog.labs.userAgent.browser.isEdge = goog.labs.userAgent.browser.matchEdge_;
+
+
+/**
+ * @return {boolean} Whether the user's browser is Firefox.
+ */
+goog.labs.userAgent.browser.isFirefox =
+    goog.labs.userAgent.browser.matchFirefox_;
+
+
+/**
+ * @return {boolean} Whether the user's browser is Safari.
+ */
+goog.labs.userAgent.browser.isSafari =
+    goog.labs.userAgent.browser.matchSafari_;
+
+
+/**
+ * @return {boolean} Whether the user's browser is Coast (Opera's Webkit-based
+ *     iOS browser).
+ */
+goog.labs.userAgent.browser.isCoast =
+    goog.labs.userAgent.browser.matchCoast_;
+
+
+/**
+ * @return {boolean} Whether the user's browser is iOS Webview.
+ */
+goog.labs.userAgent.browser.isIosWebview =
+    goog.labs.userAgent.browser.matchIosWebview_;
+
+
+/**
+ * @return {boolean} Whether the user's browser is Chrome.
+ */
+goog.labs.userAgent.browser.isChrome =
+    goog.labs.userAgent.browser.matchChrome_;
+
+
+/**
+ * @return {boolean} Whether the user's browser is the Android browser.
+ */
+goog.labs.userAgent.browser.isAndroidBrowser =
+    goog.labs.userAgent.browser.matchAndroidBrowser_;
+
+
+/**
+ * For more information, see:
+ * http://docs.aws.amazon.com/silk/latest/developerguide/user-agent.html
+ * @return {boolean} Whether the user's browser is Silk.
+ */
+goog.labs.userAgent.browser.isSilk = function() {
+  return goog.labs.userAgent.util.matchUserAgent('Silk');
+};
+
+
+/**
+ * @return {string} The browser version or empty string if version cannot be
+ *     determined. Note that for Internet Explorer, this returns the version of
+ *     the browser, not the version of the rendering engine. (IE 8 in
+ *     compatibility mode will return 8.0 rather than 7.0. To determine the
+ *     rendering engine version, look at document.documentMode instead. See
+ *     http://msdn.microsoft.com/en-us/library/cc196988(v=vs.85).aspx for more
+ *     details.)
+ */
+goog.labs.userAgent.browser.getVersion = function() {
+  var userAgentString = goog.labs.userAgent.util.getUserAgent();
+  // Special case IE since IE's version is inside the parenthesis and
+  // without the '/'.
+  if (goog.labs.userAgent.browser.isIE()) {
+    return goog.labs.userAgent.browser.getIEVersion_(userAgentString);
+  }
+
+  var versionTuples = goog.labs.userAgent.util.extractVersionTuples(
+      userAgentString);
+
+  // Construct a map for easy lookup.
+  var versionMap = {};
+  goog.array.forEach(versionTuples, function(tuple) {
+    // Note that the tuple is of length three, but we only care about the
+    // first two.
+    var key = tuple[0];
+    var value = tuple[1];
+    versionMap[key] = value;
+  });
+
+  var versionMapHasKey = goog.partial(goog.object.containsKey, versionMap);
+
+  // Gives the value with the first key it finds, otherwise empty string.
+  function lookUpValueWithKeys(keys) {
+    var key = goog.array.find(keys, versionMapHasKey);
+    return versionMap[key] || '';
+  }
+
+  // Check Opera before Chrome since Opera 15+ has "Chrome" in the string.
+  // See
+  // http://my.opera.com/ODIN/blog/2013/07/15/opera-user-agent-strings-opera-15-and-beyond
+  if (goog.labs.userAgent.browser.isOpera()) {
+    // Opera 10 has Version/10.0 but Opera/9.8, so look for "Version" first.
+    // Opera uses 'OPR' for more recent UAs.
+    return lookUpValueWithKeys(['Version', 'Opera', 'OPR']);
+  }
+
+  // Check Edge before Chrome since it has Chrome in the string.
+  if (goog.labs.userAgent.browser.isEdge()) {
+    return lookUpValueWithKeys(['Edge']);
+  }
+
+  if (goog.labs.userAgent.browser.isChrome()) {
+    return lookUpValueWithKeys(['Chrome', 'CriOS']);
+  }
+
+  // Usually products browser versions are in the third tuple after "Mozilla"
+  // and the engine.
+  var tuple = versionTuples[2];
+  return tuple && tuple[1] || '';
+};
+
+
+/**
+ * @param {string|number} version The version to check.
+ * @return {boolean} Whether the browser version is higher or the same as the
+ *     given version.
+ */
+goog.labs.userAgent.browser.isVersionOrHigher = function(version) {
+  return goog.string.compareVersions(goog.labs.userAgent.browser.getVersion(),
+                                     version) >= 0;
+};
+
+
+/**
+ * Determines IE version. More information:
+ * http://msdn.microsoft.com/en-us/library/ie/bg182625(v=vs.85).aspx#uaString
+ * http://msdn.microsoft.com/en-us/library/hh869301(v=vs.85).aspx
+ * http://blogs.msdn.com/b/ie/archive/2010/03/23/introducing-ie9-s-user-agent-string.aspx
+ * http://blogs.msdn.com/b/ie/archive/2009/01/09/the-internet-explorer-8-user-agent-string-updated-edition.aspx
+ *
+ * @param {string} userAgent the User-Agent.
+ * @return {string}
+ * @private
+ */
+goog.labs.userAgent.browser.getIEVersion_ = function(userAgent) {
+  // IE11 may identify itself as MSIE 9.0 or MSIE 10.0 due to an IE 11 upgrade
+  // bug. Example UA:
+  // Mozilla/5.0 (MSIE 9.0; Windows NT 6.1; WOW64; Trident/7.0; rv:11.0)
+  // like Gecko.
+  // See http://www.whatismybrowser.com/developers/unknown-user-agent-fragments.
+  var rv = /rv: *([\d\.]*)/.exec(userAgent);
+  if (rv && rv[1]) {
+    return rv[1];
+  }
+
+  var version = '';
+  var msie = /MSIE +([\d\.]+)/.exec(userAgent);
+  if (msie && msie[1]) {
+    // IE in compatibility mode usually identifies itself as MSIE 7.0; in this
+    // case, use the Trident version to determine the version of IE. For more
+    // details, see the links above.
+    var tridentVersion = /Trident\/(\d.\d)/.exec(userAgent);
+    if (msie[1] == '7.0') {
+      if (tridentVersion && tridentVersion[1]) {
+        switch (tridentVersion[1]) {
+          case '4.0':
+            version = '8.0';
+            break;
+          case '5.0':
+            version = '9.0';
+            break;
+          case '6.0':
+            version = '10.0';
+            break;
+          case '7.0':
+            version = '11.0';
+            break;
+        }
+      } else {
+        version = '7.0';
+      }
+    } else {
+      version = msie[1];
+    }
+  }
+  return version;
+};
+
 //javascript/closure/string/typedstring.js
 // Copyright 2013 The Closure Library Authors. All Rights Reserved.
 //
@@ -9863,7 +10366,7 @@ goog.require('goog.string.TypedString');
  * appended to {@code background:url("}, the resulting string may result in
  * the execution of a malicious script.
  *
- * TODO(mlourenco): Consider whether we should implement UTF-8 interchange
+ * TODO(user): Consider whether we should implement UTF-8 interchange
  * validity checks and blacklisting of newlines (including Unicode ones) and
  * other whitespace characters (\t, \f). Document here if so and also update
  * SafeStyle.fromConstant().
@@ -11255,6 +11758,7 @@ goog.require('goog.html.SafeUrl');
 goog.require('goog.html.TrustedResourceUrl');
 goog.require('goog.i18n.bidi.Dir');
 goog.require('goog.i18n.bidi.DirectionalString');
+goog.require('goog.labs.userAgent.browser');
 goog.require('goog.object');
 goog.require('goog.string');
 goog.require('goog.string.Const');
@@ -11532,6 +12036,7 @@ goog.html.SafeHtml.URL_ATTRIBUTES_ = goog.object.createSet('action', 'cite',
  * their content.
  * @private @const {!Object<string,boolean>}
  */
+// TODO(user): ban goog.dom.TagName.META, once users have been moved.
 goog.html.SafeHtml.NOT_ALLOWED_TAG_NAMES_ = goog.object.createSet(
     goog.dom.TagName.APPLET, goog.dom.TagName.BASE, goog.dom.TagName.EMBED,
     goog.dom.TagName.IFRAME, goog.dom.TagName.LINK, goog.dom.TagName.MATH,
@@ -11542,9 +12047,8 @@ goog.html.SafeHtml.NOT_ALLOWED_TAG_NAMES_ = goog.object.createSet(
 /**
  * @typedef {string|number|goog.string.TypedString|
  *     goog.html.SafeStyle.PropertyMap}
- * @private
  */
-goog.html.SafeHtml.AttributeValue_;
+goog.html.SafeHtml.AttributeValue;
 
 
 /**
@@ -11585,10 +12089,10 @@ goog.html.SafeHtml.AttributeValue_;
  *
  * @param {string} tagName The name of the tag. Only tag names consisting of
  *     [a-zA-Z0-9-] are allowed. Tag names documented above are disallowed.
- * @param {!Object<string, goog.html.SafeHtml.AttributeValue_>=}
- *     opt_attributes Mapping from attribute names to their values. Only
- *     attribute names consisting of [a-zA-Z0-9-] are allowed. Value of null or
- *     undefined causes the attribute to be omitted.
+ * @param {!Object<string, ?goog.html.SafeHtml.AttributeValue>=} opt_attributes
+ *     Mapping from attribute names to their values. Only attribute names
+ *     consisting of [a-zA-Z0-9-] are allowed. Value of null or undefined causes
+ *     the attribute to be omitted.
  * @param {!goog.html.SafeHtml.TextOrHtml_|
  *     !Array<!goog.html.SafeHtml.TextOrHtml_>=} opt_content Content to
  *     HTML-escape and put inside the tag. This must be empty for void tags
@@ -11623,10 +12127,10 @@ goog.html.SafeHtml.create = function(tagName, opt_attributes, opt_content) {
  *     attribute. If null or undefined src will not be set.
  * @param {goog.html.SafeHtml=} opt_srcdoc The value of the srcdoc attribute.
  *     If null or undefined srcdoc will not be set.
- * @param {!Object<string, goog.html.SafeHtml.AttributeValue_>=}
- *     opt_attributes Mapping from attribute names to their values. Only
- *     attribute names consisting of [a-zA-Z0-9-] are allowed. Value of null or
- *     undefined causes the attribute to be omitted.
+ * @param {!Object<string, ?goog.html.SafeHtml.AttributeValue>=} opt_attributes
+ *     Mapping from attribute names to their values. Only attribute names
+ *     consisting of [a-zA-Z0-9-] are allowed. Value of null or undefined causes
+ *     the attribute to be omitted.
  * @param {!goog.html.SafeHtml.TextOrHtml_|
  *     !Array<!goog.html.SafeHtml.TextOrHtml_>=} opt_content Content to
  *     HTML-escape and put inside the tag. Array elements are concatenated.
@@ -11653,10 +12157,10 @@ goog.html.SafeHtml.createIframe = function(
  * @param {!goog.html.SafeStyleSheet|!Array<!goog.html.SafeStyleSheet>}
  *     styleSheet Content to put inside the tag. Array elements are
  *     concatenated.
- * @param {!Object<string, goog.html.SafeHtml.AttributeValue_>=}
- *     opt_attributes Mapping from attribute names to their values. Only
- *     attribute names consisting of [a-zA-Z0-9-] are allowed. Value of null or
- *     undefined causes the attribute to be omitted.
+ * @param {!Object<string, ?goog.html.SafeHtml.AttributeValue>=} opt_attributes
+ *     Mapping from attribute names to their values. Only attribute names
+ *     consisting of [a-zA-Z0-9-] are allowed. Value of null or undefined causes
+ *     the attribute to be omitted.
  * @return {!goog.html.SafeHtml} The SafeHtml content with the tag.
  * @throws {Error} If invalid attribute name or attribute value is provided. If
  *     opt_attributes contains the type attribute.
@@ -11682,9 +12186,54 @@ goog.html.SafeHtml.createStyle = function(styleSheet, opt_attributes) {
 
 
 /**
+ * Creates a SafeHtml representing a meta refresh tag.
+ * @param {!goog.html.SafeUrl|string} url Where to redirect. If a string is
+ *     passed, it will be sanitized with SafeUrl.sanitize().
+ * @param {number=} opt_secs Number of seconds until the page should be
+ *     reloaded. Will be set to 0 if unspecified.
+ * @return {!goog.html.SafeHtml} The SafeHtml content with the tag.
+ */
+goog.html.SafeHtml.createMetaRefresh = function(url, opt_secs) {
+
+  // Note that sanitize is a no-op on SafeUrl.
+  var unwrappedUrl = goog.html.SafeUrl.unwrap(goog.html.SafeUrl.sanitize(url));
+
+  if (goog.labs.userAgent.browser.isIE() ||
+      goog.labs.userAgent.browser.isEdge()) {
+    // IE/EDGE can't parse the content attribute if the url contains a
+    // semicolon. We can fix this by adding quotes around the url, but then we
+    // can't parse quotes in the URL correctly. Also, it seems that IE/EDGE
+    // did not unescape semicolons in these URLs at some point in the past. We
+    // take a best-effort approach.
+    //
+    // If the URL has semicolons (which may happen in some cases, see
+    // http://www.w3.org/TR/1999/REC-html401-19991224/appendix/notes.html#h-B.2
+    // for instance), wrap it in single quotes to protect the semicolons.
+    // If the URL has semicolons and single quotes, url-encode the single quotes
+    // as well.
+    //
+    // This is imperfect. Notice that both ' and ; are reserved characters in
+    // URIs, so this could do the wrong thing, but at least it will do the wrong
+    // thing in only rare cases.
+    if (goog.string.contains(unwrappedUrl, ';')) {
+      unwrappedUrl = "'" + unwrappedUrl.replace(/'/g, '%27') + "'";
+    }
+  }
+  var attributes = {
+    'http-equiv': 'refresh',
+    'content': (opt_secs || 0) + '; url=' + unwrappedUrl
+  };
+
+  // This function will handle the HTML escaping for attributes.
+  return goog.html.SafeHtml.createSafeHtmlTagSecurityPrivateDoNotAccessOrElse(
+      'meta', attributes);
+};
+
+
+/**
  * @param {string} tagName The tag name.
  * @param {string} name The attribute name.
- * @param {!goog.html.SafeHtml.AttributeValue_} value The attribute value.
+ * @param {!goog.html.SafeHtml.AttributeValue} value The attribute value.
  * @return {string} A "name=value" string.
  * @throws {Error} If attribute value is unsafe for the given tag and attribute.
  * @private
@@ -11731,7 +12280,7 @@ goog.html.SafeHtml.getAttrNameAndValue_ = function(tagName, name, value) {
 
 /**
  * Gets value allowed in "style" attribute.
- * @param {goog.html.SafeHtml.AttributeValue_} value It could be SafeStyle or a
+ * @param {!goog.html.SafeHtml.AttributeValue} value It could be SafeStyle or a
  *     map which will be passed to goog.html.SafeStyle.create.
  * @return {string} Unwrapped value.
  * @throws {Error} If string value is given.
@@ -11755,7 +12304,7 @@ goog.html.SafeHtml.getStyleValue_ = function(value) {
  * optional attributes and optional content.
  * @param {!goog.i18n.bidi.Dir} dir Directionality.
  * @param {string} tagName
- * @param {!Object<string, goog.html.SafeHtml.AttributeValue_>=} opt_attributes
+ * @param {!Object<string, ?goog.html.SafeHtml.AttributeValue>=} opt_attributes
  * @param {!goog.html.SafeHtml.TextOrHtml_|
  *     !Array<!goog.html.SafeHtml.TextOrHtml_>=} opt_content
  * @return {!goog.html.SafeHtml} The SafeHtml content with the tag.
@@ -11865,7 +12414,7 @@ goog.html.SafeHtml.prototype.initSecurityPrivateDoNotAccessOrElse_ = function(
  * Like create() but does not restrict which tags can be constructed.
  *
  * @param {string} tagName Tag name. Set or validated by caller.
- * @param {!Object<string, goog.html.SafeHtml.AttributeValue_>=} opt_attributes
+ * @param {!Object<string, ?goog.html.SafeHtml.AttributeValue>=} opt_attributes
  * @param {(!goog.html.SafeHtml.TextOrHtml_|
  *     !Array<!goog.html.SafeHtml.TextOrHtml_>)=} opt_content
  * @return {!goog.html.SafeHtml}
@@ -11928,9 +12477,9 @@ goog.html.SafeHtml.createSafeHtmlTagSecurityPrivateDoNotAccessOrElse =
 /**
  * @param {!Object<string, string>} fixedAttributes
  * @param {!Object<string, string>} defaultAttributes
- * @param {!Object<string, goog.html.SafeHtml.AttributeValue_>=}
- *     opt_attributes Optional attributes passed to create*().
- * @return {!Object<string, goog.html.SafeHtml.AttributeValue_>}
+ * @param {!Object<string, ?goog.html.SafeHtml.AttributeValue>=} opt_attributes
+ *     Optional attributes passed to create*().
+ * @return {!Object<string, ?goog.html.SafeHtml.AttributeValue>}
  * @throws {Error} If opt_attributes contains an attribute with the same name
  *     as an attribute in fixedAttributes.
  * @package
@@ -15795,499 +16344,6 @@ goog.structs.Set.prototype.isSubsetOf = function(col) {
  */
 goog.structs.Set.prototype.__iterator__ = function(opt_keys) {
   return this.map_.__iterator__(false);
-};
-
-//javascript/closure/labs/useragent/util.js
-// Copyright 2013 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-/**
- * @fileoverview Utilities used by goog.labs.userAgent tools. These functions
- * should not be used outside of goog.labs.userAgent.*.
- *
- *
- * @author nnaze@google.com (Nathan Naze)
- */
-
-goog.provide('goog.labs.userAgent.util');
-
-goog.require('goog.string');
-
-
-/**
- * Gets the native userAgent string from navigator if it exists.
- * If navigator or navigator.userAgent string is missing, returns an empty
- * string.
- * @return {string}
- * @private
- */
-goog.labs.userAgent.util.getNativeUserAgentString_ = function() {
-  var navigator = goog.labs.userAgent.util.getNavigator_();
-  if (navigator) {
-    var userAgent = navigator.userAgent;
-    if (userAgent) {
-      return userAgent;
-    }
-  }
-  return '';
-};
-
-
-/**
- * Getter for the native navigator.
- * This is a separate function so it can be stubbed out in testing.
- * @return {Navigator}
- * @private
- */
-goog.labs.userAgent.util.getNavigator_ = function() {
-  return goog.global.navigator;
-};
-
-
-/**
- * A possible override for applications which wish to not check
- * navigator.userAgent but use a specified value for detection instead.
- * @private {string}
- */
-goog.labs.userAgent.util.userAgent_ =
-    goog.labs.userAgent.util.getNativeUserAgentString_();
-
-
-/**
- * Applications may override browser detection on the built in
- * navigator.userAgent object by setting this string. Set to null to use the
- * browser object instead.
- * @param {?string=} opt_userAgent The User-Agent override.
- */
-goog.labs.userAgent.util.setUserAgent = function(opt_userAgent) {
-  goog.labs.userAgent.util.userAgent_ = opt_userAgent ||
-      goog.labs.userAgent.util.getNativeUserAgentString_();
-};
-
-
-/**
- * @return {string} The user agent string.
- */
-goog.labs.userAgent.util.getUserAgent = function() {
-  return goog.labs.userAgent.util.userAgent_;
-};
-
-
-/**
- * @param {string} str
- * @return {boolean} Whether the user agent contains the given string, ignoring
- *     case.
- */
-goog.labs.userAgent.util.matchUserAgent = function(str) {
-  var userAgent = goog.labs.userAgent.util.getUserAgent();
-  return goog.string.contains(userAgent, str);
-};
-
-
-/**
- * @param {string} str
- * @return {boolean} Whether the user agent contains the given string.
- */
-goog.labs.userAgent.util.matchUserAgentIgnoreCase = function(str) {
-  var userAgent = goog.labs.userAgent.util.getUserAgent();
-  return goog.string.caseInsensitiveContains(userAgent, str);
-};
-
-
-/**
- * Parses the user agent into tuples for each section.
- * @param {string} userAgent
- * @return {!Array<!Array<string>>} Tuples of key, version, and the contents
- *     of the parenthetical.
- */
-goog.labs.userAgent.util.extractVersionTuples = function(userAgent) {
-  // Matches each section of a user agent string.
-  // Example UA:
-  // Mozilla/5.0 (iPad; U; CPU OS 3_2_1 like Mac OS X; en-us)
-  // AppleWebKit/531.21.10 (KHTML, like Gecko) Mobile/7B405
-  // This has three version tuples: Mozilla, AppleWebKit, and Mobile.
-
-  var versionRegExp = new RegExp(
-      // Key. Note that a key may have a space.
-      // (i.e. 'Mobile Safari' in 'Mobile Safari/5.0')
-      '(\\w[\\w ]+)' +
-
-      '/' +                // slash
-      '([^\\s]+)' +        // version (i.e. '5.0b')
-      '\\s*' +             // whitespace
-      '(?:\\((.*?)\\))?',  // parenthetical info. parentheses not matched.
-      'g');
-
-  var data = [];
-  var match;
-
-  // Iterate and collect the version tuples.  Each iteration will be the
-  // next regex match.
-  while (match = versionRegExp.exec(userAgent)) {
-    data.push([
-      match[1],  // key
-      match[2],  // value
-      // || undefined as this is not undefined in IE7 and IE8
-      match[3] || undefined  // info
-    ]);
-  }
-
-  return data;
-};
-
-
-//javascript/closure/labs/useragent/browser.js
-// Copyright 2013 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-/**
- * @fileoverview Closure user agent detection (Browser).
- * @see <a href="http://www.useragentstring.com/">User agent strings</a>
- * For more information on rendering engine, platform, or device see the other
- * sub-namespaces in goog.labs.userAgent, goog.labs.userAgent.platform,
- * goog.labs.userAgent.device respectively.)
- *
- * @author martone@google.com (Andy Martone)
- */
-
-goog.provide('goog.labs.userAgent.browser');
-
-goog.require('goog.array');
-goog.require('goog.labs.userAgent.util');
-goog.require('goog.object');
-goog.require('goog.string');
-
-
-// TODO(nnaze): Refactor to remove excessive exclusion logic in matching
-// functions.
-
-
-/**
- * @return {boolean} Whether the user's browser is Opera.
- * @private
- */
-goog.labs.userAgent.browser.matchOpera_ = function() {
-  return goog.labs.userAgent.util.matchUserAgent('Opera') ||
-      goog.labs.userAgent.util.matchUserAgent('OPR');
-};
-
-
-/**
- * @return {boolean} Whether the user's browser is IE.
- * @private
- */
-goog.labs.userAgent.browser.matchIE_ = function() {
-  return goog.labs.userAgent.util.matchUserAgent('Trident') ||
-      goog.labs.userAgent.util.matchUserAgent('MSIE');
-};
-
-
-/**
- * @return {boolean} Whether the user's browser is Edge.
- * @private
- */
-goog.labs.userAgent.browser.matchEdge_ = function() {
-  return goog.labs.userAgent.util.matchUserAgent('Edge');
-};
-
-
-/**
- * @return {boolean} Whether the user's browser is Firefox.
- * @private
- */
-goog.labs.userAgent.browser.matchFirefox_ = function() {
-  return goog.labs.userAgent.util.matchUserAgent('Firefox');
-};
-
-
-/**
- * @return {boolean} Whether the user's browser is Safari.
- * @private
- */
-goog.labs.userAgent.browser.matchSafari_ = function() {
-  return goog.labs.userAgent.util.matchUserAgent('Safari') &&
-      !(goog.labs.userAgent.browser.matchChrome_() ||
-        goog.labs.userAgent.browser.matchCoast_() ||
-        goog.labs.userAgent.browser.matchOpera_() ||
-        goog.labs.userAgent.browser.matchEdge_() ||
-        goog.labs.userAgent.browser.isSilk() ||
-        goog.labs.userAgent.util.matchUserAgent('Android'));
-};
-
-
-/**
- * @return {boolean} Whether the user's browser is Coast (Opera's Webkit-based
- *     iOS browser).
- * @private
- */
-goog.labs.userAgent.browser.matchCoast_ = function() {
-  return goog.labs.userAgent.util.matchUserAgent('Coast');
-};
-
-
-/**
- * @return {boolean} Whether the user's browser is iOS Webview.
- * @private
- */
-goog.labs.userAgent.browser.matchIosWebview_ = function() {
-  // iOS Webview does not show up as Chrome or Safari. Also check for Opera's
-  // WebKit-based iOS browser, Coast.
-  return (goog.labs.userAgent.util.matchUserAgent('iPad') ||
-          goog.labs.userAgent.util.matchUserAgent('iPhone')) &&
-      !goog.labs.userAgent.browser.matchSafari_() &&
-      !goog.labs.userAgent.browser.matchChrome_() &&
-      !goog.labs.userAgent.browser.matchCoast_() &&
-      goog.labs.userAgent.util.matchUserAgent('AppleWebKit');
-};
-
-
-/**
- * @return {boolean} Whether the user's browser is Chrome.
- * @private
- */
-goog.labs.userAgent.browser.matchChrome_ = function() {
-  return (goog.labs.userAgent.util.matchUserAgent('Chrome') ||
-      goog.labs.userAgent.util.matchUserAgent('CriOS')) &&
-      !goog.labs.userAgent.browser.matchOpera_() &&
-      !goog.labs.userAgent.browser.matchEdge_();
-};
-
-
-/**
- * @return {boolean} Whether the user's browser is the Android browser.
- * @private
- */
-goog.labs.userAgent.browser.matchAndroidBrowser_ = function() {
-  // Android can appear in the user agent string for Chrome on Android.
-  // This is not the Android standalone browser if it does.
-  return goog.labs.userAgent.util.matchUserAgent('Android') &&
-      !(goog.labs.userAgent.browser.isChrome() ||
-        goog.labs.userAgent.browser.isFirefox() ||
-        goog.labs.userAgent.browser.isOpera() ||
-        goog.labs.userAgent.browser.isSilk());
-};
-
-
-/**
- * @return {boolean} Whether the user's browser is Opera.
- */
-goog.labs.userAgent.browser.isOpera = goog.labs.userAgent.browser.matchOpera_;
-
-
-/**
- * @return {boolean} Whether the user's browser is IE.
- */
-goog.labs.userAgent.browser.isIE = goog.labs.userAgent.browser.matchIE_;
-
-
-/**
- * @return {boolean} Whether the user's browser is Edge.
- */
-goog.labs.userAgent.browser.isEdge = goog.labs.userAgent.browser.matchEdge_;
-
-
-/**
- * @return {boolean} Whether the user's browser is Firefox.
- */
-goog.labs.userAgent.browser.isFirefox =
-    goog.labs.userAgent.browser.matchFirefox_;
-
-
-/**
- * @return {boolean} Whether the user's browser is Safari.
- */
-goog.labs.userAgent.browser.isSafari =
-    goog.labs.userAgent.browser.matchSafari_;
-
-
-/**
- * @return {boolean} Whether the user's browser is Coast (Opera's Webkit-based
- *     iOS browser).
- */
-goog.labs.userAgent.browser.isCoast =
-    goog.labs.userAgent.browser.matchCoast_;
-
-
-/**
- * @return {boolean} Whether the user's browser is iOS Webview.
- */
-goog.labs.userAgent.browser.isIosWebview =
-    goog.labs.userAgent.browser.matchIosWebview_;
-
-
-/**
- * @return {boolean} Whether the user's browser is Chrome.
- */
-goog.labs.userAgent.browser.isChrome =
-    goog.labs.userAgent.browser.matchChrome_;
-
-
-/**
- * @return {boolean} Whether the user's browser is the Android browser.
- */
-goog.labs.userAgent.browser.isAndroidBrowser =
-    goog.labs.userAgent.browser.matchAndroidBrowser_;
-
-
-/**
- * For more information, see:
- * http://docs.aws.amazon.com/silk/latest/developerguide/user-agent.html
- * @return {boolean} Whether the user's browser is Silk.
- */
-goog.labs.userAgent.browser.isSilk = function() {
-  return goog.labs.userAgent.util.matchUserAgent('Silk');
-};
-
-
-/**
- * @return {string} The browser version or empty string if version cannot be
- *     determined. Note that for Internet Explorer, this returns the version of
- *     the browser, not the version of the rendering engine. (IE 8 in
- *     compatibility mode will return 8.0 rather than 7.0. To determine the
- *     rendering engine version, look at document.documentMode instead. See
- *     http://msdn.microsoft.com/en-us/library/cc196988(v=vs.85).aspx for more
- *     details.)
- */
-goog.labs.userAgent.browser.getVersion = function() {
-  var userAgentString = goog.labs.userAgent.util.getUserAgent();
-  // Special case IE since IE's version is inside the parenthesis and
-  // without the '/'.
-  if (goog.labs.userAgent.browser.isIE()) {
-    return goog.labs.userAgent.browser.getIEVersion_(userAgentString);
-  }
-
-  var versionTuples = goog.labs.userAgent.util.extractVersionTuples(
-      userAgentString);
-
-  // Construct a map for easy lookup.
-  var versionMap = {};
-  goog.array.forEach(versionTuples, function(tuple) {
-    // Note that the tuple is of length three, but we only care about the
-    // first two.
-    var key = tuple[0];
-    var value = tuple[1];
-    versionMap[key] = value;
-  });
-
-  var versionMapHasKey = goog.partial(goog.object.containsKey, versionMap);
-
-  // Gives the value with the first key it finds, otherwise empty string.
-  function lookUpValueWithKeys(keys) {
-    var key = goog.array.find(keys, versionMapHasKey);
-    return versionMap[key] || '';
-  }
-
-  // Check Opera before Chrome since Opera 15+ has "Chrome" in the string.
-  // See
-  // http://my.opera.com/ODIN/blog/2013/07/15/opera-user-agent-strings-opera-15-and-beyond
-  if (goog.labs.userAgent.browser.isOpera()) {
-    // Opera 10 has Version/10.0 but Opera/9.8, so look for "Version" first.
-    // Opera uses 'OPR' for more recent UAs.
-    return lookUpValueWithKeys(['Version', 'Opera', 'OPR']);
-  }
-
-  // Check Edge before Chrome since it has Chrome in the string.
-  if (goog.labs.userAgent.browser.isEdge()) {
-    return lookUpValueWithKeys(['Edge']);
-  }
-
-  if (goog.labs.userAgent.browser.isChrome()) {
-    return lookUpValueWithKeys(['Chrome', 'CriOS']);
-  }
-
-  // Usually products browser versions are in the third tuple after "Mozilla"
-  // and the engine.
-  var tuple = versionTuples[2];
-  return tuple && tuple[1] || '';
-};
-
-
-/**
- * @param {string|number} version The version to check.
- * @return {boolean} Whether the browser version is higher or the same as the
- *     given version.
- */
-goog.labs.userAgent.browser.isVersionOrHigher = function(version) {
-  return goog.string.compareVersions(goog.labs.userAgent.browser.getVersion(),
-                                     version) >= 0;
-};
-
-
-/**
- * Determines IE version. More information:
- * http://msdn.microsoft.com/en-us/library/ie/bg182625(v=vs.85).aspx#uaString
- * http://msdn.microsoft.com/en-us/library/hh869301(v=vs.85).aspx
- * http://blogs.msdn.com/b/ie/archive/2010/03/23/introducing-ie9-s-user-agent-string.aspx
- * http://blogs.msdn.com/b/ie/archive/2009/01/09/the-internet-explorer-8-user-agent-string-updated-edition.aspx
- *
- * @param {string} userAgent the User-Agent.
- * @return {string}
- * @private
- */
-goog.labs.userAgent.browser.getIEVersion_ = function(userAgent) {
-  // IE11 may identify itself as MSIE 9.0 or MSIE 10.0 due to an IE 11 upgrade
-  // bug. Example UA:
-  // Mozilla/5.0 (MSIE 9.0; Windows NT 6.1; WOW64; Trident/7.0; rv:11.0)
-  // like Gecko.
-  // See http://www.whatismybrowser.com/developers/unknown-user-agent-fragments.
-  var rv = /rv: *([\d\.]*)/.exec(userAgent);
-  if (rv && rv[1]) {
-    return rv[1];
-  }
-
-  var version = '';
-  var msie = /MSIE +([\d\.]+)/.exec(userAgent);
-  if (msie && msie[1]) {
-    // IE in compatibility mode usually identifies itself as MSIE 7.0; in this
-    // case, use the Trident version to determine the version of IE. For more
-    // details, see the links above.
-    var tridentVersion = /Trident\/(\d.\d)/.exec(userAgent);
-    if (msie[1] == '7.0') {
-      if (tridentVersion && tridentVersion[1]) {
-        switch (tridentVersion[1]) {
-          case '4.0':
-            version = '8.0';
-            break;
-          case '5.0':
-            version = '9.0';
-            break;
-          case '6.0':
-            version = '10.0';
-            break;
-          case '7.0':
-            version = '11.0';
-            break;
-        }
-      } else {
-        version = '7.0';
-      }
-    } else {
-      version = msie[1];
-    }
-  }
-  return version;
 };
 
 //javascript/closure/labs/useragent/engine.js
