@@ -50,9 +50,9 @@ import java.util.regex.Pattern;
 public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
 
   private static final SoyErrorKind INVALID_DELTEMPLATE_COMMAND_TEXT =
-      SoyErrorKind.of("Invalid delegate template command text.");
+      SoyErrorKind.of("Invalid deltemplate command text.");
   private static final SoyErrorKind INVALID_DELTEMPLATE_NAME =
-      SoyErrorKind.of("Invalid delegate template name");
+      SoyErrorKind.of("Invalid name.  deltemplate names should be fully qualified.");
   private static final SoyErrorKind INVALID_VARIANT_EXPR =
       SoyErrorKind.of(
           "Invalid variant expression "
