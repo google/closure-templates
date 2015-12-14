@@ -292,7 +292,7 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
       return fullTagText;
     }
 
-    private String computeLcTagName(ErrorReporter errorReporter) {
+    @Nullable private String computeLcTagName(ErrorReporter errorReporter) {
       String firstChildText = ((RawTextNode) children.get(0)).getRawText();
       Matcher matcher = TAG_NAME_PATTERN.matcher(firstChildText);
       if (!matcher.find()) {
@@ -301,6 +301,7 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
         } else {
           errorReporter.report(sourceLocation, UNNAMED_HTML_TAG_WITHIN_MSG_BLOCK, firstChildText);
         }
+        return null;
       }
       return matcher.group().toLowerCase(Locale.ENGLISH);
     }
