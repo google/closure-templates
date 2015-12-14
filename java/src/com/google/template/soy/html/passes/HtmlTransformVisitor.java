@@ -630,7 +630,7 @@ public final class HtmlTransformVisitor extends AbstractSoyNodeVisitor<Void> {
    */
   @Override protected void visitCallNode(CallNode node) {
     checkForValidSoyNodeLocation(node);
-    visitChildren(node);
+    visitSoyNode(node);
   }
 
   @Override protected void visitIfCondNode(IfCondNode node) {
