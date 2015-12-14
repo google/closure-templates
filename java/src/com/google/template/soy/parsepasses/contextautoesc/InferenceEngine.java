@@ -20,7 +20,6 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.error.ErrorReporter;
@@ -574,7 +573,7 @@ final class InferenceEngine {
         if (!escapingModes.isEmpty() || autoescapeMode == AutoescapeMode.CONTEXTUAL ||
             autoescapeMode == AutoescapeMode.STRICT) {
           // If we know the escaping mode or we're supposed to choose one, then use that.
-          context = getContextAfterEscaping(printNode, context, escapingModes);
+          context = getContextAfterEscaping(printNode, context);
         } else {
           // If we are not in an autoescaping template, assume that the author knows what they're
           // doing and simulate an innocuous value.
@@ -917,8 +916,7 @@ final class InferenceEngine {
     // we assume that the dynamic value is also an expression, but JsFollowingSlash.UNKNOWN would
     // account for things that end in semicolons (since the next slash could be either a regex OR a
     // division op).
-    return getContextAfterEscaping(node, startContext,
-        startContext.getContextBeforeDynamicValue().getEscapingModes());
+    return getContextAfterEscaping(node, startContext);
   }
 
 
@@ -929,15 +927,9 @@ final class InferenceEngine {
    * @param startContext The start context -- must be a "context before dynamic value".
    * @param escapingModes The escaping sequence being used.
    */
-  private static Context getContextAfterEscaping(
-       SoyNode node, Context startContext, List<EscapingMode> escapingModes) {
-    // NOTE: This uses the first escaping mode, so that, for example, it will pass in the
-    // escapeHtmlAttribute if it's inside of an href, instead of the relevant URI escaper.
-    // However, with the prevalence of strict, it's probably better at some point to stop passing
-    // in an escaping mode and infer the next context unconditionally.
-    Preconditions.checkArgument(!escapingModes.isEmpty());
+  private static Context getContextAfterEscaping(SoyNode node, Context startContext) {
     try {
-      return startContext.getContextAfterEscaping(Iterables.getFirst(escapingModes, null));
+      return startContext.getContextAfterDynamicValue();
     } catch (SoyAutoescapeException e) {
       throw e.maybeAssociateNode(node);
     }

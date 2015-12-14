@@ -158,14 +158,17 @@ public final class Context {
 
 
   /**
-   * The context reached after escaping content using the given mode from this context.
-   * This makes an optimistic assumption that the escaped string is not empty, but in practice this
-   * makes little difference, except {@link UriPart#START} and subsequent states, but it is
-   * the wildcard state {@link UriPart#MAYBE_VARIABLE_SCHEME}.
+   * The context after printing a correctly-escaped dynamic value in this context.
+   *
+   * <p>This makes the optimistic assumption that the escaped string is not empty. This can
+   * lead to correctness behaviors, but the default is to fail closed; for example, printing
+   * an empty string at UriPart.START switches to MAYBE_VARIABLE_SCHEME, which
+   * is designed not to trust the printed value anyway. Same in JS -- we might switch to DIV_OP
+   * when we should have stayed in REGEX, but in the worse case, we'll just produce JavaScript
+   * that doesn't compile (which is safe).
    */
-  public Context getContextAfterEscaping(EscapingMode mode) {
-    Preconditions.checkNotNull(mode);
-    if (mode == EscapingMode.ESCAPE_JS_VALUE) {
+  public Context getContextAfterDynamicValue() {
+    if (state == State.JS) {
       switch (slashType) {
         case DIV_OP:
         case UNKNOWN:
@@ -173,9 +176,9 @@ public final class Context {
         case REGEX:
           return derive(JsFollowingSlash.DIV_OP);
         case NONE:
-          break;  // Error out below.
+        default:
+          throw new IllegalStateException(slashType.name());
       }
-      throw new IllegalStateException(slashType.name());
     } else if (state == State.HTML_BEFORE_OPEN_TAG_NAME
         || state == State.HTML_BEFORE_CLOSE_TAG_NAME) {
       // We assume ElementType.NORMAL, because filterHtmlElementName filters dangerous tag names.
