@@ -707,10 +707,13 @@ public final class SoyFileSet {
             typeRegistry,
             soyFunctionMap);
 
+    SoyFileSetNode soyTree = result.fileSet();
+    TemplateRegistry registry = result.registry();
+    registry = runMiddleendPasses(registry, soyTree);
+
     // Do renaming of package-relative class names.
     ImmutableMap<String, String> parseInfo =
-        new GenerateParseInfoVisitor(javaPackage, javaClassNameSource, result.registry())
-            .exec(result.fileSet());
+        new GenerateParseInfoVisitor(javaPackage, javaClassNameSource, registry).exec(soyTree);
     return new ParseInfo(result(), parseInfo);
   }
 
