@@ -19,14 +19,19 @@ package com.google.template.soy.passes;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSortedSet;
+import com.google.template.soy.basetree.Node;
+import com.google.template.soy.basetree.NodeVisitor;
+import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.passes.FindTransitiveDepTemplatesVisitor.TransitiveDepTemplatesInfo;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
+import com.google.template.soy.soytree.SoytreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.defn.TemplateParam;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -114,7 +119,7 @@ public class FindIjParamsVisitor {
       for (TemplateNode template : depsInfo.depTemplateSet) {
 
         if (! templateToLocalIjParamsMap.containsKey(template)) {
-          templateToLocalIjParamsMap.put(template, IjDataQueries.getAllIjs(template));
+          templateToLocalIjParamsMap.put(template, getAllIjs(template));
         }
 
         for (String localIjParam : templateToLocalIjParamsMap.get(template)) {
@@ -155,6 +160,33 @@ public class FindIjParamsVisitor {
     }
 
     return resultMapBuilder.build();
+  }
+
+
+  /**
+   * Returns all ij parameters found in the subtree.
+   */
+  private static Set<String> getAllIjs(Node soyTree) {
+    final Set<String> ijs = new HashSet<>();
+    SoytreeUtils.visitAllNodes(soyTree, new NodeVisitor<Node, Boolean>() {
+      @Override public Boolean exec(Node node) {
+        if (isIj(node)) {
+          ijs.add(((VarRefNode) node).getName());
+        }
+        return true;
+      }
+    });
+    return ijs;
+  }
+
+  private static boolean isIj(Node node) {
+    if (node instanceof VarRefNode) {
+      VarRefNode varRef = (VarRefNode) node;
+      if (varRef.isInjected()) {
+        return true;
+      }
+    }
+    return false;
   }
 
 }
