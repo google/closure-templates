@@ -161,18 +161,19 @@ public final class SoyToPySrcCompiler {
    * @throws SoySyntaxException If a syntax error is detected.
    */
   public static void main(final String[] args) throws IOException, SoySyntaxException {
-    MainClassUtils.run(new Main() {
-      @Override
-      public CompilationResult main() throws IOException {
-        return new SoyToPySrcCompiler().execMain(args);
-      }
-    });
+    MainClassUtils.run(
+        new Main() {
+          @Override
+          public void main() throws IOException {
+            new SoyToPySrcCompiler().execMain(args);
+          }
+        });
   }
 
 
   private SoyToPySrcCompiler() {}
 
-  private CompilationResult execMain(String[] args) throws IOException {
+  private void execMain(String[] args) throws IOException {
 
     final CmdLineParser cmdLineParser = MainClassUtils.parseFlags(this, args, USAGE_PREFIX);
 
@@ -225,7 +226,7 @@ public final class SoyToPySrcCompiler {
         bidiIsRtlFn, translationClass, manifest, outputNamespaceManifest);
 
     // Compile.
-    return sfs.compileToPySrcFiles(outputPathFormat, inputPrefix, pySrcOptions);
+    sfs.compileToPySrcFiles(outputPathFormat, inputPrefix, pySrcOptions);
   }
 
   /**

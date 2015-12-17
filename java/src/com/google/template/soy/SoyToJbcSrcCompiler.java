@@ -122,15 +122,15 @@ public final class SoyToJbcSrcCompiler {
     MainClassUtils.run(
         new Main() {
           @Override
-          public CompilationResult main() throws IOException {
-            return new SoyToJbcSrcCompiler().execMain(args);
+          public void main() throws IOException {
+            new SoyToJbcSrcCompiler().execMain(args);
           }
         });
   }
 
   private SoyToJbcSrcCompiler() {}
 
-  private CompilationResult execMain(String[] args) throws IOException {
+  private void execMain(String[] args) throws IOException {
     final CmdLineParser cmdLineParser = MainClassUtils.parseFlags(this, args, USAGE_PREFIX);
 
     final Function<String, Void> exitWithErrorFn =
@@ -170,6 +170,6 @@ public final class SoyToJbcSrcCompiler {
     if (!outputSrcJar.isEmpty()) {
       srcJarSink = Optional.of(Files.asByteSink(new File(outputSrcJar)));
     }
-    return sfs.compileToJar(Files.asByteSink(new File(output)), srcJarSink);
+    sfs.compileToJar(Files.asByteSink(new File(output)), srcJarSink);
   }
 }
