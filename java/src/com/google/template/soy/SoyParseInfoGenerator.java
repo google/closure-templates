@@ -19,6 +19,7 @@ package com.google.template.soy;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.base.Function;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.io.Files;
@@ -121,19 +122,20 @@ public final class SoyParseInfoGenerator {
    * @throws IOException If there are problems reading the input files or writing the output file.
    */
   public static void main(final String[] args) throws IOException {
-    MainClassUtils.run(new Main() {
-      @Override
-      public CompilationResult main() throws IOException {
-        return new SoyParseInfoGenerator().execMain(args);
-      }
-    });
+    MainClassUtils.run(
+        new Main() {
+          @Override
+          public void main() throws IOException {
+            new SoyParseInfoGenerator().execMain(args);
+          }
+        });
   }
 
 
   private SoyParseInfoGenerator() {}
 
 
-  private CompilationResult execMain(String[] args) throws IOException {
+  private void execMain(String[] args) throws IOException {
 
     final CmdLineParser cmdLineParser = MainClassUtils.parseFlags(this, args, USAGE_PREFIX);
 
@@ -168,17 +170,14 @@ public final class SoyParseInfoGenerator {
     sfsBuilder.setAllowExternalCalls(allowExternalCalls);
     SoyFileSet sfs = sfsBuilder.build();
 
-    SoyFileSet.ParseInfo parseInfo = sfs.generateParseInfo(javaPackage, javaClassNameSource);
+    ImmutableMap<String, String> parseInfo =
+        sfs.generateParseInfo(javaPackage, javaClassNameSource);
 
-    if (parseInfo.result.isSuccess()) {
-      for (Map.Entry<String, String> entry : parseInfo.generatedFiles.entrySet()) {
-        File outputFile = new File(outputDirectory, entry.getKey());
-        BaseUtils.ensureDirsExistInPath(outputFile.getPath());
-        Files.write(entry.getValue(), outputFile, UTF_8);
-      }
+    for (Map.Entry<String, String> entry : parseInfo.entrySet()) {
+      File outputFile = new File(outputDirectory, entry.getKey());
+      BaseUtils.ensureDirsExistInPath(outputFile.getPath());
+      Files.write(entry.getValue(), outputFile, UTF_8);
     }
-
-    return parseInfo.result;
   }
 
 }

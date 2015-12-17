@@ -19,11 +19,10 @@ package com.google.template.soy.soytree;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.ErrorReporterImpl;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.ExplodingErrorReporter;
+import com.google.template.soy.error.FormattingErrorReporter;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 
 import junit.framework.TestCase;
@@ -99,12 +98,11 @@ public final class MsgHtmlTagNodeTest extends TestCase {
   }
 
   public void testErrorNodeReturnedWhenPhNameAttrIsMalformed() {
-    ErrorReporterImpl errorReporter = new ErrorReporterImpl();
-    Checkpoint checkpoint = errorReporter.checkpoint();
+    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
     MsgHtmlTagNode mhtn = new MsgHtmlTagNode.Builder(
         1, ImmutableList.<StandaloneNode>of(new RawTextNode(0, "<div phname=\".+\" />", X)), X)
         .build(errorReporter);
     assertThat(mhtn.getUserSuppliedPhName()).isNull();
-    assertThat(errorReporter.errorsSince(checkpoint)).isTrue();
+    assertThat(errorReporter.getErrorMessages()).isNotEmpty();
   }
 }

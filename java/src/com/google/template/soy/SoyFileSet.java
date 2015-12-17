@@ -19,7 +19,6 @@ package com.google.template.soy;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -35,17 +34,16 @@ import com.google.inject.assistedinject.Assisted;
 import com.google.inject.util.Providers;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.base.SoySyntaxException;
-import com.google.template.soy.base.internal.LegacyInternalSyntaxException;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.base.internal.VolatileSoyFileSupplier;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.conformance.CheckConformance;
 import com.google.template.soy.conformance.ConformanceInput;
-import com.google.template.soy.error.ErrorPrettyPrinter;
-import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ErrorReporter.Checkpoint;
+import com.google.template.soy.error.PrettyErrorFactory;
 import com.google.template.soy.error.SnippetFormatter;
+import com.google.template.soy.error.SoyCompilationException;
+import com.google.template.soy.error.SoyError;
 import com.google.template.soy.incrementaldomsrc.IncrementalDomSrcMain;
 import com.google.template.soy.jbcsrc.BytecodeCompiler;
 import com.google.template.soy.jbcsrc.api.SoySauce;
@@ -600,8 +598,7 @@ public final class SoyFileSet {
   private final ImmutableMap<String, ? extends SoyPrintDirective> printDirectives;
 
   /** For reporting errors during parsing. */
-  private final ErrorReporter errorReporter;
-
+  private ErrorReporterImpl errorReporter;
 
   /**
    * @param baseTofuFactory Factory for creating an instance of BaseTofu.
@@ -653,8 +650,6 @@ public final class SoyFileSet {
     this.generalOptions = generalOptions.clone();
     this.soyFunctionMap = soyFunctionMap;
     this.printDirectives = printDirectives;
-    // TODO(lukes): restrict access to this constructor
-    this.errorReporter = new ErrorReporterImpl();
   }
 
 
@@ -679,11 +674,6 @@ public final class SoyFileSet {
     return generalOptions;
   }
 
-  /** TODO(user): workaround for {@link SoyJsSrcResource}. Remove. */
-  ErrorReporter getErrorReporter() {
-    return errorReporter;
-  }
-
   /**
    * Generates Java classes containing parse info (param names, template names, meta info). There
    * will be one Java class per Soy file.
@@ -693,9 +683,10 @@ public final class SoyFileSet {
    *     "namespace", or "generic".
    * @return A map from generated file name (of the form "<*>SoyInfo.java") to generated file
    *     content.
+   * @throws SoyCompilationException If compilation fails.
    */
-  ParseInfo generateParseInfo(String javaPackage, String javaClassNameSource) {
-
+  ImmutableMap<String, String> generateParseInfo(String javaPackage, String javaClassNameSource) {
+    resetErrorReporter();
     // TODO(lukes): see if we can enforce that globals are provided at compile time here. given that
     // types have to be, this should be possible.  Currently it is disabled for backwards
     // compatibility
@@ -714,17 +705,8 @@ public final class SoyFileSet {
     // Do renaming of package-relative class names.
     ImmutableMap<String, String> parseInfo =
         new GenerateParseInfoVisitor(javaPackage, javaClassNameSource, registry).exec(soyTree);
-    return new ParseInfo(result(), parseInfo);
-  }
-
-  static final class ParseInfo {
-    final CompilationResult result;
-    final ImmutableMap<String, String> generatedFiles;
-
-    ParseInfo(CompilationResult result, ImmutableMap<String, String> generatedFiles) {
-      this.result = result;
-      this.generatedFiles = generatedFiles;
-    }
+    throwIfErrorsPresent();
+    return parseInfo;
   }
 
   /**
@@ -732,9 +714,10 @@ public final class SoyFileSet {
    * into an extracted messages file with the help of a SoyMsgBundleHandler).
    *
    * @return A SoyMsgBundle containing all the extracted messages (locale "en").
-   * @throws SoySyntaxException If a syntax error is found.
+   * @throws SoyCompilationException If compilation fails.
    */
-  public SoyMsgBundle extractMsgs() throws SoySyntaxException {
+  public SoyMsgBundle extractMsgs() {
+    resetErrorReporter();
     SoyFileSetNode soyTree =
         parse(
                 SyntaxVersion.V1_0,
@@ -743,7 +726,9 @@ public final class SoyFileSet {
                 SoyTypeRegistry.DEFAULT_UNKNOWN,
                 soyFunctionMap)
             .fileSet();
-    return new ExtractMsgsVisitor().exec(soyTree);
+    SoyMsgBundle bundle = new ExtractMsgsVisitor().exec(soyTree);
+    throwIfErrorsPresent();
+    return bundle;
   }
 
 
@@ -758,12 +743,10 @@ public final class SoyFileSet {
    *
    * @param origTransMsgBundle The message bundle to prune.
    * @return The pruned message bundle.
-   * TODO(brndn): Instead of throwing, should return a structure with a list of errors that callers
-   * can inspect.
+   * @throws SoyCompilationException If compilation fails.
    */
-  public SoyMsgBundle pruneTranslatedMsgs(SoyMsgBundle origTransMsgBundle)
-      throws SoySyntaxException {
-
+  public SoyMsgBundle pruneTranslatedMsgs(SoyMsgBundle origTransMsgBundle) {
+    resetErrorReporter();
     // ------ Extract msgs from all the templates reachable from public templates. ------
     // Note: In the future, instead of using all public templates as the root set, we can allow the
     // user to provide a root set.
@@ -812,6 +795,7 @@ public final class SoyFileSet {
         prunedTransMsgsBuilder.add(transMsg);
       }
     }
+    throwIfErrorsPresent();
     return new SoyMsgBundleImpl(
         origTransMsgBundle.getLocaleString(), prunedTransMsgsBuilder.build());
   }
@@ -821,11 +805,12 @@ public final class SoyFileSet {
    * compiled templates.
    *
    * @return The resulting {@code SoyTofu} object.
-   * @throws SoySyntaxException If a syntax error is found.
+   * @throws SoyCompilationException If compilation fails.
    */
-  public SoyTofu compileToTofu() throws SoySyntaxException {
+  public SoyTofu compileToTofu() {
+    resetErrorReporter();
     ServerCompilationPrimitives primitives = compileForServerRendering();
-    ((ErrorReporterImpl) errorReporter).throwIfErrorsPresent();
+    throwIfErrorsPresent();
     return doCompileToTofu(primitives);
   }
 
@@ -848,12 +833,12 @@ public final class SoyFileSet {
    * {@link CompiledTemplate} interface.
    *
    * @return A set of compiled templates
-   * @throws SoySyntaxException If a syntax error is found.
+   * @throws SoyCompilationException If compilation fails.
    */
-  public SoySauce compileTemplates() throws SoySyntaxException {
+  public SoySauce compileTemplates() {
+    resetErrorReporter();
     ServerCompilationPrimitives primitives = compileForServerRendering();
-    // In this mode we should throw SoySyntaxException
-    ((ErrorReporterImpl) errorReporter).throwIfErrorsPresent();
+    throwIfErrorsPresent();
     return doCompileSoySauce(primitives);
   }
 
@@ -861,20 +846,16 @@ public final class SoyFileSet {
    * <p>Compiles this Soy file set into a set of java classes implementing the
    * {@link CompiledTemplate} interface and writes them out to the given ByteSink as a JAR file.
    *
-   * @return The compilation result
+   * @throws SoyCompilationException If compilation fails.
    */
-  CompilationResult compileToJar(ByteSink jarTarget, Optional<ByteSink> srcJarTarget)
-      throws IOException {
+  void compileToJar(ByteSink jarTarget, Optional<ByteSink> srcJarTarget) throws IOException {
+    resetErrorReporter();
     ServerCompilationPrimitives primitives = compileForServerRendering();
-    if (primitives == null) {
-      // we encountered an error, return early.
-      return result();
-    }
     BytecodeCompiler.compileToJar(primitives.registry, errorReporter, jarTarget);
     if (srcJarTarget.isPresent()) {
       BytecodeCompiler.writeSrcJar(primitives.registry, soyFileSuppliers, srcJarTarget.get());
     }
-    return result();
+    throwIfErrorsPresent();
   }
 
   /** Helper method to compile SoySauce from {@link ServerCompilationPrimitives} */
@@ -886,7 +867,7 @@ public final class SoyFileSet {
             cache != null,
             errorReporter);
 
-    ((ErrorReporterImpl) errorReporter).throwIfErrorsPresent();
+    throwIfErrorsPresent();
 
     return soyTemplatesFactory.create(templates.get(), soyFunctionMap, printDirectives);
   }
@@ -907,16 +888,10 @@ public final class SoyFileSet {
 
   /**
    * Runs common compiler logic shared by tofu and jbcsrc backends.
-   *
-   * <p>Returns null if errors are encountered during compilation.  All errors will be written to
-   * the errorReporter.
    */
-  @Nullable private ServerCompilationPrimitives compileForServerRendering() {
-    ErrorReporter.Checkpoint checkpoint = errorReporter.checkpoint();
+  private ServerCompilationPrimitives compileForServerRendering() {
     ParseResult result = parse(SyntaxVersion.V2_0);
-    if (errorReporter.errorsSince(checkpoint)) {
-      return null;
-    }
+    throwIfErrorsPresent();
 
     SoyFileSetNode soyTree = result.fileSet();
     TemplateRegistry registry = result.registry();
@@ -928,9 +903,7 @@ public final class SoyFileSet {
       new ClearSoyDocStringsVisitor().exec(soyTree);
     }
 
-    if (errorReporter.errorsSince(checkpoint)) {
-      return null;
-    }
+    throwIfErrorsPresent();
     return new ServerCompilationPrimitives(registry, soyTree);
   }
 
@@ -957,13 +930,12 @@ public final class SoyFileSet {
    *     source.
    * @return A list of strings where each string represents the JS source code that belongs in one
    *     JS file. The generated JS files correspond one-to-one to the original Soy source files.
-   * @throws SoySyntaxException If a syntax error is found.
-   * TODO(brndn): Instead of throwing, should return a structure with a list of errors that callers
-   * can inspect.
+   * @throws SoyCompilationException If compilation fails.
    */
   @SuppressWarnings("deprecation")
-  public List<String> compileToJsSrc(SoyJsSrcOptions jsSrcOptions, @Nullable SoyMsgBundle msgBundle)
-      throws SoySyntaxException {
+  public List<String> compileToJsSrc(
+      SoyJsSrcOptions jsSrcOptions, @Nullable SoyMsgBundle msgBundle) {
+    resetErrorReporter();
 
     // Synchronize old and new ways to declare syntax version V1.
     if (jsSrcOptions.shouldAllowDeprecatedSyntax()) {
@@ -979,12 +951,16 @@ public final class SoyFileSet {
             false /* allow unknown functions */,
             typeRegistry,
             soyFunctionMap);
+    throwIfErrorsPresent();
     TemplateRegistry registry = parseResult.registry();
     SoyFileSetNode fileSet = parseResult.fileSet();
     registry = runMiddleendPasses(registry, fileSet);
-    return jsSrcMainProvider
+    throwIfErrorsPresent();
+    List<String> generatedSrcs = jsSrcMainProvider
         .get()
         .genJsSrc(fileSet, registry, jsSrcOptions, msgBundle, errorReporter);
+    throwIfErrorsPresent();
+    return generatedSrcs;
   }
 
   /**
@@ -996,22 +972,24 @@ public final class SoyFileSet {
    * @param jsSrcOptions The compilation options for the JS Src output target.
    * @param locales The list of locales. Can be an empty list if not applicable.
    * @param messageFilePathFormat The message file path format, or null if not applicable.
-   * @throws SoySyntaxException If a syntax error is found.
+   * @throws SoyCompilationException If compilation fails.
    * @throws IOException If there is an error in opening/reading a message file or opening/writing
    *     an output JS file.
    */
   @SuppressWarnings("deprecation")
-  CompilationResult compileToJsSrcFiles(
-      String outputPathFormat, String inputFilePathPrefix, SoyJsSrcOptions jsSrcOptions,
-      List<String> locales, @Nullable String messageFilePathFormat)
-      throws SoySyntaxException, IOException {
+  void compileToJsSrcFiles(
+      String outputPathFormat,
+      String inputFilePathPrefix,
+      SoyJsSrcOptions jsSrcOptions,
+      List<String> locales,
+      @Nullable String messageFilePathFormat)
+      throws IOException {
+    resetErrorReporter();
 
     // Synchronize old and new ways to declare syntax version V1.
     if (jsSrcOptions.shouldAllowDeprecatedSyntax()) {
       generalOptions.setDeclaredSyntaxVersionName("1.0");
     }
-
-    Checkpoint checkpoint = errorReporter.checkpoint();
 
     // Allow unknown globals for backwards compatibility
     ParseResult result =
@@ -1021,17 +999,12 @@ public final class SoyFileSet {
             false /* allow unknown functions */,
             typeRegistry,
             soyFunctionMap);
-    if (errorReporter.errorsSince(checkpoint)) {
-      return failure();
-    }
+    throwIfErrorsPresent();
 
     SoyFileSetNode soyTree = result.fileSet();
     TemplateRegistry registry = result.registry();
     registry = runMiddleendPasses(registry, soyTree);
-    if (errorReporter.errorsSince(checkpoint)) {
-      return failure();
-    }
-
+    throwIfErrorsPresent();
     if (locales.isEmpty()) {
       // Not generating localized JS.
       jsSrcMainProvider
@@ -1079,7 +1052,7 @@ public final class SoyFileSet {
                 errorReporter);
       }
     }
-    return result();
+    throwIfErrorsPresent();
   }
 
   /**
@@ -1088,16 +1061,14 @@ public final class SoyFileSet {
    * @param outputPathFormat The format string defining how to build the output file path
    *     corresponding to an input file path.
    * @param jsSrcOptions The compilation options for the JS Src output target.
-   * @throws SoySyntaxException If a syntax error is found.
+   * @throws SoyCompilationException If compilation fails.
    * @throws IOException If there is an error in opening/reading a message file or opening/writing
    *     an output JS file.
    */
   @SuppressWarnings("deprecation")
-  CompilationResult compileToIncrementalDomSrcFiles(
-      String outputPathFormat,
-      SoyJsSrcOptions jsSrcOptions)
-      throws SoySyntaxException, IOException {
-
+  void compileToIncrementalDomSrcFiles(String outputPathFormat, SoyJsSrcOptions jsSrcOptions)
+      throws IOException {
+    resetErrorReporter();
     SyntaxVersion declaredSyntaxVersion =
         generalOptions.getDeclaredSyntaxVersion(SyntaxVersion.V2_0);
 
@@ -1105,25 +1076,20 @@ public final class SoyFileSet {
         declaredSyntaxVersion.num >= SyntaxVersion.V2_0.num,
         "Incremental DOM code generation only supports syntax version of V2 or higher.");
 
-    Checkpoint checkpoint = errorReporter.checkpoint();
     ParseResult result = parse(SyntaxVersion.V2_0);
 
-    if (errorReporter.errorsSince(checkpoint)) {
-      return failure();
-    }
+    throwIfErrorsPresent();
     SoyFileSetNode soyTree = result.fileSet();
     new ChangeCallsToPassAllDataVisitor().exec(soyTree);
     simplifyVisitor.simplify(soyTree, result.registry());
 
-    if (errorReporter.errorsSince(checkpoint)) {
-      return failure();
-    }
+    throwIfErrorsPresent();
 
     incrementalDomSrcMainProvider
         .get()
         .genJsFiles(soyTree, result.registry(), jsSrcOptions, outputPathFormat, errorReporter);
 
-    return result();
+    throwIfErrorsPresent();
   }
 
   /**
@@ -1134,48 +1100,29 @@ public final class SoyFileSet {
    *     corresponding to an input file path.
    * @param inputFilePathPrefix The prefix prepended to all input file paths (can be empty string).
    * @param pySrcOptions The compilation options for the Python Src output target.
-   * @throws SoySyntaxException If a syntax error is found.
+   * @throws SoyCompilationException If compilation fails.
    * @throws IOException If there is an error in opening/reading a message file or opening/writing
    *     an output JS file.
    */
-  CompilationResult compileToPySrcFiles(
+  void compileToPySrcFiles(
       String outputPathFormat, String inputFilePathPrefix, SoyPySrcOptions pySrcOptions)
-      throws SoySyntaxException, IOException {
+      throws IOException {
+    resetErrorReporter();
 
-
-    Checkpoint checkpoint = errorReporter.checkpoint();
     ParseResult result = parse(SyntaxVersion.V2_0);
-    if (errorReporter.errorsSince(checkpoint)) {
-      return failure();
-    }
+    throwIfErrorsPresent();
     SoyFileSetNode soyTree = result.fileSet();
 
     TemplateRegistry registry = result.registry();
     registry = runMiddleendPasses(registry, result.fileSet());
-    if (errorReporter.errorsSince(checkpoint)) {
-      return failure();
-    }
+    throwIfErrorsPresent();
 
     pySrcMainProvider
         .get()
         .genPyFiles(
             soyTree, registry, pySrcOptions, outputPathFormat, inputFilePathPrefix, errorReporter);
 
-    return result();
-  }
-
-  private CompilationResult result() {
-    ErrorReporterImpl impl = (ErrorReporterImpl) errorReporter;
-    return new CompilationResult(
-        impl.getErrors(), new ErrorPrettyPrinter(new SnippetFormatter(soyFileSuppliers)));
-  }
-
-  private CompilationResult failure() {
-    ImmutableCollection<? extends LegacyInternalSyntaxException> errors =
-        ((ErrorReporterImpl) errorReporter).getErrors();
-    Preconditions.checkState(!errors.isEmpty());
-    return new CompilationResult(
-        errors, new ErrorPrettyPrinter(new SnippetFormatter(soyFileSuppliers)));
+    throwIfErrorsPresent();
   }
 
   // Parse the current file set with the given default syntax version.
@@ -1236,20 +1183,17 @@ public final class SoyFileSet {
    * @param soyTree The Soy tree to run middleend passes on.
    * @return A new TemplateRegistry.  The contextual autoescaper occasionally adds new templates and
    *     so the TemplateRegistry needs to be recreated.
-   * @throws SoySyntaxException If a syntax error is found.
    */
   @CheckReturnValue
   private synchronized TemplateRegistry runMiddleendPasses(
-      TemplateRegistry registry, SoyFileSetNode soyTree) throws SoySyntaxException {
+      TemplateRegistry registry, SoyFileSetNode soyTree) {
 
-    Checkpoint checkpoint = errorReporter.checkpoint();
     // Run contextual escaping after CSS and substitutions have been done.
     doContextualEscaping(soyTree, registry);
-    if (errorReporter.errorsSince(checkpoint)) {
-      // Further passes that rely on sliced raw text nodes, such as conformance and CSP, can't
-      // proceed if contextual escaping failed.
-      return registry;
-    }
+    // Further passes that rely on sliced raw text nodes, such as conformance and CSP, can't
+    // proceed if contextual escaping failed.
+    throwIfErrorsPresent();
+
     // contextual autoescaping may actually add new templates to the tree so we need to reconstruct
     // the registry
     registry = new TemplateRegistry(soyTree, errorReporter);
@@ -1272,8 +1216,7 @@ public final class SoyFileSet {
   }
 
 
-  private void doContextualEscaping(SoyFileSetNode soyTree, TemplateRegistry registry)
-      throws SoySyntaxException {
+  private void doContextualEscaping(SoyFileSetNode soyTree, TemplateRegistry registry) {
     List<TemplateNode> extraTemplates =
         contextualAutoescaper.rewrite(soyTree, registry, errorReporter);
     // TODO: Run the redundant template remover here and rename after CL 16642341 is in.
@@ -1297,6 +1240,29 @@ public final class SoyFileSet {
                 : extraTemplate.getTemplateName();
         containingFile.get(DerivedTemplateUtils.getBaseName(name)).addChild(extraTemplate);
       }
+    }
+  }
+
+  /**
+   * This method resets the error reporter field in preparation to a new compiler invocation.
+   *
+   * <p>This method should be called at the beginning of every entry point into SoyFileSet.
+   * <p>TODO(lukes): instead of resetting, consider making it an error to call a compiler method
+   * on the same SoyFileSet object more than once.
+   */
+  private void resetErrorReporter() {
+    // TODO(lukes): consider moving ErrorReporterImpl to the error package and making this a static
+    // factory method there somewhere
+    errorReporter =
+        new ErrorReporterImpl(new PrettyErrorFactory(new SnippetFormatter(soyFileSuppliers)));
+  }
+
+  private void throwIfErrorsPresent() {
+    if (errorReporter.hasErrors()) {
+      Iterable<SoyError> errors = errorReporter.getErrors();
+      // clear the field to ensure that error reporters can't leak between compilations
+      errorReporter = null;
+      throw new SoyCompilationException(errors);
     }
   }
 }
