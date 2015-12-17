@@ -839,6 +839,7 @@ public final class SoyFileSet {
    */
   public SoySauce compileTemplates() {
     resetErrorReporter();
+    disallowExternalCalls();
     ServerCompilationPrimitives primitives = compileForServerRendering();
     throwIfErrorsPresent();
     return doCompileSoySauce(primitives);
@@ -852,6 +853,7 @@ public final class SoyFileSet {
    */
   void compileToJar(ByteSink jarTarget, Optional<ByteSink> srcJarTarget) throws IOException {
     resetErrorReporter();
+    disallowExternalCalls();
     ServerCompilationPrimitives primitives = compileForServerRendering();
     BytecodeCompiler.compileToJar(primitives.registry, errorReporter, jarTarget);
     if (srcJarTarget.isPresent()) {
@@ -921,6 +923,17 @@ public final class SoyFileSet {
           entry.getKey().getTemplateName(), entry.getValue().ijParamSet);
     }
     return templateToTransitiveIjParams.build();
+  }
+
+  private void disallowExternalCalls() {
+    Boolean allowExternalCalls = generalOptions.allowExternalCalls();
+    if (allowExternalCalls == null) {
+      generalOptions.setAllowExternalCalls(false);
+    } else if (allowExternalCalls) {
+      throw new IllegalStateException(
+          "SoyGeneralOptions.setAllowExternalCalls(true) is not supported with this method");
+    }
+    // otherwise, it was already explicitly set to false which is what we want.
   }
 
   /**
