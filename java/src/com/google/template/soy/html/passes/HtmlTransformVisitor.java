@@ -201,8 +201,7 @@ public final class HtmlTransformVisitor extends AbstractSoyNodeVisitor<Void> {
    * @param node The node that the mapped node comes from.
    */
   private void createTextNode(RawTextNode node) {
-    // Consume text, removing unnecessary whitespace
-    String currentString = consumeText(true);
+    String currentString = consumeText();
 
     if (currentString.length() > 0) {
       SourceLocation sl = deriveSourceLocation(node);
@@ -216,7 +215,7 @@ public final class HtmlTransformVisitor extends AbstractSoyNodeVisitor<Void> {
    * @param node The node that the mapped node comes from.
    */
   private void createAttributeValueNode(RawTextNode node) {
-    String currentString = consumeText(false);
+    String currentString = consumeText();
 
     // Check to see if the currentText is empty. This may occur when we have something like
     // disabled="" or disabled="{$foo}" after the print tag is finished.
@@ -260,15 +259,8 @@ public final class HtmlTransformVisitor extends AbstractSoyNodeVisitor<Void> {
     }
   }
 
-  private String consumeText(boolean trim) {
-    String token;
-
-    if (trim) {
-      token = CharMatcher.WHITESPACE.trimFrom(currentText);
-    } else {
-      token = currentText.toString();
-    }
-
+  private String consumeText() {
+    String token = currentText.toString();
     currentText.setLength(0);
     return token;
   }
@@ -280,7 +272,7 @@ public final class HtmlTransformVisitor extends AbstractSoyNodeVisitor<Void> {
    */
   private void handleHtmlTagName(RawTextNode node, char c) {
     if (CharMatcher.WHITESPACE.matches(c) || c == '>') {
-      currentTag = consumeText(false);
+      currentTag = consumeText();
 
       // No tag name, saw something like <> or <  >.
       if (currentTag.length() <= 0) {
@@ -347,19 +339,19 @@ public final class HtmlTransformVisitor extends AbstractSoyNodeVisitor<Void> {
   private void handleHtmlAttributeName(RawTextNode node, char c) {
     if (c == '=') {
       // Next thing we should see is " to start the attribute value.
-      currentAttributeName = consumeText(false);
+      currentAttributeName = consumeText();
       setState(HtmlState.BEFORE_ATTRIBUTE_VALUE);
       suppressExpectedAttributeValueError = false;
     } else if (c == '>') {
       // Tag ended with an attribute with no value (e.g. disabled) - create an attribute, then
       // handle the tag end.
-      currentAttributeName = consumeText(false);
+      currentAttributeName = consumeText();
       createAttribute(node);
       handleHtmlTag(node, c);
     } else if (CharMatcher.WHITESPACE.matches(c)) {
       // Handle a value-less attribute, then start looking for another attribute or the end of the
       // tag.
-      currentAttributeName = consumeText(false);
+      currentAttributeName = consumeText();
       createAttribute(node);
       setState(HtmlState.TAG);
     } else {
@@ -680,7 +672,7 @@ public final class HtmlTransformVisitor extends AbstractSoyNodeVisitor<Void> {
                 startState, endState);
           }
 
-          consumeText(false);
+          consumeText();
         }
         break;
       default:

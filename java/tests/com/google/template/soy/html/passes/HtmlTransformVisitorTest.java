@@ -183,7 +183,7 @@ public final class HtmlTransformVisitorTest extends TestCase {
             + "{@param foo : ?}\n"
             + "{let $content kind=\"html\"}\n"
             + "  <div>\n"
-            + "    {if $foo}Hello world{/if}"
+            + "    {if $foo}Hello world{/if}\n"
             + "    {if $foo}\n"
             + "      <div>Hello world</div>\n"
             + "    {/if}\n"
