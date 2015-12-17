@@ -57,13 +57,11 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
       SoyErrorKind.of(
           "Invalid variant expression "
               + "(must be a string literal containing an identifier or global expression).");
-  private static final SoyErrorKind NO_SOY_DOC =
-      SoyErrorKind.of("Delegate templates require SoyDoc.");
 
   /** Pattern for the command text. */
   // 2 capturing groups: del template name, attributes.
   private static final Pattern COMMAND_TEXT_PATTERN =
-      Pattern.compile("([.\\w]+) ( \\s .* | $ )", Pattern.COMMENTS | Pattern.DOTALL);
+      Pattern.compile("^\\s*([.\\w]+)(\\s.*|$)", Pattern.DOTALL);
 
   /** Parser for the attributes in command text. */
   private static final CommandTextAttributesParser ATTRIBUTES_PARSER =
@@ -251,9 +249,6 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
   }
 
   @Override public TemplateDelegateNodeBuilder setSoyDoc(String soyDoc) {
-    if (soyDoc == null) {
-      errorReporter.report(sourceLocation, NO_SOY_DOC);
-    }
     return (TemplateDelegateNodeBuilder) super.setSoyDoc(soyDoc);
   }
 

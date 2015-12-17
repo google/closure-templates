@@ -55,8 +55,8 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder {
       SoyErrorKind.of("Cannot specify both private=\"true\" and visibility=\"{0}\".");
 
   /** Pattern for a template name. */
-  private static final Pattern NONATTRIBUTE_TEMPLATE_NAME =
-      Pattern.compile("^ [.\\w]+ (?= \\s | $)", Pattern.COMMENTS);
+  private static final Pattern TEMPLATE_NAME =
+      Pattern.compile("^\\s*([.\\w]+)(?=\\s|$)", Pattern.DOTALL);
 
   /** Parser for the command text. */
   private static final CommandTextAttributesParser ATTRIBUTES_PARSER =
@@ -105,9 +105,9 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder {
     String commandTextForParsing = cmdText;
 
     String nameAttr;
-    Matcher ntnMatcher = NONATTRIBUTE_TEMPLATE_NAME.matcher(commandTextForParsing);
+    Matcher ntnMatcher = TEMPLATE_NAME.matcher(commandTextForParsing);
     if (ntnMatcher.find()) {
-      nameAttr = ntnMatcher.group();
+      nameAttr = ntnMatcher.group(1);
       commandTextForParsing = commandTextForParsing.substring(ntnMatcher.end()).trim();
     } else {
       errorReporter.report(sourceLocation, MISSING_TEMPLATE_NAME);
