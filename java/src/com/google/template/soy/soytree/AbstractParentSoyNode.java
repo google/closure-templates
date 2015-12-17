@@ -111,9 +111,4 @@ public abstract class AbstractParentSoyNode<N extends SoyNode> extends AbstractS
   @Override public void appendSourceStringForChildren(StringBuilder sb) {
     parentMixin.appendSourceStringForChildren(sb);
   }
-
-  @Override public String toTreeString(int indent) {
-    return parentMixin.toTreeString(indent);
-  }
-
 }

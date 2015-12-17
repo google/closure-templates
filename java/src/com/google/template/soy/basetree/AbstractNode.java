@@ -109,7 +109,4 @@ public abstract class AbstractNode implements Node {
   }
 
 
-  @Override public String toTreeString(int indent) {
-    return SPACES.substring(0, indent) + "[" + this + "]\n";
-  }
 }

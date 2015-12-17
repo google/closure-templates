@@ -162,10 +162,6 @@ public final class LetContentNode extends LetNode implements RenderUnitNode {
     parentMixin.appendSourceStringForChildren(sb);
   }
 
-  @Override public String toTreeString(int indent) {
-    return parentMixin.toTreeString(indent);
-  }
-
   @Override public LetContentNode copy(CopyState copyState) {
     return new LetContentNode(this, copyState);
   }

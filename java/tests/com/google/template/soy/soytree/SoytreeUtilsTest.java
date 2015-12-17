@@ -180,7 +180,6 @@ public final class SoytreeUtilsTest extends TestCase {
     SoyFileSetNode clone = SoytreeUtils.cloneNode(soyTree);
     assertEquals(1, clone.numChildren());
 
-    assertEquals(clone.toTreeString(0), soyTree.toTreeString(0));
     assertEquals(clone.getChild(0).toSourceString(), soyTree.getChild(0).toSourceString());
     // All the localvarnodes, there is one of each type
     ForNode forNode =
@@ -231,7 +230,6 @@ public final class SoytreeUtilsTest extends TestCase {
     assertEquals(1, clone.numChildren());
 
     assertFalse(clone.getId() == soyTree.getId());
-    assertEquals(ignoreNodeIds(clone.toTreeString(0)), ignoreNodeIds(soyTree.toTreeString(0)));
     assertEquals(clone.getChild(0).toSourceString(), soyFile.toSourceString());
   }
 
@@ -261,7 +259,6 @@ public final class SoytreeUtilsTest extends TestCase {
       StandaloneNode clone = clones.get(i);
       StandaloneNode child = template.getChild(i);
       assertFalse(clone.getId() == child.getId());
-      assertEquals(ignoreNodeIds(child.toTreeString(0)), ignoreNodeIds(clone.toTreeString(0)));
       assertEquals(child.toSourceString(), clone.toSourceString());
     }
   }

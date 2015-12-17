@@ -170,10 +170,6 @@ public final class CallParamContentNode extends CallParamNode implements RenderU
     parentMixin.appendSourceStringForChildren(sb);
   }
 
-  @Override public String toTreeString(int indent) {
-    return parentMixin.toTreeString(indent);
-  }
-
   @Override public CallParamContentNode copy(CopyState copyState) {
     return new CallParamContentNode(this, copyState);
   }

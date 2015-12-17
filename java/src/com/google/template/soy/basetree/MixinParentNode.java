@@ -228,19 +228,6 @@ public final class MixinParentNode<N extends Node> {
 
 
   /**
-   * Appends the tree strings for all the children to the given StringBuilder, at one further
-   * indentation level (3 spaces) than the given current indentation level.
-   * @param sb The StringBuilder to which to append the children's tree strings.
-   * @param indent The current indentation level of this parent node.
-   */
-  public void appendTreeStringForChildren(StringBuilder sb, int indent) {
-    for (N child : children) {
-      sb.append(child.toTreeString(indent + 3));
-    }
-  }
-
-
-  /**
    * Builds a string that visually shows the subtree rooted at this node (for debugging).
    * Each line of the string will be indented by the given indentation amount. You should pass an
    * indentation of 0 unless this method is being called as part of building a larger tree string.
@@ -250,8 +237,6 @@ public final class MixinParentNode<N extends Node> {
   public String toTreeString(int indent) {
     StringBuilder sb = new StringBuilder();
     sb.append(SPACES, 0, indent).append("[").append(master).append("]\n");
-    appendTreeStringForChildren(sb, indent);
     return sb.toString();
   }
-
 }

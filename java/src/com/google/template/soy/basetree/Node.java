@@ -113,16 +113,6 @@ public interface Node {
 
 
   /**
-   * Builds a string that visually shows the subtree rooted at this node (for debugging).
-   * Each line of the string will be indented by the given indentation amount. You should pass an
-   * indentation of 0 unless this method is being called as part of building a larger tree string.
-   * @param indent The indentation for each line of the tree string (usually pass 0).
-   * @return A string that visually shows the subtree rooted at this node.
-   */
-  String toTreeString(int indent);
-
-
-  /**
    * Copies this node. The copy's parent pointer is set to null.
    *
    * <p>All copy() overrides should follow this contract:
