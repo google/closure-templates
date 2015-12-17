@@ -20,11 +20,12 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.MainClassUtils.runInternal;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.MainClassUtils.Main;
-import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.error.SoyCompilationException;
-import com.google.template.soy.error.SoyError;
-import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.base.internal.LegacyInternalSyntaxException;
+import com.google.template.soy.base.internal.SoyFileSupplier;
+import com.google.template.soy.error.ErrorPrettyPrinter;
+import com.google.template.soy.error.SnippetFormatter;
 
 import junit.framework.TestCase;
 
@@ -42,33 +43,32 @@ public final class MainClassUtilsTest extends TestCase {
             runInternal(
                 new Main() {
                   @Override
-                  public void main() {}
+                  public CompilationResult main() throws IOException {
+                    return new CompilationResult(
+                        ImmutableList.<LegacyInternalSyntaxException>of(),
+                        new ErrorPrettyPrinter(
+                            new SnippetFormatter(ImmutableMap.<String, SoyFileSupplier>of())));
+                  }
                 }))
         .isEqualTo(0);
   }
 
   public void testMainMethodThrowsIOException() {
-    assertThat(
-            runInternal(
-                new Main() {
-                  @Override
-                  public void main() throws IOException {
-                    throw new IOException();
-                  }
-                }))
-        .isEqualTo(1);
+    assertThat(runInternal(new Main() {
+      @Override
+      public CompilationResult main() throws IOException {
+        throw new IOException();
+      }
+    })).isEqualTo(1);
   }
 
   public void testMainMethodThrowsUncheckedException() {
-    assertThat(
-            runInternal(
-                new Main() {
-                  @Override
-                  public void main() throws IOException {
-                    throw new RuntimeException();
-                  }
-                }))
-        .isEqualTo(1);
+    assertThat(runInternal(new Main() {
+      @Override
+      public CompilationResult main() throws IOException {
+        throw new RuntimeException();
+      }
+    })).isEqualTo(1);
   }
 
   public void testMainMethodReturnsSoyErrorKinds() {
@@ -76,11 +76,12 @@ public final class MainClassUtilsTest extends TestCase {
             runInternal(
                 new Main() {
                   @Override
-                  public void main() {
-                    throw new SoyCompilationException(
+                  public CompilationResult main() throws IOException {
+                    return new CompilationResult(
                         ImmutableList.of(
-                            SoyError.DEFAULT_FACTORY.create(
-                                new SourceLocation("foo.soy"), SoyErrorKind.of(""))));
+                            LegacyInternalSyntaxException.createWithoutMetaInfo("OOPS")),
+                        new ErrorPrettyPrinter(
+                            new SnippetFormatter(ImmutableMap.<String, SoyFileSupplier>of())));
                   }
                 }))
         .isEqualTo(1);

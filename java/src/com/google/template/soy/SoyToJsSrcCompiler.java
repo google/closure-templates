@@ -221,18 +221,17 @@ public final class SoyToJsSrcCompiler {
    * @throws SoySyntaxException If a syntax error is detected.
    */
   public static void main(final String[] args) throws IOException, SoySyntaxException {
-    MainClassUtils.run(
-        new Main() {
-          @Override
-          public void main() throws IOException {
-            new SoyToJsSrcCompiler().execMain(args);
-          }
-        });
+    MainClassUtils.run(new Main() {
+      @Override
+      public CompilationResult main() throws IOException {
+        return new SoyToJsSrcCompiler().execMain(args);
+      }
+    });
   }
 
   private SoyToJsSrcCompiler() {}
 
-  private void execMain(String[] args) throws IOException {
+  private CompilationResult execMain(String[] args) throws IOException {
 
     final CmdLineParser cmdLineParser = MainClassUtils.parseFlags(this, args, USAGE_PREFIX);
 
@@ -278,11 +277,10 @@ public final class SoyToJsSrcCompiler {
 
     // Compile.
     boolean generateLocalizedJs = !locales.isEmpty();
-    if (generateLocalizedJs) {
-      sfs.compileToJsSrcFiles(
-          outputPathFormat, inputPrefix, jsSrcOptions, locales, messageFilePathFormat);
-    } else {
-      sfs.compileToJsSrcFiles(outputPathFormat, inputPrefix, jsSrcOptions, locales, null);
-    }
+    return generateLocalizedJs
+        ? sfs.compileToJsSrcFiles(
+        outputPathFormat, inputPrefix, jsSrcOptions, locales, messageFilePathFormat)
+        : sfs.compileToJsSrcFiles(
+            outputPathFormat, inputPrefix, jsSrcOptions, locales, null);
   }
 }

@@ -16,10 +16,12 @@
 
 package com.google.template.soy;
 
+import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.SoySyntaxException;
+import com.google.template.soy.base.internal.LegacyInternalSyntaxException;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyError;
 import com.google.template.soy.error.SoyErrorKind;
 
 import java.util.ArrayList;
@@ -31,21 +33,12 @@ import java.util.List;
  * @author brndn@google.com (Brendan Linn)
  */
 public final class ErrorReporterImpl implements ErrorReporter {
-  private final List<SoyError> errors = new ArrayList<>();
-  private final SoyError.Factory errorFactory;
-
-  // TODO(lukes): eliminate this default constructor.  It is currently used by a few expr nodes
-  public ErrorReporterImpl() {
-    this.errorFactory = SoyError.DEFAULT_FACTORY;
-  }
-
-  public ErrorReporterImpl(SoyError.Factory defaultFactory) {
-    this.errorFactory = defaultFactory;
-  }
+  private final List<LegacyInternalSyntaxException> errors = new ArrayList<>();
 
   @Override
   public void report(SourceLocation sourceLocation, SoyErrorKind error, Object... args) {
-    errors.add(errorFactory.create(sourceLocation, error, args));
+    errors.add(
+        LegacyInternalSyntaxException.createWithMetaInfo(error.format(args), sourceLocation));
   }
 
   @Override
@@ -62,15 +55,36 @@ public final class ErrorReporterImpl implements ErrorReporter {
   }
 
   /** Returns the full list of errors reported to this error reporter. */
-  public Iterable<SoyError> getErrors() {
-    return ImmutableList.copyOf(errors);
+  public ImmutableCollection<? extends LegacyInternalSyntaxException> getErrors() {
+    ImmutableCollection<? extends LegacyInternalSyntaxException> copy =
+        ImmutableList.copyOf(errors);
+    // TODO(user): remove. ErrorReporter is currently injected as a singleton in SharedModule.
+    // This is not a problem for JS and Python compilations, which are traditional short-lived
+    // binaries, but it is very bad for local development servers that can compile Tofu multiple
+    // times. Every non-initial call to compileToTofu returns all the errors reported by all
+    // previous calls.
+    // The right solution is to provide an appropriate custom scope for the error reporter,
+    // or even better, remove the Guice binding entirely. For now, just clear the error list.
+    errors.clear();
+    return copy;
   }
 
   /**
-   * Returns true if any errors have been reported.
+   * If errors have been reported, throws a single {@link SoySyntaxException} containing
+   * all of the errors as suppressed exceptions.
+   *
+   * <p>This should only be used for entry points that cannot be converted to pretty-print
+   * the {@link SoyErrorKind}s directly (example: {@link SoyFileSet#compileToTofu()}).
    */
-  boolean hasErrors() {
-    return !errors.isEmpty();
+  void throwIfErrorsPresent() throws SoySyntaxException {
+    if (!errors.isEmpty()) {
+      SoySyntaxException combined = new SoySyntaxException("errors during Soy compilation");
+      for (SoySyntaxException e : errors) {
+        combined.addSuppressed(e);
+      }
+      errors.clear();
+      throw combined;
+    }
   }
 
   private static final class CheckpointImpl implements Checkpoint {

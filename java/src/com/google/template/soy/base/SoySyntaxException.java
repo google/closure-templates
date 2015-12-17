@@ -20,11 +20,7 @@ package com.google.template.soy.base;
  * Common super type for Soy syntax errors.
  *
  */
-public abstract class SoySyntaxException extends RuntimeException {
-
-  protected SoySyntaxException() {
-    super();
-  }
+public class SoySyntaxException extends RuntimeException {
 
   /**
    * <p> Important: Do not use outside of Soy code (treat as superpackage-private).

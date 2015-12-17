@@ -19,36 +19,42 @@ package com.google.template.soy.error;
 import com.google.common.base.Optional;
 import com.google.common.base.Strings;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.LegacyInternalSyntaxException;
 
 import java.io.IOException;
+import java.io.PrintStream;
 
 /**
- * Displays {@link SoyErrorKind}s in a useful way, with a snippet of Soy source
+ * Displays {@link LegacyInternalSyntaxException}s in a useful way, with a snippet of Soy source
  * code containing the error and a caret pointing at the exact place where the error was found.
  *
  * @author brndn@google.com (Brendan Linn)
  */
-public final class PrettyErrorFactory implements SoyError.Factory {
+public final class ErrorPrettyPrinter {
 
   private final SnippetFormatter snippetFormatter;
 
-  public PrettyErrorFactory(SnippetFormatter snippetFormatter) {
+  public ErrorPrettyPrinter(SnippetFormatter snippetFormatter) {
     this.snippetFormatter = snippetFormatter;
   }
 
-  @Override
-  public SoyError create(SourceLocation location, SoyErrorKind kind, Object ...args) {
-    String message = kind.format(args);
-    return SoyError.createError(location, message, getFormattedError(location, message));
-  }
-
-  private String getFormattedError(SourceLocation sourceLocation, String message) {
+  /**
+   * Displays {@code e} on the given {@link java.io.PrintStream} in a useful way, with a snippet
+   * of Soy source code containing the error and a caret pointing at the exact place where the error
+   * was found.
+   */
+  public void print(LegacyInternalSyntaxException e, PrintStream err) {
+    // We build the full error message into a buffer and then print so that we issue one write
+    // operation to the print stream.  The most likely printstream is System.err which tends to be
+    // used concurrently.  By issuing a single write we ensure that our message doesn't get
+    // scrambled with concurrent writes.
     StringBuilder builder = new StringBuilder();
 
     // Start by printing the actual text of the exception.
-    builder.append("In file " + sourceLocation + ": " + message).append("\n");
+    builder.append(e.getMessage()).append("\n");
 
     // Try to find a snippet of source code associated with the exception and print it.
+    SourceLocation sourceLocation = e.getSourceLocation();
     Optional<String> snippet;
     try {
       snippet = snippetFormatter.getSnippet(sourceLocation);
@@ -62,10 +68,10 @@ public final class PrettyErrorFactory implements SoyError.Factory {
       // Print a caret below the error.
       // TODO(brndn): SourceLocation.beginColumn is occasionally -1. Review all SoySyntaxException
       // instantiations and ensure the SourceLocation is well-formed.
-      int beginColumn = Math.max(sourceLocation.getBeginColumn(), 1);
+      int beginColumn = Math.max(e.getSourceLocation().getBeginColumn(), 1);
       String caretLine = Strings.repeat(" ", beginColumn - 1) + "^";
       builder.append(caretLine).append("\n");
     }
-    return builder.toString();
+    err.print(builder.toString());
   }
 }

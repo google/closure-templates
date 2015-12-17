@@ -117,7 +117,6 @@ public final class SoyMsgExtractor {
    * @throws SoySyntaxException If a syntax error is detected.
    */
   public static void main(String... args) throws IOException {
-    // TODO(lukes): why isn't this using MainClassUtils.run?
     (new SoyMsgExtractor()).execMain(args);
   }
 

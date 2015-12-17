@@ -28,7 +28,6 @@ import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.template.soy.SoyFileSet.Builder;
 import com.google.template.soy.base.internal.SoyFileKind;
-import com.google.template.soy.error.SoyCompilationException;
 
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
@@ -55,7 +54,7 @@ final class MainClassUtils {
    * Used by {@link #run} to catch unexpected exceptions and print errors.
    */
   interface Main {
-    void main() throws IOException, SoyCompilationException;
+    CompilationResult main() throws IOException;
   }
 
   private MainClassUtils() {}
@@ -191,12 +190,9 @@ final class MainClassUtils {
 
   @VisibleForTesting
   static int runInternal(Main method) {
+    CompilationResult result;
     try {
-      method.main();
-      return 0;
-    } catch (SoyCompilationException compilationException) {
-      System.err.println(compilationException.getMessage());
-      return 1;
+      result = method.main();
     } catch (Exception e) {
       System.err.println("INTERNAL SOY ERROR.\n"
           + "Please open an issue at "
@@ -206,6 +202,12 @@ final class MainClassUtils {
       e.printStackTrace(System.err);
       return 1;
     }
+
+    if (!result.isSuccess()) {
+      result.printErrors(System.err);
+    }
+
+    return result.isSuccess() ? 0 : 1;
   }
 
 
