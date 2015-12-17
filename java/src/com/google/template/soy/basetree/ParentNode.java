@@ -140,14 +140,4 @@ public interface ParentNode<N extends Node> extends Node {
    * @param sb The StringBuilder to which to append the children's source strings.
    */
   public void appendSourceStringForChildren(StringBuilder sb);
-
-
-  /**
-   * Appends the tree strings for all the children to the given StringBuilder, at one further
-   * indentation level (3 spaces) than the given current indentation level.
-   * @param sb The StringBuilder to which to append the children's tree strings.
-   * @param indent The current indentation level of this parent node.
-   */
-  public void appendTreeStringForChildren(StringBuilder sb, int indent);
-
 }

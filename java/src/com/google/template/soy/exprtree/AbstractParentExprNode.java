@@ -133,10 +133,6 @@ public abstract class AbstractParentExprNode extends AbstractExprNode implements
     parentMixin.appendSourceStringForChildren(sb);
   }
 
-  @Override public void appendTreeStringForChildren(StringBuilder sb, int indent) {
-    parentMixin.appendTreeStringForChildren(sb, indent);
-  }
-
   @Override public String toTreeString(int indent) {
     return parentMixin.toTreeString(indent);
   }
