@@ -127,6 +127,18 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       .appendLine("var iattr = IncrementalDom.attr;");
   }
 
+  @Override protected String getTemplateReturnType(TemplateNode node) {
+    // TODO(sparhami) need to deal with URI types properly (like the JS code gen does) so that the
+    // usage is safe. For now, don't include any return type so compilation will fail if someone
+    // tries to create a template of kind="uri".
+    if (node.getContentKind() == ContentKind.TEXT) {
+      return "string";
+    }
+
+    // This template does not return any content but rather contains Incremental DOM instructions.
+    return "void";
+  }
+
   @Override protected void visitTemplateNode(TemplateNode node) {
     getJsCodeBuilder().setContentKind(node.getContentKind());
     super.visitTemplateNode(node);
