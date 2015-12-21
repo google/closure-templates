@@ -16,6 +16,7 @@
 
 package com.google.template.soy.error;
 
+
 import com.google.common.base.Preconditions;
 
 import java.text.MessageFormat;
