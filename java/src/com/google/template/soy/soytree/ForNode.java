@@ -97,7 +97,7 @@ public final class ForNode extends AbstractBlockCommandNode
     }
   }
 
-  private static final SoyErrorKind INVALID_COMMAND_TEXT =
+  static final SoyErrorKind INVALID_COMMAND_TEXT =
       SoyErrorKind.of("Invalid ''for'' command text");
   private static final SoyErrorKind INVALID_RANGE_SPECIFICATION =
       SoyErrorKind.of("Invalid range specification");
@@ -131,6 +131,10 @@ public final class ForNode extends AbstractBlockCommandNode
     Matcher matcher = COMMAND_TEXT_PATTERN.matcher(commandText);
     if (!matcher.matches()) {
       errorReporter.report(sourceLocation, INVALID_COMMAND_TEXT);
+      this.rangeArgs = RangeArgs.ERROR;
+      this.var = new LocalVar("error", this, null);
+      // Return early to avoid IllegalStateException below
+      return;
     }
 
     String varName = parseVarName(

@@ -29,6 +29,12 @@ import junit.framework.TestCase;
  */
 public final class ForNodeTest extends TestCase {
 
+  public void testInvalidForeachUsage() {
+    assertThatTemplateContent("{for $x in $var}{/for}\n")
+        .causesError(ForNode.INVALID_COMMAND_TEXT)
+        .at(1, 1);
+  }
+
   public void testInvalidRangeInFor() {
     assertThatTemplateContent("{for $x in range()}{/for}\n")
         .causesError(ExpressionParser.INVALID_EXPRESSION_LIST)

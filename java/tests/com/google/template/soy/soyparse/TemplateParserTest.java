@@ -1085,7 +1085,7 @@ public final class TemplateParserTest extends TestCase {
         .at(1, 1);
 
     // Test error case.
-    TemplateSubject.assertThatTemplateContent("{let $alpha: $boo.foo}")
+    TemplateSubject.assertThatTemplateContent("{let $alpha: $boo.foo}{/let}")
         .causesError(LetContentNode.NON_SELF_ENDING_WITH_VALUE)
         .at(1, 1);
   }

@@ -66,11 +66,14 @@ public final class TemplateSubject extends Subject<TemplateSubject, String> {
     try {
       new TemplateParser(new FixedIdGenerator(), getSubject(), "example.soy", 1, 0, errorReporter)
           .parseTemplateContent();
-    } finally {
-      Truth.assertThat(errorReporter.locationsForError.keySet()).contains(error);
-      actualSourceLocation = Iterables.getFirst(errorReporter.locationsForError.get(error), null);
-      return this;
+    } catch (ParseException t) {
+      // this should be added to the ErrorReporter... or really, we just shouldn't be calling this
+      // method and instead should call SoyFileParser, which does the right thing.
+      throw new RuntimeException(t);
     }
+    Truth.assertThat(errorReporter.locationsForError.keySet()).contains(error);
+    actualSourceLocation = Iterables.getFirst(errorReporter.locationsForError.get(error), null);
+    return this;
   }
 
   public void isWellFormed() {
