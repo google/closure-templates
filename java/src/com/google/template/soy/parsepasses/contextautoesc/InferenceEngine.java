@@ -552,7 +552,8 @@ final class InferenceEngine {
             case STRICT:
             case CONTEXTUAL:
               // Infer one.
-              escapingModes = escapingModesToSet = context.getEscapingModes();
+              escapingModes = escapingModesToSet =
+                  context.getEscapingModes(printNode.getChildren());
               break;
             case NOAUTOESCAPE:
               // Nothing to do. Just assume that the end context is the same as the start context.
@@ -656,7 +657,8 @@ final class InferenceEngine {
           // indicates that there's no valid escaper for this context. My plan is to actually have
           // getEscapingModes() itself throw the exception, but this requires some weeding out of
           // bad existing templates.
-          inferences.setEscapingDirectives(callNode, callContext, callContext.getEscapingModes());
+          inferences.setEscapingDirectives(callNode, callContext,
+              callContext.getEscapingModes(ImmutableList.<PrintDirectiveNode>of()));
           return Pair.of(templateName, getContextAfterDynamicValue(callNode, startContext));
         } else if (startContext.state == Context.State.TEXT) {
           // Contextualize the callee in TEXT mode. It's okay to call any template from TEXT mode

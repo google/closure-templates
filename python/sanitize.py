@@ -246,14 +246,14 @@ def filter_normalize_media_uri(value):
 
 
 def filter_trusted_resource_uri(value):
-  # TODO(shwetakarwa): This needs to be changed once all the legacy URLs are
-  # taken care of.
-  return value
+  if is_content_kind(value, CONTENT_KIND.TRUSTED_RESOURCE_URI):
+    return value.content
+  if isinstance(value, str):
+    return value
+  return 'about:invalid#' + _INNOCUOUS_OUTPUT
 
 
 def bless_string_as_trusted_resource_url_for_legacy(value):
-  # TODO(shwetakarwa): Change this to sanitized content of kind
-  # TRUSTED_RESOURCE_URI.
   return value
 
 

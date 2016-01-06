@@ -454,42 +454,39 @@ public final class Sanitizers {
 
 
   /**
-   * This is supposed to make sure the given input is an instance of either trustedResourceUrl
-   * or trustedString. But for now only return the value coerced to string.
+   * Makes sure the given input is an instance of either trustedResourceUrl or trustedString.
    */
-  public static SoyValue filterTrustedResourceUri(SoyValue value) {
-    // TODO(shwetakarwa): This needs to be changed once all the legacy URLs are taken care of.
-    return value;
+  public static String filterTrustedResourceUri(SoyValue value) {
+    if (isSanitizedContentOfKind(value, SanitizedContent.ContentKind.TRUSTED_RESOURCE_URI)) {
+      return value.coerceToString();
+    }
+    LOGGER.log(Level.WARNING, "|filterTrustedResourceUri received bad value {0}", value);
+    return "about:invalid#" + EscapingConventions.INNOCUOUS_OUTPUT;
   }
 
 
   /**
-   * For string inputs this function just returns the input string itself change to SoyValue.
+   * For string inputs this function just returns the input string itself.
    */
-  public static SoyValue filterTrustedResourceUri(String value) {
-    // TODO(shwetakarwa): This needs to be changed once all the legacy URLs are taken care of. Will
-    // probably need to return string.
-    return StringData.forValue(value);
+  public static String filterTrustedResourceUri(String value) {
+    return value;
   }
 
   /**
    * For any resource string/variable which has
-   * |blessStringAsTrustedResuorceUrlForLegacy directive unsafely changes it to
-   * sanitizedContent of kind TRUSTED_RESOURCE_URI.
+   * |blessStringAsTrustedResuorceUrlForLegacy directive return the input value as is.
    */
   public static SoyValue blessStringAsTrustedResourceUrlForLegacy(SoyValue value) {
-    // TODO(shwetakarwa): Implement this while implementing filterTrustedResourceUri.
     return value;
   }
 
 
   /**
    * For any resource string/variable which has
-   * |blessStringAsTrustedResuorceUrlForLegacy directive unsafely changes it to
-   * sanitizedContent of kind TRUSTED_RESOURCE_URI.
+   * |blessStringAsTrustedResuorceUrlForLegacy directive return the input value as is after
+   * converting it into SoyValue.
    */
   public static SoyValue blessStringAsTrustedResourceUrlForLegacy(String value) {
-    // TODO(shwetakarwa): Implement this while implementing filterTrustedResourceUri.
     return StringData.forValue(value);
   }
 

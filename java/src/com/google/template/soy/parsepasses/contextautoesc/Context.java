@@ -23,10 +23,12 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.soytree.PrintDirectiveNode;
 
 import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 
@@ -272,7 +274,7 @@ public final class Context {
    * @return Empty if there is no appropriate escaping convention to use,
    *     e.g. for comments which do not have escaping conventions.
    */
-  public ImmutableList<EscapingMode> getEscapingModes() {
+  public ImmutableList<EscapingMode> getEscapingModes(List<PrintDirectiveNode> printDirectives) {
     EscapingMode escapingMode = state.escapingMode;
 
     // Short circuit on the error case first.
@@ -286,11 +288,20 @@ public final class Context {
 
     // Keep track of whether an URI is a TrustedResource. We want some resource URIs like sources to
     // be safe and not in attacker control. Hence, a restriction that these resouce URIs need to be
-    // compile time constasts is being set. To makes sure these are compile time constants these
+    // compile time constants is being set. To makes sure these are compile time constants these
     // either need to be of type string or TrustedResourceUrl.
     EscapingMode truMode = null;
     if (uriType == UriType.TRUSTED_RESOURCE) {
       truMode = EscapingMode.FILTER_TRUSTED_RESOURCE_URI;
+      for (PrintDirectiveNode directive : printDirectives) {
+        // If a print directive with the name "|blessStringAsTrustedResourceUrlForLegacy" exists
+        // we don't want to enforce presence of a trusted resource URL. This is mainly done so as
+        // not to break the legacy soy files.
+        if (directive.getName().equals("|blessStringAsTrustedResourceUrlForLegacy")) {
+          truMode = null;
+          break;
+        }
+      }
     }
 
     // Make sure we're using the right part for a URI context.
@@ -299,16 +310,20 @@ public final class Context {
         escapingMode = EscapingMode.ESCAPE_URI;
         break;
       case START:
-        // We need to filter substitutions at the start of a URL since they can switch the protocol
-        // to a code loading protocol like javascript:.
-        if (escapingMode != EscapingMode.NORMALIZE_URI) {
-          extraEscapingMode = escapingMode;
-        }
-        // Use a different escaping mode depending on what kind of URL is being used.
-        if (uriType == UriType.MEDIA) {
-          escapingMode = EscapingMode.FILTER_NORMALIZE_MEDIA_URI;
-        } else {
-          escapingMode = EscapingMode.FILTER_NORMALIZE_URI;
+        if (truMode == null) {
+          // We need to filter substitutions at the start of a URL since they can switch the
+          // protocol to a code loading protocol like javascript:. We don't want these filters to
+          // happen when the URL in question is TrustedResourceUrl as we are sure it is not in
+          // attacker control.
+          if (escapingMode != EscapingMode.NORMALIZE_URI) {
+            extraEscapingMode = escapingMode;
+          }
+          // Use a different escaping mode depending on what kind of URL is being used.
+          if (uriType == UriType.MEDIA) {
+            escapingMode = EscapingMode.FILTER_NORMALIZE_MEDIA_URI;
+          } else {
+            escapingMode = EscapingMode.FILTER_NORMALIZE_URI;
+          }
         }
         break;
       case UNKNOWN:
@@ -395,7 +410,6 @@ public final class Context {
       case NONE:
         break;
     }
-
     // Return and immutable list of (truMode, escapingMode, extraEscapingMode)
     ImmutableList.Builder<EscapingMode> escapingListBuilder = new ImmutableList.Builder<>();
     if (truMode != null) {
@@ -470,7 +484,8 @@ public final class Context {
         }
         // In other contexts like JS and CSS strings, it makes sense to treat the message's
         // placeholders as plain text, but escape the entire result of message evaluation.
-        return Optional.of(new MsgEscapingStrategy(new Context(State.TEXT), getEscapingModes()));
+        return Optional.of(new MsgEscapingStrategy(new Context(State.TEXT),
+            getEscapingModes(ImmutableList.<PrintDirectiveNode>of())));
 
       case HTML_RCDATA:
       case HTML_NORMAL_ATTR_VALUE:

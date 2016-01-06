@@ -1556,31 +1556,36 @@ soy.$$filterNormalizeMediaUri = function(value) {
 
 
 /**
- * Vets a URI for usage as a resource.
+ * Vets a URI for usage as a resource. Makes sure the input value is a compile
+ * time constant or a TrustedResouce not in attacker's control.
  *
  * @param {*} value The value to filter.
- * @return {*} current just the value.
+ * @return {string} The value content.
  */
 soy.$$filterTrustedResourceUri = function(value) {
-  // Makes sure this is a compile time constant or a TrustedResouce not in
-  // attacker's control.
-  // TODO(shwetakarwa): This needs to be changed once all the legacy URLs are
-  // taken care of.
-  return value;
+  if (soydata.isContentKind(value,
+      soydata.SanitizedContentKind.TRUSTED_RESOURCE_URI)) {
+    goog.asserts.assert(
+        value.constructor === soydata.SanitizedTrustedResourceUri);
+    return value.getContent();
+  }
+  if (value instanceof goog.html.TrustedResourceUrl) {
+    return goog.html.TrustedResourceUrl.unwrap(value);
+  }
+  goog.asserts.fail('Bad value `%s` for |filterTrustedResourceUri',
+      [String(value)]);
+  return 'about:invalid#zSoyz';
 };
 
 
 /**
  * For any resource string/variable which has
- * |blessStringAsTrustedResuorceUrlForLegacy directive unsafely change it to
- * sanitizedContent of kind TRUSTED_RESOURCE_URI.
+ * |blessStringAsTrustedResuorceUrlForLegacy directive return the value as is.
  *
  * @param {*} value The value to be blessed. Might not be a string
- * @return {*} current just the value.
+ * @return {*} value Return current value.
  */
 soy.$$blessStringAsTrustedResourceUrlForLegacy = function(value) {
-  // TODO(shwetakarwa): Implement this while implementing
-  // filterTrustedResourceUri.
   return value;
 };
 
