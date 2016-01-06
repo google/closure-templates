@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.coredirectives.EscapeHtmlDirective;
-import com.google.template.soy.coredirectives.NoAutoescapeDirective;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
@@ -89,8 +88,7 @@ final class PerformDeprecatedNonContextualAutoescapeVisitor
 
   @Override protected void visitPrintNode(PrintNode node) {
 
-    if (autoescapeMode != AutoescapeMode.NONCONTEXTUAL &&
-        autoescapeMode != AutoescapeMode.NOAUTOESCAPE) {
+    if (autoescapeMode != AutoescapeMode.NONCONTEXTUAL) {
       // We're using one of the more modern escape modes; do a sanity check and return.  Make sure
       // that this pass is never used without first running the contextual autoescaper.
       Preconditions.checkState(
@@ -109,15 +107,7 @@ final class PerformDeprecatedNonContextualAutoescapeVisitor
       String directiveName = directiveNode.getName();
       if (autoescapeCancellingDirectives.contains(directiveName)) {
         shouldCancelAutoescape = true;
-        if (autoescapeMode == AutoescapeMode.NOAUTOESCAPE &&
-            directiveName.equals(NoAutoescapeDirective.NAME)) {
-          // Remove reundant noAutoescape in autoescape="deprecated-noautoescape" templates;
-          // however, keep it for other templates. This ensures filterNoAutoescape gets called for
-          // all (even non-contextually) autoescaped templates, as a safeguard against tainted
-          // ContentKind.TEXT from ending up noAutoescaped. BUT, deprecated-noautoescape templates
-          // make no guarantees and are often used in the same way kind="text" is.
-          node.removeChild(directiveNode);
-        }
+        break;
       }
     }
 

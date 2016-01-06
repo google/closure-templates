@@ -56,8 +56,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-import javax.annotation.Nullable;
-
 /**
  * Chooses appropriate escaping modes for <code>{print}</code> commands and derives templates as
  * necessary.
@@ -169,7 +167,7 @@ final class InferenceEngine {
   private final Inferences inferences;
 
   /** The escaping mode to assume when none is specified. */
-  @Nullable private final EscapingMode defaultEscapingMode;
+  private final EscapingMode defaultEscapingMode;
 
   /**
    * Soy directives that cancel autoescaping (see
@@ -195,8 +193,7 @@ final class InferenceEngine {
     this.inferences = inferences;
     this.autoescapeCancellingDirectives = autoescapeCancellingDirectives;
     this.slicedRawTextNodesBuilder = slicedRawTextNodesBuilder;
-    this.defaultEscapingMode = (autoescapeMode != AutoescapeMode.NOAUTOESCAPE) ?
-        EscapingMode.ESCAPE_HTML : null;
+    this.defaultEscapingMode = EscapingMode.ESCAPE_HTML;
     this.errorReporter = errorReporter;
   }
 
@@ -554,9 +551,6 @@ final class InferenceEngine {
               // Infer one.
               escapingModes = escapingModesToSet =
                   context.getEscapingModes(printNode.getChildren());
-              break;
-            case NOAUTOESCAPE:
-              // Nothing to do. Just assume that the end context is the same as the start context.
               break;
             case NONCONTEXTUAL:
               escapingModes = ImmutableList.of(defaultEscapingMode);

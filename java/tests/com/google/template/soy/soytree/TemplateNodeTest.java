@@ -384,8 +384,7 @@ public class TemplateNodeTest extends TestCase {
       assertThat(e.getMessage()).contains(
           "Invalid value for attribute 'autoescape' in 'template' command text "
               + "(autoescape=\"false\"). Valid values are "
-              + "[deprecated-noautoescape, deprecated-noncontextual, deprecated-contextual, "
-              + "strict].");
+              + "[deprecated-noncontextual, deprecated-contextual, strict].");
     }
   }
 

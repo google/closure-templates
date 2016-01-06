@@ -29,9 +29,6 @@ import java.util.Set;
  *
  */
 public enum AutoescapeMode {
-
-  /** Auto-escaping is off for the template. */
-  NOAUTOESCAPE("deprecated-noautoescape"),
   /** Auto-escaping is on for the template so directiveless prints will be HTML escaped. */
   NONCONTEXTUAL("deprecated-noncontextual"),
   /**
@@ -91,13 +88,13 @@ public enum AutoescapeMode {
   /**
    * Returns the parsed value.
    */
-  public static AutoescapeMode parseAutoEscapeMode(String autoescapeModeStr, SourceLocation loc,
+  static AutoescapeMode parseAutoEscapeMode(String autoescapeModeStr, SourceLocation loc,
       ErrorReporter reporter) {
     AutoescapeMode parsed = valueToModeMap.get(autoescapeModeStr);
     if (parsed == null) {
       // failed to parse!
       reporter.report(loc, INVALID_AUTOESCAPE_ERROR, autoescapeModeStr,  valueToModeMap.keySet());
-      return AutoescapeMode.NOAUTOESCAPE;  // default for unparsed
+      return AutoescapeMode.STRICT;  // default for unparsed
     } else {
       return parsed;
     }

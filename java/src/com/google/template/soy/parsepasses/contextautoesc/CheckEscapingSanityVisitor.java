@@ -135,12 +135,6 @@ final class CheckEscapingSanityVisitor extends AbstractSoyNodeVisitor<Void> {
       RenderUnitNode node, String nodeName, String selfClosingExample) {
     final AutoescapeMode oldMode = autoescapeMode;
     if (node.getContentKind() != null) {
-      if (autoescapeMode == AutoescapeMode.NOAUTOESCAPE) {
-        throw SoyAutoescapeException.createWithNode(
-            "{" + nodeName + "} node with 'kind' attribute is not permitted in non-autoescaped "
-            + "templates: " + node.toSourceString(),
-            node);
-      }
       // Temporarily enter strict mode.
       autoescapeMode = AutoescapeMode.STRICT;
     } else if (autoescapeMode == AutoescapeMode.STRICT) {

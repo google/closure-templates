@@ -45,8 +45,8 @@
 
 
 /** @param moo One moo. */
-{template .mooHelper_ private="true" autoescape="deprecated-noautoescape"}
+{template .mooHelper_ private="true" autoescape="deprecated-noncontextual"}
   {msg desc="Tells what a cow says."}
-    Cow says {$moo}.
+    Cow says {$moo |noAutoescape}.
   {/msg}{\n}
 {/template}

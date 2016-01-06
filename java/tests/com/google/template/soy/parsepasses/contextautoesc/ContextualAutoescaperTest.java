@@ -1228,28 +1228,6 @@ public final class ContextualAutoescaperTest extends TestCase {
             "  {@param y: ?}\n",
             "<b>{call .foo /}</b> {$y}\n",
             "{/template}"));
-
-    assertContextualRewriting(
-        join(
-            "{namespace ns}\n\n",
-            "{template .foo autoescape=\"deprecated-contextual\" private=\"true\"}\n",
-            "  {@param? x: ?}\n",
-            "{$x |escapeHtml}\n",
-            "{/template}\n\n",
-            "{template .bar autoescape=\"deprecated-noautoescape\"}\n",
-            "  {@param y: ?}\n",
-            "<b>{call .foo /}</b> {$y}\n",
-            "{/template}"),
-        join(
-            "{namespace ns}\n\n",
-            "{template .foo autoescape=\"deprecated-contextual\" private=\"true\"}\n",
-            "  {@param? x: ?}\n",
-            "{$x}\n",
-            "{/template}\n\n",
-            "{template .bar autoescape=\"deprecated-noautoescape\"}\n",
-            "  {@param y: ?}\n",
-            "<b>{call .foo /}</b> {$y}\n",
-            "{/template}"));
   }
 
   public void testUnquotedAttributes() throws Exception {
@@ -2604,44 +2582,6 @@ public final class ContextualAutoescaperTest extends TestCase {
             "{template .callee autoescape=\"strict\" private=\"true\" kind=\"text\"}\n",
             "  {@param? x: ?}\n",
               "title={$x}\n",
-            "{/template}"));
-  }
-
-
-  // Tests that noautoescape templates don't have let nodes with kind attribute.
-  public void testTypedLetBlockNotAllowedInNoAutoescapeTemplate() {
-    assertRewriteFails(
-        "In file no-path:5:1, template ns.t: " +
-        "{let} node with 'kind' attribute is not permitted in non-autoescaped " +
-        "templates: {let $l kind=\"html\"}<b>{$y}</b>{/let}",
-        join(
-            "{namespace ns}\n\n",
-            "{template .t autoescape=\"deprecated-noautoescape\"}\n",
-            "  {@param y: ?}\n",
-            "{let $l kind=\"html\"}",
-              "<b>{$y}</b>",
-            "{/let}\n",
-            "{/template}"));
-  }
-
-
-  // Tests that noautoescape templates don't have param nodes with kind attribute.
-  public void testTypedParamBlockNotAllowedInNoAutoescapeTemplate() {
-    assertRewriteFails(
-        "In file no-path:5:20, template ns.caller: " +
-        "{param} node with 'kind' attribute is not permitted in non-autoescaped " +
-        "templates: {param x kind=\"html\"}<b>{$y}</b>;{/param}",
-        join(
-            "{namespace ns}\n\n",
-            "{template .caller autoescape=\"deprecated-noautoescape\"}\n",
-            "  {@param y: ?}\n",
-              "<div>",
-                "{call .callee}{param x kind=\"html\"}<b>{$y}</b>;{/param}{/call}",
-              "</div>\n",
-            "{/template}\n\n",
-            "{template .callee autoescape=\"deprecated-contextual\" private=\"true\"}\n",
-            "  {@param x: ?}\n",
-              "<b>{$x}</b>\n",
             "{/template}"));
   }
 
