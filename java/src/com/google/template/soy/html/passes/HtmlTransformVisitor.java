@@ -560,7 +560,7 @@ public final class HtmlTransformVisitor extends AbstractSoyNodeVisitor<Void> {
     } else if (node.getContentKind() == ContentKind.ATTRIBUTES) {
       HtmlState startState = getState();
       setState(HtmlState.TAG);
-      visitChildren(node);
+      visitChildrenAllowingConcurrentModification(node);
       setState(startState);
     }
   }
