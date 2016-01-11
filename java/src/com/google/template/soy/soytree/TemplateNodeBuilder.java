@@ -257,7 +257,6 @@ public abstract class TemplateNodeBuilder {
    * reporting before the TemplateNode is ready to be built.
    */
   public String getTemplateNameForUserMsgs() {
-    Preconditions.checkState(templateNameForUserMsgs != null);
     return templateNameForUserMsgs;
   }
 
@@ -389,7 +388,7 @@ public abstract class TemplateNodeBuilder {
     AutoescapeMode autoescapeMode;
     String autoescapeModeStr = attributes.get("autoescape");
     if (autoescapeModeStr != null) {
-      autoescapeMode = parseAutoEscapeMode(autoescapeModeStr, sourceLocation, errorReporter);
+      autoescapeMode = parseAutoEscapeMode(autoescapeModeStr);
     } else {
       autoescapeMode = soyFileHeaderInfo.defaultAutoescapeMode;  // inherit from file default
     }
@@ -509,7 +508,6 @@ public abstract class TemplateNodeBuilder {
   }
 
   protected String getTemplateName() {
-    Preconditions.checkState(templateName != null);
     return templateName;
   }
 

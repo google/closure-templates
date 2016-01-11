@@ -17,11 +17,14 @@
 package com.google.template.soy.sharedpasses.render;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
 import static com.google.template.soy.shared.SharedTestUtils.untypedTemplateBodyForExpression;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.template.soy.SoyFileSetParserBuilder;
@@ -38,7 +41,7 @@ import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
-import com.google.template.soy.error.ExplodingErrorReporter;
+import com.google.template.soy.error.FormattingErrorReporter;
 import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
@@ -49,6 +52,7 @@ import com.google.template.soy.soytree.PrintNode;
 
 import junit.framework.TestCase;
 
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -176,30 +180,41 @@ public class EvalVisitorTest extends TestCase {
   /**
    * Asserts that evaluating the given expression causes a ParseException.
    * @param expression The expression to evaluate.
+   * @return the error messages
    */
-  private void assertParseError(String expression) {
-    try {
-      new ExpressionParser(expression, SourceLocation.UNKNOWN, ExplodingErrorReporter.get())
-          .parseExpression();
-    } catch (IllegalStateException e) {
-      return; // passes
+  private ImmutableList<String> assertParseError(String expression) {
+    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+    new ExpressionParser(expression, SourceLocation.UNKNOWN, errorReporter).parseExpression();
+    ImmutableList<String> errorMessages = errorReporter.getErrorMessages();
+    if (errorMessages.isEmpty()) {
+      fail("expected parse error, got none");
     }
-    fail("expected parse error, got none");
+    return errorMessages;
   }
 
   /**
    * Asserts that evaluating the given expression causes a ParseException.
    * @param expression The expression to evaluate.
    */
-  private void assertParseError(String expression, String errorMsgSubstring) {
-    try {
-      new ExpressionParser(expression, SourceLocation.UNKNOWN, ExplodingErrorReporter.get())
-          .parseExpression();
-    } catch (IllegalStateException e) {
-      assertThat(e.getMessage()).contains(errorMsgSubstring);
-      return;
+  private void assertParseError(String expression, String... errorMsgSubstrings) {
+    ImmutableList<String> errorMessages = assertParseError(expression);
+    Set<String> expectedStrings = ImmutableSet.copyOf(errorMsgSubstrings);
+    Set<String> matchedSubstrings = new HashSet<>();
+    Set<String> unmatchedErrors = new HashSet<>();
+    for (String errorMessage : errorMessages) {
+      unmatchedErrors.add(errorMessage);
+      for (String possibleMatch : expectedStrings) {
+        if (errorMessage.contains(possibleMatch)) {
+          matchedSubstrings.add(possibleMatch);
+          unmatchedErrors.remove(errorMessage);
+          break;
+        }
+      }
     }
-    fail("expected parse error, got none");
+    assertWithMessage("Expected all errors to be matched").that(unmatchedErrors).isEmpty();
+    assertWithMessage("Expected all expected substrings to match something")
+        .that(Sets.difference(expectedStrings, matchedSubstrings))
+        .isEmpty();
   }
 
 
@@ -312,16 +327,17 @@ public class EvalVisitorTest extends TestCase {
     // Test error on single-identifier key.
     assertParseError(
         "[aaa: 'blah',]",
-        "Disallowed single-identifier key \"aaa\" in map literal");
+        "Disallowed single-identifier key \"aaa\" in map literal",
+        "Encountered \" \":\" \": \"\" at line");
     assertParseError(
         "['aaa': 'blah', bbb: 123]",
-        "Disallowed single-identifier key \"bbb\" in map literal");
+        "Disallowed single-identifier key \"bbb\" in map literal",
+        "Encountered \" \":\" \": \"\" at line");
 
     // Test last value overwrites earlier value for the same key.
     result = (SoyDict) eval("['baz': 'blah', $foo.bar: 'bluh']");
     assertThat(result.getField("baz").stringValue()).isEqualTo("bluh");
   }
-
 
   public void testEvalDataRefBasic() throws Exception {
 

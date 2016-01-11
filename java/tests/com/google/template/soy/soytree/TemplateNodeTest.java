@@ -355,37 +355,34 @@ public class TemplateNodeTest extends TestCase {
 
   public void testCommandTextErrors() {
     FormattingErrorReporter errorReporter = new FormattingErrorReporter();
-    try {
-      new TemplateBasicNodeBuilder(
-          SIMPLE_FILE_HEADER_INFO, SourceLocation.UNKNOWN, errorReporter, TYPE_REGISTRY)
-          .setId(0)
-          .setCmdText("autoescape=\"deprecated-noncontextual\"")
-          .setSoyDoc("/***/")
-          .build();
-      fail();
-    } catch (IllegalStateException e) {
-      assertThat(errorReporter.getErrorMessages()).hasSize(1);
-      assertThat(errorReporter.getErrorMessages().get(0)).contains("Missing template name");
-    }
+    new TemplateBasicNodeBuilder(
+            SIMPLE_FILE_HEADER_INFO, SourceLocation.UNKNOWN, errorReporter, TYPE_REGISTRY)
+        .setId(0)
+        .setCmdText("autoescape=\"deprecated-noncontextual\"")
+        .setSoyDoc("/***/")
+        .build();
+    assertThat(errorReporter.getErrorMessages()).containsExactly("Missing template name.");
 
-    try {
-      templateBasicNode()
-          .setId(0).setCmdText(".foo autoescape=\"strict").setSoyDoc("/***/").build();
-      fail();
-    } catch (IllegalStateException e) {
-      assertThat(e.getMessage()).contains(
-          "Malformed attributes in 'template' command text (autoescape=\"strict).");
-    }
-    try {
-      templateBasicNode()
-          .setId(0).setCmdText(".foo autoescape=\"false\"").setSoyDoc("/***/").build();
-      fail();
-    } catch (IllegalStateException e) {
-      assertThat(e.getMessage()).contains(
-          "Invalid value for attribute 'autoescape' in 'template' command text "
-              + "(autoescape=\"false\"). Valid values are "
-              + "[deprecated-noncontextual, deprecated-contextual, strict].");
-    }
+    errorReporter = new FormattingErrorReporter();
+    templateBasicNode(errorReporter)
+        .setId(0)
+        .setCmdText(".foo autoescape=\"strict")
+        .setSoyDoc("/***/")
+        .build();
+    assertThat(errorReporter.getErrorMessages())
+        .containsExactly("Malformed attributes in 'template' command text (autoescape=\"strict).");
+
+    errorReporter = new FormattingErrorReporter();
+    templateBasicNode(errorReporter)
+        .setId(0)
+        .setCmdText(".foo autoescape=\"false\"")
+        .setSoyDoc("/***/")
+        .build();
+    assertThat(errorReporter.getErrorMessages())
+        .containsExactly(
+            "Invalid value for attribute 'autoescape' in 'template' command text "
+                + "(autoescape=\"false\"). Valid values are "
+                + "[deprecated-noncontextual, deprecated-contextual, strict].");
   }
 
   public void testValidStrictTemplates() {

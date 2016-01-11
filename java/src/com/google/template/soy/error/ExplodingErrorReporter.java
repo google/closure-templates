@@ -20,8 +20,9 @@ import com.google.template.soy.base.SourceLocation;
 
 /**
  * {@link ErrorReporter} implementation that throws an {@link AssertionError} whenever an error
- * is reported to it. This is seldom desirable in production code, but often desirable in tests,
- * which should fail in the presence of any errors that are not specifically checked for.
+ * is reported to it. This should only be used when no errors are expected.  This is seldom
+ * desirable in production code, but often desirable in tests, which should fail in the presence
+ * of any errors that are not specifically checked for.
  *
  * <p>To write a test that does not have this exploding behavior (for example, a test that needs
  * to check the full list of errors encountered during compilation), pass a non-exploding
@@ -52,8 +53,8 @@ public final class ExplodingErrorReporter implements ErrorReporter {
 
   @Override
   public void report(SourceLocation sourceLocation, SoyErrorKind error, Object... args) {
-    throw new IllegalStateException(
-        String.format("Unexpected SoyErrorKind: %s at %s", error.format(args), sourceLocation));
+    throw new AssertionError(
+        String.format("Unexpected SoyError: %s at %s", error.format(args), sourceLocation));
   }
 
   public static ErrorReporter get() {

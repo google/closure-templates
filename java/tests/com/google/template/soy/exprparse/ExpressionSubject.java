@@ -16,12 +16,15 @@
 
 package com.google.template.soy.exprparse;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.common.truth.FailureStrategy;
 import com.google.common.truth.Subject;
 import com.google.common.truth.SubjectFactory;
 import com.google.common.truth.Truth;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.error.ExplodingErrorReporter;
+import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.FormattingErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.VarNode;
@@ -52,93 +55,110 @@ final class ExpressionSubject extends Subject<ExpressionSubject, String> {
   }
 
   void generatesASTWithRootOfType(Class<? extends ExprNode> clazz) {
-    ExprNode root = expressionParser().parseExpression();
+    ExprNode root = isValidExpression();
+    if (!clazz.isInstance(root)) {
+      failWithBadResults("generates an ast with root of type", clazz, "has type", root.getClass());
+    }
     Truth.assertThat(root).isInstanceOf(clazz);
   }
 
   void isNotValidExpression() {
-    try {
-      expressionParser().parseExpression();
-    } catch (IllegalStateException e) {
-      return; // passes
+    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+    expressionParser(errorReporter).parseExpression();
+    if (errorReporter.getErrorMessages().isEmpty()) {
+      fail("is an invalid expression");
     }
-    fail("is an invalid expression");
   }
 
   void isNotValidExpressionList() {
-    try {
-      expressionParser().parseExpressionList();
-    } catch (IllegalStateException e) {
-      return; // passes
+    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+    expressionParser(errorReporter).parseExpressionList();
+    if (errorReporter.getErrorMessages().isEmpty()) {
+      fail("is an invalid expression list");
     }
-    fail("is an invalid expression list");
   }
 
   void isNotValidGlobal() {
-    try {
-      expressionParser().parseGlobal();
-    } catch (IllegalStateException e) {
-      return; // passes
+    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+    expressionParser(errorReporter).parseGlobal();
+    if (errorReporter.getErrorMessages().isEmpty()) {
+      fail("is an invalid global");
     }
-    fail("is an invalid global");
   }
 
   void isNotValidVar() {
-    try {
-      expressionParser().parseVariable();
-    } catch (IllegalStateException e) {
-      return; // passes
+    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+    expressionParser(errorReporter).parseVariable();
+    if (errorReporter.getErrorMessages().isEmpty()) {
+      fail("is an invalid var");
     }
-    fail("is an invalid var");
   }
 
   ExprNode isValidExpression() {
-    return expressionParser().parseExpression();
+    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+    ExprNode expr = expressionParser(errorReporter).parseExpression();
+    if (!errorReporter.getErrorMessages().isEmpty()) {
+      fail("is a valid expression", errorReporter.getErrorMessages());
+    }
+    return expr;
   }
 
   List<ExprNode> isValidExpressionList() {
-    return expressionParser().parseExpressionList();
+    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+    List<ExprNode> exprList = expressionParser(errorReporter).parseExpressionList();
+    if (!errorReporter.getErrorMessages().isEmpty()) {
+      fail("is a valid expression list", errorReporter.getErrorMessages());
+    }
+    return exprList;
   }
 
   void isValidGlobal() {
-    expressionParser().parseGlobal();
+    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+    expressionParser(errorReporter).parseGlobal();
+    if (!errorReporter.getErrorMessages().isEmpty()) {
+      fail("is a valid global", errorReporter.getErrorMessages());
+    }
   }
 
   void isValidGlobalNamed(String name) {
-    GlobalNode globalNode = expressionParser().parseGlobal();
+    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+    GlobalNode globalNode = expressionParser(errorReporter).parseGlobal();
+    if (!errorReporter.getErrorMessages().isEmpty()) {
+      fail("is valid global", errorReporter.getErrorMessages());
+    }
     String actualName = globalNode.getName();
-    Truth.assertWithMessage(
-        "expected "
-            + getSubject()
-            + "to be a valid global with name "
-            + name
-            + " but got "
-            + actualName)
-        .that(actualName)
-        .isEqualTo(name);
-    Truth.assertThat(globalNode.toSourceString()).isEqualTo(name);
+    if (!actualName.equals(name)) {
+      failWithBadResults("is global named", name, "has name", actualName);
+    }
+    String actualSourceString = globalNode.toSourceString();
+    if (!actualSourceString.equals(name)) {
+      failWithBadResults("is global named", name, "has source string", actualSourceString);
+    }
   }
 
   void isValidVar() {
-    expressionParser().parseVariable();
+    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+    expressionParser(errorReporter).parseVariable();
+    if (!errorReporter.getErrorMessages().isEmpty()) {
+      fail("is a valid var", errorReporter.getErrorMessages());
+    }
   }
 
   void isValidVarNamed(String name) {
-    VarNode varNode = expressionParser().parseVariable();
+    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+    VarNode varNode = expressionParser(errorReporter).parseVariable();
+    assertThat(errorReporter.getErrorMessages()).isEmpty();
+
     String actualName = varNode.getName();
-    Truth.assertWithMessage(
-        "expected "
-            + getSubject()
-            + "to be a valid var with name "
-            + name
-            + " but got "
-            + actualName)
-        .that(actualName)
-        .isEqualTo(name);
-    Truth.assertThat(varNode.toSourceString()).isEqualTo("$" + name);
+    if (!actualName.equals(name)) {
+      failWithBadResults("is var named", name, "is named", actualName);
+    }
+    if (!varNode.toSourceString().equals("$" + name)) {
+      failWithBadResults("has sourceString", "$" + name, "is named", varNode.toSourceString());
+    }
   }
 
-  private ExpressionParser expressionParser() {
-    return new ExpressionParser(getSubject(), SourceLocation.UNKNOWN, ExplodingErrorReporter.get());
+  private ExpressionParser expressionParser(ErrorReporter reporter) {
+    return new ExpressionParser(getSubject(), SourceLocation.UNKNOWN, reporter);
   }
 }

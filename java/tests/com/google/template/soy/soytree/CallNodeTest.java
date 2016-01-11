@@ -21,6 +21,7 @@ import static com.google.common.truth.Truth.assertThat;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.error.ExplodingErrorReporter;
+import com.google.template.soy.error.FormattingErrorReporter;
 
 import junit.framework.TestCase;
 
@@ -40,12 +41,12 @@ public final class CallNodeTest extends TestCase {
     checkCommandText(".foo data=\"all\"");
     checkCommandText(" .baz data=\"$x\"", ".baz data=\"$x\"");
 
-    try {
-      checkCommandText(".foo.bar data=\"$x\"");
-      fail();
-    } catch (IllegalStateException e) {
-      // Test passes.
-    }
+    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+    new CallBasicNode.Builder(0, SourceLocation.UNKNOWN)
+        .commandText(".foo.bar data=\"$x\"")
+        .build(errorReporter);
+    assertThat(errorReporter.getErrorMessages())
+        .containsExactly("Invalid callee name \".foo.bar\" for 'call' command.");
   }
 
 

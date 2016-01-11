@@ -16,6 +16,8 @@
 
 package com.google.template.soy.soyparse;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.common.base.Joiner;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SourceLocation;
@@ -23,6 +25,7 @@ import com.google.template.soy.base.internal.FixedIdGenerator;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.error.ExplodingErrorReporter;
+import com.google.template.soy.error.FormattingErrorReporter;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
@@ -210,17 +213,15 @@ public final class SourceLocationTest extends TestCase {
     // look for a line number and break in a way that suppresses the real error
     // message.
     // JavaCC is pretty good about never using null as a token value.
-    try {
-      SoyFileSetParserBuilder.forSuppliers(
-          SoyFileSupplier.Factory.create(
-              "{template t autoescape=\"deprecated-noncontextual\"}\nHello, World!\n",
-              SoyFileKind.SRC, "borken.soy"))
-          .doRunInitialParsingPasses(false)
-          .parse();
-      fail();
-    } catch (IllegalStateException e) {
-      // Expected.
-    }
+    FormattingErrorReporter reporter = new FormattingErrorReporter();
+    SoyFileSetParserBuilder.forSuppliers(
+            SoyFileSupplier.Factory.create(
+                "{template t autoescape=\"deprecated-noncontextual\"}\nHello, World!\n",
+                SoyFileKind.SRC,
+                "borken.soy"))
+        .errorReporter(reporter)
+        .parse();
+    assertThat(reporter.getErrorMessages()).isNotEmpty();
   }
 
   public void testAdditionalSourceLocationInfo() throws Exception {

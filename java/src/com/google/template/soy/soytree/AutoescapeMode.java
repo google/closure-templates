@@ -84,6 +84,14 @@ public enum AutoescapeMode {
     return valueToModeMap.keySet();
   }
 
+  static AutoescapeMode parseAutoEscapeMode(String autoescapeModeStr) {
+    AutoescapeMode parsed = valueToModeMap.get(autoescapeModeStr);
+    if (parsed == null) {
+      // failed to parse!
+      return AutoescapeMode.STRICT; // default for unparsed
+    }
+    return parsed;
+  }
 
   /**
    * Returns the parsed value.

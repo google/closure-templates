@@ -111,7 +111,7 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder {
       commandTextForParsing = commandTextForParsing.substring(ntnMatcher.end()).trim();
     } else {
       errorReporter.report(sourceLocation, MISSING_TEMPLATE_NAME);
-      return this; // to prevent NPEs dereferencing nameAttr below
+      nameAttr = null;
     }
 
     Map<String, String> attributes = ATTRIBUTES_PARSER.parse(
@@ -142,26 +142,27 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder {
     setCssBaseCmdText(attributes);
     setV1Marker(attributes);
 
-    if (BaseUtils.isIdentifierWithLeadingDot(nameAttr)) {
-      if (soyFileHeaderInfo.namespace == null) {
-        // In this case, throwing a SoySyntaxException and halting compilation of the current file
-        // is preferable to reporting a SoyErrorKind and continuing. To continue, we could make up
-        // an "error" template name/namespace, but that would cause spurious duplicate template
-        // errors (for every namespace-relative name in a non-namespaced file).
-        // It's also dangerous, since "error" is a common real-world template/namespace name.
-        throw LegacyInternalSyntaxException.createWithMetaInfo(
-            "Template has namespace-relative name, but file has no namespace declaration.",
-            sourceLocation);
+    if (nameAttr != null) {
+      if (BaseUtils.isIdentifierWithLeadingDot(nameAttr)) {
+        if (soyFileHeaderInfo.namespace == null) {
+          // In this case, throwing a SoySyntaxException and halting compilation of the current file
+          // is preferable to reporting a SoyErrorKind and continuing. To continue, we could make up
+          // an "error" template name/namespace, but that would cause spurious duplicate template
+          // errors (for every namespace-relative name in a non-namespaced file).
+          // It's also dangerous, since "error" is a common real-world template/namespace name.
+          throw LegacyInternalSyntaxException.createWithMetaInfo(
+              "Template has namespace-relative name, but file has no namespace declaration.",
+              sourceLocation);
+        }
+        setTemplateNames(soyFileHeaderInfo.namespace + nameAttr, nameAttr);
+      } else {
+        if (!isMarkedV1 && BaseUtils.isDottedIdentifier(nameAttr)) {
+          // only allow fully qualified template names if it is also marked as v1
+          errorReporter.report(sourceLocation, FULLY_QUALIFIED_NAME);
+        }
+        setTemplateNames(nameAttr, null);
       }
-      setTemplateNames(soyFileHeaderInfo.namespace + nameAttr, nameAttr);
-    } else {
-      if (!isMarkedV1 && BaseUtils.isDottedIdentifier(nameAttr)) {
-        // only allow fully qualified template names if it is also marked as v1
-        errorReporter.report(sourceLocation, FULLY_QUALIFIED_NAME);
-      }
-      setTemplateNames(nameAttr, null);
     }
-
     this.templateNameForUserMsgs = getTemplateName();
 
     return this;

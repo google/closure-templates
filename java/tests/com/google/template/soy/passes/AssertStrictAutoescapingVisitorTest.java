@@ -16,9 +16,9 @@
 
 package com.google.template.soy.passes;
 
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.SoyFileSetParserBuilder;
-import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ExplodingErrorReporter;
+import com.google.template.soy.error.FormattingErrorReporter;
 import com.google.template.soy.passes.AssertStrictAutoescapingVisitor;
 import com.google.template.soy.soytree.SoyFileSetNode;
 
@@ -37,7 +37,7 @@ public final class AssertStrictAutoescapingVisitorTest extends TestCase {
             + "{@param boo : ?}\n"
             + "  {$boo}\n"
             + "{/template}\n";
-    assertFalse(causesStrictException(soyCode));
+    doesntCauseStrictException(soyCode);
 
     soyCode =
         "{namespace foo.bar}\n"
@@ -45,7 +45,7 @@ public final class AssertStrictAutoescapingVisitorTest extends TestCase {
             + "{@param boo : ?}\n"
             + "  {$boo}\n"
             + "{/template}\n";
-    assertFalse(causesStrictException(soyCode));
+    doesntCauseStrictException(soyCode);
   }
 
   public void testNonStrictNamespace() {
@@ -55,7 +55,7 @@ public final class AssertStrictAutoescapingVisitorTest extends TestCase {
             + "{@param boo : ?}\n"
             + "  {$boo}\n"
             + "{/template}\n";
-    assertTrue(causesStrictException(soyCode));
+    causesStrictException(soyCode);
   }
 
   public void testNonStrictTemplate() {
@@ -65,7 +65,7 @@ public final class AssertStrictAutoescapingVisitorTest extends TestCase {
             + "{@param boo : ?}\n"
             + "  {$boo}\n"
             + "{/template}\n";
-    assertTrue(causesStrictException(soyCode));
+    causesStrictException(soyCode);
   }
 
   public void testNonDeclaredTemplate() {
@@ -75,27 +75,47 @@ public final class AssertStrictAutoescapingVisitorTest extends TestCase {
             + "{@param boo : ?}\n"
             + "  {$boo}\n"
             + "{/template}\n";
-    assertTrue(causesStrictException(soyCode));
+    causesStrictException(soyCode);
   }
 
   /**
    * Parse soyCode and execute the AssertStrictAutoescapingVisitor check on the output.
    *
    * @param soyCode The input code.
-   * @return Whether {@link AssertStrictAutoescapingVisitor} found a problem with {@code soyCode}.
    */
-  private boolean causesStrictException(String soyCode) {
-    ErrorReporter boom = ExplodingErrorReporter.get();
+  private void doesntCauseStrictException(String soyCode) {
+    ImmutableList<String> errors = parseAndGetErrors(soyCode);
+    if (!errors.isEmpty()) {
+      throw new AssertionError(
+          "Expected:\n" + soyCode + "\n to parse successfully, but got: " + errors);
+    }
+  }
+
+  /**
+   * Parse soyCode and execute the AssertStrictAutoescapingVisitor check on the output.
+   *
+   * @param soyCode The input code.
+   */
+  private void causesStrictException(String soyCode) {
+    ImmutableList<String> errors = parseAndGetErrors(soyCode);
+    for (String error : errors) {
+      if (!error.equals("Invalid use of non-strict when strict autoescaping is required.")) {
+        throw new AssertionError("Found unexpected error message: " + error);
+      }
+    }
+    if (errors.isEmpty()) {
+      throw new AssertionError("Expected:\n" + soyCode + "\n to have a strict escaping error");
+    }
+  }
+
+  private ImmutableList<String> parseAndGetErrors(String soyCode) {
+    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(soyCode)
-            .errorReporter(boom)
+            .errorReporter(errorReporter)
             .parse()
             .fileSet();
-    try {
-      new AssertStrictAutoescapingVisitor(boom).exec(soyTree);
-    } catch (IllegalStateException e) {
-      return true;
-    }
-    return false;
+    new AssertStrictAutoescapingVisitor(errorReporter).exec(soyTree);
+    return errorReporter.getErrorMessages();
   }
 }

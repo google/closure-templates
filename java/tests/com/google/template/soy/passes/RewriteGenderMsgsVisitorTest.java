@@ -96,12 +96,10 @@ public final class RewriteGenderMsgsVisitorTest extends TestCase {
             + "    desc=\"...\"}\n"
             + "  You added {$targetName1} and {$targetName2} to {$groupOwnerName}'s group.\n"
             + "{/msg}\n";
-    try {
-      SoyFileSetParserBuilder.forTemplateContents(soyCode).parse().fileSet();
-      fail();
-    } catch (IllegalStateException e) {
-      assertThat(e.getMessage()).contains("Attribute 'genders' does not contain 1-3 expressions");
-    }
+    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+    SoyFileSetParserBuilder.forTemplateContents(soyCode).errorReporter(errorReporter).parse();
+    assertThat(errorReporter.getErrorMessages())
+        .containsExactly("Attribute 'genders' does not contain 1-3 expressions");
   }
 
 
