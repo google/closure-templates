@@ -16,11 +16,21 @@
 
 package com.google.template.soy.soytree;
 
+import com.google.auto.value.AutoValue;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.error.AbstractErrorReporter;
+import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.ErrorReporter.Checkpoint;
+import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.annotation.Nullable;
@@ -37,6 +47,15 @@ import javax.annotation.Nullable;
  */
 public final class ExprUnion {
 
+  /** Creates an ExprUnion from the given expression text. */
+  static ExprUnion parseWithV1Fallback(String exprText, SourceLocation location) {
+    DelayedErrorReporter errorReporter = new DelayedErrorReporter();
+    Checkpoint checkpoint = errorReporter.checkpoint();
+    ExprNode expr = new ExpressionParser(exprText, location, errorReporter).parseExpression();
+    return errorReporter.errorsSince(checkpoint)
+        ? new ExprUnion(exprText, errorReporter.reports)
+        : new ExprUnion(expr);
+  }
 
   /**
    * Utility to create a list of {@code ExprUnion}s from a list of expression trees.
@@ -58,6 +77,9 @@ public final class ExprUnion {
   /** The V1 expression text, or null if the expression is in V2 syntax. */
   @Nullable private final String exprText;
 
+  /** The errors that were reported when this expression failed to parse as v2. */
+  private final ImmutableList<DelayedErrorReport> delayedErrorReports;
+
   /**
    * Constructor for an instance that represents a V2 expression.
    * @param expr The expression tree.
@@ -73,21 +95,24 @@ public final class ExprUnion {
   public ExprUnion(ExprRootNode expr) {
     this.expr = expr;
     this.exprText = null;
+    this.delayedErrorReports = ImmutableList.of();
   }
-
 
   /**
    * Constructor for an instance that represents an expression in V1 syntax.
    * @param exprTextV1 The text of the V1 expression.
    */
-  public ExprUnion(String exprTextV1) {
+  private ExprUnion(String exprTextV1, List<DelayedErrorReport> delayedErrorReports) {
+    Preconditions.checkArgument(!delayedErrorReports.isEmpty());
     this.expr = null;
     this.exprText = exprTextV1;
+    this.delayedErrorReports = ImmutableList.copyOf(delayedErrorReports);
   }
 
   private ExprUnion(ExprUnion orig, CopyState copyState) {
     this.expr = orig.expr != null ? orig.expr.copy(copyState) : null;
     this.exprText = orig.exprText;
+    this.delayedErrorReports = orig.delayedErrorReports;
   }
 
   /**
@@ -113,4 +138,43 @@ public final class ExprUnion {
     return new ExprUnion(this, copyState);
   }
 
+  /**
+   * Adds all the errors from trying to parse this as a V2 expression to the given error reporter.
+   *
+   * <p>Guaranteed to add at least one error if {@link #getExpr()} is null.
+   */
+  public void reportV2ParseErrors(ErrorReporter reporter) {
+    for (DelayedErrorReport report : delayedErrorReports) {
+      reporter.report(report.location(), report.error(), report.args().toArray());
+    }
+  }
+
+  /**
+   * An {@link ErrorReporter} that captures errors so that they can optionally be applied to another
+   * error reporter at a later time.
+   */
+  private static final class DelayedErrorReporter extends AbstractErrorReporter {
+    final List<DelayedErrorReport> reports = new ArrayList<>();
+
+    @Override
+    public void report(SourceLocation sourceLocation, SoyErrorKind error, Object... args) {
+      reports.add(
+          new AutoValue_ExprUnion_DelayedErrorReport(
+              sourceLocation, error, ImmutableList.copyOf(args)));
+    }
+
+    @Override
+    protected int getCurrentNumberOfErrors() {
+      return reports.size();
+    }
+  }
+
+  @AutoValue
+  abstract static class DelayedErrorReport {
+    abstract SourceLocation location();
+
+    abstract SoyErrorKind error();
+
+    abstract List<?> args();
+  }
 }

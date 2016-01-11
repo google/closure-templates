@@ -66,7 +66,7 @@ final class CheckTemplateParamsVisitor extends AbstractSoyNodeVisitor<Void> {
   private static final SoyErrorKind UNDECLARED_DATA_KEY =
       SoyErrorKind.of("Unknown data key ''{0}''.{1}");
   private static final SoyErrorKind UNUSED_PARAM =
-      SoyErrorKind.of("Param {0} unused in template body.");
+      SoyErrorKind.of("Param ''{0}'' unused in template body.");
 
   /** User-declared syntax version. */
   private final SyntaxVersion declaredSyntaxVersion;

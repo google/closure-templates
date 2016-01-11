@@ -217,7 +217,6 @@ public class EvalVisitorTest extends TestCase {
         .isEmpty();
   }
 
-
   /**
    * Asserts that evaluating the given expression causes a RenderException.
    * @param expression The expression to evaluate.
@@ -328,11 +327,13 @@ public class EvalVisitorTest extends TestCase {
     assertParseError(
         "[aaa: 'blah',]",
         "Disallowed single-identifier key \"aaa\" in map literal",
-        "Encountered \" \":\" \": \"\" at line");
+        "parse error at ':': expected null, <BOOLEAN>, <INTEGER>, <FLOAT>, <STRING>, not, "
+            + "'an identifier', variable, -, [, (, or $ij.");
     assertParseError(
         "['aaa': 'blah', bbb: 123]",
         "Disallowed single-identifier key \"bbb\" in map literal",
-        "Encountered \" \":\" \": \"\" at line");
+        "parse error at ':': expected null, <BOOLEAN>, <INTEGER>, <FLOAT>, <STRING>, not, "
+            + "'an identifier', variable, -, [, (, or $ij.");
 
     // Test last value overwrites earlier value for the same key.
     result = (SoyDict) eval("['baz': 'blah', $foo.bar: 'bluh']");

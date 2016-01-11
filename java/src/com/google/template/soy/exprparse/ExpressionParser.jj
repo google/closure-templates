@@ -207,11 +207,8 @@ public final class ExpressionParser {
   public List<ExprNode> parseExpressionList() {
     try {
       return ExprListInput();
-    } catch (TokenMgrError e) {
-      errorReporter.report(parentSourceLocation, INVALID_EXPRESSION_LIST);
-      return ImmutableList.of();
     } catch (ParseException e) {
-      errorReporter.report(parentSourceLocation, INVALID_EXPRESSION_LIST);
+      ParseErrors.reportExprParseException(errorReporter, parentSourceLocation, e);
       return ImmutableList.of();
     }
   }
@@ -227,10 +224,7 @@ public final class ExpressionParser {
     try {
       return ExprInput();
     } catch (ParseException e) {
-      errorReporter.report(parentSourceLocation, PARSE_ERROR, e.getMessage());
-      return VarRefNode.ERROR;
-    } catch (TokenMgrError e) {
-      errorReporter.report(parentSourceLocation, PARSE_ERROR, e.getMessage());
+      ParseErrors.reportExprParseException(errorReporter, parentSourceLocation, e);
       return VarRefNode.ERROR;
     }
   }
@@ -246,28 +240,8 @@ public final class ExpressionParser {
     try {
       return VarInput();
     } catch (ParseException e) {
-      errorReporter.report(parentSourceLocation, INVALID_VAR_NAME, input);
+      ParseErrors.reportExprParseException(errorReporter, "Expected a variable name ", parentSourceLocation, e);
       return VarNode.ERROR;
-    } catch (TokenMgrError e) {
-      errorReporter.report(parentSourceLocation, PARSE_ERROR, e.getMessage());
-      return VarNode.ERROR;
-    }
-  }
-
-  /**
-   * Parses the input as a global.
-   * <p>Maintains the following invariant: an error node is returned if and only if am error
-   * is reported to the parser's {@link ErrorReporter}.
-   */
-  public GlobalNode parseGlobal() {
-    try {
-      return GlobalInput();
-    } catch (ParseException e) {
-      errorReporter.report(parentSourceLocation, PARSE_ERROR, e.getMessage());
-      return GlobalNode.ERROR;
-    } catch (TokenMgrError e) {
-      errorReporter.report(parentSourceLocation, PARSE_ERROR, e.getMessage());
-      return GlobalNode.ERROR;
     }
   }
 
@@ -1026,4 +1000,17 @@ private MapLiteralNode MapLiteral() :
   "]"
 
   { return new MapLiteralNode(alternatingKeysAndValues, SourceLocation.UNKNOWN /* TODO(brndn) */); }
+}
+
+// Match everything else as an 'unexpected' or as a special LEGACY token. This prevents
+// TokenMgrErrors from being thrown and instead this will get turned into ParseExceptions which
+// have more debugging information.
+// Define at the bottom of the file so all the string literals defined in our grammar expressions
+// above are matched preferentially.  This is only really necessary for UNEXPECTED_TOKEN.
+TOKEN : {
+    < LEGACY_AND : "&&" >
+|   < LEGACY_OR : "||" >
+|   < LEGACY_NOT : "!" >
+|   < DOUBLE_QUOTE : "\"" >
+|   < UNEXPECTED_TOKEN : ~[] >
 }

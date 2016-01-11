@@ -17,16 +17,13 @@
 package com.google.template.soy.soytree;
 
 import com.google.common.base.Preconditions;
-import com.google.template.soy.ErrorReporterImpl;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprparse.ExpressionParser;
-import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.soytree.CommandTextAttributesParser.Attribute;
 
 import java.util.Map;
@@ -163,22 +160,8 @@ public abstract class CallParamNode extends AbstractCommandNode {
       if (valueExprText == null) {
         return new CommandTextParseResult(key, null /* valueExprUnion */, contentKind);
       }
-      // If valueExprText exists, try to parse it.
-      // TODO(user): Remove throwaway ErrorReporter.
-      // Explanation: In certain cases, Soy considers param nodes with clearly malformed command
-      // texts not to be an error. (See TemplateParserTest#testRecognizeCommands, around line 359.)
-      // To preserve that behavior, we create a throwaway error reporter here in order not to
-      // report it back to the main error reporter.
-      //
-      // Use the real error manager once any currently broken templates are migrated.
-      ErrorReporter throwaway = new ErrorReporterImpl();
-      Checkpoint checkpoint = throwaway.checkpoint();
-      ExprNode valueExpr
-          = new ExpressionParser(valueExprText, sourceLocation, throwaway).parseExpression();
-      ExprUnion valueExprUnion = throwaway.errorsSince(checkpoint)
-          ? new ExprUnion(valueExprText)
-          : new ExprUnion(valueExpr);
-      return new CommandTextParseResult(key, valueExprUnion, contentKind);
+      return new CommandTextParseResult(
+          key, ExprUnion.parseWithV1Fallback(valueExprText, sourceLocation), contentKind);
     }
   }
 }

@@ -18,6 +18,7 @@ package com.google.template.soy.exprparse;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.truth.FailureStrategy;
 import com.google.common.truth.Subject;
 import com.google.common.truth.SubjectFactory;
@@ -80,8 +81,9 @@ final class ExpressionSubject extends Subject<ExpressionSubject, String> {
 
   void isNotValidGlobal() {
     FormattingErrorReporter errorReporter = new FormattingErrorReporter();
-    expressionParser(errorReporter).parseGlobal();
-    if (errorReporter.getErrorMessages().isEmpty()) {
+    ExprNode expr = expressionParser(errorReporter).parseExpression();
+    ImmutableList<String> errorMessages = errorReporter.getErrorMessages();
+    if (expr instanceof GlobalNode && errorMessages.isEmpty()) {
       fail("is an invalid global");
     }
   }
@@ -114,7 +116,8 @@ final class ExpressionSubject extends Subject<ExpressionSubject, String> {
 
   void isValidGlobal() {
     FormattingErrorReporter errorReporter = new FormattingErrorReporter();
-    expressionParser(errorReporter).parseGlobal();
+    ExprNode expr = expressionParser(errorReporter).parseExpression();
+    Truth.assertThat(expr).isInstanceOf(GlobalNode.class);
     if (!errorReporter.getErrorMessages().isEmpty()) {
       fail("is a valid global", errorReporter.getErrorMessages());
     }
@@ -122,7 +125,7 @@ final class ExpressionSubject extends Subject<ExpressionSubject, String> {
 
   void isValidGlobalNamed(String name) {
     FormattingErrorReporter errorReporter = new FormattingErrorReporter();
-    GlobalNode globalNode = expressionParser(errorReporter).parseGlobal();
+    GlobalNode globalNode = (GlobalNode) expressionParser(errorReporter).parseExpression();
     if (!errorReporter.getErrorMessages().isEmpty()) {
       fail("is valid global", errorReporter.getErrorMessages());
     }

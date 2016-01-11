@@ -175,15 +175,14 @@ public final class CheckTemplateParamsVisitorTest extends TestCase {
     ImmutableList<String> errors = soyDocErrorsForTemplate(soyDoc, templateBody);
     assertThat(errors).hasSize(2);
     assertThat(errors.get(0)).contains("Unknown data key 'boo'.");
-    assertThat(errors.get(1)).isEqualTo("Param foo unused in template body.");
+    assertThat(errors.get(1)).isEqualTo("Param 'foo' unused in template body.");
   }
 
   public void testUnusedParam() {
     String soyDoc = "@param boo @param? foo";
     String templateBody = "{$boo.foo}";
     ImmutableList<String> errors = soyDocErrorsForTemplate(soyDoc, templateBody);
-    assertThat(errors).hasSize(1);
-    assertThat(errors.get(0)).isEqualTo("Param foo unused in template body.");
+    assertThat(errors).containsExactly("Param 'foo' unused in template body.");
   }
 
   public void testUnusedParamInCallWithAllData() {
@@ -204,8 +203,7 @@ public final class CheckTemplateParamsVisitorTest extends TestCase {
         "{/template}\n";
 
     ImmutableList<String> errors = soyDocErrorsFor(fileContent);
-    assertThat(errors).hasSize(1);
-    assertThat(errors.get(0)).isEqualTo("Param zoo unused in template body.");
+    assertThat(errors).containsExactly("Param 'zoo' unused in template body.");
   }
 
   public void testWithExternalCallWithAllData() {
@@ -226,9 +224,10 @@ public final class CheckTemplateParamsVisitorTest extends TestCase {
     String soyDoc = "@param boo @param foo";
     String templateBody = "{call .foo data=\"all\" /}";
     ImmutableList<String> errors = soyDocErrorsForTemplate(soyDoc, templateBody);
-    assertThat(errors).hasSize(2);
-    assertThat(errors.get(0)).isEqualTo("Param boo unused in template body.");
-    assertThat(errors.get(1)).isEqualTo("Param foo unused in template body.");
+    assertThat(errors)
+        .containsExactly(
+            "Param 'boo' unused in template body.", "Param 'foo' unused in template body.")
+        .inOrder();
   }
 
   public void testUnusedParamInDelegateTemplate() {
@@ -313,9 +312,10 @@ public final class CheckTemplateParamsVisitorTest extends TestCase {
         "{/template}\n";
 
     ImmutableList<String> errors = soyDocErrorsFor(fileContent);
-    assertThat(errors).hasSize(2);
-    assertThat(errors.get(0)).isEqualTo("Param goo unused in template body.");
-    assertThat(errors.get(1)).isEqualTo("Param zoo unused in template body.");
+    assertThat(errors)
+        .containsExactly(
+            "Param 'goo' unused in template body.", "Param 'zoo' unused in template body.")
+        .inOrder();
   }
 
   private static ImmutableList<String> soyDocErrorsForTemplate(String soyDoc, String templateBody) {

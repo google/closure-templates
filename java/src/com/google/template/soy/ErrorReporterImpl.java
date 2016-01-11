@@ -18,7 +18,7 @@ package com.google.template.soy;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.AbstractErrorReporter;
 import com.google.template.soy.error.SoyError;
 import com.google.template.soy.error.SoyErrorKind;
 
@@ -30,7 +30,7 @@ import java.util.List;
  *
  * @author brndn@google.com (Brendan Linn)
  */
-public final class ErrorReporterImpl implements ErrorReporter {
+public final class ErrorReporterImpl extends AbstractErrorReporter {
   private final List<SoyError> errors = new ArrayList<>();
   private final SoyError.Factory errorFactory;
 
@@ -48,18 +48,6 @@ public final class ErrorReporterImpl implements ErrorReporter {
     errors.add(errorFactory.create(sourceLocation, error, args));
   }
 
-  @Override
-  public Checkpoint checkpoint() {
-    return new CheckpointImpl(errors.size());
-  }
-
-  @Override
-  public boolean errorsSince(Checkpoint checkpoint) {
-    // Throws a ClassCastException if callers try to pass in a Checkpoint instance
-    // that wasn't returned by checkpoint(). We could probably ensure this at compile time
-    // with a bunch of generics, but it's not worth the effort.
-    return errors.size() > ((CheckpointImpl) checkpoint).numErrors;
-  }
 
   /** Returns the full list of errors reported to this error reporter. */
   public Iterable<SoyError> getErrors() {
@@ -73,11 +61,8 @@ public final class ErrorReporterImpl implements ErrorReporter {
     return !errors.isEmpty();
   }
 
-  private static final class CheckpointImpl implements Checkpoint {
-    private final int numErrors;
-
-    private CheckpointImpl(int numErrors) {
-      this.numErrors = numErrors;
-    }
+  @Override
+  protected int getCurrentNumberOfErrors() {
+    return errors.size();
   }
 }

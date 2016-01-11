@@ -18,13 +18,9 @@ package com.google.template.soy.soytree;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.ErrorReporterImpl;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ErrorReporter.Checkpoint;
-import com.google.template.soy.exprparse.ExpressionParser;
-import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.soytree.SoyNode.ConditionalBlockNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 
@@ -65,13 +61,13 @@ public final class IfCondNode extends AbstractBlockCommandNode
   /**
    * @param id The id for this node.
    * @param commandName The command name -- either 'if' or 'elseif'.
-   * @param condition Determines when the body is performed.
+   * @param exprUnion Determines when the body is performed.
    */
   public IfCondNode(
-      int id, SourceLocation sourceLocation, String commandName, ExprUnion condition) {
-    super(id, sourceLocation, commandName, condition.getExprText());
+      int id, SourceLocation sourceLocation, String commandName, ExprUnion exprUnion) {
+    super(id, sourceLocation, commandName, exprUnion.getExprText());
     Preconditions.checkArgument(commandName.equals("if") || commandName.equals("elseif"));
-    this.exprUnion = condition;
+    this.exprUnion = Preconditions.checkNotNull(exprUnion);
   }
 
 
@@ -81,7 +77,7 @@ public final class IfCondNode extends AbstractBlockCommandNode
    */
   private IfCondNode(IfCondNode orig, CopyState copyState) {
     super(orig, copyState);
-    this.exprUnion = (orig.exprUnion != null) ? orig.exprUnion.copy(copyState) : null;
+    this.exprUnion = orig.exprUnion.copy(copyState);
   }
 
 
@@ -148,28 +144,11 @@ public final class IfCondNode extends AbstractBlockCommandNode
 
     /**
      * Returns a new {@link IfCondNode} built from this builder's state.
-     * TODO(user): Most node builders report syntax errors to the {@link ErrorReporter}
-     * argument. This builder ignores the error reporter argument because if nodes have
-     * special fallback logic for when parsing of the command text fails.
-     * Such parsing failures should thus not currently be reported as "errors".
-     * It seems possible and desirable to change Soy to consider these to be errors,
-     * but it's not trivial, because it could break templates that currently compile.
      */
     public IfCondNode build(ErrorReporter unusedForNow) {
-      ExprUnion condition = buildExprUnion();
+      ExprUnion condition = ExprUnion.parseWithV1Fallback(commandText, sourceLocation);
       return new IfCondNode(id, sourceLocation, commandName, condition);
     }
-
-    private ExprUnion buildExprUnion() {
-      ErrorReporter errorReporter = new ErrorReporterImpl();
-      Checkpoint checkpoint = errorReporter.checkpoint();
-      ExprNode expr = new ExpressionParser(commandText, sourceLocation, errorReporter)
-          .parseExpression();
-      return errorReporter.errorsSince(checkpoint)
-          ? new ExprUnion(commandText)
-          : new ExprUnion(expr);
-    }
-
   }
 
 }

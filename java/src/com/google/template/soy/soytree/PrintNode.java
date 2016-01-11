@@ -18,14 +18,10 @@ package com.google.template.soy.soytree;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.ErrorReporterImpl;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ErrorReporter.Checkpoint;
-import com.google.template.soy.exprparse.ExpressionParser;
-import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.MsgPlaceholderInitialNode;
@@ -235,15 +231,8 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
      * Returns a new {@link PrintNode} built from this builder's state.
      * @throws java.lang.IllegalStateException if neither {@link #exprText} nor {@link #exprUnion}
      * have been set.
-     * TODO(user): Most node builders report syntax errors to the {@link ErrorReporter}
-     * argument. This builder ignores the error reporter argument because print nodes have
-     * {@linkplain PrintNode#FALLBACK_BASE_PLACEHOLDER_NAME special fallback logic} for when
-     * parsing of the user-supplied placeholder name fails. Such parsing failures should thus not
-     * currently be reported as "errors". It seems possible and desirable to change Soy to consider
-     * these to be errors, but it's not trivial, because it could break templates that currently
-     * compile.
      */
-    public PrintNode build(ErrorReporter unusedForNow) {
+    public PrintNode build(ErrorReporter errorReporter) {
       ExprUnion exprUnion = getOrParseExprUnion();
       return new PrintNode(id, isImplicit, exprUnion, sourceLocation, userSuppliedPlaceholderName);
     }
@@ -253,13 +242,7 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
         return exprUnion;
       }
       Preconditions.checkNotNull(exprText);
-      ErrorReporter internal = new ErrorReporterImpl();
-      Checkpoint checkpoint = internal.checkpoint();
-      ExprNode expr = new ExpressionParser(exprText, sourceLocation, internal)
-          .parseExpression();
-      return internal.errorsSince(checkpoint)
-          ? new ExprUnion(exprText)
-          : new ExprUnion(expr);
+      return ExprUnion.parseWithV1Fallback(exprText, sourceLocation);
     }
   }
 
