@@ -3,7 +3,7 @@
   <name>Closure Templates</name>
   <groupId>com.google.template</groupId>
   <artifactId>soy</artifactId>
-  <version>v20160111</version>
+  <version>2016-01-12</version>
   <description>
     Closure Templates are a client-side and server-side templating system.
   </description>
