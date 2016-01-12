@@ -15,6 +15,15 @@
     <url>https://www.google.com</url>
   </organization>
 
+  <!-- Useless, but required by Maven Central release process. -->
+  <developers>
+    <developer>
+      <name>Googlers</name>
+      <organization>Google</organization>
+      <organizationUrl>https://www.google.com</organizationUrl>
+    </developer>
+  </developers>
+
   <licenses>
     <license>
       <name>The Apache Software License, Version 2.0</name>
@@ -22,6 +31,14 @@
       <distribution>repo</distribution>
     </license>
   </licenses>
+
+  <!-- Allow publishing snapshots to Maven Central. -->
+  <distributionManagement>
+    <snapshotRepository>
+      <id>ossrh</id>
+      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+    </snapshotRepository>
+  </distributionManagement>
 
   <issueManagement>
     <system>GitHub</system>
@@ -214,6 +231,88 @@
     </dependency>
   </dependencies>
 
+  <profiles>
+    <!-- Build steps that only need to run when publishing to Maven Central. -->
+    <profile>
+      <id>release</id>
+      <build>
+        <plugins>
+          <plugin>
+            <!-- Sign artifacts with local GPG key. -->
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-gpg-plugin</artifactId>
+            <version>1.6</version>
+            <executions>
+              <execution>
+                <id>sign-artifacts</id>
+                <phase>verify</phase>
+                <goals>
+                  <goal>sign</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <!-- Create javadoc.jar. -->
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-javadoc-plugin</artifactId>
+            <version>2.10.3</version>
+            <configuration>
+              <notimestamp>true</notimestamp>
+              <windowtitle>Closure Templates</windowtitle>
+              <author>false</author>
+              <doctitle>
+                <![CDATA[
+                  <h1>Closure Templates</h1>
+                  <h4>Complete javadoc for developers and plugin writers.</h4>
+                ]]>
+              </doctitle>
+              <bottom>
+                <![CDATA[
+                  <div id="footer">
+                  <div id="footerlogo" style="float:left">
+                    <img src="http://www.google.com/images/art.gif" alt="Google colored balls">
+                  </div>
+                  <div id="copyright" style="float:left">
+                    <p>&copy; 2009 Google -
+                      <a href="http://www.google.com/privacy.html">Privacy Policy</a> -
+                      <a href="http://www.google.com/terms_of_service.html">Terms and Conditions</a> -
+                      <a href="http://www.google.com/about.html">About Google</a>
+                    </p>
+                  </div>
+                ]]>
+              </bottom>
+              <!-- Ignore javadoc errors. -->
+              <failOnError>false</failOnError>
+            </configuration>
+            <executions>
+              <execution>
+                <id>attach-javadoc</id>
+                <goals>
+                  <goal>jar</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <!-- Create sources.jar. -->
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-source-plugin</artifactId>
+            <version>2.4</version>
+            <executions>
+              <execution>
+                <id>attach-sources</id>
+                <goals>
+                  <goal>jar-no-fork</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+
   <build>
     <defaultGoal>install</defaultGoal>
 
@@ -227,164 +326,6 @@
     </testResources>
 
     <plugins>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>javacc-maven-plugin</artifactId>
-        <version>2.6</version>
-        <configuration>
-          <sourceDirectory>${project.basedir}/java/src</sourceDirectory>
-        </configuration>
-        <executions>
-          <execution>
-            <id>javacc</id>
-            <goals>
-              <goal>javacc</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.3</version>
-        <configuration>
-          <source>${java.version}</source>
-          <target>${java.version}</target>
-          <debug>true</debug>
-          <debuglevel>lines,vars,source</debuglevel>
-          <compilerArgument>-Werror</compilerArgument>
-          <compilerArgument>-Xlint:deprecation</compilerArgument>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <version>2.18.1</version>
-        <configuration>
-          <systemPropertyVariables>
-            <soy_jbcsrc_debug_mode>true</soy_jbcsrc_debug_mode>
-          </systemPropertyVariables>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>build-helper-maven-plugin</artifactId>
-        <version>1.10</version>
-        <executions>
-          <execution>
-            <id>attach-artifacts</id>
-            <phase>package</phase>
-            <goals>
-              <goal>attach-artifact</goal>
-            </goals>
-            <configuration>
-              <artifacts>
-                <artifact>
-                  <file>
-                    ${project.build.directory}/soyutils_usegoog.js
-                  </file>
-                  <type>js</type>
-                  <classifier>soyutils_usegoog</classifier>
-                </artifact>
-              </artifacts>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-shade-plugin</artifactId>
-        <version>2.4.2</version>
-        <executions>
-          <execution>
-            <id>with-dependencies</id>
-            <phase>package</phase>
-            <goals>
-              <goal>shade</goal>
-            </goals>
-            <configuration>
-              <shadedArtifactAttached>true</shadedArtifactAttached>
-              <shadedClassifierName>with-dependencies</shadedClassifierName>
-            </configuration>
-          </execution>
-
-          <execution>
-            <id>SoyToJsSrcCompiler</id>
-            <phase>package</phase>
-            <goals>
-              <goal>shade</goal>
-            </goals>
-            <configuration>
-              <shadedArtifactAttached>true</shadedArtifactAttached>
-              <shadedClassifierName>SoyToJsSrcCompiler</shadedClassifierName>
-              <transformers>
-                <transformer
-                  implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                  <mainClass>com.google.template.soy.SoyToJsSrcCompiler</mainClass>
-                </transformer>
-              </transformers>
-            </configuration>
-          </execution>
-
-          <execution>
-            <id>SoyToPySrcCompiler</id>
-            <phase>package</phase>
-            <goals>
-              <goal>shade</goal>
-            </goals>
-            <configuration>
-              <shadedArtifactAttached>true</shadedArtifactAttached>
-              <shadedClassifierName>SoyToPySrcCompiler</shadedClassifierName>
-              <transformers>
-                <transformer
-                  implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                  <mainClass>com.google.template.soy.SoyToPySrcCompiler</mainClass>
-                </transformer>
-              </transformers>
-            </configuration>
-          </execution>
-
-          <execution>
-            <id>SoyParseInfoGenerator</id>
-            <phase>package</phase>
-            <goals>
-              <goal>shade</goal>
-            </goals>
-            <configuration>
-              <shadedArtifactAttached>true</shadedArtifactAttached>
-              <shadedClassifierName>SoyParseInfoGenerator</shadedClassifierName>
-              <transformers>
-                <transformer
-                  implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                  <mainClass>com.google.template.soy.SoyParseInfoGenerator
-                  </mainClass>
-                </transformer>
-              </transformers>
-            </configuration>
-          </execution>
-
-          <execution>
-            <id>SoyMsgExtractor</id>
-            <phase>package</phase>
-            <goals>
-              <goal>shade</goal>
-            </goals>
-            <configuration>
-              <shadedArtifactAttached>true</shadedArtifactAttached>
-              <shadedClassifierName>SoyMsgExtractor</shadedClassifierName>
-              <transformers>
-                <transformer
-                  implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                  <mainClass>com.google.template.soy.SoyMsgExtractor</mainClass>
-                </transformer>
-              </transformers>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-antrun-plugin</artifactId>
@@ -412,156 +353,6 @@
           </execution>
         </executions>
       </plugin>
-
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>exec-maven-plugin</artifactId>
-        <version>1.4.0</version>
-        <configuration>
-          <detail>true</detail>
-        </configuration>
-        <executions>
-
-          <execution>
-            <id>js-simple-example</id>
-            <phase>verify</phase>
-            <configuration>
-              <executable>java</executable>
-              <arguments>
-                <argument>-jar</argument>
-                <argument>
-                  ${project.build.directory}/${project.build.finalName}-SoyToJsSrcCompiler.jar
-                </argument>
-                <argument>--outputPathFormat</argument>
-                <argument>
-                  ${soy.examples.out}/{INPUT_FILE_NAME_NO_EXT}_generated.js
-                </argument>
-                <argument>${soy.examples}/simple.soy</argument>
-              </arguments>
-            </configuration>
-
-            <goals>
-              <goal>exec</goal>
-            </goals>
-          </execution>
-
-          <execution>
-            <id>js-features-example</id>
-            <phase>verify</phase>
-            <configuration>
-              <executable>java</executable>
-              <arguments>
-                <argument>-jar</argument>
-                <argument>
-                  ${project.build.directory}/${project.build.finalName}-SoyToJsSrcCompiler.jar
-                </argument>
-                <argument>--outputPathFormat</argument>
-                <argument>
-                  ${soy.examples.out}/{INPUT_FILE_NAME_NO_EXT}_generated_{LOCALE}.js
-                </argument>
-                <argument>--locales</argument>
-                <argument>en,x-zz</argument>
-                <argument>--messageFilePathFormat</argument>
-                <argument>${soy.examples}/examples_translated_{LOCALE}.xlf</argument>
-                <argument>--compileTimeGlobalsFile</argument>
-                <argument>${project.basedir}/javascript/examples/features-usage_globals.txt
-                </argument>
-                <argument>--inputPrefix</argument>
-                <argument>${soy.examples}/</argument>
-                <argument>simple.soy</argument>
-                <argument>features.soy</argument>
-              </arguments>
-            </configuration>
-            <goals>
-              <goal>exec</goal>
-            </goals>
-          </execution>
-
-          <execution>
-            <id>java-simple-example</id>
-            <phase>verify</phase>
-            <configuration>
-              <mainClass>com.google.template.soy.examples.SimpleUsage</mainClass>
-              <cleanupDaemonThreads>false</cleanupDaemonThreads>
-              <additionalClasspathElements>
-                <additionalClasspathElement>
-                  ${soy.examples}/
-                </additionalClasspathElement>
-              </additionalClasspathElements>
-            </configuration>
-            <goals>
-              <goal>java</goal>
-            </goals>
-          </execution>
-
-          <execution>
-            <id>java-features-example</id>
-            <phase>verify</phase>
-            <configuration>
-              <mainClass>com.google.template.soy.examples.FeaturesUsage</mainClass>
-              <cleanupDaemonThreads>false</cleanupDaemonThreads>
-              <additionalClasspathElements>
-                <additionalClasspathElement>${soy.examples}/</additionalClasspathElement>
-                <additionalClasspathElement>
-                  ${project.build.sourceDirectory}/com/google/template/soy/examples/
-                </additionalClasspathElement>
-              </additionalClasspathElements>
-            </configuration>
-            <goals>
-              <goal>java</goal>
-            </goals>
-          </execution>
-
-          <execution>
-            <id>parse-info-generation-example</id>
-            <phase>verify</phase>
-            <configuration>
-              <executable>java</executable>
-              <arguments>
-                <argument>-jar</argument>
-                <argument>
-                  ${project.build.directory}/${project.build.finalName}-SoyParseInfoGenerator.jar
-                </argument>
-                <argument>--outputDirectory</argument>
-                <argument>${soy.examples.out}/</argument>
-                <argument>--javaPackage</argument>
-                <argument>com.google.template.soy.examples</argument>
-                <argument>--javaClassNameSource</argument>
-                <argument>filename</argument>
-                <argument>${soy.examples}/features.soy</argument>
-              </arguments>
-            </configuration>
-            <goals>
-              <goal>exec</goal>
-            </goals>
-          </execution>
-
-          <execution>
-            <id>msg-extraction-example</id>
-            <phase>verify</phase>
-            <configuration>
-              <executable>java</executable>
-              <arguments>
-                <argument>-jar</argument>
-                <argument>
-                  ${project.build.directory}/${project.build.finalName}-SoyMsgExtractor.jar
-                </argument>
-                <argument>--outputFile</argument>
-                <argument>${soy.examples.out}/examples_extracted.xlf
-                </argument>
-                <argument>--inputPrefix</argument>
-                <argument>${soy.examples}/</argument>
-                <argument>simple.soy</argument>
-                <argument>features.soy</argument>
-              </arguments>
-            </configuration>
-            <goals>
-              <goal>exec</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-enforcer-plugin</artifactId>
@@ -604,36 +395,311 @@
           </execution>
         </executions>
       </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.3</version>
+        <configuration>
+          <source>${java.version}</source>
+          <target>${java.version}</target>
+          <debug>true</debug>
+          <debuglevel>lines,vars,source</debuglevel>
+          <compilerArgument>-Werror</compilerArgument>
+          <compilerArgument>-Xlint:deprecation</compilerArgument>
+        </configuration>
+      </plugin>
 
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-javadoc-plugin</artifactId>
-        <version>2.10.3</version>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>2.4.2</version>
+        <executions>
+          <execution>
+            <id>with-dependencies</id>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <shadedArtifactAttached>true</shadedArtifactAttached>
+              <shadedClassifierName>with-dependencies</shadedClassifierName>
+            </configuration>
+          </execution>
+          <execution>
+            <id>SoyToJsSrcCompiler</id>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <shadedArtifactAttached>true</shadedArtifactAttached>
+              <shadedClassifierName>SoyToJsSrcCompiler</shadedClassifierName>
+              <transformers>
+                <transformer
+                  implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  <mainClass>com.google.template.soy.SoyToJsSrcCompiler</mainClass>
+                </transformer>
+              </transformers>
+            </configuration>
+          </execution>
+          <execution>
+            <id>SoyToPySrcCompiler</id>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <shadedArtifactAttached>true</shadedArtifactAttached>
+              <shadedClassifierName>SoyToPySrcCompiler</shadedClassifierName>
+              <transformers>
+                <transformer
+                  implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  <mainClass>com.google.template.soy.SoyToPySrcCompiler</mainClass>
+                </transformer>
+              </transformers>
+            </configuration>
+          </execution>
+          <execution>
+            <id>SoyParseInfoGenerator</id>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <shadedArtifactAttached>true</shadedArtifactAttached>
+              <shadedClassifierName>SoyParseInfoGenerator</shadedClassifierName>
+              <transformers>
+                <transformer
+                  implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  <mainClass>com.google.template.soy.SoyParseInfoGenerator
+                  </mainClass>
+                </transformer>
+              </transformers>
+            </configuration>
+          </execution>
+          <execution>
+            <id>SoyMsgExtractor</id>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <shadedArtifactAttached>true</shadedArtifactAttached>
+              <shadedClassifierName>SoyMsgExtractor</shadedClassifierName>
+              <transformers>
+                <transformer
+                  implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  <mainClass>com.google.template.soy.SoyMsgExtractor</mainClass>
+                </transformer>
+              </transformers>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>2.18.1</version>
         <configuration>
-          <notimestamp>true</notimestamp>
-          <windowtitle>Closure Templates</windowtitle>
-          <author>false</author>
-          <doctitle>
-            <![CDATA[
-                  <h1>Closure Templates</h1>
-                  <h4>Complete javadoc for developers and plugin writers.</h4>
-                ]]>
-          </doctitle>
-          <bottom>
-            <![CDATA[
-                  <div id="footer">
-                  <div id="footerlogo" style="float:left">
-                    <img src="http://www.google.com/images/art.gif" alt="Google colored balls">
-                  </div>
-                  <div id="copyright" style="float:left">
-                    <p>&copy; 2009 Google -
-                      <a href="http://www.google.com/privacy.html">Privacy Policy</a> -
-                      <a href="http://www.google.com/terms_of_service.html">Terms and Conditions</a> -
-                      <a href="http://www.google.com/about.html">About Google</a>
-                    </p>
-                  </div>
-                ]]>
-          </bottom>
+          <systemPropertyVariables>
+            <soy_jbcsrc_debug_mode>true</soy_jbcsrc_debug_mode>
+          </systemPropertyVariables>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <version>1.10</version>
+        <executions>
+          <execution>
+            <id>attach-artifacts</id>
+            <phase>package</phase>
+            <goals>
+              <goal>attach-artifact</goal>
+            </goals>
+            <configuration>
+              <artifacts>
+                <artifact>
+                  <file>
+                    ${project.build.directory}/soyutils_usegoog.js
+                  </file>
+                  <type>js</type>
+                  <classifier>soyutils_usegoog</classifier>
+                </artifact>
+              </artifacts>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <version>1.4.0</version>
+        <configuration>
+          <detail>true</detail>
+        </configuration>
+        <executions>
+          <execution>
+            <id>js-simple-example</id>
+            <phase>verify</phase>
+            <configuration>
+              <executable>java</executable>
+              <arguments>
+                <argument>-jar</argument>
+                <argument>
+                  ${project.build.directory}/${project.build.finalName}-SoyToJsSrcCompiler.jar
+                </argument>
+                <argument>--outputPathFormat</argument>
+                <argument>
+                  ${soy.examples.out}/{INPUT_FILE_NAME_NO_EXT}_generated.js
+                </argument>
+                <argument>${soy.examples}/simple.soy</argument>
+              </arguments>
+            </configuration>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>js-features-example</id>
+            <phase>verify</phase>
+            <configuration>
+              <executable>java</executable>
+              <arguments>
+                <argument>-jar</argument>
+                <argument>
+                  ${project.build.directory}/${project.build.finalName}-SoyToJsSrcCompiler.jar
+                </argument>
+                <argument>--outputPathFormat</argument>
+                <argument>
+                  ${soy.examples.out}/{INPUT_FILE_NAME_NO_EXT}_generated_{LOCALE}.js
+                </argument>
+                <argument>--locales</argument>
+                <argument>en,x-zz</argument>
+                <argument>--messageFilePathFormat</argument>
+                <argument>${soy.examples}/examples_translated_{LOCALE}.xlf</argument>
+                <argument>--compileTimeGlobalsFile</argument>
+                <argument>${project.basedir}/javascript/examples/features-usage_globals.txt
+                </argument>
+                <argument>--inputPrefix</argument>
+                <argument>${soy.examples}/</argument>
+                <argument>simple.soy</argument>
+                <argument>features.soy</argument>
+              </arguments>
+            </configuration>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>java-simple-example</id>
+            <phase>verify</phase>
+            <configuration>
+              <mainClass>com.google.template.soy.examples.SimpleUsage</mainClass>
+              <cleanupDaemonThreads>false</cleanupDaemonThreads>
+              <additionalClasspathElements>
+                <additionalClasspathElement>
+                  ${soy.examples}/
+                </additionalClasspathElement>
+              </additionalClasspathElements>
+            </configuration>
+            <goals>
+              <goal>java</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>java-features-example</id>
+            <phase>verify</phase>
+            <configuration>
+              <mainClass>com.google.template.soy.examples.FeaturesUsage</mainClass>
+              <cleanupDaemonThreads>false</cleanupDaemonThreads>
+              <additionalClasspathElements>
+                <additionalClasspathElement>${soy.examples}/</additionalClasspathElement>
+                <additionalClasspathElement>
+                  ${project.build.sourceDirectory}/com/google/template/soy/examples/
+                </additionalClasspathElement>
+              </additionalClasspathElements>
+            </configuration>
+            <goals>
+              <goal>java</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>parse-info-generation-example</id>
+            <phase>verify</phase>
+            <configuration>
+              <executable>java</executable>
+              <arguments>
+                <argument>-jar</argument>
+                <argument>
+                  ${project.build.directory}/${project.build.finalName}-SoyParseInfoGenerator.jar
+                </argument>
+                <argument>--outputDirectory</argument>
+                <argument>${soy.examples.out}/</argument>
+                <argument>--javaPackage</argument>
+                <argument>com.google.template.soy.examples</argument>
+                <argument>--javaClassNameSource</argument>
+                <argument>filename</argument>
+                <argument>${soy.examples}/features.soy</argument>
+              </arguments>
+            </configuration>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>msg-extraction-example</id>
+            <phase>verify</phase>
+            <configuration>
+              <executable>java</executable>
+              <arguments>
+                <argument>-jar</argument>
+                <argument>
+                  ${project.build.directory}/${project.build.finalName}-SoyMsgExtractor.jar
+                </argument>
+                <argument>--outputFile</argument>
+                <argument>${soy.examples.out}/examples_extracted.xlf
+                </argument>
+                <argument>--inputPrefix</argument>
+                <argument>${soy.examples}/</argument>
+                <argument>simple.soy</argument>
+                <argument>features.soy</argument>
+              </arguments>
+            </configuration>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>javacc-maven-plugin</artifactId>
+        <version>2.6</version>
+        <configuration>
+          <sourceDirectory>${project.basedir}/java/src</sourceDirectory>
+        </configuration>
+        <executions>
+          <execution>
+            <id>javacc</id>
+            <goals>
+              <goal>javacc</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <!-- Allow publishing to Maven Central via
+          `mvn -P release clean deploy`.
+          See http://central.sonatype.org/pages/apache-maven.html. -->
+        <groupId>org.sonatype.plugins</groupId>
+        <artifactId>nexus-staging-maven-plugin</artifactId>
+        <version>1.6.5</version>
+        <extensions>true</extensions>
+        <configuration>
+          <serverId>ossrh</serverId>
+          <nexusUrl>https://oss.sonatype.org</nexusUrl>
+          <autoReleaseAfterClose>true</autoReleaseAfterClose>
         </configuration>
       </plugin>
     </plugins>
