@@ -140,7 +140,9 @@ public interface SoyFileSupplier {
       if (inputFileUrl.getProtocol().equals("file")) {
         // If the URL corresponds to a local file (such as a resource during local development),
         // open it up as a volatile file, so we can account for changes to the file.
-        return new VolatileSoyFileSupplier(new File(inputFileUrl.getPath()), soyFileKind);
+	// But first unescape space characters...
+        String filename = inputFileUrl.getFile().replace("%20", " ");
+        return new VolatileSoyFileSupplier(new File(filename), soyFileKind);
       } else {
         return create(
             Resources.asCharSource(inputFileUrl, UTF_8), soyFileKind, filePath);
