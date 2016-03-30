@@ -101,6 +101,11 @@ public final class LetValueNode extends LetNode implements ExprHolderNode {
     return new LetValueNode(this, copyState);
   }
 
+  @Override
+  public String getTagString() {
+    return this.buildTagStringHelper(true);
+  }
+
   /**
    * Builder for {@link LetValueNode}.
    */
@@ -150,4 +155,5 @@ public final class LetValueNode extends LetNode implements ExprHolderNode {
           id, sourceLocation, parseResult.localVarName, commandText, parseResult.valueExpr);
     }
   }
+
 }
