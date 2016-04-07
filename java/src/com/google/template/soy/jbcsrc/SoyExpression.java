@@ -18,6 +18,7 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.OBJECT;
+import static com.google.template.soy.jbcsrc.BytecodeUtils.RENDER_CONTEXT_TYPE;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.SOY_LIST_TYPE;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.classFromAsmType;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
@@ -26,6 +27,7 @@ import static com.google.template.soy.jbcsrc.BytecodeUtils.logicalNot;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import com.google.protobuf.Message;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.soytree.CallNode;
@@ -42,6 +44,7 @@ import com.google.template.soy.types.primitive.NullType;
 import com.google.template.soy.types.primitive.SanitizedType;
 import com.google.template.soy.types.primitive.StringType;
 import com.google.template.soy.types.primitive.UnknownType;
+import com.google.template.soy.types.proto.SoyProtoTypeImpl;
 
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
@@ -97,6 +100,15 @@ class SoyExpression extends Expression {
 
   static SoyExpression forList(ListType listType, Expression delegate) {
     return new SoyExpression(listType, List.class, delegate);
+  }
+
+  static SoyExpression forProto(
+      SoyProtoTypeImpl protoType,
+      Class<? extends Message> unboxedType,
+      Expression delegate,
+      Expression renderContext) {
+    checkArgument(renderContext.resultType().equals(RENDER_CONTEXT_TYPE));
+    return new SoyExpression(protoType, unboxedType, delegate, Optional.of(renderContext));
   }
 
   /**
@@ -254,6 +266,10 @@ class SoyExpression extends Expression {
     return SoyValue.class.isAssignableFrom(clazz);
   }
 
+  boolean isKnownProto() {
+    return soyType instanceof SoyProtoTypeImpl;
+  }
+
   /**
    * Returns {@code true} if the expression is known to be an {@linkplain #isKnownInt() int} or a
    * {@linkplain #isKnownFloat() float} at compile time.
@@ -309,6 +325,30 @@ class SoyExpression extends Expression {
     }
     if (isKnownList()) {
       return asBoxed(MethodRef.LIST_IMPL_FOR_PROVIDER_LIST.invoke(delegate));
+    }
+    if (isKnownProto()) {
+      // dereference the context early in case our caller screwed up and we don't have one.
+      final Expression context = renderContext.get();
+      return asBoxed(
+          new Expression(ProtoUtils.RENDER_CONTEXT_BOX.returnType(), delegate.features()) {
+            @Override
+            void doGen(CodeBuilder adapter) {
+              delegate.gen(adapter);
+              context.gen(adapter);
+              // swap the two top items of the stack.
+              // This ensures that the base expression is gen'd at a stack depth of zero, which is
+              // important if it contains a label for a reattach point or if this is prefixed with a
+              // null check.
+              // TODO(lukes): this is super lame and is due to the fact that we generate expressions
+              // with complex control flow that isn't completely encapsulated.   Ideas: inline all
+              // the null checks so that the control flow is more encapsulated (though this will add
+              // a lot of redundancy), promote the concept of an expression that must be gen()'d at
+              // a depth of zero to a top level concept (an Expression Feature), so that we can flag
+              // it more eagerly, something else?
+              adapter.swap();
+              ProtoUtils.RENDER_CONTEXT_BOX.invokeUnchecked(adapter);
+            }
+          });
     }
     throw new IllegalStateException(
         "cannot box soy expression of type " + soyType + " with runtime type " + clazz);
@@ -507,11 +547,29 @@ class SoyExpression extends Expression {
         asListType, delegate.cast(SOY_LIST_TYPE).invoke(MethodRef.SOY_LIST_AS_JAVA_LIST));
   }
 
+  private SoyExpression unboxAsProto(Class<? extends Message> asType) {
+    return forProto(
+        (SoyProtoTypeImpl) soyType,
+        asType,
+        delegate
+            .cast(SoyProtoTypeImpl.Value.class)
+            .invoke(ProtoUtils.SOY_PROTO_VALUE_GET_PROTO)
+            .cast(asType),
+        renderContext.get());
+  }
+
   /**
    * Returns a new {@link SoyExpression} with the same type but a new delegate expression.
    */
   SoyExpression withSource(Expression expr) {
     return new SoyExpression(soyType, clazz, expr, renderContext);
+  }
+
+  SoyExpression withRenderContext(Expression renderContext) {
+    if (this.renderContext.isPresent() && this.renderContext.get().equals(renderContext)) {
+      return this;
+    }
+    return new SoyExpression(soyType, clazz, delegate, Optional.of(renderContext));
   }
 
   /**

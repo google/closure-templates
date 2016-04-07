@@ -147,7 +147,7 @@
     <dependency>
       <groupId>com.google.common.html.types</groupId>
       <artifactId>types</artifactId>
-      <version>1.0.3</version>
+      <version>1.0.4</version>
     </dependency>
 
     <dependency>
@@ -156,6 +156,12 @@
       <version>2.0.2</version>
       <!-- unnecessary at runtime since retention of annotations is CLASS -->
       <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>com.google.protobuf</groupId>
+      <artifactId>protobuf-java</artifactId>
+      <version>3.0.0-beta-2</version>
     </dependency>
 
     <dependency>
@@ -218,6 +224,19 @@
       <artifactId>jsr305</artifactId>
       <version>2.0.3</version>
       <scope>compile</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>com.google.code.gson</groupId>
+      <artifactId>gson</artifactId>
+      <version>2.7</version>
+    </dependency>
+
+    <!-- Two JSON libraries are better than one -->
+    <dependency>
+      <groupId>org.json</groupId>
+      <artifactId>json</artifactId>
+      <version>20160212</version>
     </dependency>
 
     <!-- soy build-time dependency only. see maven-antrun-plugin:generated-soyutils -->
@@ -773,7 +792,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>
-        <version>3.0.0</version>
+        <version>3.0.1</version>
         <configuration>
           <archive>
             <manifestEntries>

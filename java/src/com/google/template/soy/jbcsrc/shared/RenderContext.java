@@ -22,6 +22,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableMap;
+import com.google.protobuf.Message;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueConverter;
@@ -34,12 +35,13 @@ import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
+import com.google.template.soy.types.proto.SoyProtoTypeImpl;
 
 import java.util.Map;
 
 import javax.annotation.Nullable;
 
-/**
+/** 
  * A collection of contextual rendering data.  Each top level rendering operation will obtain a
  * single instance of this object and it will be propagated throughout the render tree.
  */
@@ -111,6 +113,24 @@ public final class RenderContext {
           "Failed to find Soy print directive with name '" + name + "'");
     }
     return printDirective;
+  }
+
+  /**
+   * Helper for boxing protos.  We cannot currently box protos without calling out to the value
+   * converter because the SoyProtoValue has a package private constructor and even if it was
+   * public it would be hard/impossible to call it.
+   *
+   * <p>The difficulty is because SoyProtoTypeImpl.Value currently depends on its SoyType for
+   * field interpretation.  In theory we could drop this and have it just use the descriptor
+   * directly (since it has a Message instance it could just call message.getDescriptor()), but
+   * this may add some overhead.  This could all be made much easier if we had perfect type
+   * information (then we would ~never need to box or rely on the SoyValue implementation).
+   */
+  public SoyProtoTypeImpl.Value box(Message proto) {
+    if (proto == null) {
+      return null;
+    }
+    return (SoyProtoTypeImpl.Value) converter.convert(proto);
   }
 
   public CompiledTemplate getDelTemplate(

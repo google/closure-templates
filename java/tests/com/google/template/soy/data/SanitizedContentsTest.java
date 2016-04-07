@@ -16,6 +16,19 @@
 
 package com.google.template.soy.data;
 
+import com.google.common.html.types.SafeHtml;
+import com.google.common.html.types.SafeHtmlBuilder;
+import com.google.common.html.types.SafeHtmlProto;
+import com.google.common.html.types.SafeHtmls;
+import com.google.common.html.types.SafeScript;
+import com.google.common.html.types.SafeScriptProto;
+import com.google.common.html.types.SafeScripts;
+import com.google.common.html.types.SafeStyleSheet;
+import com.google.common.html.types.SafeStyleSheetProto;
+import com.google.common.html.types.SafeStyleSheets;
+import com.google.common.html.types.SafeUrl;
+import com.google.common.html.types.SafeUrlProto;
+import com.google.common.html.types.SafeUrls;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 
 import junit.framework.TestCase;
@@ -152,5 +165,116 @@ public class SanitizedContentsTest extends TestCase {
 
     assertNull(SanitizedContents.getDefaultDir(ContentKind.TEXT));
     assertNull(SanitizedContents.getDefaultDir(ContentKind.HTML));
+  }
+
+  public void testConstantUri() {
+    // Passing case. We actually can't test a failing case because it won't compile.
+    SanitizedContent uri = SanitizedContents.constantUri("itms://blahblah");
+    assertEquals("itms://blahblah", uri.getContent());
+    assertEquals(ContentKind.URI, uri.getContentKind());
+    assertEquals(SanitizedContents.getDefaultDir(ContentKind.URI), uri.getContentDirection());
+  }
+
+  public void testCommonSafeHtmlTypeConversions() {
+    final String helloWorldHtml = "Hello <em>World</em>";
+    final SafeHtml safeHtml = SafeHtmls.concat(
+        SafeHtmls.htmlEscape("Hello "),
+        new SafeHtmlBuilder("em").escapeAndAppendContent("World").build());
+    final SanitizedContent sanitizedHtml = SanitizedContents.fromSafeHtml(safeHtml);
+    assertEquals(ContentKind.HTML, sanitizedHtml.getContentKind());
+    assertEquals(helloWorldHtml, sanitizedHtml.getContent());
+    assertEquals(safeHtml, sanitizedHtml.toSafeHtml());
+
+    // Proto conversions.
+    final SafeHtmlProto safeHtmlProto = sanitizedHtml.toSafeHtmlProto();
+    assertEquals(safeHtml, SafeHtmls.fromProto(safeHtmlProto));
+    assertEquals(helloWorldHtml, SanitizedContents.fromSafeHtmlProto(safeHtmlProto).getContent());
+  }
+
+  public void testCommonSafeScriptTypeConversions() {
+    final String testScript = "window.alert('hello');";
+    final SafeScript safeScript = SafeScripts.fromConstant(testScript);
+    final SanitizedContent sanitizedScript = SanitizedContents.fromSafeScript(safeScript);
+    assertEquals(ContentKind.JS, sanitizedScript.getContentKind());
+    assertEquals(testScript, sanitizedScript.getContent());
+    assertEquals(safeScript.getSafeScriptString(), sanitizedScript.getContent());
+
+    // Proto conversions.
+    final SafeScriptProto safeScriptProto = SafeScripts.toProto(safeScript);
+    assertEquals(safeScript, SafeScripts.fromProto(safeScriptProto));
+    assertEquals(testScript, SanitizedContents.fromSafeScriptProto(safeScriptProto).getContent());
+  }
+
+  public void testCommonSafeStyleSheetTypeConversions() {
+    final String testCss = "div { display: none; }";
+    final SafeStyleSheet safeCss = SafeStyleSheets.fromConstant(testCss);
+    final SanitizedContent sanitizedCss = SanitizedContents.fromSafeStyleSheet(safeCss);
+    assertEquals(ContentKind.CSS, sanitizedCss.getContentKind());
+    assertEquals(testCss, sanitizedCss.getContent());
+    assertEquals(safeCss, sanitizedCss.toSafeStyleSheet());
+
+    // Proto conversions.
+    final SafeStyleSheetProto safeCssProto = sanitizedCss.toSafeStyleSheetProto();
+    assertEquals(safeCss, SafeStyleSheets.fromProto(safeCssProto));
+    assertEquals(testCss, SanitizedContents.fromSafeStyleSheetProto(safeCssProto).getContent());
+  }
+
+  public void testCommonSafeUrlTypeConversions() {
+    final String testUrl = "http://blahblah";
+    final SanitizedContent sanitizedConstantUri = SanitizedContents.constantUri(testUrl);
+    final SafeUrl safeUrl = SafeUrls.fromConstant(testUrl);
+
+    final SanitizedContent sanitizedUrl = SanitizedContents.fromSafeUrl(safeUrl);
+    assertEquals(ContentKind.URI, sanitizedUrl.getContentKind());
+    assertEquals(testUrl, sanitizedUrl.getContent());
+    assertEquals(sanitizedConstantUri, sanitizedUrl);
+
+    // Proto conversions.
+    final SafeUrlProto safeUrlProto = SafeUrls.toProto(safeUrl);
+    final SanitizedContent sanitizedUrlProto = SanitizedContents.fromSafeUrlProto(safeUrlProto);
+    assertEquals(testUrl, sanitizedUrlProto.getContent());
+    assertEquals(sanitizedConstantUri, sanitizedUrlProto);
+  }
+
+  public void testWrongContentKindThrows_html() {
+    final SanitizedContent notHtml =
+        UnsafeSanitizedContentOrdainer.ordainAsSafe("not HTML", ContentKind.CSS);
+    try {
+      notHtml.toSafeHtml();
+      fail("Should have thrown on SanitizedContent of kind other than HTML");
+    } catch (IllegalStateException expected) {}
+    try {
+      notHtml.toSafeHtmlProto();
+      fail("Should have thrown on SanitizedContent of kind other than HTML");
+    } catch (IllegalStateException expected) {}
+  }
+
+  public void testWrongContentKindThrows_css() {
+    final SanitizedContent notCss =
+        UnsafeSanitizedContentOrdainer.ordainAsSafe("not CSS", ContentKind.HTML);
+    try {
+      notCss.toSafeStyleSheet();
+      fail("Should have thrown on SanitizedContent of kind other than CSS");
+    } catch (IllegalStateException expected) {}
+    try {
+      notCss.toSafeStyleSheetProto();
+      fail("Should have thrown on SanitizedContent of kind other than CSS");
+    } catch (IllegalStateException expected) {}
+  }
+
+  public void testInvalidStyleSheetContentThrows() {
+    for (String css : new String[] {
+        "display: none;", "{ display: none; }", "/* a comment */", "@import url('test.css');" }) {
+      final SanitizedContent cssStyle =
+          UnsafeSanitizedContentOrdainer.ordainAsSafe(css, ContentKind.CSS);
+      try {
+        cssStyle.toSafeStyleSheet();
+        fail("Should have thrown on CSS SanitizedContent with invalid stylesheet:" + css);
+      } catch (IllegalStateException expected) {}
+      try {
+        cssStyle.toSafeStyleSheetProto();
+        fail("Should have thrown on CSS SanitizedContent with invalid stylesheet:" + css);
+      } catch (IllegalStateException expected) {}
+    }
   }
 }
