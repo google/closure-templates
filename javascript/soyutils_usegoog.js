@@ -1161,7 +1161,6 @@ soy.$$stripHtmlTags = function(value, opt_tagWhitelist) {
   // [1] which are indices into a list of approved tag names.
   // Replace all other uses of < and > with entities.
   var tags = [];
-  var openListTags = [];
   var attrs = [];
   html = html.replace(
     soy.esc.$$HTML_TAG_REGEX_,
