@@ -355,50 +355,8 @@
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-enforcer-plugin</artifactId>
-        <version>1.3.1</version>
-        <executions>
-          <execution>
-            <id>enforce-files-exist</id>
-            <goals>
-              <goal>enforce</goal>
-            </goals>
-            <phase>verify</phase>
-            <configuration>
-              <rules>
-                <requireFilesExist>
-                  <files>
-                    <file>${soy.examples.out}/simple_generated.js</file>
-                    <file>${soy.examples.out}/simple_generated_en.js</file>
-                    <file>${soy.examples.out}/features_generated_en.js</file>
-                    <file>${soy.examples.out}/simple_generated_x-zz.js</file>
-                    <file>${soy.examples.out}/features_generated_x-zz.js</file>
-                    <file>${soy.examples.out}/FeaturesSoyInfo.java</file>
-                    <file>${soy.examples.out}/examples_extracted.xlf</file>
-                  </files>
-                </requireFilesExist>
-              </rules>
-              <fail>true</fail>
-            </configuration>
-          </execution>
-          <execution>
-            <id>enforce</id>
-            <configuration>
-              <rules>
-                <DependencyConvergence/>
-              </rules>
-              <fail>true</fail>
-            </configuration>
-            <goals>
-              <goal>enforce</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.3</version>
+        <version>3.5.1</version>
         <configuration>
           <source>${java.version}</source>
           <target>${java.version}</target>
@@ -668,6 +626,48 @@
             </configuration>
             <goals>
               <goal>exec</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <version>1.3.1</version>
+        <executions>
+          <execution>
+            <id>enforce-files-exist</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <phase>verify</phase>
+            <configuration>
+              <rules>
+                <requireFilesExist>
+                  <files>
+                    <file>${soy.examples.out}/simple_generated.js</file>
+                    <file>${soy.examples.out}/simple_generated_en.js</file>
+                    <file>${soy.examples.out}/features_generated_en.js</file>
+                    <file>${soy.examples.out}/simple_generated_x-zz.js</file>
+                    <file>${soy.examples.out}/features_generated_x-zz.js</file>
+                    <file>${soy.examples.out}/FeaturesSoyInfo.java</file>
+                    <file>${soy.examples.out}/examples_extracted.xlf</file>
+                  </files>
+                </requireFilesExist>
+              </rules>
+              <fail>true</fail>
+            </configuration>
+          </execution>
+          <execution>
+            <id>enforce</id>
+            <configuration>
+              <rules>
+                <DependencyConvergence/>
+              </rules>
+              <fail>true</fail>
+            </configuration>
+            <goals>
+              <goal>enforce</goal>
             </goals>
           </execution>
         </executions>
