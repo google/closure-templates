@@ -21,8 +21,8 @@ import com.google.common.collect.Sets;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.exprparse.ExpressionParser;
+import com.google.template.soy.exprparse.SoyParsingContext;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
@@ -167,7 +167,7 @@ public final class SharedTestUtils {
   public static String createTemplateBodyForExpression(
       String soyExpr, final Map<String, SoyType> typeMap) {
     ExprNode expr =
-        new ExpressionParser(soyExpr, SourceLocation.UNKNOWN, ExplodingErrorReporter.get())
+        new ExpressionParser(soyExpr, SourceLocation.UNKNOWN, SoyParsingContext.exploding())
             .parseExpression();
     final Set<String> loopVarNames = new HashSet<>();
     final Set<String> names = new HashSet<>();
@@ -209,7 +209,7 @@ public final class SharedTestUtils {
     }
     String contents = "{" + soyExpr + "}\n";
     for (String loopVar : loopVarNames) {
-      contents = "{foreach $" + loopVar + " in []}\n" + contents + "\n{/foreach}";
+      contents = "{foreach $" + loopVar + " in [null]}\n" + contents + "\n{/foreach}";
     }
     templateBody.append(contents);
     return templateBody.toString();

@@ -44,6 +44,8 @@ import com.google.template.soy.soytree.MsgPlaceholderNode;
 import com.google.template.soy.soytree.MsgPluralNode;
 import com.google.template.soy.soytree.MsgSelectNode;
 import com.google.template.soy.soytree.PrintNode;
+import com.google.template.soy.soytree.RawTextNode;
+import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.MsgPlaceholderInitialNode;
 import com.google.template.soy.soytree.SoyNode.MsgSubstUnitNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
@@ -209,10 +211,11 @@ public final class MsgFuncGenerator {
       PyExpr substPyExpr = null;
 
       if (substUnitNode instanceof MsgPlaceholderNode) {
-        MsgPlaceholderInitialNode phInitialNode =
-            (MsgPlaceholderInitialNode) ((AbstractParentSoyNode<?>) substUnitNode).getChild(0);
+        SoyNode phInitialNode = ((AbstractParentSoyNode<?>) substUnitNode).getChild(0);
 
-        if (phInitialNode instanceof PrintNode || phInitialNode instanceof CallNode) {
+        if (phInitialNode instanceof PrintNode
+            || phInitialNode instanceof CallNode
+            || phInitialNode instanceof RawTextNode) {
           substPyExpr = PyExprUtils.concatPyExprs(genPyExprsVisitor.exec(phInitialNode))
               .toPyString();
         }

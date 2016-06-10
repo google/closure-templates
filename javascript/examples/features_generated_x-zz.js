@@ -147,7 +147,7 @@ soy.examples.features.demoCallWithParam = function(opt_data, opt_ignored, opt_ij
   var destinationListLen175 = destinationList175.length;
   for (var destinationIndex175 = 0; destinationIndex175 < destinationListLen175; destinationIndex175++) {
     var destinationData175 = destinationList175[destinationIndex175];
-    output += soy.$$escapeHtml(soy.examples.features.tripReport_(soy.$$augmentMap(opt_data, {destination: destinationData175}), null, opt_ijData)) + '<br>' + ((destinationIndex175 % 2 == 0) ? soy.$$escapeHtml(soy.examples.features.tripReport_({name: opt_data.companionName, destination: destinationData175}, null, opt_ijData)) + '<br>' : '');
+    output += soy.$$escapeHtml(soy.examples.features.tripReport_(soy.$$assignDefaults({destination: destinationData175}, opt_data), null, opt_ijData)) + '<br>' + ((destinationIndex175 % 2 == 0) ? soy.$$escapeHtml(soy.examples.features.tripReport_({name: opt_data.companionName, destination: destinationData175}, null, opt_ijData)) + '<br>' : '');
   }
   return soydata.VERY_UNSAFE.ordainSanitizedHtml(output);
 };
@@ -253,14 +253,15 @@ if (goog.DEBUG) {
 
 
 soy.examples.features.demoBidiSupport = function(opt_data, opt_ignored, opt_ijData) {
-  var output = '<div id="title1" style="font-variant:small-caps" ' + soy.$$filterHtmlAttributes(soy.$$bidiDirAttr(1, opt_data.title)) + '>' + soy.$$escapeHtml(opt_data.title) + '</div><div id="title2" style="font-variant:small-caps">' + soy.$$bidiSpanWrap(1, soy.$$escapeHtml(opt_data.title)) + '</div>zby ' + soy.$$bidiSpanWrap(1, soy.$$escapeHtml(opt_data.author)) + ' (' + soy.$$escapeHtml(opt_data.year) + ')<div id="choose_a_keyword">Zyour zfavorite zkeyword: <select>';
+  opt_ijData = opt_ijData || {};
+  var output = '<div id="title1" style="' + ((opt_ijData.csp_nonce) ? '/*' + opt_ijData.csp_nonce + '*/' : '') + 'font-variant:small-caps" ' + soy.$$filterHtmlAttributes(soy.$$bidiDirAttr(1, opt_data.title)) + '>' + soy.$$escapeHtml(opt_data.title) + '</div><div id="title2" style="' + ((opt_ijData.csp_nonce) ? '/*' + opt_ijData.csp_nonce + '*/' : '') + 'font-variant:small-caps">' + soy.$$bidiSpanWrap(1, soy.$$escapeHtml(opt_data.title)) + '</div>zby ' + soy.$$bidiSpanWrap(1, soy.$$escapeHtml(opt_data.author)) + ' (' + soy.$$escapeHtml(opt_data.year) + ')<div id="choose_a_keyword">Zyour zfavorite zkeyword: <select>';
   var keywordList318 = opt_data.keywords;
   var keywordListLen318 = keywordList318.length;
   for (var keywordIndex318 = 0; keywordIndex318 < keywordListLen318; keywordIndex318++) {
     var keywordData318 = keywordList318[keywordIndex318];
     output += '<option value="' + soy.$$escapeHtmlAttribute(keywordData318) + '">' + soy.$$escapeHtml(soy.$$bidiUnicodeWrap(1, keywordData318)) + '</option>';
   }
-  output += '</select></div><a href="#" style="float:' + soy.$$escapeHtmlAttribute(soy.$$filterCssValue('right')) + '">Zhelp</a><br>';
+  output += '</select></div><a href="#" style="' + ((opt_ijData.csp_nonce) ? '/*' + opt_ijData.csp_nonce + '*/' : '') + 'float:' + soy.$$escapeHtmlAttribute(soy.$$filterCssValue('right')) + '">Zhelp</a><br>';
   return soydata.VERY_UNSAFE.ordainSanitizedHtml(output);
 };
 if (goog.DEBUG) {

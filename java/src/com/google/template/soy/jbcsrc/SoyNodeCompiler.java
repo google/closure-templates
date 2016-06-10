@@ -18,14 +18,13 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.COMPILED_TEMPLATE_TYPE;
-import static com.google.template.soy.jbcsrc.BytecodeUtils.CONTENT_KIND_TYPE;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.SOY_VALUE_PROVIDER_TYPE;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.compareSoyEquals;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.constantNull;
 import static com.google.template.soy.jbcsrc.Statement.NULL_STATEMENT;
-import static com.google.template.soy.jbcsrc.VariableSet.SaveStrategy.DERIVED;
-import static com.google.template.soy.jbcsrc.VariableSet.SaveStrategy.STORE;
+import static com.google.template.soy.jbcsrc.TemplateVariableManager.SaveStrategy.DERIVED;
+import static com.google.template.soy.jbcsrc.TemplateVariableManager.SaveStrategy.STORE;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Optional;
@@ -38,9 +37,9 @@ import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.jbcsrc.ControlFlow.IfBlock;
 import com.google.template.soy.jbcsrc.ExpressionCompiler.BasicExpressionCompiler;
 import com.google.template.soy.jbcsrc.MsgCompiler.SoyNodeToStringCompiler;
-import com.google.template.soy.jbcsrc.VariableSet.SaveStrategy;
-import com.google.template.soy.jbcsrc.VariableSet.Scope;
-import com.google.template.soy.jbcsrc.VariableSet.Variable;
+import com.google.template.soy.jbcsrc.TemplateVariableManager.SaveStrategy;
+import com.google.template.soy.jbcsrc.TemplateVariableManager.Scope;
+import com.google.template.soy.jbcsrc.TemplateVariableManager.Variable;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.msgs.internal.MsgUtils;
 import com.google.template.soy.msgs.internal.MsgUtils.MsgPartsAndIds;
@@ -87,8 +86,6 @@ import org.objectweb.asm.Type;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.annotation.Nullable;
-
 /**
  * Compiles {@link SoyNode soy nodes} into {@link Statement statements}.
  *
@@ -97,49 +94,50 @@ import javax.annotation.Nullable;
  * runtime stack be <em>empty</em> prior to any of the code produced.
  */
 final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
-   // TODO(lukes): consider introducing a Builder or a non-static Factory.
+  // TODO(lukes): consider introducing a Builder or a non-static Factory.
 
-   /**
-    * Creates a SoyNodeCompiler
-    *
-    * @param innerClasses The current set of inner classes
-    * @param stateField The field on the current class that holds the state variable
-    * @param thisVar An expression that returns 'this'
-    * @param appendableVar An expression that returns the current AdvisingAppendable that we are
-    *     rendering into
-    * @param variableSet The variable set for generating locals and fields
-    * @param variables The variable lookup table for reading locals.
-    */
+  /**
+   * Creates a SoyNodeCompiler
+   *
+   * @param innerClasses The current set of inner classes
+   * @param stateField The field on the current class that holds the state variable
+   * @param thisVar An expression that returns 'this'
+   * @param appendableVar An expression that returns the current AdvisingAppendable that we are
+   *     rendering into
+   * @param variables The variable set for generating locals and fields
+   * @param parameterLookup The variable lookup table for reading locals.
+   */
   static SoyNodeCompiler create(
       CompiledTemplateRegistry registry,
       InnerClasses innerClasses,
       FieldRef stateField,
       Expression thisVar,
       AppendableExpression appendableVar,
-      VariableSet variableSet,
-      VariableLookup variables) {
-    DetachState detachState = new DetachState(variableSet, thisVar, stateField);
+      TemplateVariableManager variables,
+      TemplateParameterLookup parameterLookup) {
+    DetachState detachState = new DetachState(variables, thisVar, stateField);
     ExpressionCompiler expressionCompiler =
-        ExpressionCompiler.create(detachState, variables);
+        ExpressionCompiler.create(detachState, parameterLookup, variables);
     ExpressionToSoyValueProviderCompiler soyValueProviderCompiler =
-        ExpressionToSoyValueProviderCompiler.create(expressionCompiler, variables);
+        ExpressionToSoyValueProviderCompiler.create(expressionCompiler, parameterLookup);
     return new SoyNodeCompiler(
         thisVar,
         registry,
         detachState,
-        variableSet,
         variables,
+        parameterLookup,
         appendableVar,
         expressionCompiler,
         soyValueProviderCompiler,
-        new LazyClosureCompiler(registry, innerClasses, variables, soyValueProviderCompiler));
+        new LazyClosureCompiler(
+            registry, innerClasses, parameterLookup, variables, soyValueProviderCompiler));
   }
 
   private final Expression thisVar;
   private final CompiledTemplateRegistry registry;
   private final DetachState detachState;
-  private final VariableSet variables;
-  private final VariableLookup variableLookup;
+  private final TemplateVariableManager variables;
+  private final TemplateParameterLookup parameterLookup;
   private final AppendableExpression appendableExpression;
   private final ExpressionCompiler exprCompiler;
   private final ExpressionToSoyValueProviderCompiler expressionToSoyValueProviderCompiler;
@@ -150,8 +148,8 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       Expression thisVar,
       CompiledTemplateRegistry registry,
       DetachState detachState,
-      VariableSet variables,
-      VariableLookup variableLookup,
+      TemplateVariableManager variables,
+      TemplateParameterLookup parameterLookup,
       AppendableExpression appendableExpression,
       ExpressionCompiler exprCompiler,
       ExpressionToSoyValueProviderCompiler expressionToSoyValueProviderCompiler,
@@ -160,7 +158,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     this.registry = checkNotNull(registry);
     this.detachState = checkNotNull(detachState);
     this.variables = checkNotNull(variables);
-    this.variableLookup = checkNotNull(variableLookup);
+    this.parameterLookup = checkNotNull(parameterLookup);
     this.appendableExpression = checkNotNull(appendableExpression);
     this.exprCompiler = checkNotNull(exprCompiler);
     this.expressionToSoyValueProviderCompiler = checkNotNull(expressionToSoyValueProviderCompiler);
@@ -495,10 +493,11 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     // TODO(user): tracks adding streaming print directives which would help with this,
     // because instead of wrapping the soy value, we would just wrap the appendable.
     for (PrintDirectiveNode printDirective : node.getChildren()) {
-      value = value.applyPrintDirective(
-          variableLookup.getRenderContext(),
-          printDirective.getName(),
-          basic.compileToList(printDirective.getArgs()));
+      value =
+          value.applyPrintDirective(
+              parameterLookup.getRenderContext(),
+              printDirective.getName(),
+              basic.compileToList(printDirective.getArgs()));
     }
     return value;
   }
@@ -542,7 +541,8 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   }
 
   @Override protected Statement visitRawTextNode(RawTextNode node) {
-    AppendableExpression render = appendableExpression.appendString(constant(node.getRawText()));
+    AppendableExpression render =
+        appendableExpression.appendString(constant(node.getRawText(), variables));
     // TODO(lukes): add some heuristics about when to add this
     // ideas:
     // * never try to detach in certain 'contexts' (e.g. attribute context)
@@ -560,8 +560,10 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   // for them, even though they write to the output.
 
   @Override protected Statement visitXidNode(XidNode node) {
-    return appendableExpression.appendString(
-            variableLookup.getRenderContext()
+    return appendableExpression
+        .appendString(
+            parameterLookup
+                .getRenderContext()
                 .invoke(MethodRef.RENDER_CONTEXT_RENAME_XID, constant(node.getText())))
         .toStatement()
         .withSourceLocation(node.getSourceLocation());
@@ -578,7 +580,8 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
 
   @Override protected Statement visitCssNode(CssNode node) {
     Expression renamedSelector =
-        variableLookup.getRenderContext()
+        parameterLookup
+            .getRenderContext()
             .invoke(MethodRef.RENDER_CONTEXT_RENAME_CSS_SELECTOR, constant(node.getSelectorText()));
 
     if (node.getComponentNameExpr() != null) {
@@ -625,7 +628,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
           MsgUtils.buildMsgPartsAndComputeMsgIdForDualFormat(fallback);
       IfBlock ifAvailableRenderDefault =
           IfBlock.create(
-              variableLookup
+              parameterLookup
                   .getRenderContext()
                   .invoke(
                       MethodRef.RENDER_CONTEXT_USE_PRIMARY_MSG,
@@ -669,17 +672,30 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
           exprCompiler.compile(node.getDelCalleeVariantExpr(), reattachPoint).coerceToString();
     }
     Expression calleeExpression =
-        variableLookup.getRenderContext()
-            .invoke(MethodRef.RENDER_CONTEXT_GET_DELTEMPLATE,
+        parameterLookup
+            .getRenderContext()
+            .invoke(
+                MethodRef.RENDER_CONTEXT_GET_DELTEMPLATE,
                 constant(node.getDelCalleeName()),
                 variantExpr,
                 constant(node.allowsEmptyDefault()),
                 prepareParamsHelper(node, reattachPoint),
-                variableLookup.getIjRecord());
-
+                parameterLookup.getIjRecord());
+    if (!node.getEscapingDirectiveNames().isEmpty()) {
+      Expression directives = getEscapingDirectivesList(node);
+      if (registry.hasDelTemplateDefinition(node.getDelCalleeName())) {
+        ContentKind kind = registry.getDelTemplateContentKind(node.getDelCalleeName());
+        calleeExpression =
+            MethodRef.RUNTIME_APPLY_ESCAPERS.invoke(
+                calleeExpression, BytecodeUtils.constant(kind), directives);
+      } else {
+        // only use dynamic resolution if we need to, to avoid runtime kind checks
+        calleeExpression =
+            MethodRef.RUNTIME_APPLY_ESCAPERS_DYNAMIC.invoke(calleeExpression, directives);
+      }
+    }
     return visitCallNodeHelper(
         node,
-        registry.getDelTemplateContentKind(node.getDelCalleeName()),
         reattachPoint,
         calleeExpression);
   }
@@ -689,49 +705,53 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     CompiledTemplateMetadata callee = registry.getTemplateInfoByTemplateName(node.getCalleeName());
     Label reattachPoint = new Label();
     Expression calleeExpression =
-        callee.constructor()
-            .construct(prepareParamsHelper(node, reattachPoint), variableLookup.getIjRecord());
+        callee
+            .constructor()
+            .construct(prepareParamsHelper(node, reattachPoint), parameterLookup.getIjRecord());
+    if (!node.getEscapingDirectiveNames().isEmpty()) {
+      calleeExpression =
+          MethodRef.RUNTIME_APPLY_ESCAPERS.invoke(
+              calleeExpression,
+              BytecodeUtils.constant(callee.node().getContentKind()),
+              getEscapingDirectivesList(node));
+    }
     return visitCallNodeHelper(
         node,
-        callee.node().getContentKind(),
         reattachPoint,
         calleeExpression);
   }
 
   private Statement visitCallNodeHelper(CallNode node,
-      @Nullable ContentKind calleeContentKind,
       Label reattachPoint,
       Expression calleeExpression) {
     FieldRef currentCalleeField = variables.getCurrentCalleeField();
-    // Apply escaping directives if any
-    if (!node.getEscapingDirectiveNames().isEmpty()) {
-      List<Expression> directiveExprs = new ArrayList<>(node.getEscapingDirectiveNames().size());
-      for (String directive : node.getEscapingDirectiveNames()) {
-        directiveExprs.add(
-            variableLookup.getRenderContext()
-                .invoke(MethodRef.RENDER_CONTEXT_GET_PRINT_DIRECTIVE, constant(directive)));
-      }
-      calleeExpression =
-          MethodRef.RUNTIME_APPLY_ESCAPERS.invoke(
-              calleeExpression,
-              BytecodeUtils.asList(directiveExprs),
-              calleeContentKind == null
-                  ? BytecodeUtils.constantNull(CONTENT_KIND_TYPE)
-                  : FieldRef.enumReference(calleeContentKind).accessor());
-    }
     Statement initCallee =
         currentCalleeField.putInstanceField(thisVar, calleeExpression).labelStart(reattachPoint);
 
-    Expression callRender = currentCalleeField.accessor(thisVar)
-        .invoke(MethodRef.COMPILED_TEMPLATE_RENDER,
-            appendableExpression,
-            variableLookup.getRenderContext());
+    Expression callRender =
+        currentCalleeField
+            .accessor(thisVar)
+            .invoke(
+                MethodRef.COMPILED_TEMPLATE_RENDER,
+                appendableExpression,
+                parameterLookup.getRenderContext());
     Statement callCallee = detachState.detachForRender(callRender);
     Statement clearCallee =
         currentCalleeField.putInstanceField(
             thisVar, BytecodeUtils.constantNull(COMPILED_TEMPLATE_TYPE));
     return Statement.concat(initCallee, callCallee, clearCallee)
         .withSourceLocation(node.getSourceLocation());
+  }
+
+  private Expression getEscapingDirectivesList(CallNode node) {
+    List<Expression> directiveExprs = new ArrayList<>(node.getEscapingDirectiveNames().size());
+    for (String directive : node.getEscapingDirectiveNames()) {
+      directiveExprs.add(
+          parameterLookup
+              .getRenderContext()
+              .invoke(MethodRef.RENDER_CONTEXT_GET_PRINT_DIRECTIVE, constant(directive)));
+    }
+    return BytecodeUtils.asList(directiveExprs);
   }
 
   private Expression prepareParamsHelper(CallNode node, Label reattachPoint) {
@@ -780,7 +800,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   private Expression getDataExpression(DataAttribute dataAttribute, Label reattachPoint) {
     if (dataAttribute.isPassingData()) {
       if (dataAttribute.isPassingAllData()) {
-        return variableLookup.getParamsRecord();
+        return parameterLookup.getParamsRecord();
       } else {
         return exprCompiler.compile(dataAttribute.dataExpr(), reattachPoint).box()
             .cast(SoyRecord.class);
@@ -823,7 +843,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         thisVar,
         detachState,
         variables,
-        variableLookup,
+        parameterLookup,
         appendableExpression,
         new SoyNodeToStringCompiler() {
           @Override
@@ -864,7 +884,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         registry,
         detachState,
         variables,
-        variableLookup,
+        parameterLookup,
         appendable,
         exprCompiler,
         expressionToSoyValueProviderCompiler,

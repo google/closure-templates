@@ -17,7 +17,7 @@
 package com.google.template.soy.passes;
 
 import com.google.common.base.Preconditions;
-import com.google.template.soy.error.ExplodingErrorReporter;
+import com.google.template.soy.exprparse.SoyParsingContext;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
@@ -106,7 +106,7 @@ public final class ChangeCallsToPassAllDataVisitor extends AbstractSoyNodeVisito
           .userSuppliedPlaceholderName(node.getUserSuppliedPhName())
           .escapingDirectiveNames(node.getEscapingDirectiveNames())
           // Use the exploding reporter since we know it won't report any errors
-          .build(ExplodingErrorReporter.get());
+          .build(SoyParsingContext.exploding());
     } else {
       CallDelegateNode nodeCast = (CallDelegateNode) node;
       newCallNode = new CallDelegateNode.Builder(node.getId(), node.getSourceLocation())
@@ -117,7 +117,7 @@ public final class ChangeCallsToPassAllDataVisitor extends AbstractSoyNodeVisito
           .userSuppliedPlaceholderName(node.getUserSuppliedPhName())
           .escapingDirectiveNames(node.getEscapingDirectiveNames())
           // Use the exploding reporter since we know it won't report any errors
-          .build(ExplodingErrorReporter.get());
+          .build(SoyParsingContext.exploding());
     }
     node.getParent().replaceChild(node, newCallNode);
   }

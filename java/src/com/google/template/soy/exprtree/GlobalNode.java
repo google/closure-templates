@@ -33,6 +33,7 @@ public final class GlobalNode extends AbstractExprNode {
 
   /** The name of the global. */
   private final String name;
+  private boolean suppressUnknownGlobalErrors;
 
   /**
    * @param name The name of the global.
@@ -70,6 +71,19 @@ public final class GlobalNode extends AbstractExprNode {
     return name;
   }
 
+  /**
+   * Call this method to suppress unknown global errors for this node.  This is appropriate if
+   * other errors have already been reported.
+   * TODO(lukes): consider upstreaming to Node. It may be useful for other kinds of errors.
+   */
+  public void suppressUnknownGlobalErrors() {
+    this.suppressUnknownGlobalErrors = true;
+  }
+
+  /** Returns true if 'unknown global' errors should not be reported for this node. */
+  public boolean shouldSuppressUnknownGlobalErrors() {
+    return suppressUnknownGlobalErrors;
+  }
 
   @Override public String toSourceString() {
     return name;

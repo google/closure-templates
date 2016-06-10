@@ -31,6 +31,8 @@ import java.util.Objects;
  */
 public final class MapType implements SoyType {
 
+  public static final MapType EMPTY_MAP = new MapType(null, null);
+
   /** The declared type of item keys in this map. */
   private final SoyType keyType;
 
@@ -39,17 +41,16 @@ public final class MapType implements SoyType {
 
 
   private MapType(SoyType keyType, SoyType valueType) {
-    Preconditions.checkNotNull(keyType);
-    Preconditions.checkNotNull(valueType);
     this.keyType = keyType;
     this.valueType = valueType;
   }
 
 
   public static MapType of(SoyType keyType, SoyType valueType) {
+    Preconditions.checkNotNull(keyType);
+    Preconditions.checkNotNull(valueType);
     return new MapType(keyType, valueType);
   }
-
 
   @Override public Kind getKind() {
     return Kind.MAP;
@@ -75,6 +76,11 @@ public final class MapType implements SoyType {
   @Override public boolean isAssignableFrom(SoyType srcType) {
     if (srcType.getKind() == Kind.MAP) {
       MapType srcMapType = (MapType) srcType;
+      if (srcMapType == EMPTY_MAP) {
+        return true;
+      } else if (this == EMPTY_MAP) {
+        return false;
+      }
       // Maps are covariant.
       return keyType.isAssignableFrom(srcMapType.keyType) &&
           valueType.isAssignableFrom(srcMapType.valueType);
@@ -100,7 +106,8 @@ public final class MapType implements SoyType {
   @Override public boolean equals(Object other) {
     if (other != null && other.getClass() == this.getClass()) {
       MapType otherMap = (MapType) other;
-      return otherMap.keyType.equals(keyType) && otherMap.valueType.equals(valueType);
+      return Objects.equals(otherMap.keyType, keyType)
+          && Objects.equals(otherMap.valueType, valueType);
     }
     return false;
   }

@@ -113,6 +113,12 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
       SoyErrorKind.of("cannot iterate over {0} of type {1}");
   private static final SoyErrorKind BAD_INDEX_TYPE = SoyErrorKind.of("bad index type {0} for {1}");
   private static final SoyErrorKind BAD_KEY_TYPE = SoyErrorKind.of("bad key type {0} for {1}");
+  private static final SoyErrorKind EMPTY_LIST_FOREACH =
+      SoyErrorKind.of("cannot iterate over empty list");
+  private static final SoyErrorKind EMPTY_LIST_ACCESS =
+      SoyErrorKind.of("accessing item in empty list");
+  private static final SoyErrorKind EMPTY_MAP_ACCESS =
+      SoyErrorKind.of("accessing item in empty map");
   private static final SoyErrorKind BRACKET_ACCESS_NOT_SUPPORTED =
       SoyErrorKind.of("type {0} does not support bracket access");
   private static final SoyErrorKind CHECK_NOT_NULL_ON_COMPILE_TIME_NULL =
@@ -310,6 +316,10 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
         return UnknownType.getInstance();
 
       case LIST:
+        if (collectionType == ListType.EMPTY_LIST) {
+          errorReporter.report(node.getParent().getSourceLocation(), EMPTY_LIST_FOREACH);
+          return ErrorType.getInstance();
+        }
         return ((ListType) collectionType).getElementType();
 
       case UNION: {
@@ -396,50 +406,52 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
       }
       // Special case for empty list.
       if (elementTypes.isEmpty()) {
-        elementTypes.add(UnknownType.getInstance());
+        node.setType(ListType.EMPTY_LIST);
+      } else {
+        node.setType(typeOps.getTypeRegistry().getOrCreateListType(
+            typeOps.computeLowestCommonType(elementTypes)));
       }
-      node.setType(typeOps.getTypeRegistry().getOrCreateListType(
-          typeOps.computeLowestCommonType(elementTypes)));
       tryApplySubstitution(node);
     }
 
     @Override protected void visitMapLiteralNode(MapLiteralNode node) {
-
       visitChildren(node);
+      setMapLiteralNodeType(node);
+      tryApplySubstitution(node);
+    }
 
+    private void setMapLiteralNodeType(MapLiteralNode node) {
       int numChildren = node.numChildren();
       if (numChildren % 2 != 0) {
         throw new AssertionError();
       }
 
-      SoyType commonKeyType;
-      SoyType commonValueType;
+      if (numChildren == 0) {
+        node.setType(MapType.EMPTY_MAP);
+        return;
+      }
+
       Set<String> duplicateKeyErrors = new HashSet<>();
       Map<String, SoyType> recordFieldTypes = new LinkedHashMap<>();
-      if (numChildren == 0) {
-        commonKeyType = UnknownType.getInstance();
-        commonValueType = UnknownType.getInstance();
-      } else {
-        List<SoyType> keyTypes = new ArrayList<>(numChildren / 2);
-        List<SoyType> valueTypes = new ArrayList<>(numChildren / 2);
-        for (int i = 0; i < numChildren; i += 2) {
-          ExprNode key = node.getChild(i);
-          ExprNode value = node.getChild(i + 1);
-          if (key.getKind() == ExprNode.Kind.STRING_NODE) {
-            String fieldName = ((StringNode) key).getValue();
-            SoyType prev = recordFieldTypes.put(fieldName, value.getType());
-            if (prev != null && duplicateKeyErrors.add(fieldName)) {
-              errorReporter.report(
-                  owningSoyNode.getSourceLocation(),
-                  DUPLICATE_KEY_IN_RECORD_LITERAL, fieldName);
-            }
+      List<SoyType> keyTypes = new ArrayList<>(numChildren / 2);
+      List<SoyType> valueTypes = new ArrayList<>(numChildren / 2);
+      for (int i = 0; i < numChildren; i += 2) {
+        ExprNode key = node.getChild(i);
+        ExprNode value = node.getChild(i + 1);
+        if (key.getKind() == ExprNode.Kind.STRING_NODE) {
+          String fieldName = ((StringNode) key).getValue();
+          SoyType prev = recordFieldTypes.put(fieldName, value.getType());
+          if (prev != null && duplicateKeyErrors.add(fieldName)) {
+            errorReporter.report(
+                owningSoyNode.getSourceLocation(),
+                DUPLICATE_KEY_IN_RECORD_LITERAL, fieldName);
           }
-          keyTypes.add(key.getType());
-          valueTypes.add(value.getType());
         }
-        commonKeyType = typeOps.computeLowestCommonType(keyTypes);
-        commonValueType = typeOps.computeLowestCommonType(valueTypes);
+        keyTypes.add(key.getType());
+        valueTypes.add(value.getType());
       }
+      SoyType commonKeyType = typeOps.computeLowestCommonType(keyTypes);
+      SoyType commonValueType = typeOps.computeLowestCommonType(valueTypes);
 
       if (StringType.getInstance().isAssignableFrom(commonKeyType)
           && recordFieldTypes.size() == numChildren / 2) {
@@ -454,7 +466,6 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
         // Case 2: Keys are not all strings. We should be creating a map for the user.
         node.setType(typeOps.getTypeRegistry().getOrCreateMapType(commonKeyType, commonValueType));
       }
-      tryApplySubstitution(node);
     }
 
     @Override protected void visitVarRefNode(VarRefNode varRef) {
@@ -876,6 +887,10 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
 
         case LIST:
           ListType listType = (ListType) baseType;
+          if (listType == ListType.EMPTY_LIST) {
+            errorReporter.report(sourceLocation, EMPTY_LIST_ACCESS);
+            return ErrorType.getInstance();
+          }
           // For lists, the key type must either be unknown or assignable to integer.
           if (keyType.getKind() != SoyType.Kind.UNKNOWN &&
               !IntType.getInstance().isAssignableFrom(keyType)) {
@@ -886,6 +901,10 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
 
         case MAP:
           MapType mapType = (MapType) baseType;
+          if (mapType == MapType.EMPTY_MAP) {
+            errorReporter.report(sourceLocation, EMPTY_MAP_ACCESS);
+            return ErrorType.getInstance();
+          }
           // For maps, the key type must either be unknown or assignable to the declared key type.
           if (keyType.getKind() != SoyType.Kind.UNKNOWN &&
               !mapType.getKeyType().isAssignableFrom(keyType)) {
@@ -1072,13 +1091,18 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
     }
 
     @Override protected void visitFunctionNode(FunctionNode node) {
-      // Handle 'isNonnull(<expr>)'
-      if (node.numChildren() == 1 && node.getFunctionName().equals("isNonnull")) {
+      // Handle 'isNull(<expr>)' and 'isNonnull(<expr>)'.
+      if (node.numChildren() != 1) {
+        return;
+      } else if (node.getFunctionName().equals("isNonnull")) {
         Wrapper<ExprNode> wrappedExpr = ExprEquivalence.get().wrap(node.getChild(0));
         positiveTypeConstraints.put(wrappedExpr, SoyTypes.removeNull(wrappedExpr.get().getType()));
         negativeTypeConstraints.put(wrappedExpr, NullType.getInstance());
+      } else if (node.getFunctionName().equals("isNull")) {
+        Wrapper<ExprNode> wrappedExpr = ExprEquivalence.get().wrap(node.getChild(0));
+        positiveTypeConstraints.put(wrappedExpr, NullType.getInstance());
+        negativeTypeConstraints.put(wrappedExpr, SoyTypes.removeNull(wrappedExpr.get().getType()));
       }
-      // Otherwise don't make any inferences (don't visit children).
     }
 
     @Override protected void visitExprNode(ExprNode node) {

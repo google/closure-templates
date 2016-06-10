@@ -20,8 +20,8 @@ import static com.google.template.soy.soytree.TemplateSubject.assertThatTemplate
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ExplodingErrorReporter;
+import com.google.template.soy.exprparse.SoyParsingContext;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 
 import junit.framework.TestCase;
@@ -34,7 +34,7 @@ public class MsgNodeTest extends TestCase {
 
   private static final SourceLocation X = SourceLocation.UNKNOWN;
 
-  private static final ErrorReporter FAIL = ExplodingErrorReporter.get();
+  private static final SoyParsingContext FAIL = SoyParsingContext.exploding();
 
   public void testGenPlaceholderNames() throws Exception {
 
@@ -74,7 +74,7 @@ public class MsgNodeTest extends TestCase {
                 .build(FAIL),
             new RawTextNode(0, "\">", X)),
         X)
-        .build(FAIL);
+        .build(ExplodingErrorReporter.get());
     msg.addChild(new MsgPlaceholderNode(0, link1Start));
     // Link 1 contents.
     msg.addChild(new MsgPlaceholderNode(
@@ -98,13 +98,13 @@ public class MsgNodeTest extends TestCase {
             .exprText("2 + 2")
             .build(FAIL)));
     // Link 1 end tag.
-    msg.addChild(new MsgPlaceholderNode(0, createSimpleHtmlTag("</a>", FAIL)));
+    msg.addChild(new MsgPlaceholderNode(0, createSimpleHtmlTag("</a>")));
     // Intervening 'br' tags.
-    msg.addChild(new MsgPlaceholderNode(0, createSimpleHtmlTag("<br>", FAIL)));
-    msg.addChild(new MsgPlaceholderNode(0, createSimpleHtmlTag("<br/>", FAIL)));
-    msg.addChild(new MsgPlaceholderNode(0, createSimpleHtmlTag("<br />", FAIL)));
-    msg.addChild(new MsgPlaceholderNode(0, createSimpleHtmlTag("<br />", FAIL)));
-    msg.addChild(new MsgPlaceholderNode(0, createSimpleHtmlTag("<br>", FAIL)));
+    msg.addChild(new MsgPlaceholderNode(0, createSimpleHtmlTag("<br>")));
+    msg.addChild(new MsgPlaceholderNode(0, createSimpleHtmlTag("<br/>")));
+    msg.addChild(new MsgPlaceholderNode(0, createSimpleHtmlTag("<br />")));
+    msg.addChild(new MsgPlaceholderNode(0, createSimpleHtmlTag("<br />")));
+    msg.addChild(new MsgPlaceholderNode(0, createSimpleHtmlTag("<br>")));
     // Link 2 start tag.
     MsgHtmlTagNode link2Start = new MsgHtmlTagNode.Builder(
         2,
@@ -115,7 +115,7 @@ public class MsgNodeTest extends TestCase {
                 .build(FAIL),
             new RawTextNode(0, "\">", X)),
         X)
-        .build(FAIL);
+        .build(ExplodingErrorReporter.get());
     msg.addChild(new MsgPlaceholderNode(0, link2Start));
     // Link 2 contents.
     msg.addChild(new MsgPlaceholderNode(
@@ -139,12 +139,12 @@ public class MsgNodeTest extends TestCase {
             .exprText("2 + 2")
             .build(FAIL)));
     // Link 2 end tag.
-    msg.addChild(new MsgPlaceholderNode(0, createSimpleHtmlTag("</a>", FAIL)));
+    msg.addChild(new MsgPlaceholderNode(0, createSimpleHtmlTag("</a>")));
     // All the parts with base placeholder name ZOO.
     msg.addChild(
-        new MsgPlaceholderNode(0, createSimpleHtmlTag("<br phname=\"zoo\">", FAIL)));
+        new MsgPlaceholderNode(0, createSimpleHtmlTag("<br phname=\"zoo\">")));
     msg.addChild(
-        new MsgPlaceholderNode(0, createSimpleHtmlTag("<br phname=\"zoo\">", FAIL)));
+        new MsgPlaceholderNode(0, createSimpleHtmlTag("<br phname=\"zoo\">")));
     msg.addChild(new MsgPlaceholderNode(
         0,
         new PrintNode.Builder(0, true /* isImplicit */, X)
@@ -278,7 +278,7 @@ public class MsgNodeTest extends TestCase {
         .build(FAIL);
 
     MsgPluralCaseNode pluralCaseNode11
-        = new MsgPluralCaseNode.Builder(0, "1", X).build(FAIL);
+        = new MsgPluralCaseNode.Builder(0, "1", X).build(ExplodingErrorReporter.get());
     MsgPlaceholderNode placeholderNode111 =
         new MsgPlaceholderNode(
             0,
@@ -319,7 +319,7 @@ public class MsgNodeTest extends TestCase {
         .build(FAIL);
 
     MsgPluralCaseNode pluralCaseNode21
-        = new MsgPluralCaseNode.Builder(0, "1", X).build(FAIL);
+        = new MsgPluralCaseNode.Builder(0, "1", X).build(ExplodingErrorReporter.get());
     MsgPlaceholderNode placeholderNode211 = new MsgPlaceholderNode(
         0,
         new PrintNode.Builder(0, false /* isImplicit */, X)
@@ -357,7 +357,7 @@ public class MsgNodeTest extends TestCase {
         .build(FAIL);
 
     MsgPluralCaseNode pluralCaseNode31
-        = new MsgPluralCaseNode.Builder(0, "1", X).build(FAIL);
+        = new MsgPluralCaseNode.Builder(0, "1", X).build(ExplodingErrorReporter.get());
     MsgPlaceholderNode placeholderNode311 = new MsgPlaceholderNode(
         0,
         new PrintNode.Builder(0, false /* isImplicit */, X)
@@ -455,7 +455,7 @@ public class MsgNodeTest extends TestCase {
         .build(FAIL);
 
     MsgPluralCaseNode pluralCaseNode11
-        = new MsgPluralCaseNode.Builder(0, "1", X).build(FAIL);
+        = new MsgPluralCaseNode.Builder(0, "1", X).build(ExplodingErrorReporter.get());
     MsgPlaceholderNode placeholderNode111 = new MsgPlaceholderNode(
         0,
         new PrintNode.Builder(0, false /* isImplicit */, X)
@@ -495,7 +495,7 @@ public class MsgNodeTest extends TestCase {
         .build(FAIL);
 
     MsgPluralCaseNode pluralCaseNode21
-        = new MsgPluralCaseNode.Builder(0, "1", X).build(FAIL);
+        = new MsgPluralCaseNode.Builder(0, "1", X).build(ExplodingErrorReporter.get());
     MsgPlaceholderNode placeholderNode211 = new MsgPlaceholderNode(
         0,
         new PrintNode.Builder(0, false /* isImplicit */, X)
@@ -533,7 +533,7 @@ public class MsgNodeTest extends TestCase {
         .build(FAIL);
 
     MsgPluralCaseNode pluralCaseNode31
-        = new MsgPluralCaseNode.Builder(0, "1", X).build(FAIL);
+        = new MsgPluralCaseNode.Builder(0, "1", X).build(ExplodingErrorReporter.get());
     MsgPlaceholderNode placeholderNode311 = new MsgPlaceholderNode(
         0,
         new PrintNode.Builder(0, false /* isImplicit */, X)
@@ -621,7 +621,7 @@ public class MsgNodeTest extends TestCase {
         .build(FAIL);
 
     MsgPluralCaseNode pluralCaseNode11
-        = new MsgPluralCaseNode.Builder(0, "1", X).build(FAIL);
+        = new MsgPluralCaseNode.Builder(0, "1", X).build(ExplodingErrorReporter.get());
     MsgPlaceholderNode placeholderNode111 = new MsgPlaceholderNode(
         0,
         new PrintNode.Builder(0, false /* isImplicit */, X)
@@ -659,7 +659,7 @@ public class MsgNodeTest extends TestCase {
         .build(FAIL);
 
     MsgPluralCaseNode pluralCaseNode31
-        = new MsgPluralCaseNode.Builder(0, "1", X).build(FAIL);
+        = new MsgPluralCaseNode.Builder(0, "1", X).build(ExplodingErrorReporter.get());
     MsgPlaceholderNode placeholderNode311 = new MsgPlaceholderNode(
         0,
         new PrintNode.Builder(0, false /* isImplicit */, X)
@@ -765,7 +765,7 @@ public class MsgNodeTest extends TestCase {
         .build(FAIL);
 
     MsgPluralCaseNode pluralCaseNode11
-        = new MsgPluralCaseNode.Builder(0, "1", X).build(FAIL);
+        = new MsgPluralCaseNode.Builder(0, "1", X).build(ExplodingErrorReporter.get());
     MsgPlaceholderNode placeholderNode111 = new MsgPlaceholderNode(
         0,
         new PrintNode.Builder(0, false /* isImplicit */, X)
@@ -803,7 +803,7 @@ public class MsgNodeTest extends TestCase {
         .build(FAIL);
 
     MsgPluralCaseNode pluralCaseNode21
-        = new MsgPluralCaseNode.Builder(0, "1", X).build(FAIL);
+        = new MsgPluralCaseNode.Builder(0, "1", X).build(ExplodingErrorReporter.get());
     MsgPlaceholderNode placeholderNode211 = new MsgPlaceholderNode(
         0,
         new PrintNode.Builder(0, false /* isImplicit */, X)
@@ -841,7 +841,7 @@ public class MsgNodeTest extends TestCase {
         .build(FAIL);
 
     MsgPluralCaseNode pluralCaseNode31
-        = new MsgPluralCaseNode.Builder(0, "1", X).build(FAIL);
+        = new MsgPluralCaseNode.Builder(0, "1", X).build(ExplodingErrorReporter.get());
     MsgPlaceholderNode placeholderNode311 = new MsgPlaceholderNode(
         0,
         new PrintNode.Builder(0, false /* isImplicit */, X)
@@ -951,7 +951,7 @@ public class MsgNodeTest extends TestCase {
         .build(FAIL);
 
     MsgPluralCaseNode pluralCaseNode11
-        = new MsgPluralCaseNode.Builder(0, "1", X).build(FAIL);
+        = new MsgPluralCaseNode.Builder(0, "1", X).build(ExplodingErrorReporter.get());
     MsgPlaceholderNode placeholderNode111 = new MsgPlaceholderNode(
         0,
         new PrintNode.Builder(0, false /* isImplicit */, X)
@@ -1013,12 +1013,12 @@ public class MsgNodeTest extends TestCase {
   // Helpers.
 
 
-  private MsgHtmlTagNode createSimpleHtmlTag(String content, ErrorReporter errorReporter) {
+  private MsgHtmlTagNode createSimpleHtmlTag(String content) {
     return new MsgHtmlTagNode.Builder(
         0,
         ImmutableList.<StandaloneNode>of(new RawTextNode(0, content, X)),
         X)
-        .build(errorReporter);
+        .build(ExplodingErrorReporter.get());
   }
 
 }

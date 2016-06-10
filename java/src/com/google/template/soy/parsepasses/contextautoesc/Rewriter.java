@@ -21,10 +21,12 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.exprparse.SoyParsingContext;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallNode;
+import com.google.template.soy.soytree.EscapingMode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.PrintNode;
@@ -119,7 +121,7 @@ final class Rewriter {
             escapingMode.directiveName,
             "",
             printNode.getSourceLocation())
-            .build(errorReporter);
+            .build(SoyParsingContext.exploding());
 
         // Figure out where to put the new directive.
         // Normally they go at the end to ensure that the value printed is of the appropriate type,
@@ -176,6 +178,9 @@ final class Rewriter {
      * TODO: Modify contextual autoescape to deal with delegates appropriately.
      */
     @Override protected void visitCallNode(CallNode callNode) {
+      // We cannot easily access the original context.  However, because everything has already been
+      // parsed, that should be fine.  I don't think this can fail at all, but whatever.
+      SoyParsingContext context = SoyParsingContext.empty(errorReporter, "fake.namespace");
 
       String derivedCalleeName = inferences.getDerivedCalleeNameForCallId(callNode.getId());
       if (derivedCalleeName != null) {
@@ -191,7 +196,7 @@ final class Rewriter {
               .userSuppliedPlaceholderName(callNode.getUserSuppliedPhName())
               .syntaxVersionBound(callNode.getSyntaxVersionUpperBound())
               .escapingDirectiveNames(callNode.getEscapingDirectiveNames())
-              .build(errorReporter);
+              .build(context);
         } else {
           CallDelegateNode callNodeCast = (CallDelegateNode) callNode;
           newCallNode = new CallDelegateNode.Builder(callNode.getId(), callNode.getSourceLocation())
@@ -201,7 +206,7 @@ final class Rewriter {
               .dataAttribute(callNode.dataAttribute())
               .userSuppliedPlaceholderName(callNode.getUserSuppliedPhName())
               .escapingDirectiveNames(callNode.getEscapingDirectiveNames())
-              .build(errorReporter);
+              .build(context);
         }
         if (!callNode.getCommandText().equals(newCallNode.getCommandText())) {
           moveChildrenTo(callNode, newCallNode);

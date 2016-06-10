@@ -118,8 +118,8 @@ import java.util.List;
  *
  *    5. Integer:
  *       + No octal numbers.
- *       + Hex numbers have strict lower case "x" in "0x" and upper case "A-F".
- *       Examples:   0   26   -729   0x1A2B
+ *       + Hex numbers have strict lower case "x" in "0x" and "A-F" or "a-f".
+ *       Examples:   0   26   -729   0x1a2B
  *
  *    6. Float:
  *       + Decimal numbers only.
@@ -183,6 +183,8 @@ public final class ExpressionParser {
   private SourceLocation parentSourceLocation;
   private ErrorReporter errorReporter;
 
+  private SoyParsingContext context;
+
   /**
    * Constructor that takes a string input.
    * @param input The input to parse.
@@ -190,11 +192,12 @@ public final class ExpressionParser {
    * @param errorReporter For reporting syntax errors.
    */
   public ExpressionParser(
-      String input, SourceLocation parentSourceLocation, ErrorReporter errorReporter) {
+      String input, SourceLocation parentSourceLocation, SoyParsingContext context) {
     this(new StringReader(input));
     this.input = input;
     this.parentSourceLocation = parentSourceLocation;
-    this.errorReporter = errorReporter;
+    this.errorReporter = context.errorReporter();
+    this.context = context;
   }
 
 
@@ -294,6 +297,7 @@ TOKEN:
       | <DEC_DIGITS> "e" ( ["+","-"] )? <DEC_DIGITS>
   >
 |
+  // Must match <IN_CMD_TEXT_1> CMD_TEXT_CHAR_1 in SoyFileParser.jj.
   < STRING:
       "'"
       (
@@ -306,7 +310,7 @@ TOKEN:
 |
   < #DEC_DIGITS: ( ["0"-"9"] )+ >
 |
-  < #HEX_DIGIT: ["0"-"9","A"-"F"] >
+  < #HEX_DIGIT: ["0"-"9","A"-"F","a"-"f"] >
 }
 
 
@@ -332,10 +336,10 @@ TOKEN:
   < DOLLAR_IDENT: "$" <IDENT> >
 |
   < DOT_IDENT: "." (<WS>)* <IDENT> >
-  { matchedToken.image = CharMatcher.WHITESPACE.removeFrom(image.toString()); }
+  { matchedToken.image = CharMatcher.whitespace().removeFrom(image.toString()); }
 |
   < QUESTION_DOT_IDENT: "?." (<WS>)* <IDENT> >
-  { matchedToken.image = CharMatcher.WHITESPACE.removeFrom(image.toString()); }
+  { matchedToken.image = CharMatcher.whitespace().removeFrom(image.toString()); }
 }
 
 
@@ -855,7 +859,7 @@ private GlobalNode Global() :
   ident = <IDENT>
   {
     loc = createSrcLoc(ident);
-    globalNameSb.append(ident.image);
+    globalNameSb.append(context.resolveAlias(ident.image));
   }
 
   (

@@ -102,9 +102,13 @@ final class ExpressionCompiler {
   static final class BasicExpressionCompiler {
     private final CompilerVisitor compilerVisitor;
 
-    private BasicExpressionCompiler(VariableLookup variables) {
+    private BasicExpressionCompiler(
+        TemplateParameterLookup parameters, TemplateVariableManager variables) {
       this.compilerVisitor =
-          new CompilerVisitor(variables, new PluginFunctionCompiler(variables),
+          new CompilerVisitor(
+              parameters,
+              variables,
+              new PluginFunctionCompiler(parameters),
               Suppliers.ofInstance(BasicDetacher.INSTANCE));
     }
 
@@ -137,8 +141,9 @@ final class ExpressionCompiler {
    */
   static ExpressionCompiler create(
       ExpressionDetacher.Factory detacherFactory,
-      VariableLookup variables) {
-    return new ExpressionCompiler(detacherFactory, variables);
+      TemplateParameterLookup parameters,
+      TemplateVariableManager variables) {
+    return new ExpressionCompiler(detacherFactory, parameters, variables);
   }
 
   /**
@@ -147,18 +152,22 @@ final class ExpressionCompiler {
    * <p>All generated detach points are implemented as {@code return} statements and the returned
    * value is boxed, so it is only valid for use by the {@link LazyClosureCompiler}.
    */
-  static BasicExpressionCompiler createBasicCompiler(VariableLookup variables) {
-    return new BasicExpressionCompiler(variables);
+  static BasicExpressionCompiler createBasicCompiler(
+      TemplateParameterLookup variables, TemplateVariableManager variableSet) {
+    return new BasicExpressionCompiler(variables, variableSet);
   }
 
-  private final VariableLookup variables;
+  private final TemplateParameterLookup variables;
+  private final TemplateVariableManager variableSet;
   private final ExpressionDetacher.Factory detacherFactory;
 
   private ExpressionCompiler(
       ExpressionDetacher.Factory detacherFactory,
-      VariableLookup variables) {
+      TemplateParameterLookup variables,
+      TemplateVariableManager variablesSet) {
     this.detacherFactory = detacherFactory;
     this.variables = variables;
+    this.variableSet = variablesSet;
   }
 
   /**
@@ -188,8 +197,8 @@ final class ExpressionCompiler {
     };
     return Optional.of(
         new CompilerVisitor(
-            variables, new PluginFunctionCompiler(variables), throwingSupplier)
-                .exec(node));
+                variables, variableSet, new PluginFunctionCompiler(variables), throwingSupplier)
+            .exec(node));
   }
 
   /**
@@ -198,15 +207,20 @@ final class ExpressionCompiler {
    */
   BasicExpressionCompiler asBasicCompiler(final Label reattachPoint) {
     return new BasicExpressionCompiler(
-        new CompilerVisitor(variables, new PluginFunctionCompiler(variables),
+        new CompilerVisitor(
+            variables,
+            variableSet,
+            new PluginFunctionCompiler(variables),
             // Use a lazy supplier to allocate the expression detacher on demand.  Allocating the
             // detacher eagerly creates detach points so we want to delay until definitely
             // neccesary.
-            Suppliers.memoize(new Supplier<ExpressionDetacher>() {
-              @Override public ExpressionDetacher get() {
-                return detacherFactory.createExpressionDetacher(reattachPoint);
-              }
-            })));
+            Suppliers.memoize(
+                new Supplier<ExpressionDetacher>() {
+                  @Override
+                  public ExpressionDetacher get() {
+                    return detacherFactory.createExpressionDetacher(reattachPoint);
+                  }
+                })));
   }
 
   /**
@@ -226,13 +240,17 @@ final class ExpressionCompiler {
   private static final class CompilerVisitor
       extends EnhancedAbstractExprNodeVisitor<SoyExpression> {
     final Supplier<? extends ExpressionDetacher> detacher;
-    final VariableLookup variables;
+    final TemplateParameterLookup parameters;
+    final TemplateVariableManager variables;
     final PluginFunctionCompiler functions;
 
-    CompilerVisitor(VariableLookup variables,
+    CompilerVisitor(
+        TemplateParameterLookup parameters,
+        TemplateVariableManager variables,
         PluginFunctionCompiler functions,
         Supplier<? extends ExpressionDetacher> detacher) {
       this.detacher = detacher;
+      this.parameters = parameters;
       this.variables = variables;
       this.functions = functions;
     }
@@ -252,7 +270,7 @@ final class ExpressionCompiler {
     }
 
     @Override protected final SoyExpression visitStringNode(StringNode node) {
-      return SoyExpression.forString(constant(node.getValue()));
+      return SoyExpression.forString(constant(node.getValue(), variables));
     }
 
     @Override protected final SoyExpression visitBooleanNode(BooleanNode node) {
@@ -640,11 +658,11 @@ final class ExpressionCompiler {
       // These are special because they do not need any attaching/detaching logic and are
       // always unboxed ints
       return SoyExpression.forInt(
-          BytecodeUtils.numericConversion(variables.getLocal(local), Type.LONG_TYPE));
+          BytecodeUtils.numericConversion(parameters.getLocal(local), Type.LONG_TYPE));
     }
 
     @Override SoyExpression visitForeachLoopVar(VarRefNode varRef, LocalVar local) {
-      Expression expression = variables.getLocal(local);
+      Expression expression = parameters.getLocal(local);
       expression = detacher.get().resolveSoyValueProvider(expression);
       return SoyExpression.forSoyValue(varRef.getType(),
           expression.cast(varRef.getType().javaType()));
@@ -659,7 +677,7 @@ final class ExpressionCompiler {
       // _not_ the first one. This would be super awesome and would save bytecode/branches/states
       // and technically be useful for all varrefs. For the time being we do the naive thing and
       // just assume that the jit can handle all the dead branches effectively.
-      Expression paramExpr = detacher.get().resolveSoyValueProvider(variables.getParam(param));
+      Expression paramExpr = detacher.get().resolveSoyValueProvider(parameters.getParam(param));
       // This inserts a CHECKCAST instruction (aka runtime type checking).  However, it is limited
       // since we do not have good checking for unions (or nullability)
       // TODO(lukes): Where/how should we implement type checking.  For the time being type errors
@@ -670,14 +688,15 @@ final class ExpressionCompiler {
     }
 
     @Override SoyExpression visitIjParam(VarRefNode varRef, InjectedParam param) {
-      Expression ij = MethodRef.RUNTIME_GET_FIELD_PROVIDER
-          .invoke(variables.getIjRecord(), constant(param.name()));
+      Expression ij =
+          MethodRef.RUNTIME_GET_FIELD_PROVIDER.invoke(
+              parameters.getIjRecord(), constant(param.name()));
       return SoyExpression.forSoyValue(varRef.getType(),
           detacher.get().resolveSoyValueProvider(ij).cast(varRef.getType().javaType()));
     }
 
     @Override SoyExpression visitLetNodeVar(VarRefNode varRef, LocalVar local) {
-      Expression expression = variables.getLocal(local);
+      Expression expression = parameters.getLocal(local);
       expression = detacher.get().resolveSoyValueProvider(expression);
       return SoyExpression.forSoyValue(varRef.getType(),
           expression.cast(varRef.getType().javaType()));
@@ -692,7 +711,7 @@ final class ExpressionCompiler {
     }
 
     @Override SoyExpression visitIsFirstFunction(FunctionNode node, SyntheticVarName indexVar) {
-      final Expression expr = variables.getLocal(indexVar);
+      final Expression expr = parameters.getLocal(indexVar);
 
       return SoyExpression.forBool(new Expression(Type.BOOLEAN_TYPE) {
         @Override void doGen(CodeBuilder adapter) {
@@ -712,8 +731,8 @@ final class ExpressionCompiler {
 
     @Override SoyExpression visitIsLastFunction(
         FunctionNode node, SyntheticVarName indexVar, SyntheticVarName lengthVar) {
-      final Expression index = variables.getLocal(indexVar);
-      final Expression length = variables.getLocal(lengthVar);
+      final Expression index = parameters.getLocal(indexVar);
+      final Expression length = parameters.getLocal(lengthVar);
       // basically 'index + 1 == length'
       return SoyExpression.forBool(new Expression(Type.BOOLEAN_TYPE) {
         @Override void doGen(CodeBuilder adapter) {
@@ -737,7 +756,7 @@ final class ExpressionCompiler {
     @Override SoyExpression visitIndexFunction(FunctionNode node, SyntheticVarName indexVar) {
       // '(long) index'
       return SoyExpression.forInt(
-          BytecodeUtils.numericConversion(variables.getLocal(indexVar), Type.LONG_TYPE));
+          BytecodeUtils.numericConversion(parameters.getLocal(indexVar), Type.LONG_TYPE));
     }
 
     @Override SoyExpression visitCheckNotNullFunction(FunctionNode node) {
@@ -801,26 +820,7 @@ final class ExpressionCompiler {
           // a nullable expression we need to box.
           dataAccess = dataAccess.box();
         }
-        final SoyExpression orig = dataAccess;
-        return dataAccess
-            .withSource(
-                new Expression(dataAccess.resultType(), dataAccess.features()) {
-                  @Override
-                  void doGen(CodeBuilder adapter) {
-                    orig.gen(adapter);
-                    // At this point either 'orig' will be on the top of stack, or it will be a null
-                    // value (if a null safety check failed).
-                    adapter.mark(nullSafeExit);
-                    // insert a cast operator to enforce type agreement between both branches.
-                    adapter.checkCast(this.resultType());
-              }
-
-              // TODO(b/20537225):  The type system lies to us in this case.  It says that the
-              // result of foo?.bar is non-nullable when in fact it has to be!  Fixing the
-              // underlying issue is extremely complicated (and likely involves changing the type
-              // system).  For now we workaround by fixing it up after the fact.
-                })
-            .asNullable();
+        return dataAccess.asNullable().labelEnd(nullSafeExit);
       }
 
       SoyExpression addNullSafetyCheck(final SoyExpression baseExpr) {
@@ -831,11 +831,8 @@ final class ExpressionCompiler {
                 new Expression(baseExpr.resultType(), baseExpr.features()) {
                   @Override
                   void doGen(CodeBuilder adapter) {
-                    baseExpr.gen(adapter); // S
-                    adapter.dup(); // S, S
-                    adapter.ifNull(nullSafeExit); // S
-                    // Note. When we jump to nullSafeExit there is still an instance of 'orig' on
-                    // the stack but we know it is == null.
+                    baseExpr.gen(adapter);
+                    BytecodeUtils.nullCoalesce(adapter, nullSafeExit);
                   }
                 })
             .asNonNullable();
@@ -849,6 +846,13 @@ final class ExpressionCompiler {
                 visitNullSafeNodeRecurse(((DataAccessNode) node).getBaseExprChild());
             if (((DataAccessNode) node).isNullSafe()) {
               baseExpr = addNullSafetyCheck(baseExpr);
+            } else {
+              // Mark non nullable.
+              // Dereferencing for access below may require unboxing and there is no point in
+              // adding null safety checks to the unboxing code.  So we just mark non nullable. In
+              // otherwords, if we are going to hit an NPE while dereferencing this expression, it
+              // makes no difference if it is due to the unboxing or the actual dereference.
+              baseExpr = baseExpr.asNonNullable();
             }
             if (node.getKind() == ExprNode.Kind.FIELD_ACCESS_NODE) {
               return visitNullSafeFieldAccess(baseExpr, (FieldAccessNode) node);

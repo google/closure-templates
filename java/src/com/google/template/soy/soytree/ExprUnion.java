@@ -27,6 +27,7 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprparse.ExpressionParser;
+import com.google.template.soy.exprparse.SoyParsingContext;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 
@@ -48,10 +49,12 @@ import javax.annotation.Nullable;
 public final class ExprUnion {
 
   /** Creates an ExprUnion from the given expression text. */
-  static ExprUnion parseWithV1Fallback(String exprText, SourceLocation location) {
+  static ExprUnion parseWithV1Fallback(String exprText, SourceLocation location,
+      SoyParsingContext context) {
     DelayedErrorReporter errorReporter = new DelayedErrorReporter();
     Checkpoint checkpoint = errorReporter.checkpoint();
-    ExprNode expr = new ExpressionParser(exprText, location, errorReporter).parseExpression();
+    ExprNode expr = new ExpressionParser(exprText, location,
+        context.withErrorReporter(errorReporter)).parseExpression();
     return errorReporter.errorsSince(checkpoint)
         ? new ExprUnion(exprText, errorReporter.reports)
         : new ExprUnion(expr);

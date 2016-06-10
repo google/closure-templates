@@ -216,9 +216,6 @@ public final class SoySauceImpl implements SoySauce {
     }
 
     @Override public Continuation<SanitizedContent> renderStrict() {
-      if (!contentKind.isPresent()) {
-        throw new IllegalStateException("Cannot render non strict templates to SanitizedContent");
-      }
       enforceContentKind();
       AdvisingStringBuilder buf = new AdvisingStringBuilder();
       try {

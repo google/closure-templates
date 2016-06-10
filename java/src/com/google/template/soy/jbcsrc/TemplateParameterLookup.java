@@ -22,9 +22,9 @@ import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 
 /**
- * A mechanism to lookup Soy variables.
+ * A mechanism to lookup expressions for accessing template parameters.
  */
-interface VariableLookup {
+interface TemplateParameterLookup {
   /**
    * Returns an expression for a given {@code @param} or {@code @inject} parameter.
    * 

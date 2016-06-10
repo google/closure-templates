@@ -22,9 +22,9 @@ import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprparse.ExpressionParser;
+import com.google.template.soy.exprparse.SoyParsingContext;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.soytree.CommandTextAttributesParser.Attribute;
@@ -532,19 +532,19 @@ public final class MsgNode extends AbstractBlockCommandNode
      * Returns a new {@link MsgNode} from the state of this builder, reporting syntax errors
      * to the given {@link ErrorReporter}.
      */
-    public MsgNode build(ErrorReporter errorReporter) {
+    public MsgNode build(SoyParsingContext context) {
 
       Map<String, String> attributes
-          = ATTRIBUTES_PARSER.parse(commandText, errorReporter, sourceLocation);
+          = ATTRIBUTES_PARSER.parse(commandText, context, sourceLocation);
 
       String gendersAttr = attributes.get("genders");
       List<ExprRootNode> genderExprs = null;
       if (gendersAttr != null) {
         genderExprs = ExprRootNode.wrap(
-            new ExpressionParser(gendersAttr, sourceLocation, errorReporter)
+            new ExpressionParser(gendersAttr, sourceLocation, context)
                 .parseExpressionList());
         if (genderExprs.isEmpty() || genderExprs.size() > 3) {
-          errorReporter.report(sourceLocation, WRONG_NUMBER_OF_GENDER_EXPRS);
+          context.report(sourceLocation, WRONG_NUMBER_OF_GENDER_EXPRS);
         }
       }
 

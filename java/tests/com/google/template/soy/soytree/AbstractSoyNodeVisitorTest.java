@@ -22,6 +22,7 @@ import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ExplodingErrorReporter;
+import com.google.template.soy.exprparse.SoyParsingContext;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 
@@ -44,10 +45,8 @@ public final class AbstractSoyNodeVisitorTest extends TestCase {
             0,
             "",
             SoyFileKind.SRC,
-            FAIL,
-            null /* delpackageCmdText */,
             new NamespaceDeclaration("boo", ImmutableList.<NameAttributePair>of(), FAIL),
-            ImmutableList.<AliasDeclaration>of() /* aliasCmdTexts */);
+            new TemplateNode.SoyFileHeaderInfo("boo"));
     soyTree.addChild(soyFile);
 
     SoyFileHeaderInfo testSoyFileHeaderInfo = new SoyFileHeaderInfo("testNs");
@@ -62,11 +61,11 @@ public final class AbstractSoyNodeVisitorTest extends TestCase {
     template1.addChild(
         new PrintNode.Builder(0, true /* isImplicit */, SourceLocation.UNKNOWN)
             .exprText("$goo")
-            .build(FAIL));
+            .build(SoyParsingContext.exploding()));
     template1.addChild(
         new PrintNode.Builder(0, true /* isImplicit */, SourceLocation.UNKNOWN)
             .exprText("2 + 2")
-            .build(FAIL));
+            .build(SoyParsingContext.exploding()));
 
     TemplateNode template2 =
         new TemplateBasicNodeBuilder(testSoyFileHeaderInfo, SourceLocation.UNKNOWN, FAIL)
@@ -78,7 +77,7 @@ public final class AbstractSoyNodeVisitorTest extends TestCase {
     template2.addChild(
         new PrintNode.Builder(0, true /* isImplicit */, SourceLocation.UNKNOWN)
             .exprText("'moo'")
-            .build(FAIL));
+            .build(SoyParsingContext.exploding()));
 
     IncompleteOutputVisitor iov = new IncompleteOutputVisitor();
     assertEquals("[Parent][SoyFile][Parent][Print][Print][Parent][Print]", iov.exec(soyTree));

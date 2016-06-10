@@ -21,7 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.exprparse.SoyParsingContext;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.MsgPlaceholderInitialNode;
@@ -57,6 +57,8 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
   /** The user-supplied placeholder name, or null if not supplied or not applicable. */
   @Nullable private final String userSuppliedPlaceholderName;
 
+  @Nullable private HtmlContext htmlContext;
+
   private PrintNode(
       int id,
       boolean isImplicit,
@@ -79,6 +81,21 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
     this.isImplicit = orig.isImplicit;
     this.exprUnion = (orig.exprUnion != null) ? orig.exprUnion.copy(copyState) : null;
     this.userSuppliedPlaceholderName = orig.userSuppliedPlaceholderName;
+    this.htmlContext = orig.htmlContext;
+  }
+
+  /**
+   * Gets the HTML source context (typically tag, attribute value, HTML PCDATA, or plain text) which
+   * this node emits in. This affects how the node is escaped (for traditional backends) or how it's
+   * passed to incremental DOM APIs.
+   */
+  public HtmlContext getHtmlContext() {
+    return Preconditions.checkNotNull(htmlContext,
+        "Cannot access HtmlContext before HtmlTransformVisitor");
+  }
+
+  public void setHtmlContext(HtmlContext value) {
+    this.htmlContext = value;
   }
 
 
@@ -232,17 +249,17 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
      * @throws java.lang.IllegalStateException if neither {@link #exprText} nor {@link #exprUnion}
      * have been set.
      */
-    public PrintNode build(ErrorReporter errorReporter) {
-      ExprUnion exprUnion = getOrParseExprUnion();
+    public PrintNode build(SoyParsingContext context) {
+      ExprUnion exprUnion = getOrParseExprUnion(context);
       return new PrintNode(id, isImplicit, exprUnion, sourceLocation, userSuppliedPlaceholderName);
     }
 
-    private ExprUnion getOrParseExprUnion() {
+    private ExprUnion getOrParseExprUnion(SoyParsingContext context) {
       if (exprUnion != null) {
         return exprUnion;
       }
       Preconditions.checkNotNull(exprText);
-      return ExprUnion.parseWithV1Fallback(exprText, sourceLocation);
+      return ExprUnion.parseWithV1Fallback(exprText, sourceLocation, context);
     }
   }
 

@@ -26,6 +26,7 @@ import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcPrintDirective;
+import com.google.template.soy.shared.internal.ShortCircuitable;
 import com.google.template.soy.shared.restricted.EscapingConventions;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.shared.restricted.SoyPurePrintDirective;
@@ -43,8 +44,11 @@ import javax.inject.Singleton;
  */
 @Singleton
 @SoyPurePrintDirective
-public class EscapeHtmlDirective implements SoyJavaPrintDirective, SoyJsSrcPrintDirective,
-    SoyPySrcPrintDirective {
+public class EscapeHtmlDirective
+    implements SoyJavaPrintDirective,
+        SoyJsSrcPrintDirective,
+        SoyPySrcPrintDirective,
+        ShortCircuitable {
 
 
   public static final String NAME = "|escapeHtml";
@@ -64,6 +68,11 @@ public class EscapeHtmlDirective implements SoyJavaPrintDirective, SoyJsSrcPrint
 
   @Override public boolean shouldCancelAutoescape() {
     return true;
+  }
+
+  @Override
+  public boolean isNoopForKind(ContentKind kind) {
+    return kind == SanitizedContent.ContentKind.HTML;
   }
 
   @Override public SoyValue applyForJava(SoyValue value, List<SoyValue> args) {

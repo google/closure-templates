@@ -33,14 +33,15 @@ public abstract class SoyError {
   public static final Factory DEFAULT_FACTORY =
       new Factory() {
         @Override
-        public SoyError create(SourceLocation location, SoyErrorKind kind, Object ...args) {
+        public SoyError create(SourceLocation location, SoyErrorKind kind, Object... args) {
           String message = kind.format(args);
-          return createError(location, message, "In file " + location + ": " + message);
+          return createError(location, kind, message, "In file " + location + ": " + message);
         }
       };
 
-  static SoyError createError(SourceLocation location, String message, String formattedError) {
-    return new AutoValue_SoyError(location, message, formattedError);
+  static SoyError createError(
+      SourceLocation location, SoyErrorKind kind, String message, String formattedError) {
+    return new AutoValue_SoyError(location, kind, message, formattedError);
   }
 
   SoyError() {} // package private to prevent external subclassing
@@ -48,7 +49,8 @@ public abstract class SoyError {
   /** The location where the error occured. */
   public abstract SourceLocation location();
 
-  // TODO(lukes): consider adding SoyErrorKind (or something like it) for classification purposes
+  /** The error kind.  For classification usecases. */
+  public abstract SoyErrorKind errorKind();
 
   /**
    * The error message.

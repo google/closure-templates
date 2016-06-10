@@ -27,6 +27,7 @@ import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
@@ -60,6 +61,9 @@ import java.util.Map;
  *
  */
 final class ResolveNamesVisitor extends AbstractSoyNodeVisitor<Void> {
+  private static final SoyErrorKind GLOBAL_MATCHES_VARIABLE =
+      SoyErrorKind.of("Found global reference aliasing a local variable ''{0}'', did you mean "
+          + "''${0}''?");
 
   private static final SoyErrorKind VARIABLE_ALREADY_DEFINED =
       SoyErrorKind.of("variable ''${0}'' already defined{1}");
@@ -347,6 +351,24 @@ final class ResolveNamesVisitor extends AbstractSoyNodeVisitor<Void> {
     @Override protected void visitExprNode(ExprNode node) {
       if (node instanceof ParentExprNode) {
         visitChildren((ParentExprNode) node);
+      }
+    }
+
+    @Override protected void visitGlobalNode(GlobalNode node) {
+      // Check for a typo involving a global reference.  If the author forgets the leading '$' on a
+      // variable reference then it will get parsed as a global.  In some compiler configurations
+      // unknown globals are not an error.  To ensure that typos are caught we check for this case
+      // here.  Making 'unknown globals' an error consistently would be a better solution, though
+      // even then we would probably want some typo checking like this.
+      // Note.  This also makes it impossible for a global to share the same name as a local.  This
+      // should be fine since global names are typically qualified strings.
+      String globalName = node.getName();
+      VarDefn varDefn = localVariables.lookup(globalName);
+      if (varDefn != null) {
+        node.suppressUnknownGlobalErrors();
+        // This means that this global has the same name as an in-scope local or param.  It is
+        // likely that they just forgot the leading '$'
+        errorReporter.report(node.getSourceLocation(), GLOBAL_MATCHES_VARIABLE, globalName);
       }
     }
 

@@ -43,6 +43,7 @@ import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.error.FormattingErrorReporter;
 import com.google.template.soy.exprparse.ExpressionParser;
+import com.google.template.soy.exprparse.SoyParsingContext;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.shared.SharedTestUtils;
@@ -184,7 +185,10 @@ public class EvalVisitorTest extends TestCase {
    */
   private ImmutableList<String> assertParseError(String expression) {
     FormattingErrorReporter errorReporter = new FormattingErrorReporter();
-    new ExpressionParser(expression, SourceLocation.UNKNOWN, errorReporter).parseExpression();
+    new ExpressionParser(
+        expression, SourceLocation.UNKNOWN,
+        SoyParsingContext.empty(errorReporter, "fake.namespace"))
+        .parseExpression();
     ImmutableList<String> errorMessages = errorReporter.getErrorMessages();
     if (errorMessages.isEmpty()) {
       fail("expected parse error, got none");

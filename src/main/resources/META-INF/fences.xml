@@ -1,0 +1,42 @@
+<!-- See http://mikesamuel.github.io/fences-maven-enforcer-rule/configuration.html -->
+<configuration>
+  <package>
+    <name>com.google.common.html.types</name>
+    <class>
+      <name>UncheckedConversions</name>
+      <trusts>com.google.template.soy.data.SanitizedContent</trusts>
+    </class>
+  </package>
+  <package>
+    <name>com.google.template.soy.data</name>
+    <class>
+      <name>UnsafeSanitizedContentOrdainer</name>
+      <method>
+        <name>ordainAsSafe</name>
+        <distrusts>*</distrusts>
+        <trusts>com.google.template.soy.basicdirectives.ChangeNewlineToBrDirective</trusts>
+        <trusts>com.google.template.soy.basicdirectives.InsertWordBreaksDirective</trusts>
+        <trusts>com.google.template.soy.bididirectives.BidiUnicodeWrapDirective</trusts>
+        <trusts>com.google.template.soy.bidifunctions.BidiDirAttrFunction</trusts>
+        <trusts>com.google.template.soy.coredirectives.EscapeHtmlDirective</trusts>
+        <trusts>com.google.template.soy.data.ordainers.GsonOrdainer</trusts>
+        <trusts>com.google.template.soy.data.ordainers.JsIdentifierOrdainer</trusts>
+        <trusts>com.google.template.soy.data.ordainers.JsonOrdainer</trusts>
+        <trusts>com.google.template.soy.data.SanitizedContent</trusts>
+        <trusts>com.google.template.soy.data.UnsafeSanitizedContentOrdainer</trusts>
+        <trusts>com.google.template.soy.jbcsrc.api.Continuations</trusts>
+        <trusts>com.google.template.soy.jbcsrc.MethodRef</trusts>
+        <trusts>com.google.template.soy.jbcsrc.runtime.DetachableContentProvider</trusts>
+        <trusts>com.google.template.soy.jbcsrc.runtime.Runtime$EscapedCompiledTemplate</trusts>
+        <trusts>com.google.template.soy.sharedpasses.render.RenderVisitor</trusts>
+        <trusts>com.google.template.soy.shared.restricted.Sanitizers</trusts>
+        <trusts>com.google.template.soy.tofu.internal.BaseTofu</trusts>
+        <trusts>com.google.template.soy.tofu.internal.BaseTofu$RendererImpl</trusts>
+        <rationale>
+          ordainAsSafe(...) can be used to create values that violate
+          security type contracts.  https://goo.gl/1JTTHd
+        </rationale>
+      </method>
+    </class>
+  </package>
+</configuration>

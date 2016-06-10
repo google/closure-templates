@@ -18,7 +18,6 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Predicates.notNull;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.ADVISING_APPENDABLE_TYPE;
-import static com.google.template.soy.jbcsrc.BytecodeUtils.CONTENT_KIND_TYPE;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.NULLARY_INIT;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.FieldRef.createField;
@@ -146,16 +145,19 @@ final class LazyClosureCompiler {
 
   private final CompiledTemplateRegistry registry;
   private final InnerClasses innerClasses;
-  private final VariableLookup parentVariables;
+  private final TemplateParameterLookup parentVariableLookup;
   private final ExpressionToSoyValueProviderCompiler expressionToSoyValueProviderCompiler;
+  private final TemplateVariableManager parentVariables;
 
   LazyClosureCompiler(
-      CompiledTemplateRegistry registry, 
+      CompiledTemplateRegistry registry,
       InnerClasses innerClasses,
-      VariableLookup parentVariables, 
+      TemplateParameterLookup parentVariableLookup,
+      TemplateVariableManager parentVariables,
       ExpressionToSoyValueProviderCompiler expressionToSoyValueProviderCompiler) {
     this.registry = registry;
     this.innerClasses = innerClasses;
+    this.parentVariableLookup = parentVariableLookup;
     this.parentVariables = parentVariables;
     this.expressionToSoyValueProviderCompiler = expressionToSoyValueProviderCompiler;
   }
@@ -225,7 +227,7 @@ final class LazyClosureCompiler {
     // TODO(lukes): ideally this would be a static final StringData field rather than reboxing each
     // time, but we don't (yet) have a good mechanism for that.
     ContentKind kind = renderUnit.getContentKind();
-    Expression constant = constant(builder == null ? "" : builder.toString());
+    Expression constant = constant(builder == null ? "" : builder.toString(), parentVariables);
     if (kind == null) {
       return Optional.<Expression>of(MethodRef.STRING_DATA_FOR_VALUE.invoke(constant));
     } else {
@@ -259,11 +261,12 @@ final class LazyClosureCompiler {
       final Label start = new Label();
       final Label end = new Label();
       final LocalVariable thisVar = createThisVar(type, start, end);
-      VariableSet variableSet = new VariableSet(fieldNames, type, thisVar, DO_RESOLVE);
-      LazyClosureVariableLookup lookup = 
-          new LazyClosureVariableLookup(this, parentVariables, variableSet, thisVar);
+      TemplateVariableManager variableSet =
+          new TemplateVariableManager(fieldNames, type, thisVar, DO_RESOLVE);
+      LazyClosureParameterLookup lookup =
+          new LazyClosureParameterLookup(this, parentVariableLookup, variableSet, thisVar);
       SoyExpression compile =
-          ExpressionCompiler.createBasicCompiler(lookup).compile(exprNode);
+          ExpressionCompiler.createBasicCompiler(lookup, variableSet).compile(exprNode);
       SoyExpression expression = compile.box();
       final Statement storeExpr =
           RESOLVED_VALUE
@@ -305,9 +308,10 @@ final class LazyClosureCompiler {
       final LocalVariable appendableVar =
           createLocal("appendable", 1, ADVISING_APPENDABLE_TYPE, start, end).asNonNullable();
 
-      final VariableSet variableSet = new VariableSet(fieldNames, type, thisVar, DO_RENDER);
-      LazyClosureVariableLookup lookup = 
-          new LazyClosureVariableLookup(this, parentVariables, variableSet, thisVar);
+      final TemplateVariableManager variableSet =
+          new TemplateVariableManager(fieldNames, type, thisVar, DO_RENDER);
+      LazyClosureParameterLookup lookup =
+          new LazyClosureParameterLookup(this, parentVariableLookup, variableSet, thisVar);
       SoyNodeCompiler soyNodeCompiler = SoyNodeCompiler.create(registry, innerClasses, stateField,
           thisVar, AppendableExpression.forLocal(appendableVar), variableSet, lookup);
       CompiledMethodBody compileChildren = soyNodeCompiler.compileChildren(renderUnit);
@@ -327,10 +331,7 @@ final class LazyClosureCompiler {
         }
       };
       ContentKind kind = renderUnit.getContentKind();
-      final Expression contentKind =
-          (kind == null)
-              ? BytecodeUtils.constantNull(CONTENT_KIND_TYPE)
-              : FieldRef.enumReference(kind).accessor();
+      final Expression contentKind = BytecodeUtils.constant(kind);
       variableSet.defineStaticFields(writer);
       Statement fieldInitializers = variableSet.defineFields(writer);
       Statement superClassContstructor = new Statement() {
@@ -428,24 +429,24 @@ final class LazyClosureCompiler {
   }
 
   /**
-   * The {@link LazyClosureVariableLookup} will generate expressions for all variable references
+   * The {@link LazyClosureParameterLookup} will generate expressions for all variable references
    * within a lazy closure.  The strategy is simple
-   * 
+   *
    * <ul>
    *     <li>If the variable is a template parameter, query the parent variable lookup and generate
    *         a {@link ParentCapture} for it
    *     <li>If the variable is a local (synthetic or otherwise), check if the declaring node is a
-   *         descendant of the current lazy node.  If it is, generate code for a normal variable 
+   *         descendant of the current lazy node.  If it is, generate code for a normal variable
    *         lookup (via our own VariableSet), otherwise generate a {@link ParentCapture} to grab
    *         the value from our parent.
    *     <li>Finally, for the {@link RenderContext}, we lazily generate a {@link ParentCapture} if
    *         necessary.
    * </ul>
    */
-  private static final class LazyClosureVariableLookup implements VariableLookup {
+  private static final class LazyClosureParameterLookup implements TemplateParameterLookup {
     private final CompilationUnit params;
-    private final VariableLookup parent;
-    private final VariableSet variableSet;
+    private final TemplateParameterLookup parentParameterLookup;
+    private final TemplateVariableManager variableSet;
     private final Expression thisVar;
 
     // These fields track all the parent captures that we need to generate.
@@ -456,13 +457,13 @@ final class LazyClosureCompiler {
     private ParentCapture paramsCapture;
     private ParentCapture ijCapture;
 
-    LazyClosureVariableLookup(
+    LazyClosureParameterLookup(
         CompilationUnit params,
-        VariableLookup parent, 
-        VariableSet variableSet, 
+        TemplateParameterLookup parentParameterLookup,
+        TemplateVariableManager variableSet,
         Expression thisVar) {
       this.params = params;
-      this.parent = parent;
+      this.parentParameterLookup = parentParameterLookup;
       this.variableSet = variableSet;
       this.thisVar = thisVar;
     }
@@ -473,7 +474,8 @@ final class LazyClosureCompiler {
       if (capturedField == null) {
         String name = param.name();
         params.fieldNames.claimName(name);
-        capturedField = ParentCapture.create(params.type, name, parent.getParam(param));
+        capturedField =
+            ParentCapture.create(params.type, name, parentParameterLookup.getParam(param));
         paramFields.put(param, capturedField);
       }
       return capturedField.field().accessor(thisVar);
@@ -488,7 +490,8 @@ final class LazyClosureCompiler {
       ParentCapture capturedField = localFields.get(local);
       if (capturedField == null) {
         String name = params.fieldNames.generateName(local.name());
-        capturedField = ParentCapture.create(params.type, name, parent.getLocal(local));
+        capturedField =
+            ParentCapture.create(params.type, name, parentParameterLookup.getLocal(local));
         localFields.put(local, capturedField);
       }
       return capturedField.field().accessor(thisVar);
@@ -503,7 +506,8 @@ final class LazyClosureCompiler {
       ParentCapture capturedField = syntheticFields.get(varName);
       if (capturedField == null) {
         String name = params.fieldNames.generateName(varName.name());
-        capturedField = ParentCapture.create(params.type, name, parent.getLocal(varName));
+        capturedField =
+            ParentCapture.create(params.type, name, parentParameterLookup.getLocal(varName));
         syntheticFields.put(varName, capturedField);
       }
       return capturedField.field().accessor(thisVar);
@@ -521,7 +525,8 @@ final class LazyClosureCompiler {
       if (renderContextCapture == null) {
         params.fieldNames.claimName(RENDER_CONTEXT_FIELD);
         renderContextCapture =
-            ParentCapture.create(params.type, RENDER_CONTEXT_FIELD, parent.getRenderContext());
+            ParentCapture.create(
+                params.type, RENDER_CONTEXT_FIELD, parentParameterLookup.getRenderContext());
       }
       return renderContextCapture.field().accessor(thisVar);
     }
@@ -530,7 +535,8 @@ final class LazyClosureCompiler {
       if (paramsCapture == null) {
         params.fieldNames.claimName(PARAMS_FIELD);
         paramsCapture =
-            ParentCapture.create(params.type, PARAMS_FIELD, parent.getParamsRecord());
+            ParentCapture.create(
+                params.type, PARAMS_FIELD, parentParameterLookup.getParamsRecord());
       }
       return paramsCapture.field().accessor(thisVar);
     }
@@ -539,7 +545,7 @@ final class LazyClosureCompiler {
       if (ijCapture == null) {
         params.fieldNames.claimName(IJ_FIELD);
         ijCapture =
-            ParentCapture.create(params.type, IJ_FIELD, parent.getIjRecord());
+            ParentCapture.create(params.type, IJ_FIELD, parentParameterLookup.getIjRecord());
       }
       return ijCapture.field().accessor(thisVar);
     }

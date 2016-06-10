@@ -53,16 +53,24 @@ final class IncrementalDomOutputOptimizers {
 
       StandaloneNode nextNode = parent.getChild(nextIndex);
 
-      if (nextNode instanceof HtmlCloseTagNode) {
-        HtmlVoidTagNode htmlVoidTagNode = new HtmlVoidTagNode(
-            openTagNode.getId(),
-            openTagNode.getTagName(),
-            openTagNode.getSourceLocation());
-        htmlVoidTagNode.addChildren(openTagNode.getChildren());
-
-        parent.replaceChild(openTagNode, htmlVoidTagNode);
-        parent.removeChild(nextNode);
+      if (!(nextNode instanceof HtmlCloseTagNode)) {
+        continue;
       }
+
+      HtmlCloseTagNode closeTagNode = (HtmlCloseTagNode) nextNode;
+
+      if (!closeTagNode.getTagName().equals(openTagNode.getTagName())) {
+        continue;
+      }
+
+      HtmlVoidTagNode htmlVoidTagNode = new HtmlVoidTagNode(
+          openTagNode.getId(),
+          openTagNode.getTagName(),
+          openTagNode.getSourceLocation());
+      htmlVoidTagNode.addChildren(openTagNode.getChildren());
+
+      parent.replaceChild(openTagNode, htmlVoidTagNode);
+      parent.removeChild(closeTagNode);
     }
   }
 

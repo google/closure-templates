@@ -48,6 +48,9 @@ public class GenCallCodeUtils {
   /** Instance of JsExprTranslator to use. */
   private final JsExprTranslator jsExprTranslator;
 
+  /** Instance of DelTemplateNamer to use. */
+  private final DelTemplateNamer delTemplateNamer;
+
   /** The IsComputableAsJsExprsVisitor used by this instance. */
   private final IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor;
 
@@ -64,9 +67,11 @@ public class GenCallCodeUtils {
   GenCallCodeUtils(
       Map<String, SoyJsSrcPrintDirective> soyJsSrcDirectivesMap,
       JsExprTranslator jsExprTranslator,
+      DelTemplateNamer delTemplateNamer,
       IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor,
       GenJsExprsVisitorFactory genJsExprsVisitorFactory) {
     this.jsExprTranslator = jsExprTranslator;
+    this.delTemplateNamer = delTemplateNamer;
     this.isComputableAsJsExprsVisitor = isComputableAsJsExprsVisitor;
     this.genJsExprsVisitorFactory = genJsExprsVisitorFactory;
     this.soyJsSrcDirectivesMap = soyJsSrcDirectivesMap;
@@ -100,7 +105,7 @@ public class GenCallCodeUtils {
    *   some.func(opt_data)
    *   some.func(opt_data.boo.foo)
    *   some.func({goo: opt_data.moo})
-   *   some.func(soy.$$augmentMap(opt_data.boo, {goo: 'Blah'}))
+   *   some.func(soy.$$assignDefaults({goo: 'Blah'}, opt_data.boo))
    *   some.func({goo: param65})
    * </pre>
    * Note that in the last case, the param content is not computable as JS expressions, so we assume
@@ -129,7 +134,7 @@ public class GenCallCodeUtils {
       // Case 2: Delegate call.
       CallDelegateNode callDelegateNode = (CallDelegateNode) callNode;
       String calleeIdExprText =
-          "soy.$$getDelTemplateId('" + callDelegateNode.getDelCalleeName() + "')";
+          "soy.$$getDelTemplateId('" + delTemplateNamer.getDelegateName(callDelegateNode) + "')";
       ExprRootNode variantSoyExpr = callDelegateNode.getDelCalleeVariantExpr();
       String variantJsExprText;
       if (variantSoyExpr == null) {
@@ -196,7 +201,7 @@ public class GenCallCodeUtils {
    *   opt_data
    *   opt_data.boo.foo
    *   {goo: opt_data.moo}
-   *   soy.$$augmentMap(opt_data.boo, {goo: 'Blah'})
+   *   soy.$$assignDefaults({goo: 'Blah'}, opt_data.boo)
    *   {goo: param65}
    * </pre>
    * Note that in the last case, the param content is not computable as JS expressions, so we assume
@@ -280,7 +285,8 @@ public class GenCallCodeUtils {
     // ------ Cases 2 and 3: Additional params with and without original data to pass ------
     if (callNode.dataAttribute().isPassingData()) {
       return new JsExpr(
-          "soy.$$augmentMap(" + dataToPass.getText() + ", " + paramsObjSb + ")", Integer.MAX_VALUE);
+          "soy.$$assignDefaults(" + paramsObjSb + ", " + dataToPass.getText() + ")",
+          Integer.MAX_VALUE);
     } else {
       return new JsExpr(paramsObjSb.toString(), Integer.MAX_VALUE);
     }

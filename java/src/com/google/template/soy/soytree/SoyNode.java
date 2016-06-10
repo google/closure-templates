@@ -106,8 +106,6 @@ public interface SoyNode extends Node {
     HTML_VOID_TAG,
     HTML_CLOSE_TAG,
     HTML_ATTRIBUTE,
-    HTML_TEXT,
-    HTML_PRINT_NODE,
 
     LOG_NODE,
     DEBUGGER_NODE,

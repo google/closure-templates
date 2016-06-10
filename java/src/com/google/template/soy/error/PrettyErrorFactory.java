@@ -39,7 +39,7 @@ public final class PrettyErrorFactory implements SoyError.Factory {
   @Override
   public SoyError create(SourceLocation location, SoyErrorKind kind, Object ...args) {
     String message = kind.format(args);
-    return SoyError.createError(location, message, getFormattedError(location, message));
+    return SoyError.createError(location, kind, message, getFormattedError(location, message));
   }
 
   private String getFormattedError(SourceLocation sourceLocation, String message) {

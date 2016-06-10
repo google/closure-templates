@@ -49,10 +49,10 @@ public class JsSrcModule extends AbstractModule {
     bind(GenJsCodeVisitor.class);
     bind(OptimizeBidiCodeGenVisitor.class);
     bind(CanInitOutputVarVisitor.class);
-    bind(GenCallCodeUtils.class);
     bind(IsComputableAsJsExprsVisitor.class);
     bind(JsExprTranslator.class);
     bind(GenDirectivePluginRequiresVisitor.class);
+    bind(DelTemplateNamer.class);
 
     // Bind providers of factories (created via assisted inject).
     install(new FactoryModuleBuilder().build(GenJsExprsVisitorFactory.class));

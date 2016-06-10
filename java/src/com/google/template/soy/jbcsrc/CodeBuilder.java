@@ -105,6 +105,11 @@ final class CodeBuilder extends MethodVisitor {
     adapter.push(value);
   }
 
+  /** See {@link GeneratorAdapter#push(Type)} */
+  public void pushNull() {
+    adapter.visitInsn(Opcodes.ACONST_NULL);
+  }
+
   /** See {@link GeneratorAdapter#loadThis()} */
   public void loadThis() {
     adapter.loadThis();

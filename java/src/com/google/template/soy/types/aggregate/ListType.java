@@ -32,16 +32,18 @@ import java.util.Objects;
  */
 public final class ListType implements SoyType {
 
+  public static final ListType EMPTY_LIST = new ListType(null);
+
   private final SoyType elementType;
 
 
   private ListType(SoyType elementType) {
-    Preconditions.checkNotNull(elementType);
     this.elementType = elementType;
   }
 
 
   public static ListType of(SoyType elementType) {
+    Preconditions.checkNotNull(elementType);
     return new ListType(elementType);
   }
 
@@ -59,6 +61,11 @@ public final class ListType implements SoyType {
   @Override public boolean isAssignableFrom(SoyType srcType) {
     if (srcType.getKind() == Kind.LIST) {
       ListType srcListType = (ListType) srcType;
+      if (srcListType == EMPTY_LIST) {
+        return true;
+      } else if (this == EMPTY_LIST) {
+        return false;
+      }
       // Lists are covariant (because values are immutable.)
       return elementType.isAssignableFrom(srcListType.elementType);
     }
@@ -82,7 +89,7 @@ public final class ListType implements SoyType {
   @Override public boolean equals(Object other) {
     return other != null &&
         this.getClass() == other.getClass() &&
-        ((ListType) other).elementType.equals(elementType);
+        Objects.equals(((ListType) other).elementType, elementType);
   }
 
 

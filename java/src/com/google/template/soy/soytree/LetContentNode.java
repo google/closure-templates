@@ -20,11 +20,12 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.MixinParentNode;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
-import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.exprparse.SoyParsingContext;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
+import com.google.template.soy.types.primitive.SanitizedType;
+import com.google.template.soy.types.primitive.StringType;
 
 import java.util.List;
 
@@ -59,6 +60,19 @@ public final class LetContentNode extends LetNode implements RenderUnitNode {
     super(id, sourceLocation, localVarName, commandText);
     this.contentKind = contentKind;
     parentMixin = new MixinParentNode<>(this);
+  }
+
+  /**
+   * Creates a LetContentNode for a compiler-generated variable. Use this in passes that rewrite the
+   * tree and introduce local temporary variables.
+   */
+  public static LetContentNode forVariable(int id, SourceLocation sourceLocation, String varName,
+      ContentKind contentKind) {
+    LetContentNode node = new LetContentNode(id, sourceLocation, varName, "$" + varName,
+        contentKind);
+    node.getVar().setType(contentKind != null
+        ? SanitizedType.getTypeForContentKind(contentKind) : StringType.getInstance());
+    return node;
   }
 
 
@@ -173,7 +187,7 @@ public final class LetContentNode extends LetNode implements RenderUnitNode {
 
     private static LetContentNode error() {
       return new LetContentNode.Builder(-1, "$error", SourceLocation.UNKNOWN)
-          .build(ExplodingErrorReporter.get()); // guaranteed to be valid
+          .build(SoyParsingContext.exploding()); // guaranteed to be valid
     }
 
     private final int id;
@@ -195,16 +209,16 @@ public final class LetContentNode extends LetNode implements RenderUnitNode {
      * Returns a new {@link LetContentNode} built from the builder's state. If the builder's state
      * is invalid, errors are reported to the {@code errorManager} and {Builder#error} is returned.
      */
-    public LetContentNode build(ErrorReporter errorReporter) {
-      Checkpoint checkpoint = errorReporter.checkpoint();
+    public LetContentNode build(SoyParsingContext context) {
+      Checkpoint checkpoint = context.errorReporter().checkpoint();
       CommandTextParseResult parseResult
-          = parseCommandTextHelper(commandText, errorReporter, sourceLocation);
+          = parseCommandTextHelper(commandText, context, sourceLocation);
 
       if (parseResult.valueExpr != null) {
-        errorReporter.report(sourceLocation, NON_SELF_ENDING_WITH_VALUE);
+        context.report(sourceLocation, NON_SELF_ENDING_WITH_VALUE);
       }
 
-      if (errorReporter.errorsSince(checkpoint)) {
+      if (context.errorReporter().errorsSince(checkpoint)) {
         return error();
       }
 

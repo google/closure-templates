@@ -20,10 +20,9 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.MixinParentNode;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
-import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.exprparse.SoyParsingContext;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 
 import java.util.List;
@@ -178,21 +177,21 @@ public final class CallParamContentNode extends CallParamNode implements RenderU
 
     private static CallParamContentNode error() {
       return new Builder(-1, "error", SourceLocation.UNKNOWN)
-          .build(ExplodingErrorReporter.get()); // guaranteed to build
+          .build(SoyParsingContext.exploding()); // guaranteed to build
     }
 
     public Builder(int id, String commandText, SourceLocation sourceLocation) {
       super(id, commandText, sourceLocation);
     }
 
-    public CallParamContentNode build(ErrorReporter errorReporter) {
-      Checkpoint checkpoint = errorReporter.checkpoint();
-      CommandTextParseResult parseResult = parseCommandTextHelper(errorReporter);
+    public CallParamContentNode build(SoyParsingContext context) {
+      Checkpoint checkpoint = context.errorReporter().checkpoint();
+      CommandTextParseResult parseResult = parseCommandTextHelper(context);
       if (parseResult.valueExprUnion != null) {
-        errorReporter.report(sourceLocation, PARAM_HAS_VALUE_BUT_IS_NOT_SELF_CLOSING, commandText);
+        context.report(sourceLocation, PARAM_HAS_VALUE_BUT_IS_NOT_SELF_CLOSING, commandText);
       }
 
-      if (errorReporter.errorsSince(checkpoint)) {
+      if (context.errorReporter().errorsSince(checkpoint)) {
         return error();
       }
 

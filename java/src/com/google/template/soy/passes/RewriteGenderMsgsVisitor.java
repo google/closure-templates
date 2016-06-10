@@ -23,6 +23,7 @@ import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.exprparse.SoyParsingContext;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.MsgNode;
@@ -144,13 +145,17 @@ final class RewriteGenderMsgsVisitor extends AbstractSoyNodeVisitor<Void> {
     List<StandaloneNode> origChildren = ImmutableList.copyOf(msg.getChildren());
     msg.clearChildren();
 
+    // We cannot easily access the original context.  However, because everything has already been
+    // parsed, that should be fine.  I don't think this can fail at all, but whatever.
+    SoyParsingContext context = SoyParsingContext.empty(errorReporter, "fake.namespace");
+
     MsgSelectCaseNode femaleCase
         = new MsgSelectCaseNode.Builder(nodeIdGen.genId(), "'female'", msg.getSourceLocation())
-            .build(errorReporter);
+            .build(context);
     femaleCase.addChildren(SoytreeUtils.cloneListWithNewIds(origChildren, nodeIdGen));
     MsgSelectCaseNode maleCase
         = new MsgSelectCaseNode.Builder(nodeIdGen.genId(), "'male'", msg.getSourceLocation())
-            .build(errorReporter);
+            .build(context);
     maleCase.addChildren(SoytreeUtils.cloneListWithNewIds(origChildren, nodeIdGen));
     MsgSelectDefaultNode defaultCase
         = new MsgSelectDefaultNode(nodeIdGen.genId(), msg.getSourceLocation());

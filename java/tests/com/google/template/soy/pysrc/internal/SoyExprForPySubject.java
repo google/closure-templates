@@ -29,7 +29,6 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.SoyModule;
-import com.google.template.soy.data.restricted.PrimitiveData;
 import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.pysrc.internal.GenPyExprsVisitor.GenPyExprsVisitorFactory;
@@ -79,8 +78,9 @@ public final class SoyExprForPySubject extends Subject<SoyExprForPySubject, Stri
   }
 
   /**
-   * Sets a map of key to {@link PrimitiveData} values as the current globally available data. Any
-   * compilation step will use these globals to replace unrecognized variables.
+   * Sets a map of key to {@link com.google.template.soy.data.restricted.PrimitiveData} values as
+   * the current globally available data. Any compilation step will use these globals to replace
+   * unrecognized variables.
    *
    * @param globals a map of keys to PrimitiveData values
    * @return the current subject for chaining

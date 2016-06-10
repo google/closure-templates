@@ -18,12 +18,19 @@ package com.google.template.soy.soytree;
 
 import static com.google.common.base.Preconditions.checkState;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.exprparse.SoyParsingContext;
+import com.google.template.soy.exprtree.VarDefn;
+import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
+
+import javax.annotation.Nullable;
 
 /**
  * Represents one message or a pair of message and fallback message.
@@ -48,6 +55,7 @@ public final class MsgFallbackGroupNode extends AbstractParentSoyNode<MsgNode>
    * the template's return value is the correct SanitizedContent object.
    */
   private ImmutableList<String> escapingDirectiveNames = ImmutableList.of();
+  @Nullable private HtmlContext htmlContext;
 
   /**
    * @param id The id for this node.
@@ -65,6 +73,38 @@ public final class MsgFallbackGroupNode extends AbstractParentSoyNode<MsgNode>
   private MsgFallbackGroupNode(MsgFallbackGroupNode orig, CopyState copyState) {
     super(orig, copyState);
     this.escapingDirectiveNames = orig.escapingDirectiveNames;
+    this.htmlContext = orig.htmlContext;
+  }
+
+  /**
+   * Gets the HTML context (typically tag, attribute value, HTML PCDATA, or plain text) which
+   * this node appears in. This affects how the node is escaped (for traditional backends)
+   * or how it's passed to incremental DOM APIs.
+   */
+  public HtmlContext getHtmlContext() {
+    return Preconditions.checkNotNull(htmlContext,
+        "Cannot access HtmlContext before HtmlTransformVisitor");
+  }
+
+  public void setHtmlContext(HtmlContext value) {
+    this.htmlContext = value;
+  }
+
+  /** Creates a print node that corresponds to this node, for tree rewriting. */
+  public PrintNode makePrintNode(IdGenerator nodeIdGen, VarDefn var) {
+    PrintNode printNode = new PrintNode.Builder(nodeIdGen.genId(),
+        true /* implicit */, getSourceLocation())
+        .exprUnion(new ExprUnion(
+            new VarRefNode(var.name(), getSourceLocation(), false /* not ij */, var)))
+        .build(SoyParsingContext.exploding());
+    printNode.setHtmlContext(htmlContext);
+
+    for (String escapingDirective : getEscapingDirectiveNames()) {
+      printNode.addChild(new PrintDirectiveNode.Builder(nodeIdGen.genId(),
+              escapingDirective, "" /* argsText */, getSourceLocation())
+          .build(SoyParsingContext.exploding()));
+    }
+    return printNode;
   }
 
 

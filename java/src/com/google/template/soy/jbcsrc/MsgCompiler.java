@@ -122,21 +122,22 @@ final class MsgCompiler {
 
   private final Expression thisVar;
   private final DetachState detachState;
-  private final VariableSet variables;
-  private final VariableLookup variableLookup;
+  private final TemplateVariableManager variables;
+  private final TemplateParameterLookup parameterLookup;
   private final AppendableExpression appendableExpression;
   private final SoyNodeToStringCompiler soyNodeCompiler;
 
-  MsgCompiler(Expression thisVar,
+  MsgCompiler(
+      Expression thisVar,
       DetachState detachState,
-      VariableSet variables,
-      VariableLookup variableLookup,
+      TemplateVariableManager variables,
+      TemplateParameterLookup parameterLookup,
       AppendableExpression appendableExpression,
       SoyNodeToStringCompiler soyNodeCompiler) {
     this.thisVar = checkNotNull(thisVar);
     this.detachState = checkNotNull(detachState);
     this.variables = checkNotNull(variables);
-    this.variableLookup = checkNotNull(variableLookup);
+    this.parameterLookup = checkNotNull(parameterLookup);
     this.appendableExpression = checkNotNull(appendableExpression);
     this.soyNodeCompiler = checkNotNull(soyNodeCompiler);
   }
@@ -154,7 +155,7 @@ final class MsgCompiler {
       MsgPartsAndIds partsAndId, MsgNode msg, List<String> escapingDirectives) {
     Expression soyMsgDefault = compileDefaultMessageConstant(partsAndId, msg);
     Expression soyMsg =
-        variableLookup
+        parameterLookup
             .getRenderContext()
             .invoke(MethodRef.RENDER_CONTEXT_GET_SOY_MSG, constant(partsAndId.id), soyMsgDefault);
     Statement printMsg;
@@ -186,7 +187,7 @@ final class MsgCompiler {
             constant(partsAndId.id), // id
             // locale, technically uknown so pass null
             BytecodeUtils.constantNull(BytecodeUtils.STRING_TYPE),
-            BytecodeUtils.constant(msgNode.isPlrselMsg()),
+            constant(msgNode.isPlrselMsg()),
             partsToPartsList(partsAndId.parts));
     return variables.addStaticField("msg_" + partsAndId.id, constructSoyMsg).accessor();
   }
@@ -228,7 +229,8 @@ final class MsgCompiler {
       return SOY_MSG_PLURAL_REMAINDER_PART.construct(
           constant(((SoyMsgPluralRemainderPart) part).getPluralVarName()));
     } else if (part instanceof SoyMsgRawTextPart) {
-      return SOY_MSG_RAW_TEXT_PART_OF.invoke(constant(((SoyMsgRawTextPart) part).getRawText()));
+      return SOY_MSG_RAW_TEXT_PART_OF.invoke(
+          constant(((SoyMsgRawTextPart) part).getRawText(), variables));
     } else if (part instanceof SoyMsgSelectPart) {
       SoyMsgSelectPart selectPart = (SoyMsgSelectPart) part;
       List<Expression> caseExprs = new ArrayList<>(selectPart.getCases().size());
@@ -257,7 +259,7 @@ final class MsgCompiler {
             .cast(SoyMsgRawTextPart.class)
             .invoke(MethodRef.SOY_MSG_RAW_TEXT_PART_GET_RAW_TEXT));
     for (String directive : escapingDirectives) {
-      text = text.applyPrintDirective(variableLookup.getRenderContext(), directive);
+      text = text.applyPrintDirective(parameterLookup.getRenderContext(), directive);
     }
     return appendableExpression.appendString(text.coerceToString()).toStatement();
   }
@@ -292,7 +294,7 @@ final class MsgCompiler {
       SoyExpression value = SoyExpression.forString(
           tempBuffer().invoke(MethodRef.ADVISING_STRING_BUILDER_GET_AND_CLEAR));
       for (String directive : escapingDirectives) {
-        value = value.applyPrintDirective(variableLookup.getRenderContext(), directive);
+        value = value.applyPrintDirective(parameterLookup.getRenderContext(), directive);
       }
       render =
           Statement.concat(
@@ -368,7 +370,9 @@ final class MsgCompiler {
       Expression value = soyNodeCompiler.compileToInt(repPluralNode.getExpr(), reattachPoint);
       placeholderNameToPutStatement.put(
           plural.getPluralVarName(),
-          putToMap(mapExpression, plural.getPluralVarName(), value).labelStart(reattachPoint));
+          putToMap(mapExpression, plural.getPluralVarName(), value)
+              .labelStart(reattachPoint)
+              .withSourceLocation(repPluralNode.getSourceLocation()));
     }
     // Recursively visit plural cases
     for (Case<SoyMsgPluralCaseSpec> caseOrDefault : plural.getCases()) {
@@ -399,15 +403,38 @@ final class MsgCompiler {
       } else if (initialNode instanceof PrintNode) {
         putEntyInMap =
             addPrintNodeToPlaceholderMap(mapExpression, placeholderName, (PrintNode) initialNode);
+      } else if (initialNode instanceof RawTextNode) {
+        putEntyInMap =
+            addRawTextNodeToPlaceholderMap(
+                mapExpression, placeholderName, (RawTextNode) initialNode);
       } else {
         // the AST for MsgNodes guarantee that these are the only options
-        throw new AssertionError();
+        throw new AssertionError("Unexpected child: " + initialNode.getClass());
       }
-      placeholderNameToPutStatement.put(placeholder.getPlaceholderName(), putEntyInMap);
+      placeholderNameToPutStatement.put(
+          placeholder.getPlaceholderName(),
+          putEntyInMap.withSourceLocation(repPlaceholderNode.getSourceLocation()));
     }
   }
 
-  
+  /**
+   * Returns a statement that adds the content of the raw text node to the map.
+   *
+   * @param mapExpression The map to put the new entry in
+   * @param mapKey The map key
+   * @param rawText The node
+   */
+  private Statement addRawTextNodeToPlaceholderMap(
+      Expression mapExpression, String mapKey, RawTextNode rawText) {
+    return mapExpression
+        .invoke(
+            MethodRef.LINKED_HASH_MAP_PUT,
+            constant(mapKey),
+            constant(rawText.getRawText(), variables))
+        .toStatement()
+        .withSourceLocation(rawText.getSourceLocation());
+  }
+
   /**
    * Returns a statement that adds the content of the node to the map.
    *
@@ -418,15 +445,18 @@ final class MsgCompiler {
   private Statement addHtmlTagNodeToPlaceholderMap(
       Expression mapExpression, String mapKey, MsgHtmlTagNode htmlTagNode) {
     Optional<String> rawText = tryGetRawTextContent(htmlTagNode);
+    Statement putStatement;
     if (rawText.isPresent()) {
-      return mapExpression
-          .invoke(MethodRef.LINKED_HASH_MAP_PUT, constant(mapKey), constant(rawText.get()))
-          .toStatement();
+      putStatement =
+          mapExpression
+              .invoke(MethodRef.LINKED_HASH_MAP_PUT, constant(mapKey), constant(rawText.get()))
+              .toStatement();
     } else {
       Statement renderIntoBuffer = soyNodeCompiler.compileToBuffer(htmlTagNode, tempBuffer());
       Statement putBuffer = putBufferIntoMapForPlaceholder(mapExpression, mapKey);
-      return Statement.concat(renderIntoBuffer, putBuffer);
+      putStatement = Statement.concat(renderIntoBuffer, putBuffer);
     }
+    return putStatement.withSourceLocation(htmlTagNode.getSourceLocation());
   }
 
   /**
@@ -440,7 +470,8 @@ final class MsgCompiler {
       Expression mapExpression, String mapKey, CallNode callNode) {
     Statement renderIntoBuffer = soyNodeCompiler.compileToBuffer(callNode, tempBuffer());
     Statement putBuffer = putBufferIntoMapForPlaceholder(mapExpression, mapKey);
-    return Statement.concat(renderIntoBuffer, putBuffer);
+    return Statement.concat(renderIntoBuffer, putBuffer)
+        .withSourceLocation(callNode.getSourceLocation());
   }
 
   /**
@@ -456,7 +487,9 @@ final class MsgCompiler {
     // ultimate target is a string rather than putting bytes on the output stream.
     Label reattachPoint = new Label();
     Expression compileToString = soyNodeCompiler.compileToString(printNode, reattachPoint);
-    return putToMap(mapExpression, mapKey, compileToString).labelStart(reattachPoint);
+    return putToMap(mapExpression, mapKey, compileToString)
+        .labelStart(reattachPoint)
+        .withSourceLocation(printNode.getSourceLocation());
   }
 
   private Statement putToMap(Expression mapExpression, String mapKey, Expression valueExpression) {

@@ -156,7 +156,7 @@ public final class BytecodeCompiler {
       return;
     }
     try (OutputStream stream = sink.openStream();
-        JarOutputStream jarOutput = new JarOutputStream(stream, getJarManifest())) {
+        JarOutputStream jarOutput = new DeterministicJarOutputStream(stream, getJarManifest())) {
       compileTemplates(
           compilerRegistry,
           reporter,
@@ -191,7 +191,7 @@ public final class BytecodeCompiler {
       ByteSink sink) throws IOException {
     Set<SoyFileNode> seenFiles = new HashSet<>();
     try (OutputStream stream = sink.openStream();
-        JarOutputStream jarOutput = new JarOutputStream(stream, getJarManifest())) {
+        JarOutputStream jarOutput = new DeterministicJarOutputStream(stream, getJarManifest())) {
       for (TemplateNode template : registry.getAllTemplates()) {
         SoyFileNode file = template.getParent();
         if (file.getSoyFileKind() == SoyFileKind.SRC && seenFiles.add(file)) {
@@ -202,6 +202,18 @@ public final class BytecodeCompiler {
           jarOutput.closeEntry();
         }
       }
+    }
+  }
+
+  private static final class DeterministicJarOutputStream extends JarOutputStream {
+    DeterministicJarOutputStream(OutputStream outputStream, Manifest manifest) throws IOException {
+      super(outputStream, manifest);
+    }
+
+    @Override
+    public void putNextEntry(ZipEntry ze) throws IOException {
+      ze.setTime(0); // set an explicit timestamp to zero so we generate deterministic outputs
+      super.putNextEntry(ze);
     }
   }
 

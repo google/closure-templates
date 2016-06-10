@@ -762,7 +762,8 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
               .put("year", ParamRequisiteness.REQUIRED)
               .put("keywords", ParamRequisiteness.REQUIRED)
               .build(),
-          ImmutableSortedSet.<String>of());
+          ImmutableSortedSet.<String>of(
+              "csp_nonce"));
     }
 
     private static final DemoBidiSupportSoyTemplateInfo __INSTANCE__ =

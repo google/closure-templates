@@ -167,8 +167,11 @@ import java.util.Map;
   static final MethodRef RENDER_RESULT_LIMITED =
       forMethod(RenderResult.class, "limited").asCheap().asNonNullable();
 
+  static final MethodRef RUNTIME_APPLY_ESCAPERS_DYNAMIC =
+      create(Runtime.class, "applyEscapersDynamic", CompiledTemplate.class, List.class);
+
   static final MethodRef RUNTIME_APPLY_ESCAPERS =
-      create(Runtime.class, "applyEscapers", CompiledTemplate.class, List.class, ContentKind.class);
+      create(Runtime.class, "applyEscapers", CompiledTemplate.class, ContentKind.class, List.class);
 
   static final MethodRef RUNTIME_APPLY_PRINT_DIRECTIVE = create(Runtime.class,
       "applyPrintDirective", SoyJavaPrintDirective.class, SoyValue.class, List.class);

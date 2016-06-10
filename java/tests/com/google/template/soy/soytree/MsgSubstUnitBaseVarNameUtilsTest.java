@@ -21,10 +21,10 @@ import static com.google.common.truth.Truth.assertThat;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.error.FormattingErrorReporter;
 import com.google.template.soy.exprparse.ExpressionParser;
+import com.google.template.soy.exprparse.SoyParsingContext;
 import com.google.template.soy.exprtree.ExprNode;
 
 import junit.framework.TestCase;
@@ -37,7 +37,7 @@ import java.util.List;
  */
 public final class MsgSubstUnitBaseVarNameUtilsTest extends TestCase {
 
-  private static final ErrorReporter FAIL = ExplodingErrorReporter.get();
+  private static final SoyParsingContext FAIL = SoyParsingContext.exploding();
 
   public void testGenBaseNames() {
 
@@ -146,7 +146,8 @@ public final class MsgSubstUnitBaseVarNameUtilsTest extends TestCase {
         new ExpressionParser(exprListText, SourceLocation.UNKNOWN, FAIL)
             .parseExpressionList();
     List<String> actual =
-        MsgSubstUnitBaseVarNameUtils.genNoncollidingBaseNamesForExprs(exprRoots, "FALLBACK", FAIL);
+        MsgSubstUnitBaseVarNameUtils.genNoncollidingBaseNamesForExprs(exprRoots, "FALLBACK",
+            ExplodingErrorReporter.get());
     MsgNodeTest.assertEquals(expected, actual);
   }
 

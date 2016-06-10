@@ -38,6 +38,7 @@ import com.google.template.soy.msgs.restricted.SoyMsgPluralPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPluralRemainderPart;
 import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
 import com.google.template.soy.msgs.restricted.SoyMsgSelectPart;
+import com.google.template.soy.shared.internal.ShortCircuitable;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 
@@ -49,6 +50,9 @@ import javax.annotation.Nullable;
 
 /**
  * Runtime utilities uniquely for the {@code jbcsrc} backend.
+ * <p>
+ * This class is public so it can be be used by generated template code.
+ * Please do not use it from client code.
  */
 public final class Runtime {
   public static final SoyValueProvider NULL_PROVIDER = new SoyValueProvider() {
@@ -139,39 +143,52 @@ public final class Runtime {
     return directive.applyForJava(value, args);
   }
 
+  // TODO(user): should access to these be restricted since it can be
+  // used to mint typed strings.
   /**
    * Wraps a given template with a collection of escapers to apply.
    *
    * @param delegate The delegate template to render
    * @param directives The set of directives to apply
-   * @param kind The content kind of the delegate template (if any)
+   */
+  public static CompiledTemplate applyEscapersDynamic(
+      CompiledTemplate delegate, List<SoyJavaPrintDirective> directives) {
+    ContentKind kind = delegate.kind();
+    if (canSkipEscaping(directives, kind)) {
+      return delegate;
+    }
+    return new EscapedCompiledTemplate(delegate, directives, kind);
+  }
+
+  /**
+   * Wraps a given template with a collection of escapers to apply.
+   *
+   * @param delegate The delegate template to render
+   * @param directives The set of directives to apply
    */
   public static CompiledTemplate applyEscapers(
-      final CompiledTemplate delegate, final List<SoyJavaPrintDirective> directives,
-      @Nullable final ContentKind kind) {
-    return new CompiledTemplate() {
-      // TODO(user): tracks adding streaming print directives which would help with this, since
-      // it would allow us to eliminate this buffer which fundamentally breaks incremental rendering
+      CompiledTemplate delegate, ContentKind kind, List<SoyJavaPrintDirective> directives) {
+    return new EscapedCompiledTemplate(delegate, directives, kind);
+  }
 
-      // Note: render() may be called multiple times as part of a render operation that detaches
-      // halfway through.  So we need to store the buffer in a field, but we never need to reset it.
-      final AdvisingStringBuilder buffer = new AdvisingStringBuilder();
-      @Override public RenderResult render(AdvisingAppendable appendable, RenderContext context)
-          throws IOException {
-        RenderResult result = delegate.render(buffer, context);
-        if (result.isDone()) {
-          SoyValue resultData =
-              kind == null
-                  ? StringData.forValue(buffer.toString())
-                  : UnsafeSanitizedContentOrdainer.ordainAsSafe(buffer.toString(), kind);
-          for (SoyJavaPrintDirective directive : directives) {
-            resultData = directive.applyForJava(resultData, ImmutableList.<SoyValue>of());
-          }
-          appendable.append(resultData.coerceToString());
-        }
-        return result;
+  /**
+   * Identifies some cases where the combination of directives and content kind mean we can skip
+   * applying the escapers.  This is an opportunistic optimization, it is possible that we will fail
+   * to skip escaping in some cases where we could and that is OK.  However, there should never be
+   * a case where we skip escaping and but the escapers would actually modify the input.
+   */
+  private static boolean canSkipEscaping(
+      List<SoyJavaPrintDirective> directives, @Nullable ContentKind kind) {
+    if (kind == null) {
+      return false;
+    }
+    for (SoyJavaPrintDirective directive : directives) {
+      if (!(directive instanceof ShortCircuitable)
+          || !((ShortCircuitable) directive).isNoopForKind(kind)) {
+        return false;
       }
-    };
+    }
+    return true;
   }
 
   public static SoyValueProvider getSoyListItem(List<SoyValueProvider> list, long index) {
@@ -347,5 +364,52 @@ public final class Runtime {
 
   public static String coerceToString(@Nullable SoyValue v) {
     return v == null ? "null" : v.coerceToString();
+  }
+
+
+  /** Wraps a compiled template to apply escaping directives. */
+  private static final class EscapedCompiledTemplate
+      implements CompiledTemplate {
+    private final CompiledTemplate delegate;
+    private final ImmutableList<SoyJavaPrintDirective> directives;
+    @Nullable private final ContentKind kind;
+
+    // TODO(user): tracks adding streaming print directives which would help with this, since
+    // it would allow us to eliminate this buffer which fundamentally breaks incremental rendering
+
+    // Note: render() may be called multiple times as part of a render operation that detaches
+    // halfway through.  So we need to store the buffer in a field, but we never need to reset it.
+    private final AdvisingStringBuilder buffer = new AdvisingStringBuilder();
+
+    EscapedCompiledTemplate(
+        CompiledTemplate delegate,
+        List<SoyJavaPrintDirective> directives,
+        @Nullable ContentKind kind) {
+      this.delegate = delegate;
+      this.directives = ImmutableList.copyOf(directives);
+      this.kind = kind;
+    }
+
+    @Override public RenderResult render(AdvisingAppendable appendable, RenderContext context)
+        throws IOException {
+      RenderResult result = delegate.render(buffer, context);
+      if (result.isDone()) {
+        SoyValue resultData =
+            kind == null
+            ? StringData.forValue(buffer.toString())
+            : UnsafeSanitizedContentOrdainer.ordainAsSafe(buffer.toString(), kind);
+        for (SoyJavaPrintDirective directive : directives) {
+          resultData = directive.applyForJava(resultData, ImmutableList.<SoyValue>of());
+        }
+        appendable.append(resultData.coerceToString());
+      }
+      return result;
+    }
+
+    @Override
+    @Nullable
+    public ContentKind kind() {
+      return kind;
+    }
   }
 }

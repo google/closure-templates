@@ -23,7 +23,7 @@ import static com.google.template.soy.jbcsrc.BytecodeUtils.SOY_VALUE_TYPE;
 import static com.google.template.soy.jbcsrc.Statement.returnExpression;
 
 import com.google.auto.value.AutoValue;
-import com.google.template.soy.jbcsrc.VariableSet.SaveRestoreState;
+import com.google.template.soy.jbcsrc.TemplateVariableManager.SaveRestoreState;
 
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
@@ -86,20 +86,20 @@ import java.util.List;
  *   }
  * }}</pre>
  *
- * <p>This object is mutable and depends on the state of the {@link VariableSet} to determine the
- * current set of active variables.  So it is important that uses of this object are sequenced
- * appropriately with operations that introduce (or remove) active variables.
+ * <p>This object is mutable and depends on the state of the {@link TemplateVariableManager} to
+ * determine the current set of active variables.  So it is important that uses of this object are
+ * sequenced appropriately with operations that introduce (or remove) active variables.
  *
  * <p>Note, in the above examples, the caller is responsible for calculating when/why to detach
  * but this class is responsible for calculating the save/restore reattach logic.
  */
 final class DetachState implements ExpressionDetacher.Factory {
-  private final VariableSet variables;
+  private final TemplateVariableManager variables;
   private final List<ReattachState> reattaches = new ArrayList<>();
   private final Expression thisExpr;
   private final FieldRef stateField;
 
-  DetachState(VariableSet variables, Expression thisExpr, FieldRef stateField) {
+  DetachState(TemplateVariableManager variables, Expression thisExpr, FieldRef stateField) {
     checkArgument(stateField.type().equals(Type.INT_TYPE));
     this.variables = variables;
     this.thisExpr = thisExpr;

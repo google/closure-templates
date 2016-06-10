@@ -20,6 +20,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.soytree.AbstractParentSoyNode;
 import com.google.template.soy.soytree.SoyNode;
+import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 
 /**
@@ -28,7 +29,7 @@ import com.google.template.soy.soytree.SoyNode.StandaloneNode;
  * in Soy.
  */
 public final class HtmlOpenTagNode
-    extends AbstractParentSoyNode<HtmlAttributeNode> implements StandaloneNode {
+    extends AbstractParentSoyNode<StandaloneNode> implements StandaloneNode, BlockNode {
 
   private final String tagName;
 

@@ -19,6 +19,7 @@ package com.google.template.soy.passes;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.exprparse.SoyParsingContext;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
@@ -63,6 +64,9 @@ public final class RewriteRemaindersVisitor extends AbstractSoyNodeVisitor<Void>
 
 
   @Override protected void visitPrintNode(PrintNode node) {
+    // We cannot easily access the original context.  However, because everything has already been
+    // parsed, that should be fine.  I don't think this can fail at all, but whatever.
+    SoyParsingContext context = SoyParsingContext.empty(errorReporter, "fake.namespace");
 
     ExprRootNode exprRootNode = node.getExprUnion().getExpr();
     if (exprRootNode == null) {
@@ -110,7 +114,7 @@ public final class RewriteRemaindersVisitor extends AbstractSoyNodeVisitor<Void>
         PrintNode newPrintNode
             = new PrintNode.Builder(node.getId(), node.isImplicit(), SourceLocation.UNKNOWN)
                 .exprText(newExprText)
-                .build(errorReporter);
+                .build(context);
         newPrintNode.addChildren(node.getChildren());
         node.getParent().replaceChild(node, newPrintNode);
       }

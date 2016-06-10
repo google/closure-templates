@@ -21,7 +21,26 @@ import static com.google.common.base.Preconditions.checkArgument;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.html.types.SafeHtml;
+import com.google.common.html.types.SafeHtmlProto;
+import com.google.common.html.types.SafeHtmls;
+import com.google.common.html.types.SafeScript;
+import com.google.common.html.types.SafeScriptProto;
+import com.google.common.html.types.SafeScripts;
+import com.google.common.html.types.SafeStyle;
+import com.google.common.html.types.SafeStyleProto;
+import com.google.common.html.types.SafeStyleSheet;
+import com.google.common.html.types.SafeStyleSheetProto;
+import com.google.common.html.types.SafeStyleSheets;
+import com.google.common.html.types.SafeStyles;
+import com.google.common.html.types.SafeUrl;
+import com.google.common.html.types.SafeUrlProto;
+import com.google.common.html.types.SafeUrls;
+import com.google.common.html.types.TrustedResourceUrl;
+import com.google.common.html.types.TrustedResourceUrlProto;
+import com.google.common.html.types.TrustedResourceUrls;
 import com.google.common.io.Resources;
+import com.google.errorprone.annotations.CompileTimeConstant;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 
 import java.io.IOException;
@@ -164,6 +183,133 @@ public final class SanitizedContents {
         // - This method currently can't be used for text resources (see pretendValidateResource()).
         getDefaultDir(kind));
   }
+
+  /**
+   * Wraps an assumed-safe URI constant.
+   *
+   * <p>This only accepts compile-time constants, based on the assumption that URLs that are
+   * controlled by the application (and not user input) are considered safe.
+   */
+  public static SanitizedContent constantUri(@CompileTimeConstant final String constant) {
+    return fromConstant(constant, ContentKind.URI, Dir.LTR);
+  }
+
+  /**
+   * Wraps an assumed-safe constant string that specifies a safe, balanced, document fragment.
+   *
+   * <p>This only accepts compile-time constants, based on the assumption that HTML snippets that
+   * are controlled by the application (and not user input) are considered safe.
+   */
+  public static SanitizedContent constantHtml(@CompileTimeConstant final String constant) {
+    return fromConstant(constant, ContentKind.HTML, null);
+  }
+
+
+  /**
+   * Wraps an assumed-safe constant string.
+   */
+  private static SanitizedContent fromConstant(
+      String constant, ContentKind kind, @Nullable Dir dir) {
+    // Extra runtime check in case the compile-time check doesn't work.
+    Preconditions.checkArgument(
+        constant.intern().equals(constant),
+        "The provided argument does not look like a compile-time constant.");
+    return SanitizedContent.create(constant, kind, dir);
+  }
+
+  /**
+   * Converts a {@link SafeHtml} into a Soy {@link SanitizedContent} of kind HTML.
+   */
+  public static SanitizedContent fromSafeHtml(SafeHtml html) {
+    return SanitizedContent.create(html.getSafeHtmlString(), ContentKind.HTML, null);
+  }
+
+  /**
+   * Converts a {@link SafeHtmlProto} into a Soy {@link SanitizedContent} of kind HTML.
+   */
+  public static SanitizedContent fromSafeHtmlProto(SafeHtmlProto html) {
+    return SanitizedContent.create(SafeHtmls.fromProto(html).getSafeHtmlString(), ContentKind.HTML,
+        null);
+  }
+
+  /**
+   * Converts a {@link SafeScript} into a Soy {@link SanitizedContent} of kind JS.
+   */
+  public static SanitizedContent fromSafeScript(SafeScript script) {
+    return SanitizedContent.create(script.getSafeScriptString(), ContentKind.JS, null);
+  }
+
+  /**
+   * Converts a {@link SafeScriptProto} into a Soy {@link SanitizedContent} of kind JS.
+   */
+  public static SanitizedContent fromSafeScriptProto(SafeScriptProto script) {
+    return SanitizedContent.create(SafeScripts.fromProto(script).getSafeScriptString(),
+        ContentKind.JS, null);
+  }
+
+  /**
+   * Converts a {@link SafeStyle} into a Soy {@link SanitizedContent} of kind CSS.
+   */
+  public static SanitizedContent fromSafeStyle(SafeStyle style) {
+    return SanitizedContent.create(style.getSafeStyleString(), ContentKind.CSS, null);
+  }
+
+  /**
+   * Converts a {@link SafeStyleProto} into a Soy {@link SanitizedContent} of kind CSS.
+   */
+  public static SanitizedContent fromSafeStyleProto(SafeStyleProto style) {
+    return SanitizedContent.create(SafeStyles.fromProto(style).getSafeStyleString(),
+        ContentKind.CSS, null);
+  }
+
+  /**
+   * Converts a {@link SafeStyleSheet} into a Soy {@link SanitizedContent} of kind CSS.
+   */
+  public static SanitizedContent fromSafeStyleSheet(SafeStyleSheet styleSheet) {
+    return SanitizedContent.create(styleSheet.getSafeStyleSheetString(), ContentKind.CSS, null);
+  }
+
+  /**
+   * Converts a {@link SafeStyleSheetProto} into a Soy {@link SanitizedContent} of kind CSS.
+   */
+  public static SanitizedContent fromSafeStyleSheetProto(SafeStyleSheetProto styleSheet) {
+    return SanitizedContent.create(SafeStyleSheets.fromProto(styleSheet).getSafeStyleSheetString(),
+        ContentKind.CSS, null);
+  }
+
+  /**
+   * Converts a {@link SafeUrl} into a Soy {@link SanitizedContent} of kind URI.
+   */
+  public static SanitizedContent fromSafeUrl(SafeUrl url) {
+    return SanitizedContent.create(url.getSafeUrlString(), ContentKind.URI, Dir.LTR);
+  }
+
+  /**
+   * Converts a {@link SafeUrlProto} into a Soy {@link SanitizedContent} of kind URI.
+   */
+  public static SanitizedContent fromSafeUrlProto(SafeUrlProto url) {
+    return SanitizedContent.create(SafeUrls.fromProto(url).getSafeUrlString(), ContentKind.URI,
+        Dir.LTR);
+  }
+
+  /**
+   * Converts a {@link TrustedResourceUrl} into a Soy {@link SanitizedContent} of kind
+   * TRUSTED_RESOURCE_URI.
+   */
+  public static SanitizedContent fromTrustedResourceUrl(TrustedResourceUrl url) {
+    return SanitizedContent.create(url.getTrustedResourceUrlString(),
+        ContentKind.TRUSTED_RESOURCE_URI, Dir.LTR);
+  }
+
+  /**
+   * Converts a {@link TrustedResourceUrlProto} into a Soy {@link SanitizedContent} of kind
+   * TRUSTED_RESOURCE_URI.
+   */
+  public static SanitizedContent fromTrustedResourceUrlProto(TrustedResourceUrlProto url) {
+    return SanitizedContent.create(TrustedResourceUrls.fromProto(url).getTrustedResourceUrlString(),
+        ContentKind.TRUSTED_RESOURCE_URI, Dir.LTR);
+  }
+
 
   /**
    * Very basic but strict validation that the resource's extension matches the content kind.

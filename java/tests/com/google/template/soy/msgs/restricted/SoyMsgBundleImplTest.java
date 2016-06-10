@@ -18,6 +18,7 @@ package com.google.template.soy.msgs.restricted;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.msgs.SoyMsgBundle;
 
 import junit.framework.TestCase;
@@ -34,15 +35,17 @@ public class SoyMsgBundleImplTest extends TestCase {
   public void testBasic() {
 
     List<SoyMsg> inMsgs = Lists.newArrayList();
-    inMsgs.add(new SoyMsg(0x123, "x-zz", null, "Boo message.", false, null, "/path/to/source1",
+    SourceLocation source1 = new SourceLocation("/path/to/source1", 10, -1, -1, -1);
+    inMsgs.add(new SoyMsg(0x123, "x-zz", null, "Boo message.", false, null, source1,
                           ImmutableList.<SoyMsgPart>of(SoyMsgRawTextPart.of("Boo!"))));
     inMsgs.add(new SoyMsg(0xABC, "x-zz", "abc", "", true, "text/html", null,
                           ImmutableList.<SoyMsgPart>of(
                               SoyMsgRawTextPart.of("Hello, "),
                               new SoyMsgPlaceholderPart("NAME"),
                               SoyMsgRawTextPart.of("!"))));
+    SourceLocation source2 = new SourceLocation("/path/to/source2", 20, -1, -1, -1);
     inMsgs.add(new SoyMsg(0x123, "x-zz",   // duplicate msg id
-                          null, "Boo message 2.", false, null, "/path/to/source2",
+                          null, "Boo message 2.", false, null, source2,
                           ImmutableList.<SoyMsgPart>of(SoyMsgRawTextPart.of("Boo 2!"))));
     SoyMsgBundle msgBundle = new SoyMsgBundleImpl("x-zz", inMsgs);
 
@@ -63,9 +66,8 @@ public class SoyMsgBundleImplTest extends TestCase {
     assertEquals("Boo message.", booMsg.getDesc());
     assertEquals(false, booMsg.isHidden());
     assertEquals(null, booMsg.getContentType());
-    assertEquals(2, booMsg.getSourcePaths().size());
-    assertTrue(booMsg.getSourcePaths().containsAll(
-                   Lists.newArrayList("/path/to/source1", "/path/to/source2")));
+    assertEquals(2, booMsg.getSourceLocations().size());
+    assertTrue(booMsg.getSourceLocations().containsAll(Lists.newArrayList(source1, source2)));
     List<SoyMsgPart> booMsgParts = booMsg.getParts();
     assertEquals(1, booMsgParts.size());
     assertEquals("Boo!", ((SoyMsgRawTextPart) booMsgParts.get(0)).getRawText());
@@ -78,7 +80,7 @@ public class SoyMsgBundleImplTest extends TestCase {
     assertEquals("", helloMsg.getDesc());
     assertEquals(true, helloMsg.isHidden());
     assertEquals("text/html", helloMsg.getContentType());
-    assertEquals(0, helloMsg.getSourcePaths().size());
+    assertEquals(0, helloMsg.getSourceLocations().size());
     List<SoyMsgPart> helloMsgParts = helloMsg.getParts();
     assertEquals(3, helloMsgParts.size());
     assertEquals("Hello, ", ((SoyMsgRawTextPart) helloMsgParts.get(0)).getRawText());

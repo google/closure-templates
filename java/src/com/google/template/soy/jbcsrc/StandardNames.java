@@ -30,6 +30,7 @@ final class StandardNames {
   static final String MSG_PLACEHOLDER_MAP_FIELD = "$msgPlaceholderMap";
 
   static final String FACTORY_CLASS = "Factory";
+  static final String LARGE_STRING_CONSTANT = "$const_string";
 
   private StandardNames() {}
 }

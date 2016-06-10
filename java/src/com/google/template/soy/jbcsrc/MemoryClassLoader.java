@@ -38,15 +38,24 @@ final class MemoryClassLoader extends AbstractMemoryClassLoader {
   private final ImmutableMap<String, ClassData> classesByName;
 
   MemoryClassLoader(Iterable<ClassData> classes) {
-    ImmutableMap.Builder<String, ClassData> builder = ImmutableMap.builder();
-    for (ClassData classData : classes) {
-      builder.put(classData.type().className(), classData);
-    }
-    this.classesByName = builder.build();
+    this.classesByName = indexByClassname(classes);
+  }
+
+  MemoryClassLoader(ClassLoader parent, Iterable<ClassData> classes) {
+    super(parent);
+    this.classesByName = indexByClassname(classes);
   }
 
   @Override
   ClassData getClassData(String name) {
     return classesByName.get(name);
+  }
+
+  private static ImmutableMap<String, ClassData> indexByClassname(Iterable<ClassData> classes) {
+    ImmutableMap.Builder<String, ClassData> builder = ImmutableMap.builder();
+    for (ClassData classData : classes) {
+      builder.put(classData.type().className(), classData);
+    }
+    return builder.build();
   }
 }

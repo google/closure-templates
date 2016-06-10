@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.msgs.SoyMsgBundle;
 
 import java.util.Iterator;
@@ -70,8 +71,8 @@ public class SoyMsgBundleImpl implements SoyMsgBundle {
 
       } else {  // duplicate message id
         SoyMsg existingMsg = tempMsgMap.get(msgId);
-        for (String source : msg.getSourcePaths()) {
-          existingMsg.addSourcePath(source);
+        for (SourceLocation source : msg.getSourceLocations()) {
+          existingMsg.addSourceLocation(source);
         }
       }
     }

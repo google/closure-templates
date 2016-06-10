@@ -33,8 +33,6 @@ public abstract class AbstractHtmlSoyNodeVisitor<R> extends AbstractSoyNodeVisit
       case HTML_OPEN_TAG_END: visitHtmlOpenTagEndNode((HtmlOpenTagEndNode) node); break;
       case HTML_CLOSE_TAG: visitHtmlCloseTagNode((HtmlCloseTagNode) node); break;
       case HTML_VOID_TAG: visitHtmlVoidTagNode((HtmlVoidTagNode) node); break;
-      case HTML_TEXT: visitHtmlTextNode((HtmlTextNode) node); break;
-      case HTML_PRINT_NODE: visitHtmlPrintNode((HtmlPrintNode) node); break;
       default:
         super.visit(node);
     }
@@ -61,14 +59,6 @@ public abstract class AbstractHtmlSoyNodeVisitor<R> extends AbstractSoyNodeVisit
   }
 
   protected void visitHtmlVoidTagNode(HtmlVoidTagNode node) {
-    visitSoyNode(node);
-  }
-
-  protected void visitHtmlTextNode(HtmlTextNode node) {
-    visitSoyNode(node);
-  }
-
-  protected void visitHtmlPrintNode(HtmlPrintNode node) {
     visitSoyNode(node);
   }
 

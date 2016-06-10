@@ -382,7 +382,7 @@ final class CollectTypeHelpersExprVisitor extends AbstractExprNodeVisitor<Void> 
     for (int i = 0, n = sb.length(); i < n; ++i) {
       // The set of Java letters and digits is a subset of the EcmaScript IdentifierPart
       // per https://es5.github.io/#x7.6
-      if (!CharMatcher.JAVA_LETTER_OR_DIGIT.matches(sb.charAt(i))) {
+      if (!CharMatcher.javaLetterOrDigit().matches(sb.charAt(i))) {
         sb.setCharAt(i, '_');
       }
     }

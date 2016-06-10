@@ -16,11 +16,14 @@
 
 package com.google.template.soy.jbcsrc.shared;
 
+import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 
 import java.io.IOException;
+
+import javax.annotation.Nullable;
 
 /** A compiled Soy template.  Each instance is suitable for being rendered exactly once. */
 public interface CompiledTemplate {
@@ -44,4 +47,12 @@ public interface CompiledTemplate {
    *     rendering cannot be continued.
    */
   RenderResult render(AdvisingAppendable appendable, RenderContext context) throws IOException;
+
+  /**
+   * The content kind of the compiled template, used for making runtime content escaping decisions.
+   * 
+   * <p>{@code null} if this template is non-strict.
+   */
+  @Nullable
+  ContentKind kind();
 }

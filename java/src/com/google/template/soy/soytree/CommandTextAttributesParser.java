@@ -22,6 +22,7 @@ import com.google.common.collect.Maps;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.exprparse.SoyParsingContext;
 
 import java.util.Collection;
 import java.util.Map;
@@ -52,7 +53,15 @@ public final class CommandTextAttributesParser {
    *  Note group(1) is attribute name, group(2) is attribute value.
    *  E.g. data="$boo" parses into group(1)="data" and group(2)="$boo". */
   private static final Pattern ATTRIBUTE_TEXT =
-      Pattern.compile("([a-zA-Z][a-zA-Z0-9-]*) = \" ([^\"]*) \" \\s*", Pattern.COMMENTS);
+      Pattern.compile("([a-zA-Z][a-zA-Z0-9-]*) = \" ( (?:[^\"\\\\]+ | \\\\.)*+ ) \" \\s*",
+          Pattern.COMMENTS | Pattern.DOTALL);
+
+  /**
+   * Regexp pattern to unescape attribute values. group(1) holds the escaped character.
+   * The backslash used for escaping is removed only if it is followed by a backslash or a quote.
+   * This is to support templates created before introduction of escaping. a\b\c becomes a\b\c.
+   */
+  private static final Pattern ATTRIBUTE_VALUE_ESCAPE = Pattern.compile("\\\\([\"\\\\])");
 
   /** The name of the Soy command handled by this parser. Only used in error messages. */
   private final String commandName;
@@ -94,6 +103,21 @@ public final class CommandTextAttributesParser {
    * assumed to be for the Soy command that this parser handles.
    *
    * @param commandText The command text to parse.
+   * @param context For reporting syntax errors.
+   * @param sourceLocation A source location near the command text,
+   *     for producing useful error reports.
+   * @return A map from attribute names to values.
+   */
+  Map<String, String> parse(
+      String commandText, SoyParsingContext context, SourceLocation sourceLocation) {
+    return parse(commandText, context.errorReporter(), sourceLocation);
+  }
+
+  /**
+   * Parses a command text string into a map of attributes names to values. The command text is
+   * assumed to be for the Soy command that this parser handles.
+   *
+   * @param commandText The command text to parse.
    * @param errorReporter For reporting syntax errors.
    * @param sourceLocation A source location near the command text,
    *     for producing useful error reports.
@@ -116,6 +140,7 @@ public final class CommandTextAttributesParser {
 
       String name = matcher.group(1);
       String value = matcher.group(2);
+      value = ATTRIBUTE_VALUE_ESCAPE.matcher(value).replaceAll("$1");
 
       if (!supportedAttributeNames.contains(name)) {
         errorReporter.report(

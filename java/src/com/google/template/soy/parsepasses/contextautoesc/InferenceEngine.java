@@ -31,10 +31,12 @@ import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CssNode;
+import com.google.template.soy.soytree.EscapingMode;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForeachIfemptyNode;
 import com.google.template.soy.soytree.ForeachNode;
 import com.google.template.soy.soytree.ForeachNonemptyNode;
+import com.google.template.soy.soytree.HtmlContext;
 import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.LetContentNode;
@@ -63,7 +65,7 @@ import java.util.Set;
  * For each template with {@code autoescape="contextual"}, assume that the template is used
  * to produce an HTML fragment.
  * Start walking the body with the {@link Context context} provided by the caller (typically
- * {@link Context.State#HTML_PCDATA}).
+ * {@link HtmlContext#HTML_PCDATA}).
  * <ul>
  *   <li>For RawTextNodes, update the context based on the fragment, so seeing "&lt;script&gt;" will
  *   move us into a JavaScript context while "&lt;!--" would move us into an HTML comment context.
@@ -507,7 +509,7 @@ final class InferenceEngine {
       try {
         // It is an error to use autoescape-canceling print directives in strict mode unless in a
         // block of kind text.
-        if (autoescapeMode == AutoescapeMode.STRICT && context.state != Context.State.TEXT) {
+        if (autoescapeMode == AutoescapeMode.STRICT && context.state != HtmlContext.TEXT) {
           for (PrintDirectiveNode printDirective : printNode.getChildren()) {
             if (printDirective.getName().equals("|noAutoescape")) {
               // Treat noAutoescape specially:
@@ -654,7 +656,7 @@ final class InferenceEngine {
           inferences.setEscapingDirectives(callNode, callContext,
               callContext.getEscapingModes(ImmutableList.<PrintDirectiveNode>of()));
           return Pair.of(templateName, getContextAfterDynamicValue(callNode, startContext));
-        } else if (startContext.state == Context.State.TEXT) {
+        } else if (startContext.state == HtmlContext.TEXT) {
           // Contextualize the callee in TEXT mode. It's okay to call any template from TEXT mode
           // since TEXT doesn't make any safety guarantees.
           return contextualizeCallee(callNode, startContext, templateName, inferences);

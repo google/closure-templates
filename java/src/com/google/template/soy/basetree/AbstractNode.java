@@ -103,10 +103,18 @@ public abstract class AbstractNode implements Node {
     return null;
   }
 
-
-  @Override public String toString() {
-    return this.getClass().getSimpleName();
+  @Override public final int hashCode() {
+    return super.hashCode();
   }
 
+  @Override public final boolean equals(Object other) {
+    return super.equals(other);
+  }
 
+  @Override public String toString() {
+    String sourceString = toSourceString();
+    sourceString =
+        sourceString.length() > 30 ? sourceString.substring(0, 30) + "..." : sourceString;
+    return this.getClass().getSimpleName() + "<" + sourceString + ">";
+  }
 }

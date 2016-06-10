@@ -21,6 +21,7 @@ import static com.google.template.soy.exprparse.ExpressionSubject.assertThatExpr
 
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.exprtree.BooleanNode;
+import com.google.template.soy.exprtree.ExprEquivalence;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.OperatorNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
@@ -114,9 +115,10 @@ public class ExpressionParserTest extends TestCase {
     assertThatExpression("0x0").isValidExpression();
     assertThatExpression("0x1A2B").isValidExpression();
     assertThatExpression("-0xCAFE88").isValidExpression();
+    assertThatExpression("0x1A2b").isValidExpression();
+    assertThatExpression("-0xcafe88").isValidExpression();
 
-    assertThatExpression("0x1a2b").isNotValidExpression();
-    assertThatExpression("-0xcafe88").isNotValidExpression();
+    assertThatExpression("0x0G").isNotValidExpression();
 
     // Float. (Note the negative sign is actually parsed as the unary "-" operator.)
     assertThatExpression("0.0").isValidExpression();
@@ -136,6 +138,7 @@ public class ExpressionParserTest extends TestCase {
 
     // String.
     assertThatExpression("''").isValidExpression();
+    assertThatExpression("'{}'").isValidExpression();
     assertThatExpression("'abc'").isValidExpression();
     assertThatExpression("'\\\\ \\' \\\" \\n \\r \\t \\b \\f  \\u00A9 \\u2468'").isValidExpression();
 
@@ -328,6 +331,9 @@ public class ExpressionParserTest extends TestCase {
   public void testParseGlobal() {
     assertThatExpression("MOO_2").isValidGlobalNamed("MOO_2");
     assertThatExpression("aaa.BBB").isValidGlobalNamed("aaa.BBB");
+    assertThatExpression("alias.MyEnum.CCC")
+        .withAlias("alias", "my.very.long.namespace")
+        .isValidGlobalNamed("my.very.long.namespace.MyEnum.CCC");
   }
 
 
@@ -530,7 +536,7 @@ public class ExpressionParserTest extends TestCase {
 
 
   private void assertNodeEquals(ExprNode expected, ExprNode actual) {
-    if (!expected.equals(actual)) {
+    if (!ExprEquivalence.get().equivalent(expected, actual)) {
       fail(String.format(
           "Expected <%s> but was: <%s>", expected.toSourceString(), actual.toSourceString()));
     }

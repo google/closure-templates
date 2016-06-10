@@ -16,6 +16,7 @@
 
 package com.google.template.soy.jbcsrc;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -35,11 +36,11 @@ import javax.annotation.Nullable;
 final class CompiledTemplateRegistry {
   private final ImmutableBiMap<String, CompiledTemplateMetadata> templateNameToMetadata;
   private final ImmutableBiMap<String, CompiledTemplateMetadata> classNameToMetadata;
-  private final ImmutableMap<String, ContentKind> deltemplateNameToContentKind;
+  private final ImmutableMap<String, Optional<ContentKind>> deltemplateNameToContentKind;
   private final ImmutableSet<String> delegateTemplateNames;
 
   CompiledTemplateRegistry(TemplateRegistry registry) {
-    Map<String, ContentKind> deltemplateNameToContentKind = new HashMap<>();
+    Map<String, Optional<ContentKind>> deltemplateNameToContentKind = new HashMap<>();
     ImmutableBiMap.Builder<String, CompiledTemplateMetadata> templateToMetadata =
         ImmutableBiMap.builder();
     ImmutableBiMap.Builder<String, CompiledTemplateMetadata> classToMetadata =
@@ -52,12 +53,11 @@ final class CompiledTemplateRegistry {
       classToMetadata.put(metadata.typeInfo().className(), metadata);
       if (template instanceof TemplateDelegateNode) {
         delegateTemplateNames.add(template.getTemplateName());
-        if (template.getContentKind() != null) {
-          // all delegates are guaranteed to have the same content kind by the
-          // checkdelegatesvisitor
-          deltemplateNameToContentKind.put(
-              ((TemplateDelegateNode) template).getDelTemplateName(), template.getContentKind());
-        }
+        // all delegates are guaranteed to have the same content kind by the
+        // checkdelegatesvisitor
+        deltemplateNameToContentKind.put(
+            ((TemplateDelegateNode) template).getDelTemplateName(),
+            Optional.fromNullable(template.getContentKind()));
       }
     }
     this.templateNameToMetadata = templateToMetadata.build();
@@ -91,8 +91,16 @@ final class CompiledTemplateRegistry {
 
   /**
    * Returns the {@link ContentKind} (if any) of a deltemplate.
+   *
+   * @throws IllegalArgumentException if it is unknown because there are no implementations of the
+   *     delegate available at compile time.
    */
-  @Nullable ContentKind getDelTemplateContentKind(String delTemplateName) {
-    return deltemplateNameToContentKind.get(delTemplateName);
+  @Nullable
+  ContentKind getDelTemplateContentKind(String delTemplateName) {
+    return deltemplateNameToContentKind.get(delTemplateName).orNull();
+  }
+
+  boolean hasDelTemplateDefinition(String delTemplateName) {
+    return deltemplateNameToContentKind.containsKey(delTemplateName);
   }
 }

@@ -21,8 +21,6 @@ import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.primitive.IntType;
 
-import java.util.Objects;
-
 /**
  * Node representing an integer value.
  *
@@ -77,17 +75,5 @@ public final class IntegerNode extends AbstractPrimitiveNode {
 
   @Override public IntegerNode copy(CopyState copyState) {
     return new IntegerNode(this, copyState);
-  }
-
-
-  @Override public boolean equals(Object other) {
-    if (other == null || other.getClass() != this.getClass()) { return false; }
-    IntegerNode otherInt = (IntegerNode) other;
-    return value == otherInt.value;
-  }
-
-
-  @Override public int hashCode() {
-    return Objects.hash(this.getClass(), value);
   }
 }

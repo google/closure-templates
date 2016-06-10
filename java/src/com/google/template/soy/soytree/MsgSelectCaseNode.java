@@ -18,10 +18,10 @@ package com.google.template.soy.soytree;
 
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprparse.ExpressionParser;
+import com.google.template.soy.exprparse.SoyParsingContext;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
@@ -99,19 +99,19 @@ public final class MsgSelectCaseNode extends CaseOrDefaultNode implements MsgBlo
      * state is invalid, errors are reported to the {@code errorReporter} and {@link Builder#error}
      * is returned.
      */
-    public MsgSelectCaseNode build(ErrorReporter errorReporter) {
-      Checkpoint checkpoint = errorReporter.checkpoint();
+    public MsgSelectCaseNode build(SoyParsingContext context) {
+      Checkpoint checkpoint = context.errorReporter().checkpoint();
 
       ExprRootNode strLit = new ExprRootNode(
-          new ExpressionParser(commandText, sourceLocation, errorReporter)
+          new ExpressionParser(commandText, sourceLocation, context)
               .parseExpression());
 
       // Make sure the expression is a string.
       if (!(strLit.numChildren() == 1 && strLit.getRoot() instanceof StringNode)) {
-        errorReporter.report(sourceLocation, INVALID_STRING_FOR_SELECT_CASE);
+        context.report(sourceLocation, INVALID_STRING_FOR_SELECT_CASE);
       }
 
-      if (errorReporter.errorsSince(checkpoint)) {
+      if (context.errorReporter().errorsSince(checkpoint)) {
         return error();
       }
 

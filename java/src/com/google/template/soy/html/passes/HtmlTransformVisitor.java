@@ -17,6 +17,7 @@
 package com.google.template.soy.html.passes;
 
 import com.google.common.base.CharMatcher;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.template.soy.base.SourceLocation;
@@ -26,18 +27,21 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.html.HtmlAttributeNode;
 import com.google.template.soy.html.HtmlCloseTagNode;
+import com.google.template.soy.html.HtmlDefinitions;
 import com.google.template.soy.html.HtmlOpenTagEndNode;
 import com.google.template.soy.html.HtmlOpenTagStartNode;
-import com.google.template.soy.html.HtmlPrintNode;
-import com.google.template.soy.html.HtmlState;
-import com.google.template.soy.html.HtmlTextNode;
+import com.google.template.soy.html.InferredElementNamespace;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.AutoescapeMode;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
+import com.google.template.soy.soytree.CssNode;
+import com.google.template.soy.soytree.HtmlContext;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.LetContentNode;
+import com.google.template.soy.soytree.LogNode;
+import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -52,7 +56,9 @@ import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.XidNode;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -66,9 +72,10 @@ import java.util.Set;
  *   <li>{@link HtmlCloseTagNode}</li>
  *   <li>{@link HtmlOpenTagEndNode}</li>
  *   <li>{@link HtmlOpenTagStartNode}</li>
- *   <li>{@link HtmlPrintNode}</li>
  *   <li>{@link HtmlTextNode}</li>
  * </ul>
+ *
+ * Also annotates msg and print nodes with their {@link HtmlContext}.
  *
  * {@link RawTextNode}s not found in a place where HTML or attributes may be present, such as in a
  * {@link XidNode}, are left alone.
@@ -81,6 +88,14 @@ public final class HtmlTransformVisitor extends AbstractSoyNodeVisitor<Void> {
 
   private static final SoyErrorKind EXPECTED_ATTRIBUTE_VALUE =
       SoyErrorKind.of("Expected to find a quoted " + "attribute value, but found \"{0}\".");
+
+  private static final SoyErrorKind EXPECTED_TAG_CLOSE = SoyErrorKind.of(
+      "Expected to find the tag close character, >, but found \"{0}\".");
+
+  private static final SoyErrorKind INVALID_SELF_CLOSING_TAG = SoyErrorKind.of(
+      "Invalid self-closing tag for \"{0}\". Self-closing tags are only valid for void tags and "
+          + "SVG content (partially supported). For a list of void elements, see "
+          + "https://www.w3.org/TR/html5/syntax.html#void-elements.");
 
   private static final SoyErrorKind SOY_TAG_BEFORE_ATTR_VALUE =
       SoyErrorKind.of(
@@ -103,8 +118,21 @@ public final class HtmlTransformVisitor extends AbstractSoyNodeVisitor<Void> {
           "The incremental HTML Soy backend requires all let statements and parameters with "
               + "content to have a content kind");
 
-  /** The last {@link HtmlState} encountered. */
-  private HtmlState currentState = HtmlState.PCDATA;
+  private static final SoyErrorKind INVALID_CSS_NODE_LOCATION =
+      SoyErrorKind.of(
+          "The incremental HTML Soy backend does not allow '{'css'}' nodes to appear in HTML "
+              + "outside of attribute values.");
+
+  private static final SoyErrorKind INVALID_XID_NODE_LOCATION =
+      SoyErrorKind.of(
+          "The incremental HTML Soy backend does not allow '{'xid'}' nodes to appear in HTML "
+              + "outside of attribute values.");
+
+  /** The last {@link HtmlContext} encountered. */
+  private HtmlContext currentState = HtmlContext.HTML_PCDATA;
+
+  /** True if we're expecting '>' after '/'.  Will only be true in TAG. */
+  private boolean isSelfClosingTag;
 
   /** The name of the current tag. */
   private String currentTag = "";
@@ -123,6 +151,9 @@ public final class HtmlTransformVisitor extends AbstractSoyNodeVisitor<Void> {
 
   /** Used to give newly created Nodes an id. */
   private IdGenerator idGen = null;
+
+  /** Keeps track of the current open elements within a template */
+  private final Deque<HtmlOpenTagEndNode> openElementsDeque = new ArrayDeque<>();
 
   /**
    * Maps a RawTextNode to nodes corresponding to one or more HTML tag pieces or attributes. This is
@@ -151,8 +182,8 @@ public final class HtmlTransformVisitor extends AbstractSoyNodeVisitor<Void> {
 
   /**
    * Transforms all the {@link RawTextNode}s corresponding to HTML to the
-   * corresponding Html*Node. Additionally, PrintNodes that occur in HTML data
-   * or attributes declarations are wrapped with an {@link HtmlPrintNode}.
+   * corresponding Html*Node. Additionally, nodes that occur in HTML data
+   * or attributes declarations are annotated with {@link HtmlContext}.
    *
    * @see AbstractSoyNodeVisitor#exec(com.google.template.soy.basetree.Node)
    */
@@ -176,12 +207,18 @@ public final class HtmlTransformVisitor extends AbstractSoyNodeVisitor<Void> {
     }
   }
 
-  private HtmlState getState() {
+  private HtmlContext getState() {
     return currentState;
   }
 
-  private void setState(HtmlState state) {
+  private void setState(HtmlContext state) {
     currentState = state;
+    isSelfClosingTag = false;
+  }
+
+  private void setSelfClosingTagState() {
+    currentState = HtmlContext.HTML_TAG;
+    isSelfClosingTag = true;
   }
 
   /**
@@ -197,15 +234,16 @@ public final class HtmlTransformVisitor extends AbstractSoyNodeVisitor<Void> {
   }
 
   /**
-   * Creates a new {@link HtmlTextNode} and maps it to node.
+   * Creates a new {@link RawTextNode} in HTML context and maps it to node.
    * @param node The node that the mapped node comes from.
    */
   private void createTextNode(RawTextNode node) {
+    Preconditions.checkState(getState() == HtmlContext.HTML_PCDATA);
     String currentString = consumeText();
 
     if (currentString.length() > 0) {
       SourceLocation sl = deriveSourceLocation(node);
-      transformMapping.put(node, new HtmlTextNode(idGen.genId(), currentString, sl));
+      transformMapping.put(node, new RawTextNode(idGen.genId(), currentString, sl, getState()));
     }
   }
 
@@ -215,13 +253,14 @@ public final class HtmlTransformVisitor extends AbstractSoyNodeVisitor<Void> {
    * @param node The node that the mapped node comes from.
    */
   private void createAttributeValueNode(RawTextNode node) {
+    Preconditions.checkState(getState() == HtmlContext.HTML_NORMAL_ATTR_VALUE);
     String currentString = consumeText();
 
     // Check to see if the currentText is empty. This may occur when we have something like
     // disabled="" or disabled="{$foo}" after the print tag is finished.
     if (currentString.length() > 0) {
       SourceLocation sl = deriveSourceLocation(node);
-      currentAttributeValues.add(new RawTextNode(idGen.genId(), currentString, sl));
+      currentAttributeValues.add(new RawTextNode(idGen.genId(), currentString, sl, getState()));
     }
   }
 
@@ -243,7 +282,7 @@ public final class HtmlTransformVisitor extends AbstractSoyNodeVisitor<Void> {
   }
 
   /**
-   * Handles a character within {@link HtmlState#PCDATA}, where either a text node may be present
+   * Handles a character within {@link HtmlContext#PCDATA}, where either a text node may be present
    * or the start of a new tag.
    * @param node The node that the current character belongs to.
    * @param c The current character being examined.
@@ -253,7 +292,7 @@ public final class HtmlTransformVisitor extends AbstractSoyNodeVisitor<Void> {
       // If we are encountering the start of a new tag, check to see if a text node with data is
       // being completed.
       createTextNode(node);
-      setState(HtmlState.TAG_NAME);
+      setState(HtmlContext.HTML_TAG_NAME);
     } else {
       currentText.append(c);
     }
@@ -266,12 +305,13 @@ public final class HtmlTransformVisitor extends AbstractSoyNodeVisitor<Void> {
   }
 
   /**
-   * Handles a character within {@link HtmlState#TAG_NAME}, where the name of a tag must be present.
+   * Handles a character within {@link HtmlContext#TAG_NAME}, where the name of a tag must be
+   * present.
    * @param node The node that the current character belongs to.
    * @param c The current character being examined.
    */
   private void handleHtmlTagName(RawTextNode node, char c) {
-    if (CharMatcher.WHITESPACE.matches(c) || c == '>') {
+    if (CharMatcher.whitespace().matches(c) || c == '>') {
       currentTag = consumeText();
 
       // No tag name, saw something like <> or <  >.
@@ -293,7 +333,7 @@ public final class HtmlTransformVisitor extends AbstractSoyNodeVisitor<Void> {
       } else {
         // Get ready to capture attributes.
         currentAttributeValues = new ArrayList<>();
-        setState(HtmlState.TAG);
+        setState(HtmlContext.HTML_TAG);
       }
     } else {
       currentText.append(c);
@@ -301,8 +341,70 @@ public final class HtmlTransformVisitor extends AbstractSoyNodeVisitor<Void> {
   }
 
   /**
-   * Handles a character within {@link HtmlState#TAG}, where either an attribute declaration or the
-   * end of a tag may appear.
+   * @param tagName The tag name to get the namespace for, given the current stack of open Elements.
+   */
+  private InferredElementNamespace getNamespace(String tagName) {
+    if (tagName.equalsIgnoreCase("svg")) {
+      return InferredElementNamespace.SVG;
+    }
+
+    // If at the root of a template, treat it as being in the XHTML namespace. Ideally, we would
+    // be able to check the union of the callsites and figure out what namespace were from there.
+    // Ultimately we cannot tell if a template will be rendered into an SVG at runtime. For almost
+    // all cases, XHTML is the right value however.
+    if (tagName.equalsIgnoreCase("foreignObject") || openElementsDeque.isEmpty()) {
+      return InferredElementNamespace.XHTML;
+    }
+
+    return openElementsDeque.peek().getNamespace();
+  }
+
+  private void emitHtmlOpenTagEndNode(
+      String tagName, boolean isSelfClosing, RawTextNode node, SourceLocation sl) {
+    InferredElementNamespace namespace = getNamespace(tagName);
+    HtmlOpenTagEndNode htmlOpenTagEndNode =
+        new HtmlOpenTagEndNode(idGen.genId(), tagName, namespace, sl);
+    transformMapping.put(node, htmlOpenTagEndNode);
+    openElementsDeque.push(htmlOpenTagEndNode);
+
+    if (!isSelfClosing) {
+      return;
+    }
+
+    /*
+     * Per spec, only two types of tags allow self-closing: void tags (e.g. input) and
+     * svg/math content. We ignore math content since only Firefox supports it. Having a self
+     * closing tag on all others is a parse error. For more info, look for "self-closing flag" in
+     * the spec.
+     * TODO(sparhami) we currently track the open elements stack on a per-template basis. That means
+     * if you have the svg element itself declared in one template, and svg content with a self
+     * closing tag in another, we will currently trip up on it. If all the callsites for a
+     * particular template are all within svg content, we could inherit that initial namespace.
+     */
+    if (namespace == InferredElementNamespace.SVG) {
+      emitHtmlCloseTagNode(tagName, node, sl);
+    } else if (!HtmlDefinitions.HTML5_VOID_ELEMENTS.contains(currentTag)) {
+      // Continuing parsing while treating the tag as a simple start tag matches how browsers
+      // handle this case. Note: a close tag is not emitted.
+      errorReporter.report(sl, INVALID_SELF_CLOSING_TAG, currentTag);
+    }
+  }
+
+  private void emitHtmlCloseTagNode(String tagName, RawTextNode node, SourceLocation sl) {
+    transformMapping.put(node, new HtmlCloseTagNode(idGen.genId(), tagName, sl));
+
+    boolean tagMatches = false;
+    // When encountering a closing tag, need to pop off any unclosed tags.
+    while (!openElementsDeque.isEmpty() && !tagMatches) {
+      HtmlOpenTagEndNode htmlOpenTagEndNode = openElementsDeque.pop();
+      tagMatches = tagName.equalsIgnoreCase(htmlOpenTagEndNode.getTagName());
+    }
+  }
+
+
+  /**
+   * Handles a character within {@link HtmlContext#TAG}, where either an attribute declaration or
+   * the end of a tag may appear.
    * @param node The node that the current character belongs to.
    * @param c The current character being examined.
    */
@@ -313,21 +415,35 @@ public final class HtmlTransformVisitor extends AbstractSoyNodeVisitor<Void> {
       SourceLocation sl = deriveSourceLocation(node);
 
       if (currentTag.startsWith("/")) {
-        transformMapping.put(node, new HtmlCloseTagNode(
-            idGen.genId(),
-            currentTag.substring(1),
-            sl));
+        emitHtmlCloseTagNode(currentTag.substring(1), node, sl);
       } else {
-        transformMapping.put(node, new HtmlOpenTagEndNode(idGen.genId(), currentTag, sl));
+        emitHtmlOpenTagEndNode(currentTag, false, node, sl);
       }
 
-      setState(HtmlState.PCDATA);
-    } else if (CharMatcher.WHITESPACE.matches(c)) {
+      setState(HtmlContext.HTML_PCDATA);
+    } else if (c == '/') {
+      setSelfClosingTagState();
+    } else if (CharMatcher.whitespace().matches(c)) {
       // Skip whitespace characters.
     } else {
-      setState(HtmlState.ATTRIBUTE_NAME);
+      setState(HtmlContext.HTML_ATTRIBUTE_NAME);
       currentText.append(c);
     }
+  }
+
+  /** Handles 8.2.4.43 of the W3C HTML5 spec */
+  private void handleHtmlSelfClosingStartTag(RawTextNode node, char c) {
+    SourceLocation sl = deriveSourceLocation(node);
+
+    if (c != '>') {
+      errorReporter.report(sl, EXPECTED_TAG_CLOSE, c);
+      setState(HtmlContext.HTML_TAG);
+      consumeCharacter(node, c);
+      return;
+    }
+
+    emitHtmlOpenTagEndNode(currentTag, true, node, sl);
+    setState(HtmlContext.HTML_PCDATA);
   }
 
   /**
@@ -340,7 +456,7 @@ public final class HtmlTransformVisitor extends AbstractSoyNodeVisitor<Void> {
     if (c == '=') {
       // Next thing we should see is " to start the attribute value.
       currentAttributeName = consumeText();
-      setState(HtmlState.BEFORE_ATTRIBUTE_VALUE);
+      setState(HtmlContext.HTML_BEFORE_ATTRIBUTE_VALUE);
       suppressExpectedAttributeValueError = false;
     } else if (c == '>') {
       // Tag ended with an attribute with no value (e.g. disabled) - create an attribute, then
@@ -348,12 +464,12 @@ public final class HtmlTransformVisitor extends AbstractSoyNodeVisitor<Void> {
       currentAttributeName = consumeText();
       createAttribute(node);
       handleHtmlTag(node, c);
-    } else if (CharMatcher.WHITESPACE.matches(c)) {
+    } else if (CharMatcher.whitespace().matches(c)) {
       // Handle a value-less attribute, then start looking for another attribute or the end of the
       // tag.
       currentAttributeName = consumeText();
       createAttribute(node);
-      setState(HtmlState.TAG);
+      setState(HtmlContext.HTML_TAG);
     } else {
       currentText.append(c);
     }
@@ -367,7 +483,7 @@ public final class HtmlTransformVisitor extends AbstractSoyNodeVisitor<Void> {
    */
   private void handleHtmlBeforeAttributeValue(RawTextNode node, char c) {
     if (c == '"') {
-      setState(HtmlState.ATTR_VALUE);
+      setState(HtmlContext.HTML_NORMAL_ATTR_VALUE);
     } else if (!suppressExpectedAttributeValueError) {
       SourceLocation sl = deriveSourceLocation(node);
       errorReporter.report(sl,  EXPECTED_ATTRIBUTE_VALUE, c);
@@ -378,8 +494,8 @@ public final class HtmlTransformVisitor extends AbstractSoyNodeVisitor<Void> {
     // for issues.
     if (c == '>') {
       handleHtmlTag(node, c);
-    } else if (CharMatcher.WHITESPACE.matches(c)) {
-      setState(HtmlState.TAG);
+    } else if (CharMatcher.whitespace().matches(c)) {
+      setState(HtmlContext.HTML_TAG);
     }
   }
 
@@ -393,7 +509,7 @@ public final class HtmlTransformVisitor extends AbstractSoyNodeVisitor<Void> {
     if (c == '"') {
       createAttributeValueNode(node);
       createAttribute(node);
-      setState(HtmlState.TAG);
+      setState(HtmlContext.HTML_TAG);
     } else {
       currentText.append(c);
     }
@@ -407,22 +523,26 @@ public final class HtmlTransformVisitor extends AbstractSoyNodeVisitor<Void> {
    */
   private void consumeCharacter(RawTextNode node, char c) {
     switch(getState()) {
-      case PCDATA:
+      case HTML_PCDATA:
         handleHtmlPcData(node, c);
         break;
-      case TAG_NAME:
+      case HTML_TAG_NAME:
         handleHtmlTagName(node, c);
         break;
-      case TAG:
-        handleHtmlTag(node, c);
+      case HTML_TAG:
+        if (isSelfClosingTag) {
+          handleHtmlSelfClosingStartTag(node, c);
+        } else {
+          handleHtmlTag(node, c);
+        }
         break;
-      case ATTRIBUTE_NAME:
+      case HTML_ATTRIBUTE_NAME:
         handleHtmlAttributeName(node, c);
         break;
-      case BEFORE_ATTRIBUTE_VALUE:
+      case HTML_BEFORE_ATTRIBUTE_VALUE:
         handleHtmlBeforeAttributeValue(node, c);
         break;
-      case ATTR_VALUE:
+      case HTML_NORMAL_ATTR_VALUE:
         handleHtmlNormalAttrValue(node, c);
         break;
       default:
@@ -448,21 +568,21 @@ public final class HtmlTransformVisitor extends AbstractSoyNodeVisitor<Void> {
     }
 
     switch(getState()) {
-      case TAG_NAME:
+      case HTML_TAG_NAME:
         /*
          * Force the end of a tag in the case we have something like:
          * <div{if $foo}...{/if} ...>
          */
         consumeCharacter(node, ' ');
         break;
-      case PCDATA:
+      case HTML_PCDATA:
         createTextNode(node);
         break;
-      case ATTRIBUTE_NAME:
+      case HTML_ATTRIBUTE_NAME:
         // Value-less attribute inside a soy block, e.g. {if $condition}disabled{/if}
         consumeCharacter(node, ' ');
         break;
-      case ATTR_VALUE:
+      case HTML_NORMAL_ATTR_VALUE:
         /*
          * Reached the end of a RawTextNode with some text, for example from:
          *
@@ -484,7 +604,7 @@ public final class HtmlTransformVisitor extends AbstractSoyNodeVisitor<Void> {
    */
   private void checkForValidSoyNodeLocation(SoyNode node) {
     switch(getState()) {
-      case BEFORE_ATTRIBUTE_VALUE:
+      case HTML_BEFORE_ATTRIBUTE_VALUE:
         errorReporter.report(node.getSourceLocation(), SOY_TAG_BEFORE_ATTR_VALUE);
         break;
       default:
@@ -493,48 +613,21 @@ public final class HtmlTransformVisitor extends AbstractSoyNodeVisitor<Void> {
   }
 
   /**
-   * Visits a {@link PrintNode}, wrapping it with an HtmlPrintNode node if it occurs in {@link
-   * HtmlState#TAG} or {@link HtmlState#PCDATA}. This allows the code generator to handle those
-   * print statements separately and know the state in which they occurred. If the {@link PrintNode}
-   * occurs in {@link HtmlState#ATTR_VALUE}, then the print node becomes a part of the
-   * current attribute's value.
+   * Visits a {@link PrintNode}, annotating it with an {@link HtmlContext}.  This allows the code
+   * generator to handle HTML print statements separately and know the state in which they occurred.
+   * If the {@link PrintNode} occurs in {@link HtmlContext#HTML_NORMAL_ATTR_VALUE}, the print node
+   * becomes part of the current attribute's value.
    */
   @Override protected void visitPrintNode(PrintNode node) {
     checkForValidSoyNodeLocation(node);
 
-    HtmlPrintNode htmlPrintNode;
-    switch(getState()) {
-      case ATTR_VALUE:
-        // A PrintNode in an attribute value, add it to the current attribute values, which will get
-        // added to the attribute node once the attribute value ends.
-        currentAttributeValues.add(node);
-        node.getParent().removeChild(node);
-        break;
-      case TAG:
-        // A PrintNode in the tag context - this is a print of something that has kind="attributes",
-        // keep track of the context using an HtmlPrintNode so that the code generator knows what.
-        // to do with it.
-        htmlPrintNode = new HtmlPrintNode(
-            idGen.genId(),
-            node,
-            HtmlPrintNode.Context.HTML_TAG,
-            node.getSourceLocation());
-        node.getParent().replaceChild(node, htmlPrintNode);
-        break;
-      case PCDATA:
-        // A PrintNode in the pcdata context - this is a print of something that is the child of
-        // an HTML element. This could be html, text, css, etc., just need to keep track of the
-        // the context and the code generator will do the right thing with each type.
-        htmlPrintNode = new HtmlPrintNode(
-            idGen.genId(),
-            node,
-            HtmlPrintNode.Context.HTML_PCDATA,
-            node.getSourceLocation());
-        node.getParent().replaceChild(node, htmlPrintNode);
-        break;
-      default:
-        break;
+    if (getState() == HtmlContext.HTML_NORMAL_ATTR_VALUE) {
+      // A PrintNode in an attribute value, add it to the current attribute values, which will get
+      // added to the attribute node once the attribute value ends.
+      currentAttributeValues.add(node);
+      node.getParent().removeChild(node);
     }
+    node.setHtmlContext(getState());
   }
 
   /**
@@ -558,10 +651,12 @@ public final class HtmlTransformVisitor extends AbstractSoyNodeVisitor<Void> {
     } else if (node.getContentKind() == ContentKind.HTML) {
       visitSoyNode(node, true);
     } else if (node.getContentKind() == ContentKind.ATTRIBUTES) {
-      HtmlState startState = getState();
-      setState(HtmlState.TAG);
+      HtmlContext startState = getState();
+      setState(HtmlContext.HTML_TAG);
       visitChildrenAllowingConcurrentModification(node);
       setState(startState);
+    } else {
+      new ContextSetterVisitor(HtmlContext.TEXT).exec(node);
     }
   }
 
@@ -601,12 +696,13 @@ public final class HtmlTransformVisitor extends AbstractSoyNodeVisitor<Void> {
   @Override protected void visitTemplateNode(TemplateNode node) {
     switch (node.getContentKind()) {
       case HTML:
-        currentState = HtmlState.PCDATA;
+        currentState = HtmlContext.HTML_PCDATA;
         break;
       case ATTRIBUTES:
-        currentState = HtmlState.TAG;
+        currentState = HtmlContext.HTML_TAG;
         break;
       default:
+        new ContextSetterVisitor(HtmlContext.TEXT).exec(node);
         return; // only need to do transformations for HTML / attributes
     }
 
@@ -614,6 +710,7 @@ public final class HtmlTransformVisitor extends AbstractSoyNodeVisitor<Void> {
       errorReporter.report(node.getSourceLocation(), NON_STRICT_TEMPLATE);
     }
 
+    openElementsDeque.clear();
     visitSoyNode(node, true);
   }
 
@@ -641,29 +738,61 @@ public final class HtmlTransformVisitor extends AbstractSoyNodeVisitor<Void> {
     visitSoyNode(node, true);
   }
 
-  @Override
-  protected void visitLoopNode(LoopNode node) {
+  @Override protected void visitLoopNode(LoopNode node) {
     visitSoyNode(node, true);
+  }
+
+  @Override protected void visitCssNode(CssNode node) {
+    if (getState() != HtmlContext.HTML_NORMAL_ATTR_VALUE) {
+      errorReporter.report(node.getSourceLocation(), INVALID_CSS_NODE_LOCATION);
+    }
+
+    visitSoyNode(node);
+  }
+
+  @Override protected void visitXidNode(XidNode node) {
+    if (getState() != HtmlContext.HTML_NORMAL_ATTR_VALUE) {
+      errorReporter.report(node.getSourceLocation(), INVALID_XID_NODE_LOCATION);
+    }
+
+    visitSoyNode(node);
+  }
+
+  @Override protected void visitMsgFallbackGroupNode(MsgFallbackGroupNode node) {
+    node.setHtmlContext(getState());
+    visitSoyNode(node);
+  }
+
+  @Override protected void visitLogNode(LogNode node) {
+    // The contents of a {log} statement are always text.
+    new ContextSetterVisitor(HtmlContext.TEXT).exec(node);
   }
 
   private void visitSoyNode(SoyNode node, boolean enforceState) {
     switch(getState()) {
-      case BEFORE_ATTRIBUTE_VALUE:
+      case HTML_BEFORE_ATTRIBUTE_VALUE:
         errorReporter.report(node.getSourceLocation(), SOY_TAG_BEFORE_ATTR_VALUE);
         break;
-      case ATTR_VALUE:
+      case HTML_NORMAL_ATTR_VALUE:
         if (node instanceof StandaloneNode) {
           StandaloneNode standaloneNode = (StandaloneNode) node;
           standaloneNode.getParent().removeChild(standaloneNode);
           currentAttributeValues.add(standaloneNode);
+          // We don't need to transform the children, but we do need to set their contexts.
+          new ContextSetterVisitor(getState()) {
+            // {param} tags inside attributes can only be TEXT.
+            @Override protected void visitCallParamContentNode(CallParamContentNode node) {
+              new ContextSetterVisitor(HtmlContext.TEXT).exec(node);
+            }
+          }.exec(node);
         }
         break;
-      case TAG:
-      case PCDATA:
+      case HTML_TAG:
+      case HTML_PCDATA:
         if (node instanceof ParentSoyNode<?>) {
-          HtmlState startState = getState();
+          HtmlContext startState = getState();
           visitChildrenAllowingConcurrentModification((ParentSoyNode<?>) node);
-          HtmlState endState = getState();
+          HtmlContext endState = getState();
 
           if (enforceState && startState != endState) {
             errorReporter.report(
@@ -685,5 +814,35 @@ public final class HtmlTransformVisitor extends AbstractSoyNodeVisitor<Void> {
 
   @Override protected void visitSoyNode(SoyNode node) {
     visitSoyNode(node, false);
+  }
+
+  /**
+   * Sets the HtmlContext for all supported nodes to a specified value. The main visitor class calls
+   * this visitor instead visiting nodes in textual contexts, since they don't need anything else.
+   */
+  private static class ContextSetterVisitor extends AbstractSoyNodeVisitor<Void> {
+    private final HtmlContext value;
+    ContextSetterVisitor(HtmlContext value) {
+      this.value = value;
+    }
+
+    @Override protected void visitSoyNode(SoyNode node) {
+      if (node instanceof ParentSoyNode<?>) {
+        visitChildren((ParentSoyNode<?>) node);
+      }
+    }
+
+    @Override protected void visitMsgFallbackGroupNode(MsgFallbackGroupNode node) {
+      node.setHtmlContext(value);
+      visitChildren(node);
+    }
+
+    @Override protected void visitPrintNode(PrintNode node) {
+      node.setHtmlContext(value);
+    }
+
+    @Override protected void visitRawTextNode(RawTextNode node) {
+      node.setHtmlContext(value);
+    }
   }
 }

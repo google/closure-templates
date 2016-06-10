@@ -16,10 +16,13 @@
 
 package com.google.template.soy.soytree;
 
+import com.google.common.base.Optional;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Multimap;
+import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.shared.internal.DelTemplateSelector;
@@ -183,5 +186,42 @@ public final class TemplateRegistry {
     // TODO(lukes): eliminate this method and DelTemplateKey
     return delTemplateSelector.selectTemplate(
         delTemplateKey.name(), delTemplateKey.variant(), activeDelPackageNames);
+  }
+
+  /**
+   * Gets the content kind that a call results in. If used with delegate calls, the delegate
+   * templates must use strict autoescaping. This relies on the fact that all delegate calls must
+   * have the same kind when using strict autoescaping. This is enforced by CheckDelegatesVisitor.
+   * @param node The {@link CallBasicNode} or {@link CallDelegateNode}.
+   * @return The kind of content that the call results in.
+   */
+  public Optional<ContentKind> getCallContentKind(CallNode node) {
+    TemplateNode templateNode = null;
+
+    if (node instanceof CallBasicNode) {
+      String calleeName = ((CallBasicNode) node).getCalleeName();
+      templateNode = getBasicTemplate(calleeName);
+    } else {
+      String calleeName = ((CallDelegateNode) node).getDelCalleeName();
+      ImmutableList<TemplateDelegateNode> templateNodes = getDelTemplateSelector()
+          .delTemplateNameToValues()
+          .get(calleeName);
+      // For per-file compilation, we may not have any of the delegate templates in the compilation
+      // unit.
+      if (!templateNodes.isEmpty()) {
+        templateNode = templateNodes.get(0);
+      }
+    }
+    // The template node may be null if the template is being compiled in isolation.
+    if (templateNode == null) {
+      return Optional.absent();
+    }
+    Preconditions.checkState(
+        templateNode instanceof TemplateBasicNode
+            || templateNode.getAutoescapeMode() == AutoescapeMode.STRICT,
+        "Cannot determine the content kind for a delegate template that does not use strict "
+            + "autoescaping.");
+
+    return Optional.of(templateNode.getContentKind());
   }
 }

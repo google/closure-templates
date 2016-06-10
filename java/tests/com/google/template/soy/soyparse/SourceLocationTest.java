@@ -240,10 +240,12 @@ public final class SourceLocationTest extends TestCase {
         .parseSoyFile()
         .getChild(0);
     SourceLocation location = templateNode.getSourceLocation();
+    // Begin at {template
     assertEquals(2, location.getLineNumber());
     assertEquals(1, location.getBeginColumn());
-    assertEquals(4, location.getEndLine());
-    assertEquals(11, location.getEndColumn());
+    // End after .t}
+    assertEquals(2, location.getEndLine());
+    assertEquals(13, location.getEndColumn());
   }
 
 

@@ -115,17 +115,23 @@ public final class PyExprUtils {
   }
 
   /**
-   * Generate a Python not null (None) check expression for a given PyExpr.
-   *
-   * @param pyExpr The input expression to test.
-   * @return A PyExpr containing the null check.
+   * Generates a Python not null (None) check expression for the given {@link PyExpr}.
    */
   public static PyExpr genPyNotNullCheck(PyExpr pyExpr) {
-    List<PyExpr> exprs = ImmutableList.of(pyExpr, new PyExpr("None", Integer.MAX_VALUE));
-
+    ImmutableList<PyExpr> exprs = ImmutableList.of(pyExpr, new PyExpr("None", Integer.MAX_VALUE));
     // Note: is/is not is Python's identity comparison. It's used for None checks for performance.
     String conditionalExpr = ExprUtils.genExprWithNewToken(Operator.NOT_EQUAL, exprs, "is not");
     return new PyExpr(conditionalExpr, PyExprUtils.pyPrecedenceForOperator(Operator.NOT_EQUAL));
+  }
+
+  /**
+   * Generates a Python null (None) check expression for the given {@link PyExpr}.
+   */
+  public static PyExpr genPyNullCheck(PyExpr expr) {
+    ImmutableList<PyExpr> exprs = ImmutableList.of(expr, new PyExpr("None", Integer.MAX_VALUE));
+    // Note: is/is not is Python's identity comparison. It's used for None checks for performance.
+    String conditionalExpr = ExprUtils.genExprWithNewToken(Operator.EQUAL, exprs, "is");
+    return new PyExpr(conditionalExpr, PyExprUtils.pyPrecedenceForOperator(Operator.EQUAL));
   }
 
   /**

@@ -296,7 +296,7 @@ public class BaseUtils {
 
 
   private static final CharMatcher whitespaceOrComma =
-      CharMatcher.WHITESPACE.or(CharMatcher.is(',')).precomputed();
+      CharMatcher.whitespace().or(CharMatcher.is(',')).precomputed();
 
   /**
    * A helper method for formating javacc ParseExceptions.

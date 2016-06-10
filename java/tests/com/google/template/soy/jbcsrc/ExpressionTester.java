@@ -25,6 +25,7 @@ import com.google.common.truth.FailureStrategy;
 import com.google.common.truth.Subject;
 import com.google.common.truth.SubjectFactory;
 import com.google.common.truth.Truth;
+import com.google.template.soy.jbcsrc.shared.Names;
 
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Label;
@@ -84,12 +85,27 @@ public final class ExpressionTester {
      * Asserts on the literal code of the expression, use sparingly since it may lead to overly
      * coupled tests.
      */
-    void hasCode(String ...instructions) {
+    ExpressionSubject hasCode(String ...instructions) {
       compile();
       String formatted = Joiner.on('\n').join(instructions);
       if (!formatted.equals(getSubject().trace().trim())) {
         fail("hasCode", formatted);
       }
+      return this;
+    }
+
+    /**
+     * Asserts on the literal code of the expression, use sparingly since it may lead to overly
+     * coupled tests.
+     */
+    ExpressionSubject doesNotContainCode(String ...instructions) {
+      compile();
+      String formatted = Joiner.on('\n').join(instructions);
+      String actual = getSubject().trace().trim();
+      if (actual.contains(formatted)) {
+        failWithBadResults("doesNotContainCode", formatted, "evaluates to", actual);
+      }
+      return this;
     }
     
     ExpressionSubject evaluatesTo(boolean expected) {
@@ -247,7 +263,7 @@ public final class ExpressionTester {
     }
   }
 
-  private static ClassData createClass(Class<? extends Invoker> targetInterface, Expression expr) {
+  static ClassData createClass(Class<? extends Invoker> targetInterface, Expression expr) {
     java.lang.reflect.Method invokeMethod;
     try {
       invokeMethod = targetInterface.getMethod("invoke");
@@ -261,9 +277,8 @@ public final class ExpressionTester {
             + " is not appropriate for this expression");
       }
     }
-    TypeInfo generatedType = TypeInfo.create(
-        ExpressionTester.class.getPackage().getName() + "." + targetInterface.getSimpleName() 
-            + "Impl");
+    TypeInfo generatedType =
+        TypeInfo.create(Names.CLASS_PREFIX + targetInterface.getSimpleName() + "Impl");
     SoyClassWriter cw =
         SoyClassWriter.builder(generatedType)
             .setAccess(Opcodes.ACC_FINAL | Opcodes.ACC_SUPER | Opcodes.ACC_PUBLIC)

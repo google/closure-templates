@@ -21,8 +21,6 @@ import com.google.template.soy.basetree.ParentNode;
 import com.google.template.soy.soytree.SoyNode.LoopNode;
 import com.google.template.soy.soytree.SoyNode.MsgSubstUnitNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
-import com.google.template.soy.soytree.jssrc.GoogMsgDefNode;
-import com.google.template.soy.soytree.jssrc.GoogMsgRefNode;
 
 /**
  * Abstract base class for all SoyNode visitors. A visitor is basically a function implemented for
@@ -64,9 +62,6 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
       case TEMPLATE_DELEGATE_NODE: visitTemplateDelegateNode((TemplateDelegateNode) node); break;
 
       case RAW_TEXT_NODE: visitRawTextNode((RawTextNode) node); break;
-
-      case GOOG_MSG_DEF_NODE: visitGoogMsgDefNode((GoogMsgDefNode) node); break;
-      case GOOG_MSG_REF_NODE: visitGoogMsgRefNode((GoogMsgRefNode) node); break;
 
       case MSG_FALLBACK_GROUP_NODE: visitMsgFallbackGroupNode((MsgFallbackGroupNode) node); break;
       case MSG_NODE: visitMsgNode((MsgNode) node); break;
@@ -164,14 +159,6 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
   }
 
   protected void visitRawTextNode(RawTextNode node) {
-    visitSoyNode(node);
-  }
-
-  protected void visitGoogMsgDefNode(GoogMsgDefNode node) {
-    visitSoyNode(node);
-  }
-
-  protected void visitGoogMsgRefNode(GoogMsgRefNode node) {
     visitSoyNode(node);
   }
 

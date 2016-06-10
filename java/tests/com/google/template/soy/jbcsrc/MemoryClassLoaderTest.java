@@ -16,8 +16,11 @@
 
 package com.google.template.soy.jbcsrc;
 
+import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.jbcsrc.SoyExpression.FALSE;
+import static com.google.template.soy.jbcsrc.SoyExpression.TRUE;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.io.ByteStreams;
 import com.google.common.testing.GcFinalization;
 import com.google.template.soy.jbcsrc.ExpressionTester.BooleanInvoker;
@@ -56,5 +59,29 @@ public class MemoryClassLoaderTest extends TestCase {
     ClassNode node = new ClassNode();
     new ClassReader(classBytes).accept(node, 0);
     assertEquals(Type.getInternalName(invoker.getClass()), node.name);
+  }
+
+  public void testDelegation() throws Exception {
+    // We want to make sure that for generated types, our classloader doesn't delegate to its parent
+    // loader
+    ClassData parentClass = ExpressionTester.createClass(BooleanInvoker.class, FALSE);
+    ClassData childClass = ExpressionTester.createClass(BooleanInvoker.class, TRUE);
+    // sanity check,  they have the same fully qualified class name
+    assertEquals(childClass.type(), parentClass.type());
+    TypeInfo type = childClass.type();
+
+    MemoryClassLoader parentLoader = new MemoryClassLoader(ImmutableList.of(parentClass));
+    MemoryClassLoader childLoader =
+        new MemoryClassLoader(parentLoader, ImmutableList.of(childClass));
+
+    BooleanInvoker fromParent =
+        parentLoader.loadClass(type.className()).asSubclass(BooleanInvoker.class).newInstance();
+    assertThat(fromParent.invoke()).isFalse();
+
+    BooleanInvoker fromChild =
+        childLoader.loadClass(type.className()).asSubclass(BooleanInvoker.class).newInstance();
+    assertThat(fromChild.invoke()).isTrue();
+
+    assertThat(fromChild.getClass()).isNotEqualTo(fromParent.getClass());
   }
 }

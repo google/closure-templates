@@ -19,8 +19,8 @@ package com.google.template.soy.soytree;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprparse.ExpressionParser;
+import com.google.template.soy.exprparse.SoyParsingContext;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
@@ -166,8 +166,8 @@ public final class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefault
      * Returns a new {@link MsgSelectNode} built from this builder's state, reporting syntax errors
      * to the given {@link ErrorReporter}.
      */
-    public MsgSelectNode build(ErrorReporter errorReporter) {
-      ExprNode selectExpr = new ExpressionParser(commandText, sourceLocation, errorReporter)
+    public MsgSelectNode build(SoyParsingContext context) {
+      ExprNode selectExpr = new ExpressionParser(commandText, sourceLocation, context)
           .parseExpression();
       return new MsgSelectNode(id, commandText, new ExprRootNode(selectExpr), sourceLocation);
     }

@@ -35,13 +35,13 @@ public final class AbstractSoyCommandNodeTest extends TestCase {
     assertEquals("{dummy blah blah}", dn.getTagString());
     assertEquals("{dummy blah blah}", dn.toSourceString());
 
-    dn = new DummyNode(8, "{blah} blah");
-    assertEquals("{{dummy {blah} blah}}", dn.getTagString());
-    assertEquals("{{dummy {blah} blah}}", dn.toSourceString());
+    dn = new DummyNode(8, "'{blah} blah'");
+    assertEquals("{dummy '{blah} blah'}", dn.getTagString());
+    assertEquals("{dummy '{blah} blah'}", dn.toSourceString());
 
-    dn = new DummyNode(8, "blah {blah}");
-    assertEquals("{{dummy blah {blah} }}", dn.getTagString());
-    assertEquals("{{dummy blah {blah} }}", dn.toSourceString());
+    dn = new DummyNode(8, "'blah {blah}'");
+    assertEquals("{dummy 'blah {blah}'}", dn.getTagString());
+    assertEquals("{dummy 'blah {blah}'}", dn.toSourceString());
   }
 
 

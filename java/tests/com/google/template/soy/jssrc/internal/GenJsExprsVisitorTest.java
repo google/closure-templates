@@ -83,16 +83,6 @@ public final class GenJsExprsVisitorTest extends TestCase {
         ImmutableList.of(new JsExpr("'More \\u00BB'", Integer.MAX_VALUE)));
   }
 
-
-  public void testPrintGoogMsg() {
-
-    assertGeneratedJsExprs(
-        "{msg desc=\"\"}Blah{/msg}",
-        ImmutableList.of(new JsExpr("msg_s6", Integer.MAX_VALUE)),
-        1);
-  }
-
-
   public void testMsgHtmlTag() {
 
     assertGeneratedJsExprs(
@@ -103,11 +93,13 @@ public final class GenJsExprsVisitorTest extends TestCase {
             new JsExpr("'\">'", Integer.MAX_VALUE)),
         0,
         0,
+        0,
         0);
 
     assertGeneratedJsExprs(
         "{@param url : ?}\n" + "{msg desc=\"\"}<a href=\"{$url}\">Click here</a>{/msg}",
         ImmutableList.of(new JsExpr("'</a>'", Integer.MAX_VALUE)),
+        0,
         0,
         0,
         2);
@@ -195,7 +187,8 @@ public final class GenJsExprsVisitorTest extends TestCase {
         soyNodeCode,
         ImmutableList.of(
             new JsExpr(
-                "some.func(soy.$$augmentMap(opt_data.boo, {goo: 'Blah'}), null, opt_ijData)", Integer.MAX_VALUE)));
+                "some.func(soy.$$assignDefaults({goo: 'Blah'}, opt_data.boo), null, opt_ijData)",
+                Integer.MAX_VALUE)));
   }
 
 
@@ -234,7 +227,7 @@ public final class GenJsExprsVisitorTest extends TestCase {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forTemplateContents(soyCode).errorReporter(boom).parse().fileSet();
     // Required by testPrintGoogMsg.
-    new ReplaceMsgsWithGoogMsgsVisitor().exec(soyTree);
+    new ExtractMsgVariablesVisitor().exec(soyTree);
     SoyNode node = SharedTestUtils.getNode(soyTree, indicesToNode);
 
     GenJsExprsVisitor gjev =

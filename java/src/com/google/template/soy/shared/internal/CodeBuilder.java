@@ -17,6 +17,7 @@
 package com.google.template.soy.shared.internal;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.internal.targetexpr.TargetExpr;
 
@@ -33,12 +34,8 @@ import java.util.List;
  */
 public abstract class CodeBuilder<E extends TargetExpr> {
 
-  /** Used by {@code increaseIndent()} and {@code decreaseIndent()}. */
-  private static final String SPACES = "                    ";  // 20 spaces
-
   /** The size of a single indent level. */
   private static final int INDENT_SIZE = 2;
-
 
   /** A buffer to accumulate the generated code. */
   private final StringBuilder code;
@@ -103,8 +100,8 @@ public abstract class CodeBuilder<E extends TargetExpr> {
    */
   private void changeIndentHelper(int chg) {
     int newIndentDepth = indent.length() + chg * INDENT_SIZE;
-    Preconditions.checkState(newIndentDepth >= 0 && newIndentDepth <= SPACES.length());
-    indent = SPACES.substring(0, newIndentDepth);
+    Preconditions.checkState(newIndentDepth >= 0);
+    indent = Strings.repeat(" ", newIndentDepth);
   }
 
   /**

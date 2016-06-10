@@ -22,11 +22,12 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprparse.ExpressionParser;
+import com.google.template.soy.exprparse.SoyParsingContext;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.SoyNode.ConditionalBlockNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
@@ -85,6 +86,31 @@ public final class ForNode extends AbstractBlockCommandNode
      */
     public abstract Optional<ExprRootNode> increment();
 
+    /**
+     * Returns true if it is statically known that the range is not empty.
+     *
+     * <p>Currently this is only possible if we have a range that contains constant values.
+     */
+    public final boolean definitelyNotEmpty() {
+      int start = 0;
+      if (start().isPresent()) {
+        ExprRootNode startExpr = start().get();
+        if (startExpr.getRoot() instanceof IntegerNode) {
+          start = ((IntegerNode) startExpr.getRoot()).getValue();
+        } else {
+          return false; // if the start is not a constant then it might be empty
+        }
+      }
+      // increment is irrelevant
+      int limit;
+      if (limit().getRoot() instanceof IntegerNode) {
+        limit = ((IntegerNode) limit().getRoot()).getValue();
+      } else {
+        return false;
+      }
+      return start < limit;
+    }
+
     private RangeArgs copy(CopyState copyState) {
       return create(
           start().isPresent()
@@ -119,18 +145,17 @@ public final class ForNode extends AbstractBlockCommandNode
    * @param id The id for this node.
    * @param commandText The command text.
    * @param sourceLocation The source location for the {@code for }node.
-   * @param errorReporter For reporting errors.
    */
   public ForNode(
       int id,
       String commandText,
       SourceLocation sourceLocation,
-      ErrorReporter errorReporter) {
+      SoyParsingContext context) {
     super(id, sourceLocation, "for", commandText);
 
     Matcher matcher = COMMAND_TEXT_PATTERN.matcher(commandText);
     if (!matcher.matches()) {
-      errorReporter.report(sourceLocation, INVALID_COMMAND_TEXT);
+      context.report(sourceLocation, INVALID_COMMAND_TEXT);
       this.rangeArgs = RangeArgs.ERROR;
       this.var = new LocalVar("error", this, null);
       // Return early to avoid IllegalStateException below
@@ -138,12 +163,12 @@ public final class ForNode extends AbstractBlockCommandNode
     }
 
     String varName = parseVarName(
-        matcher.group(1), sourceLocation, errorReporter);
+        matcher.group(1), sourceLocation, context);
     List<ExprNode> rangeArgs = parseRangeArgs(
-        matcher.group(2), sourceLocation, errorReporter);
+        matcher.group(2), sourceLocation, context);
 
     if (rangeArgs.size() > 3) {
-      errorReporter.report(sourceLocation, INVALID_RANGE_SPECIFICATION);
+      context.report(sourceLocation, INVALID_RANGE_SPECIFICATION);
       this.rangeArgs = RangeArgs.ERROR;
     } else if (rangeArgs.isEmpty()) {
       this.rangeArgs = RangeArgs.ERROR;
@@ -171,15 +196,15 @@ public final class ForNode extends AbstractBlockCommandNode
   }
 
   private static String parseVarName(
-      String input, SourceLocation sourceLocation, ErrorReporter errorReporter) {
-    return new ExpressionParser(input, sourceLocation, errorReporter)
+      String input, SourceLocation sourceLocation, SoyParsingContext context) {
+    return new ExpressionParser(input, sourceLocation, context)
         .parseVariable()
         .getName();
   }
 
   private static List<ExprNode> parseRangeArgs(
-      String input, SourceLocation sourceLocation, ErrorReporter errorReporter) {
-    return new ExpressionParser(input, sourceLocation, errorReporter)
+      String input, SourceLocation sourceLocation, SoyParsingContext context) {
+    return new ExpressionParser(input, sourceLocation, context)
         .parseExpressionList();
   }
 

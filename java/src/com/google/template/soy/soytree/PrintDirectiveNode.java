@@ -20,8 +20,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprparse.ExpressionParser;
+import com.google.template.soy.exprparse.SoyParsingContext;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
@@ -132,17 +132,17 @@ public final class PrintDirectiveNode extends AbstractSoyNode implements ExprHol
      * Returns a new {@link PrintDirectiveNode} from the state of this builder, reporting syntax
      * errors to the given {@link ErrorReporter}.
      */
-    public PrintDirectiveNode build(ErrorReporter errorReporter) {
-      ImmutableList<ExprRootNode> args = parseArgs(errorReporter);
+    public PrintDirectiveNode build(SoyParsingContext context) {
+      ImmutableList<ExprRootNode> args = parseArgs(context);
       return new PrintDirectiveNode(id, name, args, argsText, sourceLocation);
     }
 
-    private ImmutableList<ExprRootNode> parseArgs(ErrorReporter errorReporter) {
+    private ImmutableList<ExprRootNode> parseArgs(SoyParsingContext context) {
       if (this.argsText.isEmpty()) {
         return ImmutableList.of();
       }
       ImmutableList.Builder<ExprRootNode> args = ImmutableList.builder();
-      for (ExprNode expr : new ExpressionParser(argsText, sourceLocation, errorReporter)
+      for (ExprNode expr : new ExpressionParser(argsText, sourceLocation, context)
           .parseExpressionList()) {
         args.add(new ExprRootNode(expr));
       }

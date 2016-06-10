@@ -1,7 +1,6 @@
 [TOC]
 
-A Bytecode Compiler for Soy
-===========================
+# A Bytecode Compiler for Soy
 
 This package implements a bytecode compiler for the Soy language.  The high
 level goals are to
@@ -15,7 +14,8 @@ The general strategy is to generate a new Java class for each Soy `{template}`.
 Full details on how different pieces of Soy syntax map to Java code are detailed
 below.
 
-##Package design
+
+## Package design
 
 The jbcsrc implementation is split across several packages.
 
@@ -43,12 +43,12 @@ The jbcsrc implementation is split across several packages.
    This package contains functionality that is shared by the compiler and
    runtime, but is meant to be private to soy.
 
-Background
-----------
+## Background
+
 The Soy server side renderer is currently implemented as a
 [recursive visitor](https://github.com/google/closure-templates/blob/master/java/src/com/google/template/soy/sharedpasses/render/RenderVisitor.java)
 on the Soy AST. This implementation is expedient since the renderer uses the
-same API as all the parse visitors and other ‘compiler passes’ and thus can
+same API as all the parse visitors and other 'compiler passes' and thus can
 benefit from developer familiarity.  However, this design
 makes it very difficult to perform even basic optimizations.  By contrast,
 the JS implementation of Soy works by generating JS code and thus can
@@ -56,13 +56,15 @@ benefit from all the optimizations in the JS compiler and browser.
 The new Python implementation will work in a similar way (generating Python
 code).
 
-Finally, Soy rendering is one of the last sources of blocking in modern servers.
-Soy will block the request thread when coming across unfinished futures or when
-the output buffer becomes full.  The current design of Soy rendering makes it
-very difficult to move to a fully asynchronous rendering model.
+Finally, Soy rendering is one of the last sources of blocking IO in modern Java
+servers. Soy will block the request thread when coming across unfinished futures
+or when the output buffer becomes full.  The current design of Soy rendering
+makes it very difficult to move to a fully asynchronous rendering model. This is
+important for production stability and resource utilization since it is much
+easier to provision servers when the number of threads needed to serve incoming
+requests doesn't depend on worst case backend latency.
 
-Overview
---------
+## Overview
 
 For each Soy template we will generate a Java class by generating bytecode
 directly from the parse tree.  The Soy language is simple and all
@@ -104,7 +106,8 @@ There are two kinds of asynchrony we will wish to handle:
     the server writes too fast it will either block the rendering thread
     (causing poor thread utilization) or it will buffer unbounded bytes in RAM.
     If we are buffering too much, it may be better for rendering to pause and
-    for the request thread to serve another request.
+    for the request thread to serve another request while waiting for output
+    buffers to drain.
 
 Given these constraints, the above direct approach will not work.  So instead
 we could generate something like this:
@@ -151,14 +154,14 @@ class Foo {
 ~~~
 
 In this example, we are now checking whether the output is full (after every
-write operation) and we are checking if the SoyValueProviders
+write operation) and we are checking if the `SoyValueProviders`
 can be 'resolved' without blocking prior to resolving.  Additionally, we are
 storing resolved parameters in fields so that we don’t have to re-resolve them
 when re-entering the method.
 
-This is the heart of the proposal: to generate for each template a tiny state
+This is the heart of the design: to generate for each template a tiny state
 machine that can be used to save and restore state up to the point of the last
-‘detach’.  A sophisticated rendering client could then use these return types
+'detach'.  A sophisticated rendering client could then use these return types
 to detach from the request thread or find other work to do while buffers are
 being flushed or futures are completing.
 
@@ -182,8 +185,8 @@ number of pros and cons.
    * Makes refresh-to-reload more straightforward than a source compiler
      based approach would be.
  * Cons
-   * Few people are familiar with bytecode.  This may be a high
-     barrier to entry for contributions.
+   * Few people are familiar with bytecode.  This may be a high barrier to entry
+   for contributions.
    * Verbose/tedious! (we lose all the javac compiler magic that you normally
      get)
    * New compile time dependency for Soy (ASM library)
@@ -288,8 +291,7 @@ public void render(SoyRecord params, Appendable output) throws IOException {
 
 The strategy is to generate bytecode that looks like that.
 
-Structure of Compiled Templates
---------------------------------------
+# Structure of Compiled Templates
 
 For every Soy template we compile a number of classes to implement our
 functionality:
@@ -309,6 +311,16 @@ functionality:
    These allow us to implement 'lazy' `{let ...}` and `{param ...}` statements
    that render content blocks.
 
+### Glossary
+
+A few specialized terms are used throughout this document and the
+implementation.
+
+ * `detach`: A 'deatach' is the act of pausing rendering, saving execution state
+ and returning control to our caller. We are 'detaching' the current rendering
+ thread from the render operation.
+ * `attach`: The counterpart of `detach`. This is the act of attaching a new
+ thread to a detached rendering operation.  We may also use the term 'reatach'.
 
 ### Helper Objects and APIs
 
@@ -320,7 +332,7 @@ Our implementation will depend on a few new helper objects.
 softLimitReached()’.  This method can be queried to see if writes should be
 suspended.
 
-#### Result
+#### RenderResult
 
 A value type that indicates the result of a rendering operation. The 3 kinds
 are: Result.done(), meaning that rendering completed fully; Result.limited(),
@@ -328,10 +340,10 @@ meaning that the output informed us that the limit was reached;
 Result.detach(Future), meaning that rendering found an incomplete future and is
 detaching on that.
 
-#### Context
+#### RenderContext
 
 A somewhat catch-all object for propagating cross cutting data items.  Via the
-Context object, templates should be able to access:
+`RederContext` object, templates should be able to access:
 
   * The SoyMessageBundle
   * SoyFunction instances
@@ -339,21 +351,24 @@ Context object, templates should be able to access:
   * renaming maps (css, xid)
   * EscapingDirective instances
   * IJ params
+  * DeltemplateSelector
 
 We will propagate this as a single object from the top level (directly through
 the render() calls), because this object will be constant per render.
 
-As future work we may want to consider turning many of these into compiler
-intrinsics.  For example, instead of looking up the PrintDirective each time we
-need to apply it, we could stash the PrintDirective reference in a static field
-at class initialization time (ditto for escaping, translations, renaming).
+As future work we should many of these into compiler plugins.  For example,
+instead of looking up the PrintDirective instances each time we need to apply
+it, we could instead introduce a `SoyJbcsrcPrintDirective` that would run in
+the compiler and then we wouldn't need to look up instances at runtime.  This
+would be similar to how `jssrc` implements SoyFunctions and SoyPrintDirectives.
+
 
 Additionally we will enhance some core APIs to expose additional information:
 
 #### SoyValue
 
-void SoyValue.render(Appendable) will change to ‘Result
-render(AdvisingAppendable)’. That will allow individual values to detach
+`void SoyValue.render(Appendable)` will change to `RenderResult
+render(AdvisingAppendable)`. That will allow individual values to detach
 mid-render.  Most Soy values will have trivial implementations of this method,
 but for our [lazy transclusion values](https://github.com/google/closure-templates/blob/master/java/src/com/google/template/soy/data/internal/RenderableThunk)
 we will need this.
@@ -362,16 +377,15 @@ we will need this.
 
 SoyValueProviders are used to encapsulate values that aren’t done yet.  This
 includes lazy expressions as well as Futures.  In order to identify and
-conditionally resolve these providers we will need a new ‘Result canResolve()’
+conditionally resolve these providers we will need a new `Result canResolve()`
 method.
 
-Compilation Strategy
---------------------
+## Compilation Strategy
 
 The main details of the design will be a discussion of exactly how the code of
 the render method is generated.  The Soy language is logically divided into two
 parts: The expression language and the command language.  The expression
-language is basically everything inside of a set of {}’s while the command
+language is everything inside of a set of `{}`'s while the command
 language is everything outside of it.  Since the expression language is the
 simplest part, we will start there.
 
@@ -405,7 +419,7 @@ from specialization due these types.  For example, the expression `$a + $b` has
 somewhat complex semantics since Soy has essentially the javascript rules for
 the `+` operator.  So in order to execute the operator we need to know if either
 of the parameters is a string or a number and then decide to concat or sum.
-The current Java implementation is
+The current Tofu implementation is
 [here](https://github.com/google/closure-templates/blob/master/java/src/com/google/template/soy/sharedpasses/render/EvalVisitor.java)
 and implements this by a sequence of explicit type checks at runtime.  This is
 unfortunate since in a large number of cases the types are fixed at parse time.
@@ -415,8 +429,12 @@ type checks from runtime to compile time.
 
 Finally, another obvious optimization in expression evaluation is the removal
 of SoyValue boxes.  If an expression is fully typed, then we could eliminate
-all the SoyValue wrappers and instead operate directly on raw longs, doubles
-and Strings.
+all the SoyValue wrappers and instead operate directly on raw `longs`, `doubles`
+and `Strings`.
+
+For future work we should consider using the java7 `invokedynamic` instruction
+to optimize this further.  This would allow us to specialize based on runtime
+types.
 
 
 #### Data access
@@ -427,26 +445,23 @@ conditionally resolve it.  Resolution may mean one of several things:
 There are two kinds of data access:
 
   * VarRef
-     * For each of these we will generate a field to hold the resolved SoyValue
-     * To access, we first check if the field has been initialized, if it hasn’t
-       been we then evaluate the variable
-        * For params we fetch it from the params record (or the ij record)
-        * For let-expression references we evaluate the generated provider (a
-          class field)
-        * For let-content references, we simply load the field
-     * If the provider is resolvable (via the yet to be defined canResolve
-       method), then we resolve(), store to the field and continue.
-     * If is isn’t resolvable, we calculate a Result object and return.
-     * N.B. we may be able to apply some definite assignment analysis to
+     * For each of these we will generate a field to hold the SoyValueProvider
+     * To access, we first check if the provider has been resolved, if it hasn’t
+       been we then resolve the variable
+     * If the provider is resolvable (via the `canResolve` method), then we
+       `resolve()`.
+     * If is isn’t resolvable, we calculate a RenderResult object, store our
+       state and return.
+     * For future work we can use a version of definite assignment analysis to
        eliminate some checks.  For example, if it is definitely not the first
        access, then we can just read the field, no need to generate any code
-       beyond that.
+       beyond that.  An initial version of this is in `TemplateAnalysis`
   * DataAccess
      * These are for accessing subfields, map entries or list items
      * There are no fields to check so we grab the item as a provider, check
-       canResolve and conditionally return.
+       canResolve and conditionally detach.
 
-For example, a VarRef data access ‘$foo’ referring to a template param may be
+For example, a VarRef data access `$foo` referring to a template param may be
 implemented as:
 
 ~~~
@@ -500,8 +515,11 @@ Issues:
 
   * The text constant may be very large.  We may want to rewrite as multiple
     write operations if the constant is very large (>1K? >4K?)
-  * What about small writes?  maybe we should attempt to eliminate soft limit
-    checks if we have only written a few characters (<10 ?)
+  * The jvm limits string constants to <64K bytes (in modified UTF8), so for
+    very large content blocks we have to split into multiple writes.
+  * For small writes we should attempt to eliminate soft limit
+    checks if we have only written a few characters.  Coming up with reasonable
+    heuristics here will be the hard part (e.g. <100 chars? bytes?)
 
 ### PRINT\_NODE, PRINT\_DIRECTIVE\_NODE
 
@@ -511,7 +529,7 @@ The general form of a print command is
 {print <expr>|<directive1>|<directive2>...}
 ~~~
 
-(Note that the ‘print’ command name is optional and often omitted)
+(Note that the `print` command name is optional and often omitted)
 
 To evaluate this statement we will first use the expression compiler to
 generate code that produces a SoyValue object, then we will invoke code that
@@ -536,35 +554,32 @@ state = N + 2;
 These nodes are truly trivial.  In fact it was probably a mistake to implement
 them as commands instead of just a `SoyFunction`.
 
-The one complexity here would be if we want to maintain the single-element
-cache approach currently used to optimize renaming.
+In ToFu we currently use a single-element cache optimize renaming.
 See [CssNode.renameCache](https://github.com/google/closure-templates/blob/master/java/src/com/google/template/soy/soytree/CssNode.java&l=83)
 . This is one of the few examples of an optimization that would be lost in the
-redesign.  If we thought it was important we could optimize this (via the same
-technique, or possibly by using integer keys and array lookups instead of hash
-lookups, which may be simpler/smaller/faster).
+redesign.  Based on profiling of SoySauce applications, renaming does not appear
+to be on the hot path, but if we thought it was important we could optimize
+this (via the same technique, or possibly by using integer keys and array
+lookups instead of hash lookups, which may be simpler/smaller/faster).
 
 ###LET\_VALUE\_NODE,LET\_CONTENT\_NODE
 
-Let statements are more complex than you might think!  Due to our desire for
-laziness we cannot simply evaluate and stash in a field.  Instead we generate a
-class for each `{let}` command.  For let value nodes, we will generate a
-`SoyValueProvider` subclass, for `SoyContentNodes` we will generate a
-[RenderableThunk](https://github.com/google/closure-templates/blob/master/java/src/com/google/template/soy/data/internal/RenderableThunk.java&l=28)
-subclass that will be used to declare a
-[StringData.LazyString](https://github.com/google/closure-templates/blob/master/java/src/com/google/template/soy/data/restricted/StringData.java)
-or a [SantizedContent.LazyContent](https://github.com/google/closure-templates/blob/master/java/src/com/google/template/soy/data/SanitizedContent.java&l=41)
-SoyValue. For example, assume that the template `ns.owner` declares this let
+`{let ..}` statements are more complex than you might think!  Due to our desire
+for laziness we cannot simply evaluate and stash in a field.  Instead we
+generate a class for each `{let}` command.  For let value nodes, we will
+generate a `DetachableSoyValueProvider` subclass, for `SoyContentNodes` we will
+generate a `DetachableContentProvider` subclass. For example, assume that the
+template `ns.owner` declares this let
 variable `{let $foo : $a + 1 /}`, will generate the following code:
 
 ~~~
-private static final class let$foo_1 extends AbstractLetValue {
+private static final class let$foo_1 extends DetachableSoyValueProvider {
   private final ns$$owner owner;
   private int state;
   let$foo_1(ns$$owner owner) {
     this.owner = owner;
   }
-  @Override protected Result doCanResolve() {
+  @Override protected Result doResolve() {
      // evaluate expression using normal rules
      // finally take the resolved expression and
      // assign to the value field (defined by our
@@ -583,6 +598,15 @@ out of scope.  This is to sure that they behave properly in loops (re-evaluated
 per iteration) and it will also make sure we don’t pin their values in memory
 too long.
 
+Optimizations performed on lets:
+  * Identify constant lets eagerly evaluate the expression to avoid
+  generating the closure.
+  * Identify lets/params that simply alias other lets/params and 'inline' the
+  references.  e.g. `{let $foo : $bar /}` doesn't need a subclass.
+  * TODO: identify lets that (based on control flow analysis) will not need
+  detach logic and eagerly evaluate. (Work for this has started in
+  `TemplateAnalysis`)
+
 ### IF\_NODE, IF\_COND\_NODE, IF\_ELSE\_NODE
 
 If conditions will translate quite naturally since the Soy semantics and the
@@ -593,14 +617,15 @@ java semantics are identical.
 The behavior of switch is fairly similar to a sequence of if and else-if
 statements (and will be implemented just like that), however, because each
 comparison references the same SoyValue and we could detach mid-comparison.  We
-need to store the switch variable in a field.
+need to store the switch expression in a field.
 
 Note: this analysis is based on the assumption that switch case statements may
 be arbitrary expressions.  The AST and current implementation imply that they
-are, but I’m not sure.  If they are constants, then the implementation could
-resolve to something like a Java switch() statement, which would be preferable.
- Even if they don’t have to be constants, we could still optimize for the case
-statements that are constants.
+are.
+
+TODO(lukes): change soy semantics to ensure that swtich case expressions are
+constants, then the implementation could resolve to something like a Java
+`switch()` statement, which would be preferable.
 
 ### FOREACH\_NODE, FOREACH\_NONEMPTY\_NODE, FOREACH\_IFEMPTY\_NODE, FOR\_NODE
 
@@ -615,11 +640,16 @@ For loops are also pretty straightforward with 2 important caveats.
 ### LOG\_NODE
 
 A `{log}...{/log}` statement is simply a collection of Soy statements that
-should render to System.out instead of the user supplied output buffer.  This is
-implemented by simply generating code for all the child statements (as normal),
-but replace references to ‘output’ with a simply adapter of System.out to the
-AdvisingAppendable interface.  Additionally, we can skip generating any and all
-softLimitChecks since System.out doesn’t have an implementation.
+should render to `System.out` instead of the user supplied output buffer.  This
+is implemented by simply generating code for all the child statements
+(as normal), but replace references to `output` with a trivial adapter of
+`System.out` to the AdvisingAppendable interface.
+Additionally, we can skip generating any and all `softLimitChecks` since
+`System.out` doesn’t have an appropriate implementation.
+
+NOTE: this does mean that log statements can block the render thread while
+waiting for stdout buffers to flush to disk.  This is considered acceptable
+since log statements are generally only used for debugging.
 
 ### DEBUGGER\_NODE
 
@@ -664,13 +694,42 @@ private ns$$foo fooTemplate;
 parameters like `data = "all"` or `data="$expr"` will simply modify how the
 record is initialized.
 
-TODO(lukes): fill in details on delcall template selection
+For `{delcall...}s` the process is mostly the same, but instead of invoking the
+callee constructor directly, we instead trigger deltemplate selection by
+invoking `RenderContext.getDelTemplate` which selects and constructs the target
+callee.
+
+Optimizations and future work:
+  * We should eliminate the `SoyDict` parameter map whenever possible.  Most
+  calls pass a fixed set of params and in those cases we can eliminate
+  allocations and map operations by just generating a specialized constructor in
+  the callee.
+
+
 
 ### MSG\_NODE,MSG\_FALLBACK\_GROUP\_NODE
 
-TODO(lukes):  The way Soy deals with translations is a bit of a mystery to me.
-I think we will need to generate code that walks through a SoyMsg object.
-Maybe gboyer@ can explain it all to me.
+Soy has direct support for translations.  In `jssrc`, this is mostly delegated
+to `goog.getMessage`, but in SoySauce we don't have such a good option, instead
+we handle rendering and placeholder substitution ourselves.  `{msg ..}`
+rendering breaks into 2 cases
+
+ * Simple constant messages:  This is for when there are no parameters, in these
+ cases we can calculate the message id in the compiler and look it up directly
+ in the `SoyMsgBundle`.  Here we generate code that directly calls:
+ `renderContext.getSoyMessge(<id>).getParts().get(0).getRawText()`.
+ * Messages with placeholders (including gendered messages and plurals): For
+ these the rendering strategy is much more complex since translators may move
+ placeholders around, introduce new plurals cases, etc.  So for this we use a
+ runtime library to interpret the `SoyMsg` object against a map of placeholder
+ objects.  So the compiler mostly generates code to populate the placeholder
+ map. See `Runtime.renderSoyMsgWithPlaceholders`
+
+Future Optimizations:
+ * For plurals and gendered messages we can generate more specialized calls to
+ avoid boxing the plurals variable and having to pass the gender parameter in
+ the placeholder map.
+
 
 ## Compiling Soy Types
 
@@ -703,6 +762,11 @@ type system.  The key principals we will use are:
     accurate since we don't know whether or not the key exists.  So in general
     we need to be careful when dealing with possibly null expressions.  To deal
     with this we have our own concept of nullability (`Expression.isNullable()`).
+  * Type information from the compiler is best effort only.  The soy type system
+    was designed mostly for adding some compile time checks and generating
+    accessors in the jssrc backend.  Using it to generate code for soy
+    expressions is quite difficult.  (this is really just a generalization of
+    the above point)
 
 ## Runtime Dependencies
 
@@ -734,8 +798,8 @@ Cross cutting architectural issues that influence overall design choices.
        is just as hard to use it to generate a Jar vs. loading the classes into
        the current VM.
      * For reloading we would just reparse and recompile into a different (heap
-        sourced) class loader.  There is a risk that we will leak permgen, so we
-        should write leak tests for the classloaders.
+        sourced) class loader.  There is some risk that we will leak permgen,
+        so we should write leak tests for the classloaders.
   * Stack traces are readable!  Currently the tofu renderer does a lot of work
     to generate stack traces that point to the templates.  We should do the
     same.
@@ -748,15 +812,62 @@ Cross cutting architectural issues that influence overall design choices.
 
 ## Compatibility
 
-The new implementation will strive for full compatibility with the existing
-renderer behavior, unless such compatibility requires reimplementing a bug.
+There are a number of places where SoySauce has slightly different semantics
+than Tofu.  We have tried to minimize these as much as possible but in a few
+cases we prefer the SoySauce semantics (generally because they demonstrate
+errors or ambiguity in user templates).  I will attempt to document all known
+incompatibilities here:
 
-TODO(lukes): document known incompatiblities
+ * SoySauce disallows (at compile time) calls to undefined templates.  Tofu
+ turns these into runtime failures.  This may create build failures in
+ otherwise dead code.
+ * Stricter type checking of template parameters.  Tofu does runtime type
+ checking but it is somewhat limited in the accuracy of these checks.  For
+ example:
+   * If you declare that a template has a param `{@param foos : list<string>}`
+   Tofu will assert that the value is actually a list.  SoySauce will do that,
+   but it will also assert that `$foos[0]` is a string by checking it on access
+   (this is the same strategy that java uses for generics)..
 
-A Bytecode Primer
------------------
+   * Tofu fails to type check params which are statically typed to `?`, this is
+   a known bug.
+   SoySauce does not have this bug so user templates relying on it will have to
+   be fixed..
+
+ * SoySauce is stricter about dereferencing `null`  objects.  For example, given
+ the expression `isNonnull($foo.bar.baz)` if `bar` is `null` then accessing
+ `.baz` on it should cause an error, and it does in SoySauce and the JS
+ backend,  however, in Tofu this doesn’t happen (though there is a TODO),
+ instead it only causes an error if you perform certain operations with the
+ result of the expression (calling `isNonnull` and simple comparisons
+ the only thing you can do).   An appropriate fix would be
+ to rewrite it as `isNonnull($foo.bar?.baz)`..
+
+ * SoySauce interprets 'required' template parameters slightly differently than
+ Tofu.  Imagine this template:
+
+   ```
+   {template .foo}
+     {@param p : string}
+     {$p}
+   {/template}
+   ```
+
+ In Tofu, if you call `.foo` without passing `$p` there are a few things that
+ can happen:
+   * If it is a top level call (Java code calling `.foo`), then you will get a
+   `SoyTofuException` saying that a required parameter is missing.
+   * If it is a Soy->Soy call then you will get `null` for `$p`
+
+ In SoySauce you always get `null`.  We chose this option because it is more
+ internally consistent (soy->soy and java->soy calls are treated equivalently)
+ and it is more consistent with the behavior of the Javascript Soy backend.
+
+
+## A Bytecode Primer
 
 ### Definitions
+
  * Runtime/operand stack - The implicit runtime stack of the virtual machine
  * Basic Block - a sequence of instructions with no branches
  * Frame - the set of values on the runtime stack and in the local variable
@@ -764,6 +875,7 @@ A Bytecode Primer
 
 
 ### Stack Machine
+
 Java bytecode is a 'stack machine', this means that all operators perform some
 kind of operations on an implicit runtime stack.  For example, the opcode `IADD`
 will pop 2 `int` values off the runtime stack and put their sum back onto the
@@ -772,6 +884,7 @@ named (well indexed) values.  However, there are no opcodes that can operate
 on local variables (other that pushing them onto the stack).
 
 ### Types
+
 The Java bytecode type system mostly maps to the normal Java type system with a
 notable exception that boolean is not a type, boolean is just any int,
 `0 == false` and `non zero == true`. However, types impose some important
@@ -792,7 +905,7 @@ A good resource for figuring out what each jvm opcode does is from the
 ### ASM Tips
 
 The asm library has a lot of benefits. It is small, blazing fast, and well
-supported.  However, it can be very error prone to generate bytecode.  In 
+supported.  However, it can be very error prone to generate bytecode.  In
 particular, asm has no error checking, so when you make a mistake the errors
 produced can be inscrutable.  Here is what I know:
 

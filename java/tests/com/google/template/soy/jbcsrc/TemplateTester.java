@@ -230,6 +230,22 @@ public final class TemplateTester {
       return rendersAndLogs(expected, "", EMPTY_DICT, EMPTY_DICT, context);
     }
 
+    CompiledTemplateSubject failsToRenderWith(
+        Class<? extends Throwable> expected, Map<String, ?> params) {
+      try {
+        factory.create(asRecord(params), EMPTY_DICT)
+            .render(new AdvisingStringBuilder(), defaultContext);
+      } catch (Throwable t) {
+        if (!expected.isInstance(t)) {
+          failWithBadResults("failsToRenderWith", expected, "failed with", t);
+        }
+        return this;
+      }
+      failureStrategy.fail(
+          String.format("Expected %s to fail to render with a %s", getDisplaySubject(), expected));
+      return this;  // technically dead
+    }
+
     private SoyRecord asRecord(Map<String, ?> params) {
       return (SoyRecord) converter.convert(params);
     }

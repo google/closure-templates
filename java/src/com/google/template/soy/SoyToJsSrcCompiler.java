@@ -199,15 +199,6 @@ public final class SoyToJsSrcCompiler {
                   " print directive plugins (comma-delimited list).")
   private String pluginModules = "";
 
-  @Option(name = "--supportContentSecurityPolicy",
-          usage = "Adds attributes so that browsers that support the Content Security Policy" +
-                  " (CSP) can distinguish inline scripts written by the template author from" +
-                  " any injected via XSS.  If true, the parameter {$ij.csp_nonce} should" +
-                  " contain an unpredictable per-page-render secret consisting of ASCII" +
-                  " alpha-numerics, plus (+), and solidus (/).  Off by default.",
-          handler = MainClassUtils.BooleanOptionHandler.class)
-  private boolean supportContentSecurityPolicy = false;
-
   /** The remaining arguments after parsing command-line flags. */
   @Argument
   private List<String> arguments = Lists.newArrayList();
@@ -263,7 +254,6 @@ public final class SoyToJsSrcCompiler {
     if (!compileTimeGlobalsFile.isEmpty()) {
       sfsBuilder.setCompileTimeGlobals(new File(compileTimeGlobalsFile));
     }
-    sfsBuilder.setSupportContentSecurityPolicy(supportContentSecurityPolicy);
     SoyFileSet sfs = sfsBuilder.build();
 
     // Create SoyJsSrcOptions.

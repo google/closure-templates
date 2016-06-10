@@ -24,7 +24,9 @@ import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
+import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.error.FormattingErrorReporter;
+import com.google.template.soy.exprparse.SoyParsingContext;
 
 import junit.framework.TestCase;
 
@@ -51,10 +53,10 @@ public final class TemplateRegistryTest extends TestCase {
             .registry();
     assertThatRegistry(registry)
         .containsBasicTemplate("ns.foo")
-        .definedAt(new SourceLocation("example.soy", 3, 1, 4, 11));
+        .definedAt(new SourceLocation("example.soy", 3, 1, 3, 15));
     assertThatRegistry(registry).doesNotContainBasicTemplate("foo");
     assertThatRegistry(registry).containsDelTemplate("bar.baz")
-        .definedAt(new SourceLocation("example.soy", 6, 1, 7, 14));
+        .definedAt(new SourceLocation("example.soy", 6, 1, 6, 21));
     assertThatRegistry(registry).doesNotContainDelTemplate("ns.bar.baz");
   }
 
@@ -79,9 +81,9 @@ public final class TemplateRegistryTest extends TestCase {
             .registry();
 
     assertThatRegistry(registry).containsBasicTemplate("ns.foo")
-        .definedAt(new SourceLocation("bar.soy", 3, 1, 4, 11));
+        .definedAt(new SourceLocation("bar.soy", 3, 1, 3, 15));
     assertThatRegistry(registry).containsBasicTemplate("ns2.foo")
-        .definedAt(new SourceLocation("baz.soy", 3, 1, 4, 11));
+        .definedAt(new SourceLocation("baz.soy", 3, 1, 3, 15));
   }
 
   public void testDelTemplates() {
@@ -107,9 +109,9 @@ public final class TemplateRegistryTest extends TestCase {
 
 
     assertThatRegistry(registry).containsDelTemplate("foo.bar")
-        .definedAt(new SourceLocation("foo.soy", 3, 1, 4, 14));
+        .definedAt(new SourceLocation("foo.soy", 3, 1, 3, 21));
     assertThatRegistry(registry).containsDelTemplate("foo.bar")
-        .definedAt(new SourceLocation("bar.soy", 4, 1, 5, 14));
+        .definedAt(new SourceLocation("bar.soy", 4, 1, 4, 21));
   }
 
   public void testDuplicateBasicTemplates() {
@@ -156,5 +158,81 @@ public final class TemplateRegistryTest extends TestCase {
     assertThat(errorReporter.getErrorMessages()).hasSize(1);
     assertThat(Iterables.getOnlyElement(errorReporter.getErrorMessages())).contains(
         "Delegate template 'foo.bar' already defined in delpackage foo: no-path:4:1");
+  }
+
+  public void testGetCallContentKind_basicTemplate() {
+    TemplateRegistry registry =
+        SoyFileSetParserBuilder.forSuppliers(
+                SoyFileSupplier.Factory.create(
+                    "{namespace ns}\n"
+                        + "/** Simple template. */\n"
+                        + "{template .foo kind=\"attributes\"}\n"
+                        + "{/template}\n",
+                    SoyFileKind.SRC,
+                    "example.soy"))
+            .parse()
+            .registry();
+    CallNode node = new CallBasicNode.Builder(0, SourceLocation.UNKNOWN)
+        .commandText("ns.foo")
+        .calleeName("ns.foo")
+        .build(SoyParsingContext.exploding());
+    assertThat(registry.getCallContentKind(node)).hasValue(ContentKind.ATTRIBUTES);
+  }
+
+  public void testGetCallContentKind_basicTemplateMissing() {
+    TemplateRegistry registry =
+        SoyFileSetParserBuilder.forSuppliers(
+                SoyFileSupplier.Factory.create(
+                    "{namespace ns}\n"
+                        + "/** Simple template. */\n"
+                        + "{template .foo kind=\"attributes\"}\n"
+                        + "{/template}\n",
+                    SoyFileKind.SRC,
+                    "example.soy"))
+            .parse()
+            .registry();
+    CallNode node = new CallBasicNode.Builder(0, SourceLocation.UNKNOWN)
+        .commandText("ns.moo")
+        .calleeName("ns.moo")
+        .build(SoyParsingContext.exploding());
+    assertThat(registry.getCallContentKind(node)).isAbsent();
+  }
+
+  public void testGetCallContentKind_delTemplate() {
+    TemplateRegistry registry =
+        SoyFileSetParserBuilder.forSuppliers(
+                SoyFileSupplier.Factory.create(
+                    "{namespace ns}\n"
+                        + "/** Simple template. */\n"
+                        + "{deltemplate ns.foo kind=\"attributes\"}\n"
+                        + "{/deltemplate}\n",
+                    SoyFileKind.SRC,
+                    "example.soy"))
+            .parse()
+            .registry();
+    CallNode node = new CallDelegateNode.Builder(0, SourceLocation.UNKNOWN)
+        .commandText("ns.foo")
+        .delCalleeName("ns.foo")
+        .build(SoyParsingContext.exploding());
+    assertThat(registry.getCallContentKind(node)).hasValue(ContentKind.ATTRIBUTES);
+  }
+
+  public void testGetCallContentKind_delTemplateMissing() {
+    TemplateRegistry registry =
+        SoyFileSetParserBuilder.forSuppliers(
+                SoyFileSupplier.Factory.create(
+                    "{namespace ns}\n"
+                        + "/** Simple template. */\n"
+                        + "{deltemplate ns.foo kind=\"attributes\"}\n"
+                        + "{/deltemplate}\n",
+                    SoyFileKind.SRC,
+                    "example.soy"))
+            .parse()
+            .registry();
+    CallNode node = new CallDelegateNode.Builder(0, SourceLocation.UNKNOWN)
+        .commandText("ns.moo")
+        .delCalleeName("ns.moo")
+        .build(SoyParsingContext.exploding());
+    assertThat(registry.getCallContentKind(node)).isAbsent();
   }
 }

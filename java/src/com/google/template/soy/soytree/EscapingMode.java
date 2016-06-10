@@ -13,8 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package com.google.template.soy.parsepasses.contextautoesc;
+package com.google.template.soy.soytree;
 
 import com.google.common.base.CaseFormat;
 import com.google.common.collect.ImmutableMap;
@@ -26,6 +25,8 @@ import javax.annotation.Nullable;
 
 /**
  * Ways of escaping dynamic content in a template.
+ * This is only used by the contextautoesc package, but lives in soytree since it's reference by the
+ * HtmlContext enum.
  *
  */
 public enum EscapingMode {

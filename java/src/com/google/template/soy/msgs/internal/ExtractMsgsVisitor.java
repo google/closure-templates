@@ -46,21 +46,15 @@ public final class ExtractMsgsVisitor extends AbstractSoyNodeVisitor<SoyMsgBundl
   /** List of messages collected during the pass. */
   private List<SoyMsg> msgs;
 
-  /** Current Soy file path (during a pass). */
-  private String currentSource;
-
   /**
    * Returns a SoyMsgBundle containing all messages extracted from the given SoyFileSetNode or
    * SoyFileNode (locale string is null).
    */
   @Override public SoyMsgBundle exec(SoyNode node) {
-
     Preconditions.checkArgument(node instanceof SoyFileSetNode || node instanceof SoyFileNode);
 
     msgs = Lists.newArrayList();
-    currentSource = null;
     visit(node);
-    currentSource = null;
     return new SoyMsgBundleImpl(null, msgs);
   }
 
@@ -70,16 +64,9 @@ public final class ExtractMsgsVisitor extends AbstractSoyNodeVisitor<SoyMsgBundl
    * null).
    */
   public SoyMsgBundle execOnMultipleNodes(Iterable<? extends SoyNode> nodes) {
-
     msgs = Lists.newArrayList();
     for (SoyNode node : nodes) {
-      if (node instanceof SoyFileSetNode || node instanceof SoyFileNode) {
-        currentSource = null;
-      } else {
-        currentSource = node.getNearestAncestor(SoyFileNode.class).getFilePath();
-      }
       visit(node);
-      currentSource = null;
     }
     return new SoyMsgBundleImpl(null, msgs);
   }
@@ -90,19 +77,15 @@ public final class ExtractMsgsVisitor extends AbstractSoyNodeVisitor<SoyMsgBundl
 
 
   @Override protected void visitSoyFileNode(SoyFileNode node) {
-
-    currentSource = node.getFilePath();
     visitChildren(node);
-    currentSource = null;
   }
 
 
   @Override protected void visitMsgNode(MsgNode node) {
-
     MsgPartsAndIds msgPartsAndIds = MsgUtils.buildMsgPartsAndComputeMsgIdForDualFormat(node);
     msgs.add(new SoyMsg(
         msgPartsAndIds.id, -1L, null, node.getMeaning(), node.getDesc(), node.isHidden(),
-        node.getContentType(), currentSource, node.isPlrselMsg(), msgPartsAndIds.parts));
+        node.getContentType(), node.getSourceLocation(), node.isPlrselMsg(), msgPartsAndIds.parts));
   }
 
 

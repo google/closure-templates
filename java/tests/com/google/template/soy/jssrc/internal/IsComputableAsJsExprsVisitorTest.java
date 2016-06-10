@@ -68,6 +68,7 @@ public final class IsComputableAsJsExprsVisitorTest extends TestCase {
         true,
         0,
         0,
+        0,
         0);
 
     runTestHelper(
@@ -75,10 +76,11 @@ public final class IsComputableAsJsExprsVisitorTest extends TestCase {
         true,
         0,
         0,
+        0,
         2);
 
     runTestHelper(
-        "{msg desc=\"\"}<span id=\"{for $i in range(3)}{$i}{/for}\">{/msg}", false, 0, 0, 0);
+        "{msg desc=\"\"}<span id=\"{for $i in range(3)}{$i}{/for}\">{/msg}", false, 0, 0, 0, 0);
   }
 
 
@@ -143,7 +145,7 @@ public final class IsComputableAsJsExprsVisitorTest extends TestCase {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forTemplateContents(soyCode).errorReporter(boom).parse().fileSet();
     // Several tests have msg nodes.
-    new ReplaceMsgsWithGoogMsgsVisitor().exec(soyTree);
+    new ExtractMsgVariablesVisitor().exec(soyTree);
     SoyNode node = SharedTestUtils.getNode(soyTree, indicesToNode);
     assertThat(new IsComputableAsJsExprsVisitor().exec(node))
         .isEqualTo(expectedResult);

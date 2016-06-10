@@ -19,6 +19,7 @@ package com.google.template.soy.jbcsrc;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Ordering;
 
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassVisitor;
@@ -31,7 +32,10 @@ import java.lang.reflect.Array;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.Arrays;
 import java.util.Map;
+
+import javax.annotation.Nullable;
 
 /**
  * A helper for turning {@link Annotation} instances into asm visit operations.
@@ -41,6 +45,12 @@ import java.util.Map;
  * is from a different version of the annotation.
  */
 final class AnnotationRef<T extends Annotation> {
+  private static final Ordering<Method> METHOD_ORDERING = new Ordering<Method>(){
+    @Override public int compare(@Nullable Method left, @Nullable Method right) {
+      return left.toGenericString().compareTo(right.toGenericString());
+    }
+  };
+
   static <T extends Annotation> AnnotationRef<T> forType(Class<T> annType) {
     checkArgument(annType.isAnnotation());
     return new AnnotationRef<>(annType);
@@ -56,8 +66,11 @@ final class AnnotationRef<T extends Annotation> {
     Retention retention = annType.getAnnotation(Retention.class);
     this.isRuntimeVisible = retention != null && retention.value() == RetentionPolicy.RUNTIME;
     this.typeDescriptor = Type.getDescriptor(annType);
+    // we need to ensure that our writers are in a consistent ordering.  Otherwise we will generate
+    // bytecode non deterministically.  getDeclaredMethods() internally uses a hashMap for storing
+    // objects so the order of methods returned from it is non deterministic
     ImmutableMap.Builder<Method, FieldWriter> writersBuilder = ImmutableMap.builder();
-    for(Method method : annType.getDeclaredMethods()) {
+    for(Method method : METHOD_ORDERING.sortedCopy(Arrays.asList(annType.getDeclaredMethods()))) {
       if (method.getParameterTypes().length == 0 && !Modifier.isStatic(method.getModifiers())) {
         Class<?> returnType = method.getReturnType();
         if (returnType.isArray()) {

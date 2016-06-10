@@ -28,6 +28,7 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprparse.ExpressionParser;
+import com.google.template.soy.exprparse.SoyParsingContext;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.FloatNode;
@@ -130,8 +131,8 @@ public final class SoyUtils {
         String name = matcher.group(1);
         String valueText = matcher.group(2).trim();
 
-        ExprNode valueExpr = new ExpressionParser(valueText, sourceLocation, errorReporter)
-            .parseExpression();
+        ExprNode valueExpr = new ExpressionParser(valueText, sourceLocation,
+            SoyParsingContext.exploding()).parseExpression();
 
         // Handle negative numbers as a special case.
         // TODO: Consider changing parser to actually parse negative numbers as primitives.

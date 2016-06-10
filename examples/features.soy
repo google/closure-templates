@@ -435,8 +435,7 @@
  * @param setMembers List of the first few members of the set.
  */
 {template .demoDoubleBraces kind="text"}
-  // If a Soy tag needs to have brace characters within, use double braces to delimit the tag.
-  {{msg desc="Example: The set of prime numbers is {2, 3, 5, 7, 11, 13, ...}."}}
+  {msg desc="Example: The set of prime numbers is {2, 3, 5, 7, 11, 13, ...}."}
     // Note: This message also demonstrates a useful trick. Since a 'msg' block cannot contain a
     // 'foreach' statement (impossible to translate as one message), we use a 'call' to a helper
     // template that contains the 'foreach' loop. In order to use this trick, please observe the

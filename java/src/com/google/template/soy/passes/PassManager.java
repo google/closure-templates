@@ -24,8 +24,10 @@ import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.shared.restricted.SoyFunction;
+import com.google.template.soy.soytree.AliasDeclaration;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoytreeUtils;
@@ -84,6 +86,8 @@ public final class PassManager {
             .add(new ResolvePackageRelativeCssNamesPass())
             .add(new VerifyPhnameAttrOnlyOnPlaceholdersPass())
             .add(new SubstituteGlobalsVisitorPass())
+            .add(new CheckInvalidParamsPass())
+            .add(new ValidateAliasesPass())
             .add(new CheckSyntaxVersionPass());
     if (!allowUnknownFunctions) {
       singleFilePassesBuilder.add(new CheckFunctionCallsPass());
@@ -274,6 +278,14 @@ public final class PassManager {
     }
   }
 
+  private final class CheckInvalidParamsPass extends CompilerFilePass {
+    @Override
+    public void run(SoyFileNode file, IdGenerator nodeIdGen) {
+      new CheckInvalidParamsVisitor(errorReporter).exec(file);
+    }
+  }
+  
+
   private final class SubstituteGlobalsVisitorPass extends CompilerFilePass {
     SubstituteGlobalsVisitor substituteGlobalsVisitor =
         new SubstituteGlobalsVisitor(
@@ -329,6 +341,27 @@ public final class PassManager {
     @Override
     public void run(SoyFileSetNode fileSet, TemplateRegistry registry) {
       new StrictDepsVisitor(registry, errorReporter).exec(fileSet);
+    }
+  }
+
+  private static final SoyErrorKind ALIAS_CONFLICTS_WITH_GLOBAL =
+      SoyErrorKind.of("Alias ''{0}'' conflicts with a global of the same name.");
+  private static final SoyErrorKind ALIAS_CONFLICTS_WITH_GLOBAL_PREFIX =
+      SoyErrorKind.of("Alias ''{0}'' conflicts with namespace for global ''{1}''.");
+  private final class ValidateAliasesPass extends CompilerFilePass {
+    @Override
+    public void run(SoyFileNode file, IdGenerator nodeIdGen) {
+      for (AliasDeclaration alias : file.getAliasDeclarations()) {
+        if (options.getCompileTimeGlobals().containsKey(alias.getAlias())) {
+          errorReporter.report(alias.getLocation(), ALIAS_CONFLICTS_WITH_GLOBAL, alias.getAlias());
+        }
+        for (String global : options.getCompileTimeGlobals().keySet()) {
+          if (global.startsWith(alias.getAlias() + ".")) {
+            errorReporter.report(alias.getLocation(), ALIAS_CONFLICTS_WITH_GLOBAL_PREFIX,
+                alias.getAlias(), global);
+          }
+        }
+      }
     }
   }
 }

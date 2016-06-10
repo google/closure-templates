@@ -23,7 +23,10 @@ import com.google.template.soy.parsepasses.contextautoesc.SlicedRawTextNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 
 /**
- * All context needed to perform conformance checks.
+ * All context needed to perform conformance checks. Most conformance checks will only need
+ * to inspect the {@link #getSoyTree syntax tree}. Conformance checks dealing specifically
+ * with the HTML structure contained in the Soy template will also need to inspect
+ * the {@link #getSlicedRawTextNodes raw text nodes}.
  */
 @AutoValue public abstract class ConformanceInput {
 

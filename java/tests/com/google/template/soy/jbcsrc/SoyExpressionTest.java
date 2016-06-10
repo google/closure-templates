@@ -35,6 +35,7 @@ import com.google.template.soy.types.aggregate.ListType;
 import com.google.template.soy.types.primitive.AnyType;
 import com.google.template.soy.types.primitive.FloatType;
 import com.google.template.soy.types.primitive.IntType;
+import com.google.template.soy.types.primitive.StringType;
 
 import junit.framework.TestCase;
 
@@ -126,5 +127,42 @@ public class SoyExpressionTest extends TestCase {
     // SoyList uses Object identity for equality so we can't really assert on the value.
     assertThatExpression(forList(list, MethodRef.IMMUTABLE_LIST_OF.invoke()).box())
         .evaluatesToInstanceOf(ListImpl.class);
+  }
+
+  // Tests for a bug where the generic boxing code would cause ASM to emit an invalid frame.
+  //
+  // for example, assume a nullable string is at the top of the stack.  Then SoyExpression would
+  // emit the following code to box it while preserving null.
+  //
+  // DUP
+  // IFNULL L1
+  // INVOKESTATIC StringData.forValue
+  // L1:
+  //
+  // So when execution arrives at L1 there should either be a nullreference or a StringData object
+  // at the top of the stack.   Howerver L1 is also the target of a jump (the IFNULL condition), so
+  // ASM will generate a stack frame at this location.
+  // (see https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.7.4 for background
+  // on stack frames).
+  // So ASM tries to determine the type of the top item on the stack and to do so it compares the
+  // type at the DUP instruction to the type at the INVOKESTATIC.  The former is String and the
+  // latter is StringData.  The common supertype of this is Object, so ASM outputs a stack frame
+  // that says the top of the stack is an Object instead of StringData.  This means if we happen to
+  // invoke a StringData method next we will get a verification error.
+  public void testBoxNullable() {
+    MethodRef stringDataGetValue = MethodRef.create(StringData.class, "getValue");
+    SoyExpression nullableString = SoyExpression.forString(constant("hello").asNullable());
+    assertThatExpression(nullableString).evaluatesTo("hello");
+    assertThatExpression(nullableString.box().invoke(stringDataGetValue)).evaluatesTo("hello");
+  }
+
+  // similar to the above, but in the unboxing codepath
+  public void testUnboxNullable() {
+    SoyExpression nullableString = SoyExpression.forSoyValue(
+            StringType.getInstance(),
+        MethodRef.STRING_DATA_FOR_VALUE.invoke(constant("hello")).asNullable());
+    assertThatExpression(nullableString).evaluatesTo(StringData.forValue("hello"));
+    assertThatExpression(nullableString.unboxAs(String.class).invoke(MethodRef.STRING_IS_EMPTY))
+        .evaluatesTo(false);
   }
 }

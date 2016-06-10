@@ -23,10 +23,13 @@ import com.google.common.truth.SubjectFactory;
 import com.google.common.truth.Truth;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.FixedIdGenerator;
+import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.error.AbstractErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
-import com.google.template.soy.soyparse.TemplateParser;
+import com.google.template.soy.soyparse.SoyFileParser;
+import com.google.template.soy.types.SoyTypeRegistry;
 
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -96,10 +99,14 @@ public final class TemplateSubject extends Subject<TemplateSubject, String> {
   private ErrorReporterImpl doParse() {
     ErrorReporterImpl errorReporter = new ErrorReporterImpl();
     try {
-      // We should be invoking the SoyFileParser rather than this.  We end up reimplementing the
-      // error message munging
-      new TemplateParser(new FixedIdGenerator(), getSubject(), "example.soy", 1, 0, errorReporter)
-          .parseTemplateContent();
+      new SoyFileParser(
+            new SoyTypeRegistry(),
+            new FixedIdGenerator(),
+            new StringReader("{namespace test}{template .foo}\n" + getSubject() + "{/template}"),
+            SoyFileKind.SRC,
+            "example.soy",
+            errorReporter)
+        .parseSoyFile();
     } catch (Throwable e) {
       errorReporter.report(SourceLocation.UNKNOWN, SoyErrorKind.of("{0}"), e.getMessage());
     }
@@ -107,6 +114,7 @@ public final class TemplateSubject extends Subject<TemplateSubject, String> {
   }
 
   public void at(int expectedLine, int expectedColumn) {
+    expectedLine++;  // Compensate for the extra line of template wrapper
     if (expectedLine != actualSourceLocation.getLineNumber()
         || expectedColumn != actualSourceLocation.getBeginColumn()) {
       failWithRawMessage(

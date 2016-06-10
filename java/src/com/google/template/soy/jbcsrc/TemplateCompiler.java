@@ -134,7 +134,7 @@ final class TemplateCompiler {
             .sourceFileName(template.node().getSourceLocation().getFileName())
             .build();
     generateTemplateMetadata();
-    
+    generateKindMethod();
     stateField.defineField(writer);
     paramsField.defineField(writer);
     ijField.defineField(writer);
@@ -153,6 +153,12 @@ final class TemplateCompiler {
     classes.addAll(innerClasses.getInnerClassData());
     writer = null;
     return classes;
+  }
+  
+  private void generateKindMethod() {
+    Statement.returnExpression(BytecodeUtils.constant(template.node().getContentKind()))
+        .writeMethod(
+            Opcodes.ACC_PUBLIC | Opcodes.ACC_FINAL, template.kindMethod().method(), writer);
   }
 
   /** Writes a {@link TemplateMetadata} to the generated class. */
@@ -227,8 +233,9 @@ final class TemplateCompiler {
         createLocal("appendable", 1, ADVISING_APPENDABLE_TYPE, start, end).asNonNullable();
     final LocalVariable contextVar =
         createLocal("context", 2, RENDER_CONTEXT_TYPE, start, end).asNonNullable();
-    final VariableSet variableSet = 
-        new VariableSet(fieldNames, template.typeInfo(), thisVar, template.renderMethod().method());
+    final TemplateVariableManager variableSet =
+        new TemplateVariableManager(
+            fieldNames, template.typeInfo(), thisVar, template.renderMethod().method());
     TemplateNode node = template.node();
     TemplateVariables variables = 
         new TemplateVariables(variableSet, thisVar, contextVar);
@@ -318,12 +325,13 @@ final class TemplateCompiler {
     return MethodRef.RUNTIME_GET_FIELD_PROVIDER.invoke(record, fieldName);
   }
 
-  private final class TemplateVariables implements VariableLookup {
-    private final VariableSet variableSet;
+  private final class TemplateVariables implements TemplateParameterLookup {
+    private final TemplateVariableManager variableSet;
     private final Expression thisRef;
     private final Expression renderContext;
 
-    TemplateVariables(VariableSet variableSet, Expression thisRef, Expression renderContext) {
+    TemplateVariables(
+        TemplateVariableManager variableSet, Expression thisRef, Expression renderContext) {
       this.variableSet = variableSet;
       this.thisRef = thisRef;
       this.renderContext = renderContext;

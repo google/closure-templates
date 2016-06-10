@@ -21,9 +21,9 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprparse.ExpressionParser;
+import com.google.template.soy.exprparse.SoyParsingContext;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.CommandTextAttributesParser.Attribute;
 import com.google.template.soy.soytree.SoyNode.LocalVarInlineNode;
@@ -117,23 +117,23 @@ public abstract class LetNode extends AbstractCommandNode
    * @return An info object containing the parse results.
    */
   protected static CommandTextParseResult parseCommandTextHelper(
-      String commandText, ErrorReporter errorReporter, SourceLocation sourceLocation) {
+      String commandText, SoyParsingContext context, SourceLocation sourceLocation) {
 
     Matcher matcher = COMMAND_TEXT_PATTERN.matcher(commandText);
     if (!matcher.matches()) {
-      errorReporter.report(sourceLocation, INVALID_COMMAND_TEXT);
+      context.report(sourceLocation, INVALID_COMMAND_TEXT);
       return new CommandTextParseResult("error", null, null);
     }
 
     String localVarName = new ExpressionParser(
-        matcher.group(1), sourceLocation, errorReporter)
+        matcher.group(1), sourceLocation, context)
         .parseVariable()
         .getName();
 
     String valueExprString = matcher.group(2);
     ExprRootNode valueExpr = valueExprString != null
         ? new ExprRootNode(
-            new ExpressionParser(valueExprString, sourceLocation, errorReporter).parseExpression())
+            new ExpressionParser(valueExprString, sourceLocation, context).parseExpression())
         : null;
 
     ContentKind contentKind;
@@ -142,7 +142,7 @@ public abstract class LetNode extends AbstractCommandNode
           "Match groups for value expression and optional attributes should be mutually exclusive");
       // Parse optional attributes
       Map<String, String> attributes
-          = ATTRIBUTES_PARSER.parse(matcher.group(3), errorReporter, sourceLocation);
+          = ATTRIBUTES_PARSER.parse(matcher.group(3), context, sourceLocation);
       contentKind = (attributes.get("kind") != null)
           ? NodeContentKinds.forAttributeValue(attributes.get("kind")) : null;
     } else {

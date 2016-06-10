@@ -21,8 +21,6 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.types.SoyType;
 
-import java.util.Objects;
-
 import javax.annotation.Nullable;
 
 /**
@@ -154,16 +152,5 @@ public final class VarRefNode extends AbstractExprNode {
 
   @Override public VarRefNode copy(CopyState copyState) {
     return new VarRefNode(this, copyState);
-  }
-
-  @Override public boolean equals(Object other) {
-    if (other == null || other.getClass() != this.getClass()) { return false; }
-    VarRefNode otherVar = (VarRefNode) other;
-    return name.equals(otherVar.name) &&
-        isDollarSignIjParameter == otherVar.isDollarSignIjParameter;
-  }
-
-  @Override public int hashCode() {
-    return Objects.hash(this.getClass(), name, isDollarSignIjParameter);
   }
 }

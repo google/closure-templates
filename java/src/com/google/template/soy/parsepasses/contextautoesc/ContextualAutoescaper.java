@@ -168,9 +168,11 @@ public final class ContextualAutoescaper {
     // all contextual templates, and will not barf on private templates that might be declared
     // autoescape="false" because they do funky things that are provably safe by human reason but
     // not by this algorithm.
-    Set<TemplateNode> templateNodesToType = callGraph.callersOf(
-        Collections2.filter(allTemplates, IS_CONTEXTUAL));
-    templateNodesToType.addAll(Collections2.filter(allTemplates, REQUIRES_INFERENCE));
+    Collection<TemplateNode> thatRequireInference =
+        Collections2.filter(allTemplates, REQUIRES_INFERENCE);
+    Set<TemplateNode> templateNodesToType = callGraph.callersOf(thatRequireInference);
+    templateNodesToType.addAll(thatRequireInference);
+
     Set<SourceLocation> errorLocations = new HashSet<>();
     for (TemplateNode templateNode : templateNodesToType) {
       try {
@@ -309,14 +311,6 @@ public final class ContextualAutoescaper {
     }
     return templatesByNameBuilder.build();
   }
-
-  private static final Predicate<TemplateNode> IS_CONTEXTUAL = new Predicate<TemplateNode>() {
-    @Override
-    public boolean apply(TemplateNode templateNode) {
-      return templateNode.getAutoescapeMode() == AutoescapeMode.CONTEXTUAL
-          || templateNode.getAutoescapeMode() == AutoescapeMode.STRICT;
-    }
-  };
 
   private static final Predicate<TemplateNode> REQUIRES_INFERENCE
       = new Predicate<TemplateNode>() {

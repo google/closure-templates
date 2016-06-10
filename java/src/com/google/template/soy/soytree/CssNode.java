@@ -20,9 +20,9 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprparse.ExpressionParser;
+import com.google.template.soy.exprparse.SoyParsingContext;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.shared.SoyCssRenamingMap;
@@ -203,19 +203,19 @@ public final class CssNode extends AbstractCommandNode
      * Returns a new {@link CssNode} built from the builder's state, reporting syntax errors
      * to the given {@link ErrorReporter}.
      */
-    public CssNode build(ErrorReporter errorReporter) {
+    public CssNode build(SoyParsingContext context) {
       int delimPos = commandText.lastIndexOf(',');
       ExprRootNode componentNameExpr = null;
       String selectorText = commandText;
       if (delimPos != -1) {
         String componentNameText = commandText.substring(0, delimPos).trim();
         componentNameExpr = new ExprRootNode(
-            new ExpressionParser(componentNameText, sourceLocation, errorReporter)
+            new ExpressionParser(componentNameText, sourceLocation, context)
                 .parseExpression());
         selectorText = commandText.substring(delimPos + 1).trim();
       }
       if (!SELECTOR_TEXT_PATTERN.matcher(selectorText).matches()) {
-        errorReporter.report(sourceLocation, INVALID_CSS_ARGUMENT);
+        context.report(sourceLocation, INVALID_CSS_ARGUMENT);
       }
       return new CssNode(id, commandText, componentNameExpr, selectorText, sourceLocation);
     }

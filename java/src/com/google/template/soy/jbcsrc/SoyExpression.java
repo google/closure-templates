@@ -60,8 +60,16 @@ import java.util.List;
  * but depending on the type they may also support additional unboxing conversions.
  */
 class SoyExpression extends Expression {
+  // TODO(user): move this variable into Kind.
   private static final ImmutableSet<Kind> STRING_KINDS =
-      Sets.immutableEnumSet(Kind.STRING, Kind.HTML, Kind.ATTRIBUTES, Kind.JS, Kind.CSS, Kind.URI);
+      Sets.immutableEnumSet(
+          Kind.STRING,
+          Kind.HTML,
+          Kind.ATTRIBUTES,
+          Kind.JS,
+          Kind.CSS,
+          Kind.URI,
+          Kind.TRUSTED_RESOURCE_URI);
 
   static SoyExpression forSoyValue(SoyType type, Expression delegate) {
     return new SoyExpression(type, type.javaType(), delegate, Optional.<Expression>absent());
@@ -275,8 +283,7 @@ class SoyExpression extends Expression {
                 @Override
                 void doGen(CodeBuilder adapter) {
                   delegate.gen(adapter);
-                  adapter.dup();
-                  adapter.ifNull(end);
+                  BytecodeUtils.nullCoalesce(adapter, end);
                 }
               })
           .asNonNullable()
@@ -470,25 +477,15 @@ class SoyExpression extends Expression {
     } else {
       // else it must be a List/Proto/String all of which must preserve null through the unboxing
       // operation
-      final Label ifNull = new Label();
+      final Label end = new Label();
       Expression nonNullDelegate =
           new Expression(resultType(), features()) {
             @Override void doGen(CodeBuilder adapter) {
               delegate.gen(adapter);
-              adapter.dup();
-              adapter.ifNull(ifNull);
+              BytecodeUtils.nullCoalesce(adapter, end);
             }
           };
-      final SoyExpression unboxAs = withSource(nonNullDelegate).asNonNullable().unboxAs(asType);
-      return unboxAs.withSource(
-          new Expression(unboxAs.resultType(), features()) {
-            @Override
-            void doGen(CodeBuilder adapter) {
-              unboxAs.gen(adapter);
-              adapter.mark(ifNull);
-              adapter.checkCast(unboxAs.resultType()); // insert a cast to force type agreement
-            }
-          });
+      return withSource(nonNullDelegate).asNonNullable().unboxAs(asType).asNullable().labelEnd(end);
     }
     throw new UnsupportedOperationException("Can't unbox " + clazz + " as " + asType);
   }

@@ -64,18 +64,13 @@ public final class CodeBuilderTest extends TestCase {
     cb.decreaseIndentTwice();
     cb.appendLine("too");
     assertThat(cb.getCode()).isEqualTo("  boo\n      foo\ngoo\n    moo\ntoo\n");
+  }
+
+  public void testNegativeIndent() {
+    SimpleCodeBuilder cb = new SimpleCodeBuilder();
 
     try {
       cb.decreaseIndent();
-      fail();
-    } catch (IllegalStateException e) {
-      // Test passes.
-    }
-
-    try {
-      for (int i = 0; i < 12; ++i) {
-        cb.increaseIndent();
-      }
       fail();
     } catch (IllegalStateException e) {
       // Test passes.

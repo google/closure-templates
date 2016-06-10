@@ -25,6 +25,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.error.FormattingErrorReporter;
 import com.google.template.soy.exprparse.ExpressionParser;
+import com.google.template.soy.exprparse.SoyParsingContext;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
@@ -319,7 +320,7 @@ public final class TranslateToJsExprVisitorTest extends TestCase {
   private void assertSoyErrorKinds(
       String soyExpr, SoyJsSrcOptions jsSrcOptions, String... expectedErrorMsgSubstrings) {
     ExprNode exprNode = new ExpressionParser(
-        soyExpr, SourceLocation.UNKNOWN, ExplodingErrorReporter.get())
+        soyExpr, SourceLocation.UNKNOWN, SoyParsingContext.exploding())
         .parseExpression();
     FormattingErrorReporter errorReporter = new FormattingErrorReporter();
     new TranslateToJsExprVisitor(

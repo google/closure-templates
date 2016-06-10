@@ -18,8 +18,11 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.template.soy.jbcsrc.BytecodeUtils.CONTENT_KIND_TYPE;
+import static com.google.template.soy.jbcsrc.StandardNames.LARGE_STRING_CONSTANT;
 
 import com.google.common.base.Optional;
+import com.google.common.base.Utf8;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -50,10 +53,15 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 
+import javax.annotation.Nullable;
+
 /**
  * A set of utilities for generating simple expressions in bytecode
  */
 final class BytecodeUtils {
+  // https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.4.7
+  private static final int MAX_CONSTANT_STRING_LENGTH = 65535;
+
   static final TypeInfo OBJECT = TypeInfo.create(Object.class);
   static final Type STRING_TYPE = Type.getType(String.class);
   static final Type ARRAY_LIST_TYPE = Type.getType(ArrayList.class);
@@ -70,6 +78,7 @@ final class BytecodeUtils {
   static final Type SOY_LIST_TYPE = Type.getType(SoyList.class);
   static final Type CONTENT_KIND_TYPE = Type.getType(ContentKind.class);
   static final Type COMPILED_TEMPLATE_TYPE = Type.getType(CompiledTemplate.class);
+  static final Type ILLEGAL_STATE_EXCEPTION_TYPE = Type.getType(IllegalStateException.class);
 
   static final Method NULLARY_INIT = Method.getMethod("void <init>()");
   static final Method CLASS_INIT = Method.getMethod("void <clinit>()");
@@ -232,6 +241,76 @@ final class BytecodeUtils {
   /** Returns an {@link Expression} that can load the given String constant. */
   static Expression constant(final String value) {
     checkNotNull(value);
+    checkArgument(
+        Utf8.encodedLength(value) <= MAX_CONSTANT_STRING_LENGTH,
+        "String is too long when encoded in utf8");
+    return stringConstant(value);
+  }
+  
+  /** Returns an expression that evaluates to kind. */
+  static Expression constant(@Nullable ContentKind kind) {
+    return (kind == null)
+        ? BytecodeUtils.constantNull(CONTENT_KIND_TYPE)
+        : FieldRef.enumReference(kind).accessor();
+  }
+
+  /**
+   * Returns an {@link Expression} that can load the given String constant.
+   *
+   * <p>Unlike {@link #constant(String)} this can handle strings larger than 65K bytes.
+   */
+  static Expression constant(String value, TemplateVariableManager manager) {
+    int encodedLength = Utf8.encodedLength(value);
+    if (encodedLength <= MAX_CONSTANT_STRING_LENGTH) {
+      return stringConstant(value);
+    }
+    // else it is too big for a single constant pool entry so split it into a small number of
+    // entries and generate a static final field to hold the cat'ed value.
+    int startIndex = 0;
+    Expression stringExpression = null;
+    int length = value.length();
+    do {
+      int endIndex = offsetOf65KUtf8Bytes(value, startIndex, length);
+      // N.B. we may end up splitting the string at a surrogate pair, but the class format uses
+      // modified utf8 which is forgiving about such things.
+      Expression substringConstant = stringConstant(value.substring(startIndex, endIndex));
+      startIndex = endIndex;
+      if (stringExpression == null) {
+        stringExpression = substringConstant;
+      } else {
+        stringExpression = stringExpression.invoke(MethodRef.STRING_CONCAT, substringConstant);
+      }
+    } while (startIndex < length);
+    FieldRef fieldRef = manager.addStaticField(LARGE_STRING_CONSTANT, stringExpression);
+    return fieldRef.accessor();
+  }
+
+  /**
+   * Returns the largest index between {@code startIndex} and {@code endIdex} such that the UTF8
+   * encoded bytes of {@code str.substring(startIndex, returnValue}} is less than or equal to 65K.
+   */
+  private static int offsetOf65KUtf8Bytes(String str, int startIndex, int endIndex) {
+    // This implementation is based off of Utf8.encodedLength
+    int utf8Length = 0;
+    int i = startIndex;
+    for (; i < endIndex; i++) {
+      char c = str.charAt(i);
+      utf8Length++;
+      if (c < 0x800) {
+        utf8Length += (0x7f - c) >>> 31; // branch free!
+      } else {
+        utf8Length += Character.isSurrogate(c) ? 1 : 2;
+      }
+      if (utf8Length == MAX_CONSTANT_STRING_LENGTH) {
+        return i + 1;
+      } else if (utf8Length > MAX_CONSTANT_STRING_LENGTH) {
+        return i;
+      }
+    }
+    return endIndex;
+  }
+
+  private static Expression stringConstant(final String value) {
     return new Expression(STRING_TYPE, Feature.CHEAP, Feature.NON_NULLABLE) {
       @Override
       void doGen(CodeBuilder mv) {
@@ -611,6 +690,24 @@ final class BytecodeUtils {
         }
       }
     };
+  }
+
+  /**
+   * Outputs bytecode that will test the item at the top of the stack for null, and branch to
+   * {@code nullExit} if it is {@code null}.  At {@code nullSafeExit} there will be a null value at
+   * the top of the stack.
+   */
+  static void nullCoalesce(CodeBuilder builder, Label nullExit) {
+    builder.dup();
+    Label nonNull = new Label();
+    builder.ifNonNull(nonNull);
+    // See http://mail.ow2.org/wws/arc/asm/2016-02/msg00001.html for a discussion of this pattern
+    // but even though the value at the top of the stack here is null, its type isn't.  So we need
+    // to pop and push.  This is the idiomatic pattern.
+    builder.pop();
+    builder.pushNull();
+    builder.goTo(nullExit);
+    builder.mark(nonNull);
   }
 
   /**

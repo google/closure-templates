@@ -27,6 +27,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
+import com.google.template.soy.soytree.HtmlContext;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -170,7 +171,7 @@ public final class SlicedRawTextNodeTest extends TestCase {
     // Context a a a a a a a b b b b b b b a
     RawTextNode rawTextNode = new RawTextNode(0, "Hello, <World>!", SourceLocation.UNKNOWN);
     Context a = Context.HTML_PCDATA;
-    Context b = Context.HTML_PCDATA.derive(Context.State.HTML_TAG_NAME);
+    Context b = Context.HTML_PCDATA.derive(HtmlContext.HTML_TAG_NAME);
     SlicedRawTextNode slicedNode = new SlicedRawTextNode(rawTextNode, a);
     slicedNode.insertSlice(0, a, 4);  // "Hell"
     slicedNode.insertSlice(1, a, 3);  // "o, "
@@ -266,7 +267,7 @@ public final class SlicedRawTextNodeTest extends TestCase {
         return (
                 // In a script tag,
                 c.elType == Context.ElementType.SCRIPT
-                && c.state == Context.State.HTML_TAG
+                && c.state == HtmlContext.HTML_TAG
                 // but not in an attribute
                 && c.attrType == Context.AttributeType.NONE
                 );
@@ -278,7 +279,7 @@ public final class SlicedRawTextNodeTest extends TestCase {
                 // If we're not in an attribute,
                 c.attrType == Context.AttributeType.NONE
                 // but we're in JS, then we must be in a script body.
-                && c.state == Context.State.JS
+                && c.state == HtmlContext.JS
                 );
       }
     };

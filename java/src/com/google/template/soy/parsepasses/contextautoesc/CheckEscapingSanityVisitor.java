@@ -24,6 +24,7 @@ import com.google.template.soy.soytree.AutoescapeMode;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallParamContentNode;
+import com.google.template.soy.soytree.EscapingMode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.SoyFileSetNode;

@@ -100,7 +100,7 @@ final class V1JsExprTranslator {
       Deque<Map<String, JsExpr>> localVarTranslations,
       ErrorReporter errorReporter) {
 
-    soyExpr = CharMatcher.WHITESPACE.collapseFrom(soyExpr, ' ');
+    soyExpr = CharMatcher.whitespace().collapseFrom(soyExpr, ' ');
 
     StringBuffer jsExprTextSb = new StringBuffer();
 

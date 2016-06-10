@@ -18,8 +18,6 @@ package com.google.template.soy.exprtree;
 
 import com.google.template.soy.basetree.CopyState;
 
-import java.util.Objects;
-
 /**
  * Represents the bracket [] operation, which can either be used to access an
  * array element by index, or a map value by key. Following the naming convention
@@ -71,17 +69,4 @@ public final class ItemAccessNode extends DataAccessNode {
     return new ItemAccessNode(this, copyState);
   }
 
-
-  @Override public boolean equals(Object other) {
-    if (other == null || other.getClass() != this.getClass()) { return false; }
-    ItemAccessNode otherItemRef = (ItemAccessNode) other;
-    return getChild(0).equals(otherItemRef.getChild(0))
-        && getChild(1).equals(otherItemRef.getChild(1))
-        && isNullSafe == otherItemRef.isNullSafe;
-  }
-
-
-  @Override public int hashCode() {
-    return Objects.hash(this.getClass(), getChild(0), getChild(1));
-  }
 }

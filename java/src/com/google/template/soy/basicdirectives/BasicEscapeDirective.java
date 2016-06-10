@@ -18,12 +18,15 @@ package com.google.template.soy.basicdirectives;
 
 import com.google.common.base.CaseFormat;
 import com.google.common.collect.ImmutableSet;
+import com.google.template.soy.data.SanitizedContent;
+import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcPrintDirective;
+import com.google.template.soy.shared.internal.ShortCircuitable;
 import com.google.template.soy.shared.restricted.Sanitizers;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.shared.restricted.SoyPurePrintDirective;
@@ -275,7 +278,7 @@ public abstract class BasicEscapeDirective
    */
   @Singleton
   @SoyPurePrintDirective
-  static final class EscapeJsValue extends BasicEscapeDirective {
+  static final class EscapeJsValue extends BasicEscapeDirective implements ShortCircuitable {
 
     EscapeJsValue() {
       super("|escapeJsValue");
@@ -283,6 +286,11 @@ public abstract class BasicEscapeDirective
 
     @Override protected String escape(SoyValue value) {
       return Sanitizers.escapeJsValue(value);
+    }
+
+    @Override
+    public boolean isNoopForKind(ContentKind kind) {
+      return kind == SanitizedContent.ContentKind.JS;
     }
   }
 
@@ -360,7 +368,8 @@ public abstract class BasicEscapeDirective
    */
   @Singleton
   @SoyPurePrintDirective
-  static final class FilterTrustedResourceUri extends BasicEscapeDirective {
+  static final class FilterTrustedResourceUri extends BasicEscapeDirective
+      implements ShortCircuitable {
 
     FilterTrustedResourceUri() {
       super("|filterTrustedResourceUri");
@@ -368,6 +377,11 @@ public abstract class BasicEscapeDirective
 
     @Override protected String escape(SoyValue value) {
       return Sanitizers.filterTrustedResourceUri(value);
+    }
+
+    @Override
+    public boolean isNoopForKind(ContentKind kind) {
+      return kind == ContentKind.TRUSTED_RESOURCE_URI;
     }
   }
 }

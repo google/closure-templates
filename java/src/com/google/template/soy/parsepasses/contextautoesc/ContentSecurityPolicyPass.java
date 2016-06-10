@@ -22,11 +22,11 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
-import com.google.template.soy.error.ExplodingErrorReporter;
+import com.google.template.soy.exprparse.SoyParsingContext;
 import com.google.template.soy.exprtree.VarRefNode;
-import com.google.template.soy.parsepasses.contextautoesc.Context.State;
 import com.google.template.soy.parsepasses.contextautoesc.SlicedRawTextNode.RawTextSlice;
 import com.google.template.soy.soytree.ExprUnion;
+import com.google.template.soy.soytree.HtmlContext;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.PrintNode;
@@ -122,7 +122,7 @@ public final class ContentSecurityPolicyPass {
           return (
               // In a script tag or style,
               (c.elType == Context.ElementType.SCRIPT || c.elType == Context.ElementType.STYLE)
-              && c.state == Context.State.HTML_TAG
+              && c.state == HtmlContext.HTML_TAG
               // but not in an attribute
               && c.attrType == Context.AttributeType.NONE
               );
@@ -142,7 +142,7 @@ public final class ContentSecurityPolicyPass {
               // If we're not in an attribute,
               c.attrType == Context.AttributeType.NONE
               // but we're in JS or CSS, then we must be in a script or style body.
-              && (c.state == Context.State.JS || c.state == Context.State.CSS)
+              && (c.state == HtmlContext.JS || c.state == HtmlContext.CSS)
               );
         }
       };
@@ -155,7 +155,7 @@ public final class ContentSecurityPolicyPass {
       new Predicate<Context>() {
         @Override
         public boolean apply(Context c) {
-          return c.state == State.HTML_BEFORE_ATTRIBUTE_VALUE;
+          return c.state == HtmlContext.HTML_BEFORE_ATTRIBUTE_VALUE;
         }
       };
 
@@ -176,12 +176,12 @@ public final class ContentSecurityPolicyPass {
 
         private boolean isScriptAttr(Context c) {
           return c.attrType == Context.AttributeType.SCRIPT
-              && c.state == Context.State.JS;
+              && c.state == HtmlContext.JS;
         }
 
         private boolean isStyleAttr(Context c) {
           return c.attrType == Context.AttributeType.STYLE
-              && c.state == Context.State.CSS;
+              && c.state == HtmlContext.CSS;
         }
       };
 
@@ -583,6 +583,6 @@ public final class ContentSecurityPolicyPass {
         true,  // Implicit.  {$ij.csp_nonce} not {print $ij.csp_nonce}
         SourceLocation.UNKNOWN)
         .exprUnion(new ExprUnion(makeReferenceToInjectedCspNonce()))
-        .build(ExplodingErrorReporter.get());
+        .build(SoyParsingContext.exploding());
   }
 }

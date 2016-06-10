@@ -25,15 +25,14 @@ import com.google.template.soy.base.SoyBackendKind;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.PrimitiveData;
 import com.google.template.soy.data.restricted.StringData;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.error.FormattingErrorReporter;
 import com.google.template.soy.exprparse.ExpressionParser;
+import com.google.template.soy.exprparse.SoyParsingContext;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
-import com.google.template.soy.passes.SubstituteGlobalsVisitor;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.types.SoyEnumType;
 import com.google.template.soy.types.SoyType;
@@ -53,7 +52,7 @@ import javax.annotation.Nullable;
 public final class SubstituteGlobalsVisitorTest extends TestCase {
 
   public void testSubstituteGlobals() {
-    ErrorReporter boom = ExplodingErrorReporter.get();
+    SoyParsingContext boom = SoyParsingContext.exploding();
     ExprNode expr
         = new ExpressionParser("BOO + 'aaa' + foo.GOO", SourceLocation.UNKNOWN, boom)
         .parseExpression();
@@ -71,7 +70,7 @@ public final class SubstituteGlobalsVisitorTest extends TestCase {
             globals,
             new SoyTypeRegistry() /* typeRegistry */,
             false /* shouldAssertNoUnboundGlobals */,
-            boom)
+            ExplodingErrorReporter.get())
         .new SubstituteGlobalsInExprVisitor()
         .exec(expr);
 
@@ -80,7 +79,7 @@ public final class SubstituteGlobalsVisitorTest extends TestCase {
   }
 
   public void testSubstituteGlobalsFromType() {
-    ErrorReporter boom = ExplodingErrorReporter.get();
+    SoyParsingContext boom = SoyParsingContext.exploding();
     ExprNode expr
         = new ExpressionParser("foo.BOO + foo.GOO", SourceLocation.UNKNOWN, boom)
         .parseExpression();
@@ -140,7 +139,7 @@ public final class SubstituteGlobalsVisitorTest extends TestCase {
             ImmutableMap.<String, PrimitiveData>of() /* compileTimeGlobals */,
             typeRegistry,
             false /* shouldAssertNoUnboundGlobals */,
-            boom)
+            ExplodingErrorReporter.get())
         .new SubstituteGlobalsInExprVisitor()
         .exec(expr);
 
@@ -152,7 +151,7 @@ public final class SubstituteGlobalsVisitorTest extends TestCase {
     ExprNode expr = new ExpressionParser(
         "BOO + 'aaa' + foo.GOO",
         SourceLocation.UNKNOWN,
-        ExplodingErrorReporter.get())
+        SoyParsingContext.exploding())
         .parseExpression();
 
     Map<String, PrimitiveData> globals =

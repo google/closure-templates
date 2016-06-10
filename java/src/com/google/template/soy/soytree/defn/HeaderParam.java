@@ -62,17 +62,4 @@ public final class HeaderParam extends TemplateParam {
     headerParam.setLocalVariableIndex(localVariableIndex());
     return headerParam;
   }
-
-  @Override public boolean equals(Object o) {
-    if (this == o) { return true; }
-    if (o == null || this.getClass() != o.getClass()) { return false; }
-    HeaderParam other = (HeaderParam) o;
-    // Note: 'typeSrc' is nonessential.
-    return super.abstractEquals(o) && this.type.equals(other.type);
-  }
-
-  @Override public int hashCode() {
-    // Note: 'typeSrc' is nonessential.
-    return super.abstractHashCode() * 31 + type.hashCode();
-  }
 }

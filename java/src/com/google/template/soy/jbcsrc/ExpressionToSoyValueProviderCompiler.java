@@ -66,17 +66,15 @@ final class ExpressionToSoyValueProviderCompiler {
    * {@link ExpressionDetacher.Factory}
    */
   static ExpressionToSoyValueProviderCompiler create(
-      ExpressionCompiler exprCompiler,
-      VariableLookup variables) {
+      ExpressionCompiler exprCompiler, TemplateParameterLookup variables) {
     return new ExpressionToSoyValueProviderCompiler(exprCompiler, variables);
   }
 
-  private final VariableLookup variables;
+  private final TemplateParameterLookup variables;
   private final ExpressionCompiler exprCompiler;
 
   private ExpressionToSoyValueProviderCompiler(
-      ExpressionCompiler exprCompiler,
-      VariableLookup variables) {
+      ExpressionCompiler exprCompiler, TemplateParameterLookup variables) {
     this.exprCompiler = exprCompiler;
     this.variables = variables;
   }
@@ -110,14 +108,16 @@ final class ExpressionToSoyValueProviderCompiler {
 
   private static final class CompilerVisitor
       extends EnhancedAbstractExprNodeVisitor<Optional<Expression>> {
-    final VariableLookup variables;
+    final TemplateParameterLookup variables;
 
     // depending on the mode one or the other of these will be null
     @Nullable final ExpressionCompiler exprCompiler;
     @Nullable final BasicExpressionCompiler detachingExprCompiler;
 
-    CompilerVisitor(VariableLookup variables,
-        ExpressionCompiler exprCompiler,  BasicExpressionCompiler detachingExprCompiler) {
+    CompilerVisitor(
+        TemplateParameterLookup variables,
+        ExpressionCompiler exprCompiler,
+        BasicExpressionCompiler detachingExprCompiler) {
       this.variables = variables;
       checkArgument((exprCompiler == null) != (detachingExprCompiler == null));
       this.exprCompiler = exprCompiler;

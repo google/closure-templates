@@ -18,7 +18,6 @@ package com.google.template.soy;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
@@ -105,7 +104,7 @@ public final class SoyFileSetParser {
     } catch (IOException e) {
       // parse has 9 callers in SoyFileSet, and those are public API methods,
       // whose signatures it is infeasible to change.
-      throw Throwables.propagate(e);
+      throw new RuntimeException(e);
     }
   }
 

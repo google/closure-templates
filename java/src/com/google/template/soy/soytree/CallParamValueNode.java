@@ -20,10 +20,9 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
-import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.exprparse.SoyParsingContext;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 
 import java.util.List;
@@ -116,26 +115,26 @@ public final class CallParamValueNode extends CallParamNode implements ExprHolde
 
     private static CallParamValueNode error() {
       return new Builder(-1, "error: error", SourceLocation.UNKNOWN)
-          .build(ExplodingErrorReporter.get()); // guaranteed to build
+          .build(SoyParsingContext.exploding()); // guaranteed to build
     }
 
     public Builder(int id, String commandText, SourceLocation sourceLocation) {
       super(id, commandText, sourceLocation);
     }
 
-    public CallParamValueNode build(ErrorReporter errorReporter) {
-      Checkpoint checkpoint = errorReporter.checkpoint();
-      CommandTextParseResult parseResult = parseCommandTextHelper(errorReporter);
+    public CallParamValueNode build(SoyParsingContext context) {
+      Checkpoint checkpoint = context.errorReporter().checkpoint();
+      CommandTextParseResult parseResult = parseCommandTextHelper(context);
 
       if (parseResult.valueExprUnion == null) {
-        errorReporter.report(sourceLocation, SELF_ENDING_TAG_WITHOUT_VALUE, commandText);
+        context.report(sourceLocation, SELF_ENDING_TAG_WITHOUT_VALUE, commandText);
       }
 
       if (parseResult.contentKind != null) {
-        errorReporter.report(sourceLocation, SELF_ENDING_TAG_WITH_KIND_ATTRIBUTE, commandText);
+        context.report(sourceLocation, SELF_ENDING_TAG_WITH_KIND_ATTRIBUTE, commandText);
       }
 
-      if (errorReporter.errorsSince(checkpoint)) {
+      if (context.errorReporter().errorsSince(checkpoint)) {
         return error();
       }
 

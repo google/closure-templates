@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.template.soy.base.SourceLocation;
 
 import com.ibm.icu.util.ULocale;
 
@@ -29,6 +30,11 @@ import javax.annotation.Nullable;
 
 /**
  * Represents a message in some language/locale. Contains information relevant to translation.
+ *
+ * <p>This class is heavily optimized for memory usage. In one major server using SoyTofu, Soy
+ * messages comprised the single largest category of memory usage prior to optimization. Several
+ * fields can be omitted entirely for render-only usage. ImmutableSet and ImmutableList are used
+ * because their empty implementations are singletons.
  *
  */
 public final class SoyMsg {
@@ -56,7 +62,7 @@ public final class SoyMsg {
   private final String contentType;
 
   /** Location(s) of the source file(s) that this message comes from. */
-  private ImmutableSet<String> sourcePaths;
+  private ImmutableSet<SourceLocation> sourceLocations;
 
   /** Whether this is a plural/select message. */
   private final boolean isPlrselMsg;
@@ -82,15 +88,16 @@ public final class SoyMsg {
    *     plugins.
    * @param contentType Content type of the document that this message will appear in
    *     (e.g. "{@code text/html}"). May not be applicable to all message plugins.
-   * @param sourcePath Location of a source file that this message comes from. More sources can
-   *     be added using {@code addSourcePath()}. May not be applicable to all message plugins.
+   * @param sourceLocation Location of a source file that this message comes from. More sources can
+   *     be added using {@code addSourceLocation()}. May not be applicable to all message plugins.
    * @param isPlrselMsg Whether this is a plural/select message.
    * @param parts The parts that make up the message content.
    */
   public SoyMsg(
       long id, long altId, @Nullable String localeString, @Nullable String meaning,
       @Nullable String desc, boolean isHidden, @Nullable String contentType,
-      @Nullable String sourcePath, boolean isPlrselMsg, Iterable<? extends SoyMsgPart> parts) {
+      @Nullable SourceLocation sourceLocation, boolean isPlrselMsg,
+      Iterable<? extends SoyMsgPart> parts) {
 
     checkArgument(id >= 0L);
     checkArgument(altId >= -1L);
@@ -101,9 +108,9 @@ public final class SoyMsg {
     this.desc = desc;
     this.isHidden = isHidden;
     this.contentType = contentType;
-    this.sourcePaths = ImmutableSet.of();
-    if (sourcePath != null) {
-      addSourcePath(sourcePath);
+    this.sourceLocations = ImmutableSet.of();
+    if (sourceLocation != null) {
+      addSourceLocation(sourceLocation);
     }
     this.isPlrselMsg = isPlrselMsg;
     this.parts = ImmutableList.copyOf(parts);
@@ -126,20 +133,24 @@ public final class SoyMsg {
    *     plugins.
    * @param contentType Content type of the document that this message will appear in
    *     (e.g. "{@code text/html}"). May not be applicable to all message plugins.
-   * @param sourcePath Location of a source file that this message comes from. More sources can
-   *     be added using {@code addSourcePath()}. May not be applicable to all message plugins.
+   * @param sourceLocation Location of a source file that this message comes from. More sources can
+   *     be added using {@code addSourceLocation()}. May not be applicable to all message plugins.
    * @param parts The parts that make up the message content.
    */
   public SoyMsg(
       long id, @Nullable String localeString, @Nullable String meaning, @Nullable String desc,
-      boolean isHidden, @Nullable String contentType, @Nullable String sourcePath,
+      boolean isHidden, @Nullable String contentType, @Nullable SourceLocation sourceLocation,
       Iterable<? extends SoyMsgPart> parts) {
-    this(id, -1L, localeString, meaning, desc, isHidden, contentType, sourcePath, false, parts);
+    this(id, -1L, localeString, meaning, desc, isHidden, contentType, sourceLocation, false, parts);
   }
 
 
   /**
    * Constructor with just enough information for rendering only.
+   *
+   * <p>Using this constructor results in a working renderable message but uses much less memory
+   * than providing all the information for the full constructor.
+   *
    * @param id A unique id for this message (same across all translations).
    * @param localeString The language/locale string, or null if unknown. Should only be null for
    *     messages newly extracted from source files. Should always be set for messages parsed from
@@ -196,14 +207,15 @@ public final class SoyMsg {
     return contentType;
   }
 
-  /** @param sourcePath Location of a source file that this message comes from. */
-  public void addSourcePath(String sourcePath) {
-    sourcePaths = ImmutableSet.<String>builder().addAll(sourcePaths).add(sourcePath).build();
+  /** @param sourceLocation Location of a source file that this message comes from. */
+  public void addSourceLocation(SourceLocation sourceLocation) {
+    sourceLocations = ImmutableSet.<SourceLocation>builder()
+        .addAll(sourceLocations).add(sourceLocation).build();
   }
 
   /** Returns the location(s) of the source file(s) that this message comes from. */
-  public ImmutableSet<String> getSourcePaths() {
-    return sourcePaths;
+  public ImmutableSet<SourceLocation> getSourceLocations() {
+    return sourceLocations;
   }
 
   /** Returns whether this is a plural/select message. */
@@ -221,7 +233,8 @@ public final class SoyMsg {
       return false;
     }
     SoyMsg other = (SoyMsg) otherObject;
-    // NOTE: Source paths are not considered part of the object's identity, since they're mutable.
+    // NOTE: Source locations are not considered part of the object's identity,
+    // since they're mutable.
     return id == other.id
         && altId == other.altId
         && Objects.equals(localeString, other.localeString)
@@ -241,7 +254,7 @@ public final class SoyMsg {
 
   @Override public String toString() {
     return this.getClass() + "(" + id + ", " + altId + ", " + localeString + ", " + meaning
-        + ", " + desc + ", " + isHidden + ", " + contentType + ", " + sourcePaths + ", "
+        + ", " + desc + ", " + isHidden + ", " + contentType + ", " + sourceLocations + ", "
         + isPlrselMsg + ", " + parts + ")";
   }
 }

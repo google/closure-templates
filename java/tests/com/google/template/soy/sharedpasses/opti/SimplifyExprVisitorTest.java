@@ -26,8 +26,8 @@ import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.template.soy.SoyModule;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.exprparse.ExpressionParser;
+import com.google.template.soy.exprparse.SoyParsingContext;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.passes.ResolveFunctionsVisitor;
 import com.google.template.soy.shared.restricted.SoyFunction;
@@ -149,7 +149,7 @@ public final class SimplifyExprVisitorTest extends TestCase {
 
     private void simplifiesTo(String expected) {
       ExprRootNode exprRoot = new ExprRootNode(
-          new ExpressionParser(getSubject(), SourceLocation.UNKNOWN, ExplodingErrorReporter.get())
+          new ExpressionParser(getSubject(), SourceLocation.UNKNOWN, SoyParsingContext.exploding())
           .parseExpression());
       new ResolveFunctionsVisitor(SOY_FUNCTIONS).exec(exprRoot);
       INJECTOR.getInstance(SimplifyExprVisitor.class).exec(exprRoot);

@@ -54,17 +54,6 @@ public final class SoyDocParam extends TemplateParam {
     return soyDocParam;
   }
 
-  @SuppressWarnings("SimplifiableIfStatement")  // for IntelliJ
-  @Override public boolean equals(Object o) {
-    if (this == o) { return true; }
-    if (o == null || this.getClass() != o.getClass()) { return false; }
-    return super.abstractEquals(o);
-  }
-
-  @Override public int hashCode() {
-    return super.abstractHashCode();
-  }
-
   @Override
   public SoyDocParam clone() {
     return new SoyDocParam(this);

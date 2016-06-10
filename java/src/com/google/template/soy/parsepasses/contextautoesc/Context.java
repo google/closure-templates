@@ -23,6 +23,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.soytree.EscapingMode;
+import com.google.template.soy.soytree.HtmlContext;
 import com.google.template.soy.soytree.PrintDirectiveNode;
 
 import java.util.Arrays;
@@ -57,7 +59,7 @@ import javax.annotation.Nullable;
 public final class Context {
 
   /** The state the text preceding the context point describes. */
-  public final State state;
+  public final HtmlContext state;
 
   /**
    * Describes the innermost element that the text preceding the context point is in.
@@ -104,8 +106,8 @@ public final class Context {
 
   /** Use {@link Builder} to construct instances. */
   private Context(
-      State state, ElementType elType, AttributeType attrType, AttributeEndDelimiter delimType,
-      JsFollowingSlash slashType, UriPart uriPart, UriType uriType,
+      HtmlContext state, ElementType elType, AttributeType attrType,
+      AttributeEndDelimiter delimType, JsFollowingSlash slashType, UriPart uriPart, UriType uriType,
       int templateNestDepth) {
     this.state = state;
     this.elType = elType;
@@ -126,7 +128,7 @@ public final class Context {
   /**
    * A context in the given state outside any element, attribute, or Javascript content.
    */
-  private Context(State state) {
+  private Context(HtmlContext state) {
     this(state, ElementType.NONE, AttributeType.NONE, AttributeEndDelimiter.NONE,
          JsFollowingSlash.NONE, UriPart.NONE, UriType.NONE, 0);
   }
@@ -135,11 +137,11 @@ public final class Context {
    * The normal context for HTML where a less than opens a tag and an ampersand starts an HTML
    * entity.
    */
-  public static final Context HTML_PCDATA = new Context(State.HTML_PCDATA);
+  public static final Context HTML_PCDATA = new Context(HtmlContext.HTML_PCDATA);
 
 
   /** Returns a context that differs only in the state. */
-  public Context derive(State state) {
+  public Context derive(HtmlContext state) {
     return state == this.state ? this : toBuilder().withState(state).build();
   }
 
@@ -170,7 +172,7 @@ public final class Context {
    * that doesn't compile (which is safe).
    */
   public Context getContextAfterDynamicValue() {
-    if (state == State.JS) {
+    if (state == HtmlContext.JS) {
       switch (slashType) {
         case DIV_OP:
         case UNKNOWN:
@@ -181,14 +183,14 @@ public final class Context {
         default:
           throw new IllegalStateException(slashType.name());
       }
-    } else if (state == State.HTML_BEFORE_OPEN_TAG_NAME
-        || state == State.HTML_BEFORE_CLOSE_TAG_NAME) {
+    } else if (state == HtmlContext.HTML_BEFORE_OPEN_TAG_NAME
+        || state == HtmlContext.HTML_BEFORE_CLOSE_TAG_NAME) {
       // We assume ElementType.NORMAL, because filterHtmlElementName filters dangerous tag names.
-      return toBuilder().withState(State.HTML_TAG_NAME).withElType(ElementType.NORMAL).build();
-    } else if (state == State.HTML_TAG) {
+      return toBuilder().withState(HtmlContext.HTML_TAG_NAME).withElType(ElementType.NORMAL).build();
+    } else if (state == HtmlContext.HTML_TAG) {
       // To handle a substitution that starts an attribute name <tag {$attrName}=...>
       return toBuilder()
-          .withState(State.HTML_ATTRIBUTE_NAME)
+          .withState(HtmlContext.HTML_ATTRIBUTE_NAME)
           .withAttrType(AttributeType.PLAIN_TEXT)
           .build();
     } else if (uriPart == UriPart.START) {
@@ -218,7 +220,7 @@ public final class Context {
     //    <a href={print $x}>
     // where we consider $x as happening in an unquoted attribute value context, not as occuring
     // before an attribute value.
-    if (state == State.HTML_BEFORE_ATTRIBUTE_VALUE) {
+    if (state == HtmlContext.HTML_BEFORE_ATTRIBUTE_VALUE) {
       return computeContextAfterAttributeDelimiter(
           elType, attrType, AttributeEndDelimiter.SPACE_OR_TAG_END, uriType, templateNestDepth);
     }
@@ -238,15 +240,15 @@ public final class Context {
   static Context computeContextAfterAttributeDelimiter(
       ElementType elType, AttributeType attrType, AttributeEndDelimiter delim,
       UriType uriType, int templateNestDepth) {
-    State state;
+    HtmlContext state;
     JsFollowingSlash slash = JsFollowingSlash.NONE;
     UriPart uriPart = UriPart.NONE;
     switch (attrType) {
       case PLAIN_TEXT:
-        state = State.HTML_NORMAL_ATTR_VALUE;
+        state = HtmlContext.HTML_NORMAL_ATTR_VALUE;
         break;
       case SCRIPT:
-        state = State.JS;
+        state = HtmlContext.JS;
         // Start a JS block in a regex state since
         //   /foo/.test(str) && doSideEffect();
         // which starts with a regular expression literal is a valid and possibly useful program,
@@ -254,10 +256,10 @@ public final class Context {
         slash = JsFollowingSlash.REGEX;
         break;
       case STYLE:
-        state = State.CSS;
+        state = HtmlContext.CSS;
         break;
       case URI:
-        state = State.URI;
+        state = HtmlContext.URI;
         uriPart = UriPart.START;
         break;
       // NONE is not a valid AttributeType inside an attribute value.
@@ -275,11 +277,11 @@ public final class Context {
    *     e.g. for comments which do not have escaping conventions.
    */
   public ImmutableList<EscapingMode> getEscapingModes(List<PrintDirectiveNode> printDirectives) {
-    EscapingMode escapingMode = state.escapingMode;
+    EscapingMode escapingMode = state.getEscapingMode();
 
     // Short circuit on the error case first.
     if (escapingMode == null) {
-      throw SoyAutoescapeException.createWithoutMetaInfo(state.errorMessage);
+      throw SoyAutoescapeException.createWithoutMetaInfo(state.getErrorMessage());
     }
 
     // Any additional mode that allows the primary escaping mode's output language to be
@@ -478,13 +480,13 @@ public final class Context {
       case JS_SQ_STRING:
       case TEXT:
       case URI:
-        if (state == State.URI && uriPart != UriPart.QUERY) {
+        if (state == HtmlContext.URI && uriPart != UriPart.QUERY) {
           // NOTE: Only support the query portion of URIs.
           return Optional.<MsgEscapingStrategy>absent();
         }
         // In other contexts like JS and CSS strings, it makes sense to treat the message's
         // placeholders as plain text, but escape the entire result of message evaluation.
-        return Optional.of(new MsgEscapingStrategy(new Context(State.TEXT),
+        return Optional.of(new MsgEscapingStrategy(new Context(HtmlContext.TEXT),
             getEscapingModes(ImmutableList.<PrintDirectiveNode>of())));
 
       case HTML_RCDATA:
@@ -524,7 +526,7 @@ public final class Context {
     } else if (mode == EscapingMode.TEXT) {
       // The TEXT directive may only be used in TEXT mode; in any other context, it would act as
       // autoescape-cancelling.
-      return state == State.TEXT;
+      return state == HtmlContext.TEXT;
     } else if (delimType == AttributeEndDelimiter.SPACE_OR_TAG_END) {
       // Need ESCAPE_HTML_ATTRIBUTE_NOSPACE instead.
       if (mode == EscapingMode.ESCAPE_HTML || mode == EscapingMode.ESCAPE_HTML_ATTRIBUTE ||
@@ -579,7 +581,7 @@ public final class Context {
         << N_STATE_BITS) | state.ordinal());
   }
 
-  /** The number of bits needed to store a {@link State} value. */
+  /** The number of bits needed to store a {@link HtmlContext} value. */
   private static final int N_STATE_BITS = 5;
 
   /** The number of bits needed to store a {@link ElementType} value. */
@@ -607,7 +609,7 @@ public final class Context {
       throw new AssertionError();
     }
     // And each enum's ordinals must fit in the bits allocated.
-    if ((1 << N_STATE_BITS) < State.values().length
+    if ((1 << N_STATE_BITS) < HtmlContext.values().length
         || (1 << N_ELEMENT_BITS) < ElementType.values().length
         || (1 << N_ATTR_BITS) < AttributeType.values().length
         || (1 << N_DELIM_BITS) < AttributeEndDelimiter.values().length
@@ -695,24 +697,24 @@ public final class Context {
 
       // If we start in a tag name and end between attributes, then treat us as between attributes.
       // This handles <b{if $bool} attrName="value"{/if}>.
-      if (a.state == State.HTML_TAG_NAME && b.state == State.HTML_TAG) {
+      if (a.state == HtmlContext.HTML_TAG_NAME && b.state == HtmlContext.HTML_TAG) {
         // Note we only change the state; if the element type is different, we don't want it to
         // join.
         // TODO(gboyer): The withoutAttrContext() doesn't make any sense, since HTML_TAG_NAME can't
         // have an attribute context.
-        a = a.toBuilder().withState(State.HTML_TAG).withoutAttrContext().build();
+        a = a.toBuilder().withState(HtmlContext.HTML_TAG).withoutAttrContext().build();
       }
 
-      if (a.state == State.HTML_TAG && a.elType == b.elType) {
+      if (a.state == HtmlContext.HTML_TAG && a.elType == b.elType) {
         // If one branch is waiting for an attribute name, and the other is waiting for an equal
         // sign before an attribute value OR the end of an unquoted attribute value, then commit to
         // the view that the attribute name was a valueless attribute and transition to a state
         // waiting for another attribute name or the end of a tag.
-        if (b.state == State.HTML_ATTRIBUTE_NAME ||
+        if (b.state == HtmlContext.HTML_ATTRIBUTE_NAME ||
             b.delimType == AttributeEndDelimiter.SPACE_OR_TAG_END) {
           // TODO(gboyer): do we need to require a space before any new attribute name after an
           // unquoted attribute?
-          b = b.toBuilder().withState(State.HTML_TAG).withoutAttrContext().build();
+          b = b.toBuilder().withState(HtmlContext.HTML_TAG).withoutAttrContext().build();
         }
       }
     }
@@ -763,7 +765,7 @@ public final class Context {
   static Context parse(String text) {
     Queue<String> parts = Lists.newLinkedList(Arrays.asList(text.split(" ")));
     Context.Builder builder = HTML_PCDATA.toBuilder();
-    builder.withState(State.valueOf(parts.remove()));
+    builder.withState(HtmlContext.valueOf(parts.remove()));
     if (!parts.isEmpty()) {
       try {
         builder.withElType(ElementType.valueOf(parts.element()));
@@ -860,7 +862,7 @@ public final class Context {
       case ATTRIBUTES:
         // Allow HTML attribute names, regardless of the kind of attribute (e.g. plain text)
         // or immediately after an open tag.
-        return state == State.HTML_ATTRIBUTE_NAME || state == State.HTML_TAG;
+        return state == HtmlContext.HTML_ATTRIBUTE_NAME || state == HtmlContext.HTML_TAG;
       default:
         // NOTE: For URI's, we need to be picky that the context has no attribute type, since we
         // don't want to forget to escape ampersands.
@@ -883,22 +885,22 @@ public final class Context {
         // ampersands are underescaped, as long as there are no nearby semicolons.  However, this
         // special case is limited ONLY to transitional cases, where the caller is contextual and
         // the callee is strict.
-        return state == State.URI;
+        return state == HtmlContext.URI;
       default:
         return isValidStartContextForContentKind(contentKind);
     }
   }
 
 
-  private static final ImmutableMap<State, ContentKind> STATE_TO_CONTENT_KIND;
+  private static final ImmutableMap<HtmlContext, ContentKind> STATE_TO_CONTENT_KIND;
   static {
-    Map<State, ContentKind> stateToContextKind = new EnumMap<>(State.class);
-    stateToContextKind.put(State.CSS, ContentKind.CSS);
-    stateToContextKind.put(State.HTML_PCDATA, ContentKind.HTML);
-    stateToContextKind.put(State.HTML_TAG, ContentKind.ATTRIBUTES);
-    stateToContextKind.put(State.JS, ContentKind.JS);
-    stateToContextKind.put(State.URI, ContentKind.URI);
-    stateToContextKind.put(State.TEXT, ContentKind.TEXT);
+    Map<HtmlContext, ContentKind> stateToContextKind = new EnumMap<>(HtmlContext.class);
+    stateToContextKind.put(HtmlContext.CSS, ContentKind.CSS);
+    stateToContextKind.put(HtmlContext.HTML_PCDATA, ContentKind.HTML);
+    stateToContextKind.put(HtmlContext.HTML_TAG, ContentKind.ATTRIBUTES);
+    stateToContextKind.put(HtmlContext.JS, ContentKind.JS);
+    stateToContextKind.put(HtmlContext.URI, ContentKind.URI);
+    stateToContextKind.put(HtmlContext.TEXT, ContentKind.TEXT);
     STATE_TO_CONTENT_KIND = ImmutableMap.copyOf(stateToContextKind);
   }
 
@@ -928,25 +930,25 @@ public final class Context {
     }
     switch (contentKind) {
       case CSS:
-        return state == State.CSS && elType == ElementType.NONE;
+        return state == HtmlContext.CSS && elType == ElementType.NONE;
       case HTML:
-        return state == State.HTML_PCDATA && elType == ElementType.NONE;
+        return state == HtmlContext.HTML_PCDATA && elType == ElementType.NONE;
       case ATTRIBUTES:
         // Allow any html attribute context or html tag this. HTML_TAG is needed for constructs
         // like "checked" that don't require an attribute value. Explicitly disallow
         // HTML_NORMAL_ATTR_VALUE (e.g. foo={$x} without quotes) to help catch cases where
         // attributes aren't safely composable (e.g. foo={$x}checked would end up with one long
         // attribute value, whereas foo="{$x}"checked would be parsed as intended).
-        return state == State.HTML_ATTRIBUTE_NAME || state == State.HTML_TAG;
+        return state == HtmlContext.HTML_ATTRIBUTE_NAME || state == HtmlContext.HTML_TAG;
       case JS:
         // Just ensure the state is JS -- don't worry about whether a regex is coming or not.
-        return state == State.JS && elType == ElementType.NONE;
+        return state == HtmlContext.JS && elType == ElementType.NONE;
       case URI:
         // Ensure that the URI content is non-empty and the URI type remains normal (which is
         // the assumed type of the URI content kind).
-        return state == State.URI && uriType == UriType.NORMAL && uriPart != UriPart.START;
+        return state == HtmlContext.URI && uriType == UriType.NORMAL && uriPart != UriPart.START;
       case TEXT:
-        return state == State.TEXT;
+        return state == HtmlContext.TEXT;
       default:
         throw new IllegalArgumentException("Specified content kind has no associated end context.");
     }
@@ -1007,125 +1009,6 @@ public final class Context {
         }
     }
   }
-
-
-  /**
-   * A state in the parse of an HTML document.
-   */
-  @SuppressWarnings("hiding")  // Enum value names mask corresponding Contexts declared above.
-  public enum State {
-
-    /** Outside an HTML tag, directive, or comment.  (Parsed character data). */
-    HTML_PCDATA(EscapingMode.ESCAPE_HTML),
-
-    /**
-     * Inside an element whose content is RCDATA where text and entities can appear but where nested
-     * elements cannot.
-     * The content of {@code <title>} and {@code <textarea>} fall into this category since they
-     * cannot contain nested elements in HTML.
-     */
-    HTML_RCDATA(EscapingMode.ESCAPE_HTML_RCDATA),
-
-    /** Just before a tag name on an open tag. */
-    HTML_BEFORE_OPEN_TAG_NAME(EscapingMode.FILTER_HTML_ELEMENT_NAME),
-
-    /** Just before a tag name on an close tag. */
-    HTML_BEFORE_CLOSE_TAG_NAME(EscapingMode.FILTER_HTML_ELEMENT_NAME),
-
-    /**
-     * Just after a tag name, e.g. in ^ in <script^> or <div^>.
-     *
-     * <p>Note tag names must be printed all at once since we can't otherwise
-     * easily handle <s{if 1}cript{/if}>.
-     */
-    HTML_TAG_NAME("Dynamic values are not permitted in the middle of an HTML tag name;"
-        + " try adding a space before."),
-
-    /** Before an HTML attribute or the end of a tag. */
-    HTML_TAG(EscapingMode.FILTER_HTML_ATTRIBUTES),
-    // TODO: Do we need to filter out names that look like JS/CSS/URI attribute names.
-
-    /** Inside an HTML attribute name. */
-    HTML_ATTRIBUTE_NAME(EscapingMode.FILTER_HTML_ATTRIBUTES),
-
-    /** Following an equals sign (<tt>=</tt>) after an attribute name in an HTML tag. */
-    HTML_BEFORE_ATTRIBUTE_VALUE("(unexpected state)"),
-
-    /** Inside an HTML comment. */
-    HTML_COMMENT(EscapingMode.ESCAPE_HTML_RCDATA),
-
-    /** Inside a normal (non-CSS, JS, or URI) HTML attribute value. */
-    HTML_NORMAL_ATTR_VALUE(EscapingMode.ESCAPE_HTML_ATTRIBUTE),
-
-    /** In CSS content outside a comment, string, or URI. */
-    CSS(EscapingMode.FILTER_CSS_VALUE),
-
-    /** In CSS inside a comment. */
-    CSS_COMMENT("CSS comments cannot contain dynamic values."),
-
-    /** In CSS inside a double quoted string. */
-    CSS_DQ_STRING(EscapingMode.ESCAPE_CSS_STRING),
-
-    /** In CSS inside a single quoted string. */
-    CSS_SQ_STRING(EscapingMode.ESCAPE_CSS_STRING),
-
-    /** In CSS in a URI terminated by the first close parenthesis. */
-    CSS_URI(EscapingMode.NORMALIZE_URI),
-
-    /** In CSS in a URI terminated by the first double quote. */
-    CSS_DQ_URI(EscapingMode.NORMALIZE_URI),
-
-    /** In CSS in a URI terminated by the first single quote. */
-    CSS_SQ_URI(EscapingMode.NORMALIZE_URI),
-
-    /** In JavaScript, outside a comment, string, or Regexp literal. */
-    JS(EscapingMode.ESCAPE_JS_VALUE),
-
-    /** In JavaScript inside a line comment. */
-    JS_LINE_COMMENT("JS comments cannot contain dynamic values."),
-
-    /** In JavaScript inside a block comment. */
-    JS_BLOCK_COMMENT("JS comments cannot contain dynamic values."),
-
-    /** In JavaScript inside a double quoted string. */
-    JS_DQ_STRING(EscapingMode.ESCAPE_JS_STRING),
-
-    /** In JavaScript inside a single quoted string. */
-    JS_SQ_STRING(EscapingMode.ESCAPE_JS_STRING),
-
-    /** In JavaScript inside a regular expression literal. */
-    JS_REGEX(EscapingMode.ESCAPE_JS_REGEX),
-
-    /** In a URI, which may or may not be in an HTML attribute. */
-    URI(EscapingMode.NORMALIZE_URI),
-
-    /** Plain text; no escaping. */
-    TEXT(EscapingMode.TEXT)
-    ;
-
-    /**
-     * The escaping mode appropriate for dynamic content inserted at this state.
-     * Null if there is no appropriate escaping convention to use as for comments or plain text
-     * which do not have escaping conventions.
-     */
-    private final @Nullable EscapingMode escapingMode;
-
-    /**
-     * Error message to show when trying to print a dynamic value inside of this state.
-     */
-    private final @Nullable String errorMessage;
-
-    State(EscapingMode escapingMode) {
-      this.escapingMode = escapingMode;
-      this.errorMessage = null;
-    }
-
-    State(String errorMessage) {
-      this.errorMessage = errorMessage;
-      this.escapingMode = null;
-    }
-  }
-
 
   /**
    * A type of HTML element.
@@ -1375,7 +1258,7 @@ public final class Context {
    * A mutable builder for {@link Context}s.
    */
   static final class Builder {
-    private State state;
+    private HtmlContext state;
     private ElementType elType;
     private AttributeType attrType;
     private AttributeEndDelimiter delimType;
@@ -1395,7 +1278,7 @@ public final class Context {
       this.templateNestDepth = context.templateNestDepth;
     }
 
-    Builder withState(State state) {
+    Builder withState(HtmlContext state) {
       this.state = Preconditions.checkNotNull(state);
       return this;
     }
@@ -1455,27 +1338,27 @@ public final class Context {
       withoutAttrContext();
       switch (contentKind) {
         case CSS:
-          withState(State.CSS);
+          withState(HtmlContext.CSS);
           break;
         case HTML:
-          withState(State.HTML_PCDATA);
+          withState(HtmlContext.HTML_PCDATA);
           break;
         case ATTRIBUTES:
-          withState(State.HTML_TAG);
+          withState(HtmlContext.HTML_TAG);
           inTag = true;
           break;
         case JS:
-          withState(State.JS);
+          withState(HtmlContext.JS);
           withSlashType(JsFollowingSlash.REGEX);
           break;
         case URI:
-          withState(State.URI);
+          withState(HtmlContext.URI);
           withUriPart(UriPart.START);
           // Assume a let block of kind="uri" is a "normal" URI.
           withUriType(UriType.NORMAL);
           break;
         case TEXT:
-          withState(State.TEXT);
+          withState(HtmlContext.TEXT);
           break;
         default:
           break;

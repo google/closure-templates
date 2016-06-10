@@ -16,7 +16,6 @@
 
 package com.google.template.soy.soytree;
 
-import com.google.common.base.CharMatcher;
 import com.google.common.base.Preconditions;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
@@ -118,21 +117,7 @@ abstract class AbstractCommandNode extends AbstractSoyNode implements CommandNod
     } else {
       String commandNameStr = isImplicitCommandName ? "" : commandName + " ";
 
-      if (CharMatcher.anyOf("{}").matchesNoneOf(commandText)) {
-        return "{" + commandNameStr + commandText + maybeSelfEndingStr + "}";
-
-      } else {
-        char lastChar = commandText.charAt(commandText.length()-1);
-        if (lastChar == '{' || lastChar == '}') {
-          if (isSelfEnding) {
-            return "{{" + commandNameStr + commandText + " /}}";
-          } else {
-            return "{{" + commandNameStr + commandText + " }}";
-          }
-        } else {
-          return "{{" + commandNameStr + commandText + maybeSelfEndingStr + "}}";
-        }
-      }
+      return "{" + commandNameStr + commandText + maybeSelfEndingStr + "}";
     }
   }
 

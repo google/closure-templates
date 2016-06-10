@@ -19,8 +19,8 @@ package com.google.template.soy.soytree;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprparse.ExpressionParser;
+import com.google.template.soy.exprparse.SoyParsingContext;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.ConditionalBlockNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
@@ -114,9 +114,9 @@ public final class SwitchCaseNode extends CaseOrDefaultNode
      * Returns a new {@link SwitchCaseNode} from the state of this builder, reporting syntax errors
      * to the given {@link ErrorReporter}.
      */
-    public SwitchCaseNode build(ErrorReporter errorReporter) {
+    public SwitchCaseNode build(SoyParsingContext context) {
       List<ExprRootNode> exprList = ExprRootNode.wrap(
-          new ExpressionParser(commandText, sourceLocation, errorReporter)
+          new ExpressionParser(commandText, sourceLocation, context)
               .parseExpressionList());
       return new SwitchCaseNode(id, commandText, exprList, sourceLocation);
     }

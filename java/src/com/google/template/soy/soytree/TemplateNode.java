@@ -18,17 +18,24 @@ package com.google.template.soy.soytree;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 import com.google.template.soy.soytree.defn.HeaderParam;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplateParam.DeclLoc;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
@@ -60,6 +67,20 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
     }
   }
 
+  // TODO(sparhami): Add error for unused alias.  Maybe make SoyParsingContext collect usages?
+  private static final SoyErrorKind ALIAS_USED_WITHOUT_NAMESPACE =
+      SoyErrorKind.of(
+          "'''{'alias...'' can only be used in files with valid '''{'namespace ...'' "
+              + "declarations");
+
+  private static final SoyErrorKind INVALID_ALIAS_FOR_LAST_PART_OF_NAMESPACE =
+      SoyErrorKind.of(
+          "Not allowed to alias the last part of the file''s namespace ({0}) "
+              + "to another namespace ({1}).");
+
+  private static final SoyErrorKind DUPLICATE_ALIAS =
+      SoyErrorKind.of("Duplicate alias definition ''{0}''.");
+
   /**
    * Info from the containing Soy file's {@code delpackage} and {@code namespace} declarations.
    *
@@ -73,27 +94,75 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
   @Immutable
   public static class SoyFileHeaderInfo {
 
+    /** Map from aliases to namespaces for this file. */
+    public final ImmutableMap<String, String> aliasToNamespaceMap;
+
+    /** Map from aliases to namespaces for this file. */
+    public final ImmutableList<AliasDeclaration> aliasDeclarations;
+
     @Nullable public final String delPackageName;
     final Priority priority;
     @Nullable public final String namespace;
     public final AutoescapeMode defaultAutoescapeMode;
 
-    public SoyFileHeaderInfo(
-        @Nullable String delpackageName, NamespaceDeclaration soyFileNode) {
-      this(delpackageName, soyFileNode.getNamespace(), soyFileNode.getDefaultAutoescapeMode());
+    public SoyFileHeaderInfo(ErrorReporter errorReporter,
+        @Nullable String delpackageName, NamespaceDeclaration namespaceDeclaration,
+        Collection<AliasDeclaration> aliases) {
+      this(delpackageName, namespaceDeclaration.getNamespace(),
+          namespaceDeclaration.getDefaultAutoescapeMode(),
+          createAliasMap(errorReporter, namespaceDeclaration, aliases),
+          ImmutableList.copyOf(aliases));
     }
 
     @VisibleForTesting
     public SoyFileHeaderInfo(String namespace) {
-      this(null, namespace, AutoescapeMode.NONCONTEXTUAL);
+      this(
+          null,
+          namespace,
+          AutoescapeMode.NONCONTEXTUAL,
+          ImmutableMap.<String, String>of(),
+          ImmutableList.<AliasDeclaration>of());
     }
 
     private SoyFileHeaderInfo(
-        @Nullable String delPackageName, String namespace, AutoescapeMode defaultAutoescapeMode) {
+        @Nullable String delPackageName, String namespace, AutoescapeMode defaultAutoescapeMode,
+        ImmutableMap<String, String> aliasToNamespaceMap,
+        ImmutableList<AliasDeclaration> aliasDeclarations) {
       this.delPackageName = delPackageName;
       this.priority = (delPackageName == null) ? Priority.STANDARD : Priority.HIGH_PRIORITY;
       this.namespace = namespace;
       this.defaultAutoescapeMode = defaultAutoescapeMode;
+      this.aliasToNamespaceMap = aliasToNamespaceMap;
+      this.aliasDeclarations = aliasDeclarations;
+    }
+
+    private static ImmutableMap<String, String> createAliasMap(ErrorReporter errorReporter,
+        NamespaceDeclaration namespaceDeclaration, Collection<AliasDeclaration> aliases) {
+      Map<String, String> map = Maps.newLinkedHashMap();
+      String aliasForFileNamespace =
+          namespaceDeclaration.isDefined()
+              ? BaseUtils.extractPartAfterLastDot(namespaceDeclaration.getNamespace())
+              : null;
+      for (AliasDeclaration aliasDeclaration : aliases) {
+        if (!namespaceDeclaration.isDefined()) {
+          errorReporter.report(aliasDeclaration.getLocation(), ALIAS_USED_WITHOUT_NAMESPACE);
+        }
+        String aliasNamespace = aliasDeclaration.getNamespace();
+        String alias = aliasDeclaration.getAlias();
+        if (alias.equals(aliasForFileNamespace)
+            && !aliasNamespace.equals(namespaceDeclaration.getNamespace())) {
+          errorReporter.report(
+              aliasDeclaration.getLocation(),
+              INVALID_ALIAS_FOR_LAST_PART_OF_NAMESPACE,
+              namespaceDeclaration.getNamespace(),
+              aliasNamespace);
+        }
+        if (map.containsKey(alias)) {
+          errorReporter.report(aliasDeclaration.getLocation(), DUPLICATE_ALIAS, alias);
+        }
+        map.put(alias, aliasNamespace);
+      }
+      return ImmutableMap.copyOf(map);
     }
   }
 
@@ -367,8 +436,8 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
     appendSourceStringForChildren(bodySb);
     int bodyLen = bodySb.length();
     if (bodyLen != 0) {
-      if (bodyLen != 1 && bodySb.charAt(bodyLen-1) == ' ') {
-        bodySb.replace(bodyLen-1, bodyLen, "{sp}");
+      if (bodyLen != 1 && bodySb.charAt(bodyLen - 1) == ' ') {
+        bodySb.replace(bodyLen - 1, bodyLen, "{sp}");
       }
       if (bodySb.charAt(0) == ' ') {
         bodySb.replace(0, 1, "{sp}");

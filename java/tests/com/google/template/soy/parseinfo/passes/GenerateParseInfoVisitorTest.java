@@ -25,10 +25,10 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.IndentedLinesBuilder;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.error.ExplodingErrorReporter;
-import com.google.template.soy.soytree.AliasDeclaration;
 import com.google.template.soy.soytree.NameAttributePair;
 import com.google.template.soy.soytree.NamespaceDeclaration;
 import com.google.template.soy.soytree.SoyFileNode;
+import com.google.template.soy.soytree.TemplateNode;
 
 import junit.framework.TestCase;
 
@@ -101,10 +101,8 @@ public final class GenerateParseInfoVisitorTest extends TestCase {
         0,
         filePath,
         SoyFileKind.SRC,
-        ExplodingErrorReporter.get(),
-        null /* delpackageName */,
         new NamespaceDeclaration(
             namespace, ImmutableList.<NameAttributePair>of(), ExplodingErrorReporter.get()),
-        ImmutableList.<AliasDeclaration>of());
+        new TemplateNode.SoyFileHeaderInfo(namespace));
   }
 }

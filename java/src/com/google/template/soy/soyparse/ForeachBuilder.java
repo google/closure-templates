@@ -20,9 +20,9 @@ import static com.google.common.base.Preconditions.checkState;
 
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprparse.ExpressionParser;
+import com.google.template.soy.exprparse.SoyParsingContext;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.ForeachIfemptyNode;
 import com.google.template.soy.soytree.ForeachNode;
@@ -47,12 +47,12 @@ final class ForeachBuilder {
   private static final Pattern FOR_EACH_COMMAND_TEXT_PATTERN =
       Pattern.compile("( [$] \\w+ ) \\s+ in \\s+ (\\S .*)", Pattern.COMMENTS | Pattern.DOTALL);
 
-  static ForeachBuilder create(IdGenerator nodeIdGen, ErrorReporter errorReporter) {
-    return new ForeachBuilder(nodeIdGen, errorReporter);
+  static ForeachBuilder create(IdGenerator nodeIdGen, SoyParsingContext context) {
+    return new ForeachBuilder(nodeIdGen, context);
   }
 
   private final IdGenerator nodeIdGen;
-  private final ErrorReporter errorReporter;
+  private final SoyParsingContext context;
   private String cmdText;
   private List<StandaloneNode> templateBlock;
 
@@ -60,9 +60,9 @@ final class ForeachBuilder {
   private List<StandaloneNode> ifEmptyBlock;
   private SourceLocation commandLocation;
 
-  private ForeachBuilder(IdGenerator nodeIdGen, ErrorReporter errorReporter) {
+  private ForeachBuilder(IdGenerator nodeIdGen, SoyParsingContext context) {
     this.nodeIdGen = nodeIdGen;
-    this.errorReporter = errorReporter;
+    this.context = context;
   }
 
   ForeachBuilder setCommandLocation(SourceLocation location) {
@@ -96,13 +96,13 @@ final class ForeachBuilder {
     ExprRootNode expr = null;
     Matcher matcher = FOR_EACH_COMMAND_TEXT_PATTERN.matcher(cmdText);
     if (!matcher.matches()) {
-      errorReporter.report(commandLocation, INVALID_COMMAND_TEXT, cmdText);
+      context.report(commandLocation, INVALID_COMMAND_TEXT, cmdText);
     } else {
-      varName = new ExpressionParser(matcher.group(1), commandLocation, errorReporter)
+      varName = new ExpressionParser(matcher.group(1), commandLocation, context)
           .parseVariable()
           .getName();
       expr = new ExprRootNode(
-          new ExpressionParser(matcher.group(2), commandLocation, errorReporter)
+          new ExpressionParser(matcher.group(2), commandLocation, context)
               .parseExpression());
     }
     

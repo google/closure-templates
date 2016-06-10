@@ -22,8 +22,6 @@ import com.google.template.soy.html.HtmlCloseTagNode;
 import com.google.template.soy.html.HtmlOpenTagEndNode;
 import com.google.template.soy.html.HtmlOpenTagNode;
 import com.google.template.soy.html.HtmlOpenTagStartNode;
-import com.google.template.soy.html.HtmlPrintNode;
-import com.google.template.soy.html.HtmlTextNode;
 import com.google.template.soy.html.HtmlVoidTagNode;
 import com.google.template.soy.shared.internal.ApiCallScope;
 import com.google.template.soy.soytree.CallNode;
@@ -38,6 +36,7 @@ import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.LetNode;
 import com.google.template.soy.soytree.LogNode;
+import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.MsgHtmlTagNode;
 import com.google.template.soy.soytree.MsgPlaceholderNode;
 import com.google.template.soy.soytree.PrintNode;
@@ -47,8 +46,6 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.XidNode;
-import com.google.template.soy.soytree.jssrc.GoogMsgDefNode;
-import com.google.template.soy.soytree.jssrc.GoogMsgRefNode;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -78,7 +75,7 @@ class IsComputableAsJsExprsVisitor extends AbstractReturningHtmlSoyNodeVisitor<B
 
 
   @Inject
-  IsComputableAsJsExprsVisitor() {
+  protected IsComputableAsJsExprsVisitor() {
     memoizedResults = new HashMap<>();
   }
 
@@ -118,18 +115,13 @@ class IsComputableAsJsExprsVisitor extends AbstractReturningHtmlSoyNodeVisitor<B
   }
 
 
-  @Override protected Boolean visitGoogMsgDefNode(GoogMsgDefNode node) {
+  @Override protected Boolean visitMsgFallbackGroupNode(MsgFallbackGroupNode node) {
     return false;
   }
 
 
   @Override protected Boolean visitMsgPlaceholderNode(MsgPlaceholderNode node) {
     return areChildrenComputableAsJsExprs(node);
-  }
-
-
-  @Override protected Boolean visitGoogMsgRefNode(GoogMsgRefNode node) {
-    return true;
   }
 
 
@@ -238,14 +230,6 @@ class IsComputableAsJsExprsVisitor extends AbstractReturningHtmlSoyNodeVisitor<B
     return false;
   }
 
-  @Override protected Boolean visitHtmlTextNode(HtmlTextNode node) {
-    return false;
-  }
-
-  @Override protected Boolean visitHtmlPrintNode(HtmlPrintNode node) {
-    return false;
-  }
-
   // -----------------------------------------------------------------------------------------------
   // Private helpers.
 
@@ -259,15 +243,21 @@ class IsComputableAsJsExprsVisitor extends AbstractReturningHtmlSoyNodeVisitor<B
   private boolean areChildrenComputableAsJsExprs(ParentSoyNode<?> node) {
 
     for (SoyNode child : node.getChildren()) {
-      // Note: Save time by not visiting RawTextNode and PrintNode children.
-      if (! (child instanceof RawTextNode) && ! (child instanceof PrintNode)) {
-        if (! visit(child)) {
-          return false;
-        }
+      if (canSkipChild(child)) {
+        continue;
+      }
+      if (!visit(child)) {
+        return false;
       }
     }
 
     return true;
+  }
+
+  /** @return True if there is no point in visiting the child node, since it's always computable. */
+  protected boolean canSkipChild(SoyNode child) {
+    // TODO(brndn): This check is probably not worth doing.  Remove.
+    return child instanceof RawTextNode || child instanceof PrintNode;
   }
 
 }

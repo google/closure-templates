@@ -18,15 +18,18 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.data.SoyValueHelper.EMPTY_DICT;
+import static com.google.template.soy.data.SoyValueHelper.EMPTY_LIST;
 import static com.google.template.soy.jbcsrc.TemplateTester.assertThatFile;
 import static com.google.template.soy.jbcsrc.TemplateTester.assertThatTemplateBody;
 import static com.google.template.soy.jbcsrc.TemplateTester.getDefaultContext;
 
 import com.google.common.base.Joiner;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.SoyFileSetParserBuilder;
+import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueHelper;
@@ -45,6 +48,7 @@ import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.jbcsrc.shared.TemplateMetadata;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
+import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 
@@ -173,11 +177,7 @@ public class BytecodeCompilerTest extends TestCase {
         "{/deltemplate}",
         "");
 
-    SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forFileContents(soyFileContent1).parse().fileSet();
-    TemplateRegistry templateRegistry = new TemplateRegistry(soyTree, ExplodingErrorReporter.get());
-    CompiledTemplates templates = 
-        BytecodeCompiler.compile(templateRegistry, false, ExplodingErrorReporter.get()).get();
+    CompiledTemplates templates = compileFiles(soyFileContent1);
     CompiledTemplate.Factory factory = templates.getTemplateFactory("ns1.callerTemplate");
     RenderContext context = getDefaultContext(templates);
     AdvisingStringBuilder builder = new AdvisingStringBuilder();
@@ -309,16 +309,18 @@ public class BytecodeCompilerTest extends TestCase {
   public void testForEachNode() {
     // empty loop
     assertThatTemplateBody(
-        "{foreach $i in []}",
+        "{@param list: list<int>}",
+        "{foreach $i in $list}",
         "  {$i}",
-        "{/foreach}").rendersAs("");
+        "{/foreach}").rendersAs("", ImmutableMap.of("list", EMPTY_LIST));
 
     assertThatTemplateBody(
-        "{foreach $i in []}",
+        "{@param list: list<int>}",
+        "{foreach $i in $list}",
         "  {$i}",
         "{ifempty}",
         "  empty",
-        "{/foreach}").rendersAs("empty");
+        "{/foreach}").rendersAs("empty", ImmutableMap.of("list", EMPTY_LIST));
 
     assertThatTemplateBody(
         "{foreach $i in [1,2,3,4,5]}",
@@ -492,7 +494,7 @@ public class BytecodeCompilerTest extends TestCase {
     assertThatTemplateBody("{1 + 2}").rendersAs("3");
     assertThatTemplateBody("{'asdf'}").rendersAs("asdf");
   }
-
+  
   public void testLogNode() {
     assertThatTemplateBody(
         "{log}", 
@@ -503,6 +505,14 @@ public class BytecodeCompilerTest extends TestCase {
 
   public void testRawTextNode() {
     assertThatTemplateBody("hello raw text world").rendersAs("hello raw text world");
+  }
+
+  public void testRawTextNode_largeText() {
+    // This string is larger than the max constant pool entry size
+    String largeString = Strings.repeat("x", 1 << 17);
+    assertThatTemplateBody(largeString).rendersAs(largeString);
+    assertThatTemplateBody("{@param foo:?}\n{'" + largeString + "' + $foo}")
+        .rendersAs(largeString + "hello", ImmutableMap.of("foo", "hello"));
   }
 
   public void testCssNode() {
@@ -680,13 +690,14 @@ public class BytecodeCompilerTest extends TestCase {
         factory.getClass().getName());
     assertEquals("Factory", factory.getClass().getSimpleName());
 
-    Class<? extends CompiledTemplate> templateClass = 
-        factory.create(EMPTY_DICT, EMPTY_DICT).getClass();
+    CompiledTemplate templateInstance = factory.create(EMPTY_DICT, EMPTY_DICT);
+    Class<? extends CompiledTemplate> templateClass = templateInstance.getClass();
     assertEquals("com.google.template.soy.jbcsrc.gen.ns.foo", templateClass.getName());
     assertEquals("foo", templateClass.getSimpleName());
 
     TemplateMetadata templateMetadata = templateClass.getAnnotation(TemplateMetadata.class);
     assertEquals("HTML", templateMetadata.contentKind());
+    assertEquals(ContentKind.HTML, templateInstance.kind());
     assertThat(templateMetadata.injectedParams()).isEmpty();
     assertThat(templateMetadata.callees()).isEmpty();
     assertThat(templateMetadata.delCallees()).isEmpty();
@@ -755,7 +766,69 @@ public class BytecodeCompilerTest extends TestCase {
             "targetName", "gender bender", 
             "targetGender", "female"));
   }
+
+  public void testPlurals() {
+    CompiledTemplateSubject tester =
+        assertThatTemplateBody(
+            "{@param items: list<[foo: string]>}",
+            "{msg desc=\"...\"}",
+            "  {plural length($items)}",
+            "      {case 0}Unused plural form",
+            "      {case 1}{$items[0].foo}",
+            "      {case 2}{$items[1]?.foo}, {$items[0]?.foo}",
+            "      {default}{$items[2]?.foo} and some more",
+            "   {/plural}",
+            "{/msg}",
+            "");
+    tester.rendersAs(
+        "hello", ImmutableMap.of("items", ImmutableList.of(ImmutableMap.of("foo", "hello"))));
+  }
   
+  // Tests for a bug where we would overescape deltemplates at the call site when the strict
+  // content kind of the deltemplate was unknown at compile time.
+  public void testDelCallEscaping_separateCompilation() throws IOException {
+    String soyFileContent1 =
+        Joiner.on("\n")
+            .join(
+                "{namespace ns}",
+                "",
+                "{template .callerTemplate}",
+                "  {delcall myApp.myDelegate/}",
+                "{/template}",
+                "");
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(soyFileContent1).parse().fileSet();
+    // apply an escaping directive to the callsite, just like the autoescaper would
+    CallDelegateNode cdn = (CallDelegateNode) soyTree.getChild(0).getChild(0).getChild(0);
+    cdn.setEscapingDirectiveNames(ImmutableList.of("|escapeHtml"));
+    TemplateRegistry templateRegistry = new TemplateRegistry(soyTree, ExplodingErrorReporter.get());
+    CompiledTemplates templates =
+        BytecodeCompiler.compile(templateRegistry, false, ExplodingErrorReporter.get()).get();
+    CompiledTemplate.Factory caller = templates.getTemplateFactory("ns.callerTemplate");
+    try {
+      renderWithContext(caller, getDefaultContext(templates));
+      fail();
+    } catch (IllegalArgumentException iae) {
+      assertThat(iae)
+          .hasMessage(
+              "Found no active impl for delegate call to 'myApp.myDelegate' "
+                  + "(and no attribute allowemptydefault=\"true\").");
+    }
+    String soyFileContent2 =
+        Joiner.on("\n")
+            .join(
+                "{namespace ns2}",
+                "",
+                "{deltemplate myApp.myDelegate}",
+                "  <span>Hello</span>",
+                "{/deltemplate}",
+                "");
+    CompiledTemplates templatesWithDeltemplate = compileFiles(soyFileContent2);
+    // By passing an alternate context, we ensure the deltemplate selector contains the delegate
+    assertThat(renderWithContext(caller, getDefaultContext(templatesWithDeltemplate)))
+        .isEqualTo("<span>Hello</span>");
+  }
+
   private static final class FakeRenamingMap implements SoyCssRenamingMap {
     private final Map<String, String> renamingMap;
     FakeRenamingMap(Map<String, String> renamingMap) {
@@ -764,5 +837,14 @@ public class BytecodeCompilerTest extends TestCase {
     @Override public String get(String key) {
       return renamingMap.get(key);
     }
+  }
+
+  private CompiledTemplates compileFiles(String... soyFileContents) {
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(soyFileContents).parse().fileSet();
+    TemplateRegistry templateRegistry = new TemplateRegistry(soyTree, ExplodingErrorReporter.get());
+    CompiledTemplates templates =
+        BytecodeCompiler.compile(templateRegistry, false, ExplodingErrorReporter.get()).get();
+    return templates;
   }
 }

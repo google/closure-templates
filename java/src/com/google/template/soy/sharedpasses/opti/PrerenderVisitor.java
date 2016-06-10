@@ -33,8 +33,6 @@ import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.TemplateRegistry;
-import com.google.template.soy.soytree.jssrc.GoogMsgDefNode;
-import com.google.template.soy.soytree.jssrc.GoogMsgRefNode;
 
 import javax.annotation.Nullable;
 
@@ -109,16 +107,6 @@ final class PrerenderVisitor extends RenderVisitor {
 
   @Override protected void visitMsgFallbackGroupNode(MsgFallbackGroupNode node) {
     throw RenderException.create("Cannot prerender MsgFallbackGroupNode.");
-  }
-
-
-  @Override protected void visitGoogMsgDefNode(GoogMsgDefNode node) {
-    throw RenderException.create("Cannot prerender GoogMsgDefNode.");
-  }
-
-
-  @Override protected void visitGoogMsgRefNode(GoogMsgRefNode node) {
-    throw RenderException.create("Cannot prerender GoogMsgRefNode.");
   }
 
 

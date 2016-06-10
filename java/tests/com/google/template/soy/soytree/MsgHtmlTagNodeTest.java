@@ -23,6 +23,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.error.FormattingErrorReporter;
+import com.google.template.soy.exprparse.SoyParsingContext;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 
 import junit.framework.TestCase;
@@ -71,7 +72,7 @@ public final class MsgHtmlTagNodeTest extends TestCase {
             new RawTextNode(0, "<div class=\"", X),
             new PrintNode.Builder(0, true /* isImplicit */, X)
                 .exprText("$cssClass")
-                .build(FAIL),
+                .build(SoyParsingContext.exploding()),
             new RawTextNode(0, "\">", X)),
         X)
         .build(FAIL);
@@ -82,7 +83,7 @@ public final class MsgHtmlTagNodeTest extends TestCase {
             new RawTextNode(0, "<div class=\"", X),
             new PrintNode.Builder(0, true /* isImplicit */, X)
                 .exprText("$cssClass")
-                .build(FAIL),
+                .build(SoyParsingContext.exploding()),
             new RawTextNode(0, "\">", X)),
         X)
         .build(FAIL)

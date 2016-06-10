@@ -22,8 +22,8 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.SyntaxVersionUpperBound;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprparse.ExpressionParser;
+import com.google.template.soy.exprparse.SoyParsingContext;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.MsgPlaceholderInitialNode;
@@ -154,7 +154,7 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
    * @return A pair (isPassingData, dataExpr) where dataExpr may be null.
    */
   protected static DataAttribute parseDataAttributeHelper(
-      String dataAttr, SourceLocation sourceLocation, ErrorReporter errorReporter) {
+      String dataAttr, SourceLocation sourceLocation, SoyParsingContext context) {
 
     if (dataAttr == null) {
       return DataAttribute.none();
@@ -162,7 +162,7 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
       return DataAttribute.all();
     } else {
       return DataAttribute.expr(
-          new ExprRootNode(new ExpressionParser(dataAttr, sourceLocation, errorReporter)
+          new ExprRootNode(new ExpressionParser(dataAttr, sourceLocation, context)
               .parseExpression()));
     }
   }

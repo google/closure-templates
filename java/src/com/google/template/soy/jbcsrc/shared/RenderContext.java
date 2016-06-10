@@ -21,6 +21,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueHelper;
@@ -35,6 +36,8 @@ import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 
 import java.util.Map;
 
+import javax.annotation.Nullable;
+
 /**
  * A collection of contextual rendering data.  Each top level rendering operation will obtain a
  * single instance of this object and it will be propagated throughout the render tree.
@@ -45,6 +48,13 @@ public final class RenderContext {
         @Override
         public RenderResult render(AdvisingAppendable appendable, RenderContext context) {
           return RenderResult.done();
+        }
+
+        @Override
+        @Nullable
+        public ContentKind kind() {
+          // The kind doesn't really matter, since the empty string can always be safely escaped
+          return null;
         }
       };
 
@@ -115,7 +125,6 @@ public final class RenderContext {
               + calleeName
               + "' (and no attribute allowemptydefault=\"true\").");
     }
-    // TODO(lukes): change this method to have the caller call create?  this seems a little weird
     return callee.create(params, ij);
   }
 

@@ -19,8 +19,6 @@ package com.google.template.soy.exprtree;
 import com.google.common.base.Preconditions;
 import com.google.template.soy.basetree.CopyState;
 
-import java.util.Objects;
-
 /**
  * Reference to a named field.
  *
@@ -70,19 +68,5 @@ public final class FieldAccessNode extends DataAccessNode {
 
   @Override public FieldAccessNode copy(CopyState copyState) {
     return new FieldAccessNode(this, copyState);
-  }
-
-
-  @Override public boolean equals(Object other) {
-    if (other == null || other.getClass() != this.getClass()) { return false; }
-    FieldAccessNode otherFieldRef = (FieldAccessNode) other;
-    return getChild(0).equals(otherFieldRef.getChild(0)) &&
-        fieldName.equals(otherFieldRef.fieldName) &&
-        isNullSafe == otherFieldRef.isNullSafe;
-  }
-
-
-  @Override public int hashCode() {
-    return Objects.hash(this.getClass(), getChild(0), fieldName, isNullSafe);
   }
 }

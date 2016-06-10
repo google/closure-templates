@@ -18,16 +18,22 @@ package com.google.template.soy.base.internal;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.io.CharSource;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
+import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.error.SoyCompilationException;
+import com.google.template.soy.error.SoyError;
+import com.google.template.soy.error.SoyErrorKind;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
-
 
 /**
  * Record for one input Soy file.
@@ -100,6 +106,8 @@ public interface SoyFileSupplier {
    */
   final class Factory {
 
+    private static final SoyErrorKind FILE_URL_SYNTAX =
+        SoyErrorKind.of("file URL has invalid syntax: ''{0}''");
 
     /**
      * Creates a new {@code SoyFileSupplier} given a {@code CharSource} for the file content,
@@ -140,7 +148,19 @@ public interface SoyFileSupplier {
       if (inputFileUrl.getProtocol().equals("file")) {
         // If the URL corresponds to a local file (such as a resource during local development),
         // open it up as a volatile file, so we can account for changes to the file.
-        return new VolatileSoyFileSupplier(new File(inputFileUrl.getPath()), soyFileKind);
+        URI inputFileUri;
+        try {
+          inputFileUri = inputFileUrl.toURI();
+        } catch (URISyntaxException ex) {
+          SoyError e = SoyError.DEFAULT_FACTORY.create(
+              new SourceLocation(inputFileUrl.toString()),
+              FILE_URL_SYNTAX, inputFileUrl);
+          SoyCompilationException sce = new SoyCompilationException(
+              ImmutableList.of(e));
+          sce.initCause(ex);
+          throw sce;
+        }
+        return new VolatileSoyFileSupplier(new File(inputFileUri), soyFileKind);
       } else {
         return create(
             Resources.asCharSource(inputFileUrl, UTF_8), soyFileKind, filePath);

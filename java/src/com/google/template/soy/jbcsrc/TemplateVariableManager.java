@@ -24,8 +24,9 @@ import static com.google.template.soy.jbcsrc.StandardNames.MSG_PLACEHOLDER_MAP_F
 import static com.google.template.soy.jbcsrc.StandardNames.TEMP_BUFFER_FIELD;
 
 import com.google.auto.value.AutoValue;
+import com.google.common.collect.Sets;
 import com.google.template.soy.data.SoyValueProvider;
-import com.google.template.soy.jbcsrc.VariableSet.VarKey.Kind;
+import com.google.template.soy.jbcsrc.TemplateVariableManager.VarKey.Kind;
 import com.google.template.soy.jbcsrc.api.AdvisingStringBuilder;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 
@@ -38,9 +39,7 @@ import org.objectweb.asm.commons.Method;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.BitSet;
-import java.util.Collections;
 import java.util.Deque;
-import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -52,15 +51,30 @@ import javax.annotation.Nullable;
 
 /**
  * A variable in this set is a SoyValue that must be saved/restored.  This means each variable has:
- * 
+ *
  * <ul>
  *     <li>A {@link FieldRef} that can be used to define the field.
  *     <li>A {@link Statement} that can be used to save the field.
  *     <li>A {@link Statement} that can be used to restore the field.
  *     <li>A {@link LocalVariable} that can be used to read the value.
  * </ul>
+ *
+ * <p>This class also manages other template level resources, like:
+ * <ul>
+ *     <li>A {@link #getTempBufferField() buffer} that can be used to render msg placeholders.
+ *     <li>A {@link #getCurrentCalleeField() callee field} that holds the current template that is
+ *         being called.
+ *     <li>A {@link #getCurrentRenderee() renderee field} that holds the current incrementally
+ *         rendering {@link SoyValueProvider} that is being called.
+ *     <li>A {@link #getMsgPlaceholderMapField() map} that can be used to store message
+ *         placeholders.
+ * </ul>
+ *
+ * <p>Finally, this class can be used to generate static, per template fields for storing state.
+ * Currently, this is used to store default english messages and raw text constants > 64K in
+ * length.
  */
-final class VariableSet {
+final class TemplateVariableManager {
   enum SaveStrategy {
     /** Means that the value of the variable should be recalculated rather than saved to a field. */
     DERIVED,
@@ -126,7 +140,7 @@ final class VariableSet {
       SYNTHETIC;
     }
     static VarKey create(Kind synthetic, String proposedName) {
-      return new AutoValue_VariableSet_VarKey(synthetic, proposedName);
+      return new AutoValue_TemplateVariableManager_VarKey(synthetic, proposedName);
     }
 
     abstract Kind kind();
@@ -238,8 +252,8 @@ final class VariableSet {
    * @param method The method being generated
    * @param fieldNames The field name set for the current class.
    */
-  VariableSet(UniqueNameGenerator fieldNames, TypeInfo owner, LocalVariable thisVar,
-      Method method) {
+  TemplateVariableManager(
+      UniqueNameGenerator fieldNames, TypeInfo owner, LocalVariable thisVar, Method method) {
     this.fieldNames = fieldNames;
     this.fieldNames.claimName(CURRENT_CALLEE_FIELD);
     this.fieldNames.claimName(CURRENT_RENDEREE_FIELD);
@@ -264,7 +278,8 @@ final class VariableSet {
     final Label scopeExit = new Label();
     frames.push(currentFrame);
     return new Scope() {
-      @Override Variable createSynthetic(
+      @Override
+      Variable createSynthetic(
           SyntheticVarName varName, Expression initExpr, SaveStrategy strategy) {
         VarKey key = VarKey.create(Kind.SYNTHETIC, varName.name());
         // synthetics are prefixed by $ by convention
@@ -272,27 +287,29 @@ final class VariableSet {
         return doCreate(name, new Label(), scopeExit, initExpr, key, strategy);
       }
 
-      @Override Variable create(String name, Expression initExpr, SaveStrategy strategy) {
+      @Override
+      Variable create(String name, Expression initExpr, SaveStrategy strategy) {
         VarKey key = VarKey.create(Kind.USER_DEFINED, name);
         name = fieldNames.generateName(name);
         return doCreate(name, new Label(), scopeExit, initExpr, key, strategy);
       }
 
-      @Override Statement exitScope() {
+      @Override
+      Statement exitScope() {
         frames.pop();
         // Use identity semantics to make sure we visit each label at most once.  visiting a label
         // more than once tends to corrupt internal asm state.
-        final Set<Label> endLabels =
-            Collections.newSetFromMap(new IdentityHashMap<Label, Boolean>());
+        final Set<Label> endLabels = Sets.newIdentityHashSet();
         for (Variable var : currentFrame.values()) {
           endLabels.add(var.local.end());
-          availableSlots.clear(var.local.index(),
-              var.local.index() + var.local.resultType().getSize());
+          availableSlots.clear(
+              var.local.index(), var.local.index() + var.local.resultType().getSize());
         }
         return new Statement() {
           // TODO(lukes): we could generate null writes for when object typed fields go out of
           // scope.  This would potentially allow intermediate results to be collected sooner.
-          @Override void doGen(CodeBuilder adapter) {
+          @Override
+          void doGen(CodeBuilder adapter) {
             for (Label label : endLabels) {
               adapter.visitLabel(label);
             }
@@ -300,8 +317,13 @@ final class VariableSet {
         };
       }
 
-      private Variable doCreate(String name, Label start, Label end, Expression initExpr, 
-          VarKey key, SaveStrategy strategy) {
+      private Variable doCreate(
+          String name,
+          Label start,
+          Label end,
+          Expression initExpr,
+          VarKey key,
+          SaveStrategy strategy) {
         int index = reserveSlotFor(initExpr.resultType());
         LocalVariable local =
             LocalVariable.createLocal(name, index, initExpr.resultType(), start, end);
@@ -347,7 +369,7 @@ final class VariableSet {
             initializer.resultType(),
             Opcodes.ACC_STATIC | Opcodes.ACC_FINAL | Opcodes.ACC_PRIVATE,
             !initializer.isNonNullable());
-    staticFields.add(new AutoValue_VariableSet_StaticFieldVariable(ref, initializer));
+    staticFields.add(new AutoValue_TemplateVariableManager_StaticFieldVariable(ref, initializer));
     return ref;
   }
 
@@ -540,7 +562,7 @@ final class VariableSet {
         restores.add(var.restore());
       }
     }
-    return new AutoValue_VariableSet_SaveRestoreState(
+    return new AutoValue_TemplateVariableManager_SaveRestoreState(
         Statement.concat(saves), Statement.concat(restores));
   }
 

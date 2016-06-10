@@ -50,12 +50,18 @@ import org.objectweb.asm.commons.Method;
    */
   private static final Method RENDER_METHOD;
 
+  /**
+   * The {@link Method} signature of the {@link CompiledTemplate#kind()} method.
+   */
+  private static final Method KIND_METHOD;
+
   static {
     try {
       RENDER_METHOD =
           Method.getMethod(
               CompiledTemplate.class.getMethod(
                   "render", AdvisingAppendable.class, RenderContext.class));
+      KIND_METHOD = Method.getMethod(CompiledTemplate.class.getMethod("kind"));
     } catch (NoSuchMethodException | SecurityException e) {
       throw new RuntimeException(e);
     }
@@ -67,7 +73,8 @@ import org.objectweb.asm.commons.Method;
     return new AutoValue_CompiledTemplateMetadata(
         ConstructorRef.create(type, GENERATED_CONSTRUCTOR),
         MethodRef.createInstanceMethod(type, RENDER_METHOD).asNonNullable(),
-        type, 
+        MethodRef.createInstanceMethod(type, KIND_METHOD).asCheap(),
+        type,
         node);
   }
 
@@ -81,6 +88,9 @@ import org.objectweb.asm.commons.Method;
   
   /** The {@link CompiledTemplate#render(AdvisingAppendable, RenderContext)} method. */
   abstract MethodRef renderMethod();
+
+  /** The {@link CompiledTemplate#kind()} method. */
+  abstract MethodRef kindMethod();
 
   /** The name of the compiled template. */
   abstract TypeInfo typeInfo();

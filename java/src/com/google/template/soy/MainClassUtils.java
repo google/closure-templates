@@ -83,10 +83,10 @@ final class MainClassUtils {
       boolean hasParam;
       try {
         String nextArg = params.getParameter(0);
-        if (nextArg.equals("true") || nextArg.equals("1")) {
+        if (nextArg.equalsIgnoreCase("true") || nextArg.equals("1")) {
           value = true;
           hasParam = true;
-        } else if (nextArg.equals("false") || nextArg.equals("0")) {
+        } else if (nextArg.equalsIgnoreCase("false") || nextArg.equals("0")) {
           value = false;
           hasParam = true;
         } else {

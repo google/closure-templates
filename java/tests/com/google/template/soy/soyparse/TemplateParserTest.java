@@ -18,12 +18,19 @@ package com.google.template.soy.soyparse;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.template.soy.ErrorReporterImpl;
+import com.google.template.soy.SoyFileSetParser;
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
+import com.google.template.soy.base.internal.SoyFileKind;
+import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.error.FormattingErrorReporter;
+import com.google.template.soy.error.PrettyErrorFactory;
+import com.google.template.soy.error.SnippetFormatter;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.IntegerNode;
@@ -32,6 +39,9 @@ import com.google.template.soy.exprtree.OperatorNodes.NegativeOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
+import com.google.template.soy.passes.PassManager;
+import com.google.template.soy.shared.SoyGeneralOptions;
+import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallNode;
@@ -70,10 +80,12 @@ import com.google.template.soy.soytree.TemplateNodeBuilder.DeclInfo;
 import com.google.template.soy.soytree.TemplateNodeBuilder.DeclInfo.Type;
 import com.google.template.soy.soytree.TemplateSubject;
 import com.google.template.soy.soytree.XidNode;
+import com.google.template.soy.types.SoyTypeRegistry;
 
 import junit.framework.AssertionFailedError;
 import junit.framework.TestCase;
 
+import java.io.StringReader;
 import java.util.List;
 
 /**
@@ -84,41 +96,6 @@ public final class TemplateParserTest extends TestCase {
 
   private static final ErrorReporter FAIL = ExplodingErrorReporter.get();
 
-  public void testMaybeWhitespaceEmitsLineNumberOnError() {
-
-    // Check that the line number is included.
-    try {
-      parseMaybeWhitespace("ErrorMessage", "foo");
-      fail("Should have failed with a ParseException");
-    } catch (ParseException pe) {
-      assertThat(pe.getMessage()).contains("Found at: test.soy:1:1");
-    }
-
-    // The line number is correct following a newline.
-    try {
-      parseMaybeWhitespace("ErrorMessage", "\nfoo");
-      fail("Should have failed with a ParseException");
-    } catch (ParseException pe) {
-      assertThat(pe.getMessage()).contains("Found at: test.soy:2:1");
-    }
-
-    // The line number is correct even when the template doesn't start on line 1.
-    try {
-      new TemplateParser(
-              new IncrementingIdGenerator(),
-              "foo",
-              "test.soy",
-              2, // start line number
-              0, // start col number
-              ExplodingErrorReporter.get())
-          .MaybeWhitespace("ErrorMessage");
-      fail("Should have failed with a ParseException");
-    } catch (ParseException pe) {
-      assertThat(pe.getMessage()).contains("Found at: test.soy:2:1");
-    }
-  }
-
-
   // -----------------------------------------------------------------------------------------------
   // Tests for recognition only.
 
@@ -128,16 +105,59 @@ public final class TemplateParserTest extends TestCase {
     assertIsTemplateBody("{sp}");
     assertIsTemplateBody("{space}");
     assertIsTemplateBody("{ sp }");
-    assertIsTemplateBody("{{sp}}");
-    assertIsTemplateBody("{{space}}");
-    assertIsTemplateBody("{{ {sp} }}");
-    assertIsTemplateBody("{{ {} }}");
-    assertIsTemplateBody("{{ }s{p  { }}");
 
+    TemplateSubject.assertThatTemplateContent("{{sp}}")
+        .causesError("Soy {{command}} syntax is no longer supported.  Use single braces.");
+    TemplateSubject.assertThatTemplateContent("{{print { }}")
+        .causesError("Soy {{command}} syntax is no longer supported.  Use single braces.");
+    TemplateSubject.assertThatTemplateContent("a {} b")
+        .causesError("Found 'print' command with empty command text.");
+    TemplateSubject.assertThatTemplateContent("{msg desc=\"\"}a {} b{/msg}")
+        .causesError("Found 'print' command with empty command text.");
+    TemplateSubject.assertThatTemplateContent("{msg desc=\"\"}<a> {} </a>{/msg}")
+        .causesError("Found 'print' command with empty command text.");
+    TemplateSubject.assertThatTemplateContent("{msg desc=\"\"}<a href=\"{}\" />{/msg}")
+        .causesError("Found 'print' command with empty command text.");
+
+    TemplateSubject.assertThatTemplateContent("{/blah}")
+        .causesError("Unexpected closing tag '{/blah}'.");
+
+    TemplateSubject.assertThatTemplateContent("}")
+        .causesError("Unexpected }; did you mean '{rb}'?");
+
+    TemplateSubject.assertThatTemplateContent("{@blah}")
+        .causesError("Invalid declaration '{@blah'.");
+    TemplateSubject.assertThatTemplateContent("{sp ace}")
+        .causesError("Command '{sp ace' cannot have arguments.");
+    TemplateSubject.assertThatTemplateContent("{literal a=b}")
+        .causesError("Command '{literal a=b' cannot have arguments.");
+    TemplateSubject.assertThatTemplateContent("{else(a)}")
+        .causesError("Command '{else(a)' cannot have arguments.");
+
+    TemplateSubject.assertThatTemplateContent("{template}")
+        .causesError("Command '{template' cannot appear in templates.");
+    TemplateSubject.assertThatTemplateContent("{deltemplate a=b}")
+        .causesError("Command '{deltemplate a=b' cannot appear in templates.");
+    TemplateSubject.assertThatTemplateContent("{namespace()}")
+        .causesError("Command '{namespace()' cannot appear in templates.");
+
+    TemplateSubject.assertThatTemplateContent("{}")
+        .causesError("Found 'print' command with empty command text.");
+
+    TemplateSubject.assertThatTemplateContent("{print }")
+        .causesError("Found 'print' command with empty command text.");
+
+    assertIsTemplateBody("{if $blah == 'phname = \"foo\"'}{/if}");
+    assertIsNotTemplateBody("{blah phname=\"\"}");
+
+    assertIsNotTemplateBody("{");
+    assertIsNotTemplateBody("{{ {sp} }}");
+    assertIsNotTemplateBody("{{ {} }}");
+    assertIsNotTemplateBody("{{ }s{p  { }}");
     assertIsNotTemplateBody("{}");
+    assertIsNotTemplateBody("{namespace");
     assertIsNotTemplateBody("{sp");
     assertIsNotTemplateBody("{sp blah}");
-    assertIsNotTemplateBody("{print { }");
     assertIsNotTemplateBody("{print } }");
     assertIsNotTemplateBody("{print }}");
     assertIsNotTemplateBody("{{}}");
@@ -145,21 +165,20 @@ public final class TemplateParserTest extends TestCase {
     assertIsNotTemplateBody("blah}blah");
     assertIsNotTemplateBody("blah}}blah");
     assertIsNotTemplateBody("{{print {{ }}");
-    assertIsNotTemplateBody("{{print {}}");
   }
 
 
   public void testRecognizeRawText() throws Exception {
     assertIsTemplateBody("blah>blah<blah<blah>blah>blah>blah>blah<blah");
-    assertIsTemplateBody("{sp}{nil}{\\n}{{\\r}}{\\t}{lb}{{rb}}");
+    assertIsTemplateBody("{sp}{nil}{\\n}{\\r}{\\t}{lb}{rb}");
     assertIsTemplateBody(
         "blah{literal}{ {{{ } }{ {}} { }}}}}}}\n" +
             "}}}}}}}}}{ { {{/literal}blah");
 
-    assertIsNotTemplateBody("{sp ace}");
+    assertIsTemplateBody("{literal}{literal}{/literal}");
+
     assertIsNotTemplateBody("{/literal}");
     assertIsNotTemplateBody("{literal attr=\"value\"}");
-    assertIsNotTemplateBody("{literal}{literal}{/literal}");
   }
 
   public void testRecognizeComments() throws Exception {
@@ -188,6 +207,12 @@ public final class TemplateParserTest extends TestCase {
         "{foreach $item in $items} /** }\n" +
         "{{{{{*/{$item.name}{/foreach}/**{{{{*/\n");
 
+    assertIsTemplateBody(" // Not an invalid command: }\n");
+    assertIsTemplateBody(" // Not an invalid command: {{let}}\n");
+    assertIsTemplateBody(" // Not an invalid command: {@let }\n");
+    assertIsTemplateBody(" // Not an invalid command: phname=\"???\"\n");
+    assertIsTemplateBody("{msg desc=\"\"} // <{/msg}> '<<>\n{/msg}");
+
     assertIsTemplateBody("//}\n");
     assertIsTemplateBody(" //}\n");
     assertIsTemplateBody("\n//}\n");
@@ -203,7 +228,7 @@ public final class TemplateParserTest extends TestCase {
     assertIsTemplateBody("\n/**}\n}*/\n");
     assertIsTemplateBody("\n /**}\n*/\n");
 
-    assertIsNotTemplateBody("{blah /* { */ blah}");
+    assertIsNotTemplateBody("{css // }");
     assertIsNotTemplateBody("{foreach $item // }\n" +
                             "         in $items}\n" +
                             "{$item}{/foreach}\n");
@@ -212,120 +237,155 @@ public final class TemplateParserTest extends TestCase {
   }
 
   public void testRecognizeHeaderParams() throws Exception {
-    assertIsTemplateContent("{@param ...}\n");
-    assertIsTemplateContent("{@param ...}\nBODY");
-    assertIsTemplateContent("  {@param ...}\n  BODY");
-    assertIsTemplateContent("\n{@param ...}\n");
-    assertIsTemplateContent("  \n{@param ...}\nBODY");
-    assertIsTemplateContent("  \n  {@param ...\n  ...}\n  BODY");
+    assertIsTemplateContent("{@param foo: int}\n");
+    assertIsTemplateContent("{@param foo: int}\nBODY");
+    assertIsTemplateContent("  {@param foo: int}\n  BODY");
+    assertIsTemplateContent("\n{@param foo: int}\n");
+    assertIsTemplateContent("  \n{@param foo: int}\nBODY");
+    assertIsTemplateContent("  \n  {@param foo:\n  int}\n  BODY");
+
+    assertIsTemplateContent("{@param foo: int|list<[a: map<string, int|string>, b:?|null]>}\n");
 
     assertIsTemplateContent("" +
-        "  {@param ...}  {@param ...}\n" +
-        "  {@param ...}  /** ... */\n" +  // doc comment
-        "  {@param ...}  // ...\n" +  // nondoc comment
-        "  {@param ...\n" +
-        "      ...}  /** ...\n" +  // doc comment
+        "  {@param foo1: int}  {@param foo2: int}\n" +
+        "  {@param foo3: int}  /** ... */\n" +  // doc comment
+        "  {@param foo4: int}  // ...\n" +  // nondoc comment
+        "  {@param foo5:\n" +
+        "       int}  /** ...\n" +  // doc comment
         "      ...\n" +
         "      ... */\n" +
         "  /*\n" +  // nondoc comment
         "   * ...\n" +
         "   */\n" +
         "  /* ... */\n" +  // nondoc comment
-        "  {@param ...}  /**\n" +  // doc comment
+        "  {@param foo6: int}  /**\n" +  // doc comment
         "      ... */  \n" +
-        "  {@param ...}  /*\n" +  // nondoc comment
+        "  {@param foo7: int}  /*\n" +  // nondoc comment
         "      ... */  \n" +
         "\n" +
         "  BODY\n");
 
     assertIsTemplateContent("" +
-        "  /** */{@param ...}\n" +  // doc comment
+        "  /** */{@param foo1: int}\n" +  // doc comment
         "  /** \n" +  // doc comment
-        "   */{@param ...}\n" +
+        "   */{@param foo2: int}\n" +
         "\n" +
         "  BODY\n");
 
-    assertIsNotTemplateContent("{@param ...}");
-    assertIsNotTemplateContent("{@ param ...}\n");
+    assertIsNotTemplateContent("{@param foo: int}");
+    assertIsNotTemplateContent("{@ param foo: int}\n");
     assertIsNotTemplateContent("{@foo}\n");
-    assertIsNotTemplateContent("{@foo ...}\n");
+    assertIsNotTemplateContent("{@foo foo: int}\n");
 
     assertIsTemplateContent("" +
         "  /** ... */\n" +  // doc comment
-        "  {@param ...}\n" +
+        "  {@param foo: int}\n" +
         "  BODY\n");
     assertIsTemplateContent("" +
-        "  {@param ...}\n" +
+        "  {@param foo1: int}\n" +
         "  /**\n" +  // doc comment
         "   * ...\n" +
         "   */\n" +
-        "  {@param ...}\n" +
+        "  {@param foo2: int}\n" +
         "  BODY\n");
     assertIsTemplateContent("" +
-        "  {@param ...}  /*\n" +
+        "  {@param foo1: int}  /*\n" +
         "      */  /** ... */\n" +  // doc comment
-        "  {@param ...}\n" +
+        "  {@param foo2: int}\n" +
         "  BODY\n");
+
+
+    assertIsNotTemplateContent("{@param 33: int}");
+    assertIsNotTemplateContent("{@param f-oo: int}");
+    assertIsNotTemplateContent("{@param foo}");
+    assertIsNotTemplateContent("{@param foo:}");
+    assertIsNotTemplateContent("{@param : int}");
+    assertIsNotTemplateContent("{@param foo int}");
+  }
+
+  public void testQuotedStringsInCommands() throws Exception {
+    assertValidTemplate("{let $a: null /}");
+    assertValidTemplate("{let $a: '' /}");
+    assertValidTemplate("{let $a: 'a\"b\"c' /}");
+    assertValidTemplate("{let $a: 'abc\\'def' /}");
+    assertValidTemplate("{let $a: 'abc\\\\def' /}");
+    assertValidTemplate("{let $a: 'abc\\\\\\\\def' /}");
+
+    assertValidTemplate("{let $a: '\\\\ \\' \\\" \\n \\r \\t \\b \\f  \\u00A9 \\u2468' /}");
+
+    assertValidTemplate("{let $a: '{} abc {}' /}");
+    assertValidTemplate("{let $a: '{} abc\\'def {}' /}");
+    assertValidTemplate("{let $a: '{} abc\\\\def {}' /}");
+    assertValidTemplate("{let $a: '{} abc\\\\\\\\def {}' /}");
+
+    assertValidTemplate("{call blah} {param a: [blah: '{} abc\\\\\\\\def {}' ] /} {/call}");
+
+    assertValidTemplate("{msg desc=\"\"}{/msg}");
+    assertValidTemplate("{msg desc=\"Hi! I'm short! {}\"}{/msg}");
   }
 
   public void testRecognizeHeaderInjectedParams() throws Exception {
-    assertIsTemplateContent("{@inject ...}\n");
-    assertIsTemplateContent("{@inject ...}\nBODY");
-    assertIsTemplateContent("  {@inject ...}\n  BODY");
-    assertIsTemplateContent("\n{@inject ...}\n");
-    assertIsTemplateContent("  \n{@inject ...}\nBODY");
-    assertIsTemplateContent("  \n  {@inject ...\n  ...}\n  BODY");
+    assertIsTemplateContent("{@inject foo: int}\n");
+    assertIsTemplateContent("{@inject foo: int}\nBODY");
+    assertIsTemplateContent("  {@inject foo: int}\n  BODY");
+    assertIsTemplateContent("\n{@inject foo: int}\n");
+    assertIsTemplateContent("  \n{@inject foo: int}\nBODY");
+    assertIsTemplateContent("  \n  {@inject foo:\n   int}\n  BODY");
 
     assertIsTemplateContent("" +
-        "  {@inject ...}  {@inject ...}\n" +
-        "  {@inject ...}  /** ... */\n" +  // doc comment
-        "  {@inject ...}  // ...\n" +  // nondoc comment
-        "  {@inject ...\n" +
-        "      ...}  /** ...\n" +  // doc comment
+        "  {@inject foo1: int}  {@inject foo2: int}\n" +
+        "  {@inject foo3: int}  /** ... */\n" +  // doc comment
+        "  {@inject foo4: int}  // ...\n" +  // nondoc comment
+        "  {@inject foo5:\n" +
+        "       int}  /** ...\n" +  // doc comment
         "      ...\n" +
         "      ... */\n" +
         "  /*\n" +  // nondoc comment
         "   * ...\n" +
         "   */\n" +
         "  /* ... */\n" +  // nondoc comment
-        "  {@inject ...}  /**\n" +  // doc comment
+        "  {@inject foo6: int}  /**\n" +  // doc comment
         "      ... */  \n" +
-        "  {@inject ...}  /*\n" +  // nondoc comment
+        "  {@inject foo7: int}  /*\n" +  // nondoc comment
         "      ... */  \n" +
         "\n" +
         "  BODY\n");
 
     assertIsTemplateContent("" +
-        "  /** */{@inject ...}\n" +  // doc comment
+        "  /** */{@inject foo1: int}\n" +  // doc comment
         "  /** \n" +  // doc comment
-        "   */{@inject ...}\n" +
+        "   */{@inject foo2: int}\n" +
         "\n" +
         "  BODY\n");
 
-    assertIsNotTemplateContent("{@inject ...}");
-    assertIsNotTemplateContent("{@ param ...}\n");
+    assertIsNotTemplateContent("{@inject foo: int}");
+    assertIsNotTemplateContent("{@ param foo: int}\n");
     assertIsNotTemplateContent("{@foo}\n");
-    assertIsNotTemplateContent("{@foo ...}\n");
+    assertIsNotTemplateContent("{@foo foo: int}\n");
 
     assertIsTemplateContent("" +
         "  /** ... */\n" +  // doc comment
-        "  {@inject ...}\n" +
+        "  {@inject foo: int}\n" +
         "  BODY\n");
     assertIsTemplateContent("" +
-        "  {@inject ...}\n" +
+        "  {@inject foo1: int}\n" +
         "  /**\n" +  // doc comment
         "   * ...\n" +
         "   */\n" +
-        "  {@inject ...}\n" +
+        "  {@inject foo2: int}\n" +
         "  BODY\n");
     assertIsTemplateContent("" +
-        "  {@inject ...}  /*\n" +
+        "  {@inject foo1: int}  /*\n" +
         "      */  /** ... */\n" +  // doc comment
-        "  {@inject ...}\n" +
+        "  {@inject foo2: int}\n" +
         "  BODY\n");
   }
 
   public void testRecognizeCommands() throws Exception {
+    assertIsTemplateBody("{formatDate($blah)}");  // Starts with `for`
+    assertIsTemplateBody("{msgblah($blah)}");  // Starts with `msg`
+    assertIsTemplateBody("{let $a: b /}");  // Not a print
+
     assertIsTemplateBody("" +
         "{msg desc=\"blah\" hidden=\"true\"}\n" +
         "  {$boo} is a <a href=\"{$fooUrl}\">{$foo}</a>.\n" +
@@ -350,28 +410,36 @@ public final class TemplateParserTest extends TestCase {
     assertIsTemplateBody("" +
         "{for $i in range($boo + 1,\n" +
         "                 88, 11)}\n" +
-        "Number {$i}.{{/for}}");
+        "Number {$i}.{/for}");
     assertIsTemplateBody("{call aaa.bbb.ccc data=\"all\" /}");
     assertIsTemplateBody("" +
         "{call .aaa}\n" +
-        "  {{param boo: $boo /}}\n" +
+        "  {param boo: $boo /}\n" +
         "  {param foo}blah blah{/param}\n" +
         "  {param foo kind=\"html\"}blah blah{/param}\n" +
         "{/call}");
-    assertIsTemplateBody(
+
+    TemplateSubject.assertThatTemplateContent(
+        "{call .aaa}\n" +
+        "  {param foo : bar ' baz/}\n" +
+        "{/call}\n")
+        .causesError("Invalid string literal found in Soy command.");
+    TemplateSubject.assertThatTemplateContent(
         "{call .aaa}\n" +
         "  {param foo : bar \" baz/}\n" +
-        "{/call}\n");
+        "{/call}\n")
+        .causesError("Invalid string literal found in Soy command.");
+
     assertIsTemplateBody("{call aaa.bbb.ccc data=\"all\" /}");
     assertIsTemplateBody("" +
         "{call .aaa}\n" +
-        "  {{param boo: $boo /}}\n" +
+        "  {param boo: $boo /}\n" +
         "  {param foo}blah blah{/param}\n" +
         "{/call}");
     assertIsTemplateBody("{delcall aaa.bbb.ccc data=\"all\" /}");
     assertIsTemplateBody("" +
         "{delcall ddd.eee}\n" +
-        "  {{param boo: $boo /}}\n" +
+        "  {param boo: $boo /}\n" +
         "  {param foo}blah blah{/param}\n" +
         "{/delcall}");
     assertIsTemplateBody("" +
@@ -390,6 +458,18 @@ public final class TemplateParserTest extends TestCase {
     assertIsTemplateBody("{let $foo}Hello{/let}\n");
     assertIsTemplateBody("{let $foo kind=\"html\"}Hello{/let}\n");
 
+
+    TemplateSubject.assertThatTemplateContent("{{let a: b}}").causesError(
+        "Soy {{command}} syntax is no longer supported.  Use single braces.");
+
+    // This is parsed as a print command, which shouldn't end in /}
+    TemplateSubject.assertThatTemplateContent("{{let a: b /}}").causesError(
+        "parse error at '/}': expected }, <CMD_TEXT_DIRECTIVE_NAME>, <CMD_TEXT_PHNAME_ATTR>, or "
+        + "<CMD_TEXT_ARBITRARY_TOKEN>");
+    assertIsNotTemplateBody("{{let a: b /}}");
+
+
+
     assertIsNotTemplateBody("{namespace}");
     assertIsNotTemplateBody("{template}\n" + "blah\n" + "{/template}\n");
     assertIsNotTemplateBody("{msg}blah{/msg}");
@@ -397,17 +477,35 @@ public final class TemplateParserTest extends TestCase {
     assertIsNotTemplateBody("{msg desc=\"\"}<a href=http://www.google.com{/msg}");
     assertIsNotTemplateBody("{msg desc=\"\"}blah{msg desc=\"\"}bleh{/msg}bluh{/msg}");
     assertIsNotTemplateBody("{msg desc=\"\"}blah{/msg blah}");
-    assertIsNotTemplateBody("{msg}<blah<blah>{/msg}");
-    assertIsNotTemplateBody("{msg}blah>blah{/msg}");
-    assertIsNotTemplateBody("{msg}<blah>blah>{/msg}");
-    assertIsNotTemplateBody("" +
+
+    TemplateSubject.assertThatTemplateContent("{msg desc=\"\"}<blah{/msg}").causesError(
+        "Found '/msg' tag while within an HTML tag in a 'msg' block. "
+        + "Please close the HTML tag before ending the 'msg' block.");
+    TemplateSubject.assertThatTemplateContent("{msg desc=\"\"}<blah<blah>{/msg}").causesError(
+        "In a 'msg' block, found '<' within HTML tag.");
+    TemplateSubject.assertThatTemplateContent("{msg desc=\"\"}blah>blah{/msg}").causesError(
+        "In a 'msg' block, found '>' outside HTML tag.");
+    TemplateSubject.assertThatTemplateContent("{msg desc=\"\"}<blah>blah>{/msg}").causesError(
+        "In a 'msg' block, found '>' outside HTML tag.");
+
+    TemplateSubject.assertThatTemplateContent("" +
+        "{msg meaning=\"verb\" desc=\"\"}\n" +
+        "  Hi {if blah}a{/if}\n" +
+        "{/msg}").causesError("parse error at '{if ': expected "
+            + "*/, {sp}, {nil}, {\\\\n}, {\\\\r}, {\\\\t}, {lb}, {rb}, {literal}, "
+            + "{(del)call, {fallbackmsg, {/msg}, {print, {, <, <TOKEN_NL>, "
+            + "<TOKEN_WS_NOT_NL>, or <TOKEN_NOT_WS>");
+    TemplateSubject.assertThatTemplateContent("" +
         "{msg meaning=\"verb\" desc=\"\"}\n" +
         "  Archive\n" +
         "{fallbackmsg desc=\"\"}\n" +
         "  Archive\n" +
         "{fallbackmsg desc=\"\"}\n" +
         "  Store\n" +
-        "{/msg}");
+        "{/msg}").causesError("parse error at '{fallbackmsg ': expected "
+            + "*/, {sp}, {nil}, {\\\\n}, {\\\\r}, {\\\\t}, {lb}, {rb}, {literal}, "
+            + "{(del)call, {/msg}, {print, {, <, <TOKEN_NL>, "
+            + "<TOKEN_WS_NOT_NL>, or <TOKEN_NOT_WS>");
     assertIsNotTemplateBody("{print $boo /}");
     assertIsNotTemplateBody("{if true}aaa{else/}bbb{/if}");
     assertIsNotTemplateBody("{call .aaa.bbb /}");
@@ -672,6 +770,7 @@ public final class TemplateParserTest extends TestCase {
         "  \u2222\uEEEE\u9EC4\u607A\n";
 
     List<StandaloneNode> nodes = parseTemplateBody(templateBody, FAIL).getBodyNodes();
+
     assertEquals(1, nodes.size());
     RawTextNode rtn = (RawTextNode) nodes.get(0);
     assertEquals(
@@ -728,9 +827,11 @@ public final class TemplateParserTest extends TestCase {
 
     List<DeclInfo> declInfos = result.getHeaderDecls();
     assertEquals(Type.PARAM, declInfos.get(0).type());
-    assertEquals("boo: string", declInfos.get(0).cmdText());
+    assertEquals("boo", declInfos.get(0).name());
+    assertEquals("string", declInfos.get(0).paramTypeExpr());
     assertEquals(null, declInfos.get(0).soyDoc());
-    assertEquals("foo: list<int>", declInfos.get(1).cmdText());
+    assertEquals("foo", declInfos.get(1).name());
+    assertEquals("list<int>", declInfos.get(1).paramTypeExpr());
     assertEquals("Something random.", declInfos.get(1).soyDoc());
     assertEquals("Something\n      slimy.", declInfos.get(2).soyDoc());
     assertEquals(null, declInfos.get(3).soyDoc());
@@ -797,7 +898,7 @@ public final class TemplateParserTest extends TestCase {
         "  {$boo.foo}\n" +
         "  {$boo.foo phname=\"booFoo\"}\n" +
         "  {$boo.foo    phname=\"booFoo\"    }\n" +
-        "  {$boo.foo phname=\"boo_foo\"}\n";
+        "  {print $boo.foo phname=\"boo_foo\"}\n";
 
     List<StandaloneNode> nodes = parseTemplateBody(templateBody, FAIL).getBodyNodes();
     assertEquals(4, nodes.size());
@@ -823,7 +924,7 @@ public final class TemplateParserTest extends TestCase {
     PrintNode pn3 = (PrintNode) nodes.get(3);
     assertEquals("$boo.foo", pn3.getExprText());
     assertEquals("BOO_FOO", pn3.genBasePhName());
-    assertEquals("{$boo.foo phname=\"boo_foo\"}", pn3.toSourceString());
+    assertEquals("{print $boo.foo phname=\"boo_foo\"}", pn3.toSourceString());
 
     assertFalse(pn0.genSamenessKey().equals(pn1.genSamenessKey()));
     assertTrue(pn1.genSamenessKey().equals(pn2.genSamenessKey()));
@@ -1787,34 +1888,42 @@ public final class TemplateParserTest extends TestCase {
    */
   private static TemplateParseResult parseTemplateContent(String input, ErrorReporter errorReporter)
       throws ParseException {
-    return new TemplateParser(
+    return new SoyFileParser(
+            new SoyTypeRegistry(),
             new IncrementingIdGenerator(),
-            input,
+            new StringReader(input),
+            SoyFileKind.SRC,
             "test.soy",
-            1, // start line number
-            0, // start col number
             errorReporter)
         .parseTemplateContent();
   }
 
 
   /**
-   * Parses the given input using the MaybeWhitespace rule.
-   * @param errorMessage The error message MaybeWhitespace should emit when it fails.
+   * Asserts that the given input is a valid template, running all parsing phases.
    * @param input The input string to parse.
-   * @throws TokenMgrError When the given input has a token error.
-   * @throws ParseException When the given input has a parse error.
    */
-  private static void parseMaybeWhitespace(String errorMessage, String input)
-      throws TokenMgrError, ParseException {
-    new TemplateParser(
-            new IncrementingIdGenerator(),
-            input,
-            "test.soy",
-            1, // start line number
-            0, // start col number
-            ExplodingErrorReporter.get())
-        .MaybeWhitespace(errorMessage);
+  private static void assertValidTemplate(String input) {
+    ImmutableMap<String, SoyFileSupplier> files = ImmutableMap.of("example.soy",
+        SoyFileSupplier.Factory.create(
+            "{namespace test}{template .test}\n" + input + "\n{/template}",
+            SoyFileKind.SRC, "example.soy"));
+    ErrorReporterImpl reporter =
+        new ErrorReporterImpl(new PrettyErrorFactory(new SnippetFormatter(files)));
+    SoyFileSetParser fileSetParser = new SoyFileSetParser(
+        new SoyTypeRegistry(),
+        null /* ast cache */,
+        files,
+        new PassManager.Builder()
+            .setErrorReporter(reporter)
+            .setTypeRegistry(new SoyTypeRegistry())
+            .setSoyFunctionMap(ImmutableMap.<String, SoyFunction>of())
+            .setDeclaredSyntaxVersion(SyntaxVersion.V1_0)
+            .setGeneralOptions(new SoyGeneralOptions())
+            .build(),
+        reporter);
+    fileSetParser.parse();
+    assertThat(reporter.getErrors()).isEmpty();
   }
 
 

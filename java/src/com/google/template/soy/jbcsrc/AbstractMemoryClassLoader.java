@@ -17,6 +17,7 @@
 package com.google.template.soy.jbcsrc;
 
 import com.google.common.base.Throwables;
+import com.google.template.soy.jbcsrc.shared.Names;
 
 import java.net.URL;
 import java.security.AccessController;
@@ -47,13 +48,41 @@ abstract class AbstractMemoryClassLoader extends ClassLoader {
   AbstractMemoryClassLoader() {
     // We want our loaded classes to be a child classloader of ours to make sure they have access
     // to the same classes that we do.
-    super(AbstractMemoryClassLoader.class.getClassLoader());
+    this(AbstractMemoryClassLoader.class.getClassLoader());
+  }
+
+  AbstractMemoryClassLoader(ClassLoader classLoader) {
+    super(classLoader);
   }
 
   /** Returns a data object for a class with the given name or {@code null} if it doesn't exist. */
   @Nullable
   abstract ClassData getClassData(String name);
 
+  @Override
+  public final Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
+    // we need to override parent delegation if we are loading a generated class, since the parent
+    // may contain a reference to the same class (if it is running with precompiled soy templates),
+    // but we don't want to use it in this case.
+    // This replicates part of super.loadClass.
+    if (name.startsWith(Names.CLASS_PREFIX)) {
+      synchronized (getClassLoadingLock(name)) {
+        // First, check if the class has already been loaded
+        Class<?> c = findLoadedClass(name);
+        // Unlike super.loadClass we don't call parent.loadClass here
+        if (c == null) {
+          c = findClass(name);
+        }
+        if (resolve) {
+          resolveClass(c);
+        }
+        return c;
+      }
+    }
+    // otherwise use normal parent delegation
+    return super.loadClass(name, resolve);
+  }
+  
   @Override
   protected final Class<?> findClass(String name) throws ClassNotFoundException {
     ClassData classDef = getClassData(name);

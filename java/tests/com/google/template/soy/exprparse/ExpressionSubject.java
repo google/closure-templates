@@ -19,6 +19,7 @@ package com.google.template.soy.exprparse;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.truth.FailureStrategy;
 import com.google.common.truth.Subject;
 import com.google.common.truth.SubjectFactory;
@@ -46,6 +47,8 @@ final class ExpressionSubject extends Subject<ExpressionSubject, String> {
       return new ExpressionSubject(failureStrategy, s);
     }
   };
+
+  private final ImmutableMap.Builder<String, String> aliasesBuilder = ImmutableMap.builder();
 
   public ExpressionSubject(FailureStrategy failureStrategy, String s) {
     super(failureStrategy, s);
@@ -161,7 +164,13 @@ final class ExpressionSubject extends Subject<ExpressionSubject, String> {
     }
   }
 
+  ExpressionSubject withAlias(String alias, String namespace) {
+    aliasesBuilder.put(alias, namespace);
+    return this;
+  }
+
   private ExpressionParser expressionParser(ErrorReporter reporter) {
-    return new ExpressionParser(getSubject(), SourceLocation.UNKNOWN, reporter);
+    return new ExpressionParser(getSubject(), SourceLocation.UNKNOWN,
+        SoyParsingContext.create(reporter, "fake.namespace", aliasesBuilder.build()));
   }
 }

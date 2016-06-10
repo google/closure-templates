@@ -104,7 +104,7 @@ final class SubstituteGlobalsVisitor {
       }
 
       if (value == null) {
-        if (shouldAssertNoUnboundGlobals) {
+        if (shouldAssertNoUnboundGlobals && !node.shouldSuppressUnknownGlobalErrors()) {
           errorReporter.report(node.getSourceLocation(), UNBOUND_GLOBAL, node.getName());
         }
         return;

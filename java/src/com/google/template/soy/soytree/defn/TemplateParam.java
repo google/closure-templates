@@ -18,8 +18,6 @@ package com.google.template.soy.soytree.defn;
 
 import com.google.template.soy.types.SoyType;
 
-import java.util.Objects;
-
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 
@@ -94,26 +92,4 @@ public abstract class TemplateParam extends AbstractVarDefn {
   }
 
   public abstract TemplateParam copyEssential();
-
-  // Subclasses must implement equals().
-  @Override public abstract boolean equals(Object o);
-
-  // Subclasses must implement hashCode().
-  @Override public abstract int hashCode();
-
-  protected boolean abstractEquals(Object o) {
-    // Note: 'type' and 'desc' are nonessential with respect to equality.
-    // Note: This is valid only if you don't try and mix parameters from
-    // different templates in the same set.
-    if (this == o) { return true; }
-    if (o == null || this.getClass() != o.getClass()) { return false; }
-    AbstractVarDefn other = (AbstractVarDefn) o;
-    return this.name().equals(other.name()) && this.kind() == other.kind();
-  }
-
-  protected int abstractHashCode() {
-    // Note: This is valid only if you don't try and mix parameters from
-    // different templates in the same set.
-    return Objects.hash(this.getClass(), name(), isRequired, isInjected);
-  }
 }

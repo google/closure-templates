@@ -21,8 +21,7 @@ import static com.google.common.truth.Truth.assertWithMessage;
 
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
-import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ExplodingErrorReporter;
+import com.google.template.soy.exprparse.SoyParsingContext;
 
 import junit.framework.TestCase;
 
@@ -32,7 +31,7 @@ import junit.framework.TestCase;
  */
 public final class PrintNodeTest extends TestCase {
 
-  private static final ErrorReporter FAIL = ExplodingErrorReporter.get();
+  private static final SoyParsingContext FAIL = SoyParsingContext.exploding();
 
   public void testPlaceholderMethods() throws SoySyntaxException {
     PrintNode pn = new PrintNode.Builder(0, true /* isImplicit */, SourceLocation.UNKNOWN)

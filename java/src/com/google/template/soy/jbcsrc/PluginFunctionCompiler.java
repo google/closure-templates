@@ -119,10 +119,10 @@ final class PluginFunctionCompiler {
   private static final MethodRef STRING_SUBSTR_START_END =
       MethodRef.create(String.class, "substring", int.class, int.class);
 
-  private final VariableLookup variables;
+  private final TemplateParameterLookup parameterLookup;
 
-  PluginFunctionCompiler(VariableLookup variables) {
-    this.variables = variables;
+  PluginFunctionCompiler(TemplateParameterLookup parameterLookup) {
+    this.parameterLookup = parameterLookup;
   }
 
   /** Returns an expression that evaluates the given soy function. */
@@ -334,8 +334,8 @@ final class PluginFunctionCompiler {
 
   private SoyExpression invokeSoyFunction(FunctionNode node, List<SoyExpression> args) {
     Expression soyJavaFunctionExpr =
-        MethodRef.RENDER_CONTEXT_GET_FUNCTION
-            .invoke(variables.getRenderContext(), constant(node.getFunctionName()));
+        MethodRef.RENDER_CONTEXT_GET_FUNCTION.invoke(
+            parameterLookup.getRenderContext(), constant(node.getFunctionName()));
     Expression list = SoyExpression.asBoxedList(args);
     return SoyExpression.forSoyValue(UnknownType.getInstance(),
         MethodRef.RUNTIME_CALL_SOY_FUNCTION.invoke(soyJavaFunctionExpr, list));
@@ -346,7 +346,7 @@ final class PluginFunctionCompiler {
    */
   private SoyExpression invokeStrContainsFunction(SoyExpression left, SoyExpression right) {
     return SoyExpression.forBool(
-        left.unboxAs(String.class).invoke(STRING_CONTAINS, right.unboxAs(String.class)));
+        left.unboxAs(String.class).invoke(STRING_CONTAINS, right.coerceToString()));
   }
   
   /**

@@ -16,6 +16,14 @@
 
 package com.google.template.soy.data;
 
+import com.google.common.base.Preconditions;
+import com.google.common.html.types.SafeHtml;
+import com.google.common.html.types.SafeHtmlProto;
+import com.google.common.html.types.SafeHtmls;
+import com.google.common.html.types.SafeStyleSheet;
+import com.google.common.html.types.SafeStyleSheetProto;
+import com.google.common.html.types.SafeStyleSheets;
+import com.google.common.html.types.UncheckedConversions;
 import com.google.template.soy.data.internal.RenderableThunk;
 import com.google.template.soy.data.restricted.SoyString;
 
@@ -188,6 +196,76 @@ public abstract class SanitizedContent extends SoyData implements SoyString {
   public int hashCode() {
     return getContent().hashCode() + 31 * contentKind.hashCode();
   }
+
+
+  /**
+   * Converts a Soy {@link SanitizedContent} of kind HTML into a {@link SafeHtml}.
+   *
+   * @throws IllegalStateException if this SanitizedContent's content kind is not
+   *     {@link ContentKind#HTML}.
+   */
+  public SafeHtml toSafeHtml() {
+    Preconditions.checkState(getContentKind() == ContentKind.HTML,
+        "toSafeHtml() only valid for SanitizedContent of kind HTML, is: %s", getContentKind());
+    return UncheckedConversions.safeHtmlFromStringKnownToSatisfyTypeContract(getContent());
+  }
+
+
+  /**
+   * Converts a Soy {@link SanitizedContent} of kind HTML into a {@link SafeHtmlProto}.
+   *
+   * @throws IllegalStateException if this SanitizedContent's content kind is not
+   *     {@link ContentKind#HTML}.
+   */
+  public SafeHtmlProto toSafeHtmlProto() {
+    Preconditions.checkState(getContentKind() == ContentKind.HTML,
+        "toSafeHtmlProto() only valid for SanitizedContent of kind HTML, is: %s", getContentKind());
+    return SafeHtmls.toProto(
+        UncheckedConversions.safeHtmlFromStringKnownToSatisfyTypeContract(getContent()));
+  }
+
+  /**
+   * Converts a Soy {@link SanitizedContent} of kind CSS into a {@link SafeStyleSheet}.
+   *
+   * <p>To ensure correct behavior and usage, the SanitizedContent object should fulfill the
+   * contract of SafeStyleSheet - the CSS content should represent the top-level content of a style
+   * element within HTML.
+   *
+   * @throws IllegalStateException if this SanitizedContent's content kind is not
+   *     {@link ContentKind#CSS}.
+   */
+  public SafeStyleSheet toSafeStyleSheet() {
+    Preconditions.checkState(getContentKind() == ContentKind.CSS,
+        "toSafeStyleSheet() only valid for SanitizedContent of kind CSS, is: %s",
+        getContentKind());
+    // Sanity check: Try to prevent accidental misuse when this is not really a stylesheet but
+    // instead just a declaration list (i.e. a SafeStyle). This does fail to accept a stylesheet
+    // that is only a comment or only @imports; if you have a legitimate reason for this, it would
+    // be fine to make this more sophisticated, but in practice it's unlikely and keeping this check
+    // simple helps ensure it is fast. Note that this isn't a true security boundary, but a
+    // best-effort attempt to preserve SafeStyleSheet's semantical guarantees.
+    Preconditions.checkState(getContent().isEmpty() || getContent().indexOf('{') > 0,
+        "Calling toSafeStyleSheet() with content that doesn't look like a stylesheet");
+    return UncheckedConversions.safeStyleSheetFromStringKnownToSatisfyTypeContract(getContent());
+  }
+
+  /**
+   * Converts a Soy {@link SanitizedContent} of kind CSS into a {@link SafeStyleSheetProto}.
+   *
+   * <p>To ensure correct behavior and usage, the SanitizedContent object should fulfill the
+   * contract of SafeStyleSheet - the CSS content should represent the top-level content of a style
+   * element within HTML.
+   *
+   * @throws IllegalStateException if this SanitizedContent's content kind is not
+   *     {@link ContentKind#CSS}.
+   */
+  public SafeStyleSheetProto toSafeStyleSheetProto() {
+    Preconditions.checkState(getContentKind() == ContentKind.CSS,
+        "toSafeStyleSheetProto() only valid for SanitizedContent of kind CSS, is: %s",
+        getContentKind());
+    return SafeStyleSheets.toProto(toSafeStyleSheet());
+  }
+
 
   private static final class ConstantContent extends SanitizedContent {
     final String content;

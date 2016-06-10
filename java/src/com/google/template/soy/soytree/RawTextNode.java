@@ -16,6 +16,7 @@
 
 package com.google.template.soy.soytree;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
@@ -24,6 +25,8 @@ import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import javax.annotation.Nullable;
 
 /**
  * Node representing a contiguous raw text section.
@@ -48,6 +51,7 @@ public final class RawTextNode extends AbstractSoyNode implements StandaloneNode
   /** The raw text string (after processing of special chars and literal blocks). */
   private final String rawText;
 
+  @Nullable private HtmlContext htmlContext;
 
   /**
    * @param id The id for this node.
@@ -59,6 +63,13 @@ public final class RawTextNode extends AbstractSoyNode implements StandaloneNode
     this.rawText = rawText;
   }
 
+  public RawTextNode(int id, String rawText, SourceLocation sourceLocation,
+      HtmlContext htmlContext) {
+    super(id, sourceLocation);
+    this.rawText = rawText;
+    this.htmlContext = htmlContext;
+  }
+
 
   /**
    * Copy constructor.
@@ -67,11 +78,24 @@ public final class RawTextNode extends AbstractSoyNode implements StandaloneNode
   private RawTextNode(RawTextNode orig, CopyState copyState) {
     super(orig, copyState);
     this.rawText = orig.rawText;
+    this.htmlContext = orig.htmlContext;
   }
 
+  /**
+   * Gets the HTML source context (typically tag, attribute value, HTML PCDATA, or plain text) which
+   * this node emits in. This is used for incremental DOM codegen.
+   */
+  public HtmlContext getHtmlContext() {
+    return Preconditions.checkNotNull(htmlContext,
+        "Cannot access HtmlContext before HtmlTransformVisitor");
+  }
 
   @Override public Kind getKind() {
     return Kind.RAW_TEXT_NODE;
+  }
+
+  public void setHtmlContext(HtmlContext value) {
+    this.htmlContext = value;
   }
 
 

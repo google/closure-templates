@@ -26,6 +26,7 @@ import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.CallNode;
+import com.google.template.soy.soytree.EscapingMode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.PrintNode;
@@ -200,7 +201,7 @@ final class Inferences {
         (node instanceof PrintNode)
             || (node instanceof CallNode)
             || (node instanceof MsgFallbackGroupNode),
-        "Escaping directives may only be set for {print} or {call} nodes");
+        "Escaping directives may only be set for {print}, {msg}, or {call} nodes");
     int id = node.getId();
     idToStartContext.put(id, startContext);
     if (escapingModes != null) {

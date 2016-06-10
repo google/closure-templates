@@ -39,7 +39,6 @@ import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.jssrc.GoogMsgDefNode;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -128,16 +127,6 @@ public final class BuildAllDependeesMapVisitor
     potentialDependeeFrames.push(Lists.<SoyNode>newArrayList(node));
     visitChildren(node);
     potentialDependeeFrames.pop();
-  }
-
-
-  @Override protected void visitGoogMsgDefNode(GoogMsgDefNode node) {
-
-    visitSoyNode(node);
-
-    // Note: Add to potential dependees before visiting younger siblings because it defines an
-    // inline local variable.
-    potentialDependeeFrames.peek().add(node);
   }
 
 

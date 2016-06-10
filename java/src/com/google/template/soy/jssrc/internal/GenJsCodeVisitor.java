@@ -39,11 +39,15 @@ import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
+import com.google.template.soy.exprtree.VarDefn;
+import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.html.AbstractHtmlSoyNodeVisitor;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.internal.GenJsExprsVisitor.GenJsExprsVisitorFactory;
+import com.google.template.soy.jssrc.internal.HighLevelJsCodeBuilder.ConditionBuilder;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.JsExprUtils;
+import com.google.template.soy.parsepasses.contextautoesc.ContentSecurityPolicyPass;
 import com.google.template.soy.passes.FindIndirectParamsVisitor;
 import com.google.template.soy.passes.FindIndirectParamsVisitor.IndirectParamsInfo;
 import com.google.template.soy.passes.ShouldEnsureDataIsDefinedVisitor;
@@ -65,6 +69,7 @@ import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.LogNode;
+import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.MsgHtmlTagNode;
 import com.google.template.soy.soytree.MsgPluralNode;
 import com.google.template.soy.soytree.MsgSelectNode;
@@ -84,7 +89,6 @@ import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.soytree.XidNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
-import com.google.template.soy.soytree.jssrc.GoogMsgDefNode;
 import com.google.template.soy.types.SoyObjectType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeOps;
@@ -145,10 +149,13 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
 
 
   /** The options for generating JS source code. */
-  private final SoyJsSrcOptions jsSrcOptions;
+  protected final SoyJsSrcOptions jsSrcOptions;
 
   /** Instance of JsExprTranslator to use. */
-  private final JsExprTranslator jsExprTranslator;
+  protected final JsExprTranslator jsExprTranslator;
+
+  /** Instance of DelTemplateNamer to use. */
+  private final DelTemplateNamer delTemplateNamer;
 
   /** Instance of GenCallCodeUtils to use. */
   protected final GenCallCodeUtils genCallCodeUtils;
@@ -167,6 +174,8 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
 
   /** The CodeBuilder to build the current JS file being generated (during a run). */
   @VisibleForTesting CodeBuilder<JsExpr> jsCodeBuilder;
+
+  @VisibleForTesting HighLevelJsCodeBuilder highLevelJsCodeBuilder;
 
   /** The current stack of replacement JS expressions for the local variables (and foreach-loop
    *  special functions) current in scope. */
@@ -201,6 +210,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
   protected GenJsCodeVisitor(
       SoyJsSrcOptions jsSrcOptions,
       JsExprTranslator jsExprTranslator,
+      DelTemplateNamer delTemplateNamer,
       GenCallCodeUtils genCallCodeUtils,
       IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor,
       CanInitOutputVarVisitor canInitOutputVarVisitor,
@@ -209,6 +219,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
       SoyTypeOps typeOps) {
     this.jsSrcOptions = jsSrcOptions;
     this.jsExprTranslator = jsExprTranslator;
+    this.delTemplateNamer = delTemplateNamer;
     this.genCallCodeUtils = genCallCodeUtils;
     this.isComputableAsJsExprsVisitor = isComputableAsJsExprsVisitor;
     this.canInitOutputVarVisitor = canInitOutputVarVisitor;
@@ -224,6 +235,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
     try {
       jsFilesContents = Lists.newArrayList();
       jsCodeBuilder = null;
+      highLevelJsCodeBuilder = null;
       localVarTranslations = null;
       genJsExprsVisitor = null;
       assistantForMsgs = null;
@@ -246,7 +258,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
    * This method must only be called by assistant visitors, in particular
    * GenJsCodeVisitorAssistantForMsgs.
    */
-  void visitForUseByAssistants(SoyNode node) {
+  public void visitForUseByAssistants(SoyNode node) {
     visit(node);
   }
 
@@ -337,6 +349,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
     }
 
     jsCodeBuilder = createCodeBuilder();
+    highLevelJsCodeBuilder = new HighLevelJsCodeBuilderImpl(jsCodeBuilder);
     alreadyRequiredNamespaces = new LinkedHashSet<>();
 
     jsCodeBuilder.appendLine("// This file was automatically generated from ",
@@ -398,6 +411,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
 
     jsFilesContents.add(jsCodeBuilder.getCode());
     jsCodeBuilder = null;
+    highLevelJsCodeBuilder = null;
   }
 
   /**
@@ -451,7 +465,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
    */
   private void addCodeToProvideSoyNamespace(SoyFileNode soyFile) {
     if (soyFile.getNamespace() != null) {
-      jsCodeBuilder.appendLine("goog.provide('", soyFile.getNamespace(), "');");
+      highLevelJsCodeBuilder.declareNamespace(soyFile.getNamespace());
     }
   }
 
@@ -469,7 +483,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
    */
   private void addCodeToDeclareGoogModule(SoyFileNode soyFile) {
     String exportNamespace = getGoogModuleNamespace(soyFile.getNamespace());
-    jsCodeBuilder.appendLine("goog.module('", exportNamespace, "');\n");
+    highLevelJsCodeBuilder.declareModule(exportNamespace);
   }
 
   /**
@@ -531,7 +545,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
       templateNames.add(template.getTemplateName());
     }
     for (String templateName : templateNames) {
-      jsCodeBuilder.appendLine("goog.provide('", templateName, "');");
+      highLevelJsCodeBuilder.provide(templateName);
     }
   }
 
@@ -540,7 +554,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
     SortedSet<String> delTemplateNames = Sets.newTreeSet();
     for (TemplateNode template : soyFile.getChildren()) {
       if (template instanceof TemplateDelegateNode) {
-        delTemplateNames.add(((TemplateDelegateNode) template).getDelTemplateName());
+        delTemplateNames.add(delTemplateNamer.getDelegateName((TemplateDelegateNode) template));
       }
     }
     for (String delTemplateName : delTemplateNames) {
@@ -553,7 +567,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
     SortedSet<String> delTemplateNames = Sets.newTreeSet();
     for (CallDelegateNode delCall :
         SoytreeUtils.getAllNodesOfType(soyFile, CallDelegateNode.class)) {
-      delTemplateNames.add(delCall.getDelCalleeName());
+      delTemplateNames.add(delTemplateNamer.getDelegateName(delCall));
     }
     for (String delTemplateName : delTemplateNames) {
       jsCodeBuilder.appendLine(" * @hassoydelcall {", delTemplateName, "}");
@@ -566,12 +580,18 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
    */
   protected void addCodeToRequireGeneralDeps(SoyFileNode soyFile) {
 
-    addGoogRequire("soy", false);
-    addGoogRequire("soydata", false);
+    // TODO(user): keep track of JS symbols that are actually printed,
+    // so no extraRequires are necessary.
+    addGoogRequire("soy", true);
+    addGoogRequire("soydata", true);
 
     SortedSet<String> requiredObjectTypes = ImmutableSortedSet.of();
     if (hasStrictParams(soyFile)) {
       requiredObjectTypes = getRequiredObjectTypes(soyFile);
+      addGoogRequire("goog.asserts", true);
+      addGoogRequire("soy.asserts", true);
+    }
+    if (hasInjectedParams(soyFile)) {
       addGoogRequire("goog.asserts", true);
     }
 
@@ -610,7 +630,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
    * @param suppressExtra Whether to add a {@code @suppress {extraRequire}} annotation for requires
    *     that may be unused.
    */
-  private void addGoogRequire(String namespace, boolean suppressExtra) {
+  protected void addGoogRequire(String namespace, boolean suppressExtra) {
     if (!alreadyRequiredNamespaces.contains(namespace)) {
       if (suppressExtra) {
         jsCodeBuilder.appendLine("/** @suppress {extraRequire} */");
@@ -715,8 +735,14 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
 
     String templateName = node.getTemplateName();
     String partialName = node.getPartialTemplateName();
-    String alias = templateAliases.get(templateName);
+    String alias;
     boolean addToExports = jsSrcOptions.shouldGenerateGoogModules();
+
+    if (addToExports && node instanceof TemplateDelegateNode) {
+      alias = node.getPartialTemplateName().substring(1);
+    } else {
+      alias = templateAliases.get(templateName);
+    }
 
     localVarTranslations = new ArrayDeque<>();
     genJsExprsVisitor =
@@ -761,6 +787,9 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
     if (new ShouldEnsureDataIsDefinedVisitor().exec(node)) {
       jsCodeBuilder.appendLine("opt_data = opt_data || {};");
     }
+    if (shouldEnsureIjDataIsDefined(node)) {
+      jsCodeBuilder.appendLine("opt_ijData = opt_ijData || {};");
+    }
 
     // ------ Generate function body. ------
     generateFunctionBody(node);
@@ -785,14 +814,37 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
     if (node instanceof TemplateDelegateNode) {
       TemplateDelegateNode nodeAsDelTemplate = (TemplateDelegateNode) node;
       String delTemplateIdExprText =
-          "soy.$$getDelTemplateId('" + nodeAsDelTemplate.getDelTemplateName() + "')";
+          "soy.$$getDelTemplateId('" + delTemplateNamer.getDelegateName(nodeAsDelTemplate) + "')";
       String delTemplateVariantExprText = "'" + nodeAsDelTemplate.getDelTemplateVariant() + "'";
       jsCodeBuilder.appendLine(
           "soy.$$registerDelegateFn(",
           delTemplateIdExprText, ", ", delTemplateVariantExprText, ", ",
           nodeAsDelTemplate.getDelPriority().toString(), ", ",
-          nodeAsDelTemplate.getTemplateName(), ");");
+          alias, ");");
     }
+  }
+
+  /**
+   * Returns true if the given template should ensure that the {@code opt_ijData} param is defined.
+   *
+   * <p>The current logic exists for CSP support which is enabled by default.  CSP support works by
+   * generating references to an {@code $ij} param called {@code csp_nonce}, so to ensure that
+   * templates are compatible we only need to ensure the opt_ijData param is available is if the
+   * template references {@code $ij.csp_nonce}.
+   */
+  private static boolean shouldEnsureIjDataIsDefined(TemplateNode node) {
+    for (VarRefNode ref : SoytreeUtils.getAllNodesOfType(node, VarRefNode.class)) {
+      if (ref.isDollarSignIjParameter()) {
+        if (ref.getName().equals(ContentSecurityPolicyPass.CSP_NONCE_VARIABLE_NAME)) {
+          return true;
+        }
+      } else if (ref.getDefnDecl().isInjected() && ref.getDefnDecl().kind() == VarDefn.Kind.PARAM) {
+        // if it is an {@inject } param then we will generate unconditional type assertions that
+        // dereference opt_ijData.  So there is no need to ensure it is defined.
+        return false;
+      }
+    }
+    return false;
   }
 
   /**
@@ -856,7 +908,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
     localVarTranslations.pop();
   }
 
-  @Override protected void visitGoogMsgDefNode(GoogMsgDefNode node) {
+  protected GenJsCodeVisitorAssistantForMsgs getAssistantForMsgs() {
     if (assistantForMsgs == null) {
       assistantForMsgs =
           new GenJsCodeVisitorAssistantForMsgs(
@@ -871,7 +923,11 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
               genJsExprsVisitor,
               errorReporter);
     }
-    assistantForMsgs.visitForUseByMaster(node);
+    return assistantForMsgs;
+  }
+
+  @Override protected void visitMsgFallbackGroupNode(MsgFallbackGroupNode node) {
+    throw new AssertionError("Inconceivable! LetContentNode should catch this directly.");
   }
 
   @Override protected void visitMsgHtmlTagNode(MsgHtmlTagNode node) {
@@ -920,6 +976,14 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
    * </pre>
    */
   @Override protected void visitLetContentNode(LetContentNode node) {
+    // Optimization: {msg} nodes emit statements and result in a JsExpr with a single variable.  Use
+    // that variable (typically the MSG_* from getMsg) as-is instead of wrapping a new var around it
+    if (node.getChildren().size() == 1 && node.getChild(0) instanceof MsgFallbackGroupNode) {
+      String msgVar = getAssistantForMsgs()
+          .generateMsgGroupVariable((MsgFallbackGroupNode) node.getChild(0));
+      localVarTranslations.peek().put(node.getVarName(), new JsExpr(msgVar, Integer.MAX_VALUE));
+      return;
+    }
 
     String generatedVarName = node.getUniqueVarName();
 
@@ -969,11 +1033,15 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
 
     if (isComputableAsJsExprsVisitor.exec(node)) {
       jsCodeBuilder.addToOutputVar(genJsExprsVisitor.exec(node));
-      return;
+    } else {
+      generateNonExpressionIfNode(node);
     }
+  }
 
-    // ------ Not computable as JS expressions, so generate full code. ------
-
+  /**
+   * Generates the JavaScript code for an {if} block that cannot be done as an expression.
+   */
+  protected void generateNonExpressionIfNode(IfNode node) {
     for (SoyNode child : node.getChildren()) {
 
       if (child instanceof IfCondNode) {
@@ -1136,30 +1204,27 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
     JsExpr dataRefJsExpr =
         jsExprTranslator.translateToJsExpr(
             node.getExpr(), node.getExprText(), localVarTranslations, errorReporter);
-    jsCodeBuilder.appendLine("var ", listVarName, " = ", dataRefJsExpr.getText(), ";");
-    jsCodeBuilder.appendLine("var ", listLenVarName, " = ", listVarName, ".length;");
+    highLevelJsCodeBuilder
+        .declareVariable(listVarName)
+        .withValue(dataRefJsExpr.getText())
+        .declareVariable(listLenVarName)
+        .withValue(listVarName + ".length");
 
     // If has 'ifempty' node, add the wrapper 'if' statement.
     boolean hasIfemptyNode = node.numChildren() == 2;
-    if (hasIfemptyNode) {
-      jsCodeBuilder.appendLine("if (", listLenVarName, " > 0) {");
-      jsCodeBuilder.increaseIndent();
-    }
+    ConditionBuilder condition = hasIfemptyNode
+        ? highLevelJsCodeBuilder._if(listLenVarName + " > 0")
+        : null;
 
     // Generate code for nonempty case.
     visit(nonEmptyNode);
 
     // If has 'ifempty' node, add the 'else' block of the wrapper 'if' statement.
     if (hasIfemptyNode) {
-      jsCodeBuilder.decreaseIndent();
-      jsCodeBuilder.appendLine("} else {");
-      jsCodeBuilder.increaseIndent();
-
+      condition._else();
       // Generate code for empty case.
       visit(node.getChild(1));
-
-      jsCodeBuilder.decreaseIndent();
-      jsCodeBuilder.appendLine("}");
+      condition.endif();
     }
   }
 
@@ -1332,7 +1397,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
    *   output += some.func(opt_data);
    *   output += some.func(opt_data.boo.foo);
    *   output += some.func({goo: 88});
-   *   output += some.func(soy.$$augmentMap(opt_data.boo, {goo: 'Hello ' + opt_data.name});
+   *   output += some.func(soy.$$assignDefaults({goo: 'Hello ' + opt_data.name}, opt_data.boo);
    * </pre>
    */
   @Override protected void visitCallNode(CallNode node) {
@@ -1527,6 +1592,14 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
   }
 
   /**
+   * Returns the name of the JS type used to represent the given SoyType at runtime.
+   * Can be overridden by subclasses to provide a different mapping.
+   */
+  protected String getJsTypeName(SoyType type) {
+    return JsSrcUtils.getJsTypeName(type);
+  }
+
+  /**
    * Generate code to verify the runtime types of the input params. Also typecasts the
    * input parameters and assigns them to local variables for use in the template.
    * @param node the template node.
@@ -1605,8 +1678,8 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
           }
           jsCodeBuilder.appendLine("var " + paramName +
               " = goog.asserts.assertInstanceof(" + paramVal + ", " +
-              JsSrcUtils.getJsTypeName(param.type()) + ", \"expected parameter '" + paramName +
-              "' of type " + JsSrcUtils.getJsTypeName(param.type()) + ".\");");
+              getJsTypeName(param.type()) + ", \"expected parameter '" + paramName +
+              "' of type " + getJsTypeName(param.type()) + ".\");");
           isAliasedLocalVar = true;
           break;
 
@@ -1632,7 +1705,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
 
         default:
           if (param.type() instanceof SanitizedType) {
-            String typeName = JsSrcUtils.getJsTypeName(param.type());
+            String typeName = getJsTypeName(param.type());
             // We allow string or unsanitized type to be passed where a
             // sanitized type is specified - it just means that the text will
             // be escaped.
@@ -1704,7 +1777,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
           break;
 
         case OBJECT:
-          String jsType = JsSrcUtils.getJsTypeName(memberType);
+          String jsType = getJsTypeName(memberType);
           if (memberType instanceof SoyProtoType) {
             // Detect if it's a map that has been created from a proto, and
             // if so extract the proto value.
@@ -1724,7 +1797,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
             // For sanitized kinds, an unwrapped string is also considered valid.
             // (It will be auto-escaped.)  But we don't want to test for this multiple
             // times if there are multiple sanitized kinds.
-            typeTests.add("({0} instanceof " + JsSrcUtils.getJsTypeName(memberType) + ")");
+            typeTests.add("({0} instanceof " + getJsTypeName(memberType) + ")");
             typeTests.add("({0} instanceof soydata.UnsanitizedText)");
             typeTests.add("goog.isString({0})");
             break;
@@ -1807,7 +1880,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
    */
   private boolean hasStrictParams(SoyFileNode soyFile) {
     for (TemplateNode template : soyFile.getChildren()) {
-      if (hasStrictParams(template)) {
+      if (!template.getInjectedParams().isEmpty() || hasStrictParams(template)) {
         return true;
       }
     }
@@ -1829,6 +1902,18 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
   }
 
   /**
+   * Return true if any template in this file has @inject params.
+   */
+  private boolean hasInjectedParams(SoyFileNode soyFile) {
+    for (TemplateNode template : soyFile.getChildren()) {
+      if (!template.getInjectedParams().isEmpty()) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
    * Scan all templates, and return a list of types that will require a goog.require()
    * statement. Any template that has a type-checked parameter that is an object
    * or sanitized type (or a union containing the same) will need this.
@@ -1846,12 +1931,12 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
           continue;
         }
         if (param.type().getKind() == SoyType.Kind.OBJECT) {
-          requiredObjectTypes.add(JsSrcUtils.getJsTypeName(param.type()));
+          requiredObjectTypes.add(getJsTypeName(param.type()));
         } else if (param.type().getKind() == SoyType.Kind.UNION) {
           UnionType union = (UnionType) param.type();
           for (SoyType memberType : union.getMembers()) {
             if (memberType.getKind() == SoyType.Kind.OBJECT) {
-              requiredObjectTypes.add(JsSrcUtils.getJsTypeName(memberType));
+              requiredObjectTypes.add(getJsTypeName(memberType));
             }
           }
         }

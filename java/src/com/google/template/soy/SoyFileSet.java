@@ -499,22 +499,6 @@ public final class SoyFileSet {
       return this;
     }
 
-
-    /**
-     * Pass true to enable CSP (Content Security Policy) support which adds an extra pass that marks
-     * inline scripts in templates specially so the browser can distinguish scripts written by
-     * trusted template authors from scripts injected via XSS.
-     * <p>
-     * Scripts are marked using a per-page-render secret stored in the injected variable
-     * {@code $ij.csp_nonce}.
-     * Scripts in non-contextually auto-escaped templates may not be found.
-     */
-    public Builder setSupportContentSecurityPolicy(boolean supportContentSecurityPolicy) {
-      getGeneralOptions().setSupportContentSecurityPolicy(supportContentSecurityPolicy);
-      return this;
-    }
-
-
     /**
      * Override the global type registry with one that is local to this file set.
      */
@@ -697,6 +681,7 @@ public final class SoyFileSet {
             true /* allow unknown functions */,
             typeRegistry,
             soyFunctionMap);
+    throwIfErrorsPresent();
 
     SoyFileSetNode soyTree = result.fileSet();
     TemplateRegistry registry = result.registry();
@@ -1071,6 +1056,27 @@ public final class SoyFileSet {
   }
 
   /**
+   * Compiles this Soy file set into iDOM source code files and returns these JS files as a list of
+   * strings, one per file.
+   *
+   * @param jsSrcOptions The compilation options for the JS Src output target.
+   * @return A list of strings where each string represents the JS source code that belongs in one
+   *     JS file. The generated JS files correspond one-to-one to the original Soy source files.
+   * @throws SoyCompilationException If compilation fails.
+   */
+  public List<String> compileToIncrementalDomSrc(SoyJsSrcOptions jsSrcOptions)
+      throws IOException {
+    resetErrorReporter();
+    ParseResult result = preprocessIncrementalDOMResults();
+    List<String> generatedSrcs = incrementalDomSrcMainProvider
+        .get()
+        .genJsSrc(result.fileSet(), result.registry(), jsSrcOptions, errorReporter);
+    throwIfErrorsPresent();
+    return generatedSrcs;
+  }
+
+
+  /**
    * Compiles this Soy file set into JS source code files and writes these JS files to disk.
    *
    * @param outputPathFormat The format string defining how to build the output file path
@@ -1080,10 +1086,24 @@ public final class SoyFileSet {
    * @throws IOException If there is an error in opening/reading a message file or opening/writing
    *     an output JS file.
    */
-  @SuppressWarnings("deprecation")
   void compileToIncrementalDomSrcFiles(String outputPathFormat, SoyJsSrcOptions jsSrcOptions)
       throws IOException {
     resetErrorReporter();
+    ParseResult result = preprocessIncrementalDOMResults();
+
+    incrementalDomSrcMainProvider
+        .get()
+        .genJsFiles(result.fileSet(), result.registry(), jsSrcOptions, outputPathFormat,
+        errorReporter);
+
+    throwIfErrorsPresent();
+  }
+
+  /**
+   * Prepares the parsed result for use in generating Incremental DOM source code.
+   */
+  @SuppressWarnings("deprecation")
+  private ParseResult preprocessIncrementalDOMResults() {
     SyntaxVersion declaredSyntaxVersion =
         generalOptions.getDeclaredSyntaxVersion(SyntaxVersion.V2_0);
 
@@ -1099,12 +1119,7 @@ public final class SoyFileSet {
     simplifyVisitor.simplify(soyTree, result.registry());
 
     throwIfErrorsPresent();
-
-    incrementalDomSrcMainProvider
-        .get()
-        .genJsFiles(soyTree, result.registry(), jsSrcOptions, outputPathFormat, errorReporter);
-
-    throwIfErrorsPresent();
+    return result;
   }
 
   /**
@@ -1119,7 +1134,7 @@ public final class SoyFileSet {
    * @throws IOException If there is an error in opening/reading a message file or opening/writing
    *     an output JS file.
    */
-  void compileToPySrcFiles(
+  public void compileToPySrcFiles(
       String outputPathFormat, String inputFilePathPrefix, SoyPySrcOptions pySrcOptions)
       throws IOException {
     resetErrorReporter();
@@ -1217,12 +1232,9 @@ public final class SoyFileSet {
           ConformanceInput.create(soyTree, contextualAutoescaper.getSlicedRawTextNodes()),
           errorReporter);
     }
-
     // Add print directives that mark inline-scripts as safe to run.
-    if (generalOptions.supportContentSecurityPolicy()) {
-      ContentSecurityPolicyPass.blessAuthorSpecifiedScripts(
-          contextualAutoescaper.getSlicedRawTextNodes());
-    }
+    ContentSecurityPolicyPass.blessAuthorSpecifiedScripts(
+        contextualAutoescaper.getSlicedRawTextNodes());
 
     // Attempt to simplify the tree.
     new ChangeCallsToPassAllDataVisitor().exec(soyTree);

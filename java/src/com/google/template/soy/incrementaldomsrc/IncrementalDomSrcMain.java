@@ -18,7 +18,6 @@ package com.google.template.soy.incrementaldomsrc;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
@@ -107,32 +106,20 @@ public class IncrementalDomSrcMain {
       ErrorReporter errorReporter)
       throws SoySyntaxException {
 
-
-    // Make sure that we don't try to use goog.i18n.bidi when we aren't supposed to use Closure.
-    Preconditions.checkState(
-        !jsSrcOptions.getUseGoogIsRtlForBidiGlobalDir()
-        || jsSrcOptions.shouldProvideRequireSoyNamespaces()
-        || jsSrcOptions.shouldProvideRequireJsFunctions()
-        || jsSrcOptions.shouldGenerateGoogModules(),
-        "Do not specify useGoogIsRtlForBidiGlobalDir without one of "
-        + "shouldProvideRequireSoyNamespaces, shouldProvideRequireJsFunctions or "
-        + "shouldGenerateGoogModules.");
+    SoyJsSrcOptions incrementalJSSrcOptions = jsSrcOptions.clone();
+    incrementalJSSrcOptions.setShouldProvideBothSoyNamespacesAndJsFunctions(false);
+    incrementalJSSrcOptions.setShouldProvideRequireSoyNamespaces(false);
+    incrementalJSSrcOptions.setShouldProvideRequireJsFunctions(false);
+    incrementalJSSrcOptions.setShouldDeclareTopLevelNamespaces(false);
+    incrementalJSSrcOptions.setShouldGenerateGoogModules(true);
 
     try (WithScope withScope = apiCallScope.enter()) {
       // Seed the scoped parameters.
-      apiCallScope.seed(SoyJsSrcOptions.class, jsSrcOptions);
+      apiCallScope.seed(SoyJsSrcOptions.class, incrementalJSSrcOptions);
       BidiGlobalDir bidiGlobalDir = SoyBidiUtils.decodeBidiGlobalDirFromJsOptions(
-          jsSrcOptions.getBidiGlobalDir(),
-          jsSrcOptions.getUseGoogIsRtlForBidiGlobalDir());
+          incrementalJSSrcOptions.getBidiGlobalDir(),
+          incrementalJSSrcOptions.getUseGoogIsRtlForBidiGlobalDir());
       ApiCallScopeUtils.seedSharedParams(apiCallScope, null /* msgBundle */, bidiGlobalDir);
-
-// TODO(sparhami) figure out how to deal with msg nodes - need to support some sort of innerHTML,
-// which means we need autoescaping for just those subtrees.
-//      new ReplaceMsgsWithGoogMsgsVisitor(errorReporter).exec(soyTree);
-//      new MoveGoogMsgDefNodesEarlierVisitor(errorReporter).exec(soyTree);
-//      Preconditions.checkState(
-//          bidiGlobalDir != null,
-//          "If enabling shouldGenerateGoogMsgDefs, must also set bidi global directionality.");
 
       // Do the code generation.
       optimizeBidiCodeGenVisitorProvider.get().exec(soyTree);
@@ -141,6 +128,11 @@ public class IncrementalDomSrcMain {
       new HtmlTransformVisitor(errorReporter).exec(soyTree);
       IncrementalDomOutputOptimizers.collapseOpenTags(soyTree);
       IncrementalDomOutputOptimizers.collapseElements(soyTree);
+
+      new UnescapingVisitor().exec(soyTree);
+
+      // Must happen after HtmlTransformVisitor, so it can infer context for {msg} nodes.
+      new IncrementalDomExtractMsgVariablesVisitor().exec(soyTree);
 
       return genIncrementalDomCodeVisitorProvider.get().gen(soyTree, registry, errorReporter);
     }

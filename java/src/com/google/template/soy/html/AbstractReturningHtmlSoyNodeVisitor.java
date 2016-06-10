@@ -34,8 +34,6 @@ public abstract class AbstractReturningHtmlSoyNodeVisitor<R>
       case HTML_OPEN_TAG_END: return visitHtmlOpenTagEndNode((HtmlOpenTagEndNode) node);
       case HTML_CLOSE_TAG: return visitHtmlCloseTagNode((HtmlCloseTagNode) node);
       case HTML_VOID_TAG: return visitHtmlVoidTagNode((HtmlVoidTagNode) node);
-      case HTML_TEXT: return visitHtmlTextNode((HtmlTextNode) node);
-      case HTML_PRINT_NODE: return visitHtmlPrintNode((HtmlPrintNode) node);
       default:
         return super.visit(node);
     }
@@ -62,14 +60,6 @@ public abstract class AbstractReturningHtmlSoyNodeVisitor<R>
   }
 
   protected R visitHtmlVoidTagNode(HtmlVoidTagNode node) {
-    return visitSoyNode(node);
-  }
-
-  protected R visitHtmlTextNode(HtmlTextNode node) {
-    return visitSoyNode(node);
-  }
-
-  protected R visitHtmlPrintNode(HtmlPrintNode node) {
     return visitSoyNode(node);
   }
 

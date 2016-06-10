@@ -20,8 +20,8 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.base.Equivalence.Wrapper;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.exprparse.ExpressionParser;
+import com.google.template.soy.exprparse.SoyParsingContext;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 
@@ -57,7 +57,7 @@ public final class ExprEquivalenceTest extends TestCase {
     return new ExpressionParser(
         input,
         SourceLocation.UNKNOWN, 
-        ExplodingErrorReporter.get()).parseExpression();
+        SoyParsingContext.exploding()).parseExpression();
   }
 
   private void assertEquivalent(ExprNode left, ExprNode right) {

@@ -21,9 +21,9 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprparse.ExpressionParser;
+import com.google.template.soy.exprparse.SoyParsingContext;
 import com.google.template.soy.soytree.CommandTextAttributesParser.Attribute;
 
 import java.util.Map;
@@ -127,7 +127,7 @@ public abstract class CallParamNode extends AbstractCommandNode {
      * Helper used by subclass builders to parse the command text.
      * @return An info object containing the parse results.
      */
-    protected CommandTextParseResult parseCommandTextHelper(ErrorReporter errorReporter) {
+    protected CommandTextParseResult parseCommandTextHelper(SoyParsingContext context) {
       String commandText = this.commandText;
 
       // Parse the command text into key and optional valueExprText or extra attributes
@@ -135,7 +135,7 @@ public abstract class CallParamNode extends AbstractCommandNode {
       // the actual content.
       Matcher nctMatcher = NONATTRIBUTE_COMMAND_TEXT.matcher(commandText);
       if (!nctMatcher.matches()) {
-        errorReporter.report(sourceLocation, INVALID_COMMAND_TEXT, commandText);
+        context.report(sourceLocation, INVALID_COMMAND_TEXT, commandText);
         return new CommandTextParseResult(
             "bad_key", null /* valueExprUnion */, null /* contentKind */);
       }
@@ -144,13 +144,13 @@ public abstract class CallParamNode extends AbstractCommandNode {
 
       // Check the validity of the key name, this will report appropriate errors to the
       // reporter if it fails.
-      new ExpressionParser("$" + key, sourceLocation, errorReporter).parseVariable();
+      new ExpressionParser("$" + key, sourceLocation, context).parseVariable();
 
       ContentKind contentKind;
       if (nctMatcher.group(3) != null) {
         Preconditions.checkState(nctMatcher.group(2) == null);
         Map<String, String> attributes
-            = ATTRIBUTES_PARSER.parse(nctMatcher.group(3), errorReporter, sourceLocation);
+            = ATTRIBUTES_PARSER.parse(nctMatcher.group(3), context, sourceLocation);
         contentKind = NodeContentKinds.forAttributeValue(attributes.get("kind"));
       } else {
         contentKind = null;
@@ -161,7 +161,7 @@ public abstract class CallParamNode extends AbstractCommandNode {
         return new CommandTextParseResult(key, null /* valueExprUnion */, contentKind);
       }
       return new CommandTextParseResult(
-          key, ExprUnion.parseWithV1Fallback(valueExprText, sourceLocation), contentKind);
+          key, ExprUnion.parseWithV1Fallback(valueExprText, sourceLocation, context), contentKind);
     }
   }
 }

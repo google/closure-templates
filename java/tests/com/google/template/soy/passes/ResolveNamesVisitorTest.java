@@ -186,6 +186,24 @@ public final class ResolveNamesVisitorTest extends TestCase {
         .fileSet();
   }
 
+  public void testAccidentalGlobalReference() {
+    assertResolveNamesFails(
+        "Found global reference aliasing a local variable 'group', did you mean '$group'?",
+        constructTemplateSource(
+            "{@param group: string}",
+            "{if group}{$group}{/if}"));
+    assertResolveNamesFails(
+        "Found global reference aliasing a local variable 'group', did you mean '$group'?",
+        constructTemplateSource(
+            "{let $group: 'foo' /}",
+            "{if group}{$group}{/if}"));
+    assertResolveNamesFails(
+        "Unbound global 'global'.",
+        constructTemplateSource(
+            "{let $local: 'foo' /}",
+            "{if global}{$local}{/if}"));
+  }
+
   public void testLetContentSlotLifetime() {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(

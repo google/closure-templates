@@ -120,12 +120,18 @@ public class SoySauceTest extends TestCase {
             .setExpectedContentKind(ContentKind.TEXT)  // text is always fine
             .render()
             .get());
+    assertEquals(
+        SanitizedContents.unsanitizedText("Hello world"),
+        sauce
+            .renderTemplate("nonstrict_test.hello")
+            .setExpectedContentKind(ContentKind.TEXT) // text is always fine, even with renderStrict
+            .renderStrict()
+            .get());
     try {
       sauce.renderTemplate("nonstrict_test.hello").renderStrict();
       fail();
     } catch (IllegalStateException e) {
-      assertThat(e.getMessage())
-          .isEqualTo("Cannot render non strict templates to SanitizedContent");
+      assertThat(e.getMessage()).isEqualTo("Cannot render a non strict template as 'html'");
     }
     
     try {

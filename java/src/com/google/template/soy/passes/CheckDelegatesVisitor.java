@@ -16,6 +16,7 @@
 
 package com.google.template.soy.passes;
 
+import com.google.common.base.Equivalence;
 import com.google.common.base.Preconditions;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.error.ErrorReporter;
@@ -35,6 +36,7 @@ import com.google.template.soy.soytree.defn.TemplateParam;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -106,7 +108,7 @@ final class CheckDelegatesVisitor extends AbstractSoyNodeVisitor<Void> {
     for (Collection<TemplateDelegateNode> delTemplateGroup :
         selector.delTemplateNameToValues().asMap().values()) {
       TemplateDelegateNode firstDelTemplate = null;
-      Set<TemplateParam> firstRequiredParamSet = null;
+      Set<Equivalence.Wrapper<TemplateParam>> firstRequiredParamSet = null;
       ContentKind firstContentKind = null;
 
       // loop over all members of the deltemplate group.
@@ -118,7 +120,8 @@ final class CheckDelegatesVisitor extends AbstractSoyNodeVisitor<Void> {
           firstContentKind = delTemplate.getContentKind();
         } else {
           // Not first template encountered.
-          Set<TemplateParam> currRequiredParamSet = getRequiredParamSet(delTemplate);
+          Set<Equivalence.Wrapper<TemplateParam>> currRequiredParamSet =
+              getRequiredParamSet(delTemplate);
           if (!currRequiredParamSet.equals(firstRequiredParamSet)) {
             errorReporter.report(
                 delTemplate.getSourceLocation(),
@@ -147,12 +150,30 @@ final class CheckDelegatesVisitor extends AbstractSoyNodeVisitor<Void> {
     }
   }
 
+  // A specific equivalence relation for seeing if the params of 2 difference templates are
+  // effectively the same.
+  private static final class ParamEquivalence extends Equivalence<TemplateParam> {
+    static final ParamEquivalence INSTANCE = new ParamEquivalence();
+    @Override
+    protected boolean doEquivalent(TemplateParam a, TemplateParam b) {
+      return a.name().equals(b.name())
+          && a.isRequired() == b.isRequired()
+          && a.isInjected() == b.isInjected()
+          && a.type().equals(b.type());
+    }
 
-  private static Set<TemplateParam> getRequiredParamSet(TemplateDelegateNode delTemplate) {
-    Set<TemplateParam> paramSet = new HashSet<>();
+    @Override
+    protected int doHash(TemplateParam t) {
+      return Objects.hash(t.name(), t.isInjected(), t.isRequired(), t.type());
+    }
+  }
+
+  private static Set<Equivalence.Wrapper<TemplateParam>>
+      getRequiredParamSet(TemplateDelegateNode delTemplate) {
+    Set<Equivalence.Wrapper<TemplateParam>> paramSet = new HashSet<>();
     for (TemplateParam param : delTemplate.getParams()) {
       if (param.isRequired()) {
-        paramSet.add(param);
+        paramSet.add(ParamEquivalence.INSTANCE.wrap(param));
       }
     }
     return paramSet;

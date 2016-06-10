@@ -20,8 +20,8 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.error.FormattingErrorReporter;
+import com.google.template.soy.exprparse.SoyParsingContext;
 
 import junit.framework.TestCase;
 
@@ -44,7 +44,7 @@ public final class CallNodeTest extends TestCase {
     FormattingErrorReporter errorReporter = new FormattingErrorReporter();
     new CallBasicNode.Builder(0, SourceLocation.UNKNOWN)
         .commandText(".foo.bar data=\"$x\"")
-        .build(errorReporter);
+        .build(SoyParsingContext.empty(errorReporter, "fake.namspace"));
     assertThat(errorReporter.getErrorMessages())
         .containsExactly("Invalid callee name \".foo.bar\" for 'call' command.");
   }
@@ -53,7 +53,7 @@ public final class CallNodeTest extends TestCase {
   public void testSetEscapingDirectiveNames() {
     CallBasicNode callNode = new CallBasicNode.Builder(0, SourceLocation.UNKNOWN)
         .commandText(".foo")
-        .build(ExplodingErrorReporter.get());
+        .build(SoyParsingContext.exploding());
     assertThat(callNode.getEscapingDirectiveNames()).isEmpty();
     callNode.setEscapingDirectiveNames(ImmutableList.of("hello", "world"));
     assertEquals(ImmutableList.of("hello", "world"), callNode.getEscapingDirectiveNames());
@@ -71,7 +71,7 @@ public final class CallNodeTest extends TestCase {
 
     CallBasicNode callNode = new CallBasicNode.Builder(0, SourceLocation.UNKNOWN)
         .commandText(commandText)
-        .build(ExplodingErrorReporter.get());
+        .build(SoyParsingContext.exploding());
     if (callNode.getCalleeName() == null) {
       callNode.setCalleeName("testNamespace" + callNode.getSrcCalleeName());
     }
@@ -84,7 +84,7 @@ public final class CallNodeTest extends TestCase {
         .userSuppliedPlaceholderName(callNode.getUserSuppliedPhName())
         .syntaxVersionBound(callNode.getSyntaxVersionUpperBound())
         .escapingDirectiveNames(NO_ESCAPERS)
-        .build(ExplodingErrorReporter.get());
+        .build(SoyParsingContext.exploding());
 
     assertThat(normCallNode.getCommandText()).isEqualTo(expectedCommandText);
     assertThat(normCallNode.getSyntaxVersionUpperBound()).isEqualTo(callNode.getSyntaxVersionUpperBound());

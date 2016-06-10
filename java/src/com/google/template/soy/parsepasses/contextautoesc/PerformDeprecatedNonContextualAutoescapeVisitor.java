@@ -23,6 +23,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.coredirectives.EscapeHtmlDirective;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.exprparse.SoyParsingContext;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.AutoescapeMode;
@@ -121,7 +122,7 @@ final class PerformDeprecatedNonContextualAutoescapeVisitor
     if (autoescapeMode == AutoescapeMode.NONCONTEXTUAL && !shouldCancelAutoescape) {
       PrintDirectiveNode newEscapeHtmlDirectiveNode = new PrintDirectiveNode.Builder(
           nodeIdGen.genId(), EscapeHtmlDirective.NAME, "", SourceLocation.UNKNOWN)
-          .build(errorReporter);
+          .build(SoyParsingContext.exploding());  // Known valid
       node.addChild(0, newEscapeHtmlDirectiveNode);
     }
   }

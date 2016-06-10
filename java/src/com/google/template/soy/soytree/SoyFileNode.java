@@ -19,16 +19,11 @@ package com.google.template.soy.soytree;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
 
-import java.util.Collection;
 import java.util.Map;
 
 import javax.annotation.Nullable;
@@ -41,19 +36,6 @@ import javax.annotation.Nullable;
  */
 public final class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
     implements SplitLevelTopNode<TemplateNode> {
-
-  private static final SoyErrorKind ALIAS_USED_WITHOUT_NAMESPACE =
-      SoyErrorKind.of(
-          "''{alias...'' can only be used in files with valid ''{namespace ...'' "
-              + "declarations");
-
-  private static final SoyErrorKind INVALID_ALIAS_FOR_LAST_PART_OF_NAMESPACE =
-      SoyErrorKind.of(
-          "Not allowed to alias the last part of the file''s namespace ({0}) "
-              + "to another namespace ({1}).");
-
-  private static final SoyErrorKind DIFFERENT_NAMESPACES_WITH_SAME_ALIAS =
-      SoyErrorKind.of("Found two namespaces with the same alias (''{0}'' and ''{1}'').");
 
   public static final Predicate<SoyFileNode> MATCH_SRC_FILENODE = new Predicate<SoyFileNode>() {
     @Override
@@ -74,11 +56,12 @@ public final class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
   /** Map from aliases to namespaces for this file. */
   private final ImmutableMap<String, String> aliasToNamespaceMap;
 
+  private final ImmutableList<AliasDeclaration> aliasDeclarations;
+
   /**
    * @param id The id for this node.
    * @param filePath The path to the Soy source file.
    * @param soyFileKind The kind of this Soy file.
-   * @param errorReporter For reporting syntax errors.
    * @param delPackageName This Soy file's delegate package, or null if none.
    * @param namespaceDeclaration This Soy file's namespace and attributes. Nullable for backwards
    *     compatibility only.
@@ -88,44 +71,14 @@ public final class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
       int id,
       String filePath,
       SoyFileKind soyFileKind,
-      ErrorReporter errorReporter,
-      @Nullable String delPackageName,
       NamespaceDeclaration namespaceDeclaration,
-      Collection<AliasDeclaration> aliases) {
+      TemplateNode.SoyFileHeaderInfo headerInfo) {
     super(id, new SourceLocation(filePath));
     this.soyFileKind = soyFileKind;
-    this.delPackageName = delPackageName;
-    this.namespaceDeclaration = namespaceDeclaration;
-
-    Map<String, String> tempAliasToNamespaceMap = Maps.newLinkedHashMap();
-    String aliasForFileNamespace =
-        namespaceDeclaration.isDefined()
-            ? BaseUtils.extractPartAfterLastDot(namespaceDeclaration.getNamespace())
-            : null;
-    for (AliasDeclaration aliasDeclaration : aliases) {
-      if (!namespaceDeclaration.isDefined()) {
-        errorReporter.report(aliasDeclaration.getLocation(), ALIAS_USED_WITHOUT_NAMESPACE);
-      }
-      String aliasNamespace = aliasDeclaration.getNamespace();
-      String alias = aliasDeclaration.getAlias();
-      if (alias.equals(aliasForFileNamespace)
-          && !aliasNamespace.equals(namespaceDeclaration.getNamespace())) {
-        errorReporter.report(
-            aliasDeclaration.getLocation(),
-            INVALID_ALIAS_FOR_LAST_PART_OF_NAMESPACE,
-            namespaceDeclaration.getNamespace(),
-            aliasNamespace);
-      }
-      if (tempAliasToNamespaceMap.containsKey(alias)) {
-        errorReporter.report(
-            getSourceLocation(),
-            DIFFERENT_NAMESPACES_WITH_SAME_ALIAS,
-            tempAliasToNamespaceMap.get(alias),
-            aliasNamespace);
-      }
-      tempAliasToNamespaceMap.put(alias, aliasNamespace);
-    }
-    this.aliasToNamespaceMap = ImmutableMap.copyOf(tempAliasToNamespaceMap);
+    this.delPackageName = headerInfo.delPackageName;
+    this.namespaceDeclaration = namespaceDeclaration; // Immutable
+    this.aliasDeclarations = headerInfo.aliasDeclarations; // immutable
+    this.aliasToNamespaceMap = headerInfo.aliasToNamespaceMap; // immutable
   }
 
 
@@ -138,6 +91,7 @@ public final class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
     this.soyFileKind = orig.soyFileKind;
     this.delPackageName = orig.delPackageName;
     this.namespaceDeclaration = orig.namespaceDeclaration; // Immutable
+    this.aliasDeclarations = orig.aliasDeclarations; // immutable
     this.aliasToNamespaceMap = orig.aliasToNamespaceMap; // immutable
   }
 
@@ -186,6 +140,12 @@ public final class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
   /** Returns the map from aliases to namespaces for this file. */
   public ImmutableMap<String, String> getAliasToNamespaceMap() {
     return aliasToNamespaceMap;
+  }
+
+
+  /** Returns the syntactic alias directives in the file. For semantics, use aliasToNamespaceMap. */
+  public ImmutableList<AliasDeclaration> getAliasDeclarations() {
+    return aliasDeclarations;
   }
 
 

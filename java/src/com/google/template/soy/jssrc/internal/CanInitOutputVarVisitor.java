@@ -16,10 +16,11 @@
 
 package com.google.template.soy.jssrc.internal;
 
-import com.google.inject.Inject;
 import com.google.template.soy.soytree.AbstractReturningSoyNodeVisitor;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.SoyNode;
+
+import javax.inject.Inject;
 
 /**
  * Visitor for determining whther the code generated from a given node's subtree can be made to

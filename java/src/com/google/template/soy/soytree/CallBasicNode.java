@@ -22,10 +22,9 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.SyntaxVersionUpperBound;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
-import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.exprparse.SoyParsingContext;
 import com.google.template.soy.soytree.CommandTextAttributesParser.Attribute;
 import com.google.template.soy.soytree.defn.TemplateParam;
 
@@ -171,7 +170,7 @@ public final class CallBasicNode extends CallNode {
     private static CallBasicNode error() {
       return new Builder(-1, SourceLocation.UNKNOWN)
           .commandText(".error")
-          .build(ExplodingErrorReporter.get()); // guaranteed to be valid
+          .build(SoyParsingContext.exploding()); // guaranteed to be valid
     }
 
     private final int id;
@@ -226,12 +225,12 @@ public final class CallBasicNode extends CallNode {
       return this;
     }
 
-    public CallBasicNode build(ErrorReporter errorReporter) {
-      Checkpoint c = errorReporter.checkpoint();
+    public CallBasicNode build(SoyParsingContext context) {
+      Checkpoint c = context.errorReporter().checkpoint();
       CommandTextInfo commandTextInfo = commandText != null
-          ? parseCommandText(errorReporter)
+          ? parseCommandText(context)
           : buildCommandText();
-      if (errorReporter.errorsSince(c)) {
+      if (context.errorReporter().errorsSince(c)) {
         return error();
       }
       CallBasicNode callBasicNode = new CallBasicNode(
@@ -240,7 +239,7 @@ public final class CallBasicNode extends CallNode {
     }
 
     // TODO(user): eliminate side-channel parsing. This should be a part of the grammar.
-    private CommandTextInfo parseCommandText(ErrorReporter errorReporter) {
+    private CommandTextInfo parseCommandText(SoyParsingContext context) {
       String cmdText =
           commandText +
               ((userSuppliedPlaceholderName != null) ?
@@ -256,17 +255,17 @@ public final class CallBasicNode extends CallNode {
         cmdTextForParsing = cmdTextForParsing.substring(ncnMatcher.end()).trim();
         if (! (BaseUtils.isIdentifierWithLeadingDot(sourceCalleeName) ||
             BaseUtils.isDottedIdentifier(sourceCalleeName))) {
-          errorReporter.report(sourceLocation, BAD_CALLEE_NAME, sourceCalleeName);
+          context.report(sourceLocation, BAD_CALLEE_NAME, sourceCalleeName);
         }
       } else {
-        errorReporter.report(sourceLocation, MISSING_CALLEE_NAME, commandText);
+        context.report(sourceLocation, MISSING_CALLEE_NAME, commandText);
       }
 
       Map<String, String> attributes
-          = ATTRIBUTES_PARSER.parse(cmdTextForParsing, errorReporter, sourceLocation);
+          = ATTRIBUTES_PARSER.parse(cmdTextForParsing, context, sourceLocation);
 
       DataAttribute dataAttrInfo =
-          parseDataAttributeHelper(attributes.get("data"), sourceLocation, errorReporter);
+          parseDataAttributeHelper(attributes.get("data"), sourceLocation, context);
 
       return new CommandTextInfo(
           cmdText, sourceCalleeName, dataAttrInfo, userSuppliedPlaceholderName, syntaxVersionBound);
