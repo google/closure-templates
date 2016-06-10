@@ -60,7 +60,7 @@ import java.util.List;
  * but depending on the type they may also support additional unboxing conversions.
  */
 class SoyExpression extends Expression {
-  // TODO(user): move this variable into Kind.
+  // TODO(msamuel): move this variable into Kind.
   private static final ImmutableSet<Kind> STRING_KINDS =
       Sets.immutableEnumSet(
           Kind.STRING,

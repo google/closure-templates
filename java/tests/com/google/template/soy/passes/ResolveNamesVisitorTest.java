@@ -235,6 +235,7 @@ public final class ResolveNamesVisitorTest extends TestCase {
     // 1. removing this dead feature
     // 2. moving this functionality from CheckTemplateParamsVisitor to ResolveNamesVisitor where it
     //    belongs
+    // http://b/21877289 covers various issues with syntax version
     assertResolveNamesFails("Undefined variable", constructTemplateSource("{$pa}"));
   }
 

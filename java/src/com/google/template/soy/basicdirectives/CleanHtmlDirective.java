@@ -123,7 +123,7 @@ final class CleanHtmlDirective implements SoyJavaPrintDirective, SoyJsSrcPrintDi
   private String generateOptionalSafeTagsArg(List<? extends TargetExpr> args) {
     String optionalSafeTagsArg = "";
     if (!args.isEmpty()) {
-      // TODO(user): Instead of parsing generated JS, we should have a CheckArgumentsPass that
+      // TODO(msamuel): Instead of parsing generated JS, we should have a CheckArgumentsPass that
       // allows directives and functions to examine their input expressions prior to compilation and
       // relay the input file and line number to the template author along with an error message.
       Iterable<String> optionalSafeTagExprs = Iterables.transform(args, TARGET_EXPR_TO_STRING);

@@ -282,7 +282,7 @@ public final class Sanitizers {
     } else if (isSanitizedContentOfKind(value, SanitizedContent.ContentKind.JS)) {
       String jsCode = value.coerceToString();
       // This value may not be embeddable if it contains the substring "</script".
-      // TODO(user): Fixup.  We need to be careful because mucking with '<' can
+      // TODO(msamuel): Fixup.  We need to be careful because mucking with '<' can
       // break code like
       //    while (i</foo/.exec(str).length)
       // and mucking with / can break
@@ -342,7 +342,7 @@ public final class Sanitizers {
     if (isSanitizedContentOfKind(value, SanitizedContent.ContentKind.CSS)) {
       // We don't need to do this when the CSS is embedded in a
       // style attribute since then the HTML escaper kicks in.
-      // TODO(user): Maybe change the autoescaper to generate
+      // TODO(msamuel): Maybe change the autoescaper to generate
       //   |filterCssValue:attrib
       // for style attributes and thread the parameter here so that
       // we can skip this check when its unnecessary.

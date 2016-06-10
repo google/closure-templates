@@ -392,7 +392,7 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
           escaper.getNonAsciiPrefix(), escaper.getInnocuousOutput()));
     }
 
-    // TODO(user): Maybe use java Soy templates to generate the JS?
+    // TODO(msamuel): Maybe use java Soy templates to generate the JS?
 
     // Output the tables.
     for (int i = 0; i < escapeMaps.size(); ++i) {

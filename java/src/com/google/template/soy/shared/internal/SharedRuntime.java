@@ -38,6 +38,7 @@ public final class SharedRuntime {
   public static boolean equal(SoyValue operand0, SoyValue operand1) {
     // Treat the case where either is a string specially.
     // TODO(gboyer): This should probably handle SanitizedContent == SanitizedContent, even though
+    // Javascript doesn't handle that case properly. http://b/21461181
     if (operand0 instanceof StringData) {
       return compareString(operand0.stringValue(), operand1);
     }

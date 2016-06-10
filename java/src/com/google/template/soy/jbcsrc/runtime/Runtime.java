@@ -108,6 +108,7 @@ public final class Runtime {
       throw new NullPointerException("Attempted to access field '" + field + "' of null");
     }
     // TODO(lukes): ideally this would be the behavior of getFieldProvider, but Tofu relies on it
+    // returning null to interpret it as 'undefined'. http://b/20537225 describes the issues in Tofu
     SoyValueProvider provider = record.getFieldProvider(field);
     return provider == null | provider instanceof NullData ? NULL_PROVIDER : provider;
   }
@@ -143,7 +144,7 @@ public final class Runtime {
     return directive.applyForJava(value, args);
   }
 
-  // TODO(user): should access to these be restricted since it can be
+  // TODO(msamuel): should access to these be restricted since it can be
   // used to mint typed strings.
   /**
    * Wraps a given template with a collection of escapers to apply.

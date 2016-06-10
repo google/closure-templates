@@ -450,7 +450,7 @@ public class TranslateToJsExprVisitor extends AbstractReturningExprNodeVisitor<J
     // For unions, attempt to generate the field access code for each member
     // type, and then see if they all agree.
     if (baseType.getKind() == SoyType.Kind.UNION) {
-      // TODO(user): We will need to generate fallback code for each variant.
+      // TODO(msamuel): We will need to generate fallback code for each variant.
       UnionType unionType = (UnionType) baseType;
       String fieldAccessCode = null;
       for (SoyType memberType : unionType.getMembers()) {

@@ -258,7 +258,7 @@ public final class GenerateSoyUtilsEscapingDirectiveCode
     }
 
     if (digest.getNonAsciiPrefix() != null) {
-      // TODO(user): We can add a second replace of all non-ascii codepoints below.
+      // TODO(msamuel): We can add a second replace of all non-ascii codepoints below.
       throw new UnsupportedOperationException("Non ASCII prefix escapers not implemented yet.");
     }
     if (digest.getEscapesName() != null) {

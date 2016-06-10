@@ -202,6 +202,7 @@ def filter_html_attributes(value):
     return _AMBIGUOUS_ATTR_END_RE.sub(r'\1 ', value.content)
 
   # TODO(gboyer): Replace this with a runtime exception along with other
+  # backends. http://b/19795203.
   return generated_sanitize.filter_html_attributes_helper(value)
 
 

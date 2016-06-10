@@ -106,7 +106,7 @@ public final class RecordType implements SoyObjectType {
   @Override public String getFieldAccessExpr(
       String fieldContainerExpr, String fieldName, SoyBackendKind backendKind) {
     if (backendKind == SoyBackendKind.JS_SRC) {
-      // TODO(user): if fieldName is a reserved word, should we use bracket lookup
+      // TODO(msamuel): if fieldName is a reserved word, should we use bracket lookup
       // to be compatible with strict mode?
       return fieldContainerExpr + "." + fieldName;
     } else {

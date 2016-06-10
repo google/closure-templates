@@ -690,7 +690,7 @@ public final class EscapingConventions {
     public static final EscapeJsString INSTANCE = new EscapeJsString();
 
     private EscapeJsString() {
-      super(null, null);  // TODO(user): Maybe use goog.string.quote
+      super(null, null);  // TODO(msamuel): Maybe use goog.string.quote
     }
 
     @Override
@@ -728,7 +728,7 @@ public final class EscapingConventions {
     public static final EscapeJsRegex INSTANCE = new EscapeJsRegex();
 
     private EscapeJsRegex() {
-      // TODO(user): maybe use goog.string.regExpEscape after fixing it to escape
+      // TODO(msamuel): maybe use goog.string.regExpEscape after fixing it to escape
       // [\r\n\u2028\u2029]
       super(null, null);
     }
