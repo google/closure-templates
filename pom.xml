@@ -777,6 +777,8 @@
         <configuration>
           <archive>
             <manifestEntries>
+              <Implementation-Title>${project.name}</Implementation-Title>
+              <Implementation-Version>${project.version}</Implementation-Version>
               <Sealed>true</Sealed>
             </manifestEntries>
           </archive>
