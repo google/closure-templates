@@ -1345,9 +1345,9 @@ goog.loadModule = function(moduleDef) {
     };
     var exports;
     if (goog.isFunction(moduleDef)) {
-      exports = moduleDef.call(goog.global, {});
+      exports = moduleDef.call(undefined, {});
     } else if (goog.isString(moduleDef)) {
-      exports = goog.loadModuleFromSource_.call(goog.global, moduleDef);
+      exports = goog.loadModuleFromSource_.call(undefined, moduleDef);
     } else {
       throw Error('Invalid module definition');
     }
@@ -2690,7 +2690,7 @@ goog.addDependency('a11y/aria/roles.js', ['goog.a11y.aria.Role'], [], {});
 goog.addDependency('array/array.js', ['goog.array'], ['goog.asserts'], {});
 goog.addDependency('array/array_test.js', ['goog.arrayTest'], ['goog.array', 'goog.dom', 'goog.dom.TagName', 'goog.testing.PropertyReplacer', 'goog.testing.jsunit', 'goog.testing.recordFunction'], {});
 goog.addDependency('asserts/asserts.js', ['goog.asserts', 'goog.asserts.AssertionError'], ['goog.debug.Error', 'goog.dom.NodeType', 'goog.string'], {});
-goog.addDependency('asserts/asserts_test.js', ['goog.assertsTest'], ['goog.asserts', 'goog.asserts.AssertionError', 'goog.dom', 'goog.dom.TagName', 'goog.string', 'goog.testing.jsunit', 'goog.userAgent'], {});
+goog.addDependency('asserts/asserts_test.js', ['goog.assertsTest'], ['goog.asserts', 'goog.asserts.AssertionError', 'goog.dom', 'goog.dom.TagName', 'goog.labs.userAgent.browser', 'goog.string', 'goog.testing.jsunit', 'goog.userAgent'], {});
 goog.addDependency('async/animationdelay.js', ['goog.async.AnimationDelay'], ['goog.Disposable', 'goog.events', 'goog.functions'], {});
 goog.addDependency('async/animationdelay_test.js', ['goog.async.AnimationDelayTest'], ['goog.Timer', 'goog.async.AnimationDelay', 'goog.testing.PropertyReplacer', 'goog.testing.jsunit', 'goog.testing.recordFunction', 'goog.testing.testSuite'], {'module': 'goog'});
 goog.addDependency('async/conditionaldelay.js', ['goog.async.ConditionalDelay'], ['goog.Disposable', 'goog.async.Delay'], {});
@@ -3738,7 +3738,8 @@ goog.addDependency('testing/functionmock_test.js', ['goog.testing.FunctionMockTe
 goog.addDependency('testing/graphics.js', ['goog.testing.graphics'], ['goog.graphics.Path', 'goog.testing.asserts'], {});
 goog.addDependency('testing/i18n/asserts.js', ['goog.testing.i18n.asserts'], ['goog.testing.jsunit'], {});
 goog.addDependency('testing/i18n/asserts_test.js', ['goog.testing.i18n.assertsTest'], ['goog.testing.ExpectedFailures', 'goog.testing.i18n.asserts'], {});
-goog.addDependency('testing/jstdtestcaseadapter.js', ['goog.testing.JsTdTestCaseAdapter'], ['goog.async.run', 'goog.testing.TestCase', 'goog.testing.jsunit'], {});
+goog.addDependency('testing/jstdasyncwrapper.js', ['goog.testing.JsTdAsyncWrapper'], ['goog.Promise'], {});
+goog.addDependency('testing/jstdtestcaseadapter.js', ['goog.testing.JsTdTestCaseAdapter'], ['goog.async.run', 'goog.testing.JsTdAsyncWrapper', 'goog.testing.TestCase', 'goog.testing.jsunit'], {});
 goog.addDependency('testing/jsunit.js', ['goog.testing.jsunit'], ['goog.dom.TagName', 'goog.testing.TestCase', 'goog.testing.TestRunner'], {});
 goog.addDependency('testing/loosemock.js', ['goog.testing.LooseExpectationCollection', 'goog.testing.LooseMock'], ['goog.array', 'goog.structs.Map', 'goog.testing.Mock'], {});
 goog.addDependency('testing/loosemock_test.js', ['goog.testing.LooseMockTest'], ['goog.testing.LooseMock', 'goog.testing.PropertyReplacer', 'goog.testing.jsunit', 'goog.testing.mockmatchers'], {});

@@ -14,34 +14,8 @@ The general strategy is to generate a new Java class for each Soy `{template}`.
 Full details on how different pieces of Soy syntax map to Java code are detailed
 below.
 
+For information on how to develop the compiler see [the development guide](development-guide.md)
 
-## Package design
-
-The jbcsrc implementation is split across several packages.
-
- * `com.google.template.soy.jbcsrc`
-
-   The base package contains the core compiler implementation and the public
-   compiler entry point: `BytecodeCompiler`
-
- * `com.google.template.soy.jbcsrc.runtime`
-
-   This package contains helper classes and utility routines that are only
-   accessed by the generated code.  A lot of the `jbcsrc` runtime is actually
-   defined in other soy packages (such as
-   `com.google.template.soy.shared.internal.SharedRuntime` or
-   `com.google.template.soy.shared.data`), when it is possible to share with
-   Tofu.  So this package is really intended for jbcsrc specific functionality.
-
- * `com.google.template.soy.jbcsrc.api`
-
-   This package contains the public api for rendering jbcsrc compiled templates
-   via the `SoySauce` class.
-
- * `com.google.template.soy.jbcsrc.shared`
-
-   This package contains functionality that is shared by the compiler and
-   runtime, but is meant to be private to soy.
 
 ## Background
 
@@ -864,52 +838,3 @@ incompatibilities here:
  and it is more consistent with the behavior of the Javascript Soy backend.
 
 
-## A Bytecode Primer
-
-### Definitions
-
- * Runtime/operand stack - The implicit runtime stack of the virtual machine
- * Basic Block - a sequence of instructions with no branches
- * Frame - the set of values on the runtime stack and in the local variable
-   table
-
-
-### Stack Machine
-
-Java bytecode is a 'stack machine', this means that all operators perform some
-kind of operations on an implicit runtime stack.  For example, the opcode `IADD`
-will pop 2 `int` values off the runtime stack and put their sum back onto the
-stack.  Bytecode also has a local variable table that can be used to store
-named (well indexed) values.  However, there are no opcodes that can operate
-on local variables (other that pushing them onto the stack).
-
-### Types
-
-The Java bytecode type system mostly maps to the normal Java type system with a
-notable exception that boolean is not a type, boolean is just any int,
-`0 == false` and `non zero == true`. However, types impose some important
-constraints on how bytecode can be written. Every value on the runtime stack has
-a type associated, as well as every local variable.  At any instruction there
-is a notion of an active 'frame'. For a basic block, frames are trivial to
-maintain and update.  However, for branch target instructions (jump locations),
-the frames at each branching instruction must be identical.  The jvm has
-dedicated opcodes to manipulate frame state for branch targets.  For the most
-part ASM will calculate these, but errors due to inconsistent frames are easy
-to introduce (and do not have pretty failures).
-
-### Opcodes
-
-A good resource for figuring out what each jvm opcode does is from the
-[java spec](http://docs.oracle.com/javase/specs/jvms/se7/html/jvms-6.html)
-
-### ASM Tips
-
-The asm library has a lot of benefits. It is small, blazing fast, and well
-supported.  However, it can be very error prone to generate bytecode.  In
-particular, asm has no error checking, so when you make a mistake the errors
-produced can be inscrutable.  Here is what I know:
-
- * NegativeArraySizeException is thrown from MethodWriter.visitMaxes.  The most
-   likely explanation is that you have accidentally popped too many items off
-   the runtime stack.  Look for stray POP instructions, or using the wrong
-   branch instruction (IF_IEQ pops two ints, IFEQ pops one).
