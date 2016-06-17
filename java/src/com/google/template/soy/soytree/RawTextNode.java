@@ -38,13 +38,15 @@ public final class RawTextNode extends AbstractSoyNode implements StandaloneNode
 
 
   /** The special chars we need to re-escape for toSourceString(). */
-  private static final Pattern SPECIAL_CHARS_TO_ESCAPE = Pattern.compile("[\n\r\t{}]");
+  private static final Pattern SPECIAL_CHARS_TO_ESCAPE = Pattern.compile("([\n\r\t{}]|/\\*\\*|\\*/)");
 
   /** Map from special char to be re-escaped to its special char tag (for toSourceString()). */
   private static final Map<String, String> SPECIAL_CHAR_TO_TAG =
       ImmutableMap.<String, String>builder()
           .put("\n", "{\\n}").put("\r", "{\\r}").put("\t", "{\\t}")
           .put("{", "{lb}").put("}", "{rb}")
+          .put("/**", "{literal}/**{/literal}")
+          .put("*/", "{literal}*/{/literal}")
           .build();
 
 
