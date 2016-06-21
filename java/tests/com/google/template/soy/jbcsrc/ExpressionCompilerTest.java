@@ -27,6 +27,9 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.data.SanitizedContent;
+import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.data.SanitizedContents;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyDict;
 import com.google.template.soy.data.SoyList;
@@ -60,6 +63,7 @@ import com.google.template.soy.types.aggregate.ListType;
 import com.google.template.soy.types.aggregate.MapType;
 import com.google.template.soy.types.aggregate.RecordType;
 import com.google.template.soy.types.primitive.IntType;
+import com.google.template.soy.types.primitive.SanitizedType;
 import com.google.template.soy.types.primitive.StringType;
 import com.google.template.soy.types.primitive.UnknownType;
 
@@ -417,6 +421,20 @@ public class ExpressionCompilerTest extends TestCase {
         "p1", untypedBoxedSoyExpression(SoyExpression.forString(constantNull(STRING_TYPE))));
     variables.put("p2", SoyExpression.forString(constant("a")).box());
     assertExpression("$p1 ?: $p2").evaluatesTo("a");
+
+    SoyType htmlType = SanitizedType.getTypeForContentKind(ContentKind.HTML);
+    variables.put(
+        "p1",
+        SoyExpression.forSoyValue(
+            htmlType,
+            MethodRef.ORDAIN_AS_SAFE.invoke(constant("<b>hello</b>"), constant(ContentKind.HTML))));
+    variables.put("p2", SoyExpression.forString(constant("")).box());
+    assertExpression("$p1 ?: $p2").evaluatesTo(SanitizedContents.constantHtml("<b>hello</b>"));
+    variables.put(
+        "p1",
+        SoyExpression.forSoyValue(htmlType, constantNull(Type.getType(SanitizedContent.class)))
+            .asNullable());
+    assertExpression("$p1 ?: $p2").evaluatesTo("");
   }
 
   // null coalescing op expression have had a number of bugs due to the advanced unboxing

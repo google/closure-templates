@@ -30,6 +30,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.data.SanitizedContents;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueHelper;
@@ -674,6 +675,19 @@ public class BytecodeCompilerTest extends TestCase {
     assertThat(templateMetadata.injectedParams()).asList().containsExactly("bar");
     assertThat(templateMetadata.callees()).isEmpty();
     assertThat(templateMetadata.delCallees()).isEmpty();
+  }
+
+  public void testPassHtmlAsNullableString() throws Exception {
+    CompiledTemplateSubject subject =
+        TemplateTester.assertThatFile(
+            "{namespace ns}",
+            "{template .foo}",
+            "  {@param? content : string}",
+            "  {$content ?: 'empty' |escapeHtml}",
+            "{/template}");
+    subject.rendersAs("empty");
+    subject.rendersAs(
+        "<b>hello</b>", ImmutableMap.of("content", SanitizedContents.constantHtml("<b>hello</b>")));
   }
 
   private Object getField(String name, CompiledTemplate template) throws Exception {

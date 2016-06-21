@@ -63,13 +63,10 @@ import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
-import com.google.template.soy.jbcsrc.Expression.Feature;
-import com.google.template.soy.jbcsrc.Expression.Features;
 import com.google.template.soy.jbcsrc.ExpressionDetacher.BasicDetacher;
 import com.google.template.soy.soytree.defn.InjectedParam;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
-import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.aggregate.ListType;
@@ -556,65 +553,25 @@ final class ExpressionCompiler {
       // It is extremely common for a user to write '<complex-expression> ?: <primitive-expression>
       // so try to generate code that doesn't involve unconditionally boxing the right hand side.
       final SoyExpression right = visit(node.getRightChild());
-      SoyType nonNullLeftType = SoyTypes.removeNull(left.soyType());
-      Features features = Features.of();
-      if (Expression.areAllCheap(left, right)) {
-        features = features.plus(Feature.CHEAP);
-      }
-      if (right.isNonNullable()) {
-        features = features.plus(Feature.NON_NULLABLE);
-      }
-      if (nonNullLeftType.equals(right.soyType())) {
+      if (SoyTypes.removeNull(left.soyType()).equals(right.soyType())) {
+        SoyExpression result;
         if (left.isBoxed() == right.isBoxed()) {
           // no conversions!
-          return right.withSource(firstNonNull(left, right));
-        }
-        if (right.isBoxed()) {
-          // right is boxed and left is unboxed so just box the left hand side.
-          // TODO(lukes): I cannot trigger this case in a test currently, it may in fact be
-          // impossible
-          SoyExpression boxedLeft = left.box();
-          return boxedLeft.withSource(firstNonNull(boxedLeft, right));
+          result = right.withSource(firstNonNull(left, right));
         } else {
-          // left is boxed and right is unboxed, try to avoid unboxing the right hand side by
-          // attempting an unboxing conversion on the left hand side.  However, we cannot do the
-          // type conversion until after the null check... so it is a bit tricky.
-          final Label leftIsNull = new Label();
-          final Optional<SoyExpression> nullCheckedUnboxedLeft =
-              left
-                  .withSource(
-                      new Expression(left.resultType(), features) {
-                        @Override
-                        void doGen(CodeBuilder cb) {
-                          left.gen(cb);
-                          cb.dup();
-                          cb.ifNull(leftIsNull);
-                        }
-                      })
-                  .asNonNullable()
-                  // TODO(lukes): consider inlining the tryUnbox logic here, this is the only use
-                  .tryUnbox();
-          if (nullCheckedUnboxedLeft.isPresent()) {
-            return right.withSource(
-                new Expression(right.resultType(), features) {
-                  @Override
-                  void doGen(CodeBuilder adapter) {
-                    nullCheckedUnboxedLeft.get().gen(adapter);
-                    Label end = new Label();
-                    adapter.goTo(end);
-                    adapter.mark(leftIsNull);
-                    adapter.pop(); // pop the extra copy of left off the stack
-                    right.gen(adapter);
-                    adapter.mark(end);
-                  }
-                });
-          }
+          SoyExpression boxedRight = right.box();
+          result = boxedRight.withSource(firstNonNull(left.box(), boxedRight));
         }
+        if (Expression.areAllCheap(left, right)) {
+          result = result.asCheap();
+        }
+        return result;
       }
       // Now we need to do some boxing conversions.  soy expression boxes null -> null so this is
       // safe (and I assume that the jit can eliminate the resulting redundant branches)
-      return SoyExpression.forSoyValue(UnknownType.getInstance(),
-          firstNonNull(left.box().cast(SoyValue.class), right.box().cast(SoyValue.class)));
+      Class<? extends SoyValue> javaType = node.getType().javaType();
+      return SoyExpression.forSoyValue(
+          node.getType(), firstNonNull(left.box().cast(javaType), right.box().cast(javaType)));
     }
 
     @Override protected final SoyExpression visitConditionalOpNode(ConditionalOpNode node) {
