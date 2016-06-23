@@ -967,8 +967,7 @@ public final class EscapingConventions {
 
     @Override
     public String getInnocuousOutput() {
-      // TODO(b/23290608, gboyer): Use about:invalid here, to prevent any content from loading.
-      return "#" + INNOCUOUS_OUTPUT;
+      return "about:invalid#" + INNOCUOUS_OUTPUT;
     }
   }
 

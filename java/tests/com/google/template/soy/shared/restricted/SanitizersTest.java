@@ -337,7 +337,7 @@ public class SanitizersTest extends TestCase {
     };
 
     for (String badCase : badForAllFilters) {
-      assertEquals("#zSoyz", Sanitizers.filterNormalizeUri(badCase));
+      assertEquals("about:invalid#zSoyz", Sanitizers.filterNormalizeUri(badCase));
       assertInvalidMediaUri(badCase);
     }
 
@@ -346,10 +346,12 @@ public class SanitizersTest extends TestCase {
         .contains("javascript\uff1a"));
 
     // Tests of filtering heirarchy within uri path (/.. etc )
-    assertEquals("#zSoyz", Sanitizers.filterNormalizeUri("a/../"));
-    assertEquals("#zSoyz", Sanitizers.filterNormalizeUri("/..?"));
-    assertEquals("#zSoyz", Sanitizers.filterNormalizeUri("http://bad.url.com../../s../.#.."));
-    assertEquals("#zSoyz", Sanitizers.filterNormalizeUri("http://badurl.com/normal/../unsafe"));
+    assertEquals("about:invalid#zSoyz", Sanitizers.filterNormalizeUri("a/../"));
+    assertEquals("about:invalid#zSoyz", Sanitizers.filterNormalizeUri("/..?"));
+    assertEquals("about:invalid#zSoyz",
+        Sanitizers.filterNormalizeUri("http://bad.url.com../../s../.#.."));
+    assertEquals("about:invalid#zSoyz",
+        Sanitizers.filterNormalizeUri("http://badurl.com/normal/../unsafe"));
 
     // Things we should accept.
     String[] goodForAllFilters = new String[] {
@@ -386,7 +388,7 @@ public class SanitizersTest extends TestCase {
         UnsafeSanitizedContentOrdainer.ordainAsSafe(
             "javascript:handleClick()", SanitizedContent.ContentKind.URI)));
     // Except doesn't handle HTML.
-    assertEquals("#zSoyz", Sanitizers.filterNormalizeUri(
+    assertEquals("about:invalid#zSoyz", Sanitizers.filterNormalizeUri(
         UnsafeSanitizedContentOrdainer.ordainAsSafe(
             "javascript:handleClick()", SanitizedContent.ContentKind.HTML)));
 

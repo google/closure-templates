@@ -2438,7 +2438,7 @@ soy.esc.$$filterNormalizeUriHelper = function(value) {
   var str = String(value);
   if (!soy.esc.$$FILTER_FOR_FILTER_NORMALIZE_URI_.test(str)) {
     goog.asserts.fail('Bad value `%s` for |filterNormalizeUri', [str]);
-    return '#zSoyz';
+    return 'about:invalid#zSoyz';
   }
   return str.replace(
       soy.esc.$$MATCHER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI_,

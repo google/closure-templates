@@ -103,14 +103,14 @@ public class BasicEscapeDirectiveTest extends AbstractSoyPrintDirectiveTestCase 
     assertTofuOutput("", "", filterNormalizeUri);
     assertTofuOutput(
         "http://www.google.com/a%20b", "http://www.google.com/a b", filterNormalizeUri);
-    assertTofuOutput("#zSoyz", "javascript:alert(1337)", filterNormalizeUri);
+    assertTofuOutput("about:invalid#zSoyz", "javascript:alert(1337)", filterNormalizeUri);
     assertTofuOutput("42", 42, filterNormalizeUri);
 
     new JsSrcPrintDirectiveTestBuilder()
         .addTest("", " '' ", filterNormalizeUri)
         .addTest(
             "http://www.google.com/a%20b", " 'http://www.google.com/a b' ", filterNormalizeUri)
-        .addTest("#zSoyz", " 'javascript:alert(1337)' ", filterNormalizeUri)
+        .addTest("about:invalid#zSoyz", " 'javascript:alert(1337)' ", filterNormalizeUri)
         .addTest("42", " 42 ", filterNormalizeUri)
         .runTests();
   }

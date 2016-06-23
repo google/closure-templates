@@ -275,7 +275,7 @@ def normalize_uri_helper(value):
 def filter_normalize_uri_helper(value):
   value = str(value)
   if not _FILTER_FOR_FILTER_NORMALIZE_URI.search(value):
-    return '#zSoyz'
+    return 'about:invalid#zSoyz'
 
   return _MATCHER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI.sub(
       _REPLACER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI, value)
