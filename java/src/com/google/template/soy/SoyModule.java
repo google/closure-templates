@@ -39,7 +39,7 @@ import javax.inject.Singleton;
  * Guice module for Soy's programmatic interface.
  *
  */
-public class SoyModule extends AbstractModule {
+public final class SoyModule extends AbstractModule {
 
   @Override protected void configure() {
     // This module is mostly available for configuring the compiler (SoyFileSet).  Consider
@@ -79,4 +79,14 @@ public class SoyModule extends AbstractModule {
     requestStaticInjection(GuiceInitializer.class);
   }
 
+  // make this module safe to install multiple times.  This is necessary because things like
+  // JsSrcModule conflict with themselves
+
+  @Override public int hashCode() {
+    return SoyModule.class.hashCode();
+  }
+
+  @Override public boolean equals(Object other) {
+    return other instanceof SoyModule;
+  }
 }
