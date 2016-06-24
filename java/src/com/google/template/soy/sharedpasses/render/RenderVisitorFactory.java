@@ -16,6 +16,7 @@
 
 package com.google.template.soy.sharedpasses.render;
 
+import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.msgs.SoyMsgBundle;
@@ -24,8 +25,6 @@ import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.sharedpasses.render.EvalVisitor.EvalVisitorFactory;
 import com.google.template.soy.soytree.TemplateRegistry;
-
-import java.util.Set;
 
 import javax.annotation.Nullable;
 import javax.inject.Inject;
@@ -62,19 +61,23 @@ public final class RenderVisitorFactory {
    * @param templateRegistry A registry of all templates.
    * @param data The current template data.
    * @param ijData The current injected data.
-   * @param activeDelPackageNames The set of active delegate package names. Allowed to be null
-   *     when known to be irrelevant, i.e. when not using delegates feature.
-   * @param msgBundle The bundle of translated messages, or null to use the messages from the
-   *     Soy source.
+   * @param activeDelPackageSelector The predicate for testing whether a given delpackage is active.
+   *     Allowed to be null when known to be irrelevant, i.e. when not using delegates feature.
+   * @param msgBundle The bundle of translated messages, or null to use the messages from the Soy
+   *     source.
    * @param xidRenamingMap The 'xid' renaming map, or null if not applicable.
    * @param cssRenamingMap The CSS renaming map, or null if not applicable.
    * @return The newly created RenderVisitor instance.
    */
   public RenderVisitor create(
-      Appendable outputBuf, TemplateRegistry templateRegistry, SoyRecord data,
+      Appendable outputBuf,
+      TemplateRegistry templateRegistry,
+      SoyRecord data,
       @Nullable SoyRecord ijData,
-      @Nullable Set<String> activeDelPackageNames, @Nullable SoyMsgBundle msgBundle,
-      @Nullable SoyIdRenamingMap xidRenamingMap, @Nullable SoyCssRenamingMap cssRenamingMap) {
+      @Nullable Predicate<String> activeDelPackageSelector,
+      @Nullable SoyMsgBundle msgBundle,
+      @Nullable SoyIdRenamingMap xidRenamingMap,
+      @Nullable SoyCssRenamingMap cssRenamingMap) {
 
     return new RenderVisitor(
         soyJavaDirectivesMap,
@@ -83,7 +86,7 @@ public final class RenderVisitorFactory {
         templateRegistry,
         data,
         ijData,
-        activeDelPackageNames,
+        activeDelPackageSelector,
         msgBundle,
         xidRenamingMap,
         cssRenamingMap);

@@ -19,8 +19,9 @@ package com.google.template.soy.jbcsrc.shared;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueConverter;
@@ -64,7 +65,7 @@ public final class RenderContext {
   // doing this now by having SoySauceImpl reuse the Builder, but this is a little strange and could
   // be theoretically made more efficient to construct.
 
-  private final ImmutableSet<String> activeDelPackages;
+  private final Predicate<String> activeDelPackageSelector;
   private final CompiledTemplates templates;
   private final SoyCssRenamingMap cssRenamingMap;
   private final SoyIdRenamingMap xidRenamingMap;
@@ -75,7 +76,7 @@ public final class RenderContext {
   private final SoyMsgBundle msgBundle;
 
   private RenderContext(Builder builder) {
-    this.activeDelPackages = checkNotNull(builder.activeDelPackages);
+    this.activeDelPackageSelector = checkNotNull(builder.activeDelPackageSelector);
     this.templates = checkNotNull(builder.templates);
     this.cssRenamingMap = builder.cssRenamingMap;
     this.xidRenamingMap = builder.xidRenamingMap;
@@ -115,7 +116,7 @@ public final class RenderContext {
   public CompiledTemplate getDelTemplate(
       String calleeName, String variant, boolean allowEmpty, SoyRecord params, SoyRecord ij) {
     CompiledTemplate.Factory callee =
-        templates.selectDelTemplate(calleeName, variant, activeDelPackages);
+        templates.selectDelTemplate(calleeName, variant, activeDelPackageSelector);
     if (callee == null) {
       if (allowEmpty) {
         return EMPTY_TEMPLATE;
@@ -151,7 +152,7 @@ public final class RenderContext {
   @VisibleForTesting
   public Builder toBuilder() {
     return new Builder()
-        .withActiveDelPackages(this.activeDelPackages)
+        .withActiveDelPackageSelector(this.activeDelPackageSelector)
         .withSoyFunctions(soyJavaFunctionsMap)
         .withSoyPrintDirectives(soyJavaDirectivesMap)
         .withCssRenamingMap(cssRenamingMap)
@@ -163,7 +164,7 @@ public final class RenderContext {
   /** A builder for configuring the context. */
   public static final class Builder {
     private CompiledTemplates templates;
-    private ImmutableSet<String> activeDelPackages = ImmutableSet.of();
+    private Predicate<String> activeDelPackageSelector = Predicates.alwaysFalse();
     private SoyCssRenamingMap cssRenamingMap = SoyCssRenamingMap.EMPTY;
     private SoyIdRenamingMap xidRenamingMap = SoyCssRenamingMap.EMPTY;
     private ImmutableMap<String, SoyJavaFunction> soyJavaFunctionsMap = ImmutableMap.of();
@@ -176,8 +177,8 @@ public final class RenderContext {
       return this;
     }
 
-    public Builder withActiveDelPackages(ImmutableSet<String> activeDelPackages) {
-      this.activeDelPackages = checkNotNull(activeDelPackages);
+    public Builder withActiveDelPackageSelector(Predicate<String> activeDelPackageSelector) {
+      this.activeDelPackageSelector = checkNotNull(activeDelPackageSelector);
       return this;
     }
 

@@ -21,9 +21,10 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.template.soy.jbcsrc.shared.Names.rewriteStackTrace;
 
 import com.google.common.base.Optional;
+import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
@@ -48,7 +49,6 @@ import com.google.template.soy.shared.restricted.SoyPrintDirective;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.Set;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
@@ -136,7 +136,7 @@ public final class SoySauceImpl implements SoySauce {
     private final String templateName;
     private final CompiledTemplate.Factory templateFactory;
     private final Optional<ContentKind> contentKind;
-    private ImmutableSet<String> activeDelegatePackages = ImmutableSet.of();
+    private Predicate<String> activeDelegatePackages = Predicates.alwaysFalse();
     private SoyMsgBundle msgs = SoyMsgBundle.EMPTY;
     private final RenderContext.Builder contextBuilder =
         new RenderContext.Builder()
@@ -168,9 +168,9 @@ public final class SoySauceImpl implements SoySauce {
       return this;
     }
 
-    @Override public RendererImpl setActiveDelegatePackageNames(
-        Set<String> activeDelegatePackages) {
-      this.activeDelegatePackages = ImmutableSet.copyOf(activeDelegatePackages);
+    @Override
+    public RendererImpl setActiveDelegatePackageSelector(Predicate<String> active) {
+      this.activeDelegatePackages = checkNotNull(active);
       return this;
     }
 
@@ -229,7 +229,7 @@ public final class SoySauceImpl implements SoySauce {
       RenderContext context =
           contextBuilder
               .withMessageBundle(msgs)
-              .withActiveDelPackages(activeDelegatePackages)
+              .withActiveDelPackageSelector(activeDelegatePackages)
               .build();
       BidiGlobalDir dir = BidiGlobalDir.forStaticLocale(msgs.getLocaleString());
       Scoper scoper = new Scoper(apiCallScope, dir, msgs.getLocaleString());

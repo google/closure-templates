@@ -16,6 +16,7 @@
 
 package com.google.template.soy.tofu.internal;
 
+import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.msgs.SoyMsgBundle;
@@ -24,8 +25,6 @@ import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.sharedpasses.render.RenderVisitor;
 import com.google.template.soy.soytree.TemplateRegistry;
-
-import java.util.Set;
 
 import javax.annotation.Nullable;
 
@@ -48,10 +47,10 @@ final class TofuRenderVisitor extends RenderVisitor {
    *     tests).
    * @param data The current template data.
    * @param ijData The current injected data.
-   * @param activeDelPackageNames The set of active delegate package names. Allowed to be null when
-   *     known to be irrelevant.
-   * @param msgBundle The bundle of translated messages, or null to use the messages from the
-   *     Soy source.
+   * @param activeDelPackageSelector The predicate for testing whether a given delpackage is active.
+   *     Allowed to be null when known to be irrelevant.
+   * @param msgBundle The bundle of translated messages, or null to use the messages from the Soy
+   *     source.
    * @param xidRenamingMap The 'xid' renaming map, or null if not applicable.
    * @param cssRenamingMap The CSS renaming map, or null if not applicable.
    */
@@ -62,7 +61,7 @@ final class TofuRenderVisitor extends RenderVisitor {
       @Nullable TemplateRegistry templateRegistry,
       SoyRecord data,
       @Nullable SoyRecord ijData,
-      @Nullable Set<String> activeDelPackageNames,
+      @Nullable Predicate<String> activeDelPackageSelector,
       @Nullable SoyMsgBundle msgBundle,
       @Nullable SoyIdRenamingMap xidRenamingMap,
       @Nullable SoyCssRenamingMap cssRenamingMap) {
@@ -73,7 +72,7 @@ final class TofuRenderVisitor extends RenderVisitor {
         templateRegistry,
         data,
         ijData,
-        activeDelPackageNames,
+        activeDelPackageSelector,
         msgBundle,
         xidRenamingMap,
         cssRenamingMap);
@@ -88,7 +87,7 @@ final class TofuRenderVisitor extends RenderVisitor {
         templateRegistry,
         data,
         ijData,
-        activeDelPackageNames,
+        activeDelPackageSelector,
         msgBundle,
         xidRenamingMap,
         cssRenamingMap);

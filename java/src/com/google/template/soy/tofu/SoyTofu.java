@@ -16,6 +16,7 @@
 
 package com.google.template.soy.tofu;
 
+import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyRecord;
@@ -158,8 +159,16 @@ public interface SoyTofu {
 
     /**
      * Sets the set of active delegate package names.
+     *
+     * @deprecated Call {@link #setActiveDelegatePackageSelector(Predicate)} instead.
      */
+    @Deprecated
     Renderer setActiveDelegatePackageNames(Set<String> activeDelegatePackageNames);
+
+    /**
+     * Sets the predicate to use for testing whether or not a given {@code delpackage} is active.
+     */
+    Renderer setActiveDelegatePackageSelector(Predicate<String> activeDelegatePackageSelector);
 
     /**
      * Sets the bundle of translated messages, or null to use the messages from the Soy source.

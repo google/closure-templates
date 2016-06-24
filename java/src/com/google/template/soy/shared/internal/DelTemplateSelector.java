@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
+import com.google.common.base.Predicate;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
@@ -29,7 +30,6 @@ import com.google.common.collect.Tables;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Set;
 
 import javax.annotation.Nullable;
 
@@ -83,17 +83,18 @@ public final class DelTemplateSelector<T> {
   }
 
   /**
-   * Returns an active delegate for the given name, variant and active packages.  If no active
+   * Returns an active delegate for the given name, variant and active packages. If no active
    * delegate if found for the {@code variant} the we fallback to a non variant lookup. Finally, we
    * return {@code null} if no such template can be found.
    *
-   * <p>See {@code soy.$$getDelegateFn} for the js version
+   * <p>See {@code soy.$$getDelegateFn} for the {@code JS} version
    */
   @Nullable
-  public T selectTemplate(String delTemplateName, String variant, Set<String> activeDelPackages) {
+  public T selectTemplate(
+      String delTemplateName, String variant, Predicate<String> activeDelPackageSelector) {
     Group<T> group = nameAndVariantToGroup.get(delTemplateName, variant);
     if (group != null) {
-      T selection = group.select(activeDelPackages);
+      T selection = group.select(activeDelPackageSelector);
       if (selection != null) {
         return selection;
       }
@@ -102,7 +103,7 @@ public final class DelTemplateSelector<T> {
       // Retry with an empty variant
       group = nameAndVariantToGroup.get(delTemplateName, "");
       if (group != null) {
-        return group.select(activeDelPackages);
+        return group.select(activeDelPackageSelector);
       }
     }
     return null;
@@ -160,13 +161,13 @@ public final class DelTemplateSelector<T> {
     }
 
     /**
-     * Returns the value from this group based on the current active packages, or the default if
-     * one exists.
+     * Returns the value from this group based on the current active packages, or the default if one
+     * exists.
      */
-    T select(Set<String> activeDelPackages) {
+    T select(Predicate<String> activeDelPackageSelector) {
       Map.Entry<String, T> selected = null;
       for (Map.Entry<String, T> entry : delpackageToValue.entrySet()) {
-        if (activeDelPackages.contains(entry.getKey())) {
+        if (activeDelPackageSelector.apply(entry.getKey())) {
           if (selected != null) {
             // how important is this?  maybe instead of checking at deltemplate selection time we
             // should validate active packages at the beginning of rendering (this is what the js

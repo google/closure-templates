@@ -17,6 +17,7 @@
 package com.google.template.soy.sharedpasses.render;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -96,7 +97,6 @@ import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.List;
-import java.util.Set;
 
 import javax.annotation.Nullable;
 
@@ -128,8 +128,8 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
   /** The current environment. */
   protected Environment env;
 
-  /** The set of active delegate package names. */
-  protected final Set<String> activeDelPackageNames;
+  /** The predicate for testing whether a given delpackage is active. */
+  protected final Predicate<String> activeDelPackageSelector;
 
   /** The bundle of translated messages, or null to use the messages from the Soy source. */
   protected final SoyMsgBundle msgBundle;
@@ -170,8 +170,8 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
    *     tests).
    * @param data The current template data.
    * @param ijData The current injected data.
-   * @param activeDelPackageNames The set of active delegate package names. Allowed to be null when
-   *     known to be irrelevant.
+   * @param activeDelPackageSelector The predicate for testing whether a given delpackage is active.
+   *     Allowed to be null when known to be irrelevant.
    * @param msgBundle The bundle of translated messages, or null to use the messages from the Soy
    *     source.
    * @param cssRenamingMap The CSS renaming map, or null if not applicable.
@@ -184,7 +184,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       @Nullable TemplateRegistry templateRegistry,
       SoyRecord data,
       @Nullable SoyRecord ijData,
-      @Nullable Set<String> activeDelPackageNames,
+      @Nullable Predicate<String> activeDelPackageSelector,
       @Nullable SoyMsgBundle msgBundle,
       @Nullable SoyIdRenamingMap xidRenamingMap,
       @Nullable SoyCssRenamingMap cssRenamingMap) {
@@ -195,7 +195,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     this.templateRegistry = templateRegistry;
     this.data = data;
     this.ijData = ijData;
-    this.activeDelPackageNames = activeDelPackageNames;
+    this.activeDelPackageSelector = activeDelPackageSelector;
     this.msgBundle = msgBundle;
     this.xidRenamingMap = xidRenamingMap;
     this.cssRenamingMap = cssRenamingMap;
@@ -244,7 +244,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
         templateRegistry,
         data,
         ijData,
-        activeDelPackageNames,
+        activeDelPackageSelector,
         msgBundle,
         xidRenamingMap,
         cssRenamingMap);
@@ -536,7 +536,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
     TemplateDelegateNode callee;
     try {
-      callee = templateRegistry.selectDelTemplate(delegateKey, activeDelPackageNames);
+      callee = templateRegistry.selectDelTemplate(delegateKey, activeDelPackageSelector);
     } catch (IllegalArgumentException e) {
       throw RenderException.createWithSource(e.getMessage(), e, node);
     }

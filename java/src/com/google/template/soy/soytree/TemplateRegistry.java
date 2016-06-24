@@ -18,6 +18,7 @@ package com.google.template.soy.soytree;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -30,7 +31,6 @@ import com.google.template.soy.soytree.TemplateDelegateNode.DelTemplateKey;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Set;
 
 import javax.annotation.Nullable;
 
@@ -175,17 +175,18 @@ public final class TemplateRegistry {
    *
    * @param delTemplateKey The delegate template key (name and variant) to select an implementation
    *     for.
-   * @param activeDelPackageNames The set of active delegate package names.
+   * @param activeDelPackageNameSelector The predicate for testing whether a given delpackage is
+   *     active.
    * @return The selected delegate template, or null if there are no active implementations.
-   * @throws IllegalArgumentException If there are two or more active implementations with
-   *     equal priority (unable to select one over the other).
+   * @throws IllegalArgumentException If there are two or more active implementations with equal
+   *     priority (unable to select one over the other).
    */
   @Nullable
   public TemplateDelegateNode selectDelTemplate(
-      DelTemplateKey delTemplateKey, Set<String> activeDelPackageNames) {
+      DelTemplateKey delTemplateKey, Predicate<String> activeDelPackageNameSelector) {
     // TODO(lukes): eliminate this method and DelTemplateKey
     return delTemplateSelector.selectTemplate(
-        delTemplateKey.name(), delTemplateKey.variant(), activeDelPackageNames);
+        delTemplateKey.name(), delTemplateKey.variant(), activeDelPackageNameSelector);
   }
 
   /**

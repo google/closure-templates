@@ -18,6 +18,7 @@ package com.google.template.soy.tofu.internal;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
@@ -41,7 +42,6 @@ import com.google.template.soy.soytree.TemplateRegistry;
 
 import junit.framework.TestCase;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -143,15 +143,18 @@ public class TofuRenderVisitorTest extends TestCase {
     // will add its var to the enclosing template's env frame.
 
     StringBuilder outputSb = new StringBuilder();
-    RenderVisitor rv = INJECTOR.getInstance(RenderVisitorFactory.class).create(
-        outputSb,
-        templateRegistry,
-        SoyValueHelper.EMPTY_DICT,
-        null /* ijData */,
-        Collections.<String>emptySet() /* activeDelPackageNames */,
-        null /* msgBundle */,
-        null /* xidRenamingMap */,
-        null /* cssRenamingMap */);
+    RenderVisitor rv =
+        INJECTOR
+            .getInstance(RenderVisitorFactory.class)
+            .create(
+                outputSb,
+                templateRegistry,
+                SoyValueHelper.EMPTY_DICT,
+                null /* ijData */,
+                Predicates.<String>alwaysFalse() /* activeDelPackageSelector */,
+                null /* msgBundle */,
+                null /* xidRenamingMap */,
+                null /* cssRenamingMap */);
     rv.exec(templateRegistry.getBasicTemplate("ns.callerTemplate"));
 
     assertThat(outputSb.toString()).isEqualTo("blah");

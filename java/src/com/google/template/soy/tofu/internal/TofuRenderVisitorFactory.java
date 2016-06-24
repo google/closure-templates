@@ -18,6 +18,7 @@ package com.google.template.soy.tofu.internal;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.msgs.SoyMsgBundle;
@@ -25,8 +26,6 @@ import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.soytree.TemplateRegistry;
-
-import java.util.Set;
 
 import javax.annotation.Nullable;
 import javax.inject.Inject;
@@ -55,10 +54,10 @@ class TofuRenderVisitorFactory {
    * @param templateRegistry A registry of all templates.
    * @param data The current template data.
    * @param ijData The current injected data.
-   * @param activeDelPackageNames The set of active delegate package names. Allowed to be null
-   *     when known to be irrelevant, i.e. when not using delegates feature.
-   * @param msgBundle The bundle of translated messages, or null to use the messages from the
-   *     Soy source.
+   * @param activeDelPackageSelector The predicate for testing whether a given delpackage is active.
+   *     Allowed to be null when known to be irrelevant. i.e. when not using delegates feature.
+   * @param msgBundle The bundle of translated messages, or null to use the messages from the Soy
+   *     source.
    * @param xidRenamingMap The 'xid' renaming map, or null if not applicable.
    * @param cssRenamingMap The CSS renaming map, or null if not applicable.
    * @return The newly created TofuRenderVisitor instance.
@@ -69,7 +68,7 @@ class TofuRenderVisitorFactory {
       ImmutableMap<String, ? extends SoyJavaPrintDirective> printDirectives,
       SoyRecord data,
       SoyRecord ijData,
-      @Nullable Set<String> activeDelPackageNames,
+      @Nullable Predicate<String> activeDelPackageSelector,
       @Nullable SoyMsgBundle msgBundle,
       @Nullable SoyIdRenamingMap xidRenamingMap,
       @Nullable SoyCssRenamingMap cssRenamingMap) {
@@ -81,7 +80,7 @@ class TofuRenderVisitorFactory {
         templateRegistry,
         checkNotNull(data),
         checkNotNull(ijData),
-        activeDelPackageNames,
+        activeDelPackageSelector,
         msgBundle,
         xidRenamingMap,
         cssRenamingMap);

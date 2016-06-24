@@ -19,6 +19,7 @@ package com.google.template.soy.jbcsrc.shared;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.base.Optional;
+import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
@@ -134,14 +135,12 @@ public final class CompiledTemplates {
     return transitiveIjParams;
   }
 
-  /**
-   * Returns an active delegate for the given name, variant and active packages.
-   */
+  /** Returns an active delegate for the given name, variant and active package selector. */
   @Nullable
   CompiledTemplate.Factory selectDelTemplate(
-      String delTemplateName, String variant, Set<String> activeDelPackages) {
+      String delTemplateName, String variant, Predicate<String> activeDelPackageSelector) {
     TemplateData selectedTemplate =
-        selector.selectTemplate(delTemplateName, variant, activeDelPackages);
+        selector.selectTemplate(delTemplateName, variant, activeDelPackageSelector);
     return selectedTemplate == null ? null : selectedTemplate.factory;
   }
 

@@ -24,6 +24,8 @@ import static com.google.template.soy.jbcsrc.TemplateTester.assertThatTemplateBo
 import static com.google.template.soy.jbcsrc.TemplateTester.getDefaultContext;
 
 import com.google.common.base.Joiner;
+import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -130,20 +132,20 @@ public class BytecodeCompilerTest extends TestCase {
     CompiledTemplates templates = 
         BytecodeCompiler.compile(templateRegistry, false, ExplodingErrorReporter.get()).get();
     CompiledTemplate.Factory factory = templates.getTemplateFactory("ns1.callerTemplate");
-    ImmutableSet<String> activePackages = ImmutableSet.<String>of();
+    Predicate<String> activePackages = Predicates.alwaysFalse();
 
     assertThat(renderWithContext(factory, getDefaultContext(templates, activePackages)))
         .isEqualTo("default");
 
-    activePackages = ImmutableSet.of("SecretFeature");
+    activePackages = Predicates.equalTo("SecretFeature");
     assertThat(renderWithContext(factory, getDefaultContext(templates, activePackages)))
         .isEqualTo("SecretFeature aaaaaah");
 
-    activePackages = ImmutableSet.of("AlternateSecretFeature");
+    activePackages = Predicates.equalTo("AlternateSecretFeature");
     assertThat(renderWithContext(factory, getDefaultContext(templates, activePackages)))
         .isEqualTo("AlternateSecretFeature aaaaaah");
-    
-    activePackages = ImmutableSet.of("NonexistentFeature");
+
+    activePackages = Predicates.equalTo("NonexistentFeature");
     assertThat(renderWithContext(factory, getDefaultContext(templates, activePackages)))
         .isEqualTo("default");
   }

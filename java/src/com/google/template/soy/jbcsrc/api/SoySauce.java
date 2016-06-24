@@ -16,6 +16,7 @@
 
 package com.google.template.soy.jbcsrc.api;
 
+import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
@@ -25,7 +26,6 @@ import com.google.template.soy.shared.SoyIdRenamingMap;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.Set;
 
 import javax.annotation.CheckReturnValue;
 
@@ -54,8 +54,10 @@ public interface SoySauce {
     /** Configures the {@code {xid ..}} renaming map. */
     Renderer setXidRenamingMap(SoyIdRenamingMap xidRenamingMap);
 
-    /** Configures the current active {@code delpackages}. */
-    Renderer setActiveDelegatePackageNames(Set<String> activeDelegatePackages);
+    /**
+     * Sets the predicate to use for testing whether or not a given {@code delpackage} is active.
+     */
+    Renderer setActiveDelegatePackageSelector(Predicate<String> active);
 
     /** Configures the bundle of translated messages to use. */
     Renderer setMsgBundle(SoyMsgBundle msgs);
