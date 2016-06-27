@@ -149,7 +149,7 @@ public final class SoyToIncrementalDomSrcCompiler {
       exitWithErrorFn.apply("Must provide the output path format.");
     }
 
-    Injector injector = MainClassUtils.createInjector(messagePluginModule, pluginModules);
+    Injector injector = MainClassUtils.createInjectorForPlugins(pluginModules);
 
     // Create SoyFileSet.
     SoyFileSet.Builder sfsBuilder = injector.getInstance(SoyFileSet.Builder.class);
