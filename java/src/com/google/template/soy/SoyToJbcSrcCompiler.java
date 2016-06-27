@@ -90,7 +90,7 @@ public final class SoyToJbcSrcCompiler {
   private String outputSrcJar = "";
 
   @Option(
-    name = "--globals_file",
+    name = "--compileTimeGlobalsFile",
     usage =
         "The path to a file containing the mappings for global names to be substituted"
             + " at compile time. Each line of the file should have the format"
