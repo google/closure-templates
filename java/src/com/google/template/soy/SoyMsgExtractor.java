@@ -18,14 +18,12 @@ package com.google.template.soy;
 
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.inject.Injector;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.SoyMsgBundleHandler;
 import com.google.template.soy.msgs.SoyMsgBundleHandler.OutputFileOptions;
-import com.google.template.soy.shared.internal.MainEntryPointUtils;
 import com.google.template.soy.xliffmsgplugin.XliffMsgPluginModule;
 
 import org.kohsuke.args4j.Argument;
@@ -74,17 +72,11 @@ public final class SoyMsgExtractor {
   private boolean allowExternalCalls = true;
 
   @Option(name = "--outputFile",
+          required = true,
           usage = "The path to the output file to write. If a file already" +
                   " exists at this location, it will be overwritten. The file extension must" +
                   " match the output format requested.")
-  private String outputFile = "";
-
-  @Option(name = "--outputPathFormat",
-          usage = "A format string that specifies how to build the path to each" +
-                  " output file. The format string can include literal characters as well as the" +
-                  " placeholders {INPUT_PREFIX}, {INPUT_DIRECTORY}, {INPUT_FILE_NAME}," +
-                  " {INPUT_FILE_NAME_NO_EXT}")
-  private String outputPathFormat = "";
+  private File outputFile;
 
   @Option(name = "--sourceLocaleString",
           usage = "The locale string of the source language (default 'en').")
@@ -142,23 +134,6 @@ public final class SoyMsgExtractor {
     MainClassUtils.addSoyFilesToBuilder(sfsBuilder, inputPrefix, srcs, arguments,
         ImmutableList.<String>of(), ImmutableList.<String>of(), exitWithErrorFn);
     sfsBuilder.setAllowExternalCalls(allowExternalCalls);
-
-    File outputFile0;
-    if (outputPathFormat.length() != 0) {
-      if (outputFile.length() != 0) {
-        exitWithErrorFn.apply("Must provide one of output file path or output path format.");
-      }
-      String inputFilePath = inputPrefix + (Iterables.getFirst(srcs, arguments.get(0)));
-      String outputFilePath = MainEntryPointUtils.buildFilePath(
-          outputPathFormat, null, inputFilePath, inputPrefix);
-      outputFile0 = new File(outputFilePath);
-    } else if (outputFile.length() != 0) {
-      outputFile0 = new File(outputFile);
-    } else {
-      exitWithErrorFn.apply("Must provide output file path or output path format.");
-      return;
-    }
-
     SoyFileSet sfs = sfsBuilder.build();
 
     SoyMsgBundle msgBundle = sfs.extractMsgs();
@@ -169,7 +144,7 @@ public final class SoyMsgExtractor {
     if (targetLocaleString.length() > 0) {
       options.setTargetLocaleString(targetLocaleString);
     }
-    msgBundleHandler.writeToExtractedMsgsFile(msgBundle, options, outputFile0);
+    msgBundleHandler.writeToExtractedMsgsFile(msgBundle, options, outputFile);
   }
 
 }

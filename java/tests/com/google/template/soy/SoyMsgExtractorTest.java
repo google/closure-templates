@@ -51,27 +51,6 @@ public class SoyMsgExtractorTest extends TestCase {
     return tmpFile;
   }
 
-
-  public final void testOutputPathFormatFlag() throws Exception {
-    File soyFile = getTempFile(".soy");
-    Files.write(
-        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
-        + "/***/\n{template .a}\n{msg desc=\"a\"}H\uff49{/msg}\n{/template}",
-        soyFile, UTF_8);
-
-    String dir = soyFile.getParent().toString();
-    String name = soyFile.getName();
-    File xmlFile = new File(dir, name.substring(0, name.length() - 4) + ".xml");
-
-    SoyMsgExtractor.main(
-        "--outputPathFormat", "{INPUT_DIRECTORY}/{INPUT_FILE_NAME_NO_EXT}.xml",
-        soyFile.toString());
-
-    String xmlContent = Files.toString(xmlFile, UTF_8);
-    assertThat(xmlContent).contains("<source>H\uff49</source>");
-  }
-
-
   public final void testOutputFileFlag() throws Exception {
     File soyFile1 = getTempFile(".soy");
     Files.write(
