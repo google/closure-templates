@@ -26,7 +26,6 @@ import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 
 import java.util.Map;
-import java.util.Set;
 
 import javax.annotation.Nullable;
 
@@ -156,14 +155,6 @@ public interface SoyTofu {
      * Sets the injected data to call the template with. Can be null if not used.
      */
     Renderer setIjData(SoyRecord ijData);
-
-    /**
-     * Sets the set of active delegate package names.
-     *
-     * @deprecated Call {@link #setActiveDelegatePackageSelector(Predicate)} instead.
-     */
-    @Deprecated
-    Renderer setActiveDelegatePackageNames(Set<String> activeDelegatePackageNames);
 
     /**
      * Sets the predicate to use for testing whether or not a given {@code delpackage} is active.

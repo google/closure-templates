@@ -47,7 +47,6 @@ import com.google.template.soy.tofu.SoyTofu;
 import com.google.template.soy.tofu.SoyTofuException;
 
 import java.util.Map;
-import java.util.Set;
 
 import javax.annotation.Nullable;
 
@@ -327,12 +326,6 @@ public class BaseTofu implements SoyTofu {
     @Override public Renderer setIjData(SoyRecord ijData) {
       this.ijData = ijData;
       return this;
-    }
-
-    @Deprecated
-    @Override
-    public Renderer setActiveDelegatePackageNames(Set<String> activeDelegatePackageNames) {
-      return setActiveDelegatePackageSelector(Predicates.in(activeDelegatePackageNames));
     }
 
     @Override
