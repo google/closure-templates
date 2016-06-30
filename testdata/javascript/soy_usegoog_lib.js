@@ -4146,8 +4146,6 @@ goog.addDependency('vec/mat3f.js', ['goog.vec.mat3f', 'goog.vec.mat3f.Type'], ['
 goog.addDependency('vec/mat4.js', ['goog.vec.Mat4'], ['goog.vec', 'goog.vec.Vec3', 'goog.vec.Vec4'], {});
 goog.addDependency('vec/mat4d.js', ['goog.vec.mat4d', 'goog.vec.mat4d.Type'], ['goog.vec', 'goog.vec.Quaternion', 'goog.vec.vec3d', 'goog.vec.vec4d'], {});
 goog.addDependency('vec/mat4f.js', ['goog.vec.mat4f', 'goog.vec.mat4f.Type'], ['goog.vec', 'goog.vec.Quaternion', 'goog.vec.vec3f', 'goog.vec.vec4f'], {});
-goog.addDependency('vec/matrix3.js', ['goog.vec.Matrix3'], [], {});
-goog.addDependency('vec/matrix4.js', ['goog.vec.Matrix4'], ['goog.vec', 'goog.vec.Vec3', 'goog.vec.Vec4'], {});
 goog.addDependency('vec/quaternion.js', ['goog.vec.Quaternion', 'goog.vec.Quaternion.AnyType'], ['goog.vec', 'goog.vec.Vec3', 'goog.vec.Vec4'], {});
 goog.addDependency('vec/ray.js', ['goog.vec.Ray'], ['goog.vec.Vec3'], {});
 goog.addDependency('vec/vec.js', ['goog.vec', 'goog.vec.AnyType', 'goog.vec.ArrayType', 'goog.vec.Float32', 'goog.vec.Float64', 'goog.vec.Number'], ['goog.vec.Float32Array', 'goog.vec.Float64Array'], {});
@@ -19471,7 +19469,7 @@ goog.dom.getElementsByTagNameAndClass_ = function(
 
 /**
  * Alias for {@code getElementsByTagNameAndClass}.
- * @param {(?string|!goog.dom.TypedTagName<T>)=} opt_tag Element tag name.
+ * @param {(string|?goog.dom.TypedTagName<T>)=} opt_tag Element tag name.
  * @param {?string=} opt_class Optional class name.
  * @param {Element=} opt_el Optional element to look in.
  * @return {!IArrayLike<!Element>} Array-like list of elements (only a length
@@ -19483,7 +19481,25 @@ goog.dom.$$ = goog.dom.getElementsByTagNameAndClass;
 
 
 /**
- * Sets multiple properties on a node.
+ * Sets multiple properties, and sometimes attributes, on an element. Note that
+ * properties are simply object properties on the element instance, while
+ * attributes are visible in the DOM. Many properties map to attributes with the
+ * same names, some with different names, and there are also unmappable cases.
+ *
+ * This method sets properties by default (which means that custom attributes
+ * are not supported). These are the exeptions (some of which is legacy):
+ * - "style": Even though this is an attribute name, it is translated to a
+ *   property, "style.cssText". Note that this property sanitizes and formats
+ *   its value, unlike the attribute.
+ * - "class": This is an attribute name, it is translated to the "className"
+ *   property.
+ * - "for": This is an attribute name, it is translated to the "htmlFor"
+ *   property.
+ * - Entries in {@see goog.dom.DIRECT_ATTRIBUTE_MAP_} are set as attributes,
+ *   this is probably due to browser quirks.
+ * - "aria-*", "data-*": Always set as attributes, they have no property
+ *   counterparts.
+ *
  * @param {Element} element DOM node to set properties on.
  * @param {Object} properties Hash of property:value pairs.
  */
@@ -19824,9 +19840,12 @@ goog.dom.getWindow_ = function(doc) {
  * <code>createDom('div', null, createDom('p'), createDom('p'));</code>
  * would return a div with two child paragraphs
  *
+ * For passing properties, please see {@link goog.dom.setProperties} for more
+ * information.
+ *
  * @param {string|!goog.dom.TypedTagName<T>} tagName Tag to create.
- * @param {(Object|Array<string>|string)=} opt_attributes If object, then a map
- *     of name-value pairs for attributes. If a string, then this is the
+ * @param {(Object|Array<string>|string)=} opt_properties If object, then a map
+ *     of name-value pairs for properties. If a string, then this is the
  *     className of the new element. If an array, the elements will be joined
  *     together as the className of the new element.
  * @param {...(Object|string|Array|NodeList)} var_args Further DOM nodes or
@@ -19835,7 +19854,28 @@ goog.dom.getWindow_ = function(doc) {
  * @return {!Element} Reference to a DOM node.
  * @template T
  */
-goog.dom.createDom = function(tagName, opt_attributes, var_args) {
+goog.dom.createDom = function(tagName, opt_properties, var_args) {
+  return goog.dom.createDom_(document, arguments);
+};
+
+
+/**
+ * A version of createDom where the tag name is a plain string and not a member
+ * of goog.dom.TagName. Currently, this function is the same as createDom but in
+ * the future, createDom will return a more specific type (e.g. HTMLImageElement
+ * for goog.TagName.IMG) while createUntypedDom will still return Element.
+ *
+ * @param {string} tagName Tag to create.
+ * @param {(Object|Array<string>|string)=} opt_attributes If object, then a map
+ *     of name-value pairs for attributes. If a string, then this is the
+ *     className of the new element. If an array, the elements will be joined
+ *     together as the className of the new element.
+ * @param {...(Object|string|Array|NodeList)} var_args Further DOM nodes or
+ *     strings for text nodes. If one of the var_args is an array or NodeList,
+ *     its elements will be added as childNodes instead.
+ * @return {!Element} Reference to a DOM node.
+ */
+goog.dom.createUntypedDom = function(tagName, opt_attributes, var_args) {
   return goog.dom.createDom_(document, arguments);
 };
 
@@ -19935,14 +19975,15 @@ goog.dom.append_ = function(doc, parent, args, startIndex) {
 
 /**
  * Alias for {@code createDom}.
- * @param {string} tagName Tag to create.
- * @param {(string|Object)=} opt_attributes If object, then a map of name-value
- *     pairs for attributes. If a string, then this is the className of the new
+ * @param {string|!goog.dom.TypedTagName<T>} tagName Tag to create.
+ * @param {(string|Object)=} opt_properties If object, then a map of name-value
+ *     pairs for properties. If a string, then this is the className of the new
  *     element.
  * @param {...(Object|string|Array|NodeList)} var_args Further DOM nodes or
  *     strings for text nodes. If one of the var_args is an array, its
  *     children will be added as childNodes instead.
  * @return {!Element} Reference to a DOM node.
+ * @template T
  * @deprecated Use {@link goog.dom.createDom} instead.
  */
 goog.dom.$dom = goog.dom.createDom;
@@ -21504,11 +21545,12 @@ goog.dom.DomHelper.prototype.getRequiredElementByClass = function(
  * @deprecated Use DomHelper getElementsByTagNameAndClass.
  * @see goog.dom.query
  *
- * @param {?string=} opt_tag Element tag name.
+ * @param {(string|?goog.dom.TypedTagName<T>)=} opt_tag Element tag name.
  * @param {?string=} opt_class Optional class name.
  * @param {Element=} opt_el Optional element to look in.
  * @return {!IArrayLike<!Element>} Array-like list of elements (only a length
  *     property and numerical indices are guaranteed to exist).
+ * @template T
  */
 goog.dom.DomHelper.prototype.$$ =
     goog.dom.DomHelper.prototype.getElementsByTagNameAndClass;
@@ -21584,8 +21626,30 @@ goog.dom.DomHelper.prototype.createDom = function(
 
 
 /**
- * Alias for {@code createDom}.
+ * A version of createDom where the tag name is a plain string and not a member
+ * of goog.dom.TagName. Currently, this function is the same as createDom but in
+ * the future, createDom will return a more specific type (e.g. HTMLImageElement
+ * for goog.TagName.IMG) while createUntypedDom will still return Element.
+ *
  * @param {string} tagName Tag to create.
+ * @param {(Object|Array<string>|string)=} opt_attributes If object, then a map
+ *     of name-value pairs for attributes. If a string, then this is the
+ *     className of the new element. If an array, the elements will be joined
+ *     together as the className of the new element.
+ * @param {...(Object|string|Array|NodeList)} var_args Further DOM nodes or
+ *     strings for text nodes. If one of the var_args is an array or NodeList,
+ *     its elements will be added as childNodes instead.
+ * @return {!Element} Reference to a DOM node.
+ */
+goog.dom.DomHelper.prototype.createUntypedDom = function(
+    tagName, opt_attributes, var_args) {
+  return goog.dom.createDom_(this.document_, arguments);
+};
+
+
+/**
+ * Alias for {@code createDom}.
+ * @param {string|!goog.dom.TypedTagName<T>} tagName Tag to create.
  * @param {(Object|string)=} opt_attributes If object, then a map of name-value
  *     pairs for attributes. If a string, then this is the className of the new
  *     element.
@@ -21593,6 +21657,7 @@ goog.dom.DomHelper.prototype.createDom = function(
  *     text nodes.  If one of the var_args is an array, its children will be
  *     added as childNodes instead.
  * @return {!Element} Reference to a DOM node.
+ * @template T
  * @deprecated Use {@link goog.dom.DomHelper.prototype.createDom} instead.
  */
 goog.dom.DomHelper.prototype.$dom = goog.dom.DomHelper.prototype.createDom;
