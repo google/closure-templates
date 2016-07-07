@@ -150,6 +150,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     // no templates with parameters) where the js code generation does not pull it in. This is
     // required for generating calls to itext().
     addGoogRequire("goog.asserts", true /* suppressExtra */);
+    addGoogRequire("goog.string", true /* suppressExtra */);
 
     getJsCodeBuilder().appendLine("var IncrementalDom = goog.require('incrementaldom');")
       .appendLine("var ie_open = IncrementalDom.elementOpen;")
