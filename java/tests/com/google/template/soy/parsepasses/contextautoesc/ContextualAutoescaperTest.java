@@ -1397,6 +1397,26 @@ public final class ContextualAutoescaperTest extends TestCase {
             "{/template}"));
   }
 
+  public void testSvgImage() throws Exception {
+    assertContextualRewriting(
+        join(
+            "{namespace ns}\n\n",
+            "{template .image autoescape=\"deprecated-contextual\"}\n",
+            "  {@param iconPath: ?}\n",
+            "<svg>",
+            "<image xlink:href=\"{$iconPath |filterNormalizeMediaUri |escapeHtmlAttribute}\">",
+            "</svg>\n",
+            "{/template}"),
+        join(
+            "{namespace ns}\n\n",
+            "{template .image autoescape=\"deprecated-contextual\"}\n",
+            "  {@param iconPath: ?}\n",
+            "<svg>",
+            "<image xlink:href=\"{$iconPath}\">",
+            "</svg>\n",
+            "{/template}"));
+  }
+
   public void testDynamicAttrName() throws Exception {
     assertContextualRewriting(
         join(

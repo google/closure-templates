@@ -95,6 +95,8 @@ public class RawTextContextUpdaterTest extends TestCase {
         "HTML_BEFORE_ATTRIBUTE_VALUE NORMAL URI NORMAL");
     assertTransition("HTML_PCDATA", "<source src=",
         "HTML_BEFORE_ATTRIBUTE_VALUE NORMAL URI NORMAL");
+    assertTransition("HTML_PCDATA", "<image xlink:href=",
+        "HTML_BEFORE_ATTRIBUTE_VALUE MEDIA URI MEDIA");
     assertTransition("HTML_PCDATA", "<a href=mailto:",
         "URI NORMAL URI SPACE_OR_TAG_END AUTHORITY_OR_PATH NORMAL");
     assertTransition(

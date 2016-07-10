@@ -322,10 +322,11 @@ final class RawTextContextUpdater {
    */
   private static final Map<String, Context.ElementType> SPECIAL_ELEMENT_TYPES =
       ImmutableMap.<String, Context.ElementType>builder()
-          // We currently only treat <img> as a media type, since for <video> and <audio> there are
-          // concerns that attackers could introduce rich video or audio that facilitates social
-          // engineering.  Upon further review, it's possible we may allow them.
+          // We currently only treat <img> and SVG's <image> as a media type, since for <video> and
+          // <audio> there are concerns that attackers could introduce rich video or audio that
+          // facilitates social engineering.  Upon further review, it's possible we may allow them.
           .put("img", Context.ElementType.MEDIA)
+          .put("image", Context.ElementType.MEDIA)
           .put("script", Context.ElementType.SCRIPT)
           .put("style", Context.ElementType.STYLE)
           .put("textarea", Context.ElementType.TEXTAREA)
@@ -438,7 +439,8 @@ final class RawTextContextUpdater {
         } else if ("style".equals(localName)) {
           attr = Context.AttributeType.STYLE;
         // TODO(gboyer): We should treat script srcs as trusted and impose additional restrictions.
-        } else if (prior.elType == Context.ElementType.MEDIA && "src".equals(attrName)) {
+        } else if (prior.elType == Context.ElementType.MEDIA
+            && ("src".equals(attrName) || "xlink:href".equals(attrName))) {
           attr = Context.AttributeType.URI;
           uriType = UriType.MEDIA;
         } else if (prior.elType == Context.ElementType.SCRIPT && "src".equals(attrName)) {
