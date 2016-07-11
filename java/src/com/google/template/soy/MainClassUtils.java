@@ -60,6 +60,8 @@ final class MainClassUtils {
 
   private MainClassUtils() {}
 
+  // NOTE: all the OptionHandler types need to be public with public constructors so args4j can use
+  // them.
 
   /**
    * OptionHandler for args4j that handles a boolean.
@@ -160,6 +162,46 @@ final class MainClassUtils {
     }
   }
 
+  /** OptionHandler for args4j that handles a comma-delimited list of guice modules. */
+  public static final class ModuleListOptionHandler extends ListOptionHandler<Module> {
+
+    /** {@link ListOptionHandler#ListOptionHandler(CmdLineParser,OptionDef,Setter)} */
+    public ModuleListOptionHandler(
+        CmdLineParser parser, OptionDef option, Setter<? super Module> setter) {
+      super(parser, option, setter);
+    }
+
+    @Override
+    Module parseItem(String item) {
+      return instantiatePluginModule(item);
+    }
+  }
+
+  /** OptionHandler for args4j that handles a comma-delimited list of strings. */
+  public static final class ModuleOptionHandler extends OptionHandler<Module> {
+    /** {@link ListOptionHandler#ListOptionHandler(CmdLineParser,OptionDef,Setter)} */
+    public ModuleOptionHandler(
+        CmdLineParser parser, OptionDef option, Setter<? super Module> setter) {
+      super(parser, option, setter);
+    }
+
+    @Override
+    public int parseArguments(Parameters params) throws CmdLineException {
+      String parameter = params.getParameter(0);
+      // An empty string should be null
+      if (parameter.isEmpty()) {
+        setter.addValue(null);
+      } else {
+        setter.addValue(instantiatePluginModule(parameter));
+      }
+      return 1;
+    }
+
+    @Override
+    public String getDefaultMetaVariable() {
+      return "com.foo.bar.BazModule";
+    }
+  }
 
   /**
    * Parses command line flags written with args4j.
@@ -171,6 +213,11 @@ final class MainClassUtils {
    *     usage text for flags when reporting errors).
    */
   static CmdLineParser parseFlags(Object objWithFlags, String[] args, String usagePrefix) {
+    CmdLineParser.registerHandler(Module.class, ModuleOptionHandler.class);
+    // overwrite the built in boolean handler
+    CmdLineParser.registerHandler(Boolean.class, BooleanOptionHandler.class);
+    CmdLineParser.registerHandler(boolean.class, BooleanOptionHandler.class);
+
     CmdLineParser cmdLineParser = new CmdLineParser(objWithFlags);
     cmdLineParser.setUsageWidth(100);
 
@@ -216,7 +263,7 @@ final class MainClassUtils {
    * @param cmdLineParser The CmdLineParser used to print usage text for flags.
    * @param usagePrefix The string to prepend to the usage message (when reporting an error).
    */
-  static void exitWithError(
+  static RuntimeException exitWithError(
       String errorMsg, CmdLineParser cmdLineParser, String usagePrefix) {
 
     System.err.println("\nError: " + errorMsg + "\n\n");
@@ -224,6 +271,7 @@ final class MainClassUtils {
     cmdLineParser.printUsage(System.err);
 
     System.exit(1);
+    throw new AssertionError(); // dead code
   }
 
   /**
@@ -260,6 +308,13 @@ final class MainClassUtils {
    */
   static Injector createInjectorForMsgPlugin(String msgPluginModuleName) {
     return doCreateInjector(msgPluginModuleName, "");
+  }
+
+  /** Returns a Guice injector that includes the SoyModule, and the given modules. */
+  static Injector createInjector(List<Module> modules) {
+    modules = new ArrayList<>(modules); // make a copy that we know is mutable
+    modules.add(new SoyModule());
+    return Guice.createInjector(modules); // TODO(lukes): Stage.PRODUCTION?
   }
 
   /**
