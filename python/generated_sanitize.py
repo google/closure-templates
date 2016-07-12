@@ -11,7 +11,7 @@ except NameError:
 
 
 def escape_uri_helper(v):
-  return urllib.quote(str(v))
+  return urllib.quote(str(v), '')
 
 _ESCAPE_MAP_FOR_ESCAPE_HTML__AND__NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND__NORMALIZE_HTML_NOSPACE = {
   '\x00': '&#0;',

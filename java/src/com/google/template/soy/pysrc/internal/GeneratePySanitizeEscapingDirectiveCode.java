@@ -161,9 +161,12 @@ public final class GeneratePySanitizeEscapingDirectiveCode
   @Override protected void useExistingLibraryFunction(StringBuilder outputCode, String identifier,
       String existingFunction) {
     String fnName = CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, identifier);
+    // When urllib.quote is called without a second parameter, '/' is by default NOT escaped.
+    // Adding an empty string as a second parameter ensures that '/' is escaped.
+    // Documentation: https://docs.python.org/2/library/urllib.html#urllib.quote
     outputCode
         .append("\ndef ").append(fnName).append("_helper(v):\n")
-        .append("  return ").append(existingFunction).append("(str(v))\n")
+        .append("  return ").append(existingFunction).append("(str(v), \'\')\n")
         .append("\n");
   }
 
