@@ -17,7 +17,6 @@
 package com.google.template.soy;
 
 import com.google.common.base.Function;
-import com.google.common.collect.Lists;
 import com.google.inject.Injector;
 import com.google.template.soy.MainClassUtils.Main;
 import com.google.template.soy.base.SoySyntaxException;
@@ -27,9 +26,11 @@ import com.google.template.soy.xliffmsgplugin.XliffMsgPluginModule;
 import org.kohsuke.args4j.Argument;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
+import org.kohsuke.args4j.spi.StringArrayOptionHandler;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -56,18 +57,18 @@ public final class SoyToJsSrcCompiler {
   @Option(name = "--srcs",
           usage = "[Required] The list of source Soy files.",
           handler = MainClassUtils.StringListOptionHandler.class)
-  private List<String> srcs = Lists.newArrayList();
+  private List<String> srcs = new ArrayList<>();
 
   @Option(name = "--deps",
           usage = "The list of dependency Soy files (if applicable). The compiler needs deps for" +
                   " analysis/checking, but will not generate code for dep files.",
           handler = MainClassUtils.StringListOptionHandler.class)
-  private List<String> deps = Lists.newArrayList();
+  private List<String> deps = new ArrayList<>();
 
   @Option(name = "--indirectDeps",
           usage = "Soy files required by deps, but which may not be used by srcs.",
           handler = MainClassUtils.StringListOptionHandler.class)
-  private List<String> indirectDeps = Lists.newArrayList();
+  private List<String> indirectDeps = new ArrayList<>();
 
   @Option(name = "--allowExternalCalls",
           usage = "Whether to allow external calls. New projects should set this to false, and" +
@@ -124,7 +125,7 @@ public final class SoyToJsSrcCompiler {
                   " which to generate localized JS. There will be one output JS file for each" +
                   " combination of input Soy file and locale.",
           handler = MainClassUtils.StringListOptionHandler.class)
-  private List<String> locales = Lists.newArrayList();
+  private List<String> locales = new ArrayList<>();
 
   @Option(name = "--messageFilePathFormat",
           usage = "[Required for generating localized JS] A format string that specifies how to" +
@@ -199,10 +200,16 @@ public final class SoyToJsSrcCompiler {
                   " print directive plugins (comma-delimited list).")
   private String pluginModules = "";
 
+  @Option(name = "--protoFileDescriptors",
+          usage = "Location of protocol buffer definitions in the form of a file descriptor set."
+                + "The compiler needs defs for parameter type checking and generating direct "
+                + "access support for proto types.",
+          handler = StringArrayOptionHandler.class)
+  private static final List<String> protoFileDescriptors = new ArrayList<>();
+
   /** The remaining arguments after parsing command-line flags. */
   @Argument
-  private List<String> arguments = Lists.newArrayList();
-
+  private List<String> arguments = new ArrayList<>();
 
   /**
    * Compiles a set of Soy files into corresponding JS source files.
@@ -254,6 +261,7 @@ public final class SoyToJsSrcCompiler {
     if (!compileTimeGlobalsFile.isEmpty()) {
       sfsBuilder.setCompileTimeGlobals(new File(compileTimeGlobalsFile));
     }
+
     SoyFileSet sfs = sfsBuilder.build();
 
     // Create SoyJsSrcOptions.

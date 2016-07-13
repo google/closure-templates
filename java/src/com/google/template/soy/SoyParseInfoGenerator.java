@@ -21,7 +21,6 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
 import com.google.common.io.Files;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -31,9 +30,11 @@ import com.google.template.soy.base.internal.BaseUtils;
 import org.kohsuke.args4j.Argument;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
+import org.kohsuke.args4j.spi.StringArrayOptionHandler;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -65,18 +66,18 @@ public final class SoyParseInfoGenerator {
   @Option(name = "--srcs",
           usage = "[Required] The list of source Soy files.",
           handler = MainClassUtils.StringListOptionHandler.class)
-  private List<String> srcs = Lists.newArrayList();
+  private List<String> srcs = new ArrayList<>();
 
   @Option(name = "--deps",
           usage = "The list of dependency Soy files (if applicable). The compiler needs deps for" +
                   " analysis/checking, but will not generate code for dep files.",
           handler = MainClassUtils.StringListOptionHandler.class)
-  private List<String> deps = Lists.newArrayList();
+  private List<String> deps = new ArrayList<>();
 
   @Option(name = "--indirectDeps",
           usage = "Soy files required by deps, but which may not be used by srcs.",
           handler = MainClassUtils.StringListOptionHandler.class)
-  private List<String> indirectDeps = Lists.newArrayList();
+  private List<String> indirectDeps = new ArrayList<>();
 
   @Option(name = "--allowExternalCalls",
           usage = "Whether to allow external calls. New projects should set this to false, and" +
@@ -107,9 +108,16 @@ public final class SoyParseInfoGenerator {
                   " class names such as File1SoyInfo, File2SoyInfo.")
   private String javaClassNameSource = "";
 
+  @Option(name = "--protoFileDescriptors",
+          usage = "Location of protocol buffer definitions in the form of a file descriptor set."
+                + "The compiler needs defs for parameter type checking and generating direct "
+                + "access support for proto types.",
+          handler = StringArrayOptionHandler.class)
+  private static final List<String> protoFileDescriptors = new ArrayList<>();
+
   /** The remaining arguments after parsing command-line flags. */
   @Argument
-  private List<String> arguments = Lists.newArrayList();
+  private List<String> arguments = new ArrayList<>();
 
 
   /**
@@ -168,6 +176,7 @@ public final class SoyParseInfoGenerator {
         sfsBuilder, inputPrefix, ImmutableSet.copyOf(srcs), ImmutableSet.copyOf(arguments),
         ImmutableSet.copyOf(deps), ImmutableSet.copyOf(indirectDeps), exitWithErrorFn);
     sfsBuilder.setAllowExternalCalls(allowExternalCalls);
+
     SoyFileSet sfs = sfsBuilder.build();
 
     ImmutableMap<String, String> parseInfo =
