@@ -777,6 +777,8 @@
         <configuration>
           <archive>
             <manifestEntries>
+              <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+              <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
               <Sealed>true</Sealed>
             </manifestEntries>
           </archive>
