@@ -2862,7 +2862,7 @@ goog.addDependency('dom/controlrange_test.js', ['goog.dom.ControlRangeTest'], ['
 goog.addDependency('dom/dataset.js', ['goog.dom.dataset'], ['goog.string', 'goog.userAgent.product'], {});
 goog.addDependency('dom/dataset_test.js', ['goog.dom.datasetTest'], ['goog.dom', 'goog.dom.dataset', 'goog.testing.jsunit'], {});
 goog.addDependency('dom/dom.js', ['goog.dom', 'goog.dom.Appendable', 'goog.dom.DomHelper'], ['goog.array', 'goog.asserts', 'goog.dom.BrowserFeature', 'goog.dom.NodeType', 'goog.dom.TagName', 'goog.dom.safe', 'goog.html.SafeHtml', 'goog.html.uncheckedconversions', 'goog.math.Coordinate', 'goog.math.Size', 'goog.object', 'goog.string', 'goog.string.Unicode', 'goog.userAgent'], {});
-goog.addDependency('dom/dom_test.js', ['goog.dom.dom_test'], ['goog.array', 'goog.asserts', 'goog.dom', 'goog.dom.BrowserFeature', 'goog.dom.DomHelper', 'goog.dom.InputType', 'goog.dom.NodeType', 'goog.dom.TagName', 'goog.dom.TypedTagName', 'goog.functions', 'goog.html.testing', 'goog.object', 'goog.string.Const', 'goog.string.Unicode', 'goog.testing.PropertyReplacer', 'goog.testing.asserts', 'goog.userAgent', 'goog.userAgent.product', 'goog.userAgent.product.isVersion'], {});
+goog.addDependency('dom/dom_test.js', ['goog.dom.dom_test'], ['goog.array', 'goog.asserts', 'goog.dom', 'goog.dom.BrowserFeature', 'goog.dom.DomHelper', 'goog.dom.InputType', 'goog.dom.NodeType', 'goog.dom.TagName', 'goog.functions', 'goog.html.testing', 'goog.object', 'goog.string.Const', 'goog.string.Unicode', 'goog.testing.PropertyReplacer', 'goog.testing.asserts', 'goog.userAgent', 'goog.userAgent.product', 'goog.userAgent.product.isVersion'], {});
 goog.addDependency('dom/fontsizemonitor.js', ['goog.dom.FontSizeMonitor', 'goog.dom.FontSizeMonitor.EventType'], ['goog.dom', 'goog.dom.TagName', 'goog.events', 'goog.events.EventTarget', 'goog.events.EventType', 'goog.userAgent'], {});
 goog.addDependency('dom/fontsizemonitor_test.js', ['goog.dom.FontSizeMonitorTest'], ['goog.dom', 'goog.dom.FontSizeMonitor', 'goog.dom.TagName', 'goog.events', 'goog.events.Event', 'goog.testing.PropertyReplacer', 'goog.testing.events', 'goog.testing.jsunit', 'goog.userAgent'], {});
 goog.addDependency('dom/forms.js', ['goog.dom.forms'], ['goog.dom.InputType', 'goog.dom.TagName', 'goog.structs.Map', 'goog.window'], {});
@@ -2921,8 +2921,6 @@ goog.addDependency('dom/textrange.js', ['goog.dom.TextRange'], ['goog.array', 'g
 goog.addDependency('dom/textrange_test.js', ['goog.dom.TextRangeTest'], ['goog.dom', 'goog.dom.ControlRange', 'goog.dom.Range', 'goog.dom.TextRange', 'goog.math.Coordinate', 'goog.style', 'goog.testing.ExpectedFailures', 'goog.testing.jsunit', 'goog.userAgent', 'goog.userAgent.product'], {});
 goog.addDependency('dom/textrangeiterator.js', ['goog.dom.TextRangeIterator'], ['goog.array', 'goog.dom', 'goog.dom.NodeType', 'goog.dom.RangeIterator', 'goog.dom.TagName', 'goog.iter.StopIteration'], {});
 goog.addDependency('dom/textrangeiterator_test.js', ['goog.dom.TextRangeIteratorTest'], ['goog.dom', 'goog.dom.TagName', 'goog.dom.TextRangeIterator', 'goog.iter.StopIteration', 'goog.testing.dom', 'goog.testing.jsunit'], {});
-goog.addDependency('dom/typedtagname.js', ['goog.dom.TypedTagName'], [], {});
-goog.addDependency('dom/typedtagname_test.js', ['goog.dom.TypedTagNameTest'], ['goog.dom.TypedTagName', 'goog.testing.jsunit'], {});
 goog.addDependency('dom/vendor.js', ['goog.dom.vendor'], ['goog.string', 'goog.userAgent'], {});
 goog.addDependency('dom/vendor_test.js', ['goog.dom.vendorTest'], ['goog.array', 'goog.dom.vendor', 'goog.labs.userAgent.util', 'goog.testing.MockUserAgent', 'goog.testing.PropertyReplacer', 'goog.testing.jsunit', 'goog.userAgent', 'goog.userAgentTestUtil'], {});
 goog.addDependency('dom/viewportsizemonitor.js', ['goog.dom.ViewportSizeMonitor'], ['goog.dom', 'goog.events', 'goog.events.EventTarget', 'goog.events.EventType', 'goog.math.Size'], {});
@@ -19171,9 +19169,6 @@ goog.require('goog.string.Unicode');
 goog.require('goog.userAgent');
 
 
-goog.forwardDeclare('goog.dom.TypedTagName');
-
-
 /**
  * @define {boolean} Whether we know at compile time that the browser is in
  * quirks mode.
@@ -19314,12 +19309,11 @@ goog.dom.$ = goog.dom.getElement;
  *
  * @see {goog.dom.query}
  *
- * @param {(?string|!goog.dom.TypedTagName<T>)=} opt_tag Element tag name.
+ * @param {?string=} opt_tag Element tag name.
  * @param {?string=} opt_class Optional class name.
  * @param {(Document|Element)=} opt_el Optional element to look in.
  * @return {!IArrayLike<!Element>} Array-like list of elements (only a length
  *     property and numerical indices are guaranteed to exist).
- * @template T
  */
 goog.dom.getElementsByTagNameAndClass = function(opt_tag, opt_class, opt_el) {
   return goog.dom.getElementsByTagNameAndClass_(
@@ -19399,12 +19393,11 @@ goog.dom.canUseQuerySelector_ = function(parent) {
 /**
  * Helper for {@code getElementsByTagNameAndClass}.
  * @param {!Document} doc The document to get the elements in.
- * @param {(?string|!goog.dom.TypedTagName<T>)=} opt_tag Element tag name.
+ * @param {?string=} opt_tag Element tag name.
  * @param {?string=} opt_class Optional class name.
  * @param {(Document|Element)=} opt_el Optional element to look in.
  * @return {!IArrayLike<!Element>} Array-like list of elements (only a length
  *     property and numerical indices are guaranteed to exist).
- * @template T
  * @private
  */
 goog.dom.getElementsByTagNameAndClass_ = function(
@@ -19464,13 +19457,12 @@ goog.dom.getElementsByTagNameAndClass_ = function(
 
 /**
  * Alias for {@code getElementsByTagNameAndClass}.
- * @param {(string|?goog.dom.TypedTagName<T>)=} opt_tag Element tag name.
+ * @param {?string=} opt_tag Element tag name.
  * @param {?string=} opt_class Optional class name.
  * @param {Element=} opt_el Optional element to look in.
  * @return {!IArrayLike<!Element>} Array-like list of elements (only a length
  *     property and numerical indices are guaranteed to exist).
  * @deprecated Use {@link goog.dom.getElementsByTagNameAndClass} instead.
- * @template T
  */
 goog.dom.$$ = goog.dom.getElementsByTagNameAndClass;
 
@@ -19824,8 +19816,7 @@ goog.dom.getWindow_ = function(doc) {
 };
 
 
-// TODO(jakubvrana): Disallow {string} in tagName and change the return type to
-// {T}.
+// TODO(jakubvrana): Allow only members of goog.dom.TagName in tagName.
 /**
  * Returns a dom node with a set of attributes.  This function accepts varargs
  * for subsequent nodes to be added.  Subsequent nodes will be added to the
@@ -19838,7 +19829,7 @@ goog.dom.getWindow_ = function(doc) {
  * For passing properties, please see {@link goog.dom.setProperties} for more
  * information.
  *
- * @param {string|!goog.dom.TypedTagName<T>} tagName Tag to create.
+ * @param {string} tagName Tag to create.
  * @param {(Object|Array<string>|string)=} opt_properties If object, then a map
  *     of name-value pairs for properties. If a string, then this is the
  *     className of the new element. If an array, the elements will be joined
@@ -19847,7 +19838,6 @@ goog.dom.getWindow_ = function(doc) {
  *     strings for text nodes. If one of the var_args is an array or NodeList,
  *     its elements will be added as childNodes instead.
  * @return {!Element} Reference to a DOM node.
- * @template T
  */
 goog.dom.createDom = function(tagName, opt_properties, var_args) {
   return goog.dom.createDom_(document, arguments);
@@ -19970,7 +19960,7 @@ goog.dom.append_ = function(doc, parent, args, startIndex) {
 
 /**
  * Alias for {@code createDom}.
- * @param {string|!goog.dom.TypedTagName<T>} tagName Tag to create.
+ * @param {string} tagName Tag to create.
  * @param {(string|Object)=} opt_properties If object, then a map of name-value
  *     pairs for properties. If a string, then this is the className of the new
  *     element.
@@ -19978,7 +19968,6 @@ goog.dom.append_ = function(doc, parent, args, startIndex) {
  *     strings for text nodes. If one of the var_args is an array, its
  *     children will be added as childNodes instead.
  * @return {!Element} Reference to a DOM node.
- * @template T
  * @deprecated Use {@link goog.dom.createDom} instead.
  */
 goog.dom.$dom = goog.dom.createDom;
@@ -19986,9 +19975,8 @@ goog.dom.$dom = goog.dom.createDom;
 
 /**
  * Creates a new element.
- * @param {string|!goog.dom.TypedTagName<T>} name Tag name.
+ * @param {string} name Tag name.
  * @return {!Element} The new element.
- * @template T
  */
 goog.dom.createElement = function(name) {
   return document.createElement(String(name));
@@ -21477,13 +21465,11 @@ goog.dom.DomHelper.prototype.$ = goog.dom.DomHelper.prototype.getElement;
  *
  * @see goog.dom.query
  *
- * @param {(?string|!goog.dom.TypedTagName<T>)=} opt_tag Element tag name or *
- *     for all tags.
+ * @param {?string=} opt_tag Element tag name or * for all tags.
  * @param {?string=} opt_class Optional class name.
  * @param {(Document|Element)=} opt_el Optional element to look in.
  * @return {!IArrayLike<!Element>} Array-like list of elements (only a length
  *     property and numerical indices are guaranteed to exist).
- * @template T
  */
 goog.dom.DomHelper.prototype.getElementsByTagNameAndClass = function(
     opt_tag, opt_class, opt_el) {
@@ -21540,12 +21526,11 @@ goog.dom.DomHelper.prototype.getRequiredElementByClass = function(
  * @deprecated Use DomHelper getElementsByTagNameAndClass.
  * @see goog.dom.query
  *
- * @param {(string|?goog.dom.TypedTagName<T>)=} opt_tag Element tag name.
+ * @param {?string=} opt_tag Element tag name.
  * @param {?string=} opt_class Optional class name.
  * @param {Element=} opt_el Optional element to look in.
  * @return {!IArrayLike<!Element>} Array-like list of elements (only a length
  *     property and numerical indices are guaranteed to exist).
- * @template T
  */
 goog.dom.DomHelper.prototype.$$ =
     goog.dom.DomHelper.prototype.getElementsByTagNameAndClass;
@@ -21604,7 +21589,7 @@ goog.dom.Appendable;
  * which will remove all child nodes from the old element and add them as
  * child nodes of the new DIV.
  *
- * @param {string|!goog.dom.TypedTagName<T>} tagName Tag to create.
+ * @param {string} tagName Tag to create.
  * @param {Object|string=} opt_attributes If object, then a map of name-value
  *     pairs for attributes. If a string, then this is the className of the new
  *     element.
@@ -21612,7 +21597,6 @@ goog.dom.Appendable;
  *     strings for text nodes. If one of the var_args is an array or
  *     NodeList, its elements will be added as childNodes instead.
  * @return {!Element} Reference to a DOM node.
- * @template T
  */
 goog.dom.DomHelper.prototype.createDom = function(
     tagName, opt_attributes, var_args) {
@@ -21644,7 +21628,7 @@ goog.dom.DomHelper.prototype.createUntypedDom = function(
 
 /**
  * Alias for {@code createDom}.
- * @param {string|!goog.dom.TypedTagName<T>} tagName Tag to create.
+ * @param {string} tagName Tag to create.
  * @param {(Object|string)=} opt_attributes If object, then a map of name-value
  *     pairs for attributes. If a string, then this is the className of the new
  *     element.
@@ -21652,7 +21636,6 @@ goog.dom.DomHelper.prototype.createUntypedDom = function(
  *     text nodes.  If one of the var_args is an array, its children will be
  *     added as childNodes instead.
  * @return {!Element} Reference to a DOM node.
- * @template T
  * @deprecated Use {@link goog.dom.DomHelper.prototype.createDom} instead.
  */
 goog.dom.DomHelper.prototype.$dom = goog.dom.DomHelper.prototype.createDom;
@@ -21660,9 +21643,8 @@ goog.dom.DomHelper.prototype.$dom = goog.dom.DomHelper.prototype.createDom;
 
 /**
  * Creates a new element.
- * @param {string|!goog.dom.TypedTagName<T>} name Tag name.
+ * @param {string} name Tag name.
  * @return {!Element} The new element.
- * @template T
  */
 goog.dom.DomHelper.prototype.createElement = function(name) {
   return this.document_.createElement(String(name));
