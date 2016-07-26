@@ -65,9 +65,9 @@ public class SoyMsgExtractorTest extends TestCase {
 
     File xmlFile = getTempFile(".xml");
 
-    SoyMsgExtractor.main(
+    int exitCode = new SoyMsgExtractor().run(
         "--outputFile", xmlFile.toString(), soyFile1.toString(), soyFile2.toString());
-
+    assertThat(exitCode).isEqualTo(0);
     String xmlContent = Files.toString(xmlFile, UTF_8);
     assertThat(xmlContent).contains("<source>H\uff49</source>");
     assertThat(xmlContent).contains("<source>World</source>");

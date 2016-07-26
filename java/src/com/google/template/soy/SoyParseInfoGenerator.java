@@ -18,25 +18,13 @@ package com.google.template.soy;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-import com.google.common.base.Function;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.io.Files;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
-import com.google.template.soy.MainClassUtils.Main;
 import com.google.template.soy.base.internal.BaseUtils;
-
-import org.kohsuke.args4j.Argument;
-import org.kohsuke.args4j.CmdLineParser;
-import org.kohsuke.args4j.Option;
-import org.kohsuke.args4j.spi.StringArrayOptionHandler;
-
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
+import org.kohsuke.args4j.Option;
 
 /**
  * Executable for generating Java classes containing Soy parse info.
@@ -45,46 +33,13 @@ import java.util.Map;
  * Soy files.
  *
  */
-public final class SoyParseInfoGenerator {
-
-
-  /** The string to prepend to the usage message. */
-  private static final String USAGE_PREFIX =
-      "Usage:\n" +
-      "java com.google.template.soy.SoyParseInfoGenerator  \\\n" +
-      "     [<flag1> <flag2> ...] --outputDirectory <path>  \\\n" +
-      "     --javaPackage <package> --javaClassNameSource <source>  \\\n" +
-      "     --srcs <soyFilePath>,... [--deps <soyFilePath>,...]\n";
-
-
-  @Option(name = "--inputPrefix",
-          usage = "If provided, this path prefix will be prepended to each input file path" +
-                  " listed on the command line. This is a literal string prefix, so you'll need" +
-                  " to include a trailing slash if necessary.")
-  private String inputPrefix = "";
-
-  @Option(name = "--srcs",
-          usage = "[Required] The list of source Soy files.",
-          handler = MainClassUtils.StringListOptionHandler.class)
-  private List<String> srcs = new ArrayList<>();
-
-  @Option(name = "--deps",
-          usage = "The list of dependency Soy files (if applicable). The compiler needs deps for" +
-                  " analysis/checking, but will not generate code for dep files.",
-          handler = MainClassUtils.StringListOptionHandler.class)
-  private List<String> deps = new ArrayList<>();
-
-  @Option(name = "--indirectDeps",
-          usage = "Soy files required by deps, but which may not be used by srcs.",
-          handler = MainClassUtils.StringListOptionHandler.class)
-  private List<String> indirectDeps = new ArrayList<>();
+public final class SoyParseInfoGenerator extends AbstractSoyCompiler {
 
   @Option(name = "--allowExternalCalls",
           usage = "Whether to allow external calls. New projects should set this to false, and" +
                   " existing projects should remove existing external calls and then set this" +
                   " to false. It will save you a lot of headaches. Currently defaults to true" +
-                  " for backward compatibility.",
-          handler = MainClassUtils.BooleanOptionHandler.class)
+                  " for backward compatibility.")
   private boolean allowExternalCalls = true;
 
   @Option(name = "--outputDirectory",
@@ -108,18 +63,6 @@ public final class SoyParseInfoGenerator {
                   " class names such as File1SoyInfo, File2SoyInfo.")
   private String javaClassNameSource = "";
 
-  @Option(name = "--protoFileDescriptors",
-          usage = "Location of protocol buffer definitions in the form of a file descriptor set."
-                + "The compiler needs defs for parameter type checking and generating direct "
-                + "access support for proto types.",
-          handler = StringArrayOptionHandler.class)
-  private static final List<String> protoFileDescriptors = new ArrayList<>();
-
-  /** The remaining arguments after parsing command-line flags. */
-  @Argument
-  private List<String> arguments = new ArrayList<>();
-
-
   /**
    * Generates Java classes containing Soy parse info.
    *
@@ -130,51 +73,24 @@ public final class SoyParseInfoGenerator {
    * @throws IOException If there are problems reading the input files or writing the output file.
    */
   public static void main(final String[] args) throws IOException {
-    MainClassUtils.run(
-        new Main() {
-          @Override
-          public void main() throws IOException {
-            new SoyParseInfoGenerator().execMain(args);
-          }
-        });
+    new SoyParseInfoGenerator().runMain(args);
   }
 
-
-  private SoyParseInfoGenerator() {}
-
-
-  private void execMain(String[] args) throws IOException {
-
-    final CmdLineParser cmdLineParser = MainClassUtils.parseFlags(this, args, USAGE_PREFIX);
-
-    final Function<String, Void> exitWithErrorFn = new Function<String, Void>() {
-      @Override public Void apply(String errorMsg) {
-        MainClassUtils.exitWithError(errorMsg, cmdLineParser, USAGE_PREFIX);
-        return null;
-      }
-    };
-
+  @Override
+  void validateFlags() {
     if (outputDirectory.length() == 0) {
-      MainClassUtils.exitWithError("Must provide output directory.", cmdLineParser, USAGE_PREFIX);
+      exitWithError("Must provide output directory.");
     }
     if (javaPackage.length() == 0) {
-      MainClassUtils.exitWithError("Must provide Java package.", cmdLineParser, USAGE_PREFIX);
+      exitWithError("Must provide Java package.");
     }
     if (javaClassNameSource.length() == 0) {
-      MainClassUtils.exitWithError(
-          "Must provide Java class name source.", cmdLineParser, USAGE_PREFIX);
+      exitWithError("Must provide Java class name source.");
     }
+  }
 
-    Injector injector = Guice.createInjector(new SoyModule());
-
-    SoyFileSet.Builder sfsBuilder = injector.getInstance(SoyFileSet.Builder.class);
-    // ImmutableSet.copyOf() removes any duplicate filenames that were provided.
-    // This is so the builder doesn't get confused by multiple identical
-    // definitions.
-    // TODO: This does not seem like the right place to remove duplicates.
-    MainClassUtils.addSoyFilesToBuilder(
-        sfsBuilder, inputPrefix, ImmutableSet.copyOf(srcs), ImmutableSet.copyOf(arguments),
-        ImmutableSet.copyOf(deps), ImmutableSet.copyOf(indirectDeps), exitWithErrorFn);
+  @Override
+  void compile(SoyFileSet.Builder sfsBuilder) throws IOException {
     sfsBuilder.setAllowExternalCalls(allowExternalCalls);
 
     SoyFileSet sfs = sfsBuilder.build();
@@ -188,5 +104,4 @@ public final class SoyParseInfoGenerator {
       Files.write(entry.getValue(), outputFile, UTF_8);
     }
   }
-
 }

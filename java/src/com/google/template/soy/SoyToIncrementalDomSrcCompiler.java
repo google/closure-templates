@@ -61,7 +61,7 @@ public final class SoyToIncrementalDomSrcCompiler extends AbstractSoyCompiler {
    * @throws SoySyntaxException If a syntax error is detected.
    */
   public static void main(final String[] args) throws IOException, SoySyntaxException {
-    new SoyToIncrementalDomSrcCompiler().run(args);
+    new SoyToIncrementalDomSrcCompiler().runMain(args);
   }
 
   private SoyToIncrementalDomSrcCompiler() {}

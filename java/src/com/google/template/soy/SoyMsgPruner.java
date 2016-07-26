@@ -16,62 +16,32 @@
 
 package com.google.template.soy;
 
-import com.google.common.base.Function;
-import com.google.common.collect.ImmutableSet;
+import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.inject.Injector;
-import com.google.template.soy.SoyFileSet.Builder;
+import com.google.inject.Module;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.SoyMsgBundleHandler;
 import com.google.template.soy.msgs.SoyMsgBundleHandler.OutputFileOptions;
 import com.google.template.soy.shared.internal.MainEntryPointUtils;
-
-import org.kohsuke.args4j.Argument;
-import org.kohsuke.args4j.CmdLineParser;
-import org.kohsuke.args4j.Option;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import org.kohsuke.args4j.Option;
 
 /**
  * Executable for pruning messages from extracted msgs files, given a set of Soy files as reference
  * for which messages to keep.
  *
  */
-public class SoyMsgPruner {
-
-
-  /** The string to prepend to the usage message. */
-  private static final String USAGE_PREFIX = "" +
-      "Usage:\n" +
-      "java com.google.template.soy.SoyMsgPruner  \\\n" +
-      "             [<flag_1> <flag_2> ...]  \\\n" +
-      "             --inputMsgFilePathFormat <formatString>  \\\n" +
-      "             --outputMsgFilePathFormat <formatString>  \\\n" +
-      "             --locales <locale>,... --srcs <soyFilePath>,...\n";
-
-
-  @Option(
-      name = "--inputPrefix",
-      usage = "If provided, this path prefix will be prepended to each input file path. This is a" +
-          " literal string prefix, so you'll need to include a trailing slash if necessary.")
-  private String inputPrefix = "";
-
-  @Option(
-      name = "--srcs",
-      usage = "[Required] The list of source Soy files.",
-      handler = MainClassUtils.StringListOptionHandler.class)
-  private List<String> srcs = Lists.newArrayList();
-
+public final class SoyMsgPruner extends AbstractSoyCompiler {
   @Option(
       name = "--allowExternalCalls",
       usage = "Whether to allow external calls. New projects should set this to false, and" +
           " existing projects should remove existing external calls and then set this to false." +
           " It will save you a lot of headaches. Currently defaults to true for backward" +
-          " compatibility.",
-      handler = MainClassUtils.BooleanOptionHandler.class)
+          " compatibility.")
   private boolean allowExternalCalls = true;
 
   @Option(
@@ -104,12 +74,7 @@ public class SoyMsgPruner {
       name = "--msgPluginModule",
       usage = "Specifies the full class name of a Guice module that binds a" +
           " BidirectionalSoyMsgPlugin.")
-  private String msgPluginModule = "";
-
-  /** The remaining arguments after parsing command-line flags. */
-  @Argument
-  private List<String> arguments = Lists.newArrayList();
-
+  private Module msgPluginModule;
 
   /**
    * Prunes messages from XTB files, given a set of Soy files as reference for which messages to
@@ -120,41 +85,23 @@ public class SoyMsgPruner {
    * @throws SoySyntaxException If a syntax error is detected.
    */
   public static void main(String[] args) throws IOException, SoySyntaxException {
-    (new SoyMsgPruner()).execMain(args);
+    new SoyMsgPruner().runMain(args);
   }
 
+  @Override
+  boolean acceptsSourcesAsArguments() {
+    return false;
+  }
 
-  private SoyMsgPruner() {}
+  @Override
+  Optional<Module> msgPluginModule() {
+    return Optional.fromNullable(msgPluginModule);
+  }
 
-
-  private void execMain(String[] args) throws IOException, SoySyntaxException {
-
-    final CmdLineParser cmdLineParser = MainClassUtils.parseFlags(this, args, USAGE_PREFIX);
-
-    final Function<String, Void> exitWithErrorFn = new Function<String, Void>() {
-      @Override public Void apply(String errorMsg) {
-        MainClassUtils.exitWithError(errorMsg, cmdLineParser, USAGE_PREFIX);
-        return null;
-      }
-    };
-
-    if (arguments.size() > 1) {
-      MainClassUtils.exitWithError(
-          "Unrecognized args left on command line: \"" + arguments + "\".",
-          cmdLineParser, USAGE_PREFIX);
-    }
-
-    Injector injector = MainClassUtils.createInjectorForMsgPlugin(msgPluginModule);
-
-    // Create SoyFileSet.
-    Builder sfsBuilder = injector.getInstance(Builder.class);
-    MainClassUtils.addSoyFilesToBuilder(
-        sfsBuilder, inputPrefix, srcs, ImmutableSet.<String>of(),
-        ImmutableSet.<String>of(), ImmutableSet.<String>of(), exitWithErrorFn);
+  @Override
+  void compile(SoyFileSet.Builder sfsBuilder, Injector injector) throws IOException {
     sfsBuilder.setAllowExternalCalls(allowExternalCalls);
     SoyFileSet sfs = sfsBuilder.build();
-
-    // Get msg bundle handler.
     SoyMsgBundleHandler msgBundleHandler = injector.getInstance(SoyMsgBundleHandler.class);
 
     // Main loop.
@@ -178,5 +125,4 @@ public class SoyMsgPruner {
           prunedTransSoyMsgBundle, new OutputFileOptions(), new File(outputMsgFilePath));
     }
   }
-
 }

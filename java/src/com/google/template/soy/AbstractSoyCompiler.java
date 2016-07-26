@@ -15,22 +15,24 @@
  */
 package com.google.template.soy;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
+import com.google.errorprone.annotations.ForOverride;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.template.soy.MainClassUtils.Main;
 import com.google.template.soy.error.SoyCompilationException;
 import com.google.template.soy.msgs.SoyMsgPlugin;
-
 import org.kohsuke.args4j.Argument;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
-
+import org.kohsuke.args4j.spi.StringArrayOptionHandler;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import javax.annotation.CheckReturnValue;
 
 /**
  * Base class for the Soy Compilers.
@@ -116,19 +118,33 @@ abstract class AbstractSoyCompiler {
   )
   private List<Module> pluginModules = new ArrayList<>();
 
+  @Option(name = "--protoFileDescriptors",
+      usage = "Location of protocol buffer definitions in the form of a file descriptor set."
+            + "The compiler needs defs for parameter type checking and generating direct "
+            + "access support for proto types.",
+      handler = StringArrayOptionHandler.class)
+  private static final List<String> protoFileDescriptors = new ArrayList<>();
+
   /** The remaining arguments after parsing command-line flags. */
   @Argument private final List<String> arguments = new ArrayList<>();
 
   private CmdLineParser cmdLineParser;
 
-  final void run(final String[] args) {
-    MainClassUtils.run(
-        new Main() {
-          @Override
-          public void main() throws IOException, SoyCompilationException {
-            doMain(args);
-          }
-        });
+  final void runMain(String ...args) {
+    int status = run(args);
+    System.exit(status);
+  }
+
+  @VisibleForTesting
+  @CheckReturnValue
+  int run(final String ...args) {
+    // TODO(lukes): inline this method once all mains have been migrated to this base class.
+    return MainClassUtils.runInternal(new Main() {
+      @Override
+      public void main() throws IOException, SoyCompilationException {
+        doMain(args);
+      }
+    });
   }
 
   private void doMain(String[] args) throws IOException {
@@ -143,15 +159,13 @@ abstract class AbstractSoyCompiler {
     modules.addAll(pluginModules);
     modules.addAll(msgPluginModule().asSet());
     Injector injector = MainClassUtils.createInjector(modules);
-
     SoyFileSet.Builder sfsBuilder = injector.getInstance(SoyFileSet.Builder.class);
-    injector.injectMembers(this);
     MainClassUtils.addSoyFilesToBuilder(
         sfsBuilder, inputPrefix, srcs, arguments, deps, indirectDeps, exitWithErrorFn);
     if (globalsFile != null) {
       sfsBuilder.setCompileTimeGlobals(globalsFile);
     }
-    compile(sfsBuilder);
+    compile(sfsBuilder, injector);
   }
 
   /**
@@ -170,6 +184,7 @@ abstract class AbstractSoyCompiler {
    * Returns an additional plugin module to support the {@link SoyMsgPlugin}. This is only neccesary
    * if the compiler needs to perform msg extraction.
    */
+  @ForOverride
   Optional<Module> msgPluginModule() {
     return Optional.absent();
   }
@@ -177,7 +192,21 @@ abstract class AbstractSoyCompiler {
   /**
    * Extension point for subtypes to perform additional logic to validate compiler specific flags.
    */
+  @ForOverride
   void validateFlags() {}
+
+  /**
+   * Performs the actual compilation.
+   *
+   * @param sfsBuilder The builder, already populated with sources, globals (if set) and plugins.
+   *     subclasses may set additional compilation options on the builder.
+   * @param injector The injector
+   * @throws IOException
+   */
+  @ForOverride
+  void compile(SoyFileSet.Builder sfsBuilder, Injector injector) throws IOException {
+    compile(sfsBuilder);
+  }
 
   /**
    * Performs the actual compilation.
@@ -186,7 +215,10 @@ abstract class AbstractSoyCompiler {
    *     subclasses may set additional compilation options on the builder.
    * @throws IOException
    */
-  abstract void compile(SoyFileSet.Builder sfsBuilder) throws IOException;
+  @ForOverride
+  void compile(SoyFileSet.Builder sfsBuilder) throws IOException {
+    throw new AbstractMethodError("must override at least one overload of compile()");
+  }
 
   /**
    * Prints an error message and the usage string, and then exits.

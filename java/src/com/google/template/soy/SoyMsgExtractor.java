@@ -16,23 +16,17 @@
 
 package com.google.template.soy;
 
-import com.google.common.base.Function;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
+import com.google.common.base.Optional;
 import com.google.inject.Injector;
+import com.google.inject.Module;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.SoyMsgBundleHandler;
 import com.google.template.soy.msgs.SoyMsgBundleHandler.OutputFileOptions;
 import com.google.template.soy.xliffmsgplugin.XliffMsgPluginModule;
-
-import org.kohsuke.args4j.Argument;
-import org.kohsuke.args4j.CmdLineParser;
-import org.kohsuke.args4j.Option;
-
 import java.io.File;
 import java.io.IOException;
-import java.util.List;
+import org.kohsuke.args4j.Option;
 
 /**
  * Executable for extracting messages from a set of Soy files into an output messages file.
@@ -41,34 +35,13 @@ import java.util.List;
  * Soy files.
  *
  */
-public final class SoyMsgExtractor {
-
-
-  /** The string to prepend to the usage message. */
-  private static final String USAGE_PREFIX =
-      "Usage:\n" +
-      "java com.google.template.soy.SoyMsgExtractor  \\\n" +
-      "     [<flag1> <flag2> ...] --outputFile <path>  \\\n" +
-      "     --srcs <soyFilePath>,...\n";
-
-
-  @Option(name = "--inputPrefix",
-          usage = "If provided, this path prefix will be prepended to each input file path" +
-                  " listed on the command line. This is a literal string prefix, so you'll need" +
-                  " to include a trailing slash if necessary.")
-  private String inputPrefix = "";
-
-  @Option(name = "--srcs",
-          usage = "[Required] The list of source Soy files.",
-          handler = MainClassUtils.StringListOptionHandler.class)
-  private List<String> srcs = Lists.newArrayList();
+public final class SoyMsgExtractor extends AbstractSoyCompiler {
 
   @Option(name = "--allowExternalCalls",
           usage = "Whether to allow external calls. New projects should set this to false, and" +
                   " existing projects should remove existing external calls and then set this" +
                   " to false. It will save you a lot of headaches. Currently defaults to true" +
-                  " for backward compatibility.",
-          handler = MainClassUtils.BooleanOptionHandler.class)
+                  " for backward compatibility.")
   private boolean allowExternalCalls = true;
 
   @Option(name = "--outputFile",
@@ -94,12 +67,7 @@ public final class SoyMsgExtractor {
                   " If not specified, the default is" +
                   " com.google.template.soy.xliffmsgplugin.XliffMsgPluginModule, which binds" +
                   " the XliffMsgPlugin.")
-  private String messagePluginModule = XliffMsgPluginModule.class.getName();
-
-  /** The remaining arguments after parsing command-line flags. */
-  @Argument
-  private List<String> arguments = Lists.newArrayList();
-
+  private Module messagePluginModule = new XliffMsgPluginModule();
 
   /**
    * Extracts messages from a set of Soy files into an output messages file.
@@ -109,42 +77,27 @@ public final class SoyMsgExtractor {
    * @throws SoySyntaxException If a syntax error is detected.
    */
   public static void main(String... args) throws IOException {
-    // TODO(lukes): why isn't this using MainClassUtils.run?
-    (new SoyMsgExtractor()).execMain(args);
+    new SoyMsgExtractor().runMain(args);
   }
 
+  @Override
+  Optional<Module> msgPluginModule() {
+    return Optional.of(messagePluginModule);
+  }
 
-  private SoyMsgExtractor() {}
-
-
-  private void execMain(String[] args) throws IOException, SoySyntaxException {
-
-    final CmdLineParser cmdLineParser = MainClassUtils.parseFlags(this, args, USAGE_PREFIX);
-
-    final Function<String, Void> exitWithErrorFn = new Function<String, Void>() {
-      @Override public Void apply(String errorMsg) {
-        MainClassUtils.exitWithError(errorMsg, cmdLineParser, USAGE_PREFIX);
-        return null;
-      }
-    };
-
-    Injector injector = MainClassUtils.createInjectorForMsgPlugin(messagePluginModule);
-
-    SoyFileSet.Builder sfsBuilder = injector.getInstance(SoyFileSet.Builder.class);
-    MainClassUtils.addSoyFilesToBuilder(sfsBuilder, inputPrefix, srcs, arguments,
-        ImmutableList.<String>of(), ImmutableList.<String>of(), exitWithErrorFn);
+  @Override
+  void compile(SoyFileSet.Builder sfsBuilder, Injector injector) throws IOException {
     sfsBuilder.setAllowExternalCalls(allowExternalCalls);
     SoyFileSet sfs = sfsBuilder.build();
 
     SoyMsgBundle msgBundle = sfs.extractMsgs();
-
-    SoyMsgBundleHandler msgBundleHandler = injector.getInstance(SoyMsgBundleHandler.class);
     OutputFileOptions options = new OutputFileOptions();
     options.setSourceLocaleString(sourceLocaleString);
     if (targetLocaleString.length() > 0) {
       options.setTargetLocaleString(targetLocaleString);
     }
-    msgBundleHandler.writeToExtractedMsgsFile(msgBundle, options, outputFile);
+    injector
+        .getInstance(SoyMsgBundleHandler.class)
+        .writeToExtractedMsgsFile(msgBundle, options, outputFile);
   }
-
 }

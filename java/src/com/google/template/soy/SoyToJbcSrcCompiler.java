@@ -67,6 +67,6 @@ public final class SoyToJbcSrcCompiler extends AbstractSoyCompiler {
   }
 
   public static void main(final String[] args) {
-    new SoyToJbcSrcCompiler().run(args);
+    new SoyToJbcSrcCompiler().runMain(args);
   }
 }

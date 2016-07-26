@@ -16,80 +16,43 @@
 
 package com.google.template.soy;
 
-import com.google.common.base.Function;
-import com.google.inject.Injector;
-import com.google.template.soy.MainClassUtils.Main;
+import com.google.common.base.Optional;
+import com.google.inject.Module;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.xliffmsgplugin.XliffMsgPluginModule;
-
-import org.kohsuke.args4j.Argument;
-import org.kohsuke.args4j.CmdLineParser;
-import org.kohsuke.args4j.Option;
-import org.kohsuke.args4j.spi.StringArrayOptionHandler;
-
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import org.kohsuke.args4j.Option;
 
 /**
  * Executable for compiling a set of Soy files into corresponding JS source files.
  *
  */
-public final class SoyToJsSrcCompiler {
-
-
-  /** The string to prepend to the usage message. */
-  private static final String USAGE_PREFIX =
-      "Usage:\n" +
-      "java com.google.template.soy.SoyToJsSrcCompiler  \\\n" +
-      "     [<flag1> <flag2> ...] --outputPathFormat <formatString>  \\\n" +
-      "     --srcs <soyFilePath>,... [--deps <soyFilePath>,...]\n";
-
-
-  @Option(name = "--inputPrefix",
-          usage = "If provided, this path prefix will be prepended to each input file path" +
-                  " listed on the command line. This is a literal string prefix, so you'll need" +
-                  " to include a trailing slash if necessary.")
-  private String inputPrefix = "";
-
-  @Option(name = "--srcs",
-          usage = "[Required] The list of source Soy files.",
-          handler = MainClassUtils.StringListOptionHandler.class)
-  private List<String> srcs = new ArrayList<>();
-
-  @Option(name = "--deps",
-          usage = "The list of dependency Soy files (if applicable). The compiler needs deps for" +
-                  " analysis/checking, but will not generate code for dep files.",
-          handler = MainClassUtils.StringListOptionHandler.class)
-  private List<String> deps = new ArrayList<>();
-
-  @Option(name = "--indirectDeps",
-          usage = "Soy files required by deps, but which may not be used by srcs.",
-          handler = MainClassUtils.StringListOptionHandler.class)
-  private List<String> indirectDeps = new ArrayList<>();
+public final class SoyToJsSrcCompiler extends AbstractSoyCompiler {
+  @Option(
+      name = "--outputPathFormat",
+      required = true,
+      usage =
+          "[Required] A format string that specifies how to build the path to each"
+              + " output file. If not generating localized JS, then there will be one output"
+              + " JS file (UTF-8) for each input Soy file. If generating localized JS, then"
+              + " there will be one output JS file for each combination of input Soy file and"
+              + " locale. The format string can include literal characters as well as the"
+              + " placeholders {INPUT_PREFIX}, {INPUT_DIRECTORY}, {INPUT_FILE_NAME},"
+              + " {INPUT_FILE_NAME_NO_EXT}, {LOCALE}, {LOCALE_LOWER_CASE}. Note"
+              + " {LOCALE_LOWER_CASE} also turns dash into underscore, e.g. pt-BR becomes"
+              + " pt_br."
+    )
+  protected String outputPathFormat;
 
   @Option(name = "--allowExternalCalls",
           usage = "Whether to allow external calls. New projects should set this to false, and" +
                   " existing projects should remove existing external calls and then set this" +
                   " to false. It will save you a lot of headaches. Currently defaults to true" +
-                  " for backward compatibility.",
-          handler = MainClassUtils.BooleanOptionHandler.class)
+                  " for backward compatibility.")
   private boolean allowExternalCalls = true;
-
-  @Option(name = "--outputPathFormat",
-          required = true,
-          usage = "[Required] A format string that specifies how to build the path to each" +
-                  " output file. If not generating localized JS, then there will be one output" +
-                  " JS file (UTF-8) for each input Soy file. If generating localized JS, then" +
-                  " there will be one output JS file for each combination of input Soy file and" +
-                  " locale. The format string can include literal characters as well as the" +
-                  " placeholders {INPUT_PREFIX}, {INPUT_DIRECTORY}, {INPUT_FILE_NAME}," +
-                  " {INPUT_FILE_NAME_NO_EXT}, {LOCALE}, {LOCALE_LOWER_CASE}. Note" +
-                  " {LOCALE_LOWER_CASE} also turns dash into underscore, e.g. pt-BR becomes" +
-                  " pt_br.")
-  private String outputPathFormat = "";
 
   @Option(name = "--syntaxVersion",
           usage = "User-declared syntax version for the Soy file bundle (e.g. 2.0, 2.3).")
@@ -98,15 +61,13 @@ public final class SoyToJsSrcCompiler {
   @Option(name = "--shouldGenerateJsdoc",
           usage = "Whether we should generate JSDoc with type info for the Closure Compiler." +
                   " Note the generated JSDoc does not have description text, only types for the" +
-              " benefit of the Closure Compiler.",
-          handler = MainClassUtils.BooleanOptionHandler.class)
+              " benefit of the Closure Compiler.")
   private boolean shouldGenerateJsdoc = false;
 
   @Option(name = "--shouldProvideRequireSoyNamespaces",
           usage = "When this option is used, each generated JS file will contain (a) one single" +
                   " goog.provide statement for the corresponding Soy file's namespace and" +
-                  " (b) goog.require statements for the namespaces of the called templates.",
-          handler = MainClassUtils.BooleanOptionHandler.class)
+                  " (b) goog.require statements for the namespaces of the called templates.")
   private boolean shouldProvideRequireSoyNamespaces = false;
 
   @Option(name = "--shouldDeclareTopLevelNamespaces",
@@ -116,8 +77,7 @@ public final class SoyToJsSrcCompiler {
                   " name in its namespace, instead assuming the top-level name is already" +
                   " declared in the global scope. E.g. for namespace aaa.bbb, the code will not" +
                   " attempt to declare aaa, but will still define aaa.bbb if it's not already" +
-                  " defined.",
-          handler = MainClassUtils.BooleanOptionHandler.class)
+                  " defined.")
   private boolean shouldDeclareTopLevelNamespaces = true;
 
   @Option(name = "--locales",
@@ -177,39 +137,12 @@ public final class SoyToJsSrcCompiler {
                   " evaluating goog.i18n.bidi.IS_RTL. Do not combine with --bidiGlobalDir.")
   private boolean useGoogIsRtlForBidiGlobalDir = false;
 
-  @Option(name = "--compileTimeGlobalsFile",
-          usage = "The path to a file containing the mappings for global names to be substituted" +
-                  " at compile time. Each line of the file should have the format" +
-                  " \"<global_name> = <primitive_data>\" where primitive_data is a valid Soy" +
-                  " expression literal for a primitive type (null, boolean, integer, float, or" +
-                  " string). Empty lines and lines beginning with \"//\" are ignored. The file" +
-                  " should be encoded in UTF-8. If you need to generate a file in this format" +
-                  " from Java, consider using the utility" +
-                  " SoyUtils.generateCompileTimeGlobalsFile().")
-  private String compileTimeGlobalsFile = "";
-
   @Option(name = "--messagePluginModule",
           usage = "Specifies the full class name of a Guice module that binds a SoyMsgPlugin." +
                   " If not specified, the default is" +
                   " com.google.template.soy.xliffmsgplugin.XliffMsgPluginModule, which binds" +
                   " the XliffMsgPlugin.")
-  private String messagePluginModule = XliffMsgPluginModule.class.getName();
-
-  @Option(name = "--pluginModules",
-          usage = "Specifies the full class names of Guice modules for function plugins and" +
-                  " print directive plugins (comma-delimited list).")
-  private String pluginModules = "";
-
-  @Option(name = "--protoFileDescriptors",
-          usage = "Location of protocol buffer definitions in the form of a file descriptor set."
-                + "The compiler needs defs for parameter type checking and generating direct "
-                + "access support for proto types.",
-          handler = StringArrayOptionHandler.class)
-  private static final List<String> protoFileDescriptors = new ArrayList<>();
-
-  /** The remaining arguments after parsing command-line flags. */
-  @Argument
-  private List<String> arguments = new ArrayList<>();
+  private Module messagePluginModule = new XliffMsgPluginModule();
 
   /**
    * Compiles a set of Soy files into corresponding JS source files.
@@ -219,48 +152,30 @@ public final class SoyToJsSrcCompiler {
    * @throws SoySyntaxException If a syntax error is detected.
    */
   public static void main(final String[] args) throws IOException, SoySyntaxException {
-    MainClassUtils.run(
-        new Main() {
-          @Override
-          public void main() throws IOException {
-            new SoyToJsSrcCompiler().execMain(args);
-          }
-        });
+    new SoyToJsSrcCompiler().runMain(args);
   }
 
-  private SoyToJsSrcCompiler() {}
-
-  private void execMain(String[] args) throws IOException {
-
-    final CmdLineParser cmdLineParser = MainClassUtils.parseFlags(this, args, USAGE_PREFIX);
-
-    final Function<String, Void> exitWithErrorFn = new Function<String, Void>() {
-      @Override public Void apply(String errorMsg) {
-        MainClassUtils.exitWithError(errorMsg, cmdLineParser, USAGE_PREFIX);
-        return null;
-      }
-    };
-
+  @Override
+  void validateFlags() {
     if (outputPathFormat.isEmpty()) {
-      exitWithErrorFn.apply("Must provide the output path format.");
+      exitWithError("Must provide the output path format.");
     }
+  }
 
-    Injector injector = MainClassUtils.createInjector(messagePluginModule, pluginModules);
+  @Override
+  Optional<Module> msgPluginModule() {
+    return Optional.of(messagePluginModule);
+  }
 
-    // Create SoyFileSet.
-    SoyFileSet.Builder sfsBuilder = injector.getInstance(SoyFileSet.Builder.class);
-    MainClassUtils.addSoyFilesToBuilder(
-        sfsBuilder, inputPrefix, srcs, arguments, deps, indirectDeps, exitWithErrorFn);
+  @Override
+  void compile(SoyFileSet.Builder sfsBuilder) throws IOException {
     if (!syntaxVersion.isEmpty()) {
       if (syntaxVersion.equals("1.0")) {
-        exitWithErrorFn.apply("Declared syntax version must be 2.0 or greater.");
+        exitWithError("Declared syntax version must be 2.0 or greater.");
       }
       sfsBuilder.setDeclaredSyntaxVersionName(syntaxVersion);
     }
     sfsBuilder.setAllowExternalCalls(allowExternalCalls);
-    if (!compileTimeGlobalsFile.isEmpty()) {
-      sfsBuilder.setCompileTimeGlobals(new File(compileTimeGlobalsFile));
-    }
 
     SoyFileSet sfs = sfsBuilder.build();
 
