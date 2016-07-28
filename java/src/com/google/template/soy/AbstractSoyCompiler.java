@@ -18,12 +18,17 @@ package com.google.template.soy;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.ForOverride;
 import com.google.inject.Injector;
 import com.google.inject.Module;
+import com.google.protobuf.Descriptors.DescriptorValidationException;
 import com.google.template.soy.MainClassUtils.Main;
 import com.google.template.soy.error.SoyCompilationException;
 import com.google.template.soy.msgs.SoyMsgPlugin;
+import com.google.template.soy.types.SoyTypeProvider;
+import com.google.template.soy.types.SoyTypeRegistry;
+import com.google.template.soy.types.proto.SoyProtoTypeProvider;
 import org.kohsuke.args4j.Argument;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
@@ -160,6 +165,21 @@ abstract class AbstractSoyCompiler {
     modules.addAll(msgPluginModule().asSet());
     Injector injector = MainClassUtils.createInjector(modules);
     SoyFileSet.Builder sfsBuilder = injector.getInstance(SoyFileSet.Builder.class);
+    // TODO(lukes): Only call setLocalTypeRegistry if we were actually passed protos, we should
+    // change this to always call setLocalTypeRegistry (and rename the method) once all uses of the
+    // legacy proto configuration are gone.
+    if (!protoFileDescriptors.isEmpty()) {
+      SoyProtoTypeProvider.Builder protoTypeProviderBuilder = new SoyProtoTypeProvider.Builder();
+      for (String path : protoFileDescriptors) {
+        protoTypeProviderBuilder.addFileDescriptorSetFromFile(new File(path));
+      }
+      try {
+        sfsBuilder.setLocalTypeRegistry(new SoyTypeRegistry(
+            ImmutableSet.<SoyTypeProvider>of(protoTypeProviderBuilder.build())));
+      } catch (DescriptorValidationException ex) {
+        throw new IOException("Malformed descriptor set", ex);
+      }
+    }
     MainClassUtils.addSoyFilesToBuilder(
         sfsBuilder, inputPrefix, srcs, arguments, deps, indirectDeps, exitWithErrorFn);
     if (globalsFile != null) {
