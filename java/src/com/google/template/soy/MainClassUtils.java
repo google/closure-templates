@@ -176,7 +176,20 @@ final class MainClassUtils {
       return instantiatePluginModule(item);
     }
   }
+  /** OptionHandler for args4j that handles a comma-delimited list of files. */
+  public static final class FileListOptionHandler extends ListOptionHandler<File> {
 
+    /** {@link ListOptionHandler#ListOptionHandler(CmdLineParser,OptionDef,Setter)} */
+    public FileListOptionHandler(
+        CmdLineParser parser, OptionDef option, Setter<? super File> setter) {
+      super(parser, option, setter);
+    }
+
+    @Override
+    File parseItem(String item) {
+      return new File(item);
+    }
+  }
   /** OptionHandler for args4j that handles a comma-delimited list of strings. */
   public static final class ModuleOptionHandler extends OptionHandler<Module> {
     /** {@link ListOptionHandler#ListOptionHandler(CmdLineParser,OptionDef,Setter)} */

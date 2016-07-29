@@ -32,7 +32,6 @@ import com.google.template.soy.types.proto.SoyProtoTypeProvider;
 import org.kohsuke.args4j.Argument;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
-import org.kohsuke.args4j.spi.StringArrayOptionHandler;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -127,8 +126,8 @@ abstract class AbstractSoyCompiler {
       usage = "Location of protocol buffer definitions in the form of a file descriptor set."
             + "The compiler needs defs for parameter type checking and generating direct "
             + "access support for proto types.",
-      handler = StringArrayOptionHandler.class)
-  private static final List<String> protoFileDescriptors = new ArrayList<>();
+      handler = MainClassUtils.FileListOptionHandler.class)
+  private static final List<File> protoFileDescriptors = new ArrayList<>();
 
   /** The remaining arguments after parsing command-line flags. */
   @Argument private final List<String> arguments = new ArrayList<>();
@@ -170,8 +169,8 @@ abstract class AbstractSoyCompiler {
     // legacy proto configuration are gone.
     if (!protoFileDescriptors.isEmpty()) {
       SoyProtoTypeProvider.Builder protoTypeProviderBuilder = new SoyProtoTypeProvider.Builder();
-      for (String path : protoFileDescriptors) {
-        protoTypeProviderBuilder.addFileDescriptorSetFromFile(new File(path));
+      for (File descriptor : protoFileDescriptors) {
+        protoTypeProviderBuilder.addFileDescriptorSetFromFile(descriptor);
       }
       try {
         sfsBuilder.setLocalTypeRegistry(new SoyTypeRegistry(
