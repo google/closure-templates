@@ -121,7 +121,7 @@ class SoyExpression extends Expression {
     }
     return BytecodeUtils.asList(childExprs);
   }
-
+  
   static final SoyExpression NULL =
       new SoyExpression(
           NullType.getInstance(),
@@ -160,13 +160,13 @@ class SoyExpression extends Expression {
     this(soyType, clazz, delegate, Optional.<Expression>absent());
   }
 
-  private SoyExpression(SoyType soyType, Class<?> clazz, Expression delegate,
+  private SoyExpression(SoyType soyType, Class<?> clazz, Expression delegate, 
       Optional<Expression> renderContext) {
     super(delegate.resultType(), delegate.features());
     checkArgument(
         clazz.isAssignableFrom(classFromAsmType(delegate.resultType())),
-        "delegate with type %s isn't compatible with asserted SoyExpression type %s",
-        delegate.resultType(),
+        "delegate with type %s isn't compatible with asserted SoyExpression type %s", 
+        delegate.resultType(), 
         clazz);
     // If this is a boxed type, make sure the declared clazz is compatible
     // TODO(lukes): support this check for unboxed types as well.
@@ -205,7 +205,7 @@ class SoyExpression extends Expression {
     // It 'is' a string if it is unboxed or is one of our string types
     return STRING_KINDS.contains(soyType.getKind());
   }
-
+  
   boolean isKnownSanitizedContent() {
     return soyType.getKind() != Kind.STRING && STRING_KINDS.contains(soyType.getKind());
   }
@@ -317,7 +317,7 @@ class SoyExpression extends Expression {
       return asBoxed(MethodRef.FLOAT_DATA_FOR_VALUE.invoke(delegate));
     }
     if (isKnownSanitizedContent()) {
-      return asBoxed(MethodRef.ORDAIN_AS_SAFE.invoke(delegate,
+      return asBoxed(MethodRef.ORDAIN_AS_SAFE.invoke(delegate, 
           FieldRef.enumReference(((SanitizedType) soyType).getContentKind()).accessor()));
     }
     if (isKnownString()) {
@@ -473,11 +473,11 @@ class SoyExpression extends Expression {
 
   /**
    * Unboxes this to a {@link SoyExpression} with a runtime type of {@code asType}.
-   *
+   * 
    * <p>This method is appropriate when you know (likely via inspection of the {@link #soyType()},
    * or other means) that the value does have the appropriate type but you prefer to interact with
    * it as its unboxed representation.  If you simply want to 'coerce' the given value to a new type
-   * consider {@link #coerceToBoolean()} {@link #coerceToDouble()} or {@link #coerceToString()}
+   * consider {@link #coerceToBoolean()} {@link #coerceToDouble()} or {@link #coerceToString()} 
    * which are designed for that use case.
    */
   SoyExpression unboxAs(Class<?> asType) {
@@ -513,6 +513,9 @@ class SoyExpression extends Expression {
       }
       if (asType.equals(List.class)) {
         return unboxAsList();
+      }
+      if (Message.class.isAssignableFrom(asType)) {
+        return unboxAsProto(asType.asSubclass(Message.class));
       }
     } else {
       // else it must be a List/Proto/String all of which must preserve null through the unboxing
@@ -575,8 +578,8 @@ class SoyExpression extends Expression {
   /**
   * Applies a print directive to the soyValue, only useful for parameterless print directives such
   * as those applied to {@link MsgNode msg nodes} and {@link CallNode call nodes} for autoescaping.
-  * For {@link PrintNode print nodes}, the directives may be parameterized by arbitrary soy
-  * expressions.
+  * For {@link PrintNode print nodes}, the directives may be parameterized by arbitrary soy 
+  * expressions. 
   */
   SoyExpression applyPrintDirective(Expression renderContext, String directive) {
     return applyPrintDirective(renderContext, directive, MethodRef.IMMUTABLE_LIST_OF.invoke());
@@ -587,11 +590,11 @@ class SoyExpression extends Expression {
   */
   SoyExpression applyPrintDirective(
       Expression renderContext, String directive, Expression argsList) {
-    // Technically the type is either StringData or SanitizedContent depending on this type, but
+    // Technically the type is either StringData or SanitizedContent depending on this type, but 
     // boxed.  Consider propagating the type more accurately, currently there isn't (afaict) much
     // benefit (and strangely there is no common super type for SanitizedContent and String), this
     // is probably because after escaping, the only thing you would ever do is convert to a string.
-    return SoyExpression.forSoyValue(UnknownType.getInstance(),
+    return SoyExpression.forSoyValue(UnknownType.getInstance(), 
         MethodRef.RUNTIME_APPLY_PRINT_DIRECTIVE.invoke(
             renderContext
                 .invoke(MethodRef.RENDER_CONTEXT_GET_PRINT_DIRECTIVE, constant(directive)),
@@ -628,7 +631,7 @@ class SoyExpression extends Expression {
   private static final class DefaultBoxed extends SoyExpression {
     private final SoyExpression unboxed;
 
-    DefaultBoxed(SoyType soyType, SoyExpression unboxed, Expression delegate,
+    DefaultBoxed(SoyType soyType, SoyExpression unboxed, Expression delegate, 
         Optional<Expression> expr) {
       super(soyType, soyType.javaType(), delegate, expr);
       this.unboxed = unboxed;
