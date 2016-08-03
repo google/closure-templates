@@ -577,15 +577,10 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
                     "{else}",
                     "  {captureType($pa)}", // #15 must be null
                     "{/if}",
-                    "{if isNull($pa)}", // isNull function
-                    "  {captureType($pa)}", // #16 must be null
-                    "{else}",
-                    "  {captureType($pa)}", // #17 must be non-null
-                    "{/if}",
                     "{if $pb or $pa == null}",
-                    "  {captureType($pa)}", // #18 don't know
+                    "  {captureType($pa)}", // #16 don't know
                     "{else}",
-                    "  {captureType($pa)}", // #19 must be null
+                    "  {captureType($pa)}", // #17 must be null
                     "{/if}",
                     // TODO(lukes): uncomment this and fix the error
                     // "{if null == null or null != null}{/if}",
@@ -610,12 +605,10 @@ public final class ResolveExpressionTypesVisitorTest extends TestCase {
     assertThat(types.get(13)).isEqualTo(BoolType.getInstance());
     assertThat(types.get(14)).isEqualTo(BoolType.getInstance());
     assertThat(types.get(15)).isEqualTo(NullType.getInstance());
-    assertThat(types.get(16)).isEqualTo(NullType.getInstance());
-    assertThat(types.get(17)).isEqualTo(BoolType.getInstance());
 
-    assertThat(types.get(18))
+    assertThat(types.get(16))
         .isEqualTo(makeNullable(BoolType.getInstance()));
-    assertThat(types.get(19)).isEqualTo(BoolType.getInstance());
+    assertThat(types.get(17)).isEqualTo(BoolType.getInstance());
   }
 
   public void testDataFlowTypeNarrowing_complexExpressions() {

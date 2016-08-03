@@ -19,7 +19,6 @@ package com.google.template.soy.passes;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.basetree.SyntaxVersion;
-import com.google.template.soy.basicfunctions.LengthFunction;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.SoyErrorKind;
@@ -37,10 +36,6 @@ import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.defn.LoopVar;
-import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.aggregate.ListType;
-import com.google.template.soy.types.primitive.AnyType;
-import com.google.template.soy.types.primitive.UnknownType;
 
 import java.util.Set;
 
@@ -54,8 +49,6 @@ final class CheckFunctionCallsVisitor extends AbstractSoyNodeVisitor<Void> {
 
   private static final SoyErrorKind INCORRECT_NUM_ARGS =
       SoyErrorKind.of("Function ''{0}'' called with {1} arguments (expected {2}).");
-  private static final SoyErrorKind INCORRECT_ARG_TYPE =
-      SoyErrorKind.of("Function ''{0}'' called with incorrect arg type {1} (expected {2}).");
   private static final SoyErrorKind LOOP_VARIABLE_NOT_IN_SCOPE =
       SoyErrorKind.of("Function ''{0}'' must have a foreach loop variable as its argument.");
   private static final SoyErrorKind QUOTE_KEYS_IF_JS_REQUIRES_MAP_LITERAL_ARG =
@@ -97,8 +90,7 @@ final class CheckFunctionCallsVisitor extends AbstractSoyNodeVisitor<Void> {
 
 
   /**
-   * Used to visit expr nodes to find nonplugin and basic functions and check their signatures and
-   * arg types.
+   * Used to visit expr nodes to find nonplugin functions and check their signatures.
    */
   private final class CheckFunctionCallsExprVisitor extends AbstractExprNodeVisitor<Void> {
 
@@ -126,13 +118,9 @@ final class CheckFunctionCallsVisitor extends AbstractSoyNodeVisitor<Void> {
       Checkpoint checkpoint = errorReporter.checkpoint();
       checkNumArgs(function, node);
 
-      // If there were arity errors, don't run further function visits
-      if (!errorReporter.errorsSince(checkpoint)) {
-        if (function instanceof BuiltinFunction) {
-          visitNonpluginFunction((BuiltinFunction) function, node);
-        } else  {
-          visitFunction(function, node);
-        }
+      // If there were arity errors, don't run visitNonpluginFunction (it would NPE).
+      if (function instanceof BuiltinFunction && !errorReporter.errorsSince(checkpoint)) {
+        visitNonpluginFunction((BuiltinFunction) function, node);
       }
 
       // Recurse to operands.
@@ -165,12 +153,6 @@ final class CheckFunctionCallsVisitor extends AbstractSoyNodeVisitor<Void> {
       }
     }
 
-    private void visitFunction(SoyFunction fn, FunctionNode node) {
-      if (fn instanceof LengthFunction) {
-        checkArgType(node.getChild(0), ListType.of(AnyType.getInstance()), node);
-      }
-    }
-
     private void checkNumArgs(SoyFunction function, FunctionNode node) {
       int numArgs = node.numChildren();
       Set<Integer> arities = function.getValidArgsSizes();
@@ -192,21 +174,6 @@ final class CheckFunctionCallsVisitor extends AbstractSoyNodeVisitor<Void> {
           && ((VarRefNode) loopVariable).getDefnDecl() instanceof LoopVar)) {
         errorReporter.report(
             fn.getSourceLocation(), LOOP_VARIABLE_NOT_IN_SCOPE, fn.getFunctionName());
-      }
-    }
-
-    private void checkArgType(ExprNode arg, SoyType expectedType, FunctionNode node) {
-      if (arg.getType() == UnknownType.getInstance()) {
-        return;
-      }
-
-      if (!expectedType.isAssignableFrom(arg.getType())) {
-        errorReporter.report(
-            arg.getSourceLocation(),
-            INCORRECT_ARG_TYPE,
-            node.getSoyFunction().getName(),
-            arg.getType(),
-            expectedType);
       }
     }
   }

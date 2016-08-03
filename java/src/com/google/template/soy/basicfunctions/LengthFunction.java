@@ -39,7 +39,7 @@ import javax.inject.Singleton;
  */
 @Singleton
 @SoyPureFunction
-public final class LengthFunction implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction {
+final class LengthFunction implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction {
 
 
   @Inject

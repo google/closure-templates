@@ -32,7 +32,7 @@ public final class CheckFunctionCallsVisitorTest extends TestCase {
 
   public void testPureFunctionOk() {
     assertSuccess(
-        "{namespace ns}\n",
+        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n",
         "/**",
         " * @param x",
         " * @param y",
@@ -45,7 +45,7 @@ public final class CheckFunctionCallsVisitorTest extends TestCase {
   public void testIncorrectArity() {
     assertFunctionCallsInvalid(
         "Function 'min' called with 1 arguments (expected 2).",
-        "{namespace ns}\n",
+        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n",
         "/**",
         " * @param x",
         " */",
@@ -54,7 +54,9 @@ public final class CheckFunctionCallsVisitorTest extends TestCase {
         "{/template}");
     assertFunctionCallsInvalid(
         "Function 'index' called with 0 arguments (expected 1).",
-        "{namespace ns}\n",
+        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n",
+        "/**",
+        " */",
         "{template .foo}",
         "  {print index()}",
         "{/template}");
@@ -63,7 +65,7 @@ public final class CheckFunctionCallsVisitorTest extends TestCase {
   public void testNestedFunctionCall() {
     assertFunctionCallsInvalid(
         "Function 'min' called with 1 arguments (expected 2).",
-        "{namespace ns}\n",
+        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n",
         "/**",
         " * @param x",
         " * @param y",
@@ -76,7 +78,7 @@ public final class CheckFunctionCallsVisitorTest extends TestCase {
   public void testNotALoopVariable1() {
     assertFunctionCallsInvalid(
         "Function 'index' must have a foreach loop variable as its argument",
-        "{namespace ns}\n",
+        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n",
         "/**",
         " * @param x",
         " */",
@@ -88,7 +90,7 @@ public final class CheckFunctionCallsVisitorTest extends TestCase {
   public void testNotALoopVariable2() {
     assertFunctionCallsInvalid(
         "Function 'index' must have a foreach loop variable as its argument",
-        "{namespace ns}\n",
+        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n",
         "/**",
         " * @param x",
         " */",
@@ -100,7 +102,9 @@ public final class CheckFunctionCallsVisitorTest extends TestCase {
   public void testNotALoopVariable3() {
     assertFunctionCallsInvalid(
         "Function 'index' must have a foreach loop variable as its argument",
-        "{namespace ns}\n",
+        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n",
+        "/**",
+        " */",
         "{template .foo}",
         "  {print index($ij.data)}",
         "{/template}");
@@ -109,7 +113,7 @@ public final class CheckFunctionCallsVisitorTest extends TestCase {
   public void testNotALoopVariable4() {
     assertFunctionCallsInvalid(
         "Function 'index' must have a foreach loop variable as its argument",
-        "{namespace ns}\n",
+        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n",
         "/**",
         " * @param x",
         " */",
@@ -120,7 +124,7 @@ public final class CheckFunctionCallsVisitorTest extends TestCase {
 
   public void testLoopVariableOk() {
     assertSuccess(
-        "{namespace ns}\n",
+        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n",
         "/**",
         " * @param elements",
         " */",
@@ -134,7 +138,7 @@ public final class CheckFunctionCallsVisitorTest extends TestCase {
   public void testLoopVariableNotInScopeWhenEmpty() {
     assertFunctionCallsInvalid(
         "Function 'index' must have a foreach loop variable as its argument",
-        "{namespace ns}\n",
+        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n",
         "/**",
         " * @param elements",
         " */",
@@ -149,14 +153,16 @@ public final class CheckFunctionCallsVisitorTest extends TestCase {
 
   public void testQuoteKeysIfJsFunction() {
     assertSuccess(
-        "{namespace ns}\n",
+        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n",
+        "/***/",
         "{template .foo}",
         "  {let $m: quoteKeysIfJs(['a': 1, 'b': 'blah']) /}",
         "{/template}");
 
     assertFunctionCallsInvalid(
         "Function 'quoteKeysIfJs' called with argument of type string (expected map literal).",
-        "{namespace ns}\n",
+        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n",
+        "/***/",
         "{template .foo}",
         "  {let $m: quoteKeysIfJs('blah') /}",
         "{/template}");
@@ -165,7 +171,9 @@ public final class CheckFunctionCallsVisitorTest extends TestCase {
   public void testUnrecognizedFunction() {
     assertFunctionCallsInvalid(
         "Unknown function 'bogus'.",
-        "{namespace ns}\n",
+        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n",
+        "/**",
+        " */",
         "{template .foo}",
         "  {print bogus()}",
         "{/template}");
@@ -174,7 +182,7 @@ public final class CheckFunctionCallsVisitorTest extends TestCase {
   public void testUnrecognizedFunctionOkInV1() {
     assertPasses(
         SyntaxVersion.V1_0,
-        "{namespace ns}\n",
+        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n",
         "{template .foo}",
         "  {print bogus()}",
         "{/template}");
