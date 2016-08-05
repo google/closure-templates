@@ -2808,7 +2808,7 @@ goog.addDependency('debug/debugwindow_test.js', ['goog.debug.DebugWindowTest'], 
 goog.addDependency('debug/devcss/devcss.js', ['goog.debug.DevCss', 'goog.debug.DevCss.UserAgent'], ['goog.asserts', 'goog.cssom', 'goog.dom.classlist', 'goog.events', 'goog.events.EventType', 'goog.string', 'goog.userAgent'], {});
 goog.addDependency('debug/devcss/devcss_test.js', ['goog.debug.DevCssTest'], ['goog.debug.DevCss', 'goog.style', 'goog.testing.jsunit'], {});
 goog.addDependency('debug/devcss/devcssrunner.js', ['goog.debug.devCssRunner'], ['goog.debug.DevCss'], {});
-goog.addDependency('debug/divconsole.js', ['goog.debug.DivConsole'], ['goog.debug.HtmlFormatter', 'goog.debug.LogManager', 'goog.dom.TagName', 'goog.dom.safe', 'goog.html.SafeHtml', 'goog.html.SafeStyleSheet', 'goog.string.Const', 'goog.style'], {});
+goog.addDependency('debug/divconsole.js', ['goog.debug.DivConsole'], ['goog.debug.HtmlFormatter', 'goog.debug.LogManager', 'goog.dom.DomHelper', 'goog.dom.TagName', 'goog.dom.safe', 'goog.html.SafeHtml', 'goog.html.SafeStyleSheet', 'goog.string.Const', 'goog.style'], {});
 goog.addDependency('debug/enhanceerror_test.js', ['goog.debugEnhanceErrorTest'], ['goog.debug', 'goog.testing.jsunit'], {});
 goog.addDependency('debug/entrypointregistry.js', ['goog.debug.EntryPointMonitor', 'goog.debug.entryPointRegistry'], ['goog.asserts'], {});
 goog.addDependency('debug/entrypointregistry_test.js', ['goog.debug.entryPointRegistryTest'], ['goog.debug.ErrorHandler', 'goog.debug.entryPointRegistry', 'goog.testing.jsunit'], {});
@@ -2844,7 +2844,7 @@ goog.addDependency('dom/abstractrange.js', ['goog.dom.AbstractRange', 'goog.dom.
 goog.addDependency('dom/abstractrange_test.js', ['goog.dom.AbstractRangeTest'], ['goog.dom', 'goog.dom.AbstractRange', 'goog.dom.Range', 'goog.dom.TagName', 'goog.testing.jsunit'], {});
 goog.addDependency('dom/animationframe/animationframe.js', ['goog.dom.animationFrame', 'goog.dom.animationFrame.Spec', 'goog.dom.animationFrame.State'], ['goog.dom.animationFrame.polyfill'], {});
 goog.addDependency('dom/animationframe/polyfill.js', ['goog.dom.animationFrame.polyfill'], [], {});
-goog.addDependency('dom/annotate.js', ['goog.dom.annotate', 'goog.dom.annotate.AnnotateFn'], ['goog.array', 'goog.asserts', 'goog.dom', 'goog.dom.NodeType', 'goog.dom.TagName', 'goog.dom.safe', 'goog.html.SafeHtml'], {});
+goog.addDependency('dom/annotate.js', ['goog.dom.annotate', 'goog.dom.annotate.AnnotateFn'], ['goog.array', 'goog.asserts', 'goog.dom', 'goog.dom.NodeType', 'goog.dom.TagName', 'goog.dom.safe', 'goog.html.SafeHtml', 'goog.object'], {});
 goog.addDependency('dom/annotate_test.js', ['goog.dom.annotateTest'], ['goog.dom', 'goog.dom.TagName', 'goog.dom.annotate', 'goog.html.SafeHtml', 'goog.testing.jsunit'], {});
 goog.addDependency('dom/attr.js', ['goog.dom.Attr'], [], {});
 goog.addDependency('dom/browserfeature.js', ['goog.dom.BrowserFeature'], ['goog.userAgent'], {});
@@ -12344,8 +12344,9 @@ goog.html.SafeHtml.AttributeValue;
  *   which are not supported by this function are applet, base, embed, iframe,
  *   link, math, object, script, style, svg, and template.
  *
- * @param {string} tagName The name of the tag. Only tag names consisting of
- *     [a-zA-Z0-9-] are allowed. Tag names documented above are disallowed.
+ * @param {!goog.dom.TagName|string} tagName The name of the tag. Only tag names
+ *     consisting of [a-zA-Z0-9-] are allowed. Tag names documented above are
+ *     disallowed.
  * @param {?Object<string, ?goog.html.SafeHtml.AttributeValue>=} opt_attributes
  *     Mapping from attribute names to their values. Only attribute names
  *     consisting of [a-zA-Z0-9-] are allowed. Value of null or undefined causes
@@ -12360,9 +12361,9 @@ goog.html.SafeHtml.AttributeValue;
  * @throws {goog.asserts.AssertionError} If content for void tag is provided.
  */
 goog.html.SafeHtml.create = function(tagName, opt_attributes, opt_content) {
-  goog.html.SafeHtml.verifyTagName(tagName);
+  goog.html.SafeHtml.verifyTagName(String(tagName));
   return goog.html.SafeHtml.createSafeHtmlTagSecurityPrivateDoNotAccessOrElse(
-      tagName, opt_attributes, opt_content);
+      String(tagName), opt_attributes, opt_content);
 };
 
 

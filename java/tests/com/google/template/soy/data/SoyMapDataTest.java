@@ -19,6 +19,7 @@ package com.google.template.soy.data;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
+import com.google.common.testing.EqualsTester;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
 
@@ -185,9 +186,10 @@ public class SoyMapDataTest extends TestCase {
     SoyMapData smd0 = new SoyMapData();
     SoyMapData smd1 = new SoyMapData("boo", "foo");
 
-    assertTrue(smd0.equals(smd0));
-    assertTrue(smd1.equals(smd1));
-    assertFalse(smd0.equals(smd1));
+    new EqualsTester()
+      .addEqualityGroup(smd0)
+      .addEqualityGroup(smd1)
+      .testEquals();
     assertFalse(smd0.equals(new SoyMapData()));
   }
 

@@ -18,6 +18,7 @@ package com.google.template.soy.data;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.common.testing.EqualsTester;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
@@ -189,9 +190,10 @@ public class SoyListDataTest extends TestCase {
     SoyListData sld0 = new SoyListData();
     SoyListData sld1 = new SoyListData("boo");
 
-    assertTrue(sld0.equals(sld0));
-    assertTrue(sld1.equals(sld1));
-    assertFalse(sld0.equals(sld1));
+    new EqualsTester()
+      .addEqualityGroup(sld0)
+      .addEqualityGroup(sld1)
+      .testEquals();
     assertFalse(sld0.equals(new SoyListData()));
   }
 
