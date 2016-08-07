@@ -108,9 +108,4 @@ public interface SoyType {
    * @return True if the value is an instance of this type.
    */
   boolean isInstance(SoyValue value);
-
-  /**
-   * Returns the java class for the the SoyValue subclass that is used to represent this type.
-   */
-  Class<? extends SoyValue> javaType();
 }

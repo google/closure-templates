@@ -2490,10 +2490,6 @@ public final class GenJsCodeVisitorTest extends TestCase {
         return false;
       }
 
-      @Override public Class<? extends SoyValue> javaType() {
-        throw new UnsupportedOperationException();
-      }
-
       @Override public String getName() {
         return "example.type";
       }

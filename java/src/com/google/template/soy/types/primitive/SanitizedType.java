@@ -38,10 +38,6 @@ public abstract class SanitizedType extends PrimitiveType {
         && ((SanitizedContent) value).getContentKind() == getContentKind();
   }
 
-  @Override public Class<? extends SoyValue> javaType() {
-    return SanitizedContent.class;
-  }
-
   @Override public String toString() {
     return getContentKind().toString().toLowerCase();
   }

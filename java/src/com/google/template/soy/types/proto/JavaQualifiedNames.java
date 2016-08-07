@@ -162,6 +162,14 @@ public final class JavaQualifiedNames {
     return getQualifiedName(enumType, false);
   }
 
+  /** Returns the class name for the enum descriptor (uses '$' inner class seperator). */
+  public static String getCaseEnumClassName(Descriptors.OneofDescriptor oneOfDescriptor) {
+    return getQualifiedName(oneOfDescriptor.getContainingType(), false)
+        + '$'
+        + underscoresToCamelCase(oneOfDescriptor.getName(), true)
+        + "Case";
+  }
+
   public static String underscoresToCamelCase(String input, boolean capitializeNextLetter) {
     StringBuilder result = new StringBuilder();
     // Note:  I distrust ctype.h due to locales.

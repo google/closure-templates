@@ -50,10 +50,6 @@ public final class AnyType extends PrimitiveType {
     return true;
   }
 
-  @Override public Class<? extends SoyValue> javaType() {
-    return SoyValue.class;
-  }
-
   @Override public String toString() {
     return "any";
   }

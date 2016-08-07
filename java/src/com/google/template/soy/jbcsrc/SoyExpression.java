@@ -20,14 +20,10 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.OBJECT;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.RENDER_CONTEXT_TYPE;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.SOY_LIST_TYPE;
-import static com.google.template.soy.jbcsrc.BytecodeUtils.classFromAsmType;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.logicalNot;
 
 import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
-import com.google.protobuf.Message;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.soytree.CallNode;
@@ -35,7 +31,6 @@ import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
-import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.aggregate.ListType;
 import com.google.template.soy.types.primitive.BoolType;
 import com.google.template.soy.types.primitive.FloatType;
@@ -44,14 +39,11 @@ import com.google.template.soy.types.primitive.NullType;
 import com.google.template.soy.types.primitive.SanitizedType;
 import com.google.template.soy.types.primitive.StringType;
 import com.google.template.soy.types.primitive.UnknownType;
-import com.google.template.soy.types.proto.SoyProtoTypeImpl;
-
+import java.util.ArrayList;
+import java.util.List;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * An Expression involving a soy value.
@@ -63,52 +55,41 @@ import java.util.List;
  * but depending on the type they may also support additional unboxing conversions.
  */
 class SoyExpression extends Expression {
-  // TODO(msamuel): move this variable into Kind.
-  private static final ImmutableSet<Kind> STRING_KINDS =
-      Sets.immutableEnumSet(
-          Kind.STRING,
-          Kind.HTML,
-          Kind.ATTRIBUTES,
-          Kind.JS,
-          Kind.CSS,
-          Kind.URI,
-          Kind.TRUSTED_RESOURCE_URI);
 
   static SoyExpression forSoyValue(SoyType type, Expression delegate) {
-    return new SoyExpression(type, type.javaType(), delegate, Optional.<Expression>absent());
+    return new SoyExpression(
+        SoyRuntimeType.getBoxedType(type), delegate, Optional.<Expression>absent());
   }
 
   static SoyExpression forBool(Expression delegate) {
-    return new SoyExpression(BoolType.getInstance(), boolean.class, delegate);
+    return new SoyExpression(getUnboxedTypeUnchecked(BoolType.getInstance()), delegate);
   }
 
   static SoyExpression forFloat(Expression delegate) {
-    return new SoyExpression(FloatType.getInstance(), double.class, delegate);
+    return new SoyExpression(getUnboxedTypeUnchecked(FloatType.getInstance()), delegate);
   }
 
   static SoyExpression forInt(Expression delegate) {
-    return new SoyExpression(IntType.getInstance(), long.class, delegate);
+    return new SoyExpression(getUnboxedTypeUnchecked(IntType.getInstance()), delegate);
   }
 
   static SoyExpression forString(Expression delegate) {
-    return new SoyExpression(StringType.getInstance(), String.class, delegate);
+    return new SoyExpression(getUnboxedTypeUnchecked(StringType.getInstance()), delegate);
   }
 
   static SoyExpression forSanitizedString(Expression delegate, ContentKind kind) {
-    return new SoyExpression(SanitizedType.getTypeForContentKind(kind), String.class, delegate);
+    return new SoyExpression(
+        getUnboxedTypeUnchecked(SanitizedType.getTypeForContentKind(kind)), delegate);
   }
 
   static SoyExpression forList(ListType listType, Expression delegate) {
-    return new SoyExpression(listType, List.class, delegate);
+    return new SoyExpression(getUnboxedTypeUnchecked(listType), delegate);
   }
 
   static SoyExpression forProto(
-      SoyProtoTypeImpl protoType,
-      Class<? extends Message> unboxedType,
-      Expression delegate,
-      Expression renderContext) {
+      SoyRuntimeType type, Expression delegate, Expression renderContext) {
     checkArgument(renderContext.resultType().equals(RENDER_CONTEXT_TYPE));
-    return new SoyExpression(protoType, unboxedType, delegate, Optional.of(renderContext));
+    return new SoyExpression(type, delegate, Optional.of(renderContext));
   }
 
   /**
@@ -124,8 +105,7 @@ class SoyExpression extends Expression {
   
   static final SoyExpression NULL =
       new SoyExpression(
-          NullType.getInstance(),
-          Object.class,
+          getUnboxedTypeUnchecked(NullType.getInstance()),
           new Expression(OBJECT.type(), Feature.CHEAP) {
             @Override
             void doGen(CodeBuilder adapter) {
@@ -134,53 +114,62 @@ class SoyExpression extends Expression {
           });
 
   static final SoyExpression TRUE =
-      new SoyExpression(BoolType.getInstance(), boolean.class, BytecodeUtils.constant(true)) {
+      new SoyExpression(
+          getUnboxedTypeUnchecked(BoolType.getInstance()), BytecodeUtils.constant(true)) {
         @Override
         SoyExpression box() {
-          return new DefaultBoxed(BoolType.getInstance(), this,
-              FieldRef.BOOLEAN_DATA_TRUE.accessor(), Optional.<Expression>absent());
+          return new DefaultBoxed(
+              SoyRuntimeType.getBoxedType(BoolType.getInstance()),
+              this,
+              FieldRef.BOOLEAN_DATA_TRUE.accessor(),
+              Optional.<Expression>absent());
         }
       };
 
   static final SoyExpression FALSE =
-      new SoyExpression(BoolType.getInstance(), boolean.class, BytecodeUtils.constant(false)) {
+      new SoyExpression(
+          getUnboxedTypeUnchecked(BoolType.getInstance()), BytecodeUtils.constant(false)) {
         @Override
         SoyExpression box() {
-          return new DefaultBoxed(BoolType.getInstance(), this,
-              FieldRef.BOOLEAN_DATA_FALSE.accessor(), Optional.<Expression>absent());
+          return new DefaultBoxed(
+              SoyRuntimeType.getBoxedType(BoolType.getInstance()),
+              this,
+              FieldRef.BOOLEAN_DATA_FALSE.accessor(),
+              Optional.<Expression>absent());
         }
       };
 
-  private final Class<?> clazz;
-  private final SoyType soyType;
+  private static SoyRuntimeType getUnboxedTypeUnchecked(SoyType soyType) {
+    return SoyRuntimeType.getUnboxedType(soyType).get();
+  }
+
+  private final SoyRuntimeType soyType;
   private final Expression delegate;
   private final Optional<Expression> renderContext;
 
-  private SoyExpression(SoyType soyType, Class<?> clazz, Expression delegate) {
-    this(soyType, clazz, delegate, Optional.<Expression>absent());
+  private SoyExpression(SoyRuntimeType soyType, Expression delegate) {
+    this(soyType, delegate, Optional.<Expression>absent());
   }
 
-  private SoyExpression(SoyType soyType, Class<?> clazz, Expression delegate, 
-      Optional<Expression> renderContext) {
+  private SoyExpression(
+      SoyRuntimeType soyType, Expression delegate, Optional<Expression> renderContext) {
     super(delegate.resultType(), delegate.features());
     checkArgument(
-        clazz.isAssignableFrom(classFromAsmType(delegate.resultType())),
-        "delegate with type %s isn't compatible with asserted SoyExpression type %s", 
-        delegate.resultType(), 
-        clazz);
-    // If this is a boxed type, make sure the declared clazz is compatible
-    // TODO(lukes): support this check for unboxed types as well.
-    if (SoyValue.class.isAssignableFrom(clazz) && !soyType.javaType().isAssignableFrom(clazz)) {
-      throw new IllegalArgumentException(clazz + " is not compatible with soy type: " + soyType);
-    }
+        BytecodeUtils.isPossiblyAssignableFrom(soyType.runtimeType(), delegate.resultType()),
+        "delegate with type %s isn't compatible with asserted SoyExpression type %s",
+        delegate.resultType(),
+        soyType.runtimeType());
     this.soyType = soyType;
-    this.clazz = clazz;
     this.delegate = delegate;
     this.renderContext = renderContext;
   }
 
   /** Returns the {@link SoyType} of the expression. */
   final SoyType soyType() {
+    return soyRuntimeType().soyType();
+  }
+
+  final SoyRuntimeType soyRuntimeType() {
     return soyType;
   }
 
@@ -188,97 +177,24 @@ class SoyExpression extends Expression {
     delegate.gen(adapter);
   }
 
-  /**
-   * Returns {@code true} if the expression is known to be a string at compile time.
-   *
-   * <p>Note: If this returns {@code false}, there is no guarantee that this expression is
-   * <em>not</em> a string, just that it is not <em>known</em> to be a string at compile time. For
-   * example, {@code $b ? 'hello' : 2} is a valid soy expression that will be typed as 'any' at
-   * compile time. So {@link #isKnownString()} on that soy expression will return false even though
-   * it may in fact be a string.
-   */
-  boolean isKnownString() {
-    return soyType.getKind() == Kind.STRING;
-  }
-
-  boolean isKnownStringOrSanitizedContent() {
-    // It 'is' a string if it is unboxed or is one of our string types
-    return STRING_KINDS.contains(soyType.getKind());
-  }
-  
-  boolean isKnownSanitizedContent() {
-    return soyType.getKind() != Kind.STRING && STRING_KINDS.contains(soyType.getKind());
-  }
-
-  /**
-   * Returns {@code true} if the expression is known to be an int at compile time.
-   *
-   * <p>Note: If this returns {@code false}, there is no guarantee that this expression is
-   * <em>not</em> a int, just that it is not <em>known</em> to be a int at compile time.
-   */
-  boolean isKnownInt() {
-    return soyType.getKind() == Kind.INT;
-  }
-
   boolean assignableToNullableInt() {
-    return assignableToNullableType(IntType.getInstance());
+    return soyRuntimeType().assignableToNullableInt();
   }
 
   boolean assignableToNullableFloat() {
-    return assignableToNullableType(FloatType.getInstance());
+    return soyRuntimeType().assignableToNullableFloat();
   }
 
   boolean assignableToNullableNumber() {
-    return assignableToNullableType(SoyTypes.NUMBER_TYPE);
-  }
-
-  private boolean assignableToNullableType(SoyType type) {
-    return type.isAssignableFrom(soyType)
-        || (soyType.getKind() == Kind.UNION && type.isAssignableFrom(SoyTypes.removeNull(soyType)));
-  }
-  /**
-   * Returns {@code true} if the expression is known to be a float at compile time.
-   *
-   * <p>Note: If this returns {@code false}, there is no guarantee that this expression is
-   * <em>not</em> a float, just that it is not <em>known</em> to be a float at compile time.
-   */
-  boolean isKnownFloat() {
-    return soyType.getKind() == Kind.FLOAT;
+    return soyRuntimeType().assignableToNullableNumber();
   }
 
   boolean isKnownList() {
-    return soyType.getKind() == Kind.LIST;
-  }
-
-  boolean isKnownMap() {
-    return soyType.getKind() == Kind.MAP;
-  }
-
-  boolean isKnownRecord() {
-    return soyType.getKind() == Kind.RECORD;
-  }
-
-  boolean isKnownBool() {
-    return soyType.getKind() == Kind.BOOL;
+    return soyRuntimeType().isKnownList();
   }
 
   boolean isBoxed() {
-    return SoyValue.class.isAssignableFrom(clazz);
-  }
-
-  boolean isKnownProto() {
-    return soyType instanceof SoyProtoTypeImpl;
-  }
-
-  /**
-   * Returns {@code true} if the expression is known to be an {@linkplain #isKnownInt() int} or a
-   * {@linkplain #isKnownFloat() float} at compile time.
-   *
-   * <p>Note: If this returns {@code false}, there is no guarantee that this expression is
-   * <em>not</em> a number, just that it is not <em>known</em> to be a number at compile time.
-   */
-  final boolean isKnownNumber() {
-    return SoyTypes.NUMBER_TYPE.isAssignableFrom(soyType);
+    return soyRuntimeType().isBoxed();
   }
 
   /** Returns a SoyExpression that evaluates to a subtype of {@link SoyValue}. */
@@ -286,7 +202,7 @@ class SoyExpression extends Expression {
     if (isBoxed()) {
       return this;
     }
-    if (soyType.equals(NullType.getInstance())) {
+    if (soyType.soyType().equals(NullType.getInstance())) {
       return this;
     }
     // If null is expected and it is a reference type we want to propagate null through the boxing
@@ -307,26 +223,29 @@ class SoyExpression extends Expression {
           .asNullable()
           .labelEnd(end);
     }
-    if (isKnownBool()) {
+    if (soyRuntimeType().isKnownBool()) {
       return asBoxed(MethodRef.BOOLEAN_DATA_FOR_VALUE.invoke(delegate));
     }
-    if (isKnownInt()) {
+    if (soyRuntimeType().isKnownInt()) {
       return asBoxed(MethodRef.INTEGER_DATA_FOR_VALUE.invoke(delegate));
     }
-    if (isKnownFloat()) {
+    if (soyRuntimeType().isKnownFloat()) {
       return asBoxed(MethodRef.FLOAT_DATA_FOR_VALUE.invoke(delegate));
     }
-    if (isKnownSanitizedContent()) {
-      return asBoxed(MethodRef.ORDAIN_AS_SAFE.invoke(delegate, 
-          FieldRef.enumReference(((SanitizedType) soyType).getContentKind()).accessor()));
+    if (soyRuntimeType().isKnownSanitizedContent()) {
+      return asBoxed(
+          MethodRef.ORDAIN_AS_SAFE.invoke(
+              delegate,
+              FieldRef.enumReference(((SanitizedType) soyRuntimeType().soyType()).getContentKind())
+                  .accessor()));
     }
-    if (isKnownString()) {
+    if (soyRuntimeType().isKnownString()) {
       return asBoxed(MethodRef.STRING_DATA_FOR_VALUE.invoke(delegate));
     }
     if (isKnownList()) {
       return asBoxed(MethodRef.LIST_IMPL_FOR_PROVIDER_LIST.invoke(delegate));
     }
-    if (isKnownProto()) {
+    if (soyRuntimeType().isKnownProto()) {
       // dereference the context early in case our caller screwed up and we don't have one.
       final Expression context = renderContext.get();
       return asBoxed(
@@ -350,12 +269,11 @@ class SoyExpression extends Expression {
             }
           });
     }
-    throw new IllegalStateException(
-        "cannot box soy expression of type " + soyType + " with runtime type " + clazz);
+    throw new IllegalStateException("cannot box soy expression of type " + soyType);
   }
 
   private DefaultBoxed asBoxed(Expression expr) {
-    return new DefaultBoxed(soyType, this, expr, renderContext);
+    return new DefaultBoxed(soyRuntimeType().box(), this, expr, renderContext);
   }
 
   /** Coerce this expression to a boolean value. */
@@ -364,7 +282,7 @@ class SoyExpression extends Expression {
     if (BytecodeUtils.isPrimitive(resultType())) {
       return coercePrimitiveToBoolean();
     }
-    if (soyType.equals(NullType.getInstance())) {
+    if (soyType.soyType().equals(NullType.getInstance())) {
       return FALSE;
     }
     if (delegate.isNonNullable()) {
@@ -412,7 +330,7 @@ class SoyExpression extends Expression {
       return forBool(delegate.invoke(MethodRef.SOY_VALUE_COERCE_TO_BOOLEAN));
     }
     // unboxed non-primitive types.  This would be strings, protos or lists
-    if (clazz.equals(String.class)) {
+    if (soyRuntimeType().isKnownString()) {
       return forBool(logicalNot(delegate.invoke(MethodRef.STRING_IS_EMPTY)));
     }
     // All other types are always truthy, but we still need to eval the delegate in case it has
@@ -429,7 +347,7 @@ class SoyExpression extends Expression {
 
   /** Coerce this expression to a string value. */
   SoyExpression coerceToString() {
-    if (clazz.equals(String.class)) {
+    if (soyRuntimeType().isKnownString() && !isBoxed()) {
       return this;
     }
     if (BytecodeUtils.isPrimitive(resultType())) {
@@ -456,42 +374,47 @@ class SoyExpression extends Expression {
    * Coerce to a double, useful for float-int comparisons
    */
   SoyExpression coerceToDouble() {
-    if (clazz.equals(double.class)) {
-      return this;
-    }
-    if (clazz.equals(long.class)) {
-      return forFloat(BytecodeUtils.numericConversion(delegate, Type.DOUBLE_TYPE));
-    }
     if (!isBoxed()) {
+      if (soyRuntimeType().isKnownFloat()) {
+        return this;
+      }
+      if (soyRuntimeType().isKnownInt()) {
+        return forFloat(BytecodeUtils.numericConversion(delegate, Type.DOUBLE_TYPE));
+      }
       throw new UnsupportedOperationException("Can't convert " + resultType() + " to a double");
     }
-    if (isKnownFloat()) {
+    if (soyRuntimeType().isKnownFloat()) {
       return forFloat(delegate.invoke(MethodRef.SOY_VALUE_FLOAT_VALUE));
     }
     return forFloat(delegate.invoke(MethodRef.SOY_VALUE_NUMBER_VALUE));
   }
 
+  // TODO(lukes): split this into a set of specialized methods, one per target type like we did
+  // for the 'coerce' methods.
+
   /**
    * Unboxes this to a {@link SoyExpression} with a runtime type of {@code asType}.
-   * 
+   *
    * <p>This method is appropriate when you know (likely via inspection of the {@link #soyType()},
    * or other means) that the value does have the appropriate type but you prefer to interact with
-   * it as its unboxed representation.  If you simply want to 'coerce' the given value to a new type
-   * consider {@link #coerceToBoolean()} {@link #coerceToDouble()} or {@link #coerceToString()} 
+   * it as its unboxed representation. If you simply want to 'coerce' the given value to a new type
+   * consider {@link #coerceToBoolean()} {@link #coerceToDouble()} or {@link #coerceToString()}
    * which are designed for that use case.
    */
   SoyExpression unboxAs(Class<?> asType) {
     checkArgument(
         !SoyValue.class.isAssignableFrom(asType),
-        "Cannot use convert() to convert to a  SoyValue: %s, use .box() instead",
+        "Cannot use unboxAs() to convert to a SoyValue: %s, use .box() instead",
         asType);
     // no op conversion, always allow.
-    if (asType.equals(clazz)) {
+    if (BytecodeUtils.isDefinitelyAssignableFrom(Type.getType(asType), soyType.runtimeType())) {
       return this;
     }
     if (!isBoxed()) {
       throw new IllegalStateException(
-          "Trying to unbox an unboxed value (" + clazz + ") doesn't make sense, "
+          "Trying to unbox an unboxed value ("
+              + soyType
+              + ") doesn't make sense, "
               + "should you be using a type coercion? e.g. .coerceToBoolean()");
     }
     if (asType.equals(boolean.class)) {
@@ -507,15 +430,13 @@ class SoyExpression extends Expression {
       if (asType.equals(String.class)) {
         Expression unboxedString = delegate.invoke(MethodRef.SOY_VALUE_STRING_VALUE);
         // We need to ensure that santized types don't lose their content kinds
-        return isKnownSanitizedContent()
-            ? forSanitizedString(unboxedString, ((SanitizedType) soyType).getContentKind())
+        return soyRuntimeType().isKnownSanitizedContent()
+            ? forSanitizedString(
+                unboxedString, ((SanitizedType) soyType.soyType()).getContentKind())
             : forString(unboxedString);
       }
       if (asType.equals(List.class)) {
         return unboxAsList();
-      }
-      if (Message.class.isAssignableFrom(asType)) {
-        return unboxAsProto(asType.asSubclass(Message.class));
       }
     } else {
       // else it must be a List/Proto/String all of which must preserve null through the unboxing
@@ -530,15 +451,15 @@ class SoyExpression extends Expression {
           };
       return withSource(nonNullDelegate).asNonNullable().unboxAs(asType).asNullable().labelEnd(end);
     }
-    throw new UnsupportedOperationException("Can't unbox " + clazz + " as " + asType);
+    throw new UnsupportedOperationException("Can't unbox " + soyType + " as " + asType);
   }
 
   private SoyExpression unboxAsList() {
     ListType asListType;
     if (isKnownList()) {
-      asListType = (ListType) soyType;
+      asListType = (ListType) soyType.soyType();
     } else {
-      Kind kind = soyType.getKind();
+      Kind kind = soyType.soyType().getKind();
       if (kind == Kind.UNKNOWN) {
         asListType = ListType.of(UnknownType.getInstance());
       } else {
@@ -550,29 +471,18 @@ class SoyExpression extends Expression {
         asListType, delegate.cast(SOY_LIST_TYPE).invoke(MethodRef.SOY_LIST_AS_JAVA_LIST));
   }
 
-  private SoyExpression unboxAsProto(Class<? extends Message> asType) {
-    return forProto(
-        (SoyProtoTypeImpl) soyType,
-        asType,
-        delegate
-            .cast(SoyProtoTypeImpl.Value.class)
-            .invoke(ProtoUtils.SOY_PROTO_VALUE_GET_PROTO)
-            .cast(asType),
-        renderContext.get());
-  }
-
   /**
    * Returns a new {@link SoyExpression} with the same type but a new delegate expression.
    */
   SoyExpression withSource(Expression expr) {
-    return new SoyExpression(soyType, clazz, expr, renderContext);
+    return new SoyExpression(soyType, expr, renderContext);
   }
 
   SoyExpression withRenderContext(Expression renderContext) {
     if (this.renderContext.isPresent() && this.renderContext.get().equals(renderContext)) {
       return this;
     }
-    return new SoyExpression(soyType, clazz, delegate, Optional.of(renderContext));
+    return new SoyExpression(soyType, delegate, Optional.of(renderContext));
   }
 
   /**
@@ -607,14 +517,12 @@ class SoyExpression extends Expression {
   }
 
   @Override SoyExpression asNonNullable() {
-    return new SoyExpression(
-        SoyTypes.removeNull(soyType), clazz, delegate.asNonNullable(), renderContext);
+    return new SoyExpression(soyType.asNonNullable(), delegate.asNonNullable(), renderContext);
   }
 
   @Override
   public SoyExpression asNullable() {
-    return new SoyExpression(
-        SoyTypes.makeNullable(soyType), clazz, delegate.asNullable(), renderContext);
+    return new SoyExpression(soyType.asNullable(), delegate.asNullable(), renderContext);
   }
 
   @Override SoyExpression labelStart(Label label) {
@@ -631,9 +539,12 @@ class SoyExpression extends Expression {
   private static final class DefaultBoxed extends SoyExpression {
     private final SoyExpression unboxed;
 
-    DefaultBoxed(SoyType soyType, SoyExpression unboxed, Expression delegate, 
+    DefaultBoxed(
+        SoyRuntimeType soyType,
+        SoyExpression unboxed,
+        Expression delegate,
         Optional<Expression> expr) {
-      super(soyType, soyType.javaType(), delegate, expr);
+      super(soyType, delegate, expr);
       this.unboxed = unboxed;
     }
 

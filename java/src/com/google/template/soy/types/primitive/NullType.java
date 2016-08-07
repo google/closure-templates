@@ -44,10 +44,6 @@ public final class NullType extends PrimitiveType {
     return "null";
   }
 
-  @Override public Class<? extends SoyValue> javaType() {
-    return NullData.class;
-  }
-
   /**
    * Return the single instance of this type.
    */

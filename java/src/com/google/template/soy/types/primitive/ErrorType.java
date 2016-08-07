@@ -46,8 +46,4 @@ public final class ErrorType implements SoyType {
     // error type... this comparison should probably never happen in the first place.
     return false;
   }
-
-  @Override public Class<? extends SoyValue> javaType() {
-    throw new UnsupportedOperationException("ErrorType doesn't have a runtime representation");
-  }
 }

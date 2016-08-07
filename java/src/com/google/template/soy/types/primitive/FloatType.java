@@ -43,10 +43,6 @@ public final class FloatType extends PrimitiveType {
     return value instanceof FloatData;
   }
 
-  @Override public Class<? extends SoyValue> javaType() {
-    return FloatData.class;
-  }
-
   @Override public String toString() {
     return "float";
   }

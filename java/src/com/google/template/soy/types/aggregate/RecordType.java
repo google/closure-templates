@@ -23,15 +23,15 @@ import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.types.SoyObjectType;
 import com.google.template.soy.types.SoyType;
-
 import java.util.Map;
 import java.util.Objects;
 
 /**
- * Dict type - classic dictionary type with string keys. Only works with field
- * (dot) access.
+ * Dict type - classic dictionary type with string keys. Only works with field (dot) access.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
+ *
+ * <p>TODO(lukes): this shouldn't implement SoyObjectType
  *
  */
 public final class RecordType implements SoyObjectType {
@@ -73,10 +73,6 @@ public final class RecordType implements SoyObjectType {
 
   @Override public boolean isInstance(SoyValue value) {
     return value instanceof SoyRecord;
-  }
-
-  @Override public Class<? extends SoyValue> javaType() {
-    return SoyRecord.class;
   }
 
   @Override public String getName() {

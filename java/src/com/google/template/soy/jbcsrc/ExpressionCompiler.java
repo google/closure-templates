@@ -72,13 +72,11 @@ import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.aggregate.ListType;
 import com.google.template.soy.types.primitive.UnknownType;
 import com.google.template.soy.types.proto.SoyProtoTypeImpl;
-
+import java.util.ArrayList;
+import java.util.List;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Compiles a {@link ExprNode} to a {@link SoyExpression}.
@@ -400,19 +398,24 @@ final class ExpressionCompiler {
 
     @Override protected final SoyExpression visitPlusOpNode(PlusOpNode node) {
       SoyExpression left = visit(node.getChild(0));
+      SoyRuntimeType leftRuntimeType = left.soyRuntimeType();
       SoyExpression right = visit(node.getChild(1));
+      SoyRuntimeType rightRuntimeType = right.soyRuntimeType();
       // They are both definitely numbers
-      if (left.assignableToNullableNumber() && right.assignableToNullableNumber()) {
-        if (left.assignableToNullableInt() && right.assignableToNullableInt()) {
+      if (leftRuntimeType.assignableToNullableNumber()
+          && rightRuntimeType.assignableToNullableNumber()) {
+        if (leftRuntimeType.assignableToNullableInt()
+            && rightRuntimeType.assignableToNullableInt()) {
           return applyBinaryIntOperator(Opcodes.LADD, left, right);
         }
         // if either is definitely a float, then we are definitely coercing so just do it now
-        if (left.assignableToNullableFloat() || right.assignableToNullableFloat()) {
+        if (leftRuntimeType.assignableToNullableFloat()
+            || rightRuntimeType.assignableToNullableFloat()) {
           return applyBinaryFloatOperator(Opcodes.DADD, left, right);
         }
       }
       // '+' is overloaded for string arguments to mean concatenation.
-      if (left.isKnownString() || right.isKnownString()) {
+      if (leftRuntimeType.isKnownString() || rightRuntimeType.isKnownString()) {
         SoyExpression leftString = left.coerceToString();
         SoyExpression rightString = right.coerceToString();
         return SoyExpression.forString(leftString.invoke(MethodRef.STRING_CONCAT, rightString));
@@ -570,9 +573,10 @@ final class ExpressionCompiler {
       }
       // Now we need to do some boxing conversions.  soy expression boxes null -> null so this is
       // safe (and I assume that the jit can eliminate the resulting redundant branches)
-      Class<? extends SoyValue> javaType = node.getType().javaType();
+      Type runtimeType = SoyRuntimeType.getBoxedType(node.getType()).runtimeType();
       return SoyExpression.forSoyValue(
-          node.getType(), firstNonNull(left.box().cast(javaType), right.box().cast(javaType)));
+          node.getType(),
+          firstNonNull(left.box().cast(runtimeType), right.box().cast(runtimeType)));
     }
 
     @Override protected final SoyExpression visitConditionalOpNode(ConditionalOpNode node) {
@@ -622,8 +626,9 @@ final class ExpressionCompiler {
     @Override SoyExpression visitForeachLoopVar(VarRefNode varRef, LocalVar local) {
       Expression expression = parameters.getLocal(local);
       expression = detacher.get().resolveSoyValueProvider(expression);
-      return SoyExpression.forSoyValue(varRef.getType(),
-          expression.cast(varRef.getType().javaType()));
+      return SoyExpression.forSoyValue(
+          varRef.getType(),
+          expression.cast(SoyRuntimeType.getBoxedType(varRef.getType()).runtimeType()));
     }
 
     @Override SoyExpression visitParam(VarRefNode varRef, TemplateParam param) {
@@ -641,23 +646,29 @@ final class ExpressionCompiler {
       // TODO(lukes): Where/how should we implement type checking.  For the time being type errors
       // will show up here, and in the unboxing conversions performed during expression
       // manipulation. And, presumably, in NullPointerExceptions.
-      return SoyExpression.forSoyValue(varRef.getType(),
-          paramExpr.cast(varRef.getType().javaType()));
+      return SoyExpression.forSoyValue(
+          varRef.getType(),
+          paramExpr.cast(SoyRuntimeType.getBoxedType(varRef.getType()).runtimeType()));
     }
 
     @Override SoyExpression visitIjParam(VarRefNode varRef, InjectedParam param) {
       Expression ij =
           MethodRef.RUNTIME_GET_FIELD_PROVIDER.invoke(
               parameters.getIjRecord(), constant(param.name()));
-      return SoyExpression.forSoyValue(varRef.getType(),
-          detacher.get().resolveSoyValueProvider(ij).cast(varRef.getType().javaType()));
+      return SoyExpression.forSoyValue(
+          varRef.getType(),
+          detacher
+              .get()
+              .resolveSoyValueProvider(ij)
+              .cast(SoyRuntimeType.getBoxedType(varRef.getType()).runtimeType()));
     }
 
     @Override SoyExpression visitLetNodeVar(VarRefNode varRef, LocalVar local) {
       Expression expression = parameters.getLocal(local);
       expression = detacher.get().resolveSoyValueProvider(expression);
-      return SoyExpression.forSoyValue(varRef.getType(),
-          expression.cast(varRef.getType().javaType()));
+      return SoyExpression.forSoyValue(
+          varRef.getType(),
+          expression.cast(SoyRuntimeType.getBoxedType(varRef.getType()).runtimeType()));
     }
 
     @Override protected SoyExpression visitDataAccessNode(DataAccessNode node) {
@@ -836,13 +847,15 @@ final class ExpressionCompiler {
           case RECORD:
             // Always fall back to SoyRecord.  All known object and record types implement this
             // interface.
-            Expression fieldProvider = MethodRef.RUNTIME_GET_FIELD_PROVIDER.invoke(
-                baseExpr.box().cast(SoyRecord.class),
-                constant(node.getFieldName()));
-            return SoyExpression.forSoyValue(node.getType(), 
-                detacher.get()
+            Expression fieldProvider =
+                MethodRef.RUNTIME_GET_FIELD_PROVIDER.invoke(
+                    baseExpr.box().cast(SoyRecord.class), constant(node.getFieldName()));
+            return SoyExpression.forSoyValue(
+                node.getType(),
+                detacher
+                    .get()
                     .resolveSoyValueProvider(fieldProvider)
-                    .cast(node.getType().javaType()));
+                    .cast(SoyRuntimeType.getBoxedType(node.getType()).runtimeType()));
           default:
             throw new AssertionError("unexpected field access operation");
         }
@@ -865,9 +878,12 @@ final class ExpressionCompiler {
               baseExpr.box().cast(SoyMap.class),
               keyExpr.box());
         }
-        Expression soyValue = detacher.get().resolveSoyValueProvider(soyValueProvider)
-            // Just like javac, we insert cast operations when removing from a collection.
-            .cast(node.getType().javaType());
+        Expression soyValue =
+            detacher
+                .get()
+                .resolveSoyValueProvider(soyValueProvider)
+                // Just like javac, we insert cast operations when removing from a collection.
+                .cast(SoyRuntimeType.getBoxedType(node.getType()).runtimeType());
         return SoyExpression.forSoyValue(node.getType(), soyValue);
       }
     }

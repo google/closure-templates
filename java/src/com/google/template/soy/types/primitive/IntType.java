@@ -43,10 +43,6 @@ public final class IntType extends PrimitiveType {
     return value instanceof IntegerData;
   }
 
-  @Override public Class<? extends SoyValue> javaType() {
-    return IntegerData.class;
-  }
-
   @Override public String toString() {
     return "int";
   }

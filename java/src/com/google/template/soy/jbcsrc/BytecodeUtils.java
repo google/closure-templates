@@ -30,9 +30,11 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Ints;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyList;
+import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
+import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.jbcsrc.Expression.Feature;
 import com.google.template.soy.jbcsrc.Expression.Features;
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
@@ -40,20 +42,18 @@ import com.google.template.soy.jbcsrc.api.AdvisingStringBuilder;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
-
+import com.google.template.soy.types.proto.SoyProtoTypeImpl;
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import javax.annotation.Nullable;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
 import org.objectweb.asm.util.Printer;
-
-import java.lang.reflect.Array;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-
-import javax.annotation.Nullable;
 
 /**
  * A set of utilities for generating simple expressions in bytecode
@@ -65,6 +65,7 @@ final class BytecodeUtils {
   static final TypeInfo OBJECT = TypeInfo.create(Object.class);
   static final Type STRING_TYPE = Type.getType(String.class);
   static final Type ARRAY_LIST_TYPE = Type.getType(ArrayList.class);
+  static final Type LIST_TYPE = Type.getType(List.class);
   static final Type ADVISING_APPENDABLE_TYPE = Type.getType(AdvisingAppendable.class);
   static final Type ADVISING_BUILDER_TYPE = Type.getType(AdvisingStringBuilder.class);
   static final Type RENDER_RESULT_TYPE = Type.getType(RenderResult.class);
@@ -76,10 +77,12 @@ final class BytecodeUtils {
   static final Type SOY_VALUE_PROVIDER_TYPE = Type.getType(SoyValueProvider.class);
   static final Type THROWABLE_TYPE = Type.getType(Throwable.class);
   static final Type SOY_LIST_TYPE = Type.getType(SoyList.class);
+  static final Type SOY_MAP_TYPE = Type.getType(SoyMap.class);
   static final Type CONTENT_KIND_TYPE = Type.getType(ContentKind.class);
   static final Type COMPILED_TEMPLATE_TYPE = Type.getType(CompiledTemplate.class);
   static final Type ILLEGAL_STATE_EXCEPTION_TYPE = Type.getType(IllegalStateException.class);
-
+  static final Type INTEGER_DATA_TYPE = Type.getType(IntegerData.class);
+  static final Type PROTO_VALUE_TYPE = Type.getType(SoyProtoTypeImpl.Value.class);
   static final Method NULLARY_INIT = Method.getMethod("void <init>()");
   static final Method CLASS_INIT = Method.getMethod("void <clinit>()");
 
@@ -504,17 +507,21 @@ final class BytecodeUtils {
     // We can special case when we know the types.
     // If either is a string, we run special logic so test for that first
     // otherwise we special case primitives and eventually fall back to our runtime.
-    if (left.isKnownString()) {
+    SoyRuntimeType leftRuntimeType = left.soyRuntimeType();
+    SoyRuntimeType rightRuntimeType = right.soyRuntimeType();
+    if (leftRuntimeType.isKnownString()) {
       return doEqualsString(left.unboxAs(String.class), right);
     }
-    if (right.isKnownString()) {
+    if (rightRuntimeType.isKnownString()) {
+      // TODO(lukes): we are changing the order of evaluation here.
       return doEqualsString(right.unboxAs(String.class), left);
     }
-    if (left.isKnownInt() && right.isKnownInt()) {
+    if (leftRuntimeType.isKnownInt() && rightRuntimeType.isKnownInt()) {
       return compare(Opcodes.IFEQ, left.unboxAs(long.class), right.unboxAs(long.class));
     }
-    if (left.isKnownNumber() && right.isKnownNumber() 
-        && (left.isKnownFloat() || right.isKnownFloat())) {
+    if (leftRuntimeType.isKnownNumber()
+        && rightRuntimeType.isKnownNumber()
+        && (leftRuntimeType.isKnownFloat() || rightRuntimeType.isKnownFloat())) {
       return compare(Opcodes.IFEQ, left.coerceToDouble(), right.coerceToDouble());
     }
     return MethodRef.RUNTIME_EQUAL.invoke(left.box(), right.box());
@@ -529,10 +536,11 @@ final class BytecodeUtils {
   private static Expression doEqualsString(SoyExpression stringExpr, SoyExpression other) {
     // This is compatible with SharedRuntime.compareString, which interestingly makes == break
     // transitivity.  See b/21461181
-    if (other.isKnownStringOrSanitizedContent()) {
+    SoyRuntimeType otherRuntimeType = other.soyRuntimeType();
+    if (otherRuntimeType.isKnownStringOrSanitizedContent()) {
       return stringExpr.invoke(MethodRef.EQUALS, other.unboxAs(String.class));
     }
-    if (other.isKnownNumber()) {
+    if (otherRuntimeType.isKnownNumber()) {
       // in this case, we actually try to convert stringExpr to a number
       return MethodRef.RUNTIME_STRING_EQUALS_AS_NUMBER.invoke(stringExpr, other.coerceToDouble());
     }

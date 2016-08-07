@@ -26,8 +26,11 @@ import com.google.template.soy.types.SoyType;
 
 /**
  * A {@link SoyType} implementation which describes a protocol buffer enum type.
+ *
+ * <p>TODO(lukes): merge with SoyEnumType interface, we aren't going to support any other type of
+ * enum (or if we do, it will likely need a new SoyType.Kind + implementation)
  */
-final class SoyProtoEnumTypeImpl implements SoyEnumType, SoyProtoType {
+public final class SoyProtoEnumTypeImpl implements SoyEnumType, SoyProtoType {
   private final EnumDescriptor descriptor;
 
   public SoyProtoEnumTypeImpl(EnumDescriptor descriptor) {
@@ -48,10 +51,6 @@ final class SoyProtoEnumTypeImpl implements SoyEnumType, SoyProtoType {
     // For now, allow integer values.
     // TODO(user): May want to tighten this up if we ever have an enum value type.
     return value instanceof IntegerData;
-  }
-
-  @Override public Class<? extends SoyValue> javaType() {
-    return IntegerData.class;
   }
 
   @Override public String getName() {

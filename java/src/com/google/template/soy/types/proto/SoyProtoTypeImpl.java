@@ -37,16 +37,17 @@ import com.google.template.soy.types.SoyObjectType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.primitive.SanitizedType;
-
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
-
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
 
 /**
  * A {@link SoyType} subclass which describes a protocol buffer type.
+ *
+ * <p>TODO(lukes): introduce a dedicate Kind for protos instead of using SoyObjectType and the
+ * Object kind
  *
  */
 public final class SoyProtoTypeImpl implements SoyObjectType, SoyProtoType {
@@ -396,10 +397,6 @@ public final class SoyProtoTypeImpl implements SoyObjectType, SoyProtoType {
   @Override public boolean isInstance(SoyValue value) {
     return value instanceof Value
         && ((Value) value).getProto().getDescriptorForType() == typeDescriptor;
-  }
-
-  @Override public Class<? extends SoyValue> javaType() {
-    return Value.class;
   }
 
   @Override public String getName() {

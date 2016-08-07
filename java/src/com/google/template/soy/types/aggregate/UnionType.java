@@ -138,16 +138,6 @@ public final class UnionType implements SoyType {
     return false;
   }
 
-  @Override public Class<? extends SoyValue> javaType() {
-    // TODO(lukes): we can do better by finding the least common ancestor of all the javaTypes in
-    // the union.  Possibly not worth it since the hierarchy is so flat (i.e. it would almost always
-    // just resolve to SoyValue anyway)
-    if (isNullable()) {
-      return removeNullability().javaType();
-    }
-    return SoyValue.class;
-  }
-
   /** Returns true if the union includes the null type. */
   public boolean isNullable() {
     return Iterables.any(members, IS_NULL);

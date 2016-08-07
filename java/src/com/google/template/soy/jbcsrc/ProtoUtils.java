@@ -19,7 +19,6 @@ package com.google.template.soy.jbcsrc;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.STRING_TYPE;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.numericConversion;
-import static com.google.template.soy.jbcsrc.FieldRef.staticFieldReference;
 import static com.google.template.soy.types.proto.JavaQualifiedNames.underscoresToCamelCase;
 
 import com.google.common.base.Preconditions;
@@ -36,11 +35,12 @@ import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Descriptors.FileDescriptor.Syntax;
 import com.google.protobuf.Descriptors.OneofDescriptor;
+import com.google.protobuf.Extension;
 import com.google.protobuf.ExtensionLite;
 import com.google.protobuf.GeneratedMessage.ExtendableMessage;
+import com.google.protobuf.GeneratedMessage.GeneratedExtension;
 import com.google.protobuf.Message;
 import com.google.protobuf.ProtocolMessageEnum;
-import com.google.template.soy.base.SoyBackendKind;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.jbcsrc.Expression.Feature;
@@ -49,10 +49,6 @@ import com.google.template.soy.types.primitive.SanitizedType;
 import com.google.template.soy.types.proto.JavaQualifiedNames;
 import com.google.template.soy.types.proto.Protos;
 import com.google.template.soy.types.proto.SoyProtoTypeImpl;
-
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -64,6 +60,7 @@ import org.objectweb.asm.commons.GeneratorAdapter;
  */
 final class ProtoUtils {
   private static final Type BYTE_STRING_TYPE = Type.getType(ByteString.class);
+  private static final Type EXTENSION_TYPE = Type.getType(GeneratedExtension.class);
 
   static final MethodRef SOY_PROTO_VALUE_GET_PROTO =
       MethodRef.forMethod(SoyProtoTypeImpl.Value.class, "getProto").asNonNullable().asCheap();
@@ -129,17 +126,12 @@ final class ProtoUtils {
     return new AccessorGenerator(protoType, baseExpr, node, renderContext).generateAccessor();
   }
 
-  /** A helper to unbox a boxed proto value. */
-  static SoyExpression unbox(SoyProtoTypeImpl protoType, SoyExpression baseExpr) {
-    return baseExpr.unboxAs(messageClass(protoType));
-  }
-
   /**
    * A simple class to encapsulate all the parameters shared between our different accessor
    * generation strategies
    */
   private static final class AccessorGenerator {
-    final Class<?> protoClass;
+    final SoyRuntimeType unboxedRuntimeType;
     final SoyExpression baseExpr;
     final FieldAccessNode node;
     final Expression renderContext;
@@ -148,7 +140,7 @@ final class ProtoUtils {
 
     AccessorGenerator(SoyProtoTypeImpl protoType, SoyExpression baseExpr, FieldAccessNode node,
         Expression renderContext) {
-      this.protoClass = messageClass(protoType);
+      this.unboxedRuntimeType = SoyRuntimeType.getUnboxedType(protoType).get();
       this.baseExpr = baseExpr;
       this.node = node;
       this.renderContext = renderContext;
@@ -160,7 +152,22 @@ final class ProtoUtils {
       if (descriptor.isRepeated()) {
         return handleRepeated();
       }
-      SoyExpression typedBaseExpr = baseExpr.withRenderContext(renderContext).unboxAs(protoClass);
+      SoyExpression typedBaseExpr;
+      if (baseExpr.isBoxed()) {
+        typedBaseExpr =
+            SoyExpression.forProto(
+                unboxedRuntimeType,
+                baseExpr
+                    .invoke(ProtoUtils.SOY_PROTO_VALUE_GET_PROTO)
+                    // this cast is required because getProto() is generic, so it basically returns
+                    // 'Message'
+                    .cast(unboxedRuntimeType.runtimeType()),
+                renderContext);
+      } else if (baseExpr.soyRuntimeType().equals(unboxedRuntimeType)) {
+        typedBaseExpr = baseExpr;
+      } else {
+        throw new AssertionError("should be impossible");
+      }
       if (descriptor.isExtension()) {
         return handleExtension(typedBaseExpr);
       } else {
@@ -174,15 +181,13 @@ final class ProtoUtils {
       // a subset of fields as specified in SoyProtoTypeImpl. Though, we should probably actually be
       // testing against jspb semantics.  The best way forward is probably to first invest in
       // support for protos in our integration tests.
-      final MethodRef getMethodRef =
-          MethodRef.create(getGetterMethod(descriptor)).asNonNullable().asCheap();
+      final MethodRef getMethodRef = getGetterMethod(descriptor);
       if (shouldCheckForFieldPresence()) {
         final Label hasFieldLabel = new Label();
         final BytecodeProducer hasCheck;
         OneofDescriptor containingOneof = descriptor.getContainingOneof();
         if (containingOneof != null) {
-          final MethodRef getCaseRef =
-              MethodRef.create(getOneOfCaseMethod(containingOneof));
+          final MethodRef getCaseRef = getOneOfCaseMethod(containingOneof);
           final Expression fieldNumber = BytecodeUtils.constant(descriptor.getNumber());
           // this basically just calls getFooCase().getNumber() == field_number
           hasCheck = new BytecodeProducer(){
@@ -200,8 +205,7 @@ final class ProtoUtils {
           };
         } else {
           // otherwise just call the has* method
-          final MethodRef hasMethodRef;
-          hasMethodRef = MethodRef.create(getHasserMethod(descriptor)).asCheap();
+          final MethodRef hasMethodRef = getHasserMethod(descriptor);
           hasCheck = new BytecodeProducer() {
             @Override
             void doGen(CodeBuilder adapter) {
@@ -301,7 +305,7 @@ final class ProtoUtils {
       // message.getExtension(Extension) and then cast and (maybe) unbox the result.
       // The reason we need to cast is because .getExtension is a generic api and that is just how
       // stupid java generics work.
-      FieldRef extensionField = staticFieldReference(getExtensionField(descriptor));
+      FieldRef extensionField = getExtensionField(descriptor);
       final Expression extensionFieldAccessor = extensionField.accessor();
       // An extension with a default value is pretty rare, but we still need to support it.
       if (!descriptor.hasDefaultValue()) {
@@ -392,11 +396,10 @@ final class ProtoUtils {
     private SoyExpression messageToSoyExpression(Expression field) {
       if (node.getType() instanceof SoyProtoTypeImpl) {
         SoyProtoTypeImpl fieldProtoType = (SoyProtoTypeImpl) node.getType();
-        Class<? extends Message> messageClass = messageClass(fieldProtoType);
+        SoyRuntimeType protoRuntimeType = SoyRuntimeType.getUnboxedType(fieldProtoType).get();
         return SoyExpression.forProto(
-            fieldProtoType,
-            messageClass,
-            field.cast(messageClass), // this cast isn't redundant for extensions
+            protoRuntimeType,
+            field.cast(protoRuntimeType.runtimeType()), // this cast isn't redundant for extensions
             renderContext);
       } else {
         // All other are special sanitized types
@@ -413,7 +416,7 @@ final class ProtoUtils {
 
     private SoyExpression handleRepeated() {
       // For repeated fields we delegate to the tofu implementation.  This is because the proto
-      // will return a List<Integer> which we will need to turn into a List<IntegerData> and so on
+      // will return a List<Integer> which we will need to turn into a List<IntegerData> and so on.
       // we could handle this by
       // 1. generating Runtime.java helpers to do this kind of collection boxing conversion
       // 2. enhancing SoyExpression to be able to understand a 'partially unboxed collection'
@@ -421,13 +424,16 @@ final class ProtoUtils {
       // 4. Add new SoyList implementations that can do this kind of lazy resolving transparently
       //    (I think SoyEasyList is supposed to support this)
       // For now we will do #3.  #2 would be ideal (least overhead) but would be very complex. #1 or
-      // $4 would both be reasonable compromises.
-      return SoyExpression.forSoyValue(node.getType(),
-          MethodRef.RUNTIME_GET_FIELD_PROVIDER.invoke(baseExpr.box(), constant(node.getFieldName()))
-          // We can immediately resolve because we know proto fields don't need detach logic.
-          // they are always immediately available.
-          .invoke(MethodRef.SOY_VALUE_PROVIDER_RESOLVE)
-          .cast(node.getType().javaType()));
+      // #4 would both be reasonable compromises.
+      SoyRuntimeType boxedType = SoyRuntimeType.getBoxedType(node.getType());
+      return SoyExpression.forSoyValue(
+          node.getType(),
+          MethodRef.RUNTIME_GET_FIELD_PROVIDER
+              .invoke(baseExpr.box(), constant(node.getFieldName()))
+              // We can immediately resolve because we know proto fields don't need detach logic.
+              // they are always immediately available.
+              .invoke(MethodRef.SOY_VALUE_PROVIDER_RESOLVE)
+              .cast(boxedType.runtimeType()));
     }
   }
 
@@ -442,83 +448,88 @@ final class ProtoUtils {
     return reinterpretAsString;
   }
 
-  private static Class<? extends Message> messageClass(SoyProtoTypeImpl protoType) {
-    try {
-      return Class.forName(protoType.getNameForBackend(SoyBackendKind.JBC_SRC))
-          .asSubclass(Message.class);
-    } catch (ClassNotFoundException e) {
-      // TODO(lukes): report an error here?
-      throw new AssertionError(e);
-    }
-  }
-
-  private static Class<? extends Message> descriptorClass(Descriptor descriptor) {
+  // Consider caching? in SoyRuntimeType?
+  private static TypeInfo descriptorRuntimeType(Descriptor descriptor) {
     String className = JavaQualifiedNames.getClassName(descriptor);
-    ClassLoader cl = descriptor.getClass().getClassLoader();
-    if (cl == null) {
-      cl = ClassLoader.getSystemClassLoader();
-    }
-    try {
-      return cl.loadClass(className).asSubclass(Message.class);
-    } catch (ClassNotFoundException ex) {
-      throw new AssertionError(
-          "Could not resolve java class for descriptor " + descriptor.getFullName());
+    return TypeInfo.create(className);
+  }
+
+  private static Type getRuntimeReturnType(FieldDescriptor field) {
+    switch (field.getJavaType()) {
+      case BOOLEAN:
+        return Type.BOOLEAN_TYPE;
+      case BYTE_STRING:
+        return BYTE_STRING_TYPE;
+      case DOUBLE:
+        return Type.DOUBLE_TYPE;
+      case ENUM:
+        return TypeInfo.create(JavaQualifiedNames.getClassName(field.getEnumType())).type();
+      case FLOAT:
+        return Type.FLOAT_TYPE;
+      case INT:
+        return Type.INT_TYPE;
+      case LONG:
+        return Type.LONG_TYPE;
+      case MESSAGE:
+        return TypeInfo.create(JavaQualifiedNames.getClassName(field.getMessageType())).type();
+      case STRING:
+        return BytecodeUtils.STRING_TYPE;
+      default:
+        throw new AssertionError("unexpected type");
     }
   }
 
-
-  /** Returns the {@link Method} for the generated getter method. */
-  public static Method getGetterMethod(FieldDescriptor descriptor) throws SecurityException {
+  /** Returns the {@link MethodRef} for the generated getter method. */
+  private static MethodRef getGetterMethod(FieldDescriptor descriptor) throws SecurityException {
     Preconditions.checkArgument(!descriptor.isExtension(),
         "extensions do not have getter methods. %s", descriptor);
-    Class<? extends Message> owner = descriptorClass(descriptor.getContainingType());
-    try {
-      return owner.getMethod("get" + underscoresToCamelCase(descriptor.getName(), true));
-    } catch (NoSuchMethodException e) {
-      throw new IllegalStateException("Could not find getter method for " + descriptor, e);
-    }
+    TypeInfo owner = descriptorRuntimeType(descriptor.getContainingType());
+    return MethodRef.createInstanceMethod(
+            owner,
+            new org.objectweb.asm.commons.Method(
+                "get" + underscoresToCamelCase(descriptor.getName(), true),
+                Type.getMethodDescriptor(getRuntimeReturnType(descriptor))))
+        // All protos are guaranteed to never return null
+        .asNonNullable()
+        .asCheap();
   }
 
-  /** Returns the {@link Method} for the generated hasser method. */
-  private static Method getHasserMethod(FieldDescriptor descriptor) throws SecurityException {
-    Class<? extends Message> owner = descriptorClass(descriptor.getContainingType());
-    try {
-      return owner.getMethod("has" + underscoresToCamelCase(descriptor.getName(), true));
-    } catch (NoSuchMethodException e) {
-      throw new IllegalStateException("Could not find hasser method for " + descriptor, e);
-    }
+  /** Returns the {@link MethodRef} for the generated hasser method. */
+  private static MethodRef getHasserMethod(FieldDescriptor descriptor) throws SecurityException {
+    TypeInfo owner = descriptorRuntimeType(descriptor.getContainingType());
+    return MethodRef.createInstanceMethod(
+            owner,
+            new org.objectweb.asm.commons.Method(
+                "has" + underscoresToCamelCase(descriptor.getName(), true),
+                Type.getMethodDescriptor(Type.BOOLEAN_TYPE)))
+        .asCheap();
   }
 
-  /** Returns the {@link Method} for the get*Case method for oneof fields. */
-  public static Method getOneOfCaseMethod(OneofDescriptor descriptor) throws SecurityException  {
-    Class<? extends Message> owner = descriptorClass(descriptor.getContainingType());
-    try {
-      return owner.getMethod("get" + underscoresToCamelCase(descriptor.getName(), true) + "Case");
-    } catch (NoSuchMethodException e) {
-      throw new IllegalStateException("Could not find case method for " + descriptor, e);
-    }
+  /** Returns the {@link MethodRef} for the get*Case method for oneof fields. */
+  public static MethodRef getOneOfCaseMethod(OneofDescriptor descriptor) throws SecurityException {
+    TypeInfo owner = descriptorRuntimeType(descriptor.getContainingType());
+    return MethodRef.createInstanceMethod(
+            owner,
+            new org.objectweb.asm.commons.Method(
+                "get" + underscoresToCamelCase(descriptor.getName(), true) + "Case",
+                Type.getMethodDescriptor(
+                    TypeInfo.create(JavaQualifiedNames.getCaseEnumClassName(descriptor)).type())))
+        .asCheap();
   }
 
-  /** Returns the {@link Field} for the generated {@link Extension} field. */
-  public static Field getExtensionField(FieldDescriptor descriptor) throws SecurityException {
+  /** Returns the {@link FieldRef} for the generated {@link Extension} field. */
+  public static FieldRef getExtensionField(FieldDescriptor descriptor) throws SecurityException {
     Preconditions.checkArgument(descriptor.isExtension(), "%s is not an extension", descriptor);
     String extensionFieldName = underscoresToCamelCase(descriptor.getName(), false);
     if (descriptor.getExtensionScope() != null) {
-      Class<? extends Message> owner = descriptorClass(descriptor.getExtensionScope());
-      try {
-        return owner.getField(extensionFieldName);
-      } catch (NoSuchFieldException e) {
-        throw new IllegalStateException("Could not find extension field for " + descriptor, e);
-      }
+      TypeInfo owner = descriptorRuntimeType(descriptor.getExtensionScope());
+      return FieldRef.createPublicStaticField(owner, extensionFieldName, EXTENSION_TYPE);
     }
     // else we have a 'top level extension'
     String containingClass =
         JavaQualifiedNames.getPackage(descriptor.getFile()) + "."
         + JavaQualifiedNames.getOuterClassname(descriptor.getFile());
-    try {
-      return Class.forName(containingClass).getField(extensionFieldName);
-    } catch (ReflectiveOperationException e) {
-      throw new IllegalStateException("Could not find extension field for " + descriptor, e);
-    }
+    return FieldRef.createPublicStaticField(
+        TypeInfo.create(containingClass), extensionFieldName, EXTENSION_TYPE);
   }
 }

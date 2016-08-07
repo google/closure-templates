@@ -25,12 +25,10 @@ import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.jbcsrc.Expression.Feature;
 import com.google.template.soy.jbcsrc.Expression.Features;
 import com.google.template.soy.jbcsrc.runtime.Runtime;
-
+import java.lang.reflect.Modifier;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
-
-import java.lang.reflect.Modifier;
 
 /**
  * Representation of a field in a java class.
@@ -93,6 +91,15 @@ import java.lang.reflect.Modifier;
 
   static <T extends Enum<T>> FieldRef enumReference(T enumInstance) {
     return staticFieldReference(enumInstance.getDeclaringClass(), enumInstance.name());
+  }
+
+  static FieldRef createPublicStaticField(TypeInfo owner, String name, Type type) {
+    return new AutoValue_FieldRef(
+        owner,
+        name,
+        type,
+        Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_FINAL,
+        !BytecodeUtils.isPrimitive(type));
   }
 
   static FieldRef createField(TypeInfo owner, String name, Class<?> type) {

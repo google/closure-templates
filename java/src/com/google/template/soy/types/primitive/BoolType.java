@@ -43,10 +43,6 @@ public final class BoolType extends PrimitiveType {
     return value instanceof BooleanData;
   }
 
-  @Override public Class<? extends SoyValue> javaType() {
-    return BooleanData.class;
-  }
-
   @Override public String toString() {
     return "bool";
   }
