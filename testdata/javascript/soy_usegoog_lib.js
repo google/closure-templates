@@ -1345,9 +1345,9 @@ goog.loadModule = function(moduleDef) {
     };
     var exports;
     if (goog.isFunction(moduleDef)) {
-      exports = moduleDef.call(undefined, {});
+      exports = moduleDef.call(goog.global, {});
     } else if (goog.isString(moduleDef)) {
-      exports = goog.loadModuleFromSource_.call(undefined, moduleDef);
+      exports = goog.loadModuleFromSource_.call(goog.global, moduleDef);
     } else {
       throw Error('Invalid module definition');
     }
@@ -10556,7 +10556,7 @@ goog.require('goog.string.TypedString');
  * appended to {@code background:url("}, the resulting string may result in
  * the execution of a malicious script.
  *
- * TODO(user): Consider whether we should implement UTF-8 interchange
+ * TODO(mlourenco): Consider whether we should implement UTF-8 interchange
  * validity checks and blacklisting of newlines (including Unicode ones) and
  * other whitespace characters (\t, \f). Document here if so and also update
  * SafeStyle.fromConstant().
@@ -20020,7 +20020,7 @@ goog.dom.createTextNode = function(content) {
  * @return {!Element} The created table.
  */
 goog.dom.createTable = function(rows, columns, opt_fillWithNbsp) {
-  // TODO(user): Return HTMLTableElement, also in prototype function.
+  // TODO(mlourenco): Return HTMLTableElement, also in prototype function.
   // Callers need to be updated to e.g. not assign numbers to table.cellSpacing.
   return goog.dom.createTable_(document, rows, columns, !!opt_fillWithNbsp);
 };
@@ -26895,4 +26895,3 @@ soy.esc.$$SAFE_TAG_WHITELIST_ = {'b': true, 'br': true, 'em': true, 'i': true, '
 soy.esc.$$HTML_ATTRIBUTE_REGEX_ = /([a-zA-Z][a-zA-Z0-9:\-]*)[\t\n\r\u0020]*=[\t\n\r\u0020]*("[^"]*"|'[^']*')/g;
 
 // END GENERATED CODE
-
