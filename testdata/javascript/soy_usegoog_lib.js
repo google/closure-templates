@@ -1361,7 +1361,8 @@ goog.loadModule = function(moduleDef) {
     // another namespace
     if (goog.moduleLoaderState_.declareLegacyNamespace) {
       goog.constructNamespace_(moduleName, exports);
-    } else if (goog.SEAL_MODULE_EXPORTS && Object.seal) {
+    } else if (
+        goog.SEAL_MODULE_EXPORTS && Object.seal && goog.isObject(exports)) {
       Object.seal(exports);
     }
 
@@ -21742,6 +21743,17 @@ goog.dom.matchesPixelRatio_ = function(pixelRatio) {
 };
 
 
+/**
+ * Gets '2d' context of a canvas. Shortcut for canvas.getContext('2d') with a
+ * type information.
+ * @param {!HTMLCanvasElement} canvas
+ * @return {!CanvasRenderingContext2D}
+ */
+goog.dom.getCanvasContext2D = function(canvas) {
+  return /** @type {!CanvasRenderingContext2D} */ (canvas.getContext('2d'));
+};
+
+
 
 /**
  * Create an instance of a DOM helper with a new document object.
@@ -22533,6 +22545,15 @@ goog.dom.DomHelper.prototype.getAncestorByClass = goog.dom.getAncestorByClass;
  *     no match.
  */
 goog.dom.DomHelper.prototype.getAncestor = goog.dom.getAncestor;
+
+
+/**
+ * Gets '2d' context of a canvas. Shortcut for canvas.getContext('2d') with a
+ * type information.
+ * @param {!HTMLCanvasElement} canvas
+ * @return {!CanvasRenderingContext2D}
+ */
+goog.dom.DomHelper.prototype.getCanvasContext2D = goog.dom.getCanvasContext2D;
 
 //javascript/closure/structs/inversionmap.js
 // Copyright 2008 The Closure Library Authors. All Rights Reserved.
