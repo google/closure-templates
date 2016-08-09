@@ -4016,8 +4016,8 @@ goog.addDependency('ui/mockactivitymonitor.js', ['goog.ui.MockActivityMonitor'],
 goog.addDependency('ui/mockactivitymonitor_test.js', ['goog.ui.MockActivityMonitorTest'], ['goog.events', 'goog.functions', 'goog.testing.jsunit', 'goog.testing.recordFunction', 'goog.ui.ActivityMonitor', 'goog.ui.MockActivityMonitor'], {});
 goog.addDependency('ui/modalariavisibilityhelper.js', ['goog.ui.ModalAriaVisibilityHelper'], ['goog.a11y.aria', 'goog.a11y.aria.State'], {});
 goog.addDependency('ui/modalariavisibilityhelper_test.js', ['goog.ui.ModalAriaVisibilityHelperTest'], ['goog.a11y.aria', 'goog.a11y.aria.State', 'goog.dom', 'goog.string', 'goog.testing.jsunit', 'goog.ui.ModalAriaVisibilityHelper'], {});
-goog.addDependency('ui/modalpopup.js', ['goog.ui.ModalPopup'], ['goog.Timer', 'goog.asserts', 'goog.dom', 'goog.dom.TagName', 'goog.dom.classlist', 'goog.dom.iframe', 'goog.events', 'goog.events.EventType', 'goog.events.FocusHandler', 'goog.fx.Transition', 'goog.string', 'goog.style', 'goog.ui.Component', 'goog.ui.ModalAriaVisibilityHelper', 'goog.ui.PopupBase', 'goog.userAgent'], {});
-goog.addDependency('ui/modalpopup_test.js', ['goog.ui.ModalPopupTest'], ['goog.a11y.aria', 'goog.a11y.aria.State', 'goog.dispose', 'goog.dom', 'goog.dom.TagName', 'goog.events', 'goog.events.EventTarget', 'goog.fx.Transition', 'goog.fx.css3', 'goog.string', 'goog.style', 'goog.testing.MockClock', 'goog.testing.jsunit', 'goog.ui.ModalPopup', 'goog.ui.PopupBase'], {});
+goog.addDependency('ui/modalpopup.js', ['goog.ui.ModalPopup'], ['goog.Timer', 'goog.asserts', 'goog.dom', 'goog.dom.TagName', 'goog.dom.animationFrame', 'goog.dom.classlist', 'goog.dom.iframe', 'goog.events', 'goog.events.EventType', 'goog.events.FocusHandler', 'goog.fx.Transition', 'goog.string', 'goog.style', 'goog.ui.Component', 'goog.ui.ModalAriaVisibilityHelper', 'goog.ui.PopupBase', 'goog.userAgent'], {});
+goog.addDependency('ui/modalpopup_test.js', ['goog.ui.ModalPopupTest'], ['goog.a11y.aria', 'goog.a11y.aria.State', 'goog.dispose', 'goog.dom', 'goog.dom.TagName', 'goog.events', 'goog.events.EventTarget', 'goog.events.EventType', 'goog.fx.Transition', 'goog.fx.css3', 'goog.string', 'goog.style', 'goog.testing.MockClock', 'goog.testing.events', 'goog.testing.jsunit', 'goog.ui.ModalPopup', 'goog.ui.PopupBase'], {});
 goog.addDependency('ui/nativebuttonrenderer.js', ['goog.ui.NativeButtonRenderer'], ['goog.asserts', 'goog.dom.InputType', 'goog.dom.TagName', 'goog.dom.classlist', 'goog.events.EventType', 'goog.ui.ButtonRenderer', 'goog.ui.Component'], {});
 goog.addDependency('ui/nativebuttonrenderer_test.js', ['goog.ui.NativeButtonRendererTest'], ['goog.dom', 'goog.dom.TagName', 'goog.dom.classlist', 'goog.events', 'goog.testing.ExpectedFailures', 'goog.testing.events', 'goog.testing.jsunit', 'goog.testing.ui.rendererasserts', 'goog.ui.Button', 'goog.ui.Component', 'goog.ui.NativeButtonRenderer', 'goog.userAgent'], {});
 goog.addDependency('ui/option.js', ['goog.ui.Option'], ['goog.ui.Component', 'goog.ui.MenuItem', 'goog.ui.registry'], {});
@@ -20208,27 +20208,6 @@ goog.dom.createDom = function(tagName, opt_properties, var_args) {
 
 
 /**
- * A version of createDom where the tag name is a plain string and not a member
- * of goog.dom.TagName. Currently, this function is the same as createDom but in
- * the future, createDom will return a more specific type (e.g. HTMLImageElement
- * for goog.TagName.IMG) while createUntypedDom will still return Element.
- *
- * @param {string} tagName Tag to create.
- * @param {(Object|Array<string>|string)=} opt_attributes If object, then a map
- *     of name-value pairs for attributes. If a string, then this is the
- *     className of the new element. If an array, the elements will be joined
- *     together as the className of the new element.
- * @param {...(Object|string|Array|NodeList)} var_args Further DOM nodes or
- *     strings for text nodes. If one of the var_args is an array or NodeList,
- *     its elements will be added as childNodes instead.
- * @return {!Element} Reference to a DOM node.
- */
-goog.dom.createUntypedDom = function(tagName, opt_attributes, var_args) {
-  return goog.dom.createDom_(document, arguments);
-};
-
-
-/**
  * Helper for {@code createDom}.
  * @param {!Document} doc The document to create the DOM in.
  * @param {!Arguments} args Argument object passed from the callers. See
@@ -21987,28 +21966,6 @@ goog.dom.Appendable;
  * @return {!Element} Reference to a DOM node.
  */
 goog.dom.DomHelper.prototype.createDom = function(
-    tagName, opt_attributes, var_args) {
-  return goog.dom.createDom_(this.document_, arguments);
-};
-
-
-/**
- * A version of createDom where the tag name is a plain string and not a member
- * of goog.dom.TagName. Currently, this function is the same as createDom but in
- * the future, createDom will return a more specific type (e.g. HTMLImageElement
- * for goog.TagName.IMG) while createUntypedDom will still return Element.
- *
- * @param {string} tagName Tag to create.
- * @param {(Object|Array<string>|string)=} opt_attributes If object, then a map
- *     of name-value pairs for attributes. If a string, then this is the
- *     className of the new element. If an array, the elements will be joined
- *     together as the className of the new element.
- * @param {...(Object|string|Array|NodeList)} var_args Further DOM nodes or
- *     strings for text nodes. If one of the var_args is an array or NodeList,
- *     its elements will be added as childNodes instead.
- * @return {!Element} Reference to a DOM node.
- */
-goog.dom.DomHelper.prototype.createUntypedDom = function(
     tagName, opt_attributes, var_args) {
   return goog.dom.createDom_(this.document_, arguments);
 };
