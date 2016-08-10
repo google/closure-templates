@@ -1345,9 +1345,9 @@ goog.loadModule = function(moduleDef) {
     };
     var exports;
     if (goog.isFunction(moduleDef)) {
-      exports = moduleDef.call(goog.global, {});
+      exports = moduleDef.call(undefined, {});
     } else if (goog.isString(moduleDef)) {
-      exports = goog.loadModuleFromSource_.call(goog.global, moduleDef);
+      exports = goog.loadModuleFromSource_.call(undefined, moduleDef);
     } else {
       throw Error('Invalid module definition');
     }
@@ -27217,3 +27217,4 @@ soy.esc.$$SAFE_TAG_WHITELIST_ = {'b': true, 'br': true, 'em': true, 'i': true, '
 soy.esc.$$HTML_ATTRIBUTE_REGEX_ = /([a-zA-Z][a-zA-Z0-9:\-]*)[\t\n\r\u0020]*=[\t\n\r\u0020]*("[^"]*"|'[^']*')/g;
 
 // END GENERATED CODE
+
