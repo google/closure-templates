@@ -2428,64 +2428,6 @@ public final class ContextualAutoescaperTest extends TestCase {
                 "{/template}"));
   }
 
-
-  public void testTextDirectiveBanned() {
-    assertRewriteFails(
-        "In file no-path:5:1, template ns.main: " +
-        "Print directive |text is only for internal use by the Soy compiler.",
-        join(
-            "{namespace ns}\n\n",
-            "{template .main autoescape=\"deprecated-contextual\"}\n",
-            "  {@param foo: ?}\n",
-              "{$foo |text}\n",
-            "{/template}"));
-  }
-
-
-  public void testStrictModeDoesNotYetHaveDefaultParamKind() {
-    assertRewriteFails(
-        "In file no-path:4:1, template ns.main: " +
-        "In strict templates, {let}...{/let} blocks require an explicit kind=\"<type>\". " +
-        "This restriction will be lifted soon once a reasonable default is chosen. " +
-        "(Note that {let $x: $y /} is NOT subject to this restriction). " +
-        "Cause: {let $x}",
-        join(
-            "{namespace ns}\n\n",
-            "{template .main autoescape=\"strict\"}\n",
-              "{let $x}No Kind{/let}\n",
-            "{/template}"));
-    assertRewriteFails(
-        "In file no-path:4:12, template ns.main: " +
-        "In strict templates, {param}...{/param} blocks require an explicit kind=\"<type>\". " +
-        "This restriction will be lifted soon once a reasonable default is chosen. " +
-        "(Note that {param x: $y /} is NOT subject to this restriction). " +
-        "Cause: {param x}",
-        join(
-            "{namespace ns}\n\n",
-            "{template .main autoescape=\"strict\"}\n",
-              "{call .foo}{param x}No Kind{/param}{/call}\n",
-            "{/template}"));
-    // Test with a non-strict template ns.but in a strict block.
-    assertRewriteFails(
-        "In file no-path:4:21, template ns.main: " +
-        "In strict templates, {let}...{/let} blocks require an explicit kind=\"<type>\". " +
-        "This restriction will be lifted soon once a reasonable default is chosen. " +
-        "(Note that {let $x: $y /} is NOT subject to this restriction). " +
-        "Cause: {let $x}",
-        join(
-            "{namespace ns}\n\n",
-            // Non-strict template.
-            "{template .main autoescape=\"deprecated-contextual\"}\n",
-              // Strict block in the non-strict template.
-              "{let $y kind=\"html\"}",
-                // Missing kind attribute in a let in a strict block.
-                "{let $x}No Kind{/let}",
-                "{$x}",
-              "{/let}",
-            "\n{/template}"));
-  }
-
-
   public void testStrictModeRequiresStartAndEndToBeCompatible() {
     assertRewriteFails(
         "In file no-path:3:1, template ns.main: " +
@@ -2584,27 +2526,6 @@ public final class ContextualAutoescaperTest extends TestCase {
               "foo=\"{$x}",
             "\n{/template}"));
   }
-
-
-  // Tests that non-contextual templates don't call strict templates with kind=text attribute.
-  public void testTypedTextStrictCallsNotAllowedInNonContextualTemplate() {
-    assertRewriteFails(
-        "In file no-path:4:6, template ns.caller: " +
-        "Calls to strict templates with 'kind=\"text\"' attribute is not permitted in " +
-        "non-contextually autoescaped templates: {call .callee /}",
-        join(
-            "{namespace ns}\n\n",
-            "{template .caller autoescape=\"deprecated-noncontextual\"}\n",
-              "<div>",
-                "{call .callee/}",
-              "</div>\n",
-            "{/template}\n\n",
-            "{template .callee autoescape=\"strict\" private=\"true\" kind=\"text\"}\n",
-            "  {@param? x: ?}\n",
-              "title={$x}\n",
-            "{/template}"));
-  }
-
 
   public void testStrictAttributesMustNotEndInUnquotedAttributeValue() {
     // Ensure that any final attribute-value pair is quoted -- otherwise, if the use site of the

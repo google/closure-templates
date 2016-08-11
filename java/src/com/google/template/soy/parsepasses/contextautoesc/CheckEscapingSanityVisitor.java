@@ -16,9 +16,12 @@
 
 package com.google.template.soy.parsepasses.contextautoesc;
 
+import static com.google.template.soy.parsepasses.contextautoesc.ContextualAutoescaper.AUTOESCAPE_ERROR_PREFIX;
+
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.AutoescapeMode;
 import com.google.template.soy.soytree.CallBasicNode;
@@ -44,23 +47,36 @@ import com.google.template.soy.soytree.TemplateRegistry;
  *
  * Checks that internal-only directives such as {@code |text} are not used.
  *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
  * <p>{@link #exec} should be called on a full parse tree.
  *
  */
 final class CheckEscapingSanityVisitor extends AbstractSoyNodeVisitor<Void> {
+
+  // TODO(user): AUTOESCAPE_ERROR_PREFIX (and the following hyphen-space)
+  // is just used by ContextualAutoescaperTest to parse and throw errors. Remove them.
+  private static final SoyErrorKind ILLEGAL_PRINT_DIRECTIVE = SoyErrorKind.of(
+      AUTOESCAPE_ERROR_PREFIX
+          + "- {0} can only be used internally by the Soy compiler.");
+  private static final SoyErrorKind LET_WITHOUT_KIND = SoyErrorKind.of(
+      AUTOESCAPE_ERROR_PREFIX
+          + "- In strict templates, '{'let'}'...'{'/let'}' blocks "
+          + "require an explicit kind=\"<html|css|text|attributes>\".");
+  private static final SoyErrorKind PARAM_WITHOUT_KIND = SoyErrorKind.of(
+      AUTOESCAPE_ERROR_PREFIX
+          + "- In strict templates, '{'param'}'...'{'/param'}' blocks "
+          + "require an explicit kind=\"<html|css|text|attributes>\".");
+  private static final SoyErrorKind STRICT_TEXT_CALL_FROM_NONCONTEXTUAL_TEMPLATE = SoyErrorKind.of(
+      AUTOESCAPE_ERROR_PREFIX
+          + "- Calls to strict templates with ''kind=\"text\"'' are not allowed "
+          + "in non-contextually autoescaped templates.");
+
   /** Current escaping mode. */
   private AutoescapeMode autoescapeMode;
 
-  /** Registry of all templates in the Soy tree. */
   private final TemplateRegistry templateRegistry;
-  // TODO(user): replace the exceptions with invocations of the error reporter
-  @SuppressWarnings("unused")
   private final ErrorReporter errorReporter;
 
-  public CheckEscapingSanityVisitor(
-      TemplateRegistry templateRegistry, ErrorReporter errorReporter) {
+  CheckEscapingSanityVisitor(TemplateRegistry templateRegistry, ErrorReporter errorReporter) {
     this.templateRegistry = templateRegistry;
     this.errorReporter = errorReporter;
   }
@@ -80,14 +96,12 @@ final class CheckEscapingSanityVisitor extends AbstractSoyNodeVisitor<Void> {
   @Override protected void visitPrintDirectiveNode(PrintDirectiveNode node) {
     EscapingMode escapingMode = EscapingMode.fromDirective(node.getName());
     if (escapingMode != null && escapingMode.isInternalOnly) {
-       throw SoyAutoescapeException.createWithNode(
-           "Print directive " + node.getName() + " is only for internal use by the Soy compiler.",
-           node);
+      errorReporter.report(node.getSourceLocation(), ILLEGAL_PRINT_DIRECTIVE, node.getName());
     }
   }
 
   @Override protected void visitLetContentNode(LetContentNode node) {
-    visitRenderUnitNode(node, "let", "{let $x: $y /}");
+    visitRenderUnitNode(node, LET_WITHOUT_KIND);
   }
 
   @Override protected void visitCallBasicNode(CallBasicNode node) {
@@ -97,10 +111,8 @@ final class CheckEscapingSanityVisitor extends AbstractSoyNodeVisitor<Void> {
       // one file at a time without context (not recommended, but supported). In this case callee
       // will be null.
       if (callee != null && callee.getContentKind() == SanitizedContent.ContentKind.TEXT) {
-        throw SoyAutoescapeException.createWithNode(
-            "Calls to strict templates with 'kind=\"text\"' attribute is not permitted in "
-            + "non-contextually autoescaped templates: " + node.toSourceString(),
-            node);
+        errorReporter.report(
+            node.getSourceLocation(), STRICT_TEXT_CALL_FROM_NONCONTEXTUAL_TEMPLATE);
       }
     }
     visitChildren(node);
@@ -118,10 +130,8 @@ final class CheckEscapingSanityVisitor extends AbstractSoyNodeVisitor<Void> {
         // delPackage are of the same kind it is sufficient to choose only the first template.
         TemplateNode callee = divisions.get(0);
         if (callee.getContentKind() == SanitizedContent.ContentKind.TEXT) {
-          throw SoyAutoescapeException.createWithNode(
-              "Calls to strict templates with 'kind=\"text\"' attribute is not permitted in "
-              + "non-contextually autoescaped templates: " + node.toSourceString(),
-              node);
+          errorReporter.report(
+              node.getSourceLocation(), STRICT_TEXT_CALL_FROM_NONCONTEXTUAL_TEMPLATE);
         }
       }
     }
@@ -129,22 +139,16 @@ final class CheckEscapingSanityVisitor extends AbstractSoyNodeVisitor<Void> {
   }
 
   @Override protected void visitCallParamContentNode(CallParamContentNode node) {
-    visitRenderUnitNode(node, "param", "{param x: $y /}");
+    visitRenderUnitNode(node, PARAM_WITHOUT_KIND);
   }
 
-  private void visitRenderUnitNode(
-      RenderUnitNode node, String nodeName, String selfClosingExample) {
+  private void visitRenderUnitNode(RenderUnitNode node, SoyErrorKind errorKind) {
     final AutoescapeMode oldMode = autoescapeMode;
     if (node.getContentKind() != null) {
       // Temporarily enter strict mode.
       autoescapeMode = AutoescapeMode.STRICT;
     } else if (autoescapeMode == AutoescapeMode.STRICT) {
-      throw SoyAutoescapeException.createWithNode(
-          "In strict templates, {" + nodeName + "}...{/" + nodeName + "} blocks require an "
-           + "explicit kind=\"<type>\". This restriction will be lifted soon once a reasonable "
-           + "default is chosen. (Note that " + selfClosingExample + " is NOT subject to this "
-           + "restriction). Cause: " + node.getTagString(),
-          node);
+      errorReporter.report(node.getSourceLocation(), errorKind);
     }
     visitChildren(node);
     // Pop out of strict mode if we entered it just for this unit.

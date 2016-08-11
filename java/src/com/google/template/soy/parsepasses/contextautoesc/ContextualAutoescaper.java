@@ -28,6 +28,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContentOperator;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
@@ -145,8 +146,13 @@ public final class ContextualAutoescaper {
    */
   public List<TemplateNode> rewrite(
       SoyFileSetNode fileSet, TemplateRegistry registry, ErrorReporter errorReporter) {
-    // Do preliminary sanity checks.
+    // Do preliminary sanity checks. Bail if they don't succeed, since errors may void
+    // the contextual autoescaper's preconditions.
+    Checkpoint checkpoint = errorReporter.checkpoint();
     new CheckEscapingSanityVisitor(registry, errorReporter).exec(fileSet);
+    if (errorReporter.errorsSince(checkpoint)) {
+      return ImmutableList.of();
+    }
 
     // Defensively copy so our loops below hold.
     List<SoyFileNode> files = ImmutableList.copyOf(fileSet.getChildren());
