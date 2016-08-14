@@ -1930,12 +1930,12 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
         if (param.declLoc() != TemplateParam.DeclLoc.HEADER) {
           continue;
         }
-        if (param.type().getKind() == SoyType.Kind.OBJECT) {
+        if (shouldGenerateGoogRequire(param.type())) {
           requiredObjectTypes.add(getJsTypeName(param.type()));
         } else if (param.type().getKind() == SoyType.Kind.UNION) {
           UnionType union = (UnionType) param.type();
           for (SoyType memberType : union.getMembers()) {
-            if (memberType.getKind() == SoyType.Kind.OBJECT) {
+            if (shouldGenerateGoogRequire(memberType)) {
               requiredObjectTypes.add(getJsTypeName(memberType));
             }
           }
@@ -1943,6 +1943,11 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
       }
     }
     return requiredObjectTypes;
+  }
+
+  private static boolean shouldGenerateGoogRequire(SoyType type) {
+    return type.getKind() == SoyType.Kind.OBJECT
+        || (type.getKind() == SoyType.Kind.ENUM && type instanceof SoyProtoType);
   }
 
   /**
