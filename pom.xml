@@ -430,7 +430,7 @@
                     <file>${soy.examples.out}/features_generated_x-zz.js</file>
                     <file>${soy.examples.out}/FeaturesSoyInfo.java</file>
                     <file>${soy.examples.out}/examples_extracted.xlf</file>
-                    <file>${project.build.directory}/soy-${version}-jssrc_js.jar</file>
+                    <file>${project.build.directory}/soy-${project.version}-jssrc_js.jar</file>
                   </files>
                 </requireFilesExist>
                 <!--
