@@ -91,15 +91,24 @@ final class ProtoUtils {
           .asNonNullable()
           .asCheap();
 
-  private static final ImmutableMap<Descriptor, MethodRef> SAFE_PROTO_TO_ACCESSOR =
-      ImmutableMap.<Descriptor, MethodRef>builder()
-          .put(SafeHtmlProto.getDescriptor(), createSafeAccessor(SafeHtmlProto.class))
-          .put(SafeScriptProto.getDescriptor(), createSafeAccessor(SafeScriptProto.class))
-          .put(SafeStyleProto.getDescriptor(), createSafeAccessor(SafeStyleProto.class))
-          .put(SafeStyleSheetProto.getDescriptor(), createSafeAccessor(SafeStyleSheetProto.class))
-          .put(SafeUrlProto.getDescriptor(), createSafeAccessor(SafeUrlProto.class))
+  // We use the full name as the key instead of the descriptor, since descriptors use identity
+  // semantics for equality and we may load the descriptors for these protos from multiple sources
+  // depending on our configuration.
+  private static final ImmutableMap<String, MethodRef> SAFE_PROTO_TO_ACCESSOR =
+      ImmutableMap.<String, MethodRef>builder()
+          .put(SafeHtmlProto.getDescriptor().getFullName(), createSafeAccessor(SafeHtmlProto.class))
           .put(
-              TrustedResourceUrlProto.getDescriptor(),
+              SafeScriptProto.getDescriptor().getFullName(),
+              createSafeAccessor(SafeScriptProto.class))
+          .put(
+              SafeStyleProto.getDescriptor().getFullName(),
+              createSafeAccessor(SafeStyleProto.class))
+          .put(
+              SafeStyleSheetProto.getDescriptor().getFullName(),
+              createSafeAccessor(SafeStyleSheetProto.class))
+          .put(SafeUrlProto.getDescriptor().getFullName(), createSafeAccessor(SafeUrlProto.class))
+          .put(
+              TrustedResourceUrlProto.getDescriptor().getFullName(),
               createSafeAccessor(TrustedResourceUrlProto.class))
           .build();
 
@@ -405,7 +414,7 @@ final class ProtoUtils {
         // All other are special sanitized types
         ContentKind kind = ((SanitizedType) node.getType()).getContentKind();
         Descriptor messageType = descriptor.getMessageType();
-        MethodRef methodRef = SAFE_PROTO_TO_ACCESSOR.get(messageType);
+        MethodRef methodRef = SAFE_PROTO_TO_ACCESSOR.get(messageType.getFullName());
         return SoyExpression.forSanitizedString(
             field
                 .cast(methodRef.owner().type()) // this cast isn't redundant for extensions
