@@ -55,15 +55,28 @@ public final class SoyToJbcSrcCompiler extends AbstractSoyCompiler {
 
   @Override
   void compile(SoyFileSet.Builder sfsBuilder) throws IOException {
-    // Disallow external call entirely in JbcSrc.  JbcSrc needs callee information to generate
-    // correct escaping code.
-    sfsBuilder.setAllowExternalCalls(false);
-    SoyFileSet sfs = sfsBuilder.build();
     Optional<ByteSink> srcJarSink = Optional.absent();
     if (outputSrcJar != null) {
       srcJarSink = Optional.of(Files.asByteSink(outputSrcJar));
     }
-    sfs.compileToJar(Files.asByteSink(output), srcJarSink);
+    compile(sfsBuilder.build(), Files.asByteSink(output), srcJarSink);
+  }
+
+  /**
+   * Compile a set of Soy files into corresponding Java class files in a jar.
+   *
+   * @param sfs the files to compile.
+   *      It must not include files that perform external because JbcSrc needs callee
+   *      information to generate correct escaping code.
+   * @param jarTarget Receives a JAR file containing the classes compiled from the templates.
+   * @param srcJarTarget If present, receives a JAR file containing the template sources.
+   *      This may be useful for enabling IDE debugging scenarios.
+   */
+  public static void compile(SoyFileSet sfs, ByteSink jarTarget, Optional<ByteSink> srcJarTarget)
+      throws IOException {
+    // compileToJar disallows external calls so we don't need to enforce the external call
+    // requirement here.
+    sfs.compileToJar(jarTarget, srcJarTarget);
   }
 
   public static void main(final String[] args) {
