@@ -2918,7 +2918,7 @@ goog.addDependency('dom/range.js', ['goog.dom.Range'], ['goog.dom', 'goog.dom.Ab
 goog.addDependency('dom/range_test.js', ['goog.dom.RangeTest'], ['goog.dom', 'goog.dom.NodeType', 'goog.dom.Range', 'goog.dom.RangeType', 'goog.dom.TagName', 'goog.dom.TextRange', 'goog.dom.browserrange', 'goog.testing.dom', 'goog.testing.jsunit', 'goog.userAgent'], {});
 goog.addDependency('dom/rangeendpoint.js', ['goog.dom.RangeEndpoint'], [], {});
 goog.addDependency('dom/safe.js', ['goog.dom.safe', 'goog.dom.safe.InsertAdjacentHtmlPosition'], ['goog.asserts', 'goog.html.SafeHtml', 'goog.html.SafeUrl', 'goog.html.TrustedResourceUrl', 'goog.string', 'goog.string.Const'], {});
-goog.addDependency('dom/safe_test.js', ['goog.dom.safeTest'], ['goog.dom.safe', 'goog.dom.safe.InsertAdjacentHtmlPosition', 'goog.html.SafeHtml', 'goog.html.SafeUrl', 'goog.html.TrustedResourceUrl', 'goog.html.testing', 'goog.string', 'goog.string.Const', 'goog.testing', 'goog.testing.StrictMock', 'goog.testing.jsunit'], {});
+goog.addDependency('dom/safe_test.js', ['goog.dom.safeTest'], ['goog.dom.safe', 'goog.dom.safe.InsertAdjacentHtmlPosition', 'goog.html.SafeHtml', 'goog.html.SafeUrl', 'goog.html.TrustedResourceUrl', 'goog.html.testing', 'goog.string', 'goog.string.Const', 'goog.testing', 'goog.testing.StrictMock', 'goog.testing.jsunit', 'goog.userAgent'], {});
 goog.addDependency('dom/savedcaretrange.js', ['goog.dom.SavedCaretRange'], ['goog.array', 'goog.dom', 'goog.dom.SavedRange', 'goog.dom.TagName', 'goog.string'], {});
 goog.addDependency('dom/savedcaretrange_test.js', ['goog.dom.SavedCaretRangeTest'], ['goog.dom', 'goog.dom.Range', 'goog.dom.SavedCaretRange', 'goog.testing.dom', 'goog.testing.jsunit', 'goog.userAgent'], {});
 goog.addDependency('dom/savedrange.js', ['goog.dom.SavedRange'], ['goog.Disposable', 'goog.log'], {});
@@ -19307,10 +19307,13 @@ goog.dom.safe.openInWindow = function(
  * @private
  */
 goog.dom.safe.assertIsLocation_ = function(o) {
-  goog.asserts.assert(
-      o && (o instanceof Location || !(o instanceof Element)),
-      'Argument is not a Location (or a non-Element mock); got: %s',
-      goog.dom.safe.debugStringForType_(o));
+  if (goog.asserts.ENABLE_ASSERTS && typeof Location != 'undefined' &&
+      typeof Element != 'undefined') {
+    goog.asserts.assert(
+        o && (o instanceof Location || !(o instanceof Element)),
+        'Argument is not a Location (or a non-Element mock); got: %s',
+        goog.dom.safe.debugStringForType_(o));
+  }
   return /** @type {!Location} */ (o);
 };
 
@@ -19326,11 +19329,14 @@ goog.dom.safe.assertIsLocation_ = function(o) {
  * @private
  */
 goog.dom.safe.assertIsHTMLAnchorElement_ = function(o) {
-  goog.asserts.assert(
-      o && (o instanceof HTMLAnchorElement ||
-            !((o instanceof Location) || (o instanceof Element))),
-      'Argument is not a HTMLAnchorElement (or a non-Element mock); got: %s',
-      goog.dom.safe.debugStringForType_(o));
+  if (goog.asserts.ENABLE_ASSERTS && typeof HTMLAnchorElement != 'undefined' &&
+      typeof Location != 'undefined' && typeof Element != 'undefined') {
+    goog.asserts.assert(
+        o && (o instanceof HTMLAnchorElement ||
+              !((o instanceof Location) || (o instanceof Element))),
+        'Argument is not a HTMLAnchorElement (or a non-Element mock); got: %s',
+        goog.dom.safe.debugStringForType_(o));
+  }
   return /** @type {!HTMLAnchorElement} */ (o);
 };
 
@@ -19345,11 +19351,14 @@ goog.dom.safe.assertIsHTMLAnchorElement_ = function(o) {
  * @private
  */
 goog.dom.safe.assertIsHTMLLinkElement_ = function(o) {
-  goog.asserts.assert(
-      o && (o instanceof HTMLLinkElement ||
-            !((o instanceof Location) || (o instanceof Element))),
-      'Argument is not a HTMLLinkElement (or a non-Element mock); got: %s',
-      goog.dom.safe.debugStringForType_(o));
+  if (goog.asserts.ENABLE_ASSERTS && typeof HTMLLinkElement != 'undefined' &&
+      typeof Location != 'undefined' && typeof Element != 'undefined') {
+    goog.asserts.assert(
+        o && (o instanceof HTMLLinkElement ||
+              !((o instanceof Location) || (o instanceof Element))),
+        'Argument is not a HTMLLinkElement (or a non-Element mock); got: %s',
+        goog.dom.safe.debugStringForType_(o));
+  }
   return /** @type {!HTMLLinkElement} */ (o);
 };
 
@@ -19364,10 +19373,13 @@ goog.dom.safe.assertIsHTMLLinkElement_ = function(o) {
  * @private
  */
 goog.dom.safe.assertIsHTMLImageElement_ = function(o) {
-  goog.asserts.assert(
-      o && (o instanceof HTMLImageElement || !(o instanceof Element)),
-      'Argument is not a HTMLImageElement (or a non-Element mock); got: %s',
-      goog.dom.safe.debugStringForType_(o));
+  if (goog.asserts.ENABLE_ASSERTS && typeof HTMLImageElement != 'undefined' &&
+      typeof Element != 'undefined') {
+    goog.asserts.assert(
+        o && (o instanceof HTMLImageElement || !(o instanceof Element)),
+        'Argument is not a HTMLImageElement (or a non-Element mock); got: %s',
+        goog.dom.safe.debugStringForType_(o));
+  }
   return /** @type {!HTMLImageElement} */ (o);
 };
 
@@ -19382,10 +19394,13 @@ goog.dom.safe.assertIsHTMLImageElement_ = function(o) {
  * @private
  */
 goog.dom.safe.assertIsHTMLEmbedElement_ = function(o) {
-  goog.asserts.assert(
-      o && (o instanceof HTMLEmbedElement || !(o instanceof Element)),
-      'Argument is not a HTMLEmbedElement (or a non-Element mock); got: %s',
-      goog.dom.safe.debugStringForType_(o));
+  if (goog.asserts.ENABLE_ASSERTS && typeof HTMLEmbedElement != 'undefined' &&
+      typeof Element != 'undefined') {
+    goog.asserts.assert(
+        o && (o instanceof HTMLEmbedElement || !(o instanceof Element)),
+        'Argument is not a HTMLEmbedElement (or a non-Element mock); got: %s',
+        goog.dom.safe.debugStringForType_(o));
+  }
   return /** @type {!HTMLEmbedElement} */ (o);
 };
 
@@ -19400,10 +19415,13 @@ goog.dom.safe.assertIsHTMLEmbedElement_ = function(o) {
  * @private
  */
 goog.dom.safe.assertIsHTMLFrameElement_ = function(o) {
-  goog.asserts.assert(
-      o && (o instanceof HTMLFrameElement || !(o instanceof Element)),
-      'Argument is not a HTMLFrameElement (or a non-Element mock); got: %s',
-      goog.dom.safe.debugStringForType_(o));
+  if (goog.asserts.ENABLE_ASSERTS && typeof HTMLFrameElement != 'undefined' &&
+      typeof Element != 'undefined') {
+    goog.asserts.assert(
+        o && (o instanceof HTMLFrameElement || !(o instanceof Element)),
+        'Argument is not a HTMLFrameElement (or a non-Element mock); got: %s',
+        goog.dom.safe.debugStringForType_(o));
+  }
   return /** @type {!HTMLFrameElement} */ (o);
 };
 
@@ -19418,10 +19436,13 @@ goog.dom.safe.assertIsHTMLFrameElement_ = function(o) {
  * @private
  */
 goog.dom.safe.assertIsHTMLIFrameElement_ = function(o) {
-  goog.asserts.assert(
-      o && (o instanceof HTMLIFrameElement || !(o instanceof Element)),
-      'Argument is not a HTMLIFrameElement (or a non-Element mock); got: %s',
-      goog.dom.safe.debugStringForType_(o));
+  if (goog.asserts.ENABLE_ASSERTS && typeof HTMLIFrameElement != 'undefined' &&
+      typeof Element != 'undefined') {
+    goog.asserts.assert(
+        o && (o instanceof HTMLIFrameElement || !(o instanceof Element)),
+        'Argument is not a HTMLIFrameElement (or a non-Element mock); got: %s',
+        goog.dom.safe.debugStringForType_(o));
+  }
   return /** @type {!HTMLIFrameElement} */ (o);
 };
 
@@ -19436,10 +19457,13 @@ goog.dom.safe.assertIsHTMLIFrameElement_ = function(o) {
  * @private
  */
 goog.dom.safe.assertIsHTMLObjectElement_ = function(o) {
-  goog.asserts.assert(
-      o && (o instanceof HTMLObjectElement || !(o instanceof Element)),
-      'Argument is not a HTMLObjectElement (or a non-Element mock); got: %s',
-      goog.dom.safe.debugStringForType_(o));
+  if (goog.asserts.ENABLE_ASSERTS && typeof HTMLObjectElement != 'undefined' &&
+      typeof Element != 'undefined') {
+    goog.asserts.assert(
+        o && (o instanceof HTMLObjectElement || !(o instanceof Element)),
+        'Argument is not a HTMLObjectElement (or a non-Element mock); got: %s',
+        goog.dom.safe.debugStringForType_(o));
+  }
   return /** @type {!HTMLObjectElement} */ (o);
 };
 
@@ -19454,10 +19478,13 @@ goog.dom.safe.assertIsHTMLObjectElement_ = function(o) {
  * @private
  */
 goog.dom.safe.assertIsHTMLScriptElement_ = function(o) {
-  goog.asserts.assert(
-      o && (o instanceof HTMLScriptElement || !(o instanceof Element)),
-      'Argument is not a HTMLScriptElement (or a non-Element mock); got: %s',
-      goog.dom.safe.debugStringForType_(o));
+  if (goog.asserts.ENABLE_ASSERTS && typeof HTMLScriptElement != 'undefined' &&
+      typeof Element != 'undefined') {
+    goog.asserts.assert(
+        o && (o instanceof HTMLScriptElement || !(o instanceof Element)),
+        'Argument is not a HTMLScriptElement (or a non-Element mock); got: %s',
+        goog.dom.safe.debugStringForType_(o));
+  }
   return /** @type {!HTMLScriptElement} */ (o);
 };
 
@@ -19656,7 +19683,7 @@ goog.dom.$ = goog.dom.getElement;
  * @param {goog.dom.TagName} tagName
  * @param {(!Document|!Element)=} opt_parent Parent element or document where to
  *     look for elements. Defaults to document.
- * @return {!IArrayLike<!Element>}
+ * @return {!NodeList<!Element>}
  */
 goog.dom.getElementsByTagName = function(tagName, opt_parent) {
   var parent = opt_parent || document;
@@ -21826,7 +21853,7 @@ goog.dom.DomHelper.prototype.$ = goog.dom.DomHelper.prototype.getElement;
  * @param {goog.dom.TagName} tagName
  * @param {(!Document|!Element)=} opt_parent Parent element or document where to
  *     look for elements. Defaults to document of this DomHelper.
- * @return {!IArrayLike<!Element>}
+ * @return {!NodeList<!Element>}
  */
 goog.dom.DomHelper.prototype.getElementsByTagName =
     function(tagName, opt_parent) {
