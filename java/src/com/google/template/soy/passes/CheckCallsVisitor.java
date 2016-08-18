@@ -44,10 +44,7 @@ import java.util.Set;
  */
 final class CheckCallsVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
-  private static final SoyErrorKind MISSING_PARAM =
-      SoyErrorKind.of("Call missing required {0}.");
-  private static final SoyErrorKind DUPLICATE_PARAM =
-      SoyErrorKind.of("Duplicate param ''{0}''.");
+  private static final SoyErrorKind MISSING_PARAM = SoyErrorKind.of("Call missing required {0}.");
 
   /** A template registry built from the Soy tree. */
   private final TemplateRegistry templateRegistry;
@@ -71,7 +68,7 @@ final class CheckCallsVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
     // If all the data keys being passed are listed using 'param' commands, then check that all
     // required params of the callee are included.
-    if (!node.dataAttribute().isPassingData()) {
+    if (! node.dataAttribute().isPassingData()) {
 
       // Get the callee node (basic or delegate).
       TemplateNode callee = null;
@@ -94,12 +91,7 @@ final class CheckCallsVisitor extends AbstractSoyNodeVisitor<List<String>> {
         // Get param keys passed by caller.
         Set<String> callerParamKeys = Sets.newHashSet();
         for (CallParamNode callerParam : node.getChildren()) {
-          boolean isUnique = callerParamKeys.add(callerParam.getKey());
-          if (!isUnique) {
-            // Found a duplicate param.
-            errorReporter.report(
-                callerParam.getSourceLocation(), DUPLICATE_PARAM, callerParam.getKey());
-          }
+          callerParamKeys.add(callerParam.getKey());
         }
         // Check param keys required by callee.
         List<String> missingParamKeys = Lists.newArrayListWithCapacity(2);
