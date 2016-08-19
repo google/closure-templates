@@ -836,5 +836,5 @@ incompatibilities here:
  In SoySauce you always get `null`.  We chose this option because it is more
  internally consistent (soy->soy and java->soy calls are treated equivalently)
  and it is more consistent with the behavior of the Javascript Soy backend.
-
+.
 
