@@ -57,10 +57,8 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Visitor for checking that calling arguments match the declared parameter types
- * of the called template. Throws a SoySyntaxException if any problems are found.
- * Note that we don't check for missing parameters, that check is done by
- * CheckCallsVisitor.
+ * Checks that calling arguments match the declared parameter types of the called template.
+ * Doesn't check for missing parameters; that is done by {@link CheckCallsVisitor}.
  *
  * <p>In addition to checking that static types match and flagging errors, this
  * visitor also stores a set of TemplateParam object in each CallNode for all the
