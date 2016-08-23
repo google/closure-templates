@@ -10298,7 +10298,7 @@ goog.string.TypedString.prototype.implementsGoogStringTypedString;
 
 /**
  * Retrieves this wrapped string's value.
- * @return {!string} The wrapped string's value.
+ * @return {string} The wrapped string's value.
  */
 goog.string.TypedString.prototype.getTypedStringValue;
 
@@ -13674,8 +13674,8 @@ goog.define('goog.functions.CACHE_RETURN_VALUE', true);
  *
  * To cache the return values of functions with parameters, see goog.memoize.
  *
- * @param {!function():T} fn A function to lazily evaluate.
- * @return {!function():T} A wrapped version the function.
+ * @param {function():T} fn A function to lazily evaluate.
+ * @return {function():T} A wrapped version the function.
  * @template T
  */
 goog.functions.cacheReturnValue = function(fn) {
@@ -17047,7 +17047,7 @@ goog.reflect.canAccessProperty = function(obj, prop) {
  * @param {?} key The key to lookup in the cache. If it is not string or number
  *     then a {@code opt_keyFn} should be provided. The key is also used as the
  *     parameter to the {@code valueFn}.
- * @param {!function(?):V} valueFn The value provider to use to calculate the
+ * @param {function(?):V} valueFn The value provider to use to calculate the
  *     value to store in the cache. This function should be side-effect free
  *     to take advantage of the optimization.
  * @param {function(?):K=} opt_keyFn The key provider to determine the cache
