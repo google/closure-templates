@@ -295,6 +295,13 @@ public class TemplateNodeTest extends TestCase {
             "Invalid value for attribute 'autoescape' in 'template' command text "
                 + "(autoescape=\"false\"). Valid values are "
                 + "[deprecated-noncontextual, deprecated-contextual, strict].");
+
+    // assertion inside no-arg templateBasicNode() is that there is no exception.
+    templateBasicNode()
+        .setId(0)
+        .setCmdText(".foo autoescape =\n\t\r \"strict\"")
+        .setSoyDoc("/***/")
+        .build();
   }
 
   public void testValidStrictTemplates() {

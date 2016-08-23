@@ -53,7 +53,7 @@ public final class CommandTextAttributesParser {
    *  Note group(1) is attribute name, group(2) is attribute value.
    *  E.g. data="$boo" parses into group(1)="data" and group(2)="$boo". */
   private static final Pattern ATTRIBUTE_TEXT =
-      Pattern.compile("([a-zA-Z][a-zA-Z0-9-]*) = \" ( (?:[^\"\\\\]+ | \\\\.)*+ ) \" \\s*",
+      Pattern.compile("([a-zA-Z][a-zA-Z0-9-]*) \\s* = \\s* \" ( (?:[^\"\\\\]+ | \\\\.)*+ ) \" \\s*",
           Pattern.COMMENTS | Pattern.DOTALL);
 
   /**
@@ -132,7 +132,6 @@ public final class CommandTextAttributesParser {
     int i = 0;  // index in commandText that we've processed up to
     Matcher matcher = ATTRIBUTE_TEXT.matcher(commandText);
     while (matcher.find(i)) {
-
       if (matcher.start() != i) {
         errorReporter.report(sourceLocation, MALFORMED_ATTRIBUTES, commandName, commandText);
       }
