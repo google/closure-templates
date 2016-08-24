@@ -3494,8 +3494,8 @@ goog.addDependency('net/streams/streamfactory.js', ['goog.net.streams.createXhrN
 goog.addDependency('net/streams/streamparser.js', ['goog.net.streams.StreamParser'], [], {});
 goog.addDependency('net/streams/xhrnodereadablestream.js', ['goog.net.streams.XhrNodeReadableStream'], ['goog.array', 'goog.log', 'goog.net.streams.NodeReadableStream', 'goog.net.streams.XhrStreamReader'], {});
 goog.addDependency('net/streams/xhrnodereadablestream_test.js', ['goog.net.streams.XhrNodeReadableStreamTest'], ['goog.net.streams.NodeReadableStream', 'goog.net.streams.XhrNodeReadableStream', 'goog.net.streams.XhrStreamReader', 'goog.testing.PropertyReplacer', 'goog.testing.asserts', 'goog.testing.jsunit'], {});
-goog.addDependency('net/streams/xhrstreamreader.js', ['goog.net.streams.XhrStreamReader'], ['goog.events.EventHandler', 'goog.log', 'goog.net.ErrorCode', 'goog.net.EventType', 'goog.net.HttpStatus', 'goog.net.XhrIo', 'goog.net.XmlHttp', 'goog.net.streams.JsonStreamParser', 'goog.net.streams.PbStreamParser', 'goog.userAgent'], {});
-goog.addDependency('net/streams/xhrstreamreader_test.js', ['goog.net.streams.XhrStreamReaderTest'], ['goog.net.ErrorCode', 'goog.net.XmlHttp', 'goog.net.streams.XhrStreamReader', 'goog.testing.asserts', 'goog.testing.jsunit', 'goog.testing.net.XhrIo'], {});
+goog.addDependency('net/streams/xhrstreamreader.js', ['goog.net.streams.XhrStreamReader'], ['goog.events.EventHandler', 'goog.log', 'goog.net.ErrorCode', 'goog.net.EventType', 'goog.net.HttpStatus', 'goog.net.XhrIo', 'goog.net.XmlHttp', 'goog.net.streams.Base64PbStreamParser', 'goog.net.streams.JsonStreamParser', 'goog.net.streams.PbStreamParser', 'goog.string', 'goog.userAgent'], {});
+goog.addDependency('net/streams/xhrstreamreader_test.js', ['goog.net.streams.XhrStreamReaderTest'], ['goog.net.ErrorCode', 'goog.net.XmlHttp', 'goog.net.streams.XhrStreamReader', 'goog.object', 'goog.testing.asserts', 'goog.testing.jsunit', 'goog.testing.net.XhrIo'], {});
 goog.addDependency('net/testdata/jsloader_test1.js', ['goog.net.testdata.jsloader_test1'], [], {});
 goog.addDependency('net/testdata/jsloader_test2.js', ['goog.net.testdata.jsloader_test2'], [], {});
 goog.addDependency('net/testdata/jsloader_test3.js', ['goog.net.testdata.jsloader_test3'], [], {});
@@ -26505,8 +26505,8 @@ soy.$$truncate = function(str, maxLen, doAddEllipsis) {
   }
 
   // Make sure truncating at maxLen doesn't cut up a unicode surrogate pair.
-  if (soy.$$isHighSurrogate_(str.charAt(maxLen - 1)) &&
-      soy.$$isLowSurrogate_(str.charAt(maxLen))) {
+  if (soy.$$isHighSurrogate_(str.charCodeAt(maxLen - 1)) &&
+      soy.$$isLowSurrogate_(str.charCodeAt(maxLen))) {
     maxLen -= 1;
   }
 
@@ -26523,22 +26523,22 @@ soy.$$truncate = function(str, maxLen, doAddEllipsis) {
 
 /**
  * Private helper for $$truncate() to check whether a char is a high surrogate.
- * @param {string} ch The char to check.
- * @return {boolean} Whether the given char is a unicode high surrogate.
+ * @param {number} cc The codepoint to check.
+ * @return {boolean} Whether the given codepoint is a unicode high surrogate.
  * @private
  */
-soy.$$isHighSurrogate_ = function(ch) {
-  return 0xD800 <= ch && ch <= 0xDBFF;
+soy.$$isHighSurrogate_ = function(cc) {
+  return 0xD800 <= cc && cc <= 0xDBFF;
 };
 
 /**
  * Private helper for $$truncate() to check whether a char is a low surrogate.
- * @param {string} ch The char to check.
- * @return {boolean} Whether the given char is a unicode low surrogate.
+ * @param {number} cc The codepoint to check.
+ * @return {boolean} Whether the given codepoint is a unicode low surrogate.
  * @private
  */
-soy.$$isLowSurrogate_ = function(ch) {
-  return 0xDC00 <= ch && ch <= 0xDFFF;
+soy.$$isLowSurrogate_ = function(cc) {
+  return 0xDC00 <= cc && cc <= 0xDFFF;
 };
 
 

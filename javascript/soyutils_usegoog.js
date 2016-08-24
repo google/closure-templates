@@ -1747,8 +1747,8 @@ soy.$$truncate = function(str, maxLen, doAddEllipsis) {
   }
 
   // Make sure truncating at maxLen doesn't cut up a unicode surrogate pair.
-  if (soy.$$isHighSurrogate_(str.charAt(maxLen - 1)) &&
-      soy.$$isLowSurrogate_(str.charAt(maxLen))) {
+  if (soy.$$isHighSurrogate_(str.charCodeAt(maxLen - 1)) &&
+      soy.$$isLowSurrogate_(str.charCodeAt(maxLen))) {
     maxLen -= 1;
   }
 
@@ -1765,22 +1765,22 @@ soy.$$truncate = function(str, maxLen, doAddEllipsis) {
 
 /**
  * Private helper for $$truncate() to check whether a char is a high surrogate.
- * @param {string} ch The char to check.
- * @return {boolean} Whether the given char is a unicode high surrogate.
+ * @param {number} cc The codepoint to check.
+ * @return {boolean} Whether the given codepoint is a unicode high surrogate.
  * @private
  */
-soy.$$isHighSurrogate_ = function(ch) {
-  return 0xD800 <= ch && ch <= 0xDBFF;
+soy.$$isHighSurrogate_ = function(cc) {
+  return 0xD800 <= cc && cc <= 0xDBFF;
 };
 
 /**
  * Private helper for $$truncate() to check whether a char is a low surrogate.
- * @param {string} ch The char to check.
- * @return {boolean} Whether the given char is a unicode low surrogate.
+ * @param {number} cc The codepoint to check.
+ * @return {boolean} Whether the given codepoint is a unicode low surrogate.
  * @private
  */
-soy.$$isLowSurrogate_ = function(ch) {
-  return 0xDC00 <= ch && ch <= 0xDFFF;
+soy.$$isLowSurrogate_ = function(cc) {
+  return 0xDC00 <= cc && cc <= 0xDFFF;
 };
 
 
