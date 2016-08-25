@@ -1,12 +1,9 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
-                      http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0                       http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <name>Closure Templates</name>
   <groupId>com.google.template</groupId>
   <artifactId>soy</artifactId>
-  <version>2016-07-21</version>
+  <version>2016-08-25</version>
   <description>
     Closure Templates are a client-side and server-side templating system.
   </description>
@@ -382,14 +379,12 @@
             <phase>package</phase>
             <configuration>
               <target>
-                <taskdef name="gen.escape.directives"
-                         classname="com.google.template.soy.jssrc.internal.GenerateSoyUtilsEscapingDirectiveCode"
-                         classpathref="maven.runtime.classpath"/>
+                <taskdef name="gen.escape.directives" classname="com.google.template.soy.jssrc.internal.GenerateSoyUtilsEscapingDirectiveCode" classpathref="maven.runtime.classpath" />
                 <gen.escape.directives>
-                  <input path="${project.basedir}/javascript/soyutils_usegoog.js"/>
-                  <output path="${project.build.directory}/soyutils_usegoog.js"/>
-                  <libdefined pattern="goog.string.*"/>
-                  <libdefined pattern="goog.asserts.*"/>
+                  <input path="${project.basedir}/javascript/soyutils_usegoog.js" />
+                  <output path="${project.build.directory}/soyutils_usegoog.js" />
+                  <libdefined pattern="goog.string.*" />
+                  <libdefined pattern="goog.asserts.*" />
                 </gen.escape.directives>
               </target>
             </configuration>
@@ -452,7 +447,7 @@
             <id>enforce</id>
             <configuration>
               <rules>
-                <DependencyConvergence/>
+                <DependencyConvergence />
                 <banDuplicateClasses>
                   <findAllDuplicates>true</findAllDuplicates>
                   <ignoreClasses>
@@ -510,8 +505,7 @@
               <shadedArtifactAttached>true</shadedArtifactAttached>
               <shadedClassifierName>SoyToJsSrcCompiler</shadedClassifierName>
               <transformers>
-                <transformer
-                  implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                   <mainClass>com.google.template.soy.SoyToJsSrcCompiler</mainClass>
                 </transformer>
               </transformers>
@@ -527,8 +521,7 @@
               <shadedArtifactAttached>true</shadedArtifactAttached>
               <shadedClassifierName>SoyToIncrementalDomSrcCompiler</shadedClassifierName>
               <transformers>
-                <transformer
-                  implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                   <mainClass>com.google.template.soy.SoyToIncrementalDomSrcCompiler</mainClass>
                 </transformer>
               </transformers>
@@ -545,8 +538,7 @@
               <shadedArtifactAttached>true</shadedArtifactAttached>
               <shadedClassifierName>SoyToPySrcCompiler</shadedClassifierName>
               <transformers>
-                <transformer
-                  implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                   <mainClass>com.google.template.soy.SoyToPySrcCompiler</mainClass>
                 </transformer>
               </transformers>
@@ -562,8 +554,7 @@
               <shadedArtifactAttached>true</shadedArtifactAttached>
               <shadedClassifierName>SoyParseInfoGenerator</shadedClassifierName>
               <transformers>
-                <transformer
-                  implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                   <mainClass>com.google.template.soy.SoyParseInfoGenerator
                   </mainClass>
                 </transformer>
@@ -580,8 +571,7 @@
               <shadedArtifactAttached>true</shadedArtifactAttached>
               <shadedClassifierName>SoyMsgExtractor</shadedClassifierName>
               <transformers>
-                <transformer
-                  implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                   <mainClass>com.google.template.soy.SoyMsgExtractor</mainClass>
                 </transformer>
               </transformers>
