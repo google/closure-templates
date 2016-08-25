@@ -22,6 +22,8 @@ import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
+import com.google.common.io.ByteSource;
+import com.google.common.io.Files;
 import com.google.protobuf.DescriptorProtos.FileDescriptorSet;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.DescriptorValidationException;
@@ -33,7 +35,6 @@ import com.google.protobuf.ExtensionRegistry;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeProvider;
 import com.google.template.soy.types.SoyTypeRegistry;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -45,7 +46,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-
 import javax.annotation.concurrent.GuardedBy;
 
 /**
@@ -58,7 +58,7 @@ public final class SoyProtoTypeProvider implements SoyTypeProvider {
    * Helper class that assists in the construction of SoyTypeProviders.
    */
   public static final class Builder {
-    private final List<File> descriptorFiles = new ArrayList<>();
+    private final List<ByteSource> descriptorSources = new ArrayList<>();
     private final List<FileDescriptorSet> descriptorSets = new ArrayList<>();
     private final List<GenericDescriptor> descriptors = new ArrayList<>();
 
@@ -67,7 +67,15 @@ public final class SoyProtoTypeProvider implements SoyTypeProvider {
 
     /** Read a file descriptor set from a file and register any proto types found within. */
     public Builder addFileDescriptorSetFromFile(File descriptorFile) {
-      descriptorFiles.add(descriptorFile);
+      return addFileDescriptorSetFromByteSource(Files.asByteSource(descriptorFile));
+    }
+
+    /**
+     * Read a file descriptor set from a byte source and register any proto types found
+     * within.
+     */
+    public Builder addFileDescriptorSetFromByteSource(ByteSource descriptorSource) {
+      descriptorSources.add(descriptorSource);
       return this;
     }
 
@@ -90,13 +98,13 @@ public final class SoyProtoTypeProvider implements SoyTypeProvider {
      * in practice.
      */
     public boolean isEmpty() {
-      return descriptorFiles.isEmpty() && descriptorSets.isEmpty() && descriptors.isEmpty();
+      return descriptorSources.isEmpty() && descriptorSets.isEmpty() && descriptors.isEmpty();
     }
 
     private void walkAll(DescriptorTreeWalker walker)
         throws FileNotFoundException, IOException, DescriptorValidationException {
-      for (File descriptorFile : descriptorFiles) {
-        walker.walkFileDescriptorSetFromFile(descriptorFile);
+      for (ByteSource descriptorSource : descriptorSources) {
+        walker.walkFileDescriptorSetFromByteSource(descriptorSource);
       }
       for (FileDescriptorSet descriptorSet : descriptorSets) {
         walker.walkFileDescriptorSet(descriptorSet);
@@ -112,7 +120,7 @@ public final class SoyProtoTypeProvider implements SoyTypeProvider {
       SoyProtoTypeProvider provider = new SoyProtoTypeProvider();
 
       ExtensionRegistry extensionRegistry = ExtensionRegistry.getEmptyRegistry();
-      if (!descriptorFiles.isEmpty()) {
+      if (!descriptorSources.isEmpty()) {
         extensionRegistry = ExtensionRegistry.newInstance();
         walkAll(new RegisterExtensionsDescriptorTreeWalker(extensionRegistry));
       }
@@ -131,7 +139,7 @@ public final class SoyProtoTypeProvider implements SoyTypeProvider {
      */
     public SoyProtoTypeProvider buildNoFiles() {
       Preconditions.checkState(
-          descriptorFiles.isEmpty(),
+          descriptorSources.isEmpty(),
           "use build(), not buildNoFiles() to load descriptors from files");
       try {
         return build();

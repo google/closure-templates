@@ -19,6 +19,7 @@ package com.google.template.soy.types.proto;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
+import com.google.common.io.ByteSource;
 import com.google.protobuf.DescriptorProtos.FileDescriptorProto;
 import com.google.protobuf.DescriptorProtos.FileDescriptorSet;
 import com.google.protobuf.Descriptors.Descriptor;
@@ -28,9 +29,6 @@ import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Descriptors.FileDescriptor;
 import com.google.protobuf.Descriptors.GenericDescriptor;
 import com.google.protobuf.ExtensionRegistry;
-
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -54,9 +52,9 @@ abstract class DescriptorTreeWalker {
   }
 
   /**
-   * Called for each file set file.  Unless overridden, does nothing.
+   * Called for each file set source.  Unless overridden, does nothing.
    */
-  void visitFileDescriptorSetFromFile(File file) {
+  void visitFileDescriptorSetFromByteSource(ByteSource source) {
     // no-op
   }
 
@@ -112,19 +110,19 @@ abstract class DescriptorTreeWalker {
     // no-op
   }
 
-  /** Read a file descriptor set from a file and walkr any proto types found within. */
-  final void walkFileDescriptorSetFromFile(final File file)
+  /** Read a file descriptor set and walk any proto types found within. */
+  final void walkFileDescriptorSetFromByteSource(ByteSource source)
       throws FileNotFoundException, IOException, DescriptorValidationException {
-    visitFileDescriptorSetFromFile(file);
+    visitFileDescriptorSetFromByteSource(source);
 
-    try (InputStream inputStream = new FileInputStream(file)) {
+    try (InputStream inputStream = source.openStream()) {
       walkFileDescriptorSet(
           FileDescriptorSet.parseFrom(inputStream, extensionRegistry));
     }
   }
 
   /** Given file descriptor set, register any proto types found within. */
-  final void walkFileDescriptorSet(final FileDescriptorSet descriptorSet)
+  final void walkFileDescriptorSet(FileDescriptorSet descriptorSet)
       throws DescriptorValidationException {
     visitFileDescriptorSet(descriptorSet);
 
