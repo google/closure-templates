@@ -110,8 +110,6 @@ public class IncrementalDomSrcMain {
     incrementalJSSrcOptions.setShouldProvideBothSoyNamespacesAndJsFunctions(false);
     incrementalJSSrcOptions.setShouldProvideRequireSoyNamespaces(false);
     incrementalJSSrcOptions.setShouldProvideRequireJsFunctions(false);
-    incrementalJSSrcOptions.setShouldDeclareTopLevelNamespaces(false);
-    incrementalJSSrcOptions.setShouldGenerateGoogModules(true);
 
     try (WithScope withScope = apiCallScope.enter()) {
       // Seed the scoped parameters.

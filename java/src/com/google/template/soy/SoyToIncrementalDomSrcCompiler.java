@@ -53,6 +53,39 @@ public final class SoyToIncrementalDomSrcCompiler extends AbstractSoyCompiler {
   )
   private String outputPathFormat;
 
+  @Option(
+    name = "--shouldDeclareTopLevelNamespaces",
+    usage =
+        "[Only applicable when generating regular JS code to define namespaces (i.e."
+            + " not generating goog.provide/goog.require).] When this option is set to"
+            + " false, each generated JS file will not attempt to declare the top-level"
+            + " name in its namespace, instead assuming the top-level name is already"
+            + " declared in the global scope. E.g. for namespace aaa.bbb, the code will not"
+            + " attempt to declare aaa, but will still define aaa.bbb if it's not already"
+            + " defined."
+  )
+  private boolean shouldDeclareTopLevelNamespaces = false;
+
+  @Option(
+    name = "--shouldGenerateGoogModules",
+    usage =
+        "[Whether we should generate code to declare goog.modules]"
+  )
+  private boolean shouldGenerateGoogModules = true;
+
+  @Option(
+    name = "--useGoogIsRtlForBidiGlobalDir",
+    usage =
+        "[Only applicable if both --shouldGenerateGoogMsgDefs and"
+            +
+            " --shouldProvideRequireSoyNamespaces"
+            +
+            " is true]"
+            + " Whether to determine the bidi global direction at template runtime by"
+            + " evaluating goog.i18n.bidi.IS_RTL. Do not combine with --bidiGlobalDir."
+  )
+  private boolean useGoogIsRtlForBidiGlobalDir = false;
+
    /**
    * Compiles a set of Soy files into corresponding Incremental DOM source files.
    *
@@ -65,7 +98,6 @@ public final class SoyToIncrementalDomSrcCompiler extends AbstractSoyCompiler {
   }
 
   private SoyToIncrementalDomSrcCompiler() {}
-
   @Override
   void compile(SoyFileSet.Builder sfsBuilder) throws IOException {
     sfsBuilder.setAllowExternalCalls(false);
@@ -76,14 +108,13 @@ public final class SoyToIncrementalDomSrcCompiler extends AbstractSoyCompiler {
     jsSrcOptions.setShouldProvideRequireSoyNamespaces(false);
     jsSrcOptions.setShouldProvideRequireJsFunctions(false);
     jsSrcOptions.setShouldProvideBothSoyNamespacesAndJsFunctions(false);
-    jsSrcOptions.setShouldDeclareTopLevelNamespaces(false);
+    jsSrcOptions.setShouldDeclareTopLevelNamespaces(shouldDeclareTopLevelNamespaces);
     jsSrcOptions.setShouldGenerateJsdoc(true);
-    // Only goog.module generation supported
-    jsSrcOptions.setShouldGenerateGoogModules(true);
+    jsSrcOptions.setShouldGenerateGoogModules(shouldGenerateGoogModules);
     jsSrcOptions.setShouldGenerateGoogMsgDefs(true);
     jsSrcOptions.setGoogMsgsAreExternal(true);
     jsSrcOptions.setBidiGlobalDir(0);
-    jsSrcOptions.setUseGoogIsRtlForBidiGlobalDir(true);
+    jsSrcOptions.setUseGoogIsRtlForBidiGlobalDir(useGoogIsRtlForBidiGlobalDir);
     sfs.compileToIncrementalDomSrcFiles(outputPathFormat, jsSrcOptions);
   }
 }
