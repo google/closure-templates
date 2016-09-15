@@ -84,7 +84,7 @@ public final class SoyToIncrementalDomSrcCompiler extends AbstractSoyCompiler {
             + " Whether to determine the bidi global direction at template runtime by"
             + " evaluating goog.i18n.bidi.IS_RTL. Do not combine with --bidiGlobalDir."
   )
-  private boolean useGoogIsRtlForBidiGlobalDir = false;
+  private boolean useGoogIsRtlForBidiGlobalDir = true;
 
    /**
    * Compiles a set of Soy files into corresponding Incremental DOM source files.
