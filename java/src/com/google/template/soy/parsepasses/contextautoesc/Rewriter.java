@@ -36,6 +36,7 @@ import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
+import com.google.template.soy.soytree.SoySyntaxExceptionUtils;
 import com.google.template.soy.soytree.TemplateNode;
 
 import java.util.List;
@@ -104,7 +105,11 @@ final class Rewriter {
      * Keep track of template nodes so we know which are derived and which aren't.
      */
     @Override protected void visitTemplateNode(TemplateNode templateNode) {
-      Preconditions.checkState(!visitedTemplateNames.contains(templateNode.getTemplateName()));
+      if (visitedTemplateNames.contains(templateNode.getTemplateName())) {
+        throw SoySyntaxExceptionUtils.createWithNode(
+            "was defined previously",
+            templateNode);
+      }
       visitedTemplateNames.add(templateNode.getTemplateName());
       visitChildrenAllowingConcurrentModification(templateNode);
     }
