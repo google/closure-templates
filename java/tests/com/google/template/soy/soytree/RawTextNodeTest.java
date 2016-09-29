@@ -28,7 +28,12 @@ import junit.framework.*;
 public final class RawTextNodeTest extends TestCase {
 
   public void testToSourceString() {
-    RawTextNode rtn = new RawTextNode(0, "Aa`! \n \r \t { }", SourceLocation.UNKNOWN);
-    assertEquals("Aa`! {\\n} {\\r} {\\t} {lb} {rb}", rtn.toSourceString());
+    assertEquals("Aa`! {\\n} {\\r} {\\t} {lb} {rb}", rawTextToSourceString("Aa`! \n \r \t { }"));
+    assertEquals("{literal}/**{/literal} some comment {literal}*/{/literal}",  rawTextToSourceString("/** some comment */"));
+    assertEquals("{literal}/**{/literal}* some comment {literal}*/{/literal}",  rawTextToSourceString("/*** some comment */"));
+  }
+
+  private String rawTextToSourceString(final String rawText) {
+    return new RawTextNode(0, rawText, SourceLocation.UNKNOWN).toSourceString();
   }
 }
