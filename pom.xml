@@ -823,8 +823,12 @@
             <configuration>
               <classesDirectory>${project.basedir}/javascript</classesDirectory>
               <classifier>jssrc_js</classifier>
-              <include>**/*.js</include>
-              <exclude>**/*_test.js</exclude>
+              <includes>
+                <include>**/*.js</include>
+              </includes>
+              <excludes>
+                <exclude>**/*_test.js</exclude>
+              </excludes>
               <archive />
             </configuration>
           </execution>
