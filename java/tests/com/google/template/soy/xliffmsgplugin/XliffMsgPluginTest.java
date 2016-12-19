@@ -118,4 +118,21 @@ public final class XliffMsgPluginTest extends TestCase {
     assertEquals(8577643341484516105L, msgs.get(4).getId());
   }
 
+  public void testGenerateMsgPlurals() throws Exception {
+    URL testSoyFile = Resources.getResource(XliffMsgPluginTest.class, "test_data/test-plurals.soy");
+    SoyMsgBundle msgBundle = SoyFileSet.builder().add(testSoyFile).build().extractMsgs();
+
+    XliffMsgPlugin msgPlugin = new XliffMsgPlugin();
+
+    // Test without target language.
+    OutputFileOptions outputFileOptions = new OutputFileOptions();
+    CharSequence extractedMsgsFile =
+        msgPlugin.generateExtractedMsgsFile(msgBundle, outputFileOptions);
+
+    URL expectedExtractedMsgsFile = Resources.getResource(
+        XliffMsgPluginTest.class, "test_data/test-plurals_extracted.xlf");
+    assertEquals(
+        Resources.toString(expectedExtractedMsgsFile, UTF_8),
+        extractedMsgsFile.toString());
+  }
 }

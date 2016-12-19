@@ -1,0 +1,36 @@
+// Author: Nick Santos
+
+{namespace sheeple}
+
+
+/**
+ * Print hello
+ * @param users
+ */
+{template .helloTemplate}
+  {msg desc="Hello!"}
+    {select length($users)}
+      {case '0'}Hello nobody!
+      {case '1'}
+        {select $users[0].gender}
+          {case 'male'}Hi bro!
+          {case 'female'}Hi sis!
+          {default}Hi you!
+        {/select}
+      {default}Hello sheeple!
+    {/select}
+  {/msg}
+{/template}
+/**
+ * Print hello
+ * @param users
+ */
+{template .helloTemplate2}
+  {msg desc="Hello!"}
+    {plural length($users)}
+      {case 0}Hello nobody!
+      {case 1}Hello!
+      {default}Hello sheeple!
+    {/plural}
+  {/msg}
+{/template}
