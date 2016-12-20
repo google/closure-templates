@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+  <file original="SoyMsgBundle" datatype="x-soy-msg-bundle" xml:space="preserve" source-language="en">
+    <body>
+      <group restype="soy-select">
+        <trans-unit id="2812453453230155341[0]" datatype="html">
+          <source>Hello nobody!</source>
+          <note priority="1" from="description">Hello!</note>
+        </trans-unit>
+        <group restype="soy-select">
+          <trans-unit id="2812453453230155341[1][male]" datatype="html">
+            <source>Hi bro!</source>
+            <note priority="1" from="description">Hello!</note>
+          </trans-unit>
+          <trans-unit id="2812453453230155341[1][female]" datatype="html">
+            <source>Hi sis!</source>
+            <note priority="1" from="description">Hello!</note>
+          </trans-unit>
+          <trans-unit id="2812453453230155341[1][default]" datatype="html">
+            <source>Hi you!</source>
+            <note priority="1" from="description">Hello!</note>
+          </trans-unit>
+        </group>
+        <trans-unit id="2812453453230155341[default]" datatype="html">
+          <source>Hello sheeple!</source>
+          <note priority="1" from="description">Hello!</note>
+        </trans-unit>
+      </group>
+      <group restype="soy-plural">
+        <trans-unit id="5884392340308823007[=0]" datatype="html">
+          <source>Hello nobody!</source>
+          <note priority="1" from="description">Hello!</note>
+        </trans-unit>
+        <trans-unit id="5884392340308823007[=1]" datatype="html">
+          <source>Hello!</source>
+          <note priority="1" from="description">Hello!</note>
+        </trans-unit>
+        <trans-unit id="5884392340308823007[other]" datatype="html">
+          <source>Hello sheeple!</source>
+          <note priority="1" from="description">Hello!</note>
+        </trans-unit>
+      </group>
+    </body>
+  </file>
+</xliff>
