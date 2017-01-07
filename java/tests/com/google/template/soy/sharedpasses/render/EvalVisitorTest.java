@@ -20,14 +20,12 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.shared.SharedTestUtils.untypedTemplateBodyForExpression;
 import static org.junit.Assert.fail;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.SoyModule;
-import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyDict;
 import com.google.template.soy.data.SoyList;
@@ -39,9 +37,6 @@ import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
-import com.google.template.soy.error.FormattingErrorReporter;
-import com.google.template.soy.exprparse.ExpressionParser;
-import com.google.template.soy.exprparse.SoyParsingContext;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
@@ -221,26 +216,6 @@ public class EvalVisitorTest {
   }
 
   /**
-   * Asserts that evaluating the given expression causes a ParseException.
-   *
-   * @param expression The expression to evaluate.
-   * @return the error messages
-   */
-  private static ImmutableList<String> assertParseError(String expression) {
-    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
-    new ExpressionParser(
-            expression,
-            SourceLocation.UNKNOWN,
-            SoyParsingContext.empty(errorReporter, "fake.namespace"))
-        .parseExpression();
-    ImmutableList<String> errorMessages = errorReporter.getErrorMessages();
-    if (errorMessages.isEmpty()) {
-      fail("expected parse error, got none");
-    }
-    return errorMessages;
-  }
-
-  /**
    * Asserts that evaluating the given expression causes a RenderException.
    *
    * @param expression The expression to evaluate.
@@ -312,8 +287,6 @@ public class EvalVisitorTest {
 
     result = (SoyList) eval("[]");
     assertThat(result.length()).isEqualTo(0);
-
-    assertParseError("[,]");
   }
 
   @Test
@@ -342,9 +315,6 @@ public class EvalVisitorTest {
     assertThat(result.getField("aaa").stringValue()).isEqualTo("blah");
     assertThat(result.getField("bbb").integerValue()).isEqualTo(123);
     assertThat(result.getField("baz").integerValue()).isEqualTo(8);
-
-    assertParseError("[:,]");
-    assertParseError("[,:]");
 
     // Test last value overwrites earlier value for the same key.
     result = (SoyDict) eval("['baz': 'blah', $foo.bar: 'bluh']");
