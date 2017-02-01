@@ -72,16 +72,14 @@ public final class RawTextNode extends AbstractSoyNode implements StandaloneNode
   public RawTextNode(
       int id, String rawText, SourceLocation sourceLocation, HtmlContext htmlContext) {
     super(id, sourceLocation);
-    checkArgument(!rawText.isEmpty(), "you can't create empty RawTextNodes");
-    this.rawText = rawText;
+    this.rawText = checkNotNull(rawText);
     this.htmlContext = htmlContext;
     this.offsets = SourceOffsets.fromLocation(sourceLocation, rawText.length());
   }
 
   public RawTextNode(int id, String rawText, SourceLocation sourceLocation, SourceOffsets offsets) {
     super(id, sourceLocation);
-    checkArgument(!rawText.isEmpty(), "you can't create empty RawTextNodes");
-    this.rawText = rawText;
+    this.rawText = checkNotNull(rawText);
     this.offsets = offsets;
   }
 

@@ -33,6 +33,7 @@ public class RawTextContextUpdaterTest {
 
   @Test
   public void testPcdata() throws Exception {
+    assertTransition("HTML_PCDATA", "", "HTML_PCDATA");
     assertTransition("HTML_PCDATA", "Hello, World!", "HTML_PCDATA");
     assertTransition("HTML_PCDATA", "Jad loves ponies <3 <3 <3 !!!", "HTML_PCDATA");
     assertTransition("HTML_PCDATA", "OMG! Ponies, Ponies, Ponies &lt;3", "HTML_PCDATA");
@@ -110,6 +111,7 @@ public class RawTextContextUpdaterTest {
 
   @Test
   public void testBeforeTagName() throws Exception {
+    assertTransition("HTML_BEFORE_OPEN_TAG_NAME", "", "HTML_BEFORE_OPEN_TAG_NAME");
     assertTransition("HTML_BEFORE_OPEN_TAG_NAME", "/", "HTML_BEFORE_CLOSE_TAG_NAME");
     assertTransition("HTML_BEFORE_OPEN_TAG_NAME", "h1", "HTML_TAG_NAME NORMAL");
     assertTransition("HTML_BEFORE_OPEN_TAG_NAME", "svg:font-face id='x'", "HTML_TAG NORMAL");
@@ -119,6 +121,7 @@ public class RawTextContextUpdaterTest {
     assertTransition("HTML_BEFORE_OPEN_TAG_NAME", "3 Kitties!", "HTML_PCDATA");
     assertTransition("HTML_BEFORE_OPEN_TAG_NAME", " script", "HTML_PCDATA");
 
+    assertTransition("HTML_BEFORE_CLOSE_TAG_NAME", "", "HTML_BEFORE_CLOSE_TAG_NAME");
     assertTransition("HTML_BEFORE_CLOSE_TAG_NAME", "9", "ERROR");
     assertTransition("HTML_BEFORE_CLOSE_TAG_NAME", "/", "ERROR");
     assertTransition("HTML_BEFORE_CLOSE_TAG_NAME", "h1", "HTML_TAG_NAME NORMAL");
@@ -130,6 +133,7 @@ public class RawTextContextUpdaterTest {
 
   @Test
   public void testTagName() throws Exception {
+    assertTransition("HTML_TAG_NAME NORMAL", "", "HTML_TAG_NAME NORMAL");
     // Now, it's banned to do something like: <h{if 1}1{/if}>; instead the full tag name must be
     // specified.
     assertTransition("HTML_TAG_NAME NORMAL", "1", "ERROR");
@@ -162,6 +166,7 @@ public class RawTextContextUpdaterTest {
 
   @Test
   public void testTag() throws Exception {
+    assertTransition("HTML_TAG NORMAL", "", "HTML_TAG NORMAL");
     assertTransition("HTML_TAG NORMAL", ">", "HTML_PCDATA");
     assertTransition("HTML_TAG TEXTAREA", ">", "HTML_RCDATA TEXTAREA");
     assertTransition("HTML_TAG TITLE", ">", "HTML_RCDATA TITLE");
@@ -194,6 +199,7 @@ public class RawTextContextUpdaterTest {
 
   @Test
   public void testHtmlComment() throws Exception {
+    assertTransition("HTML_COMMENT", "", "HTML_COMMENT");
     assertTransition("HTML_COMMENT", " ", "HTML_COMMENT");
     assertTransition("HTML_COMMENT", "\r", "HTML_COMMENT");
     assertTransition("HTML_COMMENT", "/", "HTML_COMMENT");
@@ -251,6 +257,18 @@ public class RawTextContextUpdaterTest {
   public void testAttr() throws Exception {
     assertTransition(
         "HTML_NORMAL_ATTR_VALUE NORMAL PLAIN_TEXT DOUBLE_QUOTE",
+        "",
+        "HTML_NORMAL_ATTR_VALUE NORMAL PLAIN_TEXT DOUBLE_QUOTE");
+    assertTransition(
+        "HTML_NORMAL_ATTR_VALUE NORMAL PLAIN_TEXT SINGLE_QUOTE",
+        "",
+        "HTML_NORMAL_ATTR_VALUE NORMAL PLAIN_TEXT SINGLE_QUOTE");
+    assertTransition(
+        "HTML_NORMAL_ATTR_VALUE NORMAL PLAIN_TEXT SPACE_OR_TAG_END",
+        "",
+        "HTML_NORMAL_ATTR_VALUE NORMAL PLAIN_TEXT SPACE_OR_TAG_END");
+    assertTransition(
+        "HTML_NORMAL_ATTR_VALUE NORMAL PLAIN_TEXT DOUBLE_QUOTE",
         "foo",
         "HTML_NORMAL_ATTR_VALUE NORMAL PLAIN_TEXT DOUBLE_QUOTE");
     assertTransition(
@@ -280,6 +298,7 @@ public class RawTextContextUpdaterTest {
 
   @Test
   public void testCss() throws Exception {
+    assertTransition("CSS", "", "CSS");
     assertTransition("CSS", " p { color: red; }", "CSS");
     assertTransition("CSS", "p.clazz#id {\r\n  border: 2px;\n}", "CSS");
     assertTransition("CSS", "/*\nHello, World! */", "CSS");
@@ -298,6 +317,7 @@ public class RawTextContextUpdaterTest {
 
   @Test
   public void testCssComment() throws Exception {
+    assertTransition("CSS_COMMENT", "", "CSS_COMMENT");
     assertTransition("CSS_COMMENT", "\r\n\n\r", "CSS_COMMENT");
     assertTransition("CSS_COMMENT", " * /", "CSS_COMMENT");
     assertTransition("CSS_COMMENT", " */", "CSS");
@@ -309,6 +329,7 @@ public class RawTextContextUpdaterTest {
 
   @Test
   public void testCssDqString() throws Exception {
+    assertTransition("CSS_DQ_STRING", "", "CSS_DQ_STRING");
     assertTransition("CSS_DQ_STRING", "Hello, World!", "CSS_DQ_STRING");
     assertTransition("CSS_DQ_STRING", "Don't", "CSS_DQ_STRING");
     assertTransition("CSS_DQ_STRING", "\"", "CSS");
@@ -322,6 +343,7 @@ public class RawTextContextUpdaterTest {
 
   @Test
   public void testCssSqString() throws Exception {
+    assertTransition("CSS_SQ_STRING", "", "CSS_SQ_STRING");
     assertTransition("CSS_SQ_STRING", "Hello, World!", "CSS_SQ_STRING");
     assertTransition("CSS_SQ_STRING", "M. \"The Greatest!\" Ali", "CSS_SQ_STRING");
     assertTransition("CSS_SQ_STRING", "'", "CSS");
@@ -337,6 +359,7 @@ public class RawTextContextUpdaterTest {
 
   @Test
   public void testCssUri() throws Exception {
+    assertTransition("CSS_URI START NORMAL", "", "CSS_URI START NORMAL");
     assertTransition("CSS_URI START NORMAL", "/search?q=cute+bunnies", "CSS_URI QUERY NORMAL");
     assertTransition("CSS_URI START NORMAL", "#anchor)", "CSS");
     assertTransition("CSS_URI START NORMAL", "#anchor )", "CSS");
@@ -403,6 +426,7 @@ public class RawTextContextUpdaterTest {
 
   @Test
   public void testJsBeforeRegex() throws Exception {
+    assertTransition("JS REGEX", "", "JS REGEX");
     assertTransition("JS REGEX", "/*", "JS_BLOCK_COMMENT REGEX");
     assertTransition(
         "JS NORMAL SCRIPT SPACE_OR_TAG_END REGEX",
@@ -443,6 +467,7 @@ public class RawTextContextUpdaterTest {
 
   @Test
   public void testJsBeforeDivOp() throws Exception {
+    assertTransition("JS DIV_OP", "", "JS DIV_OP");
     assertTransition("JS DIV_OP", "/*", "JS_BLOCK_COMMENT DIV_OP");
     assertTransition(
         "JS NORMAL SCRIPT SPACE_OR_TAG_END DIV_OP",
@@ -483,6 +508,7 @@ public class RawTextContextUpdaterTest {
 
   @Test
   public void testJsLineComment() throws Exception {
+    assertTransition("JS_LINE_COMMENT DIV_OP", "", "JS_LINE_COMMENT DIV_OP");
     assertTransition("JS_LINE_COMMENT DIV_OP", "*/", "JS_LINE_COMMENT DIV_OP");
     assertTransition("JS_LINE_COMMENT DIV_OP", "Hello, World!", "JS_LINE_COMMENT DIV_OP");
     assertTransition("JS_LINE_COMMENT DIV_OP", "\"'/", "JS_LINE_COMMENT DIV_OP");
@@ -492,6 +518,7 @@ public class RawTextContextUpdaterTest {
         "\n",
         "JS NORMAL SCRIPT DOUBLE_QUOTE DIV_OP");
     assertTransition("JS_LINE_COMMENT DIV_OP", "</script>", "HTML_PCDATA");
+    assertTransition("JS_LINE_COMMENT REGEX", "", "JS_LINE_COMMENT REGEX");
     assertTransition("JS_LINE_COMMENT REGEX", "*/", "JS_LINE_COMMENT REGEX");
     assertTransition("JS_LINE_COMMENT REGEX", "Hello, World!", "JS_LINE_COMMENT REGEX");
     assertTransition("JS_LINE_COMMENT REGEX", "\"'/", "JS_LINE_COMMENT REGEX");
@@ -501,6 +528,7 @@ public class RawTextContextUpdaterTest {
 
   @Test
   public void testJsBlockComment() throws Exception {
+    assertTransition("JS_BLOCK_COMMENT DIV_OP", "", "JS_BLOCK_COMMENT DIV_OP");
     assertTransition("JS_BLOCK_COMMENT DIV_OP", "\n", "JS_BLOCK_COMMENT DIV_OP");
     assertTransition("JS_BLOCK_COMMENT DIV_OP", "Hello, World!", "JS_BLOCK_COMMENT DIV_OP");
     assertTransition("JS_BLOCK_COMMENT DIV_OP", "\"'/", "JS_BLOCK_COMMENT DIV_OP");
@@ -510,6 +538,7 @@ public class RawTextContextUpdaterTest {
         "*/",
         "JS NORMAL SCRIPT DOUBLE_QUOTE DIV_OP");
     assertTransition("JS_BLOCK_COMMENT DIV_OP", "</script>", "HTML_PCDATA");
+    assertTransition("JS_BLOCK_COMMENT REGEX", "", "JS_BLOCK_COMMENT REGEX");
     assertTransition("JS_BLOCK_COMMENT REGEX", "\r\n", "JS_BLOCK_COMMENT REGEX");
     assertTransition("JS_BLOCK_COMMENT REGEX", "Hello, World!", "JS_BLOCK_COMMENT REGEX");
     assertTransition("JS_BLOCK_COMMENT REGEX", "\"'/", "JS_BLOCK_COMMENT REGEX");
@@ -519,6 +548,7 @@ public class RawTextContextUpdaterTest {
 
   @Test
   public void testJsDqString() throws Exception {
+    assertTransition("JS_DQ_STRING", "", "JS_DQ_STRING");
     assertTransition("JS_DQ_STRING", "Hello, World!", "JS_DQ_STRING");
     assertTransition("JS_DQ_STRING", M1500, "JS_DQ_STRING"); // Check for stack overflow
     assertTransition("JS_DQ_STRING", "\"", "JS DIV_OP");
@@ -534,6 +564,7 @@ public class RawTextContextUpdaterTest {
 
   @Test
   public void testJsSqString() throws Exception {
+    assertTransition("JS_SQ_STRING", "", "JS_SQ_STRING");
     assertTransition("JS_SQ_STRING", "Hello, World!", "JS_SQ_STRING");
     assertTransition("JS_SQ_STRING", M1500, "JS_SQ_STRING"); // Check for stack overflow
     assertTransition("JS_SQ_STRING", "/*", "JS_SQ_STRING");
@@ -555,6 +586,7 @@ public class RawTextContextUpdaterTest {
 
   @Test
   public void testJsRegex() throws Exception {
+    assertTransition("JS_REGEX", "", "JS_REGEX");
     assertTransition("JS_REGEX", "Hello, World!", "JS_REGEX");
     assertTransition("JS_REGEX", "\\/*", "JS_REGEX");
     assertTransition("JS_REGEX", "[/*]", "JS_REGEX");
@@ -575,6 +607,7 @@ public class RawTextContextUpdaterTest {
 
   @Test
   public void testUri() throws Exception {
+    assertTransition("URI START NORMAL", "", "URI START NORMAL");
     assertTransition("URI START NORMAL", ".", "URI MAYBE_SCHEME NORMAL");
     assertTransition("URI START NORMAL", "/", "URI AUTHORITY_OR_PATH NORMAL");
     assertTransition("URI START NORMAL", "#", "URI FRAGMENT NORMAL");
@@ -593,6 +626,7 @@ public class RawTextContextUpdaterTest {
     assertTransition("URI START NORMAL", "bloB:", "URI DANGEROUS_SCHEME NORMAL");
     assertTransition("URI START NORMAL", "FiLeSystem:", "URI DANGEROUS_SCHEME NORMAL");
 
+    assertTransition("URI QUERY NORMAL", "", "URI QUERY NORMAL");
     assertTransition("URI QUERY NORMAL", ".", "URI QUERY NORMAL");
     assertTransition("URI QUERY NORMAL", "/", "URI QUERY NORMAL");
     assertTransition("URI QUERY NORMAL", "#", "URI FRAGMENT NORMAL");
@@ -600,6 +634,7 @@ public class RawTextContextUpdaterTest {
     assertTransition("URI QUERY NORMAL", "&", "URI QUERY NORMAL");
     assertTransition("URI QUERY NORMAL", "javascript:", "URI QUERY NORMAL");
 
+    assertTransition("URI FRAGMENT NORMAL", "", "URI FRAGMENT NORMAL");
     assertTransition("URI FRAGMENT NORMAL", "?", "URI FRAGMENT NORMAL");
     assertTransition("URI FRAGMENT NORMAL", "javascript:", "URI FRAGMENT NORMAL");
 
@@ -635,6 +670,7 @@ public class RawTextContextUpdaterTest {
 
   @Test
   public void testRcdata() throws Exception {
+    assertTransition("HTML_RCDATA XMP", "", "HTML_RCDATA XMP");
     assertTransition("HTML_RCDATA XMP", "Hello, World!", "HTML_RCDATA XMP");
     assertTransition("HTML_RCDATA XMP", "<p", "HTML_RCDATA XMP");
     assertTransition("HTML_RCDATA XMP", "<p ", "HTML_RCDATA XMP");
@@ -648,6 +684,7 @@ public class RawTextContextUpdaterTest {
   @Test
   public void testText() throws Exception {
     // Plain text's only edge should be back to itself.
+    assertTransition("TEXT", "", "TEXT");
     assertTransition("TEXT", "Hello, World!", "TEXT");
     assertTransition("TEXT", "<p", "TEXT");
     assertTransition("TEXT", "&D*(@*(#*(AW*D(J*#(J*(JS!!!''\"", "TEXT");
