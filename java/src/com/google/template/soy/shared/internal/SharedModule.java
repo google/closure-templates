@@ -25,6 +25,8 @@ import com.google.template.soy.basicfunctions.BasicFunctionsModule;
 import com.google.template.soy.bididirectives.BidiDirectivesModule;
 import com.google.template.soy.bidifunctions.BidiFunctionsModule;
 import com.google.template.soy.coredirectives.CoreDirectivesModule;
+import com.google.template.soy.data.SoyValueConverter;
+import com.google.template.soy.data.SoyValueHelper;
 import com.google.template.soy.i18ndirectives.I18nDirectivesModule;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.ApiCall;
@@ -34,9 +36,7 @@ import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.types.SoyTypeProvider;
 import com.google.template.soy.types.SoyTypeRegistry;
-
 import java.util.Set;
-
 import javax.inject.Singleton;
 
 /**
@@ -44,12 +44,13 @@ import javax.inject.Singleton;
  *
  * <p>Contains all the bindings shared between the runtime and compiler
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public final class SharedModule extends AbstractModule {
 
-  @Override protected void configure() {
+  @Override
+  protected void configure() {
     // Install the core directives.
     install(new CoreDirectivesModule());
 
@@ -64,11 +65,11 @@ public final class SharedModule extends AbstractModule {
     GuiceSimpleScope apiCallScope = new GuiceSimpleScope();
     bindScope(ApiCallScope.class, apiCallScope);
     // Make the API call scope instance injectable.
-    bind(GuiceSimpleScope.class).annotatedWith(ApiCall.class)
-        .toInstance(apiCallScope);
+    bind(GuiceSimpleScope.class).annotatedWith(ApiCall.class).toInstance(apiCallScope);
 
     // Bind unscoped providers for parameters in ApiCallScope (these throw exceptions).
-    bind(String.class).annotatedWith(LocaleString.class)
+    bind(String.class)
+        .annotatedWith(LocaleString.class)
         .toProvider(GuiceSimpleScope.<String>getUnscopedProvider())
         .in(ApiCallScope.class);
     bind(BidiGlobalDir.class)
@@ -77,11 +78,14 @@ public final class SharedModule extends AbstractModule {
 
     Multibinder.newSetBinder(binder(), SoyTypeProvider.class);
     bind(SoyTypeRegistry.class).in(Singleton.class);
-  }
 
+    bind(SoyValueConverter.class).in(Singleton.class);
+    bind(SoyValueHelper.class); // TODO(user): Remove
+  }
 
   /**
    * Builds and provides the map of all installed SoyFunctions (name to function).
+   *
    * @param soyFunctionsSet The installed set of SoyFunctions (from Guice Multibinder).
    */
   @Provides
@@ -95,9 +99,9 @@ public final class SharedModule extends AbstractModule {
     return mapBuilder.build();
   }
 
-
   /**
    * Builds and provides the map of all installed SoyPrintDirectives (name to directive).
+   *
    * @param soyDirectivesSet The installed set of SoyPrintDirectives (from Guice Multibinder).
    */
   @Provides
@@ -114,7 +118,7 @@ public final class SharedModule extends AbstractModule {
   /**
    * Builds and provides the map of SoyJavaPrintDirectives (name to directive).
    *
-   * This actually collects all SoyPrintDirectives that implement either SoyJavaPrintDirective or
+   * <p>This actually collects all SoyPrintDirectives that implement either SoyJavaPrintDirective or
    * SoyJavaRuntimePrintDirective (deprecated). The latter are adapted to the former interface.
    *
    * @param soyDirectivesSet The installed set of SoyPrintDirectives (from Guice Multibinder). Each
@@ -129,13 +133,13 @@ public final class SharedModule extends AbstractModule {
         soyDirectivesSet, SoyJavaPrintDirective.class);
   }
 
-  @Override public boolean equals(Object other) {
+  @Override
+  public boolean equals(Object other) {
     return other != null && this.getClass().equals(other.getClass());
   }
 
-
-  @Override public int hashCode() {
+  @Override
+  public int hashCode() {
     return this.getClass().hashCode();
   }
-
 }

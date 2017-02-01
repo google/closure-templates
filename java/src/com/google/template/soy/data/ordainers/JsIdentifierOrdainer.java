@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
-
 import java.util.regex.Pattern;
 
 /**
@@ -37,8 +36,9 @@ public final class JsIdentifierOrdainer {
    *
    * <p>This does not accept zero-width characters.
    */
-  private static final Pattern VALID_JS_IDENTIFIER_PATTERN = Pattern.compile(
-      "^[$_\\p{IsLetter}][$_\\p{IsLetter}\\p{IsDigit}]*$", Pattern.UNICODE_CHARACTER_CLASS);
+  private static final Pattern VALID_JS_IDENTIFIER_PATTERN =
+      Pattern.compile(
+          "^[$_\\p{IsLetter}][$_\\p{IsLetter}\\p{IsDigit}]*$", Pattern.UNICODE_CHARACTER_CLASS);
 
   /**
    * Invalid JS identifiers.
@@ -47,34 +47,100 @@ public final class JsIdentifierOrdainer {
    *
    * <p>TODO(Tony Payne): See if there is a canonical list somewhere.
    */
-  private static final ImmutableSet<String> INVALID_JS_IDENTIFIERS = ImmutableSet.of(
-      /* reserved words */
-      "break", "case", "catch", "continue", "debugger", "default", "delete", "do", "else",
-      "finally", "for", "function", "if", "in", "instanceof", "new", "return", "switch", "this",
-      "throw", "try", "typeof", "var", "void", "while", "with",
-      /* future reserved words */
-      "class", "const", "enum", "export", "extends", "import", "super", "implements", "interface",
-      "let", "package", "private", "protected", "public", "static", "yield",
-      /* literals */
-      "null", "true", "false", "NaN", "Infinity", "undefined",
-      /* other words to avoid */
-      "eval", "arguments", "int", "byte", "char", "goto", "long", "final", "float", "short",
-      "double", "native", "throws", "boolean", "abstract", "volatile", "transient", "synchronized",
-      "prototype", "__proto__");
+  private static final ImmutableSet<String> INVALID_JS_IDENTIFIERS =
+      ImmutableSet.of(
+          /* reserved words */
+          "break",
+          "case",
+          "catch",
+          "continue",
+          "debugger",
+          "default",
+          "delete",
+          "do",
+          "else",
+          "finally",
+          "for",
+          "function",
+          "if",
+          "in",
+          "instanceof",
+          "new",
+          "return",
+          "switch",
+          "this",
+          "throw",
+          "try",
+          "typeof",
+          "var",
+          "void",
+          "while",
+          "with",
+          /* future reserved words */
+          "class",
+          "const",
+          "enum",
+          "export",
+          "extends",
+          "import",
+          "super",
+          "implements",
+          "interface",
+          "let",
+          "package",
+          "private",
+          "protected",
+          "public",
+          "static",
+          "yield",
+          /* literals */
+          "null",
+          "true",
+          "false",
+          "NaN",
+          "Infinity",
+          "undefined",
+          /* other words to avoid */
+          "eval",
+          "arguments",
+          "int",
+          "byte",
+          "char",
+          "goto",
+          "long",
+          "final",
+          "float",
+          "short",
+          "double",
+          "native",
+          "throws",
+          "boolean",
+          "abstract",
+          "volatile",
+          "transient",
+          "synchronized",
+          "prototype",
+          "__proto__");
 
   /** No constructor. */
   private JsIdentifierOrdainer() {}
 
   /**
-   * Validates that {@code identifier} matches a safe pattern for JS identifiers and ordains
-   * the value as JS.
+   * Validates that {@code identifier} matches a safe pattern for JS identifiers and ordains the
+   * value as JS.
+   *
+   * <p>TODO: this appears to be redundant with some code in JsSrcUtils.
    */
   public static SanitizedContent jsIdentifier(String identifier) {
-    checkArgument(VALID_JS_IDENTIFIER_PATTERN.matcher(identifier).matches(),
-        "JS identifier '%s' should match the pattern '%s'", identifier,
+    checkArgument(
+        VALID_JS_IDENTIFIER_PATTERN.matcher(identifier).matches(),
+        "JS identifier '%s' should match the pattern '%s'",
+        identifier,
         VALID_JS_IDENTIFIER_PATTERN.pattern());
-    checkArgument(!INVALID_JS_IDENTIFIERS.contains(identifier),
-        "JS identifier '%s' should not be a reserved word or match a literal", identifier);
+    checkArgument(
+        !INVALID_JS_IDENTIFIERS.contains(identifier),
+        "JS identifier '%s' should not be a reserved word or match a literal",
+        identifier);
     return UnsafeSanitizedContentOrdainer.ordainAsSafe(identifier, ContentKind.JS);
   }
 }

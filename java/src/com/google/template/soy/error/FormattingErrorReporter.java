@@ -18,13 +18,12 @@ package com.google.template.soy.error;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
-
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * {@link com.google.template.soy.error.ErrorReporter} implementation that formats
- * {@link com.google.template.soy.error.SoyErrorKind}s without attaching source locations.
+ * {@link com.google.template.soy.error.ErrorReporter} implementation that formats {@link
+ * com.google.template.soy.error.SoyErrorKind}s without attaching source locations.
  *
  * <p>TODO(lukes): replace this with ErrorReporterImpl
  *

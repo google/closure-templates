@@ -17,13 +17,10 @@
 package com.google.template.soy.jbcsrc.api;
 
 import com.google.inject.BindingAnnotation;
-
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
-/**
- * Binding annotation for a {@link SoySauce} object that is constructed from precompiled soures.
- */
+/** Binding annotation for a {@link SoySauce} object that is constructed from precompiled soures. */
 @Retention(RetentionPolicy.RUNTIME)
 @BindingAnnotation
 public @interface Precompiled {}

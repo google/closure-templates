@@ -24,7 +24,6 @@ import static com.google.template.soy.jbcsrc.StandardNames.FACTORY_CLASS;
 
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
-
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
@@ -33,12 +32,15 @@ import org.objectweb.asm.commons.Method;
 /**
  * Generates {@link com.google.template.soy.jbcsrc.shared.CompiledTemplate.Factory} implementations.
  *
- * <p>Each factory is incredibly simple, essentially we are generating this class: <pre>{@code
- *   public final class FooFactory implements CompiledTemplate.Factory {
- *     public CompiledTemplate create(SoyRecord params) {
- *       return new Foo(params);
- *     }
- *   }}</pre>
+ * <p>Each factory is incredibly simple, essentially we are generating this class:
+ *
+ * <pre>{@code
+ * public final class FooFactory implements CompiledTemplate.Factory {
+ *   public CompiledTemplate create(SoyRecord params) {
+ *     return new Foo(params);
+ *   }
+ * }
+ * }</pre>
  *
  * <p>Where the only thing that differs is the name of the template being constructed.
  */
@@ -48,11 +50,13 @@ final class TemplateFactoryCompiler {
   private static final int FACTORY_ACCESS = Opcodes.ACC_PUBLIC | Opcodes.ACC_FINAL;
 
   private static final Method CREATE_METHOD;
+
   static {
     try {
-      CREATE_METHOD = Method.getMethod(
-          CompiledTemplate.Factory.class.getDeclaredMethod(
-              "create", SoyRecord.class, SoyRecord.class));
+      CREATE_METHOD =
+          Method.getMethod(
+              CompiledTemplate.Factory.class.getDeclaredMethod(
+                  "create", SoyRecord.class, SoyRecord.class));
     } catch (NoSuchMethodException | SecurityException e) {
       throw new AssertionError(e);
     }
@@ -86,10 +90,13 @@ final class TemplateFactoryCompiler {
 
   /**
    * Generates a static initializer that references the CompiledTemplate class to force eager
-   * classloading (and thus verification errors). For example, <pre>{@code
-   *   static {
-   *     Class<?> clz = GeneratedTemplateClass.class;
-   *   }}</pre>
+   * classloading (and thus verification errors). For example,
+   *
+   * <pre>{@code
+   * static {
+   *   Class<?> clz = GeneratedTemplateClass.class;
+   * }
+   * }</pre>
    */
   private void generateStaticInitializer(ClassVisitor cv) {
     if (Flags.DEBUG) {
@@ -117,7 +124,8 @@ final class TemplateFactoryCompiler {
     final Statement returnTemplate =
         Statement.returnExpression(template.constructor().construct(paramsVar, ijVar));
     new Statement() {
-      @Override void doGen(CodeBuilder ga) {
+      @Override
+      void doGen(CodeBuilder ga) {
         ga.mark(start);
         returnTemplate.gen(ga);
         ga.mark(end);

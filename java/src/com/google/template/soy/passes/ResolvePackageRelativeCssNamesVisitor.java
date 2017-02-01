@@ -27,9 +27,7 @@ import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.TemplateNode;
 
-/**
- * Converts package-relative CSS class names to absolute names.
- */
+/** Converts package-relative CSS class names to absolute names. */
 final class ResolvePackageRelativeCssNamesVisitor extends AbstractSoyNodeVisitor<Void> {
 
   private static final SoyErrorKind PACKAGE_RELATIVE_CLASS_NAME_USED_WITH_COMPONENT_NAME =
@@ -45,7 +43,8 @@ final class ResolvePackageRelativeCssNamesVisitor extends AbstractSoyNodeVisitor
     this.errorReporter = errorReporter;
   }
 
-    @Override protected void visitTemplateNode(TemplateNode node) {
+  @Override
+  protected void visitTemplateNode(TemplateNode node) {
     // Compute the CSS package prefix for this template. The search order is:
     // 1) cssbase on the template
     // 2) cssbase on the namespace
@@ -62,7 +61,8 @@ final class ResolvePackageRelativeCssNamesVisitor extends AbstractSoyNodeVisitor
     super.visitTemplateNode(node);
   }
 
-  @Override protected void visitCssNode(CssNode node) {
+  @Override
+  protected void visitCssNode(CssNode node) {
     // Determine if this is a package-relative selector, do nothing if it's not.
     String selectorText = node.getSelectorText();
     if (!selectorText.startsWith("%")) {
@@ -90,7 +90,8 @@ final class ResolvePackageRelativeCssNamesVisitor extends AbstractSoyNodeVisitor
     parent.addChild(indexInParent, newNode);
   }
 
-  @Override protected void visitSoyNode(SoyNode node) {
+  @Override
+  protected void visitSoyNode(SoyNode node) {
     if (node instanceof ParentSoyNode<?>) {
       visitChildrenAllowingConcurrentModification((ParentSoyNode<?>) node);
     }

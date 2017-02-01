@@ -22,50 +22,51 @@ import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.internal.ListImpl;
 import com.google.template.soy.jssrc.restricted.JsExpr;
-import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
+import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyListExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
  * Soy function that gets the keys in a map.
  *
- * <p> The keys are returned as a list with no guarantees on the order (may be different on each run
+ * <p>The keys are returned as a list with no guarantees on the order (may be different on each run
  * or for each backend).
  *
- * <p> This enables iteration over the keys in a map, e.g.
- *     {foreach $key in keys($myMap)} ... {/foreach}
+ * <p>This enables iteration over the keys in a map, e.g. {@code {foreach $key in keys($myMap)} ...
+ * {/foreach}}
  *
  */
 @Singleton
 @SoyPureFunction
-public final class KeysFunction implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction {
+public final class KeysFunction
+    implements SoyJavaFunction, SoyLibraryAssistedJsSrcFunction, SoyPySrcFunction {
 
   @Inject
   KeysFunction() {}
 
-
-  @Override public String getName() {
+  @Override
+  public String getName() {
     return "keys";
   }
 
-  @Override public Set<Integer> getValidArgsSizes() {
+  @Override
+  public Set<Integer> getValidArgsSizes() {
     return ImmutableSet.of(1);
   }
 
-  @Override public SoyValue computeForJava(List<SoyValue> args) {
+  @Override
+  public SoyValue computeForJava(List<SoyValue> args) {
     SoyValue arg = args.get(0);
 
-    if (! (arg instanceof SoyMap)) {
+    if (!(arg instanceof SoyMap)) {
       throw new IllegalArgumentException("Argument to keys() function is not SoyMap.");
     }
     return ListImpl.forProviderList(keys((SoyMap) arg));
@@ -78,13 +79,20 @@ public final class KeysFunction implements SoyJavaFunction, SoyJsSrcFunction, So
     return list;
   }
 
-  @Override public JsExpr computeForJsSrc(List<JsExpr> args) {
+  @Override
+  public JsExpr computeForJsSrc(List<JsExpr> args) {
     JsExpr arg = args.get(0);
 
     return new JsExpr("soy.$$getMapKeys(" + arg.getText() + ")", Integer.MAX_VALUE);
   }
 
-  @Override public PyExpr computeForPySrc(List<PyExpr> args) {
+  @Override
+  public ImmutableSet<String> getRequiredJsLibNames() {
+    return ImmutableSet.<String>of("soy");
+  }
+
+  @Override
+  public PyExpr computeForPySrc(List<PyExpr> args) {
     PyExpr arg = args.get(0);
 
     return new PyListExpr("(" + arg.getText() + ").keys()", Integer.MAX_VALUE);

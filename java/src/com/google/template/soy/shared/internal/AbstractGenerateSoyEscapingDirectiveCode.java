@@ -26,16 +26,13 @@ import com.google.common.collect.Maps;
 import com.google.common.io.Files;
 import com.google.template.soy.shared.restricted.EscapingConventions;
 import com.google.template.soy.shared.restricted.EscapingConventions.EscapingLanguage;
-
-import org.apache.tools.ant.Task;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
-
 import javax.annotation.ParametersAreNonnullByDefault;
+import org.apache.tools.ant.Task;
 
 /**
  * Abstract class for generating code relied upon by escaping directives.
@@ -49,9 +46,8 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
   // See http://ant.apache.org/manual/develop.html for more details.
 
   /**
-   * A file reference like {@code <input path="foo.txt"/>}.
-   * This is the basis for the {@code <input/>} and {@code <output/>} child elements of the Ant
-   * task.
+   * A file reference like {@code <input path="foo.txt"/>}. This is the basis for the {@code
+   * <input/>} and {@code <output/>} child elements of the Ant task.
    */
   public static final class FileRef {
     /** True iff the file must exist before we can execute the task. */
@@ -63,9 +59,7 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
       this.isInput = isInput;
     }
 
-    /**
-     * Invoked reflectively by Ant when it sees a {@code path="..."} attribute.
-     */
+    /** Invoked reflectively by Ant when it sees a {@code path="..."} attribute. */
     public void setPath(String path) throws IOException {
       file = new File(path);
       if (isInput) {
@@ -109,12 +103,13 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
    * Matches functions available in the environment in which output will be run including things
    * like {@link EscapingConventions.CrossLanguageStringXform#getLangFunctionNames}.
    */
-  protected Predicate<String> availableIdentifiers = new Predicate<String>() {
-    @Override
-    public boolean apply(String functionName) {
-      return functionName.indexOf('.') < 0;  // Only match builtins.
-    }
-  };
+  protected Predicate<String> availableIdentifiers =
+      new Predicate<String>() {
+        @Override
+        public boolean apply(String functionName) {
+          return functionName.indexOf('.') < 0; // Only match builtins.
+        }
+      };
 
   /**
    * A matcher for functions available in the environment in which output will be run including
@@ -135,8 +130,8 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
   }
 
   /**
-   * Called reflectively when Ant sees {@code <output>} to specify the file that should receive
-   * the output.
+   * Called reflectively when Ant sees {@code <output>} to specify the file that should receive the
+   * output.
    */
   public FileRef createOutput() {
     if (output != null) {
@@ -146,20 +141,21 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
     return output;
   }
 
-  /**
-   * Called reflectively when Ant sees {@code <libdefined>}.
-   */
+  /** Called reflectively when Ant sees {@code <libdefined>}. */
   public void addConfiguredLibdefined(FunctionNamePredicate p) {
     final Pattern namePattern = p.namePattern;
     if (namePattern == null) {
       throw new IllegalStateException("Please specify a pattern attribute for <libdefined>");
     }
-    availableIdentifiers = Predicates.or(availableIdentifiers, new Predicate<String>() {
-      @Override
-      public boolean apply(String identifierName) {
-        return namePattern.matcher(identifierName).matches();
-      }
-    });
+    availableIdentifiers =
+        Predicates.or(
+            availableIdentifiers,
+            new Predicate<String>() {
+              @Override
+              public boolean apply(String identifierName) {
+                return namePattern.matcher(identifierName).matches();
+              }
+            });
   }
 
   /**
@@ -185,9 +181,7 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
     }
   }
 
-  /**
-   * Called to actually build the output by Ant.
-   */
+  /** Called to actually build the output by Ant. */
   @Override
   public void execute() {
     super.execute();
@@ -238,8 +232,8 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
   }
 
   /** A line that precedes the rest of the generated code. */
-  final String GENERATED_CODE_START_MARKER = getLineCommentSyntax() +
-      " START GENERATED CODE FOR ESCAPERS.";
+  final String GENERATED_CODE_START_MARKER =
+      getLineCommentSyntax() + " START GENERATED CODE FOR ESCAPERS.";
 
   /** A line that follows the rest of the generated code. */
   final String GENERATED_CODE_END_MARKER = getLineCommentSyntax() + " END GENERATED CODE";
@@ -247,9 +241,9 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
   /**
    * Appends Code to the given buffer.
    *
-   * <p>
-   * The output Code contains symbol definitions in the appropriate scope (the soy namespace in
+   * <p>The output Code contains symbol definitions in the appropriate scope (the soy namespace in
    * JavaScript or a module in Python).
+   *
    * <pre>
    *   ...ESCAPES_FOR_ESCAPE_HTML_  = { ... }  // Maps of characters to escaped versions
    *   ...MATCHER_FOR_ESCAPE_HTML_  = &lt;regex&gt;  // A single character matching RegExp
@@ -259,11 +253,11 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
    *   ...escapeHtmlHelper = &lt;function&gt;
    * </pre>
    *
-   * <p>There is not necessarily a one-to-one relationship between any of the symbols above
-   * and escape directives except for the {@code ...escape...Helper} function.
+   * <p>There is not necessarily a one-to-one relationship between any of the symbols above and
+   * escape directives except for the {@code ...escape...Helper} function.
    *
-   * @param availableIdentifiers Determines whether a qualified identifier, like
-   *     {@code goog.foo.Bar}, is available.
+   * @param availableIdentifiers Determines whether a qualified identifier, like {@code
+   *     goog.foo.Bar}, is available.
    * @param outputCode Receives output code.
    */
   @VisibleForTesting
@@ -292,13 +286,13 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
     List<DirectiveDigest> digests = Lists.newArrayList();
 
     escaperLoop:
-    for (EscapingConventions.CrossLanguageStringXform escaper
-             : EscapingConventions.getAllEscapers()) {
+    for (EscapingConventions.CrossLanguageStringXform escaper :
+        EscapingConventions.getAllEscapers()) {
       // "|escapeHtml" -> "escapeHtml"
       String escapeDirectiveIdent = escaper.getDirectiveName().substring(1);
       // "escapeHtml" -> "ESCAPE_HTML"
-      String escapeDirectiveUIdent = CaseFormat.LOWER_CAMEL.to(
-          CaseFormat.UPPER_UNDERSCORE, escapeDirectiveIdent);
+      String escapeDirectiveUIdent =
+          CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_UNDERSCORE, escapeDirectiveIdent);
 
       // If there is an existing function, use it.
       for (String existingFunction : escaper.getLangFunctionNames(getLanguage())) {
@@ -335,9 +329,7 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
           throw new IllegalStateException();
         }
         escapeRegexpRangeOnto((char) rangeStart, (char) lastCodeUnit, matcherRegexBuf);
-        matcherRegexBuf
-            .append("]")
-            .append(getRegexEnd());
+        matcherRegexBuf.append("]").append(getRegexEnd());
 
         // See if we can reuse an existing map.
         int numEscapeMaps = escapeMaps.size();
@@ -387,9 +379,14 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
         }
       }
 
-      digests.add(new DirectiveDigest(
-          escapeDirectiveIdent, escapesVar, matcherVar, filterVar,
-          escaper.getNonAsciiPrefix(), escaper.getInnocuousOutput()));
+      digests.add(
+          new DirectiveDigest(
+              escapeDirectiveIdent,
+              escapesVar,
+              matcherVar,
+              filterVar,
+              escaper.getNonAsciiPrefix(),
+              escaper.getInnocuousOutput()));
     }
 
     // TODO(msamuel): Maybe use java Soy templates to generate the JS?
@@ -411,10 +408,7 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
         writeStringLiteral(e.getValue(), outputCode);
         needsComma = true;
       }
-      outputCode
-          .append("\n}")
-          .append(getLineEndSyntax())
-          .append("\n");
+      outputCode.append("\n}").append(getLineEndSyntax()).append("\n");
 
       generateReplacerFunction(outputCode, escapeMapName);
     }
@@ -445,8 +439,8 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
   }
 
   /**
-   * True if the two maps have at least one (key, value) pair in common, and no pairs with the
-   * same key but different values according to {@link Object#equals}.
+   * True if the two maps have at least one (key, value) pair in common, and no pairs with the same
+   * key but different values according to {@link Object#equals}.
    */
   private static <K, V> boolean mapsHaveCompatibleOverlap(Map<K, V> a, Map<K, V> b) {
     if (b.size() < a.size()) {
@@ -472,35 +466,27 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
     return overlap;
   }
 
-  /**
-   * Appends a string literal with the given value onto the given buffer.
-   */
+  /** Appends a string literal with the given value onto the given buffer. */
   protected void writeStringLiteral(String value, StringBuilder out) {
-    out.append('\'')
-        .append(escapeOutputString(value))
-        .append('\'');
+    out.append('\'').append(escapeOutputString(value)).append('\'');
   }
 
   /**
-   * Appends a string literal which may not be printable with the given value onto the given
-   * buffer.
+   * Appends a string literal which may not be printable with the given value onto the given buffer.
    */
   private void writeUnsafeStringLiteral(char value, StringBuilder out) {
     if (!isPrintable(value)) {
       // Don't emit non-Latin characters or control characters since they don't roundtrip well.
       out.append(String.format(value >= 0x100 ? "'\\u%04x'" : "'\\x%02x'", (int) value));
     } else {
-      out.append('\'')
-          .append(escapeOutputString(String.valueOf(value)))
-          .append('\'');
+      out.append('\'').append(escapeOutputString(String.valueOf(value))).append('\'');
     }
   }
 
   /**
-   * Appends a RegExp character range set onto the given buffer.
-   * E.g. given the letters 'a' and 'z' as start and end, appends {@code a-z}.
-   * These are meant to be concatenated to create character sets like {@code /[a-zA-Z0-9]/}.
-   * This method will omit unnecessary ends or range separators.
+   * Appends a RegExp character range set onto the given buffer. E.g. given the letters 'a' and 'z'
+   * as start and end, appends {@code a-z}. These are meant to be concatenated to create character
+   * sets like {@code /[a-zA-Z0-9]/}. This method will omit unnecessary ends or range separators.
    */
   private static void escapeRegexpRangeOnto(char start, char end, StringBuilder out) {
     if (!isPrintable(start)) {
@@ -521,9 +507,7 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
     }
   }
 
-  /**
-   * True iff ch is not a control character or non-Latin character.
-   */
+  /** True iff ch is not a control character or non-Latin character. */
   private static boolean isPrintable(char ch) {
     return 0x20 <= ch && ch <= 0x7e;
   }
@@ -585,14 +569,17 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
    * @param outputCode The StringBuilder where generated code should be appended.
    * @return A string containing the prefix for the generated sanitizer.
    */
-  protected void generatePrefix(StringBuilder outputCode) { /* NOOP by default. */ }
+  protected void generatePrefix(StringBuilder outputCode) {
+    /* NOOP by default. */
+  }
 
   /**
    * Generate the signature to a map object to hold character mapping. All necessary comments and
-   * variable declarations should be included in the signature. The map assignment will be
-   * appended to the signature.
+   * variable declarations should be included in the signature. The map assignment will be appended
+   * to the signature.
    *
-   * For example. In Javascript the following should be returned:
+   * <p>For example. In Javascript the following should be returned:
+   *
    * <pre>
    *   /**
    *    * Maps characters to the escaped versions for the named escape directives.\n")
@@ -601,7 +588,6 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
    *    *\/
    *     soy.esc.$$ESCAPE_MAP_FOR_&lt;NAME&gt;_
    * </pre>
-   *
    *
    * @param outputCode The StringBuilder where generated code should be appended.
    * @param mapName The name of this map.
@@ -641,8 +627,8 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
    * @param identifier The identifier of the escape directive.
    * @param existingFunction The existing function to reuse.
    */
-  protected abstract void useExistingLibraryFunction(StringBuilder outputCode, String identifier,
-      String existingFunction);
+  protected abstract void useExistingLibraryFunction(
+      StringBuilder outputCode, String identifier, String existingFunction);
 
   /**
    * Generate the helper function to execute the escaping, filtering, and replacing.

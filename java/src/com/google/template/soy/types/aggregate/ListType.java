@@ -20,14 +20,12 @@ import com.google.common.base.Preconditions;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.types.SoyType;
-
 import java.util.Objects;
 
 /**
- * Represents the type of a list, a sequential random-access container keyed
- * by integer.
+ * Represents the type of a list, a sequential random-access container keyed by integer.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public final class ListType implements SoyType {
@@ -36,29 +34,26 @@ public final class ListType implements SoyType {
 
   private final SoyType elementType;
 
-
   private ListType(SoyType elementType) {
     this.elementType = elementType;
   }
-
 
   public static ListType of(SoyType elementType) {
     Preconditions.checkNotNull(elementType);
     return new ListType(elementType);
   }
 
-
-  @Override public Kind getKind() {
+  @Override
+  public Kind getKind() {
     return Kind.LIST;
   }
-
 
   public SoyType getElementType() {
     return elementType;
   }
 
-
-  @Override public boolean isAssignableFrom(SoyType srcType) {
+  @Override
+  public boolean isAssignableFrom(SoyType srcType) {
     if (srcType.getKind() == Kind.LIST) {
       ListType srcListType = (ListType) srcType;
       if (srcListType == EMPTY_LIST) {
@@ -72,24 +67,25 @@ public final class ListType implements SoyType {
     return false;
   }
 
-
-  @Override public boolean isInstance(SoyValue value) {
+  @Override
+  public boolean isInstance(SoyValue value) {
     return value instanceof SoyList;
   }
 
-  @Override public String toString() {
+  @Override
+  public String toString() {
     return "list<" + elementType + ">";
   }
 
-
-  @Override public boolean equals(Object other) {
-    return other != null &&
-        this.getClass() == other.getClass() &&
-        Objects.equals(((ListType) other).elementType, elementType);
+  @Override
+  public boolean equals(Object other) {
+    return other != null
+        && this.getClass() == other.getClass()
+        && Objects.equals(((ListType) other).elementType, elementType);
   }
 
-
-  @Override public int hashCode() {
+  @Override
+  public int hashCode() {
     return Objects.hash(this.getClass(), elementType);
   }
 }

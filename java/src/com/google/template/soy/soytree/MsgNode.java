@@ -30,14 +30,12 @@ import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.soytree.CommandTextAttributesParser.Attribute;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
-
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
 import javax.annotation.Nullable;
 
 /**
@@ -45,14 +43,15 @@ import javax.annotation.Nullable;
  * MsgPluralNode, or MsgSelectNode.
  *
  * <p>The AST will be one of the following
+ *
  * <ul>
- *     <li>A single {@link RawTextNode}
- *     <li>A mix of {@link RawTextNode} and {@link MsgPlaceholderNode}
- *     <li>A single {@link MsgPluralNode}
- *     <li>A single {@link MsgSelectNode}
+ *   <li>A single {@link RawTextNode}
+ *   <li>A mix of {@link RawTextNode} and {@link MsgPlaceholderNode}
+ *   <li>A single {@link MsgPluralNode}
+ *   <li>A single {@link MsgSelectNode}
  * </ul>
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public final class MsgNode extends AbstractBlockCommandNode
@@ -63,10 +62,10 @@ public final class MsgNode extends AbstractBlockCommandNode
 
   /**
    * Returns a new {@link Builder} representing a {@code msg} MsgNode.
+   *
    * @param id The node's id.
    * @param commandText The node's command text.
    * @param sourceLocation The node's source location.
-   *
    */
   public static Builder msg(int id, String commandText, SourceLocation sourceLocation) {
     return new Builder(id, "msg", commandText, sourceLocation);
@@ -74,6 +73,7 @@ public final class MsgNode extends AbstractBlockCommandNode
 
   /**
    * Returns a new {@link Builder} representing a {@code fallbackmsg} MsgNode.
+   *
    * @param id The node's id.
    * @param commandText The node's command text.
    * @param sourceLocation The node's source location.
@@ -107,20 +107,18 @@ public final class MsgNode extends AbstractBlockCommandNode
     }
   }
 
-
   /** Parser for the command text. */
   private static final CommandTextAttributesParser ATTRIBUTES_PARSER =
-      new CommandTextAttributesParser("msg",
+      new CommandTextAttributesParser(
+          "msg",
           new Attribute("genders", Attribute.ALLOW_ALL_VALUES, null),
           new Attribute("meaning", Attribute.ALLOW_ALL_VALUES, null),
           new Attribute(
               "desc", Attribute.ALLOW_ALL_VALUES, Attribute.NO_DEFAULT_VALUE_BECAUSE_REQUIRED),
           new Attribute("hidden", Attribute.BOOLEAN_VALUES, "false"));
 
-
   /** We don't use different content types. It may be a historical artifact in the TC. */
   private static final String DEFAULT_CONTENT_TYPE = "text/html";
-
 
   /** The list of expressions for gender values. Null after rewriting. */
   @Nullable private List<ExprRootNode> genderExprs;
@@ -153,9 +151,9 @@ public final class MsgNode extends AbstractBlockCommandNode
     this.isHidden = isHidden;
   }
 
-
   /**
    * Copy constructor.
+   *
    * @param orig The node to copy.
    */
   private MsgNode(MsgNode orig, CopyState copyState) {
@@ -178,56 +176,51 @@ public final class MsgNode extends AbstractBlockCommandNode
     substUnitInfo = genSubstUnitInfo(this);
   }
 
-
-  @Override public Kind getKind() {
+  @Override
+  public Kind getKind() {
     return Kind.MSG_NODE;
   }
 
-
   /**
-   * Returns the list of expressions for gender values and sets that field to null.
-   * Note that this node's command text will still contain the substring genders="...". We think
-   * this is okay since the command text is only used for reporting errors (in fact, it might be
-   * good as a reminder of how the msg was originally written).
+   * Returns the list of expressions for gender values and sets that field to null. Note that this
+   * node's command text will still contain the substring genders="...". We think this is okay since
+   * the command text is only used for reporting errors (in fact, it might be good as a reminder of
+   * how the msg was originally written).
    */
-  @Nullable public List<ExprRootNode> getAndRemoveGenderExprs() {
+  @Nullable
+  public List<ExprRootNode> getAndRemoveGenderExprs() {
     List<ExprRootNode> genderExprs = this.genderExprs;
     this.genderExprs = null;
     return genderExprs;
   }
 
-
-  @Override public List<ExprUnion> getAllExprUnions() {
+  @Override
+  public List<ExprUnion> getAllExprUnions() {
     if (genderExprs != null) {
       throw new AssertionError();
     }
     return ImmutableList.of();
   }
 
-
   /** Returns the meaning string if set, otherwise null (usually null). */
   public String getMeaning() {
     return meaning;
   }
-
 
   /** Returns the description string for translators. */
   public String getDesc() {
     return desc;
   }
 
-
   /** Returns whether the message should be added as 'hidden' in the TC. */
   public boolean isHidden() {
     return isHidden;
   }
 
-
   /** Returns the content type for the TC. */
   public String getContentType() {
     return DEFAULT_CONTENT_TYPE;
   }
-
 
   /** Returns whether this is a plural or select message. */
   public boolean isPlrselMsg() {
@@ -251,6 +244,7 @@ public final class MsgNode extends AbstractBlockCommandNode
 
   /**
    * Gets the representative placeholder node for a given placeholder name.
+   *
    * @param placeholderName The placeholder name.
    * @return The representative placeholder node for the given placeholder name.
    */
@@ -261,9 +255,9 @@ public final class MsgNode extends AbstractBlockCommandNode
     return (MsgPlaceholderNode) substUnitInfo.varNameToRepNodeMap.get(placeholderName);
   }
 
-
   /**
    * Gets the placeholder name for a given placeholder node.
+   *
    * @param placeholderNode The placeholder node.
    * @return The placeholder name for the given placeholder node.
    */
@@ -274,9 +268,9 @@ public final class MsgNode extends AbstractBlockCommandNode
     return substUnitInfo.nodeToVarNameMap.get(placeholderNode);
   }
 
-
   /**
    * Gets the representative plural node for a given plural variable name.
+   *
    * @param pluralVarName The plural variable name.
    * @return The representative plural node for the given plural variable name.
    */
@@ -287,9 +281,9 @@ public final class MsgNode extends AbstractBlockCommandNode
     return (MsgPluralNode) substUnitInfo.varNameToRepNodeMap.get(pluralVarName);
   }
 
-
   /**
    * Gets the variable name associated with a given plural node.
+   *
    * @param pluralNode The plural node.
    * @return The plural variable name for the given plural node.
    */
@@ -300,9 +294,9 @@ public final class MsgNode extends AbstractBlockCommandNode
     return substUnitInfo.nodeToVarNameMap.get(pluralNode);
   }
 
-
   /**
    * Gets the representative select node for a given select variable name.
+   *
    * @param selectVarName The select variable name.
    * @return The representative select node for the given select variable name.
    */
@@ -313,9 +307,9 @@ public final class MsgNode extends AbstractBlockCommandNode
     return (MsgSelectNode) substUnitInfo.varNameToRepNodeMap.get(selectVarName);
   }
 
-
   /**
    * Gets the variable name associated with a given select node.
+   *
    * @param selectNode The select node.
    * @return The select variable name for the given select node.
    */
@@ -326,9 +320,7 @@ public final class MsgNode extends AbstractBlockCommandNode
     return substUnitInfo.nodeToVarNameMap.get(selectNode);
   }
 
-  /**
-   * Getter for the generated map from substitution unit var name to representative node.
-   */
+  /** Getter for the generated map from substitution unit var name to representative node. */
   public ImmutableMap<String, MsgSubstUnitNode> getVarNameToRepNodeMap() {
     if (substUnitInfo == null) {
       substUnitInfo = genSubstUnitInfo(this);
@@ -336,7 +328,8 @@ public final class MsgNode extends AbstractBlockCommandNode
     return substUnitInfo.varNameToRepNodeMap;
   }
 
-  @Override public String toSourceString() {
+  @Override
+  public String toSourceString() {
     StringBuilder sb = new StringBuilder();
     sb.append(getTagString());
     appendSourceStringForChildren(sb);
@@ -344,15 +337,13 @@ public final class MsgNode extends AbstractBlockCommandNode
     return sb.toString();
   }
 
-
-  @Override public MsgNode copy(CopyState copyState) {
+  @Override
+  public MsgNode copy(CopyState copyState) {
     return new MsgNode(this, copyState);
   }
 
-
   // -----------------------------------------------------------------------------------------------
   // Static helpers for building SubstUnitInfo.
-
 
   /**
    * Helper function to generate SubstUnitInfo, which contains mappings from/to substitution unit
@@ -368,31 +359,30 @@ public final class MsgNode extends AbstractBlockCommandNode
     return genFinalSubstUnitInfoMapsHelper(genPrelimSubstUnitInfoMapsHelper(msgNode));
   }
 
-
   /**
    * Private helper for genSubstUnitInfo(). Determines representative nodes and builds preliminary
    * maps.
    *
-   * If there are multiple nodes in the message that should share the same var name, then the first
-   * such node encountered becomes the "representative node" for the group ("repNode" in variable
-   * names). The rest of the nodes in the group are non-representative ("nonRepNode").
+   * <p>If there are multiple nodes in the message that should share the same var name, then the
+   * first such node encountered becomes the "representative node" for the group ("repNode" in
+   * variable names). The rest of the nodes in the group are non-representative ("nonRepNode").
    *
-   * The baseNameToRepNodesMap is a multimap from each base name to its list of representative
+   * <p>The baseNameToRepNodesMap is a multimap from each base name to its list of representative
    * nodes (they all generate the same base var name, but should not have the same final var name).
    * If we encounter a non-representative node, then we insert it into nonRepNodeToRepNodeMap,
    * mapping it to its corresponding representative node.
    *
-   * The base var names are preliminary because some of the final var names will be the base names
-   * plus a unique suffix.
+   * <p>The base var names are preliminary because some of the final var names will be the base
+   * names plus a unique suffix.
    *
    * @param msgNode The MsgNode being processed.
    * @return A pair of (1) a multimap from each base name to its list of representative nodes, and
    *     (2) a map from each non-representative node to its respective representative node.
    */
   @SuppressWarnings("unchecked")
-  private static
-  Pair<ListMultimap<String, MsgSubstUnitNode>, Map<MsgSubstUnitNode, MsgSubstUnitNode>>
-  genPrelimSubstUnitInfoMapsHelper(MsgNode msgNode) {
+  private static Pair<
+          ListMultimap<String, MsgSubstUnitNode>, Map<MsgSubstUnitNode, MsgSubstUnitNode>>
+      genPrelimSubstUnitInfoMapsHelper(MsgNode msgNode) {
 
     ListMultimap<String, MsgSubstUnitNode> baseNameToRepNodesMap = LinkedListMultimap.create();
     Map<MsgSubstUnitNode, MsgSubstUnitNode> nonRepNodeToRepNodeMap = new HashMap<>();
@@ -409,7 +399,7 @@ public final class MsgNode extends AbstractBlockCommandNode
     while (!traversalQueue.isEmpty()) {
       MsgSubstUnitNode node = traversalQueue.remove();
 
-      if ((node instanceof MsgSelectNode) || (node instanceof MsgPluralNode))  {
+      if ((node instanceof MsgSelectNode) || (node instanceof MsgPluralNode)) {
         for (CaseOrDefaultNode child : ((ParentSoyNode<CaseOrDefaultNode>) node).getChildren()) {
           for (SoyNode grandchild : child.getChildren()) {
             if (grandchild instanceof MsgSubstUnitNode) {
@@ -443,7 +433,6 @@ public final class MsgNode extends AbstractBlockCommandNode
 
     return Pair.of(baseNameToRepNodesMap, nonRepNodeToRepNodeMap);
   }
-
 
   /**
    * Private helper for genSubstUnitInfo(). Generates the final SubstUnitInfo given preliminary
@@ -529,20 +518,20 @@ public final class MsgNode extends AbstractBlockCommandNode
     }
 
     /**
-     * Returns a new {@link MsgNode} from the state of this builder, reporting syntax errors
-     * to the given {@link ErrorReporter}.
+     * Returns a new {@link MsgNode} from the state of this builder, reporting syntax errors to the
+     * given {@link ErrorReporter}.
      */
     public MsgNode build(SoyParsingContext context) {
 
-      Map<String, String> attributes
-          = ATTRIBUTES_PARSER.parse(commandText, context, sourceLocation);
+      Map<String, String> attributes =
+          ATTRIBUTES_PARSER.parse(commandText, context, sourceLocation);
 
       String gendersAttr = attributes.get("genders");
       List<ExprRootNode> genderExprs = null;
       if (gendersAttr != null) {
-        genderExprs = ExprRootNode.wrap(
-            new ExpressionParser(gendersAttr, sourceLocation, context)
-                .parseExpressionList());
+        genderExprs =
+            ExprRootNode.wrap(
+                new ExpressionParser(gendersAttr, sourceLocation, context).parseExpressionList());
         if (genderExprs.isEmpty() || genderExprs.size() > 3) {
           context.report(sourceLocation, WRONG_NUMBER_OF_GENDER_EXPRS);
         }

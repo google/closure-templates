@@ -17,16 +17,18 @@
 package com.google.template.soy.data;
 
 /**
- * Interface intended mainly to be implemented by enums, so that during 
- * the Soy Globals' generation the returned value should be some secondary value
- * different from the enum's primary(ordinal) value.
- * 
- * NOTE: In case the enum's secondary value should never be changed once it is set,
- * ensure to add tests/add documentation on every use of this interface for enums.  
+ * Interface intended mainly to be implemented by enums, so that during the Soy Globals' generation
+ * the returned value should be some secondary value different from the enum's primary(ordinal)
+ * value.
+ *
+ * <p>NOTE: In case the enum's secondary value should never be changed once it is set, ensure to add
+ * tests/add documentation on every use of this interface for enums.
  */
 public interface SoyGlobalsValue {
 
-  /** Returns the Soy Value to Soy Globals. While exporting the value to SoyGlobals
-   *  the object's toString() value is returned. */
+  /**
+   * Returns the Soy Value to Soy Globals. While exporting the value to SoyGlobals the object's
+   * toString() value is returned.
+   */
   Object getSoyGlobalValue();
 }

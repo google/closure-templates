@@ -20,14 +20,14 @@ import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.Multibinder;
 import com.google.template.soy.shared.restricted.SoyFunction;
 
-
 /**
  * Guice module for basic Soy functions.
  *
  */
 public final class BasicFunctionsModule extends AbstractModule {
 
-  @Override public void configure() {
+  @Override
+  public void configure() {
     Multibinder<SoyFunction> soyFunctionsSetBinder =
         Multibinder.newSetBinder(binder(), SoyFunction.class);
     soyFunctionsSetBinder.addBinding().to(AugmentMapFunction.class);
@@ -39,6 +39,7 @@ public final class BasicFunctionsModule extends AbstractModule {
     soyFunctionsSetBinder.addBinding().to(LengthFunction.class);
     soyFunctionsSetBinder.addBinding().to(MaxFunction.class);
     soyFunctionsSetBinder.addBinding().to(MinFunction.class);
+    soyFunctionsSetBinder.addBinding().to(ParseIntFunction.class);
     soyFunctionsSetBinder.addBinding().to(RandomIntFunction.class);
     soyFunctionsSetBinder.addBinding().to(RoundFunction.class);
     soyFunctionsSetBinder.addBinding().to(StrContainsFunction.class);

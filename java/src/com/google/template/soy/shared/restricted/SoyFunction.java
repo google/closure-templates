@@ -18,29 +18,27 @@ package com.google.template.soy.shared.restricted;
 
 import java.util.Set;
 
-
 /**
  * Superinterface for a Soy function.
  *
- * <p> Important: Implementing this interface by itself does nothing. Your function implementation
+ * <p>Important: Implementing this interface by itself does nothing. Your function implementation
  * class needs to implement some of all of this interface's subinterfaces.
  *
  */
 public interface SoyFunction {
 
-
   /**
    * Gets the name of the Soy function.
+   *
    * @return The name of the Soy function.
    */
   public String getName();
 
-
   /**
    * Gets the set of valid args list sizes. For example, the set {0, 2} would indicate that this
    * function can take 0 or 2 arguments (but not 1).
+   *
    * @return The set of valid args list sizes.
    */
   public Set<Integer> getValidArgsSizes();
-
 }

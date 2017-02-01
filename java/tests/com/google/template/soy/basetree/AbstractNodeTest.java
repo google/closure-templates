@@ -16,22 +16,27 @@
 
 package com.google.template.soy.basetree;
 
-import static junit.framework.TestCase.assertNull;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.soytree.AbstractParentSoyNode;
 import com.google.template.soy.soytree.SoyNode;
-
-import junit.framework.TestCase;
+import com.google.template.soy.soytree.SoyNode.Kind;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for AbstractNode.
  *
  */
-public final class AbstractNodeTest extends TestCase {
+@RunWith(JUnit4.class)
+public final class AbstractNodeTest {
 
-
-
+  @Test
   public void testAncestorMethods() {
 
     DummyNodeAlpha dummyA = new DummyNodeAlpha();
@@ -59,34 +64,49 @@ public final class AbstractNodeTest extends TestCase {
     assertNull(leaf.getNearestAncestor(DopeyNode.class));
   }
 
-
   private static interface DummyNode extends SoyNode {}
 
   private abstract static class BaseNode extends AbstractParentSoyNode<SoyNode> {
     protected BaseNode() {
       super(1, SourceLocation.UNKNOWN);
     }
-    @Override public String toSourceString() { return null; }
 
-    @Override public DummyNodeAlpha copy(CopyState copyState) {
+    @Override
+    public String toSourceString() {
+      return null;
+    }
+
+    @Override
+    public DummyNodeAlpha copy(CopyState copyState) {
       throw new UnsupportedOperationException();
     }
   }
 
   private static final class DummyNodeAlpha extends BaseNode implements DummyNode {
-    @Override public Kind getKind() { return Kind.CALL_BASIC_NODE; }
+    @Override
+    public Kind getKind() {
+      return Kind.CALL_BASIC_NODE;
+    }
   }
 
   private static final class DummyNodeBeta extends BaseNode implements DummyNode {
-    @Override public Kind getKind() { return Kind.CALL_BASIC_NODE; }
+    @Override
+    public Kind getKind() {
+      return Kind.CALL_BASIC_NODE;
+    }
   }
 
   private static final class SillyNode extends BaseNode {
-    @Override public Kind getKind() { return Kind.CALL_BASIC_NODE; }
+    @Override
+    public Kind getKind() {
+      return Kind.CALL_BASIC_NODE;
+    }
   }
 
   private static final class DopeyNode extends BaseNode {
-    @Override public Kind getKind() { return Kind.CALL_BASIC_NODE; }
+    @Override
+    public Kind getKind() {
+      return Kind.CALL_BASIC_NODE;
+    }
   }
-
 }

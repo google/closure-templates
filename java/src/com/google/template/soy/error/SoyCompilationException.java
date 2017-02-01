@@ -19,21 +19,23 @@ import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Ordering;
 import com.google.template.soy.base.SoySyntaxException;
 
 /**
- * Reports on all Soy compilation errors and allows for programmatic inspection via
- * {@link #getErrors()}.
+ * Reports on all Soy compilation errors and allows for programmatic inspection via {@link
+ * #getErrors()}.
  */
 public final class SoyCompilationException extends SoySyntaxException {
   private final ImmutableList<SoyError> errors;
 
   public SoyCompilationException(Iterable<SoyError> specificErrors) {
     super();
-    this.errors = ImmutableList.copyOf(specificErrors);
+    this.errors = Ordering.natural().immutableSortedCopy(specificErrors);
     checkArgument(!errors.isEmpty());
   }
 
+  /** Returns the list of errors in sorted order. */
   public ImmutableList<SoyError> getErrors() {
     return errors;
   }
@@ -42,6 +44,8 @@ public final class SoyCompilationException extends SoySyntaxException {
   public String getMessage() {
     StringBuilder sb = new StringBuilder("errors during Soy compilation\n");
     Joiner.on("\n").appendTo(sb, errors);
+    int numErrors = errors.size();
+    sb.append(numErrors).append(" error").append(numErrors > 1 ? "s" : "").append('\n');
     return sb.toString();
   }
 }

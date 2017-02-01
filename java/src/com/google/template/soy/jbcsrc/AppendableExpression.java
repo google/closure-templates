@@ -21,12 +21,10 @@ import static com.google.template.soy.jbcsrc.BytecodeUtils.ADVISING_APPENDABLE_T
 import static com.google.template.soy.jbcsrc.BytecodeUtils.ADVISING_BUILDER_TYPE;
 
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
-
 import org.objectweb.asm.Label;
+import org.objectweb.asm.Type;
 
-/**
- * An expression for an {@link AdvisingAppendable}.
- */
+/** An expression for an {@link AdvisingAppendable}. */
 final class AppendableExpression extends Expression {
   private static final MethodRef APPEND =
       MethodRef.create(AdvisingAppendable.class, "append", CharSequence.class).asNonNullable();
@@ -35,21 +33,26 @@ final class AppendableExpression extends Expression {
       MethodRef.create(AdvisingAppendable.class, "append", char.class).asNonNullable();
 
   private static final MethodRef SOFT_LIMITED =
-      MethodRef.forMethod(AdvisingAppendable.class, "softLimitReached").asCheap();
+      MethodRef.create(AdvisingAppendable.class, "softLimitReached").asCheap();
 
   static AppendableExpression forLocal(LocalVariable delegate) {
-    return new AppendableExpression(delegate, false /* hasSideEffects*/,
-        true /* supportsSoftLimiting */);
+    return new AppendableExpression(
+        delegate, false /* hasSideEffects*/, true /* supportsSoftLimiting */);
   }
 
   static AppendableExpression forStringBuilder(Expression delegate) {
     checkArgument(delegate.resultType().equals(ADVISING_BUILDER_TYPE));
-    return new AppendableExpression(delegate, false /* hasSideEffects*/,
+    return new AppendableExpression(
+        ADVISING_BUILDER_TYPE,
+        delegate,
+        false /* hasSideEffects*/,
         false /* supportsSoftLimiting */);
   }
 
   static AppendableExpression logger() {
-    return new AppendableExpression(MethodRef.RUNTIME_LOGGER.invoke(), false /* hasSideEffects*/,
+    return new AppendableExpression(
+        MethodRef.RUNTIME_LOGGER.invoke(),
+        false /* hasSideEffects*/,
         false /* supportsSoftLimiting */);
   }
 
@@ -61,16 +64,22 @@ final class AppendableExpression extends Expression {
 
   private AppendableExpression(
       Expression delegate, boolean hasSideEffects, boolean supportsSoftLimiting) {
-    super(ADVISING_APPENDABLE_TYPE, delegate.features());
+    this(ADVISING_APPENDABLE_TYPE, delegate, hasSideEffects, supportsSoftLimiting);
+  }
+
+  private AppendableExpression(
+      Type resultType, Expression delegate, boolean hasSideEffects, boolean supportsSoftLimiting) {
+    super(resultType, delegate.features());
     delegate.checkAssignableTo(ADVISING_APPENDABLE_TYPE);
-    checkArgument(delegate.isNonNullable(), 
-        "advising appendable expressions should always be non null");
+    checkArgument(
+        delegate.isNonNullable(), "advising appendable expressions should always be non null");
     this.delegate = delegate;
     this.hasSideEffects = hasSideEffects;
     this.supportsSoftLimiting = supportsSoftLimiting;
   }
 
-  @Override void doGen(CodeBuilder adapter) {
+  @Override
+  void doGen(CodeBuilder adapter) {
     delegate.gen(adapter);
   }
 
@@ -96,11 +105,13 @@ final class AppendableExpression extends Expression {
     return delegate.invoke(SOFT_LIMITED);
   }
 
-  @Override AppendableExpression labelStart(Label label) {
+  @Override
+  AppendableExpression labelStart(Label label) {
     return withNewDelegate(delegate.labelStart(label), this.hasSideEffects);
   }
 
-  @Override Statement toStatement() {
+  @Override
+  Statement toStatement() {
     // .toStatement() by default just generates the expression and adds a 'POP' instruction
     // to clear the stack. However, this is only neccesary when the expression in question has a
     // side effect worth preserving.  If we know that it does not we can just return the empty
@@ -116,7 +127,7 @@ final class AppendableExpression extends Expression {
   }
 
   /**
-   * Returns {@code true} if this expression requires detach logic to be generated based on runtime 
+   * Returns {@code true} if this expression requires detach logic to be generated based on runtime
    * calls to {@link AdvisingAppendable#softLimitReached()}.
    */
   boolean supportsSoftLimiting() {

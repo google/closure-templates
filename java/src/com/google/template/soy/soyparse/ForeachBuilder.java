@@ -28,14 +28,13 @@ import com.google.template.soy.soytree.ForeachIfemptyNode;
 import com.google.template.soy.soytree.ForeachNode;
 import com.google.template.soy.soytree.ForeachNonemptyNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
-
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * A helper for building {@link ForeachNode}s and its two immediate children: 
- * {@link ForeachNonemptyNode} and {@link ForeachIfemptyNode}.
+ * A helper for building {@link ForeachNode}s and its two immediate children: {@link
+ * ForeachNonemptyNode} and {@link ForeachIfemptyNode}.
  */
 final class ForeachBuilder {
 
@@ -74,14 +73,13 @@ final class ForeachBuilder {
     this.cmdText = cmdText;
     return this;
   }
-  
+
   ForeachBuilder setLoopBody(List<StandaloneNode> templateBlock) {
     this.templateBlock = templateBlock;
     return this;
   }
 
-  ForeachBuilder setIfEmptyBody(SourceLocation ifEmptyLocation,
-      List<StandaloneNode> ifEmptyBlock) {
+  ForeachBuilder setIfEmptyBody(SourceLocation ifEmptyLocation, List<StandaloneNode> ifEmptyBlock) {
     this.ifEmptyLocation = ifEmptyLocation;
     this.ifEmptyBlock = ifEmptyBlock;
     return this;
@@ -98,17 +96,18 @@ final class ForeachBuilder {
     if (!matcher.matches()) {
       context.report(commandLocation, INVALID_COMMAND_TEXT, cmdText);
     } else {
-      varName = new ExpressionParser(matcher.group(1), commandLocation, context)
-          .parseVariable()
-          .getName();
-      expr = new ExprRootNode(
-          new ExpressionParser(matcher.group(2), commandLocation, context)
-              .parseExpression());
+      varName =
+          new ExpressionParser(matcher.group(1), commandLocation, context)
+              .parseVariable()
+              .getName();
+      expr =
+          new ExprRootNode(
+              new ExpressionParser(matcher.group(2), commandLocation, context).parseExpression());
     }
-    
+
     ForeachNode foreach = new ForeachNode(nodeIdGen.genId(), expr, cmdText, commandLocation);
-    ForeachNonemptyNode nonEmpty
-        = new ForeachNonemptyNode(nodeIdGen.genId(), varName, commandLocation);
+    ForeachNonemptyNode nonEmpty =
+        new ForeachNonemptyNode(nodeIdGen.genId(), varName, commandLocation);
     nonEmpty.addChildren(templateBlock);
     foreach.addChild(nonEmpty);
     if (ifEmptyBlock != null) {

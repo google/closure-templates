@@ -38,7 +38,6 @@ import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
-
 import java.util.List;
 import java.util.Map;
 
@@ -55,7 +54,6 @@ public final class SoyExprForPySubject extends Subject<SoyExprForPySubject, Stri
   private final LocalVariableStack localVarExprs;
 
   private final Injector injector;
-
 
   private SoyExprForPySubject(FailureStrategy failureStrategy, String expr) {
     super(failureStrategy, expr);
@@ -108,9 +106,8 @@ public final class SoyExprForPySubject extends Subject<SoyExprForPySubject, Stri
    * @param expectedPyExprs the expected result of compilation
    */
   public void compilesTo(List<PyExpr> expectedPyExprs) {
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(getSubject())
-        .parse()
-        .fileSet();
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forTemplateContents(getSubject()).parse().fileSet();
     SoyNode node = SharedTestUtils.getNode(soyTree, 0);
 
     SharedTestUtils.simulateNewApiCall(injector);
@@ -166,10 +163,8 @@ public final class SoyExprForPySubject extends Subject<SoyExprForPySubject, Stri
     }
   }
 
-
   //-----------------------------------------------------------------------------------------------
   // Public static functions for starting a SoyExprForPySubject test.
-
 
   private static final SubjectFactory<SoyExprForPySubject, String> SOYEXPR =
       new SubjectFactory<SoyExprForPySubject, String>() {

@@ -16,17 +16,21 @@
 
 package com.google.template.soy.data;
 
+import static org.junit.Assert.assertEquals;
+
 import com.google.template.soy.data.SanitizedContent.ContentKind;
-
-import junit.framework.TestCase;
-
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for UnsafeSanitizedContentOrdainer utility class.
  *
  */
-public class UnsafeSanitizedContentOrdainerTest extends TestCase {
+@RunWith(JUnit4.class)
+public class UnsafeSanitizedContentOrdainerTest {
 
+  @Test
   public void testOrdainAsSafe() {
     assertEquals(
         SanitizedContent.create("Hello World", ContentKind.TEXT, null),
@@ -48,6 +52,7 @@ public class UnsafeSanitizedContentOrdainerTest extends TestCase {
         UnsafeSanitizedContentOrdainer.ordainAsSafe("hello=world", ContentKind.ATTRIBUTES));
   }
 
+  @Test
   public void testOrdainAsSafeWithDir() {
     assertEquals(
         SanitizedContent.create("Hello World", ContentKind.TEXT, Dir.LTR),
@@ -59,5 +64,4 @@ public class UnsafeSanitizedContentOrdainerTest extends TestCase {
         SanitizedContent.create("Hello World", ContentKind.TEXT, Dir.NEUTRAL),
         UnsafeSanitizedContentOrdainer.ordainAsSafe("Hello World", ContentKind.TEXT, Dir.NEUTRAL));
   }
-
 }

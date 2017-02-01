@@ -31,7 +31,7 @@ import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.SoytreeUtils;
+import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateBasicNodeBuilder;
 import com.google.template.soy.soytree.TemplateDelegateNode;
@@ -39,13 +39,11 @@ import com.google.template.soy.soytree.TemplateDelegateNodeBuilder;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 import com.google.template.soy.soytree.defn.TemplateParam;
-
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
 import javax.annotation.Nullable;
 
 /**
@@ -87,14 +85,14 @@ final class Inferences {
   private final Map<String, Context> templateNameToEndContext = Maps.newLinkedHashMap();
 
   /** Maps IDs of <code>{print}</code> commands to the context in which they start. */
-  private final Map<Integer, Context> idToStartContext = Maps.newLinkedHashMap();
+  private final Map<SoyNode, Context> nodeToStartContext = Maps.newIdentityHashMap();
 
   /** Maps IDs of print and call commands to the inferred escaping modes. */
-  private final Map<Integer, ImmutableList<EscapingMode>> idToEscapingModes =
-      Maps.newLinkedHashMap();
+  private final Map<SoyNode, ImmutableList<EscapingMode>> nodeToEscapingModes =
+      Maps.newIdentityHashMap();
 
   /** Maps IDs of <code>{call}</code> commands to the derived template they should use. */
-  private final Map<Integer, String> callIdToDerivedCalleeName = Maps.newLinkedHashMap();
+  private final Map<CallNode, String> callNodeToDerivedCalleeName = Maps.newIdentityHashMap();
 
   /** The set of template names checked.  Used to identify re-entrant templates. */
   private final Set<String> templatesChecked = Sets.newHashSet();
@@ -170,9 +168,8 @@ final class Inferences {
    */
   public ImmutableList<EscapingMode> getEscapingMode(PrintNode printNode) {
     // See if we have already inferred an escaping mode for the node.
-    int id = printNode.getId();
     for (Inferences inferences = this; inferences != null; inferences = inferences.parent) {
-      ImmutableList<EscapingMode> escapingModes = inferences.idToEscapingModes.get(id);
+      ImmutableList<EscapingMode> escapingModes = inferences.nodeToEscapingModes.get(printNode);
       if (escapingModes != null) {
         return escapingModes;
       }
@@ -202,28 +199,28 @@ final class Inferences {
             || (node instanceof CallNode)
             || (node instanceof MsgFallbackGroupNode),
         "Escaping directives may only be set for {print}, {msg}, or {call} nodes");
-    int id = node.getId();
-    idToStartContext.put(id, startContext);
+    nodeToStartContext.put(node, startContext);
     if (escapingModes != null) {
-      idToEscapingModes.put(id, ImmutableList.copyOf(escapingModes));
+      nodeToEscapingModes.put(node, ImmutableList.copyOf(escapingModes));
     }
   }
 
   /**
    * The escaping modes for the print command with the given ID in the order in which they should be
    * applied.
-   * @param nodeId Like {@link SoyNode#getId}.
+    *
+   * @param node a node instance
    */
-  public ImmutableList<EscapingMode> getEscapingModesForId(int nodeId) {
-    ImmutableList<EscapingMode> modes = idToEscapingModes.get(nodeId);
+  public ImmutableList<EscapingMode> getEscapingModesForNode(SoyNode node) {
+    ImmutableList<EscapingMode> modes = nodeToEscapingModes.get(node);
     if (modes == null) {
       modes = ImmutableList.of();
     }
     return modes;
   }
 
-  public ImmutableMap<Integer, Context> getPrintNodeStartContexts() {
-    return ImmutableMap.copyOf(idToStartContext);
+  public ImmutableMap<SoyNode, Context> getPrintNodeStartContexts() {
+    return ImmutableMap.copyOf(nodeToStartContext);
   }
 
   /**
@@ -232,15 +229,15 @@ final class Inferences {
    * @param derivedCalleeName A qualified template name.
    */
   public void retargetCall(CallNode cn, String derivedCalleeName) {
-    callIdToDerivedCalleeName.put(cn.getId(), derivedCalleeName);
+    callNodeToDerivedCalleeName.put(cn, derivedCalleeName);
   }
 
   /**
    * The name of the derived template that the call with the given id should call, or null if the
    * call with the given id should not be retargeted to a derived template.
    */
-  public String getDerivedCalleeNameForCallId(int callId) {
-    return callIdToDerivedCalleeName.get(callId);
+  public String getDerivedCalleeNameForCall(CallNode callNode) {
+    return callNodeToDerivedCalleeName.get(callNode);
   }
 
   /**
@@ -262,7 +259,7 @@ final class Inferences {
       // vardefns assigned.  Then we manually recopy to a new template in order to modify the name.
       // TODO(lukes): we should add direct support for swapping template names to TemplateNode
       // or just eliminate usecases for this method.
-      TemplateNode trivialClonedTemplate = SoytreeUtils.cloneWithNewIds(tn, idGen);
+      TemplateNode trivialClonedTemplate = SoyTreeUtils.cloneWithNewIds(tn, idGen);
       int cloneId = trivialClonedTemplate.getId();
 
       // We need to use the unnamespaced name in the command text since we'll be inserting this
@@ -272,15 +269,19 @@ final class Inferences {
       if (tn instanceof TemplateBasicNode) {
         String derivedPartialName = (tn.getPartialTemplateName() != null) ?
             derivedName.substring(soyFileHeaderInfo.namespace.length()) : null;
-        clone = new TemplateBasicNodeBuilder(
-            soyFileHeaderInfo, tn.getSourceLocation(), ExplodingErrorReporter.get())
-            .setId(cloneId)
-            .setCmdTextInfo(
-                derivedName, derivedPartialName,
-                tn.getVisibility(), tn.getAutoescapeMode(), tn.getContentKind(),
-                tn.getRequiredCssNamespaces())
-            .addParams(trivialClonedTemplate.getAllParams())
-            .build();
+        clone =
+            new TemplateBasicNodeBuilder(soyFileHeaderInfo, ExplodingErrorReporter.get())
+                .setId(cloneId)
+                .setSourceLocation(tn.getSourceLocation())
+                .setCmdTextInfo(
+                    derivedName,
+                    derivedPartialName,
+                    tn.getVisibility(),
+                    tn.getAutoescapeMode(),
+                    tn.getContentKind(),
+                    tn.getRequiredCssNamespaces())
+                .addParams(trivialClonedTemplate.getAllParams())
+                .build();
 
         if (! (derivedName.equals(clone.getTemplateName()) &&
             Objects.equals(derivedPartialName, clone.getPartialTemplateName()))) {
@@ -289,14 +290,19 @@ final class Inferences {
 
       } else if (tn instanceof TemplateDelegateNode) {
         TemplateDelegateNode tdn = (TemplateDelegateNode) tn;
-        clone = new TemplateDelegateNodeBuilder(
-            soyFileHeaderInfo, tn.getSourceLocation(), ExplodingErrorReporter.get())
-            .setId(cloneId)
-            .setCmdTextInfo(
-                derivedName, tdn.getDelTemplateVariant(), tdn.getDelPriority(),
-                tn.getAutoescapeMode(), tn.getContentKind(), tn.getRequiredCssNamespaces())
-            .addParams(trivialClonedTemplate.getAllParams())
-            .build();
+        clone =
+            new TemplateDelegateNodeBuilder(soyFileHeaderInfo, ExplodingErrorReporter.get())
+                .setId(cloneId)
+                .setSourceLocation(tn.getSourceLocation())
+                .setCmdTextInfo(
+                    derivedName,
+                    tdn.getDelTemplateVariant(),
+                    tdn.getDelPriority(),
+                    tn.getAutoescapeMode(),
+                    tn.getContentKind(),
+                    tn.getRequiredCssNamespaces())
+                .addParams(trivialClonedTemplate.getAllParams())
+                .build();
         if (! (derivedName.equals(((TemplateDelegateNode) clone).getDelTemplateName()))) {
           throw new AssertionError();
         }
@@ -327,10 +333,10 @@ final class Inferences {
    * This instance should not be used after folding.
    */
   public void foldIntoParent() {
-    parent.idToEscapingModes.putAll(idToEscapingModes);
-    parent.idToStartContext.putAll(idToStartContext);
+    parent.nodeToEscapingModes.putAll(nodeToEscapingModes);
+    parent.nodeToStartContext.putAll(nodeToStartContext);
     parent.templateNameToEndContext.putAll(templateNameToEndContext);
-    parent.callIdToDerivedCalleeName.putAll(callIdToDerivedCalleeName);
+    parent.callNodeToDerivedCalleeName.putAll(callNodeToDerivedCalleeName);
     parent.templatesByName.putAll(templatesByName);
     parent.templatesChecked.addAll(templatesChecked);
   }

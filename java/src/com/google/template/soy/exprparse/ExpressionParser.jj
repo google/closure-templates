@@ -27,6 +27,7 @@ options {
   JDK_VERSION = "1.7";
   STATIC = false;
   UNICODE_INPUT = true;
+  CACHE_TOKENS = true;
 }
 
 
@@ -38,10 +39,11 @@ PARSER_BEGIN(ExpressionParser)
 
 package com.google.template.soy.exprparse;
 
-import com.google.common.base.CharMatcher;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
+import com.google.common.primitives.Longs;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.BaseUtils;
+import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.BooleanNode;
@@ -58,12 +60,14 @@ import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.Operator;
+import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.exprtree.StringNode;
-import com.google.template.soy.exprtree.VarNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.internal.base.UnescapeUtils;
-
 import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.LinkedHashSet;
 import java.util.List;
 
 
@@ -76,7 +80,7 @@ import java.util.List;
  *
  * <pre>
  * This parser parses several related things: variables, data references, globals, expression lists,
- * and expressions.
+ * parameter lists, and expressions.
  *
  * A. Variable:
  *    + A dollar sign "$" followed by an identifier (no space between).
@@ -102,9 +106,16 @@ import java.util.List;
  *
  * D. Expression list:
  *    + A comma-separated list of one or more expressions (see below for definition of expression).
- *    Example:   $aaa, $bbb.ccc + 1, round(3.14)
+ *    Examples:   $aaa, $bbb.ccc + 1, round(3.14)
  *
- * E. Expression:
+ * E. Named parameter list:
+ *    + A named parameter list, used only for proto initialization calls.
+ *    + A comma-separate list of named expressions, in which names and expressions are separated by
+ *      a colon ":".
+ *    + Named and unnamed expressions cannot be mixed within the same function call.
+ *    Examples:   foo: $aaa, bar: $bbb.ccc + 1, baz: round(3.14)
+ *
+ * F. Expression:
  *
  *    1. Data reference:
  *       + See above for definition.
@@ -131,7 +142,7 @@ import java.util.List;
  *       + Single quotes only.
  *       + Escape sequences:   \\   \'   \"   \n   \r   \t   \b   \f
  *       + Unicode escape:   \ u ####   (backslash, "u", four hex digits -- no spaces in between)
- *       Examples:   ''   'abc'   'blah bleh bluh'   'aa\\bb\'cc\ndd'
+ *       Examples:   ''   'abc'   'blah bleh bluh'   'aa\\bb\'cc\ndd'   '\u263a'
  *
  *    8. List literal:
  *       + Delimited by brackets.
@@ -143,7 +154,7 @@ import java.util.List;
  *       + Keys must be strings (or expressions that will evaluate to strings).
  *       Examples:   [:]   ['aaa': 'blah', 'bbb': 123, $boo: $foo]
  *
- *    10. Operators:
+ *    10. Operator:
  *       + Parentheses can be used to override precedence rules:   ( )
  *       + Precedence 8:   - (unary)   not
  *       + Precedence 7:   *   /   %
@@ -154,39 +165,46 @@ import java.util.List;
  *       + Precedence 2:   or
  *       + Precedence 1:   ?: (binary)   ? : (ternary)
  *
- *    11. Functions:
+ *    11. Function:
  *       + Function name, open parenthesis, optional expression list, close parenthesis.
- *       + The function name is one identifier.
+ *       + The function name is one or more identifiers, seperated by dots.
  *       + See above for the definition of an expression list.
- *       Examples:   isFirst($item)   foo()   myFunction(2, 'aa')
+ *       Examples:   foo()   isFirst($item)   my.new.Proto(a: 'str', b: $foo)
+ *
+ *    12. Proto initialization:
+ *       + Fully qualified proto name, open parenthesis, optional named parameter list,
+ *         close parenthesis.
+ *       + See above for the definition of a named parameter list.
+ *       Examples:   proto()   my.new.Proto(a: 'str', b: $foo)
  * </pre>
  *
  */
 public final class ExpressionParser {
 
-  public static final SoyErrorKind INVALID_EXPRESSION_LIST
-      = SoyErrorKind.of("Invalid expression list");
-  private static final SoyErrorKind INVALID_PARAM_NAME_IJ
-      = SoyErrorKind.of("Invalid param name ''ij'' (''ij'' is for injected data ref).");
-  public static final SoyErrorKind INVALID_VAR_NAME
-      = SoyErrorKind.of("Invalid var name ''{0}''");
-  private static final SoyErrorKind INVALID_VAR_NAME_IJ
-      = SoyErrorKind.of("Invalid var name ''ij'' (''ij'' is for injected data ref).");
-
-  private static final SoyErrorKind SINGLE_IDENTIFIER_KEY_IN_MAP_LITERAL
-      = SoyErrorKind.of("Disallowed single-identifier key \"{0}\" in map literal "
+  private static final SoyErrorKind DUPLICATE_PARAM_NAME =
+      SoyErrorKind.of("Duplicate param name ''{0}''");
+  private static final SoyErrorKind INTEGER_OUT_OF_RANGE =
+      SoyErrorKind.of("Soy integers are constrained to the range of JavaScript integers: "
+          + "https://www.ecma-international.org/ecma-262/5.1/#sec-8.5");
+  private static final SoyErrorKind INVALID_FUNCTION_NAME =
+      SoyErrorKind.of("Invalid function name ''{0}''");
+  private static final SoyErrorKind INVALID_PARAM_NAME =
+      SoyErrorKind.of("Invalid param name ''{0}''");
+  private static final SoyErrorKind INVALID_VAR_NAME_IJ =
+      SoyErrorKind.of("Invalid var name ''ij'' (''ij'' is for injected data ref).");
+  private static final SoyErrorKind SINGLE_IDENTIFIER_KEY_IN_MAP_LITERAL =
+      SoyErrorKind.of("Disallowed single-identifier key \"{0}\" in map literal "
           + "(please surround with single quotes for string or parentheses for global).");
-
-  private static final SoyErrorKind PARSE_ERROR = SoyErrorKind.of("{0}");
+  private static final SoyErrorKind UNEXPECTED_IJ_DATA_REFERENCE =
+      SoyErrorKind.of("Expected a variable name, but found an ''ij'' data reference.");
 
   private String input;
   private SourceLocation parentSourceLocation;
   private ErrorReporter errorReporter;
 
-  private SoyParsingContext context;
-
   /**
    * Constructor that takes a string input.
+   *
    * @param input The input to parse.
    * @param parentSourceLocation the source location associated with the input.
    * @param errorReporter For reporting syntax errors.
@@ -197,7 +215,6 @@ public final class ExpressionParser {
     this.input = input;
     this.parentSourceLocation = parentSourceLocation;
     this.errorReporter = context.errorReporter();
-    this.context = context;
   }
 
 
@@ -232,19 +249,28 @@ public final class ExpressionParser {
     }
   }
 
-
   /**
-   * Parses the input as a variable name.
+   * Parses the input as a variable name.  Guaranteed to not be an $ij reference.
    *
    * <p>Maintains the following invariant: an error node is returned if and only if an error
    * is reported to the parser's {@link ErrorReporter}.
    */
-  public VarNode parseVariable() {
+  public VarRefNode parseVariable() {
+    // We are repurposing VarRef() to match variable declarations for let and loop var declarations
+    // This is annoying for 2 reasons
+    // 1. declarations have be prefixed with '$' (unlike {@param ...} declarations)
+    // 2. we need to disallow declaring variables named 'ij'
     try {
-      return VarInput();
+      VarRefNode node = VarRef();
+      if (node.isDollarSignIjParameter()) {
+        errorReporter.report(node.getSourceLocation(), UNEXPECTED_IJ_DATA_REFERENCE);
+        return VarRefNode.ERROR;
+      }
+      return node;
     } catch (ParseException e) {
-      ParseErrors.reportExprParseException(errorReporter, "Expected a variable name ", parentSourceLocation, e);
-      return VarNode.ERROR;
+      ParseErrors.reportExprParseException(errorReporter,
+          "Expected a variable name ", parentSourceLocation, e);
+      return VarRefNode.ERROR;
     }
   }
 
@@ -252,7 +278,7 @@ public final class ExpressionParser {
    * Private helper to create an operator node.
    */
   private static final OperatorNode createOperatorNode(
-      String op, int prec, ExprNode ...children) {
+      String op, int prec, ExprNode... children) {
     Operator operator = Operator.of(op, children.length);
     if (operator.getPrecedence() != prec) {
       throw new IllegalArgumentException("invalid precedence " + prec + " for operator " + op);
@@ -261,14 +287,11 @@ public final class ExpressionParser {
   }
 
   private SourceLocation createSrcLoc(Token token) {
-    // TODO(brndn): The Math.max fiddling is required because some callers instantiate
-    // the expression parser with SourceLocation.UNKNOWN (for example, ExprParseUtils).
-    return new SourceLocation(
-        parentSourceLocation.getFilePath(),
-        Math.max(1, parentSourceLocation.getLineNumber()),
-        Math.max(1, parentSourceLocation.getBeginColumn() + token.beginColumn),
-        Math.max(1, parentSourceLocation.getLineNumber()),
-        Math.max(1, parentSourceLocation.getBeginColumn() + token.endColumn));
+    return Tokens.createSrcLoc(parentSourceLocation, token);
+  }
+
+  private SourceLocation createSrcLoc(Token token1, Token token2) {
+    return createSrcLoc(token1).extend(createSrcLoc(token2));
   }
 }
 
@@ -284,21 +307,16 @@ PARSER_END(ExpressionParser)
 TOKEN:
 {
   < NULL: "null" >
-|
-  < BOOLEAN: "true" | "false" >
-|
-  < INTEGER:
-        <DEC_DIGITS>
-      | "0x" (<HEX_DIGIT>)+
-  >
-|
-  < FLOAT:
+| < TRUE: "true">
+| < FALSE: "false" >
+| < DEC_INTEGER: <DEC_DIGITS> >
+| < HEX_INTEGER : "0x" (<HEX_DIGIT>)+ >
+| < FLOAT:
         <DEC_DIGITS> "." <DEC_DIGITS> ( "e" ( ["+","-"] )? <DEC_DIGITS> )?
       | <DEC_DIGITS> "e" ( ["+","-"] )? <DEC_DIGITS>
   >
-|
-  // Must match <IN_CMD_TEXT_1> CMD_TEXT_CHAR_1 in SoyFileParser.jj.
-  < STRING:
+  // Must match <IN_CMD_TAG_UNSTRUCTURED> CMD_TEXT_ARBITRARY_TOKEN in SoyFileParser.jj.
+| < STRING:
       "'"
       (
           ~["'","\\","\n","\r"]
@@ -307,39 +325,52 @@ TOKEN:
       )*
       "'"
   >
-|
-  < #DEC_DIGITS: ( ["0"-"9"] )+ >
-|
-  < #HEX_DIGIT: ["0"-"9","A"-"F","a"-"f"] >
+| < #DEC_DIGITS: ( ["0"-"9"] )+ >
+| < #HEX_DIGIT: ["0"-"9","A"-"F","a"-"f"] >
 }
 
 
 // Operators.
 TOKEN:
 {
-  < UNARY_OP: "not" >
-// Note: The null-coalescing binary operator "?:" is parsed separately in PrecExpr1().
-| < PRECEDENCE_2_OP: "or" >
-| < PRECEDENCE_3_OP: "and" >
-| < PRECEDENCE_4_OP: "==" | "!=" >
-| < PRECEDENCE_5_OP: "<" | ">" | "<=" | ">=" >
-| < PRECEDENCE_6_OP: "+">
-| < PRECEDENCE_7_OP: "*" | "/" | "%" >
+  <QMARK: "?" >     // Precedence 1 operators
+| < COLON: ":" >    // Also used as part of part of map literal syntax
+| < QCOLON: "?:" >
+| < OR: "or" >      // Precedence 2 operators
+| < AND: "and" >    // Precedence 3 operators
+| < EQ: "==">       // Precedence 4 operators
+| < NOT_EQ: "!=" >
+| < LANGLE: "<" >   // Precedence 5 operators
+| < RANGLE: ">" >
+| < LT_EQ: "<=" >
+| < GT_EQ: ">=" >
+| < PLUS: "+">      // Precedence 6 operators
+| < MINUS: "-">     // Precedence 6 as a binary operator and 8 as a unary operator
+| < TIMES: "*">     // Precedence 7 operators
+| < DIV: "/">
+| < MOD: "%">
+| < NOT: "not" >    // Precedence 8 as a unary operator (along with MINUS)
+| < DOT: "." >      // Precedence 9 operators
+| < QDOT: "?." >
+| < LBRACKET: "[" > // Precedence 9 data access operators and part of map literal syntax
+| < RBRACKET: "]" >
+| < QLBRACKET: "?[" >
+| < COMMA: "," >    // Not actually an operator, part of map/list literal syntax
+| < LPAREN: "(" >
+| < RPAREN: ")" >
 }
 
 
-// Variables, data references, and globals.
+// Identifiers.
 TOKEN:
 {
   < IDENT: ["a"-"z","A"-"Z","_"] ( ["a"-"z","A"-"Z","_","0"-"9"] )* >
 |
+  // N.B. it is important for this to be defined above DOLLAR_IDENT so $ij isn't parsed as that
+  // token
+  < IJ :  "$ij" >
+|
   < DOLLAR_IDENT: "$" <IDENT> >
-|
-  < DOT_IDENT: "." (<WS>)* <IDENT> >
-  { matchedToken.image = CharMatcher.whitespace().removeFrom(image.toString()); }
-|
-  < QUESTION_DOT_IDENT: "?." (<WS>)* <IDENT> >
-  { matchedToken.image = CharMatcher.whitespace().removeFrom(image.toString()); }
 }
 
 
@@ -347,6 +378,24 @@ TOKEN:
 SKIP:
 {
   < WS: " " | "\t" | "\n" | "\r" | "\r\n" >
+}
+
+// Match everything else as an 'unexpected' or as a special LEGACY token. This prevents
+// TokenMgrErrors from being thrown and instead this will get turned into ParseExceptions which
+// have more debugging information.
+// Define at the bottom so all the tokens defined above are matched preferentially.  This is only
+// really necessary for UNEXPECTED_TOKEN.
+TOKEN:
+{
+    < LEGACY_AND : "&&" >
+|   < LEGACY_OR : "||" >
+|   < LEGACY_NOT : "!" >
+    // We could support double quoted strings except for the fact that in some cases expressions
+    // need to be able to be written in attribute values (variant expressions, data expressions).
+    // It isn't clear how we would support double quoted strings in that context.  Similarly, this
+    // is why the SoyFileParser requires attributes values to be double quoted.
+|   < DOUBLE_QUOTE : "\"" >
+|   < UNEXPECTED_TOKEN : ~[] >
 }
 
 
@@ -360,32 +409,49 @@ SKIP:
  */
 private PrimitiveNode Primitive() :
 {
-  Token b, i, f, str;
+  Token tok;
+  PrimitiveNode primitive;
 }
 {
-  { PrimitiveNode primitive; }
 
   (
-    <NULL>
-    { primitive = new NullNode(SourceLocation.UNKNOWN /* TODO(brndn) */); }
+    tok = <NULL>
+    { primitive = new NullNode(createSrcLoc(tok)); }
   |
-    b = <BOOLEAN>
-    { primitive = new BooleanNode(b.image.equals("true"), createSrcLoc(b)); }
+    tok = <TRUE>
+    { primitive = new BooleanNode(true, createSrcLoc(tok)); }
   |
-    i = <INTEGER>
-    { if (i.image.startsWith("0x")) {
-        primitive = new IntegerNode(Integer.parseInt(i.image.substring(2), 16), createSrcLoc(i));
-      } else {
-        primitive = new IntegerNode(Integer.parseInt(i.image, 10), createSrcLoc(i));
+    tok = <FALSE>
+    { primitive = new BooleanNode(false, createSrcLoc(tok)); }
+  |
+    tok = <DEC_INTEGER>
+    { SourceLocation loc = createSrcLoc(tok);
+      Long parsed = Longs.tryParse(tok.image, 10);
+      if (parsed == null || !IntegerNode.isInRange(parsed)) {
+        errorReporter.report(loc, INTEGER_OUT_OF_RANGE);
+        parsed = 0L;
       }
+      primitive = new IntegerNode(parsed, loc);
     }
   |
-    f = <FLOAT>
-    { primitive = new FloatNode(Double.parseDouble(f.image), createSrcLoc(f)); }
+    tok = <HEX_INTEGER>
+    { SourceLocation loc = createSrcLoc(tok);
+      Long parsed = Longs.tryParse(tok.image.substring(2), 16);
+      if (parsed == null || !IntegerNode.isInRange(parsed)) {
+        errorReporter.report(loc, INTEGER_OUT_OF_RANGE);
+        parsed = 0L;
+      }
+      primitive = new IntegerNode(parsed, loc);
+    }
   |
-    str = <STRING>
-    { String strNoQuotes = str.image.substring(1, str.image.length() - 1);
-      primitive = new StringNode(UnescapeUtils.unescapeJs(strNoQuotes), createSrcLoc(str));
+    tok = <FLOAT>
+    { primitive = new FloatNode(Double.parseDouble(tok.image), createSrcLoc(tok)); }
+  |
+    tok = <STRING>
+    { String strNoQuotes = tok.image.substring(1, tok.image.length() - 1);
+      // TODO(lukes): a common strategy for string literals is to use a custom lexer state and a
+      // MORE production.  Once the parsers are merged do that.
+      primitive = new StringNode(UnescapeUtils.unescapeJs(strNoQuotes), createSrcLoc(tok));
     }
   )
 
@@ -409,13 +475,8 @@ private List<ExprNode> ExprListInput() :
 }
 {
   exprList = ExprList()
-  { List<ExprNode> rootedExprList = Lists.newArrayList();
-    for (ExprNode expr : exprList) {
-      rootedExprList.add(expr);
-    }
-  }
   <EOF>
-  { return rootedExprList; }
+  { return exprList; }
 }
 
 
@@ -435,37 +496,6 @@ private ExprNode ExprInput() :
 }
 
 
-/**
- * Matches the whole input if it is a variable.
- *
- * VarInput -> Var EOF
- */
-private VarNode VarInput() :
-{
-  VarNode var;
-}
-{
-  var = Var()
-  <EOF>
-  { return var; }
-}
-
-
-/**
- * Matches the whole input if it is a global.
- *
- * GlobalInput -> Global EOF
- */
-private GlobalNode GlobalInput():
-{
-  GlobalNode global;
-}
-{
-  global = Global()
-  <EOF>
-  { return global; }
-}
-
 
 /**
  * Matches a comma-separated list of one or more expressions.
@@ -474,15 +504,15 @@ private GlobalNode GlobalInput():
 private List<ExprNode> ExprList() :
 {
   ExprNode expr;
+  List<ExprNode> exprList = new ArrayList<ExprNode>();
 }
 {
-  { List<ExprNode> exprList = Lists.newArrayList(); }
 
   expr = Expr()
   { exprList.add(expr); }
 
   (
-    ","
+    <COMMA>
     expr = Expr()
     { exprList.add(expr); }
   )*
@@ -503,6 +533,7 @@ private ExprNode Expr() :
   expr = PrecExpr1()
   { return expr; }
 }
+
 
 // For implementing operators with multiple precedence levels we implement the 'classic solution'
 // as documented here: http://www.engr.mun.ca/~theo/Misc/exp_parsing.htm#classic
@@ -543,14 +574,14 @@ private ExprNode PrecExpr1() :
   // These operators are right associative, the right recursion on PrecExpr1
   // accomplishes this
   [
-    "?:"
+    <QCOLON>
     expr1 = PrecExpr1()
 
     { expr = Operator.NULL_COALESCING.createNode(expr, expr1); }
   |
-    "?"
+    <QMARK>
     expr1 = PrecExpr1()
-    ":"
+    <COLON>
     expr2 = PrecExpr1()
 
     { expr = Operator.CONDITIONAL.createNode(expr, expr1, expr2); }
@@ -572,7 +603,7 @@ private ExprNode PrecExpr2() :
 
   expr = PrecExpr3()
   (
-    op = <PRECEDENCE_2_OP>
+    op = <OR>
     rightHand = PrecExpr3()
 
     { expr = createOperatorNode(op.image, 2, expr, rightHand); }
@@ -595,7 +626,7 @@ private ExprNode PrecExpr3() :
 
   expr = PrecExpr4()
   (
-    op = <PRECEDENCE_3_OP>
+    op = <AND>
     rightHand = PrecExpr4()
 
     { expr = createOperatorNode(op.image, 3, expr, rightHand); }
@@ -618,7 +649,11 @@ private ExprNode PrecExpr4() :
 
   expr = PrecExpr5()
   (
-    op = <PRECEDENCE_4_OP>
+    (
+       op = <EQ>
+    |
+       op = <NOT_EQ>
+    )
     rightHand = PrecExpr5()
 
     { expr = createOperatorNode(op.image, 4, expr, rightHand); }
@@ -640,7 +675,15 @@ private ExprNode PrecExpr5() :
 
   expr = PrecExpr6()
   (
-    op = <PRECEDENCE_5_OP>
+    (
+       op = <LANGLE>
+     |
+       op = <RANGLE>
+     |
+       op = <LT_EQ>
+     |
+       op = <GT_EQ>
+    )
     rightHand = PrecExpr6()
 
     { expr = createOperatorNode(op.image, 5, expr, rightHand); }
@@ -662,16 +705,14 @@ private ExprNode PrecExpr6() :
 
   expr = PrecExpr7()
   (
-    op = <PRECEDENCE_6_OP>
+    (
+       op = <PLUS>
+     |
+       op = <MINUS>
+    )
     rightHand = PrecExpr7()
 
     { expr = createOperatorNode(op.image, 6, expr, rightHand); }
-
-  // "-" has to be handled specially due to ambiguity with unary negation
-  | "-"
-    rightHand = PrecExpr7()
-
-    { expr = Operator.MINUS.createNode(expr, rightHand); }
   )*
 
   { return expr; }
@@ -690,7 +731,13 @@ private ExprNode PrecExpr7() :
 
   expr = PrecExpr8()
   (
-    op = <PRECEDENCE_7_OP>
+    (
+       op = <TIMES>
+     |
+       op = <DIV>
+     |
+       op = <MOD>
+    )
     rightHand = PrecExpr8()
 
     { expr = createOperatorNode(op.image, 7, expr, rightHand); }
@@ -703,7 +750,7 @@ private ExprNode PrecExpr7() :
 /**
  * Matches expressions with precedence levels 8 and higher.
  *
- * <p>This level has our right associative unary operators '-' and 'not' as well as data access
+ * <p>This level has our right associative unary operators '-' and 'not'
  */
 private ExprNode PrecExpr8() :
 {
@@ -711,86 +758,91 @@ private ExprNode PrecExpr8() :
 }
 {
   { ExprNode expr; }
-  (
-   expr = PrecExpr9()
-   |
-   unaryOp = <UNARY_OP>
-   expr = PrecExpr8()
-   {
-    expr = createOperatorNode(unaryOp.image, 8, expr);
-   }
 
-   // "-" has to be handled specially due to ambiguity with unary negation
-   | "-"
+  (
+    expr = PrecExpr9()
+  |
+    (
+       unaryOp = <NOT>
+     |
+       unaryOp = <MINUS>
+    )
     expr = PrecExpr8()
-    {
-      expr = Operator.NEGATIVE.createNode(expr);
-    }
+    { expr = createOperatorNode(unaryOp.image, 8, expr); }
   )
   { return expr; }
 }
 
 /**
- * Matches expressions with precedence levels 9 and higher.
+ * Matches expressions with precedence level 9.
  *
- * <p>This level has our data access 'operators'
+ * <p>This level has our data access 'operators' and is currently our highest precedence level.
  */
 private ExprNode PrecExpr9() :
 {
-  Token tok;
-  ExprNode keyExpr;
-  Token op;
+  ExprNode expr, keyExpr;
+  Token ident, open, close, op;
 }
 {
-    { ExprNode expr; }
-    expr = Primary()
+  expr = Primary()
+  (
     (
-       tok = <DOT_IDENT>
-       { expr = new FieldAccessNode(expr, tok.image.substring(1), false) /* null safe */; }
-     |
-       tok = <QUESTION_DOT_IDENT>
-       { expr = new FieldAccessNode(expr, tok.image.substring(2), true /* null safe */); }
-     |
-       "["
-        keyExpr = Expr()
-       "]"
-       { expr = new ItemAccessNode(expr, keyExpr, false /* null safe */); }
-     |
-       "?["
-        keyExpr = Expr()
-       "]"
-       { expr = new ItemAccessNode(expr, keyExpr, true /* null safe */); }
-    )*
+      op = <DOT>
+    |
+      op = <QDOT>
+    )
+    ident = <IDENT>
+    { // TODO(lukes):  add the source location of the ident as a separate field.  This would be
+      // more useful for error messages about the access
+      expr =
+          new FieldAccessNode(
+              expr,
+              ident.image,
+              createSrcLoc(op, ident),
+              op.kind == QDOT);
+    }
+  |
+    (
+      open = <LBRACKET>
+    |
+      open = <QLBRACKET>
+    )
+    keyExpr = Expr()
+    close = <RBRACKET>
+    { expr =
+          new ItemAccessNode(
+              expr,
+              keyExpr,
+              createSrcLoc(open, close),
+              open.kind == QLBRACKET);
+    }
+  )*
 
   { return expr; }
 }
 
+
 /**
  * Primary ->   "(" Expr ")"
- *            | FunctionCall | DataRef | Global | ListLiteral | MapLiteral | Primitive
+ *            | VarRef | GlobalOrFunction | ListLiteral | MapLiteral | Primitive
  */
 private ExprNode Primary() :
 {
+  ExprNode primary;
 }
 {
-  { ExprNode primary; }
-
   (
-    "("
+    <LPAREN>
     primary = Expr()
-    ")"
+    <RPAREN>
   |
-    LOOKAHEAD( <IDENT> "(" )
-    primary = FunctionCall()
+    primary = VarRef()
   |
-    primary = DataRef()
+    primary = GlobalOrFunction()
   |
-    primary = Global()
-  |
-    LOOKAHEAD( "[" ( "]" | Expr() ( "," | "]" ) ) )
-    primary = ListLiteral()
-  |
-    primary = MapLiteral()
+    // This matches both map and list literals.  They have been 'left-factored' in to the same
+    // production because they start with the same token.
+    primary = CollectionLiteral()
   |
     primary = Primitive()
   )
@@ -798,223 +850,253 @@ private ExprNode Primary() :
   { return primary; }
 }
 
-
 /**
- * Note: This nonterminal is not used in expressions. It's only used to match an input string that
- * should be a variable.
- *
- * Var -> DollarIdent
+ * VarRef ->  ( "$ij." Ident | DollarIdent )
  */
-private VarNode Var():
+private VarRefNode VarRef() :
 {
-  Token dollarIdent;
-}
-{
-  dollarIdent = <DOLLAR_IDENT>
-  { String identStr = dollarIdent.image.substring(1);
-    if (identStr.equals("ij")) {
-      errorReporter.report(createSrcLoc(dollarIdent), INVALID_VAR_NAME_IJ);
-    }
-    return new VarNode(identStr, createSrcLoc(dollarIdent));
-  }
-}
-
-
-/**
- * DataRef ->  ( "$ij." Ident | DollarIdent )
- */
-private ExprNode DataRef() :
-{
+  Token ij;
   Token ident;
-  VarNode varNode;
-  ExprNode expr;
 }
 {
-  { ExprNode dataRef; }
-
   (
-    "$ij."
-    ident = <IDENT>
-    { dataRef = new VarRefNode(ident.image, createSrcLoc(ident), true, null); }
+    ij = <IJ>
+    // avoid a choice conflict with field access by always prefering to grab the <DOT> from this
+    // production instead of field access
+    [ LOOKAHEAD(1)
+      <DOT>
+      ident = <IDENT>
+      { return new VarRefNode(ident.image, createSrcLoc(ij, ident), true, null); }
+    ]
+    { SourceLocation loc = createSrcLoc(ij);
+      errorReporter.report(loc, INVALID_VAR_NAME_IJ);
+      return new VarRefNode("ij", loc, false, null);  // keep going as best we can
+    }
   |
-    varNode = Var()
-    { dataRef = new VarRefNode(varNode.getName(), varNode.getSourceLocation(), false, null); }
+    ident = <DOLLAR_IDENT>
+    { return new VarRefNode(ident.image.substring(1), createSrcLoc(ident), false, null); }
   )
-
-  { return dataRef; }
 }
 
 
 /**
- * Global -> Ident ( DotIdent )*
+ * Parses a global, a function call, or a proto init call.
+ * These share a production because they share a common prefix.
+ *
+ * GlobalOrFunction -> Identifier() [ "(" [ Expr() ( "," Expr() )* | Ident ":" Expr() ( "," Ident ":" Expr() )* ] ")" ]
  */
-private GlobalNode Global() :
+private ExprNode GlobalOrFunction() :
 {
-  Token ident;
-  SourceLocation loc;
+  Identifier ident;
+  Token openParen = null, closeParen = null, paramName;
+  ExprNode first, expr;
+  List<ExprNode> params = new ArrayList<ExprNode>();
+  LinkedHashSet<String> paramNames;
 }
 {
-  {  StringBuilder globalNameSb = new StringBuilder(); }
-
-  ident = <IDENT>
-  {
-    loc = createSrcLoc(ident);
-    globalNameSb.append(context.resolveAlias(ident.image));
-  }
-
-  (
-    // Resolve ambiguity with data access, by preferring extending the global to creating a
-    // FieldAccessNode with a global as the base expression.
-    // It used to be the case that globals were unambiguous with data access due to the fact that
-    // data access could only use varrefs (and other data access) as a base expression,  but
-    // since now data access can use any Primary as a base expression it is ambiguous (since
-    // Global() is a primary).  The LOOKAHEAD resolves the ambiguity, but another possibly better
-    // option is just to model globals as a sequence of field accesses with a global as the base
-    // expression.  This would require the global substituion phase to be more complex, but
-    // probably makes more sense.
-    LOOKAHEAD(2)
-    ident = <DOT_IDENT>
-    {
-      loc = loc.extend(createSrcLoc(ident));
-      globalNameSb.append(ident.image);
-    }
-  )*
-
-  { return new GlobalNode(globalNameSb.toString(), loc); }
-}
-
-
-/**
- * FunctionCall -> Ident "(" [ ExprList ] ")"
- */
-private FunctionNode FunctionCall() :
-{
-  Token ident;
-  List<ExprNode> exprList;
-}
-{
-  ident = <IDENT>
-  "("
-  { exprList = null; }
+  ident = Identifier()
   [
-    exprList = ExprList()
-  ]
-  ")"
+    openParen = <LPAREN>
 
-  { FunctionNode fnNode = new FunctionNode(ident.image, createSrcLoc(ident));
-    if (exprList != null) {
-      fnNode.addChildren(exprList);
+    [
+      // this can be any expr, for a function call; for proto init, must be a single-ident global
+      first = Expr()
+
+      (
+        // parens contain a list of ident : expr pairs - this is a proto init call
+        <COLON>
+        expr = Expr()
+        { if (!(first instanceof GlobalNode)
+              || !BaseUtils.isIdentifier(((GlobalNode) first).getName())) {
+            errorReporter.report(
+                first.getSourceLocation(), INVALID_PARAM_NAME, first.toSourceString());
+            first = GlobalNode.ERROR;
+          }
+
+          paramNames = new LinkedHashSet<String>();
+
+          paramNames.add(((GlobalNode) first).getName());
+          params.add(expr);
+        }
+
+        (
+          <COMMA>
+
+          paramName = <IDENT>
+          { if (!paramNames.add(paramName.image)) {
+              errorReporter.report(createSrcLoc(paramName), DUPLICATE_PARAM_NAME, paramName.image);
+            }
+          }
+          <COLON>
+          expr = Expr()
+          { params.add(expr); }
+        )*
+
+        closeParen = <RPAREN>
+        { ProtoInitNode pNode = new ProtoInitNode(
+              ident.identifier(), paramNames, ident.location().extend(createSrcLoc(closeParen)));
+          pNode.addChildren(params);
+          return pNode;
+        }
+      |
+        // parens contain a list of exprs - this is a function
+        { params.add(first); }
+
+        (
+          <COMMA>
+          expr = Expr()
+          { params.add(expr); }
+        )*
+
+        closeParen = <RPAREN>
+
+        { FunctionNode fnNode =
+              new FunctionNode(ident.identifier(), ident.location().extend(createSrcLoc(closeParen)));
+          fnNode.addChildren(params);
+          return fnNode;
+        }
+      )
+    ]
+
+    closeParen = <RPAREN>
+  ]
+
+  { // If we did not find parens, this is a global node
+    if (openParen == null) {
+      return new GlobalNode(ident.identifier(), ident.location());
     }
-    return fnNode;
+
+    // we found parens, but no param content. For exprs with no params, prefer functions.
+    // TODO(user): Right now, the ambiguity is resolved in RewriteFunctionsPass, because
+    // ExpressionParser doesn't have access to the type registry. Once ExprParser gets rolled into
+    // SoyFileParser, get rid of RewriteFunctionsPass and do it in the parser.
+    return new FunctionNode(ident.identifier(), ident.location().extend(createSrcLoc(closeParen)));
   }
 }
 
+/**
+ * Parses map and list literals.  Both are primary expressions that start with '['
+ *
+ * CollectionLiteral -> "[ ( "]" | :" "]" | Expr() (("," Expr())* | ( ":" Expr() ("," Expr() ":" Expr())*) [","]]))
+ */
+private ExprNode CollectionLiteral():
+{
+  Token begin, end;
+  ExprNode itemExpr;
+  List<ExprNode> items = ImmutableList.of();
+}
+{
+  begin = <LBRACKET>
+  (
+    // empty map
+    <COLON>
+    end = <RBRACKET>
+    { return new MapLiteralNode(items, createSrcLoc(begin, end)); }
+  |
+    // empty list
+    end = <RBRACKET>
+    { return new ListLiteralNode(items, createSrcLoc(begin, end)); }
+  |
+    // The first item of a non-empty list/map will be an expression
+    itemExpr = MapKeyOrExpr()
+    { items = new ArrayList<ExprNode>();
+      items.add(itemExpr);
+    }
+
+    // The next item will be a comma for a list, or a colon for a map
+    (
+      ( // this lookahead is necessary to make this loop unambiguous with the trailing comma
+        LOOKAHEAD({ getToken(1).kind == COMMA && getToken(2).kind != RBRACKET } )
+        <COMMA>
+        itemExpr = Expr()
+        { items.add(itemExpr); }
+      )*
+      [ <COMMA> ]  // trailing comma
+      end = <RBRACKET>
+      { return new ListLiteralNode(items, createSrcLoc(begin, end)); }
+    |
+      // nonempty map
+      <COLON>
+      itemExpr = Expr()  // value
+      { items.add(itemExpr); }
+      (
+        // this lookahead is necessary to make this loop unambiguous with the trailing comma
+        LOOKAHEAD({ getToken(1).kind == COMMA && getToken(2).kind != RBRACKET } )
+        <COMMA>
+        itemExpr = MapKeyOrExpr()
+        { items.add(itemExpr); }
+        <COLON>
+        itemExpr = Expr()
+        { items.add(itemExpr); }
+      )*
+      [ <COMMA> ]  // trailing comma
+      end = <RBRACKET>
+      { return new MapLiteralNode(items, createSrcLoc(begin, end)); }
+    )
+  )
+}
 
 /**
- * ListLiteral -> "[" [ Expr ( "," Expr )* [ "," ] ] "]"
+ * Matches an expression that can be used as a map key, or a normal expression if it isn't for a
+ * map key.
  */
-private ListLiteralNode ListLiteral() :
+private ExprNode MapKeyOrExpr() :
 {
   ExprNode itemExpr;
+  Token ident;
 }
 {
-  { List<ExprNode> items = Lists.newArrayList(); }
-
-  "["
-  [
+  ( LOOKAHEAD( <IDENT> <COLON> )
+    ident = <IDENT>
+    {
+      // If it wasn't for the LOOKAHEAD this would have parsed as a global, just create one here
+      // so we can keep parsing.
+      itemExpr = new GlobalNode(ident.image, createSrcLoc(ident));
+      // TODO(lukes): consider how important this check is.  The theory is that users might
+      // think that our mapliterals work like keys in js object literals.  Though what will
+      // really happen is that we will parse it as a global and then it just will get whatever
+      // value is assigned (the risk is in the jssrc backend where undefined globals are
+      // allowed).
+      errorReporter.report(
+          createSrcLoc(ident), SINGLE_IDENTIFIER_KEY_IN_MAP_LITERAL, ident.image);
+    }
+  |
     itemExpr = Expr()
-    { items.add(itemExpr); }
+  )
 
-    (
-      LOOKAHEAD( "," Expr() )
-
-      ","
-
-      itemExpr = Expr()
-      { items.add(itemExpr); }
-    )*
-
-    [
-      ","
-    ]
-  ]
-  "]"
-
-  { return new ListLiteralNode(items, SourceLocation.UNKNOWN /* TODO(brndn) */); }
+  { return itemExpr; }
 }
-
 
 /**
- * MapLiteral -> "[" ( ":" | Expr ":" Expr ( "," Expr ":" Expr )* [ "," ] ) "]"
+ * A helper to parse a dotted identifier.
  *
- * Note: We use brackets instead of braces to delimit map literals because braces in Soy are used to
- * delimit Soy tags.
+ * Identifier -> Ident ( Dot Ident )*
  */
-private MapLiteralNode MapLiteral() :
+private Identifier Identifier() :
 {
-  Token ident;
-  ExprNode keyExpr, valueExpr;
-  SourceLocation begin, end;
+  Token first, next = null;
+  StringBuilder sb = null;  // lazily allocated
 }
 {
-  { List<ExprNode> alternatingKeysAndValues = Lists.newArrayList(); }
-
-  "["
-  (
-    ":"
-  |
-    [
-      LOOKAHEAD( <IDENT> ":" )
-      ident = <IDENT>
-      {
-        errorReporter.report(
-            createSrcLoc(ident), SINGLE_IDENTIFIER_KEY_IN_MAP_LITERAL, ident.image);
+  first = <IDENT>
+  // This is a no-op lookahead (it doesn't actually change the algorithm), but it suppresses a
+  // choice conflict warning.  The issue is that global() followed by field access is ambiguous
+  // with extending the global node.  By setting a LOOKAHEAD here, we are just saying 'prefer to
+  // extend the identifier over a field access', which is what we want.
+  ( LOOKAHEAD(1)
+    <DOT>
+    next = <IDENT>
+    { if (sb == null) {
+        sb = new StringBuilder();
+        sb.append(first.image);
       }
-    ]
-    keyExpr = Expr()
-    { alternatingKeysAndValues.add(keyExpr); }
-    ":"
-    valueExpr = Expr()
-    { alternatingKeysAndValues.add(valueExpr); }
-
-    (
-      LOOKAHEAD( "," Expr() )
-
-      ","
-
-      [
-        LOOKAHEAD( <IDENT> ":" )
-        ident = <IDENT>
-        {
-          errorReporter.report(
-              createSrcLoc(ident), SINGLE_IDENTIFIER_KEY_IN_MAP_LITERAL, ident.image);
-        }
-      ]
-      keyExpr = Expr()
-      { alternatingKeysAndValues.add(keyExpr); }
-      ":"
-      valueExpr = Expr()
-      { alternatingKeysAndValues.add(valueExpr); }
-    )*
-
-    [
-      ","
-    ]
-  )
-  "]"
-
-  { return new MapLiteralNode(alternatingKeysAndValues, SourceLocation.UNKNOWN /* TODO(brndn) */); }
-}
-
-// Match everything else as an 'unexpected' or as a special LEGACY token. This prevents
-// TokenMgrErrors from being thrown and instead this will get turned into ParseExceptions which
-// have more debugging information.
-// Define at the bottom of the file so all the string literals defined in our grammar expressions
-// above are matched preferentially.  This is only really necessary for UNEXPECTED_TOKEN.
-TOKEN : {
-    < LEGACY_AND : "&&" >
-|   < LEGACY_OR : "||" >
-|   < LEGACY_NOT : "!" >
-|   < DOUBLE_QUOTE : "\"" >
-|   < UNEXPECTED_TOKEN : ~[] >
+      sb.append('.').append(next.image);
+    }
+  )*
+  { if (sb != null) {
+      return Identifier.create(sb.toString(), createSrcLoc(first, next));
+    } else {
+      return Identifier.create(first.image, createSrcLoc(first));
+    }
+  }
 }

@@ -28,20 +28,18 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
-
 import java.util.List;
 
 /**
  * Visitor for extracting messages from a Soy parse tree.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
- * <p> {@link #exec} should be called on a full parse tree. All messages will be extracted and
+ * <p>{@link #exec} should be called on a full parse tree. All messages will be extracted and
  * returned in a {@code SoyMsgBundle} (locale "en").
  *
  */
 public final class ExtractMsgsVisitor extends AbstractSoyNodeVisitor<SoyMsgBundle> {
-
 
   /** List of messages collected during the pass. */
   private List<SoyMsg> msgs;
@@ -50,14 +48,14 @@ public final class ExtractMsgsVisitor extends AbstractSoyNodeVisitor<SoyMsgBundl
    * Returns a SoyMsgBundle containing all messages extracted from the given SoyFileSetNode or
    * SoyFileNode (locale string is null).
    */
-  @Override public SoyMsgBundle exec(SoyNode node) {
+  @Override
+  public SoyMsgBundle exec(SoyNode node) {
     Preconditions.checkArgument(node instanceof SoyFileSetNode || node instanceof SoyFileNode);
 
     msgs = Lists.newArrayList();
     visit(node);
     return new SoyMsgBundleImpl(null, msgs);
   }
-
 
   /**
    * Returns a SoyMsgBundle containing all messages extracted from the given nodes (locale string is
@@ -71,32 +69,38 @@ public final class ExtractMsgsVisitor extends AbstractSoyNodeVisitor<SoyMsgBundl
     return new SoyMsgBundleImpl(null, msgs);
   }
 
-
   // -----------------------------------------------------------------------------------------------
   // Implementations for specific nodes.
 
-
-  @Override protected void visitSoyFileNode(SoyFileNode node) {
+  @Override
+  protected void visitSoyFileNode(SoyFileNode node) {
     visitChildren(node);
   }
 
-
-  @Override protected void visitMsgNode(MsgNode node) {
+  @Override
+  protected void visitMsgNode(MsgNode node) {
     MsgPartsAndIds msgPartsAndIds = MsgUtils.buildMsgPartsAndComputeMsgIdForDualFormat(node);
-    msgs.add(new SoyMsg(
-        msgPartsAndIds.id, -1L, null, node.getMeaning(), node.getDesc(), node.isHidden(),
-        node.getContentType(), node.getSourceLocation(), node.isPlrselMsg(), msgPartsAndIds.parts));
+    msgs.add(
+        new SoyMsg(
+            msgPartsAndIds.id,
+            -1L,
+            null,
+            node.getMeaning(),
+            node.getDesc(),
+            node.isHidden(),
+            node.getContentType(),
+            node.getSourceLocation(),
+            node.isPlrselMsg(),
+            msgPartsAndIds.parts));
   }
-
 
   // -----------------------------------------------------------------------------------------------
   // Fallback implementation.
 
-
-  @Override protected void visitSoyNode(SoyNode node) {
+  @Override
+  protected void visitSoyNode(SoyNode node) {
     if (node instanceof ParentSoyNode<?>) {
       visitChildren((ParentSoyNode<?>) node);
     }
   }
-
 }

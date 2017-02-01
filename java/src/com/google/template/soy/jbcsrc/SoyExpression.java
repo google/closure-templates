@@ -20,10 +20,12 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.OBJECT;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.RENDER_CONTEXT_TYPE;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.SOY_LIST_TYPE;
+import static com.google.template.soy.jbcsrc.BytecodeUtils.SOY_VALUE_TYPE;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.logicalNot;
 
 import com.google.common.base.Optional;
+import com.google.protobuf.Message;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.soytree.CallNode;
@@ -57,33 +59,31 @@ import org.objectweb.asm.Type;
 class SoyExpression extends Expression {
 
   static SoyExpression forSoyValue(SoyType type, Expression delegate) {
-    return new SoyExpression(
-        SoyRuntimeType.getBoxedType(type), delegate, Optional.<Expression>absent());
+    return new SoyExpression(SoyRuntimeType.getBoxedType(type), delegate);
   }
 
   static SoyExpression forBool(Expression delegate) {
-    return new SoyExpression(getUnboxedTypeUnchecked(BoolType.getInstance()), delegate);
+    return new SoyExpression(getUnboxedType(BoolType.getInstance()), delegate);
   }
 
   static SoyExpression forFloat(Expression delegate) {
-    return new SoyExpression(getUnboxedTypeUnchecked(FloatType.getInstance()), delegate);
+    return new SoyExpression(getUnboxedType(FloatType.getInstance()), delegate);
   }
 
   static SoyExpression forInt(Expression delegate) {
-    return new SoyExpression(getUnboxedTypeUnchecked(IntType.getInstance()), delegate);
+    return new SoyExpression(getUnboxedType(IntType.getInstance()), delegate);
   }
 
   static SoyExpression forString(Expression delegate) {
-    return new SoyExpression(getUnboxedTypeUnchecked(StringType.getInstance()), delegate);
+    return new SoyExpression(getUnboxedType(StringType.getInstance()), delegate);
   }
 
   static SoyExpression forSanitizedString(Expression delegate, ContentKind kind) {
-    return new SoyExpression(
-        getUnboxedTypeUnchecked(SanitizedType.getTypeForContentKind(kind)), delegate);
+    return new SoyExpression(getUnboxedType(SanitizedType.getTypeForContentKind(kind)), delegate);
   }
 
   static SoyExpression forList(ListType listType, Expression delegate) {
-    return new SoyExpression(getUnboxedTypeUnchecked(listType), delegate);
+    return new SoyExpression(getUnboxedType(listType), delegate);
   }
 
   static SoyExpression forProto(
@@ -102,20 +102,29 @@ class SoyExpression extends Expression {
     }
     return BytecodeUtils.asList(childExprs);
   }
-  
+
   static final SoyExpression NULL =
       new SoyExpression(
-          getUnboxedTypeUnchecked(NullType.getInstance()),
+          getUnboxedType(NullType.getInstance()),
           new Expression(OBJECT.type(), Feature.CHEAP) {
             @Override
-            void doGen(CodeBuilder adapter) {
-              adapter.visitInsn(Opcodes.ACONST_NULL);
+            void doGen(CodeBuilder cb) {
+              cb.pushNull();
+            }
+          });
+
+  static final SoyExpression NULL_BOXED =
+      new SoyExpression(
+          SoyRuntimeType.getBoxedType(NullType.getInstance()),
+          new Expression(SOY_VALUE_TYPE, Feature.CHEAP) {
+            @Override
+            void doGen(CodeBuilder cb) {
+              cb.pushNull();
             }
           });
 
   static final SoyExpression TRUE =
-      new SoyExpression(
-          getUnboxedTypeUnchecked(BoolType.getInstance()), BytecodeUtils.constant(true)) {
+      new SoyExpression(getUnboxedType(BoolType.getInstance()), BytecodeUtils.constant(true)) {
         @Override
         SoyExpression box() {
           return new DefaultBoxed(
@@ -127,8 +136,7 @@ class SoyExpression extends Expression {
       };
 
   static final SoyExpression FALSE =
-      new SoyExpression(
-          getUnboxedTypeUnchecked(BoolType.getInstance()), BytecodeUtils.constant(false)) {
+      new SoyExpression(getUnboxedType(BoolType.getInstance()), BytecodeUtils.constant(false)) {
         @Override
         SoyExpression box() {
           return new DefaultBoxed(
@@ -139,62 +147,60 @@ class SoyExpression extends Expression {
         }
       };
 
-  private static SoyRuntimeType getUnboxedTypeUnchecked(SoyType soyType) {
+  private static SoyRuntimeType getUnboxedType(SoyType soyType) {
     return SoyRuntimeType.getUnboxedType(soyType).get();
   }
 
-  private final SoyRuntimeType soyType;
+  private final SoyRuntimeType soyRuntimeType;
   private final Expression delegate;
   private final Optional<Expression> renderContext;
 
-  private SoyExpression(SoyRuntimeType soyType, Expression delegate) {
-    this(soyType, delegate, Optional.<Expression>absent());
+  private SoyExpression(SoyRuntimeType soyRuntimeType, Expression delegate) {
+    this(soyRuntimeType, delegate, Optional.<Expression>absent());
   }
 
   private SoyExpression(
-      SoyRuntimeType soyType, Expression delegate, Optional<Expression> renderContext) {
+      SoyRuntimeType soyRuntimeType, Expression delegate, Optional<Expression> renderContext) {
     super(delegate.resultType(), delegate.features());
     checkArgument(
-        BytecodeUtils.isPossiblyAssignableFrom(soyType.runtimeType(), delegate.resultType()),
-        "delegate with type %s isn't compatible with asserted SoyExpression type %s",
-        delegate.resultType(),
-        soyType.runtimeType());
-    this.soyType = soyType;
+        BytecodeUtils.isPossiblyAssignableFrom(soyRuntimeType.runtimeType(), delegate.resultType()),
+        "Expecting SoyExpression type of %s, found delegate with type of %s",
+        soyRuntimeType.runtimeType(),
+        delegate.resultType());
+    this.soyRuntimeType = soyRuntimeType;
     this.delegate = delegate;
     this.renderContext = renderContext;
   }
 
   /** Returns the {@link SoyType} of the expression. */
   final SoyType soyType() {
-    return soyRuntimeType().soyType();
+    return soyRuntimeType.soyType();
   }
 
+  /** Returns the {@link SoyRuntimeType} of the expression. */
   final SoyRuntimeType soyRuntimeType() {
-    return soyType;
+    return soyRuntimeType;
   }
 
-  @Override final void doGen(CodeBuilder adapter) {
+  @Override
+  final void doGen(CodeBuilder adapter) {
     delegate.gen(adapter);
   }
 
   boolean assignableToNullableInt() {
-    return soyRuntimeType().assignableToNullableInt();
+    return soyRuntimeType.assignableToNullableInt();
   }
 
   boolean assignableToNullableFloat() {
-    return soyRuntimeType().assignableToNullableFloat();
+    return soyRuntimeType.assignableToNullableFloat();
   }
 
   boolean assignableToNullableNumber() {
-    return soyRuntimeType().assignableToNullableNumber();
-  }
-
-  boolean isKnownList() {
-    return soyRuntimeType().isKnownList();
+    return soyRuntimeType.assignableToNullableNumber();
   }
 
   boolean isBoxed() {
-    return soyRuntimeType().isBoxed();
+    return soyRuntimeType.isBoxed();
   }
 
   /** Returns a SoyExpression that evaluates to a subtype of {@link SoyValue}. */
@@ -202,13 +208,15 @@ class SoyExpression extends Expression {
     if (isBoxed()) {
       return this;
     }
-    if (soyType.soyType().equals(NullType.getInstance())) {
-      return this;
+    if (soyType().equals(NullType.getInstance())) {
+      return NULL_BOXED;
     }
     // If null is expected and it is a reference type we want to propagate null through the boxing
     // operation
     if (!delegate.isNonNullable()) {
       // now prefix with a null check and then box so null is preserved via 'boxing'
+      // TODO(lukes): this violates the expression contract since we jump to a label outside the
+      // scope of the expression
       final Label end = new Label();
       return withSource(
               new Expression(resultType(), features()) {
@@ -223,33 +231,32 @@ class SoyExpression extends Expression {
           .asNullable()
           .labelEnd(end);
     }
-    if (soyRuntimeType().isKnownBool()) {
+    if (soyRuntimeType.isKnownBool()) {
       return asBoxed(MethodRef.BOOLEAN_DATA_FOR_VALUE.invoke(delegate));
     }
-    if (soyRuntimeType().isKnownInt()) {
+    if (soyRuntimeType.isKnownInt()) {
       return asBoxed(MethodRef.INTEGER_DATA_FOR_VALUE.invoke(delegate));
     }
-    if (soyRuntimeType().isKnownFloat()) {
+    if (soyRuntimeType.isKnownFloat()) {
       return asBoxed(MethodRef.FLOAT_DATA_FOR_VALUE.invoke(delegate));
     }
-    if (soyRuntimeType().isKnownSanitizedContent()) {
+    if (soyRuntimeType.isKnownSanitizedContent()) {
       return asBoxed(
           MethodRef.ORDAIN_AS_SAFE.invoke(
               delegate,
-              FieldRef.enumReference(((SanitizedType) soyRuntimeType().soyType()).getContentKind())
-                  .accessor()));
+              FieldRef.enumReference(((SanitizedType) soyType()).getContentKind()).accessor()));
     }
-    if (soyRuntimeType().isKnownString()) {
+    if (soyRuntimeType.isKnownString()) {
       return asBoxed(MethodRef.STRING_DATA_FOR_VALUE.invoke(delegate));
     }
-    if (isKnownList()) {
+    if (soyRuntimeType.isKnownList()) {
       return asBoxed(MethodRef.LIST_IMPL_FOR_PROVIDER_LIST.invoke(delegate));
     }
-    if (soyRuntimeType().isKnownProto()) {
+    if (soyRuntimeType.isKnownProto()) {
       // dereference the context early in case our caller screwed up and we don't have one.
       final Expression context = renderContext.get();
       return asBoxed(
-          new Expression(ProtoUtils.RENDER_CONTEXT_BOX.returnType(), delegate.features()) {
+          new Expression(MethodRef.RENDER_CONTEXT_BOX.returnType(), delegate.features()) {
             @Override
             void doGen(CodeBuilder adapter) {
               delegate.gen(adapter);
@@ -265,15 +272,15 @@ class SoyExpression extends Expression {
               // a depth of zero to a top level concept (an Expression Feature), so that we can flag
               // it more eagerly, something else?
               adapter.swap();
-              ProtoUtils.RENDER_CONTEXT_BOX.invokeUnchecked(adapter);
+              MethodRef.RENDER_CONTEXT_BOX.invokeUnchecked(adapter);
             }
           });
     }
-    throw new IllegalStateException("cannot box soy expression of type " + soyType);
+    throw new IllegalStateException("Can't box soy expression of type " + soyRuntimeType);
   }
 
   private DefaultBoxed asBoxed(Expression expr) {
-    return new DefaultBoxed(soyRuntimeType().box(), this, expr, renderContext);
+    return new DefaultBoxed(soyRuntimeType.box(), this, expr, renderContext);
   }
 
   /** Coerce this expression to a boolean value. */
@@ -282,7 +289,7 @@ class SoyExpression extends Expression {
     if (BytecodeUtils.isPrimitive(resultType())) {
       return coercePrimitiveToBoolean();
     }
-    if (soyType.soyType().equals(NullType.getInstance())) {
+    if (soyType().equals(NullType.getInstance())) {
       return FALSE;
     }
     if (delegate.isNonNullable()) {
@@ -330,24 +337,25 @@ class SoyExpression extends Expression {
       return forBool(delegate.invoke(MethodRef.SOY_VALUE_COERCE_TO_BOOLEAN));
     }
     // unboxed non-primitive types.  This would be strings, protos or lists
-    if (soyRuntimeType().isKnownString()) {
+    if (soyRuntimeType.isKnownString()) {
       return forBool(logicalNot(delegate.invoke(MethodRef.STRING_IS_EMPTY)));
     }
     // All other types are always truthy, but we still need to eval the delegate in case it has
     // side effects or contains a null exit branch.
     return forBool(
-            new Expression(Type.BOOLEAN_TYPE, delegate.features()) {
-              @Override void doGen(CodeBuilder adapter) {
-                delegate.gen(adapter);
-                adapter.pop();
-                adapter.pushBoolean(true);
-              }
-            });
+        new Expression(Type.BOOLEAN_TYPE, delegate.features()) {
+          @Override
+          void doGen(CodeBuilder adapter) {
+            delegate.gen(adapter);
+            adapter.pop();
+            adapter.pushBoolean(true);
+          }
+        });
   }
 
   /** Coerce this expression to a string value. */
   SoyExpression coerceToString() {
-    if (soyRuntimeType().isKnownString() && !isBoxed()) {
+    if (soyRuntimeType.isKnownString() && !isBoxed()) {
       return this;
     }
     if (BytecodeUtils.isPrimitive(resultType())) {
@@ -370,20 +378,18 @@ class SoyExpression extends Expression {
     return forString(MethodRef.RUNTIME_COERCE_TO_STRING.invoke(delegate));
   }
 
-  /**
-   * Coerce to a double, useful for float-int comparisons
-   */
+  /** Coerce this expression to a double value. Useful for float-int comparisons. */
   SoyExpression coerceToDouble() {
     if (!isBoxed()) {
-      if (soyRuntimeType().isKnownFloat()) {
+      if (soyRuntimeType.isKnownFloat()) {
         return this;
       }
-      if (soyRuntimeType().isKnownInt()) {
+      if (soyRuntimeType.isKnownInt()) {
         return forFloat(BytecodeUtils.numericConversion(delegate, Type.DOUBLE_TYPE));
       }
       throw new UnsupportedOperationException("Can't convert " + resultType() + " to a double");
     }
-    if (soyRuntimeType().isKnownFloat()) {
+    if (soyRuntimeType.isKnownFloat()) {
       return forFloat(delegate.invoke(MethodRef.SOY_VALUE_FLOAT_VALUE));
     }
     return forFloat(delegate.invoke(MethodRef.SOY_VALUE_NUMBER_VALUE));
@@ -406,17 +412,28 @@ class SoyExpression extends Expression {
         !SoyValue.class.isAssignableFrom(asType),
         "Cannot use unboxAs() to convert to a SoyValue: %s, use .box() instead",
         asType);
-    // no op conversion, always allow.
-    if (BytecodeUtils.isDefinitelyAssignableFrom(Type.getType(asType), soyType.runtimeType())) {
+
+    // No-op conversion, always allow.
+    // SoyExpressions that are already unboxed fall into this case.
+    if (BytecodeUtils.isDefinitelyAssignableFrom(
+        Type.getType(asType), soyRuntimeType.runtimeType())) {
       return this;
     }
+
+    // Attempting to unbox an unboxed proto
+    if (asType.equals(Message.class) && soyRuntimeType.isKnownProto() && !isBoxed()) {
+      return this;
+    }
+
     if (!isBoxed()) {
       throw new IllegalStateException(
           "Trying to unbox an unboxed value ("
-              + soyType
-              + ") doesn't make sense, "
-              + "should you be using a type coercion? e.g. .coerceToBoolean()");
+              + soyRuntimeType
+              + ") into "
+              + asType
+              + " doesn't make sense. Should you be using a type coercion? e.g. .coerceToBoolean()");
     }
+
     if (asType.equals(boolean.class)) {
       return forBool(delegate.invoke(MethodRef.SOY_VALUE_BOOLEAN_VALUE));
     }
@@ -426,145 +443,159 @@ class SoyExpression extends Expression {
     if (asType.equals(double.class)) {
       return forFloat(delegate.invoke(MethodRef.SOY_VALUE_FLOAT_VALUE));
     }
+
     if (delegate.isNonNullable()) {
       if (asType.equals(String.class)) {
         Expression unboxedString = delegate.invoke(MethodRef.SOY_VALUE_STRING_VALUE);
         // We need to ensure that santized types don't lose their content kinds
-        return soyRuntimeType().isKnownSanitizedContent()
-            ? forSanitizedString(
-                unboxedString, ((SanitizedType) soyType.soyType()).getContentKind())
+        return soyRuntimeType.isKnownSanitizedContent()
+            ? forSanitizedString(unboxedString, ((SanitizedType) soyType()).getContentKind())
             : forString(unboxedString);
       }
       if (asType.equals(List.class)) {
         return unboxAsList();
       }
+      if (asType.equals(Message.class)) {
+        SoyRuntimeType runtimeType = getUnboxedType(soyType());
+        return forProto(
+            runtimeType,
+            delegate
+                .invoke(MethodRef.SOY_PROTO_VALUE_GET_PROTO)
+                .checkedCast(runtimeType.runtimeType()),
+            renderContext.get());
+      }
     } else {
       // else it must be a List/Proto/String all of which must preserve null through the unboxing
       // operation
+      // TODO(lukes): this violates the expression contract since we jump to a label outside the
+      // scope of the expression
       final Label end = new Label();
       Expression nonNullDelegate =
           new Expression(resultType(), features()) {
-            @Override void doGen(CodeBuilder adapter) {
+            @Override
+            void doGen(CodeBuilder adapter) {
               delegate.gen(adapter);
               BytecodeUtils.nullCoalesce(adapter, end);
             }
           };
       return withSource(nonNullDelegate).asNonNullable().unboxAs(asType).asNullable().labelEnd(end);
     }
-    throw new UnsupportedOperationException("Can't unbox " + soyType + " as " + asType);
+    throw new UnsupportedOperationException("Can't unbox " + soyRuntimeType + " as " + asType);
   }
 
   private SoyExpression unboxAsList() {
     ListType asListType;
-    if (isKnownList()) {
-      asListType = (ListType) soyType.soyType();
+    if (soyRuntimeType.isKnownList()) {
+      asListType = (ListType) soyType();
     } else {
-      Kind kind = soyType.soyType().getKind();
+      Kind kind = soyType().getKind();
       if (kind == Kind.UNKNOWN) {
         asListType = ListType.of(UnknownType.getInstance());
       } else {
         // The type checker should have already rejected all of these
-        throw new UnsupportedOperationException("Cannot convert " + soyType + " to List");
+        throw new UnsupportedOperationException("Can't convert " + soyRuntimeType + " to List");
       }
     }
     return forList(
-        asListType, delegate.cast(SOY_LIST_TYPE).invoke(MethodRef.SOY_LIST_AS_JAVA_LIST));
+        asListType, delegate.checkedCast(SOY_LIST_TYPE).invoke(MethodRef.SOY_LIST_AS_JAVA_LIST));
   }
 
-  /**
-   * Returns a new {@link SoyExpression} with the same type but a new delegate expression.
-   */
+  /** Returns a new {@link SoyExpression} with the same type but a new delegate expression. */
   SoyExpression withSource(Expression expr) {
-    return new SoyExpression(soyType, expr, renderContext);
+    return new SoyExpression(soyRuntimeType, expr, renderContext);
   }
 
   SoyExpression withRenderContext(Expression renderContext) {
-    if (this.renderContext.isPresent() && this.renderContext.get().equals(renderContext)) {
-      return this;
-    }
-    return new SoyExpression(soyType, delegate, Optional.of(renderContext));
+    checkArgument(renderContext.resultType().equals(RENDER_CONTEXT_TYPE));
+    return new SoyExpression(soyRuntimeType, delegate, Optional.of(renderContext));
   }
 
   /**
-  * Applies a print directive to the soyValue, only useful for parameterless print directives such
-  * as those applied to {@link MsgNode msg nodes} and {@link CallNode call nodes} for autoescaping.
-  * For {@link PrintNode print nodes}, the directives may be parameterized by arbitrary soy 
-  * expressions. 
-  */
+   * Applies a print directive to the soyValue, only useful for parameterless print directives such
+   * as those applied to {@link MsgNode msg nodes} and {@link CallNode call nodes} for autoescaping.
+   * For {@link PrintNode print nodes}, the directives may be parameterized by arbitrary soy
+   * expressions.
+   */
   SoyExpression applyPrintDirective(Expression renderContext, String directive) {
     return applyPrintDirective(renderContext, directive, MethodRef.IMMUTABLE_LIST_OF.invoke());
   }
 
-  /**
-  * Applies a print directive to the soyValue.
-  */
+  /** Applies a print directive to the soyValue. */
   SoyExpression applyPrintDirective(
       Expression renderContext, String directive, Expression argsList) {
-    // Technically the type is either StringData or SanitizedContent depending on this type, but 
+    // Technically the type is either StringData or SanitizedContent depending on this type, but
     // boxed.  Consider propagating the type more accurately, currently there isn't (afaict) much
     // benefit (and strangely there is no common super type for SanitizedContent and String), this
     // is probably because after escaping, the only thing you would ever do is convert to a string.
-    return SoyExpression.forSoyValue(UnknownType.getInstance(), 
+    return SoyExpression.forSoyValue(
+        UnknownType.getInstance(),
         MethodRef.RUNTIME_APPLY_PRINT_DIRECTIVE.invoke(
-            renderContext
-                .invoke(MethodRef.RENDER_CONTEXT_GET_PRINT_DIRECTIVE, constant(directive)),
-                this.box(),
+            renderContext.invoke(MethodRef.RENDER_CONTEXT_GET_PRINT_DIRECTIVE, constant(directive)),
+            this.box(),
             argsList));
   }
 
-  @Override SoyExpression asCheap() {
+  @Override
+  SoyExpression asCheap() {
     return withSource(delegate.asCheap());
   }
 
-  @Override SoyExpression asNonNullable() {
-    return new SoyExpression(soyType.asNonNullable(), delegate.asNonNullable(), renderContext);
+  @Override
+  SoyExpression asNonNullable() {
+    return new SoyExpression(
+        soyRuntimeType.asNonNullable(), delegate.asNonNullable(), renderContext);
   }
 
   @Override
-  public SoyExpression asNullable() {
-    return new SoyExpression(soyType.asNullable(), delegate.asNullable(), renderContext);
+  SoyExpression asNullable() {
+    return new SoyExpression(soyRuntimeType.asNullable(), delegate.asNullable(), renderContext);
   }
 
-  @Override SoyExpression labelStart(Label label) {
+  @Override
+  SoyExpression labelStart(Label label) {
     return withSource(delegate.labelStart(label));
   }
 
-  @Override SoyExpression labelEnd(Label label) {
+  @Override
+  SoyExpression labelEnd(Label label) {
     return withSource(delegate.labelEnd(label));
   }
 
-  /**
-   * Default subtype of {@link SoyExpression} used by our core expression implementations.
-   */
+  /** Default subtype of {@link SoyExpression} used by our core expression implementations. */
   private static final class DefaultBoxed extends SoyExpression {
     private final SoyExpression unboxed;
 
     DefaultBoxed(
-        SoyRuntimeType soyType,
+        SoyRuntimeType soyRuntimeType,
         SoyExpression unboxed,
         Expression delegate,
-        Optional<Expression> expr) {
-      super(soyType, delegate, expr);
+        Optional<Expression> renderContext) {
+      super(soyRuntimeType, delegate, renderContext);
       this.unboxed = unboxed;
     }
 
-    @Override final SoyExpression unboxAs(Class<?> asType) {
+    @Override
+    final SoyExpression unboxAs(Class<?> asType) {
       return unboxed.unboxAs(asType);
     }
 
-    @Override SoyExpression coerceToBoolean() {
+    @Override
+    SoyExpression coerceToBoolean() {
       return unboxed.coerceToBoolean();
     }
 
-    @Override SoyExpression coerceToString() {
+    @Override
+    SoyExpression coerceToString() {
       return unboxed.coerceToString();
     }
 
-    @Override SoyExpression coerceToDouble() {
+    @Override
+    SoyExpression coerceToDouble() {
       return unboxed.coerceToDouble();
     }
 
-    @Override final SoyExpression box() {
+    @Override
+    final SoyExpression box() {
       return this;
     }
   }

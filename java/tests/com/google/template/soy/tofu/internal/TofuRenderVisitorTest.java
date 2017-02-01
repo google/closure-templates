@@ -29,7 +29,7 @@ import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.SoyModule;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.SoyValueHelper;
+import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.shared.internal.FunctionAdapters;
 import com.google.template.soy.shared.restricted.SoyFunction;
@@ -39,17 +39,18 @@ import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.sharedpasses.render.RenderVisitor;
 import com.google.template.soy.sharedpasses.render.RenderVisitorFactory;
 import com.google.template.soy.soytree.TemplateRegistry;
-
-import junit.framework.TestCase;
-
 import java.util.List;
 import java.util.Set;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for TofuRenderVisitor.
  *
  */
-public class TofuRenderVisitorTest extends TestCase {
+@RunWith(JUnit4.class)
+public class TofuRenderVisitorTest {
 
   private static final class Reverse implements SoyJavaFunction {
 
@@ -96,7 +97,6 @@ public class TofuRenderVisitorTest extends TestCase {
     }
   }
 
-
   private static final Injector INJECTOR =
       Guice.createInjector(
           new SoyModule(),
@@ -113,30 +113,30 @@ public class TofuRenderVisitorTest extends TestCase {
           });
 
   // TODO: Does this belong in RenderVisitorTest instead?
+  @Test
   public void testLetWithinParam() throws Exception {
 
-    String soyFileContent = "" +
-        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n" +
-        "\n" +
-        "/***/\n" +
-        "{template .callerTemplate}\n" +
-        "  {call .calleeTemplate}\n" +
-        "    {param boo}\n" +
-        "      {let $foo: 'blah' /}\n" +
-        "      {$foo}\n" +
-        "    {/param}\n" +
-        "  {/call}\n" +
-        "{/template}\n" +
-        "\n" +
-        "/** @param boo */\n" +
-        "{template .calleeTemplate}\n" +
-        "  {$boo}\n" +
-        "{/template}\n";
+    String soyFileContent =
+        ""
+            + "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
+            + "\n"
+            + "/***/\n"
+            + "{template .callerTemplate}\n"
+            + "  {call .calleeTemplate}\n"
+            + "    {param boo}\n"
+            + "      {let $foo: 'blah' /}\n"
+            + "      {$foo}\n"
+            + "    {/param}\n"
+            + "  {/call}\n"
+            + "{/template}\n"
+            + "\n"
+            + "/** @param boo */\n"
+            + "{template .calleeTemplate}\n"
+            + "  {$boo}\n"
+            + "{/template}\n";
 
     TemplateRegistry templateRegistry =
-        SoyFileSetParserBuilder.forFileContents(soyFileContent)
-            .parse()
-            .registry();
+        SoyFileSetParserBuilder.forFileContents(soyFileContent).parse().registry();
 
     // Important: This test will be doing its intended job only if we run
     // MarkParentNodesNeedingEnvFramesVisitor, because otherwise the 'let' within the 'param' block
@@ -149,7 +149,7 @@ public class TofuRenderVisitorTest extends TestCase {
             .create(
                 outputSb,
                 templateRegistry,
-                SoyValueHelper.EMPTY_DICT,
+                SoyValueConverter.EMPTY_DICT,
                 null /* ijData */,
                 Predicates.<String>alwaysFalse() /* activeDelPackageSelector */,
                 null /* msgBundle */,
@@ -161,6 +161,7 @@ public class TofuRenderVisitorTest extends TestCase {
   }
 
   // Regression test covering rollback of cl/101592053.
+  @Test
   public void testJavaFunctions() {
     String soyFileContent =
         "{namespace ns autoescape=\"strict\"}\n"
@@ -176,26 +177,30 @@ public class TofuRenderVisitorTest extends TestCase {
     TemplateRegistry registry = result.registry();
 
     StringBuilder out = new StringBuilder();
-    RenderVisitor rv = INJECTOR.getInstance(RenderVisitorFactory.class).create(
-        out,
-        registry,
-        SoyValueHelper.EMPTY_DICT,
-        null /* ijData */,
-        null /* activeDelPackageNames */,
-        null /* msgBundle */,
-        null /* xidRenamingMap */,
-        null /* cssRenamingMap */);
+    RenderVisitor rv =
+        INJECTOR
+            .getInstance(RenderVisitorFactory.class)
+            .create(
+                out,
+                registry,
+                SoyValueConverter.EMPTY_DICT,
+                null /* ijData */,
+                null /* activeDelPackageNames */,
+                null /* msgBundle */,
+                null /* xidRenamingMap */,
+                null /* cssRenamingMap */);
     rv.exec(registry.getBasicTemplate("ns.foo"));
     assertThat(out.toString()).isEqualTo("olleh");
   }
 
+  @Test
   public void testTofuPrintDirectives() {
     String soyFileContent =
         "{namespace ns autoescape=\"strict\"}\n"
-        + "/***/\n"
-        + "{template .foo kind=\"html\"}\n"
-        + "  {'hello' |caps}\n"
-        + "{/template}\n";
+            + "/***/\n"
+            + "{template .foo kind=\"html\"}\n"
+            + "  {'hello' |caps}\n"
+            + "{/template}\n";
 
     ImmutableMap<String, ? extends SoyJavaPrintDirective> printDirectives =
         FunctionAdapters.buildSpecificSoyDirectivesMap(
@@ -203,16 +208,19 @@ public class TofuRenderVisitorTest extends TestCase {
     ParseResult result = SoyFileSetParserBuilder.forFileContents(soyFileContent).parse();
     TemplateRegistry registry = result.registry();
     StringBuilder out = new StringBuilder();
-    RenderVisitor rv = INJECTOR.getInstance(TofuRenderVisitorFactory.class).create(
-        out,
-        registry,
-        printDirectives,
-        SoyValueHelper.EMPTY_DICT,
-        SoyValueHelper.EMPTY_DICT /* ijData */,
-        null /* activeDelPackageNames */,
-        null /* msgBundle */,
-        null /* xidRenamingMap */,
-        null /* cssRenamingMap */);
+    RenderVisitor rv =
+        INJECTOR
+            .getInstance(TofuRenderVisitorFactory.class)
+            .create(
+                out,
+                registry,
+                printDirectives,
+                SoyValueConverter.EMPTY_DICT,
+                SoyValueConverter.EMPTY_DICT /* ijData */,
+                null /* activeDelPackageNames */,
+                null /* msgBundle */,
+                null /* xidRenamingMap */,
+                null /* cssRenamingMap */);
     rv.exec(registry.getBasicTemplate("ns.foo"));
     assertThat(out.toString()).isEqualTo("HELLO");
   }

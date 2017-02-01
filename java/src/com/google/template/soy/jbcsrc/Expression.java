@@ -21,34 +21,49 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-
-import org.objectweb.asm.Label;
-import org.objectweb.asm.Type;
-
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
+import org.objectweb.asm.Label;
+import org.objectweb.asm.Type;
 
 /**
  * An expression has a {@link #resultType()} and can {@link #gen generate} code to evaluate the
  * expression.
  *
- * <p>Expressions should be side effect free and also should not <em>consume</em> stack items.
+ * <p>Expressions should:
+ *
+ * <ul>
+ *   <li>have no side effects
+ *   <li>be idempotent (you can compose them multiple times and get sensible results)
+ *   <li>produce <em>exactly 1</em> <i>value</i> onto the runtime stack
+ *   <li>not <em>consume</em> stack items
+ * </ul>
+ *
+ * <p>These rules make it easier to compose and reason about the effect of composing expressions. In
+ * particular it makes it easier to maintain the stack height and type invariants of the JVM.
+ *
+ * <p>Due to these constraints there are some natural consequences, a few examples include:
+ *
+ * <ul>
+ *   <li>An expression should never branch to a label outside of the same expression. (Note: {@code
+ *       return} and {@code throw} are special cases that are allowed)
+ * </ul>
  */
 abstract class Expression extends BytecodeProducer {
-  /** 
+  /**
    * Expression features track additional metadata for expressions.
-   * 
-   * <p>Features should be defined such that not setting a feature on an expression is a safe 
-   * default.  That way if they get accidentally dropped in a transformation we simply generate
-   * less efficient code, not incorrect code.
+   *
+   * <p>Features should be defined such that not setting a feature on an expression is a safe
+   * default. That way if they get accidentally dropped in a transformation we simply generate less
+   * efficient code, not incorrect code.
    */
   enum Feature {
     /** The expression is guaranteed to not return null. */
     NON_NULLABLE,
-    /** 
-     * The expression is 'cheap'.  As a rule of thumb, if it involves allocation, it is not cheap.
-     * 
+    /**
+     * The expression is 'cheap'. As a rule of thumb, if it involves allocation, it is not cheap.
+     *
      * <p>Cheapness is useful when deciding if it would be reasonable to evaluate an expression more
      * than once if the alternative is generating additional fields and save/restore code.
      */
@@ -65,7 +80,7 @@ abstract class Expression extends BytecodeProducer {
       return EMPTY;
     }
 
-    static Features of(Feature first, Feature ...rest) {
+    static Features of(Feature first, Feature... rest) {
       EnumSet<Feature> set = EnumSet.of(first);
       Collections.addAll(set, rest);
       return new Features(set);
@@ -141,22 +156,18 @@ abstract class Expression extends BytecodeProducer {
   }
 
   /** Returns true if all referenced expressions are {@linkplain #isCheap() cheap}. */
-  static boolean areAllCheap(Expression first, Expression ...rest) {
+  static boolean areAllCheap(Expression first, Expression... rest) {
     return areAllCheap(ImmutableList.<Expression>builder().add(first).add(rest).build());
   }
 
-  /**
-   * Checks that the given expressions are compatible with the given types.
-   */
-  static void checkTypes(ImmutableList<Type> types, Expression ...exprs) {
+  /** Checks that the given expressions are compatible with the given types. */
+  static void checkTypes(ImmutableList<Type> types, Expression... exprs) {
     if (Flags.DEBUG) {
       checkTypes(types, Arrays.asList(exprs));
     }
   }
 
-  /**
-   * Checks that the given expressions are compatible with the given types.
-   */
+  /** Checks that the given expressions are compatible with the given types. */
   static void checkTypes(ImmutableList<Type> types, Iterable<? extends Expression> exprs) {
     if (Flags.DEBUG) {
       int size = Iterables.size(exprs);
@@ -180,7 +191,7 @@ abstract class Expression extends BytecodeProducer {
     this(resultType, Features.of());
   }
 
-  Expression(Type resultType, Feature first, Feature ...rest) {
+  Expression(Type resultType, Feature first, Feature... rest) {
     this(resultType, Features.of(first, rest));
   }
 
@@ -189,14 +200,15 @@ abstract class Expression extends BytecodeProducer {
     this.features = Features.forType(resultType, features);
   }
 
-  /** 
+  /**
    * Generate code to evaluate the expression.
-   *   
+   *
    * <p>The generated code satisfies the invariant that the top of the runtime stack will contain a
-   * value with this {@link #resultType()} immediately after evaluation of the code. 
+   * value with this {@link #resultType()} immediately after evaluation of the code.
    */
-  @Override abstract void doGen(CodeBuilder adapter);
-  
+  @Override
+  abstract void doGen(CodeBuilder adapter);
+
   /** The type of the expression. */
   final Type resultType() {
     return resultType;
@@ -213,47 +225,42 @@ abstract class Expression extends BytecodeProducer {
   }
 
   /**
-   * Returns all the feature bits. 
-   * Typically, users will want to invoke one of the convenience accessors {@link #isCheap()} or 
-   * {@link #isNonNullable()}. 
+   * Returns all the feature bits. Typically, users will want to invoke one of the convenience
+   * accessors {@link #isCheap()} or {@link #isNonNullable()}.
    */
   Features features() {
     return features;
   }
 
-  /**
-   * Check that this expression is assignable to {@code expected}. 
-   */
+  /** Check that this expression is assignable to {@code expected}. */
   final void checkAssignableTo(Type expected) {
-    if (Flags.DEBUG) {
-      checkAssignableTo(expected, "");
-    }
+    checkAssignableTo(expected, "");
   }
 
-  /**
-   * Check that this expression is assignable to {@code expected}. 
-   */
-  final void checkAssignableTo(Type expected, String fmt, Object ...args) {
-    if (Flags.DEBUG) {
-      if (BytecodeUtils.isPossiblyAssignableFrom(resultType(), expected)) {
-        return;
-      }
-      String message = String.format("Type mismatch. Expected %s, got %s.", expected, resultType());
+  /** Check that this expression is assignable to {@code expected}. */
+  final void checkAssignableTo(Type expected, String fmt, Object... args) {
+    if (Flags.DEBUG && !BytecodeUtils.isPossiblyAssignableFrom(expected, resultType())) {
+      String message =
+          String.format(
+              "Type mismatch. %s not assignable to %s.",
+              resultType().getClassName(), expected.getClassName());
       if (!fmt.isEmpty()) {
         message = String.format(fmt, args) + ". " + message;
       }
+
       throw new IllegalArgumentException(message);
     }
   }
 
-  /** 
+  /**
    * Convert this expression to a statement, by executing it and throwing away the result.
-   * 
+   *
    * <p>This is useful for invoking non-void methods when we don't care about the result.
    */
   Statement toStatement() {
     return new Statement() {
-      @Override void doGen(CodeBuilder adapter) {
+      @Override
+      void doGen(CodeBuilder adapter) {
         Expression.this.gen(adapter);
         switch (resultType().getSize()) {
           case 0:
@@ -268,14 +275,15 @@ abstract class Expression extends BytecodeProducer {
       }
     };
   }
-  
+
   /** Returns an equivalent expression where {@link #isCheap()} returns {@code true}. */
   Expression asCheap() {
     if (isCheap()) {
       return this;
     }
     return new Expression(resultType, features.plus(Feature.CHEAP)) {
-      @Override void doGen(CodeBuilder adapter) {
+      @Override
+      void doGen(CodeBuilder adapter) {
         Expression.this.gen(adapter);
       }
     };
@@ -287,7 +295,8 @@ abstract class Expression extends BytecodeProducer {
       return this;
     }
     return new Expression(resultType, features.plus(Feature.NON_NULLABLE)) {
-      @Override void doGen(CodeBuilder adapter) {
+      @Override
+      void doGen(CodeBuilder adapter) {
         Expression.this.gen(adapter);
       }
     };
@@ -310,14 +319,15 @@ abstract class Expression extends BytecodeProducer {
    *
    * @throws IllegalArgumentException if either type is not a reference type.
    */
-  Expression cast(final Type target) {
+  Expression checkedCast(final Type target) {
     checkArgument(target.getSort() == Type.OBJECT, "cast targets must be reference types.");
     checkArgument(resultType().getSort() == Type.OBJECT, "you may only cast from reference types.");
     if (BytecodeUtils.isDefinitelyAssignableFrom(target, resultType())) {
       return this;
     }
     return new Expression(target, features()) {
-      @Override void doGen(CodeBuilder adapter) {
+      @Override
+      void doGen(CodeBuilder adapter) {
         Expression.this.gen(adapter);
         adapter.checkCast(resultType());
       }
@@ -329,15 +339,15 @@ abstract class Expression extends BytecodeProducer {
    *
    * @throws IllegalArgumentException if either type is not a reference type.
    */
-  Expression cast(Class<?> target) {
-    return cast(Type.getType(target));
+  Expression checkedCast(Class<?> target) {
+    return checkedCast(Type.getType(target));
   }
 
   /**
    * A simple helper that calls through to {@link MethodRef#invoke(Expression...)}, but allows a
    * more natural fluent call style.
    */
-  Expression invoke(MethodRef method, Expression ...args) {
+  Expression invoke(MethodRef method, Expression... args) {
     return method.invoke(ImmutableList.<Expression>builder().add(this).add(args).build());
   }
 
@@ -345,17 +355,18 @@ abstract class Expression extends BytecodeProducer {
    * A simple helper that calls through to {@link MethodRef#invokeVoid(Expression...)}, but allows a
    * more natural fluent call style.
    */
-  Statement invokeVoid(MethodRef method, Expression ...args) {
+  Statement invokeVoid(MethodRef method, Expression... args) {
     return method.invokeVoid(ImmutableList.<Expression>builder().add(this).add(args).build());
   }
 
   /**
-   * Returns a new expression identical to this one but with the given label applied at the start
-   * of the expression.
+   * Returns a new expression identical to this one but with the given label applied at the start of
+   * the expression.
    */
   Expression labelStart(final Label label) {
     return new Expression(resultType(), features) {
-      @Override void doGen(CodeBuilder adapter) {
+      @Override
+      void doGen(CodeBuilder adapter) {
         adapter.mark(label);
         Expression.this.gen(adapter);
       }
@@ -363,8 +374,8 @@ abstract class Expression extends BytecodeProducer {
   }
 
   /**
-   * Returns a new expression identical to this one but with the given label applied at the end
-   * of the expression.
+   * Returns a new expression identical to this one but with the given label applied at the end of
+   * the expression.
    */
   Expression labelEnd(final Label label) {
     return new Expression(resultType(), features) {
@@ -376,7 +387,8 @@ abstract class Expression extends BytecodeProducer {
     };
   }
 
-  @Override public String toString() {
+  @Override
+  public String toString() {
     String name = getClass().getSimpleName();
     if (name.isEmpty()) {
       // provide a default for anonymous subclasses

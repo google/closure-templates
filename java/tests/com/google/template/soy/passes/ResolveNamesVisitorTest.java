@@ -37,14 +37,17 @@ import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeProvider;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.primitive.UnknownType;
-
-import junit.framework.TestCase;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for ResolveNamesVisitor.
  *
  */
-public final class ResolveNamesVisitorTest extends TestCase {
+@RunWith(JUnit4.class)
+public final class ResolveNamesVisitorTest {
 
   private static final SoyTypeProvider typeProvider =
       new SoyTypeProvider() {
@@ -60,6 +63,7 @@ public final class ResolveNamesVisitorTest extends TestCase {
   private static final SoyTypeRegistry typeRegistry =
       new SoyTypeRegistry(ImmutableSet.of(typeProvider));
 
+  @Test
   public void testParamNameLookupSuccess() {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
@@ -72,6 +76,7 @@ public final class ResolveNamesVisitorTest extends TestCase {
     assertThat(n.getParams().get(0).localVariableIndex()).isEqualTo(0);
   }
 
+  @Test
   public void testInjectedParamNameLookupSuccess() {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
@@ -84,6 +89,7 @@ public final class ResolveNamesVisitorTest extends TestCase {
     assertThat(n.getInjectedParams().get(0).localVariableIndex()).isEqualTo(0);
   }
 
+  @Test
   public void testLetNameLookupSuccess() {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(constructTemplateSource("{let $pa: 1 /}", "{$pa}"))
@@ -95,6 +101,7 @@ public final class ResolveNamesVisitorTest extends TestCase {
     assertThat(((LetValueNode) n.getChild(0)).getVar().localVariableIndex()).isEqualTo(0);
   }
 
+  @Test
   public void testMultipleLocalsAndScopesNumbering() {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
@@ -126,6 +133,7 @@ public final class ResolveNamesVisitorTest extends TestCase {
     assertThat(((LetValueNode) n.getChild(2)).getVar().localVariableIndex()).isEqualTo(3);
   }
 
+  @Test
   public void testMultipleLocals() {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
@@ -148,24 +156,18 @@ public final class ResolveNamesVisitorTest extends TestCase {
         .isEqualTo(secondLet.getVar());
   }
 
+  @Test
   public void testVariableNameRedefinition() {
     assertResolveNamesFails(
         "variable '$la' already defined at line 4",
-        constructTemplateSource(
-            "{let $la: 1 /}",
-            "{let $la: $la /}"));
+        constructTemplateSource("{let $la: 1 /}", "{let $la: $la /}"));
     assertResolveNamesFails(
         "variable '$pa' already defined",
-        constructTemplateSource(
-            "{@param pa: bool}",
-            "{let $pa: not $pa /}"));
+        constructTemplateSource("{@param pa: bool}", "{let $pa: not $pa /}"));
     assertResolveNamesFails(
         "variable '$la' already defined at line 4",
         constructTemplateSource(
-            "{let $la: 1 /}",
-            "{foreach $item in ['a', 'b']}",
-            "  {let $la: $la /}",
-            "{/foreach}"));
+            "{let $la: 1 /}", "{foreach $item in ['a', 'b']}", "  {let $la: $la /}", "{/foreach}"));
     assertResolveNamesFails(
         "variable '$group' already defined",
         constructTemplateSource(
@@ -186,24 +188,20 @@ public final class ResolveNamesVisitorTest extends TestCase {
         .fileSet();
   }
 
+  @Test
   public void testAccidentalGlobalReference() {
     assertResolveNamesFails(
         "Found global reference aliasing a local variable 'group', did you mean '$group'?",
-        constructTemplateSource(
-            "{@param group: string}",
-            "{if group}{$group}{/if}"));
+        constructTemplateSource("{@param group: string}", "{if group}{$group}{/if}"));
     assertResolveNamesFails(
         "Found global reference aliasing a local variable 'group', did you mean '$group'?",
-        constructTemplateSource(
-            "{let $group: 'foo' /}",
-            "{if group}{$group}{/if}"));
+        constructTemplateSource("{let $group: 'foo' /}", "{if group}{$group}{/if}"));
     assertResolveNamesFails(
         "Unbound global 'global'.",
-        constructTemplateSource(
-            "{let $local: 'foo' /}",
-            "{if global}{$local}{/if}"));
+        constructTemplateSource("{let $local: 'foo' /}", "{if global}{$local}{/if}"));
   }
 
+  @Test
   public void testLetContentSlotLifetime() {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
@@ -228,7 +226,9 @@ public final class ResolveNamesVisitorTest extends TestCase {
     assertThat(bLetNode.getVar().localVariableIndex()).isEqualTo(0);
   }
 
-  public void ignoretestNameLookupFailure() {
+  @Test
+  @Ignore
+  public void testNameLookupFailure() {
     // This fails currently because we aren't setting SyntaxVersion.V9_9
     // But referencing unknown variables is actually currently handled by the
     // CheckTemplateParamsVisitor.  So this test is potentially silly anyway.  Consider
@@ -240,19 +240,22 @@ public final class ResolveNamesVisitorTest extends TestCase {
   }
 
   /**
-   * Helper function that constructs a boilerplate template given a list of body
-   * statements to insert into the middle of the template. The body statements will be
-   * indented and separated with newlines.
+   * Helper function that constructs a boilerplate template given a list of body statements to
+   * insert into the middle of the template. The body statements will be indented and separated with
+   * newlines.
+   *
    * @param body The body statements.
    * @return The combined template.
    */
-  private String constructTemplateSource(String... body) {
-    return "" +
-        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n" +
-        "/***/\n" +
-        "{template .aaa}\n" +
-        "  " + Joiner.on("\n   ").join(body) + "\n" +
-        "{/template}\n";
+  private static String constructTemplateSource(String... body) {
+    return ""
+        + "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
+        + "/***/\n"
+        + "{template .aaa}\n"
+        + "  "
+        + Joiner.on("\n   ").join(body)
+        + "\n"
+        + "{/template}\n";
   }
 
   private void assertResolveNamesFails(String expectedError, String fileContent) {

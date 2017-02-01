@@ -47,7 +47,6 @@ import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.LoopVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.UndeclaredVar;
-
 import java.util.ArrayDeque;
 import java.util.BitSet;
 import java.util.Deque;
@@ -56,14 +55,14 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Visitor which resolves all variable and parameter references to point to
- * the corresponding declaration object.
+ * Visitor which resolves all variable and parameter references to point to the corresponding
+ * declaration object.
  *
  */
 final class ResolveNamesVisitor extends AbstractSoyNodeVisitor<Void> {
   private static final SoyErrorKind GLOBAL_MATCHES_VARIABLE =
-      SoyErrorKind.of("Found global reference aliasing a local variable ''{0}'', did you mean "
-          + "''${0}''?");
+      SoyErrorKind.of(
+          "Found global reference aliasing a local variable ''{0}'', did you mean " + "''${0}''?");
 
   private static final SoyErrorKind VARIABLE_ALREADY_DEFINED =
       SoyErrorKind.of("variable ''${0}'' already defined{1}");
@@ -93,8 +92,8 @@ final class ResolveNamesVisitor extends AbstractSoyNodeVisitor<Void> {
     private int delayReleaseClaims = 0;
 
     /**
-     * Enters a new scope.  Variables {@link #define defined} will have a lifetime that extends
-     * until a matching call to {@link #exitScope()}.
+     * Enters a new scope. Variables {@link #define defined} will have a lifetime that extends until
+     * a matching call to {@link #exitScope()}.
      */
     void enterScope() {
       currentScope.push(new LinkedHashMap<String, VarDefn>());
@@ -103,18 +102,16 @@ final class ResolveNamesVisitor extends AbstractSoyNodeVisitor<Void> {
     /**
      * Enters a new scope.
      *
-     * <p>Variables defined in a lazy scope have a lifetime that extends to the matching
-     * {@link #exitLazyScope()} call, but the variable slots reserved have their lifetimes extended
-     * until the parent scope closes.
+     * <p>Variables defined in a lazy scope have a lifetime that extends to the matching {@link
+     * #exitLazyScope()} call, but the variable slots reserved have their lifetimes extended until
+     * the parent scope closes.
      */
     void enterLazyScope() {
       delayReleaseClaims++;
       enterScope();
     }
 
-    /**
-     * Exits the current scope.
-     */
+    /** Exits the current scope. */
     void exitLazyScope() {
       checkState(delayReleaseClaims > 0, "Exiting a lazy scope when we aren't in one");
       exitScope();
@@ -124,8 +121,8 @@ final class ResolveNamesVisitor extends AbstractSoyNodeVisitor<Void> {
     /**
      * Exits the current lazy scope.
      *
-     * <p>This releases all the variable indices associated with the variables defined in this
-     * frame so that they can be reused.
+     * <p>This releases all the variable indices associated with the variables defined in this frame
+     * so that they can be reused.
      */
     void exitScope() {
       Map<String, VarDefn> variablesGoingOutOfScope = currentScope.pop();
@@ -177,9 +174,8 @@ final class ResolveNamesVisitor extends AbstractSoyNodeVisitor<Void> {
       VarDefn preexisting = lookup(defn.name());
       if (preexisting != null) {
         Optional<SourceLocation> sourceLocation = forVarDefn(preexisting);
-        String location = sourceLocation.isPresent()
-            ? " at line " + sourceLocation.get().getLineNumber()
-            : "";
+        String location =
+            sourceLocation.isPresent() ? " at line " + sourceLocation.get().getBeginLine() : "";
         errorReporter.report(
             definingNode.getSourceLocation(), VARIABLE_ALREADY_DEFINED, defn.name(), location);
         return false;
@@ -188,7 +184,6 @@ final class ResolveNamesVisitor extends AbstractSoyNodeVisitor<Void> {
       defn.setLocalVariableIndex(claimSlot());
       return true;
     }
-
 
     /**
      * Returns the smallest available local variable slot or claims a new one if there is none
@@ -214,13 +209,14 @@ final class ResolveNamesVisitor extends AbstractSoyNodeVisitor<Void> {
       unavailableSlots.set(0, nextSlotToClaim);
       // now the only bits on will be the ones where available slots has '0'.
       unavailableSlots.xor(availableSlots);
-      checkState(unavailableSlots.isEmpty(),
-          "Expected all slots to be available: %s", unavailableSlots);
+      checkState(
+          unavailableSlots.isEmpty(), "Expected all slots to be available: %s", unavailableSlots);
     }
   }
 
   /** Scope for injected params. */
   private LocalVariables localVariables;
+
   private Map<String, InjectedParam> ijParams;
 
   private final ErrorReporter errorReporter;
@@ -229,7 +225,8 @@ final class ResolveNamesVisitor extends AbstractSoyNodeVisitor<Void> {
     this.errorReporter = errorReporter;
   }
 
-  @Override protected void visitTemplateNode(TemplateNode node) {
+  @Override
+  protected void visitTemplateNode(TemplateNode node) {
     // Create a scope for all parameters.
     localVariables = new LocalVariables();
     localVariables.enterScope();
@@ -249,18 +246,21 @@ final class ResolveNamesVisitor extends AbstractSoyNodeVisitor<Void> {
     ijParams = null;
   }
 
-  @Override protected void visitPrintNode(PrintNode node) {
+  @Override
+  protected void visitPrintNode(PrintNode node) {
     visitSoyNode(node);
   }
 
-  @Override protected void visitLetValueNode(LetValueNode node) {
+  @Override
+  protected void visitLetValueNode(LetValueNode node) {
     visitExpressions(node);
     // Now after the let-block is complete, define the new variable
     // in the current scope.
     localVariables.define(node.getVar(), node);
   }
 
-  @Override protected void visitLetContentNode(LetContentNode node) {
+  @Override
+  protected void visitLetContentNode(LetContentNode node) {
     // LetContent nodes may reserve slots in their sub expressions, but due to lazy evaluation will
     // not use them immediately, so we can't release the slots until the parent scope is gone.
     // however the variable lifetime should be limited
@@ -270,7 +270,8 @@ final class ResolveNamesVisitor extends AbstractSoyNodeVisitor<Void> {
     localVariables.define(node.getVar(), node);
   }
 
-  @Override protected void visitForNode(ForNode node) {
+  @Override
+  protected void visitForNode(ForNode node) {
     // Visit the range expressions.
     visitExpressions(node);
 
@@ -282,7 +283,8 @@ final class ResolveNamesVisitor extends AbstractSoyNodeVisitor<Void> {
     localVariables.exitScope();
   }
 
-  @Override protected void visitForeachNonemptyNode(ForeachNonemptyNode node) {
+  @Override
+  protected void visitForeachNonemptyNode(ForeachNonemptyNode node) {
     // Visit the foreach iterator expression
     visitExpressions(node.getParent());
 
@@ -295,7 +297,8 @@ final class ResolveNamesVisitor extends AbstractSoyNodeVisitor<Void> {
     localVariables.exitScope();
   }
 
-  @Override protected void visitSoyNode(SoyNode node) {
+  @Override
+  protected void visitSoyNode(SoyNode node) {
     if (node instanceof ExprHolderNode) {
       visitExpressions((ExprHolderNode) node);
     }
@@ -333,28 +336,32 @@ final class ResolveNamesVisitor extends AbstractSoyNodeVisitor<Void> {
   // Expr visitor.
 
   /**
-   * Visitor which resolves all variable and parameter references in expressions
-   * to point to the corresponding declaration object.
+   * Visitor which resolves all variable and parameter references in expressions to point to the
+   * corresponding declaration object.
    */
   private final class ResolveNamesExprVisitor extends AbstractExprNodeVisitor<Void> {
 
-    @Override public Void exec(ExprNode node) {
+    @Override
+    public Void exec(ExprNode node) {
       Preconditions.checkArgument(node instanceof ExprRootNode);
       visit(node);
       return null;
     }
 
-    @Override protected void visitExprRootNode(ExprRootNode node) {
+    @Override
+    protected void visitExprRootNode(ExprRootNode node) {
       visitChildren(node);
     }
 
-    @Override protected void visitExprNode(ExprNode node) {
+    @Override
+    protected void visitExprNode(ExprNode node) {
       if (node instanceof ParentExprNode) {
         visitChildren((ParentExprNode) node);
       }
     }
 
-    @Override protected void visitGlobalNode(GlobalNode node) {
+    @Override
+    protected void visitGlobalNode(GlobalNode node) {
       // Check for a typo involving a global reference.  If the author forgets the leading '$' on a
       // variable reference then it will get parsed as a global.  In some compiler configurations
       // unknown globals are not an error.  To ensure that typos are caught we check for this case
@@ -372,7 +379,8 @@ final class ResolveNamesVisitor extends AbstractSoyNodeVisitor<Void> {
       }
     }
 
-    @Override protected void visitVarRefNode(VarRefNode varRef) {
+    @Override
+    protected void visitVarRefNode(VarRefNode varRef) {
       if (varRef.isDollarSignIjParameter()) {
         InjectedParam ijParam = ijParams.get(varRef.getName());
         if (ijParam == null) {

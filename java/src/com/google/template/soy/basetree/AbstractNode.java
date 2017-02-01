@@ -21,15 +21,10 @@ import javax.annotation.Nullable;
 /**
  * Abstract implementation of a Node.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public abstract class AbstractNode implements Node {
-
-
-  /** Just spaces. */
-  protected static final String SPACES = "                                        ";
-
 
   /** The lowest known upper bound (exclusive!) for the syntax version of this node. */
   @Nullable private SyntaxVersionUpperBound syntaxVersionBound;
@@ -37,52 +32,51 @@ public abstract class AbstractNode implements Node {
   /** The parent of this node. */
   private ParentNode<?> parent;
 
-
   protected AbstractNode() {
     syntaxVersionBound = null;
     parent = null;
   }
 
-
   /**
    * Copy constructor.
+   *
    * @param orig The node to copy.
    */
   protected AbstractNode(AbstractNode orig, CopyState copyState) {
-    parent = null;  // important: should not copy parent pointer
+    parent = null; // important: should not copy parent pointer
     this.syntaxVersionBound = orig.syntaxVersionBound;
   }
 
-
-  @Override public void maybeSetSyntaxVersionUpperBound(
-      SyntaxVersionUpperBound newSyntaxVersionBound) {
+  @Override
+  public void maybeSetSyntaxVersionUpperBound(SyntaxVersionUpperBound newSyntaxVersionBound) {
     syntaxVersionBound =
         SyntaxVersionUpperBound.selectLower(syntaxVersionBound, newSyntaxVersionBound);
   }
 
-
-  @Override @Nullable public SyntaxVersionUpperBound getSyntaxVersionUpperBound() {
+  @Override
+  @Nullable
+  public SyntaxVersionUpperBound getSyntaxVersionUpperBound() {
     return syntaxVersionBound;
   }
 
-
-  @Override public boolean couldHaveSyntaxVersionAtLeast(SyntaxVersion syntaxVersionCutoff) {
-    return syntaxVersionBound == null ||
-        syntaxVersionBound.syntaxVersion.num > syntaxVersionCutoff.num;
+  @Override
+  public boolean couldHaveSyntaxVersionAtLeast(SyntaxVersion syntaxVersionCutoff) {
+    return syntaxVersionBound == null
+        || syntaxVersionBound.syntaxVersion.num > syntaxVersionCutoff.num;
   }
 
-
-  @Override public void setParent(ParentNode<?> parent) {
+  @Override
+  public void setParent(ParentNode<?> parent) {
     this.parent = parent;
   }
 
-
-  @Override public ParentNode<?> getParent() {
+  @Override
+  public ParentNode<?> getParent() {
     return parent;
   }
 
-
-  @Override public boolean hasAncestor(Class<? extends Node> ancestorClass) {
+  @Override
+  public boolean hasAncestor(Class<? extends Node> ancestorClass) {
 
     for (Node node = this; node != null; node = node.getParent()) {
       if (ancestorClass.isInstance(node)) {
@@ -92,8 +86,8 @@ public abstract class AbstractNode implements Node {
     return false;
   }
 
-
-  @Override public <N extends Node> N getNearestAncestor(Class<N> ancestorClass) {
+  @Override
+  public <N extends Node> N getNearestAncestor(Class<N> ancestorClass) {
 
     for (Node node = this; node != null; node = node.getParent()) {
       if (ancestorClass.isInstance(node)) {
@@ -103,15 +97,18 @@ public abstract class AbstractNode implements Node {
     return null;
   }
 
-  @Override public final int hashCode() {
+  @Override
+  public final int hashCode() {
     return super.hashCode();
   }
 
-  @Override public final boolean equals(Object other) {
+  @Override
+  public final boolean equals(Object other) {
     return super.equals(other);
   }
 
-  @Override public String toString() {
+  @Override
+  public String toString() {
     String sourceString = toSourceString();
     sourceString =
         sourceString.length() > 30 ? sourceString.substring(0, 30) + "..." : sourceString;

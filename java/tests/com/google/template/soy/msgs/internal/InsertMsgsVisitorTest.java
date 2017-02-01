@@ -39,19 +39,19 @@ import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateNode;
-
-import junit.framework.TestCase;
-
 import java.util.List;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for {@link InsertMsgsVisitor}.
  *
  */
-public final class InsertMsgsVisitorTest extends TestCase {
+@RunWith(JUnit4.class)
+public final class InsertMsgsVisitorTest {
 
   private static final ErrorReporter FAIL = ExplodingErrorReporter.get();
-
 
   // -----------------------------------------------------------------------------------------------
   // Test basic messages.
@@ -74,13 +74,11 @@ public final class InsertMsgsVisitorTest extends TestCase {
           + "  {msg desc=\"\"}dairy{$moo}{/msg}\n"
           + "{/template}\n";
 
-
+  @Test
   public void testBasicMsgsUsingSoySource() {
 
     SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forFileContents(BASIC_TEST_FILE_CONTENT)
-            .parse()
-            .fileSet();
+        SoyFileSetParserBuilder.forFileContents(BASIC_TEST_FILE_CONTENT).parse().fileSet();
     TemplateNode template = (TemplateNode) SharedTestUtils.getNode(soyTree);
 
     // Before.
@@ -114,13 +112,11 @@ public final class InsertMsgsVisitorTest extends TestCase {
     assertThat(((PrintNode) template.getChild(11)).getExprText()).isEqualTo("$moo");
   }
 
-
+  @Test
   public void testBasicMsgsUsingMsgBundle() {
 
     SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forFileContents(BASIC_TEST_FILE_CONTENT)
-            .parse()
-            .fileSet();
+        SoyFileSetParserBuilder.forFileContents(BASIC_TEST_FILE_CONTENT).parse().fileSet();
     TemplateNode template = (TemplateNode) SharedTestUtils.getNode(soyTree);
 
     // Before.
@@ -139,14 +135,21 @@ public final class InsertMsgsVisitorTest extends TestCase {
     List<SoyMsg> translatedMsgs = Lists.newArrayList();
     // Original (en): random{{FOO}}{{START_LINK}}slimy{{END_LINK}}
     // Translation (x-zz): {{START_LINK}}zslimy{{END_LINK}}{{FOO}}zrandom
-    translatedMsgs.add(new SoyMsg(
-        MsgUtils.computeMsgIdForDualFormat(msg), "x-zz", null, null, false, null, null,
-        ImmutableList.of(
-            new SoyMsgPlaceholderPart("START_LINK"),
-            SoyMsgRawTextPart.of("zslimy"),
-            new SoyMsgPlaceholderPart("END_LINK"),
-            new SoyMsgPlaceholderPart("FOO"),
-            SoyMsgRawTextPart.of("zrandom"))));
+    translatedMsgs.add(
+        new SoyMsg(
+            MsgUtils.computeMsgIdForDualFormat(msg),
+            "x-zz",
+            null,
+            null,
+            false,
+            null,
+            null,
+            ImmutableList.of(
+                new SoyMsgPlaceholderPart("START_LINK"),
+                SoyMsgRawTextPart.of("zslimy"),
+                new SoyMsgPlaceholderPart("END_LINK"),
+                new SoyMsgPlaceholderPart("FOO"),
+                SoyMsgRawTextPart.of("zrandom"))));
     // Note: This bundle has no translation for the message "dairy{$moo}".
     SoyMsgBundle msgBundle = new SoyMsgBundleImpl("x-zz", translatedMsgs);
 
@@ -168,7 +171,6 @@ public final class InsertMsgsVisitorTest extends TestCase {
     assertThat(((RawTextNode) template.getChild(10)).getRawText()).isEqualTo("dairy");
     assertThat(((PrintNode) template.getChild(11)).getExprText()).isEqualTo("$moo");
   }
-
 
   // -----------------------------------------------------------------------------------------------
   // Test plural/select messages.
@@ -195,27 +197,27 @@ public final class InsertMsgsVisitorTest extends TestCase {
           + "  {/msg}\n"
           + "{/template}\n";
 
-
+  @Test
   public void testPlrselMsgsUsingSoySource() {
     SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forFileContents(PLRSEL_TEST_FILE_CONTENT)
-            .parse()
-            .fileSet();
+        SoyFileSetParserBuilder.forFileContents(PLRSEL_TEST_FILE_CONTENT).parse().fileSet();
     TemplateNode template = (TemplateNode) SharedTestUtils.getNode(soyTree);
 
     assertThat(template.numChildren()).isEqualTo(2);
 
     // Execute the visitor.
     FormattingErrorReporter errorReporter = new FormattingErrorReporter();
-     new InsertMsgsVisitor(null /* msgBundle */, errorReporter).exec(template);
+    new InsertMsgsVisitor(null /* msgBundle */, errorReporter).exec(template);
 
     assertThat(errorReporter.getErrorMessages()).hasSize(2);
-    assertThat(errorReporter.getErrorMessages().get(0)).contains(
-        "JS code generation currently only supports plural/select messages when "
-            + "shouldGenerateGoogMsgDefs is true.");
-    assertThat(errorReporter.getErrorMessages().get(1)).contains(
-        "JS code generation currently only supports plural/select messages when "
-            + "shouldGenerateGoogMsgDefs is true.");
+    assertThat(errorReporter.getErrorMessages().get(0))
+        .contains(
+            "JS code generation currently only supports plural/select messages when "
+                + "shouldGenerateGoogMsgDefs is true.");
+    assertThat(errorReporter.getErrorMessages().get(1))
+        .contains(
+            "JS code generation currently only supports plural/select messages when "
+                + "shouldGenerateGoogMsgDefs is true.");
   }
 
   // -----------------------------------------------------------------------------------------------
@@ -253,11 +255,10 @@ public final class InsertMsgsVisitorTest extends TestCase {
           + "  {/msg}\n"
           + "{/template}\n";
 
+  @Test
   public void testFallbackMsgsUsingSoySource() {
     SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forFileContents(FALLBACK_TEST_FILE_CONTENT)
-            .parse()
-            .fileSet();
+        SoyFileSetParserBuilder.forFileContents(FALLBACK_TEST_FILE_CONTENT).parse().fileSet();
     TemplateNode template = (TemplateNode) SharedTestUtils.getNode(soyTree);
 
     // Before.
@@ -278,12 +279,10 @@ public final class InsertMsgsVisitorTest extends TestCase {
     assertThat(((RawTextNode) template.getChild(3)).getRawText()).isEqualTo("trans1");
   }
 
-
+  @Test
   public void testFallbackMsgsUsingMsgBundle() {
     SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forFileContents(FALLBACK_TEST_FILE_CONTENT)
-            .parse()
-            .fileSet();
+        SoyFileSetParserBuilder.forFileContents(FALLBACK_TEST_FILE_CONTENT).parse().fileSet();
     TemplateNode template = (TemplateNode) SharedTestUtils.getNode(soyTree);
 
     // Before.
@@ -296,15 +295,27 @@ public final class InsertMsgsVisitorTest extends TestCase {
     // Build the translated message bundle.
     List<SoyMsg> translatedMsgs = Lists.newArrayList();
     MsgNode trans1FirstInstance = ((MsgFallbackGroupNode) template.getChild(1)).getChild(0);
-    translatedMsgs.add(new SoyMsg(
-        MsgUtils.computeMsgIdForDualFormat(trans1FirstInstance), "x-zz",
-        null, null, false, null, null,
-        ImmutableList.<SoyMsgPart>of(SoyMsgRawTextPart.of("ztrans1"))));
+    translatedMsgs.add(
+        new SoyMsg(
+            MsgUtils.computeMsgIdForDualFormat(trans1FirstInstance),
+            "x-zz",
+            null,
+            null,
+            false,
+            null,
+            null,
+            ImmutableList.<SoyMsgPart>of(SoyMsgRawTextPart.of("ztrans1"))));
     MsgNode trans2FirstInstance = ((MsgFallbackGroupNode) template.getChild(2)).getChild(1);
-    translatedMsgs.add(new SoyMsg(
-        MsgUtils.computeMsgIdForDualFormat(trans2FirstInstance), "x-zz",
-        null, null, false, null, null,
-        ImmutableList.<SoyMsgPart>of(SoyMsgRawTextPart.of("ztrans2"))));
+    translatedMsgs.add(
+        new SoyMsg(
+            MsgUtils.computeMsgIdForDualFormat(trans2FirstInstance),
+            "x-zz",
+            null,
+            null,
+            false,
+            null,
+            null,
+            ImmutableList.<SoyMsgPart>of(SoyMsgRawTextPart.of("ztrans2"))));
     SoyMsgBundle msgBundle = new SoyMsgBundleImpl("x-zz", translatedMsgs);
 
     // Execute the visitor.

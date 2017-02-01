@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-
 package com.google.template.soy.sharedpasses.render;
 
 import com.google.common.util.concurrent.Futures;
@@ -28,8 +27,8 @@ import com.google.template.soy.data.SoyRecord;
 public class EvalVisitorFutureTest extends EvalVisitorTest {
   @Override
   protected SoyRecord createTestData() {
-    SoyList tri = VALUE_HELPER.newEasyList(Futures.immediateFuture(1), 3, 6, 10, 15, 21);
-    return VALUE_HELPER.newEasyDict(
+    SoyList tri = CONVERTER.newEasyList(Futures.immediateFuture(1), 3, 6, 10, 15, 21);
+    return CONVERTER.newEasyDict(
         "boo", Futures.immediateFuture(8),
         "foo.bar", Futures.immediateFuture("baz"),
         "foo.goo2", Futures.immediateFuture(tri),
@@ -38,8 +37,8 @@ public class EvalVisitorFutureTest extends EvalVisitorTest {
         "t", Futures.immediateFuture(true),
         "f", Futures.immediateFuture(false),
         "n", Futures.immediateFuture(null),
-        "map0", Futures.immediateFuture(VALUE_HELPER.newEasyDict()),
-        "list0", Futures.immediateFuture(VALUE_HELPER.newEasyList()),
+        "map0", Futures.immediateFuture(CONVERTER.newEasyDict()),
+        "list0", Futures.immediateFuture(CONVERTER.newEasyList()),
         "longNumber", Futures.immediateFuture(1000000000000000001L),
         "floatNumber", Futures.immediateFuture(1.5D));
   }

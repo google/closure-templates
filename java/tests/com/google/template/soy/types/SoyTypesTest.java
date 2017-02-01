@@ -18,6 +18,8 @@ package com.google.template.soy.types;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
@@ -27,7 +29,7 @@ import com.google.template.soy.data.SoyDict;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.SoyValueHelper;
+import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
@@ -52,16 +54,14 @@ import com.google.template.soy.types.primitive.SanitizedType.TrustedResourceUriT
 import com.google.template.soy.types.primitive.SanitizedType.UriType;
 import com.google.template.soy.types.primitive.StringType;
 import com.google.template.soy.types.primitive.UnknownType;
-
-import junit.framework.TestCase;
-
 import java.util.Set;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
-
-/**
- * Unit tests for soy types.
- */
-public class SoyTypesTest extends TestCase {
+/** Unit tests for soy types. */
+@RunWith(JUnit4.class)
+public class SoyTypesTest {
   private static final NullData NULL_DATA = NullData.INSTANCE;
   private static final BooleanData BOOLEAN_DATA = BooleanData.TRUE;
   private static final StringData STRING_DATA = StringData.forValue("foo");
@@ -77,15 +77,15 @@ public class SoyTypesTest extends TestCase {
   private static final SanitizedContent URI_DATA =
       UnsafeSanitizedContentOrdainer.ordainAsSafe("uri", SanitizedContent.ContentKind.URI, null);
   private static final SanitizedContent TRUSTED_RESOURCE_URI_DATA =
-      UnsafeSanitizedContentOrdainer.ordainAsSafe("trusted_resource_uri",
-          SanitizedContent.ContentKind.TRUSTED_RESOURCE_URI, null);
+      UnsafeSanitizedContentOrdainer.ordainAsSafe(
+          "trusted_resource_uri", SanitizedContent.ContentKind.TRUSTED_RESOURCE_URI, null);
   private static final SanitizedContent JS_DATA =
       UnsafeSanitizedContentOrdainer.ordainAsSafe("js", SanitizedContent.ContentKind.JS, null);
-  private static final SoyList LIST_DATA = SoyValueHelper.UNCUSTOMIZED_INSTANCE.newEasyList();
-  private static final SoyMap MAP_DATA = SoyValueHelper.UNCUSTOMIZED_INSTANCE.newEasyDict();
-  private static final SoyDict DICT_DATA = SoyValueHelper.UNCUSTOMIZED_INSTANCE.newEasyDict();
+  private static final SoyList LIST_DATA = SoyValueConverter.UNCUSTOMIZED_INSTANCE.newEasyList();
+  private static final SoyMap MAP_DATA = SoyValueConverter.UNCUSTOMIZED_INSTANCE.newEasyDict();
+  private static final SoyDict DICT_DATA = SoyValueConverter.UNCUSTOMIZED_INSTANCE.newEasyDict();
 
-
+  @Test
   public void testAnyType() {
     assertThat(AnyType.getInstance().isAssignableFrom(NullType.getInstance())).isTrue();
     assertThat(AnyType.getInstance().isAssignableFrom(AnyType.getInstance())).isTrue();
@@ -94,7 +94,7 @@ public class SoyTypesTest extends TestCase {
     assertThat(AnyType.getInstance().isAssignableFrom(IntType.getInstance())).isTrue();
   }
 
-
+  @Test
   public void testUnknownType() {
     assertThat(UnknownType.getInstance().isAssignableFrom(NullType.getInstance())).isTrue();
     assertThat(UnknownType.getInstance().isAssignableFrom(AnyType.getInstance())).isTrue();
@@ -103,7 +103,7 @@ public class SoyTypesTest extends TestCase {
     assertThat(UnknownType.getInstance().isAssignableFrom(IntType.getInstance())).isTrue();
   }
 
-
+  @Test
   public void testNullType() {
     assertThat(NullType.getInstance().isAssignableFrom(NullType.getInstance())).isTrue();
     assertThat(NullType.getInstance().isAssignableFrom(StringType.getInstance())).isFalse();
@@ -112,7 +112,7 @@ public class SoyTypesTest extends TestCase {
     assertThat(NullType.getInstance().isAssignableFrom(UnknownType.getInstance())).isFalse();
   }
 
-
+  @Test
   public void testStringType() {
     assertThat(StringType.getInstance().isAssignableFrom(StringType.getInstance())).isTrue();
     assertThat(StringType.getInstance().isAssignableFrom(IntType.getInstance())).isFalse();
@@ -121,7 +121,7 @@ public class SoyTypesTest extends TestCase {
     assertThat(StringType.getInstance().isAssignableFrom(UnknownType.getInstance())).isFalse();
   }
 
-
+  @Test
   public void testPrimitiveTypeEquality() {
     assertThat(AnyType.getInstance().equals(AnyType.getInstance())).isTrue();
     assertThat(AnyType.getInstance().equals(IntType.getInstance())).isFalse();
@@ -129,13 +129,13 @@ public class SoyTypesTest extends TestCase {
     assertThat(UnknownType.getInstance().equals(UnknownType.getInstance())).isTrue();
   }
 
-
+  @Test
   public void testSanitizedType() {
     assertThat(StringType.getInstance().isAssignableFrom(HtmlType.getInstance())).isTrue();
     assertThat(StringType.getInstance().isAssignableFrom(CssType.getInstance())).isTrue();
     assertThat(StringType.getInstance().isAssignableFrom(UriType.getInstance())).isTrue();
-    assertThat(StringType.getInstance().isAssignableFrom(
-        TrustedResourceUriType.getInstance())).isTrue();
+    assertThat(StringType.getInstance().isAssignableFrom(TrustedResourceUriType.getInstance()))
+        .isTrue();
     assertThat(StringType.getInstance().isAssignableFrom(AttributesType.getInstance())).isTrue();
     assertThat(StringType.getInstance().isAssignableFrom(JsType.getInstance())).isTrue();
 
@@ -151,12 +151,14 @@ public class SoyTypesTest extends TestCase {
     assertThat(UriType.getInstance().isAssignableFrom(IntType.getInstance())).isFalse();
     assertThat(UriType.getInstance().isAssignableFrom(HtmlType.getInstance())).isFalse();
 
-    assertThat(TrustedResourceUriType.getInstance().isAssignableFrom(
-        TrustedResourceUriType.getInstance())).isTrue();
-    assertThat(TrustedResourceUriType.getInstance().isAssignableFrom(
-        IntType.getInstance())).isFalse();
-    assertThat(TrustedResourceUriType.getInstance().isAssignableFrom(
-        HtmlType.getInstance())).isFalse();
+    assertThat(
+            TrustedResourceUriType.getInstance()
+                .isAssignableFrom(TrustedResourceUriType.getInstance()))
+        .isTrue();
+    assertThat(TrustedResourceUriType.getInstance().isAssignableFrom(IntType.getInstance()))
+        .isFalse();
+    assertThat(TrustedResourceUriType.getInstance().isAssignableFrom(HtmlType.getInstance()))
+        .isFalse();
 
     assertThat(AttributesType.getInstance().isAssignableFrom(AttributesType.getInstance()))
         .isTrue();
@@ -168,12 +170,12 @@ public class SoyTypesTest extends TestCase {
     assertThat(JsType.getInstance().isAssignableFrom(HtmlType.getInstance())).isFalse();
   }
 
-
+  @Test
   public void testUnionType() {
     // Test that it flattens properly
-    SoyType utype = UnionType.of(
-        IntType.getInstance(),
-        UnionType.of(IntType.getInstance(), NullType.getInstance()));
+    SoyType utype =
+        UnionType.of(
+            IntType.getInstance(), UnionType.of(IntType.getInstance(), NullType.getInstance()));
     assertThat(utype.toString()).isEqualTo("int|null");
     assertThat(utype.isAssignableFrom(IntType.getInstance())).isTrue();
     assertThat(utype.isAssignableFrom(NullType.getInstance())).isTrue();
@@ -183,18 +185,20 @@ public class SoyTypesTest extends TestCase {
     assertThat(utype.isAssignableFrom(UnknownType.getInstance())).isFalse();
   }
 
-
+  @Test
   public void testUnionTypeEquality() {
     assertThat(
-        UnionType.of(IntType.getInstance(), BoolType.getInstance())
-            .equals(UnionType.of(BoolType.getInstance(), IntType.getInstance()))).isTrue();
+            UnionType.of(IntType.getInstance(), BoolType.getInstance())
+                .equals(UnionType.of(BoolType.getInstance(), IntType.getInstance())))
+        .isTrue();
     assertThat(
-        UnionType.of(IntType.getInstance(), BoolType.getInstance())
-            .equals(UnionType.of(IntType.getInstance(), StringType.getInstance()))).isFalse();
+            UnionType.of(IntType.getInstance(), BoolType.getInstance())
+                .equals(UnionType.of(IntType.getInstance(), StringType.getInstance())))
+        .isFalse();
   }
 
-
   // Test that list types are covariant over their element types.
+  @Test
   public void testListCovariance() {
     ListType listOfAny = ListType.of(AnyType.getInstance());
     ListType listOfString = ListType.of(StringType.getInstance());
@@ -216,7 +220,7 @@ public class SoyTypesTest extends TestCase {
     assertThat(listOfString.isAssignableFrom(listOfAny)).isFalse();
   }
 
-
+  @Test
   public void testListTypeEquality() {
     ListType listOfAny = ListType.of(AnyType.getInstance());
     ListType listOfAny2 = ListType.of(AnyType.getInstance());
@@ -226,8 +230,8 @@ public class SoyTypesTest extends TestCase {
     assertThat(listOfAny.equals(listOfString)).isFalse();
   }
 
-
   // Test that map types are covariant over their key types.
+  @Test
   public void testMapKeyCovariance() {
     MapType mapOfAnyToAny = MapType.of(AnyType.getInstance(), AnyType.getInstance());
     MapType mapOfStringToAny = MapType.of(StringType.getInstance(), AnyType.getInstance());
@@ -249,8 +253,8 @@ public class SoyTypesTest extends TestCase {
     assertThat(mapOfStringToAny.isAssignableFrom(mapOfAnyToAny)).isFalse();
   }
 
-
   // Test that map types are covariant over their value types.
+  @Test
   public void testMapValueCovariance() {
     MapType mapOfAnyToAny = MapType.of(AnyType.getInstance(), AnyType.getInstance());
     MapType mapOfAnyToString = MapType.of(AnyType.getInstance(), StringType.getInstance());
@@ -272,7 +276,7 @@ public class SoyTypesTest extends TestCase {
     assertThat(mapOfAnyToString.isAssignableFrom(mapOfAnyToAny)).isFalse();
   }
 
-
+  @Test
   public void testMapTypeEquality() {
     MapType mapOfAnyToAny = MapType.of(AnyType.getInstance(), AnyType.getInstance());
     MapType mapOfAnyToAny2 = MapType.of(AnyType.getInstance(), AnyType.getInstance());
@@ -284,155 +288,333 @@ public class SoyTypesTest extends TestCase {
     assertThat(mapOfAnyToAny.equals(mapOfAnyToString)).isFalse();
   }
 
-
+  @Test
   public void testRecordTypeEquality() {
-    RecordType r1 = RecordType.of(ImmutableMap.<String, SoyType>of(
-        "a", IntType.getInstance(), "b", AnyType.getInstance()));
+    RecordType r1 =
+        RecordType.of(
+            ImmutableMap.<String, SoyType>of(
+                "a", IntType.getInstance(), "b", AnyType.getInstance()));
 
     assertThat(
-        r1.equals(RecordType.of(ImmutableMap.<String, SoyType>of(
-            "a", IntType.getInstance(), "b", AnyType.getInstance())))).isTrue();
+            r1.equals(
+                RecordType.of(
+                    ImmutableMap.<String, SoyType>of(
+                        "a", IntType.getInstance(), "b", AnyType.getInstance()))))
+        .isTrue();
     assertThat(
-        r1.equals(RecordType.of(ImmutableMap.<String, SoyType>of(
-            "a", IntType.getInstance(), "c", AnyType.getInstance())))).isFalse();
+            r1.equals(
+                RecordType.of(
+                    ImmutableMap.<String, SoyType>of(
+                        "a", IntType.getInstance(), "c", AnyType.getInstance()))))
+        .isFalse();
     assertThat(
-        r1.equals(RecordType.of(ImmutableMap.<String, SoyType>of(
-            "a", IntType.getInstance(), "b", StringType.getInstance())))).isFalse();
+            r1.equals(
+                RecordType.of(
+                    ImmutableMap.<String, SoyType>of(
+                        "a", IntType.getInstance(), "b", StringType.getInstance()))))
+        .isFalse();
   }
 
-
+  @Test
   public void testRecordTypeAssignment() {
-    RecordType r1 = RecordType.of(ImmutableMap.<String, SoyType>of(
-        "a", IntType.getInstance(), "b", AnyType.getInstance()));
+    RecordType r1 =
+        RecordType.of(
+            ImmutableMap.<String, SoyType>of(
+                "a", IntType.getInstance(), "b", AnyType.getInstance()));
 
     // Same
     assertThat(
-        r1.isAssignableFrom(RecordType.of(ImmutableMap.<String, SoyType>of(
-            "a", IntType.getInstance(), "b", AnyType.getInstance())))).isTrue();
+            r1.isAssignableFrom(
+                RecordType.of(
+                    ImmutableMap.<String, SoyType>of(
+                        "a", IntType.getInstance(), "b", AnyType.getInstance()))))
+        .isTrue();
 
     // "b" is subtype
     assertThat(
-        r1.isAssignableFrom(RecordType.of(ImmutableMap.<String, SoyType>of(
-            "a", IntType.getInstance(), "b", StringType.getInstance())))).isTrue();
+            r1.isAssignableFrom(
+                RecordType.of(
+                    ImmutableMap.<String, SoyType>of(
+                        "a", IntType.getInstance(), "b", StringType.getInstance()))))
+        .isTrue();
 
     // Additional field
     assertThat(
-        r1.isAssignableFrom(RecordType.of(ImmutableMap.<String, SoyType>of("a",
-            IntType.getInstance(), "b", StringType.getInstance(), "c", StringType.getInstance()))))
+            r1.isAssignableFrom(
+                RecordType.of(
+                    ImmutableMap.<String, SoyType>of(
+                        "a",
+                        IntType.getInstance(),
+                        "b",
+                        StringType.getInstance(),
+                        "c",
+                        StringType.getInstance()))))
         .isTrue();
 
     // Missing "b"
     assertThat(
-        r1.isAssignableFrom(RecordType.of(ImmutableMap.<String, SoyType>of(
-            "a", IntType.getInstance(), "c", AnyType.getInstance())))).isFalse();
+            r1.isAssignableFrom(
+                RecordType.of(
+                    ImmutableMap.<String, SoyType>of(
+                        "a", IntType.getInstance(), "c", AnyType.getInstance()))))
+        .isFalse();
 
     // Field type mismatch
     assertThat(
-        r1.isAssignableFrom(RecordType.of(ImmutableMap.<String, SoyType>of(
-            "a", StringType.getInstance(), "b", AnyType.getInstance())))).isFalse();
+            r1.isAssignableFrom(
+                RecordType.of(
+                    ImmutableMap.<String, SoyType>of(
+                        "a", StringType.getInstance(), "b", AnyType.getInstance()))))
+        .isFalse();
   }
 
-
+  @Test
   public void testAnyTypeIsInstance() {
-    assertIsInstance(AnyType.getInstance(),
-        NULL_DATA, BOOLEAN_DATA, STRING_DATA, INTEGER_DATA, FLOAT_DATA,
-        HTML_DATA, ATTRIBUTES_DATA, CSS_DATA, URI_DATA, TRUSTED_RESOURCE_URI_DATA, JS_DATA,
-        LIST_DATA, MAP_DATA, DICT_DATA);
+    assertIsInstance(
+        AnyType.getInstance(),
+        NULL_DATA,
+        BOOLEAN_DATA,
+        STRING_DATA,
+        INTEGER_DATA,
+        FLOAT_DATA,
+        HTML_DATA,
+        ATTRIBUTES_DATA,
+        CSS_DATA,
+        URI_DATA,
+        TRUSTED_RESOURCE_URI_DATA,
+        JS_DATA,
+        LIST_DATA,
+        MAP_DATA,
+        DICT_DATA);
   }
 
-
+  @Test
   public void testUnknownTypeIsInstance() {
-    assertIsInstance(UnknownType.getInstance(),
-        NULL_DATA, BOOLEAN_DATA, STRING_DATA, INTEGER_DATA, FLOAT_DATA,
-        HTML_DATA, ATTRIBUTES_DATA, CSS_DATA, URI_DATA, TRUSTED_RESOURCE_URI_DATA, JS_DATA,
-        LIST_DATA, MAP_DATA, DICT_DATA);
+    assertIsInstance(
+        UnknownType.getInstance(),
+        NULL_DATA,
+        BOOLEAN_DATA,
+        STRING_DATA,
+        INTEGER_DATA,
+        FLOAT_DATA,
+        HTML_DATA,
+        ATTRIBUTES_DATA,
+        CSS_DATA,
+        URI_DATA,
+        TRUSTED_RESOURCE_URI_DATA,
+        JS_DATA,
+        LIST_DATA,
+        MAP_DATA,
+        DICT_DATA);
   }
 
-
+  @Test
   public void testNullTypeIsInstance() {
     assertIsInstance(NullType.getInstance(), NULL_DATA);
-    assertIsNotInstance(NullType.getInstance(),
-        BOOLEAN_DATA, STRING_DATA, INTEGER_DATA, FLOAT_DATA,
-        HTML_DATA, ATTRIBUTES_DATA, CSS_DATA, URI_DATA, TRUSTED_RESOURCE_URI_DATA, JS_DATA,
-        LIST_DATA, MAP_DATA, DICT_DATA);
+    assertIsNotInstance(
+        NullType.getInstance(),
+        BOOLEAN_DATA,
+        STRING_DATA,
+        INTEGER_DATA,
+        FLOAT_DATA,
+        HTML_DATA,
+        ATTRIBUTES_DATA,
+        CSS_DATA,
+        URI_DATA,
+        TRUSTED_RESOURCE_URI_DATA,
+        JS_DATA,
+        LIST_DATA,
+        MAP_DATA,
+        DICT_DATA);
   }
 
-
+  @Test
   public void testBoolTypeIsInstance() {
     assertIsInstance(BoolType.getInstance(), BOOLEAN_DATA);
-    assertIsNotInstance(BoolType.getInstance(),
-        NULL_DATA, STRING_DATA, INTEGER_DATA, FLOAT_DATA,
-        HTML_DATA, ATTRIBUTES_DATA, CSS_DATA, URI_DATA, TRUSTED_RESOURCE_URI_DATA, JS_DATA,
-        LIST_DATA, MAP_DATA, DICT_DATA);
+    assertIsNotInstance(
+        BoolType.getInstance(),
+        NULL_DATA,
+        STRING_DATA,
+        INTEGER_DATA,
+        FLOAT_DATA,
+        HTML_DATA,
+        ATTRIBUTES_DATA,
+        CSS_DATA,
+        URI_DATA,
+        TRUSTED_RESOURCE_URI_DATA,
+        JS_DATA,
+        LIST_DATA,
+        MAP_DATA,
+        DICT_DATA);
   }
 
-
+  @Test
   public void testStringTypeIsInstance() {
-    assertIsInstance(StringType.getInstance(),
-        STRING_DATA, HTML_DATA, ATTRIBUTES_DATA, CSS_DATA, URI_DATA, TRUSTED_RESOURCE_URI_DATA,
+    assertIsInstance(
+        StringType.getInstance(),
+        STRING_DATA,
+        HTML_DATA,
+        ATTRIBUTES_DATA,
+        CSS_DATA,
+        URI_DATA,
+        TRUSTED_RESOURCE_URI_DATA,
         JS_DATA);
-    assertIsNotInstance(StringType.getInstance(),
-        NULL_DATA, BOOLEAN_DATA, INTEGER_DATA,
-        LIST_DATA, MAP_DATA, DICT_DATA);
+    assertIsNotInstance(
+        StringType.getInstance(),
+        NULL_DATA,
+        BOOLEAN_DATA,
+        INTEGER_DATA,
+        LIST_DATA,
+        MAP_DATA,
+        DICT_DATA);
   }
 
-
+  @Test
   public void testIntTypeIsInstance() {
     assertIsInstance(IntType.getInstance(), INTEGER_DATA);
-    assertIsNotInstance(IntType.getInstance(),
-        NULL_DATA, BOOLEAN_DATA, STRING_DATA, FLOAT_DATA,
-        HTML_DATA, ATTRIBUTES_DATA, CSS_DATA, URI_DATA, TRUSTED_RESOURCE_URI_DATA, JS_DATA,
-        LIST_DATA, MAP_DATA, DICT_DATA);
+    assertIsNotInstance(
+        IntType.getInstance(),
+        NULL_DATA,
+        BOOLEAN_DATA,
+        STRING_DATA,
+        FLOAT_DATA,
+        HTML_DATA,
+        ATTRIBUTES_DATA,
+        CSS_DATA,
+        URI_DATA,
+        TRUSTED_RESOURCE_URI_DATA,
+        JS_DATA,
+        LIST_DATA,
+        MAP_DATA,
+        DICT_DATA);
   }
 
-
+  @Test
   public void testFloatTypeIsInstance() {
     assertIsInstance(FloatType.getInstance(), FLOAT_DATA);
-    assertIsNotInstance(FloatType.getInstance(),
-        NULL_DATA, BOOLEAN_DATA, STRING_DATA, INTEGER_DATA,
-        HTML_DATA, ATTRIBUTES_DATA, CSS_DATA, URI_DATA, TRUSTED_RESOURCE_URI_DATA, JS_DATA,
-        LIST_DATA, MAP_DATA, DICT_DATA);
+    assertIsNotInstance(
+        FloatType.getInstance(),
+        NULL_DATA,
+        BOOLEAN_DATA,
+        STRING_DATA,
+        INTEGER_DATA,
+        HTML_DATA,
+        ATTRIBUTES_DATA,
+        CSS_DATA,
+        URI_DATA,
+        TRUSTED_RESOURCE_URI_DATA,
+        JS_DATA,
+        LIST_DATA,
+        MAP_DATA,
+        DICT_DATA);
   }
 
-
+  @Test
   public void testSanitizedTypeIsInstance() {
     assertIsInstance(SanitizedType.HtmlType.getInstance(), HTML_DATA);
-    assertIsNotInstance(SanitizedType.HtmlType.getInstance(),
-        NULL_DATA, BOOLEAN_DATA, STRING_DATA, INTEGER_DATA, FLOAT_DATA,
-        ATTRIBUTES_DATA, CSS_DATA, URI_DATA, TRUSTED_RESOURCE_URI_DATA, JS_DATA,
-        LIST_DATA, MAP_DATA, DICT_DATA);
+    assertIsNotInstance(
+        SanitizedType.HtmlType.getInstance(),
+        NULL_DATA,
+        BOOLEAN_DATA,
+        STRING_DATA,
+        INTEGER_DATA,
+        FLOAT_DATA,
+        ATTRIBUTES_DATA,
+        CSS_DATA,
+        URI_DATA,
+        TRUSTED_RESOURCE_URI_DATA,
+        JS_DATA,
+        LIST_DATA,
+        MAP_DATA,
+        DICT_DATA);
 
     assertIsInstance(SanitizedType.AttributesType.getInstance(), ATTRIBUTES_DATA);
-    assertIsNotInstance(SanitizedType.AttributesType.getInstance(),
-        NULL_DATA, BOOLEAN_DATA, STRING_DATA, INTEGER_DATA, FLOAT_DATA,
-        HTML_DATA, CSS_DATA, URI_DATA, TRUSTED_RESOURCE_URI_DATA, JS_DATA,
-        LIST_DATA, MAP_DATA, DICT_DATA);
+    assertIsNotInstance(
+        SanitizedType.AttributesType.getInstance(),
+        NULL_DATA,
+        BOOLEAN_DATA,
+        STRING_DATA,
+        INTEGER_DATA,
+        FLOAT_DATA,
+        HTML_DATA,
+        CSS_DATA,
+        URI_DATA,
+        TRUSTED_RESOURCE_URI_DATA,
+        JS_DATA,
+        LIST_DATA,
+        MAP_DATA,
+        DICT_DATA);
 
     assertIsInstance(SanitizedType.CssType.getInstance(), CSS_DATA);
-    assertIsNotInstance(SanitizedType.CssType.getInstance(),
-        NULL_DATA, BOOLEAN_DATA, STRING_DATA, INTEGER_DATA, FLOAT_DATA,
-        HTML_DATA, ATTRIBUTES_DATA, URI_DATA, TRUSTED_RESOURCE_URI_DATA, JS_DATA,
-        LIST_DATA, MAP_DATA, DICT_DATA);
+    assertIsNotInstance(
+        SanitizedType.CssType.getInstance(),
+        NULL_DATA,
+        BOOLEAN_DATA,
+        STRING_DATA,
+        INTEGER_DATA,
+        FLOAT_DATA,
+        HTML_DATA,
+        ATTRIBUTES_DATA,
+        URI_DATA,
+        TRUSTED_RESOURCE_URI_DATA,
+        JS_DATA,
+        LIST_DATA,
+        MAP_DATA,
+        DICT_DATA);
 
     assertIsInstance(SanitizedType.UriType.getInstance(), URI_DATA);
-    assertIsNotInstance(SanitizedType.UriType.getInstance(),
-        NULL_DATA, BOOLEAN_DATA, STRING_DATA, INTEGER_DATA, FLOAT_DATA,
-        HTML_DATA, ATTRIBUTES_DATA, CSS_DATA, TRUSTED_RESOURCE_URI_DATA, JS_DATA,
-        LIST_DATA, MAP_DATA, DICT_DATA);
+    assertIsNotInstance(
+        SanitizedType.UriType.getInstance(),
+        NULL_DATA,
+        BOOLEAN_DATA,
+        STRING_DATA,
+        INTEGER_DATA,
+        FLOAT_DATA,
+        HTML_DATA,
+        ATTRIBUTES_DATA,
+        CSS_DATA,
+        TRUSTED_RESOURCE_URI_DATA,
+        JS_DATA,
+        LIST_DATA,
+        MAP_DATA,
+        DICT_DATA);
 
     assertIsInstance(SanitizedType.TrustedResourceUriType.getInstance(), TRUSTED_RESOURCE_URI_DATA);
-    assertIsNotInstance(SanitizedType.TrustedResourceUriType.getInstance(),
-        NULL_DATA, BOOLEAN_DATA, STRING_DATA, INTEGER_DATA, FLOAT_DATA,
-        HTML_DATA, ATTRIBUTES_DATA, CSS_DATA, URI_DATA, JS_DATA,
-        LIST_DATA, MAP_DATA, DICT_DATA);
+    assertIsNotInstance(
+        SanitizedType.TrustedResourceUriType.getInstance(),
+        NULL_DATA,
+        BOOLEAN_DATA,
+        STRING_DATA,
+        INTEGER_DATA,
+        FLOAT_DATA,
+        HTML_DATA,
+        ATTRIBUTES_DATA,
+        CSS_DATA,
+        URI_DATA,
+        JS_DATA,
+        LIST_DATA,
+        MAP_DATA,
+        DICT_DATA);
 
     assertIsInstance(SanitizedType.JsType.getInstance(), JS_DATA);
-    assertIsNotInstance(SanitizedType.JsType.getInstance(),
-        NULL_DATA, BOOLEAN_DATA, STRING_DATA, INTEGER_DATA, FLOAT_DATA,
-        HTML_DATA, ATTRIBUTES_DATA, CSS_DATA, URI_DATA, TRUSTED_RESOURCE_URI_DATA,
-        LIST_DATA, MAP_DATA, DICT_DATA);
+    assertIsNotInstance(
+        SanitizedType.JsType.getInstance(),
+        NULL_DATA,
+        BOOLEAN_DATA,
+        STRING_DATA,
+        INTEGER_DATA,
+        FLOAT_DATA,
+        HTML_DATA,
+        ATTRIBUTES_DATA,
+        CSS_DATA,
+        URI_DATA,
+        TRUSTED_RESOURCE_URI_DATA,
+        LIST_DATA,
+        MAP_DATA,
+        DICT_DATA);
   }
 
+  @Test
   public void testAllContentKindsCovered() {
     Set<SoyType> types = Sets.newIdentityHashSet();
     for (ContentKind kind : ContentKind.values()) {
@@ -447,59 +629,99 @@ public class SoyTypesTest extends TestCase {
     }
   }
 
+  @Test
   public void testListTypeIsInstance() {
     ListType listOfString = ListType.of(StringType.getInstance());
     assertIsInstance(listOfString, LIST_DATA);
-    assertIsNotInstance(listOfString,
-        NULL_DATA, BOOLEAN_DATA, STRING_DATA, INTEGER_DATA, FLOAT_DATA,
-        HTML_DATA, ATTRIBUTES_DATA, CSS_DATA, URI_DATA, TRUSTED_RESOURCE_URI_DATA, JS_DATA,
-        MAP_DATA, DICT_DATA);
+    assertIsNotInstance(
+        listOfString,
+        NULL_DATA,
+        BOOLEAN_DATA,
+        STRING_DATA,
+        INTEGER_DATA,
+        FLOAT_DATA,
+        HTML_DATA,
+        ATTRIBUTES_DATA,
+        CSS_DATA,
+        URI_DATA,
+        TRUSTED_RESOURCE_URI_DATA,
+        JS_DATA,
+        MAP_DATA,
+        DICT_DATA);
   }
 
-
+  @Test
   public void testMapTypeIsInstance() {
     MapType mapOfStringToAny = MapType.of(StringType.getInstance(), AnyType.getInstance());
     assertIsInstance(mapOfStringToAny, MAP_DATA, LIST_DATA);
-    assertIsNotInstance(mapOfStringToAny,
-        NULL_DATA, BOOLEAN_DATA, STRING_DATA, INTEGER_DATA, FLOAT_DATA,
-        HTML_DATA, ATTRIBUTES_DATA, CSS_DATA, URI_DATA, TRUSTED_RESOURCE_URI_DATA, JS_DATA);
+    assertIsNotInstance(
+        mapOfStringToAny,
+        NULL_DATA,
+        BOOLEAN_DATA,
+        STRING_DATA,
+        INTEGER_DATA,
+        FLOAT_DATA,
+        HTML_DATA,
+        ATTRIBUTES_DATA,
+        CSS_DATA,
+        URI_DATA,
+        TRUSTED_RESOURCE_URI_DATA,
+        JS_DATA);
   }
 
-
+  @Test
   public void testRecordTypeIsInstance() {
     MapType mapOfStringToAny = MapType.of(StringType.getInstance(), AnyType.getInstance());
     assertIsInstance(mapOfStringToAny, MAP_DATA, DICT_DATA);
-    assertIsNotInstance(mapOfStringToAny,
-        NULL_DATA, BOOLEAN_DATA, STRING_DATA, INTEGER_DATA, FLOAT_DATA,
-        HTML_DATA, ATTRIBUTES_DATA, CSS_DATA, URI_DATA, JS_DATA);
+    assertIsNotInstance(
+        mapOfStringToAny,
+        NULL_DATA,
+        BOOLEAN_DATA,
+        STRING_DATA,
+        INTEGER_DATA,
+        FLOAT_DATA,
+        HTML_DATA,
+        ATTRIBUTES_DATA,
+        CSS_DATA,
+        URI_DATA,
+        JS_DATA);
   }
 
-
+  @Test
   public void testUnionTypeIsInstance() {
     SoyType utype = UnionType.of(IntType.getInstance(), StringType.getInstance());
-    assertIsInstance(utype,
-        INTEGER_DATA, STRING_DATA, HTML_DATA, ATTRIBUTES_DATA, CSS_DATA, URI_DATA,
-        TRUSTED_RESOURCE_URI_DATA, JS_DATA);
-    assertIsNotInstance(utype,
-        NULL_DATA, BOOLEAN_DATA, FLOAT_DATA,
-        LIST_DATA, MAP_DATA, DICT_DATA);
+    assertIsInstance(
+        utype,
+        INTEGER_DATA,
+        STRING_DATA,
+        HTML_DATA,
+        ATTRIBUTES_DATA,
+        CSS_DATA,
+        URI_DATA,
+        TRUSTED_RESOURCE_URI_DATA,
+        JS_DATA);
+    assertIsNotInstance(utype, NULL_DATA, BOOLEAN_DATA, FLOAT_DATA, LIST_DATA, MAP_DATA, DICT_DATA);
   }
 
-
-  private void assertIsInstance(SoyType type, SoyValue... values) {
+  private static void assertIsInstance(SoyType type, SoyValue... values) {
     for (SoyValue value : values) {
-      assertWithMessage("Expected value of type " + value.getClass().getName()
-          + " to be an instance of Soy type " + type)
+      assertWithMessage(
+              "Expected value of type "
+                  + value.getClass().getName()
+                  + " to be an instance of Soy type "
+                  + type)
           .that(type.isInstance(value))
           .isTrue();
     }
   }
 
-
-  private void assertIsNotInstance(SoyType type, SoyValue... values) {
+  private static void assertIsNotInstance(SoyType type, SoyValue... values) {
     for (SoyValue value : values) {
-      assertWithMessage("Expected value of type " + value.getClass().getName()
-          + " to NOT be an instance of Soy type " + type)
+      assertWithMessage(
+              "Expected value of type "
+                  + value.getClass().getName()
+                  + " to NOT be an instance of Soy type "
+                  + type)
           .that(type.isInstance(value))
           .isFalse();
     }

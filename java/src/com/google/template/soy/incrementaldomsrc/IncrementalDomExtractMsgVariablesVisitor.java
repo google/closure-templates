@@ -21,11 +21,12 @@ import com.google.template.soy.soytree.HtmlContext;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 
 /**
- * Extracts nodes that idom cannot handle as statements into variables.
- * TODO(slaks): Extract attribute values.
+ * Extracts nodes that idom cannot handle as statements into variables. TODO(slaks): Extract
+ * attribute values.
  */
 final class IncrementalDomExtractMsgVariablesVisitor extends ExtractMsgVariablesVisitor {
-  @Override protected void wrapMsgFallbackGroupNodeHelper(
+  @Override
+  protected void wrapMsgFallbackGroupNodeHelper(
       MsgFallbackGroupNode msgFbGrpNode, IdGenerator nodeIdGen) {
     if (msgFbGrpNode.getHtmlContext() != HtmlContext.HTML_PCDATA) {
       super.wrapMsgFallbackGroupNodeHelper(msgFbGrpNode, nodeIdGen);

@@ -16,26 +16,22 @@
 
 package com.google.template.soy.shared.internal;
 
-
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Multimap;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.soytree.SoyFileNode;
-
 import java.io.File;
-
 import javax.annotation.Nullable;
 
 /**
  * Private shared utils for main entry point classes (e.g. JsSrcMain) or classes with a main()
  * method.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public class MainEntryPointUtils {
-
 
   private MainEntryPointUtils() {}
 
@@ -49,7 +45,9 @@ public class MainEntryPointUtils {
    * @return A map of output file paths to their respective input indicies.
    */
   public static Multimap<String, Integer> mapOutputsToSrcs(
-      @Nullable String locale, String outputPathFormat, String inputPathsPrefix,
+      @Nullable String locale,
+      String outputPathFormat,
+      String inputPathsPrefix,
       ImmutableList<SoyFileNode> fileNodes) {
     Multimap<String, Integer> outputs = ArrayListMultimap.create();
 
@@ -61,8 +59,9 @@ public class MainEntryPointUtils {
     for (int i = 0; i < fileNodes.size(); ++i) {
       SoyFileNode inputFile = fileNodes.get(i);
       String inputFilePath = inputFile.getFilePath();
-      String outputFilePath = MainEntryPointUtils.buildFilePath(
-          outputPathFormat, locale, inputFilePath, inputPathsPrefix);
+      String outputFilePath =
+          MainEntryPointUtils.buildFilePath(
+              outputPathFormat, locale, inputFilePath, inputPathsPrefix);
 
       BaseUtils.ensureDirsExistInPath(outputFilePath);
       outputs.put(outputFilePath, i);
@@ -82,7 +81,9 @@ public class MainEntryPointUtils {
    * @return The output file path corresponding to the given input file path.
    */
   public static String buildFilePath(
-      String filePathFormat, @Nullable String locale, @Nullable String inputFilePath,
+      String filePathFormat,
+      @Nullable String locale,
+      @Nullable String inputFilePath,
       String inputPathPrefix) {
 
     String path = filePathFormat;
@@ -121,5 +122,4 @@ public class MainEntryPointUtils {
 
     return path;
   }
-
 }

@@ -27,14 +27,12 @@ import com.google.template.soy.internal.i18n.BidiFormatter;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.internal.i18n.SoyBidiUtils;
 import com.google.template.soy.jssrc.restricted.JsExpr;
-import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
+import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcPrintDirective;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcPrintDirective;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
-
 import java.util.List;
 import java.util.Set;
-
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
@@ -48,35 +46,36 @@ import javax.inject.Singleton;
  */
 @Singleton
 final class BidiUnicodeWrapDirective
-    implements SoyJavaPrintDirective, SoyJsSrcPrintDirective, SoyPySrcPrintDirective {
-
+    implements SoyJavaPrintDirective,
+        SoyLibraryAssistedJsSrcPrintDirective,
+        SoyPySrcPrintDirective {
 
   /** Provider for the current bidi global directionality. */
   private final Provider<BidiGlobalDir> bidiGlobalDirProvider;
 
-
-  /**
-   * @param bidiGlobalDirProvider Provider for the current bidi global directionality.
-   */
+  /** @param bidiGlobalDirProvider Provider for the current bidi global directionality. */
   @Inject
   BidiUnicodeWrapDirective(Provider<BidiGlobalDir> bidiGlobalDirProvider) {
     this.bidiGlobalDirProvider = bidiGlobalDirProvider;
   }
 
-
-  @Override public String getName() {
+  @Override
+  public String getName() {
     return "|bidiUnicodeWrap";
   }
 
-  @Override public Set<Integer> getValidArgsSizes() {
+  @Override
+  public Set<Integer> getValidArgsSizes() {
     return ImmutableSet.of(0);
   }
 
-  @Override public boolean shouldCancelAutoescape() {
+  @Override
+  public boolean shouldCancelAutoescape() {
     return false;
   }
 
-  @Override public SoyValue applyForJava(SoyValue value, List<SoyValue> args) {
+  @Override
+  public SoyValue applyForJava(SoyValue value, List<SoyValue> args) {
     ContentKind valueKind = null;
     Dir valueDir = null;
     if (value instanceof SanitizedContent) {
@@ -93,8 +92,8 @@ final class BidiUnicodeWrapDirective
     // escaping. We simply have no way of knowing if this is what is happening when we get
     // non-SanitizedContent input, and most of the time it isn't.
     boolean isHtml = valueKind == ContentKind.HTML;
-    String wrappedValue = bidiFormatter.unicodeWrapWithKnownDir(
-        valueDir, value.coerceToString(), isHtml);
+    String wrappedValue =
+        bidiFormatter.unicodeWrapWithKnownDir(valueDir, value.coerceToString(), isHtml);
 
     // Bidi-wrapping a value converts it to the context directionality. Since it does not cost us
     // anything, we will indicate this known direction in the output SanitizedContent, even though
@@ -119,13 +118,20 @@ final class BidiUnicodeWrapDirective
     return StringData.forValue(wrappedValue);
   }
 
-  @Override public JsExpr applyForJsSrc(JsExpr value, List<JsExpr> args) {
+  @Override
+  public JsExpr applyForJsSrc(JsExpr value, List<JsExpr> args) {
     String codeSnippet = bidiGlobalDirProvider.get().getCodeSnippet();
     return new JsExpr(
         "soy.$$bidiUnicodeWrap(" + codeSnippet + ", " + value.getText() + ")", Integer.MAX_VALUE);
   }
 
-  @Override public PyExpr applyForPySrc(PyExpr value, List<PyExpr> args) {
+  @Override
+  public ImmutableSet<String> getRequiredJsLibNames() {
+    return ImmutableSet.of("soy");
+  }
+
+  @Override
+  public PyExpr applyForPySrc(PyExpr value, List<PyExpr> args) {
     String codeSnippet = bidiGlobalDirProvider.get().getCodeSnippet();
     return new PyExpr(
         "bidi.unicode_wrap(" + codeSnippet + ", " + value.getText() + ")", Integer.MAX_VALUE);

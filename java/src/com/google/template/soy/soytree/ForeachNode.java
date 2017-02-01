@@ -20,22 +20,22 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
-
 import java.util.List;
 
 /**
- * Node representing a 'foreach' statement. Should always contain a ForeachNonemptyNode as the
- * first child. May contain a second child, which should be a ForeachIfemptyNode.
+ * Node representing a 'foreach' statement. Should always contain a ForeachNonemptyNode as the first
+ * child. May contain a second child, which should be a ForeachIfemptyNode.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public final class ForeachNode extends AbstractParentCommandNode<SoyNode>
-    implements StandaloneNode, SplitLevelTopNode<SoyNode>, StatementNode, ExprHolderNode {
+public final class ForeachNode extends AbstractParentCommandNode<BlockNode>
+    implements StandaloneNode, SplitLevelTopNode<BlockNode>, StatementNode, ExprHolderNode {
 
   /** The parsed expression for the list that we're iterating over. */
   private final ExprRootNode expr;
@@ -46,15 +46,14 @@ public final class ForeachNode extends AbstractParentCommandNode<SoyNode>
    * @param commandText The command text.
    * @param sourceLocation The node's source location.
    */
-  public ForeachNode(
-      int id, ExprRootNode expr, String commandText, SourceLocation sourceLocation) {
+  public ForeachNode(int id, ExprRootNode expr, String commandText, SourceLocation sourceLocation) {
     super(id, sourceLocation, "foreach", commandText);
     this.expr = expr;
   }
 
-
   /**
    * Copy constructor.
+   *
    * @param orig The node to copy.
    */
   private ForeachNode(ForeachNode orig, CopyState copyState) {
@@ -62,36 +61,33 @@ public final class ForeachNode extends AbstractParentCommandNode<SoyNode>
     this.expr = orig.expr.copy(copyState);
   }
 
-
-  @Override public Kind getKind() {
+  @Override
+  public Kind getKind() {
     return Kind.FOREACH_NODE;
   }
-
 
   /** Returns the text of the expression we're iterating over. */
   public String getExprText() {
     return expr.toSourceString();
   }
 
-
   /** Returns the parsed expression. */
   public ExprRootNode getExpr() {
     return expr;
   }
 
-
-  @Override public List<ExprUnion> getAllExprUnions() {
+  @Override
+  public List<ExprUnion> getAllExprUnions() {
     return ImmutableList.of(new ExprUnion(expr));
   }
 
-
-  @Override public BlockNode getParent() {
+  @Override
+  public BlockNode getParent() {
     return (BlockNode) super.getParent();
   }
 
-
-  @Override public ForeachNode copy(CopyState copyState) {
+  @Override
+  public ForeachNode copy(CopyState copyState) {
     return new ForeachNode(this, copyState);
   }
-
 }

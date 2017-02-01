@@ -19,11 +19,9 @@ package com.google.template.soy;
 import com.google.common.base.Optional;
 import com.google.common.io.ByteSink;
 import com.google.common.io.Files;
-
-import org.kohsuke.args4j.Option;
-
 import java.io.File;
 import java.io.IOException;
+import org.kohsuke.args4j.Option;
 
 /** Executable for compiling a set of Soy files into corresponding Java class files in a jar. */
 public final class SoyToJbcSrcCompiler extends AbstractSoyCompiler {
@@ -65,12 +63,11 @@ public final class SoyToJbcSrcCompiler extends AbstractSoyCompiler {
   /**
    * Compile a set of Soy files into corresponding Java class files in a jar.
    *
-   * @param sfs the files to compile.
-   *      It must not include files that perform external because JbcSrc needs callee
-   *      information to generate correct escaping code.
+   * @param sfs the files to compile. It must not include files that perform external because JbcSrc
+   *     needs callee information to generate correct escaping code.
    * @param jarTarget Receives a JAR file containing the classes compiled from the templates.
-   * @param srcJarTarget If present, receives a JAR file containing the template sources.
-   *      This may be useful for enabling IDE debugging scenarios.
+   * @param srcJarTarget If present, receives a JAR file containing the template sources. This may
+   *     be useful for enabling IDE debugging scenarios.
    */
   public static void compile(SoyFileSet sfs, ByteSink jarTarget, Optional<ByteSink> srcJarTarget)
       throws IOException {

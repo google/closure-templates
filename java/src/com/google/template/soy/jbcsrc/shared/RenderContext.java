@@ -24,9 +24,9 @@ import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableMap;
 import com.google.protobuf.Message;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.data.SoyProtoValue;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueConverter;
-import com.google.template.soy.data.SoyValueHelper;
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.msgs.SoyMsgBundle;
@@ -35,14 +35,11 @@ import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
-import com.google.template.soy.types.proto.SoyProtoTypeImpl;
-
 import java.util.Map;
-
 import javax.annotation.Nullable;
 
-/** 
- * A collection of contextual rendering data.  Each top level rendering operation will obtain a
+/**
+ * A collection of contextual rendering data. Each top level rendering operation will obtain a
  * single instance of this object and it will be propagated throughout the render tree.
  */
 public final class RenderContext {
@@ -116,21 +113,21 @@ public final class RenderContext {
   }
 
   /**
-   * Helper for boxing protos.  We cannot currently box protos without calling out to the value
-   * converter because the SoyProtoValue has a package private constructor and even if it was
-   * public it would be hard/impossible to call it.
+   * Helper for boxing protos. We cannot currently box protos without calling out to the value
+   * converter because the SoyProtoValue has a package private constructor and even if it was public
+   * it would be hard/impossible to call it.
    *
-   * <p>The difficulty is because SoyProtoTypeImpl.Value currently depends on its SoyType for
-   * field interpretation.  In theory we could drop this and have it just use the descriptor
-   * directly (since it has a Message instance it could just call message.getDescriptor()), but
-   * this may add some overhead.  This could all be made much easier if we had perfect type
-   * information (then we would ~never need to box or rely on the SoyValue implementation).
+   * <p>The difficulty is because SoyProtoValue currently depends on its SoyType for field
+   * interpretation. In theory we could drop this and have it just use the descriptor directly
+   * (since it has a Message instance it could just call message.getDescriptor()), but this may add
+   * some overhead. This could all be made much easier if we had perfect type information (then we
+   * would ~never need to box or rely on the SoyValue implementation).
    */
-  public SoyProtoTypeImpl.Value box(Message proto) {
+  public SoyProtoValue box(Message proto) {
     if (proto == null) {
       return null;
     }
-    return (SoyProtoTypeImpl.Value) converter.convert(proto);
+    return (SoyProtoValue) converter.convert(proto);
   }
 
   public CompiledTemplate getDelTemplate(
@@ -149,9 +146,7 @@ public final class RenderContext {
     return callee.create(params, ij);
   }
 
-  /**
-   * Returns {@code true} if the primary msg should be used instead of the fallback.
-   */
+  /** Returns {@code true} if the primary msg should be used instead of the fallback. */
   public boolean usePrimaryMsg(long msgId, long fallbackId) {
     // Note: we need to make sure the fallback msg is actually present if we are going to fallback.
     return msgBundle.getMsg(msgId) != null || msgBundle.getMsg(fallbackId) == null;
@@ -189,7 +184,7 @@ public final class RenderContext {
     private SoyIdRenamingMap xidRenamingMap = SoyCssRenamingMap.EMPTY;
     private ImmutableMap<String, SoyJavaFunction> soyJavaFunctionsMap = ImmutableMap.of();
     private ImmutableMap<String, SoyJavaPrintDirective> soyJavaDirectivesMap = ImmutableMap.of();
-    private SoyValueConverter converter = SoyValueHelper.UNCUSTOMIZED_INSTANCE;
+    private SoyValueConverter converter = SoyValueConverter.UNCUSTOMIZED_INSTANCE;
     private SoyMsgBundle msgBundle = SoyMsgBundle.EMPTY;
 
     public Builder withCompiledTemplates(CompiledTemplates templates) {

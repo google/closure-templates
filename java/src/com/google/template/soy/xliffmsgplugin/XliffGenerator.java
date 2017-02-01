@@ -25,23 +25,19 @@ import com.google.template.soy.msgs.restricted.SoyMsg;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPlaceholderPart;
 import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
-
 import java.util.Map;
-
 import javax.annotation.Nullable;
-
 
 /**
  * Static function for generating the output XLIFF file content from a SoyMsgBundle of extracted
  * messages.
  *
- * <p> XLIFF specification: http://docs.oasis-open.org/xliff/xliff-core/xliff-core.html
+ * <p>XLIFF specification: http://docs.oasis-open.org/xliff/xliff-core/xliff-core.html
  *
  */
 class XliffGenerator {
 
   private XliffGenerator() {}
-
 
   /** Make some effort to use correct XLIFF datatype values. */
   private static final Map<String, String> CONTENT_TYPE_TO_XLIFF_DATATYPE_MAP =
@@ -53,7 +49,6 @@ class XliffGenerator {
           .put("text/css", "css")
           .put("text/xml", "xml")
           .build();
-
 
   /**
    * Generates the output XLIFF file content for a given SoyMsgBundle.
@@ -79,8 +74,11 @@ class XliffGenerator {
     ilb.appendLine("<xliff version=\"1.2\" xmlns=\"urn:oasis:names:tc:xliff:document:1.2\">");
     ilb.increaseIndent();
     ilb.appendLineStart(
-        "<file original=\"SoyMsgBundle\" datatype=\"x-soy-msg-bundle\"", " xml:space=\"preserve\"",
-        " source-language=\"", attributeEscaper.escape(sourceLocaleString), "\"");
+        "<file original=\"SoyMsgBundle\" datatype=\"x-soy-msg-bundle\"",
+        " xml:space=\"preserve\"",
+        " source-language=\"",
+        attributeEscaper.escape(sourceLocaleString),
+        "\"");
     if (hasTarget) {
       ilb.appendParts(" target-language=\"", attributeEscaper.escape(targetLocaleString), "\"");
     }
@@ -97,7 +95,7 @@ class XliffGenerator {
       if (contentType != null && contentType.length() > 0) {
         String xliffDatatype = CONTENT_TYPE_TO_XLIFF_DATATYPE_MAP.get(contentType);
         if (xliffDatatype == null) {
-          xliffDatatype = contentType;  // just use the contentType string
+          xliffDatatype = contentType; // just use the contentType string
         }
         ilb.appendParts(" datatype=\"", attributeEscaper.escape(xliffDatatype), "\"");
       }
@@ -148,5 +146,4 @@ class XliffGenerator {
 
     return ilb;
   }
-
 }

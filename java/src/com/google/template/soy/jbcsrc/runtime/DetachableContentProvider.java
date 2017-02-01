@@ -26,19 +26,17 @@ import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import com.google.template.soy.jbcsrc.api.AdvisingStringBuilder;
 import com.google.template.soy.jbcsrc.api.RenderResult;
-
 import java.io.IOException;
-
 import javax.annotation.Nullable;
 
 /**
- * A special implementation of {@link SoyValueProvider} to use as a shared base class for the
- * {@code jbcsrc} implementations of the generated {@code LetContentNode} and 
- * {@code CallParamContentNode} implementations.
+ * A special implementation of {@link SoyValueProvider} to use as a shared base class for the {@code
+ * jbcsrc} implementations of the generated {@code LetContentNode} and {@code CallParamContentNode}
+ * implementations.
  */
 public abstract class DetachableContentProvider implements SoyValueProvider {
   @Nullable private final ContentKind contentKind;
-  
+
   // Will be either a SanitizedContent or a StringData, but there is no common super type besides
   // this.
   private SoyValue resolvedValue;
@@ -46,20 +44,23 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
   // Will be either an AdvisingStringBuilder or a TeeAdvisingAppendable depending on whether we are
   // being resolved via 'status()' or via 'renderAndResolve'
   private AdvisingAppendable builder;
-  
+
   protected DetachableContentProvider(@Nullable ContentKind contentKind) {
     this.contentKind = contentKind;
   }
 
-  @Override public final SoyValue resolve() {
+  @Override
+  public final SoyValue resolve() {
     SoyValue local = resolvedValue;
     checkState(local != null, "called resolve() before status() returned ready.");
-    checkState(local != TombstoneValue.INSTANCE,
+    checkState(
+        local != TombstoneValue.INSTANCE,
         "called resolve() after calling renderAndResolve with isLast == true");
     return local;
   }
 
-  @Override public final RenderResult status() {
+  @Override
+  public final RenderResult status() {
     if (resolvedValue != null) {
       return RenderResult.done();
     }
@@ -70,7 +71,8 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
     return doRenderIntoBufferingAppendable(currentBuilder);
   }
 
-  @Override public RenderResult renderAndResolve(AdvisingAppendable appendable, boolean isLast)
+  @Override
+  public RenderResult renderAndResolve(AdvisingAppendable appendable, boolean isLast)
       throws IOException {
     SoyValue value = resolvedValue;
     if (value != null) {
@@ -97,7 +99,7 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
       if (contentKind != null) {
         resolvedValue = UnsafeSanitizedContentOrdainer.ordainAsSafe(target.toString(), contentKind);
       } else {
-        resolvedValue = StringData.forValue(target.toString()); 
+        resolvedValue = StringData.forValue(target.toString());
       }
     }
     return result;
@@ -110,7 +112,7 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
    * An {@link AdvisingAppendable} that forwards to a delegate appendable but also saves all the
    * same forwarded content into a buffer.
    *
-   * <p>See: <a href="http://en.wikipedia.org/wiki/Tee_%28command%29">Tee command</p> for the unix
+   * <p>See: <a href="http://en.wikipedia.org/wiki/Tee_%28command%29">Tee command for the unix
    * command on which this is based.
    */
   private static final class TeeAdvisingAppendable implements AdvisingAppendable {
@@ -121,30 +123,34 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
       this.delegate = delegate;
     }
 
-    @Override public AdvisingAppendable append(CharSequence csq) throws IOException {
+    @Override
+    public AdvisingAppendable append(CharSequence csq) throws IOException {
       delegate.append(csq);
       buffer.append(csq);
       return this;
     }
 
-    @Override public AdvisingAppendable append(CharSequence csq, int start, int end) 
-        throws IOException {
+    @Override
+    public AdvisingAppendable append(CharSequence csq, int start, int end) throws IOException {
       delegate.append(csq, start, end);
       buffer.append(csq, start, end);
       return this;
     }
 
-    @Override public AdvisingAppendable append(char c) throws IOException {
+    @Override
+    public AdvisingAppendable append(char c) throws IOException {
       delegate.append(c);
       buffer.append(c);
       return this;
     }
 
-    @Override public boolean softLimitReached() {
+    @Override
+    public boolean softLimitReached() {
       return delegate.softLimitReached();
     }
-    
-    @Override public String toString() {
+
+    @Override
+    public String toString() {
       return buffer.toString();
     }
   }

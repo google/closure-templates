@@ -23,14 +23,17 @@ import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyStringExpr;
 import com.google.template.soy.shared.AbstractSoyPrintDirectiveTestCase;
-
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for TruncateDirective.
  *
  */
+@RunWith(JUnit4.class)
 public class TruncateDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
-
+  @Test
   public void testApplyForTofu() {
     TruncateDirective truncateDirective = new TruncateDirective();
 
@@ -52,7 +55,7 @@ public class TruncateDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
     assertTofuOutput("1234...", "1234\uD800\uDC00blah", truncateDirective, 8, true);
     assertTofuOutput("1234567", "1234567\uD800\uDC00", truncateDirective, 8, false);
   }
-
+  @Test
   public void testApplyForJsSrc() {
     TruncateDirective truncateDirective = new TruncateDirective();
 
@@ -61,16 +64,22 @@ public class TruncateDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
     JsExpr trueJsExpr = new JsExpr("true", Integer.MAX_VALUE);
     JsExpr falseJsExpr = new JsExpr("false", Integer.MAX_VALUE);
     assertThat(
-        truncateDirective.applyForJsSrc(dataRefJsExpr, ImmutableList.of(maxLenJsExpr)).getText())
+            truncateDirective
+                .applyForJsSrc(dataRefJsExpr, ImmutableList.of(maxLenJsExpr))
+                .getText())
         .isEqualTo("soy.$$truncate(opt_data.myKey, 8, true)");
     assertThat(
-        truncateDirective.applyForJsSrc(dataRefJsExpr, ImmutableList.of(maxLenJsExpr, trueJsExpr))
-            .getText()).isEqualTo("soy.$$truncate(opt_data.myKey, 8, true)");
+            truncateDirective
+                .applyForJsSrc(dataRefJsExpr, ImmutableList.of(maxLenJsExpr, trueJsExpr))
+                .getText())
+        .isEqualTo("soy.$$truncate(opt_data.myKey, 8, true)");
     assertThat(
-        truncateDirective.applyForJsSrc(dataRefJsExpr, ImmutableList.of(maxLenJsExpr, falseJsExpr))
-            .getText()).isEqualTo("soy.$$truncate(opt_data.myKey, 8, false)");
+            truncateDirective
+                .applyForJsSrc(dataRefJsExpr, ImmutableList.of(maxLenJsExpr, falseJsExpr))
+                .getText())
+        .isEqualTo("soy.$$truncate(opt_data.myKey, 8, false)");
   }
-
+  @Test
   public void testApplyForPySrc() {
     TruncateDirective truncateDirective = new TruncateDirective();
 
@@ -79,17 +88,17 @@ public class TruncateDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
     PyExpr maxLenExpr = new PyExpr("8", Integer.MAX_VALUE);
     PyExpr trueExpr = new PyExpr("True", Integer.MAX_VALUE);
     PyExpr falseExpr = new PyExpr("False", Integer.MAX_VALUE);
-    assertThat(
-        truncateDirective.applyForPySrc(data, ImmutableList.of(maxLenExpr)).getText())
+    assertThat(truncateDirective.applyForPySrc(data, ImmutableList.of(maxLenExpr)).getText())
         .isEqualTo("directives.truncate('data', 8, True)");
     assertThat(
-        truncateDirective.applyForPySrc(data, ImmutableList.of(maxLenExpr, trueExpr)).getText())
+            truncateDirective.applyForPySrc(data, ImmutableList.of(maxLenExpr, trueExpr)).getText())
         .isEqualTo("directives.truncate('data', 8, True)");
     assertThat(
-        truncateDirective.applyForPySrc(data, ImmutableList.of(maxLenExpr, falseExpr)).getText())
+            truncateDirective
+                .applyForPySrc(data, ImmutableList.of(maxLenExpr, falseExpr))
+                .getText())
         .isEqualTo("directives.truncate('data', 8, False)");
-    assertThat(
-        truncateDirective.applyForPySrc(dataRef, ImmutableList.of(maxLenExpr)).getText())
+    assertThat(truncateDirective.applyForPySrc(dataRef, ImmutableList.of(maxLenExpr)).getText())
         .isEqualTo("directives.truncate(str(opt_data[myKey]), 8, True)");
   }
 }

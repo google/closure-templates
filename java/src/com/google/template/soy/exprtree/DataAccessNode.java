@@ -21,9 +21,9 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 
 /**
- * Base class which represents access to a field or element of an aggregate value,
- * such as an object or collection. Syntactically, data accesses are always
- * suffix operators such as base.fieldName or base[expression].
+ * Base class which represents access to a field or element of an aggregate value, such as an object
+ * or collection. Syntactically, data accesses are always suffix operators such as base.fieldName or
+ * base[expression].
  *
  */
 public abstract class DataAccessNode extends AbstractParentExprNode {
@@ -31,11 +31,10 @@ public abstract class DataAccessNode extends AbstractParentExprNode {
   protected final boolean isNullSafe;
 
   /**
-   * @param base The base expression, that is a reference to the object
-   *     containing the named field.
+   * @param base The base expression, that is a reference to the object containing the named field.
    * @param sourceLocation The node's source location.
-   * @param isNullSafe If true, checks during evaluation whether the base expression is null
-   *     and returns null instead of causing an invalid dereference.
+   * @param isNullSafe If true, checks during evaluation whether the base expression is null and
+   *     returns null instead of causing an invalid dereference.
    */
   protected DataAccessNode(ExprNode base, SourceLocation sourceLocation, boolean isNullSafe) {
     super(sourceLocation);
@@ -49,28 +48,24 @@ public abstract class DataAccessNode extends AbstractParentExprNode {
     this.isNullSafe = orig.isNullSafe;
   }
 
-
   /** Returns the base expression from which we're looking up the named field. */
   public ExprNode getBaseExprChild() {
     return this.getChild(0);
   }
-
 
   /** Returns whether this field reference is null-safe. */
   public boolean isNullSafe() {
     return isNullSafe;
   }
 
-
   /**
-   * Returns the source string for the part of the expression that accesses
-   * the item - in other words, not including the base expression. This is
-   * intended for use in reporting errors.
+   * Returns the source string for the part of the expression that accesses the item - in other
+   * words, not including the base expression. This is intended for use in reporting errors.
    */
   public abstract String getSourceStringSuffix();
 
-
-  @Override public String toSourceString() {
+  @Override
+  public String toSourceString() {
     return getBaseExprChild().toSourceString() + getSourceStringSuffix();
   }
 }

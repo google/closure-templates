@@ -22,14 +22,12 @@ import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jssrc.restricted.JsExpr;
-import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
+import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
-
 import java.util.List;
 import java.util.Set;
-
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
@@ -40,36 +38,36 @@ import javax.inject.Singleton;
  *
  */
 @Singleton
-class BidiMarkFunction implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction {
-
+final class BidiMarkFunction
+    implements SoyJavaFunction, SoyLibraryAssistedJsSrcFunction, SoyPySrcFunction {
 
   /** Provider for the current bidi global directionality. */
   private final Provider<BidiGlobalDir> bidiGlobalDirProvider;
 
-
-  /**
-   * @param bidiGlobalDirProvider Provider for the current bidi global directionality.
-   */
+  /** @param bidiGlobalDirProvider Provider for the current bidi global directionality. */
   @Inject
   BidiMarkFunction(Provider<BidiGlobalDir> bidiGlobalDirProvider) {
     this.bidiGlobalDirProvider = bidiGlobalDirProvider;
   }
 
-
-  @Override public String getName() {
+  @Override
+  public String getName() {
     return "bidiMark";
   }
 
-  @Override public Set<Integer> getValidArgsSizes() {
+  @Override
+  public Set<Integer> getValidArgsSizes() {
     return ImmutableSet.of(0);
   }
 
-  @Override public SoyValue computeForJava(List<SoyValue> args) {
+  @Override
+  public SoyValue computeForJava(List<SoyValue> args) {
     return StringData.forValue(
         (bidiGlobalDirProvider.get().getStaticValue() < 0) ? "\u200F" /*RLM*/ : "\u200E" /*LRM*/);
   }
 
-  @Override public JsExpr computeForJsSrc(List<JsExpr> args) {
+  @Override
+  public JsExpr computeForJsSrc(List<JsExpr> args) {
     BidiGlobalDir bidiGlobalDir = bidiGlobalDirProvider.get();
     if (bidiGlobalDir.isStaticValue()) {
       return new JsExpr(
@@ -81,7 +79,13 @@ class BidiMarkFunction implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFun
         Operator.CONDITIONAL.getPrecedence());
   }
 
-  @Override public PyExpr computeForPySrc(List<PyExpr> args) {
+  @Override
+  public ImmutableSet<String> getRequiredJsLibNames() {
+    return ImmutableSet.copyOf(bidiGlobalDirProvider.get().getNamespace().asSet());
+  }
+
+  @Override
+  public PyExpr computeForPySrc(List<PyExpr> args) {
     BidiGlobalDir bidiGlobalDir = bidiGlobalDirProvider.get();
     return new PyExpr(
         "'\\u200F' if (" + bidiGlobalDir.getCodeSnippet() + ") < 0 else '\\u200E'",

@@ -17,47 +17,37 @@
 package com.google.template.soy.jssrc.internal;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.template.soy.jssrc.dsl.CodeChunk.id;
 
-import com.google.common.collect.Lists;
-import com.google.template.soy.exprtree.Operator;
-import com.google.template.soy.jssrc.restricted.JsExpr;
-
-import junit.framework.TestCase;
+import com.google.common.collect.ImmutableList;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for {@link JsCodeBuilder}.
  *
  */
-public final class JsCodeBuilderTest extends TestCase {
+@RunWith(JUnit4.class)
+public final class JsCodeBuilderTest {
 
+  @Test
   public void testOutputVarWithConcat() {
-    JsCodeBuilder jcb = new JsCodeBuilder();
-    jcb.pushOutputVar("output");
-    jcb.appendOutputVarName().appendLineEnd();
-    assertThat(jcb.getCode()).isEqualTo("output\n");
+    JsCodeBuilder jcb = new JsCodeBuilder().pushOutputVar("output");
     jcb.initOutputVarIfNecessary();
-    assertThat(jcb.getCode()).isEqualTo("output\nvar output = '';\n");
-    jcb.pushOutputVar("param5");
-    jcb.appendOutputVarName().appendLineEnd();
-    jcb.setOutputVarInited();
-    jcb.initOutputVarIfNecessary();  // nothing added
-    assertThat(jcb.getCode()).isEqualTo("output\nvar output = '';\nparam5\n");
+    assertThat(jcb.getCode()).isEqualTo("var output = '';\n");
+    jcb.pushOutputVar("param5").setOutputVarInited().initOutputVarIfNecessary(); // nothing added
+    assertThat(jcb.getCode()).isEqualTo("var output = '';\n");
 
-    jcb = new JsCodeBuilder();
-    jcb.pushOutputVar("output");
-    jcb.addToOutputVar(Lists.newArrayList(new JsExpr("boo", Integer.MAX_VALUE)));
+    jcb = new JsCodeBuilder().pushOutputVar("output").addChunkToOutputVar(id("boo"));
     assertThat(jcb.getCode()).isEqualTo("var output = '' + boo;\n");
-    jcb.pushOutputVar("param5");
-    jcb.setOutputVarInited();
-    jcb.addToOutputVar(Lists.newArrayList(
-        new JsExpr("a - b", Operator.MINUS.getPrecedence()),
-        new JsExpr("c - d", Operator.MINUS.getPrecedence()),
-        new JsExpr("e * f", Operator.TIMES.getPrecedence())));
+    jcb.pushOutputVar("param5")
+        .setOutputVarInited()
+        .addChunksToOutputVar(ImmutableList.of(
+            id("a").minus(id("b")),
+            id("c").minus(id("d")),
+            id("e").times(id("f"))));
     assertThat(jcb.getCode())
         .isEqualTo("var output = '' + boo;\nparam5 += a - b + (c - d) + e * f;\n");
-    jcb.popOutputVar();
-    jcb.appendOutputVarName().appendLineEnd();
-    assertThat(jcb.getCode())
-        .isEqualTo("var output = '' + boo;\nparam5 += a - b + (c - d) + e * f;\noutput\n");
   }
 }

@@ -19,9 +19,7 @@ package com.google.template.soy.msgs.restricted;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.annotations.VisibleForTesting;
-
 import java.util.Arrays;
-
 
 /**
  * Represents a raw text string within a message (the stuff that translators change).
@@ -30,7 +28,6 @@ import java.util.Arrays;
 public abstract class SoyMsgRawTextPart extends SoyMsgPart {
 
   private static final int BYTES_PER_CHAR = 2;
-
 
   /** Returns a SoyMsgRawTextPart representing the specified raw text string. */
   public static SoyMsgRawTextPart of(String rawText) {
@@ -52,75 +49,79 @@ public abstract class SoyMsgRawTextPart extends SoyMsgPart {
     }
   }
 
-
   /** Returns the raw text string. */
   public abstract String getRawText();
 
-
-  @Override public final String toString() {
+  @Override
+  public final String toString() {
     return getRawText();
   }
-
 
   /** Constructor only intended to be used internally. */
   SoyMsgRawTextPart() {}
 
-
   /**
    * UTF-8 raw message text representation.
    *
-   * For most messages, UTF8 represents the string more compactly. For Latin strings, UTF8 will
+   * <p>For most messages, UTF8 represents the string more compactly. For Latin strings, UTF8 will
    * always be half the size of UTF16.
    */
-  @VisibleForTesting static final class Utf8SoyMsgRawTextPart extends SoyMsgRawTextPart {
+  @VisibleForTesting
+  static final class Utf8SoyMsgRawTextPart extends SoyMsgRawTextPart {
     private final byte[] utf8Bytes;
 
     Utf8SoyMsgRawTextPart(byte[] utf8Bytes) {
       this.utf8Bytes = utf8Bytes;
     }
 
-    @Override public boolean equals(Object other) {
+    @Override
+    public boolean equals(Object other) {
       // NOTE: Since message encoding is deterministic, we know the messages don't match if
       // the other one is encoded as chars.
       return other.getClass() == Utf8SoyMsgRawTextPart.class
           && Arrays.equals(utf8Bytes, ((Utf8SoyMsgRawTextPart) other).utf8Bytes);
     }
 
-    @Override public int hashCode() {
+    @Override
+    public int hashCode() {
       return getClass().hashCode() + Arrays.hashCode(utf8Bytes);
     }
 
-    @Override public String getRawText() {
+    @Override
+    public String getRawText() {
       return new String(utf8Bytes, UTF_8);
     }
   }
 
-
   /**
    * Character array representation.
    *
-   * Using a character array over String saves another 7M on a realistic application with 1 million
-   * messages in memory, by avoiding the overhead of the String object.
+   * <p>Using a character array over String saves another 7M on a realistic application with 1
+   * million messages in memory, by avoiding the overhead of the String object.
    */
-  @VisibleForTesting static final class CharArraySoyMsgRawTextPart extends SoyMsgRawTextPart {
+  @VisibleForTesting
+  static final class CharArraySoyMsgRawTextPart extends SoyMsgRawTextPart {
     private final char[] charArray;
 
     CharArraySoyMsgRawTextPart(char[] charArray) {
       this.charArray = charArray;
     }
 
-    @Override public boolean equals(Object other) {
+    @Override
+    public boolean equals(Object other) {
       // NOTE: Since message encoding is deterministic, we know the messages don't match if
       // the other one is encoded as UTF8.
       return other.getClass() == CharArraySoyMsgRawTextPart.class
           && Arrays.equals(charArray, ((CharArraySoyMsgRawTextPart) other).charArray);
     }
 
-    @Override public int hashCode() {
+    @Override
+    public int hashCode() {
       return getClass().hashCode() + Arrays.hashCode(charArray);
     }
 
-    @Override public String getRawText() {
+    @Override
+    public String getRawText() {
       return new String(charArray);
     }
   }

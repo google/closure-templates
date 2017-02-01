@@ -39,7 +39,6 @@ import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
 import com.google.template.soy.soytree.TemplateNode;
-
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
@@ -47,7 +46,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import javax.annotation.Nullable;
 
 /**
@@ -57,69 +55,69 @@ import javax.annotation.Nullable;
  * traversal, and must remain in the same traversal relationship with the depender after any
  * modifications to the tree, in order to preserve correctness.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
- * <p> {@link #exec} must be called on a {@code TemplateNode} or an ancestor of a
- * {@code TemplateNode}.
+ * <p>{@link #exec} must be called on a {@code TemplateNode} or an ancestor of a {@code
+ * TemplateNode}.
  *
- * <p> More specifically, a dependee may be an ancestor of the depender or an older sibling of
- * either the depender or an ancestor of the depender. In the case of a dependee that is an ancestor
- * of the depender, the depender must not be moved outside of the subtree of the dependee. In the
- * case of a dependee that is an older sibling of either the depender or an ancestor of the
- * depender, this same relationship must be maintained when the depender is moved within the tree.
+ * <p>More specifically, a dependee may be an ancestor of the depender or an older sibling of either
+ * the depender or an ancestor of the depender. In the case of a dependee that is an ancestor of the
+ * depender, the depender must not be moved outside of the subtree of the dependee. In the case of a
+ * dependee that is an older sibling of either the depender or an ancestor of the depender, this
+ * same relationship must be maintained when the depender is moved within the tree.
  *
- * <p> Dependees are one of:
- * (a) TemplateNode: Its nodes must remain in its subtree.
- * (b) SplitLevelTopNode: Its immediate children (the bottom level) must remain under it.
- * (c) ConditionalBlockNode other than LoopNode: It may never be executed, and we can't guarantee
- *     that any of the references made in a node's subtree will be defined in the case that the
- *     block is not executed, and furthermore, even if the node's subtree has no references, we
- *     don't want to needlessly process the node's subtree when the block is not executed. We make
- *     an exception for LoopNodes because we don't want to lose the ability to pull invariants out
- *     of loops.
- * (d) LocalVarNode: Its subtree or younger siblings may reference its local variable.
- * (e) MsgBlockNode: Any change to its immediate children would change the message to be translated,
- *     which would be incorrect.
+ * <p>Dependees are one of: (a) TemplateNode: Its nodes must remain in its subtree. (b)
+ * SplitLevelTopNode: Its immediate children (the bottom level) must remain under it. (c)
+ * ConditionalBlockNode other than LoopNode: It may never be executed, and we can't guarantee that
+ * any of the references made in a node's subtree will be defined in the case that the block is not
+ * executed, and furthermore, even if the node's subtree has no references, we don't want to
+ * needlessly process the node's subtree when the block is not executed. We make an exception for
+ * LoopNodes because we don't want to lose the ability to pull invariants out of loops. (d)
+ * LocalVarNode: Its subtree or younger siblings may reference its local variable. (e) MsgBlockNode:
+ * Any change to its immediate children would change the message to be translated, which would be
+ * incorrect.
  *
  */
 public final class BuildAllDependeesMapVisitor
     extends AbstractSoyNodeVisitor<Map<SoyNode, List<SoyNode>>> {
 
-
   /** Stack of frames containing lists of nodes that may be dependees (for the current template). */
   private Deque<List<SoyNode>> potentialDependeeFrames;
 
-  /** Map from each node to the list of all its dependees, ordered by distance from the depender
-   *  (nearest dependee is first). */
+  /**
+   * Map from each node to the list of all its dependees, ordered by distance from the depender
+   * (nearest dependee is first).
+   */
   private Map<SoyNode, List<SoyNode>> allDependeesMap;
 
-  @Override public Map<SoyNode, List<SoyNode>> exec(SoyNode node) {
+  @Override
+  public Map<SoyNode, List<SoyNode>> exec(SoyNode node) {
 
     Preconditions.checkArgument(
-        node instanceof SoyFileSetNode || node instanceof SoyFileNode ||
-        node instanceof TemplateNode);
+        node instanceof SoyFileSetNode
+            || node instanceof SoyFileNode
+            || node instanceof TemplateNode);
 
     allDependeesMap = Maps.newHashMap();
     visit(node);
     return allDependeesMap;
   }
 
-
   // -----------------------------------------------------------------------------------------------
   // Implementations for specific nodes.
 
-
-  @Override protected void visitSoyFileSetNode(SoyFileSetNode node) {
+  @Override
+  protected void visitSoyFileSetNode(SoyFileSetNode node) {
     visitChildren(node);
   }
 
-
-  @Override protected void visitSoyFileNode(SoyFileNode node) {
+  @Override
+  protected void visitSoyFileNode(SoyFileNode node) {
     visitChildren(node);
   }
 
-
-  @Override protected void visitTemplateNode(TemplateNode node) {
+  @Override
+  protected void visitTemplateNode(TemplateNode node) {
     potentialDependeeFrames = new ArrayDeque<>();
 
     // Note: Add to potential dependees while visiting children because descendents can't be moved
@@ -129,8 +127,8 @@ public final class BuildAllDependeesMapVisitor
     potentialDependeeFrames.pop();
   }
 
-
-  @Override protected void visitLetNode(LetNode node) {
+  @Override
+  protected void visitLetNode(LetNode node) {
 
     visitSoyNode(node);
 
@@ -139,12 +137,11 @@ public final class BuildAllDependeesMapVisitor
     potentialDependeeFrames.peek().add(node);
   }
 
-
   // -----------------------------------------------------------------------------------------------
   // Fallback implementation.
 
-
-  @Override protected void visitSoyNode(SoyNode node) {
+  @Override
+  protected void visitSoyNode(SoyNode node) {
 
     // ------ Recurse. ------
     // Note: We must recurse first, because a parent's children must have already been processed
@@ -154,9 +151,11 @@ public final class BuildAllDependeesMapVisitor
 
       List<SoyNode> newPotentialDependeeFrame = Lists.newArrayList();
 
-      if (node instanceof TemplateNode || node instanceof SplitLevelTopNode<?> ||
-          node instanceof ConditionalBlockNode || node instanceof LocalVarBlockNode ||
-          node instanceof MsgBlockNode) {
+      if (node instanceof TemplateNode
+          || node instanceof SplitLevelTopNode<?>
+          || node instanceof ConditionalBlockNode
+          || node instanceof LocalVarBlockNode
+          || node instanceof MsgBlockNode) {
         // This node is a potential dependee for descendants.
         newPotentialDependeeFrame.add(node);
       }
@@ -199,10 +198,8 @@ public final class BuildAllDependeesMapVisitor
     }
   }
 
-
   // -----------------------------------------------------------------------------------------------
   // Helpers.
-
 
   /**
    * Helper for visitSoyNode() to determine whether a given node is dependent on a given potential
@@ -217,17 +214,17 @@ public final class BuildAllDependeesMapVisitor
   private boolean isDependent(
       SoyNode potentialDependee, SoyNode node, @Nullable Set<String> topLevelRefs) {
 
-    if (potentialDependee instanceof TemplateNode ||
-        (potentialDependee instanceof ConditionalBlockNode &&
-         !(potentialDependee instanceof LoopNode))) {
+    if (potentialDependee instanceof TemplateNode
+        || (potentialDependee instanceof ConditionalBlockNode
+            && !(potentialDependee instanceof LoopNode))) {
       // A node can never be moved outside of its template, nor outside of any conditionally
       // executed block that contains it (we make an exception for loops).
       return true;
     }
 
-    if (node.getParent() == potentialDependee &&
-        (potentialDependee instanceof SplitLevelTopNode<?> ||
-         potentialDependee instanceof MsgBlockNode)) {
+    if (node.getParent() == potentialDependee
+        && (potentialDependee instanceof SplitLevelTopNode<?>
+            || potentialDependee instanceof MsgBlockNode)) {
       // The bottom level of a split-level structure cannot be moved. Also, the immediate children
       // of a MsgBlockNode cannot be moved because they define the message for translation.
       return true;
@@ -235,8 +232,8 @@ public final class BuildAllDependeesMapVisitor
 
     if (potentialDependee instanceof LocalVarNode) {
       // Check whether this node depends on the local var.
-      if (topLevelRefs != null &&
-          topLevelRefs.contains(((LocalVarNode) potentialDependee).getVarName())) {
+      if (topLevelRefs != null
+          && topLevelRefs.contains(((LocalVarNode) potentialDependee).getVarName())) {
         return true;
       }
       // Check whether any child depends on the local var.
@@ -257,10 +254,8 @@ public final class BuildAllDependeesMapVisitor
     return false;
   }
 
-
   // -----------------------------------------------------------------------------------------------
   // Helper to retrieve top-level references from a Soy expression.
-
 
   /**
    * Finds the top-level references within a Soy expression (V1 or V2 syntax).
@@ -279,7 +274,6 @@ public final class BuildAllDependeesMapVisitor
     }
   }
 
-
   /**
    * Helper for getTopLevelRefsInExpr() to get top-level references from a Soy V2 expression.
    * Returns the set of top-level references in the given expression.
@@ -289,30 +283,32 @@ public final class BuildAllDependeesMapVisitor
 
     private Set<String> topLevelRefs;
 
-    @Override public Set<String> exec(ExprNode node) {
+    @Override
+    public Set<String> exec(ExprNode node) {
       topLevelRefs = Sets.newHashSet();
       visit(node);
       return topLevelRefs;
     }
 
-    @Override protected void visitVarRefNode(VarRefNode node) {
+    @Override
+    protected void visitVarRefNode(VarRefNode node) {
       topLevelRefs.add(node.getName());
     }
 
-    @Override protected void visitExprNode(ExprNode node) {
+    @Override
+    protected void visitExprNode(ExprNode node) {
       if (node instanceof ParentExprNode) {
         visitChildren((ParentExprNode) node);
       }
     }
   }
 
-
   /** Regex for a top-level reference in a Soy V1 expression. Used by getTopLevelRefsInV1Expr(). */
   private static final Pattern TOP_LEVEL_REF = Pattern.compile("\\$([a-zA-Z0-9_]+)");
 
-
   /**
    * Helper for getTopLevelRefsInExpr() to get top-level references from a Soy V1 expression.
+   *
    * @param exprText The text of the expression.
    * @return The set of top-level references in the expression.
    */
@@ -325,5 +321,4 @@ public final class BuildAllDependeesMapVisitor
     }
     return topLevelRefs;
   }
-
 }

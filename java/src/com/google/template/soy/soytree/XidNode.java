@@ -44,12 +44,10 @@ public final class XidNode extends AbstractCommandNode implements StandaloneNode
    * This pair keeps a mapping to the last used map and the calculated value, so that we don't have
    * lookup the value again if the same renaming map is used. Note that you need to make sure that
    * the number of actually occuring maps is very low and should really be at max 2 (one for
-   * obfuscated and one for unobfuscated renaming).
-   * Also in production only one of the maps should really be used, so that cache hit rate
-   * approaches 100%.
+   * obfuscated and one for unobfuscated renaming). Also in production only one of the maps should
+   * really be used, so that cache hit rate approaches 100%.
    */
   private volatile Pair<SoyIdRenamingMap, String> renameCache;
-
 
   /**
    * @param id The id for this node.
@@ -60,9 +58,9 @@ public final class XidNode extends AbstractCommandNode implements StandaloneNode
     text = commandText;
   }
 
-
   /**
    * Copy constructor.
+   *
    * @param orig The node to copy.
    */
   private XidNode(XidNode orig, CopyState copyState) {
@@ -70,11 +68,10 @@ public final class XidNode extends AbstractCommandNode implements StandaloneNode
     text = orig.text;
   }
 
-
-  @Override public Kind getKind() {
+  @Override
+  public Kind getKind() {
     return Kind.XID_NODE;
   }
-
 
   /** Returns the text of the identifier. */
   public String getText() {
@@ -102,19 +99,17 @@ public final class XidNode extends AbstractCommandNode implements StandaloneNode
     return text + "_";
   }
 
-
-  @Override public BlockNode getParent() {
+  @Override
+  public BlockNode getParent() {
     return (BlockNode) super.getParent();
   }
 
-
-  @Override public XidNode copy(CopyState copyState) {
+  @Override
+  public XidNode copy(CopyState copyState) {
     return new XidNode(this, copyState);
   }
 
-  /**
-   * Builder for {@link XidNode}.
-   */
+  /** Builder for {@link XidNode}. */
   public static final class Builder {
 
     public static final XidNode ERROR = new XidNode(-1, SourceLocation.UNKNOWN, "error");

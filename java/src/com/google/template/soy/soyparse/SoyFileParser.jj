@@ -45,12 +45,14 @@ package com.google.template.soy.soyparse;
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
+import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicates;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.LegacyInternalSyntaxException;
 import com.google.template.soy.base.internal.SoyFileKind;
@@ -59,6 +61,7 @@ import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprparse.SoyParsingContext;
+import com.google.template.soy.soytree.defn.HeaderParam;
 import com.google.template.soy.soytree.AliasDeclaration;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
@@ -66,6 +69,7 @@ import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.CallParamValueNode;
+import com.google.template.soy.soytree.CommandTagAttribute;
 import com.google.template.soy.soytree.CssNode;
 import com.google.template.soy.soytree.DebuggerNode;
 import com.google.template.soy.soytree.ForNode;
@@ -87,7 +91,6 @@ import com.google.template.soy.soytree.MsgPluralNode;
 import com.google.template.soy.soytree.MsgSelectCaseNode;
 import com.google.template.soy.soytree.MsgSelectDefaultNode;
 import com.google.template.soy.soytree.MsgSelectNode;
-import com.google.template.soy.soytree.NameAttributePair;
 import com.google.template.soy.soytree.NamespaceDeclaration;
 import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.PrintNode;
@@ -103,15 +106,25 @@ import com.google.template.soy.soytree.TemplateBasicNodeBuilder;
 import com.google.template.soy.soytree.TemplateDelegateNodeBuilder;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.TemplateNodeBuilder.DeclInfo;
 import com.google.template.soy.soytree.TemplateNodeBuilder;
 import com.google.template.soy.soytree.XidNode;
+import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.SoyTypes;
+import com.google.template.soy.types.ast.GenericTypeNode;
+import com.google.template.soy.types.ast.NamedTypeNode;
+import com.google.template.soy.types.ast.RecordTypeNode;
+import com.google.template.soy.types.ast.TypeNode;
+import com.google.template.soy.types.ast.UnionTypeNode;
 import com.google.template.soy.types.SoyTypeRegistry;
-
-import java.io.*;
-import java.util.*;
-import java.util.regex.*;
-
+import com.google.template.soy.types.primitive.ErrorType;
+import com.google.template.soy.types.primitive.UnknownType;
+import com.google.template.soy.types.primitive.NullType;
+import java.io.Reader;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.regex.Pattern;
+import javax.annotation.Nullable;
 
 /**
  * This parser's specification is in SoyFileParser.jj, which is read by JavaCC and transformed
@@ -284,24 +297,11 @@ import java.util.regex.*;
  *
  */
 public class SoyFileParser {
-  // Template parser regexes:
   /** Regex string used in patterns below. Note the first set of spaces is reluctant. */
   private static final String LINE_BOUNDARY_REGEX = "\\s*?(\\n|\\r)\\s*";
 
   /** Pattern for a line boundary. */
   private static final Pattern LINE_BOUNDARY_PATTERN = Pattern.compile(LINE_BOUNDARY_REGEX);
-
-  /** Pattern for a line boundary appearing at the start edge of the string being matched. */
-  private static final Pattern START_EDGE_LINE_BOUNDARY_PATTERN =
-      Pattern.compile("^" + LINE_BOUNDARY_REGEX);
-
-  /** Pattern for a line boundary appearing at the end edge of the string being matched. */
-  private static final Pattern END_EDGE_LINE_BOUNDARY_PATTERN =
-      Pattern.compile(LINE_BOUNDARY_REGEX + "$");
-
-  /** Pattern for a line boundary not appearing at either edge of the string being matched. */
-  private static final Pattern NONEDGE_LINE_BOUNDARY_PATTERN =
-      Pattern.compile("(?<=\\S)" + LINE_BOUNDARY_REGEX + "(?=\\S)");
 
   static class RegexFromTokenImageFunction implements Function<String, String> {
     @Override public String apply(String o) {
@@ -322,11 +322,7 @@ public class SoyFileParser {
   private static final Pattern INVALID_PRINT_FILE_PREFIX_PATTERN = Pattern.compile(
       "^(namespace|(del)?template|typedef|alias)\\b.*");
 
-
-  private static final SoyErrorKind UNCATEGORIZED = SoyErrorKind.of("In file {0}, template {1}: {2}");
-
-  private static final SoyErrorKind MISMATCHED_CLOSING_TAG =
-      SoyErrorKind.of("''{0}'' has mismatched closing tag ''{1}''.");
+  private static final Joiner NO_SEP_JOINER = Joiner.on("");
 
   // Template errors:
   private static final SoyErrorKind UNEXPECTED_CLOSING_TAG =
@@ -348,7 +344,7 @@ public class SoyFileParser {
       SoyErrorKind.of("Tags ''plural'' and ''select'' are not allowed inside ''plural'' blocks.");
 
   private static final SoyErrorKind MULTIPLE_PHNAME_ATTRIBUTES_IN_COMMAND = SoyErrorKind.of(
-      "Found multiple ''phname'' attributes in ''{0}'' command text \"{1}\".");
+      "Found multiple ''phname'' attributes in command text \"{0}\".");
 
   private static final SoyErrorKind PRINT_COMMAND_WITH_EMPTY_TEXT =
       SoyErrorKind.of("Found ''print'' command with empty command text.");
@@ -356,6 +352,10 @@ public class SoyFileParser {
   private static final SoyErrorKind INVALID_PRINT_COMMAND_TEXT =
       SoyErrorKind.of("Invalid ''print'' command text \"{0}\" (check the directives).");
 
+  private static final SoyErrorKind UNEXPECTED_CONTENT_BEFORE =
+      SoyErrorKind.of("Unexpected content before ''{0}'', expected only comments or whitespace.");
+  private static final SoyErrorKind UNEXPECTED_CONTENT_AFTER =
+      SoyErrorKind.of("Unexpected content after ''{0}'', expected only comments or whitespace.");
 
   /** Type registry for resolving type names. */
   private SoyTypeRegistry typeRegistry;
@@ -415,9 +415,7 @@ public class SoyFileParser {
     } catch (LegacyInternalSyntaxException e) {
       ParseErrors.report(errorReporter, filePath, e);
     } catch (TokenMgrError e) {
-      // Should only happen if we make a mistake in the token manager.
-      // TODO(lukes): Make sure this really never happens, then remove the catch block.
-      ParseErrors.reportUnexpected(errorReporter, filePath, e);
+      ParseErrors.reportTokenMgrError(errorReporter, filePath, e);
     }
     // our callers expect us to return null when encountering parsing errors.
     if (errorReporter.errorsSince(checkpoint)) {
@@ -447,10 +445,48 @@ public class SoyFileParser {
         lineNumEnd, columnNumEnd);
   }
 
+  private <T> SourceItemInfo<T> newSourceItemInfo(
+      T parsed, SourceLocation location) {
+    return new SourceItemInfo<T>(parsed, location);
+  }
+
+  private <T> SourceItemInfo<T> newSourceItemInfo(
+      T parsed, SourceLocation begin, SourceLocation end) {
+    return new SourceItemInfo<T>(parsed, begin.extend(end));
+  }
 
   private SourceLocation createSrcLoc(Token tok1, Token ...rest) {
     return Tokens.createSrcLoc(filePath, tok1, rest);
   }
+
+  // Methods for managing lexical states from the parser
+  // Be careful using these.  You should only use them at fixed points where you know.
+  // * The lexer is only one token ahead (and you generally know the exact token)
+  // * The state change isn't possible to perform from the lexer directly. For example, because it
+  //   depends on a 'syntactic element' such as a tag attribute (e.g. kind="html")
+  // * There is a clear matching syntactic element for exiting the state (e.g. a close tag)
+
+
+  /** Switch the parser to a new state and push the current state onto the stack. */
+  private void pushState(int nextState) {
+    Tokens.checkLexerIsExactlyOneTokenAhead(this);
+    token_source.pushState(nextState);
+  }
+
+  /** pop the stack and switch to that state. */
+  private void popState() {
+    Tokens.checkLexerIsExactlyOneTokenAhead(this);
+    token_source.popState();
+  }
+
+  private void popStateIfStateIs(int state) {
+    Tokens.checkLexerIsExactlyOneTokenAhead(this);
+    token_source.popStateIfStateIs(state);
+  }
+
+  // An error that can be thrown to abort parsing.  This is useful if an error has been reported
+  // and it is known that parsing cannot continue.
+  private static final class AbortParsingError extends Error {}
 }
 
 PARSER_END(SoyFileParser)
@@ -465,60 +501,40 @@ TOKEN_MGR_DECLS:
 {
   // Template parser:
 
-  /**
-   * Whether we're within a 'msg' block. We need to record this because we sometimes leave
-   * states TEMPLATE_DEFAULT_AT_SOL* (e.g. to parse a Soy tag) and then when we're done, we need to
-   * know which TEMPLATE_DEFAULT_AT_SOL* state to return to. See switchToStateDefault*() below.
+  // Used for returning to our prior lexical state when completing a multiline comment.
+  private final LexicalStateStack stateStack = new LexicalStateStack();
+
+
+  /** Saves the current lexical state and switch to a new one.  To switch back call
+   * {@link #popState()}.
    */
-  private boolean isInMsgBlock = false;
-
-  /** Whether we're within an HTML tag. Only applicable within a 'msg' block */
-  private boolean isInMsgHtmlTag = false;
-
-
-
-  /**
-   * Helper for lexical actions to switch back to one of the states TEMPLATE_DEFAULT_AT_SOL or
-   * TEMPLATE_DEFAULT_IN_MSG_BLOCK_AT_SOL, depending on whether we're currently within a msg block.
-   */
-  private void switchToStateDefaultAtSol() {
-    if (isInMsgBlock) {
-      SwitchTo(TEMPLATE_DEFAULT_IN_MSG_BLOCK_AT_SOL);
-    } else {
-      SwitchTo(TEMPLATE_DEFAULT_AT_SOL);
-    }
+  void pushState(int newState) {
+    stateStack.push(curLexState);
+    SwitchTo(newState);
   }
 
-
-  /**
-   * Helper for lexical actions to switch back to one of the states TEMPLATE_DEFAULT_NOT_SOL or
-   * TEMPLATE_DEFAULT_IN_MSG_BLOCK_NOT_SOL, depending on whether we're currently within a msg block.
-   */
-  private void switchToStateDefaultNotSol() {
-    if (isInMsgBlock) {
-      SwitchTo(TEMPLATE_DEFAULT_IN_MSG_BLOCK_NOT_SOL);
-    } else {
-      SwitchTo(TEMPLATE_DEFAULT_NOT_SOL);
-    }
-  }
-
-  // Wrapper to prevent unreachable statement errors after throw
-  private void throwPoisonToken(String message, Token token) {
-    throw new PoisonTokenException(message, token);
+ /**
+  * Switch back to the previous state stored in {@link #stateStack}.
+  */
+  void popState() {
+    SwitchTo(stateStack.pop());
   }
 
   /**
-   * Thrown from an invalid token to skip the rest of the containing {template}.
-   * See consumeUntilTemplateClose
+   * Conditionally pops the given state if it is at the top of the stack and the stack isn't empty.
+   *
+   * <p>Most users should use {@link #popState()} but in error conditions this can be useful to
+   * prevent underflowing the stack.
    */
-  final class PoisonTokenException extends RuntimeException {
-    public final String message;
-    public final Token token;
-    public PoisonTokenException(String message, Token token) {
-      super(message);
-      this.message = message;
-      this.token = token;
+  void popStateIfStateIs(int state) {
+    if (stateStack.peek() == state) {
+      popState();
     }
+  }
+
+  private void clearAndSwitchToDefault() {
+    stateStack.clear();
+    SwitchTo(DEFAULT);
   }
 }
 
@@ -529,56 +545,29 @@ TOKEN_MGR_DECLS:
 // File (non-template) tokens
 // =================================================================================================
 
-// Skip whitespace and comments
-SKIP : {
- " "
-|  "\t"
-|  "\n"
-|  "\r"
-|  <"//" (~["\n","\r"])* ("\n" | "\r" | "\r\n")?>
+// In default (outside of templates) structured tags and expressions, skip whitespace and line
+// comments
+// NOTE: the TEMPLATE_* states can't be specified here because it would interfere with the
+// interpretation of url schemes in 'raw text' e.g. http://foo.com  So those lexical states use a
+// different set of tokens.
+<DEFAULT, IN_CMD_TAG_STRUCTURED, EXPR> SKIP: {
+  < <WS> >
+|  < <LINE_COMMENT> >
 }
 
-<DEFAULT> MORE: {
- "/*" : IN_MULTILINE_COMMENT
+// In all these states, SKIP multiline comments
+// NOTE: we don't just configure this for state * because these comments shouldn't work in things
+// like string literals or attribute values
+<DEFAULT, IN_CMD_TAG_STRUCTURED, EXPR, TEMPLATE_DEFAULT, TEMPLATE_DEFAULT_IN_MSG_BLOCK> MORE: {
+  <"/*"> { pushState(IN_MULTILINE_COMMENT); }
 }
 
-<IN_MULTILINE_COMMENT> MORE : {
+<IN_MULTILINE_COMMENT, IN_SOYDOC> MORE : {
   < ~[] >
 }
 
 <IN_MULTILINE_COMMENT> SKIP : {
-  "*/" : DEFAULT
-}
-
-
-<DEFAULT> TOKEN : {
-  <RBRACE : "}">
-| <EQ : "=">
-| <AS: "as">
-| <ALIAS_OPEN: "{alias">
-| <CSSBASE: "cssbase">
-| <NAMESPACE_OPEN: "{namespace">
-| <AUTOESCAPE: "autoescape">
-| <REQUIRECSS: "requirecss">
-| <DELPACKAGE_OPEN: "{delpackage">
-| <ATTRIBUTE_VALUE:
-    "\""
-    (
-     // TODO(lukes): we should probably have a way to escape double quotes within the attribute
-     // value
-      ~["\""]
-    )*
-    "\""
-  >
-| <DOTTED_IDENT: <IDENT> ( (<WS>)* "." (<WS>)* <IDENT> )*>
-}
-
-// Templates
-
-<DEFAULT> TOKEN : {
-  < #TEMPLATE_OPEN_SUFFIX: (<WS>)+ ( ~["}"] )+ "}">
-| <DELTEMPLATE_OPEN: "{deltemplate" <TEMPLATE_OPEN_SUFFIX>> : TEMPLATE_DEFAULT_NOT_SOL
-| <TEMPLATE_OPEN: "{template" <TEMPLATE_OPEN_SUFFIX>> : TEMPLATE_DEFAULT_NOT_SOL
+  <"*/"> { popState(); }
 }
 
 // SOYDOC
@@ -595,24 +584,45 @@ SKIP : {
 // have to write BNF expressions to match (and ignore) soydoc in all other contexts, which would be
 // tedious.
 
-<DEFAULT> MORE : {
-   "/**" : IN_SOYDOC
-}
-
-<IN_SOYDOC> MORE : {
-  < ~[] >
+// NOTE: we don't use all the same states as normal multiline comments (see above), this is because
+// the distinction between 'doc comments' and 'multiline comments' is only relevant in these states.
+<DEFAULT, TEMPLATE_DEFAULT, TEMPLATE_DEFAULT_IN_MSG_BLOCK> MORE : {
+   "/**" { pushState(IN_SOYDOC); }
 }
 
 <IN_SOYDOC> SPECIAL_TOKEN : {
-  <SOYDOC: "*/" > : DEFAULT
+  <SOYDOC: "*/" > { popState(); }
 }
 
-// Match everything else as an 'unexpected' token to prevent TokenMgrErrors from being thrown and
-// instead this will get turned into ParseExceptions which have more debugging information.
-// TODO(slaks): Apply to all states.
 <DEFAULT> TOKEN : {
-    < UNEXPECTED_TOKEN : ~[] >
+  <ALIAS_OPEN: "{alias"> { pushState(IN_CMD_TAG_STRUCTURED); }
+| <NAMESPACE_OPEN: "{namespace"> { pushState(IN_CMD_TAG_STRUCTURED); }
+| <DELPACKAGE_OPEN: "{delpackage"> { pushState(IN_CMD_TAG_STRUCTURED); }
 }
+
+<IN_CMD_TAG_STRUCTURED> MORE: {
+  "\"" : IN_ATTRIBUTE_VALUE
+}
+
+<IN_ATTRIBUTE_VALUE> TOKEN: {
+  <ATTRIBUTE_VALUE: "\""> : IN_CMD_TAG_STRUCTURED
+}
+
+// In attribute values accumulate all non-double quote characters unless they are escaped.  N.B.
+// This includes newlines which is important for backwards compatibility.
+<IN_ATTRIBUTE_VALUE> MORE: {
+ <~[]>
+| "\\\""
+}
+
+// Templates
+
+<DEFAULT> TOKEN : {
+  <DELTEMPLATE_OPEN : "{deltemplate" > { pushState(IN_CMD_TAG_STRUCTURED); }
+| <TEMPLATE_OPEN: "{template" > { pushState(IN_CMD_TAG_STRUCTURED); }
+}
+
+
 
 // =================================================================================================
 // Template tokens (only used inside templates)
@@ -621,56 +631,13 @@ SKIP : {
 // -------------------------------------------------------------------------------------------------
 // Line comment.
 
-// Comments are only recognized in states TEMPLATE_DEFAULT_AT_SOL*.
-
-// The only difference between TEMPLATE_DEFAULT*_AT_SOL and TEMPLATE_DEFAULT*_NOT_SOL is that the
-// former allow a line comment to start without preceding whitespace.
-
-<TEMPLATE_DEFAULT_AT_SOL, TEMPLATE_DEFAULT_IN_MSG_BLOCK_AT_SOL> SKIP:
+// Due to ambiguity with uri schemes, line comments in TEMPLATE_DEFAULT and
+// TEMPLATE_DEFAULT_IN_MSG_BLOCK are only interpreted as such if there is preceding whitespace.
+// Other lexical states don't have this requirement.  The fact that comments swallow a leading
+// whitespace character doesn't affect output because of how line joining works.
+<TEMPLATE_DEFAULT, TEMPLATE_DEFAULT_IN_MSG_BLOCK> SKIP:
 {
-  < LINE_COMMENT_AT_SOL: ( <WS_NOT_NL> )? "//" ( <NOT_NL> )* >
-  { switchToStateDefaultNotSol(); }
-}
-
-<TEMPLATE_DEFAULT_NOT_SOL, TEMPLATE_DEFAULT_IN_MSG_BLOCK_NOT_SOL> SKIP:
-{
-  < LINE_COMMENT_NOT_SOL: <WS_NOT_NL> "//" ( <NOT_NL> )* >
-}
-
-
-// -------------------------------------------------------------------------------------------------
-// Block comment.
-
-<TEMPLATE_DEFAULT_AT_SOL, TEMPLATE_DEFAULT_NOT_SOL, TEMPLATE_DEFAULT_IN_MSG_BLOCK_AT_SOL, TEMPLATE_DEFAULT_IN_MSG_BLOCK_NOT_SOL> SKIP:
-{
-  < BLOCK_DOC_COMMENT_START: "/**" > : IN_BLOCK_DOC_COMMENT
-|
-  < BLOCK_NONDOC_COMMENT_START: "/*" > : IN_BLOCK_NONDOC_COMMENT
-}
-
-// Collect the block comment text using MORE and return it when we reach the "*/" token.
-// TODO(lukes): Use a SPECIAL token to collect the SoyDoc into the {@param} token automatically.
-<IN_BLOCK_DOC_COMMENT, IN_BLOCK_NONDOC_COMMENT> MORE:
-{
-  < BLOCK_COMMENT_CHAR: <ANY_CHAR> >
-}
-
-<IN_BLOCK_DOC_COMMENT> TOKEN:
-{
-  < BLOCK_DOC_COMMENT: "*/" >
-  { // Remove the "*/" token and trim the contents.
-    matchedToken.image = image.substring(0, image.length() - 2).trim();
-    switchToStateDefaultNotSol();
-  }
-}
-
-<IN_BLOCK_NONDOC_COMMENT> TOKEN:
-{
-  < BLOCK_NONDOC_COMMENT: "*/" >
-  { // Remove the "*/" token and trim the contents.
-    matchedToken.image = image.substring(0, image.length() - 2).trim();
-    switchToStateDefaultNotSol();
-  }
+  < <WS> <LINE_COMMENT> >
 }
 
 
@@ -688,107 +655,130 @@ SKIP : {
 
 // IN_CMD_TAG_STRUCTURED is used for commands that parse their command text in the tokenizer. It has
 // tokens for each valid construct that can appear in these tags.
+//
+// In the long run, all commands should have structured parsing, for now it is only {@param} and
+// {@inject}
+//
 // IN_CMD_TAG_UNSTRUCTURED is for older or more-complex tags that are parsed through regexes, or the
 // expression parser.  It swallows any kind of token into CMD_TEXT_ARBITRARY_TOKEN.
 
-<TEMPLATE_DEFAULT_AT_SOL, TEMPLATE_DEFAULT_NOT_SOL, TEMPLATE_DEFAULT_IN_MSG_BLOCK_AT_SOL, TEMPLATE_DEFAULT_IN_MSG_BLOCK_NOT_SOL> TOKEN:
+<TEMPLATE_DEFAULT, TEMPLATE_DEFAULT_IN_MSG_BLOCK> TOKEN:
 {
-  <CMD_CLOSE_TEMPLATE        : "{/template}"> : DEFAULT
-| <CMD_CLOSE_DELTEMPLATE     : "{/deltemplate}"> : DEFAULT
+  <CMD_CLOSE_TEMPLATE            : "{/template}"> { clearAndSwitchToDefault(); }
+| <CMD_CLOSE_DELTEMPLATE         : "{/deltemplate}"> { clearAndSwitchToDefault(); }
 
-| < DECL_BEGIN_PARAM         : "{@param"    > : IN_CMD_TAG_STRUCTURED
-| < DECL_BEGIN_INJECT_PARAM  : "{@inject"   > : IN_CMD_TAG_STRUCTURED
-| < XXX_BRACE_INVALID          : "}" >
-  { throwPoisonToken("Unexpected }; did you mean '{rb}'?", matchedToken); }
+| < DECL_BEGIN_PARAM             : "{@param"    >  { pushState(IN_CMD_TAG_STRUCTURED); }
+| < DECL_BEGIN_OPT_PARAM         : "{@param?"   >  { pushState(IN_CMD_TAG_STRUCTURED); }
+| < DECL_BEGIN_INJECT_PARAM      : "{@inject"   >  { pushState(IN_CMD_TAG_STRUCTURED); }
+| < DECL_BEGIN_OPT_INJECT_PARAM  : "{@inject?"  >  { pushState(IN_CMD_TAG_STRUCTURED); }
 
-| < CMD_FULL_SP              : "{sp}"       > { switchToStateDefaultNotSol(); }
-| < CMD_FULL_NIL             : "{nil}"      > { switchToStateDefaultNotSol(); }
-| < CMD_FULL_LF              : "{\\n}"      > { switchToStateDefaultNotSol(); }
-| < CMD_FULL_CR              : "{\\r}"      > { switchToStateDefaultNotSol(); }
-| < CMD_FULL_TAB             : "{\\t}"      > { switchToStateDefaultNotSol(); }
-| < CMD_FULL_LB              : "{lb}"       > { switchToStateDefaultNotSol(); }
-| < CMD_FULL_RB              : "{rb}"       > { switchToStateDefaultNotSol(); }
+| < XXX_BRACE_INVALID            : "}" >
+| < CMD_FULL_SP                  : "{sp}"       >
+| < CMD_FULL_NIL                 : "{nil}"      >
+| < CMD_FULL_LF                  : "{\\n}"      >
+| < CMD_FULL_CR                  : "{\\r}"      >
+| < CMD_FULL_TAB                 : "{\\t}"      >
+| < CMD_FULL_LB                  : "{lb}"       >
+| < CMD_FULL_RB                  : "{rb}"       >
 
-| < CMD_OPEN_LITERAL         : "{literal}"  > : IN_LITERAL_BLOCK
+| < CMD_OPEN_LITERAL             : "{literal}"  >  { pushState(IN_LITERAL_BLOCK); }
 
-| < CMD_BEGIN_CALL           : ("{call" | "{delcall")  <WS> > : IN_CMD_TAG_UNSTRUCTURED
-| < CMD_CLOSE_CALL           : "{/call}" | "{/delcall}" > { switchToStateDefaultNotSol(); }
+| < CMD_BEGIN_CALL               : "{call" <WS>    > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
+| < CMD_BEGIN_DELCALL            : "{delcall" <WS> > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
+| < CMD_CLOSE_CALL               : "{/call}"       >
+| < CMD_CLOSE_DELCALL            : "{/delcall}"    >
 
-| < CMD_BEGIN_PARAM          : "{param" <WS>     > : IN_CMD_TAG_UNSTRUCTURED
-| < CMD_CLOSE_PARAM          : "{/param}"   > { switchToStateDefaultNotSol(); }
+| < CMD_BEGIN_PARAM              : "{param" <WS>     > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
+| < CMD_CLOSE_PARAM              : "{/param}"   >
 
-| < CMD_BEGIN_MSG            : "{msg" <WS>  > { isInMsgBlock = true; SwitchTo(IN_CMD_TAG_UNSTRUCTURED); }
-| < CMD_BEGIN_FALLBACK_MSG   : "{fallbackmsg" <WS> > : IN_CMD_TAG_UNSTRUCTURED
-| < CMD_CLOSE_MSG            : "{/msg}"     > {
-    if (isInMsgHtmlTag) {
-      throwPoisonToken(
-          "Found '/msg' tag while within an HTML tag in a 'msg' block. Please close the HTML" +
-          " tag before ending the 'msg' block.", matchedToken);
-    }
-    isInMsgBlock = false;
-    SwitchTo(TEMPLATE_DEFAULT_NOT_SOL);
-  }
+| < CMD_BEGIN_MSG                : "{msg" <WS>  > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
+| < CMD_BEGIN_FALLBACK_MSG  : "{fallbackmsg" <WS> > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
+| < CMD_CLOSE_MSG           : "{/msg}"     >
 
-| < CMD_BEGIN_PRINT          : "{print" <WS> > : IN_CMD_TAG_UNSTRUCTURED
-| < CMD_BEGIN_XID            : "{xid" <WS>  > : IN_CMD_TAG_UNSTRUCTURED
-| < CMD_BEGIN_CSS            : "{css" <WS>  > : IN_CMD_TAG_UNSTRUCTURED
+| < CMD_BEGIN_PRINT              : "{print" <WS>   > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
+| < CMD_BEGIN_XID                : "{xid" <WS>    > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
+| < CMD_BEGIN_CSS                : "{css" <WS>    > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
 
-| < CMD_BEGIN_IF             : "{if" <WS>     > : IN_CMD_TAG_UNSTRUCTURED
-| < CMD_BEGIN_ELSEIF         : "{elseif" <WS> > : IN_CMD_TAG_UNSTRUCTURED
-| < CMD_FULL_ELSE            : "{else}"     > { switchToStateDefaultNotSol(); }
-| < CMD_CLOSE_IF             : "{/if}"      > { switchToStateDefaultNotSol(); }
+| < CMD_BEGIN_IF                 : "{if" <WS>     > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
+| < CMD_BEGIN_ELSEIF             : "{elseif" <WS> > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
+| < CMD_FULL_ELSE                : "{else}"       >
+| < CMD_CLOSE_IF                 : "{/if}"        >
 
-| < CMD_BEGIN_LET            : "{let" <WS>  > : IN_CMD_TAG_UNSTRUCTURED
-| < CMD_CLOSE_LET            : "{/let}"     > { switchToStateDefaultNotSol(); }
+| < CMD_BEGIN_LET                : "{let" <WS>    > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
+| < CMD_CLOSE_LET                : "{/let}"       >
 
-| < CMD_BEGIN_FOR            : "{for" <WS>       > : IN_CMD_TAG_UNSTRUCTURED
-| < CMD_CLOSE_FOR            : "{/for}"     > { switchToStateDefaultNotSol(); }
+| < CMD_BEGIN_FOR                : "{for" <WS>    > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
+| < CMD_CLOSE_FOR                : "{/for}"       >
 
-| < CMD_BEGIN_PLURAL         : "{plural" <WS>    > : IN_CMD_TAG_UNSTRUCTURED
-| < CMD_CLOSE_PLURAL         : "{/plural}"  > { switchToStateDefaultNotSol(); }
+| < CMD_BEGIN_PLURAL             : "{plural" <WS> > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
+| < CMD_CLOSE_PLURAL             : "{/plural}"    >
 
-| < CMD_BEGIN_SELECT         : "{select" <WS>    > : IN_CMD_TAG_UNSTRUCTURED
-| < CMD_CLOSE_SELECT         : "{/select}"  > { switchToStateDefaultNotSol(); }
+| < CMD_BEGIN_SELECT             : "{select" <WS> > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
+| < CMD_CLOSE_SELECT             : "{/select}"    >
 
-| < CMD_BEGIN_SWITCH         : "{switch" <WS>    > : IN_CMD_TAG_UNSTRUCTURED
-| < CMD_CLOSE_SWITCH         : "{/switch}"  > { switchToStateDefaultNotSol(); }
+| < CMD_BEGIN_SWITCH             : "{switch" <WS> > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
+| < CMD_CLOSE_SWITCH             : "{/switch}"    >
 
-| < CMD_FULL_DEFAULT         : "{default}"  > { switchToStateDefaultNotSol(); }
-| < CMD_BEGIN_CASE           : "{case" <WS> > : IN_CMD_TAG_UNSTRUCTURED
+| < CMD_FULL_DEFAULT             : "{default}"    >
+| < CMD_BEGIN_CASE               : "{case" <WS>   > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
 
-| < CMD_BEGIN_FOREACH        : "{foreach" <WS> > : IN_CMD_TAG_UNSTRUCTURED
-| < CMD_FULL_IFEMPTY         : "{ifempty}"  > { switchToStateDefaultNotSol(); }
-| < CMD_CLOSE_FOREACH        : "{/foreach}" > { switchToStateDefaultNotSol(); }
+| < CMD_BEGIN_FOREACH            : "{foreach" <WS>> { pushState(IN_CMD_TAG_UNSTRUCTURED); }
+| < CMD_FULL_IFEMPTY             : "{ifempty}"  >
+| < CMD_CLOSE_FOREACH            : "{/foreach}" >
 
-| < CMD_OPEN_LOG             : "{log}"      > { switchToStateDefaultNotSol(); }
-| < CMD_CLOSE_LOG            : "{/log}"     > { switchToStateDefaultNotSol(); }
-| < CMD_FULL_DEBUGGER        : "{debugger}" > { switchToStateDefaultNotSol(); }
-| < CMD_BEGIN_IMPLICIT_PRINT : "{"          > : IN_CMD_TAG_UNSTRUCTURED
+| < CMD_OPEN_LOG                 : "{log}"      >
+| < CMD_CLOSE_LOG                : "{/log}"     >
+| < CMD_FULL_DEBUGGER            : "{debugger}" >
+| < CMD_BEGIN_IMPLICIT_PRINT     : "{"          > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
 }
 
 
 // ------------ Step 2: Match the command text and closing delimiter ------------
 
-<IN_CMD_TAG_UNSTRUCTURED, IN_CMD_TAG_STRUCTURED> TOKEN: {
-  < CMD_END : "}" > { switchToStateDefaultNotSol(); }
-| < CMD_SELF_CLOSE : "/}" > { switchToStateDefaultNotSol(); }
-| < CMD_TEXT_DIRECTIVE_NAME: "|" <IDENT> >
-// TODO(lukes): Once we merge in the ExpressionParser, use NameAttributePair () instead.
+<IN_CMD_TAG_UNSTRUCTURED, IN_CMD_TAG_STRUCTURED, EXPR> TOKEN: {
+  < CMD_END : "}" > { popState(); }
+| < CMD_SELF_CLOSE : "/}" > { popState(); }
+}
+
+<IN_CMD_TAG_UNSTRUCTURED> TOKEN: {
+ < CMD_TEXT_DIRECTIVE_NAME: "|" <IDENT> >
+// TODO(lukes): Once we merge in the ExpressionParser, use CommandTagAttribute () instead.
 | < CMD_TEXT_PHNAME_ATTR: <WS_CHAR> "phname=\"" <IDENT> "\"" >
 | < XXX_CMD_TEXT_PHNAME_NOT_IDENT: <WS_CHAR> "phname=\"" ( ~["\""] )* "\"" >
-  { throwPoisonToken(
-        "Found 'phname' attribute that is not a valid identifier (" + matchedToken.image + ").",
-        matchedToken);
-  }
 }
+
 
 <IN_CMD_TAG_STRUCTURED> TOKEN: {
-  < NAME : <IDENT> >
-| < CMD_TYPE_PREFIX : (<WS>)* ":" (<WS>)* > : IN_TYPE_LITERAL
+  // This is for {@param foo : int} and (eventually) {let $foo : someExpression()}.  A colon in a
+  // structured tag transitions us into the EXPR state.
+  < TAG_COLON : ":"  >: EXPR
+| <EQ : "=">
+| <AS: "as">
 }
 
-<IN_TYPE_LITERAL> TOKEN: {  // TODO(slaks): Replace with actual type parser.
-  < CMD_TYPE_LITERAL : ( ~["}"] )+ > : IN_CMD_TAG_STRUCTURED
+<IN_CMD_TAG_STRUCTURED, EXPR> TOKEN: {
+  // This makes NAME a matchable token within structured tags and exprs (IDENT is otherwise private)
+  < NAME : <IDENT> >
+| < DOT: "." >
+}
+
+// EXPR is for type expressions and (eventually) soy expressions
+
+<EXPR> TOKEN: {
+   < LANGLE: "<" >
+ | < RANGLE: ">" >
+ | < LBRACKET: "[" >
+ | < RBRACKET: "]" >
+ | < COMMA: "," >
+ | < COLON : ":"  >
+  // NOTE: this means that "|" <IDENT> is a valid matchable token sequence. But for print
+  // directives we have "|"<IDENT> as a single token.  This is bad since any|null will get
+  // tokenized as <IDENT> <CMD_TEXT_DIRECTIVE_NAME> instead of <IDENT> <VBAR> <IDENT>.  The
+  // reason this isn't currently a problem is because CMD_TEXT_DIRECTIVE_NAME is defined in a
+  // different lexical state.  This will become a problem when we switch print node to use
+  // structured tag parsing.
+ | < VBAR: "|" >
+ | < QMARK: "?" >
 }
 
 <IN_CMD_TAG_UNSTRUCTURED> TOKEN: {
@@ -814,31 +804,19 @@ SKIP : {
   >
   // Force friendly error messages by providing a token to match error cases.
 | <XXX_INVALID_STRING_LITERAL: ["'", "\""]>
-  { throwPoisonToken("Invalid string literal found in Soy command.", matchedToken); }
 }
 
 
 // -------------------------------------------------------------------------------------------------
 // In a 'msg' block.
 
-// The only difference between states TEMPLATE_DEFAULT_AT_SOL/TEMPLATE_DEFAULT_NOT_SOL and
-// TEMPLATE_DEFAULT_IN_MSG_BLOCK_AT_SOL/TEMPLATE_DEFAULT_IN_MSG_BLOCK_NOT_SOL is that the latter
-// also create tokens for HTML tag open/close.
-<TEMPLATE_DEFAULT_IN_MSG_BLOCK_AT_SOL, TEMPLATE_DEFAULT_IN_MSG_BLOCK_NOT_SOL> TOKEN:
+// The only difference between states TEMPLATE_DEFAULT and
+// TEMPLATE_DEFAULT_IN_MSG_BLOCK is that the latter also create tokens for HTML tag open/close.
+<TEMPLATE_DEFAULT_IN_MSG_BLOCK> TOKEN:
 {
-  < MSG_HTML_TAG_OPEN: "<" >
-  { if (isInMsgHtmlTag) {
-      throwPoisonToken("In a 'msg' block, found '<' within HTML tag.", matchedToken);
-    }
-    isInMsgHtmlTag = true;
-  }
+  < MSG_HTML_TAG_OPEN:  "<" >
 |
   < MSG_HTML_TAG_CLOSE: ">" >
-  { if (!isInMsgHtmlTag) {
-      throwPoisonToken("In a 'msg' block, found '>' outside HTML tag.", matchedToken);
-    }
-    isInMsgHtmlTag = false;
-  }
 }
 
 
@@ -858,24 +836,18 @@ SKIP : {
   {
     // Note: 'image' is cumulative over MOREs while 'lengthOfMatch' is just the end tag length.
     matchedToken.image = image.substring(0, image.length() - lengthOfMatch);
-    switchToStateDefaultNotSol();
+    popState();
   }
 }
 
-
 // -------------------------------------------------------------------------------------------------
-// Misc.
+// Text.
 
-<TEMPLATE_DEFAULT_AT_SOL, TEMPLATE_DEFAULT_NOT_SOL, TEMPLATE_DEFAULT_IN_MSG_BLOCK_AT_SOL, TEMPLATE_DEFAULT_IN_MSG_BLOCK_NOT_SOL> TOKEN:
+<TEMPLATE_DEFAULT, TEMPLATE_DEFAULT_IN_MSG_BLOCK> TOKEN:
 {
-  < TOKEN_NL: <NL> >
-  { switchToStateDefaultAtSol(); }
-|
-  < TOKEN_WS_NOT_NL: <WS_NOT_NL> >
-  { switchToStateDefaultNotSol(); }
+  < TOKEN_WS: <WS> >
 |
   < TOKEN_NOT_WS: <NOT_WS> >
-  { switchToStateDefaultNotSol(); }
 }
 
 // Private helper regexes.
@@ -883,26 +855,28 @@ SKIP : {
 {
   < #ANY_CHAR: ~[] >
 |
-  < WS: " " | "\t" | "\n" | "\r" | "\r\n" >
+  < #WS: " " | "\t" | "\n" | "\r" | "\r\n" >
 |
   < #WS_CHAR: " " | "\t" | "\n" | "\r" >
 |
   < #NOT_WS: ~[" ","\t","\n","\r"] >
 |
-  < #NL: "\n" | "\r" | "\r\n" >
-|
   < #NOT_NL: ~["\n","\r"] >
-|
-  < #WS_NOT_NL: " " | "\t" >
 |
   < #BRACE: ["{","}"] >
 |
-  < QMARK: ["?"] >
-|
   < #IDENT: ["a"-"z","A"-"Z","_"] ( ["a"-"z","A"-"Z","_","0"-"9"] )* >
+|
+  < #LINE_COMMENT: "//" ( <NOT_NL> )* >
 }
 
-// TODO(slaks): Merge in type tokens (used in templates and in typedefs)
+// Match everything else as an 'unexpected' token to prevent TokenMgrErrors from being thrown and
+// instead this will get turned into ParseExceptions which have more debugging information.
+// NOTE: this has to come after any single character token definition in these states.
+// TODO(slaks): Apply to all states.
+<DEFAULT, IN_CMD_TAG_STRUCTURED, EXPR> TOKEN : {
+    < UNEXPECTED_TOKEN : ~[] >
+}
 
 // =================================================================================================
 // Grammar
@@ -917,13 +891,10 @@ SKIP : {
 private SoyFileNode SoyFile() :
 {
   TemplateNode template;
-  String delpackageName = null;
+  Identifier delpackageName = null;
   NamespaceDeclaration namespace = NamespaceDeclaration.NULL;
-  List<TemplateNode> templates = new ArrayList<TemplateNode>();
-  List<AliasDeclaration> aliases = new ArrayList<AliasDeclaration>();
+  List<AliasDeclaration> aliases = ImmutableList.of();
   AliasDeclaration alias = null;
-  // note we generate the id first to avoid having to edit every test that asserts on node ids.
-  int id = nodeIdGen.genId();
 }
 {
   [ delpackageName = DelPackage() ]
@@ -932,7 +903,11 @@ private SoyFileNode SoyFile() :
 
   (
     alias = Alias()
-    { aliases.add(alias); }
+    { if (aliases.isEmpty()) {
+       aliases = new ArrayList<AliasDeclaration>();
+     }
+     aliases.add(alias);
+    }
   )*
 
   {
@@ -940,35 +915,27 @@ private SoyFileNode SoyFile() :
       delpackageName, namespace, aliases);
     context = SoyParsingContext.create(errorReporter, soyFileHeaderInfo.namespace,
         soyFileHeaderInfo.aliasToNamespaceMap);
+    SoyFileNode sfn =
+        new SoyFileNode(
+            nodeIdGen.genId(),
+            filePath,
+            soyFileKind,
+            namespace,
+            soyFileHeaderInfo);
   }
 
   (
-    try {
-      template = Template(soyFileHeaderInfo)
-      { templates.add(template); }
-    } catch (ParseException e) {
-      ParseErrors.reportSoyFileParseException(errorReporter, filePath, e);
-      consumeUntilTemplateClose();
-    } catch(SoyFileParserTokenManager.PoisonTokenException e) {
-      errorReporter.report(createSrcLoc(e.token), SoyErrorKind.of("{0}"), e.message);
-      consumeUntilTemplateClose();
-      // TODO(slaks): Also check the the close token matches open?
+    template = Template(soyFileHeaderInfo)
+    { if (template != null) {
+       // it will be null if a parsing error occurred
+       sfn.addChild(template);
+     }
     }
   )*
 
   <EOF>
 
-  {
-    SoyFileNode sfn =
-        new SoyFileNode(
-            id,
-            filePath,
-            soyFileKind,
-            namespace,
-            soyFileHeaderInfo);
-    sfn.addChildren(templates);
-    return sfn;
-  }
+  { return sfn; }
 }
 
 /**
@@ -976,30 +943,31 @@ private SoyFileNode SoyFile() :
  */
 private AliasDeclaration Alias() :
 {
-  Token open, namespace, close;
-  Token alias = null, as = null;
+  Token open, close;
+  Identifier namespace, alias = null;
+  Token as = null;
 }
 {
   (
     open = <ALIAS_OPEN>
-    namespace = <DOTTED_IDENT>
+    namespace = DottedIdent()
     [
       as = <AS>
-      alias = <DOTTED_IDENT>
+      alias = DottedIdent()
     ]
-    close = <RBRACE>
+    close = <CMD_END>
   )
   {
     return alias == null
         ? new AliasDeclaration(
-            namespace.image,
+            namespace.identifier(),
             errorReporter,
-            createSrcLoc(open, namespace, close))
+            createSrcLoc(open, close))
         : new AliasDeclaration(
-            namespace.image,
-            alias.image,
+            namespace.identifier(),
+            alias.identifier(),
             errorReporter,
-            createSrcLoc(open, namespace, as, alias, close));
+            createSrcLoc(open, close));
   }
 }
 
@@ -1008,188 +976,276 @@ private AliasDeclaration Alias() :
  */
 private NamespaceDeclaration Namespace() :
 {
-  Token open, name, close;
-  NameAttributePair attr;
-  List<NameAttributePair> attributes = new ArrayList<NameAttributePair>();
+  Token open, close;
+  Identifier name;
+  CommandTagAttribute attr;
+  List<CommandTagAttribute> attributes;
 }
 {
   open = <NAMESPACE_OPEN>
-  name = <DOTTED_IDENT>
-  (
-    attr = Attribute()
-    { attributes.add(attr); }
-  )*
-  close = <RBRACE>
+  name = DottedIdent()
+  attributes = CommandAttributes()
+  close = <CMD_END>
   {
-    return new NamespaceDeclaration(name.image, attributes, errorReporter);
+    return new NamespaceDeclaration(name, attributes, errorReporter);
   }
 }
 
 /**
+ * Matches an arbitrary sequence of CommandAttributes()
+ */
+private List<CommandTagAttribute> CommandAttributes() :
+{
+  CommandTagAttribute attr;
+  List<CommandTagAttribute> attributes = ImmutableList.of();
+}
+{
+   (
+    attr = Attribute()
+    { if (attributes.isEmpty()) {
+        attributes = new ArrayList<CommandTagAttribute>();
+      }
+      attributes.add(attr);
+    }
+  )*
+
+  // None of our commands ever allow attributes to be duplicated.
+  // Drop duplicates and report errors before returning to our caller.
+  { CommandTagAttribute.removeDuplicatesAndReportErrors(attributes, errorReporter);
+    return attributes;
+  }
+}
+
+
+/**
  * Matches a name value pair.
  *
- * <p>Currently this is hardcoded to handle a fixed set of keys, which means
- * adding a new attribute will require a parser change.  Alternatively, we could
- * match all possible keys and figure out if they were appropriate later.
- * 'Hardcoding' the keys is pretty easy for now and will allow the tokenizer to
- * issue reasonable error messages.
+ * Attribute -> <NAME> <EQ> <ATTRIBUTE_VALUE>
  */
-private NameAttributePair Attribute() :
+private CommandTagAttribute Attribute() :
 {
   Token name;
   Token eq;
   Token value;
 }
 {
-  (
-      name = <AUTOESCAPE>
-    | name = <REQUIRECSS>
-    | name = <CSSBASE>
-  )
+  name = <NAME>
   eq = <EQ>
   value = <ATTRIBUTE_VALUE>
   {
-    return new NameAttributePair(
-        name.image,
-        // trim quotes off the token
-        value.image.substring(1, value.image.length() - 1),
-        createSrcLoc(name, eq, value));
+    return new CommandTagAttribute(
+        Identifier.create(name.image, createSrcLoc(name)),
+        // trim quotes off the token and unescape internal quotation marks
+        value.image.substring(1, value.image.length() - 1).replace("\\\"", "\""),
+        createSrcLoc(value));
   }
 }
 
 /**
  * Matches a {delpackage ...} declaration.
- *
- * <p>Currently this just returns the parsed name, we should consider returning
- * some object with source location information.
  */
-private String DelPackage() :
+private Identifier DelPackage() :
 {
-  Token name;
+  Identifier name;
 }
 {
   <DELPACKAGE_OPEN>
-  name = <DOTTED_IDENT>
-  <RBRACE>
+  name = DottedIdent()
+  <CMD_END>
   {
-    return name.image;
+    return name;
   }
 }
 
 
 /**
- * Template -> AnyTemplateTag TemplateContent
+ * Template -> (
+ *   <TEMPLATE_OPEN>
+ *   TemplateName()
+ *   CommandAttributes()
+ *   <CMD_END>
+ *   TemplateHeader()
+ *   TemplateBlock()
+ *   <CMD_CLOSE_TEMPLATE>
+ * |
+ *   <DELTEMPLATE_OPEN>
+ *   TemplateName()
+ *   CommandAttributes()
+ *   <CMD_END>
+ *   TemplateHeader()
+ *   TemplateBlock()
+ *   <CMD_CLOSE_DELTEMPLATE>
+ * )
+ *
  * @param soyFileHeaderInfo Info from the containing Soy file's header declarations. Needed by the
  *     TemplateNode constructors.
  */
 private TemplateNode Template(SoyFileHeaderInfo soyFileHeaderInfo) :
 {
-  Token open, close;
-  boolean isBasicTemplate;
-  List<DeclInfo> templateHeaderDecls = null;
-  List<StandaloneNode> templateBodyNodes = null;
-  String openTagName;
+  Token open;
+  TemplateNode templateNode = null;
+  TemplateNodeBuilder builder;
 }
 {
-  // First, parse the opening tag and set up the classes need for the template parser.
   (
-      (
-        open = <TEMPLATE_OPEN>
-        { isBasicTemplate = true; }
-      )
-    | (
-        open = <DELTEMPLATE_OPEN>
-        { isBasicTemplate = false; }
-      )
+    open = <TEMPLATE_OPEN>
+    { builder = new TemplateBasicNodeBuilder(soyFileHeaderInfo, errorReporter); }
+    try {
+      templateNode = TemplateHelper(builder, open)
+      <CMD_CLOSE_TEMPLATE>
+    } catch (ParseException e) {
+      reportErrorAndSkipTo(e, CMD_CLOSE_TEMPLATE);
+    } catch (AbortParsingError e) {
+      // do nothing, continue trying to parse other templates
+      return null;
+    }
+
+  | open = <DELTEMPLATE_OPEN>
+    { builder = new TemplateDelegateNodeBuilder(soyFileHeaderInfo, errorReporter); }
+    try {
+      templateNode = TemplateHelper(builder, open)
+      <CMD_CLOSE_DELTEMPLATE>
+    } catch (ParseException e) {
+      reportErrorAndSkipTo(e, CMD_CLOSE_DELTEMPLATE);
+    } catch (AbortParsingError e) {
+      // do nothing, continue trying to parse other templates
+      return null;
+    }
   )
+  { return templateNode; }
+}
 
+/**
+ * A helper for parsing everything except the open and close tags of a template.
+ */
+private TemplateNode TemplateHelper(TemplateNodeBuilder builder, Token open) :
+{
+  Token close;
+  List<StandaloneNode> templateBodyNodes;
+  RawTextNode initialRawText;
+  Identifier templateName;
+  List<CommandTagAttribute> attributes;
+}
+{
   {
-    SourceLocation srcLocation = createSrcLoc(open);
-
-    TemplateNodeBuilder templateNodeBuilder = isBasicTemplate
-        ? new TemplateBasicNodeBuilder(
-            soyFileHeaderInfo, srcLocation, errorReporter, typeRegistry)
-        : new TemplateDelegateNodeBuilder(
-            soyFileHeaderInfo, srcLocation, errorReporter, typeRegistry);
-
-    templateNodeBuilder.setId(nodeIdGen.genId());
-
-    // --- Set the command text. ---
-    // trim the leading tag name and the trailing '}'
-    openTagName = open.image.substring(0, isBasicTemplate ? 10 : 13);
-    String cmdText = open.image.substring(openTagName.length(), open.image.length() - 1);
-    templateNodeBuilder.setCmdText(cmdText);
-
+    // eagerly fetch the id to be backwards compatible.  if we delay allocating, all the ids in the
+    // file will change.  TODO(user): remove ids
+    builder.setId(nodeIdGen.genId());
+  }
+  templateName = TemplateName()
+  attributes = CommandAttributes()
+  {
+    builder.setCommandValues(templateName, attributes);
+    // We can't set soy doc until after setCommandValues due to conditions in the builder.
     // --- Set the SoyDoc. ---
     // special tokens are accessible from the non-special tokens that come after them.
     Token soyDoc = open.specialToken;
     if (soyDoc != null && soyDoc.kind == SOYDOC) {
-      templateNodeBuilder.setSoyDoc(soyDoc.image);
-    } else {
-      templateNodeBuilder.setSoyDoc(null);
+      builder.setSoyDoc(soyDoc.image, createSrcLoc(soyDoc));
     }
+    pushState(TEMPLATE_DEFAULT);
   }
-
-  // Once the parser is set up, parse any parameter declarations
-  (
-    LOOKAHEAD( TemplateHeaderLookaheadHelper() )
-    templateHeaderDecls = TemplateHeader()
-    { templateNodeBuilder.setHeaderDecls(templateHeaderDecls); }
-  |
-    // If no template header, ignore initial indent at start of template body.
-    [ HeaderConsecWsNoNl() ]
-  )
-
-  // Next, parse the actual content.
+  close = <CMD_END>
+  { builder.setSourceLocation(createSrcLoc(open, close)); }
+  initialRawText = TemplateHeader(builder)
   templateBodyNodes = TemplateBlock()
-
-  // Finally, consume the closing tag (and make sure it matches the opening tag).
-  (
-      (
-        close = <CMD_CLOSE_TEMPLATE>
-        {
-          if (!isBasicTemplate) {
-            errorReporter.report(createSrcLoc(close), MISMATCHED_CLOSING_TAG,
-                openTagName + templateNodeBuilder.getTemplateNameForUserMsgs(), close.image);
-          }
-        }
-      )
-    | (
-        close = <CMD_CLOSE_DELTEMPLATE>
-        {
-          if (isBasicTemplate) {
-            errorReporter.report(createSrcLoc(close), MISMATCHED_CLOSING_TAG,
-                openTagName + templateNodeBuilder.getTemplateNameForUserMsgs(), close.image);
-          }
-        }
-      )
-  )
-
   {
-    TemplateNode templateNode = templateNodeBuilder.build();
-    if (templateBodyNodes != null) {
-        templateNode.addChildren(templateBodyNodes);
+    TemplateNode templateNode = builder.build();
+    if (initialRawText != null) {
+      templateNode.addChild(initialRawText);
     }
+    templateNode.addChildren(templateBodyNodes);
     return templateNode;
   }
-
 }
 
+/**
+ * Parses a Template name.  This is either a fully qualified dotted identifier or a partial
+ * identifier consisting of a single <DOT><IDENT> sequence.
+ *
+ * TemplateName -> (<DOT> <NAME> | DottedIdent() )
+ */
+private Identifier TemplateName():
+{
+  Token dot, name;
+  Identifier ident;
+}
+{
+  (
+    // The partial name case.
+    dot = <DOT>
+    name = <NAME>
+    { ident= Identifier.create("." + name.image, createSrcLoc(dot, name)); }
+  |
+    ident = DottedIdent()
+  )
+  { return ident; }
+}
+
+/**
+ * DottedIdent -> <NAME> (<DOT> <NAME>)*
+ */
+private Identifier DottedIdent():
+{
+  StringBuilder sb = null;
+  Token dot, name, next = null;
+}
+{
+  name = <NAME>
+  (
+    dot = <DOT>
+    next = <NAME>
+    { if (sb == null) {
+        sb = new StringBuilder();
+        sb.append(name.image);
+      }
+      sb.append('.').append(next.image);
+    }
+  )*
+  {
+    return sb == null
+      ? Identifier.create(name.image, createSrcLoc(name))
+      : Identifier.create(sb.toString(), createSrcLoc(name, next));
+  }
+}
 
 JAVACODE
-/** Discards all remaining tokens from the current template after encountering an error. */
-private void consumeUntilTemplateClose() {
-  token_source.SwitchTo(TEMPLATE_DEFAULT_NOT_SOL);
-  Token t = null;
+/**
+ * Reports the error and skips to the given token.
+ *
+ * See https://javacc.java.net/doc/errorrecovery.html
+ */
+private Token reportErrorAndSkipTo(ParseException error, int kind) {
+  ParseErrors.reportSoyFileParseException(errorReporter, filePath, error);
+  Token t;
   do {
-    // Ignore errors from the tokens we consume.
-    try {
-      t = getNextToken();
-    } catch (SoyFileParserTokenManager.PoisonTokenException e) {}
-  } while (t == null || // Ignore other posion tokens
-      (t.kind != EOF && t.kind != CMD_CLOSE_TEMPLATE && t.kind != CMD_CLOSE_DELTEMPLATE));
+    t = getNextToken();
+  // We need to halt when observing EOF.  The behavior of the token manager is to keep returning
+  // EOF from getNextToken(), so if we don't check for it this will become an infinite loop.
+  } while (t.kind != kind && t.kind != EOF);
+  return t;
 }
 
+JAVACODE
+/**
+ * Reports the error and skips to the given token if it observes the end of a template, throws an
+ * exception to halt parsing.
+ *
+ * See https://javacc.java.net/doc/errorrecovery.html
+ */
+private Token reportTemplateBodyErrorAndSkipTo(ParseException error, int kind) {
+  ParseErrors.reportSoyFileParseException(errorReporter, filePath, error);
+  Token t;
+  do {
+    t = getNextToken();
+    if (t.kind == CMD_CLOSE_TEMPLATE || t.kind == CMD_CLOSE_DELTEMPLATE) {
+      throw new AbortParsingError();
+    }
+  // We need to halt when observing EOF.  The behavior of the token manager is to keep returning
+  // EOF from getNextToken(), so if we don't check for it this will become an infinite loop.
+  } while (t.kind != kind && t.kind != EOF);
+  return t;
+}
 // =================================================================================================
 // Grammar - Templates
 // =================================================================================================
@@ -1213,44 +1269,77 @@ private String CmdText():
 }
 {
   cmdTextParts = CmdTextParts()
-  { return Joiner.on("").join(cmdTextParts); }
+  { return NO_SEP_JOINER.join(cmdTextParts); }
 }
 
+/**
+ * Same as CmdText() but with source information.
+ */
+private SourceItemInfo<String> CmdTextWithSource():
+{
+  SourceItemInfo<List<String>> parts;
+}
+{
+  parts = CmdTextPartsWithSource()
+  {
+    return newSourceItemInfo(
+        NO_SEP_JOINER.join(parts.parsedContent()),
+        parts.srcLocation());
+  }
+}
 
 /**
- * CmdTextParts -> ( CmdTextToken | CmdTextDirectiveName | CmdTextPhnameAttr )*
+ * CmdTextParts -> CmdTextPartsWithSource
  */
 private List<String> CmdTextParts() :
 {
-  Token cmdTextChar;
-  Token cmdTextSpecialPart;
+  SourceItemInfo<List<String>> parts;
 }
 {
-  { List<String> cmdTextParts = Lists.newArrayList();
-    StringBuilder currCmdTextPartSb = new StringBuilder();
+  parts = CmdTextPartsWithSource()
+  {
+    return parts.parsedContent();
   }
+}
+
+/**
+ * CmdTextPartsWithSource -> ( CmdTextToken | CmdTextDirectiveName | CmdTextPhnameAttr )*
+ */
+private SourceItemInfo<List<String>> CmdTextPartsWithSource() :
+{
+  Token first = null;
+  Token current = null;
+  List<String> cmdTextParts = Lists.newArrayList();
+  StringBuilder currCmdTextPartSb = new StringBuilder();
+}
+{
   (
     (
-      cmdTextChar = <CMD_TEXT_ARBITRARY_TOKEN> { currCmdTextPartSb.append(cmdTextChar.image); }
+      current = <CMD_TEXT_ARBITRARY_TOKEN> { currCmdTextPartSb.append(current.image); }
     | (
-        cmdTextSpecialPart = <CMD_TEXT_DIRECTIVE_NAME>
-      | cmdTextSpecialPart = <CMD_TEXT_PHNAME_ATTR>
+        current = <CMD_TEXT_DIRECTIVE_NAME>
+      | current = <CMD_TEXT_PHNAME_ATTR>
       )
       { // Add the preceding part if nonempty.
         if (currCmdTextPartSb.length() > 0) {
           cmdTextParts.add(currCmdTextPartSb.toString());
-          currCmdTextPartSb = new StringBuilder();
+          currCmdTextPartSb.setLength(0);
         }
         // Add the special part.
-        cmdTextParts.add(cmdTextSpecialPart.image);
+        cmdTextParts.add(current.image);
       }
     )
+  { if (first == null) {
+      first = current;
+    }
+  }
   )*
 
-  { // Add the last part if nonempty.
+  {
+    // Add the last part if nonempty.
     if (currCmdTextPartSb.length() > 0) {
       cmdTextParts.add(currCmdTextPartSb.toString());
-      currCmdTextPartSb = new StringBuilder();
+      currCmdTextPartSb.setLength(0);
     }
 
     // Process whitespace.
@@ -1270,351 +1359,628 @@ private List<String> CmdTextParts() :
       cmdTextPart = LINE_BOUNDARY_PATTERN.matcher(cmdTextPart).replaceAll(" ");
       cmdTextParts.set(i, cmdTextPart);
     }
-
-    return cmdTextParts;
+    SourceLocation location;
+    if (current == null) {
+      // use the most recently consumed token for the sourcelocation when the cmd text is empty.
+      location = createSrcLoc(getToken(0));
+    } else if (current == first) {
+      location = createSrcLoc(first);
+    } else {
+      location = createSrcLoc(first, current);
+    }
+    return newSourceItemInfo(cmdTextParts, location);
   }
 }
-
-// -------------------------------------------------------------------------------------------------
-// Whitespace strings. These rules do not skip block doc comments (but do skip nondoc comments).
-// Used for parsing the template header. Do not use for parsing basic raw text in the template body.
-
-
-/**
- * HeaderConsecWsNoNl -> ( TokenWsNotNl | BlockNondocComment )+
- */
-private void HeaderConsecWsNoNl() : {}
-{
-  ( <TOKEN_WS_NOT_NL> | <BLOCK_NONDOC_COMMENT> )+
-}
-
-
-/**
- * HeaderConsecWs  -> HeaderConsecWsWithNl | HeaderConsecWsNoNl
- */
-private void HeaderConsecWs() : {}
-{
-  ( <TOKEN_NL> | <TOKEN_WS_NOT_NL> | <BLOCK_NONDOC_COMMENT> )+
-}
-
 
 // -------------------------------------------------------------------------------------------------
 // Raw text.
 
-
 /**
- * BlockCommentToken -> BlockDocComment | BlockNondocComment
+ * Matches whitespace for the purpose of ignoring it.
+ * SkipWhitespace ->  ( <TOKEN_WS> )*
  */
-private Token BlockCommentToken() :
+private void SkipWhitespace() : { }
 {
-  Token token;
-}
-{
-  (
-    token = <BLOCK_DOC_COMMENT>
-  |
-    token = <BLOCK_NONDOC_COMMENT>
-  )
-
-  { return token; }
-}
-
-
-
-/**
- * BasicRawTextToken -> TokenNl | TokenWsNotNl | TokenNotWs
- */
-private Token BasicRawTextToken() :
-{
-  Token token;
-}
-{
-  (
-    token = <TOKEN_NL>
-  | token = <TOKEN_WS_NOT_NL>
-  | token = <TOKEN_NOT_WS>
-  )
-
-  { return token; }
+  // The LOOKAHEAD here just suppresses a warning, we want the standard greedy behavior.
+  ( LOOKAHEAD(1) <TOKEN_WS> )*
 }
 
 
 /**
- * BasicRawText -> ( BasicRawTextToken | BlockCommentToken )+
+ * RawTextNode -> ( BasicRawText | LiteralRawText | SpecialCharRawText )+
  *
- * Important: Since this is used for parsing basic raw text in the body of templates, we apply
- * line-joining rules here.
+ * May return null if all content is dropped (due to comments, line joining, etc).
  */
-private SourceItemInfo<String> BasicRawText() :
+private RawTextNode RawText() :
 {
   Token token;
+  RawTextBuilder builder = new RawTextBuilder(filePath, nodeIdGen);
 }
 {
-  {
-    StringBuilder basicRawTextSb = new StringBuilder();
-    int lineNum = -1;
-    int columnNum = -1;
+  // There is a choice conflict here because given a sequence of two characters we could parse it
+  // as one RawTextNode containing two characters or 2 RawTextNodes each containing one char.
+  // However, we always want the former, so we insert this LOOKAHEAD to suppress the
+  // conflict warning since the default greedy behavior is what we want.
+  ( LOOKAHEAD(1)
+    (
+      // basic tokens
+      (
+        token = <TOKEN_NOT_WS>
+      | token = <TOKEN_WS>
+      )
+    { builder.addBasic(token); }
+    |
+      <CMD_OPEN_LITERAL>
+      token = <LITERAL_RAW_TEXT_CONTENT>
+    { builder.addLiteral(token); }
+    |
+      ( token = <CMD_FULL_SP>
+      | token = <CMD_FULL_NIL>
+      | token = <CMD_FULL_CR>
+      | token = <CMD_FULL_LF>
+      | token = <CMD_FULL_TAB>
+      | token = <CMD_FULL_LB>
+      | token = <CMD_FULL_RB>
+      )
+    { builder.addTextualCommand(token); }
+    )
+  )+
+
+  { return builder.build(); }
+}
+
+// =================================================================================================
+// Grammar
+// =================================================================================================
+
+// -------------------------------------------------------------------------------------------------
+// Template header.
+
+/**
+ * Important: The template header consists of a sequence of ParamDecls() separated by optional
+ * whitespace
+ *
+ * TemplateHeader -> ( Whitespace() | ParamDecl() )*
+ *
+ * Whether or not a particular piece of whitespace is part of the header or part of an initial raw
+ * text node is ambiguous.  So if there is a trailing piece of non-trivial whitespace it will be
+ * consumed here.  So we return the both
+ */
+private RawTextNode TemplateHeader(TemplateNodeBuilder templateBuilder) :
+{
+  HeaderParam param;
+  List<HeaderParam> params = ImmutableList.of();
+  RawTextNode whitespace = null;
+  String soyDoc = null;
+}
+{
+  ( LOOKAHEAD(1)  // prefer consuming whitespace here instead of in a subsequent RawTextNode
+    (
+    { Token tok;
+      RawTextBuilder builder = new RawTextBuilder(filePath, nodeIdGen);
+    }
+    ( LOOKAHEAD(1)  // prefer staying in the loop
+      tok = <TOKEN_WS>
+      { if (tok.specialToken != null) {
+          soyDoc = tok.specialToken.image;
+        }
+        builder.addBasic(tok);
+      }
+    )+
+    { whitespace = builder.build(); }
+    |
+      param = ParamDecl(soyDoc)
+      {
+        // we just parsed a param, preceding whitespace/doc comments are not important
+        whitespace = null;
+        soyDoc = null;
+        if (params.isEmpty()) {
+          params = new ArrayList<HeaderParam>();
+        }
+        params.add(param);
+      }
+    )
+  )*
+
+  { templateBuilder.addParams(params);
+    return whitespace;
+  }
+}
+
+
+
+/**
+ * ParamDecl -> SoyTagOpen ( <CMD_NAME_PARAM_DECL> | <CMD_NAME_INJECTED_PARAM_DECL> )
+ *              [ <QMARK> ] <WS_AFTER_CMD_NAME> CmdText RegSoyTagClose
+ *
+ * @param desc The doc comment that was attached to whitespace preceding this param, if any.
+ */
+private HeaderParam ParamDecl(@Nullable String desc) :
+{
+  Token ws, tagBegin, name, tagEnd;
+  TypeNode paramTypeNode = null;
+  SoyType paramType = ErrorType.getInstance();
+  String cmdText;
+  Token blockDocComment;
+  boolean optional = false;
+  boolean inject = false;
+}
+{
+  (
+    tagBegin = <DECL_BEGIN_PARAM>
+  | tagBegin = <DECL_BEGIN_OPT_PARAM>  { optional = true; }
+  | tagBegin = <DECL_BEGIN_INJECT_PARAM>  { inject = true; }
+  | tagBegin = <DECL_BEGIN_OPT_INJECT_PARAM> { inject = true; optional = true; }
+  )
+  // If there is a special token directly attached to the {@param, use that instead of whatever
+  // was passed to us.
+  { if (tagBegin.specialToken != null) {
+      desc = tagBegin.specialToken.image;
+    }
   }
 
-  (
-    // Needed because this can be called before another expansion that can also consume <TOKEN_NL>.
-    LOOKAHEAD(2)
-    (
-      token = BasicRawTextToken()
-      { basicRawTextSb.append(token.image); }
-    |
-      // Skip block comments (doc and nondoc).
-      token = BlockCommentToken()
-    )
+  name = <NAME>
+  <TAG_COLON>
+  try {
+    paramTypeNode = TypeExpr()
     {
-      if (lineNum == -1) {
-        lineNum = token.beginLine;
-        columnNum = token.beginColumn;
-      }
+      paramType = typeRegistry.getOrCreateType(paramTypeNode, errorReporter);
     }
-  )+
+    tagEnd = <CMD_END>
 
-  { String basicRawText = basicRawTextSb.toString();
-    // TODO(lukes): Move all of this logic to RawTextNode.
-    // Handle line boundaries after Soy tags (includes stripping end-of-template space since input
-    // ends with a newline).
-    basicRawText = START_EDGE_LINE_BOUNDARY_PATTERN.matcher(basicRawText).replaceFirst("");
-
-    // Adjust line by counting forward for each newline removed.
-    // So far, we have only removed content from the beginning of the string.
-    int numSpaceCharsRemovedFromFront = basicRawTextSb.length() - basicRawText.length();
-    for (int i = 0; i < numSpaceCharsRemovedFromFront; ++i) {
-      char ch = basicRawTextSb.charAt(i);
-       if (ch == '\r') {
-        if (i + 1 == numSpaceCharsRemovedFromFront || basicRawTextSb.charAt(i + 1) != '\n') {
-          ++lineNum;  // Only count this CR if it is not part of a CRLF.
-          columnNum = 1;
-        }
-      } else if (ch == '\n') {
-        ++lineNum;
-        columnNum = 1;
-      }
-    }
-
-    // Handle line boundaries before Soy tags (includes stripping end-of-template space since input
-    // ends with a newline).
-    basicRawText = END_EDGE_LINE_BOUNDARY_PATTERN.matcher(basicRawText).replaceFirst("");
-
-    // Handle line boundaries in the middle of the raw text. Note we have to check the characters
-    // before and after because the line boundaries may be adjacent to HTML tags.
-    Matcher matcher = NONEDGE_LINE_BOUNDARY_PATTERN.matcher(basicRawText);
-    StringBuffer basicRawTextWithoutNewlinesSb = new StringBuffer(basicRawText.length());
-    while (matcher.find()) {
-      char charBefore = basicRawText.charAt(matcher.start() - 1);
-      char charAfter = basicRawText.charAt(matcher.end());
-      matcher.appendReplacement(
-          basicRawTextWithoutNewlinesSb, (charBefore == '>' || charAfter == '<') ? "" : " ");
-    }
-    matcher.appendTail(basicRawTextWithoutNewlinesSb);
-
-    return newSourceItemInfo(
-      basicRawTextWithoutNewlinesSb.toString(),
-      lineNum,
-      columnNum,
-      token.endLine,
-      token.endColumn
-    );
+  } catch (ParseException parseException) {
+    tagEnd = reportTemplateBodyErrorAndSkipTo(parseException, CMD_END);
   }
-}
-
-
-/**
- * Matches empty string or BasicRawText, and if the latter, then ensures it's all whitespace.
- * Used for areas that should not have any content (e.g. between 'call' and 'param' tags).
- * TODO(slaks): Change parameters to SoyErrorKind, Object...
- *
- * MaybeWhitespace -> [ BasicRawText ]
- *
- * Package visible for testing.
- */
-void MaybeWhitespace(String errorMessage) :
-{
-  SourceItemInfo<String> basicRawText;
-}
-{
-  [
-    basicRawText = BasicRawText()
-    { if (basicRawText.parsedContent().trim().length() != 0) {
-        errorReporter.report(basicRawText.srcLocation(), SoyErrorKind.of("{0}"), errorMessage);
-      }
-    }
-  ]
-}
-
-
-/**
- * LiteralRawText -> SoyTagOpen CmdNameLiteral RegSoyTagClose LiteralRawTextContent
- */
-private SourceItemInfo<String> LiteralRawText() :
-{
-  Token tag;
-  Token literalRawTextContent;
-}
-{
-  tag = <CMD_OPEN_LITERAL>
-  literalRawTextContent = <LITERAL_RAW_TEXT_CONTENT>
-  { return newSourceItemInfo(literalRawTextContent.image, tag); }
-}
-
-
-/**
- * SpecialCharRawText -> {...}
- */
-private SourceItemInfo<String> SpecialCharRawText() :
-{
-  Token command; String value;
-}
-{
-  (
-    command = <CMD_FULL_SP>  { value = " ";  }
-  | command = <CMD_FULL_NIL> { value = "";   }
-  | command = <CMD_FULL_CR>  { value = "\r"; }
-  | command = <CMD_FULL_LF>  { value = "\n"; }
-  | command = <CMD_FULL_TAB> { value = "\t"; }
-  | command = <CMD_FULL_LB>  { value = "{";  }
-  | command = <CMD_FULL_RB>  { value = "}";  }
-  )
-  { return newSourceItemInfo(value, command); }
-}
-
-
-/**
- * ContiguousRawText -> ( BasicRawText | LiteralRawText | SpecialCharRawText )+
- *
- * May return empty string (due to comments, line joining, etc).
- */
-private SourceItemInfo<String> ContiguousRawText() :
-{
-  SourceItemInfo<String> basicRawText, literalRawText, specialCharRawText;
-}
-{
-  {
-    StringBuilder sb = new StringBuilder();
-    SourceItemInfo<String> first = null;
-    SourceItemInfo<String> last = null;
-  }
-
-  (
-    // Needed because this can be called before another expansion that can also consume <TOKEN_NL>.
-    LOOKAHEAD(2)
-    (
-      basicRawText = BasicRawText()
-      {
-        if (first == null) {
-          first = basicRawText;
-        }
-        last = basicRawText;
-        sb.append(basicRawText.parsedContent());
-      }
-    |
-      literalRawText = LiteralRawText()
-      {
-        if (first == null) {
-          first = literalRawText;
-        }
-        last = literalRawText;
-        sb.append(literalRawText.parsedContent());
-      }
-    |
-      specialCharRawText = SpecialCharRawText()
-      {
-        if (first == null) {
-          first = specialCharRawText;
-        }
-        last = specialCharRawText;
-        sb.append(specialCharRawText.parsedContent());
-      }
-    )
-  )+
 
   {
-    return newSourceItemInfo(sb.toString(), first, last);
+    if (desc != null) {
+      // trim the leading /** and trailing */ as well as the whitespace from the doc comment.
+      desc = desc.substring(3, desc.length() - 2).trim();
+    }
+    return new HeaderParam(
+        name.image,
+        createSrcLoc(name),
+        // Optional params become nullable
+        optional ? typeRegistry.getOrCreateUnionType(paramType, NullType.getInstance()) : paramType,
+        paramTypeNode,
+        // the param is required if it isn't optional and the parsed type isn't nullable.
+        !optional && !SoyTypes.isNullable(paramType),
+        inject,
+        desc);
   }
 }
+
+// -------------------------------------------------------------------------------------------------
+// Template block.
+
+
+/**
+ * TemplateBlock -> ( RawText | Stmt )*
+ */
+private List<StandaloneNode> TemplateBlock() :
+{
+  RawTextNode rawText;
+  StatementNode stmt;
+}
+{
+  { List<StandaloneNode> templateBlock = Lists.newArrayList(); }
+
+  (
+    rawText = RawText() { if (rawText != null) templateBlock.add(rawText); }
+  | stmt = Stmt() { templateBlock.add(stmt); }
+  )*
+
+  { return templateBlock; }
+}
+
 
 
 // -------------------------------------------------------------------------------------------------
-// Other tags.
+// Soy statements.
 
 
 /**
- * MsgTag -> SoyTagOpen CmdNameMsg WsAfterCmdName CmdText RegSoyTagClose
+ * Stmt ->   MsgStmt | PrintStmt | XidStmt | CssStmt | LetStmt | IfStmt | SwitchStmt
+ *         | ForeachStmt | ForStmt| CallStmt | LogStmt | DebuggerStmt
  */
-private SourceItemInfo<String> MsgTag() :
+private StatementNode Stmt() :
 {
-  Token tagBegin, tagEnd;
+  StatementNode stmt;
+}
+{
+  (
+    stmt = NonPrintableStmt()
+  | stmt = PrintableStmt()
+  | stmt = ControlFlowStmt()
+  )
+
+  { return stmt; }
+}
+
+/**
+ * NonPrintableStmt ->  LetStmt | LogStmt | DebuggerStmt
+ */
+private StatementNode NonPrintableStmt() :
+{
+  StatementNode stmt;
+}
+{
+  (
+    stmt = LetStmt()
+  | stmt = LogStmt()
+  | stmt = DebuggerStmt()
+  )
+
+  { return stmt; }
+}
+
+/**
+ * PrintableStmt ->   MsgStmt | PrintStmt | XidStmt | CssStmt | CallStmt
+ */
+private StatementNode PrintableStmt() :
+{
+  StatementNode stmt;
+}
+{
+  (
+    stmt = MsgStmt()
+  | stmt = XidStmt()
+  | stmt = CssStmt()
+  | stmt = CallStmt()
+  | stmt = PrintStmt()
+  )
+
+  { return stmt; }
+}
+
+/**
+ * ControlFlowStmt -> IfStmt | SwitchStmt | ForeachStmt | ForStmt
+ */
+private StatementNode ControlFlowStmt() :
+{
+  StatementNode stmt;
+}
+{
+  (
+    stmt = IfStmt()
+  | stmt = SwitchStmt()
+  | stmt = ForeachStmt()
+  | stmt = ForStmt()
+  )
+
+  { return stmt; }
+}
+
+
+/**
+ * MsgStmt -> <CMD_BEGIN_MSG> CmdText <CMD_END> TemplateBlockForMsg
+   ( <CMD_BEGIN_FALLBACK_MSG> CmdText <CMD_END> TemplateBlockForMsg )? <CMD_CLOSE_MSG>
+ */
+private MsgFallbackGroupNode MsgStmt() :
+{
   String cmdText;
+  List<StandaloneNode> templateBlockForMsg;
+  Token tagBegin, tagEnd;
+  MsgNode msgNode;
 }
 {
   tagBegin = <CMD_BEGIN_MSG>
   cmdText = CmdText()
+  {
+    pushState(TEMPLATE_DEFAULT_IN_MSG_BLOCK);
+    Checkpoint checkpoint = errorReporter.checkpoint();
+  }
   tagEnd = <CMD_END>
+  {
+    SourceLocation location = createSrcLoc(tagBegin, tagEnd);
+    MsgFallbackGroupNode msgFbGrpNode = new MsgFallbackGroupNode(nodeIdGen.genId(), location);
+    msgNode = MsgNode.msg(nodeIdGen.genId(), cmdText, location).build(context);
+    msgFbGrpNode.addChild(msgNode);
+  }
+  templateBlockForMsg = TemplateBlockForMsg()
+  { msgNode.addChildren(templateBlockForMsg); }
 
-  { return newSourceItemInfo(cmdText, tagBegin, tagEnd); }
+  (
+    tagBegin = <CMD_BEGIN_FALLBACK_MSG>
+    cmdText = CmdText()
+    tagEnd = <CMD_END>
+    {
+     location = createSrcLoc(tagBegin, tagEnd);
+      msgNode = MsgNode.fallbackmsg(nodeIdGen.genId(), cmdText, location).build(context);
+      msgFbGrpNode.addChild(msgNode);
+    }
+    templateBlockForMsg = TemplateBlockForMsg()
+    { msgNode.addChildren(templateBlockForMsg); }
+  )?
+
+  {
+    if (errorReporter.errorsSince(checkpoint) || getToken(1).kind != CMD_CLOSE_MSG) {
+      popStateIfStateIs(TEMPLATE_DEFAULT_IN_MSG_BLOCK);
+    } else {
+      popState();
+    }
+  }
+  <CMD_CLOSE_MSG>
+
+  { return msgFbGrpNode; }
 }
 
 
 /**
- * FallbackmsgTag -> SoyTagOpen CmdNameFallbackmsg WsAfterCmdName CmdText RegSoyTagClose
+ * TemplateBlockForMsg ->   (Whitespace) MsgPlural MaybeWhitespace
+ *                        | MaybeWhitespace MsgSelect MaybeWhitespace
+ *                        | ( ContiguousRawTextAsNode | Stmt | MsgHtmlTag )*
  */
-private SourceItemInfo<String> FallbackmsgTag() :
+private List<StandaloneNode> TemplateBlockForMsg() :
 {
-  Token tagBegin, tagEnd;
-  String cmdText;
+  RawTextNode rawText;
+  MsgPlaceholderInitialNode stmt;
+  MsgPlaceholderInitialNode msgHtmlTag;
+  StandaloneNode msgPluralOrSelectNode;
+  // The index of the plural or select node, if any
+  int pluralOrSelectIndex = -1;
+  // Whether or not the first node is just whitespace.
+  boolean firstNodeIsWhitespace = false;
+  List<StandaloneNode> templateBlock = Lists.newArrayList();
 }
 {
-  tagBegin = <CMD_BEGIN_FALLBACK_MSG>
-  cmdText = CmdText()
-  tagEnd = <CMD_END>
+  // For template blocks, we have two different options.
+  // 1. simple: a mix of raw text and place holders
+  // 2. plurals and genders.
+  //
+  // Plurals and genders use the {plural} and {select} tags which work like {switch} statements but
+  // they require that that are only preceeded and succeeded by whitespace.  To handle parsing this
+  // without a non-trivial lookahead we search for and collect all initial whitespace into a special
+  // raw text node.  This will allow us to trivially ignore it if we do parse a following {plural
+  // or to just use it as a normal rawtextnode if we don't.
 
-  { return newSourceItemInfo(cmdText, tagBegin, tagEnd); }
+  // try to collect all leading whitespace into a raw text node on its own.
+  // This will make it possible to detect if a leading {plural} or {select} was preceeded by content
+  [ LOOKAHEAD(1)  // prefer taking this branch over skipping and consuming as RawText
+    { Token tok;
+      RawTextBuilder builder = new RawTextBuilder(filePath, nodeIdGen);
+    }
+    ( LOOKAHEAD(1)  // prefer staying in the loop
+      tok = <TOKEN_WS>
+      { builder.addBasic(tok); }
+    )+
+    {
+      rawText = builder.build();
+      if (rawText != null) {
+        firstNodeIsWhitespace = true;
+        templateBlock.add(rawText);
+      }
+    }
+  ]
+  (
+    (
+      msgPluralOrSelectNode = MsgPlural()
+    | msgPluralOrSelectNode = MsgSelect()
+    )
+    SkipWhitespace()  // we want to ignore all whitespace after a plural or select, just expect it
+  {
+    if (firstNodeIsWhitespace) {
+      // The first node was just basic whitespace.  Which is allowed but ignored prior to a plural
+      // or select.  So just drop it.
+      templateBlock.remove(0);
+      firstNodeIsWhitespace = false;
+    }
+    if (pluralOrSelectIndex == -1) {
+      pluralOrSelectIndex = templateBlock.size();
+    }
+    templateBlock.add(msgPluralOrSelectNode);
+  }
+  | rawText = RawText() { if (rawText != null) templateBlock.add(rawText); }
+  | stmt = CallStmt()  { templateBlock.add(new MsgPlaceholderNode(nodeIdGen.genId(), stmt)); }
+  | stmt = PrintStmt() { templateBlock.add(new MsgPlaceholderNode(nodeIdGen.genId(), stmt)); }
+  | msgHtmlTag = MsgHtmlTag()
+    { templateBlock.add(new MsgPlaceholderNode(nodeIdGen.genId(), msgHtmlTag)); }
+  )*
+
+  {
+    // Plural/select are only allowed if they are the only child
+    // However we do allow them to be prefixed or suffixed with arbitrary amounts of whitespace.
+    if (pluralOrSelectIndex != -1) {
+      StandaloneNode pluralOrSelect = templateBlock.get(pluralOrSelectIndex);
+      for (int i = 0; i < templateBlock.size(); i++) {
+        if (i == pluralOrSelectIndex) {
+          continue;
+        }
+        errorReporter.report(
+          // blame the current node
+          templateBlock.get(i).getSourceLocation(),
+          i < pluralOrSelectIndex ? UNEXPECTED_CONTENT_BEFORE : UNEXPECTED_CONTENT_AFTER,
+          pluralOrSelect instanceof MsgPluralNode ? "{plural" : "{select");
+      }
+      // return the single plural or select and drop the other items.  We have either reported
+      // errors or have ignored them because they are purely whitespace.
+      return ImmutableList.of(pluralOrSelect);
+    }
+    return templateBlock;
+  }
 }
 
 
 /**
- * PluralTag -> SoyTagOpen CmdNamePlural WsAfterCmdName CmdText RegSoyTagClose
+ * MsgPlural -> PluralTag MaybeWhitespace ( CaseTag TemplateBlockForMsg )*
+ *              DefaultTag TemplateBlockForMsg EndPluralTag
  */
-private SourceItemInfo<String> PluralTag() :
+private MsgPluralNode MsgPlural() :
 {
-  Token tagBegin, tagEnd;
   String cmdText;
+  List<StandaloneNode> templateBlock;
+  Token cmdBegin, cmdEnd;
+  Token defaultTag;
 }
 {
-  tagBegin = <CMD_BEGIN_PLURAL>
+  cmdBegin = <CMD_BEGIN_PLURAL>
   cmdText = CmdText()
-  tagEnd = <CMD_END>
+  cmdEnd = <CMD_END>
+  {
+    MsgPluralNode msgPluralNode = new MsgPluralNode.Builder(
+        nodeIdGen.genId(), cmdText, createSrcLoc(cmdBegin, cmdEnd))
+        .build(context);
+  }
+  try {
+    // consume all whitespace between {plural} and the first {case}
+    // later {case} and {default} tags will naturally consume whitespace due via RawText()
+    SkipWhitespace()
+    (
+      cmdBegin = <CMD_BEGIN_CASE>
+      cmdText = CmdText()
+      cmdEnd = <CMD_END>
+      {
+        MsgPluralCaseNode msgPluralCaseNode = new MsgPluralCaseNode.Builder(
+            nodeIdGen.genId(), cmdText, createSrcLoc(cmdBegin, cmdEnd))
+            .build(errorReporter);
+        msgPluralNode.addChild(msgPluralCaseNode);
+      }
+      templateBlock = TemplateBlockForMsg()
+      { if (templateBlock.size() == 1 &&
+            (templateBlock.get(0) instanceof MsgPluralNode ||
+             templateBlock.get(0) instanceof MsgSelectNode )) {
+          errorReporter.report(
+              templateBlock.get(0).getSourceLocation(),
+              PLURAL_AND_SELECT_NOT_ALLOWED_INSIDE_PLURAL_BLOCK);
+        }
+        msgPluralCaseNode.addChildren(templateBlock);
+      }
+    )*
 
-  { return newSourceItemInfo(cmdText, tagBegin, tagEnd); }
+    defaultTag = <CMD_FULL_DEFAULT>
+    {
+      MsgPluralDefaultNode msgPluralDefaultNode = new MsgPluralDefaultNode(
+          nodeIdGen.genId(), createSrcLoc(defaultTag));
+      msgPluralNode.addChild(msgPluralDefaultNode);
+    }
+    templateBlock = TemplateBlockForMsg()
+    { if (templateBlock.size() == 1 &&
+          (templateBlock.get(0) instanceof MsgPluralNode ||
+           templateBlock.get(0) instanceof MsgSelectNode )) {
+        errorReporter.report(
+            templateBlock.get(0).getSourceLocation(),
+            PLURAL_AND_SELECT_NOT_ALLOWED_INSIDE_PLURAL_BLOCK);
+      }
+      msgPluralDefaultNode.addChildren(templateBlock);
+    }
+
+    <CMD_CLOSE_PLURAL>
+  } catch (ParseException e) {
+    // report and keep going to maintain previous behavior around reporting errors for unexpected
+    // textual content before the first {case} tag
+    reportTemplateBodyErrorAndSkipTo(e, CMD_CLOSE_PLURAL);
+  }
+
+  { return msgPluralNode; }
 }
 
 
 /**
- * SelectTag -> SoyTagOpen CmdNameSelect WsAfterCmdName CmdText RegSoyTagClose
+ * MsgSelect -> SelectTag MaybeWhitespace ( CaseTag TemplateBlockForMsg )*
+ *              DefaultTag TemplateBlockForMsg EndSelectTag
  */
-private SourceItemInfo<String> SelectTag() :
+private MsgSelectNode MsgSelect() :
 {
-  Token tagBegin, tagEnd;
+  Token defaultTag;
   String cmdText;
+  List<StandaloneNode> templateBlock;
+  Token cmdBegin, cmdEnd;
 }
 {
-  tagBegin = <CMD_BEGIN_SELECT>
+  cmdBegin = <CMD_BEGIN_SELECT>
   cmdText = CmdText()
-  tagEnd = <CMD_END>
+  cmdEnd = <CMD_END>
+  {
+    MsgSelectNode msgSelectNode = new MsgSelectNode.Builder(
+        nodeIdGen.genId(), cmdText, createSrcLoc(cmdBegin, cmdEnd)).build(context);
+  }
+  // consume all whitespace between {select} and the first {case}
+  // later {case} and {default} tags will naturally consume whitespace due to RawText()
+  SkipWhitespace()
+  try {
+    (
+      cmdBegin = <CMD_BEGIN_CASE>
+      cmdText = CmdText()
+      cmdEnd = <CMD_END>
+      {
+        MsgSelectCaseNode msgSelectCaseNode = new MsgSelectCaseNode.Builder(
+            nodeIdGen.genId(), cmdText, createSrcLoc(cmdBegin, cmdEnd))
+            .build(context);
+        msgSelectNode.addChild(msgSelectCaseNode);
+      }
+      templateBlock = TemplateBlockForMsg()
+      { msgSelectCaseNode.addChildren(templateBlock); }
+    )*
 
-  { return newSourceItemInfo(cmdText, tagBegin, tagEnd); }
+    defaultTag = <CMD_FULL_DEFAULT>
+    {
+      MsgSelectDefaultNode msgSelectDefaultNode
+          = new MsgSelectDefaultNode(nodeIdGen.genId(), createSrcLoc(defaultTag));
+      msgSelectNode.addChild(msgSelectDefaultNode);
+    }
+    templateBlock = TemplateBlockForMsg()
+    { msgSelectDefaultNode.addChildren(templateBlock); }
+
+    <CMD_CLOSE_SELECT>
+  } catch (ParseException e) {
+    reportTemplateBodyErrorAndSkipTo(e, CMD_CLOSE_SELECT);
+  }
+
+  { return msgSelectNode; }
+}
+
+
+/**
+ * MsgHtmlTag -> MsgHtmlTagOpen TemplateBlock MsgHtmlTagClose
+ */
+private MsgHtmlTagNode MsgHtmlTag() :
+{
+  Token htmlTagOpen;
+  List<StandaloneNode> templateBlock;
+}
+{
+  htmlTagOpen = <MSG_HTML_TAG_OPEN>
+  templateBlock = TemplateBlock()
+  <MSG_HTML_TAG_CLOSE>
+
+  {
+    SourceLocation srcLoc = createSrcLoc(htmlTagOpen);
+    // TODO(lukes): Massively simplify this by creating more nodes.  Also fix SourceLocation.
+    // First, we add back the HTML tag's opening and closing angle brackets.
+    // Minor note: If there's only one RawTextNode, we'll replace it twice. No big deal.
+    if (templateBlock.get(0) instanceof RawTextNode) {
+      RawTextNode firstNode = (RawTextNode) templateBlock.get(0);
+      RawTextNode newNode = new RawTextNode(
+          nodeIdGen.genId(),
+          "<" + firstNode.getRawText(),
+          srcLoc.extend(firstNode.getSourceLocation()));
+      templateBlock.set(0, newNode);
+    } else {
+      templateBlock.add(0, new RawTextNode(nodeIdGen.genId(), "<", srcLoc));
+    }
+    int lastNodeIndex = templateBlock.size() - 1;
+    if (templateBlock.get(lastNodeIndex) instanceof RawTextNode) {
+      RawTextNode lastNode = (RawTextNode) templateBlock.get(lastNodeIndex);
+      RawTextNode newNode =
+          new RawTextNode(nodeIdGen.genId(), lastNode.getRawText() + ">",
+          lastNode.getSourceLocation().extend(srcLoc));
+
+      templateBlock.set(lastNodeIndex, newNode);
+    } else {
+      templateBlock.add(new RawTextNode(nodeIdGen.genId(), ">", srcLoc));
+    }
+    return new MsgHtmlTagNode.Builder(
+        nodeIdGen.genId(),
+        ImmutableList.copyOf(templateBlock),
+        createSrcLoc(htmlTagOpen))
+        .build(errorReporter);
+  }
 }
 
 
 /**
  * PrintTag -> SoyTagOpen [ CmdNamePrint WsAfterCmdName ] CmdTextParts RegSoyTagClose
- * This will also capture invalid forms of actual commands that did not match those commands' actual
- * tokens (eg, `{else blah}`), then try to parse them as implicit prints.  We check for these errors
- * here, catching any kind of invalid construction that starts with { and is not matched by a token.
+ *
  */
 private SourceItemInfo<List<String>> PrintTag() :
 {
@@ -1654,764 +2020,44 @@ private SourceItemInfo<List<String>> PrintTag() :
   }
 }
 
-
-/**
- * XidTag -> SoyTagOpen CmdNameXid WsAfterCmdName CmdText RegSoyTagClose
- */
-private SourceItemInfo<String> XidTag() :
-{
-  Token tagBegin, tagEnd;
-  String cmdText;
-}
-{
-  tagBegin = <CMD_BEGIN_XID>
-  cmdText = CmdText()
-  tagEnd = <CMD_END>
-
-  { return newSourceItemInfo(cmdText, tagBegin, tagEnd); }
-}
-
-
-/**
- * CssTag -> SoyTagOpen CmdNameCss WsAfterCmdName CmdText RegSoyTagClose
- */
-private SourceItemInfo<String> CssTag() :
-{
-  Token tagBegin, tagEnd;
-  String cmdText;
-}
-{
-  tagBegin = <CMD_BEGIN_CSS>
-  cmdText = CmdText()
-  tagEnd = <CMD_END>
-
-  { return newSourceItemInfo(cmdText, tagBegin, tagEnd); }
-}
-
-
-/**
- * LetTagSelfEnding -> SoyTagOpen CmdNameLet WsAfterCmdName CmdText SelfEndingSoyTagClose
- */
-private SourceItemInfo<String> LetTagSelfEnding() :
-{
-  Token tagBegin, tagEnd;
-  String cmdText;
-}
-{
-  tagBegin = <CMD_BEGIN_LET>
-  cmdText = CmdText()
-  tagEnd = <CMD_SELF_CLOSE>
-
-  { return newSourceItemInfo(cmdText, tagBegin, tagEnd); }
-}
-
-
-/**
- * LetTagNotSelfEnding -> SoyTagOpen CmdNameLet WsAfterCmdName CmdText RegSoyTagClose
- */
-private SourceItemInfo<String> LetTagNotSelfEnding() :
-{
-  Token tagBegin, tagEnd;
-  String cmdText;
-}
-{
-  tagBegin = <CMD_BEGIN_LET>
-  cmdText = CmdText()
-  tagEnd = <CMD_END>
-
-  { return newSourceItemInfo(cmdText, tagBegin, tagEnd); }
-}
-
-
-/**
- * IfTag -> SoyTagOpen CmdNameIf WsAfterCmdName CmdText RegSoyTagClose
- */
-private SourceItemInfo<String> IfTag() :
-{
-  Token tagBegin, tagEnd;
-  String cmdText;
-}
-{
-  tagBegin = <CMD_BEGIN_IF>
-  cmdText = CmdText()
-  tagEnd = <CMD_END>
-
-  { return newSourceItemInfo(cmdText, tagBegin, tagEnd); }
-}
-
-
-/**
- * ElseifTag -> SoyTagOpen CmdNameElseif WsAfterCmdName CmdText RegSoyTagClose
- */
-private SourceItemInfo<String> ElseifTag() :
-{
-  Token tagBegin, tagEnd;
-  String cmdText;
-}
-{
-  tagBegin = <CMD_BEGIN_ELSEIF>
-  cmdText = CmdText()
-  tagEnd = <CMD_END>
-
-  { return newSourceItemInfo(cmdText, tagBegin, tagEnd); }
-}
-
-
-/**
- * SwitchTag -> SoyTagOpen CmdNameSwitch WsAfterCmdName CmdText RegSoyTagClose
- */
-private SourceItemInfo<String> SwitchTag() :
-{
-  Token tagBegin, tagEnd;
-  String cmdText;
-}
-{
-  tagBegin = <CMD_BEGIN_SWITCH>
-  cmdText = CmdText()
-  tagEnd = <CMD_END>
-
-  { return newSourceItemInfo(cmdText, tagBegin, tagEnd); }
-}
-
-
-/**
- * ForeachTag -> SoyTagOpen CmdNameForeach WsAfterCmdName CmdText RegSoyTagClose
- */
-private SourceItemInfo<String> ForeachTag() :
-{
-  Token tagBegin, tagEnd;
-  String cmdText;
-}
-{
-  tagBegin = <CMD_BEGIN_FOREACH>
-  cmdText = CmdText()
-  tagEnd = <CMD_END>
-
-  { return newSourceItemInfo(cmdText, tagBegin, tagEnd); }
-}
-
-
-/**
- * ForTag -> SoyTagOpen CmdNameFor WsAfterCmdName CmdText RegSoyTagClose
- */
-private SourceItemInfo<String> ForTag() :
-{
-  Token tagBegin, tagEnd;
-  String cmdText;
-}
-{
-  tagBegin = <CMD_BEGIN_FOR>
-  cmdText = CmdText()
-  tagEnd = <CMD_END>
-
-  { return newSourceItemInfo(cmdText, tagBegin, tagEnd); }
-}
-
-
-/**
- * AnyCallTagSelfEnding -> SoyTagOpen CmdNameAnyCall WsAfterCmdName CmdTextParts
- *                         SelfEndingSoyTagClose
- */
-private SourceItemInfo<List<String>> AnyCallTagSelfEnding() :
-{
-  Token tagBegin, tagEnd;
-  List<String> cmdTextParts;
-}
-{
-  { List<String> callTagParts = Lists.newArrayList(); }
-
-  tagBegin = <CMD_BEGIN_CALL>
-  { callTagParts.add(tagBegin.image.substring(1)); }  // Strip {
-  cmdTextParts = CmdTextParts()
-  { callTagParts.addAll(cmdTextParts); }
-  tagEnd = <CMD_SELF_CLOSE>
-
-  { return newSourceItemInfo(callTagParts, tagBegin, tagEnd); }
-}
-
-
-/**
- * AnyCallTagNotSelfEnding -> SoyTagOpen CmdNameAnyCall WsAfterCmdName CmdTextParts RegSoyTagClose
- */
-private SourceItemInfo<List<String>> AnyCallTagNotSelfEnding() :
-{
-  Token tagBegin, tagEnd;
-  List<String> cmdTextParts;
-}
-{
-  { List<String> callTagParts = Lists.newArrayList(); }
-
-  tagBegin = <CMD_BEGIN_CALL>
-  { callTagParts.add(tagBegin.image.substring(1)); }  // Strip {
-  cmdTextParts = CmdTextParts()
-  { callTagParts.addAll(cmdTextParts); }
-  tagEnd = <CMD_END>
-
-  { return newSourceItemInfo(callTagParts, tagBegin, tagEnd); }
-}
-
-
-/**
- * ParamTagSelfEnding -> SoyTagOpen CmdNameParam WsAfterCmdName CmdText SelfEndingSoyTagClose
- */
-private SourceItemInfo<String> ParamTagSelfEnding() :
-{
-  Token tagBegin, tagEnd;
-  String cmdText;
-}
-{
-  tagBegin = <CMD_BEGIN_PARAM>
-  cmdText = CmdText()
-  tagEnd = <CMD_SELF_CLOSE>
-
-  { return newSourceItemInfo(cmdText, tagBegin, tagEnd); }
-}
-
-
-/**
- * ParamTagNotSelfEnding -> SoyTagOpen CmdNameParam WsAfterCmdName CmdText RegSoyTagClose
- */
-private SourceItemInfo<String> ParamTagNotSelfEnding() :
-{
-  Token tagBegin, tagEnd;
-  String cmdText;
-}
-{
-  tagBegin = <CMD_BEGIN_PARAM>
-  cmdText = CmdText()
-  tagEnd = <CMD_END>
-
-  { return newSourceItemInfo(cmdText, tagBegin, tagEnd); }
-}
-
-
-// -------------------------------------------------------------------------------------------------
-// Shared tags.
-
-
-/**
- * CaseTag -> SoyTagOpen CmdNameCase WsAfterCmdName CmdText RegSoyTagClose
- *
- * Note: Shared between 'switch', 'plural', and 'select'.
- */
-private SourceItemInfo<String> CaseTag() :
-{
-  Token tagBegin, tagEnd;
-  String cmdText;
-}
-{
-  tagBegin = <CMD_BEGIN_CASE>
-  cmdText = CmdText()
-  tagEnd = <CMD_END>
-
-  { return newSourceItemInfo(cmdText, tagBegin, tagEnd); }
-}
-
-
-// =================================================================================================
-// Grammar
-// =================================================================================================
-
-// -------------------------------------------------------------------------------------------------
-// Template header.
-
-
-/**
- * Important: The template header must always:
- * (1) contain at least one declaration, and
- * (2) end with a string of whitespace that includes at least one newline.
- *
- * TemplateHeader -> ( [ HeaderConsecWs ] Decl )+ HeaderConsecWsWithNl
- */
-private List<DeclInfo> TemplateHeader() :
-{
-  DeclInfo declInfo;
-}
-{
-  { List<DeclInfo> declInfos = Lists.newArrayList(); }
-
-  (
-    LOOKAHEAD( TemplateHeaderLookaheadHelper() )
-    [ HeaderConsecWs() ]
-    declInfo = Decl() { declInfos.add(declInfo); }
-  )+
-
-  // Note that this also consumes the the leading indent that follows the header.
-  // TODO(lukes): Why on earth do we require a newline? Change to [ HeaderConsecWsWithNl ]?
-  [ HeaderConsecWsNoNl() ] <TOKEN_NL> [ HeaderConsecWsNoNl() ]
-
-  { return declInfos; }
-}
-
-
-/**
- * Helper for use in LOOKAHEAD to check for Decl preceded by optional whitespace.
- * Necessary to stop parser from looking for normal commands instead of headers when the headers are
- * following whitepace and doc comments.
- *
- * TemplateHeaderLookaheadHelper -> [ <BLOCK_DOC_COMMENT> ] [ HeaderConsecWs ]
- *     SoyTagOpen <CMD_NAME_PARAM_DECL> | <CMD_NAME_INJECTED_PARAM_DECL> [ QMARK ] WsAfterCmdName
- */
-private void TemplateHeaderLookaheadHelper() :
-{}
-{
-  [ HeaderConsecWs() ]
-  [ <BLOCK_DOC_COMMENT> [ HeaderConsecWs() ] ]
-  ( <DECL_BEGIN_PARAM> | <DECL_BEGIN_INJECT_PARAM> )
-}
-
-
-/**
- * Decl -> ParamDecl | ParamDeclWithDocPrefix
- */
-private DeclInfo Decl() :
-{
-  DeclInfo declInfo;
-}
-{
-  (
-    declInfo = ParamDecl()
-    { return declInfo; }
-  |
-    declInfo = ParamDeclWithDocPrefix()
-    { return declInfo; }
-  )
-}
-
-
-/**
- * ParamDecl -> SoyTagOpen ( <CMD_NAME_PARAM_DECL> | <CMD_NAME_INJECTED_PARAM_DECL> )
- *              [ <QMARK> ] <WS_AFTER_CMD_NAME> CmdText RegSoyTagClose
- *              [ ( TokenWsNotNl )* BlockDocComment ]
- */
-private DeclInfo ParamDecl() :
-{
-  Token tagBegin, name, paramType, tagEnd;
-  String cmdText;
-  String desc;
-  Token blockDocComment;
-  DeclInfo.OptionalStatus optionalStatus = DeclInfo.OptionalStatus.REQUIRED;
-  DeclInfo.Type type = DeclInfo.Type.PARAM;
-}
-{
-  (
-    tagBegin = <DECL_BEGIN_PARAM>
-  | tagBegin = <DECL_BEGIN_INJECT_PARAM> { type = DeclInfo.Type.INJECTED_PARAM; }
-  )
-
-  [ <QMARK> { optionalStatus = DeclInfo.OptionalStatus.OPTIONAL; } ]
-  (<WS>)+
-
-  name = <NAME>
-  <CMD_TYPE_PREFIX>
-  paramType = <CMD_TYPE_LITERAL>  // TODO(slaks): Directly invoke type parser.
-  tagEnd = <CMD_END>
-
-  (
-    LOOKAHEAD( ( <TOKEN_WS_NOT_NL> )* <BLOCK_DOC_COMMENT> )
-
-    (
-      <TOKEN_WS_NOT_NL>
-    )*
-
-    blockDocComment = <BLOCK_DOC_COMMENT>
-    {
-      desc = blockDocComment.image;
-    }
-  |
-    {
-      desc = null;
-    }
-  )
-
-  {
-    return new DeclInfo(type, optionalStatus, name.image, paramType.image, desc,
-        createSrcLoc(tagBegin, tagEnd));
-  }
-}
-
-
-/**
- * ParamDeclWithDocPrefix -> BlockDocComment [ HeaderConsecWs ] SoyTagOpen
- *                           ( <CMD_NAME_PARAM_DECL> | <CMD_NAME_INJECTED_PARAM_DECL> )
- *                           [ <QMARK> ] <WS_AFTER_CMD_NAME> CmdText RegSoyTagClose
- *                           [ ( TokenWsNotNl )* BlockDocComment ]
- */
-private DeclInfo ParamDeclWithDocPrefix() :
-{
-  Token blockDocComment, name, paramType;
-  DeclInfo.OptionalStatus optionalStatus = DeclInfo.OptionalStatus.REQUIRED;
-  DeclInfo.Type type = DeclInfo.Type.PARAM;
-}
-{
-  blockDocComment = <BLOCK_DOC_COMMENT>
-  [ HeaderConsecWs() ]
-
-  (
-    <DECL_BEGIN_PARAM>
-  | <DECL_BEGIN_INJECT_PARAM> { type = DeclInfo.Type.INJECTED_PARAM; }
-  )
-
-  [ <QMARK> { optionalStatus = DeclInfo.OptionalStatus.OPTIONAL; } ]
-  (<WS>)+
-
-  name = <NAME>
-  <CMD_TYPE_PREFIX>
-  paramType = <CMD_TYPE_LITERAL>  // TODO(slaks): Directly invoke type parser.
-  <CMD_END>
-
-  {
-    return new DeclInfo(type, optionalStatus, name.image, paramType.image, blockDocComment.image,
-        createSrcLoc(blockDocComment));
-  }
-}
-
-
-// -------------------------------------------------------------------------------------------------
-// Template block.
-
-
-/**
- * TemplateBlock -> ( ContiguousRawTextAsNode | Stmt )*
- */
-private List<StandaloneNode> TemplateBlock() :
-{
-  RawTextNode contiguousRawTextAsNode;
-  StatementNode stmt;
-}
-{
-  { List<StandaloneNode> templateBlock = Lists.newArrayList(); }
-
-  (
-    contiguousRawTextAsNode = ContiguousRawTextAsNode()
-    { if (contiguousRawTextAsNode != null) templateBlock.add(contiguousRawTextAsNode); }
-  // TODO(lukes): Figure out something non-null to return instead.
-  | stmt = Stmt() { if (stmt != null) { templateBlock.add(stmt); } }
-  )*
-
-  { return templateBlock; }
-}
-
-
-/**
- * ContiguousRawTextAsNode -> ContiguousRawText
- *
- * May return null if the raw text ends up empty (due to comments, line joining, etc).
- */
-private RawTextNode ContiguousRawTextAsNode() :
-{
-  SourceItemInfo<String> contiguousRawText;
-}
-{
-  contiguousRawText = ContiguousRawText()
-  {
-    if (contiguousRawText.parsedContent().isEmpty()) {
-      return null;
-    }
-    return new RawTextNode(
-        nodeIdGen.genId(), contiguousRawText.parsedContent(), contiguousRawText.srcLocation());
-  }
-}
-
-
-// -------------------------------------------------------------------------------------------------
-// Soy statements.
-
-
-/**
- * Stmt ->   MsgStmt | PrintStmt | XidStmt | CssStmt | LetStmt | IfStmt | SwitchStmt
- *         | ForeachStmt | ForStmt| CallStmt | LogStmt | DebuggerStmt
- */
-private StatementNode Stmt() :
-{
-  StatementNode stmt;
-}
-{
-  (
-    stmt = MsgStmt()
-  | stmt = XidStmt()
-  | stmt = CssStmt()
-  | stmt = LetStmt()
-  | stmt = IfStmt()
-  | stmt = SwitchStmt()
-  | stmt = ForeachStmt()
-  | stmt = ForStmt()
-  | stmt = CallStmt()
-  | stmt = LogStmt()
-  | stmt = DebuggerStmt()
-  | stmt = PrintStmt()
-  )
-
-  { return stmt; }
-}
-
-
-/**
- * MsgStmt -> MsgTag TemplateBlockForMsg ( FallbackmsgTag TemplateBlockForMsg )? EndMsgTag
- */
-private MsgFallbackGroupNode MsgStmt() :
-{
-  SourceItemInfo<String> cmdText;
-  List<StandaloneNode> templateBlockForMsg;
-}
-{
-  { MsgNode msgNode; }
-
-  cmdText = MsgTag()
-  {
-    MsgFallbackGroupNode msgFbGrpNode = new MsgFallbackGroupNode(
-        nodeIdGen.genId(), cmdText.srcLocation());
-    msgNode = MsgNode.msg(nodeIdGen.genId(), cmdText.parsedContent(), cmdText.srcLocation())
-        .build(context);
-    msgFbGrpNode.addChild(msgNode);
-  }
-  templateBlockForMsg = TemplateBlockForMsg()
-  { msgNode.addChildren(templateBlockForMsg); }
-
-  (
-    cmdText = FallbackmsgTag()
-    {
-      msgNode = MsgNode.fallbackmsg(
-          nodeIdGen.genId(), cmdText.parsedContent(), cmdText.srcLocation())
-          .build(context);
-      msgFbGrpNode.addChild(msgNode);
-    }
-    templateBlockForMsg = TemplateBlockForMsg()
-    { msgNode.addChildren(templateBlockForMsg); }
-  )?
-
-  <CMD_CLOSE_MSG>
-
-  { return msgFbGrpNode; }
-}
-
-
-/**
- * TemplateBlockForMsg ->   MaybeWhitespace MsgPlural MaybeWhitespace
- *                        | MaybeWhitespace MsgSelect MaybeWhitespace
- *                        | ( ContiguousRawTextAsNode | Stmt | MsgHtmlTag )*
- */
-private List<StandaloneNode> TemplateBlockForMsg() :
-{
-  RawTextNode contiguousRawTextAsNode;
-  MsgPlaceholderInitialNode stmt;
-  MsgHtmlTagNode msgHtmlTag;
-  MsgPluralNode msgPlural;
-  MsgSelectNode msgSelect;
-}
-{
-  { List<StandaloneNode> templateBlock = Lists.newArrayList(); }
-
-  (
-    // TODO(lukes): Move this error check out of the parse phase.
-    LOOKAHEAD( MaybeWhitespace("") <CMD_BEGIN_PLURAL> )
-    MaybeWhitespace("No message content is allowed before a 'plural' block.")
-    msgPlural = MsgPlural()
-    { templateBlock.add(msgPlural); }
-    MaybeWhitespace("No message content is allowed after a 'plural' block.")
-
-  |
-    LOOKAHEAD( MaybeWhitespace("") <CMD_BEGIN_SELECT> )
-    MaybeWhitespace("No message content is allowed before a 'select' block.")
-    msgSelect = MsgSelect()
-    { templateBlock.add(msgSelect); }
-    MaybeWhitespace("No message content is allowed after a 'select' block.")
-
-  |
-    (
-      (
-        contiguousRawTextAsNode = ContiguousRawTextAsNode()
-        { if (contiguousRawTextAsNode != null) templateBlock.add(contiguousRawTextAsNode); }
-
-      | stmt = CallStmt()  { templateBlock.add(new MsgPlaceholderNode(nodeIdGen.genId(), stmt)); }
-      | stmt = PrintStmt() {  // TODO(lukes): Figure out something non-null to return instead.
-        if (stmt != null) { templateBlock.add(new MsgPlaceholderNode(nodeIdGen.genId(), stmt)); }
-      }
-      | msgHtmlTag = MsgHtmlTag()
-        { templateBlock.add(new MsgPlaceholderNode(nodeIdGen.genId(), msgHtmlTag)); }
-      )
-    )*
-  )
-
-  { return templateBlock; }
-}
-
-
-/**
- * MsgPlural -> PluralTag MaybeWhitespace ( CaseTag TemplateBlockForMsg )*
- *              DefaultTag TemplateBlockForMsg EndPluralTag
- */
-private MsgPluralNode MsgPlural() :
-{
-  Token defaultTag;
-  SourceItemInfo<String> cmdText;
-  List<StandaloneNode> templateBlockForMsg;
-}
-{
-  cmdText = PluralTag()
-  {
-    MsgPluralNode msgPluralNode = new MsgPluralNode.Builder(
-        nodeIdGen.genId(), cmdText.parsedContent(), cmdText.srcLocation())
-        .build(context);
-  }
-  MaybeWhitespace("No content allowed between 'plural' and 'case'" +
-      " (whitespace and comments are okay).")
-
-  (
-    cmdText = CaseTag()
-    {
-      MsgPluralCaseNode msgPluralCaseNode = new MsgPluralCaseNode.Builder(
-          nodeIdGen.genId(), cmdText.parsedContent(), cmdText.srcLocation())
-          .build(errorReporter);
-      msgPluralNode.addChild(msgPluralCaseNode);
-    }
-    templateBlockForMsg = TemplateBlockForMsg()
-    { if (templateBlockForMsg.size() == 1 &&
-          (templateBlockForMsg.get(0) instanceof MsgPluralNode ||
-           templateBlockForMsg.get(0) instanceof MsgSelectNode )) {
-        errorReporter.report(
-            templateBlockForMsg.get(0).getSourceLocation(),
-            PLURAL_AND_SELECT_NOT_ALLOWED_INSIDE_PLURAL_BLOCK);
-      }
-      msgPluralCaseNode.addChildren(templateBlockForMsg);
-    }
-  )*
-
-  defaultTag = <CMD_FULL_DEFAULT>
-  {
-    MsgPluralDefaultNode msgPluralDefaultNode = new MsgPluralDefaultNode(
-        nodeIdGen.genId(), createSrcLoc(defaultTag));
-    msgPluralNode.addChild(msgPluralDefaultNode);
-  }
-  templateBlockForMsg = TemplateBlockForMsg()
-  { if (templateBlockForMsg.size() == 1 &&
-        (templateBlockForMsg.get(0) instanceof MsgPluralNode ||
-         templateBlockForMsg.get(0) instanceof MsgSelectNode )) {
-      errorReporter.report(
-          templateBlockForMsg.get(0).getSourceLocation(),
-          PLURAL_AND_SELECT_NOT_ALLOWED_INSIDE_PLURAL_BLOCK);
-    }
-    msgPluralDefaultNode.addChildren(templateBlockForMsg);
-  }
-
-  <CMD_CLOSE_PLURAL>
-
-  { return msgPluralNode; }
-}
-
-
-/**
- * MsgSelect -> SelectTag MaybeWhitespace ( CaseTag TemplateBlockForMsg )*
- *              DefaultTag TemplateBlockForMsg EndSelectTag
- */
-private MsgSelectNode MsgSelect() :
-{
-  Token defaultTag;
-  SourceItemInfo<String> cmdText;
-  List<StandaloneNode> templateBlockForMsg;
-}
-{
-  cmdText = SelectTag()
-  {
-    MsgSelectNode msgSelectNode = new MsgSelectNode.Builder(
-        nodeIdGen.genId(), cmdText.parsedContent(), cmdText.srcLocation()).build(context);
-  }
-  MaybeWhitespace("No content allowed between 'select' and 'case'" +
-      " (whitespace and comments are okay).")
-
-  (
-    cmdText = CaseTag()
-    {
-      MsgSelectCaseNode msgSelectCaseNode = new MsgSelectCaseNode.Builder(
-          nodeIdGen.genId(), cmdText.parsedContent(), cmdText.srcLocation())
-          .build(context);
-      msgSelectNode.addChild(msgSelectCaseNode);
-    }
-    templateBlockForMsg = TemplateBlockForMsg()
-    { msgSelectCaseNode.addChildren(templateBlockForMsg); }
-  )*
-
-  defaultTag = <CMD_FULL_DEFAULT>
-  {
-    MsgSelectDefaultNode msgSelectDefaultNode
-        = new MsgSelectDefaultNode(nodeIdGen.genId(), createSrcLoc(defaultTag));
-    msgSelectNode.addChild(msgSelectDefaultNode);
-  }
-  templateBlockForMsg = TemplateBlockForMsg()
-  { msgSelectDefaultNode.addChildren(templateBlockForMsg); }
-
-  <CMD_CLOSE_SELECT>
-
-  { return msgSelectNode; }
-}
-
-
-/**
- * MsgHtmlTag -> MsgHtmlTagOpen TemplateBlock MsgHtmlTagClose
- */
-private MsgHtmlTagNode MsgHtmlTag() :
-{
-  Token htmlTagOpen;
-  List<StandaloneNode> templateBlock;
-}
-{
-  htmlTagOpen = <MSG_HTML_TAG_OPEN>
-  templateBlock = TemplateBlock()
-  <MSG_HTML_TAG_CLOSE>
-
-  {
-    SourceLocation srcLoc = createSrcLoc(htmlTagOpen);
-    // TODO(lukes): Massively simplify this by creating more nodes.  Also fix SourceLocation.
-    // First, we add back the HTML tag's opening and closing angle brackets.
-    // Minor note: If there's only one RawTextNode, we'll replace it twice. No big deal.
-    if (templateBlock.get(0) instanceof RawTextNode) {
-      RawTextNode firstNode = (RawTextNode) templateBlock.get(0);
-      RawTextNode newNode = new RawTextNode(
-          nodeIdGen.genId(), "<" + firstNode.getRawText(), srcLoc);
-      templateBlock.set(0, newNode);
-    } else {
-      templateBlock.add(0, new RawTextNode(nodeIdGen.genId(), "<", srcLoc));
-    }
-    int lastNodeIndex = templateBlock.size() - 1;
-    if (templateBlock.get(lastNodeIndex) instanceof RawTextNode) {
-      RawTextNode lastNode = (RawTextNode) templateBlock.get(lastNodeIndex);
-      RawTextNode newNode = new RawTextNode(nodeIdGen.genId(), lastNode.getRawText() + ">", srcLoc);
-      templateBlock.set(lastNodeIndex, newNode);
-    } else {
-      templateBlock.add(new RawTextNode(nodeIdGen.genId(), ">", srcLoc));
-    }
-    return new MsgHtmlTagNode.Builder(
-        nodeIdGen.genId(),
-        ImmutableList.copyOf(templateBlock),
-        createSrcLoc(htmlTagOpen))
-        .build(errorReporter);
-  }
-}
-
-
 /**
  * PrintStmt -> PrintTag
  */
 private PrintNode PrintStmt() :
 {
-  SourceItemInfo<List<String>> printTagInfo;
+  Token tagBegin, tagEnd;
+  List<String> cmdTextParts;
+  boolean isImplicit;
 }
 {
-  printTagInfo = PrintTag()
-
+  (
+    tagBegin = <CMD_BEGIN_PRINT>  { isImplicit = false; }
+  | tagBegin = <CMD_BEGIN_IMPLICIT_PRINT>  { isImplicit = true; }
+  )
+  cmdTextParts = CmdTextParts()
+  tagEnd = <CMD_END>
   {
-    List<String> printTagParts = printTagInfo.parsedContent();
+    SourceLocation location = createSrcLoc(tagBegin, tagEnd);
+    // This will also capture invalid forms of actual commands that did not match those commands'
+    // actual tokens (eg, `{else blah}`), then try to parse them as implicit prints.  We check for
+    // these errors here, catching any kind of invalid construction that starts with { and is not
+    // matched by a token.
+    if (cmdTextParts.isEmpty()) {
+      errorReporter.report(location, PRINT_COMMAND_WITH_EMPTY_TEXT);
+    } else if (cmdTextParts.get(0).startsWith("/")) {
+      errorReporter.report(location, UNEXPECTED_CLOSING_TAG,
+          "{" + Joiner.on("").join(cmdTextParts) + "}");
+    } else if (cmdTextParts.get(0).startsWith("@")) {
+      errorReporter.report(location, INVALID_DECLARATION, "{" + cmdTextParts.get(0));
+    } else if (cmdTextParts.get(0).startsWith("{")) {
+      errorReporter.report(location, FOUND_DOUBLE_BRACE);
+    } else if (INVALID_PRINT_FILE_PREFIX_PATTERN.matcher(cmdTextParts.get(0)).matches()) {
+      errorReporter.report(location, INVALID_PRINT_FILE_COMMAND, "{" + cmdTextParts.get(0));
+    } else if (INVALID_PRINT_PREFIX_PATTERN.matcher(cmdTextParts.get(0)).matches()) {
+      errorReporter.report(location, INVALID_PRINT_PREFIX, "{" + cmdTextParts.get(0));
+    }
 
     // ------ Process command name (implicit or explicit). ------
-    boolean isImplicit;
-    List<String> cmdTextParts;
-    if (!printTagParts.isEmpty() && printTagParts.get(0).equals("print")) {
-      isImplicit = false;
-      cmdTextParts = printTagParts.subList(1, printTagParts.size());
-    } else {
-      isImplicit = true;
-      cmdTextParts = printTagParts;
-    }
     String cmdText = Joiner.on("").join(cmdTextParts);
 
     // ------ Process 'phname' attribute (if any). ------
@@ -2419,8 +2065,7 @@ private PrintNode PrintStmt() :
     for (String cmdTextPart : cmdTextParts) {
       if (cmdTextPart.startsWith(" phname=\"") && cmdTextPart.endsWith("\"")) {
         if (phnameAttr != null) {
-          errorReporter.report(
-              printTagInfo.srcLocation(), MULTIPLE_PHNAME_ATTRIBUTES_IN_COMMAND, "print", cmdText);
+          errorReporter.report(location, MULTIPLE_PHNAME_ATTRIBUTES_IN_COMMAND, cmdText);
         }
         phnameAttr = cmdTextPart;
       }
@@ -2435,13 +2080,11 @@ private PrintNode PrintStmt() :
 
     // ------ Process expression. ------
     // Note: First part is expression, rest of parts are directives or directive args.
-    if (cmdTextParts.isEmpty()) {
-      errorReporter.report(printTagInfo.srcLocation(), PRINT_COMMAND_WITH_EMPTY_TEXT);
-      return null;
-    }
-    String exprText = cmdTextParts.get(0).trim();
+    // if cmdTextParts is empty, we already reported an error above, so pretend it is a literal
+    // empty string and keep going.
+    String exprText = cmdTextParts.isEmpty() ? "''" : cmdTextParts.get(0).trim();
     PrintNode printNode
-        = new PrintNode.Builder(nodeIdGen.genId(), isImplicit, printTagInfo.srcLocation())
+        = new PrintNode.Builder(nodeIdGen.genId(), isImplicit, location)
             .exprText(exprText)
             .userSuppliedPlaceholderName(userSuppliedPhName)
             .build(context);
@@ -2455,7 +2098,7 @@ private PrintNode PrintStmt() :
         // Create previous directive and save current directive name.
         if (directiveName != null) {
           printNode.addChild(new PrintDirectiveNode.Builder(
-              nodeIdGen.genId(), directiveName, "", printTagInfo.srcLocation())
+              nodeIdGen.genId(), directiveName, "", location)
               .build(context));
         }
         directiveName = cmdTextPart;
@@ -2467,7 +2110,7 @@ private PrintNode PrintStmt() :
         }
         String argsText = cmdTextPart.substring(1);
         printNode.addChild(new PrintDirectiveNode.Builder(
-            nodeIdGen.genId(), directiveName, argsText, printTagInfo.srcLocation())
+            nodeIdGen.genId(), directiveName, argsText, location)
             .build(context));
         directiveName = null;
 
@@ -2481,7 +2124,7 @@ private PrintNode PrintStmt() :
     // Add last directive.
     if (directiveName != null) {
       printNode.addChild(new PrintDirectiveNode.Builder(
-          nodeIdGen.genId(), directiveName, "", printTagInfo.srcLocation())
+          nodeIdGen.genId(), directiveName, "", location)
           .build(context));
     }
 
@@ -2495,12 +2138,15 @@ private PrintNode PrintStmt() :
  */
 private XidNode XidStmt() :
 {
-  SourceItemInfo<String> cmdText;
+  Token cmdBegin, cmdEnd;
+  String cmdText;
 }
 {
-  cmdText = XidTag()
+  cmdBegin = <CMD_BEGIN_XID>
+  cmdText = CmdText()
+  cmdEnd = <CMD_END>
   {
-    return new XidNode.Builder(nodeIdGen.genId(), cmdText.parsedContent(), cmdText.srcLocation())
+    return new XidNode.Builder(nodeIdGen.genId(), cmdText, createSrcLoc(cmdBegin, cmdEnd))
         .build(errorReporter);
   }
 }
@@ -2511,50 +2157,69 @@ private XidNode XidStmt() :
  */
 private CssNode CssStmt() :
 {
-  SourceItemInfo<String> cmdText;
+  Token cmdBegin, cmdEnd;
+  String cmdText;
 }
 {
-  cmdText = CssTag()
+  cmdBegin = <CMD_BEGIN_CSS>
+  cmdText = CmdText()
+  cmdEnd = <CMD_END>
   {
-    return new CssNode.Builder(nodeIdGen.genId(), cmdText.parsedContent(), cmdText.srcLocation())
+    return new CssNode.Builder(nodeIdGen.genId(), cmdText, createSrcLoc(cmdBegin, cmdEnd))
         .build(context);
   }
 }
 
 
 /**
- * LetStmt ->   LetTagSelfEnding
- *            | LetTagNotSelfEnding TemplateBlock EndLetTag
+ * LetStmt -> <CMD_BEGIN_LET> CmdText() (<CMD_SELF_CLOSE>|<CMD_END> TemplateBlock() <CMD_CLOSE_LET>)
  */
 private LetNode LetStmt() :
 {
   SourceItemInfo<String> cmdText;
-  List<StandaloneNode> templateBlock;
+  Token tagBegin, tagEnd;
+  LetNode letNode;
 }
 {
-  { LetNode letNode = null; }
-
+  tagBegin = <CMD_BEGIN_LET>
+  cmdText = CmdTextWithSource()
+  {
+    Checkpoint cmdTextCheckpoint = errorReporter.checkpoint();
+    LetNode.CommandTextParseResult result =
+        LetNode.parseCommandTextHelper(
+            cmdText.parsedContent(),
+            context,
+            cmdText.srcLocation());
+  }
   (
-    LOOKAHEAD( LetTagSelfEnding() )
+    tagEnd = <CMD_SELF_CLOSE>
 
-    cmdText = LetTagSelfEnding()
-    {
-      letNode = new LetValueNode.Builder(
-          nodeIdGen.genId(), cmdText.parsedContent(), cmdText.srcLocation())
-          .build(context);
+    { letNode = new LetValueNode.Builder(
+          nodeIdGen.genId(), result, createSrcLoc(tagBegin, tagEnd))
+          .build(cmdTextCheckpoint, errorReporter);
     }
-
   |
-
-    cmdText = LetTagNotSelfEnding()
     {
-      LetContentNode letContentNode = new LetContentNode.Builder(
-            nodeIdGen.genId(), cmdText.parsedContent(), cmdText.srcLocation())
-            .build(context);
+      pushState(TEMPLATE_DEFAULT);
+      Checkpoint checkpoint = errorReporter.checkpoint();
+    }
+    tagEnd = <CMD_END>
+    { LetContentNode letContentNode = new LetContentNode.Builder(
+          nodeIdGen.genId(), result, createSrcLoc(tagBegin, tagEnd))
+          .build(cmdTextCheckpoint, errorReporter);
+      List<StandaloneNode> templateBlock;
     }
     templateBlock = TemplateBlock()
     { letContentNode.addChildren(templateBlock);
       letNode = letContentNode;
+    }
+    {
+      // if there was an error or there is about to be one, be more careful popping the stack.
+      if (errorReporter.errorsSince(checkpoint) || getToken(1).kind != CMD_CLOSE_LET) {
+        popStateIfStateIs(TEMPLATE_DEFAULT);
+      } else {
+        popState();
+      }
     }
     <CMD_CLOSE_LET>
   )
@@ -2568,18 +2233,22 @@ private LetNode LetStmt() :
  */
 private IfNode IfStmt() :
 {
-  SourceItemInfo<String> cmdText;
+  String cmdText;
   List<StandaloneNode> templateBlock;
+  Token cmdBegin, cmdEnd;
   Token elseTag;
 }
 {
   { IfCondNode ifCondNode; }
 
-  cmdText = IfTag()
+  cmdBegin = <CMD_BEGIN_IF>
+  cmdText = CmdText()
+  cmdEnd = <CMD_END>
   {
-    IfNode ifNode = new IfNode(nodeIdGen.genId(), cmdText.srcLocation());
+    SourceLocation ifTagLocation = createSrcLoc(cmdBegin, cmdEnd);
+    IfNode ifNode = new IfNode(nodeIdGen.genId(), ifTagLocation);
     ifCondNode = IfCondNode.ifBuilder(
-        nodeIdGen.genId(), cmdText.parsedContent(), cmdText.srcLocation())
+        nodeIdGen.genId(), cmdText, ifTagLocation)
         .build(context);
     ifNode.addChild(ifCondNode);
   }
@@ -2587,10 +2256,13 @@ private IfNode IfStmt() :
   { ifCondNode.addChildren(templateBlock); }
 
   (
-    cmdText = ElseifTag()
+    cmdBegin = <CMD_BEGIN_ELSEIF>
+    cmdText = CmdText()
+    cmdEnd = <CMD_END>
     {
+      SourceLocation elseIfLocation = createSrcLoc(cmdBegin, cmdEnd);
       ifCondNode = IfCondNode.elseifBuilder(
-          nodeIdGen.genId(), cmdText.parsedContent(), cmdText.srcLocation()).build(context);
+          nodeIdGen.genId(), cmdText, elseIfLocation).build(context);
       ifNode.addChild(ifCondNode);
     }
     templateBlock = TemplateBlock()
@@ -2620,45 +2292,54 @@ private IfNode IfStmt() :
  */
 private SwitchNode SwitchStmt() :
 {
-  SourceItemInfo<String> cmdText;
-  Token defaultTag;
+  String cmdText;
   List<StandaloneNode> templateBlock;
+  Token cmdBegin, cmdEnd;
+  Token defaultTag;
 }
 {
-  cmdText = SwitchTag()
+  cmdBegin = <CMD_BEGIN_SWITCH>
+  cmdText = CmdText()
+  cmdEnd = <CMD_END>
   {
     SwitchNode switchNode = new SwitchNode.Builder(
-        nodeIdGen.genId(), cmdText.parsedContent(), cmdText.srcLocation())
+        nodeIdGen.genId(), cmdText, createSrcLoc(cmdBegin, cmdEnd))
         .build(context);
   }
+  // consume all whitespace between {switch} and the first {case}
+  // later {case} and {default} tags will naturally consume and drop whitespace due to how RawText()
+  // line joining works
+  SkipWhitespace()
+  try {
+    (
+      cmdBegin = <CMD_BEGIN_CASE>
+      cmdText = CmdText()
+      cmdEnd = <CMD_END>
+      {
+        SwitchCaseNode switchCaseNode = new SwitchCaseNode.Builder(
+            nodeIdGen.genId(), cmdText, createSrcLoc(cmdBegin, cmdEnd))
+            .build(context);
+        switchNode.addChild(switchCaseNode);
+      }
+      templateBlock = TemplateBlock()
+      { switchCaseNode.addChildren(templateBlock); }
+    )*
 
-  MaybeWhitespace("No content allowed between 'switch' and 'case'" +
-      " (whitespace and comments are okay).")
+    [
+      defaultTag = <CMD_FULL_DEFAULT>
+      {
+        SwitchDefaultNode switchDefaultNode = new SwitchDefaultNode(
+            nodeIdGen.genId(), createSrcLoc(defaultTag));
+        switchNode.addChild(switchDefaultNode);
+      }
+      templateBlock = TemplateBlock()
+      { switchDefaultNode.addChildren(templateBlock); }
+    ]
 
-  (
-    cmdText = CaseTag()
-    {
-      SwitchCaseNode switchCaseNode = new SwitchCaseNode.Builder(
-          nodeIdGen.genId(), cmdText.parsedContent(), cmdText.srcLocation())
-          .build(context);
-      switchNode.addChild(switchCaseNode);
-    }
-    templateBlock = TemplateBlock()
-    { switchCaseNode.addChildren(templateBlock); }
-  )*
-
-  [
-    defaultTag = <CMD_FULL_DEFAULT>
-    {
-      SwitchDefaultNode switchDefaultNode = new SwitchDefaultNode(
-          nodeIdGen.genId(), createSrcLoc(defaultTag));
-      switchNode.addChild(switchDefaultNode);
-    }
-    templateBlock = TemplateBlock()
-    { switchDefaultNode.addChildren(templateBlock); }
-  ]
-
-  <CMD_CLOSE_SWITCH>
+    <CMD_CLOSE_SWITCH>
+ } catch (ParseException e) {
+   reportTemplateBodyErrorAndSkipTo(e, CMD_CLOSE_SWITCH);
+ }
 
   { return switchNode; }
 }
@@ -2669,16 +2350,19 @@ private SwitchNode SwitchStmt() :
  */
 private ForeachNode ForeachStmt() :
 {
-  SourceItemInfo<String> cmdText;
+  String cmdText;
   List<StandaloneNode> templateBlock;
+  Token cmdBegin, cmdEnd;
   Token ifemptyTag;
 }
 {
-  cmdText = ForeachTag()
+  cmdBegin = <CMD_BEGIN_FOREACH>
+  cmdText = CmdText()
+  cmdEnd = <CMD_END>
   {
     ForeachBuilder builder = ForeachBuilder.create(nodeIdGen, context)
-        .setCommandLocation(cmdText.srcLocation())
-        .setCommandText(cmdText.parsedContent());
+        .setCommandLocation(createSrcLoc(cmdBegin, cmdEnd))
+        .setCommandText(cmdText);
   }
 
   templateBlock = TemplateBlock()
@@ -2705,16 +2389,19 @@ private ForeachNode ForeachStmt() :
  */
 private ForNode ForStmt() :
 {
-  SourceItemInfo<String> cmdText;
+  String cmdText;
+  Token cmdBegin, cmdEnd;
   List<StandaloneNode> templateBlock;
 }
 {
-  cmdText = ForTag()
+  cmdBegin = <CMD_BEGIN_FOR>
+  cmdText = CmdText()
+  cmdEnd = <CMD_END>
   {
     ForNode forNode = new ForNode(
         nodeIdGen.genId(),
-        cmdText.parsedContent(),
-        cmdText.srcLocation(),
+        cmdText,
+        createSrcLoc(cmdBegin, cmdEnd),
         context);
   }
 
@@ -2729,139 +2416,171 @@ private ForNode ForStmt() :
 
 /**
  * CallStmt ->
- *       AnyCallTagSelfEnding
- *     | AnyCallTagNotSelfEnding MaybeWhitespace ( CallParam MaybeWhitespace )* EndAnyCallTag
+ *   <CMD_BEGIN_CALL> CmdTextParts() (<CMD_SELF_CLOSE> | <CMD_END> CallParams <CMD_CLOSE_CALL>)
+ * | <CMD_BEGIN_DELCALL> CmdTextParts() (<CMD_SELF_CLOSE> | <CMD_END> CallParams <CMD_CLOSE_DELCALL>)
  */
 private CallNode CallStmt() :
 {
-  SourceItemInfo<List<String>> callTagInfo;
-  CallParamNode callParam;
-  Token endCallTag;
+  Token tagBegin, tagEnd;
+  List<String> cmdTextParts;
+  CallNode callNode = null;
 }
 {
-  { List<CallParamNode> callParams = Lists.newArrayList(); }
-
   (
-    LOOKAHEAD(AnyCallTagSelfEnding())
-    callTagInfo = AnyCallTagSelfEnding()
-    { endCallTag = null; }
-
-  |
-
-    callTagInfo = AnyCallTagNotSelfEnding()
-
-    MaybeWhitespace("No content allowed between 'call' and 'param'" +
-        " (whitespace and comments are okay).")
-
-
+    tagBegin = <CMD_BEGIN_CALL>
+    cmdTextParts = CmdTextParts()
     (
-      callParam = CallParam()
-      { callParams.add(callParam); }
-      MaybeWhitespace("No content allowed between 'param' and 'param'" +
-          " (whitespace and comments are okay).")
-    )*
-
-    endCallTag = <CMD_CLOSE_CALL>
+      tagEnd = <CMD_SELF_CLOSE>
+      { callNode =
+          setCommandTextAndPlaceholderName(
+              new CallBasicNode.Builder(nodeIdGen.genId(), createSrcLoc(tagBegin, tagEnd)),
+              cmdTextParts)
+              .build(context);
+      }
+    |
+      tagEnd = <CMD_END>
+      { callNode =
+          setCommandTextAndPlaceholderName(
+              new CallBasicNode.Builder(nodeIdGen.genId(), createSrcLoc(tagBegin, tagEnd)),
+              cmdTextParts)
+              .build(context);
+      }
+      try {
+        AddParams(callNode)
+        <CMD_CLOSE_CALL>
+      } catch (ParseException e) {
+        reportTemplateBodyErrorAndSkipTo(e, CMD_CLOSE_CALL);
+      }
+    )
+  |
+    tagBegin = <CMD_BEGIN_DELCALL>
+    cmdTextParts = CmdTextParts()
+    (
+      tagEnd = <CMD_SELF_CLOSE>
+      { callNode =
+          setCommandTextAndPlaceholderName(
+              new CallDelegateNode.Builder(nodeIdGen.genId(), createSrcLoc(tagBegin, tagEnd)),
+              cmdTextParts)
+              .build(context);
+      }
+    |
+      tagEnd = <CMD_END>
+      { callNode =
+          setCommandTextAndPlaceholderName(
+              new CallDelegateNode.Builder(nodeIdGen.genId(), createSrcLoc(tagBegin, tagEnd)),
+              cmdTextParts)
+              .build(context);
+      }
+      try {
+        AddParams(callNode)
+        <CMD_CLOSE_DELCALL>
+      } catch (ParseException e) {
+        reportTemplateBodyErrorAndSkipTo(e, CMD_CLOSE_DELCALL);
+      }
+    )
   )
+  { return callNode; }
+}
 
-  // TODO(slaks): Get rid of all of these loops (including CmdTextParts).
-  // Instead, take (PhName()|CmdText())*, and set phname in {} inside the repetition.
-  // Do the same for print statements (also with |directive).
-  { List<String> callTagParts = callTagInfo.parsedContent();
-
-    // ------ Divide callTagParts into cmdName, cmdText, and phnameAttr (if any). ------
-    String cmdName = callTagParts.get(0);
-
-    StringBuilder cmdTextSb = new StringBuilder();
-    String phnameAttr = null;
-
-    for (int i = 1; i < callTagParts.size(); i++) {
-      String cmdTextPart = callTagParts.get(i);
-      if (cmdTextPart.startsWith(" phname=\"") && cmdTextPart.endsWith("\"")) {
-        if (phnameAttr != null) {
-          errorReporter.report(
-              callTagInfo.srcLocation(),
-              MULTIPLE_PHNAME_ATTRIBUTES_IN_COMMAND,
-              cmdName,
-              Joiner.on("").join(callTagParts.subList(1, callTagParts.size())));
-        }
-        phnameAttr = cmdTextPart;
-      } else {
-        cmdTextSb.append(cmdTextPart);
+JAVACODE
+/**
+ * Interprets the cmdTextParts to extract the phname attribute (if any) and then set it into the
+ * builder.
+ *
+ * <p>TODO(lukes): switch calls to use 'structured' parsing.  It would simplify a lot of this and
+ * yield better error messages
+ */
+private CallNode.Builder setCommandTextAndPlaceholderName(
+    CallNode.Builder builder,
+    List<String> cmdTextParts) {
+  StringBuilder cmdTextSb = new StringBuilder();
+  String phnameAttr = null;
+  for (int i = 0; i < cmdTextParts.size(); i++) {
+    String cmdTextPart = cmdTextParts.get(i);
+    if (cmdTextPart.startsWith(" phname=\"") && cmdTextPart.endsWith("\"")) {
+      if (phnameAttr != null) {
+        errorReporter.report(
+            builder.getSourceLocation(),
+            MULTIPLE_PHNAME_ATTRIBUTES_IN_COMMAND,
+            Joiner.on("").join(cmdTextParts));
       }
-    }
-
-    String cmdText = cmdTextSb.toString();
-
-    // ------ Compute isBasicCallTag and userSuppliedPhName. ------
-    boolean isBasicCallTag = callTagParts.get(0).trim().equals("call");
-    if (endCallTag != null && !endCallTag.image.equals("{/" + callTagParts.get(0).trim() + "}")) {
-      // TODO(slaks): Port to SoyErrorKind.
-      if (isBasicCallTag) {
-        errorReporter.report(createSrcLoc(endCallTag),
-            SoyErrorKind.of("{0}"), "Mismatched 'call' and '/delcall'.");
-      } else {
-        errorReporter.report(createSrcLoc(endCallTag),
-            SoyErrorKind.of("{0}"), "Mismatched 'delcall' and '/call'.");
-      }
-    }
-
-    String userSuppliedPhName =
-        (phnameAttr != null) ? phnameAttr.substring(9, phnameAttr.length() - 1) : null;
-
-    // ------ Create the CallNode. ------
-    CallNode callNode = null;
-    if (isBasicCallTag) {
-      callNode = new CallBasicNode.Builder(nodeIdGen.genId(), callTagInfo.srcLocation())
-          .commandText(cmdText)
-          .userSuppliedPlaceholderName(userSuppliedPhName)
-          .build(context);
+      phnameAttr = cmdTextPart;
     } else {
-      callNode = new CallDelegateNode.Builder(nodeIdGen.genId(), callTagInfo.srcLocation())
-          .commandText(cmdText)
-          .userSuppliedPlaceholderName(userSuppliedPhName)
-          .build(context);
+      cmdTextSb.append(cmdTextPart);
     }
-    callNode.addChildren(callParams);
-
-    return callNode;
   }
+
+  // 9 == the length of ' phname="'... yes this is lame
+  String userSuppliedPhName =
+        (phnameAttr != null) ? phnameAttr.substring(9, phnameAttr.length() - 1) : null;
+  return builder.commandText(cmdTextSb.toString()).userSuppliedPlaceholderName(userSuppliedPhName);
+}
+
+
+private void AddParams(CallNode callNode) :
+{
+  CallParamNode callParam;
+}
+{
+  // consume all whitespace between {call}/{delcall} and the first {param} as well as between params
+  SkipWhitespace()
+  (
+    callParam = CallParam()
+    { callNode.addChild(callParam); }
+    SkipWhitespace()
+  )*
 }
 
 
 /**
- * CallParam ->   ParamTagSelfEnding
- *              | ParamTagNotSelfEnding TemplateBlock EndParamTag
+ * CallParam -> <CMD_BEGIN_PARAM> CmdText() (<CMD_SELF_CLOSE>|<CMD_END> TemplateBlock() <CMD_CLOSE_PARAM>)
  */
 private CallParamNode CallParam() :
 {
+  Token tagBegin, tagEnd;
   SourceItemInfo<String> cmdText;
-  List<StandaloneNode> templateBlock;
+  CallParamNode callParamNode = null;
 }
 {
-  { CallParamNode callParamNode = null; }
-
+  tagBegin = <CMD_BEGIN_PARAM>
+  cmdText = CmdTextWithSource()
+  {
+    Checkpoint cmdTextCheckpoint = errorReporter.checkpoint();
+    CallParamNode.CommandTextParseResult result =
+        CallParamNode.parseCommandTextHelper(
+            cmdText.parsedContent(),
+            context,
+            cmdText.srcLocation());
+  }
   (
-    LOOKAHEAD( ParamTagSelfEnding() )
-
-    cmdText = ParamTagSelfEnding()
+    tagEnd = <CMD_SELF_CLOSE>
     {
       callParamNode = new CallParamValueNode.Builder(
-          nodeIdGen.genId(), cmdText.parsedContent(), cmdText.srcLocation())
-          .build(context);
+          nodeIdGen.genId(), result, createSrcLoc(tagBegin, tagEnd))
+          .build(cmdTextCheckpoint, errorReporter);
     }
-
   |
-
-    cmdText = ParamTagNotSelfEnding()
+    {
+      pushState(TEMPLATE_DEFAULT);
+      Checkpoint checkpoint = errorReporter.checkpoint();
+    }
+    tagEnd = <CMD_END>
     {
       CallParamContentNode cpcn = new CallParamContentNode.Builder(
-          nodeIdGen.genId(), cmdText.parsedContent(), cmdText.srcLocation())
-          .build(context);
+          nodeIdGen.genId(), result, createSrcLoc(tagBegin, tagEnd))
+          .build(cmdTextCheckpoint, errorReporter);
+      List<StandaloneNode> templateBlock;
     }
     templateBlock = TemplateBlock()
     { cpcn.addChildren(templateBlock);
       callParamNode = cpcn;
+    }
+    {
+      if (errorReporter.errorsSince(checkpoint) || getToken(1).kind != CMD_CLOSE_PARAM) {
+        popStateIfStateIs(TEMPLATE_DEFAULT);
+      } else {
+        popState();
+      }
     }
     <CMD_CLOSE_PARAM>
   )
@@ -2906,41 +2625,198 @@ private DebuggerNode DebuggerStmt() :
 }
 
 
+
+// -------------------------------------------------------------------------------------------------
+// Type Expressions.
+//
+// The Soy type grammar is relatively simple.  We have 1 'operator' "|" for type unions, but other
+// than that, it is just a small set of primary productions that are relatively unambiguous
+//
+// The most complex part of this is our handling of generic types since there is a small amount of
+// ambiguity with nominal types because both start with a single identifier.  In the past this was
+// handled by making our token definitions more complex, but this is generally antithetical to
+// performance.
+//
+// NOTE: all the tokens we are consuming are defined in the EXPR lexical state.
+
 /**
- * TODO(lukes): Delete after porting tests
+ * TypeExpr -> Primary ("|" Primary)*
  */
-TemplateParseResult parseTemplateContent() :
+private TypeNode TypeExpr() :
 {
-  List<DeclInfo> headerDecls;
-  List<StandaloneNode> bodyNodes;
+  TypeNode first = null;
+  TypeNode next = null;
+  // lazily allocate the list since most of the time this isn't actually a Union
+  List<TypeNode> members = null;
 }
 {
-  {
-    context = SoyParsingContext.empty(errorReporter, "fake.namespace");
-    token_source.SwitchTo(TEMPLATE_DEFAULT_AT_SOL);
-  }
+  first = PrimaryType()
 
   (
-    LOOKAHEAD( TemplateHeaderLookaheadHelper() )
-    headerDecls = TemplateHeader()
+    <VBAR>
+    next = PrimaryType()
+    {
+      if (members == null) {
+        members = new ArrayList<TypeNode>();
+        members.add(first);
+      }
+      members.add(next);
+    }
+  )*
+
+  {
+    return members == null ? first : UnionTypeNode.create(members);
+  }
+}
+
+
+/**
+ * Primary -> NamedType | UnknownType | RecordType
+ */
+private TypeNode PrimaryType() :
+{
+  TypeNode type;
+}
+{
+  (
+    type = NamedType()
   |
-    // If no template header, ignore initial indent at start of template body.
-    [ LOOKAHEAD(2) HeaderConsecWsNoNl() ]
-    { headerDecls = null; }
+    type = UnknownType()
+  |
+    type = RecordType()
   )
 
-  bodyNodes = TemplateBlock()
+  { return type; }
+}
 
-  <EOF>
-  { // Note: We're using an undocumented API to check the token manager's state. If this ever
-    // breaks due to changes in JavaCC (extremely unlikely since many users around the world are
-    // depending on it), then we'll have to use a different method to detect whether we're within
-    // a comment block.
-    if (token_source.curLexState == IN_BLOCK_DOC_COMMENT ||
-        token_source.curLexState == IN_BLOCK_NONDOC_COMMENT) {
-      throw new ParseException("At end of template, found comment block that is never closed.");
+
+/**
+ * RecordType -> "[" ( RecordField ( "," RecordField )* )? "]"
+ */
+private TypeNode RecordType() :
+{
+  List<RecordTypeNode.Property> properties = ImmutableList.of();
+  Token open, close;
+  RecordTypeNode.Property prop;
+}
+{
+  open = <LBRACKET>
+
+  (
+    prop = RecordField()
+    {
+      properties = new ArrayList<RecordTypeNode.Property>();
+      properties.add(prop);
     }
+    (
+      <COMMA>
+      prop = RecordField()
+      {
+        properties.add(prop);
+      }
+    )*
+
+  )?
+
+  close = <RBRACKET>
+
+  {
+   return RecordTypeNode.create(createSrcLoc(open, close), properties);
+  }
+}
+
+
+/**
+ * RecordField -> NAME ":" TypeExpr
+ */
+private RecordTypeNode.Property RecordField() :
+{
+  Token fieldName;
+  TypeNode fieldType;
+}
+{
+  fieldName = <NAME>
+  <COLON>
+  fieldType = TypeExpr()
+
+  {
+    return RecordTypeNode.Property.create(createSrcLoc(fieldName), fieldName.image, fieldType);
+  }
+}
+
+
+/**
+ * NamedType -> IDENT ("." IDENT)* [< TypExpr() ("," TypeExpr())* >]
+ *
+ * <p>This includes any named type including our generic types
+ */
+private TypeNode NamedType() :
+{
+  Token first, open, close;
+  Token next = null;
+  String ident;
+  SourceLocation fullLocation;
+
+  TypeNode arg;
+  List<TypeNode> genericArgs = ImmutableList.of();
+  StringBuilder sb = null;
+}
+{
+
+  first = <NAME>
+  (
+    <DOT>
+    next = <NAME>
+    {
+      if (sb == null) {
+        sb = new StringBuilder(first.image);
+      }
+      sb.append('.');
+      sb.append(next.image);
+    }
+  )*
+  {
+    ident = sb == null ? first.image : sb.toString();
+    fullLocation = next == null ? createSrcLoc(first) : createSrcLoc(first, next);
   }
 
-  { return new TemplateParseResult(headerDecls, bodyNodes); }
+  [
+    open = <LANGLE>
+    [
+      arg = TypeExpr()
+      {
+        genericArgs = new ArrayList<TypeNode>();
+        genericArgs.add(arg);
+      }
+      (
+        <COMMA>
+        arg = TypeExpr()
+        {
+          genericArgs.add(arg);
+        }
+      )*
+    ]
+    close = <RANGLE>
+    {
+      return GenericTypeNode.create(
+          fullLocation.extend(createSrcLoc(close)),
+          ident,
+          genericArgs);
+    }
+  ]
+  {
+    return NamedTypeNode.create(fullLocation, ident);
+  }
+}
+
+/**
+ * UnknownType -> QMARK
+ */
+private TypeNode UnknownType() :
+{
+  Token tok;
+}
+{
+  tok = <QMARK>
+  { return NamedTypeNode.create(createSrcLoc(tok), "?"); }
 }

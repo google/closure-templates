@@ -18,30 +18,26 @@ package com.google.template.soy.data.restricted;
 
 import com.google.common.base.Preconditions;
 import com.google.template.soy.data.internal.RenderableThunk;
-
 import java.io.IOException;
-
 import javax.annotation.concurrent.Immutable;
-
 
 /**
  * String data.
  *
- * <p> Important: This class may only be used in implementing plugins (e.g. functions, directives).
+ * <p>Important: This class may only be used in implementing plugins (e.g. functions, directives).
  *
  */
 @Immutable
 public abstract class StringData extends PrimitiveData implements SoyString {
-
 
   /** Static instance of StringData with value "". */
   public static final StringData EMPTY_STRING = new ConstantString("");
 
   private StringData() {}
 
-
   /**
    * Gets a StringData instance for the given value.
+   *
    * @param value The desired value.
    * @return A StringData instance with the given value.
    */
@@ -49,49 +45,49 @@ public abstract class StringData extends PrimitiveData implements SoyString {
     return (value.length() == 0) ? EMPTY_STRING : new ConstantString(value);
   }
 
-  /**
-   * Returns a StringData instance for the given {@link RenderableThunk}.
-   */
+  /** Returns a StringData instance for the given {@link RenderableThunk}. */
   public static StringData forThunk(RenderableThunk thunk) {
     return new LazyString(thunk);
   }
 
-
   /** Returns the string value. */
   public abstract String getValue();
 
-
-  @Override public String stringValue() {
+  @Override
+  public String stringValue() {
     return getValue();
   }
 
-
-  @Override public String toString() {
+  @Override
+  public String toString() {
     return getValue();
   }
-
 
   /**
    * {@inheritDoc}
    *
-   * <p> The empty string is falsy.
+   * <p>The empty string is falsy.
    */
-  @Deprecated
-  @Override public boolean toBoolean() {
+  @Override
+  public boolean coerceToBoolean() {
     return getValue().length() > 0;
   }
 
+  @Override
+  public String coerceToString() {
+    return toString();
+  }
 
   @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
-  @Override public boolean equals(Object other) {
+  @Override
+  public boolean equals(Object other) {
     return other != null && getValue().equals(other.toString());
   }
 
-
-  @Override public int hashCode() {
+  @Override
+  public int hashCode() {
     return getValue().hashCode();
   }
-
 
   private static final class ConstantString extends StringData {
     final String content;
@@ -100,11 +96,13 @@ public abstract class StringData extends PrimitiveData implements SoyString {
       this.content = Preconditions.checkNotNull(content);
     }
 
-    @Override public void render(Appendable appendable) throws IOException {
+    @Override
+    public void render(Appendable appendable) throws IOException {
       appendable.append(content);
     }
 
-    @Override public String getValue() {
+    @Override
+    public String getValue() {
       return content;
     }
   }
@@ -119,11 +117,13 @@ public abstract class StringData extends PrimitiveData implements SoyString {
       this.thunk = thunk;
     }
 
-    @Override public void render(Appendable appendable) throws IOException {
+    @Override
+    public void render(Appendable appendable) throws IOException {
       thunk.render(appendable);
     }
 
-    @Override public String getValue() {
+    @Override
+    public String getValue() {
       return thunk.renderAsString();
     }
   }

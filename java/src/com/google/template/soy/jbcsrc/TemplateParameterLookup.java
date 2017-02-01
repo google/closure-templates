@@ -21,45 +21,43 @@ import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 
-/**
- * A mechanism to lookup expressions for accessing template parameters.
- */
+/** A mechanism to lookup expressions for accessing template parameters. */
 interface TemplateParameterLookup {
   /**
    * Returns an expression for a given {@code @param} or {@code @inject} parameter.
-   * 
+   *
    * <p>The expression will be for a {@link SoyValueProvider}.
    */
   Expression getParam(TemplateParam param);
 
   /**
    * Returns an expression for a given local variable.
-   * 
+   *
    * <p>The type of the expression will be based on the kind of variable being accessed.
    */
   Expression getLocal(LocalVar local);
 
   /**
    * Returns an expression for a given {@code @param} or {@code @inject} parameter.
-   * 
+   *
    * <p>The type of the expression will be based on the kind of variable being accessed.
    */
   Expression getLocal(SyntheticVarName varName);
 
-  /** 
-   * Returns an expression that produces the current 
-   * {@link com.google.template.soy.jbcsrc.shared.RenderContext}. 
+  /**
+   * Returns an expression that produces the current {@link
+   * com.google.template.soy.jbcsrc.shared.RenderContext}.
    */
   Expression getRenderContext();
 
   /**
-   * Returns the current template's parameter dictionary.  The returned expression will have a
-   * {@link Expression#resultType()} of {@link SoyRecord}.
+   * Returns the current template's parameter dictionary. The returned expression will have a {@link
+   * Expression#resultType()} of {@link SoyRecord}.
    */
   Expression getParamsRecord();
   /**
-   * Returns the current template's ij dictionary.  The returned expression will have a
-   * {@link Expression#resultType()} of {@link SoyRecord}.
+   * Returns the current template's ij dictionary. The returned expression will have a {@link
+   * Expression#resultType()} of {@link SoyRecord}.
    */
   Expression getIjRecord();
 }

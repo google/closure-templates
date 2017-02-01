@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Runtime module for compiled soy templates.
 
 This module provides utility functions required by soy templates compiled with
@@ -43,15 +42,12 @@ try:
 except NameError:
   pass
 
-
 # Map from registered delegate template key to the priority, function, and
 # function name tuple.
 _DELEGATE_REGISTRY = {}
 
-
 # All number types for use during custom type functions.
 _NUMBER_TYPES = (int, long, float)
-
 
 # The mapping of css class names for get_css_name.
 _css_name_mapping = None
@@ -268,8 +264,8 @@ def register_delegate_fn(template_id, variant, priority, fn, fn_name):
         priority an error will be raised.
   """
   map_key = _gen_delegate_id(template_id, variant)
-  curr_priority, _, curr_fn_name = _DELEGATE_REGISTRY.get(
-      map_key, (None, None, None))
+  curr_priority, _, curr_fn_name = _DELEGATE_REGISTRY.get(map_key,
+                                                          (None, None, None))
 
   # Ignore unless at a equal or higher priority.
   if curr_priority is None or priority > curr_priority:
@@ -404,6 +400,23 @@ def check_not_null(val):
   if val is None:
     raise RuntimeError('Unexpected null value')
   return val
+
+
+def parse_int(s):
+  """A function that attempts to convert the input string into an int.
+
+  Returns None if the input is not a valid int.
+
+  Args:
+    s: String to convert.
+
+  Returns:
+    int if s is a valid int string, otherwise None.
+  """
+  try:
+    return int(s)
+  except ValueError:
+    return None
 
 
 ######################

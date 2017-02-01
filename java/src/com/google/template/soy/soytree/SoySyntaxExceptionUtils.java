@@ -21,19 +21,17 @@ import com.google.template.soy.base.internal.LegacyInternalSyntaxException;
 /**
  * Utilities for creating and modifying LegacyInternalSyntaxException objects.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public class SoySyntaxExceptionUtils {
 
-
   private SoySyntaxExceptionUtils() {}
-
 
   /**
    * Creates a LegacyInternalSyntaxException, with meta info filled in based on the given Soy node.
    *
-   * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+   * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
    *
    * @param message The error message.
    * @param node The node from which to derive the exception meta info.
@@ -44,12 +42,11 @@ public class SoySyntaxExceptionUtils {
     return associateNode(LegacyInternalSyntaxException.createWithoutMetaInfo(message), node);
   }
 
-
   /**
-   * Adds meta info to an existing LegacyInternalSyntaxException. The meta info is derived from
-   * a Soy node.
+   * Adds meta info to an existing LegacyInternalSyntaxException. The meta info is derived from a
+   * Soy node.
    *
-   * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+   * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
    *
    * @param sse The SoySyntaxException to add meta info to.
    * @param node The node from which to derive the exception meta info.
@@ -63,5 +60,4 @@ public class SoySyntaxExceptionUtils {
 
     return sse.associateMetaInfo(node.getSourceLocation(), null, templateName);
   }
-
 }

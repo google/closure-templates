@@ -23,22 +23,21 @@ import com.google.template.soy.parsepasses.contextautoesc.SlicedRawTextNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 
 /**
- * All context needed to perform conformance checks. Most conformance checks will only need
- * to inspect the {@link #getSoyTree syntax tree}. Conformance checks dealing specifically
- * with the HTML structure contained in the Soy template will also need to inspect
- * the {@link #getSlicedRawTextNodes raw text nodes}.
+ * All context needed to perform conformance checks. Most conformance checks will only need to
+ * inspect the {@link #getSoyTree syntax tree}. Conformance checks dealing specifically with the
+ * HTML structure contained in the Soy template will also need to inspect the {@link
+ * #getSlicedRawTextNodes raw text nodes}.
  */
-@AutoValue public abstract class ConformanceInput {
+@AutoValue
+public abstract class ConformanceInput {
 
   public static ConformanceInput create(
       SoyFileSetNode soyTree, ImmutableList<SlicedRawTextNode> slicedRawTextNodes) {
     return new AutoValue_ConformanceInput(
-        Preconditions.checkNotNull(soyTree),
-        Preconditions.checkNotNull(slicedRawTextNodes));
+        Preconditions.checkNotNull(soyTree), Preconditions.checkNotNull(slicedRawTextNodes));
   }
 
   public abstract SoyFileSetNode getSoyTree();
 
   public abstract ImmutableList<SlicedRawTextNode> getSlicedRawTextNodes();
 }
-

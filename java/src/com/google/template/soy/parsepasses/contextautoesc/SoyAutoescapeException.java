@@ -21,7 +21,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.LegacyInternalSyntaxException;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoySyntaxExceptionUtils;
-
+import java.util.Objects;
 import javax.annotation.Nullable;
 
 /**
@@ -31,7 +31,7 @@ import javax.annotation.Nullable;
 public final class SoyAutoescapeException extends LegacyInternalSyntaxException {
 
   /**
-   * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+   * Important: Do not use outside of Soy code (treat as superpackage-private).
    *
    * @param message The error message.
    * @return The new SoyAutoescapeException object.
@@ -42,9 +42,8 @@ public final class SoyAutoescapeException extends LegacyInternalSyntaxException 
     return new SoyAutoescapeException(message);
   }
 
-
   /**
-   * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+   * Important: Do not use outside of Soy code (treat as superpackage-private).
    *
    * @param message The error message, or null to use the message from the cause.
    * @param cause The cause of this exception.
@@ -63,11 +62,10 @@ public final class SoyAutoescapeException extends LegacyInternalSyntaxException 
     }
   }
 
-
   /**
    * Creates a SoyAutoescapeException, with meta info filled in based on the given Soy node.
    *
-   * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+   * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
    *
    * @param message The error message.
    * @param node The node from which to derive the exception meta info.
@@ -78,11 +76,10 @@ public final class SoyAutoescapeException extends LegacyInternalSyntaxException 
     return SoyAutoescapeException.createWithoutMetaInfo(message).associateNode(node);
   }
 
-
   /**
    * Creates a SoyAutoescapeException, with meta info filled in based on the given Soy node.
    *
-   * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+   * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
    *
    * @param message The error message, or null to use the message from the cause.
    * @param cause The cause of this exception.
@@ -95,9 +92,8 @@ public final class SoyAutoescapeException extends LegacyInternalSyntaxException 
     return SoyAutoescapeException.createCausedWithoutMetaInfo(message, cause).associateNode(node);
   }
 
-
   /**
-   * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+   * Important: Do not use outside of Soy code (treat as superpackage-private).
    *
    * @param message A detailed description of what the error is.
    */
@@ -106,9 +102,8 @@ public final class SoyAutoescapeException extends LegacyInternalSyntaxException 
     super(message);
   }
 
-
   /**
-   * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+   * Important: Do not use outside of Soy code (treat as superpackage-private).
    *
    * @param message A detailed description of what the error is.
    * @param cause The Throwable underlying this error.
@@ -117,11 +112,10 @@ public final class SoyAutoescapeException extends LegacyInternalSyntaxException 
     super(message, cause);
   }
 
-
   /**
-   * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+   * Important: Do not use outside of Soy code (treat as superpackage-private).
    *
-   * <p> Note: For this constructor, the message will be set to the cause's message.
+   * <p>Note: For this constructor, the message will be set to the cause's message.
    *
    * @param cause The Throwable underlying this error.
    */
@@ -129,9 +123,8 @@ public final class SoyAutoescapeException extends LegacyInternalSyntaxException 
     super(cause.getMessage(), cause);
   }
 
-
   /**
-   * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+   * Important: Do not use outside of Soy code (treat as superpackage-private).
    *
    * @param node The node from which to derive the exception meta info.
    * @return This same SoyAutoescapeException object, for convenience.
@@ -141,15 +134,14 @@ public final class SoyAutoescapeException extends LegacyInternalSyntaxException 
     return this;
   }
 
-
   /**
-   * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+   * Important: Do not use outside of Soy code (treat as superpackage-private).
    *
    * @param node The node from which to derive the exception meta info.
    * @return This same SoyAutoescapeException object, for convenience.
    */
   public SoyAutoescapeException maybeAssociateNode(SoyNode node) {
-    if (getSourceLocation() == SourceLocation.UNKNOWN) {
+    if (Objects.equals(getSourceLocation(), SourceLocation.UNKNOWN)) {
       associateNode(node);
     }
     return this;

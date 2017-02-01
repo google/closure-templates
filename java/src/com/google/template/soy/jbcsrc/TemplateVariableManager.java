@@ -25,17 +25,11 @@ import static com.google.template.soy.jbcsrc.StandardNames.TEMP_BUFFER_FIELD;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.Sets;
+import com.google.template.soy.base.internal.UniqueNameGenerator;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.jbcsrc.TemplateVariableManager.VarKey.Kind;
 import com.google.template.soy.jbcsrc.api.AdvisingStringBuilder;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
-
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.Label;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
-import org.objectweb.asm.commons.Method;
-
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -45,72 +39,86 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
+import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.Label;
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
+import org.objectweb.asm.commons.Method;
 
 /**
- * A variable in this set is a SoyValue that must be saved/restored.  This means each variable has:
- *
- * <ul>
- *     <li>A {@link FieldRef} that can be used to define the field.
- *     <li>A {@link Statement} that can be used to save the field.
- *     <li>A {@link Statement} that can be used to restore the field.
- *     <li>A {@link LocalVariable} that can be used to read the value.
- * </ul>
+ * Manages scopes and local variables.
  *
  * <p>This class also manages other template level resources, like:
+ *
  * <ul>
- *     <li>A {@link #getTempBufferField() buffer} that can be used to render msg placeholders.
- *     <li>A {@link #getCurrentCalleeField() callee field} that holds the current template that is
- *         being called.
- *     <li>A {@link #getCurrentRenderee() renderee field} that holds the current incrementally
- *         rendering {@link SoyValueProvider} that is being called.
- *     <li>A {@link #getMsgPlaceholderMapField() map} that can be used to store message
- *         placeholders.
+ *   <li>A {@link #getTempBufferField() buffer} that can be used to render msg placeholders.
+ *   <li>A {@link #getCurrentCalleeField() callee field} that holds the current template that is
+ *       being called.
+ *   <li>A {@link #getCurrentRenderee() renderee field} that holds the current incrementally
+ *       rendering {@link SoyValueProvider} that is being called.
+ *   <li>A {@link #getMsgPlaceholderMapField() map} that can be used to store message placeholders.
  * </ul>
  *
  * <p>Finally, this class can be used to generate static, per template fields for storing state.
- * Currently, this is used to store default english messages and raw text constants > 64K in
- * length.
+ * Currently, this is used to store default english messages and raw text constants > 64K in length.
  */
 final class TemplateVariableManager {
   enum SaveStrategy {
     /** Means that the value of the variable should be recalculated rather than saved to a field. */
     DERIVED,
-    /** Means that the value of the variable should saved to a field. */
+    /**
+     * Means that the we never expect to save/restore the value of this variable, and that any
+     * attempt to do so should be an error.
+     */
+    NEVER,
+    /** Means that the value of the variable should be saved to a field. */
     STORE;
   }
 
-  abstract class Scope {
+  abstract static class Scope {
     private Scope() {}
 
     /**
-     * Creates a new 'synthetic' variable.  A synthetic variable is a variable that is
-     * introduced by the compiler rather than a user defined name.
+     * Creates a new 'synthetic' variable. A synthetic variable is a variable that is introduced by
+     * the compiler rather than having a user defined name.
      *
-     * @param name A proposed name for the variable, the actual variable name may be modified to 
+     * @param name A proposed name for the variable, the actual variable name may be modified to
      *     ensure uniqueness
-     * @param initializer The expression that can be used to derive the initial value.  Note, this
-     *     expression must be save to gen() more than once if {@code isDerived} is {@code true}
-     * @param strategy Set this if the value of the variable is trivially derivable from other 
-     *     variables already defined.
+     * @param initializer The expression that can be used to derive the initial value. Note, this
+     *     expression must be able to be saved to gen() more than once if {@code strategy} is {@code
+     *     DERIVED}.
+     * @param strategy Set this to {@code DERIVED} if the value of the variable is trivially
+     *     derivable from other variables already defined.
      */
-    abstract Variable createSynthetic(SyntheticVarName name, Expression initializer, 
-        SaveStrategy strategy);
+    abstract Variable createSynthetic(
+        SyntheticVarName name, Expression initializer, SaveStrategy strategy);
 
     /**
-     * Creates a new 'synthetic' variable.  A synthetic variable is a variable that is
-     * introduced by the compiler rather than a user defined name.
+     * Creates a new temporary variable. A temporary variable is a variable that is introduced by
+     * the compiler, and is never accessed outside of the given scope. Its {@link SaveStrategy} is
+     * always set to {@code NEVER}.
      *
-     * @param name The name of the variable, the name is assumed to be unique (enforced by the 
+     * @param name A proposed name for the variable, the actual variable name may be modified to
+     *     ensure uniqueness
+     * @param initializer The expression that can be used to initialize the variable
+     */
+    abstract Variable createTemporary(String name, Expression initializer);
+
+    /**
+     * Creates a new user-defined variable.
+     *
+     * @param name The name of the variable, the name is assumed to be unique (enforced by the
      *     ResolveNamesVisitor).
      * @param initializer The expression that can be used to initialize the variable
+     * @param strategy Set this to {@code DERIVED} if the value of the variable is trivially
+     *     derivable from other variables already defined.
      */
     abstract Variable create(String name, Expression initializer, SaveStrategy strategy);
 
     /**
-     * Returns a statement that should be used when exiting the scope.  This is responsible for
+     * Returns a statement that should be used when exiting the scope. This is responsible for
      * appropriately clearing fields and visiting end labels.
      */
     abstract Statement exitScope();
@@ -118,39 +126,55 @@ final class TemplateVariableManager {
 
   /**
    * A sufficiently unique identifier.
-   * 
+   *
    * <p>This key will uniquely identify a currently 'active' variable, but may not be unique over
    * all possible variables.
    */
-  @AutoValue abstract static class VarKey {
+  @AutoValue
+  abstract static class VarKey {
     enum Kind {
-      /** 
+      /**
        * Includes @param, @inject, {let..}, and loop vars.
-       * 
-       * <p>Uniqueness of local variable names is enforced by the ResolveNamesVisitor pass, we
-       * just need uniqueness for the field names 
+       *
+       * <p>Uniqueness of local variable names is enforced by the ResolveNamesVisitor pass, we just
+       * need uniqueness for the field names
        */
       USER_DEFINED,
+
       /**
        * There are certain operations in which a value must be used multiple times and may have
-       * expensive initialization. For example, the collection being looped over in a
-       * {@code foreach} loop.  For these we generate 'synthetic' variables to efficiently reference
-       * the expression.
+       * expensive initialization. For example, the collection being looped over in a {@code
+       * foreach} loop. For these we generate 'synthetic' variables to efficiently reference the
+       * expression.
        */
-      SYNTHETIC;
+      SYNTHETIC,
+
+      /** A subset of synthetic variables that are never accessed outside the initializing scope. */
+      TEMPORARY;
     }
-    static VarKey create(Kind synthetic, String proposedName) {
-      return new AutoValue_TemplateVariableManager_VarKey(synthetic, proposedName);
+
+    static VarKey create(Kind kind, String proposedName) {
+      return new AutoValue_TemplateVariableManager_VarKey(kind, proposedName);
     }
 
     abstract Kind kind();
+
     abstract String name();
   }
 
   /**
-   * A variable that may need to be saved/restored.
+   * A variable that needs to be saved/restored.
+   *
+   * <p>Each variable has:
+   *
+   * <ul>
+   *   <li>A {@link FieldRef} that can be used to define the field.
+   *   <li>A {@link Statement} that can be used to save the field.
+   *   <li>A {@link Statement} that can be used to restore the field.
+   *   <li>A {@link LocalVariable} that can be used to read the value.
+   * </ul>
    */
-  abstract class Variable {
+  abstract static class Variable {
     protected final Expression initExpression;
     protected final LocalVariable local;
     private final Statement initializer;
@@ -171,23 +195,25 @@ final class TemplateVariableManager {
 
     abstract void maybeDefineField(ClassVisitor writer);
 
-    LocalVariable local() {
+    final LocalVariable local() {
       return local;
     }
   }
 
   private final class FieldSavedVariable extends Variable {
-    private FieldRef fieldRef;  // lazily allocated on a save/restore operation
+    private FieldRef fieldRef; // lazily allocated on a save/restore operation
 
     private FieldSavedVariable(Expression initExpression, LocalVariable local) {
       super(initExpression, local);
     }
 
-    @Override Statement save() {
+    @Override
+    Statement save() {
       return getField().putInstanceField(thisVar, local);
     }
 
-    @Override Statement restore() {
+    @Override
+    Statement restore() {
       Expression fieldValue = getField().accessor(thisVar);
       return local.store(fieldValue);
     }
@@ -199,29 +225,52 @@ final class TemplateVariableManager {
       return fieldRef;
     }
 
-    @Override void maybeDefineField(ClassVisitor writer) {
+    @Override
+    void maybeDefineField(ClassVisitor writer) {
       if (fieldRef != null) {
         fieldRef.defineField(writer);
       }
     }
   }
-  
-  private final class DerivedVariable extends Variable {
+
+  private static final class DerivedVariable extends Variable {
     private DerivedVariable(Expression initExpression, LocalVariable local) {
       super(initExpression, local);
     }
 
-    @Override Statement save() {
+    @Override
+    Statement save() {
       return Statement.NULL_STATEMENT;
     }
 
-    @Override Statement restore() {
+    @Override
+    Statement restore() {
       return local.store(initExpression);
     }
 
-    @Override void maybeDefineField(ClassVisitor writer) {}
+    @Override
+    void maybeDefineField(ClassVisitor writer) {}
   }
-  
+
+  private static final class TemporaryVariable extends Variable {
+    private TemporaryVariable(Expression initExpression, LocalVariable local) {
+      super(initExpression, local);
+    }
+
+    @Override
+    Statement save() {
+      throw new UnsupportedOperationException("Should not call save() on this variable.");
+    }
+
+    @Override
+    Statement restore() {
+      throw new UnsupportedOperationException("Should not call restore() on this variable.");
+    }
+
+    @Override
+    void maybeDefineField(ClassVisitor writer) {}
+  }
+
   @AutoValue
   abstract static class StaticFieldVariable {
     abstract FieldRef field();
@@ -237,9 +286,9 @@ final class TemplateVariableManager {
   private final TypeInfo owner;
   private final LocalVariable thisVar;
   // Allocated lazily
-  @Nullable private FieldRef currentCalleeField; 
+  @Nullable private FieldRef currentCalleeField;
   // Allocated lazily
-  @Nullable private FieldRef currentRendereeField; 
+  @Nullable private FieldRef currentRendereeField;
   // Allocated lazily
   @Nullable private FieldRef tempBufferField;
   // Allocated lazily
@@ -247,10 +296,10 @@ final class TemplateVariableManager {
   private int msgPlaceholderMapInitialSize = 0;
 
   /**
+   * @param fieldNames The field name set for the current class.
    * @param owner The type that is the owner of the method being generated
    * @param thisVar An expression returning the current 'this' reference
    * @param method The method being generated
-   * @param fieldNames The field name set for the current class.
    */
   TemplateVariableManager(
       UniqueNameGenerator fieldNames, TypeInfo owner, LocalVariable thisVar, Method method) {
@@ -261,7 +310,7 @@ final class TemplateVariableManager {
     this.fieldNames.claimName(MSG_PLACEHOLDER_MAP_FIELD);
     this.owner = owner;
     this.thisVar = thisVar;
-    availableSlots.set(0);   // for 'this'
+    availableSlots.set(0); // for 'this'
     int from = 1;
     for (Type type : method.getArgumentTypes()) {
       int to = from + type.getSize();
@@ -270,9 +319,7 @@ final class TemplateVariableManager {
     }
   }
 
-  /**
-   * Enters a new scope.  Variables may only be defined within a scope.
-   */
+  /** Enters a new scope. Variables may only be defined within a scope. */
   Scope enterScope() {
     final Map<VarKey, Variable> currentFrame = new LinkedHashMap<>();
     final Label scopeExit = new Label();
@@ -285,6 +332,13 @@ final class TemplateVariableManager {
         // synthetics are prefixed by $ by convention
         String name = fieldNames.generateName("$" + varName.name());
         return doCreate(name, new Label(), scopeExit, initExpr, key, strategy);
+      }
+
+      @Override
+      Variable createTemporary(String name, Expression initExpr) {
+        VarKey key = VarKey.create(Kind.TEMPORARY, name);
+        name = fieldNames.generateName("$$" + name);
+        return doCreate(name, new Label(), scopeExit, initExpr, key, SaveStrategy.NEVER);
       }
 
       @Override
@@ -332,6 +386,9 @@ final class TemplateVariableManager {
           case DERIVED:
             var = new DerivedVariable(initExpr, local);
             break;
+          case NEVER:
+            var = new TemporaryVariable(initExpr, local);
+            break;
           case STORE:
             var = new FieldSavedVariable(initExpr, local);
             break;
@@ -352,18 +409,17 @@ final class TemplateVariableManager {
     }
   }
 
-  
   /**
    * Adds a private static final field and returns a reference to it.
    *
-   * @param proposedName  The proposed name,  the actual name will be this plus an optional suffix
-   *     to ensure uniqueness
+   * @param proposedName The proposed name. The actual name will be this plus an optional suffix to
+   *     ensure uniqueness.
    * @param initializer An expression to initialize the field.
    */
   FieldRef addStaticField(String proposedName, Expression initializer) {
     String name = fieldNames.generateName(proposedName);
     FieldRef ref =
-        new AutoValue_FieldRef(
+        FieldRef.create(
             owner,
             name,
             initializer.resultType(),
@@ -376,12 +432,13 @@ final class TemplateVariableManager {
   // TODO(lukes): consider moving all these optional 'one per template' fields to a different object
   // for management.
 
-  /** 
+  /**
    * Defines all the fields necessary for the registered variables.
-   * 
+   *
    * @return a statement to initialize the fields
    */
-  @CheckReturnValue Statement defineFields(ClassVisitor writer) {
+  @CheckReturnValue
+  Statement defineFields(ClassVisitor writer) {
     List<Statement> initializers = new ArrayList<>();
     for (Variable var : allVariables) {
       var.maybeDefineField(writer);
@@ -399,33 +456,37 @@ final class TemplateVariableManager {
       // if it turns out to be expensive, this could always be solved by an author by refactoring
       // their templates (e.g. extract the conditional logic into another template)
       final Expression newStringBuilder = ConstructorRef.ADVISING_STRING_BUILDER.construct();
-      initializers.add(new Statement() {
-        @Override void doGen(CodeBuilder adapter) {
-          adapter.loadThis();
-          newStringBuilder.gen(adapter);
-          tempBufferField.putUnchecked(adapter);
-        }
-      });
+      initializers.add(
+          new Statement() {
+            @Override
+            void doGen(CodeBuilder adapter) {
+              adapter.loadThis();
+              newStringBuilder.gen(adapter);
+              tempBufferField.putUnchecked(adapter);
+            }
+          });
     }
     if (msgPlaceholderMapField != null) {
       msgPlaceholderMapField.defineField(writer);
       // same comment as above about eager initialization.
       final Expression newHashMap =
           ConstructorRef.LINKED_HASH_MAP_SIZE.construct(constant(msgPlaceholderMapInitialSize));
-      initializers.add(new Statement() {
-        @Override void doGen(CodeBuilder adapter) {
-          adapter.loadThis();
-          newHashMap.gen(adapter);
-          msgPlaceholderMapField.putUnchecked(adapter);
-        }
-      });
+      initializers.add(
+          new Statement() {
+            @Override
+            void doGen(CodeBuilder adapter) {
+              adapter.loadThis();
+              newHashMap.gen(adapter);
+              msgPlaceholderMapField.putUnchecked(adapter);
+            }
+          });
     }
     return Statement.concat(initializers);
   }
-  
+
   /**
-   * Adds definitions for all the static fields managed by this variable set and adds a
-   * {@code <clinit>} method to the given class.
+   * Adds definitions for all the static fields managed by this variable set and adds a {@code
+   * <clinit>} method to the given class.
    *
    * @param writer The class to add the fields and static initializer to.
    */
@@ -444,48 +505,45 @@ final class TemplateVariableManager {
 
   /**
    * Returns the field that holds the current callee template.
-   * 
+   *
    * <p>Unlike normal variables the VariableSet doesn't maintain responsibility for saving and
    * restoring the current callee to a local.
    */
   FieldRef getCurrentCalleeField() {
     FieldRef local = currentCalleeField;
     if (local == null) {
-      local = currentCalleeField = 
-          FieldRef.createField(owner, CURRENT_CALLEE_FIELD, CompiledTemplate.class);
+      local =
+          currentCalleeField =
+              FieldRef.createField(owner, CURRENT_CALLEE_FIELD, CompiledTemplate.class);
     }
     return local;
   }
 
-  /**
-   * Returns the field that holds the current temp buffer.
-   */
+  /** Returns the field that holds the current temp buffer. */
   FieldRef getTempBufferField() {
     FieldRef local = tempBufferField;
     if (local == null) {
-      local = tempBufferField =
-          FieldRef.createFinalField(owner, TEMP_BUFFER_FIELD, AdvisingStringBuilder.class)
-              .asNonNull();
+      local =
+          tempBufferField =
+              FieldRef.createFinalField(owner, TEMP_BUFFER_FIELD, AdvisingStringBuilder.class)
+                  .asNonNull();
     }
     return local;
   }
 
-  /**
-   * Returns the field that holds a map used for rendering msg placeholders.
-   */
+  /** Returns the field that holds a map used for rendering msg placeholders. */
   FieldRef getMsgPlaceholderMapField() {
     FieldRef local = msgPlaceholderMapField;
     if (local == null) {
-      local = msgPlaceholderMapField =
-          FieldRef.createFinalField(owner, MSG_PLACEHOLDER_MAP_FIELD, LinkedHashMap.class)
-              .asNonNull();
+      local =
+          msgPlaceholderMapField =
+              FieldRef.createFinalField(owner, MSG_PLACEHOLDER_MAP_FIELD, LinkedHashMap.class)
+                  .asNonNull();
     }
     return local;
   }
 
-  /**
-   * Configures a minimum size for the {@link #getMsgPlaceholderMapField()}.
-   */
+  /** Configures a minimum size for the {@link #getMsgPlaceholderMapField()}. */
   void setMsgPlaceholderMapMinSize(int size) {
     // we use the max of all the requested minimum sizes for the initial size
     this.msgPlaceholderMapInitialSize = Math.max(msgPlaceholderMapInitialSize, size);
@@ -493,22 +551,23 @@ final class TemplateVariableManager {
 
   /**
    * Returns the field that holds the currently rendering SoyValueProvider.
-   * 
+   *
    * <p>Unlike normal variables the VariableSet doesn't maintain responsibility for saving and
    * restoring the current renderee to a local.
    */
   FieldRef getCurrentRenderee() {
     FieldRef local = currentRendereeField;
     if (local == null) {
-      local = currentRendereeField = 
-          FieldRef.createField(owner, CURRENT_RENDEREE_FIELD, SoyValueProvider.class);
+      local =
+          currentRendereeField =
+              FieldRef.createField(owner, CURRENT_RENDEREE_FIELD, SoyValueProvider.class);
     }
     return local;
   }
 
   /**
-   * Looks up a user defined variable with the given name.  The variable must have been created
-   * in a currently active scope.
+   * Looks up a user defined variable with the given name. The variable must have been created in a
+   * currently active scope.
    */
   Variable getVariable(String name) {
     VarKey varKey = VarKey.create(Kind.USER_DEFINED, name);
@@ -516,8 +575,8 @@ final class TemplateVariableManager {
   }
 
   /**
-   * Looks up a synthetic variable with the given name.  The variable must have been created
-   * in a currently active scope.
+   * Looks up a synthetic variable with the given name. The variable must have been created in a
+   * currently active scope.
    */
   Variable getVariable(SyntheticVarName name) {
     VarKey varKey = VarKey.create(Kind.SYNTHETIC, name.name());
@@ -543,8 +602,10 @@ final class TemplateVariableManager {
   }
 
   /** Statements for saving and restoring local variables in class fields. */
-  @AutoValue abstract static class SaveRestoreState {
+  @AutoValue
+  abstract static class SaveRestoreState {
     abstract Statement save();
+
     abstract Statement restore();
   }
 
@@ -555,7 +616,8 @@ final class TemplateVariableManager {
     // Iterate backwards so that we restore variables in order of definition which will ensure that
     // derived fields work correctly.
     for (Iterator<Map<VarKey, Variable>> iterator = frames.descendingIterator();
-        iterator.hasNext();) {
+        iterator.hasNext();
+        ) {
       Map<VarKey, Variable> frame = iterator.next();
       for (Variable var : frame.values()) {
         saves.add(var.save());
@@ -580,4 +642,3 @@ final class TemplateVariableManager {
     }
   }
 }
-

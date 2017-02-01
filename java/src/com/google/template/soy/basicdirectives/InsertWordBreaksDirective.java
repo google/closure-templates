@@ -25,54 +25,56 @@ import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jssrc.restricted.JsExpr;
-import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
+import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcPrintDirective;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.shared.restricted.SoyPurePrintDirective;
-
 import java.util.List;
 import java.util.Set;
-
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
  * A directive that inserts word breaks as necessary.
- * It takes a single argument : an integer specifying the max number of characters between breaks.
+ *
+ * <p>It takes a single argument : an integer specifying the max number of characters between
+ * breaks.
  *
  */
 @Singleton
 @SoyPurePrintDirective
-public class InsertWordBreaksDirective
-    implements SanitizedContentOperator, SoyJavaPrintDirective, SoyJsSrcPrintDirective {
-
+final class InsertWordBreaksDirective
+    implements SanitizedContentOperator,
+        SoyJavaPrintDirective,
+        SoyLibraryAssistedJsSrcPrintDirective {
 
   @Inject
   InsertWordBreaksDirective() {}
 
-
-  @Override public String getName() {
+  @Override
+  public String getName() {
     return "|insertWordBreaks";
   }
 
-
-  @Override public Set<Integer> getValidArgsSizes() {
+  @Override
+  public Set<Integer> getValidArgsSizes() {
     return ImmutableSet.of(1);
   }
 
-
-  @Override public boolean shouldCancelAutoescape() {
+  @Override
+  public boolean shouldCancelAutoescape() {
     return false;
   }
 
-
-  @Override @Nonnull public SanitizedContent.ContentKind getContentKind() {
+  @Override
+  @Nonnull
+  public SanitizedContent.ContentKind getContentKind() {
     // This directive expects HTML as input and produces HTML as output.
     return SanitizedContent.ContentKind.HTML;
   }
 
-
-  @Override public SoyValue applyForJava(SoyValue value, List<SoyValue> args) {
+  @Override
+  public SoyValue applyForJava(SoyValue value, List<SoyValue> args) {
 
     int maxCharsBetweenWordBreaks;
     try {
@@ -85,9 +87,9 @@ public class InsertWordBreaksDirective
     StringBuilder result = new StringBuilder();
 
     // These variables keep track of important state while looping through the string below.
-    boolean isInTag = false;  // whether we're inside an HTML tag
-    boolean isMaybeInEntity = false;  // whether we might be inside an HTML entity
-    int numCharsWithoutBreak = 0;  // number of characters since the last word break
+    boolean isInTag = false; // whether we're inside an HTML tag
+    boolean isMaybeInEntity = false; // whether we might be inside an HTML entity
+    int numCharsWithoutBreak = 0; // number of characters since the last word break
 
     String str = value.coerceToString();
     for (int codePoint, i = 0, n = str.length(); i < n; i += Character.charCount(codePoint)) {
@@ -107,8 +109,8 @@ public class InsertWordBreaksDirective
 
       } else if (isMaybeInEntity) {
         switch (codePoint) {
-          // If maybe inside an entity and we see ';', it's the end of the entity. The entity
-          // that just ended counts as one char, so increment numCharsWithoutBreak.
+            // If maybe inside an entity and we see ';', it's the end of the entity. The entity
+            // that just ended counts as one char, so increment numCharsWithoutBreak.
           case ';':
             isMaybeInEntity = false;
             ++numCharsWithoutBreak;
@@ -127,9 +129,9 @@ public class InsertWordBreaksDirective
             break;
         }
 
-      } else {  // !isInTag && !isInEntity
+      } else { // !isInTag && !isInEntity
         switch (codePoint) {
-          // When not within a tag or an entity and we see '<', we're now inside an HTML tag.
+            // When not within a tag or an entity and we see '<', we're now inside an HTML tag.
           case '<':
             isInTag = true;
             break;
@@ -168,12 +170,17 @@ public class InsertWordBreaksDirective
     return StringData.forValue(result.toString());
   }
 
-
-  @Override public JsExpr applyForJsSrc(JsExpr value, List<JsExpr> args) {
+  @Override
+  public JsExpr applyForJsSrc(JsExpr value, List<JsExpr> args) {
 
     return new JsExpr(
         "soy.$$insertWordBreaks(" + value.getText() + ", " + args.get(0).getText() + ")",
         Integer.MAX_VALUE);
+  }
+
+  @Override
+  public ImmutableSet<String> getRequiredJsLibNames() {
+    return ImmutableSet.of("soy");
   }
 
 }

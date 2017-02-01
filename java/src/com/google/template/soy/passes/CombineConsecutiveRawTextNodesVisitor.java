@@ -16,127 +16,88 @@
 
 package com.google.template.soy.passes;
 
-import com.google.template.soy.base.SourceLocation;
+
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.RawTextNode;
-import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
-import com.google.template.soy.soytree.SoyNode.StandaloneNode;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Visitor for combining any consecutive sequences of {@code RawTextNode}s into one equivalent
  * {@code RawTextNode}.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public final class CombineConsecutiveRawTextNodesVisitor extends AbstractSoyNodeVisitor<Void> {
 
   /** The node id generator for the parse tree. Retrieved from the root SoyFileSetNode. */
-  private IdGenerator nodeIdGen;
+  private final IdGenerator nodeIdGen;
 
-  @Override public Void exec(SoyNode node) {
-
-    // Retrieve the node id generator from the root of the parse tree.
-    nodeIdGen = node.getNearestAncestor(SoyFileSetNode.class).getNodeIdGenerator();
-
-    // Execute the pass.
-    return super.exec(node);
+  public CombineConsecutiveRawTextNodesVisitor(IdGenerator nodeIdGen) {
+    this.nodeIdGen = nodeIdGen;
   }
 
+  @Override
+  protected void visitSoyNode(SoyNode node) {
 
-  @Override protected void visitSoyNode(SoyNode node) {
-
-    if (node instanceof ParentSoyNode<?>) {
-      visitChildren((ParentSoyNode<?>) node);
-    }
-
-    if (! (node instanceof BlockNode)) {
-      return;
-    }
-    BlockNode nodeAsBlock = (BlockNode) node;
-
-    // Check whether there are any consecutive RawTextNode children.
-    boolean hasConsecRawTextNodes = false;
-    for (int i = 0; i <= nodeAsBlock.numChildren() - 2; i++) {
-      if (nodeAsBlock.getChild(i) instanceof RawTextNode &&
-          nodeAsBlock.getChild(i+1) instanceof RawTextNode) {
-        hasConsecRawTextNodes = true;
-        break;
-      }
-    }
-    // If there aren't any consecutive RawTextNode children, we're done.
-    if (!hasConsecRawTextNodes) {
+    if (!(node instanceof ParentSoyNode<?>)) {
       return;
     }
 
-    // Rebuild the list of children, combining consecutive RawTextNodes into one.
-    List<StandaloneNode> copyOfOrigChildren = new ArrayList<>(nodeAsBlock.getChildren());
-    nodeAsBlock.clearChildren();
+    ParentSoyNode<?> nodeAsParent = (ParentSoyNode<?>) node;
 
-    List<RawTextNode> consecutiveRawTextNodes = new ArrayList<>();
-    for (StandaloneNode origChild : copyOfOrigChildren) {
-
-      if (origChild instanceof RawTextNode) {
-        consecutiveRawTextNodes.add((RawTextNode) origChild);
-
+    // where the most recent sequence of raw text nodes starts
+    int rawTextSeqStart = -1;
+    for (int i = 0; i < nodeAsParent.numChildren(); i++) {
+      if (nodeAsParent.getChild(i) instanceof RawTextNode) {
+        if (rawTextSeqStart == -1) {
+          rawTextSeqStart = i;
+        }
+        // the next node is not a raw text node (or we are at the end)
+        if (i == nodeAsParent.numChildren() - 1
+            || !(nodeAsParent.getChild(i + 1) instanceof RawTextNode)) {
+          // we have more than one raw text node, combine them
+          if (rawTextSeqStart < i) {
+            // This is safe because we already know it has RawTextNodes as children
+            @SuppressWarnings("unchecked")
+            ParentSoyNode<? super RawTextNode> typedParent =
+                (ParentSoyNode<? super RawTextNode>) nodeAsParent;
+            combineRawTextNodes(typedParent, rawTextSeqStart, i + 1);
+            // We just replaced [rawTextSeqStart, i] with a single node at rawTextSeqStart
+            // so reset i to be rawTextSeqStart so that on the next loop iteration, we move on to
+            // the next item. In other words, the item that was previously at i+1 is now at
+            // rawTextSeqStart+1.
+            i = rawTextSeqStart;
+          }
+          // reset the start of the sequence
+          rawTextSeqStart = -1;
+        }
       } else {
-        // First add the preceding consecutive RawTextNodes, if any.
-        addConsecutiveRawTextNodesAsOneNodeHelper(nodeAsBlock, consecutiveRawTextNodes);
-        consecutiveRawTextNodes.clear();
-        // Then add the current new child.
-        nodeAsBlock.addChild(origChild);
+        visit(nodeAsParent.getChild(i)); // recurse
       }
     }
-
-    // Add the final group of consecutive RawTextNodes, if any.
-    addConsecutiveRawTextNodesAsOneNodeHelper(nodeAsBlock, consecutiveRawTextNodes);
-    consecutiveRawTextNodes.clear();
   }
-
 
   /**
-   * Helper to add consecutive RawTextNodes as one child node (the raw text will be joined).
-   * If the consecutive RawTextNodes list actually only has one item, then adds that node instead
-   * of creating a new RawTextNode.
-   *
-   * Note: This function works closely with the above code. In particular, it assumes we're
-   * rebuilding the whole list (thus adding to the end of the parent) instead of fixing the old
-   * list in-place.
-   *
-   * @param parent The parent to add the new child to.
-   * @param consecutiveRawTextNodes The list of consecutive RawTextNodes.
+   * Collapses a range of RawTextNodes between start and end into a single raw text node using
+   * {@link RawTextNode#concat(int, RawTextNode)}
    */
-  private void addConsecutiveRawTextNodesAsOneNodeHelper(
-      BlockNode parent, List<RawTextNode> consecutiveRawTextNodes) {
-    // Nothing to do.
-    if (consecutiveRawTextNodes.isEmpty()) {
-      return;
+  private void combineRawTextNodes(ParentSoyNode<? super RawTextNode> parent, int start, int end) {
+    // Since we know this parent had raw text nodes as children it must be able to handle
+    // standalone nodes.
+    // We have just finished a sequence of raw text nodes that is more than one item
+    int newId = nodeIdGen.genId();
+    RawTextNode newNode = (RawTextNode) parent.getChild(start);
+    for (int i = start + 1; i < end; i++) {
+      newNode = newNode.concat(newId, (RawTextNode) parent.getChild(i));
     }
-
-    // Simply add the one RawTextNode.
-    if (consecutiveRawTextNodes.size() == 1) {
-      parent.addChild(consecutiveRawTextNodes.get(0));
-      return;
+    // it is slightly more efficient to remove in reverse order
+    // TODO(lukes): add a 'removeRange' method, it would be faster
+    for (int i = end - 1; i > start; i--) {
+      parent.removeChild(i);
     }
-
-    // Create a new combined RawTextNode.
-    StringBuilder rawText = new StringBuilder();
-    SourceLocation sourceLocation = null;
-    for (RawTextNode rtn : consecutiveRawTextNodes) {
-      rawText.append(rtn.getRawText());
-      sourceLocation = (sourceLocation == null)
-          ? rtn.getSourceLocation()
-          : sourceLocation.extend(rtn.getSourceLocation());
-    }
-    parent.addChild(
-        new RawTextNode(nodeIdGen.genId(), rawText.toString(), sourceLocation));
+    parent.replaceChild(start, newNode);
   }
-
 }

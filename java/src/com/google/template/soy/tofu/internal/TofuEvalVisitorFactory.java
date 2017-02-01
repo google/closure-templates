@@ -17,11 +17,10 @@
 package com.google.template.soy.tofu.internal;
 
 import com.google.template.soy.data.SoyRecord;
-import com.google.template.soy.data.SoyValueHelper;
+import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.sharedpasses.render.Environment;
 import com.google.template.soy.sharedpasses.render.EvalVisitor;
 import com.google.template.soy.sharedpasses.render.EvalVisitor.EvalVisitorFactory;
-
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -33,16 +32,16 @@ import javax.inject.Singleton;
 @Singleton
 final class TofuEvalVisitorFactory implements EvalVisitorFactory {
 
-  /** Instance of SoyValueHelper to use. */
-  private final SoyValueHelper valueHelper;
+  /** Instance of SoyValueConverter to use. */
+  private final SoyValueConverter valueConverter;
 
   @Inject
-  public TofuEvalVisitorFactory(SoyValueHelper valueHelper) {
-    this.valueHelper = valueHelper;
+  public TofuEvalVisitorFactory(SoyValueConverter valueConverter) {
+    this.valueConverter = valueConverter;
   }
 
-  @Override public EvalVisitor create(
-      @Nullable SoyRecord ijData, Environment env) {
-    return new TofuEvalVisitor(valueHelper, ijData, env);
+  @Override
+  public EvalVisitor create(@Nullable SoyRecord ijData, Environment env) {
+    return new TofuEvalVisitor(valueConverter, ijData, env);
   }
 }

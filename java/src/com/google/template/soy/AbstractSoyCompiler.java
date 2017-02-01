@@ -18,25 +18,19 @@ package com.google.template.soy;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.ForOverride;
 import com.google.inject.Injector;
 import com.google.inject.Module;
-import com.google.protobuf.Descriptors.DescriptorValidationException;
 import com.google.template.soy.MainClassUtils.Main;
-import com.google.template.soy.error.SoyCompilationException;
 import com.google.template.soy.msgs.SoyMsgPlugin;
-import com.google.template.soy.types.SoyTypeProvider;
-import com.google.template.soy.types.SoyTypeRegistry;
-import com.google.template.soy.types.proto.SoyProtoTypeProvider;
-import org.kohsuke.args4j.Argument;
-import org.kohsuke.args4j.CmdLineParser;
-import org.kohsuke.args4j.Option;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.CheckReturnValue;
+import org.kohsuke.args4j.Argument;
+import org.kohsuke.args4j.CmdLineParser;
+import org.kohsuke.args4j.Option;
 
 /**
  * Base class for the Soy Compilers.
@@ -122,33 +116,48 @@ abstract class AbstractSoyCompiler {
   )
   private List<Module> pluginModules = new ArrayList<>();
 
-  @Option(name = "--protoFileDescriptors",
-      usage = "Location of protocol buffer definitions in the form of a file descriptor set."
+  @Option(
+    name = "--protoFileDescriptors",
+    usage =
+        "Location of protocol buffer definitions in the form of a file descriptor set."
             + "The compiler needs defs for parameter type checking and generating direct "
             + "access support for proto types.",
-      handler = MainClassUtils.FileListOptionHandler.class)
+    handler = MainClassUtils.FileListOptionHandler.class
+  )
   private static final List<File> protoFileDescriptors = new ArrayList<>();
+
+  @Option(
+    name = "--enableExperimentalFeatures",
+    usage =
+        "Enable experimental features that are not generally available. "
+            + "These experimental features may change, break, or disappear at any time. "
+            + "We make absolutely no guarantees about what may happen if you turn one of these "
+            + "experiments on. Please proceed with caution at your own risk.",
+    handler = MainClassUtils.StringListOptionHandler.class
+  )
+  private static final List<String> experimentalFeatures = new ArrayList<>();
 
   /** The remaining arguments after parsing command-line flags. */
   @Argument private final List<String> arguments = new ArrayList<>();
 
   private CmdLineParser cmdLineParser;
 
-  final void runMain(String ...args) {
+  final void runMain(String... args) {
     int status = run(args);
     System.exit(status);
   }
 
   @VisibleForTesting
   @CheckReturnValue
-  int run(final String ...args) {
+  int run(final String... args) {
     // TODO(lukes): inline this method once all mains have been migrated to this base class.
-    return MainClassUtils.runInternal(new Main() {
-      @Override
-      public void main() throws IOException, SoyCompilationException {
-        doMain(args);
-      }
-    });
+    return MainClassUtils.runInternal(
+        new Main() {
+          @Override
+          public void main() throws IOException {
+            doMain(args);
+          }
+        });
   }
 
   private void doMain(String[] args) throws IOException {
@@ -168,15 +177,8 @@ abstract class AbstractSoyCompiler {
     // change this to always call setLocalTypeRegistry (and rename the method) once all uses of the
     // legacy proto configuration are gone.
     if (!protoFileDescriptors.isEmpty()) {
-      SoyProtoTypeProvider.Builder protoTypeProviderBuilder = new SoyProtoTypeProvider.Builder();
       for (File descriptor : protoFileDescriptors) {
-        protoTypeProviderBuilder.addFileDescriptorSetFromFile(descriptor);
-      }
-      try {
-        sfsBuilder.setLocalTypeRegistry(new SoyTypeRegistry(
-            ImmutableSet.<SoyTypeProvider>of(protoTypeProviderBuilder.build())));
-      } catch (DescriptorValidationException ex) {
-        throw new IOException("Malformed descriptor set", ex);
+        sfsBuilder.addProtoFileDescriptorSetFromFile(descriptor);
       }
     }
     MainClassUtils.addSoyFilesToBuilder(
@@ -184,6 +186,8 @@ abstract class AbstractSoyCompiler {
     if (globalsFile != null) {
       sfsBuilder.setCompileTimeGlobals(globalsFile);
     }
+    // Set experimental features that are not generally available.
+    sfsBuilder.setExperimentalFeatures(experimentalFeatures);
     compile(sfsBuilder, injector);
   }
 
@@ -195,6 +199,7 @@ abstract class AbstractSoyCompiler {
    *
    * <p>TODO(lukes): eliminate support for old-style srcs
    */
+  @ForOverride
   boolean acceptsSourcesAsArguments() {
     return true;
   }

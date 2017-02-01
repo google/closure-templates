@@ -32,21 +32,19 @@ import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.soytree.CommandTextAttributesParser.Attribute;
 import com.google.template.soy.soytree.defn.TemplateParam;
-
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 
 /**
  * Node representing a call to a delegate template.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public final class CallDelegateNode extends CallNode {
@@ -74,8 +72,11 @@ public final class CallDelegateNode extends CallNode {
     public final Boolean allowsEmptyDefault;
 
     public CommandTextInfo(
-        String commandText, String delCalleeName, @Nullable ExprRootNode delCalleeVariantExpr,
-        Boolean allowsEmptyDefault, DataAttribute dataAttr,
+        String commandText,
+        String delCalleeName,
+        @Nullable ExprRootNode delCalleeVariantExpr,
+        Boolean allowsEmptyDefault,
+        DataAttribute dataAttr,
         @Nullable String userSuppliedPlaceholderName) {
       super(commandText, dataAttr, userSuppliedPlaceholderName, null);
       this.delCalleeName = delCalleeName;
@@ -90,11 +91,11 @@ public final class CallDelegateNode extends CallNode {
 
   /** Parser for the command text. */
   private static final CommandTextAttributesParser ATTRIBUTES_PARSER =
-      new CommandTextAttributesParser("delcall",
+      new CommandTextAttributesParser(
+          "delcall",
           new Attribute("variant", Attribute.ALLOW_ALL_VALUES, null),
           new Attribute("data", Attribute.ALLOW_ALL_VALUES, null),
           new Attribute("allowemptydefault", Attribute.BOOLEAN_VALUES, null));
-
 
   /** The name of the delegate template being called. */
   private final String delCalleeName;
@@ -102,15 +103,17 @@ public final class CallDelegateNode extends CallNode {
   /** The variant expression for the delegate being called, or null. */
   @Nullable private final ExprRootNode delCalleeVariantExpr;
 
-  /** User-specified value of whether this delegate call defaults to empty string if there's no
-   *  active implementation, or null if the attribute is not specified. */
+  /**
+   * User-specified value of whether this delegate call defaults to empty string if there's no
+   * active implementation, or null if the attribute is not specified.
+   */
   private Boolean allowsEmptyDefault;
 
   /**
    * The list of params that need to be type checked when this node is run on a per delegate basis.
-   * All the params that could be statically verified will be checked up front (by the
-   * {@code CheckCallingParamTypesVisitor}), this list contains the params that could not be
-   * statically checked.
+   * All the params that could be statically verified will be checked up front (by the {@code
+   * CheckCallingParamTypesVisitor}), this list contains the params that could not be statically
+   * checked.
    *
    * <p>NOTE:This list will be a subset of the params of the callee, not a subset of the params
    * passed from this caller.
@@ -118,8 +121,7 @@ public final class CallDelegateNode extends CallNode {
   private ImmutableMap<TemplateDelegateNode, ImmutableList<TemplateParam>>
       paramsToRuntimeCheckByDelegate;
 
-
-  public static final class Builder {
+  public static final class Builder extends CallNode.Builder {
 
     private static CallDelegateNode error() {
       return new Builder(-1, SourceLocation.UNKNOWN)
@@ -149,6 +151,12 @@ public final class CallDelegateNode extends CallNode {
       return this;
     }
 
+    @Override
+    public SourceLocation getSourceLocation() {
+      return sourceLocation;
+    }
+
+    @Override
     public Builder commandText(String commandText) {
       this.commandText = commandText;
       return this;
@@ -174,21 +182,22 @@ public final class CallDelegateNode extends CallNode {
       return this;
     }
 
+    @Override
     public Builder userSuppliedPlaceholderName(String userSuppliedPlaceholderName) {
       this.userSuppliedPlaceholderName = userSuppliedPlaceholderName;
       return this;
     }
 
+    @Override
     public CallDelegateNode build(SoyParsingContext context) {
       Checkpoint checkpoint = context.errorReporter().checkpoint();
-      CommandTextInfo commandTextInfo = commandText != null
-          ? parseCommandText(context)
-          : buildCommandText();
+      CommandTextInfo commandTextInfo =
+          commandText != null ? parseCommandText(context) : buildCommandText();
       if (context.errorReporter().errorsSince(checkpoint)) {
         return error();
       }
-      CallDelegateNode callDelegateNode
-          = new CallDelegateNode(id, sourceLocation, commandTextInfo, escapingDirectiveNames);
+      CallDelegateNode callDelegateNode =
+          new CallDelegateNode(id, sourceLocation, commandTextInfo, escapingDirectiveNames);
       return callDelegateNode;
     }
 
@@ -196,9 +205,10 @@ public final class CallDelegateNode extends CallNode {
       String commandTextWithoutPhnameAttr = this.commandText;
 
       String commandText =
-          commandTextWithoutPhnameAttr +
-              ((userSuppliedPlaceholderName != null) ?
-                  " phname=\"" + userSuppliedPlaceholderName + "\"" : "");
+          commandTextWithoutPhnameAttr
+              + ((userSuppliedPlaceholderName != null)
+                  ? " phname=\"" + userSuppliedPlaceholderName + "\""
+                  : "");
 
       // Handle callee name not listed as an attribute.
       Matcher ncnMatcher = NONATTRIBUTE_CALLEE_NAME.matcher(commandTextWithoutPhnameAttr);
@@ -215,16 +225,16 @@ public final class CallDelegateNode extends CallNode {
         context.report(sourceLocation, MISSING_CALLEE_NAME, commandText);
       }
 
-      Map<String, String> attributes = ATTRIBUTES_PARSER.parse(
-          commandTextWithoutPhnameAttr, context, sourceLocation);
+      Map<String, String> attributes =
+          ATTRIBUTES_PARSER.parse(commandTextWithoutPhnameAttr, context, sourceLocation);
 
       String variantExprText = attributes.get("variant");
       ExprRootNode delCalleeVariantExpr;
       if (variantExprText == null) {
         delCalleeVariantExpr = null;
       } else {
-        ExprNode expr = new ExpressionParser(variantExprText, sourceLocation, context)
-            .parseExpression();
+        ExprNode expr =
+            new ExpressionParser(variantExprText, sourceLocation, context).parseExpression();
         // If the variant is a fixed string, do a sanity check.
         if (expr instanceof StringNode) {
           String fixedVariantStr = ((StringNode) expr).getValue();
@@ -243,19 +253,23 @@ public final class CallDelegateNode extends CallNode {
           (allowemptydefaultAttr == null) ? null : allowemptydefaultAttr.equals("true");
 
       return new CommandTextInfo(
-          commandText, delCalleeName, delCalleeVariantExpr, allowsEmptyDefault,
-          dataAttrInfo, userSuppliedPlaceholderName);
+          commandText,
+          delCalleeName,
+          delCalleeVariantExpr,
+          allowsEmptyDefault,
+          dataAttrInfo,
+          userSuppliedPlaceholderName);
     }
 
     private CommandTextInfo buildCommandText() {
 
       Preconditions.checkArgument(BaseUtils.isDottedIdentifier(delCalleeName));
       String commandText = "";
-        commandText += delCalleeName;
+      commandText += delCalleeName;
       if (dataAttribute.isPassingAllData()) {
         commandText += " data=\"all\"";
       } else if (dataAttribute.isPassingData()) {
-        assert dataAttribute.dataExpr() != null;  // suppress warnings
+        assert dataAttribute.dataExpr() != null; // suppress warnings
         commandText += " data=\"" + dataAttribute.dataExpr().toSourceString() + '"';
       }
       if (userSuppliedPlaceholderName != null) {
@@ -263,11 +277,13 @@ public final class CallDelegateNode extends CallNode {
       }
 
       return new CommandTextInfo(
-          commandText, delCalleeName, delCalleeVariantExpr, allowEmptyDefault, dataAttribute,
+          commandText,
+          delCalleeName,
+          delCalleeVariantExpr,
+          allowEmptyDefault,
+          dataAttribute,
           userSuppliedPlaceholderName);
     }
-
-
   }
 
   private CallDelegateNode(
@@ -281,12 +297,12 @@ public final class CallDelegateNode extends CallNode {
     this.allowsEmptyDefault = commandTextInfo.allowsEmptyDefault;
   }
 
-
   /**
    * Copy constructor.
+   *
    * @param orig The node to copy.
    */
-  @SuppressWarnings("ConstantConditions")  // for IntelliJ
+  @SuppressWarnings("ConstantConditions") // for IntelliJ
   private CallDelegateNode(CallDelegateNode orig, CopyState copyState) {
     super(orig, copyState);
     this.delCalleeName = orig.delCalleeName;
@@ -296,20 +312,19 @@ public final class CallDelegateNode extends CallNode {
     this.paramsToRuntimeCheckByDelegate = orig.paramsToRuntimeCheckByDelegate;
   }
 
-
-  @Override public Kind getKind() {
+  @Override
+  public Kind getKind() {
     return Kind.CALL_DELEGATE_NODE;
   }
-
 
   /** Returns the name of the delegate template being called. */
   public String getDelCalleeName() {
     return delCalleeName;
   }
 
-
   /** Returns the variant expression for the delegate being called, or null if it's a string. */
-  @Nullable public ExprRootNode getDelCalleeVariantExpr() {
+  @Nullable
+  public ExprRootNode getDelCalleeVariantExpr() {
     return delCalleeVariantExpr;
   }
 
@@ -321,7 +336,8 @@ public final class CallDelegateNode extends CallNode {
     this.paramsToRuntimeCheckByDelegate = Preconditions.checkNotNull(paramsToRuntimeCheck);
   }
 
-  @Override public Collection<TemplateParam> getParamsToRuntimeCheck(TemplateNode callee) {
+  @Override
+  public Collection<TemplateParam> getParamsToRuntimeCheck(TemplateNode callee) {
     if (paramsToRuntimeCheckByDelegate == null) {
       return callee.getParams();
     }
@@ -342,8 +358,8 @@ public final class CallDelegateNode extends CallNode {
     return allowsEmptyDefault;
   }
 
-
-  @Override public List<ExprUnion> getAllExprUnions() {
+  @Override
+  public List<ExprUnion> getAllExprUnions() {
     List<ExprUnion> allExprUnions = Lists.newArrayListWithCapacity(2);
     if (delCalleeVariantExpr != null) {
       allExprUnions.add(new ExprUnion(delCalleeVariantExpr));
@@ -352,9 +368,8 @@ public final class CallDelegateNode extends CallNode {
     return Collections.unmodifiableList(allExprUnions);
   }
 
-
-  @Override public CallDelegateNode copy(CopyState copyState) {
+  @Override
+  public CallDelegateNode copy(CopyState copyState) {
     return new CallDelegateNode(this, copyState);
   }
-
 }

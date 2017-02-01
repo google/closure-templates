@@ -22,7 +22,7 @@ import com.google.template.soy.base.internal.BaseUtils;
 
 /**
  * Utilities for translating soy symbols to and from strings that are suitable for use in java class
- * files.  These utilities are shared between the compiler and the runtime system.
+ * files. These utilities are shared between the compiler and the runtime system.
  */
 public final class Names {
   public static final String CLASS_PREFIX = "com.google.template.soy.jbcsrc.gen.";
@@ -34,14 +34,14 @@ public final class Names {
    * Translate a user controlled Soy name to a form that is safe to encode in a java class, method
    * or field name.
    *
-   * <p>Soy identifiers are very simple, they are restricted to the following regex:
-   * {@code [a-zA-Z_]([a-zA-Z_0-9])*}. So a template name is just one or more identifiers separated
-   * by {@code .} characters.  To escape it, we simply replace all '.'s with '_'s, and all '_'s with
+   * <p>Soy identifiers are very simple, they are restricted to the following regex: {@code
+   * [a-zA-Z_]([a-zA-Z_0-9])*}. So a template name is just one or more identifiers separated by
+   * {@code .} characters. To escape it, we simply replace all '.'s with '_'s, and all '_'s with
    * '__' and prefix with a package name.
    */
   public static String javaClassNameFromSoyTemplateName(String soyTemplate) {
-    checkArgument(BaseUtils.isDottedIdentifier(soyTemplate),
-        "%s is not a valid template name.", soyTemplate);
+    checkArgument(
+        BaseUtils.isDottedIdentifier(soyTemplate), "%s is not a valid template name.", soyTemplate);
     return CLASS_PREFIX + soyTemplate;
   }
 
@@ -50,8 +50,10 @@ public final class Names {
    * be stored.
    */
   public static String javaFileName(String soyNamespace, String fileName) {
-    checkArgument(BaseUtils.isDottedIdentifier(soyNamespace),
-        "%s is not a valid soy namspace name.", soyNamespace);
+    checkArgument(
+        BaseUtils.isDottedIdentifier(soyNamespace),
+        "%s is not a valid soy namspace name.",
+        soyNamespace);
     return (CLASS_PREFIX + soyNamespace).replace('.', '/') + '/' + fileName;
   }
 
@@ -61,26 +63,28 @@ public final class Names {
    */
   public static String soyTemplateNameFromJavaClassName(String javaClass) {
     if (!javaClass.startsWith(CLASS_PREFIX)) {
-      throw new IllegalArgumentException("java class: " + javaClass
-          + " is not a mangled soy template name");
+      throw new IllegalArgumentException(
+          "java class: " + javaClass + " is not a mangled soy template name");
     }
     return javaClass.substring(CLASS_PREFIX.length());
   }
 
   /**
    * Rewrites the given stack trace by replacing all references to generated jbcsrc types with the
-   * original template names. 
+   * original template names.
    */
   public static void rewriteStackTrace(Throwable throwable) {
     StackTraceElement[] stack = throwable.getStackTrace();
     for (int i = 0; i < stack.length; i++) {
       StackTraceElement curr = stack[i];
       if (curr.getClassName().startsWith(CLASS_PREFIX)) {
-        stack[i] = new StackTraceElement(
-            soyTemplateNameFromJavaClassName(curr.getClassName()), 
-            curr.getMethodName(),  // TODO(lukes): remove the method name? only if it == 'render'?
-            curr.getFileName(), 
-            curr.getLineNumber());
+        stack[i] =
+            new StackTraceElement(
+                soyTemplateNameFromJavaClassName(curr.getClassName()),
+                // TODO(lukes): remove the method name? only if it == 'render'?
+                curr.getMethodName(),
+                curr.getFileName(),
+                curr.getLineNumber());
       }
     }
     throwable.setStackTrace(stack);

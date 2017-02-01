@@ -21,16 +21,15 @@ import static com.google.common.base.Preconditions.checkArgument;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.basetree.CopyState;
-
 import java.util.List;
 
 /**
  * Dummy node that serves as the root of an expression tree so that the tree can be arbitrarily
  * changed without needing to change the reference to the tree.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
- * <p> This node should always have exactly one child.
+ * <p>This node should always have exactly one child.
  *
  */
 public final class ExprRootNode extends AbstractParentExprNode {
@@ -52,6 +51,7 @@ public final class ExprRootNode extends AbstractParentExprNode {
 
   /**
    * Creates a new instance with the given node as the child.
+   *
    * @param child The child to add to the new node.
    */
   public ExprRootNode(ExprNode child) {
@@ -60,17 +60,17 @@ public final class ExprRootNode extends AbstractParentExprNode {
     this.addChild(child);
   }
 
-
   /**
    * Copy constructor.
+   *
    * @param orig The node to copy.
    */
   private ExprRootNode(ExprRootNode orig, CopyState copyState) {
     super(orig, copyState);
   }
 
-
-  @Override public Kind getKind() {
+  @Override
+  public Kind getKind() {
     return Kind.EXPR_ROOT_NODE;
   }
 
@@ -78,19 +78,19 @@ public final class ExprRootNode extends AbstractParentExprNode {
     return getChild(0);
   }
 
-  @Override public ExprNode getChild(int index) {
+  @Override
+  public ExprNode getChild(int index) {
     Preconditions.checkArgument(index == 0);
     return super.getChild(0);
   }
 
-
-  @Override public String toSourceString() {
+  @Override
+  public String toSourceString() {
     return getRoot().toSourceString();
   }
 
-
-  @Override public ExprRootNode copy(CopyState copyState) {
+  @Override
+  public ExprRootNode copy(CopyState copyState) {
     return new ExprRootNode(this, copyState);
   }
-
 }

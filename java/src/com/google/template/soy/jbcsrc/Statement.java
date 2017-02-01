@@ -20,22 +20,20 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.THROWABLE_TYPE;
 
 import com.google.template.soy.base.SourceLocation;
-
+import java.io.IOException;
+import java.util.Arrays;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
 
-import java.io.IOException;
-import java.util.Arrays;
-
 /**
- * A statement models a section of code.  Unlike {@linkplain Expression expressions}, statements
- * may have side effects.  For example, the Soy code {@code {'foo'}} could be implemented as a 
- * statement that writes to an output stream.
+ * A statement models a section of code. Unlike {@linkplain Expression expressions}, statements may
+ * have side effects. For example, the Soy code {@code {'foo'}} could be implemented as a statement
+ * that writes to an output stream.
  *
- * <p>The generated code should satisfy the invariant that the runtime stack and local variables
- * are are unchanged by the generated code (i.e. the frame map at the start of the statement is
+ * <p>The generated code should satisfy the invariant that the runtime stack and local variables are
+ * are unchanged by the generated code (i.e. the frame map at the start of the statement is
  * identical to the frame map at the end of the statement).
  */
 abstract class Statement extends BytecodeProducer {
@@ -57,27 +55,28 @@ abstract class Statement extends BytecodeProducer {
 
   /**
    * Generates a statement that returns the value produced by the given expression.
-   * 
-   * <p>This does not validate that the return type is appropriate.  It is our callers 
-   * responsibility to do that.
+   *
+   * <p>This does not validate that the return type is appropriate. It is our callers responsibility
+   * to do that.
    */
   static Statement returnExpression(final Expression expression) {
     // TODO(lukes): it would be nice to do a checkType operation here to make sure that expression
     // is compatible with the return type of the method, but i don't know how to get that
     // information here (reasonably).  So it is the caller's responsibility.
     return new Statement() {
-      @Override void doGen(CodeBuilder adapter) {
+      @Override
+      void doGen(CodeBuilder adapter) {
         expression.gen(adapter);
         adapter.returnValue();
       }
     };
   }
 
- /**
-  * Generates a statement that throws the throwable produced by the given expression.
-  * 
-  * <p>This does not validate that the throwable is compatible with the methods throws clause. 
-  */
+  /**
+   * Generates a statement that throws the throwable produced by the given expression.
+   *
+   * <p>This does not validate that the throwable is compatible with the methods throws clause.
+   */
   static Statement throwExpression(final Expression expression) {
     expression.checkAssignableTo(THROWABLE_TYPE);
     return new Statement() {
@@ -90,7 +89,7 @@ abstract class Statement extends BytecodeProducer {
   }
 
   /** Returns a statement that concatenates all the provided statements. */
-  static Statement concat(Statement ...statements) {
+  static Statement concat(Statement... statements) {
     return concat(Arrays.asList(statements));
   }
 
@@ -98,7 +97,8 @@ abstract class Statement extends BytecodeProducer {
   static Statement concat(final Iterable<? extends Statement> statements) {
     checkNotNull(statements);
     return new Statement() {
-      @Override void doGen(CodeBuilder adapter) {
+      @Override
+      void doGen(CodeBuilder adapter) {
         for (Statement statement : statements) {
           statement.gen(adapter);
         }
@@ -116,7 +116,7 @@ abstract class Statement extends BytecodeProducer {
 
   /**
    * Writes this statement to the {@link ClassVisitor} as a method.
-   * 
+   *
    * @param access The access modifiers of the method
    * @param method The method signature
    * @param visitor The class visitor to write it to
@@ -143,37 +143,38 @@ abstract class Statement extends BytecodeProducer {
     try {
       builder.endMethod();
     } catch (Throwable t) {
-      // ASM fails in bizarre ways, attach a trace of the thing we tried to generate to the 
+      // ASM fails in bizarre ways, attach a trace of the thing we tried to generate to the
       // exception.
       throw new RuntimeException("Failed to generate method:\n" + this, t);
     }
   }
   /**
-   * Returns a new statement identical to this one but with the given label applied at the start
-   * of the statement.
+   * Returns a new statement identical to this one but with the given label applied at the start of
+   * the statement.
    */
   final Statement labelStart(final Label label) {
     return new Statement() {
-      @Override void doGen(CodeBuilder adapter) {
+      @Override
+      void doGen(CodeBuilder adapter) {
         adapter.mark(label);
         Statement.this.gen(adapter);
       }
     };
   }
 
-  /**
-   * Returns a new {@link Statement} with the source location attached.
-   */
+  /** Returns a new {@link Statement} with the source location attached. */
   final Statement withSourceLocation(SourceLocation location) {
     checkNotNull(location);
     return new Statement(location) {
-      @Override void doGen(CodeBuilder adapter) {
+      @Override
+      void doGen(CodeBuilder adapter) {
         Statement.this.gen(adapter);
       }
     };
   }
 
-  @Override public String toString() {
+  @Override
+  public String toString() {
     return "Statement:\n" + trace();
   }
 }

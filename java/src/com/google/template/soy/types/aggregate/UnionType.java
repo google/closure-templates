@@ -26,7 +26,7 @@ import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.types.SoyType;
-
+import com.google.template.soy.types.primitive.ErrorType;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
@@ -38,19 +38,22 @@ import java.util.Set;
  *
  */
 public final class UnionType implements SoyType {
-  private static final Predicate<SoyType> IS_NULL = new Predicate<SoyType> () {
-    @Override public boolean apply(SoyType memberType) {
-      return memberType.getKind() == SoyType.Kind.NULL;
-    }
-  };
+  private static final Predicate<SoyType> IS_NULL =
+      new Predicate<SoyType>() {
+        @Override
+        public boolean apply(SoyType memberType) {
+          return memberType.getKind() == SoyType.Kind.NULL;
+        }
+      };
 
   /** Comparator that defines the ordering of types. */
-  private static final Comparator<SoyType> MEMBER_ORDER = new Comparator<SoyType>() {
-    @Override public int compare(SoyType st1, SoyType st2) {
-      return st1.toString().compareTo(st2.toString());
-    }
-  };
-
+  private static final Comparator<SoyType> MEMBER_ORDER =
+      new Comparator<SoyType>() {
+        @Override
+        public int compare(SoyType st1, SoyType st2) {
+          return st1.toString().compareTo(st2.toString());
+        }
+      };
 
   private final ImmutableSortedSet<SoyType> members;
 
@@ -65,47 +68,48 @@ public final class UnionType implements SoyType {
     }
   }
 
-
   /**
    * Convenience method for creating unions.
+   *
    * @param members Member types of the union.
-   * @return Union of those types.
-   *    If there is exactly one distinct type in members, then this will not be a UnionType.
+   * @return Union of those types. If there is exactly one distinct type in members, then this will
+   *     not be a UnionType.
    */
   public static SoyType of(SoyType... members) {
     return of(Arrays.asList(members));
   }
 
-
   /**
    * Create a union from a collection of types.
+   *
    * @param members Member types of the union.
-   * @return Union of those types.
-   *    If there is exactly one distinct type in members, then this will not be a UnionType.
+   * @return Union of those types. If there is exactly one distinct type in members, then this will
+   *     not be a UnionType.
    */
   public static SoyType of(Collection<SoyType> members) {
     ImmutableSet<SoyType> flattenedMembers = flatten(members);
     if (flattenedMembers.size() == 1) {
       return Iterables.getOnlyElement(flattenedMembers);
     }
+    // unions with the error type should just resolve to the error type to simplify analysis.
+    if (flattenedMembers.contains(ErrorType.getInstance())) {
+      return ErrorType.getInstance();
+    }
     return new UnionType(flattenedMembers);
   }
 
-
-  @Override public Kind getKind() {
+  @Override
+  public Kind getKind() {
     return Kind.UNION;
   }
 
-
-  /**
-   * Return the set of types contained in this union.
-   */
+  /** Return the set of types contained in this union. */
   public Set<SoyType> getMembers() {
     return members;
   }
 
-
-  @Override public boolean isAssignableFrom(SoyType srcType) {
+  @Override
+  public boolean isAssignableFrom(SoyType srcType) {
     if (srcType.getKind() == Kind.UNION) {
       // A union is assignable to a union if every type in the source
       // union is assignable to some type in the destination union.
@@ -128,8 +132,8 @@ public final class UnionType implements SoyType {
     }
   }
 
-
-  @Override public boolean isInstance(SoyValue value) {
+  @Override
+  public boolean isInstance(SoyValue value) {
     for (SoyType memberType : members) {
       if (memberType.isInstance(value)) {
         return true;
@@ -151,28 +155,28 @@ public final class UnionType implements SoyType {
     return this;
   }
 
-
-  @Override public String toString() {
+  @Override
+  public String toString() {
     return Joiner.on('|').join(members);
   }
 
-
-  @Override public boolean equals(Object other) {
-    return other != null &&
-        other.getClass() == this.getClass() &&
-        ((UnionType) other).members.equals(members);
+  @Override
+  public boolean equals(Object other) {
+    return other != null
+        && other.getClass() == this.getClass()
+        && ((UnionType) other).members.equals(members);
   }
 
-
-  @Override public int hashCode() {
+  @Override
+  public int hashCode() {
     return Objects.hash(this.getClass(), members);
   }
 
-
   /**
-   * Create a set containing all of the types contained in the input collection.
-   * If any of the members of the input collection are unions, add the
-   * individual members to the result union, thus "flattening" the union.
+   * Create a set containing all of the types contained in the input collection. If any of the
+   * members of the input collection are unions, add the individual members to the result union,
+   * thus "flattening" the union.
+   *
    * @param members The input types.
    * @return The set of all types in the input collection.
    */

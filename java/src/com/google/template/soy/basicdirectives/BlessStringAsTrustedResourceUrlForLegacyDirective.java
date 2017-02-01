@@ -19,62 +19,72 @@ package com.google.template.soy.basicdirectives;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.jssrc.restricted.JsExpr;
-import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
+import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcPrintDirective;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcPrintDirective;
 import com.google.template.soy.shared.restricted.Sanitizers;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.shared.restricted.SoyPurePrintDirective;
-
 import java.util.List;
 import java.util.Set;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * Implements the |blessStringAsTrustedResourceUrlForLegacy directive, which accepts resource
- * URIs like script src and blesses them as TrustedResourceUri.
+ * Implements the |blessStringAsTrustedResourceUrlForLegacy directive, which accepts resource URIs
+ * like script src and blesses them as TrustedResourceUri.
  *
- * <p>
- * Note that this directive is not autoescape cancelling, and can thus be used in strict templates.
- * The directive returns its result as an object of type SoyValue.
+ * <p>Note that this directive is not autoescape cancelling, and can thus be used in strict
+ * templates. The directive returns its result as an object of type SoyValue.
  */
 @Singleton
 @SoyPurePrintDirective
-final class BlessStringAsTrustedResourceUrlForLegacyDirective implements SoyJavaPrintDirective,
-    SoyJsSrcPrintDirective, SoyPySrcPrintDirective {
+final class BlessStringAsTrustedResourceUrlForLegacyDirective
+    implements SoyJavaPrintDirective,
+        SoyLibraryAssistedJsSrcPrintDirective,
+        SoyPySrcPrintDirective {
 
   private static final Set<Integer> VALID_ARGS_SIZES = ImmutableSet.of(0);
 
   @Inject
   public BlessStringAsTrustedResourceUrlForLegacyDirective() {}
 
-  @Override public String getName() {
+  @Override
+  public String getName() {
     return "|blessStringAsTrustedResourceUrlForLegacy";
   }
 
-  @Override public final Set<Integer> getValidArgsSizes() {
+  @Override
+  public final Set<Integer> getValidArgsSizes() {
     return VALID_ARGS_SIZES;
   }
 
-  @Override public boolean shouldCancelAutoescape() {
+  @Override
+  public boolean shouldCancelAutoescape() {
     return false;
   }
 
-  @Override public SoyValue applyForJava(SoyValue value, List<SoyValue> args) {
+  @Override
+  public SoyValue applyForJava(SoyValue value, List<SoyValue> args) {
     return Sanitizers.blessStringAsTrustedResourceUrlForLegacy(value);
   }
 
-  @Override public JsExpr applyForJsSrc(JsExpr value, List<JsExpr> args) {
-    return new JsExpr("soy.$$blessStringAsTrustedResourceUrlForLegacy(" + value.getText() + ")",
+  @Override
+  public JsExpr applyForJsSrc(JsExpr value, List<JsExpr> args) {
+    return new JsExpr(
+        "soy.$$blessStringAsTrustedResourceUrlForLegacy(" + value.getText() + ")",
         Integer.MAX_VALUE);
   }
 
-  @Override public PyExpr applyForPySrc(PyExpr value, List<PyExpr> args) {
+  @Override
+  public ImmutableSet<String> getRequiredJsLibNames() {
+    return ImmutableSet.of("soy");
+  }
+
+  @Override
+  public PyExpr applyForPySrc(PyExpr value, List<PyExpr> args) {
     return new PyExpr(
         "sanitize.bless_string_as_trusted_resource_url_for_legacy(" + value.getText() + ")",
         Integer.MAX_VALUE);
   }
-
 }

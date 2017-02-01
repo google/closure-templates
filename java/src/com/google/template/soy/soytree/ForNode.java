@@ -36,7 +36,6 @@ import com.google.template.soy.soytree.SoyNode.LoopNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
 import com.google.template.soy.soytree.defn.LocalVar;
-
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -44,24 +43,28 @@ import java.util.regex.Pattern;
 /**
  * Node representing a 'for' statement.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public final class ForNode extends AbstractBlockCommandNode
-    implements StandaloneNode, StatementNode, ConditionalBlockNode, LoopNode, ExprHolderNode,
-    LocalVarBlockNode {
+    implements StandaloneNode,
+        StatementNode,
+        ConditionalBlockNode,
+        LoopNode,
+        ExprHolderNode,
+        LocalVarBlockNode {
 
-  /**
-   * The arguments to a {@code range(...)} expression in a {@code {for ...}} loop statement.
-   */
-  @AutoValue public abstract static class RangeArgs {
-    static final RangeArgs ERROR = create(
-        Optional.<ExprRootNode>absent(),
-        new ExprRootNode(VarRefNode.ERROR),
-        Optional.<ExprRootNode>absent());
+  /** The arguments to a {@code range(...)} expression in a {@code {for ...}} loop statement. */
+  @AutoValue
+  public abstract static class RangeArgs {
+    static final RangeArgs ERROR =
+        create(
+            Optional.<ExprRootNode>absent(),
+            new ExprRootNode(VarRefNode.ERROR),
+            Optional.<ExprRootNode>absent());
 
-    static RangeArgs create(Optional<ExprRootNode> start,
-        ExprRootNode limit, Optional<ExprRootNode> increment) {
+    static RangeArgs create(
+        Optional<ExprRootNode> start, ExprRootNode limit, Optional<ExprRootNode> increment) {
       return new AutoValue_ForNode_RangeArgs(start, limit, increment);
     }
 
@@ -74,9 +77,7 @@ public final class ForNode extends AbstractBlockCommandNode
      */
     public abstract Optional<ExprRootNode> start();
 
-    /**
-     * The expression for the iteration end point.  This is interpreted as an exclusive limit.
-     */
+    /** The expression for the iteration end point. This is interpreted as an exclusive limit. */
     public abstract ExprRootNode limit();
 
     /**
@@ -92,7 +93,7 @@ public final class ForNode extends AbstractBlockCommandNode
      * <p>Currently this is only possible if we have a range that contains constant values.
      */
     public final boolean definitelyNotEmpty() {
-      int start = 0;
+      long start = 0;
       if (start().isPresent()) {
         ExprRootNode startExpr = start().get();
         if (startExpr.getRoot() instanceof IntegerNode) {
@@ -101,13 +102,14 @@ public final class ForNode extends AbstractBlockCommandNode
           return false; // if the start is not a constant then it might be empty
         }
       }
-      // increment is irrelevant
-      int limit;
+      long limit;
       if (limit().getRoot() instanceof IntegerNode) {
         limit = ((IntegerNode) limit().getRoot()).getValue();
       } else {
         return false;
       }
+      // NOTE: we don't need to consider the increment, since as long as start < limit, the start
+      // will always be produced by the range
       return start < limit;
     }
 
@@ -123,17 +125,16 @@ public final class ForNode extends AbstractBlockCommandNode
     }
   }
 
-  static final SoyErrorKind INVALID_COMMAND_TEXT =
-      SoyErrorKind.of("Invalid ''for'' command text");
+  static final SoyErrorKind INVALID_COMMAND_TEXT = SoyErrorKind.of("Invalid ''for'' command text");
   private static final SoyErrorKind INVALID_RANGE_SPECIFICATION =
       SoyErrorKind.of("Invalid range specification");
 
   /** Regex pattern for the command text. */
   // 2 capturing groups: local var name, arguments to range()
   private static final Pattern COMMAND_TEXT_PATTERN =
-      Pattern.compile("( [$] \\w+ ) \\s+ in \\s+ range[(] \\s* (.*) \\s* [)]",
-                      Pattern.COMMENTS | Pattern.DOTALL);
-
+      Pattern.compile(
+          "( [$] \\w+ ) \\s+ in \\s+ range[(] \\s* (.*) \\s* [)]",
+          Pattern.COMMENTS | Pattern.DOTALL);
 
   /** The Local variable for this loop. */
   private final LocalVar var;
@@ -147,10 +148,7 @@ public final class ForNode extends AbstractBlockCommandNode
    * @param sourceLocation The source location for the {@code for }node.
    */
   public ForNode(
-      int id,
-      String commandText,
-      SourceLocation sourceLocation,
-      SoyParsingContext context) {
+      int id, String commandText, SourceLocation sourceLocation, SoyParsingContext context) {
     super(id, sourceLocation, "for", commandText);
 
     Matcher matcher = COMMAND_TEXT_PATTERN.matcher(commandText);
@@ -162,10 +160,8 @@ public final class ForNode extends AbstractBlockCommandNode
       return;
     }
 
-    String varName = parseVarName(
-        matcher.group(1), sourceLocation, context);
-    List<ExprNode> rangeArgs = parseRangeArgs(
-        matcher.group(2), sourceLocation, context);
+    String varName = parseVarName(matcher.group(1), sourceLocation, context);
+    List<ExprNode> rangeArgs = parseRangeArgs(matcher.group(2), sourceLocation, context);
 
     if (rangeArgs.size() > 3) {
       context.report(sourceLocation, INVALID_RANGE_SPECIFICATION);
@@ -182,14 +178,15 @@ public final class ForNode extends AbstractBlockCommandNode
 
       // the limit is the first item if there is only one arg, otherwise it is the second arg
       ExprNode limit = rangeArgs.get(rangeArgs.size() == 1 ? 0 : 1);
-      this.rangeArgs = RangeArgs.create(
-          start == null
-              ? Optional.<ExprRootNode>absent()
-              : Optional.of(new ExprRootNode(start)),
-          new ExprRootNode(limit),
-          increment == null
-              ? Optional.<ExprRootNode>absent()
-              : Optional.of(new ExprRootNode(increment)));
+      this.rangeArgs =
+          RangeArgs.create(
+              start == null
+                  ? Optional.<ExprRootNode>absent()
+                  : Optional.of(new ExprRootNode(start)),
+              new ExprRootNode(limit),
+              increment == null
+                  ? Optional.<ExprRootNode>absent()
+                  : Optional.of(new ExprRootNode(increment)));
     }
 
     var = new LocalVar(varName, this, null);
@@ -197,20 +194,17 @@ public final class ForNode extends AbstractBlockCommandNode
 
   private static String parseVarName(
       String input, SourceLocation sourceLocation, SoyParsingContext context) {
-    return new ExpressionParser(input, sourceLocation, context)
-        .parseVariable()
-        .getName();
+    return new ExpressionParser(input, sourceLocation, context).parseVariable().getName();
   }
 
   private static List<ExprNode> parseRangeArgs(
       String input, SourceLocation sourceLocation, SoyParsingContext context) {
-    return new ExpressionParser(input, sourceLocation, context)
-        .parseExpressionList();
+    return new ExpressionParser(input, sourceLocation, context).parseExpressionList();
   }
-
 
   /**
    * Copy constructor.
+   *
    * @param orig The node to copy.
    */
   private ForNode(ForNode orig, CopyState copyState) {
@@ -219,29 +213,28 @@ public final class ForNode extends AbstractBlockCommandNode
     this.rangeArgs = orig.rangeArgs.copy(copyState);
   }
 
-
-  @Override public Kind getKind() {
+  @Override
+  public Kind getKind() {
     return Kind.FOR_NODE;
   }
 
-
-  @Override public final LocalVar getVar() {
+  @Override
+  public final LocalVar getVar() {
     return var;
   }
 
-
-  @Override public final String getVarName() {
+  @Override
+  public final String getVarName() {
     return var.name();
   }
-
 
   /** Returns the parsed range args. */
   public RangeArgs getRangeArgs() {
     return rangeArgs;
   }
 
-
-  @Override public List<ExprUnion> getAllExprUnions() {
+  @Override
+  public List<ExprUnion> getAllExprUnions() {
     return ExprUnion.createList(
         ImmutableList.copyOf(
             Iterables.concat(
@@ -250,14 +243,13 @@ public final class ForNode extends AbstractBlockCommandNode
                 rangeArgs.increment().asSet())));
   }
 
-
-  @Override public BlockNode getParent() {
+  @Override
+  public BlockNode getParent() {
     return (BlockNode) super.getParent();
   }
 
-
-  @Override public ForNode copy(CopyState copyState) {
+  @Override
+  public ForNode copy(CopyState copyState) {
     return new ForNode(this, copyState);
   }
-
 }

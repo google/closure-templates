@@ -17,25 +17,22 @@
 package com.google.template.soy.jbcsrc;
 
 import com.google.common.base.Optional;
+import com.google.errorprone.annotations.ForOverride;
 import com.google.template.soy.base.SourceLocation;
-
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.util.Textifier;
 import org.objectweb.asm.util.TraceMethodVisitor;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
-
-/**
- * A type that can produce bytecode.
- */
+/** An object that can produce bytecode. */
 abstract class BytecodeProducer {
   /**
    * This bit tracks whether or not the current thread is generating code.
    *
    * <p>This is used to enforce an invariant that creation of {@link BytecodeProducer} instances
-   * should not occur during code generation.  This is because BytecodeProducer instances tend to
+   * should not occur during code generation. This is because BytecodeProducer instances tend to
    * trigger verification checks and mutate mutable data structures as part of their initialization.
    * Accidentally delaying this work until code generation time is an easy mistake to make and it
    * may cause undefined behavior.
@@ -71,7 +68,10 @@ abstract class BytecodeProducer {
   private BytecodeProducer(Optional<SourceLocation> location) {
     if (Flags.DEBUG && isGenerating.get()) {
       throw new IllegalStateException(
-          "All bytecode producers should be created prior to code generation beginning.");
+          "All bytecode producers should be constructed prior to code generation (.gen()) being "
+              + "called.\nThis helps to ensure that code generation is idempotent since many "
+              + "Statement/Expression construction routines interact with mutable compiler data "
+              + "structures");
     }
     this.location = location;
   }
@@ -92,7 +92,7 @@ abstract class BytecodeProducer {
         // source files.
         Label start = new Label();
         adapter.mark(start);
-        adapter.visitLineNumber(location.get().getLineNumber(), start);
+        adapter.visitLineNumber(location.get().getBeginLine(), start);
       }
 
       doGen(adapter);
@@ -109,29 +109,29 @@ abstract class BytecodeProducer {
     }
   }
 
+  @ForOverride
   abstract void doGen(CodeBuilder adapter);
 
-  /**
-   * Returns a human readable string for the code that this {@link BytecodeProducer} generates.
-   */
+  /** Returns a human readable string for the code that this {@link BytecodeProducer} generates. */
   final String trace() {
     // TODO(lukes): textifier has support for custom label names by overriding appendLabel.
     // Consider trying to make use of (using the Label.info field? adding a custom NamedLabel
     // sub type?)
-    Textifier textifier = new Textifier(Opcodes.ASM5) {
-      {
-        // reset tab sizes.  Since we don't care about formatting class names or method signatures
-        // (only code). We only need to set the tab2,tab3 and ltab settings (tab is for class
-        // members).
-        this.tab = null;  // trigger an error if used.
-        this.tab2 = "  ";  // tab setting for instructions
-        this.tab3 = "";  // tab setting for switch cases
-        this.ltab = "";  // tab setting for labels
-      }
-    };
+    Textifier textifier =
+        new Textifier(Opcodes.ASM5) {
+          {
+            // reset tab sizes.  Since we don't care about formatting class names or method
+            // signatures (only code). We only need to set the tab2,tab3 and ltab settings (tab is
+            // for class members).
+            this.tab = null; // trigger an error if used.
+            this.tab2 = "  "; // tab setting for instructions
+            this.tab3 = ""; // tab setting for switch cases
+            this.ltab = ""; // tab setting for labels
+          }
+        };
     gen(new CodeBuilder(new TraceMethodVisitor(textifier), 0, "trace", "()V"));
     StringWriter writer = new StringWriter();
     textifier.print(new PrintWriter(writer));
-    return writer.toString();  // Note textifier always adds a trailing newline
+    return writer.toString(); // Note textifier always adds a trailing newline
   }
 }

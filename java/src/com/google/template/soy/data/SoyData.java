@@ -21,20 +21,17 @@ import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
-
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-
 /**
  * Abstract base class for all nodes in a Soy data tree.
  *
- * <p> Important: Even though this class is not marked 'final', do not extend this class.
+ * <p>Important: Even though this class is not marked 'final', do not extend this class.
  *
  */
 public abstract class SoyData extends SoyAbstractValue {
-
 
   /**
    * Creates deprecated SoyData objects from standard Java data structures.
@@ -45,13 +42,13 @@ public abstract class SoyData extends SoyAbstractValue {
    * @deprecated It's best to pass whatever object you have directly to the Soy templates you're
    *     using -- Soy understands primitives, lists, and maps natively, and if you install runtime
    *     support you can also pass protocol buffers. If you're interacting directly with the Soy
-   *     runtime and need SoyValue objects, use SoyValueHelper instead.
+   *     runtime and need SoyValue objects, use SoyValueConverter instead.
    */
   @Deprecated
   public static SoyData createFromExistingData(Object obj) {
 
     // Important: This is frozen for backwards compatibility, For future changes (pun not intended),
-    // use SoyValueHelper, which works with the new interfaces SoyValue and SoyValueProvider.
+    // use SoyValueConverter, which works with the new interfaces SoyValue and SoyValueProvider.
 
     if (obj == null) {
       return NullData.INSTANCE;
@@ -78,7 +75,7 @@ public abstract class SoyData extends SoyAbstractValue {
       return FloatData.forValue((Float) obj);
     } else if (obj instanceof Future<?>) {
       // Note: In the old SoyData, we don't support late-resolution of Futures. We immediately
-      // resolve the Future object here. For late-resolution, use SoyValueHelper.convert().
+      // resolve the Future object here. For late-resolution, use SoyValueConverter.convert().
       try {
         return createFromExistingData(((Future<?>) obj).get());
       } catch (InterruptedException e) {
@@ -90,53 +87,9 @@ public abstract class SoyData extends SoyAbstractValue {
       }
     } else {
       throw new SoyDataException(
-          "Attempting to convert unrecognized object to Soy data (object type " +
-          obj.getClass().getName() + ").");
+          "Attempting to convert unrecognized object to Soy data (object type "
+              + obj.getClass().getName()
+              + ").");
     }
   }
-
-
-  // -----------------------------------------------------------------------------------------------
-  // Adapting old implementations to the new interface.
-
-
-  // The old SoyData has method toBoolean(), while the new SoyValue has method coerceToBoolean().
-  // This adapts old implementations to the new interface.
-  @SuppressWarnings("deprecation")
-  @Override public boolean coerceToBoolean() {
-   return toBoolean();
-  }
-
-
-  /**
-   * This was a required method in the old SoyData interface. For new data classes, please use
-   * interface SoyValue, which has the method coerceToBoolean().
-   *
-   * Converts this data object into a boolean (e.g. when used in a boolean context). In other words,
-   * this method tells whether this object is truthy.
-   * @return The value of this data object if coerced into a boolean. I.e. true if this object is
-   *     truthy, false if this object is falsy.
-   */
-  @Deprecated
-  public abstract boolean toBoolean();
-
-
-  // The old SoyData has method toString(), while the new SoyValue has method coerceToString().
-  // This adapts old implementations to the new interface.
-  @SuppressWarnings("deprecation")
-  @Override public String coerceToString() {
-    return toString();
-  }
-
-
-  /**
-   * This was a required method in the old SoyData interface. For new data classes, please use
-   * interface SoyValue, which has the method coerceToString().
-   *
-   * Converts this data object into a string (e.g. when used in a string context).
-   * @return The value of this data object if coerced into a string.
-   */
-  // TODO: Maybe deprecate this method (even though it's a standard method).
-  @Override public abstract String toString();
-
 }

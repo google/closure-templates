@@ -44,32 +44,25 @@ import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
-
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import javax.inject.Inject;
 
 /**
  * Inserts directives into print commands by looking at the context in which a print appears, and
- * derives templates and rewrites calls so that each template is entered only in contexts
- * consistent with its escaping conventions.
+ * derives templates and rewrites calls so that each template is entered only in contexts consistent
+ * with its escaping conventions.
  *
- * E.g. it will {@link ContextualAutoescaper#rewrite rewrite}
- * <xmp class=prettyprint>
- * {template example autoescape="contextual"}
- *   <p>Hello, {$world}!</p>
- * {/template}
- * </xmp>
- * to
- * <xmp class=prettyprint>
- * {template example autoescape="contextual"}
- *   <p>Hello, {$world |escapeHtml}!</p>
- * {/template}
- * </xmp>
+ * <p>E.g. it will {@link ContextualAutoescaper#rewrite rewrite} <xmp class=prettyprint> {template
+ * example autoescape="contextual"}
+ *
+ * <p>Hello, {$world}! {/template} </xmp> to <xmp class=prettyprint> {template example
+ * autoescape="contextual"}
+ *
+ * <p>Hello, {$world |escapeHtml}! {/template} </xmp>
  *
  */
 public final class ContextualAutoescaper {
@@ -82,8 +75,8 @@ public final class ContextualAutoescaper {
       SoyErrorKind.of(AUTOESCAPE_ERROR_PREFIX + "{0}");
 
   /**
-   * Soy directives that cancel autoescaping (see
-   * {@link SoyPrintDirective#shouldCancelAutoescape()}).
+   * Soy directives that cancel autoescaping (see {@link
+   * SoyPrintDirective#shouldCancelAutoescape()}).
    */
   private final ImmutableSet<String> autoescapeCancellingDirectives;
 
@@ -101,9 +94,9 @@ public final class ContextualAutoescaper {
    * with the core and basic directives defined in com.google.template.soy.{basic,core}directives,
    * and any custom directives supplied on the command line.
    *
-   * @param soyDirectivesMap Map of all SoyPrintDirectives (name to directive) such that
-   *     {@code soyDirectivesMap.get(key).getName().equals(key)} for all key in
-   *     {@code soyDirectivesMap.keySet()}.
+   * @param soyDirectivesMap Map of all SoyPrintDirectives (name to directive) such that {@code
+   *     soyDirectivesMap.get(key).getName().equals(key)} for all key in {@code
+   *     soyDirectivesMap.keySet()}.
    */
   @Inject
   ContextualAutoescaper(final ImmutableMap<String, ? extends SoyPrintDirective> soyDirectivesMap) {
@@ -122,10 +115,10 @@ public final class ContextualAutoescaper {
   }
 
   /**
-   * @param autoescapeCancellingDirectives The Soy directives that cancel autoescaping (see
-   *     {@link SoyPrintDirective#shouldCancelAutoescape()}).
-   * @param sanitizedContentOperators Maps print directive names to the content kinds they
-   *     consume and produce.
+   * @param autoescapeCancellingDirectives The Soy directives that cancel autoescaping (see {@link
+   *     SoyPrintDirective#shouldCancelAutoescape()}).
+   * @param sanitizedContentOperators Maps print directive names to the content kinds they consume
+   *     and produce.
    */
   public ContextualAutoescaper(
       Iterable<String> autoescapeCancellingDirectives,
@@ -134,14 +127,13 @@ public final class ContextualAutoescaper {
     this.sanitizedContentOperators = ImmutableMap.copyOf(sanitizedContentOperators);
   }
 
-
   /**
    * Rewrites the given Soy files so that dynamic output is properly escaped according to the
    * context in which it appears.
    *
    * @param fileSet Modified in place.
    * @return Extra templates which were derived from templates under fileSet and which must be
-   *     compiled with fileSet to produce a correct output.  See {@link DerivedTemplateUtils} for an
+   *     compiled with fileSet to produce a correct output. See {@link DerivedTemplateUtils} for an
    *     explanation of these.
    */
   public List<TemplateNode> rewrite(
@@ -161,8 +153,9 @@ public final class ContextualAutoescaper {
 
     // Inferences collects all the typing decisions we make, templates we derive, and escaping modes
     // we choose.
-    Inferences inferences = new Inferences(
-        autoescapeCancellingDirectives, fileSet.getNodeIdGenerator(), templatesByName);
+    Inferences inferences =
+        new Inferences(
+            autoescapeCancellingDirectives, fileSet.getNodeIdGenerator(), templatesByName);
     ImmutableList.Builder<SlicedRawTextNode> slicedRawTextNodesBuilder = ImmutableList.builder();
 
     Collection<TemplateNode> allTemplates = inferences.getAllTemplates();
@@ -184,9 +177,10 @@ public final class ContextualAutoescaper {
       try {
         // In strict mode, the author specifies the kind of SanitizedContent to produce, and thus
         // the context in which to escape.
-        Context startContext = (templateNode.getContentKind() != null) ?
-            Context.getStartContextForContentKind(templateNode.getContentKind()) :
-            Context.HTML_PCDATA;
+        Context startContext =
+            (templateNode.getContentKind() != null)
+                ? Context.getStartContextForContentKind(templateNode.getContentKind())
+                : Context.HTML_PCDATA;
         InferenceEngine.inferTemplateEndContext(
             templateNode,
             startContext,
@@ -215,10 +209,11 @@ public final class ContextualAutoescaper {
         inferences, new NonContextualTypedRenderUnitNodesVisitor(errorReporter));
 
     // Now that we know we don't fail with exceptions, apply the changes to the given files.
-    List<TemplateNode> extraTemplates = new Rewriter(
-        inferences, sanitizedContentOperators, errorReporter).rewrite(fileSet);
+    List<TemplateNode> extraTemplates =
+        new Rewriter(inferences, sanitizedContentOperators, errorReporter).rewrite(fileSet);
 
-    runVisitorOnAllTemplatesIncludingNewOnes(inferences,
+    runVisitorOnAllTemplatesIncludingNewOnes(
+        inferences,
         new PerformDeprecatedNonContextualAutoescapeVisitor(
             autoescapeCancellingDirectives, errorReporter, fileSet.getNodeIdGenerator()));
 
@@ -228,13 +223,13 @@ public final class ContextualAutoescaper {
   /**
    * Runs a visitor on all templates, including newly-generated ones.
    *
-   * <p>After running the inference engine, new re-contextualized templates have been generated,
-   * but haven't been folded back into the SoyFileSetNode (which happens in the SoyFileSet monster
+   * <p>After running the inference engine, new re-contextualized templates have been generated, but
+   * haven't been folded back into the SoyFileSetNode (which happens in the SoyFileSet monster
    * class).
    *
-   * <p>Note this is true even for non-contextual templates. If a non-contextual template
-   * eventually is called by a contextual one, the call subtree will be rewritten for the alternate
-   * context (even though they remain non-contextually autoescaped).
+   * <p>Note this is true even for non-contextual templates. If a non-contextual template eventually
+   * is called by a contextual one, the call subtree will be rewritten for the alternate context
+   * (even though they remain non-contextually autoescaped).
    */
   private void runVisitorOnAllTemplatesIncludingNewOnes(
       Inferences inferences, AbstractSoyNodeVisitor<?> visitor) {
@@ -246,8 +241,8 @@ public final class ContextualAutoescaper {
 
   /**
    * Null if no typing has been done for the named template, or otherwise the context after a call
-   * to the named template.  Since we derive templates by start context at the call site, there
-   * is no start context parameter.
+   * to the named template. Since we derive templates by start context at the call site, there is no
+   * start context parameter.
    *
    * @param templateName A qualified template name.
    */
@@ -263,9 +258,7 @@ public final class ContextualAutoescaper {
     return slicedRawTextNodes;
   }
 
-  /**
-   * Reports an autoescape exception.
-   */
+  /** Reports an autoescape exception. */
   private void reportError(
       ErrorReporter errorReporter, Set<SourceLocation> errorLocations, SoyAutoescapeException e) {
     // First, get to the root cause of the exception, and assemble an error message indicating
@@ -290,12 +283,13 @@ public final class ContextualAutoescaper {
 
   /**
    * Fills in the {@link Inferences} template name to node map.
+   *
    * @param files Modified in place.
    */
   private static Map<String, ImmutableList<TemplateNode>> findTemplates(
       Iterable<? extends SoyFileNode> files) {
-    final Map<String, ImmutableList.Builder<TemplateNode>> templatesByName
-        = Maps.newLinkedHashMap();
+    final Map<String, ImmutableList.Builder<TemplateNode>> templatesByName =
+        Maps.newLinkedHashMap();
     for (SoyFileNode file : files) {
       for (TemplateNode template : file.getChildren()) {
         String templateName;
@@ -310,16 +304,16 @@ public final class ContextualAutoescaper {
         templatesByName.get(templateName).add(template);
       }
     }
-    final ImmutableMap.Builder<String, ImmutableList<TemplateNode>> templatesByNameBuilder
-        = ImmutableMap.builder();
+    final ImmutableMap.Builder<String, ImmutableList<TemplateNode>> templatesByNameBuilder =
+        ImmutableMap.builder();
     for (Map.Entry<String, ImmutableList.Builder<TemplateNode>> e : templatesByName.entrySet()) {
       templatesByNameBuilder.put(e.getKey(), e.getValue().build());
     }
     return templatesByNameBuilder.build();
   }
 
-  private static final Predicate<TemplateNode> REQUIRES_INFERENCE
-      = new Predicate<TemplateNode>() {
+  private static final Predicate<TemplateNode> REQUIRES_INFERENCE =
+      new Predicate<TemplateNode>() {
         @Override
         public boolean apply(TemplateNode templateNode) {
           // All strict and contextual. With strict, every template establishes its own context.
@@ -329,16 +323,15 @@ public final class ContextualAutoescaper {
           // not really enforced strongly by the Closure JS Compiler. (Prior to changing this,
           // there were a few templates that weren't contextually autoescaped because they were
           // private, but were still being called directly from JS.)
-          return templateNode.getAutoescapeMode() == AutoescapeMode.STRICT ||
-              templateNode.getAutoescapeMode() == AutoescapeMode.CONTEXTUAL;
+          return templateNode.getAutoescapeMode() == AutoescapeMode.STRICT
+              || templateNode.getAutoescapeMode() == AutoescapeMode.CONTEXTUAL;
         }
-  };
-
+      };
 
   private static Map<String, SanitizedContent.ContentKind> makeOperatorKindMap(
       final ImmutableMap<String, ? extends SoyPrintDirective> soyDirectivesMap) {
-    ImmutableMap.Builder<String, SanitizedContent.ContentKind> operatorKindMapBuilder
-        = ImmutableMap.builder();
+    ImmutableMap.Builder<String, SanitizedContent.ContentKind> operatorKindMapBuilder =
+        ImmutableMap.builder();
     for (SoyPrintDirective directive : soyDirectivesMap.values()) {
       if (directive instanceof SanitizedContentOperator) {
         operatorKindMapBuilder.put(
@@ -357,17 +350,20 @@ public final class ContextualAutoescaper {
       this.errorReporter = errorReporter;
     }
 
-    @Override protected void visitTemplateNode(TemplateNode node) {
+    @Override
+    protected void visitTemplateNode(TemplateNode node) {
       if (node.getAutoescapeMode() == AutoescapeMode.NONCONTEXTUAL) {
         visitChildren(node);
       }
     }
 
-    @Override protected void visitLetContentNode(LetContentNode node) {
+    @Override
+    protected void visitLetContentNode(LetContentNode node) {
       visitRenderUnitNode(node);
     }
 
-    @Override protected void visitCallParamContentNode(CallParamContentNode node) {
+    @Override
+    protected void visitCallParamContentNode(CallParamContentNode node) {
       visitRenderUnitNode(node);
     }
 
@@ -393,7 +389,8 @@ public final class ContextualAutoescaper {
       }
     }
 
-    @Override protected void visitSoyNode(SoyNode node) {
+    @Override
+    protected void visitSoyNode(SoyNode node) {
       if (node instanceof ParentSoyNode<?>) {
         visitChildren((ParentSoyNode<?>) node);
       }

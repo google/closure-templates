@@ -22,14 +22,12 @@ import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.SoyFileSupplier;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 
 /**
- * Fetches a snippet of source code surrounding a given {@link SourceLocation}.
- * The snippet is just for human consumption and doesn't necessarily correspond to
- * any unit of Soy syntax.
+ * Fetches a snippet of source code surrounding a given {@link SourceLocation}. The snippet is just
+ * for human consumption and doesn't necessarily correspond to any unit of Soy syntax.
  *
  * @author brndn@google.com (Brendan Linn)
  */
@@ -42,11 +40,11 @@ public final class SnippetFormatter {
   }
 
   /**
-   * Returns a snippet of source code surrounding the given {@link SourceLocation},
-   * or {@link Optional#absent()} if source code is unavailable. (This happens, for example,
-   * when anyone uses {@link SourceLocation#UNKNOWN}, which is why no one should use it.)
+   * Returns a snippet of source code surrounding the given {@link SourceLocation}, or {@link
+   * Optional#absent()} if source code is unavailable. (This happens, for example, when anyone uses
+   * {@link SourceLocation#UNKNOWN}, which is why no one should use it.)
    */
-  public Optional<String> getSnippet(SourceLocation sourceLocation) throws IOException {
+  Optional<String> getSnippet(SourceLocation sourceLocation) throws IOException {
     // Try to find a snippet of source code associated with the exception and print it.
     SoyFileSupplier supplier = filePathsToSuppliers.get(sourceLocation.getFilePath());
     if (supplier == null) {
@@ -55,12 +53,12 @@ public final class SnippetFormatter {
     String result;
     try (BufferedReader reader = new BufferedReader(supplier.open())) {
       // Line numbers are 1-indexed
-      for (int linenum = 1; linenum < sourceLocation.getLineNumber(); ++linenum) {
+      for (int linenum = 1; linenum < sourceLocation.getBeginLine(); ++linenum) {
         // Skip preceding lines
         reader.readLine();
       }
-      result = reader.readLine();
+      result = reader.readLine(); // returns null on EOF
     }
-    return Optional.of(result);
+    return Optional.fromNullable(result);
   }
 }

@@ -20,12 +20,10 @@ import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import com.google.template.soy.jbcsrc.api.RenderResult;
-
 import java.io.IOException;
-
 import javax.annotation.Nullable;
 
-/** A compiled Soy template.  Each instance is suitable for being rendered exactly once. */
+/** A compiled Soy template. Each instance is suitable for being rendered exactly once. */
 public interface CompiledTemplate {
   /** A factory interface for constructing a {@link CompiledTemplate}. */
   interface Factory {
@@ -35,14 +33,14 @@ public interface CompiledTemplate {
 
   /**
    * Renders the template.
-   * 
+   *
    * @param appendable The output target
    * @param context The rendering context
-   * @return {@link RenderResult#done()} if rendering has completed successfully, 
-   *     {@link RenderResult#limited()} if rendering was paused because the appendable reported
-   *     {@link AdvisingAppendable#softLimitReached()} or 
-   *     {@link RenderResult#continueAfter(java.util.concurrent.Future)} if rendering encountered
-   *     a future that was not {@link java.util.concurrent.Future#isDone done}.
+   * @return {@link RenderResult#done()} if rendering has completed successfully, {@link
+   *     RenderResult#limited()} if rendering was paused because the appendable reported {@link
+   *     AdvisingAppendable#softLimitReached()} or {@link
+   *     RenderResult#continueAfter(java.util.concurrent.Future)} if rendering encountered a future
+   *     that was not {@link java.util.concurrent.Future#isDone done}.
    * @throws IOException If the output stream throws an exception. This is a fatal error and
    *     rendering cannot be continued.
    */
@@ -50,7 +48,7 @@ public interface CompiledTemplate {
 
   /**
    * The content kind of the compiled template, used for making runtime content escaping decisions.
-   * 
+   *
    * <p>{@code null} if this template is non-strict.
    */
   @Nullable

@@ -18,12 +18,9 @@ package com.google.template.soy.data;
 
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import com.google.template.soy.jbcsrc.api.RenderResult;
-
 import java.io.IOException;
-
 import javax.annotation.Nonnull;
 import javax.annotation.ParametersAreNonnullByDefault;
-
 
 /**
  * Abstract implementation of SoyValue.
@@ -35,55 +32,60 @@ import javax.annotation.ParametersAreNonnullByDefault;
 @ParametersAreNonnullByDefault
 public abstract class SoyAbstractValue implements SoyValue {
 
-
-  @Override @Nonnull public SoyValue resolve() {
+  @Override
+  @Nonnull
+  public SoyValue resolve() {
     return this;
   }
 
-  @Override @Nonnull public RenderResult status() {
+  @Override
+  @Nonnull
+  public RenderResult status() {
     return RenderResult.done();
   }
 
-  @Override public RenderResult renderAndResolve(AdvisingAppendable appendable, boolean isLast)
+  @Override
+  public RenderResult renderAndResolve(AdvisingAppendable appendable, boolean isLast)
       throws IOException {
     render(appendable);
     return RenderResult.done();
   }
 
   // Force subtypes to implement equals
-  @Override public abstract boolean equals(Object other);
+  @Override
+  public abstract boolean equals(Object other);
 
-
-  @Override public boolean booleanValue() {
+  @Override
+  public boolean booleanValue() {
     throw new SoyDataException(
         "Expecting boolean value but instead encountered type " + getClass().getSimpleName());
   }
 
-
-  @Override public int integerValue() {
+  @Override
+  public int integerValue() {
     throw new SoyDataException(
         "Expecting integer value but instead encountered type " + getClass().getSimpleName());
   }
 
-
-  @Override public long longValue() {
+  @Override
+  public long longValue() {
     return integerValue();
   }
 
-
-  @Override public double floatValue() {
+  @Override
+  public double floatValue() {
     throw new SoyDataException(
         "Expecting float value but instead encountered type " + getClass().getSimpleName());
   }
 
-
-  @Override public double numberValue() {
+  @Override
+  public double numberValue() {
     throw new SoyDataException(
         "Expecting number value but instead encountered type " + getClass().getSimpleName());
   }
 
-
-  @Override public String stringValue() {
+  @Override
+  public String stringValue() {
     throw new SoyDataException(
         "Expecting string value but instead encountered type " + getClass().getSimpleName());
   }

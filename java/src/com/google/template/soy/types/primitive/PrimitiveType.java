@@ -18,23 +18,21 @@ package com.google.template.soy.types.primitive;
 
 import com.google.template.soy.types.SoyType;
 
-/**
- * Base class for primitive types.
- */
+/** Base class for primitive types. */
 abstract class PrimitiveType implements SoyType {
 
-
-  @Override public boolean isAssignableFrom(SoyType srcType) {
+  @Override
+  public boolean isAssignableFrom(SoyType srcType) {
     return srcType.getKind() == getKind();
   }
 
-
-  @Override public boolean equals(Object other) {
+  @Override
+  public boolean equals(Object other) {
     return other.getClass() == this.getClass();
   }
 
-
-  @Override public int hashCode() {
+  @Override
+  public int hashCode() {
     // All instances of a given primitive type are considered equal.
     return this.getClass().hashCode();
   }

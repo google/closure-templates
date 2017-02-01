@@ -18,29 +18,13 @@ package com.google.template.soy.html;
 
 import com.google.common.collect.ImmutableSet;
 
-/**
- * Various HTML definitions from the w3 spec.
- */
+/** Various HTML definitions from the w3 spec. */
 public final class HtmlDefinitions {
   private HtmlDefinitions() {}
 
   /** The void elements, from http://www.w3.org/TR/html5/syntax.html#void-elements */
-  public static final ImmutableSet<String> HTML5_VOID_ELEMENTS = ImmutableSet.of(
-      "area",
-      "base",
-      "br",
-      "col",
-      "embed",
-      "hr",
-      "img",
-      "input",
-      "keygen",
-      "link",
-      "meta",
-      "param",
-      "source",
-      "track",
-      "wbr");
-
+  public static final ImmutableSet<String> HTML5_VOID_ELEMENTS =
+      ImmutableSet.of(
+          "area", "base", "br", "col", "embed", "hr", "img", "input", "keygen", "link", "meta",
+          "param", "source", "track", "wbr");
 }
-

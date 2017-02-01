@@ -16,35 +16,40 @@
 
 package com.google.template.soy.exprtree;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.exprtree.ExprNode.OperatorNode;
 import com.google.template.soy.exprtree.OperatorNodes.MinusOpNode;
-
-import junit.framework.TestCase;
-
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Map;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for AbstractExprNodeVisitor.
  *
  */
-public final class AbstractExprNodeVisitorTest extends TestCase {
+@RunWith(JUnit4.class)
+public final class AbstractExprNodeVisitorTest {
 
   private static final SourceLocation LOC = SourceLocation.UNKNOWN;
 
+  @Test
   public void testConcreteImplementation() throws SoySyntaxException {
 
     IntegerNode expr = new IntegerNode(17, LOC);
 
     IncompleteEvalVisitor iev = new IncompleteEvalVisitor(null);
-    assertEquals(17.0, iev.exec(expr));
+    assertEquals(17.0, iev.exec(expr), 0.0);
   }
 
-
+  @Test
   public void testInterfaceImplementation() throws SoySyntaxException {
 
     MinusOpNode expr = new MinusOpNode(LOC);
@@ -54,14 +59,14 @@ public final class AbstractExprNodeVisitorTest extends TestCase {
     expr.addChild(dataRef);
 
     IncompleteEvalVisitor iev = new IncompleteEvalVisitor(ImmutableMap.of("boo", 13.0));
-    assertEquals(4.0, iev.exec(expr));
+    assertEquals(4.0, iev.exec(expr), 0.0);
 
     expr.replaceChild(0, new IntegerNode(34, LOC));
 
-    assertEquals(21.0, iev.exec(expr));
+    assertEquals(21.0, iev.exec(expr), 0.0);
   }
 
-
+  @Test
   public void testNotImplemented() throws SoySyntaxException {
 
     MinusOpNode expr = new MinusOpNode(LOC);
@@ -80,7 +85,6 @@ public final class AbstractExprNodeVisitorTest extends TestCase {
     }
   }
 
-
   private static final class IncompleteEvalVisitor extends AbstractExprNodeVisitor<Double> {
 
     private final Map<String, Double> env;
@@ -91,31 +95,34 @@ public final class AbstractExprNodeVisitorTest extends TestCase {
       this.env = env;
     }
 
-    @Override public Double exec(ExprNode node) {
+    @Override
+    public Double exec(ExprNode node) {
       resultStack = new ArrayDeque<>();
       visit(node);
       return resultStack.peek();
     }
 
-    @Override protected void visitIntegerNode(IntegerNode node) {
+    @Override
+    protected void visitIntegerNode(IntegerNode node) {
       resultStack.push((double) node.getValue());
     }
 
-    @Override protected void visitVarRefNode(VarRefNode node) {
+    @Override
+    protected void visitVarRefNode(VarRefNode node) {
       resultStack.push(env.get(node.getName()));
     }
 
-    @Override protected void visitOperatorNode(OperatorNode node) {
+    @Override
+    protected void visitOperatorNode(OperatorNode node) {
       // Note: This isn't the "right" way to implement this, but we want to override the interface
       // implementation for the purpose of testing.
       if (node.getOperator() != Operator.MINUS) {
         throw new UnsupportedOperationException();
       }
-      visitChildren(node);  // results will be on stack in reverse operand order
+      visitChildren(node); // results will be on stack in reverse operand order
       double operand1 = resultStack.pop();
       double operand0 = resultStack.pop();
       resultStack.push(operand0 - operand1);
     }
   }
-
 }

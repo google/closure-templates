@@ -30,14 +30,12 @@ import com.google.template.soy.soytree.defn.TemplateParam;
 /**
  * Visitor for determining whether a template needs to ensure that its data is defined.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public final class ShouldEnsureDataIsDefinedVisitor {
 
-  /**
-   * Runs this pass on the given template.
-   */
+  /** Runs this pass on the given template. */
   public boolean exec(TemplateNode template) {
 
     boolean hasOptional = false;
@@ -64,19 +62,21 @@ public final class ShouldEnsureDataIsDefinedVisitor {
     return new AbstractNodeVisitor<Node, Boolean>() {
       boolean shouldEnsureDataIsDefined;
 
-      @Override public Boolean exec(Node node) {
+      @Override
+      public Boolean exec(Node node) {
         visit(node);
         return shouldEnsureDataIsDefined;
       }
 
-      @Override public void visit(Node node) {
+      @Override
+      public void visit(Node node) {
         if (node instanceof VarRefNode) {
           VarRefNode varRefNode = (VarRefNode) node;
           VarDefn var = varRefNode.getDefnDecl();
           // Don't include injected params in this analysis
           if (varRefNode.isPossibleParam()
-              && (var.kind() != VarDefn.Kind.PARAM  // a soydoc param -> not ij
-                  || !((TemplateParam) var).isInjected())) {  // an {@param but not {@inject
+              && (var.kind() != VarDefn.Kind.PARAM // a soydoc param -> not ij
+                  || !((TemplateParam) var).isInjected())) { // an {@param but not {@inject
             shouldEnsureDataIsDefined = true;
             return;
           }

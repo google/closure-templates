@@ -18,9 +18,7 @@ package com.google.template.soy.msgs;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.msgs.restricted.SoyMsg;
-
 import java.util.Iterator;
-
 
 /**
  * Represents a full set of messages in some language/locale.
@@ -28,59 +26,61 @@ import java.util.Iterator;
  */
 public interface SoyMsgBundle extends Iterable<SoyMsg> {
 
-
   /**
    * Gets the language/locale string of this bundle of messages.
+   *
    * @return The language/locale string of the messages provided by this bundle.
    */
   public String getLocaleString();
 
-
   /**
    * Retrieves a message by its unique message id.
+   *
    * @param msgId The message id of the message to retrieve.
    * @return The corresponding message, or null if not found.
    */
   public SoyMsg getMsg(long msgId);
 
-
   /**
    * Gets the number of messages in this bundle.
+   *
    * @return The number of messages in this bundle.
    */
   public int getNumMsgs();
 
-
   /**
    * Returns an iterator over all the messages.
+   *
    * @return An iterator over all the messages.
    */
-  @Override public Iterator<SoyMsg> iterator();
-
+  @Override
+  public Iterator<SoyMsg> iterator();
 
   // -----------------------------------------------------------------------------------------------
   // Null object.
-
 
   /** Null object for SoyMsgBundle, assumes English Locale. */
   public static SoyMsgBundle EMPTY =
       new SoyMsgBundle() {
 
-        @Override public String getLocaleString() {
+        @Override
+        public String getLocaleString() {
           return "en";
         }
 
-        @Override public SoyMsg getMsg(long msgId) {
+        @Override
+        public SoyMsg getMsg(long msgId) {
           return null;
         }
 
-        @Override public int getNumMsgs() {
+        @Override
+        public int getNumMsgs() {
           return 0;
         }
 
-        @Override public Iterator<SoyMsg> iterator() {
+        @Override
+        public Iterator<SoyMsg> iterator() {
           return ImmutableList.<SoyMsg>of().iterator();
         }
       };
-
 }

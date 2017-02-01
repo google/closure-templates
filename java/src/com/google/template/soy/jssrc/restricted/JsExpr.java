@@ -22,9 +22,9 @@ import com.google.template.soy.internal.targetexpr.TargetExpr;
  * Value class to represent a JS expression. Includes the text of the expression as well as the
  * precedence of the top-most operator.
  *
- * <p> Important: This class may only be used in implementing plugins (e.g. functions, directives).
+ * <p>Important: This class may only be used in implementing plugins (e.g. functions, directives).
  *
- * <p> Note that while all behavior of JsExpr matches TargetExpr, the class serves to differentiate
+ * <p>Note that while all behavior of JsExpr matches TargetExpr, the class serves to differentiate
  * between languages and retain plugin behavior.
  *
  */

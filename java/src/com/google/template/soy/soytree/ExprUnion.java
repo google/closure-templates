@@ -30,18 +30,16 @@ import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprparse.SoyParsingContext;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
-
 import java.util.ArrayList;
 import java.util.List;
-
 import javax.annotation.Nullable;
 
 /**
  * Represents a Soy expression in either V2 or V1 syntax.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
- * If this expression is in V2 syntax, then {@link #getExpr()} will return a nonnull expression
+ * <p>If this expression is in V2 syntax, then {@link #getExpr()} will return a nonnull expression
  * tree. If this expression is in V1 syntax, then {@code #getExpr()} will return null. In either
  * case, the expression text can be obtained from {@link #getExprText()}.
  *
@@ -49,12 +47,13 @@ import javax.annotation.Nullable;
 public final class ExprUnion {
 
   /** Creates an ExprUnion from the given expression text. */
-  static ExprUnion parseWithV1Fallback(String exprText, SourceLocation location,
-      SoyParsingContext context) {
+  static ExprUnion parseWithV1Fallback(
+      String exprText, SourceLocation location, SoyParsingContext context) {
     DelayedErrorReporter errorReporter = new DelayedErrorReporter();
     Checkpoint checkpoint = errorReporter.checkpoint();
-    ExprNode expr = new ExpressionParser(exprText, location,
-        context.withErrorReporter(errorReporter)).parseExpression();
+    ExprNode expr =
+        new ExpressionParser(exprText, location, context.withErrorReporter(errorReporter))
+            .parseExpression();
     return errorReporter.errorsSince(checkpoint)
         ? new ExprUnion(exprText, errorReporter.reports)
         : new ExprUnion(expr);
@@ -62,6 +61,7 @@ public final class ExprUnion {
 
   /**
    * Utility to create a list of {@code ExprUnion}s from a list of expression trees.
+   *
    * @param exprs The list of expression trees.
    * @return A new list of corresponding {@code ExprUnion}s.
    */
@@ -72,7 +72,6 @@ public final class ExprUnion {
     }
     return exprUnions;
   }
-
 
   /** The expression tree, or null if the expression is in V1 syntax. */
   @Nullable private final ExprRootNode expr;
@@ -85,6 +84,7 @@ public final class ExprUnion {
 
   /**
    * Constructor for an instance that represents a V2 expression.
+   *
    * @param expr The expression tree.
    */
   public ExprUnion(ExprNode expr) {
@@ -93,6 +93,7 @@ public final class ExprUnion {
 
   /**
    * Constructor for an instance that represents a V2 expression.
+   *
    * @param expr The expression tree.
    */
   public ExprUnion(ExprRootNode expr) {
@@ -103,6 +104,7 @@ public final class ExprUnion {
 
   /**
    * Constructor for an instance that represents an expression in V1 syntax.
+   *
    * @param exprTextV1 The text of the V1 expression.
    */
   private ExprUnion(String exprTextV1, List<DelayedErrorReport> delayedErrorReports) {
@@ -118,25 +120,17 @@ public final class ExprUnion {
     this.delayedErrorReports = orig.delayedErrorReports;
   }
 
-  /**
-   * Returns the expression tree if the expression is in V2 syntax, else null.
-   */
+  /** Returns the expression tree if the expression is in V2 syntax, else null. */
   public ExprRootNode getExpr() {
     return expr;
   }
 
-
-  /**
-   * Returns the expression text. This method works for both V2 and V1 expressions.
-   */
+  /** Returns the expression text. This method works for both V2 and V1 expressions. */
   public String getExprText() {
     return (expr != null) ? expr.toSourceString() : exprText;
   }
 
-
-  /**
-   * Returns a (deep) clone of this object.
-   */
+  /** Returns a (deep) clone of this object. */
   public ExprUnion copy(CopyState copyState) {
     return new ExprUnion(this, copyState);
   }

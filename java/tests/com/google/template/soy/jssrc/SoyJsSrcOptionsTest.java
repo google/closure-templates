@@ -18,15 +18,18 @@ package com.google.template.soy.jssrc;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import junit.framework.TestCase;
-
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for SoyJsSrcOptions.
  *
  */
-public final class SoyJsSrcOptionsTest extends TestCase {
+@RunWith(JUnit4.class)
+public final class SoyJsSrcOptionsTest {
 
+  @Test
   public void testClone() {
 
     SoyJsSrcOptions options = new SoyJsSrcOptions();

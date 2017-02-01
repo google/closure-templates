@@ -19,13 +19,11 @@ package com.google.template.soy.parseinfo;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
-
 /**
  * Parsed info about a Soy file.
  *
  */
 public class SoyFileInfo {
-
 
   /**
    * Enum for whether there are prefix expressions in the 'css' tags that a CSS name appears in.
@@ -37,7 +35,6 @@ public class SoyFileInfo {
     NEVER,
     SOMETIMES;
   }
-
 
   /** The source Soy file's name. */
   private final String fileName;
@@ -58,11 +55,10 @@ public class SoyFileInfo {
   /** Map from each CSS name appearing in this file to its CssTagsPrefixPresence state. */
   private final ImmutableMap<String, CssTagsPrefixPresence> cssNameMap;
 
-
   /**
    * Constructor for internal use only.
    *
-   * <p> Important: Do not construct SoyFileInfo objects outside of Soy internal or Soy-generated
+   * <p>Important: Do not construct SoyFileInfo objects outside of Soy internal or Soy-generated
    * code. User code that constructs SoyFileInfo objects will be broken by future Soy changes.
    *
    * @param fileName The source Soy file's name.
@@ -70,7 +66,8 @@ public class SoyFileInfo {
    * @param templates List of templates in this Soy file.
    */
   public SoyFileInfo(
-      String fileName, String namespace,
+      String fileName,
+      String namespace,
       ImmutableList<SoyTemplateInfo> templates,
       ImmutableMap<String, CssTagsPrefixPresence> cssNameMap,
       ImmutableList<String> deltemplateNames) {
@@ -80,7 +77,6 @@ public class SoyFileInfo {
     this.cssNameMap = cssNameMap;
     this.deltemplateNames = deltemplateNames;
   }
-
 
   /** Returns the source Soy file's name. */
   public final String getFileName() {
@@ -103,16 +99,14 @@ public class SoyFileInfo {
   }
 
   /**
-   * Returns a list of any protocol buffer types used by the templates. The elements
-   * of the list are the default object for a given proto type.
+   * Returns a list of any protocol buffer types used by the templates. The elements of the list are
+   * the default object for a given proto type.
    */
   public ImmutableList<Object> getProtoTypes() {
     return ImmutableList.of();
   }
 
-  /**
-   * Returns the fully qualified names of all deltemplates in the file.
-   */
+  /** Returns the fully qualified names of all deltemplates in the file. */
   public final ImmutableList<String> getDelTemplateNames() {
     return deltemplateNames;
   }

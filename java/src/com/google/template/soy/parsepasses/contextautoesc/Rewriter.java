@@ -37,7 +37,6 @@ import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.TemplateNode;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -52,7 +51,7 @@ final class Rewriter {
   private final Inferences inferences;
 
   /**
-   * The names of templates visited.  Used to distinguish derived templates from templates in the
+   * The names of templates visited. Used to distinguish derived templates from templates in the
    * input Soy files.
    */
   private final Set<String> visitedTemplateNames = Sets.newHashSet();
@@ -72,9 +71,7 @@ final class Rewriter {
     this.errorReporter = errorReporter;
   }
 
-  /**
-   * @return Derived templates that should be added to the parse tree.
-   */
+  /** @return Derived templates that should be added to the parse tree. */
   public List<TemplateNode> rewrite(SoyFileSetNode files) {
     RewriterVisitor mutator = new RewriterVisitor();
     // First walk the input files that the caller already knows about.
@@ -95,33 +92,28 @@ final class Rewriter {
     return extraTemplates.build();
   }
 
-
-  /**
-   * A visitor that applies the changes in Inferences to a Soy tree.
-   */
+  /** A visitor that applies the changes in Inferences to a Soy tree. */
   private final class RewriterVisitor extends AbstractSoyNodeVisitor<Void> {
-    /**
-     * Keep track of template nodes so we know which are derived and which aren't.
-     */
-    @Override protected void visitTemplateNode(TemplateNode templateNode) {
+    /** Keep track of template nodes so we know which are derived and which aren't. */
+    @Override
+    protected void visitTemplateNode(TemplateNode templateNode) {
       Preconditions.checkState(!visitedTemplateNames.contains(templateNode.getTemplateName()));
       visitedTemplateNames.add(templateNode.getTemplateName());
       visitChildrenAllowingConcurrentModification(templateNode);
     }
 
-    /**
-     * Add any escaping directives.
-     */
-    @Override protected void visitPrintNode(PrintNode printNode) {
-      int id = printNode.getId();
-      ImmutableList<EscapingMode> escapingModes = inferences.getEscapingModesForId(id);
+    /** Add any escaping directives. */
+    @Override
+    protected void visitPrintNode(PrintNode printNode) {
+      ImmutableList<EscapingMode> escapingModes = inferences.getEscapingModesForNode(printNode);
       for (EscapingMode escapingMode : escapingModes) {
-        PrintDirectiveNode newPrintDirective = new PrintDirectiveNode.Builder(
-            inferences.getIdGenerator().genId(),
-            escapingMode.directiveName,
-            "",
-            printNode.getSourceLocation())
-            .build(SoyParsingContext.exploding());
+        PrintDirectiveNode newPrintDirective =
+            new PrintDirectiveNode.Builder(
+                    inferences.getIdGenerator().genId(),
+                    escapingMode.directiveName,
+                    "",
+                    printNode.getSourceLocation())
+                .build(SoyParsingContext.exploding());
 
         // Figure out where to put the new directive.
         // Normally they go at the end to ensure that the value printed is of the appropriate type,
@@ -141,29 +133,25 @@ final class Rewriter {
       }
     }
 
-    /**
-     * Do nothing.
-     */
-    @Override protected void visitRawTextNode(RawTextNode rawTextNode) {
+    /** Do nothing. */
+    @Override
+    protected void visitRawTextNode(RawTextNode rawTextNode) {
       // TODO: Possibly normalize raw text nodes by adding quotes around unquoted attributes with
       // non-noescape dynamic content to avoid the need for space escaping.
     }
 
-    /**
-     * Grabs the inferred escaping directives from the node in string form.
-     */
+    /** Grabs the inferred escaping directives from the node in string form. */
     private ImmutableList<String> getDirectiveNamesForNode(SoyNode node) {
       ImmutableList.Builder<String> escapingDirectiveNames = new ImmutableList.Builder<>();
-      for (EscapingMode escapingMode : inferences.getEscapingModesForId(node.getId())) {
+      for (EscapingMode escapingMode : inferences.getEscapingModesForNode(node)) {
         escapingDirectiveNames.add(escapingMode.directiveName);
       }
       return escapingDirectiveNames.build();
     }
 
-    /**
-     * Sets the escaping directives we inferred on the node.
-     */
-    @Override protected void visitMsgFallbackGroupNode(MsgFallbackGroupNode node) {
+    /** Sets the escaping directives we inferred on the node. */
+    @Override
+    protected void visitMsgFallbackGroupNode(MsgFallbackGroupNode node) {
       node.setEscapingDirectiveNames(getDirectiveNamesForNode(node));
       visitChildren(node);
     }
@@ -171,42 +159,45 @@ final class Rewriter {
     /**
      * Rewrite call targets.
      *
-     * Note that this processing is only applicable for CallBasicNodes. The reason is that
+     * <p>Note that this processing is only applicable for CallBasicNodes. The reason is that
      * CallDelegateNodes are always calling public templates (delegate templates are always public),
      * and public templates never need rewriting.
      *
-     * TODO: Modify contextual autoescape to deal with delegates appropriately.
+     * <p>TODO: Modify contextual autoescape to deal with delegates appropriately.
      */
-    @Override protected void visitCallNode(CallNode callNode) {
+    @Override
+    protected void visitCallNode(CallNode callNode) {
       // We cannot easily access the original context.  However, because everything has already been
       // parsed, that should be fine.  I don't think this can fail at all, but whatever.
       SoyParsingContext context = SoyParsingContext.empty(errorReporter, "fake.namespace");
 
-      String derivedCalleeName = inferences.getDerivedCalleeNameForCallId(callNode.getId());
+      String derivedCalleeName = inferences.getDerivedCalleeNameForCall(callNode);
       if (derivedCalleeName != null) {
         // Creates a new call node, but with a different target name.
         // TODO: Create a CallNode.withNewName() convenience method.
         CallNode newCallNode;
         if (callNode instanceof CallBasicNode) {
           // For simplicity, use the full callee name as the source callee name.
-          newCallNode = new CallBasicNode.Builder(callNode.getId(), callNode.getSourceLocation())
-              .calleeName(derivedCalleeName)
-              .sourceCalleeName(derivedCalleeName)
-              .dataAttribute(callNode.dataAttribute())
-              .userSuppliedPlaceholderName(callNode.getUserSuppliedPhName())
-              .syntaxVersionBound(callNode.getSyntaxVersionUpperBound())
-              .escapingDirectiveNames(callNode.getEscapingDirectiveNames())
-              .build(context);
+          newCallNode =
+              new CallBasicNode.Builder(callNode.getId(), callNode.getSourceLocation())
+                  .calleeName(derivedCalleeName)
+                  .sourceCalleeName(derivedCalleeName)
+                  .dataAttribute(callNode.dataAttribute())
+                  .userSuppliedPlaceholderName(callNode.getUserSuppliedPhName())
+                  .syntaxVersionBound(callNode.getSyntaxVersionUpperBound())
+                  .escapingDirectiveNames(callNode.getEscapingDirectiveNames())
+                  .build(context);
         } else {
           CallDelegateNode callNodeCast = (CallDelegateNode) callNode;
-          newCallNode = new CallDelegateNode.Builder(callNode.getId(), callNode.getSourceLocation())
-              .delCalleeName(derivedCalleeName)
-              .delCalleeVariantExpr(callNodeCast.getDelCalleeVariantExpr())
-              .allowEmptyDefault(callNodeCast.allowsEmptyDefault())
-              .dataAttribute(callNode.dataAttribute())
-              .userSuppliedPlaceholderName(callNode.getUserSuppliedPhName())
-              .escapingDirectiveNames(callNode.getEscapingDirectiveNames())
-              .build(context);
+          newCallNode =
+              new CallDelegateNode.Builder(callNode.getId(), callNode.getSourceLocation())
+                  .delCalleeName(derivedCalleeName)
+                  .delCalleeVariantExpr(callNodeCast.getDelCalleeVariantExpr())
+                  .allowEmptyDefault(callNodeCast.allowsEmptyDefault())
+                  .dataAttribute(callNode.dataAttribute())
+                  .userSuppliedPlaceholderName(callNode.getUserSuppliedPhName())
+                  .escapingDirectiveNames(callNode.getEscapingDirectiveNames())
+                  .build(context);
         }
         if (!callNode.getCommandText().equals(newCallNode.getCommandText())) {
           moveChildrenTo(callNode, newCallNode);
@@ -222,25 +213,19 @@ final class Rewriter {
       visitChildrenAllowingConcurrentModification(callNode);
     }
 
-    /**
-     * Recurses to children.
-     */
-    @Override protected void visitSoyNode(SoyNode node) {
+    /** Recurses to children. */
+    @Override
+    protected void visitSoyNode(SoyNode node) {
       if (node instanceof ParentSoyNode<?>) {
         visitChildrenAllowingConcurrentModification((ParentSoyNode<?>) node);
       }
     }
-
   }
 
-
-  /**
-   * Replaces old child with new child.
-   */
+  /** Replaces old child with new child. */
   private static void replaceChild(StandaloneNode oldChild, StandaloneNode newChild) {
     oldChild.getParent().replaceChild(oldChild, newChild);
   }
-
 
   private static <T extends SoyNode> void moveChildrenTo(
       ParentSoyNode<T> oldParent, ParentSoyNode<T> newParent) {
@@ -248,5 +233,4 @@ final class Rewriter {
     oldParent.clearChildren();
     newParent.addChildren(children);
   }
-
 }

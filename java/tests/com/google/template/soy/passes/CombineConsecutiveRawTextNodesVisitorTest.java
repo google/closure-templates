@@ -19,30 +19,34 @@ package com.google.template.soy.passes;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.template.soy.SoyFileSetParserBuilder;
+import com.google.template.soy.base.SourceLocation.Point;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ExplodingErrorReporter;
-import com.google.template.soy.passes.CombineConsecutiveRawTextNodesVisitor;
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateNode;
-
-import junit.framework.TestCase;
+import java.util.Arrays;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for CombineConsecutiveRawTextNodesVisitor.
  *
  */
-public final class CombineConsecutiveRawTextNodesVisitorTest extends TestCase {
+@RunWith(JUnit4.class)
+public final class CombineConsecutiveRawTextNodesVisitorTest {
 
+  @Test
   public void testCombineConsecutiveRawTextNodes() {
     String testFileContent =
-        "{namespace boo autoescape=\"deprecated-noncontextual\"}\n" +
-        "\n" +
-        "/** @param goo */\n" +
-        "{template .foo}\n" +
-        "  Blah{$goo}blah\n" +
-        "{/template}\n";
+        "{namespace boo}\n"
+            + "\n"
+            + "/** @param goo */\n"
+            + "{template .foo}\n"
+            + "  Blah{$goo}blah\n"
+            + "{/template}\n";
 
     ErrorReporter boom = ExplodingErrorReporter.get();
     SoyFileSetNode soyTree =
@@ -56,11 +60,54 @@ public final class CombineConsecutiveRawTextNodesVisitorTest extends TestCase {
 
     assertThat(template.numChildren()).isEqualTo(5);
 
-    new CombineConsecutiveRawTextNodesVisitor().exec(soyTree);
+    new CombineConsecutiveRawTextNodesVisitor(soyTree.getNodeIdGenerator()).exec(soyTree);
 
     assertThat(template.numChildren()).isEqualTo(3);
     assertThat(((RawTextNode) template.getChild(0)).getRawText()).isEqualTo("Blah");
     assertThat(((RawTextNode) template.getChild(2)).getRawText()).isEqualTo("blahblehbluh");
   }
 
+
+  @Test
+  public void testCombineConsecutiveRawTextNodes_preserveSourceLocations() {
+    String testFileContent = "{namespace boo}{template .foo}\nbl{nil}ah\n{/template}";
+
+    ErrorReporter boom = ExplodingErrorReporter.get();
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(testFileContent)
+            .errorReporter(boom)
+            .parse()
+            .fileSet();
+    TemplateNode template = (TemplateNode) SharedTestUtils.getNode(soyTree);
+    assertThat(template.numChildren()).isEqualTo(1);
+
+    RawTextNode node = (RawTextNode) template.getChild(0);
+    assertThat(node.getRawText()).isEqualTo("blah");
+    assertThat(node.getSourceLocation().getBeginPoint()).isEqualTo(Point.create(2, 1));
+    assertThat(node.getSourceLocation().getEndPoint()).isEqualTo(Point.create(2, 9));
+
+    // we also know the locations of individual characters
+    assertThat(node.locationOf(2)).isEqualTo(Point.create(2, 8));
+
+    // split it up into 1 node per character
+    int newId = 1; // arbitrary
+    RawTextNode c1 = node.substring(newId, 0, 1);
+    RawTextNode c2 = node.substring(newId, 1, 2);
+    RawTextNode c3 = node.substring(newId, 2, 3);
+    RawTextNode c4 = node.substring(newId, 3, 4);
+    template.removeChild(node);
+    template.addChildren(Arrays.asList(c1, c2, c3, c4));
+
+    assertThat(template.numChildren()).isEqualTo(4);
+
+    new CombineConsecutiveRawTextNodesVisitor(soyTree.getNodeIdGenerator()).exec(soyTree);
+
+    assertThat(template.numChildren()).isEqualTo(1);
+    node = (RawTextNode) template.getChild(0);
+    // all the data is preserved across the join operation
+    assertThat(node.getRawText()).isEqualTo("blah");
+    assertThat(node.getSourceLocation().getBeginPoint()).isEqualTo(Point.create(2, 1));
+    assertThat(node.getSourceLocation().getEndPoint()).isEqualTo(Point.create(2, 9));
+    assertThat(node.locationOf(2)).isEqualTo(Point.create(2, 8));
+  }
 }

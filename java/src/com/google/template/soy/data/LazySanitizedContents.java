@@ -20,9 +20,9 @@ import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.internal.RenderableThunk;
 
 /**
- * An internal only  class to allow the render package to create lazy versions of SanitizedContent.
+ * An internal only class to allow the render package to create lazy versions of SanitizedContent.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public final class LazySanitizedContents {

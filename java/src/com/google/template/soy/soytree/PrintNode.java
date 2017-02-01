@@ -28,25 +28,24 @@ import com.google.template.soy.soytree.SoyNode.MsgPlaceholderInitialNode;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
-
 import java.util.List;
-
 import javax.annotation.Nullable;
 
 /**
  * Node representing a 'print' statement.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNode>
-    implements StandaloneNode, SplitLevelTopNode<PrintDirectiveNode>, StatementNode,
-    ExprHolderNode, MsgPlaceholderInitialNode {
-
+    implements StandaloneNode,
+        SplitLevelTopNode<PrintDirectiveNode>,
+        StatementNode,
+        ExprHolderNode,
+        MsgPlaceholderInitialNode {
 
   /** Fallback base placeholder name. */
   public static final String FALLBACK_BASE_PLACEHOLDER_NAME = "XXX";
-
 
   /** Whether the command 'print' is implicit. */
   private final boolean isImplicit;
@@ -71,9 +70,9 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
     this.userSuppliedPlaceholderName = userSuppliedPlaceholderName;
   }
 
-
   /**
    * Copy constructor.
+   *
    * @param orig The node to copy.
    */
   private PrintNode(PrintNode orig, CopyState copyState) {
@@ -90,44 +89,41 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
    * passed to incremental DOM APIs.
    */
   public HtmlContext getHtmlContext() {
-    return Preconditions.checkNotNull(htmlContext,
-        "Cannot access HtmlContext before HtmlTransformVisitor");
+    return Preconditions.checkNotNull(
+        htmlContext, "Cannot access HtmlContext before HtmlTransformVisitor");
   }
 
   public void setHtmlContext(HtmlContext value) {
     this.htmlContext = value;
   }
 
-
-  @Override public Kind getKind() {
+  @Override
+  public Kind getKind() {
     return Kind.PRINT_NODE;
   }
-
 
   /** Returns whether the 'print' command name was implicit. */
   public boolean isImplicit() {
     return isImplicit;
   }
 
-
   /** Returns the text of the expression to print. */
   public String getExprText() {
     return exprUnion.getExprText();
   }
-
 
   /** Returns the parsed expression, or null if the expression is not in V2 syntax. */
   public ExprUnion getExprUnion() {
     return exprUnion;
   }
 
-
-  @Override public String getUserSuppliedPhName() {
+  @Override
+  public String getUserSuppliedPhName() {
     return userSuppliedPlaceholderName;
   }
 
-
-  @Override public String genBasePhName() {
+  @Override
+  public String genBasePhName() {
 
     if (userSuppliedPlaceholderName != null) {
       return BaseUtils.convertToUpperUnderscore(userSuppliedPlaceholderName);
@@ -142,19 +138,19 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
         exprRoot.getRoot(), FALLBACK_BASE_PLACEHOLDER_NAME);
   }
 
-
-  @Override public Object genSamenessKey() {
+  @Override
+  public Object genSamenessKey() {
     // PrintNodes are considered the same placeholder if they have the same command text.
     return getCommandText();
   }
 
-
-  @Override public List<ExprUnion> getAllExprUnions() {
+  @Override
+  public List<ExprUnion> getAllExprUnions() {
     return ImmutableList.of(exprUnion);
   }
 
-
-  @Override public String getCommandText() {
+  @Override
+  public String getCommandText() {
     StringBuilder sb = new StringBuilder();
     sb.append(exprUnion.getExprText());
     for (PrintDirectiveNode child : getChildren()) {
@@ -166,29 +162,27 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
     return sb.toString();
   }
 
-
-  @Override public String getTagString() {
+  @Override
+  public String getTagString() {
     return buildTagStringHelper(false, isImplicit);
   }
 
-
-  @Override public String toSourceString() {
+  @Override
+  public String toSourceString() {
     return getTagString();
   }
 
-
-  @Override public BlockNode getParent() {
+  @Override
+  public BlockNode getParent() {
     return (BlockNode) super.getParent();
   }
 
-
-  @Override public PrintNode copy(CopyState copyState) {
+  @Override
+  public PrintNode copy(CopyState copyState) {
     return new PrintNode(this, copyState);
   }
 
-  /**
-   * Builder for {@link PrintNode}.
-   */
+  /** Builder for {@link PrintNode}. */
   public static final class Builder {
     private final int id;
     private final boolean isImplicit;
@@ -212,8 +206,8 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
     /**
      * @param exprText The node's expression text.
      * @return This builder, for chaining.
-     * @throws java.lang.IllegalStateException if {@link #exprText} or {@link #exprUnion}
-     * has already been set.
+     * @throws java.lang.IllegalStateException if {@link #exprText} or {@link #exprUnion} has
+     *     already been set.
      */
     public Builder exprText(String exprText) {
       Preconditions.checkState(this.exprText == null);
@@ -225,8 +219,8 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
     /**
      * @param exprUnion The parsed expression for this print node.
      * @return This builder, for chaining.
-     * @throws java.lang.IllegalStateException if {@link #exprText} or {@link #exprUnion}
-     * has already been set.
+     * @throws java.lang.IllegalStateException if {@link #exprText} or {@link #exprUnion} has
+     *     already been set.
      */
     public Builder exprUnion(ExprUnion exprUnion) {
       Preconditions.checkState(this.exprText == null);
@@ -246,8 +240,9 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
 
     /**
      * Returns a new {@link PrintNode} built from this builder's state.
+     *
      * @throws java.lang.IllegalStateException if neither {@link #exprText} nor {@link #exprUnion}
-     * have been set.
+     *     have been set.
      */
     public PrintNode build(SoyParsingContext context) {
       ExprUnion exprUnion = getOrParseExprUnion(context);
@@ -262,5 +257,4 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
       return ExprUnion.parseWithV1Fallback(exprText, sourceLocation, context);
     }
   }
-
 }

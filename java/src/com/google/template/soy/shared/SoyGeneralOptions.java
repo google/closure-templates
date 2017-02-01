@@ -19,6 +19,7 @@ package com.google.template.soy.shared;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
@@ -26,15 +27,13 @@ import com.google.template.soy.SoyUtils;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.data.internalutils.InternalValueUtils;
 import com.google.template.soy.data.restricted.PrimitiveData;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.util.List;
 import java.util.Map;
-
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-
 
 /**
  * Compilation options applicable to the Soy frontend and/or to multiple Soy backends.
@@ -54,6 +53,9 @@ public final class SoyGeneralOptions implements Cloneable {
   /** Map from compile-time global name to value. */
   private ImmutableMap<String, PrimitiveData> compileTimeGlobals;
 
+  /** A list of experimental features that are not generally available. */
+  private ImmutableList<String> experimentalFeatures = ImmutableList.of();
+
   public SoyGeneralOptions() {}
 
   private SoyGeneralOptions(SoyGeneralOptions orig) {
@@ -61,10 +63,27 @@ public final class SoyGeneralOptions implements Cloneable {
     this.allowExternalCalls = orig.allowExternalCalls;
     this.strictAutoescapingRequired = orig.strictAutoescapingRequired;
     this.compileTimeGlobals = orig.compileTimeGlobals;
+    this.experimentalFeatures = ImmutableList.copyOf(orig.experimentalFeatures);
+  }
+
+  /**
+   * Sets experimental features. These features are unreleased and are not generally available.
+   *
+   * @param experimentalFeatures
+   */
+  public SoyGeneralOptions setExperimentalFeatures(List<String> experimentalFeatures) {
+    this.experimentalFeatures = ImmutableList.copyOf(experimentalFeatures);
+    return this;
+  }
+
+  /** Returns a list of experimental features. */
+  public ImmutableList<String> getExperimentalFeatures() {
+    return experimentalFeatures;
   }
 
   /**
    * Sets the user-declared syntax version name for the Soy file bundle.
+   *
    * @param versionName The syntax version name, e.g. "1.0", "2.0", "2.3".
    */
   public SoyGeneralOptions setDeclaredSyntaxVersionName(@Nonnull String versionName) {
@@ -76,7 +95,7 @@ public final class SoyGeneralOptions implements Cloneable {
    * Returns the user-declared syntax version, or the given default value if the user did not
    * declare a syntax version.
    *
-   * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+   * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
    *
    * @param defaultSyntaxVersion The default value to return if the user did not declare a syntax
    *     version.
@@ -87,6 +106,7 @@ public final class SoyGeneralOptions implements Cloneable {
 
   /**
    * Sets whether to allow external calls (calls to undefined templates).
+   *
    * @param allowExternalCalls The value to set.
    */
   public SoyGeneralOptions setAllowExternalCalls(boolean allowExternalCalls) {
@@ -104,6 +124,7 @@ public final class SoyGeneralOptions implements Cloneable {
 
   /**
    * Sets whether strict autoescaping is required.
+   *
    * @param strictAutoescapingRequired Whether autoescaping is required.
    */
   public SoyGeneralOptions setStrictAutoescapingRequired(boolean strictAutoescapingRequired) {
@@ -111,9 +132,7 @@ public final class SoyGeneralOptions implements Cloneable {
     return this;
   }
 
-  /**
-   * Returns whether strict autoescaping is required.
-   */
+  /** Returns whether strict autoescaping is required. */
   public boolean isStrictAutoescapingRequired() {
     return strictAutoescapingRequired;
   }
@@ -121,13 +140,13 @@ public final class SoyGeneralOptions implements Cloneable {
   /**
    * Sets the map from compile-time global name to value.
    *
-   * <p> The values can be any of the Soy primitive types: null, boolean, integer, float (Java
+   * <p>The values can be any of the Soy primitive types: null, boolean, integer, float (Java
    * double), or string.
    *
-   * @param compileTimeGlobalsMap Map from compile-time global name to value. The values can be
-   *     any of the Soy primitive types: null, boolean, integer, float (Java double), or string.
-   * @throws com.google.template.soy.base.SoySyntaxException If one of the values is not a valid
-   *        Soy primitive type.
+   * @param compileTimeGlobalsMap Map from compile-time global name to value. The values can be any
+   *     of the Soy primitive types: null, boolean, integer, float (Java double), or string.
+   * @throws com.google.template.soy.base.SoySyntaxException If one of the values is not a valid Soy
+   *     primitive type.
    */
   public SoyGeneralOptions setCompileTimeGlobals(Map<String, ?> compileTimeGlobalsMap) {
     setCompileTimeGlobalsInternal(
@@ -149,60 +168,64 @@ public final class SoyGeneralOptions implements Cloneable {
   /**
    * Sets the file containing compile-time globals.
    *
-   * <p> Each line of the file should have the format
+   * <p>Each line of the file should have the format
+   *
    * <pre>
    *     &lt;global_name&gt; = &lt;primitive_data&gt;
    * </pre>
+   *
    * where primitive_data is a valid Soy expression literal for a primitive type (null, boolean,
    * integer, float, or string). Empty lines and lines beginning with "//" are ignored. The file
    * should be encoded in UTF-8.
    *
-   * <p> If you need to generate a file in this format from Java, consider using the utility
-   * {@code SoyUtils.generateCompileTimeGlobalsFile()}.
+   * <p>If you need to generate a file in this format from Java, consider using the utility {@code
+   * SoyUtils.generateCompileTimeGlobalsFile()}.
    *
    * @param compileTimeGlobalsFile The file containing compile-time globals.
    * @throws IOException If there is an error reading the compile-time globals file.
    */
   public SoyGeneralOptions setCompileTimeGlobals(File compileTimeGlobalsFile) throws IOException {
-    setCompileTimeGlobalsInternal(SoyUtils.parseCompileTimeGlobals(
-        Files.asCharSource(compileTimeGlobalsFile, UTF_8)));
+    setCompileTimeGlobalsInternal(
+        SoyUtils.parseCompileTimeGlobals(Files.asCharSource(compileTimeGlobalsFile, UTF_8)));
     return this;
   }
 
   /**
    * Sets the resource file containing compile-time globals.
    *
-   * <p> Each line of the file should have the format
+   * <p>Each line of the file should have the format
+   *
    * <pre>
    *     &lt;global_name&gt; = &lt;primitive_data&gt;
    * </pre>
+   *
    * where primitive_data is a valid Soy expression literal for a primitive type (null, boolean,
    * integer, float, or string). Empty lines and lines beginning with "//" are ignored. The file
    * should be encoded in UTF-8.
    *
-   * <p> If you need to generate a file in this format from Java, consider using the utility
-   * {@code SoyUtils.generateCompileTimeGlobalsFile()}.
+   * <p>If you need to generate a file in this format from Java, consider using the utility {@code
+   * SoyUtils.generateCompileTimeGlobalsFile()}.
    *
    * @param compileTimeGlobalsResource The resource file containing compile-time globals.
    * @throws IOException If there is an error reading the compile-time globals file.
    */
   public SoyGeneralOptions setCompileTimeGlobals(URL compileTimeGlobalsResource)
       throws IOException {
-    setCompileTimeGlobalsInternal(SoyUtils.parseCompileTimeGlobals(
-        Resources.asCharSource(compileTimeGlobalsResource, UTF_8)));
+    setCompileTimeGlobalsInternal(
+        SoyUtils.parseCompileTimeGlobals(
+            Resources.asCharSource(compileTimeGlobalsResource, UTF_8)));
     return this;
   }
 
-  /**
-   * Returns the map from compile-time global name to value.
-   */
+  /** Returns the map from compile-time global name to value. */
   public ImmutableMap<String, PrimitiveData> getCompileTimeGlobals() {
     return compileTimeGlobals == null
         ? ImmutableMap.<String, PrimitiveData>of()
         : compileTimeGlobals;
   }
 
-  @Override public final SoyGeneralOptions clone() {
+  @Override
+  public final SoyGeneralOptions clone() {
     return new SoyGeneralOptions(this);
   }
 }

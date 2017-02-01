@@ -17,99 +17,63 @@
 package com.google.template.soy.data;
 
 import java.util.Map;
-
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
-
 
 /**
  * A mutable SoyDict with additional methods for ease-of-use.
  *
  * <p>In map usage, the item keys are the record field names in the form of StringData.
  *
- * <p>Important: Until this API is more stable and this note is removed, users must not define
- * classes that implement this interface.
+ * <p>Important: Do not use. Use java.util.Map instead.
  *
  */
+@Deprecated
 @ParametersAreNonnullByDefault
 public interface SoyEasyDict extends SoyDict {
 
-
   /**
    * Sets a field of this dict.
+   *
    * @param name The field name to set.
    * @param valueProvider A provider of the field value for the given field name. Note that this is
    *     often just the field value itself, since all values are also providers.
    */
+  @Deprecated
   public void setField(String name, SoyValueProvider valueProvider);
-
 
   /**
    * Deletes a field of this dict.
+   *
    * @param name The field name to delete.
    */
+  @Deprecated
   public void delField(String name);
-
-
-  /**
-   * Sets items in this dict from another dict.
-   * @param dict A dict of the fields to set.
-   */
-  public void setItemsFromDict(SoyDict dict);
-
 
   /**
    * Sets fields on this dict from a Java string-keyed map.
+   *
    * @param javaStringMap A Java string-keyed map of the fields to set.
    */
+  @Deprecated
   public void setFieldsFromJavaStringMap(Map<String, ?> javaStringMap);
-
 
   /**
    * Sets a subfield of this dict.
+   *
    * @param dottedName The dotted name to set (one or more field names, dot-separated).
    * @param value The subfield value for the given dotted name. If it's not a SoyValueProvider
    *     (includes SoyValue), it will be converted.
    */
+  @Deprecated
   public void set(String dottedName, @Nullable Object value);
-
-
-  /**
-   * Deletes a subfield of this dict.
-   * @param dottedName The dotted name to delete (one or more field names, dot-separated).
-   */
-  public void del(String dottedName);
-
-
-  /**
-   * Checks whether this dict has a subfield at the given dotted name.
-   * @param dottedName The dotted name to check (one or more field names, dot-separated).
-   * @return Whether this dict has a subfield at the given dotted name.
-   */
-  public boolean has(String dottedName);
-
 
   /**
    * Gets a subfield value of this dict.
+   *
    * @param dottedName The dotted name to get (one or more field names, dot-separated).
    * @return The subfield value for the given dotted name, or null if no such subfield.
    */
+  @Deprecated
   public SoyValue get(String dottedName);
-
-
-  /**
-   * Gets a provider of a subfield value of this dict.
-   * @param dottedName The dotted name to get (one or more field names, dot-separated).
-   * @return A provider of the subfield value for the given dotted name, or null if no such
-   *     subfield.
-   */
-  public SoyValueProvider getProvider(String dottedName);
-
-
-  /**
-   * Makes this dict immutable.
-   * @return This dict, for convenience.
-   */
-  public SoyEasyDict makeImmutable();
-
 }

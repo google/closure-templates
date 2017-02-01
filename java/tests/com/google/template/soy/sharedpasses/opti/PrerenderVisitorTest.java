@@ -16,62 +16,65 @@
 
 package com.google.template.soy.sharedpasses.opti;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.SoyModule;
 import com.google.template.soy.sharedpasses.render.RenderException;
-
-import junit.framework.TestCase;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for PrerenderVisitor.
  *
  */
-public class PrerenderVisitorTest extends TestCase {
+@RunWith(JUnit4.class)
+public class PrerenderVisitorTest {
 
-
+  @Test
   public void testPrerenderBasic() throws Exception {
 
     String templateBody =
-        "{let $boo: 8 /}\n" +
-        "{$boo}\n" +
-        "{if $boo > 4}\n" +
-        "  {sp}+ 7 equals {$boo + 7}.\n" +
-        "{/if}\n";
+        "{let $boo: 8 /}\n"
+            + "{$boo}\n"
+            + "{if $boo > 4}\n"
+            + "  {sp}+ 7 equals {$boo + 7}.\n"
+            + "{/if}\n";
     assertEquals("8 + 7 equals 15.", prerender(templateBody));
   }
 
-
+  @Test
   public void testPrerenderWithDirectives() throws Exception {
 
     String printNodesSource =
-        "{let $boo: 8 /}\n" +
-        "{'<b>&</b>' |escapeHtml}   {sp}\n" +
-        "{'aaa+bbb = ccc' |escapeUri}   {sp}\n" +
-        "{'0123456789' |truncate:5,true}   {sp}\n" +
-        "{'0123456789' |truncate:$boo,false}   {sp}\n" +
-        "{'0123456789' |escapeHtml |insertWordBreaks:5}   {sp}\n" +
-        "{'0123456789' |insertWordBreaks:$boo |escapeHtml}   {sp}\n";
+        "{let $boo: 8 /}\n"
+            + "{'<b>&</b>' |escapeHtml}   {sp}\n"
+            + "{'aaa+bbb = ccc' |escapeUri}   {sp}\n"
+            + "{'0123456789' |truncate:5,true}   {sp}\n"
+            + "{'0123456789' |truncate:$boo,false}   {sp}\n"
+            + "{'0123456789' |escapeHtml |insertWordBreaks:5}   {sp}\n"
+            + "{'0123456789' |insertWordBreaks:$boo |escapeHtml}   {sp}\n";
     String expectedResult =
-        "&lt;b&gt;&amp;&lt;/b&gt;    " +
-        "aaa%2Bbbb%20%3D%20ccc    " +
-        "01...    " +
-        "01234567    " +
-        "01234<wbr>56789    " +
-        "01234567&lt;wbr&gt;89    ";
+        "&lt;b&gt;&amp;&lt;/b&gt;    "
+            + "aaa%2Bbbb%20%3D%20ccc    "
+            + "01...    "
+            + "01234567    "
+            + "01234<wbr>56789    "
+            + "01234567&lt;wbr&gt;89    ";
     assertEquals(expectedResult, prerender(printNodesSource));
   }
 
-
+  @Test
   public void testPrerenderWithUnsupportedNode() throws Exception {
 
     // Cannot prerender MsgFallbackGroupNode.
-    String templateBody =
-        "{msg desc=\"\"}\n" +
-        "  Hello world.\n" +
-        "{/msg}\n";
+    String templateBody = "{msg desc=\"\"}\n" + "  Hello world.\n" + "{/msg}\n";
     try {
       prerender(templateBody);
       fail();
@@ -81,10 +84,10 @@ public class PrerenderVisitorTest extends TestCase {
 
     // Cannot prerender CssNode.
     templateBody =
-        "{let $boo: 8 /}\n" +
-        "{if $boo > 4}\n" +
-        "  <div class=\"{css foo}\">blah</div>\n" +
-        "{/if}\n";
+        "{let $boo: 8 /}\n"
+            + "{if $boo > 4}\n"
+            + "  <div class=\"{css foo}\">blah</div>\n"
+            + "{/if}\n";
     try {
       prerender(templateBody);
       fail();
@@ -94,15 +97,15 @@ public class PrerenderVisitorTest extends TestCase {
 
     // This should work because the if-condition is false, thus skipping the CssNode.
     templateBody =
-        "{let $boo: 8 /}\n" +
-        "{$boo}\n" +
-        "{if $boo < 4}\n" +
-        "  <div class=\"{css foo}\">blah</div>\n" +
-        "{/if}\n";
+        "{let $boo: 8 /}\n"
+            + "{$boo}\n"
+            + "{if $boo < 4}\n"
+            + "  <div class=\"{css foo}\">blah</div>\n"
+            + "{/if}\n";
     assertEquals("8", prerender(templateBody));
   }
 
-
+  @Test
   public void testPrerenderWithUndefinedData() throws Exception {
 
     String templateBody =
@@ -125,27 +128,28 @@ public class PrerenderVisitorTest extends TestCase {
     assertEquals("8", prerender(templateBody));
   }
 
-
+  @Test
   public void testPrerenderWithDirectiveError() throws Exception {
 
     try {
       prerender("  {'blah' |bidiSpanWrap}\n");
       fail();
     } catch (Exception e) {
-      assertTrue(e instanceof RenderException &&
-          e.getMessage().contains("Cannot prerender a node with some impure print directive."));
+      assertTrue(
+          e instanceof RenderException
+              && e.getMessage()
+                  .contains("Cannot prerender a node with some impure print directive."));
     }
   }
-
 
   // -----------------------------------------------------------------------------------------------
   // Helpers.
 
   private static final Injector INJECTOR = Guice.createInjector(new SoyModule());
 
-
   /**
    * Renders the given input string (should be a template body) and returns the result.
+   *
    * @param input The input string to prerender.
    * @return The rendered result.
    * @throws Exception If there's an error.
@@ -159,5 +163,4 @@ public class PrerenderVisitorTest extends TestCase {
     prerenderVisitor.exec(result.fileSet().getChild(0).getChild(0));
     return outputSb.toString();
   }
-
 }

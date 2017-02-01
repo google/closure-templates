@@ -25,7 +25,6 @@ import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.sharedpasses.render.EvalVisitor.EvalVisitorFactory;
 import com.google.template.soy.soytree.TemplateRegistry;
-
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -33,7 +32,7 @@ import javax.inject.Singleton;
 /**
  * Default implementation of RenderVisitorFactory.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 @Singleton
@@ -52,7 +51,6 @@ public final class RenderVisitorFactory {
     this.soyJavaDirectivesMap = soyJavaDirectivesMap;
     this.evalVisitorFactory = evalVisitorFactory;
   }
-
 
   /**
    * Creates a RenderVisitor.
@@ -91,5 +89,4 @@ public final class RenderVisitorFactory {
         xidRenamingMap,
         cssRenamingMap);
   }
-
 }

@@ -20,35 +20,32 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.Objects;
 import java.util.concurrent.Future;
-
 import javax.annotation.Nullable;
 
-/**
- * The result of an asynchronous rendering operation.
- */
+/** The result of an asynchronous rendering operation. */
 public final class RenderResult {
   private static final RenderResult DONE_RESULT = new RenderResult(Type.DONE);
   private static final RenderResult LIMITED_RESULT = new RenderResult(Type.LIMITED);
 
-  /** 
-   * Returns a {@link RenderResult} with {@linkplain RenderResult#type type} set to
-   * {@linkplain Type#DONE done}.
+  /**
+   * Returns a {@link RenderResult} with {@linkplain RenderResult#type type} set to {@linkplain
+   * Type#DONE done}.
    */
   public static RenderResult done() {
     return DONE_RESULT;
   }
 
-  /** 
-   * Returns a {@link RenderResult} with {@linkplain RenderResult#type type} set to
-   * {@linkplain Type#LIMITED limited}.
+  /**
+   * Returns a {@link RenderResult} with {@linkplain RenderResult#type type} set to {@linkplain
+   * Type#LIMITED limited}.
    */
   public static RenderResult limited() {
     return LIMITED_RESULT;
   }
 
   /**
-   * Returns a {@link RenderResult} with {@linkplain RenderResult#type type} set to
-   * {@linkplain Type#DETACH detach}.
+   * Returns a {@link RenderResult} with {@linkplain RenderResult#type type} set to {@linkplain
+   * Type#DETACH detach}.
    */
   public static RenderResult continueAfter(Future<?> future) {
     return new RenderResult(future);
@@ -57,11 +54,11 @@ public final class RenderResult {
   /** The result type. */
   public enum Type {
     /**
-     * The {@link AdvisingAppendable} that is being rendered into has indicated that its
-     * {@linkplain AdvisingAppendable#softLimitReached soft limit} has been reached.
+     * The {@link AdvisingAppendable} that is being rendered into has indicated that its {@linkplain
+     * AdvisingAppendable#softLimitReached soft limit} has been reached.
      */
     LIMITED,
-    /** Rendering has encountered an incomplete future.  This future will be provided */
+    /** Rendering has encountered an incomplete future. This future will be provided */
     DETACH,
     /** Rendering has completed successfully. */
     DONE;
@@ -80,9 +77,7 @@ public final class RenderResult {
     this.future = checkNotNull(future);
   }
 
-  /**
-   * Returns the {@link Type} of this result.
-   */
+  /** Returns the {@link Type} of this result. */
   public Type type() {
     return type;
   }
@@ -94,7 +89,7 @@ public final class RenderResult {
 
   /**
    * Returns the future that soy is waiting for.
-   * 
+   *
    * @throws IllegalStateException if {@link #type()} is not {@link Type#DETACH}.
    */
   public Future<?> future() {
@@ -105,16 +100,19 @@ public final class RenderResult {
     }
     return f;
   }
-  
-  @Override public String toString() {
+
+  @Override
+  public String toString() {
     return "RenderResult{ " + type + "}";
   }
-  
-  @Override public int hashCode() {
+
+  @Override
+  public int hashCode() {
     return Objects.hash(type, future);
   }
 
-  @Override public boolean equals(Object obj) {
+  @Override
+  public boolean equals(Object obj) {
     if (obj instanceof RenderResult) {
       RenderResult other = (RenderResult) obj;
       // Use identity matching for the future.

@@ -26,24 +26,20 @@ import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.MsgSubstUnitNode;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
-
 import java.util.List;
-
 import javax.annotation.Nullable;
 
 /**
  * Node representing a 'select' block.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public final class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefaultNode>
     implements MsgSubstUnitNode, SplitLevelTopNode<CaseOrDefaultNode>, ExprHolderNode {
 
-
   /** Fallback base select var name. */
   public static final String FALLBACK_BASE_SELECT_VAR_NAME = "STATUS";
-
 
   /** The expression for the value to select on. */
   private final ExprRootNode selectExpr;
@@ -51,12 +47,8 @@ public final class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefault
   /** The base select var name (what the translator sees). */
   private final String baseSelectVarName;
 
-
   private MsgSelectNode(
-      int id,
-      String commandText,
-      ExprRootNode selectExpr,
-      SourceLocation sourceLocation) {
+      int id, String commandText, ExprRootNode selectExpr, SourceLocation sourceLocation) {
     super(id, sourceLocation, "select", commandText);
 
     this.selectExpr = selectExpr;
@@ -72,7 +64,6 @@ public final class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefault
             selectExpr.getRoot(), FALLBACK_BASE_SELECT_VAR_NAME);
   }
 
-
   /**
    * @param id The id for this node.
    * @param sourceLocation The node's source location.
@@ -85,18 +76,23 @@ public final class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefault
       SourceLocation sourceLocation,
       ExprRootNode selectExpr,
       @Nullable String baseSelectVarName) {
-    super(id, sourceLocation, "select",
-        selectExpr.toSourceString() +
-            ((baseSelectVarName != null) ? " phname=\"" + baseSelectVarName + "\"" : ""));
+    super(
+        id,
+        sourceLocation,
+        "select",
+        selectExpr.toSourceString()
+            + ((baseSelectVarName != null) ? " phname=\"" + baseSelectVarName + "\"" : ""));
     this.selectExpr = selectExpr;
-    this.baseSelectVarName = (baseSelectVarName != null) ? baseSelectVarName :
-        MsgSubstUnitBaseVarNameUtils.genNaiveBaseNameForExpr(
-            selectExpr.getRoot(), FALLBACK_BASE_SELECT_VAR_NAME);
+    this.baseSelectVarName =
+        (baseSelectVarName != null)
+            ? baseSelectVarName
+            : MsgSubstUnitBaseVarNameUtils.genNaiveBaseNameForExpr(
+                selectExpr.getRoot(), FALLBACK_BASE_SELECT_VAR_NAME);
   }
-
 
   /**
    * Copy constructor.
+   *
    * @param orig The node to copy.
    */
   private MsgSelectNode(MsgSelectNode orig, CopyState copyState) {
@@ -105,47 +101,44 @@ public final class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefault
     this.baseSelectVarName = orig.baseSelectVarName;
   }
 
-
-  @Override public Kind getKind() {
+  @Override
+  public Kind getKind() {
     return Kind.MSG_SELECT_NODE;
   }
-
 
   /** Returns the expression for the value to select on. */
   public ExprRootNode getExpr() {
     return selectExpr;
   }
 
-
   /** Returns the base select var name (what the translator sees). */
-  @Override public String getBaseVarName() {
+  @Override
+  public String getBaseVarName() {
     return baseSelectVarName;
   }
 
-
-  @Override public boolean shouldUseSameVarNameAs(MsgSubstUnitNode other) {
-    return (other instanceof MsgSelectNode) &&
-        this.getCommandText().equals(((MsgSelectNode) other).getCommandText());
+  @Override
+  public boolean shouldUseSameVarNameAs(MsgSubstUnitNode other) {
+    return (other instanceof MsgSelectNode)
+        && this.getCommandText().equals(((MsgSelectNode) other).getCommandText());
   }
 
-
-  @Override public List<ExprUnion> getAllExprUnions() {
+  @Override
+  public List<ExprUnion> getAllExprUnions() {
     return ImmutableList.of(new ExprUnion(selectExpr));
   }
 
-
-  @Override public MsgBlockNode getParent() {
+  @Override
+  public MsgBlockNode getParent() {
     return (MsgBlockNode) super.getParent();
   }
 
-
-  @Override public MsgSelectNode copy(CopyState copyState) {
+  @Override
+  public MsgSelectNode copy(CopyState copyState) {
     return new MsgSelectNode(this, copyState);
   }
 
-  /**
-   * Builder for {@link MsgSelectNode}.
-   */
+  /** Builder for {@link MsgSelectNode}. */
   public static final class Builder {
     private final int id;
     private final String commandText;
@@ -167,10 +160,9 @@ public final class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefault
      * to the given {@link ErrorReporter}.
      */
     public MsgSelectNode build(SoyParsingContext context) {
-      ExprNode selectExpr = new ExpressionParser(commandText, sourceLocation, context)
-          .parseExpression();
+      ExprNode selectExpr =
+          new ExpressionParser(commandText, sourceLocation, context).parseExpression();
       return new MsgSelectNode(id, commandText, new ExprRootNode(selectExpr), sourceLocation);
     }
   }
-
 }

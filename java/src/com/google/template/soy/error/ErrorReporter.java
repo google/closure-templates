@@ -26,20 +26,20 @@ import com.google.template.soy.base.SourceLocation;
 public interface ErrorReporter {
 
   /**
-   * Reports the given {@code error}, formatted according to {@code args} and associated with
-   * the given {@code sourceLocation}.
+   * Reports the given {@code error}, formatted according to {@code args} and associated with the
+   * given {@code sourceLocation}.
    */
   void report(SourceLocation sourceLocation, SoyErrorKind error, Object... args);
 
   /**
-   * Returns an opaque token (the checkpoint) that callers can later pass back into
-   * {@link #errorsSince} to see if any errors have occurred in the interim.
+   * Returns an opaque token (the checkpoint) that callers can later pass back into {@link
+   * #errorsSince} to see if any errors have occurred in the interim.
    */
   Checkpoint checkpoint();
 
   /**
-   * Returns true iff errors have occurred since {@code checkpoint} was obtained
-   * from {@link #checkpoint}.
+   * Returns true iff errors have occurred since {@code checkpoint} was obtained from {@link
+   * #checkpoint}.
    *
    * <p>Useful for callers whose outputs are dependent on whether some code path resulted in new
    * errors (for example, returning an error node if parsing encountered errors).

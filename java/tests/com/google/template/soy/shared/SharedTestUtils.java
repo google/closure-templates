@@ -38,25 +38,21 @@ import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.primitive.UnknownType;
-
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import javax.annotation.Nullable;
 
 /**
  * Shared utilities for unit tests.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public final class SharedTestUtils {
 
-
   private SharedTestUtils() {}
-
 
   /**
    * Simulates the start of a new Soy API call by entering/re-entering the ApiCallScope and seeding
@@ -68,20 +64,19 @@ public final class SharedTestUtils {
     return simulateNewApiCall(injector, null, BidiGlobalDir.LTR);
   }
 
-
   /**
    * Simulates the start of a new Soy API call by entering/re-entering the ApiCallScope and seeding
    * scoped values common to all backends. Does not seed backend-specific API call parameters.
    *
    * @param injector The Guice injector responsible for injections during the API call.
-   * @param msgBundle The bundle of translated messages, or null to use the messages from the
-   *     Soy source.
+   * @param msgBundle The bundle of translated messages, or null to use the messages from the Soy
+   *     source.
    * @param bidiGlobalDir The bidi global directionality. If null, it is derived from the msgBundle
    *     locale, if any, otherwise ltr.
    * @return The ApiCallScope object (for use by the caller of this method to seed additional API
    *     call parameters, such as backend-specific parameters).
    */
-  @SuppressWarnings("CheckReturnValue")  // the call to apiCallScope.enter()
+  @SuppressWarnings("CheckReturnValue") // the call to apiCallScope.enter()
   public static GuiceSimpleScope simulateNewApiCall(
       Injector injector, @Nullable SoyMsgBundle msgBundle, @Nullable BidiGlobalDir bidiGlobalDir) {
 
@@ -98,7 +93,6 @@ public final class SharedTestUtils {
     return apiCallScope;
   }
 
-
   /**
    * Builds a test Soy file's content from the given Soy code, which will be the body of the only
    * template in the test Soy file.
@@ -112,7 +106,6 @@ public final class SharedTestUtils {
     return buildTestSoyFileContent(
         AutoEscapingType.DEPRECATED_NONCONTEXTUAL, soyDocParamNames, soyCode);
   }
-
 
   /**
    * Builds a test Soy file's content from the given Soy code, which will be the body of the only
@@ -149,21 +142,21 @@ public final class SharedTestUtils {
   }
 
   /**
-   * Returns a template body for the given soy expression.  e.g. for the soy expression
-   * {@code $foo + 2} this will return <pre><code>
+   * Returns a template body for the given soy expression. e.g. for the soy expression {@code $foo +
+   * 2} this will return
+   *
+   * <pre><code>
    *   {{@literal @}param foo : ?}
    *   {$foo + 2}
    * </code></pre>
    *
-   * <p>To supply types call the other overload {@link #untypedTemplateBodyForExpression(String)}
+   * <p>To supply types, call {@link #createTemplateBodyForExpression} directly.
    */
   public static String untypedTemplateBodyForExpression(String soyExpr) {
     return createTemplateBodyForExpression(soyExpr, ImmutableMap.<String, SoyType>of());
   }
 
-  /**
-   * Returns a template body for the given soy expression. With type specializations.
-   */
+  /** Returns a template body for the given soy expression. With type specializations. */
   public static String createTemplateBodyForExpression(
       String soyExpr, final Map<String, SoyType> typeMap) {
     ExprNode expr =
@@ -226,7 +219,7 @@ public final class SharedTestUtils {
    */
   public static SoyNode getNode(SoyFileSetNode soyTree, int... indicesToNode) {
 
-    SoyNode node = soyTree.getChild(0).getChild(0);  // initially set to TemplateNode
+    SoyNode node = soyTree.getChild(0).getChild(0); // initially set to TemplateNode
     for (int index : indicesToNode) {
       node = ((ParentSoyNode<?>) node).getChild(index);
     }

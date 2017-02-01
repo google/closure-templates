@@ -16,16 +16,14 @@
 
 package com.google.template.soy.error;
 
-
 import com.google.common.base.Preconditions;
-
 import java.text.MessageFormat;
 
 /**
- * Represents any syntactic or semantic error made by a Soy template author, which can be
- * collected during compilation and displayed back to the author.
- * (In particular, this class is not intended to convey errors in the Soy implementation itself.)
- * The error can be customized with {@link #format string arguments}.
+ * Represents any syntactic or semantic error made by a Soy template author, which can be collected
+ * during compilation and displayed back to the author. (In particular, this class is not intended
+ * to convey errors in the Soy implementation itself.) The error can be customized with {@link
+ * #format string arguments}.
  *
  * <p>Classes that report SoyErrorKinds should declare them as static final fields, making it easy
  * for readers to inspect the errors that the class could report.
@@ -43,8 +41,11 @@ public final class SoyErrorKind {
   }
 
   public String format(Object... args) {
-    Preconditions.checkState(args.length == requiredArgs,
-        "Error format required %s parameters, %s were supplied.", requiredArgs, args.length);
+    Preconditions.checkState(
+        args.length == requiredArgs,
+        "Error format required %s parameters, %s were supplied.",
+        requiredArgs,
+        args.length);
     return messageFormat.format(args);
   }
 
@@ -70,7 +71,8 @@ public final class SoyErrorKind {
     }
   }
 
-  @Override public String toString() {
+  @Override
+  public String toString() {
     return getClass().getSimpleName() + "{" + messageFormat.toPattern() + "}";
   }
 }

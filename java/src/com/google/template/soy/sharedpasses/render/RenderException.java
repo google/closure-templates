@@ -18,10 +18,8 @@ package com.google.template.soy.sharedpasses.render;
 
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.TemplateNode;
-
 import java.util.ArrayDeque;
 import java.util.Deque;
-
 import javax.annotation.Nullable;
 
 /**
@@ -55,7 +53,6 @@ public final class RenderException extends RuntimeException {
     return renderException;
   }
 
-
   /** The list of all stack traces from the soy rendering. */
   private final Deque<StackTraceElement> soyStackTrace = new ArrayDeque<>();
 
@@ -67,14 +64,13 @@ public final class RenderException extends RuntimeException {
     super(message, cause);
   }
 
-  @Override public Throwable fillInStackTrace() {
+  @Override
+  public Throwable fillInStackTrace() {
     // Remove java stack trace, we only care about the soy stack.
     return this;
   }
 
-  /**
-   * Add a partial stack trace element by specifying the source location of the soy file.
-   */
+  /** Add a partial stack trace element by specifying the source location of the soy file. */
   RenderException addStackTraceElement(SoyNode node) {
     // Typically, this is fast since templates aren't that deep and we only do this in error
     // situations so performance matters less.
@@ -83,18 +79,17 @@ public final class RenderException extends RuntimeException {
     return this;
   }
 
-  /**
-   * Finalize the stack trace by prepending the soy stack trace to the given Throwable.
-   */
+  /** Finalize the stack trace by prepending the soy stack trace to the given Throwable. */
   public void finalizeStackTrace(Throwable t) {
     t.setStackTrace(concatWithJavaStackTrace(t.getStackTrace()));
   }
 
   /**
    * Prepend the soy stack trace to the given standard java stack trace.
-   * @param javaStackTrace The java stack trace to prepend.  This should come from
+   *
+   * @param javaStackTrace The java stack trace to prepend. This should come from
    *     Throwable#getStackTrace()
-   * @return The combined stack trace to use.  Callers should call Throwable#setStackTrace() to
+   * @return The combined stack trace to use. Callers should call Throwable#setStackTrace() to
    *     override another Throwable's stack trace.
    */
   private StackTraceElement[] concatWithJavaStackTrace(StackTraceElement[] javaStackTrace) {

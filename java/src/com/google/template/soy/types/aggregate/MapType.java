@@ -20,13 +20,12 @@ import com.google.common.base.Preconditions;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.types.SoyType;
-
 import java.util.Objects;
 
 /**
  * Map type - generalized mapping type with key and value type arguments.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public final class MapType implements SoyType {
@@ -39,12 +38,10 @@ public final class MapType implements SoyType {
   /** The declared type of item values in this map. */
   private final SoyType valueType;
 
-
   private MapType(SoyType keyType, SoyType valueType) {
     this.keyType = keyType;
     this.valueType = valueType;
   }
-
 
   public static MapType of(SoyType keyType, SoyType valueType) {
     Preconditions.checkNotNull(keyType);
@@ -52,28 +49,23 @@ public final class MapType implements SoyType {
     return new MapType(keyType, valueType);
   }
 
-  @Override public Kind getKind() {
+  @Override
+  public Kind getKind() {
     return Kind.MAP;
   }
 
-
-  /**
-   * Returns the type for keys of this map.
-   */
+  /** Returns the type for keys of this map. */
   public SoyType getKeyType() {
     return keyType;
   }
 
-
-  /**
-   * Returns the type for values in this map.
-   */
+  /** Returns the type for values in this map. */
   public SoyType getValueType() {
     return valueType;
   }
 
-
-  @Override public boolean isAssignableFrom(SoyType srcType) {
+  @Override
+  public boolean isAssignableFrom(SoyType srcType) {
     if (srcType.getKind() == Kind.MAP) {
       MapType srcMapType = (MapType) srcType;
       if (srcMapType == EMPTY_MAP) {
@@ -82,23 +74,24 @@ public final class MapType implements SoyType {
         return false;
       }
       // Maps are covariant.
-      return keyType.isAssignableFrom(srcMapType.keyType) &&
-          valueType.isAssignableFrom(srcMapType.valueType);
+      return keyType.isAssignableFrom(srcMapType.keyType)
+          && valueType.isAssignableFrom(srcMapType.valueType);
     }
     return false;
   }
 
-
-  @Override public boolean isInstance(SoyValue value) {
+  @Override
+  public boolean isInstance(SoyValue value) {
     return value instanceof SoyMap;
   }
 
-  @Override public String toString() {
+  @Override
+  public String toString() {
     return "map<" + keyType + "," + valueType + ">";
   }
 
-
-  @Override public boolean equals(Object other) {
+  @Override
+  public boolean equals(Object other) {
     if (other != null && other.getClass() == this.getClass()) {
       MapType otherMap = (MapType) other;
       return Objects.equals(otherMap.keyType, keyType)
@@ -107,9 +100,8 @@ public final class MapType implements SoyType {
     return false;
   }
 
-
-  @Override public int hashCode() {
+  @Override
+  public int hashCode() {
     return Objects.hash(this.getClass(), keyType, valueType);
   }
-
 }

@@ -36,29 +36,30 @@ import com.google.template.soy.soytree.TemplateNode;
 /**
  * Visitor to change {@code call}s to use {@code data="all"} whenever possible.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
- * <p> This visitor must be called on a SoyFileSetNode, SoyFileNode, or TemplateNode (i.e. template
+ * <p>This visitor must be called on a SoyFileSetNode, SoyFileNode, or TemplateNode (i.e. template
  * or ancestor of a template).
  *
  */
 public final class ChangeCallsToPassAllDataVisitor extends AbstractSoyNodeVisitor<Void> {
 
-  @Override public Void exec(SoyNode node) {
+  @Override
+  public Void exec(SoyNode node) {
 
     Preconditions.checkArgument(
-        node instanceof SoyFileSetNode || node instanceof SoyFileNode ||
-        node instanceof TemplateNode);
+        node instanceof SoyFileSetNode
+            || node instanceof SoyFileNode
+            || node instanceof TemplateNode);
     visit(node);
     return null;
   }
 
-
   // -----------------------------------------------------------------------------------------------
   // Implementations for concrete nodes.
 
-
-  @Override protected void visitCallNode(CallNode node) {
+  @Override
+  protected void visitCallNode(CallNode node) {
 
     // If there are no params (i.e. children), then this optimization doesn't apply.
     if (node.numChildren() == 0) {
@@ -78,7 +79,7 @@ public final class ChangeCallsToPassAllDataVisitor extends AbstractSoyNodeVisito
     // (b) referencing regular data (not local vars or injected data).
     // If not, then stop (i.e. return) because we cannot pass data="all" instead.
     for (CallParamNode param : node.getChildren()) {
-      if (! (param instanceof CallParamValueNode)) {
+      if (!(param instanceof CallParamValueNode)) {
         return;
       }
       CallParamValueNode valueParam = (CallParamValueNode) param;
@@ -99,38 +100,38 @@ public final class ChangeCallsToPassAllDataVisitor extends AbstractSoyNodeVisito
     CallNode newCallNode;
     if (node instanceof CallBasicNode) {
       CallBasicNode nodeCast = (CallBasicNode) node;
-      newCallNode = new CallBasicNode.Builder(node.getId(), node.getSourceLocation())
-          .calleeName(nodeCast.getCalleeName())
-          .sourceCalleeName(nodeCast.getSrcCalleeName())
-          .dataAttribute(DataAttribute.all())
-          .userSuppliedPlaceholderName(node.getUserSuppliedPhName())
-          .escapingDirectiveNames(node.getEscapingDirectiveNames())
-          // Use the exploding reporter since we know it won't report any errors
-          .build(SoyParsingContext.exploding());
+      newCallNode =
+          new CallBasicNode.Builder(node.getId(), node.getSourceLocation())
+              .calleeName(nodeCast.getCalleeName())
+              .sourceCalleeName(nodeCast.getSrcCalleeName())
+              .dataAttribute(DataAttribute.all())
+              .userSuppliedPlaceholderName(node.getUserSuppliedPhName())
+              .escapingDirectiveNames(node.getEscapingDirectiveNames())
+              // Use the exploding reporter since we know it won't report any errors
+              .build(SoyParsingContext.exploding());
     } else {
       CallDelegateNode nodeCast = (CallDelegateNode) node;
-      newCallNode = new CallDelegateNode.Builder(node.getId(), node.getSourceLocation())
-          .delCalleeName(nodeCast.getDelCalleeName())
-          .delCalleeVariantExpr(nodeCast.getDelCalleeVariantExpr())
-          .allowEmptyDefault(nodeCast.allowsEmptyDefault())
-          .dataAttribute(DataAttribute.all())
-          .userSuppliedPlaceholderName(node.getUserSuppliedPhName())
-          .escapingDirectiveNames(node.getEscapingDirectiveNames())
-          // Use the exploding reporter since we know it won't report any errors
-          .build(SoyParsingContext.exploding());
+      newCallNode =
+          new CallDelegateNode.Builder(node.getId(), node.getSourceLocation())
+              .delCalleeName(nodeCast.getDelCalleeName())
+              .delCalleeVariantExpr(nodeCast.getDelCalleeVariantExpr())
+              .allowEmptyDefault(nodeCast.allowsEmptyDefault())
+              .dataAttribute(DataAttribute.all())
+              .userSuppliedPlaceholderName(node.getUserSuppliedPhName())
+              .escapingDirectiveNames(node.getEscapingDirectiveNames())
+              // Use the exploding reporter since we know it won't report any errors
+              .build(SoyParsingContext.exploding());
     }
     node.getParent().replaceChild(node, newCallNode);
   }
 
-
   // -----------------------------------------------------------------------------------------------
   // Fallback implementation.
 
-
-  @Override protected void visitSoyNode(SoyNode node) {
+  @Override
+  protected void visitSoyNode(SoyNode node) {
     if (node instanceof ParentSoyNode<?>) {
       visitChildrenAllowingConcurrentModification((ParentSoyNode<?>) node);
     }
   }
-
 }

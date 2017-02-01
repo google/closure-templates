@@ -29,20 +29,18 @@ import com.google.inject.Module;
 import com.google.template.soy.SoyFileSet.Builder;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.error.SoyCompilationException;
-
-import org.kohsuke.args4j.CmdLineException;
-import org.kohsuke.args4j.CmdLineParser;
-import org.kohsuke.args4j.OptionDef;
-import org.kohsuke.args4j.spi.OptionHandler;
-import org.kohsuke.args4j.spi.Parameters;
-import org.kohsuke.args4j.spi.Setter;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+import org.kohsuke.args4j.CmdLineException;
+import org.kohsuke.args4j.CmdLineParser;
+import org.kohsuke.args4j.OptionDef;
+import org.kohsuke.args4j.spi.OptionHandler;
+import org.kohsuke.args4j.spi.Parameters;
+import org.kohsuke.args4j.spi.Setter;
 
 /**
  * Utilities for classes with a {@code main()} method.
@@ -51,8 +49,8 @@ import java.util.Set;
 final class MainClassUtils {
 
   /**
-   * Represents a top-level entry point into the Soy codebase.
-   * Used by {@link #run} to catch unexpected exceptions and print errors.
+   * Represents a top-level entry point into the Soy codebase. Used by {@link #run} to catch
+   * unexpected exceptions and print errors.
    */
   interface Main {
     void main() throws IOException, SoyCompilationException;
@@ -66,7 +64,7 @@ final class MainClassUtils {
   /**
    * OptionHandler for args4j that handles a boolean.
    *
-   * <p> The difference between this handler and the default boolean option handler supplied by
+   * <p>The difference between this handler and the default boolean option handler supplied by
    * args4j is that the default one doesn't take any param, so can only be used to turn on boolean
    * flags, but never to turn them off. This implementation allows an optional param value
    * true/false/1/0 so that the user can turn on or off the flag.
@@ -79,7 +77,8 @@ final class MainClassUtils {
       super(parser, option, setter);
     }
 
-    @Override public int parseArguments(Parameters params) throws CmdLineException {
+    @Override
+    public int parseArguments(Parameters params) throws CmdLineException {
 
       boolean value;
       boolean hasParam;
@@ -106,15 +105,13 @@ final class MainClassUtils {
       return hasParam ? 1 : 0;
     }
 
-    @Override public String getDefaultMetaVariable() {
+    @Override
+    public String getDefaultMetaVariable() {
       return null;
     }
   }
 
-
-  /**
-   * OptionHandler for args4j that handles a comma-delimited list.
-   */
+  /** OptionHandler for args4j that handles a comma-delimited list. */
   abstract static class ListOptionHandler<T> extends OptionHandler<T> {
 
     /** {@link OptionHandler#OptionHandler(CmdLineParser,OptionDef,Setter)} */
@@ -124,12 +121,14 @@ final class MainClassUtils {
 
     /**
      * Parses one item from the list into the appropriate type.
+     *
      * @param item One item from the list.
      * @return The object representation of the item.
      */
     abstract T parseItem(String item);
 
-    @Override public int parseArguments(Parameters params) throws CmdLineException {
+    @Override
+    public int parseArguments(Parameters params) throws CmdLineException {
       String parameter = params.getParameter(0);
       // An empty string should be an empty list, not a list containing the empty item
       if (!parameter.isEmpty()) {
@@ -140,15 +139,13 @@ final class MainClassUtils {
       return 1;
     }
 
-    @Override public String getDefaultMetaVariable() {
+    @Override
+    public String getDefaultMetaVariable() {
       return "ITEM,ITEM,...";
     }
   }
 
-
-  /**
-   * OptionHandler for args4j that handles a comma-delimited list of strings.
-   */
+  /** OptionHandler for args4j that handles a comma-delimited list of strings. */
   public static final class StringListOptionHandler extends ListOptionHandler<String> {
 
     /** {@link ListOptionHandler#ListOptionHandler(CmdLineParser,OptionDef,Setter)} */
@@ -157,7 +154,8 @@ final class MainClassUtils {
       super(parser, option, setter);
     }
 
-    @Override String parseItem(String item) {
+    @Override
+    String parseItem(String item) {
       return item;
     }
   }
@@ -258,16 +256,16 @@ final class MainClassUtils {
       System.err.println(compilationException.getMessage());
       return 1;
     } catch (Exception e) {
-      System.err.println("INTERNAL SOY ERROR.\n"
-          + "Please open an issue at "
-          + "https://github.com/google/closure-templates/issues"
-          + " with this stack trace and repro steps"
-      );
+      System.err.println(
+          "INTERNAL SOY ERROR.\n"
+              + "Please open an issue at "
+              + "https://github.com/google/closure-templates/issues"
+              + " with this stack trace and repro steps"
+          );
       e.printStackTrace(System.err);
       return 1;
     }
   }
-
 
   /**
    * Prints an error message and the usage string, and then exits.
@@ -332,6 +330,7 @@ final class MainClassUtils {
 
   /**
    * Returns an injector configured with the given plugins
+   *
    * @param msgPluginModuleName The name of a guice module binding a msgplugin, may be empty
    * @param pluginModuleNames A comma delimited list of plugin modules name, may be empty
    */
@@ -359,16 +358,16 @@ final class MainClassUtils {
   private static Module instantiatePluginModule(String moduleName) {
 
     try {
-      return (Module) Class.forName(moduleName).newInstance();
+      return (Module) Class.forName(moduleName).getConstructor().newInstance();
 
-    } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
+    } catch (ReflectiveOperationException e) {
       throw new RuntimeException("Cannot instantiate plugin module \"" + moduleName + "\".", e);
     }
   }
 
-
   /**
    * Helper to add srcs and deps Soy files to a SoyFileSet builder. Also does sanity checks.
+   *
    * @param sfsBuilder The SoyFileSet builder to add to.
    * @param inputPrefix The input path prefix to prepend to all the file paths.
    * @param srcs The srcs from the --srcs flag. Exactly one of 'srcs' and 'args' must be nonempty.
@@ -378,8 +377,12 @@ final class MainClassUtils {
    * @param exitWithErrorFn A function that exits with an error message followed by a usage message.
    */
   static void addSoyFilesToBuilder(
-      Builder sfsBuilder, String inputPrefix, Collection<String> srcs, Collection<String> args,
-      Collection<String> deps, Collection<String> indirectDeps,
+      Builder sfsBuilder,
+      String inputPrefix,
+      Collection<String> srcs,
+      Collection<String> args,
+      Collection<String> deps,
+      Collection<String> indirectDeps,
       Function<String, Void> exitWithErrorFn) {
     if (srcs.isEmpty() && args.isEmpty()) {
       exitWithErrorFn.apply("Must provide list of source Soy files (--srcs).");
@@ -395,8 +398,8 @@ final class MainClassUtils {
     // TODO(gboyer): Maybe stop supporting old style (srcs from command line args) at some point.
     Set<String> srcsSet = ImmutableSet.<String>builder().addAll(srcs).addAll(args).build();
     Set<String> depsSet = Sets.difference(ImmutableSet.copyOf(deps), srcsSet);
-    Set<String> indirectDepsSet = Sets.difference(ImmutableSet.copyOf(indirectDeps),
-        Sets.union(srcsSet, depsSet));
+    Set<String> indirectDepsSet =
+        Sets.difference(ImmutableSet.copyOf(indirectDeps), Sets.union(srcsSet, depsSet));
 
     for (String src : srcsSet) {
       sfsBuilder.addWithKind(new File(inputPrefix + src), SoyFileKind.SRC);
@@ -408,5 +411,4 @@ final class MainClassUtils {
       sfsBuilder.addWithKind(new File(inputPrefix + dep), SoyFileKind.INDIRECT_DEP);
     }
   }
-
 }

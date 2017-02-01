@@ -16,55 +16,75 @@
 
 package com.google.template.soy.jbcsrc;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+
 import com.google.common.collect.ImmutableList;
-
-import junit.framework.TestCase;
-
-import org.objectweb.asm.Opcodes;
-
 import java.lang.annotation.Annotation;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestName;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
+import org.objectweb.asm.Opcodes;
 
-/**
- * Tests for {@link AnnotationRef}.
- */
-public class AnnotationRefTest extends TestCase {
-  @Retention(RetentionPolicy.RUNTIME)
-  @interface NoParams{}
+/** Tests for {@link AnnotationRef}. */
+@RunWith(JUnit4.class)
+public class AnnotationRefTest {
+  @Rule public final TestName testName = new TestName();
 
   @Retention(RetentionPolicy.RUNTIME)
-  @interface AParam{ String value() default ""; }
-  
+  @interface NoParams {}
+
+  @Retention(RetentionPolicy.RUNTIME)
+  @interface AParam {
+    String value() default "";
+  }
+
   @Retention(RetentionPolicy.RUNTIME)
   @interface ComplexParams {
     String value() default "";
+
     int[] ints() default {};
+
     String[] strings() default {};
+
     AParam aParam() default @AParam;
   }
 
   @NoParams
+  @Test
   public void testAnnotation_NoParams() throws Exception {
     runCurrentAnnotationTest();
   }
-  
+
   @AParam("foo")
+  @Test
   public void testAnnotation_aParam() throws Exception {
     runCurrentAnnotationTest();
   }
 
   @AParam
+  @Test
   public void testAnnotation_aParam_default() throws Exception {
     runCurrentAnnotationTest();
   }
-  
+
   @ComplexParams
+  @Test
   public void testAnnotation_complex_default() {
     runCurrentAnnotationTest();
   }
 
-  @ComplexParams(value = "foo", ints = {1, 2, 3}, strings = {"a", "b", "c"}, aParam = @AParam("foo"))
+  @ComplexParams(
+    value = "foo",
+    ints = {1, 2, 3},
+    strings = {"a", "b", "c"},
+    aParam = @AParam("foo")
+  )
+  @Test
   public void testAnnotation_complex() {
     runCurrentAnnotationTest();
   }
@@ -72,21 +92,22 @@ public class AnnotationRefTest extends TestCase {
   private void runCurrentAnnotationTest() {
     Annotation[] annotations;
     try {
-      annotations = getClass().getMethod(getName()).getAnnotations();
+      annotations = getClass().getMethod(testName.getMethodName()).getAnnotations();
     } catch (NoSuchMethodException | SecurityException e) {
       throw new RuntimeException(e);
     }
-    if (annotations.length != 1) {
-      fail("There should only be one annotation on the test method");
+    if (annotations.length != 2) {
+      fail("There should only be one non @Test annotation on the test method");
     }
-    Annotation ann = annotations[0];
+    Annotation ann =
+        annotations[0].annotationType() == Test.class ? annotations[1] : annotations[0];
     assertEquals(ann, createClassWithAnnotation(ann).getAnnotation(ann.annotationType()));
   }
 
   @SuppressWarnings("unchecked")
   private static <T extends Annotation> Class<?> createClassWithAnnotation(T ann) {
-    TypeInfo generatedType = TypeInfo.create(
-        AnnotationRefTest.class.getPackage().getName() + ".Tmp");
+    TypeInfo generatedType =
+        TypeInfo.create(AnnotationRefTest.class.getPackage().getName() + ".Tmp");
     SoyClassWriter cw =
         SoyClassWriter.builder(generatedType)
             .setAccess(Opcodes.ACC_FINAL | Opcodes.ACC_SUPER | Opcodes.ACC_PUBLIC)
@@ -97,8 +118,7 @@ public class AnnotationRefTest extends TestCase {
     try {
       return new MemoryClassLoader(ImmutableList.of(cd)).loadClass(cd.type().className());
     } catch (ClassNotFoundException e) {
-      throw new RuntimeException(e);  // this should be impossible
+      throw new RuntimeException(e); // this should be impossible
     }
   }
 }
-

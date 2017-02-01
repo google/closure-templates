@@ -23,18 +23,17 @@ import com.google.inject.Key;
 import com.google.inject.OutOfScopeException;
 import com.google.inject.Provider;
 import com.google.inject.Scope;
-
 import java.util.Map;
 import java.util.Stack;
-
 import javax.annotation.CheckReturnValue;
 
 /**
  * Scopes a single execution of a block of code.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
- * Apply this scope with a try/finally block:
+ * <p>Apply this scope with a try/finally block:
+ *
  * <pre>
  *   scope.enter();
  *   try {
@@ -50,7 +49,8 @@ import javax.annotation.CheckReturnValue;
  * The scope can be initialized with one or more seed values by calling {@code seed(key, value)} or
  * {@code seed(class, value)} before the injector will be called upon to provide for this key.
  *
- * For each key seeded with seed(), you must include a corresponding binding:
+ * <p>For each key seeded with seed(), you must include a corresponding binding:
+ *
  * <pre>
  *   bind(key)
  *       .toProvider(GuiceSimpleScope.&lt;KeyClass&gt;getUnscopedProvider())
@@ -60,24 +60,25 @@ import javax.annotation.CheckReturnValue;
  */
 public class GuiceSimpleScope implements Scope {
   public interface WithScope extends AutoCloseable {
-    @Override public void close();
+    @Override
+    public void close();
   }
 
   /** Provider to use as the unscoped provider for scoped parameters. Always throws exception. */
   private static final Provider<Object> UNSCOPED_PROVIDER =
       new Provider<Object>() {
-        @Override public Object get() {
+        @Override
+        public Object get() {
           throw new IllegalStateException(
-              "If you got here then it means that your code asked for scoped object which should" +
-              " have been explicitly seeded in this scope by calling GuiceSimpleScope.seed()," +
-              " but was not.");
+              "If you got here then it means that your code asked for scoped object which should"
+                  + " have been explicitly seeded in this scope by calling GuiceSimpleScope.seed(),"
+                  + " but was not.");
         }
       };
 
-
   /**
-   * Returns a provider that always throws exception complaining that the object
-   * in question must be seeded before it can be injected.
+   * Returns a provider that always throws exception complaining that the object in question must be
+   * seeded before it can be injected.
    *
    * @return typed provider
    */
@@ -86,20 +87,20 @@ public class GuiceSimpleScope implements Scope {
     return (Provider<T>) UNSCOPED_PROVIDER;
   }
 
-
   /** The ThreadLocal holding all the values in scope. */
   private final ThreadLocal<Stack<Map<Key<?>, Object>>> scopedValuesTl = new ThreadLocal<>();
 
-  private final WithScope exiter = new WithScope() {
-    @Override public void close() {
-      exit();
-    }
-  };
+  private final WithScope exiter =
+      new WithScope() {
+        @Override
+        public void close() {
+          exit();
+        }
+      };
 
-  /**
-   * Enters an occurrence of this scope.
-   */
-  @CheckReturnValue public WithScope enter() {
+  /** Enters an occurrence of this scope. */
+  @CheckReturnValue
+  public WithScope enter() {
     Stack<Map<Key<?>, Object>> stack = scopedValuesTl.get();
     if (stack == null) {
       stack = new Stack<>();
@@ -109,10 +110,7 @@ public class GuiceSimpleScope implements Scope {
     return exiter;
   }
 
-
-  /**
-   * Exits the current occurrence of this scope.
-   */
+  /** Exits the current occurrence of this scope. */
   public void exit() {
     checkState(isActive(), "No scoping block in progress");
     Stack<Map<Key<?>, Object>> stack = scopedValuesTl.get();
@@ -122,18 +120,15 @@ public class GuiceSimpleScope implements Scope {
     }
   }
 
-
-  /**
-   * Whether we're currently in an occurrence of this scope.
-   */
+  /** Whether we're currently in an occurrence of this scope. */
   public boolean isActive() {
     Stack<Map<Key<?>, Object>> stack = scopedValuesTl.get();
     return stack != null && !stack.isEmpty();
   }
 
-
   /**
    * Seeds a value in the current occurrence of this scope.
+   *
    * @param key The key to seed.
    * @param value The value for the key.
    */
@@ -143,13 +138,15 @@ public class GuiceSimpleScope implements Scope {
     checkState(
         !scopedObjects.containsKey(key),
         "A value for the key %s was already seeded in this scope. Old value: %s New value: %s",
-        key, scopedObjects.get(key), value);
+        key,
+        scopedObjects.get(key),
+        value);
     scopedObjects.put(key, value);
   }
 
-
   /**
    * Seeds a value in the current occurrence of this scope.
+   *
    * @param class0 The class to seed.
    * @param value The value for the key.
    */
@@ -157,9 +154,9 @@ public class GuiceSimpleScope implements Scope {
     seed(Key.get(class0), value);
   }
 
-
   /**
    * Gets a value in the current occurrence of this scope.
+   *
    * @param key The key to get.
    * @return The scoped value for the given key.
    */
@@ -174,11 +171,12 @@ public class GuiceSimpleScope implements Scope {
     return value;
   }
 
-
-  @Override public <T> Provider<T> scope(final Key<T> key, final Provider<T> unscopedProvider) {
+  @Override
+  public <T> Provider<T> scope(final Key<T> key, final Provider<T> unscopedProvider) {
 
     return new Provider<T>() {
-      @Override public T get() {
+      @Override
+      public T get() {
         Map<Key<?>, Object> scopedValues = getScopedValues(key);
         @SuppressWarnings("unchecked")
         T value = (T) scopedValues.get(key);
@@ -191,9 +189,9 @@ public class GuiceSimpleScope implements Scope {
     };
   }
 
-
   /**
    * Private helper to get the map of scoped values specific to the current thread.
+   *
    * @param key The key that is intended to be retrieved from the returned map.
    */
   private <T> Map<Key<?>, Object> getScopedValues(Key<T> key) {
@@ -202,5 +200,4 @@ public class GuiceSimpleScope implements Scope {
     }
     return scopedValuesTl.get().peek();
   }
-
 }

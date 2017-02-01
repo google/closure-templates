@@ -19,55 +19,51 @@ package com.google.template.soy.internal.i18n;
 import com.google.common.base.Preconditions;
 import com.google.template.soy.base.SoyBackendKind;
 import com.google.template.soy.data.Dir;
-
 import java.util.regex.Pattern;
-
 
 /**
  * Bidi utilities for Soy code.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public class SoyBidiUtils {
 
   private SoyBidiUtils() {}
 
-  /**
-   * The name used as an alias for importing a module containing the bidiIsRtlFn.
-   */
+  /** The name used as an alias for importing a module containing the bidiIsRtlFn. */
   public static final String IS_RTL_MODULE_ALIAS = "external_bidi";
-
 
   /**
    * The code snippet that can be used to determine at template runtime whether the bidi global
    * direction is rtl.
    */
   private static final String GOOG_IS_RTL_CODE_SNIPPET = "soy.$$IS_LOCALE_RTL";
-
+  private static final String GOOG_IS_RTL_CODE_SNIPPET_NAMESPACE = "soy";
 
   /**
    * Gets the bidi global directionality from a language/locale string (ltr=1, rtl=-1).
-   * @param localeString The language/locale string for which to get the bidi global
-   *     directionality.
+   *
+   * @param localeString The language/locale string for which to get the bidi global directionality.
    * @return 1 if the language/locale is left-to-right or unknown, and -1 if it's right-to-left.
    */
   static BidiGlobalDir getBidiGlobalDir(String localeString) {
     boolean isRtl;
     try {
-      isRtl = localeString != null
-          && (BidiUtils.isRtlLanguage(localeString)
-              || FAKE_RTL_LOCALES_PATTERN.matcher(localeString).matches());
+      isRtl =
+          localeString != null
+              && (BidiUtils.isRtlLanguage(localeString)
+                  || FAKE_RTL_LOCALES_PATTERN.matcher(localeString).matches());
     } catch (IllegalArgumentException localeException) {
       isRtl = false;
     }
     return BidiGlobalDir.forStaticIsRtl(isRtl);
   }
 
-
   /**
-   * Decodes the bidi global directionality from the usual command line options used to specify
-   * it. Checks that at most one of the options was specified.
+   * Decodes the bidi global directionality from the usual command line options used to specify it.
+   * Checks that at most one of the options was specified.
+   *
    * @param bidiGlobalDir 1: ltr, -1: rtl, 0: unspecified.
    * @param useGoogIsRtlForBidiGlobalDir Whether to determine the bidi global direction at template
    *     runtime by evaluating goog.i18n.bidi.IS_RTL.
@@ -79,7 +75,8 @@ public class SoyBidiUtils {
       if (!useGoogIsRtlForBidiGlobalDir) {
         return null;
       }
-      return BidiGlobalDir.forIsRtlCodeSnippet(GOOG_IS_RTL_CODE_SNIPPET, SoyBackendKind.JS_SRC);
+      return BidiGlobalDir.forIsRtlCodeSnippet(
+          GOOG_IS_RTL_CODE_SNIPPET, GOOG_IS_RTL_CODE_SNIPPET_NAMESPACE, SoyBackendKind.JS_SRC);
     }
     Preconditions.checkState(
         !useGoogIsRtlForBidiGlobalDir,
@@ -92,6 +89,7 @@ public class SoyBidiUtils {
 
   /**
    * Decodes bidi global directionality from the Python bidiIsRtlFn command line option.
+   *
    * @param bidiIsRtlFn The string containing the full module path and function name.
    * @return BidiGlobalDir object - or null if the option was not specified.
    */
@@ -106,22 +104,22 @@ public class SoyBidiUtils {
     // When importing the module, we'll using the constant name to avoid potential conflicts.
     String fnName = bidiIsRtlFn.substring(dotIndex + 1) + "()";
     return BidiGlobalDir.forIsRtlCodeSnippet(
-        IS_RTL_MODULE_ALIAS + '.' + fnName, SoyBackendKind.PYTHON_SRC);
+        IS_RTL_MODULE_ALIAS + '.' + fnName, null, SoyBackendKind.PYTHON_SRC);
   }
 
   /**
-   * A regular expression for matching language codes indicating the FakeBidi pseudo-locale.
-   * The FakeBiDi pseudo-locale unfortunately currently does not have an accepted language code.
-   * Some products use 'qbi' ('qXX' is a standard way of indicating a private-use language code,
-   * and the 'bi' stands for bidi). Others prefer to tag on '-psrtl' (for pseudo-RTL) to the
-   * original locale.
+   * A regular expression for matching language codes indicating the FakeBidi pseudo-locale. The
+   * FakeBiDi pseudo-locale unfortunately currently does not have an accepted language code. Some
+   * products use 'qbi' ('qXX' is a standard way of indicating a private-use language code, and the
+   * 'bi' stands for bidi). Others prefer to tag on '-psrtl' (for pseudo-RTL) to the original
+   * locale.
    */
   private static final Pattern FAKE_RTL_LOCALES_PATTERN =
       Pattern.compile("qbi|.*[-_]psrtl", Pattern.CASE_INSENSITIVE);
 
-
   /**
    * Get a bidi formatter.
+   *
    * @param dir The directionality as an integer (ltr=1, rtl=-1).
    * @return The BidiFormatter.
    */
@@ -129,5 +127,4 @@ public class SoyBidiUtils {
     Preconditions.checkArgument(dir != 0);
     return BidiFormatter.getInstance(dir < 0 ? Dir.RTL : Dir.LTR);
   }
-
 }

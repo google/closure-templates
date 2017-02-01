@@ -16,9 +16,13 @@
 
 package com.google.template.soy.types.proto;
 
-import com.google.common.base.CharMatcher;
+import com.google.common.collect.ImmutableMap;
 import com.google.protobuf.DescriptorProtos.FileOptions;
 import com.google.protobuf.Descriptors;
+import com.google.protobuf.Descriptors.Descriptor;
+import com.google.protobuf.Descriptors.EnumDescriptor;
+import com.google.protobuf.Descriptors.FileDescriptor;
+import com.google.protobuf.Descriptors.ServiceDescriptor;
 
 /**
  * Helper class for generating fully qualified Java/GWT identfiers for descriptors.
@@ -27,152 +31,87 @@ import com.google.protobuf.Descriptors;
 public final class JavaQualifiedNames {
   private JavaQualifiedNames() {}
 
-  /**
-   * The suffix to append to the outer class name when it collides with the name of a message
-   * declared in the proto file.
-   */
-  private static final String OUTER_CLASS_SUFFIX = "OuterClass";
+  private static final ImmutableMap<String, String> SPECIAL_CASES =
+      ImmutableMap.<String, String>builder()
+          .put("cached_size", "CachedSize_")
+          .put("class", "Class_")
+          .put("serialized_size", "SerializedSize_")
+          .build();
 
   /** Returns the expected java package for protos based on the .proto file. */
   public static String getPackage(Descriptors.FileDescriptor fileDescriptor) {
-    FileOptions fileOptions = fileDescriptor.getOptions();
-
-    // Otherwise, derive it.
-    String javaPackage = fileDescriptor.getOptions().getJavaPackage();
-    if (javaPackage == null || javaPackage.equals("")) {
-      String genericPackage = fileDescriptor.getPackage();
-      if (genericPackage == null || genericPackage.equals("")) {
-        javaPackage = "com.google.protos";
-      } else {
-        javaPackage = "com.google.protos." + fileDescriptor.getPackage();
-      }
-    }
-    return javaPackage;
-  }
-
-  /** Used by the other overload, descends recursively into messages. */
-  private static boolean hasConflictingClassName(Descriptors.Descriptor messageDesc, String name) {
-    if (name.equals(messageDesc.getName())) {
-      return true;
-    }
-    for (Descriptors.EnumDescriptor enumDesc : messageDesc.getEnumTypes()) {
-      if (name.equals(enumDesc.getName())) {
-        return true;
-      }
-    }
-    for (Descriptors.Descriptor nestedMessageDesc : messageDesc.getNestedTypes()) {
-      if (hasConflictingClassName(nestedMessageDesc, name)) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  /** Checks whether any generated classes conflict with the given name. */
-  private static boolean hasConflictingClassName(Descriptors.FileDescriptor fileDesc, String name) {
-    for (Descriptors.EnumDescriptor enumDesc : fileDesc.getEnumTypes()) {
-      if (name.equals(enumDesc.getName())) {
-        return true;
-      }
-    }
-    for (Descriptors.ServiceDescriptor serviceDesc : fileDesc.getServices()) {
-      if (name.equals(serviceDesc.getName())) {
-        return true;
-      }
-    }
-    for (Descriptors.Descriptor messageDesc : fileDesc.getMessageTypes()) {
-      if (hasConflictingClassName(messageDesc, name)) {
-        return true;
-      }
-    }
-    return false;
+    return getPackage(fileDescriptor, ProtoFlavor.PROTO2);
   }
 
   /** Derives the outer class name based on the protobuf (.proto) file name. */
   public static String getOuterClassname(Descriptors.FileDescriptor fileDescriptor) {
-    String className = fileDescriptor.getOptions().getJavaOuterClassname();
-    if (CharMatcher.whitespace().matchesAllOf(className)) {
-      className = fileDescriptor.getName();
-      int cut0 = className.lastIndexOf("/");
-      int cut1 = className.lastIndexOf(".");
-      className = underscoresToCamelCase(className.substring(cut0 + 1, cut1), true);
-      if (hasConflictingClassName(fileDescriptor, className)) {
-        className = className + OUTER_CLASS_SUFFIX;
-      }
-    }
-    return className;
-  }
-
-  private static void appendQualifiedName(StringBuilder builder, Descriptors.FileDescriptor fd,
-      String name, Descriptors.Descriptor parent, boolean useCanonicalNames) {
-    if (parent == null) {
-      boolean topLevelClassSet = false;
-      builder.append(getPackage(fd));
-      if (fd.getOptions().getJavaMultipleFiles()) {
-        // We aren't generating a wrapper class, so the package stays as is
-      } else {
-        builder.append('.').append(getOuterClassname(fd));
-        topLevelClassSet = true;
-      }
-      builder.append(!topLevelClassSet || useCanonicalNames ? '.' : '$').append(name);
-    } else {
-      appendQualifiedName(
-          builder, fd, parent.getName(), parent.getContainingType(), useCanonicalNames);
-      builder.append(useCanonicalNames ? '.' : '$').append(name);
-    }
-  }
-
-  private static String getQualifiedName(Descriptors.FileDescriptor fd, String name,
-      Descriptors.Descriptor parent, boolean useCanonicalNames) {
-    StringBuilder builder = new StringBuilder();
-    appendQualifiedName(builder, fd, name, parent, useCanonicalNames);
-    return builder.toString();
-  }
-
-  private static String getQualifiedName(Descriptors.Descriptor msg, boolean useCanonicalNames) {
-    return getQualifiedName(
-        msg.getFile(), msg.getName(), msg.getContainingType(), useCanonicalNames);
-  }
-
-  private static String getQualifiedName(
-      Descriptors.EnumDescriptor enumType, boolean useCanonicalNames) {
-    return getQualifiedName(
-        enumType.getFile(), enumType.getName(), enumType.getContainingType(), useCanonicalNames);
+    return getFileClassName(fileDescriptor, ProtoFlavor.PROTO2);
   }
 
   /**
    * Returns the fully-qualified name for the message descriptor (uses '.' inner class seperator).
    */
   public static String getQualifiedName(Descriptors.Descriptor msg) {
-    return getQualifiedName(msg, true);
+    return getClassName(msg).replace('$', '.');
   }
 
   /** Returns the fully-qualified name for the enum descriptor (uses '.' inner class seperator). */
   public static String getQualifiedName(Descriptors.EnumDescriptor enumType) {
-    return getQualifiedName(enumType, true);
+    return getClassName(enumType).replace('$', '.');
   }
 
   /** Returns the class name for the message descriptor (uses '$' inner class seperator). */
   public static String getClassName(Descriptors.Descriptor msg) {
-    return getQualifiedName(msg, false);
+    return getClassName(msg, ProtoFlavor.PROTO2);
   }
 
   /** Returns the class name for the enum descriptor (uses '$' inner class seperator). */
   public static String getClassName(Descriptors.EnumDescriptor enumType) {
-    return getQualifiedName(enumType, false);
+    return getClassName(enumType, ProtoFlavor.PROTO2);
+  }
+
+  /**
+   * Gets the fully qualified name for generated classes in Java convention. Nested classes will be
+   * separated using '$' instead of '.'
+   */
+  public static String getClassName(Descriptor descriptor, ProtoFlavor flavor) {
+    return getClassName(classNameWithoutPackage(descriptor), descriptor.getFile(), flavor);
+  }
+
+  /**
+   * Gets the fully qualified name for generated classes in Java convention. Nested classes will be
+   * separated using '$' instead of '.'
+   */
+  public static String getClassName(EnumDescriptor descriptor, ProtoFlavor flavor) {
+    return getClassName(classNameWithoutPackage(descriptor), descriptor.getFile(), flavor);
+  }
+
+  /** Returns the Java name for a proto field. */
+  public static String getFieldName(
+      Descriptors.FieldDescriptor field, boolean capitializeFirstLetter) {
+    String fieldName = field.getName();
+    if (SPECIAL_CASES.containsKey(fieldName)) {
+      String output = SPECIAL_CASES.get(fieldName);
+      if (capitializeFirstLetter) {
+        return output;
+      } else {
+        return ((char) (output.charAt(0) + ('a' - 'A'))) + output.substring(1);
+      }
+    }
+    return underscoresToCamelCase(fieldName, capitializeFirstLetter);
   }
 
   /** Returns the class name for the enum descriptor (uses '$' inner class seperator). */
   public static String getCaseEnumClassName(Descriptors.OneofDescriptor oneOfDescriptor) {
-    return getQualifiedName(oneOfDescriptor.getContainingType(), false)
+    return getClassName(oneOfDescriptor.getContainingType())
         + '$'
         + underscoresToCamelCase(oneOfDescriptor.getName(), true)
         + "Case";
   }
 
+  /** Converts underscore field names to camel case, while preserving camel case field names. */
   public static String underscoresToCamelCase(String input, boolean capitializeNextLetter) {
     StringBuilder result = new StringBuilder();
-    // Note:  I distrust ctype.h due to locales.
     for (int i = 0; i < input.length(); i++) {
       char ch = input.charAt(i);
       if ('a' <= ch && ch <= 'z') {
@@ -200,5 +139,161 @@ public final class JavaQualifiedNames {
       }
     }
     return result.toString();
+  }
+
+  private static String getClassName(
+      String nameWithoutPackage, FileDescriptor file, ProtoFlavor flavor) {
+    StringBuilder sb = new StringBuilder();
+    if (multipleJavaFiles(file, flavor)) {
+      sb.append(getPackage(file, flavor));
+      if (sb.length() > 0) {
+        sb.append('.');
+      }
+    } else {
+      sb.append(getClassName(file, flavor));
+      if (sb.length() > 0) {
+        sb.append('$');
+      }
+    }
+    sb.append(nameWithoutPackage.replace('.', '$'));
+    return sb.toString();
+  }
+
+  private static String getClassName(FileDescriptor file, ProtoFlavor flavor) {
+    StringBuilder sb = new StringBuilder();
+    sb.append(getPackage(file, flavor));
+    if (sb.length() > 0) {
+      sb.append('.');
+    }
+    sb.append(getFileClassName(file, flavor));
+    return sb.toString();
+  }
+
+  static String getPackage(FileDescriptor file, ProtoFlavor flavor) {
+    FileOptions fileOptions = file.getOptions();
+    StringBuilder sb = new StringBuilder();
+    if (fileOptions.hasJavaPackage()) {
+      sb.append(fileOptions.getJavaPackage());
+    } else {
+      sb.append("com.google.protos");
+      if (!file.getPackage().isEmpty()) {
+        sb.append('.').append(file.getPackage());
+      }
+    }
+
+
+    return sb.toString();
+  }
+
+  private static String classNameWithoutPackage(Descriptor descriptor) {
+    return stripPackageName(descriptor.getFullName(), descriptor.getFile());
+  }
+
+  private static String classNameWithoutPackage(EnumDescriptor descriptor) {
+    // Doesn't append "Mutable" for enum type's name.
+    Descriptor messageDescriptor = descriptor.getContainingType();
+    if (messageDescriptor == null) {
+      return descriptor.getName();
+    }
+    return classNameWithoutPackage(messageDescriptor) + '.' + descriptor.getName();
+  }
+
+  private static String stripPackageName(String fullName, FileDescriptor file) {
+    if (file.getPackage().isEmpty()) {
+      return fullName;
+    }
+    return fullName.substring(file.getPackage().length() + 1);
+  }
+
+  private static boolean multipleJavaFiles(FileDescriptor fd, ProtoFlavor flavor) {
+    FileOptions options = fd.getOptions();
+    switch (flavor) {
+      case PROTO2:
+        return options.getJavaMultipleFiles();
+      default:
+        throw new AssertionError();
+    }
+  }
+
+  static String getFileClassName(FileDescriptor file, ProtoFlavor flavor) {
+    switch (flavor) {
+      case PROTO2:
+        return getFileImmutableClassName(file);
+      default:
+        throw new AssertionError();
+    }
+  }
+
+  private static String getFileImmutableClassName(FileDescriptor file) {
+    if (file.getOptions().hasJavaOuterClassname()) {
+      return file.getOptions().getJavaOuterClassname();
+    }
+    String className = getFileDefaultImmutableClassName(file);
+    if (hasConflictingClassName(file, className)) {
+      return className + "OuterClass";
+    }
+    return className;
+  }
+
+  private static String getFileDefaultImmutableClassName(FileDescriptor file) {
+    String name = file.getName();
+    int lastSlash = name.lastIndexOf('/');
+    String basename;
+    if (lastSlash < 0) {
+      basename = name;
+    } else {
+      basename = name.substring(lastSlash + 1);
+    }
+    return underscoresToCamelCase(stripProto(basename), true);
+  }
+
+  private static String stripProto(String filename) {
+    int lastDot = filename.lastIndexOf('.');
+    if (lastDot >= 0) {
+      switch (filename.substring(lastDot)) {
+        case ".protodevel":
+        case ".proto":
+          return filename.substring(0, lastDot);
+      }
+    }
+    return filename;
+  }
+
+  /** Used by the other overload, descends recursively into messages. */
+  private static boolean hasConflictingClassName(Descriptor messageDesc, String name) {
+    if (name.equals(messageDesc.getName())) {
+      return true;
+    }
+    for (EnumDescriptor enumDesc : messageDesc.getEnumTypes()) {
+      if (name.equals(enumDesc.getName())) {
+        return true;
+      }
+    }
+    for (Descriptor nestedMessageDesc : messageDesc.getNestedTypes()) {
+      if (hasConflictingClassName(nestedMessageDesc, name)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /** Checks whether any generated classes conflict with the given name. */
+  private static boolean hasConflictingClassName(FileDescriptor file, String name) {
+    for (EnumDescriptor enumDesc : file.getEnumTypes()) {
+      if (name.equals(enumDesc.getName())) {
+        return true;
+      }
+    }
+    for (ServiceDescriptor serviceDesc : file.getServices()) {
+      if (name.equals(serviceDesc.getName())) {
+        return true;
+      }
+    }
+    for (Descriptor messageDesc : file.getMessageTypes()) {
+      if (hasConflictingClassName(messageDesc, name)) {
+        return true;
+      }
+    }
+    return false;
   }
 }

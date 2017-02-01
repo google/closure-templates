@@ -28,14 +28,12 @@ import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.soytree.SoyNode.MsgPlaceholderInitialNode;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import javax.annotation.Nullable;
 
 /**
@@ -177,9 +175,9 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
     // If two MsgHtmlTagNodes are both only raw text, then they are considered the same placeholder
     // if they both have the same user-supplied placeholder name (if any) and the same tag text.
     // If one of the MsgHtmlTagNodes is not only raw text, then the two MsgHtmlTagNodes are never
-    // considered the same placeholder.
+    // considered the same placeholder (so use the instance as the sameness key)
     return isOnlyRawText ?
-        Pair.of(userSuppliedPlaceholderName, fullTagText) : Integer.valueOf(getId());
+        Pair.of(userSuppliedPlaceholderName, fullTagText) : this;
   }
 
 
@@ -223,11 +221,11 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
    */
   public static final class Builder {
 
-    private static MsgHtmlTagNode error() {
+    private static MsgHtmlTagNode error(SourceLocation location) {
       return new Builder(
-          -1,
-          ImmutableList.<StandaloneNode>of(new RawTextNode(-1, "<body/>", SourceLocation.UNKNOWN)),
-          SourceLocation.UNKNOWN)
+              -1,
+              ImmutableList.<StandaloneNode>of(new RawTextNode(-1, "<body/>", location)),
+              location)
           .build(ExplodingErrorReporter.get()); // guaranteed to be valid
     }
 
@@ -260,7 +258,7 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
       String fullTagText = computeFullTagText();
 
       if (errorReporter.errorsSince(checkpoint)) {
-        return error();
+        return error(sourceLocation);
       }
 
       return new MsgHtmlTagNode(

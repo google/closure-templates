@@ -20,21 +20,19 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.MixinParentNode;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.SoyErrorKind;
-import com.google.template.soy.exprparse.SoyParsingContext;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 import com.google.template.soy.types.primitive.SanitizedType;
 import com.google.template.soy.types.primitive.StringType;
-
 import java.util.List;
-
 import javax.annotation.Nullable;
 
 /**
  * Node representing a 'let' statement with content.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public final class LetContentNode extends LetNode implements RenderUnitNode {
@@ -49,7 +47,6 @@ public final class LetContentNode extends LetNode implements RenderUnitNode {
 
   /** The let node's content kind, or null if no 'kind' attribute was present. */
   @Nullable private final ContentKind contentKind;
-
 
   private LetContentNode(
       int id,
@@ -66,18 +63,21 @@ public final class LetContentNode extends LetNode implements RenderUnitNode {
    * Creates a LetContentNode for a compiler-generated variable. Use this in passes that rewrite the
    * tree and introduce local temporary variables.
    */
-  public static LetContentNode forVariable(int id, SourceLocation sourceLocation, String varName,
-      ContentKind contentKind) {
-    LetContentNode node = new LetContentNode(id, sourceLocation, varName, "$" + varName,
-        contentKind);
-    node.getVar().setType(contentKind != null
-        ? SanitizedType.getTypeForContentKind(contentKind) : StringType.getInstance());
+  public static LetContentNode forVariable(
+      int id, SourceLocation sourceLocation, String varName, ContentKind contentKind) {
+    LetContentNode node =
+        new LetContentNode(id, sourceLocation, varName, "$" + varName, contentKind);
+    node.getVar()
+        .setType(
+            contentKind != null
+                ? SanitizedType.getTypeForContentKind(contentKind)
+                : StringType.getInstance());
     return node;
   }
 
-
   /**
    * Copy constructor.
+   *
    * @param orig The node to copy.
    */
   private LetContentNode(LetContentNode orig, CopyState copyState) {
@@ -86,24 +86,22 @@ public final class LetContentNode extends LetNode implements RenderUnitNode {
     this.contentKind = orig.contentKind;
   }
 
-
-  @Override public Kind getKind() {
+  @Override
+  public Kind getKind() {
     return Kind.LET_CONTENT_NODE;
   }
 
-
-  /**
-   * Return The local variable name (without preceding '$').
-   */
-  @Override public final String getVarName() {
+  /** Return The local variable name (without preceding '$'). */
+  @Override
+  public final String getVarName() {
     return var.name();
   }
 
-
-  @Override @Nullable public ContentKind getContentKind() {
+  @Override
+  @Nullable
+  public ContentKind getContentKind() {
     return contentKind;
   }
-
 
   // -----------------------------------------------------------------------------------------------
   // ParentSoyNode stuff.
@@ -111,8 +109,8 @@ public final class LetContentNode extends LetNode implements RenderUnitNode {
   // AbstractParentSoyNode. But this class need to include its own MixinParentNode field because
   // it needs to subclass LetNode (and Java doesn't allow multiple inheritance).
 
-
-  @Override public String toSourceString() {
+  @Override
+  public String toSourceString() {
     StringBuilder sb = new StringBuilder();
     sb.append(getTagString());
     appendSourceStringForChildren(sb);
@@ -120,78 +118,90 @@ public final class LetContentNode extends LetNode implements RenderUnitNode {
     return sb.toString();
   }
 
-  @Override public int numChildren() {
+  @Override
+  public int numChildren() {
     return parentMixin.numChildren();
   }
 
-  @Override public StandaloneNode getChild(int index) {
+  @Override
+  public StandaloneNode getChild(int index) {
     return parentMixin.getChild(index);
   }
 
-  @Override public int getChildIndex(StandaloneNode child) {
+  @Override
+  public int getChildIndex(StandaloneNode child) {
     return parentMixin.getChildIndex(child);
   }
 
-  @Override public List<StandaloneNode> getChildren() {
+  @Override
+  public List<StandaloneNode> getChildren() {
     return parentMixin.getChildren();
   }
 
-  @Override public void addChild(StandaloneNode child) {
+  @Override
+  public void addChild(StandaloneNode child) {
     parentMixin.addChild(child);
   }
 
-  @Override public void addChild(int index, StandaloneNode child) {
+  @Override
+  public void addChild(int index, StandaloneNode child) {
     parentMixin.addChild(index, child);
   }
 
-  @Override public void removeChild(int index) {
+  @Override
+  public void removeChild(int index) {
     parentMixin.removeChild(index);
   }
 
-  @Override public void removeChild(StandaloneNode child) {
+  @Override
+  public void removeChild(StandaloneNode child) {
     parentMixin.removeChild(child);
   }
 
-  @Override public void replaceChild(int index, StandaloneNode newChild) {
+  @Override
+  public void replaceChild(int index, StandaloneNode newChild) {
     parentMixin.replaceChild(index, newChild);
   }
 
-  @Override public void replaceChild(StandaloneNode currChild, StandaloneNode newChild) {
+  @Override
+  public void replaceChild(StandaloneNode currChild, StandaloneNode newChild) {
     parentMixin.replaceChild(currChild, newChild);
   }
 
-  @Override public void clearChildren() {
+  @Override
+  public void clearChildren() {
     parentMixin.clearChildren();
   }
 
-  @Override public void addChildren(List<? extends StandaloneNode> children) {
+  @Override
+  public void addChildren(List<? extends StandaloneNode> children) {
     parentMixin.addChildren(children);
   }
 
-  @Override public void addChildren(int index, List<? extends StandaloneNode> children) {
+  @Override
+  public void addChildren(int index, List<? extends StandaloneNode> children) {
     parentMixin.addChildren(index, children);
   }
 
-  @Override public void appendSourceStringForChildren(StringBuilder sb) {
+  @Override
+  public void appendSourceStringForChildren(StringBuilder sb) {
     parentMixin.appendSourceStringForChildren(sb);
   }
 
-  @Override public LetContentNode copy(CopyState copyState) {
+  @Override
+  public LetContentNode copy(CopyState copyState) {
     return new LetContentNode(this, copyState);
   }
 
-  /**
-   * Builder for {@link LetContentNode}.
-   */
+  /** Builder for {@link LetContentNode}. */
   public static final class Builder {
 
     private static LetContentNode error() {
-      return new LetContentNode.Builder(-1, "$error", SourceLocation.UNKNOWN)
-          .build(SoyParsingContext.exploding()); // guaranteed to be valid
+      return new LetContentNode(-1, SourceLocation.UNKNOWN, "$error", "$error", null);
     }
 
     private final int id;
-    private final String commandText;
+    private final CommandTextParseResult parseResult;
     private final SourceLocation sourceLocation;
 
     /**
@@ -199,9 +209,9 @@ public final class LetContentNode extends LetNode implements RenderUnitNode {
      * @param commandText The node's command text.
      * @param sourceLocation The node's source location.
      */
-    public Builder(int id, String commandText, SourceLocation sourceLocation) {
+    public Builder(int id, CommandTextParseResult parseResult, SourceLocation sourceLocation) {
       this.id = id;
-      this.commandText = commandText;
+      this.parseResult = parseResult;
       this.sourceLocation = sourceLocation;
     }
 
@@ -209,21 +219,22 @@ public final class LetContentNode extends LetNode implements RenderUnitNode {
      * Returns a new {@link LetContentNode} built from the builder's state. If the builder's state
      * is invalid, errors are reported to the {@code errorManager} and {Builder#error} is returned.
      */
-    public LetContentNode build(SoyParsingContext context) {
-      Checkpoint checkpoint = context.errorReporter().checkpoint();
-      CommandTextParseResult parseResult
-          = parseCommandTextHelper(commandText, context, sourceLocation);
+    public LetContentNode build(Checkpoint checkpoint, ErrorReporter errorReporter) {
 
       if (parseResult.valueExpr != null) {
-        context.report(sourceLocation, NON_SELF_ENDING_WITH_VALUE);
+        errorReporter.report(sourceLocation, NON_SELF_ENDING_WITH_VALUE);
       }
 
-      if (context.errorReporter().errorsSince(checkpoint)) {
+      if (errorReporter.errorsSince(checkpoint)) {
         return error();
       }
 
       return new LetContentNode(
-          id, sourceLocation, parseResult.localVarName, commandText, parseResult.contentKind);
+          id,
+          sourceLocation,
+          parseResult.localVarName,
+          parseResult.originalCommandText,
+          parseResult.contentKind);
     }
   }
 }

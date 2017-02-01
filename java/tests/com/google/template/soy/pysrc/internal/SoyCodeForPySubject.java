@@ -38,7 +38,6 @@ import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
-
 import java.util.List;
 
 /**
@@ -62,7 +61,6 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
 
   private final Injector injector;
 
-
   /**
    * A Subject for testing sections of Soy code. The provided data can either be an entire Soy file,
    * or just the body of a template. If just a body is provided, it is wrapped with a simple
@@ -78,12 +76,10 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
     this.injector = Guice.createInjector(new SoyModule());
   }
 
-
   public SoyCodeForPySubject withEnvironmentModule(String environmentModulePath) {
     this.environmentModulePath = environmentModulePath;
     return this;
   }
-
 
   public SoyCodeForPySubject withBidi(String bidiIsRtlFn) {
     this.bidiIsRtlFn = bidiIsRtlFn;
@@ -103,7 +99,7 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
   /**
    * Asserts that the subject compiles to the expected Python output.
    *
-   * <p> During compilation, freestanding bodies are compiled as strict templates with the output
+   * <p>During compilation, freestanding bodies are compiled as strict templates with the output
    * variable already being initialized. Additionally, any automatically generated variables have
    * generated IDs replaced with '###'. Thus 'name123' would become 'name###'.
    *
@@ -143,7 +139,7 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
     try {
       if (isFile) {
         compileFile();
-      } else{
+      } else {
         compileBody();
       }
       fail("Compilation suceeded when it should have failed.");
@@ -154,11 +150,18 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
 
   private GenPyCodeVisitor getGenPyCodeVisitor() {
     // Setup default configs.
-    SoyPySrcOptions pySrcOptions = new SoyPySrcOptions(RUNTIME_PATH, environmentModulePath,
-        bidiIsRtlFn, translationClass, namespaceManifest, false);
+    SoyPySrcOptions pySrcOptions =
+        new SoyPySrcOptions(
+            RUNTIME_PATH,
+            environmentModulePath,
+            bidiIsRtlFn,
+            translationClass,
+            namespaceManifest,
+            false);
     GuiceSimpleScope apiCallScope = SharedTestUtils.simulateNewApiCall(injector);
     apiCallScope.seed(SoyPySrcOptions.class, pySrcOptions);
-    apiCallScope.seed(new Key<ImmutableMap<String, String>>(PyCurrentManifest.class){},
+    apiCallScope.seed(
+        new Key<ImmutableMap<String, String>>(PyCurrentManifest.class) {},
         ImmutableMap.<String, String>of());
 
     // Execute the compiler.
@@ -166,7 +169,7 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
   }
 
   private String compileFile() {
-    SoyFileSetNode node = SoyFileSetParserBuilder.forFileContents(getSubject()).parse().fileSet();
+    SoyFileSetNode node = SoyFileSetParserBuilder.forFileContents(actual()).parse().fileSet();
     List<String> fileContents = getGenPyCodeVisitor().gen(node, ExplodingErrorReporter.get());
     return fileContents.get(0).replaceAll("([a-zA-Z]+)\\d+", "$1###");
   }
@@ -174,7 +177,7 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
   private String compileBody() {
     SoyNode node =
         SharedTestUtils.getNode(
-            SoyFileSetParserBuilder.forTemplateContents(AutoEscapingType.STRICT, getSubject())
+            SoyFileSetParserBuilder.forTemplateContents(AutoEscapingType.STRICT, actual())
                 .declaredSyntaxVersion(SyntaxVersion.V2_0)
                 .parse()
                 .fileSet(),
@@ -197,10 +200,8 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
     return genPyCodeVisitor.pyCodeBuilder.getCode().replaceAll("([a-zA-Z]+)\\d+", "$1###");
   }
 
-
   //-----------------------------------------------------------------------------------------------
   // Public static functions for starting a SoyCodeForPySubject test.
-
 
   private static final SubjectFactory<SoyCodeForPySubject, String> SOYCODE =
       new SubjectFactory<SoyCodeForPySubject, String>() {

@@ -18,10 +18,9 @@ package com.google.template.soy.sharedpasses.opti;
 
 import com.google.common.base.Preconditions;
 import com.google.template.soy.data.SoyRecord;
-import com.google.template.soy.data.SoyValueHelper;
+import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.sharedpasses.render.Environment;
 import com.google.template.soy.sharedpasses.render.EvalVisitor.EvalVisitorFactory;
-
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -29,32 +28,30 @@ import javax.inject.Singleton;
 /**
  * A factory for creating PreevalVisitor objects.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 @Singleton
 public final class PreevalVisitorFactory implements EvalVisitorFactory {
 
-  /** Instance of SoyValueHelper to use. */
-  private final SoyValueHelper valueHelper;
+  /** Instance of SoyValueConverter to use. */
+  private final SoyValueConverter valueConverter;
 
   @Inject
-  public PreevalVisitorFactory(SoyValueHelper valueHelper) {
-    this.valueHelper = valueHelper;
+  public PreevalVisitorFactory(SoyValueConverter valueConverter) {
+    this.valueConverter = valueConverter;
   }
-
 
   public PreevalVisitor create(Environment env) {
-    return new PreevalVisitor(valueHelper, env);
+    return new PreevalVisitor(valueConverter, env);
   }
 
-
-  @Override public PreevalVisitor create(
-      @Nullable SoyRecord ijData, Environment env) {
+  @Override
+  public PreevalVisitor create(@Nullable SoyRecord ijData, Environment env) {
 
     // PreevalVisitor cannot handle ijData references.
     Preconditions.checkArgument(ijData == null);
 
-    return new PreevalVisitor(valueHelper, env);
+    return new PreevalVisitor(valueConverter, env);
   }
 }

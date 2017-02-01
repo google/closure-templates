@@ -23,11 +23,10 @@ import com.google.template.soy.soytree.SoyNode.ConditionalBlockNode;
 /**
  * Node representing the 'default' block in a 'switch' statement.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public final class SwitchDefaultNode extends CaseOrDefaultNode implements ConditionalBlockNode {
-
 
   /**
    * @param id The id for this node.
@@ -37,23 +36,22 @@ public final class SwitchDefaultNode extends CaseOrDefaultNode implements Condit
     super(id, sourceLocation, "default", "");
   }
 
-
   /**
    * Copy constructor.
+   *
    * @param orig The node to copy.
    */
   private SwitchDefaultNode(SwitchDefaultNode orig, CopyState copyState) {
     super(orig, copyState);
   }
 
-
-  @Override public Kind getKind() {
+  @Override
+  public Kind getKind() {
     return Kind.SWITCH_DEFAULT_NODE;
   }
 
-
-  @Override public SwitchDefaultNode copy(CopyState copyState) {
+  @Override
+  public SwitchDefaultNode copy(CopyState copyState) {
     return new SwitchDefaultNode(this, copyState);
   }
-
 }

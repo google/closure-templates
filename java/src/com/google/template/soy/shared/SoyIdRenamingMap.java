@@ -14,23 +14,22 @@
  * limitations under the License.
  */
 
-
 package com.google.template.soy.shared;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
 /**
- * An interface for a one-to-one string mapping function used to rename identifiers.
- * Renaming can be used for minimization, obfuscation, normalization, etc.
+ * An interface for a one-to-one string mapping function used to rename identifiers. Renaming can be
+ * used for minimization, obfuscation, normalization, etc.
  *
  */
 @ParametersAreNonnullByDefault
 public interface SoyIdRenamingMap {
 
   /**
-   * Gets the string that should be substituted for {@code key}. The same
-   * value must be consistently returned for any particular {@code key}, and
-   * the returned value must not be returned for any other {@code key} value.
+   * Gets the string that should be substituted for {@code key}. The same value must be consistently
+   * returned for any particular {@code key}, and the returned value must not be returned for any
+   * other {@code key} value.
    *
    * @param key The text to be replaced, never null.
    * @return The value to substitute for {@code key}.

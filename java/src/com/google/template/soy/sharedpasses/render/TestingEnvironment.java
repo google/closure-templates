@@ -23,21 +23,18 @@ import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.soytree.defn.LoopVar;
-
 import java.util.Map;
 
-/**
- * An {@link Environment} for testing expressions.
- */
+/** An {@link Environment} for testing expressions. */
 public final class TestingEnvironment extends Environment {
-  
+
   /**
-   * Creates an environment that should only be used in testing environments.  Allows variables to
-   * be resolved against a predefined set but doesn't allow binding new variable definitions.
+   * Creates an environment that should only be used in testing environments. Allows variables to be
+   * resolved against a predefined set but doesn't allow binding new variable definitions.
    */
-  @VisibleForTesting public static Environment createForTest(
-      final SoyRecord params,
-      final Map<String, SoyValueProvider> locals) {
+  @VisibleForTesting
+  public static Environment createForTest(
+      final SoyRecord params, final Map<String, SoyValueProvider> locals) {
     return new TestingEnvironment(params, locals);
   }
 
@@ -49,31 +46,38 @@ public final class TestingEnvironment extends Environment {
     this.locals = locals;
   }
 
-  @Override void bind(VarDefn var, SoyValueProvider value) {
+  @Override
+  void bind(VarDefn var, SoyValueProvider value) {
     throw new UnsupportedOperationException();
   }
 
-  @Override void bindIsLast(LoopVar loopVar, boolean isLast) {
+  @Override
+  void bindIsLast(LoopVar loopVar, boolean isLast) {
     throw new UnsupportedOperationException();
   }
 
-  @Override void bindCurrentIndex(LoopVar loopVar, int lastIndex) {
+  @Override
+  void bindCurrentIndex(LoopVar loopVar, int lastIndex) {
     throw new UnsupportedOperationException();
   }
 
-  @Override SoyValue getVar(VarDefn var) {
+  @Override
+  SoyValue getVar(VarDefn var) {
     return getVarProvider(var).resolve();
   }
 
-  @Override boolean isLast(LoopVar loopVar) {
+  @Override
+  boolean isLast(LoopVar loopVar) {
     return doGetProvider(loopVar.name() + "__isLast").resolve().booleanValue();
   }
 
-  @Override int getIndex(LoopVar loopVar) {
+  @Override
+  int getIndex(LoopVar loopVar) {
     return doGetProvider(loopVar.name() + "__index").resolve().integerValue();
   }
 
-  @Override SoyValueProvider getVarProvider(VarDefn var) {
+  @Override
+  SoyValueProvider getVarProvider(VarDefn var) {
     return doGetProvider(var.name());
   }
 

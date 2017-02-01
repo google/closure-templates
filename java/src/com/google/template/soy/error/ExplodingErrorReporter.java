@@ -19,22 +19,21 @@ package com.google.template.soy.error;
 import com.google.template.soy.base.SourceLocation;
 
 /**
- * {@link ErrorReporter} implementation that throws an {@link AssertionError} whenever an error
- * is reported to it. This should only be used when no errors are expected.  This is seldom
- * desirable in production code, but often desirable in tests, which should fail in the presence
- * of any errors that are not specifically checked for.
+ * {@link ErrorReporter} implementation that throws an {@link AssertionError} whenever an error is
+ * reported to it. This should only be used when no errors are expected. This is seldom desirable in
+ * production code, but often desirable in tests, which should fail in the presence of any errors
+ * that are not specifically checked for.
  *
- * <p>To write a test that does not have this exploding behavior (for example, a test that needs
- * to check the full list of errors encountered during compilation), pass a non-exploding
- * ErrorReporter instance to
- * {@link com.google.template.soy.SoyFileSetParserBuilder#errorReporter}.
+ * <p>To write a test that does not have this exploding behavior (for example, a test that needs to
+ * check the full list of errors encountered during compilation), pass a non-exploding ErrorReporter
+ * instance to {@link com.google.template.soy.SoyFileSetParserBuilder#errorReporter}.
  *
  * @author brndn@google.com (Brendan Linn)
  */
 public final class ExplodingErrorReporter extends AbstractErrorReporter {
 
   private static final ErrorReporter INSTANCE = new ExplodingErrorReporter();
-  
+
   public static ErrorReporter get() {
     return INSTANCE;
   }

@@ -357,8 +357,8 @@
     {call .demoParamWithKindAttributeCallee_}
       // Note that the {param} blocks for the message and listItems parameter are declared to have
       // content of kind HTML. This instructs the contextual autoescaper to process the content of
-      // these blocks as HTML, and to wrap the the value of the parameter as a soydata.SanitizedHtml
-      // object.
+      // these blocks as HTML, and to wrap the value of the parameter as a
+      // goog.soy.data.SanitizedHtml object.
       {param message kind="html"}
         <b>{$message}</b>
       {/param}
@@ -379,8 +379,8 @@
  */
 {template .demoParamWithKindAttributeCallee_ private="true"}
   // Note that both $message and $listItems contain HTML markup produced by a {param} block in the
-  // the calling template.  Since the {param} blocks are declared to have HTML content, their values
-  // are wrapped as soydata.SanitizedHtml objects.  This in turn causes them to be emitted here
+  // the calling template. Since the {param} blocks are declared to have HTML content, their values
+  // are wrapped as goog.soy.data.SanitizedHtml objects. This in turn causes them to be emitted here
   // without further escaping.
   <div>{$message}</div>
   <ol>

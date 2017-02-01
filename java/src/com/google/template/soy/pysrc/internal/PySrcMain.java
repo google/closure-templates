@@ -38,7 +38,6 @@ import com.google.template.soy.sharedpasses.opti.SimplifyVisitor;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateRegistry;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
@@ -46,17 +45,15 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
-
 import javax.inject.Inject;
 
 /**
  * Main entry point for the Python Src backend (output target).
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public final class PySrcMain {
-
 
   /** The scope object that manages the API call scope. */
   private final GuiceSimpleScope apiCallScope;
@@ -66,7 +63,6 @@ public final class PySrcMain {
 
   /** Provider for getting an instance of GenPyCodeVisitor. */
   private final Provider<GenPyCodeVisitor> genPyCodeVisitorProvider;
-
 
   /**
    * @param apiCallScope The scope object that manages the API call scope.
@@ -82,7 +78,6 @@ public final class PySrcMain {
     this.simplifyVisitor = simplifyVisitor;
     this.genPyCodeVisitorProvider = genPyCodeVisitorProvider;
   }
-
 
   /**
    * Generates Python source code given a Soy parse tree and an options object.
@@ -106,11 +101,11 @@ public final class PySrcMain {
     try (WithScope withScope = apiCallScope.enter()) {
       // Seed the scoped parameters.
       apiCallScope.seed(SoyPySrcOptions.class, pySrcOptions);
-      apiCallScope.seed(new Key<ImmutableMap<String, String>>(PyCurrentManifest.class){},
-          currentManifest);
+      apiCallScope.seed(
+          new Key<ImmutableMap<String, String>>(PyCurrentManifest.class) {}, currentManifest);
 
-      BidiGlobalDir bidiGlobalDir = SoyBidiUtils.decodeBidiGlobalDirFromPyOptions(
-          pySrcOptions.getBidiIsRtlFn());
+      BidiGlobalDir bidiGlobalDir =
+          SoyBidiUtils.decodeBidiGlobalDirFromPyOptions(pySrcOptions.getBidiIsRtlFn());
       ApiCallScopeUtils.seedSharedParams(apiCallScope, null, bidiGlobalDir);
 
       simplifyVisitor.simplify(soyTree, templateRegistry);
@@ -139,13 +134,15 @@ public final class PySrcMain {
       ErrorReporter errorReporter)
       throws SoySyntaxException, IOException {
 
-    ImmutableList<SoyFileNode> srcsToCompile = ImmutableList.copyOf(Iterables.filter(
-        soyTree.getChildren(), SoyFileNode.MATCH_SRC_FILENODE));
+    ImmutableList<SoyFileNode> srcsToCompile =
+        ImmutableList.copyOf(
+            Iterables.filter(soyTree.getChildren(), SoyFileNode.MATCH_SRC_FILENODE));
 
     // Determine the output paths.
     List<String> soyNamespaces = getSoyNamespaces(soyTree);
-    Multimap<String, Integer> outputs = MainEntryPointUtils.mapOutputsToSrcs(
-        null, outputPathFormat, inputPathsPrefix, srcsToCompile);
+    Multimap<String, Integer> outputs =
+        MainEntryPointUtils.mapOutputsToSrcs(
+            null, outputPathFormat, inputPathsPrefix, srcsToCompile);
 
     // Generate the manifest and add it to the current manifest.
     ImmutableMap<String, String> manifest = generateManifest(soyNamespaces, outputs);
@@ -155,8 +152,10 @@ public final class PySrcMain {
         genPySrc(soyTree, templateRegistry, pySrcOptions, manifest, errorReporter);
 
     if (srcsToCompile.size() != pyFileContents.size()) {
-      throw new AssertionError(String.format("Expected to generate %d code chunk(s), got %d",
-          srcsToCompile.size(), pyFileContents.size()));
+      throw new AssertionError(
+          String.format(
+              "Expected to generate %d code chunk(s), got %d",
+              srcsToCompile.size(), pyFileContents.size()));
     }
 
     // Write out the Python outputs.
@@ -186,8 +185,8 @@ public final class PySrcMain {
    * Generate the manifest file by finding the output file paths and converting them into a Python
    * import format.
    */
-  private ImmutableMap<String, String> generateManifest(List<String> soyNamespaces,
-      Multimap<String, Integer> outputs) {
+  private static ImmutableMap<String, String> generateManifest(
+      List<String> soyNamespaces, Multimap<String, Integer> outputs) {
     ImmutableMap.Builder<String, String> manifest = new ImmutableMap.Builder<>();
     for (String outputFilePath : outputs.keySet()) {
       for (int inputFileIndex : outputs.get(outputFilePath)) {
@@ -206,5 +205,4 @@ public final class PySrcMain {
     }
     return namespaces;
   }
-
 }

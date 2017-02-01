@@ -21,29 +21,34 @@ import static com.google.common.truth.Truth.assertThat;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.shared.AbstractSoyPrintDirectiveTestCase;
-
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for InsertWordBreaksDirective.
  *
  */
+@RunWith(JUnit4.class)
 public class InsertWordBreaksDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
-
-
+  @Test
   public void testApplyForTofu() {
     int maxCharsBetweenBreaks = 8;
 
     InsertWordBreaksDirective insertWordBreaksDirective = new InsertWordBreaksDirective();
     assertTofuOutput("", "", insertWordBreaksDirective, maxCharsBetweenBreaks);
     assertTofuOutput(
-        "blah blahblah<wbr>blah", "blah blahblahblah", insertWordBreaksDirective,
+        "blah blahblah<wbr>blah",
+        "blah blahblahblah",
+        insertWordBreaksDirective,
         maxCharsBetweenBreaks);
     assertTofuOutput(
-        "blah<br>&lt;bla<wbr>hblah", "blah<br>&lt;blahblah", insertWordBreaksDirective,
+        "blah<br>&lt;bla<wbr>hblah",
+        "blah<br>&lt;blahblah",
+        insertWordBreaksDirective,
         maxCharsBetweenBreaks);
   }
-
-
+  @Test
   public void testApplyForJsSrc() {
 
     InsertWordBreaksDirective insertWordBreaksDirective = new InsertWordBreaksDirective();
@@ -52,5 +57,4 @@ public class InsertWordBreaksDirectiveTest extends AbstractSoyPrintDirectiveTest
     assertThat(insertWordBreaksDirective.applyForJsSrc(dataRef, ImmutableList.of(arg)).getText())
         .isEqualTo("soy.$$insertWordBreaks(opt_data.myKey, 8)");
   }
-
 }

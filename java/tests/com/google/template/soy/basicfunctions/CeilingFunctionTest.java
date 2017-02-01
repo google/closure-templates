@@ -17,6 +17,7 @@
 package com.google.template.soy.basicfunctions;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.junit.Assert.assertEquals;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SoyValue;
@@ -24,36 +25,39 @@ import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.pysrc.restricted.PyExpr;
-
-import junit.framework.TestCase;
-
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for CeilingFunction.
  *
  */
-public class CeilingFunctionTest extends TestCase {
+@RunWith(JUnit4.class)
+public class CeilingFunctionTest {
 
-
+  @Test
   public void testComputeForJava() {
     CeilingFunction ceilingFunction = new CeilingFunction();
 
     SoyValue float0 = FloatData.forValue(7.5);
-    assertEquals(IntegerData.forValue(8),
-                 ceilingFunction.computeForJava(ImmutableList.of(float0)));
+    assertEquals(IntegerData.forValue(8), ceilingFunction.computeForJava(ImmutableList.of(float0)));
 
     SoyValue integer = IntegerData.forValue(14);
-    assertEquals(IntegerData.forValue(14),
-                 ceilingFunction.computeForJava(ImmutableList.of(integer)));
+    assertEquals(
+        IntegerData.forValue(14), ceilingFunction.computeForJava(ImmutableList.of(integer)));
   }
 
+  @Test
   public void testComputeForJsSrc() {
     CeilingFunction ceilingFunction = new CeilingFunction();
     JsExpr expr = new JsExpr("JS_CODE", Integer.MAX_VALUE);
-    assertEquals(new JsExpr("Math.ceil(JS_CODE)", Integer.MAX_VALUE),
-                 ceilingFunction.computeForJsSrc(ImmutableList.of(expr)));
+    assertEquals(
+        new JsExpr("Math.ceil(JS_CODE)", Integer.MAX_VALUE),
+        ceilingFunction.computeForJsSrc(ImmutableList.of(expr)));
   }
 
+  @Test
   public void testComputeForPySrc() {
     CeilingFunction ceilingFunction = new CeilingFunction();
     PyExpr expr = new PyExpr("number", Integer.MAX_VALUE);

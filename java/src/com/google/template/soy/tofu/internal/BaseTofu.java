@@ -25,7 +25,7 @@ import com.google.inject.assistedinject.Assisted;
 import com.google.inject.assistedinject.AssistedInject;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyRecord;
-import com.google.template.soy.data.SoyValueHelper;
+import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.msgs.SoyMsgBundle;
@@ -45,24 +45,21 @@ import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.tofu.SoyTofu;
 import com.google.template.soy.tofu.SoyTofuException;
-
 import java.util.Map;
-
 import javax.annotation.Nullable;
 
 /**
  * Represents a compiled Soy file set. This is the result of compiling Soy to a Java object.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public class BaseTofu implements SoyTofu {
 
-
   /**
    * Injectable factory for creating an instance of this class.
    *
-   * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+   * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
    */
   public interface BaseTofuFactory {
 
@@ -77,7 +74,7 @@ public class BaseTofu implements SoyTofu {
         ImmutableMap<String, ? extends SoyPrintDirective> printDirectives);
   }
 
-  private final SoyValueHelper valueHelper;
+  private final SoyValueConverter valueConverter;
 
   /** The scope object that manages the API call scope. */
   private final GuiceSimpleScope apiCallScope;
@@ -91,19 +88,19 @@ public class BaseTofu implements SoyTofu {
   private final ImmutableMap<String, ? extends SoyJavaPrintDirective> printDirectives;
 
   /**
-   * @param valueHelper Instance of SoyValueHelper to use.
+   * @param valueConverter Instance of SoyValueConverter to use.
    * @param apiCallScope The scope object that manages the API call scope.
    * @param tofuRenderVisitorFactory Factory for creating an instance of TofuRenderVisitor.
    */
   @AssistedInject
   public BaseTofu(
-      SoyValueHelper valueHelper,
+      SoyValueConverter valueConverter,
       @ApiCall GuiceSimpleScope apiCallScope,
       TofuRenderVisitorFactory tofuRenderVisitorFactory,
       @Assisted TemplateRegistry templates,
       @Assisted ImmutableMap<String, ImmutableSortedSet<String>> templateToIjParamsInfoMap,
       @Assisted ImmutableMap<String, ? extends SoyPrintDirective> printDirectives) {
-    this.valueHelper = valueHelper;
+    this.valueConverter = valueConverter;
     this.apiCallScope = apiCallScope;
     this.tofuRenderVisitorFactory = tofuRenderVisitorFactory;
     this.templateRegistry = templates;
@@ -121,35 +118,35 @@ public class BaseTofu implements SoyTofu {
   /**
    * {@inheritDoc}
    *
-   * <p> For objects of this class, the namespace is always null.
+   * <p>For objects of this class, the namespace is always null.
    */
-  @Override public String getNamespace() {
+  @Override
+  public String getNamespace() {
     return null;
   }
 
-
-  @Override public SoyTofu forNamespace(@Nullable String namespace) {
+  @Override
+  public SoyTofu forNamespace(@Nullable String namespace) {
     return (namespace == null) ? this : new NamespacedTofu(this, namespace);
   }
 
-
-  @Override public Renderer newRenderer(SoyTemplateInfo templateInfo) {
+  @Override
+  public Renderer newRenderer(SoyTemplateInfo templateInfo) {
     return new RendererImpl(this, templateInfo.getName());
   }
 
-
-  @Override public Renderer newRenderer(String templateName) {
+  @Override
+  public Renderer newRenderer(String templateName) {
     return new RendererImpl(this, templateName);
   }
 
-
-  @Override public ImmutableSortedSet<String> getUsedIjParamsForTemplate(
-      SoyTemplateInfo templateInfo) {
+  @Override
+  public ImmutableSortedSet<String> getUsedIjParamsForTemplate(SoyTemplateInfo templateInfo) {
     return getUsedIjParamsForTemplate(templateInfo.getName());
   }
 
-
-  @Override public ImmutableSortedSet<String> getUsedIjParamsForTemplate(String templateName) {
+  @Override
+  public ImmutableSortedSet<String> getUsedIjParamsForTemplate(String templateName) {
     ImmutableSortedSet<String> ijParams = templateToIjParamsInfoMap.get(templateName);
     if (ijParams == null) {
       throw new SoyTofuException("Template '" + templateName + "' not found.");
@@ -160,7 +157,6 @@ public class BaseTofu implements SoyTofu {
     // enforce the "assertNoExternalCalls" flag.
     return ijParams;
   }
-
 
   // -----------------------------------------------------------------------------------------------
   // Private methods.
@@ -208,7 +204,6 @@ public class BaseTofu implements SoyTofu {
     }
   }
 
-
   /**
    * Renders a template and appends the result to a StringBuilder.
    *
@@ -242,23 +237,24 @@ public class BaseTofu implements SoyTofu {
     }
 
     if (data == null) {
-      data = SoyValueHelper.EMPTY_DICT;
+      data = SoyValueConverter.EMPTY_DICT;
     }
     if (ijData == null) {
-      ijData = SoyValueHelper.EMPTY_DICT;
+      ijData = SoyValueConverter.EMPTY_DICT;
     }
 
     try {
-      RenderVisitor rv = tofuRenderVisitorFactory.create(
-          outputBuf,
-          templateRegistry,
-          printDirectives,
-          data,
-          ijData,
-          activeDelPackageNames,
-          msgBundle,
-          idRenamingMap,
-          cssRenamingMap);
+      RenderVisitor rv =
+          tofuRenderVisitorFactory.create(
+              outputBuf,
+              templateRegistry,
+              printDirectives,
+              data,
+              ijData,
+              activeDelPackageNames,
+              msgBundle,
+              idRenamingMap,
+              cssRenamingMap);
       rv.exec(template);
 
     } catch (RenderException re) {
@@ -268,14 +264,10 @@ public class BaseTofu implements SoyTofu {
     return template;
   }
 
-
   // -----------------------------------------------------------------------------------------------
   // Renderer implementation.
 
-
-  /**
-   * Simple implementation of the Renderer interface.
-   */
+  /** Simple implementation of the Renderer interface. */
   private static class RendererImpl implements Renderer {
 
     private final BaseTofu baseTofu;
@@ -306,24 +298,28 @@ public class BaseTofu implements SoyTofu {
       this.contentKindExplicitlySet = false;
     }
 
-    @Override public Renderer setData(Map<String, ?> data) {
+    @Override
+    public Renderer setData(Map<String, ?> data) {
       this.data =
-          (data == null) ? null : baseTofu.valueHelper.newEasyDictFromJavaStringMap(data);
+          (data == null) ? null : baseTofu.valueConverter.newEasyDictFromJavaStringMap(data);
       return this;
     }
 
-    @Override public Renderer setData(SoyRecord data) {
+    @Override
+    public Renderer setData(SoyRecord data) {
       this.data = data;
       return this;
     }
 
-    @Override public Renderer setIjData(Map<String, ?> ijData) {
+    @Override
+    public Renderer setIjData(Map<String, ?> ijData) {
       this.ijData =
-          (ijData == null) ? null : baseTofu.valueHelper.newEasyDictFromJavaStringMap(ijData);
+          (ijData == null) ? null : baseTofu.valueConverter.newEasyDictFromJavaStringMap(ijData);
       return this;
     }
 
-    @Override public Renderer setIjData(SoyRecord ijData) {
+    @Override
+    public Renderer setIjData(SoyRecord ijData) {
       this.ijData = ijData;
       return this;
     }
@@ -334,37 +330,50 @@ public class BaseTofu implements SoyTofu {
       return this;
     }
 
-    @Override public Renderer setMsgBundle(SoyMsgBundle msgBundle) {
+    @Override
+    public Renderer setMsgBundle(SoyMsgBundle msgBundle) {
       this.msgBundle = msgBundle;
       return this;
     }
 
-    @Override public Renderer setIdRenamingMap(SoyIdRenamingMap idRenamingMap) {
+    @Override
+    public Renderer setIdRenamingMap(SoyIdRenamingMap idRenamingMap) {
       this.idRenamingMap = idRenamingMap;
       return this;
     }
 
-    @Override public Renderer setCssRenamingMap(SoyCssRenamingMap cssRenamingMap) {
+    @Override
+    public Renderer setCssRenamingMap(SoyCssRenamingMap cssRenamingMap) {
       this.cssRenamingMap = cssRenamingMap;
       return this;
     }
 
-    @Override public Renderer setContentKind(SanitizedContent.ContentKind contentKind) {
+    @Override
+    public Renderer setContentKind(SanitizedContent.ContentKind contentKind) {
       this.expectedContentKind = Preconditions.checkNotNull(contentKind);
       this.contentKindExplicitlySet = true;
       return this;
     }
 
-    @Override public String render() {
+    @Override
+    public String render() {
       StringBuilder sb = new StringBuilder();
       render(sb);
       return sb.toString();
     }
 
-    @Override public SanitizedContent.ContentKind render(Appendable out) {
-      TemplateNode template = baseTofu.renderMain(
-          out, templateName, data, ijData, activeDelPackageNames, msgBundle, idRenamingMap,
-          cssRenamingMap);
+    @Override
+    public SanitizedContent.ContentKind render(Appendable out) {
+      TemplateNode template =
+          baseTofu.renderMain(
+              out,
+              templateName,
+              data,
+              ijData,
+              activeDelPackageNames,
+              msgBundle,
+              idRenamingMap,
+              cssRenamingMap);
       if (contentKindExplicitlySet || template.getContentKind() != null) {
         // Enforce the content kind if:
         // - The caller explicitly set a content kind to validate.
@@ -375,11 +384,19 @@ public class BaseTofu implements SoyTofu {
       return template.getContentKind();
     }
 
-    @Override public SanitizedContent renderStrict() {
+    @Override
+    public SanitizedContent renderStrict() {
       StringBuilder sb = new StringBuilder();
-      TemplateNode template = baseTofu.renderMain(
-          sb, templateName, data, ijData, activeDelPackageNames, msgBundle, idRenamingMap,
-          cssRenamingMap);
+      TemplateNode template =
+          baseTofu.renderMain(
+              sb,
+              templateName,
+              data,
+              ijData,
+              activeDelPackageNames,
+              msgBundle,
+              idRenamingMap,
+              cssRenamingMap);
       enforceContentKind(template);
       // Use the expected instead of actual content kind; that way, if an HTML template is rendered
       // as TEXT, we will return TEXT.
@@ -393,42 +410,49 @@ public class BaseTofu implements SoyTofu {
         return;
       }
       if (template.getContentKind() == null) {
-        throw new SoyTofuException("Expected template to be autoescape=\"strict\" " +
-            "but was autoescape=\"" + template.getAutoescapeMode().getAttributeValue() + "\": " +
-            template.getTemplateName());
+        throw new SoyTofuException(
+            "Expected template to be autoescape=\"strict\" "
+                + "but was autoescape=\""
+                + template.getAutoescapeMode().getAttributeValue()
+                + "\": "
+                + template.getTemplateName());
       }
       if (expectedContentKind != template.getContentKind()) {
-        throw new SoyTofuException("Expected template to be kind=\"" +
-            NodeContentKinds.toAttributeValue(expectedContentKind) +
-            "\" but was kind=\"" + NodeContentKinds.toAttributeValue(template.getContentKind()) +
-            "\": " + template.getTemplateName());
+        throw new SoyTofuException(
+            "Expected template to be kind=\""
+                + NodeContentKinds.toAttributeValue(expectedContentKind)
+                + "\" but was kind=\""
+                + NodeContentKinds.toAttributeValue(template.getContentKind())
+                + "\": "
+                + template.getTemplateName());
       }
     }
   }
-
 
   // -----------------------------------------------------------------------------------------------
   // Old render methods.
 
   @Deprecated
-  @Override public String render(
+  @Override
+  public String render(
       SoyTemplateInfo templateInfo, @Nullable SoyRecord data, @Nullable SoyMsgBundle msgBundle) {
-    return (new RendererImpl(this, templateInfo.getName())).setData(data).setMsgBundle(msgBundle)
+    return (new RendererImpl(this, templateInfo.getName()))
+        .setData(data)
+        .setMsgBundle(msgBundle)
         .render();
   }
 
-
   @Deprecated
-  @Override public String render(
+  @Override
+  public String render(
       String templateName, @Nullable Map<String, ?> data, @Nullable SoyMsgBundle msgBundle) {
     return (new RendererImpl(this, templateName)).setData(data).setMsgBundle(msgBundle).render();
   }
 
-
   @Deprecated
-  @Override public String render(
+  @Override
+  public String render(
       String templateName, @Nullable SoyRecord data, @Nullable SoyMsgBundle msgBundle) {
     return (new RendererImpl(this, templateName)).setData(data).setMsgBundle(msgBundle).render();
   }
-
 }

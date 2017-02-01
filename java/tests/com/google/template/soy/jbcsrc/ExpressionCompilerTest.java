@@ -21,6 +21,7 @@ import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.constantNull;
 import static com.google.template.soy.jbcsrc.FieldRef.staticFieldReference;
 import static com.google.template.soy.jbcsrc.TemplateTester.assertThatTemplateBody;
+import static org.junit.Assert.fail;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -35,7 +36,7 @@ import com.google.template.soy.data.SoyDict;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.SoyValueHelper;
+import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.internal.DictImpl;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
@@ -66,27 +67,25 @@ import com.google.template.soy.types.primitive.IntType;
 import com.google.template.soy.types.primitive.SanitizedType;
 import com.google.template.soy.types.primitive.StringType;
 import com.google.template.soy.types.primitive.UnknownType;
-
-import junit.framework.TestCase;
-
-import org.objectweb.asm.Label;
-import org.objectweb.asm.Type;
-import org.objectweb.asm.commons.Method;
-
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
+import org.objectweb.asm.Label;
+import org.objectweb.asm.Type;
+import org.objectweb.asm.commons.Method;
 
-/**
- * Tests for {@link ExpressionCompiler}
- */
-public class ExpressionCompilerTest extends TestCase {
+/** Tests for {@link ExpressionCompiler} */
+@RunWith(JUnit4.class)
+public class ExpressionCompilerTest {
   public static RenderContext currentRenderContext;
 
   private final Map<String, SoyExpression> variables = new HashMap<>();
-  private ExpressionCompiler testExpressionCompiler =
+  private final ExpressionCompiler testExpressionCompiler =
       ExpressionCompiler.create(
           new ExpressionDetacher.Factory() {
             @Override
@@ -102,6 +101,11 @@ public class ExpressionCompilerTest extends TestCase {
                     return soyValueProvider;
                   }
                   return MethodRef.SOY_VALUE_PROVIDER_RESOLVE.invoke(soyValueProvider);
+                }
+
+                @Override
+                public Expression resolveSoyValueProviderList(Expression soyValueProviderList) {
+                  throw new UnsupportedOperationException();
                 }
               };
             }
@@ -139,18 +143,19 @@ public class ExpressionCompilerTest extends TestCase {
             }
           },
           new TemplateVariableManager(
-              UniqueNameGenerator.forFieldNames(), null, null, getRenderMethod()));
+              JbcSrcNameGenerators.forFieldNames(), null, null, getRenderMethod()));
 
-  private Method getRenderMethod() {
+  private static Method getRenderMethod() {
     try {
       return Method.getMethod(
-          CompiledTemplate.class
-              .getMethod("render", AdvisingAppendable.class, RenderContext.class));
+          CompiledTemplate.class.getMethod(
+              "render", AdvisingAppendable.class, RenderContext.class));
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
   }
 
+  @Test
   public void testConstants() {
     assertExpression("1").evaluatesTo(1L);
     assertExpression("1.0").evaluatesTo(1D);
@@ -159,6 +164,7 @@ public class ExpressionCompilerTest extends TestCase {
     assertExpression("'asdf'").evaluatesTo("asdf");
   }
 
+  @Test
   public void testCollectionLiterals_list() {
     assertExpression("[]").evaluatesTo(ImmutableList.of());
     // Lists values are always boxed
@@ -171,21 +177,24 @@ public class ExpressionCompilerTest extends TestCase {
                 BooleanData.FALSE));
   }
 
+  @Test
   public void testCollectionLiterals_map() {
-    assertExpression("[:]").evaluatesTo(SoyValueHelper.EMPTY_DICT);
+    assertExpression("[:]").evaluatesTo(SoyValueConverter.EMPTY_DICT);
 
     // Map values are always boxed.  SoyMaps use == for equality, so check equivalence by comparing
     // their string representations.
     assertExpression("['a': 1, 'b': 1.0, 'c': 'asdf', 'd': false] + ''")
         .evaluatesTo(
             DictImpl.forProviderMap(
-                ImmutableMap.<String, SoyValue>of(
-                    "a", IntegerData.forValue(1),
-                    "b", FloatData.forValue(1.0),
-                    "c", StringData.forValue("asdf"),
-                    "d", BooleanData.FALSE)).toString());
+                    ImmutableMap.<String, SoyValue>of(
+                        "a", IntegerData.forValue(1),
+                        "b", FloatData.forValue(1.0),
+                        "c", StringData.forValue("asdf"),
+                        "d", BooleanData.FALSE))
+                .toString());
   }
 
+  @Test
   public void testNegativeOpNode() {
     assertExpression("-1").evaluatesTo(-1L);
     assertExpression("-1.0").evaluatesTo(-1.0);
@@ -199,6 +208,7 @@ public class ExpressionCompilerTest extends TestCase {
     assertExpression("-$foo").evaluatesTo(FloatData.forValue(-1.0));
   }
 
+  @Test
   public void testModOpNode() {
     assertExpression("3 % 2").evaluatesTo(1L);
     assertExpression("5 % 3").evaluatesTo(2L);
@@ -206,7 +216,8 @@ public class ExpressionCompilerTest extends TestCase {
     try {
       compileExpression("5.0 % 3.0");
       fail();
-    } catch (Exception expected) {}
+    } catch (Exception expected) {
+    }
 
     variables.put("foo", untypedBoxedSoyExpression(SoyExpression.forInt(constant(3L))));
     variables.put("bar", untypedBoxedSoyExpression(SoyExpression.forInt(constant(2L))));
@@ -217,8 +228,9 @@ public class ExpressionCompilerTest extends TestCase {
     assertExpression("$foo % $bar").throwsException(SoyDataException.class);
   }
 
+  @Test
   public void testDivideByOpNode() {
-    assertExpression("3 / 2").evaluatesTo(1.5);  // note the coercion to floating point
+    assertExpression("3 / 2").evaluatesTo(1.5); // note the coercion to floating point
     assertExpression("4.2 / 2").evaluatesTo(2.1);
 
     variables.put("foo", untypedBoxedSoyExpression(SoyExpression.forFloat(constant(3.0))));
@@ -226,6 +238,7 @@ public class ExpressionCompilerTest extends TestCase {
     assertExpression("$foo / $bar").evaluatesTo(1.5);
   }
 
+  @Test
   public void testTimesOpNode() {
     assertExpression("4.2 * 2").evaluatesTo(8.4);
     assertExpression("4 * 2").evaluatesTo(8L);
@@ -235,6 +248,7 @@ public class ExpressionCompilerTest extends TestCase {
     assertExpression("$foo * $bar").evaluatesTo(FloatData.forValue(6.0));
   }
 
+  @Test
   public void testMinusOpNode() {
     assertExpression("4.2 - 2").evaluatesTo(2.2);
     assertExpression("4 - 2").evaluatesTo(2L);
@@ -244,6 +258,7 @@ public class ExpressionCompilerTest extends TestCase {
     assertExpression("$foo - $bar").evaluatesTo(FloatData.forValue(1.0));
   }
 
+  @Test
   public void testPlusOpNode() {
     assertExpression("4.2 + 2").evaluatesTo(6.2);
     assertExpression("4 + 2").evaluatesTo(6L);
@@ -252,7 +267,7 @@ public class ExpressionCompilerTest extends TestCase {
 
     variables.put("foo", untypedBoxedSoyExpression(SoyExpression.forString(constant("foo"))));
     assertExpression("$foo + 2").evaluatesTo(StringData.forValue("foo2"));
-    assertExpression("$foo + '2'").evaluatesTo("foo2");  // Note, not boxed
+    assertExpression("$foo + '2'").evaluatesTo("foo2"); // Note, not boxed
 
     variables.put("foo", untypedBoxedSoyExpression(SoyExpression.forInt(constant(1L))));
     assertExpression("$foo + 2").evaluatesTo(IntegerData.forValue(3));
@@ -260,6 +275,7 @@ public class ExpressionCompilerTest extends TestCase {
     assertExpression("['foo'] + ['bar']").evaluatesTo("[foo][bar]");
   }
 
+  @Test
   public void testNotOpNode() {
     assertExpression("not false").evaluatesTo(true);
     assertExpression("not true").evaluatesTo(false);
@@ -268,9 +284,10 @@ public class ExpressionCompilerTest extends TestCase {
     assertExpression("not $foo").evaluatesTo(false);
 
     variables.put("foo", untypedBoxedSoyExpression(SoyExpression.forString(constant(""))));
-    assertExpression("not $foo").evaluatesTo(true);  // empty string is falsy
+    assertExpression("not $foo").evaluatesTo(true); // empty string is falsy
   }
 
+  @Test
   public void testComparisonOperators() {
     variables.put("oneInt", untypedBoxedSoyExpression(SoyExpression.forInt(constant(1L))));
     variables.put("oneFloat", untypedBoxedSoyExpression(SoyExpression.forFloat(constant(1.0))));
@@ -306,6 +323,7 @@ public class ExpressionCompilerTest extends TestCase {
     }
   }
 
+  @Test
   public void testConditionalOperators() {
     variables.put("true", untypedBoxedSoyExpression(SoyExpression.TRUE));
     variables.put("false", untypedBoxedSoyExpression(SoyExpression.FALSE));
@@ -327,6 +345,7 @@ public class ExpressionCompilerTest extends TestCase {
 
   // The arithmetic types are handled by testComparisonOperators, the == and != operators have
   // extra semantics for strings as well as boxed fallback
+  @Test
   public void testEqualOpNode() {
     assertExprNotEquals("'asdf'", "12.0");
     assertExprEquals("'12'", "12.0");
@@ -353,6 +372,7 @@ public class ExpressionCompilerTest extends TestCase {
     assertExprNotEquals("null", "'a'");
   }
 
+  @Test
   public void testConditionalOpNode() {
     assertExpression("false ? 1 : 2").evaluatesTo(2L);
     assertExpression("true ? 1 : 2").evaluatesTo(1L);
@@ -372,43 +392,32 @@ public class ExpressionCompilerTest extends TestCase {
 
   // conditional op expression have had a number of bugs due previous implementations that
   // aggressively unboxed operands
+  @Test
   public void testConditionalOpNode_advanced() {
     CompiledTemplateSubject tester =
-        assertThatTemplateBody(
-            "{@param? p : string}",
-            "{$p ? $p : '' }");
+        assertThatTemplateBody("{@param? p : string}", "{$p ? $p : '' }");
     tester.rendersAs("", ImmutableMap.<String, Object>of());
     tester.rendersAs("hello", ImmutableMap.<String, Object>of("p", "hello"));
     tester =
         assertThatTemplateBody(
-            "{@param? p : map<string, string>}",
-            "{if $p}",
-            "  {$p['key']}",
-            "{/if}");
+            "{@param? p : map<string, string>}", "{if $p}", "  {$p['key']}", "{/if}");
     tester.rendersAs("", ImmutableMap.<String, Object>of());
-    tester =
-        assertThatTemplateBody(
-            "{@param? p : string}",
-            "{$p ? $p : 1 }");
+    tester = assertThatTemplateBody("{@param? p : string}", "{$p ? $p : 1 }");
     tester.rendersAs("1", ImmutableMap.<String, Object>of());
     tester.rendersAs("hello", ImmutableMap.<String, Object>of("p", "hello"));
 
-    tester =
-        assertThatTemplateBody(
-            "{@param p : int}",
-            "{$p ? 1 : $p }");
+    tester = assertThatTemplateBody("{@param p : int}", "{$p ? 1 : $p }");
     tester.rendersAs("0", ImmutableMap.<String, Object>of("p", 0));
     tester.rendersAs("1", ImmutableMap.<String, Object>of("p", 2));
 
     tester =
         assertThatTemplateBody(
-            "{@param b : bool}",
-            "{@param v : list<int>}",
-            "{$b ? $v[0] : $v[1] + 1}");
+            "{@param b : bool}", "{@param v : list<int>}", "{$b ? $v[0] : $v[1] + 1}");
     tester.rendersAs("null", ImmutableMap.<String, Object>of("b", true, "v", Arrays.asList()));
     tester.rendersAs("3", ImmutableMap.<String, Object>of("b", false, "v", Arrays.asList(1, 2)));
   }
 
+  @Test
   public void testNullCoalescingOpNode() {
     assertExpression("1 ?: 2").evaluatesTo(1L);
     // force the type checker to interpret the left hand side as a nullable string, the literal null
@@ -439,22 +448,23 @@ public class ExpressionCompilerTest extends TestCase {
 
   // null coalescing op expression have had a number of bugs due to the advanced unboxing
   // conversions forcing unnecessary NullPointerExceptions
+  @Test
   public void testNullCoalescingOpNode_advanced() {
     CompiledTemplateSubject tester =
-        assertThatTemplateBody(
-            "{@param v : list<string>}",
-            "{$v[0] ?: $v[1] }");
+        assertThatTemplateBody("{@param v : list<string>}", "{$v[0] ?: $v[1] }");
     tester.rendersAs("null", ImmutableMap.<String, Object>of("v", Arrays.asList()));
     tester.rendersAs("b", ImmutableMap.<String, Object>of("v", Arrays.asList(null, "b")));
     tester.rendersAs("a", ImmutableMap.<String, Object>of("v", Arrays.asList("a", "b")));
   }
 
+  @Test
   public void testCheckNotNull() {
     assertExpression("checkNotNull(1 < 2 ? null : 'a')")
         .throwsException(NullPointerException.class, "'1 < 2 ? null : 'a'' evaluates to null");
     assertExpression("checkNotNull('a')").evaluatesTo("a");
   }
 
+  @Test
   public void testItemAccess_lists() {
     variables.put("list", compileExpression("[0, 1, 2]").box());
     // By default all values are boxed
@@ -478,6 +488,7 @@ public class ExpressionCompilerTest extends TestCase {
     assertExpression("$list[$anInt]").evaluatesTo(null);
   }
 
+  @Test
   public void testItemAccess_maps() {
     // String literal keys trigger a heuristic that makes MapLiteral mean RecordLiteral and you
     // can't use 'item access' to read it. We use string concatention to force a map interpretation.
@@ -489,6 +500,7 @@ public class ExpressionCompilerTest extends TestCase {
     assertExpression("$map['not valid']").evaluatesTo(null);
   }
 
+  @Test
   public void testNullSafeItemAccess_map() {
     // Note: due to bugs in the type resolver (b/20537225) we can't properly type this variable
     // so instead we have to lie about the nullability of this map.
@@ -501,6 +513,7 @@ public class ExpressionCompilerTest extends TestCase {
     assertExpression("$nullMap?['a']").evaluatesTo(null);
   }
 
+  @Test
   public void testNullSafeItemAccess_list() {
     variables.put(
         "nullList",
@@ -509,11 +522,12 @@ public class ExpressionCompilerTest extends TestCase {
             BytecodeUtils.constantNull(Type.getType(SoyList.class))));
     assertExpression("$nullList[1]")
         .doesNotContainCode("IFNULL")
-        .doesNotContainCode("IFNNONULL")  // no null checks
+        .doesNotContainCode("IFNNONULL") // no null checks
         .throwsException(NullPointerException.class);
     assertExpression("$nullList?[1]").evaluatesTo(null);
   }
 
+  @Test
   public void testFieldAccess() {
     variables.put("record", compileExpression("['a': 0, 'b': 1, 'c': 2]").box());
     // By default all values are boxed
@@ -525,6 +539,7 @@ public class ExpressionCompilerTest extends TestCase {
     assertExpression("$record.a + 1").evaluatesTo(1L);
   }
 
+  @Test
   public void testNullSafeFieldAccess() {
     variables.put(
         "nullRecord",
@@ -535,6 +550,7 @@ public class ExpressionCompilerTest extends TestCase {
     assertExpression("$nullRecord?.a").evaluatesTo(null);
   }
 
+  @Test
   public void testMaxAndMin() {
     assertExpression("min(2, 3)").evaluatesTo(2L);
     assertExpression("max(2, 3)").evaluatesTo(3L);
@@ -596,19 +612,26 @@ public class ExpressionCompilerTest extends TestCase {
     final StringBuilder templateBody = new StringBuilder();
     new AbstractExprNodeVisitor<Void>() {
       final Set<String> names = new HashSet<>();
-      @Override protected void visitVarRefNode(VarRefNode node) {
+
+      @Override
+      protected void visitVarRefNode(VarRefNode node) {
         if (names.add(node.getName())) {
-              SoyType type = variables.get(node.getName()).soyType();
-              templateBody.append("{@param " + node.getName() + ": " + type + "}\n");
+          SoyType type = variables.get(node.getName()).soyType();
+          templateBody
+              .append("{@param ")
+              .append(node.getName())
+              .append(": ")
+              .append(type)
+              .append("}\n");
         }
       }
 
-      @Override protected void visitExprNode(ExprNode node) {
+      @Override
+      protected void visitExprNode(ExprNode node) {
         if (node instanceof ParentExprNode) {
           visitChildren((ParentExprNode) node);
         }
       }
-
     }.exec(expr);
     templateBody.append("{" + soyExpr + "}\n");
     return templateBody.toString();

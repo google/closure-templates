@@ -38,89 +38,118 @@ import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
-
 import java.util.List;
 
 /**
  * Abstract base class for all ExprNode visitors. A visitor is basically a function implemented for
  * some or all ExprNodes, where the implementation can be different for each specific node class.
  *
- * <p> Same as {@link AbstractExprNodeVisitor} except that in this class, internal {@code visit()}
+ * <p>Same as {@link AbstractExprNodeVisitor} except that in this class, internal {@code visit()}
  * calls return a value.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
- * <p>
- * To create a visitor:
+ * <p>To create a visitor:
+ *
  * <ol>
- * <li> Subclass this class.
- * <li> Implement {@code visit*Node()} methods for some specific node types.
- * <li> Implement fallback methods for node types not specifically handled. The most general
- *      fallback method is {@link #visitExprNode visitExprNode()}, which is usually needed. Other
- *      fallback methods include {@code visitPrimitiveNode()} and {@code visitOperatorNode()}.
- * <li> Maybe implement a constructor, taking appropriate parameters for your visitor call.
- * <li> Maybe implement {@link #exec exec()} if this visitor needs to return a non-null final result
- *      and/or if this visitor has state that needs to be setup/reset before each unrelated use of
- *      {@code visit()}.
+ *   <li> Subclass this class.
+ *   <li> Implement {@code visit*Node()} methods for some specific node types.
+ *   <li> Implement fallback methods for node types not specifically handled. The most general
+ *       fallback method is {@link #visitExprNode visitExprNode()}, which is usually needed. Other
+ *       fallback methods include {@code visitPrimitiveNode()} and {@code visitOperatorNode()}.
+ *   <li> Maybe implement a constructor, taking appropriate parameters for your visitor call.
+ *   <li> Maybe implement {@link #exec exec()} if this visitor needs to return a non-null final
+ *       result and/or if this visitor has state that needs to be setup/reset before each unrelated
+ *       use of {@code visit()}.
  * </ol>
  *
  * @param <R> The return type of this visitor.
- *
  * @see AbstractExprNodeVisitor
  */
 public abstract class AbstractReturningExprNodeVisitor<R>
     extends AbstractReturningNodeVisitor<ExprNode, R> {
 
-  @Override protected R visit(ExprNode node) {
+  @Override
+  protected R visit(ExprNode node) {
 
     switch (node.getKind()) {
+      case EXPR_ROOT_NODE:
+        return visitExprRootNode((ExprRootNode) node);
 
-      case EXPR_ROOT_NODE: return visitExprRootNode((ExprRootNode) node);
+      case NULL_NODE:
+        return visitNullNode((NullNode) node);
+      case BOOLEAN_NODE:
+        return visitBooleanNode((BooleanNode) node);
+      case INTEGER_NODE:
+        return visitIntegerNode((IntegerNode) node);
+      case FLOAT_NODE:
+        return visitFloatNode((FloatNode) node);
+      case STRING_NODE:
+        return visitStringNode((StringNode) node);
 
-      case NULL_NODE: return visitNullNode((NullNode) node);
-      case BOOLEAN_NODE: return visitBooleanNode((BooleanNode) node);
-      case INTEGER_NODE: return visitIntegerNode((IntegerNode) node);
-      case FLOAT_NODE: return visitFloatNode((FloatNode) node);
-      case STRING_NODE: return visitStringNode((StringNode) node);
+      case LIST_LITERAL_NODE:
+        return visitListLiteralNode((ListLiteralNode) node);
+      case MAP_LITERAL_NODE:
+        return visitMapLiteralNode((MapLiteralNode) node);
 
-      case LIST_LITERAL_NODE: return visitListLiteralNode((ListLiteralNode) node);
-      case MAP_LITERAL_NODE: return visitMapLiteralNode((MapLiteralNode) node);
+      case VAR_REF_NODE:
+        return visitVarRefNode((VarRefNode) node);
+      case FIELD_ACCESS_NODE:
+        return visitFieldAccessNode((FieldAccessNode) node);
+      case ITEM_ACCESS_NODE:
+        return visitItemAccessNode((ItemAccessNode) node);
 
-      case VAR_REF_NODE: return visitVarRefNode((VarRefNode) node);
-      case FIELD_ACCESS_NODE: return visitFieldAccessNode((FieldAccessNode) node);
-      case ITEM_ACCESS_NODE: return visitItemAccessNode((ItemAccessNode) node);
+      case GLOBAL_NODE:
+        return visitGlobalNode((GlobalNode) node);
 
-      case GLOBAL_NODE: return visitGlobalNode((GlobalNode) node);
-
-      case NEGATIVE_OP_NODE: return visitNegativeOpNode((NegativeOpNode) node);
-      case NOT_OP_NODE: return visitNotOpNode((NotOpNode) node);
-      case TIMES_OP_NODE: return visitTimesOpNode((TimesOpNode) node);
-      case DIVIDE_BY_OP_NODE: return visitDivideByOpNode((DivideByOpNode) node);
-      case MOD_OP_NODE: return visitModOpNode((ModOpNode) node);
-      case PLUS_OP_NODE: return visitPlusOpNode((PlusOpNode) node);
-      case MINUS_OP_NODE: return visitMinusOpNode((MinusOpNode) node);
-      case LESS_THAN_OP_NODE: return visitLessThanOpNode((LessThanOpNode) node);
-      case GREATER_THAN_OP_NODE: return visitGreaterThanOpNode((GreaterThanOpNode) node);
+      case NEGATIVE_OP_NODE:
+        return visitNegativeOpNode((NegativeOpNode) node);
+      case NOT_OP_NODE:
+        return visitNotOpNode((NotOpNode) node);
+      case TIMES_OP_NODE:
+        return visitTimesOpNode((TimesOpNode) node);
+      case DIVIDE_BY_OP_NODE:
+        return visitDivideByOpNode((DivideByOpNode) node);
+      case MOD_OP_NODE:
+        return visitModOpNode((ModOpNode) node);
+      case PLUS_OP_NODE:
+        return visitPlusOpNode((PlusOpNode) node);
+      case MINUS_OP_NODE:
+        return visitMinusOpNode((MinusOpNode) node);
+      case LESS_THAN_OP_NODE:
+        return visitLessThanOpNode((LessThanOpNode) node);
+      case GREATER_THAN_OP_NODE:
+        return visitGreaterThanOpNode((GreaterThanOpNode) node);
       case LESS_THAN_OR_EQUAL_OP_NODE:
         return visitLessThanOrEqualOpNode((LessThanOrEqualOpNode) node);
       case GREATER_THAN_OR_EQUAL_OP_NODE:
         return visitGreaterThanOrEqualOpNode((GreaterThanOrEqualOpNode) node);
-      case EQUAL_OP_NODE: return visitEqualOpNode((EqualOpNode) node);
-      case NOT_EQUAL_OP_NODE: return visitNotEqualOpNode((NotEqualOpNode) node);
-      case AND_OP_NODE: return visitAndOpNode((AndOpNode) node);
-      case OR_OP_NODE: return visitOrOpNode((OrOpNode) node);
-      case NULL_COALESCING_OP_NODE: return visitNullCoalescingOpNode((NullCoalescingOpNode) node);
-      case CONDITIONAL_OP_NODE: return visitConditionalOpNode((ConditionalOpNode) node);
+      case EQUAL_OP_NODE:
+        return visitEqualOpNode((EqualOpNode) node);
+      case NOT_EQUAL_OP_NODE:
+        return visitNotEqualOpNode((NotEqualOpNode) node);
+      case AND_OP_NODE:
+        return visitAndOpNode((AndOpNode) node);
+      case OR_OP_NODE:
+        return visitOrOpNode((OrOpNode) node);
+      case NULL_COALESCING_OP_NODE:
+        return visitNullCoalescingOpNode((NullCoalescingOpNode) node);
+      case CONDITIONAL_OP_NODE:
+        return visitConditionalOpNode((ConditionalOpNode) node);
 
-      case FUNCTION_NODE: return visitFunctionNode((FunctionNode) node);
+      case FUNCTION_NODE:
+        return visitFunctionNode((FunctionNode) node);
+      case PROTO_INIT_NODE:
+        return visitProtoInitNode((ProtoInitNode) node);
 
-      default: throw new UnsupportedOperationException();
+      default:
+        throw new UnsupportedOperationException();
     }
   }
 
-
   /**
    * Helper to visit all the children of a node, in order.
+   *
    * @param node The parent node whose children to visit.
    * @return The list of return values from visiting the children.
    * @see #visitChildrenAllowingConcurrentModification
@@ -129,19 +158,15 @@ public abstract class AbstractReturningExprNodeVisitor<R>
     return visitChildren((ParentNode<ExprNode>) node);
   }
 
-
   // -----------------------------------------------------------------------------------------------
   // Implementations for misc nodes.
-
 
   protected R visitExprRootNode(ExprRootNode node) {
     return visitExprNode(node);
   }
 
-
   // -----------------------------------------------------------------------------------------------
   // Implementations for primitive nodes.
-
 
   protected R visitNullNode(NullNode node) {
     return visitPrimitiveNode(node);
@@ -167,10 +192,8 @@ public abstract class AbstractReturningExprNodeVisitor<R>
     return visitExprNode(node);
   }
 
-
   // -----------------------------------------------------------------------------------------------
   // Implementations for collection nodes.
-
 
   protected R visitListLiteralNode(ListLiteralNode node) {
     return visitExprNode(node);
@@ -180,10 +203,8 @@ public abstract class AbstractReturningExprNodeVisitor<R>
     return visitExprNode(node);
   }
 
-
   // -----------------------------------------------------------------------------------------------
   // Implementations for reference nodes.
-
 
   protected R visitVarRefNode(VarRefNode node) {
     return visitExprNode(node);
@@ -205,10 +226,8 @@ public abstract class AbstractReturningExprNodeVisitor<R>
     return visitExprNode(node);
   }
 
-
   // -----------------------------------------------------------------------------------------------
   // Implementations for operator nodes.
-
 
   protected R visitNegativeOpNode(NegativeOpNode node) {
     return visitOperatorNode(node);
@@ -282,25 +301,22 @@ public abstract class AbstractReturningExprNodeVisitor<R>
     return visitExprNode(node);
   }
 
-
   // -----------------------------------------------------------------------------------------------
   // Implementations for function nodes.
-
 
   protected R visitFunctionNode(FunctionNode node) {
     return visitExprNode(node);
   }
 
+  protected R visitProtoInitNode(ProtoInitNode node) {
+    return visitExprNode(node);
+  }
 
   // -----------------------------------------------------------------------------------------------
   // Fallback implementation.
 
-
-  /**
-   * @param node The node being visited.
-   */
+  /** @param node The node being visited. */
   protected R visitExprNode(ExprNode node) {
     throw new UnsupportedOperationException();
   }
-
 }

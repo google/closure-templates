@@ -16,6 +16,9 @@
 
 package com.google.template.soy.sharedpasses.opti;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
@@ -32,16 +35,16 @@ import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
-
-import junit.framework.TestCase;
-
 import java.util.List;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
-/**
- */
-public class SimplifyVisitorTest extends TestCase {
+/** @author Kai Huang */
+@RunWith(JUnit4.class)
+public class SimplifyVisitorTest {
 
-
+  @Test
   public void testCombineConsecutiveRawTextNodes() throws Exception {
 
     String soyCode =
@@ -71,34 +74,35 @@ public class SimplifyVisitorTest extends TestCase {
     assertEquals("blahblehbluh", ((RawTextNode) forNode.getChild(2)).getRawText());
   }
 
-
+  @Test
   public void testMsgBlockNodeChildrenAreNotReplaced() throws Exception {
 
     String soyFileContent =
-        "{namespace boo autoescape=\"deprecated-noncontextual\"}\n" +
-        "\n" +
-        "{template .foo}\n" +
-        "\n" +
-        "  {msg desc=\"\"}\n" +
-        "    blah\n" +
-        "    {'blah'}\n" +
-        "    blah\n" +
-        "    {call .aaa /}\n" +
-        "    blah\n" +
-        "    <div class=\"{call .aaa /}\">\n" +
-        "    </div>\n" +
-        "    blah\n" +
-        "  {/msg}\n" +
-        "{/template}\n" +
-        "\n" +
-        "/***/\n" +
-        "{template .aaa}\n" +
-        "  blah\n" +
-        "{/template}";
+        "{namespace boo autoescape=\"deprecated-noncontextual\"}\n"
+            + "\n"
+            + "{template .foo}\n"
+            + "\n"
+            + "  {msg desc=\"\"}\n"
+            + "    blah\n"
+            + "    {'blah'}\n"
+            + "    blah\n"
+            + "    {call .aaa /}\n"
+            + "    blah\n"
+            + "    <div class=\"{call .aaa /}\">\n"
+            + "    </div>\n"
+            + "    blah\n"
+            + "  {/msg}\n"
+            + "{/template}\n"
+            + "\n"
+            + "/***/\n"
+            + "{template .aaa}\n"
+            + "  blah\n"
+            + "{/template}";
 
     MsgNode msgNode =
-        ((MsgFallbackGroupNode) simplifySoyFiles(soyFileContent).getChild(0).getChild(0)
-            .getChild(0)).getChild(0);
+        ((MsgFallbackGroupNode)
+                simplifySoyFiles(soyFileContent).getChild(0).getChild(0).getChild(0))
+            .getChild(0);
     assertEquals(8, msgNode.numChildren());
     // The MsgPlaceholderNode children are not replaced.
     assertTrue(msgNode.getChild(1) instanceof MsgPlaceholderNode);
@@ -109,7 +113,7 @@ public class SimplifyVisitorTest extends TestCase {
     assertTrue(((MsgPlaceholderNode) msgNode.getChild(1)).getChild(0) instanceof RawTextNode);
   }
 
-
+  @Test
   public void testSimplifyPrintNode() throws Exception {
 
     String soyCode;
@@ -137,38 +141,38 @@ public class SimplifyVisitorTest extends TestCase {
         "{'0123456789' |insertWordBreaks:$boo}", simplifySoyCode(soyCode).get(0).toSourceString());
   }
 
-
+  @Test
   public void testSimplifyIfNode() throws Exception {
 
     String soyCode;
 
     soyCode =
-        "{if not false}\n" +
-        "  111\n" +
-        "{/if}\n" +
-        "{if true and false}\n" +
-        "  222\n" +
-        "{/if}\n";
+        "{if not false}\n"
+            + "  111\n"
+            + "{/if}\n"
+            + "{if true and false}\n"
+            + "  222\n"
+            + "{/if}\n";
     assertEquals("111", simplifySoyCode(soyCode).get(0).toSourceString());
 
     soyCode =
-        "{if ''}\n" +
-        "  111\n" +
-        "{elseif not 1}\n" +
-        "  222\n" +
-        "{else}\n" +
-        "  333\n" +
-        "{/if}\n";
+        "{if ''}\n"
+            + "  111\n"
+            + "{elseif not 1}\n"
+            + "  222\n"
+            + "{else}\n"
+            + "  333\n"
+            + "{/if}\n";
     assertEquals("333", simplifySoyCode(soyCode).get(0).toSourceString());
 
     soyCode =
-        "{if false}\n" +
-        "  111\n" +
-        "{elseif true}\n" +
-        "  222\n" +
-        "{else}\n" +
-        "  333\n" +
-        "{/if}\n";
+        "{if false}\n"
+            + "  111\n"
+            + "{elseif true}\n"
+            + "  222\n"
+            + "{else}\n"
+            + "  333\n"
+            + "{/if}\n";
     assertEquals("222", simplifySoyCode(soyCode).get(0).toSourceString());
 
     soyCode =
@@ -208,7 +212,7 @@ public class SimplifyVisitorTest extends TestCase {
     assertEquals("{if $boo}222{else}444{/if}", simplifySoyCode(soyCode).get(0).toSourceString());
   }
 
-
+  @Test
   public void testSimplifySwitchNode() throws Exception {
 
     String soyCode;
@@ -224,11 +228,11 @@ public class SimplifyVisitorTest extends TestCase {
     assertEquals("222333", simplifySoyCode(soyCode).get(0).toSourceString());
 
     soyCode =
-        "{switch 1 + 2}\n" +
-        "  {case 1}111\n" +
-        "  {case 2}222\n" +
-        "  {default}333\n" +
-        "{/switch}\n";
+        "{switch 1 + 2}\n"
+            + "  {case 1}111\n"
+            + "  {case 2}222\n"
+            + "  {default}333\n"
+            + "{/switch}\n";
     assertEquals("333", simplifySoyCode(soyCode).get(0).toSourceString());
 
     soyCode =
@@ -244,12 +248,10 @@ public class SimplifyVisitorTest extends TestCase {
         simplifySoyCode(soyCode).get(0).toSourceString());
   }
 
-
   // -----------------------------------------------------------------------------------------------
   // Helpers.
 
   private static final Injector INJECTOR = Guice.createInjector(new SoyModule());
-
 
   private static List<StandaloneNode> simplifySoyCode(String soyCode) throws Exception {
 
@@ -259,7 +261,6 @@ public class SimplifyVisitorTest extends TestCase {
     return parse.fileSet().getChild(0).getChild(0).getChildren();
   }
 
-
   private static SoyFileSetNode simplifySoyFiles(String... soyFileContents) throws Exception {
 
     ParseResult parse = SoyFileSetParserBuilder.forFileContents(soyFileContents).parse();
@@ -267,5 +268,4 @@ public class SimplifyVisitorTest extends TestCase {
     simplifyVisitor.simplify(parse.fileSet(), parse.registry());
     return parse.fileSet();
   }
-
 }

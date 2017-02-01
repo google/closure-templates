@@ -23,13 +23,15 @@ import com.google.common.collect.Iterables;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.error.FormattingErrorReporter;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
-import junit.framework.TestCase;
+/** @author Mike Samuel */
+@RunWith(JUnit4.class)
+public final class CheckFunctionCallsVisitorTest {
 
-/**
- */
-public final class CheckFunctionCallsVisitorTest extends TestCase {
-
+  @Test
   public void testPureFunctionOk() {
     assertSuccess(
         "{namespace ns}\n",
@@ -42,6 +44,7 @@ public final class CheckFunctionCallsVisitorTest extends TestCase {
         "{/template}");
   }
 
+  @Test
   public void testIncorrectArity() {
     assertFunctionCallsInvalid(
         "Function 'min' called with 1 arguments (expected 2).",
@@ -60,6 +63,7 @@ public final class CheckFunctionCallsVisitorTest extends TestCase {
         "{/template}");
   }
 
+  @Test
   public void testNestedFunctionCall() {
     assertFunctionCallsInvalid(
         "Function 'min' called with 1 arguments (expected 2).",
@@ -73,6 +77,7 @@ public final class CheckFunctionCallsVisitorTest extends TestCase {
         "{/template}");
   }
 
+  @Test
   public void testNotALoopVariable1() {
     assertFunctionCallsInvalid(
         "Function 'index' must have a foreach loop variable as its argument",
@@ -85,6 +90,7 @@ public final class CheckFunctionCallsVisitorTest extends TestCase {
         "{/template}");
   }
 
+  @Test
   public void testNotALoopVariable2() {
     assertFunctionCallsInvalid(
         "Function 'index' must have a foreach loop variable as its argument",
@@ -97,6 +103,7 @@ public final class CheckFunctionCallsVisitorTest extends TestCase {
         "{/template}");
   }
 
+  @Test
   public void testNotALoopVariable3() {
     assertFunctionCallsInvalid(
         "Function 'index' must have a foreach loop variable as its argument",
@@ -106,6 +113,7 @@ public final class CheckFunctionCallsVisitorTest extends TestCase {
         "{/template}");
   }
 
+  @Test
   public void testNotALoopVariable4() {
     assertFunctionCallsInvalid(
         "Function 'index' must have a foreach loop variable as its argument",
@@ -118,6 +126,7 @@ public final class CheckFunctionCallsVisitorTest extends TestCase {
         "{/template}");
   }
 
+  @Test
   public void testLoopVariableOk() {
     assertSuccess(
         "{namespace ns}\n",
@@ -131,6 +140,7 @@ public final class CheckFunctionCallsVisitorTest extends TestCase {
         "{/template}");
   }
 
+  @Test
   public void testLoopVariableNotInScopeWhenEmpty() {
     assertFunctionCallsInvalid(
         "Function 'index' must have a foreach loop variable as its argument",
@@ -147,6 +157,7 @@ public final class CheckFunctionCallsVisitorTest extends TestCase {
         "{/template}");
   }
 
+  @Test
   public void testQuoteKeysIfJsFunction() {
     assertSuccess(
         "{namespace ns}\n",
@@ -162,6 +173,7 @@ public final class CheckFunctionCallsVisitorTest extends TestCase {
         "{/template}");
   }
 
+  @Test
   public void testUnrecognizedFunction() {
     assertFunctionCallsInvalid(
         "Unknown function 'bogus'.",
@@ -171,6 +183,7 @@ public final class CheckFunctionCallsVisitorTest extends TestCase {
         "{/template}");
   }
 
+  @Test
   public void testUnrecognizedFunctionOkInV1() {
     assertPasses(
         SyntaxVersion.V1_0,

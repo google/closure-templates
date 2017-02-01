@@ -42,11 +42,9 @@ import com.google.common.html.types.TrustedResourceUrls;
 import com.google.common.io.Resources;
 import com.google.errorprone.annotations.CompileTimeConstant;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
-
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.Set;
-
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
@@ -57,28 +55,21 @@ import javax.annotation.ParametersAreNonnullByDefault;
  * should reside with the specific project.
  *
  * <p>All utilities here should be extremely difficult to abuse in a way that could create
- * attacker-controlled SanitizedContent objects. Java's type system is a great tool to achieve
- * this.
+ * attacker-controlled SanitizedContent objects. Java's type system is a great tool to achieve this.
  *
  */
 @ParametersAreNonnullByDefault
 public final class SanitizedContents {
-  /**
-   * Extensions for static resources that we allow to be treated as safe HTML.
-   */
+  /** Extensions for static resources that we allow to be treated as safe HTML. */
   private static final Set<String> SAFE_HTML_FILE_EXTENSIONS = ImmutableSet.of("html", "svg");
 
   /** No constructor. */
   private SanitizedContents() {}
 
-
-  /**
-   * Creates an empty string constant.
-   */
+  /** Creates an empty string constant. */
   public static SanitizedContent emptyString(ContentKind kind) {
-    return SanitizedContent.create("", kind, Dir.NEUTRAL);  // Empty string is neutral.
+    return SanitizedContent.create("", kind, Dir.NEUTRAL); // Empty string is neutral.
   }
-
 
   /**
    * Creates a SanitizedContent object of kind TEXT of a given direction (null if unknown).
@@ -89,7 +80,6 @@ public final class SanitizedContents {
     return SanitizedContent.create(text, ContentKind.TEXT, dir);
   }
 
-
   /**
    * Creates a SanitizedContent object of kind TEXT and unknown direction.
    *
@@ -98,7 +88,6 @@ public final class SanitizedContents {
   public static SanitizedContent unsanitizedText(String text) {
     return unsanitizedText(text, null);
   }
-
 
   /**
    * Concatenate the contents of multiple {@link SanitizedContent} objects of kind HTML.
@@ -111,7 +100,7 @@ public final class SanitizedContents {
     }
 
     StringBuilder combined = new StringBuilder();
-    Dir dir = Dir.NEUTRAL;  // Empty string is neutral.
+    Dir dir = Dir.NEUTRAL; // Empty string is neutral.
     for (SanitizedContent content : contents) {
       combined.append(content.getContent());
       if (dir == Dir.NEUTRAL) {
@@ -129,14 +118,13 @@ public final class SanitizedContents {
     return SanitizedContent.create(combined.toString(), ContentKind.HTML, dir);
   }
 
-
   /**
    * Loads assumed-safe content from a Java resource.
    *
-   * This performs ZERO VALIDATION of the data, and takes you on your word that the input is valid.
-   * We assume that resources should be safe because they are part of the binary, and therefore not
-   * attacker controlled, unless the source code is compromised (in which there's nothing we can
-   * do).
+   * <p>This performs ZERO VALIDATION of the data, and takes you on your word that the input is
+   * valid. We assume that resources should be safe because they are part of the binary, and
+   * therefore not attacker controlled, unless the source code is compromised (in which there's
+   * nothing we can do).
    *
    * @param contextClass Class relative to which to load the resource.
    * @param resourceName The name of the resource, relative to the context class.
@@ -148,7 +136,8 @@ public final class SanitizedContents {
       throws IOException {
     pretendValidateResource(resourceName, kind);
     return SanitizedContent.create(
-        Resources.toString(Resources.getResource(contextClass, resourceName), charset), kind,
+        Resources.toString(Resources.getResource(contextClass, resourceName), charset),
+        kind,
         // Text resources are usually localized, so one might think that the locale direction should
         // be assumed for them. We do not do that because:
         // - We do not know the locale direction here.
@@ -160,22 +149,22 @@ public final class SanitizedContents {
   /**
    * Loads assumed-safe content from a Java resource.
    *
-   * This performs ZERO VALIDATION of the data, and takes you on your word that the input is valid.
-   * We assume that resources should be safe because they are part of the binary, and therefore not
-   * attacker controlled, unless the source code is compromised (in which there's nothing we can
-   * do).
+   * <p>This performs ZERO VALIDATION of the data, and takes you on your word that the input is
+   * valid. We assume that resources should be safe because they are part of the binary, and
+   * therefore not attacker controlled, unless the source code is compromised (in which there's
+   * nothing we can do).
    *
-   * @param resourceName The name of the resource to be found using
-   *                     {@linkplain Thread#getContextClassLoader() context class loader}.
+   * @param resourceName The name of the resource to be found using {@linkplain
+   *     Thread#getContextClassLoader() context class loader}.
    * @param charset The character set to use, usually Charsets.UTF_8.
    * @param kind The content kind of the resource.
    */
   public static SanitizedContent fromResource(
-      String resourceName, Charset charset, ContentKind kind)
-      throws IOException {
+      String resourceName, Charset charset, ContentKind kind) throws IOException {
     pretendValidateResource(resourceName, kind);
     return SanitizedContent.create(
-        Resources.toString(Resources.getResource(resourceName), charset), kind,
+        Resources.toString(Resources.getResource(resourceName), charset),
+        kind,
         // Text resources are usually localized, so one might think that the locale direction should
         // be assumed for them. We do not do that because:
         // - We do not know the locale direction here.
@@ -204,10 +193,7 @@ public final class SanitizedContents {
     return fromConstant(constant, ContentKind.HTML, null);
   }
 
-
-  /**
-   * Wraps an assumed-safe constant string.
-   */
+  /** Wraps an assumed-safe constant string. */
   private static SanitizedContent fromConstant(
       String constant, ContentKind kind, @Nullable Dir dir) {
     // Extra runtime check in case the compile-time check doesn't work.
@@ -217,79 +203,59 @@ public final class SanitizedContents {
     return SanitizedContent.create(constant, kind, dir);
   }
 
-  /**
-   * Converts a {@link SafeHtml} into a Soy {@link SanitizedContent} of kind HTML.
-   */
+  /** Converts a {@link SafeHtml} into a Soy {@link SanitizedContent} of kind HTML. */
   public static SanitizedContent fromSafeHtml(SafeHtml html) {
     return SanitizedContent.create(html.getSafeHtmlString(), ContentKind.HTML, null);
   }
 
-  /**
-   * Converts a {@link SafeHtmlProto} into a Soy {@link SanitizedContent} of kind HTML.
-   */
+  /** Converts a {@link SafeHtmlProto} into a Soy {@link SanitizedContent} of kind HTML. */
   public static SanitizedContent fromSafeHtmlProto(SafeHtmlProto html) {
-    return SanitizedContent.create(SafeHtmls.fromProto(html).getSafeHtmlString(), ContentKind.HTML,
-        null);
+    return SanitizedContent.create(
+        SafeHtmls.fromProto(html).getSafeHtmlString(), ContentKind.HTML, null);
   }
 
-  /**
-   * Converts a {@link SafeScript} into a Soy {@link SanitizedContent} of kind JS.
-   */
+  /** Converts a {@link SafeScript} into a Soy {@link SanitizedContent} of kind JS. */
   public static SanitizedContent fromSafeScript(SafeScript script) {
     return SanitizedContent.create(script.getSafeScriptString(), ContentKind.JS, null);
   }
 
-  /**
-   * Converts a {@link SafeScriptProto} into a Soy {@link SanitizedContent} of kind JS.
-   */
+  /** Converts a {@link SafeScriptProto} into a Soy {@link SanitizedContent} of kind JS. */
   public static SanitizedContent fromSafeScriptProto(SafeScriptProto script) {
-    return SanitizedContent.create(SafeScripts.fromProto(script).getSafeScriptString(),
-        ContentKind.JS, null);
+    return SanitizedContent.create(
+        SafeScripts.fromProto(script).getSafeScriptString(), ContentKind.JS, null);
   }
 
-  /**
-   * Converts a {@link SafeStyle} into a Soy {@link SanitizedContent} of kind CSS.
-   */
+  /** Converts a {@link SafeStyle} into a Soy {@link SanitizedContent} of kind CSS. */
   public static SanitizedContent fromSafeStyle(SafeStyle style) {
     return SanitizedContent.create(style.getSafeStyleString(), ContentKind.CSS, null);
   }
 
-  /**
-   * Converts a {@link SafeStyleProto} into a Soy {@link SanitizedContent} of kind CSS.
-   */
+  /** Converts a {@link SafeStyleProto} into a Soy {@link SanitizedContent} of kind CSS. */
   public static SanitizedContent fromSafeStyleProto(SafeStyleProto style) {
-    return SanitizedContent.create(SafeStyles.fromProto(style).getSafeStyleString(),
-        ContentKind.CSS, null);
+    return SanitizedContent.create(
+        SafeStyles.fromProto(style).getSafeStyleString(), ContentKind.CSS, null);
   }
 
-  /**
-   * Converts a {@link SafeStyleSheet} into a Soy {@link SanitizedContent} of kind CSS.
-   */
+  /** Converts a {@link SafeStyleSheet} into a Soy {@link SanitizedContent} of kind CSS. */
   public static SanitizedContent fromSafeStyleSheet(SafeStyleSheet styleSheet) {
     return SanitizedContent.create(styleSheet.getSafeStyleSheetString(), ContentKind.CSS, null);
   }
 
-  /**
-   * Converts a {@link SafeStyleSheetProto} into a Soy {@link SanitizedContent} of kind CSS.
-   */
+  /** Converts a {@link SafeStyleSheetProto} into a Soy {@link SanitizedContent} of kind CSS. */
   public static SanitizedContent fromSafeStyleSheetProto(SafeStyleSheetProto styleSheet) {
-    return SanitizedContent.create(SafeStyleSheets.fromProto(styleSheet).getSafeStyleSheetString(),
-        ContentKind.CSS, null);
+    return SanitizedContent.create(
+        SafeStyleSheets.fromProto(styleSheet).getSafeStyleSheetString(), ContentKind.CSS, null);
   }
 
-  /**
-   * Converts a {@link SafeUrl} into a Soy {@link SanitizedContent} of kind URI.
-   */
+  /** Converts a {@link SafeUrl} into a Soy {@link SanitizedContent} of kind URI. */
   public static SanitizedContent fromSafeUrl(SafeUrl url) {
     return SanitizedContent.create(url.getSafeUrlString(), ContentKind.URI, Dir.LTR);
   }
 
-  /**
-   * Converts a {@link SafeUrlProto} into a Soy {@link SanitizedContent} of kind URI.
-   */
+  /** Converts a {@link SafeUrlProto} into a Soy {@link SanitizedContent} of kind URI. */
   public static SanitizedContent fromSafeUrlProto(SafeUrlProto url) {
-    return SanitizedContent.create(SafeUrls.fromProto(url).getSafeUrlString(), ContentKind.URI,
-        Dir.LTR);
+    return SanitizedContent.create(
+        SafeUrls.fromProto(url).getSafeUrlString(), ContentKind.URI, Dir.LTR);
   }
 
   /**
@@ -297,8 +263,8 @@ public final class SanitizedContents {
    * TRUSTED_RESOURCE_URI.
    */
   public static SanitizedContent fromTrustedResourceUrl(TrustedResourceUrl url) {
-    return SanitizedContent.create(url.getTrustedResourceUrlString(),
-        ContentKind.TRUSTED_RESOURCE_URI, Dir.LTR);
+    return SanitizedContent.create(
+        url.getTrustedResourceUrlString(), ContentKind.TRUSTED_RESOURCE_URI, Dir.LTR);
   }
 
   /**
@@ -306,10 +272,11 @@ public final class SanitizedContents {
    * TRUSTED_RESOURCE_URI.
    */
   public static SanitizedContent fromTrustedResourceUrlProto(TrustedResourceUrlProto url) {
-    return SanitizedContent.create(TrustedResourceUrls.fromProto(url).getTrustedResourceUrlString(),
-        ContentKind.TRUSTED_RESOURCE_URI, Dir.LTR);
+    return SanitizedContent.create(
+        TrustedResourceUrls.fromProto(url).getTrustedResourceUrlString(),
+        ContentKind.TRUSTED_RESOURCE_URI,
+        Dir.LTR);
   }
-
 
   /**
    * Very basic but strict validation that the resource's extension matches the content kind.
@@ -317,10 +284,11 @@ public final class SanitizedContents {
    * <p>In practice, this may be unnecessary, but it's always good to start out strict. This list
    * can either be expanded as needed, or removed if too onerous.
    */
-  @VisibleForTesting static void pretendValidateResource(String resourceName, ContentKind kind) {
+  @VisibleForTesting
+  static void pretendValidateResource(String resourceName, ContentKind kind) {
     int index = resourceName.lastIndexOf('.');
-    Preconditions.checkArgument(index >= 0,
-        "Currently, we only validate resources with explicit extensions.");
+    Preconditions.checkArgument(
+        index >= 0, "Currently, we only validate resources with explicit extensions.");
     String fileExtension = resourceName.substring(index + 1).toLowerCase();
 
     switch (kind) {
@@ -342,7 +310,7 @@ public final class SanitizedContents {
    * Returns the default direction per content kind: LTR for JS, URI, ATTRIBUTES, and CSS content,
    * and otherwise unknown.
    */
-  @VisibleForTesting static Dir getDefaultDir(ContentKind kind) {
+  static Dir getDefaultDir(ContentKind kind) {
     switch (kind) {
       case JS:
       case URI:

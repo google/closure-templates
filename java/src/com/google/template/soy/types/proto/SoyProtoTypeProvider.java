@@ -24,6 +24,7 @@ import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
 import com.google.common.io.ByteSource;
 import com.google.common.io.Files;
+import com.google.protobuf.DescriptorProtos.FileDescriptorProto;
 import com.google.protobuf.DescriptorProtos.FileDescriptorSet;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.DescriptorValidationException;
@@ -38,7 +39,9 @@ import com.google.template.soy.types.SoyTypeRegistry;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -53,6 +56,14 @@ import javax.annotation.concurrent.GuardedBy;
  *
  */
 public final class SoyProtoTypeProvider implements SoyTypeProvider {
+
+  private static final ExtensionRegistry REGISTRY = createRegistry();
+
+  private static final ExtensionRegistry createRegistry() {
+    ExtensionRegistry instance = ExtensionRegistry.newInstance();
+    // Add extensions needed for parsing descriptors here.
+    return instance;
+  }
 
   /**
    * Helper class that assists in the construction of SoyTypeProviders.
@@ -93,6 +104,12 @@ public final class SoyProtoTypeProvider implements SoyTypeProvider {
       return this;
     }
 
+    /** Registers a collection of descriptors of any type. */
+    public Builder addDescriptors(GenericDescriptor... descriptorsToAdd) {
+      Collections.addAll(descriptors, descriptorsToAdd);
+      return this;
+    }
+
     /**
      * Assumes there are no empty descriptor files and descriptor sets which is mostly true
      * in practice.
@@ -103,13 +120,46 @@ public final class SoyProtoTypeProvider implements SoyTypeProvider {
 
     private void walkAll(DescriptorTreeWalker walker)
         throws FileNotFoundException, IOException, DescriptorValidationException {
-      for (ByteSource descriptorSource : descriptorSources) {
-        walker.walkFileDescriptorSetFromByteSource(descriptorSource);
+      // use a linked hash map.  The descriptors will tend to be in dependency order, so by
+      // constructing in the provided order we will limit the depth of the recusion below.
+      Map<String, FileDescriptorProto> nameToProtos = new LinkedHashMap<>();
+      for (ByteSource source : descriptorSources) {
+        try (InputStream inputStream = source.openStream()) {
+          for (FileDescriptorProto file :
+              FileDescriptorSet.parseFrom(inputStream, REGISTRY).getFileList()) {
+            nameToProtos.put(file.getName(), file);
+          }
+        }
       }
       for (FileDescriptorSet descriptorSet : descriptorSets) {
-        walker.walkFileDescriptorSet(descriptorSet);
+        for (FileDescriptorProto file : descriptorSet.getFileList()) {
+          nameToProtos.put(file.getName(), file);
+        }
       }
-      walker.walkGenericDescriptors(descriptors);
+      Map<String, FileDescriptor> parsedDescriptors = new HashMap<>();
+      for (String name : nameToProtos.keySet()) {
+        walker.walkDescriptor(buildDescriptor(name, parsedDescriptors, nameToProtos));
+      }
+      walker.walkDescriptors(descriptors);
+    }
+
+    private static FileDescriptor buildDescriptor(
+        String name,
+        Map<String, FileDescriptor> descriptors,
+        Map<String, FileDescriptorProto> protos)
+        throws DescriptorValidationException {
+      FileDescriptor file = descriptors.get(name);
+      if (file != null) {
+        return file;
+      }
+      FileDescriptorProto proto = protos.get(name);
+      FileDescriptor[] deps = new FileDescriptor[proto.getDependencyCount()];
+      for (int i = 0; i < proto.getDependencyCount(); i++) {
+        deps[i] = buildDescriptor(proto.getDependency(i), descriptors, protos);
+      }
+      file = FileDescriptor.buildFrom(proto, deps);
+      descriptors.put(name, file);
+      return file;
     }
 
     /**
@@ -118,18 +168,9 @@ public final class SoyProtoTypeProvider implements SoyTypeProvider {
     public SoyProtoTypeProvider build()
         throws FileNotFoundException, IOException, DescriptorValidationException {
       SoyProtoTypeProvider provider = new SoyProtoTypeProvider();
-
-      ExtensionRegistry extensionRegistry = ExtensionRegistry.getEmptyRegistry();
-      if (!descriptorSources.isEmpty()) {
-        extensionRegistry = ExtensionRegistry.newInstance();
-        walkAll(new RegisterExtensionsDescriptorTreeWalker(extensionRegistry));
-      }
-
-      DescriptorAddingDescriptorTreeWalker walker
-          = new DescriptorAddingDescriptorTreeWalker(extensionRegistry);
+      DescriptorAddingDescriptorTreeWalker walker = new DescriptorAddingDescriptorTreeWalker();
       walkAll(walker);
       walker.commitInto(provider);
-
       return provider;
     }
 
@@ -148,6 +189,7 @@ public final class SoyProtoTypeProvider implements SoyTypeProvider {
       }
     }
   }
+
   private final Object lock = new Object();
 
   /** Map of all the protobuf type descriptors that we've discovered. */
@@ -181,10 +223,9 @@ public final class SoyProtoTypeProvider implements SoyTypeProvider {
   private final Map<String, SoyType> typeCache;
 
   private SoyProtoTypeProvider() {
-    Map<String, SoyType> typeCache = new HashMap<>();
+    this.typeCache = new HashMap<>();
     // Seed the type cache with types that are handled specially by SoyProtoValueConverter.
-    typeCache.putAll(SafeStringTypes.SAFE_STRING_PROTO_NAME_TO_SANITIZED_TYPE);
-    this.typeCache = typeCache;
+    this.typeCache.putAll(SafeStringTypes.SAFE_PROTO_TO_SANITIZED_TYPE);
   }
 
   public static SoyProtoTypeProvider empty() {
@@ -204,14 +245,14 @@ public final class SoyProtoTypeProvider implements SoyTypeProvider {
    * Internal helper method to construct a type based on a Descriptor.  This is for the Tofu backend
    * which doesn't require all protos to be pre-registered.
    */
-  SoyProtoTypeImpl getType(Descriptor descriptor, SoyTypeRegistry registry) {
+  SoyProtoType getType(Descriptor descriptor, SoyTypeRegistry registry) {
     String fullName = descriptor.getFullName();
     if (!descriptors.containsKey(fullName)) {
       DescriptorAddingDescriptorTreeWalker walker = new DescriptorAddingDescriptorTreeWalker();
-      walker.walkMessageDescriptor(descriptor);
+      walker.walkDescriptor(descriptor);
       walker.commitInto(this);
     }
-    return (SoyProtoTypeImpl) doGetType(fullName, registry, descriptor);
+    return (SoyProtoType) doGetType(fullName, registry, descriptor);
   }
 
   private SoyType doGetType(String name, SoyTypeRegistry typeRegistry,
@@ -221,9 +262,9 @@ public final class SoyProtoTypeProvider implements SoyTypeProvider {
       type = typeCache.get(name);
       if (type == null) {
         if (descriptor instanceof EnumDescriptor) {
-          type = new SoyProtoEnumTypeImpl((EnumDescriptor) descriptor);
+          type = new SoyProtoEnumType((EnumDescriptor) descriptor);
         } else {
-          type = new SoyProtoTypeImpl(typeRegistry, (Descriptor) descriptor, extensions.get(name));
+          type = new SoyProtoType(typeRegistry, (Descriptor) descriptor, extensions.get(name));
         }
         typeCache.put(name, type);
       }
@@ -231,46 +272,11 @@ public final class SoyProtoTypeProvider implements SoyTypeProvider {
     return type;
   }
 
-
-  /**
-   * A pass over a proto descriptor file set that registers all extensions.
-   */
-  static final class RegisterExtensionsDescriptorTreeWalker extends DescriptorTreeWalker {
-
-    RegisterExtensionsDescriptorTreeWalker(ExtensionRegistry extensionRegistry) {
-      super(extensionRegistry);
-    }
-
-    @Override
-    void visitFileDescriptor(FileDescriptor fileDescriptor) {
-      walkGenericDescriptors(fileDescriptor.getExtensions());
-    }
-
-    @Override
-    void visitMessageDescriptor(Descriptor descriptor) {
-      walkGenericDescriptors(descriptor.getExtensions());
-    }
-
-    @Override
-    void visitExtensionDescriptor(FieldDescriptor descriptor) {
-      extensionRegistry.add(descriptor);
-    }
-  }
-
-
   /** Walks a descriptor tree to build the descriptors, and extensions maps. */
   static final class DescriptorAddingDescriptorTreeWalker extends DescriptorTreeWalker {
 
     private final Map<String, GenericDescriptor> descriptors = new LinkedHashMap<>();
     private final Multimap<String, FieldDescriptor> extensions = LinkedListMultimap.create();
-
-    DescriptorAddingDescriptorTreeWalker(ExtensionRegistry extensionRegistry) {
-      super(extensionRegistry);
-    }
-
-    DescriptorAddingDescriptorTreeWalker() {
-      this(ExtensionRegistry.getEmptyRegistry());
-    }
 
     void commitInto(SoyProtoTypeProvider provider) {
       synchronized (provider.lock) {
@@ -281,9 +287,6 @@ public final class SoyProtoTypeProvider implements SoyTypeProvider {
 
     @Override
     void visitMessageDescriptor(Descriptor descriptor) {
-      if (descriptors.containsKey(descriptor.getFullName())) {
-        return;
-      }
       // Register a message descriptor for a proto type.
       descriptors.put(descriptor.getFullName(), descriptor);
     }
@@ -292,11 +295,8 @@ public final class SoyProtoTypeProvider implements SoyTypeProvider {
     void visitFieldDescriptor(FieldDescriptor fieldDescriptor) {
       if (Protos.shouldJsIgnoreField(fieldDescriptor)) {
         return;
-      } else if (fieldDescriptor.getType() == FieldDescriptor.Type.MESSAGE) {
-        maybeWalkMessageDescriptor(fieldDescriptor.getMessageType());
-      } else if (fieldDescriptor.getType() == FieldDescriptor.Type.ENUM) {
-        visitEnumDescriptor(fieldDescriptor.getEnumType());
       }
+      maybeWalkFieldType(fieldDescriptor);
     }
 
     @Override
@@ -310,15 +310,16 @@ public final class SoyProtoTypeProvider implements SoyTypeProvider {
         return;
       }
       String containingType = extension.getContainingType().getFullName();
-      if (extensions.put(containingType, extension)
-          && extension.getType() == FieldDescriptor.Type.MESSAGE) {
-        maybeWalkMessageDescriptor(extension.getMessageType());
+      if (extensions.put(containingType, extension)) {
+        maybeWalkFieldType(extension);
       }
     }
 
-    private void maybeWalkMessageDescriptor(Descriptor descriptor) {
-      if (!descriptors.containsKey(descriptor.getFullName())) {
-        walkMessageDescriptor(descriptor);
+    private void maybeWalkFieldType(FieldDescriptor fieldDescriptor) {
+      if (fieldDescriptor.getType() == FieldDescriptor.Type.MESSAGE) {
+        walkDescriptor(fieldDescriptor.getMessageType());
+      } else if (fieldDescriptor.getType() == FieldDescriptor.Type.ENUM) {
+        walkDescriptor(fieldDescriptor.getEnumType());
       }
     }
   }

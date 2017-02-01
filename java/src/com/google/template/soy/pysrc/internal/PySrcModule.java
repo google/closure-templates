@@ -30,21 +30,19 @@ import com.google.template.soy.shared.internal.ApiCallScope;
 import com.google.template.soy.shared.internal.FunctionAdapters;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
-
 import java.util.Set;
-
 import javax.inject.Singleton;
-
 
 /**
  * Guice module for the Python Source backend.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public final class PySrcModule extends AbstractModule {
 
-  @Override protected void configure() {
+  @Override
+  protected void configure() {
     // Bindings for when explicit dependencies are required.
     bind(PySrcMain.class);
     bind(GenPyCodeVisitor.class);
@@ -60,14 +58,14 @@ public final class PySrcModule extends AbstractModule {
     bind(SoyPySrcOptions.class)
         .toProvider(GuiceSimpleScope.<SoyPySrcOptions>getUnscopedProvider())
         .in(ApiCallScope.class);
-    bind(new Key<ImmutableMap<String, String>>(PyCurrentManifest.class){})
+    bind(new Key<ImmutableMap<String, String>>(PyCurrentManifest.class) {})
         .toProvider(GuiceSimpleScope.<ImmutableMap<String, String>>getUnscopedProvider())
         .in(ApiCallScope.class);
   }
 
-
   /**
    * Builds and provides the map of SoyPySrcDirectives (name to directive).
+   *
    * @param soyDirectivesSet The installed set of SoyPrintDirectives (from Guice Multibinder). Each
    *     SoyDirective may or may not implement SoyPySrcPrintDirective.
    */
@@ -75,7 +73,7 @@ public final class PySrcModule extends AbstractModule {
   @Singleton
   ImmutableMap<String, SoyPySrcPrintDirective> provideSoyPySrcDirectivesMap(
       Set<SoyPrintDirective> soyDirectivesSet) {
-    return FunctionAdapters.buildSpecificSoyDirectivesMap(soyDirectivesSet,
-        SoyPySrcPrintDirective.class);
+    return FunctionAdapters.buildSpecificSoyDirectivesMap(
+        soyDirectivesSet, SoyPySrcPrintDirective.class);
   }
 }

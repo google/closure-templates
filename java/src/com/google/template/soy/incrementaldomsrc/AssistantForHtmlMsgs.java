@@ -15,24 +15,25 @@
  */
 package com.google.template.soy.incrementaldomsrc;
 
+import static com.google.template.soy.jssrc.dsl.CodeChunk.dottedId;
+import static com.google.template.soy.jssrc.dsl.CodeChunk.id;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
+import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.internal.GenCallCodeUtils;
 import com.google.template.soy.jssrc.internal.GenJsCodeVisitorAssistantForMsgs;
 import com.google.template.soy.jssrc.internal.GenJsExprsVisitor;
 import com.google.template.soy.jssrc.internal.IsComputableAsJsExprsVisitor;
 import com.google.template.soy.jssrc.internal.JsExprTranslator;
 import com.google.template.soy.jssrc.internal.TemplateAliases;
-import com.google.template.soy.jssrc.restricted.JsExpr;
-import com.google.template.soy.shared.internal.CodeBuilder;
+import com.google.template.soy.jssrc.internal.TranslationContext;
 import com.google.template.soy.soytree.HtmlContext;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.MsgPlaceholderNode;
-
-import java.util.Deque;
 import java.util.Map;
 
 /**
@@ -67,13 +68,20 @@ final class AssistantForHtmlMsgs extends GenJsCodeVisitorAssistantForMsgs {
       JsExprTranslator jsExprTranslator,
       GenCallCodeUtils genCallCodeUtils,
       IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor,
-      CodeBuilder<JsExpr> jsCodeBuilder,
-      Deque<Map<String, JsExpr>> localVarTranslations,
       TemplateAliases functionAliases,
       GenJsExprsVisitor genJsExprsVisitor,
+      TranslationContext translationContext,
       ErrorReporter errorReporter) {
-    super(master, jsSrcOptions, jsExprTranslator, genCallCodeUtils, isComputableAsJsExprsVisitor,
-        jsCodeBuilder, localVarTranslations, functionAliases, genJsExprsVisitor, errorReporter);
+    super(
+        master,
+        jsSrcOptions,
+        jsExprTranslator,
+        genCallCodeUtils,
+        isComputableAsJsExprsVisitor,
+        functionAliases,
+        genJsExprsVisitor,
+        translationContext,
+        errorReporter);
   }
 
   @Override
@@ -125,7 +133,9 @@ final class AssistantForHtmlMsgs extends GenJsCodeVisitorAssistantForMsgs {
 
     // If there are no placeholders, we don't need anything special (but we still need to unescape).
     if (placeholderNames.isEmpty()) {
-      jsCodeBuilder.appendLine("itext(goog.string.unescapeEntities(", translationVar, "));");
+      CodeChunk.WithValue unescape =
+          dottedId("goog.string.unescapeEntities").call(id(translationVar));
+      jsCodeBuilder().append(id("itext").call(unescape));
       return;
     }
 
@@ -137,14 +147,23 @@ final class AssistantForHtmlMsgs extends GenJsCodeVisitorAssistantForMsgs {
     String lastIndexVar = "lastIndex_" + node.getId();
 
     // Declare everything.
-    jsCodeBuilder.appendLineStart("var ", lastIndexVar, " = 0, ");
-    jsCodeBuilder.appendLineEnd(regexVar, " = ", PLACEHOLDER_REGEX, ", ", matchVar, ";");
+    jsCodeBuilder()
+        .appendLine(
+            "var ",
+            lastIndexVar,
+            " = 0, ",
+            regexVar,
+            " = ",
+            PLACEHOLDER_REGEX,
+            ", ",
+            matchVar,
+            ";");
 
     // For each placeholder.
-    jsCodeBuilder.appendLine("do {");
-    jsCodeBuilder.increaseIndent();
+    jsCodeBuilder().appendLine("do {");
+    jsCodeBuilder().increaseIndent();
     // Find the placeholder.
-    jsCodeBuilder.appendLine(matchVar, " = ", regexVar,
+    jsCodeBuilder().appendLine(matchVar, " = ", regexVar,
         ".exec(", translationVar, ") || undefined;");
     // Replace null with undefined.  This is necessary to make substring() treat falsy as an omitted
     // parameter, so that it goes until the end of the string.  Otherwise, the non-numeric parameter
@@ -152,35 +171,39 @@ final class AssistantForHtmlMsgs extends GenJsCodeVisitorAssistantForMsgs {
 
     // Emit the (possibly-empty) run of raw text since the last placeholder, until this placeholder,
     // or until the end of the source string.
-    jsCodeBuilder.appendLine("itext(goog.string.unescapeEntities(", translationVar,
-        ".substring(", lastIndexVar, ", ", matchVar, " && ", matchVar, ".index)));");
-    jsCodeBuilder.appendLine(lastIndexVar, " = ", regexVar, ".lastIndex;");
+    CodeChunk.WithValue endIndex =
+        id(matchVar).and(id(matchVar).dotAccess("index"), translationContext.codeGenerator());
+    CodeChunk.WithValue unescape =
+        dottedId("goog.string.unescapeEntities")
+            .call(id(translationVar).dotAccess("substring").call(id(lastIndexVar), endIndex));
+
+    jsCodeBuilder().append(id("itext").call(unescape));
+    jsCodeBuilder().appendLine(lastIndexVar, " = ", regexVar, ".lastIndex;");
 
     // Handle the actual placeholder.
-    jsCodeBuilder.appendLine("switch (", matchVar, " && ", matchVar, "[0]) {");
-    jsCodeBuilder.increaseIndent();
+    jsCodeBuilder().appendLine("switch (", matchVar, " && ", matchVar, "[0]) {");
+    jsCodeBuilder().increaseIndent();
 
     for (Map.Entry<String, MsgPlaceholderNode> ph : placeholderNames.entrySet()) {
-      jsCodeBuilder.appendLine("case ", BaseUtils.escapeToSoyString(ph.getKey(), true), ":");
-      jsCodeBuilder.increaseIndent();
+      jsCodeBuilder().appendLine("case ", BaseUtils.escapeToSoyString(ph.getKey(), true), ":");
+      jsCodeBuilder().increaseIndent();
       master.visitForUseByAssistants(ph.getValue());
-      jsCodeBuilder.appendLine("break;");
-      jsCodeBuilder.decreaseIndent();
+      jsCodeBuilder().appendLine("break;");
+      jsCodeBuilder().decreaseIndent();
     }
-    jsCodeBuilder.decreaseIndent();
-    jsCodeBuilder.appendLine("}");
+    jsCodeBuilder().decreaseIndent();
+    jsCodeBuilder().appendLine("}");
 
-    jsCodeBuilder.decreaseIndent();
-    jsCodeBuilder.appendLine("} while (", matchVar, ");");
+    jsCodeBuilder().decreaseIndent();
+    jsCodeBuilder().appendLine("} while (", matchVar, ");");
   }
 
   @Override
-  protected JsExpr genGoogMsgPlaceholderExpr(MsgPlaceholderNode msgPhNode) {
+  protected CodeChunk.WithValue genGoogMsgPlaceholder(MsgPlaceholderNode msgPhNode) {
     // Mark the node so we know what instructions to emit.
     String name = PLACEHOLDER_WRAPPER + placeholderNames.size() + PLACEHOLDER_WRAPPER;
     placeholderNames.put(name, msgPhNode);
-
     // Return the marker string to insert into the translated text.
-    return new JsExpr(BaseUtils.escapeToSoyString(name, true), Integer.MAX_VALUE);
+    return CodeChunk.stringLiteral(name);
   }
 }

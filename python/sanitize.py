@@ -192,6 +192,10 @@ def filter_css_value(value):
   return generated_sanitize.filter_css_value_helper(value)
 
 
+def filter_csp_nonce_value(value):
+  return generated_sanitize.filter_csp_nonce_value_helper(value)
+
+
 def filter_html_attributes(value):
   # NOTE: Explicitly no support for SanitizedContentKind.HTML, since that is
   # meaningless in this context, which is generally *between* html attributes.
@@ -221,6 +225,13 @@ def filter_image_data_uri(value):
       'Filtered URIs are by nature sanitized.')
   return SanitizedUri(
       generated_sanitize.filter_image_data_uri_helper(value), approval=approval)
+
+
+def filter_tel_uri(value):
+  approval = IActuallyUnderstandSoyTypeSafetyAndHaveSecurityApproval(
+      'Filtered URIs are by nature sanitized.')
+  return SanitizedUri(
+      generated_sanitize.filter_tel_uri_helper(value), approval=approval)
 
 
 def filter_no_auto_escape(value):

@@ -22,34 +22,26 @@ import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 import com.google.inject.BindingAnnotation;
-
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
-
 
 /**
  * Binding annotations related to the ApiCallScope.
  *
- * <p> Important: This class may only be used in implementing plugins (e.g. functions, directives).
+ * <p>Important: This class may only be used in implementing plugins (e.g. functions, directives).
  *
  */
 public class ApiCallScopeBindingAnnotations {
 
   private ApiCallScopeBindingAnnotations() {}
 
-
-  /**
-   * Annotation for a GuiceSimpleScope parameter that should receive the ApiCallScope.
-   */
+  /** Annotation for a GuiceSimpleScope parameter that should receive the ApiCallScope. */
   @BindingAnnotation
   @Target({FIELD, PARAMETER, METHOD})
   @Retention(RUNTIME)
   public @interface ApiCall {}
 
-
-  /**
-   * Annotation for the localeString parameter in the ApiCallScope.
-   */
+  /** Annotation for the localeString parameter in the ApiCallScope. */
   @BindingAnnotation
   @Target({FIELD, PARAMETER, METHOD})
   @Retention(RUNTIME)

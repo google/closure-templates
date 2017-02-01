@@ -19,45 +19,40 @@ package com.google.template.soy.types.primitive;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.types.SoyType;
 
-
 /**
- * The "any" type is the supertype of all other types. The only operations allowed
- * on this type are explicit coercions to other types (i.e. downcasting), or operations
- * that implicitly coerce to string or boolean type (e.g. printing).
+ * The "any" type is the supertype of all other types. The only operations allowed on this type are
+ * explicit coercions to other types (i.e. downcasting), or operations that implicitly coerce to
+ * string or boolean type (e.g. printing).
  *
  */
 public final class AnyType extends PrimitiveType {
 
-
   private static final AnyType INSTANCE = new AnyType();
-
 
   // Not constructible - use getInstance().
   private AnyType() {}
 
-
-  @Override public Kind getKind() {
+  @Override
+  public Kind getKind() {
     return Kind.ANY;
   }
 
-
-  @Override public boolean isAssignableFrom(SoyType srcType) {
+  @Override
+  public boolean isAssignableFrom(SoyType srcType) {
     return true;
   }
 
-
-  @Override public boolean isInstance(SoyValue value) {
+  @Override
+  public boolean isInstance(SoyValue value) {
     return true;
   }
 
-  @Override public String toString() {
+  @Override
+  public String toString() {
     return "any";
   }
 
-
-  /**
-   * Return the single instance of this type.
-   */
+  /** Return the single instance of this type. */
   public static AnyType getInstance() {
     return INSTANCE;
   }

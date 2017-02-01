@@ -16,17 +16,13 @@
 
 package com.google.template.soy.data.internal;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.template.soy.data.SoyValueHelper;
 import com.google.template.soy.data.SoyValueProvider;
-
 import java.util.Map;
-
 import javax.annotation.ParametersAreNonnullByDefault;
 
 /**
- * Internal implementation of SoyDict in terms of a map. Do not use directly; instead,
- * use {@link SoyValueHelper#convert}.
+ * Internal implementation of SoyDict in terms of a map. Do not use directly; instead, use {@link
+ * SoyValueConverter#convert}.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
@@ -35,21 +31,13 @@ import javax.annotation.ParametersAreNonnullByDefault;
 public final class DictImpl extends AbstractDict {
 
   /**
-   * Empty, immutable dictionary.
-   */
-  public static final DictImpl EMPTY = DictImpl.forProviderMap(
-      ImmutableMap.<String, SoyValueProvider>of());
-
-
-  /**
    * Creates a SoyDict implementation for a particular underlying provider map.
-   * <p>
-   * The map may be mutable, but will not be mutated by the DictImpl.
+   *
+   * <p>The map may be mutable, but will not be mutated by the DictImpl.
    */
   public static DictImpl forProviderMap(Map<String, ? extends SoyValueProvider> providerMap) {
     return new DictImpl(providerMap);
   }
-
 
   private DictImpl(Map<String, ? extends SoyValueProvider> providerMap) {
     super(providerMap);

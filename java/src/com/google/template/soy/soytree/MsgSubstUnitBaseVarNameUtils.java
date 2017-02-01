@@ -32,14 +32,13 @@ import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.VarRefNode;
-
 import java.util.List;
 
 /**
  * Static helpers for generating base names for msg substitution units (i.e. placeholder names and
  * plural/select vars).
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public final class MsgSubstUnitBaseVarNameUtils {
@@ -57,16 +56,26 @@ public final class MsgSubstUnitBaseVarNameUtils {
    * Helper function to generate a base placeholder (or plural/select var) name from an expression,
    * using the naive algorithm.
    *
-   * If the expression is a data ref or global, then the last key (if any) is used as the base
+   * <p>If the expression is a data ref or global, then the last key (if any) is used as the base
    * placeholder name. Otherwise, the fallback name is used.
    *
-   * Examples:    $aaaBbb -> AAA_BBB;    $aaa_bbb -> AAA_BBB;    $aaa.bbb -> BBB;    $ij.aaa -> AAA;
-   * aaa.BBB -> BBB;    $aaa.0 -> fallback;    $aaa[0] -> fallback;    $aaa[0].bbb -> BBB;
-   * length($aaa) -> fallback;    $aaa + 1 -> fallback
+   * <p>Examples:
+   *
+   * <ul>
+   *   <li>{@code $aaaBbb -> AAA_BBB}
+   *   <li>{@code $aaa_bbb -> AAA_BBB}
+   *   <li>{@code $aaa.bbb -> BBB}
+   *   <li>{@code $ij.aaa -> AAA}
+   *   <li>{@code aaa.BBB -> BBB}
+   *   <li>{@code $aaa.0 -> fallback}
+   *   <li>{@code $aaa[0] -> fallback}
+   *   <li>{@code $aaa[0].bbb -> BBB}
+   *   <li>{@code length($aaa) -> fallback}
+   *   <li>{@code $aaa + 1 -> fallback}
+   * </ul>
    *
    * @param exprNode The root node for an expression.
    * @param fallbackBaseName The fallback base name.
-   *
    * @return The base placeholder (or plural/select var) name for the given expression.
    */
   public static String genNaiveBaseNameForExpr(ExprNode exprNode, String fallbackBaseName) {
@@ -82,14 +91,24 @@ public final class MsgSubstUnitBaseVarNameUtils {
     return fallbackBaseName;
   }
 
-
   /**
    * The equivalent of {@code genNaiveBaseNameForExpr()} in our new algorithm for generating base
    * name.
    *
-   * Examples:    $aaaBbb -> AAA_BBB;    $aaa_bbb -> AAA_BBB;    $aaa.bbb -> BBB;    $ij.aaa -> AAA;
-   * aaa.BBB -> BBB;    $aaa.0 -> AAA_0;    $aaa[0] -> AAA_0;    $aaa[0].bbb -> BBB; length($aaa) ->
-   * fallback;    $aaa + 1 -> fallback
+   * <p>Examples:
+   *
+   * <ul>
+   *   <li>{@code $aaaBbb -> AAA_BBB}
+   *   <li>{@code $aaa_bbb -> AAA_BBB}
+   *   <li>{@code $aaa.bbb -> BBB}
+   *   <li>{@code $ij.aaa -> AAA}
+   *   <li>{@code aaa.BBB -> BBB}
+   *   <li>{@code $aaa.0 -> AAA_0}
+   *   <li>{@code $aaa[0] -> AAA_0}
+   *   <li>{@code $aaa[0].bbb -> BBB}
+   *   <li>{@code length($aaa) -> fallback}
+   *   <li>{@code $aaa + 1 -> fallback}
+   * </ul>
    *
    * @param exprNode The expr root of the expression to generate the shortest base name for.
    * @param fallbackBaseName The fallback base name to use if the given expression doesn't generate
@@ -102,7 +121,6 @@ public final class MsgSubstUnitBaseVarNameUtils {
     return Iterables.getFirst(candidateBaseNames, fallbackBaseName);
   }
 
-
   /**
    * Generates base names for all the expressions in a list, where for each expression, we use the
    * shortest candidate base name that does not collide with any of the candidate base names
@@ -110,17 +128,17 @@ public final class MsgSubstUnitBaseVarNameUtils {
    * collide if they are identical or if one is a suffix of the other beginning after an underscore
    * character.
    *
-   * For example, given the expressions $userGender and $target.gender, the generated base names
+   * <p>For example, given the expressions $userGender and $target.gender, the generated base names
    * would be USER_GENDER and TARGET_GENDER. (Even though the shortest candidate base names are
    * USER_GENDER and GENDER, the latter one is not used since it collides with the former one.)
    *
-   * Note: We prefer the shorter candidate base names when possible, because the translator usually
-   * doesn't care about all the names. E.g. $data.actionTargets[0].personInfo.gender turns into
-   * GENDER as opposed to DATA_ACTION_TARGETS_0_PERSON_INFO_GENDER, which is overkill and probably
-   * more confusing. Another reason is that refactorings that change higher-level names should not
-   * change messages unnecessarily. E.g. a refactoring that changes
-   * $data.actionTargets[0].personInfo.gender -> $userData.actionTargets[0].personInfo.gender
-   * should not change the placeholder name.
+   * <p>Note: We prefer the shorter candidate base names when possible, because the translator
+   * usually doesn't care about all the names. E.g. $data.actionTargets[0].personInfo.gender turns
+   * into GENDER as opposed to DATA_ACTION_TARGETS_0_PERSON_INFO_GENDER, which is overkill and
+   * probably more confusing. Another reason is that refactorings that change higher-level names
+   * should not change messages unnecessarily. E.g. a refactoring that changes
+   * $data.actionTargets[0].personInfo.gender -> $userData.actionTargets[0].personInfo.gender should
+   * not change the placeholder name.
    *
    * @param exprNodes The expr nodes of the expressions to generate noncolliding base names for.
    * @param fallbackBaseName The fallback base name.
@@ -140,8 +158,7 @@ public final class MsgSubstUnitBaseVarNameUtils {
 
     // --- Build a multiset of collision strings (if key has > 1 values, then it's a collision). ---
     // Note: We could combine this loop with the previous loop, but it's more readable this way.
-    Multimap<String, ExprNode> collisionStrToLongestCandidatesMultimap =
-        HashMultimap.create();
+    Multimap<String, ExprNode> collisionStrToLongestCandidatesMultimap = HashMultimap.create();
     for (int i = 0; i < numExprs; i++) {
       ExprNode exprRoot = exprNodes.get(i);
       List<String> candidateBaseNameList = candidateBaseNameLists.get(i);
@@ -191,7 +208,8 @@ public final class MsgSubstUnitBaseVarNameUtils {
         errorReporter.report(
             collidingExprRoot.getSourceLocation(),
             COLLIDING_EXPRESSIONS,
-            exprRoot.toSourceString(), collidingExprRoot.toSourceString());
+            exprRoot.toSourceString(),
+            collidingExprRoot.toSourceString());
         return noncollidingBaseNames;
       } else {
         // No candidates: Use fallback.
@@ -202,19 +220,18 @@ public final class MsgSubstUnitBaseVarNameUtils {
     return noncollidingBaseNames;
   }
 
-
   /**
    * Private helper for {@code genShortestBaseNameForExpr()} and {@code
    * genNoncollidingBaseNamesForExprs()}.
    *
-   * Given an expression that's a data ref or a global, generates the list of all possible base
+   * <p>Given an expression that's a data ref or a global, generates the list of all possible base
    * names, from short to long. Shortest contains only the last key. Longest contains up to the
    * first key (unless there are accesses using expressions to compute non-static keys, in which
    * case we cannot generate any more base names). If no base names can be generated for the given
    * expression (i.e. if the expression is not a data ref or global, or the last key is non-static),
    * then returns empty list.
    *
-   * For example, given $aaa[0].bbb.cccDdd, generates the list ["CCC_DDD", "BBB_CCC_DDD",
+   * <p>For example, given $aaa[0].bbb.cccDdd, generates the list ["CCC_DDD", "BBB_CCC_DDD",
    * "AAA_0_BBB_CCC_DDD"]. One the other hand, given $aaa['xxx'], generates the empty list (because
    * ['xxx'] parses to a DataRefAccessExprNode).
    *
@@ -246,9 +263,10 @@ public final class MsgSubstUnitBaseVarNameUtils {
               // Stop if we encounter an invalid key.
               break;
             }
-            nameSegment = Integer.toString(keyValue.getValue());
-            baseName = BaseUtils.convertToUpperUnderscore(nameSegment) +
-                ((baseName != null) ? "_" + baseName : "");
+            nameSegment = Long.toString(keyValue.getValue());
+            baseName =
+                BaseUtils.convertToUpperUnderscore(nameSegment)
+                    + ((baseName != null) ? "_" + baseName : "");
             continue;
           } else {
             break; // Stop if we encounter a non-static key
@@ -257,9 +275,10 @@ public final class MsgSubstUnitBaseVarNameUtils {
           break; // Stop if we encounter an expression that is not representable as a name.
         }
 
-        baseName = BaseUtils.convertToUpperUnderscore(nameSegment) +
-            ((baseName != null) ? "_" + baseName : "");
-        baseNames.add(baseName);  // new candidate base name whenever we encounter a key
+        baseName =
+            BaseUtils.convertToUpperUnderscore(nameSegment)
+                + ((baseName != null) ? "_" + baseName : "");
+        baseNames.add(baseName); // new candidate base name whenever we encounter a key
       }
       return baseNames;
     } else if (exprNode instanceof GlobalNode) {
@@ -269,8 +288,8 @@ public final class MsgSubstUnitBaseVarNameUtils {
       String baseName = null;
       for (int i = globalNameParts.length - 1; i >= 0; i--) {
         baseName =
-            BaseUtils.convertToUpperUnderscore(globalNameParts[i]) +
-                ((baseName != null) ? "_" + baseName : "");
+            BaseUtils.convertToUpperUnderscore(globalNameParts[i])
+                + ((baseName != null) ? "_" + baseName : "");
         baseNames.add(baseName);
       }
       return baseNames;
@@ -280,5 +299,4 @@ public final class MsgSubstUnitBaseVarNameUtils {
       return ImmutableList.of();
     }
   }
-
 }

@@ -26,14 +26,13 @@ import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.AutoescapeMode;
 import com.google.template.soy.soytree.ExprUnion;
+import com.google.template.soy.soytree.NamespaceDeclaration;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 
-/**
- * A visitor that scans for features not supported by jbcsrc and reports errors for them.
- */
+/** A visitor that scans for features not supported by jbcsrc and reports errors for them. */
 final class UnsupportedFeatureReporter {
   private final SoyNodeVisitor errorChecker;
   private final ErrorReporter errorReporter;
@@ -54,17 +53,20 @@ final class UnsupportedFeatureReporter {
       this.exprVisitor = new ExprNodeVisitor();
     }
 
-    @Override protected void visitSoyFileNode(SoyFileNode node) {
+    @Override
+    protected void visitSoyFileNode(SoyFileNode node) {
       super.visitSoyFileNode(node);
-      if (node.getDefaultAutoescapeMode() != AutoescapeMode.STRICT) {
+      NamespaceDeclaration namespaceDeclaration = node.getNamespaceDeclaration();
+      if (namespaceDeclaration.getDefaultAutoescapeMode() != AutoescapeMode.STRICT) {
         errorReporter.report(
-            node.getSourceLocation(),
+            namespaceDeclaration.getAutoescapeModeLocation(),
             SoyErrorKind.of("jbcsrc only supports strict autoescape templates, found : ''{0}''"),
-            node.getDefaultAutoescapeMode());
+            namespaceDeclaration.getDefaultAutoescapeMode());
       }
     }
-    
-    @Override protected void visitSoyNode(SoyNode node) {
+
+    @Override
+    protected void visitSoyNode(SoyNode node) {
       if (node instanceof ParentSoyNode<?>) {
         visitChildren((ParentSoyNode<?>) node);
       }
@@ -85,7 +87,8 @@ final class UnsupportedFeatureReporter {
 
   private class ExprNodeVisitor extends AbstractExprNodeVisitor<Void> {
 
-    @Override protected final void visitVarRefNode(VarRefNode node) {
+    @Override
+    protected final void visitVarRefNode(VarRefNode node) {
       VarDefn defn = node.getDefnDecl();
       switch (defn.kind()) {
         case IJ_PARAM:
@@ -102,7 +105,8 @@ final class UnsupportedFeatureReporter {
       }
     }
 
-    @Override protected void visitExprNode(ExprNode node) {
+    @Override
+    protected void visitExprNode(ExprNode node) {
       if (node instanceof ParentExprNode) {
         visitChildren((ParentExprNode) node);
       }

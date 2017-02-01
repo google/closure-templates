@@ -16,6 +16,12 @@
 
 package com.google.template.soy.data;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import com.google.common.html.types.SafeHtml;
 import com.google.common.html.types.SafeHtmlBuilder;
 import com.google.common.html.types.SafeHtmlProto;
@@ -30,22 +36,25 @@ import com.google.common.html.types.SafeUrl;
 import com.google.common.html.types.SafeUrlProto;
 import com.google.common.html.types.SafeUrls;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
-
-import junit.framework.TestCase;
-
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for SanitizedContents utility class.
  *
  */
-public class SanitizedContentsTest extends TestCase {
+@RunWith(JUnit4.class)
+public class SanitizedContentsTest {
 
+  @Test
   public void testUnsanitizedText() {
     assertEquals(
         SanitizedContent.create("Hello World", ContentKind.TEXT, null),
         SanitizedContents.unsanitizedText("Hello World"));
   }
 
+  @Test
   public void testConcatCombinesHtml() throws Exception {
     String text1 = "one";
     String text2 = "two";
@@ -55,15 +64,18 @@ public class SanitizedContentsTest extends TestCase {
     SanitizedContent content2 = SanitizedContent.create(text2, ContentKind.HTML, null);
     SanitizedContent content3 = SanitizedContent.create(text3, ContentKind.HTML, null);
 
-    assertEquals(SanitizedContent.create(text1 + text2 + text3, ContentKind.HTML, null),
+    assertEquals(
+        SanitizedContent.create(text1 + text2 + text3, ContentKind.HTML, null),
         SanitizedContents.concatHtml(content1, content2, content3));
   }
 
+  @Test
   public void testConcatReturnsEmpty() throws Exception {
-    assertEquals(SanitizedContent.create("", ContentKind.HTML, Dir.NEUTRAL),
-        SanitizedContents.concatHtml());
+    assertEquals(
+        SanitizedContent.create("", ContentKind.HTML, Dir.NEUTRAL), SanitizedContents.concatHtml());
   }
 
+  @Test
   public void testConcatThrowsExceptionOnDifferentNonHtml() throws Exception {
     try {
       SanitizedContents.concatHtml(
@@ -75,6 +87,7 @@ public class SanitizedContentsTest extends TestCase {
     }
   }
 
+  @Test
   public void testConcatCombinesHtmlDir() throws Exception {
     SanitizedContent EMPTY_HTML = SanitizedContents.emptyString(ContentKind.HTML);
     SanitizedContent LTR_HTML = SanitizedContent.create(".", ContentKind.HTML, Dir.LTR);
@@ -92,31 +105,26 @@ public class SanitizedContentsTest extends TestCase {
     assertEquals(null, SanitizedContents.concatHtml(UNKNOWN_DIR_HTML).getContentDirection());
 
     // x + unknown -> unknown
-    assertEquals(null,
-        SanitizedContents.concatHtml(LTR_HTML, UNKNOWN_DIR_HTML).getContentDirection());
-    assertEquals(null,
-        SanitizedContents.concatHtml(UNKNOWN_DIR_HTML, LTR_HTML).getContentDirection());
-    assertEquals(null,
-        SanitizedContents.concatHtml(RTL_HTML, UNKNOWN_DIR_HTML).getContentDirection());
-    assertEquals(null,
-        SanitizedContents.concatHtml(UNKNOWN_DIR_HTML, RTL_HTML).getContentDirection());
-    assertEquals(null,
-        SanitizedContents.concatHtml(NEUTRAL_HTML, UNKNOWN_DIR_HTML).getContentDirection());
-    assertEquals(null,
-        SanitizedContents.concatHtml(UNKNOWN_DIR_HTML, NEUTRAL_HTML).getContentDirection());
-    assertEquals(null,
+    assertNull(SanitizedContents.concatHtml(LTR_HTML, UNKNOWN_DIR_HTML).getContentDirection());
+    assertNull(SanitizedContents.concatHtml(UNKNOWN_DIR_HTML, LTR_HTML).getContentDirection());
+    assertNull(SanitizedContents.concatHtml(RTL_HTML, UNKNOWN_DIR_HTML).getContentDirection());
+    assertNull(SanitizedContents.concatHtml(UNKNOWN_DIR_HTML, RTL_HTML).getContentDirection());
+    assertNull(SanitizedContents.concatHtml(NEUTRAL_HTML, UNKNOWN_DIR_HTML).getContentDirection());
+    assertNull(SanitizedContents.concatHtml(UNKNOWN_DIR_HTML, NEUTRAL_HTML).getContentDirection());
+    assertNull(
         SanitizedContents.concatHtml(UNKNOWN_DIR_HTML, UNKNOWN_DIR_HTML).getContentDirection());
 
     // x + neutral -> x
-    assertEquals(Dir.LTR,
-        SanitizedContents.concatHtml(LTR_HTML, NEUTRAL_HTML).getContentDirection());
-    assertEquals(Dir.LTR,
-        SanitizedContents.concatHtml(NEUTRAL_HTML, LTR_HTML).getContentDirection());
-    assertEquals(Dir.RTL,
-        SanitizedContents.concatHtml(RTL_HTML, NEUTRAL_HTML).getContentDirection());
-    assertEquals(Dir.RTL,
-        SanitizedContents.concatHtml(NEUTRAL_HTML, RTL_HTML).getContentDirection());
-    assertEquals(Dir.NEUTRAL,
+    assertEquals(
+        Dir.LTR, SanitizedContents.concatHtml(LTR_HTML, NEUTRAL_HTML).getContentDirection());
+    assertEquals(
+        Dir.LTR, SanitizedContents.concatHtml(NEUTRAL_HTML, LTR_HTML).getContentDirection());
+    assertEquals(
+        Dir.RTL, SanitizedContents.concatHtml(RTL_HTML, NEUTRAL_HTML).getContentDirection());
+    assertEquals(
+        Dir.RTL, SanitizedContents.concatHtml(NEUTRAL_HTML, RTL_HTML).getContentDirection());
+    assertEquals(
+        Dir.NEUTRAL,
         SanitizedContents.concatHtml(NEUTRAL_HTML, NEUTRAL_HTML).getContentDirection());
 
     // x + x -> x
@@ -124,8 +132,8 @@ public class SanitizedContentsTest extends TestCase {
     assertEquals(Dir.RTL, SanitizedContents.concatHtml(RTL_HTML, RTL_HTML).getContentDirection());
 
     // LTR + RTL -> unknown
-    assertEquals(null, SanitizedContents.concatHtml(LTR_HTML, RTL_HTML).getContentDirection());
-    assertEquals(null, SanitizedContents.concatHtml(LTR_HTML, RTL_HTML).getContentDirection());
+    assertNull(SanitizedContents.concatHtml(LTR_HTML, RTL_HTML).getContentDirection());
+    assertNull(SanitizedContents.concatHtml(LTR_HTML, RTL_HTML).getContentDirection());
   }
 
   private void assertResourceNameValid(boolean valid, String resourceName, ContentKind kind) {
@@ -137,6 +145,7 @@ public class SanitizedContentsTest extends TestCase {
     }
   }
 
+  @Test
   public void testPretendValidateResource() {
     // Correct resources.
     assertResourceNameValid(true, "test.js", ContentKind.JS);
@@ -157,6 +166,7 @@ public class SanitizedContentsTest extends TestCase {
     assertResourceNameValid(false, "test", ContentKind.JS);
   }
 
+  @Test
   public void testGetDefaultDir() {
     assertEquals(Dir.LTR, SanitizedContents.getDefaultDir(ContentKind.JS));
     assertEquals(Dir.LTR, SanitizedContents.getDefaultDir(ContentKind.CSS));
@@ -167,6 +177,7 @@ public class SanitizedContentsTest extends TestCase {
     assertNull(SanitizedContents.getDefaultDir(ContentKind.HTML));
   }
 
+  @Test
   public void testConstantUri() {
     // Passing case. We actually can't test a failing case because it won't compile.
     SanitizedContent uri = SanitizedContents.constantUri("itms://blahblah");
@@ -175,11 +186,13 @@ public class SanitizedContentsTest extends TestCase {
     assertEquals(SanitizedContents.getDefaultDir(ContentKind.URI), uri.getContentDirection());
   }
 
+  @Test
   public void testCommonSafeHtmlTypeConversions() {
     final String helloWorldHtml = "Hello <em>World</em>";
-    final SafeHtml safeHtml = SafeHtmls.concat(
-        SafeHtmls.htmlEscape("Hello "),
-        new SafeHtmlBuilder("em").escapeAndAppendContent("World").build());
+    final SafeHtml safeHtml =
+        SafeHtmls.concat(
+            SafeHtmls.htmlEscape("Hello "),
+            new SafeHtmlBuilder("em").escapeAndAppendContent("World").build());
     final SanitizedContent sanitizedHtml = SanitizedContents.fromSafeHtml(safeHtml);
     assertEquals(ContentKind.HTML, sanitizedHtml.getContentKind());
     assertEquals(helloWorldHtml, sanitizedHtml.getContent());
@@ -191,6 +204,7 @@ public class SanitizedContentsTest extends TestCase {
     assertEquals(helloWorldHtml, SanitizedContents.fromSafeHtmlProto(safeHtmlProto).getContent());
   }
 
+  @Test
   public void testCommonSafeScriptTypeConversions() {
     final String testScript = "window.alert('hello');";
     final SafeScript safeScript = SafeScripts.fromConstant(testScript);
@@ -205,6 +219,7 @@ public class SanitizedContentsTest extends TestCase {
     assertEquals(testScript, SanitizedContents.fromSafeScriptProto(safeScriptProto).getContent());
   }
 
+  @Test
   public void testCommonSafeStyleSheetTypeConversions() {
     final String testCss = "div { display: none; }";
     final SafeStyleSheet safeCss = SafeStyleSheets.fromConstant(testCss);
@@ -219,6 +234,7 @@ public class SanitizedContentsTest extends TestCase {
     assertEquals(testCss, SanitizedContents.fromSafeStyleSheetProto(safeCssProto).getContent());
   }
 
+  @Test
   public void testCommonSafeUrlTypeConversions() {
     final String testUrl = "http://blahblah";
     final SanitizedContent sanitizedConstantUri = SanitizedContents.constantUri(testUrl);
@@ -236,45 +252,88 @@ public class SanitizedContentsTest extends TestCase {
     assertEquals(sanitizedConstantUri, sanitizedUrlProto);
   }
 
+  @Test
   public void testWrongContentKindThrows_html() {
     final SanitizedContent notHtml =
         UnsafeSanitizedContentOrdainer.ordainAsSafe("not HTML", ContentKind.CSS);
     try {
       notHtml.toSafeHtml();
       fail("Should have thrown on SanitizedContent of kind other than HTML");
-    } catch (IllegalStateException expected) {}
+    } catch (IllegalStateException expected) {
+    }
     try {
       notHtml.toSafeHtmlProto();
       fail("Should have thrown on SanitizedContent of kind other than HTML");
-    } catch (IllegalStateException expected) {}
+    } catch (IllegalStateException expected) {
+    }
   }
 
+  @Test
+  public void testWrongContentKindThrows_script() {
+    final SanitizedContent notJs =
+        UnsafeSanitizedContentOrdainer.ordainAsSafe("not JS", ContentKind.URI);
+    try {
+      notJs.toSafeScriptProto();
+      fail("Should have thrown on SanitizedContent of kind other than JS");
+    } catch (IllegalStateException expected) {
+    }
+  }
+
+  @Test
   public void testWrongContentKindThrows_css() {
     final SanitizedContent notCss =
         UnsafeSanitizedContentOrdainer.ordainAsSafe("not CSS", ContentKind.HTML);
     try {
+      notCss.toSafeStyleProto();
+      fail("Should have thrown on SanitizedContent of kind other than CSS");
+    } catch (IllegalStateException expected) {
+    }
+    try {
       notCss.toSafeStyleSheet();
       fail("Should have thrown on SanitizedContent of kind other than CSS");
-    } catch (IllegalStateException expected) {}
+    } catch (IllegalStateException expected) {
+    }
     try {
       notCss.toSafeStyleSheetProto();
       fail("Should have thrown on SanitizedContent of kind other than CSS");
-    } catch (IllegalStateException expected) {}
+    } catch (IllegalStateException expected) {
+    }
   }
 
+  @Test
+  public void testWrongContentKindThrows_uri() {
+    final SanitizedContent notUri =
+        UnsafeSanitizedContentOrdainer.ordainAsSafe("not URI", ContentKind.HTML);
+    try {
+      notUri.toSafeUrlProto();
+      fail("Should have thrown on SanitizedContent of kind other than URI");
+    } catch (IllegalStateException expected) {
+    }
+    try {
+      notUri.toTrustedResourceUrlProto();
+      fail("Should have thrown on SanitizedContent of kind other than URI");
+    } catch (IllegalStateException expected) {
+    }
+  }
+
+  @Test
   public void testInvalidStyleSheetContentThrows() {
-    for (String css : new String[] {
-        "display: none;", "{ display: none; }", "/* a comment */", "@import url('test.css');" }) {
+    for (String css :
+        new String[] {
+          "display: none;", "{ display: none; }", "/* a comment */", "@import url('test.css');"
+        }) {
       final SanitizedContent cssStyle =
           UnsafeSanitizedContentOrdainer.ordainAsSafe(css, ContentKind.CSS);
       try {
         cssStyle.toSafeStyleSheet();
         fail("Should have thrown on CSS SanitizedContent with invalid stylesheet:" + css);
-      } catch (IllegalStateException expected) {}
+      } catch (IllegalStateException expected) {
+      }
       try {
         cssStyle.toSafeStyleSheetProto();
         fail("Should have thrown on CSS SanitizedContent with invalid stylesheet:" + css);
-      } catch (IllegalStateException expected) {}
+      } catch (IllegalStateException expected) {
+      }
     }
   }
 }

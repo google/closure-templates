@@ -26,40 +26,35 @@ import com.google.template.soy.data.internal.AugmentedParamStore;
 import com.google.template.soy.data.internal.BasicParamStore;
 import com.google.template.soy.jbcsrc.Expression.Feature;
 import com.google.template.soy.jbcsrc.api.AdvisingStringBuilder;
-
-import org.objectweb.asm.Type;
-import org.objectweb.asm.commons.Method;
-
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
+import org.objectweb.asm.Type;
+import org.objectweb.asm.commons.Method;
 
-/**
- * A reference to a type that can be constructed at runtime.
- */
-@AutoValue abstract class ConstructorRef {
-  /** 
+/** A reference to a type that can be constructed at runtime. */
+@AutoValue
+abstract class ConstructorRef {
+  /**
    * Returns a new {@link ConstructorRef} that refers to a constructor on the given type with the
    * given parameter types.
    */
   static ConstructorRef create(TypeInfo type, Method init) {
-    checkArgument(init.getName().equals("<init>")  && init.getReturnType().equals(Type.VOID_TYPE),
-        "'%s' is not a valid constructor", init);
-    return new AutoValue_ConstructorRef(
-        type, 
-        init, 
-        ImmutableList.copyOf(init.getArgumentTypes()));
+    checkArgument(
+        init.getName().equals("<init>") && init.getReturnType().equals(Type.VOID_TYPE),
+        "'%s' is not a valid constructor",
+        init);
+    return new AutoValue_ConstructorRef(type, init, ImmutableList.copyOf(init.getArgumentTypes()));
   }
 
-  /** 
+  /**
    * Returns a new {@link ConstructorRef} that refers to a constructor on the given type with the
    * given parameter types.
    */
   static ConstructorRef create(TypeInfo type, Iterable<Type> argTypes) {
     return create(
-        type,
-        new Method("<init>", Type.VOID_TYPE, Iterables.toArray(argTypes, Type.class)));
+        type, new Method("<init>", Type.VOID_TYPE, Iterables.toArray(argTypes, Type.class)));
   }
 
   static ConstructorRef create(Class<?> clazz, Class<?>... argTypes) {
@@ -71,11 +66,9 @@ import java.util.LinkedHashMap;
       throw new RuntimeException(e);
     }
     Type constructorType = Type.getType(c);
-    
+
     return new AutoValue_ConstructorRef(
-        type, 
-        Method.getMethod(c),
-        ImmutableList.copyOf(constructorType.getArgumentTypes()));
+        type, Method.getMethod(c), ImmutableList.copyOf(constructorType.getArgumentTypes()));
   }
 
   static final ConstructorRef ARRAY_LIST_SIZE = create(ArrayList.class, int.class);
@@ -86,25 +79,28 @@ import java.util.LinkedHashMap;
   static final ConstructorRef ADVISING_STRING_BUILDER = create(AdvisingStringBuilder.class);
 
   abstract TypeInfo instanceClass();
+
   abstract Method method();
+
   abstract ImmutableList<Type> argTypes();
 
-  /** 
+  /**
    * Returns an expression that constructs a new instance of {@link #instanceClass()} by calling
    * this constructor.
    */
-  Expression construct(final Expression ...args) {
+  Expression construct(final Expression... args) {
     return construct(Arrays.asList(args));
   }
 
-  /** 
+  /**
    * Returns an expression that constructs a new instance of {@link #instanceClass()} by calling
    * this constructor.
    */
   Expression construct(final Iterable<? extends Expression> args) {
     Expression.checkTypes(argTypes(), args);
     return new Expression(instanceClass().type(), Feature.NON_NULLABLE) {
-      @Override void doGen(CodeBuilder mv) {
+      @Override
+      void doGen(CodeBuilder mv) {
         mv.newInstance(instanceClass().type());
         // push a second reference onto the stack so there is still a reference to the new object
         // after invoking the constructor (constructors are void methods)

@@ -23,9 +23,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 
-/**
- * Helpers for interpreting parse errors as soy errors.
- */
+/** Helpers for interpreting parse errors as soy errors. */
 final class ParseErrors {
 
   private static final SoyErrorKind LEGACY_AND_ERROR =
@@ -40,18 +38,22 @@ final class ParseErrors {
   private ParseErrors() {}
 
   static void reportExprParseException(
-      ErrorReporter reporter, SourceLocation location, ParseException e) {
-    reportExprParseException(reporter, "", location, e);
+      ErrorReporter reporter, SourceLocation parentSourceLocation, ParseException e) {
+    reportExprParseException(reporter, "", parentSourceLocation, e);
   }
 
   static void reportExprParseException(
-      ErrorReporter reporter, String expectation, SourceLocation location, ParseException e) {
+      ErrorReporter reporter,
+      String expectation,
+      SourceLocation parentSourceLocation,
+      ParseException e) {
     // currentToken is the 'last successfully consumed token', but the error is usually due to the
     // first unsuccessful token.  use that for the source location
     Token errorToken = e.currentToken;
     if (errorToken.next != null) {
       errorToken = errorToken.next;
     }
+    SourceLocation errorLocation = Tokens.createSrcLoc(parentSourceLocation, errorToken);
 
     // handle a few special cases that come up in v1->v2 migrations.  We have no production rules
     // that reference these tokens so they will always be unexpected.  Another option we could take
@@ -59,16 +61,16 @@ final class ParseErrors {
     // same place we match 'and'), then we could report errors and keep going in the parser.
     switch (errorToken.kind) {
       case ExpressionParserConstants.LEGACY_AND:
-        reporter.report(location, LEGACY_AND_ERROR);
+        reporter.report(errorLocation, LEGACY_AND_ERROR);
         return;
       case ExpressionParserConstants.LEGACY_OR:
-        reporter.report(location, LEGACY_OR_ERROR);
+        reporter.report(errorLocation, LEGACY_OR_ERROR);
         return;
       case ExpressionParserConstants.LEGACY_NOT:
-        reporter.report(location, LEGACY_NOT_ERROR);
+        reporter.report(errorLocation, LEGACY_NOT_ERROR);
         return;
       case ExpressionParserConstants.DOUBLE_QUOTE:
-        reporter.report(location, LEGACY_DOUBLE_QUOTED_STRING);
+        reporter.report(errorLocation, LEGACY_DOUBLE_QUOTED_STRING);
         return;
     }
     // otherwise log a generic unexpected token error message
@@ -78,35 +80,27 @@ final class ParseErrors {
       expectedTokenImages.add(getSoyFileParserTokenDisplayName(expected[0]));
     }
     reporter.report(
-        // TODO(lukes): we should offset the location by the location of the errorToken however
-        // expr source locations are already iffy, so doing random math on them is unlikely to help
-        // anything.  Revisit when we stop extracting expressions from SoyNode command texts with
-        // regular expressions.
-        location,
+        errorLocation,
         SoyErrorKind.of(expectation + "{0}"),
         formatParseExceptionDetails(errorToken.image, expectedTokenImages.build().asList()));
   }
 
   /**
-   * Returns a human friendly display name for tokens.  By default we use the generated token
-   * image which is appropriate for literal tokens.
+   * Returns a human friendly display name for tokens. By default we use the generated token image
+   * which is appropriate for literal tokens.
    */
   private static String getSoyFileParserTokenDisplayName(int tokenId) {
     switch (tokenId) {
       case ExpressionParserConstants.EOF:
         return "eof";
-      case ExpressionParserConstants.PRECEDENCE_2_OP:
-      case ExpressionParserConstants.PRECEDENCE_3_OP:
-      case ExpressionParserConstants.PRECEDENCE_4_OP:
-      case ExpressionParserConstants.PRECEDENCE_5_OP:
-      case ExpressionParserConstants.PRECEDENCE_6_OP:
-      case ExpressionParserConstants.PRECEDENCE_7_OP:
-        return "an operator";
+      case ExpressionParserConstants.HEX_INTEGER:
+      case ExpressionParserConstants.DEC_INTEGER:
+      case ExpressionParserConstants.FLOAT:
+        return "number";
+      case ExpressionParserConstants.STRING:
+        return "string";
       case ExpressionParserConstants.IDENT:
         return "an identifier";
-      case ExpressionParserConstants.DOT_IDENT:
-      case ExpressionParserConstants.QUESTION_DOT_IDENT:
-        return "field access";
       case ExpressionParserConstants.DOLLAR_IDENT:
         return "variable";
       case ExpressionParserConstants.UNEXPECTED_TOKEN:

@@ -24,13 +24,10 @@ import java.util.Objects;
  */
 public final class SoyMsgPluralRemainderPart extends SoyMsgPart {
 
-
   /** The plural variable name. */
   private final String pluralVarName;
 
-  /**
-   * @param pluralVarName The plural variable name.
-   */
+  /** @param pluralVarName The plural variable name. */
   public SoyMsgPluralRemainderPart(String pluralVarName) {
     this.pluralVarName = pluralVarName;
   }
@@ -39,12 +36,14 @@ public final class SoyMsgPluralRemainderPart extends SoyMsgPart {
     return pluralVarName;
   }
 
-  @Override public boolean equals(Object other) {
+  @Override
+  public boolean equals(Object other) {
     return other instanceof SoyMsgPluralRemainderPart
         && pluralVarName.equals(((SoyMsgPluralRemainderPart) other).pluralVarName);
   }
 
-  @Override public int hashCode() {
+  @Override
+  public int hashCode() {
     return Objects.hash(SoyMsgPluralRemainderPart.class, pluralVarName);
   }
 }

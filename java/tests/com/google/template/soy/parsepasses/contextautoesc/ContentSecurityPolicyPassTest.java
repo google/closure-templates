@@ -17,9 +17,11 @@
 package com.google.template.soy.parsepasses.contextautoesc;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.junit.Assert.assertEquals;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
+import com.google.template.soy.SoyFileSet;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.error.ErrorReporter;
@@ -28,55 +30,46 @@ import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateNode;
-
-import junit.framework.TestCase;
-
 import java.util.List;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test for {@link ContentSecurityPolicyPass}.
  *
  */
-public final class ContentSecurityPolicyPassTest extends TestCase {
+@RunWith(JUnit4.class)
+public final class ContentSecurityPolicyPassTest {
 
-  private static final String NONCE = "{if $ij.csp_nonce} nonce=\"{$ij.csp_nonce}\"{/if}";
+  private static final String NONCE =
+      "{if $ij.csp_nonce} nonce=\"{$ij.csp_nonce |filterCspNonceValue}\"{/if}";
 
+  @Test
   public void testTrivialTemplate() {
     assertInjected(
-        join(
-            "{template .foo}\n",
-            "Hello, World!\n",
-            "{/template}"),
-        join(
-            "{template .foo}\n",
-            "Hello, World!\n",
-            "{/template}"));
+        join("{template .foo}\n", "Hello, World!\n", "{/template}"),
+        join("{template .foo}\n", "Hello, World!\n", "{/template}"));
   }
 
+  @Test
   public void testOneScriptWithBody() {
     assertInjected(
         join(
             "{template .foo}\n",
             "<script" + NONCE + ">alert('Hello, World!')</script>\n",
             "{/template}"),
-        join(
-            "{template .foo}\n",
-            "<script>alert('Hello, World!')</script>\n",
-            "{/template}"));
+        join("{template .foo}\n", "<script>alert('Hello, World!')</script>\n", "{/template}"));
   }
 
+  @Test
   public void testOneSrcedScript() {
     assertInjected(
-        join(
-            "{template .foo}\n",
-            "<script src=\"app.js\"" + NONCE + "></script>\n",
-            "{/template}"),
-        join(
-            "{template .foo}\n",
-            "<script src=\"app.js\"></script>\n",
-            "{/template}"));
+        join("{template .foo}\n", "<script src=\"app.js\"" + NONCE + "></script>\n", "{/template}"),
+        join("{template .foo}\n", "<script src=\"app.js\"></script>\n", "{/template}"));
   }
 
+  @Test
   public void testManyScripts() {
     assertInjected(
         join(
@@ -97,6 +90,7 @@ public final class ContentSecurityPolicyPassTest extends TestCase {
             "{/template}"));
   }
 
+  @Test
   public void testFakeScripts() {
     assertInjected(
         join(
@@ -121,6 +115,7 @@ public final class ContentSecurityPolicyPassTest extends TestCase {
             "{/template}"));
   }
 
+  @Test
   public void testPrintDirectiveInScriptTag() {
     assertInjected(
         join(
@@ -139,11 +134,14 @@ public final class ContentSecurityPolicyPassTest extends TestCase {
             "{/template}"));
   }
 
+  @Test
   public void testOneStyleTag() {
     assertInjected(
         join(
             "{template .foo}\n",
-            "<style type=text/css", NONCE, ">",
+            "<style type=text/css",
+            NONCE,
+            ">",
             "p {lb} color: purple {rb}",
             "</style>\n",
             "{/template}"),
@@ -153,6 +151,7 @@ public final class ContentSecurityPolicyPassTest extends TestCase {
             "{/template}"));
   }
 
+  @Test
   public void testTrailingSlashes() {
     assertInjected(
         join(
@@ -165,20 +164,15 @@ public final class ContentSecurityPolicyPassTest extends TestCase {
             "{/template}"));
   }
 
+  @Test
   public void testInlineEventHandlersAndStyles() {
     assertInjected(
         join(
             "{template .foo}\n",
             "  {@param height: int}\n",
             "<a href='#' style='",
-            "{if $ij.csp_nonce}",
-              "/*{$ij.csp_nonce}*/",
-            "{/if}",
             "height:{$height |filterCssValue |escapeHtmlAttribute}px;'",
             " onclick='",
-            "{if $ij.csp_nonce}",
-              "/*{$ij.csp_nonce}*/",
-            "{/if}",
             "foo() &amp;& bar(\"baz\")'",
             ">",
 
@@ -188,24 +182,15 @@ public final class ContentSecurityPolicyPassTest extends TestCase {
             // untrusted suffix.
             "<a href='#' onmouseover=foo()",
             " style=color:red>",
-
             "<input checked ONCHANGE = \"",
-            "{if $ij.csp_nonce}",
-              "/*{$ij.csp_nonce}*/",
-            "{/if}",
             "Panic()\"",
             ">",
-
             "<script onerror= '",
-            "{if $ij.csp_nonce}",
-              "/*{$ij.csp_nonce}*/",
-            "{/if}",
             "scriptError()'",
             "{if $ij.csp_nonce}",
-              " nonce=\"{$ij.csp_nonce}\"",
+            " nonce=\"{$ij.csp_nonce |filterCspNonceValue}\"",
             "{/if}",
             ">baz()</script>\n",
-
             "{/template}"),
         join(
             "{template .foo}\n",
@@ -217,12 +202,58 @@ public final class ContentSecurityPolicyPassTest extends TestCase {
             "{/template}"));
   }
 
+  // regression test for a bug where an attacker controlled csp_nonce variable could introduce an
+  // XSS because no escaping directives were applied.  Generally csp_nonce variables should not be
+  // attacker controlled, but since applications are responsible for configuring them they may in
+  // fact be.  So we need to escape them.
+  @Test
+  public void testEscaping_script() {
+    SoyFileSet.Builder builder = SoyFileSet.builder();
+    builder.add(
+        join(
+            "{namespace ns}\n",
+            "{template .foo}\n",
+            "<script>var innocentJs=\"foo\"</script>\n",
+            "{/template}"),
+        "test.soy");
+    String renderedValue =
+        builder
+            .build()
+            .compileTemplates()
+            .renderTemplate("ns.foo")
+            .setIj(ImmutableMap.of("csp_nonce", "\">alert('hello')</script><script data-foo=\""))
+            .render()
+            .get();
+    assertEquals("<script nonce=\"zSoyz\">var innocentJs=\"foo\"</script>", renderedValue);
+  }
+
+  @Test
+  public void testEscaping_inline() {
+    SoyFileSet.Builder builder = SoyFileSet.builder();
+    builder.add(
+        join(
+            "{namespace ns}\n",
+            "{template .foo}\n",
+            "<a href='#' onmouseover='foo()'>click me</a>\n",
+            "{/template}"),
+        "test.soy");
+    String renderedValue =
+        builder
+            .build()
+            .compileTemplates()
+            .renderTemplate("ns.foo")
+            .setIj(ImmutableMap.of("csp_nonce", "*/alert('hello');/*"))
+            .render()
+            .get();
+    // We don't inject into inline event handlers anymore
+    assertEquals("<a href='#' onmouseover='foo()'>click me</a>", renderedValue);
+  }
 
   private static String join(String... lines) {
     return Joiner.on("").join(lines);
   }
 
-  private SoyFileSetNode parseAndApplyCspPass(String input) {
+  private static SoyFileSetNode parseAndApplyCspPass(String input) {
     String namespace = "{namespace ns autoescape=\"deprecated-contextual\"}\n\n";
     ErrorReporter boom = ExplodingErrorReporter.get();
     ParseResult parseResult =
@@ -244,10 +275,9 @@ public final class ContentSecurityPolicyPassTest extends TestCase {
   /**
    * Returns the contextually rewritten and injected source.
    *
-   * The Soy tree may have multiple files, but only the source code for the first is returned.
+   * <p>The Soy tree may have multiple files, but only the source code for the first is returned.
    */
-  private void assertInjected(String expectedOutput, String input)
-    throws SoyAutoescapeException {
+  private static void assertInjected(String expectedOutput, String input) {
     SoyFileSetNode soyTree = parseAndApplyCspPass(input);
 
     StringBuilder src = new StringBuilder();

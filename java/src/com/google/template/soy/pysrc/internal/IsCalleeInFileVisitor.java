@@ -21,22 +21,20 @@ import com.google.template.soy.soytree.AbstractReturningSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.TemplateNode;
-
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-
 import javax.inject.Inject;
 
 /**
  * Visitor to determine whether the given callee string is a call to a template in the same file.
  *
- * <p>Important: This class is in {@link ApiCallScope} because it memoizes results that are
- * reusable for the same parse tree. If we change the parse tree between uses of the scoped
- * instance, then the results may not be correct. (In that case, we would need to take this class
- * out of {@code ApiCallScope} and rewrite the code somehow to still take advantage of the
- * memoized results to the extent that they remain correct.)
+ * <p>Important: This class is in {@link ApiCallScope} because it memoizes results that are reusable
+ * for the same parse tree. If we change the parse tree between uses of the scoped instance, then
+ * the results may not be correct. (In that case, we would need to take this class out of {@code
+ * ApiCallScope} and rewrite the code somehow to still take advantage of the memoized results to the
+ * extent that they remain correct.)
  *
  */
 @ApiCallScope
@@ -45,13 +43,13 @@ final class IsCalleeInFileVisitor extends AbstractReturningSoyNodeVisitor<Boolea
   /** The memoized results of past visits to nodes. */
   private final Map<CallBasicNode, Boolean> memoizedResults;
 
-
   @Inject
   IsCalleeInFileVisitor() {
     memoizedResults = new HashMap<>();
   }
 
-  @Override protected Boolean visitCallBasicNode(CallBasicNode node) {
+  @Override
+  protected Boolean visitCallBasicNode(CallBasicNode node) {
     if (memoizedResults.containsKey(node)) {
       return memoizedResults.get(node);
     } else {

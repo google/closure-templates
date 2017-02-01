@@ -46,116 +46,129 @@ import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
-
 import java.util.List;
-
 import javax.annotation.Nullable;
 
 /**
  * Enum of Soy expression operators.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public enum Operator {
-
-
   NEGATIVE(ImmutableList.of(new Token("-"), OPERAND_0), 8, RIGHT, "- (unary)") {
-        @Override public OperatorNode createNode(SourceLocation location) {
-          return new NegativeOpNode(location);
-        }
-      },
+    @Override
+    public OperatorNode createNode(SourceLocation location) {
+      return new NegativeOpNode(location);
+    }
+  },
   NOT(ImmutableList.of(new Token("not"), SP, OPERAND_0), 8, RIGHT) {
-        @Override public OperatorNode createNode(SourceLocation location) {
-          return new NotOpNode(location);
-        }
-      },
+    @Override
+    public OperatorNode createNode(SourceLocation location) {
+      return new NotOpNode(location);
+    }
+  },
   TIMES(ImmutableList.of(OPERAND_0, SP, new Token("*"), SP, OPERAND_1), 7, LEFT) {
-        @Override public OperatorNode createNode(SourceLocation location) {
-          return new TimesOpNode(location);
-        }
-      },
+    @Override
+    public OperatorNode createNode(SourceLocation location) {
+      return new TimesOpNode(location);
+    }
+  },
   DIVIDE_BY(ImmutableList.of(OPERAND_0, SP, new Token("/"), SP, OPERAND_1), 7, LEFT) {
-        @Override public OperatorNode createNode(SourceLocation location) {
-          return new DivideByOpNode(location);
-        }
-      },
+    @Override
+    public OperatorNode createNode(SourceLocation location) {
+      return new DivideByOpNode(location);
+    }
+  },
   MOD(ImmutableList.of(OPERAND_0, SP, new Token("%"), SP, OPERAND_1), 7, LEFT) {
-        @Override public OperatorNode createNode(SourceLocation location) {
-          return new ModOpNode(location);
-        }
-      },
+    @Override
+    public OperatorNode createNode(SourceLocation location) {
+      return new ModOpNode(location);
+    }
+  },
 
   PLUS(ImmutableList.of(OPERAND_0, SP, new Token("+"), SP, OPERAND_1), 6, LEFT) {
-        @Override public OperatorNode createNode(SourceLocation location) {
-          return new PlusOpNode(location);
-        }
-      },
+    @Override
+    public OperatorNode createNode(SourceLocation location) {
+      return new PlusOpNode(location);
+    }
+  },
   MINUS(ImmutableList.of(OPERAND_0, SP, new Token("-"), SP, OPERAND_1), 6, LEFT, "- (binary)") {
-        @Override public OperatorNode createNode(SourceLocation location) {
-          return new MinusOpNode(location);
-        }
-      },
+    @Override
+    public OperatorNode createNode(SourceLocation location) {
+      return new MinusOpNode(location);
+    }
+  },
 
   LESS_THAN(ImmutableList.of(OPERAND_0, SP, new Token("<"), SP, OPERAND_1), 5, LEFT) {
-        @Override public OperatorNode createNode(SourceLocation location) {
-          return new LessThanOpNode(location);
-        }
-      },
+    @Override
+    public OperatorNode createNode(SourceLocation location) {
+      return new LessThanOpNode(location);
+    }
+  },
   GREATER_THAN(ImmutableList.of(OPERAND_0, SP, new Token(">"), SP, OPERAND_1), 5, LEFT) {
-        @Override public OperatorNode createNode(SourceLocation location) {
-          return new GreaterThanOpNode(location);
-        }
-      },
+    @Override
+    public OperatorNode createNode(SourceLocation location) {
+      return new GreaterThanOpNode(location);
+    }
+  },
   LESS_THAN_OR_EQUAL(ImmutableList.of(OPERAND_0, SP, new Token("<="), SP, OPERAND_1), 5, LEFT) {
-        @Override public OperatorNode createNode(SourceLocation location) {
-          return new LessThanOrEqualOpNode(location);
-        }
-      },
+    @Override
+    public OperatorNode createNode(SourceLocation location) {
+      return new LessThanOrEqualOpNode(location);
+    }
+  },
   GREATER_THAN_OR_EQUAL(ImmutableList.of(OPERAND_0, SP, new Token(">="), SP, OPERAND_1), 5, LEFT) {
-        @Override public OperatorNode createNode(SourceLocation location) {
-          return new GreaterThanOrEqualOpNode(location);
-        }
-      },
+    @Override
+    public OperatorNode createNode(SourceLocation location) {
+      return new GreaterThanOrEqualOpNode(location);
+    }
+  },
 
   EQUAL(ImmutableList.of(OPERAND_0, SP, new Token("=="), SP, OPERAND_1), 4, LEFT) {
-        @Override public OperatorNode createNode(SourceLocation location) {
-          return new EqualOpNode(location);
-        }
-      },
+    @Override
+    public OperatorNode createNode(SourceLocation location) {
+      return new EqualOpNode(location);
+    }
+  },
   NOT_EQUAL(ImmutableList.of(OPERAND_0, SP, new Token("!="), SP, OPERAND_1), 4, LEFT) {
-        @Override public OperatorNode createNode(SourceLocation location) {
-          return new NotEqualOpNode(location);
-        }
-      },
+    @Override
+    public OperatorNode createNode(SourceLocation location) {
+      return new NotEqualOpNode(location);
+    }
+  },
 
   AND(ImmutableList.of(OPERAND_0, SP, new Token("and"), SP, OPERAND_1), 3, LEFT) {
-        @Override public OperatorNode createNode(SourceLocation location) {
-          return new AndOpNode(location);
-        }
-      },
+    @Override
+    public OperatorNode createNode(SourceLocation location) {
+      return new AndOpNode(location);
+    }
+  },
 
   OR(ImmutableList.of(OPERAND_0, SP, new Token("or"), SP, OPERAND_1), 2, LEFT) {
-        @Override public OperatorNode createNode(SourceLocation location) {
-          return new OrOpNode(location);
-        }
-      },
+    @Override
+    public OperatorNode createNode(SourceLocation location) {
+      return new OrOpNode(location);
+    }
+  },
 
   NULL_COALESCING(ImmutableList.of(OPERAND_0, SP, new Token("?:"), SP, OPERAND_1), 1, RIGHT) {
-        @Override public OperatorNode createNode(SourceLocation location) {
-          return new NullCoalescingOpNode(location);
-        }
-      },
+    @Override
+    public OperatorNode createNode(SourceLocation location) {
+      return new NullCoalescingOpNode(location);
+    }
+  },
   CONDITIONAL(
       ImmutableList.of(
           OPERAND_0, SP, new Token("?"), SP, OPERAND_1, SP, new Token(":"), SP, OPERAND_2),
-      1, RIGHT) {
-        @Override public OperatorNode createNode(SourceLocation location) {
-          return new ConditionalOpNode(location);
-        }
-      },
+      1,
+      RIGHT) {
+    @Override
+    public OperatorNode createNode(SourceLocation location) {
+      return new ConditionalOpNode(location);
+    }
+  },
   ;
-
 
   /** Constants used in the enum definitions above. */
   static class Constants {
@@ -167,9 +180,9 @@ public enum Operator {
 
   // -----------------------------------------------------------------------------------------------
 
-
   /** Map used for fetching an Operator from the pair (tokenString, numOperands). */
   private static final ImmutableTable<String, Integer, Operator> OPERATOR_TABLE;
+
   static {
     ImmutableTable.Builder<String, Integer, Operator> builder = ImmutableTable.builder();
     for (Operator op : Operator.values()) {
@@ -177,7 +190,6 @@ public enum Operator {
     }
     OPERATOR_TABLE = builder.build();
   }
-
 
   /**
    * Fetches an Operator given the pair (tokenString, numOperands).
@@ -197,15 +209,15 @@ public enum Operator {
     }
   }
 
-
   // -----------------------------------------------------------------------------------------------
-
 
   /** The canonical syntax for this operator, including spacing. */
   private final List<SyntaxElement> syntax;
 
-  /** This operator's token. Multiple tokens (e.g. the ternary conditional operator) are separated
-   *  using a space. */
+  /**
+   * This operator's token. Multiple tokens (e.g. the ternary conditional operator) are separated
+   * using a space.
+   */
   private final String tokenString;
 
   /** The number of operands that this operator takes. */
@@ -222,6 +234,7 @@ public enum Operator {
 
   /**
    * Constructor that doesn't specify a description string (defaults to using the token string).
+   *
    * @param syntax The canonical syntax for this operator, including spacing.
    * @param precedence This operator's precedence level.
    * @param associativity This operator's associativity.
@@ -230,15 +243,18 @@ public enum Operator {
     this(syntax, precedence, associativity, null /* description */);
   }
 
-
   /**
    * Constructor that specifies a description string.
+   *
    * @param syntax The canonical syntax for this operator, including spacing.
    * @param precedence This operator's precedence level.
    * @param associativity This operator's associativity.
    * @param description A short description of this operator.
    */
-  private Operator(List<SyntaxElement> syntax, int precedence, Associativity associativity,
+  private Operator(
+      List<SyntaxElement> syntax,
+      int precedence,
+      Associativity associativity,
       @Nullable String description) {
 
     this.syntax = ImmutableList.copyOf(syntax);
@@ -265,14 +281,15 @@ public enum Operator {
     this.description = (description != null) ? description : tokenString;
   }
 
-
   /** Returns the canonical syntax for this operator, including spacing. */
   public List<SyntaxElement> getSyntax() {
     return syntax;
   }
 
-  /** Returns this operator's token. Multiple tokens (e.g. the ternary conditional operator) are
-   *  separated using a space. */
+  /**
+   * Returns this operator's token. Multiple tokens (e.g. the ternary conditional operator) are
+   * separated using a space.
+   */
   public String getTokenString() {
     return tokenString;
   }
@@ -301,7 +318,7 @@ public enum Operator {
   public abstract OperatorNode createNode(SourceLocation location);
 
   /** Creates a node representing this operator, with the given children. */
-  public final OperatorNode createNode(ExprNode ...children) {
+  public final OperatorNode createNode(ExprNode... children) {
     checkArgument(children.length == getNumOperands());
     // TODO(lukes): the source locations for all ExprNodes are pretty much a joke, currently all
     // ParentExprNodes just use the source location of their first child, so that is what we do here
@@ -315,10 +332,7 @@ public enum Operator {
 
   // -----------------------------------------------------------------------------------------------
 
-
-  /**
-   * Enum for an operator's associativity.
-   */
+  /** Enum for an operator's associativity. */
   public static enum Associativity {
     /** Left-to-right. */
     LEFT,
@@ -326,16 +340,10 @@ public enum Operator {
     RIGHT
   }
 
-
-  /**
-   * Represents a syntax element (used in a syntax specification for an operator).
-   */
+  /** Represents a syntax element (used in a syntax specification for an operator). */
   public static interface SyntaxElement {}
 
-
-  /**
-   * A syntax element for an operand.
-   */
+  /** A syntax element for an operand. */
   public static class Operand implements SyntaxElement {
 
     private final int index;
@@ -350,10 +358,7 @@ public enum Operator {
     }
   }
 
-
-  /**
-   * A syntax element for a token.
-   */
+  /** A syntax element for a token. */
   public static class Token implements SyntaxElement {
 
     private final String value;
@@ -368,13 +373,9 @@ public enum Operator {
     }
   }
 
-
-  /**
-   * A syntax element for a space character.
-   */
+  /** A syntax element for a space character. */
   public static class Spacer implements SyntaxElement {
 
     private Spacer() {}
   }
-
 }

@@ -25,17 +25,15 @@ import com.google.template.soy.exprparse.SoyParsingContext;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
-
 import java.util.List;
 
 /**
  * Node representing a 'print' directive.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public final class PrintDirectiveNode extends AbstractSoyNode implements ExprHolderNode {
-
 
   /** The directive name (including vertical bar). */
   private final String name;
@@ -58,9 +56,9 @@ public final class PrintDirectiveNode extends AbstractSoyNode implements ExprHol
     this.argsText = argsText;
   }
 
-
   /**
    * Copy constructor.
+   *
    * @param orig The node to copy.
    */
   private PrintDirectiveNode(PrintDirectiveNode orig, CopyState copyState) {
@@ -74,41 +72,37 @@ public final class PrintDirectiveNode extends AbstractSoyNode implements ExprHol
     this.args = ImmutableList.copyOf(tempArgs);
   }
 
-
-  @Override public Kind getKind() {
+  @Override
+  public Kind getKind() {
     return Kind.PRINT_DIRECTIVE_NODE;
   }
-
 
   /** Returns the directive name (including vertical bar). */
   public String getName() {
     return name;
   }
 
-
   /** The parsed args. */
   public List<ExprRootNode> getArgs() {
     return args;
   }
 
-
-  @Override public String toSourceString() {
+  @Override
+  public String toSourceString() {
     return name + ((argsText.length() > 0) ? ":" + argsText : "");
   }
 
-
-  @Override public List<ExprUnion> getAllExprUnions() {
+  @Override
+  public List<ExprUnion> getAllExprUnions() {
     return ExprUnion.createList(args);
   }
 
-
-  @Override public PrintDirectiveNode copy(CopyState copyState) {
+  @Override
+  public PrintDirectiveNode copy(CopyState copyState) {
     return new PrintDirectiveNode(this, copyState);
   }
 
-  /**
-   * Builder for {@link PrintDirectiveNode}.
-   */
+  /** Builder for {@link PrintDirectiveNode}. */
   public static final class Builder {
     private final int id;
     private final String name;
@@ -142,12 +136,11 @@ public final class PrintDirectiveNode extends AbstractSoyNode implements ExprHol
         return ImmutableList.of();
       }
       ImmutableList.Builder<ExprRootNode> args = ImmutableList.builder();
-      for (ExprNode expr : new ExpressionParser(argsText, sourceLocation, context)
-          .parseExpressionList()) {
+      for (ExprNode expr :
+          new ExpressionParser(argsText, sourceLocation, context).parseExpressionList()) {
         args.add(new ExprRootNode(expr));
       }
       return args.build();
     }
   }
-
 }

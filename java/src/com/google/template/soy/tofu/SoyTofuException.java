@@ -19,17 +19,17 @@ package com.google.template.soy.tofu;
 import com.google.template.soy.data.SoyFutureException;
 import com.google.template.soy.sharedpasses.render.RenderException;
 
-
 /**
  * Exception thrown when an error occurs during template rendering.
  *
  * <p>There are several kinds of errors that you might encounter:
+ *
  * <ul>
- *   <li>Type errors.  Thrown if the static type of a variable does not match the runtime type.
- *   <li>Plugin errors.  Errors thrown from functions will be wrapped in SoyTofuException with the
+ *   <li>Type errors. Thrown if the static type of a variable does not match the runtime type.
+ *   <li>Plugin errors. Errors thrown from functions will be wrapped in SoyTofuException with the
  *       original exception maintained in the {@link Throwable#getCause() cause} field.
- *   <li>Future errors.  Errors thrown when dereferencing {@link Future} instances passed as
- *       parameters.  In this case, the failure cause will be {@link SoyFutureException}, with the
+ *   <li>Future errors. Errors thrown when dereferencing {@link Future} instances passed as
+ *       parameters. In this case, the failure cause will be {@link SoyFutureException}, with the
  *       failure cause attached to that.
  *   <li>TODO(lukes): fill in more examples
  * </ul>
@@ -37,16 +37,14 @@ import com.google.template.soy.sharedpasses.render.RenderException;
  */
 public class SoyTofuException extends RuntimeException {
 
-
-  /**
-   * @param message A detailed description of the error.
-   */
+  /** @param message A detailed description of the error. */
   public SoyTofuException(String message) {
     super(message);
   }
 
   /**
    * Creates an instance by copying a RenderException.
+   *
    * @param re The RenderException to copy.
    */
   public SoyTofuException(RenderException re) {

@@ -28,7 +28,6 @@ import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 abstract class AbstractBlockCommandNode extends AbstractParentCommandNode<StandaloneNode>
     implements BlockCommandNode {
 
-
   /**
    * @param id The id for this node.
    * @param sourceLocation The node's source location.
@@ -40,13 +39,12 @@ abstract class AbstractBlockCommandNode extends AbstractParentCommandNode<Standa
     super(id, sourceLocation, commandName, commandText);
   }
 
-
   /**
    * Copy constructor.
+   *
    * @param orig The node to copy.
    */
   protected AbstractBlockCommandNode(AbstractBlockCommandNode orig, CopyState copyState) {
     super(orig, copyState);
   }
-
 }

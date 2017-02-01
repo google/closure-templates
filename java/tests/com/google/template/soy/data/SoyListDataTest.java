@@ -16,6 +16,11 @@
 
 package com.google.template.soy.data;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.testing.EqualsTester;
@@ -23,19 +28,19 @@ import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
-
-import junit.framework.TestCase;
-
 import java.util.List;
-
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for SoyListData.
  *
  */
-public class SoyListDataTest extends TestCase {
+@RunWith(JUnit4.class)
+public class SoyListDataTest {
 
-
+  @Test
   public void testPutRemoveGetSingleKey() {
 
     SoyListData sld = new SoyListData();
@@ -65,7 +70,7 @@ public class SoyListDataTest extends TestCase {
     sld.add(8);
     assertEquals(8, sld.getInteger(3));
     sld.add(3.14);
-    assertEquals(3.14, sld.getFloat(4));
+    assertEquals(3.14, sld.getFloat(4), 0.0);
     sld.add("woohoo");
     assertEquals("woohoo", sld.getString(5));
 
@@ -74,7 +79,7 @@ public class SoyListDataTest extends TestCase {
     sld.set(6, -8);
     assertEquals(-8, sld.getInteger(6));
     sld.set(7, -3.14);
-    assertEquals(-3.14, sld.getFloat(7));
+    assertEquals(-3.14, sld.getFloat(7), 0.0);
     sld.set(7, "boohoo");
     assertEquals("boohoo", sld.getString(7));
 
@@ -95,7 +100,7 @@ public class SoyListDataTest extends TestCase {
     assertEquals(smd, sld.getMapData(7));
   }
 
-
+  @Test
   public void testPutRemoveGetMultiKey() {
 
     SoyListData sld = new SoyListData();
@@ -113,10 +118,10 @@ public class SoyListDataTest extends TestCase {
     sld.put("0.2.boo", "foo");
     sld.put("0.2.goo", 1.618);
     assertEquals("foo", sld.getString("0.2.boo"));
-    assertEquals(1.618, sld.getMapData("0.2").getFloat("goo"));
+    assertEquals(1.618, sld.getMapData("0.2").getFloat("goo"), 0.0);
   }
 
-
+  @Test
   public void testConstruction() {
 
     List<Object> existingList = Lists.<Object>newArrayList(8, null, ImmutableList.of("blah", true));
@@ -128,7 +133,7 @@ public class SoyListDataTest extends TestCase {
     assertTrue(sld.get(1) instanceof NullData);
     assertEquals("blah", sld.getString("2.0"));
     assertEquals(true, sld.getBoolean("2.1"));
-    assertEquals(2.71828, sld.getFloat("2.2"));
+    assertEquals(2.71828, sld.getFloat("2.2"), 0.0);
     assertEquals("bleh", sld.getString(3));
 
     sld = new SoyListData(8, null, new SoyListData("blah", true));
@@ -139,11 +144,11 @@ public class SoyListDataTest extends TestCase {
     assertTrue(sld.get(1) instanceof NullData);
     assertEquals("blah", sld.getString("2.0"));
     assertEquals(true, sld.getBoolean("2.1"));
-    assertEquals(2.71828, sld.getFloat("2.2"));
+    assertEquals(2.71828, sld.getFloat("2.2"), 0.0);
     assertEquals("bleh", sld.getString(3));
   }
 
-
+  @Test
   public void testErrorDuringConstruction() {
 
     List<Object> existingList =
@@ -166,7 +171,7 @@ public class SoyListDataTest extends TestCase {
     }
   }
 
-
+  @Test
   public void testCoercion() {
 
     SoyListData sld0 = new SoyListData();
@@ -184,19 +189,17 @@ public class SoyListDataTest extends TestCase {
     assertEquals(true, sld2.coerceToBoolean());
   }
 
-
+  @Test
   public void testIsEqualto() {
 
     SoyListData sld0 = new SoyListData();
     SoyListData sld1 = new SoyListData("boo");
 
-    new EqualsTester()
-      .addEqualityGroup(sld0)
-      .addEqualityGroup(sld1)
-      .testEquals();
+    new EqualsTester().addEqualityGroup(sld0).addEqualityGroup(sld1).testEquals();
     assertFalse(sld0.equals(new SoyListData()));
   }
 
+  @Test
   public void testLongHandling() {
     // long value will loose precision if converted to double.
     long l = 987654321987654321L;

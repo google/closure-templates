@@ -21,9 +21,6 @@ import com.google.common.io.Files;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.pysrc.SoyPySrcOptions;
-
-import org.kohsuke.args4j.Option;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
@@ -31,7 +28,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
-
+import org.kohsuke.args4j.Option;
 
 /**
  * Executable for compiling a set of Soy files into corresponding Python source files.
@@ -43,57 +40,79 @@ import java.util.Properties;
  */
 public final class SoyToPySrcCompiler extends AbstractSoyCompiler {
 
-  @Option(name = "--outputPathFormat",
-      required = true,
-      usage = "[Required] A format string that specifies how to build the path to each"
-              + " output file. There will be one output Python file (UTF-8) for each input Soy"
-              + " file. The format string can include literal characters as well as the"
-              + " placeholders {INPUT_PREFIX}, {INPUT_DIRECTORY}, {INPUT_FILE_NAME}, and"
-              + " {INPUT_FILE_NAME_NO_EXT}. Additionally periods are not allowed in the"
-              + " outputted filename outside of the final py extension.")
+  @Option(
+    name = "--outputPathFormat",
+    required = true,
+    usage =
+        "[Required] A format string that specifies how to build the path to each"
+            + " output file. There will be one output Python file (UTF-8) for each input Soy"
+            + " file. The format string can include literal characters as well as the"
+            + " placeholders {INPUT_PREFIX}, {INPUT_DIRECTORY}, {INPUT_FILE_NAME}, and"
+            + " {INPUT_FILE_NAME_NO_EXT}. Additionally periods are not allowed in the"
+            + " outputted filename outside of the final py extension."
+  )
   private String outputPathFormat = "";
 
-  @Option(name = "--runtimePath",
-          required = true,
-          usage = "[Required] The module path used to find the python runtime libraries. This"
-              + " should be in dot notation format.")
+  @Option(
+    name = "--runtimePath",
+    required = true,
+    usage =
+        "[Required] The module path used to find the python runtime libraries. This"
+            + " should be in dot notation format."
+  )
   private String runtimePath = "";
 
-  @Option(name = "--environmentModulePath",
-          usage = "A custom python module which will override the environment.py module if custom"
-              + " functionality is required for interacting with your runtime environment. This"
-              + " module must implement all functions of the environment module if provided.")
+  @Option(
+    name = "--environmentModulePath",
+    usage =
+        "A custom python module which will override the environment.py module if custom"
+            + " functionality is required for interacting with your runtime environment. This"
+            + " module must implement all functions of the environment module if provided."
+  )
   private String environmentModulePath = "";
 
-  @Option(name = "--translationClass",
-          usage = "The full class name of the python runtime translation class."
-              + " The name should include the absolute module path and class name in dot notation"
-              + " format (e.g. \"my.package.module.TranslatorClass\")."
-              + " It is required for {msg} command.")
+  @Option(
+    name = "--translationClass",
+    usage =
+        "The full class name of the python runtime translation class."
+            + " The name should include the absolute module path and class name in dot notation"
+            + " format (e.g. \"my.package.module.TranslatorClass\")."
+            + " It is required for {msg} command."
+  )
   private String translationClass = "";
 
-  @Option(name = "--bidiIsRtlFn",
-          usage = "The full name of a function used to determine if bidi is rtl for setting global"
-                  + " directionality. The name should include the absolute module path and function"
-                  + "name in dot notation format (e.g. \"my.app.bidi.is_rtl\"). Only applicable if"
-                  + " your Soy code uses bidi functions/directives.")
+  @Option(
+    name = "--bidiIsRtlFn",
+    usage =
+        "The full name of a function used to determine if bidi is rtl for setting global"
+            + " directionality. The name should include the absolute module path and function"
+            + "name in dot notation format (e.g. \"my.app.bidi.is_rtl\"). Only applicable if"
+            + " your Soy code uses bidi functions/directives."
+  )
   private String bidiIsRtlFn = "";
 
-  @Option(name = "--syntaxVersion",
-          usage = "User-declared syntax version for the Soy file bundle (e.g. 2.2, 2.3).")
+  @Option(
+    name = "--syntaxVersion",
+    usage = "User-declared syntax version for the Soy file bundle (e.g. 2.2, 2.3)."
+  )
   private String syntaxVersion = "";
 
-  @Option(name = "--namespaceManifestPath",
-          usage = "A list of paths to a manifest file which provides a map of soy namespaces to"
-                  + " their Python paths. If this is provided, direct imports will be used,"
-                  + " drastically improving runtime performance.",
-          handler = MainClassUtils.StringListOptionHandler.class)
+  @Option(
+    name = "--namespaceManifestPath",
+    usage =
+        "A list of paths to a manifest file which provides a map of soy namespaces to"
+            + " their Python paths. If this is provided, direct imports will be used,"
+            + " drastically improving runtime performance.",
+    handler = MainClassUtils.StringListOptionHandler.class
+  )
   private List<String> namespaceManifestPaths = new ArrayList<>();
 
-  @Option(name = "--outputNamespaceManifest",
-          usage = "Output a manifest file containing a map of all soy namespaces to their Python"
-                  + " paths.",
-          handler = MainClassUtils.BooleanOptionHandler.class)
+  @Option(
+    name = "--outputNamespaceManifest",
+    usage =
+        "Output a manifest file containing a map of all soy namespaces to their Python" + " paths.",
+    handler = MainClassUtils.BooleanOptionHandler.class
+  )
   private boolean outputNamespaceManifest = false;
 
   /**
@@ -138,8 +157,14 @@ public final class SoyToPySrcCompiler extends AbstractSoyCompiler {
     }
 
     // Create SoyPySrcOptions.
-    SoyPySrcOptions pySrcOptions = new SoyPySrcOptions(runtimePath, environmentModulePath,
-        bidiIsRtlFn, translationClass, manifest, outputNamespaceManifest);
+    SoyPySrcOptions pySrcOptions =
+        new SoyPySrcOptions(
+            runtimePath,
+            environmentModulePath,
+            bidiIsRtlFn,
+            translationClass,
+            manifest,
+            outputNamespaceManifest);
 
     // Compile.
     sfs.compileToPySrcFiles(outputPathFormat, inputPrefix, pySrcOptions);

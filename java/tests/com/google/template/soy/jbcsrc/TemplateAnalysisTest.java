@@ -16,6 +16,8 @@
 
 package com.google.template.soy.jbcsrc;
 
+import static org.junit.Assert.fail;
+
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.SoyFileSetParserBuilder;
@@ -25,15 +27,16 @@ import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.shared.restricted.SoyFunction;
-import com.google.template.soy.soytree.SoytreeUtils;
+import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
-
-import junit.framework.TestCase;
-
 import java.util.Set;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /** Tests for {@link TemplateAnalysis}. */
-public final class TemplateAnalysisTest extends TestCase {
+@RunWith(JUnit4.class)
+public final class TemplateAnalysisTest {
 
   // All the tests are written as soy templates with references to two soy functions 'refed' and
   // 'notrefed'.
@@ -42,6 +45,7 @@ public final class TemplateAnalysisTest extends TestCase {
   //  'notrefed' just means the opposite.  at that point in the program there is no guarantee that
   //  it has already been referenced.
 
+  @Test
   public void testSimpleSequentalAccess() {
     runTest("{@param p : string}", "{notrefed($p)}{refed($p)}");
 
@@ -57,16 +61,14 @@ public final class TemplateAnalysisTest extends TestCase {
         "{refed($p3)}");
   }
 
+  @Test
   public void testDataAccess() {
-    runTest("{@param p : list<string>}", 
-        "{notrefed($p[0])}",
-        "{refed($p[0])}");
+    runTest("{@param p : list<string>}", "{notrefed($p[0])}", "{refed($p[0])}");
 
-    runTest("{@param p : [field:string]}", 
-        "{notrefed($p.field)}",
-        "{refed($p.field)}");
+    runTest("{@param p : [field:string]}", "{notrefed($p.field)}", "{refed($p.field)}");
   }
 
+  @Test
   public void testIf() {
     // conditions are refed prior to the blocks they control
     // if there is an {else} then anything refed in all branches is refed after the if
@@ -105,6 +107,7 @@ public final class TemplateAnalysisTest extends TestCase {
         "{notrefed($p)}");
   }
 
+  @Test
   public void testSwitch() {
     // empty switch
     runTest("{@param p : int}", "{switch $p}", "{/switch}", "{notrefed($p)}");
@@ -152,6 +155,7 @@ public final class TemplateAnalysisTest extends TestCase {
         "{notrefed($p3)}"); // p3 is not refed because it only happens if $p != $p2
   }
 
+  @Test
   public void testFor() {
     runTest(
         "{@param limit : int}",
@@ -174,6 +178,7 @@ public final class TemplateAnalysisTest extends TestCase {
         "{refed($p)}");
   }
 
+  @Test
   public void testForeach() {
     // test special functions for foreach loops. though these all look like references to the loop
     // var, they actually aren't.
@@ -207,6 +212,7 @@ public final class TemplateAnalysisTest extends TestCase {
         "{notrefed($p3)}");
   }
 
+  @Test
   public void testForeach_literalList() {
     // test literal lists
     // empty list
@@ -241,6 +247,7 @@ public final class TemplateAnalysisTest extends TestCase {
         "{notrefed($p2)}");
   }
 
+  @Test
   public void testLetVariable() {
     runTest("{@param p: ?}", "{let $l : $p/}", "{notrefed($p)}");
     // referencing $l implies we have refed $p
@@ -255,6 +262,7 @@ public final class TemplateAnalysisTest extends TestCase {
         "{refed($p)}");
   }
 
+  @Test
   public void testRefsInLets() {
     runTest(
         "{@param p: ?}",
@@ -265,14 +273,10 @@ public final class TemplateAnalysisTest extends TestCase {
         "{refed($l2)}",
         "{refed($l)}");
   }
-  
+
+  @Test
   public void testMsg() {
-    runTest(
-        "{@param p : ?}",
-        "{msg desc=\"\"}",
-        "  Hello {$p}",
-        "{/msg}",
-        "{refed($p)}");
+    runTest("{@param p : ?}", "{msg desc=\"\"}", "  Hello {$p}", "{/msg}", "{refed($p)}");
 
     runTest(
         "{@param p : ?}",
@@ -282,7 +286,7 @@ public final class TemplateAnalysisTest extends TestCase {
         "  Hello foo",
         "{/msg}",
         "{notrefed($p)}");
-    
+
     runTest(
         "{@param p : ?}",
         "{msg desc=\"\"}",
@@ -292,17 +296,12 @@ public final class TemplateAnalysisTest extends TestCase {
         "{/msg}",
         "{refed($p)}");
   }
-  
+
+  @Test
   public void testCall() {
     // The tricky thing about calls is how params are handled
-    runTest(
-        "{@param p : ?}",
-        "{call .foo data=\"$p\"/}",
-        "{refed($p)}");
-    runTest(
-        "{@param p : ?}",
-        "{call .foo data=\"all\"/}",
-        "{notrefed($p)}");
+    runTest("{@param p : ?}", "{call .foo data=\"$p\"/}", "{refed($p)}");
+    runTest("{@param p : ?}", "{call .foo data=\"all\"/}", "{notrefed($p)}");
     runTest(
         "{@param p : ?}",
         "{call .foo}",
@@ -310,7 +309,7 @@ public final class TemplateAnalysisTest extends TestCase {
         "  {param p2 : notrefed($p) /}",
         "{/call}",
         "{notrefed($p)}");
-    
+
     runTest(
         "{@param p : ?}",
         "{$p}",
@@ -324,7 +323,7 @@ public final class TemplateAnalysisTest extends TestCase {
   void runTest(String... lines) {
     TemplateNode template = parseTemplate(lines);
     TemplateAnalysis analysis = TemplateAnalysis.analyze(template);
-    for (FunctionNode node : SoytreeUtils.getAllNodesOfType(template, FunctionNode.class)) {
+    for (FunctionNode node : SoyTreeUtils.getAllNodesOfType(template, FunctionNode.class)) {
       if (node.getSoyFunction() == NOT_REFED_FUNCTION) {
         checkNotReferenced(analysis, node.getChild(0));
       } else if (node.getSoyFunction() == REFED_FUNCTION) {
@@ -360,26 +359,27 @@ public final class TemplateAnalysisTest extends TestCase {
     // subtract 2 from the line number since the boilerplate adds 2 lines above the user content
     return child.toSourceString()
         + " at "
-        + (sourceLocation.getLineNumber() - 2)
+        + (sourceLocation.getBeginLine() - 2)
         + ":"
         + sourceLocation.getBeginColumn();
   }
 
   private static TemplateNode parseTemplate(String... lines) {
     return SoyFileSetParserBuilder.forFileContents(
-        Joiner.on("\n").join(
-            "{namespace test}",
-            "{template .caller}",
-            Joiner.on("\n").join(lines),
-            "{/template}",
-            "",
-            // add an additional template as a callee.
-            "{template .foo}",
-            "  {@param? p1 : ?}",
-            "  {@param? p2 : ?}",
-            "  {$p1 + $p2}",
-            "{/template}",
-            ""))
+            Joiner.on("\n")
+                .join(
+                    "{namespace test}",
+                    "{template .caller}",
+                    Joiner.on("\n").join(lines),
+                    "{/template}",
+                    "",
+                    // add an additional template as a callee.
+                    "{template .foo}",
+                    "  {@param? p1 : ?}",
+                    "  {@param? p2 : ?}",
+                    "  {$p1 + $p2}",
+                    "{/template}",
+                    ""))
         .addSoyFunction(REFED_FUNCTION)
         .addSoyFunction(NOT_REFED_FUNCTION)
         .parse()

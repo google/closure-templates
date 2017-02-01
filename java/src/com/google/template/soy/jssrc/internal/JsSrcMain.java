@@ -39,12 +39,10 @@ import com.google.template.soy.sharedpasses.opti.SimplifyVisitor;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateRegistry;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.List;
-
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Provider;
@@ -52,11 +50,10 @@ import javax.inject.Provider;
 /**
  * Main entry point for the JS Src backend (output target).
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public class JsSrcMain {
-
 
   /** The scope object that manages the API call scope. */
   private final GuiceSimpleScope apiCallScope;
@@ -69,7 +66,6 @@ public class JsSrcMain {
 
   /** Provider for getting an instance of GenJsCodeVisitor. */
   private final Provider<GenJsCodeVisitor> genJsCodeVisitorProvider;
-
 
   /**
    * @param apiCallScope The scope object that manages the API call scope.
@@ -89,7 +85,6 @@ public class JsSrcMain {
     this.optimizeBidiCodeGenVisitorProvider = optimizeBidiCodeGenVisitorProvider;
     this.genJsCodeVisitorProvider = genJsCodeVisitorProvider;
   }
-
 
   /**
    * Generates JS source code given a Soy parse tree, an options object, and an optional bundle of
@@ -111,18 +106,18 @@ public class JsSrcMain {
 
     // Make sure that we don't try to use goog.i18n.bidi when we aren't supposed to use Closure.
     Preconditions.checkState(
-        !jsSrcOptions.getUseGoogIsRtlForBidiGlobalDir() ||
-        jsSrcOptions.shouldProvideRequireSoyNamespaces() ||
-        jsSrcOptions.shouldProvideRequireJsFunctions(),
-        "Do not specify useGoogIsRtlForBidiGlobalDir without either" +
-        " shouldProvideRequireSoyNamespaces or shouldProvideRequireJsFunctions.");
+        !jsSrcOptions.getUseGoogIsRtlForBidiGlobalDir()
+            || jsSrcOptions.shouldProvideRequireSoyNamespaces()
+            || jsSrcOptions.shouldProvideRequireJsFunctions(),
+        "Do not specify useGoogIsRtlForBidiGlobalDir without either"
+            + " shouldProvideRequireSoyNamespaces or shouldProvideRequireJsFunctions.");
 
     try (WithScope withScope = apiCallScope.enter()) {
       // Seed the scoped parameters.
       apiCallScope.seed(SoyJsSrcOptions.class, jsSrcOptions);
-      BidiGlobalDir bidiGlobalDir = SoyBidiUtils.decodeBidiGlobalDirFromJsOptions(
-          jsSrcOptions.getBidiGlobalDir(),
-          jsSrcOptions.getUseGoogIsRtlForBidiGlobalDir());
+      BidiGlobalDir bidiGlobalDir =
+          SoyBidiUtils.decodeBidiGlobalDirFromJsOptions(
+              jsSrcOptions.getBidiGlobalDir(), jsSrcOptions.getUseGoogIsRtlForBidiGlobalDir());
       ApiCallScopeUtils.seedSharedParams(apiCallScope, msgBundle, bidiGlobalDir);
 
       // Replace MsgNodes.
@@ -169,21 +164,25 @@ public class JsSrcMain {
       String outputPathFormat,
       String inputPathsPrefix,
       ErrorReporter errorReporter)
-      throws SoySyntaxException, IOException {
+      throws IOException {
 
     List<String> jsFileContents =
         genJsSrc(soyTree, templateRegistry, jsSrcOptions, msgBundle, errorReporter);
 
-    ImmutableList<SoyFileNode> srcsToCompile = ImmutableList.copyOf(Iterables.filter(
-        soyTree.getChildren(), SoyFileNode.MATCH_SRC_FILENODE));
+    ImmutableList<SoyFileNode> srcsToCompile =
+        ImmutableList.copyOf(
+            Iterables.filter(soyTree.getChildren(), SoyFileNode.MATCH_SRC_FILENODE));
 
     if (srcsToCompile.size() != jsFileContents.size()) {
-      throw new AssertionError(String.format("Expected to generate %d code chunk(s), got %d",
-          srcsToCompile.size(), jsFileContents.size()));
+      throw new AssertionError(
+          String.format(
+              "Expected to generate %d code chunk(s), got %d",
+              srcsToCompile.size(), jsFileContents.size()));
     }
 
-    Multimap<String, Integer> outputs = MainEntryPointUtils.mapOutputsToSrcs(
-        locale, outputPathFormat, inputPathsPrefix, srcsToCompile);
+    Multimap<String, Integer> outputs =
+        MainEntryPointUtils.mapOutputsToSrcs(
+            locale, outputPathFormat, inputPathsPrefix, srcsToCompile);
 
     for (String outputFilePath : outputs.keySet()) {
       Writer out = Files.newWriter(new File(outputFilePath), UTF_8);

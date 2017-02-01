@@ -16,66 +16,81 @@
 
 package com.google.template.soy.data.internal;
 
-import com.google.template.soy.data.SoyAbstractRecord;
+import com.google.template.soy.data.SoyAbstractValue;
+import com.google.template.soy.data.SoyRecord;
+import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
-
 import java.io.IOException;
-
 import javax.annotation.Nonnull;
-
 
 /**
  * Internal-use param store for passing data in subtemplate calls.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public abstract class ParamStore extends SoyAbstractRecord {
-
+public abstract class ParamStore extends SoyAbstractValue implements SoyRecord {
 
   /**
    * Sets a field (i.e. param) in this ParamStore.
+   *
    * @param name The field name to set.
    * @param valueProvider A provider of the field value.
    */
   public abstract ParamStore setField(String name, @Nonnull SoyValueProvider valueProvider);
 
+  @Override
+  public SoyValue getField(String name) {
+    SoyValueProvider valueProvider = getFieldProvider(name);
+    return (valueProvider != null) ? valueProvider.resolve() : null;
+  }
 
-  @Override public boolean coerceToBoolean() {
+  // -----------------------------------------------------------------------------------------------
+  // SoyValue.
+
+  @Override
+  public boolean coerceToBoolean() {
     throw new UnsupportedOperationException();
   }
 
-
-  @Override public String coerceToString() {
+  @Override
+  public String coerceToString() {
     throw new UnsupportedOperationException();
   }
 
-  @Override public void render(Appendable appendable) throws IOException {
+  @Override
+  public void render(Appendable appendable) throws IOException {
     throw new UnsupportedOperationException();
   }
 
-  @Override public boolean equals(Object other) {
+  @Override
+  public boolean equals(Object other) {
     throw new UnsupportedOperationException();
   }
-
 
   // -----------------------------------------------------------------------------------------------
   // Empty instance.
 
+  public static final ParamStore EMPTY_INSTANCE =
+      new ParamStore() {
+        @Override
+        public ParamStore setField(String name, @Nonnull SoyValueProvider valueProvider) {
+          throw new UnsupportedOperationException();
+        }
 
-  public static final ParamStore EMPTY_INSTANCE = new ParamStore() {
+        @Override
+        public boolean hasField(String name) {
+          return false;
+        }
 
-    @Override public ParamStore setField(String name, @Nonnull SoyValueProvider valueProvider) {
-      throw new UnsupportedOperationException();
-    }
+        @Override
+        public SoyValueProvider getFieldProvider(String name) {
+          return null;
+        }
 
-    @Override public boolean hasField(String name) {
-      return false;
-    }
-
-    @Override public SoyValueProvider getFieldProvider(String name) {
-      return null;
-    }
-  };
-
+        @Override
+        public SoyValue getField(String name) {
+          return null;
+        }
+      };
 }

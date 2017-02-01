@@ -26,38 +26,33 @@ import com.google.template.soy.types.SoyType;
  */
 public final class StringType extends PrimitiveType {
 
-
   private static final StringType INSTANCE = new StringType();
-
 
   // Not constructible - use getInstance().
   private StringType() {}
 
-
-  @Override public Kind getKind() {
+  @Override
+  public Kind getKind() {
     return Kind.STRING;
   }
 
-
-  @Override public String toString() {
+  @Override
+  public String toString() {
     return "string";
   }
 
-
-  /**
-   * Return the single instance of this type.
-   */
+  /** Return the single instance of this type. */
   public static StringType getInstance() {
     return INSTANCE;
   }
 
-
-  @Override public boolean isAssignableFrom(SoyType srcType) {
-    return srcType.getKind() == Kind.STRING || srcType instanceof SanitizedType;
+  @Override
+  public boolean isAssignableFrom(SoyType srcType) {
+    return srcType.getKind().isKnownStringOrSanitizedContent();
   }
 
-
-  @Override public boolean isInstance(SoyValue value) {
+  @Override
+  public boolean isInstance(SoyValue value) {
     return value instanceof SoyString;
   }
 }

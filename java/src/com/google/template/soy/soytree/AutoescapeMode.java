@@ -17,10 +17,7 @@
 package com.google.template.soy.soytree;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyErrorKind;
-
+import com.google.common.collect.ImmutableSortedMap;
 import java.util.Set;
 
 /**
@@ -43,21 +40,17 @@ public enum AutoescapeMode {
   STRICT("strict"),
   ;
 
-  private static final SoyErrorKind INVALID_AUTOESCAPE_ERROR =
-      SoyErrorKind.of("invalid ''autoescape'' value ''{0}'', expected one of {1}");
   private static final ImmutableMap<String, AutoescapeMode> valueToModeMap;
 
   static {
-    ImmutableMap.Builder <String, AutoescapeMode> map = ImmutableMap.builder();
+    ImmutableSortedMap.Builder<String, AutoescapeMode> map = ImmutableSortedMap.naturalOrder();
     for (AutoescapeMode value : AutoescapeMode.values()) {
       map.put(value.attributeValue, value);
     }
     valueToModeMap = map.build();
   }
 
-
   private final String attributeValue;
-
 
   /**
    * Constructs an AutoescapeMode enum.
@@ -68,43 +61,17 @@ public enum AutoescapeMode {
     this.attributeValue = attributeValue;
   }
 
-
-  /**
-   * Returns a form of this attribute's name suitable for use in a template attribute.
-   */
+  /** Returns a form of this attribute's name suitable for use in a template attribute. */
   public String getAttributeValue() {
     return attributeValue;
   }
 
-
-  /**
-   * The set created by element-wise application of {@link #getAttributeValue} to all modes.
-   */
+  /** The set created by element-wise application of {@link #getAttributeValue} to all modes. */
   public static Set<String> getAttributeValues() {
     return valueToModeMap.keySet();
   }
 
-  static AutoescapeMode parseAutoEscapeMode(String autoescapeModeStr) {
-    AutoescapeMode parsed = valueToModeMap.get(autoescapeModeStr);
-    if (parsed == null) {
-      // failed to parse!
-      return AutoescapeMode.STRICT; // default for unparsed
-    }
-    return parsed;
-  }
-
-  /**
-   * Returns the parsed value.
-   */
-  static AutoescapeMode parseAutoEscapeMode(String autoescapeModeStr, SourceLocation loc,
-      ErrorReporter reporter) {
-    AutoescapeMode parsed = valueToModeMap.get(autoescapeModeStr);
-    if (parsed == null) {
-      // failed to parse!
-      reporter.report(loc, INVALID_AUTOESCAPE_ERROR, autoescapeModeStr,  valueToModeMap.keySet());
-      return AutoescapeMode.STRICT;  // default for unparsed
-    } else {
-      return parsed;
-    }
+  static AutoescapeMode forAttributeValue(String autoescapeModeStr) {
+    return valueToModeMap.get(autoescapeModeStr);
   }
 }

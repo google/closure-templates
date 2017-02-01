@@ -21,16 +21,14 @@ import com.google.common.collect.Lists;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.exprtree.Operator;
+import com.google.template.soy.jssrc.dsl.SoyJsPluginUtils;
 import com.google.template.soy.jssrc.restricted.JsExpr;
-import com.google.template.soy.jssrc.restricted.SoyJsCodeUtils;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
-
 import java.util.List;
 import java.util.Set;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -42,20 +40,21 @@ import javax.inject.Singleton;
 public final class RandomIntFunction
     implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction {
 
-
   @Inject
   RandomIntFunction() {}
 
-
-  @Override public String getName() {
+  @Override
+  public String getName() {
     return "randomInt";
   }
 
-  @Override public Set<Integer> getValidArgsSizes() {
+  @Override
+  public Set<Integer> getValidArgsSizes() {
     return ImmutableSet.of(1);
   }
 
-  @Override public SoyValue computeForJava(List<SoyValue> args) {
+  @Override
+  public SoyValue computeForJava(List<SoyValue> args) {
     SoyValue arg = args.get(0);
 
     long longValue = arg.longValue();
@@ -67,16 +66,18 @@ public final class RandomIntFunction
     return (long) Math.floor(Math.random() * longValue);
   }
 
-  @Override public JsExpr computeForJsSrc(List<JsExpr> args) {
+  @Override
+  public JsExpr computeForJsSrc(List<JsExpr> args) {
     JsExpr arg = args.get(0);
 
     JsExpr random = new JsExpr("Math.random()", Integer.MAX_VALUE);
     JsExpr randomTimesArg =
-        SoyJsCodeUtils.genJsExprUsingSoySyntax(Operator.TIMES, Lists.newArrayList(random, arg));
+        SoyJsPluginUtils.genJsExprUsingSoySyntax(Operator.TIMES, Lists.newArrayList(random, arg));
     return new JsExpr("Math.floor(" + randomTimesArg.getText() + ")", Integer.MAX_VALUE);
   }
 
-  @Override public PyExpr computeForPySrc(List<PyExpr> args) {
+  @Override
+  public PyExpr computeForPySrc(List<PyExpr> args) {
     PyExpr arg = args.get(0);
     // Subtract 1 from the argument as the python randint function is inclusive on both sides.
     return new PyExpr("random.randint(0, " + arg.getText() + " - 1)", Integer.MAX_VALUE);

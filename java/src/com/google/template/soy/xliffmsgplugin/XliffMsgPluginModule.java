@@ -19,17 +19,15 @@ package com.google.template.soy.xliffmsgplugin;
 import com.google.inject.AbstractModule;
 import com.google.template.soy.msgs.SoyMsgPlugin;
 
-
 /**
  * Guice module to bind the XliffMsgPlugin.
  *
  */
 public class XliffMsgPluginModule extends AbstractModule {
 
-
-  @Override protected void configure() {
+  @Override
+  protected void configure() {
 
     bind(SoyMsgPlugin.class).to(XliffMsgPlugin.class);
   }
-
 }

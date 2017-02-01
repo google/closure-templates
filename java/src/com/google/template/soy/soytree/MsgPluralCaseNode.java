@@ -26,7 +26,7 @@ import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
 /**
  * Node representing a 'case' block in a 'plural' block.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public final class MsgPluralCaseNode extends CaseOrDefaultNode implements MsgBlockNode {
@@ -46,9 +46,9 @@ public final class MsgPluralCaseNode extends CaseOrDefaultNode implements MsgBlo
     this.caseNumber = caseNumber;
   }
 
-
   /**
    * Copy constructor.
+   *
    * @param orig The node to copy.
    */
   private MsgPluralCaseNode(MsgPluralCaseNode orig, CopyState copyState) {
@@ -56,29 +56,26 @@ public final class MsgPluralCaseNode extends CaseOrDefaultNode implements MsgBlo
     this.caseNumber = orig.caseNumber;
   }
 
-
-  @Override public Kind getKind() {
+  @Override
+  public Kind getKind() {
     return Kind.MSG_PLURAL_CASE_NODE;
   }
-
 
   /** Returns the case number. */
   public int getCaseNumber() {
     return caseNumber;
   }
 
-
-  @Override public MsgPluralCaseNode copy(CopyState copyState) {
+  @Override
+  public MsgPluralCaseNode copy(CopyState copyState) {
     return new MsgPluralCaseNode(this, copyState);
   }
 
-  /**
-   * Builder for {@link MsgPluralCaseNode}.
-   */
+  /** Builder for {@link MsgPluralCaseNode}. */
   public static final class Builder {
 
-    public static final MsgPluralCaseNode ERROR
-        = new MsgPluralCaseNode(-1, SourceLocation.UNKNOWN, "error", 1);
+    public static final MsgPluralCaseNode ERROR =
+        new MsgPluralCaseNode(-1, SourceLocation.UNKNOWN, "error", 1);
 
     private final int id;
     private final String commandText;
@@ -96,9 +93,9 @@ public final class MsgPluralCaseNode extends CaseOrDefaultNode implements MsgBlo
     }
 
     /**
-     * Builds a new {@link MsgPluralCaseNode} from this builder's state. If the builder's state
-     * is invalid, errors are reported to the {@code errorReporter} and {@link Builder#ERROR}
-     * is returned.
+     * Builds a new {@link MsgPluralCaseNode} from this builder's state. If the builder's state is
+     * invalid, errors are reported to the {@code errorReporter} and {@link Builder#ERROR} is
+     * returned.
      */
     public MsgPluralCaseNode build(ErrorReporter errorReporter) {
       Checkpoint checkpoint = errorReporter.checkpoint();
@@ -121,5 +118,4 @@ public final class MsgPluralCaseNode extends CaseOrDefaultNode implements MsgBlo
       return node;
     }
   }
-
 }

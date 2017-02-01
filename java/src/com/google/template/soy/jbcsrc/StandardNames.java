@@ -16,9 +16,7 @@
 
 package com.google.template.soy.jbcsrc;
 
-/**
- * Constants for standard names used by the compiler.
- */
+/** Constants for standard names used by the compiler. */
 final class StandardNames {
   static final String PARAMS_FIELD = "$params";
   static final String IJ_FIELD = "$ij";

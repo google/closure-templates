@@ -22,7 +22,6 @@ import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
-
 import java.util.Objects;
 
 /**
@@ -48,9 +47,7 @@ public final class SharedRuntime {
     return Objects.equals(operand0, operand1);
   }
 
-  /**
-   * Performs the {@code +} operator on the two values.
-   */
+  /** Performs the {@code +} operator on the two values. */
   public static SoyValue plus(SoyValue operand0, SoyValue operand1) {
     if (operand0 instanceof IntegerData && operand1 instanceof IntegerData) {
       return IntegerData.forValue(operand0.longValue() + operand1.longValue());
@@ -63,9 +60,7 @@ public final class SharedRuntime {
     }
   }
 
-  /**
-   * Performs the {@code -} operator on the two values.
-   */
+  /** Performs the {@code -} operator on the two values. */
   public static SoyValue minus(SoyValue operand0, SoyValue operand1) {
     if (operand0 instanceof IntegerData && operand1 instanceof IntegerData) {
       return IntegerData.forValue(operand0.longValue() - operand1.longValue());
@@ -74,9 +69,7 @@ public final class SharedRuntime {
     }
   }
 
-  /**
-   * Performs the {@code *} operator on the two values.
-   */
+  /** Performs the {@code *} operator on the two values. */
   public static NumberData times(SoyValue operand0, SoyValue operand1) {
     if (operand0 instanceof IntegerData && operand1 instanceof IntegerData) {
       return IntegerData.forValue(operand0.longValue() * operand1.longValue());
@@ -85,9 +78,7 @@ public final class SharedRuntime {
     }
   }
 
-  /**
-   * Performs the {@code /} operator on the two values.
-   */
+  /** Performs the {@code /} operator on the two values. */
   public static double dividedBy(SoyValue operand0, SoyValue operand1) {
     // Note: Soy always performs floating-point division, even on two integers (like JavaScript).
     // Note that this *will* lose precision for longs.
@@ -121,9 +112,7 @@ public final class SharedRuntime {
     }
   }
 
-  /**
-   * Determines if the operand's string form can be equality-compared with a string.
-   */
+  /** Determines if the operand's string form can be equality-compared with a string. */
   public static boolean compareString(String string, SoyValue other) {
     // This follows similarly to the Javascript specification, to ensure similar operation
     // over Javascript and Java: http://www.ecma-international.org/ecma-262/5.1/#sec-11.9.3

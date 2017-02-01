@@ -20,7 +20,6 @@ import com.google.common.base.Preconditions;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.types.SoyType;
-
 import javax.annotation.Nullable;
 
 /**
@@ -29,8 +28,8 @@ import javax.annotation.Nullable;
  */
 public final class VarRefNode extends AbstractExprNode {
 
-  public static final VarRefNode ERROR
-      = new VarRefNode("error", SourceLocation.UNKNOWN, false, null);
+  public static final VarRefNode ERROR =
+      new VarRefNode("error", SourceLocation.UNKNOWN, false, null);
 
   /** The name of the variable. */
   private final String name;
@@ -42,8 +41,8 @@ public final class VarRefNode extends AbstractExprNode {
   private VarDefn defn;
 
   /**
-   * For cases where we are able to infer a stronger type than the variable, this
-   * will contain the stronger type which overrides the variable's type.
+   * For cases where we are able to infer a stronger type than the variable, this will contain the
+   * stronger type which overrides the variable's type.
    */
   private SoyType subtituteType;
 
@@ -76,15 +75,17 @@ public final class VarRefNode extends AbstractExprNode {
     // 2. local variables have declaringNode references (induces cycles).
     // so calling copy() here could create an infinite loop and even if it didn't it would still be
     // wrong.  So instead we just use the prior defn and rely on our caller to manually fix up the
-    // defn after cloning.  This should be handled by SoytreeUtils.cloneNode.
+    // defn after cloning.  This should be handled by SoyTreeUtils.cloneNode.
     this.defn = orig.defn;
   }
 
-  @Override public Kind getKind() {
+  @Override
+  public Kind getKind() {
     return Kind.VAR_REF_NODE;
   }
 
-  @Override public SoyType getType() {
+  @Override
+  public SoyType getType() {
     // We won't know the type until we know the variable declaration.
     Preconditions.checkState(defn != null);
     return subtituteType != null ? subtituteType : defn.type();
@@ -109,16 +110,12 @@ public final class VarRefNode extends AbstractExprNode {
     return defn.isInjected();
   }
 
-  /**
-   * @param defn the varDecl to set
-   */
+  /** @param defn the varDecl to set */
   public void setDefn(VarDefn defn) {
     this.defn = defn;
   }
 
-  /**
-   * @return the varDecl
-   */
+  /** @return the varDecl */
   public VarDefn getDefnDecl() {
     return defn;
   }
@@ -129,28 +126,30 @@ public final class VarRefNode extends AbstractExprNode {
   }
 
   /**
-   * Returns whether this might be a local variable reference. If the variable definition
-   * is unknown, then it returns true.
+   * Returns whether this might be a local variable reference. If the variable definition is
+   * unknown, then it returns true.
    */
   public Boolean isPossibleParam() {
-    return defn.kind() == VarDefn.Kind.PARAM ||
-        defn.kind() == VarDefn.Kind.UNDECLARED;
+    return defn.kind() == VarDefn.Kind.PARAM || defn.kind() == VarDefn.Kind.UNDECLARED;
   }
 
   /**
-   * Override the type of the variable when used in this context. This is set by
-   * the flow analysis in the type resolution pass which can infer a stronger type.
+   * Override the type of the variable when used in this context. This is set by the flow analysis
+   * in the type resolution pass which can infer a stronger type.
+   *
    * @param type The overridden type value.
    */
   public void setSubstituteType(SoyType type) {
     subtituteType = type;
   }
 
-  @Override public String toSourceString() {
+  @Override
+  public String toSourceString() {
     return "$" + (isDollarSignIjParameter ? "ij." : "") + name;
   }
 
-  @Override public VarRefNode copy(CopyState copyState) {
+  @Override
+  public VarRefNode copy(CopyState copyState) {
     return new VarRefNode(this, copyState);
   }
 }

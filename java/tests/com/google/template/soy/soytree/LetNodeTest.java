@@ -18,23 +18,25 @@ package com.google.template.soy.soytree;
 
 import static com.google.template.soy.soytree.TemplateSubject.assertThatTemplateContent;
 
-import junit.framework.TestCase;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests for {@link LetNode}.
  *
  * @author brndn@google.com (Brendan Linn)
  */
-public final class LetNodeTest extends TestCase {
+@RunWith(JUnit4.class)
+public final class LetNodeTest {
 
+  @Test
   public void testInvalidCommandText() {
-    assertThatTemplateContent("{let foo /}\n")
-        .causesError(LetNode.INVALID_COMMAND_TEXT)
-        .at(1, 1);
+    assertThatTemplateContent("{let foo /}\n").causesError(LetNode.INVALID_COMMAND_TEXT).at(1, 6);
     // Let nodes don't have accurate source location information for their command texts yet.
     // TODO(user): fix.
     assertThatTemplateContent("{let\n\n\nfoo /}\n")
         .causesError(LetNode.INVALID_COMMAND_TEXT)
-        .at(1, 1);
+        .at(2, 1);
   }
 }

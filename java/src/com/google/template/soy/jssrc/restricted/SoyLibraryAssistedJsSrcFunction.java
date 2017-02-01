@@ -18,24 +18,21 @@ package com.google.template.soy.jssrc.restricted;
 
 import com.google.common.collect.ImmutableSet;
 
-
 /**
- * Interface for a Soy function with more Closure Library requirements than typical Soy
- * templates, implemented for the JS Source backend.
+ * Interface for a Soy function with more Closure Library requirements than typical Soy templates,
+ * implemented for the JS Source backend.
  *
- * <p> Important: This may only be used in implementing function plugins.
+ * <p>Important: This may only be used in implementing function plugins.
  *
  */
 public interface SoyLibraryAssistedJsSrcFunction extends SoyJsSrcFunction {
 
-
   /**
    * Returns a list of Closure library names to require when this function is used.
    *
-   * <p> Note: Return the raw Closure library names, Soy will wrap them in goog.require for you.
+   * <p>Note: Return the raw Closure library names, Soy will wrap them in goog.require for you.
    *
    * @return A collection of strings representing Closure JS library names
    */
   public ImmutableSet<String> getRequiredJsLibNames();
-
 }

@@ -21,15 +21,18 @@ import static com.google.common.truth.Truth.assertThat;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.shared.AbstractSoyPrintDirectiveTestCase;
-
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for IdDirective.
  *
  */
+@RunWith(JUnit4.class)
 public class IdDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
 
-
+  @Test
   public void testApplyForTofu() {
 
     IdDirective idDirective = new IdDirective();
@@ -39,7 +42,7 @@ public class IdDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
     assertTofuOutput("<>&'\" \\", "<>&'\" \\", idDirective);
   }
 
-
+  @Test
   public void testApplyForJsSrc() {
 
     IdDirective idDirective = new IdDirective();
@@ -47,5 +50,4 @@ public class IdDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
     assertThat(idDirective.applyForJsSrc(dataRef, ImmutableList.<JsExpr>of()).getText())
         .isEqualTo("opt_data.myKey");
   }
-
 }

@@ -24,11 +24,10 @@ import com.google.template.soy.basetree.CopyState;
  * Abstract node representing a 'case' or 'default' block in 'select', 'switch' or 'plural'
  * statements.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public abstract class CaseOrDefaultNode extends AbstractBlockCommandNode {
-
 
   /**
    * @param id The id for this node.
@@ -42,22 +41,21 @@ public abstract class CaseOrDefaultNode extends AbstractBlockCommandNode {
     super(id, sourceLocation, commandName, commandText);
   }
 
-
   /**
    * Copy constructor.
+   *
    * @param orig The node to copy.
    */
   protected CaseOrDefaultNode(CaseOrDefaultNode orig, CopyState copyState) {
     super(orig, copyState);
   }
 
-
-  @Override public String toSourceString() {
+  @Override
+  public String toSourceString() {
     StringBuilder sb = new StringBuilder();
     sb.append(getTagString());
     appendSourceStringForChildren(sb);
     // Note: No end tag.
     return sb.toString();
   }
-
 }

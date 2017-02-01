@@ -17,9 +17,10 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.template.soy.data.SoyValueHelper.EMPTY_DICT;
+import static com.google.template.soy.data.SoyValueConverter.EMPTY_DICT;
 import static com.google.template.soy.jbcsrc.TemplateTester.asRecord;
 import static com.google.template.soy.jbcsrc.TemplateTester.getDefaultContext;
+import static org.junit.Assert.assertEquals;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -31,44 +32,49 @@ import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
-
-import junit.framework.TestCase;
-
 import java.io.IOException;
 import java.util.List;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
-/**
- * Tests for {@link DetachState}.
- */
-public final class DetachStateTest extends TestCase {
+/** Tests for {@link DetachState}. */
+@RunWith(JUnit4.class)
+public final class DetachStateTest {
   static final class TestAppendable implements AdvisingAppendable {
     private final StringBuilder delegate = new StringBuilder();
     boolean softLimitReached;
 
-    @Override public TestAppendable append(CharSequence s) {
+    @Override
+    public TestAppendable append(CharSequence s) {
       delegate.append(s);
       return this;
     }
 
-    @Override public TestAppendable append(CharSequence s, int start, int end) {
+    @Override
+    public TestAppendable append(CharSequence s, int start, int end) {
       delegate.append(s, start, end);
       return this;
     }
 
-    @Override public TestAppendable append(char c) {
+    @Override
+    public TestAppendable append(char c) {
       delegate.append(c);
       return this;
     }
 
-    @Override public boolean softLimitReached() {
+    @Override
+    public boolean softLimitReached() {
       return softLimitReached;
     }
 
-    @Override public String toString() {
+    @Override
+    public String toString() {
       return delegate.toString();
     }
   }
 
+  @Test
   public void testDetach_singleRawTextNode() throws IOException {
     CompiledTemplates templates = TemplateTester.compileTemplateBody("hello world");
     CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.foo");
@@ -85,16 +91,18 @@ public final class DetachStateTest extends TestCase {
     assertEquals(RenderResult.limited(), template.render(output, context));
     assertEquals("hello world", output.toString());
     assertEquals(RenderResult.done(), template.render(output, context));
-    assertEquals("hello world", output.toString());  // nothing was added
+    assertEquals("hello world", output.toString()); // nothing was added
   }
 
+  @Test
   public void testDetach_multipleNodes() throws IOException {
     CompiledTemplates templates =
         TemplateTester.compileTemplateBody(
             "hello",
-            // this print node inserts a space character and ensures that our raw text nodes don't 
+            // this print node inserts a space character and ensures that our raw text nodes don't
             // get merged
-            "{' '}", "world");
+            "{' '}",
+            "world");
     CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.foo");
     RenderContext context = getDefaultContext(templates);
     CompiledTemplate template = factory.create(EMPTY_DICT, EMPTY_DICT);
@@ -113,10 +121,11 @@ public final class DetachStateTest extends TestCase {
     assertEquals(RenderResult.limited(), template.render(output, context));
     assertEquals("hello world", output.toString());
     assertEquals(RenderResult.done(), template.render(output, context));
-    assertEquals("hello world", output.toString());  // nothing was added
+    assertEquals("hello world", output.toString()); // nothing was added
   }
 
   // ensure that when we call back in, locals are restored
+  @Test
   public void testDetach_saveRestore() throws IOException {
     CompiledTemplates templates =
         TemplateTester.compileTemplateBody("{for $i in range(10)}", "  {$i}", "{/for}");
@@ -139,15 +148,16 @@ public final class DetachStateTest extends TestCase {
     assertThat(output.toString()).isEmpty(); // last render was empty
   }
 
+  @Test
   public void testDetachOnUnResolvedProvider() throws IOException {
     SettableFuture<String> future = SettableFuture.create();
     CompiledTemplates templates =
         TemplateTester.compileTemplateBody("{@param foo : string}", "prefix{sp}{$foo}{sp}suffix");
     CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.foo");
     RenderContext context = getDefaultContext(templates);
-    CompiledTemplate template = factory.create(
-        asRecord(ImmutableMap.of("foo", future)), EMPTY_DICT);
-    
+    CompiledTemplate template =
+        factory.create(asRecord(ImmutableMap.of("foo", future)), EMPTY_DICT);
+
     AdvisingStringBuilder output = new AdvisingStringBuilder();
     RenderResult result = template.render(output, context);
     assertEquals(RenderResult.Type.DETACH, result.type());
@@ -166,6 +176,7 @@ public final class DetachStateTest extends TestCase {
     assertEquals("prefix future suffix", output.toString());
   }
 
+  @Test
   public void testDetachOnEachIteration() throws IOException {
     CompiledTemplates templates =
         TemplateTester.compileTemplateBody(
@@ -179,12 +190,13 @@ public final class DetachStateTest extends TestCase {
             "suffix");
     CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.foo");
     RenderContext context = getDefaultContext(templates);
-    List<SettableFuture<String>> futures = ImmutableList.of(
-        SettableFuture.<String>create(),
-        SettableFuture.<String>create(),
-        SettableFuture.<String>create());
-    CompiledTemplate template = factory.create(
-        asRecord(ImmutableMap.of("list", futures)), EMPTY_DICT);
+    List<SettableFuture<String>> futures =
+        ImmutableList.of(
+            SettableFuture.<String>create(),
+            SettableFuture.<String>create(),
+            SettableFuture.<String>create());
+    CompiledTemplate template =
+        factory.create(asRecord(ImmutableMap.of("list", futures)), EMPTY_DICT);
 
     AdvisingStringBuilder output = new AdvisingStringBuilder();
     RenderResult result = template.render(output, context);
@@ -213,6 +225,7 @@ public final class DetachStateTest extends TestCase {
   // This test is for a bug where we were generating one detach logic block for a full expressions
   // but it caused stack merge errors because the runtime stack wasn't consistent across all detach
   // points.  See http://mail.ow2.org/wws/arc/asm/2015-04/msg00001.html
+  @Test
   public void testDetachOnMultipleParamsInOneExpression() throws IOException {
     CompiledTemplates templates =
         TemplateTester.compileTemplateBody(
@@ -229,6 +242,7 @@ public final class DetachStateTest extends TestCase {
     assertEquals("2345", output.toString());
   }
 
+  @Test
   public void testDetachOnCall() throws IOException {
     CompiledTemplates templates =
         TemplateTester.compileFile(
@@ -236,7 +250,7 @@ public final class DetachStateTest extends TestCase {
             "",
             "{template .caller}",
             "  {@param callerParam : string}",
-            "  {call .callee data=\"all\"}",
+            "  {call .callee}",
             "    {param calleeParam: $callerParam /}",
             "  {/call}",
             "{/template}",
@@ -259,6 +273,7 @@ public final class DetachStateTest extends TestCase {
     assertEquals("prefix foo suffix", output.toString());
   }
 
+  @Test
   public void testDetachOnParamTransclusion() throws IOException {
     CompiledTemplates templates =
         TemplateTester.compileFile(

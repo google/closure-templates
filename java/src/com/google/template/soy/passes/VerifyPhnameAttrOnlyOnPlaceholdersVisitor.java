@@ -29,7 +29,7 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 /**
  * Visitor to verify that all occurrences of the 'phname' attribute are on message placeholders.
  *
- * <p> Note: Doesn't check HTML tags since we don't parse HTML tags outside of messages anyway. Only
+ * <p>Note: Doesn't check HTML tags since we don't parse HTML tags outside of messages anyway. Only
  * checks PrintNode and CallNode.
  *
  */
@@ -42,16 +42,16 @@ public final class VerifyPhnameAttrOnlyOnPlaceholdersVisitor extends AbstractSoy
     this.errorReporter = errorReporter;
   }
 
-  @Override protected void visitPrintNode(PrintNode node) {
+  @Override
+  protected void visitPrintNode(PrintNode node) {
     visitMsgPlaceholderInitialContentNodeHelper(node);
   }
 
-
-  @Override protected void visitCallNode(CallNode node) {
+  @Override
+  protected void visitCallNode(CallNode node) {
     visitMsgPlaceholderInitialContentNodeHelper(node);
     visitChildren(node);
   }
-
 
   private void visitMsgPlaceholderInitialContentNodeHelper(MsgPlaceholderInitialNode node) {
     if (node.getUserSuppliedPhName() != null && !(node.getParent() instanceof MsgPlaceholderNode)) {
@@ -59,11 +59,10 @@ public final class VerifyPhnameAttrOnlyOnPlaceholdersVisitor extends AbstractSoy
     }
   }
 
-
-  @Override protected void visitSoyNode(SoyNode node) {
+  @Override
+  protected void visitSoyNode(SoyNode node) {
     if (node instanceof ParentSoyNode<?>) {
       visitChildren((ParentSoyNode<?>) node);
     }
   }
-
 }

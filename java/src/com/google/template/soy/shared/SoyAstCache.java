@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-
 package com.google.template.soy.shared;
 
 import com.google.auto.value.AutoValue;
@@ -22,29 +21,27 @@ import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
 import com.google.template.soy.base.internal.SoyFileSupplier.Version;
 import com.google.template.soy.soytree.SoyFileNode;
-import com.google.template.soy.soytree.SoytreeUtils;
-
+import com.google.template.soy.soytree.SoyTreeUtils;
 import java.util.HashMap;
 import java.util.Map;
-
 import javax.annotation.concurrent.GuardedBy;
 import javax.inject.Inject;
 
 /**
  * Cache for the soy tree respecting file versions.
  *
- * <p> This allows for file-granularity caching of the parsed tree, to avoid parsing the same file
- * over and over if the contents have not changed.  This helps the development experience when
- * there are a large number of files, most of which aren't changing during the edit/reflect loop.
- * This does not help in a production startup-compilation setup; instead, this will just use more
- * memory.
+ * <p>This allows for file-granularity caching of the parsed tree, to avoid parsing the same file
+ * over and over if the contents have not changed. This helps the development experience when there
+ * are a large number of files, most of which aren't changing during the edit/reflect loop. This
+ * does not help in a production startup-compilation setup; instead, this will just use more memory.
  *
- * <p> Please treat the internals as Soy superpackage-private.
+ * <p>Please treat the internals as Soy superpackage-private.
  *
  */
 public final class SoyAstCache {
   /** A {@link SoyFileNode} with an associated {@link Version}. */
-  @AutoValue public abstract static class VersionedFile {
+  @AutoValue
+  public abstract static class VersionedFile {
     public static VersionedFile of(SoyFileNode file, Version version) {
       return new AutoValue_SoyAstCache_VersionedFile(file, version);
     }
@@ -52,11 +49,12 @@ public final class SoyAstCache {
     VersionedFile() {}
 
     public abstract SoyFileNode file();
+
     public abstract Version version();
 
     /** Make a defensive copy. */
     private VersionedFile copy() {
-      return new AutoValue_SoyAstCache_VersionedFile(SoytreeUtils.cloneNode(file()), version());
+      return new AutoValue_SoyAstCache_VersionedFile(SoyTreeUtils.cloneNode(file()), version());
     }
   }
 
@@ -67,12 +65,13 @@ public final class SoyAstCache {
   /** An ID generator to ensure all versions of all files have unique ID's. */
   private final IdGenerator idGenerator = new IncrementingIdGenerator();
 
-  @Inject public SoyAstCache() {}
+  @Inject
+  public SoyAstCache() {}
 
   /**
    * Stores a cached version of the AST.
    *
-   * <p> Please treat this as superpackage-private for Soy internals.
+   * <p>Please treat this as superpackage-private for Soy internals.
    *
    * @param fileName The name of the file.
    * @param versionedFile The compiled AST at the particular version. The node is defensively
@@ -85,7 +84,7 @@ public final class SoyAstCache {
   /**
    * Retrieves a cached version of this file supplier AST, if any.
    *
-   * <p> Please treat this as superpackage-private for Soy internals.
+   * <p>Please treat this as superpackage-private for Soy internals.
    *
    * @param fileName The name of the file
    * @param version The current file version.
@@ -109,11 +108,11 @@ public final class SoyAstCache {
   /**
    * Returns an ID generator that must be used for all files in this cache.
    *
-   * <p> If this ID generator is not used, nodes in the cache will have conflicting ID's. It is
-   * important to use a manual synchronized block over this cache while using the ID generator
-   * since the ID generator is not guaranteed to be thread-safe!
+   * <p>If this ID generator is not used, nodes in the cache will have conflicting ID's. It is
+   * important to use a manual synchronized block over this cache while using the ID generator since
+   * the ID generator is not guaranteed to be thread-safe!
    *
-   * <p> Please treat this as superpackage-private for Soy internals.
+   * <p>Please treat this as superpackage-private for Soy internals.
    */
   public IdGenerator getNodeIdGenerator() {
     return idGenerator;

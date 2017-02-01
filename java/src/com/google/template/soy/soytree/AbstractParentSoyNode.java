@@ -20,22 +20,19 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.MixinParentNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
-
 import java.util.List;
 
 /**
  * Abstract implementation of a ParentSoyNode.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public abstract class AbstractParentSoyNode<N extends SoyNode> extends AbstractSoyNode
     implements ParentSoyNode<N> {
 
-
   /** The mixin object that implements the ParentNode functionality. */
   private final MixinParentNode<N> parentMixin;
-
 
   /**
    * @param id The id for this node.
@@ -46,9 +43,9 @@ public abstract class AbstractParentSoyNode<N extends SoyNode> extends AbstractS
     parentMixin = new MixinParentNode<>(this);
   }
 
-
   /**
    * Copy constructor.
+   *
    * @param orig The node to copy.
    */
   protected AbstractParentSoyNode(AbstractParentSoyNode<N> orig, CopyState copyState) {
@@ -56,59 +53,73 @@ public abstract class AbstractParentSoyNode<N extends SoyNode> extends AbstractS
     this.parentMixin = new MixinParentNode<N>(orig.parentMixin, this, copyState);
   }
 
-  @Override public int numChildren() {
+  @Override
+  public int numChildren() {
     return parentMixin.numChildren();
   }
 
-  @Override public N getChild(int index) {
+  @Override
+  public N getChild(int index) {
     return parentMixin.getChild(index);
   }
 
-  @Override public int getChildIndex(N child) {
+  @Override
+  public int getChildIndex(N child) {
     return parentMixin.getChildIndex(child);
   }
 
-  @Override public List<N> getChildren() {
+  @Override
+  public List<N> getChildren() {
     return parentMixin.getChildren();
   }
 
-  @Override public void addChild(N child) {
+  @Override
+  public void addChild(N child) {
     parentMixin.addChild(child);
   }
 
-  @Override public void addChild(int index, N child) {
+  @Override
+  public void addChild(int index, N child) {
     parentMixin.addChild(index, child);
   }
 
-  @Override public void removeChild(int index) {
+  @Override
+  public void removeChild(int index) {
     parentMixin.removeChild(index);
   }
 
-  @Override public void removeChild(N child) {
+  @Override
+  public void removeChild(N child) {
     parentMixin.removeChild(child);
   }
 
-  @Override public void replaceChild(int index, N newChild) {
+  @Override
+  public void replaceChild(int index, N newChild) {
     parentMixin.replaceChild(index, newChild);
   }
 
-  @Override public void replaceChild(N currChild, N newChild) {
+  @Override
+  public void replaceChild(N currChild, N newChild) {
     parentMixin.replaceChild(currChild, newChild);
   }
 
-  @Override public void clearChildren() {
+  @Override
+  public void clearChildren() {
     parentMixin.clearChildren();
   }
 
-  @Override public void addChildren(List<? extends N> children) {
+  @Override
+  public void addChildren(List<? extends N> children) {
     parentMixin.addChildren(children);
   }
 
-  @Override public void addChildren(int index, List<? extends N> children) {
+  @Override
+  public void addChildren(int index, List<? extends N> children) {
     parentMixin.addChildren(index, children);
   }
 
-  @Override public void appendSourceStringForChildren(StringBuilder sb) {
+  @Override
+  public void appendSourceStringForChildren(StringBuilder sb) {
     parentMixin.appendSourceStringForChildren(sb);
   }
 }

@@ -21,25 +21,24 @@ import com.google.template.soy.data.SoyData;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyListData;
 import com.google.template.soy.data.SoyMapData;
-
 import java.util.List;
 
 /**
  * Abstract superclass for a node in a Soy data tree that represents a collection of data (i.e. an
  * internal node).
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
- * <p> Important: Even though this class is not marked 'final', do not extend this class.
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
+ *
+ * <p>Important: Even though this class is not marked 'final', do not extend this class.
  *
  */
 public abstract class CollectionData extends SoyData {
 
-
   // ------------ put() ------------
-
 
   /**
    * Convenience function to put multiple mappings in one call.
+   *
    * @param data The mappings to put, as alternating keys/values. Indices 0, 2, 4, ... must be valid
    *     key strings. Indices 1, 3, 5, ... must be valid Soy data values.
    * @throws SoyDataException When attempting to add an invalid varargs list or a mapping containing
@@ -57,15 +56,16 @@ public abstract class CollectionData extends SoyData {
         put((String) data[i], SoyData.createFromExistingData(data[i + 1]));
       } catch (ClassCastException cce) {
         throw new SoyDataException(
-            "Attempting to add a mapping containing a non-string key (key type " +
-            data[i].getClass().getName() + ").");
+            "Attempting to add a mapping containing a non-string key (key type "
+                + data[i].getClass().getName()
+                + ").");
       }
     }
   }
 
-
   /**
    * Puts data into this data tree at the specified key string.
+   *
    * @param keyStr One or more map keys and/or list indices (separated by '.' if multiple parts).
    *     Indicates the path to the location within this data tree.
    * @param value The data to put at the specified location.
@@ -80,8 +80,7 @@ public abstract class CollectionData extends SoyData {
 
       SoyData nextSoyData = collectionData.getSingle(keys.get(i));
       if (nextSoyData != null && !(nextSoyData instanceof CollectionData)) {
-        throw new SoyDataException(
-            "Failed to evaluate key string \"" + keyStr + "\" for put().");
+        throw new SoyDataException("Failed to evaluate key string \"" + keyStr + "\" for put().");
       }
       CollectionData nextCollectionData = (CollectionData) nextSoyData;
 
@@ -99,9 +98,9 @@ public abstract class CollectionData extends SoyData {
     collectionData.putSingle(keys.get(numKeys - 1), ensureValidValue(value));
   }
 
-
   /**
    * Puts data into this data tree at the specified key string.
+   *
    * @param keyStr One or more map keys and/or list indices (separated by '.' if multiple parts).
    *     Indicates the path to the location within this data tree.
    * @param value The data to put at the specified location.
@@ -112,6 +111,7 @@ public abstract class CollectionData extends SoyData {
 
   /**
    * Puts data into this data tree at the specified key string.
+   *
    * @param keyStr One or more map keys and/or list indices (separated by '.' if multiple parts).
    *     Indicates the path to the location within this data tree.
    * @param value The data to put at the specified location.
@@ -122,6 +122,7 @@ public abstract class CollectionData extends SoyData {
 
   /**
    * Puts data into this data tree at the specified key string.
+   *
    * @param keyStr One or more map keys and/or list indices (separated by '.' if multiple parts).
    *     Indicates the path to the location within this data tree.
    * @param value The data to put at the specified location.
@@ -132,6 +133,7 @@ public abstract class CollectionData extends SoyData {
 
   /**
    * Puts data into this data tree at the specified key string.
+   *
    * @param keyStr One or more map keys and/or list indices (separated by '.' if multiple parts).
    *     Indicates the path to the location within this data tree.
    * @param value The data to put at the specified location.
@@ -142,6 +144,7 @@ public abstract class CollectionData extends SoyData {
 
   /**
    * Puts data into this data tree at the specified key string.
+   *
    * @param keyStr One or more map keys and/or list indices (separated by '.' if multiple parts).
    *     Indicates the path to the location within this data tree.
    * @param value The data to put at the specified location.
@@ -150,12 +153,11 @@ public abstract class CollectionData extends SoyData {
     put(keyStr, StringData.forValue(value));
   }
 
-
   // ------------ remove() ------------
-
 
   /**
    * Removes the data at the specified key string.
+   *
    * @param keyStr One or more map keys and/or list indices (separated by '.' if multiple parts).
    *     Indicates the path to the location within this data tree.
    */
@@ -176,12 +178,11 @@ public abstract class CollectionData extends SoyData {
     collectionData.removeSingle(keys.get(numKeys - 1));
   }
 
-
   // ------------ get*() ------------
-
 
   /**
    * Gets the data at the specified key string.
+   *
    * @param keyStr One or more map keys and/or list indices (separated by '.' if multiple parts).
    *     Indicates the path to the location within this data tree.
    * @return The data at the specified key string, or null if there's no data at the location.
@@ -203,10 +204,10 @@ public abstract class CollectionData extends SoyData {
     return collectionData.getSingle(keys.get(numKeys - 1));
   }
 
-
   /**
-   * Precondition: The specified key string is the path to a SoyMapData object.
-   * Gets the SoyMapData at the specified key string.
+   * Precondition: The specified key string is the path to a SoyMapData object. Gets the SoyMapData
+   * at the specified key string.
+   *
    * @param keyStr One or more map keys and/or list indices (separated by '.' if multiple parts).
    *     Indicates the path to the location within this data tree.
    * @return The SoyMapData at the specified key string, or null if no data is stored there.
@@ -216,8 +217,9 @@ public abstract class CollectionData extends SoyData {
   }
 
   /**
-   * Precondition: The specified key string is the path to a SoyListData object.
-   * Gets the SoyListData at the specified key string.
+   * Precondition: The specified key string is the path to a SoyListData object. Gets the
+   * SoyListData at the specified key string.
+   *
    * @param keyStr One or more map keys and/or list indices (separated by '.' if multiple parts).
    *     Indicates the path to the location within this data tree.
    * @return The SoyListData at the specified key string, or null if no data is stored there.
@@ -227,8 +229,9 @@ public abstract class CollectionData extends SoyData {
   }
 
   /**
-   * Precondition: The specified key string is the path to a boolean.
-   * Gets the boolean at the specified key string.
+   * Precondition: The specified key string is the path to a boolean. Gets the boolean at the
+   * specified key string.
+   *
    * @param keyStr One or more map keys and/or list indices (separated by '.' if multiple parts).
    *     Indicates the path to the location within this data tree.
    * @return The boolean at the specified key string.
@@ -243,8 +246,9 @@ public abstract class CollectionData extends SoyData {
   }
 
   /**
-   * Precondition: The specified key string is the path to an integer.
-   * Gets the integer at the specified key string.
+   * Precondition: The specified key string is the path to an integer. Gets the integer at the
+   * specified key string.
+   *
    * @param keyStr One or more map keys and/or list indices (separated by '.' if multiple parts).
    *     Indicates the path to the location within this data tree.
    * @return The integer at the specified key string.
@@ -259,8 +263,9 @@ public abstract class CollectionData extends SoyData {
   }
 
   /**
-   * Precondition: The specified key string is the path to a long.
-   * Gets the long at the specified key string.
+   * Precondition: The specified key string is the path to a long. Gets the long at the specified
+   * key string.
+   *
    * @param keyStr One or more map keys and/or list indices (separated by '.' if multiple parts).
    *     Indicates the path to the location within this data tree.
    * @return The long at the specified key string.
@@ -275,8 +280,9 @@ public abstract class CollectionData extends SoyData {
   }
 
   /**
-   * Precondition: The specified key string is the path to a float.
-   * Gets the float at the specified key string.
+   * Precondition: The specified key string is the path to a float. Gets the float at the specified
+   * key string.
+   *
    * @param keyStr One or more map keys and/or list indices (separated by '.' if multiple parts).
    *     Indicates the path to the location within this data tree.
    * @return The float at the specified key string.
@@ -291,8 +297,9 @@ public abstract class CollectionData extends SoyData {
   }
 
   /**
-   * Precondition: The specified key string is the path to a string.
-   * Gets the string at the specified key string.
+   * Precondition: The specified key string is the path to a string. Gets the string at the
+   * specified key string.
+   *
    * @param keyStr One or more map keys and/or list indices (separated by '.' if multiple parts).
    *     Indicates the path to the location within this data tree.
    * @return The string at the specified key string.
@@ -306,47 +313,45 @@ public abstract class CollectionData extends SoyData {
     return valueData.stringValue();
   }
 
-
   // -----------------------------------------------------------------------------------------------
   // Superpackage-private methods.
-
 
   /**
    * Important: Do not use outside of Soy code (treat as superpackage-private).
    *
-   * Puts data into this data object at the specified key.
+   * <p>Puts data into this data object at the specified key.
+   *
    * @param key An individual key.
    * @param value The data to put at the specified key.
    */
   public abstract void putSingle(String key, SoyData value);
 
-
   /**
    * Important: Do not use outside of Soy code (treat as superpackage-private).
    *
-   * Removes the data at the specified key.
+   * <p>Removes the data at the specified key.
+   *
    * @param key An individual key.
    */
   public abstract void removeSingle(String key);
 
-
   /**
    * Important: Do not use outside of Soy code (treat as superpackage-private).
    *
-   * Gets the data at the specified key.
+   * <p>Gets the data at the specified key.
+   *
    * @param key An individual key.
    * @return The data at the specified key, or null if the key is not defined.
    */
   public abstract SoyData getSingle(String key);
 
-
   // -----------------------------------------------------------------------------------------------
   // Protected/private helpers.
-
 
   /**
    * Ensures that the given value is valid for insertion into a Soy data tree. If the value is not
    * null, then simply returns it, else return NullData.
+   *
    * @param value The value to ensure validity for.
    * @return The given value if it's not null, or NullData if it is null.
    */
@@ -354,10 +359,10 @@ public abstract class CollectionData extends SoyData {
     return (value != null) ? value : NullData.INSTANCE;
   }
 
-
   /**
    * Splits a string into tokens at the specified delimiter.
-   * @param str The string to split.  Must not be null.
+   *
+   * @param str The string to split. Must not be null.
    * @param delim The delimiter character.
    * @return A list of tokens. Will not return null.
    */
@@ -379,5 +384,4 @@ public abstract class CollectionData extends SoyData {
 
     return result;
   }
-
 }

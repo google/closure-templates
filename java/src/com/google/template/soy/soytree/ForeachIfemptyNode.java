@@ -23,12 +23,11 @@ import com.google.template.soy.soytree.SoyNode.ConditionalBlockNode;
 /**
  * Node representing the 'ifempty' portion of a 'foreach' statement.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public final class ForeachIfemptyNode extends AbstractBlockCommandNode
     implements ConditionalBlockNode {
-
 
   /**
    * @param id The id for this node.
@@ -38,22 +37,22 @@ public final class ForeachIfemptyNode extends AbstractBlockCommandNode
     super(id, sourceLocation, "ifempty", "");
   }
 
-
   /**
    * Copy constructor.
+   *
    * @param orig The node to copy.
    */
   private ForeachIfemptyNode(ForeachIfemptyNode orig, CopyState copyState) {
     super(orig, copyState);
   }
 
-
-  @Override public Kind getKind() {
+  @Override
+  public Kind getKind() {
     return Kind.FOREACH_IFEMPTY_NODE;
   }
 
-
-  @Override public String toSourceString() {
+  @Override
+  public String toSourceString() {
     StringBuilder sb = new StringBuilder();
     sb.append(getTagString());
     appendSourceStringForChildren(sb);
@@ -61,14 +60,13 @@ public final class ForeachIfemptyNode extends AbstractBlockCommandNode
     return sb.toString();
   }
 
-
-  @Override public ForeachNode getParent() {
+  @Override
+  public ForeachNode getParent() {
     return (ForeachNode) super.getParent();
   }
 
-
-  @Override public ForeachIfemptyNode copy(CopyState copyState) {
+  @Override
+  public ForeachIfemptyNode copy(CopyState copyState) {
     return new ForeachIfemptyNode(this, copyState);
   }
-
 }

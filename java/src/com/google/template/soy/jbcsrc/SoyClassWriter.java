@@ -21,20 +21,18 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.OBJECT;
 
 import com.google.template.soy.jbcsrc.shared.Names;
-
+import java.util.ArrayList;
+import java.util.List;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.util.CheckClassAdapter;
 
-import java.util.ArrayList;
-import java.util.List;
-
 /**
- * A subclass of {@link ClassWriter} that allows us to specialize
- * {@link ClassWriter#getCommonSuperClass} for compiler generated types as well as set common
- * defaults for all classwriters used by {@code jbcsrc}.
+ * A subclass of {@link ClassWriter} that allows us to specialize {@link
+ * ClassWriter#getCommonSuperClass} for compiler generated types as well as set common defaults for
+ * all classwriters used by {@code jbcsrc}.
  */
 final class SoyClassWriter extends ClassVisitor {
   /** Returns a new SoyClassWriter for writing a new class of the given type. */
@@ -47,25 +45,25 @@ final class SoyClassWriter extends ClassVisitor {
     private int access = Opcodes.ACC_FINAL | Opcodes.ACC_SUPER;
     private TypeInfo baseClass = OBJECT;
     private List<String> interfaces = new ArrayList<>();
-    private String fileName;  // optional
+    private String fileName; // optional
 
     private Builder(TypeInfo type) {
       this.type = checkNotNull(type);
     }
 
     /**
-     * Set the access permissions on the generated class.  The default is package private and 
-     * {@code final}.
-     * 
-     * @param access The access permissions, a bit mask composed from constants like 
-     *     {@link Opcodes#ACC_PUBLIC}
+     * Set the access permissions on the generated class. The default is package private and {@code
+     * final}.
+     *
+     * @param access The access permissions, a bit mask composed from constants like {@link
+     *     Opcodes#ACC_PUBLIC}
      */
     Builder setAccess(int access) {
       this.access = access;
       return this;
     }
 
-    /** Sets the base class for this type.  The default is {@code Object}. */
+    /** Sets the base class for this type. The default is {@code Object}. */
     Builder extending(TypeInfo baseClass) {
       this.baseClass = checkNotNull(baseClass);
       return this;
@@ -76,7 +74,7 @@ final class SoyClassWriter extends ClassVisitor {
       interfaces.add(typeInfo.internalName());
       return this;
     }
-    
+
     Builder sourceFileName(String fileName) {
       this.fileName = checkNotNull(fileName);
       return this;
@@ -111,17 +109,13 @@ final class SoyClassWriter extends ClassVisitor {
     }
   }
 
-  /**
-   * Sets the number of 'detach states' needed by the compiled class.
-   */
+  /** Sets the number of 'detach states' needed by the compiled class. */
   void setNumDetachStates(int numDetachStates) {
     checkArgument(numDetachStates >= 0);
     this.numDetachStates = numDetachStates;
   }
 
-  /**
-   * @deprecated Don't call visitSource(), SoyClassWriter calls it for you during construction.
-   */
+  /** @deprecated Don't call visitSource(), SoyClassWriter calls it for you during construction. */
   @Deprecated
   @Override
   public void visitSource(String source, String debug) {
@@ -129,9 +123,7 @@ final class SoyClassWriter extends ClassVisitor {
         "Don't call visitSource(), SoyClassWriter calls it for you");
   }
 
-  /**
-   * @deprecated Don't call visit(), SoyClassWriter calls it for you during construction.
-   */
+  /** @deprecated Don't call visit(), SoyClassWriter calls it for you during construction. */
   @Deprecated
   @Override
   public void visit(int v, int a, String n, String s, String b, String[] i) {
@@ -159,7 +151,8 @@ final class SoyClassWriter extends ClassVisitor {
       return api;
     }
 
-    @Override protected String getCommonSuperClass(String left, String right) {
+    @Override
+    protected String getCommonSuperClass(String left, String right) {
       boolean leftIsGenerated = left.startsWith(Names.INTERNAL_CLASS_PREFIX);
       boolean rightIsGenerated = right.startsWith(Names.INTERNAL_CLASS_PREFIX);
       if (!leftIsGenerated & !rightIsGenerated) {
@@ -174,4 +167,3 @@ final class SoyClassWriter extends ClassVisitor {
     }
   }
 }
-

@@ -19,7 +19,6 @@ package com.google.template.soy.data.ordainers;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
-
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -33,16 +32,12 @@ public final class JsonOrdainer {
     // Not instantiable
   }
 
-  /**
-   *  Generate sanitized js content from a JSONObject.
-   */
+  /** Generate sanitized js content from a JSONObject. */
   public static SanitizedContent serializeJsonObject(JSONObject json) {
     return ordainJson(json.toString());
   }
 
-  /**
-   *  Generate sanitized js content from a JSONArray.
-   */
+  /** Generate sanitized js content from a JSONArray. */
   public static SanitizedContent serializeJsonArray(JSONArray json) {
     return ordainJson(json.toString());
   }

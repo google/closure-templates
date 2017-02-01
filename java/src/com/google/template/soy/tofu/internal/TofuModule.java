@@ -20,16 +20,16 @@ import com.google.inject.AbstractModule;
 import com.google.inject.assistedinject.FactoryModuleBuilder;
 import com.google.template.soy.tofu.internal.BaseTofu.BaseTofuFactory;
 
-
 /**
  * Guice module for the Tofu backend.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public final class TofuModule extends AbstractModule {
 
-  @Override protected void configure() {
+  @Override
+  protected void configure() {
     // Bindings for when explicit dependencies are required.
     bind(TofuEvalVisitorFactory.class);
     bind(TofuRenderVisitorFactory.class);
@@ -37,5 +37,4 @@ public final class TofuModule extends AbstractModule {
     // Bind providers of factories (created via assisted inject).
     install(new FactoryModuleBuilder().build(BaseTofuFactory.class));
   }
-
 }

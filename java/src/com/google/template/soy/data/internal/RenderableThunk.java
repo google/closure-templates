@@ -61,7 +61,7 @@ public abstract class RenderableThunk {
    * An {@link Appendable} that forwards to a delegate appenable but also saves all the same
    * forwarded content into a buffer.
    *
-   * <p>See: <a href="http://en.wikipedia.org/wiki/Tee_%28command%29">Tee command</p> for the unix
+   * <p>See: <a href="http://en.wikipedia.org/wiki/Tee_%28command%29">Tee command for the unix
    * command on which this is based.
    */
   private static final class TeeAppendable implements Appendable {
@@ -72,19 +72,22 @@ public abstract class RenderableThunk {
       this.delegate = delegate;
     }
 
-    @Override public Appendable append(CharSequence csq) throws IOException {
+    @Override
+    public Appendable append(CharSequence csq) throws IOException {
       delegate.append(csq);
       buffer.append(csq);
       return this;
     }
 
-    @Override public Appendable append(CharSequence csq, int start, int end) throws IOException {
+    @Override
+    public Appendable append(CharSequence csq, int start, int end) throws IOException {
       delegate.append(csq, start, end);
       buffer.append(csq, start, end);
       return this;
     }
 
-    @Override public Appendable append(char c) throws IOException {
+    @Override
+    public Appendable append(char c) throws IOException {
       delegate.append(c);
       buffer.append(c);
       return this;

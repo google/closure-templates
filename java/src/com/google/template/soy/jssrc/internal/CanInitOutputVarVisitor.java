@@ -19,21 +19,19 @@ package com.google.template.soy.jssrc.internal;
 import com.google.template.soy.soytree.AbstractReturningSoyNodeVisitor;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.SoyNode;
-
 import javax.inject.Inject;
 
 /**
- * Visitor for determining whther the code generated from a given node's subtree can be made to
- * also initialize the current variable (if not already initialized).
+ * Visitor for determining whther the code generated from a given node's subtree can be made to also
+ * initialize the current variable (if not already initialized).
  *
- * <p> Precondition: MsgNode should not exist in the tree.
+ * <p>Precondition: MsgNode should not exist in the tree.
  *
  */
 public final class CanInitOutputVarVisitor extends AbstractReturningSoyNodeVisitor<Boolean> {
 
   /** The IsComputableAsJsExprsVisitor used by this instance (when needed). */
   private final IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor;
-
 
   /**
    * @param isComputableAsJsExprsVisitor The IsComputableAsJsExprsVisitor used by this instance
@@ -44,25 +42,22 @@ public final class CanInitOutputVarVisitor extends AbstractReturningSoyNodeVisit
     this.isComputableAsJsExprsVisitor = isComputableAsJsExprsVisitor;
   }
 
-
   // -----------------------------------------------------------------------------------------------
   // Implementations for specific nodes.
 
-
-  @Override protected Boolean visitCallNode(CallNode node) {
+  @Override
+  protected Boolean visitCallNode(CallNode node) {
     // The call is a JS expression that returns its output as a string.
     return true;
   }
 
-
   // -----------------------------------------------------------------------------------------------
   // Fallback implementation.
 
-
-  @Override protected Boolean visitSoyNode(SoyNode node) {
+  @Override
+  protected Boolean visitSoyNode(SoyNode node) {
     // For the vast majority of nodes, the return value of this visitor should be the same as the
     // return value of IsComputableAsJsExprsVisitor.
     return isComputableAsJsExprsVisitor.exec(node);
   }
-
 }

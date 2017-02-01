@@ -18,6 +18,7 @@ package com.google.template.soy.tofu.internal;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
+import static org.junit.Assert.fail;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
@@ -29,50 +30,54 @@ import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.SoyModule;
 import com.google.template.soy.data.SoyEasyDict;
 import com.google.template.soy.data.SoyFutureException;
-import com.google.template.soy.data.SoyValueHelper;
+import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.tofu.SoyTofu;
 import com.google.template.soy.tofu.SoyTofuException;
 import com.google.template.soy.tofu.internal.BaseTofu.BaseTofuFactory;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
-import junit.framework.TestCase;
-
-/**
- * Unit tests for exception behavior of Tofu.
- */
-public final class TofuExceptionsTest extends TestCase {
-  private static final SoyValueHelper VALUE_HELPER = SoyValueHelper.UNCUSTOMIZED_INSTANCE;
+/** Unit tests for exception behavior of Tofu. */
+@RunWith(JUnit4.class)
+public final class TofuExceptionsTest {
+  private static final SoyValueConverter CONVERTER = SoyValueConverter.UNCUSTOMIZED_INSTANCE;
   private static final Injector INJECTOR = Guice.createInjector(new SoyModule());
 
-  private static final String SOY_FILE = Joiner.on('\n').join(
-      "{namespace ns}",
-      "",
-      "/** */",
-      "{template .callerTemplate}",
-      "  {call .calleeTemplate data=\"all\" /}",
-      "{/template}",
-      "",  // line 7
-      "{template .calleeTemplate}",
-      "  {@param foo: [boo: int, bad: string]}",
-      "  {$foo.boo}",
-      "  {$foo.bad}",
-      "{/template}",
-      "", // line 13
-      "{template .transclusionCaller}",
-      "  {@param foo: int}",
-      "  {call .transclusionCallee}",
-      "    {param content}{$foo}{/param}",
-      "  {/call}",
-      "{/template}",
-      "", // line 20
-      "{template .transclusionCallee}",
-      "  {@param content: string}",
-      "  {$content}",
-      "{/template}");
+  private static final String SOY_FILE =
+      Joiner.on('\n')
+          .join(
+              "{namespace ns}",
+              "",
+              "/** */",
+              "{template .callerTemplate}",
+              "  {call .calleeTemplate data=\"all\" /}",
+              "{/template}",
+              "", // line 7
+              "{template .calleeTemplate}",
+              "  {@param foo: [boo: int, bad: string]}",
+              "  {$foo.boo}",
+              "  {$foo.bad}",
+              "{/template}",
+              "", // line 13
+              "{template .transclusionCaller}",
+              "  {@param foo: int}",
+              "  {call .transclusionCallee}",
+              "    {param content}{$foo}{/param}",
+              "  {/call}",
+              "{/template}",
+              "", // line 20
+              "{template .transclusionCallee}",
+              "  {@param content: string}",
+              "  {$content}",
+              "{/template}");
 
   private SoyTofu tofu;
 
-  @Override protected void setUp() throws Exception {
+  @Before
+  public void setUp() throws Exception {
     tofu =
         INJECTOR
             .getInstance(BaseTofuFactory.class)
@@ -82,8 +87,9 @@ public final class TofuExceptionsTest extends TestCase {
                 ImmutableMap.<String, SoyPrintDirective>of());
   }
 
+  @Test
   public void testExceptions_undefined() throws Exception {
-    SoyEasyDict data = VALUE_HELPER.newEasyDict("foo.boo", 42);
+    SoyEasyDict data = CONVERTER.newEasyDict("foo.boo", 42);
     // This is an exception that occurs during expression evaluation
     try {
       tofu.newRenderer("ns.callerTemplate").setData(data).render();
@@ -96,25 +102,28 @@ public final class TofuExceptionsTest extends TestCase {
     }
   }
 
+  @Test
   public void testExceptions_badType() throws Exception {
-    SoyEasyDict data = VALUE_HELPER.newEasyDict("foo", "not a record");
+    SoyEasyDict data = CONVERTER.newEasyDict("foo", "not a record");
     // This is an exception that occurs during template calling due to a type checkin
     try {
       tofu.newRenderer("ns.callerTemplate").setData(data).render();
       fail();
     } catch (SoyTofuException ste) {
       assertThat(ste.getCause()).isNull();
-      assertThat(ste).hasMessage(
-          "Parameter type mismatch: attempt to bind value 'not a record' to parameter "
-          + "'foo' which has declared type '[bad: string, boo: int]'.");
+      assertThat(ste)
+          .hasMessage(
+              "Parameter type mismatch: attempt to bind value 'not a record' to parameter "
+                  + "'foo' which has declared type '[bad: string, boo: int]'.");
       assertThat(ste.getStackTrace()[0].toString()).isEqualTo("ns.calleeTemplate(no-path:8)");
       assertThat(ste.getStackTrace()[1].toString()).isEqualTo("ns.callerTemplate(no-path:5)");
     }
   }
 
+  @Test
   public void testExceptions_failedFuture() {
     Exception futureFailureCause = new Exception("boom");
-    SoyEasyDict data = VALUE_HELPER.newEasyDict("foo", immediateFailedFuture(futureFailureCause));
+    SoyEasyDict data = CONVERTER.newEasyDict("foo", immediateFailedFuture(futureFailureCause));
     // This error occurs due to a failed future.
     try {
       tofu.newRenderer("ns.callerTemplate").setData(data).render();
@@ -129,34 +138,38 @@ public final class TofuExceptionsTest extends TestCase {
     }
   }
 
+  @Test
   public void testExceptions_wrongTypeFuture() {
-    SoyEasyDict data = VALUE_HELPER.newEasyDict("foo", Futures.immediateFuture("not a record"));
+    SoyEasyDict data = CONVERTER.newEasyDict("foo", Futures.immediateFuture("not a record"));
     // This error occurs due to data of the wrong type, hidden behind a future.
     try {
       tofu.newRenderer("ns.callerTemplate").setData(data).render();
       fail();
     } catch (SoyTofuException ste) {
       assertThat(ste.getCause()).isNull();
-      assertThat(ste).hasMessage(
-          "When evaluating \"$foo.boo\": Parameter type mismatch: attempt to bind value "
-          + "'not a record' to parameter 'foo' which has declared type "
-          + "'[bad: string, boo: int]'.");
+      assertThat(ste)
+          .hasMessage(
+              "When evaluating \"$foo.boo\": Parameter type mismatch: attempt to bind value "
+                  + "'not a record' to parameter 'foo' which has declared type "
+                  + "'[bad: string, boo: int]'.");
       assertThat(ste.getStackTrace()[0].toString()).isEqualTo("ns.calleeTemplate(no-path:8)");
       assertThat(ste.getStackTrace()[1].toString()).isEqualTo("ns.calleeTemplate(no-path:10)");
       assertThat(ste.getStackTrace()[2].toString()).isEqualTo("ns.callerTemplate(no-path:5)");
     }
   }
 
+  @Test
   public void testExceptions_transclusion_wrongTypeFuture() {
-    SoyEasyDict data = VALUE_HELPER.newEasyDict("foo", Futures.immediateFuture("not an int"));
+    SoyEasyDict data = CONVERTER.newEasyDict("foo", Futures.immediateFuture("not an int"));
     try {
       tofu.newRenderer("ns.transclusionCaller").setData(data).render();
       fail();
     } catch (SoyTofuException ste) {
       assertThat(ste.getCause()).isNull();
-      assertThat(ste).hasMessage(
-          "When evaluating \"$foo\": Parameter type mismatch: attempt to bind value "
-          + "'not an int' to parameter 'foo' which has declared type 'int'.");
+      assertThat(ste)
+          .hasMessage(
+              "When evaluating \"$foo\": Parameter type mismatch: attempt to bind value "
+                  + "'not an int' to parameter 'foo' which has declared type 'int'.");
       assertThat(ste.getStackTrace()[0].toString()).isEqualTo("ns.transclusionCaller(no-path:14)");
       assertThat(ste.getStackTrace()[1].toString()).isEqualTo("ns.transclusionCaller(no-path:17)");
       assertThat(ste.getStackTrace()[2].toString()).isEqualTo("ns.transclusionCallee(no-path:23)");
@@ -164,9 +177,10 @@ public final class TofuExceptionsTest extends TestCase {
     }
   }
 
+  @Test
   public void testExceptions_transclusion_failedFuture() {
     Exception futureFailureCause = new Exception("boom");
-    SoyEasyDict data = VALUE_HELPER.newEasyDict("foo", immediateFailedFuture(futureFailureCause));
+    SoyEasyDict data = CONVERTER.newEasyDict("foo", immediateFailedFuture(futureFailureCause));
     try {
       tofu.newRenderer("ns.transclusionCaller").setData(data).render();
       fail();

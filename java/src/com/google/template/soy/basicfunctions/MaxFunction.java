@@ -28,10 +28,8 @@ import com.google.template.soy.pysrc.restricted.PyFunctionExprBuilder;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
-
 import java.util.List;
 import java.util.Set;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -43,20 +41,21 @@ import javax.inject.Singleton;
 @SoyPureFunction
 public final class MaxFunction implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction {
 
-
   @Inject
   MaxFunction() {}
 
-
-  @Override public String getName() {
+  @Override
+  public String getName() {
     return "max";
   }
 
-  @Override public Set<Integer> getValidArgsSizes() {
+  @Override
+  public Set<Integer> getValidArgsSizes() {
     return ImmutableSet.of(2);
   }
 
-  @Override public SoyValue computeForJava(List<SoyValue> args) {
+  @Override
+  public SoyValue computeForJava(List<SoyValue> args) {
     SoyValue arg0 = args.get(0);
     SoyValue arg1 = args.get(1);
 
@@ -72,7 +71,8 @@ public final class MaxFunction implements SoyJavaFunction, SoyJsSrcFunction, Soy
     }
   }
 
-  @Override public JsExpr computeForJsSrc(List<JsExpr> args) {
+  @Override
+  public JsExpr computeForJsSrc(List<JsExpr> args) {
     JsExpr arg0 = args.get(0);
     JsExpr arg1 = args.get(1);
 
@@ -80,7 +80,8 @@ public final class MaxFunction implements SoyJavaFunction, SoyJsSrcFunction, Soy
         "Math.max(" + arg0.getText() + ", " + arg1.getText() + ")", Integer.MAX_VALUE);
   }
 
-  @Override public PyExpr computeForPySrc(List<PyExpr> args) {
+  @Override
+  public PyExpr computeForPySrc(List<PyExpr> args) {
     PyExpr arg0 = args.get(0);
     PyExpr arg1 = args.get(1);
 

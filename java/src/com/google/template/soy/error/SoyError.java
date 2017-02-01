@@ -17,16 +17,15 @@
 package com.google.template.soy.error;
 
 import com.google.auto.value.AutoValue;
+import com.google.common.collect.ComparisonChain;
 import com.google.template.soy.base.SourceLocation;
 
-/**
- * A structured error object for reporting
- */
+/** A structured error object for reporting */
 @AutoValue
-public abstract class SoyError {
-  /** A factory for constructing Errors.  Typically this is used to apply formatting. */
+public abstract class SoyError implements Comparable<SoyError> {
+  /** A factory for constructing Errors. Typically this is used to apply formatting. */
   public interface Factory {
-    SoyError create(SourceLocation location, SoyErrorKind kind, Object ...args);
+    SoyError create(SourceLocation location, SoyErrorKind kind, Object... args);
   }
 
   /** provides a default implementation for tests. */
@@ -35,7 +34,7 @@ public abstract class SoyError {
         @Override
         public SoyError create(SourceLocation location, SoyErrorKind kind, Object... args) {
           String message = kind.format(args);
-          return createError(location, kind, message, "In file " + location + ": " + message);
+          return createError(location, kind, message, location + ": error: " + message);
         }
       };
 
@@ -49,7 +48,7 @@ public abstract class SoyError {
   /** The location where the error occured. */
   public abstract SourceLocation location();
 
-  /** The error kind.  For classification usecases. */
+  /** The error kind. For classification usecases. */
   public abstract SoyErrorKind errorKind();
 
   /**
@@ -62,11 +61,18 @@ public abstract class SoyError {
   // Should be accessed via toString()
   abstract String formattedMessage();
 
-  /**
-   * The full formatted error.
-   */
+  /** The full formatted error. */
   @Override
   public String toString() {
     return formattedMessage();
+  }
+
+  @Override
+  public int compareTo(SoyError o) {
+    // TODO(user): use Comparator.comparing(...)
+    return ComparisonChain.start()
+        .compare(location(), o.location())
+        .compare(message(), o.message())
+        .result();
   }
 }

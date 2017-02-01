@@ -28,33 +28,31 @@ import com.google.template.soy.soytree.SoyNode.StatementNode;
 public final class DebuggerNode extends AbstractCommandNode
     implements StandaloneNode, StatementNode {
 
-
   public DebuggerNode(int id, SourceLocation sourceLocation) {
     super(id, sourceLocation, "debugger", "");
   }
 
-
   /**
    * Copy constructor.
+   *
    * @param orig The node to copy.
    */
   private DebuggerNode(DebuggerNode orig, CopyState copyState) {
     super(orig, copyState);
   }
 
-
-  @Override public Kind getKind() {
+  @Override
+  public Kind getKind() {
     return Kind.DEBUGGER_NODE;
   }
 
-
-  @Override public BlockNode getParent() {
+  @Override
+  public BlockNode getParent() {
     return (BlockNode) super.getParent();
   }
 
-
-  @Override public DebuggerNode copy(CopyState copyState) {
+  @Override
+  public DebuggerNode copy(CopyState copyState) {
     return new DebuggerNode(this, copyState);
   }
-
 }

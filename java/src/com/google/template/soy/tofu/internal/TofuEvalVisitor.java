@@ -17,30 +17,29 @@
 package com.google.template.soy.tofu.internal;
 
 import com.google.template.soy.data.SoyRecord;
-import com.google.template.soy.data.SoyValueHelper;
+import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.sharedpasses.render.Environment;
 import com.google.template.soy.sharedpasses.render.EvalVisitor;
-
 import javax.annotation.Nullable;
 
 /**
  * Version of {@code EvalVisitor} for the Tofu backend.
  *
- * <p>For deprecated function implementations, uses {@code SoyTofuFunction}s instead of
- * {@code SoyJavaRuntimeFunction}s. (For new functions that implement {@code SoyJavaFunction}, there
- * is no difference.)
+ * <p>For deprecated function implementations, uses {@code SoyTofuFunction}s instead of {@code
+ * SoyJavaRuntimeFunction}s. (For new functions that implement {@code SoyJavaFunction}, there is no
+ * difference.)
  *
  */
 // TODO: Attempt to remove this class.
 final class TofuEvalVisitor extends EvalVisitor {
 
   /**
-   * @param valueHelper Instance of SoyValueHelper to use.
+   * @param valueConverter Instance of SoyValueConverter to use.
    * @param ijData The current injected data.
    * @param env The current environment.
    */
   protected TofuEvalVisitor(
-      SoyValueHelper valueHelper, @Nullable SoyRecord ijData, Environment env) {
-    super(valueHelper, ijData, env);
+      SoyValueConverter valueConverter, @Nullable SoyRecord ijData, Environment env) {
+    super(valueConverter, ijData, env);
   }
 }

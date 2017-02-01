@@ -17,9 +17,8 @@
 package com.google.template.soy.sharedpasses.render;
 
 import com.google.template.soy.data.SoyRecord;
-import com.google.template.soy.data.SoyValueHelper;
+import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.sharedpasses.render.EvalVisitor.EvalVisitorFactory;
-
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -27,21 +26,22 @@ import javax.inject.Singleton;
 /**
  * Default implementation of EvalVisitorFactory.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 @Singleton
 public final class EvalVisitorFactoryImpl implements EvalVisitorFactory {
 
-  /** Instance of SoyValueHelper to use. */
-  private final SoyValueHelper valueHelper;
+  /** Instance of SoyValueConverter to use. */
+  private final SoyValueConverter valueConverter;
 
   @Inject
-  public EvalVisitorFactoryImpl(SoyValueHelper valueHelper) {
-    this.valueHelper = valueHelper;
+  public EvalVisitorFactoryImpl(SoyValueConverter valueConverter) {
+    this.valueConverter = valueConverter;
   }
 
-  @Override public EvalVisitor create(@Nullable SoyRecord ijData, Environment env) {
-    return new EvalVisitor(valueHelper, ijData, env);
+  @Override
+  public EvalVisitor create(@Nullable SoyRecord ijData, Environment env) {
+    return new EvalVisitor(valueConverter, ijData, env);
   }
 }

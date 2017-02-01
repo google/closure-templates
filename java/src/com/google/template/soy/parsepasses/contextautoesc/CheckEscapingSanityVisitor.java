@@ -42,10 +42,10 @@ import com.google.template.soy.soytree.TemplateRegistry;
  * Visitor performing escaping sanity checks over all input -- not just input affected by the
  * contextual autoescaping inference engine.
  *
- * Checks that typed {@code {param}} and {@code {let}} nodes only appear in contextually
+ * <p>Checks that typed {@code {param}} and {@code {let}} nodes only appear in contextually
  * autoescaped templates.
  *
- * Checks that internal-only directives such as {@code |text} are not used.
+ * <p>Checks that internal-only directives such as {@code |text} are not used.
  *
  * <p>{@link #exec} should be called on a full parse tree.
  *
@@ -54,21 +54,24 @@ final class CheckEscapingSanityVisitor extends AbstractSoyNodeVisitor<Void> {
 
   // TODO(user): AUTOESCAPE_ERROR_PREFIX (and the following hyphen-space)
   // is just used by ContextualAutoescaperTest to parse and throw errors. Remove them.
-  private static final SoyErrorKind ILLEGAL_PRINT_DIRECTIVE = SoyErrorKind.of(
-      AUTOESCAPE_ERROR_PREFIX
-          + "- {0} can only be used internally by the Soy compiler.");
-  private static final SoyErrorKind LET_WITHOUT_KIND = SoyErrorKind.of(
-      AUTOESCAPE_ERROR_PREFIX
-          + "- In strict templates, '{'let'}'...'{'/let'}' blocks "
-          + "require an explicit kind=\"<html|css|text|attributes>\".");
-  private static final SoyErrorKind PARAM_WITHOUT_KIND = SoyErrorKind.of(
-      AUTOESCAPE_ERROR_PREFIX
-          + "- In strict templates, '{'param'}'...'{'/param'}' blocks "
-          + "require an explicit kind=\"<html|css|text|attributes>\".");
-  private static final SoyErrorKind STRICT_TEXT_CALL_FROM_NONCONTEXTUAL_TEMPLATE = SoyErrorKind.of(
-      AUTOESCAPE_ERROR_PREFIX
-          + "- Calls to strict templates with ''kind=\"text\"'' are not allowed "
-          + "in non-contextually autoescaped templates.");
+  private static final SoyErrorKind ILLEGAL_PRINT_DIRECTIVE =
+      SoyErrorKind.of(
+          AUTOESCAPE_ERROR_PREFIX + "- {0} can only be used internally by the Soy compiler.");
+  private static final SoyErrorKind LET_WITHOUT_KIND =
+      SoyErrorKind.of(
+          AUTOESCAPE_ERROR_PREFIX
+              + "- In strict templates, '{'let'}'...'{'/let'}' blocks "
+              + "require an explicit kind=\"<html|css|text|attributes>\".");
+  private static final SoyErrorKind PARAM_WITHOUT_KIND =
+      SoyErrorKind.of(
+          AUTOESCAPE_ERROR_PREFIX
+              + "- In strict templates, '{'param'}'...'{'/param'}' blocks "
+              + "require an explicit kind=\"<html|css|text|attributes>\".");
+  private static final SoyErrorKind STRICT_TEXT_CALL_FROM_NONCONTEXTUAL_TEMPLATE =
+      SoyErrorKind.of(
+          AUTOESCAPE_ERROR_PREFIX
+              + "- Calls to strict templates with ''kind=\"text\"'' are not allowed "
+              + "in non-contextually autoescaped templates.");
 
   /** Current escaping mode. */
   private AutoescapeMode autoescapeMode;
@@ -84,27 +87,32 @@ final class CheckEscapingSanityVisitor extends AbstractSoyNodeVisitor<Void> {
   // -----------------------------------------------------------------------------------------------
   // Implementations for specific nodes.
 
-  @Override protected void visitSoyFileSetNode(SoyFileSetNode node) {
+  @Override
+  protected void visitSoyFileSetNode(SoyFileSetNode node) {
     visitChildren(node);
   }
 
-  @Override protected void visitTemplateNode(TemplateNode node) {
+  @Override
+  protected void visitTemplateNode(TemplateNode node) {
     autoescapeMode = node.getAutoescapeMode();
     visitChildren(node);
   }
 
-  @Override protected void visitPrintDirectiveNode(PrintDirectiveNode node) {
+  @Override
+  protected void visitPrintDirectiveNode(PrintDirectiveNode node) {
     EscapingMode escapingMode = EscapingMode.fromDirective(node.getName());
     if (escapingMode != null && escapingMode.isInternalOnly) {
       errorReporter.report(node.getSourceLocation(), ILLEGAL_PRINT_DIRECTIVE, node.getName());
     }
   }
 
-  @Override protected void visitLetContentNode(LetContentNode node) {
+  @Override
+  protected void visitLetContentNode(LetContentNode node) {
     visitRenderUnitNode(node, LET_WITHOUT_KIND);
   }
 
-  @Override protected void visitCallBasicNode(CallBasicNode node) {
+  @Override
+  protected void visitCallBasicNode(CallBasicNode node) {
     if (autoescapeMode == AutoescapeMode.NONCONTEXTUAL) {
       TemplateNode callee = templateRegistry.getBasicTemplate((node).getCalleeName());
       // It's possible that the callee template is in another file, and Soy is being used to compile
@@ -118,7 +126,8 @@ final class CheckEscapingSanityVisitor extends AbstractSoyNodeVisitor<Void> {
     visitChildren(node);
   }
 
-  @Override protected void visitCallDelegateNode(CallDelegateNode node) {
+  @Override
+  protected void visitCallDelegateNode(CallDelegateNode node) {
     if (autoescapeMode == AutoescapeMode.NONCONTEXTUAL) {
       ImmutableList<TemplateDelegateNode> divisions =
           templateRegistry
@@ -138,7 +147,8 @@ final class CheckEscapingSanityVisitor extends AbstractSoyNodeVisitor<Void> {
     visitChildren(node);
   }
 
-  @Override protected void visitCallParamContentNode(CallParamContentNode node) {
+  @Override
+  protected void visitCallParamContentNode(CallParamContentNode node) {
     visitRenderUnitNode(node, PARAM_WITHOUT_KIND);
   }
 
@@ -158,8 +168,8 @@ final class CheckEscapingSanityVisitor extends AbstractSoyNodeVisitor<Void> {
   // -----------------------------------------------------------------------------------------------
   // Fallback implementation.
 
-
-  @Override protected void visitSoyNode(SoyNode node) {
+  @Override
+  protected void visitSoyNode(SoyNode node) {
     if (node instanceof ParentSoyNode<?>) {
       visitChildren((ParentSoyNode<?>) node);
     }

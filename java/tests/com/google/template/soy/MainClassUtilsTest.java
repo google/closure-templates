@@ -25,18 +25,20 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.error.SoyCompilationException;
 import com.google.template.soy.error.SoyError;
 import com.google.template.soy.error.SoyErrorKind;
-
-import junit.framework.TestCase;
-
 import java.io.IOException;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests for {@link MainClassUtils}.
  *
  * @author brndn@google.com (Brendan Linn)
  */
-public final class MainClassUtilsTest extends TestCase {
+@RunWith(JUnit4.class)
+public final class MainClassUtilsTest {
 
+  @Test
   public void testMainMethodThrowsNothing() {
     assertThat(
             runInternal(
@@ -47,6 +49,7 @@ public final class MainClassUtilsTest extends TestCase {
         .isEqualTo(0);
   }
 
+  @Test
   public void testMainMethodThrowsIOException() {
     assertThat(
             runInternal(
@@ -59,6 +62,7 @@ public final class MainClassUtilsTest extends TestCase {
         .isEqualTo(1);
   }
 
+  @Test
   public void testMainMethodThrowsUncheckedException() {
     assertThat(
             runInternal(
@@ -71,6 +75,7 @@ public final class MainClassUtilsTest extends TestCase {
         .isEqualTo(1);
   }
 
+  @Test
   public void testMainMethodReturnsSoyErrorKinds() {
     assertThat(
             runInternal(
@@ -85,5 +90,4 @@ public final class MainClassUtilsTest extends TestCase {
                 }))
         .isEqualTo(1);
   }
-
 }

@@ -19,7 +19,6 @@ package com.google.template.soy.parsepasses.contextautoesc;
 import static org.junit.Assert.assertEquals;
 
 import com.google.common.base.Optional;
-
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -31,33 +30,43 @@ public class ContextTest {
     assertUnion(dominating, dominating, other);
   }
 
-  private void assertUnion(String expected, String a, String b) {
+  private static void assertUnion(String expected, String a, String b) {
     Context aContext = Context.parse(a);
     Context bContext = Context.parse(b);
     Context expectedContext = Context.parse(expected);
-    assertEquals("Union of " + aContext + " and " + bContext,
-        Optional.of(expectedContext), Context.union(aContext, bContext));
-    assertEquals("Reverse union of " + bContext + " and " + aContext,
-        Optional.of(expectedContext), Context.union(bContext, aContext));
+    assertEquals(
+        "Union of " + aContext + " and " + bContext,
+        Optional.of(expectedContext),
+        Context.union(aContext, bContext));
+    assertEquals(
+        "Reverse union of " + bContext + " and " + aContext,
+        Optional.of(expectedContext),
+        Context.union(bContext, aContext));
   }
 
-  private void assertUnionFails(String a, String b) {
+  private static void assertUnionFails(String a, String b) {
     Context aContext = Context.parse(a);
     Context bContext = Context.parse(b);
-    assertEquals("Union of " + aContext + " and " + bContext,
-        Optional.absent(), Context.union(aContext, bContext));
-    assertEquals("Reverse union of " + bContext + " and " + aContext,
-        Optional.absent(), Context.union(bContext, aContext));
+    assertEquals(
+        "Union of " + aContext + " and " + bContext,
+        Optional.absent(),
+        Context.union(aContext, bContext));
+    assertEquals(
+        "Reverse union of " + bContext + " and " + aContext,
+        Optional.absent(),
+        Context.union(bContext, aContext));
   }
 
-  @Test public void testObviousUnions() {
+  @Test
+  public void testObviousUnions() {
     assertUnionNoop("CSS", "CSS");
     assertUnionNoop("HTML_PCDATA", "HTML_PCDATA");
     assertUnionNoop("JS", "JS");
     assertUnionNoop("HTML_TAG_NAME", "HTML_TAG_NAME");
   }
 
-  @Test public void testJsUnions() {
+  @Test
+  public void testJsUnions() {
     // Identity cases.
     assertUnionNoop("JS UNKNOWN", "JS UNKNOWN");
     assertUnionNoop("JS DIV_OP", "JS DIV_OP");
@@ -71,7 +80,8 @@ public class ContextTest {
     assertUnion("JS UNKNOWN", "JS REGEX", "JS DIV_OP");
 
     // Same, even if it's within a script attribute.
-    assertUnion("JS NORMAL SCRIPT DOUBLE_QUOTE UNKNOWN",
+    assertUnion(
+        "JS NORMAL SCRIPT DOUBLE_QUOTE UNKNOWN",
         "JS NORMAL SCRIPT DOUBLE_QUOTE REGEX",
         "JS NORMAL SCRIPT DOUBLE_QUOTE DIV_OP");
 
@@ -79,7 +89,8 @@ public class ContextTest {
     assertUnionFails("JS NORMAL SCRIPT DOUBLE_QUOTE REGEX", "JS REGEX");
   }
 
-  @Test public void testUriPartUnions() {
+  @Test
+  public void testUriPartUnions() {
     // The more well-formed states:
     String start = "URI START NORMAL";
     String maybeScheme = "URI MAYBE_SCHEME NORMAL";
@@ -151,7 +162,8 @@ public class ContextTest {
     assertUnionNoop(dangerousScheme, unknown);
   }
 
-  @Test public void testUriTypeUnions() {
+  @Test
+  public void testUriTypeUnions() {
     assertUnionNoop("URI START NORMAL", "URI START NORMAL");
     assertUnionNoop("URI START MEDIA", "URI START MEDIA");
     // For now, we don't allow unioning these two types.
@@ -178,17 +190,16 @@ public class ContextTest {
     assertUnionFails("HTML_TAG NORMAL", "HTML_ATTRIBUTE_NAME SCRIPT");
 
     // Something like: <a {if $x}b=foo{/if}
-    assertUnionNoop("HTML_TAG NORMAL",
-        "HTML_NORMAL_ATTR_VALUE NORMAL PLAIN_TEXT SPACE_OR_TAG_END");
+    assertUnionNoop("HTML_TAG NORMAL", "HTML_NORMAL_ATTR_VALUE NORMAL PLAIN_TEXT SPACE_OR_TAG_END");
     // Similar, but one side is a script and the other isn't:
-    assertUnionFails("HTML_TAG SCRIPT",
-        "HTML_NORMAL_ATTR_VALUE NORMAL PLAIN_TEXT SPACE_OR_TAG_END");
+    assertUnionFails(
+        "HTML_TAG SCRIPT", "HTML_NORMAL_ATTR_VALUE NORMAL PLAIN_TEXT SPACE_OR_TAG_END");
     // Or, unclosed quote: <a {if $x}b="foo{/if}
-    assertUnionFails("HTML_TAG NORMAL",
-        "HTML_NORMAL_ATTR_VALUE NORMAL PLAIN_TEXT SINGLE_QUOTE");
+    assertUnionFails("HTML_TAG NORMAL", "HTML_NORMAL_ATTR_VALUE NORMAL PLAIN_TEXT SINGLE_QUOTE");
   }
 
-  @Test public void testClearlyFailingUnions() {
+  @Test
+  public void testClearlyFailingUnions() {
     assertUnionFails("TEXT", "HTML_PCDATA");
     assertUnionFails("CSS", "JS");
   }

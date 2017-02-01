@@ -37,10 +37,8 @@ import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.shared.internal.SharedModule;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.types.SoyTypeRegistry;
-
 import java.util.Arrays;
 import java.util.List;
-
 import javax.annotation.Nullable;
 
 /**
@@ -51,7 +49,6 @@ import javax.annotation.Nullable;
 public final class SoyFileSetParserBuilder {
 
   private final ImmutableMap<String, SoyFileSupplier> soyFileSuppliers;
-  private boolean doRunInitialParsingPasses = true; // Non-standard default
   private SoyTypeRegistry typeRegistry = new SoyTypeRegistry();
   private SyntaxVersion declaredSyntaxVersion = SyntaxVersion.V2_0;
   @Nullable private SoyAstCache astCache = null;
@@ -63,38 +60,37 @@ public final class SoyFileSetParserBuilder {
   private SoyGeneralOptions options = new SoyGeneralOptions();
 
   /**
-   * Returns a builder that gets its Soy inputs from the given strings, treating each string
-   * as the full contents of a Soy file.
+   * Returns a builder that gets its Soy inputs from the given strings, treating each string as the
+   * full contents of a Soy file.
    */
   public static SoyFileSetParserBuilder forFileContents(String... fileContents) {
     return new SoyFileSetParserBuilder(fileContents);
   }
 
-  /**
-   * Returns a builder that gets its Soy inputs from the given {@link SoyFileSupplier}s.
-   */
+  /** Returns a builder that gets its Soy inputs from the given {@link SoyFileSupplier}s. */
   public static SoyFileSetParserBuilder forSuppliers(SoyFileSupplier... suppliers) {
     return new SoyFileSetParserBuilder(ImmutableList.copyOf(Arrays.asList(suppliers)));
   }
 
   /**
-   * Returns a builder that gets its Soy inputs from the given strings, treating each string
-   * as the contents of a Soy template.
+   * Returns a builder that gets its Soy inputs from the given strings, treating each string as the
+   * contents of a Soy template.
    */
   public static SoyFileSetParserBuilder forTemplateContents(String... templateContents) {
     return forTemplateContents(AutoEscapingType.DEPRECATED_NONCONTEXTUAL, templateContents);
   }
 
   /**
-   * Returns a builder that gets its Soy inputs from the given strings, treating each string
-   * as the contents of a Soy template, and using the given {@link AutoEscapingType}.
+   * Returns a builder that gets its Soy inputs from the given strings, treating each string as the
+   * contents of a Soy template, and using the given {@link AutoEscapingType}.
    */
   public static SoyFileSetParserBuilder forTemplateContents(
       AutoEscapingType autoEscapingType, String... templateContents) {
     String[] fileContents = new String[templateContents.length];
     for (int i = 0; i < fileContents.length; ++i) {
-      fileContents[i] = SharedTestUtils.buildTestSoyFileContent(
-          autoEscapingType, null /* soyDocParamNames */, templateContents[i]);
+      fileContents[i] =
+          SharedTestUtils.buildTestSoyFileContent(
+              autoEscapingType, null /* soyDocParamNames */, templateContents[i]);
     }
     return new SoyFileSetParserBuilder(fileContents);
   }
@@ -111,24 +107,9 @@ public final class SoyFileSetParserBuilder {
     this.soyFileSuppliers = builder.build();
   }
 
-  /**
-   * Sets the parser's declared syntax version. Returns this object, for chaining.
-   */
+  /** Sets the parser's declared syntax version. Returns this object, for chaining. */
   public SoyFileSetParserBuilder declaredSyntaxVersion(SyntaxVersion version) {
     this.declaredSyntaxVersion = version;
-    return this;
-  }
-
-  /**
-   * Turns the parser's initial parsing passes on or off, see {@link PassManager}.
-   * 
-   * @deprecated There should be no reason to need this.  All tests that wish to run a subset of
-   * passes should be able to demonstrate similar behavior by running all passes.  (If you cannot
-   * then the thing you are trying to test doesn't make sense).
-   */
-  @Deprecated
-  public SoyFileSetParserBuilder doRunInitialParsingPasses(boolean doRunInitialParsingPasses) {
-    this.doRunInitialParsingPasses = doRunInitialParsingPasses;
     return this;
   }
 
@@ -136,7 +117,7 @@ public final class SoyFileSetParserBuilder {
     this.errorReporter = errorReporter;
     return this;
   }
-  
+
   public SoyFileSetParserBuilder addSoyFunction(SoyFunction function) {
     this.soyFunctionMap =
         ImmutableMap.<String, SoyFunction>builder()
@@ -155,7 +136,7 @@ public final class SoyFileSetParserBuilder {
     this.typeRegistry = typeRegistry;
     return this;
   }
-  
+
   public SoyFileSetParserBuilder allowUnboundGlobals(boolean allowUnboundGlobals) {
     this.allowUnboundGlobals = allowUnboundGlobals;
     return this;
@@ -177,33 +158,25 @@ public final class SoyFileSetParserBuilder {
   /**
    * Constructs a parse tree from the builder's state, returning the root of the tree.
    *
-   * <p>Note: since {@link SoyFileSetParserBuilder} can only be used in tests, this method
-   * will throw an {@link AssertionError} if any error is encountered during parsing. For tests
-   * that require different behavior (for example, tests that need to inspect the full list of
-   * errors encountered during compilation), pass a different {@link ErrorReporter} implementation
-   * to {@link #errorReporter}.
+   * <p>Note: since {@link SoyFileSetParserBuilder} can only be used in tests, this method will
+   * throw an {@link AssertionError} if any error is encountered during parsing. For tests that
+   * require different behavior (for example, tests that need to inspect the full list of errors
+   * encountered during compilation), pass a different {@link ErrorReporter} implementation to
+   * {@link #errorReporter}.
    */
   public ParseResult parse() {
-    PassManager passManager = null;
-    if (doRunInitialParsingPasses) {
-      PassManager.Builder builder =
-          new PassManager.Builder()
-              .setDeclaredSyntaxVersion(declaredSyntaxVersion)
-              .setSoyFunctionMap(soyFunctionMap)
-              .setErrorReporter(errorReporter)
-              .setTypeRegistry(typeRegistry)
-              .setGeneralOptions(options);
-      if (allowUnboundGlobals) {
-        builder.allowUnknownGlobals();
-      }
-      passManager = builder.build();
+    PassManager.Builder passManager =
+        new PassManager.Builder()
+            .setDeclaredSyntaxVersion(declaredSyntaxVersion)
+            .setSoyFunctionMap(soyFunctionMap)
+            .setErrorReporter(errorReporter)
+            .setTypeRegistry(typeRegistry)
+            .setGeneralOptions(options);
+    if (allowUnboundGlobals) {
+      passManager.allowUnknownGlobals();
     }
     return new SoyFileSetParser(
-            typeRegistry,
-            astCache,
-            soyFileSuppliers,
-            passManager,
-            errorReporter)
+            typeRegistry, astCache, soyFileSuppliers, passManager.build(), errorReporter)
         .parse();
   }
 }

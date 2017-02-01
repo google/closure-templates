@@ -16,10 +16,7 @@
 
 package com.google.template.soy.basetree;
 
-/**
- * An object that can hold extra state for tree copying operations
- */
+/** An object that can hold extra state for tree copying operations */
 public final class CopyState {
   // TODO(lukes): implement!
 }
-

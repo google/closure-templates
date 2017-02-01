@@ -19,9 +19,7 @@ package com.google.template.soy.types.primitive;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.types.SoyType;
 
-/**
- * A placeholder for errors during parsing.
- */
+/** A placeholder for errors during parsing. */
 public final class ErrorType implements SoyType {
 
   private static final ErrorType INSTANCE = new ErrorType();
@@ -32,18 +30,25 @@ public final class ErrorType implements SoyType {
     return INSTANCE;
   }
 
-  @Override public Kind getKind() {
+  @Override
+  public Kind getKind() {
     return Kind.ERROR;
   }
 
-
-  @Override public boolean isAssignableFrom(SoyType srcType) {
+  @Override
+  public boolean isAssignableFrom(SoyType srcType) {
     return false;
   }
 
-  @Override public boolean isInstance(SoyValue value) {
+  @Override
+  public boolean isInstance(SoyValue value) {
     // TODO(lukes): have this throw an exception? while it is true that nothing is equal to the
     // error type... this comparison should probably never happen in the first place.
     return false;
+  }
+
+  @Override
+  public String toString() {
+    return "$error$";
   }
 }

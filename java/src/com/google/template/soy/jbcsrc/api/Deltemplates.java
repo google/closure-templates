@@ -17,7 +17,6 @@
 package com.google.template.soy.jbcsrc.api;
 
 import com.google.inject.BindingAnnotation;
-
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 

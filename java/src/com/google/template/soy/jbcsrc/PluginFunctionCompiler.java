@@ -39,39 +39,39 @@ import com.google.template.soy.types.primitive.FloatType;
 import com.google.template.soy.types.primitive.IntType;
 import com.google.template.soy.types.primitive.StringType;
 import com.google.template.soy.types.primitive.UnknownType;
-
+import java.util.List;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Type;
-
-import java.util.List;
 
 /**
  * Implements intrinsics for built in functions.
  *
  * <p>Many soy functions are very simple but the Tofu calling convention that is used requires us to
+ *
  * <ul>
- *     <li>Box all arguments
- *     <li>Pass the arguments as a {@code List}
- *     <li>Map {@code null} -> {@code NullData} and back
+ *   <li>Box all arguments
+ *   <li>Pass the arguments as a {@code List}
+ *   <li>Map {@code null} -> {@code NullData} and back
  * </ul>
  *
- * <p>A lot of this cost could be avoided by swapping out an intrinsic implementation.  For example,
- * {@code isNonnull($foo)} requires code that looks like: <pre>{@code
- * 
- *   List<SoyValue> args = new ArrayList<1>();
- *   args.put(<$foo>.box());
- *   SoyValue ret = Runtime.callSoyFunction(
- *       renderContext.getFunction("isNonnull"),
- *       args);
+ * <p>A lot of this cost could be avoided by swapping out an intrinsic implementation. For example,
+ * {@code isNonnull($foo)} requires code that looks like:
+ *
+ * <pre>{@code
+ * List<SoyValue> args = new ArrayList<1>();
+ * args.put(<$foo>.box());
+ * SoyValue ret = Runtime.callSoyFunction(
+ *     renderContext.getFunction("isNonnull"),
+ *     args);
  *
  * }</pre>
  *
- * <p>But that could be easily replaced with a simpler implementation of just
- * {@code <$foo> == null}.  This class provides intrinsic implementations of all functions that are
- * built into {@code soy}.
+ * <p>But that could be easily replaced with a simpler implementation of just {@code <$foo> ==
+ * null}. This class provides intrinsic implementations of all functions that are built into {@code
+ * soy}.
  */
 final class PluginFunctionCompiler {
-  private static final SoyType NUMBER_TYPE = 
+  private static final SoyType NUMBER_TYPE =
       UnionType.of(IntType.getInstance(), FloatType.getInstance());
 
   private static final MethodRef AUGMENT_MAP_FN =
@@ -161,35 +161,33 @@ final class PluginFunctionCompiler {
         if (args.size() == 2) {
           return invokeStrSubFunction(args.get(0), args.get(1));
         }
-        return invokeStrSubFunction(args.get(0), args.get(1), args.get(2)); 
+        return invokeStrSubFunction(args.get(0), args.get(1), args.get(2));
       default:
         // TODO(lukes): add support for the BidiFunctions
         return invokeSoyFunction(node, args);
     }
   }
 
-  /**
-   * @see com.google.template.soy.basicfunctions.AugmentMapFunction
-   */
+  /** @see com.google.template.soy.basicfunctions.AugmentMapFunction */
   private SoyExpression invokeAugmentMapFunction(SoyExpression arg0, SoyExpression arg1) {
-    Expression first = arg0.cast(SoyDict.class);
-    Expression second = arg1.cast(SoyDict.class);
+    Expression first = arg0.checkedCast(SoyDict.class);
+    Expression second = arg1.checkedCast(SoyDict.class);
     // TODO(lukes): this logic should move into the ResolveExpressionTypesVisitor
-    MapType mapType = MapType.of(StringType.getInstance(), 
-        UnionType.of(getMapValueType(arg0.soyType()), getMapValueType(arg1.soyType())));
+    MapType mapType =
+        MapType.of(
+            StringType.getInstance(),
+            UnionType.of(getMapValueType(arg0.soyType()), getMapValueType(arg1.soyType())));
     return SoyExpression.forSoyValue(mapType, AUGMENT_MAP_FN.invoke(first, second));
   }
 
   private SoyType getMapValueType(SoyType type) {
-    if (type instanceof MapType) {
+    if (type.getKind() == SoyType.Kind.MAP) {
       return ((MapType) type).getValueType();
     }
     return UnknownType.getInstance();
   }
 
-  /**
-   * @see com.google.template.soy.basicfunctions.CeilingFunction
-   */
+  /** @see com.google.template.soy.basicfunctions.CeilingFunction */
   private SoyExpression invokeCeilingFunction(SoyExpression argument) {
     switch (argument.resultType().getSort()) {
       case Type.LONG:
@@ -202,9 +200,7 @@ final class PluginFunctionCompiler {
     }
   }
 
-  /**
-   * @see com.google.template.soy.basicfunctions.FloorFunction
-   */
+  /** @see com.google.template.soy.basicfunctions.FloorFunction */
   private SoyExpression invokeFloorFunction(SoyExpression argument) {
     switch (argument.resultType().getSort()) {
       case Type.LONG:
@@ -217,65 +213,59 @@ final class PluginFunctionCompiler {
     }
   }
 
-  /**
-   * @see com.google.template.soy.basicfunctions.IsNonnullFunction
-   */
+  /** @see com.google.template.soy.basicfunctions.IsNonnullFunction */
   private SoyExpression invokeIsNonnullFunction(final SoyExpression soyExpression) {
     if (BytecodeUtils.isPrimitive(soyExpression.resultType())) {
       return SoyExpression.TRUE;
     }
-    return SoyExpression.forBool(new Expression(Type.BOOLEAN_TYPE, soyExpression.features()){
-      @Override void doGen(CodeBuilder adapter) {
-        soyExpression.gen(adapter);
-        Label isNull = new Label();
-        adapter.ifNull(isNull);
-        // non-null
-        adapter.pushBoolean(true);
-        Label end = new Label();
-        adapter.goTo(end);
-        adapter.mark(isNull);
-        adapter.pushBoolean(false);
-        adapter.mark(end);
-      }
-    });
+    return SoyExpression.forBool(
+        new Expression(Type.BOOLEAN_TYPE, soyExpression.features()) {
+          @Override
+          void doGen(CodeBuilder adapter) {
+            soyExpression.gen(adapter);
+            Label isNull = new Label();
+            adapter.ifNull(isNull);
+            // non-null
+            adapter.pushBoolean(true);
+            Label end = new Label();
+            adapter.goTo(end);
+            adapter.mark(isNull);
+            adapter.pushBoolean(false);
+            adapter.mark(end);
+          }
+        });
   }
 
-  /**
-   * @see com.google.template.soy.basicfunctions.KeysFunction
-   */
+  /** @see com.google.template.soy.basicfunctions.KeysFunction */
   private SoyExpression invokeKeysFunction(SoyExpression soyExpression) {
     SoyType argType = soyExpression.soyType();
     // TODO(lukes): this logic should live in ResolveExpressionTypesVisitor
     SoyType listElementType;
-    if (argType instanceof MapType) {
-      listElementType = ((MapType) argType).getKeyType();  // pretty much just string
-    } else if (argType instanceof ListType) {
+    if (argType.getKind() == SoyType.Kind.MAP) {
+      listElementType = ((MapType) argType).getKeyType(); // pretty much just string
+    } else if (argType.getKind() == SoyType.Kind.LIST) {
       listElementType = IntType.getInstance();
     } else {
       listElementType = UnknownType.getInstance();
     }
     return SoyExpression.forList(
         ListType.of(listElementType),
-        KEYS_FN.invoke(soyExpression.box().cast(SoyMap.class)));
+        KEYS_FN.invoke(soyExpression.box().checkedCast(SoyMap.class)));
   }
 
-  /**
-   * @see com.google.template.soy.basicfunctions.LengthFunction
-   */
+  /** @see com.google.template.soy.basicfunctions.LengthFunction */
   private SoyExpression invokeLengthFunction(SoyExpression soyExpression) {
     Expression lengthExpressionAsInt;
     if (soyExpression.isBoxed()) {
-      lengthExpressionAsInt = soyExpression.cast(SoyList.class).invoke(SOYLIST_LENGTH);
+      lengthExpressionAsInt = soyExpression.checkedCast(SoyList.class).invoke(SOYLIST_LENGTH);
     } else {
-      lengthExpressionAsInt = soyExpression.cast(List.class).invoke(LIST_SIZE);
+      lengthExpressionAsInt = soyExpression.checkedCast(List.class).invoke(LIST_SIZE);
     }
     return SoyExpression.forInt(
-        BytecodeUtils.numericConversion(lengthExpressionAsInt, Type.LONG_TYPE)); 
+        BytecodeUtils.numericConversion(lengthExpressionAsInt, Type.LONG_TYPE));
   }
 
-  /**
-   * @see com.google.template.soy.basicfunctions.MaxFunction
-   */
+  /** @see com.google.template.soy.basicfunctions.MaxFunction */
   private SoyExpression invokeMaxFunction(SoyExpression left, SoyExpression right) {
     if (left.assignableToNullableInt() && right.assignableToNullableInt()) {
       return SoyExpression.forInt(
@@ -288,9 +278,7 @@ final class PluginFunctionCompiler {
     }
   }
 
-  /**
-   * @see com.google.template.soy.basicfunctions.MinFunction
-   */
+  /** @see com.google.template.soy.basicfunctions.MinFunction */
   private SoyExpression invokeMinFunction(SoyExpression left, SoyExpression right) {
     if (left.assignableToNullableInt() && right.assignableToNullableInt()) {
       return SoyExpression.forInt(
@@ -303,16 +291,12 @@ final class PluginFunctionCompiler {
     }
   }
 
-  /**
-   * @see com.google.template.soy.basicfunctions.RandomIntFunction
-   */
+  /** @see com.google.template.soy.basicfunctions.RandomIntFunction */
   private SoyExpression invokeRandomIntFunction(SoyExpression soyExpression) {
     return SoyExpression.forInt(RANDOM_INT_FN.invoke(soyExpression.unboxAs(long.class)));
   }
 
-  /**
-   * @see com.google.template.soy.basicfunctions.RoundFunction
-   */
+  /** @see com.google.template.soy.basicfunctions.RoundFunction */
   private SoyExpression invokeRoundFunction(SoyExpression soyExpression) {
     if (soyExpression.assignableToNullableInt()) {
       return soyExpression;
@@ -323,12 +307,12 @@ final class PluginFunctionCompiler {
     return SoyExpression.forInt(ROUND_FN.invoke(soyExpression.box()));
   }
 
-  /**
-   * @see com.google.template.soy.basicfunctions.RoundFunction
-   */
+  /** @see com.google.template.soy.basicfunctions.RoundFunction */
   private SoyExpression invokeRoundFunction(SoyExpression value, SoyExpression digitsAfterPoint) {
-    return SoyExpression.forSoyValue(NUMBER_TYPE, 
-        ROUND_WITH_NUM_DIGITS_AFTER_POINT_FN.invoke(value.box(), 
+    return SoyExpression.forSoyValue(
+        NUMBER_TYPE,
+        ROUND_WITH_NUM_DIGITS_AFTER_POINT_FN.invoke(
+            value.box(),
             BytecodeUtils.numericConversion(digitsAfterPoint.unboxAs(long.class), Type.INT_TYPE)));
   }
 
@@ -337,21 +321,18 @@ final class PluginFunctionCompiler {
         MethodRef.RENDER_CONTEXT_GET_FUNCTION.invoke(
             parameterLookup.getRenderContext(), constant(node.getFunctionName()));
     Expression list = SoyExpression.asBoxedList(args);
-    return SoyExpression.forSoyValue(UnknownType.getInstance(),
+    return SoyExpression.forSoyValue(
+        UnknownType.getInstance(),
         MethodRef.RUNTIME_CALL_SOY_FUNCTION.invoke(soyJavaFunctionExpr, list));
   }
 
-  /**
-   * @see com.google.template.soy.basicfunctions.StrContainsFunction
-   */
+  /** @see com.google.template.soy.basicfunctions.StrContainsFunction */
   private SoyExpression invokeStrContainsFunction(SoyExpression left, SoyExpression right) {
     return SoyExpression.forBool(
         left.unboxAs(String.class).invoke(STRING_CONTAINS, right.coerceToString()));
   }
-  
-  /**
-   * @see com.google.template.soy.basicfunctions.StrIndexOfFunction
-   */
+
+  /** @see com.google.template.soy.basicfunctions.StrIndexOfFunction */
   private SoyExpression invokeStrIndexOfFunction(SoyExpression left, SoyExpression right) {
     return SoyExpression.forInt(
         BytecodeUtils.numericConversion(
@@ -359,31 +340,30 @@ final class PluginFunctionCompiler {
             Type.LONG_TYPE));
   }
 
-  /**
-   * @see com.google.template.soy.basicfunctions.StrIndexOfFunction
-   */
+  /** @see com.google.template.soy.basicfunctions.StrIndexOfFunction */
   private SoyExpression invokeStrLenFunction(SoyExpression str) {
-    return SoyExpression.forInt(BytecodeUtils.numericConversion(
-        str.unboxAs(String.class).invoke(STRING_LENGTH), Type.LONG_TYPE));
+    return SoyExpression.forInt(
+        BytecodeUtils.numericConversion(
+            str.unboxAs(String.class).invoke(STRING_LENGTH), Type.LONG_TYPE));
   }
 
-  /**
-   * @see com.google.template.soy.basicfunctions.StrSubFunction
-   */
+  /** @see com.google.template.soy.basicfunctions.StrSubFunction */
   private SoyExpression invokeStrSubFunction(SoyExpression str, SoyExpression startIndex) {
     return SoyExpression.forString(
-        str.unboxAs(String.class).invoke(STRING_SUBSTR_START,
-            BytecodeUtils.numericConversion(startIndex.unboxAs(long.class), Type.INT_TYPE)));
+        str.unboxAs(String.class)
+            .invoke(
+                STRING_SUBSTR_START,
+                BytecodeUtils.numericConversion(startIndex.unboxAs(long.class), Type.INT_TYPE)));
   }
 
-  /**
-   * @see com.google.template.soy.basicfunctions.StrSubFunction
-   */
+  /** @see com.google.template.soy.basicfunctions.StrSubFunction */
   private SoyExpression invokeStrSubFunction(
       SoyExpression str, SoyExpression startIndex, SoyExpression endIndex) {
     return SoyExpression.forString(
-        str.unboxAs(String.class).invoke(STRING_SUBSTR_START_END,
-            BytecodeUtils.numericConversion(startIndex.unboxAs(long.class), Type.INT_TYPE),
-            BytecodeUtils.numericConversion(endIndex.unboxAs(long.class), Type.INT_TYPE)));
+        str.unboxAs(String.class)
+            .invoke(
+                STRING_SUBSTR_START_END,
+                BytecodeUtils.numericConversion(startIndex.unboxAs(long.class), Type.INT_TYPE),
+                BytecodeUtils.numericConversion(endIndex.unboxAs(long.class), Type.INT_TYPE)));
   }
 }

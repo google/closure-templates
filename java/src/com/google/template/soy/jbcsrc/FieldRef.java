@@ -20,7 +20,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 
 import com.google.auto.value.AutoValue;
-import com.google.template.soy.data.SoyValueHelper;
+import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.jbcsrc.Expression.Feature;
 import com.google.template.soy.jbcsrc.Expression.Features;
@@ -30,14 +30,13 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
-/**
- * Representation of a field in a java class.
- */
-@AutoValue abstract class FieldRef {
+/** Representation of a field in a java class. */
+@AutoValue
+abstract class FieldRef {
   static final FieldRef BOOLEAN_DATA_FALSE = staticFieldReference(BooleanData.class, "FALSE");
   static final FieldRef BOOLEAN_DATA_TRUE = staticFieldReference(BooleanData.class, "TRUE");
   static final FieldRef NULL_PROVIDER = staticFieldReference(Runtime.class, "NULL_PROVIDER");
-  static final FieldRef EMPTY_DICT = staticFieldReference(SoyValueHelper.class, "EMPTY_DICT");
+  static final FieldRef EMPTY_DICT = staticFieldReference(SoyValueConverter.class, "EMPTY_DICT");
 
   static FieldRef createFinalField(TypeInfo owner, String name, Class<?> type) {
     return createFinalField(owner, name, Type.getType(type));
@@ -84,9 +83,13 @@ import org.objectweb.asm.Type;
       throw new IllegalStateException("Field: " + field + " is not static");
     }
     return new AutoValue_FieldRef(
-        TypeInfo.create(field.getDeclaringClass()), field.getName(), Type.getType(field.getType()),
+        TypeInfo.create(field.getDeclaringClass()),
+        field.getName(),
+        Type.getType(field.getType()),
         Opcodes.ACC_STATIC,
-        false /** Assume all static field refs are non-null. */);
+        false
+        /** Assume all static field refs are non-null. */
+        );
   }
 
   static <T extends Enum<T>> FieldRef enumReference(T enumInstance) {
@@ -110,17 +113,20 @@ import org.objectweb.asm.Type;
     return new AutoValue_FieldRef(
         owner, name, type, Opcodes.ACC_PRIVATE, !BytecodeUtils.isPrimitive(type));
   }
-  
+
   /** The type that owns this field. */
   abstract TypeInfo owner();
+
   abstract String name();
+
   abstract Type type();
 
-  /** 
-   * The field access flags.  This is a bit set of things like {@link Opcodes#ACC_STATIC}
-   * and {@link Opcodes#ACC_PRIVATE}.
+  /**
+   * The field access flags. This is a bit set of things like {@link Opcodes#ACC_STATIC} and {@link
+   * Opcodes#ACC_PRIVATE}.
    */
   abstract int accessFlags();
+
   abstract boolean isNullable();
 
   final boolean isStatic() {
@@ -132,11 +138,11 @@ import org.objectweb.asm.Type;
     cv.visitField(
         accessFlags(),
         name(),
-        type().getDescriptor(), 
-        null /* no generic signature */, 
+        type().getDescriptor(),
+        null /* no generic signature */,
         null /* no initializer */);
   }
-  
+
   FieldRef asNonNull() {
     if (!isNullable() || BytecodeUtils.isPrimitive(type())) {
       return this;
@@ -144,9 +150,7 @@ import org.objectweb.asm.Type;
     return new AutoValue_FieldRef(owner(), name(), type(), accessFlags(), false);
   }
 
-  /**
-   * Returns an accessor that accesses this field on the given owner.
-   */
+  /** Returns an accessor that accesses this field on the given owner. */
   Expression accessor(final Expression owner) {
     checkState(!isStatic());
     checkArgument(owner.resultType().equals(this.owner().type()));
@@ -158,16 +162,15 @@ import org.objectweb.asm.Type;
       features = features.plus(Feature.NON_NULLABLE);
     }
     return new Expression(type(), features) {
-      @Override void doGen(CodeBuilder mv) {
+      @Override
+      void doGen(CodeBuilder mv) {
         owner.gen(mv);
         mv.getField(owner().type(), FieldRef.this.name(), resultType());
       }
     };
   }
 
-  /**
-   * Returns an expression that accesses this static field.
-   */
+  /** Returns an expression that accesses this static field. */
   Expression accessor() {
     checkState(isStatic());
     Features features = Features.of(Feature.CHEAP);
@@ -175,16 +178,17 @@ import org.objectweb.asm.Type;
       features = features.plus(Feature.NON_NULLABLE);
     }
     return new Expression(type(), features) {
-      @Override void doGen(CodeBuilder mv) {
+      @Override
+      void doGen(CodeBuilder mv) {
         mv.getStatic(owner().type(), FieldRef.this.name(), resultType());
       }
     };
   }
-  
+
   /**
-   * Returns a {@link Statement} that stores the {@code value} in this field on the given 
-   * {@code instance}.
-   * 
+   * Returns a {@link Statement} that stores the {@code value} in this field on the given {@code
+   * instance}.
+   *
    * @throws IllegalStateException if this is a static field
    */
   Statement putInstanceField(final Expression instance, final Expression value) {
@@ -192,17 +196,17 @@ import org.objectweb.asm.Type;
     instance.checkAssignableTo(owner().type());
     value.checkAssignableTo(type());
     return new Statement() {
-      @Override void doGen(CodeBuilder adapter) {
+      @Override
+      void doGen(CodeBuilder adapter) {
         instance.gen(adapter);
         value.gen(adapter);
         putUnchecked(adapter);
       }
-
     };
   }
   /**
-   * Returns a {@link Statement} that stores the {@code value} in this field on the given
-   * {@code instance}.
+   * Returns a {@link Statement} that stores the {@code value} in this field on the given {@code
+   * instance}.
    *
    * @throws IllegalStateException if this is a static field
    */
@@ -220,11 +224,16 @@ import org.objectweb.asm.Type;
 
   /**
    * Adds code to place the top item of the stack into this field.
-   * 
+   *
    * @throws IllegalStateException if this is a static field
    */
   void putUnchecked(CodeBuilder adapter) {
     checkState(!isStatic(), "This field is static!");
     adapter.putField(owner().type(), name(), type());
+  }
+
+  static FieldRef create(
+      TypeInfo owner, String name, Type type, int accessFlags, boolean isNullable) {
+    return new AutoValue_FieldRef(owner, name, type, accessFlags, isNullable);
   }
 }

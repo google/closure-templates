@@ -17,6 +17,7 @@
 package com.google.template.soy.passes;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.junit.Assert.assertEquals;
 
 import com.google.common.collect.Iterables;
 import com.google.template.soy.SoyFileSetParserBuilder;
@@ -27,15 +28,18 @@ import com.google.template.soy.msgs.internal.MsgUtils;
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
-
-import junit.framework.TestCase;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for RewriteGenderMsgsVisitor.
  *
  */
-public final class RewriteGenderMsgsVisitorTest extends TestCase {
+@RunWith(JUnit4.class)
+public final class RewriteGenderMsgsVisitorTest {
 
+  @Test
   public void testCannotMixGendersAndSelect() {
     String soyCode =
         ""
@@ -59,7 +63,7 @@ public final class RewriteGenderMsgsVisitorTest extends TestCase {
         .contains("Cannot mix 'genders' attribute with 'select' command in the same message.");
   }
 
-
+  @Test
   public void testErrorIfCannotGenNoncollidingBaseNames() {
     String soyCode =
         ""
@@ -81,7 +85,7 @@ public final class RewriteGenderMsgsVisitorTest extends TestCase {
                 + "Add explicit base names with the 'phname' attribute.");
   }
 
-
+  @Test
   public void testMaxThreeGenders() {
     String soyCode =
         ""
@@ -102,7 +106,7 @@ public final class RewriteGenderMsgsVisitorTest extends TestCase {
         .containsExactly("Attribute 'genders' does not contain 1-3 expressions");
   }
 
-
+  @Test
   public void testMaxTwoGendersWithPlural() {
     String soyCode =
         ""
@@ -129,7 +133,7 @@ public final class RewriteGenderMsgsVisitorTest extends TestCase {
                 + " message).");
   }
 
-
+  @Test
   public void testRewriteSimple() {
 
     String soyCode =
@@ -141,17 +145,14 @@ public final class RewriteGenderMsgsVisitorTest extends TestCase {
 
     ErrorReporter boom = ExplodingErrorReporter.get();
     SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forTemplateContents(soyCode)
-            .errorReporter(boom)
-            .parse()
-            .fileSet();
+        SoyFileSetParserBuilder.forTemplateContents(soyCode).errorReporter(boom).parse().fileSet();
 
     // After.
     MsgNode msgAfterRewrite = (MsgNode) SharedTestUtils.getNode(soyTree, 0, 0);
     assertEquals(
         // Note: Still has genders="..." in command text.
-        "{msg genders=\"$userGender\" desc=\"Button text.\"}" +
-            "{select $userGender}{case 'female'}Save{case 'male'}Save{default}Save{/select}",
+        "{msg genders=\"$userGender\" desc=\"Button text.\"}"
+            + "{select $userGender}{case 'female'}Save{case 'male'}Save{default}Save{/select}",
         msgAfterRewrite.toSourceString());
 
     // ------ Test that it has same msg id as equivalent msg using 'select'. ------
@@ -173,7 +174,7 @@ public final class RewriteGenderMsgsVisitorTest extends TestCase {
         .isEqualTo(MsgUtils.computeMsgIdForDualFormat(msgUsingSelect));
   }
 
-
+  @Test
   public void testRewriteWithPlural() {
 
     String soyCode =
@@ -186,20 +187,17 @@ public final class RewriteGenderMsgsVisitorTest extends TestCase {
 
     ErrorReporter boom = ExplodingErrorReporter.get();
     SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forTemplateContents(soyCode)
-            .errorReporter(boom)
-            .parse()
-            .fileSet();
+        SoyFileSetParserBuilder.forTemplateContents(soyCode).errorReporter(boom).parse().fileSet();
     // After.
     MsgNode msgAfterRewrite = (MsgNode) SharedTestUtils.getNode(soyTree, 0, 0);
     assertEquals(
         // Note: Still has genders="..." in command text.
-        "{msg genders=\"$userGender\" desc=\"...\"}" +
-            "{select $userGender}" +
-            "{case 'female'}{plural $num}{case 1}Send it{default}Send {$num}{/plural}" +
-            "{case 'male'}{plural $num}{case 1}Send it{default}Send {$num}{/plural}"  +
-            "{default}{plural $num}{case 1}Send it{default}Send {$num}{/plural}"  +
-            "{/select}",
+        "{msg genders=\"$userGender\" desc=\"...\"}"
+            + "{select $userGender}"
+            + "{case 'female'}{plural $num}{case 1}Send it{default}Send {$num}{/plural}"
+            + "{case 'male'}{plural $num}{case 1}Send it{default}Send {$num}{/plural}"
+            + "{default}{plural $num}{case 1}Send it{default}Send {$num}{/plural}"
+            + "{/select}",
         msgAfterRewrite.toSourceString());
 
     // ------ Test that it has same msg id as equivalent msg using 'select'. ------
@@ -222,7 +220,7 @@ public final class RewriteGenderMsgsVisitorTest extends TestCase {
         .isEqualTo(MsgUtils.computeMsgIdForDualFormat(msgUsingSelect));
   }
 
-
+  @Test
   public void testRewriteWithThreeGendersAndNoncollidingSelectVarNames() {
 
     String soyCode =
@@ -235,43 +233,52 @@ public final class RewriteGenderMsgsVisitorTest extends TestCase {
 
     ErrorReporter boom = ExplodingErrorReporter.get();
     SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forTemplateContents(soyCode)
-            .errorReporter(boom)
-            .parse()
-            .fileSet();
+        SoyFileSetParserBuilder.forTemplateContents(soyCode).errorReporter(boom).parse().fileSet();
     // After.
     MsgNode msgAfterRewrite = (MsgNode) SharedTestUtils.getNode(soyTree, 0, 0);
 
-    String expectedInnerSelectSrc = "" +
-        "{select $target[1].gender phname=\"TARGET_1_GENDER\"}" +
-          "{case 'female'}You starred {$target[0].name}'s photo in {$target[1].name}'s album." +
-          "{case 'male'}You starred {$target[0].name}'s photo in {$target[1].name}'s album." +
-          "{default}You starred {$target[0].name}'s photo in {$target[1].name}'s album." +
-        "{/select}";
-    String expectedMsgSrc = "" +
-        // Note: Still has genders="..." in command text.
-        "{msg genders=\"$ij.userGender, $target[0].gender, $target[1].gender\" desc=\"...\"}" +
-          "{select $ij.userGender}" +  // note: 'phname' not specified because generated is same
-            "{case 'female'}" +
-              "{select $target[0].gender phname=\"TARGET_0_GENDER\"}" +
-                "{case 'female'}" + expectedInnerSelectSrc +
-                "{case 'male'}" + expectedInnerSelectSrc +
-                "{default}" + expectedInnerSelectSrc +
-              "{/select}" +
-            "{case 'male'}" +
-              "{select $target[0].gender phname=\"TARGET_0_GENDER\"}" +
-                "{case 'female'}" + expectedInnerSelectSrc +
-                "{case 'male'}" + expectedInnerSelectSrc +
-                "{default}" + expectedInnerSelectSrc +
-              "{/select}" +
-            "{default}" +
-              "{select $target[0].gender phname=\"TARGET_0_GENDER\"}" +
-                "{case 'female'}" + expectedInnerSelectSrc +
-                "{case 'male'}" + expectedInnerSelectSrc +
-                "{default}" + expectedInnerSelectSrc +
-              "{/select}" +
-          "{/select}";
+    String expectedInnerSelectSrc =
+        ""
+            + "{select $target[1].gender phname=\"TARGET_1_GENDER\"}"
+            + "{case 'female'}You starred {$target[0].name}'s photo in {$target[1].name}'s album."
+            + "{case 'male'}You starred {$target[0].name}'s photo in {$target[1].name}'s album."
+            + "{default}You starred {$target[0].name}'s photo in {$target[1].name}'s album."
+            + "{/select}";
+    String expectedMsgSrc =
+        ""
+            +
+            // Note: Still has genders="..." in command text.
+            "{msg genders=\"$ij.userGender, $target[0].gender, $target[1].gender\" desc=\"...\"}"
+            + "{select $ij.userGender}"
+            + // note: 'phname' not specified because generated is same
+            "{case 'female'}"
+            + "{select $target[0].gender phname=\"TARGET_0_GENDER\"}"
+            + "{case 'female'}"
+            + expectedInnerSelectSrc
+            + "{case 'male'}"
+            + expectedInnerSelectSrc
+            + "{default}"
+            + expectedInnerSelectSrc
+            + "{/select}"
+            + "{case 'male'}"
+            + "{select $target[0].gender phname=\"TARGET_0_GENDER\"}"
+            + "{case 'female'}"
+            + expectedInnerSelectSrc
+            + "{case 'male'}"
+            + expectedInnerSelectSrc
+            + "{default}"
+            + expectedInnerSelectSrc
+            + "{/select}"
+            + "{default}"
+            + "{select $target[0].gender phname=\"TARGET_0_GENDER\"}"
+            + "{case 'female'}"
+            + expectedInnerSelectSrc
+            + "{case 'male'}"
+            + expectedInnerSelectSrc
+            + "{default}"
+            + expectedInnerSelectSrc
+            + "{/select}"
+            + "{/select}";
     assertThat(msgAfterRewrite.toSourceString()).isEqualTo(expectedMsgSrc);
   }
-
 }

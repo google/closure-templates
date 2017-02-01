@@ -25,7 +25,6 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.HeaderParam;
 import com.google.template.soy.soytree.defn.TemplateParam;
-
 import java.util.List;
 
 /**
@@ -39,7 +38,8 @@ public final class InferRequiredSyntaxVersionVisitor extends AbstractSoyNodeVisi
   /** The highest known required syntax version so far (during a pass). */
   private SyntaxVersion knownRequiredSyntaxVersion;
 
-  @Override public SyntaxVersion exec(SoyNode node) {
+  @Override
+  public SyntaxVersion exec(SoyNode node) {
     Preconditions.checkArgument(node instanceof SoyFileNode);
 
     knownRequiredSyntaxVersion = SyntaxVersion.V1_0;
@@ -50,7 +50,8 @@ public final class InferRequiredSyntaxVersionVisitor extends AbstractSoyNodeVisi
   // -----------------------------------------------------------------------------------------------
   // Implementations for specific nodes.
 
-  @Override protected void visitTemplateNode(TemplateNode node) {
+  @Override
+  protected void visitTemplateNode(TemplateNode node) {
     if (knownRequiredSyntaxVersion.num < SyntaxVersion.V2_3.num) {
       List<TemplateParam> params = node.getParams();
       for (TemplateParam param : params) {
@@ -60,8 +61,8 @@ public final class InferRequiredSyntaxVersionVisitor extends AbstractSoyNodeVisi
         }
       }
     }
-    if (knownRequiredSyntaxVersion.num < SyntaxVersion.V2_4.num &&
-        !node.getInjectedParams().isEmpty()) {
+    if (knownRequiredSyntaxVersion.num < SyntaxVersion.V2_4.num
+        && !node.getInjectedParams().isEmpty()) {
       knownRequiredSyntaxVersion = SyntaxVersion.V2_4;
     }
   }
@@ -69,7 +70,8 @@ public final class InferRequiredSyntaxVersionVisitor extends AbstractSoyNodeVisi
   // -----------------------------------------------------------------------------------------------
   // Fallback implementation.
 
-  @Override protected void visitSoyNode(SoyNode node) {
+  @Override
+  protected void visitSoyNode(SoyNode node) {
     if (node instanceof ParentSoyNode<?>) {
       visitChildren((ParentSoyNode<?>) node);
     }

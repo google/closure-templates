@@ -18,7 +18,6 @@ package com.google.template.soy.soytree.defn;
 
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.primitive.UnknownType;
-
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 
@@ -39,15 +38,18 @@ public final class SoyDocParam extends TemplateParam {
     super(soyDocParam);
   }
 
-  @Override public DeclLoc declLoc() {
+  @Override
+  public DeclLoc declLoc() {
     return DeclLoc.SOY_DOC;
   }
 
-  @Override public SoyType type() {
+  @Override
+  public SoyType type() {
     return UnknownType.getInstance();
   }
 
-  @Override public SoyDocParam copyEssential() {
+  @Override
+  public SoyDocParam copyEssential() {
     // Note: 'desc' is nonessential.
     SoyDocParam soyDocParam = new SoyDocParam(name(), isRequired(), null);
     soyDocParam.setLocalVariableIndex(localVariableIndex());

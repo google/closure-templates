@@ -19,38 +19,33 @@ package com.google.template.soy.types.primitive;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.BooleanData;
 
-
 /**
  * Soy boolean type.
  *
  */
 public final class BoolType extends PrimitiveType {
 
-
   private static final BoolType INSTANCE = new BoolType();
-
 
   // Not constructible - use getInstance().
   private BoolType() {}
 
-
-  @Override public Kind getKind() {
+  @Override
+  public Kind getKind() {
     return Kind.BOOL;
   }
 
-
-  @Override public boolean isInstance(SoyValue value) {
+  @Override
+  public boolean isInstance(SoyValue value) {
     return value instanceof BooleanData;
   }
 
-  @Override public String toString() {
+  @Override
+  public String toString() {
     return "bool";
   }
 
-
-  /**
-   * Return the single instance of this type.
-   */
+  /** Return the single instance of this type. */
   public static BoolType getInstance() {
     return INSTANCE;
   }

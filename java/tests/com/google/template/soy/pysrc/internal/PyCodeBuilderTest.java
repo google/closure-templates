@@ -23,16 +23,18 @@ import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyExprUtils;
 import com.google.template.soy.pysrc.restricted.PyStringExpr;
-
-import junit.framework.TestCase;
-
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for PyCodeBuilder.
  *
  */
-public final class PyCodeBuilderTest extends TestCase {
+@RunWith(JUnit4.class)
+public final class PyCodeBuilderTest {
 
+  @Test
   public void testSimpleOutputVar() {
     // Output initialization.
     PyCodeBuilder pcb = new PyCodeBuilder();
@@ -44,10 +46,11 @@ public final class PyCodeBuilderTest extends TestCase {
     pcb.pushOutputVar("param5");
     pcb.appendOutputVarName().appendLineEnd();
     pcb.setOutputVarInited();
-    pcb.initOutputVarIfNecessary();  // nothing added
+    pcb.initOutputVarIfNecessary(); // nothing added
     assertThat(pcb.getCode()).isEqualTo("output\noutput = []\nparam5\n");
   }
 
+  @Test
   public void testComplexOutput() {
     // Output assignment should initialize and use append.
     PyCodeBuilder pcb = new PyCodeBuilder();
@@ -58,10 +61,11 @@ public final class PyCodeBuilderTest extends TestCase {
     // Multiple expressions should use extend to track output as one large list.
     pcb.pushOutputVar("param5");
     pcb.setOutputVarInited();
-    pcb.addToOutputVar(Lists.newArrayList(
-        new PyExpr("a - b", PyExprUtils.pyPrecedenceForOperator(Operator.MINUS)),
-        new PyExpr("c - d", PyExprUtils.pyPrecedenceForOperator(Operator.MINUS)),
-        new PyExpr("e * f", PyExprUtils.pyPrecedenceForOperator(Operator.TIMES))));
+    pcb.addToOutputVar(
+        Lists.newArrayList(
+            new PyExpr("a - b", PyExprUtils.pyPrecedenceForOperator(Operator.MINUS)),
+            new PyExpr("c - d", PyExprUtils.pyPrecedenceForOperator(Operator.MINUS)),
+            new PyExpr("e * f", PyExprUtils.pyPrecedenceForOperator(Operator.TIMES))));
     assertThat(pcb.getCode())
         .isEqualTo(
             "output = []\noutput.append(boo)\nparam5.extend([str(a - b),str(c - d),str(e * f)])\n");
@@ -70,9 +74,10 @@ public final class PyCodeBuilderTest extends TestCase {
     assertThat(pcb.getCode())
         .isEqualTo(
             "output = []\noutput.append(boo)\nparam5.extend([str(a - b),str(c - d),str(e * f)])\n"
-            + "output\n");
+                + "output\n");
   }
 
+  @Test
   public void testOutputAsString() {
     // Output should use String joining to convert to a String.
     PyCodeBuilder pcb = new PyCodeBuilder();

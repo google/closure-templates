@@ -16,25 +16,30 @@
 
 package com.google.template.soy.data;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.testing.EqualsTester;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
-
-import junit.framework.TestCase;
-
 import java.util.Map;
-
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for SoyMapData.
  *
  */
-public class SoyMapDataTest extends TestCase {
+@RunWith(JUnit4.class)
+public class SoyMapDataTest {
 
-
+  @Test
   public void testPutRemoveGetSingleKey() {
 
     SoyMapData smd = new SoyMapData();
@@ -53,7 +58,7 @@ public class SoyMapDataTest extends TestCase {
     smd.put("wooi", 8);
     assertEquals(8, smd.getInteger("wooi"));
     smd.put("woof", 3.14);
-    assertEquals(3.14, smd.getFloat("woof"));
+    assertEquals(3.14, smd.getFloat("woof"), 0.0);
     smd.put("woos", "woohoo");
     assertEquals("woohoo", smd.getString("woos"));
 
@@ -66,7 +71,7 @@ public class SoyMapDataTest extends TestCase {
     assertEquals(sld, smd.getListData("goo"));
   }
 
-
+  @Test
   public void testPutRemoveGetMultiKey() {
 
     SoyMapData smd = new SoyMapData();
@@ -84,10 +89,10 @@ public class SoyMapDataTest extends TestCase {
     smd.put("boo.zoo.0", "too");
     smd.put("boo.zoo.1", 1.618);
     assertEquals("too", smd.getString("boo.zoo.0"));
-    assertEquals(1.618, smd.getListData("boo.zoo").getFloat("1"));
+    assertEquals(1.618, smd.getListData("boo.zoo").getFloat("1"), 0.0);
   }
 
-
+  @Test
   public void testConstruction() {
 
     Map<String, Object> existingMap = Maps.newHashMap();
@@ -102,10 +107,10 @@ public class SoyMapDataTest extends TestCase {
     assertEquals("blah", smd.getString("goo.buntu"));
     assertEquals(true, smd.getBoolean("goo.dy"));
     assertEquals("bleh", smd.getString("moo"));
-    assertEquals(2.71828, smd.getFloat("too.seven"));
+    assertEquals(2.71828, smd.getFloat("too.seven"), 0.0);
   }
 
-
+  @Test
   public void testErrorDuringConstruction() {
 
     Map<String, Object> existingMap = Maps.newHashMap();
@@ -129,10 +134,10 @@ public class SoyMapDataTest extends TestCase {
       assertTrue(sde.getMessage().contains("At data path 'goo[2]':"));
     }
 
-    existingMap.put("goo", ImmutableMap.of(
-        "buntu", "blah",
-        "fy", ImmutableList.of(0, 1, new Object(), 3),
-        "dy", true));
+    existingMap.put(
+        "goo",
+        ImmutableMap.of(
+            "buntu", "blah", "fy", ImmutableList.of(0, 1, new Object(), 3), "dy", true));
 
     try {
       new SoyMapData(existingMap);
@@ -147,12 +152,15 @@ public class SoyMapDataTest extends TestCase {
       new SoyMapData(existingMap);
       fail();
     } catch (SoyDataException sde) {
-      assertTrue(sde.getMessage().contains(
-          "At data path 'goo': Attempting to convert a map with non-string key to Soy data"));
+      assertTrue(
+          sde.getMessage()
+              .contains(
+                  "At data path 'goo': "
+                      + "Attempting to convert a map with non-string key to Soy data"));
     }
   }
 
-
+  @Test
   public void testCoercion() {
 
     SoyMapData smd0 = new SoyMapData();
@@ -170,8 +178,9 @@ public class SoyMapDataTest extends TestCase {
     String smd2Str = smd2.coerceToString();
     assertTrue(smd2Str.contains("boo: 8"));
     assertTrue(smd2Str.contains("foo: null"));
-    assertTrue(smd2Str.contains("goo: {buntu: blah, dy: true}") ||
-               smd2Str.contains("goo: {dy: true, buntu: blah}"));
+    assertTrue(
+        smd2Str.contains("goo: {buntu: blah, dy: true}")
+            || smd2Str.contains("goo: {dy: true, buntu: blah}"));
     assertTrue(smd2Str.contains("moo: bleh"));
     assertTrue(smd2Str.contains("too: {seven: 2.71828}"));
 
@@ -180,19 +189,17 @@ public class SoyMapDataTest extends TestCase {
     assertEquals(true, smd2.coerceToBoolean());
   }
 
-
+  @Test
   public void testIsEqualto() {
 
     SoyMapData smd0 = new SoyMapData();
     SoyMapData smd1 = new SoyMapData("boo", "foo");
 
-    new EqualsTester()
-      .addEqualityGroup(smd0)
-      .addEqualityGroup(smd1)
-      .testEquals();
+    new EqualsTester().addEqualityGroup(smd0).addEqualityGroup(smd1).testEquals();
     assertFalse(smd0.equals(new SoyMapData()));
   }
 
+  @Test
   public void testLongHandling() {
     // long value will loose precision if converted to double.
     long l = 987654321987654321L;

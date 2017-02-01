@@ -16,14 +16,18 @@
 
 package com.google.template.soy.jbcsrc;
 
-import junit.framework.TestCase;
+import static org.junit.Assert.assertEquals;
 
-/**
- * Tests for {@link TypeInfo}.
- */
-public final class TypeInfoTest extends TestCase {
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
+
+/** Tests for {@link TypeInfo}. */
+@RunWith(JUnit4.class)
+public final class TypeInfoTest {
   static class Inner {}
 
+  @Test
   public void testSimpleName() {
     assertEquals("TypeInfoTest", TypeInfo.create(TypeInfoTest.class).simpleName());
     assertEquals("TypeInfoTest", TypeInfo.create(TypeInfoTest.class.getName()).simpleName());
@@ -32,8 +36,9 @@ public final class TypeInfoTest extends TestCase {
     assertEquals("Inner", TypeInfo.create(Inner.class.getName()).simpleName());
   }
 
+  @Test
   public void testInnerClass() {
-    assertEquals(TypeInfo.create(Inner.class),
-        TypeInfo.create(TypeInfoTest.class).innerClass("Inner"));
+    assertEquals(
+        TypeInfo.create(Inner.class), TypeInfo.create(TypeInfoTest.class).innerClass("Inner"));
   }
 }

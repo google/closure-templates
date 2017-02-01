@@ -31,38 +31,32 @@ import com.google.template.soy.pysrc.restricted.PyFunctionExprBuilder;
 import com.google.template.soy.pysrc.restricted.SoyPySrcPrintDirective;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.LocaleString;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
-
 import com.ibm.icu.text.CompactDecimalFormat;
 import com.ibm.icu.text.CompactDecimalFormat.CompactStyle;
 import com.ibm.icu.text.NumberFormat;
 import com.ibm.icu.util.ULocale;
-
 import java.util.List;
 import java.util.Set;
-
 import javax.inject.Inject;
 import javax.inject.Provider;
 
 /**
- * A directive that formats an input number based on Locale of the current SoyMsgBundle.
- * It may take two optional arguments. The first is a lower-case string describing the type of
- * format to apply, which can be one of 'decimal', 'currency', 'percent', 'scientific',
- * 'compact_short', or 'compact_long'. If this argument is not provided, the default 'decimal'
- * will be used. The second argument is the "numbers" keyword passed to the ICU4J's locale. For
- * instance, it can be "native" so that we show native characters in languages like arabic (this
- * argument is ignored for templates running in JavaScript).
+ * A directive that formats an input number based on Locale of the current SoyMsgBundle. It may take
+ * two optional arguments. The first is a lower-case string describing the type of format to apply,
+ * which can be one of 'decimal', 'currency', 'percent', 'scientific', 'compact_short', or
+ * 'compact_long'. If this argument is not provided, the default 'decimal' will be used. The second
+ * argument is the "numbers" keyword passed to the ICU4J's locale. For instance, it can be "native"
+ * so that we show native characters in languages like arabic (this argument is ignored for
+ * templates running in JavaScript).
  *
- * <p>Usage examples:
- * {@code
-       {$value|formatNum}
-       {$value|formatNum:'decimal'}
-       {$value|formatNum:'decimal','native'}
-   }
+ * <p>Usage examples: {@code {$value|formatNum} {$value|formatNum:'decimal'}
+ * {$value|formatNum:'decimal','native'} }
  *
  */
-class FormatNumDirective implements SoyJavaPrintDirective, SoyLibraryAssistedJsSrcPrintDirective,
-      SoyPySrcPrintDirective {
-
+class FormatNumDirective
+    implements SoyJavaPrintDirective,
+        SoyLibraryAssistedJsSrcPrintDirective,
+        SoyPySrcPrintDirective {
 
   // Map of format arguments to the Closure Format enum.
   private static final ImmutableMap<String, String> JS_ARGS_TO_ENUM =
@@ -85,7 +79,6 @@ class FormatNumDirective implements SoyJavaPrintDirective, SoyLibraryAssistedJsS
 
   private static final String DEFAULT_FORMAT = "decimal";
 
-
   /**
    * Provide the current Locale string.
    *
@@ -104,21 +97,25 @@ class FormatNumDirective implements SoyJavaPrintDirective, SoyLibraryAssistedJsS
     this.localeStringProvider = localeStringProvider;
   }
 
-  @Override public String getName() {
+  @Override
+  public String getName() {
     return "|formatNum";
   }
 
-  @Override public Set<Integer> getValidArgsSizes() {
+  @Override
+  public Set<Integer> getValidArgsSizes() {
     return VALID_ARGS_SIZES;
   }
 
-  @Override public boolean shouldCancelAutoescape() {
+  @Override
+  public boolean shouldCancelAutoescape() {
     return false;
   }
 
-  @Override public SoyValue applyForJava(SoyValue value, List<SoyValue> args) {
-    ULocale uLocale = I18nUtils.parseULocale(localeStringProvider.get())
-        .setKeywordValue("numbers", "local");
+  @Override
+  public SoyValue applyForJava(SoyValue value, List<SoyValue> args) {
+    ULocale uLocale =
+        I18nUtils.parseULocale(localeStringProvider.get()).setKeywordValue("numbers", "local");
     if (args.size() > 1) {
       // A keyword for ULocale was passed (like 'native', for instance, to use native characters).
       uLocale = uLocale.setKeywordValue("numbers", args.get(1).stringValue());
@@ -154,7 +151,8 @@ class FormatNumDirective implements SoyJavaPrintDirective, SoyLibraryAssistedJsS
     return StringData.forValue(numberFormat.format(((NumberData) value).toFloat()));
   }
 
-  @Override public JsExpr applyForJsSrc(JsExpr value, List<JsExpr> args) {
+  @Override
+  public JsExpr applyForJsSrc(JsExpr value, List<JsExpr> args) {
     String numberFormatType = parseFormat(args);
 
     StringBuilder expr = new StringBuilder();
@@ -167,7 +165,8 @@ class FormatNumDirective implements SoyJavaPrintDirective, SoyLibraryAssistedJsS
     return new JsExpr(expr.toString(), Integer.MAX_VALUE);
   }
 
-  @Override public PyExpr applyForPySrc(PyExpr value, List<PyExpr> args) {
+  @Override
+  public PyExpr applyForPySrc(PyExpr value, List<PyExpr> args) {
     String numberFormatType = parseFormat(args);
 
     PyFunctionExprBuilder builder =
@@ -178,13 +177,15 @@ class FormatNumDirective implements SoyJavaPrintDirective, SoyLibraryAssistedJsS
     return builder.asPyStringExpr();
   }
 
-  @Override public ImmutableSet<String> getRequiredJsLibNames() {
+  @Override
+  public ImmutableSet<String> getRequiredJsLibNames() {
     return REQUIRED_JS_LIBS;
   }
 
   /**
    * Validates that the provided format matches a supported format, and returns the value, if not,
    * this throws an exception.
+   *
    * @param args The list of provided arguments.
    * @return String The number format type.
    */

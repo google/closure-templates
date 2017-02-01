@@ -21,14 +21,12 @@ import com.google.common.collect.Sets;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
-
 import java.util.Set;
 
 /**
- * Functions for adapting the legacy Java {@link SoyFunction} implementations
- * ({@link SoyJavaRuntimeFunction}
- * and {@link com.google.template.soy.tofu.restricted.SoyTofuFunction}) to the canonical
- * implementation ({@link SoyJavaFunction}).
+ * Functions for adapting the legacy Java {@link SoyFunction} implementations ({@link
+ * SoyJavaRuntimeFunction} and {@link com.google.template.soy.tofu.restricted.SoyTofuFunction}) to
+ * the canonical implementation ({@link SoyJavaFunction}).
  *
  * <p>TODO(user): migrate the legacy impls and remove this class.
  */
@@ -56,8 +54,11 @@ public final class FunctionAdapters {
 
         if (seenDirectiveNames.contains(directiveName)) {
           throw new IllegalStateException(
-              "Found two implementations of " + specificSoyDirectiveType.getSimpleName() +
-              " with the same directive name '" + directiveName + "'.");
+              "Found two implementations of "
+                  + specificSoyDirectiveType.getSimpleName()
+                  + " with the same directive name '"
+                  + directiveName
+                  + "'.");
         }
         seenDirectiveNames.add(directiveName);
 

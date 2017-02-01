@@ -23,18 +23,16 @@ import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.exprtree.Operator;
+import com.google.template.soy.jssrc.dsl.SoyJsPluginUtils;
 import com.google.template.soy.jssrc.restricted.JsExpr;
-import com.google.template.soy.jssrc.restricted.SoyJsCodeUtils;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyExprUtils;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
-
 import java.util.List;
 import java.util.Set;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -56,7 +54,7 @@ final class IsNullFunction implements SoyJavaFunction, SoyJsSrcFunction, SoyPySr
   public JsExpr computeForJsSrc(List<JsExpr> args) {
     JsExpr arg = args.get(0);
     JsExpr nullJsExpr = new JsExpr("null", Integer.MAX_VALUE);
-    return SoyJsCodeUtils.genJsExprUsingSoySyntax(
+    return SoyJsPluginUtils.genJsExprUsingSoySyntax(
         Operator.EQUAL, ImmutableList.of(arg, nullJsExpr));
   }
 

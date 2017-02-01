@@ -21,6 +21,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
+import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.LegacyInternalSyntaxException;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
@@ -32,16 +33,11 @@ import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.StringNode;
-import com.google.template.soy.soytree.CommandTextAttributesParser.Attribute;
 import com.google.template.soy.soytree.TemplateDelegateNode.DelTemplateKey;
 import com.google.template.soy.soytree.TemplateNode.Priority;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 import com.google.template.soy.soytree.defn.TemplateParam;
-import com.google.template.soy.types.SoyTypeRegistry;
-
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.List;
 
 /**
  * Builder for TemplateDelegateNode.
@@ -51,29 +47,12 @@ import java.util.regex.Pattern;
  */
 public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
 
-  private static final SoyErrorKind INVALID_DELTEMPLATE_COMMAND_TEXT =
-      SoyErrorKind.of("Invalid deltemplate command text.");
   private static final SoyErrorKind INVALID_DELTEMPLATE_NAME =
       SoyErrorKind.of("Invalid name.  deltemplate names should be fully qualified.");
   private static final SoyErrorKind INVALID_VARIANT_EXPR =
       SoyErrorKind.of(
           "Invalid variant expression "
               + "(must be a string literal containing an identifier or global expression).");
-
-  /** Pattern for the command text. */
-  // 2 capturing groups: del template name, attributes.
-  private static final Pattern COMMAND_TEXT_PATTERN =
-      Pattern.compile("^\\s*([.\\w]+)(\\s.*|$)", Pattern.DOTALL);
-
-  /** Parser for the attributes in command text. */
-  private static final CommandTextAttributesParser ATTRIBUTES_PARSER =
-      new CommandTextAttributesParser("deltemplate",
-          new Attribute("variant", Attribute.ALLOW_ALL_VALUES, null),
-          new Attribute("autoescape", AutoescapeMode.getAttributeValues(), null),
-          new Attribute("kind", NodeContentKinds.getAttributeValues(), null),
-          new Attribute("requirecss", Attribute.ALLOW_ALL_VALUES, null),
-          new Attribute("cssbase", Attribute.ALLOW_ALL_VALUES, null),
-          new Attribute("deprecatedV1", Attribute.BOOLEAN_VALUES, "false"));
 
   /** The delegate template name. */
   private String delTemplateName;
@@ -90,78 +69,108 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
   /** The delegate priority. */
   private Priority delPriority;
 
-  /**
-   * @param soyFileHeaderInfo Info from the containing Soy file's header declarations.
-   * @param sourceLocation The template's source location.
-   */
+  /** @param soyFileHeaderInfo Info from the containing Soy file's header declarations. */
   public TemplateDelegateNodeBuilder(
-      SoyFileHeaderInfo soyFileHeaderInfo,
-      SourceLocation sourceLocation,
-      ErrorReporter errorReporter) {
-    super(soyFileHeaderInfo, sourceLocation, errorReporter, null /* typeRegistry */);
+      SoyFileHeaderInfo soyFileHeaderInfo, ErrorReporter errorReporter) {
+    super(soyFileHeaderInfo, errorReporter);
   }
 
-  /**
-   * @param soyFileHeaderInfo Info from the containing Soy file's header declarations.
-   * @param sourceLocation The template's source location.
-   */
-  public TemplateDelegateNodeBuilder(
-      SoyFileHeaderInfo soyFileHeaderInfo,
-      SourceLocation sourceLocation,
-      ErrorReporter errorReporter,
-      SoyTypeRegistry typeRegistry) {
-    super(soyFileHeaderInfo, sourceLocation, errorReporter, typeRegistry);
-  }
-
-  @Override public TemplateDelegateNodeBuilder setId(int id) {
+  @Override
+  public TemplateDelegateNodeBuilder setId(int id) {
     return (TemplateDelegateNodeBuilder) super.setId(id);
   }
 
-  @Override public TemplateDelegateNodeBuilder setCmdText(String cmdText) {
-    Preconditions.checkState(this.cmdText == null);
-    this.cmdText = cmdText;
+  @Override
+  public TemplateDelegateNodeBuilder setSourceLocation(SourceLocation location) {
+    return (TemplateDelegateNodeBuilder) super.setSourceLocation(location);
+  }
+
+  @Override
+  public TemplateNodeBuilder setCommandValues(
+      Identifier templateName, List<CommandTagAttribute> attrs) {
+    this.cmdText = templateName.identifier() + " " + Joiner.on(' ').join(attrs);
+
     if (soyFileHeaderInfo.namespace == null) {
       // Abort template parsing if there is no namespace.
       // TODO(lukes): if we had a more strongly typed way of representing template names we could
       // use some kind of standard ERROR namespace and continue.
       throw LegacyInternalSyntaxException.createWithMetaInfo(
-          "Cannot declare deltemplates in files with no namespace declaration.", sourceLocation);
+          "Cannot declare deltemplates in files with no namespace declaration.",
+          templateName.location());
     }
-    Matcher matcher = COMMAND_TEXT_PATTERN.matcher(cmdText);
-    if (!matcher.matches()) {
-      errorReporter.report(sourceLocation, INVALID_DELTEMPLATE_COMMAND_TEXT);
-      return this; // avoid IllegalStateExceptions in matcher.group(...) below.
+    // deltemplate names must be fully qualified
+    if (templateName.isPartialIdentifier()) {
+      errorReporter.report(templateName.location(), INVALID_DELTEMPLATE_NAME);
     }
-
-    this.delTemplateName = matcher.group(1);
-    if (!BaseUtils.isDottedIdentifier(delTemplateName)) {
-      errorReporter.report(sourceLocation, INVALID_DELTEMPLATE_NAME);
-    }
-
-    Map<String, String> attributes = ATTRIBUTES_PARSER.parse(
-        matcher.group(2).trim(), errorReporter, sourceLocation);
-
-    String variantExprText = attributes.get("variant");
-    if (variantExprText == null) {
-      this.delTemplateVariant = "";
-    } else {
-      ExprNode variantExpr = new ExpressionParser(variantExprText, sourceLocation,
-          SoyParsingContext.create(errorReporter, soyFileHeaderInfo.namespace,
-              soyFileHeaderInfo.aliasToNamespaceMap))
-          .parseExpression();
-      if (variantExpr instanceof StringNode) {
-        // A string literal is being used as template variant, so the expression value can
-        // immediately be evaluated.
-        this.delTemplateVariant = ((StringNode) variantExpr).getValue();
-        TemplateDelegateNode.verifyVariantName(delTemplateVariant, sourceLocation);
-      } else if (variantExpr instanceof GlobalNode) {
-        // A global expression was used as template variant. The expression will be stored and later
-        // resolved into a value when the global expressions are resolved.
-        this.delTemplateVariantExpr = new ExprRootNode(variantExpr);
-        this.templateNameForUserMsgs = delTemplateName + ":"
-            + (((GlobalNode) variantExpr).getName());
-      } else {
-        errorReporter.report(sourceLocation, INVALID_VARIANT_EXPR);
+    this.delTemplateName = templateName.identifier();
+    AutoescapeMode autoescapeMode = soyFileHeaderInfo.defaultAutoescapeMode;
+    ContentKind kind = null;
+    SourceLocation kindLocation = null;
+    this.delTemplateVariant = "";
+    for (CommandTagAttribute attribute : attrs) {
+      Identifier name = attribute.getName();
+      switch (name.identifier()) {
+        case "autoescape":
+          autoescapeMode = attribute.valueAsAutoescapeMode(errorReporter);
+          break;
+        case "kind":
+          kind = attribute.valueAsContentKind(errorReporter);
+          kindLocation = attribute.getValueLocation();
+          break;
+        case "requirecss":
+          setRequiredCssNamespaces(attribute.valueAsRequireCss(errorReporter));
+          break;
+        case "cssbase":
+          setCssBaseNamespace(attribute.valueAsCssBase(errorReporter));
+          break;
+        case "deprecatedV1":
+          markDeprecatedV1(attribute.valueAsBoolean(errorReporter, false));
+          break;
+        case "stricthtml":
+          strictHtmlMode = attribute.valueAsStrictHtmlMode(errorReporter);
+          break;
+        case "variant":
+          // need to get variant parsing out of this.  maybe we can expose some sort of limited
+          // primitiveOrGlobal parsing solution?
+          this.delTemplateVariant = null;
+          ExprNode variantExpr =
+              new ExpressionParser(
+                      attribute.getValue(),
+                      attribute.getValueLocation(),
+                      SoyParsingContext.create(
+                          errorReporter,
+                          soyFileHeaderInfo.namespace,
+                          soyFileHeaderInfo.aliasToNamespaceMap))
+                  .parseExpression();
+          if (variantExpr instanceof StringNode) {
+            // A string literal is being used as template variant, so the expression value can
+            // immediately be evaluated.
+            this.delTemplateVariant = ((StringNode) variantExpr).getValue();
+            TemplateDelegateNode.verifyVariantName(
+                delTemplateVariant, attribute.getValueLocation());
+          } else if (variantExpr instanceof GlobalNode) {
+            // A global expression was used as template variant. The expression will be stored and
+            // later resolved into a value when the global expressions are resolved.
+            this.delTemplateVariantExpr = new ExprRootNode(variantExpr);
+            this.templateNameForUserMsgs =
+                delTemplateName + ":" + (((GlobalNode) variantExpr).getName());
+          } else {
+            errorReporter.report(attribute.getValueLocation(), INVALID_VARIANT_EXPR);
+          }
+          break;
+        default:
+          errorReporter.report(
+              name.location(),
+              CommandTagAttribute.UNSUPPORTED_ATTRIBUTE_KEY,
+              name.identifier(),
+              ImmutableList.of(
+                  "autoescape",
+                  "kind",
+                  "requirecss",
+                  "deprecatedV1",
+                  "cssbase",
+                  "stricthtml",
+                  "variant"));
       }
     }
 
@@ -172,15 +181,9 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
       this.templateNameForUserMsgs = delTemplateKey.toString();
     }
 
+    setAutoescapeInfo(autoescapeMode, kind, kindLocation);
     this.delPriority = soyFileHeaderInfo.priority;
-
-    setAutoescapeCmdText(attributes);
-    setRequireCssCmdText(attributes);
-    setCssBaseCmdText(attributes);
-    setV1Marker(attributes);
-
-    genInternalTemplateNameHelper();
-
+    genInternalTemplateNameHelper(templateName.location());
     return this;
   }
 
@@ -198,10 +201,14 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
    * @return This builder.
    */
   public TemplateDelegateNodeBuilder setCmdTextInfo(
-      String delTemplateName, String delTemplateVariant, Priority delPriority,
-      AutoescapeMode autoescapeMode, ContentKind contentKind,
+      String delTemplateName,
+      String delTemplateVariant,
+      Priority delPriority,
+      AutoescapeMode autoescapeMode,
+      ContentKind contentKind,
       ImmutableList<String> requiredCssNamespaces) {
 
+    Preconditions.checkState(this.sourceLocation != null);
     Preconditions.checkState(this.cmdText == null);
     Preconditions.checkArgument(BaseUtils.isDottedIdentifier(delTemplateName));
     Preconditions.checkArgument(
@@ -213,11 +220,14 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
     this.delTemplateKey = DelTemplateKey.create(delTemplateName, delTemplateVariant);
     this.templateNameForUserMsgs = delTemplateKey.toString();
     this.delPriority = delPriority;
-    setAutoescapeInfo(autoescapeMode, contentKind);
+    setAutoescapeInfo(autoescapeMode, contentKind, sourceLocation);
     setRequiredCssNamespaces(requiredCssNamespaces);
-    String cmdText = delTemplateName +
-        ((delTemplateVariant.length() == 0) ? "" : " variant=\"" + delTemplateVariant + "\"") +
-        " autoescape=\"" + autoescapeMode.getAttributeValue() + "\"";
+    String cmdText =
+        delTemplateName
+            + ((delTemplateVariant.length() == 0) ? "" : " variant=\"" + delTemplateVariant + "\"")
+            + " autoescape=\""
+            + autoescapeMode.getAttributeValue()
+            + "\"";
     if (contentKind != null) {
       cmdText += " kind=\"" + NodeContentKinds.toAttributeValue(contentKind) + '"';
     }
@@ -226,7 +236,7 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
     }
     this.cmdText = cmdText;
 
-    genInternalTemplateNameHelper();
+    genInternalTemplateNameHelper(sourceLocation);
 
     return this;
   }
@@ -235,7 +245,7 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
    * Private helper for both setCmdText() and setCmdTextInfo() to generate and set the internal-use
    * partial template name and template name.
    */
-  private void genInternalTemplateNameHelper() {
+  private void genInternalTemplateNameHelper(SourceLocation nameLocation) {
     Preconditions.checkState(id != null);
 
     // Compute a SHA-1 hash value for the delPackageName plus delTemplateKey, and take the first 32
@@ -247,36 +257,42 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
     // TODO(lukes): why calculate a hash? just cat the bits together to get a
     // reasonable and unique string?  is this for client obfuscation?
     String delPackageAndDelTemplateStr =
-        (soyFileHeaderInfo.delPackageName == null ? "" : soyFileHeaderInfo.delPackageName) +
-            "~" + delTemplateName + "~" + delTemplateVariant;
+        (soyFileHeaderInfo.delPackageName == null ? "" : soyFileHeaderInfo.delPackageName)
+            + "~"
+            + delTemplateName
+            + "~"
+            + delTemplateVariant;
     String collisionPreventionStr =
         BaseUtils.computePartialSha1AsHexString(delPackageAndDelTemplateStr, 32);
 
     // Generate the actual internal-use template name.
     String generatedPartialTemplateName = ".__deltemplate_s" + id + "_" + collisionPreventionStr;
     String generatedTemplateName = soyFileHeaderInfo.namespace + generatedPartialTemplateName;
-    setTemplateNames(generatedTemplateName, generatedPartialTemplateName);
+    setTemplateNames(generatedTemplateName, nameLocation, generatedPartialTemplateName);
   }
 
-  @Override public TemplateDelegateNodeBuilder setSoyDoc(String soyDoc) {
-    return (TemplateDelegateNodeBuilder) super.setSoyDoc(soyDoc);
+  @Override
+  public TemplateDelegateNodeBuilder setSoyDoc(String soyDoc, SourceLocation soyDocLocation) {
+    return (TemplateDelegateNodeBuilder) super.setSoyDoc(soyDoc, soyDocLocation);
   }
 
-  @Override public TemplateDelegateNodeBuilder setHeaderDecls(DeclInfo... declInfos) {
-    return (TemplateDelegateNodeBuilder) super.setHeaderDecls(declInfos);
-  }
-
-  @Override public TemplateDelegateNodeBuilder addParams(
-      Iterable<? extends TemplateParam> allParams) {
+  @Override
+  public TemplateDelegateNodeBuilder addParams(Iterable<? extends TemplateParam> allParams) {
     return (TemplateDelegateNodeBuilder) super.addParams(allParams);
   }
 
-  @Override public TemplateDelegateNode build() {
+  @Override
+  public TemplateDelegateNode build() {
     Preconditions.checkState(id != null && cmdText != null);
 
     return new TemplateDelegateNode(
-        this, soyFileHeaderInfo, delTemplateName, delTemplateVariant,
-        delTemplateVariantExpr, delTemplateKey, delPriority,
+        this,
+        soyFileHeaderInfo,
+        delTemplateName,
+        delTemplateVariant,
+        delTemplateVariantExpr,
+        delTemplateKey,
+        delPriority,
         params);
   }
 }

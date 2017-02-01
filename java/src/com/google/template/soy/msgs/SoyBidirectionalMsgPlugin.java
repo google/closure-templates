@@ -18,7 +18,6 @@ package com.google.template.soy.msgs;
 
 import com.google.template.soy.msgs.SoyMsgBundleHandler.OutputFileOptions;
 
-
 /**
  * Plugin for implementing a specific message file format. Supports postprocessing of msgs files by
  * having methods to both generate and parse both extracted and translated msgs files.
@@ -26,16 +25,14 @@ import com.google.template.soy.msgs.SoyMsgBundleHandler.OutputFileOptions;
  */
 public interface SoyBidirectionalMsgPlugin extends SoyMsgPlugin {
 
-
   // Note: generateExtractedMsgsFile() is defined in SoyMsgPlugin.
-
 
   /**
    * Parses the content of an extracted messages file (source messages to be translated) and builds
    * a message bundle object.
    *
-   * Currently, this method exists purely for consistency. There's currently no functionality in Soy
-   * that uses this method.
+   * <p>Currently, this method exists purely for consistency. There's currently no functionality in
+   * Soy that uses this method.
    *
    * @param extractedMsgsFileContent The content of the extracted messages file.
    * @return The message bundle object built from the messages file.
@@ -44,11 +41,10 @@ public interface SoyBidirectionalMsgPlugin extends SoyMsgPlugin {
   public SoyMsgBundle parseExtractedMsgsFile(String extractedMsgsFileContent)
       throws SoyMsgException;
 
-
   /**
    * Builds the content of a translated msgs file from a given message bundle object.
    *
-   * For example, the given message bundle may be the result of postprocessing a message bundle
+   * <p>For example, the given message bundle may be the result of postprocessing a message bundle
    * parsed from an original translated msgs file.
    *
    * @param msgBundle The bundle of messages.
@@ -59,7 +55,6 @@ public interface SoyBidirectionalMsgPlugin extends SoyMsgPlugin {
    */
   public CharSequence generateTranslatedMsgsFile(SoyMsgBundle msgBundle, OutputFileOptions options)
       throws SoyMsgException;
-
 
   // Note: parseTranslatedMsgsFile() is defined in SoyMsgPlugin.
 

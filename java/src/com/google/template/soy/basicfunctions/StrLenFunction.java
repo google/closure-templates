@@ -29,57 +29,60 @@ import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
-
 import java.util.List;
 import java.util.Set;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
  * A function that determines the length of a string.
  *
- * <p><code>strLen(expr1)</code> requires <code>expr1</code> to be of type
- * string or {@link com.google.template.soy.data.SanitizedContent}.
+ * <p><code>strLen(expr1)</code> requires <code>expr1</code> to be of type string or {@link
+ * com.google.template.soy.data.SanitizedContent}.
  *
  * <p>TODO(lukes,dcphillips): This function has inconsistent behavior between the backends when it
- * comes to astral plane codepoints.  Python is the only backend doing it right.
+ * comes to astral plane codepoints. Python is the only backend doing it right.
  *
  */
 @Singleton
 @SoyPureFunction
 final class StrLenFunction implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction {
 
-
   @Inject
   StrLenFunction() {}
 
-
-  @Override public String getName() {
+  @Override
+  public String getName() {
     return "strLen";
   }
 
-  @Override public Set<Integer> getValidArgsSizes() {
+  @Override
+  public Set<Integer> getValidArgsSizes() {
     return ImmutableSet.of(1);
   }
 
-  @Override public SoyValue computeForJava(List<SoyValue> args) {
+  @Override
+  public SoyValue computeForJava(List<SoyValue> args) {
     SoyValue arg0 = args.get(0);
 
-    Preconditions.checkArgument(arg0 instanceof StringData || arg0 instanceof SanitizedContent,
-        "First argument to strLen() function is not StringData or SanitizedContent: %s", arg0);
+    Preconditions.checkArgument(
+        arg0 instanceof StringData || arg0 instanceof SanitizedContent,
+        "First argument to strLen() function is not StringData or SanitizedContent: %s",
+        arg0);
 
     return IntegerData.forValue(arg0.coerceToString().length());
   }
 
-  @Override public JsExpr computeForJsSrc(List<JsExpr> args) {
+  @Override
+  public JsExpr computeForJsSrc(List<JsExpr> args) {
     // Coerce SanitizedContent args to strings.
     String arg0 = JsExprUtils.toString(args.get(0)).getText();
 
     return new JsExpr("(" + arg0 + ").length", Integer.MAX_VALUE);
   }
 
-  @Override public PyExpr computeForPySrc(List<PyExpr> args) {
+  @Override
+  public PyExpr computeForPySrc(List<PyExpr> args) {
     return new PyExpr("len(" + args.get(0).toPyString().getText() + ")", Integer.MAX_VALUE);
   }
 }

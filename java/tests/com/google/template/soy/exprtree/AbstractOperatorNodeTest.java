@@ -16,28 +16,33 @@
 
 package com.google.template.soy.exprtree;
 
+import static org.junit.Assert.assertEquals;
+
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.MinusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NegativeOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
-
-import junit.framework.TestCase;
-
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for AbstractOperatorNode.
  *
  */
-public final class AbstractOperatorNodeTest extends TestCase {
+@RunWith(JUnit4.class)
+public final class AbstractOperatorNodeTest {
 
   private static final SourceLocation X = SourceLocation.UNKNOWN;
   // Note: We're going to reuse this leaf node in the test trees. This isn't really correct, but
   // should work for this test.
   private static final VarRefNode x = new VarRefNode("x", X, false, null);
 
+  @Test
   public void testToSourceString1() {
 
     // Test expression: $x - -$x - (-($x - $x) - $x)
@@ -67,22 +72,22 @@ public final class AbstractOperatorNodeTest extends TestCase {
     n1.addChild(x);
     n1.addChild(n3);
     // Child of n3.
-    n3.addChild(x);
+    n3.addChild(x.copy(new CopyState()));
     // Children of n2.
     NegativeOpNode n4 = new NegativeOpNode(X);
     n2.addChild(n4);
-    n2.addChild(x);
+    n2.addChild(x.copy(new CopyState()));
     // Child of n4.
     MinusOpNode n5 = new MinusOpNode(X);
     n4.addChild(n5);
     // Children of n5.
-    n5.addChild(x);
-    n5.addChild(x);
+    n5.addChild(x.copy(new CopyState()));
+    n5.addChild(x.copy(new CopyState()));
 
     assertEquals("$x - -$x - (-($x - $x) - $x)", n0.toSourceString());
   }
 
-
+  @Test
   public void testToSourceString2() {
 
     // Test expression: not $x ? $x != $x : $x * $x
@@ -110,13 +115,12 @@ public final class AbstractOperatorNodeTest extends TestCase {
     // Child of n1.
     n1.addChild(x);
     // Children of n2.
-    n2.addChild(x);
-    n2.addChild(x);
+    n2.addChild(x.copy(new CopyState()));
+    n2.addChild(x.copy(new CopyState()));
     // Children of n3.
-    n3.addChild(x);
-    n3.addChild(x);
+    n3.addChild(x.copy(new CopyState()));
+    n3.addChild(x.copy(new CopyState()));
 
     assertEquals("not $x ? $x != $x : $x * $x", n0.toSourceString());
   }
-
 }

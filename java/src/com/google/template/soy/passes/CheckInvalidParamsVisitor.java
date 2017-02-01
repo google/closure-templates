@@ -26,7 +26,7 @@ import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarDefn.Kind;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.SoytreeUtils;
+import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
 
@@ -34,8 +34,8 @@ import com.google.template.soy.soytree.defn.TemplateParam;
  * A visitor that checks for certain misuses of template parameters:
  *
  * <ul>
- *     <li>There should be no explicit use of injected parameters called {@code csp_nonce}.  These
- *     should all be inserted by the soy compiler as part of the content security pass.
+ *   <li>There should be no explicit use of injected parameters called {@code csp_nonce}. These
+ *       should all be inserted by the soy compiler as part of the content security pass.
  * </ul>
  *
  * <p>TODO(lukes): add a check for unresolved globals that match params.
@@ -56,7 +56,7 @@ final class CheckInvalidParamsVisitor {
     // Search for injected params named 'csp_nonce'.  This includes:
     // * @inject params
     // * $ij references
-    SoytreeUtils.visitAllNodes(
+    SoyTreeUtils.visitAllNodes(
         node,
         new NodeVisitor<Node, Boolean>() {
           @Override

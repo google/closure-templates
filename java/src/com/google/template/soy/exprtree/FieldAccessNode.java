@@ -17,10 +17,14 @@
 package com.google.template.soy.exprtree;
 
 import com.google.common.base.Preconditions;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 
 /**
  * Reference to a named field.
+ *
+ * <p>The source location of this node is the location of the {@code .field} and doesn't include the
+ * base expression.
  *
  */
 public final class FieldAccessNode extends DataAccessNode {
@@ -28,14 +32,15 @@ public final class FieldAccessNode extends DataAccessNode {
   private final String fieldName;
 
   /**
-   * @param base The base expression, that is a reference to the object
-   *     containing the named field.
+   * @param base The base expression, that is a reference to the object containing the named field.
    * @param fieldName The name of the field.
-   * @param isNullSafe If true, checks during evaluation whether the base expression is null
-   *     and returns null instead of causing an invalid dereference.
+   * @param location The location of the access expression
+   * @param isNullSafe If true, checks during evaluation whether the base expression is null and
+   *     returns null instead of causing an invalid dereference.
    */
-  public FieldAccessNode(ExprNode base, String fieldName, boolean isNullSafe) {
-    super(base, base.getSourceLocation(), isNullSafe);
+  public FieldAccessNode(
+      ExprNode base, String fieldName, SourceLocation location, boolean isNullSafe) {
+    super(base, location, isNullSafe);
     Preconditions.checkArgument(fieldName != null);
     this.fieldName = fieldName;
   }
@@ -45,28 +50,27 @@ public final class FieldAccessNode extends DataAccessNode {
     this.fieldName = orig.fieldName;
   }
 
-  @Override public Kind getKind() {
+  @Override
+  public Kind getKind() {
     return Kind.FIELD_ACCESS_NODE;
   }
-
 
   /** Returns the field name. */
   public String getFieldName() {
     return fieldName;
   }
 
-
   /**
-   * Returns the source string for the part of the expression that accesses
-   * the item - in other words, not including the base expression. This is
-   * intended for use in reporting errors.
+   * Returns the source string for the part of the expression that accesses the item - in other
+   * words, not including the base expression. This is intended for use in reporting errors.
    */
-  @Override public String getSourceStringSuffix() {
+  @Override
+  public String getSourceStringSuffix() {
     return (isNullSafe ? "?." : ".") + fieldName;
   }
 
-
-  @Override public FieldAccessNode copy(CopyState copyState) {
+  @Override
+  public FieldAccessNode copy(CopyState copyState) {
     return new FieldAccessNode(this, copyState);
   }
 }

@@ -20,17 +20,14 @@ import com.google.common.base.Preconditions;
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.api.RenderResult.Type;
-
 import java.io.IOException;
-
 import javax.annotation.Nullable;
-
 
 /**
  * A SoyValueProvider that lazily computes and caches its value.
  *
- * <p>SoyAbstractCachingValueProvider is thread-safe, but in a race condition, may compute its
- * value twice.
+ * <p>SoyAbstractCachingValueProvider is thread-safe, but in a race condition, may compute its value
+ * twice.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
@@ -46,10 +43,11 @@ public abstract class SoyAbstractCachingValueProvider implements SoyValueProvide
 
     public abstract void check(SoyValue value);
   }
+
   /**
    * The resolved value.
-   * <p>
-   * This will be set to non-null the first time this is resolved. Note that SoyValue must not be
+   *
+   * <p>This will be set to non-null the first time this is resolved. Note that SoyValue must not be
    * null. This is volatile to indicate it will be tested and set atomically across threads.
    */
   private volatile SoyValue resolvedValue = null;
@@ -58,7 +56,8 @@ public abstract class SoyAbstractCachingValueProvider implements SoyValueProvide
   // collection
   @Nullable private ValueAssertion valueAssertion;
 
-  @Override public final SoyValue resolve() {
+  @Override
+  public final SoyValue resolve() {
     // NOTE: If this is used across threads, the worst that will happen is two different providers
     // will be constructed, and an arbitrary one will win. Since setting a volatile reference is
     // atomic, however, this is thread-safe. We keep a local cache here to avoid doing a memory
@@ -75,8 +74,9 @@ public abstract class SoyAbstractCachingValueProvider implements SoyValueProvide
     return localResolvedValue;
   }
 
-  @Override public RenderResult renderAndResolve(
-      AdvisingAppendable appendable, boolean isLast) throws IOException {
+  @Override
+  public RenderResult renderAndResolve(AdvisingAppendable appendable, boolean isLast)
+      throws IOException {
     // Gives a reasonable default implementation, if subclasses can do better they can override.
     RenderResult result = status();
     if (result.type() == Type.DONE) {
@@ -85,7 +85,8 @@ public abstract class SoyAbstractCachingValueProvider implements SoyValueProvide
     return result;
   }
 
-  @Override public int hashCode() {
+  @Override
+  public int hashCode() {
     throw new UnsupportedOperationException(
         "SoyAbstractCachingValueProvider is unsuitable for use as a hash key.");
   }
@@ -97,14 +98,13 @@ public abstract class SoyAbstractCachingValueProvider implements SoyValueProvide
 
   /** Registers a {@link ValueAssertion} callback with this caching provider. */
   public void addValueAssertion(ValueAssertion assertion) {
-    Preconditions.checkState(resolvedValue == null,
+    Preconditions.checkState(
+        resolvedValue == null,
         "ValueAssertions should only be registered if the value is not yet computed.");
     assertion.next = valueAssertion;
     valueAssertion = assertion;
   }
 
-  /**
-   * Implemented by subclasses to do the heavy-lifting for resolving.
-   */
+  /** Implemented by subclasses to do the heavy-lifting for resolving. */
   protected abstract SoyValue compute();
 }

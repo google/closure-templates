@@ -18,29 +18,22 @@ package com.google.template.soy.internal.i18n;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.template.soy.data.Dir;
-
 import com.ibm.icu.lang.UCharacter;
 import com.ibm.icu.lang.UProperty;
 import com.ibm.icu.lang.UScript;
 import com.ibm.icu.util.ULocale;
 
-/**
- * Utility functions for performing common Bidi tests on strings.
- */
+/** Utility functions for performing common Bidi tests on strings. */
 public class BidiUtils {
 
-  /**
-   * Not instantiable.
-   */
-  private BidiUtils() {
-  }
+  /** Not instantiable. */
+  private BidiUtils() {}
 
   /**
-   * A container class for Unicode formatting characters and for directionality
-   * string constants.
+   * A container class for Unicode formatting characters and for directionality string constants.
    */
-  public static final class Format {
-    private Format () {}  // Not instantiable.
+  static final class Format {
+    private Format() {} // Not instantiable.
     /** Unicode "Left-To-Right Embedding" (LRE) character. */
     public static final char LRE = '\u202A';
     /** Unicode "Right-To-Left Embedding" (RLE) character. */
@@ -58,53 +51,40 @@ public class BidiUtils {
     public static final String RLM_STRING = Character.toString(RLM);
   }
 
-  /**
-   * Returns the directionality of a locale.
-   */
+  /** Returns the directionality of a locale. */
   public static Dir languageDir(ULocale locale) {
     return isRtlLanguage(locale) ? Dir.RTL : Dir.LTR;
   }
 
-  /**
-   * Returns the directionality of a locale, given as a string in the ICU syntax.
-   */
+  /** Returns the directionality of a locale, given as a string in the ICU syntax. */
   public static Dir languageDir(String locale) {
     return isRtlLanguage(locale) ? Dir.RTL : Dir.LTR;
   }
 
-  /**
-   * Returns whether a locale is RTL.
-   */
+  /** Returns whether a locale is RTL. */
   @SuppressWarnings("deprecation")
   public static boolean isRtlLanguage(ULocale locale) {
     try {
-      return UScript.isRightToLeft(UCharacter.getPropertyValueEnum(UProperty.SCRIPT,
-          ULocale.addLikelySubtags(locale).getScript()));
+      return UScript.isRightToLeft(
+          UCharacter.getPropertyValueEnum(
+              UProperty.SCRIPT, ULocale.addLikelySubtags(locale).getScript()));
     } catch (IllegalArgumentException e) {
       return false;
     }
   }
 
-  /**
-   * Returns whether a locale, given as a string in the ICU syntax, is RTL.
-   */
+  /** Returns whether a locale, given as a string in the ICU syntax, is RTL. */
   public static boolean isRtlLanguage(String locale) {
     return isRtlLanguage(new ULocale(locale));
   }
 
-  /**
-   * "right" string constant.
-   */
+  /** "right" string constant. */
   public static final String RIGHT = "right";
 
-  /**
-   * "left" string constant.
-   */
+  /** "left" string constant. */
   public static final String LEFT = "left";
 
-  /**
-   * An object that estimates the directionality of a given string by various methods.
-   */
+  /** An object that estimates the directionality of a given string by various methods. */
   @VisibleForTesting
   static class DirectionalityEstimator {
 
@@ -118,10 +98,8 @@ public class BidiUtils {
      */
     private static final int DIR_TYPE_CACHE_SIZE = 0x700;
 
-    /**
-     * The bidi character class cache.
-     */
-    private static final byte DIR_TYPE_CACHE[];
+    /** The bidi character class cache. */
+    private static final byte[] DIR_TYPE_CACHE;
 
     static {
       DIR_TYPE_CACHE = new byte[DIR_TYPE_CACHE_SIZE];
@@ -131,30 +109,22 @@ public class BidiUtils {
     }
 
     /**
-     * The current classification of a word, for the word count direction estimation algorithm.
-     * As we progress our examination through a word, the type may increase in value e.g.:
-     * NEUTRAL -> EN | AN -> STRONG
-     * or
-     * NEUTRAL -> PLUS -> SIGNED_EN | PLUS_AN -> STRONG.
-     * It will only decrease when going back down to NEUTRAL at a word break, and when a neutral
-     * character (other than a plus or minus sign) appears after a plus or minus sign. Please note
-     * that STRONG, URL, and EMBEDDED are terminal, i.e. do not change into another word type until
-     * the end of the word is reached.
+     * The current classification of a word, for the word count direction estimation algorithm. As
+     * we progress our examination through a word, the type may increase in value e.g.: NEUTRAL ->
+     * EN | AN -> STRONG or NEUTRAL -> PLUS -> SIGNED_EN | PLUS_AN -> STRONG. It will only decrease
+     * when going back down to NEUTRAL at a word break, and when a neutral character (other than a
+     * plus or minus sign) appears after a plus or minus sign. Please note that STRONG, URL, and
+     * EMBEDDED are terminal, i.e. do not change into another word type until the end of the word is
+     * reached.
      */
     private static class WordType {
-      /**
-       * Word so far - if any - contains no LTR, RTL, or numeric characters.
-       */
+      /** Word so far - if any - contains no LTR, RTL, or numeric characters. */
       public static final int NEUTRAL = 0;
 
-      /**
-       * Word so far is a plus sign.
-       */
+      /** Word so far is a plus sign. */
       public static final int PLUS = 1;
 
-      /**
-       * Word so far is a minus sign.
-       */
+      /** Word so far is a minus sign. */
       public static final int MINUS = 2;
 
       /**
@@ -188,9 +158,7 @@ public class BidiUtils {
        */
       public static final int MINUS_AN = 7;
 
-      /**
-       * Word had an LTR or RTL character; ltrWordCount or rtlWordCount has been incremented.
-       */
+      /** Word had an LTR or RTL character; ltrWordCount or rtlWordCount has been incremented. */
       public static final int STRONG = 8;
 
       /**
@@ -198,9 +166,7 @@ public class BidiUtils {
        */
       public static final int URL = 9;
 
-      /**
-       * A "word" between LRE/LRO/RLE/RLO and matching PDF.
-       */
+      /** A "word" between LRE/LRO/RLE/RLO and matching PDF. */
       public static final int EMBEDDED = 10;
     }
 
@@ -210,28 +176,21 @@ public class BidiUtils {
      */
     private static final double RTL_THRESHOLD = 0.4;
 
-
     // Internal instance variables.
 
-    /**
-     * The text to be scanned.
-     */
+    /** The text to be scanned. */
     private final String text;
 
     /**
-     * Whether the text to be scanned is to be treated as HTML, i.e. skipping over tags and
-     * entities when looking for the next / preceding dir type.
+     * Whether the text to be scanned is to be treated as HTML, i.e. skipping over tags and entities
+     * when looking for the next / preceding dir type.
      */
     private final boolean isHtml;
 
-    /**
-     * The length of the text in chars.
-     */
+    /** The length of the text in chars. */
     private final int length;
 
-    /**
-     * The current position in the text.
-     */
+    /** The current position in the text. */
     private int charIndex;
 
     /**
@@ -242,19 +201,13 @@ public class BidiUtils {
      */
     private char lastChar;
 
-    /**
-     * Number of LTR words found so far by the word count direction estimation algorithm.
-     */
+    /** Number of LTR words found so far by the word count direction estimation algorithm. */
     private int ltrWordCount;
 
-    /**
-     * Number of RTL words found so far by the word count direction estimation algorithm.
-     */
+    /** Number of RTL words found so far by the word count direction estimation algorithm. */
     private int rtlWordCount;
 
-    /**
-     * Number of URLs found so far by the word count direction estimation algorithm.
-     */
+    /** Number of URLs found so far by the word count direction estimation algorithm. */
     private int urlWordCount;
 
     /**
@@ -284,7 +237,6 @@ public class BidiUtils {
      * estimation algorithm.
      */
     private int wordType;
-
 
     // Methods intended for use by BidiUtils.
 
@@ -399,10 +351,9 @@ public class BidiUtils {
 
     /**
      * Returns the directionality of the first character with strong directionality in the string,
-     * or Dir.NEUTRAL if none was encountered. Treats a non-BN character between an
-     * LRE/RLE/LRO/RLO and its matching PDF as a strong character, LTR after LRE/LRO, and RTL after
-     * RLE/RLO. The results are undefined for a string containing unbalanced LRE/RLE/LRO/RLO/PDF
-     * characters.
+     * or Dir.NEUTRAL if none was encountered. Treats a non-BN character between an LRE/RLE/LRO/RLO
+     * and its matching PDF as a strong character, LTR after LRE/LRO, and RTL after RLE/RLO. The
+     * results are undefined for a string containing unbalanced LRE/RLE/LRO/RLO/PDF characters.
      */
     Dir getEntryDir() {
       // The reason for this method name, as opposed to getFirstStrongDir(), is that "first strong"
@@ -559,8 +510,8 @@ public class BidiUtils {
     }
 
     /**
-     * Estimates the directionality of the (whole) string based on relative word counts. See
-     * {@link #estimateDirection(String str)} for full description.
+     * Estimates the directionality of the (whole) string based on relative word counts. See {@link
+     * #estimateDirection(String str)} for full description.
      *
      * @return the string's directionality
      */
@@ -609,12 +560,12 @@ public class BidiUtils {
               if (wordType < WordType.STRONG) {
                 if (wordType <= WordType.MINUS) {
                   switch (lastChar) {
-                    case 0x002B:  // PLUS SIGN
-                    case 0x207A:  // SUPERSCRIPT PLUS SIGN
-                    case 0x208A:  // SUBSCRIPT PLUS SIGN
-                    case 0xFB29:  // HEBREW LETTER ALTERNATIVE PLUS SIGN
-                    case 0xFE62:  // SMALL PLUS SIGN
-                    case 0xFF0B:  // FULLWIDTH PLUS SIGN
+                    case 0x002B: // PLUS SIGN
+                    case 0x207A: // SUPERSCRIPT PLUS SIGN
+                    case 0x208A: // SUBSCRIPT PLUS SIGN
+                    case 0xFB29: // HEBREW LETTER ALTERNATIVE PLUS SIGN
+                    case 0xFE62: // SMALL PLUS SIGN
+                    case 0xFF0B: // FULLWIDTH PLUS SIGN
                       wordType = WordType.PLUS;
                       break;
                     default:
@@ -700,7 +651,6 @@ public class BidiUtils {
       return compareCounts();
     }
 
-
     // Internal methods
 
     /*
@@ -726,8 +676,8 @@ public class BidiUtils {
 
     /**
      * Converts a neutral or numeric word to STRONG, or, if the word had been neutral, and the
-     * character just scanned and the characters following are a URL, to a URL, and adjusts the
-     * word counts appropriately.
+     * character just scanned and the characters following are a URL, to a URL, and adjusts the word
+     * counts appropriately.
      */
     private void processStrong(boolean isRtl) {
       if (wordType >= WordType.STRONG) {
@@ -736,8 +686,9 @@ public class BidiUtils {
       }
       switch (wordType) {
         case WordType.NEUTRAL:
-          if (!isRtl && lastChar == 'h' &&
-              (matchForward("ttp://", true) || matchForward("ttps://", true))) {
+          if (!isRtl
+              && lastChar == 'h'
+              && (matchForward("ttp://", true) || matchForward("ttps://", true))) {
             // This is the start of a URL.
             wordType = WordType.URL;
             ++urlWordCount;
@@ -827,8 +778,8 @@ public class BidiUtils {
     }
 
     /**
-     * Returns whether the text at charIndex going forward is equal to a given string.
-     * Does NOT skip over HTML mark-up.
+     * Returns whether the text at charIndex going forward is equal to a given string. Does NOT skip
+     * over HTML mark-up.
      *
      * @param match The string to match.
      * @param advance Whether to advance charIndex to the end of a successful match.
@@ -861,8 +812,8 @@ public class BidiUtils {
 
     /**
      * Returns the UCharacter.DIRECTIONALITY_... value of the next codepoint and advances charIndex.
-     * If isHtml, and the codepoint is '<' or '&', advances through the tag/entity, and returns
-     * an appropriate dirtype.
+     * If isHtml, and the codepoint is '<' or '&', advances through the tag/entity, and returns an
+     * appropriate dirtype.
      *
      * @throws java.lang.IndexOutOfBoundsException if called when charIndex >= length or < 0.
      */
@@ -992,9 +943,9 @@ public class BidiUtils {
     }
 
     /**
-     * Advances charIndex forward through an HTML character entity tag (after the opening
-     * &amp; has already been read) and returns UCharacter.DIRECTIONALITY_WHITESPACE. It would be
-     * best to figure out the actual character and return its dirtype, but this is good enough.
+     * Advances charIndex forward through an HTML character entity tag (after the opening &amp; has
+     * already been read) and returns UCharacter.DIRECTIONALITY_WHITESPACE. It would be best to
+     * figure out the actual character and return its dirtype, but this is good enough.
      */
     private byte skipEntityForward() {
       while (charIndex < length && (lastChar = text.charAt(charIndex++)) != ';') {}
@@ -1002,10 +953,10 @@ public class BidiUtils {
     }
 
     /**
-     * Advances charIndex backward through an HTML character entity tag (after the closing ;
-     * has already been read) and returns UCharacter.DIRECTIONALITY_WHITESPACE. It would be best to
-     * figure out the actual character and return its dirtype, but this is good enough. If there
-     * is no matching &amp;, does not change charIndex and returns
+     * Advances charIndex backward through an HTML character entity tag (after the closing ; has
+     * already been read) and returns UCharacter.DIRECTIONALITY_WHITESPACE. It would be best to
+     * figure out the actual character and return its dirtype, but this is good enough. If there is
+     * no matching &amp;, does not change charIndex and returns
      * UCharacter.DIRECTIONALITY_OTHER_NEUTRALS (for the ';' that did not start an entity after
      * all). Nevertheless, the running time for calling skipEntityBackward() in a loop remains
      * linear in the size of the text, even for a text like ";;;;;;;", because skipTagBackward()
@@ -1041,8 +992,7 @@ public class BidiUtils {
   }
 
   /**
-   * Like {@link #hasAnyLtr(String, boolean)}, but assumes
-   * {@code str} is not HTML / HTML-escaped.
+   * Like {@link #hasAnyLtr(String, boolean)}, but assumes {@code str} is not HTML / HTML-escaped.
    *
    * @param str the string to be tested
    * @return whether the string contains any LTR characters
@@ -1064,8 +1014,7 @@ public class BidiUtils {
   }
 
   /**
-   * Like {@link #hasAnyRtl(String, boolean)}, but assumes
-   * {@code str} is not HTML / HTML-escaped.
+   * Like {@link #hasAnyRtl(String, boolean)}, but assumes {@code str} is not HTML / HTML-escaped.
    *
    * @param str the string to be tested
    * @return whether the string contains any RTL characters
@@ -1096,15 +1045,15 @@ public class BidiUtils {
   }
 
   /**
-   * Returns the directionality of the first character with strong directionality in the string,
-   * or Dir.NEUTRAL if none was encountered. Treats a non-BN character between an
-   * LRE/RLE/LRO/RLO and its matching PDF as a strong character, LTR after LRE/LRO, and RTL after
-   * RLE/RLO. The results are undefined for a string containing unbalanced LRE/RLE/LRO/RLO/PDF
-   * characters. The intended use is to check whether a logically separate item that ends with a
-   * character of the string's entry directionality and precedes the string inline (not counting any
-   * neutral characters in between) would "stick" to it in an opposite-directionality context, thus
-   * being displayed in an incorrect position. An LRM or RLM character (the one of the context's
-   * directionality) between the two will prevent such sticking.
+   * Returns the directionality of the first character with strong directionality in the string, or
+   * Dir.NEUTRAL if none was encountered. Treats a non-BN character between an LRE/RLE/LRO/RLO and
+   * its matching PDF as a strong character, LTR after LRE/LRO, and RTL after RLE/RLO. The results
+   * are undefined for a string containing unbalanced LRE/RLE/LRO/RLO/PDF characters. The intended
+   * use is to check whether a logically separate item that ends with a character of the string's
+   * entry directionality and precedes the string inline (not counting any neutral characters in
+   * between) would "stick" to it in an opposite-directionality context, thus being displayed in an
+   * incorrect position. An LRM or RLM character (the one of the context's directionality) between
+   * the two will prevent such sticking.
    *
    * @param str the string to check
    * @param isHtml whether str is HTML / HTML-escaped
@@ -1141,8 +1090,7 @@ public class BidiUtils {
   }
 
   /**
-   * Like {@link #getExitDir(String, boolean)}, but assumes {@code str} is not HTML or
-   * HTML-escaped.
+   * Like {@link #getExitDir(String, boolean)}, but assumes {@code str} is not HTML or HTML-escaped.
    */
   public static Dir getExitDir(String str) {
     return getExitDir(str, false /* isHtml */);
@@ -1150,43 +1098,43 @@ public class BidiUtils {
 
   /**
    * Estimates the directionality of a string based on relative word counts, as detailed below.
-   * <p>
-   * The parts of the text embedded between LRE/RLE and the matching PDF are ignored, since the
+   *
+   * <p>The parts of the text embedded between LRE/RLE and the matching PDF are ignored, since the
    * directionality in which the string as a whole is displayed will not affect their display
    * anyway, and we want to base it on the remainder.
-   * <p>
-   * The parts of the text embedded between LRO/RLO and the matching PDF are considered LTR/RTL
+   *
+   * <p>The parts of the text embedded between LRO/RLO and the matching PDF are considered LTR/RTL
    * "words". This is primarily in order to treat "fake bidi" pseudolocalized text as RTL.
-   * <p>
-   * The remaining parts of the text are divided into "words" on whitespace and, inside numbers, on
-   * neutral characters that break the LTR flow around them when used inside a number in an RTL
+   *
+   * <p>The remaining parts of the text are divided into "words" on whitespace and, inside numbers,
+   * on neutral characters that break the LTR flow around them when used inside a number in an RTL
    * context. (This is most of them, the primary exceptions being period, comma, NBSP and colon,
    * i.e. bidi class CS not including slash, which a long-standing Microsoft bug treats as ES)).
-   * <p>
-   * Each word is assigned a type - LTR, RTL, URL, signed "European" number, unsigned "European"
-   * number, negative "Arabic" number, "Arabic" number with leading plus sign, and unsigned
-   * "Arabic" number - as follows:
-   * <p>
-   * - Words that start with "http[s]://" (possibly preceded by some neutrals) are URLs.
-   * <p>
-   * - Of the remaining words, those that contain any strongly directional characters are classified
-   * as LTR or RTL based on their first strongly directional character.
-   * <p>
-   * - Of the remaining words, those that contain any digits are classified as an "European" or
+   *
+   * <p>Each word is assigned a type - LTR, RTL, URL, signed "European" number, unsigned "European"
+   * number, negative "Arabic" number, "Arabic" number with leading plus sign, and unsigned "Arabic"
+   * number - as follows:
+   *
+   * <p>- Words that start with "http[s]://" (possibly preceded by some neutrals) are URLs.
+   *
+   * <p>- Of the remaining words, those that contain any strongly directional characters are
+   * classified as LTR or RTL based on their first strongly directional character.
+   *
+   * <p>- Of the remaining words, those that contain any digits are classified as an "European" or
    * "Arabic" number based on the type of its first digit, and signed or unsigned depending on
    * whether the first digit was immediately preceded by a plus or minus sign (bidi class ES).
-   * <p>
-   * - The remaining words are classified as "neutral" and ignored.
-   * <p>
-   * Once the words of each type have been counted, the directionality is decided as follows:
-   * <p>
-   * If the number of RTL words exceeds 40% of the total of LTR and RTL words, return Dir.RTL. The
-   * threshold favors RTL because LTR words and phrases are used in RTL sentences more commonly than
-   * RTL in LTR.
-   * <p>
-   * Otherwise, if there are any LTR words, return Dir.LTR.
-   * <p>
-   * Otherwise (i.e. if there are no LTR or RTL words), if there are any URLs, or any signed
+   *
+   * <p>- The remaining words are classified as "neutral" and ignored.
+   *
+   * <p>Once the words of each type have been counted, the directionality is decided as follows:
+   *
+   * <p>If the number of RTL words exceeds 40% of the total of LTR and RTL words, return Dir.RTL.
+   * The threshold favors RTL because LTR words and phrases are used in RTL sentences more commonly
+   * than RTL in LTR.
+   *
+   * <p>Otherwise, if there are any LTR words, return Dir.LTR.
+   *
+   * <p>Otherwise (i.e. if there are no LTR or RTL words), if there are any URLs, or any signed
    * "European" numbers, or an "Arabic" number with a leading plus sign, or more than one unsigned
    * "European" number, return Dir.LTR. This ensures that the text is displayed LTR even in an RTL
    * context, where things like "http://www.google.com/", "-5", "+١٢٣٤٢٣٤٦٧٨٩" (assuming it is
@@ -1204,17 +1152,18 @@ public class BidiUtils {
    * usage in Hebrew, it seems like an OK choice. Please note that native Persian digits are
    * included in the "European" class because the unary minus is preferred on the left in Persian,
    * and Persian math is written LTR.
-   * <p>
-   * Otherwise, if there are any negative "Arabic" numbers, return Dir.RTL. This is because the
+   *
+   * <p>Otherwise, if there are any negative "Arabic" numbers, return Dir.RTL. This is because the
    * unary minus is supposed to be displayed to the right of a number written in "Arabic" digits.
-   * <p>
-   * Otherwise, return Dir.NEUTRAL. This includes the common case of a single unsigned number, which
-   * will display correctly in either "European" or "Arabic" digits in either directionality, so it
-   * is best not to force it to either. It also includes an otherwise neutral string containing two
-   * or more "Arabic" numbers. We do *not* consider it to be RTL because it is unclear that it is
-   * important to display "Arabic"-digit math and ranges in RTL even in an LTR context, and because
-   * we have no idea how to handle phone numbers spelled (or, more likely, misspelled) in "Arabic"
-   * digits with non-CS separators. But it is quite clear that we do not want to force it to LTR.
+   *
+   * <p>Otherwise, return Dir.NEUTRAL. This includes the common case of a single unsigned number,
+   * which will display correctly in either "European" or "Arabic" digits in either directionality,
+   * so it is best not to force it to either. It also includes an otherwise neutral string
+   * containing two or more "Arabic" numbers. We do *not* consider it to be RTL because it is
+   * unclear that it is important to display "Arabic"-digit math and ranges in RTL even in an LTR
+   * context, and because we have no idea how to handle phone numbers spelled (or, more likely,
+   * misspelled) in "Arabic" digits with non-CS separators. But it is quite clear that we do not
+   * want to force it to LTR.
    *
    * @param str the string to check
    * @return the string's directionality
@@ -1224,8 +1173,8 @@ public class BidiUtils {
   }
 
   /**
-   * Like {@link #estimateDirection(String)}, but can treat {@code str} as HTML,
-   * ignoring HTML tags and escapes that would otherwise be mistaken for LTR text.
+   * Like {@link #estimateDirection(String)}, but can treat {@code str} as HTML, ignoring HTML tags
+   * and escapes that would otherwise be mistaken for LTR text.
    *
    * @param str the string to check
    * @param isHtml whether str is HTML / HTML-escaped

@@ -16,16 +16,12 @@
 
 package com.google.template.soy.types;
 
-/**
- * Interface used to lookup information about an object type.
- */
+/** Interface used to lookup information about an object type. */
 public interface SoyTypeProvider {
 
-
   /**
-   * Given a fully-qualified name of a type, return the {@link SoyType}
-   * that describes this type, or {@code null} if this type provider does
-   * not have a definition for the requested type.
+   * Given a fully-qualified name of a type, return the {@link SoyType} that describes this type, or
+   * {@code null} if this type provider does not have a definition for the requested type.
    *
    * @param typeName The fully-qualified name of the type.
    * @param typeRegistry The global type registry.

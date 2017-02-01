@@ -22,38 +22,36 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.SoyValueHelper;
+import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
-
-import junit.framework.TestCase;
-
-import org.mozilla.javascript.Context;
-import org.mozilla.javascript.ContextFactory;
-import org.mozilla.javascript.NativeArray;
-import org.mozilla.javascript.NativeObject;
-import org.mozilla.javascript.ScriptableObject;
-
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.util.Arrays;
 import java.util.List;
-
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
-
+import org.junit.Rule;
+import org.junit.rules.TestName;
+import org.mozilla.javascript.Context;
+import org.mozilla.javascript.ContextFactory;
+import org.mozilla.javascript.NativeArray;
+import org.mozilla.javascript.NativeObject;
+import org.mozilla.javascript.ScriptableObject;
 
 /**
  * Utilities for testing Soy print directives.
  *
+ * <p>TODO(lukes): this should be changed to be a {@code @Rule}
+ *
  */
 @ParametersAreNonnullByDefault
-public abstract class AbstractSoyPrintDirectiveTestCase extends TestCase {
-
+public abstract class AbstractSoyPrintDirectiveTestCase {
+  @Rule public final TestName testName = new TestName();
 
   /**
    * @param expectedOutput The expected result of applying directive to value with args.
@@ -62,11 +60,12 @@ public abstract class AbstractSoyPrintDirectiveTestCase extends TestCase {
    * @param args Arguments to the Soy directive.
    */
   protected void assertTofuOutput(
-      String expectedOutput, @Nullable Object value, SoyJavaPrintDirective directive,
+      String expectedOutput,
+      @Nullable Object value,
+      SoyJavaPrintDirective directive,
       Object... args) {
     assertTofuOutput(StringData.forValue(expectedOutput), value, directive, args);
   }
-
 
   /**
    * @param expectedOutput The expected result of applying directive to value with args.
@@ -78,19 +77,18 @@ public abstract class AbstractSoyPrintDirectiveTestCase extends TestCase {
       SoyValue expectedOutput, Object value, SoyJavaPrintDirective directive, Object... args) {
     ImmutableList.Builder<SoyValue> argsData = ImmutableList.builder();
     for (Object arg : args) {
-      argsData.add(SoyValueHelper.UNCUSTOMIZED_INSTANCE.convert(arg).resolve());
+      argsData.add(SoyValueConverter.UNCUSTOMIZED_INSTANCE.convert(arg).resolve());
     }
     assertThat(
-        directive.applyForJava(
-            SoyValueHelper.UNCUSTOMIZED_INSTANCE.convert(value).resolve(),
-            argsData.build()).toString())
+            directive
+                .applyForJava(
+                    SoyValueConverter.UNCUSTOMIZED_INSTANCE.convert(value).resolve(),
+                    argsData.build())
+                .toString())
         .isEqualTo(expectedOutput.toString());
   }
 
-
-  /**
-   * Aggregates multiple JS tests so that they can be run in a single JS interpreter.
-   */
+  /** Aggregates multiple JS tests so that they can be run in a single JS interpreter. */
   public final class JsSrcPrintDirectiveTestBuilder {
     private final ImmutableList.Builder<TestData> testDataListBuilder = ImmutableList.builder();
 
@@ -108,7 +106,9 @@ public abstract class AbstractSoyPrintDirectiveTestCase extends TestCase {
      *     arguments.
      */
     public JsSrcPrintDirectiveTestBuilder addTest(
-        String expectedOutput, String valueJs, SoyJsSrcPrintDirective directive,
+        String expectedOutput,
+        String valueJs,
+        SoyJsSrcPrintDirective directive,
         String... directiveArgsJs) {
       testDataListBuilder.add(
           new TestData(expectedOutput, valueJs, directive, Arrays.asList(directiveArgsJs)));
@@ -134,16 +134,18 @@ public abstract class AbstractSoyPrintDirectiveTestCase extends TestCase {
         generatedJsExprsAsJsArray
             .append("String(")
             .append(
-                testData.directive.applyForJsSrc(
-                    new JsExpr("(" + testData.valueJs + ")", Integer.MAX_VALUE), args.build())
-                .getText())
+                testData
+                    .directive
+                    .applyForJsSrc(
+                        new JsExpr("(" + testData.valueJs + ")", Integer.MAX_VALUE), args.build())
+                    .getText())
             .append(")");
         generatedJsExprsAsJsArrayHasElements = true;
       }
       generatedJsExprsAsJsArray.append("]");
 
       Context context = new ContextFactory().enterContext();
-      context.setOptimizationLevel(-1);  // Only running once.
+      context.setOptimizationLevel(-1); // Only running once.
       ScriptableObject globalScope = context.initStandardObjects();
 
       // Define a fake navigator object for Closure's userAgent library.
@@ -169,12 +171,14 @@ public abstract class AbstractSoyPrintDirectiveTestCase extends TestCase {
         throw new AssertionError(ex);
       }
 
-      NativeArray outputAsJsList = (NativeArray) context.evaluateString(
-          globalScope,
-          generatedJsExprsAsJsArray.toString(),
-          getClass() + ":" + getName(),  // File name for JS traces.
-          1,
-          null);
+      NativeArray outputAsJsList =
+          (NativeArray)
+              context.evaluateString(
+                  globalScope,
+                  generatedJsExprsAsJsArray.toString(),
+                  getClass() + ":" + testName.getMethodName(), // File name for JS traces.
+                  1,
+                  null);
       long n = outputAsJsList.getLength();
       ImmutableList.Builder<String> actualOutputListBuilder = ImmutableList.builder();
       for (int i = 0; i < n; ++i) {
@@ -186,15 +190,11 @@ public abstract class AbstractSoyPrintDirectiveTestCase extends TestCase {
     }
   }
 
-
   private static String getSoyUtilsPath() {
     return "testdata/javascript/soy_usegoog_lib.js";
   }
 
-
-  /**
-   * Data for a single print directive test to run in a JS interpreter.
-   */
+  /** Data for a single print directive test to run in a JS interpreter. */
   static final class TestData {
 
     /** The expected output string. */
@@ -210,7 +210,9 @@ public abstract class AbstractSoyPrintDirectiveTestCase extends TestCase {
     final ImmutableList<String> directiveArgsJs;
 
     TestData(
-        String expectedOutput, String valueJs, SoyJsSrcPrintDirective directive,
+        String expectedOutput,
+        String valueJs,
+        SoyJsSrcPrintDirective directive,
         List<String> directiveArgsJs) {
       this.expectedOutput = expectedOutput;
       this.valueJs = valueJs;
@@ -218,5 +220,4 @@ public abstract class AbstractSoyPrintDirectiveTestCase extends TestCase {
       this.directiveArgsJs = ImmutableList.copyOf(directiveArgsJs);
     }
   }
-
 }

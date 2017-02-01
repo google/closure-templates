@@ -31,10 +31,10 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
  * Visitor for asserting that all the nodes in a parse tree or subtree conform to the user-declared
  * syntax version.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
- * <p> {@link #exec} may be called on any node. There is no return value. However, a
- * {@code SoySyntaxException} is thrown if the given node or a descendant does not satisfy the
+ * <p>{@link #exec} may be called on any node. There is no return value. However, a {@code
+ * SoySyntaxException} is thrown if the given node or a descendant does not satisfy the
  * user-declared syntax version.
  *
  */
@@ -56,18 +56,23 @@ final class ReportSyntaxVersionErrorsVisitor extends AbstractSoyNodeVisitor<Void
       SyntaxVersion requiredSyntaxVersion, boolean isDeclared, ErrorReporter errorReporter) {
     this.errorReporter = errorReporter;
     this.requiredSyntaxVersion = requiredSyntaxVersion;
-    this.errorPreamble = (requiredSyntaxVersion == SyntaxVersion.V1_0)
-        ? "incorrect v1 syntax"
-        : ((isDeclared ? "declared" : "inferred")
-            + " syntax version " + requiredSyntaxVersion + " not satisfied");
+    this.errorPreamble =
+        (requiredSyntaxVersion == SyntaxVersion.V1_0)
+            ? "incorrect v1 syntax"
+            : ((isDeclared ? "declared" : "inferred")
+                + " syntax version "
+                + requiredSyntaxVersion
+                + " not satisfied");
   }
 
-  @Override public Void exec(SoyNode node) {
+  @Override
+  public Void exec(SoyNode node) {
     visitSoyNode(node);
     return null;
   }
 
-  @Override protected void visitSoyNode(SoyNode node) {
+  @Override
+  protected void visitSoyNode(SoyNode node) {
     // ------ Record errors for this Soy node. ------
     if (!node.couldHaveSyntaxVersionAtLeast(requiredSyntaxVersion)) {
       SyntaxVersionUpperBound syntaxVersionBound = node.getSyntaxVersionUpperBound();

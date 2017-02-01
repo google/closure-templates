@@ -18,13 +18,11 @@ package com.google.template.soy.msgs;
 
 import com.google.template.soy.msgs.SoyMsgBundleHandler.OutputFileOptions;
 
-
 /**
  * Plugin for implementing a specific message file format.
  *
  */
 public interface SoyMsgPlugin {
-
 
   /**
    * Builds the content of an extracted messages file (source messages to be translated) from a
@@ -39,7 +37,6 @@ public interface SoyMsgPlugin {
   public CharSequence generateExtractedMsgsFile(SoyMsgBundle msgBundle, OutputFileOptions options)
       throws SoyMsgException;
 
-
   /**
    * Parses the content of a translated messages file and builds a message bundle object.
    *
@@ -49,5 +46,4 @@ public interface SoyMsgPlugin {
    */
   public SoyMsgBundle parseTranslatedMsgsFile(String translatedMsgsFileContent)
       throws SoyMsgException;
-
 }

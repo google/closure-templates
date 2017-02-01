@@ -20,36 +20,34 @@ import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Ordering;
-
-import org.objectweb.asm.AnnotationVisitor;
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.Type;
-
 import java.lang.annotation.Annotation;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.reflect.Array;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.Map;
-
 import javax.annotation.Nullable;
+import org.objectweb.asm.AnnotationVisitor;
+import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.Type;
 
 /**
  * A helper for turning {@link Annotation} instances into asm visit operations.
- * 
+ *
  * <p>This is safer than just using {@link AnnotationVisitor} directly since it makes it impossible
  * to typo field names, which are silently ignored, since it is assumed in the parser that the field
  * is from a different version of the annotation.
  */
 final class AnnotationRef<T extends Annotation> {
-  private static final Ordering<Method> METHOD_ORDERING = new Ordering<Method>(){
-    @Override public int compare(@Nullable Method left, @Nullable Method right) {
-      return left.toGenericString().compareTo(right.toGenericString());
-    }
-  };
+  private static final Ordering<Method> METHOD_ORDERING =
+      new Ordering<Method>() {
+        @Override
+        public int compare(@Nullable Method left, @Nullable Method right) {
+          return left.toGenericString().compareTo(right.toGenericString());
+        }
+      };
 
   static <T extends Annotation> AnnotationRef<T> forType(Class<T> annType) {
     checkArgument(annType.isAnnotation());
@@ -70,7 +68,7 @@ final class AnnotationRef<T extends Annotation> {
     // bytecode non deterministically.  getDeclaredMethods() internally uses a hashMap for storing
     // objects so the order of methods returned from it is non deterministic
     ImmutableMap.Builder<Method, FieldWriter> writersBuilder = ImmutableMap.builder();
-    for(Method method : METHOD_ORDERING.sortedCopy(Arrays.asList(annType.getDeclaredMethods()))) {
+    for (Method method : METHOD_ORDERING.sortedCopy(Arrays.asList(annType.getDeclaredMethods()))) {
       if (method.getParameterTypes().length == 0 && !Modifier.isStatic(method.getModifiers())) {
         Class<?> returnType = method.getReturnType();
         if (returnType.isArray()) {
@@ -80,10 +78,10 @@ final class AnnotationRef<T extends Annotation> {
           }
           writersBuilder.put(method, arrayFieldWriter(method.getName()));
         } else if (returnType.isAnnotation()) {
-          // N.B. this is recursive and will fail if we encounter recursive annotations 
+          // N.B. this is recursive and will fail if we encounter recursive annotations
           // (StackOverflowError).  This could be resolved when we have a usecase, but the failure
           // will be obvious if it every pops up.
-          @SuppressWarnings("unchecked")  // we just checked above
+          @SuppressWarnings("unchecked") // we just checked above
           AnnotationRef<?> forType = forType((Class<? extends Annotation>) returnType);
           writersBuilder.put(method, annotationFieldWriter(method.getName(), forType));
         } else {
@@ -95,9 +93,7 @@ final class AnnotationRef<T extends Annotation> {
     this.writers = writersBuilder.build();
   }
 
-  /**
-   * Writes the given annotation to the visitor.
-   */
+  /** Writes the given annotation to the visitor. */
   void write(T instance, ClassVisitor visitor) {
     doWrite(instance, visitor.visitAnnotation(typeDescriptor, isRuntimeVisible));
   }
@@ -109,13 +105,13 @@ final class AnnotationRef<T extends Annotation> {
     annVisitor.visitEnd();
   }
 
-  // Invokes the given method on the instance, throwing runtime exceptions if any exception is 
+  // Invokes the given method on the instance, throwing runtime exceptions if any exception is
   // thrown
   private Object invokeExplosively(T instance, Method key) {
     Object invoke;
     try {
       invoke = key.invoke(instance);
-    } catch (IllegalAccessException |InvocationTargetException e) {
+    } catch (ReflectiveOperationException e) {
       // these are unexpected since annotation accessors should be public
       throw new RuntimeException(e);
     }
@@ -137,9 +133,9 @@ final class AnnotationRef<T extends Annotation> {
     };
   }
 
-  /** 
+  /**
    * Writes an primitive valued field to the writer.
-   *   
+   *
    * <p>See {@link AnnotationVisitor#visit(String, Object)} for the valid types.
    */
   private static FieldWriter simpleFieldWriter(final String name) {
@@ -151,7 +147,6 @@ final class AnnotationRef<T extends Annotation> {
     };
   }
 
-  
   /** Writes an array valued field to the annotation visitor. */
   private static FieldWriter arrayFieldWriter(final String name) {
     return new FieldWriter() {

@@ -19,16 +19,14 @@ package com.google.template.soy.coredirectives;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.jssrc.restricted.JsExpr;
-import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
+import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcPrintDirective;
 import com.google.template.soy.shared.restricted.Sanitizers;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.shared.restricted.SoyPurePrintDirective;
-
 import java.util.List;
 import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
 
 /**
  * A directive that turns off autoescape for this 'print' tag (if it's on for the template).
@@ -36,38 +34,42 @@ import javax.inject.Singleton;
  */
 @Singleton
 @SoyPurePrintDirective
-public class NoAutoescapeDirective implements SoyJavaPrintDirective, SoyJsSrcPrintDirective {
-
+public class NoAutoescapeDirective
+    implements SoyJavaPrintDirective, SoyLibraryAssistedJsSrcPrintDirective {
 
   public static final String NAME = "|noAutoescape";
-
 
   @Inject
   public NoAutoescapeDirective() {}
 
-
-  @Override public String getName() {
+  @Override
+  public String getName() {
     return NAME;
   }
 
-
-  @Override public Set<Integer> getValidArgsSizes() {
+  @Override
+  public Set<Integer> getValidArgsSizes() {
     return ImmutableSet.of(0);
   }
 
-
-  @Override public boolean shouldCancelAutoescape() {
+  @Override
+  public boolean shouldCancelAutoescape() {
     return true;
   }
 
-
-  @Override public SoyValue applyForJava(SoyValue value, List<SoyValue> args) {
+  @Override
+  public SoyValue applyForJava(SoyValue value, List<SoyValue> args) {
     return Sanitizers.filterNoAutoescape(value);
   }
 
-
-  @Override public JsExpr applyForJsSrc(JsExpr value, List<JsExpr> args) {
+  @Override
+  public JsExpr applyForJsSrc(JsExpr value, List<JsExpr> args) {
     return new JsExpr("soy.$$filterNoAutoescape(" + value.getText() + ")", Integer.MAX_VALUE);
+  }
+
+  @Override
+  public ImmutableSet<String> getRequiredJsLibNames() {
+    return ImmutableSet.of("soy");
   }
 
 }

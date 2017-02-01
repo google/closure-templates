@@ -33,7 +33,6 @@ import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.defn.TemplateParam;
-
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Objects;
@@ -45,8 +44,8 @@ import java.util.Set;
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
- * <p> {@link #exec} should be called on a full parse tree. There is no return value. A
- * {@code SoySyntaxException} is thrown if an error is found.
+ * <p>{@link #exec} should be called on a full parse tree. There is no return value. A {@code
+ * SoySyntaxException} is thrown if an error is found.
  *
  */
 final class CheckDelegatesVisitor extends AbstractSoyNodeVisitor<Void> {
@@ -67,6 +66,10 @@ final class CheckDelegatesVisitor extends AbstractSoyNodeVisitor<Void> {
           "If one deltemplate has strict autoescaping, all its peers must also be strictly"
               + " autoescaped with the same content kind: {0} != {1}. Conflicting definition at"
               + " {2}.");
+  private static final SoyErrorKind DELTEMPLATES_WITH_DIFFERENT_STRICT_HTML_MODE =
+      SoyErrorKind.of(
+          "Found delegate template with same name ''{0}'' but different strict html mode "
+              + "compared to the definition at {1}.");
 
   /** A template registry built from the Soy tree. */
   private final TemplateRegistry templateRegistry;
@@ -76,14 +79,20 @@ final class CheckDelegatesVisitor extends AbstractSoyNodeVisitor<Void> {
 
   /** Current delegate package name, or null if none (during pass). */
   private String currDelPackageName;
+
+  private final boolean enabledStrictHtml;
+
   private final ErrorReporter errorReporter;
 
-  CheckDelegatesVisitor(TemplateRegistry templateRegistry, ErrorReporter errorReporter) {
+  CheckDelegatesVisitor(
+      TemplateRegistry templateRegistry, boolean enabledStrictHtml, ErrorReporter errorReporter) {
     this.templateRegistry = templateRegistry;
+    this.enabledStrictHtml = enabledStrictHtml;
     this.errorReporter = errorReporter;
   }
 
-  @Override public Void exec(SoyNode soyNode) {
+  @Override
+  public Void exec(SoyNode soyNode) {
 
     Preconditions.checkArgument(soyNode instanceof SoyFileSetNode);
     // Perform checks that only involve templates (uses templateRegistry only, no traversal).
@@ -95,21 +104,19 @@ final class CheckDelegatesVisitor extends AbstractSoyNodeVisitor<Void> {
     return null;
   }
 
-
-  /**
-   * Performs checks that only involve templates (uses templateRegistry only).
-   */
+  /** Performs checks that only involve templates (uses templateRegistry only). */
   private void checkTemplates() {
 
     DelTemplateSelector<TemplateDelegateNode> selector = templateRegistry.getDelTemplateSelector();
 
-    // Check that all delegate templates with the same name have the same declared params and
-    // content kind.
+    // Check that all delegate templates with the same name have the same declared params,
+    // content kind, and strict html mode.
     for (Collection<TemplateDelegateNode> delTemplateGroup :
         selector.delTemplateNameToValues().asMap().values()) {
       TemplateDelegateNode firstDelTemplate = null;
       Set<Equivalence.Wrapper<TemplateParam>> firstRequiredParamSet = null;
       ContentKind firstContentKind = null;
+      boolean firstStrictHtml = false;
 
       // loop over all members of the deltemplate group.
       for (TemplateDelegateNode delTemplate : delTemplateGroup) {
@@ -118,6 +125,7 @@ final class CheckDelegatesVisitor extends AbstractSoyNodeVisitor<Void> {
           firstDelTemplate = delTemplate;
           firstRequiredParamSet = getRequiredParamSet(delTemplate);
           firstContentKind = delTemplate.getContentKind();
+          firstStrictHtml = delTemplate.isStrictHtml() && firstContentKind == ContentKind.HTML;
         } else {
           // Not first template encountered.
           Set<Equivalence.Wrapper<TemplateParam>> currRequiredParamSet =
@@ -145,6 +153,16 @@ final class CheckDelegatesVisitor extends AbstractSoyNodeVisitor<Void> {
                 String.valueOf(delTemplate.getContentKind()),
                 firstDelTemplate.getSourceLocation().toString());
           }
+          // Check if all del templates have the same settings of strict HTML mode.
+          // We do not need to check {@code ContentKind} again since we already did that earlier
+          // in this pass.
+          if (enabledStrictHtml && delTemplate.isStrictHtml() != firstStrictHtml) {
+            errorReporter.report(
+                delTemplate.getSourceLocation(),
+                DELTEMPLATES_WITH_DIFFERENT_STRICT_HTML_MODE,
+                firstDelTemplate.getDelTemplateName(),
+                firstDelTemplate.getSourceLocation().toString());
+          }
         }
       }
     }
@@ -154,6 +172,7 @@ final class CheckDelegatesVisitor extends AbstractSoyNodeVisitor<Void> {
   // effectively the same.
   private static final class ParamEquivalence extends Equivalence<TemplateParam> {
     static final ParamEquivalence INSTANCE = new ParamEquivalence();
+
     @Override
     protected boolean doEquivalent(TemplateParam a, TemplateParam b) {
       return a.name().equals(b.name())
@@ -168,8 +187,8 @@ final class CheckDelegatesVisitor extends AbstractSoyNodeVisitor<Void> {
     }
   }
 
-  private static Set<Equivalence.Wrapper<TemplateParam>>
-      getRequiredParamSet(TemplateDelegateNode delTemplate) {
+  private static Set<Equivalence.Wrapper<TemplateParam>> getRequiredParamSet(
+      TemplateDelegateNode delTemplate) {
     Set<Equivalence.Wrapper<TemplateParam>> paramSet = new HashSet<>();
     for (TemplateParam param : delTemplate.getParams()) {
       if (param.isRequired()) {
@@ -179,19 +198,18 @@ final class CheckDelegatesVisitor extends AbstractSoyNodeVisitor<Void> {
     return paramSet;
   }
 
-
   // -----------------------------------------------------------------------------------------------
   // Implementations for specific nodes.
 
-
-  @Override protected void visitTemplateNode(TemplateNode node) {
+  @Override
+  protected void visitTemplateNode(TemplateNode node) {
     this.currTemplateNameForUserMsgs = node.getTemplateNameForUserMsgs();
     this.currDelPackageName = node.getDelPackageName();
     visitChildren(node);
   }
 
-
-  @Override protected void visitCallBasicNode(CallBasicNode node) {
+  @Override
+  protected void visitCallBasicNode(CallBasicNode node) {
 
     String calleeName = node.getCalleeName();
 
@@ -204,7 +222,7 @@ final class CheckDelegatesVisitor extends AbstractSoyNodeVisitor<Void> {
     TemplateBasicNode callee = templateRegistry.getBasicTemplate(calleeName);
     if (callee != null) {
       String calleeDelPackageName = callee.getDelPackageName();
-      if (calleeDelPackageName != null && ! calleeDelPackageName.equals(currDelPackageName)) {
+      if (calleeDelPackageName != null && !calleeDelPackageName.equals(currDelPackageName)) {
         errorReporter.report(
             node.getSourceLocation(),
             CROSS_PACKAGE_DELCALL,
@@ -214,8 +232,8 @@ final class CheckDelegatesVisitor extends AbstractSoyNodeVisitor<Void> {
     }
   }
 
-
-  @Override protected void visitCallDelegateNode(CallDelegateNode node) {
+  @Override
+  protected void visitCallDelegateNode(CallDelegateNode node) {
 
     String delCalleeName = node.getDelCalleeName();
 
@@ -225,15 +243,13 @@ final class CheckDelegatesVisitor extends AbstractSoyNodeVisitor<Void> {
     }
   }
 
-
   // -----------------------------------------------------------------------------------------------
   // Fallback implementation.
 
-
-  @Override protected void visitSoyNode(SoyNode node) {
+  @Override
+  protected void visitSoyNode(SoyNode node) {
     if (node instanceof ParentSoyNode<?>) {
       visitChildren((ParentSoyNode<?>) node);
     }
   }
-
 }

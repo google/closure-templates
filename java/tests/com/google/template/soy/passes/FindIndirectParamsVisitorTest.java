@@ -23,25 +23,25 @@ import com.google.common.collect.Multimap;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ExplodingErrorReporter;
-import com.google.template.soy.passes.FindIndirectParamsVisitor;
 import com.google.template.soy.passes.FindIndirectParamsVisitor.IndirectParamsInfo;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.defn.TemplateParam;
-
-import junit.framework.TestCase;
-
 import java.util.Map;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for FindIndirectParamsVisitor.
  *
  */
-public final class FindIndirectParamsVisitorTest extends TestCase {
+@RunWith(JUnit4.class)
+public final class FindIndirectParamsVisitorTest {
 
-
+  @Test
   public void testFindIndirectParams() {
 
     String fileContent1 =
@@ -181,5 +181,4 @@ public final class FindIndirectParamsVisitorTest extends TestCase {
     // 'b4' listed by alpha.five
     assertThat(pktcm).valuesForKey("b4").isEqualTo(ImmutableSet.of(a5, b4));
   }
-
 }

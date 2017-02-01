@@ -24,18 +24,16 @@ import com.google.template.soy.exprparse.SoyParsingContext;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.ConditionalBlockNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
-
 import java.util.List;
 
 /**
  * Node representing a 'case' block in a 'switch' block.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public final class SwitchCaseNode extends CaseOrDefaultNode
     implements ConditionalBlockNode, ExprHolderNode {
-
 
   /** The text for this case's expression list. */
   private final String exprListText;
@@ -50,9 +48,9 @@ public final class SwitchCaseNode extends CaseOrDefaultNode
     this.exprListText = commandText;
   }
 
-
   /**
    * Copy constructor.
+   *
    * @param orig The node to copy.
    */
   private SwitchCaseNode(SwitchCaseNode orig, CopyState copyState) {
@@ -64,36 +62,32 @@ public final class SwitchCaseNode extends CaseOrDefaultNode
     }
   }
 
-
-  @Override public Kind getKind() {
+  @Override
+  public Kind getKind() {
     return Kind.SWITCH_CASE_NODE;
   }
-
 
   /** Returns the text for this case's expression list. */
   public String getExprListText() {
     return exprListText;
   }
 
-
   /** Returns the parsed expression list, or null if the expression list is not in V2 syntax. */
   public List<ExprRootNode> getExprList() {
     return exprList;
   }
 
-
-  @Override public List<ExprUnion> getAllExprUnions() {
+  @Override
+  public List<ExprUnion> getAllExprUnions() {
     return ExprUnion.createList(exprList);
   }
 
-
-  @Override public SwitchCaseNode copy(CopyState copyState) {
+  @Override
+  public SwitchCaseNode copy(CopyState copyState) {
     return new SwitchCaseNode(this, copyState);
   }
 
-  /**
-   * Builder for {@link SwitchCaseNode}.
-   */
+  /** Builder for {@link SwitchCaseNode}. */
   public static final class Builder {
     private final int id;
     private final String commandText;
@@ -115,11 +109,10 @@ public final class SwitchCaseNode extends CaseOrDefaultNode
      * to the given {@link ErrorReporter}.
      */
     public SwitchCaseNode build(SoyParsingContext context) {
-      List<ExprRootNode> exprList = ExprRootNode.wrap(
-          new ExpressionParser(commandText, sourceLocation, context)
-              .parseExpressionList());
+      List<ExprRootNode> exprList =
+          ExprRootNode.wrap(
+              new ExpressionParser(commandText, sourceLocation, context).parseExpressionList());
       return new SwitchCaseNode(id, commandText, exprList, sourceLocation);
     }
   }
-
 }

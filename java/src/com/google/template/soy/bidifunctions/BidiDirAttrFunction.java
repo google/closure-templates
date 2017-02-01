@@ -27,14 +27,12 @@ import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.internal.i18n.BidiUtils;
 import com.google.template.soy.internal.i18n.SoyBidiUtils;
 import com.google.template.soy.jssrc.restricted.JsExpr;
-import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
+import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
-
 import java.util.List;
 import java.util.Set;
-
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
@@ -48,31 +46,30 @@ import javax.inject.Singleton;
  *
  */
 @Singleton
-class BidiDirAttrFunction implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction {
-
+final class BidiDirAttrFunction
+    implements SoyJavaFunction, SoyLibraryAssistedJsSrcFunction, SoyPySrcFunction {
 
   /** Provider for the current bidi global directionality. */
   private final Provider<BidiGlobalDir> bidiGlobalDirProvider;
 
-
-  /**
-   * @param bidiGlobalDirProvider Provider for the current bidi global directionality.
-   */
+  /** @param bidiGlobalDirProvider Provider for the current bidi global directionality. */
   @Inject
   BidiDirAttrFunction(Provider<BidiGlobalDir> bidiGlobalDirProvider) {
     this.bidiGlobalDirProvider = bidiGlobalDirProvider;
   }
 
-
-  @Override public String getName() {
+  @Override
+  public String getName() {
     return "bidiDirAttr";
   }
 
-  @Override public Set<Integer> getValidArgsSizes() {
+  @Override
+  public Set<Integer> getValidArgsSizes() {
     return ImmutableSet.of(1, 2);
   }
 
-  @Override public SoyValue computeForJava(List<SoyValue> args) {
+  @Override
+  public SoyValue computeForJava(List<SoyValue> args) {
     SoyValue value = args.get(0);
     Dir valueDir = null;
     boolean isHtmlForValueDirEstimation = false;
@@ -84,35 +81,50 @@ class BidiDirAttrFunction implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrc
       }
     }
     if (valueDir == null) {
-      isHtmlForValueDirEstimation = isHtmlForValueDirEstimation ||
-          (args.size() == 2 && args.get(1).booleanValue());
+      isHtmlForValueDirEstimation =
+          isHtmlForValueDirEstimation || (args.size() == 2 && args.get(1).booleanValue());
       valueDir = BidiUtils.estimateDirection(value.coerceToString(), isHtmlForValueDirEstimation);
     }
 
-    BidiFormatter bidiFormatter = SoyBidiUtils.getBidiFormatter(
-        bidiGlobalDirProvider.get().getStaticValue());
+    BidiFormatter bidiFormatter =
+        SoyBidiUtils.getBidiFormatter(bidiGlobalDirProvider.get().getStaticValue());
     String dirAttr = bidiFormatter.knownDirAttr(valueDir);
     return UnsafeSanitizedContentOrdainer.ordainAsSafe(dirAttr, ContentKind.ATTRIBUTES);
   }
 
-  @Override public JsExpr computeForJsSrc(List<JsExpr> args) {
+  @Override
+  public JsExpr computeForJsSrc(List<JsExpr> args) {
     JsExpr value = args.get(0);
     JsExpr isHtml = (args.size() == 2) ? args.get(1) : null;
 
     String callText =
-        "soy.$$bidiDirAttr(" + bidiGlobalDirProvider.get().getCodeSnippet() + ", " +
-        value.getText() + (isHtml != null ? ", " + isHtml.getText() : "") + ")";
+        "soy.$$bidiDirAttr("
+            + bidiGlobalDirProvider.get().getCodeSnippet()
+            + ", "
+            + value.getText()
+            + (isHtml != null ? ", " + isHtml.getText() : "")
+            + ")";
 
     return new JsExpr(callText, Integer.MAX_VALUE);
   }
 
-  @Override public PyExpr computeForPySrc(List<PyExpr> args) {
+  @Override
+  public ImmutableSet<String> getRequiredJsLibNames() {
+    return ImmutableSet.of("soy");
+  }
+
+  @Override
+  public PyExpr computeForPySrc(List<PyExpr> args) {
     PyExpr value = args.get(0);
     PyExpr isHtml = (args.size() == 2) ? args.get(1) : null;
 
     String callText =
-        "bidi.dir_attr(" + bidiGlobalDirProvider.get().getCodeSnippet() + ", " +
-        value.getText() + (isHtml != null ? ", " + isHtml.getText() : "") + ")";
+        "bidi.dir_attr("
+            + bidiGlobalDirProvider.get().getCodeSnippet()
+            + ", "
+            + value.getText()
+            + (isHtml != null ? ", " + isHtml.getText() : "")
+            + ")";
 
     return new PyExpr(callText, Integer.MAX_VALUE);
   }

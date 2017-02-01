@@ -22,23 +22,20 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.msgs.SoyMsgBundle;
-
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.SortedMap;
-
 import javax.annotation.Nullable;
 
 /**
  * Represents a full set of messages in some language/locale.
  *
- * Important: Only use this class from message plugins!
+ * <p>Important: Only use this class from message plugins!
  *
  */
 public class SoyMsgBundleImpl implements SoyMsgBundle {
-
 
   /** The language/locale string of this bundle's messages. */
   private final String localeString;
@@ -46,15 +43,14 @@ public class SoyMsgBundleImpl implements SoyMsgBundle {
   /** Map from unique message id to message. Iteration order is sorted order of message id. */
   private final Map<Long, SoyMsg> msgMap;
 
-
   /**
    * Note: If there exist duplicate message ids in the {@code msgs} list, the first one wins.
    * However, the source paths from subsequent duplicates will be added to the source paths for the
    * message.
    *
    * @param localeString The language/locale string of this bundle of messages, or null if unknown.
-   *     Should only be null for bundles newly extracted from source files. Should always be set
-   *     for bundles parsed from message files/resources.
+   *     Should only be null for bundles newly extracted from source files. Should always be set for
+   *     bundles parsed from message files/resources.
    * @param msgs The list of messages. List order will become the iteration order.
    */
   public SoyMsgBundleImpl(@Nullable String localeString, List<SoyMsg> msgs) {
@@ -66,10 +62,10 @@ public class SoyMsgBundleImpl implements SoyMsgBundle {
       checkArgument(Objects.equals(msg.getLocaleString(), localeString));
       long msgId = msg.getId();
 
-      if (!tempMsgMap.containsKey(msgId)) {  // new message id
+      if (!tempMsgMap.containsKey(msgId)) { // new message id
         tempMsgMap.put(msgId, msg);
 
-      } else {  // duplicate message id
+      } else { // duplicate message id
         SoyMsg existingMsg = tempMsgMap.get(msgId);
         for (SourceLocation source : msg.getSourceLocations()) {
           existingMsg.addSourceLocation(source);
@@ -80,24 +76,23 @@ public class SoyMsgBundleImpl implements SoyMsgBundle {
     msgMap = ImmutableMap.copyOf(tempMsgMap);
   }
 
-
-  @Override public String getLocaleString() {
+  @Override
+  public String getLocaleString() {
     return localeString;
   }
 
-
-  @Override public SoyMsg getMsg(long msgId) {
+  @Override
+  public SoyMsg getMsg(long msgId) {
     return msgMap.get(msgId);
   }
 
-
-  @Override public int getNumMsgs() {
+  @Override
+  public int getNumMsgs() {
     return msgMap.size();
   }
 
-
-  @Override public Iterator<SoyMsg> iterator() {
+  @Override
+  public Iterator<SoyMsg> iterator() {
     return msgMap.values().iterator();
   }
-
 }

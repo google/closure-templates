@@ -17,11 +17,13 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.template.soy.data.SoyValueHelper.EMPTY_DICT;
+import static com.google.template.soy.data.SoyValueConverter.EMPTY_DICT;
 import static com.google.template.soy.jbcsrc.TemplateTester.asRecord;
 import static com.google.template.soy.jbcsrc.TemplateTester.assertThatTemplateBody;
 import static com.google.template.soy.jbcsrc.TemplateTester.compileTemplateBody;
 import static com.google.template.soy.jbcsrc.TemplateTester.getDefaultContext;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -34,41 +36,37 @@ import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
-
-import junit.framework.TestCase;
-
 import java.io.IOException;
+import java.lang.reflect.Constructor;
+import java.util.Arrays;
 import java.util.List;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
-/**
- * Tests for {@link LazyClosureCompiler}.
- */
-public class LazyClosureCompilerTest extends TestCase {
+/** Tests for {@link LazyClosureCompiler}. */
+@RunWith(JUnit4.class)
+public class LazyClosureCompilerTest {
+  @Test
   public void testLetContentNode() {
-    assertThatTemplateBody(
-        "{let $foo}",
-        "  foo bar baz",
-        "{/let}",
-        "{$foo}").rendersAs("foo bar baz");
+    assertThatTemplateBody("{let $foo}", "  foo bar baz", "{/let}", "{$foo}")
+        .rendersAs("foo bar baz");
   }
-  
+
+  @Test
   public void testLetContentNode_typed() {
-    assertThatTemplateBody(
-        "{let $foo kind=\"html\"}",
-        "  foo bar baz",
-        "{/let}",
-        "{$foo}").rendersAs("foo bar baz");
+    assertThatTemplateBody("{let $foo kind=\"html\"}", "  foo bar baz", "{/let}", "{$foo}")
+        .rendersAs("foo bar baz");
   }
-  
+
+  @Test
   public void testLetNodes_nested() {
     assertThatTemplateBody(
-        "{let $foo}",
-        "  {let $foo}foo bar baz{/let}",
-        "  {$foo}",
-        "{/let}",
-        "{$foo}").rendersAs("foo bar baz");
+            "{let $foo}", "  {let $foo}foo bar baz{/let}", "  {$foo}", "{/let}", "{$foo}")
+        .rendersAs("foo bar baz");
   }
 
+  @Test
   public void testLetContentNode_detaching() throws IOException {
     SettableFuture<String> bar = SettableFuture.create();
     CompiledTemplates templates =
@@ -80,7 +78,7 @@ public class LazyClosureCompilerTest extends TestCase {
     AdvisingStringBuilder output = new AdvisingStringBuilder();
     RenderResult result = template.render(output, context);
     assertEquals(RenderResult.Type.DETACH, result.type());
-    assertSame(bar, result.future());  // we found bar!
+    assertSame(bar, result.future()); // we found bar!
     assertEquals("hello ", output.toString());
 
     // make sure no progress is made
@@ -94,28 +92,50 @@ public class LazyClosureCompilerTest extends TestCase {
     assertEquals("hello bar", output.toString());
   }
 
+  @Test
   public void testLetValueNode() {
-    assertThatTemplateBody(
-        "{let $foo : 1+2 /}",
-        "{$foo}").rendersAs("3");
-    
-    assertThatTemplateBody(
-        "{let $null : null /}",
-        "{$null}").rendersAs("null");
-    
-    assertThatTemplateBody(
-        "{let $bar : 'a' /}",
-        "{let $foo : $bar + 'b' /}",
-        "{$foo}").rendersAs("ab");
+    assertThatTemplateBody("{let $foo : 1+2 /}", "{$foo}").rendersAs("3");
+
+    assertThatTemplateBody("{let $null : null /}", "{$null}").rendersAs("null");
+
+    assertThatTemplateBody("{let $bar : 'a' /}", "{let $foo : $bar + 'b' /}", "{$foo}")
+        .rendersAs("ab");
   }
 
+  @Test
   public void testLetValueNode_captureParameter() {
-    assertThatTemplateBody(
-        "{@param param: string}",
-        "{let $foo : $param + '_suffix' /}",
-        "{$foo}").rendersAs("string_suffix", ImmutableMap.of("param", "string"));
+    assertThatTemplateBody("{@param param: string}", "{let $foo : $param + '_suffix' /}", "{$foo}")
+        .rendersAs("string_suffix", ImmutableMap.of("param", "string"));
   }
 
+  // Regression test for a bug where captures of synthetic variables wouldn't be deduped properly
+  // and we would recapture the same synthetic multiple times.
+  @Test
+  public void testLetValueNode_captureSyntheticParameter() {
+    // make sure that if we capture a synthetic we only capture it once
+    CompiledTemplates templates =
+        compileTemplateBody(
+            "{@param l : list<string>}",
+            "{foreach $s in $l}",
+            // the index function is implemented via a synthetic loop index
+            "  {let $bar : index($s) + index($s) /}",
+            "  {$bar}",
+            "{/foreach}");
+    CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.foo");
+    CompiledTemplate template = factory.create(EMPTY_DICT, EMPTY_DICT);
+    List<Class<?>> innerClasses = Lists.newArrayList(template.getClass().getDeclaredClasses());
+    innerClasses.remove(factory.getClass());
+    Class<?> let = Iterables.getOnlyElement(innerClasses);
+    assertEquals("let_bar", let.getSimpleName());
+    // the closures capture variables as constructor parameters.
+    // in this case since index() always returns an unboxed integer the parameter should be a single
+    // int.  In a previous version, we passed 2 ints.
+    assertThat(let.getDeclaredConstructors()).hasLength(1);
+    Constructor<?> cStruct = let.getDeclaredConstructors()[0];
+    assertThat(Arrays.asList(cStruct.getParameterTypes())).isEqualTo(Arrays.asList(int.class));
+  }
+
+  @Test
   public void testLetValueNode_nullableParameter() {
     CompiledTemplateSubject tester =
         assertThatTemplateBody(
@@ -127,6 +147,7 @@ public class LazyClosureCompilerTest extends TestCase {
     tester.rendersAs("false", ImmutableMap.<String, Object>of("param", false));
   }
 
+  @Test
   public void testLetValueNode_nullableString() {
     CompiledTemplateSubject tester =
         assertThatTemplateBody(
@@ -140,6 +161,7 @@ public class LazyClosureCompilerTest extends TestCase {
     tester.rendersAs("2", ImmutableMap.<String, Object>of("param2", "2"));
   }
 
+  @Test
   public void testLetValueNode_optionalInts() {
     CompiledTemplateSubject tester =
         assertThatTemplateBody(
@@ -155,6 +177,7 @@ public class LazyClosureCompilerTest extends TestCase {
         "3", ImmutableMap.of("comments", ImmutableList.of("a", "b", "c", "d"), "numComments", 1));
   }
 
+  @Test
   public void testDetachOnFutureLazily() throws IOException {
     SettableFuture<String> bar = SettableFuture.create();
     CompiledTemplates templates =
@@ -166,9 +189,9 @@ public class LazyClosureCompilerTest extends TestCase {
     AdvisingStringBuilder output = new AdvisingStringBuilder();
     RenderResult result = template.render(output, context);
     assertEquals(RenderResult.Type.DETACH, result.type());
-    assertSame(bar, result.future());  // we found bar!
+    assertSame(bar, result.future()); // we found bar!
     assertEquals("before use", output.toString());
-    
+
     // make sure no progress is made
     result = template.render(output, context);
     assertEquals(RenderResult.Type.DETACH, result.type());
@@ -180,13 +203,14 @@ public class LazyClosureCompilerTest extends TestCase {
     assertEquals("before use bar bar", output.toString());
   }
 
+  @Test
   public void testLetValueNodeStructure() {
     // make sure we don't break normal reflection apis
     CompiledTemplates templates =
         compileTemplateBody("{let $bar : 'a' /}", "{let $foo : $bar + 1 /}");
     CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.foo");
     CompiledTemplate template = factory.create(EMPTY_DICT, EMPTY_DICT);
-    
+
     assertThat(template.getClass().getDeclaredClasses()).asList().hasSize(2);
     List<Class<?>> innerClasses = Lists.newArrayList(template.getClass().getDeclaredClasses());
     innerClasses.remove(factory.getClass());

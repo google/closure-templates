@@ -23,7 +23,6 @@ import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.template.soy.soytree.RawTextNode;
-
 import java.util.Collections;
 import java.util.List;
 import javax.annotation.Nullable;
@@ -35,17 +34,19 @@ import javax.annotation.Nullable;
  */
 public final class SlicedRawTextNode {
 
-
   /**
    * A substring of raw text that is exposed to parse passes.
-   * <p>
-   * This slice is not the entire substring with the same context.  Such a thing cannot be
+   *
+   * <p>This slice is not the entire substring with the same context. Such a thing cannot be
    * statically determined since in a portion of a template that stays in the same context like
+   *
    * <pre>
    *   foo {if $cond}bar{else}baz{/if} boo
    * </pre>
-   * there might be two possible strings with the same context: {@code "foo bar boo"} and
-   * {@code "foo baz boo"}.
+   *
+   * there might be two possible strings with the same context: {@code "foo bar boo"} and {@code
+   * "foo baz boo"}.
+   *
    * <p>
    */
   public static final class RawTextSlice {
@@ -86,6 +87,7 @@ public final class SlicedRawTextNode {
 
     /**
      * Splits this slice in two at the given offset and returns the slice after the split.
+     *
      * @param offset into the slice.
      */
     private RawTextSlice split(int offset) {
@@ -102,8 +104,9 @@ public final class SlicedRawTextNode {
     }
 
     /**
-     * Mutates the parse tree by replacing the sliced text node with a text node that
-     * includes the given text at the given point within this slice.
+     * Mutates the parse tree by replacing the sliced text node with a text node that includes the
+     * given text at the given point within this slice.
+     *
      * @param text A string in context context.
      * @param offset An offset between 0 (inclusive) and {@link #getLength()} (exclusive).
      * @param context the context of text.
@@ -138,24 +141,30 @@ public final class SlicedRawTextNode {
       RawTextNode rawTextNode = slicedRawTextNode.getRawTextNode();
       String originalText = rawTextNode.getRawText();
       String replacementText =
-        originalText.substring(0, insertionOffset) + text + originalText.substring(insertionOffset);
-      RawTextNode replacementNode = new RawTextNode(
-          rawTextNode.getId(), replacementText, rawTextNode.getSourceLocation());
+          originalText.substring(0, insertionOffset)
+              + text
+              + originalText.substring(insertionOffset);
+      RawTextNode replacementNode =
+          new RawTextNode(rawTextNode.getId(), replacementText, rawTextNode.getSourceLocation());
 
       // Rerun the context update algo so that we can figure out the context of the inserted slices
       // and ensure that the inserted text does not invalidate any of the security assumptions made
       // by the auto-escaper.
       Context startContext = slicedRawTextNode.startContext;
       Context expectedEndContext = slicedRawTextNode.endContext;
-      SlicedRawTextNode retyped = RawTextContextUpdater.processRawText(
-          replacementNode, startContext);
+      SlicedRawTextNode retyped =
+          RawTextContextUpdater.processRawText(replacementNode, startContext);
       Context actualEndContext = retyped.getEndContext();
 
       if (!expectedEndContext.equals(actualEndContext)) {
         // Inserting the text would invalidate typing assumptions made earlier.
         throw SoyAutoescapeException.createWithNode(
-            "Inserting `" + text + "` would cause text node to end in context " + actualEndContext
-            + " instead of " + expectedEndContext,
+            "Inserting `"
+                + text
+                + "` would cause text node to end in context "
+                + actualEndContext
+                + " instead of "
+                + expectedEndContext,
             rawTextNode);
       }
 
@@ -170,8 +179,9 @@ public final class SlicedRawTextNode {
         if (slice.startOffset >= insertionEndOffset) {
           break;
         }
-        int length = Math.min(insertionEndOffset, slice.endOffset)
-            - Math.max(insertionOffset, slice.startOffset);
+        int length =
+            Math.min(insertionEndOffset, slice.endOffset)
+                - Math.max(insertionOffset, slice.startOffset);
         slicedRawTextNode.insertSlice(insertionIndex, slice.context, length);
         // Increment the insertion index to point past the slice just inserted so that
         // we're ready for the next one.
@@ -199,7 +209,6 @@ public final class SlicedRawTextNode {
       return "\"" + rawText.replaceAll("\"|\\\\", "\\\\$0") + "\"#" + id;
     }
   }
-
 
   /** The backing raw text node. */
   private RawTextNode rawTextNode;
@@ -234,6 +243,7 @@ public final class SlicedRawTextNode {
 
   /**
    * Called by the builder to add slices as their context becomes known.
+   *
    * @param startOffset an offset (inclusive) into the rawTextNode's string content.
    * @param endOffset an offset (exclusive) into the rawTextNode's string content.
    * @param context the context for the slice.
@@ -291,8 +301,9 @@ public final class SlicedRawTextNode {
         // If there haven't been modifications since the last merge, don't orphan slices.
         merged = slice;
       } else {
-        merged = new RawTextSlice(
-            slice.context, this, slice.startOffset, slices.get(next - 1).endOffset);
+        merged =
+            new RawTextSlice(
+                slice.context, this, slice.startOffset, slices.get(next - 1).endOffset);
       }
       slices.set(nMerged, merged);
     }
@@ -303,9 +314,8 @@ public final class SlicedRawTextNode {
   /**
    * The slices that occur in the context described by the given predicates.
    *
-   * <p>
-   * The order is deterministic but does not necessarily bear any relationship to the order in which
-   * slices can appear in the template's output because it is dependent on the ordering of
+   * <p>The order is deterministic but does not necessarily bear any relationship to the order in
+   * which slices can appear in the template's output because it is dependent on the ordering of
    * individual templates in the parsed input.
    *
    * @param slicedRawTextNodes The sliced raw text nodes to search.
@@ -313,7 +323,7 @@ public final class SlicedRawTextNode {
    * @param sliceContextPredicate Applied to the context of the slice being tested.
    * @param nextContextPredicate Applied to the context after the slice being tested.
    * @return a list of slices such that input predicates are all true when applied to the contexts
-   *   at and around that slice.
+   *     at and around that slice.
    */
   public static List<RawTextSlice> find(
       Iterable<? extends SlicedRawTextNode> slicedTextNodes,
@@ -359,5 +369,4 @@ public final class SlicedRawTextNode {
     }
     return matches.build();
   }
-
 }

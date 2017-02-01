@@ -17,10 +17,8 @@
 package com.google.template.soy.data;
 
 import java.util.List;
-
 import javax.annotation.Nonnull;
 import javax.annotation.ParametersAreNonnullByDefault;
-
 
 /**
  * A list containing values. Each value is a SoyValue (can be unresolved).
@@ -35,42 +33,43 @@ import javax.annotation.ParametersAreNonnullByDefault;
 @ParametersAreNonnullByDefault
 public interface SoyList extends SoyMap {
 
-
   /**
    * Gets the length of this SoyList.
+   *
    * @return The length.
    */
   public int length();
 
-
   /**
    * Gets a Java list of all value providers in this SoyList. Note that value providers are often
    * just the values themselves, since all values are also providers.
+   *
    * @return A Java list of all value providers.
    */
-  @Nonnull public List<? extends SoyValueProvider> asJavaList();
-
+  @Nonnull
+  public List<? extends SoyValueProvider> asJavaList();
 
   /**
    * Gets a Java list all values in this SoyList. All value providers will be eagerly resolved.
+   *
    * @return A Java list of all resolved values.
    */
-  @Nonnull public List<? extends SoyValue> asResolvedJavaList();
-
+  @Nonnull
+  public List<? extends SoyValue> asResolvedJavaList();
 
   /**
    * Gets a value of this SoyList.
+   *
    * @param index The index to get.
    * @return The value for the given index, or null if no such index.
    */
   public SoyValue get(int index);
 
-
   /**
    * Gets a provider of a value of this SoyList.
+   *
    * @param index The index to get.
    * @return A provider of the value for the given index, or null if no such index.
    */
   public SoyValueProvider getProvider(int index);
-
 }

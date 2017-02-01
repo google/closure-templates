@@ -29,7 +29,7 @@ import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
 /**
  * Node representing a 'case' block in a 'select' block.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public final class MsgSelectCaseNode extends CaseOrDefaultNode implements MsgBlockNode {
@@ -48,6 +48,7 @@ public final class MsgSelectCaseNode extends CaseOrDefaultNode implements MsgBlo
 
   /**
    * Copy constructor.
+   *
    * @param orig The node to copy.
    */
   private MsgSelectCaseNode(MsgSelectCaseNode orig, CopyState copyState) {
@@ -55,25 +56,22 @@ public final class MsgSelectCaseNode extends CaseOrDefaultNode implements MsgBlo
     this.caseValue = orig.caseValue;
   }
 
-
-  @Override public Kind getKind() {
+  @Override
+  public Kind getKind() {
     return Kind.MSG_SELECT_CASE_NODE;
   }
-
 
   /** Returns the case value. */
   public String getCaseValue() {
     return caseValue;
   }
 
-
-  @Override public MsgSelectCaseNode copy(CopyState copyState) {
+  @Override
+  public MsgSelectCaseNode copy(CopyState copyState) {
     return new MsgSelectCaseNode(this, copyState);
   }
 
-  /**
-   * Builder for {@link MsgSelectCaseNode}.
-   */
+  /** Builder for {@link MsgSelectCaseNode}. */
   public static final class Builder {
     private static MsgSelectCaseNode error() {
       return new MsgSelectCaseNode(-1, SourceLocation.UNKNOWN, "error", "error");
@@ -102,9 +100,9 @@ public final class MsgSelectCaseNode extends CaseOrDefaultNode implements MsgBlo
     public MsgSelectCaseNode build(SoyParsingContext context) {
       Checkpoint checkpoint = context.errorReporter().checkpoint();
 
-      ExprRootNode strLit = new ExprRootNode(
-          new ExpressionParser(commandText, sourceLocation, context)
-              .parseExpression());
+      ExprRootNode strLit =
+          new ExprRootNode(
+              new ExpressionParser(commandText, sourceLocation, context).parseExpression());
 
       // Make sure the expression is a string.
       if (!(strLit.numChildren() == 1 && strLit.getRoot() instanceof StringNode)) {

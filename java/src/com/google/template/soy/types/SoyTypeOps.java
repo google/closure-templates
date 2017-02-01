@@ -17,10 +17,9 @@
 package com.google.template.soy.types;
 
 import com.google.common.base.Optional;
+import com.google.template.soy.types.primitive.ErrorType;
 import com.google.template.soy.types.primitive.FloatType;
-
 import java.util.Collection;
-
 import javax.inject.Inject;
 
 /**
@@ -30,12 +29,10 @@ import javax.inject.Inject;
 public final class SoyTypeOps {
   private final SoyTypeRegistry typeRegistry;
 
-
   @Inject
   public SoyTypeOps(SoyTypeRegistry typeRegistry) {
     this.typeRegistry = typeRegistry;
   }
-
 
   public SoyTypeRegistry getTypeRegistry() {
     return typeRegistry;
@@ -43,11 +40,15 @@ public final class SoyTypeOps {
 
   /**
    * Compute the most specific type that is assignable from both t0 and t1.
+   *
    * @param t0 A type.
    * @param t1 Another type.
    * @return A type that is assignable from both t0 and t1.
    */
   public SoyType computeLowestCommonType(SoyType t0, SoyType t1) {
+    if (t0 == ErrorType.getInstance() || t1 == ErrorType.getInstance()) {
+      return ErrorType.getInstance();
+    }
     if (t0.isAssignableFrom(t1)) {
       return t0;
     } else if (t1.isAssignableFrom(t0)) {
@@ -60,10 +61,9 @@ public final class SoyTypeOps {
     }
   }
 
-
   /**
-   * Compute the most specific type that is assignable from all types within
-   * a collection.
+   * Compute the most specific type that is assignable from all types within a collection.
+   *
    * @param types list of types.
    * @return A type that is assignable from all of the listed types.
    */
@@ -75,16 +75,20 @@ public final class SoyTypeOps {
     return result;
   }
 
-
   /**
-   * Compute the most specific type that is assignable from both t0 and t1, taking
-   * into account arithmetic promotions - that is, converting int to float if needed.
+   * Compute the most specific type that is assignable from both t0 and t1, taking into account
+   * arithmetic promotions - that is, converting int to float if needed.
+   *
    * @param t0 A type.
    * @param t1 Another type.
    * @return A type that is assignable from both t0 and t1 or absent if the types are not arithmetic
-   *    meaning a subtype of 'number' or unknown.
+   *     meaning a subtype of 'number' or unknown.
    */
   public Optional<SoyType> computeLowestCommonTypeArithmetic(SoyType t0, SoyType t1) {
+    // If either of the types is an error type, return the error type
+    if (t0 == ErrorType.getInstance() || t1 == ErrorType.getInstance()) {
+      return Optional.<SoyType>of(ErrorType.getInstance());
+    }
     // If either of the types isn't numeric or unknown, then this isn't valid for an arithmetic
     // operation.
     if (!isNumericOrUnknown(t0) || !isNumericOrUnknown(t1)) {

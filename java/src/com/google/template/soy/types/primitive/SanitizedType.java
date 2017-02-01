@@ -21,24 +21,24 @@ import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.types.SoyType;
 
-
 /**
- * Implementation of types for sanitized strings, that is strings that are
- * produced by templates having a "kind" attribute. All of these types may
- * be implicitly coerced into strings.
+ * Implementation of types for sanitized strings, that is strings that are produced by templates
+ * having a "kind" attribute. All of these types may be implicitly coerced into strings.
  *
  */
 public abstract class SanitizedType extends PrimitiveType {
 
-  /** Returns the content kind for this type.  Guaranteed to be non-null and also not TEXT. */
+  /** Returns the content kind for this type. Guaranteed to be non-null and also not TEXT. */
   public abstract ContentKind getContentKind();
 
-  @Override public boolean isInstance(SoyValue value) {
+  @Override
+  public boolean isInstance(SoyValue value) {
     return value instanceof SanitizedContent
         && ((SanitizedContent) value).getContentKind() == getContentKind();
   }
 
-  @Override public String toString() {
+  @Override
+  public String toString() {
     return getContentKind().toString().toLowerCase();
   }
 
@@ -87,11 +87,13 @@ public abstract class SanitizedType extends PrimitiveType {
     // Not constructible - use getInstance().
     private HtmlType() {}
 
-    @Override public Kind getKind() {
+    @Override
+    public Kind getKind() {
       return Kind.HTML;
     }
 
-    @Override public ContentKind getContentKind() {
+    @Override
+    public ContentKind getContentKind() {
       return ContentKind.HTML;
     }
 
@@ -109,11 +111,13 @@ public abstract class SanitizedType extends PrimitiveType {
     // Not constructible - use getInstance().
     private AttributesType() {}
 
-    @Override public Kind getKind() {
+    @Override
+    public Kind getKind() {
       return Kind.ATTRIBUTES;
     }
 
-    @Override public ContentKind getContentKind() {
+    @Override
+    public ContentKind getContentKind() {
       return ContentKind.ATTRIBUTES;
     }
 
@@ -131,11 +135,13 @@ public abstract class SanitizedType extends PrimitiveType {
     // Not constructible - use getInstance().
     private UriType() {}
 
-    @Override public Kind getKind() {
+    @Override
+    public Kind getKind() {
       return Kind.URI;
     }
 
-    @Override public ContentKind getContentKind() {
+    @Override
+    public ContentKind getContentKind() {
       return ContentKind.URI;
     }
 
@@ -153,11 +159,13 @@ public abstract class SanitizedType extends PrimitiveType {
     // Not constructible - use getInstance().
     private TrustedResourceUriType() {}
 
-    @Override public Kind getKind() {
+    @Override
+    public Kind getKind() {
       return Kind.TRUSTED_RESOURCE_URI;
     }
 
-    @Override public ContentKind getContentKind() {
+    @Override
+    public ContentKind getContentKind() {
       return ContentKind.TRUSTED_RESOURCE_URI;
     }
 
@@ -175,11 +183,13 @@ public abstract class SanitizedType extends PrimitiveType {
     // Not constructible - use getInstance().
     private CssType() {}
 
-    @Override public Kind getKind() {
+    @Override
+    public Kind getKind() {
       return Kind.CSS;
     }
 
-    @Override public ContentKind getContentKind() {
+    @Override
+    public ContentKind getContentKind() {
       return ContentKind.CSS;
     }
 
@@ -197,11 +207,13 @@ public abstract class SanitizedType extends PrimitiveType {
     // Not constructible - use getInstance().
     private JsType() {}
 
-    @Override public Kind getKind() {
+    @Override
+    public Kind getKind() {
       return Kind.JS;
     }
 
-    @Override public ContentKind getContentKind() {
+    @Override
+    public ContentKind getContentKind() {
       return ContentKind.JS;
     }
 

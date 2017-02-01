@@ -17,11 +17,10 @@
 package com.google.template.soy.jbcsrc;
 
 import com.google.common.collect.ImmutableList;
-
-import org.objectweb.asm.ClassVisitor;
-
+import com.google.template.soy.base.internal.UniqueNameGenerator;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import org.objectweb.asm.ClassVisitor;
 
 /**
  * Tracks a collection of inner classes and aids in name management and calling 
@@ -32,7 +31,7 @@ final class InnerClasses {
   private final TypeInfo outer;
   private final Map<TypeInfo, ClassData> innerClasses = new LinkedHashMap<>();
   private final Map<TypeInfo, Integer> innerClassesAccessModifiers = new LinkedHashMap<>();
-  private final UniqueNameGenerator classNames = UniqueNameGenerator.forClassNames();
+  private final UniqueNameGenerator classNames = JbcSrcNameGenerators.forClassNames();
 
   InnerClasses(TypeInfo outer) {
     this.outer = outer;

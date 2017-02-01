@@ -16,26 +16,31 @@
 
 package com.google.template.soy.msgs.restricted;
 
-import junit.framework.TestCase;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests the compact interner.
  *
  */
-public class CompactInternerTest extends TestCase {
+@RunWith(JUnit4.class)
+public class CompactInternerTest {
 
   public static final String LOCALE = "xx";
 
-
   private CompactInterner interner;
 
-
-  @Override public void setUp() throws Exception {
-    super.setUp();
+  @Before
+  public void setUp() throws Exception {
     interner = new CompactInterner();
   }
 
-
+  @Test
   public void testSimple() {
     String firstHello = new String("hello");
     String firstGoodbye = new String("goodbye");
@@ -47,7 +52,7 @@ public class CompactInternerTest extends TestCase {
     assertSame(firstGoodbye, interner.intern(new String("goodbye")));
   }
 
-
+  @Test
   public void testThousandsOfItems() {
     // A deterministic test with enough iterations to catch dumb errors.
     int iterations = 100000;
@@ -69,6 +74,7 @@ public class CompactInternerTest extends TestCase {
     }
   }
 
+  @Test
   public void testPerformance() {
     // Do some testing. The number of iterations has no effect on these metrics.
     int iterations = 100000;
@@ -92,11 +98,15 @@ public class CompactInternerTest extends TestCase {
     }
 
     assertTrue(
-        "Cost was " + maxCost + " but should have been under "
+        "Cost was "
+            + maxCost
+            + " but should have been under "
             + CompactInterner.getAverageCollisionsBound(),
         maxCost <= CompactInterner.getAverageCollisionsBound());
     assertTrue(
-        "Overhead was " + maxOverhead + " but should have been under "
+        "Overhead was "
+            + maxOverhead
+            + " but should have been under "
             + CompactInterner.getWorstCaseOverhead(),
         maxOverhead < CompactInterner.getWorstCaseOverhead());
   }

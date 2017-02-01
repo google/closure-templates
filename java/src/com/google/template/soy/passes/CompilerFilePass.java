@@ -19,14 +19,14 @@ package com.google.template.soy.passes;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.soytree.SoyFileNode;
 
-/** 
+/**
  * A pass that runs over a single {@link SoyFileNode}.
- * 
+ *
  * <p>Generally this should be used in preference to {@link CompilerFileSetPass} since ASTs operated
  * on by these nodes can be cached individually leading to better compile times.
- * 
+ *
  * <p>TODO(lukes): it would be nice to somehow use the type system to flag a pass as 'readonly' or
- * not.  Making the ASTs immutable probably isn't worth it, but we could consider adding a 
+ * not. Making the ASTs immutable probably isn't worth it, but we could consider adding a
  * 'freeze/unfreeze' API.
  */
 public abstract class CompilerFilePass {
@@ -39,7 +39,7 @@ public abstract class CompilerFilePass {
     }
     return simpleName;
   }
-  
+
   @Override
   public String toString() {
     return name();

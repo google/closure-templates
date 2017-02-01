@@ -18,38 +18,45 @@ package com.google.template.soy.jssrc.restricted;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import com.google.common.collect.Lists;
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.exprtree.Operator;
-
-import junit.framework.TestCase;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for JsExprUtils.
  *
  */
-public class JsExprUtilsTest extends TestCase {
+@RunWith(JUnit4.class)
+public class JsExprUtilsTest {
 
-
+  @Test
   public void testConcatJsExprs() {
 
-    JsExpr concatResult = JsExprUtils.concatJsExprs(Lists.newArrayList(
-        new JsExpr("'blah' + 'blah'", Operator.MINUS.getPrecedence()),
-        new JsExpr("'bleh' + 'bleh'", Operator.MINUS.getPrecedence()),
-        new JsExpr("2 * 8", Operator.TIMES.getPrecedence())));
+    JsExpr concatResult =
+        JsExprUtils.concatJsExprs(
+            ImmutableList.of(
+                new JsExpr("'blah' + 'blah'", Operator.MINUS.getPrecedence()),
+                new JsExpr("'bleh' + 'bleh'", Operator.MINUS.getPrecedence()),
+                new JsExpr("2 * 8", Operator.TIMES.getPrecedence())));
     assertThat(concatResult.getText()).isEqualTo("'blah' + 'blah' + ('bleh' + 'bleh') + 2 * 8");
     assertThat(concatResult.getPrecedence()).isEqualTo(Operator.PLUS.getPrecedence());
   }
 
+  @Test
   public void testConcatJsExprsForceString() {
 
-    JsExpr concatResult = JsExprUtils.concatJsExprsForceString(Lists.newArrayList(
-        new JsExpr("2", Integer.MAX_VALUE),
-        new JsExpr("2", Integer.MAX_VALUE)));
+    JsExpr concatResult =
+        JsExprUtils.concatJsExprsForceString(
+            ImmutableList.of(
+                new JsExpr("2", Integer.MAX_VALUE), new JsExpr("2", Integer.MAX_VALUE)));
     assertThat(concatResult.getText()).isEqualTo("'' + 2 + 2");
     assertThat(concatResult.getPrecedence()).isEqualTo(Operator.PLUS.getPrecedence());
   }
 
+  @Test
   public void testIsStringLiteral() {
     assertThat(JsExprUtils.isStringLiteral(new JsExpr("''", Integer.MAX_VALUE))).isTrue();
     assertThat(JsExprUtils.isStringLiteral(new JsExpr("'a'", Integer.MAX_VALUE))).isTrue();
@@ -69,6 +76,7 @@ public class JsExprUtilsTest extends TestCase {
     assertThat(JsExprUtils.isStringLiteral(new JsExpr("foo('a')", Integer.MAX_VALUE))).isFalse();
   }
 
+  @Test
   public void testWrapWithFunction() {
     JsExpr expr = new JsExpr("'foo' + 'bar'", Operator.PLUS.getPrecedence());
 
@@ -81,4 +89,23 @@ public class JsExprUtilsTest extends TestCase {
         .isEqualTo("'foo' + 'bar'");
   }
 
+  /**
+   * This test shows the inherent error-prone nature of JsExpr. Nothing checks that the precedence
+   * passed to the JsExpr ctor corresponds to the topmost operator in the text passed in to the
+   * JsExpr ctor. Passing in the wrong precedence bypasses the parenthesization logic and lead to
+   * incorrect gencode. TODO(user): consolidate JS code generation under CodeChunk and eliminate
+   * JsExpr.
+   */
+  @Test
+  public void testJsExprGarbageInGarbageOut() {
+    JsExpr lhs = new JsExpr("a", Integer.MAX_VALUE);
+    JsExpr wrongPrecedence =
+        new JsExpr("b < c", Integer.MAX_VALUE /* should be Operator.LESS_THAN.getPrecedence() */);
+    assertThat(JsExprUtils.concatJsExprs(ImmutableList.of(lhs, wrongPrecedence)).getText())
+        .isEqualTo("a + b < c"); // wrong! should be a + (b < c)
+
+    JsExpr rightPrecedence = new JsExpr("b < c", Operator.LESS_THAN.getPrecedence());
+    assertThat(JsExprUtils.concatJsExprs(ImmutableList.of(lhs, rightPrecedence)).getText())
+        .isEqualTo("a + (b < c)");
+  }
 }

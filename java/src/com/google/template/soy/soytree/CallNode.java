@@ -31,24 +31,24 @@ import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
-
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 
 /**
  * Node representing a call.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
-    implements StandaloneNode, SplitLevelTopNode<CallParamNode>, StatementNode, ExprHolderNode,
-    MsgPlaceholderInitialNode {
-
+    implements StandaloneNode,
+        SplitLevelTopNode<CallParamNode>,
+        StatementNode,
+        ExprHolderNode,
+        MsgPlaceholderInitialNode {
 
   /**
    * Private helper class used by constructors. Encapsulates all the info derived from the command
@@ -63,7 +63,8 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
     @Nullable protected final SyntaxVersionUpperBound syntaxVersionBound;
 
     public CommandTextInfo(
-        String commandText, DataAttribute dataAttribute,
+        String commandText,
+        DataAttribute dataAttribute,
         @Nullable String userSuppliedPlaceholderName,
         @Nullable SyntaxVersionUpperBound syntaxVersionBound) {
       this.commandText = commandText;
@@ -73,10 +74,8 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
     }
   }
 
-
   /** Fallback base placeholder name. */
   public static final String FALLBACK_BASE_PLACEHOLDER_NAME = "XXX";
-
 
   /** Parsed metadata from the 'data' attribute. */
   private final DataAttribute dataAttr;
@@ -86,11 +85,13 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
 
   /**
    * Escaping directives names (including the vertical bar) to apply to the return value. With
-   * strict autoescape, the result of each call site is escaped, which is potentially a no-op if
-   * the template's return value is the correct SanitizedContent object.
+   * strict autoescape, the result of each call site is escaped, which is potentially a no-op if the
+   * template's return value is the correct SanitizedContent object.
    */
   private ImmutableList<String> escapingDirectiveNames = ImmutableList.of();
 
+  /** True if this node is within a HTML context. */
+  private boolean isPcData = false;
 
   /**
    * Protected constructor for use by subclasses.
@@ -98,8 +99,8 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
    * @param id The id for this node.
    * @param sourceLocation The node's source location.
    * @param commandTextInfo All the info derived from the command text.
-   * @param escapingDirectiveNames Call-site escaping directives used by strict autoescaping.
-   *     This is inferred by the autoescaper and not part of the syntax, and thus is not in the
+   * @param escapingDirectiveNames Call-site escaping directives used by strict autoescaping. This
+   *     is inferred by the autoescaper and not part of the syntax, and thus is not in the
    *     CommandTextInfo.
    */
   protected CallNode(
@@ -116,13 +117,16 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
   }
 
   /** A Parsed {@code data} attribute. */
-  @AutoValue public abstract static class DataAttribute {
+  @AutoValue
+  public abstract static class DataAttribute {
     public static DataAttribute none() {
       return new AutoValue_CallNode_DataAttribute(false, null);
     }
+
     public static DataAttribute all() {
       return new AutoValue_CallNode_DataAttribute(true, null);
     }
+
     public static DataAttribute expr(ExprRootNode expr) {
       return new AutoValue_CallNode_DataAttribute(true, expr);
     }
@@ -135,7 +139,8 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
       return isPassingData() && dataExpr() == null;
     }
 
-    @Nullable public abstract ExprRootNode dataExpr();
+    @Nullable
+    public abstract ExprRootNode dataExpr();
 
     DataAttribute copy(CopyState copyState) {
       if (dataExpr() == null) {
@@ -162,14 +167,14 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
       return DataAttribute.all();
     } else {
       return DataAttribute.expr(
-          new ExprRootNode(new ExpressionParser(dataAttr, sourceLocation, context)
-              .parseExpression()));
+          new ExprRootNode(
+              new ExpressionParser(dataAttr, sourceLocation, context).parseExpression()));
     }
   }
 
-
   /**
    * Copy constructor.
+   *
    * @param orig The node to copy.
    */
   protected CallNode(CallNode orig, CopyState copyState) {
@@ -177,6 +182,7 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
     this.dataAttr = orig.dataAttr.copy(copyState);
     this.userSuppliedPlaceholderName = orig.userSuppliedPlaceholderName;
     this.escapingDirectiveNames = orig.escapingDirectiveNames;
+    this.isPcData = orig.getIsPcData();
   }
 
   /** The parsed 'data' attribute. */
@@ -184,28 +190,38 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
     return dataAttr;
   }
 
-  @Override public String getUserSuppliedPhName() {
+  public boolean getIsPcData() {
+    return isPcData;
+  }
+
+  public void setIsPcData(boolean isPcData) {
+    this.isPcData = isPcData;
+  }
+
+  @Override
+  public String getUserSuppliedPhName() {
     return userSuppliedPlaceholderName;
   }
 
-
-  @Override public String getTagString() {
+  @Override
+  public String getTagString() {
     return buildTagStringHelper(numChildren() == 0);
   }
 
-
-  @Override public String toSourceString() {
+  @Override
+  public String toSourceString() {
     return (numChildren() == 0) ? getTagString() : super.toSourceString();
   }
 
-
-  @Override public List<ExprUnion> getAllExprUnions() {
-    return (dataAttr.dataExpr() != null) ?
-        ImmutableList.of(new ExprUnion(dataAttr.dataExpr())) : Collections.<ExprUnion>emptyList();
+  @Override
+  public List<ExprUnion> getAllExprUnions() {
+    return (dataAttr.dataExpr() != null)
+        ? ImmutableList.of(new ExprUnion(dataAttr.dataExpr()))
+        : Collections.<ExprUnion>emptyList();
   }
 
-
-  @Override public String genBasePhName() {
+  @Override
+  public String genBasePhName() {
 
     if (userSuppliedPlaceholderName != null) {
       return BaseUtils.convertToUpperUnderscore(userSuppliedPlaceholderName);
@@ -214,19 +230,19 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
     return FALLBACK_BASE_PLACEHOLDER_NAME;
   }
 
-
-  @SuppressWarnings("UnnecessaryBoxing")  // for IntelliJ
-  @Override public Object genSamenessKey() {
-    // CallNodes are never considered the same placeholder. We return the node id as the info for
-    // determining sameness. The node id should be unique among all nodes in the tree.
-    return Integer.valueOf(getId());
+  @SuppressWarnings("UnnecessaryBoxing") // for IntelliJ
+  @Override
+  public Object genSamenessKey() {
+    // CallNodes are never considered the same placeholder. We return the node instance as the info
+    // for determining sameness. Sinces nodes have identity semantics this will only compare equal
+    // to itself.
+    return this;
   }
 
-
-  @Override public BlockNode getParent() {
+  @Override
+  public BlockNode getParent() {
     return (BlockNode) super.getParent();
   }
-
 
   /**
    * Returns the subset of {@link TemplateParam params} of the {@code callee} that require runtime
@@ -236,20 +252,28 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
     return callee.getParams();
   }
 
-  /**
-   * Sets the inferred escaping directives.
-   */
+  /** Sets the inferred escaping directives. */
   public void setEscapingDirectiveNames(ImmutableList<String> escapingDirectiveNames) {
     this.escapingDirectiveNames = escapingDirectiveNames;
   }
 
-
   /**
    * Returns the escaping directives, applied from left to right.
    *
-   * It is an error to call this before the contextual rewriter has been run.
+   * <p>It is an error to call this before the contextual rewriter has been run.
    */
   public ImmutableList<String> getEscapingDirectiveNames() {
     return escapingDirectiveNames;
+  }
+
+  /** Base Builder for CallNode and CallDelegateNode. */
+  public abstract static class Builder {
+    public abstract SourceLocation getSourceLocation();
+
+    public abstract Builder commandText(String commandText);
+
+    public abstract Builder userSuppliedPlaceholderName(String commandText);
+
+    public abstract CallNode build(SoyParsingContext context);
   }
 }

@@ -20,42 +20,42 @@ import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Optional;
-
+import java.util.List;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
-import java.util.List;
-
-/**
- * Utilities for encoding control flow in terms of statements and expressions.
- */
+/** Utilities for encoding control flow in terms of statements and expressions. */
 final class ControlFlow {
   private ControlFlow() {}
 
-  @AutoValue abstract static class IfBlock {
+  @AutoValue
+  abstract static class IfBlock {
     static IfBlock create(Expression cond, Statement block) {
       cond.checkAssignableTo(Type.BOOLEAN_TYPE);
       return new AutoValue_ControlFlow_IfBlock(cond, block);
     }
+
     abstract Expression condition();
+
     abstract Statement block();
   }
 
   /**
-   * Returns a statement that encodes the given sequence of {@link IfBlock if blocks} as an 
+   * Returns a statement that encodes the given sequence of {@link IfBlock if blocks} as an
    * if-elseif-else chain.
    */
   static Statement ifElseChain(final List<IfBlock> ifs, final Optional<Statement> elseBlock) {
     checkArgument(!ifs.isEmpty());
     return new Statement() {
-      @Override void doGen(CodeBuilder adapter) {
+      @Override
+      void doGen(CodeBuilder adapter) {
         Label end = new Label();
         Label next;
         for (int i = 0; i < ifs.size(); i++) {
           IfBlock curr = ifs.get(i);
           boolean isLastIfBlock = i == ifs.size() - 1;
-          if (isLastIfBlock  && !elseBlock.isPresent()) {
+          if (isLastIfBlock && !elseBlock.isPresent()) {
             next = end;
           } else {
             next = new Label();

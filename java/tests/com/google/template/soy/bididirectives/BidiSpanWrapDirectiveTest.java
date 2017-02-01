@@ -28,13 +28,16 @@ import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyStringExpr;
 import com.google.template.soy.shared.AbstractSoyPrintDirectiveTestCase;
 import com.google.template.soy.shared.SharedRestrictedTestUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for BidiSpanWrapDirective.
  *
  */
+@RunWith(JUnit4.class)
 public class BidiSpanWrapDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
-
 
   private static final BidiSpanWrapDirective BIDI_SPAN_WRAP_DIRECTIVE_FOR_STATIC_LTR =
       new BidiSpanWrapDirective(Providers.of(BidiGlobalDir.LTR));
@@ -42,70 +45,87 @@ public class BidiSpanWrapDirectiveTest extends AbstractSoyPrintDirectiveTestCase
   private static final BidiSpanWrapDirective BIDI_SPAN_WRAP_DIRECTIVE_FOR_STATIC_RTL =
       new BidiSpanWrapDirective(Providers.of(BidiGlobalDir.RTL));
 
-
+  @Test
   public void testApplyForTofu() {
     assertTofuOutput("", "", BIDI_SPAN_WRAP_DIRECTIVE_FOR_STATIC_LTR);
     assertTofuOutput("blah", "blah", BIDI_SPAN_WRAP_DIRECTIVE_FOR_STATIC_LTR);
-    assertTofuOutput("<span dir=\"rtl\">\u05E0</span>\u200E", "\u05E0",
-        BIDI_SPAN_WRAP_DIRECTIVE_FOR_STATIC_LTR);
+    assertTofuOutput(
+        "<span dir=\"rtl\">\u05E0</span>\u200E", "\u05E0", BIDI_SPAN_WRAP_DIRECTIVE_FOR_STATIC_LTR);
 
-    assertTofuOutput("<span dir=\"rtl\">\u05E0</span>\u200E",
+    assertTofuOutput(
+        "<span dir=\"rtl\">\u05E0</span>\u200E",
         SanitizedContents.unsanitizedText("\u05E0"),
         BIDI_SPAN_WRAP_DIRECTIVE_FOR_STATIC_LTR);
-    assertTofuOutput("<span dir=\"rtl\">\u05E0</span>\u200E",
+    assertTofuOutput(
+        "<span dir=\"rtl\">\u05E0</span>\u200E",
         SanitizedContents.unsanitizedText("\u05E0", Dir.RTL),
         BIDI_SPAN_WRAP_DIRECTIVE_FOR_STATIC_LTR);
-    assertTofuOutput("\u05E0\u200E",
+    assertTofuOutput(
+        "\u05E0\u200E",
         SanitizedContents.unsanitizedText("\u05E0", Dir.LTR),
         BIDI_SPAN_WRAP_DIRECTIVE_FOR_STATIC_LTR);
-    assertTofuOutput("\u05E0\u200E",
+    assertTofuOutput(
+        "\u05E0\u200E",
         SanitizedContents.unsanitizedText("\u05E0", Dir.NEUTRAL),
         BIDI_SPAN_WRAP_DIRECTIVE_FOR_STATIC_LTR);
-    assertTofuOutput("blah",
+    assertTofuOutput(
+        "blah",
         SanitizedContents.unsanitizedText("blah", Dir.NEUTRAL),
         BIDI_SPAN_WRAP_DIRECTIVE_FOR_STATIC_LTR);
 
     assertTofuOutput("", "", BIDI_SPAN_WRAP_DIRECTIVE_FOR_STATIC_RTL);
     assertTofuOutput("\u05E0", "\u05E0", BIDI_SPAN_WRAP_DIRECTIVE_FOR_STATIC_RTL);
-    assertTofuOutput("<span dir=\"ltr\">blah</span>\u200F", "blah",
-        BIDI_SPAN_WRAP_DIRECTIVE_FOR_STATIC_RTL);
+    assertTofuOutput(
+        "<span dir=\"ltr\">blah</span>\u200F", "blah", BIDI_SPAN_WRAP_DIRECTIVE_FOR_STATIC_RTL);
 
-    assertTofuOutput("<span dir=\"ltr\">blah</span>\u200F",
+    assertTofuOutput(
+        "<span dir=\"ltr\">blah</span>\u200F",
         SanitizedContents.unsanitizedText("blah"),
         BIDI_SPAN_WRAP_DIRECTIVE_FOR_STATIC_RTL);
-    assertTofuOutput("<span dir=\"ltr\">blah</span>\u200F",
+    assertTofuOutput(
+        "<span dir=\"ltr\">blah</span>\u200F",
         SanitizedContents.unsanitizedText("blah", Dir.LTR),
         BIDI_SPAN_WRAP_DIRECTIVE_FOR_STATIC_RTL);
-    assertTofuOutput("blah\u200F",
+    assertTofuOutput(
+        "blah\u200F",
         SanitizedContents.unsanitizedText("blah", Dir.RTL),
         BIDI_SPAN_WRAP_DIRECTIVE_FOR_STATIC_RTL);
-    assertTofuOutput("blah\u200F",
+    assertTofuOutput(
+        "blah\u200F",
         SanitizedContents.unsanitizedText("blah", Dir.NEUTRAL),
         BIDI_SPAN_WRAP_DIRECTIVE_FOR_STATIC_RTL);
-    assertTofuOutput("\u05E0",
+    assertTofuOutput(
+        "\u05E0",
         SanitizedContents.unsanitizedText("\u05E0", Dir.NEUTRAL),
         BIDI_SPAN_WRAP_DIRECTIVE_FOR_STATIC_RTL);
   }
 
+  @Test
   public void testApplyForJsSrc() {
     JsExpr dataRef = new JsExpr("opt_data.myKey", Integer.MAX_VALUE);
     assertThat(
-        BIDI_SPAN_WRAP_DIRECTIVE_FOR_STATIC_LTR.applyForJsSrc(dataRef, ImmutableList.<JsExpr>of())
-            .getText()).isEqualTo("soy.$$bidiSpanWrap(1, opt_data.myKey)");
+            BIDI_SPAN_WRAP_DIRECTIVE_FOR_STATIC_LTR
+                .applyForJsSrc(dataRef, ImmutableList.<JsExpr>of())
+                .getText())
+        .isEqualTo("soy.$$bidiSpanWrap(1, opt_data.myKey)");
     assertThat(
-        BIDI_SPAN_WRAP_DIRECTIVE_FOR_STATIC_RTL.applyForJsSrc(dataRef, ImmutableList.<JsExpr>of())
-            .getText()).isEqualTo("soy.$$bidiSpanWrap(-1, opt_data.myKey)");
+            BIDI_SPAN_WRAP_DIRECTIVE_FOR_STATIC_RTL
+                .applyForJsSrc(dataRef, ImmutableList.<JsExpr>of())
+                .getText())
+        .isEqualTo("soy.$$bidiSpanWrap(-1, opt_data.myKey)");
 
-    BidiSpanWrapDirective codeSnippet = new BidiSpanWrapDirective(
-        SharedRestrictedTestUtils.BIDI_GLOBAL_DIR_FOR_JS_ISRTL_CODE_SNIPPET_PROVIDER);
-    assertThat(
-        codeSnippet.applyForJsSrc(dataRef, ImmutableList.<JsExpr>of())
-            .getText()).isEqualTo("soy.$$bidiSpanWrap(IS_RTL?-1:1, opt_data.myKey)");
+    BidiSpanWrapDirective codeSnippet =
+        new BidiSpanWrapDirective(
+            SharedRestrictedTestUtils.BIDI_GLOBAL_DIR_FOR_JS_ISRTL_CODE_SNIPPET_PROVIDER);
+    assertThat(codeSnippet.applyForJsSrc(dataRef, ImmutableList.<JsExpr>of()).getText())
+        .isEqualTo("soy.$$bidiSpanWrap(IS_RTL?-1:1, opt_data.myKey)");
   }
 
+  @Test
   public void testApplyForPySrc() {
-    BidiSpanWrapDirective codeSnippet = new BidiSpanWrapDirective(
-        SharedRestrictedTestUtils.BIDI_GLOBAL_DIR_FOR_PY_ISRTL_CODE_SNIPPET_PROVIDER);
+    BidiSpanWrapDirective codeSnippet =
+        new BidiSpanWrapDirective(
+            SharedRestrictedTestUtils.BIDI_GLOBAL_DIR_FOR_PY_ISRTL_CODE_SNIPPET_PROVIDER);
 
     PyExpr data = new PyStringExpr("'data'");
     assertThat(codeSnippet.applyForPySrc(data, ImmutableList.<PyExpr>of()).getText())

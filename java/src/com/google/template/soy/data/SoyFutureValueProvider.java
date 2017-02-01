@@ -17,78 +17,79 @@
 package com.google.template.soy.data;
 
 import com.google.template.soy.jbcsrc.api.RenderResult;
-
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-
 import javax.annotation.Nonnull;
 
 /**
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * Important: Do not use outside of Soy code (treat as superpackage-private).
  *
- * SoyValueProvider implementation that represents a wrapped future.
+ * <p>SoyValueProvider implementation that represents a wrapped future.
  *
  */
 public final class SoyFutureValueProvider extends SoyAbstractCachingValueProvider {
-  private static final FutureBlockCallback NOOP = new FutureBlockCallback() {
-    @Override public void beforeBlock() {}
-  };
+  private static final FutureBlockCallback NOOP =
+      new FutureBlockCallback() {
+        @Override
+        public void beforeBlock() {}
+      };
 
   /**
    * Allows threads to register a {@link FutureBlockCallback}.
    *
    * <p>When calling {@link #resolve()} on this {@link SoyFutureValueProvider}, if the thread needs
    * to block on the future (because {@link Future#isDone()} is {@code false}), then it will call
-   * the currently registered block callback immediately prior blocking.  See
-   * {@code RenderVisitor.exec} for the motivating usecase for this hook.
+   * the currently registered block callback immediately prior blocking. See {@code
+   * RenderVisitor.exec} for the motivating usecase for this hook.
    *
    * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
    */
   public static final ThreadLocal<FutureBlockCallback> futureBlockCallback =
       new ThreadLocal<FutureBlockCallback>() {
-        @Override protected FutureBlockCallback initialValue() {
+        @Override
+        protected FutureBlockCallback initialValue() {
           return NOOP;
         }
       };
 
-  /** The instance of SoyValueHelper to use for converting the future value (after retrieval). */
-  private final SoyValueHelper valueHelper;
+  /** The instance of SoyValueConverter to use for converting the future value (after retrieval). */
+  private final SoyValueConverter valueConverter;
 
   /** The wrapped Future object that will provide the value, if needed. */
   private final Future<?> future;
 
-  /**
-   * A callback that gets fired just before this provider will block on a future.
-   */
+  /** A callback that gets fired just before this provider will block on a future. */
   public interface FutureBlockCallback {
     void beforeBlock();
   }
 
   /**
-   * @param valueHelper The instance of SoyValueHelper to use for converting the future value
+   * @param valueConverter The instance of SoyValueConverter to use for converting the future value
    *     (after retrieval).
    * @param future The underlying Future object.
    */
-  public SoyFutureValueProvider(SoyValueHelper valueHelper, Future<?> future) {
-    this.valueHelper = valueHelper;
+  public SoyFutureValueProvider(SoyValueConverter valueConverter, Future<?> future) {
+    this.valueConverter = valueConverter;
     this.future = future;
   }
 
-  @Override public RenderResult status() {
+  @Override
+  public RenderResult status() {
     return future.isDone() ? RenderResult.done() : RenderResult.continueAfter(future);
   }
 
   /**
-   * Calls Future.get() and then converts the result to SoyValue. Note that
-   * this result can never return {@code null}, since null converts to
-   * {@code NullData.INSTANCE}.
+   * Calls Future.get() and then converts the result to SoyValue. Note that this result can never
+   * return {@code null}, since null converts to {@code NullData.INSTANCE}.
    */
-  @Override @Nonnull protected final SoyValue compute() {
+  @Override
+  @Nonnull
+  protected final SoyValue compute() {
     try {
       if (!future.isDone()) {
         futureBlockCallback.get().beforeBlock();
       }
-      return valueHelper.convert(future.get()).resolve();
+      return valueConverter.convert(future.get()).resolve();
     } catch (ExecutionException e) {
       throw new SoyFutureException(e.getCause());
     } catch (Throwable e) {

@@ -20,17 +20,18 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.SoyErrorKind;
-import com.google.template.soy.exprparse.SoyParsingContext;
+import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
-
 import java.util.List;
 
 /**
  * Node representing a 'param' with a value expression.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public final class CallParamValueNode extends CallParamNode implements ExprHolderNode {
@@ -61,86 +62,89 @@ public final class CallParamValueNode extends CallParamNode implements ExprHolde
     this.valueExprUnion = Preconditions.checkNotNull(valueExprUnion);
   }
 
-
   /**
    * Copy constructor.
+   *
    * @param orig The node to copy.
    */
   private CallParamValueNode(CallParamValueNode orig, CopyState copyState) {
     super(orig, copyState);
     this.key = orig.key;
-    this.valueExprUnion = (orig.valueExprUnion != null)
-        ? orig.valueExprUnion.copy(copyState)
-        : null;
+    this.valueExprUnion =
+        (orig.valueExprUnion != null) ? orig.valueExprUnion.copy(copyState) : null;
   }
 
-
-  @Override public Kind getKind() {
+  @Override
+  public Kind getKind() {
     return Kind.CALL_PARAM_VALUE_NODE;
   }
 
-
-  @Override public String getKey() {
+  @Override
+  public String getKey() {
     return key;
   }
-
 
   /** Returns the expression text for the param value. */
   public String getValueExprText() {
     return valueExprUnion.getExprText();
   }
 
-
   /** Returns the parsed expression for the param value. */
   public ExprUnion getValueExprUnion() {
     return valueExprUnion;
   }
 
-
-  @Override public String getTagString() {
+  @Override
+  public String getTagString() {
     return buildTagStringHelper(true);
   }
 
-
-  @Override public List<ExprUnion> getAllExprUnions() {
+  @Override
+  public List<ExprUnion> getAllExprUnions() {
     return ImmutableList.of(valueExprUnion);
   }
 
-
-  @Override public CallParamValueNode copy(CopyState copyState) {
+  @Override
+  public CallParamValueNode copy(CopyState copyState) {
     return new CallParamValueNode(this, copyState);
   }
 
   public static final class Builder extends CallParamNode.Builder {
 
     private static CallParamValueNode error() {
-      return new Builder(-1, "error: error", SourceLocation.UNKNOWN)
-          .build(SoyParsingContext.exploding()); // guaranteed to build
+      return new CallParamValueNode(
+          -1,
+          SourceLocation.UNKNOWN,
+          "error",
+          new ExprUnion(new ExprRootNode(new IntegerNode(1, SourceLocation.UNKNOWN))),
+          "error: error");
     }
 
-    public Builder(int id, String commandText, SourceLocation sourceLocation) {
-      super(id, commandText, sourceLocation);
+    public Builder(int id, CommandTextParseResult parseResult, SourceLocation sourceLocation) {
+      super(id, parseResult, sourceLocation);
     }
 
-    public CallParamValueNode build(SoyParsingContext context) {
-      Checkpoint checkpoint = context.errorReporter().checkpoint();
-      CommandTextParseResult parseResult = parseCommandTextHelper(context);
-
+    public CallParamValueNode build(Checkpoint checkpoint, ErrorReporter errorReporter) {
       if (parseResult.valueExprUnion == null) {
-        context.report(sourceLocation, SELF_ENDING_TAG_WITHOUT_VALUE, commandText);
+        errorReporter.report(
+            sourceLocation, SELF_ENDING_TAG_WITHOUT_VALUE, parseResult.originalCommantText);
       }
 
       if (parseResult.contentKind != null) {
-        context.report(sourceLocation, SELF_ENDING_TAG_WITH_KIND_ATTRIBUTE, commandText);
+        errorReporter.report(
+            sourceLocation, SELF_ENDING_TAG_WITH_KIND_ATTRIBUTE, parseResult.originalCommantText);
       }
 
-      if (context.errorReporter().errorsSince(checkpoint)) {
+      if (errorReporter.errorsSince(checkpoint)) {
         return error();
       }
 
-      CallParamValueNode node = new CallParamValueNode(
-          id, sourceLocation, parseResult.key, parseResult.valueExprUnion, commandText);
-      return node;
+      return new CallParamValueNode(
+          id,
+          sourceLocation,
+          parseResult.key,
+          parseResult.valueExprUnion,
+          parseResult.originalCommantText);
     }
   }
 }

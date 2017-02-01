@@ -16,9 +16,7 @@
 
 package com.google.template.soy.jbcsrc;
 
-/**
- * Holds flags controlling compiler behavior.
- */
+/** Holds flags controlling compiler behavior. */
 final class Flags {
   /**
    * Controls extra debug checks in the compiler that are generally redundant with bytecode

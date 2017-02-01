@@ -24,36 +24,28 @@ import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
 /**
  * Node representing a Soy file set (the root of the Soy parse tree).
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public final class SoyFileSetNode extends AbstractParentSoyNode<SoyFileNode>
     implements SplitLevelTopNode<SoyFileNode> {
 
-  /**
-   * SoyFileSetNode is the only {@link SoyNode} that doesn't have a meaningful notion of
-   * source location (since it represents the entire compilation unit).
-   * Instead of changing the class hierarchy, just use a throwaway source location.
-   */
-  private static final SourceLocation IRRELEVANT = SourceLocation.UNKNOWN;
-
 
   /** The node id generator for this parse tree. */
   private final IdGenerator nodeIdGen;
-
 
   /**
    * @param id The id for this node.
    * @param nodeIdGen The node id generator for this parse tree.
    */
   public SoyFileSetNode(int id, IdGenerator nodeIdGen) {
-    super(id, IRRELEVANT);
+    super(id, null /* there is no source location. */);
     this.nodeIdGen = nodeIdGen;
   }
 
-
   /**
    * Copy constructor.
+   *
    * @param orig The node to copy.
    */
   private SoyFileSetNode(SoyFileSetNode orig, CopyState copyState) {
@@ -61,25 +53,31 @@ public final class SoyFileSetNode extends AbstractParentSoyNode<SoyFileNode>
     this.nodeIdGen = orig.nodeIdGen.copy();
   }
 
-
-  @Override public Kind getKind() {
+  @Override
+  public Kind getKind() {
     return Kind.SOY_FILE_SET_NODE;
   }
-
 
   /** Returns the node id generator for this parse tree. */
   public IdGenerator getNodeIdGenerator() {
     return nodeIdGen;
   }
 
-
-  @Override public String toSourceString() {
-    throw new UnsupportedOperationException();
+  @Deprecated
+  @Override
+  public String toSourceString() {
+    throw new UnsupportedOperationException("SoyFileSets don't have source locations");
   }
 
+  /** @deprecated SoyFileSetNodes don't have source locations. */
+  @Deprecated
+  @Override
+  public SourceLocation getSourceLocation() {
+    return super.getSourceLocation();
+  }
 
-  @Override public SoyFileSetNode copy(CopyState copyState) {
+  @Override
+  public SoyFileSetNode copy(CopyState copyState) {
     return new SoyFileSetNode(this, copyState);
   }
-
 }

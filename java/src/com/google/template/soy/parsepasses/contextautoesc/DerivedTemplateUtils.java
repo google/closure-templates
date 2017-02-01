@@ -19,10 +19,10 @@ package com.google.template.soy.parsepasses.contextautoesc;
 /**
  * Utilities for dealing with the names of derived templates.
  *
- * <p>
- * A derived template is a template that is called in a specific context.
- * A user may specify some templates that are called in multiple contexts or a single obscure
- * context such as the template {@code foo} below:
+ * <p>A derived template is a template that is called in a specific context. A user may specify some
+ * templates that are called in multiple contexts or a single obscure context such as the template
+ * {@code foo} below:
+ *
  * <pre class="prettyprint">
  * {template main}
  *   &lt;a onclick="alert({call foo/})"&gt;{call foo /}&lt;/a&gt;
@@ -32,8 +32,9 @@ package com.google.template.soy.parsepasses.contextautoesc;
  * {/template}
  * </pre>
  *
- * There is no single escaping context which makes sense for {@code $msg}.  So the auto-escaper
+ * There is no single escaping context which makes sense for {@code $msg}. So the auto-escaper
  * derives an extra template producing something like:
+ *
  * <pre class="prettyprint">
  * {template main}
  *   &lt;a onclick="alert({call foo/})"&gt;{call foo /}&lt;/a&gt;
@@ -46,24 +47,22 @@ package com.google.template.soy.parsepasses.contextautoesc;
  * {/template}
  * </pre>
  *
- * <p>
- * Each derived template has a name that is built by name mangling an original template name with
- * the template's start {@link Context context}.
- * A derived template's name (or qualified name) looks like:<pre>
+ * <p>Each derived template has a name that is built by name mangling an original template name with
+ * the template's start {@link Context context}. A derived template's name (or qualified name) looks
+ * like:
+ *
+ * <pre>
  *     qualifiedName ::== baseName [separator context]
  *                                 ^^^^^^^^^^^^^^^^^^^
  *                                          |
  *                                        suffix
  * </pre>
  *
- * <p>
- * The base name is the name of a template in the original Soy source.
- * The separator is a fixed string.
- * The context is derived from the {@link Context#packedBits} of the template's start context.
- * The separator and context together form a suffix.
+ * <p>The base name is the name of a template in the original Soy source. The separator is a fixed
+ * string. The context is derived from the {@link Context#packedBits} of the template's start
+ * context. The separator and context together form a suffix.
  *
- * <p>
- * As shown above, the suffix is optional.  The suffix is omitted for any template whose context
+ * <p>As shown above, the suffix is optional. The suffix is omitted for any template whose context
  * is the default starting context: {@link Context#HTML_PCDATA pcdata}.
  *
  */
@@ -86,9 +85,7 @@ public final class DerivedTemplateUtils {
     }
   }
 
-  /**
-   * The base name for the given template name whether derived or not.
-   */
+  /** The base name for the given template name whether derived or not. */
   public static String getBaseName(String templateName) {
     int separatorIndex = templateName.lastIndexOf(CONTEXT_SEPARATOR);
     return separatorIndex < 0 ? templateName : templateName.substring(0, separatorIndex);

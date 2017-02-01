@@ -1,0 +1,64 @@
+/*
+ * Copyright 2016 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.google.template.soy.jssrc.dsl;
+
+import static com.google.template.soy.exprtree.Operator.Associativity.LEFT;
+
+import com.google.auto.value.AutoValue;
+import com.google.template.soy.exprtree.Operator;
+import com.google.template.soy.exprtree.Operator.Associativity;
+
+/** Represents a JavaScript unary operation. */
+@AutoValue
+abstract class PrefixUnaryOperation extends Operation {
+  abstract String operator();
+
+  abstract CodeChunk.WithValue arg();
+
+  static PrefixUnaryOperation create(Operator operator, WithValue arg) {
+    // Operator.NOT is the only unary Soy operator whose text differs from its JS counterpart.
+    // Patch things up here.
+    String operatorString = (operator == Operator.NOT ? "!" : operator.getTokenString());
+    return new AutoValue_PrefixUnaryOperation(operator.getPrecedence(), operatorString, arg);
+  }
+
+  @Override
+  Associativity associativity() {
+    return LEFT; // it's unary, doesn't matter
+  }
+
+  @Override
+  public boolean isRepresentableAsSingleExpression() {
+    return arg().isRepresentableAsSingleExpression();
+  }
+
+  @Override
+  void doFormatInitialStatements(FormattingContext ctx, boolean moreToCome) {
+    arg().formatInitialStatements(ctx, moreToCome);
+  }
+
+  @Override
+  void doFormatOutputExpr(FormattingContext ctx, OutputContext outputContext) {
+    ctx.append(operator());
+    formatOperand(arg(), OperandPosition.LEFT /* it's unary, doesn't matter */, ctx);
+  }
+  
+  @Override
+  public void collectRequires(RequiresCollector collector) {
+    arg().collectRequires(collector);
+  }
+}

@@ -21,16 +21,16 @@ import com.google.template.soy.sharedpasses.opti.OptiModule;
 import com.google.template.soy.sharedpasses.render.EvalVisitor.EvalVisitorFactory;
 import com.google.template.soy.sharedpasses.render.EvalVisitorFactoryImpl;
 
-
 /**
  * Guice module for shared passes.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public final class SharedPassesModule extends AbstractModule {
 
-  @Override protected void configure() {
+  @Override
+  protected void configure() {
     // Install OptiModule, which explicitly binds classes in the opti package.
     // We use a separate module rather than inlining the classes here to allow
     // classes in the package to be package-private.
@@ -40,11 +40,13 @@ public final class SharedPassesModule extends AbstractModule {
     bind(EvalVisitorFactory.class).to(EvalVisitorFactoryImpl.class);
   }
 
-  @Override public boolean equals(Object other) {
+  @Override
+  public boolean equals(Object other) {
     return other != null && this.getClass().equals(other.getClass());
   }
 
-  @Override public int hashCode() {
+  @Override
+  public int hashCode() {
     return this.getClass().hashCode();
   }
 }

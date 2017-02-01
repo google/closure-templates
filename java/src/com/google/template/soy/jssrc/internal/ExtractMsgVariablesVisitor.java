@@ -18,7 +18,7 @@ package com.google.template.soy.jssrc.internal;
 
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
-import com.google.template.soy.html.HtmlAttributeNode;
+import com.google.template.soy.html.IncrementalHtmlAttributeNode;
 import com.google.template.soy.passes.BuildAllDependeesMapVisitor;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.LetContentNode;
@@ -29,44 +29,44 @@ import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.LocalVarInlineNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
-import com.google.template.soy.soytree.SoytreeUtils;
-
+import com.google.template.soy.soytree.SoyTreeUtils;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 /**
- * Moves {@link MsgFallbackGroupNode}s to separate <code>{let}</code> and print nodes.
- * We then move the let node to the nearest block ancestor, so that the print node can be emitted as
- * an expression instead of a statement. After this pass, all MsgFallbackGroupNodes will only appear
+ * Moves {@link MsgFallbackGroupNode}s to separate <code>{let}</code> and print nodes. We then move
+ * the let node to the nearest block ancestor, so that the print node can be emitted as an
+ * expression instead of a statement. After this pass, all MsgFallbackGroupNodes will only appear
  * inside {@link LetContentNodes}.
  *
- * TODO(slaks): Generalize to extract all nodes that create statements but must appear in expression
- * context ({@link MsgHtmlTagNode}, {@link CallParamNode}, {@link LogNode}, & idom attribute values)
- * to variables. This will let us completely remove the many paths in jssrc that conditionally emit
- * temporary variables.
+ * <p>TODO(slaks): Generalize to extract all nodes that create statements but must appear in
+ * expression context ({@link MsgHtmlTagNode}, {@link CallParamNode}, {@link LogNode}, & idom
+ * attribute values) to variables. This will let us completely remove the many paths in jssrc that
+ * conditionally emit temporary variables.
  *
- * <p> {@link #exec} must be called on a full parse tree.
+ * <p>{@link #exec} must be called on a full parse tree.
  *
  */
 public class ExtractMsgVariablesVisitor extends AbstractSoyNodeVisitor<Void> {
 
   /** The list of MsgFallbackGroupNodes found in the given node's subtree. */
   private List<MsgFallbackGroupNode> msgFbGrpNodes;
+
   private Map<SoyNode, List<SoyNode>> allDependeesMap;
 
-  @Override public Void exec(SoyNode node) {
+  @Override
+  public Void exec(SoyNode node) {
     msgFbGrpNodes = new ArrayList<>();
     visit(node);
     return null;
   }
 
-
   // -----------------------------------------------------------------------------------------------
   // Implementations for specific nodes.
 
-
-  @Override protected void visitSoyFileSetNode(SoyFileSetNode node) {
+  @Override
+  protected void visitSoyFileSetNode(SoyFileSetNode node) {
 
     // We find all the MsgFallbackGroupNodes before replacing them because we don't want the
     // modifications to interfere with the traversal.
@@ -84,27 +84,24 @@ public class ExtractMsgVariablesVisitor extends AbstractSoyNodeVisitor<Void> {
     }
   }
 
-
-  @Override protected void visitMsgFallbackGroupNode(MsgFallbackGroupNode node) {
+  @Override
+  protected void visitMsgFallbackGroupNode(MsgFallbackGroupNode node) {
     msgFbGrpNodes.add(node);
     visitChildren(node);
   }
 
-
   // -----------------------------------------------------------------------------------------------
   // Fallback implementation.
 
-
-  @Override protected void visitSoyNode(SoyNode node) {
+  @Override
+  protected void visitSoyNode(SoyNode node) {
     if (node instanceof ParentSoyNode<?>) {
       visitChildren((ParentSoyNode<?>) node);
     }
   }
 
-
   // -----------------------------------------------------------------------------------------------
   // Helpers.
-
 
   protected void wrapMsgFallbackGroupNodeHelper(
       MsgFallbackGroupNode msgFbGrpNode, IdGenerator nodeIdGen) {
@@ -113,10 +110,10 @@ public class ExtractMsgVariablesVisitor extends AbstractSoyNodeVisitor<Void> {
     // Find the actual content kind that this node prints in.
     RenderUnitNode container = msgFbGrpNode.getNearestAncestor(RenderUnitNode.class);
     ContentKind kind = container.getContentKind();
-    HtmlAttributeNode containingAttribute =
-        msgFbGrpNode.getNearestAncestor(HtmlAttributeNode.class);
+    IncrementalHtmlAttributeNode containingAttribute =
+        msgFbGrpNode.getNearestAncestor(IncrementalHtmlAttributeNode.class);
     if (containingAttribute != null
-        && SoytreeUtils.isDescendantOf(containingAttribute, container)) {
+        && SoyTreeUtils.isDescendantOf(containingAttribute, container)) {
       kind = ContentKind.TEXT;
     }
 
@@ -124,12 +121,13 @@ public class ExtractMsgVariablesVisitor extends AbstractSoyNodeVisitor<Void> {
     // that does not matter, since ContextAutoesc has already added appropriate escaping directives.
     // At this point, ContentKind only matters for idom, which uses it to figure out how to emit the
     // output (as itext, as parsed HTML or as attribute parameters).
-    LetContentNode letNode = LetContentNode.forVariable(nodeIdGen.genId(),
-        msgFbGrpNode.getSourceLocation(), varName, kind);
+    LetContentNode letNode =
+        LetContentNode.forVariable(
+            nodeIdGen.genId(), msgFbGrpNode.getSourceLocation(), varName, kind);
 
-
-    msgFbGrpNode.getParent().replaceChild(msgFbGrpNode,
-        msgFbGrpNode.makePrintNode(nodeIdGen, letNode.getVar()));
+    msgFbGrpNode
+        .getParent()
+        .replaceChild(msgFbGrpNode, msgFbGrpNode.makePrintNode(nodeIdGen, letNode.getVar()));
 
     letNode.addChild(msgFbGrpNode);
     insertWrappingLetNode(letNode, allDependeesMap.get(msgFbGrpNode));
@@ -153,5 +151,4 @@ public class ExtractMsgVariablesVisitor extends AbstractSoyNodeVisitor<Void> {
     // TODO(slaks): Move after earlier inserted nodes in case {msg}s reference each-other.
     newParent.addChild(indexUnderNewParent, letNode);
   }
-
 }

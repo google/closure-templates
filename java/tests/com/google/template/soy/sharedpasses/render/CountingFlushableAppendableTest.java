@@ -18,22 +18,25 @@ package com.google.template.soy.sharedpasses.render;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import junit.framework.TestCase;
-
 import java.io.Flushable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
-/**
- * Test case for {@link CountingFlushableAppendable}.
- */
-public class CountingFlushableAppendableTest extends TestCase {
+/** Test case for {@link CountingFlushableAppendable}. */
+@RunWith(JUnit4.class)
+public class CountingFlushableAppendableTest {
 
+  @Test
   public void testAppendAndFlush() throws Exception {
     final StringBuilder progress = new StringBuilder();
-    Flushable flushable = new Flushable() {
-      @Override public void flush() {
-        progress.append("F");
-      }
-    };
+    Flushable flushable =
+        new Flushable() {
+          @Override
+          public void flush() {
+            progress.append("F");
+          }
+        };
 
     CountingFlushableAppendable c = new CountingFlushableAppendable(progress, flushable);
     assertThat(c.getAppendedCountSinceLastFlush()).isEqualTo(0);

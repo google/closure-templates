@@ -18,23 +18,20 @@ package com.google.template.soy.pysrc.internal;
 
 import com.google.common.base.Preconditions;
 import com.google.template.soy.pysrc.restricted.PyExpr;
-
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.Map;
-
 import javax.annotation.Nullable;
 
 /**
- * This class tracks the mappings of local variable names (and foreach-loop special functions)
- * to their respective Python expressions. It enables scoped resolution of variables in places
- * such as inside function calls and loops.
+ * This class tracks the mappings of local variable names (and foreach-loop special functions) to
+ * their respective Python expressions. It enables scoped resolution of variables in places such as
+ * inside function calls and loops.
  */
 final class LocalVariableStack {
 
   private final Deque<Map<String, PyExpr>> localVarExprs = new ArrayDeque<>();
-
 
   /**
    * Adds a new reference frame to the stack. This should be used when entering a new scope, such as
@@ -44,9 +41,7 @@ final class LocalVariableStack {
     localVarExprs.push(new HashMap<String, PyExpr>());
   }
 
-  /**
-   * Removes a reference frame from the stack, typically used when leaving some scope.
-   */
+  /** Removes a reference frame from the stack, typically used when leaving some scope. */
   void popFrame() {
     localVarExprs.pop();
   }
@@ -71,7 +66,8 @@ final class LocalVariableStack {
    * @param variableName The name of the variable.
    * @return The translated expression, or null if not found.
    */
-  @Nullable PyExpr getVariableExpression(String variableName) {
+  @Nullable
+  PyExpr getVariableExpression(String variableName) {
     for (Map<String, PyExpr> frame : localVarExprs) {
       PyExpr translation = frame.get(variableName);
       if (translation != null) {

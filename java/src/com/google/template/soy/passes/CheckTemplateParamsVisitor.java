@@ -24,6 +24,7 @@ import com.google.template.soy.basetree.NodeVisitor;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.error.SoyErrors;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.passes.FindIndirectParamsVisitor.IndirectParamsInfo;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
@@ -32,12 +33,11 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
-import com.google.template.soy.soytree.SoytreeUtils;
+import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.defn.TemplateParam;
-
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -49,16 +49,16 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Visitor for checking that in each template, the parameters declared in the SoyDoc match the data
  * keys referenced in the template.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
- * <p> Precondition: All template and callee names should be full names (i.e. you must execute
- * {@code SetFullCalleeNamesVisitor} before executing this visitor).
+ * <p>Precondition: All template and callee names should be full names (i.e. you must execute {@code
+ * SetFullCalleeNamesVisitor} before executing this visitor).
  *
- * <p> Note this visitor only works for code in Soy V2 syntax.
+ * <p>Note this visitor only works for code in Soy V2 syntax.
  *
- * <p> {@link #exec} should be called on a full parse tree. There is no return value.
- * However, errors are reported to the {@code ErrorReporter} if the parameters
- * declared in some template's SoyDoc do not match the data keys referenced in that template.
+ * <p>{@link #exec} should be called on a full parse tree. There is no return value. However, errors
+ * are reported to the {@code ErrorReporter} if the parameters declared in some template's SoyDoc do
+ * not match the data keys referenced in that template.
  *
  */
 final class CheckTemplateParamsVisitor extends AbstractSoyNodeVisitor<Void> {
@@ -70,14 +70,13 @@ final class CheckTemplateParamsVisitor extends AbstractSoyNodeVisitor<Void> {
 
   /** User-declared syntax version. */
   private final SyntaxVersion declaredSyntaxVersion;
+
   private final ErrorReporter errorReporter;
 
   /** Registry of all templates in the Soy tree. */
   private final TemplateRegistry templateRegistry;
 
-  /**
-   * @param declaredSyntaxVersion User-declared syntax version,
-   */
+  /** @param declaredSyntaxVersion User-declared syntax version, */
   CheckTemplateParamsVisitor(
       TemplateRegistry templateRegistry,
       SyntaxVersion declaredSyntaxVersion,
@@ -90,7 +89,8 @@ final class CheckTemplateParamsVisitor extends AbstractSoyNodeVisitor<Void> {
   // -----------------------------------------------------------------------------------------------
   // Implementations for specific nodes.
 
-  @Override protected void visitSoyFileSetNode(SoyFileSetNode node) {
+  @Override
+  protected void visitSoyFileSetNode(SoyFileSetNode node) {
     // Run pass only on the Soy files that are all in V2 syntax.
     for (SoyFileNode soyFile : node.getChildren()) {
       // Run pass on Soy file if it is all in V2 syntax.
@@ -102,7 +102,7 @@ final class CheckTemplateParamsVisitor extends AbstractSoyNodeVisitor<Void> {
 
   private boolean allNodesInferredAboveV2(SoyNode node) {
     final AtomicBoolean allV2 = new AtomicBoolean(true);
-    SoytreeUtils.visitAllNodes(
+    SoyTreeUtils.visitAllNodes(
         node,
         new NodeVisitor<Node, Boolean>() {
           @Override
@@ -127,10 +127,11 @@ final class CheckTemplateParamsVisitor extends AbstractSoyNodeVisitor<Void> {
     return allV2.get();
   }
 
-  @Override protected void visitTemplateNode(TemplateNode node) {
+  @Override
+  protected void visitTemplateNode(TemplateNode node) {
     ListMultimap<String, SourceLocation> dataKeys = ArrayListMultimap.create();
 
-    for (VarRefNode varRefNode : SoytreeUtils.getAllNodesOfType(node, VarRefNode.class)) {
+    for (VarRefNode varRefNode : SoyTreeUtils.getAllNodesOfType(node, VarRefNode.class)) {
       if (varRefNode.isPossibleParam()) {
         dataKeys.put(varRefNode.getName(), varRefNode.getSourceLocation());
       }
@@ -147,9 +148,9 @@ final class CheckTemplateParamsVisitor extends AbstractSoyNodeVisitor<Void> {
         // that at the end of the for-loop, dataKeys will only contain the keys that are referenced
         // but not declared in SoyDoc.
         dataKeys.removeAll(param.name());
-      } else if (ipi.paramKeyToCalleesMultimap.containsKey(param.name()) ||
-                 ipi.mayHaveIndirectParamsInExternalCalls ||
-                 ipi.mayHaveIndirectParamsInExternalDelCalls) {
+      } else if (ipi.paramKeyToCalleesMultimap.containsKey(param.name())
+          || ipi.mayHaveIndirectParamsInExternalCalls
+          || ipi.mayHaveIndirectParamsInExternalDelCalls) {
         // Good: Declared in SoyDoc and either (a) used in a call that passes all data or (b) used
         // in an external call or delcall that passes all data, which may need the param (we can't
         // verify).
@@ -161,7 +162,7 @@ final class CheckTemplateParamsVisitor extends AbstractSoyNodeVisitor<Void> {
 
     // At this point, the only keys left in dataKeys are undeclared.
     for (Entry<String, SourceLocation> undeclared : dataKeys.entries()) {
-      String extraErrorMessage = "";
+      String extraErrorMessage = SoyErrors.getDidYouMeanMessage(allParamNames, undeclared.getKey());
       errorReporter.report(
           undeclared.getValue(), UNDECLARED_DATA_KEY, undeclared.getKey(), extraErrorMessage);
     }
@@ -178,7 +179,8 @@ final class CheckTemplateParamsVisitor extends AbstractSoyNodeVisitor<Void> {
   // -----------------------------------------------------------------------------------------------
   // Fallback implementation.
 
-  @Override protected void visitSoyNode(SoyNode node) {
+  @Override
+  protected void visitSoyNode(SoyNode node) {
     if (node instanceof ParentSoyNode<?>) {
       visitChildren((ParentSoyNode<?>) node);
     }

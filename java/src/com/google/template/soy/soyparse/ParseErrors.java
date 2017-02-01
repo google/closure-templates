@@ -23,11 +23,31 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.LegacyInternalSyntaxException;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-/**
- * Helpers for interpreting parse errors as soy errors.
- */
+/** Helpers for interpreting parse errors as soy errors. */
 final class ParseErrors {
+  private static final Pattern EXTRACT_LOCATION = Pattern.compile("at line (\\d+), column (\\d+).");
+  private static final SoyErrorKind UNEXPECTED_TOKEN_MGR_ERROR =
+      SoyErrorKind.of(
+          "Unexpected fatal Soy error. Please file a bug with your Soy file and "
+              + "we''ll take a look.  {0}");
+  private static final SoyErrorKind UNEXPECTED_EOF =
+      SoyErrorKind.of(
+          "Unexpected end of file.  Did you forget to close an attribute value or a comment?");
+
+  private static final SoyErrorKind INVALID_STRING_LITERAL =
+      SoyErrorKind.of("Invalid string literal found in Soy command.");
+  private static final SoyErrorKind UNEXPECTED_RIGHT_BRACE =
+      SoyErrorKind.of("Unexpected ''}''; did you mean '''{'rb'}'''?");
+  private static final SoyErrorKind BAD_PHNAME_VALUE =
+      SoyErrorKind.of("Found ''phname'' attribute that is not a valid identifier");
+  private static final SoyErrorKind UNEXPECTED_PARAM_DECL =
+      SoyErrorKind.of(
+          "Unexpected parameter declaration. Param declarations must come before any code in "
+              + "your template.");
+
   private ParseErrors() {}
 
   static void reportSoyFileParseException(
@@ -38,43 +58,70 @@ final class ParseErrors {
     if (errorToken.next != null) {
       errorToken = errorToken.next;
     }
+    SourceLocation location = Tokens.createSrcLoc(filePath, errorToken);
+    // handle a few special cases.
+    switch (errorToken.kind) {
+      case SoyFileParserConstants.XXX_BRACE_INVALID:
+        reporter.report(location, UNEXPECTED_RIGHT_BRACE);
+        return;
+      case SoyFileParserConstants.XXX_INVALID_STRING_LITERAL:
+        reporter.report(location, INVALID_STRING_LITERAL);
+        return;
+      case SoyFileParserConstants.XXX_CMD_TEXT_PHNAME_NOT_IDENT:
+        reporter.report(location, BAD_PHNAME_VALUE);
+        return;
+      case SoyFileParserConstants.DECL_BEGIN_PARAM:
+      case SoyFileParserConstants.DECL_BEGIN_OPT_PARAM:
+      case SoyFileParserConstants.DECL_BEGIN_INJECT_PARAM:
+      case SoyFileParserConstants.DECL_BEGIN_OPT_INJECT_PARAM:
+        reporter.report(location, UNEXPECTED_PARAM_DECL);
+        return;
+      default:
+        //fall-through
+    }
     ImmutableSet.Builder<String> expectedTokenImages = ImmutableSet.builder();
     for (int[] expected : e.expectedTokenSequences) {
-      // We only display the first token
+      // We only display the first token of any expected sequence
       expectedTokenImages.add(getSoyFileParserTokenDisplayName(expected[0]));
     }
+
     reporter.report(
-        Tokens.createSrcLoc(filePath, errorToken),
+        location,
         SoyErrorKind.of("{0}"),
         formatParseExceptionDetails(errorToken.image, expectedTokenImages.build().asList()));
   }
 
   /**
-   * Returns a human friendly display name for tokens.  By default we use the generated token 
-   * image which is appropriate for literal tokens.
+   * Returns a human friendly display name for tokens. By default we use the generated token image
+   * which is appropriate for literal tokens.
    */
   private static String getSoyFileParserTokenDisplayName(int tokenId) {
     switch (tokenId) {
       case SoyFileParserConstants.ATTRIBUTE_VALUE:
         return "attribute-value";
 
-      // File-level tokens:
+        // File-level tokens:
       case SoyFileParserConstants.DELTEMPLATE_OPEN:
         return "{deltemplate";
       case SoyFileParserConstants.TEMPLATE_OPEN:
         return "{template";
 
-      // Template tokens:
+        // Template tokens:
       case SoyFileParserConstants.CMD_BEGIN_CALL:
-        return "{(del)call";
+        return "{call";
       case SoyFileParserConstants.CMD_CLOSE_CALL:
-        return "{/(del)call}";
+        return "{/call}";
 
-      case SoyFileParserConstants.DOTTED_IDENT:
+      case SoyFileParserConstants.CMD_BEGIN_DELCALL:
+        return "{delcall";
+      case SoyFileParserConstants.CMD_CLOSE_DELCALL:
+        return "{/delcall}";
+
+      case SoyFileParserConstants.NAME:
         return "identifier";
       case SoyFileParserConstants.EOF:
         return "eof";
-      // TODO(slaks): Gather all CMD_BEGIN* constants using Reflection & string manipulation?
+        // TODO(slaks): Gather all CMD_BEGIN* constants using Reflection & string manipulation?
       case SoyFileParserConstants.CMD_BEGIN_PARAM:
         return "{param";
       case SoyFileParserConstants.CMD_BEGIN_MSG:
@@ -105,6 +152,20 @@ final class ParseErrors {
         return "{case";
       case SoyFileParserConstants.CMD_BEGIN_FOREACH:
         return "{foreach";
+      case SoyFileParserConstants.CMD_OPEN_LITERAL:
+        return "{literal";
+
+      case SoyFileParserConstants.CMD_FULL_SP:
+      case SoyFileParserConstants.CMD_FULL_NIL:
+      case SoyFileParserConstants.CMD_FULL_CR:
+      case SoyFileParserConstants.CMD_FULL_LF:
+      case SoyFileParserConstants.CMD_FULL_TAB:
+      case SoyFileParserConstants.CMD_FULL_LB:
+      case SoyFileParserConstants.CMD_FULL_RB:
+      case SoyFileParserConstants.TOKEN_NOT_WS:
+        return "text";
+      case SoyFileParserConstants.TOKEN_WS:
+        return "whitespace";
 
       case SoyFileParserConstants.UNEXPECTED_TOKEN:
         throw new AssertionError("we should never expect the unexpected token");
@@ -122,9 +183,25 @@ final class ParseErrors {
     reporter.report(sourceLocation, SoyErrorKind.of("{0}"), exception.getOriginalMessage());
   }
 
-  static void reportUnexpected(ErrorReporter reporter, String filePath, TokenMgrError exception) {
-    reporter.report(new SourceLocation(filePath), SoyErrorKind.of("Unexpected fatal Soy error.  "
-        + "Please file a bug with your Soy file and we''ll take a look.  {0}"),
-        exception.getMessage());
+  static void reportTokenMgrError(
+      ErrorReporter reporter, String filePath, TokenMgrError exception) {
+    // If the file is terminated in the middle of an attribute value or a multiline comment a
+    // TokenMgrError will be thrown (due to our use of MORE productions).  The only way to tell is
+    // to test the message for "<EOF>".  The suggested workaround for this is to submit the
+    // generated TokenMgrError code into source control and rewrite the constructor.  This would
+    // also allow us to avoid using a regex to extract line number information.
+    String message = exception.getMessage();
+    if (exception.errorCode == TokenMgrError.LEXICAL_ERROR && message.contains("<EOF>")) {
+      Matcher line = EXTRACT_LOCATION.matcher(message);
+      if (line.find()) {
+        int startLine = Integer.parseInt(line.group(1));
+        // javacc's column numbers are 0-based, while Soy's are 1-based
+        int column = Integer.parseInt(line.group(2)) + 1;
+        reporter.report(
+            new SourceLocation(filePath, startLine, column, startLine, column), UNEXPECTED_EOF);
+        return;
+      }
+    }
+    reporter.report(new SourceLocation(filePath), UNEXPECTED_TOKEN_MGR_ERROR, message);
   }
 }

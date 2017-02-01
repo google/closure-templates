@@ -25,17 +25,15 @@ import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.internal.DictImpl;
 import com.google.template.soy.jssrc.restricted.JsExpr;
-import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
+import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyFunctionExprBuilder;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -47,42 +45,45 @@ import javax.inject.Singleton;
 @Singleton
 @SoyPureFunction
 public final class AugmentMapFunction
-    implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction {
+    implements SoyJavaFunction, SoyLibraryAssistedJsSrcFunction, SoyPySrcFunction {
 
-  @Inject AugmentMapFunction() {}
+  @Inject
+  AugmentMapFunction() {}
 
-
-  @Override public String getName() {
+  @Override
+  public String getName() {
     return "augmentMap";
   }
 
-  @Override public Set<Integer> getValidArgsSizes() {
+  @Override
+  public Set<Integer> getValidArgsSizes() {
     return ImmutableSet.of(2);
   }
 
-  @SuppressWarnings("ConstantConditions")  // IntelliJ
-  @Override public SoyValue computeForJava(List<SoyValue> args) {
+  @SuppressWarnings("ConstantConditions") // IntelliJ
+  @Override
+  public SoyValue computeForJava(List<SoyValue> args) {
     SoyValue arg0 = args.get(0);
     SoyValue arg1 = args.get(1);
 
-    Preconditions.checkArgument(arg0 instanceof SoyMap,
-        "First argument to augmentMap() function is not SoyMap.");
-    Preconditions.checkArgument(arg1 instanceof SoyMap,
-        "Second argument to augmentMap() function is not SoyMap.");
+    Preconditions.checkArgument(
+        arg0 instanceof SoyMap, "First argument to augmentMap() function is not SoyMap.");
+    Preconditions.checkArgument(
+        arg1 instanceof SoyMap, "Second argument to augmentMap() function is not SoyMap.");
 
     // TODO: Support map with nonstring key.
-    Preconditions.checkArgument(arg0 instanceof SoyDict,
-        "First argument to augmentMap() function is not SoyDict. Currently, augmentMap() doesn't" +
-            " support maps that are not dicts (it is a todo).");
-    Preconditions.checkArgument(arg1 instanceof SoyDict,
-        "Second argument to augmentMap() function is not SoyDict. Currently, augmentMap() doesn't" +
-            " support maps that are not dicts (it is a todo).");
+    Preconditions.checkArgument(
+        arg0 instanceof SoyDict,
+        "First argument to augmentMap() function is not SoyDict. Currently, augmentMap() doesn't"
+            + " support maps that are not dicts (it is a todo).");
+    Preconditions.checkArgument(
+        arg1 instanceof SoyDict,
+        "Second argument to augmentMap() function is not SoyDict. Currently, augmentMap() doesn't"
+            + " support maps that are not dicts (it is a todo).");
     return augmentMap((SoyDict) arg0, (SoyDict) arg1);
   }
 
-  /**
-   * Combine the two maps.
-   */
+  /** Combine the two maps. */
   public static SoyDict augmentMap(SoyDict first, SoyDict second) {
     Map<String, SoyValueProvider> map =
         Maps.newHashMapWithExpectedSize(first.getItemCnt() + second.getItemCnt());
@@ -91,7 +92,8 @@ public final class AugmentMapFunction
     return DictImpl.forProviderMap(map);
   }
 
-  @Override public JsExpr computeForJsSrc(List<JsExpr> args) {
+  @Override
+  public JsExpr computeForJsSrc(List<JsExpr> args) {
     JsExpr arg0 = args.get(0);
     JsExpr arg1 = args.get(1);
 
@@ -99,7 +101,13 @@ public final class AugmentMapFunction
     return new JsExpr(exprText, Integer.MAX_VALUE);
   }
 
-  @Override public PyExpr computeForPySrc(List<PyExpr> args) {
+  @Override
+  public ImmutableSet<String> getRequiredJsLibNames() {
+    return ImmutableSet.of("soy");
+  }
+
+  @Override
+  public PyExpr computeForPySrc(List<PyExpr> args) {
     PyFunctionExprBuilder fnBuilder = new PyFunctionExprBuilder("dict");
     fnBuilder.addArg(args.get(0)).setUnpackedKwargs(args.get(1));
     return fnBuilder.asPyExpr();

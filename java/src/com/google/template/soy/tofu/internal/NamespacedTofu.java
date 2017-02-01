@@ -24,26 +24,22 @@ import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.parseinfo.SoyTemplateInfo;
 import com.google.template.soy.tofu.SoyTofu;
-
 import java.util.Map;
-
 import javax.annotation.Nullable;
 
 /**
  * Represents a compiled Soy file set, with a namespace prepended to templates being rendered.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 class NamespacedTofu implements SoyTofu {
-
 
   /** The underlying Tofu object. */
   private final BaseTofu baseTofu;
 
   /** The namespace of this SoyTofu object. */
   private final String namespace;
-
 
   /**
    * @param baseTofu The underlying Tofu object.
@@ -56,71 +52,69 @@ class NamespacedTofu implements SoyTofu {
     this.namespace = namespace;
   }
 
-
   /**
    * {@inheritDoc}
    *
-   * <p> For objects of this class, the namespace is always nonempty.
+   * <p>For objects of this class, the namespace is always nonempty.
    */
-  @Override public String getNamespace() {
+  @Override
+  public String getNamespace() {
     return namespace;
   }
 
-
-  @Override public SoyTofu forNamespace(@Nullable String namespace) {
+  @Override
+  public SoyTofu forNamespace(@Nullable String namespace) {
     if (namespace == null) {
       return baseTofu;
     } else {
-      checkArgument(namespace.charAt(0) != '.' && namespace.charAt(namespace.length() - 1) != '.',
-          "Invalid namespace '%s' (must not begin or end with a dot).", namespace);
+      checkArgument(
+          namespace.charAt(0) != '.' && namespace.charAt(namespace.length() - 1) != '.',
+          "Invalid namespace '%s' (must not begin or end with a dot).",
+          namespace);
       return new NamespacedTofu(baseTofu, namespace);
     }
   }
 
-
-  /**
-   * Translates a template name that may be full or partial to a full template name.
-   */
+  /** Translates a template name that may be full or partial to a full template name. */
   private String getFullTemplateName(String templateName) {
     return (templateName.charAt(0) == '.') ? namespace + templateName : templateName;
   }
 
-  @Override public Renderer newRenderer(SoyTemplateInfo templateInfo) {
+  @Override
+  public Renderer newRenderer(SoyTemplateInfo templateInfo) {
     return baseTofu.newRenderer(templateInfo);
   }
 
-
-  @Override public Renderer newRenderer(String templateName) {
+  @Override
+  public Renderer newRenderer(String templateName) {
     return baseTofu.newRenderer(getFullTemplateName(templateName));
   }
 
-
-  @Override public ImmutableSortedSet<String> getUsedIjParamsForTemplate(
-      SoyTemplateInfo templateInfo) {
+  @Override
+  public ImmutableSortedSet<String> getUsedIjParamsForTemplate(SoyTemplateInfo templateInfo) {
     return baseTofu.getUsedIjParamsForTemplate(templateInfo);
   }
 
-
-  @Override public ImmutableSortedSet<String> getUsedIjParamsForTemplate(String templateName) {
+  @Override
+  public ImmutableSortedSet<String> getUsedIjParamsForTemplate(String templateName) {
     return baseTofu.getUsedIjParamsForTemplate(getFullTemplateName(templateName));
   }
-
 
   // -----------------------------------------------------------------------------------------------
   // Old render methods.
 
-
   @Deprecated
   @SuppressWarnings({"deprecation"})
-  @Override public String render(
+  @Override
+  public String render(
       SoyTemplateInfo templateInfo, @Nullable SoyRecord data, @Nullable SoyMsgBundle msgBundle) {
     return render(templateInfo.getPartialName(), data, msgBundle);
   }
 
-
   @Deprecated
   @SuppressWarnings({"deprecation"})
-  @Override public String render(
+  @Override
+  public String render(
       String templateName, @Nullable Map<String, ?> data, @Nullable SoyMsgBundle msgBundle) {
     if (templateName.charAt(0) == '.') {
       return baseTofu.render(namespace + templateName, data, msgBundle);
@@ -129,10 +123,10 @@ class NamespacedTofu implements SoyTofu {
     }
   }
 
-
   @Deprecated
   @SuppressWarnings({"deprecation"})
-  @Override public String render(
+  @Override
+  public String render(
       String templateName, @Nullable SoyRecord data, @Nullable SoyMsgBundle msgBundle) {
     if (templateName.charAt(0) == '.') {
       return baseTofu.render(namespace + templateName, data, msgBundle);
@@ -140,5 +134,4 @@ class NamespacedTofu implements SoyTofu {
       return baseTofu.render(templateName, data, msgBundle);
     }
   }
-
 }

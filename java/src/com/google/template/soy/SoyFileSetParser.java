@@ -31,16 +31,14 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.types.SoyTypeRegistry;
-
 import java.io.IOException;
 import java.io.Reader;
-
 import javax.annotation.Nullable;
 
 /**
  * Static functions for parsing a set of Soy files into a {@link SoyFileSetNode}.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public final class SoyFileSetParser {
@@ -65,7 +63,7 @@ public final class SoyFileSetParser {
   /** The suppliers of the Soy files to parse. */
   private final ImmutableMap<String, ? extends SoyFileSupplier> soyFileSuppliers;
 
-  /** Parsing passes. null means that they are disabled.*/
+  /** Parsing passes. null means that they are disabled. */
   @Nullable private final PassManager passManager;
 
   /** For reporting parse errors. */
@@ -94,10 +92,7 @@ public final class SoyFileSetParser {
     this.passManager = passManager;
   }
 
-
-  /**
-   * Parses a set of Soy files, returning a structure containing the parse tree and any errors.
-   */
+  /** Parses a set of Soy files, returning a structure containing the parse tree and any errors. */
   public ParseResult parse() {
     try {
       return parseWithVersions();
@@ -107,7 +102,6 @@ public final class SoyFileSetParser {
       throw new RuntimeException(e);
     }
   }
-
 
   /**
    * Parses a set of Soy files, returning a structure containing the parse tree and template
@@ -124,13 +118,12 @@ public final class SoyFileSetParser {
     boolean filesWereSkipped = false;
     for (SoyFileSupplier fileSupplier : soyFileSuppliers.values()) {
       SoyFileSupplier.Version version = fileSupplier.getVersion();
-      VersionedFile cachedFile = cache != null
-          ? cache.get(fileSupplier.getFilePath(), version)
-          : null;
+      VersionedFile cachedFile =
+          cache != null ? cache.get(fileSupplier.getFilePath(), version) : null;
       SoyFileNode node;
       if (cachedFile == null) {
         //noinspection SynchronizationOnLocalVariableOrMethodParameter IntelliJ
-        synchronized (nodeIdGen) {  // Avoid using the same ID generator in multiple threads.
+        synchronized (nodeIdGen) { // Avoid using the same ID generator in multiple threads.
           node = parseSoyFileHelper(fileSupplier, nodeIdGen, typeRegistry);
           // TODO(user): implement error recovery and keep on trucking in order to display
           // as many errors as possible. Currently, the later passes just spew NPEs if run on
@@ -174,12 +167,12 @@ public final class SoyFileSetParser {
       throws IOException {
     try (Reader soyFileReader = soyFileSupplier.open()) {
       return new SoyFileParser(
-          typeRegistry,
-          nodeIdGen,
-          soyFileReader,
-          soyFileSupplier.getSoyFileKind(),
-          soyFileSupplier.getFilePath(),
-          errorReporter)
+              typeRegistry,
+              nodeIdGen,
+              soyFileReader,
+              soyFileSupplier.getSoyFileKind(),
+              soyFileSupplier.getFilePath(),
+              errorReporter)
           .parseSoyFile();
     }
   }

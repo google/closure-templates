@@ -18,7 +18,6 @@ package com.google.template.soy.msgs.restricted;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
-
 import javax.annotation.Nullable;
 
 /**
@@ -30,7 +29,8 @@ public abstract class SoyMsgPart {
   // instanceof tests.  Consider introducing a visitor api or an enum for fast switching.
 
   /** A case in a plural or 'select' msg part. */
-  @AutoValue public abstract static class Case<T> {
+  @AutoValue
+  public abstract static class Case<T> {
     public static <T> Case<T> create(T spec, Iterable<? extends SoyMsgPart> parts) {
       return new AutoValue_SoyMsgPart_Case<>(spec, ImmutableList.copyOf(parts));
     }
@@ -38,7 +38,9 @@ public abstract class SoyMsgPart {
     Case() {}
 
     // null means default case
-    @Nullable public abstract T spec();
+    @Nullable
+    public abstract T spec();
+
     public abstract ImmutableList<SoyMsgPart> parts();
   }
 

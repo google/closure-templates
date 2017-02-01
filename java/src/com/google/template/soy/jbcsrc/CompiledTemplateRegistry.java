@@ -24,15 +24,11 @@ import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
-
 import java.util.HashMap;
 import java.util.Map;
-
 import javax.annotation.Nullable;
 
-/**
- * A registry of information about every compiled template.
- */
+/** A registry of information about every compiled template. */
 final class CompiledTemplateRegistry {
   private final ImmutableBiMap<String, CompiledTemplateMetadata> templateNameToMetadata;
   private final ImmutableBiMap<String, CompiledTemplateMetadata> classNameToMetadata;
@@ -47,7 +43,7 @@ final class CompiledTemplateRegistry {
         ImmutableBiMap.builder();
     ImmutableSet.Builder<String> delegateTemplateNames = ImmutableSet.builder();
     for (TemplateNode template : registry.getAllTemplates()) {
-      CompiledTemplateMetadata metadata = 
+      CompiledTemplateMetadata metadata =
           CompiledTemplateMetadata.create(template.getTemplateName(), template);
       templateToMetadata.put(template.getTemplateName(), metadata);
       classToMetadata.put(metadata.typeInfo().className(), metadata);
@@ -69,22 +65,18 @@ final class CompiledTemplateRegistry {
   ImmutableSet<String> getTemplateNames() {
     return templateNameToMetadata.keySet();
   }
-  
+
   /** Returns the names of all delegate template implementations. */
   ImmutableSet<String> getDelegateTemplateNames() {
     return delegateTemplateNames;
   }
 
-  /**
-   * Returns information about the generated class for the given fully qualified template name.
-   */
+  /** Returns information about the generated class for the given fully qualified template name. */
   CompiledTemplateMetadata getTemplateInfoByTemplateName(String templateName) {
     return templateNameToMetadata.get(templateName);
   }
 
-  /**
-   * Returns information about the generated class for the given fully qualified template name.
-   */
+  /** Returns information about the generated class for the given fully qualified template name. */
   CompiledTemplateMetadata getTemplateInfoByClassName(String templateName) {
     return classNameToMetadata.get(templateName);
   }

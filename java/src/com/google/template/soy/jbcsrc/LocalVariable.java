@@ -20,28 +20,28 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.base.Optional;
-
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
 /**
  * A local variable representation.
- * 
+ *
  * <p>This does nothing to enforce required constraints, e.g.:
+ *
  * <ul>
- *    <li>This does not ensure that {@link #start()} and {@link #end()} are valid and exist in the
- *        method.
- *    <li>This does not ensure that the {@link #index} is otherwise unused and that only one 
- *        variable is active at a time with the index.
+ *   <li>This does not ensure that {@link #start()} and {@link #end()} are valid and exist in the
+ *       method.
+ *   <li>This does not ensure that the {@link #index} is otherwise unused and that only one variable
+ *       is active at a time with the index.
  * </ul>
- * 
+ *
  * <p>Note: This class does not attempt to make use of the convenience methods on generator adapter
- * such as {@link CodeBuilder#newLocal(Type)} or {@link CodeBuilder#loadArg(int)} that
- * make it easier to work with local variables (and calculating local variable indexes).  Instead
- * we push this responsibility onto our caller.  This is because CodeBuilder doesn't make it
- * possible to generate local variable debugging tables in this case (e.g. there is no way to map
- * a method parameter index to a local variable index).
+ * such as {@link CodeBuilder#newLocal(Type)} or {@link CodeBuilder#loadArg(int)} that make it
+ * easier to work with local variables (and calculating local variable indexes). Instead we push
+ * this responsibility onto our caller. This is because CodeBuilder doesn't make it possible to
+ * generate local variable debugging tables in this case (e.g. there is no way to map a method
+ * parameter index to a local variable index).
  */
 final class LocalVariable extends Expression {
   // TODO(lukes): the fact that you need to specify the start and end labels during construction
@@ -62,16 +62,16 @@ final class LocalVariable extends Expression {
   private final int index;
   private final Label start;
   private final Label end;
-  
+
   private LocalVariable(
-      String variableName, Type type, int index, Label start, Label end, Feature ...features) {
+      String variableName, Type type, int index, Label start, Label end, Feature... features) {
     super(type, Feature.CHEAP /* locals are always cheap */, features);
     this.variableName = checkNotNull(variableName);
     this.index = index;
     this.start = checkNotNull(start);
     this.end = checkNotNull(end);
   }
-  
+
   /** The name of the variable, ends up in debugging tables. */
   String variableName() {
     return variableName;
@@ -80,43 +80,46 @@ final class LocalVariable extends Expression {
   int index() {
     return index;
   }
-  
+
   /** A label defining the earliest point at which this variable is defined. */
   Label start() {
     return start;
   }
-  
+
   /** A label defining the latest point at which this variable is defined. */
   Label end() {
     return end;
   }
 
-  @Override LocalVariable asCheap() {
+  @Override
+  LocalVariable asCheap() {
     return this;
   }
-  
-  @Override LocalVariable asNonNullable() {
+
+  @Override
+  LocalVariable asNonNullable() {
     if (isNonNullable()) {
       return this;
     }
     return new LocalVariable(variableName, resultType(), index, start, end, Feature.NON_NULLABLE);
   }
-  
+
   /**
-   * Write a local variable table entry for this variable.  This informs debuggers about variable
+   * Write a local variable table entry for this variable. This informs debuggers about variable
    * names, types and lifetime.
    */
   void tableEntry(CodeBuilder mv) {
     mv.visitLocalVariable(
         variableName(),
         resultType().getDescriptor(),
-        null /** no generic signature */,
+        null, // no generic signature
         start(),
         end(),
         index());
   }
 
-  @Override void doGen(CodeBuilder mv) {
+  @Override
+  void doGen(CodeBuilder mv) {
     mv.visitVarInsn(resultType().getOpcode(Opcodes.ILOAD), index());
   }
 
@@ -129,7 +132,7 @@ final class LocalVariable extends Expression {
 
   /**
    * Return a {@link Statement} that stores the value of the given expression into this variable.
-   * 
+   *
    * @param expr The expression to store
    * @param firstVarInstruction A label to use to mark the store instruction
    */
@@ -141,7 +144,8 @@ final class LocalVariable extends Expression {
   private Statement store(final Expression expr, final Optional<Label> firstVarInstruction) {
     expr.checkAssignableTo(resultType());
     return new Statement() {
-      @Override void doGen(CodeBuilder adapter) {
+      @Override
+      void doGen(CodeBuilder adapter) {
         expr.gen(adapter);
         if (firstVarInstruction.isPresent()) {
           adapter.mark(firstVarInstruction.get());

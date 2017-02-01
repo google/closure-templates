@@ -20,9 +20,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueProvider;
-
 import java.util.Map;
-
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -30,11 +28,10 @@ import javax.annotation.Nullable;
  * Implementation of ParamStore that represents a backing store augmented with additional fields
  * (params). The additional fields may hide fields from the backing store.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public class AugmentedParamStore extends ParamStore {
-
+public final class AugmentedParamStore extends ParamStore {
 
   /** The backing store (can be any SoyRecord, not necessarily ParamStore) being augmented. */
   private final SoyRecord backingStore;
@@ -42,29 +39,26 @@ public class AugmentedParamStore extends ParamStore {
   /** The internal map holding the additional fields (params). */
   private final Map<String, SoyValueProvider> localStore;
 
-
   public AugmentedParamStore(@Nullable SoyRecord backingStore, int expectedKeys) {
     this.backingStore = backingStore;
     this.localStore = Maps.newHashMapWithExpectedSize(expectedKeys);
   }
 
-
-  @Override public AugmentedParamStore setField(String name,
-      @Nonnull SoyValueProvider valueProvider) {
+  @Override
+  public AugmentedParamStore setField(String name, @Nonnull SoyValueProvider valueProvider) {
     Preconditions.checkNotNull(valueProvider);
     localStore.put(name, valueProvider);
     return this;
   }
 
-
-  @Override public boolean hasField(String name) {
+  @Override
+  public boolean hasField(String name) {
     return localStore.containsKey(name) || backingStore.hasField(name);
   }
 
-
-  @Override public SoyValueProvider getFieldProvider(String name) {
+  @Override
+  public SoyValueProvider getFieldProvider(String name) {
     SoyValueProvider val = localStore.get(name);
     return (val != null) ? val : backingStore.getFieldProvider(name);
   }
-
 }

@@ -206,11 +206,15 @@ _MATCHER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MED
 
 _FILTER_FOR_FILTER_CSS_VALUE = re.compile(r"""^(?!-*(?:expression|(?:moz-)?binding))(?:[.#]?-?(?:[_a-z0-9-]+)(?:-[_a-z0-9-]+)*-?|(?:rgb|hsl)a?\([0-9.%, ]+\)|-?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[a-z]{1,2}|%)?|!important|)\Z""", re.U | re.I)
 
+_FILTER_FOR_FILTER_CSP_NONCE_VALUE = re.compile(r"""^[a-zA-Z0-9+/]+=*$""", re.U)
+
 _FILTER_FOR_FILTER_NORMALIZE_URI = re.compile(r"""^(?![^#?]*/(?:\.|%2E){2}(?:[/?#]|\Z))(?:(?:https?|mailto):|[^&:/?#]*(?:[/?#]|\Z))""", re.U | re.I)
 
 _FILTER_FOR_FILTER_NORMALIZE_MEDIA_URI = re.compile(r"""^[^&:/?#]*(?:[/?#]|\Z)|^https?:|^data:image/[a-z0-9+]+;base64,[a-z0-9+/]+=*\Z|^blob:""", re.U | re.I)
 
 _FILTER_FOR_FILTER_IMAGE_DATA_URI = re.compile(r"""^data:image/(?:bmp|gif|jpe?g|png|tiff|webp);base64,[a-z0-9+/]+=*\Z""", re.U | re.I)
+
+_FILTER_FOR_FILTER_TEL_URI = re.compile(r"""^tel:[0-9a-z;=\-+._!~*' /():&$#?@,]+\Z""", re.U | re.I)
 
 _FILTER_FOR_FILTER_HTML_ATTRIBUTES = re.compile(r"""^(?!on|src|(?:style|action|archive|background|cite|classid|codebase|data|dsync|href|longdesc|usemap)\s*$)(?:[a-z0-9_$:-]*)\Z""", re.U | re.I)
 
@@ -272,6 +276,14 @@ def normalize_uri_helper(value):
       _REPLACER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI, value)
 
 
+def filter_csp_nonce_value_helper(value):
+  value = str(value)
+  if not _FILTER_FOR_FILTER_CSP_NONCE_VALUE.search(value):
+    return 'zSoyz'
+
+  return value
+
+
 def filter_normalize_uri_helper(value):
   value = str(value)
   if not _FILTER_FOR_FILTER_NORMALIZE_URI.search(value):
@@ -294,6 +306,14 @@ def filter_image_data_uri_helper(value):
   value = str(value)
   if not _FILTER_FOR_FILTER_IMAGE_DATA_URI.search(value):
     return 'data:image/gif;base64,zSoyz'
+
+  return value
+
+
+def filter_tel_uri_helper(value):
+  value = str(value)
+  if not _FILTER_FOR_FILTER_TEL_URI.search(value):
+    return 'about:invalid#zSoyz'
 
   return value
 

@@ -20,74 +20,73 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.soytree.SoyFileSetNode;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
-import junit.framework.TestCase;
-
-public class AliasUtilsTest extends TestCase {
+@RunWith(JUnit4.class)
+public class AliasUtilsTest {
+  @Test
   public void testLocalFunctionAliasing() {
-    String fileBody = ""
-        + "{namespace foo.bar.baz}"
-        + "/** */"
-        + "{template .localOne}{/template}\n";
+    String fileBody = "{namespace foo.bar.baz}\n{template .localOne}{/template}\n";
 
     SoyFileSetNode n = SoyFileSetParserBuilder.forFileContents(fileBody).parse().fileSet();
     TemplateAliases templateAliases = AliasUtils.createTemplateAliases(n.getChild(0));
-    
+
     String alias = templateAliases.get("foo.bar.baz.localOne");
     assertThat(alias).isEqualTo("$localOne");
     assertThat(AliasUtils.isExternalFunction(alias)).isFalse();
   }
-  
-  /*
-   * Tests that a local template's name is aliased correctly when a call is encountered first. 
-   */
-  public void testLocalFunctionCallAliasing() {
-    String fileBody = ""
-        + "{namespace foo.bar.baz}"
-        + "/** */"
-        + "{template .localOne}{call .localTwo /}{/template}\n"
-        + "{template .localTwo}{/template}\n";
 
+  /*
+   * Tests that a local template's name is aliased correctly when a call is encountered first.
+   */
+  @Test
+  public void testLocalFunctionCallAliasing() {
+    String fileBody =
+        "{namespace foo.bar.baz}\n"
+            + "{template .localOne}{call .localTwo /}{/template}\n"
+            + "{template .localTwo}{/template}\n";
 
     SoyFileSetNode n = SoyFileSetParserBuilder.forFileContents(fileBody).parse().fileSet();
     TemplateAliases templateAliases = AliasUtils.createTemplateAliases(n.getChild(0));
-    
+
     String alias = templateAliases.get("foo.bar.baz.localTwo");
     assertThat(alias).isEqualTo("$localTwo");
     assertThat(AliasUtils.isExternalFunction(alias)).isFalse();
   }
-  
+
+  @Test
   public void testNonLocalFunctionAliasing() {
-    String fileBody = ""
-        + "{namespace foo.bar.baz}"
-        + "/** */"
-        + "{template .bam}\n"
-        + "  {call other.name.space.bam /}\n"
-        + "{/template}\n";
+    String fileBody =
+        "{namespace foo.bar.baz}\n"
+            + "{template .bam}\n"
+            + "  {call other.name.space.bam /}\n"
+            + "{/template}\n";
 
     SoyFileSetNode n = SoyFileSetParserBuilder.forFileContents(fileBody).parse().fileSet();
     TemplateAliases templateAliases = AliasUtils.createTemplateAliases(n.getChild(0));
-    
+
     String alias = templateAliases.get("other.name.space.bam");
     assertThat(alias).isEqualTo("$templateAlias1");
     assertThat(AliasUtils.isExternalFunction(alias)).isTrue();
   }
-  
+
   /*
    * Tests that a template that is called multiple times does not create a new alias.
    */
+  @Test
   public void testMultipleCallAliasing() {
-    String fileBody = ""
-        + "{namespace foo.bar.baz}"
-        + "/** */"
-        + "{template .bam}\n"
-        + "  {call other.name.space.bam /}\n"
-        + "  {call other.name.space.bam /}\n"
-        + "{/template}\n";
+    String fileBody =
+        "{namespace foo.bar.baz}\n"
+            + "{template .bam}\n"
+            + "  {call other.name.space.bam /}\n"
+            + "  {call other.name.space.bam /}\n"
+            + "{/template}\n";
 
     SoyFileSetNode n = SoyFileSetParserBuilder.forFileContents(fileBody).parse().fileSet();
     TemplateAliases templateAliases = AliasUtils.createTemplateAliases(n.getChild(0));
-    
+
     String alias = templateAliases.get("other.name.space.bam");
     assertThat(alias).isEqualTo("$templateAlias1");
     assertThat(AliasUtils.isExternalFunction(alias)).isTrue();

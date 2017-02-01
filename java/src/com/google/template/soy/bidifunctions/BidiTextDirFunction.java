@@ -24,39 +24,39 @@ import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.internal.i18n.BidiUtils;
 import com.google.template.soy.jssrc.restricted.JsExpr;
-import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
+import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
-
 import java.util.List;
 import java.util.Set;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * Soy function that gets the bidi directionality of a text string (1 for LTR, -1 for RTL, or
- * 0 for none).
+ * Soy function that gets the bidi directionality of a text string (1 for LTR, -1 for RTL, or 0 for
+ * none).
  *
  */
 @Singleton
-class BidiTextDirFunction implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction {
-
+final class BidiTextDirFunction
+    implements SoyJavaFunction, SoyLibraryAssistedJsSrcFunction, SoyPySrcFunction {
 
   @Inject
   BidiTextDirFunction() {}
 
-
-  @Override public String getName() {
+  @Override
+  public String getName() {
     return "bidiTextDir";
   }
 
-  @Override public Set<Integer> getValidArgsSizes() {
+  @Override
+  public Set<Integer> getValidArgsSizes() {
     return ImmutableSet.of(1, 2);
   }
 
-  @Override public SoyValue computeForJava(List<SoyValue> args) {
+  @Override
+  public SoyValue computeForJava(List<SoyValue> args) {
     SoyValue value = args.get(0);
     Dir valueDir = null;
     boolean isHtmlForValueDirEstimation = false;
@@ -68,30 +68,39 @@ class BidiTextDirFunction implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrc
       }
     }
     if (valueDir == null) {
-      isHtmlForValueDirEstimation = isHtmlForValueDirEstimation ||
-        (args.size() == 2 && args.get(1).booleanValue());
+      isHtmlForValueDirEstimation =
+          isHtmlForValueDirEstimation || (args.size() == 2 && args.get(1).booleanValue());
       valueDir = BidiUtils.estimateDirection(value.coerceToString(), isHtmlForValueDirEstimation);
     }
     return IntegerData.forValue(valueDir.ord);
   }
 
-  @Override public JsExpr computeForJsSrc(List<JsExpr> args) {
+  @Override
+  public JsExpr computeForJsSrc(List<JsExpr> args) {
     JsExpr value = args.get(0);
     JsExpr isHtml = (args.size() == 2) ? args.get(1) : null;
 
-    String callText = (isHtml != null) ?
-        "soy.$$bidiTextDir(" + value.getText() + ", " + isHtml.getText() + ")" :
-        "soy.$$bidiTextDir(" + value.getText() + ")";
+    String callText =
+        (isHtml != null)
+            ? "soy.$$bidiTextDir(" + value.getText() + ", " + isHtml.getText() + ")"
+            : "soy.$$bidiTextDir(" + value.getText() + ")";
     return new JsExpr(callText, Integer.MAX_VALUE);
   }
 
-  @Override public PyExpr computeForPySrc(List<PyExpr> args) {
+  @Override
+  public ImmutableSet<String> getRequiredJsLibNames() {
+    return ImmutableSet.<String>of("soy");
+  }
+
+  @Override
+  public PyExpr computeForPySrc(List<PyExpr> args) {
     PyExpr value = args.get(0);
     PyExpr isHtml = (args.size() == 2) ? args.get(1) : null;
 
-    String callText = (isHtml != null) ?
-        "bidi.text_dir(" + value.getText() + ", " + isHtml.getText() + ")" :
-        "bidi.text_dir(" + value.getText() + ")";
+    String callText =
+        (isHtml != null)
+            ? "bidi.text_dir(" + value.getText() + ", " + isHtml.getText() + ")"
+            : "bidi.text_dir(" + value.getText() + ")";
     return new PyExpr(callText, Integer.MAX_VALUE);
   }
 }

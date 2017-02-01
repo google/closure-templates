@@ -24,49 +24,51 @@ import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ExplodingErrorReporter;
-import com.google.template.soy.passes.FindTransitiveDepTemplatesVisitor;
 import com.google.template.soy.passes.FindTransitiveDepTemplatesVisitor.TransitiveDepTemplatesInfo;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
-
-import junit.framework.TestCase;
-
 import java.util.Map;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for FindTransitiveDepTemplatesVisitor.
  *
  */
-public final class FindTransitiveDepTemplatesVisitorTest extends TestCase {
+@RunWith(JUnit4.class)
+public final class FindTransitiveDepTemplatesVisitorTest {
 
   private static final ErrorReporter FAIL = ExplodingErrorReporter.get();
 
+  @Test
   public void testSimple() {
 
     // aaa -> {bbb, ccc}, bbb -> ddd.
-    String fileContent = "" +
-        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n" +
-        "\n" +
-        "/***/\n" +
-        "{template .aaa}\n" +
-        "  {call .bbb /} {$ij.boo} {call .ccc /} {$ij.foo}\n" +
-        "{/template}\n" +
-        "\n" +
-        "/***/\n" +
-        "{template .bbb}\n" +
-        "  {$ij.boo} {$ij.goo} {call .ddd /}\n" +
-        "{/template}\n" +
-        "\n" +
-        "/***/\n" +
-        "{template .ccc}\n" +
-        "  {$ij.boo} {$ij.moo + $ij.woo}\n" +
-        "{/template}\n" +
-        "\n" +
-        "/***/\n" +
-        "{template .ddd}\n" +
-        "  {$ij.boo} {$ij.moo} {round($ij.zoo)}\n" +
-        "{/template}\n";
+    String fileContent =
+        ""
+            + "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
+            + "\n"
+            + "/***/\n"
+            + "{template .aaa}\n"
+            + "  {call .bbb /} {$ij.boo} {call .ccc /} {$ij.foo}\n"
+            + "{/template}\n"
+            + "\n"
+            + "/***/\n"
+            + "{template .bbb}\n"
+            + "  {$ij.boo} {$ij.goo} {call .ddd /}\n"
+            + "{/template}\n"
+            + "\n"
+            + "/***/\n"
+            + "{template .ccc}\n"
+            + "  {$ij.boo} {$ij.moo + $ij.woo}\n"
+            + "{/template}\n"
+            + "\n"
+            + "/***/\n"
+            + "{template .ddd}\n"
+            + "  {$ij.boo} {$ij.moo} {round($ij.zoo)}\n"
+            + "{/template}\n";
 
     ParseResult result =
         SoyFileSetParserBuilder.forFileContents(fileContent).errorReporter(FAIL).parse();
@@ -109,27 +111,28 @@ public final class FindTransitiveDepTemplatesVisitorTest extends TestCase {
         .isEqualTo(ImmutableSet.of(aaa, bbb, ccc, ddd));
   }
 
-
+  @Test
   public void testTwoPathsToSameTemplate() {
 
     // aaa -> {bbb, ccc}, ccc -> bbb.
-    String fileContent = "" +
-        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n" +
-        "\n" +
-        "/***/\n" +
-        "{template .aaa}\n" +
-        "  {call .bbb /} {$ij.boo} {call .ccc /} {$ij.foo}\n" +
-        "{/template}\n" +
-        "\n" +
-        "/***/\n" +
-        "{template .bbb}\n" +
-        "  {$ij.boo} {$ij.goo}\n" +
-        "{/template}\n" +
-        "\n" +
-        "/***/\n" +
-        "{template .ccc}\n" +
-        "  {$ij.boo} {$ij.moo + $ij.woo} {call .bbb /}\n" +
-        "{/template}\n";
+    String fileContent =
+        ""
+            + "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
+            + "\n"
+            + "/***/\n"
+            + "{template .aaa}\n"
+            + "  {call .bbb /} {$ij.boo} {call .ccc /} {$ij.foo}\n"
+            + "{/template}\n"
+            + "\n"
+            + "/***/\n"
+            + "{template .bbb}\n"
+            + "  {$ij.boo} {$ij.goo}\n"
+            + "{/template}\n"
+            + "\n"
+            + "/***/\n"
+            + "{template .ccc}\n"
+            + "  {$ij.boo} {$ij.moo + $ij.woo} {call .bbb /}\n"
+            + "{/template}\n";
 
     ParseResult result =
         SoyFileSetParserBuilder.forFileContents(fileContent).errorReporter(FAIL).parse();
@@ -153,29 +156,30 @@ public final class FindTransitiveDepTemplatesVisitorTest extends TestCase {
     assertThat(memoizedInfoMap.get(aaa).depTemplateSet).isEqualTo(ImmutableSet.of(aaa, bbb, ccc));
   }
 
-
+  @Test
   public void testSimpleRecursion() {
 
     // Tests direct recursion (cycle of 1) and indirect recursion with a cycle of 2.
 
     // aaa -> bbb, bbb -> {bbb, ccc}, ccc -> bbb.
-    String fileContent = "" +
-        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n" +
-        "\n" +
-        "/***/\n" +
-        "{template .aaa}\n" +
-        "  {call .bbb /} {$ij.boo} {$ij.foo}\n" +
-        "{/template}\n" +
-        "\n" +
-        "/***/\n" +
-        "{template .bbb}\n" +
-        "  {$ij.boo} {$ij.goo} {call .bbb /} {call .ccc /}\n" +
-        "{/template}\n" +
-        "\n" +
-        "/***/\n" +
-        "{template .ccc}\n" +
-        "  {$ij.boo} {call .bbb /} {$ij.moo}\n" +
-        "{/template}\n";
+    String fileContent =
+        ""
+            + "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
+            + "\n"
+            + "/***/\n"
+            + "{template .aaa}\n"
+            + "  {call .bbb /} {$ij.boo} {$ij.foo}\n"
+            + "{/template}\n"
+            + "\n"
+            + "/***/\n"
+            + "{template .bbb}\n"
+            + "  {$ij.boo} {$ij.goo} {call .bbb /} {call .ccc /}\n"
+            + "{/template}\n"
+            + "\n"
+            + "/***/\n"
+            + "{template .ccc}\n"
+            + "  {$ij.boo} {call .bbb /} {$ij.moo}\n"
+            + "{/template}\n";
 
     ParseResult result =
         SoyFileSetParserBuilder.forFileContents(fileContent).errorReporter(FAIL).parse();
@@ -201,29 +205,30 @@ public final class FindTransitiveDepTemplatesVisitorTest extends TestCase {
     assertThat(memoizedInfoMap.get(aaa).depTemplateSet).isEqualTo(ImmutableSet.of(aaa, bbb, ccc));
   }
 
-
+  @Test
   public void testLargerRecursiveCycle() {
 
     // Tests indirect recursion with a cycle of 3.
 
     // aaa -> bbb, bbb -> ccc, ccc -> aaa.
-    String fileContent = "" +
-        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n" +
-        "\n" +
-        "/***/\n" +
-        "{template .aaa}\n" +
-        "  {$ij.foo} {$ij.boo} {call .bbb /}\n" +
-        "{/template}\n" +
-        "\n" +
-        "/***/\n" +
-        "{template .bbb}\n" +
-        "  {$ij.goo} {call .ccc /} {$ij.boo}\n" +
-        "{/template}\n" +
-        "\n" +
-        "/***/\n" +
-        "{template .ccc}\n" +
-        "  {call .aaa /} {$ij.moo} {$ij.boo}\n" +
-        "{/template}\n";
+    String fileContent =
+        ""
+            + "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
+            + "\n"
+            + "/***/\n"
+            + "{template .aaa}\n"
+            + "  {$ij.foo} {$ij.boo} {call .bbb /}\n"
+            + "{/template}\n"
+            + "\n"
+            + "/***/\n"
+            + "{template .bbb}\n"
+            + "  {$ij.goo} {call .ccc /} {$ij.boo}\n"
+            + "{/template}\n"
+            + "\n"
+            + "/***/\n"
+            + "{template .ccc}\n"
+            + "  {call .aaa /} {$ij.moo} {$ij.boo}\n"
+            + "{/template}\n";
 
     ParseResult result =
         SoyFileSetParserBuilder.forFileContents(fileContent).errorReporter(FAIL).parse();
@@ -249,32 +254,33 @@ public final class FindTransitiveDepTemplatesVisitorTest extends TestCase {
     assertThat(memoizedInfoMap.get(aaa).depTemplateSet).isEqualTo(ImmutableSet.of(aaa, bbb, ccc));
   }
 
-
+  @Test
   public void testTwoPathsToSameRecursiveCycle() {
 
     // aaa -> {bbb, ccc}, bbb -> ddd, ccc -> ddd, ddd -> bbb.
-    String fileContent = "" +
-        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n" +
-        "\n" +
-        "/***/\n" +
-        "{template .aaa}\n" +
-        "  {$ij.boo} {$ij.foo} {call .bbb /} {call .ccc /}\n" +
-        "{/template}\n" +
-        "\n" +
-        "/***/\n" +
-        "{template .bbb}\n" +
-        "  {$ij.boo} {$ij.goo} {call .ddd /}\n" +
-        "{/template}\n" +
-        "\n" +
-        "/***/\n" +
-        "{template .ccc}\n" +
-        "  {$ij.boo} {$ij.moo} {call .ddd /}\n" +
-        "{/template}\n" +
-        "\n" +
-        "/***/\n" +
-        "{template .ddd}\n" +
-        "  {$ij.boo} {$ij.too} {call .bbb /}\n" +
-        "{/template}\n";
+    String fileContent =
+        ""
+            + "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
+            + "\n"
+            + "/***/\n"
+            + "{template .aaa}\n"
+            + "  {$ij.boo} {$ij.foo} {call .bbb /} {call .ccc /}\n"
+            + "{/template}\n"
+            + "\n"
+            + "/***/\n"
+            + "{template .bbb}\n"
+            + "  {$ij.boo} {$ij.goo} {call .ddd /}\n"
+            + "{/template}\n"
+            + "\n"
+            + "/***/\n"
+            + "{template .ccc}\n"
+            + "  {$ij.boo} {$ij.moo} {call .ddd /}\n"
+            + "{/template}\n"
+            + "\n"
+            + "/***/\n"
+            + "{template .ddd}\n"
+            + "  {$ij.boo} {$ij.too} {call .bbb /}\n"
+            + "{/template}\n";
 
     ParseResult result =
         SoyFileSetParserBuilder.forFileContents(fileContent).errorReporter(FAIL).parse();
@@ -301,27 +307,28 @@ public final class FindTransitiveDepTemplatesVisitorTest extends TestCase {
         .isEqualTo(ImmutableSet.of(aaa, bbb, ccc, ddd));
   }
 
-
+  @Test
   public void testSmallerRecursiveCycleInLargerRecursiveCycle() {
 
     // aaa -> {bbb, ccc}, bbb -> aaa, ccc -> bbb.
-    String fileContent = "" +
-        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n" +
-        "\n" +
-        "/***/\n" +
-        "{template .aaa}\n" +
-        "  {$ij.foo} {$ij.boo} {call .bbb /} {call .ccc /}\n" +
-        "{/template}\n" +
-        "\n" +
-        "/***/\n" +
-        "{template .bbb}\n" +
-        "  {$ij.goo} {$ij.boo} {call .aaa /}\n" +
-        "{/template}\n" +
-        "\n" +
-        "/***/\n" +
-        "{template .ccc}\n" +
-        "  {$ij.moo} {$ij.boo} {call .bbb /}\n" +
-        "{/template}\n";
+    String fileContent =
+        ""
+            + "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
+            + "\n"
+            + "/***/\n"
+            + "{template .aaa}\n"
+            + "  {$ij.foo} {$ij.boo} {call .bbb /} {call .ccc /}\n"
+            + "{/template}\n"
+            + "\n"
+            + "/***/\n"
+            + "{template .bbb}\n"
+            + "  {$ij.goo} {$ij.boo} {call .aaa /}\n"
+            + "{/template}\n"
+            + "\n"
+            + "/***/\n"
+            + "{template .ccc}\n"
+            + "  {$ij.moo} {$ij.boo} {call .bbb /}\n"
+            + "{/template}\n";
 
     ParseResult result =
         SoyFileSetParserBuilder.forFileContents(fileContent).errorReporter(FAIL).parse();
@@ -345,32 +352,33 @@ public final class FindTransitiveDepTemplatesVisitorTest extends TestCase {
     assertThat(memoizedInfoMap.get(aaa).depTemplateSet).isEqualTo(ImmutableSet.of(aaa, bbb, ccc));
   }
 
-
+  @Test
   public void testExecOnAllTemplates() {
 
     // aaa -> {bbb, ccc}, bbb -> ddd.
-    String fileContent = "" +
-        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n" +
-        "\n" +
-        "/***/\n" +
-        "{template .bbb}\n" +
-        "  {$ij.boo} {$ij.goo} {call .ddd /}\n" +
-        "{/template}\n" +
-        "\n" +
-        "/***/\n" +
-        "{template .aaa}\n" +
-        "  {call .bbb /} {$ij.boo} {call .ccc /} {$ij.foo}\n" +
-        "{/template}\n" +
-        "\n" +
-        "/***/\n" +
-        "{template .ccc}\n" +
-        "  {$ij.boo} {$ij.moo + $ij.woo}\n" +
-        "{/template}\n" +
-        "\n" +
-        "/***/\n" +
-        "{template .ddd}\n" +
-        "  {$ij.boo} {$ij.moo} {round($ij.zoo)}\n" +
-        "{/template}\n";
+    String fileContent =
+        ""
+            + "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
+            + "\n"
+            + "/***/\n"
+            + "{template .bbb}\n"
+            + "  {$ij.boo} {$ij.goo} {call .ddd /}\n"
+            + "{/template}\n"
+            + "\n"
+            + "/***/\n"
+            + "{template .aaa}\n"
+            + "  {call .bbb /} {$ij.boo} {call .ccc /} {$ij.foo}\n"
+            + "{/template}\n"
+            + "\n"
+            + "/***/\n"
+            + "{template .ccc}\n"
+            + "  {$ij.boo} {$ij.moo + $ij.woo}\n"
+            + "{/template}\n"
+            + "\n"
+            + "/***/\n"
+            + "{template .ddd}\n"
+            + "  {$ij.boo} {$ij.moo} {round($ij.zoo)}\n"
+            + "{/template}\n";
 
     ParseResult result =
         SoyFileSetParserBuilder.forFileContents(fileContent).errorReporter(FAIL).parse();
@@ -383,13 +391,11 @@ public final class FindTransitiveDepTemplatesVisitorTest extends TestCase {
     TemplateNode ddd = soyTree.getChild(0).getChild(3);
 
     ImmutableMap<TemplateNode, TransitiveDepTemplatesInfo> resultMap =
-        new FindTransitiveDepTemplatesVisitor(templateRegistry)
-            .execOnAllTemplates(soyTree);
+        new FindTransitiveDepTemplatesVisitor(templateRegistry).execOnAllTemplates(soyTree);
     assertThat(resultMap).hasSize(4);
     assertThat(resultMap.get(ddd).depTemplateSet).isEqualTo(ImmutableSet.of(ddd));
     assertThat(resultMap.get(ccc).depTemplateSet).isEqualTo(ImmutableSet.of(ccc));
     assertThat(resultMap.get(bbb).depTemplateSet).isEqualTo(ImmutableSet.of(bbb, ddd));
     assertThat(resultMap.get(aaa).depTemplateSet).isEqualTo(ImmutableSet.of(aaa, bbb, ccc, ddd));
   }
-
 }

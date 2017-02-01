@@ -27,19 +27,17 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprparse.SoyParsingContext;
 import com.google.template.soy.soytree.CommandTextAttributesParser.Attribute;
 import com.google.template.soy.soytree.defn.TemplateParam;
-
 import java.util.Collection;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 
 /**
  * Node representing a call to a basic template.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public final class CallBasicNode extends CallNode {
@@ -49,10 +47,7 @@ public final class CallBasicNode extends CallNode {
   public static final SoyErrorKind BAD_CALLEE_NAME =
       SoyErrorKind.of("Invalid callee name \"{0}\" for ''call'' command.");
 
-  /**
-   * Helper class used by constructors. Encapsulates all the info derived from the command
-   * text.
-   */
+  /** Helper class used by constructors. Encapsulates all the info derived from the command text. */
   @Immutable
   private static final class CommandTextInfo extends CallNode.CommandTextInfo {
 
@@ -60,7 +55,9 @@ public final class CallBasicNode extends CallNode {
     private final String srcCalleeName;
 
     CommandTextInfo(
-        String commandText, String srcCalleeName, DataAttribute dataAttr,
+        String commandText,
+        String srcCalleeName,
+        DataAttribute dataAttr,
         @Nullable String userSuppliedPlaceholderName,
         @Nullable SyntaxVersionUpperBound syntaxVersionBound) {
       super(commandText, dataAttr, userSuppliedPlaceholderName, syntaxVersionBound);
@@ -74,8 +71,8 @@ public final class CallBasicNode extends CallNode {
 
   /** Parser for the command text. */
   private static final CommandTextAttributesParser ATTRIBUTES_PARSER =
-      new CommandTextAttributesParser("call",
-          new Attribute("data", Attribute.ALLOW_ALL_VALUES, null));
+      new CommandTextAttributesParser(
+          "call", new Attribute("data", Attribute.ALLOW_ALL_VALUES, null));
 
   /** The callee name string as it appears in the source code. */
   private final String sourceCalleeName;
@@ -84,10 +81,10 @@ public final class CallBasicNode extends CallNode {
   private String calleeName;
 
   /**
-   * The list of params that need to be type checked when this node is run.  All the params that
-   * could be statically verified will be checked up front (by the
-   * {@code CheckCallingParamTypesVisitor}), this list contains the params that could not be
-   * statically checked.
+   * The list of params that need to be type checked when this node is run. All the params that
+   * could be statically verified will be checked up front (by the {@code
+   * CheckCallingParamTypesVisitor}), this list contains the params that could not be statically
+   * checked.
    *
    * <p>NOTE:This list will be a subset of the params of the callee, not a subset of the params
    * passed from this caller.
@@ -115,6 +112,7 @@ public final class CallBasicNode extends CallNode {
 
   /**
    * Copy constructor.
+   *
    * @param orig The node to copy.
    */
   private CallBasicNode(CallBasicNode orig, CopyState copyState) {
@@ -124,7 +122,8 @@ public final class CallBasicNode extends CallNode {
     this.paramsToRuntimeTypeCheck = orig.paramsToRuntimeTypeCheck;
   }
 
-  @Override public Kind getKind() {
+  @Override
+  public Kind getKind() {
     return Kind.CALL_BASIC_NODE;
   }
 
@@ -133,9 +132,9 @@ public final class CallBasicNode extends CallNode {
     return sourceCalleeName;
   }
 
-
   /**
    * Sets the full name of the template being called (must not be a partial name).
+   *
    * @param calleeName The full name of the template being called.
    */
   public void setCalleeName(String calleeName) {
@@ -152,7 +151,8 @@ public final class CallBasicNode extends CallNode {
     this.paramsToRuntimeTypeCheck = ImmutableList.copyOf(paramNames);
   }
 
-  @Override public Collection<TemplateParam> getParamsToRuntimeCheck(TemplateNode callee) {
+  @Override
+  public Collection<TemplateParam> getParamsToRuntimeCheck(TemplateNode callee) {
     return paramsToRuntimeTypeCheck == null ? callee.getParams() : paramsToRuntimeTypeCheck;
   }
 
@@ -161,11 +161,12 @@ public final class CallBasicNode extends CallNode {
     return calleeName;
   }
 
-  @Override public CallBasicNode copy(CopyState copyState) {
+  @Override
+  public CallBasicNode copy(CopyState copyState) {
     return new CallBasicNode(this, copyState);
   }
 
-  public static final class Builder {
+  public static final class Builder extends CallNode.Builder {
 
     private static CallBasicNode error() {
       return new Builder(-1, SourceLocation.UNKNOWN)
@@ -195,6 +196,12 @@ public final class CallBasicNode extends CallNode {
       return this;
     }
 
+    @Override
+    public SourceLocation getSourceLocation() {
+      return sourceLocation;
+    }
+
+    @Override
     public Builder commandText(String commandText) {
       this.commandText = commandText;
       return this;
@@ -220,30 +227,33 @@ public final class CallBasicNode extends CallNode {
       return this;
     }
 
+    @Override
     public Builder userSuppliedPlaceholderName(String userSuppliedPlaceholderName) {
       this.userSuppliedPlaceholderName = userSuppliedPlaceholderName;
       return this;
     }
 
+    @Override
     public CallBasicNode build(SoyParsingContext context) {
       Checkpoint c = context.errorReporter().checkpoint();
-      CommandTextInfo commandTextInfo = commandText != null
-          ? parseCommandText(context)
-          : buildCommandText();
+      CommandTextInfo commandTextInfo =
+          commandText != null ? parseCommandText(context) : buildCommandText();
       if (context.errorReporter().errorsSince(c)) {
         return error();
       }
-      CallBasicNode callBasicNode = new CallBasicNode(
-          id, sourceLocation, commandTextInfo, escapingDirectiveNames, calleeName);
+      CallBasicNode callBasicNode =
+          new CallBasicNode(
+              id, sourceLocation, commandTextInfo, escapingDirectiveNames, calleeName);
       return callBasicNode;
     }
 
     // TODO(user): eliminate side-channel parsing. This should be a part of the grammar.
     private CommandTextInfo parseCommandText(SoyParsingContext context) {
       String cmdText =
-          commandText +
-              ((userSuppliedPlaceholderName != null) ?
-                  " phname=\"" + userSuppliedPlaceholderName + "\"" : "");
+          commandText
+              + ((userSuppliedPlaceholderName != null)
+                  ? " phname=\"" + userSuppliedPlaceholderName + "\""
+                  : "");
 
       String cmdTextForParsing = commandText;
 
@@ -253,16 +263,16 @@ public final class CallBasicNode extends CallNode {
       if (ncnMatcher.find()) {
         sourceCalleeName = ncnMatcher.group(1);
         cmdTextForParsing = cmdTextForParsing.substring(ncnMatcher.end()).trim();
-        if (! (BaseUtils.isIdentifierWithLeadingDot(sourceCalleeName) ||
-            BaseUtils.isDottedIdentifier(sourceCalleeName))) {
+        if (!(BaseUtils.isIdentifierWithLeadingDot(sourceCalleeName)
+            || BaseUtils.isDottedIdentifier(sourceCalleeName))) {
           context.report(sourceLocation, BAD_CALLEE_NAME, sourceCalleeName);
         }
       } else {
         context.report(sourceLocation, MISSING_CALLEE_NAME, commandText);
       }
 
-      Map<String, String> attributes
-          = ATTRIBUTES_PARSER.parse(cmdTextForParsing, context, sourceLocation);
+      Map<String, String> attributes =
+          ATTRIBUTES_PARSER.parse(cmdTextForParsing, context, sourceLocation);
 
       DataAttribute dataAttrInfo =
           parseDataAttributeHelper(attributes.get("data"), sourceLocation, context);
@@ -277,7 +287,7 @@ public final class CallBasicNode extends CallNode {
       if (dataAttr.isPassingAllData()) {
         commandText += " data=\"all\"";
       } else if (dataAttr.isPassingData()) {
-        assert dataAttr.dataExpr() != null;  // suppress warnings
+        assert dataAttr.dataExpr() != null; // suppress warnings
         commandText += " data=\"" + dataAttr.dataExpr().toSourceString() + '"';
       }
       if (userSuppliedPlaceholderName != null) {

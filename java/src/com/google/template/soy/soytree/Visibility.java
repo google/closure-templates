@@ -17,7 +17,7 @@
 package com.google.template.soy.soytree;
 
 import com.google.common.collect.ImmutableMap;
-
+import com.google.common.collect.ImmutableSortedMap;
 import java.util.Set;
 
 public enum Visibility {
@@ -41,7 +41,7 @@ public enum Visibility {
   private static final ImmutableMap<String, Visibility> attrValuesToVisibilityLevels;
 
   static {
-    ImmutableMap.Builder<String, Visibility> builder = ImmutableMap.builder();
+    ImmutableMap.Builder<String, Visibility> builder = ImmutableSortedMap.naturalOrder();
     for (Visibility v : Visibility.values()) {
       builder.put(v.attributeValue, v);
     }

@@ -36,7 +36,6 @@ import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.OperatorNodes.NegativeOpNode;
 import com.google.template.soy.exprtree.VarRefNode;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.Map;
@@ -49,20 +48,18 @@ import java.util.regex.Pattern;
  */
 public final class SoyUtils {
 
-
   private SoyUtils() {}
-
 
   /**
    * Generates the text for a compile-time globals file in the format expected by the Soy compiler
    * and appends the generated text to the given {@code Appendable}.
    *
-   * <p> The generated lines will follow the iteration order of the provided map.
+   * <p>The generated lines will follow the iteration order of the provided map.
    *
-   * <p> Important: When you write the output to a file, be sure to use UTF-8 encoding.
+   * <p>Important: When you write the output to a file, be sure to use UTF-8 encoding.
    *
-   * @param compileTimeGlobalsMap Map from compile-time global name to value. The values can be
-   *     any of the Soy primitive types: null, boolean, integer, float (Java double), or string.
+   * @param compileTimeGlobalsMap Map from compile-time global name to value. The values can be any
+   *     of the Soy primitive types: null, boolean, integer, float (Java double), or string.
    * @param output The object to append the generated text to.
    * @throws SoySyntaxException If one of the values is not a valid Soy primitive type.
    * @throws IOException If there is an error appending to the given {@code Appendable}.
@@ -80,29 +77,25 @@ public final class SoyUtils {
     }
   }
 
-
-  /**
-   * Error types for bad lines in the compile-time globals file.
-   */
+  /** Error types for bad lines in the compile-time globals file. */
   private static final class CompileTimeGlobalsFileErrors {
     static final SoyErrorKind INVALID_FORMAT = SoyErrorKind.of("Invalid line format: {0}");
     static final SoyErrorKind INVALID_VALUE = SoyErrorKind.of("Invalid value: {0}");
     static final SoyErrorKind NON_PRIMITIVE_VALUE = SoyErrorKind.of("Non-primitive value: {0}");
   }
 
-
   /**
-   * Pattern for one line in the compile-time globals file.
-   * TODO(user): consider replacing with {@link java.util.Properties}.
+   * Pattern for one line in the compile-time globals file. TODO(user): consider replacing with
+   * {@link java.util.Properties}.
    */
   // Note: group 1 = key, group 2 = value.
   private static final Pattern COMPILE_TIME_GLOBAL_LINE =
       Pattern.compile("([a-zA-Z_][a-zA-Z_0-9.]*) \\s* = \\s* (.+)", Pattern.COMMENTS);
 
-
   /**
    * Parses a globals file in the format created by {@link #generateCompileTimeGlobalsFile} into a
    * map from global name to primitive value.
+   *
    * @param inputSource A source that returns a reader for the globals file.
    * @return The parsed globals map.
    * @throws IOException If an error occurs while reading the globals file.
@@ -131,8 +124,9 @@ public final class SoyUtils {
         String name = matcher.group(1);
         String valueText = matcher.group(2).trim();
 
-        ExprNode valueExpr = new ExpressionParser(valueText, sourceLocation,
-            SoyParsingContext.exploding()).parseExpression();
+        ExprNode valueExpr =
+            new ExpressionParser(valueText, sourceLocation, SoyParsingContext.exploding())
+                .parseExpression();
 
         // Handle negative numbers as a special case.
         // TODO: Consider changing parser to actually parse negative numbers as primitives.
@@ -153,8 +147,7 @@ public final class SoyUtils {
         // TODO: Consider allowing non-primitives (e.g. list/map literals).
         if (!(valueExpr instanceof PrimitiveNode)) {
           if (valueExpr instanceof GlobalNode || valueExpr instanceof VarRefNode) {
-            errorReporter.report(
-                sourceLocation, CompileTimeGlobalsFileErrors.INVALID_VALUE, line);
+            errorReporter.report(sourceLocation, CompileTimeGlobalsFileErrors.INVALID_VALUE, line);
           } else {
             errorReporter.report(
                 sourceLocation, CompileTimeGlobalsFileErrors.NON_PRIMITIVE_VALUE, line);

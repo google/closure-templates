@@ -35,17 +35,15 @@ import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.CallParamValueNode;
-
 import java.util.LinkedHashMap;
 import java.util.Map;
-
 import javax.inject.Inject;
 
 /**
  * Functions for generating Python code for template calls and their parameters.
  *
  */
-final class GenPyCallExprVisitor extends AbstractReturningSoyNodeVisitor<PyExpr>{
+final class GenPyCallExprVisitor extends AbstractReturningSoyNodeVisitor<PyExpr> {
 
   private final ImmutableMap<String, SoyPySrcPrintDirective> soyPySrcDirectivesMap;
 
@@ -54,7 +52,6 @@ final class GenPyCallExprVisitor extends AbstractReturningSoyNodeVisitor<PyExpr>
   private final IsCalleeInFileVisitor isCalleeInFileVisitor;
 
   private final GenPyExprsVisitorFactory genPyExprsVisitorFactory;
-
 
   private LocalVariableStack localVarStack;
   private ErrorReporter errorReporter;
@@ -79,6 +76,7 @@ final class GenPyCallExprVisitor extends AbstractReturningSoyNodeVisitor<PyExpr>
    * define their respective {@code param<n>} temporary variables.
    *
    * <p>Here are five example calls:
+   *
    * <pre>
    *   {call some.func data="all" /}
    *   {call some.func data="$boo" /}
@@ -94,7 +92,9 @@ final class GenPyCallExprVisitor extends AbstractReturningSoyNodeVisitor<PyExpr>
    *     {/param}
    *   {/call}
    * </pre>
+   *
    * Their respective generated calls might be the following:
+   *
    * <pre>
    *   some.func(data)
    *   some.func(data.get('boo'))
@@ -102,6 +102,7 @@ final class GenPyCallExprVisitor extends AbstractReturningSoyNodeVisitor<PyExpr>
    *   some.func(runtime.merge_into_dict({'goo': 'Blah'}, data.get('boo')))
    *   some.func({'goo': param65})
    * </pre>
+   *
    * Note that in the last case, the param content is not computable as Python expressions, so we
    * assume that code has been generated to define the temporary variable {@code param<n>}.
    *
@@ -126,7 +127,8 @@ final class GenPyCallExprVisitor extends AbstractReturningSoyNodeVisitor<PyExpr>
    * @param node The basic call node.
    * @return The call Python expression.
    */
-  @Override protected PyExpr visitCallBasicNode(CallBasicNode node) {
+  @Override
+  protected PyExpr visitCallBasicNode(CallBasicNode node) {
     String calleeName = node.getCalleeName();
 
     // Build the Python expr text for the callee.
@@ -151,7 +153,8 @@ final class GenPyCallExprVisitor extends AbstractReturningSoyNodeVisitor<PyExpr>
    * @param node The delegate call node.
    * @return The call Python expression.
    */
-  @Override protected PyExpr visitCallDelegateNode(CallDelegateNode node) {
+  @Override
+  protected PyExpr visitCallDelegateNode(CallDelegateNode node) {
     ExprRootNode variantSoyExpr = node.getDelCalleeVariantExpr();
     PyExpr variantPyExpr;
     if (variantSoyExpr == null) {
@@ -163,11 +166,12 @@ final class GenPyCallExprVisitor extends AbstractReturningSoyNodeVisitor<PyExpr>
           new TranslateToPyExprVisitor(localVarStack, errorReporter);
       variantPyExpr = translator.exec(variantSoyExpr);
     }
-    String calleeExprText = new PyFunctionExprBuilder("runtime.get_delegate_fn")
-        .addArg(node.getDelCalleeName())
-        .addArg(variantPyExpr)
-        .addArg(node.allowsEmptyDefault())
-        .build();
+    String calleeExprText =
+        new PyFunctionExprBuilder("runtime.get_delegate_fn")
+            .addArg(node.getDelCalleeName())
+            .addArg(variantPyExpr)
+            .addArg(node.allowsEmptyDefault())
+            .build();
 
     String callExprText = calleeExprText + "(" + genObjToPass(node) + ", ijData)";
     return escapeCall(callExprText, node.getEscapingDirectiveNames());
@@ -227,8 +231,8 @@ final class GenPyCallExprVisitor extends AbstractReturningSoyNodeVisitor<PyExpr>
 
         // Param content nodes require a content kind in strict autoescaping, so the content must be
         // wrapped as SanitizedContent.
-        valuePyExpr = PyExprUtils.wrapAsSanitizedContent(cpcn.getContentKind(),
-            valuePyExpr.toPyString());
+        valuePyExpr =
+            PyExprUtils.wrapAsSanitizedContent(cpcn.getContentKind(), valuePyExpr.toPyString());
 
         additionalParams.put(key, valuePyExpr);
       }
@@ -263,8 +267,8 @@ final class GenPyCallExprVisitor extends AbstractReturningSoyNodeVisitor<PyExpr>
     // Successively wrap each escapedExpr in various directives.
     for (String directiveName : directiveNames) {
       SoyPySrcPrintDirective directive = soyPySrcDirectivesMap.get(directiveName);
-      Preconditions.checkNotNull(directive,
-          "Autoescaping produced a bogus directive: %s", directiveName);
+      Preconditions.checkNotNull(
+          directive, "Autoescaping produced a bogus directive: %s", directiveName);
       escapedExpr = directive.applyForPySrc(escapedExpr, ImmutableList.<PyExpr>of());
     }
     return escapedExpr;

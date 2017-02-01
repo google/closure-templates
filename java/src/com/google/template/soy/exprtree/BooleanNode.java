@@ -18,21 +18,18 @@ package com.google.template.soy.exprtree;
 
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.primitive.BoolType;
 
 /**
  * Node representing a boolean value.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public final class BooleanNode extends AbstractPrimitiveNode {
 
-
   /** The boolean value. */
   private final boolean value;
-
 
   /**
    * @param value The boolean value.
@@ -43,9 +40,9 @@ public final class BooleanNode extends AbstractPrimitiveNode {
     this.value = value;
   }
 
-
   /**
    * Copy constructor.
+   *
    * @param orig The node to copy.
    */
   private BooleanNode(BooleanNode orig, CopyState copyState) {
@@ -53,30 +50,28 @@ public final class BooleanNode extends AbstractPrimitiveNode {
     this.value = orig.value;
   }
 
-
-  @Override public Kind getKind() {
+  @Override
+  public Kind getKind() {
     return Kind.BOOLEAN_NODE;
   }
 
-
-  @Override public SoyType getType() {
+  @Override
+  public BoolType getType() {
     return BoolType.getInstance();
   }
-
 
   /** Returns the boolean value. */
   public boolean getValue() {
     return value;
   }
 
-
-  @Override public String toSourceString() {
+  @Override
+  public String toSourceString() {
     return value ? "true" : "false";
   }
 
-
-  @Override public BooleanNode copy(CopyState copyState) {
+  @Override
+  public BooleanNode copy(CopyState copyState) {
     return new BooleanNode(this, copyState);
   }
-
 }

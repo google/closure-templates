@@ -25,14 +25,13 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
-
 import java.util.Map;
 
 /**
- * Sets the full callee name on each {@link CallBasicNode} whose callee name
- * in the source code either is a partial template name or starts with an alias.
+ * Sets the full callee name on each {@link CallBasicNode} whose callee name in the source code
+ * either is a partial template name or starts with an alias.
  *
- * <p> {@link #exec} should be called on a full parse tree or a Soy file. This pass mutates
+ * <p>{@link #exec} should be called on a full parse tree or a Soy file. This pass mutates
  * CallBasicNodes. There is no return value.
  *
  * <p>TODO(brndn): consider folding into TemplateParser.
@@ -52,31 +51,32 @@ final class SetFullCalleeNamesVisitor extends AbstractSoyNodeVisitor<Void> {
 
   /** Alias-to-namespace map of the current file (during the pass). */
   private Map<String, String> currAliasToNamespaceMap;
+
   private final ErrorReporter errorReporter;
 
   SetFullCalleeNamesVisitor(ErrorReporter errorReporter) {
     this.errorReporter = errorReporter;
   }
 
-  @Override public Void exec(SoyNode soyNode) {
+  @Override
+  public Void exec(SoyNode soyNode) {
     Preconditions.checkArgument(
         soyNode instanceof SoyFileSetNode || soyNode instanceof SoyFileNode);
     return super.exec(soyNode);
   }
 
-
   // -----------------------------------------------------------------------------------------------
   // Implementations for specific nodes.
 
-
-  @Override protected void visitSoyFileNode(SoyFileNode node) {
+  @Override
+  protected void visitSoyFileNode(SoyFileNode node) {
     currNamespace = node.getNamespace();
     currAliasToNamespaceMap = node.getAliasToNamespaceMap();
     visitChildren(node);
   }
 
-
-  @Override protected void visitCallBasicNode(CallBasicNode node) {
+  @Override
+  protected void visitCallBasicNode(CallBasicNode node) {
 
     if (currNamespace == null) {
       String srcCalleeName = node.getSrcCalleeName();
@@ -117,15 +117,13 @@ final class SetFullCalleeNamesVisitor extends AbstractSoyNodeVisitor<Void> {
     visitChildren(node);
   }
 
-
   // -----------------------------------------------------------------------------------------------
   // Fallback implementation.
 
-
-  @Override protected void visitSoyNode(SoyNode node) {
+  @Override
+  protected void visitSoyNode(SoyNode node) {
     if (node instanceof ParentSoyNode<?>) {
       visitChildren((ParentSoyNode<?>) node);
     }
   }
-
 }

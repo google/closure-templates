@@ -31,7 +31,6 @@ import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Reader;
@@ -47,17 +46,15 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
 
-/**
- * The entry point to the {@code jbcsrc} compiler.
- */
+/** The entry point to the {@code jbcsrc} compiler. */
 public final class BytecodeCompiler {
   private static final Logger logger = Logger.getLogger(BytecodeCompiler.class.getName());
   /**
    * Compiles all the templates in the given registry.
    *
    * @param registry All the templates to compile
-   * @param developmentMode Whether or not we are in development mode.  In development mode we 
-   *    compile classes lazily
+   * @param developmentMode Whether or not we are in development mode. In development mode we
+   *     compile classes lazily
    * @param reporter The error reporter
    * @return CompiledTemplates or {@code absent()} if compilation fails, in which case errors will
    *     have been reported to the error reporter.
@@ -110,13 +107,13 @@ public final class BytecodeCompiler {
                         + "         bytes: {3}\n"
                         + "        fields: {4}\n"
                         + "  detachStates: {5}",
-                        new Object[] {
-                            stopwatch.toString(),
-                            registry.getAllTemplates().size(),
-                            compiledClasses.size(),
-                            numBytes,
-                            numFields,
-                            numDetachStates
+                    new Object[] {
+                      stopwatch.toString(),
+                      registry.getAllTemplates().size(),
+                      compiledClasses.size(),
+                      numBytes,
+                      numFields,
+                      numDetachStates
                     });
                 return compiledClasses;
               }
@@ -137,7 +134,7 @@ public final class BytecodeCompiler {
    * Compiles all the templates in the given registry to a jar file written to the given output
    * stream.
    *
-   * <p>If errors are encountered, the error reporter will be updated and we will return.  The
+   * <p>If errors are encountered, the error reporter will be updated and we will return. The
    * contents of any data written to the sink at that point are undefined.
    *
    * @param registry All the templates to compile
@@ -172,23 +169,22 @@ public final class BytecodeCompiler {
   }
 
   /**
-   * Writes the source files out to a {@code -src.jar}.  This places the soy files at the same
-   * classpath relative location as their generated classes.  Ultimately this can be used by
+   * Writes the source files out to a {@code -src.jar}. This places the soy files at the same
+   * classpath relative location as their generated classes. Ultimately this can be used by
    * debuggers for source level debugging.
    *
    * <p>It is a little weird that the relative locations of the generated classes are not identical
-   * to the input source files.  This is due to the disconnect between java packages and soy
-   * namespaces.  We should consider using the soy namespace directly as a java package in the
+   * to the input source files. This is due to the disconnect between java packages and soy
+   * namespaces. We should consider using the soy namespace directly as a java package in the
    * future.
    *
-   * @param registry  All the templates in the current compilation unit
+   * @param registry All the templates in the current compilation unit
    * @param files The source files by file path
    * @param sink The source to write the jar file
    */
   public static void writeSrcJar(
-      TemplateRegistry registry,
-      ImmutableMap<String, SoyFileSupplier> files,
-      ByteSink sink) throws IOException {
+      TemplateRegistry registry, ImmutableMap<String, SoyFileSupplier> files, ByteSink sink)
+      throws IOException {
     Set<SoyFileNode> seenFiles = new HashSet<>();
     try (OutputStream stream = sink.openStream();
         JarOutputStream jarOutput = new DeterministicJarOutputStream(stream, getJarManifest())) {
@@ -218,19 +214,18 @@ public final class BytecodeCompiler {
   }
 
   /** Copies the file to the output stream */
-  private static void copyFileToOutput(SoyFileSupplier from, OutputStream to)
-      throws IOException {
-    // 'from' contains a Reader which allows streaming reads of characters and 'to' is an 
+  private static void copyFileToOutput(SoyFileSupplier from, OutputStream to) throws IOException {
+    // 'from' contains a Reader which allows streaming reads of characters and 'to' is an
     // OutputStream which allows for streaming writes of bytes.  This disconnect means we need to do
     // some character encoding.  The classic way to do this is to use OutputStreamWriter to wrap the
     // outputStream and apply an encoder.  This introduces some wierdness because OutputStreamWriter
     // can hold on to a few bytes to deal with unmatched surrogate pairs.  So we would need to
     // close/flush it inorder to not corrupt the files.  This is undesirable since the output is
-    // actually a JarOutputStream and we are writing multiple files (we would over flush).  So 
+    // actually a JarOutputStream and we are writing multiple files (we would over flush).  So
     // instead we do the naive thing and read the whole file as a string, convert the whole string
     // to a byte array and then write the whole byte array.
     //
-    // The real fix is to avoid the Reader and add methods to SoyFileSupplier to give us a 
+    // The real fix is to avoid the Reader and add methods to SoyFileSupplier to give us a
     // ByteSource then we can avoid the error prone decode/encode dance.
     String file;
     try (Reader contents = from.open()) {
@@ -247,8 +242,8 @@ public final class BytecodeCompiler {
     return mf;
   }
 
-  private static void checkForUnsupportedFeatures(TemplateRegistry registry,
-      ErrorReporter errorReporter) {
+  private static void checkForUnsupportedFeatures(
+      TemplateRegistry registry, ErrorReporter errorReporter) {
     UnsupportedFeatureReporter reporter = new UnsupportedFeatureReporter(errorReporter);
     for (TemplateNode node : registry.getAllTemplates()) {
       reporter.check(node);
@@ -280,7 +275,7 @@ public final class BytecodeCompiler {
           }
           listener.onCompile(clazz);
         }
-      // Report unexpected errors and keep going to try to collect more.
+        // Report unexpected errors and keep going to try to collect more.
       } catch (UnexpectedCompilerFailureException e) {
         errorReporter.report(
             e.getOriginalLocation(),

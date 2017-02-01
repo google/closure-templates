@@ -16,22 +16,26 @@
 
 package com.google.template.soy.data;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
-
-import junit.framework.TestCase;
-
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for SoyData.
  *
  */
-public class SoyDataTest extends TestCase {
+@RunWith(JUnit4.class)
+public class SoyDataTest {
 
-
+  @Test
   public void testCreateFromExistingData() {
 
     assertTrue(SoyData.createFromExistingData(null) instanceof NullData);
@@ -45,15 +49,11 @@ public class SoyDataTest extends TestCase {
             .getString("boo"));
     assertEquals(
         "goo",
-        ((SoyListData) SoyData.createFromExistingData(ImmutableList.of("goo")))
-            .getString(0));
+        ((SoyListData) SoyData.createFromExistingData(ImmutableList.of("goo"))).getString(0));
     assertEquals(
-        "hoo",
-        ((SoyListData) SoyData.createFromExistingData(ImmutableSet.of("hoo")))
-            .getString(0));
+        "hoo", ((SoyListData) SoyData.createFromExistingData(ImmutableSet.of("hoo"))).getString(0));
 
-    assertEquals(3.14, SoyData.createFromExistingData(3.14).floatValue());
-    assertEquals(3.14F, (float) SoyData.createFromExistingData(3.14F).floatValue());
+    assertEquals(3.14, SoyData.createFromExistingData(3.14).floatValue(), 0.0);
+    assertEquals(3.14F, (float) SoyData.createFromExistingData(3.14F).floatValue(), 0.0f);
   }
-
 }

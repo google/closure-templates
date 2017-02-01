@@ -45,6 +45,7 @@ import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyNode;
+import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.CommandNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
@@ -52,7 +53,6 @@ import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.XidNode;
-
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -61,21 +61,22 @@ import java.util.Set;
 /**
  * Chooses appropriate escaping modes for <code>{print}</code> commands and derives templates as
  * necessary.
- * <p>
- * For each template with {@code autoescape="contextual"}, assume that the template is used
- * to produce an HTML fragment.
- * Start walking the body with the {@link Context context} provided by the caller (typically
- * {@link HtmlContext#HTML_PCDATA}).
+ *
+ * <p>For each template with {@code autoescape="contextual"}, assume that the template is used to
+ * produce an HTML fragment. Start walking the body with the {@link Context context} provided by the
+ * caller (typically {@link HtmlContext#HTML_PCDATA}).
+ *
  * <ul>
  *   <li>For RawTextNodes, update the context based on the fragment, so seeing "&lt;script&gt;" will
- *   move us into a JavaScript context while "&lt;!--" would move us into an HTML comment context.
+ *       move us into a JavaScript context while "&lt;!--" would move us into an HTML comment
+ *       context.
  *   <li>For {@link PrintNode}s, choose an escaping convention appropriate to the current context.
  *   <li>For {@link IfNode}s, {@link SwitchNode}s, and looping constructs, propagate context
- *   separately along each path, and make sure they converge on a consistent context.
+ *       separately along each path, and make sure they converge on a consistent context.
  *   <li>For {@link CallBasicNode}s, maybe derive the target based on current context, recursively
- *   propagate contexts through the derived template to compute an end context for the template.
- *   See fixed-point typing below for a discussion of reentrant templates and templates used in
- *   different contexts.
+ *       propagate contexts through the derived template to compute an end context for the template.
+ *       See fixed-point typing below for a discussion of reentrant templates and templates used in
+ *       different contexts.
  * </ul>
  *
  */
@@ -85,12 +86,12 @@ final class InferenceEngine {
    * Infer an end context for the given template and, if requested, choose escaping directives for
    * any <code>{print}</code>.
    *
-   * @param templateNode A template that is visited in {@code startContext} and no other.
-   *     If a template can be reached from multiple contexts, then it should be cloned.
-   *     This class automatically does that for called templates.
+   * @param templateNode A template that is visited in {@code startContext} and no other. If a
+   *     template can be reached from multiple contexts, then it should be cloned. This class
+   *     automatically does that for called templates.
    * @param inferences Receives all suggested changes and inferences to tn.
-   * @param autoescapeCancellingDirectives Soy directives that cancel autoescaping (see
-   *     {@link com.google.template.soy.shared.restricted.SoyPrintDirective#shouldCancelAutoescape()}).
+   * @param autoescapeCancellingDirectives Soy directives that cancel autoescaping (see {@link
+   *     com.google.template.soy.shared.restricted.SoyPrintDirective#shouldCancelAutoescape()}).
    * @return The end context when the given template is reached from {@code startContext}.
    */
   public static Context inferTemplateEndContext(
@@ -99,13 +100,18 @@ final class InferenceEngine {
       Inferences inferences,
       Set<String> autoescapeCancellingDirectives,
       ImmutableList.Builder<SlicedRawTextNode> slicedRawTextNodesBuilder,
-      ErrorReporter errorReporter) throws SoyAutoescapeException {
+      ErrorReporter errorReporter) {
     Context endContext;
     try {
       AutoescapeMode autoescapeMode = templateNode.getAutoescapeMode();
-      InferenceEngine inferenceEngine = new InferenceEngine(
-          autoescapeMode, autoescapeMode, inferences, autoescapeCancellingDirectives,
-          slicedRawTextNodesBuilder, errorReporter);
+      InferenceEngine inferenceEngine =
+          new InferenceEngine(
+              autoescapeMode,
+              autoescapeMode,
+              inferences,
+              autoescapeCancellingDirectives,
+              slicedRawTextNodesBuilder,
+              errorReporter);
       // Context started off as startContext and we have propagated context through all of
       // template's children, so now context is the template's end context.
       endContext = inferenceEngine.infer(templateNode, startContext);
@@ -124,19 +130,23 @@ final class InferenceEngine {
   private static void checkStrictBlockEndContext(RenderUnitNode node, Context endContext) {
     if (!endContext.isValidEndContextForContentKind(node.getContentKind())) {
       throw SoyAutoescapeException.createWithNode(
-          "A strict block of kind=\"" + NodeContentKinds.toAttributeValue(node.getContentKind())
-              + "\" cannot end in context " + endContext + ". Likely cause is "
-              + endContext.getLikelyEndContextMismatchCause(node.getContentKind()) + ": "
+          "A strict block of kind=\""
+              + NodeContentKinds.toAttributeValue(node.getContentKind())
+              + "\" cannot end in context "
+              + endContext
+              + ". Likely cause is "
+              + endContext.getLikelyEndContextMismatchCause(node.getContentKind())
+              + ": "
               + node.getTagString(),
           node);
     }
   }
 
-   /**
+  /**
    * Applies strict contextual autoescaping to the given node's children.
    *
-   * <p>The start context is the given node's declared {@link ContentKind}, and it is enforced
-   * that the block's inferred end context matches the start context.
+   * <p>The start context is the given node's declared {@link ContentKind}, and it is enforced that
+   * the block's inferred end context matches the start context.
    *
    * <p>This method is used to visit the content of {let} and {param} nodes with a {@code kind}
    * attribute.
@@ -147,14 +157,20 @@ final class InferenceEngine {
       Inferences inferences,
       Set<String> autoescapeCancellingDirectives,
       ImmutableList.Builder<SlicedRawTextNode> slicedRawTextNodesBuilder,
-      ErrorReporter errorReporter) throws SoyAutoescapeException {
-    InferenceEngine inferenceEngine = new InferenceEngine(
-        AutoescapeMode.STRICT, templateAutoescapeMode, inferences, autoescapeCancellingDirectives,
-        slicedRawTextNodesBuilder, errorReporter);
+      ErrorReporter errorReporter) {
+    InferenceEngine inferenceEngine =
+        new InferenceEngine(
+            AutoescapeMode.STRICT,
+            templateAutoescapeMode,
+            inferences,
+            autoescapeCancellingDirectives,
+            slicedRawTextNodesBuilder,
+            errorReporter);
     // Context started off as startContext and we have propagated context through all of
     // node's children, so now context is the node's end context.
-    Context endContext = inferenceEngine.inferChildren(node,
-        Context.getStartContextForContentKind(node.getContentKind()));
+    Context endContext =
+        inferenceEngine.inferChildren(
+            node, Context.getStartContextForContentKind(node.getContentKind()));
     // Checking that start and end context is same.
     checkStrictBlockEndContext(node, endContext);
   }
@@ -172,8 +188,8 @@ final class InferenceEngine {
   private final EscapingMode defaultEscapingMode;
 
   /**
-   * Soy directives that cancel autoescaping (see
-   * {@link com.google.template.soy.shared.restricted.SoyPrintDirective#shouldCancelAutoescape()}).
+   * Soy directives that cancel autoescaping (see {@link
+   * com.google.template.soy.shared.restricted.SoyPrintDirective#shouldCancelAutoescape()}).
    */
   private final Set<String> autoescapeCancellingDirectives;
 
@@ -209,12 +225,12 @@ final class InferenceEngine {
   }
 
   /**
-   * A visitor that propagates context across a Soy AST to determine its end context.
-   * The end context of an AST is the one that would be reached by applying the
-   * {@link RawTextContextUpdater}'s HTML/CSS/JS grammar to any output of the template
-   * (where print commands produce innocuous strings).
-   * An innocuous string is one that is non-empty and that contains no special characters
-   * in HTML/CSS/JS. The string 'z' is a good example of an innocuous string.
+   * A visitor that propagates context across a Soy AST to determine its end context. The end
+   * context of an AST is the one that would be reached by applying the {@link
+   * RawTextContextUpdater}'s HTML/CSS/JS grammar to any output of the template (where print
+   * commands produce innocuous strings). An innocuous string is one that is non-empty and that
+   * contains no special characters in HTML/CSS/JS. The string 'z' is a good example of an innocuous
+   * string.
    */
   private final class ContextPropagatingVisitor extends AbstractSoyNodeVisitor<Context> {
 
@@ -224,15 +240,13 @@ final class InferenceEngine {
       this.context = context;
     }
 
-    @Override public Context exec(SoyNode node) {
+    @Override
+    public Context exec(SoyNode node) {
       visit(node);
       return context;
     }
 
-
-    /**
-     * Like {@link #exec(SoyNode)}, but only visits the current node's children, if any.
-     */
+    /** Like {@link #exec(SoyNode)}, but only visits the current node's children, if any. */
     public Context execChildren(SoyNode node) {
       if (node instanceof ParentSoyNode<?>) {
         visitChildren((ParentSoyNode<?>) node);
@@ -240,9 +254,10 @@ final class InferenceEngine {
       return context;
     }
 
-
-    @Override protected void visitTemplateNode(TemplateNode templateNode) {
-      Preconditions.checkState(templateNode.getAutoescapeMode() == autoescapeMode,
+    @Override
+    protected void visitTemplateNode(TemplateNode templateNode) {
+      Preconditions.checkState(
+          templateNode.getAutoescapeMode() == autoescapeMode,
           "Same ContextPropagatingVisitor cannot be reused for multiple escaping modes.");
       if (autoescapeMode == AutoescapeMode.STRICT) {
         Preconditions.checkState(
@@ -258,11 +273,9 @@ final class InferenceEngine {
       }
     }
 
-
-    /**
-     * Propagates context across raw chunks of HTML text.
-     */
-    @Override protected void visitRawTextNode(RawTextNode rawTextNode) {
+    /** Propagates context across raw chunks of HTML text. */
+    @Override
+    protected void visitRawTextNode(RawTextNode rawTextNode) {
       Context newContext;
       try {
         SlicedRawTextNode sliced = RawTextContextUpdater.processRawText(rawTextNode, context);
@@ -274,7 +287,8 @@ final class InferenceEngine {
       context = newContext;
     }
 
-    @Override protected void visitMsgFallbackGroupNode(MsgFallbackGroupNode node) {
+    @Override
+    protected void visitMsgFallbackGroupNode(MsgFallbackGroupNode node) {
       if (autoescapeMode == AutoescapeMode.STRICT || autoescapeMode == AutoescapeMode.CONTEXTUAL) {
         // (1) Determine the escaping we should do on the node itself, and the context we should
         // parse the children in.
@@ -283,23 +297,31 @@ final class InferenceEngine {
           throw SoyAutoescapeException.createWithNode(
               "Messages are not supported in this context, because it would mean asking "
                   + "translators to write source code; if this is desired, try factoring the "
-                  + "message into a {let} block: " + context,
+                  + "message into a {let} block: "
+                  + context,
               node);
         }
         Context.MsgEscapingStrategy strategy = maybeStrategy.get();
         inferences.setEscapingDirectives(node, context, strategy.escapingModesForFullMessage);
 
         // (2) Run the inference engine on the parts of the message in that context.
-        Context msgEndContext = new InferenceEngine(
-            autoescapeMode, templateAutoescapeMode, inferences,
-            autoescapeCancellingDirectives, slicedRawTextNodesBuilder, errorReporter)
-            .inferChildren(node, strategy.childContext);
+        Context msgEndContext =
+            new InferenceEngine(
+                    autoescapeMode,
+                    templateAutoescapeMode,
+                    inferences,
+                    autoescapeCancellingDirectives,
+                    slicedRawTextNodesBuilder,
+                    errorReporter)
+                .inferChildren(node, strategy.childContext);
 
         // (3) Make sure the message didn't itself change context.
         if (!msgEndContext.equals(strategy.childContext)) {
           throw SoyAutoescapeException.createWithNode(
               "Message text should not alter the escaping context. "
-                  + context + " != " + strategy.childContext,
+                  + context
+                  + " != "
+                  + strategy.childContext,
               node);
         }
       } else {
@@ -313,7 +335,8 @@ final class InferenceEngine {
      * {@link DerivedTemplateUtils Derive} a template from the given call's target if necessary, and
      * figure out the template's end context.
      */
-    @Override protected void visitCallNode(CallNode callNode) {
+    @Override
+    protected void visitCallNode(CallNode callNode) {
       try {
         String calleeName;
         if (callNode instanceof CallBasicNode) {
@@ -336,17 +359,17 @@ final class InferenceEngine {
       visitChildren(callNode);
     }
 
-
     /**
      * For param content nodes with a {@code kind} attribute, visit the node's content with the
      * strict contextual escaper in the start context indicated by the {@code kind} attribute.
      *
      * <p>If the param content nodes with a {@code kind} attribute is in non-contextual template it
-     * is handled by another visitor
-     * ({@link ContextualAutoescaper.NonContextualTypedRenderUnitNodesVisitor}) called from
-     * {@link ContextualAutoescaper}. Here only nodes in strict or contextual templates are handled.
+     * is handled by another visitor ({@link
+     * ContextualAutoescaper.NonContextualTypedRenderUnitNodesVisitor}) called from {@link
+     * ContextualAutoescaper}. Here only nodes in strict or contextual templates are handled.
      */
-    @Override protected void visitCallParamContentNode(CallParamContentNode node) {
+    @Override
+    protected void visitCallParamContentNode(CallParamContentNode node) {
       if (node.getContentKind() != null
           && (autoescapeMode == AutoescapeMode.CONTEXTUAL
               || autoescapeMode == AutoescapeMode.STRICT)) {
@@ -360,39 +383,35 @@ final class InferenceEngine {
       }
     }
 
-
-    /**
-     * Pass over 'xid' nodes.
-     */
-    @Override protected void visitXidNode(XidNode node) {
+    /** Pass over 'xid' nodes. */
+    @Override
+    protected void visitXidNode(XidNode node) {
       context = context.getContextBeforeDynamicValue();
 
       // TODO: Maybe check that we're in a non-string CSS context, a JS string or value context, or
       // an attribute value context like a class, id, or for.
     }
 
-
-    /**
-     * Pass over CSS nodes.
-     */
-    @Override protected void visitCssNode(CssNode node) {
+    /** Pass over CSS nodes. */
+    @Override
+    protected void visitCssNode(CssNode node) {
       context = context.getContextBeforeDynamicValue();
 
       // TODO: Maybe check that we're in a non-string CSS context, a JS string or value context, or
       // an attribute value context like a class, id, or for.
     }
-
 
     /**
      * For let content nodes with a {@code kind} attribute, visit the node's content with the strict
      * contextual escaper in the start context indicated by the {@code kind} attribute.
      *
-     * <p>If the let content nodes with a {@code kind} attribute is in non-contextual template it
-     * is handled by another visitor
-     * ({@link ContextualAutoescaper.NonContextualTypedRenderUnitNodesVisitor}) called from
-     * {@link ContextualAutoescaper}. Here only nodes in strict or contextual templates are handled.
+     * <p>If the let content nodes with a {@code kind} attribute is in non-contextual template it is
+     * handled by another visitor ({@link
+     * ContextualAutoescaper.NonContextualTypedRenderUnitNodesVisitor}) called from {@link
+     * ContextualAutoescaper}. Here only nodes in strict or contextual templates are handled.
      */
-    @Override protected void visitLetContentNode(LetContentNode node) {
+    @Override
+    protected void visitLetContentNode(LetContentNode node) {
       if (node.getContentKind() == null) {
         // Nodes without kind attribute are treated by the contextual autoescaper as before (i.e.
         // visted in whatever context the let node appears.
@@ -406,22 +425,22 @@ final class InferenceEngine {
       }
     }
 
-
-    @Override protected void visitIfNode(IfNode ifNode) {
+    @Override
+    protected void visitIfNode(IfNode ifNode) {
       propagateAcrossDisjunction(ifNode);
     }
 
-
-    @Override protected void visitSwitchNode(SwitchNode switchNode) {
+    @Override
+    protected void visitSwitchNode(SwitchNode switchNode) {
       propagateAcrossDisjunction(switchNode);
     }
 
-
     /**
-     * Do multiple inferences so we can make sure we get to a consistent context regardless of
-     * how many times the loop is entered.
+     * Do multiple inferences so we can make sure we get to a consistent context regardless of how
+     * many times the loop is entered.
      */
-    @Override protected void visitForNode(ForNode forNode) {
+    @Override
+    protected void visitForNode(ForNode forNode) {
       // Strictly speaking, if a for loop is guaranteed to execute once, then the result of
       // rewrite(loopBody, context) must be the same as rewrite(loopBody, result).
       // But where we cannot prove that the loop is executed at least once, the result must be the
@@ -439,8 +458,8 @@ final class InferenceEngine {
         Optional<Context> combined = Context.union(context, afterBody);
         if (!combined.isPresent()) {
           throw SoyAutoescapeException.createWithNode(
-              "{for} command changes context so it cannot be reentered : " +
-                  forNode.toSourceString(),
+              "{for} command changes context so it cannot be reentered : "
+                  + forNode.toSourceString(),
               forNode);
         }
         context = combined.get();
@@ -450,11 +469,12 @@ final class InferenceEngine {
     }
 
     /**
-     * Do multiple inferences so we can make sure we get to a consistent context regardless of
-     * how many times the loop is entered.
+     * Do multiple inferences so we can make sure we get to a consistent context regardless of how
+     * many times the loop is entered.
      */
-    @Override protected void visitForeachNode(ForeachNode foreachNode) {
-      List<SoyNode> foreachChildren = foreachNode.getChildren();
+    @Override
+    protected void visitForeachNode(ForeachNode foreachNode) {
+      List<BlockNode> foreachChildren = foreachNode.getChildren();
       ForeachNonemptyNode neNode = (ForeachNonemptyNode) foreachChildren.get(0);
       ForeachIfemptyNode ieNode;
       if (foreachChildren.size() == 2) {
@@ -473,8 +493,8 @@ final class InferenceEngine {
           Optional<Context> combined = Context.union(elseContext, afterBody);
           if (!combined.isPresent()) {
             throw SoyAutoescapeException.createWithNode(
-                "{foreach} body does not end in the same context after repeated entries : " +
-                    neNode.toSourceString(),
+                "{foreach} body does not end in the same context after repeated entries : "
+                    + neNode.toSourceString(),
                 neNode);
           }
           afterBody = combined.get();
@@ -488,10 +508,10 @@ final class InferenceEngine {
         Optional<Context> combined = Context.union(ifemptyContext, afterBody);
         if (!combined.isPresent()) {
           throw SoyAutoescapeException.createWithNode(
-              (ieNode == null ?
-                  "{foreach} body changes context : " :
-                  "{foreach} body does not end in the same context as {ifempty} : ") +
-                  foreachNode.toSourceString(),
+              (ieNode == null
+                      ? "{foreach} body changes context : "
+                      : "{foreach} body does not end in the same context as {ifempty} : ")
+                  + foreachNode.toSourceString(),
               ieNode == null ? foreachNode : ieNode);
         }
         context = combined.get();
@@ -500,12 +520,12 @@ final class InferenceEngine {
       }
     }
 
-
     /**
-     * Pick an escaping mode for the print node if this is in an
-     * {@code autoescape="contextual"} template.
+     * Pick an escaping mode for the print node if this is in an {@code autoescape="contextual"}
+     * template.
      */
-    @Override protected void visitPrintNode(PrintNode printNode) {
+    @Override
+    protected void visitPrintNode(PrintNode printNode) {
       try {
         // It is an error to use autoescape-canceling print directives in strict mode unless in a
         // block of kind text.
@@ -521,20 +541,25 @@ final class InferenceEngine {
                 // Help the user figure out the best content kind to use, using existing heuristics.
                 ContentKind recommendedKind = context.getMostAppropriateContentKind();
                 String recommendedKindStr =
-                    (recommendedKind == ContentKind.TEXT) ?
-                    "appropriate kind=\"...\"" :
-                    ("kind=\"" + NodeContentKinds.toAttributeValue(recommendedKind) + "\"");
+                    (recommendedKind == ContentKind.TEXT)
+                        ? "appropriate kind=\"...\""
+                        : ("kind=\"" + NodeContentKinds.toAttributeValue(recommendedKind) + "\"");
                 throw SoyAutoescapeException.createWithNode(
-                    "noAutoescape is not allowed in strict autoescaping mode. Instead, pass in a " +
-                        "{param} with " + recommendedKindStr + " or SanitizedContent.",
+                    "noAutoescape is not allowed in strict autoescaping mode. Instead, pass in a "
+                        + "{param} with "
+                        + recommendedKindStr
+                        + " or SanitizedContent.",
                     printNode);
               }
             } else if (autoescapeCancellingDirectives.contains(printDirective.getName())) {
               throw SoyAutoescapeException.createWithNode(
-                  "Autoescape-cancelling print directives like " + printDirective.getName() +
-                      " are only allowed in kind=\"text\" blocks. If you really want to " +
-                      "over-escape, try using a let block: " +
-                      "{let $foo kind=\"text\"}" + printNode.toSourceString() + "{/let}{$foo}.",
+                  "Autoescape-cancelling print directives like "
+                      + printDirective.getName()
+                      + " are only allowed in kind=\"text\" blocks. If you really want to "
+                      + "over-escape, try using a let block: "
+                      + "{let $foo kind=\"text\"}"
+                      + printNode.toSourceString()
+                      + "{/let}{$foo}.",
                   printNode);
             }
           }
@@ -543,7 +568,7 @@ final class InferenceEngine {
         List<EscapingMode> escapingModes = inferences.getEscapingMode(printNode);
 
         context = context.getContextBeforeDynamicValue();
-        if (escapingModes.isEmpty()) {  // None specified.
+        if (escapingModes.isEmpty()) { // None specified.
           // The inferences set below specify which nodes to change. In the non-contextual modes,
           // we leave escapingModesToSet null since no changes are to be made to this print node.
           List<EscapingMode> escapingModesToSet = null;
@@ -551,8 +576,8 @@ final class InferenceEngine {
             case STRICT:
             case CONTEXTUAL:
               // Infer one.
-              escapingModes = escapingModesToSet =
-                  context.getEscapingModes(printNode.getChildren());
+              escapingModes =
+                  escapingModesToSet = context.getEscapingModes(printNode.getChildren());
               break;
             case NONCONTEXTUAL:
               escapingModes = ImmutableList.of(defaultEscapingMode);
@@ -561,47 +586,49 @@ final class InferenceEngine {
           inferences.setEscapingDirectives(printNode, context, escapingModesToSet);
         } else if (!context.isCompatibleWith(escapingModes.get(0))) {
           throw SoyAutoescapeException.createWithNode(
-              "Escaping modes " + escapingModes + " not compatible with " + context + " : " +
-                  printNode.toSourceString(),
+              "Escaping modes "
+                  + escapingModes
+                  + " not compatible with "
+                  + context
+                  + " : "
+                  + printNode.toSourceString(),
               printNode);
         }
 
         // Figure out the context at the end.
-        if (!escapingModes.isEmpty() || autoescapeMode == AutoescapeMode.CONTEXTUAL ||
-            autoescapeMode == AutoescapeMode.STRICT) {
+        if (!escapingModes.isEmpty()
+            || autoescapeMode == AutoescapeMode.CONTEXTUAL
+            || autoescapeMode == AutoescapeMode.STRICT) {
           // If we know the escaping mode or we're supposed to choose one, then use that.
           context = getContextAfterEscaping(printNode, context);
         } else {
           // If we are not in an autoescaping template, assume that the author knows what they're
           // doing and simulate an innocuous value.
-          context = RawTextContextUpdater.processRawText(
-              new RawTextNode(-1, "z", printNode.getSourceLocation()), context)
-              .getEndContext();
+          context =
+              RawTextContextUpdater.processRawText(
+                      new RawTextNode(-1, "z", printNode.getSourceLocation()), context)
+                  .getEndContext();
         }
       } catch (SoyAutoescapeException ex) {
         throw ex.maybeAssociateNode(printNode);
       }
     }
 
-
-    /**
-     * Handle conjunction nodes.
-     */
-    @Override protected void visitSoyNode(SoyNode node) {
+    /** Handle conjunction nodes. */
+    @Override
+    protected void visitSoyNode(SoyNode node) {
       if (node instanceof ParentSoyNode<?>) {
         visitChildren((ParentSoyNode<?>) node);
       }
     }
 
-
     //
     // Helper methods.
 
-
     /**
      * Determines the content kind of the templates.
-     * <p>
-     * This relies on CheckDelegatesVisitor to print friendly messages if the deltemplates differ
+     *
+     * <p>This relies on CheckDelegatesVisitor to print friendly messages if the deltemplates differ
      * in content kind.
      */
     private ContentKind getCommonContentKindIfStrict(List<TemplateNode> templates) {
@@ -614,7 +641,6 @@ final class InferenceEngine {
       }
       return contentKind;
     }
-
 
     /**
      * Derives a template if necessary to compute a consistent end context for a call to the named
@@ -638,8 +664,8 @@ final class InferenceEngine {
 
       if (autoescapeMode == AutoescapeMode.STRICT) {
         // We're currently in a strict mode template. Check what kind of template is being called.
-        if (calleeStrictContentKind != null &&
-            startContext.isValidStartContextForContentKind(calleeStrictContentKind)) {
+        if (calleeStrictContentKind != null
+            && startContext.isValidStartContextForContentKind(calleeStrictContentKind)) {
           // As an optimization, don't escape the call site if the callee has the right content
           // kind. Since all deltemplates with the same name must be of the same kind (checked
           // elsewhere), we can make this optimization even if we can't see all the deltemplates.
@@ -653,7 +679,9 @@ final class InferenceEngine {
           // indicates that there's no valid escaper for this context. My plan is to actually have
           // getEscapingModes() itself throw the exception, but this requires some weeding out of
           // bad existing templates.
-          inferences.setEscapingDirectives(callNode, callContext,
+          inferences.setEscapingDirectives(
+              callNode,
+              callContext,
               callContext.getEscapingModes(ImmutableList.<PrintDirectiveNode>of()));
           return Pair.of(templateName, getContextAfterDynamicValue(callNode, startContext));
         } else if (startContext.state == HtmlContext.TEXT) {
@@ -666,9 +694,9 @@ final class InferenceEngine {
           // re-escaping in most cases. Markup won't be preserved, but at least there will be zero
           // double-escaping. HTML is more consistent because externs behave the same as interns.
           throw SoyAutoescapeException.createWithNode(
-              "Soy strict autoescaping currently forbids calls to non-strict templates, unless " +
-                  "the context is kind=\"text\", since there's no guarantee the callee is safe: " +
-                  callNode.getTagString(),
+              "Soy strict autoescaping currently forbids calls to non-strict templates, unless "
+                  + "the context is kind=\"text\", since there's no guarantee the callee is safe: "
+                  + callNode.getTagString(),
               callNode);
         }
 
@@ -687,11 +715,16 @@ final class InferenceEngine {
           // attributes, even though it's not technically valid HTML, in order to help migration.
           if (!startContext.isValidStartContextForContentKindLoose(calleeStrictContentKind)) {
             throw SoyAutoescapeException.createWithNode(
-                "Cannot call strictly autoescaped template " + templateName + " of kind=\"" +
-                    NodeContentKinds.toAttributeValue(calleeStrictContentKind) +
-                    "\" from incompatible context " + startContext + ". Strict templates " +
-                    "generate extra code to safely call templates of other content kinds, but " +
-                    "non-strict templates do not: " + callNode.getTagString(),
+                "Cannot call strictly autoescaped template "
+                    + templateName
+                    + " of kind=\""
+                    + NodeContentKinds.toAttributeValue(calleeStrictContentKind)
+                    + "\" from incompatible context "
+                    + startContext
+                    + ". Strict templates "
+                    + "generate extra code to safely call templates of other content kinds, but "
+                    + "non-strict templates do not: "
+                    + callNode.getTagString(),
                 callNode);
           }
           return Pair.of(templateName, startContext);
@@ -701,7 +734,6 @@ final class InferenceEngine {
         }
       }
     }
-
 
     /**
      * Creates a contextual derivative of the specified template and infers the end context.
@@ -730,12 +762,15 @@ final class InferenceEngine {
         return Pair.of(newCalleeName, endContext);
       } catch (SoyAutoescapeException e) {
         throw SoyAutoescapeException.createCausedWithNode(
-            "Error while re-contextualizing template " + calleeName + " in context " +
-                startContext + ":",
-            e, callNode);
+            "Error while re-contextualizing template "
+                + calleeName
+                + " in context "
+                + startContext
+                + ":",
+            e,
+            callNode);
       }
     }
-
 
     /**
      * Determines the end context and a set of inferences for a template in a particular context.
@@ -758,8 +793,9 @@ final class InferenceEngine {
       List<TemplateNode> templateNodes = inferences.lookupTemplates(calleeName);
       // Optimistically assume the new callee ends with the same context as it starts, and then
       // verify that's the case.
-      Pair<Inferences, Context> hypothesis = hypothesizeContextualization(
-          startContext, startContext, calleeName, templateNodes, inferences);
+      Pair<Inferences, Context> hypothesis =
+          hypothesizeContextualization(
+              startContext, startContext, calleeName, templateNodes, inferences);
       endContext = hypothesis.second;
       Inferences subInferences = hypothesis.first;
       if (!endContext.equals(startContext) && subInferences.wasTemplateChecked(calleeName)) {
@@ -767,8 +803,9 @@ final class InferenceEngine {
         // is a valid endContext context since its output is the same regardless of whether
         // recursive calls are properly typed. This allows us to gloss over minor differences in
         // startContexts, e.g. JsFollowingSlash.
-        Pair<Inferences, Context> secondHypothesis = hypothesizeContextualization(
-            startContext, endContext, calleeName, templateNodes, inferences);
+        Pair<Inferences, Context> secondHypothesis =
+            hypothesizeContextualization(
+                startContext, endContext, calleeName, templateNodes, inferences);
         Optional<Context> combined = Context.union(secondHypothesis.second, endContext);
         // See if the first and second hypothesis result in a compatible end context.
         if (!combined.isPresent()) {
@@ -784,11 +821,10 @@ final class InferenceEngine {
       return endContext;
     }
 
-
     /**
      * Hypothesizes a particular end context and determines a potential end context, if any.
-     * <p>
-     * This returns the *actual* end context determined from this hypothesis. Hypotheses are
+     *
+     * <p>This returns the *actual* end context determined from this hypothesis. Hypotheses are
      * needed to handle recursive templates, where the output context is needed to compute the
      * context within the template.
      *
@@ -801,34 +837,40 @@ final class InferenceEngine {
      *     them.
      */
     private Pair<Inferences, Context> hypothesizeContextualization(
-        Context startContext, Context hypotheticalEndContext, String calleeName,
-        List<TemplateNode> templateNodes, Inferences parentInferences) {
+        Context startContext,
+        Context hypotheticalEndContext,
+        String calleeName,
+        List<TemplateNode> templateNodes,
+        Inferences parentInferences) {
       // Create a hypothetical world of inferences based on this hypothesis. It is up to the caller
       // to fold these into the parent inferences if it chooses to use these.
       Inferences inferences = new Inferences(parentInferences);
       List<Context> endContexts = new ArrayList<Context>();
       inferences.recordTemplateEndContext(calleeName, hypotheticalEndContext);
       for (TemplateNode templateNode : templateNodes) {
-        endContexts.add(inferTemplateEndContext(
-            templateNode, startContext, inferences, autoescapeCancellingDirectives,
-            slicedRawTextNodesBuilder, errorReporter));
+        endContexts.add(
+            inferTemplateEndContext(
+                templateNode,
+                startContext,
+                inferences,
+                autoescapeCancellingDirectives,
+                slicedRawTextNodesBuilder,
+                errorReporter));
       }
       Optional<Context> combined = Context.union(endContexts);
       if (!combined.isPresent()) {
         throw SoyAutoescapeException.createWithNode(
             "Deltemplates diverge when used with deprecated-contextual autoescaping."
                 + " Based on the call site, assuming these templates all start in "
-                + startContext + ", the different deltemplates end in incompatible contexts: "
+                + startContext
+                + ", the different deltemplates end in incompatible contexts: "
                 + Joiner.on(", ").join(endContexts),
             templateNodes.get(0));
       }
       return Pair.of(inferences, combined.get());
     }
 
-
-    /**
-     * Consider the various branches separately and compute a union context for each branch.
-     */
+    /** Consider the various branches separately and compute a union context for each branch. */
     private void propagateAcrossDisjunction(ParentSoyNode<?> node) {
       try {
         // All the branches of an {if} or {switch} should return compatible contexts, so that we can
@@ -843,10 +885,10 @@ final class InferenceEngine {
           Optional<Context> combined = Context.union(out, brOut);
           if (!combined.isPresent()) {
             throw SoyAutoescapeException.createWithNode(
-                (node instanceof IfNode ?
-                    "{if} command branch ends in a different context than preceding branches: " :
-                    "{switch} command case ends in a different context than preceding cases: ") +
-                    branch.toSourceString(),
+                (node instanceof IfNode
+                        ? "{if} command branch ends in a different context than preceding branches:"
+                        : "{switch} command case ends in a different context than preceding cases:")
+                    + " " + branch.toSourceString(),
                 branch);
           }
           out = combined.get();
@@ -861,10 +903,10 @@ final class InferenceEngine {
           Optional<Context> combined = Context.union(context, out);
           if (!combined.isPresent()) {
             throw SoyAutoescapeException.createWithNode(
-                (node instanceof IfNode ?
-                    "{if} command without {else} changes context : " :
-                    "{switch} command without {default} changes context : ") +
-                    node.toSourceString(),
+                (node instanceof IfNode
+                        ? "{if} command without {else} changes context : "
+                        : "{switch} command without {default} changes context : ")
+                    + node.toSourceString(),
                 node);
           }
           out = combined.get();
@@ -876,23 +918,29 @@ final class InferenceEngine {
       }
     }
 
-
     private void inferInStrictMode(RenderUnitNode node) {
-      inferStrictRenderUnitNode(templateAutoescapeMode, node, inferences,
-          autoescapeCancellingDirectives, slicedRawTextNodesBuilder, errorReporter);
+      inferStrictRenderUnitNode(
+          templateAutoescapeMode,
+          node,
+          inferences,
+          autoescapeCancellingDirectives,
+          slicedRawTextNodesBuilder,
+          errorReporter);
     }
 
-
-    /**
-     * Applies HTML contextual autoescaping on a legacy contextual parameter block.
-     */
+    /** Applies HTML contextual autoescaping on a legacy contextual parameter block. */
     private void inferInContextualModeForHtml(CommandNode node) {
       // NOTE: Previously this wouldn't do any contextual analysis, which resulted in subtle bugs
       // such as the contextual autoescaper not seeing typed parameters in nested calls.
-      final Context paramContentNodeEndContext = new InferenceEngine(
-          AutoescapeMode.CONTEXTUAL, templateAutoescapeMode, inferences,
-          autoescapeCancellingDirectives, slicedRawTextNodesBuilder, errorReporter)
-        .inferChildren(node, Context.HTML_PCDATA);
+      final Context paramContentNodeEndContext =
+          new InferenceEngine(
+                  AutoescapeMode.CONTEXTUAL,
+                  templateAutoescapeMode,
+                  inferences,
+                  autoescapeCancellingDirectives,
+                  slicedRawTextNodesBuilder,
+                  errorReporter)
+              .inferChildren(node, Context.HTML_PCDATA);
       if (!paramContentNodeEndContext.equals(Context.HTML_PCDATA)) {
         throw SoyAutoescapeException.createWithNode(
             "Blocks should start and end in HTML context: " + node.getTagString(), node);
@@ -900,12 +948,12 @@ final class InferenceEngine {
     }
   }
 
-
   //
   // Static helper methods (cannot be part of inner class).
 
   /**
    * Returns the end context after a properly escaped dynamic value was inserted.
+   *
    * @param node Node to print out in case of an error.
    * @param startContext The context after which a dynamic value is inserted.
    */
@@ -916,7 +964,6 @@ final class InferenceEngine {
     // division op).
     return getContextAfterEscaping(node, startContext);
   }
-
 
   /**
    * Returns the end context after a dynamic value was inserted with specific escaping modes.

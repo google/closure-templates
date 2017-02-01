@@ -27,7 +27,7 @@ import com.google.template.soy.soytree.defn.LoopVar;
 /**
  * Node representing the loop portion of a 'foreach' statement.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public final class ForeachNonemptyNode extends AbstractBlockNode
@@ -45,9 +45,9 @@ public final class ForeachNonemptyNode extends AbstractBlockNode
     this.var = new LoopVar(varName, this, null);
   }
 
-
   /**
    * Copy constructor.
+   *
    * @param orig The node to copy.
    */
   private ForeachNonemptyNode(ForeachNonemptyNode orig, CopyState copyState) {
@@ -55,53 +55,49 @@ public final class ForeachNonemptyNode extends AbstractBlockNode
     this.var = new LoopVar(orig.var, this);
   }
 
-
-  @Override public Kind getKind() {
+  @Override
+  public Kind getKind() {
     return Kind.FOREACH_NONEMPTY_NODE;
   }
-
 
   public int getForeachNodeId() {
     return getParent().getId();
   }
 
-
-  @Override public final LoopVar getVar() {
+  @Override
+  public final LoopVar getVar() {
     return var;
   }
 
-
-  @Override public final String getVarName() {
+  @Override
+  public final String getVarName() {
     return var.name();
   }
-
 
   /** Returns the text of the expression we're iterating over. */
   public String getExprText() {
     return getParent().getExprText();
   }
 
-
   /** Returns the expression we're iterating over. */
   public ExprRootNode getExpr() {
     return getParent().getExpr();
   }
 
-
-  @Override public String toSourceString() {
+  @Override
+  public String toSourceString() {
     StringBuilder sb = new StringBuilder();
     appendSourceStringForChildren(sb);
     return sb.toString();
   }
 
-
-  @Override public ForeachNode getParent() {
+  @Override
+  public ForeachNode getParent() {
     return (ForeachNode) super.getParent();
   }
 
-
-  @Override public ForeachNonemptyNode copy(CopyState copyState) {
+  @Override
+  public ForeachNonemptyNode copy(CopyState copyState) {
     return new ForeachNonemptyNode(this, copyState);
   }
-
 }

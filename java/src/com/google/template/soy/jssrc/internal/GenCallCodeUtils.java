@@ -16,13 +16,23 @@
 
 package com.google.template.soy.jssrc.internal;
 
+import static com.google.template.soy.jssrc.dsl.CodeChunk.WithValue.LITERAL_EMPTY_STRING;
+import static com.google.template.soy.jssrc.dsl.CodeChunk.WithValue.LITERAL_FALSE;
+import static com.google.template.soy.jssrc.dsl.CodeChunk.WithValue.LITERAL_NULL;
+import static com.google.template.soy.jssrc.dsl.CodeChunk.WithValue.LITERAL_TRUE;
+import static com.google.template.soy.jssrc.dsl.CodeChunk.WithValue.id;
+import static com.google.template.soy.jssrc.dsl.CodeChunk.dottedId;
+import static com.google.template.soy.jssrc.dsl.CodeChunk.fromExpr;
+import static com.google.template.soy.jssrc.dsl.CodeChunk.stringLiteral;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.jssrc.dsl.CodeChunk;
+import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
 import com.google.template.soy.jssrc.internal.GenJsExprsVisitor.GenJsExprsVisitorFactory;
 import com.google.template.soy.jssrc.restricted.JsExpr;
-import com.google.template.soy.jssrc.restricted.JsExprUtils;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
@@ -30,14 +40,12 @@ import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.CallParamValueNode;
-
-import java.util.Deque;
+import java.util.List;
 import java.util.Map;
-
 import javax.inject.Inject;
 
 /**
- * Utilities for generating JS code for calls.
+ * Generates JS code for {call}s and {delcall}s.
  *
  */
 public class GenCallCodeUtils {
@@ -58,13 +66,14 @@ public class GenCallCodeUtils {
   private final GenJsExprsVisitorFactory genJsExprsVisitorFactory;
 
   /**
+   * @param soyJsSrcDirectivesMap Map of jssrc print directives to their names.
    * @param jsExprTranslator Instance of JsExprTranslator to use.
+   * @param delTemplateNamer Renamer for delegate templates.
    * @param isComputableAsJsExprsVisitor The IsComputableAsJsExprsVisitor to be used.
    * @param genJsExprsVisitorFactory Factory for creating an instance of GenJsExprsVisitor.
    */
   @Inject
-  protected
-  GenCallCodeUtils(
+  protected GenCallCodeUtils(
       Map<String, SoyJsSrcPrintDirective> soyJsSrcDirectivesMap,
       JsExprTranslator jsExprTranslator,
       DelTemplateNamer delTemplateNamer,
@@ -112,64 +121,81 @@ public class GenCallCodeUtils {
    * that code has been generated to define the temporary variable 'param&lt;n&gt;'.
    *
    * @param callNode The call to generate code for.
-   * @param localVarTranslations The current stack of replacement JS expressions for the local
-   *     variables (and foreach-loop special functions) current in scope.
    * @param templateAliases A mapping of fully qualified calls to a variable in scope.
    * @return The JS expression for the call.
    */
-  public JsExpr genCallExpr(
+  public CodeChunk.WithValue gen(
       CallNode callNode,
-      Deque<Map<String, JsExpr>> localVarTranslations,
       TemplateAliases templateAliases,
+      TranslationContext translationContext,
       ErrorReporter errorReporter) {
 
-    JsExpr objToPass = genObjToPass(callNode, localVarTranslations, templateAliases, errorReporter);
-
-    // Build the JS expr text for the callee.
-    String calleeExprText;
+    CodeChunk.Generator codeGenerator = translationContext.codeGenerator();
+    // Build the JS CodeChunk for the callee's name.
+    CodeChunk.WithValue callee;
     if (callNode instanceof CallBasicNode) {
       // Case 1: Basic call.
-      calleeExprText = templateAliases.get(((CallBasicNode) callNode).getCalleeName());
+      callee = dottedId(
+          templateAliases.get(((CallBasicNode) callNode).getCalleeName()));
     } else {
       // Case 2: Delegate call.
       CallDelegateNode callDelegateNode = (CallDelegateNode) callNode;
-      String calleeIdExprText =
-          "soy.$$getDelTemplateId('" + delTemplateNamer.getDelegateName(callDelegateNode) + "')";
+      CodeChunk.WithValue calleeId = dottedId("soy.$$getDelTemplateId")
+          .call(
+              stringLiteral(
+                  delTemplateNamer.getDelegateName(callDelegateNode)));
+
       ExprRootNode variantSoyExpr = callDelegateNode.getDelCalleeVariantExpr();
-      String variantJsExprText;
+      CodeChunk.WithValue variant;
       if (variantSoyExpr == null) {
         // Case 2a: Delegate call with empty variant.
-        variantJsExprText = "''";
+        variant = LITERAL_EMPTY_STRING;
       } else {
         // Case 2b: Delegate call with variant expression.
         // TODO(lukes): the use of toSourceString() here is strange.  Remove it.
-        JsExpr variantJsExpr =
-            jsExprTranslator.translateToJsExpr(
-                variantSoyExpr,
-                variantSoyExpr.toSourceString(),
-                localVarTranslations,
-                errorReporter);
-        variantJsExprText = variantJsExpr.getText();
+        variant = jsExprTranslator.translateToCodeChunk(
+            variantSoyExpr,
+            variantSoyExpr.toSourceString(),
+            translationContext,
+            errorReporter);
       }
-      calleeExprText =
-          "soy.$$getDelegateFn(" +
-              calleeIdExprText + ", " + variantJsExprText + ", " +
-              (callDelegateNode.allowsEmptyDefault() ? "true" : "false") + ")";
+
+      callee = dottedId("soy.$$getDelegateFn")
+          .call(
+              calleeId,
+              variant,
+              callDelegateNode.allowsEmptyDefault() ? LITERAL_TRUE : LITERAL_FALSE);
     }
 
-    // Generate the main call expression.
-    String callExprText = calleeExprText + "(" + objToPass.getText() + ", null, opt_ijData)";
-    JsExpr result = new JsExpr(callExprText, Integer.MAX_VALUE);
+    // Generate the data object to pass to callee
+    CodeChunk.WithValue objToPass =
+        genObjToPass(callNode, templateAliases, translationContext, errorReporter);
 
-    // In strict mode, escaping directives may apply to the call site.
+    // Generate the main call expression.
+    CodeChunk.WithValue call = callee.call(objToPass, LITERAL_NULL, id("opt_ijData"));
+    if (callNode.getEscapingDirectiveNames().isEmpty()) {
+      return call;
+    }
+
+    // Apply escaping directives as necessary.
+    //
+    // The print directive system continues to use JsExpr, as it is a publicly available API and
+    // migrating it to CodeChunk would be a major change. Therefore, we convert our CodeChunks
+    // to JsExpr and back here.
+    JsExpr callResult = call.singleExprOrName();
     for (String directiveName : callNode.getEscapingDirectiveNames()) {
       SoyJsSrcPrintDirective directive = soyJsSrcDirectivesMap.get(directiveName);
       Preconditions.checkNotNull(
           directive, "Contextual autoescaping produced a bogus directive: %s", directiveName);
-      result = directive.applyForJsSrc(result, ImmutableList.<JsExpr>of());
+      callResult = directive.applyForJsSrc(callResult, ImmutableList.<JsExpr>of());
     }
 
-    return result;
+    return call.isRepresentableAsSingleExpression()
+        ? fromExpr(callResult)
+        : codeGenerator.newChunk()
+            .statement(call)
+            .assign(fromExpr(callResult))
+            .buildAsValue();
   }
 
 
@@ -208,27 +234,25 @@ public class GenCallCodeUtils {
    * that code has been generated to define the temporary variable 'param&lt;n&gt;'.
    *
    * @param callNode The call to generate code for.
-   * @param localVarTranslations The current stack of replacement JS expressions for the local
-   *     variables (and foreach-loop special functions) current in scope.
    * @param templateAliases A mapping of fully qualified calls to a variable in scope.
    * @return The JS expression for the object to pass in the call.
    */
-  public JsExpr genObjToPass(
+  private CodeChunk.WithValue genObjToPass(
       CallNode callNode,
-      Deque<Map<String, JsExpr>> localVarTranslations,
       TemplateAliases templateAliases,
+      TranslationContext translationContext,
       ErrorReporter errorReporter) {
 
     // ------ Generate the expression for the original data to pass ------
-    JsExpr dataToPass;
+    CodeChunk.WithValue dataToPass;
     if (callNode.dataAttribute().isPassingAllData()) {
-      dataToPass = new JsExpr("opt_data", Integer.MAX_VALUE);
+      dataToPass = CodeChunkUtils.OPT_DATA;
     } else if (callNode.dataAttribute().isPassingData()) {
       dataToPass =
-          jsExprTranslator.translateToJsExpr(
-              callNode.dataAttribute().dataExpr(), localVarTranslations, errorReporter);
+          jsExprTranslator.translateToCodeChunk(
+              callNode.dataAttribute().dataExpr(), translationContext, errorReporter);
     } else {
-      dataToPass = new JsExpr("null", Integer.MAX_VALUE);
+      dataToPass = LITERAL_NULL;
     }
 
     // ------ Case 1: No additional params ------
@@ -237,58 +261,47 @@ public class GenCallCodeUtils {
     }
 
     // ------ Build an object literal containing the additional params ------
-    StringBuilder paramsObjSb = new StringBuilder();
-    paramsObjSb.append('{');
+    ImmutableList.Builder<CodeChunk.WithValue> keys = ImmutableList.builder();
+    ImmutableList.Builder<CodeChunk.WithValue> values = ImmutableList.builder();
 
-    boolean isFirst = true;
     for (CallParamNode child : callNode.getChildren()) {
-
-      if (isFirst) {
-        isFirst = false;
-      } else {
-        paramsObjSb.append(", ");
-      }
-
-      String key = child.getKey();
-      paramsObjSb.append(key).append(": ");
+      keys.add(id(child.getKey()));
 
       if (child instanceof CallParamValueNode) {
         CallParamValueNode cpvn = (CallParamValueNode) child;
-        JsExpr valueJsExpr =
-            jsExprTranslator.translateToJsExpr(
-                cpvn.getValueExprUnion(), localVarTranslations, errorReporter);
-        paramsObjSb.append(valueJsExpr.getText());
-
+        CodeChunk.WithValue value =
+            jsExprTranslator.translateToCodeChunk(
+                cpvn.getValueExprUnion(), translationContext, errorReporter);
+        values.add(value);
       } else {
         CallParamContentNode cpcn = (CallParamContentNode) child;
-        JsExpr valueJsExpr;
+
+        CodeChunk.WithValue content;
         if (isComputableAsJsExprsVisitor.exec(cpcn)) {
-          valueJsExpr =
-              JsExprUtils.concatJsExprsForceString(
-                  genJsExprsVisitorFactory
-                      .create(localVarTranslations, templateAliases, errorReporter)
-                      .exec(cpcn));
+          List<CodeChunk.WithValue> chunks = genJsExprsVisitorFactory
+              .create(translationContext, templateAliases, errorReporter)
+              .exec(cpcn);
+          content = CodeChunkUtils.concatChunksForceString(chunks);
         } else {
           // This is a param with content that cannot be represented as JS expressions, so we assume
           // that code has been generated to define the temporary variable 'param<n>'.
-          String paramExpr = "param" + cpcn.getId();
-          valueJsExpr = new JsExpr(paramExpr, Integer.MAX_VALUE);
+          content = id("param" + cpcn.getId());
         }
 
-        valueJsExpr = maybeWrapContent(cpcn, valueJsExpr);
-        paramsObjSb.append(valueJsExpr.getText());
+        content = maybeWrapContent(translationContext.codeGenerator(), cpcn, content);
+        values.add(content);
       }
     }
 
-    paramsObjSb.append('}');
+    CodeChunk.WithValue params = CodeChunk.mapLiteral(keys.build(), values.build());
 
     // ------ Cases 2 and 3: Additional params with and without original data to pass ------
     if (callNode.dataAttribute().isPassingData()) {
-      return new JsExpr(
-          "soy.$$assignDefaults(" + paramsObjSb + ", " + dataToPass.getText() + ")",
-          Integer.MAX_VALUE);
+      CodeChunk.WithValue allData = dottedId("soy.$$assignDefaults")
+          .call(params, dataToPass);
+      return allData;
     } else {
-      return new JsExpr(paramsObjSb.toString(), Integer.MAX_VALUE);
+      return params;
     }
   }
 
@@ -302,9 +315,13 @@ public class GenCallCodeUtils {
    * variant used in internal blocks.
    * </p>
    */
-  protected JsExpr maybeWrapContent(CallParamContentNode node, JsExpr valueJsExpr) {
-    return JsExprUtils.maybeWrapAsSanitizedContentForInternalBlocks(
-        node.getContentKind(),
-        valueJsExpr);
+  protected CodeChunk.WithValue maybeWrapContent(
+      CodeChunk.Generator generator, CallParamContentNode node, CodeChunk.WithValue content) {
+    if (node.getContentKind() == null) {
+      return content;
+    }
+
+    // Use the internal blocks wrapper, to maintain falsiness of empty string
+    return CodeChunkUtils.wrapAsSanitizedContent(node.getContentKind(), content, true);
   }
 }

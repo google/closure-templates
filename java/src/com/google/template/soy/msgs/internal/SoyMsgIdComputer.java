@@ -23,9 +23,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPlaceholderPart;
 import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
-
 import javax.annotation.Nullable;
-
 
 /**
  * Static methods to compute the unique message id for a message.
@@ -33,21 +31,19 @@ import javax.annotation.Nullable;
  */
 public class SoyMsgIdComputer {
 
-
   private SoyMsgIdComputer() {}
-
 
   /**
    * Computes the unique message id for a message, given the message parts, the meaning string (if
    * any), and the content type (if any). These are the only elements incorporated into the message
    * id.
    *
-   * <p> In particular, note that the id of a message does not change when its desc changes.
+   * <p>In particular, note that the id of a message does not change when its desc changes.
    *
    * @param msgParts The parts of the message.
    * @param meaning The meaning string, or null if none (usually null).
-   * @param contentType Content type of the document that this message will appear in (e.g.
-   *     "{@code text/html}", or null if not used.
+   * @param contentType Content type of the document that this message will appear in (e.g. "{@code
+   *     text/html}", or null if not used.
    * @return The computed message id.
    */
   public static long computeMsgId(
@@ -55,21 +51,20 @@ public class SoyMsgIdComputer {
     return computeMsgIdHelper(msgParts, false, meaning, contentType);
   }
 
-
   /**
    * Computes an alternate unique message id for a message, given the message parts, the meaning
    * string (if any), and the content type (if any). These are the only elements incorporated into
    * the message id.
    *
-   * <p> In particular, note that the id of a message does not change when its desc changes.
+   * <p>In particular, note that the id of a message does not change when its desc changes.
    *
-   * <p> Important: This is an alternate message id computation using braced placeholders. Only use
+   * <p>Important: This is an alternate message id computation using braced placeholders. Only use
    * this function instead of {@link #computeMsgId} if you know that you need this alternate format.
    *
    * @param msgParts The parts of the message.
    * @param meaning The meaning string, or null if none (usually null).
-   * @param contentType Content type of the document that this message will appear in (e.g.
-   *     "{@code text/html}", or null if not used..
+   * @param contentType Content type of the document that this message will appear in (e.g. "{@code
+   *     text/html}", or null if not used..
    * @return The computed message id.
    */
   public static long computeMsgIdUsingBracedPhs(
@@ -77,13 +72,12 @@ public class SoyMsgIdComputer {
     return computeMsgIdHelper(msgParts, true, meaning, contentType);
   }
 
-
   /**
    * Computes the unique message id for a message, given the message parts, the meaning string (if
    * any), and the content type (if any). These are the only elements incorporated into the message
    * id.
    *
-   * <p> In particular, note that the id of a message does not change when its desc changes.
+   * <p>In particular, note that the id of a message does not change when its desc changes.
    *
    * @param msgParts The parts of the message.
    * @param doUseBracedPhs Whether to use braced placeholders. (Even though braced placeholders
@@ -91,11 +85,13 @@ public class SoyMsgIdComputer {
    *     msg id is still a separate decision, even if your message is plural/select and you do use
    *     ICU syntax to represent plural/select parts.)
    * @param meaning The meaning string, or null if none (usually null).
-   * @param contentType Content type of the document that this message will appear in (e.g.
-   *     "{@code text/html}", or null if not used..
+   * @param contentType Content type of the document that this message will appear in (e.g. "{@code
+   *     text/html}", or null if not used..
    */
   private static long computeMsgIdHelper(
-      ImmutableList<SoyMsgPart> msgParts, boolean doUseBracedPhs, @Nullable String meaning,
+      ImmutableList<SoyMsgPart> msgParts,
+      boolean doUseBracedPhs,
+      @Nullable String meaning,
       @Nullable String contentType) {
 
     // Important: Do not change this algorithm. Doing so will break backwards compatibility.
@@ -118,7 +114,6 @@ public class SoyMsgIdComputer {
     // To avoid negative ids we strip the high-order bit.
     return fp & 0x7fffffffffffffffL;
   }
-
 
   /**
    * Private helper to build the canonical message content string that should be used for msg id
@@ -162,7 +157,6 @@ public class SoyMsgIdComputer {
     return msgStrSb.toString();
   }
 
-
   @VisibleForTesting
   static long fingerprint(String str) {
 
@@ -174,11 +168,10 @@ public class SoyMsgIdComputer {
       hi ^= 0x130f9bef;
       lo ^= 0x94a0a928;
     }
-    return (((long)hi) << 32) | (lo & 0xffffffffL);
+    return (((long) hi) << 32) | (lo & 0xffffffffL);
   }
 
-
-  @SuppressWarnings({"PointlessBitwiseExpression", "PointlessArithmeticExpression"})  // IntelliJ
+  @SuppressWarnings({"PointlessBitwiseExpression", "PointlessArithmeticExpression"}) // IntelliJ
   private static int hash32(byte[] str, int start, int limit, int c) {
 
     int a = 0x9e3779b9;
@@ -187,60 +180,109 @@ public class SoyMsgIdComputer {
     int i;
     for (i = start; i + 12 <= limit; i += 12) {
 
-      a += (((str[i+0] & 0xff) << 0) |
-            ((str[i+1] & 0xff) << 8) |
-            ((str[i+2] & 0xff) << 16) |
-            ((str[i+3] & 0xff) << 24));
-      b += (((str[i+4] & 0xff) << 0) |
-            ((str[i+5] & 0xff) << 8) |
-            ((str[i+6] & 0xff) << 16) |
-            ((str[i+7] & 0xff) << 24));
-      c += (((str[i+8] & 0xff) << 0) |
-            ((str[i+9] & 0xff) << 8) |
-            ((str[i+10] & 0xff) << 16) |
-            ((str[i+11] & 0xff) << 24));
+      a +=
+          (((str[i + 0] & 0xff) << 0)
+              | ((str[i + 1] & 0xff) << 8)
+              | ((str[i + 2] & 0xff) << 16)
+              | ((str[i + 3] & 0xff) << 24));
+      b +=
+          (((str[i + 4] & 0xff) << 0)
+              | ((str[i + 5] & 0xff) << 8)
+              | ((str[i + 6] & 0xff) << 16)
+              | ((str[i + 7] & 0xff) << 24));
+      c +=
+          (((str[i + 8] & 0xff) << 0)
+              | ((str[i + 9] & 0xff) << 8)
+              | ((str[i + 10] & 0xff) << 16)
+              | ((str[i + 11] & 0xff) << 24));
 
       // Mix.
-      a -= b; a -= c; a ^= (c>>>13);
-      b -= c; b -= a; b ^= (a<<8);
-      c -= a; c -= b; c ^= (b>>>13);
-      a -= b; a -= c; a ^= (c>>>12);
-      b -= c; b -= a; b ^= (a<<16);
-      c -= a; c -= b; c ^= (b>>>5);
-      a -= b; a -= c; a ^= (c>>>3);
-      b -= c; b -= a; b ^= (a<<10);
-      c -= a; c -= b; c ^= (b>>>15);
+      a -= b;
+      a -= c;
+      a ^= (c >>> 13);
+      b -= c;
+      b -= a;
+      b ^= (a << 8);
+      c -= a;
+      c -= b;
+      c ^= (b >>> 13);
+      a -= b;
+      a -= c;
+      a ^= (c >>> 12);
+      b -= c;
+      b -= a;
+      b ^= (a << 16);
+      c -= a;
+      c -= b;
+      c ^= (b >>> 5);
+      a -= b;
+      a -= c;
+      a ^= (c >>> 3);
+      b -= c;
+      b -= a;
+      b ^= (a << 10);
+      c -= a;
+      c -= b;
+      c ^= (b >>> 15);
     }
 
     c += limit - start;
-    switch (limit - i) {  // Deal with rest. Cases fall through.
-      case 11: c += (str[i+10] & 0xff) << 24;
-      case 10: c += (str[i+9] & 0xff) << 16;
-      case 9 : c += (str[i+8] & 0xff) << 8;
+    switch (limit - i) { // Deal with rest. Cases fall through.
+      case 11:
+        c += (str[i + 10] & 0xff) << 24;
+      case 10:
+        c += (str[i + 9] & 0xff) << 16;
+      case 9:
+        c += (str[i + 8] & 0xff) << 8;
         // the first byte of c is reserved for the length
-      case 8 : b += (str[i+7] & 0xff) << 24;
-      case 7 : b += (str[i+6] & 0xff) << 16;
-      case 6 : b += (str[i+5] & 0xff) << 8;
-      case 5 : b += (str[i+4] & 0xff);
-      case 4 : a += (str[i+3] & 0xff) << 24;
-      case 3 : a += (str[i+2] & 0xff) << 16;
-      case 2 : a += (str[i+1] & 0xff) << 8;
-      case 1 : a += (str[i+0] & 0xff);
+      case 8:
+        b += (str[i + 7] & 0xff) << 24;
+      case 7:
+        b += (str[i + 6] & 0xff) << 16;
+      case 6:
+        b += (str[i + 5] & 0xff) << 8;
+      case 5:
+        b += (str[i + 4] & 0xff);
+      case 4:
+        a += (str[i + 3] & 0xff) << 24;
+      case 3:
+        a += (str[i + 2] & 0xff) << 16;
+      case 2:
+        a += (str[i + 1] & 0xff) << 8;
+      case 1:
+        a += (str[i + 0] & 0xff);
         // case 0 : nothing left to add
     }
 
     // Mix.
-    a -= b; a -= c; a ^= (c>>>13);
-    b -= c; b -= a; b ^= (a<<8);
-    c -= a; c -= b; c ^= (b>>>13);
-    a -= b; a -= c; a ^= (c>>>12);
-    b -= c; b -= a; b ^= (a<<16);
-    c -= a; c -= b; c ^= (b>>>5);
-    a -= b; a -= c; a ^= (c>>>3);
-    b -= c; b -= a; b ^= (a<<10);
-    c -= a; c -= b; c ^= (b>>>15);
+    a -= b;
+    a -= c;
+    a ^= (c >>> 13);
+    b -= c;
+    b -= a;
+    b ^= (a << 8);
+    c -= a;
+    c -= b;
+    c ^= (b >>> 13);
+    a -= b;
+    a -= c;
+    a ^= (c >>> 12);
+    b -= c;
+    b -= a;
+    b ^= (a << 16);
+    c -= a;
+    c -= b;
+    c ^= (b >>> 5);
+    a -= b;
+    a -= c;
+    a ^= (c >>> 3);
+    b -= c;
+    b -= a;
+    b ^= (a << 10);
+    c -= a;
+    c -= b;
+    c ^= (b >>> 15);
 
     return c;
   }
-
 }

@@ -22,47 +22,50 @@ import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ExplodingErrorReporter;
-import com.google.template.soy.passes.FindIjParamsVisitor;
 import com.google.template.soy.passes.FindIjParamsVisitor.IjParamsInfo;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
-
-import junit.framework.TestCase;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for FindIjParamsVisitor.
  *
  */
-public final class FindIjParamsVisitorTest extends TestCase {
+@RunWith(JUnit4.class)
+public final class FindIjParamsVisitorTest {
 
   private static final ErrorReporter FAIL = ExplodingErrorReporter.get();
 
+  @Test
   public void testSimple() {
 
     // aaa -> {bbb, ccc}, bbb -> ddd.
-    String fileContent = "" +
-        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n" +
-        "\n" +
-        "/***/\n" +
-        "{template .aaa}\n" +
-        "  {call .bbb /} {$ij.boo} {call .ccc /} {$ij.foo}\n" +
-        "{/template}\n" +
-        "\n" +
-        "/***/\n" +
-        "{template .bbb}\n" +
-        "  {$ij.boo} {$ij.goo} {call .ddd /}\n" +
-        "{/template}\n" +
-        "\n" +
-        "/***/\n" +
-        "{template .ccc}\n" +
-        "  {$ij.boo} {$ij.moo + $ij.woo}\n" +
-        "{/template}\n" +
-        "\n" +
-        "/***/\n" +
-        "{template .ddd}\n" +
-        "  {$ij.boo} {$ij.moo} {round($ij.zoo)}\n" +
-        "{/template}\n";
+    String fileContent =
+        ""
+            + "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
+            + "\n"
+            + "/***/\n"
+            + "{template .aaa}\n"
+            + "  {call .bbb /} {$ij.boo} {call .ccc /} {$ij.foo}\n"
+            + "{/template}\n"
+            + "\n"
+            + "/***/\n"
+            + "{template .bbb}\n"
+            + "  {$ij.boo} {$ij.goo} {call .ddd /}\n"
+            + "{/template}\n"
+            + "\n"
+            + "/***/\n"
+            + "{template .ccc}\n"
+            + "  {$ij.boo} {$ij.moo + $ij.woo}\n"
+            + "{/template}\n"
+            + "\n"
+            + "/***/\n"
+            + "{template .ddd}\n"
+            + "  {$ij.boo} {$ij.moo} {round($ij.zoo)}\n"
+            + "{/template}\n";
 
     SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(fileContent).parse().fileSet();
     TemplateRegistry templateRegistry = new TemplateRegistry(soyTree, FAIL);
@@ -99,27 +102,28 @@ public final class FindIjParamsVisitorTest extends TestCase {
     assertThat(visitor.exec(aaa).ijParamToCalleesMultimap.keySet()).hasSize(6);
   }
 
-
+  @Test
   public void testTwoPathsToSameTemplate() {
 
     // aaa -> {bbb, ccc}, ccc -> bbb.
-    String fileContent = "" +
-        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n" +
-        "\n" +
-        "/***/\n" +
-        "{template .aaa}\n" +
-        "  {call .bbb /} {$ij.boo} {call .ccc /} {$ij.foo}\n" +
-        "{/template}\n" +
-        "\n" +
-        "/***/\n" +
-        "{template .bbb}\n" +
-        "  {$ij.boo} {$ij.goo}\n" +
-        "{/template}\n" +
-        "\n" +
-        "/***/\n" +
-        "{template .ccc}\n" +
-        "  {$ij.boo} {$ij.moo + $ij.woo} {call .bbb /}\n" +
-        "{/template}\n";
+    String fileContent =
+        ""
+            + "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
+            + "\n"
+            + "/***/\n"
+            + "{template .aaa}\n"
+            + "  {call .bbb /} {$ij.boo} {call .ccc /} {$ij.foo}\n"
+            + "{/template}\n"
+            + "\n"
+            + "/***/\n"
+            + "{template .bbb}\n"
+            + "  {$ij.boo} {$ij.goo}\n"
+            + "{/template}\n"
+            + "\n"
+            + "/***/\n"
+            + "{template .ccc}\n"
+            + "  {$ij.boo} {$ij.moo + $ij.woo} {call .bbb /}\n"
+            + "{/template}\n";
 
     SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(fileContent).parse().fileSet();
     TemplateRegistry templateRegistry = new TemplateRegistry(soyTree, FAIL);
@@ -139,29 +143,30 @@ public final class FindIjParamsVisitorTest extends TestCase {
     assertThat(visitor.exec(aaa).ijParamToCalleesMultimap.keySet()).hasSize(5);
   }
 
-
+  @Test
   public void testSimpleRecursion() {
 
     // Tests direct recursion (cycle of 1) and indirect recursion with a cycle of 2.
 
     // aaa -> bbb, bbb -> {bbb, ccc}, ccc -> bbb.
-    String fileContent = "" +
-        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n" +
-        "\n" +
-        "/***/\n" +
-        "{template .aaa}\n" +
-        "  {call .bbb /} {$ij.boo} {$ij.foo}\n" +
-        "{/template}\n" +
-        "\n" +
-        "/***/\n" +
-        "{template .bbb}\n" +
-        "  {$ij.boo} {$ij.goo} {call .bbb /} {call .ccc /}\n" +
-        "{/template}\n" +
-        "\n" +
-        "/***/\n" +
-        "{template .ccc}\n" +
-        "  {$ij.boo} {call .bbb /} {$ij.moo}\n" +
-        "{/template}\n";
+    String fileContent =
+        ""
+            + "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
+            + "\n"
+            + "/***/\n"
+            + "{template .aaa}\n"
+            + "  {call .bbb /} {$ij.boo} {$ij.foo}\n"
+            + "{/template}\n"
+            + "\n"
+            + "/***/\n"
+            + "{template .bbb}\n"
+            + "  {$ij.boo} {$ij.goo} {call .bbb /} {call .ccc /}\n"
+            + "{/template}\n"
+            + "\n"
+            + "/***/\n"
+            + "{template .ccc}\n"
+            + "  {$ij.boo} {call .bbb /} {$ij.moo}\n"
+            + "{/template}\n";
 
     SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(fileContent).parse().fileSet();
     TemplateRegistry templateRegistry = new TemplateRegistry(soyTree, FAIL);
@@ -184,29 +189,30 @@ public final class FindIjParamsVisitorTest extends TestCase {
     assertThat(visitor.exec(aaa).ijParamToCalleesMultimap.keySet()).hasSize(4);
   }
 
-
+  @Test
   public void testLargerRecursiveCycle() {
 
     // Tests indirect recursion with a cycle of 3.
 
     // aaa -> bbb, bbb -> ccc, ccc -> aaa.
-    String fileContent = "" +
-        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n" +
-        "\n" +
-        "/***/\n" +
-        "{template .aaa}\n" +
-        "  {$ij.foo} {$ij.boo} {call .bbb /}\n" +
-        "{/template}\n" +
-        "\n" +
-        "/***/\n" +
-        "{template .bbb}\n" +
-        "  {$ij.goo} {call .ccc /} {$ij.boo}\n" +
-        "{/template}\n" +
-        "\n" +
-        "/***/\n" +
-        "{template .ccc}\n" +
-        "  {call .aaa /} {$ij.moo} {$ij.boo}\n" +
-        "{/template}\n";
+    String fileContent =
+        ""
+            + "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
+            + "\n"
+            + "/***/\n"
+            + "{template .aaa}\n"
+            + "  {$ij.foo} {$ij.boo} {call .bbb /}\n"
+            + "{/template}\n"
+            + "\n"
+            + "/***/\n"
+            + "{template .bbb}\n"
+            + "  {$ij.goo} {call .ccc /} {$ij.boo}\n"
+            + "{/template}\n"
+            + "\n"
+            + "/***/\n"
+            + "{template .ccc}\n"
+            + "  {call .aaa /} {$ij.moo} {$ij.boo}\n"
+            + "{/template}\n";
 
     SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(fileContent).parse().fileSet();
     TemplateRegistry templateRegistry = new TemplateRegistry(soyTree, FAIL);
@@ -229,32 +235,33 @@ public final class FindIjParamsVisitorTest extends TestCase {
     assertThat(visitor.exec(aaa).ijParamToCalleesMultimap.keySet()).hasSize(4);
   }
 
-
+  @Test
   public void testTwoPathsToSameRecursiveCycle() {
 
     // aaa -> {bbb, ccc}, bbb -> ddd, ccc -> ddd, ddd -> bbb.
-    String fileContent = "" +
-        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n" +
-        "\n" +
-        "/***/\n" +
-        "{template .aaa}\n" +
-        "  {$ij.boo} {$ij.foo} {call .bbb /} {call .ccc /}\n" +
-        "{/template}\n" +
-        "\n" +
-        "/***/\n" +
-        "{template .bbb}\n" +
-        "  {$ij.boo} {$ij.goo} {call .ddd /}\n" +
-        "{/template}\n" +
-        "\n" +
-        "/***/\n" +
-        "{template .ccc}\n" +
-        "  {$ij.boo} {$ij.moo} {call .ddd /}\n" +
-        "{/template}\n" +
-        "\n" +
-        "/***/\n" +
-        "{template .ddd}\n" +
-        "  {$ij.boo} {$ij.too} {call .bbb /}\n" +
-        "{/template}\n";
+    String fileContent =
+        ""
+            + "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
+            + "\n"
+            + "/***/\n"
+            + "{template .aaa}\n"
+            + "  {$ij.boo} {$ij.foo} {call .bbb /} {call .ccc /}\n"
+            + "{/template}\n"
+            + "\n"
+            + "/***/\n"
+            + "{template .bbb}\n"
+            + "  {$ij.boo} {$ij.goo} {call .ddd /}\n"
+            + "{/template}\n"
+            + "\n"
+            + "/***/\n"
+            + "{template .ccc}\n"
+            + "  {$ij.boo} {$ij.moo} {call .ddd /}\n"
+            + "{/template}\n"
+            + "\n"
+            + "/***/\n"
+            + "{template .ddd}\n"
+            + "  {$ij.boo} {$ij.too} {call .bbb /}\n"
+            + "{/template}\n";
 
     SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(fileContent).parse().fileSet();
     TemplateRegistry templateRegistry = new TemplateRegistry(soyTree, FAIL);
@@ -278,27 +285,28 @@ public final class FindIjParamsVisitorTest extends TestCase {
     assertThat(visitor.exec(aaa).ijParamToCalleesMultimap.keySet()).hasSize(5);
   }
 
-
+  @Test
   public void testSmallerRecursiveCycleInLargerRecursiveCycle() {
 
     // aaa -> {bbb, ccc}, bbb -> aaa, ccc -> bbb.
-    String fileContent = "" +
-        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n" +
-        "\n" +
-        "/***/\n" +
-        "{template .aaa}\n" +
-        "  {$ij.foo} {$ij.boo} {call .bbb /} {call .ccc /}\n" +
-        "{/template}\n" +
-        "\n" +
-        "/***/\n" +
-        "{template .bbb}\n" +
-        "  {$ij.goo} {$ij.boo} {call .aaa /}\n" +
-        "{/template}\n" +
-        "\n" +
-        "/***/\n" +
-        "{template .ccc}\n" +
-        "  {$ij.moo} {$ij.boo} {call .bbb /}\n" +
-        "{/template}\n";
+    String fileContent =
+        ""
+            + "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
+            + "\n"
+            + "/***/\n"
+            + "{template .aaa}\n"
+            + "  {$ij.foo} {$ij.boo} {call .bbb /} {call .ccc /}\n"
+            + "{/template}\n"
+            + "\n"
+            + "/***/\n"
+            + "{template .bbb}\n"
+            + "  {$ij.goo} {$ij.boo} {call .aaa /}\n"
+            + "{/template}\n"
+            + "\n"
+            + "/***/\n"
+            + "{template .ccc}\n"
+            + "  {$ij.moo} {$ij.boo} {call .bbb /}\n"
+            + "{/template}\n";
 
     SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(fileContent).parse().fileSet();
     TemplateRegistry templateRegistry = new TemplateRegistry(soyTree, FAIL);
@@ -319,33 +327,33 @@ public final class FindIjParamsVisitorTest extends TestCase {
     assertThat(visitor.exec(aaa).ijParamToCalleesMultimap.keySet()).hasSize(4);
   }
 
-
+  @Test
   public void testExecForAllTemplates() {
 
     // aaa -> {bbb, ccc}, bbb -> ddd.
-    String fileContent = "" +
-        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n" +
-        "\n" +
-        "/***/\n" +
-        "{template .bbb}\n" +
-        "  {$ij.boo} {$ij.goo} {call .ddd /}\n" +
-        "{/template}\n" +
-        "\n" +
-        "/***/\n" +
-        "{template .aaa}\n" +
-        "  {call .bbb /} {$ij.boo} {call .ccc /} {$ij.foo}\n" +
-        "{/template}\n" +
-        "\n" +
-        "/***/\n" +
-        "{template .ccc}\n" +
-        "  {$ij.boo} {$ij.moo + $ij.woo}\n" +
-        "{/template}\n" +
-        "\n" +
-        "/***/\n" +
-        "{template .ddd}\n" +
-        "  {$ij.boo} {$ij.moo} {round($ij.zoo)}\n" +
-        "{/template}\n";
-
+    String fileContent =
+        ""
+            + "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
+            + "\n"
+            + "/***/\n"
+            + "{template .bbb}\n"
+            + "  {$ij.boo} {$ij.goo} {call .ddd /}\n"
+            + "{/template}\n"
+            + "\n"
+            + "/***/\n"
+            + "{template .aaa}\n"
+            + "  {call .bbb /} {$ij.boo} {call .ccc /} {$ij.foo}\n"
+            + "{/template}\n"
+            + "\n"
+            + "/***/\n"
+            + "{template .ccc}\n"
+            + "  {$ij.boo} {$ij.moo + $ij.woo}\n"
+            + "{/template}\n"
+            + "\n"
+            + "/***/\n"
+            + "{template .ddd}\n"
+            + "  {$ij.boo} {$ij.moo} {round($ij.zoo)}\n"
+            + "{/template}\n";
 
     SoyFileSetNode soyTree = SoyFileSetParserBuilder.forFileContents(fileContent).parse().fileSet();
     TemplateRegistry templateRegistry = new TemplateRegistry(soyTree, FAIL);
@@ -364,5 +372,4 @@ public final class FindIjParamsVisitorTest extends TestCase {
     assertThat(templateToIjParamsInfoMap.get(aaa).ijParamToCalleesMultimap).hasSize(10);
     assertThat(templateToIjParamsInfoMap.get(aaa).ijParamToCalleesMultimap.keySet()).hasSize(6);
   }
-
 }

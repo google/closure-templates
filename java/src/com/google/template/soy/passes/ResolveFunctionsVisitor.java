@@ -26,8 +26,8 @@ import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.restricted.SoyFunction;
 
 /**
- * Decorates {@link FunctionNode}s with corresponding {@link SoyFunction}s,
- * so that later passes can simply read the functions off the AST.
+ * Decorates {@link FunctionNode}s with corresponding {@link SoyFunction}s, so that later passes can
+ * simply read the functions off the AST.
  */
 @VisibleForTesting
 public final class ResolveFunctionsVisitor extends AbstractExprNodeVisitor<Void> {

@@ -17,7 +17,6 @@
 package com.google.template.soy.i18ndirectives;
 
 import com.ibm.icu.util.ULocale;
-
 import java.util.Locale;
 
 /**
@@ -26,10 +25,8 @@ import java.util.Locale;
  */
 class I18nUtils {
 
-
   // Private constructor to prevent instantiation.
-  private I18nUtils() { }
-
+  private I18nUtils() {}
 
   /**
    * Given a string representing a Locale, returns the Locale object for that string.
@@ -37,17 +34,19 @@ class I18nUtils {
    * @return A Locale object built from the string provided
    */
   public static Locale parseLocale(String localeString) {
-    if (localeString == null) { return Locale.US; }
+    if (localeString == null) {
+      return Locale.US;
+    }
     String[] groups = localeString.split("[-_]");
     switch (groups.length) {
-       case 1:
-         return new Locale(groups[0]);
-       case 2:
-         return new Locale(groups[0], groups[1].toUpperCase());
-       case 3:
-         return new Locale(groups[0], groups[1].toUpperCase(), groups[2]);
-       default:
-         throw new IllegalArgumentException("Malformed localeString: " + localeString);
+      case 1:
+        return new Locale(groups[0]);
+      case 2:
+        return new Locale(groups[0], groups[1].toUpperCase());
+      case 3:
+        return new Locale(groups[0], groups[1].toUpperCase(), groups[2]);
+      default:
+        throw new IllegalArgumentException("Malformed localeString: " + localeString);
     }
   }
 

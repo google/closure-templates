@@ -14,37 +14,46 @@
  * limitations under the License.
  */
 
-
 package com.google.template.soy.jbcsrc.runtime;
 
 import com.google.template.soy.data.SoyAbstractValue;
-
 import java.io.IOException;
 
 /**
  * A simple Tombstone SoyValue for state transitions in our SoyValueProvider subtypes.
- * 
+ *
  * <p>This should never be exposed to users or end up being accessed via a template.
  */
 final class TombstoneValue extends SoyAbstractValue {
   static final TombstoneValue INSTANCE = new TombstoneValue();
 
-  @Override public void render(Appendable appendable) throws IOException {
-    throw new UnsupportedOperationException();
-  }
-  @Override public boolean equals(Object other) {
+  @Override
+  public void render(Appendable appendable) throws IOException {
     throw new UnsupportedOperationException();
   }
 
-  @Override public String coerceToString() {
+  @Override
+  public boolean equals(Object other) {
     throw new UnsupportedOperationException();
   }
-  
-  @Override public boolean coerceToBoolean() {
+
+  @Override
+  public int hashCode() {
     throw new UnsupportedOperationException();
   }
-  
-  @Override public String toString() {
+
+  @Override
+  public String coerceToString() {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public boolean coerceToBoolean() {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public String toString() {
     return "TOMBSTONE";
   }
 

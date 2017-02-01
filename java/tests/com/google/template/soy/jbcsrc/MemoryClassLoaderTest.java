@@ -19,48 +19,54 @@ package com.google.template.soy.jbcsrc;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.jbcsrc.SoyExpression.FALSE;
 import static com.google.template.soy.jbcsrc.SoyExpression.TRUE;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.ByteStreams;
 import com.google.common.testing.GcFinalization;
 import com.google.template.soy.jbcsrc.ExpressionTester.BooleanInvoker;
-
-import junit.framework.TestCase;
-
+import java.io.IOException;
+import java.lang.ref.WeakReference;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
 
-import java.io.IOException;
-import java.lang.ref.WeakReference;
+/** Tests for {@link MemoryClassLoader} */
+@RunWith(JUnit4.class)
+public class MemoryClassLoaderTest {
 
-/**
- * Tests for {@link MemoryClassLoader}
- */
-public class MemoryClassLoaderTest extends TestCase {
-
-  // Our memory classloaders should be garbage collectable when all references to their types 
+  // Our memory classloaders should be garbage collectable when all references to their types
   // disapear
+  @Test
   public void testCollectable() {
     BooleanInvoker invoker = ExpressionTester.createInvoker(BooleanInvoker.class, FALSE);
-    assertEquals(false, invoker.invoke());  // sanity, the invoker works
+    assertFalse(invoker.invoke()); // sanity, the invoker works
     MemoryClassLoader loader = (MemoryClassLoader) invoker.getClass().getClassLoader();
     WeakReference<MemoryClassLoader> loaderRef = new WeakReference<MemoryClassLoader>(loader);
-    invoker = null;  // unpin
+    invoker = null; // unpin
     loader = null;
     GcFinalization.awaitClear(loaderRef);
   }
 
+  @Test
   public void testAsResource() throws IOException {
     BooleanInvoker invoker = ExpressionTester.createInvoker(BooleanInvoker.class, FALSE);
-    byte[] classBytes = ByteStreams.toByteArray(
-        invoker.getClass().getClassLoader().getResourceAsStream(
-            invoker.getClass().getName().replace('.', '/') + ".class"));
+    byte[] classBytes =
+        ByteStreams.toByteArray(
+            invoker
+                .getClass()
+                .getClassLoader()
+                .getResourceAsStream(invoker.getClass().getName().replace('.', '/') + ".class"));
     ClassNode node = new ClassNode();
     new ClassReader(classBytes).accept(node, 0);
     assertEquals(Type.getInternalName(invoker.getClass()), node.name);
   }
 
+  @Test
   public void testDelegation() throws Exception {
     // We want to make sure that for generated types, our classloader doesn't delegate to its parent
     // loader
@@ -75,11 +81,19 @@ public class MemoryClassLoaderTest extends TestCase {
         new MemoryClassLoader(parentLoader, ImmutableList.of(childClass));
 
     BooleanInvoker fromParent =
-        parentLoader.loadClass(type.className()).asSubclass(BooleanInvoker.class).newInstance();
+        parentLoader
+            .loadClass(type.className())
+            .asSubclass(BooleanInvoker.class)
+            .getConstructor()
+            .newInstance();
     assertThat(fromParent.invoke()).isFalse();
 
     BooleanInvoker fromChild =
-        childLoader.loadClass(type.className()).asSubclass(BooleanInvoker.class).newInstance();
+        childLoader
+            .loadClass(type.className())
+            .asSubclass(BooleanInvoker.class)
+            .getConstructor()
+            .newInstance();
     assertThat(fromChild.invoke()).isTrue();
 
     assertThat(fromChild.getClass()).isNotEqualTo(fromParent.getClass());

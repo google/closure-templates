@@ -20,19 +20,17 @@ import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.Multibinder;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 
-
 /**
  * Guice module for i18n directives.
  *
  */
 public class I18nDirectivesModule extends AbstractModule {
 
-
-  @Override public void configure() {
+  @Override
+  public void configure() {
     Multibinder<SoyPrintDirective> soyDirectivesSetBinder =
         Multibinder.newSetBinder(binder(), SoyPrintDirective.class);
 
     soyDirectivesSetBinder.addBinding().to(FormatNumDirective.class);
   }
-
 }

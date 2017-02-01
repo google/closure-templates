@@ -18,7 +18,5 @@ package com.google.template.soy.data.restricted;
 
 import com.google.template.soy.data.SoyValue;
 
-/**
- * A common marker super type for strings.  Useful in the {@code jbcsrc} backend.
- */
+/** A common marker super type for strings. Useful in the {@code jbcsrc} backend. */
 public interface SoyString extends SoyValue {}

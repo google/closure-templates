@@ -21,11 +21,12 @@ import com.google.inject.AbstractModule;
 /**
  * Guice module for optimization passes.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public class OptiModule extends AbstractModule {
-  @Override protected void configure() {
+  @Override
+  protected void configure() {
     // Bindings for when explicit dependencies are required.
     bind(PreevalVisitorFactory.class);
     bind(PrerenderVisitorFactory.class);

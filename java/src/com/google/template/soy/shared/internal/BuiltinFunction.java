@@ -20,28 +20,25 @@ import com.google.common.base.CaseFormat;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.shared.restricted.SoyFunction;
-
 import java.util.Map;
 import java.util.Set;
-
 
 /**
  * Enum of built-in functions supported in Soy expressions.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public enum BuiltinFunction implements SoyFunction {
-
   IS_FIRST,
   IS_LAST,
   INDEX,
   QUOTE_KEYS_IF_JS,
   CHECK_NOT_NULL;
 
-
   /** Map of NonpluginFunctions by function name. */
   private static final Map<String, BuiltinFunction> NONPLUGIN_FUNCTIONS_BY_NAME;
+
   static {
     ImmutableMap.Builder<String, BuiltinFunction> mapBuilder = ImmutableMap.builder();
     for (BuiltinFunction nonpluginFn : values()) {
@@ -50,15 +47,14 @@ public enum BuiltinFunction implements SoyFunction {
     NONPLUGIN_FUNCTIONS_BY_NAME = mapBuilder.build();
   }
 
-
   /**
    * Returns the NonpluginFunction for the given function name, or null if not found.
+   *
    * @param functionName The function name to retrieve.
    */
   public static BuiltinFunction forFunctionName(String functionName) {
     return NONPLUGIN_FUNCTIONS_BY_NAME.get(functionName);
   }
-
 
   /** The function name. */
   private final String functionName;

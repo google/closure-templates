@@ -16,17 +16,15 @@
 
 package com.google.template.soy.exprtree;
 
-
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.shared.restricted.SoyFunction;
-
 import javax.annotation.Nullable;
 
 /**
  * A node representing a function (with args as children).
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public final class FunctionNode extends AbstractParentExprNode {
@@ -45,9 +43,9 @@ public final class FunctionNode extends AbstractParentExprNode {
     this.functionName = functionName;
   }
 
-
   /**
    * Copy constructor.
+   *
    * @param orig The node to copy.
    */
   private FunctionNode(FunctionNode orig, CopyState copyState) {
@@ -56,18 +54,18 @@ public final class FunctionNode extends AbstractParentExprNode {
     this.soyFunction = orig.soyFunction;
   }
 
-
-  @Override public Kind getKind() {
+  @Override
+  public Kind getKind() {
     return Kind.FUNCTION_NODE;
   }
-
 
   /** Returns the function name. */
   public String getFunctionName() {
     return functionName;
   }
 
-  @Nullable public SoyFunction getSoyFunction() {
+  @Nullable
+  public SoyFunction getSoyFunction() {
     return soyFunction;
   }
 
@@ -75,8 +73,8 @@ public final class FunctionNode extends AbstractParentExprNode {
     this.soyFunction = soyFunction;
   }
 
-
-  @Override public String toSourceString() {
+  @Override
+  public String toSourceString() {
 
     StringBuilder sourceSb = new StringBuilder();
     sourceSb.append(functionName).append('(');
@@ -95,9 +93,8 @@ public final class FunctionNode extends AbstractParentExprNode {
     return sourceSb.toString();
   }
 
-
-  @Override public FunctionNode copy(CopyState copyState) {
+  @Override
+  public FunctionNode copy(CopyState copyState) {
     return new FunctionNode(this, copyState);
   }
-
 }

@@ -18,38 +18,36 @@ package com.google.template.soy.shared.restricted;
 
 import java.util.Set;
 
-
 /**
  * Superinterface for a Soy print directive.
  *
- * <p> Important: Implementing this interface by itself does nothing. Your directive implementation
+ * <p>Important: Implementing this interface by itself does nothing. Your directive implementation
  * class needs to implement some of all of this interface's subinterfaces.
  *
  */
 public interface SoyPrintDirective {
 
-
   /**
    * Gets the name of the Soy print directive.
+   *
    * @return The name of the Soy print directive.
    */
   public String getName();
 
-
   /**
    * Gets the set of valid args list sizes. For example, the set {0, 2} would indicate that this
    * directive can take 0 or 2 arguments (but not 1).
+   *
    * @return The set of valid args list sizes.
    */
   public Set<Integer> getValidArgsSizes();
 
-
   /**
    * Returns whether the appearance of this directive on a 'print' tag should cancel autoescape for
    * that 'print' tag.
+   *
    * @return Whether the appearance of this directive on a 'print' tag should cancel autoescape for
-   * that 'print' tag.
+   *     that 'print' tag.
    */
   public boolean shouldCancelAutoescape();
-
 }

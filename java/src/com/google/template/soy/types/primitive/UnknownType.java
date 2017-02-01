@@ -20,42 +20,38 @@ import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.types.SoyType;
 
 /**
- * The "unknown" type is used to indicate that the type was unspecified or could not
- * be inferred. Variables with unknown type are considered to be dynamically-typed,
- * and all operations are allowed (but may fail at runtime).
+ * The "unknown" type is used to indicate that the type was unspecified or could not be inferred.
+ * Variables with unknown type are considered to be dynamically-typed, and all operations are
+ * allowed (but may fail at runtime).
  */
 public final class UnknownType extends PrimitiveType {
 
-
   private static final UnknownType INSTANCE = new UnknownType();
-
 
   // Not constructible - use getInstance().
   private UnknownType() {}
 
-
-  @Override public Kind getKind() {
+  @Override
+  public Kind getKind() {
     return Kind.UNKNOWN;
   }
 
-
-  @Override public boolean isAssignableFrom(SoyType srcType) {
+  @Override
+  public boolean isAssignableFrom(SoyType srcType) {
     return true;
   }
 
-
-  @Override public boolean isInstance(SoyValue value) {
+  @Override
+  public boolean isInstance(SoyValue value) {
     return true;
   }
 
-  @Override public String toString() {
+  @Override
+  public String toString() {
     return "?";
   }
 
-
-  /**
-   * Return the single instance of this type.
-   */
+  /** Return the single instance of this type. */
   public static UnknownType getInstance() {
     return INSTANCE;
   }

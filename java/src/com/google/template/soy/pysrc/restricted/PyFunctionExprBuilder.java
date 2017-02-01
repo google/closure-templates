@@ -20,49 +20,43 @@ import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
 import com.google.common.collect.Iterables;
-
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
+ * A class for building code for a function call expression in Python. It builds to a PyExpr so it
+ * could be used function call code recursively.
  *
- * A class for building code for a function call expression in Python.
- * It builds to a PyExpr so it could be used function call code recursively.
- *
- * <p> Sample Output:
- * {@code some_func_call(1, "str", foo='bar', foo=nested_call(42))}
- *
+ * <p>Sample Output: {@code some_func_call(1, "str", foo='bar', foo=nested_call(42))}
  *
  */
 public final class PyFunctionExprBuilder {
   private static final Function<Map.Entry<String, PyExpr>, String> KEYWORD_ARG_MAPPER =
       new Function<Map.Entry<String, PyExpr>, String>() {
-    @Override
-    public String apply(Map.Entry<String, PyExpr> entry) {
-      String key = entry.getKey();
-      PyExpr value = entry.getValue();
-      return key + "=" + value.getText();
-    }
-  };
+        @Override
+        public String apply(Map.Entry<String, PyExpr> entry) {
+          String key = entry.getKey();
+          PyExpr value = entry.getValue();
+          return key + "=" + value.getText();
+        }
+      };
 
   private static final Function<PyExpr, String> LIST_ARG_MAPPER =
       new Function<PyExpr, String>() {
-    @Override
-    public String apply(PyExpr arg) {
-      return arg.getText();
-    }
-  };
+        @Override
+        public String apply(PyExpr arg) {
+          return arg.getText();
+        }
+      };
 
   private final String funcName;
   private final Deque<PyExpr> argList;
   private final Map<String, PyExpr> kwargMap;
   private String unpackedKwargs = null;
 
-  /**
-   * @param funcName The name of the function.
-   */
+  /** @param funcName The name of the function. */
   public PyFunctionExprBuilder(String funcName) {
     this.funcName = funcName;
     this.argList = new ArrayDeque<>();
@@ -151,9 +145,7 @@ public final class PyFunctionExprBuilder {
     return this;
   }
 
-  /**
-   *  Returns a valid Python function call as a String.
-   */
+  /** Returns a valid Python function call as a String. */
   public String build() {
     StringBuilder sb = new StringBuilder(funcName + "(");
 
@@ -174,21 +166,20 @@ public final class PyFunctionExprBuilder {
     return sb.toString();
   }
 
-
- /*
-  * Use when the output function is unknown in Python runtime.
-  *
-  * @return A PyExpr represents the function code.
-  */
+  /**
+   * Use when the output function is unknown in Python runtime.
+   *
+   * @return A PyExpr represents the function code.
+   */
   public PyExpr asPyExpr() {
     return new PyExpr(build(), Integer.MAX_VALUE);
   }
 
- /*
-  * Use when the output function is known to be a String in Python runtime.
-  *
-  * @return A PyStringExpr represents the function code.
-  */
+  /**
+   * Use when the output function is known to be a String in Python runtime.
+   *
+   * @return A PyStringExpr represents the function code.
+   */
   public PyStringExpr asPyStringExpr() {
     return new PyStringExpr(build());
   }

@@ -25,14 +25,12 @@ import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.internal.i18n.SoyBidiUtils;
 import com.google.template.soy.jssrc.restricted.JsExpr;
-import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
+import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
-
 import java.util.List;
 import java.util.Set;
-
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
@@ -46,31 +44,30 @@ import javax.inject.Singleton;
  *
  */
 @Singleton
-class BidiMarkAfterFunction implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction {
-
+final class BidiMarkAfterFunction
+    implements SoyJavaFunction, SoyLibraryAssistedJsSrcFunction, SoyPySrcFunction {
 
   /** Provider for the current bidi global directionality. */
   private final Provider<BidiGlobalDir> bidiGlobalDirProvider;
 
-
-  /**
-   * @param bidiGlobalDirProvider Provider for the current bidi global directionality.
-   */
+  /** @param bidiGlobalDirProvider Provider for the current bidi global directionality. */
   @Inject
   BidiMarkAfterFunction(Provider<BidiGlobalDir> bidiGlobalDirProvider) {
     this.bidiGlobalDirProvider = bidiGlobalDirProvider;
   }
 
-
-  @Override public String getName() {
+  @Override
+  public String getName() {
     return "bidiMarkAfter";
   }
 
-  @Override public Set<Integer> getValidArgsSizes() {
+  @Override
+  public Set<Integer> getValidArgsSizes() {
     return ImmutableSet.of(1, 2);
   }
 
-  @Override public SoyValue computeForJava(List<SoyValue> args) {
+  @Override
+  public SoyValue computeForJava(List<SoyValue> args) {
     SoyValue value = args.get(0);
     boolean isHtml = args.size() == 2 && args.get(1).booleanValue();
     Dir valueDir = null;
@@ -81,27 +78,47 @@ class BidiMarkAfterFunction implements SoyJavaFunction, SoyJsSrcFunction, SoyPyS
     }
 
     int bidiGlobalDir = bidiGlobalDirProvider.get().getStaticValue();
-    return StringData.forValue(SoyBidiUtils.getBidiFormatter(bidiGlobalDir).markAfterKnownDir(
-        valueDir, value.coerceToString(), isHtml));
+    return StringData.forValue(
+        SoyBidiUtils.getBidiFormatter(bidiGlobalDir)
+            .markAfterKnownDir(valueDir, value.coerceToString(), isHtml));
   }
 
-  @Override public JsExpr computeForJsSrc(List<JsExpr> args) {
+  @Override
+  public JsExpr computeForJsSrc(List<JsExpr> args) {
     JsExpr value = args.get(0);
     JsExpr isHtml = (args.size() == 2) ? args.get(1) : null;
 
     String callText =
-        "soy.$$bidiMarkAfter(" + bidiGlobalDirProvider.get().getCodeSnippet() + ", " +
-        value.getText() + (isHtml != null ? ", " + isHtml.getText() : "") + ")";
+        "soy.$$bidiMarkAfter("
+            + bidiGlobalDirProvider.get().getCodeSnippet()
+            + ", "
+            + value.getText()
+            + (isHtml != null ? ", " + isHtml.getText() : "")
+            + ")";
 
     return new JsExpr(callText, Integer.MAX_VALUE);
   }
 
-  @Override public PyExpr computeForPySrc(List<PyExpr> args) {
+  @Override
+  public ImmutableSet<String> getRequiredJsLibNames() {
+    return ImmutableSet.<String>builder()
+        .addAll(bidiGlobalDirProvider.get().getNamespace().asSet())
+        .add("soy")
+        .build();
+  }
+
+  @Override
+  public PyExpr computeForPySrc(List<PyExpr> args) {
     PyExpr value = args.get(0);
     PyExpr isHtml = (args.size() == 2) ? args.get(1) : null;
 
-    String callText = "bidi.mark_after(" + bidiGlobalDirProvider.get().getCodeSnippet() + ", " +
-        value.getText() + (isHtml != null ? ", " + isHtml.getText() : "") + ")";
+    String callText =
+        "bidi.mark_after("
+            + bidiGlobalDirProvider.get().getCodeSnippet()
+            + ", "
+            + value.getText()
+            + (isHtml != null ? ", " + isHtml.getText() : "")
+            + ")";
 
     return new PyExpr(callText, Integer.MAX_VALUE);
   }

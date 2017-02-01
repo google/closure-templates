@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumSet;
@@ -30,14 +29,10 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-/**
- * Contains lower-case names of innocuous HTML elements.
- */
+/** Contains lower-case names of innocuous HTML elements. */
 public final class TagWhitelist {
 
-  /**
-   * Additional tags which can be white-listed as safe.
-   */
+  /** Additional tags which can be white-listed as safe. */
   public static enum OptionalSafeTag {
     LI("li"),
     OL("ol"),
@@ -65,14 +60,16 @@ public final class TagWhitelist {
 
     public static final Function<String, OptionalSafeTag> FROM_TAG_NAME =
         new Function<String, OptionalSafeTag>() {
-          @Override public OptionalSafeTag apply(String tagName) {
+          @Override
+          public OptionalSafeTag apply(String tagName) {
             return fromTagName(tagName);
           }
         };
 
     public static final Function<OptionalSafeTag, String> TO_TAG_NAME =
         new Function<OptionalSafeTag, String>() {
-          @Override public String apply(OptionalSafeTag tag) {
+          @Override
+          public String apply(OptionalSafeTag tag) {
             return tag.getTagName();
           }
         };
@@ -106,29 +103,24 @@ public final class TagWhitelist {
     return safeTagNames.contains(tagName);
   }
 
-  private static final Pattern VALID_TAG_NAME = Pattern.compile(
-      "^[A-Za-z][A-Za-z0-9]*(?:-[A-Za-z][A-Za-z0-9]*)*\\z");
+  private static final Pattern VALID_TAG_NAME =
+      Pattern.compile("^[A-Za-z][A-Za-z0-9]*(?:-[A-Za-z][A-Za-z0-9]*)*\\z");
 
   // Any changes to this must be reviewed by ise-team@.
   /** A white-list of common formatting tags used by jslayout. */
-  public static final TagWhitelist FORMATTING = new TagWhitelist(
-    "b",
-    "br",
-    "em",
-    "i",
-    "s",
-    "sub",
-    "sup",
-    "u"
-    // Any changes to this must be reviewed by ise-team@.
-    );
+  public static final TagWhitelist FORMATTING =
+      new TagWhitelist(
+          "b", "br", "em", "i", "s", "sub", "sup", "u"
+          // Any changes to this must be reviewed by ise-team@.
+          );
 
-  public Set<String> asSet() { return safeTagNames; }
+  public Set<String> asSet() {
+    return safeTagNames;
+  }
 
   private static boolean requireLowerCaseTagNames(Iterable<String> strs) {
     for (String str : strs) {
-      assert str.equals(str.toLowerCase(Locale.ENGLISH))
-          && VALID_TAG_NAME.matcher(str).matches()
+      assert str.equals(str.toLowerCase(Locale.ENGLISH)) && VALID_TAG_NAME.matcher(str).matches()
           : str;
     }
     // We assert above instead of returning false so that the assertion error contains the

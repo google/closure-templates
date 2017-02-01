@@ -16,88 +16,89 @@
 
 package com.google.template.soy.msgs.restricted;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.template.soy.msgs.SoyMsgBundle;
-
-import junit.framework.TestCase;
-
 import java.util.List;
-
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for RenderOnlySoyMsgBundleImpl.
  *
  */
-public class RenderOnlySoyMsgBundleImplTest extends TestCase {
+@RunWith(JUnit4.class)
+public class RenderOnlySoyMsgBundleImplTest {
 
   public static final String LOCALE = "xx";
-
 
   private ImmutableList<SoyMsg> testMessages;
 
   private SoyMsgBundle bundle;
 
-
-  /**
-   * Creates a text-only message.
-   */
+  /** Creates a text-only message. */
   private SoyMsg createSimpleMsg(long id) {
-    return new SoyMsg(id, LOCALE, false,
-        ImmutableList.of(SoyMsgRawTextPart.of("Message #" + id)));
+    return new SoyMsg(id, LOCALE, false, ImmutableList.of(SoyMsgRawTextPart.of("Message #" + id)));
   }
 
-
-  /**
-   * Creates a message with two parts.
-   */
+  /** Creates a message with two parts. */
   private SoyMsg createMessageWithPlaceholder(long id) {
-    return new SoyMsg(id, LOCALE, false,
-        ImmutableList.of(
-            SoyMsgRawTextPart.of("Message "),
-            new SoyMsgPlaceholderPart("ph_" + id)));
+    return new SoyMsg(
+        id,
+        LOCALE,
+        false,
+        ImmutableList.of(SoyMsgRawTextPart.of("Message "), new SoyMsgPlaceholderPart("ph_" + id)));
   }
 
-
-  /**
-   * Creates a message that has a select.
-   */
+  /** Creates a message that has a select. */
   private SoyMsg createSelectMsg(long id) {
-    return new SoyMsg(id, LOCALE, true, ImmutableList.of(
-        new SoyMsgSelectPart("varname", ImmutableList.of(
-            SoyMsgPart.Case.create("male", ImmutableList.of(
-                SoyMsgRawTextPart.of("Male message " + id))),
-            SoyMsgPart.Case.create("female", ImmutableList.of(
-                SoyMsgRawTextPart.of("Female message " + id)))))));
+    return new SoyMsg(
+        id,
+        LOCALE,
+        true,
+        ImmutableList.of(
+            new SoyMsgSelectPart(
+                "varname",
+                ImmutableList.of(
+                    SoyMsgPart.Case.create(
+                        "male", ImmutableList.of(SoyMsgRawTextPart.of("Male message " + id))),
+                    SoyMsgPart.Case.create(
+                        "female",
+                        ImmutableList.of(SoyMsgRawTextPart.of("Female message " + id)))))));
   }
 
+  @Before
+  public void setUp() throws Exception {
 
-  @Override public void setUp() throws Exception {
-    super.setUp();
-
-    testMessages = ImmutableList.of(
-        createSimpleMsg(314),
-        createSimpleMsg(159),
-        createSimpleMsg(265),
-        createSimpleMsg(358),
-        createSimpleMsg(979),
-        createMessageWithPlaceholder(323),
-        createMessageWithPlaceholder(846),
-        createMessageWithPlaceholder(264),
-        createSelectMsg(832),
-        createSelectMsg(791),
-        createSelectMsg(6065559473112027469L));
+    testMessages =
+        ImmutableList.of(
+            createSimpleMsg(314),
+            createSimpleMsg(159),
+            createSimpleMsg(265),
+            createSimpleMsg(358),
+            createSimpleMsg(979),
+            createMessageWithPlaceholder(323),
+            createMessageWithPlaceholder(846),
+            createMessageWithPlaceholder(264),
+            createSelectMsg(832),
+            createSelectMsg(791),
+            createSelectMsg(6065559473112027469L));
     bundle = new RenderOnlySoyMsgBundleImpl(LOCALE, testMessages);
   }
 
-
+  @Test
   public void testBasic() {
     assertEquals(LOCALE, bundle.getLocaleString());
     assertEquals(testMessages.size(), bundle.getNumMsgs());
   }
 
-
+  @Test
   public void testGetMsg() {
     for (SoyMsg message : testMessages) {
       SoyMsg actual = bundle.getMsg(message.getId());
@@ -105,7 +106,7 @@ public class RenderOnlySoyMsgBundleImplTest extends TestCase {
     }
   }
 
-
+  @Test
   public void testIterator() {
     List<SoyMsg> actualMessages = Lists.newArrayList();
     long lastId = -1;
@@ -121,7 +122,7 @@ public class RenderOnlySoyMsgBundleImplTest extends TestCase {
     assertEquals(ImmutableSet.copyOf(testMessages), ImmutableSet.copyOf(actualMessages));
   }
 
-
+  @Test
   public void testCopy() {
     // Take advantage of the fact that SoyMsgBundle actually implements Iterable<SoyMsg>.
     SoyMsgBundle copy = new RenderOnlySoyMsgBundleImpl(LOCALE, bundle);

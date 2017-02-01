@@ -24,7 +24,6 @@ import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.coredirectives.EscapeHtmlDirective;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprparse.SoyParsingContext;
-import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.AutoescapeMode;
 import com.google.template.soy.soytree.PrintDirectiveNode;
@@ -46,15 +45,14 @@ import com.google.template.soy.soytree.TemplateNode;
  * modified. There is no return value.
  *
  */
-final class PerformDeprecatedNonContextualAutoescapeVisitor
-    extends AbstractSoyNodeVisitor<Void> {
+final class PerformDeprecatedNonContextualAutoescapeVisitor extends AbstractSoyNodeVisitor<Void> {
 
   /**
-   * Soy directives that cancel autoescaping (see
-   * {@link SoyPrintDirective#shouldCancelAutoescape()}).
+   * Soy directives that cancel autoescaping (see {@link
+   * SoyPrintDirective#shouldCancelAutoescape()}).
    */
   private final ImmutableSet<String> autoescapeCancellingDirectives;
-  private final ErrorReporter errorReporter;
+
 
   /** The node id generator for the parse tree. Retrieved from the root SoyFileSetNode. */
   private final IdGenerator nodeIdGen;
@@ -62,32 +60,27 @@ final class PerformDeprecatedNonContextualAutoescapeVisitor
   /** The autoescape mode of the current template. */
   private AutoescapeMode autoescapeMode;
 
-
-  /**
-   * @param autoescapeCancellingDirectives print directives that disable autoescape
-   */
+  /** @param autoescapeCancellingDirectives print directives that disable autoescape */
   public PerformDeprecatedNonContextualAutoescapeVisitor(
       ImmutableSet<String> autoescapeCancellingDirectives,
       ErrorReporter errorReporter,
       IdGenerator nodeIdGen) {
-    this.errorReporter = errorReporter;
     this.autoescapeCancellingDirectives = autoescapeCancellingDirectives;
     this.nodeIdGen = nodeIdGen;
   }
 
-
   // -----------------------------------------------------------------------------------------------
   // Implementations for specific nodes.
 
-
-  @Override protected void visitTemplateNode(TemplateNode node) {
+  @Override
+  protected void visitTemplateNode(TemplateNode node) {
     autoescapeMode = node.getAutoescapeMode();
     visitChildren(node);
     autoescapeMode = null;
   }
 
-
-  @Override protected void visitPrintNode(PrintNode node) {
+  @Override
+  protected void visitPrintNode(PrintNode node) {
 
     if (autoescapeMode != AutoescapeMode.NONCONTEXTUAL) {
       // We're using one of the more modern escape modes; do a sanity check and return.  Make sure
@@ -120,22 +113,21 @@ final class PerformDeprecatedNonContextualAutoescapeVisitor
     // motivation for fixing this is low because it would risk breaking old templates, which
     // ideally should migrate off of deprecated-noncontextual autoescape.
     if (autoescapeMode == AutoescapeMode.NONCONTEXTUAL && !shouldCancelAutoescape) {
-      PrintDirectiveNode newEscapeHtmlDirectiveNode = new PrintDirectiveNode.Builder(
-          nodeIdGen.genId(), EscapeHtmlDirective.NAME, "", SourceLocation.UNKNOWN)
-          .build(SoyParsingContext.exploding());  // Known valid
+      PrintDirectiveNode newEscapeHtmlDirectiveNode =
+          new PrintDirectiveNode.Builder(
+                  nodeIdGen.genId(), EscapeHtmlDirective.NAME, "", SourceLocation.UNKNOWN)
+              .build(SoyParsingContext.exploding()); // Known valid
       node.addChild(0, newEscapeHtmlDirectiveNode);
     }
   }
 
-
   // -----------------------------------------------------------------------------------------------
   // Fallback implementation.
 
-
-  @Override protected void visitSoyNode(SoyNode node) {
+  @Override
+  protected void visitSoyNode(SoyNode node) {
     if (node instanceof ParentSoyNode<?>) {
       visitChildren((ParentSoyNode<?>) node);
     }
   }
-
 }

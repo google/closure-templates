@@ -32,35 +32,34 @@ import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
-
-import junit.framework.TestCase;
-
 import java.util.List;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for {@link PerformDeprecatedNonContextualAutoescapeVisitor}.
  *
  */
-public final class PerformDeprecatedNonContextualAutoescapeVisitorTest extends TestCase {
+@RunWith(JUnit4.class)
+public final class PerformDeprecatedNonContextualAutoescapeVisitorTest {
 
   private static final ImmutableSet<String> AUTOESCAPE_CANCELLING_DIRECTIVE_NAMES =
-      ImmutableSet.of(
-          EscapeHtmlDirective.NAME,
-          NoAutoescapeDirective.NAME,
-          IdDirective.NAME);
+      ImmutableSet.of(EscapeHtmlDirective.NAME, NoAutoescapeDirective.NAME, IdDirective.NAME);
 
   private static final ErrorReporter FAIL = ExplodingErrorReporter.get();
 
-  private void performAutoescape(SoyFileSetNode soyTree) {
+  private static void performAutoescape(SoyFileSetNode soyTree) {
     new PerformDeprecatedNonContextualAutoescapeVisitor(
-        AUTOESCAPE_CANCELLING_DIRECTIVE_NAMES, FAIL, soyTree.getNodeIdGenerator()).exec(soyTree);
+            AUTOESCAPE_CANCELLING_DIRECTIVE_NAMES, FAIL, soyTree.getNodeIdGenerator())
+        .exec(soyTree);
   }
 
+  @Test
   public void testAutoescapeOnSimple() throws Exception {
 
     String testPrintTags = "{'<br>'}";
-    Pair<SoyFileSetNode, List<PrintNode>> helperRetVal =
-        parseTestPrintTagsHelper(testPrintTags);
+    Pair<SoyFileSetNode, List<PrintNode>> helperRetVal = parseTestPrintTagsHelper(testPrintTags);
     SoyFileSetNode soyTree = helperRetVal.first;
     List<PrintNode> printNodes = helperRetVal.second;
 
@@ -74,12 +73,11 @@ public final class PerformDeprecatedNonContextualAutoescapeVisitorTest extends T
     assertThat(printNodes.get(0).getChild(0).getName()).isEqualTo(EscapeHtmlDirective.NAME);
   }
 
-
+  @Test
   public void testAutoescapeOnWithOtherDirectives() throws Exception {
 
     String testPrintTags = "{'<br>' |boo:5}";
-    Pair<SoyFileSetNode, List<PrintNode>> helperRetVal =
-        parseTestPrintTagsHelper(testPrintTags);
+    Pair<SoyFileSetNode, List<PrintNode>> helperRetVal = parseTestPrintTagsHelper(testPrintTags);
     SoyFileSetNode soyTree = helperRetVal.first;
     List<PrintNode> printNodes = helperRetVal.second;
 
@@ -95,12 +93,11 @@ public final class PerformDeprecatedNonContextualAutoescapeVisitorTest extends T
     assertThat(printNodes.get(0).getChild(1).getName()).isEqualTo("|boo");
   }
 
-
+  @Test
   public void testAutoescapeOnWithNoAutoescape() throws Exception {
 
     String testPrintTags = "{'<br>' |noAutoescape}{'<br>' |noAutoescape |noAutoescape}";
-    Pair<SoyFileSetNode, List<PrintNode>> helperRetVal =
-        parseTestPrintTagsHelper(testPrintTags);
+    Pair<SoyFileSetNode, List<PrintNode>> helperRetVal = parseTestPrintTagsHelper(testPrintTags);
     SoyFileSetNode soyTree = helperRetVal.first;
     List<PrintNode> printNodes = helperRetVal.second;
 
@@ -121,13 +118,12 @@ public final class PerformDeprecatedNonContextualAutoescapeVisitorTest extends T
     assertThat(printNodes.get(1).getChild(1).getName()).isEqualTo(NoAutoescapeDirective.NAME);
   }
 
-
+  @Test
   public void testAutoescapeOnWithEscapeHtml() throws Exception {
 
     String testPrintTags =
         "{'<br>' |escapeHtml}{'<br>' |noAutoescape |escapeHtml}{'<br>' |escapeHtml |noAutoescape}";
-    Pair<SoyFileSetNode, List<PrintNode>> helperRetVal =
-        parseTestPrintTagsHelper(testPrintTags);
+    Pair<SoyFileSetNode, List<PrintNode>> helperRetVal = parseTestPrintTagsHelper(testPrintTags);
     SoyFileSetNode soyTree = helperRetVal.first;
     List<PrintNode> printNodes = helperRetVal.second;
 
@@ -154,11 +150,11 @@ public final class PerformDeprecatedNonContextualAutoescapeVisitorTest extends T
     assertThat(printNodes.get(2).getChild(1).getName()).isEqualTo(NoAutoescapeDirective.NAME);
   }
 
-
   /**
    * Helper that puts the given test 'print' tags into a test file, parses the test file, and
-   * returns both the parse tree and a list of references to the PrintNodes in the parse tree
-   * (these PrintNodes correspond to the test 'print' tags).
+   * returns both the parse tree and a list of references to the PrintNodes in the parse tree (these
+   * PrintNodes correspond to the test 'print' tags).
+   *
    * @param testPrintTags The test 'print' tags to be parsed.
    * @return A Pair with the first item being the full parse tree of the generated test file, and
    *     the second item being a list of references to the PrintNodes in the parse tree.
@@ -168,12 +164,13 @@ public final class PerformDeprecatedNonContextualAutoescapeVisitorTest extends T
       String testPrintTags) throws SoySyntaxException {
 
     String testFileContent =
-        "{namespace boo autoescape=\"deprecated-noncontextual\"}\n" +
-        "\n" +
-        "/** Foo template. */\n" +
-        "{template .foo}\n" +
-        testPrintTags + "\n" +
-        "{/template}\n";
+        "{namespace boo autoescape=\"deprecated-noncontextual\"}\n"
+            + "\n"
+            + "/** Foo template. */\n"
+            + "{template .foo}\n"
+            + testPrintTags
+            + "\n"
+            + "{/template}\n";
 
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(testFileContent).parse().fileSet();
@@ -186,5 +183,4 @@ public final class PerformDeprecatedNonContextualAutoescapeVisitorTest extends T
 
     return Pair.of(soyTree, printNodes);
   }
-
 }

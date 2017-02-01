@@ -21,29 +21,26 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
 import com.google.template.soy.base.internal.BaseUtils;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.regex.Pattern;
-
 import javax.inject.Inject;
 
 /**
  * Handler for writing {@code SoyMsgBundle}s to file format and for creating {@code SoyMsgBundle}s
  * from files or resources.
  *
- * <p> Uses a {@code SoyMsgPlugin} to do the actual generation of the output data and the actual
+ * <p>Uses a {@code SoyMsgPlugin} to do the actual generation of the output data and the actual
  * parsing of the input data. The {@code SoyMsgPlugin} implements the specific message file format.
  *
  */
 public class SoyMsgBundleHandler {
 
-
   /**
    * Options for generating an output messages file.
    *
-   * This same class is used for both extracted messages files (source messages to be translated)
+   * <p>This same class is used for both extracted messages files (source messages to be translated)
    * and translated messages files. Not all options will apply to both types of output files, and
    * not all options will apply to all message plugins.
    */
@@ -66,48 +63,42 @@ public class SoyMsgBundleHandler {
 
     /**
      * Sets the source locale string for an output messages file.
+     *
      * @param sourceLocaleString The source locale string.
      */
     public void setSourceLocaleString(String sourceLocaleString) {
       this.sourceLocaleString = sourceLocaleString;
     }
 
-    /**
-     * Returns the source locale string.
-     */
+    /** Returns the source locale string. */
     public String getSourceLocaleString() {
       return sourceLocaleString;
     }
 
     /**
      * Sets the target locale string for an output messages file.
+     *
      * @param targetLocaleString The target locale string.
      */
     public void setTargetLocaleString(String targetLocaleString) {
       this.targetLocaleString = targetLocaleString;
     }
 
-    /**
-     * Returns the target locale string.
-     */
+    /** Returns the target locale string. */
     public String getTargetLocaleString() {
       return targetLocaleString;
     }
   }
 
-
   /** For backwards-compatibility checking of file names that start with "en". */
   private static final Pattern FIRST_WORD_IS_EN_PATTERN = Pattern.compile("^en[^A-Za-z].*");
 
-
   private final SoyMsgPlugin msgPlugin;
-
 
   @Inject
   public SoyMsgBundleHandler(SoyMsgPlugin msgPlugin) {
     this.msgPlugin = msgPlugin;
   }
-
 
   /**
    * Reads a translated messages file and creates a SoyMsgBundle.
@@ -136,7 +127,6 @@ public class SoyMsgBundleHandler {
     }
   }
 
-
   /**
    * Reads a translated messages resource and creates a SoyMsgBundle.
    *
@@ -157,16 +147,14 @@ public class SoyMsgBundleHandler {
     }
   }
 
-
   // -----------------------------------------------------------------------------------------------
   // Soy internal methods.
-
 
   /**
    * Generates an extracted messages file (source messages to be translated) from a given message
    * bundle, and writes it to file.
    *
-   * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+   * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
    *
    * @param msgBundle The message bundle to write to file.
    * @param options The options for generating the output extracted messages file (depending on the
@@ -184,12 +172,11 @@ public class SoyMsgBundleHandler {
     Files.write(cs, outputFile, UTF_8);
   }
 
-
   /**
    * Generates an translated messages file (source messages to be translated) from a given message
    * bundle, and writes it to file.
    *
-   * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+   * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
    *
    * @param msgBundle The message bundle to write to file.
    * @param options The options for generating the output translated messages file (depending on the
@@ -202,7 +189,7 @@ public class SoyMsgBundleHandler {
       SoyMsgBundle msgBundle, OutputFileOptions options, File outputFile)
       throws IOException, SoyMsgException {
 
-    if (! (msgPlugin instanceof SoyBidirectionalMsgPlugin)) {
+    if (!(msgPlugin instanceof SoyBidirectionalMsgPlugin)) {
       throw new SoyMsgException(
           "writeToTranslatedMsgsFile() only works if using a SoyBidirectionalMsgPlugin.");
     }
@@ -212,5 +199,4 @@ public class SoyMsgBundleHandler {
     BaseUtils.ensureDirsExistInPath(outputFile.getPath());
     Files.write(cs, outputFile, UTF_8);
   }
-
 }

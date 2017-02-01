@@ -18,22 +18,17 @@ package com.google.template.soy.data;
 
 import javax.annotation.Nonnull;
 
-
 /**
  * An operator that takes sanitized content of a particular kind and produces sanitized content of
- * the same kind.
- * Directives may be marked as producers of sanitized content, in which case, the autoescaper will
- * put any inferred directives before the escaping directive.
- * This allows directives that take sanitized content of a particular
- * {@link SanitizedContent.ContentKind kind} and wrap it to avoid over-escaping.
+ * the same kind. Directives may be marked as producers of sanitized content, in which case, the
+ * autoescaper will put any inferred directives before the escaping directive. This allows
+ * directives that take sanitized content of a particular {@link SanitizedContent.ContentKind kind}
+ * and wrap it to avoid over-escaping.
  *
  */
 public interface SanitizedContentOperator {
 
-
-  /**
-   * The kind of content consumed and produced.
-   */
-  @Nonnull SanitizedContent.ContentKind getContentKind();
-
+  /** The kind of content consumed and produced. */
+  @Nonnull
+  SanitizedContent.ContentKind getContentKind();
 }

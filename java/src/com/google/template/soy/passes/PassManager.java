@@ -30,30 +30,19 @@ import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.AliasDeclaration;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
-import com.google.template.soy.soytree.SoytreeUtils;
+import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.types.SoyTypeRegistry;
+import java.util.Objects;
 
 /**
  * Configures all the parsing passes.
  *
  * <p>The parsing passes are a collection of operations that mutate/rewrite parts of the parse tree
- * in trivial/obvious ways.  These passes are logically part of parsing the literal text of the soy
+ * in trivial/obvious ways. These passes are logically part of parsing the literal text of the soy
  * file and each one could theoretically be done as part of the parser, but for maintainability it
- * is easier to pull them out into separate passes.  It is expected that each of these passes will
+ * is easier to pull them out into separate passes. It is expected that each of these passes will
  * mutate the AST in critical ways.
- *
- * <p>The default initial parsing passes are:
- * <ul>
- *   <li>{@link RewriteGenderMsgsVisitor}
- *   <li>{@link RewriteRemaindersVisitor}
- *   <li>{@link SetFullCalleeNamesVisitor}
- *   <li>{@link ResolveExpressionTypesVisitor}
- *   <li>{@link ResolveNamesVisitor}
- *   <li>{@link ResolvePackageRelativeCssNamesVisitor}
- *   <li>{@link VerifyPhnameAttrOnlyOnPlaceholdersVisitor}
- *   <li>{@link SubstituteGlobalsVisitorPass}
- * </ul>
  */
 public final class PassManager {
   private final ImmutableList<CompilerFilePass> singleFilePasses;
@@ -64,7 +53,6 @@ public final class PassManager {
   private final SyntaxVersion declaredSyntaxVersion;
   private final SoyGeneralOptions options;
   private final boolean allowUnknownGlobals;
-  private final boolean allowUnknownFunctions;
 
   private PassManager(Builder builder) {
     this.registry = checkNotNull(builder.registry);
@@ -73,25 +61,41 @@ public final class PassManager {
     this.declaredSyntaxVersion = checkNotNull(builder.declaredSyntaxVersion);
     this.options = checkNotNull(builder.opts);
     this.allowUnknownGlobals = builder.allowUnknownGlobals;
-    this.allowUnknownFunctions = builder.allowUnknownFunctions;
+
+    boolean enabledStrictHtml = options.getExperimentalFeatures().contains("stricthtml");
 
     ImmutableList.Builder<CompilerFilePass> singleFilePassesBuilder =
         ImmutableList.<CompilerFilePass>builder()
             .add(new RewriteGendersPass())
             .add(new RewriteRemaindersPass())
+            .add(new HtmlRewritePass(options.getExperimentalFeatures(), errorReporter))
+            .add(new StrictHtmlValidationPass(options.getExperimentalFeatures(), errorReporter))
+            // TODO(lukes): run this very early for now, as support increases this should get moved
+            // later and later in the compiler
+            .add(new DesugarHtmlNodesPass())
+            .add(new RewriteGlobalsPass(registry, options.getCompileTimeGlobals(), errorReporter))
+            .add(new RewriteFunctionsPass(registry))
             .add(new SetFullCalleeNamesPass())
             .add(new ResolveNamesPass())
             .add(new ResolveFunctionsPass())
             .add(new ResolveExpressionTypesPass())
             .add(new ResolvePackageRelativeCssNamesPass())
-            .add(new VerifyPhnameAttrOnlyOnPlaceholdersPass())
-            .add(new SubstituteGlobalsVisitorPass())
-            .add(new CheckInvalidParamsPass())
-            .add(new ValidateAliasesPass())
-            .add(new CheckSyntaxVersionPass());
-    if (!allowUnknownFunctions) {
-      singleFilePassesBuilder.add(new CheckFunctionCallsPass());
+            .add(new VerifyPhnameAttrOnlyOnPlaceholdersPass());
+    if (!allowUnknownGlobals) {
+      // Must come after RewriteGlobalsPass since that is when values are substituted.
+      // We should also run after the ResolveNamesPass which checks for global/param ambiguity and
+      // may issue better error messages.
+      singleFilePassesBuilder.add(new CheckGlobalsPass(errorReporter));
     }
+    singleFilePassesBuilder
+        .add(new CheckInvalidParamsPass())
+        .add(new ValidateAliasesPass())
+        .add(new CheckSyntaxVersionPass())
+        // Must run after ResolveExpressionTypesPass, which adds the SoyProtoType info.
+        .add(new CheckProtoInitCallsPass(errorReporter))
+        .add(
+            new CheckFunctionCallsPass(
+                builder.allowUnknownFunctions, declaredSyntaxVersion, errorReporter));
     // If requiring strict autoescaping, check and enforce it.
     if (options.isStrictAutoescapingRequired()) {
       singleFilePassesBuilder.add(new EnforceStrictAutoescapingPass());
@@ -105,11 +109,11 @@ public final class PassManager {
     ImmutableList.Builder<CompilerFileSetPass> fileSetPassBuilder =
         ImmutableList.<CompilerFileSetPass>builder()
             .add(new CheckTemplateParamsPass())
-            .add(new CheckCallsPass())
+            .add(new CheckTemplateCallsPass(enabledStrictHtml, errorReporter))
             .add(new CheckVisibilityPass())
             .add(new CheckDelegatesPass());
     // If disallowing external calls, perform the check.
-    if (options.allowExternalCalls() == Boolean.FALSE) {
+    if (Objects.equals(options.allowExternalCalls(), Boolean.FALSE)) {
       fileSetPassBuilder.add(new StrictDepsPass());
     }
     this.fileSetPasses = fileSetPassBuilder.build();
@@ -176,7 +180,7 @@ public final class PassManager {
       this.allowUnknownGlobals = true;
       return this;
     }
-    
+
     /**
      * Allows unknown functions.
      *
@@ -193,18 +197,8 @@ public final class PassManager {
     }
   }
 
-  private final class CheckFunctionCallsPass extends CompilerFilePass {
-    final CheckFunctionCallsVisitor functionCallsVisitor =
-        new CheckFunctionCallsVisitor(declaredSyntaxVersion, errorReporter);
-
-    @Override
-    public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-      functionCallsVisitor.exec(file);
-    }
-  }
-
   private final class CheckSyntaxVersionPass extends CompilerFilePass {
-    final ReportSyntaxVersionErrorsVisitor reportDeclaredVersionErrors = 
+    final ReportSyntaxVersionErrorsVisitor reportDeclaredVersionErrors =
         new ReportSyntaxVersionErrorsVisitor(declaredSyntaxVersion, true, errorReporter);
     final InferRequiredSyntaxVersionVisitor inferenceVisitor =
         new InferRequiredSyntaxVersionVisitor();
@@ -228,39 +222,47 @@ public final class PassManager {
   }
 
   private final class RewriteGendersPass extends CompilerFilePass {
-    @Override public void run(SoyFileNode file, IdGenerator nodeIdGen) {
+    @Override
+    public void run(SoyFileNode file, IdGenerator nodeIdGen) {
       new RewriteGenderMsgsVisitor(nodeIdGen, errorReporter).exec(file);
     }
   }
 
   private final class RewriteRemaindersPass extends CompilerFilePass {
-    @Override public void run(SoyFileNode file, IdGenerator nodeIdGen) {
+    @Override
+    public void run(SoyFileNode file, IdGenerator nodeIdGen) {
       new RewriteRemaindersVisitor(errorReporter).exec(file);
     }
   }
 
   private final class SetFullCalleeNamesPass extends CompilerFilePass {
-    @Override public void run(SoyFileNode file, IdGenerator nodeIdGen) {
+    @Override
+    public void run(SoyFileNode file, IdGenerator nodeIdGen) {
       new SetFullCalleeNamesVisitor(errorReporter).exec(file);
+    }
+  }
+
+  private final class ResolveNamesPass extends CompilerFilePass {
+    @Override
+    public void run(SoyFileNode file, IdGenerator nodeIdGen) {
+      new ResolveNamesVisitor(errorReporter).exec(file);
     }
   }
 
   private final class ResolveFunctionsPass extends CompilerFilePass {
     @Override
     public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-      SoytreeUtils.execOnAllV2Exprs(file, new ResolveFunctionsVisitor(soyFunctionMap));
-    }
-  }
-
-  private final class ResolveNamesPass extends CompilerFilePass {
-    @Override public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-      new ResolveNamesVisitor(errorReporter).exec(file);
+      SoyTreeUtils.execOnAllV2Exprs(file, new ResolveFunctionsVisitor(soyFunctionMap));
     }
   }
 
   private final class ResolveExpressionTypesPass extends CompilerFilePass {
-    @Override public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-      new ResolveExpressionTypesVisitor(registry, declaredSyntaxVersion, errorReporter).exec(file);
+    @Override
+    public void run(SoyFileNode file, IdGenerator nodeIdGen) {
+      boolean allowProtoInit = options.getExperimentalFeatures().contains("protoInit");
+      new ResolveExpressionTypesVisitor(
+              registry, declaredSyntaxVersion, allowProtoInit, errorReporter)
+          .exec(file);
     }
   }
 
@@ -284,21 +286,6 @@ public final class PassManager {
       new CheckInvalidParamsVisitor(errorReporter).exec(file);
     }
   }
-  
-
-  private final class SubstituteGlobalsVisitorPass extends CompilerFilePass {
-    SubstituteGlobalsVisitor substituteGlobalsVisitor =
-        new SubstituteGlobalsVisitor(
-            options.getCompileTimeGlobals(),
-            registry,
-            !allowUnknownGlobals, // shouldAssertNoUnboundGlobals
-            errorReporter);
-
-    @Override
-    public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-      substituteGlobalsVisitor.exec(file);
-    }
-  }
 
   private final class EnforceStrictAutoescapingPass extends CompilerFilePass {
     final AssertStrictAutoescapingVisitor visitor =
@@ -311,27 +298,25 @@ public final class PassManager {
   }
 
   private final class CheckTemplateParamsPass extends CompilerFileSetPass {
-    @Override public void run(SoyFileSetNode fileSet, TemplateRegistry registry) {
+    @Override
+    public void run(SoyFileSetNode fileSet, TemplateRegistry registry) {
       new CheckTemplateParamsVisitor(registry, declaredSyntaxVersion, errorReporter).exec(fileSet);
-    }
-  }
-  
-  private final class CheckCallsPass extends CompilerFileSetPass {
-    @Override public void run(SoyFileSetNode fileSet, TemplateRegistry registry) {
-      // TODO(lukes): consider merging these passes.  They are very very similar
-      new CheckCallsVisitor(registry, errorReporter).exec(fileSet);
-      new CheckCallingParamTypesVisitor(registry, errorReporter).exec(fileSet);
     }
   }
 
   private final class CheckDelegatesPass extends CompilerFileSetPass {
-    @Override public void run(SoyFileSetNode fileSet, TemplateRegistry registry) {
-      new CheckDelegatesVisitor(registry, errorReporter).exec(fileSet);
+    private final boolean enabledStrictHtml =
+        options.getExperimentalFeatures().contains("stricthtml");
+
+    @Override
+    public void run(SoyFileSetNode fileSet, TemplateRegistry registry) {
+      new CheckDelegatesVisitor(registry, enabledStrictHtml, errorReporter).exec(fileSet);
     }
   }
 
   private final class CheckVisibilityPass extends CompilerFileSetPass {
-    @Override public void run(SoyFileSetNode fileSet, TemplateRegistry registry) {
+    @Override
+    public void run(SoyFileSetNode fileSet, TemplateRegistry registry) {
       // TODO(lukes): make this part of CheckCallsPass?
       new CheckTemplateVisibility(registry, errorReporter).exec(fileSet);
     }
@@ -348,6 +333,7 @@ public final class PassManager {
       SoyErrorKind.of("Alias ''{0}'' conflicts with a global of the same name.");
   private static final SoyErrorKind ALIAS_CONFLICTS_WITH_GLOBAL_PREFIX =
       SoyErrorKind.of("Alias ''{0}'' conflicts with namespace for global ''{1}''.");
+
   private final class ValidateAliasesPass extends CompilerFilePass {
     @Override
     public void run(SoyFileNode file, IdGenerator nodeIdGen) {
@@ -357,8 +343,8 @@ public final class PassManager {
         }
         for (String global : options.getCompileTimeGlobals().keySet()) {
           if (global.startsWith(alias.getAlias() + ".")) {
-            errorReporter.report(alias.getLocation(), ALIAS_CONFLICTS_WITH_GLOBAL_PREFIX,
-                alias.getAlias(), global);
+            errorReporter.report(
+                alias.getLocation(), ALIAS_CONFLICTS_WITH_GLOBAL_PREFIX, alias.getAlias(), global);
           }
         }
       }

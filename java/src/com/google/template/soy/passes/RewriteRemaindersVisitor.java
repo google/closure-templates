@@ -29,12 +29,12 @@ import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 
 /**
- * Visitor for finding {@code print} nodes that are actually {@code remainder} nodes,
- * and replacing them with the appropriate expression.
+ * Visitor for finding {@code print} nodes that are actually {@code remainder} nodes, and replacing
+ * them with the appropriate expression.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
- * <p> {@link #exec} should be called on a full parse tree. There is no return value.
+ * <p>{@link #exec} should be called on a full parse tree. There is no return value.
  *
  */
 public final class RewriteRemaindersVisitor extends AbstractSoyNodeVisitor<Void> {
@@ -62,8 +62,8 @@ public final class RewriteRemaindersVisitor extends AbstractSoyNodeVisitor<Void>
   // -----------------------------------------------------------------------------------------------
   // Implementations for specific nodes.
 
-
-  @Override protected void visitPrintNode(PrintNode node) {
+  @Override
+  protected void visitPrintNode(PrintNode node) {
     // We cannot easily access the original context.  However, because everything has already been
     // parsed, that should be fine.  I don't think this can fail at all, but whatever.
     SoyParsingContext context = SoyParsingContext.empty(errorReporter, "fake.namespace");
@@ -93,8 +93,10 @@ public final class RewriteRemaindersVisitor extends AbstractSoyNodeVisitor<Void>
         }
 
         // 'remainder' with a different expression than the enclosing 'plural'. Bad!
-        if (!functionNode.getChild(0).toSourceString().equals(
-                  currPluralNode.getExpr().toSourceString())) {
+        if (!functionNode
+            .getChild(0)
+            .toSourceString()
+            .equals(currPluralNode.getExpr().toSourceString())) {
           errorReporter.report(functionNode.getSourceLocation(), REMAINDER_PLURAL_EXPR_MISMATCH);
         }
 
@@ -111,8 +113,8 @@ public final class RewriteRemaindersVisitor extends AbstractSoyNodeVisitor<Void>
         // Now rewrite the PrintNode (reusing the old node id).
         String newExprText =
             "(" + currPluralNode.getExpr().toSourceString() + ") - " + currPluralNode.getOffset();
-        PrintNode newPrintNode
-            = new PrintNode.Builder(node.getId(), node.isImplicit(), SourceLocation.UNKNOWN)
+        PrintNode newPrintNode =
+            new PrintNode.Builder(node.getId(), node.isImplicit(), SourceLocation.UNKNOWN)
                 .exprText(newExprText)
                 .build(context);
         newPrintNode.addChildren(node.getChildren());
@@ -121,22 +123,20 @@ public final class RewriteRemaindersVisitor extends AbstractSoyNodeVisitor<Void>
     }
   }
 
-
-  @Override protected void visitMsgPluralNode(MsgPluralNode node) {
+  @Override
+  protected void visitMsgPluralNode(MsgPluralNode node) {
     currPluralNode = node;
     visitChildren(node);
     currPluralNode = null;
   }
 
-
   // -----------------------------------------------------------------------------------------------
   // Fallback implementation.
 
-
-  @Override protected void visitSoyNode(SoyNode node) {
+  @Override
+  protected void visitSoyNode(SoyNode node) {
     if (node instanceof ParentSoyNode<?>) {
       visitChildrenAllowingConcurrentModification((ParentSoyNode<?>) node);
     }
   }
-
 }

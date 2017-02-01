@@ -16,19 +16,23 @@
 
 package com.google.template.soy.soytree;
 
+import static org.junit.Assert.assertEquals;
+
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.soytree.SoyNode.Kind;
-
-import junit.framework.TestCase;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for AbstractCommandNode.
  *
  */
-public final class AbstractSoyCommandNodeTest extends TestCase {
+@RunWith(JUnit4.class)
+public final class AbstractSoyCommandNodeTest {
 
-
+  @Test
   public void testGetTagString() {
 
     DummyNode dn = new DummyNode(8, "blah blah");
@@ -44,20 +48,20 @@ public final class AbstractSoyCommandNodeTest extends TestCase {
     assertEquals("{dummy 'blah {blah}'}", dn.toSourceString());
   }
 
-
   private static class DummyNode extends AbstractCommandNode {
 
     public DummyNode(int id, String commandText) {
       super(id, SourceLocation.UNKNOWN, "dummy", commandText);
     }
 
-    @Override public Kind getKind() {
+    @Override
+    public Kind getKind() {
       throw new UnsupportedOperationException();
     }
 
-    @Override public DummyNode copy(CopyState copyState) {
+    @Override
+    public DummyNode copy(CopyState copyState) {
       throw new UnsupportedOperationException();
     }
   }
-
 }

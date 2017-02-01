@@ -23,7 +23,6 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprparse.SoyParsingContext;
-
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
@@ -49,17 +48,19 @@ public final class CommandTextAttributesParser {
   private static final SoyErrorKind MISSING_REQUIRED_ATTRIBUTE =
       SoyErrorKind.of("Missing required attribute ''{0}'' in ''{1}'' command text ({2}).");
 
-  /** Regex pattern for an attribute in command text.
-   *  Note group(1) is attribute name, group(2) is attribute value.
-   *  E.g. data="$boo" parses into group(1)="data" and group(2)="$boo". */
+  /**
+   * Regex pattern for an attribute in command text. Note group(1) is attribute name, group(2) is
+   * attribute value. E.g. data="$boo" parses into group(1)="data" and group(2)="$boo".
+   */
   private static final Pattern ATTRIBUTE_TEXT =
-      Pattern.compile("([a-zA-Z][a-zA-Z0-9-]*) \\s* = \\s* \" ( (?:[^\"\\\\]+ | \\\\.)*+ ) \" \\s*",
+      Pattern.compile(
+          "([a-zA-Z][a-zA-Z0-9-]*) \\s* = \\s* \" ( (?:[^\"\\\\]+ | \\\\.)*+ ) \" \\s*",
           Pattern.COMMENTS | Pattern.DOTALL);
 
   /**
-   * Regexp pattern to unescape attribute values. group(1) holds the escaped character.
-   * The backslash used for escaping is removed only if it is followed by a backslash or a quote.
-   * This is to support templates created before introduction of escaping. a\b\c becomes a\b\c.
+   * Regexp pattern to unescape attribute values. group(1) holds the escaped character. The
+   * backslash used for escaping is removed only if it is followed by a backslash or a quote. This
+   * is to support templates created before introduction of escaping. a\b\c becomes a\b\c.
    */
   private static final Pattern ATTRIBUTE_VALUE_ESCAPE = Pattern.compile("\\\\([\"\\\\])");
 
@@ -71,7 +72,6 @@ public final class CommandTextAttributesParser {
 
   /** The set of names of the supported attributes. */
   private final Set<String> supportedAttributeNames;
-
 
   /**
    * @param commandName The name of the Soy command that this parser handles. Only used in
@@ -88,10 +88,10 @@ public final class CommandTextAttributesParser {
       supportedAttributeNamesBuilder.add(attribute.name);
 
       // Sanity check that the default values are allowed values.
-      if (attribute.allowedValues == Attribute.ALLOW_ALL_VALUES ||
-          attribute.defaultValue == null ||
-          Attribute.NO_DEFAULT_VALUE_BECAUSE_REQUIRED.equals(attribute.defaultValue)) {
-        continue;  // nothing to check
+      if (attribute.allowedValues == Attribute.ALLOW_ALL_VALUES
+          || attribute.defaultValue == null
+          || Attribute.NO_DEFAULT_VALUE_BECAUSE_REQUIRED.equals(attribute.defaultValue)) {
+        continue; // nothing to check
       }
       Preconditions.checkArgument(attribute.allowedValues.contains(attribute.defaultValue));
     }
@@ -104,8 +104,8 @@ public final class CommandTextAttributesParser {
    *
    * @param commandText The command text to parse.
    * @param context For reporting syntax errors.
-   * @param sourceLocation A source location near the command text,
-   *     for producing useful error reports.
+   * @param sourceLocation A source location near the command text, for producing useful error
+   *     reports.
    * @return A map from attribute names to values.
    */
   Map<String, String> parse(
@@ -119,8 +119,8 @@ public final class CommandTextAttributesParser {
    *
    * @param commandText The command text to parse.
    * @param errorReporter For reporting syntax errors.
-   * @param sourceLocation A source location near the command text,
-   *     for producing useful error reports.
+   * @param sourceLocation A source location near the command text, for producing useful error
+   *     reports.
    * @return A map from attribute names to values.
    */
   Map<String, String> parse(
@@ -129,7 +129,7 @@ public final class CommandTextAttributesParser {
     Map<String, String> attributes = Maps.newHashMap();
 
     // --- Parse the attributes ---
-    int i = 0;  // index in commandText that we've processed up to
+    int i = 0; // index in commandText that we've processed up to
     Matcher matcher = ATTRIBUTE_TEXT.matcher(commandText);
     while (matcher.find(i)) {
       if (matcher.start() != i) {
@@ -142,12 +142,10 @@ public final class CommandTextAttributesParser {
       value = ATTRIBUTE_VALUE_ESCAPE.matcher(value).replaceAll("$1");
 
       if (!supportedAttributeNames.contains(name)) {
-        errorReporter.report(
-            sourceLocation, UNSUPPORTED_ATTRIBUTE, name, commandName, commandText);
+        errorReporter.report(sourceLocation, UNSUPPORTED_ATTRIBUTE, name, commandName, commandText);
       }
       if (attributes.containsKey(name)) {
-        errorReporter.report(
-            sourceLocation, DUPLICATE_ATTRIBUTE, name, commandName, commandText);
+        errorReporter.report(sourceLocation, DUPLICATE_ATTRIBUTE, name, commandName, commandText);
       }
       attributes.put(name, value);
     }
@@ -162,7 +160,7 @@ public final class CommandTextAttributesParser {
       if (attributes.containsKey(supportedAttribute.name)) {
         // Check that the supplied value is allowed.
         if (supportedAttribute.allowedValues == Attribute.ALLOW_ALL_VALUES) {
-          continue;  // nothing to check
+          continue; // nothing to check
         }
         if (!supportedAttribute.allowedValues.contains(attributes.get(supportedAttribute.name))) {
           errorReporter.report(
@@ -192,16 +190,11 @@ public final class CommandTextAttributesParser {
     return attributes;
   }
 
-
   // -----------------------------------------------------------------------------------------------
   // Attribute record.
 
-
-  /**
-   * Record for a supported attribute.
-   */
+  /** Record for a supported attribute. */
   public static class Attribute {
-
 
     /** Use this as the allowed values set when there is no fixed set of allowed values. */
     public static final Collection<String> ALLOW_ALL_VALUES = null;
@@ -209,28 +202,31 @@ public final class CommandTextAttributesParser {
     /** Use this as the allowed values set for a boolean attribute. */
     public static final Collection<String> BOOLEAN_VALUES = ImmutableSet.of("true", "false");
 
-    /** Use this as the default attribute value when there should not be a default because the
-     *  attribute is required. (Non-required attributes must have default values.) */
+    /**
+     * Use this as the default attribute value when there should not be a default because the
+     * attribute is required. (Non-required attributes must have default values.)
+     */
     public static final String NO_DEFAULT_VALUE_BECAUSE_REQUIRED = "__NDVBR__";
-
 
     /** The attribute name. */
     final String name;
 
-    /** The collection of allowed values, or {@link #ALLOW_ALL_VALUES} if there's no fixed set of
-     *  allowed values. */
+    /**
+     * The collection of allowed values, or {@link #ALLOW_ALL_VALUES} if there's no fixed set of
+     * allowed values.
+     */
     final Collection<String> allowedValues;
 
-    /** The default value, or {@link #NO_DEFAULT_VALUE_BECAUSE_REQUIRED} if the attribute is
-     *  required. */
+    /**
+     * The default value, or {@link #NO_DEFAULT_VALUE_BECAUSE_REQUIRED} if the attribute is
+     * required.
+     */
     final String defaultValue;
 
-
     /**
-     * The definition of one supported attribute.
-     * If there is no fixed set of allowed values, use {@link #ALLOW_ALL_VALUES}.
-     * Non-required attributes must have default values. Required dattributes should map to a
-     * default value of {@link #NO_DEFAULT_VALUE_BECAUSE_REQUIRED}.
+     * The definition of one supported attribute. If there is no fixed set of allowed values, use
+     * {@link #ALLOW_ALL_VALUES}. Non-required attributes must have default values. Required
+     * dattributes should map to a default value of {@link #NO_DEFAULT_VALUE_BECAUSE_REQUIRED}.
      *
      * @param name The attribute name.
      * @param allowedValues The collection of allowed values, or {@link #ALLOW_ALL_VALUES} if
@@ -243,7 +239,5 @@ public final class CommandTextAttributesParser {
       this.allowedValues = allowedValues;
       this.defaultValue = defaultValue;
     }
-
   }
-
 }

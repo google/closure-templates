@@ -18,22 +18,21 @@ package com.google.template.soy.jssrc.internal;
 
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
-
 import javax.inject.Inject;
 
 /**
- * Transforms the name of a delegate template (as it appears in source code) into a name
- * suitable for use in internal data structures. In the base class, the transformation is
- * the identity, but subclasses can override it.
- * name.
+ * Transforms the name of a delegate template (as it appears in source code) into a name suitable
+ * for use in internal data structures. In the base class, the transformation is the identity, but
+ * subclasses can override it.
  */
 public class DelTemplateNamer {
   @Inject
   public DelTemplateNamer() {}
 
   /**
-   * Gets the name for a delegate template, which is used to refer a delegate template along
-   * with the variant.
+   * Gets the name for a delegate template, which is used to refer a delegate template along with
+   * the variant.
+   *
    * @param node A node representing a delegate template
    * @return A string that is used to refer to the delegate template.
    */
@@ -42,8 +41,9 @@ public class DelTemplateNamer {
   }
 
   /**
-   * Gets the name for a delegate template, which is used to refer a delegate template along
-   * with the variant.
+   * Gets the name for a delegate template, which is used to refer a delegate template along with
+   * the variant.
+   *
    * @param node A node representing a call to a delegate template.
    * @return A string that is used to refer to the delegate template.
    */
@@ -52,8 +52,9 @@ public class DelTemplateNamer {
   }
 
   /**
-   * Gets the name for a delegate template, which is used to refer a delegate template along
-   * with the variant.
+   * Gets the name for a delegate template, which is used to refer a delegate template along with
+   * the variant.
+   *
    * @param delTemplateName The name of the delegate template.
    * @return A string that is used to refer to the delegate template.
    */

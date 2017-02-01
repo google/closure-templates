@@ -24,8 +24,7 @@ import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.SoyFileNode;
-import com.google.template.soy.soytree.SoytreeUtils;
-
+import com.google.template.soy.soytree.SoyTreeUtils;
 import java.util.SortedSet;
 
 /**
@@ -44,15 +43,16 @@ final class GenFunctionPluginRequiresVisitor {
     GenFunctionPluginRequiresHelperVisitor helperVisitor =
         new GenFunctionPluginRequiresHelperVisitor();
 
-    SoytreeUtils.execOnAllV2Exprs(soyFile, helperVisitor);
+    SoyTreeUtils.execOnAllV2Exprs(soyFile, helperVisitor);
 
     return requiredJsLibNames;
   }
 
   private final class GenFunctionPluginRequiresHelperVisitor
-     extends AbstractExprNodeVisitor<SortedSet<String>> {
+      extends AbstractExprNodeVisitor<SortedSet<String>> {
 
-    @Override protected void visitFunctionNode(FunctionNode node) {
+    @Override
+    protected void visitFunctionNode(FunctionNode node) {
       SoyFunction soyFunction = node.getSoyFunction();
       if (soyFunction instanceof SoyLibraryAssistedJsSrcFunction) {
         requiredJsLibNames.addAll(
@@ -61,7 +61,8 @@ final class GenFunctionPluginRequiresVisitor {
       visitChildren(node);
     }
 
-    @Override protected void visitExprNode(ExprNode node) {
+    @Override
+    protected void visitExprNode(ExprNode node) {
       if (node instanceof ParentExprNode) {
         visitChildren((ParentExprNode) node);
       }

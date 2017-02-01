@@ -25,10 +25,8 @@ import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
-
 import java.util.List;
 import java.util.Set;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -40,20 +38,21 @@ import javax.inject.Singleton;
 @SoyPureFunction
 public final class CeilingFunction implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction {
 
-
   @Inject
   CeilingFunction() {}
 
-
-  @Override public String getName() {
+  @Override
+  public String getName() {
     return "ceiling";
   }
 
-  @Override public Set<Integer> getValidArgsSizes() {
+  @Override
+  public Set<Integer> getValidArgsSizes() {
     return ImmutableSet.of(1);
   }
 
-  @Override public SoyValue computeForJava(List<SoyValue> args) {
+  @Override
+  public SoyValue computeForJava(List<SoyValue> args) {
     return ceil(args.get(0));
   }
 
@@ -69,13 +68,15 @@ public final class CeilingFunction implements SoyJavaFunction, SoyJsSrcFunction,
     }
   }
 
-  @Override public JsExpr computeForJsSrc(List<JsExpr> args) {
+  @Override
+  public JsExpr computeForJsSrc(List<JsExpr> args) {
     JsExpr arg = args.get(0);
 
     return new JsExpr("Math.ceil(" + arg.getText() + ")", Integer.MAX_VALUE);
   }
 
-  @Override public PyExpr computeForPySrc(List<PyExpr> args) {
+  @Override
+  public PyExpr computeForPySrc(List<PyExpr> args) {
     PyExpr arg = args.get(0);
 
     return new PyExpr("int(math.ceil(" + arg.getText() + "))", Integer.MAX_VALUE);

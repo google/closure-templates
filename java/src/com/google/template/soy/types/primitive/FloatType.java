@@ -19,38 +19,33 @@ package com.google.template.soy.types.primitive;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.FloatData;
 
-
 /**
  * Soy floating-point type.
  *
  */
 public final class FloatType extends PrimitiveType {
 
-
   private static final FloatType INSTANCE = new FloatType();
-
 
   // Not constructible - use getInstance().
   private FloatType() {}
 
-
-  @Override public Kind getKind() {
+  @Override
+  public Kind getKind() {
     return Kind.FLOAT;
   }
 
-
-  @Override public boolean isInstance(SoyValue value) {
+  @Override
+  public boolean isInstance(SoyValue value) {
     return value instanceof FloatData;
   }
 
-  @Override public String toString() {
+  @Override
+  public String toString() {
     return "float";
   }
 
-
-  /**
-   * Return the single instance of this type.
-   */
+  /** Return the single instance of this type. */
   public static FloatType getInstance() {
     return INSTANCE;
   }

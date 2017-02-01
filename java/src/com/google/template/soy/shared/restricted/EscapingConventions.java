@@ -21,13 +21,11 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.escape.Escaper;
-
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.regex.Pattern;
-
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
@@ -35,23 +33,21 @@ import javax.annotation.ParametersAreNonnullByDefault;
  * Definitions of escaping functions that behave consistently in JavaScript and Java that implement
  * the escaping directives as in <code>{print $x <b>|escapeJsString</b>}</code>.
  *
- * <p>
- * An escaping convention is defined in terms of
+ * <p>An escaping convention is defined in terms of
+ *
  * <ol>
  *   <li>An optional filter predicate that all valid inputs must match.
- *   <li>An optional function name from the closure JavaScript library that
- *       already implements the escaping convention.
+ *   <li>An optional function name from the closure JavaScript library that already implements the
+ *       escaping convention.
  *   <li>A required mapping from characters to escaping strings.
  * </ol>
  *
- * <p>
- * Escaping functions are exposed as {@link Escaper}s in Java and via a JavaScript code
+ * <p>Escaping functions are exposed as {@link Escaper}s in Java and via a JavaScript code
  * generating ant task for JavaScript.
  *
  */
 @ParametersAreNonnullByDefault
 public final class EscapingConventions {
-
 
   // Below we take advantage of lazy class loading to avoid doing the work of initializing maps
   // or loading code for escaping conventions never used by the Java runtime.
@@ -60,19 +56,16 @@ public final class EscapingConventions {
   // Each escaping convention is its own public interface to java code, and the JavaScript code
   // generator uses a public accessor that ties them all together.
 
-
-  /**
-   * The list of potential languages which are used by the escapers.
-   */
+  /** The list of potential languages which are used by the escapers. */
   public static enum EscapingLanguage {
-    JAVASCRIPT, PYTHON
+    JAVASCRIPT,
+    PYTHON
   }
 
-
   /**
-   * A mapping from a plain text character to the escaped text in the target language.
-   * We define a character below as a code unit, not a codepoint as none of the target languages
-   * treat supplementary codepoints as special.
+   * A mapping from a plain text character to the escaped text in the target language. We define a
+   * character below as a code unit, not a codepoint as none of the target languages treat
+   * supplementary codepoints as special.
    */
   public static final class Escape implements Comparable<Escape> {
     private final char plainText;
@@ -83,57 +76,54 @@ public final class EscapingConventions {
       this.escaped = escaped;
     }
 
-    /**
-     * A character in the input language.
-     */
+    /** A character in the input language. */
     public char getPlainText() {
       return plainText;
     }
 
     /**
-     * A string in the output language that corresponds to {@link #getPlainText}
-     * in the input language.
+     * A string in the output language that corresponds to {@link #getPlainText} in the input
+     * language.
      */
     public String getEscaped() {
       return escaped;
     }
 
-    @Override public int compareTo(Escape b) {
+    @Override
+    public int compareTo(Escape b) {
       return this.plainText - b.plainText;
     }
   }
 
-
   /**
-   * A transformation on strings that preserves some correctness or safety properties.
-   * Subclasses come in three varieties:
+   * A transformation on strings that preserves some correctness or safety properties. Subclasses
+   * come in three varieties:
+   *
    * <dl>
-   *   <dt>Escaper</dt>
-   *     <dd>A mapping from strings in an input language to strings in an output language that
-   *     preserves the content.
-   *     E.g. the plain text string {@code 1 < 2} can be escaped to the equivalent HTML string
-   *     {@code 1 &lt; 2}.</dd>
-   *   <dt>Normalizer</dt>
-   *     <dd>A mapping from strings in a language to equivalent strings in the same language but
-   *     that can be more easily embedded in another language.
-   *     E.g. the URI {@code http://www.google.com/search?q=O'Reilly} is equivalent to
-   *     {@code http://www.google.com/search?q=O%27Reilly} but the latter can be safely
-   *     embedded in a single quoted HTML attribute.</dd>
-   *   <dt>Filter</dt>
-   *     <dd>A mapping from strings in a language to the same value or to an innocuous value.
-   *     E.g. the string {@code h1} might pass an html identifier filter but the string
-   *     {@code ><script>alert('evil')</script>} should not and could be replaced by an innocuous
-   *     value like {@code zzz}.</dd>
+   *   <dt>Escaper
+   *   <dd>A mapping from strings in an input language to strings in an output language that
+   *       preserves the content. E.g. the plain text string {@code 1 < 2} can be escaped to the
+   *       equivalent HTML string {@code 1 &lt; 2}.
+   *   <dt>Normalizer
+   *   <dd>A mapping from strings in a language to equivalent strings in the same language but that
+   *       can be more easily embedded in another language. E.g. the URI {@code
+   *       http://www.google.com/search?q=O'Reilly} is equivalent to {@code
+   *       http://www.google.com/search?q=O%27Reilly} but the latter can be safely embedded in a
+   *       single quoted HTML attribute.
+   *   <dt>Filter
+   *   <dd>A mapping from strings in a language to the same value or to an innocuous value. E.g. the
+   *       string {@code h1} might pass an html identifier filter but the string {@code
+   *       ><script>alert('evil')</script>} should not and could be replaced by an innocuous value
+   *       like {@code zzz}.
    * </dl>
    */
-  public static abstract class CrossLanguageStringXform extends Escaper {
+  public abstract static class CrossLanguageStringXform extends Escaper {
     private final String directiveName;
     private final @Nullable Pattern valueFilter;
     private final ImmutableList<Escape> escapes;
     /**
-     * A dense mapping mirroring escapes.
-     * I.e. for each element of {@link #escapes} {@code e} such that {@code e.plainText < 0x80},
-     * {@code escapesByCodeUnit[e.plainText] == e.escaped}.
+     * A dense mapping mirroring escapes. I.e. for each element of {@link #escapes} {@code e} such
+     * that {@code e.plainText < 0x80}, {@code escapesByCodeUnit[e.plainText] == e.escaped}.
      */
     private final String[] escapesByCodeUnit;
     /** Keys in a sparse mapping for the non ASCII {@link #escapes}. */
@@ -144,18 +134,18 @@ public final class EscapingConventions {
     private final @Nullable String nonAsciiPrefix;
 
     /**
-     * @param valueFilter {@code null} if the directive accepts all strings as inputs.  Otherwise
-     *     a regular expression that accepts only strings that can be escaped by this directive.
+     * @param valueFilter {@code null} if the directive accepts all strings as inputs. Otherwise a
+     *     regular expression that accepts only strings that can be escaped by this directive.
      * @param nonAsciiPrefix An escaping prefix in {@code "%", "\\u", "\\"} which specifies how to
-     *     escape non-ASCII code units not in the sparse mapping.
-     *     If null, then non-ASCII code units outside the sparse map can appear unescaped.
+     *     escape non-ASCII code units not in the sparse mapping. If null, then non-ASCII code units
+     *     outside the sparse map can appear unescaped.
      */
     protected CrossLanguageStringXform(
         @Nullable Pattern valueFilter, @Nullable String nonAsciiPrefix) {
       String simpleName = getClass().getSimpleName();
       // EscapeHtml -> |escapeHtml
-      this.directiveName = ("|" + Character.toLowerCase(simpleName.charAt(0)) +
-                            simpleName.substring(1));
+      this.directiveName =
+          ("|" + Character.toLowerCase(simpleName.charAt(0)) + simpleName.substring(1));
 
       this.valueFilter = valueFilter;
       this.escapes = defineEscapes();
@@ -195,15 +185,12 @@ public final class EscapingConventions {
       this.nonAsciiPrefix = nonAsciiPrefix;
     }
 
-
-    /**
-     * Returns the escapes used for this escaper.
-     */
+    /** Returns the escapes used for this escaper. */
     protected abstract ImmutableList<Escape> defineEscapes();
-
 
     /**
      * The name of the directive associated with this escaping function.
+     *
      * @return E.g. {@code |escapeHtml}
      */
     public String getDirectiveName() {
@@ -212,24 +199,22 @@ public final class EscapingConventions {
 
     /**
      * An escaping prefix in {@code "%", "\\u", "\\"} which specifies how to escape non-ASCII code
-     * units not in the sparse mapping.
-     * If null, then non-ASCII code units outside the sparse map can appear unescaped.
+     * units not in the sparse mapping. If null, then non-ASCII code units outside the sparse map
+     * can appear unescaped.
      */
     public final @Nullable String getNonAsciiPrefix() {
       return nonAsciiPrefix;
     }
 
     /**
-     * Null if the escaper accepts all strings as inputs, or otherwise a regular expression
-     * that accepts only strings that can be escaped by this escaper.
+     * Null if the escaper accepts all strings as inputs, or otherwise a regular expression that
+     * accepts only strings that can be escaped by this escaper.
      */
     public final @Nullable Pattern getValueFilter() {
       return valueFilter;
     }
 
-    /**
-     * The escapes need to translate the input language to the output language.
-     */
+    /** The escapes need to translate the input language to the output language. */
     public final ImmutableList<Escape> getEscapes() {
       return escapes;
     }
@@ -245,13 +230,10 @@ public final class EscapingConventions {
       return ImmutableList.<String>of();
     }
 
-    /**
-     * Returns an innocuous string in this context that can be used when filtering.
-     */
+    /** Returns an innocuous string in this context that can be used when filtering. */
     public String getInnocuousOutput() {
       return INNOCUOUS_OUTPUT;
     }
-
 
     // Methods that satisfy the Escaper interface.
     @Override
@@ -264,19 +246,21 @@ public final class EscapingConventions {
     // TODO(lukes): consider eliminating this method, it was removed from the Escaper interface.
     public final Appendable escape(final Appendable out) {
       return new Appendable() {
-        @Override public Appendable append(CharSequence csq) throws IOException {
+        @Override
+        public Appendable append(CharSequence csq) throws IOException {
           maybeEscapeOnto(csq, out, 0, csq.length());
           return this;
         }
 
-        @Override public Appendable append(CharSequence csq, int start, int end)
-            throws IOException {
+        @Override
+        public Appendable append(CharSequence csq, int start, int end) throws IOException {
           maybeEscapeOnto(csq, out, start, end);
           return this;
         }
 
-        @Override public Appendable append(char c) throws IOException {
-          if (c < escapesByCodeUnit.length) {  // Use the dense map.
+        @Override
+        public Appendable append(char c) throws IOException {
+          if (c < escapesByCodeUnit.length) { // Use the dense map.
             String esc = escapesByCodeUnit[c];
             if (esc != null) {
               out.append(esc);
@@ -284,11 +268,11 @@ public final class EscapingConventions {
             }
           } else if (c >= 0x80) {
             int index = Arrays.binarySearch(nonAsciiCodeUnits, c);
-            if (index >= 0) {  // Found in the sparse map.
+            if (index >= 0) { // Found in the sparse map.
               out.append(nonAsciiEscapes[index]);
               return this;
             }
-            if (nonAsciiPrefix != null) {  // Fallback for non-ASCII code units.
+            if (nonAsciiPrefix != null) { // Fallback for non-ASCII code units.
               escapeUsingPrefix(c, out);
               return this;
             }
@@ -302,8 +286,9 @@ public final class EscapingConventions {
     /**
      * Escapes the given char sequence onto the given buffer iff it contains characters that need to
      * be escaped.
+     *
      * @return null if no output buffer was passed in, and s contains no characters that need
-     *    escaping.  Otherwise out, or a StringBuilder if one needed to be allocated.
+     *     escaping. Otherwise out, or a StringBuilder if one needed to be allocated.
      */
     private @Nullable StringBuilder maybeEscapeOnto(CharSequence s, @Nullable StringBuilder out) {
       try {
@@ -317,16 +302,16 @@ public final class EscapingConventions {
     /**
      * Escapes the given range of the given sequence onto the given buffer iff it contains
      * characters that need to be escaped.
+     *
      * @return null if no output buffer was passed in, and s contains no characters that need
-     *    escaping.  Otherwise out, or a StringBuilder if one needed to be allocated.
+     *     escaping. Otherwise out, or a StringBuilder if one needed to be allocated.
      */
     private @Nullable Appendable maybeEscapeOnto(
-        CharSequence s, @Nullable Appendable out, int start, int end)
-        throws IOException {
+        CharSequence s, @Nullable Appendable out, int start, int end) throws IOException {
       int pos = start;
       for (int i = start; i < end; ++i) {
         char c = s.charAt(i);
-        if (c < escapesByCodeUnit.length) {  // Use the dense map.
+        if (c < escapesByCodeUnit.length) { // Use the dense map.
           String esc = escapesByCodeUnit[c];
           if (esc != null) {
             if (out == null) {
@@ -337,7 +322,7 @@ public final class EscapingConventions {
             out.append(s, pos, i).append(esc);
             pos = i + 1;
           }
-        } else if (c >= 0x80) {  // Use the sparse map.
+        } else if (c >= 0x80) { // Use the sparse map.
           int index = Arrays.binarySearch(nonAsciiCodeUnits, c);
           if (index >= 0) {
             if (out == null) {
@@ -345,7 +330,7 @@ public final class EscapingConventions {
             }
             out.append(s, pos, i).append(nonAsciiEscapes[index]);
             pos = i + 1;
-          } else if (nonAsciiPrefix != null) {  // Fallback to the prefix based escaping.
+          } else if (nonAsciiPrefix != null) { // Fallback to the prefix based escaping.
             if (out == null) {
               out = new StringBuilder(end - start + 32);
             }
@@ -362,14 +347,14 @@ public final class EscapingConventions {
     }
 
     /**
-     * Appends a hex representation of the given code unit to out preceded by the
-     * {@link #nonAsciiPrefix}.
+     * Appends a hex representation of the given code unit to out preceded by the {@link
+     * #nonAsciiPrefix}.
      *
      * @param c A code unit greater than or equal to 0x80.
      * @param out written to.
      */
     private void escapeUsingPrefix(char c, Appendable out) throws IOException {
-      if ("%".equals(nonAsciiPrefix)) {  // Use a UTF-8
+      if ("%".equals(nonAsciiPrefix)) { // Use a UTF-8
         if (c < 0x800) {
           out.append('%');
           appendHexPair(((c >>> 6) & 0x1f) | 0xc0, out);
@@ -395,32 +380,24 @@ public final class EscapingConventions {
     private static final char[] HEX_DIGITS = {
       '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
     };
-    /**
-     * Given {@code 0x20} appends {@code "20"} to the given output buffer.
-     */
+    /** Given {@code 0x20} appends {@code "20"} to the given output buffer. */
     private void appendHexPair(int b, Appendable out) throws IOException {
       out.append(HEX_DIGITS[b >>> 4]);
       out.append(HEX_DIGITS[b & 0xf]);
     }
   }
 
-
-  /**
-   * A builder for lists of escapes.
-   */
-  private static abstract class EscapeListBuilder {
+  /** A builder for lists of escapes. */
+  private abstract static class EscapeListBuilder {
     private final List<Escape> escapes = Lists.newArrayList();
 
     /**
      * Computes the numeric escape in the output language for the given codepoint in the input
-     * language.
-     * E.g. in C, the numeric escape for space is {@code \x20}.
+     * language. E.g. in C, the numeric escape for space is {@code \x20}.
      */
     abstract String getNumericEscapeFor(char plainText);
 
-    /**
-     * Adds an escape for the given code unit in the input language to the given escaped text.
-     */
+    /** Adds an escape for the given code unit in the input language to the given escaped text. */
     final EscapeListBuilder escape(char plainText, String escaped) {
       escapes.add(new Escape(plainText, escaped));
       return this;
@@ -435,9 +412,7 @@ public final class EscapingConventions {
       return this;
     }
 
-    /**
-     * Adds a numeric escape for each code unit in the input string.
-     */
+    /** Adds a numeric escape for each code unit in the input string. */
     final EscapeListBuilder escapeAll(String plainTextCodeUnits) {
       int numCodeUnits = plainTextCodeUnits.length();
       for (int i = 0; i < numCodeUnits; ++i) {
@@ -446,9 +421,7 @@ public final class EscapingConventions {
       return this;
     }
 
-    /**
-     * Adds numeric escapes for each code unit in the given range not in the exclusion set.
-     */
+    /** Adds numeric escapes for each code unit in the given range not in the exclusion set. */
     final EscapeListBuilder escapeAllInRangeExcept(
         int startInclusive, int endExclusive, char... notEscaped) {
       notEscaped = notEscaped.clone();
@@ -467,26 +440,20 @@ public final class EscapingConventions {
       return this;
     }
 
-    /**
-     * The list of all escapes defined thus far.
-     */
+    /** The list of all escapes defined thus far. */
     final ImmutableList<Escape> build() {
       Collections.sort(escapes);
       return ImmutableList.copyOf(escapes);
     }
   }
 
-
-  /**
-   * Escapes using HTML/XML numeric entities : {@code 'A' -> "&#65;"}.
-   */
+  /** Escapes using HTML/XML numeric entities : {@code 'A' -> "&#65;"}. */
   private static final class HtmlEscapeListBuilder extends EscapeListBuilder {
     @Override
     String getNumericEscapeFor(char plainText) {
       return "&#" + ((int) plainText) + ";";
     }
   }
-
 
   // Implementations of particular escapers.
   // These names follow the convention defined in Escaper's constructor above where
@@ -495,10 +462,7 @@ public final class EscapingConventions {
   //    |escapeFoo
   // Each also provides a singleton INSTANCE member.
 
-
-  /**
-   * Implements the {@code |escapeHtml} directive.
-   */
+  /** Implements the {@code |escapeHtml} directive. */
   public static final class EscapeHtml extends CrossLanguageStringXform {
     /** Implements the {@code |escapeHtml} directive. */
     public static final EscapeHtml INSTANCE = new EscapeHtml();
@@ -519,7 +483,8 @@ public final class EscapingConventions {
           .build();
     }
 
-    @Override public List<String> getLangFunctionNames(EscapingLanguage language) {
+    @Override
+    public List<String> getLangFunctionNames(EscapingLanguage language) {
       if (language == EscapingLanguage.JAVASCRIPT) {
         return ImmutableList.<String>of("goog.string.htmlEscape");
       }
@@ -527,27 +492,32 @@ public final class EscapingConventions {
     }
   }
 
-
   /**
    * A directive that encodes any HTML special characters that can appear in RCDATA unescaped but
-   * that can be escaped without changing semantics.
-   * From <a href="http://www.w3.org/TR/html5/tokenization.html#rcdata-state">HTML 5</a>:
+   * that can be escaped without changing semantics. From <a
+   * href="http://www.w3.org/TR/html5/tokenization.html#rcdata-state">HTML 5</a>:
+   *
    * <blockquote>
-   *   <h4>8.2.4.3 RCDATA state</h4>
-   *   Consume the next input character:
-   *   <ul>
-   *     <li>U+0026 AMPERSAND (&)
-   *       <br>Switch to the character reference in RCDATA state.
-   *     <li>U+003C LESS-THAN SIGN (<)
-   *       <br>Switch to the RCDATA less-than sign state.
-   *     <li>EOF
-   *       <br>Emit an end-of-file token.
-   *     <li>Anything else
-   *       <br>Emit the current input character as a character token.
-   *   </ul>
+   *
+   * <h4>8.2.4.3 RCDATA state</h4>
+   *
+   * Consume the next input character:
+   *
+   * <ul>
+   *   <li>U+0026 AMPERSAND (&) <br>
+   *       Switch to the character reference in RCDATA state.
+   *   <li>U+003C LESS-THAN SIGN (<) <br>
+   *       Switch to the RCDATA less-than sign state.
+   *   <li>EOF <br>
+   *       Emit an end-of-file token.
+   *   <li>Anything else <br>
+   *       Emit the current input character as a character token.
+   * </ul>
+   *
    * </blockquote>
-   * So all HTML special characters can be escaped, except ampersand, since escaping that would
-   * lead to overescaping of legitimate HTML entities.
+   *
+   * So all HTML special characters can be escaped, except ampersand, since escaping that would lead
+   * to overescaping of legitimate HTML entities.
    */
   public static final class NormalizeHtml extends CrossLanguageStringXform {
     /** Implements the {@code |normalizeHtml} directive. */
@@ -569,10 +539,9 @@ public final class EscapingConventions {
     }
   }
 
-
   /**
-   * Implements the {@code |escapeHtmlNoSpace} directive which allows arbitrary content
-   * to be included in the value of an unquoted HTML attribute.
+   * Implements the {@code |escapeHtmlNoSpace} directive which allows arbitrary content to be
+   * included in the value of an unquoted HTML attribute.
    */
   public static final class EscapeHtmlNospace extends CrossLanguageStringXform {
     /** Implements the {@code |escapeHtmlNospace} directive. */
@@ -644,7 +613,6 @@ public final class EscapingConventions {
     }
   }
 
-
   /**
    * A directive that encodes any HTML special characters and unquoted attribute terminators that
    * can appear in RCDATA unescaped but that can be escaped without changing semantics.
@@ -669,10 +637,7 @@ public final class EscapingConventions {
     }
   }
 
-
-  /**
-   * Escapes using hex escapes since octal are non-standard.  'A' -> "\\x41"
-   */
+  /** Escapes using hex escapes since octal are non-standard. 'A' -> "\\x41" */
   private static final class JsEscapeListBuilder extends EscapeListBuilder {
     @Override
     String getNumericEscapeFor(char plainText) {
@@ -680,17 +645,16 @@ public final class EscapingConventions {
     }
   }
 
-
   /**
-   * Implements the {@code |escapeJsString} directive which allows arbitrary content
-   * to be included inside a quoted JavaScript string.
+   * Implements the {@code |escapeJsString} directive which allows arbitrary content to be included
+   * inside a quoted JavaScript string.
    */
   public static final class EscapeJsString extends CrossLanguageStringXform {
     /** Implements the {@code |escapeJsString} directive. */
     public static final EscapeJsString INSTANCE = new EscapeJsString();
 
     private EscapeJsString() {
-      super(null, null);  // TODO(msamuel): Maybe use goog.string.quote
+      super(null, null); // TODO(msamuel): Maybe use goog.string.quote
     }
 
     @Override
@@ -698,10 +662,10 @@ public final class EscapingConventions {
       return new JsEscapeListBuilder()
           // Some control characters.
           .escape('\u0000')
-          .escape('\b')  // \\b means word-break inside RegExps.
+          .escape('\b') // \\b means word-break inside RegExps.
           .escape('\t', "\\t")
           .escape('\n', "\\n")
-          .escape('\u000b')  // \\v not consistently supported on IE.
+          .escape('\u000b') // \\v not consistently supported on IE.
           .escape('\f', "\\f")
           .escape('\r', "\\r")
           .escape('\\', "\\\\")
@@ -709,8 +673,8 @@ public final class EscapingConventions {
           .escape('"')
           .escape('\'')
           .escape('/', "\\/")
-          .escapeAll("\u2028\u2029")  // JavaScript newlines
-          .escape('\u0085')  // A JavaScript newline according to at least one draft spec.
+          .escapeAll("\u2028\u2029") // JavaScript newlines
+          .escape('\u0085') // A JavaScript newline according to at least one draft spec.
           // HTML special characters.  Note, that this provides added protection against problems
           // with </script> <![CDATA[, ]]>, <!--, -->, etc.
           .escapeAll("<>&=")
@@ -718,10 +682,9 @@ public final class EscapingConventions {
     }
   }
 
-
   /**
-   * Implements the {@code |escapeJsRegex} directive which allows arbitrary content
-   * to be included inside a JavaScript regular expression.
+   * Implements the {@code |escapeJsRegex} directive which allows arbitrary content to be included
+   * inside a JavaScript regular expression.
    */
   public static final class EscapeJsRegex extends CrossLanguageStringXform {
     /** Implements the {@code |escapeJsRegex} directive. */
@@ -738,15 +701,15 @@ public final class EscapingConventions {
       return new JsEscapeListBuilder()
           // Some control characters.
           .escape('\u0000')
-          .escape('\b')  // \\b means word-break inside RegExps.
+          .escape('\b') // \\b means word-break inside RegExps.
           .escape('\t', "\\t")
           .escape('\n', "\\n")
-          .escape('\u000b')  // \\v not consistently supported on IE.
+          .escape('\u000b') // \\v not consistently supported on IE.
           .escape('\f', "\\f")
           .escape('\r', "\\r")
-          .escape('\\', "\\\\")  // Escape prefix
-          .escapeAll("\u2028\u2029")  // JavaScript newlines
-          .escape('\u0085')  // A JavaScript newline according to at least one draft spec.
+          .escape('\\', "\\\\") // Escape prefix
+          .escapeAll("\u2028\u2029") // JavaScript newlines
+          .escape('\u0085') // A JavaScript newline according to at least one draft spec.
           // Quoting characters.  / is also instrumental in </script>.
           .escape('"')
           .escape('\'')
@@ -760,10 +723,9 @@ public final class EscapingConventions {
     }
   }
 
-
   /**
-   * Escapes using CSS hex escapes with a space at the end in case a hex digit is the next
-   * character : {@code 'A' => "\41 "}
+   * Escapes using CSS hex escapes with a space at the end in case a hex digit is the next character
+   * : {@code 'A' => "\41 "}
    */
   private static final class CssEscapeListBuilder extends EscapeListBuilder {
     @Override
@@ -772,10 +734,9 @@ public final class EscapingConventions {
     }
   }
 
-
   /**
-   * Implements the {@code |escapeCssString} directive which allows arbitrary content to be
-   * included in a CSS quoted string or identifier.
+   * Implements the {@code |escapeCssString} directive which allows arbitrary content to be included
+   * in a CSS quoted string or identifier.
    */
   public static final class EscapeCssString extends CrossLanguageStringXform {
     /** Implements the {@code |escapeCssString} directive. */
@@ -805,33 +766,33 @@ public final class EscapingConventions {
     }
   }
 
-
   /**
    * Implements the {@code |filterCssValue} directive which filters out strings that are not valid
    * CSS property names, keyword values, quantities, hex colors, or ID or class literals.
    */
   public static final class FilterCssValue extends CrossLanguageStringXform {
     /**
-     * Matches a CSS token that can appear unquoted as part of an ID, class, font-family-name,
-     * or CSS keyword value.
+     * Matches a CSS token that can appear unquoted as part of an ID, class, font-family-name, or
+     * CSS keyword value.
      */
-    public static final Pattern CSS_WORD = Pattern.compile(
-        // See http://www.owasp.org/index.php/XSS_(Cross_Site_Scripting)_Prevention_Cheat_Sheet
-        // #RULE_.234_-_CSS_Escape_Before_Inserting_Untrusted_Data_into_HTML_Style_Property_Values
-        // for an explanation of why expression and moz-binding are bad.
-        "^(?!-*(?:expression|(?:moz-)?binding))(?:"
-        + // A latin class name or ID, CSS identifier, hex color or unicode range.
-          "[.#]?-?(?:[_a-z0-9-]+)(?:-[_a-z0-9-]+)*-?|"
-        + // A non-hex color
-          "(?:rgb|hsl)a?\\([0-9.%, ]+\\)|"
-        + // A quantity
-          "-?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)(?:[a-z]{1,2}|%)?|"
-        + // The special value !important.
-          "!important|"
-        + // Nothing.
-          ""
-        + ")\\z",
-        Pattern.CASE_INSENSITIVE);
+    public static final Pattern CSS_WORD =
+        Pattern.compile(
+            // See http://www.owasp.org/index.php/XSS_(Cross_Site_Scripting)_Prevention_Cheat_Sheet
+            // #RULE_.234_-_CSS_Escape_Before_Inserting_Untrusted_Data_into_HTML_Style_Property_Values
+            // for an explanation of why expression and moz-binding are bad.
+            "^(?!-*(?:expression|(?:moz-)?binding))(?:"
+                + // A latin class name or ID, CSS identifier, hex color or unicode range.
+                "[.#]?-?(?:[_a-z0-9-]+)(?:-[_a-z0-9-]+)*-?|"
+                + // A non-hex color
+                "(?:rgb|hsl)a?\\([0-9.%, ]+\\)|"
+                + // A quantity
+                "-?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)(?:[a-z]{1,2}|%)?|"
+                + // The special value !important.
+                "!important|"
+                + // Nothing.
+                ""
+                + ")\\z",
+            Pattern.CASE_INSENSITIVE);
 
     /** Implements the {@code |filterCssValue} directive. */
     public static final FilterCssValue INSTANCE = new FilterCssValue();
@@ -846,10 +807,7 @@ public final class EscapingConventions {
     }
   }
 
-
-  /**
-   * Escapes using URI percent encoding : {@code 'A' => "%41"}
-   */
+  /** Escapes using URI percent encoding : {@code 'A' => "%41"} */
   private static final class UriEscapeListBuilder extends EscapeListBuilder {
     @Override
     String getNumericEscapeFor(char plainText) {
@@ -868,12 +826,11 @@ public final class EscapingConventions {
     }
   }
 
-
   /**
-   * Implements the {@code |normalizeUri} directive which allows arbitrary content to be included
-   * in a URI regardless of the string delimiters of the the surrounding language.
-   * This normalizes, but does not escape, so it does not affect URI special characters, but
-   * instead escapes HTML, CSS, and JS delimiters.
+   * Implements the {@code |normalizeUri} directive which allows arbitrary content to be included in
+   * a URI regardless of the string delimiters of the the surrounding language. This normalizes, but
+   * does not escape, so it does not affect URI special characters, but instead escapes HTML, CSS,
+   * and JS delimiters.
    */
   public static final class NormalizeUri extends CrossLanguageStringXform {
     /** Implements the {@code |normalizeUri} directive. */
@@ -919,10 +876,7 @@ public final class EscapingConventions {
     }
   }
 
-
-  /**
-   * Like {@link NormalizeUri} but filters out dangerous protocols.
-   */
+  /** Like {@link NormalizeUri} but filters out dangerous protocols. */
   public static final class FilterNormalizeUri extends CrossLanguageStringXform {
     /** Implements the {@code |filterNormalizeUri} directive. */
     public static final FilterNormalizeUri INSTANCE = new FilterNormalizeUri();
@@ -952,11 +906,14 @@ public final class EscapingConventions {
       // (4) paths ending in /..
       super(
           Pattern.compile(
-              "^" +
-              // Reject case (3) and (4)
-              "(?![^#?]*/(?:\\.|%2E){2}(?:[/?#]|\\z))" +
-              // Accept cases (1) and (2)
-              "(?:(?:https?|mailto):|[^&:/?#]*(?:[/?#]|\\z))", Pattern.CASE_INSENSITIVE),
+              "^"
+                  +
+                  // Reject case (3) and (4)
+                  "(?![^#?]*/(?:\\.|%2E){2}(?:[/?#]|\\z))"
+                  +
+                  // Accept cases (1) and (2)
+                  "(?:(?:https?|mailto):|[^&:/?#]*(?:[/?#]|\\z))",
+              Pattern.CASE_INSENSITIVE),
           null);
     }
 
@@ -971,7 +928,6 @@ public final class EscapingConventions {
     }
   }
 
-
   /**
    * Like {@link FilterNormalizeUri}, but also accepts {@code data:} and {@code blob:} URIs, since
    * image sources don't execute script in the same origin as the page (although image handling
@@ -979,9 +935,9 @@ public final class EscapingConventions {
    * protect against such a thing).
    *
    * <p>Only intended to be used with images; for videos and audio we expect some sort of further
-   * review since they can more easily be used for social engineering.  Video and audio still
-   * accept http/https because remote video and audio can still be protected against via CSP,
-   * but data URIs don't have self-evident provenance.
+   * review since they can more easily be used for social engineering. Video and audio still accept
+   * http/https because remote video and audio can still be protected against via CSP, but data URIs
+   * don't have self-evident provenance.
    */
   public static final class FilterNormalizeMediaUri extends CrossLanguageStringXform {
     /** Implements the {@code |filterNormalizeMediaUri} directive. */
@@ -997,16 +953,16 @@ public final class EscapingConventions {
           Pattern.compile(
               // Allow relative URIs.
               "^[^&:/?#]*(?:[/?#]|\\z)"
-              // Allow http and https URIs.
-              + "|^https?:"
-              // Allow image data URIs. Ignore the subtype because browsers ignore them anyways.
-              // In fact, most browsers happily accept text/html or a completely empty MIME, but it
-              // doesn't hurt to verify that it at least looks vaguely correct.
-              + "|^data:image/[a-z0-9+]+"
-              + ";base64,[a-z0-9+/]+=*\\z"
-              // Blob URIs -- while there's no saying what's in them, (a) they are created on the
-              // same origin, and (b) no worse than loading a random http/https link.
-              + "|^blob:",
+                  // Allow http and https URIs.
+                  + "|^https?:"
+                  // Allow image data URIs. Ignore the subtype because browsers ignore them anyways.
+                  // In fact, most browsers happily accept text/html or a completely empty MIME, but
+                  // it doesn't hurt to verify that it at least looks vaguely correct.
+                  + "|^data:image/[a-z0-9+]+"
+                  + ";base64,[a-z0-9+/]+=*\\z"
+                  // Blob URIs -- while there's no saying what's in them, (a) they are created on
+                  // the same origin, and (b) no worse than loading a random http/https link.
+                  + "|^blob:",
               Pattern.CASE_INSENSITIVE),
           null);
     }
@@ -1026,7 +982,6 @@ public final class EscapingConventions {
     }
   }
 
-
   /**
    * Accepts only data URI's that contain an image.
    *
@@ -1039,7 +994,7 @@ public final class EscapingConventions {
    * http/https.
    */
   public static final class FilterImageDataUri extends CrossLanguageStringXform {
-    /** Implements the {@code |filterNormalizeUri} directive. */
+    /** Implements the {@code |filterImageDataUri} directive. */
     public static final FilterImageDataUri INSTANCE = new FilterImageDataUri();
 
     private FilterImageDataUri() {
@@ -1067,6 +1022,35 @@ public final class EscapingConventions {
     }
   }
 
+  /**
+   * Accepts only tel URIs but does not verify complete correctness.
+   *
+   * <p>The RFC for the tel: URI https://tools.ietf.org/html/rfc3966
+   */
+  public static final class FilterTelUri extends CrossLanguageStringXform {
+    /** Implements the {@code |filterTelUri} directive. */
+    public static final FilterTelUri INSTANCE = new FilterTelUri();
+
+    private FilterTelUri() {
+      super(
+          Pattern.compile("^tel:[0-9a-z;=\\-+._!~*' /():&$#?@,]+\\z", Pattern.CASE_INSENSITIVE),
+          null);
+    }
+
+    @Override
+    protected ImmutableList<Escape> defineEscapes() {
+      return ImmutableList.<Escape>of();
+    }
+
+    @Override
+    public String getInnocuousOutput() {
+      // NOTE: about:invalid is registered in http://www.w3.org/TR/css3-values/#about-invalid :
+      // "The about:invalid URI references a non-existent document with a generic error condition.
+      // It can be used when a URI is necessary, but the default value shouldn't be resolveable as
+      // any type of document."
+      return "about:invalid#" + INNOCUOUS_OUTPUT;
+    }
+  }
 
   /**
    * Implements the {@code |escapeUri} directive which allows arbitrary content to be included in a
@@ -1082,24 +1066,28 @@ public final class EscapingConventions {
 
     @Override
     protected ImmutableList<Escape> defineEscapes() {
+      // From Appendix A of RFC 3986
+      // unreserved := ALPHA / DIGIT / "-" / "." / "_" / "~"
+      String unreservedChars = "-.";
+      for (char c = '0'; c <= '9'; c++) {
+        unreservedChars += c;
+      }
+      for (char c = 'A'; c <= 'Z'; c++) {
+        unreservedChars += c;
+      }
+      unreservedChars += '_';
+      for (char c = 'a'; c <= 'z'; c++) {
+        unreservedChars += c;
+      }
+      unreservedChars += '~';
       return new UriEscapeListBuilder()
-          .escapeAllInRangeExcept(
-              0, 0x80,
-              // From Appendix A of RFC 3986
-              // unreserved := ALPHA / DIGIT / "-" / "." / "_" / "~"
-              '-', '.',
-              '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-              'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q',
-              'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
-              '_',
-              'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q',
-              'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
-              '~')
+          .escapeAllInRangeExcept(0, 0x80, unreservedChars.toCharArray())
           // All non-ASCII codepoints escaped per the constructor above.
           .build();
     }
 
-    @Override public List<String> getLangFunctionNames(EscapingLanguage language) {
+    @Override
+    public List<String> getLangFunctionNames(EscapingLanguage language) {
       if (language == EscapingLanguage.JAVASCRIPT) {
         return ImmutableList.<String>of("goog.string.urlEncode", "encodeURIComponent");
       } else if (language == EscapingLanguage.PYTHON) {
@@ -1109,10 +1097,9 @@ public final class EscapingConventions {
     }
   }
 
-
   /**
-   * Implements the {@code |filterHtmlAttributes} directive which filters out identifiers that
-   * can't appear as part of an HTML tag or attribute name.
+   * Implements the {@code |filterHtmlAttributes} directive which filters out identifiers that can't
+   * appear as part of an HTML tag or attribute name.
    */
   public static final class FilterHtmlAttributes extends CrossLanguageStringXform {
     /** Implements the {@code |filterHtmlAttributes} directive. */
@@ -1122,16 +1109,16 @@ public final class EscapingConventions {
       super(
           Pattern.compile(
               "^"
-              // Disallow on* and src* attribute names.
-              + "(?!on|src|"
-              // Disallow specific other attribute names.
-              + "(?:style|action|archive|background|cite|classid|codebase|data|dsync|href"
-              + "|longdesc|usemap)\\s*$)"
-              + "(?:"
-              // Must match letters
-              + "[a-z0-9_$:-]*"
-              // Match until the end.
-              + ")\\z",
+                  // Disallow on* and src* attribute names.
+                  + "(?!on|src|"
+                  // Disallow specific other attribute names.
+                  + "(?:style|action|archive|background|cite|classid|codebase|data|dsync|href"
+                  + "|longdesc|usemap)\\s*$)"
+                  + "(?:"
+                  // Must match letters
+                  + "[a-z0-9_$:-]*"
+                  // Match until the end.
+                  + ")\\z",
               Pattern.CASE_INSENSITIVE),
           null);
     }
@@ -1141,7 +1128,6 @@ public final class EscapingConventions {
       return ImmutableList.<Escape>of();
     }
   }
-
 
   /**
    * Implements the {@code |filterHtmlElementName} directive which filters out identifiers that
@@ -1155,9 +1141,9 @@ public final class EscapingConventions {
       super(
           Pattern.compile(
               "^"
-              // Disallow special element names.
-              + "(?!script|style|title|textarea|xmp|no)"
-              + "[a-z0-9_$:-]*\\z",
+                  // Disallow special element names.
+                  + "(?!script|style|title|textarea|xmp|no)"
+                  + "[a-z0-9_$:-]*\\z",
               Pattern.CASE_INSENSITIVE),
           null);
     }
@@ -1168,10 +1154,53 @@ public final class EscapingConventions {
     }
   }
 
-
   /**
-   * An accessor for all string transforms defined above.
+   * Implements the {@code |filterCspNonceValue} directive
+   *
+   * <p>This only allows alphanumeric, plus, slash, and equals. So importantly it shouldn't be used
+   * in any programming-languagey context, such as:
+   *
+   * <ul>
+   *   <li>JavaScript outside a string
+   *   <li>CSS outside a string
+   *   <li>tag names, attribute names ("attributes" context)
+   * </ul>
+   *
+   * <p>It is allowed in:
+   *
+   * <ul>
+   *   <li>HTML pcdata, rcdata, attribute values, even nospace
+   *   <li>CSS and JS strings
+   *   <li>HTML, JS, CSS comments
+   * </ul>
+   *
+   * <p>And in practice, it is only used in:
+   *
+   * <ul>
+   *   <li>HTML attribute values
+   * </ul>
+   *
+   * <p>See also https://www.w3.org/TR/CSP2/#nonce_value
    */
+  public static final class FilterCspNonceValue extends CrossLanguageStringXform {
+    public static final FilterCspNonceValue INSTANCE = new FilterCspNonceValue();
+
+    private FilterCspNonceValue() {
+      super(Pattern.compile("^[a-zA-Z0-9+/]+=*$"), null);
+    }
+
+    @Override
+    protected ImmutableList<Escape> defineEscapes() {
+      return ImmutableList.<Escape>of();
+    }
+
+    @Override
+    public String getInnocuousOutput() {
+      return INNOCUOUS_OUTPUT;
+    }
+  }
+
+  /** An accessor for all string transforms defined above. */
   public static Iterable<CrossLanguageStringXform> getAllEscapers() {
     // This list is hard coded but is checked by unittests for the contextual auto-escaper.
     return ImmutableList.of(
@@ -1185,61 +1214,59 @@ public final class EscapingConventions {
         FilterCssValue.INSTANCE,
         EscapeUri.INSTANCE,
         NormalizeUri.INSTANCE,
+        FilterCspNonceValue.INSTANCE,
         FilterNormalizeUri.INSTANCE,
         FilterNormalizeMediaUri.INSTANCE,
         FilterImageDataUri.INSTANCE,
+        FilterTelUri.INSTANCE,
         FilterHtmlAttributes.INSTANCE,
-        FilterHtmlElementName.INSTANCE
-        );
+        FilterHtmlElementName.INSTANCE);
   }
-
 
   /**
    * A string, used as the result of a filter when the filter pattern does not match the input, that
    * is not a substring of any keyword or well-known identifier in HTML, JS, or CSS and that is a
    * valid identifier part in all those languages, and which cannot terminate a string, comment, or
    * other bracketed section.
-   * <p>
-   * This string is also longer than necessary so that developers can use grep when it starts
+   *
+   * <p>This string is also longer than necessary so that developers can use grep when it starts
    * showing up in their output.
-   * <p>
-   * If grep directed you here, then one of your Soy templates is using a filter directive that
-   * is receiving a potentially unsafe input.  Run your app in debug mode and you should get the
-   * name of the directive and the input deemed unsafe.
+   *
+   * <p>If grep directed you here, then one of your Soy templates is using a filter directive that
+   * is receiving a potentially unsafe input. Run your app in debug mode and you should get the name
+   * of the directive and the input deemed unsafe.
    */
   public static final String INNOCUOUS_OUTPUT = "zSoyz";
 
-
   /**
-   * Loose matcher for HTML tags, DOCTYPEs, and HTML comments.
-   * This will reliably find HTML tags (though not CDATA tags and not XML tags whose name or
-   * namespace starts with a non-latin character), and will do a good job with DOCTYPES (though
-   * will have trouble with complex doctypes that define their own entities) and does a decent job
-   * with simple HTML comments.
-   * <p>
-   * This should be good enough since HTML sanitizers do not typically output comments, or CDATA,
+   * Loose matcher for HTML tags, DOCTYPEs, and HTML comments. This will reliably find HTML tags
+   * (though not CDATA tags and not XML tags whose name or namespace starts with a non-latin
+   * character), and will do a good job with DOCTYPES (though will have trouble with complex
+   * doctypes that define their own entities) and does a decent job with simple HTML comments.
+   *
+   * <p>This should be good enough since HTML sanitizers do not typically output comments, or CDATA,
    * or RCDATA content.
-   * <p>
-   * The tag name, if any is in group 1.
+   *
+   * <p>The tag name, if any is in group 1.
    */
-  public static final Pattern HTML_TAG_CONTENT = Pattern.compile(
-      // Matches a left angle bracket followed by either
-      // (1) a "!" which indicates a doctype or comment, or
-      // (2) an optional solidus (/, indicating an end tag) and an HTML tag name.
-      // followed by any number of quoted strings (found in tags and doctypes) or other content
-      // terminated by a right angle bracket.
-      "<(?:!|/?([a-zA-Z][a-zA-Z0-9:\\-]*))(?:[^>'\"]|\"[^\"]*\"|'[^']*')*>");
-
+  public static final Pattern HTML_TAG_CONTENT =
+      Pattern.compile(
+          // Matches a left angle bracket followed by either
+          // (1) a "!" which indicates a doctype or comment, or
+          // (2) an optional solidus (/, indicating an end tag) and an HTML tag name.
+          // followed by any number of quoted strings (found in tags and doctypes) or other content
+          // terminated by a right angle bracket.
+          "<(?:!|/?([a-zA-Z][a-zA-Z0-9:\\-]*))(?:[^>'\"]|\"[^\"]*\"|'[^']*')*>");
 
   /**
-   * Convert an ASCII string to full-width.
-   * Full-width characters are in Unicode page U+FFxx and are used to allow ASCII characters to be
-   * embedded in written Chinese without breaking alignment -- so a sinograph which occupies two
-   * columns can line up properly with a Latin letter or symbol which normally occupies only one
-   * column.
-   * <p>
-   * See <a href="http://en.wikipedia.org/wiki/Duplicate_characters_in_Unicode#CJK_fullwidth_forms">
-   * CJK fullwidth forms</a> and <a href="unicode.org/charts/PDF/UFF00.pdf">unicode.org</a>.
+   * Convert an ASCII string to full-width. Full-width characters are in Unicode page U+FFxx and are
+   * used to allow ASCII characters to be embedded in written Chinese without breaking alignment --
+   * so a sinograph which occupies two columns can line up properly with a Latin letter or symbol
+   * which normally occupies only one column.
+   *
+   * <p>See <a
+   * href="http://en.wikipedia.org/wiki/Duplicate_characters_in_Unicode#CJK_fullwidth_forms">CJK
+   * fullwidth forms</a> and <a href="unicode.org/charts/PDF/UFF00.pdf">unicode.org</a>.
    */
   private static String toFullWidth(String ascii) {
     int numChars = ascii.length();

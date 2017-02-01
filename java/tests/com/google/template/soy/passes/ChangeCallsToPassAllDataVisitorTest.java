@@ -23,21 +23,23 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ExplodingErrorReporter;
-import com.google.template.soy.passes.ChangeCallsToPassAllDataVisitor;
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
-
-import junit.framework.TestCase;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for ChangeCallsToPassAllDataVisitor,
  *
  */
-public final class ChangeCallsToPassAllDataVisitorTest extends TestCase {
+@RunWith(JUnit4.class)
+public final class ChangeCallsToPassAllDataVisitorTest {
 
   private static final ErrorReporter FAIL = ExplodingErrorReporter.get();
 
+  @Test
   public void testChangedCall() {
     String callCode =
         "{@param xxx : ? }\n"
@@ -64,14 +66,13 @@ public final class ChangeCallsToPassAllDataVisitorTest extends TestCase {
         .isEqualTo("{call .foo data=\"all\" /}");
   }
 
-
+  @Test
   public void testUnchangedCall() {
 
-    String callCode =
-        "{call .foo /}\n";
+    String callCode = "{call .foo /}\n";
     testUnchangedCallHelper(callCode);
 
-    callCode = "{@param goo : ? }\n" + "{call .foo data=\"$goo\" /}\n";
+    callCode = "{@param goo : ? }\n{call .foo data=\"$goo\" /}\n";
     testUnchangedCallHelper(callCode);
 
     callCode =
@@ -84,27 +85,22 @@ public final class ChangeCallsToPassAllDataVisitorTest extends TestCase {
             + "{/call}\n";
     testUnchangedCallHelper(callCode);
 
-    callCode = "{@param xxx0 : ? }\n" + "{call .foo}\n" + "  {param xxx: $xxx0 /}\n" + "{/call}\n";
+    callCode = "{@param xxx0 : ? }\n{call .foo}\n  {param xxx: $xxx0 /}\n{/call}\n";
     testUnchangedCallHelper(callCode);
 
-    callCode = "{call .foo}\n" + "  {param xxx: 'xxx' /}\n" + "{/call}\n";
+    callCode = "{call .foo}\n  {param xxx: 'xxx' /}\n{/call}\n";
     testUnchangedCallHelper(callCode);
 
-    callCode = "{@param goo: ? }\n" + "{call .foo}\n" + "  {param xxx: $goo.xxx /}\n" + "{/call}\n";
+    callCode = "{@param goo: ? }\n{call .foo}\n  {param xxx: $goo.xxx /}\n{/call}\n";
     testUnchangedCallHelper(callCode);
 
-    callCode =
-        "{@param xxx : ? }\n" + "{call .foo}\n" + "  {param xxx: $xxx.goo /}\n" + "{/call}\n";
+    callCode = "{@param xxx : ? }\n{call .foo}\n  {param xxx: $xxx.goo /}\n{/call}\n";
     testUnchangedCallHelper(callCode);
 
-    callCode =
-        "{@param xxx : ? }\n" + "{call .foo}\n" + "  {param xxx}{$xxx}{/param}\n" + "{/call}\n";
+    callCode = "{@param xxx : ? }\n{call .foo}\n  {param xxx}{$xxx}{/param}\n{/call}\n";
     testUnchangedCallHelper(callCode);
 
-    callCode =
-        "{call .foo}\n" +
-        "  {param xxx}xxx{/param}\n" +
-        "{/call}\n";
+    callCode = "{call .foo}\n  {param xxx}xxx{/param}\n{/call}\n";
     testUnchangedCallHelper(callCode);
 
     callCode =
@@ -115,7 +111,6 @@ public final class ChangeCallsToPassAllDataVisitorTest extends TestCase {
             + "{/call}\n";
     testUnchangedCallHelper(callCode);
   }
-
 
   private void testUnchangedCallHelper(String callCode) {
     SoyFileSetNode soyTree =
@@ -130,7 +125,7 @@ public final class ChangeCallsToPassAllDataVisitorTest extends TestCase {
         .isEqualTo(ImmutableList.of("|escapeHtml"));
   }
 
-
+  @Test
   public void testUnchangedCallWithLoopVar() {
     String soyCode =
         "{@param xxxs : ? }\n"
@@ -149,5 +144,4 @@ public final class ChangeCallsToPassAllDataVisitorTest extends TestCase {
 
     assertThat(callNodeInsideLoopAfterPass).isSameAs(callNodeInsideLoopBeforePass);
   }
-
 }

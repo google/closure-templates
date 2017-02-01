@@ -16,6 +16,7 @@
 
 package com.google.template.soy.jbcsrc;
 
+import javax.annotation.Nullable;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
@@ -26,18 +27,16 @@ import org.objectweb.asm.commons.LocalVariablesSorter;
 import org.objectweb.asm.commons.Method;
 import org.objectweb.asm.commons.TableSwitchGenerator;
 
-import javax.annotation.Nullable;
-
 /**
  * A {@link MethodVisitor} that acts as a substitute for {@link GeneratorAdapter}.
- * 
- * <p>{@link GeneratorAdapter} has lots of convient methods (like 
- * {@link GeneratorAdapter#push(int)}), however it is a subtype of {@link LocalVariablesSorter} 
- * which automatically renumbers local variables.  This is actually fine (i think), but the problem
- * is that it makes our debugging information (like {@link ClassData#toString()} or 
- * {@link Expression#trace()}) very misleading since none of the local variable indices in the debug
+ *
+ * <p>{@link GeneratorAdapter} has lots of convenient methods (like {@link
+ * GeneratorAdapter#push(int)}), however it is a subtype of {@link LocalVariablesSorter} which
+ * automatically renumbers local variables. This is actually fine (i think), but the problem is that
+ * it makes our debugging information (like {@link ClassData#toString()} or {@link
+ * Expression#trace()}) very misleading since none of the local variable indices in the debug
  * information match the indexes in the generated code, so the debug data just looks wrong.
- * 
+ *
  * <p>So instead we use forwarding to reuse the safe subset of the {@link GeneratorAdapter} api and
  * this allows us to skip past all the local variable munging.
  */
@@ -49,9 +48,15 @@ final class CodeBuilder extends MethodVisitor {
   }
 
   CodeBuilder(int access, Method method, @Nullable Type[] exceptions, ClassVisitor cv) {
-    this(access, method, 
-        cv.visitMethod(access, method.getName(), method.getDescriptor(),
-            null /* generic signature */, getInternalNames(exceptions)));
+    this(
+        access,
+        method,
+        cv.visitMethod(
+            access,
+            method.getName(),
+            method.getDescriptor(),
+            null /* generic signature */,
+            getInternalNames(exceptions)));
   }
 
   CodeBuilder(MethodVisitor mv, int access, String name, String desc) {
@@ -61,11 +66,11 @@ final class CodeBuilder extends MethodVisitor {
 
   private static String[] getInternalNames(@Nullable Type[] types) {
     if (types == null) {
-        return null;
+      return null;
     }
     String[] names = new String[types.length];
     for (int i = 0; i < names.length; ++i) {
-        names[i] = types[i].getInternalName();
+      names[i] = types[i].getInternalName();
     }
     return names;
   }
@@ -134,7 +139,7 @@ final class CodeBuilder extends MethodVisitor {
   public void dup() {
     adapter.dup();
   }
-  
+
   /** See {@link GeneratorAdapter#dupX1()} */
   public void dupX1() {
     adapter.dupX1();
@@ -149,12 +154,12 @@ final class CodeBuilder extends MethodVisitor {
   public void dup2() {
     adapter.dup2();
   }
-  
+
   /** See {@link GeneratorAdapter#dup2X1()} */
   public void dup2X1() {
     adapter.dup2X1();
   }
-  
+
   /** See {@link GeneratorAdapter#dup2X2()} */
   public void dup2X2() {
     adapter.dup2X2();

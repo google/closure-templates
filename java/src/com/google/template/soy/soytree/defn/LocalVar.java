@@ -46,14 +46,15 @@ public class LocalVar extends AbstractVarDefn {
     this.declaringNode = declaringNode;
   }
 
-
-  @Override public Kind kind() {
+  @Override
+  public Kind kind() {
     return Kind.LOCAL_VAR;
   }
 
   /**
-   * Setter for the type - this is necessary because sometimes we don't know
-   * the variable type until after analysis.
+   * Setter for the type - this is necessary because sometimes we don't know the variable type until
+   * after analysis.
+   *
    * @param type The data type of the variable.
    */
   public void setType(SoyType type) {

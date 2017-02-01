@@ -20,9 +20,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.template.soy.base.SourceLocation;
 
-/**
- * Helpers for dealing with {@link Token tokens}
- */
+/** Helpers for dealing with {@link Token tokens} */
 final class Tokens {
 
   /**
@@ -51,5 +49,24 @@ final class Tokens {
 
   private static boolean endsLaterThan(Token tok, int endLine, int endCol) {
     return tok.endLine > endLine || (tok.endLine == endLine && tok.endColumn > endCol);
+  }
+
+  /**
+   * Checks that the parser is exactly one token ahead of the parser.
+   *
+   * <p>Our grammar is (mostly) LL(1) so this should be the standard case, but if LOOKAHEAD is
+   * introduced http://www.engr.mun.ca/~theo/JavaCC-FAQ/javacc-faq-moz.htm#tth_sEc3.12
+   *
+   * @param parser The parser.
+   */
+  static void checkLexerIsExactlyOneTokenAhead(SoyFileParser parser) {
+    Token current = parser.getToken(0);
+    if (current.next != null) {
+      if (current.next.next != null) {
+        throw new IllegalStateException("lexer is more than one token ahead");
+      }
+    } else {
+      throw new IllegalStateException("lexer is 0 tokens ahead, this should be impossible.");
+    }
   }
 }

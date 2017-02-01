@@ -18,7 +18,7 @@ package com.google.template.soy.sharedpasses.opti;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.data.SoyRecord;
-import com.google.template.soy.data.SoyValueHelper;
+import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.shared.restricted.SoyPurePrintDirective;
 import com.google.template.soy.sharedpasses.render.Environment;
@@ -33,23 +33,21 @@ import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.TemplateRegistry;
-
 import javax.annotation.Nullable;
 
 /**
  * Visitor for prerendering the template subtree rooted at a given SoyNode. This is possible when
  * all data values are known at compile time.
  *
- * Package-private helper for {@link SimplifyVisitor}.
+ * <p>Package-private helper for {@link SimplifyVisitor}.
  *
- * <p> The rendered output will be appended to the Appendable provided to the constructor.
+ * <p>The rendered output will be appended to the Appendable provided to the constructor.
  *
  */
 final class PrerenderVisitor extends RenderVisitor {
 
   /**
-   * @param soyJavaDirectivesMap Map of all SoyJavaPrintDirectives (name to
-   *     directive).
+   * @param soyJavaDirectivesMap Map of all SoyJavaPrintDirectives (name to directive).
    * @param preevalVisitorFactory Factory for creating an instance of PreevalVisitor.
    * @param outputBuf The Appendable to append the output to.
    * @param templateRegistry A registry of all templates.
@@ -64,7 +62,7 @@ final class PrerenderVisitor extends RenderVisitor {
         preevalVisitorFactory,
         outputBuf,
         templateRegistry,
-        SoyValueHelper.EMPTY_DICT,
+        SoyValueConverter.EMPTY_DICT,
         null /* ijData */,
         null /* activeDelPackageNames */,
         null /* msgBundle */,
@@ -72,8 +70,8 @@ final class PrerenderVisitor extends RenderVisitor {
         null /* cssRenamingMap */);
   }
 
-
-  @Override protected PrerenderVisitor createHelperInstance(Appendable outputBuf, SoyRecord data) {
+  @Override
+  protected PrerenderVisitor createHelperInstance(Appendable outputBuf, SoyRecord data) {
 
     return new PrerenderVisitor(
         soyJavaDirectivesMap,
@@ -82,8 +80,8 @@ final class PrerenderVisitor extends RenderVisitor {
         templateRegistry);
   }
 
-
-  @Override public Void exec(SoyNode soyNode) {
+  @Override
+  public Void exec(SoyNode soyNode) {
     // Set the environment to be empty for each node.  This will set all params to Undefined.
     env = Environment.prerenderingEnvironment();
     // Note: This is a catch-all to turn RuntimeExceptions that aren't RenderExceptions into
@@ -100,37 +98,36 @@ final class PrerenderVisitor extends RenderVisitor {
     }
   }
 
-
   // -----------------------------------------------------------------------------------------------
   // Implementations for specific nodes.
 
-
-  @Override protected void visitMsgFallbackGroupNode(MsgFallbackGroupNode node) {
+  @Override
+  protected void visitMsgFallbackGroupNode(MsgFallbackGroupNode node) {
     throw RenderException.create("Cannot prerender MsgFallbackGroupNode.");
   }
 
-
-  @Override protected void visitCssNode(CssNode node) {
+  @Override
+  protected void visitCssNode(CssNode node) {
     throw RenderException.create("Cannot prerender CssNode.");
   }
 
-
-  @Override protected void visitCallDelegateNode(CallDelegateNode node) {
+  @Override
+  protected void visitCallDelegateNode(CallDelegateNode node) {
     throw RenderException.create("Cannot prerender CallDelegateNode.");
   }
 
-
-  @Override protected void visitLogNode(LogNode node) {
+  @Override
+  protected void visitLogNode(LogNode node) {
     throw RenderException.create("Cannot prerender LogNode.");
   }
 
-
-  @Override protected void visitDebuggerNode(DebuggerNode node) {
+  @Override
+  protected void visitDebuggerNode(DebuggerNode node) {
     throw RenderException.create("Cannot prerender DebuggerNode.");
   }
 
-
-  @Override protected void visitPrintNode(PrintNode node) {
+  @Override
+  protected void visitPrintNode(PrintNode node) {
     for (PrintDirectiveNode directiveNode : node.getChildren()) {
       if (!isSoyPurePrintDirective(directiveNode)) {
         throw RenderException.create("Cannot prerender a node with some impure print directive.");
@@ -139,19 +136,17 @@ final class PrerenderVisitor extends RenderVisitor {
     super.visitPrintNode(node);
   }
 
-
-  @Override protected void visitPrintDirectiveNode(PrintDirectiveNode node) {
+  @Override
+  protected void visitPrintDirectiveNode(PrintDirectiveNode node) {
     if (!isSoyPurePrintDirective(node)) {
       throw RenderException.create("Cannot prerender impure print directive.");
     }
     super.visitPrintDirectiveNode(node);
   }
 
-
   private boolean isSoyPurePrintDirective(PrintDirectiveNode node) {
     SoyJavaPrintDirective directive = soyJavaDirectivesMap.get(node.getName());
-    return directive != null &&
-        directive.getClass().isAnnotationPresent(SoyPurePrintDirective.class);
+    return directive != null
+        && directive.getClass().isAnnotationPresent(SoyPurePrintDirective.class);
   }
-
 }

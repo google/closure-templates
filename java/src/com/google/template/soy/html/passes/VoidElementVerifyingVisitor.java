@@ -19,23 +19,21 @@ package com.google.template.soy.html.passes;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.html.AbstractHtmlSoyNodeVisitor;
-import com.google.template.soy.html.HtmlCloseTagNode;
 import com.google.template.soy.html.HtmlDefinitions;
-import com.google.template.soy.html.HtmlOpenTagEndNode;
-import com.google.template.soy.html.HtmlOpenTagNode;
+import com.google.template.soy.html.IncrementalHtmlCloseTagNode;
+import com.google.template.soy.html.IncrementalHtmlOpenTagNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 
-
 /**
- * Looks for void element closing tags that are not immediately preceded by an open tag of the
- * same type. This indicates an error on the developer's part as void elements may not contain any
+ * Looks for void element closing tags that are not immediately preceded by an open tag of the same
+ * type. This indicates an error on the developer's part as void elements may not contain any
  * content. While the spec prohibits void elements from having closing tags at all, we allow them
  * for people who like XML.
  */
-public final class VoidElementVerifyingVisitor extends AbstractHtmlSoyNodeVisitor<Void>  {
+public final class VoidElementVerifyingVisitor extends AbstractHtmlSoyNodeVisitor<Void> {
   private static final SoyErrorKind INVALID_CLOSE_TAG =
       SoyErrorKind.of(
           "Closing tag for a void HTML "
@@ -50,7 +48,7 @@ public final class VoidElementVerifyingVisitor extends AbstractHtmlSoyNodeVisito
   }
 
   @Override
-  protected void visitHtmlCloseTagNode(HtmlCloseTagNode node) {
+  protected void visitIncrementalHtmlCloseTagNode(IncrementalHtmlCloseTagNode node) {
     String tagName = node.getTagName();
 
     if (!HtmlDefinitions.HTML5_VOID_ELEMENTS.contains(tagName)) {
@@ -68,11 +66,8 @@ public final class VoidElementVerifyingVisitor extends AbstractHtmlSoyNodeVisito
     } else {
       StandaloneNode previousNode = parent.getChild(previousIndex);
 
-      if (previousNode instanceof HtmlOpenTagNode
-          && ((HtmlOpenTagNode) previousNode).getTagName().equals(tagName)) {
-        return;
-      } else if (previousNode instanceof HtmlOpenTagEndNode
-          && ((HtmlOpenTagEndNode) previousNode).getTagName().equals(tagName)) {
+      if (previousNode instanceof IncrementalHtmlOpenTagNode
+          && ((IncrementalHtmlOpenTagNode) previousNode).getTagName().equals(tagName)) {
         return;
       }
 
@@ -83,7 +78,8 @@ public final class VoidElementVerifyingVisitor extends AbstractHtmlSoyNodeVisito
   // -----------------------------------------------------------------------------------------------
   // Fallback implementation.
 
-  @Override protected void visitSoyNode(SoyNode node) {
+  @Override
+  protected void visitSoyNode(SoyNode node) {
     if (node instanceof ParentSoyNode<?>) {
       visitChildren((ParentSoyNode<?>) node);
     }

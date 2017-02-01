@@ -18,33 +18,38 @@ package com.google.template.soy.jbcsrc.api;
 
 /**
  * An {@link AdvisingAppendable} that delegates to a StringBuilder.
- * 
+ *
  * <p>NOTE: {@link #softLimitReached()} is hard coded to return {@code false}, since it is assumed
  * that users will not care about limiting buffer usage.
  */
 public final class AdvisingStringBuilder implements AdvisingAppendable {
   private final StringBuilder delegate = new StringBuilder();
 
-  @Override public AdvisingStringBuilder append(CharSequence s) {
+  @Override
+  public AdvisingStringBuilder append(CharSequence s) {
     delegate.append(s);
     return this;
   }
 
-  @Override public AdvisingStringBuilder append(CharSequence s, int start, int end) {
+  @Override
+  public AdvisingStringBuilder append(CharSequence s, int start, int end) {
     delegate.append(s, start, end);
     return this;
   }
 
-  @Override public AdvisingStringBuilder append(char c) {
+  @Override
+  public AdvisingStringBuilder append(char c) {
     delegate.append(c);
     return this;
   }
 
-  @Override public boolean softLimitReached() {
+  @Override
+  public boolean softLimitReached() {
     return false;
   }
 
-  @Override public String toString() {
+  @Override
+  public String toString() {
     return delegate.toString();
   }
 

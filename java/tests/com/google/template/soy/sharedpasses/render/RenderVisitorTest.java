@@ -17,6 +17,7 @@
 package com.google.template.soy.sharedpasses.render;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.junit.Assert.fail;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Predicate;
@@ -40,7 +41,7 @@ import com.google.template.soy.data.SoyEasyDict;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.SoyValueHelper;
+import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ExplodingErrorReporter;
@@ -64,9 +65,6 @@ import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.types.SoyTypeRegistry;
-
-import junit.framework.TestCase;
-
 import java.io.ByteArrayOutputStream;
 import java.io.FileDescriptor;
 import java.io.FileOutputStream;
@@ -76,49 +74,79 @@ import java.io.PrintStream;
 import java.io.StringReader;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.annotation.Nullable;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for RenderVisitor.
  *
  */
-public class RenderVisitorTest extends TestCase {
+@RunWith(JUnit4.class)
+public class RenderVisitorTest {
 
   private static final Injector INJECTOR = Guice.createInjector(new SoyModule());
 
-  private static final SoyValueHelper VALUE_HELPER = INJECTOR.getInstance(SoyValueHelper.class);
+  private static final SoyValueConverter CONVERTER = INJECTOR.getInstance(SoyValueConverter.class);
 
   private static final SoyRecord TEST_DATA;
+
   static {
-    SoyList tri = VALUE_HELPER.newEasyList(1, 3, 6, 10, 15, 21);
-    TEST_DATA = VALUE_HELPER.newEasyDict(
-        "boo", 8, "foo.bar", "baz", "foo.goo2", tri, "goo", tri, "moo", 3.14, "t", true, "f", false,
-        "map0", VALUE_HELPER.newEasyDict(),
-        "list0", VALUE_HELPER.newEasyList(),
-        "list1", VALUE_HELPER.newEasyList(1, 2, 3),
-        "component", "comp",
-        "plainText", "<plaintext id=foo>",
-        "sanitizedContent",
-        UnsafeSanitizedContentOrdainer.ordainAsSafe(
-            "<plaintext id=foo>", SanitizedContent.ContentKind.HTML),
-        "greekA", "alpha", "greekB", "beta",
-        "toStringTestValue", createToStringTestValue());
+    SoyList tri = CONVERTER.newEasyList(1, 3, 6, 10, 15, 21);
+    TEST_DATA =
+        CONVERTER.newEasyDict(
+            "boo",
+            8,
+            "foo.bar",
+            "baz",
+            "foo.goo2",
+            tri,
+            "goo",
+            tri,
+            "moo",
+            3.14,
+            "t",
+            true,
+            "f",
+            false,
+            "map0",
+            CONVERTER.newEasyDict(),
+            "list0",
+            CONVERTER.newEasyList(),
+            "list1",
+            CONVERTER.newEasyList(1, 2, 3),
+            "component",
+            "comp",
+            "plainText",
+            "<plaintext id=foo>",
+            "sanitizedContent",
+            UnsafeSanitizedContentOrdainer.ordainAsSafe(
+                "<plaintext id=foo>", SanitizedContent.ContentKind.HTML),
+            "greekA",
+            "alpha",
+            "greekB",
+            "beta",
+            "toStringTestValue",
+            createToStringTestValue());
   }
 
   private static final SoyRecord TEST_IJ_DATA =
-      VALUE_HELPER.newEasyDict("ijBool", true, "ijInt", 26, "ijStr", "injected");
+      CONVERTER.newEasyDict("ijBool", true, "ijInt", 26, "ijStr", "injected");
 
   private static final SoyIdRenamingMap TEST_XID_RENAMING_MAP =
       new SoyIdRenamingMap() {
-        @Override public String get(String key) {
+        @Override
+        public String get(String key) {
           return key + "_id_renamed";
         }
       };
 
   private static final SoyCssRenamingMap TEST_CSS_RENAMING_MAP =
       new SoyCssRenamingMap() {
-        @Override public String get(String key) {
+        @Override
+        public String get(String key) {
           return key + "_renamed";
         }
       };
@@ -128,12 +156,14 @@ public class RenderVisitorTest extends TestCase {
   private SoyIdRenamingMap xidRenamingMap = null;
   private SoyCssRenamingMap cssRenamingMap = null;
 
-  @Override protected void setUp() {
+  @Before
+  public void setUp() {
     SharedTestUtils.simulateNewApiCall(INJECTOR);
   }
 
   /**
    * Asserts that the given input string (should be a template body) renders to the given result.
+   *
    * @param templateBody The input string to render (should be a template body).
    * @param result The expected rendered result.
    * @throws Exception If the assertion is not true or if there's an error.
@@ -144,6 +174,7 @@ public class RenderVisitorTest extends TestCase {
 
   /**
    * Asserts that the given input string (should be a template body) renders to the given result.
+   *
    * @param templateBody The input string to render (should be a template body).
    * @param data The SoyRecord data used for testing.
    * @param result The expected rendered result.
@@ -156,10 +187,11 @@ public class RenderVisitorTest extends TestCase {
 
   /**
    * Asserts that the given input string (should be a template body) renders to the given result.
+   *
    * @param templateBody The input string to render (should be a template body).
    * @param errorMessage The expected error message.
-   * @throws Exception If an expected exception is not thrown, or the error message is
-   *     different from expected.
+   * @throws Exception If an expected exception is not thrown, or the error message is different
+   *     from expected.
    */
   private void assertRenderException(String templateBody, String errorMessage) throws Exception {
     assertRenderExceptionWithDataAndMsgBundle(templateBody, TEST_DATA, null, errorMessage);
@@ -167,11 +199,12 @@ public class RenderVisitorTest extends TestCase {
 
   /**
    * Asserts that the given input string (should be a template body) renders to the given result.
+   *
    * @param templateBody The input string to render (should be a template body).
    * @param data The SoyRecord data used for testing.
    * @param errorMessage The expected error message.
-   * @throws Exception If an expected exception is not thrown, or the error message is
-   *     different from expected.
+   * @throws Exception If an expected exception is not thrown, or the error message is different
+   *     from expected.
    */
   private void assertRenderExceptionWithData(
       String templateBody, SoyRecord data, String errorMessage) throws Exception {
@@ -180,20 +213,24 @@ public class RenderVisitorTest extends TestCase {
 
   /**
    * Asserts that the given input string (should be a template body) renders to the given result.
+   *
    * @param templateBody The input string to render (should be a template body).
    * @param data The SoyRecord data used for testing.
    * @param msgBundle The bundle of translated messages.
    * @param errorMessage The expected error message.
-   * @throws Exception If an expected exception is not thrown, or the error message is
-   *     different from expected.
+   * @throws Exception If an expected exception is not thrown, or the error message is different
+   *     from expected.
    */
   private void assertRenderExceptionWithDataAndMsgBundle(
       String templateBody, SoyRecord data, @Nullable SoyMsgBundle msgBundle, String errorMessage)
       throws Exception {
     try {
       String result = renderWithDataAndMsgBundle(templateBody, data, msgBundle);
-      fail("Invalid template body didn't throw exception. Template body was:\n" + templateBody
-          + "\n result was:\n" + result);
+      fail(
+          "Invalid template body didn't throw exception. Template body was:\n"
+              + templateBody
+              + "\n result was:\n"
+              + result);
     } catch (RenderException e) {
       assertThat(e.getMessage()).contains(errorMessage);
     }
@@ -201,6 +238,7 @@ public class RenderVisitorTest extends TestCase {
 
   /**
    * Renders the given input string (should be a template body) and returns the result.
+   *
    * @param templateBody The input string to render (should be a template body).
    * @return The rendered result.
    * @throws Exception If there's an error.
@@ -211,17 +249,19 @@ public class RenderVisitorTest extends TestCase {
 
   /**
    * Renders the given input string (should be a template body) and returns the result.
+   *
    * @param templateBody The input string to render (should be a template body).
    * @param data The soy data as a map of variables to objects.
    * @return The rendered result.
    * @throws Exception If there's an error.
    */
-  private String renderWithData(String templateBody, SoyRecord data)  throws Exception {
+  private String renderWithData(String templateBody, SoyRecord data) throws Exception {
     return renderWithDataAndMsgBundle(templateBody, data, null);
   }
 
   /**
    * Renders the given input string (should be a template body) and returns the result.
+   *
    * @param templateBody The input string to render (should be a template body).
    * @param data The soy data as a map of variables to objects.
    * @param msgBundle The bundle of translated messages.
@@ -229,7 +269,7 @@ public class RenderVisitorTest extends TestCase {
    * @throws Exception If there's an error.
    */
   private String renderWithDataAndMsgBundle(
-      String templateBody, SoyRecord data, @Nullable SoyMsgBundle msgBundle)  throws Exception {
+      String templateBody, SoyRecord data, @Nullable SoyMsgBundle msgBundle) throws Exception {
 
     ErrorReporter boom = ExplodingErrorReporter.get();
     SoyFileSetNode soyTree =
@@ -262,29 +302,35 @@ public class RenderVisitorTest extends TestCase {
   // -----------------------------------------------------------------------------------------------
   // Tests begin here.
 
+  @Test
   public void testRenderRawText() throws Exception {
     String templateBody =
-        "  {sp} aaa bbb  \n" +
-        "  ccc {lb}{rb} ddd {\\n}\n" +
-        "  {literal}eee\n" +
-        "fff }{  {/literal}  \n" +
-        "  \u2222\uEEEE\u9EC4\u607A\n";
+        "  {sp} aaa bbb  \n"
+            + "  ccc {lb}{rb} ddd {\\n}\n"
+            + "  {literal}eee\n"
+            + "fff }{  {/literal}  \n"
+            + "  \u2222\uEEEE\u9EC4\u607A\n";
 
     assertRender(templateBody, "  aaa bbb ccc {} ddd \neee\nfff }{  \u2222\uEEEE\u9EC4\u607A");
   }
 
+  @Test
   public void testRenderComments() throws Exception {
     String templateBody =
-        "  {sp}  // {sp}\n" +  // first {sp} outside of comments
-        "  /* {sp} {sp} */  // {sp}\n" +
-        "  /* {sp} */{sp}/* {sp} */\n" +  // middle {sp} outside of comments
-        "  /* {sp}\n" +
-        "  {sp} */{sp}\n" +  // last {sp} outside of comments
-        "  // {sp} /* {sp} */\n";
+        "  {sp}  // {sp}\n"
+            + // first {sp} outside of comments
+            "  /* {sp} {sp} */  // {sp}\n"
+            + "  /* {sp} */{sp}/* {sp} */\n"
+            + // middle {sp} outside of comments
+            "  /* {sp}\n"
+            + "  {sp} */{sp}\n"
+            + // last {sp} outside of comments
+            "  // {sp} /* {sp} */\n";
 
     assertRender(templateBody, "   ");
   }
 
+  @Test
   public void testRenderPrintStmt() throws Exception {
     String templateBody =
         "{@param foo : ? }\n"
@@ -300,10 +346,12 @@ public class RenderVisitorTest extends TestCase {
             + "  {print ' blah &&blahblahblah' |escapeHtml|insertWordBreaks:8}{sp}\n"
             + "  {$toStringTestValue |noAutoescape}\n";
 
-    assertRender(templateBody,
-      "8 baz injected22 false -1  blah &amp;&amp;blahbl<wbr>ahblah coerceToString()");
+    assertRender(
+        templateBody,
+        "8 baz injected22 false -1  blah &amp;&amp;blahbl<wbr>ahblah coerceToString()");
   }
 
+  @Test
   public void testRenderMsgStmt() throws Exception {
     String templateBody =
         "{@param foo: ?}\n"
@@ -317,44 +365,57 @@ public class RenderVisitorTest extends TestCase {
             + "  {msg meaning=\"verb\" desc=\"\"}Archive{/msg}\n"
             + "  {msg desc=\"\"}Archive{/msg}\n";
 
-    assertRender(templateBody,
-        "You're currently using 26 MB of your quota. " +
-        "<a href=\"baz\">Learn more</A>" +
-        "<br /><br />" +
-        "ArchiveArchiveArchiveArchive");
+    assertRender(
+        templateBody,
+        "You're currently using 26 MB of your quota. "
+            + "<a href=\"baz\">Learn more</A>"
+            + "<br /><br />"
+            + "ArchiveArchiveArchiveArchive");
   }
 
+  @Test
   public void testRenderMsgStmtWithFallback() throws Exception {
-    String templateBody = "" +
-        "  {msg desc=\"\"}\n" +
-        "    blah\n" +
-        "  {fallbackmsg desc=\"\"}\n" +
-        "    bleh\n" +
-        "  {/msg}\n";
+    String templateBody =
+        ""
+            + "  {msg desc=\"\"}\n"
+            + "    blah\n"
+            + "  {fallbackmsg desc=\"\"}\n"
+            + "    bleh\n"
+            + "  {/msg}\n";
 
     // Without msg bundle.
     assertRender(templateBody, "blah");
 
     // With msg bundle.
-    SoyFileNode file = new SoyFileParser(
-            new SoyTypeRegistry(),
-            new IncrementingIdGenerator(),
-            new StringReader("{namespace test}\n{template .foo}\n" + templateBody + "{/template}"),
-            SoyFileKind.SRC,
-            "test.soy",
-            ExplodingErrorReporter.get())
-        .parseSoyFile();
+    SoyFileNode file =
+        new SoyFileParser(
+                new SoyTypeRegistry(),
+                new IncrementingIdGenerator(),
+                new StringReader(
+                    "{namespace test}\n{template .foo}\n" + templateBody + "{/template}"),
+                SoyFileKind.SRC,
+                "test.soy",
+                ExplodingErrorReporter.get())
+            .parseSoyFile();
 
-    MsgNode fallbackMsg = ((MsgFallbackGroupNode) file.getChildren().get(0)
-        .getChildren().get(0)).getChild(1);
-    SoyMsg translatedFallbackMsg = new SoyMsg(
-        MsgUtils.computeMsgIdForDualFormat(fallbackMsg), "x-zz", null, null, false, null, null,
-        ImmutableList.<SoyMsgPart>of(SoyMsgRawTextPart.of("zbleh")));
+    MsgNode fallbackMsg =
+        ((MsgFallbackGroupNode) file.getChildren().get(0).getChildren().get(0)).getChild(1);
+    SoyMsg translatedFallbackMsg =
+        new SoyMsg(
+            MsgUtils.computeMsgIdForDualFormat(fallbackMsg),
+            "x-zz",
+            null,
+            null,
+            false,
+            null,
+            null,
+            ImmutableList.<SoyMsgPart>of(SoyMsgRawTextPart.of("zbleh")));
     SoyMsgBundle msgBundle =
         new SoyMsgBundleImpl("x-zz", Lists.newArrayList(translatedFallbackMsg));
     assertThat(renderWithDataAndMsgBundle(templateBody, TEST_DATA, msgBundle)).isEqualTo("zbleh");
   }
 
+  @Test
   public void testRenderSimpleSelect() throws Exception {
     String templateBody =
         "{@param person: ?}\n"
@@ -366,13 +427,14 @@ public class RenderVisitorTest extends TestCase {
             + "    {/select}\n"
             + "  {/msg}\n";
 
-    SoyEasyDict data = VALUE_HELPER.newEasyDict("person", "The president", "gender", "female");
+    SoyEasyDict data = CONVERTER.newEasyDict("person", "The president", "gender", "female");
     assertRenderWithData(templateBody, data, "The president shared her photos.");
 
     data.set("gender", "male");
     assertRenderWithData(templateBody, data, "The president shared his photos.");
   }
 
+  @Test
   public void testRenderSimplePlural() throws Exception {
     String templateBody =
         "{@param n_people: ?}\n"
@@ -385,7 +447,7 @@ public class RenderVisitorTest extends TestCase {
             + "    {/plural}\n"
             + "  {/msg}\n";
 
-    SoyEasyDict data = VALUE_HELPER.newEasyDict("person", "Bob", "n_people", 0);
+    SoyEasyDict data = CONVERTER.newEasyDict("person", "Bob", "n_people", 0);
     assertRenderWithData(templateBody, data, "Nobody shared photos.");
 
     data.set("n_people", 1);
@@ -395,6 +457,7 @@ public class RenderVisitorTest extends TestCase {
     assertRenderWithData(templateBody, data, "Bob and 9 others shared photos.");
   }
 
+  @Test
   public void testRenderNestedSelects() throws Exception {
     String templateBody =
         "{@param gender1: ?}\n"
@@ -420,8 +483,9 @@ public class RenderVisitorTest extends TestCase {
             + "    {/select}\n"
             + "  {/msg}\n";
 
-    SoyEasyDict data = VALUE_HELPER.newEasyDict(
-        "person1", "Alice", "gender1", "female", "person2", "Lara", "gender2", "female");
+    SoyEasyDict data =
+        CONVERTER.newEasyDict(
+            "person1", "Alice", "gender1", "female", "person2", "Lara", "gender2", "female");
     assertRenderWithData(templateBody, data, "Alice shared her photos with Lara and her friends.");
 
     data.set("person2", "Mark");
@@ -430,15 +494,16 @@ public class RenderVisitorTest extends TestCase {
 
     data.set("person1", "Bob");
     data.set("gender1", "male");
-    assertRenderWithData(templateBody, data,
-        "              Bob shared his photos with Mark and his friends.");
+    assertRenderWithData(
+        templateBody, data, "              Bob shared his photos with Mark and his friends.");
 
     data.set("person2", "Lara");
     data.set("gender2", "female");
-    assertRenderWithData(templateBody, data,
-        "              Bob shared his photos with Lara and her friends.");
+    assertRenderWithData(
+        templateBody, data, "              Bob shared his photos with Lara and her friends.");
   }
 
+  @Test
   public void testRenderPluralNestedInSelect() throws Exception {
     String templateBody =
         "  {@param person : ?}\n"
@@ -461,8 +526,7 @@ public class RenderVisitorTest extends TestCase {
             + "   {/select}\n"
             + "  {/msg}\n";
 
-    SoyEasyDict data = VALUE_HELPER.newEasyDict(
-        "person", "Alice", "gender", "female", "n_people", 0);
+    SoyEasyDict data = CONVERTER.newEasyDict("person", "Alice", "gender", "female", "n_people", 0);
     assertRenderWithData(templateBody, data, "Alice added nobody to her circle.");
 
     data.set("n_people", 1);
@@ -476,6 +540,7 @@ public class RenderVisitorTest extends TestCase {
     assertRenderWithData(templateBody, data, "Bob added 10 people to his circle.");
   }
 
+  @Test
   public void testRenderPlrselComplexConstructs() throws Exception {
     String templateBody =
         "  {@param person : [gender: string, name: string]}\n"
@@ -499,18 +564,21 @@ public class RenderVisitorTest extends TestCase {
             + "    {/select}\n"
             + "  {/msg}\n";
 
-    SoyEasyDict data = VALUE_HELPER.newEasyDict(
-        "person", VALUE_HELPER.newEasyDict("name", "Alice", "gender", "female"),
-        "invitees", VALUE_HELPER.newEasyList("Anna", "Brent", "Chris", "Darin"));
+    SoyEasyDict data =
+        CONVERTER.newEasyDict(
+            "person", CONVERTER.newEasyDict("name", "Alice", "gender", "female"),
+            "invitees", CONVERTER.newEasyList("Anna", "Brent", "Chris", "Darin"));
     assertRenderWithData(templateBody, data, "Alice added Anna and 3 others to her circle.");
 
-    data.set("person", VALUE_HELPER.newEasyDict("name", "Bob", "gender", "male"));
+    data.set("person", CONVERTER.newEasyDict("name", "Bob", "gender", "male"));
     assertRenderWithData(templateBody, data, "Bob added Anna and 3 others to his circle.");
   }
 
+  @Test
   public void testRenderPluralWithEmbeddedHtmlElements() throws Exception {
     /**
      * Link to open up the email options dialog.
+     *
      * @param num {number} Number of people who will be notified via email.
      */
     String templateBody =
@@ -531,17 +599,20 @@ public class RenderVisitorTest extends TestCase {
             + "   {/plural}\n"
             + " {/msg}\n";
 
-    SoyEasyDict data = VALUE_HELPER.newEasyDict("num", 1);
+    SoyEasyDict data = CONVERTER.newEasyDict("num", 1);
     assertRenderWithData(
-        templateBody, data,
+        templateBody,
+        data,
         "Notify <span class=\"sharebox-id-email-number\">1</span> person via email &rsaquo;");
 
     data.set("num", 10);
     assertRenderWithData(
-        templateBody, data,
+        templateBody,
+        data,
         "Notify <span class=\"sharebox-id-email-number\">10</span> people via email &rsaquo;");
   }
 
+  @Test
   public void testRenderSelectWithRuntimeErrors() throws Exception {
     String templateBody =
         "{@param gender: ?}\n"
@@ -553,11 +624,12 @@ public class RenderVisitorTest extends TestCase {
             + "    {/select}\n"
             + "  {/msg}\n";
 
-    SoyEasyDict data = VALUE_HELPER.newEasyDict("person", "The president", "gender", 100);
+    SoyEasyDict data = CONVERTER.newEasyDict("person", "The president", "gender", 100);
     assertRenderExceptionWithData(
         templateBody, data, "Select expression \"$gender\" doesn't evaluate to string.");
   }
 
+  @Test
   public void testRenderPluralWithRuntimeErrors() throws Exception {
     String templateBody =
         "{@param n_people: ?}\n"
@@ -570,11 +642,12 @@ public class RenderVisitorTest extends TestCase {
             + "    {/plural}\n"
             + "  {/msg}\n";
 
-    SoyEasyDict data = VALUE_HELPER.newEasyDict("person", "Bob", "n_people", "nobody");
+    SoyEasyDict data = CONVERTER.newEasyDict("person", "Bob", "n_people", "nobody");
     assertRenderExceptionWithData(
         templateBody, data, "Plural expression \"$n_people\" doesn't evaluate to number.");
   }
 
+  @Test
   public void testRenderLetStmt() throws Exception {
     String templateBody =
         "{@param foo: ?}\n"
@@ -590,6 +663,7 @@ public class RenderVisitorTest extends TestCase {
     assertRender(templateBody, "3Boo!0Boo!1Boo!2Boo!");
   }
 
+  @Test
   public void testRenderIfStmt() throws Exception {
     String templateBody =
         "{@param boo: ?}\n"
@@ -609,6 +683,7 @@ public class RenderVisitorTest extends TestCase {
     assertRender(templateBody, "8+3.14");
   }
 
+  @Test
   public void testRenderSwitchStmt() throws Exception {
     String templateBody =
         "{@param foo: ?}\n"
@@ -629,6 +704,7 @@ public class RenderVisitorTest extends TestCase {
     assertRender(templateBody, "Bluh bazzad");
   }
 
+  @Test
   public void testRenderForeachStmt() throws Exception {
     String templateBody =
         ""
@@ -659,15 +735,16 @@ public class RenderVisitorTest extends TestCase {
             + "    {sp}{$item}\n"
             + "  {/foreach}\n";
 
-    assertRender(templateBody,
-        "" +
-            "1 = Sum of 1 through 1.\n" +
-            "3 = Sum of 1 through 2.\n" +
-            "6 = Sum of 1 through 3.\n" +
-            "10 = Sum of 1 through 4.\n" +
-            "15 = Sum of 1 through 5.\n" +
-            "21 = Sum of 1 through 6.\n" +
-            " 2 6 12 20 30 42 Bluh blah 123 8");
+    assertRender(
+        templateBody,
+        ""
+            + "1 = Sum of 1 through 1.\n"
+            + "3 = Sum of 1 through 2.\n"
+            + "6 = Sum of 1 through 3.\n"
+            + "10 = Sum of 1 through 4.\n"
+            + "15 = Sum of 1 through 5.\n"
+            + "21 = Sum of 1 through 6.\n"
+            + " 2 6 12 20 30 42 Bluh blah 123 8");
 
     // Test iteration over map keys.
     templateBody =
@@ -685,13 +762,13 @@ public class RenderVisitorTest extends TestCase {
             + "    {/if}\n"
             + "  {/foreach}\n";
 
-    SoyEasyDict data = VALUE_HELPER.newEasyDict(
-        "myMap", VALUE_HELPER.newEasyDict("aaa", "Blah", "bbb", 17));
+    SoyEasyDict data =
+        CONVERTER.newEasyDict("myMap", CONVERTER.newEasyDict("aaa", "Blah", "bbb", 17));
     String output = renderWithData(templateBody, data);
-    assertThat(ImmutableSet.of("[aaa: Blah, bbb: 17]", "[bbb: 17, aaa: Blah]"))
-        .contains(output);
+    assertThat(ImmutableSet.of("[aaa: Blah, bbb: 17]", "[bbb: 17, aaa: Blah]")).contains(output);
   }
 
+  @Test
   public void testRenderForStmt() throws Exception {
     String templateBody =
         "{@param goo : list<?> }\n"
@@ -704,45 +781,47 @@ public class RenderVisitorTest extends TestCase {
             + "    {/for}\n"
             + "  {/foreach}\n";
 
-    assertRender(templateBody,
-        "1 = 1\n" +
-        "3 = 1 + 2\n" +
-        "6 = 1 + 2 + 3\n" +
-        "10 = 1 + 2 + 3 + 4\n" +
-        "15 = 1 + 2 + 3 + 4 + 5\n" +
-        "21 = 1 + 2 + 3 + 4 + 5 + 6");
+    assertRender(
+        templateBody,
+        "1 = 1\n"
+            + "3 = 1 + 2\n"
+            + "6 = 1 + 2 + 3\n"
+            + "10 = 1 + 2 + 3 + 4\n"
+            + "15 = 1 + 2 + 3 + 4 + 5\n"
+            + "21 = 1 + 2 + 3 + 4 + 5 + 6");
   }
 
+  @Test
   public void testRenderWithXidRenaming() throws Exception {
     xidRenamingMap = TEST_XID_RENAMING_MAP;
     String templateBody = "..{xid ident}";
     assertRender(templateBody, "..ident_id_renamed");
   }
 
+  @Test
   public void testRenderWithoutXidRenaming() throws Exception {
     String templateBody = "..{xid ident}";
     assertRender(templateBody, "..ident_");
   }
 
+  @Test
   public void testRenderWithCssRenaming() throws Exception {
     cssRenamingMap = TEST_CSS_RENAMING_MAP;
     String templateBody =
         "{@param component : ? }\n" + "..{css class}" + "..{css $component, selector}";
 
-    assertRender(templateBody,
-        "..class_renamed" +
-        "..comp-selector_renamed");
+    assertRender(templateBody, "..class_renamed" + "..comp-selector_renamed");
   }
 
+  @Test
   public void testRenderWithoutCssRenaming() throws Exception {
     String templateBody =
         "{@param component : ? }\n" + "..{css class}" + "..{css $component, selector}";
 
-    assertRender(templateBody,
-        "..class" +
-        "..comp-selector");
+    assertRender(templateBody, "..class" + "..comp-selector");
   }
 
+  @Test
   public void testRenderPcdataWithKnownSafeHtml() throws Exception {
     String templateBody =
         "{@param plainText : ?}\n"
@@ -753,42 +832,41 @@ public class RenderVisitorTest extends TestCase {
 
     assertRender(
         templateBody,
-        "plain: &lt;plaintext id=foo&gt;\n" +
-        "html:  <plaintext id=foo>\n" +
-        "The end.");
+        "plain: &lt;plaintext id=foo&gt;\n" + "html:  <plaintext id=foo>\n" + "The end.");
   }
 
+  @Test
   public void testRenderBasicCall() throws Exception {
     String soyFileContent =
-        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n" +
-        "\n" +
-        "/** @param boo @param foo @param goo */\n" +
-        "{template .callerTemplate}\n" +
-        "  {call .calleeTemplate data=\"all\" /}\n" +
-        "  {call .calleeTemplate data=\"$foo\" /}\n" +
-        "  {call .calleeTemplate data=\"all\"}\n" +
-        "    {param boo: $foo.boo /}\n" +
-        "  {/call}\n" +
-        "  {call .calleeTemplate data=\"all\"}\n" +
-        "    {param boo: 'moo' /}\n" +
-        "  {/call}\n" +
-        "  {call .calleeTemplate data=\"$foo\"}\n" +
-        "    {param boo}moo{/param}\n" +
-        "  {/call}\n" +
-        "  {call .calleeTemplate}\n" +
-        "    {param boo}zoo{/param}\n" +
-        "    {param goo: $foo.goo /}\n" +
-        "  {/call}\n" +
-        "{/template}\n" +
-        "\n" +
-        "/**\n" +
-        " * @param boo\n" +
-        " * @param goo\n" +
-        " */\n" +
-        "{template .calleeTemplate}\n" +
-        "  {$boo}\n" +
-        "  {foreach $n in $goo} {$n}{/foreach}{\\n}\n" +
-        "{/template}\n";
+        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
+            + "\n"
+            + "/** @param boo @param foo @param goo */\n"
+            + "{template .callerTemplate}\n"
+            + "  {call .calleeTemplate data=\"all\" /}\n"
+            + "  {call .calleeTemplate data=\"$foo\" /}\n"
+            + "  {call .calleeTemplate data=\"all\"}\n"
+            + "    {param boo: $foo.boo /}\n"
+            + "  {/call}\n"
+            + "  {call .calleeTemplate data=\"all\"}\n"
+            + "    {param boo: 'moo' /}\n"
+            + "  {/call}\n"
+            + "  {call .calleeTemplate data=\"$foo\"}\n"
+            + "    {param boo}moo{/param}\n"
+            + "  {/call}\n"
+            + "  {call .calleeTemplate}\n"
+            + "    {param boo}zoo{/param}\n"
+            + "    {param goo: $foo.goo /}\n"
+            + "  {/call}\n"
+            + "{/template}\n"
+            + "\n"
+            + "/**\n"
+            + " * @param boo\n"
+            + " * @param goo\n"
+            + " */\n"
+            + "{template .calleeTemplate}\n"
+            + "  {$boo}\n"
+            + "  {foreach $n in $goo} {$n}{/foreach}{\\n}\n"
+            + "{/template}\n";
 
     TemplateRegistry templateRegistry =
         SoyFileSetParserBuilder.forFileContents(soyFileContent)
@@ -796,9 +874,16 @@ public class RenderVisitorTest extends TestCase {
             .parse()
             .registry();
 
-    SoyEasyDict data = VALUE_HELPER.newEasyDict(
-        "boo", "boo", "foo.boo", "foo", "goo", VALUE_HELPER.newEasyList(1, 2, 3),
-        "foo.goo", VALUE_HELPER.newEasyList(3, 2, 1));
+    SoyEasyDict data =
+        CONVERTER.newEasyDict(
+            "boo",
+            "boo",
+            "foo.boo",
+            "foo",
+            "goo",
+            CONVERTER.newEasyList(1, 2, 3),
+            "foo.goo",
+            CONVERTER.newEasyList(3, 2, 1));
 
     StringBuilder outputSb = new StringBuilder();
     RenderVisitor rv =
@@ -816,16 +901,15 @@ public class RenderVisitorTest extends TestCase {
     rv.exec(templateRegistry.getBasicTemplate("ns.callerTemplate"));
 
     String expectedOutput =
-        "boo 1 2 3\n" +
-        "foo 3 2 1\n" +
-        "foo 1 2 3\n" +
-        "moo 1 2 3\n" +
-        "moo 3 2 1\n" +
-        "zoo 3 2 1\n";
+        "boo 1 2 3\n"
+            + "foo 3 2 1\n"
+            + "foo 1 2 3\n"
+            + "moo 1 2 3\n"
+            + "moo 3 2 1\n"
+            + "zoo 3 2 1\n";
 
     assertThat(outputSb.toString()).isEqualTo(expectedOutput);
   }
-
 
   private static class TestFuture extends AbstractFuture<String> {
     private int isDoneCounter;
@@ -836,7 +920,8 @@ public class RenderVisitorTest extends TestCase {
       this.progress = progress;
     }
 
-    @Override public boolean isDone() {
+    @Override
+    public boolean isDone() {
       // Return false twice. We check each future once whether we need to check upon rendering
       // whether it is done and once when actually rendering.
       if (isDoneCounter >= 2) {
@@ -846,51 +931,55 @@ public class RenderVisitorTest extends TestCase {
       return false;
     }
 
-    @Override public String get() throws InterruptedException, ExecutionException {
+    @Override
+    public String get() throws InterruptedException, ExecutionException {
       String val = super.get();
       progress.append(val);
       return val;
     }
   }
 
+  @Test
   public void testRenderFuture() throws Exception {
     final StringBuilder progress = new StringBuilder();
 
-    Flushable flushable = new Flushable() {
-      @Override public void flush() {
-        progress.append("flush;");
-      }
-    };
+    Flushable flushable =
+        new Flushable() {
+          @Override
+          public void flush() {
+            progress.append("flush;");
+          }
+        };
     String soyFileContent =
-        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n" +
-        "\n" +
-        "/** @param boo @param foo @param goo */\n" +
-        "{template .callerTemplate}\n" +
-        "  {call .calleeTemplate data=\"all\" /}\n" +
-        "  {call .calleeTemplate data=\"$foo\" /}\n" +
-        "  {call .calleeTemplate data=\"all\"}\n" +
-        "    {param boo: $foo.boo /}\n" +
-        "  {/call}\n" +
-        "  {call .calleeTemplate data=\"all\"}\n" +
-        "    {param boo: 'moo' /}\n" +
-        "  {/call}\n" +
-        "  {call .calleeTemplate data=\"$foo\"}\n" +
-        "    {param boo}moo{/param}\n" +
-        "  {/call}\n" +
-        "  {call .calleeTemplate}\n" +
-        "    {param boo}zoo{/param}\n" +
-        "    {param goo: $foo.goo /}\n" +
-        "  {/call}\n" +
-        "{/template}\n" +
-        "\n" +
-        "/**\n" +
-        " * @param boo\n" +
-        " * @param goo\n" +
-        " */\n" +
-        "{template .calleeTemplate}\n" +
-        "  {$boo}{$ij.future}\n" +
-        "  {foreach $n in $goo} {$n}{/foreach}{\\n}\n" +
-        "{/template}\n";
+        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
+            + "\n"
+            + "/** @param boo @param foo @param goo */\n"
+            + "{template .callerTemplate}\n"
+            + "  {call .calleeTemplate data=\"all\" /}\n"
+            + "  {call .calleeTemplate data=\"$foo\" /}\n"
+            + "  {call .calleeTemplate data=\"all\"}\n"
+            + "    {param boo: $foo.boo /}\n"
+            + "  {/call}\n"
+            + "  {call .calleeTemplate data=\"all\"}\n"
+            + "    {param boo: 'moo' /}\n"
+            + "  {/call}\n"
+            + "  {call .calleeTemplate data=\"$foo\"}\n"
+            + "    {param boo}moo{/param}\n"
+            + "  {/call}\n"
+            + "  {call .calleeTemplate}\n"
+            + "    {param boo}zoo{/param}\n"
+            + "    {param goo: $foo.goo /}\n"
+            + "  {/call}\n"
+            + "{/template}\n"
+            + "\n"
+            + "/**\n"
+            + " * @param boo\n"
+            + " * @param goo\n"
+            + " */\n"
+            + "{template .calleeTemplate}\n"
+            + "  {$boo}{$ij.future}\n"
+            + "  {foreach $n in $goo} {$n}{/foreach}{\\n}\n"
+            + "{/template}\n";
 
     TemplateRegistry templateRegistry =
         SoyFileSetParserBuilder.forFileContents(soyFileContent)
@@ -898,13 +987,18 @@ public class RenderVisitorTest extends TestCase {
             .parse()
             .registry();
 
-    SoyEasyDict data = VALUE_HELPER.newEasyDict(
-        "boo", new TestFuture("boo", progress),
-        "foo.boo", new TestFuture("foo", progress),
-        "goo", VALUE_HELPER.newEasyList(1, 2, 3),
-        "foo.goo", VALUE_HELPER.newEasyList(3, 2, 1));
+    SoyEasyDict data =
+        CONVERTER.newEasyDict(
+            "boo",
+            new TestFuture("boo", progress),
+            "foo.boo",
+            new TestFuture("foo", progress),
+            "goo",
+            CONVERTER.newEasyList(1, 2, 3),
+            "foo.goo",
+            CONVERTER.newEasyList(3, 2, 1));
 
-    SoyRecord testIj = VALUE_HELPER.newEasyDict("future", new TestFuture("ij", progress));
+    SoyRecord testIj = CONVERTER.newEasyDict("future", new TestFuture("ij", progress));
 
     StringBuilder outputSb = new StringBuilder();
     CountingFlushableAppendable output = new CountingFlushableAppendable(outputSb, flushable);
@@ -924,59 +1018,63 @@ public class RenderVisitorTest extends TestCase {
     rv.exec(templateRegistry.getBasicTemplate("ns.callerTemplate"));
 
     String expectedOutput =
-        "booij 1 2 3\n" +
-        "fooij 3 2 1\n" +
-        "fooij 1 2 3\n" +
-        "mooij 1 2 3\n" +
-        "mooij 3 2 1\n" +
-        "zooij 3 2 1\n";
+        "booij 1 2 3\n"
+            + "fooij 3 2 1\n"
+            + "fooij 1 2 3\n"
+            + "mooij 1 2 3\n"
+            + "mooij 3 2 1\n"
+            + "zooij 3 2 1\n";
 
     assertThat(outputSb.toString()).isEqualTo(expectedOutput);
     assertThat(progress.toString()).isEqualTo("booflush;ijflush;foo");
   }
 
+  @Test
   public void testRenderDelegateCall() throws Exception {
     String soyFileContent1 =
-        "{namespace ns1 autoescape=\"deprecated-noncontextual\"}\n" +
-        "\n" +
-        "/***/\n" +
-        "{template .callerTemplate}\n" +
-        "  {delcall myApp.myDelegate}\n" +
-        "    {param boo: 'aaaaaah' /}\n" +
-        "  {/delcall}\n" +
-        "{/template}\n" +
-        "\n" +
-        "/** @param boo */\n" +
-        "{deltemplate myApp.myDelegate}\n" +  // default implementation (doesn't use $boo)
-        "  000\n" +
-        "{/deltemplate}\n";
+        "{namespace ns1 autoescape=\"deprecated-noncontextual\"}\n"
+            + "\n"
+            + "/***/\n"
+            + "{template .callerTemplate}\n"
+            + "  {delcall myApp.myDelegate}\n"
+            + "    {param boo: 'aaaaaah' /}\n"
+            + "  {/delcall}\n"
+            + "{/template}\n"
+            + "\n"
+            + "/** @param boo */\n"
+            + "{deltemplate myApp.myDelegate}\n"
+            + // default implementation (doesn't use $boo)
+            "  000\n"
+            + "{/deltemplate}\n";
 
     String soyFileContent2 =
-        "{delpackage SecretFeature}\n" +
-        "{namespace ns2 autoescape=\"deprecated-noncontextual\"}\n" +
-        "\n" +
-        "/** @param boo */\n" +
-        "{deltemplate myApp.myDelegate}\n" +  // implementation in SecretFeature
-        "  111 {$boo}\n" +
-        "{/deltemplate}\n";
+        "{delpackage SecretFeature}\n"
+            + "{namespace ns2 autoescape=\"deprecated-noncontextual\"}\n"
+            + "\n"
+            + "/** @param boo */\n"
+            + "{deltemplate myApp.myDelegate}\n"
+            + // implementation in SecretFeature
+            "  111 {$boo}\n"
+            + "{/deltemplate}\n";
 
     String soyFileContent3 =
-        "{delpackage AlternateSecretFeature}\n" +
-        "{namespace ns3 autoescape=\"deprecated-noncontextual\"}\n" +
-        "\n" +
-        "/** @param boo */\n" +
-        "{deltemplate myApp.myDelegate}\n" +  // implementation in AlternateSecretFeature
-        "  222 {call .helper data=\"all\" /}\n" +
-        "{/deltemplate}\n";
+        "{delpackage AlternateSecretFeature}\n"
+            + "{namespace ns3 autoescape=\"deprecated-noncontextual\"}\n"
+            + "\n"
+            + "/** @param boo */\n"
+            + "{deltemplate myApp.myDelegate}\n"
+            + // implementation in AlternateSecretFeature
+            "  222 {call .helper data=\"all\" /}\n"
+            + "{/deltemplate}\n";
 
     String soyFileContent4 =
-        "{delpackage AlternateSecretFeature}\n" +
-        "{namespace ns3 autoescape=\"deprecated-noncontextual\"}\n" +
-        "\n" +
-        "/** @param boo */\n" +
-        "{template .helper private=\"true\"}\n" +
-        "  {$boo} {$ij.ijStr}\n" +
-        "{/template}\n";
+        "{delpackage AlternateSecretFeature}\n"
+            + "{namespace ns3 autoescape=\"deprecated-noncontextual\"}\n"
+            + "\n"
+            + "/** @param boo */\n"
+            + "{template .helper private=\"true\"}\n"
+            + "  {$boo} {$ij.ijStr}\n"
+            + "{/template}\n";
 
     TemplateRegistry templateRegistry =
         SoyFileSetParserBuilder.forFileContents(
@@ -988,42 +1086,82 @@ public class RenderVisitorTest extends TestCase {
 
     Predicate<String> activeDelPackageNames = Predicates.alwaysFalse();
     StringBuilder outputSb = new StringBuilder();
-    INJECTOR.getInstance(RenderVisitorFactory.class)
-        .create(outputSb, templateRegistry, VALUE_HELPER.newEasyDict(), TEST_IJ_DATA,
-            activeDelPackageNames, null, xidRenamingMap, cssRenamingMap)
+    INJECTOR
+        .getInstance(RenderVisitorFactory.class)
+        .create(
+            outputSb,
+            templateRegistry,
+            CONVERTER.newEasyDict(),
+            TEST_IJ_DATA,
+            activeDelPackageNames,
+            null,
+            xidRenamingMap,
+            cssRenamingMap)
         .exec(callerTemplate);
     assertThat(outputSb.toString()).isEqualTo("000");
 
     activeDelPackageNames = Predicates.equalTo("SecretFeature");
     outputSb = new StringBuilder();
-    INJECTOR.getInstance(RenderVisitorFactory.class)
-        .create(outputSb, templateRegistry, VALUE_HELPER.newEasyDict(), TEST_IJ_DATA,
-            activeDelPackageNames, null, xidRenamingMap, cssRenamingMap)
+    INJECTOR
+        .getInstance(RenderVisitorFactory.class)
+        .create(
+            outputSb,
+            templateRegistry,
+            CONVERTER.newEasyDict(),
+            TEST_IJ_DATA,
+            activeDelPackageNames,
+            null,
+            xidRenamingMap,
+            cssRenamingMap)
         .exec(callerTemplate);
     assertThat(outputSb.toString()).isEqualTo("111 aaaaaah");
 
     activeDelPackageNames = Predicates.equalTo("AlternateSecretFeature");
     outputSb = new StringBuilder();
-    INJECTOR.getInstance(RenderVisitorFactory.class)
-        .create(outputSb, templateRegistry, VALUE_HELPER.newEasyDict(), TEST_IJ_DATA,
-            activeDelPackageNames, null, xidRenamingMap, cssRenamingMap)
+    INJECTOR
+        .getInstance(RenderVisitorFactory.class)
+        .create(
+            outputSb,
+            templateRegistry,
+            CONVERTER.newEasyDict(),
+            TEST_IJ_DATA,
+            activeDelPackageNames,
+            null,
+            xidRenamingMap,
+            cssRenamingMap)
         .exec(callerTemplate);
     assertThat(outputSb.toString()).isEqualTo("222 aaaaaah injected");
 
     activeDelPackageNames = Predicates.equalTo("NonexistentFeature");
     outputSb = new StringBuilder();
-    INJECTOR.getInstance(RenderVisitorFactory.class)
-        .create(outputSb, templateRegistry, VALUE_HELPER.newEasyDict(), TEST_IJ_DATA,
-            activeDelPackageNames, null, xidRenamingMap, cssRenamingMap)
+    INJECTOR
+        .getInstance(RenderVisitorFactory.class)
+        .create(
+            outputSb,
+            templateRegistry,
+            CONVERTER.newEasyDict(),
+            TEST_IJ_DATA,
+            activeDelPackageNames,
+            null,
+            xidRenamingMap,
+            cssRenamingMap)
         .exec(callerTemplate);
     assertThat(outputSb.toString()).isEqualTo("000");
 
     activeDelPackageNames =
         Predicates.in(ImmutableSet.of("NonexistentFeature", "AlternateSecretFeature"));
     outputSb = new StringBuilder();
-    INJECTOR.getInstance(RenderVisitorFactory.class)
-        .create(outputSb, templateRegistry, VALUE_HELPER.newEasyDict(), TEST_IJ_DATA,
-            activeDelPackageNames, null, xidRenamingMap, cssRenamingMap)
+    INJECTOR
+        .getInstance(RenderVisitorFactory.class)
+        .create(
+            outputSb,
+            templateRegistry,
+            CONVERTER.newEasyDict(),
+            TEST_IJ_DATA,
+            activeDelPackageNames,
+            null,
+            xidRenamingMap,
+            cssRenamingMap)
         .exec(callerTemplate);
     assertThat(outputSb.toString()).isEqualTo("222 aaaaaah injected");
 
@@ -1031,19 +1169,28 @@ public class RenderVisitorTest extends TestCase {
         Predicates.in(ImmutableSet.of("SecretFeature", "AlternateSecretFeature"));
     outputSb = new StringBuilder();
     try {
-      INJECTOR.getInstance(RenderVisitorFactory.class)
-          .create(outputSb, templateRegistry, VALUE_HELPER.newEasyDict(), TEST_IJ_DATA,
-              activeDelPackageNames, null, xidRenamingMap, cssRenamingMap)
+      INJECTOR
+          .getInstance(RenderVisitorFactory.class)
+          .create(
+              outputSb,
+              templateRegistry,
+              CONVERTER.newEasyDict(),
+              TEST_IJ_DATA,
+              activeDelPackageNames,
+              null,
+              xidRenamingMap,
+              cssRenamingMap)
           .exec(callerTemplate);
       fail();
     } catch (RenderException e) {
       assertThat(e.getMessage())
           .contains(
               "For delegate template 'myApp.myDelegate', found two active implementations with"
-              + " equal priority");
+                  + " equal priority");
     }
   }
 
+  @Test
   public void testRenderDelegateVariantCall() throws Exception {
     String soyFileContent1 =
         ""
@@ -1092,46 +1239,55 @@ public class RenderVisitorTest extends TestCase {
             "  000global\n"
             + "{/deltemplate}\n";
 
-    String soyFileContent2 = "" +
-        "{delpackage SecretFeature}\n" +
-        "{namespace ns2 autoescape=\"deprecated-noncontextual\"}\n" +
-        "\n" +
-        "/** @param boo */\n" +
-        "{deltemplate myApp.myDelegate}\n" +  // variant "" in SecretFeature
-        "  111empty\n" +
-        "{/deltemplate}\n" +
-        "\n" +
-        "/** @param boo */\n" +
-        "{deltemplate myApp.myDelegate variant=\"'alpha'\"}\n" +  // "alpha" in SecretFeature
-        "  111alpha\n" +
-        "{/deltemplate}\n" +
-        "\n" +
-        "/** @param boo */\n" +
-        "{deltemplate myApp.myDelegate variant=\"'beta'\"}\n" +  // "beta" in SecretFeature
-        "  111beta\n" +
-        "{/deltemplate}\n" +
-        "/** @param boo */\n" +
-        "{deltemplate myApp.myDelegate variant=\"test.GLOBAL\"}\n" +  // variant using global
-        "  111global\n" +
-        "{/deltemplate}\n";
+    String soyFileContent2 =
+        ""
+            + "{delpackage SecretFeature}\n"
+            + "{namespace ns2 autoescape=\"deprecated-noncontextual\"}\n"
+            + "\n"
+            + "/** @param boo */\n"
+            + "{deltemplate myApp.myDelegate}\n"
+            + // variant "" in SecretFeature
+            "  111empty\n"
+            + "{/deltemplate}\n"
+            + "\n"
+            + "/** @param boo */\n"
+            + "{deltemplate myApp.myDelegate variant=\"'alpha'\"}\n"
+            + // "alpha" in SecretFeature
+            "  111alpha\n"
+            + "{/deltemplate}\n"
+            + "\n"
+            + "/** @param boo */\n"
+            + "{deltemplate myApp.myDelegate variant=\"'beta'\"}\n"
+            + // "beta" in SecretFeature
+            "  111beta\n"
+            + "{/deltemplate}\n"
+            + "/** @param boo */\n"
+            + "{deltemplate myApp.myDelegate variant=\"test.GLOBAL\"}\n"
+            + // variant using global
+            "  111global\n"
+            + "{/deltemplate}\n";
 
-    String soyFileContent3 = "" +
-        "{delpackage AlternateSecretFeature}\n" +
-        "{namespace ns3 autoescape=\"deprecated-noncontextual\"}\n" +
-        "\n" +
-        "/** @param boo */\n" +
-        "{deltemplate myApp.myDelegate}\n" +  // variant "" in AlternateSecretFeature
-        "  222empty\n" +
-        "{/deltemplate}\n" +
-        "\n" +
-        "/** @param boo */\n" +
-        "{deltemplate myApp.myDelegate variant=\"'alpha'\"}\n" +  // variant "alpha" in Alternate
-        "  222alpha\n" +
-        "{/deltemplate}\n" +
-        "/** @param boo */\n" +
-        "{deltemplate myApp.myDelegate variant=\"test.GLOBAL\"}\n" +  // variant using global
-        "  222global\n" +
-        "{/deltemplate}\n";  // Note: No variant "beta" in AlternateSecretFeature.
+    String soyFileContent3 =
+        ""
+            + "{delpackage AlternateSecretFeature}\n"
+            + "{namespace ns3 autoescape=\"deprecated-noncontextual\"}\n"
+            + "\n"
+            + "/** @param boo */\n"
+            + "{deltemplate myApp.myDelegate}\n"
+            + // variant "" in AlternateSecretFeature
+            "  222empty\n"
+            + "{/deltemplate}\n"
+            + "\n"
+            + "/** @param boo */\n"
+            + "{deltemplate myApp.myDelegate variant=\"'alpha'\"}\n"
+            + // variant "alpha" in Alternate
+            "  222alpha\n"
+            + "{/deltemplate}\n"
+            + "/** @param boo */\n"
+            + "{deltemplate myApp.myDelegate variant=\"test.GLOBAL\"}\n"
+            + // variant using global
+            "  222global\n"
+            + "{/deltemplate}\n"; // Note: No variant "beta" in AlternateSecretFeature.
 
     SoyGeneralOptions options = new SoyGeneralOptions();
     options.setCompileTimeGlobals(ImmutableMap.<String, Object>of("test.GLOBAL", 1));
@@ -1145,42 +1301,82 @@ public class RenderVisitorTest extends TestCase {
 
     Predicate<String> activeDelPackageNames = Predicates.alwaysFalse();
     StringBuilder outputSb = new StringBuilder();
-    INJECTOR.getInstance(RenderVisitorFactory.class)
-        .create(outputSb, templateRegistry, TEST_DATA, TEST_IJ_DATA,
-            activeDelPackageNames, null, xidRenamingMap, cssRenamingMap)
+    INJECTOR
+        .getInstance(RenderVisitorFactory.class)
+        .create(
+            outputSb,
+            templateRegistry,
+            TEST_DATA,
+            TEST_IJ_DATA,
+            activeDelPackageNames,
+            null,
+            xidRenamingMap,
+            cssRenamingMap)
         .exec(callerTemplate);
     assertThat(outputSb.toString()).isEqualTo("000alpha000beta000empty000global");
 
     activeDelPackageNames = Predicates.equalTo("SecretFeature");
     outputSb = new StringBuilder();
-    INJECTOR.getInstance(RenderVisitorFactory.class)
-        .create(outputSb, templateRegistry, TEST_DATA, TEST_IJ_DATA,
-            activeDelPackageNames, null, xidRenamingMap, cssRenamingMap)
+    INJECTOR
+        .getInstance(RenderVisitorFactory.class)
+        .create(
+            outputSb,
+            templateRegistry,
+            TEST_DATA,
+            TEST_IJ_DATA,
+            activeDelPackageNames,
+            null,
+            xidRenamingMap,
+            cssRenamingMap)
         .exec(callerTemplate);
     assertThat(outputSb.toString()).isEqualTo("111alpha111beta111empty111global");
 
     activeDelPackageNames = Predicates.equalTo("AlternateSecretFeature");
     outputSb = new StringBuilder();
-    INJECTOR.getInstance(RenderVisitorFactory.class)
-        .create(outputSb, templateRegistry, TEST_DATA, TEST_IJ_DATA,
-            activeDelPackageNames, null, xidRenamingMap, cssRenamingMap)
+    INJECTOR
+        .getInstance(RenderVisitorFactory.class)
+        .create(
+            outputSb,
+            templateRegistry,
+            TEST_DATA,
+            TEST_IJ_DATA,
+            activeDelPackageNames,
+            null,
+            xidRenamingMap,
+            cssRenamingMap)
         .exec(callerTemplate);
     assertThat(outputSb.toString()).isEqualTo("222alpha000beta222empty222global");
 
     activeDelPackageNames = Predicates.equalTo("NonexistentFeature");
     outputSb = new StringBuilder();
-    INJECTOR.getInstance(RenderVisitorFactory.class)
-        .create(outputSb, templateRegistry, TEST_DATA, TEST_IJ_DATA,
-            activeDelPackageNames, null, xidRenamingMap, cssRenamingMap)
+    INJECTOR
+        .getInstance(RenderVisitorFactory.class)
+        .create(
+            outputSb,
+            templateRegistry,
+            TEST_DATA,
+            TEST_IJ_DATA,
+            activeDelPackageNames,
+            null,
+            xidRenamingMap,
+            cssRenamingMap)
         .exec(callerTemplate);
     assertThat(outputSb.toString()).isEqualTo("000alpha000beta000empty000global");
 
     activeDelPackageNames =
         Predicates.in(ImmutableSet.of("NonexistentFeature", "AlternateSecretFeature"));
     outputSb = new StringBuilder();
-    INJECTOR.getInstance(RenderVisitorFactory.class)
-        .create(outputSb, templateRegistry, TEST_DATA, TEST_IJ_DATA,
-            activeDelPackageNames, null, xidRenamingMap, cssRenamingMap)
+    INJECTOR
+        .getInstance(RenderVisitorFactory.class)
+        .create(
+            outputSb,
+            templateRegistry,
+            TEST_DATA,
+            TEST_IJ_DATA,
+            activeDelPackageNames,
+            null,
+            xidRenamingMap,
+            cssRenamingMap)
         .exec(callerTemplate);
     assertThat(outputSb.toString()).isEqualTo("222alpha000beta222empty222global");
 
@@ -1188,48 +1384,58 @@ public class RenderVisitorTest extends TestCase {
         Predicates.in(ImmutableSet.of("SecretFeature", "AlternateSecretFeature"));
     outputSb = new StringBuilder();
     try {
-      INJECTOR.getInstance(RenderVisitorFactory.class)
-          .create(outputSb, templateRegistry, TEST_DATA, TEST_IJ_DATA,
-              activeDelPackageNames, null, xidRenamingMap, cssRenamingMap)
+      INJECTOR
+          .getInstance(RenderVisitorFactory.class)
+          .create(
+              outputSb,
+              templateRegistry,
+              TEST_DATA,
+              TEST_IJ_DATA,
+              activeDelPackageNames,
+              null,
+              xidRenamingMap,
+              cssRenamingMap)
           .exec(callerTemplate);
       fail();
     } catch (RenderException e) {
       assertThat(e.getMessage())
           .contains(
               "For delegate template 'myApp.myDelegate:alpha', found two active implementations with"
-              + " equal priority");
+                  + " equal priority");
     }
   }
 
+  @Test
   public void testRenderDelegateCallWithoutDefault() throws Exception {
     String soyFileContent1a =
-        "{namespace ns1 autoescape=\"deprecated-noncontextual\"}\n" +
-        "\n" +
-        "/***/\n" +
-        "{template .callerTemplate}\n" +
-        "  {delcall myApp.myDelegate allowemptydefault=\"true\"}\n" +
-        "    {param boo: 'aaaaaah' /}\n" +
-        "  {/delcall}\n" +
-        "{/template}\n";
+        "{namespace ns1 autoescape=\"deprecated-noncontextual\"}\n"
+            + "\n"
+            + "/***/\n"
+            + "{template .callerTemplate}\n"
+            + "  {delcall myApp.myDelegate allowemptydefault=\"true\"}\n"
+            + "    {param boo: 'aaaaaah' /}\n"
+            + "  {/delcall}\n"
+            + "{/template}\n";
 
     String soyFileContent1b =
-        "{namespace ns1 autoescape=\"deprecated-noncontextual\"}\n" +
-        "\n" +
-        "/***/\n" +
-        "{template .callerTemplate}\n" +
-        "  {delcall myApp.myDelegate allowemptydefault=\"false\"}\n" +
-        "    {param boo: 'aaaaaah' /}\n" +
-        "  {/delcall}\n" +
-        "{/template}\n";
+        "{namespace ns1 autoescape=\"deprecated-noncontextual\"}\n"
+            + "\n"
+            + "/***/\n"
+            + "{template .callerTemplate}\n"
+            + "  {delcall myApp.myDelegate allowemptydefault=\"false\"}\n"
+            + "    {param boo: 'aaaaaah' /}\n"
+            + "  {/delcall}\n"
+            + "{/template}\n";
 
     String soyFileContent2 =
-        "{delpackage SecretFeature}\n" +
-        "{namespace ns2 autoescape=\"deprecated-noncontextual\"}\n" +
-        "\n" +
-        "/** @param boo */\n" +
-        "{deltemplate myApp.myDelegate}\n" +  // implementation in SecretFeature
-        "  111 {$boo}\n" +
-        "{/deltemplate}\n";
+        "{delpackage SecretFeature}\n"
+            + "{namespace ns2 autoescape=\"deprecated-noncontextual\"}\n"
+            + "\n"
+            + "/** @param boo */\n"
+            + "{deltemplate myApp.myDelegate}\n"
+            + // implementation in SecretFeature
+            "  111 {$boo}\n"
+            + "{/deltemplate}\n";
 
     // ------ Test with only file 1a in bundle. ------
 
@@ -1239,17 +1445,33 @@ public class RenderVisitorTest extends TestCase {
 
     Predicate<String> activeDelPackageNames = Predicates.alwaysFalse();
     StringBuilder outputSb = new StringBuilder();
-    INJECTOR.getInstance(RenderVisitorFactory.class)
-        .create(outputSb, templateRegistry, VALUE_HELPER.newEasyDict(), null,
-            activeDelPackageNames, null, xidRenamingMap, cssRenamingMap)
+    INJECTOR
+        .getInstance(RenderVisitorFactory.class)
+        .create(
+            outputSb,
+            templateRegistry,
+            CONVERTER.newEasyDict(),
+            null,
+            activeDelPackageNames,
+            null,
+            xidRenamingMap,
+            cssRenamingMap)
         .exec(callerTemplate);
     assertThat(outputSb.toString()).isEmpty();
 
     activeDelPackageNames = Predicates.equalTo("SecretFeature");
     outputSb = new StringBuilder();
-    INJECTOR.getInstance(RenderVisitorFactory.class)
-        .create(outputSb, templateRegistry, VALUE_HELPER.newEasyDict(), null,
-            activeDelPackageNames, null, xidRenamingMap, cssRenamingMap)
+    INJECTOR
+        .getInstance(RenderVisitorFactory.class)
+        .create(
+            outputSb,
+            templateRegistry,
+            CONVERTER.newEasyDict(),
+            null,
+            activeDelPackageNames,
+            null,
+            xidRenamingMap,
+            cssRenamingMap)
         .exec(callerTemplate);
     assertThat(outputSb.toString()).isEmpty();
 
@@ -1263,33 +1485,65 @@ public class RenderVisitorTest extends TestCase {
 
     activeDelPackageNames = Predicates.alwaysFalse();
     outputSb = new StringBuilder();
-    INJECTOR.getInstance(RenderVisitorFactory.class)
-        .create(outputSb, templateRegistry, VALUE_HELPER.newEasyDict(), null,
-            activeDelPackageNames, null, xidRenamingMap, cssRenamingMap)
+    INJECTOR
+        .getInstance(RenderVisitorFactory.class)
+        .create(
+            outputSb,
+            templateRegistry,
+            CONVERTER.newEasyDict(),
+            null,
+            activeDelPackageNames,
+            null,
+            xidRenamingMap,
+            cssRenamingMap)
         .exec(callerTemplate);
     assertThat(outputSb.toString()).isEmpty();
 
     activeDelPackageNames = Predicates.equalTo("SecretFeature");
     outputSb = new StringBuilder();
-    INJECTOR.getInstance(RenderVisitorFactory.class)
-        .create(outputSb, templateRegistry, VALUE_HELPER.newEasyDict(), null,
-            activeDelPackageNames, null, xidRenamingMap, cssRenamingMap)
+    INJECTOR
+        .getInstance(RenderVisitorFactory.class)
+        .create(
+            outputSb,
+            templateRegistry,
+            CONVERTER.newEasyDict(),
+            null,
+            activeDelPackageNames,
+            null,
+            xidRenamingMap,
+            cssRenamingMap)
         .exec(callerTemplate);
     assertThat(outputSb.toString()).isEqualTo("111 aaaaaah");
 
     activeDelPackageNames = Predicates.equalTo("NonexistentFeature");
     outputSb = new StringBuilder();
-    INJECTOR.getInstance(RenderVisitorFactory.class)
-        .create(outputSb, templateRegistry, VALUE_HELPER.newEasyDict(), null,
-            activeDelPackageNames, null, xidRenamingMap, cssRenamingMap)
+    INJECTOR
+        .getInstance(RenderVisitorFactory.class)
+        .create(
+            outputSb,
+            templateRegistry,
+            CONVERTER.newEasyDict(),
+            null,
+            activeDelPackageNames,
+            null,
+            xidRenamingMap,
+            cssRenamingMap)
         .exec(callerTemplate);
     assertThat(outputSb.toString()).isEmpty();
 
     activeDelPackageNames = Predicates.in(ImmutableSet.of("NonexistentFeature", "SecretFeature"));
     outputSb = new StringBuilder();
-    INJECTOR.getInstance(RenderVisitorFactory.class)
-        .create(outputSb, templateRegistry, VALUE_HELPER.newEasyDict(), null,
-            activeDelPackageNames, null, xidRenamingMap, cssRenamingMap)
+    INJECTOR
+        .getInstance(RenderVisitorFactory.class)
+        .create(
+            outputSb,
+            templateRegistry,
+            CONVERTER.newEasyDict(),
+            null,
+            activeDelPackageNames,
+            null,
+            xidRenamingMap,
+            cssRenamingMap)
         .exec(callerTemplate);
     assertThat(outputSb.toString()).isEqualTo("111 aaaaaah");
 
@@ -1304,9 +1558,17 @@ public class RenderVisitorTest extends TestCase {
 
     activeDelPackageNames = Predicates.alwaysFalse();
     try {
-      INJECTOR.getInstance(RenderVisitorFactory.class)
-          .create(new StringBuilder(), templateRegistry, VALUE_HELPER.newEasyDict(), null,
-              activeDelPackageNames, null, xidRenamingMap, cssRenamingMap)
+      INJECTOR
+          .getInstance(RenderVisitorFactory.class)
+          .create(
+              new StringBuilder(),
+              templateRegistry,
+              CONVERTER.newEasyDict(),
+              null,
+              activeDelPackageNames,
+              null,
+              xidRenamingMap,
+              cssRenamingMap)
           .exec(callerTemplate);
       fail();
     } catch (RenderException re) {
@@ -1324,9 +1586,17 @@ public class RenderVisitorTest extends TestCase {
 
     activeDelPackageNames = Predicates.alwaysFalse();
     try {
-      INJECTOR.getInstance(RenderVisitorFactory.class)
-          .create(new StringBuilder(), templateRegistry, VALUE_HELPER.newEasyDict(), null,
-              activeDelPackageNames, null, xidRenamingMap, cssRenamingMap)
+      INJECTOR
+          .getInstance(RenderVisitorFactory.class)
+          .create(
+              new StringBuilder(),
+              templateRegistry,
+              CONVERTER.newEasyDict(),
+              null,
+              activeDelPackageNames,
+              null,
+              xidRenamingMap,
+              cssRenamingMap)
           .exec(callerTemplate);
       fail();
     } catch (RenderException re) {
@@ -1335,13 +1605,22 @@ public class RenderVisitorTest extends TestCase {
 
     activeDelPackageNames = Predicates.equalTo("SecretFeature");
     outputSb = new StringBuilder();
-    INJECTOR.getInstance(RenderVisitorFactory.class)
-        .create(outputSb, templateRegistry, VALUE_HELPER.newEasyDict(), null,
-            activeDelPackageNames, null, xidRenamingMap, cssRenamingMap)
+    INJECTOR
+        .getInstance(RenderVisitorFactory.class)
+        .create(
+            outputSb,
+            templateRegistry,
+            CONVERTER.newEasyDict(),
+            null,
+            activeDelPackageNames,
+            null,
+            xidRenamingMap,
+            cssRenamingMap)
         .exec(callerTemplate);
     assertThat(outputSb.toString()).isEqualTo("111 aaaaaah");
   }
 
+  @Test
   public void testRenderLogStmt() throws Exception {
     String templateBody =
         ""
@@ -1365,16 +1644,18 @@ public class RenderVisitorTest extends TestCase {
     System.setOut(new PrintStream(new FileOutputStream(FileDescriptor.out)));
   }
 
+  @Test
   public void testRenderLogStmtOrdering() throws Exception {
-    String templateBody = "" +
-        "{let $gamma}\n" +
-        "  {log}let-block{/log}\n" +
-        "  let-block\n" +
-        "{/let}\n" +
-        "before{sp}{log}before{/log}\n" +
-        "{$gamma}\n" +
-        "{sp}after{log}after{/log}\n" +
-        "{sp}{$gamma}\n";
+    String templateBody =
+        ""
+            + "{let $gamma}\n"
+            + "  {log}let-block{/log}\n"
+            + "  let-block\n"
+            + "{/let}\n"
+            + "before{sp}{log}before{/log}\n"
+            + "{$gamma}\n"
+            + "{sp}after{log}after{/log}\n"
+            + "{sp}{$gamma}\n";
     // Send stdout to my own buffer.
     ByteArrayOutputStream buffer = new ByteArrayOutputStream();
     System.setOut(new PrintStream(buffer));
@@ -1385,26 +1666,27 @@ public class RenderVisitorTest extends TestCase {
     System.setOut(new PrintStream(new FileOutputStream(FileDescriptor.out)));
   }
 
+  @Test
   public void testRenderCallLazyParamContentNode() throws Exception {
     String soyFileContent =
-        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n" +
-        "\n" +
-        "/** */\n" +
-        "{template .callerTemplate}\n" +
-        "  {call .calleeTemplate}\n" +
-        "    {param foo}\n" +
-        "      param{log}param{/log}\n" +
-        "    {/param}\n" +
-        "  {/call}\n" +
-        "{/template}\n" +
-        "\n" +
-        "/**\n" +
-        " * @param foo\n" +
-        " */\n" +
-        "{template .calleeTemplate}\n" +
-        "  callee{log}callee{/log}\n" +
-        "  {sp}{$foo}{sp}{$foo}\n" +
-        "{/template}\n";
+        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
+            + "\n"
+            + "/** */\n"
+            + "{template .callerTemplate}\n"
+            + "  {call .calleeTemplate}\n"
+            + "    {param foo}\n"
+            + "      param{log}param{/log}\n"
+            + "    {/param}\n"
+            + "  {/call}\n"
+            + "{/template}\n"
+            + "\n"
+            + "/**\n"
+            + " * @param foo\n"
+            + " */\n"
+            + "{template .calleeTemplate}\n"
+            + "  callee{log}callee{/log}\n"
+            + "  {sp}{$foo}{sp}{$foo}\n"
+            + "{/template}\n";
 
     TemplateRegistry templateRegistry =
         SoyFileSetParserBuilder.forFileContents(soyFileContent)
@@ -1413,7 +1695,7 @@ public class RenderVisitorTest extends TestCase {
             .registry();
 
     StringBuilder outputSb = new StringBuilder();
-     // Send stdout to my own buffer.
+    // Send stdout to my own buffer.
 
     ByteArrayOutputStream buffer = new ByteArrayOutputStream();
     System.setOut(new PrintStream(buffer));
@@ -1423,7 +1705,7 @@ public class RenderVisitorTest extends TestCase {
             .create(
                 outputSb,
                 templateRegistry,
-                VALUE_HELPER.newEasyDict(),
+                CONVERTER.newEasyDict(),
                 null,
                 Predicates.<String>alwaysFalse(),
                 null,
@@ -1437,6 +1719,7 @@ public class RenderVisitorTest extends TestCase {
     System.setOut(new PrintStream(new FileOutputStream(FileDescriptor.out)));
   }
 
+  @Test
   public void testRenderExceptionsHaveExtraInfo() throws Exception {
 
     assertRenderException(
@@ -1452,24 +1735,27 @@ public class RenderVisitorTest extends TestCase {
         "When evaluating \"$undefined + 3\":");
   }
 
+  @Test
   public void testParamTypeCheckSuccess() throws Exception {
     assertRender("{@param boo: int}\n{$boo}\n", "8");
     assertRender("{@param list1: list<int>}\n{$list1[0]}\n", "1");
   }
 
+  @Test
   public void testInjectedParamTypeCheckSuccess() throws Exception {
     assertRender("{@inject ijInt: int}\n{$ijInt}\n", "26");
     assertRender("{@inject ijStr: string}\n{$ijStr}\n", "injected");
   }
 
+  @Test
   public void testDelayedCheckingOfCachingProviders() {
     String soyFileContent =
-        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n" +
-        "\n" +
-        "{template .template}\n" +
-        "  {@param foo: int}\n" +
-        "  Before: {$foo}\n" +
-        "{/template}\n";
+        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
+            + "\n"
+            + "{template .template}\n"
+            + "  {@param foo: int}\n"
+            + "  Before: {$foo}\n"
+            + "{/template}\n";
     ErrorReporter boom = ExplodingErrorReporter.get();
     TemplateRegistry templateRegistry =
         SoyFileSetParserBuilder.forFileContents(soyFileContent)
@@ -1479,14 +1765,19 @@ public class RenderVisitorTest extends TestCase {
     TemplateNode callerTemplate = templateRegistry.getBasicTemplate("ns.template");
     final StringBuilder outputSb = new StringBuilder();
     final AtomicReference<String> outputAtFutureGetTime = new AtomicReference<>();
-    AbstractFuture<Integer> fooFuture = new AbstractFuture<Integer>() {
-      { set(1); }
-      @Override public Integer get() throws InterruptedException, ExecutionException {
-        outputAtFutureGetTime.set(outputSb.toString());
-        return super.get();
-      }
-    };
-    SoyRecord data = VALUE_HELPER.newEasyDict("foo", fooFuture);
+    AbstractFuture<Integer> fooFuture =
+        new AbstractFuture<Integer>() {
+          {
+            set(1);
+          }
+
+          @Override
+          public Integer get() throws InterruptedException, ExecutionException {
+            outputAtFutureGetTime.set(outputSb.toString());
+            return super.get();
+          }
+        };
+    SoyRecord data = CONVERTER.newEasyDict("foo", fooFuture);
     RenderVisitor rv =
         INJECTOR
             .getInstance(RenderVisitorFactory.class)
@@ -1504,14 +1795,15 @@ public class RenderVisitorTest extends TestCase {
     assertThat(outputSb.toString()).isEqualTo("Before: 1");
   }
 
+  @Test
   public void testDelayedCheckingOfCachingProviders_typeCheckFailure() {
     String soyFileContent =
-        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n" +
-        "\n" +
-        "{template .template}\n" +
-        "  {@param foo: int}\n" +
-        "  Before: {$foo}\n" +
-        "{/template}\n";
+        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
+            + "\n"
+            + "{template .template}\n"
+            + "  {@param foo: int}\n"
+            + "  Before: {$foo}\n"
+            + "{/template}\n";
     TemplateRegistry templateRegistry =
         SoyFileSetParserBuilder.forFileContents(soyFileContent)
             .errorReporter(FAIL)
@@ -1519,7 +1811,7 @@ public class RenderVisitorTest extends TestCase {
             .registry();
     TemplateNode callerTemplate = templateRegistry.getBasicTemplate("ns.template");
     final StringBuilder outputSb = new StringBuilder();
-    SoyRecord data = VALUE_HELPER.newEasyDict("foo", Futures.immediateFuture("hello world"));
+    SoyRecord data = CONVERTER.newEasyDict("foo", Futures.immediateFuture("hello world"));
     RenderVisitor rv =
         INJECTOR
             .getInstance(RenderVisitorFactory.class)
@@ -1538,31 +1830,35 @@ public class RenderVisitorTest extends TestCase {
     } catch (RenderException exception) {
       assertThat(outputSb.toString()).isEqualTo("Before: ");
       assertThat(exception.getMessage())
-          .contains("Parameter type mismatch: attempt to bind value 'hello world' to parameter "
-              + "'foo' which has declared type 'int'");
+          .contains(
+              "Parameter type mismatch: attempt to bind value 'hello world' to parameter "
+                  + "'foo' which has declared type 'int'");
     }
   }
 
+  @Test
   public void testStreamLazyParamsToOutputStreamDirectly() {
-    String soyFileContent = Joiner.on("\n").join(
-        "{namespace ns autoescape=\"deprecated-noncontextual\"}",
-        "",
-        "{template .callee}",
-        "  {@param body: html}",
-        "  <div>",
-        "    {$body}",
-        "  </div>",
-        "{/template}",
-        "",
-        "{template .caller}",
-        "  {@param future: string}",
-        "  {call .callee}",
-        "    {param body kind=\"html\"}",
-        "      static-content{sp}",
-        "      {$future}",
-        "    {/param}",
-        "  {/call}",
-        "{/template}");
+    String soyFileContent =
+        Joiner.on("\n")
+            .join(
+                "{namespace ns autoescape=\"deprecated-noncontextual\"}",
+                "",
+                "{template .callee}",
+                "  {@param body: html}",
+                "  <div>",
+                "    {$body}",
+                "  </div>",
+                "{/template}",
+                "",
+                "{template .caller}",
+                "  {@param future: string}",
+                "  {call .callee}",
+                "    {param body kind=\"html\"}",
+                "      static-content{sp}",
+                "      {$future}",
+                "    {/param}",
+                "  {/call}",
+                "{/template}");
     TemplateRegistry templateRegistry =
         SoyFileSetParserBuilder.forFileContents(soyFileContent)
             .errorReporter(FAIL)
@@ -1571,14 +1867,19 @@ public class RenderVisitorTest extends TestCase {
     TemplateNode callerTemplate = templateRegistry.getBasicTemplate("ns.caller");
     final StringBuilder outputSb = new StringBuilder();
     final AtomicReference<String> outputAtFutureGetTime = new AtomicReference<>();
-    AbstractFuture<String> future = new AbstractFuture<String>() {
-      { set("future-content"); }
-      @Override public String get() throws InterruptedException, ExecutionException {
-        outputAtFutureGetTime.set(outputSb.toString());
-        return super.get();
-      }
-    };
-    SoyRecord data = VALUE_HELPER.newEasyDict("future", future);
+    AbstractFuture<String> future =
+        new AbstractFuture<String>() {
+          {
+            set("future-content");
+          }
+
+          @Override
+          public String get() throws InterruptedException, ExecutionException {
+            outputAtFutureGetTime.set(outputSb.toString());
+            return super.get();
+          }
+        };
+    SoyRecord data = CONVERTER.newEasyDict("future", future);
     RenderVisitor rv =
         INJECTOR
             .getInstance(RenderVisitorFactory.class)
@@ -1596,38 +1897,43 @@ public class RenderVisitorTest extends TestCase {
     assertThat(outputSb.toString()).isEqualTo("<div>static-content future-content</div>");
   }
 
-
+  @Test
   public void testParamTypeCheckFailed() throws Exception {
     assertRenderException("{@param boo: string}\n{$boo}\n", "Parameter type mismatch");
-    assertRenderException("{@param list1: list<string>}\n{$list1[0]}\n",
-        "Expected value of type");
+    assertRenderException("{@param list1: list<string>}\n{$list1[0]}\n", "Expected value of type");
     assertRenderException("{@inject ijInt: string}\n{$ijInt}\n", "Parameter type mismatch");
   }
 
   private static SoyValue createToStringTestValue() {
     return new SoyAbstractValue() {
-      @Override public String toString() {
+      @Override
+      public String toString() {
         // NOTE: Soy should not print the toString() values, only the coerceToString() values.
         return "toString()";
       }
 
-      @Override public String coerceToString() {
+      @Override
+      public String coerceToString() {
         return "coerceToString()";
       }
 
-      @Override public void render(Appendable appendable) throws IOException {
+      @Override
+      public void render(Appendable appendable) throws IOException {
         appendable.append(coerceToString());
       }
 
-      @Override public boolean coerceToBoolean() {
+      @Override
+      public boolean coerceToBoolean() {
         return true;
       }
 
-      @Override public boolean equals(Object other) {
+      @Override
+      public boolean equals(Object other) {
         return this.getClass() == other.getClass();
       }
 
-      @Override public int hashCode() {
+      @Override
+      public int hashCode() {
         return this.getClass().hashCode();
       }
     };

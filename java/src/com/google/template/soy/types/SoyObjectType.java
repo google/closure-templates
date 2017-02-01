@@ -20,22 +20,19 @@ import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.SoyBackendKind;
 
 /**
- * Type representing an object. Object types have a unique name,
- * and can have zero or more member fields.
+ * Type representing an object. Object types have a unique name, and can have zero or more member
+ * fields.
  *
- * <p>Object types are always referred to by their fully-qualified name; That
- * is, there's no concept of packages or scopes in this type system (those
- * concepts are already factored out before the type definition reaches this
- * point.)
+ * <p>Object types are always referred to by their fully-qualified name; That is, there's no concept
+ * of packages or scopes in this type system (those concepts are already factored out before the
+ * type definition reaches this point.)
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
-*/
+ */
 public interface SoyObjectType extends SoyType {
 
-  /**
-   * Return the fully-qualified name of this object type.
-   */
+  /** Return the fully-qualified name of this object type. */
   String getName();
 
   /**
@@ -46,17 +43,15 @@ public interface SoyObjectType extends SoyType {
   String getNameForBackend(SoyBackendKind backend);
 
   /**
-   * Return the data type of the field with the given name; If there's no such
-   * field, then return {@code null}.
+   * Return the data type of the field with the given name; If there's no such field, then return
+   * {@code null}.
    *
    * @param fieldName The name of the field.
    * @return The field type, or null.
    */
   SoyType getFieldType(String fieldName);
 
-  /**
-   * Return all the possible field names that can be referenced from this ObjectType.
-   */
+  /** Return all the possible field names that can be referenced from this ObjectType. */
   ImmutableSet<String> getFieldNames();
 
   /**
@@ -72,11 +67,10 @@ public interface SoyObjectType extends SoyType {
   String getFieldAccessExpr(String fieldContainerExpr, String fieldName, SoyBackendKind backend);
 
   /**
-   * In some cases, {@link #getFieldAccessExpr accessing a field} requires importing
-   * symbols into the generated code (example being protobuf extension fields which
-   * require importing the extension type). If this field requires imports, then this
-   * method will return the strings representing the symbol needed to import.
-   * Otherwise, returns the empty set.
+   * In some cases, {@link #getFieldAccessExpr accessing a field} requires importing symbols into
+   * the generated code (example being protobuf extension fields which require importing the
+   * extension type). If this field requires imports, then this method will return the strings
+   * representing the symbol needed to import. Otherwise, returns the empty set.
    *
    * @param fieldName The name of the field being accessed.
    * @param backend Which backend we're generating code for.

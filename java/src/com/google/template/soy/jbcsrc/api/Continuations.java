@@ -23,12 +23,9 @@ import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.jbcsrc.api.SoySauce.Continuation;
 import com.google.template.soy.jbcsrc.api.SoySauce.WriteContinuation;
-
 import java.io.IOException;
 
-/**
- * A collection of simple {@link Continuation} and {@link WriteContinuation} implementations.
- */
+/** A collection of simple {@link Continuation} and {@link WriteContinuation} implementations. */
 final class Continuations {
   private Continuations() {}
 
@@ -37,9 +34,9 @@ final class Continuations {
     return FinalContinuation.INSTANCE;
   }
 
-  /** 
-   * Return a string valued continuation.  Rendering logic is delegated to the 
-   * {@link WriteContinuation}, but it is assumed that the builder is the render target.
+  /**
+   * Return a string valued continuation. Rendering logic is delegated to the {@link
+   * WriteContinuation}, but it is assumed that the builder is the render target.
    */
   static Continuation<String> stringContinuation(
       WriteContinuation delegate, AdvisingStringBuilder builder) {
@@ -47,14 +44,15 @@ final class Continuations {
       return new ResultContinuation<>(builder.toString());
     }
     return new AbstractContinuation<String>(delegate, builder) {
-      @Override Continuation<String> nextContinuation(WriteContinuation next) {
+      @Override
+      Continuation<String> nextContinuation(WriteContinuation next) {
         return stringContinuation(next, builder);
       }
     };
   }
-  
+
   /**
-   * Return a {@link SanitizedContent} valued continuation.  Rendering logic is delegated to the 
+   * Return a {@link SanitizedContent} valued continuation. Rendering logic is delegated to the
    * {@link WriteContinuation}, but it is assumed that the builder is the render target.
    */
   static Continuation<SanitizedContent> strictContinuation(
@@ -64,74 +62,82 @@ final class Continuations {
           UnsafeSanitizedContentOrdainer.ordainAsSafe(builder.toString(), kind));
     }
     return new AbstractContinuation<SanitizedContent>(delegate, builder) {
-      @Override Continuation<SanitizedContent> nextContinuation(WriteContinuation next) {
+      @Override
+      Continuation<SanitizedContent> nextContinuation(WriteContinuation next) {
         return strictContinuation(next, builder, kind);
       }
     };
   }
 
   /**
-   * Base class for logic shared between {@link #strictContinuation} and 
-   * {@link #stringContinuation}.
+   * Base class for logic shared between {@link #strictContinuation} and {@link
+   * #stringContinuation}.
    */
   private abstract static class AbstractContinuation<T> implements Continuation<T> {
     final WriteContinuation delegate;
     final AdvisingStringBuilder builder;
-  
+
     AbstractContinuation(WriteContinuation delegate, AdvisingStringBuilder builder) {
       this.delegate = delegate;
       this.builder = builder;
     }
-    
-    @Override public final RenderResult result() {
+
+    @Override
+    public final RenderResult result() {
       return delegate.result();
     }
-  
-    @Override public final T get() {
+
+    @Override
+    public final T get() {
       throw new IllegalStateException("Rendering is not complete");
     }
-  
-    @Override public final Continuation<T> continueRender() {
+
+    @Override
+    public final Continuation<T> continueRender() {
       try {
         return nextContinuation(delegate.continueRender());
       } catch (IOException e) {
         throw new AssertionError("impossible", e);
       }
     }
-  
+
     abstract Continuation<T> nextContinuation(WriteContinuation next);
   }
 
   private enum FinalContinuation implements WriteContinuation {
     INSTANCE;
-    @Override public RenderResult result() {
+
+    @Override
+    public RenderResult result() {
       return RenderResult.done();
     }
-  
-    @Override public WriteContinuation continueRender() {
+
+    @Override
+    public WriteContinuation continueRender() {
       throw new IllegalStateException("Rendering is already complete and cannot be continued");
     }
   }
 
-  /**
-   * A 'done' {@link Continuation} with a non-null value
-   */
+  /** A 'done' {@link Continuation} with a non-null value */
   private static final class ResultContinuation<T> implements Continuation<T> {
     final T value;
-  
+
     ResultContinuation(T value) {
       this.value = checkNotNull(value);
     }
-  
-    @Override public RenderResult result() {
+
+    @Override
+    public RenderResult result() {
       return RenderResult.done();
     }
-  
-    @Override public T get() {
+
+    @Override
+    public T get() {
       return value;
     }
-  
-    @Override public Continuation<T> continueRender() {
+
+    @Override
+    public Continuation<T> continueRender() {
       throw new IllegalStateException("Rendering is already complete and cannot be continued");
     }
   }

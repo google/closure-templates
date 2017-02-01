@@ -27,23 +27,25 @@ import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
-import com.google.template.soy.soytree.SoytreeUtils;
+import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
 
 /**
- * HTML-unescapes all {@link RawTextNode}s in {@link ContentKind#HTML}
- * or {@link ContentKind#ATTRIBUTES} contexts. This is used for Incremental DOM compilation,
- * which treats raw content in these contexts as text rather than HTML source.
+ * HTML-unescapes all {@link RawTextNode}s in {@link ContentKind#HTML} or {@link
+ * ContentKind#ATTRIBUTES} contexts. This is used for Incremental DOM compilation, which treats raw
+ * content in these contexts as text rather than HTML source.
  */
 final class UnescapingVisitor extends AbstractHtmlSoyNodeVisitor<Void> {
 
-  @Override protected void visitSoyNode(SoyNode node) {
+  @Override
+  protected void visitSoyNode(SoyNode node) {
     if (node instanceof ParentSoyNode<?>) {
       visitChildrenAllowingConcurrentModification((ParentSoyNode<?>) node);
     }
   }
 
-  @Override protected void visitRawTextNode(RawTextNode node) {
+  @Override
+  protected void visitRawTextNode(RawTextNode node) {
     if (node.getHtmlContext() != HtmlContext.HTML_PCDATA
         && node.getHtmlContext() != HtmlContext.HTML_NORMAL_ATTR_VALUE) {
       return;
@@ -56,24 +58,32 @@ final class UnescapingVisitor extends AbstractHtmlSoyNodeVisitor<Void> {
       MsgPlaceholderNode containingPlaceholder = node.getNearestAncestor(MsgPlaceholderNode.class);
       // Unless we're _directly_ in a placeholder.
       if (containingPlaceholder == null
-          || !SoytreeUtils.isDescendantOf(containingPlaceholder, containingMsg)) {
+          || !SoyTreeUtils.isDescendantOf(containingPlaceholder, containingMsg)) {
         return;
       }
     }
-    node.getParent().replaceChild(node, new RawTextNode(node.getId(),
-        UnescapeUtils.unescapeHtml(node.getRawText()),
-        node.getSourceLocation(), node.getHtmlContext()));
+    node.getParent()
+        .replaceChild(
+            node,
+            new RawTextNode(
+                node.getId(),
+                UnescapeUtils.unescapeHtml(node.getRawText()),
+                node.getSourceLocation(),
+                node.getHtmlContext()));
   }
 
-  @Override protected void visitTemplateNode(TemplateNode node) {
+  @Override
+  protected void visitTemplateNode(TemplateNode node) {
     visitRenderUnitNode(node);
   }
 
-  @Override protected void visitCallParamContentNode(CallParamContentNode node) {
+  @Override
+  protected void visitCallParamContentNode(CallParamContentNode node) {
     visitRenderUnitNode(node);
   }
 
-  @Override protected void visitLetContentNode(LetContentNode node) {
+  @Override
+  protected void visitLetContentNode(LetContentNode node) {
     visitRenderUnitNode(node);
   }
 

@@ -20,19 +20,17 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.MixinParentNode;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.SoyErrorKind;
-import com.google.template.soy.exprparse.SoyParsingContext;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
-
 import java.util.List;
-
 import javax.annotation.Nullable;
 
 /**
  * Node representing a 'param' with content.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public final class CallParamContentNode extends CallParamNode implements RenderUnitNode {
@@ -50,7 +48,6 @@ public final class CallParamContentNode extends CallParamNode implements RenderU
 
   /** The param's content kind, or null if no 'kind' attribute was present. */
   @Nullable private final ContentKind contentKind;
-
 
   /**
    * @param id The id for this node.
@@ -70,9 +67,9 @@ public final class CallParamContentNode extends CallParamNode implements RenderU
     this.contentKind = contentKind;
   }
 
-
   /**
    * Copy constructor.
+   *
    * @param orig The node to copy.
    */
   private CallParamContentNode(CallParamContentNode orig, CopyState copyState) {
@@ -82,21 +79,21 @@ public final class CallParamContentNode extends CallParamNode implements RenderU
     this.contentKind = orig.contentKind;
   }
 
-
-  @Override public Kind getKind() {
+  @Override
+  public Kind getKind() {
     return Kind.CALL_PARAM_CONTENT_NODE;
   }
 
-
-  @Override public String getKey() {
+  @Override
+  public String getKey() {
     return key;
   }
 
-
-  @Override @Nullable public ContentKind getContentKind() {
+  @Override
+  @Nullable
+  public ContentKind getContentKind() {
     return contentKind;
   }
-
 
   // -----------------------------------------------------------------------------------------------
   // ParentSoyNode stuff.
@@ -104,8 +101,8 @@ public final class CallParamContentNode extends CallParamNode implements RenderU
   // AbstractParentSoyNode. But this class need to include its own MixinParentNode field because
   // it needs to subclass CallParamNode (and Java doesn't allow multiple inheritance).
 
-
-  @Override public String toSourceString() {
+  @Override
+  public String toSourceString() {
     StringBuilder sb = new StringBuilder();
     sb.append(getTagString());
     appendSourceStringForChildren(sb);
@@ -113,91 +110,109 @@ public final class CallParamContentNode extends CallParamNode implements RenderU
     return sb.toString();
   }
 
-  @Override public int numChildren() {
+  @Override
+  public int numChildren() {
     return parentMixin.numChildren();
   }
 
-  @Override public StandaloneNode getChild(int index) {
+  @Override
+  public StandaloneNode getChild(int index) {
     return parentMixin.getChild(index);
   }
 
-  @Override public int getChildIndex(StandaloneNode child) {
+  @Override
+  public int getChildIndex(StandaloneNode child) {
     return parentMixin.getChildIndex(child);
   }
 
-  @Override public List<StandaloneNode> getChildren() {
+  @Override
+  public List<StandaloneNode> getChildren() {
     return parentMixin.getChildren();
   }
 
-  @Override public void addChild(StandaloneNode child) {
+  @Override
+  public void addChild(StandaloneNode child) {
     parentMixin.addChild(child);
   }
 
-  @Override public void addChild(int index, StandaloneNode child) {
+  @Override
+  public void addChild(int index, StandaloneNode child) {
     parentMixin.addChild(index, child);
   }
 
-  @Override public void removeChild(int index) {
+  @Override
+  public void removeChild(int index) {
     parentMixin.removeChild(index);
   }
 
-  @Override public void removeChild(StandaloneNode child) {
+  @Override
+  public void removeChild(StandaloneNode child) {
     parentMixin.removeChild(child);
   }
 
-  @Override public void replaceChild(int index, StandaloneNode newChild) {
+  @Override
+  public void replaceChild(int index, StandaloneNode newChild) {
     parentMixin.replaceChild(index, newChild);
   }
 
-  @Override public void replaceChild(StandaloneNode currChild, StandaloneNode newChild) {
+  @Override
+  public void replaceChild(StandaloneNode currChild, StandaloneNode newChild) {
     parentMixin.replaceChild(currChild, newChild);
   }
 
-  @Override public void clearChildren() {
+  @Override
+  public void clearChildren() {
     parentMixin.clearChildren();
   }
 
-  @Override public void addChildren(List<? extends StandaloneNode> children) {
+  @Override
+  public void addChildren(List<? extends StandaloneNode> children) {
     parentMixin.addChildren(children);
   }
 
-  @Override public void addChildren(int index, List<? extends StandaloneNode> children) {
+  @Override
+  public void addChildren(int index, List<? extends StandaloneNode> children) {
     parentMixin.addChildren(index, children);
   }
 
-  @Override public void appendSourceStringForChildren(StringBuilder sb) {
+  @Override
+  public void appendSourceStringForChildren(StringBuilder sb) {
     parentMixin.appendSourceStringForChildren(sb);
   }
 
-  @Override public CallParamContentNode copy(CopyState copyState) {
+  @Override
+  public CallParamContentNode copy(CopyState copyState) {
     return new CallParamContentNode(this, copyState);
   }
 
   public static final class Builder extends CallParamNode.Builder {
 
     private static CallParamContentNode error() {
-      return new Builder(-1, "error", SourceLocation.UNKNOWN)
-          .build(SoyParsingContext.exploding()); // guaranteed to build
+      return new CallParamContentNode(-1, SourceLocation.UNKNOWN, "error", null, "error");
     }
 
-    public Builder(int id, String commandText, SourceLocation sourceLocation) {
-      super(id, commandText, sourceLocation);
+    public Builder(int id, CommandTextParseResult parseResult, SourceLocation sourceLocation) {
+      super(id, parseResult, sourceLocation);
     }
 
-    public CallParamContentNode build(SoyParsingContext context) {
-      Checkpoint checkpoint = context.errorReporter().checkpoint();
-      CommandTextParseResult parseResult = parseCommandTextHelper(context);
+    public CallParamContentNode build(Checkpoint checkpoint, ErrorReporter errorReporter) {
       if (parseResult.valueExprUnion != null) {
-        context.report(sourceLocation, PARAM_HAS_VALUE_BUT_IS_NOT_SELF_CLOSING, commandText);
+        errorReporter.report(
+            sourceLocation,
+            PARAM_HAS_VALUE_BUT_IS_NOT_SELF_CLOSING,
+            parseResult.originalCommantText);
       }
 
-      if (context.errorReporter().errorsSince(checkpoint)) {
+      if (errorReporter.errorsSince(checkpoint)) {
         return error();
       }
 
       return new CallParamContentNode(
-          id, sourceLocation, parseResult.key, parseResult.contentKind, commandText);
+          id,
+          sourceLocation,
+          parseResult.key,
+          parseResult.contentKind,
+          parseResult.originalCommantText);
     }
   }
-
 }

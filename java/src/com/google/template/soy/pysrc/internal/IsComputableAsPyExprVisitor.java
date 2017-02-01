@@ -37,10 +37,8 @@ import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SwitchNode;
-
 import java.util.HashMap;
 import java.util.Map;
-
 import javax.inject.Inject;
 
 /**
@@ -48,11 +46,11 @@ import javax.inject.Inject;
  * computable as the concatenation of one or more Python expressions. If this is false, it means the
  * generated code for computing the node's output must include one or more full Python statements.
  *
- * <p> Important: This class is in {@link ApiCallScope} because it memoizes results that are
- * reusable for the same parse tree. If we change the parse tree between uses of the scoped
- * instance, then the results may not be correct. (In that case, we would need to take this class
- * out of {@code ApiCallScope} and rewrite the code somehow to still take advantage of the
- * memoized results to the extent that they remain correct.)
+ * <p>Important: This class is in {@link ApiCallScope} because it memoizes results that are reusable
+ * for the same parse tree. If we change the parse tree between uses of the scoped instance, then
+ * the results may not be correct. (In that case, we would need to take this class out of {@code
+ * ApiCallScope} and rewrite the code somehow to still take advantage of the memoized results to the
+ * extent that they remain correct.)
  *
  */
 @ApiCallScope
@@ -74,7 +72,8 @@ class IsComputableAsPyExprVisitor extends AbstractReturningSoyNodeVisitor<Boolea
     return areChildrenComputableAsPyExprs(node);
   }
 
-  @Override protected Boolean visit(SoyNode node) {
+  @Override
+  protected Boolean visit(SoyNode node) {
     if (memoizedResults.containsKey(node)) {
       return memoizedResults.get(node);
     } else {
@@ -84,86 +83,99 @@ class IsComputableAsPyExprVisitor extends AbstractReturningSoyNodeVisitor<Boolea
     }
   }
 
-
   // -----------------------------------------------------------------------------------------------
   // Implementations for specific nodes.
 
-
-  @Override protected Boolean visitRawTextNode(RawTextNode node) {
+  @Override
+  protected Boolean visitRawTextNode(RawTextNode node) {
     return true;
   }
 
-  @Override protected Boolean visitPrintNode(PrintNode node) {
+  @Override
+  protected Boolean visitPrintNode(PrintNode node) {
     return true;
   }
 
-  @Override protected Boolean visitMsgFallbackGroupNode(MsgFallbackGroupNode node) {
+  @Override
+  protected Boolean visitMsgFallbackGroupNode(MsgFallbackGroupNode node) {
     return true;
   }
 
-  @Override protected Boolean visitMsgNode(MsgNode node) {
+  @Override
+  protected Boolean visitMsgNode(MsgNode node) {
     return true;
   }
 
-  @Override protected Boolean visitLetNode(LetNode node) {
+  @Override
+  protected Boolean visitLetNode(LetNode node) {
     return false;
   }
 
-  @Override protected Boolean visitCssNode(CssNode node) {
+  @Override
+  protected Boolean visitCssNode(CssNode node) {
     return true;
   }
 
-  @Override protected Boolean visitIfNode(IfNode node) {
+  @Override
+  protected Boolean visitIfNode(IfNode node) {
     // If all children are computable as Python expressions, then this 'if' statement can be written
     // as an expression as well, using the ternary conditional operator ("'a' if x else 'b'").
     return areChildrenComputableAsPyExprs(node);
   }
 
-  @Override protected Boolean visitIfCondNode(IfCondNode node) {
+  @Override
+  protected Boolean visitIfCondNode(IfCondNode node) {
     return areChildrenComputableAsPyExprs(node);
   }
 
-  @Override protected Boolean visitIfElseNode(IfElseNode node) {
+  @Override
+  protected Boolean visitIfElseNode(IfElseNode node) {
     return areChildrenComputableAsPyExprs(node);
   }
 
-  @Override protected Boolean visitSwitchNode(SwitchNode node) {
+  @Override
+  protected Boolean visitSwitchNode(SwitchNode node) {
     return false;
   }
 
-  @Override protected Boolean visitForeachNode(ForeachNode node) {
+  @Override
+  protected Boolean visitForeachNode(ForeachNode node) {
     // TODO(dcphillips): Consider using list comprehensions to generate the output of a foreach.
     return false;
   }
 
-  @Override protected Boolean visitForNode(ForNode node) {
+  @Override
+  protected Boolean visitForNode(ForNode node) {
     return false;
   }
 
-  @Override protected Boolean visitCallNode(CallNode node) {
+  @Override
+  protected Boolean visitCallNode(CallNode node) {
     return areChildrenComputableAsPyExprs(node);
   }
 
-  @Override protected Boolean visitCallParamValueNode(CallParamValueNode node) {
+  @Override
+  protected Boolean visitCallParamValueNode(CallParamValueNode node) {
     return true;
   }
 
-  @Override protected Boolean visitCallParamContentNode(CallParamContentNode node) {
+  @Override
+  protected Boolean visitCallParamContentNode(CallParamContentNode node) {
     return areChildrenComputableAsPyExprs(node);
   }
 
-  @Override protected Boolean visitLogNode(LogNode node) {
+  @Override
+  protected Boolean visitLogNode(LogNode node) {
     return false;
   }
 
-  @Override protected Boolean visitDebuggerNode(DebuggerNode node) {
+  @Override
+  protected Boolean visitDebuggerNode(DebuggerNode node) {
     return false;
   }
-
 
   // -----------------------------------------------------------------------------------------------
   // Private helpers.
-
 
   /**
    * Private helper to check whether all SoyNode children of a given parent node satisfy

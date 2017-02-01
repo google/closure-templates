@@ -23,11 +23,10 @@ import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
 /**
  * Node representing the 'default' block in a 'plural' block.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public final class MsgPluralDefaultNode extends CaseOrDefaultNode implements MsgBlockNode {
-
 
   /**
    * @param id The id for this node.
@@ -37,23 +36,22 @@ public final class MsgPluralDefaultNode extends CaseOrDefaultNode implements Msg
     super(id, sourceLocation, "default", "");
   }
 
-
   /**
    * Copy constructor.
+   *
    * @param orig The node to copy.
    */
   private MsgPluralDefaultNode(MsgPluralDefaultNode orig, CopyState copyState) {
     super(orig, copyState);
   }
 
-
-  @Override public Kind getKind() {
+  @Override
+  public Kind getKind() {
     return Kind.MSG_PLURAL_DEFAULT_NODE;
   }
 
-
-  @Override public MsgPluralDefaultNode copy(CopyState copyState) {
+  @Override
+  public MsgPluralDefaultNode copy(CopyState copyState) {
     return new MsgPluralDefaultNode(this, copyState);
   }
-
 }

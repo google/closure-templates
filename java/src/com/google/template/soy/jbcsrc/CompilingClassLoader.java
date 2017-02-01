@@ -20,18 +20,16 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * A classloader that can compile templates on demand.
- */
+/** A classloader that can compile templates on demand. */
 final class CompilingClassLoader extends AbstractMemoryClassLoader {
   static {
     // See http://docs.oracle.com/javase/7/docs/technotes/guides/lang/cl-mt.html
     ClassLoader.registerAsParallelCapable();
   }
 
-  // Synchronized hashmap is sufficient for our usecase since we are only calling remove(), CHM 
+  // Synchronized hashmap is sufficient for our usecase since we are only calling remove(), CHM
   // would just use more memory.
-  private final Map<String, ClassData> classesByName = 
+  private final Map<String, ClassData> classesByName =
       Collections.synchronizedMap(new HashMap<String, ClassData>());
 
   private final CompiledTemplateRegistry registry;
@@ -39,7 +37,7 @@ final class CompilingClassLoader extends AbstractMemoryClassLoader {
   CompilingClassLoader(CompiledTemplateRegistry registry) {
     this.registry = registry;
   }
-  
+
   @Override
   ClassData getClassData(String name) {
     ClassData classDef = classesByName.get(name);
@@ -52,9 +50,9 @@ final class CompilingClassLoader extends AbstractMemoryClassLoader {
     // For each template we compile there are only two 'public' classes that could be loaded prior
     // to compiling the template. The CompiledTemplate.Factory class and the CompiledTemplate itself
     boolean isFactory = name.endsWith("$" + StandardNames.FACTORY_CLASS);
-    String compiledTemplateName = 
-        isFactory 
-            ? name.substring(0, name.length() - (StandardNames.FACTORY_CLASS.length() + 1)) 
+    String compiledTemplateName =
+        isFactory
+            ? name.substring(0, name.length() - (StandardNames.FACTORY_CLASS.length() + 1))
             : name;
     CompiledTemplateMetadata meta = registry.getTemplateInfoByClassName(compiledTemplateName);
     if (meta == null) {

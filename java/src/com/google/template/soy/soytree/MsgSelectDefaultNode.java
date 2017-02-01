@@ -23,36 +23,32 @@ import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
 /**
  * Node representing the 'default' block in a 'select' block.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public final class MsgSelectDefaultNode extends CaseOrDefaultNode implements MsgBlockNode {
 
-
-  /**
-   * @param id The id for this node.
-   */
+  /** @param id The id for this node. */
   public MsgSelectDefaultNode(int id, SourceLocation sourceLocation) {
     super(id, sourceLocation, "default", "");
   }
 
-
   /**
    * Copy constructor.
+   *
    * @param orig The node to copy.
    */
   private MsgSelectDefaultNode(MsgSelectDefaultNode orig, CopyState copyState) {
     super(orig, copyState);
   }
 
-
-  @Override public Kind getKind() {
+  @Override
+  public Kind getKind() {
     return Kind.MSG_SELECT_DEFAULT_NODE;
   }
 
-
-  @Override public MsgSelectDefaultNode copy(CopyState copyState) {
+  @Override
+  public MsgSelectDefaultNode copy(CopyState copyState) {
     return new MsgSelectDefaultNode(this, copyState);
   }
-
 }

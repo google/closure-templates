@@ -16,44 +16,33 @@
 
 package com.google.template.soy.soytree;
 
-import static com.google.template.soy.soytree.AutoescapeMode.parseAutoEscapeMode;
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Joiner;
-import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
+import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.basetree.SyntaxVersionUpperBound;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
-import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
-import com.google.template.soy.soytree.TemplateNodeBuilder.DeclInfo.OptionalStatus;
-import com.google.template.soy.soytree.TemplateNodeBuilder.DeclInfo.Type;
 import com.google.template.soy.soytree.defn.HeaderParam;
 import com.google.template.soy.soytree.defn.SoyDocParam;
 import com.google.template.soy.soytree.defn.TemplateParam;
-import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.SoyTypeRegistry;
-import com.google.template.soy.types.aggregate.UnionType;
-import com.google.template.soy.types.parse.TypeParser;
-import com.google.template.soy.types.primitive.NullType;
-
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import javax.annotation.Nullable;
 
 /**
@@ -64,8 +53,6 @@ import javax.annotation.Nullable;
  */
 public abstract class TemplateNodeBuilder {
 
-  private static final SoyErrorKind INVALID_CSS_BASE_NAMESPACE_NAME =
-      SoyErrorKind.of("Invalid CSS base namespace name ''{0}''");
   private static final SoyErrorKind INVALID_SOYDOC_PARAM =
       SoyErrorKind.of("Found invalid soydoc param name ''{0}''");
   private static final SoyErrorKind INVALID_TEMPLATE_NAME =
@@ -83,87 +70,11 @@ public abstract class TemplateNodeBuilder {
   private static final SoyErrorKind PARAM_ALREADY_DECLARED =
       SoyErrorKind.of("Param ''{0}'' already declared");
 
-  /**
-   * Value class used in the input to method {@link #setHeaderDecls}.
-   *
-   * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
-   */
-  public static final class DeclInfo {
-
-    /** The type of declaration (either regular param or injected param). */
-    public enum Type {
-      PARAM("@param"),
-      INJECTED_PARAM("@inject");
-
-      private final String name;
-
-      Type(String name) {
-        this.name = name;
-      }
-
-      @Override
-      public String toString() {
-        return name;
-      }
-    }
-
-    /** Whether this is an optional parameter. */
-    public enum OptionalStatus {
-      REQUIRED,
-      OPTIONAL
-    }
-
-    private final Type type;
-    private final String name;
-    private final String paramTypeExpr;
-    private final OptionalStatus optionalStatus;
-    private final SourceLocation sourceLocation;
-    @Nullable private final String soyDoc;
-
-    public DeclInfo(
-        Type type,
-        OptionalStatus optionalStatus,
-        String name,
-        String paramTypeExpr,
-        @Nullable String soyDoc,
-        SourceLocation sourceLocation) {
-      this.type = type;
-      this.name = name;
-      this.paramTypeExpr = paramTypeExpr;
-      this.soyDoc = soyDoc;
-      this.sourceLocation = sourceLocation;
-      this.optionalStatus = optionalStatus;
-    }
-
-    public Type type() {
-      return type;
-    }
-
-    public String name() {
-      return name;
-    }
-
-    public String paramTypeExpr() {
-      return paramTypeExpr;
-    }
-
-    @Nullable public String soyDoc() {
-      return soyDoc;
-    }
-
-    public SourceLocation location() {
-      return sourceLocation;
-    }
-  }
-
   /** Info from the containing Soy file's header declarations. */
   protected final SoyFileHeaderInfo soyFileHeaderInfo;
 
   /** For reporting parse errors. */
   protected final ErrorReporter errorReporter;
-
-  /** The registry of named types. */
-  private final SoyTypeRegistry typeRegistry;
 
   /** The id for this node. */
   protected Integer id;
@@ -174,12 +85,16 @@ public abstract class TemplateNodeBuilder {
   /** The command text. */
   protected String cmdText;
 
-  /** This template's name.
-   *  This is private instead of protected to enforce use of setTemplateNames(). */
+  /**
+   * This template's name. This is private instead of protected to enforce use of
+   * setTemplateNames().
+   */
   private String templateName;
 
-  /** This template's partial name. Only applicable for V2.
-   *  This is private instead of protected to enforce use of setTemplateNames(). */
+  /**
+   * This template's partial name. Only applicable for V2. This is private instead of protected to
+   * enforce use of setTemplateNames().
+   */
   private String partialTemplateName;
 
   /** A string suitable for display in user msgs as the template name. */
@@ -188,22 +103,23 @@ public abstract class TemplateNodeBuilder {
   /** This template's visibility level. */
   protected Visibility visibility;
 
-  /** The mode of autoescaping for this template.
-   *  This is private instead of protected to enforce use of setAutoescapeInfo(). */
+  /**
+   * The mode of autoescaping for this template. This is private instead of protected to enforce use
+   * of setAutoescapeInfo().
+   */
   private AutoescapeMode autoescapeMode;
 
   /** Required CSS namespaces. */
-  private ImmutableList<String> requiredCssNamespaces;
+  private ImmutableList<String> requiredCssNamespaces = ImmutableList.of();
 
   /** Base CSS namespace for package-relative CSS selectors. */
   private String cssBaseNamespace;
 
-  /** Strict mode context. Nonnull iff autoescapeMode is strict.
-   *  This is private instead of protected to enforce use of setAutoescapeInfo(). */
+  /**
+   * Strict mode context. Nonnull iff autoescapeMode is strict. This is private instead of protected
+   * to enforce use of setAutoescapeInfo().
+   */
   private ContentKind contentKind;
-
-  /** Whether setSoyDoc() has been called. */
-  protected boolean isSoyDocSet;
 
   /** The full SoyDoc, including the start/end tokens, or null. */
   protected String soyDoc;
@@ -216,28 +132,22 @@ public abstract class TemplateNodeBuilder {
 
   protected boolean isMarkedV1;
 
-  final SourceLocation sourceLocation;
+  protected StrictHtmlMode strictHtmlMode;
 
-  /**
-   * @param soyFileHeaderInfo Info from the containing Soy file's header declarations.
-   * @param typeRegistry Type registry used in parsing type declarations.
-   */
-  protected TemplateNodeBuilder(
-      SoyFileHeaderInfo soyFileHeaderInfo,
-      SourceLocation sourceLocation,
-      ErrorReporter errorReporter,
-      @Nullable SoyTypeRegistry typeRegistry) {
+  SourceLocation sourceLocation;
+
+  /** @param soyFileHeaderInfo Info from the containing Soy file's header declarations. */
+  protected TemplateNodeBuilder(SoyFileHeaderInfo soyFileHeaderInfo, ErrorReporter errorReporter) {
     this.soyFileHeaderInfo = soyFileHeaderInfo;
-    this.sourceLocation = sourceLocation;
     this.errorReporter = errorReporter;
-    this.typeRegistry = typeRegistry;
     this.syntaxVersionBound = null;
-    this.isSoyDocSet = false;
+    this.strictHtmlMode = StrictHtmlMode.UNSET;
     // All other fields default to null.
   }
 
   /**
    * Sets the id for the node to be built.
+   *
    * @return This builder.
    */
   public TemplateNodeBuilder setId(int id) {
@@ -246,12 +156,21 @@ public abstract class TemplateNodeBuilder {
     return this;
   }
 
+  /** Sets the source location. */
+  public TemplateNodeBuilder setSourceLocation(SourceLocation location) {
+    checkState(sourceLocation == null);
+    this.sourceLocation = checkNotNull(location);
+    return this;
+  }
+
   /**
-   * Sets the command text for the node to be built. The command text will be parsed to fill in
-   * fields such as templateName and autoescapeMode.
-   * @return This builder.
+   * Set the parsed data from the command tag.
+   *
+   * @param name The template name
+   * @param attrs The attributes that are set on the tag {e.g. {@code kind="strict"}}
    */
-  public abstract TemplateNodeBuilder setCmdText(String cmdText);
+  public abstract TemplateNodeBuilder setCommandValues(
+      Identifier name, List<CommandTagAttribute> attrs);
 
   /**
    * Returns a template name suitable for display in user msgs.
@@ -266,159 +185,78 @@ public abstract class TemplateNodeBuilder {
   /**
    * Sets the SoyDoc for the node to be built. The SoyDoc will be parsed to fill in SoyDoc param
    * info.
+   *
    * @return This builder.
    */
-  public TemplateNodeBuilder setSoyDoc(String soyDoc) {
-    Preconditions.checkState(!isSoyDocSet);
+  public TemplateNodeBuilder setSoyDoc(String soyDoc, SourceLocation soyDocLocation) {
+    Preconditions.checkState(this.soyDoc == null);
     Preconditions.checkState(cmdText != null);
-
-    this.isSoyDocSet = true;
     this.soyDoc = soyDoc;
-
-    if (soyDoc != null) {
-      Preconditions.checkArgument(soyDoc.startsWith("/**") && soyDoc.endsWith("*/"));
-      String cleanedSoyDoc = cleanSoyDocHelper(soyDoc);
-      this.soyDocDesc = parseSoyDocDescHelper(cleanedSoyDoc);
-      this.addParams(parseSoyDocDeclsHelper(cleanedSoyDoc));
-    } else {
-      this.soyDocDesc = null;
-      // Note: Don't set this.params to null here because params can also come from header decls.
-    }
+    Preconditions.checkArgument(soyDoc.startsWith("/**") && soyDoc.endsWith("*/"));
+    String cleanedSoyDoc = cleanSoyDocHelper(soyDoc);
+    this.soyDocDesc = parseSoyDocDescHelper(cleanedSoyDoc);
+    this.addParams(parseSoyDocDeclsHelper(cleanedSoyDoc, soyDocLocation));
 
     return this;
-  }
-
-  /**
-   * Sets the template header decls.
-   * @param declInfos DeclInfo objects for the decls found in the template header.
-   * @return This builder.
-   */
-  public TemplateNodeBuilder setHeaderDecls(Collection<DeclInfo> declInfos) {
-    List<TemplateParam> params = new ArrayList<>(declInfos.size());
-    for (DeclInfo declInfo : declInfos) {
-      Optional<HeaderParam> headerParam = forDeclInfo(declInfo);
-      if (headerParam.isPresent()) {
-        params.add(headerParam.get());
-      }
-    }
-    this.addParams(params);
-    return this;
-  }
-
-  /**
-   * Sets the template header decls.
-   * @param declInfos DeclInfo objects for the decls found in the template header.
-   * @return This builder.
-   */
-  public TemplateNodeBuilder setHeaderDecls(DeclInfo... declInfos) {
-    List<TemplateParam> params = new ArrayList<>(declInfos.length);
-    for (DeclInfo declInfo : declInfos) {
-      Optional<HeaderParam> headerParam = forDeclInfo(declInfo);
-      if (headerParam.isPresent()) {
-        params.add(headerParam.get());
-      }
-    }
-    this.addParams(params);
-    return this;
-  }
-
-  private Optional<HeaderParam> forDeclInfo(DeclInfo declInfo) {
-    SoyType type;
-    boolean isInjected = declInfo.type == Type.INJECTED_PARAM;
-    boolean isRequired = true;
-    Preconditions.checkNotNull(typeRegistry);
-    type = new TypeParser(declInfo.paramTypeExpr(), declInfo.location(), typeRegistry)
-        .parseTypeDeclaration();
-    if (declInfo.optionalStatus == OptionalStatus.OPTIONAL) {
-      isRequired = false;
-      type = typeRegistry.getOrCreateUnionType(type, NullType.getInstance());
-    } else if (type instanceof UnionType && ((UnionType) type).isNullable()) {
-      isRequired = false;
-    }
-    return Optional.of(new HeaderParam(declInfo.name(), declInfo.paramTypeExpr(), type,
-        isRequired, isInjected, declInfo.soyDoc));
   }
 
   /**
    * Helper for {@code setSoyDoc()} and {@code setHeaderDecls()}. This method is intended to be
    * called at most once for SoyDoc params and at most once for header params.
+   *
    * @param params The params to add.
    */
-  protected TemplateNodeBuilder addParams(Iterable<? extends TemplateParam> params) {
+  public TemplateNodeBuilder addParams(Iterable<? extends TemplateParam> params) {
 
+    Set<String> seenParamKeys = new HashSet<>();
     if (this.params == null) {
       this.params = ImmutableList.copyOf(params);
     } else {
-      this.params = ImmutableList.<TemplateParam>builder()
-          .addAll(this.params)
-          .addAll(params)
-          .build();
+      for (TemplateParam oldParam : this.params) {
+        seenParamKeys.add(oldParam.name());
+      }
+      this.params =
+          ImmutableList.<TemplateParam>builder().addAll(this.params).addAll(params).build();
     }
 
-    // Check params.
-    Set<String> seenParamKeys = new HashSet<>();
-    for (TemplateParam param : this.params) {
+    // Check new params.
+    for (TemplateParam param : params) {
       if (param.name().equals("ij")) {
-        errorReporter.report(sourceLocation, INVALID_PARAM_NAMED_IJ);
+        errorReporter.report(paramSourceLocation(param), INVALID_PARAM_NAMED_IJ);
       }
-      if (seenParamKeys.contains(param.name())) {
-        errorReporter.report(sourceLocation, PARAM_ALREADY_DECLARED, param.name());
+      if (!seenParamKeys.add(param.name())) {
+        errorReporter.report(paramSourceLocation(param), PARAM_ALREADY_DECLARED, param.name());
       }
-      seenParamKeys.add(param.name());
     }
     return this;
   }
 
-  /**
-   * Builds the template node. Will error if not enough info as been set on this builder.
-   */
+  private SourceLocation paramSourceLocation(TemplateParam param) {
+    // TODO(lukes): these sourcelocations are wrong for SoyDocParams.  Fixing would be tricky, the
+    // best solution is to eliminate support for SoyDoc params.
+    return param instanceof HeaderParam ? ((HeaderParam) param).nameLocation() : sourceLocation;
+  }
+
+  /** Builds the template node. Will error if not enough info as been set on this builder. */
   public abstract TemplateNode build();
 
   // -----------------------------------------------------------------------------------------------
   // Protected helpers for fields that need extra logic when being set.
 
-  protected final void setAutoescapeCmdText(Map<String, String> attributes) {
-    AutoescapeMode autoescapeMode;
-    String autoescapeModeStr = attributes.get("autoescape");
-    if (autoescapeModeStr != null) {
-      autoescapeMode = parseAutoEscapeMode(autoescapeModeStr);
-    } else {
-      autoescapeMode = soyFileHeaderInfo.defaultAutoescapeMode;  // inherit from file default
-    }
-
-    ContentKind contentKind = (attributes.get("kind") != null) ?
-        NodeContentKinds.forAttributeValue(attributes.get("kind")) : null;
-
-    setAutoescapeInfo(autoescapeMode, contentKind);
-  }
-
-  protected final void setRequireCssCmdText(Map<String, String> attributes) {
-    setRequiredCssNamespaces(RequirecssUtils.parseRequirecssAttr(attributes.get("requirecss"),
-        sourceLocation));
-  }
-
-  protected final void setCssBaseCmdText(Map<String, String> attributes) {
-    String cssBaseNamespace = attributes.get("cssbase");
-    if (cssBaseNamespace != null) {
-      if (!BaseUtils.isDottedIdentifier(cssBaseNamespace)) {
-        errorReporter.report(sourceLocation, INVALID_CSS_BASE_NAMESPACE_NAME, cssBaseNamespace);
-      }
-      setCssBaseNamespace(cssBaseNamespace);
-    }
-  }
-
-  protected final void setV1Marker(Map<String, String> attributes) {
-    if ("true".equals(attributes.get("deprecatedV1"))) {
-      this.isMarkedV1 = true;
-      SyntaxVersionUpperBound newSyntaxVersionBound = new SyntaxVersionUpperBound(
-          SyntaxVersion.V2_0, "Template is marked as deprecatedV1.");
+  protected final void markDeprecatedV1(boolean isDeprecatedV1) {
+    isMarkedV1 = isDeprecatedV1;
+    if (isDeprecatedV1) {
+      SyntaxVersionUpperBound newSyntaxVersionBound =
+          new SyntaxVersionUpperBound(SyntaxVersion.V2_0, "Template is marked as deprecatedV1.");
       this.syntaxVersionBound =
           SyntaxVersionUpperBound.selectLower(this.syntaxVersionBound, newSyntaxVersionBound);
     }
   }
 
   protected void setAutoescapeInfo(
-      AutoescapeMode autoescapeMode, @Nullable ContentKind contentKind) {
+      AutoescapeMode autoescapeMode,
+      @Nullable ContentKind contentKind,
+      @Nullable SourceLocation kindLocation) {
 
     Preconditions.checkArgument(autoescapeMode != null);
     this.autoescapeMode = autoescapeMode;
@@ -428,7 +266,7 @@ public abstract class TemplateNodeBuilder {
       contentKind = ContentKind.HTML;
     } else if (contentKind != null && autoescapeMode != AutoescapeMode.STRICT) {
       // TODO: Perhaps this could imply strict escaping?
-      errorReporter.report(sourceLocation, KIND_BUT_NOT_STRICT);
+      errorReporter.report(kindLocation, KIND_BUT_NOT_STRICT);
     }
     this.contentKind = contentKind;
   }
@@ -465,7 +303,9 @@ public abstract class TemplateNodeBuilder {
   }
 
   /** @return Strict mode context. Nonnull iff autoescapeMode is strict. */
-  @Nullable protected ContentKind getContentKind() {
+  @Nullable
+  public ContentKind getContentKind() {
+    checkState(autoescapeMode != null); // make sure setAutoescapeInfo was called
     return contentKind;
   }
 
@@ -487,24 +327,30 @@ public abstract class TemplateNodeBuilder {
     this.cssBaseNamespace = cssBaseNamespace;
   }
 
-  protected final void setTemplateNames(String templateName, @Nullable String partialTemplateName) {
+  protected final void setTemplateNames(
+      String templateName, SourceLocation nameLocation, @Nullable String partialTemplateName) {
     this.templateName = templateName;
     this.partialTemplateName = partialTemplateName;
 
     if (partialTemplateName != null && !BaseUtils.isIdentifierWithLeadingDot(partialTemplateName)) {
-      errorReporter.report(sourceLocation, INVALID_TEMPLATE_NAME, partialTemplateName);
+      errorReporter.report(nameLocation, INVALID_TEMPLATE_NAME, partialTemplateName);
     }
 
     if (!BaseUtils.isDottedIdentifier(templateName)) {
-      errorReporter.report(sourceLocation, INVALID_TEMPLATE_NAME, templateName);
+      errorReporter.report(nameLocation, INVALID_TEMPLATE_NAME, templateName);
     }
+  }
+
+  protected StrictHtmlMode getStrictHtmlMode() {
+    return strictHtmlMode;
   }
 
   protected String getTemplateName() {
     return templateName;
   }
 
-  @Nullable protected String getPartialTemplateName() {
+  @Nullable
+  protected String getPartialTemplateName() {
     return partialTemplateName;
   }
 
@@ -514,11 +360,11 @@ public abstract class TemplateNodeBuilder {
   /** Pattern for a newline. */
   private static final Pattern NEWLINE = Pattern.compile("\\n|\\r\\n?");
 
-  /** Pattern for a SoyDoc start token, including spaces up to the first newline.*/
+  /** Pattern for a SoyDoc start token, including spaces up to the first newline. */
   private static final Pattern SOY_DOC_START =
       Pattern.compile("^ [/][*][*] [\\ ]* \\r?\\n?", Pattern.COMMENTS);
 
-  /** Pattern for a SoyDoc end token, including preceding spaces up to the last newline.*/
+  /** Pattern for a SoyDoc end token, including preceding spaces up to the last newline. */
   private static final Pattern SOY_DOC_END =
       Pattern.compile("\\r?\\n? [\\ ]* [*][/] $", Pattern.COMMENTS);
 
@@ -532,11 +378,10 @@ public abstract class TemplateNodeBuilder {
       Pattern.compile("[a-zA-Z_]\\w*", Pattern.COMMENTS);
 
   /**
-   * Private helper for the constructor to clean the SoyDoc.
-   * (1) Changes all newlines to "\n".
-   * (2) Escapes deprecated javadoc tags.
-   * (3) Strips the start/end tokens and spaces (including newlines if they occupy their own lines).
-   * (4) Removes common indent from all lines (e.g. space-star-space).
+   * Private helper for the constructor to clean the SoyDoc. (1) Changes all newlines to "\n". (2)
+   * Escapes deprecated javadoc tags. (3) Strips the start/end tokens and spaces (including newlines
+   * if they occupy their own lines). (4) Removes common indent from all lines (e.g.
+   * space-star-space).
    *
    * @param soyDoc The SoyDoc to clean.
    * @return The cleaned SoyDoc.
@@ -569,10 +414,10 @@ public abstract class TemplateNodeBuilder {
   }
 
   /**
-   * Private helper for {@code cleanSoyDocHelper()}.
-   * Removes a common character at the start of all lines, either once or as many times as possible.
+   * Private helper for {@code cleanSoyDocHelper()}. Removes a common character at the start of all
+   * lines, either once or as many times as possible.
    *
-   * <p> Special case: Empty lines count as if they do have the common character for the purpose of
+   * <p>Special case: Empty lines count as if they do have the common character for the purpose of
    * deciding whether all lines have the common character.
    *
    * @param lines The list of lines. If removal happens, then the list elements will be modified.
@@ -591,11 +436,10 @@ public abstract class TemplateNodeBuilder {
       boolean areAllLinesEmpty = true;
       for (String line : lines) {
         if (line.length() == 0) {
-          continue;  // empty lines are okay
+          continue; // empty lines are okay
         }
         areAllLinesEmpty = false;
-        if (line.length() <= numCharsToRemove ||
-            line.charAt(numCharsToRemove) != charToRemove) {
+        if (line.length() <= numCharsToRemove || line.charAt(numCharsToRemove) != charToRemove) {
           isStillCounting = false;
           break;
         }
@@ -613,7 +457,7 @@ public abstract class TemplateNodeBuilder {
       for (int i = 0; i < lines.size(); i++) {
         String line = lines.get(i);
         if (line.length() == 0) {
-          continue;  // don't change empty lines
+          continue; // don't change empty lines
         }
         lines.set(i, line.substring(numCharsToRemove));
       }
@@ -641,7 +485,8 @@ public abstract class TemplateNodeBuilder {
    * @param cleanedSoyDoc The cleaned SoyDoc text. Must not be null.
    * @return A SoyDocDeclsInfo object with the parsed info.
    */
-  private List<SoyDocParam> parseSoyDocDeclsHelper(String cleanedSoyDoc) {
+  private List<SoyDocParam> parseSoyDocDeclsHelper(
+      String cleanedSoyDoc, SourceLocation soyDocSourceLocation) {
     List<SoyDocParam> params = new ArrayList<>();
 
     Matcher matcher = SOY_DOC_DECL_PATTERN.matcher(cleanedSoyDoc);
@@ -670,12 +515,12 @@ public abstract class TemplateNodeBuilder {
           if (declText.startsWith("{")) {
             // v1 is allowed for compatibility reasons
             if (!isMarkedV1) {
-              errorReporter.report(sourceLocation, LEGACY_COMPATIBLE_PARAM_TAG, declText);
+              errorReporter.report(soyDocSourceLocation, LEGACY_COMPATIBLE_PARAM_TAG, declText);
             }
           } else {
-            // TODO(lukes): the source location here is not accurate (points to the template, not
-            // the doc line.
-            errorReporter.report(sourceLocation, INVALID_SOYDOC_PARAM, declText);
+            // TODO(lukes): the source location here is not accurate (points to the start of the doc
+            // not the @param line
+            errorReporter.report(soyDocSourceLocation, INVALID_SOYDOC_PARAM, declText);
           }
         }
 

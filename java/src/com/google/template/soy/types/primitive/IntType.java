@@ -18,7 +18,7 @@ package com.google.template.soy.types.primitive;
 
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.IntegerData;
-
+import com.google.template.soy.types.SoyType;
 
 /**
  * Soy integer type.
@@ -26,31 +26,35 @@ import com.google.template.soy.data.restricted.IntegerData;
  */
 public final class IntType extends PrimitiveType {
 
-
   private static final IntType INSTANCE = new IntType();
-
 
   // Not constructible - use getInstance().
   private IntType() {}
 
-
-  @Override public Kind getKind() {
+  @Override
+  public Kind getKind() {
     return Kind.INT;
   }
 
+  @Override
+  public boolean isAssignableFrom(SoyType srcType) {
+    Kind kind = srcType.getKind();
+    // enums are implicitly assignable to ints since that is the runtime representation in all
+    // backends
+    return kind == Kind.INT || kind == Kind.PROTO_ENUM;
+  }
 
-  @Override public boolean isInstance(SoyValue value) {
+  @Override
+  public boolean isInstance(SoyValue value) {
     return value instanceof IntegerData;
   }
 
-  @Override public String toString() {
+  @Override
+  public String toString() {
     return "int";
   }
 
-
-  /**
-   * Return the single instance of this type.
-   */
+  /** Return the single instance of this type. */
   public static IntType getInstance() {
     return INSTANCE;
   }

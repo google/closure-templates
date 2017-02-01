@@ -23,19 +23,17 @@ import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprparse.SoyParsingContext;
 import com.google.template.soy.soytree.SoyNode.ConditionalBlockNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
-
 import java.util.List;
 
 /**
- * Node representing a block within an 'if' statement that has a conditional expression (i.e.
- * either the 'if' block or an 'elseif' block).
+ * Node representing a block within an 'if' statement that has a conditional expression (i.e. either
+ * the 'if' block or an 'elseif' block).
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public final class IfCondNode extends AbstractBlockCommandNode
     implements ConditionalBlockNode, ExprHolderNode {
-
 
   /** The parsed expression. */
   private final ExprUnion exprUnion;
@@ -70,9 +68,9 @@ public final class IfCondNode extends AbstractBlockCommandNode
     this.exprUnion = Preconditions.checkNotNull(exprUnion);
   }
 
-
   /**
    * Copy constructor.
+   *
    * @param orig The node to copy.
    */
   private IfCondNode(IfCondNode orig, CopyState copyState) {
@@ -80,35 +78,33 @@ public final class IfCondNode extends AbstractBlockCommandNode
     this.exprUnion = orig.exprUnion.copy(copyState);
   }
 
-
-  @Override public Kind getKind() {
+  @Override
+  public Kind getKind() {
     return Kind.IF_COND_NODE;
   }
-
 
   /** Returns the text of the conditional expression. */
   public String getExprText() {
     return exprUnion.getExprText();
   }
 
-
   /** Returns the parsed expression. */
   public ExprUnion getExprUnion() {
     return exprUnion;
   }
 
-
-  @Override public String getCommandName() {
+  @Override
+  public String getCommandName() {
     return (getParent().getChild(0) == this) ? "if" : "elseif";
   }
 
-
-  @Override public String getCommandText() {
+  @Override
+  public String getCommandText() {
     return exprUnion.getExprText();
   }
 
-
-  @Override public String toSourceString() {
+  @Override
+  public String toSourceString() {
     StringBuilder sb = new StringBuilder();
     sb.append(getTagString());
     appendSourceStringForChildren(sb);
@@ -116,19 +112,17 @@ public final class IfCondNode extends AbstractBlockCommandNode
     return sb.toString();
   }
 
-
-  @Override public List<ExprUnion> getAllExprUnions() {
+  @Override
+  public List<ExprUnion> getAllExprUnions() {
     return ImmutableList.of(exprUnion);
   }
 
-
-  @Override public IfCondNode copy(CopyState copyState) {
+  @Override
+  public IfCondNode copy(CopyState copyState) {
     return new IfCondNode(this, copyState);
   }
 
-  /**
-   * Builder for {@link IfCondNode}.
-   */
+  /** Builder for {@link IfCondNode}. */
   public static final class Builder {
     private final int id;
     private final String commandName;
@@ -142,13 +136,10 @@ public final class IfCondNode extends AbstractBlockCommandNode
       this.sourceLocation = sourceLocation;
     }
 
-    /**
-     * Returns a new {@link IfCondNode} built from this builder's state.
-     */
+    /** Returns a new {@link IfCondNode} built from this builder's state. */
     public IfCondNode build(SoyParsingContext context) {
       ExprUnion condition = ExprUnion.parseWithV1Fallback(commandText, sourceLocation, context);
       return new IfCondNode(id, sourceLocation, commandName, condition);
     }
   }
-
 }

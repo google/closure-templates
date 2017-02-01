@@ -14,32 +14,34 @@
  * limitations under the License.
  */
 
-
 package com.google.template.soy.shared;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
 /**
- * An interface for a one-to-one string mapping function used to rename CSS selectors.
- * CSS renaming can be used for minimization, obfuscation, normalization, etc.
+ * An interface for a one-to-one string mapping function used to rename CSS selectors. CSS renaming
+ * can be used for minimization, obfuscation, normalization, etc.
  *
  */
 @ParametersAreNonnullByDefault
 public interface SoyCssRenamingMap extends SoyIdRenamingMap {
 
   /** A renaming map that has no entries. */
-  static final SoyCssRenamingMap EMPTY = new SoyCssRenamingMap() {
-    @Override public String get(String key) {
-      return null;
-    }
-  };
+  static final SoyCssRenamingMap EMPTY =
+      new SoyCssRenamingMap() {
+        @Override
+        public String get(String key) {
+          return null;
+        }
+      };
 
   /** A renaming map that maps every name to itself. */
-  public static final SoyCssRenamingMap IDENTITY = new SoyCssRenamingMap() {
+  public static final SoyCssRenamingMap IDENTITY =
+      new SoyCssRenamingMap() {
 
-    @Override
-    public String get(String key) {
-      return key;
-    }
-  };
+        @Override
+        public String get(String key) {
+          return key;
+        }
+      };
 }

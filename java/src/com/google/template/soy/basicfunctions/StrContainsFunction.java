@@ -31,45 +31,45 @@ import com.google.template.soy.pysrc.restricted.PyExprUtils;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
-
 import java.util.List;
 import java.util.Set;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
  * A function that determines if a given string contains another given string.
  *
- * <p><code>strContains(expr1, expr2)</code> requires <code>expr1</code> and
- * <code>expr2</code> to be of type string or {@link SanitizedContent}.  It
- * evaluates to <code>true</code> iff <code>expr1</code> contains
- * <code>expr2</code>.  <code>strContains</code> is case sensitive.
+ * <p><code>strContains(expr1, expr2)</code> requires <code>expr1</code> and <code>expr2</code> to
+ * be of type string or {@link SanitizedContent}. It evaluates to <code>true</code> iff <code>expr1
+ * </code> contains <code>expr2</code>. <code>strContains</code> is case sensitive.
  *
  */
 @Singleton
 @SoyPureFunction
 final class StrContainsFunction implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction {
 
-
   @Inject
   StrContainsFunction() {}
 
-
-  @Override public String getName() {
+  @Override
+  public String getName() {
     return "strContains";
   }
 
-  @Override public Set<Integer> getValidArgsSizes() {
+  @Override
+  public Set<Integer> getValidArgsSizes() {
     return ImmutableSet.of(2);
   }
 
-  @Override public SoyValue computeForJava(List<SoyValue> args) {
+  @Override
+  public SoyValue computeForJava(List<SoyValue> args) {
     SoyValue arg0 = args.get(0);
     SoyValue arg1 = args.get(1);
 
-    Preconditions.checkArgument(arg0 instanceof StringData || arg0 instanceof SanitizedContent,
-        "First argument to strContains() function is not StringData or SanitizedContent: %s", arg0);
+    Preconditions.checkArgument(
+        arg0 instanceof StringData || arg0 instanceof SanitizedContent,
+        "First argument to strContains() function is not StringData or SanitizedContent: %s",
+        arg0);
 
     String strArg0 = arg0.coerceToString();
     String strArg1 = arg1.coerceToString();
@@ -77,7 +77,8 @@ final class StrContainsFunction implements SoyJavaFunction, SoyJsSrcFunction, So
     return BooleanData.forValue(strArg0.contains(strArg1));
   }
 
-  @Override public JsExpr computeForJsSrc(List<JsExpr> args) {
+  @Override
+  public JsExpr computeForJsSrc(List<JsExpr> args) {
     // Coerce SanitizedContent args to strings.
     String arg0 = JsExprUtils.toString(args.get(0)).getText();
     String arg1 = JsExprUtils.toString(args.get(1)).getText();
@@ -87,7 +88,8 @@ final class StrContainsFunction implements SoyJavaFunction, SoyJsSrcFunction, So
     return new JsExpr(exprText, Operator.NOT_EQUAL.getPrecedence());
   }
 
-  @Override public PyExpr computeForPySrc(List<PyExpr> args) {
+  @Override
+  public PyExpr computeForPySrc(List<PyExpr> args) {
     // Coerce SanitizedContent args to strings.
     String arg0 = args.get(0).toPyString().getText();
     String arg1 = args.get(1).toPyString().getText();

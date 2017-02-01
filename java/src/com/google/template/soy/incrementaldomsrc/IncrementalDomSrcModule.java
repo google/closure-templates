@@ -24,20 +24,20 @@ import com.google.template.soy.jssrc.internal.GenJsExprsVisitor;
 import com.google.template.soy.shared.internal.ApiCallScope;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
 
-
 /**
  * Guice module for the Incremental DOM JS Source backend.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  */
 public class IncrementalDomSrcModule extends AbstractModule {
 
-
-  @Override protected void configure() {
+  @Override
+  protected void configure() {
     // Bind providers of factories (created via assisted inject).
-    install(new FactoryModuleBuilder()
-        .implement(GenJsExprsVisitor.class, GenIncrementalDomExprsVisitor.class)
-        .build(GenIncrementalDomExprsVisitorFactory.class));
+    install(
+        new FactoryModuleBuilder()
+            .implement(GenJsExprsVisitor.class, GenIncrementalDomExprsVisitor.class)
+            .build(GenIncrementalDomExprsVisitorFactory.class));
 
     // Bindings for when explicit dependencies are required.
     bind(IncrementalDomSrcMain.class);

@@ -18,12 +18,9 @@ package com.google.template.soy.data;
 
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import com.google.template.soy.jbcsrc.api.RenderResult;
-
 import java.io.IOException;
-
 import javax.annotation.Nonnull;
 import javax.annotation.ParametersAreNonnullByDefault;
-
 
 /**
  * A provider of a Soy value.
@@ -42,38 +39,39 @@ public interface SoyValueProvider {
   /**
    * Usually, this method is a no-op that simply returns this object. However, if this value needs
    * to be resolved at usage time, then this method resolves and returns the resolved value.
+   *
    * @return The resolved value.
    */
-  @Nonnull public SoyValue resolve();
+  @Nonnull
+  public SoyValue resolve();
 
   /**
-   * Returns {@link RenderResult#done()} if the value provider can be
-   * {@link #resolve() resolved} without blocking on a future.  Otherwise, returns a
-   * {@link RenderResult} that holds the future.
+   * Returns {@link RenderResult#done()} if the value provider can be {@link #resolve() resolved}
+   * without blocking on a future. Otherwise, returns a {@link RenderResult} that holds the future.
    *
-   * <p>Note, once this method returns {@link RenderResult#done()} all future calls must also
-   * return {@link RenderResult#done()}.
+   * <p>Note, once this method returns {@link RenderResult#done()} all future calls must also return
+   * {@link RenderResult#done()}.
    *
-   * <p>This method will <em>never</em> return a
-   * {@link com.google.template.soy.jbcsrc.api.RenderResult.Type#LIMITED limited}
-   * {@link RenderResult}
+   * <p>This method will <em>never</em> return a {@link
+   * com.google.template.soy.jbcsrc.api.RenderResult.Type#LIMITED limited} {@link RenderResult}
    */
-  @Nonnull public RenderResult status();
+  @Nonnull
+  public RenderResult status();
 
   /**
    * Renders this value to the given {@link AdvisingAppendable}, possibly partially.
    *
    * <p>This should render the exact same content as {@code resolve().render(Appendable)} but may
-   * optionally detach part of the way through rendering.  Note, this means that this method is
-   * <em>stateful</em> and if it returns something besides {@link RenderResult#done()} then the
-   * next call to this method will resume rendering from the previous point.
+   * optionally detach part of the way through rendering. Note, this means that this method is
+   * <em>stateful</em> and if it returns something besides {@link RenderResult#done()} then the next
+   * call to this method will resume rendering from the previous point.
    *
    * @param appendable The appendable to render to.
    * @param isLast True if this is <em>definitely</em> the last time this value will be rendered.
    *     Used as a hint to implementations to not optimize for later calls (for example, by storing
-   *     render results in a buffer for faster re-renders).  The value of this parameter should not
+   *     render results in a buffer for faster re-renders). The value of this parameter should not
    *     affect behavior of this method, only performance.
-   * @return A {@link RenderResult} that describes whether or not rendering completed.  If the
+   * @return A {@link RenderResult} that describes whether or not rendering completed. If the
    *     returned result is not {@link RenderResult#done() done}, then to complete rendering you
    *     must call this method again.
    * @throws IOException If the appendable throws an IOException

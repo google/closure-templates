@@ -17,11 +17,13 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.template.soy.data.SoyValueHelper.EMPTY_DICT;
-import static com.google.template.soy.data.SoyValueHelper.EMPTY_LIST;
+import static com.google.template.soy.data.SoyValueConverter.EMPTY_DICT;
+import static com.google.template.soy.data.SoyValueConverter.EMPTY_LIST;
 import static com.google.template.soy.jbcsrc.TemplateTester.assertThatFile;
 import static com.google.template.soy.jbcsrc.TemplateTester.assertThatTemplateBody;
 import static com.google.template.soy.jbcsrc.TemplateTester.getDefaultContext;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Predicate;
@@ -35,7 +37,7 @@ import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SanitizedContents;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.SoyValueHelper;
+import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.internal.BasicParamStore;
 import com.google.template.soy.data.internal.EasyDictImpl;
 import com.google.template.soy.data.internal.ParamStore;
@@ -54,20 +56,20 @@ import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateRegistry;
-
-import junit.framework.TestCase;
-
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
-/**
- * A test for the template compiler, notably {@link BytecodeCompiler} and its collaborators.
- */
-public class BytecodeCompilerTest extends TestCase {
+/** A test for the template compiler, notably {@link BytecodeCompiler} and its collaborators. */
+@RunWith(JUnit4.class)
+public class BytecodeCompilerTest {
 
+  @Test
   public void testDelCall_delPackageSelections() throws IOException {
     String soyFileContent1 =
         Joiner.on("\n")
@@ -114,22 +116,24 @@ public class BytecodeCompilerTest extends TestCase {
                 "{/deltemplate}",
                 "");
 
-    String soyFileContent4 = Joiner.on("\n").join(
-        "{namespace ns3 autoescape=\"strict\"}",
-        "",
-        "/** */",
-        "{template .helper private=\"true\"}",
-        "  {@param boo : string}",
-        "  {$boo}",
-        "{/template}",
-        "");
+    String soyFileContent4 =
+        Joiner.on("\n")
+            .join(
+                "{namespace ns3 autoescape=\"strict\"}",
+                "",
+                "/** */",
+                "{template .helper private=\"true\"}",
+                "  {@param boo : string}",
+                "  {$boo}",
+                "{/template}",
+                "");
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
                 soyFileContent1, soyFileContent2, soyFileContent3, soyFileContent4)
             .parse()
             .fileSet();
     TemplateRegistry templateRegistry = new TemplateRegistry(soyTree, ExplodingErrorReporter.get());
-    CompiledTemplates templates = 
+    CompiledTemplates templates =
         BytecodeCompiler.compile(templateRegistry, false, ExplodingErrorReporter.get()).get();
     CompiledTemplate.Factory factory = templates.getTemplateFactory("ns1.callerTemplate");
     Predicate<String> activePackages = Predicates.alwaysFalse();
@@ -150,52 +154,61 @@ public class BytecodeCompilerTest extends TestCase {
         .isEqualTo("default");
   }
 
-  private String renderWithContext(CompiledTemplate.Factory factory, RenderContext context)
+  private static String renderWithContext(CompiledTemplate.Factory factory, RenderContext context)
       throws IOException {
     AdvisingStringBuilder builder = new AdvisingStringBuilder();
-    assertEquals(RenderResult.done(), 
-        factory.create(EMPTY_DICT, EMPTY_DICT).render(builder, context));
+    assertEquals(
+        RenderResult.done(), factory.create(EMPTY_DICT, EMPTY_DICT).render(builder, context));
     String string = builder.toString();
     return string;
   }
 
+  @Test
   public void testDelCall_delVariant() throws IOException {
-    String soyFileContent1 = Joiner.on("\n").join(
-        "{namespace ns1 autoescape=\"strict\"}",
-        "",
-        "/***/",
-        "{template .callerTemplate}",
-        "  {@param variant : string}",
-        "  {delcall ns1.del variant=\"$variant\" allowemptydefault=\"true\"/}",
-        "{/template}",
-        "",
-        "/** */",
-        "{deltemplate ns1.del variant=\"'v1'\"}",
-        "  v1",
-        "{/deltemplate}",
-        "",
-        "/** */",
-        "{deltemplate ns1.del variant=\"'v2'\"}",
-        "  v2",
-        "{/deltemplate}",
-        "");
+    String soyFileContent1 =
+        Joiner.on("\n")
+            .join(
+                "{namespace ns1 autoescape=\"strict\"}",
+                "",
+                "/***/",
+                "{template .callerTemplate}",
+                "  {@param variant : string}",
+                "  {delcall ns1.del variant=\"$variant\" allowemptydefault=\"true\"/}",
+                "{/template}",
+                "",
+                "/** */",
+                "{deltemplate ns1.del variant=\"'v1'\"}",
+                "  v1",
+                "{/deltemplate}",
+                "",
+                "/** */",
+                "{deltemplate ns1.del variant=\"'v2'\"}",
+                "  v2",
+                "{/deltemplate}",
+                "");
 
     CompiledTemplates templates = compileFiles(soyFileContent1);
     CompiledTemplate.Factory factory = templates.getTemplateFactory("ns1.callerTemplate");
     RenderContext context = getDefaultContext(templates);
     AdvisingStringBuilder builder = new AdvisingStringBuilder();
-    assertEquals(RenderResult.done(), 
-        factory.create(TemplateTester.asRecord(ImmutableMap.of("variant", "v1")), EMPTY_DICT)
+    assertEquals(
+        RenderResult.done(),
+        factory
+            .create(TemplateTester.asRecord(ImmutableMap.of("variant", "v1")), EMPTY_DICT)
             .render(builder, context));
     assertThat(builder.getAndClearBuffer()).isEqualTo("v1");
 
-    assertEquals(RenderResult.done(),
-        factory.create(TemplateTester.asRecord(ImmutableMap.of("variant", "v2")), EMPTY_DICT)
+    assertEquals(
+        RenderResult.done(),
+        factory
+            .create(TemplateTester.asRecord(ImmutableMap.of("variant", "v2")), EMPTY_DICT)
             .render(builder, context));
     assertThat(builder.getAndClearBuffer()).isEqualTo("v2");
 
-    assertEquals(RenderResult.done(),
-        factory.create(TemplateTester.asRecord(ImmutableMap.of("variant", "unknown")), EMPTY_DICT)
+    assertEquals(
+        RenderResult.done(),
+        factory
+            .create(TemplateTester.asRecord(ImmutableMap.of("variant", "unknown")), EMPTY_DICT)
             .render(builder, context));
     assertThat(builder.toString()).isEmpty();
 
@@ -204,77 +217,91 @@ public class BytecodeCompilerTest extends TestCase {
     assertThat(templateMetadata.delCallees()).asList().containsExactly("ns1.del");
   }
 
+  @Test
   public void testCallBasicNode() throws IOException {
-    CompiledTemplates templates = TemplateTester.compileFile(
-        "{namespace ns autoescape=\"strict\"}",
-        "",
-        "/** */",
-        "{template .callerDataAll}",
-        "  {@param foo : string}",
-        "  {call .callee data=\"all\" /}",
-        "{/template}",
-        "",
-        "/** */",
-        "{template .callerDataExpr}",
-        "  {@param rec : [foo : string]}",
-        "  {call .callee data=\"$rec\" /}",
-        "{/template}",
-        "",
-        "/** */",
-        "{template .callerParams}",
-        "  {@param p1 : string}",
-        "  {call .callee}",
-        "    {param foo : $p1 /}",
-        "    {param boo : 'a' + 1 + 'b' /}",
-        "  {/call}",
-        "{/template}",
-        "",
-        "/** */",
-        "{template .callerParamsAndData}",
-        "  {@param p1 : string}",
-        "  {call .callee data=\"all\"}",
-        "    {param foo : $p1 /}",
-        "  {/call}",
-        "{/template}",
-        "",
-        "/** */",
-        "{template .callee}",
-        "  {@param foo : string}",
-        "  {@param? boo : string}",
-        "Foo: {$foo}{\\n}",
-        "Boo: {$boo}{\\n}",
-        "{/template}",
-        "");
+    CompiledTemplates templates =
+        TemplateTester.compileFile(
+            "{namespace ns autoescape=\"strict\"}",
+            "",
+            "/** */",
+            "{template .callerDataAll}",
+            "  {@param foo : string}",
+            "  {call .callee data=\"all\" /}",
+            "{/template}",
+            "",
+            "/** */",
+            "{template .callerDataExpr}",
+            "  {@param rec : [foo : string]}",
+            "  {call .callee data=\"$rec\" /}",
+            "{/template}",
+            "",
+            "/** */",
+            "{template .callerParams}",
+            "  {@param p1 : string}",
+            "  {call .callee}",
+            "    {param foo : $p1 /}",
+            "    {param boo : 'a' + 1 + 'b' /}",
+            "  {/call}",
+            "{/template}",
+            "",
+            "/** */",
+            "{template .callerParamsAndData}",
+            "  {@param p1 : string}",
+            "  {call .callee data=\"all\"}",
+            "    {param foo : $p1 /}",
+            "  {/call}",
+            "{/template}",
+            "",
+            "/** */",
+            "{template .callee}",
+            "  {@param foo : string}",
+            "  {@param? boo : string}",
+            "Foo: {$foo}{\\n}",
+            "Boo: {$boo}{\\n}",
+            "{/template}",
+            "");
     ParamStore params = new BasicParamStore(2);
     params.setField("foo", StringData.forValue("foo"));
     assertThat(render(templates, params, "ns.callerDataAll")).isEqualTo("Foo: foo\nBoo: null\n");
     params.setField("boo", StringData.forValue("boo"));
     assertThat(render(templates, params, "ns.callerDataAll")).isEqualTo("Foo: foo\nBoo: boo\n");
-    
-    assertThat(getTemplateMetadata(templates, "ns.callerDataAll").callees()).asList().containsExactly("ns.callee");
-    
+
+    assertThat(getTemplateMetadata(templates, "ns.callerDataAll").callees())
+        .asList()
+        .containsExactly("ns.callee");
+
     params = new BasicParamStore(2);
     params.setField("rec", new BasicParamStore(2).setField("foo", StringData.forValue("foo")));
     assertThat(render(templates, params, "ns.callerDataExpr")).isEqualTo("Foo: foo\nBoo: null\n");
     ((ParamStore) params.getField("rec")).setField("boo", StringData.forValue("boo"));
     assertThat(render(templates, params, "ns.callerDataExpr")).isEqualTo("Foo: foo\nBoo: boo\n");
-    assertThat(getTemplateMetadata(templates, "ns.callerDataExpr").callees()).asList().containsExactly("ns.callee");
-    
+    assertThat(getTemplateMetadata(templates, "ns.callerDataExpr").callees())
+        .asList()
+        .containsExactly("ns.callee");
+
     params = new BasicParamStore(2);
     params.setField("p1", StringData.forValue("foo"));
     assertThat(render(templates, params, "ns.callerParams")).isEqualTo("Foo: foo\nBoo: a1b\n");
-    assertThat(getTemplateMetadata(templates, "ns.callerParams").callees()).asList().containsExactly("ns.callee");
-    
+    assertThat(getTemplateMetadata(templates, "ns.callerParams").callees())
+        .asList()
+        .containsExactly("ns.callee");
+
     params = new BasicParamStore(2);
     params.setField("p1", StringData.forValue("foo"));
     params.setField("boo", StringData.forValue("boo"));
     assertThat(render(templates, params, "ns.callerParamsAndData"))
         .isEqualTo("Foo: foo\nBoo: boo\n");
-    assertThat(getTemplateMetadata(templates, "ns.callerParamsAndData").callees()).asList().containsExactly("ns.callee");
+    assertThat(getTemplateMetadata(templates, "ns.callerParamsAndData").callees())
+        .asList()
+        .containsExactly("ns.callee");
   }
 
   private static TemplateMetadata getTemplateMetadata(CompiledTemplates templates, String name) {
-    return templates.getTemplateFactory(name).getClass().getDeclaringClass().getAnnotation(TemplateMetadata.class);
+    return templates
+        .getTemplateFactory(name)
+        .getClass()
+        .getDeclaringClass()
+        .getAnnotation(TemplateMetadata.class);
   }
 
   private String render(CompiledTemplates templates, SoyRecord params, String name)
@@ -286,197 +313,155 @@ public class BytecodeCompilerTest extends TestCase {
     return output;
   }
 
+  @Test
   public void testForNode() {
     // empty loop
-    assertThatTemplateBody(
-        "{for $i in range(2, 2)}",
-        "  {$i}",
-        "{/for}").rendersAs("");
+    assertThatTemplateBody("{for $i in range(2, 2)}", "  {$i}", "{/for}").rendersAs("");
 
-    assertThatTemplateBody(
-        "{for $i in range(10)}", 
-        "  {$i}",
-        "{/for}").rendersAs("0123456789");
+    assertThatTemplateBody("{for $i in range(10)}", "  {$i}", "{/for}").rendersAs("0123456789");
 
-    assertThatTemplateBody(
-        "{for $i in range(2, 10)}", 
-        "  {$i}",
-        "{/for}").rendersAs("23456789");
+    assertThatTemplateBody("{for $i in range(2, 10)}", "  {$i}", "{/for}").rendersAs("23456789");
 
-    assertThatTemplateBody(
-        "{for $i in range(2, 10, 2)}", 
-        "  {$i}",
-        "{/for}").rendersAs("2468");
+    assertThatTemplateBody("{for $i in range(2, 10, 2)}", "  {$i}", "{/for}").rendersAs("2468");
   }
 
+  @Test
   public void testForEachNode() {
     // empty loop
     assertThatTemplateBody(
-        "{@param list: list<int>}",
-        "{foreach $i in $list}",
-        "  {$i}",
-        "{/foreach}").rendersAs("", ImmutableMap.of("list", EMPTY_LIST));
+            "{@param list: list<int>}", "{foreach $i in $list}", "  {$i}", "{/foreach}")
+        .rendersAs("", ImmutableMap.of("list", EMPTY_LIST));
 
     assertThatTemplateBody(
-        "{@param list: list<int>}",
-        "{foreach $i in $list}",
-        "  {$i}",
-        "{ifempty}",
-        "  empty",
-        "{/foreach}").rendersAs("empty", ImmutableMap.of("list", EMPTY_LIST));
+            "{@param list: list<int>}",
+            "{foreach $i in $list}",
+            "  {$i}",
+            "{ifempty}",
+            "  empty",
+            "{/foreach}")
+        .rendersAs("empty", ImmutableMap.of("list", EMPTY_LIST));
+
+    assertThatTemplateBody("{foreach $i in [1,2,3,4,5]}", "  {$i}", "{/foreach}")
+        .rendersAs("12345");
 
     assertThatTemplateBody(
-        "{foreach $i in [1,2,3,4,5]}",
-        "  {$i}",
-        "{/foreach}").rendersAs("12345");
-
-    assertThatTemplateBody(
-        "{foreach $i in [1,2,3,4,5]}",
-        "  {if isFirst($i)}",
-        "    first!{\\n}",
-        "  {/if}",
-        "  {$i}-{index($i)}{\\n}",
-        "  {if isLast($i)}",
-        "    last!",
-        "  {/if}",
-        "{/foreach}").rendersAs(Joiner.on('\n').join(
-            "first!",
-            "1-0",
-            "2-1",
-            "3-2",
-            "4-3",
-            "5-4",
-            "last!"));
+            "{foreach $i in [1,2,3,4,5]}",
+            "  {if isFirst($i)}",
+            "    first!{\\n}",
+            "  {/if}",
+            "  {$i}-{index($i)}{\\n}",
+            "  {if isLast($i)}",
+            "    last!",
+            "  {/if}",
+            "{/foreach}")
+        .rendersAs(Joiner.on('\n').join("first!", "1-0", "2-1", "3-2", "4-3", "5-4", "last!"));
   }
 
+  @Test
   public void testForEachNode_mapKeys() {
     assertThatTemplateBody(
-        "{@param map : map<string, int>}",
-        "{foreach $key in keys($map)}",
-        "  {$key} - {$map[$key]}{if not isLast($key)}{\\n}{/if}",
-        "{/foreach}")
-        .rendersAs("a - 1\nb - 2",
-            ImmutableMap.of("map", ImmutableMap.of("a", 1, "b", 2)));
+            "{@param map : map<string, int>}",
+            "{foreach $key in keys($map)}",
+            "  {$key} - {$map[$key]}{if not isLast($key)}{\\n}{/if}",
+            "{/foreach}")
+        .rendersAs("a - 1\nb - 2", ImmutableMap.of("map", ImmutableMap.of("a", 1, "b", 2)));
   }
 
+  @Test
   public void testForEachNode_nullableList() {
     // The compiler should be rejected this :(
     assertThatTemplateBody(
-        "{@param map : map<string, list<int>>}",
-        "{foreach $item in $map?['key']}",
-        "  {$item}",
-        "{/foreach}")
-        .rendersAs("123",
-            ImmutableMap.of("map", ImmutableMap.of("key", ImmutableList.of(1, 2, 3))));
+            "{@param map : map<string, list<int>>}",
+            "{foreach $item in $map?['key']}",
+            "  {$item}",
+            "{/foreach}")
+        .rendersAs(
+            "123", ImmutableMap.of("map", ImmutableMap.of("key", ImmutableList.of(1, 2, 3))));
   }
 
+  @Test
   public void testSwitchNode() {
     assertThatTemplateBody(
-        "{switch 1}", 
-        "  {case 1}",
-        "    one",
-        "  {case 2}",
-        "    two",
-        "  {default}",
-        "    default",
-        "{/switch}").rendersAs("one");
-    
+            "{switch 1}",
+            "  {case 1}",
+            "    one",
+            "  {case 2}",
+            "    two",
+            "  {default}",
+            "    default",
+            "{/switch}")
+        .rendersAs("one");
+
     assertThatTemplateBody(
-        "{switch 2}", 
-        "  {case 1}",
-        "    one",
-        "  {case 2}",
-        "    two",
-        "  {default}",
-        "    default",
-        "{/switch}").rendersAs("two");
+            "{switch 2}",
+            "  {case 1}",
+            "    one",
+            "  {case 2}",
+            "    two",
+            "  {default}",
+            "    default",
+            "{/switch}")
+        .rendersAs("two");
     assertThatTemplateBody(
-        "{switch 'asdf'}", 
-        "  {case 1}",
-        "    one",
-        "  {case 2}",
-        "    two",
-        "  {default}",
-        "    default",
-        "{/switch}").rendersAs("default");
+            "{switch 'asdf'}",
+            "  {case 1}",
+            "    one",
+            "  {case 2}",
+            "    two",
+            "  {default}",
+            "    default",
+            "{/switch}")
+        .rendersAs("default");
   }
 
+  @Test
   public void testSwitchNode_empty() {
     assertThatTemplateBody("{switch 1}", "{/switch}").rendersAs("");
   }
 
+  @Test
   public void testSwitchNode_defaultOnly() {
     assertThatTemplateBody("{switch 1}", "  {default}Hello", "{/switch}").rendersAs("Hello");
   }
 
+  @Test
   public void testNestedSwitch() {
     assertThatTemplateBody(
-        "{switch 'a'}", 
-        "  {case 'a'}",
-        "    {switch 1} {case 1} sub {default} sub default {/switch}",
-        "  {case 2}",
-        "    two",
-        "  {default}",
-        "    default",
-        "{/switch}").rendersAs(" sub ");
+            "{switch 'a'}",
+            "  {case 'a'}",
+            "    {switch 1} {case 1} sub {default} sub default {/switch}",
+            "  {case 2}",
+            "    two",
+            "  {default}",
+            "    default",
+            "{/switch}")
+        .rendersAs(" sub ");
   }
 
+  @Test
   public void testIfNode() {
-    assertThatTemplateBody(
-        "{if true}", 
-        "  hello",
-        "{/if}").rendersAs("hello");
+    assertThatTemplateBody("{if true}", "  hello", "{/if}").rendersAs("hello");
+
+    assertThatTemplateBody("{if false}", "  hello", "{/if}").rendersAs("");
+
+    assertThatTemplateBody("{if false}", "  one", "{elseif false}", "  two", "{/if}").rendersAs("");
+    assertThatTemplateBody("{if true}", "  one", "{elseif false}", "  two", "{/if}")
+        .rendersAs("one");
+    assertThatTemplateBody("{if false}", "  one", "{elseif true}", "  two", "{/if}")
+        .rendersAs("two");
 
     assertThatTemplateBody(
-        "{if false}", 
-        "  hello",
-        "{/if}").rendersAs("");
-
+            "{if true}", "  one", "{elseif true}", "  two", "{else}", "  three", "{/if}")
+        .rendersAs("one");
     assertThatTemplateBody(
-        "{if false}", 
-        "  one",
-        "{elseif false}",
-        "  two",
-        "{/if}").rendersAs("");
+            "{if false}", "  one", "{elseif true}", "  two", "{else}", "  three", "{/if}")
+        .rendersAs("two");
     assertThatTemplateBody(
-        "{if true}", 
-        "  one",
-        "{elseif false}",
-        "  two",
-        "{/if}").rendersAs("one");
-    assertThatTemplateBody(
-        "{if false}", 
-        "  one",
-        "{elseif true}",
-        "  two",
-        "{/if}").rendersAs("two");
-
-    assertThatTemplateBody(
-        "{if true}",
-        "  one",
-        "{elseif true}",
-        "  two",
-        "{else}",
-        "  three",
-        "{/if}").rendersAs("one");
-    assertThatTemplateBody(
-        "{if false}",
-        "  one",
-        "{elseif true}",
-        "  two",
-        "{else}",
-        "  three",
-        "{/if}").rendersAs("two");
-    assertThatTemplateBody(
-        "{if false}",
-        "  one",
-        "{elseif false}",
-        "  two",
-        "{else}",
-        "  three",
-        "{/if}").rendersAs("three");
+            "{if false}", "  one", "{elseif false}", "  two", "{else}", "  three", "{/if}")
+        .rendersAs("three");
   }
 
+  @Test
   public void testIfNode_nullableBool() {
     CompiledTemplateSubject tester =
         assertThatTemplateBody(
@@ -493,23 +478,24 @@ public class BytecodeCompilerTest extends TestCase {
     tester.rendersAs("hello", ImmutableMap.of("cond1", true, "cond2", false));
   }
 
+  @Test
   public void testPrintNode() {
     assertThatTemplateBody("{1 + 2}").rendersAs("3");
     assertThatTemplateBody("{'asdf'}").rendersAs("asdf");
   }
-  
+
+  @Test
   public void testLogNode() {
-    assertThatTemplateBody(
-        "{log}", 
-        "  hello{sp}",
-        "  {'world'}",
-        "{/log}").logsOutput("hello world");
+    assertThatTemplateBody("{log}", "  hello{sp}", "  {'world'}", "{/log}")
+        .logsOutput("hello world");
   }
 
+  @Test
   public void testRawTextNode() {
     assertThatTemplateBody("hello raw text world").rendersAs("hello raw text world");
   }
 
+  @Test
   public void testRawTextNode_largeText() {
     // This string is larger than the max constant pool entry size
     String largeString = Strings.repeat("x", 1 << 17);
@@ -518,6 +504,7 @@ public class BytecodeCompilerTest extends TestCase {
         .rendersAs(largeString + "hello", ImmutableMap.of("foo", "hello"));
   }
 
+  @Test
   public void testCssNode() {
     FakeRenamingMap renamingMap = new FakeRenamingMap(ImmutableMap.of("foo", "bar"));
     assertThatTemplateBody("{css foo}").withCssRenamingMap(renamingMap).rendersAs("bar");
@@ -525,12 +512,14 @@ public class BytecodeCompilerTest extends TestCase {
     assertThatTemplateBody("{css 1+2, foo2}").withCssRenamingMap(renamingMap).rendersAs("3-foo2");
   }
 
+  @Test
   public void testXidNode() {
     FakeRenamingMap renamingMap = new FakeRenamingMap(ImmutableMap.of("foo", "bar"));
     assertThatTemplateBody("{xid foo}").withXidRenamingMap(renamingMap).rendersAs("bar");
     assertThatTemplateBody("{xid foo2}").withXidRenamingMap(renamingMap).rendersAs("foo2_");
   }
 
+  @Test
   public void testCallCustomFunction() {
     SoyJavaFunction plusOneFunction =
         new SoyJavaFunction() {
@@ -552,93 +541,96 @@ public class BytecodeCompilerTest extends TestCase {
     assertThatTemplateBody("{plusOne(1)}").withSoyFunction(plusOneFunction).rendersAs("2");
   }
 
+  @Test
   public void testIsNonNull() {
-    assertThatTemplateBody(
-        "{@param foo : [a : [ b : string]] }",
-        "{isNonnull($foo.a)}"
-    ).rendersAs("false", ImmutableMap.<String, Object>of("foo", ImmutableMap.<String, String>of()));
+    assertThatTemplateBody("{@param foo : [a : [ b : string]] }", "{isNonnull($foo.a)}")
+        .rendersAs(
+            "false", ImmutableMap.<String, Object>of("foo", ImmutableMap.<String, String>of()));
   }
 
   // Tests for a bug in an integration test where unnecessary float unboxing conversions happened.
+  @Test
   public void testBoxedIntComparisonFromFunctions() {
     assertThatTemplateBody(
-        "{@param list : list<int>}",
-        "{foreach $item in $list}",
-        "{if index($item) == ceiling(length($list) / 2) - 1}",
-        "  Middle.",
-        "{/if}",
-        "{/foreach}",
-        ""
-    ).rendersAs("Middle.", ImmutableMap.of("list", ImmutableList.of(1, 2, 3)));
+            "{@param list : list<int>}",
+            "{foreach $item in $list}",
+            "{if index($item) == ceiling(length($list) / 2) - 1}",
+            "  Middle.",
+            "{/if}",
+            "{/foreach}",
+            "")
+        .rendersAs("Middle.", ImmutableMap.of("list", ImmutableList.of(1, 2, 3)));
   }
 
+  @Test
   public void testOptionalListIteration() {
-    CompiledTemplateSubject tester = assertThatTemplateBody(
-        "{@param? list : list<int>}",
-        "{if $list}",
-        "  {foreach $item in $list}",
-        "    {$item}",
-        "  {/foreach}",
-        "{/if}",
-        ""
-    );
+    CompiledTemplateSubject tester =
+        assertThatTemplateBody(
+            "{@param? list : list<int>}",
+            "{if $list}",
+            "  {foreach $item in $list}",
+            "    {$item}",
+            "  {/foreach}",
+            "{/if}",
+            "");
     tester.rendersAs("123", ImmutableMap.of("list", ImmutableList.of(1, 2, 3)));
     tester.rendersAs("");
   }
 
+  @Test
   public void testPrintDirectives() {
     assertThatTemplateBody("{' blah &&blahblahblah' |escapeHtml|insertWordBreaks:8}")
         .rendersAs(" blah &amp;&amp;blahbl<wbr>ahblah");
   }
 
+  @Test
   public void testParam() {
-    assertThatTemplateBody(
-        "{@param foo : int }",
-        "{$foo + 1}")
+    assertThatTemplateBody("{@param foo : int }", "{$foo + 1}")
         .rendersAs("2", ImmutableMap.of("foo", 1))
         .rendersAs("3", ImmutableMap.of("foo", 2))
         .rendersAs("4", ImmutableMap.of("foo", 3));
   }
-  
+
+  @Test
   public void testParam_headerDocParam() {
     assertThatFile(
-        "{namespace ns autoescape=\"strict\"}",
-        "/** ",
-        " * @param foo A foo",
-        "*/ ",
-        "{template .foo}",
-        "  {$foo + 1}",
-        "{/template}",
-        "")
+            "{namespace ns autoescape=\"strict\"}",
+            "/** ",
+            " * @param foo A foo",
+            "*/ ",
+            "{template .foo}",
+            "  {$foo + 1}",
+            "{/template}",
+            "")
         .rendersAs("2", ImmutableMap.of("foo", 1))
         .rendersAs("3", ImmutableMap.of("foo", 2))
         .rendersAs("4", ImmutableMap.of("foo", 3));
   }
 
+  @Test
   public void testInjectParam() {
-    assertThatTemplateBody(
-        "{@inject foo : int }",
-        "{$foo + 1}")
+    assertThatTemplateBody("{@inject foo : int }", "{$foo + 1}")
         .rendersAs("2", ImmutableMap.<String, Object>of(), ImmutableMap.of("foo", 1))
         .rendersAs("3", ImmutableMap.<String, Object>of(), ImmutableMap.of("foo", 2))
         .rendersAs("4", ImmutableMap.<String, Object>of(), ImmutableMap.of("foo", 3));
   }
 
+  @Test
   public void testInjectParam_legacyIj() {
-    assertThatTemplateBody(
-        "{$ij.foo + 1}")
+    assertThatTemplateBody("{$ij.foo + 1}")
         .rendersAs("2", ImmutableMap.<String, Object>of(), ImmutableMap.of("foo", 1))
         .rendersAs("3", ImmutableMap.<String, Object>of(), ImmutableMap.of("foo", 2))
         .rendersAs("4", ImmutableMap.<String, Object>of(), ImmutableMap.of("foo", 3));
   }
 
+  @Test
   public void testParamValidation() throws Exception {
     CompiledTemplates templates =
         TemplateTester.compileTemplateBody("{@param foo : int}", "{$foo ?: -1}");
     CompiledTemplate.Factory singleParam = templates.getTemplateFactory("ns.foo");
     RenderContext context = getDefaultContext(templates);
     AdvisingStringBuilder builder = new AdvisingStringBuilder();
-    EasyDictImpl params = new EasyDictImpl(SoyValueHelper.UNCUSTOMIZED_INSTANCE);
+    EasyDictImpl params = new EasyDictImpl(SoyValueConverter.UNCUSTOMIZED_INSTANCE);
     params.setField("foo", IntegerData.forValue(1));
     singleParam.create(params, EMPTY_DICT).render(builder, context);
     assertEquals("1", builder.getAndClearBuffer());
@@ -649,13 +641,14 @@ public class BytecodeCompilerTest extends TestCase {
     CompiledTemplate.Factory singleIj = templates.getTemplateFactory("ns.foo");
     context = getDefaultContext(templates);
     params.setField("foo", IntegerData.forValue(1));
-    singleIj.create(SoyValueHelper.EMPTY_DICT, params).render(builder, context);
+    singleIj.create(SoyValueConverter.EMPTY_DICT, params).render(builder, context);
     assertEquals("1", builder.getAndClearBuffer());
     params.delField("foo");
-    singleIj.create(SoyValueHelper.EMPTY_DICT, params).render(builder, context);
+    singleIj.create(SoyValueConverter.EMPTY_DICT, params).render(builder, context);
     assertEquals("null", builder.getAndClearBuffer());
   }
 
+  @Test
   public void testParamFields() throws Exception {
     CompiledTemplate.Factory multipleParams =
         TemplateTester.compileTemplateBody(
@@ -664,7 +657,7 @@ public class BytecodeCompilerTest extends TestCase {
                 "{@inject bar : string}",
                 "{$foo + $baz + $bar}")
             .getTemplateFactory("ns.foo");
-    EasyDictImpl params = new EasyDictImpl(SoyValueHelper.UNCUSTOMIZED_INSTANCE);
+    EasyDictImpl params = new EasyDictImpl(SoyValueConverter.UNCUSTOMIZED_INSTANCE);
     params.setField("foo", StringData.forValue("foo"));
     params.setField("bar", StringData.forValue("bar"));
     params.setField("baz", StringData.forValue("baz"));
@@ -679,6 +672,7 @@ public class BytecodeCompilerTest extends TestCase {
     assertThat(templateMetadata.delCallees()).isEmpty();
   }
 
+  @Test
   public void testPassHtmlAsNullableString() throws Exception {
     CompiledTemplateSubject subject =
         TemplateTester.assertThatFile(
@@ -698,12 +692,12 @@ public class BytecodeCompilerTest extends TestCase {
     return declaredField.get(template);
   }
 
+  @Test
   public void testBasicFunctionality() {
     // make sure we don't break standard reflection access
     CompiledTemplate.Factory factory =
         TemplateTester.compileTemplateBody("hello world").getTemplateFactory("ns.foo");
-    assertEquals("com.google.template.soy.jbcsrc.gen.ns.foo$Factory",
-        factory.getClass().getName());
+    assertEquals("com.google.template.soy.jbcsrc.gen.ns.foo$Factory", factory.getClass().getName());
     assertEquals("Factory", factory.getClass().getSimpleName());
 
     CompiledTemplate templateInstance = factory.create(EMPTY_DICT, EMPTY_DICT);
@@ -725,6 +719,7 @@ public class BytecodeCompilerTest extends TestCase {
     assertThat(templateClass.getDeclaredClasses()).asList().contains(factory.getClass());
   }
 
+  @Test
   public void testContentKindNonStrict() {
     assertThat(
             TemplateTester.compileFile(
@@ -740,20 +735,21 @@ public class BytecodeCompilerTest extends TestCase {
         .isEmpty();
   }
 
+  @Test
   public void testRenderMsgStmt() throws Exception {
     assertThatTemplateBody(
-        "{@param quota : int}",
-        "{@param url : string}",
-        "{msg desc=\"msg with placeholders.\"}",
-        "  You're currently using {$quota} MB of your quota.{sp}",
-        "  <a href=\"{$url}\">Learn more</A>",
-        "  <br /><br />",
-        "{/msg}",
-        "{msg meaning=\"noun\" desc=\"\" hidden=\"true\"}Archive{/msg}",
-        "{msg meaning=\"noun\" desc=\"The archive (noun).\"}Archive{/msg}",
-        "{msg meaning=\"verb\" desc=\"\"}Archive{/msg}",
-        "{msg desc=\"\"}Archive{/msg}",
-        "")
+            "{@param quota : int}",
+            "{@param url : string}",
+            "{msg desc=\"msg with placeholders.\"}",
+            "  You're currently using {$quota} MB of your quota.{sp}",
+            "  <a href=\"{$url}\">Learn more</A>",
+            "  <br /><br />",
+            "{/msg}",
+            "{msg meaning=\"noun\" desc=\"\" hidden=\"true\"}Archive{/msg}",
+            "{msg meaning=\"noun\" desc=\"The archive (noun).\"}Archive{/msg}",
+            "{msg meaning=\"verb\" desc=\"\"}Archive{/msg}",
+            "{msg desc=\"\"}Archive{/msg}",
+            "")
         .rendersAs(
             "You're currently using 26 MB of your quota. "
                 + "<a href=\"http://foo.com\">Learn more</A>"
@@ -762,27 +758,32 @@ public class BytecodeCompilerTest extends TestCase {
             ImmutableMap.of("quota", 26, "url", "http://foo.com"));
   }
 
+  @Test
   public void testGenders() {
-    CompiledTemplateSubject tester = assertThatTemplateBody(
-        "{@param userGender : string}",
-        "{@param targetName : string}",
-        "{@param targetGender : string}",
-        "{msg genders=\"$userGender, $targetGender\" desc=\"...\"}",
-        "  You replied to {$targetName}.",
-        "{/msg}",
-        "");
-    tester.rendersAs("You replied to bender the offender.", 
-            ImmutableMap.of(
-                "userGender", "male", 
-                "targetName", "bender the offender", 
-                "targetGender", "male"));
-    tester.rendersAs("You replied to gender bender.", 
+    CompiledTemplateSubject tester =
+        assertThatTemplateBody(
+            "{@param userGender : string}",
+            "{@param targetName : string}",
+            "{@param targetGender : string}",
+            "{msg genders=\"$userGender, $targetGender\" desc=\"...\"}",
+            "  You replied to {$targetName}.",
+            "{/msg}",
+            "");
+    tester.rendersAs(
+        "You replied to bender the offender.",
         ImmutableMap.of(
-            "userGender", "male", 
-            "targetName", "gender bender", 
+            "userGender", "male",
+            "targetName", "bender the offender",
+            "targetGender", "male"));
+    tester.rendersAs(
+        "You replied to gender bender.",
+        ImmutableMap.of(
+            "userGender", "male",
+            "targetName", "gender bender",
             "targetGender", "female"));
   }
 
+  @Test
   public void testPlurals() {
     CompiledTemplateSubject tester =
         assertThatTemplateBody(
@@ -799,9 +800,10 @@ public class BytecodeCompilerTest extends TestCase {
     tester.rendersAs(
         "hello", ImmutableMap.of("items", ImmutableList.of(ImmutableMap.of("foo", "hello"))));
   }
-  
+
   // Tests for a bug where we would overescape deltemplates at the call site when the strict
   // content kind of the deltemplate was unknown at compile time.
+  @Test
   public void testDelCallEscaping_separateCompilation() throws IOException {
     String soyFileContent1 =
         Joiner.on("\n")
@@ -847,10 +849,13 @@ public class BytecodeCompilerTest extends TestCase {
 
   private static final class FakeRenamingMap implements SoyCssRenamingMap {
     private final Map<String, String> renamingMap;
+
     FakeRenamingMap(Map<String, String> renamingMap) {
       this.renamingMap = renamingMap;
     }
-    @Override public String get(String key) {
+
+    @Override
+    public String get(String key) {
       return renamingMap.get(key);
     }
   }

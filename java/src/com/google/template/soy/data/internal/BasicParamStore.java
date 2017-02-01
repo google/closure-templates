@@ -19,44 +19,38 @@ package com.google.template.soy.data.internal;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import com.google.template.soy.data.SoyValueProvider;
-
 import java.util.Map;
-
 import javax.annotation.Nonnull;
-
 
 /**
  * Basic implementation of ParamStore.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public class BasicParamStore extends ParamStore {
-
+public final class BasicParamStore extends ParamStore {
 
   /** The internal map holding the fields (params). */
   private final Map<String, SoyValueProvider> localStore;
-
 
   public BasicParamStore(int size) {
     this.localStore = Maps.newHashMapWithExpectedSize(size);
   }
 
-
-  @Override public BasicParamStore setField(String name, @Nonnull SoyValueProvider valueProvider) {
+  @Override
+  public BasicParamStore setField(String name, @Nonnull SoyValueProvider valueProvider) {
     Preconditions.checkNotNull(valueProvider);
     localStore.put(name, valueProvider);
     return this;
   }
 
-
-  @Override public boolean hasField(String name) {
+  @Override
+  public boolean hasField(String name) {
     return localStore.containsKey(name);
   }
 
-
-  @Override public SoyValueProvider getFieldProvider(String name) {
+  @Override
+  public SoyValueProvider getFieldProvider(String name) {
     return localStore.get(name);
   }
-
 }

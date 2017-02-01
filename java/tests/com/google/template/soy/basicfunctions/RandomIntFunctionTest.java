@@ -17,6 +17,8 @@
 package com.google.template.soy.basicfunctions;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
@@ -24,24 +26,24 @@ import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.pysrc.restricted.PyExpr;
-
-import junit.framework.TestCase;
-
 import java.util.Set;
-
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for RandomIntFunction.
  *
  */
-public class RandomIntFunctionTest extends TestCase {
+@RunWith(JUnit4.class)
+public class RandomIntFunctionTest {
 
+  @Test
   public void testComputeForJava() {
     RandomIntFunction randomIntFunction = new RandomIntFunction();
 
     SoyValue arg = IntegerData.ONE;
-    assertEquals(IntegerData.ZERO,
-                 randomIntFunction.computeForJava(ImmutableList.of(arg)));
+    assertEquals(IntegerData.ZERO, randomIntFunction.computeForJava(ImmutableList.of(arg)));
 
     arg = IntegerData.forValue(3);
     Set<Integer> seenResults = Sets.newHashSetWithExpectedSize(3);
@@ -56,13 +58,16 @@ public class RandomIntFunctionTest extends TestCase {
     assertEquals(3, seenResults.size());
   }
 
+  @Test
   public void testComputeForJsSrc() {
     RandomIntFunction randomIntFunction = new RandomIntFunction();
     JsExpr argExpr = new JsExpr("JS_CODE", Integer.MAX_VALUE);
-    assertEquals(new JsExpr("Math.floor(Math.random() * JS_CODE)", Integer.MAX_VALUE),
-                 randomIntFunction.computeForJsSrc(ImmutableList.of(argExpr)));
+    assertEquals(
+        new JsExpr("Math.floor(Math.random() * JS_CODE)", Integer.MAX_VALUE),
+        randomIntFunction.computeForJsSrc(ImmutableList.of(argExpr)));
   }
 
+  @Test
   public void testComputeForPySrc() {
     RandomIntFunction randomIntFunction = new RandomIntFunction();
     PyExpr argExpr = new PyExpr("upper", Integer.MAX_VALUE);

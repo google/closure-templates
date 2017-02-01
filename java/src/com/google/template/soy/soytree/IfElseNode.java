@@ -23,11 +23,10 @@ import com.google.template.soy.soytree.SoyNode.ConditionalBlockNode;
 /**
  * Node representing the 'else' block within an 'if' statement.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public final class IfElseNode extends AbstractBlockCommandNode implements ConditionalBlockNode {
-
 
   /**
    * @param id The id for this node.
@@ -37,22 +36,22 @@ public final class IfElseNode extends AbstractBlockCommandNode implements Condit
     super(id, sourceLocation, "else", "");
   }
 
-
   /**
    * Copy constructor.
+   *
    * @param orig The node to copy.
    */
   private IfElseNode(IfElseNode orig, CopyState copyState) {
     super(orig, copyState);
   }
 
-
-  @Override public Kind getKind() {
+  @Override
+  public Kind getKind() {
     return Kind.IF_ELSE_NODE;
   }
 
-
-  @Override public String toSourceString() {
+  @Override
+  public String toSourceString() {
     StringBuilder sb = new StringBuilder();
     sb.append(getTagString());
     appendSourceStringForChildren(sb);
@@ -60,9 +59,8 @@ public final class IfElseNode extends AbstractBlockCommandNode implements Condit
     return sb.toString();
   }
 
-
-  @Override public IfElseNode copy(CopyState copyState) {
+  @Override
+  public IfElseNode copy(CopyState copyState) {
     return new IfElseNode(this, copyState);
   }
-
 }

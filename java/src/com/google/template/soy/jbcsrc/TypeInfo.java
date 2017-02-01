@@ -19,20 +19,20 @@ package com.google.template.soy.jbcsrc;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.auto.value.AutoValue;
-
 import org.objectweb.asm.Type;
 
-/** 
- * A wrapper around {@link Type} that provides some additional methods and accessor caching. 
- * 
- * <p>Also, unlike {@link Type} this only represents the name of a class, it doesn't attempt to 
+/**
+ * A wrapper around {@link Type} that provides some additional methods and accessor caching.
+ *
+ * <p>Also, unlike {@link Type} this only represents the name of a class, it doesn't attempt to
  * represent primitive or array types or method descriptors.
  */
-@AutoValue abstract class TypeInfo {
+@AutoValue
+abstract class TypeInfo {
   static TypeInfo create(Class<?> clazz) {
     Type type = Type.getType(clazz);
-    return new AutoValue_TypeInfo(clazz.getName(), clazz.getSimpleName(), type.getInternalName(), 
-        type);
+    return new AutoValue_TypeInfo(
+        clazz.getName(), clazz.getSimpleName(), type.getInternalName(), type);
   }
 
   static TypeInfo create(String className) {
@@ -42,22 +42,21 @@ import org.objectweb.asm.Type;
     // This logic is specified by Class.getSimpleName()
     String packageLessName = className.substring(className.lastIndexOf('.') + 1);
     String simpleName = packageLessName.substring(packageLessName.lastIndexOf('$') + 1);
-    return new AutoValue_TypeInfo(
-        className,
-        simpleName,
-        type.getInternalName(),
-        type);
+    return new AutoValue_TypeInfo(className, simpleName, type.getInternalName(), type);
   }
 
   abstract String className();
+
   abstract String simpleName();
+
   abstract String internalName();
+
   abstract Type type();
 
   /** Returns a new {@link TypeInfo} for an inner class of this class. */
   final TypeInfo innerClass(String simpleName) {
-    checkArgument(simpleName.indexOf('$') == -1, 
-        "Simple names shouldn't contain '$': %s", simpleName);
+    checkArgument(
+        simpleName.indexOf('$') == -1, "Simple names shouldn't contain '$': %s", simpleName);
     String className = className() + '$' + simpleName;
     String internalName = internalName() + '$' + simpleName;
     Type type = Type.getObjectType(internalName);

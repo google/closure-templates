@@ -21,15 +21,18 @@ import static com.google.common.truth.Truth.assertThat;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.error.FormattingErrorReporter;
-
-import junit.framework.TestCase;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for VerifyPhnameAttrOnlyOnPlaceholdersVisitor.
  *
  */
-public final class VerifyPhnameAttrOnlyOnPlaceholdersVisitorTest extends TestCase {
+@RunWith(JUnit4.class)
+public final class VerifyPhnameAttrOnlyOnPlaceholdersVisitorTest {
 
+  @Test
   public void testVerifyPhnameAttrOnlyOnPlaceholders() {
     assertInvalidSoyCode("{@param boo : ?}\n{$boo phname=\"foo\"}");
     assertInvalidSoyCode("{call .helper phname=\"foo\" /}");

@@ -31,7 +31,7 @@ import com.google.template.soy.soytree.TemplateRegistry;
  * Visitor to check that there are no external calls. Used by backends that disallow external calls,
  * such as the Tofu (JavaObj) backend.
  *
- * <p> {@link #exec} should be called on a {@code SoyFileSetNode} or a {@code SoyFileNode}. There is
+ * <p>{@link #exec} should be called on a {@code SoyFileSetNode} or a {@code SoyFileNode}. There is
  * no return value. A {@code SoySyntaxException} is thrown if an error is found.
  *
  */
@@ -57,15 +57,14 @@ public final class StrictDepsVisitor extends AbstractSoyNodeVisitor<Void> {
     this.errorReporter = errorReporter;
   }
 
-
   // -----------------------------------------------------------------------------------------------
   // Implementations for specific nodes.
-
 
   // TODO(gboyer): Consider some deltemplate checking, but it's hard to make a coherent case for
   // deltemplates since it's legitimate to have zero implementations, or to have the implementation
   // in a different part of the dependency graph (if it's late-bound).
-  @Override protected void visitCallBasicNode(CallBasicNode node) {
+  @Override
+  protected void visitCallBasicNode(CallBasicNode node) {
     TemplateNode callee = templateRegistry.getBasicTemplate(node.getCalleeName());
 
     if (callee == null) {
@@ -100,8 +99,8 @@ public final class StrictDepsVisitor extends AbstractSoyNodeVisitor<Void> {
   // -----------------------------------------------------------------------------------------------
   // Fallback implementation.
 
-
-  @Override protected void visitSoyNode(SoyNode node) {
+  @Override
+  protected void visitSoyNode(SoyNode node) {
     if (node instanceof ParentSoyNode<?>) {
       visitChildren((ParentSoyNode<?>) node);
     }

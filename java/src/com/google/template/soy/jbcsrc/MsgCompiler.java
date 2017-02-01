@@ -46,17 +46,13 @@ import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
-
-import org.objectweb.asm.Label;
-
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.objectweb.asm.Label;
 
-/**
- * A helper for compiling {@link MsgNode messages}
- */
+/** A helper for compiling {@link MsgNode messages} */
 final class MsgCompiler {
   private static final ConstructorRef SOY_MSG =
       ConstructorRef.create(SoyMsg.class, long.class, String.class, boolean.class, Iterable.class);
@@ -69,17 +65,16 @@ final class MsgCompiler {
   private static final ConstructorRef SOY_MSG_SELECT_PART =
       ConstructorRef.create(SoyMsgSelectPart.class, String.class, Iterable.class);
   private static final MethodRef SOY_MSG_RAW_TEXT_PART_OF =
-      MethodRef.forMethod(SoyMsgRawTextPart.class, "of", String.class);
+      MethodRef.create(SoyMsgRawTextPart.class, "of", String.class);
   private static final MethodRef CASE_CREATE =
-      MethodRef.forMethod(Case.class, "create", Object.class, Iterable.class);
+      MethodRef.create(Case.class, "create", Object.class, Iterable.class);
   private static final ConstructorRef SOY_MSG_PLURAL_CASE_SPEC_TYPE =
       ConstructorRef.create(SoyMsgPluralCaseSpec.class, SoyMsgPluralCaseSpec.Type.class);
   private static final ConstructorRef SOY_MSG_PLURAL_CASE_SPEC_INT =
       ConstructorRef.create(SoyMsgPluralCaseSpec.class, int.class);
-  
 
   /**
-   * A helper interface that allows the MsgCompiler to interact with the SoyNodeCompiler in a 
+   * A helper interface that allows the MsgCompiler to interact with the SoyNodeCompiler in a
    * limited way.
    */
   interface SoyNodeToStringCompiler {
@@ -99,22 +94,22 @@ final class MsgCompiler {
 
     /**
      * Compiles the print node to a {@link String} valued expression.
-     * 
+     *
      * <p>If the node requires detach logic, it should use the given label as the reattach point.
      */
     Expression compileToString(PrintNode node, Label reattachPoint);
 
-    /** 
+    /**
      * Compiles the given CallNode to a statement that writes the result into the given appendable.
-     * 
+     *
      * <p>The statement is guaranteed to be written to a location with a stack depth of zero.
      */
     Statement compileToBuffer(CallNode call, AppendableExpression appendable);
 
-    /** 
+    /**
      * Compiles the given MsgHtmlTagNode to a statement that writes the result into the given
      * appendable.
-     * 
+     *
      * <p>The statement is guaranteed to be written to a location with a stack depth of zero.
      */
     Statement compileToBuffer(MsgHtmlTagNode htmlTagNode, AppendableExpression appendable);
@@ -178,7 +173,7 @@ final class MsgCompiler {
    *
    * <p>For each msg we generate a static final field that holds a SoyMsg object which means we have
    * to go through the somewhat awkward process of generating code to construct objects we have at
-   * compile time.  We could do something like use java serialization, but just invoking the
+   * compile time. We could do something like use java serialization, but just invoking the
    * constructors isn't too hard.
    */
   private Expression compileDefaultMessageConstant(MsgPartsAndIds partsAndId, MsgNode msgNode) {
@@ -200,9 +195,7 @@ final class MsgCompiler {
     return BytecodeUtils.asList(partsExprs);
   }
 
-  /**
-   * Returns an {@link Expression} that evaluates to an equivalent SoyMsgPart as the argument.
-   */
+  /** Returns an {@link Expression} that evaluates to an equivalent SoyMsgPart as the argument. */
   private Expression partToPartExpression(SoyMsgPart part) {
     if (part instanceof SoyMsgPlaceholderPart) {
       return SOY_MSG_PLACEHOLDER_PART.construct(
@@ -247,26 +240,24 @@ final class MsgCompiler {
     }
   }
 
-  /**
-   * Handles a translation consisting of a single raw text node.
-   */
+  /** Handles a translation consisting of a single raw text node. */
   private Statement handleBasicTranslation(List<String> escapingDirectives, Expression soyMsg) {
     // optimize for simple constant translations (very common)
     // this becomes: renderContext.getSoyMessge(<id>).getParts().get(o).getRawText()
-    SoyExpression text = SoyExpression.forString(
-        soyMsg.invoke(MethodRef.SOY_MSG_GET_PARTS)
-            .invoke(MethodRef.LIST_GET, constant(0))
-            .cast(SoyMsgRawTextPart.class)
-            .invoke(MethodRef.SOY_MSG_RAW_TEXT_PART_GET_RAW_TEXT));
+    SoyExpression text =
+        SoyExpression.forString(
+            soyMsg
+                .invoke(MethodRef.SOY_MSG_GET_PARTS)
+                .invoke(MethodRef.LIST_GET, constant(0))
+                .checkedCast(SoyMsgRawTextPart.class)
+                .invoke(MethodRef.SOY_MSG_RAW_TEXT_PART_GET_RAW_TEXT));
     for (String directive : escapingDirectives) {
       text = text.applyPrintDirective(parameterLookup.getRenderContext(), directive);
     }
     return appendableExpression.appendString(text.coerceToString()).toStatement();
   }
 
-  /**
-   * Handles a complex message with placeholders.
-   */
+  /** Handles a complex message with placeholders. */
   private Statement handleTranslationWithPlaceholders(
       MsgNode msg,
       List<String> escapingDirectives,
@@ -284,15 +275,18 @@ final class MsgCompiler {
     Statement clearMap = placeholderMap.invokeVoid(MethodRef.LINKED_HASH_MAP_CLEAR);
     Statement render;
     if (escapingDirectives.isEmpty()) {
-      render = MethodRef.RUNTIME_RENDER_SOY_MSG_WITH_PLACEHOLDERS.invokeVoid(soyMsg,
-          placeholderMap, appendableExpression);
+      render =
+          MethodRef.RUNTIME_RENDER_SOY_MSG_WITH_PLACEHOLDERS.invokeVoid(
+              soyMsg, placeholderMap, appendableExpression);
     } else {
       // render into the handy buffer we already have!
-      Statement renderToBuffer = MethodRef.RUNTIME_RENDER_SOY_MSG_WITH_PLACEHOLDERS.invokeVoid(
-          soyMsg, placeholderMap, tempBuffer());
+      Statement renderToBuffer =
+          MethodRef.RUNTIME_RENDER_SOY_MSG_WITH_PLACEHOLDERS.invokeVoid(
+              soyMsg, placeholderMap, tempBuffer());
       // N.B. the type here is always 'string'
-      SoyExpression value = SoyExpression.forString(
-          tempBuffer().invoke(MethodRef.ADVISING_STRING_BUILDER_GET_AND_CLEAR));
+      SoyExpression value =
+          SoyExpression.forString(
+              tempBuffer().invoke(MethodRef.ADVISING_STRING_BUILDER_GET_AND_CLEAR));
       for (String directive : escapingDirectives) {
         value = value.applyPrintDirective(parameterLookup.getRenderContext(), directive);
       }
@@ -461,7 +455,7 @@ final class MsgCompiler {
 
   /**
    * Returns a statement that adds the content rendered by the call to the map.
-   * 
+   *
    * @param mapExpression The map to put the new entry in
    * @param mapKey The map key
    * @param callNode The node
@@ -494,9 +488,7 @@ final class MsgCompiler {
 
   private Statement putToMap(Expression mapExpression, String mapKey, Expression valueExpression) {
     return mapExpression
-        .invoke(MethodRef.LINKED_HASH_MAP_PUT,
-            constant(mapKey),
-            valueExpression)
+        .invoke(MethodRef.LINKED_HASH_MAP_PUT, constant(mapKey), valueExpression)
         .toStatement();
   }
 
@@ -506,7 +498,8 @@ final class MsgCompiler {
 
   private Statement putBufferIntoMapForPlaceholder(Expression mapExpression, String mapKey) {
     return mapExpression
-        .invoke(MethodRef.LINKED_HASH_MAP_PUT,
+        .invoke(
+            MethodRef.LINKED_HASH_MAP_PUT,
             constant(mapKey),
             tempBuffer().invoke(MethodRef.ADVISING_STRING_BUILDER_GET_AND_CLEAR))
         .toStatement();

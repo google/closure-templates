@@ -20,7 +20,6 @@ import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.UndefinedData;
 
-
 /**
  * The "null" type.
  *
@@ -32,21 +31,22 @@ public final class NullType extends PrimitiveType {
   // Not constructible - use getInstance().
   private NullType() {}
 
-  @Override public Kind getKind() {
+  @Override
+  public Kind getKind() {
     return Kind.NULL;
   }
 
-  @Override public boolean isInstance(SoyValue value) {
+  @Override
+  public boolean isInstance(SoyValue value) {
     return value instanceof NullData || value instanceof UndefinedData;
   }
 
-  @Override public String toString() {
+  @Override
+  public String toString() {
     return "null";
   }
 
-  /**
-   * Return the single instance of this type.
-   */
+  /** Return the single instance of this type. */
   public static NullType getInstance() {
     return INSTANCE;
   }

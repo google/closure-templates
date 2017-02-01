@@ -17,6 +17,7 @@
 package com.google.template.soy.basicfunctions;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.junit.Assert.assertEquals;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SoyValue;
@@ -29,17 +30,18 @@ import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyExprUtils;
-
-import junit.framework.TestCase;
-
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for IsNonnullFunction.
  *
  */
-public class IsNonnullFunctionTest extends TestCase {
+@RunWith(JUnit4.class)
+public class IsNonnullFunctionTest {
 
-
+  @Test
   public void testComputeForJava() {
     IsNonnullFunction isNonnullFunction = new IsNonnullFunction();
 
@@ -57,6 +59,7 @@ public class IsNonnullFunctionTest extends TestCase {
         isNonnullFunction.computeForJava(ImmutableList.<SoyValue>of(StringData.forValue(""))));
   }
 
+  @Test
   public void testComputeForJsSrc() {
     IsNonnullFunction isNonnullFunction = new IsNonnullFunction();
     JsExpr expr = new JsExpr("JS_CODE", Integer.MAX_VALUE);
@@ -65,11 +68,13 @@ public class IsNonnullFunctionTest extends TestCase {
         isNonnullFunction.computeForJsSrc(ImmutableList.of(expr)));
   }
 
+  @Test
   public void testComputeForPySrc() {
     IsNonnullFunction isNonnullFunction = new IsNonnullFunction();
     PyExpr expr = new PyExpr("data", Integer.MAX_VALUE);
     assertThat(isNonnullFunction.computeForPySrc(ImmutableList.of(expr)))
-        .isEqualTo(new PyExpr("data is not None",
-            PyExprUtils.pyPrecedenceForOperator(Operator.NOT_EQUAL)));
+        .isEqualTo(
+            new PyExpr(
+                "data is not None", PyExprUtils.pyPrecedenceForOperator(Operator.NOT_EQUAL)));
   }
 }

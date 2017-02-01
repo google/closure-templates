@@ -24,32 +24,27 @@ import java.util.Objects;
  */
 public final class SoyMsgPlaceholderPart extends SoyMsgPart {
 
-
   /** The placeholder name (as seen by translators). */
   private final String placeholderName;
 
-
-  /**
-   * @param placeholderName The placeholder name (as seen by translators).
-   */
+  /** @param placeholderName The placeholder name (as seen by translators). */
   public SoyMsgPlaceholderPart(String placeholderName) {
     this.placeholderName = placeholderName;
   }
-
 
   /** Returns the placeholder name (as seen by translators). */
   public String getPlaceholderName() {
     return placeholderName;
   }
 
-
-  @Override public boolean equals(Object other) {
+  @Override
+  public boolean equals(Object other) {
     return other instanceof SoyMsgPlaceholderPart
         && placeholderName.equals(((SoyMsgPlaceholderPart) other).placeholderName);
   }
 
-
-  @Override public int hashCode() {
-    return Objects.hash(SoyMsgPlaceholderPart.class, placeholderName.hashCode());
+  @Override
+  public int hashCode() {
+    return Objects.hash(SoyMsgPlaceholderPart.class, placeholderName);
   }
 }

@@ -45,8 +45,7 @@ public final class AliasDeclaration {
     }
   }
 
-  public AliasDeclaration(
-      String namespace, ErrorReporter errorReporter, SourceLocation location) {
+  public AliasDeclaration(String namespace, ErrorReporter errorReporter, SourceLocation location) {
     this(namespace, BaseUtils.extractPartAfterLastDot(namespace), errorReporter, location);
   }
 

@@ -17,37 +17,38 @@
 package com.google.template.soy.basicfunctions;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.SoyValueHelper;
+import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyListExpr;
-
-import junit.framework.TestCase;
-
 import java.util.Set;
-
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for KeysFunction.
  *
  */
-public class KeysFunctionTest extends TestCase {
+@RunWith(JUnit4.class)
+public class KeysFunctionTest {
 
+  private static final SoyValueConverter CONVERTER = SoyValueConverter.UNCUSTOMIZED_INSTANCE;
 
-  private static final SoyValueHelper VALUE_HELPER = SoyValueHelper.UNCUSTOMIZED_INSTANCE;
-
-
+  @Test
   public void testComputeForJava() {
     KeysFunction keysFunction = new KeysFunction();
 
-    SoyValue map = VALUE_HELPER.newEasyDict(
-        "boo", "bar", "foo", 2, "goo", VALUE_HELPER.newEasyDict("moo", 4));
+    SoyValue map =
+        CONVERTER.newEasyDict("boo", "bar", "foo", 2, "goo", CONVERTER.newEasyDict("moo", 4));
     SoyValue result = keysFunction.computeForJava(ImmutableList.of(map));
 
     assertTrue(result instanceof SoyList);
@@ -61,6 +62,7 @@ public class KeysFunctionTest extends TestCase {
     assertEquals(Sets.newHashSet("boo", "foo", "goo"), resultItems);
   }
 
+  @Test
   public void testComputeForJsSrc() {
     KeysFunction keysFunction = new KeysFunction();
     JsExpr expr = new JsExpr("JS_CODE", Integer.MAX_VALUE);
@@ -69,6 +71,7 @@ public class KeysFunctionTest extends TestCase {
         keysFunction.computeForJsSrc(ImmutableList.of(expr)));
   }
 
+  @Test
   public void testComputeForPySrc() {
     KeysFunction keysFunction = new KeysFunction();
     PyExpr dict = new PyExpr("dictionary", Integer.MAX_VALUE);

@@ -26,7 +26,6 @@ import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.soytree.TemplateRegistry;
-
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -45,7 +44,6 @@ class TofuRenderVisitorFactory {
   public TofuRenderVisitorFactory(TofuEvalVisitorFactory tofuEvalVisitorFactory) {
     this.tofuEvalVisitorFactory = tofuEvalVisitorFactory;
   }
-
 
   /**
    * Creates a TofuRenderVisitor.
@@ -85,5 +83,4 @@ class TofuRenderVisitorFactory {
         xidRenamingMap,
         cssRenamingMap);
   }
-
 }

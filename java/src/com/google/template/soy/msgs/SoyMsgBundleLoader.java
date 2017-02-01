@@ -18,16 +18,14 @@ package com.google.template.soy.msgs;
 
 import java.util.Locale;
 
-/**
- * Contract for any object that can load a SoyMsgBundle given a locale.
- */
+/** Contract for any object that can load a SoyMsgBundle given a locale. */
 public interface SoyMsgBundleLoader {
 
   /**
    * Gets the Message bundle for a particular locale.
    *
-   * @return The bundle. The Soy API expects SoyMsgBundle.EMPTY if there are
-   *     no translations and the in-template messages should be used.
+   * @return The bundle. The Soy API expects {@link SoyMsgBundle#EMPTY} if there are no translations
+   *     and the in-template messages should be used.
    */
   public SoyMsgBundle getSoyMsgBundleForLocale(Locale locale);
 }

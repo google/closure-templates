@@ -22,7 +22,6 @@ import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
-
 import javax.annotation.Nullable;
 
 /**
@@ -33,7 +32,6 @@ final class JsSrcTestUtils {
 
   private JsSrcTestUtils() {}
 
-
   /**
    * Simulates the start of a new Soy API call by entering/re-entering the ApiCallScope and seeding
    * scoped values.
@@ -43,7 +41,6 @@ final class JsSrcTestUtils {
   public static void simulateNewApiCall(Injector injector) {
     simulateNewApiCall(injector, new SoyJsSrcOptions());
   }
-
 
   /**
    * Simulates the start of a new Soy API call by entering/re-entering the ApiCallScope and seeding
@@ -56,19 +53,20 @@ final class JsSrcTestUtils {
     simulateNewApiCall(injector, jsSrcOptions, null, BidiGlobalDir.LTR);
   }
 
-
   /**
    * Simulates the start of a new Soy API call by entering/re-entering the ApiCallScope and seeding
    * scoped values.
    *
    * @param injector The Guice injector responsible for injections during the API call.
    * @param jsSrcOptions The options for generating JS source code.
-   * @param msgBundle The bundle of translated messages, or null to use the messages from the
-   *     Soy source.
+   * @param msgBundle The bundle of translated messages, or null to use the messages from the Soy
+   *     source.
    * @param bidiGlobalDir The bidi global directionality
    */
   private static void simulateNewApiCall(
-      Injector injector, SoyJsSrcOptions jsSrcOptions, @Nullable SoyMsgBundle msgBundle,
+      Injector injector,
+      SoyJsSrcOptions jsSrcOptions,
+      @Nullable SoyMsgBundle msgBundle,
       BidiGlobalDir bidiGlobalDir) {
 
     GuiceSimpleScope apiCallScope =

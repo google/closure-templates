@@ -26,10 +26,8 @@ import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
-
 import java.util.List;
 import java.util.Set;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -41,20 +39,21 @@ import javax.inject.Singleton;
 @SoyPureFunction
 public final class LengthFunction implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction {
 
-
   @Inject
   LengthFunction() {}
 
-
-  @Override public String getName() {
+  @Override
+  public String getName() {
     return "length";
   }
 
-  @Override public Set<Integer> getValidArgsSizes() {
+  @Override
+  public Set<Integer> getValidArgsSizes() {
     return ImmutableSet.of(1);
   }
 
-  @Override public SoyValue computeForJava(List<SoyValue> args) {
+  @Override
+  public SoyValue computeForJava(List<SoyValue> args) {
     SoyValue arg = args.get(0);
 
     if (arg == null) {
@@ -62,21 +61,28 @@ public final class LengthFunction implements SoyJavaFunction, SoyJsSrcFunction, 
     }
 
     if (!(arg instanceof SoyList)) {
-      throw new IllegalArgumentException("Argument to length() function is not a SoyList " +
-          "(found type " + arg.getClass().getName() + ").");
+      throw new IllegalArgumentException(
+          "Argument to length() function is not a SoyList "
+              + "(found type "
+              + arg.getClass().getName()
+              + ").");
     }
     return IntegerData.forValue(((SoyList) arg).length());
   }
 
-  @Override public JsExpr computeForJsSrc(List<JsExpr> args) {
+  @Override
+  public JsExpr computeForJsSrc(List<JsExpr> args) {
     JsExpr arg = args.get(0);
 
-    String exprText = arg.getPrecedence() == Integer.MAX_VALUE ?
-                      arg.getText() + ".length" : "(" + arg.getText() + ").length";
+    String exprText =
+        arg.getPrecedence() == Integer.MAX_VALUE
+            ? arg.getText() + ".length"
+            : "(" + arg.getText() + ").length";
     return new JsExpr(exprText, Integer.MAX_VALUE);
   }
 
-  @Override public PyExpr computeForPySrc(List<PyExpr> args) {
+  @Override
+  public PyExpr computeForPySrc(List<PyExpr> args) {
     PyExpr arg = args.get(0);
 
     return new PyExpr("len(" + arg.getText() + ")", Integer.MAX_VALUE);

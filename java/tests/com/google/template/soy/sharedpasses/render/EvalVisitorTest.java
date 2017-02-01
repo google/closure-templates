@@ -17,14 +17,13 @@
 package com.google.template.soy.sharedpasses.render;
 
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.common.truth.Truth.assertWithMessage;
 import static com.google.template.soy.shared.SharedTestUtils.untypedTemplateBodyForExpression;
+import static org.junit.Assert.fail;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.template.soy.SoyFileSetParserBuilder;
@@ -35,7 +34,7 @@ import com.google.template.soy.data.SoyDict;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.SoyValueHelper;
+import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.NullData;
@@ -50,53 +49,74 @@ import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.sharedpasses.render.EvalVisitor.EvalVisitorFactory;
 import com.google.template.soy.soytree.PrintNode;
-
-import junit.framework.TestCase;
-
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-
 import javax.annotation.Nullable;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for EvalVisitor.
  *
  */
-public class EvalVisitorTest extends TestCase {
+@RunWith(JUnit4.class)
+public class EvalVisitorTest {
 
   private static final Injector INJECTOR = Guice.createInjector(new SoyModule());
 
-  protected static final SoyValueHelper VALUE_HELPER = INJECTOR.getInstance(SoyValueHelper.class);
+  protected static final SoyValueConverter CONVERTER =
+      INJECTOR.getInstance(SoyValueConverter.class);
 
   private SoyRecord testData;
   private static final SoyRecord TEST_IJ_DATA =
-      VALUE_HELPER.newEasyDict("ijBool", true, "ijInt", 26, "ijStr", "injected");
+      CONVERTER.newEasyDict("ijBool", true, "ijInt", 26, "ijStr", "injected");
 
-  private final Map<String, SoyValueProvider> locals = Maps.newHashMap(
-      ImmutableMap.<String, SoyValueProvider>of(
-          "zoo", StringData.forValue("loo"),
-          "woo", FloatData.forValue(-1.618)));
+  private final Map<String, SoyValueProvider> locals =
+      Maps.newHashMap(
+          ImmutableMap.<String, SoyValueProvider>of(
+              "zoo", StringData.forValue("loo"),
+              "woo", FloatData.forValue(-1.618)));
 
-
-  @Override protected void setUp() {
+  @Before
+  public void setUp() {
     testData = createTestData();
     SharedTestUtils.simulateNewApiCall(INJECTOR);
   }
 
   protected SoyRecord createTestData() {
-    SoyList tri = VALUE_HELPER.newEasyList(1, 3, 6, 10, 15, 21);
-    return VALUE_HELPER.newEasyDict(
-        "boo", 8, "foo.bar", "baz", "foo.goo2", tri, "goo", tri,
-        "moo", 3.14, "t", true, "f", false, "n", null,
-        "map0", VALUE_HELPER.newEasyDict(), "list0", VALUE_HELPER.newEasyList(),
-        "longNumber", 1000000000000000001L,
-        "floatNumber", 1.5);
+    SoyList tri = CONVERTER.newEasyList(1, 3, 6, 10, 15, 21);
+    return CONVERTER.newEasyDict(
+        "boo",
+        8,
+        "foo.bar",
+        "baz",
+        "foo.goo2",
+        tri,
+        "goo",
+        tri,
+        "moo",
+        3.14,
+        "t",
+        true,
+        "f",
+        false,
+        "n",
+        null,
+        "map0",
+        CONVERTER.newEasyDict(),
+        "list0",
+        CONVERTER.newEasyList(),
+        "longNumber",
+        1000000000000000001L,
+        "floatNumber",
+        1.5);
   }
-
 
   /**
    * Evaluates the given expression and returns the result.
+   *
    * @param expression The expression to evaluate.
    * @return The expression result.
    * @throws Exception If there's an error.
@@ -133,9 +153,9 @@ public class EvalVisitorTest extends TestCase {
     return evalVisitor.exec(expr);
   }
 
-
   /**
    * Asserts that the given expression evaluates to the given result.
+   *
    * @param expression The expression to evaluate.
    * @param result The expected expression result.
    * @throws Exception If the assertion is not true or if there's an error.
@@ -144,9 +164,9 @@ public class EvalVisitorTest extends TestCase {
     assertThat(eval(expression).booleanValue()).isEqualTo(result);
   }
 
-
   /**
    * Asserts that the given expression evaluates to the given result.
+   *
    * @param expression The expression to evaluate.
    * @param result The expected result.
    * @throws Exception If the assertion is not true or if there's an error.
@@ -155,9 +175,9 @@ public class EvalVisitorTest extends TestCase {
     assertThat(eval(expression).longValue()).isEqualTo(result);
   }
 
-
   /**
    * Asserts that the given expression evaluates to the given result.
+   *
    * @param expression The expression to evaluate.
    * @param result The expected result.
    * @throws Exception If the assertion is not true or if there's an error.
@@ -166,9 +186,9 @@ public class EvalVisitorTest extends TestCase {
     assertThat(eval(expression).floatValue()).isEqualTo(result);
   }
 
-
   /**
    * Asserts that the given expression evaluates to the given result.
+   *
    * @param expression The expression to evaluate.
    * @param result The expected result.
    * @throws Exception If the assertion is not true or if there's an error.
@@ -177,17 +197,18 @@ public class EvalVisitorTest extends TestCase {
     assertThat(eval(expression).stringValue()).isEqualTo(result);
   }
 
-
   /**
    * Asserts that evaluating the given expression causes a ParseException.
+   *
    * @param expression The expression to evaluate.
    * @return the error messages
    */
-  private ImmutableList<String> assertParseError(String expression) {
+  private static ImmutableList<String> assertParseError(String expression) {
     FormattingErrorReporter errorReporter = new FormattingErrorReporter();
     new ExpressionParser(
-        expression, SourceLocation.UNKNOWN,
-        SoyParsingContext.empty(errorReporter, "fake.namespace"))
+            expression,
+            SourceLocation.UNKNOWN,
+            SoyParsingContext.empty(errorReporter, "fake.namespace"))
         .parseExpression();
     ImmutableList<String> errorMessages = errorReporter.getErrorMessages();
     if (errorMessages.isEmpty()) {
@@ -197,32 +218,8 @@ public class EvalVisitorTest extends TestCase {
   }
 
   /**
-   * Asserts that evaluating the given expression causes a ParseException.
-   * @param expression The expression to evaluate.
-   */
-  private void assertParseError(String expression, String... errorMsgSubstrings) {
-    ImmutableList<String> errorMessages = assertParseError(expression);
-    Set<String> expectedStrings = ImmutableSet.copyOf(errorMsgSubstrings);
-    Set<String> matchedSubstrings = new HashSet<>();
-    Set<String> unmatchedErrors = new HashSet<>();
-    for (String errorMessage : errorMessages) {
-      unmatchedErrors.add(errorMessage);
-      for (String possibleMatch : expectedStrings) {
-        if (errorMessage.contains(possibleMatch)) {
-          matchedSubstrings.add(possibleMatch);
-          unmatchedErrors.remove(errorMessage);
-          break;
-        }
-      }
-    }
-    assertWithMessage("Expected all errors to be matched").that(unmatchedErrors).isEmpty();
-    assertWithMessage("Expected all expected substrings to match something")
-        .that(Sets.difference(expectedStrings, matchedSubstrings))
-        .isEmpty();
-  }
-
-  /**
    * Asserts that evaluating the given expression causes a RenderException.
+   *
    * @param expression The expression to evaluate.
    * @throws Exception If the assertion is not true or if there's an error.
    */
@@ -241,9 +238,9 @@ public class EvalVisitorTest extends TestCase {
     }
   }
 
-
   /**
    * Asserts that evaluating the given expression causes a SoyDataException.
+   *
    * @param expression The expression to evaluate.
    * @throws Exception If the assertion is not true or if there's an error.
    */
@@ -262,11 +259,10 @@ public class EvalVisitorTest extends TestCase {
     }
   }
 
-
   // -----------------------------------------------------------------------------------------------
   // Tests begin here.
 
-
+  @Test
   public void testEvalPrimitives() throws Exception {
     assertThat(eval("null")).isInstanceOf(NullData.class);
     assertEval("true", true);
@@ -276,7 +272,7 @@ public class EvalVisitorTest extends TestCase {
     assertEval("'boo'", "boo");
   }
 
-
+  @Test
   public void testEvalListLiteral() throws Exception {
 
     SoyList result = (SoyList) eval("['blah', 123, $boo]");
@@ -285,7 +281,7 @@ public class EvalVisitorTest extends TestCase {
     assertThat(result.get(1).integerValue()).isEqualTo(123);
     assertThat(result.get(2).integerValue()).isEqualTo(8);
 
-    result = (SoyList) eval("['blah', 123, $boo,]");  // trailing comma
+    result = (SoyList) eval("['blah', 123, $boo,]"); // trailing comma
     assertThat(result.length()).isEqualTo(3);
     assertThat(result.get(0).stringValue()).isEqualTo("blah");
     assertThat(result.get(1).integerValue()).isEqualTo(123);
@@ -297,7 +293,7 @@ public class EvalVisitorTest extends TestCase {
     assertParseError("[,]");
   }
 
-
+  @Test
   public void testEvalMapLiteral() throws Exception {
 
     SoyDict result = (SoyDict) eval("[:]");
@@ -309,7 +305,7 @@ public class EvalVisitorTest extends TestCase {
     assertThat(result.getField("bbb").integerValue()).isEqualTo(123);
     assertThat(result.getField("baz").integerValue()).isEqualTo(8);
 
-    result = (SoyDict) eval("['aaa': 'blah', 'bbb': 123, $foo.bar: $boo,]");  // trailing comma
+    result = (SoyDict) eval("['aaa': 'blah', 'bbb': 123, $foo.bar: $boo,]"); // trailing comma
     assertThat(result.getItemKeys()).hasSize(3);
     assertThat(result.getField("aaa").stringValue()).isEqualTo("blah");
     assertThat(result.getField("bbb").integerValue()).isEqualTo(123);
@@ -327,23 +323,12 @@ public class EvalVisitorTest extends TestCase {
     assertParseError("[:,]");
     assertParseError("[,:]");
 
-    // Test error on single-identifier key.
-    assertParseError(
-        "[aaa: 'blah',]",
-        "Disallowed single-identifier key \"aaa\" in map literal",
-        "parse error at ':': expected null, <BOOLEAN>, <INTEGER>, <FLOAT>, <STRING>, not, "
-            + "'an identifier', variable, -, [, (, or $ij.");
-    assertParseError(
-        "['aaa': 'blah', bbb: 123]",
-        "Disallowed single-identifier key \"bbb\" in map literal",
-        "parse error at ':': expected null, <BOOLEAN>, <INTEGER>, <FLOAT>, <STRING>, not, "
-            + "'an identifier', variable, -, [, (, or $ij.");
-
     // Test last value overwrites earlier value for the same key.
     result = (SoyDict) eval("['baz': 'blah', $foo.bar: 'bluh']");
     assertThat(result.getField("baz").stringValue()).isEqualTo("bluh");
   }
 
+  @Test
   public void testEvalDataRefBasic() throws Exception {
 
     assertEval("$zoo", "loo");
@@ -374,8 +359,8 @@ public class EvalVisitorTest extends TestCase {
         "$boo?['xyz']", "encountered non-map/list just before accessing \"?['xyz']\"");
     assertDataException(
         "$foo[2]",
-        "SoyDict accessed with non-string key (got key type" +
-            " com.google.template.soy.data.restricted.IntegerData).");
+        "SoyDict accessed with non-string key (got key type"
+            + " com.google.template.soy.data.restricted.IntegerData).");
     assertThat(eval("$moo.too")).isInstanceOf(UndefinedData.class);
     //assertRenderException(
     //    "$roo.too", "encountered undefined LHS just before accessing \".too\"");
@@ -388,7 +373,7 @@ public class EvalVisitorTest extends TestCase {
     assertThat(eval("$ij.ijZoo.boo")).isInstanceOf(UndefinedData.class);
   }
 
-
+  @Test
   public void testEvalDataRefWithNullSafeAccess() throws Exception {
 
     // Note: Null-safe access only helps when left side is undefined or null, not when it's the
@@ -398,10 +383,9 @@ public class EvalVisitorTest extends TestCase {
     assertThat(eval("$foo?.baz?.moo.tar")).isInstanceOf(NullData.class);
     assertDataException(
         "$foo[2]",
-        "SoyDict accessed with non-string key (got key type" +
-            " com.google.template.soy.data.restricted.IntegerData).");
-    assertRenderException(
-        "$moo?.too", "encountered non-record just before accessing \"?.too\"");
+        "SoyDict accessed with non-string key (got key type"
+            + " com.google.template.soy.data.restricted.IntegerData).");
+    assertRenderException("$moo?.too", "encountered non-record just before accessing \"?.too\"");
     assertThat(eval("$roo?.too")).isInstanceOf(NullData.class);
     assertThat(eval("$roo?[2]")).isInstanceOf(NullData.class);
     assertRenderException(
@@ -409,7 +393,7 @@ public class EvalVisitorTest extends TestCase {
     assertThat(eval("$ij.ijZoo?.boo")).isInstanceOf(NullData.class);
   }
 
-
+  @Test
   public void testEvalNumericalOperators() throws Exception {
 
     assertEval("-$boo", -8);
@@ -425,9 +409,9 @@ public class EvalVisitorTest extends TestCase {
     assertEval("-99+-111", -210);
     assertEval("$moo + $goo[5]", 24.14);
     assertEval("$ij.ijInt + $boo", 34);
-    assertEval("'boo'+'hoo'", "boohoo");  // string concatenation
-    assertEval("$foo.bar + $ij.ijStr", "bazinjected");  // string concatenation
-    assertEval("8 + $zoo + 8.0", "8loo8");  // coercion to string type
+    assertEval("'boo'+'hoo'", "boohoo"); // string concatenation
+    assertEval("$foo.bar + $ij.ijStr", "bazinjected"); // string concatenation
+    assertEval("8 + $zoo + 8.0", "8loo8"); // coercion to string type
 
     assertEval("$goo[4] - $boo", 7);
     assertEval("1.002- $woo", 2.62);
@@ -435,12 +419,12 @@ public class EvalVisitorTest extends TestCase {
     // Ensure longs work.
     assertEval("$longNumber + $longNumber", 2000000000000000002L);
     assertEval("$longNumber * 4 - $longNumber", 3000000000000000003L);
-    assertEval("$longNumber / $longNumber", 1.0);  // NOTE: Division is on floats.
+    assertEval("$longNumber / $longNumber", 1.0); // NOTE: Division is on floats.
     assertEval("$longNumber < ($longNumber + 1)", true);
     assertEval("$longNumber < ($longNumber - 1)", false);
   }
 
-
+  @Test
   public void testEvalDataRefWithExpressions() throws Exception {
 
     assertEval("$foo['bar']", "baz");
@@ -450,7 +434,7 @@ public class EvalVisitorTest extends TestCase {
     assertEval("$foo.goo2[2 + 2]", 15);
   }
 
-
+  @Test
   public void testEvalBooleanOperators() throws Exception {
 
     assertEval("not $t", false);
@@ -465,14 +449,14 @@ public class EvalVisitorTest extends TestCase {
     assertEval("not $goo", false);
     assertEval("not $list0", false);
 
-    assertEval("false and $undefinedName", false);  // short-circuit evaluation
+    assertEval("false and $undefinedName", false); // short-circuit evaluation
     assertEval("$t and -1 and $goo and $foo.bar", true);
 
-    assertEval("true or $undefinedName", true);  // short-circuit evaluation
+    assertEval("true or $undefinedName", true); // short-circuit evaluation
     assertEval("$f or 0.0 or ''", false);
   }
 
-
+  @Test
   public void testEvalComparisonOperators() throws Exception {
 
     assertEval("1<1", false);
@@ -544,14 +528,14 @@ public class EvalVisitorTest extends TestCase {
     assertEval("($floatNumber - 1) >= $floatNumber", false);
   }
 
-
+  @Test
   public void testEvalConditionalOperator() throws Exception {
 
     assertEval("($f and 0)?4 : '4'", "4");
     assertEval("$goo ? $goo[1]:1", 3);
   }
 
-
+  @Test
   public void testEvalFunctions() throws Exception {
 
     assertEval("isNonnull(null)", false);
@@ -566,5 +550,4 @@ public class EvalVisitorTest extends TestCase {
     assertEval("isNonnull($foo.goo2)", true);
     assertEval("isNonnull($map0)", true);
   }
-
 }

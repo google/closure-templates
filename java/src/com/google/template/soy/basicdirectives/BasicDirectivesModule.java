@@ -26,8 +26,8 @@ import com.google.template.soy.shared.restricted.SoyPrintDirective;
  */
 public class BasicDirectivesModule extends AbstractModule {
 
-
-  @Override public void configure() {
+  @Override
+  public void configure() {
 
     Multibinder<SoyPrintDirective> soyDirectivesSetBinder =
         Multibinder.newSetBinder(binder(), SoyPrintDirective.class);
@@ -38,21 +38,26 @@ public class BasicDirectivesModule extends AbstractModule {
     soyDirectivesSetBinder.addBinding().toInstance(new BasicEscapeDirective.NormalizeHtml());
     soyDirectivesSetBinder.addBinding().toInstance(new BasicEscapeDirective.EscapeHtmlRcdata());
     soyDirectivesSetBinder.addBinding().toInstance(new BasicEscapeDirective.EscapeHtmlAttribute());
-    soyDirectivesSetBinder.addBinding().toInstance(
-        new BasicEscapeDirective.EscapeHtmlAttributeNospace());
+    soyDirectivesSetBinder
+        .addBinding()
+        .toInstance(new BasicEscapeDirective.EscapeHtmlAttributeNospace());
     soyDirectivesSetBinder.addBinding().toInstance(new BasicEscapeDirective.FilterHtmlAttributes());
-    soyDirectivesSetBinder.addBinding().toInstance(
-        new BasicEscapeDirective.FilterHtmlElementName());
+    soyDirectivesSetBinder
+        .addBinding()
+        .toInstance(new BasicEscapeDirective.FilterHtmlElementName());
     soyDirectivesSetBinder.addBinding().toInstance(new BasicEscapeDirective.EscapeJsRegex());
     soyDirectivesSetBinder.addBinding().toInstance(new BasicEscapeDirective.EscapeJsString());
     soyDirectivesSetBinder.addBinding().toInstance(new BasicEscapeDirective.EscapeJsValue());
     soyDirectivesSetBinder.addBinding().toInstance(new BasicEscapeDirective.FilterNormalizeUri());
-    soyDirectivesSetBinder.addBinding().toInstance(
-        new BasicEscapeDirective.FilterNormalizeMediaUri());
-    soyDirectivesSetBinder.addBinding().toInstance(
-        new BasicEscapeDirective.FilterTrustedResourceUri());
+    soyDirectivesSetBinder
+        .addBinding()
+        .toInstance(new BasicEscapeDirective.FilterNormalizeMediaUri());
+    soyDirectivesSetBinder
+        .addBinding()
+        .toInstance(new BasicEscapeDirective.FilterTrustedResourceUri());
     soyDirectivesSetBinder.addBinding().toInstance(new BasicEscapeDirective.NormalizeUri());
     soyDirectivesSetBinder.addBinding().toInstance(new BasicEscapeDirective.EscapeUri());
+    soyDirectivesSetBinder.addBinding().toInstance(new BasicEscapeDirective.FilterCspNonceValue());
 
     // Other directives.
     soyDirectivesSetBinder.addBinding().to(ChangeNewlineToBrDirective.class);
@@ -61,7 +66,7 @@ public class BasicDirectivesModule extends AbstractModule {
     soyDirectivesSetBinder.addBinding().to(TextDirective.class);
     soyDirectivesSetBinder.addBinding().to(CleanHtmlDirective.class);
     soyDirectivesSetBinder.addBinding().to(FilterImageDataUriDirective.class);
+    soyDirectivesSetBinder.addBinding().to(FilterTelUriDirective.class);
     soyDirectivesSetBinder.addBinding().to(BlessStringAsTrustedResourceUrlForLegacyDirective.class);
   }
-
 }

@@ -26,41 +26,29 @@ import com.google.template.soy.soytree.SoyNode;
 public abstract class AbstractReturningHtmlSoyNodeVisitor<R>
     extends AbstractReturningSoyNodeVisitor<R> {
 
-  @Override protected R visit(SoyNode node) {
+  @Override
+  protected R visit(SoyNode node) {
     switch (node.getKind()) {
-      case HTML_ATTRIBUTE: return visitHtmlAttributeNode((HtmlAttributeNode) node);
-      case HTML_OPEN_TAG: return visitHtmlOpenTagNode((HtmlOpenTagNode) node);
-      case HTML_OPEN_TAG_START: return visitHtmlOpenTagStartNode((HtmlOpenTagStartNode) node);
-      case HTML_OPEN_TAG_END: return visitHtmlOpenTagEndNode((HtmlOpenTagEndNode) node);
-      case HTML_CLOSE_TAG: return visitHtmlCloseTagNode((HtmlCloseTagNode) node);
-      case HTML_VOID_TAG: return visitHtmlVoidTagNode((HtmlVoidTagNode) node);
+      case INCREMENTAL_HTML_ATTRIBUTE:
+        return visitIncrementalHtmlAttributeNode((IncrementalHtmlAttributeNode) node);
+      case INCREMENTAL_HTML_OPEN_TAG:
+        return visitIncrementalHtmlOpenTagNode((IncrementalHtmlOpenTagNode) node);
+      case INCREMENTAL_HTML_CLOSE_TAG:
+        return visitIncrementalHtmlCloseTagNode((IncrementalHtmlCloseTagNode) node);
       default:
         return super.visit(node);
     }
   }
-  
-  protected R visitHtmlAttributeNode(HtmlAttributeNode node) {
+
+  protected R visitIncrementalHtmlAttributeNode(IncrementalHtmlAttributeNode node) {
     return visitSoyNode(node);
   }
 
-  protected R visitHtmlOpenTagNode(HtmlOpenTagNode node) {
+  protected R visitIncrementalHtmlOpenTagNode(IncrementalHtmlOpenTagNode node) {
     return visitSoyNode(node);
   }
 
-  protected R visitHtmlOpenTagStartNode(HtmlOpenTagStartNode node) {
+  protected R visitIncrementalHtmlCloseTagNode(IncrementalHtmlCloseTagNode node) {
     return visitSoyNode(node);
   }
-
-  protected R visitHtmlOpenTagEndNode(HtmlOpenTagEndNode node) {
-    return visitSoyNode(node);
-  }
-
-  protected R visitHtmlCloseTagNode(HtmlCloseTagNode node) {
-    return visitSoyNode(node);
-  }
-
-  protected R visitHtmlVoidTagNode(HtmlVoidTagNode node) {
-    return visitSoyNode(node);
-  }
-
 }

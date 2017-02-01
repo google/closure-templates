@@ -18,21 +18,19 @@ package com.google.template.soy.jbcsrc;
 
 import com.google.common.collect.ImmutableMap;
 
-/**
- * A {@link ClassLoader} that can load classes from a configured set of {@code byte[]}s.
- */
+/** A {@link ClassLoader} that can load classes from a configured set of {@code byte[]}s. */
 final class MemoryClassLoader extends AbstractMemoryClassLoader {
   static {
     // Since we only override findClass(), we can call this method to get fine grained locking
     // support with no additional work. Our superclass will lock all calls to findClass with a per
-    // class to load lock, so we will never see concurrent loads of a single class. 
+    // class to load lock, so we will never see concurrent loads of a single class.
     // See http://docs.oracle.com/javase/7/docs/technotes/guides/lang/cl-mt.html
     ClassLoader.registerAsParallelCapable();
   }
 
   /**
    * We store all the classes in this map and rely on normal classloading resolution.
-   * 
+   *
    * <p>The classloader will request classes via {@link #findClass(String)} as loading proceeds.
    */
   private final ImmutableMap<String, ClassData> classesByName;

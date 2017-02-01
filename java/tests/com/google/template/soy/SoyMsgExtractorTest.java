@@ -19,54 +19,38 @@ package com.google.template.soy;
 import static com.google.common.truth.Truth.assertThat;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-import com.google.common.collect.Lists;
 import com.google.common.io.Files;
-
-import junit.framework.TestCase;
-
 import java.io.File;
-import java.util.List;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
-public class SoyMsgExtractorTest extends TestCase {
-  private List<File> filesToDelete;
-
-  @Override protected void setUp() throws Exception {
-    super.setUp();
-    filesToDelete = Lists.newArrayList();
-  }
-
-
-  @Override protected void tearDown() throws Exception {
-    super.tearDown();
-    for (File fileToDelete : filesToDelete) {
-      fileToDelete.delete();
-    }
-    filesToDelete = null;
-  }
+@RunWith(JUnit4.class)
+public class SoyMsgExtractorTest {
+  @Rule public final TemporaryFolder temp = new TemporaryFolder();
 
 
-  private File getTempFile(String ext) throws Exception {
-    File tmpFile = File.createTempFile(getName(), ext);
-    filesToDelete.add(tmpFile);
-    return tmpFile;
-  }
-
-  public final void testOutputFileFlag() throws Exception {
-    File soyFile1 = getTempFile(".soy");
+  @Test
+  public void testOutputFileFlag() throws Exception {
+    File soyFile1 = temp.newFile("temp.soy");
     Files.write(
         "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
-        + "/***/\n{template .a}\n{msg desc=\"a\"}H\uff49{/msg}\n{/template}",
-        soyFile1, UTF_8);
-    File soyFile2 = getTempFile(".soy");
+            + "/***/\n{template .a}\n{msg desc=\"a\"}H\uff49{/msg}\n{/template}",
+        soyFile1,
+        UTF_8);
+    File soyFile2 = temp.newFile("temp2.soy");
     Files.write(
         "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
-        + "/***/\n{template .b}\n{msg desc=\"a\"}World{/msg}\n{/template}",
-        soyFile2, UTF_8);
+            + "/***/\n{template .b}\n{msg desc=\"a\"}World{/msg}\n{/template}",
+        soyFile2,
+        UTF_8);
+    File xmlFile = temp.newFile("temp.xml");
 
-    File xmlFile = getTempFile(".xml");
-
-    int exitCode = new SoyMsgExtractor().run(
-        "--outputFile", xmlFile.toString(), soyFile1.toString(), soyFile2.toString());
+    int exitCode =
+        new SoyMsgExtractor()
+            .run("--outputFile", xmlFile.toString(), soyFile1.toString(), soyFile2.toString());
     assertThat(exitCode).isEqualTo(0);
     String xmlContent = Files.toString(xmlFile, UTF_8);
     assertThat(xmlContent).contains("<source>H\uff49</source>");

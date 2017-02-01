@@ -22,15 +22,15 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
-
 import javax.annotation.Nullable;
 
 /**
  * Holds information and services needed for parsing templates and expressions.
  *
- * Do not store this class beyond the lifetime of the parse; ErrorReporter is not reusable like that
+ * <p>Do not store this class beyond the lifetime of the parse; ErrorReporter is not reusable like
+ * that
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  */
 @AutoValue
 public abstract class SoyParsingContext {
@@ -41,14 +41,12 @@ public abstract class SoyParsingContext {
     return new AutoValue_SoyParsingContext(errorReporter, namespace, aliasToNamespaceMap);
   }
 
-  public static SoyParsingContext empty(
-      ErrorReporter errorReporter,
-      String namespace) {
+  public static SoyParsingContext empty(ErrorReporter errorReporter, String namespace) {
     return create(errorReporter, namespace, ImmutableMap.<String, String>of());
   }
 
   /**
-   * Creates a context with an exploding error reporter and no contextual data.  Use this method for
+   * Creates a context with an exploding error reporter and no contextual data. Use this method for
    * non-file contexts such as error objects.
    */
   public static SoyParsingContext exploding() {
@@ -58,7 +56,8 @@ public abstract class SoyParsingContext {
   public abstract ErrorReporter errorReporter();
 
   /** The full namespace of the file being parsed, or null for legacy v1 templates. */
-  @Nullable public abstract String namespace();
+  @Nullable
+  public abstract String namespace();
 
   /** The alias declarations in the file, if any. */
   abstract ImmutableMap<String, String> aliasToNamespaceMap();
@@ -70,9 +69,8 @@ public abstract class SoyParsingContext {
   }
 
   /**
-   * Reports the given {@code error}, formatted according to {@code args} and associated with
-   * the given {@code sourceLocation}.
-   * Convencience wrapper for errorReporter.
+   * Reports the given {@code error}, formatted according to {@code args} and associated with the
+   * given {@code sourceLocation}. Convencience wrapper for errorReporter.
    */
   public void report(SourceLocation sourceLocation, SoyErrorKind error, Object... args) {
     errorReporter().report(sourceLocation, error, args);

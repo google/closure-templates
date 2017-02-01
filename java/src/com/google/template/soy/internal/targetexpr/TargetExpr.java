@@ -22,12 +22,12 @@ import java.util.Objects;
  * Value class to represent an expression in the target source (JS, Python, etc.). Includes the text
  * of the expression as well as the precedence of the top-most operator.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
- * <p> Note that even though the precedence numbers we use are for Soy (see
- * {@link com.google.template.soy.exprtree.Operator#getPrecedence}), the precedence ordering of
- * the Soy expression operators matches that of JS, Python, and Java, so the precedence numbers are
- * correct when used for generating the target code as well.
+ * <p>Note that even though the precedence numbers we use are for Soy (see {@link
+ * com.google.template.soy.exprtree.Operator#getPrecedence}), the precedence ordering of the Soy
+ * expression operators matches that of JS, Python, and Java, so the precedence numbers are correct
+ * when used for generating the target code as well.
  *
  */
 public class TargetExpr {
@@ -37,7 +37,6 @@ public class TargetExpr {
 
   /** The precedence of the top-most operator, or Integer.MAX_VALUE. */
   private final int precedence;
-
 
   /**
    * @param text The expression text in the target language.
@@ -58,18 +57,20 @@ public class TargetExpr {
     return precedence;
   }
 
-  @Override public String toString() {
+  @Override
+  public String toString() {
     return String.format("%s{text=%s, precedence=%d}", this.getClass().getName(), text, precedence);
   }
 
-  @Override public boolean equals(Object other) {
+  @Override
+  public boolean equals(Object other) {
     if (other == null || this.getClass() != other.getClass()) {
       return false;
     }
     TargetExpr otherCast = (TargetExpr) other;
     if (this.text.equals(otherCast.text)) {
       if (this.precedence != otherCast.precedence) {
-        throw new AssertionError();  // if text is equal, precedence should also be equal
+        throw new AssertionError(); // if text is equal, precedence should also be equal
       }
       return true;
     } else {
@@ -77,7 +78,8 @@ public class TargetExpr {
     }
   }
 
-  @Override public int hashCode() {
+  @Override
+  public int hashCode() {
     return Objects.hash(text, precedence);
   }
 }

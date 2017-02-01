@@ -19,13 +19,14 @@ package com.google.template.soy.base.internal;
 /**
  * A generator of int ids. Implementations can generate fixed ids, unique ids, or anything else.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public interface IdGenerator {
 
   /**
    * Generates and returns an id.
+   *
    * @return The generated id.
    */
   public int genId();
@@ -33,8 +34,8 @@ public interface IdGenerator {
   /**
    * Clones this id generator, such that the original and new generators will generate the same list
    * of ids going forward.
+   *
    * @return A clone of this id generator.
    */
   public IdGenerator copy();
-
 }

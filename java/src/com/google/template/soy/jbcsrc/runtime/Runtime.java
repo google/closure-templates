@@ -41,39 +41,42 @@ import com.google.template.soy.msgs.restricted.SoyMsgSelectPart;
 import com.google.template.soy.shared.internal.ShortCircuitable;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
-
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-
 import javax.annotation.Nullable;
 
 /**
  * Runtime utilities uniquely for the {@code jbcsrc} backend.
- * <p>
- * This class is public so it can be be used by generated template code.
- * Please do not use it from client code.
+ *
+ * <p>This class is public so it can be be used by generated template code. Please do not use it
+ * from client code.
  */
 public final class Runtime {
-  public static final SoyValueProvider NULL_PROVIDER = new SoyValueProvider() {
-    @Override public RenderResult status() {
-      return RenderResult.done();
-    }
+  public static final SoyValueProvider NULL_PROVIDER =
+      new SoyValueProvider() {
+        @Override
+        public RenderResult status() {
+          return RenderResult.done();
+        }
 
-    @Override public SoyValue resolve() {
-      return null;
-    }
+        @Override
+        public SoyValue resolve() {
+          return null;
+        }
 
-    @Override public RenderResult renderAndResolve(AdvisingAppendable appendable, boolean isLast)
-        throws IOException {
-      appendable.append("null");
-      return RenderResult.done();
-    }
+        @Override
+        public RenderResult renderAndResolve(AdvisingAppendable appendable, boolean isLast)
+            throws IOException {
+          appendable.append("null");
+          return RenderResult.done();
+        }
 
-    @Override public String toString() {
-      return "NULL_PROVIDER";
-    }
-  };
+        @Override
+        public String toString() {
+          return "NULL_PROVIDER";
+        }
+      };
 
   public static AssertionError unexpectedStateError(int state) {
     return new AssertionError("Unexpected state requested: " + state);
@@ -87,10 +90,7 @@ public final class Runtime {
     }
   }
 
-  /**
-   * Helper function to translate NullData -> null when resolving a SoyValueProvider that may
-   * have come from SoyValueProvider.
-   */
+  /** Helper function to translate NullData -> null when resolving a SoyValueProvider. */
   public static SoyValue resolveSoyValueProvider(SoyValueProvider provider) {
     SoyValue value = provider.resolve();
     if (value instanceof NullData) {
@@ -100,8 +100,8 @@ public final class Runtime {
   }
 
   /**
-   * Helper function to make SoyRecord.getFieldProvider a non-nullable function by returning
-   * {@link #NULL_PROVIDER} for missing fields.
+   * Helper function to make SoyRecord.getFieldProvider a non-nullable function by returning {@link
+   * #NULL_PROVIDER} for missing fields.
    */
   public static SoyValueProvider getFieldProvider(SoyRecord record, String field) {
     if (record == null) {
@@ -110,15 +110,15 @@ public final class Runtime {
     // TODO(lukes): ideally this would be the behavior of getFieldProvider, but Tofu relies on it
     // returning null to interpret it as 'undefined'. http://b/20537225 describes the issues in Tofu
     SoyValueProvider provider = record.getFieldProvider(field);
-    return provider == null | provider instanceof NullData ? NULL_PROVIDER : provider;
+    // | instead of || avoids a branch
+    return (provider == null | provider instanceof NullData) ? NULL_PROVIDER : provider;
   }
 
   /**
    * Helper function to translate null -> NullData when calling SoyJavaFunctions that may expect it.
    *
    * <p>In the long run we should either fix ToFu (and all SoyJavaFunctions) to not use NullData or
-   * we should introduce custom SoyFunction implementations for
-   * have come from SoyValueProvider.
+   * we should introduce custom SoyFunction implementations for have come from SoyValueProvider.
    */
   public static SoyValue callSoyFunction(SoyJavaFunction function, List<SoyValue> args) {
     for (int i = 0; i < args.size(); i++) {
@@ -174,9 +174,9 @@ public final class Runtime {
 
   /**
    * Identifies some cases where the combination of directives and content kind mean we can skip
-   * applying the escapers.  This is an opportunistic optimization, it is possible that we will fail
-   * to skip escaping in some cases where we could and that is OK.  However, there should never be
-   * a case where we skip escaping and but the escapers would actually modify the input.
+   * applying the escapers. This is an opportunistic optimization, it is possible that we will fail
+   * to skip escaping in some cases where we could and that is OK. However, there should never be a
+   * case where we skip escaping and but the escapers would actually modify the input.
    */
   private static boolean canSkipEscaping(
       List<SoyJavaPrintDirective> directives, @Nullable ContentKind kind) {
@@ -204,6 +204,18 @@ public final class Runtime {
     return NULL_PROVIDER;
   }
 
+  public static RenderResult getListStatus(List<? extends SoyValueProvider> soyValueProviders) {
+    // avoid allocating an iterator
+    int size = soyValueProviders.size();
+    for (int i = 0; i < size; i++) {
+      RenderResult result = soyValueProviders.get(i).status();
+      if (!result.isDone()) {
+        return result;
+      }
+    }
+    return RenderResult.done();
+  }
+
   public static SoyValueProvider getSoyMapItem(SoyMap soyMap, SoyValue key) {
     if (soyMap == null) {
       throw new NullPointerException("Attempted to access map item '" + key + "' of null");
@@ -212,11 +224,9 @@ public final class Runtime {
     return soyValueProvider == null ? NULL_PROVIDER : soyValueProvider;
   }
 
-  /**
-   * Render a 'complex' message containing with placeholders.
-   */
-  public static void renderSoyMsgWithPlaceholders(SoyMsg msg, Map<String, Object> placeholders,
-      Appendable out) throws IOException {
+  /** Render a 'complex' message containing with placeholders. */
+  public static void renderSoyMsgWithPlaceholders(
+      SoyMsg msg, Map<String, Object> placeholders, Appendable out) throws IOException {
     if (msg.getParts().isEmpty()) {
       // TODO(lukes): RenderVisitorAssistantForMsgs does this... but this seems like a weird case
       // investigate eliminating it
@@ -247,12 +257,13 @@ public final class Runtime {
   }
 
   /**
-   * Render a {@code {select}} part of a message.  Most of the complexity is handled by
-   * {@link SoyMsgSelectPart#lookupCase} all this needs to do is apply the placeholders to all the
+   * Render a {@code {select}} part of a message. Most of the complexity is handled by {@link
+   * SoyMsgSelectPart#lookupCase} all this needs to do is apply the placeholders to all the
    * children.
    */
-  private static void renderSelect(SoyMsg msg, SoyMsgSelectPart firstPart,
-      Map<String, Object> placeholders, Appendable out) throws IOException {
+  private static void renderSelect(
+      SoyMsg msg, SoyMsgSelectPart firstPart, Map<String, Object> placeholders, Appendable out)
+      throws IOException {
     String selectCase = getSelectCase(placeholders, firstPart.getSelectVarName());
     for (SoyMsgPart casePart : firstPart.lookupCase(selectCase)) {
       if (casePart instanceof SoyMsgSelectPart) {
@@ -271,12 +282,13 @@ public final class Runtime {
   }
 
   /**
-   * Render a {@code {plural}} part of a message.  Most of the complexity is handled by
-   * {@link SoyMsgPluralPart#lookupCase} all this needs to do is apply the placeholders to all the
+   * Render a {@code {plural}} part of a message. Most of the complexity is handled by {@link
+   * SoyMsgPluralPart#lookupCase} all this needs to do is apply the placeholders to all the
    * children.
    */
-  private static void renderPlural(SoyMsg msg, SoyMsgPluralPart plural,
-      Map<String, Object> placeholders, Appendable out) throws IOException {
+  private static void renderPlural(
+      SoyMsg msg, SoyMsgPluralPart plural, Map<String, Object> placeholders, Appendable out)
+      throws IOException {
     int pluralValue = getPlural(placeholders, plural.getPluralVarName());
     for (SoyMsgPart casePart : plural.lookupCase(pluralValue, msg.getLocale())) {
       if (casePart instanceof SoyMsgPlaceholderPart) {
@@ -299,8 +311,7 @@ public final class Runtime {
   private static String getSelectCase(Map<String, Object> placeholders, String selectVarName) {
     String selectCase = (String) placeholders.get(selectVarName);
     if (selectCase == null) {
-      throw new IllegalArgumentException(
-          "No value provided for select: '" + selectVarName + "'");
+      throw new IllegalArgumentException("No value provided for select: '" + selectVarName + "'");
     }
     return selectCase;
   }
@@ -309,15 +320,15 @@ public final class Runtime {
   private static int getPlural(Map<String, Object> placeholders, String pluralVarName) {
     IntegerData pluralValue = (IntegerData) placeholders.get(pluralVarName);
     if (pluralValue == null) {
-      throw new IllegalArgumentException(
-          "No value provided for plural: '" + pluralVarName + "'");
+      throw new IllegalArgumentException("No value provided for plural: '" + pluralVarName + "'");
     }
     return pluralValue.integerValue();
   }
 
   /** Append the placeholder to the output stream. */
-  private static void writePlaceholder(SoyMsgPlaceholderPart placeholder,
-      Map<String, Object> placeholders, Appendable out) throws IOException {
+  private static void writePlaceholder(
+      SoyMsgPlaceholderPart placeholder, Map<String, Object> placeholders, Appendable out)
+      throws IOException {
     String placeholderName = placeholder.getPlaceholderName();
     String str = (String) placeholders.get(placeholderName);
     if (str == null) {
@@ -332,27 +343,31 @@ public final class Runtime {
     out.append(msgPart.getRawText());
   }
 
-  private static final AdvisingAppendable LOGGER = new AdvisingAppendable() {
-    @Override public boolean softLimitReached() {
-      return false;
-    }
+  private static final AdvisingAppendable LOGGER =
+      new AdvisingAppendable() {
+        @Override
+        public boolean softLimitReached() {
+          return false;
+        }
 
-    @Override public AdvisingAppendable append(char c) throws IOException {
-      System.out.append(c);
-      return this;
-    }
+        @Override
+        public AdvisingAppendable append(char c) throws IOException {
+          System.out.append(c);
+          return this;
+        }
 
-    @Override public AdvisingAppendable append(CharSequence csq, int start, int end) {
-      System.out.append(csq, start, end);
-      return this;
-    }
+        @Override
+        public AdvisingAppendable append(CharSequence csq, int start, int end) {
+          System.out.append(csq, start, end);
+          return this;
+        }
 
-    @Override
-    public AdvisingAppendable append(CharSequence csq) {
-      System.out.append(csq);
-      return this;
-    }
-  };
+        @Override
+        public AdvisingAppendable append(CharSequence csq) {
+          System.out.append(csq);
+          return this;
+        }
+      };
 
   public static AdvisingAppendable logger() {
     return LOGGER;
@@ -367,10 +382,8 @@ public final class Runtime {
     return v == null ? "null" : v.coerceToString();
   }
 
-
   /** Wraps a compiled template to apply escaping directives. */
-  private static final class EscapedCompiledTemplate
-      implements CompiledTemplate {
+  private static final class EscapedCompiledTemplate implements CompiledTemplate {
     private final CompiledTemplate delegate;
     private final ImmutableList<SoyJavaPrintDirective> directives;
     @Nullable private final ContentKind kind;
@@ -391,14 +404,15 @@ public final class Runtime {
       this.kind = kind;
     }
 
-    @Override public RenderResult render(AdvisingAppendable appendable, RenderContext context)
+    @Override
+    public RenderResult render(AdvisingAppendable appendable, RenderContext context)
         throws IOException {
       RenderResult result = delegate.render(buffer, context);
       if (result.isDone()) {
         SoyValue resultData =
             kind == null
-            ? StringData.forValue(buffer.toString())
-            : UnsafeSanitizedContentOrdainer.ordainAsSafe(buffer.toString(), kind);
+                ? StringData.forValue(buffer.toString())
+                : UnsafeSanitizedContentOrdainer.ordainAsSafe(buffer.toString(), kind);
         for (SoyJavaPrintDirective directive : directives) {
           resultData = directive.applyForJava(resultData, ImmutableList.<SoyValue>of());
         }

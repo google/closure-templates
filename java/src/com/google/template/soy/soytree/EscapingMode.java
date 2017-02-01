@@ -18,15 +18,12 @@ package com.google.template.soy.soytree;
 import com.google.common.base.CaseFormat;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
-
 import java.util.Map;
-
 import javax.annotation.Nullable;
 
 /**
- * Ways of escaping dynamic content in a template.
- * This is only used by the contextautoesc package, but lives in soytree since it's reference by the
- * HtmlContext enum.
+ * Ways of escaping dynamic content in a template. This is only used by the contextautoesc package,
+ * but lives in soytree since it's reference by the HtmlContext enum.
  *
  */
 public enum EscapingMode {
@@ -42,8 +39,8 @@ public enum EscapingMode {
 
   /**
    * Encodes HTML special characters, including quotes, so that the value can appear as part of a
-   * quoted attribute value.
-   * This differs from {@link #ESCAPE_HTML} in that it strips tags from known safe HTML.
+   * quoted attribute value. This differs from {@link #ESCAPE_HTML} in that it strips tags from
+   * known safe HTML.
    */
   ESCAPE_HTML_ATTRIBUTE(true, null),
 
@@ -54,15 +51,14 @@ public enum EscapingMode {
   ESCAPE_HTML_ATTRIBUTE_NOSPACE(true, null),
 
   /**
-   * Only allow a valid identifier - letters, numbers, dashes, and underscores.
-   * Throw a runtime exception otherwise.
+   * Only allow a valid identifier - letters, numbers, dashes, and underscores. Throw a runtime
+   * exception otherwise.
    */
   FILTER_HTML_ELEMENT_NAME(true, null),
 
   /**
-   * Only allow a valid identifier - letters, numbers, dashes, and underscores
-   * or a subset of attribute value pairs.
-   * Throw a runtime exception otherwise.
+   * Only allow a valid identifier - letters, numbers, dashes, and underscores or a subset of
+   * attribute value pairs. Throw a runtime exception otherwise.
    */
   FILTER_HTML_ATTRIBUTES(true, null),
 
@@ -73,14 +69,14 @@ public enum EscapingMode {
   ESCAPE_JS_STRING(false, null),
 
   /**
-   * If a number or boolean, output as a JS literal.  Otherwise surround in quotes and escape.
-   * Make sure all HTML and space characters are quoted.
+   * If a number or boolean, output as a JS literal. Otherwise surround in quotes and escape. Make
+   * sure all HTML and space characters are quoted.
    */
   ESCAPE_JS_VALUE(false, null),
 
   /**
-   * Like {@link #ESCAPE_JS_STRING} but additionally escapes RegExp specials like
-   * <code>.+*?$^[](){}</code>.
+   * Like {@link #ESCAPE_JS_STRING} but additionally escapes RegExp specials like <code>.+*?$^[](){}
+   * </code>.
    */
   ESCAPE_JS_REGEX(false, null),
 
@@ -99,8 +95,8 @@ public enum EscapingMode {
 
   /**
    * Percent encode all URI special characters and characters that cannot appear unescaped in a URI
-   * such as spaces.  Make sure to encode pluses and parentheses.
-   * This corresponds to the JavaScript function {@code encodeURIComponent}.
+   * such as spaces. Make sure to encode pluses and parentheses. This corresponds to the JavaScript
+   * function {@code encodeURIComponent}.
    */
   ESCAPE_URI(true, ContentKind.URI),
 
@@ -109,10 +105,10 @@ public enum EscapingMode {
    * encode characters that are not special in URIs that are special in languages that URIs are
    * embedded in such as parentheses and quotes.
    *
-   * This corresponds to the JavaScript function {@code encodeURI} but additionally encodes quotes
-   * parentheses, and percent signs that are not followed by two hex digits.
+   * <p>This corresponds to the JavaScript function {@code encodeURI} but additionally encodes
+   * quotes parentheses, and percent signs that are not followed by two hex digits.
    *
-   * This is not necessarily HTML embeddable because we want ampersands to get HTML-escaped.
+   * <p>This is not necessarily HTML embeddable because we want ampersands to get HTML-escaped.
    */
   NORMALIZE_URI(false, ContentKind.URI),
 
@@ -123,11 +119,19 @@ public enum EscapingMode {
 
   /**
    * Like {@link #FILTER_NORMALIZE_URI}, but also accepts some {@code data:} URIs, since image
-   * sources don't execute script in the same origin as the page.  Although image decoding
-   * 0-days are discovered from time to time, a templating language can't realistically try to
-   * protect against such a thing.
+   * sources don't execute script in the same origin as the page. Although image decoding 0-days are
+   * discovered from time to time, a templating language can't realistically try to protect against
+   * such a thing.
    */
   FILTER_NORMALIZE_MEDIA_URI(false, ContentKind.URI),
+
+  /**
+   * A special filter for csp nonce values.
+   *
+   * <p>Explicitly rejects values that don't comply with the definition
+   * https://www.w3.org/TR/CSP2/#nonce_value
+   */
+  FILTER_CSP_NONCE_VALUE(true, null, true /* internal-only */),
 
   /**
    * Makes sure there URIs are trusted and not input variables. Currently used only for script
@@ -136,9 +140,7 @@ public enum EscapingMode {
   // TODO(shwetakarwa): Change second argument when function is implemented.
   FILTER_TRUSTED_RESOURCE_URI(false, null),
 
-  /**
-   * The explicit rejection of escaping.
-   */
+  /** The explicit rejection of escaping. */
   NO_AUTOESCAPE(false, ContentKind.TEXT),
 
   /**
@@ -146,8 +148,7 @@ public enum EscapingMode {
    * SanitizedContent of kind TEXT, but this may never be used manually by the developer. This has
    * no escaping.
    */
-  TEXT(false, ContentKind.TEXT, true /* internal-only */)
-  ;
+  TEXT(false, ContentKind.TEXT, true /* internal-only */);
 
   /** The Soy <code>{print}</code> directive that specifies this escaping mode. */
   public final String directiveName;
@@ -161,7 +162,6 @@ public enum EscapingMode {
   /** Whether this directive is only for internal use by the contextual autoescaper. */
   public final boolean isInternalOnly;
 
-
   EscapingMode(boolean escapesQuotes, @Nullable ContentKind contentKind, boolean internalOnly) {
     this.directiveName = "|" + CaseFormat.UPPER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, name());
     this.isHtmlEmbeddable = escapesQuotes;
@@ -173,15 +173,14 @@ public enum EscapingMode {
     this(escapesQuotes, contentKind, false /* internal-only */);
   }
 
-
-  /**
-   * The escaping mode corresponding to the given directive or null.
-   */
-  @Nullable public static EscapingMode fromDirective(String directiveName) {
+  /** The escaping mode corresponding to the given directive or null. */
+  @Nullable
+  public static EscapingMode fromDirective(String directiveName) {
     return DIRECTIVE_TO_ESCAPING_MODE.get(directiveName);
   }
 
   private static final Map<String, EscapingMode> DIRECTIVE_TO_ESCAPING_MODE;
+
   static {
     ImmutableMap.Builder<String, EscapingMode> builder = ImmutableMap.builder();
     for (EscapingMode mode : EscapingMode.values()) {

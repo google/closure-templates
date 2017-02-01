@@ -26,81 +26,91 @@ import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcPrintDirective;
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.soytree.SoyNode;
-
-import junit.framework.TestCase;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for GenDirectivePluginRequiresVisitor.
  *
  */
-public class GenDirectivePluginRequiresVisitorTest extends TestCase {
-
+@RunWith(JUnit4.class)
+public class GenDirectivePluginRequiresVisitorTest {
 
   private static class TestPrintDirective implements SoyLibraryAssistedJsSrcPrintDirective {
-    @Override public ImmutableSet<String> getRequiredJsLibNames() {
+    @Override
+    public ImmutableSet<String> getRequiredJsLibNames() {
       return ImmutableSet.of("test.closure.name");
     }
 
-    @Override public String getName() {
+    @Override
+    public String getName() {
       return "|test";
     }
 
-    @Override public boolean shouldCancelAutoescape() {
+    @Override
+    public boolean shouldCancelAutoescape() {
       return false;
     }
 
-    @Override public Set<Integer> getValidArgsSizes() {
+    @Override
+    public Set<Integer> getValidArgsSizes() {
       return ImmutableSet.of(0);
     }
 
-    @Override public JsExpr applyForJsSrc(JsExpr value, List<JsExpr> args) {
+    @Override
+    public JsExpr applyForJsSrc(JsExpr value, List<JsExpr> args) {
       throw new UnsupportedOperationException();
     }
   }
 
-
   private static class AnotherTestPrintDirective implements SoyLibraryAssistedJsSrcPrintDirective {
-    @Override public ImmutableSet<String> getRequiredJsLibNames() {
+    @Override
+    public ImmutableSet<String> getRequiredJsLibNames() {
       return ImmutableSet.of("another.closure.name");
     }
 
-    @Override public String getName() {
+    @Override
+    public String getName() {
       return "|another";
     }
 
-    @Override public boolean shouldCancelAutoescape() {
+    @Override
+    public boolean shouldCancelAutoescape() {
       return false;
     }
 
-    @Override public Set<Integer> getValidArgsSizes() {
+    @Override
+    public Set<Integer> getValidArgsSizes() {
       return ImmutableSet.of(0);
     }
 
-    @Override public JsExpr applyForJsSrc(JsExpr value, List<JsExpr> args) {
+    @Override
+    public JsExpr applyForJsSrc(JsExpr value, List<JsExpr> args) {
       throw new UnsupportedOperationException();
     }
   }
 
   /** Map of all SoyLibraryAssistedJsSrcPrintDirectives */
   private static final Map<String, SoyLibraryAssistedJsSrcPrintDirective> testDirectivesMap =
-      ImmutableMap.of("|test", new TestPrintDirective(),
-                      "|another", new AnotherTestPrintDirective());
+      ImmutableMap.of(
+          "|test", new TestPrintDirective(),
+          "|another", new AnotherTestPrintDirective());
 
-
+  @Test
   public void testUnmatchedDirective() {
     assertGeneratedLibs(ImmutableSet.<String>of(), "{@param boo : ?}", "{$boo |goosfraba}\n");
   }
 
-
+  @Test
   public void testSingleDirective() {
     assertGeneratedLibs(ImmutableSet.of("test.closure.name"), "{@param boo : ?}", "{$boo |test}\n");
   }
 
-
+  @Test
   public void testMultipleDirectives() {
     assertGeneratedLibs(
         ImmutableSet.of("test.closure.name", "another.closure.name"),
@@ -108,7 +118,6 @@ public class GenDirectivePluginRequiresVisitorTest extends TestCase {
         "{@param goo : ?}",
         "{$boo |test}\n{$goo |another}\n");
   }
-
 
   private static void assertGeneratedLibs(Set<String> expectedLibs, String... soyCodeLines) {
     SoyNode node =
@@ -121,5 +130,4 @@ public class GenDirectivePluginRequiresVisitorTest extends TestCase {
     Set<String> actualLibs = gdprv.exec(node);
     assertThat(expectedLibs).isEqualTo(actualLibs);
   }
-
 }

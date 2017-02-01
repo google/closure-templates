@@ -37,43 +37,52 @@ import org.kohsuke.args4j.Option;
  */
 public final class SoyMsgPruner extends AbstractSoyCompiler {
   @Option(
-      name = "--allowExternalCalls",
-      usage = "Whether to allow external calls. New projects should set this to false, and" +
-          " existing projects should remove existing external calls and then set this to false." +
-          " It will save you a lot of headaches. Currently defaults to true for backward" +
-          " compatibility.")
+    name = "--allowExternalCalls",
+    usage =
+        "Whether to allow external calls. New projects should set this to false, and"
+            + " existing projects should remove existing external calls and then set this to false."
+            + " It will save you a lot of headaches. Currently defaults to true for backward"
+            + " compatibility."
+  )
   private boolean allowExternalCalls = true;
 
   @Option(
-      name = "--locales",
-      usage = "[Required] Comma-delimited list of locales.",
-      handler = MainClassUtils.StringListOptionHandler.class)
+    name = "--locales",
+    usage = "[Required] Comma-delimited list of locales.",
+    handler = MainClassUtils.StringListOptionHandler.class
+  )
   private List<String> locales = Lists.newArrayList();
 
   @Option(
-      name = "--inputMsgFilePathFormat",
-      usage = "[Required] A format string that specifies how to build the path to each translated" +
-          " messages file. The format string can include literal characters as well as the" +
-          " placeholders {INPUT_PREFIX}, {LOCALE}, and {LOCALE_LOWER_CASE}. Note" +
-          " {LOCALE_LOWER_CASE} also turns dash into underscore, e.g. pt-BR becomes pt_br. The" +
-          " format string must end with an extension matching the message file format" +
-          " (case-insensitive).")
+    name = "--inputMsgFilePathFormat",
+    usage =
+        "[Required] A format string that specifies how to build the path to each translated"
+            + " messages file. The format string can include literal characters as well as the"
+            + " placeholders {INPUT_PREFIX}, {LOCALE}, and {LOCALE_LOWER_CASE}. Note"
+            + " {LOCALE_LOWER_CASE} also turns dash into underscore, e.g. pt-BR becomes pt_br. The"
+            + " format string must end with an extension matching the message file format"
+            + " (case-insensitive)."
+  )
   private String inputMsgFilePathFormat = "";
 
   @Option(
-      name = "--outputMsgFilePathFormat",
-      usage = "[Required] A format string that specifies how to build the path to each pruned" +
-          " output translated messages file. The format string can include literal characters as" +
-          " well as the placeholders {INPUT_PREFIX}, {LOCALE}, and {LOCALE_LOWER_CASE}. Note" +
-          " {LOCALE_LOWER_CASE} also turns dash into underscore, e.g. pt-BR becomes pt_br. The" +
-          " format string must end with an extension matching the message file format" +
-          " (case-insensitive).")
+    name = "--outputMsgFilePathFormat",
+    usage =
+        "[Required] A format string that specifies how to build the path to each pruned"
+            + " output translated messages file. The format string can include literal characters"
+            + " as well as the placeholders {INPUT_PREFIX}, {LOCALE}, and {LOCALE_LOWER_CASE}. Note"
+            + " {LOCALE_LOWER_CASE} also turns dash into underscore, e.g. pt-BR becomes pt_br. The"
+            + " format string must end with an extension matching the message file format"
+            + " (case-insensitive)."
+  )
   private String outputMsgFilePathFormat = "";
 
   @Option(
-      name = "--msgPluginModule",
-      usage = "Specifies the full class name of a Guice module that binds a" +
-          " BidirectionalSoyMsgPlugin.")
+    name = "--msgPluginModule",
+    usage =
+        "Specifies the full class name of a Guice module that binds a"
+            + " BidirectionalSoyMsgPlugin."
+  )
   private Module msgPluginModule;
 
   /**
@@ -108,8 +117,8 @@ public final class SoyMsgPruner extends AbstractSoyCompiler {
     for (String locale : locales) {
 
       // Get the input msg bundle.
-      String inputMsgFilePath = MainEntryPointUtils.buildFilePath(
-          inputMsgFilePathFormat, locale, null, inputPrefix);
+      String inputMsgFilePath =
+          MainEntryPointUtils.buildFilePath(inputMsgFilePathFormat, locale, null, inputPrefix);
       SoyMsgBundle origTransMsgBundle = msgBundleHandler.createFromFile(new File(inputMsgFilePath));
       if (origTransMsgBundle.getLocaleString() == null) {
         throw new IOException("Error opening or parsing message file " + inputMsgFilePath);
@@ -119,8 +128,9 @@ public final class SoyMsgPruner extends AbstractSoyCompiler {
       SoyMsgBundle prunedTransSoyMsgBundle = sfs.pruneTranslatedMsgs(origTransMsgBundle);
 
       // Write out the pruned msg bundle.
-      String outputMsgFilePath = MainEntryPointUtils.buildFilePath(
-          outputMsgFilePathFormat, locale, inputMsgFilePath, inputPrefix);
+      String outputMsgFilePath =
+          MainEntryPointUtils.buildFilePath(
+              outputMsgFilePathFormat, locale, inputMsgFilePath, inputPrefix);
       msgBundleHandler.writeToTranslatedMsgsFile(
           prunedTransSoyMsgBundle, new OutputFileOptions(), new File(outputMsgFilePath));
     }

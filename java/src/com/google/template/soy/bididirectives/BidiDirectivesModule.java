@@ -20,20 +20,18 @@ import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.Multibinder;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 
-
 /**
  * Guice module for bidi Soy print directives.
  *
  */
 public class BidiDirectivesModule extends AbstractModule {
 
-
-  @Override public void configure() {
+  @Override
+  public void configure() {
 
     Multibinder<SoyPrintDirective> soyDirectivesSetBinder =
         Multibinder.newSetBinder(binder(), SoyPrintDirective.class);
     soyDirectivesSetBinder.addBinding().to(BidiSpanWrapDirective.class);
     soyDirectivesSetBinder.addBinding().to(BidiUnicodeWrapDirective.class);
   }
-
 }

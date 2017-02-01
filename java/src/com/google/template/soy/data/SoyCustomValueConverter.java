@@ -16,17 +16,15 @@
 
 package com.google.template.soy.data;
 
-
 /**
- * <p> Important: Until this API is more stable and this note is removed, users must not directly
- * use this class.
+ * Important: Until this API is more stable and this note is removed, users must not directly use
+ * this class.
  *
- * A custom converter that knows how to convert some specific Java objects to SoyValues (or
+ * <p>A custom converter that knows how to convert some specific Java objects to SoyValues (or
  * SoyValueProviders).
  *
  */
 public interface SoyCustomValueConverter {
-
 
   /**
    * Converts the given object into a corresponding SoyValue or SoyValueProvider. If this converter
@@ -38,5 +36,4 @@ public interface SoyCustomValueConverter {
    * @return A provider for the converted value (often the converted value itself).
    */
   SoyValueProvider convert(SoyValueConverter valueConverter, Object obj);
-
 }

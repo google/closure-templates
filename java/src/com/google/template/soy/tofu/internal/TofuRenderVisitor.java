@@ -25,15 +25,14 @@ import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.sharedpasses.render.RenderVisitor;
 import com.google.template.soy.soytree.TemplateRegistry;
-
 import javax.annotation.Nullable;
 
 /**
  * Version of {@code RenderVisitor} for the Tofu backend.
  *
  * <p>For deprecated directive implementations, uses {@code SoyTofuPrintDirective}s instead of
- * {@code SoyJavaRuntimePrintDirective}s. (For new directives that implement
- * {@code SoyJavaPrintDirective}, there is no difference.)
+ * {@code SoyJavaRuntimePrintDirective}s. (For new directives that implement {@code
+ * SoyJavaPrintDirective}, there is no difference.)
  *
  */
 // TODO: Attempt to remove this class.
@@ -78,8 +77,8 @@ final class TofuRenderVisitor extends RenderVisitor {
         cssRenamingMap);
   }
 
-
-  @Override protected TofuRenderVisitor createHelperInstance(Appendable outputBuf, SoyRecord data) {
+  @Override
+  protected TofuRenderVisitor createHelperInstance(Appendable outputBuf, SoyRecord data) {
     return new TofuRenderVisitor(
         soyJavaDirectivesMap,
         (TofuEvalVisitorFactory) evalVisitorFactory,
@@ -92,5 +91,4 @@ final class TofuRenderVisitor extends RenderVisitor {
         xidRenamingMap,
         cssRenamingMap);
   }
-
 }

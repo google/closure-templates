@@ -25,17 +25,20 @@ import com.google.template.soy.types.primitive.IntType;
 import com.google.template.soy.types.primitive.SanitizedType.HtmlType;
 import com.google.template.soy.types.primitive.StringType;
 import com.google.template.soy.types.primitive.UnknownType;
-
-import junit.framework.TestCase;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for SoyTypeOps.
  *
  */
-public class SoyTypeOpsTest extends TestCase {
+@RunWith(JUnit4.class)
+public class SoyTypeOpsTest {
   public final SoyTypeRegistry typeRegistry = new SoyTypeRegistry();
   public final SoyTypeOps typeOps = new SoyTypeOps(typeRegistry);
 
+  @Test
   public void testLeastCommonType() {
     assertThat(typeOps.computeLowestCommonType(IntType.getInstance(), AnyType.getInstance()))
         .isEqualTo(AnyType.getInstance());
@@ -55,6 +58,7 @@ public class SoyTypeOpsTest extends TestCase {
         .isEqualTo(UnionType.of(IntType.getInstance(), FloatType.getInstance()));
   }
 
+  @Test
   public void testLeastCommonTypeArithmetic() {
     SoyType intT = IntType.getInstance();
     SoyType anyT = AnyType.getInstance();

@@ -16,7 +16,7 @@
 
 package com.google.template.soy.soytree;
 
-import com.google.common.base.Preconditions;
+
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.AbstractNode;
 import com.google.template.soy.basetree.CopyState;
@@ -24,7 +24,7 @@ import com.google.template.soy.basetree.CopyState;
 /**
  * Abstract implementation of a SoyNode.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public abstract class AbstractSoyNode extends AbstractNode implements SoyNode {
@@ -37,15 +37,17 @@ public abstract class AbstractSoyNode extends AbstractNode implements SoyNode {
 
   /**
    * @param id The id for this node.
-   * @param sourceLocation The node's source location.
+   * @param sourceLocation The node's source location. {@code null} is allowed for a few special
+   *     cases (SoyFileNode and SoyFileSetNode).
    */
   protected AbstractSoyNode(int id, SourceLocation sourceLocation) {
     this.id = id;
-    srcLoc = Preconditions.checkNotNull(sourceLocation);
+    srcLoc = sourceLocation;
   }
 
   /**
    * Copy constructor.
+   *
    * @param orig The node to copy.
    */
   protected AbstractSoyNode(AbstractSoyNode orig, CopyState copyState) {
@@ -54,25 +56,36 @@ public abstract class AbstractSoyNode extends AbstractNode implements SoyNode {
     this.srcLoc = orig.srcLoc;
   }
 
-  @Override public void setId(int id) {
+  @Override
+  public void setId(int id) {
     this.id = id;
   }
 
-  @Override public int getId() {
+  @Override
+  public int getId() {
     return id;
   }
 
-  /** The location in the file from which this node was parsed or derived. */
-  @Override public SourceLocation getSourceLocation() {
+  /**
+   * The location in the file from which this node was parsed or derived.
+   *
+   * <p>This is an optional operation. Some nodes don't have source locations.
+   */
+  @Override
+  public SourceLocation getSourceLocation() {
+    if (srcLoc == null) {
+      throw new UnsupportedOperationException();
+    }
     return srcLoc;
   }
 
-  @Override public ParentSoyNode<?> getParent() {
+  @Override
+  public ParentSoyNode<?> getParent() {
     return (ParentSoyNode<?>) super.getParent();
   }
 
-  @Override public String toString() {
+  @Override
+  public String toString() {
     return super.toString() + "_" + id;
   }
-
 }

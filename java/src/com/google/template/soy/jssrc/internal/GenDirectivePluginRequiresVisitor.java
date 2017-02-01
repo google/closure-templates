@@ -22,10 +22,8 @@ import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcPrintDire
 import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
-
 import java.util.Map;
 import java.util.SortedSet;
-
 import javax.inject.Inject;
 
 /**
@@ -41,31 +39,30 @@ public final class GenDirectivePluginRequiresVisitor
 
   private SortedSet<String> requiredJsLibNames;
 
-
   @Inject
   public GenDirectivePluginRequiresVisitor(
       Map<String, SoyLibraryAssistedJsSrcPrintDirective> soyLibraryAssistedJsSrcDirectivesMap) {
     this.soyLibraryAssistedJsSrcDirectivesMap = soyLibraryAssistedJsSrcDirectivesMap;
   }
 
-
-  @Override public SortedSet<String> exec(SoyNode soyNode) {
+  @Override
+  public SortedSet<String> exec(SoyNode soyNode) {
     requiredJsLibNames = Sets.newTreeSet();
     visit(soyNode);
     return requiredJsLibNames;
   }
 
-
-  @Override protected void visitPrintDirectiveNode(PrintDirectiveNode node) {
+  @Override
+  protected void visitPrintDirectiveNode(PrintDirectiveNode node) {
     String directiveName = node.getName();
     if (soyLibraryAssistedJsSrcDirectivesMap.containsKey(directiveName)) {
-      requiredJsLibNames
-          .addAll(soyLibraryAssistedJsSrcDirectivesMap.get(directiveName).getRequiredJsLibNames());
+      requiredJsLibNames.addAll(
+          soyLibraryAssistedJsSrcDirectivesMap.get(directiveName).getRequiredJsLibNames());
     }
   }
 
-
-  @Override protected void visitSoyNode(SoyNode node) {
+  @Override
+  protected void visitSoyNode(SoyNode node) {
     if (node instanceof ParentSoyNode<?>) {
       visitChildren((ParentSoyNode<?>) node);
     }

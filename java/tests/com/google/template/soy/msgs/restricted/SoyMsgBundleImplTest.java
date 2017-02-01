@@ -16,37 +16,64 @@
 
 package com.google.template.soy.msgs.restricted;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.msgs.SoyMsgBundle;
-
-import junit.framework.TestCase;
-
 import java.util.List;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for SoyMsgBundle.
  *
  */
-public class SoyMsgBundleImplTest extends TestCase {
+@RunWith(JUnit4.class)
+public class SoyMsgBundleImplTest {
 
-
+  @Test
   public void testBasic() {
 
     List<SoyMsg> inMsgs = Lists.newArrayList();
-    SourceLocation source1 = new SourceLocation("/path/to/source1", 10, -1, -1, -1);
-    inMsgs.add(new SoyMsg(0x123, "x-zz", null, "Boo message.", false, null, source1,
-                          ImmutableList.<SoyMsgPart>of(SoyMsgRawTextPart.of("Boo!"))));
-    inMsgs.add(new SoyMsg(0xABC, "x-zz", "abc", "", true, "text/html", null,
-                          ImmutableList.<SoyMsgPart>of(
-                              SoyMsgRawTextPart.of("Hello, "),
-                              new SoyMsgPlaceholderPart("NAME"),
-                              SoyMsgRawTextPart.of("!"))));
-    SourceLocation source2 = new SourceLocation("/path/to/source2", 20, -1, -1, -1);
-    inMsgs.add(new SoyMsg(0x123, "x-zz",   // duplicate msg id
-                          null, "Boo message 2.", false, null, source2,
-                          ImmutableList.<SoyMsgPart>of(SoyMsgRawTextPart.of("Boo 2!"))));
+    SourceLocation source1 = new SourceLocation("/path/to/source1", 10, 1, 10, 10);
+    inMsgs.add(
+        new SoyMsg(
+            0x123,
+            "x-zz",
+            null,
+            "Boo message.",
+            false,
+            null,
+            source1,
+            ImmutableList.<SoyMsgPart>of(SoyMsgRawTextPart.of("Boo!"))));
+    inMsgs.add(
+        new SoyMsg(
+            0xABC,
+            "x-zz",
+            "abc",
+            "",
+            true,
+            "text/html",
+            null,
+            ImmutableList.<SoyMsgPart>of(
+                SoyMsgRawTextPart.of("Hello, "),
+                new SoyMsgPlaceholderPart("NAME"),
+                SoyMsgRawTextPart.of("!"))));
+    SourceLocation source2 = new SourceLocation("/path/to/source2", 20, 1, 20, 10);
+    inMsgs.add(
+        new SoyMsg(
+            0x123,
+            "x-zz", // duplicate msg id
+            null,
+            "Boo message 2.",
+            false,
+            null,
+            source2,
+            ImmutableList.<SoyMsgPart>of(SoyMsgRawTextPart.of("Boo 2!"))));
     SoyMsgBundle msgBundle = new SoyMsgBundleImpl("x-zz", inMsgs);
 
     assertEquals("x-zz", msgBundle.getLocaleString());
@@ -87,5 +114,4 @@ public class SoyMsgBundleImplTest extends TestCase {
     assertEquals("NAME", ((SoyMsgPlaceholderPart) helloMsgParts.get(1)).getPlaceholderName());
     assertEquals("!", ((SoyMsgRawTextPart) helloMsgParts.get(2)).getRawText());
   }
-
 }

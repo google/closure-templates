@@ -27,22 +27,20 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableTable;
 import com.google.common.collect.Table;
 import com.google.common.collect.Tables;
-
 import java.util.LinkedHashMap;
 import java.util.Map;
-
 import javax.annotation.Nullable;
 
 /**
  * Utility for applying deltemplate selection logic to an arbitrary set of values.
- * 
+ *
  * <p>This object allows selection logic to be shared between both tofu and jbcsrc which use
  * different runtime representations for templates, without needing to have hard dependencies on
  * those runtime representations. For example, tofu uses {@code TemplateDelegateNode} and jbcsrc
  * uses {@code CompiledTemplate}.
  *
- * <p>This logic should be kept in sync with the JS and Python runtime logic.  See the JS
- * {@code soy.$$getDelegateFn} and {@code soy.$$registerDelegateFn} methods.
+ * <p>This logic should be kept in sync with the JS and Python runtime logic. See the JS {@code
+ * soy.$$getDelegateFn} and {@code soy.$$registerDelegateFn} methods.
  *
  * @param <T> The type of the values in the selector
  */
@@ -131,7 +129,7 @@ public final class DelTemplateSelector<T> {
       return getBuilder(delTemplateName, variant).add(delpackage, value);
     }
 
-    private DelTemplateSelector.Group.Builder<T> getBuilder(String name, String variant) {
+    private Group.Builder<T> getBuilder(String name, String variant) {
       checkArgument(!name.isEmpty());
       Group.Builder<T> v = nameAndVariantToGroup.get(name, variant);
       if (v == null) {
@@ -146,9 +144,7 @@ public final class DelTemplateSelector<T> {
     }
   }
 
-  /**
-   * Represents all the templates for a given deltemplate name and variant value.
-   */
+  /** Represents all the templates for a given deltemplate name and variant value. */
   private static final class Group<T> {
     final String formattedName;
     @Nullable final T defaultValue;
@@ -176,9 +172,7 @@ public final class DelTemplateSelector<T> {
                 String.format(
                     "For delegate template '%s', found two active implementations with equal"
                         + " priority in delegate packages '%s' and '%s'.",
-                    formattedName,
-                    entry.getKey(),
-                    selected.getKey()));
+                    formattedName, entry.getKey(), selected.getKey()));
           }
           selected = entry;
         }

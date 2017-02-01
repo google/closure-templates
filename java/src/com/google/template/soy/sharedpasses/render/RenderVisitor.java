@@ -90,22 +90,20 @@ import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.LoopVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.SoyType.Kind;
-
 import java.io.Flushable;
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.List;
-
 import javax.annotation.Nullable;
 
 /**
  * Visitor for rendering the template subtree rooted at a given SoyNode.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
- * <p> The rendered output will be appended to the Appendable provided to the constructor.
+ * <p>The rendered output will be appended to the Appendable provided to the constructor.
  *
  */
 public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
@@ -161,7 +159,6 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
    */
   private CountingFlushableAppendable flushable;
 
-
   /**
    * @param soyJavaDirectivesMap Map of all SoyJavaPrintDirectives (name to directive).
    * @param evalVisitorFactory Factory for creating an instance of EvalVisitor.
@@ -200,8 +197,8 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     this.xidRenamingMap = xidRenamingMap;
     this.cssRenamingMap = cssRenamingMap;
 
-    this.evalVisitor = null;  // lazily initialized
-    this.assistantForMsgs = null;  // lazily initialized
+    this.evalVisitor = null; // lazily initialized
+    this.assistantForMsgs = null; // lazily initialized
 
     this.outputBufStack = new ArrayDeque<>();
     if (outputBuf instanceof Flushable) {
@@ -215,7 +212,8 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     pushOutputBuf(outputBuf);
   }
 
-  @Override public Void exec(SoyNode node) {
+  @Override
+  public Void exec(SoyNode node) {
     if (flushable != null) {
       // only do this in exec() so that all recursively called templates flush the correct top-level
       // output stream
@@ -263,27 +261,27 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     env = Environment.create(template, data, ijData);
     checkStrictParamTypes(template, paramsToTypeCheck);
     visitChildren(template);
-    env = null;  // unpin for gc
+    env = null; // unpin for gc
   }
 
   // -----------------------------------------------------------------------------------------------
   // Implementations for specific nodes.
 
-
-  @Override protected void visitTemplateNode(TemplateNode node) {
+  @Override
+  protected void visitTemplateNode(TemplateNode node) {
     // check all params of the node. This callpath should only be called in the case of external
     // calls into soy (e.g. RenderVisitor.exec(node)).  For calls to templates from soy, the
     // renderTemplate() method is called directly.
     renderTemplate(node, node.getParams());
   }
 
-
-  @Override protected void visitRawTextNode(RawTextNode node) {
+  @Override
+  protected void visitRawTextNode(RawTextNode node) {
     append(currOutputBuf, node.getRawText());
   }
 
-
-  @Override protected void visitMsgFallbackGroupNode(MsgFallbackGroupNode node) {
+  @Override
+  protected void visitMsgFallbackGroupNode(MsgFallbackGroupNode node) {
     if (assistantForMsgs == null) {
       assistantForMsgs = new RenderVisitorAssistantForMsgs(this, msgBundle);
     }
@@ -303,13 +301,13 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     }
   }
 
-
-  @Override protected void visitMsgHtmlTagNode(MsgHtmlTagNode node) {
+  @Override
+  protected void visitMsgHtmlTagNode(MsgHtmlTagNode node) {
     throw new AssertionError();
   }
 
-
-  @Override protected void visitPrintNode(PrintNode node) {
+  @Override
+  protected void visitPrintNode(PrintNode node) {
 
     SoyValue result = eval(node.getExprUnion().getExpr(), node);
     if (result instanceof UndefinedData) {
@@ -335,14 +333,14 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     append(currOutputBuf, result, node);
   }
 
-
-  @Override protected void visitXidNode(XidNode node) {
+  @Override
+  protected void visitXidNode(XidNode node) {
     String xid = node.getRenamedText(xidRenamingMap);
     append(currOutputBuf, xid);
   }
 
-
-  @Override protected void visitCssNode(CssNode node) {
+  @Override
+  protected void visitCssNode(CssNode node) {
     ExprRootNode componentNameExpr = node.getComponentNameExpr();
     if (componentNameExpr != null) {
       append(currOutputBuf, eval(componentNameExpr, node), node);
@@ -370,18 +368,18 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     append(currOutputBuf, className);
   }
 
-
-  @Override protected void visitLetValueNode(LetValueNode node) {
+  @Override
+  protected void visitLetValueNode(LetValueNode node) {
     env.bind(node.getVar(), lazyEval(node.getValueExpr(), node));
   }
 
-
-  @Override protected void visitLetContentNode(LetContentNode node) {
+  @Override
+  protected void visitLetContentNode(LetContentNode node) {
     env.bind(node.getVar(), renderRenderUnitNode(node));
   }
 
-
-  @Override protected void visitIfNode(IfNode node) {
+  @Override
+  protected void visitIfNode(IfNode node) {
 
     for (SoyNode child : node.getChildren()) {
 
@@ -402,8 +400,8 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     }
   }
 
-
-  @Override protected void visitSwitchNode(SwitchNode node) {
+  @Override
+  protected void visitSwitchNode(SwitchNode node) {
 
     SoyValue switchValue = eval(node.getExpr(), node);
 
@@ -428,15 +426,19 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     }
   }
 
-
-  @Override protected void visitForeachNode(ForeachNode node) {
+  @Override
+  protected void visitForeachNode(ForeachNode node) {
 
     SoyValue dataRefValue = eval(node.getExpr(), node);
     if (!(dataRefValue instanceof SoyList)) {
       throw RenderException.createWithSource(
-          "In 'foreach' command " + node.toSourceString() + ", the data reference does not "
-              + "resolve to a SoyList " + "(encountered type "
-              + dataRefValue.getClass().getName() + ").",
+          "In 'foreach' command "
+              + node.toSourceString()
+              + ", the data reference does not "
+              + "resolve to a SoyList "
+              + "(encountered type "
+              + dataRefValue.getClass().getName()
+              + ").",
           node);
     }
     SoyList foreachList = (SoyList) dataRefValue;
@@ -460,17 +462,19 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     }
   }
 
-
-  @Override protected void visitForNode(ForNode node) {
+  @Override
+  protected void visitForNode(ForNode node) {
 
     RangeArgs rangeArgs = node.getRangeArgs();
 
-    int increment = rangeArgs.increment().isPresent()
-        ? evalRangeArg(node, rangeArgs.increment().get())
-        : 1 /* default */;
-    int init = rangeArgs.start().isPresent()
-        ? evalRangeArg(node, rangeArgs.start().get())
-        : 0 /* default */;
+    int increment =
+        rangeArgs.increment().isPresent()
+            ? evalRangeArg(node, rangeArgs.increment().get())
+            : 1 /* default */;
+    int init =
+        rangeArgs.start().isPresent()
+            ? evalRangeArg(node, rangeArgs.start().get())
+            : 0 /* default */;
     int limit = evalRangeArg(node, rangeArgs.limit());
 
     LocalVar localVarName = node.getVar();
@@ -484,15 +488,18 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     SoyValue rangeArgValue = eval(rangeArg, node);
     if (!(rangeArgValue instanceof IntegerData)) {
       throw RenderException.createWithSource(
-          "In 'for' command " + node.toSourceString() + ", the expression \""
-              + rangeArg.toSourceString() + "\" does not resolve to an integer.",
+          "In 'for' command "
+              + node.toSourceString()
+              + ", the expression \""
+              + rangeArg.toSourceString()
+              + "\" does not resolve to an integer.",
           node);
     }
     return rangeArgValue.integerValue();
   }
 
-
-  @Override protected void visitCallBasicNode(CallBasicNode node) {
+  @Override
+  protected void visitCallBasicNode(CallBasicNode node) {
 
     TemplateNode callee = templateRegistry.getBasicTemplate(node.getCalleeName());
     if (callee == null) {
@@ -503,8 +510,8 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     visitCallNodeHelper(node, callee);
   }
 
-
-  @Override protected void visitCallDelegateNode(CallDelegateNode node) {
+  @Override
+  protected void visitCallDelegateNode(CallDelegateNode node) {
 
     ExprRootNode variantExpr = node.getDelCalleeVariantExpr();
     String variant;
@@ -527,7 +534,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
             String.format(
                 "Variant expression \"%s\" doesn't evaluate to a valid type "
                     + "(Only string and integer are supported).",
-            variantExpr.toSourceString()),
+                variantExpr.toSourceString()),
             e,
             node);
       }
@@ -545,17 +552,18 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       visitCallNodeHelper(node, callee);
 
     } else if (node.allowsEmptyDefault()) {
-      return;  // no active delegate implementation, so the call output is empty string
+      return; // no active delegate implementation, so the call output is empty string
 
     } else {
       throw RenderException.createWithSource(
-          "Found no active impl for delegate call to '" + node.getDelCalleeName()
-              + "' (and no attribute allowemptydefault=\"true\").", node);
+          "Found no active impl for delegate call to '"
+              + node.getDelCalleeName()
+              + "' (and no attribute allowemptydefault=\"true\").",
+          node);
     }
   }
 
-
-  @SuppressWarnings("ConstantConditions")  // for IntelliJ
+  @SuppressWarnings("ConstantConditions") // for IntelliJ
   private void visitCallNodeHelper(CallNode node, TemplateNode callee) {
 
     // ------ Build the call data. ------
@@ -565,8 +573,10 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     } else if (node.dataAttribute().isPassingData()) {
       SoyValue dataRefValue = eval(node.dataAttribute().dataExpr(), node);
       if (!(dataRefValue instanceof SoyRecord)) {
-        throw RenderException.create("In 'call' command " + node.toSourceString() +
-        ", the data reference does not resolve to a SoyRecord.")
+        throw RenderException.create(
+                "In 'call' command "
+                    + node.toSourceString()
+                    + ", the data reference does not resolve to a SoyRecord.")
             .addStackTraceElement(node);
       }
       dataToPass = (SoyRecord) dataRefValue;
@@ -608,8 +618,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
         } else if (child instanceof CallParamContentNode) {
           mutableCallData.setField(
-              child.getKey(),
-              renderRenderUnitNode((CallParamContentNode) child));
+              child.getKey(), renderRenderUnitNode((CallParamContentNode) child));
 
         } else {
           throw new AssertionError();
@@ -646,10 +655,11 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
         // this template call.
         throw re.addStackTraceElement(node);
       }
-      SoyValue resultData = (callee.getContentKind() != null) ?
-          UnsafeSanitizedContentOrdainer.ordainAsSafe(
-              calleeBuilder.toString(), callee.getContentKind()) :
-          StringData.forValue(calleeBuilder.toString());
+      SoyValue resultData =
+          (callee.getContentKind() != null)
+              ? UnsafeSanitizedContentOrdainer.ordainAsSafe(
+                  calleeBuilder.toString(), callee.getContentKind())
+              : StringData.forValue(calleeBuilder.toString());
       for (String directiveName : node.getEscapingDirectiveNames()) {
         resultData = applyDirective(directiveName, resultData, ImmutableList.<SoyValue>of(), node);
       }
@@ -657,49 +667,43 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     }
   }
 
-
-  @Override protected void visitCallParamNode(CallParamNode node) {
+  @Override
+  protected void visitCallParamNode(CallParamNode node) {
     // In this visitor, we never directly visit a CallParamNode.
     throw new AssertionError();
   }
 
-
-  @Override protected void visitLogNode(LogNode node) {
+  @Override
+  protected void visitLogNode(LogNode node) {
     renderBlock(node, System.out);
-    System.out.println();  // add a newline
+    System.out.println(); // add a newline
   }
 
-
-  @Override protected void visitDebuggerNode(DebuggerNode node) {
+  @Override
+  protected void visitDebuggerNode(DebuggerNode node) {
     // The 'debugger' statement does nothing in Java rendering, but the user could theoretically
     // place a breakpoint at this method.
   }
 
-
   // -----------------------------------------------------------------------------------------------
   // Fallback implementation.
 
-
-  @Override protected void visitSoyNode(SoyNode node) {
+  @Override
+  protected void visitSoyNode(SoyNode node) {
 
     if (node instanceof ParentSoyNode<?>) {
       visitChildren((ParentSoyNode<?>) node);
     }
   }
 
-
   // -----------------------------------------------------------------------------------------------
   // Helpers.
 
-
-  /**
-   * Pushes the given output buffer onto the stack (it becomes the current output buffer).
-   */
+  /** Pushes the given output buffer onto the stack (it becomes the current output buffer). */
   private void pushOutputBuf(Appendable outputBuf) {
     outputBufStack.push(outputBuf);
     currOutputBuf = outputBuf;
   }
-
 
   /**
    * Pops the top output buffer off the stack and returns it (changes the current output buffer).
@@ -710,7 +714,6 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     return poppedOutputBuf;
   }
 
-
   /**
    * This method must only be called by assistant visitors, in particular
    * RenderVisitorAssistantForMsgs.
@@ -719,10 +722,10 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     return currOutputBuf;
   }
 
-
   /**
    * Private helper to render the children of a block into a separate string (not directly appended
    * to the current output buffer).
+   *
    * @param block The block whose children are to be rendered.
    */
   private void renderBlock(BlockNode block, Appendable to) {
@@ -732,11 +735,13 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
   }
 
   private SoyValue renderRenderUnitNode(final RenderUnitNode renderUnitNode) {
-    RenderableThunk thunk = new RenderableThunk() {
-      @Override protected void doRender(Appendable appendable) throws IOException {
-        renderBlock(renderUnitNode, appendable);
-      }
-    };
+    RenderableThunk thunk =
+        new RenderableThunk() {
+          @Override
+          protected void doRender(Appendable appendable) throws IOException {
+            renderBlock(renderUnitNode, appendable);
+          }
+        };
     ContentKind contentKind = renderUnitNode.getContentKind();
     if (contentKind != null) {
       return LazySanitizedContents.forThunk(thunk, contentKind);
@@ -781,11 +786,13 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
    */
   private SoyValueProvider lazyEval(final ExprNode expr, final SoyNode node) {
     return new SoyAbstractCachingValueProvider() {
-      @Override protected SoyValue compute() {
+      @Override
+      protected SoyValue compute() {
         return eval(expr, node);
       }
 
-      @Override public RenderResult status() {
+      @Override
+      public RenderResult status() {
         return RenderResult.done();
       }
     };
@@ -799,10 +806,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     return eval(expr, node);
   }
 
-
-  /**
-   * Helper to append text to the output, propagating any exceptions.
-   */
+  /** Helper to append text to the output, propagating any exceptions. */
   static void append(Appendable outputBuf, CharSequence cs) {
     try {
       outputBuf.append(cs);
@@ -811,9 +815,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     }
   }
 
-  /**
-   * Helper to append a SoyValue to the output, propagating any exceptions.
-   */
+  /** Helper to append a SoyValue to the output, propagating any exceptions. */
   static void append(Appendable outputBuf, SoyValue value, SoyNode node) {
     try {
       value.render(outputBuf);
@@ -823,7 +825,6 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       throw e.addStackTraceElement(node);
     }
   }
-
 
   /**
    * Protected helper to apply a print directive.
@@ -841,16 +842,23 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     SoyJavaPrintDirective directive = soyJavaDirectivesMap.get(directiveName);
     if (directive == null) {
       throw RenderException.createWithSource(
-          "Failed to find Soy print directive with name '" + directiveName
-              + "'" + " (tag " + node.toSourceString() + ")",
+          "Failed to find Soy print directive with name '"
+              + directiveName
+              + "'"
+              + " (tag "
+              + node.toSourceString()
+              + ")",
           node);
     }
 
     // TODO: Add a pass to check num args at compile time.
-    if (! directive.getValidArgsSizes().contains(args.size())) {
+    if (!directive.getValidArgsSizes().contains(args.size())) {
       throw RenderException.createWithSource(
-          "Print directive '" + directiveName + "' used with the wrong number of arguments (tag "
-              + node.toSourceString() + ").",
+          "Print directive '"
+              + directiveName
+              + "' used with the wrong number of arguments (tag "
+              + node.toSourceString()
+              + ").",
           node);
     }
 
@@ -876,8 +884,8 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
   }
 
   /** Check that the given {@code paramValue} matches the static type of {@code param}. */
-  private void checkStrictParamType(final TemplateNode node, final TemplateParam param,
-      @Nullable SoyValueProvider paramValue) {
+  private void checkStrictParamType(
+      final TemplateNode node, final TemplateParam param, @Nullable SoyValueProvider paramValue) {
     Kind kind = param.type().getKind();
     if (kind == Kind.ANY || kind == Kind.UNKNOWN) {
       // Nothing to check.  ANY and UKNOWN match all types.
@@ -890,11 +898,13 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       if (!typedValue.isComputed()) {
         // in order to preserve laziness we tell the value provider to assert the type when
         // computation is triggered
-        typedValue.addValueAssertion(new ValueAssertion() {
-          @Override public void check(SoyValue value) {
-            checkValueType(param, value, node);
-          }
-        });
+        typedValue.addValueAssertion(
+            new ValueAssertion() {
+              @Override
+              public void check(SoyValue value) {
+                checkValueType(param, value, node);
+              }
+            });
         return;
       }
     }
@@ -908,8 +918,11 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       throw RenderException.createWithSource(
           "Parameter type mismatch: attempt to bind value '"
               + (value instanceof UndefinedData ? "(undefined)" : value)
-              + "' to parameter '" + param.name() + "' which has declared type '"
-              + param.type() + "'.",
+              + "' to parameter '"
+              + param.name()
+              + "' which has declared type '"
+              + param.type()
+              + "'.",
           node);
     }
   }

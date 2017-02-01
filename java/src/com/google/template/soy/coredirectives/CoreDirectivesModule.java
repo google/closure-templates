@@ -20,15 +20,14 @@ import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.Multibinder;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 
-
 /**
  * Guice module for basic Soy print directives.
  *
  */
 public class CoreDirectivesModule extends AbstractModule {
 
-
-  @Override public void configure() {
+  @Override
+  public void configure() {
 
     Multibinder<SoyPrintDirective> soyDirectivesSetBinder =
         Multibinder.newSetBinder(binder(), SoyPrintDirective.class);
@@ -36,5 +35,4 @@ public class CoreDirectivesModule extends AbstractModule {
     soyDirectivesSetBinder.addBinding().to(IdDirective.class);
     soyDirectivesSetBinder.addBinding().to(EscapeHtmlDirective.class);
   }
-
 }

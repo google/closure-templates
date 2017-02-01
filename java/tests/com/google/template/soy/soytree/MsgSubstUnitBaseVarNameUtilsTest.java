@@ -17,6 +17,7 @@
 package com.google.template.soy.soytree;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.junit.Assert.assertEquals;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -26,19 +27,21 @@ import com.google.template.soy.error.FormattingErrorReporter;
 import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprparse.SoyParsingContext;
 import com.google.template.soy.exprtree.ExprNode;
-
-import junit.framework.TestCase;
-
 import java.util.List;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for {@link MsgSubstUnitBaseVarNameUtils}.
  *
  */
-public final class MsgSubstUnitBaseVarNameUtilsTest extends TestCase {
+@RunWith(JUnit4.class)
+public final class MsgSubstUnitBaseVarNameUtilsTest {
 
   private static final SoyParsingContext FAIL = SoyParsingContext.exploding();
 
+  @Test
   public void testGenBaseNames() {
 
     String exprText = "$aaBb";
@@ -64,8 +67,7 @@ public final class MsgSubstUnitBaseVarNameUtilsTest extends TestCase {
     exprText = "aa_._bb._CC_DD_";
     assertNaiveBaseNameForExpr("CC_DD", exprText);
     assertShortestBaseNameForExpr("CC_DD", exprText);
-    assertCandidateBaseNamesForExpr(
-        ImmutableList.of("CC_DD", "BB_CC_DD", "AA_BB_CC_DD"), exprText);
+    assertCandidateBaseNamesForExpr(ImmutableList.of("CC_DD", "BB_CC_DD", "AA_BB_CC_DD"), exprText);
 
     exprText = "length($aaBb)";
     assertNaiveBaseNameForExpr("FALLBACK", exprText);
@@ -86,46 +88,40 @@ public final class MsgSubstUnitBaseVarNameUtilsTest extends TestCase {
     exprText = "$aa0_0bb['foo'][2]?.cc_dd.ee?[5]";
     assertNaiveBaseNameForExpr("FALLBACK", exprText);
     assertShortestBaseNameForExpr("EE_5", exprText);
-    assertCandidateBaseNamesForExpr(
-        ImmutableList.of("EE_5", "CC_DD_EE_5"), exprText);
+    assertCandidateBaseNamesForExpr(ImmutableList.of("EE_5", "CC_DD_EE_5"), exprText);
   }
 
   private void assertNaiveBaseNameForExpr(String expected, String exprText) {
-    ExprNode exprRoot = new ExpressionParser(
-        exprText, SourceLocation.UNKNOWN, FAIL)
-        .parseExpression();
+    ExprNode exprRoot =
+        new ExpressionParser(exprText, SourceLocation.UNKNOWN, FAIL).parseExpression();
     String actual = MsgSubstUnitBaseVarNameUtils.genNaiveBaseNameForExpr(exprRoot, "FALLBACK");
-    MsgNodeTest.assertEquals(expected, actual);
+    assertEquals(expected, actual);
   }
 
   private void assertShortestBaseNameForExpr(String expected, String exprText) {
-    ExprNode exprRoot = new ExpressionParser(
-        exprText, SourceLocation.UNKNOWN, FAIL)
-        .parseExpression();
-    String actual = MsgSubstUnitBaseVarNameUtils.genShortestBaseNameForExpr(
-        exprRoot, "FALLBACK");
-    MsgNodeTest.assertEquals(expected, actual);
+    ExprNode exprRoot =
+        new ExpressionParser(exprText, SourceLocation.UNKNOWN, FAIL).parseExpression();
+    String actual = MsgSubstUnitBaseVarNameUtils.genShortestBaseNameForExpr(exprRoot, "FALLBACK");
+    assertEquals(expected, actual);
   }
 
   private void assertCandidateBaseNamesForExpr(List<String> expected, String exprText) {
-    ExprNode exprRoot = new ExpressionParser(
-        exprText, SourceLocation.UNKNOWN, FAIL)
-        .parseExpression();
-    List<String> actual = MsgSubstUnitBaseVarNameUtils.genCandidateBaseNamesForExpr(
-        exprRoot);
-    MsgNodeTest.assertEquals(expected, actual);
+    ExprNode exprRoot =
+        new ExpressionParser(exprText, SourceLocation.UNKNOWN, FAIL).parseExpression();
+    List<String> actual = MsgSubstUnitBaseVarNameUtils.genCandidateBaseNamesForExpr(exprRoot);
+    assertEquals(expected, actual);
   }
 
+  @Test
   public void testGenNoncollidingBaseNames() {
-    assertNoncollidingBaseNamesForExprs(
-        ImmutableList.of("GENDER"), "$user.gender");
+    assertNoncollidingBaseNamesForExprs(ImmutableList.of("GENDER"), "$user.gender");
     assertErrorMsgWhenGenNoncollidingBaseNamesForExprs(
-        "Cannot generate noncolliding base names for vars. " +
-            "Colliding expressions: '$gender' and '$ij.gender'.",
+        "Cannot generate noncolliding base names for vars. "
+            + "Colliding expressions: '$gender' and '$ij.gender'.",
         "$gender, $ij.gender");
     assertErrorMsgWhenGenNoncollidingBaseNamesForExprs(
-        "Cannot generate noncolliding base names for vars. " +
-            "Colliding expressions: '$ij.gender' and '$userGender'.",
+        "Cannot generate noncolliding base names for vars. "
+            + "Colliding expressions: '$ij.gender' and '$userGender'.",
         "$userGender, $ij.gender");
     assertNoncollidingBaseNamesForExprs(
         ImmutableList.of("USERGENDER", "GENDER"), "$usergender, $ij.gender");
@@ -143,19 +139,17 @@ public final class MsgSubstUnitBaseVarNameUtilsTest extends TestCase {
 
   private void assertNoncollidingBaseNamesForExprs(List<String> expected, String exprListText) {
     List<ExprNode> exprRoots =
-        new ExpressionParser(exprListText, SourceLocation.UNKNOWN, FAIL)
-            .parseExpressionList();
+        new ExpressionParser(exprListText, SourceLocation.UNKNOWN, FAIL).parseExpressionList();
     List<String> actual =
-        MsgSubstUnitBaseVarNameUtils.genNoncollidingBaseNamesForExprs(exprRoots, "FALLBACK",
-            ExplodingErrorReporter.get());
-    MsgNodeTest.assertEquals(expected, actual);
+        MsgSubstUnitBaseVarNameUtils.genNoncollidingBaseNamesForExprs(
+            exprRoots, "FALLBACK", ExplodingErrorReporter.get());
+    assertEquals(expected, actual);
   }
 
   private void assertErrorMsgWhenGenNoncollidingBaseNamesForExprs(
       String expectedErrorMsg, String exprListText) {
     List<ExprNode> exprRoots =
-        new ExpressionParser(exprListText, SourceLocation.UNKNOWN, FAIL)
-            .parseExpressionList();
+        new ExpressionParser(exprListText, SourceLocation.UNKNOWN, FAIL).parseExpressionList();
     FormattingErrorReporter errorReporter = new FormattingErrorReporter();
     MsgSubstUnitBaseVarNameUtils.genNoncollidingBaseNamesForExprs(
         exprRoots, "FALLBACK", errorReporter);

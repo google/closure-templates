@@ -14,46 +14,54 @@
  * limitations under the License.
  */
 
-
 package com.google.template.soy.jssrc.internal;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.template.soy.jssrc.dsl.CodeChunk.id;
+import static com.google.template.soy.jssrc.dsl.CodeChunk.number;
 
-import com.google.common.collect.Maps;
+import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.exprtree.Operator;
+import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.restricted.JsExpr;
-
-import junit.framework.TestCase;
-
-import java.util.ArrayDeque;
-import java.util.Deque;
-import java.util.Map;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
- * Unit tests for V1JsExprTranslator.
+ * Unit tests for {@link V1JsExprTranslator}.
  *
  */
-public class V1JsExprTranslatorTest extends TestCase {
+@RunWith(JUnit4.class)
+public final class V1JsExprTranslatorTest {
 
+  // Let 'goo' simulate a local variable from a 'foreach' loop.
+  private static final ImmutableMap<String, CodeChunk.WithValue> LOCAL_VAR_TRANSLATIONS =
+      ImmutableMap.<String, CodeChunk.WithValue>builder()
+          .put(
+              "goo",
+              id("gooData8"))
+          .put(
+              "goo__isFirst",
+              id("gooIndex8")
+                  .doubleEquals(
+                      number(0)))
+          .put(
+              "goo__isLast",
+              id("gooIndex8")
+                  .doubleEquals(
+                      id("gooListLen8")
+                          .minus(
+                              number(1))))
+          .put(
+              "goo__index",
+              id("gooIndex8"))
+          .build();
 
-  private static final Deque<Map<String, JsExpr>> LOCAL_VAR_TRANSLATIONS =
-      new ArrayDeque<Map<String, JsExpr>>();
-  static {
-    Map<String, JsExpr> frame = Maps.newHashMap();
-    // Let 'goo' simulate a local variable from a 'foreach' loop.
-    frame.put("goo", new JsExpr("gooData8", Integer.MAX_VALUE));
-    frame.put("goo__isFirst", new JsExpr("gooIndex8 == 0", Operator.EQUAL.getPrecedence()));
-    frame.put("goo__isLast", new JsExpr("gooIndex8 == gooListLen8 - 1",
-                                        Operator.EQUAL.getPrecedence()));
-    frame.put("goo__index", new JsExpr("gooIndex8", Integer.MAX_VALUE));
-    LOCAL_VAR_TRANSLATIONS.push(frame);
-  }
-
-
-  public void testDataRef() throws Exception {
-
+  @Test
+  public void testDataRef() {
     runTestHelper("$boo",
                   new JsExpr("opt_data.boo", Integer.MAX_VALUE));
     runTestHelper("$boo.goo",
@@ -69,18 +77,16 @@ public class V1JsExprTranslatorTest extends TestCase {
                   true /* lenient */);
   }
 
-
-  public void testOperators() throws Exception {
-
+  @Test
+  public void testOperators() {
     runTestHelper("not $boo or true and $goo",
                   new JsExpr("! opt_data.boo || true && gooData8", Operator.OR.getPrecedence()));
     runTestHelper("( (8-4) + (2-1) )",
                   new JsExpr("( (8-4) + (2-1) )", Operator.PLUS.getPrecedence()));
   }
 
-
-  public void testFunctions() throws Exception {
-
+  @Test
+  public void testFunctions() {
     runTestHelper("isFirst($goo)",
                   new JsExpr("(gooIndex8 == 0)", Operator.EQUAL.getPrecedence()));
     runTestHelper("not isLast($goo)",
@@ -92,17 +98,18 @@ public class V1JsExprTranslatorTest extends TestCase {
                   new JsExpr("opt_data.boo.length", Integer.MAX_VALUE));
   }
 
-
-  public void runTestHelper(String soyExpr, JsExpr expectedJsExpr) throws Exception {
+  private static void runTestHelper(String soyExpr, JsExpr expectedJsExpr) {
     runTestHelper(soyExpr, expectedJsExpr, false);
   }
 
-
-  public void runTestHelper(String soyExpr, JsExpr expectedJsExpr, boolean shouldBeLenient)
-      throws Exception {
-
-    JsExpr actualJsExpr = V1JsExprTranslator.translateToJsExpr(
-        soyExpr, SourceLocation.UNKNOWN, LOCAL_VAR_TRANSLATIONS, ExplodingErrorReporter.get());
+  private static void runTestHelper(
+      String soyExpr, JsExpr expectedJsExpr, boolean shouldBeLenient) {
+    JsExpr actualJsExpr =
+        V1JsExprTranslator.translateToJsExpr(
+            soyExpr,
+            SourceLocation.UNKNOWN,
+            SoyToJsVariableMappings.startingWith(LOCAL_VAR_TRANSLATIONS),
+            ExplodingErrorReporter.get());
     assertThat(actualJsExpr.getText()).isEqualTo(expectedJsExpr.getText());
     if (shouldBeLenient) {
       assertThat(actualJsExpr.getPrecedence() < expectedJsExpr.getPrecedence()).isTrue();
@@ -110,5 +117,4 @@ public class V1JsExprTranslatorTest extends TestCase {
       assertThat(actualJsExpr.getPrecedence()).isEqualTo(expectedJsExpr.getPrecedence());
     }
   }
-
 }

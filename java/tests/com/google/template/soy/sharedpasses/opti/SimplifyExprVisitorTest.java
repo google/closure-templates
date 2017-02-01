@@ -31,16 +31,18 @@ import com.google.template.soy.exprparse.SoyParsingContext;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.passes.ResolveFunctionsVisitor;
 import com.google.template.soy.shared.restricted.SoyFunction;
-
-import junit.framework.TestCase;
-
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for {@link SimplifyExprVisitor}.
  *
  */
-public final class SimplifyExprVisitorTest extends TestCase {
+@RunWith(JUnit4.class)
+public final class SimplifyExprVisitorTest {
 
+  @Test
   public void testSimplifyFullySimplifiableExpr() {
     assertThat("-99+-111").simplifiesTo("-210");
     assertThat("-99+-111").simplifiesTo("-210");
@@ -55,7 +57,7 @@ public final class SimplifyExprVisitorTest extends TestCase {
     assertThat("floor(7/2)").simplifiesTo("3");
   }
 
-
+  @Test
   public void testSimplifyNotSimplifiableExpr() {
     assertThat("$boo").simplifiesTo("$boo");
     assertThat("$boo % 3").simplifiesTo("$boo % 3");
@@ -67,7 +69,7 @@ public final class SimplifyExprVisitorTest extends TestCase {
     assertThat("floor($boo / 3)").simplifiesTo("floor($boo / 3)");
   }
 
-
+  @Test
   public void testSimplifyPartiallySimplifiableExpr() {
     assertThat("3 * 5 % $boo").simplifiesTo("15 % $boo");
     assertThat("not false and not $boo").simplifiesTo("not $boo");
@@ -78,7 +80,7 @@ public final class SimplifyExprVisitorTest extends TestCase {
     assertThat("floor($boo / (1.0 + 2))").simplifiesTo("floor($boo / 3.0)");
   }
 
-
+  @Test
   public void testSimplifyListAndMapLiterals() {
     assertThat("['a' + 'b', 1 - 3]").simplifiesTo("['ab', -2]");
     assertThat("['a' + 'b': 1 - 3]").simplifiesTo("['ab': -2]");
@@ -92,7 +94,7 @@ public final class SimplifyExprVisitorTest extends TestCase {
     assertThat("keys(['a' + 'b': 1 - 3])").simplifiesTo("keys(['ab': -2])");
   }
 
-
+  @Test
   public void testSimplifyBinaryLogicalOps() {
     // 'and'
     assertThat("true and true").simplifiesTo("true");
@@ -123,7 +125,7 @@ public final class SimplifyExprVisitorTest extends TestCase {
     assertThat("1 or true").simplifiesTo("1");
   }
 
-
+  @Test
   public void testSimplifyConditionalOp() {
     assertThat("true ? 111 : 222").simplifiesTo("111");
     assertThat("false ? 111 : 222").simplifiesTo("222");
@@ -132,7 +134,6 @@ public final class SimplifyExprVisitorTest extends TestCase {
     assertThat("$boo or true ? $boo and false : true")
         .simplifiesTo("$boo or true ? $boo and false : true"); // Can't simplify
   }
-
 
   // -----------------------------------------------------------------------------------------------
   // Helpers.
@@ -148,9 +149,10 @@ public final class SimplifyExprVisitorTest extends TestCase {
     }
 
     private void simplifiesTo(String expected) {
-      ExprRootNode exprRoot = new ExprRootNode(
-          new ExpressionParser(getSubject(), SourceLocation.UNKNOWN, SoyParsingContext.exploding())
-          .parseExpression());
+      ExprRootNode exprRoot =
+          new ExprRootNode(
+              new ExpressionParser(actual(), SourceLocation.UNKNOWN, SoyParsingContext.exploding())
+                  .parseExpression());
       new ResolveFunctionsVisitor(SOY_FUNCTIONS).exec(exprRoot);
       INJECTOR.getInstance(SimplifyExprVisitor.class).exec(exprRoot);
       Truth.assertThat(exprRoot.toSourceString()).isEqualTo(expected);
@@ -159,11 +161,11 @@ public final class SimplifyExprVisitorTest extends TestCase {
 
   private static final SubjectFactory<SimplifySubject, String> FACTORY =
       new SubjectFactory<SimplifySubject, String>() {
-    @Override
-    public SimplifySubject getSubject(FailureStrategy failureStrategy, String s) {
-      return new SimplifySubject(failureStrategy, s);
-    }
-  };
+        @Override
+        public SimplifySubject getSubject(FailureStrategy failureStrategy, String s) {
+          return new SimplifySubject(failureStrategy, s);
+        }
+      };
 
   private static SimplifySubject assertThat(String input) {
     return Truth.assertAbout(FACTORY).that(input);

@@ -17,7 +17,6 @@
 package com.google.template.soy.incrementaldomsrc;
 
 import com.google.template.soy.jssrc.internal.DelTemplateNamer;
-
 import javax.inject.Inject;
 
 /**
@@ -28,7 +27,8 @@ final class IncrementalDomDelTemplateNamer extends DelTemplateNamer {
   @Inject
   public IncrementalDomDelTemplateNamer() {}
 
-  @Override protected String getDelegateName(String delTemplateName) {
+  @Override
+  protected String getDelegateName(String delTemplateName) {
     return delTemplateName + ".idom";
   }
 }

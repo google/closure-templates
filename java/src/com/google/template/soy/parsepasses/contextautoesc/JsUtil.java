@@ -16,9 +16,8 @@
 
 package com.google.template.soy.parsepasses.contextautoesc;
 
-import java.util.Set;
-
 import com.google.common.collect.ImmutableSet;
+import java.util.Set;
 
 /**
  * Some utilities for dealing with JavaScript syntax.
@@ -29,15 +28,15 @@ final class JsUtil {
   /**
    * True iff a slash after the given run of non-whitespace tokens starts a regular expression
    * instead of a div operator : (/ or /=).
-   * <p>
-   * This fails on some valid but nonsensical JavaScript programs like {@code x = ++/foo/i} which is
-   * quite different than {@code x++/foo/i}, but is not known to fail on any known useful programs.
-   * It is based on the draft
-   * <a href="http://www.mozilla.org/js/language/js20-2000-07/rationale/syntax.html">JavaScript 2.0
+   *
+   * <p>This fails on some valid but nonsensical JavaScript programs like {@code x = ++/foo/i} which
+   * is quite different than {@code x++/foo/i}, but is not known to fail on any known useful
+   * programs. It is based on the draft <a
+   * href="http://www.mozilla.org/js/language/js20-2000-07/rationale/syntax.html">JavaScript 2.0
    * lexical grammar</a> and requires one token of lookbehind.
    *
    * @param jsTokens A run of non-whitespace, non-comment, non string tokens not including the '/'
-   *     character.  Non-empty.
+   *     character. Non-empty.
    */
   public static boolean isRegexPreceder(String jsTokens) {
     // Tokens that precede a regular expression in JavaScript.
@@ -51,11 +50,27 @@ final class JsUtil {
     int jsTokensLen = jsTokens.length();
     char lastChar = jsTokens.charAt(jsTokensLen - 1);
     switch (lastChar) {
-      case '=': case '#': case '%': case '&': case '(': case '*':
-      case ',': case '<': case '>': case '?': case ':': case ';':
-      case '^': case '{': case '|': case '}': case '~': case '[':
+      case '=':
+      case '#':
+      case '%':
+      case '&':
+      case '(':
+      case '*':
+      case ',':
+      case '<':
+      case '>':
+      case '?':
+      case ':':
+      case ';':
+      case '^':
+      case '{':
+      case '|':
+      case '}':
+      case '~':
+      case '[':
         return true;
-      case '+': case '-':
+      case '+':
+      case '-':
         // ++ and -- are not
         int signStart = jsTokensLen - 1;
         // Count the number of adjacent dashes or pluses.
@@ -84,9 +99,20 @@ final class JsUtil {
     }
   }
 
-  private static final Set<String> REGEX_PRECEDER_KEYWORDS = ImmutableSet.of(
-      "break", "case", "continue", "delete", "do", "else", "finally", "instanceof", "return",
-      "throw", "try", "typeof");
+  private static final Set<String> REGEX_PRECEDER_KEYWORDS =
+      ImmutableSet.of(
+          "break",
+          "case",
+          "continue",
+          "delete",
+          "do",
+          "else",
+          "finally",
+          "instanceof",
+          "return",
+          "throw",
+          "try",
+          "typeof");
 
   private JsUtil() {
     // Not instantiable.

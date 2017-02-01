@@ -22,8 +22,12 @@ import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.exprtree.Operator;
-import com.google.template.soy.internal.targetexpr.ExprUtils;
-
+import com.google.template.soy.exprtree.Operator.Associativity;
+import com.google.template.soy.exprtree.Operator.Operand;
+import com.google.template.soy.exprtree.Operator.Spacer;
+import com.google.template.soy.exprtree.Operator.SyntaxElement;
+import com.google.template.soy.exprtree.Operator.Token;
+import com.google.template.soy.internal.targetexpr.TargetExpr;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -31,7 +35,7 @@ import java.util.Map;
 /**
  * Common utilities for dealing with Python expressions.
  *
- * <p> Important: This class may only be used in implementing plugins (e.g. functions, directives).
+ * <p>Important: This class may only be used in implementing plugins (e.g. functions, directives).
  *
  */
 public final class PyExprUtils {
@@ -45,8 +49,8 @@ public final class PyExprUtils {
   /**
    * Map used to provide operator precedences in Python.
    *
-   * @see <a href="https://docs.python.org/2/reference/expressions.html#operator-precedence"> Python
-   *      operator precedence.</a>
+   * @see <a href="https://docs.python.org/2/reference/expressions.html#operator-precedence">Python
+   *     operator precedence.</a>
    */
   private static final ImmutableMap<Operator, Integer> PYTHON_PRECEDENCES =
       new ImmutableMap.Builder<Operator, Integer>()
@@ -68,7 +72,6 @@ public final class PyExprUtils {
           .put(Operator.NULL_COALESCING, 1)
           .put(Operator.CONDITIONAL, 1)
           .build();
-
 
   private PyExprUtils() {}
 
@@ -114,23 +117,19 @@ public final class PyExprUtils {
     return new PyListExpr(resultSb.toString(), Integer.MAX_VALUE);
   }
 
-  /**
-   * Generates a Python not null (None) check expression for the given {@link PyExpr}.
-   */
+  /** Generates a Python not null (None) check expression for the given {@link PyExpr}. */
   public static PyExpr genPyNotNullCheck(PyExpr pyExpr) {
     ImmutableList<PyExpr> exprs = ImmutableList.of(pyExpr, new PyExpr("None", Integer.MAX_VALUE));
     // Note: is/is not is Python's identity comparison. It's used for None checks for performance.
-    String conditionalExpr = ExprUtils.genExprWithNewToken(Operator.NOT_EQUAL, exprs, "is not");
+    String conditionalExpr = genExprWithNewToken(Operator.NOT_EQUAL, exprs, "is not");
     return new PyExpr(conditionalExpr, PyExprUtils.pyPrecedenceForOperator(Operator.NOT_EQUAL));
   }
 
-  /**
-   * Generates a Python null (None) check expression for the given {@link PyExpr}.
-   */
+  /** Generates a Python null (None) check expression for the given {@link PyExpr}. */
   public static PyExpr genPyNullCheck(PyExpr expr) {
     ImmutableList<PyExpr> exprs = ImmutableList.of(expr, new PyExpr("None", Integer.MAX_VALUE));
     // Note: is/is not is Python's identity comparison. It's used for None checks for performance.
-    String conditionalExpr = ExprUtils.genExprWithNewToken(Operator.EQUAL, exprs, "is");
+    String conditionalExpr = genExprWithNewToken(Operator.EQUAL, exprs, "is");
     return new PyExpr(conditionalExpr, PyExprUtils.pyPrecedenceForOperator(Operator.EQUAL));
   }
 
@@ -163,10 +162,11 @@ public final class PyExprUtils {
    */
   public static PyExpr wrapAsSanitizedContent(ContentKind contentKind, PyExpr pyExpr) {
     String sanitizer = NodeContentKinds.toPySanitizedContentOrdainer(contentKind);
-    String approval = "sanitize.IActuallyUnderstandSoyTypeSafetyAndHaveSecurityApproval("
-        + "'Internally created Sanitization.')";
-    return new PyExpr(sanitizer + "(" + pyExpr.getText() + ", approval=" + approval + ")",
-        Integer.MAX_VALUE);
+    String approval =
+        "sanitize.IActuallyUnderstandSoyTypeSafetyAndHaveSecurityApproval("
+            + "'Internally created Sanitization.')";
+    return new PyExpr(
+        sanitizer + "(" + pyExpr.getText() + ", approval=" + approval + ")", Integer.MAX_VALUE);
   }
 
   /**
@@ -183,7 +183,7 @@ public final class PyExprUtils {
    * Convert a java Iterable object to valid PyExpr as array.
    *
    * @param iterable Iterable of Objects to be converted to PyExpr, it must be Number, PyExpr or
-   *        String.
+   *     String.
    */
   public static PyExpr convertIterableToPyListExpr(Iterable<?> iterable) {
     return convertIterableToPyExpr(iterable, true);
@@ -193,7 +193,7 @@ public final class PyExprUtils {
    * Convert a java Iterable object to valid PyExpr as tuple.
    *
    * @param iterable Iterable of Objects to be converted to PyExpr, it must be Number, PyExpr or
-   *        String.
+   *     String.
    */
   public static PyExpr convertIterableToPyTupleExpr(Iterable<?> iterable) {
     return convertIterableToPyExpr(iterable, false);
@@ -203,7 +203,7 @@ public final class PyExprUtils {
    * Convert a java Map to valid PyExpr as dict.
    *
    * @param dict A Map to be converted to PyExpr as a dictionary, both key and value should be
-   *        PyExpr.
+   *     PyExpr.
    */
   public static PyExpr convertMapToOrderedDict(Map<PyExpr, PyExpr> dict) {
     List<String> values = new ArrayList<>();
@@ -216,11 +216,11 @@ public final class PyExprUtils {
     return new PyExpr("collections.OrderedDict([" + joiner.join(values) + "])", Integer.MAX_VALUE);
   }
 
-    /**
+  /**
    * Convert a java Map to valid PyExpr as dict.
    *
    * @param dict A Map to be converted to PyExpr as a dictionary, both key and value should be
-   *        PyExpr.
+   *     PyExpr.
    */
   public static PyExpr convertMapToPyExpr(Map<PyExpr, PyExpr> dict) {
     List<String> values = new ArrayList<>();
@@ -262,5 +262,75 @@ public final class PyExprUtils {
       contents += ",";
     }
     return new PyListExpr(leftDelimiter + contents + rightDelimiter, Integer.MAX_VALUE);
+  }
+
+  /**
+   * Generates an expression for the given operator and operands assuming that the expression for
+   * the operator uses the same syntax format as the Soy operator, with the exception that the of a
+   * different token. Associativity, spacing, and precedence are maintained from the original
+   * operator.
+   *
+   * <p>Examples:
+   *
+   * <pre>
+   * NOT, ["$a"], "!" -> "! $a"
+   * AND, ["$a", "$b"], "&&" -> "$a && $b"
+   * NOT, ["$a * $b"], "!"; -> "! ($a * $b)"
+   * </pre>
+   *
+   * @param op The operator.
+   * @param operandExprs The operands.
+   * @param newToken The language specific token equivalent to the operator's original token.
+   * @return The generated expression with a new token.
+   */
+  public static String genExprWithNewToken(
+      Operator op, List<? extends TargetExpr> operandExprs, String newToken) {
+
+    int opPrec = op.getPrecedence();
+    boolean isLeftAssociative = op.getAssociativity() == Associativity.LEFT;
+
+    StringBuilder exprSb = new StringBuilder();
+
+    // Iterate through the operator's syntax elements.
+    List<SyntaxElement> syntax = op.getSyntax();
+    for (int i = 0, n = syntax.size(); i < n; i++) {
+      SyntaxElement syntaxEl = syntax.get(i);
+
+      if (syntaxEl instanceof Operand) {
+        // Retrieve the operand's subexpression.
+        int operandIndex = ((Operand) syntaxEl).getIndex();
+        TargetExpr operandExpr = operandExprs.get(operandIndex);
+        // If left (right) associative, first (last) operand doesn't need protection if it's an
+        // operator of equal precedence to this one.
+        boolean needsProtection;
+        if (i == (isLeftAssociative ? 0 : n - 1)) {
+          needsProtection = operandExpr.getPrecedence() < opPrec;
+        } else {
+          needsProtection = operandExpr.getPrecedence() <= opPrec;
+        }
+        // Append the operand's subexpression to the expression we're building (if necessary,
+        // protected using parentheses).
+        String subexpr =
+            needsProtection ? "(" + operandExpr.getText() + ")" : operandExpr.getText();
+        exprSb.append(subexpr);
+
+      } else if (syntaxEl instanceof Token) {
+        // If a newToken is supplied, then use it, else use the token defined by Soy syntax.
+        if (newToken != null) {
+          exprSb.append(newToken);
+        } else {
+          exprSb.append(((Token) syntaxEl).getValue());
+        }
+
+      } else if (syntaxEl instanceof Spacer) {
+        // Spacer is just one space.
+        exprSb.append(' ');
+
+      } else {
+        throw new AssertionError();
+      }
+    }
+
+    return exprSb.toString();
   }
 }

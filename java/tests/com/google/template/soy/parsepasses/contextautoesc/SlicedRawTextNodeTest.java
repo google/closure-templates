@@ -17,6 +17,7 @@
 package com.google.template.soy.parsepasses.contextautoesc;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.junit.Assert.fail;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Predicate;
@@ -32,57 +33,47 @@ import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateNode;
-
-import junit.framework.TestCase;
-
 import java.util.List;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test for {@link SlicedRawTextNode}.
  *
  */
-public final class SlicedRawTextNodeTest extends TestCase {
+@RunWith(JUnit4.class)
+public final class SlicedRawTextNodeTest {
 
   /** Custom print directives used in tests below. */
   private static final ImmutableMap<String, SoyPrintDirective> SOY_PRINT_DIRECTIVES =
       ImmutableMap.of();
 
+  @Test
   public void testTrivialTemplate() throws Exception {
     assertInjected(
-        join(
-            "{template .foo}\n",
-            "Hello, World!\n",
-            "{/template}"),
-        join(
-            "{template .foo}\n",
-            "Hello, World!\n",
-            "{/template}"));
+        join("{template .foo}\n", "Hello, World!\n", "{/template}"),
+        join("{template .foo}\n", "Hello, World!\n", "{/template}"));
   }
 
+  @Test
   public void testOneScriptWithBody() throws Exception {
     assertInjected(
         join(
             "{template .foo}\n",
             "<script INJE='CTED'>alert('Hello, World!')</script>\n",
             "{/template}"),
-        join(
-            "{template .foo}\n",
-            "<script>alert('Hello, World!')</script>\n",
-            "{/template}"));
+        join("{template .foo}\n", "<script>alert('Hello, World!')</script>\n", "{/template}"));
   }
 
+  @Test
   public void testOneSrcedScript() throws Exception {
     assertInjected(
-        join(
-            "{template .foo}\n",
-            "<script src=\"app.js\" INJE='CTED'></script>\n",
-            "{/template}"),
-        join(
-            "{template .foo}\n",
-            "<script src=\"app.js\"></script>\n",
-            "{/template}"));
+        join("{template .foo}\n", "<script src=\"app.js\" INJE='CTED'></script>\n", "{/template}"),
+        join("{template .foo}\n", "<script src=\"app.js\"></script>\n", "{/template}"));
   }
 
+  @Test
   public void testManyScripts() throws Exception {
     assertInjected(
         join(
@@ -103,6 +94,7 @@ public final class SlicedRawTextNodeTest extends TestCase {
             "{/template}"));
   }
 
+  @Test
   public void testFakeScripts() throws Exception {
     assertInjected(
         join(
@@ -127,6 +119,7 @@ public final class SlicedRawTextNodeTest extends TestCase {
             "{/template}"));
   }
 
+  @Test
   public void testPrintDirectiveInScriptTag() throws Exception {
     assertInjected(
         join(
@@ -144,24 +137,25 @@ public final class SlicedRawTextNodeTest extends TestCase {
             "{/template}"));
   }
 
+  @Test
   public void testContextAssumptionsUpheld() throws Exception {
     try {
       parseAndInjectIntoScriptTags(
-                                   join(
-                                        "{template .foo}\n",
-                                        "<script src='foo.js'></script>\n",
-                                        "{/template}"),
-                                   " title='unclosed");
+          join("{template .foo}\n", "<script src='foo.js'></script>\n", "{/template}"),
+          " title='unclosed");
     } catch (SoyAutoescapeException ex) {
-      assertThat(ex).hasMessage("In file no-path:4:1, template ns.foo:"
-          + " Inserting ` title='unclosed` would cause text node to end in context"
-          + " (Context HTML_NORMAL_ATTR_VALUE SCRIPT PLAIN_TEXT SINGLE_QUOTE) instead of"
-          + " (Context HTML_PCDATA)");
+      assertThat(ex)
+          .hasMessage(
+              "In file no-path:4:1, template ns.foo:"
+                  + " Inserting ` title='unclosed` would cause text node to end in context"
+                  + " (Context HTML_NORMAL_ATTR_VALUE SCRIPT PLAIN_TEXT SINGLE_QUOTE) instead of"
+                  + " (Context HTML_PCDATA)");
       return;
     }
     fail("Expected SoyAutoescapeException");
   }
 
+  @Test
   public void testMergeAdjacentSlicesWithSameContext() throws Exception {
     // Insert slices in a way that we end up with multiple adjacent slices with the
     // same context arranged thus:
@@ -173,37 +167,39 @@ public final class SlicedRawTextNodeTest extends TestCase {
     Context a = Context.HTML_PCDATA;
     Context b = Context.HTML_PCDATA.derive(HtmlContext.HTML_TAG_NAME);
     SlicedRawTextNode slicedNode = new SlicedRawTextNode(rawTextNode, a);
-    slicedNode.insertSlice(0, a, 4);  // "Hell"
-    slicedNode.insertSlice(1, a, 3);  // "o, "
-    slicedNode.insertSlice(2, b, 4);  // "<Wor"
-    slicedNode.insertSlice(3, b, 1);  // "l"
-    slicedNode.insertSlice(4, b, 0);  // ""
-    slicedNode.insertSlice(5, b, 2);  // "d>"
-    slicedNode.insertSlice(6, a, 1);  // "!"
+    slicedNode.insertSlice(0, a, 4); // "Hell"
+    slicedNode.insertSlice(1, a, 3); // "o, "
+    slicedNode.insertSlice(2, b, 4); // "<Wor"
+    slicedNode.insertSlice(3, b, 1); // "l"
+    slicedNode.insertSlice(4, b, 0); // ""
+    slicedNode.insertSlice(5, b, 2); // "d>"
+    slicedNode.insertSlice(6, a, 1); // "!"
     slicedNode.setEndContext(a);
 
     assertThat(slicedNode.getSlices()).hasSize(7);
     assertThat(slicesToString(slicedNode.getSlices()))
-        .isEqualTo("\"Hell\"#0:HTML_PCDATA, "
-            + "\"o, \"#0:HTML_PCDATA, "
-            + "\"<Wor\"#0:HTML_TAG_NAME, "
-            + "\"l\"#0:HTML_TAG_NAME, "
-            + "\"\"#0:HTML_TAG_NAME, "
-            + "\"d>\"#0:HTML_TAG_NAME, "
-            + "\"!\"#0:HTML_PCDATA");
+        .isEqualTo(
+            "\"Hell\"#0:HTML_PCDATA, "
+                + "\"o, \"#0:HTML_PCDATA, "
+                + "\"<Wor\"#0:HTML_TAG_NAME, "
+                + "\"l\"#0:HTML_TAG_NAME, "
+                + "\"\"#0:HTML_TAG_NAME, "
+                + "\"d>\"#0:HTML_TAG_NAME, "
+                + "\"!\"#0:HTML_PCDATA");
 
     slicedNode.mergeAdjacentSlicesWithSameContext();
 
     assertThat(slicedNode.getSlices()).hasSize(3);
     assertThat(slicesToString(slicedNode.getSlices()))
-        .isEqualTo("\"Hello, \"#0:HTML_PCDATA, "
-            + "\"<World>\"#0:HTML_TAG_NAME, "
-            + "\"!\"#0:HTML_PCDATA");
+        .isEqualTo(
+            "\"Hello, \"#0:HTML_PCDATA, "
+                + "\"<World>\"#0:HTML_TAG_NAME, "
+                + "\"!\"#0:HTML_PCDATA");
   }
 
   /**
-   * Renders slices to a comma separated list with elements like
-   * {@code "<text>"#<node-id>:<context>}.
+   * Renders slices to a comma separated list with elements like {@code
+   * "<text>"#<node-id>:<context>}.
    */
   private static final String slicesToString(List<SlicedRawTextNode.RawTextSlice> slices) {
     StringBuilder sb = new StringBuilder();
@@ -243,10 +239,9 @@ public final class SlicedRawTextNodeTest extends TestCase {
   /**
    * Returns the contextually rewritten source.
    *
-   * The Soy tree may have multiple files, but only the source code for the first is returned.
+   * <p>The Soy tree may have multiple files, but only the source code for the first is returned.
    */
-  private void assertInjected(String expectedOutput, String input)
-    throws SoyAutoescapeException {
+  private void assertInjected(String expectedOutput, String input) {
     SoyFileSetNode soyTree = parseAndInjectIntoScriptTags(input, " INJE='CTED'");
 
     StringBuilder src = new StringBuilder();
@@ -262,30 +257,32 @@ public final class SlicedRawTextNodeTest extends TestCase {
 
   private static void insertTextAtEndOfScriptOpenTag(
       List<SlicedRawTextNode> slicedRawTextNodes, String toInject) {
-    Predicate<? super Context> inScriptTag = new Predicate<Context>() {
-      public boolean apply(Context c) {
-        return (
-                // In a script tag,
-                c.elType == Context.ElementType.SCRIPT
+    Predicate<? super Context> inScriptTag =
+        new Predicate<Context>() {
+          @Override
+          public boolean apply(Context c) {
+            return (
+            // In a script tag,
+            c.elType == Context.ElementType.SCRIPT
                 && c.state == HtmlContext.HTML_TAG
                 // but not in an attribute
-                && c.attrType == Context.AttributeType.NONE
-                );
-      }
-    };
-    Predicate<? super Context> inScriptBody = new Predicate<Context>() {
-      public boolean apply(Context c) {
-        return (
-                // If we're not in an attribute,
-                c.attrType == Context.AttributeType.NONE
+                && c.attrType == Context.AttributeType.NONE);
+          }
+        };
+    Predicate<? super Context> inScriptBody =
+        new Predicate<Context>() {
+          @Override
+          public boolean apply(Context c) {
+            return (
+            // If we're not in an attribute,
+            c.attrType == Context.AttributeType.NONE
                 // but we're in JS, then we must be in a script body.
-                && c.state == HtmlContext.JS
-                );
-      }
-    };
+                && c.state == HtmlContext.JS);
+          }
+        };
 
     for (SlicedRawTextNode.RawTextSlice slice :
-           SlicedRawTextNode.find(slicedRawTextNodes, null, inScriptTag, inScriptBody)) {
+        SlicedRawTextNode.find(slicedRawTextNodes, null, inScriptTag, inScriptBody)) {
       String rawText = slice.getRawText();
       int rawTextLen = rawText.length();
       assertThat(rawText.charAt(rawTextLen - 1)).isEqualTo('>');
@@ -297,5 +294,4 @@ public final class SlicedRawTextNodeTest extends TestCase {
       slice.insertText(insertionPoint, toInject);
     }
   }
-
 }

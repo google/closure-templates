@@ -26,20 +26,19 @@ import com.google.template.soy.types.SoyType;
  * number of subinterfaces that extend the base interface in various aspects. Every concrete node
  * implements some subset of these interfaces.
  *
- * The top level definition is the base ExprNode interface.
+ * <p>The top level definition is the base ExprNode interface.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public interface ExprNode extends Node {
 
-
   /**
    * Enum of specific node kinds (coresponding to specific node types).
-   * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+   *
+   * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
    */
   public static enum Kind {
-
     EXPR_ROOT_NODE,
 
     NULL_NODE,
@@ -78,64 +77,41 @@ public interface ExprNode extends Node {
     CONDITIONAL_OP_NODE,
 
     FUNCTION_NODE,
+    PROTO_INIT_NODE,
   }
-
 
   /**
    * Gets this node's kind (corresponding to this node's specific type).
+   *
    * @return This node's kind (corresponding to this node's specific type).
    */
   public Kind getKind();
 
-  /**
-   * Gets the data type of this node.
-   */
+  /** Gets the data type of this node. */
   public SoyType getType();
 
-  @Override public ParentExprNode getParent();
+  @Override
+  public ParentExprNode getParent();
 
-  /**
-   * See {@link Node#copy(CopyState)} for a description of the copy contract.
-   */
-  @Override public ExprNode copy(CopyState copyState);
-
+  /** See {@link Node#copy(CopyState)} for a description of the copy contract. */
+  @Override
+  public ExprNode copy(CopyState copyState);
 
   // -----------------------------------------------------------------------------------------------
 
-
-  /**
-   * A node in an expression parse tree that may be a parent.
-   */
+  /** A node in an expression parse tree that may be a parent. */
   public static interface ParentExprNode extends ExprNode, ParentNode<ExprNode> {}
 
-
   // -----------------------------------------------------------------------------------------------
 
-
-  /**
-   * A node representing an operator (with operands as children).
-   */
+  /** A node representing an operator (with operands as children). */
   public static interface OperatorNode extends ParentExprNode {
 
     public Operator getOperator();
   }
 
-
   // -----------------------------------------------------------------------------------------------
 
-
-  /**
-   * A node representing a constant.
-   */
-  public static interface ConstantNode extends ExprNode {}
-
-
-  // -----------------------------------------------------------------------------------------------
-
-
-  /**
-   * A node representing a primitive literal.
-   */
-  public static interface PrimitiveNode extends ConstantNode {}
-
+  /** A node representing a primitive literal. */
+  public static interface PrimitiveNode extends ExprNode {}
 }

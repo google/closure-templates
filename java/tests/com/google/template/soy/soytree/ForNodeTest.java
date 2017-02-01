@@ -18,35 +18,22 @@ package com.google.template.soy.soytree;
 
 import static com.google.template.soy.soytree.TemplateSubject.assertThatTemplateContent;
 
-import junit.framework.TestCase;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests for {@link ForNode}.
  *
  * @author brndn@google.com (Brendan Linn)
  */
-public final class ForNodeTest extends TestCase {
+@RunWith(JUnit4.class)
+public final class ForNodeTest {
 
+  @Test
   public void testInvalidForeachUsage() {
     assertThatTemplateContent("{for $x in $var}{/for}\n")
         .causesError(ForNode.INVALID_COMMAND_TEXT)
-        .at(1, 1);
-  }
-
-  public void testInvalidRangeInFor() {
-    String emptyRangeExpressionErrorMessage =
-        "parse error at '': expected null, <BOOLEAN>, <INTEGER>, <FLOAT>, <STRING>, not, "
-            + "'an identifier', variable, -, [, (, or $ij.";
-    assertThatTemplateContent("{for $x in range()}{/for}\n")
-        .causesError(emptyRangeExpressionErrorMessage)
-        .at(1, 1);
-    // ForNodes don't have accurate source location information for their command texts yet.
-    // TODO(user): fix.
-    assertThatTemplateContent("{for      $x in range()}{/for}")
-        .causesError(emptyRangeExpressionErrorMessage)
-        .at(1, 1);
-    assertThatTemplateContent("{for\n\n\n\n$x in range()}{/for}")
-        .causesError(emptyRangeExpressionErrorMessage)
         .at(1, 1);
   }
 }

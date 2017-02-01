@@ -19,51 +19,47 @@ package com.google.template.soy.jbcsrc.shared;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 import com.google.template.soy.data.SanitizedContent.ContentKind;
-
 import java.lang.annotation.Retention;
 
 /**
  * An annotation added to compiled templates for preserving certain bits of template metadata.
- * 
- * <p>For now this just records the strict content kind of a template (if any), in the future 
+ *
+ * <p>For now this just records the strict content kind of a template (if any), in the future
  * consider adding:
+ *
  * <ul>
- *     <li>Metadata about params and their requisiteness settings.
+ *   <li>Metadata about params and their requisiteness settings.
  * </ul>
  */
 @Retention(RUNTIME)
 public @interface TemplateMetadata {
   /**
-   * The content kind of the template.  This will be one of the {@link ContentKind} constant names
-   * or {@code ""} which means that this isn't a strict template.
+   * The content kind of the template. This will be one of the {@link ContentKind} constant names or
+   * {@code ""} which means that this isn't a strict template.
    */
   String contentKind();
 
   /**
    * Returns the list of injected params, both {@code $ij.foo} variables and {@code @inject} params
-   */ 
+   */
   String[] injectedParams();
 
-  /** 
-   * Returns the fully qualified names of all the basic templates called by this template.
-   */
+  /** Returns the fully qualified names of all the basic templates called by this template. */
   String[] callees();
 
-  /** 
-   * Returns the fully qualified names of all the delegate templates called by this template.
-   */
+  /** Returns the fully qualified names of all the delegate templates called by this template. */
   String[] delCallees();
 
   /**
-   * Returns metadata for deltemplates.  If this is not a deltemplate it will have an empty
-   * {@link DelTemplateMetadata#name}.
+   * Returns metadata for deltemplates. If this is not a deltemplate it will have an empty {@link
+   * DelTemplateMetadata#name}.
    */
   DelTemplateMetadata deltemplateMetadata() default @DelTemplateMetadata;
 
   @Retention(RUNTIME)
   @interface DelTemplateMetadata {
     /**
-     * The name of the delpackage this is in.  If this is a default deltemplate the package will be
+     * The name of the delpackage this is in. If this is a default deltemplate the package will be
      * {@code ""}.
      */
     String delPackage() default "";

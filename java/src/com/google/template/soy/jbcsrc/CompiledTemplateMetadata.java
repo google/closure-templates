@@ -24,7 +24,6 @@ import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.soytree.TemplateNode;
-
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
 
@@ -34,7 +33,8 @@ import org.objectweb.asm.commons.Method;
  * <p>This should contain basic information about a single template that will be useful for
  * generating that template as well as calls to the template.
  */
-@AutoValue abstract class CompiledTemplateMetadata {
+@AutoValue
+abstract class CompiledTemplateMetadata {
   /**
    * The {@link Method} signature of all generated constructors for the {@link CompiledTemplate}
    * classes.
@@ -43,16 +43,13 @@ import org.objectweb.asm.commons.Method;
       new Method(
           "<init>", Type.getMethodDescriptor(Type.VOID_TYPE, SOY_RECORD_TYPE, SOY_RECORD_TYPE));
 
-  /** 
-   * The {@link Method} signature of the 
-   * {@link CompiledTemplate#render(AdvisingAppendable, RenderContext)}  
-   * method. 
+  /**
+   * The {@link Method} signature of the {@link CompiledTemplate#render(AdvisingAppendable,
+   * RenderContext)} method.
    */
   private static final Method RENDER_METHOD;
 
-  /**
-   * The {@link Method} signature of the {@link CompiledTemplate#kind()} method.
-   */
+  /** The {@link Method} signature of the {@link CompiledTemplate#kind()} method. */
   private static final Method KIND_METHOD;
 
   static {
@@ -78,14 +75,14 @@ import org.objectweb.asm.commons.Method;
         node);
   }
 
-  /** 
+  /**
    * The template constructor.
-   * 
-   * <p>The constructor has the same interface as 
-   * {@link com.google.template.soy.jbcsrc.shared.CompiledTemplate.Factory#create}
+   *
+   * <p>The constructor has the same interface as {@link
+   * com.google.template.soy.jbcsrc.shared.CompiledTemplate.Factory#create}
    */
   abstract ConstructorRef constructor();
-  
+
   /** The {@link CompiledTemplate#render(AdvisingAppendable, RenderContext)} method. */
   abstract MethodRef renderMethod();
 

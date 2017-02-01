@@ -40,9 +40,7 @@ import com.google.template.soy.soytree.MsgSelectCaseNode;
 import com.google.template.soy.soytree.MsgSelectDefaultNode;
 import com.google.template.soy.soytree.MsgSelectNode;
 import com.google.template.soy.soytree.SoyNode;
-
 import com.ibm.icu.util.ULocale;
-
 import java.util.List;
 
 /**
@@ -67,25 +65,21 @@ final class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
     this.msgBundle = msgBundle;
   }
 
-
-  @Override public Void exec(SoyNode node) {
+  @Override
+  public Void exec(SoyNode node) {
     throw new AssertionError();
   }
 
-
-  /**
-   * This method must only be called by the master RenderVisitor.
-   */
+  /** This method must only be called by the master RenderVisitor. */
   void visitForUseByMaster(SoyNode node) {
     visit(node);
   }
 
-
   // -----------------------------------------------------------------------------------------------
   // Implementations for specific nodes.
 
-
-  @Override protected void visitMsgFallbackGroupNode(MsgFallbackGroupNode node) {
+  @Override
+  protected void visitMsgFallbackGroupNode(MsgFallbackGroupNode node) {
 
     boolean foundTranslation = false;
     if (msgBundle != null) {
@@ -98,16 +92,12 @@ final class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
         }
       }
     }
-    if (! foundTranslation) {
+    if (!foundTranslation) {
       renderMsgFromSource(node.getChild(0));
     }
-
   }
 
-
-  /**
-   * Private helper for visitMsgFallbackGroupNode() to render a message from its translation.
-   */
+  /** Private helper for visitMsgFallbackGroupNode() to render a message from its translation. */
   private void renderMsgFromTranslation(MsgNode msg, SoyMsg translation) {
 
     List<SoyMsgPart> msgParts = translation.getParts();
@@ -127,7 +117,8 @@ final class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
         for (SoyMsgPart msgPart : msgParts) {
 
           if (msgPart instanceof SoyMsgRawTextPart) {
-            RenderVisitor.append(master.getCurrOutputBufForUseByAssistants(),
+            RenderVisitor.append(
+                master.getCurrOutputBufForUseByAssistants(),
                 ((SoyMsgRawTextPart) msgPart).getRawText());
 
           } else if (msgPart instanceof SoyMsgPlaceholderPart) {
@@ -138,26 +129,22 @@ final class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
             throw new AssertionError();
           }
         }
-
       }
     }
   }
 
-
-  /**
-   * Private helper for visitMsgFallbackGroupNode() to render a message from its source.
-   */
+  /** Private helper for visitMsgFallbackGroupNode() to render a message from its source. */
   private void renderMsgFromSource(MsgNode msg) {
     visitChildren(msg);
   }
 
-
-  @Override protected void visitMsgNode(MsgNode node) {
+  @Override
+  protected void visitMsgNode(MsgNode node) {
     throw new AssertionError();
   }
 
-
-  @Override protected void visitMsgPluralNode(MsgPluralNode node) {
+  @Override
+  protected void visitMsgPluralNode(MsgPluralNode node) {
     ExprRootNode pluralExpr = node.getExpr();
     double pluralValue;
     try {
@@ -181,14 +168,13 @@ final class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
         if (((MsgPluralCaseNode) child).getCaseNumber() == pluralValue) {
           visitChildren(child);
           break;
-
         }
       }
     }
   }
 
-
-  @Override protected void visitMsgSelectNode(MsgSelectNode node) {
+  @Override
+  protected void visitMsgSelectNode(MsgSelectNode node) {
     ExprRootNode selectExpr = node.getExpr();
     String selectValue;
     try {
@@ -211,40 +197,36 @@ final class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
         if (((MsgSelectCaseNode) child).getCaseValue().equals(selectValue)) {
           visitChildren(child);
           return;
-
         }
       }
     }
   }
 
-
-  @Override protected void visitMsgPlaceholderNode(MsgPlaceholderNode node) {
+  @Override
+  protected void visitMsgPlaceholderNode(MsgPlaceholderNode node) {
     visitChildren(node);
   }
 
-
-  @Override protected void visitMsgHtmlTagNode(MsgHtmlTagNode node) {
+  @Override
+  protected void visitMsgHtmlTagNode(MsgHtmlTagNode node) {
     // Note: We don't default to the fallback implementation because we don't need to add
     // another frame to the environment.
     visitChildren(node);
   }
 
-
   // -----------------------------------------------------------------------------------------------
   // Helper class for traversing a translated plural/select message.
-
 
   /**
    * Visitor for processing {@code SoyMsgPluralPart} and {@code SoyMsgSelectPart} objects.
    *
-   * Visits the parts hierarchy, evaluates each part and appends the result into the
-   * parent class' StringBuffer object.
+   * <p>Visits the parts hierarchy, evaluates each part and appends the result into the parent
+   * class' StringBuffer object.
    *
-   * In addition to writing to output, this inner class uses the outer class's master's eval()
+   * <p>In addition to writing to output, this inner class uses the outer class's master's eval()
    * method to evaluate the expressions associated with the nodes.
    */
   private class PlrselMsgPartsVisitor {
-
 
     /** The parent message node for the parts dealt here. */
     private final MsgNode msgNode;
@@ -254,6 +236,7 @@ final class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
 
     /**
      * Constructor.
+     *
      * @param msgNode The parent message node for the parts dealt here.
      * @param locale The locale of the Soy message.
      */
@@ -262,10 +245,10 @@ final class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
       this.locale = locale;
     }
 
-
     /**
-     * Processes a {@code SoyMsgSelectPart} and appends the rendered output to
-     * the {@code StringBuilder} object in {@code RenderVisitor}.
+     * Processes a {@code SoyMsgSelectPart} and appends the rendered output to the {@code
+     * StringBuilder} object in {@code RenderVisitor}.
+     *
      * @param selectPart The Select part.
      */
     private void visitPart(SoyMsgSelectPart selectPart) {
@@ -306,22 +289,22 @@ final class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
             appendRawTextPart((SoyMsgRawTextPart) casePart);
 
           } else {
-            throw RenderException.create("Unsupported part of type " + casePart.getClass().getName() +
-                " under a select case.")
+            throw RenderException.create(
+                    "Unsupported part of type "
+                        + casePart.getClass().getName()
+                        + " under a select case.")
                 .addStackTraceElement(repSelectNode);
-
           }
         }
       }
     }
 
-
     /**
-     * Processes a {@code SoyMsgPluralPart} and appends the rendered output to
-     * the {@code StringBuilder} object in {@code RenderVisitor}.
-     * It uses the message node cached in this object to get the corresponding
-     * Plural node, gets its variable value and offset, and computes the remainder value to
-     * be used to render the {@code SoyMsgPluralRemainderPart} later.
+     * Processes a {@code SoyMsgPluralPart} and appends the rendered output to the {@code
+     * StringBuilder} object in {@code RenderVisitor}. It uses the message node cached in this
+     * object to get the corresponding Plural node, gets its variable value and offset, and computes
+     * the remainder value to be used to render the {@code SoyMsgPluralRemainderPart} later.
+     *
      * @param pluralPart The Plural part.
      */
     private void visitPart(SoyMsgPluralPart pluralPart) {
@@ -330,8 +313,7 @@ final class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
       double correctPluralValue;
       ExprRootNode pluralExpr = repPluralNode.getExpr();
       try {
-        correctPluralValue =
-            master.evalForUseByAssistants(pluralExpr, repPluralNode).numberValue();
+        correctPluralValue = master.evalForUseByAssistants(pluralExpr, repPluralNode).numberValue();
       } catch (SoyDataException e) {
         throw RenderException.createWithSource(
             String.format(
@@ -357,28 +339,28 @@ final class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
 
         } else {
           // Plural parts will not have nested plural/select parts.  So, this is an error.
-          throw RenderException.create("Unsupported part of type " + casePart.getClass().getName() +
-              " under a plural case.")
+          throw RenderException.create(
+                  "Unsupported part of type "
+                      + casePart.getClass().getName()
+                      + " under a plural case.")
               .addStackTraceElement(repPluralNode);
-
         }
       }
     }
 
-
     /**
-     * Processes a {@code SoyMsgPluralRemainderPart} and appends the rendered output to
-     * the {@code StringBuilder} object in {@code RenderVisitor}.  Since this is precomputed
-     * when visiting the {@code SoyMsgPluralPart} object, it is directly used here.
+     * Processes a {@code SoyMsgPluralRemainderPart} and appends the rendered output to the {@code
+     * StringBuilder} object in {@code RenderVisitor}. Since this is precomputed when visiting the
+     * {@code SoyMsgPluralPart} object, it is directly used here.
      */
     private void appendPluralRemainder(double currentPluralRemainderValue) {
-      RenderVisitor.append(master.getCurrOutputBufForUseByAssistants(),
-          String.valueOf(currentPluralRemainderValue));
+      RenderVisitor.append(
+          master.getCurrOutputBufForUseByAssistants(), String.valueOf(currentPluralRemainderValue));
     }
-
 
     /**
      * Process a {@code SoyMsgPlaceholderPart} and updates the internal data structures.
+     *
      * @param msgPlaceholderPart the Placeholder part.
      */
     private void visitPart(SoyMsgPlaceholderPart msgPlaceholderPart) {
@@ -388,25 +370,22 @@ final class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
       visit(msgNode.getRepPlaceholderNode(msgPlaceholderPart.getPlaceholderName()));
     }
 
-
     /**
-     * Processes a {@code SoyMsgRawTextPart} and appends the contained text to
-     * the {@code StringBuilder} object in {@code RenderVisitor}.
+     * Processes a {@code SoyMsgRawTextPart} and appends the contained text to the {@code
+     * StringBuilder} object in {@code RenderVisitor}.
+     *
      * @param rawTextPart The raw text part.
      */
     private void appendRawTextPart(SoyMsgRawTextPart rawTextPart) {
       RenderVisitor.append(master.getCurrOutputBufForUseByAssistants(), rawTextPart.getRawText());
     }
-
   }
-
 
   // -----------------------------------------------------------------------------------------------
   // Fallback implementation.
 
-
-  @Override protected void visitSoyNode(SoyNode node) {
+  @Override
+  protected void visitSoyNode(SoyNode node) {
     master.visitForUseByAssistants(node);
   }
-
 }

@@ -16,23 +16,34 @@
 
 package com.google.template.soy.jbcsrc;
 
-import junit.framework.TestCase;
+import static org.junit.Assert.assertEquals;
 
-/**
- * Tests for {@link FieldRef}
- */
-public class FieldRefTest extends TestCase {
-  enum SimpleEnum { FOO, BAR; }
-  enum ComplexEnum { 
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
+
+/** Tests for {@link FieldRef} */
+@RunWith(JUnit4.class)
+public class FieldRefTest {
+  enum SimpleEnum {
+    FOO,
+    BAR;
+  }
+
+  enum ComplexEnum {
     FOO {
-      @Override void foo() {}
-    }, 
+      @Override
+      void foo() {}
+    },
     BAR {
-      @Override void foo() {}
+      @Override
+      void foo() {}
     };
+
     abstract void foo();
   }
-  
+
+  @Test
   public void testEnumReference() {
     FieldRef ref = FieldRef.enumReference(SimpleEnum.FOO);
     assertEquals(SimpleEnum.class.getName(), ref.owner().className());
