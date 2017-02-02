@@ -21,6 +21,7 @@ import com.google.common.collect.Iterables;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.basicfunctions.LengthFunction;
+import com.google.template.soy.basicfunctions.ParseFloatFunction;
 import com.google.template.soy.basicfunctions.ParseIntFunction;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
@@ -156,6 +157,8 @@ final class CheckFunctionCallsPass extends CompilerFilePass {
       if (fn instanceof LengthFunction) {
         checkArgType(node.getChild(0), ListType.of(AnyType.getInstance()), node);
       } else if (fn instanceof ParseIntFunction) {
+        checkArgType(node.getChild(0), StringType.getInstance(), node);
+      } else if (fn instanceof ParseFloatFunction) {
         checkArgType(node.getChild(0), StringType.getInstance(), node);
       }
     }

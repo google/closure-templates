@@ -595,6 +595,17 @@ soy.$$parseInt = function(str) {
 
 
 /**
+ * Parses the given string into a float. Returns null if parse is unsuccessful.
+ * @param {string} str The string to parse
+ * @return {?number} The string parsed as a float, or null if unsuccessful.
+ */
+soy.$$parseFloat = function(str) {
+  var parsed = parseFloat(str);
+  return isNaN(parsed) ? null : parsed;
+};
+
+
+/**
  * Gets a consistent unique id for the given delegate template name. Two calls
  * to this function will return the same id if and only if the input names are
  * the same.

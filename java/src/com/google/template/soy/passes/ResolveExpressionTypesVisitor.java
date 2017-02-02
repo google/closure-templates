@@ -25,6 +25,7 @@ import com.google.common.collect.Maps;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.basetree.SyntaxVersionUpperBound;
+import com.google.template.soy.basicfunctions.ParseFloatFunction;
 import com.google.template.soy.basicfunctions.ParseIntFunction;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -786,6 +787,8 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
       } else if (knownFunction instanceof ParseIntFunction) {
         // TODO(user): This is hacky and incomplete. Come up with a better solution.
         node.setType(SoyTypes.makeNullable(IntType.getInstance()));
+      } else if (knownFunction instanceof ParseFloatFunction) {
+        node.setType(SoyTypes.makeNullable(FloatType.getInstance()));
       } else {
         // We have no way of knowing the return type of a function.
         // TODO: think about adding function type declarations.

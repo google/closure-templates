@@ -17,8 +17,9 @@
 package com.google.template.soy.basicfunctions;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.primitives.Doubles;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.restricted.IntegerData;
+import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
@@ -32,27 +33,27 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * Soy function that converts a string to an integer.
+ * Soy function that converts a string to a float.
  *
- * <p>This function accepts a single string. If the string is a valid base 10 integer, then the
- * function will return that integer. Otherwise, it will return {@code null}.
+ * <p>This function accepts a single string. If the string is a valid float, then the function will
+ * return that float. Otherwise, it will return {@code null}.
  *
  * <p>Ex: <code>
- *   {parseInt('10') + 20}  // evaluates to 30
- *   {parseInt('garbage') ?: -1}  // evaluates to -1
+ *   {parseFloat('9.1') + 1}  // evaluates to 10.1
+ *   {parseFloat('garbage') ?: 1.0}  // evaluates to 1.0
  * </code>
  */
 @Singleton
 @SoyPureFunction
-public final class ParseIntFunction
+public final class ParseFloatFunction
     implements SoyJavaFunction, SoyLibraryAssistedJsSrcFunction, SoyPySrcFunction {
 
   @Inject
-  ParseIntFunction() {}
+  ParseFloatFunction() {}
 
   @Override
   public String getName() {
-    return "parseInt";
+    return "parseFloat";
   }
 
   @Override
@@ -62,21 +63,16 @@ public final class ParseIntFunction
 
   @Override
   public SoyValue computeForJava(List<SoyValue> args) {
-    String toParse = args.get(0).stringValue();
-
-    try {
-      // Java backends can handle full 64 bit numbers.
-      return IntegerData.forValue(Long.parseLong(toParse));
-    } catch (NumberFormatException e) {
-      return NullData.INSTANCE;
-    }
+    Double d = Doubles.tryParse(args.get(0).stringValue());
+    return (d == null || d.isNaN()) ? NullData.INSTANCE : FloatData.forValue(d);
   }
 
   @Override
   public JsExpr computeForJsSrc(List<JsExpr> args) {
-    // TODO(user): parseInt('123abc', 10) == 123; JS parseInt tries to parse as much as it can.
+    // TODO(user): parseFloat('123abc') == 123; JS parseFloat tries to parse as much as it can.
+    // That means parseFloat('1.1.1') == 1.1
     String arg = args.get(0).getText();
-    return new JsExpr(String.format("soy.$$parseInt(%s)", arg), Integer.MAX_VALUE);
+    return new JsExpr(String.format("soy.$$parseFloat(%s)", arg), Integer.MAX_VALUE);
   }
 
   @Override
@@ -86,7 +82,7 @@ public final class ParseIntFunction
 
   @Override
   public PyExpr computeForPySrc(List<PyExpr> args) {
-    String arg = args.get(0).getText();
-    return new PyExpr(String.format("runtime.parse_int(%s)", arg), Integer.MAX_VALUE);
+    return new PyExpr(
+        String.format("runtime.parse_float(%s)", args.get(0).getText()), Integer.MAX_VALUE);
   }
 }

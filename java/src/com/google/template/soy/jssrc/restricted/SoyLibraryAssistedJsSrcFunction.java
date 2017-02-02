@@ -34,5 +34,5 @@ public interface SoyLibraryAssistedJsSrcFunction extends SoyJsSrcFunction {
    *
    * @return A collection of strings representing Closure JS library names
    */
-  public ImmutableSet<String> getRequiredJsLibNames();
+  ImmutableSet<String> getRequiredJsLibNames();
 }

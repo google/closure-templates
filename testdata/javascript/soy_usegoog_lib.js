@@ -1420,7 +1420,8 @@ goog.loadModule = function(moduleDef) {
     if (goog.moduleLoaderState_.declareLegacyNamespace) {
       goog.constructNamespace_(moduleName, exports);
     } else if (
-        goog.SEAL_MODULE_EXPORTS && Object.seal && goog.isObject(exports)) {
+        goog.SEAL_MODULE_EXPORTS && Object.seal && typeof exports == 'object' &&
+        exports != null) {
       Object.seal(exports);
     }
 
@@ -29466,6 +29467,17 @@ soy.$$checkNotNull = function(val) {
  */
 soy.$$parseInt = function(str) {
   var parsed = parseInt(str, 10);
+  return isNaN(parsed) ? null : parsed;
+};
+
+
+/**
+ * Parses the given string into a float. Returns null if parse is unsuccessful.
+ * @param {string} str The string to parse
+ * @return {?number} The string parsed as a float, or null if unsuccessful.
+ */
+soy.$$parseFloat = function(str) {
+  var parsed = parseFloat(str);
   return isNaN(parsed) ? null : parsed;
 };
 

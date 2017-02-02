@@ -24,6 +24,7 @@ from __future__ import unicode_literals
 __author__ = 'dcphillips@google.com (David Phillips)'
 
 import importlib
+import math
 import os
 import re
 import sys
@@ -417,6 +418,24 @@ def parse_int(s):
     return int(s)
   except ValueError:
     return None
+
+
+def parse_float(s):
+  """A function that attempts to convert the input string into a float.
+
+  Returns None if the input is not a valid float, or if the input is NaN.
+
+  Args:
+    s: String to convert.
+
+  Returns:
+    float if s is a valid float string that is not NaN, otherwise None.
+  """
+  try:
+    f = float(s)
+  except ValueError:
+    return None
+  return None if math.isnan(f) else f
 
 
 ######################
