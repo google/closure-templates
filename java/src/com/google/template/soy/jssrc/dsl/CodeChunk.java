@@ -16,6 +16,9 @@
 
 package com.google.template.soy.jssrc.dsl;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.jssrc.dsl.OutputContext.STATEMENT;
 import static com.google.template.soy.jssrc.dsl.OutputContext.TRAILING_EXPRESSION;
 
@@ -23,6 +26,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.ForOverride;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.UniqueNameGenerator;
@@ -66,32 +70,82 @@ public abstract class CodeChunk {
   /**
    * Creates a new code chunk from the given expression. The expression's precedence is preserved.
    */
-  public static WithValue fromExpr(JsExpr expr) {
-    return Leaf.create(expr);
+  public static WithValue fromExpr(JsExpr expr, Iterable<String> requires) {
+    ImmutableSet<String> copy = ImmutableSet.copyOf(requires);
+    Leaf chunk = Leaf.create(expr);
+    return copy.isEmpty() ? chunk : GoogRequire.create(chunk, copy);
   }
 
   /**
    * Creates a code chunk representing a JavaScript identifier.
    *
-   * @throws IllegalStateException if rawText is not a valid JavaScript identifier.
+   * @throws IllegalArgumentException if rawText is not a valid JavaScript identifier.
    */
   public static WithValue id(String id) {
-    Preconditions.checkState(ID.matcher(id).matches(), "not a valid id: %s", id);
+    Preconditions.checkArgument(ID.matcher(id).matches(), "not a valid id: %s", id);
     return Leaf.create(id);
   }
 
   /**
-   * Creates a code chunk representing a JavaScript "dotted identifier".
+   * Creates a code chunk representing a JavaScript identifier.
    *
-   * <p>"Dotted identifiers" are really just sequences of dot-access operations off some
-   * base identifier, so this method is just a convenience for
-   * <code>id(...).dotAccess(...)...</code>. It's provided because working with raw dot-separated
-   * strings is common.
+   * <p>TODO(lukes): consider making everyone call 'dottedIdWithRequire' instead?
+   *
+   * @throws IllegalArgumentException if {@code id} is not a valid JavaScript identifier.
+   */
+  public static WithValue idWithRequire(String id) {
+    return GoogRequire.create(id(id), ImmutableSet.of(id));
+  }
+
+  /**
+   * Creates a code chunk representing a JavaScript "dotted identifier" that also adds a {@code
+   * goog.require} for the identifier.
+   *
+   * <p>"Dotted identifiers" are really just sequences of dot-access operations off some base
+   * identifier, so this method is just a convenience for <code>id(...).dotAccess(...)...</code>.
+   * It's provided because working with raw dot-separated strings is common.
    *
    * @throws IllegalStateException if dotSeparatedIdentifiers is not a dot-separated sequence of
-   * valid JavaScript identifiers.
+   *     valid JavaScript identifiers.
    */
-  public static WithValue dottedId(String dotSeparatedIdentifiers) {
+  public static WithValue dottedIdWithRequire(String identifier) {
+    return GoogRequire.create(dottedId(identifier), ImmutableSet.of(identifier));
+  }
+
+  /**
+   * Creates a code chunk representing a javascript identifier that also adds a {@code goog.require}
+   * for the given namesapce.
+   *
+   * <p>"Dotted identifiers" are really just sequences of dot-access operations off some base
+   * identifier, so this method is just a convenience for <code>id(...).dotAccess(...)...</code>.
+   * It's provided because working with raw dot-separated strings is common.
+   *
+   * <p>This should be rarely used.
+   *
+   * @throws IllegalArgumentException if {@code namespace} isn't a prefix of {@code dottedId}
+   */
+  public static WithValue dottedIdWithCustomNamespace(String dottedId, String namespace) {
+    checkArgument(
+        dottedId.startsWith(namespace), "Expected %s to start with %s", dottedId, namespace);
+    return GoogRequire.create(dottedId(dottedId), ImmutableSet.of(namespace));
+  }
+
+  /**
+   * Creates a code chunk representing a JavaScript "dotted identifier" which needs no {@code
+   * goog.require} statements to be added.
+   *
+   * <p>"Dotted identifiers" are really just sequences of dot-access operations off some base
+   * identifier, so this method is just a convenience for <code>id(...).dotAccess(...)...</code>.
+   * It's provided because working with raw dot-separated strings is common.
+   *
+   * <p>This should only be used for certain special namespaces e.g. {@code goog} or {@code window}
+   * TODO(lukes): enforce that.
+   */
+  public static WithValue dottedIdNoRequire(String dotSeparatedIdentifiers) {
+    return dottedId(dotSeparatedIdentifiers);
+  }
+
+  private static WithValue dottedId(String dotSeparatedIdentifiers) {
     List<String> ids = Splitter.on('.').splitToList(dotSeparatedIdentifiers);
     Preconditions.checkState(
         !ids.isEmpty(),
@@ -134,20 +188,50 @@ public abstract class CodeChunk {
   }
 
   /**
-   * Creates a new code chunk declaring a variable with the given name, initialized to the
-   * given value.
+   * Returns a builder for a new code chunk that declares a variable with the given name.
    *
    * <p>Most callers should use {@link CodeChunk.Generator#declare(WithValue)}. This method should
-   * only be used when this chunk is being inserted into foreign code that requires a variable
-   * of the given name to exist.
+   * only be used when this chunk is being inserted into foreign code that requires a variable of
+   * the given name to exist.
    */
-  public static WithValue declare(String varName, WithValue rhs) {
-    return declare(null, varName, rhs);
+  public static DeclarationBuilder declare(String varName) {
+    return new DeclarationBuilder(varName);
   }
 
-  public static WithValue declare(
-      @Nullable String closureCompilerTypeExpression, String varName, WithValue rhs) {
-    return Declaration.create(closureCompilerTypeExpression, varName, rhs);
+  /** A builder for complex declarations. */
+  public static final class DeclarationBuilder {
+    @Nullable String typeExpr;
+    @Nullable ImmutableSet<String> requires;
+    String varName;
+    WithValue rhs;
+
+    DeclarationBuilder(String varName) {
+      this.varName = checkNotNull(varName);
+    }
+
+    public DeclarationBuilder setInitialValue(WithValue rhs) {
+      checkState(this.rhs == null);
+      this.rhs = checkNotNull(rhs);
+      return this;
+    }
+
+    public DeclarationBuilder setTypeExpression(String typeExpr) {
+      checkState(this.typeExpr == null);
+      this.typeExpr = checkNotNull(typeExpr);
+      return this;
+    }
+
+    public DeclarationBuilder setGoogRequiresForType(Iterable<String> requires) {
+      checkState(this.requires == null);
+      this.requires = ImmutableSet.copyOf(requires);
+      return this;
+    }
+
+    public WithValue build() {
+      checkState(rhs != null, "must set an initial value");
+      return Declaration.create(
+          typeExpr, varName, rhs, requires == null ? ImmutableSet.<String>of() : requires);
+    }
   }
 
   /** Creates a code chunk representing the logical negation {@code !} of the given chunk. */
@@ -221,8 +305,9 @@ public abstract class CodeChunk {
    * SoyJsSrcPrintDirective print directives} owned by others. This method should be used to wrap
    * the results of those plugins.
    */
-  public static WithValue dontTrustPrecedenceOf(JsExpr couldHaveWrongPrecedence) {
-    return Group.create(fromExpr(couldHaveWrongPrecedence));
+  public static WithValue dontTrustPrecedenceOf(
+      JsExpr couldHaveWrongPrecedence, Iterable<String> requires) {
+    return Group.create(fromExpr(couldHaveWrongPrecedence, requires));
   }
 
   /**
@@ -236,7 +321,9 @@ public abstract class CodeChunk {
    */
   public static CodeChunk treatRawStringAsStatementLegacyOnly(
       String rawString, Iterable<String> requires) {
-    return LeafStatement.create(rawString.trim(), requires);
+    ImmutableSet<String> copy = ImmutableSet.copyOf(requires);
+    LeafStatement chunk = LeafStatement.create(rawString.trim());
+    return copy.isEmpty() ? chunk : GoogRequireStatement.create(chunk, copy);
   }
 
   /**
@@ -268,15 +355,15 @@ public abstract class CodeChunk {
 
     WithValue() { /* no subclasses outside this package */ }
 
-    public CodeChunk.WithValue plus(CodeChunk.WithValue rhs) {
+    public final CodeChunk.WithValue plus(CodeChunk.WithValue rhs) {
       return BinaryOperation.create(Operator.PLUS, this, rhs);
     }
 
-    public CodeChunk.WithValue minus(CodeChunk.WithValue rhs) {
+    public final CodeChunk.WithValue minus(CodeChunk.WithValue rhs) {
       return BinaryOperation.create(Operator.MINUS, this, rhs);
     }
 
-    public CodeChunk.WithValue plusEquals(CodeChunk.WithValue rhs) {
+    public final CodeChunk.WithValue plusEquals(CodeChunk.WithValue rhs) {
       return BinaryOperation.create(
           "+=",
           0, // the precedence of JS assignments (including +=) is lower than any Soy operator
@@ -285,15 +372,15 @@ public abstract class CodeChunk {
           rhs);
     }
 
-    public CodeChunk.WithValue doubleEquals(CodeChunk.WithValue rhs) {
+    public final CodeChunk.WithValue doubleEquals(CodeChunk.WithValue rhs) {
       return BinaryOperation.create(Operator.EQUAL, this, rhs);
     }
 
-    public CodeChunk.WithValue doubleNotEquals(CodeChunk.WithValue rhs) {
+    public final CodeChunk.WithValue doubleNotEquals(CodeChunk.WithValue rhs) {
       return BinaryOperation.create(Operator.NOT_EQUAL, this, rhs);
     }
 
-    public CodeChunk.WithValue tripleEquals(CodeChunk.WithValue rhs) {
+    public final CodeChunk.WithValue tripleEquals(CodeChunk.WithValue rhs) {
       return BinaryOperation.create(
           "===",
           Operator.EQUAL.getPrecedence(),
@@ -302,15 +389,15 @@ public abstract class CodeChunk {
           rhs);
     }
 
-    public CodeChunk.WithValue doubleEqualsNull() {
+    public final CodeChunk.WithValue doubleEqualsNull() {
       return doubleEquals(LITERAL_NULL);
     }
 
-    public CodeChunk.WithValue times(CodeChunk.WithValue rhs) {
+    public final CodeChunk.WithValue times(CodeChunk.WithValue rhs) {
       return BinaryOperation.create(Operator.TIMES, this, rhs);
     }
 
-    public CodeChunk.WithValue divideBy(CodeChunk.WithValue rhs) {
+    public final CodeChunk.WithValue divideBy(CodeChunk.WithValue rhs) {
       return BinaryOperation.create(Operator.DIVIDE_BY, this, rhs);
     }
 
@@ -322,7 +409,8 @@ public abstract class CodeChunk {
      *     short-circuiting behavior ({@code rhs} should be evaluated only if the current chunk
      *     evaluates as true).
      */
-    public CodeChunk.WithValue and(CodeChunk.WithValue rhs, CodeChunk.Generator codeGenerator) {
+    public final CodeChunk.WithValue and(
+        CodeChunk.WithValue rhs, CodeChunk.Generator codeGenerator) {
       return BinaryOperation.and(this, rhs, codeGenerator);
     }
 
@@ -334,43 +422,40 @@ public abstract class CodeChunk {
      *     short-circuiting behavior ({@code rhs} should be evaluated only if the current chunk
      *     evaluates as false).
      */
-    public CodeChunk.WithValue or(CodeChunk.WithValue rhs, CodeChunk.Generator codeGenerator) {
+    public final CodeChunk.WithValue or(
+        CodeChunk.WithValue rhs, CodeChunk.Generator codeGenerator) {
       return BinaryOperation.or(this, rhs, codeGenerator);
     }
 
-    CodeChunk.WithValue mod(CodeChunk.WithValue rhs) {
+    final CodeChunk.WithValue mod(CodeChunk.WithValue rhs) {
       return BinaryOperation.create(Operator.MOD, this, rhs);
     }
 
     /** Takes in a String identifier for convenience, since that's what most use cases need. */
-    public CodeChunk.WithValue dotAccess(String identifier) {
+    public final CodeChunk.WithValue dotAccess(String identifier) {
       return Dot.create(this, id(identifier));
     }
 
-    public CodeChunk.WithValue bracketAccess(CodeChunk.WithValue arg) {
+    public final CodeChunk.WithValue bracketAccess(CodeChunk.WithValue arg) {
       return Bracket.create(this, arg);
     }
 
-    public CodeChunk.WithValue call(CodeChunk.WithValue... args) {
+    public final CodeChunk.WithValue call(CodeChunk.WithValue... args) {
       return call(Arrays.asList(args));
     }
 
-    public CodeChunk.WithValue call(Iterable<? extends CodeChunk.WithValue> args) {
+    public final CodeChunk.WithValue call(Iterable<? extends CodeChunk.WithValue> args) {
       return Call.create(this, ImmutableList.copyOf(args));
     }
 
-    public CodeChunk.WithValue instanceof_(String typeString) {
+    public final CodeChunk.WithValue instanceof_(CodeChunk.WithValue identifier) {
       // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Operator_Precedence
       // instanceof has the same precedence as LESS_THAN
       return BinaryOperation.create(
-          "instanceof",
-          Operator.LESS_THAN.getPrecedence(),
-          Associativity.LEFT,
-          this,
-          dottedId(typeString));
+          "instanceof", Operator.LESS_THAN.getPrecedence(), Associativity.LEFT, this, identifier);
     }
 
-    public CodeChunk.WithValue assign(CodeChunk.WithValue rhs) {
+    public final CodeChunk.WithValue assign(CodeChunk.WithValue rhs) {
       return BinaryOperation.create(
           "=",
           0, // the precedence of JS assignments is lower than any Soy operator
@@ -422,7 +507,12 @@ public abstract class CodeChunk {
       // The exception is Composites. Composites are sequences of statements that have a variable
       // allocated to represent them when they appear in other code chunks. They should not produce
       // any expression output when formatted by themselves.
-      if (outputContext == STATEMENT && !(this instanceof Composite)) {
+      // TODO(lukes): consider giving doFormatOutputExpr a return value to account for this, rather
+      // than inspecting the type of the receiver.
+      if (outputContext == STATEMENT
+          && !(this instanceof Composite)
+          && !(this instanceof GoogRequire
+              && (((GoogRequire) this).underlying() instanceof Composite))) {
         ctx.append(';').endLine();
       }
     }
@@ -439,6 +529,26 @@ public abstract class CodeChunk {
    * all required namespaces from a code chunk.
    */
   public interface RequiresCollector {
+    /** Drops all requires. */
+    final RequiresCollector NULL =
+        new RequiresCollector() {
+          @Override
+          public void add(String require) {}
+        };
+
+    /** Collects requires into an ImmutableSet that can be accessed via {@link #get} */
+    final class IntoImmutableSet implements RequiresCollector {
+      private final ImmutableSet.Builder<String> builder = ImmutableSet.builder();
+
+      @Override
+      public void add(String require) {
+        builder.add(require);
+      }
+
+      public ImmutableSet<String> get() {
+        return builder.build();
+      }
+    }
     void add(String require);
   }
 
@@ -513,9 +623,33 @@ public abstract class CodeChunk {
    * TODO(user): remove.
    */
   public final JsExpr assertExpr() {
+    RequiresCollector.IntoImmutableSet collector = new RequiresCollector.IntoImmutableSet();
+    JsExpr expr = assertExprAndCollectRequires(collector);
+    ImmutableSet<String> requires = collector.get();
+    if (!requires.isEmpty()) {
+      throw new IllegalStateException("calling assertExpr() would drop requires!: " + requires);
+    }
+    return expr;
+  }
+
+  /**
+   * Temporary method to ease migration to the CodeChunk DSL.
+   *
+   * <p>Because of the recursive nature of the JS codegen system, it is generally not possible to
+   * convert one codegen method at a time to use the CodeChunk DSL. However, the business logic
+   * inside those methods can be migrated incrementally. Methods that do not yet use the CodeChunk
+   * DSL can "unwrap" inputs using this method and "wrap" results using {@link
+   * CodeChunk#fromExpr(JsExpr)}. This is safe as long as each CodeChunk generated for production
+   * code is {@link CodeChunk.WithValue#isRepresentableAsSingleExpression}.
+   *
+   * <p>TODO(user): remove.
+   */
+  public final JsExpr assertExprAndCollectRequires(RequiresCollector collector) {
     WithValue withValue = (WithValue) this;
-    Preconditions.checkState(withValue.isRepresentableAsSingleExpression(),
-        "Not an expr:\n%s", this.getCode());
+    if (!withValue.isRepresentableAsSingleExpression()) {
+      throw new IllegalStateException(String.format("Not an expr:\n%s", this.getCode()));
+    }
+    collectRequires(collector);
     return withValue.singleExprOrName();
   }
 
@@ -622,7 +756,7 @@ public abstract class CodeChunk {
      * value.
      */
     public CodeChunk.WithValue declare(CodeChunk.WithValue rhs) {
-      return CodeChunk.declare(newVarName(), rhs);
+      return CodeChunk.declare(newVarName()).setInitialValue(rhs).build();
     }
 
     /** Returns a builder for a new code chunk that is not initialized to any value. */
@@ -681,7 +815,7 @@ public abstract class CodeChunk {
         children.add(rhs);
         varName = ((Declaration) rhs).varName();
       } else {
-        children.add(Declaration.create(null, varName(), rhs));
+        children.add(CodeChunk.declare(varName()).setInitialValue(rhs).build());
       }
       return this;
     }

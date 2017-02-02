@@ -17,7 +17,6 @@
 package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
-import com.google.common.collect.ImmutableList;
 import com.google.template.soy.jssrc.dsl.CodeChunk.RequiresCollector;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 
@@ -28,15 +27,13 @@ import com.google.template.soy.jssrc.restricted.JsExpr;
 @AutoValue
 abstract class Leaf extends CodeChunk.WithValue {
   abstract JsExpr value();
-  
-  abstract ImmutableList<String> requires();
 
   static Leaf create(String text) {
     return create(new JsExpr(text, Integer.MAX_VALUE));
   }
 
   static Leaf create(JsExpr value) {
-    return new AutoValue_Leaf(value, ImmutableList.<String>of());
+    return new AutoValue_Leaf(value);
   }
 
   @Override
@@ -61,8 +58,5 @@ abstract class Leaf extends CodeChunk.WithValue {
   
   @Override
   public void collectRequires(RequiresCollector collector) {
-    for (String require : requires()) {
-      collector.add(require);
-    }
   }
 }

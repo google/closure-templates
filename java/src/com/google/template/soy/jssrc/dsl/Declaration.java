@@ -19,7 +19,7 @@ package com.google.template.soy.jssrc.dsl;
 import static com.google.template.soy.jssrc.dsl.OutputContext.EXPRESSION;
 
 import com.google.auto.value.AutoValue;
-import com.google.template.soy.jssrc.dsl.CodeChunk.RequiresCollector;
+import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import javax.annotation.Nullable;
 
@@ -33,10 +33,16 @@ abstract class Declaration extends CodeChunk.WithValue {
 
   @Nullable
   abstract String closureCompilerTypeExpression();
+  
+  abstract ImmutableSet<String> googRequires();
 
   static Declaration create(
-      @Nullable String closureCompilerTypeExpression, String varName, CodeChunk.WithValue rhs) {
-    return new AutoValue_Declaration(varName, rhs, closureCompilerTypeExpression);
+      @Nullable String closureCompilerTypeExpression,
+      String varName,
+      CodeChunk.WithValue rhs,
+      Iterable<String> googRequires) {
+    return new AutoValue_Declaration(
+        varName, rhs, closureCompilerTypeExpression, ImmutableSet.copyOf(googRequires));
   }
 
   /**
@@ -91,6 +97,9 @@ abstract class Declaration extends CodeChunk.WithValue {
   
   @Override
   public void collectRequires(RequiresCollector collector) {
+    for (String require : googRequires()) {
+      collector.add(require);
+    }
     rhs().collectRequires(collector);
   }
 }

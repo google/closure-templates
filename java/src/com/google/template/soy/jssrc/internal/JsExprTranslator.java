@@ -19,6 +19,7 @@ package com.google.template.soy.jssrc.internal;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
@@ -81,13 +82,14 @@ public final class JsExprTranslator {
           ? expr.getSourceLocation()
           : SourceLocation.UNKNOWN;
       Preconditions.checkNotNull(exprText);
-      return CodeChunk
-          .fromExpr(
-              V1JsExprTranslator.translateToJsExpr(
-                  exprText,
-                  sourceLocation,
-                  translationContext.soyToJsVariableMappings(),
-                  errorReporter));
+      // TODO(lukes):add missingRequire suppression here
+      return CodeChunk.fromExpr(
+          V1JsExprTranslator.translateToJsExpr(
+              exprText,
+              sourceLocation,
+              translationContext.soyToJsVariableMappings(),
+              errorReporter),
+          ImmutableList.<String>of());
     }
   }
 

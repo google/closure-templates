@@ -17,8 +17,8 @@
 package com.google.template.soy.jssrc.internal;
 
 import static com.google.template.soy.jssrc.dsl.CodeChunk.WithValue.LITERAL_EMPTY_STRING;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.dottedId;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.id;
+import static com.google.template.soy.jssrc.dsl.CodeChunk.dottedIdNoRequire;
+import static com.google.template.soy.jssrc.dsl.CodeChunk.idWithRequire;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.stringLiteral;
 
 import com.google.common.base.Preconditions;
@@ -208,16 +208,16 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<CodeChunk.Wit
       // Get directive.
       SoyJsSrcPrintDirective directive = soyJsSrcDirectivesMap.get(directiveNode.getName());
       if (directive == null) {
+        // TODO(lukes): this should be dead, delete it
         errorReporter.report(
-            node.getSourceLocation(),
-            UNKNOWN_SOY_JS_SRC_PRINT_DIRECTIVE,
-            directiveNode.getName());
+            node.getSourceLocation(), UNKNOWN_SOY_JS_SRC_PRINT_DIRECTIVE, directiveNode.getName());
         return;
       }
 
       // Get directive args.
       List<ExprRootNode> argNodes = directiveNode.getArgs();
       if (!directive.getValidArgsSizes().contains(argNodes.size())) {
+        // TODO(lukes): this should be dead, delete it
         errorReporter.report(
             node.getSourceLocation(),
             ARITY_MISMATCH,
@@ -256,7 +256,7 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<CodeChunk.Wit
    * </pre>
    */
   @Override protected void visitXidNode(XidNode node) {
-    chunks.add(id("xid").call(stringLiteral(node.getText())));
+    chunks.add(idWithRequire("xid").call(stringLiteral(node.getText())));
   }
 
   /**
@@ -283,7 +283,8 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<CodeChunk.Wit
     }
     args.add(stringLiteral(node.getSelectorText()));
 
-    chunks.add(dottedId("goog.getCssName").call(args));
+    // goog.getCssName is part of the very base of closure, it requires no requires.
+    chunks.add(dottedIdNoRequire("goog.getCssName").call(args));
   }
 
   /**

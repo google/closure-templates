@@ -19,11 +19,14 @@ package com.google.template.soy.jssrc.dsl;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.fromExpr;
 
 import com.google.common.base.Function;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.template.soy.exprtree.Operator;
+import com.google.template.soy.jssrc.dsl.CodeChunk.RequiresCollector;
 import com.google.template.soy.jssrc.dsl.CodeChunk.WithValue;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
+import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcPrintDirective;
 import java.util.List;
 
 /**
@@ -55,7 +58,7 @@ public final class SoyJsPluginUtils {
             new Function<JsExpr, CodeChunk.WithValue>() {
               @Override
               public CodeChunk.WithValue apply(JsExpr input) {
-                return fromExpr(input);
+                return fromExpr(input, ImmutableList.<String>of());
               }
             });
     return CodeChunk.operation(
@@ -83,22 +86,30 @@ public final class SoyJsPluginUtils {
       List<CodeChunk.WithValue> args) {
     List<JsExpr> argExprs = Lists.transform(args, TO_JS_EXPR);
     JsExpr applied = directive.applyForJsSrc(expr.singleExprOrName(), argExprs);
-
+    RequiresCollector.IntoImmutableSet collector = new RequiresCollector.IntoImmutableSet();
+    expr.collectRequires(collector);
     boolean isSingleExpr = expr.isRepresentableAsSingleExpression();
     for (CodeChunk.WithValue arg : args) {
+      arg.collectRequires(collector);
       if (!arg.isRepresentableAsSingleExpression()) {
         isSingleExpr = false;
         break;
       }
     }
+    if (directive instanceof SoyLibraryAssistedJsSrcPrintDirective) {
+      for (String name :
+          ((SoyLibraryAssistedJsSrcPrintDirective) directive).getRequiredJsLibNames()) {
+        collector.add(name);
+      }
+    }
 
     return isSingleExpr
-        ? fromExpr(applied)
+        ? fromExpr(applied, collector.get())
         : generator
             .newChunk()
             .statement(expr)
             .statements(args)
-            .assign(fromExpr(applied))
+            .assign(fromExpr(applied, collector.get()))
             .buildAsValue();
     // TODO(user): Move SoyJsPluginUtils to jssrc/internal then uncomment
     // return CodeChunk.fromExpr(JsSrcUtils.wrapInIife(generator, toWrap));

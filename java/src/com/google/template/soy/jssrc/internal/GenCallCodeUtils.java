@@ -21,8 +21,8 @@ import static com.google.template.soy.jssrc.dsl.CodeChunk.WithValue.LITERAL_FALS
 import static com.google.template.soy.jssrc.dsl.CodeChunk.WithValue.LITERAL_NULL;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.WithValue.LITERAL_TRUE;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.WithValue.id;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.dottedId;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.fromExpr;
+import static com.google.template.soy.jssrc.dsl.CodeChunk.idWithRequire;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.stringLiteral;
 
 import com.google.common.base.Preconditions;
@@ -30,10 +30,12 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
+import com.google.template.soy.jssrc.dsl.CodeChunk.RequiresCollector;
 import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
 import com.google.template.soy.jssrc.internal.GenJsExprsVisitor.GenJsExprsVisitorFactory;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
+import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcPrintDirective;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallNode;
@@ -135,15 +137,18 @@ public class GenCallCodeUtils {
     CodeChunk.WithValue callee;
     if (callNode instanceof CallBasicNode) {
       // Case 1: Basic call.
-      callee = dottedId(
-          templateAliases.get(((CallBasicNode) callNode).getCalleeName()));
+      // TODO(lukes): add the logic for the goog.require here.  The simplest strategy requires a
+      // TemplateRegistry to detect external templates.
+      callee =
+          CodeChunk.dottedIdNoRequire(
+              templateAliases.get(((CallBasicNode) callNode).getCalleeName()));
     } else {
       // Case 2: Delegate call.
       CallDelegateNode callDelegateNode = (CallDelegateNode) callNode;
-      CodeChunk.WithValue calleeId = dottedId("soy.$$getDelTemplateId")
-          .call(
-              stringLiteral(
-                  delTemplateNamer.getDelegateName(callDelegateNode)));
+      CodeChunk.WithValue calleeId =
+          idWithRequire("soy")
+              .dotAccess("$$getDelTemplateId")
+              .call(stringLiteral(delTemplateNamer.getDelegateName(callDelegateNode)));
 
       ExprRootNode variantSoyExpr = callDelegateNode.getDelCalleeVariantExpr();
       CodeChunk.WithValue variant;
@@ -160,11 +165,13 @@ public class GenCallCodeUtils {
             errorReporter);
       }
 
-      callee = dottedId("soy.$$getDelegateFn")
-          .call(
-              calleeId,
-              variant,
-              callDelegateNode.allowsEmptyDefault() ? LITERAL_TRUE : LITERAL_FALSE);
+      callee =
+          idWithRequire("soy")
+              .dotAccess("$$getDelegateFn")
+              .call(
+                  calleeId,
+                  variant,
+                  callDelegateNode.allowsEmptyDefault() ? LITERAL_TRUE : LITERAL_FALSE);
     }
 
     // Generate the data object to pass to callee
@@ -183,18 +190,27 @@ public class GenCallCodeUtils {
     // migrating it to CodeChunk would be a major change. Therefore, we convert our CodeChunks
     // to JsExpr and back here.
     JsExpr callResult = call.singleExprOrName();
+    RequiresCollector.IntoImmutableSet collector = new RequiresCollector.IntoImmutableSet();
+    call.collectRequires(collector);
     for (String directiveName : callNode.getEscapingDirectiveNames()) {
       SoyJsSrcPrintDirective directive = soyJsSrcDirectivesMap.get(directiveName);
       Preconditions.checkNotNull(
           directive, "Contextual autoescaping produced a bogus directive: %s", directiveName);
       callResult = directive.applyForJsSrc(callResult, ImmutableList.<JsExpr>of());
+      if (directive instanceof SoyLibraryAssistedJsSrcPrintDirective) {
+        for (String name :
+            ((SoyLibraryAssistedJsSrcPrintDirective) directive).getRequiredJsLibNames()) {
+          collector.add(name);
+        }
+      }
     }
 
     return call.isRepresentableAsSingleExpression()
-        ? fromExpr(callResult)
-        : codeGenerator.newChunk()
+        ? fromExpr(callResult, collector.get())
+        : codeGenerator
+            .newChunk()
             .statement(call)
-            .assign(fromExpr(callResult))
+            .assign(fromExpr(callResult, collector.get()))
             .buildAsValue();
   }
 
@@ -297,8 +313,8 @@ public class GenCallCodeUtils {
 
     // ------ Cases 2 and 3: Additional params with and without original data to pass ------
     if (callNode.dataAttribute().isPassingData()) {
-      CodeChunk.WithValue allData = dottedId("soy.$$assignDefaults")
-          .call(params, dataToPass);
+      CodeChunk.WithValue allData =
+          idWithRequire("soy").dotAccess("$$assignDefaults").call(params, dataToPass);
       return allData;
     } else {
       return params;

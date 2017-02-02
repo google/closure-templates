@@ -17,7 +17,7 @@
 package com.google.template.soy.incrementaldomsrc;
 
 import static com.google.template.soy.jssrc.dsl.CodeChunk.WithValue.LITERAL_EMPTY_STRING;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.dottedId;
+import static com.google.template.soy.jssrc.dsl.CodeChunk.dottedIdWithRequire;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.id;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.stringLiteral;
 
@@ -43,7 +43,6 @@ import com.google.template.soy.jssrc.dsl.CodeChunk.Generator;
 import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
 import com.google.template.soy.jssrc.internal.CanInitOutputVarVisitor;
 import com.google.template.soy.jssrc.internal.GenCallCodeUtils;
-import com.google.template.soy.jssrc.internal.GenDirectivePluginRequiresVisitor;
 import com.google.template.soy.jssrc.internal.GenJsCodeVisitor;
 import com.google.template.soy.jssrc.internal.GenJsCodeVisitorAssistantForMsgs;
 import com.google.template.soy.jssrc.internal.GenJsExprsVisitor;
@@ -83,6 +82,8 @@ import javax.inject.Inject;
  * function calls and changing how statements are combined.
  */
 public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
+  private static final CodeChunk.WithValue GOOG_ASSERTS_ASSERT =
+      dottedIdWithRequire("goog.asserts").dotAccess("assert");
 
   private static final SoyErrorKind PRINT_ATTR_INVALID_KIND =
       SoyErrorKind.of("For Incremental DOM, '{print}' statements in attributes context can only be "
@@ -111,7 +112,6 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       IsComputableAsIncrementalDomExprsVisitor isComputableAsJsExprsVisitor,
       CanInitOutputVarVisitor canInitOutputVarVisitor,
       GenIncrementalDomExprsVisitorFactory genIncrementalDomExprsVisitorFactory,
-      GenDirectivePluginRequiresVisitor genDirectivePluginRequiresVisitor,
       SoyTypeOps typeOps) {
     super(
         jsSrcOptions,
@@ -121,7 +121,6 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
         isComputableAsJsExprsVisitor,
         canInitOutputVarVisitor,
         genIncrementalDomExprsVisitorFactory,
-        genDirectivePluginRequiresVisitor,
         typeOps);
   }
 
@@ -354,9 +353,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     Generator cg = templateTranslationContext.codeGenerator();
     CodeChunk.WithValue var = cg.declare(textValue);
     return cg.newChunk()
-        .statement(
-            dottedId("goog.asserts.assert")
-                .call(var.doubleNotEquals(CodeChunk.WithValue.LITERAL_NULL)))
+        .statement(GOOG_ASSERTS_ASSERT.call(var.doubleNotEquals(CodeChunk.WithValue.LITERAL_NULL)))
         .statement(id("itext").call(var))
         .buildAsValue();
   }
@@ -708,24 +705,27 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
             errorReporter)
             .generateMsgGroupCode(node);
         break;
-      // Messages in attribute values are plain text. However, since the translated content includes
-      // entities (because other Soy backends treat these messages as HTML source), we must unescape
-      // the translations before passing them to the idom APIs.
+        // Messages in attribute values are plain text. However, since the translated content
+        // includes entities (because other Soy backends treat these messages as HTML source), we
+        // must unescape the translations before passing them to the idom APIs.
       case HTML_NORMAL_ATTR_VALUE:
-        msgExpression = new AssistantForAttributeMsgs(
-            this /* master */,
-            jsSrcOptions,
-            jsExprTranslator,
-            genCallCodeUtils,
-            isComputableAsJsExprsVisitor,
-            templateAliases,
-            genJsExprsVisitor,
-            templateTranslationContext,
-            errorReporter)
-            .generateMsgGroupVariable(node);
-        getJsCodeBuilder().addChunkToOutputVar(
-            dottedId("goog.string.unescapeEntities")
-                .call(id(msgExpression)));
+        msgExpression =
+            new AssistantForAttributeMsgs(
+                    this /* master */,
+                    jsSrcOptions,
+                    jsExprTranslator,
+                    genCallCodeUtils,
+                    isComputableAsJsExprsVisitor,
+                    templateAliases,
+                    genJsExprsVisitor,
+                    templateTranslationContext,
+                    errorReporter)
+                .generateMsgGroupVariable(node);
+        getJsCodeBuilder()
+            .addChunkToOutputVar(
+                dottedIdWithRequire("goog.string")
+                    .dotAccess("unescapeEntities")
+                    .call(id(msgExpression)));
         break;
       default:
         msgExpression = getAssistantForMsgs().generateMsgGroupVariable(node);
@@ -772,7 +772,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     @Override
     protected CodeChunk.WithValue genGoogMsgPlaceholder(MsgPlaceholderNode msgPhNode) {
       CodeChunk.WithValue toEscape = super.genGoogMsgPlaceholder(msgPhNode);
-      return dottedId("soy.$$escapeHtml").call(toEscape);
+      return dottedIdWithRequire("soy").dotAccess("$$escapeHtml").call(toEscape);
     }
   }
 }

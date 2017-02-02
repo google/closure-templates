@@ -262,6 +262,20 @@ public class NodeContentKinds {
         KIND_TO_JS_ORDAINER_NAME_FOR_INTERNAL_BLOCKS.get(contentKind));
   }
 
+  /**
+   * Returns the namespace to {@code goog.require} to access the ordainer functions provided by
+   * {@link #toJsSanitizedContentOrdainer(ContentKind)} and {@link
+   * #toJsSanitizedContentOrdainerForInternalBlocks(ContentKind)}.
+   *
+   * @param contentKind
+   */
+  public static String getJsImportForOrdainersFunctions(ContentKind contentKind) {
+    if (contentKind == ContentKind.TEXT) {
+      return "soydata";
+    }
+    return "soydata.VERY_UNSAFE";
+  }
+
   /** Returns the pack function for converting SanitizedContent objects to safe protos. */
   public static String toJsPackFunction(Descriptor protoDescriptor) {
     return Preconditions.checkNotNull(JS_TO_PROTO_PACK_FN.get(protoDescriptor.getFullName()));

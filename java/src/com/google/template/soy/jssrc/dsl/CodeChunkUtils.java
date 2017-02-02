@@ -17,13 +17,14 @@
 package com.google.template.soy.jssrc.dsl;
 
 import static com.google.template.soy.jssrc.dsl.CodeChunk.WithValue.LITERAL_EMPTY_STRING;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.dottedId;
+import static com.google.template.soy.jssrc.dsl.CodeChunk.dottedIdWithCustomNamespace;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.id;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
+import com.google.template.soy.jssrc.dsl.CodeChunk.RequiresCollector;
 import com.google.template.soy.jssrc.restricted.JsExprUtils;
 import java.util.List;
 
@@ -46,11 +47,14 @@ public final class CodeChunkUtils {
   public static CodeChunk.WithValue wrapAsSanitizedContent(
       ContentKind contentKind, CodeChunk.WithValue value, boolean isInternalBlock) {
     Preconditions.checkNotNull(contentKind);
+    // TODO(lukes): NodeContentKinds should just return a CodeChunk.WithValue
     String ordainerFn =
         isInternalBlock
             ? NodeContentKinds.toJsSanitizedContentOrdainerForInternalBlocks(contentKind)
             : NodeContentKinds.toJsSanitizedContentOrdainer(contentKind);
-    return dottedId(ordainerFn).call(value);
+    return dottedIdWithCustomNamespace(
+            ordainerFn, NodeContentKinds.getJsImportForOrdainersFunctions(contentKind))
+        .call(value);
   }
 
   /**
@@ -88,11 +92,13 @@ public final class CodeChunkUtils {
       List<? extends CodeChunk.WithValue> chunks) {
     if (!chunks.isEmpty()
         && chunks.get(0).isRepresentableAsSingleExpression()
-        && JsExprUtils.isStringLiteral(chunks.get(0).assertExpr())) {
+        && JsExprUtils.isStringLiteral(
+            chunks.get(0).assertExprAndCollectRequires(RequiresCollector.NULL))) {
       return concatChunks(chunks);
     } else if (chunks.size() > 1
         && chunks.get(1).isRepresentableAsSingleExpression()
-        && JsExprUtils.isStringLiteral(chunks.get(1).assertExpr())) {
+        && JsExprUtils.isStringLiteral(
+            chunks.get(1).assertExprAndCollectRequires(RequiresCollector.NULL))) {
       return concatChunks(chunks);
     } else {
       return concatChunks(

@@ -17,7 +17,8 @@
 package com.google.template.soy.jssrc.internal;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.dottedId;
+import static com.google.template.soy.jssrc.dsl.CodeChunk.dottedIdNoRequire;
+import static com.google.template.soy.jssrc.dsl.CodeChunk.dottedIdWithRequire;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.number;
 
 import com.google.common.base.Joiner;
@@ -41,6 +42,7 @@ import com.google.template.soy.types.aggregate.MapType;
 import com.google.template.soy.types.aggregate.RecordType;
 import com.google.template.soy.types.aggregate.UnionType;
 import com.google.template.soy.types.primitive.SanitizedType;
+import com.google.template.soy.types.proto.SoyProtoEnumType;
 import com.google.template.soy.types.proto.SoyProtoType;
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -83,7 +85,6 @@ abstract class JsType {
     PROTO;
   }
 
-  // TODO(lukes): add a method to get goog.requires needed by a type expression
   // TODO(lukes): use this consistently throughout jssrc.  We should consider inserting type
   // expressions when extracting list items/map items/record items.  Also at all of those points we
   // should strongly consider using the value coercion logic.  The fact that we don't leads to many
@@ -114,7 +115,7 @@ abstract class JsType {
         Optional<WithValue> getTypeAssertion(WithValue value, Generator codeGenerator) {
           // TODO(lukes): we shouldn't allow numbers here, see if anyone relies on this 'feature'.
           return Optional.of(
-              dottedId("goog.isBoolean")
+              dottedIdNoRequire("goog.isBoolean")
                   .call(value)
                   .or(value.tripleEquals(number(1)), codeGenerator)
                   .or(value.tripleEquals(number(0)), codeGenerator));
@@ -125,7 +126,7 @@ abstract class JsType {
       new JsType("number") {
         @Override
         Optional<WithValue> getTypeAssertion(WithValue value, Generator codeGenerator) {
-          return Optional.of(dottedId("goog.isNumber").call(value));
+          return Optional.of(dottedIdNoRequire("goog.isNumber").call(value));
         }
       };
 
@@ -135,9 +136,12 @@ abstract class JsType {
         @Override
         Optional<WithValue> getTypeAssertion(WithValue value, Generator codeGenerator) {
           return Optional.of(
-              dottedId("goog.isString")
+              dottedIdNoRequire("goog.isString")
                   .call(value)
-                  .or(value.instanceof_("goog.soy.data.SanitizedContent"), codeGenerator));
+                  .or(
+                      // TODO(lukes): this is a bug, add a require for this
+                      value.instanceof_(dottedIdNoRequire("goog.soy.data.SanitizedContent")),
+                      codeGenerator));
         }
       };
 
@@ -145,7 +149,7 @@ abstract class JsType {
       new JsType("!Array") {
         @Override
         Optional<WithValue> getTypeAssertion(WithValue value, Generator codeGenerator) {
-          return Optional.of(dottedId("goog.isArray").call(value));
+          return Optional.of(dottedIdNoRequire("goog.isArray").call(value));
         }
       };
 
@@ -153,13 +157,15 @@ abstract class JsType {
       new JsType("!Object") {
         @Override
         Optional<WithValue> getTypeAssertion(WithValue value, Generator codeGenerator) {
-          return Optional.of(dottedId("goog.isObject").call(value));
+          return Optional.of(dottedIdNoRequire("goog.isObject").call(value));
         }
       };
 
   private static final JsType NULL_OR_UNDEFINED_TYPE =
       new JsType(
-          ImmutableList.of("null", "undefined"), ImmutableList.of(ValueCoercionStrategy.NULL)) {
+          ImmutableList.of("null", "undefined"),
+          ImmutableSet.<String>of(),
+          ImmutableList.of(ValueCoercionStrategy.NULL)) {
         @Override
         Optional<WithValue> getTypeAssertion(WithValue value, Generator codeGenerator) {
           return Optional.of(value.doubleEqualsNull());
@@ -172,7 +178,7 @@ abstract class JsType {
       new JsType("function()") {
         @Override
         Optional<WithValue> getTypeAssertion(WithValue value, Generator codeGenerator) {
-          return Optional.of(dottedId("goog.isFunction").call(value));
+          return Optional.of(dottedIdNoRequire("goog.isFunction").call(value));
         }
       };
 
@@ -204,8 +210,22 @@ abstract class JsType {
       case BOOL:
         return BOOLEAN_TYPE;
 
-      case FLOAT:
       case PROTO_ENUM:
+        SoyProtoEnumType enumType = (SoyProtoEnumType) soyType;
+        String enumTypeName = enumType.getNameForBackend(SoyBackendKind.JS_SRC);
+        // TODO(lukes): stop allowing number, just allow the enum
+        return new JsType(
+            ImmutableSet.of("number", enumTypeName),
+            ImmutableSet.of(enumTypeName),
+            ImmutableSet.<ValueCoercionStrategy>of()) {
+          @Override
+          Optional<WithValue> getTypeAssertion(WithValue value, Generator codeGenerator) {
+            // enums have a runtime type of number
+            return Optional.of(dottedIdNoRequire("goog.isNumber").call(value));
+          }
+        };
+
+      case FLOAT:
       case INT:
         return NUMBER_TYPE;
 
@@ -235,7 +255,7 @@ abstract class JsType {
         return new JsType("!Array<" + element.typeExpr() + ">") {
           @Override
           Optional<WithValue> getTypeAssertion(WithValue value, Generator codeGenerator) {
-            return Optional.of(dottedId("goog.isArray").call(value));
+            return Optional.of(dottedIdNoRequire("goog.isArray").call(value));
           }
         };
 
@@ -251,7 +271,7 @@ abstract class JsType {
             "!Object<" + keyTypeName.typeExpr() + "," + valueTypeName.typeExpr() + ">") {
           @Override
           Optional<WithValue> getTypeAssertion(WithValue value, Generator codeGenerator) {
-            return Optional.of(dottedId("goog.isObject").call(value));
+            return Optional.of(dottedIdNoRequire("goog.isObject").call(value));
           }
         };
 
@@ -263,7 +283,7 @@ abstract class JsType {
         return new JsType(protoTypeName, ValueCoercionStrategy.PROTO) {
           @Override
           Optional<WithValue> getTypeAssertion(WithValue value, Generator codeGenerator) {
-            return Optional.of(value.instanceof_(protoTypeName));
+            return Optional.of(value.instanceof_(dottedIdWithRequire(protoTypeName)));
           }
         };
 
@@ -281,7 +301,7 @@ abstract class JsType {
         return new JsType("{" + Joiner.on(", ").withKeyValueSeparator(": ").join(members) + "}") {
           @Override
           Optional<WithValue> getTypeAssertion(WithValue value, Generator codeGenerator) {
-            return Optional.of(dottedId("goog.isObject").call(value));
+            return Optional.of(dottedIdNoRequire("goog.isObject").call(value));
           }
         };
 
@@ -289,6 +309,7 @@ abstract class JsType {
         UnionType unionType = (UnionType) soyType;
         Set<String> typeExprs = new LinkedHashSet<>();
         Set<ValueCoercionStrategy> strategies = new LinkedHashSet<>();
+        Set<String> requires = new LinkedHashSet<>();
         final Set<JsType> types = new LinkedHashSet<>();
         final boolean isNullable = unionType.isNullable();
         // handle null first so that if other type tests dereference the param they won't fail
@@ -302,11 +323,12 @@ abstract class JsType {
             continue; // handled above
           }
           JsType memberType = forSoyType(member, isIncrementalDom);
+          requires.addAll(memberType.extraRequires);
           typeExprs.addAll(memberType.typeExpressions);
           strategies.addAll(memberType.coercionStrategies);
           types.add(memberType);
         }
-        return new JsType(typeExprs, strategies) {
+        return new JsType(typeExprs, requires, strategies) {
           @Override
           Optional<WithValue> getTypeAssertion(WithValue value, Generator codeGenerator) {
             WithValue result = null;
@@ -333,27 +355,35 @@ abstract class JsType {
   }
 
   private final ImmutableSortedSet<String> typeExpressions;
+  private final ImmutableSet<String> extraRequires;
   private final ImmutableSet<ValueCoercionStrategy> coercionStrategies;
 
   private JsType(String typeExpr) {
-    this(ImmutableList.of(typeExpr), ImmutableSet.<ValueCoercionStrategy>of());
+    this(
+        ImmutableList.of(typeExpr),
+        ImmutableSet.<String>of(),
+        ImmutableSet.<ValueCoercionStrategy>of());
   }
 
   private JsType(Iterable<String> typeExprs) {
-    this(typeExprs, ImmutableSet.<ValueCoercionStrategy>of());
+    this(typeExprs, ImmutableSet.<String>of(), ImmutableSet.<ValueCoercionStrategy>of());
   }
 
   private JsType(String typeExpr, ValueCoercionStrategy coercionStrategy) {
-    this(ImmutableList.of(typeExpr), ImmutableSet.of(coercionStrategy));
+    this(ImmutableList.of(typeExpr), ImmutableSet.<String>of(), ImmutableSet.of(coercionStrategy));
   }
 
-  private JsType(Iterable<String> typeExprs, Iterable<ValueCoercionStrategy> coercionStrategies) {
+  private JsType(
+      Iterable<String> typeExprs,
+      Iterable<String> requires,
+      Iterable<ValueCoercionStrategy> coercionStrategies) {
     // Sort for determinism, order doesn't matter.
     this.typeExpressions = ImmutableSortedSet.copyOf(typeExprs);
     checkArgument(!typeExpressions.isEmpty());
     EnumSet<ValueCoercionStrategy> strategies = EnumSet.noneOf(ValueCoercionStrategy.class);
     Iterables.addAll(strategies, coercionStrategies);
     this.coercionStrategies = Sets.immutableEnumSet(strategies);
+    this.extraRequires = ImmutableSet.copyOf(requires);
   }
 
   /** Returns a type expression. */
@@ -370,6 +400,10 @@ abstract class JsType {
       return "(" + typeExpr() + ")";
     }
     return typeExpr();
+  }
+  
+  final ImmutableSet<String> getGoogRequires() {
+    return extraRequires;
   }
 
   /**
@@ -436,7 +470,8 @@ abstract class JsType {
     return new JsType(typeExprs) {
       @Override
       Optional<WithValue> getTypeAssertion(WithValue value, Generator codeGenerator) {
-        return Optional.of(dottedId(type).dotAccess("isCompatibleWith").call(value));
+        // TODO(lukes): add a require here
+        return Optional.of(dottedIdNoRequire(type).dotAccess("isCompatibleWith").call(value));
       }
     };
   }

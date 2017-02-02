@@ -49,7 +49,6 @@ public class JsSrcModule extends AbstractModule {
     bind(CanInitOutputVarVisitor.class);
     bind(IsComputableAsJsExprsVisitor.class);
     bind(JsExprTranslator.class);
-    bind(GenDirectivePluginRequiresVisitor.class);
     bind(DelTemplateNamer.class);
 
     // Bind providers of factories (created via assisted inject).

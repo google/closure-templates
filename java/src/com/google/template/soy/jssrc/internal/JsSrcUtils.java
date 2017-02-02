@@ -21,6 +21,7 @@ import com.google.template.soy.base.SoyBackendKind;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
+import com.google.template.soy.jssrc.dsl.CodeChunk.RequiresCollector;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.primitive.SanitizedType;
@@ -113,10 +114,11 @@ public final class JsSrcUtils {
 
   // TODO(user): this is a hack to make non-single-expr CodeChunks still be JsExpr-compatible
   // during the transition. Once all of jssrc understands CodeChunks, remove all usage.
-  public static JsExpr wrapInIife(CodeChunk.WithValue chunk, boolean forceWrapSingleExpr) {
+  public static CodeChunk.WithValue wrapInIife(
+      CodeChunk.WithValue chunk, boolean forceWrapSingleExpr) {
     // TODO(user): This is not right either, but it prevents a lot of test churn.
     if (chunk.isRepresentableAsSingleExpression() && !forceWrapSingleExpr) {
-      return chunk.assertExpr();
+      return chunk;
     }
 
     StringBuilder iife = new StringBuilder();
@@ -126,8 +128,9 @@ public final class JsSrcUtils {
             .return_(chunk)
             .getStatementsForInsertingIntoForeignCodeAtIndent(2));
     iife.append("})()");
-
-    return new JsExpr(iife.toString(), Integer.MAX_VALUE);
+    RequiresCollector.IntoImmutableSet collector = new RequiresCollector.IntoImmutableSet();
+    chunk.collectRequires(collector);
+    return CodeChunk.fromExpr(new JsExpr(iife.toString(), Integer.MAX_VALUE), collector.get());
   }
 
 

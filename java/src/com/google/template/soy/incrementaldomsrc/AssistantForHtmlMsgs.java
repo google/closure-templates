@@ -15,7 +15,7 @@
  */
 package com.google.template.soy.incrementaldomsrc;
 
-import static com.google.template.soy.jssrc.dsl.CodeChunk.dottedId;
+import static com.google.template.soy.jssrc.dsl.CodeChunk.dottedIdWithRequire;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.id;
 
 import com.google.common.base.Preconditions;
@@ -45,6 +45,8 @@ import java.util.Map;
  * placeholders from the translated message and execute the idom commands instead.
  */
 final class AssistantForHtmlMsgs extends GenJsCodeVisitorAssistantForMsgs {
+  private static final CodeChunk.WithValue GOOG_STRING_UNESCAPE_ENTITIES =
+      dottedIdWithRequire("goog.string").dotAccess("unescapeEntities");
 
   /**
    * Maps dynamic nodes within the translated message to placeholder values to pass to goog.getMsg()
@@ -133,8 +135,7 @@ final class AssistantForHtmlMsgs extends GenJsCodeVisitorAssistantForMsgs {
 
     // If there are no placeholders, we don't need anything special (but we still need to unescape).
     if (placeholderNames.isEmpty()) {
-      CodeChunk.WithValue unescape =
-          dottedId("goog.string.unescapeEntities").call(id(translationVar));
+      CodeChunk.WithValue unescape = GOOG_STRING_UNESCAPE_ENTITIES.call(id(translationVar));
       jsCodeBuilder().append(id("itext").call(unescape));
       return;
     }
@@ -174,8 +175,8 @@ final class AssistantForHtmlMsgs extends GenJsCodeVisitorAssistantForMsgs {
     CodeChunk.WithValue endIndex =
         id(matchVar).and(id(matchVar).dotAccess("index"), translationContext.codeGenerator());
     CodeChunk.WithValue unescape =
-        dottedId("goog.string.unescapeEntities")
-            .call(id(translationVar).dotAccess("substring").call(id(lastIndexVar), endIndex));
+        GOOG_STRING_UNESCAPE_ENTITIES.call(
+            id(translationVar).dotAccess("substring").call(id(lastIndexVar), endIndex));
 
     jsCodeBuilder().append(id("itext").call(unescape));
     jsCodeBuilder().appendLine(lastIndexVar, " = ", regexVar, ".lastIndex;");

@@ -17,7 +17,7 @@
 package com.google.template.soy.jssrc.internal;
 
 import static com.google.template.soy.jssrc.dsl.CodeChunk.WithValue.LITERAL_NULL;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.dottedId;
+import static com.google.template.soy.jssrc.dsl.CodeChunk.dottedIdWithRequire;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
@@ -132,7 +132,7 @@ final class NullSafeAccumulator {
       // It's okay if the whole chain evals to null. The unpack functions accept null.
       return unpackFunction.call(cur);
     } else {
-      return dottedId("goog.array.map").call(cur, unpackFunction);
+      return dottedIdWithRequire("goog.array").dotAccess("map").call(cur, unpackFunction);
     }
   }
 

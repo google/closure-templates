@@ -22,6 +22,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
+import com.google.template.soy.jssrc.dsl.CodeChunk.RequiresCollector;
 import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -162,8 +163,9 @@ public class JsCodeBuilder {
       CodeChunk.WithValue rhs = CodeChunkUtils.concatChunksForceString(codeChunks);
       rhs.collectRequires(requireCollector);
       append(
-          CodeChunk.declare(
-              currOutputVar.singleExprOrName().getText(), rhs));
+          CodeChunk.declare(currOutputVar.singleExprOrName().getText())
+              .setInitialValue(rhs)
+              .build());
       setOutputVarInited();
     }
     return this;
@@ -300,6 +302,10 @@ public class JsCodeBuilder {
     append(codeFragments);
     code.append("\n");
     return this;
+  }
+
+  public RequiresCollector getRequiresCollector() {
+    return requireCollector;
   }
 
   /**

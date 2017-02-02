@@ -168,11 +168,6 @@ public final class GenJsCodeVisitorTest {
             + "goog.provide('boo.foo');\n"
             + "\n"
             + "goog.require('boo.woo');\n"
-            + "/** @suppress {extraRequire} */\n"
-            + "goog.require('soy');\n"
-            + "/** @suppress {extraRequire} */\n"
-            + "goog.require('soydata');\n"
-            + "\n"
             + "\n";
 
     jsSrcOptions.setShouldProvideRequireSoyNamespaces(true);
@@ -195,11 +190,6 @@ public final class GenJsCodeVisitorTest {
             + "goog.provide('boo.foo.goo');\n"
             + "\n"
             + "goog.require('boo.woo.hoo');\n"
-            + "/** @suppress {extraRequire} */\n"
-            + "goog.require('soy');\n"
-            + "/** @suppress {extraRequire} */\n"
-            + "goog.require('soydata');\n"
-            + "\n"
             + "\n";
 
     jsSrcOptions.setShouldProvideRequireSoyNamespaces(false);
@@ -224,11 +214,6 @@ public final class GenJsCodeVisitorTest {
             + "goog.provide('boo.foo.goo');\n"
             + "\n"
             + "goog.require('boo.woo');\n"
-            + "/** @suppress {extraRequire} */\n"
-            + "goog.require('soy');\n"
-            + "/** @suppress {extraRequire} */\n"
-            + "goog.require('soydata');\n"
-            + "\n"
             + "\n";
 
     jsSrcOptions.setShouldProvideRequireJsFunctions(false);
@@ -270,11 +255,6 @@ public final class GenJsCodeVisitorTest {
             + "\n"
             + "goog.require('boo.woo');\n"
             + "goog.require('boo.woo.aaa');\n"
-            + "/** @suppress {extraRequire} */\n"
-            + "goog.require('soy');\n"
-            + "/** @suppress {extraRequire} */\n"
-            + "goog.require('soydata');\n"
-            + "\n"
             + "\n";
 
     jsSrcOptions.setShouldProvideRequireSoyNamespaces(true);
@@ -316,11 +296,6 @@ public final class GenJsCodeVisitorTest {
             + "\n"
             + "goog.require('also.for.function');\n"
             + "goog.require('for.function');\n"
-            + "/** @suppress {extraRequire} */\n"
-            + "goog.require('soy');\n"
-            + "/** @suppress {extraRequire} */\n"
-            + "goog.require('soydata');\n"
-            + "\n"
             + "\n";
 
     jsSrcOptions.setShouldProvideRequireSoyNamespaces(true);
@@ -396,10 +371,6 @@ public final class GenJsCodeVisitorTest {
             + "goog.provide('boo.foo.goo');\n"
             + "\n"
             + "goog.require('boo.woo.hoo');\n"
-            + "/** @suppress {extraRequire} */\n"
-            + "goog.require('soy');\n"
-            + "/** @suppress {extraRequire} */\n"
-            + "goog.require('soydata');\n"
             + "\n"
             + "\n";
 
@@ -441,10 +412,7 @@ public final class GenJsCodeVisitorTest {
             + "\n"
             + "goog.provide('boo.foo');\n"
             + "\n"
-            + "/** @suppress {extraRequire} */\n"
             + "goog.require('soy');\n"
-            + "/** @suppress {extraRequire} */\n"
-            + "goog.require('soydata');\n"
             + "\n"
             + "\n"
             + "boo.foo.__deltemplate_s2_34da4ced = function(opt_data, opt_ignored, opt_ijData) {\n"
@@ -490,10 +458,7 @@ public final class GenJsCodeVisitorTest {
             + "\n"
             + "goog.provide('boo.foo');\n"
             + "\n"
-            + "/** @suppress {extraRequire} */\n"
             + "goog.require('soy');\n"
-            + "/** @suppress {extraRequire} */\n"
-            + "goog.require('soydata');\n"
             + "\n"
             + "\n"
             + "boo.foo.__deltemplate_s2_784ed7a8 = function(opt_data, opt_ignored, opt_ijData) {\n"
@@ -2688,10 +2653,7 @@ public final class GenJsCodeVisitorTest {
             + "\n"
             + "goog.module('boo.foo');\n"
             + "\n"
-            + "/** @suppress {extraRequire} */\n"
-            + "goog.require('soy');\n"
-            + "/** @suppress {extraRequire} */\n"
-            + "goog.require('soydata');\n"
+            + "goog.require('soydata.VERY_UNSAFE');\n"
             + "var $import1 = goog.require('boo.bar');\n"
             + "var $templateAlias1 = $import1.one;\n"
             + "var $templateAlias2 = $import1.two;\n"
