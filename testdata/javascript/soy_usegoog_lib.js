@@ -1387,70 +1387,6 @@ if (goog.DEPENDENCIES_ENABLED) {
 
 
 /**
- * @package {?boolean}
- * Visible for testing.
- */
-goog.hasBadLetScoping = null;
-
-
-/**
- * @return {boolean}
- * @private
- */
-goog.useSafari10Workaround_ = function() {
-  if (goog.hasBadLetScoping == null) {
-    var result;
-    try {
-      result = !!eval(
-          '"use strict";' +
-          'let x = 1; function f() { return typeof x; };' +
-          'f() == "number";');
-    } catch (e) {
-      // Assume that ES6 syntax isn't supported.
-      result = false;
-    }
-    goog.hasBadLetScoping = result;
-  }
-  return goog.hasBadLetScoping;
-};
-
-
-/**
- * @param {string} moduleDef
- * @return {string}
- * @package Visible for testing.
- */
-goog.workaroundSafari10EvalBug = function(moduleDef) {
-  var srcUrlRE = /\/\/# sourceURL.*\n/g;
-  var srcMapUrlRE = /\/\/# sourceMappingURL.*\n/g;
-
-  var srcUrlLine = goog.getLastREMatch_(moduleDef, srcUrlRE);
-  var srcMapUrlLine = goog.getLastREMatch_(moduleDef, srcMapUrlRE);
-
-  moduleDef = moduleDef.replace(srcUrlRE, '');
-  moduleDef = moduleDef.replace(srcMapUrlRE, '');
-
-  moduleDef = '(function(){' + moduleDef +
-      '\n' +  // Terminate any trailing single line comment.
-      ';' +   // Terminate any trailing expression.
-      '})();\n' + srcMapUrlLine + srcUrlLine;
-  return moduleDef;
-};
-
-
-/**
- * @param {string} str
- * @param {RegExp} re
- * @return {string}
- * @private
- */
-goog.getLastREMatch_ = function(str, re) {
-  var matches = str.match(re);
-  return matches ? matches[matches.length - 1] : '';
-};
-
-
-/**
  * @param {function(?):?|string} moduleDef The module definition.
  */
 goog.loadModule = function(moduleDef) {
@@ -1469,10 +1405,6 @@ goog.loadModule = function(moduleDef) {
     if (goog.isFunction(moduleDef)) {
       exports = moduleDef.call(undefined, {});
     } else if (goog.isString(moduleDef)) {
-      if (goog.useSafari10Workaround_) {
-        moduleDef = goog.workaroundSafari10EvalBug(moduleDef);
-      }
-
       exports = goog.loadModuleFromSource_.call(undefined, moduleDef);
     } else {
       throw Error('Invalid module definition');
@@ -3446,6 +3378,12 @@ goog.addDependency('i18n/compactnumberformatsymbolsext.js', ['goog.i18n.CompactN
 goog.addDependency('i18n/currency.js', ['goog.i18n.currency', 'goog.i18n.currency.CurrencyInfo', 'goog.i18n.currency.CurrencyInfoTier2'], [], {});
 goog.addDependency('i18n/currency_test.js', ['goog.i18n.currencyTest'], ['goog.i18n.NumberFormat', 'goog.i18n.currency', 'goog.i18n.currency.CurrencyInfo', 'goog.object', 'goog.testing.PropertyReplacer', 'goog.testing.jsunit'], {});
 goog.addDependency('i18n/currencycodemap.js', ['goog.i18n.currencyCodeMap', 'goog.i18n.currencyCodeMapTier2'], [], {});
+goog.addDependency('i18n/dateintervalformat.js', ['goog.i18n.DateIntervalFormat'], ['goog.array', 'goog.asserts', 'goog.date.DateLike', 'goog.date.DateRange', 'goog.date.DateTime', 'goog.date.Interval', 'goog.i18n.DateTimeFormat', 'goog.i18n.DateTimeSymbols', 'goog.i18n.DateTimeSymbolsType', 'goog.i18n.TimeZone', 'goog.i18n.dateIntervalSymbols', 'goog.object'], {'lang': 'es5', 'module': 'goog'});
+goog.addDependency('i18n/dateintervalformat_test.js', ['goog.i18n.DateIntervalFormatTest'], ['goog.date.Date', 'goog.date.DateRange', 'goog.date.DateTime', 'goog.date.Interval', 'goog.i18n.DateIntervalFormat', 'goog.i18n.DateTimeFormat', 'goog.i18n.DateTimeSymbols_ar', 'goog.i18n.DateTimeSymbols_en', 'goog.i18n.DateTimeSymbols_fr_CA', 'goog.i18n.DateTimeSymbols_gl', 'goog.i18n.DateTimeSymbols_hi', 'goog.i18n.DateTimeSymbols_zh', 'goog.i18n.TimeZone', 'goog.i18n.dateIntervalPatterns', 'goog.i18n.dateIntervalSymbols', 'goog.object', 'goog.testing.testSuite'], {'module': 'goog'});
+goog.addDependency('i18n/dateintervalpatterns.js', ['goog.i18n.dateIntervalPatterns'], ['goog.i18n.dateIntervalSymbols'], {'module': 'goog'});
+goog.addDependency('i18n/dateintervalpatternsext.js', ['goog.i18n.dateIntervalPatternsExt'], ['goog.i18n.dateIntervalPatterns'], {'module': 'goog'});
+goog.addDependency('i18n/dateintervalsymbols.js', ['goog.i18n.dateIntervalSymbols'], [], {'module': 'goog'});
+goog.addDependency('i18n/dateintervalsymbolsext.js', ['goog.i18n.dateIntervalSymbolsExt'], ['goog.i18n.dateIntervalSymbols'], {'module': 'goog'});
 goog.addDependency('i18n/datetimeformat.js', ['goog.i18n.DateTimeFormat', 'goog.i18n.DateTimeFormat.Format'], ['goog.asserts', 'goog.date', 'goog.i18n.DateTimeSymbols', 'goog.i18n.TimeZone', 'goog.string'], {});
 goog.addDependency('i18n/datetimeformat_test.js', ['goog.i18n.DateTimeFormatTest'], ['goog.date.Date', 'goog.date.DateTime', 'goog.i18n.DateTimeFormat', 'goog.i18n.DateTimePatterns', 'goog.i18n.DateTimePatterns_ar', 'goog.i18n.DateTimePatterns_de', 'goog.i18n.DateTimePatterns_en', 'goog.i18n.DateTimePatterns_fa', 'goog.i18n.DateTimePatterns_fr', 'goog.i18n.DateTimePatterns_ja', 'goog.i18n.DateTimePatterns_sv', 'goog.i18n.DateTimeSymbols', 'goog.i18n.DateTimeSymbols_ar', 'goog.i18n.DateTimeSymbols_ar_AE', 'goog.i18n.DateTimeSymbols_ar_SA', 'goog.i18n.DateTimeSymbols_bn_BD', 'goog.i18n.DateTimeSymbols_de', 'goog.i18n.DateTimeSymbols_en', 'goog.i18n.DateTimeSymbols_en_GB', 'goog.i18n.DateTimeSymbols_en_IE', 'goog.i18n.DateTimeSymbols_en_IN', 'goog.i18n.DateTimeSymbols_en_US', 'goog.i18n.DateTimeSymbols_fa', 'goog.i18n.DateTimeSymbols_fr', 'goog.i18n.DateTimeSymbols_fr_DJ', 'goog.i18n.DateTimeSymbols_he_IL', 'goog.i18n.DateTimeSymbols_ja', 'goog.i18n.DateTimeSymbols_ro_RO', 'goog.i18n.DateTimeSymbols_sv', 'goog.i18n.TimeZone', 'goog.testing.jsunit'], {});
 goog.addDependency('i18n/datetimeparse.js', ['goog.i18n.DateTimeParse'], ['goog.asserts', 'goog.date', 'goog.i18n.DateTimeFormat', 'goog.i18n.DateTimeSymbols'], {});
