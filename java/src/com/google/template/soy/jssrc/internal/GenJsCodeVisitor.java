@@ -18,12 +18,13 @@ package com.google.template.soy.jssrc.internal;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.declare;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.dottedIdNoRequire;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.dottedIdWithRequire;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.id;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.number;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.return_;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.stringLiteral;
+import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_ASSERTS_ASSERT_TYPE;
+import static com.google.template.soy.jssrc.internal.JsRuntime.WINDOW_CONSOLE_LOG;
+import static com.google.template.soy.jssrc.internal.JsRuntime.sanitizedContentOrdainerFunction;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
@@ -843,10 +844,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
       //   the result of one template and feed it to another, and also to confidently assign
       //   sanitized HTML content to innerHTML. This does not use the internal-blocks variant,
       //   and so will wrap empty strings.
-      templateBody = CodeChunkUtils.wrapAsSanitizedContent(
-          node.getContentKind(),
-          templateBody,
-          false /* not an internal block */);
+      templateBody = sanitizedContentOrdainerFunction(node.getContentKind()).call(templateBody);
     }
     jsCodeBuilder.append(return_(templateBody));
   }
@@ -1439,8 +1437,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
     if (isComputableAsJsExprsVisitor.execOnChildren(node)) {
       List<CodeChunk.WithValue> logMsgChunks = genJsExprsVisitor.execOnChildren(node);
 
-      jsCodeBuilder.append(
-          dottedIdNoRequire("window.console.log").call(CodeChunkUtils.concatChunks(logMsgChunks)));
+      jsCodeBuilder.append(WINDOW_CONSOLE_LOG.call(CodeChunkUtils.concatChunks(logMsgChunks)));
     } else {
       // Must build log msg in a local var logMsg_s##.
       String outputVarName = "logMsg_s" + node.getId();
@@ -1450,7 +1447,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
 
       jsCodeBuilder.popOutputVar();
 
-      jsCodeBuilder.append(dottedIdNoRequire("window.console.log").call(id(outputVarName)));
+      jsCodeBuilder.append(WINDOW_CONSOLE_LOG.call(id(outputVarName)));
     }
   }
 
@@ -1589,13 +1586,11 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
       // The type-cast expression.
       if (typeAssertion.isPresent()) {
         value =
-            dottedIdWithRequire("soy.asserts")
-                .dotAccess("assertType")
-                .call(
-                    typeAssertion.get(),
-                    stringLiteral(paramName),
-                    paramChunk,
-                    stringLiteral(jsType.typeExpr()));
+            SOY_ASSERTS_ASSERT_TYPE.call(
+                typeAssertion.get(),
+                stringLiteral(paramName),
+                paramChunk,
+                stringLiteral(jsType.typeExpr()));
       } else {
         value = paramChunk;
       }

@@ -18,8 +18,13 @@ package com.google.template.soy.jssrc.internal;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.dottedIdNoRequire;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.dottedIdWithRequire;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.number;
+import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_IS_ARRAY;
+import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_IS_BOOLEAN;
+import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_IS_FUNCTION;
+import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_IS_NUMBER;
+import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_IS_OBJECT;
+import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_IS_STRING;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
@@ -115,7 +120,7 @@ abstract class JsType {
         Optional<WithValue> getTypeAssertion(WithValue value, Generator codeGenerator) {
           // TODO(lukes): we shouldn't allow numbers here, see if anyone relies on this 'feature'.
           return Optional.of(
-              dottedIdNoRequire("goog.isBoolean")
+              GOOG_IS_BOOLEAN
                   .call(value)
                   .or(value.tripleEquals(number(1)), codeGenerator)
                   .or(value.tripleEquals(number(0)), codeGenerator));
@@ -126,7 +131,7 @@ abstract class JsType {
       new JsType("number") {
         @Override
         Optional<WithValue> getTypeAssertion(WithValue value, Generator codeGenerator) {
-          return Optional.of(dottedIdNoRequire("goog.isNumber").call(value));
+          return Optional.of(GOOG_IS_NUMBER.call(value));
         }
       };
 
@@ -136,7 +141,7 @@ abstract class JsType {
         @Override
         Optional<WithValue> getTypeAssertion(WithValue value, Generator codeGenerator) {
           return Optional.of(
-              dottedIdNoRequire("goog.isString")
+              GOOG_IS_STRING
                   .call(value)
                   .or(
                       // TODO(lukes): this is a bug, add a require for this
@@ -149,7 +154,7 @@ abstract class JsType {
       new JsType("!Array") {
         @Override
         Optional<WithValue> getTypeAssertion(WithValue value, Generator codeGenerator) {
-          return Optional.of(dottedIdNoRequire("goog.isArray").call(value));
+          return Optional.of(GOOG_IS_ARRAY.call(value));
         }
       };
 
@@ -157,7 +162,7 @@ abstract class JsType {
       new JsType("!Object") {
         @Override
         Optional<WithValue> getTypeAssertion(WithValue value, Generator codeGenerator) {
-          return Optional.of(dottedIdNoRequire("goog.isObject").call(value));
+          return Optional.of(GOOG_IS_OBJECT.call(value));
         }
       };
 
@@ -178,7 +183,7 @@ abstract class JsType {
       new JsType("function()") {
         @Override
         Optional<WithValue> getTypeAssertion(WithValue value, Generator codeGenerator) {
-          return Optional.of(dottedIdNoRequire("goog.isFunction").call(value));
+          return Optional.of(GOOG_IS_FUNCTION.call(value));
         }
       };
 
@@ -221,7 +226,7 @@ abstract class JsType {
           @Override
           Optional<WithValue> getTypeAssertion(WithValue value, Generator codeGenerator) {
             // enums have a runtime type of number
-            return Optional.of(dottedIdNoRequire("goog.isNumber").call(value));
+            return Optional.of(GOOG_IS_NUMBER.call(value));
           }
         };
 
@@ -255,7 +260,7 @@ abstract class JsType {
         return new JsType("!Array<" + element.typeExpr() + ">") {
           @Override
           Optional<WithValue> getTypeAssertion(WithValue value, Generator codeGenerator) {
-            return Optional.of(dottedIdNoRequire("goog.isArray").call(value));
+            return Optional.of(GOOG_IS_ARRAY.call(value));
           }
         };
 
@@ -271,19 +276,19 @@ abstract class JsType {
             "!Object<" + keyTypeName.typeExpr() + "," + valueTypeName.typeExpr() + ">") {
           @Override
           Optional<WithValue> getTypeAssertion(WithValue value, Generator codeGenerator) {
-            return Optional.of(dottedIdNoRequire("goog.isObject").call(value));
+            return Optional.of(GOOG_IS_OBJECT.call(value));
           }
         };
 
       case PROTO:
-        final String protoTypeName =
-            ((SoyProtoType) soyType).getNameForBackend(SoyBackendKind.JS_SRC);
+        final SoyProtoType protoType = (SoyProtoType) soyType;
+        final String protoTypeName = protoType.getNameForBackend(SoyBackendKind.JS_SRC);
         // In theory his should be "!" + protoTypeName since we don't actually allow null, but it
         // isn't clear that this is very useful for users.
         return new JsType(protoTypeName, ValueCoercionStrategy.PROTO) {
           @Override
           Optional<WithValue> getTypeAssertion(WithValue value, Generator codeGenerator) {
-            return Optional.of(value.instanceof_(dottedIdWithRequire(protoTypeName)));
+            return Optional.of(value.instanceof_(JsRuntime.protoConstructor(protoType)));
           }
         };
 
@@ -301,7 +306,7 @@ abstract class JsType {
         return new JsType("{" + Joiner.on(", ").withKeyValueSeparator(": ").join(members) + "}") {
           @Override
           Optional<WithValue> getTypeAssertion(WithValue value, Generator codeGenerator) {
-            return Optional.of(dottedIdNoRequire("goog.isObject").call(value));
+            return Optional.of(GOOG_IS_OBJECT.call(value));
           }
         };
 

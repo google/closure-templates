@@ -17,9 +17,9 @@
 package com.google.template.soy.jssrc.internal;
 
 import static com.google.template.soy.jssrc.dsl.CodeChunk.WithValue.LITERAL_EMPTY_STRING;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.dottedIdNoRequire;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.idWithRequire;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.stringLiteral;
+import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_GET_CSS_NAME;
+import static com.google.template.soy.jssrc.internal.JsRuntime.XID;
 
 import com.google.common.base.Preconditions;
 import com.google.inject.assistedinject.Assisted;
@@ -256,7 +256,7 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<CodeChunk.Wit
    * </pre>
    */
   @Override protected void visitXidNode(XidNode node) {
-    chunks.add(idWithRequire("xid").call(stringLiteral(node.getText())));
+    chunks.add(XID.call(stringLiteral(node.getText())));
   }
 
   /**
@@ -283,8 +283,8 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<CodeChunk.Wit
     }
     args.add(stringLiteral(node.getSelectorText()));
 
-    // goog.getCssName is part of the very base of closure, it requires no requires.
-    chunks.add(dottedIdNoRequire("goog.getCssName").call(args));
+
+    chunks.add(GOOG_GET_CSS_NAME.call(args));
   }
 
   /**

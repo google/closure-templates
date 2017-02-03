@@ -17,9 +17,11 @@
 package com.google.template.soy.incrementaldomsrc;
 
 import static com.google.template.soy.jssrc.dsl.CodeChunk.WithValue.LITERAL_EMPTY_STRING;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.dottedIdWithRequire;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.id;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.stringLiteral;
+import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_ASSERTS_ASSERT;
+import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_STRING_UNESCAPE_ENTITIES;
+import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_ESCAPE_HTML;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
@@ -82,8 +84,6 @@ import javax.inject.Inject;
  * function calls and changing how statements are combined.
  */
 public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
-  private static final CodeChunk.WithValue GOOG_ASSERTS_ASSERT =
-      dottedIdWithRequire("goog.asserts").dotAccess("assert");
 
   private static final SoyErrorKind PRINT_ATTR_INVALID_KIND =
       SoyErrorKind.of("For Incremental DOM, '{print}' statements in attributes context can only be "
@@ -722,10 +722,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
                     errorReporter)
                 .generateMsgGroupVariable(node);
         getJsCodeBuilder()
-            .addChunkToOutputVar(
-                dottedIdWithRequire("goog.string")
-                    .dotAccess("unescapeEntities")
-                    .call(id(msgExpression)));
+            .addChunkToOutputVar(GOOG_STRING_UNESCAPE_ENTITIES.call(id(msgExpression)));
         break;
       default:
         msgExpression = getAssistantForMsgs().generateMsgGroupVariable(node);
@@ -772,7 +769,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     @Override
     protected CodeChunk.WithValue genGoogMsgPlaceholder(MsgPlaceholderNode msgPhNode) {
       CodeChunk.WithValue toEscape = super.genGoogMsgPlaceholder(msgPhNode);
-      return dottedIdWithRequire("soy").dotAccess("$$escapeHtml").call(toEscape);
+      return SOY_ESCAPE_HTML.call(toEscape);
     }
   }
 }

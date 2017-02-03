@@ -23,24 +23,26 @@ import static com.google.template.soy.jssrc.dsl.CodeChunk.WithValue.LITERAL_NULL
 import static com.google.template.soy.jssrc.dsl.CodeChunk.WithValue.LITERAL_TRUE;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.arrayLiteral;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.dontTrustPrecedenceOf;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.dottedIdWithCustomNamespace;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.dottedIdWithRequire;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.id;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.idWithRequire;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.mapLiteral;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.new_;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.number;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.operation;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.stringLiteral;
+import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_ARRAY_MAP;
+import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_CHECK_MAP_KEY;
+import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_CHECK_NOT_NULL;
+import static com.google.template.soy.jssrc.internal.JsRuntime.extensionField;
+import static com.google.template.soy.jssrc.internal.JsRuntime.protoConstructor;
+import static com.google.template.soy.jssrc.internal.JsRuntime.protoToSanitizedContentConverterFunction;
+import static com.google.template.soy.jssrc.internal.JsRuntime.sanitizedContentToProtoConverterFunction;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.assistedinject.Assisted;
 import com.google.inject.assistedinject.AssistedInject;
 import com.google.protobuf.Descriptors.FieldDescriptor;
-import com.google.template.soy.base.SoyBackendKind;
 import com.google.template.soy.base.internal.BaseUtils;
-import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.AbstractReturningExprNodeVisitor;
@@ -317,8 +319,7 @@ public class TranslateExprNodeVisitor
         // cannot be included in the JS object literal.
 
         CodeChunk.WithValue rawKey = visit(keyNode);
-        assignments.put(
-            idWithRequire("soy").dotAccess("$$checkMapKey").call(rawKey), visit(valueNode));
+        assignments.put(SOY_CHECK_MAP_KEY.call(rawKey), visit(valueNode));
       }
     }
 
@@ -441,27 +442,21 @@ public class TranslateExprNodeVisitor
         type.getDescriptor().getFullName(),
         fieldName);
     if (desc.isExtension()) {
-      // TODO(lukes): we should have one method to call that returns a CodeChunk.WithValue
-      CodeChunk.WithValue extensionName =
-          dottedIdWithCustomNamespace(
-              Protos.getJsExtensionName(desc), Protos.getJsExtensionImport(desc));
       return isSanitizedContent
           ? FieldAccess.callAndUnpack()
               .getter("getExtension")
-              .arg(extensionName)
-              .unpackFunctionName(
-                  dottedIdWithRequire(NodeContentKinds.toJsUnpackFunction(desc.getMessageType())))
+              .arg(extensionField(desc))
+              .unpackFunctionName(protoToSanitizedContentConverterFunction(desc.getMessageType()))
               .isRepeated(desc.isRepeated())
               .build()
-          : FieldAccess.call("getExtension", extensionName);
+          : FieldAccess.call("getExtension", extensionField(desc));
     }
 
     String getter = "get" + LOWER_CAMEL.to(UPPER_CAMEL, fieldName);
     return isSanitizedContent
         ? FieldAccess.callAndUnpack()
             .getter(getter)
-            .unpackFunctionName(
-                dottedIdWithRequire(NodeContentKinds.toJsUnpackFunction(desc.getMessageType())))
+            .unpackFunctionName(protoToSanitizedContentConverterFunction(desc.getMessageType()))
             .isRepeated(desc.isRepeated())
             .build()
         : FieldAccess.call(getter);
@@ -513,8 +508,7 @@ public class TranslateExprNodeVisitor
   @Override
   protected CodeChunk.WithValue visitProtoInitNode(ProtoInitNode node) {
     SoyProtoType type = (SoyProtoType) node.getType();
-    String typeName = type.getNameForBackend(SoyBackendKind.JS_SRC);
-    CodeChunk.WithValue proto = new_(dottedIdWithRequire(typeName)).call();
+    CodeChunk.WithValue proto = new_(protoConstructor(type)).call();
     CodeChunk.WithValue protoVar = codeGenerator.declare(proto);
     CodeChunk.Builder builder = codeGenerator.newChunk(protoVar);
 
@@ -524,20 +518,16 @@ public class TranslateExprNodeVisitor
       CodeChunk.WithValue fieldValue = visit(node.getChild(i));
       if (Protos.isSanitizedContentField(fieldDesc)) {
         CodeChunk.WithValue sanitizedContentPackFn =
-            dottedIdWithRequire(NodeContentKinds.toJsPackFunction(fieldDesc.getMessageType()));
+            sanitizedContentToProtoConverterFunction(fieldDesc.getMessageType());
         fieldValue =
             fieldDesc.isRepeated()
-                ? dottedIdWithRequire("goog.array")
-                    .dotAccess("map")
-                    .call(fieldValue, sanitizedContentPackFn)
+                ? GOOG_ARRAY_MAP.call(fieldValue, sanitizedContentPackFn)
                 : sanitizedContentPackFn.call(fieldValue);
       }
 
       // See go/jspb for setter and getter names.  // MOE: strip_line
       if (fieldDesc.isExtension()) {
-        CodeChunk.WithValue extInfo =
-            dottedIdWithCustomNamespace(
-                Protos.getJsExtensionName(fieldDesc), Protos.getJsExtensionImport(fieldDesc));
+        CodeChunk.WithValue extInfo = extensionField(fieldDesc);
         builder.statement(protoVar.dotAccess("setExtension").call(extInfo, fieldValue));
       } else {
         String setFn = "set" + LOWER_CAMEL.to(UPPER_CAMEL, fieldName);
@@ -611,7 +601,7 @@ public class TranslateExprNodeVisitor
   }
 
   private CodeChunk.WithValue visitCheckNotNullFunction(ExprNode child) {
-    return idWithRequire("soy").dotAccess("$$checkNotNull").call(visit(child));
+    return SOY_CHECK_NOT_NULL.call(visit(child));
   }
 
   private CodeChunk.WithValue visitIsFirstFunction(FunctionNode node) {

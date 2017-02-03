@@ -17,13 +17,9 @@
 package com.google.template.soy.jssrc.dsl;
 
 import static com.google.template.soy.jssrc.dsl.CodeChunk.WithValue.LITERAL_EMPTY_STRING;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.dottedIdWithCustomNamespace;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.id;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.data.SanitizedContent.ContentKind;
-import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.jssrc.dsl.CodeChunk.RequiresCollector;
 import com.google.template.soy.jssrc.restricted.JsExprUtils;
 import java.util.List;
@@ -35,27 +31,6 @@ public final class CodeChunkUtils {
   public static final CodeChunk.WithValue OPT_DATA = id("opt_data");
 
   private CodeChunkUtils() {}
-
-  /**
-   * For nodes with specified content kind, the content was autoescaped in the corresponding
-   * context. Wrap the evaluation result in a SanitizedContent instance of the appropriate kind.
-   *
-   * <p>If {@code isInternalBlock} is true, the returned value will use the function for internal
-   * blocks, which does not wrap empty strings. This is done as a workaround, in order to maintain
-   * falsiness of empty strings.
-   */
-  public static CodeChunk.WithValue wrapAsSanitizedContent(
-      ContentKind contentKind, CodeChunk.WithValue value, boolean isInternalBlock) {
-    Preconditions.checkNotNull(contentKind);
-    // TODO(lukes): NodeContentKinds should just return a CodeChunk.WithValue
-    String ordainerFn =
-        isInternalBlock
-            ? NodeContentKinds.toJsSanitizedContentOrdainerForInternalBlocks(contentKind)
-            : NodeContentKinds.toJsSanitizedContentOrdainer(contentKind);
-    return dottedIdWithCustomNamespace(
-            ordainerFn, NodeContentKinds.getJsImportForOrdainersFunctions(contentKind))
-        .call(value);
-  }
 
   /**
    * Builds a {@link CodeChunk.WithValue} that represents the concatenation of the given code

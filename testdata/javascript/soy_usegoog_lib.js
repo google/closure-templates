@@ -1387,6 +1387,70 @@ if (goog.DEPENDENCIES_ENABLED) {
 
 
 /**
+ * @package {?boolean}
+ * Visible for testing.
+ */
+goog.hasBadLetScoping = null;
+
+
+/**
+ * @return {boolean}
+ * @private
+ */
+goog.useSafari10Workaround_ = function() {
+  if (goog.hasBadLetScoping == null) {
+    var result;
+    try {
+      result = !!eval(
+          '"use strict";' +
+          'let x = 1; function f() { return typeof x; };' +
+          'f() == "number";');
+    } catch (e) {
+      // Assume that ES6 syntax isn't supported.
+      result = false;
+    }
+    goog.hasBadLetScoping = result;
+  }
+  return goog.hasBadLetScoping;
+};
+
+
+/**
+ * @param {string} moduleDef
+ * @return {string}
+ * @package Visible for testing.
+ */
+goog.workaroundSafari10EvalBug = function(moduleDef) {
+  var srcUrlRE = /\/\/# sourceURL.*\n/g;
+  var srcMapUrlRE = /\/\/# sourceMappingURL.*\n/g;
+
+  var srcUrlLine = goog.getLastREMatch_(moduleDef, srcUrlRE);
+  var srcMapUrlLine = goog.getLastREMatch_(moduleDef, srcMapUrlRE);
+
+  moduleDef = moduleDef.replace(srcUrlRE, '');
+  moduleDef = moduleDef.replace(srcMapUrlRE, '');
+
+  moduleDef = '(function(){' + moduleDef +
+      '\n' +  // Terminate any trailing single line comment.
+      ';' +   // Terminate any trailing expression.
+      '})();\n' + srcMapUrlLine + srcUrlLine;
+  return moduleDef;
+};
+
+
+/**
+ * @param {string} str
+ * @param {RegExp} re
+ * @return {string}
+ * @private
+ */
+goog.getLastREMatch_ = function(str, re) {
+  var matches = str.match(re);
+  return matches ? matches[matches.length - 1] : '';
+};
+
+
+/**
  * @param {function(?):?|string} moduleDef The module definition.
  */
 goog.loadModule = function(moduleDef) {
@@ -1405,6 +1469,10 @@ goog.loadModule = function(moduleDef) {
     if (goog.isFunction(moduleDef)) {
       exports = moduleDef.call(undefined, {});
     } else if (goog.isString(moduleDef)) {
+      if (goog.useSafari10Workaround_) {
+        moduleDef = goog.workaroundSafari10EvalBug(moduleDef);
+      }
+
       exports = goog.loadModuleFromSource_.call(undefined, moduleDef);
     } else {
       throw Error('Invalid module definition');

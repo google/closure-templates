@@ -22,8 +22,10 @@ import static com.google.template.soy.jssrc.dsl.CodeChunk.WithValue.LITERAL_NULL
 import static com.google.template.soy.jssrc.dsl.CodeChunk.WithValue.LITERAL_TRUE;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.WithValue.id;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.fromExpr;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.idWithRequire;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.stringLiteral;
+import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_ASSIGN_DEFAULTS;
+import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_GET_DELEGATE_FN;
+import static com.google.template.soy.jssrc.internal.JsRuntime.sanitizedContentOrdainerFunctionForInternalBlocks;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -146,9 +148,8 @@ public class GenCallCodeUtils {
       // Case 2: Delegate call.
       CallDelegateNode callDelegateNode = (CallDelegateNode) callNode;
       CodeChunk.WithValue calleeId =
-          idWithRequire("soy")
-              .dotAccess("$$getDelTemplateId")
-              .call(stringLiteral(delTemplateNamer.getDelegateName(callDelegateNode)));
+          JsRuntime.SOY_GET_DELTEMPLATE_ID.call(
+              stringLiteral(delTemplateNamer.getDelegateName(callDelegateNode)));
 
       ExprRootNode variantSoyExpr = callDelegateNode.getDelCalleeVariantExpr();
       CodeChunk.WithValue variant;
@@ -166,12 +167,10 @@ public class GenCallCodeUtils {
       }
 
       callee =
-          idWithRequire("soy")
-              .dotAccess("$$getDelegateFn")
-              .call(
-                  calleeId,
-                  variant,
-                  callDelegateNode.allowsEmptyDefault() ? LITERAL_TRUE : LITERAL_FALSE);
+          SOY_GET_DELEGATE_FN.call(
+              calleeId,
+              variant,
+              callDelegateNode.allowsEmptyDefault() ? LITERAL_TRUE : LITERAL_FALSE);
     }
 
     // Generate the data object to pass to callee
@@ -313,8 +312,7 @@ public class GenCallCodeUtils {
 
     // ------ Cases 2 and 3: Additional params with and without original data to pass ------
     if (callNode.dataAttribute().isPassingData()) {
-      CodeChunk.WithValue allData =
-          idWithRequire("soy").dotAccess("$$assignDefaults").call(params, dataToPass);
+      CodeChunk.WithValue allData = SOY_ASSIGN_DEFAULTS.call(params, dataToPass);
       return allData;
     } else {
       return params;
@@ -338,6 +336,6 @@ public class GenCallCodeUtils {
     }
 
     // Use the internal blocks wrapper, to maintain falsiness of empty string
-    return CodeChunkUtils.wrapAsSanitizedContent(node.getContentKind(), content, true);
+    return sanitizedContentOrdainerFunctionForInternalBlocks(node.getContentKind()).call(content);
   }
 }

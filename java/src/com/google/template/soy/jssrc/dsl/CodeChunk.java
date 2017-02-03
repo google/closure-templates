@@ -87,17 +87,6 @@ public abstract class CodeChunk {
   }
 
   /**
-   * Creates a code chunk representing a JavaScript identifier.
-   *
-   * <p>TODO(lukes): consider making everyone call 'dottedIdWithRequire' instead?
-   *
-   * @throws IllegalArgumentException if {@code id} is not a valid JavaScript identifier.
-   */
-  public static WithValue idWithRequire(String id) {
-    return GoogRequire.create(id(id), ImmutableSet.of(id));
-  }
-
-  /**
    * Creates a code chunk representing a JavaScript "dotted identifier" that also adds a {@code
    * goog.require} for the identifier.
    *

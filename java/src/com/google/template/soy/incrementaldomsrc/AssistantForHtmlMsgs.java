@@ -15,8 +15,8 @@
  */
 package com.google.template.soy.incrementaldomsrc;
 
-import static com.google.template.soy.jssrc.dsl.CodeChunk.dottedIdWithRequire;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.id;
+import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_STRING_UNESCAPE_ENTITIES;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
@@ -45,8 +45,6 @@ import java.util.Map;
  * placeholders from the translated message and execute the idom commands instead.
  */
 final class AssistantForHtmlMsgs extends GenJsCodeVisitorAssistantForMsgs {
-  private static final CodeChunk.WithValue GOOG_STRING_UNESCAPE_ENTITIES =
-      dottedIdWithRequire("goog.string").dotAccess("unescapeEntities");
 
   /**
    * Maps dynamic nodes within the translated message to placeholder values to pass to goog.getMsg()

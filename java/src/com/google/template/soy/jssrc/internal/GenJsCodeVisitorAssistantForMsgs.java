@@ -16,10 +16,11 @@
 
 package com.google.template.soy.jssrc.internal;
 
-import static com.google.template.soy.jssrc.dsl.CodeChunk.dottedIdNoRequire;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.dottedIdWithRequire;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.id;
+import static com.google.template.soy.jssrc.dsl.CodeChunk.new_;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.stringLiteral;
+import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_GET_MSG;
+import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_I18N_MESSAGE_FORMAT;
 
 import com.google.common.base.CaseFormat;
 import com.google.common.base.Preconditions;
@@ -308,7 +309,7 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
       jsCodeBuilder()
           .append(
               CodeChunk.declare(googMsgCodeGenInfo.googMsgVarName)
-                  .setInitialValue(dottedIdNoRequire("goog.getMsg").call(googMsgContent))
+                  .setInitialValue(GOOG_GET_MSG.call(googMsgContent))
                   .build());
     } else {
       // If there are placeholders, pass them as an arg to goog.getMsg.
@@ -316,8 +317,7 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
           .append(
               CodeChunk.declare(googMsgCodeGenInfo.googMsgVarName)
                   .setInitialValue(
-                      dottedIdNoRequire("goog.getMsg")
-                          .call(googMsgContent, googMsgCodeGenInfo.placeholders.build()))
+                      GOOG_GET_MSG.call(googMsgContent, googMsgCodeGenInfo.placeholders.build()))
                   .build());
       }
 
@@ -372,7 +372,7 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
   private static CodeChunk.WithValue getMessageFormatCall(GoogMsgCodeGenInfo codeGenInfo) {
     MapLiteralBuilder builder = codeGenInfo.pluralsAndSelects;
     builder.putAll(codeGenInfo.placeholders);
-    return CodeChunk.new_(dottedIdWithRequire("goog.i18n.MessageFormat"))
+    return new_(GOOG_I18N_MESSAGE_FORMAT)
         .call(id(codeGenInfo.googMsgVarName))
         .dotAccess("formatIgnoringPound")
         .call(builder.build());
