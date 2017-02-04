@@ -130,9 +130,6 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
   /** Regex pattern for an integer. */
   private static final Pattern INTEGER = Pattern.compile("-?\\d+");
 
-  /** Namespace to goog.require when useGoogIsRtlForBidiGlobalDir is in force. */
-  private static final String GOOG_IS_RTL_NAMESPACE = "goog.i18n.bidi";
-
   /** The options for generating JS source code. */
   protected final SoyJsSrcOptions jsSrcOptions;
 
@@ -354,7 +351,6 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
       templateAliases = AliasUtils.createTemplateAliases(node);
 
       addCodeToDeclareGoogModule(file, node);
-      addCodeToRequireGeneralDeps(node);
       addCodeToRequireGoogModules(node);
     } else if (jsSrcOptions.shouldProvideRequireSoyNamespaces()) {
       addCodeToProvideSoyNamespace(file, node);
@@ -362,7 +358,6 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
         addCodeToProvideJsFunctions(file, node);
       }
       file.append('\n');
-      addCodeToRequireGeneralDeps(node);
       addCodeToRequireSoyNamespaces(node);
     } else if (jsSrcOptions.shouldProvideRequireJsFunctions()) {
       if (jsSrcOptions.shouldProvideBothSoyNamespacesAndJsFunctions()) {
@@ -370,11 +365,12 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
       }
       addCodeToProvideJsFunctions(file, node);
       file.append('\n');
-      addCodeToRequireGeneralDeps(node);
       addCodeToRequireJsFunctions(node);
     } else {
       addCodeToDefineJsNamespaces(file, node);
     }
+
+    addTemplatePreamble();
 
     // Add code for each template.
     for (TemplateNode template : node.getChildren()) {
@@ -391,6 +387,9 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
     jsFilesContents.add(file.toString());
     jsCodeBuilder = null;
   }
+
+  /** An extension point for subclasses to add content prior to any template definition. */
+  protected void addTemplatePreamble() {}
 
   /**
    * Appends requirecss jsdoc tags in the file header section.
@@ -562,17 +561,6 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
     }
     for (String delTemplateName : delTemplateNames) {
       header.append(" * @hassoydelcall {").append(delTemplateName).append("}\n");
-    }
-  }
-
-  /**
-   * Helper for visitSoyFileNode(SoyFileNode) to add code to require general dependencies.
-   * @param soyFile The node we're visiting.
-   */
-  protected void addCodeToRequireGeneralDeps(SoyFileNode soyFile) {
-    if (jsSrcOptions.getUseGoogIsRtlForBidiGlobalDir()) {
-      // Suppress extraRequire because it may be unused (b/25672094).
-      jsCodeBuilder.addGoogRequire(GOOG_IS_RTL_NAMESPACE, true);
     }
   }
 

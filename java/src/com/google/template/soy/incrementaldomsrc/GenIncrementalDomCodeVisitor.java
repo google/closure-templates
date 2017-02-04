@@ -65,7 +65,6 @@ import com.google.template.soy.soytree.MsgHtmlTagNode;
 import com.google.template.soy.soytree.MsgPlaceholderNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
-import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
@@ -145,14 +144,8 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     return soyNamespace + NAMESPACE_EXTENSION;
   }
 
-  @Override protected void addCodeToRequireGeneralDeps(SoyFileNode soyFile) {
-    super.addCodeToRequireGeneralDeps(soyFile);
-    // Need to make sure goog.asserts is pulled in because there may be some cases (e.g.
-    // no templates with parameters) where the js code generation does not pull it in. This is
-    // required for generating calls to itext().
-    getJsCodeBuilder().addGoogRequire("goog.asserts", true);
-    getJsCodeBuilder().addGoogRequire("goog.string", true);
-
+  @Override
+  protected void addTemplatePreamble() {
     getJsCodeBuilder()
         .appendLine("var IncrementalDom = goog.require('incrementaldom');")
         .appendLine("var ie_open = IncrementalDom.elementOpen;")
