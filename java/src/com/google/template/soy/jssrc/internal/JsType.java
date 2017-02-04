@@ -17,7 +17,6 @@
 package com.google.template.soy.jssrc.internal;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.dottedIdNoRequire;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.number;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_IS_ARRAY;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_IS_BOOLEAN;
@@ -25,6 +24,8 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_IS_FUNCTION;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_IS_NUMBER;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_IS_OBJECT;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_IS_STRING;
+import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_SOY_DATA_SANITIZED_CONTENT;
+import static com.google.template.soy.jssrc.internal.JsRuntime.sanitizedContentType;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
@@ -143,10 +144,7 @@ abstract class JsType {
           return Optional.of(
               GOOG_IS_STRING
                   .call(value)
-                  .or(
-                      // TODO(lukes): this is a bug, add a require for this
-                      value.instanceof_(dottedIdNoRequire("goog.soy.data.SanitizedContent")),
-                      codeGenerator));
+                  .or(value.instanceof_(GOOG_SOY_DATA_SANITIZED_CONTENT), codeGenerator));
         }
       };
 
@@ -406,7 +404,7 @@ abstract class JsType {
     }
     return typeExpr();
   }
-  
+
   final ImmutableSet<String> getGoogRequires() {
     return extraRequires;
   }
@@ -430,8 +428,8 @@ abstract class JsType {
         : coercion;
   }
 
-  private static JsType createSanitized(ContentKind kind) {
-    final String type = NodeContentKinds.toJsSanitizedContentCtorName(kind);
+  private static JsType createSanitized(final ContentKind kind) {
+    String type = NodeContentKinds.toJsSanitizedContentCtorName(kind);
     // All the sanitized types have an .isCompatibleWith method for testing for allowed types
     // NOTE: this actually allows 'string' to be passed, which is inconsistent with other backends
     // We allow string or unsanitized type to be passed where a
@@ -475,8 +473,7 @@ abstract class JsType {
     return new JsType(typeExprs) {
       @Override
       Optional<WithValue> getTypeAssertion(WithValue value, Generator codeGenerator) {
-        // TODO(lukes): add a require here
-        return Optional.of(dottedIdNoRequire(type).dotAccess("isCompatibleWith").call(value));
+        return Optional.of(sanitizedContentType(kind).dotAccess("isCompatibleWith").call(value));
       }
     };
   }

@@ -135,7 +135,7 @@ public final class JsTypeTest {
         .getTypeAssertion(
             id(varName), CodeChunk.Generator.create(JsSrcNameGenerators.forLocalVariables()))
         .get()
-        .assertExpr()
+        .assertExprAndCollectRequires(CodeChunk.RequiresCollector.NULL)
         .getText();
   }
 

@@ -60,6 +60,8 @@ public final class JsRuntime {
 
   public static final CodeChunk.WithValue GOOG_IS_STRING = dottedIdNoRequire("goog.isString");
 
+  public static final CodeChunk.WithValue GOOG_SOY_DATA_SANITIZED_CONTENT =
+      dottedIdWithRequire("goog.soy.data.SanitizedContent");
   public static final CodeChunk.WithValue GOOG_STRING_UNESCAPE_ENTITIES =
       dottedIdWithRequire("goog.string").dotAccess("unescapeEntities");
 
@@ -134,5 +136,12 @@ public final class JsRuntime {
   /** Returns the constructor for the proto. */
   public static CodeChunk.WithValue protoConstructor(SoyProtoType type) {
     return dottedIdWithRequire(type.getNameForBackend(SoyBackendKind.JS_SRC));
+  }
+
+  /**
+   * Returns the js type for the sanitized content object corresponding to the given ContentKind.
+   */
+  public static CodeChunk.WithValue sanitizedContentType(ContentKind kind) {
+    return dottedIdWithRequire(NodeContentKinds.toJsSanitizedContentCtorName(kind));
   }
 }
