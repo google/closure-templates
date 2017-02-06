@@ -39,6 +39,7 @@ import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.internal.GenJsExprsVisitor.GenJsExprsVisitorFactory;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
+import com.google.template.soy.shared.AutoEscapingType;
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.SoyNode;
@@ -675,14 +676,16 @@ public final class GenJsCodeVisitorTest {
             + "  Blah\n"
             + "{/deltemplate}\n";
 
-    TemplateNode template =
-        (TemplateNode)
-            SharedTestUtils.getNode(
-                SoyFileSetParserBuilder.forFileContents(testFileContent).parse().fileSet());
+    ParseResult parseResult = SoyFileSetParserBuilder.forFileContents(testFileContent).parse();
 
     // ------ Code style 'concat'. ------
     String expectedJsCode =
         ""
+            + "goog.provide('boo.foo');\n"
+            + "\n"
+            + "goog.require('soy');\n"
+            + "\n"
+            + "\n"
             + "boo.foo.__deltemplate_s2_ad618961 = function(opt_data, opt_ignored, opt_ijData) {\n"
             + "  return 'Blah';\n"
             + "};\n"
@@ -693,11 +696,13 @@ public final class GenJsCodeVisitorTest {
             + "soy.$$registerDelegateFn(soy.$$getDelTemplateId('myDelegates.goo'), '', 0,"
             + " boo.foo.__deltemplate_s2_ad618961);\n";
 
+    genJsCodeVisitor.jsSrcOptions.setShouldProvideRequireSoyNamespaces(true);
     // Setup the GenJsCodeVisitor's state before the template is visited.
-    genJsCodeVisitor.jsCodeBuilder = new JsCodeBuilder();
-
-    genJsCodeVisitor.visitForTesting(template, ExplodingErrorReporter.get());
-    assertThat(genJsCodeVisitor.jsCodeBuilder.getCode()).isEqualTo(expectedJsCode);
+    String file =
+        genJsCodeVisitor
+            .gen(parseResult.fileSet(), parseResult.registry(), ExplodingErrorReporter.get())
+            .get(0);
+    assertThat(file).endsWith(expectedJsCode);
   }
 
   @Test
@@ -1074,6 +1079,22 @@ public final class GenJsCodeVisitorTest {
             + "  output += alpha__soy5 + beta__soy6 + gamma__soy8 + delta__soy12;\n"
             + "}\n";
     assertGeneratedJsCode(soyNodeCode, expectedJsCode);
+  }
+
+  // Regression test for a bug where the logic for ordaining strict letcontent blocks failed to
+  // propagate the necessary requires for the ordainer functions.
+  @Test
+  public void testStrictLetAddsAppropriateRequires() {
+    jsSrcOptions.setShouldProvideRequireSoyNamespaces(true);
+    String soyNodeCode = "{let $text kind=\"text\"}foo{/let}{let $html kind=\"html\"}foo{/let}\n";
+    ParseResult parseResult =
+        SoyFileSetParserBuilder.forTemplateContents(AutoEscapingType.STRICT, soyNodeCode).parse();
+    String jsFilesContents =
+        genJsCodeVisitor
+            .gen(parseResult.fileSet(), parseResult.registry(), ExplodingErrorReporter.get())
+            .get(0);
+    assertThat(jsFilesContents).contains("goog.require('soydata')");
+    assertThat(jsFilesContents).contains("goog.require('soydata.VERY_UNSAFE')");
   }
 
   @Test

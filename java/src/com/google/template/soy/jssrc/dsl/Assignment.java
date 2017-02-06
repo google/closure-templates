@@ -19,7 +19,6 @@ package com.google.template.soy.jssrc.dsl;
 import static com.google.template.soy.jssrc.dsl.OutputContext.EXPRESSION;
 
 import com.google.auto.value.AutoValue;
-import com.google.template.soy.jssrc.dsl.CodeChunk.RequiresCollector;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 
 /** Represents an assignment to a variable. */
@@ -48,6 +47,12 @@ abstract class Assignment extends CodeChunk.WithValue {
 
   @Override
   void doFormatOutputExpr(FormattingContext ctx, OutputContext outputContext) {
+    // Print the variable reference only if the composite is appearing in another expression.
+    // The purpose of a composite is to provide a name for reference from other code chunks.
+    // If this composite is being asked to appear as its own statement, print nothing.
+    if (outputContext != OutputContext.EXPRESSION) {
+      return;
+    }
     ctx.append(varName());
   }
 

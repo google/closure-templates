@@ -85,7 +85,10 @@ public final class JsRuntime {
 
   public static final CodeChunk.WithValue SOY_GET_DELEGATE_FN =
       dottedIdWithRequire("soy").dotAccess("$$getDelegateFn");
-
+  
+  public static final CodeChunk.WithValue SOY_REGISTER_DELEGATE_FN =
+      dottedIdWithRequire("soy").dotAccess("$$registerDelegateFn");
+  
   public static final CodeChunk.WithValue SOY_GET_DELTEMPLATE_ID =
       dottedIdWithRequire("soy").dotAccess("$$getDelTemplateId");
 

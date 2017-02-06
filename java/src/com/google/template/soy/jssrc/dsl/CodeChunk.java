@@ -177,6 +177,17 @@ public abstract class CodeChunk {
   }
 
   /**
+   * Returns a code chunk that assigns a variable with the given name.
+   *
+   * <p>Most callers should use {@link CodeChunk.Generator#assign(WithValue)}. This method should
+   * only be used when this chunk is being inserted into foreign code that requires a variable of
+   * the given name to exist.
+   */
+  public static CodeChunk assign(String varName, CodeChunk.WithValue rhs) {
+    return Assignment.create(varName, rhs);
+  }
+
+  /**
    * Returns a builder for a new code chunk that declares a variable with the given name.
    *
    * <p>Most callers should use {@link CodeChunk.Generator#declare(WithValue)}. This method should
@@ -493,15 +504,17 @@ public abstract class CodeChunk {
     final void formatOutputExpr(FormattingContext ctx, OutputContext outputContext) {
       doFormatOutputExpr(ctx, outputContext);
       // If the expression will appear as its own statement, add a trailing semicolon and newline.
-      // The exception is Composites. Composites are sequences of statements that have a variable
-      // allocated to represent them when they appear in other code chunks. They should not produce
-      // any expression output when formatted by themselves.
+      // The exception is Composites/Assignments. Composites are sequences of statements that have
+      // a variable allocated to represent them when they appear in other code chunks. They should
+      // not produce any expression output when formatted by themselves.
       // TODO(lukes): consider giving doFormatOutputExpr a return value to account for this, rather
       // than inspecting the type of the receiver.
       if (outputContext == STATEMENT
           && !(this instanceof Composite)
+          && !(this instanceof Assignment)
           && !(this instanceof GoogRequire
-              && (((GoogRequire) this).underlying() instanceof Composite))) {
+              && (((GoogRequire) this).underlying() instanceof Composite
+                  || ((GoogRequire) this).underlying() instanceof Assignment))) {
         ctx.append(';').endLine();
       }
     }

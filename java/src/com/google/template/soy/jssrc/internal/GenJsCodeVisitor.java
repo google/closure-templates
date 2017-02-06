@@ -17,14 +17,19 @@
 package com.google.template.soy.jssrc.internal;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.template.soy.jssrc.dsl.CodeChunk.assign;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.declare;
+import static com.google.template.soy.jssrc.dsl.CodeChunk.dottedIdNoRequire;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.id;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.number;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.return_;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.stringLiteral;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_ASSERTS_ASSERT_TYPE;
+import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_GET_DELTEMPLATE_ID;
+import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_REGISTER_DELEGATE_FN;
 import static com.google.template.soy.jssrc.internal.JsRuntime.WINDOW_CONSOLE_LOG;
 import static com.google.template.soy.jssrc.internal.JsRuntime.sanitizedContentOrdainerFunction;
+import static com.google.template.soy.jssrc.internal.JsRuntime.sanitizedContentOrdainerFunctionForInternalBlocks;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
@@ -746,14 +751,13 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
     // ------ If delegate template, generate a statement to register it. ------
     if (node instanceof TemplateDelegateNode) {
       TemplateDelegateNode nodeAsDelTemplate = (TemplateDelegateNode) node;
-      String delTemplateIdExprText =
-          "soy.$$getDelTemplateId('" + delTemplateNamer.getDelegateName(nodeAsDelTemplate) + "')";
-      String delTemplateVariantExprText = "'" + nodeAsDelTemplate.getDelTemplateVariant() + "'";
-      jsCodeBuilder.appendLine(
-          "soy.$$registerDelegateFn(",
-          delTemplateIdExprText, ", ", delTemplateVariantExprText, ", ",
-          nodeAsDelTemplate.getDelPriority().toString(), ", ",
-          alias, ");");
+      jsCodeBuilder.append(
+          SOY_REGISTER_DELEGATE_FN.call(
+              SOY_GET_DELTEMPLATE_ID.call(
+                  stringLiteral(delTemplateNamer.getDelegateName(nodeAsDelTemplate))),
+              stringLiteral(nodeAsDelTemplate.getDelTemplateVariant()),
+              number(nodeAsDelTemplate.getDelPriority().getValue()),
+              dottedIdNoRequire(alias)));
     }
   }
 
@@ -920,6 +924,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
     }
 
     String generatedVarName = node.getUniqueVarName();
+    CodeChunk.WithValue generatedVar = id(generatedVarName);
 
     // Generate code to define the local var.
     jsCodeBuilder.pushOutputVar(generatedVarName);
@@ -935,19 +940,15 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
 
       // The expression for the constructor of SanitizedContent of the appropriate kind (e.g.,
       // "soydata.VERY_UNSAFE.ordainSanitizedHtml"), or null if the node has no 'kind' attribute.
-      final String sanitizedContentOrdainer =
-          NodeContentKinds.toJsSanitizedContentOrdainerForInternalBlocks(node.getContentKind());
-
-      jsCodeBuilder.appendLine(generatedVarName, " = ", sanitizedContentOrdainer, "(",
-          generatedVarName, ");");
+      jsCodeBuilder.append(
+          assign(
+              generatedVarName,
+              sanitizedContentOrdainerFunctionForInternalBlocks(node.getContentKind())
+                  .call(generatedVar)));
     }
 
     // Add a mapping for generating future references to this local var.
-    templateTranslationContext
-        .soyToJsVariableMappings()
-        .put(
-            node.getVarName(),
-            id(generatedVarName));
+    templateTranslationContext.soyToJsVariableMappings().put(node.getVarName(), generatedVar);
   }
 
   /**
