@@ -543,7 +543,9 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
         case QUOTE_KEYS_IF_JS:
           return visitMapLiteralNode((MapLiteralNode) node.getChild(0));
         case CHECK_NOT_NULL:
-          return visitCheckNotNull(node.getChild(0));
+          return visitCheckNotNullFunction(node.getChild(0));
+        case FLOAT:
+          return visitFloatFunction(node.getChild(0));
         default:
           throw new AssertionError();
       }
@@ -580,7 +582,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     return builder.build();
   }
 
-  private SoyValue visitCheckNotNull(ExprNode child) {
+  private SoyValue visitCheckNotNullFunction(ExprNode child) {
     SoyValue childValue = visit(child);
     if (childValue instanceof NullData || childValue instanceof UndefinedData) {
       throw new SoyDataException(child.toSourceString() + " is null");
@@ -606,6 +608,14 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       throw RenderException.create(
           "While computing function \"" + fnNode.toSourceString() + "\": " + e.getMessage(), e);
     }
+  }
+
+  private SoyValue visitFloatFunction(ExprNode child) {
+    SoyValue childValue = visit(child);
+    if (childValue instanceof FloatData) {
+      return childValue;
+    }
+    return FloatData.forValue(childValue.longValue()); // non-IntegerData will throw
   }
 
   private SoyValue visitIsFirstFunction(FunctionNode node) {

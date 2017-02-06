@@ -34,7 +34,9 @@ public enum BuiltinFunction implements SoyFunction {
   IS_LAST("isLast"),
   INDEX("index"),
   QUOTE_KEYS_IF_JS("quoteKeysIfJs"),
-  CHECK_NOT_NULL("checkNotNull");
+  CHECK_NOT_NULL("checkNotNull"),
+  FLOAT("$$float"), // $$ prefix ensures that the parser doesn't let devs use it directly
+  ;
 
   /** Map of NonpluginFunctions by function name. */
   private static final Map<String, BuiltinFunction> NONPLUGIN_FUNCTIONS_BY_NAME;

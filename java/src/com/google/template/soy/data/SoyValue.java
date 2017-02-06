@@ -36,21 +36,21 @@ public interface SoyValue extends SoyValueProvider {
    * @return True if this value is equal to the other in the sense of Soy.
    */
   @Override
-  public boolean equals(Object other);
+  boolean equals(Object other);
 
   /**
    * Coerces this value into a boolean.
    *
    * @return This value coerced into a boolean.
    */
-  public boolean coerceToBoolean();
+  boolean coerceToBoolean();
 
   /**
    * Coerces this value into a string.
    *
    * @return This value coerced into a string.
    */
-  public String coerceToString();
+  String coerceToString();
 
   /**
    * Renders this value to the given appendable.
@@ -61,7 +61,7 @@ public interface SoyValue extends SoyValueProvider {
    * @param appendable The appendable to render to.
    * @throws IOException
    */
-  public void render(Appendable appendable) throws IOException;
+  void render(Appendable appendable) throws IOException;
 
   // -----------------------------------------------------------------------------------------------
   // Convenience methods for retrieving a known primitive type.
@@ -73,7 +73,7 @@ public interface SoyValue extends SoyValueProvider {
    * @return The boolean value of this boolean object.
    * @throws SoyDataException If this object is not actually a boolean.
    */
-  public boolean booleanValue();
+  boolean booleanValue();
 
   /**
    * Precondition: Only call this method if you know that this SoyValue object is a 32-bit integer.
@@ -82,7 +82,7 @@ public interface SoyValue extends SoyValueProvider {
    * @return The integer value of this integer object.
    * @throws SoyDataException If this object is not actually an integer.
    */
-  public int integerValue();
+  int integerValue();
 
   /**
    * Precondition: Only call this method if you know that this SoyValue object is an integer or
@@ -91,7 +91,7 @@ public interface SoyValue extends SoyValueProvider {
    * @return The integer value of this integer object.
    * @throws SoyDataException If this object is not actually an integer.
    */
-  public long longValue();
+  long longValue();
 
   /**
    * Precondition: Only call this method if you know that this SoyValue object is a float. This
@@ -100,7 +100,7 @@ public interface SoyValue extends SoyValueProvider {
    * @return The float value of this float object.
    * @throws SoyDataException If this object is not actually a float.
    */
-  public double floatValue();
+  double floatValue();
 
   /**
    * Precondition: Only call this method if you know that this SoyValue object is a number. This
@@ -109,7 +109,7 @@ public interface SoyValue extends SoyValueProvider {
    * @return The float value of this number object.
    * @throws SoyDataException If this object is not actually a number.
    */
-  public double numberValue();
+  double numberValue();
 
   /**
    * Precondition: Only call this method if you know that this SoyValue object is a string. This
@@ -118,5 +118,5 @@ public interface SoyValue extends SoyValueProvider {
    * @return The string value of this string object.
    * @throws SoyDataException If this object is not actually a string.
    */
-  public String stringValue();
+  String stringValue();
 }

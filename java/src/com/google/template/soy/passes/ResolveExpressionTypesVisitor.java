@@ -768,6 +768,9 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
               node.setType(SoyTypes.removeNull(type));
             }
             break;
+          case FLOAT:
+            node.setType(FloatType.getInstance());
+            break;
           case INDEX:
             node.setType(IntType.getInstance());
             break;

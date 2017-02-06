@@ -817,6 +817,11 @@ final class ExpressionCompiler {
           .asNonNullable();
     }
 
+    @Override
+    SoyExpression visitFloatFunction(FunctionNode node) {
+      throw new AssertionError("not yet implemented"); // TODO(user): implement
+    }
+
     // Non-builtin functions
 
     // TODO(lukes): For plugins we simply add the Map<String, SoyJavaFunction> map to RenderContext

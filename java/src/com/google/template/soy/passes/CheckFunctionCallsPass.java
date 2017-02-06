@@ -17,7 +17,6 @@
 package com.google.template.soy.passes;
 
 import com.google.common.base.Joiner;
-import com.google.common.collect.Iterables;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.basicfunctions.LengthFunction;
@@ -38,6 +37,7 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.defn.LoopVar;
 import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.aggregate.ListType;
 import com.google.template.soy.types.primitive.AnyType;
 import com.google.template.soy.types.primitive.StringType;
@@ -127,28 +127,32 @@ final class CheckFunctionCallsPass extends CompilerFilePass {
     }
 
     private void visitNonpluginFunction(BuiltinFunction nonpluginFn, FunctionNode node) {
-      String fnName = nonpluginFn.getName();
+      // All non-plugin functions so far have exactly 1 arg
+      ExprNode arg = node.getChild(0);
+
       // Check argument types.
-      ExprNode firstChild = Iterables.getFirst(node.getChildren(), null);
       switch (nonpluginFn) {
         case INDEX:
         case IS_FIRST:
         case IS_LAST:
-          requireLoopVariableInScope(node, firstChild);
+          requireLoopVariableInScope(node, arg);
           break;
         case QUOTE_KEYS_IF_JS:
-          if (!(firstChild instanceof MapLiteralNode)) {
+          if (!(arg instanceof MapLiteralNode)) {
             errorReporter.report(
                 node.getSourceLocation(),
                 QUOTE_KEYS_IF_JS_REQUIRES_MAP_LITERAL_ARG,
                 node.getChild(0).getType().toString());
           }
           break;
+        case FLOAT:
+          checkArgType(arg, SoyTypes.NUMBER_TYPE, node);
+          break;
         case CHECK_NOT_NULL:
           // Do nothing.  All types are valid.
           break;
         default:
-          throw new AssertionError("Unrecognized nonplugin fn " + fnName);
+          throw new AssertionError("Unrecognized nonplugin fn " + nonpluginFn.getName());
       }
     }
 

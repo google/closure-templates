@@ -667,6 +667,7 @@ final class TemplateAnalysis {
           case CHECK_NOT_NULL:
             // fall through
             break;
+          case FLOAT: // TODO(user): Implement
           default:
             throw new AssertionError("unexpected builtin function");
         }

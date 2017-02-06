@@ -83,6 +83,7 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
   @Override
   protected final T visitFunctionNode(FunctionNode node) {
     SoyFunction function = node.getSoyFunction();
+
     if (function instanceof BuiltinFunction) {
       BuiltinFunction nonpluginFn = (BuiltinFunction) function;
       if (nonpluginFn == BuiltinFunction.QUOTE_KEYS_IF_JS) {
@@ -93,6 +94,10 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
       if (nonpluginFn == BuiltinFunction.CHECK_NOT_NULL) {
         return visitCheckNotNullFunction(node);
       }
+      if (nonpluginFn == BuiltinFunction.FLOAT) {
+        return visitFloatFunction(node);
+      }
+
       // the rest of the builtins all deal with indexing operations on foreach variables.
       VarRefNode varRef = (VarRefNode) node.getChild(0);
       ForeachNonemptyNode declaringNode =
@@ -105,8 +110,11 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
               node, foreachLoopIndex(declaringNode), foreachLoopLength(declaringNode));
         case INDEX:
           return visitIndexFunction(node, foreachLoopIndex(declaringNode));
-        case CHECK_NOT_NULL: // handled before the switch above
         case QUOTE_KEYS_IF_JS:
+        case CHECK_NOT_NULL:
+        case FLOAT:
+          // should have been handled above, before the switch statement
+          throw new AssertionError();
         default:
           throw new AssertionError();
       }
@@ -146,11 +154,15 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
     return visitExprNode(node);
   }
 
-  T visitPluginFunction(FunctionNode node) {
+  T visitCheckNotNullFunction(FunctionNode node) {
     return visitExprNode(node);
   }
 
-  T visitCheckNotNullFunction(FunctionNode node) {
+  T visitFloatFunction(FunctionNode node) {
+    return visitExprNode(node);
+  }
+
+  T visitPluginFunction(FunctionNode node) {
     return visitExprNode(node);
   }
 }

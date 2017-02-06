@@ -39,6 +39,7 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.sanitizedContentT
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.inject.assistedinject.Assisted;
 import com.google.inject.assistedinject.AssistedInject;
 import com.google.protobuf.Descriptors.FieldDescriptor;
@@ -554,7 +555,9 @@ public class TranslateExprNodeVisitor
         case QUOTE_KEYS_IF_JS:
           return visitMapLiteralNodeHelper((MapLiteralNode) node.getChild(0), true);
         case CHECK_NOT_NULL:
-          return visitCheckNotNullFunction(node.getChild(0));
+          return visitCheckNotNullFunction(node);
+        case FLOAT:
+          return visitFloatFunction(node);
         default:
           throw new AssertionError();
       }
@@ -600,8 +603,13 @@ public class TranslateExprNodeVisitor
     }
   }
 
-  private CodeChunk.WithValue visitCheckNotNullFunction(ExprNode child) {
-    return SOY_CHECK_NOT_NULL.call(visit(child));
+  private CodeChunk.WithValue visitCheckNotNullFunction(FunctionNode node) {
+    return SOY_CHECK_NOT_NULL.call(visit(node.getChild(0)));
+  }
+
+  private CodeChunk.WithValue visitFloatFunction(FunctionNode node) {
+    // int -> float coercion is a no-op in javascript
+    return visit(Iterables.getOnlyElement(node.getChildren()));
   }
 
   private CodeChunk.WithValue visitIsFirstFunction(FunctionNode node) {
@@ -609,12 +617,10 @@ public class TranslateExprNodeVisitor
     return variableMappings.get(varName + "__isFirst");
   }
 
-
   private CodeChunk.WithValue visitIsLastFunction(FunctionNode node) {
     String varName = ((VarRefNode) node.getChild(0)).getName();
     return variableMappings.get(varName + "__isLast");
   }
-
 
   private CodeChunk.WithValue visitIndexFunction(FunctionNode node) {
     String varName = ((VarRefNode) node.getChild(0)).getName();

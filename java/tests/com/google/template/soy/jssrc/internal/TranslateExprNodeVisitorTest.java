@@ -292,7 +292,7 @@ public final class TranslateExprNodeVisitorTest {
   }
 
   @Test
-  public void testGeneralFunctions() {
+  public void testBuiltinFunctions() {
     assertThatSoyExpr("isFirst($goo) ? 1 : 0")
         .withInitialLocalVarTranslations(LOCAL_VAR_TRANSLATIONS)
         .generatesCode("gooIndex8 == 0 ? 1 : 0")
@@ -307,6 +307,14 @@ public final class TranslateExprNodeVisitorTest {
         .withInitialLocalVarTranslations(LOCAL_VAR_TRANSLATIONS)
         .generatesCode("gooIndex8 + 1")
         .withPrecedence(PLUS);
+
+    assertThatSoyExpr("['abc': $goo]")
+        .withInitialLocalVarTranslations(LOCAL_VAR_TRANSLATIONS)
+        .generatesCode("{abc: gooData8}");
+
+    assertThatSoyExpr("quoteKeysIfJs(['abc': $goo])")
+        .withInitialLocalVarTranslations(LOCAL_VAR_TRANSLATIONS)
+        .generatesCode("{'abc': gooData8}");
 
     assertThatSoyExpr("checkNotNull($goo) ? 1 : 0")
         .withInitialLocalVarTranslations(LOCAL_VAR_TRANSLATIONS)
