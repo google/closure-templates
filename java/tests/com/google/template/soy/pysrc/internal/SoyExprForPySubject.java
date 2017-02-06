@@ -31,8 +31,10 @@ import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.SoyModule;
 import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.pysrc.internal.GenPyExprsVisitor.GenPyExprsVisitorFactory;
 import com.google.template.soy.pysrc.restricted.PyExpr;
+import com.google.template.soy.pysrc.restricted.PyExprUtils;
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.soytree.PrintNode;
@@ -134,6 +136,14 @@ public final class SoyExprForPySubject extends Subject<SoyExprForPySubject, Stri
    */
   public void translatesTo(PyExpr expectedPyExpr) {
     translatesTo(expectedPyExpr, null);
+  }
+
+  public void translatesTo(String expr, Operator precedence) {
+    translatesTo(new PyExpr(expr, PyExprUtils.pyPrecedenceForOperator(precedence)));
+  }
+
+  public void translatesTo(String expr, int precedence) {
+    translatesTo(new PyExpr(expr, precedence));
   }
 
   /**

@@ -35,7 +35,7 @@ public enum BuiltinFunction implements SoyFunction {
   INDEX("index"),
   QUOTE_KEYS_IF_JS("quoteKeysIfJs"),
   CHECK_NOT_NULL("checkNotNull"),
-  FLOAT("$$float"), // $$ prefix ensures that the parser doesn't let devs use it directly
+  FLOAT("_soy_private_do_not_use_float"), // TODO(user): fix name
   ;
 
   /** Map of NonpluginFunctions by function name. */

@@ -320,8 +320,14 @@ abstract class Expression extends BytecodeProducer {
    * @throws IllegalArgumentException if either type is not a reference type.
    */
   Expression checkedCast(final Type target) {
-    checkArgument(target.getSort() == Type.OBJECT, "cast targets must be reference types.");
-    checkArgument(resultType().getSort() == Type.OBJECT, "you may only cast from reference types.");
+    checkArgument(
+        target.getSort() == Type.OBJECT,
+        "cast targets must be reference types. (%s)",
+        target.getClassName());
+    checkArgument(
+        resultType().getSort() == Type.OBJECT,
+        "you may only cast from reference types. (%s)",
+        resultType().getClassName());
     if (BytecodeUtils.isDefinitelyAssignableFrom(target, resultType())) {
       return this;
     }

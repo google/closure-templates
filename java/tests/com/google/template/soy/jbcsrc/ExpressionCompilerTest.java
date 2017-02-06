@@ -63,6 +63,7 @@ import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.aggregate.ListType;
 import com.google.template.soy.types.aggregate.MapType;
 import com.google.template.soy.types.aggregate.RecordType;
+import com.google.template.soy.types.primitive.FloatType;
 import com.google.template.soy.types.primitive.IntType;
 import com.google.template.soy.types.primitive.SanitizedType;
 import com.google.template.soy.types.primitive.StringType;
@@ -72,6 +73,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -82,8 +84,6 @@ import org.objectweb.asm.commons.Method;
 /** Tests for {@link ExpressionCompiler} */
 @RunWith(JUnit4.class)
 public class ExpressionCompilerTest {
-  public static RenderContext currentRenderContext;
-
   private final Map<String, SoyExpression> variables = new HashMap<>();
   private final ExpressionCompiler testExpressionCompiler =
       ExpressionCompiler.create(
@@ -153,6 +153,11 @@ public class ExpressionCompilerTest {
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
+  }
+
+  @Before
+  public void setUp() {
+    variables.clear();
   }
 
   @Test
@@ -548,6 +553,22 @@ public class ExpressionCompilerTest {
             BytecodeUtils.constantNull(Type.getType(SoyDict.class))));
     assertExpression("$nullRecord.a").throwsException(NullPointerException.class);
     assertExpression("$nullRecord?.a").evaluatesTo(null);
+  }
+
+  @Test
+  public void testBuiltinFunctions() {
+    variables.put("x", compileExpression("['a': 1]").box());
+    variables.put(
+        "y",
+        SoyExpression.forSoyValue(
+            SoyTypes.makeNullable(FloatType.getInstance()),
+            BytecodeUtils.constantNull(Type.getType(FloatData.class))));
+    assertExpression("checkNotNull($x.a)").evaluatesTo(IntegerData.forValue(1));
+    assertExpression("checkNotNull($y)").throwsException(NullPointerException.class);
+
+    variables.put("z", compileExpression("10").box());
+    assertExpression("_soy_private_do_not_use_float($z)").evaluatesTo(10f);
+    assertExpression("_soy_private_do_not_use_float(20)").evaluatesTo(20f);
   }
 
   @Test

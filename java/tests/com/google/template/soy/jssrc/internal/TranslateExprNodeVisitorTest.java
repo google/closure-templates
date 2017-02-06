@@ -41,24 +41,10 @@ public final class TranslateExprNodeVisitorTest {
   // Let 'goo' simulate a local variable from a 'foreach' loop.
   private static final ImmutableMap<String, CodeChunk.WithValue> LOCAL_VAR_TRANSLATIONS =
       ImmutableMap.<String, CodeChunk.WithValue>builder()
-          .put(
-              "goo",
-              id("gooData8"))
-          .put(
-              "goo__isFirst",
-              id("gooIndex8")
-                  .doubleEquals(
-                      number(0)))
-          .put(
-              "goo__isLast",
-              id("gooIndex8")
-                  .doubleEquals(
-                      id("gooListLen8")
-                          .minus(
-                              number(1))))
-          .put(
-              "goo__index",
-              id("gooIndex8"))
+          .put("goo", id("gooData8"))
+          .put("goo__isFirst", id("gooIndex8").doubleEquals(number(0)))
+          .put("goo__isLast", id("gooIndex8").doubleEquals(id("gooListLen8").minus(number(1))))
+          .put("goo__index", id("gooIndex8"))
           .build();
 
   @Test
@@ -320,5 +306,11 @@ public final class TranslateExprNodeVisitorTest {
         .withInitialLocalVarTranslations(LOCAL_VAR_TRANSLATIONS)
         .generatesCode("soy.$$checkNotNull(gooData8) ? 1 : 0")
         .withPrecedence(CONDITIONAL);
+
+    // float() should be no-op in javascript
+    assertThatSoyExpr("$goo + _soy_private_do_not_use_float(10)")
+        .withInitialLocalVarTranslations(LOCAL_VAR_TRANSLATIONS)
+        .generatesCode("gooData8 + 10")
+        .withPrecedence(PLUS);
   }
 }

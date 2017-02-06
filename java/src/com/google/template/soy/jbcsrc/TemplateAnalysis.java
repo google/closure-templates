@@ -151,7 +151,7 @@ final class TemplateAnalysis {
   }
 
   /**
-   * This visitor (and the {@link PseudoEvaluatorExprVisitor}) visit every Soy node in the order
+   * This visitor (and the {@link PseudoEvaluatorExprVisitor}) visits every Soy node in the order
    * that the code generated from those node would execute and contructs an {@link AccessGraph}.
    */
   private static final class PseudoEvaluatorVisitor extends AbstractSoyNodeVisitor<Void> {
@@ -665,9 +665,9 @@ final class TemplateAnalysis {
             return;
           case QUOTE_KEYS_IF_JS:
           case CHECK_NOT_NULL:
+          case FLOAT:
             // fall through
             break;
-          case FLOAT: // TODO(user): Implement
           default:
             throw new AssertionError("unexpected builtin function");
         }
