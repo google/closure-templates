@@ -34,6 +34,8 @@ import javax.inject.Inject;
  * Custom data converter for protocol buffer message types.
  *
  */
+// TODO(user): Will be removed shortly. Please use SoyFileSet.Builder#addProtoDescriptors to add
+// descriptors directly to SoyFileSet.Builder.
 public final class SoyProtoValueConverter implements SoyCustomValueConverter {
   private final SoyTypeRegistry registry;
   private final SoyProtoTypeProvider protoTypeProvider;

@@ -23,6 +23,7 @@ package com.google.template.soy.data;
  * <p>A custom converter that knows how to convert some specific Java objects to SoyValues (or
  * SoyValueProviders).
  *
+ *     <p>TODO(user): Going away soon. Please perform data conversions outside of Soy code.
  */
 public interface SoyCustomValueConverter {
 

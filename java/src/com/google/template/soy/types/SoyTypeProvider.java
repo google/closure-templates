@@ -16,7 +16,11 @@
 
 package com.google.template.soy.types;
 
-/** Interface used to lookup information about an object type. */
+/**
+ * Interface used to lookup information about an object type.
+ *
+ * <p>TODO(user): Will be removed soon. Please do not add additional implementations.
+ */
 public interface SoyTypeProvider {
 
   /**

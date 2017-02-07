@@ -55,6 +55,8 @@ import javax.annotation.concurrent.GuardedBy;
  * SoyTypeProvider implementation which handles protocol buffer message types.
  *
  */
+// TODO(user): Please use SoyFileSet.Builder#addProtoDescriptors to add descriptors directly to
+// SoyFileSet.Builder.
 public final class SoyProtoTypeProvider implements SoyTypeProvider {
 
   private static final ExtensionRegistry REGISTRY = createRegistry();
