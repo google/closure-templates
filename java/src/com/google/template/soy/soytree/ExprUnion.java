@@ -28,6 +28,7 @@ import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprparse.SoyParsingContext;
+import com.google.template.soy.exprparse.V1ExpressionErrors;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import java.util.ArrayList;
@@ -143,6 +144,22 @@ public final class ExprUnion {
   public void reportV2ParseErrors(ErrorReporter reporter) {
     for (DelayedErrorReport report : delayedErrorReports) {
       reporter.report(report.location(), report.error(), report.args().toArray());
+    }
+  }
+
+  /**
+   * Reports v1 expression errors that are considered permanent errors for all templates regardless
+   * of the template's version. Use of v1 expressions will eventually go away entirely, and this
+   * method can ban certain v1 expressions incrementally until all are removed from the codebase.
+   */
+  public void reportDisallowedV1ExpressionErrors(ErrorReporter reporter) {
+    for (DelayedErrorReport report : delayedErrorReports) {
+      if (V1ExpressionErrors.LEGACY_AND_ERROR.equals(report.error())
+          || V1ExpressionErrors.LEGACY_OR_ERROR.equals(report.error())
+          || V1ExpressionErrors.LEGACY_NOT_ERROR.equals(report.error())
+          || V1ExpressionErrors.LEGACY_DOUBLE_QUOTED_STRING.equals(report.error())) {
+        reporter.report(report.location(), report.error(), report.args().toArray());
+      }
     }
   }
 

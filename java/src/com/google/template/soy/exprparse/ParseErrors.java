@@ -26,15 +26,6 @@ import com.google.template.soy.error.SoyErrorKind;
 /** Helpers for interpreting parse errors as soy errors. */
 final class ParseErrors {
 
-  private static final SoyErrorKind LEGACY_AND_ERROR =
-      SoyErrorKind.of("Found use of ''&&'' instead of the ''and'' operator");
-  private static final SoyErrorKind LEGACY_OR_ERROR =
-      SoyErrorKind.of("Found use of ''||'' instead of the ''or'' operator");
-  private static final SoyErrorKind LEGACY_NOT_ERROR =
-      SoyErrorKind.of("Found use of ''!'' instead of the ''not'' operator");
-  private static final SoyErrorKind LEGACY_DOUBLE_QUOTED_STRING =
-      SoyErrorKind.of("Found use of double quotes, Soy strings use single quotes");
-
   private ParseErrors() {}
 
   static void reportExprParseException(
@@ -61,16 +52,16 @@ final class ParseErrors {
     // same place we match 'and'), then we could report errors and keep going in the parser.
     switch (errorToken.kind) {
       case ExpressionParserConstants.LEGACY_AND:
-        reporter.report(errorLocation, LEGACY_AND_ERROR);
+        reporter.report(errorLocation, V1ExpressionErrors.LEGACY_AND_ERROR);
         return;
       case ExpressionParserConstants.LEGACY_OR:
-        reporter.report(errorLocation, LEGACY_OR_ERROR);
+        reporter.report(errorLocation, V1ExpressionErrors.LEGACY_OR_ERROR);
         return;
       case ExpressionParserConstants.LEGACY_NOT:
-        reporter.report(errorLocation, LEGACY_NOT_ERROR);
+        reporter.report(errorLocation, V1ExpressionErrors.LEGACY_NOT_ERROR);
         return;
       case ExpressionParserConstants.DOUBLE_QUOTE:
-        reporter.report(errorLocation, LEGACY_DOUBLE_QUOTED_STRING);
+        reporter.report(errorLocation, V1ExpressionErrors.LEGACY_DOUBLE_QUOTED_STRING);
         return;
     }
     // otherwise log a generic unexpected token error message

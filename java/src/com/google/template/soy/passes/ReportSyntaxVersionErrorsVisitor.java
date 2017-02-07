@@ -91,6 +91,10 @@ final class ReportSyntaxVersionErrorsVisitor extends AbstractSoyNodeVisitor<Void
         // not parsable as V2.
         if (exprUnion.getExpr() == null && requiredSyntaxVersion.num >= SyntaxVersion.V2_0.num) {
           exprUnion.reportV2ParseErrors(errorReporter);
+        } else {
+          // Certain v1 expressions are being incrementally banned until all v1 expressions can be
+          // removed from the codebase.
+          exprUnion.reportDisallowedV1ExpressionErrors(errorReporter);
         }
       }
     }
