@@ -15,62 +15,64 @@
  */
 package com.google.template.soy.jssrc.dsl;
 
-import static com.google.common.base.Preconditions.checkArgument;
-
 import com.google.auto.value.AutoValue;
-import com.google.common.collect.ImmutableSet;
-import com.google.template.soy.jssrc.restricted.JsExpr;
+import com.google.common.collect.ImmutableList;
 
-/**
- * A delegating {@link CodeChunk} that records the symbols that the delegate {@code goog.require}s.
- */
+/** Represents a symbol that is imported via a {@code goog.require} statement. */
 @AutoValue
-abstract class GoogRequire extends CodeChunk.WithValue {
-  static GoogRequire create(CodeChunk.WithValue delegate, Iterable<String> requires) {
-    // This check is to account for a limitation in formatOutputExpr
-    checkArgument(
-        !(delegate instanceof GoogRequire),
-        "GoogRequire nodes shouldn't delegate to other GoogRequire nodes: %s",
-        delegate);
-    ImmutableSet<String> copy = ImmutableSet.copyOf(requires);
-    checkArgument(!copy.isEmpty(), "expected at least one require, got none");
-    return new AutoValue_GoogRequire(delegate, copy);
+public abstract class GoogRequire implements Comparable<GoogRequire> {
+  private static final CodeChunk.WithValue GOOG_REQUIRE =
+      CodeChunk.dottedIdNoRequire("goog.require");
+
+  /**
+   * Creates a new {@code GoogRequire} that requires the given symbol: {@code
+   * goog.require('symbol'); }
+   */
+  public static GoogRequire create(String symbol) {
+    return new AutoValue_GoogRequire(symbol, GOOG_REQUIRE.call(CodeChunk.stringLiteral(symbol)));
   }
 
-  abstract CodeChunk.WithValue underlying();
-
-  abstract ImmutableSet<String> requires();
-
-  @Override
-  public boolean isRepresentableAsSingleExpression() {
-    return underlying().isRepresentableAsSingleExpression();
+  /**
+   * Creates a new {@code GoogRequire} that requires the given symbol and aliases it to the given
+   * name: {@code var alias = goog.require('symbol'); }
+   */
+  public static GoogRequire createWithAlias(String symbol, String alias) {
+    CodeChunkUtils.checkId(alias);
+    return new AutoValue_GoogRequire(
+        symbol,
+        CodeChunk.declare(alias)
+            .setInitialValue(GOOG_REQUIRE.call(CodeChunk.stringLiteral(symbol)))
+            .build());
   }
 
-  @Override
-  public JsExpr singleExprOrName() {
-    return underlying().singleExprOrName();
-  }
+  /** The symbol to require. */
+  public abstract String symbol();
 
-  @Override
-  public void collectRequires(RequiresCollector collector) {
-    for (String require : requires()) {
-      collector.add(require);
+  /** a code chunk that will generate the {@code goog.require()}. */
+  abstract CodeChunk chunk();
+
+  /** Returns a code chunk that can act as a reference to the required symbol. */
+  public CodeChunk.WithValue reference() {
+    CodeChunk.WithValue value;
+    if (chunk() instanceof Declaration) {
+      value = CodeChunk.id(((Declaration) chunk()).varName());
+    } else {
+      value = CodeChunk.dottedIdNoRequire(symbol());
     }
-    underlying().collectRequires(collector);
+    return GoogRequireDecorator.create(value, ImmutableList.of(this));
   }
 
-  // we need to delegate here but the code chunk api is antagonistic to delegation so we suppress
-  // the error prone check
-  @SuppressWarnings("ForOverride")
-  @Override
-  void doFormatOutputExpr(FormattingContext ctx, OutputContext outputContext) {
-    underlying().doFormatOutputExpr(ctx, outputContext);
+  /** Access a member of this required symbol. */
+  public CodeChunk.WithValue dotAccess(String ident) {
+    return reference().dotAccess(ident);
   }
 
-  // see above
-  @SuppressWarnings("ForOverride")
+  public void writeTo(StringBuilder sb) {
+    sb.append(chunk().getStatementsForInsertingIntoForeignCodeAtIndent(0));
+  }
+
   @Override
-  void doFormatInitialStatements(FormattingContext ctx, boolean moreToCome) {
-    underlying().doFormatInitialStatements(ctx, moreToCome);
+  public final int compareTo(GoogRequire o) {
+    return symbol().compareTo(o.symbol());
   }
 }

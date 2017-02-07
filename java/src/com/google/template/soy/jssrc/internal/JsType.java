@@ -41,6 +41,7 @@ import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.jssrc.dsl.CodeChunk.Generator;
 import com.google.template.soy.jssrc.dsl.CodeChunk.WithValue;
+import com.google.template.soy.jssrc.dsl.GoogRequire;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.aggregate.ListType;
@@ -167,7 +168,7 @@ abstract class JsType {
   private static final JsType NULL_OR_UNDEFINED_TYPE =
       new JsType(
           ImmutableList.of("null", "undefined"),
-          ImmutableSet.<String>of(),
+          ImmutableSet.<GoogRequire>of(),
           ImmutableList.of(ValueCoercionStrategy.NULL)) {
         @Override
         Optional<WithValue> getTypeAssertion(WithValue value, Generator codeGenerator) {
@@ -219,7 +220,7 @@ abstract class JsType {
         // TODO(lukes): stop allowing number, just allow the enum
         return new JsType(
             ImmutableSet.of("number", enumTypeName),
-            ImmutableSet.of(enumTypeName),
+            ImmutableSet.of(GoogRequire.create(enumTypeName)),
             ImmutableSet.<ValueCoercionStrategy>of()) {
           @Override
           Optional<WithValue> getTypeAssertion(WithValue value, Generator codeGenerator) {
@@ -312,7 +313,7 @@ abstract class JsType {
         UnionType unionType = (UnionType) soyType;
         Set<String> typeExprs = new LinkedHashSet<>();
         Set<ValueCoercionStrategy> strategies = new LinkedHashSet<>();
-        Set<String> requires = new LinkedHashSet<>();
+        Set<GoogRequire> requires = new LinkedHashSet<>();
         final Set<JsType> types = new LinkedHashSet<>();
         final boolean isNullable = unionType.isNullable();
         // handle null first so that if other type tests dereference the param they won't fail
@@ -358,27 +359,30 @@ abstract class JsType {
   }
 
   private final ImmutableSortedSet<String> typeExpressions;
-  private final ImmutableSet<String> extraRequires;
+  private final ImmutableSet<GoogRequire> extraRequires;
   private final ImmutableSet<ValueCoercionStrategy> coercionStrategies;
 
   private JsType(String typeExpr) {
     this(
         ImmutableList.of(typeExpr),
-        ImmutableSet.<String>of(),
+        ImmutableSet.<GoogRequire>of(),
         ImmutableSet.<ValueCoercionStrategy>of());
   }
 
   private JsType(Iterable<String> typeExprs) {
-    this(typeExprs, ImmutableSet.<String>of(), ImmutableSet.<ValueCoercionStrategy>of());
+    this(typeExprs, ImmutableSet.<GoogRequire>of(), ImmutableSet.<ValueCoercionStrategy>of());
   }
 
   private JsType(String typeExpr, ValueCoercionStrategy coercionStrategy) {
-    this(ImmutableList.of(typeExpr), ImmutableSet.<String>of(), ImmutableSet.of(coercionStrategy));
+    this(
+        ImmutableList.of(typeExpr),
+        ImmutableSet.<GoogRequire>of(),
+        ImmutableSet.of(coercionStrategy));
   }
 
   private JsType(
       Iterable<String> typeExprs,
-      Iterable<String> requires,
+      Iterable<GoogRequire> requires,
       Iterable<ValueCoercionStrategy> coercionStrategies) {
     // Sort for determinism, order doesn't matter.
     this.typeExpressions = ImmutableSortedSet.copyOf(typeExprs);
@@ -405,7 +409,7 @@ abstract class JsType {
     return typeExpr();
   }
 
-  final ImmutableSet<String> getGoogRequires() {
+  final ImmutableSet<GoogRequire> getGoogRequires() {
     return extraRequires;
   }
 

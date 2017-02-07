@@ -16,7 +16,6 @@
 
 package com.google.template.soy.jssrc.dsl;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.jssrc.dsl.OutputContext.STATEMENT;
@@ -36,7 +35,6 @@ import com.google.template.soy.exprtree.Operator.Associativity;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import java.util.Arrays;
 import java.util.List;
-import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
 /**
@@ -70,10 +68,10 @@ public abstract class CodeChunk {
   /**
    * Creates a new code chunk from the given expression. The expression's precedence is preserved.
    */
-  public static WithValue fromExpr(JsExpr expr, Iterable<String> requires) {
-    ImmutableSet<String> copy = ImmutableSet.copyOf(requires);
+  public static WithValue fromExpr(JsExpr expr, Iterable<GoogRequire> requires) {
+    ImmutableSet<GoogRequire> copy = ImmutableSet.copyOf(requires);
     Leaf chunk = Leaf.create(expr);
-    return copy.isEmpty() ? chunk : GoogRequire.create(chunk, copy);
+    return copy.isEmpty() ? chunk : GoogRequireDecorator.create(chunk, copy);
   }
 
   /**
@@ -82,41 +80,8 @@ public abstract class CodeChunk {
    * @throws IllegalArgumentException if rawText is not a valid JavaScript identifier.
    */
   public static WithValue id(String id) {
-    Preconditions.checkArgument(ID.matcher(id).matches(), "not a valid id: %s", id);
+    CodeChunkUtils.checkId(id);
     return Leaf.create(id);
-  }
-
-  /**
-   * Creates a code chunk representing a JavaScript "dotted identifier" that also adds a {@code
-   * goog.require} for the identifier.
-   *
-   * <p>"Dotted identifiers" are really just sequences of dot-access operations off some base
-   * identifier, so this method is just a convenience for <code>id(...).dotAccess(...)...</code>.
-   * It's provided because working with raw dot-separated strings is common.
-   *
-   * @throws IllegalStateException if dotSeparatedIdentifiers is not a dot-separated sequence of
-   *     valid JavaScript identifiers.
-   */
-  public static WithValue dottedIdWithRequire(String identifier) {
-    return GoogRequire.create(dottedId(identifier), ImmutableSet.of(identifier));
-  }
-
-  /**
-   * Creates a code chunk representing a javascript identifier that also adds a {@code goog.require}
-   * for the given namesapce.
-   *
-   * <p>"Dotted identifiers" are really just sequences of dot-access operations off some base
-   * identifier, so this method is just a convenience for <code>id(...).dotAccess(...)...</code>.
-   * It's provided because working with raw dot-separated strings is common.
-   *
-   * <p>This should be rarely used.
-   *
-   * @throws IllegalArgumentException if {@code namespace} isn't a prefix of {@code dottedId}
-   */
-  public static WithValue dottedIdWithCustomNamespace(String dottedId, String namespace) {
-    checkArgument(
-        dottedId.startsWith(namespace), "Expected %s to start with %s", dottedId, namespace);
-    return GoogRequire.create(dottedId(dottedId), ImmutableSet.of(namespace));
   }
 
   /**
@@ -127,14 +92,9 @@ public abstract class CodeChunk {
    * identifier, so this method is just a convenience for <code>id(...).dotAccess(...)...</code>.
    * It's provided because working with raw dot-separated strings is common.
    *
-   * <p>This should only be used for certain special namespaces e.g. {@code goog} or {@code window}
-   * TODO(lukes): enforce that.
+   * <p>Most dotted identifiers should be accessed via the {@link GoogRequire} api.
    */
   public static WithValue dottedIdNoRequire(String dotSeparatedIdentifiers) {
-    return dottedId(dotSeparatedIdentifiers);
-  }
-
-  private static WithValue dottedId(String dotSeparatedIdentifiers) {
     List<String> ids = Splitter.on('.').splitToList(dotSeparatedIdentifiers);
     Preconditions.checkState(
         !ids.isEmpty(),
@@ -201,7 +161,7 @@ public abstract class CodeChunk {
   /** A builder for complex declarations. */
   public static final class DeclarationBuilder {
     @Nullable String typeExpr;
-    @Nullable ImmutableSet<String> requires;
+    @Nullable ImmutableSet<GoogRequire> requires;
     String varName;
     WithValue rhs;
 
@@ -221,7 +181,7 @@ public abstract class CodeChunk {
       return this;
     }
 
-    public DeclarationBuilder setGoogRequiresForType(Iterable<String> requires) {
+    public DeclarationBuilder setGoogRequiresForType(Iterable<GoogRequire> requires) {
       checkState(this.requires == null);
       this.requires = ImmutableSet.copyOf(requires);
       return this;
@@ -230,7 +190,7 @@ public abstract class CodeChunk {
     public WithValue build() {
       checkState(rhs != null, "must set an initial value");
       return Declaration.create(
-          typeExpr, varName, rhs, requires == null ? ImmutableSet.<String>of() : requires);
+          typeExpr, varName, rhs, requires == null ? ImmutableSet.<GoogRequire>of() : requires);
     }
   }
 
@@ -306,7 +266,7 @@ public abstract class CodeChunk {
    * the results of those plugins.
    */
   public static WithValue dontTrustPrecedenceOf(
-      JsExpr couldHaveWrongPrecedence, Iterable<String> requires) {
+      JsExpr couldHaveWrongPrecedence, Iterable<GoogRequire> requires) {
     return Group.create(fromExpr(couldHaveWrongPrecedence, requires));
   }
 
@@ -320,21 +280,12 @@ public abstract class CodeChunk {
    * <p>TODO(user): remove.
    */
   public static CodeChunk treatRawStringAsStatementLegacyOnly(
-      String rawString, Iterable<String> requires) {
-    ImmutableSet<String> copy = ImmutableSet.copyOf(requires);
+      String rawString, Iterable<GoogRequire> requires) {
+    ImmutableSet<GoogRequire> copy = ImmutableSet.copyOf(requires);
     LeafStatement chunk = LeafStatement.create(rawString.trim());
-    return copy.isEmpty() ? chunk : GoogRequireStatement.create(chunk, copy);
+    return copy.isEmpty() ? chunk : GoogRequireStatementDecorator.create(chunk, copy);
   }
 
-  /**
-   * See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Grammar_and_types#Variables
-   *
-   * <p>This incorrectly allows keywords, but that's not a big problem because doing so would cause
-   * JSCompiler to crash. This also incorrectly disallows Unicode in identifiers, but that's not a
-   * big problem because the JS backend generally names identifiers after Soy identifiers, which
-   * don't allow Unicode either.
-   */
-  private static final Pattern ID = Pattern.compile("[A-Za-z_$][\\w$]*");
 
   /**
    * Marker class for a chunk of code that represents a value.
@@ -512,9 +463,9 @@ public abstract class CodeChunk {
       if (outputContext == STATEMENT
           && !(this instanceof Composite)
           && !(this instanceof Assignment)
-          && !(this instanceof GoogRequire
-              && (((GoogRequire) this).underlying() instanceof Composite
-                  || ((GoogRequire) this).underlying() instanceof Assignment))) {
+          && !(this instanceof GoogRequireDecorator
+              && (((GoogRequireDecorator) this).underlying() instanceof Composite
+                  || ((GoogRequireDecorator) this).underlying() instanceof Assignment))) {
         ctx.append(';').endLine();
       }
     }
@@ -535,23 +486,23 @@ public abstract class CodeChunk {
     final RequiresCollector NULL =
         new RequiresCollector() {
           @Override
-          public void add(String require) {}
+          public void add(GoogRequire require) {}
         };
 
     /** Collects requires into an ImmutableSet that can be accessed via {@link #get} */
     final class IntoImmutableSet implements RequiresCollector {
-      private final ImmutableSet.Builder<String> builder = ImmutableSet.builder();
+      private final ImmutableSet.Builder<GoogRequire> builder = ImmutableSet.builder();
 
       @Override
-      public void add(String require) {
+      public void add(GoogRequire require) {
         builder.add(require);
       }
 
-      public ImmutableSet<String> get() {
+      public ImmutableSet<GoogRequire> get() {
         return builder.build();
       }
     }
-    void add(String require);
+    void add(GoogRequire require);
   }
 
   /** Adds all the 'goog.require' identifiers needed by this CodeChunk to the given collection. */
@@ -627,7 +578,7 @@ public abstract class CodeChunk {
   public final JsExpr assertExpr() {
     RequiresCollector.IntoImmutableSet collector = new RequiresCollector.IntoImmutableSet();
     JsExpr expr = assertExprAndCollectRequires(collector);
-    ImmutableSet<String> requires = collector.get();
+    ImmutableSet<GoogRequire> requires = collector.get();
     if (!requires.isEmpty()) {
       throw new IllegalStateException("calling assertExpr() would drop requires!: " + requires);
     }

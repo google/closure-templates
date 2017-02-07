@@ -52,6 +52,7 @@ import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.CodeChunk.DeclarationBuilder;
 import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
 import com.google.template.soy.jssrc.dsl.ConditionalBuilder;
+import com.google.template.soy.jssrc.dsl.GoogRequire;
 import com.google.template.soy.jssrc.internal.GenJsExprsVisitor.GenJsExprsVisitorFactory;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.parsepasses.contextautoesc.ContentSecurityPolicyPass;
@@ -375,8 +376,6 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
       addCodeToDefineJsNamespaces(file, node);
     }
 
-    addTemplatePreamble();
-
     // Add code for each template.
     for (TemplateNode template : node.getChildren()) {
       jsCodeBuilder.appendLine().appendLine();
@@ -392,9 +391,6 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
     jsFilesContents.add(file.toString());
     jsCodeBuilder = null;
   }
-
-  /** An extension point for subclasses to add content prior to any template definition. */
-  protected void addTemplatePreamble() {}
 
   /**
    * Appends requirecss jsdoc tags in the file header section.
@@ -589,7 +585,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
 
     for (String calleeNamespace : calleeNamespaces) {
       if (calleeNamespace.length() > 0 && !calleeNamespace.equals(prevCalleeNamespace)) {
-        jsCodeBuilder.addGoogRequire(calleeNamespace, false);
+        jsCodeBuilder.addGoogRequire(GoogRequire.create(calleeNamespace));
         prevCalleeNamespace = calleeNamespace;
       }
     }
@@ -600,12 +596,8 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
    * @param soyFile The node we're visiting.
    */
   private void addCodeToRequireJsFunctions(SoyFileNode soyFile) {
-    SortedSet<String> requires = new TreeSet<>();
     for (CallBasicNode node : new FindCalleesNotInFileVisitor().exec(soyFile)) {
-      requires.add(node.getCalleeName());
-    }
-    for (String require : requires) {
-      jsCodeBuilder.addGoogRequire(require, false);
+      jsCodeBuilder.addGoogRequire(GoogRequire.create(node.getCalleeName()));
     }
   }
 
@@ -656,6 +648,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
     String alias;
     boolean addToExports = jsSrcOptions.shouldGenerateGoogModules();
 
+    // TODO(lukes): does it make sense to add deltempaltes or private templates to exports?
     if (addToExports && node instanceof TemplateDelegateNode) {
       alias = node.getPartialTemplateName().substring(1);
     } else {
@@ -1494,8 +1487,8 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
     for (TemplateParam param : node.getParams()) {
       JsType jsType = getJsType(param.type());
       record.put(genParamAlias(param.name()), jsType.typeExprForRecordMember());
-      for (String require : jsType.getGoogRequires()) {
-        jsCodeBuilder.addGoogRequire(require, false /* don't suppress extraRequire */);
+      for (GoogRequire require : jsType.getGoogRequires()) {
+        jsCodeBuilder.addGoogRequire(require);
       }
       paramNames.add(param.name());
     }

@@ -15,6 +15,7 @@
  */
 package com.google.template.soy.incrementaldomsrc;
 
+import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_TEXT;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.id;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_STRING_UNESCAPE_ENTITIES;
 
@@ -91,12 +92,15 @@ final class AssistantForHtmlMsgs extends GenJsCodeVisitorAssistantForMsgs {
   }
 
   /**
-   * Generates idom instructions that output the contents of a translated message as HTML.
-   * For example:
+   * Generates idom instructions that output the contents of a translated message as HTML. For
+   * example:
+   *
    * <pre>
    *   {msg desc="Says hello to a person."}Hello {$name}!{/msg}
    * </pre>
+   *
    * compiles to
+   *
    * <pre>
    *   /** @desc Says hello to a person. *{@literal /}
    *   var MSG_EXTERNAL_6936162475751860807 = goog.getMsg(
@@ -105,16 +109,20 @@ final class AssistantForHtmlMsgs extends GenJsCodeVisitorAssistantForMsgs {
    *   var lastIndex_1153 = 0, partRe_1153 = /\x01\d+\x01/g, match_1153;
    *   do {
    *     match_1153 = partRe_1153.exec(MSG_EXTERNAL_6936162475751860807) || undefined;
-   *     itext(goog.string.unescapeEntities(MSG_EXTERNAL_6936162475751860807.substring(lastIndex_1153, match_1153 && match_1153.index)));
+   *     incrementalDom.text(goog.string.unescapeEntities(
+   *         MSG_EXTERNAL_6936162475751860807.substring(
+   *           lastIndex_1153, match_1153 && match_1153.index)));
    *     lastIndex_1153 = partRe_1153.lastIndex;
    *     switch (match_1153 && match_1153[0]) {
    *       case '\u00010\u0001':
    *         var dyn8 = opt_data.name;
-   *         if (typeof dyn8 == 'function') dyn8(); else if (dyn8 != null) itext(dyn8);
+   *         if (typeof dyn8 == 'function') dyn8();
+   *         else if (dyn8 != null) incrementalDom.text(dyn8);
    *         break;
    *     }
    *   } while (match_1153);
    * </pre>
+   *
    * Each interpolated MsgPlaceholderNode (either for HTML tags or for print statements) compiles to
    * a separate {@code case} statement.
    */
@@ -134,7 +142,7 @@ final class AssistantForHtmlMsgs extends GenJsCodeVisitorAssistantForMsgs {
     // If there are no placeholders, we don't need anything special (but we still need to unescape).
     if (placeholderNames.isEmpty()) {
       CodeChunk.WithValue unescape = GOOG_STRING_UNESCAPE_ENTITIES.call(id(translationVar));
-      jsCodeBuilder().append(id("itext").call(unescape));
+      jsCodeBuilder().append(INCREMENTAL_DOM_TEXT.call(unescape));
       return;
     }
 
@@ -176,7 +184,7 @@ final class AssistantForHtmlMsgs extends GenJsCodeVisitorAssistantForMsgs {
         GOOG_STRING_UNESCAPE_ENTITIES.call(
             id(translationVar).dotAccess("substring").call(id(lastIndexVar), endIndex));
 
-    jsCodeBuilder().append(id("itext").call(unescape));
+    jsCodeBuilder().append(INCREMENTAL_DOM_TEXT.call(unescape));
     jsCodeBuilder().appendLine(lastIndexVar, " = ", regexVar, ".lastIndex;");
 
     // Handle the actual placeholder.

@@ -34,6 +34,7 @@ import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.CodeChunk.RequiresCollector;
 import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
+import com.google.template.soy.jssrc.dsl.GoogRequire;
 import com.google.template.soy.jssrc.internal.GenJsExprsVisitor.GenJsExprsVisitorFactory;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
@@ -199,7 +200,7 @@ public class GenCallCodeUtils {
       if (directive instanceof SoyLibraryAssistedJsSrcPrintDirective) {
         for (String name :
             ((SoyLibraryAssistedJsSrcPrintDirective) directive).getRequiredJsLibNames()) {
-          collector.add(name);
+          collector.add(GoogRequire.create(name));
         }
       }
     }

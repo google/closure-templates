@@ -22,21 +22,22 @@ import com.google.common.collect.ImmutableSet;
 
 /** A delegating {@link CodeChunk} that record the symbols that the delegate requires. */
 @AutoValue
-abstract class GoogRequireStatement extends CodeChunk {
-  static GoogRequireStatement create(LeafStatement delegate, Iterable<String> requires) {
+abstract class GoogRequireStatementDecorator extends CodeChunk {
+  static GoogRequireStatementDecorator create(
+      LeafStatement delegate, Iterable<GoogRequire> requires) {
     // This check is to account for a limitation in formatOutputExpr
-    ImmutableSet<String> copy = ImmutableSet.copyOf(requires);
+    ImmutableSet<GoogRequire> copy = ImmutableSet.copyOf(requires);
     checkArgument(!copy.isEmpty(), "expected at least one require, got none");
-    return new AutoValue_GoogRequireStatement(delegate, copy);
+    return new AutoValue_GoogRequireStatementDecorator(delegate, copy);
   }
 
   abstract LeafStatement underlying();
 
-  abstract ImmutableSet<String> requires();
+  abstract ImmutableSet<GoogRequire> requires();
 
   @Override
   public void collectRequires(RequiresCollector collector) {
-    for (String require : requires()) {
+    for (GoogRequire require : requires()) {
       collector.add(require);
     }
     underlying().collectRequires(collector);
