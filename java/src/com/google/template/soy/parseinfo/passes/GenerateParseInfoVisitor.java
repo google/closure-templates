@@ -781,6 +781,9 @@ public final class GenerateParseInfoVisitor
             }
             break;
           }
+
+        default:
+          break;
       }
     }
   }
