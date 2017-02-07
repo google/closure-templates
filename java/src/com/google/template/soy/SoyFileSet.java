@@ -93,6 +93,7 @@ import com.google.template.soy.xliffmsgplugin.XliffMsgPlugin;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -564,6 +565,14 @@ public final class SoyFileSet {
     Builder addProtoFileDescriptorSetFromFile(File descriptorFile) {
       protoTypeProviderBuilder.addFileDescriptorSetFromFile(descriptorFile);
       return this;
+    }
+
+    /**
+     * Registers a collection of protocol buffer descriptors. This makes all the types defined in
+     * the provided descriptors available to use in soy.
+     */
+    public Builder addProtoDescriptors(GenericDescriptor... descriptors) {
+      return addProtoDescriptors(Arrays.asList(descriptors));
     }
 
     /**
