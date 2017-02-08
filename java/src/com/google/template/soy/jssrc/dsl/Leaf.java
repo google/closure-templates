@@ -37,7 +37,7 @@ abstract class Leaf extends CodeChunk.WithValue {
   }
 
   @Override
-  void doFormatInitialStatements(FormattingContext ctx, boolean moreToCome) {
+  void doFormatInitialStatements(FormattingContext ctx) {
     // nothing to do
   }
 

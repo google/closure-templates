@@ -57,21 +57,13 @@ abstract class Declaration extends CodeChunk.WithValue {
   @Override
   String getCode(int startingIndent, OutputContext outputContext, boolean moreToCome) {
     FormattingContext ctx = new FormattingContext(startingIndent);
-    formatInitialStatements(ctx, moreToCome);
+    formatInitialStatements(ctx);
     return ctx.toString();
   }
 
   @Override
-  void doFormatInitialStatements(FormattingContext ctx, boolean moreToCome) {
-    rhs().formatInitialStatements(ctx, moreToCome);
-
-    if (!moreToCome) {
-      // If there's no more to come, no point in declaring the variable.
-      rhs().formatOutputExpr(ctx, EXPRESSION);
-      ctx.append(';').endLine();
-      return;
-    }
-
+  void doFormatInitialStatements(FormattingContext ctx) {
+    rhs().formatInitialStatements(ctx);
     if (closureCompilerTypeExpression() != null) {
       ctx.append("/** @type {").append(closureCompilerTypeExpression()).append("} */").endLine();
     }

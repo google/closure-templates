@@ -20,7 +20,6 @@ import static com.google.template.soy.jssrc.dsl.OutputContext.EXPRESSION;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.jssrc.dsl.CodeChunk.RequiresCollector;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 
 /** Represents a JavaScript array literal expression. */
@@ -73,9 +72,9 @@ abstract class ArrayLiteral extends CodeChunk.WithValue {
   }
 
   @Override
-  void doFormatInitialStatements(FormattingContext ctx, boolean moreToCome) {
-    for (int i = 0; i < elements().size(); ++i) {
-      elements().get(i).formatInitialStatements(ctx, moreToCome || i < elements().size() - 1);
+  void doFormatInitialStatements(FormattingContext ctx) {
+    for (CodeChunk.WithValue element : elements()) {
+      element.formatInitialStatements(ctx);
     }
   }
 }

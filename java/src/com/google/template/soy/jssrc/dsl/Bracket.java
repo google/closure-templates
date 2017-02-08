@@ -21,7 +21,6 @@ import static com.google.template.soy.jssrc.dsl.OutputContext.EXPRESSION;
 
 import com.google.auto.value.AutoValue;
 import com.google.template.soy.exprtree.Operator.Associativity;
-import com.google.template.soy.jssrc.dsl.CodeChunk.RequiresCollector;
 
 /** Represents a JavaScript computed member access ({@code []}) expression. */
 @AutoValue
@@ -59,9 +58,9 @@ abstract class Bracket extends Operation {
   }
 
   @Override
-  void doFormatInitialStatements(FormattingContext ctx, boolean moreToCome) {
-    receiver().formatInitialStatements(ctx, true /* moreToCome */);
-    key().formatInitialStatements(ctx, moreToCome);
+  void doFormatInitialStatements(FormattingContext ctx) {
+    receiver().formatInitialStatements(ctx);
+    key().formatInitialStatements(ctx);
   }
 
   @Override

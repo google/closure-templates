@@ -42,8 +42,8 @@ abstract class New extends Operation {
   }
 
   @Override
-  void doFormatInitialStatements(FormattingContext ctx, boolean moreToCome) {
-    ctor().formatInitialStatements(ctx, moreToCome);
+  void doFormatInitialStatements(FormattingContext ctx) {
+    ctor().formatInitialStatements(ctx);
   }
 
   @Override

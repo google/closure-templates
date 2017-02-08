@@ -471,8 +471,8 @@ public abstract class CodeChunk {
     }
 
     @Override
-    final void formatAllStatements(FormattingContext ctx, boolean moreToCome) {
-      super.formatAllStatements(ctx, true);
+    final void formatAllStatements(FormattingContext ctx) {
+      super.formatAllStatements(ctx);
       formatOutputExpr(ctx, OutputContext.STATEMENT);
     }
   }
@@ -641,7 +641,7 @@ public abstract class CodeChunk {
     }
 
     FormattingContext initialStatements = new FormattingContext(startingIndent);
-    formatInitialStatements(initialStatements, !outputExprs.isEmpty());
+    formatInitialStatements(initialStatements);
 
     // Now put them back into the right order.
     return initialStatements
@@ -652,12 +652,10 @@ public abstract class CodeChunk {
   /**
    * Layer of indirection to check that the initial statements of a code chunk are executed at most
    * once. Subclasses must call this, and not {@link #doFormatInitialStatements}.
-   *
-   * @param moreToCome True if this is not the last code chunk in its sequence.
    */
-  final void formatInitialStatements(FormattingContext ctx, boolean moreToCome) {
+  final void formatInitialStatements(FormattingContext ctx) {
     if (ctx.shouldFormat(this)) {
-      doFormatInitialStatements(ctx, moreToCome);
+      doFormatInitialStatements(ctx);
     }
   }
 
@@ -665,19 +663,13 @@ public abstract class CodeChunk {
    * If this chunk can be represented as a single expression, does nothing. If this chunk cannot be
    * represented as a single expression, writes everything except the final expression to the
    * buffer. Must only be called by {@link #formatInitialStatements}.
-   *
-   * @param moreToCome True if this is not the last code chunk in its sequence.
    */
   @ForOverride
-  abstract void doFormatInitialStatements(FormattingContext ctx, boolean moreToCome);
+  abstract void doFormatInitialStatements(FormattingContext ctx);
 
-  /**
-   * Writes zero or more JavaScript statements representing this code chunk to the given buffer.
-   *
-   * @param moreToCome True if this is not the last code chunk in its sequence.
-   */
-  void formatAllStatements(FormattingContext ctx, boolean moreToCome) {
-    formatInitialStatements(ctx, moreToCome);
+  /** Writes zero or more JavaScript statements representing this code chunk to the given buffer. */
+  void formatAllStatements(FormattingContext ctx) {
+    formatInitialStatements(ctx);
     // overridden by CodeChunk.WithValue to format the output expression too
   }
 

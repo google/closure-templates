@@ -70,7 +70,7 @@ abstract class GoogRequireDecorator extends CodeChunk.WithValue {
   // see above
   @SuppressWarnings("ForOverride")
   @Override
-  void doFormatInitialStatements(FormattingContext ctx, boolean moreToCome) {
-    underlying().doFormatInitialStatements(ctx, moreToCome);
+  void doFormatInitialStatements(FormattingContext ctx) {
+    underlying().doFormatInitialStatements(ctx);
   }
 }

@@ -38,8 +38,8 @@ abstract class Assignment extends CodeChunk.WithValue {
   }
 
   @Override
-  void doFormatInitialStatements(FormattingContext ctx, boolean moreToCome) {
-    rhs().formatInitialStatements(ctx, true /* moreToCome */);
+  void doFormatInitialStatements(FormattingContext ctx) {
+    rhs().formatInitialStatements(ctx);
     ctx.append(varName()).append(" = ");
     rhs().formatOutputExpr(ctx, EXPRESSION);
     ctx.append(";").endLine();

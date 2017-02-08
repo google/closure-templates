@@ -21,7 +21,6 @@ import static com.google.template.soy.jssrc.dsl.OutputContext.EXPRESSION;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.jssrc.dsl.CodeChunk.RequiresCollector;
 import javax.annotation.Nullable;
 
 /** Represents an {@code if}-{@code else if}-{@code else} statement. */
@@ -37,7 +36,7 @@ abstract class Conditional extends CodeChunk {
   }
 
   @Override
-  void doFormatInitialStatements(FormattingContext ctx, boolean moreToCome) {
+  void doFormatInitialStatements(FormattingContext ctx) {
     formatIfClause(ctx);
     int numRightBracesToClose = 0;
     for (IfThenPair condition : conditions().subList(1, conditions().size())) {
@@ -53,10 +52,9 @@ abstract class Conditional extends CodeChunk {
     for (int i = 0; i < numRightBracesToClose; ++i) {
       ctx.close();
     }
-    if (moreToCome) {
-      ctx.endLine();
-    }
+    ctx.endLine();
   }
+
   @Override
   public void collectRequires(RequiresCollector collector) {
     for (IfThenPair child : conditions()) {
@@ -69,12 +67,12 @@ abstract class Conditional extends CodeChunk {
   }
   private void formatIfClause(FormattingContext ctx) {
     IfThenPair first = conditions().get(0);
-    first.predicate.formatInitialStatements(ctx, true /* moreToCome */);
+    first.predicate.formatInitialStatements(ctx);
     ctx.append("if (");
     first.predicate.formatOutputExpr(ctx, EXPRESSION);
     ctx.append(") ");
     try (FormattingContext ignored = ctx.enterBlock()) {
-      first.consequent.formatAllStatements(ctx, false /* moreToCome */);
+      first.consequent.formatAllStatements(ctx);
     }
   }
 
@@ -88,7 +86,7 @@ abstract class Conditional extends CodeChunk {
     condition.predicate.formatOutputExpr(ctx, EXPRESSION);
     ctx.append(") ");
     try (FormattingContext ignored = ctx.enterBlock()) {
-      condition.consequent.formatAllStatements(ctx, false /* moreToCome */);
+      condition.consequent.formatAllStatements(ctx);
     }
   }
 
@@ -105,7 +103,7 @@ abstract class Conditional extends CodeChunk {
       IfThenPair condition, FormattingContext ctx) {
     ctx.append(" else ");
     try (FormattingContext ignored = ctx.enterBlock()) {
-      condition.predicate.formatInitialStatements(ctx, true /* moreToCome */);
+      condition.predicate.formatInitialStatements(ctx);
       ctx.append("if (");
       condition.predicate.formatOutputExpr(ctx, EXPRESSION);
       ctx.append(") ");
@@ -114,7 +112,7 @@ abstract class Conditional extends CodeChunk {
       // are chained appropriately. The block will be closed by
       // Conditional#doFormatInitialStatements.
       ctx.enterBlock();
-      condition.consequent.formatAllStatements(ctx, false /* moreToCome */);
+      condition.consequent.formatAllStatements(ctx);
     }
   }
 
@@ -124,7 +122,7 @@ abstract class Conditional extends CodeChunk {
     }
     ctx.append(" else ");
     try (FormattingContext ignored = ctx.enterBlock()) {
-      trailingElse().formatAllStatements(ctx, false /* moreToCome */);
+      trailingElse().formatAllStatements(ctx);
     }
     ctx.endLine();
   }

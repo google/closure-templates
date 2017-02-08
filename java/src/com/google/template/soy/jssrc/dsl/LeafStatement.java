@@ -32,7 +32,7 @@ abstract class LeafStatement extends CodeChunk {
   }
 
   @Override
-  void doFormatInitialStatements(FormattingContext ctx, boolean moreToCome) {
+  void doFormatInitialStatements(FormattingContext ctx) {
     if (value().length() == 0) {
       return;
     }

@@ -20,7 +20,6 @@ import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.Operator.Associativity;
-import com.google.template.soy.jssrc.dsl.CodeChunk.RequiresCollector;
 
 /** Represents a JavaScript binary operation. */
 @AutoValue
@@ -97,8 +96,8 @@ abstract class BinaryOperation extends Operation {
   }
 
   @Override
-  void doFormatInitialStatements(FormattingContext ctx, boolean moreToCome) {
-    arg1().formatInitialStatements(ctx, true /* moreToCome */);
-    arg2().formatInitialStatements(ctx, moreToCome);
+  void doFormatInitialStatements(FormattingContext ctx) {
+    arg1().formatInitialStatements(ctx);
+    arg2().formatInitialStatements(ctx);
   }
 }

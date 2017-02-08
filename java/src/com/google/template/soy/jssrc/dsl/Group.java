@@ -54,8 +54,8 @@ abstract class Group extends Operation {
   }
 
   @Override
-  void doFormatInitialStatements(FormattingContext ctx, boolean moreToCome) {
-    underlying().formatInitialStatements(ctx, moreToCome);
+  void doFormatInitialStatements(FormattingContext ctx) {
+    underlying().formatInitialStatements(ctx);
   }
 
   @Override

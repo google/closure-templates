@@ -55,7 +55,7 @@ abstract class Ternary extends Operation {
   }
 
   @Override
-  void doFormatInitialStatements(FormattingContext ctx, boolean moreToCome) {
+  void doFormatInitialStatements(FormattingContext ctx) {
     // Nothing to do
   }
 

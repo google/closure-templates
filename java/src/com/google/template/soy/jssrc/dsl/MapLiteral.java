@@ -21,7 +21,6 @@ import static com.google.template.soy.jssrc.dsl.OutputContext.EXPRESSION;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.jssrc.dsl.CodeChunk.RequiresCollector;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 
 /** Represents a JavaScript map literal expression. */
@@ -76,10 +75,12 @@ abstract class MapLiteral extends CodeChunk.WithValue {
   }
 
   @Override
-  void doFormatInitialStatements(FormattingContext ctx, boolean moreToCome) {
-    for (int i = 0; i < keys().size(); i++) {
-      keys().get(i).formatInitialStatements(ctx, moreToCome || i < keys().size() - 1);
-      values().get(i).formatInitialStatements(ctx, moreToCome || i < keys().size() - 1);
+  void doFormatInitialStatements(FormattingContext ctx) {
+    for (CodeChunk.WithValue key : keys()) {
+      key.formatInitialStatements(ctx);
+    }
+    for (CodeChunk.WithValue value : values()) {
+      value.formatInitialStatements(ctx);
     }
   }
 

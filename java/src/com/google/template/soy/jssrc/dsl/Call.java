@@ -22,7 +22,6 @@ import static com.google.template.soy.jssrc.dsl.OutputContext.EXPRESSION;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.exprtree.Operator.Associativity;
-import com.google.template.soy.jssrc.dsl.CodeChunk.RequiresCollector;
 
 /** Represents a JavaScript function call. */
 @AutoValue
@@ -87,10 +86,10 @@ abstract class Call extends Operation {
   }
 
   @Override
-  void doFormatInitialStatements(FormattingContext ctx, boolean moreToCome) {
-    receiver().formatInitialStatements(ctx, true /* moreToCome */);
-    for (int i = 0; i < args().size(); ++i) {
-      args().get(i).formatInitialStatements(ctx, moreToCome || i < args().size() - 1);
+  void doFormatInitialStatements(FormattingContext ctx) {
+    receiver().formatInitialStatements(ctx);
+    for (CodeChunk.WithValue arg : args()) {
+      arg.formatInitialStatements(ctx);
     }
   }
 }

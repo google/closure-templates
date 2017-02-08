@@ -19,7 +19,6 @@ package com.google.template.soy.jssrc.dsl;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.jssrc.dsl.CodeChunk.RequiresCollector;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 
 /**
@@ -42,9 +41,9 @@ abstract class Composite extends CodeChunk.WithValue {
   }
 
   @Override
-  void doFormatInitialStatements(FormattingContext ctx, boolean moreToCome) {
-    for (int i = 0; i < children().size(); ++i) {
-      children().get(i).formatInitialStatements(ctx, moreToCome || i < children().size() - 1);
+  void doFormatInitialStatements(FormattingContext ctx) {
+    for (CodeChunk child : children()) {
+      child.formatInitialStatements(ctx);
     }
   }
   @Override
