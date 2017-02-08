@@ -16,11 +16,9 @@
 
 package com.google.template.soy;
 
-import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
-import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.inject.Guice;
@@ -242,11 +240,6 @@ final class MainClassUtils {
     return cmdLineParser;
   }
 
-  static void run(Main method) {
-    int status = runInternal(method);
-    System.exit(status);
-  }
-
   @VisibleForTesting
   static int runInternal(Main method) {
     try {
@@ -285,68 +278,11 @@ final class MainClassUtils {
     throw new AssertionError(); // dead code
   }
 
-  /**
-   * Returns a Guice injector that includes the SoyModule, a message plugin module, and maybe
-   * additional plugin modules, and maybe additional modules.
-   *
-   * @param msgPluginModuleName The full class name of the message plugin module. Required.
-   * @param pluginModuleNames Comma-delimited list of full class names of additional plugin modules
-   *     to include. Optional.
-   * @return A Guice injector that includes the SoyModule, the given message plugin module, and the
-   *     given additional plugin modules (if any).
-   */
-  static Injector createInjector(String msgPluginModuleName, String pluginModuleNames) {
-    checkArgument(!msgPluginModuleName.isEmpty());
-    return doCreateInjector(msgPluginModuleName, pluginModuleNames);
-  }
-
-  /**
-   * Returns a Guice injector that includes the SoyModule, and maybe additional plugin modules.
-   *
-   * @param pluginModuleNames Comma-delimited list of full class names of additional plugin modules
-   *     to include. Optional.
-   * @return A Guice injector that includes the SoyModule, the given message plugin module, and the
-   *     given additional plugin modules (if any).
-   */
-  static Injector createInjectorForPlugins(String pluginModuleNames) {
-    return doCreateInjector("", pluginModuleNames);
-  }
-
-  /**
-   * Returns a Guice injector that includes the SoyModule, and maybe additional plugin modules.
-   *
-   * @param msgPluginModuleName The full class name of the message plugin module. Required.
-   */
-  static Injector createInjectorForMsgPlugin(String msgPluginModuleName) {
-    return doCreateInjector(msgPluginModuleName, "");
-  }
-
   /** Returns a Guice injector that includes the SoyModule, and the given modules. */
   static Injector createInjector(List<Module> modules) {
     modules = new ArrayList<>(modules); // make a copy that we know is mutable
     modules.add(new SoyModule());
     return Guice.createInjector(modules); // TODO(lukes): Stage.PRODUCTION?
-  }
-
-  /**
-   * Returns an injector configured with the given plugins
-   *
-   * @param msgPluginModuleName The name of a guice module binding a msgplugin, may be empty
-   * @param pluginModuleNames A comma delimited list of plugin modules name, may be empty
-   */
-  private static Injector doCreateInjector(String msgPluginModuleName, String pluginModuleNames) {
-    List<Module> guiceModules = new ArrayList<>();
-    guiceModules.add(new SoyModule());
-
-    if (!msgPluginModuleName.isEmpty()) {
-      guiceModules.add(instantiatePluginModule(msgPluginModuleName));
-    }
-
-    for (String pluginModuleName : Splitter.on(',').omitEmptyStrings().split(pluginModuleNames)) {
-      guiceModules.add(instantiatePluginModule(pluginModuleName));
-    }
-
-    return Guice.createInjector(guiceModules);
   }
 
   /**
