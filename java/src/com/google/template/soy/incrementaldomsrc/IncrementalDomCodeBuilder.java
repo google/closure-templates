@@ -30,6 +30,15 @@ final class IncrementalDomCodeBuilder extends JsCodeBuilder {
 
   IncrementalDomCodeBuilder() {
     super();
+    // Always add the SOY_IDOM library.  This is necessary to ensure that all incremental dom src
+    // libraries always depend on it which ensures that whether a soy file is compiled on the
+    // command line or via a dynamic tool invoking SoyFileSet.compileToIncrementalDomSrc the
+    // dependencies of the file wont change.  This is important because this library is used to
+    // ensure that incremental dom still works when SoyGeneralOptions.allowExternalCalls() is true
+    // which often happens in such scenarios.
+    // TODO(lukes): disallow incrementaldomsrc from being used with allowExternalCalls and then
+    // eliminate this.
+    addGoogRequire(IncrementalDomRuntime.SOY_IDOM);
   }
 
   IncrementalDomCodeBuilder(IncrementalDomCodeBuilder parent) {

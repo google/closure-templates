@@ -23,14 +23,32 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.jssrc.dsl.CodeChunk.RequiresCollector;
 import com.google.template.soy.jssrc.restricted.JsExprUtils;
 import java.util.List;
+import java.util.regex.Pattern;
 
 /** Utility methods for working with CodeChunks. */
 public final class CodeChunkUtils {
+
+  /**
+   * See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Grammar_and_types#Variables
+   *
+   * <p>This incorrectly allows keywords, but that's not a big problem because doing so would cause
+   * JSCompiler to crash. This also incorrectly disallows Unicode in identifiers, but that's not a
+   * big problem because the JS backend generally names identifiers after Soy identifiers, which
+   * don't allow Unicode either.
+   */
+  private static final Pattern ID = Pattern.compile("[A-Za-z_$][\\w$]*");
 
   /** Useful for code generation, but not so useful as to belong in {@link CodeChunk}. */
   public static final CodeChunk.WithValue OPT_DATA = id("opt_data");
 
   private CodeChunkUtils() {}
+
+  /** Validates that the given string is a valid javascript identifier. */
+  static void checkId(String id) {
+    if (!ID.matcher(id).matches()) {
+      throw new IllegalArgumentException(String.format("not a valid js identifier: %s", id));
+    }
+  }
 
   /**
    * Builds a {@link CodeChunk.WithValue} that represents the concatenation of the given code
