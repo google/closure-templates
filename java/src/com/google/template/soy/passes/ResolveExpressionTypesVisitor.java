@@ -25,6 +25,7 @@ import com.google.common.collect.Maps;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.basetree.SyntaxVersionUpperBound;
+import com.google.template.soy.basicfunctions.FloatFunction;
 import com.google.template.soy.basicfunctions.ParseFloatFunction;
 import com.google.template.soy.basicfunctions.ParseIntFunction;
 import com.google.template.soy.error.ErrorReporter;
@@ -768,9 +769,6 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
               node.setType(SoyTypes.removeNull(type));
             }
             break;
-          case FLOAT:
-            node.setType(FloatType.getInstance());
-            break;
           case INDEX:
             node.setType(IntType.getInstance());
             break;
@@ -792,6 +790,8 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
         node.setType(SoyTypes.makeNullable(IntType.getInstance()));
       } else if (knownFunction instanceof ParseFloatFunction) {
         node.setType(SoyTypes.makeNullable(FloatType.getInstance()));
+      } else if (knownFunction instanceof FloatFunction) {
+        node.setType(FloatType.getInstance());
       } else {
         // We have no way of knowing the return type of a function.
         // TODO: think about adding function type declarations.

@@ -665,7 +665,6 @@ final class TemplateAnalysis {
             return;
           case QUOTE_KEYS_IF_JS:
           case CHECK_NOT_NULL:
-          case FLOAT:
             // fall through
             break;
           default:

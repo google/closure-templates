@@ -17,6 +17,7 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
+import static com.google.template.soy.types.SoyTypes.NUMBER_TYPE;
 
 import com.google.template.soy.basicfunctions.AugmentMapFunction;
 import com.google.template.soy.basicfunctions.CeilingFunction;
@@ -35,7 +36,6 @@ import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.aggregate.ListType;
 import com.google.template.soy.types.aggregate.MapType;
 import com.google.template.soy.types.aggregate.UnionType;
-import com.google.template.soy.types.primitive.FloatType;
 import com.google.template.soy.types.primitive.IntType;
 import com.google.template.soy.types.primitive.StringType;
 import com.google.template.soy.types.primitive.UnknownType;
@@ -71,8 +71,6 @@ import org.objectweb.asm.Type;
  * soy}.
  */
 final class PluginFunctionCompiler {
-  private static final SoyType NUMBER_TYPE =
-      UnionType.of(IntType.getInstance(), FloatType.getInstance());
 
   private static final MethodRef AUGMENT_MAP_FN =
       MethodRef.create(AugmentMapFunction.class, "augmentMap", SoyDict.class, SoyDict.class)
@@ -162,6 +160,8 @@ final class PluginFunctionCompiler {
           return invokeStrSubFunction(args.get(0), args.get(1));
         }
         return invokeStrSubFunction(args.get(0), args.get(1), args.get(2));
+      case "_soy_private_do_not_use_float":
+        return invokeFloatFunction(args.get(0));
       default:
         // TODO(lukes): add support for the BidiFunctions
         return invokeSoyFunction(node, args);
@@ -198,6 +198,26 @@ final class PluginFunctionCompiler {
       default:
         return SoyExpression.forSoyValue(IntType.getInstance(), CEIL_FN.invoke(argument.box()));
     }
+  }
+
+  /** @see com.google.template.soy.basicfunctions.FloatFunction */
+  private SoyExpression invokeFloatFunction(SoyExpression arg) {
+    if (arg.soyRuntimeType().isKnownFloat()) {
+      return arg;
+    }
+
+    final SoyExpression intArg = arg.isBoxed() ? arg.unboxAs(long.class) : arg;
+    SoyExpression result =
+        SoyExpression.forFloat(
+                new Expression(Type.DOUBLE_TYPE) {
+                  @Override
+                  void doGen(CodeBuilder cb) {
+                    intArg.gen(cb);
+                    cb.cast(Type.LONG_TYPE, Type.DOUBLE_TYPE);
+                  }
+                })
+            .asNonNullable();
+    return arg.isCheap() ? result.asCheap() : result;
   }
 
   /** @see com.google.template.soy.basicfunctions.FloorFunction */

@@ -817,27 +817,6 @@ final class ExpressionCompiler {
           .asNonNullable();
     }
 
-    @Override
-    SoyExpression visitFloatFunction(FunctionNode node) {
-      SoyExpression argExpr = visit(Iterables.getOnlyElement(node.getChildren()));
-      if (argExpr.soyRuntimeType().isKnownFloat()) {
-        return argExpr;
-      }
-
-      final SoyExpression exprToCast = argExpr.isBoxed() ? argExpr.unboxAs(long.class) : argExpr;
-      SoyExpression result =
-          SoyExpression.forFloat(
-                  new Expression(Type.DOUBLE_TYPE) {
-                    @Override
-                    void doGen(CodeBuilder cb) {
-                      exprToCast.gen(cb);
-                      cb.cast(Type.LONG_TYPE, Type.DOUBLE_TYPE);
-                    }
-                  })
-              .asNonNullable();
-      return argExpr.isCheap() ? result.asCheap() : result;
-    }
-
     // Non-builtin functions
 
     // TODO(lukes): For plugins we simply add the Map<String, SoyJavaFunction> map to RenderContext

@@ -306,11 +306,5 @@ public final class TranslateExprNodeVisitorTest {
         .withInitialLocalVarTranslations(LOCAL_VAR_TRANSLATIONS)
         .generatesCode("soy.$$checkNotNull(gooData8) ? 1 : 0")
         .withPrecedence(CONDITIONAL);
-
-    // float() should be no-op in javascript
-    assertThatSoyExpr("$goo + _soy_private_do_not_use_float(10)")
-        .withInitialLocalVarTranslations(LOCAL_VAR_TRANSLATIONS)
-        .generatesCode("gooData8 + 10")
-        .withPrecedence(PLUS);
   }
 }

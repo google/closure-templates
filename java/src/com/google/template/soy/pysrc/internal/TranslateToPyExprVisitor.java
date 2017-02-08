@@ -376,8 +376,6 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
         return visitMapLiteralNode((MapLiteralNode) node.getChild(0));
       case CHECK_NOT_NULL:
         return visitCheckNotNullFunction(node);
-      case FLOAT:
-        return visitFloatFunction(node);
       default:
         throw new AssertionError();
     }
@@ -386,11 +384,6 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
   private PyExpr visitCheckNotNullFunction(FunctionNode node) {
     PyExpr childExpr = visit(node.getChild(0));
     return new PyFunctionExprBuilder("runtime.check_not_null").addArg(childExpr).asPyExpr();
-  }
-
-  private PyExpr visitFloatFunction(FunctionNode node) {
-    // int -> float coercion is a no-op in python
-    return visit(Iterables.getOnlyElement(node.getChildren()));
   }
 
   private PyExpr visitForEachFunction(FunctionNode node, String suffix) {

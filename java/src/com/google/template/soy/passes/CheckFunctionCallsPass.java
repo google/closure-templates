@@ -19,6 +19,7 @@ package com.google.template.soy.passes;
 import com.google.common.base.Joiner;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.basetree.SyntaxVersion;
+import com.google.template.soy.basicfunctions.FloatFunction;
 import com.google.template.soy.basicfunctions.LengthFunction;
 import com.google.template.soy.basicfunctions.ParseFloatFunction;
 import com.google.template.soy.basicfunctions.ParseIntFunction;
@@ -142,11 +143,8 @@ final class CheckFunctionCallsPass extends CompilerFilePass {
             errorReporter.report(
                 node.getSourceLocation(),
                 QUOTE_KEYS_IF_JS_REQUIRES_MAP_LITERAL_ARG,
-                node.getChild(0).getType().toString());
+                arg.getType().toString());
           }
-          break;
-        case FLOAT:
-          checkArgType(arg, SoyTypes.NUMBER_TYPE, node);
           break;
         case CHECK_NOT_NULL:
           // Do nothing.  All types are valid.
@@ -164,6 +162,8 @@ final class CheckFunctionCallsPass extends CompilerFilePass {
         checkArgType(node.getChild(0), StringType.getInstance(), node);
       } else if (fn instanceof ParseFloatFunction) {
         checkArgType(node.getChild(0), StringType.getInstance(), node);
+      } else if (fn instanceof FloatFunction) {
+        checkArgType(node.getChild(0), SoyTypes.NUMBER_TYPE, node);
       }
     }
 
