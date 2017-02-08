@@ -24,7 +24,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.CodeChunk.RequiresCollector;
 import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
-import com.google.template.soy.jssrc.dsl.GoogRequire;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
@@ -94,13 +93,13 @@ public class JsCodeBuilder {
   private final CodeChunk.RequiresCollector requireCollector =
       new CodeChunk.RequiresCollector() {
         @Override
-        public void add(GoogRequire require) {
-          addGoogRequire(require);
+        public void add(String require) {
+          addGoogRequire(require, false /* don't suppress extraRequire. */);
         }
       };
 
-  // the set of symbols to require, indexed by symbol name to detect conflicting imports
-  private final Map<String, GoogRequire> googRequires = new TreeMap<>();
+  // A name to whether or not we should '@suppress {extraRequire}'
+  private final Map<String, Boolean> googRequires = new TreeMap<>();
 
   /**
    * The current output variable.
@@ -312,26 +311,24 @@ public class JsCodeBuilder {
   /**
    * Adds a {@code goog.require}
    *
-   * @param require The namespace being required
+   * @param namespace The namespace being required
+   * @param suppressExtra Whether to add a suppression for extra requires
    */
-  public void addGoogRequire(GoogRequire require) {
-    GoogRequire oldRequire = googRequires.put(require.symbol(), require);
-    if (oldRequire != null && !oldRequire.equals(require)) {
-      throw new IllegalArgumentException(
-          "Found the same namespace added as a require in multiple incompatible ways: "
-              + oldRequire
-              + " vs. "
-              + require);
+  public void addGoogRequire(String namespace, boolean suppressExtra) {
+    Boolean old = googRequires.put(namespace, suppressExtra);
+    if (old != null && !old && suppressExtra) {
+      // if anyone said it was ok to not suppressExtra, trust it.
+      googRequires.put(namespace, false);
     }
   }
 
   /** Should only be used by {@link GenJsCodeVisitor#visitSoyFileNode}. */
   void appendGoogRequires(StringBuilder sb) {
-    for (GoogRequire require : googRequires.values()) {
-      // TODO(lukes): we need some namespace management here... though really we need namespace
-      // management with all declarations... The problem is that a require could introduce a name
-      // alias that conflicts with a symbol defined elsewhere in the file.
-      require.writeTo(sb);
+    for (Map.Entry<String, Boolean> entry : googRequires.entrySet()) {
+      if (entry.getValue()) {
+        sb.append("/** @suppress {extraRequire} */\n");
+      }
+      sb.append("goog.require('").append(entry.getKey()).append("');\n");
     }
   }
 
@@ -350,6 +347,6 @@ public class JsCodeBuilder {
   /** Returns a CodeChunk that is equivalent to this CodeBuilder. */
   CodeChunk getCodeAsChunkLegacyOnly() {
     return CodeChunk.treatRawStringAsStatementLegacyOnly(
-        getCode(), ImmutableList.copyOf(googRequires.values()));
+        getCode(), ImmutableList.copyOf(googRequires.keySet()));
   }
 }

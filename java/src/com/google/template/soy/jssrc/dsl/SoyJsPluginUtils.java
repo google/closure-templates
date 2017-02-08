@@ -58,7 +58,7 @@ public final class SoyJsPluginUtils {
             new Function<JsExpr, CodeChunk.WithValue>() {
               @Override
               public CodeChunk.WithValue apply(JsExpr input) {
-                return fromExpr(input, ImmutableList.<GoogRequire>of());
+                return fromExpr(input, ImmutableList.<String>of());
               }
             });
     return CodeChunk.operation(
@@ -99,7 +99,7 @@ public final class SoyJsPluginUtils {
     if (directive instanceof SoyLibraryAssistedJsSrcPrintDirective) {
       for (String name :
           ((SoyLibraryAssistedJsSrcPrintDirective) directive).getRequiredJsLibNames()) {
-        collector.add(GoogRequire.create(name));
+        collector.add(name);
       }
     }
 

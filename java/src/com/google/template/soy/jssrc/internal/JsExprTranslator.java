@@ -27,7 +27,6 @@ import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
-import com.google.template.soy.jssrc.dsl.GoogRequire;
 import com.google.template.soy.jssrc.internal.TranslateExprNodeVisitor.TranslateExprNodeVisitorFactory;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
 import com.google.template.soy.shared.internal.BuiltinFunction;
@@ -90,7 +89,7 @@ public final class JsExprTranslator {
               sourceLocation,
               translationContext.soyToJsVariableMappings(),
               errorReporter),
-          ImmutableList.<GoogRequire>of());
+          ImmutableList.<String>of());
     }
   }
 

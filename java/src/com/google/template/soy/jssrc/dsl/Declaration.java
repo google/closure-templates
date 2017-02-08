@@ -34,13 +34,13 @@ abstract class Declaration extends CodeChunk.WithValue {
   @Nullable
   abstract String closureCompilerTypeExpression();
   
-  abstract ImmutableSet<GoogRequire> googRequires();
+  abstract ImmutableSet<String> googRequires();
 
   static Declaration create(
       @Nullable String closureCompilerTypeExpression,
       String varName,
       CodeChunk.WithValue rhs,
-      Iterable<GoogRequire> googRequires) {
+      Iterable<String> googRequires) {
     return new AutoValue_Declaration(
         varName, rhs, closureCompilerTypeExpression, ImmutableSet.copyOf(googRequires));
   }
@@ -97,7 +97,7 @@ abstract class Declaration extends CodeChunk.WithValue {
   
   @Override
   public void collectRequires(RequiresCollector collector) {
-    for (GoogRequire require : googRequires()) {
+    for (String require : googRequires()) {
       collector.add(require);
     }
     rhs().collectRequires(collector);

@@ -16,6 +16,8 @@
 package com.google.template.soy.jssrc.internal;
 
 import static com.google.template.soy.jssrc.dsl.CodeChunk.dottedIdNoRequire;
+import static com.google.template.soy.jssrc.dsl.CodeChunk.dottedIdWithCustomNamespace;
+import static com.google.template.soy.jssrc.dsl.CodeChunk.dottedIdWithRequire;
 
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
@@ -23,7 +25,6 @@ import com.google.template.soy.base.SoyBackendKind;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
-import com.google.template.soy.jssrc.dsl.GoogRequire;
 import com.google.template.soy.types.proto.Protos;
 import com.google.template.soy.types.proto.SoyProtoType;
 
@@ -34,21 +35,14 @@ import com.google.template.soy.types.proto.SoyProtoType;
  * exclusively with the {@link CodeChunk} api.
  */
 public final class JsRuntime {
-  private static final GoogRequire GOOG_ARRAY = GoogRequire.create("goog.array");
-  private static final GoogRequire GOOG_ASSERTS = GoogRequire.create("goog.asserts");
-  private static final GoogRequire GOOG_STRING = GoogRequire.create("goog.string");
-
-  private static final GoogRequire SOY = GoogRequire.create("soy");
-  private static final GoogRequire SOY_ASSERTS = GoogRequire.create("soy.asserts");
-
-  private static final GoogRequire XID_REQUIRE = GoogRequire.create("xid");
 
   private JsRuntime() {}
 
-  public static final CodeChunk.WithValue GOOG_ARRAY_MAP = GOOG_ARRAY.reference().dotAccess("map");
+  public static final CodeChunk.WithValue GOOG_ARRAY_MAP =
+      dottedIdWithRequire("goog.array").dotAccess("map");
 
   public static final CodeChunk.WithValue GOOG_ASSERTS_ASSERT =
-      GOOG_ASSERTS.reference().dotAccess("assert");
+      dottedIdWithRequire("goog.asserts").dotAccess("assert");
 
   public static final CodeChunk.WithValue GOOG_GET_CSS_NAME = dottedIdNoRequire("goog.getCssName");
 
@@ -67,55 +61,58 @@ public final class JsRuntime {
   public static final CodeChunk.WithValue GOOG_IS_STRING = dottedIdNoRequire("goog.isString");
 
   public static final CodeChunk.WithValue GOOG_SOY_DATA_SANITIZED_CONTENT =
-      GoogRequire.create("goog.soy.data.SanitizedContent").reference();
-
+      dottedIdWithRequire("goog.soy.data.SanitizedContent");
   public static final CodeChunk.WithValue GOOG_STRING_UNESCAPE_ENTITIES =
-      GOOG_STRING.dotAccess("unescapeEntities");
+      dottedIdWithRequire("goog.string").dotAccess("unescapeEntities");
 
   public static final CodeChunk.WithValue GOOG_I18N_MESSAGE_FORMAT =
-      GoogRequire.create("goog.i18n.MessageFormat").reference();
+      dottedIdWithRequire("goog.i18n.MessageFormat");
 
   public static final CodeChunk.WithValue SOY_ASSERTS_ASSERT_TYPE =
-      SOY_ASSERTS.dotAccess("assertType");
+      dottedIdWithRequire("soy.asserts").dotAccess("assertType");
 
-  public static final CodeChunk.WithValue SOY_ASSIGN_DEFAULTS = SOY.dotAccess("$$assignDefaults");
+  public static final CodeChunk.WithValue SOY_ASSIGN_DEFAULTS =
+      dottedIdWithRequire("soy").dotAccess("$$assignDefaults");
 
-  public static final CodeChunk.WithValue SOY_CHECK_MAP_KEY = SOY.dotAccess("$$checkMapKey");
+  public static final CodeChunk.WithValue SOY_CHECK_MAP_KEY =
+      dottedIdWithRequire("soy").dotAccess("$$checkMapKey");
 
-  public static final CodeChunk.WithValue SOY_CHECK_NOT_NULL = SOY.dotAccess("$$checkNotNull");
+  public static final CodeChunk.WithValue SOY_CHECK_NOT_NULL =
+      dottedIdWithRequire("soy").dotAccess("$$checkNotNull");
 
-  public static final CodeChunk.WithValue SOY_ESCAPE_HTML = SOY.dotAccess("$$escapeHtml");
+  public static final CodeChunk.WithValue SOY_ESCAPE_HTML =
+      dottedIdWithRequire("soy").dotAccess("$$escapeHtml");
 
-  public static final CodeChunk.WithValue SOY_GET_DELEGATE_FN = SOY.dotAccess("$$getDelegateFn");
-
+  public static final CodeChunk.WithValue SOY_GET_DELEGATE_FN =
+      dottedIdWithRequire("soy").dotAccess("$$getDelegateFn");
+  
   public static final CodeChunk.WithValue SOY_REGISTER_DELEGATE_FN =
-      SOY.dotAccess("$$registerDelegateFn");
-
+      dottedIdWithRequire("soy").dotAccess("$$registerDelegateFn");
+  
   public static final CodeChunk.WithValue SOY_GET_DELTEMPLATE_ID =
-      SOY.dotAccess("$$getDelTemplateId");
+      dottedIdWithRequire("soy").dotAccess("$$getDelTemplateId");
 
   public static final CodeChunk.WithValue WINDOW_CONSOLE_LOG =
       dottedIdNoRequire("window.console.log");
 
-  public static final CodeChunk.WithValue XID = XID_REQUIRE.reference();
+  public static final CodeChunk.WithValue XID = dottedIdWithRequire("xid");
 
   /** Returns the field containing the extension object for the given field descriptor. */
   public static CodeChunk.WithValue extensionField(FieldDescriptor desc) {
-    String jsExtensionImport = Protos.getJsExtensionImport(desc);
-    String jsExtensionName = Protos.getJsExtensionName(desc);
-    return symbolWithNamespace(jsExtensionImport, jsExtensionName);
+    return dottedIdWithCustomNamespace(
+        Protos.getJsExtensionName(desc), Protos.getJsExtensionImport(desc));
   }
 
   /** Returns a function that can 'unpack' safe proto types into sanitized content types.. */
   public static CodeChunk.WithValue protoToSanitizedContentConverterFunction(
       Descriptor messageType) {
-    return GoogRequire.create(NodeContentKinds.toJsUnpackFunction(messageType)).reference();
+    return dottedIdWithRequire(NodeContentKinds.toJsUnpackFunction(messageType));
   }
 
   /** Returns a function that can 'unpack' safe proto types into sanitized content types.. */
   public static CodeChunk.WithValue sanitizedContentToProtoConverterFunction(
       Descriptor messageType) {
-    return GoogRequire.create(NodeContentKinds.toJsPackFunction(messageType)).reference();
+    return dottedIdWithRequire(NodeContentKinds.toJsPackFunction(messageType));
   }
 
   /**
@@ -123,9 +120,9 @@ public final class JsRuntime {
    * SanitizedContent} object with no escaping.
    */
   public static CodeChunk.WithValue sanitizedContentOrdainerFunction(ContentKind kind) {
-    return symbolWithNamespace(
-        NodeContentKinds.getJsImportForOrdainersFunctions(kind),
-        NodeContentKinds.toJsSanitizedContentOrdainer(kind));
+    return dottedIdWithCustomNamespace(
+        NodeContentKinds.toJsSanitizedContentOrdainer(kind),
+        NodeContentKinds.getJsImportForOrdainersFunctions(kind));
   }
 
   /**
@@ -134,36 +131,20 @@ public final class JsRuntime {
    */
   public static CodeChunk.WithValue sanitizedContentOrdainerFunctionForInternalBlocks(
       ContentKind kind) {
-    return symbolWithNamespace(
-        NodeContentKinds.getJsImportForOrdainersFunctions(kind),
-        NodeContentKinds.toJsSanitizedContentOrdainerForInternalBlocks(kind));
+    return dottedIdWithCustomNamespace(
+        NodeContentKinds.toJsSanitizedContentOrdainerForInternalBlocks(kind),
+        NodeContentKinds.getJsImportForOrdainersFunctions(kind));
   }
 
   /** Returns the constructor for the proto. */
   public static CodeChunk.WithValue protoConstructor(SoyProtoType type) {
-    return GoogRequire.create(type.getNameForBackend(SoyBackendKind.JS_SRC)).reference();
+    return dottedIdWithRequire(type.getNameForBackend(SoyBackendKind.JS_SRC));
   }
 
   /**
    * Returns the js type for the sanitized content object corresponding to the given ContentKind.
    */
   public static CodeChunk.WithValue sanitizedContentType(ContentKind kind) {
-    return GoogRequire.create(NodeContentKinds.toJsSanitizedContentCtorName(kind)).reference();
-  }
-
-  /**
-   * Returns a code chunk that accesses the given symbol.
-   *
-   * @param requireSymbol The symbol to {@code goog.require}
-   * @param fullyQualifiedSymbol The symbol we want to access.
-   */
-  private static CodeChunk.WithValue symbolWithNamespace(
-      String requireSymbol, String fullyQualifiedSymbol) {
-    GoogRequire require = GoogRequire.create(requireSymbol);
-    if (fullyQualifiedSymbol.equals(require.symbol())) {
-      return require.reference();
-    }
-    String ident = fullyQualifiedSymbol.substring(require.symbol().length() + 1);
-    return require.dotAccess(ident);
+    return dottedIdWithRequire(NodeContentKinds.toJsSanitizedContentCtorName(kind));
   }
 }

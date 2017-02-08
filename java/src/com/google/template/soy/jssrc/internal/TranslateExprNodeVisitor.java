@@ -70,7 +70,6 @@ import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.CodeChunk.RequiresCollector;
 import com.google.template.soy.jssrc.dsl.CodeChunk.WithValue;
-import com.google.template.soy.jssrc.dsl.GoogRequire;
 import com.google.template.soy.jssrc.internal.NullSafeAccumulator.FieldAccess;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
@@ -582,7 +581,7 @@ public class TranslateExprNodeVisitor
       if (soyJsSrcFunction instanceof SoyLibraryAssistedJsSrcFunction) {
         for (String name :
             ((SoyLibraryAssistedJsSrcFunction) soyJsSrcFunction).getRequiredJsLibNames()) {
-          collector.add(GoogRequire.create(name));
+          collector.add(name);
         }
       }
       CodeChunk.WithValue functionOutput =
