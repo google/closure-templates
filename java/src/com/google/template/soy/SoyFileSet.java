@@ -558,12 +558,17 @@ public final class SoyFileSet {
       return this;
     }
 
-    /**
-     * Add proto file descriptor set and override the global type registry with one that is local to
-     * this file set.
-     */
-    Builder addProtoFileDescriptorSetFromFile(File descriptorFile) {
+    /** Add all proto descriptors found in the file to the type registry. */
+    public Builder addProtoDescriptorsFromFile(File descriptorFile) {
       protoTypeProviderBuilder.addFileDescriptorSetFromFile(descriptorFile);
+      return this;
+    }
+
+    /** Add all proto descriptors found in all files to the type registry. */
+    public Builder addProtoDescriptorsFromFiles(Iterable<File> descriptorFiles) {
+      for (File descriptorFile : descriptorFiles) {
+        protoTypeProviderBuilder.addFileDescriptorSetFromFile(descriptorFile);
+      }
       return this;
     }
 

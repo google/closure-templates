@@ -173,13 +173,8 @@ abstract class AbstractSoyCompiler {
     modules.addAll(msgPluginModule().asSet());
     Injector injector = MainClassUtils.createInjector(modules);
     SoyFileSet.Builder sfsBuilder = injector.getInstance(SoyFileSet.Builder.class);
-    // TODO(lukes): Only call setLocalTypeRegistry if we were actually passed protos, we should
-    // change this to always call setLocalTypeRegistry (and rename the method) once all uses of the
-    // legacy proto configuration are gone.
     if (!protoFileDescriptors.isEmpty()) {
-      for (File descriptor : protoFileDescriptors) {
-        sfsBuilder.addProtoFileDescriptorSetFromFile(descriptor);
-      }
+      sfsBuilder.addProtoDescriptorsFromFiles(protoFileDescriptors);
     }
     MainClassUtils.addSoyFilesToBuilder(
         sfsBuilder, inputPrefix, srcs, arguments, deps, indirectDeps, exitWithErrorFn);
