@@ -30,7 +30,7 @@ abstract class Operation extends CodeChunk.WithValue {
   @Override
   public final JsExpr singleExprOrName() {
     FormattingContext ctx = new FormattingContext();
-    formatOutputExpr(ctx, EXPRESSION);
+    ctx.appendOutputExpression(this, EXPRESSION);
     return new JsExpr(ctx.toString(), precedence());
   }
 
@@ -48,7 +48,7 @@ abstract class Operation extends CodeChunk.WithValue {
     if (protect) {
       ctx.append('(');
     }
-    operand.formatOutputExpr(ctx, EXPRESSION);
+    ctx.appendOutputExpression(operand, EXPRESSION);
     if (protect) {
       ctx.append(')');
     }

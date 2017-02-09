@@ -77,7 +77,7 @@ public abstract class CodeChunk {
   /**
    * Creates a code chunk representing a JavaScript identifier.
    *
-   * @throws IllegalArgumentException if rawText is not a valid JavaScript identifier.
+   * @throws IllegalArgumentException if {@code id} is not a valid JavaScript identifier.
    */
   public static WithValue id(String id) {
     CodeChunkUtils.checkId(id);
@@ -109,8 +109,9 @@ public abstract class CodeChunk {
 
   /**
    * Creates a code chunk representing a JavaScript string literal.
+   *
    * @param contents The contents of the string literal. The contents will be escaped appropriately
-   * and embedded inside single quotes.
+   *     and embedded inside single quotes.
    */
   public static WithValue stringLiteral(String contents) {
     // Escape non-ASCII characters since browsers are inconsistent in how they interpret utf-8 in
@@ -200,16 +201,16 @@ public abstract class CodeChunk {
   }
 
   /**
-   * Returns a code chunk representing the {@code new} operator applied to the given constructor.
-   * If you need to call the constructor with arguments, call {@link WithValue#call}
-   * on the returned chunk.
+   * Creates a code chunk representing the {@code new} operator applied to the given constructor. If
+   * you need to call the constructor with arguments, call {@link WithValue#call} on the returned
+   * chunk.
    */
   public static WithValue new_(WithValue ctor) {
     return New.create(ctor);
   }
 
   /**
-   * Returns a code chunk representing the given Soy operator applied to the given operands.
+   * Creates a code chunk representing the given Soy operator applied to the given operands.
    *
    * @param codeGenerator Required in case the operator is {@link Operator#AND} or {@link
    *     Operator#OR} and temporary variables need to be allocated for short-circuiting behavior.
@@ -241,17 +242,18 @@ public abstract class CodeChunk {
     }
   }
 
+  /** Creates a code chunk representing a javascript array literal. */
   public static WithValue arrayLiteral(Iterable<? extends WithValue> elements) {
     return ArrayLiteral.create(ImmutableList.copyOf(elements));
   }
 
+  /** Creates a code chunk representing a javascript map literal. */
   public static WithValue mapLiteral(
-      Iterable<? extends WithValue> keys,
-      Iterable<? extends WithValue> values) {
+      Iterable<? extends WithValue> keys, Iterable<? extends WithValue> values) {
     return MapLiteral.create(ImmutableList.copyOf(keys), ImmutableList.copyOf(values));
   }
 
-  /** Returns a CodeChunk that represents a return statement returning the given value. */
+  /** Creates a code chunk that represents a return statement returning the given value. */
   public static CodeChunk return_(CodeChunk.WithValue returnValue) {
     return Return.create(returnValue);
   }
@@ -425,8 +427,8 @@ public abstract class CodeChunk {
     /**
      * If this chunk can be represented as a single expression, returns that expression. If this
      * chunk cannot be represented as a single expression, returns an expression containing
-     * references to variables defined by the corresponding {@link #formatInitialStatements initial
-     * statements}.
+     * references to a variable defined by the corresponding {@link #doFormatInitialStatements
+     * initial statements}.
      *
      * <p>This method should rarely be used, but is needed when interoperating with parts of the
      * codegen system that do not yet understand CodeChunks (e.g. {@link SoyJsSrcFunction}).
@@ -436,45 +438,14 @@ public abstract class CodeChunk {
     /**
      * If this chunk can be represented as a single expression, writes that single expression to the
      * buffer. If the chunk cannot be represented as a single expression, writes an expression to
-     * the buffer containing references to variables defined by the corresponding {@link
-     * #formatInitialStatements initial statements}.
+     * the buffer containing references to a variable defined by the corresponding {@link
+     * #doFormatInitialStatements initial statements}.
      *
-     * <p>Must only be called by {@link #formatOutputExpr}.
+     * <p>Must only be called by {@link FormattingContext#appendOutputExpression}.
      *
      * @param outputContext The surrounding context where the expression is inserted.
      */
-    @ForOverride
     abstract void doFormatOutputExpr(FormattingContext ctx, OutputContext outputContext);
-
-    /**
-     * Layer of indirection to check if the output expression should end in a semicolon+newline.
-     * Subclasses must call this, and not {@link #doFormatOutputExpr}.
-     *
-     * @param outputContext The surrounding context where the expression is inserted.
-     */
-    final void formatOutputExpr(FormattingContext ctx, OutputContext outputContext) {
-      doFormatOutputExpr(ctx, outputContext);
-      // If the expression will appear as its own statement, add a trailing semicolon and newline.
-      // The exception is Composites/Assignments. Composites are sequences of statements that have
-      // a variable allocated to represent them when they appear in other code chunks. They should
-      // not produce any expression output when formatted by themselves.
-      // TODO(lukes): consider giving doFormatOutputExpr a return value to account for this, rather
-      // than inspecting the type of the receiver.
-      if (outputContext == STATEMENT
-          && !(this instanceof Composite)
-          && !(this instanceof Assignment)
-          && !(this instanceof GoogRequireDecorator
-              && (((GoogRequireDecorator) this).underlying() instanceof Composite
-                  || ((GoogRequireDecorator) this).underlying() instanceof Assignment))) {
-        ctx.append(';').endLine();
-      }
-    }
-
-    @Override
-    final void formatAllStatements(FormattingContext ctx) {
-      super.formatAllStatements(ctx);
-      formatOutputExpr(ctx, OutputContext.STATEMENT);
-    }
   }
 
   /**
@@ -637,11 +608,11 @@ public abstract class CodeChunk {
 
     FormattingContext outputExprs = new FormattingContext(startingIndent);
     if (this instanceof WithValue) {
-      ((WithValue) this).formatOutputExpr(outputExprs, outputContext);
+      outputExprs.appendOutputExpression((WithValue) this, outputContext);
     }
 
     FormattingContext initialStatements = new FormattingContext(startingIndent);
-    formatInitialStatements(initialStatements);
+    initialStatements.appendInitialStatements(this);
 
     // Now put them back into the right order.
     return initialStatements
@@ -650,28 +621,11 @@ public abstract class CodeChunk {
   }
 
   /**
-   * Layer of indirection to check that the initial statements of a code chunk are executed at most
-   * once. Subclasses must call this, and not {@link #doFormatInitialStatements}.
-   */
-  final void formatInitialStatements(FormattingContext ctx) {
-    if (ctx.shouldFormat(this)) {
-      doFormatInitialStatements(ctx);
-    }
-  }
-
-  /**
    * If this chunk can be represented as a single expression, does nothing. If this chunk cannot be
    * represented as a single expression, writes everything except the final expression to the
-   * buffer. Must only be called by {@link #formatInitialStatements}.
+   * buffer. Must only be called by {@link FormattingContext#appendInitialStatements}.
    */
-  @ForOverride
   abstract void doFormatInitialStatements(FormattingContext ctx);
-
-  /** Writes zero or more JavaScript statements representing this code chunk to the given buffer. */
-  void formatAllStatements(FormattingContext ctx) {
-    formatInitialStatements(ctx);
-    // overridden by CodeChunk.WithValue to format the output expression too
-  }
 
   CodeChunk() {}
 
@@ -697,7 +651,7 @@ public abstract class CodeChunk {
     }
 
     /**
-     * Creates a new code chunk declaring an automatically-named variable initialized to the given
+     * Creates a code chunk declaring an automatically-named variable initialized to the given
      * value.
      */
     public CodeChunk.WithValue declare(CodeChunk.WithValue rhs) {

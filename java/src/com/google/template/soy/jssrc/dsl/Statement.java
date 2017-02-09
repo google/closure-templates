@@ -39,8 +39,7 @@ abstract class Statement extends CodeChunk {
 
   @Override
   void doFormatInitialStatements(FormattingContext ctx) {
-    underlying().formatAllStatements(ctx);
-    ctx.endLine();
+    ctx.appendAll(underlying()).endLine();
   }
   
   @Override

@@ -16,6 +16,8 @@
 
 package com.google.template.soy.jssrc.dsl;
 
+import static com.google.template.soy.jssrc.dsl.OutputContext.STATEMENT;
+
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import java.util.Collections;
@@ -56,6 +58,37 @@ final class FormattingContext implements AutoCloseable {
   FormattingContext append(char c) {
     maybeIndent();
     buf.append(c);
+    return this;
+  }
+
+  /** Writes the initial statements for the {@code chunk} to the buffer. */
+  FormattingContext appendInitialStatements(CodeChunk chunk) {
+    if (shouldFormat(chunk)) {
+      chunk.doFormatInitialStatements(this);
+    }
+    return this;
+  }
+
+  /** Writes the output expression for the {@code value} to the buffer. */
+  FormattingContext appendOutputExpression(CodeChunk.WithValue value, OutputContext context) {
+    value.doFormatOutputExpr(this, context);
+
+    // If the expression will appear as its own statement, add a trailing semicolon and newline.
+    // The exception is Composites. Composites are sequences of statements that have a variable
+    // allocated to represent them when they appear in other code chunks. They should not produce
+    // any expression output when formatted by themselves.
+    if (context == STATEMENT && !(value instanceof Composite) && !isEmpty()) {
+      append(';').endLine();
+    }
+    return this;
+  }
+
+  /** Writes all code for the {@code chunk} to the buffer. */
+  FormattingContext appendAll(CodeChunk chunk) {
+    appendInitialStatements(chunk);
+    if (chunk instanceof CodeChunk.WithValue) {
+      appendOutputExpression((CodeChunk.WithValue) chunk, STATEMENT);
+    }
     return this;
   }
 

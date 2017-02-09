@@ -43,9 +43,10 @@ abstract class Composite extends CodeChunk.WithValue {
   @Override
   void doFormatInitialStatements(FormattingContext ctx) {
     for (CodeChunk child : children()) {
-      child.formatInitialStatements(ctx);
+      ctx.appendInitialStatements(child);
     }
   }
+
   @Override
   public void collectRequires(RequiresCollector collector) {
     for (CodeChunk child : children()) {

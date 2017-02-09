@@ -32,10 +32,10 @@ abstract class Return extends CodeChunk {
 
   @Override
   void doFormatInitialStatements(FormattingContext ctx) {
-    value().formatInitialStatements(ctx);
-    ctx.append("return ");
-    value().formatOutputExpr(ctx, EXPRESSION);
-    ctx.append(';');
+    ctx.appendInitialStatements(value())
+        .append("return ")
+        .appendOutputExpression(value(), EXPRESSION)
+        .append(';');
   }
   
   @Override

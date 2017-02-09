@@ -67,12 +67,12 @@ abstract class Conditional extends CodeChunk {
   }
   private void formatIfClause(FormattingContext ctx) {
     IfThenPair first = conditions().get(0);
-    first.predicate.formatInitialStatements(ctx);
-    ctx.append("if (");
-    first.predicate.formatOutputExpr(ctx, EXPRESSION);
-    ctx.append(") ");
+    ctx.appendInitialStatements(first.predicate)
+        .append("if (")
+        .appendOutputExpression(first.predicate, EXPRESSION)
+        .append(") ");
     try (FormattingContext ignored = ctx.enterBlock()) {
-      first.consequent.formatAllStatements(ctx);
+      ctx.appendAll(first.consequent);
     }
   }
 
@@ -82,11 +82,9 @@ abstract class Conditional extends CodeChunk {
    */
   private static void formatElseIfClauseWithNoDependencies(
       IfThenPair condition, FormattingContext ctx) {
-    ctx.append(" else if (");
-    condition.predicate.formatOutputExpr(ctx, EXPRESSION);
-    ctx.append(") ");
+    ctx.append(" else if (").appendOutputExpression(condition.predicate, EXPRESSION).append(") ");
     try (FormattingContext ignored = ctx.enterBlock()) {
-      condition.consequent.formatAllStatements(ctx);
+      ctx.appendAll(condition.consequent);
     }
   }
 
@@ -103,16 +101,17 @@ abstract class Conditional extends CodeChunk {
       IfThenPair condition, FormattingContext ctx) {
     ctx.append(" else ");
     try (FormattingContext ignored = ctx.enterBlock()) {
-      condition.predicate.formatInitialStatements(ctx);
-      ctx.append("if (");
-      condition.predicate.formatOutputExpr(ctx, EXPRESSION);
-      ctx.append(") ");
+      ctx.appendInitialStatements(condition.predicate)
+          .append("if (")
+          .appendOutputExpression(condition.predicate, EXPRESSION)
+          .append(") ");
+
       // Most enterBlock callers use try-with-resources to automatically close the block,
       // but here, we need to leave the block open so that subsequent `else if` clauses
       // are chained appropriately. The block will be closed by
       // Conditional#doFormatInitialStatements.
       ctx.enterBlock();
-      condition.consequent.formatAllStatements(ctx);
+      ctx.appendAll(condition.consequent);
     }
   }
 
@@ -122,7 +121,7 @@ abstract class Conditional extends CodeChunk {
     }
     ctx.append(" else ");
     try (FormattingContext ignored = ctx.enterBlock()) {
-      trailingElse().formatAllStatements(ctx);
+      ctx.appendAll(trailingElse());
     }
     ctx.endLine();
   }

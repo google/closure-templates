@@ -51,8 +51,7 @@ abstract class Dot extends Operation {
 
   @Override
   void doFormatInitialStatements(FormattingContext ctx) {
-    receiver().formatInitialStatements(ctx);
-    key().formatInitialStatements(ctx);
+    ctx.appendInitialStatements(receiver()).appendInitialStatements(key());
   }
 
   @Override

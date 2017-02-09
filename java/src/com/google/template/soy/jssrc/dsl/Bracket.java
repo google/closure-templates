@@ -59,16 +59,13 @@ abstract class Bracket extends Operation {
 
   @Override
   void doFormatInitialStatements(FormattingContext ctx) {
-    receiver().formatInitialStatements(ctx);
-    key().formatInitialStatements(ctx);
+    ctx.appendInitialStatements(receiver()).appendInitialStatements(key());
   }
 
   @Override
   void doFormatOutputExpr(FormattingContext ctx, OutputContext outputContext) {
     formatOperand(receiver(), OperandPosition.LEFT, ctx);
-    ctx.append('[');
     // No need to protect the expression in the bracket with parens. it's unambiguous.
-    key().formatOutputExpr(ctx, EXPRESSION);
-    ctx.append(']');
+    ctx.append('[').appendOutputExpression(key(), EXPRESSION).append(']');
   }
 }

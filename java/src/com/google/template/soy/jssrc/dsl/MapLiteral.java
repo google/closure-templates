@@ -56,7 +56,7 @@ abstract class MapLiteral extends CodeChunk.WithValue {
   @Override
   public JsExpr singleExprOrName() {
     FormattingContext ctx = new FormattingContext();
-    formatOutputExpr(ctx, EXPRESSION);
+    ctx.appendOutputExpression(this, EXPRESSION);
     return new JsExpr(ctx.toString(), Integer.MAX_VALUE);
   }
 
@@ -67,9 +67,9 @@ abstract class MapLiteral extends CodeChunk.WithValue {
       if (i > 0) {
         ctx.append(", ");
       }
-      keys().get(i).formatOutputExpr(ctx, EXPRESSION);
-      ctx.append(": ");
-      values().get(i).formatOutputExpr(ctx, EXPRESSION);
+      ctx.appendOutputExpression(keys().get(i), EXPRESSION)
+          .append(": ")
+          .appendOutputExpression(values().get(i), EXPRESSION);
     }
     ctx.append('}');
   }
@@ -77,10 +77,10 @@ abstract class MapLiteral extends CodeChunk.WithValue {
   @Override
   void doFormatInitialStatements(FormattingContext ctx) {
     for (CodeChunk.WithValue key : keys()) {
-      key.formatInitialStatements(ctx);
+      ctx.appendInitialStatements(key);
     }
     for (CodeChunk.WithValue value : values()) {
-      value.formatInitialStatements(ctx);
+      ctx.appendInitialStatements(value);
     }
   }
 

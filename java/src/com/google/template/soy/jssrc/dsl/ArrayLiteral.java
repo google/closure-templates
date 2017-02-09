@@ -52,7 +52,7 @@ abstract class ArrayLiteral extends CodeChunk.WithValue {
   @Override
   public JsExpr singleExprOrName() {
     FormattingContext ctx = new FormattingContext();
-    formatOutputExpr(ctx, EXPRESSION);
+    ctx.appendOutputExpression(this, EXPRESSION);
     return new JsExpr(ctx.toString(), Integer.MAX_VALUE);
   }
 
@@ -66,7 +66,7 @@ abstract class ArrayLiteral extends CodeChunk.WithValue {
       } else {
         ctx.append(", ");
       }
-      element.formatOutputExpr(ctx, EXPRESSION);
+      ctx.appendOutputExpression(element, EXPRESSION);
     }
     ctx.append(']');
   }
@@ -74,7 +74,7 @@ abstract class ArrayLiteral extends CodeChunk.WithValue {
   @Override
   void doFormatInitialStatements(FormattingContext ctx) {
     for (CodeChunk.WithValue element : elements()) {
-      element.formatInitialStatements(ctx);
+      ctx.appendInitialStatements(element);
     }
   }
 }

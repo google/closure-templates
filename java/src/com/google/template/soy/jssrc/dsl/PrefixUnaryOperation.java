@@ -48,7 +48,7 @@ abstract class PrefixUnaryOperation extends Operation {
 
   @Override
   void doFormatInitialStatements(FormattingContext ctx) {
-    arg().formatInitialStatements(ctx);
+    ctx.appendInitialStatements(arg());
   }
 
   @Override

@@ -97,7 +97,6 @@ abstract class BinaryOperation extends Operation {
 
   @Override
   void doFormatInitialStatements(FormattingContext ctx) {
-    arg1().formatInitialStatements(ctx);
-    arg2().formatInitialStatements(ctx);
+    ctx.appendInitialStatements(arg1()).appendInitialStatements(arg2());
   }
 }

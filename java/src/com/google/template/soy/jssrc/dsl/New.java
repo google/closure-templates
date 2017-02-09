@@ -43,7 +43,7 @@ abstract class New extends Operation {
 
   @Override
   void doFormatInitialStatements(FormattingContext ctx) {
-    ctor().formatInitialStatements(ctx);
+    ctx.appendInitialStatements(ctor());
   }
 
   @Override

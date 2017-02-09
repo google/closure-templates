@@ -80,16 +80,16 @@ abstract class Call extends Operation {
       }
       // The comma is the lowest-precedence JavaScript operator, so none of the args
       // need to be protected.
-      arg.formatOutputExpr(ctx, EXPRESSION);
+      ctx.appendOutputExpression(arg, EXPRESSION);
     }
     ctx.append(')');
   }
 
   @Override
   void doFormatInitialStatements(FormattingContext ctx) {
-    receiver().formatInitialStatements(ctx);
+    ctx.appendInitialStatements(receiver());
     for (CodeChunk.WithValue arg : args()) {
-      arg.formatInitialStatements(ctx);
+      ctx.appendInitialStatements(arg);
     }
   }
 }

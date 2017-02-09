@@ -55,14 +55,12 @@ abstract class Group extends Operation {
 
   @Override
   void doFormatInitialStatements(FormattingContext ctx) {
-    underlying().formatInitialStatements(ctx);
+    ctx.appendInitialStatements(underlying());
   }
 
   @Override
   void doFormatOutputExpr(FormattingContext ctx, OutputContext outputContext) {
-    ctx.append('(');
-    underlying().formatOutputExpr(ctx, outputContext);
-    ctx.append(')');
+    ctx.append('(').appendOutputExpression(underlying(), outputContext).append(')');
   }
   @Override
   public void collectRequires(RequiresCollector collector) {
