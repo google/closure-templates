@@ -16,8 +16,7 @@
 
 package com.google.template.soy.data;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -38,22 +37,22 @@ public class SoyDataTest {
   @Test
   public void testCreateFromExistingData() {
 
-    assertTrue(SoyData.createFromExistingData(null) instanceof NullData);
-    assertEquals("boo", SoyData.createFromExistingData(StringData.forValue("boo")).stringValue());
-    assertEquals("boo", SoyData.createFromExistingData("boo").stringValue());
-    assertEquals(true, SoyData.createFromExistingData(true).booleanValue());
-    assertEquals(8, SoyData.createFromExistingData(8).integerValue());
-    assertEquals(
-        "foo",
-        ((SoyMapData) SoyData.createFromExistingData(ImmutableMap.of("boo", "foo")))
-            .getString("boo"));
-    assertEquals(
-        "goo",
-        ((SoyListData) SoyData.createFromExistingData(ImmutableList.of("goo"))).getString(0));
-    assertEquals(
-        "hoo", ((SoyListData) SoyData.createFromExistingData(ImmutableSet.of("hoo"))).getString(0));
+    assertThat(SoyData.createFromExistingData(null)).isInstanceOf(NullData.class);
+    assertThat(SoyData.createFromExistingData(StringData.forValue("boo")).stringValue())
+        .isEqualTo("boo");
+    assertThat(SoyData.createFromExistingData("boo").stringValue()).isEqualTo("boo");
+    assertThat(SoyData.createFromExistingData(true).booleanValue()).isTrue();
+    assertThat(SoyData.createFromExistingData(8).integerValue()).isEqualTo(8);
+    assertThat(
+            ((SoyMapData) SoyData.createFromExistingData(ImmutableMap.of("boo", "foo")))
+                .getString("boo"))
+        .isEqualTo("foo");
+    assertThat(((SoyListData) SoyData.createFromExistingData(ImmutableList.of("goo"))).getString(0))
+        .isEqualTo("goo");
+    assertThat(((SoyListData) SoyData.createFromExistingData(ImmutableSet.of("hoo"))).getString(0))
+        .isEqualTo("hoo");
 
-    assertEquals(3.14, SoyData.createFromExistingData(3.14).floatValue(), 0.0);
-    assertEquals(3.14F, (float) SoyData.createFromExistingData(3.14F).floatValue(), 0.0f);
+    assertThat(SoyData.createFromExistingData(3.14).floatValue()).isWithin(0.0).of(3.14);
+    assertThat((float) SoyData.createFromExistingData(3.14F).floatValue()).isWithin(0.0f).of(3.14F);
   }
 }

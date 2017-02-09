@@ -16,8 +16,7 @@
 
 package com.google.template.soy.data;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.fail;
 
 import com.google.common.collect.ImmutableList;
@@ -49,73 +48,78 @@ public class SoyValueConverterTest {
   @Test
   public void testDictCreation() {
     SoyEasyDict dict1 = CONVERTER.newEasyDict();
-    assertEquals(0, dict1.getItemCnt());
+    assertThat(dict1.getItemCnt()).isEqualTo(0);
     dict1.set("boo", 111);
     dict1.set("foo.goo", 222);
 
     SoyEasyDict dict2 = CONVERTER.newEasyDict("foo", 3.14, "too", true);
-    assertEquals(3.14, dict2.get("foo").floatValue(), 0.0);
-    assertEquals(true, dict2.get("too").booleanValue());
+    assertThat(dict2.get("foo").floatValue()).isWithin(0.0).of(3.14);
+    assertThat(dict2.get("too").booleanValue()).isTrue();
 
     SoyEasyDict dict3 = CONVERTER.newEasyDictFromDict(dict1);
-    assertEquals(111, dict3.get("boo").integerValue());
-    assertEquals(222, ((SoyEasyDict) dict3.get("foo")).get("goo").integerValue());
+    assertThat(dict3.get("boo").integerValue()).isEqualTo(111);
+    assertThat(((SoyEasyDict) dict3.get("foo")).get("goo").integerValue()).isEqualTo(222);
 
     SoyEasyDict dict4 =
         CONVERTER.newEasyDictFromJavaStringMap(ImmutableMap.of("foo", 3.14, "too", true));
-    assertEquals(3.14, dict4.get("foo").floatValue(), 0.0);
-    assertEquals(true, dict4.get("too").booleanValue());
+    assertThat(dict4.get("foo").floatValue()).isWithin(0.0).of(3.14);
+    assertThat(dict4.get("too").booleanValue()).isTrue();
   }
 
   @Test
   public void testListCreation() {
-    SoyList list1 = CONVERTER.newList(3.14, true);
-    assertEquals(3.14, list1.get(0).floatValue(), 0.0);
-    assertEquals(true, list1.get(1).booleanValue());
+    SoyList list2 = CONVERTER.newList(3.14, true);
+    assertThat(list2.get(0).floatValue()).isWithin(0.0).of(3.14);
+    assertThat(list2.get(1).booleanValue()).isTrue();
 
-    SoyList list2 = CONVERTER.newList(null, list1);
-    assertEquals(NullData.INSTANCE, list2.get(0));
-    assertEquals(true, ((SoyList) list2.get(1)).get(1).booleanValue());
+    SoyList list4 = CONVERTER.newList(3.14, true);
+    assertThat(list4.get(0).floatValue()).isWithin(0.0).of(3.14);
+    assertThat(list4.get(1).booleanValue()).isTrue();
   }
 
   @Test
   public void testConvertBasic() {
-    assertEquals(NullData.INSTANCE, CONVERTER.convert(null));
-    assertEquals("boo", CONVERTER.convert(StringData.forValue("boo")).resolve().stringValue());
-    assertEquals("boo", CONVERTER.convert("boo").resolve().stringValue());
-    assertEquals(true, CONVERTER.convert(true).resolve().booleanValue());
-    assertEquals(8, CONVERTER.convert(8).resolve().integerValue());
-    assertEquals(
-        "foo",
-        ((SoyDict) CONVERTER.convert(ImmutableMap.of("boo", "foo"))).getField("boo").stringValue());
-    assertEquals(
-        "goo", ((SoyList) CONVERTER.convert(ImmutableList.of("goo"))).get(0).stringValue());
-    assertEquals("hoo", ((SoyList) CONVERTER.convert(ImmutableSet.of("hoo"))).get(0).stringValue());
-    assertEquals(3.14, CONVERTER.convert(3.14).resolve().floatValue(), 0.0);
-    assertEquals(3.14F, (float) CONVERTER.convert(3.14F).resolve().floatValue(), 0.0f);
+    assertThat(CONVERTER.convert(null)).isEqualTo(NullData.INSTANCE);
+    assertThat(CONVERTER.convert(StringData.forValue("boo")).resolve().stringValue())
+        .isEqualTo("boo");
+    assertThat(CONVERTER.convert("boo").resolve().stringValue()).isEqualTo("boo");
+    assertThat(CONVERTER.convert(true).resolve().booleanValue()).isTrue();
+    assertThat(CONVERTER.convert(8).resolve().integerValue()).isEqualTo(8);
+    assertThat(
+            ((SoyDict) CONVERTER.convert(ImmutableMap.of("boo", "foo")))
+                .getField("boo")
+                .stringValue())
+        .isEqualTo("foo");
+    assertThat(((SoyList) CONVERTER.convert(ImmutableList.of("goo"))).get(0).stringValue())
+        .isEqualTo("goo");
+    assertThat(((SoyList) CONVERTER.convert(ImmutableSet.of("hoo"))).get(0).stringValue())
+        .isEqualTo("hoo");
+    assertThat(CONVERTER.convert(3.14).resolve().floatValue()).isWithin(0.0).of(3.14);
+    assertThat((float) CONVERTER.convert(3.14F).resolve().floatValue()).isWithin(0.0f).of(3.14F);
   }
 
   @Test
   public void testConvertFuture() {
-    assertTrue(
-        CONVERTER.convert(Futures.immediateFuture("future")) instanceof SoyFutureValueProvider);
-    assertEquals("soy", CONVERTER.convert(Futures.immediateFuture("soy")).resolve().stringValue());
+    assertThat(CONVERTER.convert(Futures.immediateFuture("future")))
+        .isInstanceOf(SoyFutureValueProvider.class);
+    assertThat(CONVERTER.convert(Futures.immediateFuture("soy")).resolve().stringValue())
+        .isEqualTo("soy");
   }
 
   @Test
   public void testConvertSoyGlobalsValue() {
-    assertEquals(
-        "foo",
-        CONVERTER
-            .convert(
-                new SoyGlobalsValue() {
-                  @Override
-                  public Object getSoyGlobalValue() {
-                    return "foo";
-                  }
-                })
-            .resolve()
-            .stringValue());
+    assertThat(
+            CONVERTER
+                .convert(
+                    new SoyGlobalsValue() {
+                      @Override
+                      public Object getSoyGlobalValue() {
+                        return "foo";
+                      }
+                    })
+                .resolve()
+                .stringValue())
+        .isEqualTo("foo");
   }
 
   @Test
@@ -148,10 +152,10 @@ public class SoyValueConverterTest {
     SoyValueConverter converter = injector.getInstance(SoyValueConverter.class);
 
     // Test convert non-primitive arrays.
-    assertEquals(
-        "foo", ((SoyList) converter.convert(new String[] {"boo", "foo"})).get(1).stringValue());
-    assertEquals(
-        5, ((SoyList) converter.convert(new Integer[] {1, 3, 5, 7})).get(2).integerValue());
+    assertThat(((SoyList) converter.convert(new String[] {"boo", "foo"})).get(1).stringValue())
+        .isEqualTo("foo");
+    assertThat(((SoyList) converter.convert(new Integer[] {1, 3, 5, 7})).get(2).integerValue())
+        .isEqualTo(5);
 
     // Test convert primitive arrays (expected to error).
     try {
@@ -161,8 +165,8 @@ public class SoyValueConverterTest {
     }
 
     // Test that basic conversions still work.
-    assertEquals(NullData.INSTANCE, converter.convert(null));
-    assertEquals("boo", converter.convert("boo").resolve().stringValue());
-    assertEquals(3.14, converter.convert(3.14).resolve().floatValue(), 0.0);
+    assertThat(converter.convert(null)).isEqualTo(NullData.INSTANCE);
+    assertThat(converter.convert("boo").resolve().stringValue()).isEqualTo("boo");
+    assertThat(converter.convert(3.14).resolve().floatValue()).isWithin(0.0).of(3.14);
   }
 }

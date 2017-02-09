@@ -16,9 +16,7 @@
 
 package com.google.template.soy.data;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.fail;
 
 import com.google.common.collect.ImmutableList;
@@ -45,30 +43,30 @@ public class SoyMapDataTest {
     SoyMapData smd = new SoyMapData();
 
     smd.put("boo", StringData.forValue("boohoo"));
-    assertEquals("boohoo", ((StringData) smd.get("boo")).getValue());
+    assertThat(((StringData) smd.get("boo")).getValue()).isEqualTo("boohoo");
 
     smd.put("boo", (SoyData) null);
-    assertTrue(smd.get("boo") instanceof NullData);
+    assertThat(smd.get("boo")).isInstanceOf(NullData.class);
 
     smd.remove("boo");
-    assertEquals(null, smd.get("boo"));
+    assertThat(smd.get("boo")).isNull();
 
     smd.put("woob", true);
-    assertEquals(true, smd.getBoolean("woob"));
+    assertThat(smd.getBoolean("woob")).isTrue();
     smd.put("wooi", 8);
-    assertEquals(8, smd.getInteger("wooi"));
+    assertThat(smd.getInteger("wooi")).isEqualTo(8);
     smd.put("woof", 3.14);
-    assertEquals(3.14, smd.getFloat("woof"), 0.0);
+    assertThat(smd.getFloat("woof")).isWithin(0.0).of(3.14);
     smd.put("woos", "woohoo");
-    assertEquals("woohoo", smd.getString("woos"));
+    assertThat(smd.getString("woos")).isEqualTo("woohoo");
 
     SoyMapData smd2 = new SoyMapData();
     smd.put("foo", smd2);
-    assertEquals(smd2, smd.getMapData("foo"));
+    assertThat(smd.getMapData("foo")).isEqualTo(smd2);
 
     SoyListData sld = new SoyListData();
     smd.put("goo", sld);
-    assertEquals(sld, smd.getListData("goo"));
+    assertThat(smd.getListData("goo")).isEqualTo(sld);
   }
 
   @Test
@@ -77,19 +75,19 @@ public class SoyMapDataTest {
     SoyMapData smd = new SoyMapData();
 
     smd.put("boo.foo", false);
-    assertEquals(false, smd.getBoolean("boo.foo"));
-    assertEquals(false, smd.getMapData("boo").getBoolean("foo"));
+    assertThat(smd.getBoolean("boo.foo")).isFalse();
+    assertThat(smd.getMapData("boo").getBoolean("foo")).isFalse();
 
     smd.put("boo.goo.moo", 26);
-    assertEquals(26, smd.getInteger("boo.goo.moo"));
-    assertEquals(26, smd.getMapData("boo").getInteger("goo.moo"));
-    assertEquals(26, smd.getMapData("boo.goo").getInteger("moo"));
-    assertEquals(26, smd.getMapData("boo").getMapData("goo").getInteger("moo"));
+    assertThat(smd.getInteger("boo.goo.moo")).isEqualTo(26);
+    assertThat(smd.getMapData("boo").getInteger("goo.moo")).isEqualTo(26);
+    assertThat(smd.getMapData("boo.goo").getInteger("moo")).isEqualTo(26);
+    assertThat(smd.getMapData("boo").getMapData("goo").getInteger("moo")).isEqualTo(26);
 
     smd.put("boo.zoo.0", "too");
     smd.put("boo.zoo.1", 1.618);
-    assertEquals("too", smd.getString("boo.zoo.0"));
-    assertEquals(1.618, smd.getListData("boo.zoo").getFloat("1"), 0.0);
+    assertThat(smd.getString("boo.zoo.0")).isEqualTo("too");
+    assertThat(smd.getListData("boo.zoo").getFloat("1")).isWithin(0.0).of(1.618);
   }
 
   @Test
@@ -102,12 +100,12 @@ public class SoyMapDataTest {
     SoyMapData smd = new SoyMapData(existingMap);
     smd.put("moo", "bleh", "too.seven", 2.71828);
 
-    assertEquals(8, smd.getInteger("boo"));
-    assertTrue(smd.get("foo") instanceof NullData);
-    assertEquals("blah", smd.getString("goo.buntu"));
-    assertEquals(true, smd.getBoolean("goo.dy"));
-    assertEquals("bleh", smd.getString("moo"));
-    assertEquals(2.71828, smd.getFloat("too.seven"), 0.0);
+    assertThat(smd.getInteger("boo")).isEqualTo(8);
+    assertThat(smd.get("foo")).isInstanceOf(NullData.class);
+    assertThat(smd.getString("goo.buntu")).isEqualTo("blah");
+    assertThat(smd.getBoolean("goo.dy")).isTrue();
+    assertThat(smd.getString("moo")).isEqualTo("bleh");
+    assertThat(smd.getFloat("too.seven")).isWithin(0.0).of(2.71828);
   }
 
   @Test
@@ -122,7 +120,7 @@ public class SoyMapDataTest {
       new SoyMapData(existingMap);
       fail();
     } catch (SoyDataException sde) {
-      assertTrue(sde.getMessage().contains("At data path 'goo.fy':"));
+      assertThat(sde.getMessage()).contains("At data path 'goo.fy':");
     }
 
     existingMap.put("goo", ImmutableList.of(0, 1, new Object(), 3));
@@ -131,7 +129,7 @@ public class SoyMapDataTest {
       new SoyMapData(existingMap);
       fail();
     } catch (SoyDataException sde) {
-      assertTrue(sde.getMessage().contains("At data path 'goo[2]':"));
+      assertThat(sde.getMessage()).contains("At data path 'goo[2]':");
     }
 
     existingMap.put(
@@ -143,7 +141,7 @@ public class SoyMapDataTest {
       new SoyMapData(existingMap);
       fail();
     } catch (SoyDataException sde) {
-      assertTrue(sde.getMessage().contains("At data path 'goo.fy[2]':"));
+      assertThat(sde.getMessage()).contains("At data path 'goo.fy[2]':");
     }
 
     existingMap.put("goo", ImmutableMap.of(new Object(), "blah"));
@@ -152,11 +150,10 @@ public class SoyMapDataTest {
       new SoyMapData(existingMap);
       fail();
     } catch (SoyDataException sde) {
-      assertTrue(
-          sde.getMessage()
-              .contains(
-                  "At data path 'goo': "
-                      + "Attempting to convert a map with non-string key to Soy data"));
+      assertThat(sde.getMessage())
+          .contains(
+              "At data path 'goo': "
+                  + "Attempting to convert a map with non-string key to Soy data");
     }
   }
 
@@ -172,21 +169,22 @@ public class SoyMapDataTest {
     SoyMapData smd2 = new SoyMapData(existingMap);
     smd2.put("moo", "bleh", "too.seven", 2.71828);
 
-    assertEquals("{}", smd0.coerceToString());
-    assertEquals("{boo: foo}", smd1.coerceToString());
+    assertThat(smd0.coerceToString()).isEqualTo("{}");
+    assertThat(smd1.coerceToString()).isEqualTo("{boo: foo}");
 
     String smd2Str = smd2.coerceToString();
-    assertTrue(smd2Str.contains("boo: 8"));
-    assertTrue(smd2Str.contains("foo: null"));
-    assertTrue(
-        smd2Str.contains("goo: {buntu: blah, dy: true}")
-            || smd2Str.contains("goo: {dy: true, buntu: blah}"));
-    assertTrue(smd2Str.contains("moo: bleh"));
-    assertTrue(smd2Str.contains("too: {seven: 2.71828}"));
+    assertThat(smd2Str).contains("boo: 8");
+    assertThat(smd2Str).contains("foo: null");
+    assertThat(
+            smd2Str.contains("goo: {buntu: blah, dy: true}")
+                || smd2Str.contains("goo: {dy: true, buntu: blah}"))
+        .isTrue();
+    assertThat(smd2Str).contains("moo: bleh");
+    assertThat(smd2Str).contains("too: {seven: 2.71828}");
 
-    assertEquals(true, smd0.coerceToBoolean());
-    assertEquals(true, smd1.coerceToBoolean());
-    assertEquals(true, smd2.coerceToBoolean());
+    assertThat(smd0.coerceToBoolean()).isTrue();
+    assertThat(smd1.coerceToBoolean()).isTrue();
+    assertThat(smd2.coerceToBoolean()).isTrue();
   }
 
   @Test
@@ -196,7 +194,7 @@ public class SoyMapDataTest {
     SoyMapData smd1 = new SoyMapData("boo", "foo");
 
     new EqualsTester().addEqualityGroup(smd0).addEqualityGroup(smd1).testEquals();
-    assertFalse(smd0.equals(new SoyMapData()));
+    assertThat(smd0.equals(new SoyMapData())).isFalse();
   }
 
   @Test
@@ -205,9 +203,9 @@ public class SoyMapDataTest {
     long l = 987654321987654321L;
     SoyMapData smd = new SoyMapData();
     smd.put("long", l);
-    assertEquals(l, smd.getLong("long"));
+    assertThat(smd.getLong("long")).isEqualTo(l);
 
     smd = new SoyMapData("long", l);
-    assertEquals(l, smd.getLong("long"));
+    assertThat(smd.getLong("long")).isEqualTo(l);
   }
 }

@@ -16,9 +16,7 @@
 
 package com.google.template.soy.data;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.fail;
 
 import com.google.template.soy.data.SoyAbstractCachingValueProvider.ValueAssertion;
@@ -62,11 +60,11 @@ public class SoyAbstractCachingValueProviderTest {
   @Test
   public void testRepeatedCalls() {
     TestValueProvider value = new TestValueProvider(1);
-    assertFalse(value.isComputed());
+    assertThat(value.isComputed()).isFalse();
     // Will fail if the underlying one is called twice.
-    assertEquals(1, value.resolve().integerValue());
-    assertTrue(value.isComputed());
-    assertEquals(1, value.resolve().integerValue());
+    assertThat(value.resolve().integerValue()).isEqualTo(1);
+    assertThat(value.isComputed()).isTrue();
+    assertThat(value.resolve().integerValue()).isEqualTo(1);
   }
 
   @Test
@@ -88,25 +86,25 @@ public class SoyAbstractCachingValueProviderTest {
       badValue.resolve();
       fail();
     } catch (IllegalStateException e) {
-      assertEquals("boom", e.getMessage());
-      assertEquals(1, counter.get());
+      assertThat(e.getMessage()).isEqualTo("boom");
+      assertThat(counter.get()).isEqualTo(1);
     }
     // Errors are not cached
     try {
       badValue.resolve();
       fail();
     } catch (IllegalStateException e) {
-      assertEquals("Caching was expected", e.getMessage());
+      assertThat(e.getMessage()).isEqualTo("Caching was expected");
     }
     counter.set(0);
     TestValueProvider goodValue = new TestValueProvider(1);
     goodValue.addValueAssertion(assertion);
     // Will fail if the underlying one is called twice.
-    assertEquals(1, goodValue.resolve().integerValue());
-    assertEquals(1, counter.get());
+    assertThat(goodValue.resolve().integerValue()).isEqualTo(1);
+    assertThat(counter.get()).isEqualTo(1);
     // successes are cached
-    assertEquals(1, goodValue.resolve().integerValue());
-    assertEquals(1, counter.get());
+    assertThat(goodValue.resolve().integerValue()).isEqualTo(1);
+    assertThat(counter.get()).isEqualTo(1);
   }
 
   private static final class SimpleAssertion extends ValueAssertion {
@@ -127,9 +125,9 @@ public class SoyAbstractCachingValueProviderTest {
     value.addValueAssertion(assertion1);
     value.addValueAssertion(assertion2);
     value.addValueAssertion(assertion3);
-    assertEquals(1, value.resolve().integerValue());
-    assertTrue(assertion1.hasBeenCalled);
-    assertTrue(assertion2.hasBeenCalled);
-    assertTrue(assertion3.hasBeenCalled);
+    assertThat(value.resolve().integerValue()).isEqualTo(1);
+    assertThat(assertion1.hasBeenCalled).isTrue();
+    assertThat(assertion2.hasBeenCalled).isTrue();
+    assertThat(assertion3.hasBeenCalled).isTrue();
   }
 }

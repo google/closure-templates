@@ -16,10 +16,8 @@
 
 package com.google.template.soy.data;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
 import static org.junit.Assert.fail;
 
 import com.google.common.html.types.SafeHtml;
@@ -49,9 +47,8 @@ public class SanitizedContentsTest {
 
   @Test
   public void testUnsanitizedText() {
-    assertEquals(
-        SanitizedContent.create("Hello World", ContentKind.TEXT, null),
-        SanitizedContents.unsanitizedText("Hello World"));
+    assertThat(SanitizedContents.unsanitizedText("Hello World"))
+        .isEqualTo(SanitizedContent.create("Hello World", ContentKind.TEXT, null));
   }
 
   @Test
@@ -64,15 +61,14 @@ public class SanitizedContentsTest {
     SanitizedContent content2 = SanitizedContent.create(text2, ContentKind.HTML, null);
     SanitizedContent content3 = SanitizedContent.create(text3, ContentKind.HTML, null);
 
-    assertEquals(
-        SanitizedContent.create(text1 + text2 + text3, ContentKind.HTML, null),
-        SanitizedContents.concatHtml(content1, content2, content3));
+    assertThat(SanitizedContents.concatHtml(content1, content2, content3))
+        .isEqualTo(SanitizedContent.create(text1 + text2 + text3, ContentKind.HTML, null));
   }
 
   @Test
   public void testConcatReturnsEmpty() throws Exception {
-    assertEquals(
-        SanitizedContent.create("", ContentKind.HTML, Dir.NEUTRAL), SanitizedContents.concatHtml());
+    assertThat(SanitizedContents.concatHtml())
+        .isEqualTo(SanitizedContent.create("", ContentKind.HTML, Dir.NEUTRAL));
   }
 
   @Test
@@ -83,7 +79,7 @@ public class SanitizedContentsTest {
           SanitizedContents.emptyString(ContentKind.CSS));
       fail();
     } catch (IllegalArgumentException e) {
-      assertEquals("Can only concat HTML", e.getMessage());
+      assertThat(e.getMessage()).isEqualTo("Can only concat HTML");
     }
   }
 
@@ -96,52 +92,66 @@ public class SanitizedContentsTest {
     SanitizedContent UNKNOWN_DIR_HTML = SanitizedContent.create(".", ContentKind.HTML, null);
 
     // empty -> neutral
-    assertEquals(Dir.NEUTRAL, SanitizedContents.concatHtml(EMPTY_HTML).getContentDirection());
+    assertThat(SanitizedContents.concatHtml(EMPTY_HTML).getContentDirection())
+        .isEqualTo(Dir.NEUTRAL);
 
     // x -> x
-    assertEquals(Dir.LTR, SanitizedContents.concatHtml(LTR_HTML).getContentDirection());
-    assertEquals(Dir.RTL, SanitizedContents.concatHtml(RTL_HTML).getContentDirection());
-    assertEquals(Dir.NEUTRAL, SanitizedContents.concatHtml(NEUTRAL_HTML).getContentDirection());
-    assertEquals(null, SanitizedContents.concatHtml(UNKNOWN_DIR_HTML).getContentDirection());
+    assertThat(SanitizedContents.concatHtml(LTR_HTML).getContentDirection()).isEqualTo(Dir.LTR);
+    assertThat(SanitizedContents.concatHtml(RTL_HTML).getContentDirection()).isEqualTo(Dir.RTL);
+    assertThat(SanitizedContents.concatHtml(NEUTRAL_HTML).getContentDirection())
+        .isEqualTo(Dir.NEUTRAL);
+    assertThat(SanitizedContents.concatHtml(UNKNOWN_DIR_HTML).getContentDirection()).isNull();
 
     // x + unknown -> unknown
-    assertNull(SanitizedContents.concatHtml(LTR_HTML, UNKNOWN_DIR_HTML).getContentDirection());
-    assertNull(SanitizedContents.concatHtml(UNKNOWN_DIR_HTML, LTR_HTML).getContentDirection());
-    assertNull(SanitizedContents.concatHtml(RTL_HTML, UNKNOWN_DIR_HTML).getContentDirection());
-    assertNull(SanitizedContents.concatHtml(UNKNOWN_DIR_HTML, RTL_HTML).getContentDirection());
-    assertNull(SanitizedContents.concatHtml(NEUTRAL_HTML, UNKNOWN_DIR_HTML).getContentDirection());
-    assertNull(SanitizedContents.concatHtml(UNKNOWN_DIR_HTML, NEUTRAL_HTML).getContentDirection());
-    assertNull(
-        SanitizedContents.concatHtml(UNKNOWN_DIR_HTML, UNKNOWN_DIR_HTML).getContentDirection());
+    assertThat(SanitizedContents.concatHtml(LTR_HTML, UNKNOWN_DIR_HTML).getContentDirection())
+        .isNull();
+    assertThat(SanitizedContents.concatHtml(UNKNOWN_DIR_HTML, LTR_HTML).getContentDirection())
+        .isNull();
+    assertThat(SanitizedContents.concatHtml(RTL_HTML, UNKNOWN_DIR_HTML).getContentDirection())
+        .isNull();
+    assertThat(SanitizedContents.concatHtml(UNKNOWN_DIR_HTML, RTL_HTML).getContentDirection())
+        .isNull();
+    assertThat(SanitizedContents.concatHtml(NEUTRAL_HTML, UNKNOWN_DIR_HTML).getContentDirection())
+        .isNull();
+    assertThat(SanitizedContents.concatHtml(UNKNOWN_DIR_HTML, NEUTRAL_HTML).getContentDirection())
+        .isNull();
+    assertThat(
+            SanitizedContents.concatHtml(UNKNOWN_DIR_HTML, UNKNOWN_DIR_HTML).getContentDirection())
+        .isNull();
 
     // x + neutral -> x
-    assertEquals(
-        Dir.LTR, SanitizedContents.concatHtml(LTR_HTML, NEUTRAL_HTML).getContentDirection());
-    assertEquals(
-        Dir.LTR, SanitizedContents.concatHtml(NEUTRAL_HTML, LTR_HTML).getContentDirection());
-    assertEquals(
-        Dir.RTL, SanitizedContents.concatHtml(RTL_HTML, NEUTRAL_HTML).getContentDirection());
-    assertEquals(
-        Dir.RTL, SanitizedContents.concatHtml(NEUTRAL_HTML, RTL_HTML).getContentDirection());
-    assertEquals(
-        Dir.NEUTRAL,
-        SanitizedContents.concatHtml(NEUTRAL_HTML, NEUTRAL_HTML).getContentDirection());
+    assertThat(SanitizedContents.concatHtml(LTR_HTML, NEUTRAL_HTML).getContentDirection())
+        .isEqualTo(Dir.LTR);
+    assertThat(SanitizedContents.concatHtml(NEUTRAL_HTML, LTR_HTML).getContentDirection())
+        .isEqualTo(Dir.LTR);
+    assertThat(SanitizedContents.concatHtml(RTL_HTML, NEUTRAL_HTML).getContentDirection())
+        .isEqualTo(Dir.RTL);
+    assertThat(SanitizedContents.concatHtml(NEUTRAL_HTML, RTL_HTML).getContentDirection())
+        .isEqualTo(Dir.RTL);
+    assertThat(SanitizedContents.concatHtml(NEUTRAL_HTML, NEUTRAL_HTML).getContentDirection())
+        .isEqualTo(Dir.NEUTRAL);
 
     // x + x -> x
-    assertEquals(Dir.LTR, SanitizedContents.concatHtml(LTR_HTML, LTR_HTML).getContentDirection());
-    assertEquals(Dir.RTL, SanitizedContents.concatHtml(RTL_HTML, RTL_HTML).getContentDirection());
+    assertThat(SanitizedContents.concatHtml(LTR_HTML, LTR_HTML).getContentDirection())
+        .isEqualTo(Dir.LTR);
+    assertThat(SanitizedContents.concatHtml(RTL_HTML, RTL_HTML).getContentDirection())
+        .isEqualTo(Dir.RTL);
 
     // LTR + RTL -> unknown
-    assertNull(SanitizedContents.concatHtml(LTR_HTML, RTL_HTML).getContentDirection());
-    assertNull(SanitizedContents.concatHtml(LTR_HTML, RTL_HTML).getContentDirection());
+    assertThat(SanitizedContents.concatHtml(LTR_HTML, RTL_HTML).getContentDirection()).isNull();
+    assertThat(SanitizedContents.concatHtml(LTR_HTML, RTL_HTML).getContentDirection()).isNull();
   }
 
   private void assertResourceNameValid(boolean valid, String resourceName, ContentKind kind) {
     try {
       SanitizedContents.pretendValidateResource(resourceName, kind);
-      assertTrue("No exception was thrown, but wasn't expected to be valid.", valid);
+      assertWithMessage("No exception was thrown, but wasn't expected to be valid.")
+          .that(valid)
+          .isTrue();
     } catch (IllegalArgumentException e) {
-      assertFalse("Exception was thrown, but was expected to be valid.", valid);
+      assertWithMessage("Exception was thrown, but was expected to be valid.")
+          .that(valid)
+          .isFalse();
     }
   }
 
@@ -168,22 +178,23 @@ public class SanitizedContentsTest {
 
   @Test
   public void testGetDefaultDir() {
-    assertEquals(Dir.LTR, SanitizedContents.getDefaultDir(ContentKind.JS));
-    assertEquals(Dir.LTR, SanitizedContents.getDefaultDir(ContentKind.CSS));
-    assertEquals(Dir.LTR, SanitizedContents.getDefaultDir(ContentKind.ATTRIBUTES));
-    assertEquals(Dir.LTR, SanitizedContents.getDefaultDir(ContentKind.URI));
+    assertThat(SanitizedContents.getDefaultDir(ContentKind.JS)).isEqualTo(Dir.LTR);
+    assertThat(SanitizedContents.getDefaultDir(ContentKind.CSS)).isEqualTo(Dir.LTR);
+    assertThat(SanitizedContents.getDefaultDir(ContentKind.ATTRIBUTES)).isEqualTo(Dir.LTR);
+    assertThat(SanitizedContents.getDefaultDir(ContentKind.URI)).isEqualTo(Dir.LTR);
 
-    assertNull(SanitizedContents.getDefaultDir(ContentKind.TEXT));
-    assertNull(SanitizedContents.getDefaultDir(ContentKind.HTML));
+    assertThat(SanitizedContents.getDefaultDir(ContentKind.TEXT)).isNull();
+    assertThat(SanitizedContents.getDefaultDir(ContentKind.HTML)).isNull();
   }
 
   @Test
   public void testConstantUri() {
     // Passing case. We actually can't test a failing case because it won't compile.
     SanitizedContent uri = SanitizedContents.constantUri("itms://blahblah");
-    assertEquals("itms://blahblah", uri.getContent());
-    assertEquals(ContentKind.URI, uri.getContentKind());
-    assertEquals(SanitizedContents.getDefaultDir(ContentKind.URI), uri.getContentDirection());
+    assertThat(uri.getContent()).isEqualTo("itms://blahblah");
+    assertThat(uri.getContentKind()).isEqualTo(ContentKind.URI);
+    assertThat(uri.getContentDirection())
+        .isEqualTo(SanitizedContents.getDefaultDir(ContentKind.URI));
   }
 
   @Test
@@ -194,14 +205,15 @@ public class SanitizedContentsTest {
             SafeHtmls.htmlEscape("Hello "),
             new SafeHtmlBuilder("em").escapeAndAppendContent("World").build());
     final SanitizedContent sanitizedHtml = SanitizedContents.fromSafeHtml(safeHtml);
-    assertEquals(ContentKind.HTML, sanitizedHtml.getContentKind());
-    assertEquals(helloWorldHtml, sanitizedHtml.getContent());
-    assertEquals(safeHtml, sanitizedHtml.toSafeHtml());
+    assertThat(sanitizedHtml.getContentKind()).isEqualTo(ContentKind.HTML);
+    assertThat(sanitizedHtml.getContent()).isEqualTo(helloWorldHtml);
+    assertThat(sanitizedHtml.toSafeHtml()).isEqualTo(safeHtml);
 
     // Proto conversions.
     final SafeHtmlProto safeHtmlProto = sanitizedHtml.toSafeHtmlProto();
-    assertEquals(safeHtml, SafeHtmls.fromProto(safeHtmlProto));
-    assertEquals(helloWorldHtml, SanitizedContents.fromSafeHtmlProto(safeHtmlProto).getContent());
+    assertThat(SafeHtmls.fromProto(safeHtmlProto)).isEqualTo(safeHtml);
+    assertThat(SanitizedContents.fromSafeHtmlProto(safeHtmlProto).getContent())
+        .isEqualTo(helloWorldHtml);
   }
 
   @Test
@@ -209,14 +221,15 @@ public class SanitizedContentsTest {
     final String testScript = "window.alert('hello');";
     final SafeScript safeScript = SafeScripts.fromConstant(testScript);
     final SanitizedContent sanitizedScript = SanitizedContents.fromSafeScript(safeScript);
-    assertEquals(ContentKind.JS, sanitizedScript.getContentKind());
-    assertEquals(testScript, sanitizedScript.getContent());
-    assertEquals(safeScript.getSafeScriptString(), sanitizedScript.getContent());
+    assertThat(sanitizedScript.getContentKind()).isEqualTo(ContentKind.JS);
+    assertThat(sanitizedScript.getContent()).isEqualTo(testScript);
+    assertThat(sanitizedScript.getContent()).isEqualTo(safeScript.getSafeScriptString());
 
     // Proto conversions.
     final SafeScriptProto safeScriptProto = SafeScripts.toProto(safeScript);
-    assertEquals(safeScript, SafeScripts.fromProto(safeScriptProto));
-    assertEquals(testScript, SanitizedContents.fromSafeScriptProto(safeScriptProto).getContent());
+    assertThat(SafeScripts.fromProto(safeScriptProto)).isEqualTo(safeScript);
+    assertThat(SanitizedContents.fromSafeScriptProto(safeScriptProto).getContent())
+        .isEqualTo(testScript);
   }
 
   @Test
@@ -224,14 +237,15 @@ public class SanitizedContentsTest {
     final String testCss = "div { display: none; }";
     final SafeStyleSheet safeCss = SafeStyleSheets.fromConstant(testCss);
     final SanitizedContent sanitizedCss = SanitizedContents.fromSafeStyleSheet(safeCss);
-    assertEquals(ContentKind.CSS, sanitizedCss.getContentKind());
-    assertEquals(testCss, sanitizedCss.getContent());
-    assertEquals(safeCss, sanitizedCss.toSafeStyleSheet());
+    assertThat(sanitizedCss.getContentKind()).isEqualTo(ContentKind.CSS);
+    assertThat(sanitizedCss.getContent()).isEqualTo(testCss);
+    assertThat(sanitizedCss.toSafeStyleSheet()).isEqualTo(safeCss);
 
     // Proto conversions.
     final SafeStyleSheetProto safeCssProto = sanitizedCss.toSafeStyleSheetProto();
-    assertEquals(safeCss, SafeStyleSheets.fromProto(safeCssProto));
-    assertEquals(testCss, SanitizedContents.fromSafeStyleSheetProto(safeCssProto).getContent());
+    assertThat(SafeStyleSheets.fromProto(safeCssProto)).isEqualTo(safeCss);
+    assertThat(SanitizedContents.fromSafeStyleSheetProto(safeCssProto).getContent())
+        .isEqualTo(testCss);
   }
 
   @Test
@@ -241,15 +255,15 @@ public class SanitizedContentsTest {
     final SafeUrl safeUrl = SafeUrls.fromConstant(testUrl);
 
     final SanitizedContent sanitizedUrl = SanitizedContents.fromSafeUrl(safeUrl);
-    assertEquals(ContentKind.URI, sanitizedUrl.getContentKind());
-    assertEquals(testUrl, sanitizedUrl.getContent());
-    assertEquals(sanitizedConstantUri, sanitizedUrl);
+    assertThat(sanitizedUrl.getContentKind()).isEqualTo(ContentKind.URI);
+    assertThat(sanitizedUrl.getContent()).isEqualTo(testUrl);
+    assertThat(sanitizedUrl).isEqualTo(sanitizedConstantUri);
 
     // Proto conversions.
     final SafeUrlProto safeUrlProto = SafeUrls.toProto(safeUrl);
     final SanitizedContent sanitizedUrlProto = SanitizedContents.fromSafeUrlProto(safeUrlProto);
-    assertEquals(testUrl, sanitizedUrlProto.getContent());
-    assertEquals(sanitizedConstantUri, sanitizedUrlProto);
+    assertThat(sanitizedUrlProto.getContent()).isEqualTo(testUrl);
+    assertThat(sanitizedUrlProto).isEqualTo(sanitizedConstantUri);
   }
 
   @Test
