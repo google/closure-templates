@@ -69,13 +69,13 @@ public class SoyValueConverterTest {
 
   @Test
   public void testListCreation() {
-    SoyEasyList list2 = CONVERTER.newEasyList(3.14, true);
-    assertEquals(3.14, list2.get(0).floatValue(), 0.0);
-    assertEquals(true, list2.get(1).booleanValue());
+    SoyList list1 = CONVERTER.newList(3.14, true);
+    assertEquals(3.14, list1.get(0).floatValue(), 0.0);
+    assertEquals(true, list1.get(1).booleanValue());
 
-    SoyEasyList list4 = CONVERTER.newEasyListFromJavaIterable(ImmutableList.of(3.14, true));
-    assertEquals(3.14, list4.get(0).floatValue(), 0.0);
-    assertEquals(true, list4.get(1).booleanValue());
+    SoyList list2 = CONVERTER.newList(null, list1);
+    assertEquals(NullData.INSTANCE, list2.get(0));
+    assertEquals(true, ((SoyList) list2.get(1)).get(1).booleanValue());
   }
 
   @Test

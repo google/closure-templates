@@ -94,14 +94,12 @@ abstract class MethodRef {
   static final MethodRef FLOAT_DATA_FOR_VALUE =
       create(FloatData.class, "forValue", double.class).asNonNullable();
 
+  // cheap() because it's zero-arg
   static final MethodRef IMMUTABLE_LIST_OF =
       create(ImmutableList.class, "of").asCheap().asNonNullable();
 
   static final MethodRef INTEGER_DATA_FOR_VALUE =
       create(IntegerData.class, "forValue", long.class).asNonNullable();
-
-  static final MethodRef INTEGER_TO_STRING =
-      create(Integer.class, "toString", int.class).asNonNullable();
 
   static final MethodRef INTS_CHECKED_CAST =
       create(Ints.class, "checkedCast", long.class).asCheap();

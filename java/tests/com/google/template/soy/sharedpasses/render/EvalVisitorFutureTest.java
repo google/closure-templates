@@ -27,7 +27,7 @@ import com.google.template.soy.data.SoyRecord;
 public class EvalVisitorFutureTest extends EvalVisitorTest {
   @Override
   protected SoyRecord createTestData() {
-    SoyList tri = CONVERTER.newEasyList(Futures.immediateFuture(1), 3, 6, 10, 15, 21);
+    SoyList tri = CONVERTER.newList(Futures.immediateFuture(1), 3, 6, 10, 15, 21);
     return CONVERTER.newEasyDict(
         "boo", Futures.immediateFuture(8),
         "foo.bar", Futures.immediateFuture("baz"),
@@ -38,7 +38,7 @@ public class EvalVisitorFutureTest extends EvalVisitorTest {
         "f", Futures.immediateFuture(false),
         "n", Futures.immediateFuture(null),
         "map0", Futures.immediateFuture(CONVERTER.newEasyDict()),
-        "list0", Futures.immediateFuture(CONVERTER.newEasyList()),
+        "list0", Futures.immediateFuture(CONVERTER.newList()),
         "longNumber", Futures.immediateFuture(1000000000000000001L),
         "floatNumber", Futures.immediateFuture(1.5D));
   }

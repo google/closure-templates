@@ -39,7 +39,7 @@ public class LengthFunctionTest {
   @Test
   public void testComputeForJava() {
     LengthFunction lengthFunction = new LengthFunction();
-    SoyValue list = SoyValueConverter.UNCUSTOMIZED_INSTANCE.newEasyList(1, 3, 5, 7);
+    SoyValue list = SoyValueConverter.UNCUSTOMIZED_INSTANCE.newList(1, 3, 5, 7);
     assertEquals(IntegerData.forValue(4), lengthFunction.computeForJava(ImmutableList.of(list)));
   }
 

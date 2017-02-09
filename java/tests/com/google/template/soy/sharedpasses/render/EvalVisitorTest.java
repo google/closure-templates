@@ -86,7 +86,7 @@ public class EvalVisitorTest {
   }
 
   protected SoyRecord createTestData() {
-    SoyList tri = CONVERTER.newEasyList(1, 3, 6, 10, 15, 21);
+    SoyList tri = CONVERTER.newList(1, 3, 6, 10, 15, 21);
     return CONVERTER.newEasyDict(
         "boo",
         8,
@@ -107,7 +107,7 @@ public class EvalVisitorTest {
         "map0",
         CONVERTER.newEasyDict(),
         "list0",
-        CONVERTER.newEasyList(),
+        CONVERTER.newList(),
         "longNumber",
         1000000000000000001L,
         "floatNumber",

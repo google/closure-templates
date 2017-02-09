@@ -16,6 +16,7 @@
 
 package com.google.template.soy.data;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
@@ -31,7 +32,6 @@ import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jbcsrc.api.RenderResult;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -60,8 +60,7 @@ public class SoyValueConverter {
       DictImpl.forProviderMap(ImmutableMap.<String, SoyValueProvider>of());
 
   /** An immutable empty list. */
-  public static final SoyList EMPTY_LIST =
-      ListImpl.forProviderList(ImmutableList.<SoyValueProvider>of());
+  public static final SoyList EMPTY_LIST = UNCUSTOMIZED_INSTANCE.newList();
 
   /** List of user-provided custom value converters. */
   // Note: Using field injection instead of constructor injection because we want optional = true.
@@ -158,19 +157,6 @@ public class SoyValueConverter {
   /**
    * IMPORTANT: Do not use this method. Consider it internal to Soy.
    *
-   * <p>Creates a new SoyEasyList initialized from the given values.
-   *
-   * @param values A list of values.
-   * @return A new SoyEasyList initialized from the given values.
-   */
-  @Deprecated
-  public SoyEasyList newEasyList(Object... values) {
-    return newEasyListFromJavaIterable(Arrays.asList(values));
-  }
-
-  /**
-   * IMPORTANT: Do not use this method. Consider it internal to Soy.
-   *
    * <p>Creates a new SoyEasyList initialized from a SoyList.
    *
    * @param list The list of initial values.
@@ -188,18 +174,18 @@ public class SoyValueConverter {
   /**
    * IMPORTANT: Do not use this method. Consider it internal to Soy.
    *
-   * <p>Creates a new SoyEasyList initialized from a Java iterable.
+   * <p>Creates a new SoyList initialized from the given values. Values are converted eagerly.
    *
-   * @param javaIterable The Java iterable of initial values.
-   * @return A new SoyEasyList initialized from the given Java iterable.
+   * @param items A list of values.
+   * @return A new SoyEasyList initialized from the given values.
    */
-  @Deprecated
-  public SoyEasyList newEasyListFromJavaIterable(Iterable<?> javaIterable) {
-    EasyListImpl result = new EasyListImpl();
-    for (Object o : javaIterable) {
-      result.add(convert(o));
+  @VisibleForTesting
+  public SoyList newList(Object... items) {
+    ImmutableList.Builder<SoyValueProvider> builder = ImmutableList.builder();
+    for (Object o : items) {
+      builder.add(convert(o));
     }
-    return result;
+    return ListImpl.forProviderList(builder.build());
   }
 
   /**
@@ -243,12 +229,10 @@ public class SoyValueConverter {
       @SuppressWarnings("unchecked")
       Map<String, ?> objCast = (Map<String, ?>) obj;
       return newDictFromJavaStringMap(objCast);
-    } else if (obj instanceof Collection<?>) {
-      // NOTE: We don't trap Iterable, because many specific types extend from Iterable but are not
+    } else if (obj instanceof Collection<?> || obj instanceof FluentIterable<?>) {
+      // NOTE: We don't trap Iterable itself, because many types extend from Iterable but are not
       // meant to be enumerated.
-      return newListFromIterable((Collection<?>) obj);
-    } else if (obj instanceof FluentIterable<?>) {
-      return newListFromIterable((FluentIterable<?>) obj);
+      return newListFromIterable((Iterable<?>) obj);
     } else if (obj instanceof SoyGlobalsValue) {
       return convert(((SoyGlobalsValue) obj).getSoyGlobalValue());
     } else {

@@ -94,7 +94,7 @@ public class RenderVisitorTest {
   private static final SoyRecord TEST_DATA;
 
   static {
-    SoyList tri = CONVERTER.newEasyList(1, 3, 6, 10, 15, 21);
+    SoyList tri = CONVERTER.newList(1, 3, 6, 10, 15, 21);
     TEST_DATA =
         CONVERTER.newEasyDict(
             "boo",
@@ -114,9 +114,9 @@ public class RenderVisitorTest {
             "map0",
             CONVERTER.newEasyDict(),
             "list0",
-            CONVERTER.newEasyList(),
+            CONVERTER.newList(),
             "list1",
-            CONVERTER.newEasyList(1, 2, 3),
+            CONVERTER.newList(1, 2, 3),
             "component",
             "comp",
             "plainText",
@@ -567,7 +567,7 @@ public class RenderVisitorTest {
     SoyEasyDict data =
         CONVERTER.newEasyDict(
             "person", CONVERTER.newEasyDict("name", "Alice", "gender", "female"),
-            "invitees", CONVERTER.newEasyList("Anna", "Brent", "Chris", "Darin"));
+            "invitees", CONVERTER.newList("Anna", "Brent", "Chris", "Darin"));
     assertRenderWithData(templateBody, data, "Alice added Anna and 3 others to her circle.");
 
     data.set("person", CONVERTER.newEasyDict("name", "Bob", "gender", "male"));
@@ -881,9 +881,9 @@ public class RenderVisitorTest {
             "foo.boo",
             "foo",
             "goo",
-            CONVERTER.newEasyList(1, 2, 3),
+            CONVERTER.newList(1, 2, 3),
             "foo.goo",
-            CONVERTER.newEasyList(3, 2, 1));
+            CONVERTER.newList(3, 2, 1));
 
     StringBuilder outputSb = new StringBuilder();
     RenderVisitor rv =
@@ -994,9 +994,9 @@ public class RenderVisitorTest {
             "foo.boo",
             new TestFuture("foo", progress),
             "goo",
-            CONVERTER.newEasyList(1, 2, 3),
+            CONVERTER.newList(1, 2, 3),
             "foo.goo",
-            CONVERTER.newEasyList(3, 2, 1));
+            CONVERTER.newList(3, 2, 1));
 
     SoyRecord testIj = CONVERTER.newEasyDict("future", new TestFuture("ij", progress));
 

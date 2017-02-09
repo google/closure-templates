@@ -81,7 +81,7 @@ public class SoyTypesTest {
           "trusted_resource_uri", SanitizedContent.ContentKind.TRUSTED_RESOURCE_URI, null);
   private static final SanitizedContent JS_DATA =
       UnsafeSanitizedContentOrdainer.ordainAsSafe("js", SanitizedContent.ContentKind.JS, null);
-  private static final SoyList LIST_DATA = SoyValueConverter.UNCUSTOMIZED_INSTANCE.newEasyList();
+  private static final SoyList LIST_DATA = SoyValueConverter.UNCUSTOMIZED_INSTANCE.newList();
   private static final SoyMap MAP_DATA = SoyValueConverter.UNCUSTOMIZED_INSTANCE.newEasyDict();
   private static final SoyDict DICT_DATA = SoyValueConverter.UNCUSTOMIZED_INSTANCE.newEasyDict();
 

@@ -69,10 +69,15 @@ public final class KeysFunction
     if (!(arg instanceof SoyMap)) {
       throw new IllegalArgumentException("Argument to keys() function is not SoyMap.");
     }
+
     return ListImpl.forProviderList(keys((SoyMap) arg));
   }
 
-  /** Returns a list of all the keys in the given map. */
+  /**
+   * Returns a list of all the keys in the given map.
+   *
+   * <p>Do not inline; required for jbcsrc. Must be mutable list.
+   */
   public static List<SoyValue> keys(SoyMap map) {
     List<SoyValue> list = new ArrayList<>(map.getItemCnt());
     Iterables.addAll(list, map.getItemKeys());
