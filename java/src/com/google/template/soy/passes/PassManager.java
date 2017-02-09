@@ -198,24 +198,21 @@ public final class PassManager {
   }
 
   private final class CheckSyntaxVersionPass extends CompilerFilePass {
-    final ReportSyntaxVersionErrorsVisitor reportDeclaredVersionErrors =
-        new ReportSyntaxVersionErrorsVisitor(declaredSyntaxVersion, true, errorReporter);
-    final InferRequiredSyntaxVersionVisitor inferenceVisitor =
-        new InferRequiredSyntaxVersionVisitor();
+    final ReportSyntaxVersionErrors reportDeclaredVersionErrors =
+        new ReportSyntaxVersionErrors(declaredSyntaxVersion, true, errorReporter);
 
     @Override
     public void run(SoyFileNode file, IdGenerator nodeIdGen) {
       Checkpoint checkpoint = errorReporter.checkpoint();
-      reportDeclaredVersionErrors.exec(file);
+      reportDeclaredVersionErrors.report(file);
       // If there were no errors against the declared syntax version, check for errors against
       // the inferred syntax version too. (If there were errors against the declared syntax version,
       // skip the inferred error checking, because it could produce duplicate errors and in any case
       // it's confusing for the user to have to deal with both declared and inferred errors.)
       if (!errorReporter.errorsSince(checkpoint)) {
-        SyntaxVersion inferredSyntaxVersion = inferenceVisitor.exec(file);
+        SyntaxVersion inferredSyntaxVersion = InferRequiredSyntaxVersion.infer(file);
         if (inferredSyntaxVersion.num > declaredSyntaxVersion.num) {
-          new ReportSyntaxVersionErrorsVisitor(inferredSyntaxVersion, false, errorReporter)
-              .exec(file);
+          new ReportSyntaxVersionErrors(inferredSyntaxVersion, false, errorReporter).report(file);
         }
       }
     }

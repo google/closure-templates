@@ -17,28 +17,23 @@
 package com.google.template.soy.passes;
 
 import com.google.common.base.Preconditions;
+import com.google.template.soy.basetree.Node;
+import com.google.template.soy.basetree.NodeVisitor;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.basetree.SyntaxVersionUpperBound;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
-import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.ExprUnion;
-import com.google.template.soy.soytree.SoyNode;
+import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
-import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import com.google.template.soy.soytree.SoyTreeUtils;
 
 /**
- * Visitor for asserting that all the nodes in a parse tree or subtree conform to the user-declared
- * syntax version.
- *
- * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
- * <p>{@link #exec} may be called on any node. There is no return value. However, a {@code
- * SoySyntaxException} is thrown if the given node or a descendant does not satisfy the
- * user-declared syntax version.
+ * Reports syntax version errors for unparsed expressions and {@link SyntaxVersionUpperBound}s that
+ * aren't compatible with a required version.
  *
  */
-final class ReportSyntaxVersionErrorsVisitor extends AbstractSoyNodeVisitor<Void> {
+final class ReportSyntaxVersionErrors {
 
   private static final SoyErrorKind SYNTAX_VERSION_OUT_OF_BOUNDS = SoyErrorKind.of("{0}: {1}");
 
@@ -52,7 +47,7 @@ final class ReportSyntaxVersionErrorsVisitor extends AbstractSoyNodeVisitor<Void
    *     False if it is inferred.
    * @param errorReporter For reporting errors.
    */
-  ReportSyntaxVersionErrorsVisitor(
+  ReportSyntaxVersionErrors(
       SyntaxVersion requiredSyntaxVersion, boolean isDeclared, ErrorReporter errorReporter) {
     this.errorReporter = errorReporter;
     this.requiredSyntaxVersion = requiredSyntaxVersion;
@@ -65,15 +60,19 @@ final class ReportSyntaxVersionErrorsVisitor extends AbstractSoyNodeVisitor<Void
                 + " not satisfied");
   }
 
-  @Override
-  public Void exec(SoyNode node) {
-    visitSoyNode(node);
-    return null;
+  public void report(SoyFileNode node) {
+    SoyTreeUtils.visitAllNodes(
+        node,
+        new NodeVisitor<Node, Boolean>() {
+          @Override
+          public Boolean exec(Node node) {
+            visitNode(node);
+            return true; // keep visiting
+          }
+        });
   }
 
-  @Override
-  protected void visitSoyNode(SoyNode node) {
-    // ------ Record errors for this Soy node. ------
+  private void visitNode(Node node) {
     if (!node.couldHaveSyntaxVersionAtLeast(requiredSyntaxVersion)) {
       SyntaxVersionUpperBound syntaxVersionBound = node.getSyntaxVersionUpperBound();
       Preconditions.checkNotNull(syntaxVersionBound);
@@ -83,7 +82,6 @@ final class ReportSyntaxVersionErrorsVisitor extends AbstractSoyNodeVisitor<Void
           errorPreamble,
           syntaxVersionBound.reasonStr);
     }
-
     // ------ Record errors for expressions held by this Soy node. ------
     if (node instanceof ExprHolderNode) {
       for (ExprUnion exprUnion : ((ExprHolderNode) node).getAllExprUnions()) {
@@ -97,11 +95,6 @@ final class ReportSyntaxVersionErrorsVisitor extends AbstractSoyNodeVisitor<Void
           exprUnion.reportDisallowedV1ExpressionErrors(errorReporter);
         }
       }
-    }
-
-    // ------ Record errors for descendants of this Soy node. ------
-    if (node instanceof ParentSoyNode<?>) {
-      visitChildren((ParentSoyNode<?>) node);
     }
   }
 }
