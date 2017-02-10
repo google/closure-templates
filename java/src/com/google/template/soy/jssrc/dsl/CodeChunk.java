@@ -253,6 +253,16 @@ public abstract class CodeChunk {
     return MapLiteral.create(ImmutableList.copyOf(keys), ImmutableList.copyOf(values));
   }
 
+  /** Creates a code chunk representing a for loop. */
+  public static CodeChunk forCall(
+      String localVar,
+      CodeChunk.WithValue initial,
+      CodeChunk.WithValue limit,
+      CodeChunk.WithValue increment,
+      CodeChunk body) {
+    return For.create(localVar, initial, limit, increment, body);
+  }
+
   /** Creates a code chunk that represents a return statement returning the given value. */
   public static CodeChunk return_(CodeChunk.WithValue returnValue) {
     return Return.create(returnValue);
