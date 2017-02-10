@@ -18,6 +18,8 @@ package com.google.template.soy.passes;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
+import com.google.template.soy.basetree.SyntaxVersion;
+import com.google.template.soy.basetree.SyntaxVersionUpperBound;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
@@ -46,6 +48,12 @@ public final class ResolveFunctionsVisitor extends AbstractExprNodeVisitor<Void>
       node.setSoyFunction(function);
     } else if ((function = BuiltinFunction.forFunctionName(functionName)) != null) {
       node.setSoyFunction(function);
+      if (functionName.equals(BuiltinFunction.V1_EXPRESSION.getName())) {
+        node.maybeSetSyntaxVersionUpperBound(
+            new SyntaxVersionUpperBound(
+                SyntaxVersion.V2_0,
+                "The v1Expression function can only be used in deprecatedV1 templates."));
+      }
     }
     visitChildren(node);
   }

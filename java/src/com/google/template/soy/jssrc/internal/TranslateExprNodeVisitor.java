@@ -556,6 +556,8 @@ public class TranslateExprNodeVisitor
           return visitMapLiteralNodeHelper((MapLiteralNode) node.getChild(0), true);
         case CHECK_NOT_NULL:
           return visitCheckNotNullFunction(node);
+        case V1_EXPRESSION:
+          return visitV1ExpressionFunction(node);
         default:
           throw new AssertionError();
       }
@@ -618,5 +620,13 @@ public class TranslateExprNodeVisitor
   private CodeChunk.WithValue visitIndexFunction(FunctionNode node) {
     String varName = ((VarRefNode) node.getChild(0)).getName();
     return variableMappings.get(varName + "__index");
+  }
+
+  private CodeChunk.WithValue visitV1ExpressionFunction(FunctionNode node) {
+    String exprText = ((StringNode) node.getChild(0)).getValue();
+    return CodeChunk.fromExpr(
+        V1JsExprTranslator.translateToJsExpr(
+            exprText, node.getSourceLocation(), variableMappings, errorReporter),
+        ImmutableList.<GoogRequire>of());
   }
 }

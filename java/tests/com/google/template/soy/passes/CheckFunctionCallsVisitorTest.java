@@ -174,6 +174,25 @@ public final class CheckFunctionCallsVisitorTest {
   }
 
   @Test
+  public void testV1ExpressionFunction() {
+    assertPasses(
+        SyntaxVersion.V1_0,
+        "{namespace ns}\n",
+        "{template .foo}",
+        "  {let $m: v1Expression('blah.length') /}",
+        "{/template}");
+
+    assertFunctionCallsInvalid(
+        SyntaxVersion.V1_0,
+        "Function 'v1Expression' called with argument of type string (expected string literal).",
+        "{namespace ns}\n",
+        "{template .foo deprecatedV1=\"true\"}",
+        "  {let $blah: 'foo' /}",
+        "  {let $m: v1Expression($blah) /}",
+        "{/template}");
+  }
+
+  @Test
   public void testUnrecognizedFunction() {
     assertFunctionCallsInvalid(
         "Unknown function 'bogus'.",
@@ -205,8 +224,14 @@ public final class CheckFunctionCallsVisitorTest {
   }
 
   private void assertFunctionCallsInvalid(String errorMessage, String... lines) {
+    assertFunctionCallsInvalid(SyntaxVersion.V2_0, errorMessage, lines);
+  }
+
+  private void assertFunctionCallsInvalid(
+      SyntaxVersion declaredSyntaxVersion, String errorMessage, String... lines) {
     FormattingErrorReporter errorReporter = new FormattingErrorReporter();
     SoyFileSetParserBuilder.forFileContents(Joiner.on('\n').join(lines))
+        .declaredSyntaxVersion(declaredSyntaxVersion)
         .errorReporter(errorReporter)
         .parse();
     assertThat(errorReporter.getErrorMessages()).hasSize(1);

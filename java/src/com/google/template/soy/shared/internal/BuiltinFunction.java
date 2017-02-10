@@ -35,6 +35,7 @@ public enum BuiltinFunction implements SoyFunction {
   INDEX("index"),
   QUOTE_KEYS_IF_JS("quoteKeysIfJs"),
   CHECK_NOT_NULL("checkNotNull"),
+  V1_EXPRESSION("v1Expression"),
   ;
 
   /** Map of NonpluginFunctions by function name. */

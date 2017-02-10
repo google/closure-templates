@@ -25,6 +25,7 @@ import static com.google.template.soy.jssrc.dsl.CodeChunk.number;
 import static com.google.template.soy.jssrc.internal.JsSrcSubject.assertThatSoyExpr;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import org.junit.Test;
@@ -306,5 +307,13 @@ public final class TranslateExprNodeVisitorTest {
         .withInitialLocalVarTranslations(LOCAL_VAR_TRANSLATIONS)
         .generatesCode("soy.$$checkNotNull(gooData8) ? 1 : 0")
         .withPrecedence(CONDITIONAL);
+  }
+
+  @Test
+  public void testBuiltinFunctions_v1Expression() {
+    assertThatSoyExpr("v1Expression('$goo.length()')")
+        .withInitialLocalVarTranslations(LOCAL_VAR_TRANSLATIONS)
+        .withDeclaredSyntaxVersion(SyntaxVersion.V1_0)
+        .generatesCode("gooData8.length()");
   }
 }

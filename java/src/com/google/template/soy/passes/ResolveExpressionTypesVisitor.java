@@ -782,6 +782,9 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
             // cleanup of all broken templates.
             node.setType(UnknownType.getInstance());
             break;
+          case V1_EXPRESSION:
+            node.setType(UnknownType.getInstance());
+            break;
           default:
             throw new AssertionError();
         }

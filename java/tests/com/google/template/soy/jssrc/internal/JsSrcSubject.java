@@ -29,6 +29,7 @@ import com.google.common.truth.SubjectFactory;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.internal.UniqueNameGenerator;
+import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.error.FormattingErrorReporter;
@@ -65,6 +66,7 @@ final class JsSrcSubject extends Subject<JsSrcSubject, String> {
   private ImmutableMap<String, CodeChunk.WithValue> initialLocalVarTranslations = ImmutableMap.of();
   private SoyTypeRegistry typeRegistry = new SoyTypeRegistry();
   private ErrorReporter errorReporter = ExplodingErrorReporter.get();
+  private SyntaxVersion syntaxVersion = SyntaxVersion.V2_0;
 
   // Set by call to generateChunk()
   @Nullable private CodeChunk.WithValue chunk;
@@ -113,6 +115,12 @@ final class JsSrcSubject extends Subject<JsSrcSubject, String> {
     return this;
   }
 
+  @CheckReturnValue
+  JsSrcSubject withDeclaredSyntaxVersion(SyntaxVersion version) {
+    this.syntaxVersion = version;
+    return this;
+  }
+
   private void generateChunk() {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
@@ -122,6 +130,7 @@ final class JsSrcSubject extends Subject<JsSrcSubject, String> {
                     + actual()
                     + "{/template}\n")
             .allowUnboundGlobals(true)
+            .declaredSyntaxVersion(syntaxVersion)
             .typeRegistry(typeRegistry)
             .options(generalOptions)
             .parse()

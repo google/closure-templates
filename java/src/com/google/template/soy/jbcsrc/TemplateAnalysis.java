@@ -667,6 +667,9 @@ final class TemplateAnalysis {
           case CHECK_NOT_NULL:
             // fall through
             break;
+          case V1_EXPRESSION:
+            throw new UnsupportedOperationException(
+                "the v1Expression function can't be used in templates compiled to Java");
           default:
             throw new AssertionError("unexpected builtin function");
         }

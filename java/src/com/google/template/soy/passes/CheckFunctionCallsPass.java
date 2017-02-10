@@ -31,6 +31,7 @@ import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
+import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.restricted.SoyFunction;
@@ -61,6 +62,9 @@ final class CheckFunctionCallsPass extends CompilerFilePass {
   private static final SoyErrorKind QUOTE_KEYS_IF_JS_REQUIRES_MAP_LITERAL_ARG =
       SoyErrorKind.of(
           "Function ''quoteKeysIfJs'' called with argument of type {0} (expected map literal).");
+  private static final SoyErrorKind V1_EXPRESSION_REQUIRES_STRING_ARG =
+      SoyErrorKind.of(
+          "Function ''v1Expression'' called with argument of type {0} (expected string literal).");
   private static final SoyErrorKind UNKNOWN_FUNCTION = SoyErrorKind.of("Unknown function ''{0}''.");
 
   private final ErrorReporter errorReporter;
@@ -148,6 +152,14 @@ final class CheckFunctionCallsPass extends CompilerFilePass {
           break;
         case CHECK_NOT_NULL:
           // Do nothing.  All types are valid.
+          break;
+        case V1_EXPRESSION:
+          if (!(arg instanceof StringNode)) {
+            errorReporter.report(
+                node.getSourceLocation(),
+                V1_EXPRESSION_REQUIRES_STRING_ARG,
+                node.getChild(0).getType().toString());
+          }
           break;
         default:
           throw new AssertionError("Unrecognized nonplugin fn " + nonpluginFn.getName());

@@ -544,6 +544,9 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
           return visitMapLiteralNode((MapLiteralNode) node.getChild(0));
         case CHECK_NOT_NULL:
           return visitCheckNotNullFunction(node.getChild(0));
+        case V1_EXPRESSION:
+          throw new UnsupportedOperationException(
+              "the v1Expression function can't be used in templates compiled to Java");
         default:
           throw new AssertionError();
       }
