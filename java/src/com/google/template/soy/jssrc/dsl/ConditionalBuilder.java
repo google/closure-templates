@@ -77,7 +77,6 @@ public final class ConditionalBuilder {
     IfThenPair ifThen = Iterables.getOnlyElement(pairs);
     return ifThen.consequent instanceof CodeChunk.WithValue
         && trailingElse instanceof CodeChunk.WithValue
-        && ifThen.predicate.isRepresentableAsSingleExpression()
         && ((CodeChunk.WithValue) ifThen.consequent).isRepresentableAsSingleExpression()
         && ((CodeChunk.WithValue) trailingElse).isRepresentableAsSingleExpression();
   }

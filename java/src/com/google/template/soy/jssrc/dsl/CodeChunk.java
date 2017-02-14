@@ -188,7 +188,7 @@ public abstract class CodeChunk {
       return this;
     }
 
-    public WithValue build() {
+    public CodeChunk.WithValue build() {
       checkState(rhs != null, "must set an initial value");
       return Declaration.create(
           typeExpr, varName, rhs, requires == null ? ImmutableSet.<GoogRequire>of() : requires);
@@ -198,6 +198,11 @@ public abstract class CodeChunk {
   /** Creates a code chunk representing the logical negation {@code !} of the given chunk. */
   public static WithValue not(CodeChunk.WithValue arg) {
     return PrefixUnaryOperation.create(Operator.NOT, arg);
+  }
+
+  /** Starts a {@code switch} statement dispatching on the given chunk. */
+  public static SwitchBuilder switch_(CodeChunk.WithValue switchOn) {
+    return new SwitchBuilder(switchOn);
   }
 
   /**
@@ -284,10 +289,8 @@ public abstract class CodeChunk {
 
   /**
    * Creates a code chunk from the given text, treating it as a series of statements rather than an
-   * expression.
-   *
-   * <p>The only valid use case for this method is for interoperability with existing codegen. Do
-   * not use for new code.
+   * expression. For use only by {@link
+   * com.google.template.soy.jssrc.internal.GenJsCodeVisitor#visitReturningCodeChunk}.
    *
    * <p>TODO(user): remove.
    */

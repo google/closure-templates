@@ -34,7 +34,7 @@ final class FormattingContext implements AutoCloseable {
   private final StringBuilder buf;
   private final int initialSize;
 
-  private Scope curScope = new Scope(null /* parent */);
+  private Scope curScope = new Scope(null /* parent */, false /* emitClosingBrace */);
   private String curIndent;
   private boolean nextAppendShouldStartNewLine = false;
 
@@ -92,7 +92,7 @@ final class FormattingContext implements AutoCloseable {
     return this;
   }
 
-  boolean shouldFormat(CodeChunk chunk) {
+  private boolean shouldFormat(CodeChunk chunk) {
     boolean shouldFormat = !curScope.alreadyFormatted(chunk);
     if (shouldFormat) {
       curScope.formatted.add(chunk);
@@ -105,7 +105,19 @@ final class FormattingContext implements AutoCloseable {
     buf.append('{');
     curIndent = curIndent + "  ";
     endLine();
-    curScope = new Scope(curScope);
+    curScope = new Scope(curScope, true /* emitClosingBrace */);
+    return this;
+  }
+
+  /**
+   * For use only by {@link Switch#doFormatInitialStatements}. It's not an error for bodies of case
+   * clauses to be brace-delimited, but it is slightly less readable, so omit them.
+   */
+  FormattingContext enterCaseBody() {
+    maybeIndent();
+    curIndent = curIndent + "  ";
+    endLine();
+    curScope = new Scope(curScope, false /* emitClosingBrace */);
     return this;
   }
 
@@ -138,11 +150,14 @@ final class FormattingContext implements AutoCloseable {
 
   @Override
   public void close() {
+    boolean emitClosingBrace = curScope.emitClosingBrace;
     curScope = Preconditions.checkNotNull(curScope.parent);
     Preconditions.checkState(!curIndent.isEmpty());
     curIndent = curIndent.substring(2);
     endLine();
-    append('}');
+    if (emitClosingBrace) {
+      append('}');
+    }
   }
 
   /**
@@ -171,9 +186,11 @@ final class FormattingContext implements AutoCloseable {
         Collections.<CodeChunk>newSetFromMap(new IdentityHashMap<CodeChunk, Boolean>());
     @Nullable
     final Scope parent;
+    final boolean emitClosingBrace;
 
-    Scope(@Nullable Scope parent) {
+    Scope(@Nullable Scope parent, boolean emitClosingBrace) {
       this.parent = parent;
+      this.emitClosingBrace = emitClosingBrace;
     }
 
     boolean alreadyFormatted(CodeChunk chunk) {

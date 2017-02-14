@@ -23,7 +23,10 @@ import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import javax.annotation.Nullable;
 
-/** Represents a variable declaration. */
+/**
+ * Represents a variable declaration. TODO(brndn): declarations are statements. This should subclass
+ * {@link CodeChunk}, not {@link CodeChunk.WithValue}.
+ */
 @AutoValue
 abstract class Declaration extends CodeChunk.WithValue {
 
@@ -89,7 +92,7 @@ abstract class Declaration extends CodeChunk.WithValue {
   public JsExpr singleExprOrName() {
     return new JsExpr(varName(), Integer.MAX_VALUE);
   }
-  
+
   @Override
   public void collectRequires(RequiresCollector collector) {
     for (GoogRequire require : googRequires()) {

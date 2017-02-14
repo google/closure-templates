@@ -23,8 +23,8 @@ import com.google.common.base.Preconditions;
 import com.google.template.soy.exprtree.Operator.Associativity;
 
 /**
- * Represents a ternary expression. All of its constituent chunks are representable as single
- * expressions, so it is too.
+ * Represents a ternary expression. Its consequent and alternate chunks are required to be
+ * representable as single expressions, though its predicate can be more complex.
  */
 @AutoValue
 abstract class Ternary extends Operation {
@@ -38,9 +38,8 @@ abstract class Ternary extends Operation {
       CodeChunk.WithValue predicate,
       CodeChunk.WithValue consequent,
       CodeChunk.WithValue alternate) {
-    Preconditions.checkState(predicate.isRepresentableAsSingleExpression());
-    Preconditions.checkState(consequent.isRepresentableAsSingleExpression());
-    Preconditions.checkState(alternate.isRepresentableAsSingleExpression());
+    Preconditions.checkArgument(consequent.isRepresentableAsSingleExpression());
+    Preconditions.checkArgument(alternate.isRepresentableAsSingleExpression());
     return new AutoValue_Ternary(predicate, consequent, alternate);
   }
 
@@ -56,7 +55,8 @@ abstract class Ternary extends Operation {
 
   @Override
   void doFormatInitialStatements(FormattingContext ctx) {
-    // Nothing to do
+    ctx.appendInitialStatements(predicate());
+    // consequent and alternate cannot have initial statements
   }
 
   @Override

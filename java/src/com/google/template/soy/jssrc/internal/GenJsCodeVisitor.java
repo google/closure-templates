@@ -24,6 +24,7 @@ import static com.google.template.soy.jssrc.dsl.CodeChunk.id;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.number;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.return_;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.stringLiteral;
+import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_IS_OBJECT;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_ASSERTS_ASSERT_TYPE;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_GET_DELTEMPLATE_ID;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_REGISTER_DELEGATE_FN;
@@ -34,6 +35,7 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.sanitizedContentO
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.TreeMultimap;
 import com.google.template.soy.base.internal.SoyFileKind;
@@ -53,8 +55,8 @@ import com.google.template.soy.jssrc.dsl.CodeChunk.DeclarationBuilder;
 import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
 import com.google.template.soy.jssrc.dsl.ConditionalBuilder;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
+import com.google.template.soy.jssrc.dsl.SwitchBuilder;
 import com.google.template.soy.jssrc.internal.GenJsExprsVisitor.GenJsExprsVisitorFactory;
-import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.parsepasses.contextautoesc.ContentSecurityPolicyPass;
 import com.google.template.soy.passes.FindIndirectParamsVisitor;
 import com.google.template.soy.passes.FindIndirectParamsVisitor.IndirectParamsInfo;
@@ -304,6 +306,35 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
   /** @return The CodeBuilder used for generating file contents. */
   protected JsCodeBuilder getJsCodeBuilder() {
     return jsCodeBuilder;
+  }
+
+  /**
+   * Visits the given node, returning a {@link CodeChunk} encapsulating its JavaScript code. The
+   * chunk is indented one level from the current indent level.
+   *
+   * <p>Unlike {@link TranslateExprNodeVisitor}, GenJsCodeVisitor does not return anything as the
+   * result of visiting a subtree. To get recursive chunk-building, we use a hack, swapping out the
+   * {@link JsCodeBuilder} and using the unsound {@link
+   * CodeChunk#treatRawStringAsStatementLegacyOnly} API.
+   */
+  private CodeChunk visitReturningCodeChunk(SoyNode node) {
+    // Replace jsCodeBuilder with a child JsCodeBuilder.
+    JsCodeBuilder original = jsCodeBuilder;
+    jsCodeBuilder = createChildJsCodeBuilder();
+
+    // Visit body.
+    jsCodeBuilder.increaseIndent();
+    visit(node);
+    jsCodeBuilder.decreaseIndent();
+
+    CodeChunk chunk =
+        CodeChunk.treatRawStringAsStatementLegacyOnly(
+            jsCodeBuilder.getCode(), jsCodeBuilder.googRequires());
+    // Swap the original JsCodeBuilder back in, but preserve indent levels.
+    original.setIndent(jsCodeBuilder.getIndent());
+    jsCodeBuilder = original;
+
+    return chunk;
   }
 
   /**
@@ -982,24 +1013,8 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
         CodeChunk.WithValue predicate =
             jsExprTranslator.translateToCodeChunk(
                 ((IfCondNode) child).getExprUnion(), templateTranslationContext, errorReporter);
-
-        // Replace jsCodeBuilder with a child JsCodeBuilder.
-        JsCodeBuilder originalCodeBuilder = jsCodeBuilder;
-        jsCodeBuilder = createChildJsCodeBuilder();
-
-        // Visit body.
-        jsCodeBuilder.increaseIndent();
-        visit(child);
-        jsCodeBuilder.decreaseIndent();
-
-        // Convert body to CodeChunk.
-
-        CodeChunk consequent = jsCodeBuilder.getCodeAsChunkLegacyOnly();
-
-        // Swap the original JsCodeBuilder back in, but preserve indent levels.
-        originalCodeBuilder.setIndent(jsCodeBuilder.getIndent());
-        jsCodeBuilder = originalCodeBuilder;
-
+        // Convert body.
+        CodeChunk consequent = visitReturningCodeChunk(child);
         // Add if-block to conditional.
         if (conditional == null) {
           conditional =
@@ -1009,22 +1024,8 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
         }
 
       } else if (child instanceof IfElseNode) {
-        // Replace jsCodeBuilder with a child JsCodeBuilder.
-        JsCodeBuilder originalCodeBuilder = jsCodeBuilder;
-        jsCodeBuilder = this.createChildJsCodeBuilder();
-
-        // Visit body.
-        jsCodeBuilder.increaseIndent();
-        visit(child);
-        jsCodeBuilder.decreaseIndent();
-
-        // Convert body to CodeChunk.
-        CodeChunk trailingElse = jsCodeBuilder.getCodeAsChunkLegacyOnly();
-
-        // Swap the original JsCodeBuilder back in, but preserve indent levels.
-        originalCodeBuilder.setIndent(jsCodeBuilder.getIndent());
-        jsCodeBuilder = originalCodeBuilder;
-
+        // Convert body.
+        CodeChunk trailingElse = visitReturningCodeChunk(child);
         // Add else-block to conditional.
         conditional.else_(trailingElse);
       } else {
@@ -1064,67 +1065,55 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
    */
   @Override protected void visitSwitchNode(SwitchNode node) {
 
-    String switchExpr = coerceTypeForSwitchComparison(node.getExpr(), node.getExprText());
-    jsCodeBuilder.appendLine("switch (", switchExpr, ") {");
-    jsCodeBuilder.increaseIndent();
-
+    CodeChunk.WithValue switchOn =
+        coerceTypeForSwitchComparison(node.getExpr(), node.getExprText());
+    SwitchBuilder switchBuilder = CodeChunk.switch_(switchOn);
     for (SoyNode child : node.getChildren()) {
-
       if (child instanceof SwitchCaseNode) {
         SwitchCaseNode scn = (SwitchCaseNode) child;
-
+        ImmutableList.Builder<CodeChunk.WithValue> caseChunks = ImmutableList.builder();
         for (ExprNode caseExpr : scn.getExprList()) {
-          JsExpr caseJsExpr =
-              jsExprTranslator
-                  .translateToCodeChunk(caseExpr, templateTranslationContext, errorReporter)
-                  .assertExprAndCollectRequires(
-                      jsCodeBuilder.getRequiresCollector()); // TODO(user): remove
-          jsCodeBuilder.appendLine("case ", caseJsExpr.getText(), ":");
+          CodeChunk.WithValue caseChunk =
+              jsExprTranslator.translateToCodeChunk(
+                  caseExpr, templateTranslationContext, errorReporter);
+          caseChunks.add(caseChunk);
         }
-
-        jsCodeBuilder.increaseIndent();
-        visit(scn);
-        jsCodeBuilder.appendLine("break;");
-        jsCodeBuilder.decreaseIndent();
-
+        CodeChunk body = visitReturningCodeChunk(scn);
+        switchBuilder.case_(caseChunks.build(), body);
       } else if (child instanceof SwitchDefaultNode) {
-        SwitchDefaultNode sdn = (SwitchDefaultNode) child;
-
-        jsCodeBuilder.appendLine("default:");
-
-        jsCodeBuilder.increaseIndent();
-        visit(sdn);
-        jsCodeBuilder.decreaseIndent();
-
+        CodeChunk body = visitReturningCodeChunk(child);
+        switchBuilder.default_(body);
       } else {
         throw new AssertionError();
       }
     }
-
-    jsCodeBuilder.decreaseIndent();
-    jsCodeBuilder.appendLine("}");
+    jsCodeBuilder.append(switchBuilder.build());
   }
 
   // js switch statements use === for comparing the switch expr to the cases.  In order to preserve
   // soy equality semantics for sanitized content objects we need to coerce cases and switch exprs
   // to strings.
-  private String coerceTypeForSwitchComparison(ExprRootNode v2Expr, String v1Expr) {
-    String jsExpr =
-        jsExprTranslator
-            .translateToCodeChunk(v2Expr, v1Expr, templateTranslationContext, errorReporter)
-            .assertExprAndCollectRequires(
-                jsCodeBuilder.getRequiresCollector()) // TODO(user): remove
-            .getText();
+  private CodeChunk.WithValue coerceTypeForSwitchComparison(ExprRootNode v2Expr, String v1Expr) {
+    CodeChunk.WithValue switchOn =
+        jsExprTranslator.translateToCodeChunk(
+            v2Expr, v1Expr, templateTranslationContext, errorReporter);
     SoyType type = v2Expr.getType();
     // If the type is possibly a sanitized content type then we need to toString it.
     if (SoyTypes.makeNullable(StringType.getInstance()).isAssignableFrom(type)
         || type.equals(AnyType.getInstance())
         || type.equals(UnknownType.getInstance())) {
-      return "(goog.isObject($$temp = " + jsExpr + ")) ? $$temp.toString() : $$temp";
+      CodeChunk.Generator codeGenerator = templateTranslationContext.codeGenerator();
+      CodeChunk.WithValue tmp = codeGenerator.declare(switchOn);
+      return codeGenerator
+          .newChunk()
+          .if_(GOOG_IS_OBJECT.call(tmp), tmp.dotAccess("toString").call())
+          .else_(tmp)
+          .endif()
+          .buildAsValue();
     }
     // For everything else just pass through.  switching on objects/collections is unlikely to
     // have reasonably defined behavior.
-    return jsExpr;
+    return switchOn;
   }
 
   /**

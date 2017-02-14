@@ -1179,8 +1179,8 @@ public final class GenJsCodeVisitorTest {
             + "    Bluh\n"
             + "{/switch}\n";
     String expectedJsCode =
-        ""
-            + "switch ((goog.isObject($$temp = opt_data.boo)) ? $$temp.toString() : $$temp) {\n"
+        "var $tmp = opt_data.boo;\n"
+            + "switch (goog.isObject($tmp) ? $tmp.toString() : $tmp) {\n"
             + "  case 0:\n"
             + "    output += 'Blah';\n"
             + "    break;\n"
@@ -1205,10 +1205,8 @@ public final class GenJsCodeVisitorTest {
             + "    Bluh\n"
             + "{/switch}\n";
     String expectedJsCode =
-        ""
-            + "switch ((goog.isObject("
-            + "$$temp = ($$temp = opt_data.alpha) == null ? opt_data.beta : $$temp)) "
-            + "? $$temp.toString() : $$temp) {\n"
+        "var $tmp = ($$temp = opt_data.alpha) == null ? opt_data.beta : $$temp;\n"
+            + "switch (goog.isObject($tmp) ? $tmp.toString() : $tmp) {\n"
             + "  default:\n"
             + "    output += 'Bluh';\n"
             + "}\n";

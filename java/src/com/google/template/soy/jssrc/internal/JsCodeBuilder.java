@@ -129,6 +129,10 @@ public class JsCodeBuilder {
     currOutputVarIsInited = parent.currOutputVarIsInited;
   }
 
+  Iterable<GoogRequire> googRequires() {
+    return googRequires.values();
+  }
+
   public void initOutputVarIfNecessary() {
 
     if (currOutputVarIsInited) {
@@ -345,11 +349,5 @@ public class JsCodeBuilder {
   /** Appends the code accumulated in this builder to the given {@link StringBuilder}. */
   void appendCode(StringBuilder sb) {
     sb.append(code);
-  }
-
-  /** Returns a CodeChunk that is equivalent to this CodeBuilder. */
-  CodeChunk getCodeAsChunkLegacyOnly() {
-    return CodeChunk.treatRawStringAsStatementLegacyOnly(
-        getCode(), ImmutableList.copyOf(googRequires.values()));
   }
 }
