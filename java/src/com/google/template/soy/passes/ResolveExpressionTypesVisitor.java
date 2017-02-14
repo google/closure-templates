@@ -144,8 +144,6 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
       SoyErrorKind.of("Missing Soy type for node {0}");
   private static final SoyErrorKind NOT_A_PROTO_TYPE =
       SoyErrorKind.of("''{0}'' is a ''{1}'', expected a protocol buffer.");
-  private static final SoyErrorKind PROTO_INIT_NOT_SUPPORTED =
-      SoyErrorKind.of("Proto initialization is not yet supported.");
   private static final SoyErrorKind STRING_LENGTH_ERROR =
       SoyErrorKind.of(
           "Soy strings do not have a ''length'' field. Use function strLen(...) instead.");
@@ -166,8 +164,6 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
   private final SoyTypeRegistry typeRegistry;
   /** Common operations on Soy types. */
   private final SoyTypeOps typeOps;
-  /** TODO(user): remove once proto init is GA. */
-  private final boolean allowProtoInit;
 
   /** Current set of type substitutions. */
   private TypeSubstitution substitutions;
@@ -175,13 +171,11 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
   ResolveExpressionTypesVisitor(
       SoyTypeRegistry typeRegistry,
       SyntaxVersion declaredSyntaxVersion,
-      boolean allowProtoInit,
       ErrorReporter errorReporter) {
     this.errorReporter = errorReporter;
     this.typeRegistry = typeRegistry;
     this.typeOps = new SoyTypeOps(typeRegistry);
     this.declaredSyntaxVersion = declaredSyntaxVersion;
-    this.allowProtoInit = allowProtoInit;
   }
 
   @Override
@@ -818,8 +812,6 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
         node.setType(ErrorType.getInstance());
       } else {
         node.setType(type);
-        // TODO(user): Remove once proto init is fully implemented.
-        errorReporter.report(node.getSourceLocation(), PROTO_INIT_NOT_SUPPORTED);
       }
     }
 

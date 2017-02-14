@@ -92,7 +92,6 @@ public final class ResolveExpressionTypesVisitorTest {
     return new ResolveExpressionTypesVisitor(
         TYPE_REGISTRY,
         declaredSyntaxVersion,
-        false /* allowProtoInit */,
         ExplodingErrorReporter.get());
   }
 

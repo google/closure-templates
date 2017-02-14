@@ -256,10 +256,7 @@ public final class PassManager {
   private final class ResolveExpressionTypesPass extends CompilerFilePass {
     @Override
     public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-      boolean allowProtoInit = options.getExperimentalFeatures().contains("protoInit");
-      new ResolveExpressionTypesVisitor(
-              registry, declaredSyntaxVersion, allowProtoInit, errorReporter)
-          .exec(file);
+      new ResolveExpressionTypesVisitor(registry, declaredSyntaxVersion, errorReporter).exec(file);
     }
   }
 
