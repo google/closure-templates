@@ -46,8 +46,6 @@ import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.TemplateNode;
 import java.util.List;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 import org.junit.Before;
 import org.junit.Test;
@@ -2303,49 +2301,25 @@ public final class GenJsCodeVisitorTest {
   }
 
   @Test
-  public void testHeaderParamRequiresAssertsAndSanitizedData() {
-    ImmutableSet<String> symbols =
-        getRequiredSymbols(
-            "{namespace boo.foo}\n"
-                + "\n"
-                + "{template .goo}\n"
-                + "  {@param moo : string}\n"
-                + "  {$moo}\n"
-                + "{/template}\n");
+  public void testHeaderParamRequiresAsserts() {
+    String testFileContent =
+        "{namespace boo.foo autoescape=\"deprecated-noncontextual\"}\n"
+            + "\n"
+            + "/** */\n"
+            + "{template .goo}\n"
+            + "  {@param moo : string}\n"
+            + "  {$moo}\n"
+            + "{/template}\n";
 
-    assertThat(symbols).contains("soy.asserts");
-    assertThat(symbols).contains("goog.soy.data.SanitizedContent");
-  }
+    ParseResult parseResult = SoyFileSetParserBuilder.forFileContents(testFileContent).parse();
 
-  @Test
-  public void testHeaderParamAggregateTypesPropagateRequiresFromMembers() {
-    assertThat(
-            getRequiredSymbols(
-                "{namespace boo.foo}\n"
-                    + "\n"
-                    + "{template .goo}\n"
-                    + "  {@param moo : list<html>}\n"
-                    + "  {$moo}\n"
-                    + "{/template}\n"))
-        .contains("goog.soy.data.SanitizedHtml");
-    assertThat(
-            getRequiredSymbols(
-                "{namespace boo.foo}\n"
-                    + "\n"
-                    + "{template .goo}\n"
-                    + "  {@param moo : map<string, html>}\n"
-                    + "  {$moo}\n"
-                    + "{/template}\n"))
-        .contains("goog.soy.data.SanitizedHtml");
-    assertThat(
-            getRequiredSymbols(
-                "{namespace boo.foo}\n"
-                    + "\n"
-                    + "{template .goo}\n"
-                    + "  {@param moo : html|css}\n"
-                    + "  {$moo}\n"
-                    + "{/template}\n"))
-        .containsAllOf("goog.soy.data.SanitizedHtml", "goog.soy.data.SanitizedCss");
+    jsSrcOptions.setShouldProvideRequireSoyNamespaces(true);
+    List<String> jsFilesContents =
+        genJsCodeVisitor.gen(
+            parseResult.fileSet(), parseResult.registry(), ExplodingErrorReporter.get());
+
+    // Ensure that the use of header params causes soy.asserts to be required.
+    assertThat(jsFilesContents.get(0)).contains("goog.require('soy.asserts')");
   }
 
   @Test
@@ -2798,24 +2772,5 @@ public final class GenJsCodeVisitorTest {
     genJsCodeVisitor.visitForTesting(node, errorReporter);
 
     return genJsCodeVisitor.jsCodeBuilder.getCode();
-  }
-
-  private ImmutableSet<String> getRequiredSymbols(String soyFile) {
-    ParseResult parseResult = SoyFileSetParserBuilder.forFileContents(soyFile).parse();
-
-    jsSrcOptions.setShouldProvideRequireSoyNamespaces(true);
-    jsSrcOptions.setShouldGenerateJsdoc(true);
-    List<String> jsFilesContents =
-        genJsCodeVisitor.gen(
-            parseResult.fileSet(), parseResult.registry(), ExplodingErrorReporter.get());
-    Pattern googRequire = Pattern.compile("goog.require\\('(.*)'\\);");
-    ImmutableSet.Builder<String> requires = ImmutableSet.builder();
-    for (String file : jsFilesContents) {
-      Matcher matcher = googRequire.matcher(file);
-      while (matcher.find()) {
-        requires.add(matcher.group(1));
-      }
-    }
-    return requires.build();
   }
 }
