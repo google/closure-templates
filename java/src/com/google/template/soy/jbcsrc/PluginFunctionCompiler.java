@@ -21,6 +21,7 @@ import static com.google.template.soy.types.SoyTypes.NUMBER_TYPE;
 
 import com.google.template.soy.basicfunctions.AugmentMapFunction;
 import com.google.template.soy.basicfunctions.CeilingFunction;
+import com.google.template.soy.basicfunctions.FloatFunction;
 import com.google.template.soy.basicfunctions.FloorFunction;
 import com.google.template.soy.basicfunctions.KeysFunction;
 import com.google.template.soy.basicfunctions.MaxFunction;
@@ -160,7 +161,7 @@ final class PluginFunctionCompiler {
           return invokeStrSubFunction(args.get(0), args.get(1));
         }
         return invokeStrSubFunction(args.get(0), args.get(1), args.get(2));
-      case "_soy_private_do_not_use_float":
+      case FloatFunction.NAME:
         return invokeFloatFunction(args.get(0));
       default:
         // TODO(lukes): add support for the BidiFunctions
@@ -202,21 +203,9 @@ final class PluginFunctionCompiler {
 
   /** @see com.google.template.soy.basicfunctions.FloatFunction */
   private SoyExpression invokeFloatFunction(SoyExpression arg) {
-    if (arg.soyRuntimeType().isKnownFloat()) {
-      return arg;
-    }
-
-    final SoyExpression intArg = arg.isBoxed() ? arg.unboxAs(long.class) : arg;
+    SoyExpression unboxed = arg.isBoxed() ? arg.unboxAs(long.class) : arg;
     SoyExpression result =
-        SoyExpression.forFloat(
-                new Expression(Type.DOUBLE_TYPE) {
-                  @Override
-                  void doGen(CodeBuilder cb) {
-                    intArg.gen(cb);
-                    cb.cast(Type.LONG_TYPE, Type.DOUBLE_TYPE);
-                  }
-                })
-            .asNonNullable();
+        SoyExpression.forFloat(BytecodeUtils.numericConversion(unboxed, Type.DOUBLE_TYPE));
     return arg.isCheap() ? result.asCheap() : result;
   }
 

@@ -565,10 +565,6 @@ public class ExpressionCompilerTest {
             BytecodeUtils.constantNull(Type.getType(FloatData.class))));
     assertExpression("checkNotNull($x.a)").evaluatesTo(IntegerData.forValue(1));
     assertExpression("checkNotNull($y)").throwsException(NullPointerException.class);
-
-    variables.put("z", compileExpression("10").box());
-    assertExpression("_soy_private_do_not_use_float($z)").evaluatesTo(10f);
-    assertExpression("_soy_private_do_not_use_float(20)").evaluatesTo(20f);
   }
 
   @Test

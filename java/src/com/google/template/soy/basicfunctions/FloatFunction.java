@@ -27,20 +27,28 @@ import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
 import java.util.List;
 import java.util.Set;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 
-/** Soy special function for automatic coercion of an int into a float. */
-@Singleton
+/**
+ * Soy special function for automatic coercion of an int into a float.
+ *
+ * <p>This function is explicitly not registered with {@link BasicFunctionsModule}. It exists mostly
+ * to enable adding return types to commonly used functions without breaking type-checking for
+ * existing templates. It is not meant to be used directly in Soy templates.
+ */
 @SoyPureFunction
 public final class FloatFunction implements SoyJavaFunction, SoyJsSrcFunction, SoyPySrcFunction {
 
-  @Inject
-  FloatFunction() {}
+  // $$ prefix ensures that the function cannot be used directly
+  public static final String NAME = "$$float";
+
+  public static final FloatFunction INSTANCE = new FloatFunction();
+
+  // Do not @Inject; should not be used outside of {@link CheckTemplateCallsPass}.
+  private FloatFunction() {}
 
   @Override
   public String getName() {
-    return "_soy_private_do_not_use_float"; // TODO(user): fix name
+    return NAME;
   }
 
   @Override
@@ -50,11 +58,7 @@ public final class FloatFunction implements SoyJavaFunction, SoyJsSrcFunction, S
 
   @Override
   public SoyValue computeForJava(List<SoyValue> args) {
-    SoyValue arg = args.get(0);
-    if (arg instanceof FloatData) {
-      return arg;
-    }
-    return FloatData.forValue(arg.longValue()); // non-IntegerData will throw
+    return FloatData.forValue(args.get(0).longValue()); // non-IntegerData will throw on longValue()
   }
 
   @Override

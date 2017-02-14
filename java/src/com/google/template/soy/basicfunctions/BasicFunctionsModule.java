@@ -32,7 +32,6 @@ public final class BasicFunctionsModule extends AbstractModule {
         Multibinder.newSetBinder(binder(), SoyFunction.class);
     soyFunctionsSetBinder.addBinding().to(AugmentMapFunction.class);
     soyFunctionsSetBinder.addBinding().to(CeilingFunction.class);
-    soyFunctionsSetBinder.addBinding().to(FloatFunction.class);
     soyFunctionsSetBinder.addBinding().to(FloorFunction.class);
     soyFunctionsSetBinder.addBinding().to(IsNonnullFunction.class);
     soyFunctionsSetBinder.addBinding().to(IsNullFunction.class);

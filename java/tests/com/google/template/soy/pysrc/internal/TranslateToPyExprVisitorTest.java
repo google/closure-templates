@@ -186,9 +186,5 @@ public class TranslateToPyExprVisitorTest {
   public void testBuiltinFunction() {
     assertThatSoyExpr("checkNotNull($boo) ? 1 : 0")
         .translatesTo("1 if runtime.check_not_null(data.get('boo')) else 0", Operator.CONDITIONAL);
-
-    // float() should be no-op in python
-    assertThatSoyExpr("$boo + _soy_private_do_not_use_float(10)")
-        .translatesTo("runtime.type_safe_add(data.get('boo'), 10)", Integer.MAX_VALUE);
   }
 }

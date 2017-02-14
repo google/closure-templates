@@ -19,7 +19,6 @@ package com.google.template.soy.passes;
 import com.google.common.base.Joiner;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.basetree.SyntaxVersion;
-import com.google.template.soy.basicfunctions.FloatFunction;
 import com.google.template.soy.basicfunctions.LengthFunction;
 import com.google.template.soy.basicfunctions.ParseFloatFunction;
 import com.google.template.soy.basicfunctions.ParseIntFunction;
@@ -39,7 +38,6 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.defn.LoopVar;
 import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.aggregate.ListType;
 import com.google.template.soy.types.primitive.AnyType;
 import com.google.template.soy.types.primitive.StringType;
@@ -174,8 +172,6 @@ final class CheckFunctionCallsPass extends CompilerFilePass {
         checkArgType(node.getChild(0), StringType.getInstance(), node);
       } else if (fn instanceof ParseFloatFunction) {
         checkArgType(node.getChild(0), StringType.getInstance(), node);
-      } else if (fn instanceof FloatFunction) {
-        checkArgType(node.getChild(0), SoyTypes.NUMBER_TYPE, node);
       }
     }
 
