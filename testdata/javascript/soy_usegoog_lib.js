@@ -3830,7 +3830,7 @@ goog.addDependency('result/simpleresult_test.js', ['goog.result.SimpleResultTest
 goog.addDependency('result/transform_test.js', ['goog.result.transformTest'], ['goog.Timer', 'goog.result', 'goog.result.SimpleResult', 'goog.testing.MockClock', 'goog.testing.jsunit', 'goog.testing.recordFunction'], {});
 goog.addDependency('result/wait_test.js', ['goog.result.waitTest'], ['goog.Timer', 'goog.result', 'goog.result.SimpleResult', 'goog.testing.MockClock', 'goog.testing.jsunit', 'goog.testing.recordFunction'], {});
 goog.addDependency('soy/data.js', ['goog.soy.data.SanitizedContent', 'goog.soy.data.SanitizedContentKind', 'goog.soy.data.SanitizedCss', 'goog.soy.data.SanitizedHtml', 'goog.soy.data.SanitizedHtmlAttribute', 'goog.soy.data.SanitizedJs', 'goog.soy.data.SanitizedTrustedResourceUri', 'goog.soy.data.SanitizedUri', 'goog.soy.data.UnsanitizedText'], ['goog.Uri', 'goog.html.SafeHtml', 'goog.html.SafeScript', 'goog.html.SafeStyle', 'goog.html.SafeUrl', 'goog.html.TrustedResourceUrl', 'goog.html.uncheckedconversions', 'goog.i18n.bidi.Dir', 'goog.string.Const'], {});
-goog.addDependency('soy/data_test.js', ['goog.soy.dataTest'], ['goog.html.SafeHtml', 'goog.soy.testHelper', 'goog.testing.jsunit'], {});
+goog.addDependency('soy/data_test.js', ['goog.soy.dataTest'], ['goog.html.SafeHtml', 'goog.html.SafeUrl', 'goog.soy.testHelper', 'goog.testing.jsunit'], {});
 goog.addDependency('soy/renderer.js', ['goog.soy.InjectedDataSupplier', 'goog.soy.Renderer'], ['goog.asserts', 'goog.dom', 'goog.html.uncheckedconversions', 'goog.soy', 'goog.soy.data.SanitizedContent', 'goog.soy.data.SanitizedContentKind', 'goog.string.Const'], {});
 goog.addDependency('soy/renderer_test.js', ['goog.soy.RendererTest'], ['goog.dom', 'goog.dom.NodeType', 'goog.dom.TagName', 'goog.html.SafeHtml', 'goog.i18n.bidi.Dir', 'goog.soy.Renderer', 'goog.soy.data.SanitizedContentKind', 'goog.soy.testHelper', 'goog.testing.jsunit', 'goog.testing.recordFunction'], {});
 goog.addDependency('soy/soy.js', ['goog.soy'], ['goog.asserts', 'goog.dom', 'goog.dom.NodeType', 'goog.dom.TagName', 'goog.html.legacyconversions', 'goog.soy.data.SanitizedContent', 'goog.soy.data.SanitizedContentKind', 'goog.string'], {});
@@ -28285,6 +28285,24 @@ goog.soy.data.SanitizedContent.prototype.toSafeHtml = function() {
               'Soy SanitizedContent of kind HTML produces ' +
               'SafeHtml-contract-compliant value.'),
           this.toString(), this.contentDir);
+};
+
+
+/**
+ * Converts sanitized content of kind URI into SafeUrl without modification.
+ * @return {!goog.html.SafeUrl}
+ * @throws {Error} when the content kind is not URI.
+ */
+goog.soy.data.SanitizedContent.prototype.toSafeUrl = function() {
+  if (this.contentKind !== goog.soy.data.SanitizedContentKind.URI) {
+    throw Error('Sanitized content was not of kind URI.');
+  }
+  return goog.html.uncheckedconversions
+      .safeUrlFromStringKnownToSatisfyTypeContract(
+          goog.string.Const.from(
+              'Soy SanitizedContent of kind URI produces ' +
+              'SafeHtml-contract-compliant value.'),
+          this.toString());
 };
 
 
