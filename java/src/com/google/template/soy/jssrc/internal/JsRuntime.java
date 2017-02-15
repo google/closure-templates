@@ -16,6 +16,7 @@
 package com.google.template.soy.jssrc.internal;
 
 import static com.google.template.soy.jssrc.dsl.CodeChunk.dottedIdNoRequire;
+import static com.google.template.soy.jssrc.dsl.CodeChunk.id;
 
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
@@ -98,6 +99,12 @@ public final class JsRuntime {
       dottedIdNoRequire("window.console.log");
 
   public static final CodeChunk.WithValue XID = XID_REQUIRE.reference();
+
+  /** A constant for the template parameter {@code opt_data}. */
+  public static final CodeChunk.WithValue OPT_DATA = id("opt_data");
+
+  /** A constant for the template parameter {@code opt_ijData}. */
+  public static final CodeChunk.WithValue OPT_IJ_DATA = id("opt_ijData");
 
   /** Returns the field containing the extension object for the given field descriptor. */
   public static CodeChunk.WithValue extensionField(FieldDescriptor desc) {

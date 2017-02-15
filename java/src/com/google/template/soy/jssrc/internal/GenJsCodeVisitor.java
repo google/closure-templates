@@ -17,6 +17,7 @@
 package com.google.template.soy.jssrc.internal;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.template.soy.jssrc.dsl.CodeChunk.WithValue.EMPTY_OBJECT_LITERAL;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.assign;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.declare;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.dottedIdNoRequire;
@@ -25,6 +26,8 @@ import static com.google.template.soy.jssrc.dsl.CodeChunk.number;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.return_;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.stringLiteral;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_IS_OBJECT;
+import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_DATA;
+import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_IJ_DATA;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_ASSERTS_ASSERT_TYPE;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_GET_DELTEMPLATE_ID;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_REGISTER_DELEGATE_FN;
@@ -739,10 +742,12 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
 
     // Generate statement to ensure data is defined, if necessary.
     if (new ShouldEnsureDataIsDefinedVisitor().exec(node)) {
-      jsCodeBuilder.appendLine("opt_data = opt_data || {};");
+      jsCodeBuilder.append(
+          CodeChunk.assign("opt_data", OPT_DATA.or(EMPTY_OBJECT_LITERAL, codeGenerator)));
     }
     if (shouldEnsureIjDataIsDefined(node)) {
-      jsCodeBuilder.appendLine("opt_ijData = opt_ijData || {};");
+      jsCodeBuilder.append(
+          CodeChunk.assign("opt_ijData", OPT_IJ_DATA.or(EMPTY_OBJECT_LITERAL, codeGenerator)));
     }
 
     // ------ Generate function body. ------

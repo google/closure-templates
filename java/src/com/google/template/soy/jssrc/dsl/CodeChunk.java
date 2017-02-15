@@ -318,6 +318,7 @@ public abstract class CodeChunk {
     public static final WithValue LITERAL_FALSE = id("false");
     public static final WithValue LITERAL_NULL = id("null");
     public static final WithValue LITERAL_EMPTY_STRING = Leaf.create("''");
+    public static final WithValue EMPTY_OBJECT_LITERAL = Leaf.create("{}");
 
     WithValue() { /* no subclasses outside this package */ }
 

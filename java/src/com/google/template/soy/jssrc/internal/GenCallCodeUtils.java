@@ -179,7 +179,7 @@ public class GenCallCodeUtils {
         genObjToPass(callNode, templateAliases, translationContext, errorReporter);
 
     // Generate the main call expression.
-    CodeChunk.WithValue call = callee.call(objToPass, LITERAL_NULL, id("opt_ijData"));
+    CodeChunk.WithValue call = callee.call(objToPass, LITERAL_NULL, JsRuntime.OPT_IJ_DATA);
     if (callNode.getEscapingDirectiveNames().isEmpty()) {
       return call;
     }
@@ -262,7 +262,7 @@ public class GenCallCodeUtils {
     // ------ Generate the expression for the original data to pass ------
     CodeChunk.WithValue dataToPass;
     if (callNode.dataAttribute().isPassingAllData()) {
-      dataToPass = CodeChunkUtils.OPT_DATA;
+      dataToPass = JsRuntime.OPT_DATA;
     } else if (callNode.dataAttribute().isPassingData()) {
       dataToPass =
           jsExprTranslator.translateToCodeChunk(

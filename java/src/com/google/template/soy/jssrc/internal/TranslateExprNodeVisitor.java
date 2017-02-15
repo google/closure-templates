@@ -30,6 +30,8 @@ import static com.google.template.soy.jssrc.dsl.CodeChunk.number;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.operation;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.stringLiteral;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_ARRAY_MAP;
+import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_DATA;
+import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_IJ_DATA;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_CHECK_MAP_KEY;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_CHECK_NOT_NULL;
 import static com.google.template.soy.jssrc.internal.JsRuntime.extensionField;
@@ -189,9 +191,7 @@ public class TranslateExprNodeVisitor
    * @return The code to access the value of that parameter.
    */
   static CodeChunk.WithValue genCodeForParamAccess(String paramName, boolean isInjected) {
-    return isInjected
-        ? id("opt_ijData").dotAccess(paramName)
-        : id("opt_data").dotAccess(paramName);
+    return isInjected ? OPT_IJ_DATA.dotAccess(paramName) : OPT_DATA.dotAccess(paramName);
   }
 
   @Override protected CodeChunk.WithValue visitExprRootNode(ExprRootNode node) {
@@ -359,7 +359,7 @@ public class TranslateExprNodeVisitor
     CodeChunk.WithValue translation;
     if (node.isDollarSignIjParameter()) {
       // Case 1: Injected data reference.
-      return id("opt_ijData").dotAccess(node.getName());
+      return OPT_IJ_DATA.dotAccess(node.getName());
     } else if ((translation = variableMappings.maybeGet(node.getName())) != null) {
       // Case 2: In-scope local var.
       return translation;

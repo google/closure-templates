@@ -38,9 +38,6 @@ public final class CodeChunkUtils {
    */
   private static final Pattern ID = Pattern.compile("[A-Za-z_$][\\w$]*");
 
-  /** Useful for code generation, but not so useful as to belong in {@link CodeChunk}. */
-  public static final CodeChunk.WithValue OPT_DATA = id("opt_data");
-
   private CodeChunkUtils() {}
 
   /** Validates that the given string is a valid javascript identifier. */
