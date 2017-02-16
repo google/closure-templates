@@ -132,7 +132,7 @@ public final class PreevalVisitorTest {
             .create(
                 null,
                 TestingEnvironment.createForTest(
-                    SoyValueConverter.UNCUSTOMIZED_INSTANCE.newEasyDict("boo", 8),
+                    SoyValueConverter.UNCUSTOMIZED_INSTANCE.newDict("boo", 8),
                     new HashMap<String, SoyValueProvider>()));
     return preevalVisitor.exec(expr);
   }

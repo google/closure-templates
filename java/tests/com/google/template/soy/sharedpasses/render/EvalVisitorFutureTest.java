@@ -28,7 +28,7 @@ public class EvalVisitorFutureTest extends EvalVisitorTest {
   @Override
   protected SoyRecord createTestData() {
     SoyList tri = CONVERTER.newList(Futures.immediateFuture(1), 3, 6, 10, 15, 21);
-    return CONVERTER.newEasyDict(
+    return CONVERTER.newDict(
         "boo", Futures.immediateFuture(8),
         "foo.bar", Futures.immediateFuture("baz"),
         "foo.goo2", Futures.immediateFuture(tri),
@@ -37,7 +37,7 @@ public class EvalVisitorFutureTest extends EvalVisitorTest {
         "t", Futures.immediateFuture(true),
         "f", Futures.immediateFuture(false),
         "n", Futures.immediateFuture(null),
-        "map0", Futures.immediateFuture(CONVERTER.newEasyDict()),
+        "map0", Futures.immediateFuture(CONVERTER.newDict()),
         "list0", Futures.immediateFuture(CONVERTER.newList()),
         "longNumber", Futures.immediateFuture(1000000000000000001L),
         "floatNumber", Futures.immediateFuture(1.5D));

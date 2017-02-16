@@ -44,9 +44,8 @@ public class AugmentMapFunctionTest {
   public void testComputeForJava() {
     AugmentMapFunction augmentMapFunction = new AugmentMapFunction();
     SoyMap origMap =
-        CONVERTER.newEasyDict("aaa", "blah", "bbb", "bleh", "ccc", CONVERTER.newEasyDict("xxx", 2));
-    SoyMap additionalMap =
-        CONVERTER.newEasyDict("aaa", "bluh", "ccc", CONVERTER.newEasyDict("yyy", 5));
+        CONVERTER.newDict("aaa", "blah", "bbb", "bleh", "ccc", CONVERTER.newDict("xxx", 2));
+    SoyMap additionalMap = CONVERTER.newDict("aaa", "bluh", "ccc", CONVERTER.newDict("yyy", 5));
     SoyDict augmentedDict =
         (SoyDict)
             augmentMapFunction.computeForJava(ImmutableList.<SoyValue>of(origMap, additionalMap));

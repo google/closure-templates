@@ -71,7 +71,7 @@ public class EvalVisitorTest {
 
   private SoyRecord testData;
   private static final SoyRecord TEST_IJ_DATA =
-      CONVERTER.newEasyDict("ijBool", true, "ijInt", 26, "ijStr", "injected");
+      CONVERTER.newDict("ijBool", true, "ijInt", 26, "ijStr", "injected");
 
   private final Map<String, SoyValueProvider> locals =
       Maps.newHashMap(
@@ -87,7 +87,7 @@ public class EvalVisitorTest {
 
   protected SoyRecord createTestData() {
     SoyList tri = CONVERTER.newList(1, 3, 6, 10, 15, 21);
-    return CONVERTER.newEasyDict(
+    return CONVERTER.newDict(
         "boo",
         8,
         "foo.bar",
@@ -105,7 +105,7 @@ public class EvalVisitorTest {
         "n",
         null,
         "map0",
-        CONVERTER.newEasyDict(),
+        CONVERTER.newDict(),
         "list0",
         CONVERTER.newList(),
         "longNumber",

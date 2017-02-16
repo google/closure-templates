@@ -47,23 +47,20 @@ public class SoyValueConverterTest {
 
   @Test
   public void testDictCreation() {
-    SoyEasyDict dict1 = CONVERTER.newEasyDict();
+    SoyDict dict1 = CONVERTER.newDict();
     assertThat(dict1.getItemCnt()).isEqualTo(0);
-    dict1.set("boo", 111);
-    dict1.set("foo.goo", 222);
 
-    SoyEasyDict dict2 = CONVERTER.newEasyDict("foo", 3.14, "too", true);
-    assertThat(dict2.get("foo").floatValue()).isWithin(0.0).of(3.14);
-    assertThat(dict2.get("too").booleanValue()).isTrue();
+    SoyDict dict2 = CONVERTER.newDict("foo", 3.14, "too", true);
+    assertThat(dict2.getField("foo").floatValue()).isWithin(0.0).of(3.14);
+    assertThat(dict2.getField("too").booleanValue()).isTrue();
 
-    SoyEasyDict dict3 = CONVERTER.newEasyDictFromDict(dict1);
-    assertThat(dict3.get("boo").integerValue()).isEqualTo(111);
-    assertThat(((SoyEasyDict) dict3.get("foo")).get("goo").integerValue()).isEqualTo(222);
+    SoyDict dict3 = CONVERTER.newDict("boo", 111, "foo.goo", 222);
+    assertThat(dict3.getField("boo").integerValue()).isEqualTo(111);
+    assertThat(((SoyDict) dict3.getField("foo")).getField("goo").integerValue()).isEqualTo(222);
 
-    SoyEasyDict dict4 =
-        CONVERTER.newEasyDictFromJavaStringMap(ImmutableMap.of("foo", 3.14, "too", true));
-    assertThat(dict4.get("foo").floatValue()).isWithin(0.0).of(3.14);
-    assertThat(dict4.get("too").booleanValue()).isTrue();
+    SoyDict dict4 = CONVERTER.newDictFromMap(ImmutableMap.of("foo", 3.14, "too", true));
+    assertThat(dict4.getField("foo").floatValue()).isWithin(0.0).of(3.14);
+    assertThat(dict4.getField("too").booleanValue()).isTrue();
   }
 
   @Test

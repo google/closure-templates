@@ -37,7 +37,7 @@ import com.google.template.soy.base.internal.IncrementingIdGenerator;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyAbstractValue;
-import com.google.template.soy.data.SoyEasyDict;
+import com.google.template.soy.data.SoyDict;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
@@ -96,7 +96,7 @@ public class RenderVisitorTest {
   static {
     SoyList tri = CONVERTER.newList(1, 3, 6, 10, 15, 21);
     TEST_DATA =
-        CONVERTER.newEasyDict(
+        CONVERTER.newDict(
             "boo",
             8,
             "foo.bar",
@@ -112,7 +112,7 @@ public class RenderVisitorTest {
             "f",
             false,
             "map0",
-            CONVERTER.newEasyDict(),
+            CONVERTER.newDict(),
             "list0",
             CONVERTER.newList(),
             "list1",
@@ -133,7 +133,7 @@ public class RenderVisitorTest {
   }
 
   private static final SoyRecord TEST_IJ_DATA =
-      CONVERTER.newEasyDict("ijBool", true, "ijInt", 26, "ijStr", "injected");
+      CONVERTER.newDict("ijBool", true, "ijInt", 26, "ijStr", "injected");
 
   private static final SoyIdRenamingMap TEST_XID_RENAMING_MAP =
       new SoyIdRenamingMap() {
@@ -427,10 +427,10 @@ public class RenderVisitorTest {
             + "    {/select}\n"
             + "  {/msg}\n";
 
-    SoyEasyDict data = CONVERTER.newEasyDict("person", "The president", "gender", "female");
+    SoyDict data = CONVERTER.newDict("person", "The president", "gender", "female");
     assertRenderWithData(templateBody, data, "The president shared her photos.");
 
-    data.set("gender", "male");
+    data = CONVERTER.newDict("person", "The president", "gender", "male");
     assertRenderWithData(templateBody, data, "The president shared his photos.");
   }
 
@@ -447,13 +447,13 @@ public class RenderVisitorTest {
             + "    {/plural}\n"
             + "  {/msg}\n";
 
-    SoyEasyDict data = CONVERTER.newEasyDict("person", "Bob", "n_people", 0);
+    SoyDict data = CONVERTER.newDict("person", "Bob", "n_people", 0);
     assertRenderWithData(templateBody, data, "Nobody shared photos.");
 
-    data.set("n_people", 1);
+    data = CONVERTER.newDict("person", "Bob", "n_people", 1);
     assertRenderWithData(templateBody, data, "Only Bob shared photos.");
 
-    data.set("n_people", 10);
+    data = CONVERTER.newDict("person", "Bob", "n_people", 10);
     assertRenderWithData(templateBody, data, "Bob and 9 others shared photos.");
   }
 
@@ -483,22 +483,25 @@ public class RenderVisitorTest {
             + "    {/select}\n"
             + "  {/msg}\n";
 
-    SoyEasyDict data =
-        CONVERTER.newEasyDict(
+    SoyDict data =
+        CONVERTER.newDict(
             "person1", "Alice", "gender1", "female", "person2", "Lara", "gender2", "female");
     assertRenderWithData(templateBody, data, "Alice shared her photos with Lara and her friends.");
 
-    data.set("person2", "Mark");
-    data.set("gender2", "male");
+    data =
+        CONVERTER.newDict(
+            "person1", "Alice", "gender1", "female", "person2", "Mark", "gender2", "male");
     assertRenderWithData(templateBody, data, "Alice shared her photos with Mark and his friends.");
 
-    data.set("person1", "Bob");
-    data.set("gender1", "male");
+    data =
+        CONVERTER.newDict(
+            "person1", "Bob", "gender1", "male", "person2", "Mark", "gender2", "male");
     assertRenderWithData(
         templateBody, data, "              Bob shared his photos with Mark and his friends.");
 
-    data.set("person2", "Lara");
-    data.set("gender2", "female");
+    data =
+        CONVERTER.newDict(
+            "person1", "Bob", "gender1", "male", "person2", "Lara", "gender2", "female");
     assertRenderWithData(
         templateBody, data, "              Bob shared his photos with Lara and her friends.");
   }
@@ -526,17 +529,16 @@ public class RenderVisitorTest {
             + "   {/select}\n"
             + "  {/msg}\n";
 
-    SoyEasyDict data = CONVERTER.newEasyDict("person", "Alice", "gender", "female", "n_people", 0);
+    SoyDict data = CONVERTER.newDict("person", "Alice", "gender", "female", "n_people", 0);
     assertRenderWithData(templateBody, data, "Alice added nobody to her circle.");
 
-    data.set("n_people", 1);
+    data = CONVERTER.newDict("person", "Alice", "gender", "female", "n_people", 1);
     assertRenderWithData(templateBody, data, "Alice added one person to her circle.");
 
-    data.set("n_people", 10);
+    data = CONVERTER.newDict("person", "Alice", "gender", "female", "n_people", 10);
     assertRenderWithData(templateBody, data, "Alice added 10 people to her circle.");
 
-    data.set("person", "Bob");
-    data.set("gender", "male");
+    data = CONVERTER.newDict("person", "Bob", "gender", "male", "n_people", 10);
     assertRenderWithData(templateBody, data, "Bob added 10 people to his circle.");
   }
 
@@ -564,13 +566,16 @@ public class RenderVisitorTest {
             + "    {/select}\n"
             + "  {/msg}\n";
 
-    SoyEasyDict data =
-        CONVERTER.newEasyDict(
-            "person", CONVERTER.newEasyDict("name", "Alice", "gender", "female"),
+    SoyDict data =
+        CONVERTER.newDict(
+            "person", CONVERTER.newDict("name", "Alice", "gender", "female"),
             "invitees", CONVERTER.newList("Anna", "Brent", "Chris", "Darin"));
     assertRenderWithData(templateBody, data, "Alice added Anna and 3 others to her circle.");
 
-    data.set("person", CONVERTER.newEasyDict("name", "Bob", "gender", "male"));
+    data =
+        CONVERTER.newDict(
+            "person", CONVERTER.newDict("name", "Bob", "gender", "male"),
+            "invitees", CONVERTER.newList("Anna", "Brent", "Chris", "Darin"));
     assertRenderWithData(templateBody, data, "Bob added Anna and 3 others to his circle.");
   }
 
@@ -599,13 +604,13 @@ public class RenderVisitorTest {
             + "   {/plural}\n"
             + " {/msg}\n";
 
-    SoyEasyDict data = CONVERTER.newEasyDict("num", 1);
+    SoyDict data = CONVERTER.newDict("num", 1);
     assertRenderWithData(
         templateBody,
         data,
         "Notify <span class=\"sharebox-id-email-number\">1</span> person via email &rsaquo;");
 
-    data.set("num", 10);
+    data = CONVERTER.newDict("num", 10);
     assertRenderWithData(
         templateBody,
         data,
@@ -624,7 +629,7 @@ public class RenderVisitorTest {
             + "    {/select}\n"
             + "  {/msg}\n";
 
-    SoyEasyDict data = CONVERTER.newEasyDict("person", "The president", "gender", 100);
+    SoyDict data = CONVERTER.newDict("person", "The president", "gender", 100);
     assertRenderExceptionWithData(
         templateBody, data, "Select expression \"$gender\" doesn't evaluate to string.");
   }
@@ -642,7 +647,7 @@ public class RenderVisitorTest {
             + "    {/plural}\n"
             + "  {/msg}\n";
 
-    SoyEasyDict data = CONVERTER.newEasyDict("person", "Bob", "n_people", "nobody");
+    SoyDict data = CONVERTER.newDict("person", "Bob", "n_people", "nobody");
     assertRenderExceptionWithData(
         templateBody, data, "Plural expression \"$n_people\" doesn't evaluate to number.");
   }
@@ -762,8 +767,7 @@ public class RenderVisitorTest {
             + "    {/if}\n"
             + "  {/foreach}\n";
 
-    SoyEasyDict data =
-        CONVERTER.newEasyDict("myMap", CONVERTER.newEasyDict("aaa", "Blah", "bbb", 17));
+    SoyDict data = CONVERTER.newDict("myMap", CONVERTER.newDict("aaa", "Blah", "bbb", 17));
     String output = renderWithData(templateBody, data);
     assertThat(ImmutableSet.of("[aaa: Blah, bbb: 17]", "[bbb: 17, aaa: Blah]")).contains(output);
   }
@@ -874,16 +878,8 @@ public class RenderVisitorTest {
             .parse()
             .registry();
 
-    SoyEasyDict data =
-        CONVERTER.newEasyDict(
-            "boo",
-            "boo",
-            "foo.boo",
-            "foo",
-            "goo",
-            CONVERTER.newList(1, 2, 3),
-            "foo.goo",
-            CONVERTER.newList(3, 2, 1));
+    SoyDict foo = CONVERTER.newDict("boo", "foo", "goo", CONVERTER.newList(3, 2, 1));
+    SoyDict data = CONVERTER.newDict("boo", "boo", "foo", foo, "goo", CONVERTER.newList(1, 2, 3));
 
     StringBuilder outputSb = new StringBuilder();
     RenderVisitor rv =
@@ -987,18 +983,14 @@ public class RenderVisitorTest {
             .parse()
             .registry();
 
-    SoyEasyDict data =
-        CONVERTER.newEasyDict(
-            "boo",
-            new TestFuture("boo", progress),
-            "foo.boo",
-            new TestFuture("foo", progress),
-            "goo",
-            CONVERTER.newList(1, 2, 3),
-            "foo.goo",
-            CONVERTER.newList(3, 2, 1));
+    SoyDict foo =
+        CONVERTER.newDict(
+            "boo", new TestFuture("foo", progress), "goo", CONVERTER.newList(3, 2, 1));
+    SoyDict data =
+        CONVERTER.newDict(
+            "boo", new TestFuture("boo", progress), "foo", foo, "goo", CONVERTER.newList(1, 2, 3));
 
-    SoyRecord testIj = CONVERTER.newEasyDict("future", new TestFuture("ij", progress));
+    SoyRecord testIj = CONVERTER.newDict("future", new TestFuture("ij", progress));
 
     StringBuilder outputSb = new StringBuilder();
     CountingFlushableAppendable output = new CountingFlushableAppendable(outputSb, flushable);
@@ -1091,7 +1083,7 @@ public class RenderVisitorTest {
         .create(
             outputSb,
             templateRegistry,
-            CONVERTER.newEasyDict(),
+            CONVERTER.newDict(),
             TEST_IJ_DATA,
             activeDelPackageNames,
             null,
@@ -1107,7 +1099,7 @@ public class RenderVisitorTest {
         .create(
             outputSb,
             templateRegistry,
-            CONVERTER.newEasyDict(),
+            CONVERTER.newDict(),
             TEST_IJ_DATA,
             activeDelPackageNames,
             null,
@@ -1123,7 +1115,7 @@ public class RenderVisitorTest {
         .create(
             outputSb,
             templateRegistry,
-            CONVERTER.newEasyDict(),
+            CONVERTER.newDict(),
             TEST_IJ_DATA,
             activeDelPackageNames,
             null,
@@ -1139,7 +1131,7 @@ public class RenderVisitorTest {
         .create(
             outputSb,
             templateRegistry,
-            CONVERTER.newEasyDict(),
+            CONVERTER.newDict(),
             TEST_IJ_DATA,
             activeDelPackageNames,
             null,
@@ -1156,7 +1148,7 @@ public class RenderVisitorTest {
         .create(
             outputSb,
             templateRegistry,
-            CONVERTER.newEasyDict(),
+            CONVERTER.newDict(),
             TEST_IJ_DATA,
             activeDelPackageNames,
             null,
@@ -1174,7 +1166,7 @@ public class RenderVisitorTest {
           .create(
               outputSb,
               templateRegistry,
-              CONVERTER.newEasyDict(),
+              CONVERTER.newDict(),
               TEST_IJ_DATA,
               activeDelPackageNames,
               null,
@@ -1450,7 +1442,7 @@ public class RenderVisitorTest {
         .create(
             outputSb,
             templateRegistry,
-            CONVERTER.newEasyDict(),
+            CONVERTER.newDict(),
             null,
             activeDelPackageNames,
             null,
@@ -1466,7 +1458,7 @@ public class RenderVisitorTest {
         .create(
             outputSb,
             templateRegistry,
-            CONVERTER.newEasyDict(),
+            CONVERTER.newDict(),
             null,
             activeDelPackageNames,
             null,
@@ -1490,7 +1482,7 @@ public class RenderVisitorTest {
         .create(
             outputSb,
             templateRegistry,
-            CONVERTER.newEasyDict(),
+            CONVERTER.newDict(),
             null,
             activeDelPackageNames,
             null,
@@ -1506,7 +1498,7 @@ public class RenderVisitorTest {
         .create(
             outputSb,
             templateRegistry,
-            CONVERTER.newEasyDict(),
+            CONVERTER.newDict(),
             null,
             activeDelPackageNames,
             null,
@@ -1522,7 +1514,7 @@ public class RenderVisitorTest {
         .create(
             outputSb,
             templateRegistry,
-            CONVERTER.newEasyDict(),
+            CONVERTER.newDict(),
             null,
             activeDelPackageNames,
             null,
@@ -1538,7 +1530,7 @@ public class RenderVisitorTest {
         .create(
             outputSb,
             templateRegistry,
-            CONVERTER.newEasyDict(),
+            CONVERTER.newDict(),
             null,
             activeDelPackageNames,
             null,
@@ -1563,7 +1555,7 @@ public class RenderVisitorTest {
           .create(
               new StringBuilder(),
               templateRegistry,
-              CONVERTER.newEasyDict(),
+              CONVERTER.newDict(),
               null,
               activeDelPackageNames,
               null,
@@ -1591,7 +1583,7 @@ public class RenderVisitorTest {
           .create(
               new StringBuilder(),
               templateRegistry,
-              CONVERTER.newEasyDict(),
+              CONVERTER.newDict(),
               null,
               activeDelPackageNames,
               null,
@@ -1610,7 +1602,7 @@ public class RenderVisitorTest {
         .create(
             outputSb,
             templateRegistry,
-            CONVERTER.newEasyDict(),
+            CONVERTER.newDict(),
             null,
             activeDelPackageNames,
             null,
@@ -1705,7 +1697,7 @@ public class RenderVisitorTest {
             .create(
                 outputSb,
                 templateRegistry,
-                CONVERTER.newEasyDict(),
+                CONVERTER.newDict(),
                 null,
                 Predicates.<String>alwaysFalse(),
                 null,
@@ -1777,7 +1769,7 @@ public class RenderVisitorTest {
             return super.get();
           }
         };
-    SoyRecord data = CONVERTER.newEasyDict("foo", fooFuture);
+    SoyRecord data = CONVERTER.newDict("foo", fooFuture);
     RenderVisitor rv =
         INJECTOR
             .getInstance(RenderVisitorFactory.class)
@@ -1811,7 +1803,7 @@ public class RenderVisitorTest {
             .registry();
     TemplateNode callerTemplate = templateRegistry.getBasicTemplate("ns.template");
     final StringBuilder outputSb = new StringBuilder();
-    SoyRecord data = CONVERTER.newEasyDict("foo", Futures.immediateFuture("hello world"));
+    SoyRecord data = CONVERTER.newDict("foo", Futures.immediateFuture("hello world"));
     RenderVisitor rv =
         INJECTOR
             .getInstance(RenderVisitorFactory.class)
@@ -1879,7 +1871,7 @@ public class RenderVisitorTest {
             return super.get();
           }
         };
-    SoyRecord data = CONVERTER.newEasyDict("future", future);
+    SoyRecord data = CONVERTER.newDict("future", future);
     RenderVisitor rv =
         INJECTOR
             .getInstance(RenderVisitorFactory.class)

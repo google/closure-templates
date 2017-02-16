@@ -23,7 +23,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import com.google.template.soy.data.internal.DictImpl;
-import com.google.template.soy.data.internal.EasyDictImpl;
 import com.google.template.soy.data.internal.EasyListImpl;
 import com.google.template.soy.data.internal.ListImpl;
 import com.google.template.soy.data.restricted.BooleanData;
@@ -33,6 +32,7 @@ import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
@@ -56,8 +56,7 @@ public class SoyValueConverter {
   public static final SoyValueConverter UNCUSTOMIZED_INSTANCE = new SoyValueConverter();
 
   /** An immutable empty dict. */
-  public static final SoyDict EMPTY_DICT =
-      DictImpl.forProviderMap(ImmutableMap.<String, SoyValueProvider>of());
+  public static final SoyDict EMPTY_DICT = UNCUSTOMIZED_INSTANCE.newDict();
 
   /** An immutable empty list. */
   public static final SoyList EMPTY_LIST = UNCUSTOMIZED_INSTANCE.newList();
@@ -74,76 +73,34 @@ public class SoyValueConverter {
   // Creating.
 
   /**
-   * IMPORTANT: Do not use this method. Consider it internal to Soy.
-   *
-   * <p>Creates a new empty SoyEasyDict.
-   *
-   * @return A new empty SoyEasyDict.
-   */
-  @Deprecated
-  public SoyEasyDict newEasyDict() {
-    return new EasyDictImpl(this);
-  }
-
-  /**
-   * IMPORTANT: Do not use this method. Consider it internal to Soy.
-   *
-   * <p>Creates a new SoyEasyDict initialized from the given keys and values.
+   * Creates a new SoyDict initialized from the given keys and values. Values are converted eagerly.
+   * Recognizes dotted-name syntax: adding {@code ("foo.goo", value)} will automatically create
+   * {@code ['foo': ['goo': value]]}.
    *
    * @param alternatingKeysAndValues An alternating list of keys and values.
-   * @return A new SoyEasyDict initialized from the given keys and values.
+   * @return A new SoyDict initialized from the given keys and values.
    */
-  @Deprecated
-  public SoyEasyDict newEasyDict(Object... alternatingKeysAndValues) {
+  @VisibleForTesting
+  public SoyDict newDict(Object... alternatingKeysAndValues) {
     Preconditions.checkArgument(alternatingKeysAndValues.length % 2 == 0);
-    EasyDictImpl result = new EasyDictImpl(this);
+
+    Map<String, Object> map = new HashMap<>();
     for (int i = 0, n = alternatingKeysAndValues.length / 2; i < n; i++) {
-      result.set((String) alternatingKeysAndValues[2 * i], alternatingKeysAndValues[2 * i + 1]);
+      String key = (String) alternatingKeysAndValues[2 * i];
+      SoyValueProvider value = convert(alternatingKeysAndValues[2 * i + 1]); // convert eagerly
+      insertIntoNestedMap(map, key, value);
     }
-    return result;
-  }
-
-  /**
-   * IMPORTANT: Do not use this method. Consider it internal to Soy.
-   *
-   * <p>Creates a new SoyEasyDict initialized from a SoyDict.
-   *
-   * @param dict The dict of initial items.
-   * @return A new SoyEasyDict initialized from the given SoyDict.
-   */
-  @Deprecated
-  public SoyEasyDict newEasyDictFromDict(SoyDict dict) {
-    Map<String, ? extends SoyValueProvider> map = dict.asJavaStringMap();
-    SoyEasyDict result = this.newEasyDict();
-    for (Map.Entry<String, ? extends SoyValueProvider> e : map.entrySet()) {
-      result.setField(e.getKey(), e.getValue());
-    }
-    return result;
-  }
-
-  /**
-   * IMPORTANT: Do not use this method. Consider it internal to Soy.
-   *
-   * <p>Creates a new SoyEasyDict initialized from a Java string-keyed map.
-   *
-   * @param javaStringMap The map of initial items.
-   * @return A new SoyEasyDict initialized from the given Java string-keyed map.
-   */
-  @Deprecated
-  public SoyEasyDict newEasyDictFromJavaStringMap(Map<String, ?> javaStringMap) {
-    EasyDictImpl result = new EasyDictImpl(this);
-    result.setFieldsFromJavaStringMap(javaStringMap);
-    return result;
+    return newDictFromMap(map);
   }
 
   /**
    * Creates a Soy dictionary from a Java string map. While this is O(N) with the map's shallow
-   * size, the values are converted into Soy types lazily, only once.
+   * size, the values are converted into Soy values lazily and only once.
    *
    * @param javaStringMap The map backing the dict.
-   * @return A new SoyEasyDict initialized from the given Java string-keyed map.
+   * @return A new SoyDict initialized from the given Java string-keyed map.
    */
-  private SoyDict newDictFromJavaStringMap(Map<String, ?> javaStringMap) {
+  public SoyDict newDictFromMap(Map<String, ?> javaStringMap) {
     // Create a dictionary backed by a map which has eagerly converted each value into a lazy
     // value provider. Specifically, the map iteration is done eagerly so that the lazy value
     // provider can cache its value.
@@ -152,6 +109,49 @@ public class SoyValueConverter {
       builder.put(entry.getKey(), convertLazy(entry.getValue()));
     }
     return DictImpl.forProviderMap(builder.build());
+  }
+
+  /**
+   * Private helper to create nested maps based off of a given string of dot-separated field names,
+   * then insert the value into the innermost map.
+   *
+   * <p>For example, {@code insertIntoNestedMap(new HashMap<>(), "foo.bar.baz", val)} will return a
+   * map of {@code {"foo": {"bar": {"baz": val}}}}.
+   *
+   * @param map Top-level map to insert into
+   * @param dottedName One or more field names, dot-separated.
+   * @param value Value to insert
+   */
+  private static void insertIntoNestedMap(
+      Map<String, Object> map, String dottedName, SoyValueProvider value) {
+
+    String[] names = dottedName.split("[.]");
+    int n = names.length;
+
+    String lastName = names[n - 1];
+
+    Map<String, Object> lastMap;
+    if (n == 1) {
+      lastMap = map;
+    } else {
+      lastMap = map;
+      for (int i = 0; i <= n - 2; i++) {
+        Object o = lastMap.get(names[i]);
+        if (o instanceof Map) {
+          @SuppressWarnings("unchecked")
+          Map<String, Object> m = (Map<String, Object>) o;
+          lastMap = m;
+        } else if (o == null) {
+          Map<String, Object> newMap = new HashMap<>();
+          lastMap.put(names[i], newMap);
+          lastMap = newMap;
+        } else {
+          throw new AssertionError("should not happen");
+        }
+      }
+    }
+
+    lastMap.put(lastName, value);
   }
 
   /**
@@ -228,10 +228,10 @@ public class SoyValueConverter {
       // converters have a chance at converting the map.
       @SuppressWarnings("unchecked")
       Map<String, ?> objCast = (Map<String, ?>) obj;
-      return newDictFromJavaStringMap(objCast);
+      return newDictFromMap(objCast);
     } else if (obj instanceof Collection<?> || obj instanceof FluentIterable<?>) {
       // NOTE: We don't trap Iterable itself, because many types extend from Iterable but are not
-      // meant to be enumerated.
+      // meant to be enumerated. (e.g. ByteString)
       return newListFromIterable((Iterable<?>) obj);
     } else if (obj instanceof SoyGlobalsValue) {
       return convert(((SoyGlobalsValue) obj).getSoyGlobalValue());

@@ -659,8 +659,8 @@ This will generate code that looks like:
 ~~~
 private ns$$foo fooTemplate;
   case N:
-    SoyEasyDict record = new SoyEasyDict();
-    record.put("bar", <generate bar param>);
+    SoyRecord record = new ParamStore();
+    record.setField("bar", <generate bar param>);
     fooTemplate = new ns$$foo(record);
     state = N+1;
   case N+1:

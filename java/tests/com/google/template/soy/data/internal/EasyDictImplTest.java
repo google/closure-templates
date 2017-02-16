@@ -52,11 +52,11 @@ public class EasyDictImplTest {
     SoyValue val2 = new EasyDictImpl(SoyValueConverter.UNCUSTOMIZED_INSTANCE);
     assertFalse(val1.equals(val2)); // EasyDictImpl uses object identity.
 
-    SoyValue val3 = SoyValueConverter.UNCUSTOMIZED_INSTANCE.newEasyDict("foo", 3.14);
+    SoyValue val3 = SoyValueConverter.UNCUSTOMIZED_INSTANCE.newDict("foo", 3.14);
     assertTrue(val3.coerceToBoolean());
     assertEquals("{foo: 3.14}", val3.coerceToString());
 
-    SoyValue val4 = SoyValueConverter.UNCUSTOMIZED_INSTANCE.newEasyDict("too", true);
+    SoyValue val4 = SoyValueConverter.UNCUSTOMIZED_INSTANCE.newDict("too", true);
     assertTrue(val4.coerceToBoolean());
     assertEquals("{too: true}", val4.coerceToString());
   }
@@ -64,7 +64,7 @@ public class EasyDictImplTest {
   @Test
   public void testDictMethods() {
 
-    SoyDict dict = SoyValueConverter.UNCUSTOMIZED_INSTANCE.newEasyDict("boo", "aaah", "foo", 3.14);
+    SoyDict dict = SoyValueConverter.UNCUSTOMIZED_INSTANCE.newDict("boo", "aaah", "foo", 3.14);
     Map<String, ? extends SoyValueProvider> m1 = dict.asJavaStringMap();
     assertEquals(2, m1.size());
     assertEquals("aaah", m1.get("boo").resolve().stringValue());

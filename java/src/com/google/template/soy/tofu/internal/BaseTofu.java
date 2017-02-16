@@ -300,8 +300,7 @@ public class BaseTofu implements SoyTofu {
 
     @Override
     public Renderer setData(Map<String, ?> data) {
-      this.data =
-          (data == null) ? null : baseTofu.valueConverter.newEasyDictFromJavaStringMap(data);
+      this.data = (data == null) ? null : baseTofu.valueConverter.newDictFromMap(data);
       return this;
     }
 
@@ -313,8 +312,7 @@ public class BaseTofu implements SoyTofu {
 
     @Override
     public Renderer setIjData(Map<String, ?> ijData) {
-      this.ijData =
-          (ijData == null) ? null : baseTofu.valueConverter.newEasyDictFromJavaStringMap(ijData);
+      this.ijData = (ijData == null) ? null : baseTofu.valueConverter.newDictFromMap(ijData);
       return this;
     }
 

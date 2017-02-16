@@ -47,8 +47,7 @@ public class KeysFunctionTest {
   public void testComputeForJava() {
     KeysFunction keysFunction = new KeysFunction();
 
-    SoyValue map =
-        CONVERTER.newEasyDict("boo", "bar", "foo", 2, "goo", CONVERTER.newEasyDict("moo", 4));
+    SoyValue map = CONVERTER.newDict("boo", "bar", "foo", 2, "goo", CONVERTER.newDict("moo", 4));
     SoyValue result = keysFunction.computeForJava(ImmutableList.of(map));
 
     assertTrue(result instanceof SoyList);
