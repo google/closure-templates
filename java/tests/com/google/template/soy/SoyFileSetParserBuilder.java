@@ -129,6 +129,8 @@ public final class SoyFileSetParserBuilder {
 
   public SoyFileSetParserBuilder options(SoyGeneralOptions options) {
     this.options = checkNotNull(options);
+    // allow the version in the options to override the the declared default, if there is one.
+    this.declaredSyntaxVersion = options.getDeclaredSyntaxVersion(declaredSyntaxVersion);
     return this;
   }
 
