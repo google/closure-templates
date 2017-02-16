@@ -48,6 +48,12 @@ public final class GenPyExprsVisitorTest {
   }
 
   @Test
+  public void testXid() {
+    assertThatSoyExpr("{xid primary}")
+        .compilesTo(new PyExpr("runtime.get_xid_name('primary')", Integer.MAX_VALUE));
+  }
+
+  @Test
   public void testIf() {
     String soyNodeCode =
         "{@param boo:?}\n"

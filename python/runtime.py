@@ -54,6 +54,11 @@ _NUMBER_TYPES = (int, long, float)
 _css_name_mapping = None
 
 
+def get_xid_name(name):   # pylint: disable=unused-argument
+  """Not currently implemented."""
+  raise NotImplementedError('xid is not implemented')
+
+
 def get_css_name(class_name, modifier=None):
   """Return the mapped css class name with modifier.
 

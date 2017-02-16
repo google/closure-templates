@@ -45,6 +45,7 @@ import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import com.google.template.soy.soytree.XidNode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -255,6 +256,14 @@ public class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>> {
       msg = directive.applyForPySrc(msg, ImmutableList.<PyExpr>of());
     }
     pyExprs.add(msg);
+  }
+
+  @Override
+  protected void visitXidNode(XidNode node) {
+    // preliminary xid implementation.  just uses the css renaming map
+    StringBuilder sb =
+        new StringBuilder("runtime.get_xid_name('").append(node.getText()).append("')");
+    pyExprs.add(new PyExpr(sb.toString(), Integer.MAX_VALUE));
   }
 
   @Override

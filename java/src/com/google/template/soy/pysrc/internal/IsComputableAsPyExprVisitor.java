@@ -37,6 +37,7 @@ import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SwitchNode;
+import com.google.template.soy.soytree.XidNode;
 import java.util.HashMap;
 import java.util.Map;
 import javax.inject.Inject;
@@ -113,6 +114,11 @@ class IsComputableAsPyExprVisitor extends AbstractReturningSoyNodeVisitor<Boolea
 
   @Override
   protected Boolean visitCssNode(CssNode node) {
+    return true;
+  }
+
+  @Override
+  protected Boolean visitXidNode(XidNode node) {
     return true;
   }
 
