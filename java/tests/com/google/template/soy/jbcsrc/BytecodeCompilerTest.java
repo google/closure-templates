@@ -35,11 +35,11 @@ import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SanitizedContents;
+import com.google.template.soy.data.SoyDict;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.internal.BasicParamStore;
-import com.google.template.soy.data.internal.EasyDictImpl;
 import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.StringData;
@@ -639,20 +639,24 @@ public class BytecodeCompilerTest {
     CompiledTemplate.Factory singleParam = templates.getTemplateFactory("ns.foo");
     RenderContext context = getDefaultContext(templates);
     AdvisingStringBuilder builder = new AdvisingStringBuilder();
-    EasyDictImpl params = new EasyDictImpl(SoyValueConverter.UNCUSTOMIZED_INSTANCE);
-    params.setField("foo", IntegerData.forValue(1));
+
+    SoyDict params =
+        SoyValueConverter.UNCUSTOMIZED_INSTANCE.newDict("foo", IntegerData.forValue(1));
     singleParam.create(params, EMPTY_DICT).render(builder, context);
     assertEquals("1", builder.getAndClearBuffer());
+
     singleParam.create(EMPTY_DICT, EMPTY_DICT).render(builder, context);
     assertEquals("-1", builder.getAndClearBuffer());
 
     templates = TemplateTester.compileTemplateBody("{@inject foo : int}", "{$foo}");
     CompiledTemplate.Factory singleIj = templates.getTemplateFactory("ns.foo");
     context = getDefaultContext(templates);
-    params.setField("foo", IntegerData.forValue(1));
+
+    params = SoyValueConverter.UNCUSTOMIZED_INSTANCE.newDict("foo", IntegerData.forValue(1));
     singleIj.create(SoyValueConverter.EMPTY_DICT, params).render(builder, context);
     assertEquals("1", builder.getAndClearBuffer());
-    params.delField("foo");
+
+    params = SoyValueConverter.UNCUSTOMIZED_INSTANCE.newDict();
     singleIj.create(SoyValueConverter.EMPTY_DICT, params).render(builder, context);
     assertEquals("null", builder.getAndClearBuffer());
   }
@@ -666,10 +670,11 @@ public class BytecodeCompilerTest {
                 "{@inject bar : string}",
                 "{$foo + $baz + $bar}")
             .getTemplateFactory("ns.foo");
-    EasyDictImpl params = new EasyDictImpl(SoyValueConverter.UNCUSTOMIZED_INSTANCE);
-    params.setField("foo", StringData.forValue("foo"));
-    params.setField("bar", StringData.forValue("bar"));
-    params.setField("baz", StringData.forValue("baz"));
+    SoyDict params =
+        SoyValueConverter.UNCUSTOMIZED_INSTANCE.newDict(
+            "foo", StringData.forValue("foo"),
+            "bar", StringData.forValue("bar"),
+            "baz", StringData.forValue("baz"));
     CompiledTemplate template = multipleParams.create(params, params);
     assertEquals(StringData.forValue("foo"), getField("foo", template));
     assertEquals(StringData.forValue("bar"), getField("bar", template));
