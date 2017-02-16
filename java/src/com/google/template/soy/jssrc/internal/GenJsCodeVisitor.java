@@ -1264,23 +1264,17 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
     // Get the JS expression text for the init/limit/increment values.
     RangeArgs range = node.getRangeArgs();
     String incrementJsExprText =
-        range.increment().isPresent()
-            ? jsExprTranslator
-                .translateToCodeChunk(
-                    range.increment().get(), templateTranslationContext, errorReporter)
-                .assertExprAndCollectRequires(
-                    jsCodeBuilder.getRequiresCollector()) // TODO(user): remove
-                .getText()
-            : "1" /* default */;
+        jsExprTranslator
+            .translateToCodeChunk(range.increment(), templateTranslationContext, errorReporter)
+            .assertExprAndCollectRequires(
+                jsCodeBuilder.getRequiresCollector()) // TODO(user): remove
+            .getText();
     String initJsExprText =
-        range.start().isPresent()
-            ? jsExprTranslator
-                .translateToCodeChunk(
-                    range.start().get(), templateTranslationContext, errorReporter)
-                .assertExprAndCollectRequires(
-                    jsCodeBuilder.getRequiresCollector()) // TODO(user): remove
-                .getText()
-            : "0" /* default */;
+        jsExprTranslator
+            .translateToCodeChunk(range.start(), templateTranslationContext, errorReporter)
+            .assertExprAndCollectRequires(
+                jsCodeBuilder.getRequiresCollector()) // TODO(user): remove
+            .getText();
     String limitJsExprText =
         jsExprTranslator
             .translateToCodeChunk(range.limit(), templateTranslationContext, errorReporter)

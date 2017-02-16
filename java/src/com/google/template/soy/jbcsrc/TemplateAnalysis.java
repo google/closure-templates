@@ -275,12 +275,8 @@ final class TemplateAnalysis {
       // The range(...) args of a For node are always evaluated first, in this order.
       // (see SoyNodeCompiler)
       RangeArgs rangeArgs = node.getRangeArgs();
-      if (rangeArgs.start().isPresent()) {
-        evalInline(rangeArgs.start().get());
-      }
-      if (rangeArgs.increment().isPresent()) {
-        evalInline(rangeArgs.increment().get());
-      }
+      evalInline(rangeArgs.start());
+      evalInline(rangeArgs.increment());
       evalInline(rangeArgs.limit());
       Block loopBegin = this.current;
       // create a branch for the loop body

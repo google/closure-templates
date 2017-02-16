@@ -214,22 +214,26 @@ public final class TemplateTester {
       return rendersAndLogs(expected, "", asRecord(params), asRecord(ij), defaultContext);
     }
 
+    CompiledTemplateSubject failsToRenderWith(Class<? extends Throwable> expected) {
+      return failsToRenderWith(expected, ImmutableMap.<String, Object>of());
+    }
+
     CompiledTemplateSubject failsToRenderWith(
         Class<? extends Throwable> expected, Map<String, ?> params) {
       AdvisingStringBuilder builder = new AdvisingStringBuilder();
+      compile();
       try {
         factory.create(asRecord(params), EMPTY_DICT).render(builder, defaultContext);
+        failureStrategy.fail(
+            String.format(
+                "Expected %s to fail to render with a %s, but it rendered '%s'",
+                actual(), expected, ""));
       } catch (Throwable t) {
         if (!expected.isInstance(t)) {
           failWithBadResults("failsToRenderWith", expected, "failed with", t);
         }
-        return this;
       }
-      failureStrategy.fail(
-          String.format(
-              "Expected %s to fail to render with a %s, but it rendered '%s'",
-              getDisplaySubject(), expected, builder.toString()));
-      return this; // technically dead
+      return this; // may be dead
     }
 
     private SoyRecord asRecord(Map<String, ?> params) {
@@ -255,6 +259,7 @@ public final class TemplateTester {
       if (result.type() != RenderResult.Type.DONE) {
         fail("renders to completion", result);
       }
+
       String output = builder.toString();
       if (!output.equals(expectedOutput)) {
         failWithBadResults("renders as", expectedOutput, "renders as", output);
@@ -269,7 +274,7 @@ public final class TemplateTester {
     protected String getDisplaySubject() {
       if (classData == null) {
         // hasn't been compiled yet.  just use the source text
-        return super.actualAsString();
+        return actual();
       }
 
       String customName = super.internalCustomName();

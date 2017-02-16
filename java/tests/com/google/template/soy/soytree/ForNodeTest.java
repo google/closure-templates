@@ -32,8 +32,17 @@ public final class ForNodeTest {
 
   @Test
   public void testInvalidForeachUsage() {
-    assertThatTemplateContent("{for $x in $var}{/for}\n")
-        .causesError(ForNode.INVALID_COMMAND_TEXT)
+    assertThatTemplateContent("{for $x in $var}{/for}")
+        .causesError("Invalid 'for' command text")
+        .at(1, 1);
+  }
+
+  @Test
+  public void testForRangeOutOfRange() {
+    assertThatTemplateContent("{for $x in range(2147483648, 2147483649, 2147483650)}{/for}")
+        .causesError("Range specification is too large: 2,147,483,648")
+        .causesError("Range specification is too large: 2,147,483,649")
+        .causesError("Range specification is too large: 2,147,483,650")
         .at(1, 1);
   }
 }

@@ -467,14 +467,8 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
     RangeArgs rangeArgs = node.getRangeArgs();
 
-    int increment =
-        rangeArgs.increment().isPresent()
-            ? evalRangeArg(node, rangeArgs.increment().get())
-            : 1 /* default */;
-    int init =
-        rangeArgs.start().isPresent()
-            ? evalRangeArg(node, rangeArgs.start().get())
-            : 0 /* default */;
+    int increment = evalRangeArg(node, rangeArgs.increment());
+    int init = evalRangeArg(node, rangeArgs.start());
     int limit = evalRangeArg(node, rangeArgs.limit());
 
     LocalVar localVarName = node.getVar();

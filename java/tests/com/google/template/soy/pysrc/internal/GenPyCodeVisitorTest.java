@@ -215,7 +215,7 @@ public final class GenPyCodeVisitorTest {
             + "def helloWorld(data={}, ijData={}):\n"
             + "  output = []\n"
             + "  if data.get('foo'):\n"
-            + "    for i### in xrange(5):\n"
+            + "    for i### in xrange(0, 5, 1):\n"
             + "      output.append(str(runtime.key_safe_data_access(data.get('boo'), i###)))\n"
             + "  else:\n"
             + "    output.append('Blah')\n"
@@ -266,13 +266,13 @@ public final class GenPyCodeVisitorTest {
     String soyCode =
         "{@param boo : ?}\n" + "{for $i in range(5)}\n" + "  {$boo[$i]}\n" + "{/for}\n";
     String expectedPyCode =
-        "for i### in xrange(5):\n"
+        "for i### in xrange(0, 5, 1):\n"
             + "  output.append(str(runtime.key_safe_data_access(data.get('boo'), i###)))\n";
     assertThatSoyCode(soyCode).compilesTo(expectedPyCode);
 
     soyCode = "{@param boo : ?}\n" + "{for $i in range(5, 10)}\n" + "  {$boo[$i]}\n" + "{/for}\n";
     expectedPyCode =
-        "for i### in xrange(5, 10):\n"
+        "for i### in xrange(5, 10, 1):\n"
             + "  output.append(str(runtime.key_safe_data_access(data.get('boo'), i###)))\n";
     assertThatSoyCode(soyCode).compilesTo(expectedPyCode);
 
@@ -379,7 +379,7 @@ public final class GenPyCodeVisitorTest {
 
     String expectedPyCode =
         "foo__soy### = []\n"
-            + "for num### in xrange(5):\n"
+            + "for num### in xrange(0, 5, 1):\n"
             + "  foo__soy###.append(str(num###))\n"
             + "foo__soy###.extend(['Hello ',str(data.get('boo'))])\n"
             + "foo__soy### = sanitize.SanitizedHtml(''.join(foo__soy###), "

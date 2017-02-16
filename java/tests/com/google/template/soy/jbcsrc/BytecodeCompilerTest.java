@@ -323,6 +323,15 @@ public class BytecodeCompilerTest {
     assertThatTemplateBody("{for $i in range(2, 10)}", "  {$i}", "{/for}").rendersAs("23456789");
 
     assertThatTemplateBody("{for $i in range(2, 10, 2)}", "  {$i}", "{/for}").rendersAs("2468");
+
+    assertThatTemplateBody("{for $i in range(0, 10, 65536 * 65536 * 65536)}", "  {$i}", "{/for}")
+        .failsToRenderWith(IllegalArgumentException.class);
+
+    assertThatTemplateBody(
+            "{for $i in range(65536 * 65536 * 65536, 65536 * 65536 * 65536 + 1)}",
+            "  {$i}",
+            "{/for}")
+        .failsToRenderWith(IllegalArgumentException.class);
   }
 
   @Test

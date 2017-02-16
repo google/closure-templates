@@ -29,11 +29,14 @@ import static com.google.template.soy.jbcsrc.TemplateVariableManager.SaveStrateg
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
+import com.google.common.primitives.Ints;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.restricted.IntegerData;
+import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.jbcsrc.ControlFlow.IfBlock;
 import com.google.template.soy.jbcsrc.ExpressionCompiler.BasicExpressionCompiler;
 import com.google.template.soy.jbcsrc.MsgCompiler.SoyNodeToStringCompiler;
@@ -355,24 +358,41 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
 
     final ImmutableList.Builder<Statement> initStatements = ImmutableList.builder();
     final Variable currentIndex;
-    if (rangeArgs.start().isPresent()) {
+
+    ExprNode startNode = rangeArgs.start().getRoot();
+    if (startNode instanceof IntegerNode && ((IntegerNode) startNode).isInt()) {
+      int value = Ints.checkedCast(((IntegerNode) startNode).getValue());
+      currentIndex = scope.create(forNode.getVarName(), constant(value), STORE);
+      initStatements.add(currentIndex.initializer());
+    } else {
       Label startDetachPoint = new Label();
+      // Note: If the value of rangeArgs.start() is above 32 bits, Ints.checkedCast() will fail at
+      // runtime with IllegalArgumentException.
       Expression startIndex =
           MethodRef.INTS_CHECKED_CAST.invoke(
-              exprCompiler.compile(rangeArgs.start().get(), startDetachPoint).unboxAs(long.class));
+              exprCompiler.compile(rangeArgs.start(), startDetachPoint).unboxAs(long.class));
       currentIndex = scope.create(forNode.getVarName(), startIndex, STORE);
       initStatements.add(currentIndex.initializer().labelStart(startDetachPoint));
-    } else {
-      currentIndex = scope.create(forNode.getVarName(), constant(0), STORE);
-      initStatements.add(currentIndex.initializer());
     }
 
     final Statement incrementCurrentIndex;
-    if (rangeArgs.increment().isPresent()) {
+    ExprNode incrementNode = rangeArgs.increment().getRoot();
+    if (incrementNode instanceof IntegerNode && ((IntegerNode) incrementNode).isInt()) {
+      final int increment = Ints.checkedCast(((IntegerNode) incrementNode).getValue());
+      incrementCurrentIndex =
+          new Statement() {
+            @Override
+            void doGen(CodeBuilder cb) {
+              cb.iinc(currentIndex.local().index(), increment);
+            }
+          };
+    } else {
       Label detachPoint = new Label();
+      // Note: If the value of rangeArgs.increment() is above 32 bits, Ints.checkedCast() will fail
+      // at runtime with IllegalArgumentException.
       Expression increment =
           MethodRef.INTS_CHECKED_CAST.invoke(
-              exprCompiler.compile(rangeArgs.increment().get(), detachPoint).unboxAs(long.class));
+              exprCompiler.compile(rangeArgs.increment(), detachPoint).unboxAs(long.class));
       // If the expression is non-trivial, make sure to save it to a field.
       final Variable incrementVariable =
           scope.createSynthetic(
@@ -380,7 +400,6 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
               increment,
               increment.isCheap() ? DERIVED : STORE);
       initStatements.add(incrementVariable.initializer().labelStart(detachPoint));
-      incrementVariable.local();
       incrementCurrentIndex =
           new Statement() {
             @Override
@@ -389,14 +408,6 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
               incrementVariable.local().gen(adapter);
               adapter.visitInsn(Opcodes.IADD);
               adapter.visitVarInsn(Opcodes.ISTORE, currentIndex.local().index());
-            }
-          };
-    } else {
-      incrementCurrentIndex =
-          new Statement() {
-            @Override
-            void doGen(CodeBuilder adapter) {
-              adapter.iinc(currentIndex.local().index(), 1);
             }
           };
     }

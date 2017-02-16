@@ -17,9 +17,7 @@
 package com.google.template.soy.soytree;
 
 import com.google.auto.value.AutoValue;
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.SoyErrorKind;
@@ -57,35 +55,24 @@ public final class ForNode extends AbstractBlockCommandNode
   /** The arguments to a {@code range(...)} expression in a {@code {for ...}} loop statement. */
   @AutoValue
   public abstract static class RangeArgs {
-    static final RangeArgs ERROR =
-        create(
-            Optional.<ExprRootNode>absent(),
-            new ExprRootNode(VarRefNode.ERROR),
-            Optional.<ExprRootNode>absent());
+    private static final RangeArgs ERROR =
+        create(VarRefNode.ERROR, VarRefNode.ERROR, VarRefNode.ERROR);
 
-    static RangeArgs create(
-        Optional<ExprRootNode> start, ExprRootNode limit, Optional<ExprRootNode> increment) {
-      return new AutoValue_ForNode_RangeArgs(start, limit, increment);
+    static RangeArgs create(ExprNode start, ExprNode limit, ExprNode increment) {
+      return new AutoValue_ForNode_RangeArgs(
+          new ExprRootNode(start), new ExprRootNode(limit), new ExprRootNode(increment));
     }
 
     RangeArgs() {}
 
-    /**
-     * The expression for the iteration start point.
-     *
-     * <p>This is optional, the default beginning of iteration is {@code 0} if this is not set.
-     */
-    public abstract Optional<ExprRootNode> start();
+    /** The expression for the iteration start point. Default is {@code 0}. */
+    public abstract ExprRootNode start();
 
     /** The expression for the iteration end point. This is interpreted as an exclusive limit. */
     public abstract ExprRootNode limit();
 
-    /**
-     * The expression for the iteration increment.
-     *
-     * <p>This is optional, the default increment {@code 1} if this is not set.
-     */
-    public abstract Optional<ExprRootNode> increment();
+    /** The expression for the iteration increment. Default is {@code 1}. */
+    public abstract ExprRootNode increment();
 
     /**
      * Returns true if it is statically known that the range is not empty.
@@ -93,21 +80,20 @@ public final class ForNode extends AbstractBlockCommandNode
      * <p>Currently this is only possible if we have a range that contains constant values.
      */
     public final boolean definitelyNotEmpty() {
-      long start = 0;
-      if (start().isPresent()) {
-        ExprRootNode startExpr = start().get();
-        if (startExpr.getRoot() instanceof IntegerNode) {
-          start = ((IntegerNode) startExpr.getRoot()).getValue();
-        } else {
-          return false; // if the start is not a constant then it might be empty
-        }
+      long start;
+      if (start().getRoot() instanceof IntegerNode) {
+        start = ((IntegerNode) start().getRoot()).getValue();
+      } else {
+        return false; // if the start is not a constant then it might be empty
       }
+
       long limit;
       if (limit().getRoot() instanceof IntegerNode) {
         limit = ((IntegerNode) limit().getRoot()).getValue();
       } else {
         return false;
       }
+
       // NOTE: we don't need to consider the increment, since as long as start < limit, the start
       // will always be produced by the range
       return start < limit;
@@ -115,19 +101,18 @@ public final class ForNode extends AbstractBlockCommandNode
 
     private RangeArgs copy(CopyState copyState) {
       return create(
-          start().isPresent()
-              ? Optional.of(start().get().copy(copyState))
-              : Optional.<ExprRootNode>absent(),
-          limit().copy(copyState),
-          increment().isPresent()
-              ? Optional.of(increment().get().copy(copyState))
-              : Optional.<ExprRootNode>absent());
+          start().getRoot().copy(copyState),
+          limit().getRoot().copy(copyState),
+          increment().getRoot().copy(copyState));
     }
   }
 
-  static final SoyErrorKind INVALID_COMMAND_TEXT = SoyErrorKind.of("Invalid ''for'' command text");
+  private static final SoyErrorKind INVALID_COMMAND_TEXT =
+      SoyErrorKind.of("Invalid ''for'' command text");
   private static final SoyErrorKind INVALID_RANGE_SPECIFICATION =
       SoyErrorKind.of("Invalid range specification");
+  private static final SoyErrorKind RANGE_OUT_OF_RANGE =
+      SoyErrorKind.of("Range specification is too large: {0}");
 
   /** Regex pattern for the command text. */
   // 2 capturing groups: local var name, arguments to range()
@@ -163,30 +148,35 @@ public final class ForNode extends AbstractBlockCommandNode
     String varName = parseVarName(matcher.group(1), sourceLocation, context);
     List<ExprNode> rangeArgs = parseRangeArgs(matcher.group(2), sourceLocation, context);
 
-    if (rangeArgs.size() > 3) {
+    if (rangeArgs.size() > 3 || rangeArgs.isEmpty()) {
       context.report(sourceLocation, INVALID_RANGE_SPECIFICATION);
-      this.rangeArgs = RangeArgs.ERROR;
-    } else if (rangeArgs.isEmpty()) {
       this.rangeArgs = RangeArgs.ERROR;
     } else {
       // OK, now interpret the args
-      // If there are 2 or more args, then the first is the 'start' value
-      ExprNode start = rangeArgs.size() >= 2 ? rangeArgs.get(0) : null;
 
-      // If there are 3 args, then the last one is the increment.
-      ExprNode increment = rangeArgs.size() == 3 ? rangeArgs.get(2) : null;
+      // If there are 2 or more args, then the first is the 'start' value; default is 0
+      ExprNode start =
+          rangeArgs.size() >= 2 ? rangeArgs.get(0) : new IntegerNode(0, sourceLocation);
+
+      // If there are 3 args, then the last one is the increment; default is 1
+      ExprNode increment =
+          rangeArgs.size() == 3 ? rangeArgs.get(2) : new IntegerNode(1, sourceLocation);
 
       // the limit is the first item if there is only one arg, otherwise it is the second arg
       ExprNode limit = rangeArgs.get(rangeArgs.size() == 1 ? 0 : 1);
-      this.rangeArgs =
-          RangeArgs.create(
-              start == null
-                  ? Optional.<ExprRootNode>absent()
-                  : Optional.of(new ExprRootNode(start)),
-              new ExprRootNode(limit),
-              increment == null
-                  ? Optional.<ExprRootNode>absent()
-                  : Optional.of(new ExprRootNode(increment)));
+
+      this.rangeArgs = RangeArgs.create(start, limit, increment);
+
+      // Range args cannot be larger than 32-bit ints
+      if (isOutOfRange(start)) {
+        context.report(sourceLocation, RANGE_OUT_OF_RANGE, ((IntegerNode) start).getValue());
+      }
+      if (isOutOfRange(increment)) {
+        context.report(sourceLocation, RANGE_OUT_OF_RANGE, ((IntegerNode) increment).getValue());
+      }
+      if (isOutOfRange(limit)) {
+        context.report(sourceLocation, RANGE_OUT_OF_RANGE, ((IntegerNode) limit).getValue());
+      }
     }
 
     var = new LocalVar(varName, this, null);
@@ -200,6 +190,14 @@ public final class ForNode extends AbstractBlockCommandNode
   private static List<ExprNode> parseRangeArgs(
       String input, SourceLocation sourceLocation, SoyParsingContext context) {
     return new ExpressionParser(input, sourceLocation, context).parseExpressionList();
+  }
+
+  private static boolean isOutOfRange(ExprNode node) {
+    if (node instanceof IntegerNode) {
+      long n = ((IntegerNode) node).getValue();
+      return n > Integer.MAX_VALUE || n < Integer.MIN_VALUE;
+    }
+    return false;
   }
 
   /**
@@ -236,11 +234,7 @@ public final class ForNode extends AbstractBlockCommandNode
   @Override
   public List<ExprUnion> getAllExprUnions() {
     return ExprUnion.createList(
-        ImmutableList.copyOf(
-            Iterables.concat(
-                rangeArgs.start().asSet(),
-                ImmutableList.of(rangeArgs.limit()),
-                rangeArgs.increment().asSet())));
+        ImmutableList.of(rangeArgs.start(), rangeArgs.limit(), rangeArgs.increment()));
   }
 
   @Override

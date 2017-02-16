@@ -76,6 +76,11 @@ public final class IntegerNode extends AbstractPrimitiveNode {
     return value;
   }
 
+  /** Returns true if the value stored by the node is a 32-bit integer. */
+  public boolean isInt() {
+    return Integer.MIN_VALUE <= value && value <= Integer.MAX_VALUE;
+  }
+
   @Override
   public String toSourceString() {
     return Long.toString(value);

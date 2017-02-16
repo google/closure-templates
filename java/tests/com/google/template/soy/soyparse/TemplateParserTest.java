@@ -1364,7 +1364,7 @@ public final class TemplateParserTest {
   public void testParseForStmt() throws Exception {
 
     String templateBody =
-        "  {for $i in range(1, $itemsLength + 1)}\n"
+        "  {for $i in range(10, $itemsLength + 1)}\n"
             + "    {msg desc=\"Numbered item.\"}\n"
             + "      {$i}: {$items[$i - 1]}{\\n}\n"
             + "    {/msg}\n"
@@ -1376,11 +1376,11 @@ public final class TemplateParserTest {
     ForNode fn = (ForNode) nodes.get(0);
     assertEquals("i", fn.getVarName());
     ForNode.RangeArgs rangeArgs = fn.getRangeArgs();
-    assertThat(rangeArgs.increment()).isAbsent();
-    assertEquals("1", rangeArgs.start().get().toSourceString());
+    assertEquals("1", rangeArgs.increment().toSourceString());
+    assertEquals("10", rangeArgs.start().toSourceString());
     assertEquals("$itemsLength + 1", rangeArgs.limit().toSourceString());
 
-    assertThat(rangeArgs.start().get().getRoot()).isInstanceOf(IntegerNode.class);
+    assertThat(rangeArgs.start().getRoot()).isInstanceOf(IntegerNode.class);
     assertThat(rangeArgs.limit().getRoot()).isInstanceOf(PlusOpNode.class);
 
     assertEquals(1, fn.numChildren());
