@@ -468,7 +468,8 @@ public class TranslateExprNodeVisitor
       return visit(node.getValue());
     }
     // jssrc supports unknown globals by plopping the global name directly into the output
-    // TODO(lukes): add a missingRequire suppression here
+    // NOTE: this may cause the jscompiler to emit warnings, users will need to whitelist them or
+    // fix their use of unknown globals.
     return CodeChunk.dottedIdNoRequire(node.getName());
   }
 

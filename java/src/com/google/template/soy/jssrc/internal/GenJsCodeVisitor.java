@@ -374,7 +374,6 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
         ? ""
         : " Templates in namespace " + node.getNamespace() + ".";
     file.append(" * @fileoverview").append(fileOverviewDescription).append('\n');
-    file.append(" * @suppress {missingRequire}\n");
     if (node.getDelPackageName() != null) {
       file.append(" * @modName {").append(node.getDelPackageName()).append("}\n");
     }

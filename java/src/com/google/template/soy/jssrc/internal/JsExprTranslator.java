@@ -83,7 +83,8 @@ public final class JsExprTranslator {
           ? expr.getSourceLocation()
           : SourceLocation.UNKNOWN;
       Preconditions.checkNotNull(exprText);
-      // TODO(lukes):add missingRequire suppression here
+      // NOTE: this may cause the jscompiler to emit warnings, users will need to whitelist them or
+      // fix their use of v1 exprs.
       return CodeChunk.fromExpr(
           V1JsExprTranslator.translateToJsExpr(
               exprText,
