@@ -46,6 +46,7 @@ import com.google.template.soy.error.SnippetFormatter;
 import com.google.template.soy.error.SoyCompilationException;
 import com.google.template.soy.error.SoyError;
 import com.google.template.soy.incrementaldomsrc.IncrementalDomSrcMain;
+import com.google.template.soy.incrementaldomsrc.SoyIncrementalDomSrcOptions;
 import com.google.template.soy.jbcsrc.BytecodeCompiler;
 import com.google.template.soy.jbcsrc.api.SoySauce;
 import com.google.template.soy.jbcsrc.api.SoySauceImpl;
@@ -1124,7 +1125,7 @@ public final class SoyFileSet {
    *     JS file. The generated JS files correspond one-to-one to the original Soy source files.
    * @throws SoyCompilationException If compilation fails.
    */
-  public List<String> compileToIncrementalDomSrc(SoyJsSrcOptions jsSrcOptions) throws IOException {
+  public List<String> compileToIncrementalDomSrc(SoyIncrementalDomSrcOptions jsSrcOptions) {
     resetErrorReporter();
     ParseResult result = preprocessIncrementalDOMResults();
     List<String> generatedSrcs =
@@ -1145,9 +1146,10 @@ public final class SoyFileSet {
    * @throws IOException If there is an error in opening/reading a message file or opening/writing
    *     an output JS file.
    */
-  void compileToIncrementalDomSrcFiles(String outputPathFormat, SoyJsSrcOptions jsSrcOptions)
-      throws IOException {
+  void compileToIncrementalDomSrcFiles(
+      String outputPathFormat, SoyIncrementalDomSrcOptions jsSrcOptions) throws IOException {
     resetErrorReporter();
+    disallowExternalCalls();
     ParseResult result = preprocessIncrementalDOMResults();
 
     incrementalDomSrcMainProvider

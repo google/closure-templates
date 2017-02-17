@@ -18,7 +18,7 @@ package com.google.template.soy;
 
 import com.google.common.annotations.Beta;
 import com.google.template.soy.base.SoySyntaxException;
-import com.google.template.soy.jssrc.SoyJsSrcOptions;
+import com.google.template.soy.incrementaldomsrc.SoyIncrementalDomSrcOptions;
 import java.io.IOException;
 import org.kohsuke.args4j.Option;
 
@@ -65,22 +65,7 @@ public final class SoyToIncrementalDomSrcCompiler extends AbstractSoyCompiler {
 
   @Override
   void compile(SoyFileSet.Builder sfsBuilder) throws IOException {
-    sfsBuilder.setAllowExternalCalls(false);
     SoyFileSet sfs = sfsBuilder.build();
-    // Create SoyJsSrcOptions.
-    SoyJsSrcOptions jsSrcOptions = new SoyJsSrcOptions();
-    jsSrcOptions.setShouldAllowDeprecatedSyntax(false);
-    jsSrcOptions.setShouldProvideRequireSoyNamespaces(false);
-    jsSrcOptions.setShouldProvideRequireJsFunctions(false);
-    jsSrcOptions.setShouldProvideBothSoyNamespacesAndJsFunctions(false);
-    jsSrcOptions.setShouldDeclareTopLevelNamespaces(false);
-    jsSrcOptions.setShouldGenerateJsdoc(true);
-    // Only goog.module generation supported
-    jsSrcOptions.setShouldGenerateGoogModules(true);
-    jsSrcOptions.setShouldGenerateGoogMsgDefs(true);
-    jsSrcOptions.setGoogMsgsAreExternal(true);
-    jsSrcOptions.setBidiGlobalDir(0);
-    jsSrcOptions.setUseGoogIsRtlForBidiGlobalDir(true);
-    sfs.compileToIncrementalDomSrcFiles(outputPathFormat, jsSrcOptions);
+    sfs.compileToIncrementalDomSrcFiles(outputPathFormat, new SoyIncrementalDomSrcOptions());
   }
 }

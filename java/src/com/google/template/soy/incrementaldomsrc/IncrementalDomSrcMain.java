@@ -89,7 +89,7 @@ public class IncrementalDomSrcMain {
    * optional bundle of translated messages.
    *
    * @param soyTree The Soy parse tree to generate JS source code for.
-   * @param jsSrcOptions The compilation options relevant to this backend.
+   * @param options The compilation options relevant to this backend.
    * @return A list of strings where each string represents the JS source code that belongs in one
    *     JS file. The generated JS files correspond one-to-one to the original Soy source files.
    * @throws SoySyntaxException If a syntax error is found.
@@ -97,16 +97,11 @@ public class IncrementalDomSrcMain {
   public List<String> genJsSrc(
       SoyFileSetNode soyTree,
       TemplateRegistry registry,
-      SoyJsSrcOptions jsSrcOptions,
+      SoyIncrementalDomSrcOptions options,
       ErrorReporter errorReporter)
       throws SoySyntaxException {
 
-    SoyJsSrcOptions incrementalJSSrcOptions = jsSrcOptions.clone();
-    incrementalJSSrcOptions.setShouldProvideBothSoyNamespacesAndJsFunctions(false);
-    incrementalJSSrcOptions.setShouldProvideRequireSoyNamespaces(false);
-    incrementalJSSrcOptions.setShouldProvideRequireJsFunctions(false);
-    incrementalJSSrcOptions.setShouldDeclareTopLevelNamespaces(false);
-    incrementalJSSrcOptions.setShouldGenerateGoogModules(true);
+    SoyJsSrcOptions incrementalJSSrcOptions = options.toJsSrcOptions();
 
     try (WithScope withScope = apiCallScope.enter()) {
       // Seed the scoped parameters.
@@ -146,7 +141,7 @@ public class IncrementalDomSrcMain {
   public void genJsFiles(
       SoyFileSetNode soyTree,
       TemplateRegistry templateRegistry,
-      SoyJsSrcOptions jsSrcOptions,
+      SoyIncrementalDomSrcOptions jsSrcOptions,
       String outputPathFormat,
       ErrorReporter errorReporter)
       throws IOException {
