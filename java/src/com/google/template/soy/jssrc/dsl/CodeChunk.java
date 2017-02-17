@@ -217,28 +217,19 @@ public abstract class CodeChunk {
   /**
    * Creates a code chunk representing the given Soy operator applied to the given operands.
    *
-   * @param codeGenerator Required in case the operator is {@link Operator#AND} or {@link
-   *     Operator#OR} and temporary variables need to be allocated for short-circuiting behavior.
-   *     Callers can pass null safely as long as the operator is neither AND nor OR, or if all of
-   *     the operands are {@link WithValue#isRepresentableAsSingleExpression representable as single
-   *     expressions}. TODO(brndn): if more than one caller needs to pass null, introduce an
-   *     exploding code generator.
+   * <p>Cannot be used for {@link Operator#AND} and {@link Operator#OR}, as they require access to a
+   * {@link CodeChunk.Generator} to generate temporary variables for short-circuiting. Use {@link
+   * CodeChunk.WithValue#and} and {@link CodeChunk.WithValue#or} instead.
    */
-  public static WithValue operation(
-      Operator op, List<WithValue> operands, CodeChunk.Generator codeGenerator) {
-    Preconditions.checkState(operands.size() == op.getNumOperands());
+  public static WithValue operation(Operator op, List<WithValue> operands) {
+    Preconditions.checkArgument(operands.size() == op.getNumOperands());
+    // AND and OR have dedicated APIs to handle short-circuiting
+    Preconditions.checkArgument(op != Operator.AND && op != Operator.OR);
     switch (op.getNumOperands()) {
       case 1:
         return PrefixUnaryOperation.create(op, operands.get(0));
       case 2:
-        // AND and OR have dedicated APIs to handle short-circuiting
-        if (op == Operator.AND) {
-          return operands.get(0).and(operands.get(1), codeGenerator);
-        } else if (op == Operator.OR) {
-          return operands.get(0).or(operands.get(1), codeGenerator);
-        } else {
-          return BinaryOperation.create(op, operands.get(0), operands.get(1));
-        }
+        return BinaryOperation.create(op, operands.get(0), operands.get(1));
       case 3:
         Preconditions.checkArgument(op == Operator.CONDITIONAL);
         return Ternary.create(operands.get(0), operands.get(1), operands.get(2));

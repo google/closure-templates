@@ -63,7 +63,9 @@ import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.NullNode;
+import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
@@ -503,8 +505,21 @@ public class TranslateExprNodeVisitor
         .buildAsValue();
   }
 
-  @Override protected CodeChunk.WithValue visitOperatorNode(OperatorNode node) {
-    return operation(node.getOperator(), visitChildren(node), codeGenerator);
+  @Override
+  protected CodeChunk.WithValue visitAndOpNode(AndOpNode node) {
+    Preconditions.checkArgument(node.numChildren() == 2);
+    return visit(node.getChild(0)).and(visit(node.getChild(1)), codeGenerator);
+  }
+
+  @Override
+  protected CodeChunk.WithValue visitOrOpNode(OrOpNode node) {
+    Preconditions.checkArgument(node.numChildren() == 2);
+    return visit(node.getChild(0)).or(visit(node.getChild(1)), codeGenerator);
+  }
+
+  @Override
+  protected CodeChunk.WithValue visitOperatorNode(OperatorNode node) {
+    return operation(node.getOperator(), visitChildren(node));
   }
 
   @Override

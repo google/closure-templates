@@ -61,14 +61,7 @@ public final class SoyJsPluginUtils {
                 return fromExpr(input, ImmutableList.<GoogRequire>of());
               }
             });
-    return CodeChunk.operation(
-            op,
-            operands,
-            // See callee's documentation. Passing a null codeGenerator is safe here
-            // because all of the operands are representable as single expressions
-            // (since they are JsExprs).
-            null)
-        .assertExpr();
+    return CodeChunk.operation(op, operands).assertExpr();
   }
 
   /**
