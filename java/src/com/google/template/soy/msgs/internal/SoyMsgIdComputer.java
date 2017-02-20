@@ -171,7 +171,11 @@ public class SoyMsgIdComputer {
     return (((long) hi) << 32) | (lo & 0xffffffffL);
   }
 
-  @SuppressWarnings({"PointlessBitwiseExpression", "PointlessArithmeticExpression"}) // IntelliJ
+  @SuppressWarnings({
+    "PointlessBitwiseExpression",
+    "PointlessArithmeticExpression",
+    "FallThrough"
+  }) // IntelliJ
   private static int hash32(byte[] str, int start, int limit, int c) {
 
     int a = 0x9e3779b9;
