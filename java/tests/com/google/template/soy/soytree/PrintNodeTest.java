@@ -93,13 +93,6 @@ public final class PrintNodeTest {
             .exprText("$boo + $foo")
             .build(FAIL);
     assertWithMessage("Fallback value expected.").that(pn.genBasePhName()).isEqualTo("XXX");
-
-    // V1 syntax.
-    pn =
-        new PrintNode.Builder(0, true /* isImplicit */, SourceLocation.UNKNOWN)
-            .exprText("\"blah\"")
-            .build(FAIL);
-    assertWithMessage("Fallback value expected.").that(pn.genBasePhName()).isEqualTo("XXX");
   }
 
   @Test

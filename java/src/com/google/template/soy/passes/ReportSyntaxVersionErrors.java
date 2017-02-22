@@ -23,9 +23,7 @@ import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.basetree.SyntaxVersionUpperBound;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
-import com.google.template.soy.soytree.ExprUnion;
 import com.google.template.soy.soytree.SoyFileNode;
-import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 
 /**
@@ -81,20 +79,6 @@ final class ReportSyntaxVersionErrors {
           SYNTAX_VERSION_OUT_OF_BOUNDS,
           errorPreamble,
           syntaxVersionBound.reasonStr);
-    }
-    // ------ Record errors for expressions held by this Soy node. ------
-    if (node instanceof ExprHolderNode) {
-      for (ExprUnion exprUnion : ((ExprHolderNode) node).getAllExprUnions()) {
-        // Log parse errors if the required syntax version is at least V2, but the expression was
-        // not parsable as V2.
-        if (exprUnion.getExpr() == null && requiredSyntaxVersion.num >= SyntaxVersion.V2_0.num) {
-          exprUnion.reportV2ParseErrors(errorReporter);
-        } else {
-          // Certain v1 expressions are being incrementally banned until all v1 expressions can be
-          // removed from the codebase.
-          exprUnion.reportDisallowedV1ExpressionErrors(errorReporter);
-        }
-      }
     }
   }
 }

@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprparse.SoyParsingContext;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
@@ -254,7 +255,10 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
         return exprUnion;
       }
       Preconditions.checkNotNull(exprText);
-      return ExprUnion.parseWithV1Fallback(exprText, sourceLocation, context);
+      ExprRootNode expr =
+          new ExprRootNode(
+              new ExpressionParser(exprText, sourceLocation, context).parseExpression());
+      return new ExprUnion(expr);
     }
   }
 }

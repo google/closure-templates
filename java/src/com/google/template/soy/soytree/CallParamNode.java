@@ -24,6 +24,7 @@ import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprparse.SoyParsingContext;
+import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.CommandTextAttributesParser.Attribute;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -153,10 +154,8 @@ public abstract class CallParamNode extends AbstractCommandNode {
     if (valueExprText == null) {
       return new CommandTextParseResult(commandText, key, null /* valueExprUnion */, contentKind);
     }
-    return new CommandTextParseResult(
-        commandText,
-        key,
-        ExprUnion.parseWithV1Fallback(valueExprText, location, context),
-        contentKind);
+    ExprRootNode expr =
+        new ExprRootNode(new ExpressionParser(valueExprText, location, context).parseExpression());
+    return new CommandTextParseResult(commandText, key, new ExprUnion(expr), contentKind);
   }
 }

@@ -20,7 +20,9 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprparse.SoyParsingContext;
+import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.ConditionalBlockNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import java.util.List;
@@ -138,7 +140,10 @@ public final class IfCondNode extends AbstractBlockCommandNode
 
     /** Returns a new {@link IfCondNode} built from this builder's state. */
     public IfCondNode build(SoyParsingContext context) {
-      ExprUnion condition = ExprUnion.parseWithV1Fallback(commandText, sourceLocation, context);
+      ExprRootNode expr =
+          new ExprRootNode(
+              new ExpressionParser(commandText, sourceLocation, context).parseExpression());
+      ExprUnion condition = new ExprUnion(expr);
       return new IfCondNode(id, sourceLocation, commandName, condition);
     }
   }

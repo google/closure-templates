@@ -16,49 +16,23 @@
 
 package com.google.template.soy.soytree;
 
-import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.error.AbstractErrorReporter;
-import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ErrorReporter.Checkpoint;
-import com.google.template.soy.error.SoyErrorKind;
-import com.google.template.soy.exprparse.ExpressionParser;
-import com.google.template.soy.exprparse.SoyParsingContext;
-import com.google.template.soy.exprparse.V1ExpressionErrors;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
-import java.util.ArrayList;
 import java.util.List;
-import javax.annotation.Nullable;
 
 /**
- * Represents a Soy expression in either V2 or V1 syntax.
+ * Represents a Soy expression in either V2 or V1 syntax. Since Soy V1 expressions are going away,
+ * this class will be removed from the Soy codebase soon.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
- *
- * <p>If this expression is in V2 syntax, then {@link #getExpr()} will return a nonnull expression
- * tree. If this expression is in V1 syntax, then {@code #getExpr()} will return null. In either
- * case, the expression text can be obtained from {@link #getExprText()}.
  *
  */
 public final class ExprUnion {
 
-  /** Creates an ExprUnion from the given expression text. */
-  static ExprUnion parseWithV1Fallback(
-      String exprText, SourceLocation location, SoyParsingContext context) {
-    DelayedErrorReporter errorReporter = new DelayedErrorReporter();
-    Checkpoint checkpoint = errorReporter.checkpoint();
-    ExprNode expr =
-        new ExpressionParser(exprText, location, context.withErrorReporter(errorReporter))
-            .parseExpression();
-    return errorReporter.errorsSince(checkpoint)
-        ? new ExprUnion(exprText, errorReporter.reports)
-        : new ExprUnion(expr);
-  }
+  // TODO(mknichel): Remove this class from Soy.
 
   /**
    * Utility to create a list of {@code ExprUnion}s from a list of expression trees.
@@ -74,14 +48,7 @@ public final class ExprUnion {
     return exprUnions;
   }
 
-  /** The expression tree, or null if the expression is in V1 syntax. */
-  @Nullable private final ExprRootNode expr;
-
-  /** The V1 expression text, or null if the expression is in V2 syntax. */
-  @Nullable private final String exprText;
-
-  /** The errors that were reported when this expression failed to parse as v2. */
-  private final ImmutableList<DelayedErrorReport> delayedErrorReports;
+  private final ExprRootNode expr;
 
   /**
    * Constructor for an instance that represents a V2 expression.
@@ -89,7 +56,7 @@ public final class ExprUnion {
    * @param expr The expression tree.
    */
   public ExprUnion(ExprNode expr) {
-    this(new ExprRootNode(expr));
+    this(new ExprRootNode(Preconditions.checkNotNull(expr)));
   }
 
   /**
@@ -98,27 +65,11 @@ public final class ExprUnion {
    * @param expr The expression tree.
    */
   public ExprUnion(ExprRootNode expr) {
-    this.expr = expr;
-    this.exprText = null;
-    this.delayedErrorReports = ImmutableList.of();
-  }
-
-  /**
-   * Constructor for an instance that represents an expression in V1 syntax.
-   *
-   * @param exprTextV1 The text of the V1 expression.
-   */
-  private ExprUnion(String exprTextV1, List<DelayedErrorReport> delayedErrorReports) {
-    Preconditions.checkArgument(!delayedErrorReports.isEmpty());
-    this.expr = null;
-    this.exprText = exprTextV1;
-    this.delayedErrorReports = ImmutableList.copyOf(delayedErrorReports);
+    this.expr = Preconditions.checkNotNull(expr);
   }
 
   private ExprUnion(ExprUnion orig, CopyState copyState) {
-    this.expr = orig.expr != null ? orig.expr.copy(copyState) : null;
-    this.exprText = orig.exprText;
-    this.delayedErrorReports = orig.delayedErrorReports;
+    this.expr = orig.expr.copy(copyState);
   }
 
   /** Returns the expression tree if the expression is in V2 syntax, else null. */
@@ -128,67 +79,11 @@ public final class ExprUnion {
 
   /** Returns the expression text. This method works for both V2 and V1 expressions. */
   public String getExprText() {
-    return (expr != null) ? expr.toSourceString() : exprText;
+    return expr.toSourceString();
   }
 
   /** Returns a (deep) clone of this object. */
   public ExprUnion copy(CopyState copyState) {
     return new ExprUnion(this, copyState);
-  }
-
-  /**
-   * Adds all the errors from trying to parse this as a V2 expression to the given error reporter.
-   *
-   * <p>Guaranteed to add at least one error if {@link #getExpr()} is null.
-   */
-  public void reportV2ParseErrors(ErrorReporter reporter) {
-    for (DelayedErrorReport report : delayedErrorReports) {
-      reporter.report(report.location(), report.error(), report.args().toArray());
-    }
-  }
-
-  /**
-   * Reports v1 expression errors that are considered permanent errors for all templates regardless
-   * of the template's version. Use of v1 expressions will eventually go away entirely, and this
-   * method can ban certain v1 expressions incrementally until all are removed from the codebase.
-   */
-  public void reportDisallowedV1ExpressionErrors(ErrorReporter reporter) {
-    for (DelayedErrorReport report : delayedErrorReports) {
-      if (V1ExpressionErrors.LEGACY_AND_ERROR.equals(report.error())
-          || V1ExpressionErrors.LEGACY_OR_ERROR.equals(report.error())
-          || V1ExpressionErrors.LEGACY_NOT_ERROR.equals(report.error())
-          || V1ExpressionErrors.LEGACY_DOUBLE_QUOTED_STRING.equals(report.error())) {
-        reporter.report(report.location(), report.error(), report.args().toArray());
-      }
-    }
-  }
-
-  /**
-   * An {@link ErrorReporter} that captures errors so that they can optionally be applied to another
-   * error reporter at a later time.
-   */
-  private static final class DelayedErrorReporter extends AbstractErrorReporter {
-    final List<DelayedErrorReport> reports = new ArrayList<>();
-
-    @Override
-    public void report(SourceLocation sourceLocation, SoyErrorKind error, Object... args) {
-      reports.add(
-          new AutoValue_ExprUnion_DelayedErrorReport(
-              sourceLocation, error, ImmutableList.copyOf(args)));
-    }
-
-    @Override
-    protected int getCurrentNumberOfErrors() {
-      return reports.size();
-    }
-  }
-
-  @AutoValue
-  abstract static class DelayedErrorReport {
-    abstract SourceLocation location();
-
-    abstract SoyErrorKind error();
-
-    abstract List<?> args();
   }
 }

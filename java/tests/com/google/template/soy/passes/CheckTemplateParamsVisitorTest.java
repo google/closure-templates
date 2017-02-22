@@ -285,7 +285,7 @@ public final class CheckTemplateParamsVisitorTest {
             + "/** Template 1 */\n"
             + "{template .foo1}\n"
             + "  {$goo1}\n"
-            + "  {$goo1.moo1()}\n"
+            + "  {v1Expression('$goo1.moo1()')}\n"
             + // file is not all V2 syntax due to this expression
             "{/template}\n";
 
