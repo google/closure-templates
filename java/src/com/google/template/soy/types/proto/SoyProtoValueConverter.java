@@ -17,16 +17,10 @@
 package com.google.template.soy.types.proto;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.io.BaseEncoding;
-import com.google.protobuf.ByteString;
-import com.google.protobuf.Descriptors.EnumValueDescriptor;
 import com.google.protobuf.Message;
-import com.google.protobuf.ProtocolMessageEnum;
 import com.google.template.soy.data.SoyCustomValueConverter;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueProvider;
-import com.google.template.soy.data.restricted.IntegerData;
-import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.types.SoyTypeRegistry;
 import javax.inject.Inject;
 
@@ -73,22 +67,6 @@ public final class SoyProtoValueConverter implements SoyCustomValueConverter {
       // fetch a type given a descriptor which will definitely work.
       SoyProtoType type = protoTypeProvider.getType(message.getDescriptorForType(), registry);
       return new SoyProtoValueImpl(valueConverter, type, message);
-    }
-    if (obj instanceof ByteString) {
-      // Encode proto byte fields as base-64 since that is a safe and consistent way to send them
-      // to Javascript.  Note that we must check this here without using custom value converter,
-      // because ByteString implements Iterable<Byte>, which SoyValueConverter tries and fails to
-      // convert to a list.
-      return StringData.forValue(BaseEncoding.base64().encode(((ByteString) obj).toByteArray()));
-    }
-    // NOTE: Enum values can come in different flavors, depending on whether it was obtained
-    // via reflection (as it is in SoyProtoValue) or obtained by just getting the enum value
-    // if passed directly to Java.
-    if (obj instanceof EnumValueDescriptor) {
-      return IntegerData.forValue(((EnumValueDescriptor) obj).getNumber());
-    }
-    if (obj instanceof ProtocolMessageEnum) {
-      return IntegerData.forValue(((ProtocolMessageEnum) obj).getNumber());
     }
     return null;
   }

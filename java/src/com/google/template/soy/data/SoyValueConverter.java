@@ -21,7 +21,11 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.io.BaseEncoding;
 import com.google.inject.Inject;
+import com.google.protobuf.ByteString;
+import com.google.protobuf.Descriptors.EnumValueDescriptor;
+import com.google.protobuf.ProtocolMessageEnum;
 import com.google.template.soy.data.internal.DictImpl;
 import com.google.template.soy.data.internal.EasyListImpl;
 import com.google.template.soy.data.internal.ListImpl;
@@ -231,10 +235,19 @@ public class SoyValueConverter {
       return newDictFromMap(objCast);
     } else if (obj instanceof Collection<?> || obj instanceof FluentIterable<?>) {
       // NOTE: We don't trap Iterable itself, because many types extend from Iterable but are not
-      // meant to be enumerated. (e.g. ByteString)
+      // meant to be enumerated. (e.g. ByteString implements Iterable<Byte>)
       return newListFromIterable((Iterable<?>) obj);
     } else if (obj instanceof SoyGlobalsValue) {
       return convert(((SoyGlobalsValue) obj).getSoyGlobalValue());
+    } else if (obj instanceof ByteString) {
+      // Encode ByteStrings as base 64, as a safe and consistent way to send them to JS
+      return StringData.forValue(BaseEncoding.base64().encode(((ByteString) obj).toByteArray()));
+    } else if (obj instanceof EnumValueDescriptor) {
+      // Proto enum that was obtained via reflection (e.g. from SoyProtoValue)
+      return IntegerData.forValue(((EnumValueDescriptor) obj).getNumber());
+    } else if (obj instanceof ProtocolMessageEnum) {
+      // Proto enum that was directly passed into the template
+      return IntegerData.forValue(((ProtocolMessageEnum) obj).getNumber());
     } else {
       if (customValueConverters != null) {
         for (SoyCustomValueConverter customConverter : customValueConverters) {
