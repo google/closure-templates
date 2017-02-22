@@ -157,11 +157,6 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   }
 
   @Override
-  protected String getJsTypeName(SoyType type) {
-    return IncrementalDomSrcUtils.getJsTypeName(type);
-  }
-
-  @Override
   protected String getTemplateReturnType(TemplateNode node) {
     // TODO(sparhami) need to deal with URI types properly (like the JS code gen does) so that the
     // usage is safe. For now, don't include any return type so compilation will fail if someone

@@ -1518,14 +1518,6 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
   }
 
   /**
-   * Returns the name of the JS type used to represent the given SoyType at runtime.
-   * Can be overridden by subclasses to provide a different mapping.
-   */
-  protected String getJsTypeName(SoyType type) {
-    return JsSrcUtils.getJsTypeName(type);
-  }
-
-  /**
    * Generate code to verify the runtime types of the input params. Also typecasts the
    * input parameters and assigns them to local variables for use in the template.
    * @param node the template node.

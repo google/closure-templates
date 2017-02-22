@@ -17,21 +17,15 @@
 package com.google.template.soy.jssrc.internal;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.template.soy.base.SoyBackendKind;
 import com.google.template.soy.base.internal.BaseUtils;
-import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.CodeChunk.RequiresCollector;
 import com.google.template.soy.jssrc.restricted.JsExpr;
-import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.primitive.SanitizedType;
-import com.google.template.soy.types.proto.SoyProtoEnumType;
-import com.google.template.soy.types.proto.SoyProtoType;
 
 /**
  * Shared utilities specific to the JS Src backend.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public final class JsSrcUtils {
@@ -77,27 +71,6 @@ public final class JsSrcUtils {
       }
     }
     return out.toString();
-  }
-
-
-  /**
-   * Given a Soy type, return the corresponding jscompiler type name. Only
-   * handles types which have names and have a declared constructor - not
-   * arbitrary type expressions.
-   */
-  public static String getJsTypeName(SoyType type) {
-    if (type.getKind().isKnownSanitizedContent()) {
-      return NodeContentKinds.toJsSanitizedContentCtorName(
-          ((SanitizedType) type).getContentKind());
-    } else if (type.getKind() == SoyType.Kind.RECORD) {
-      return "Object";
-    } else if (type.getKind() == SoyType.Kind.PROTO) {
-      return ((SoyProtoType) type).getNameForBackend(SoyBackendKind.JS_SRC);
-    } else if (type.getKind() == SoyType.Kind.PROTO_ENUM) {
-      return ((SoyProtoEnumType) type).getNameForBackend(SoyBackendKind.JS_SRC);
-    } else {
-      throw new AssertionError("Unsupported type: " + type);
-    }
   }
 
 
