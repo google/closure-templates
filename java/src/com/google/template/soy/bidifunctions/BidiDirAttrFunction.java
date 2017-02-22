@@ -110,7 +110,10 @@ final class BidiDirAttrFunction
 
   @Override
   public ImmutableSet<String> getRequiredJsLibNames() {
-    return ImmutableSet.of("soy");
+    return ImmutableSet.<String>builder()
+        .addAll(bidiGlobalDirProvider.get().getNamespace().asSet())
+        .add("soy")
+        .build();
   }
 
   @Override
