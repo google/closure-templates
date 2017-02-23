@@ -61,9 +61,15 @@ abstract class For extends CodeChunk {
         .appendOutputExpression(initial(), EXPRESSION)
         .append("; " + localVar() + " < ")
         .appendOutputExpression(limit(), EXPRESSION)
-        .append("; " + localVar() + " += ")
-        .appendOutputExpression(increment(), EXPRESSION)
-        .append(") ");
+        .append("; ");
+
+    if ((increment() instanceof Leaf) && "1".equals(((Leaf) increment()).value().getText())) {
+      ctx.append(localVar() + "++");
+    } else {
+      ctx.append(localVar() + " += ").appendOutputExpression(increment(), EXPRESSION);
+    }
+
+    ctx.append(") ");
 
     try (FormattingContext ignored = ctx.enterBlock()) {
       ctx.appendAll(body());

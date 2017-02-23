@@ -48,6 +48,7 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
@@ -137,9 +138,6 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
 
   /** Regex pattern to look for dots in a template name. */
   private static final Pattern DOT = Pattern.compile("\\.");
-
-  /** Regex pattern for an integer. */
-  private static final Pattern INTEGER = Pattern.compile("-?\\d+");
 
   /** The options for generating JS source code. */
   protected final SoyJsSrcOptions jsSrcOptions;
@@ -312,27 +310,39 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
   }
 
   /**
-   * Visits the given node, returning a {@link CodeChunk} encapsulating its JavaScript code. The
-   * chunk is indented one level from the current indent level.
+   * Visits the children of the given node, returning a {@link CodeChunk} encapsulating its
+   * JavaScript code. The chunk is indented one level from the current indent level.
    *
    * <p>Unlike {@link TranslateExprNodeVisitor}, GenJsCodeVisitor does not return anything as the
    * result of visiting a subtree. To get recursive chunk-building, we use a hack, swapping out the
    * {@link JsCodeBuilder} and using the unsound {@link
    * CodeChunk#treatRawStringAsStatementLegacyOnly} API.
    */
-  private CodeChunk visitReturningCodeChunk(SoyNode node) {
+  private CodeChunk visitChildrenReturningCodeChunk(ParentSoyNode<?> node) {
+    return doVisitReturningCodeChunk(node, true);
+  }
+
+  /** Do not use directly; use {@link visitChildrenReturningCodeChunk} instead. */
+  private CodeChunk doVisitReturningCodeChunk(SoyNode node, boolean visitChildren) {
     // Replace jsCodeBuilder with a child JsCodeBuilder.
     JsCodeBuilder original = jsCodeBuilder;
     jsCodeBuilder = createChildJsCodeBuilder();
 
     // Visit body.
     jsCodeBuilder.increaseIndent();
-    visit(node);
+
+    if (visitChildren) {
+      visitChildren((ParentSoyNode<?>) node);
+    } else {
+      visit(node);
+    }
+
     jsCodeBuilder.decreaseIndent();
 
     CodeChunk chunk =
         CodeChunk.treatRawStringAsStatementLegacyOnly(
             jsCodeBuilder.getCode(), jsCodeBuilder.googRequires());
+
     // Swap the original JsCodeBuilder back in, but preserve indent levels.
     original.setIndent(jsCodeBuilder.getIndent());
     jsCodeBuilder = original;
@@ -1013,12 +1023,14 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
 
     for (SoyNode child : node.getChildren()) {
       if (child instanceof IfCondNode) {
+        IfCondNode condNode = (IfCondNode) child;
+
         // Convert predicate.
         CodeChunk.WithValue predicate =
             jsExprTranslator.translateToCodeChunk(
-                ((IfCondNode) child).getExprUnion(), templateTranslationContext, errorReporter);
+                condNode.getExprUnion(), templateTranslationContext, errorReporter);
         // Convert body.
-        CodeChunk consequent = visitReturningCodeChunk(child);
+        CodeChunk consequent = visitChildrenReturningCodeChunk(condNode);
         // Add if-block to conditional.
         if (conditional == null) {
           conditional =
@@ -1029,7 +1041,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
 
       } else if (child instanceof IfElseNode) {
         // Convert body.
-        CodeChunk trailingElse = visitReturningCodeChunk(child);
+        CodeChunk trailingElse = visitChildrenReturningCodeChunk((IfElseNode) child);
         // Add else-block to conditional.
         conditional.else_(trailingElse);
       } else {
@@ -1082,10 +1094,10 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
                   caseExpr, templateTranslationContext, errorReporter);
           caseChunks.add(caseChunk);
         }
-        CodeChunk body = visitReturningCodeChunk(scn);
+        CodeChunk body = visitChildrenReturningCodeChunk(scn);
         switchBuilder.case_(caseChunks.build(), body);
       } else if (child instanceof SwitchDefaultNode) {
-        CodeChunk body = visitReturningCodeChunk(child);
+        CodeChunk body = visitChildrenReturningCodeChunk((SwitchDefaultNode) child);
         switchBuilder.default_(body);
       } else {
         throw new AssertionError();
@@ -1258,76 +1270,40 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
   @Override protected void visitForNode(ForNode node) {
 
     String varName = node.getVarName();
-    String nodeId = Integer.toString(node.getId());
+    String localVar = varName + node.getId();
 
-    // Get the JS expression text for the init/limit/increment values.
+    // Get CodeChunks for the initial/limit/increment values.
     RangeArgs range = node.getRangeArgs();
-    String incrementJsExprText =
-        jsExprTranslator
-            .translateToCodeChunk(range.increment(), templateTranslationContext, errorReporter)
-            .assertExprAndCollectRequires(
-                jsCodeBuilder.getRequiresCollector()) // TODO(user): remove
-            .getText();
-    String initJsExprText =
-        jsExprTranslator
-            .translateToCodeChunk(range.start(), templateTranslationContext, errorReporter)
-            .assertExprAndCollectRequires(
-                jsCodeBuilder.getRequiresCollector()) // TODO(user): remove
-            .getText();
-    String limitJsExprText =
-        jsExprTranslator
-            .translateToCodeChunk(range.limit(), templateTranslationContext, errorReporter)
-            .assertExprAndCollectRequires(
-                jsCodeBuilder.getRequiresCollector()) // TODO(user): remove
-            .getText();
+    CodeChunk.WithValue initial =
+        jsExprTranslator.translateToCodeChunk(
+            range.start(), templateTranslationContext, errorReporter);
+    CodeChunk.WithValue limit =
+        jsExprTranslator.translateToCodeChunk(
+            range.limit(), templateTranslationContext, errorReporter);
+    CodeChunk.WithValue increment =
+        jsExprTranslator.translateToCodeChunk(
+            range.increment(), templateTranslationContext, errorReporter);
 
-    // If any of the JS expressions for init/limit/increment isn't an integer, precompute its value.
-    String initCode;
-    if (INTEGER.matcher(initJsExprText).matches()) {
-      initCode = initJsExprText;
-    } else {
-      initCode = varName + "Init" + nodeId;
-      jsCodeBuilder.appendLine("var ", initCode, " = ", initJsExprText, ";");
+    // If the limit or increment are not raw integers, save them to a separate variable so that
+    // they are not calculated multiple times.
+    // No need to do so for initial, since it is only executed once.
+    if (!(range.limit().getRoot() instanceof IntegerNode)) {
+      limit = declare(localVar + "Limit").setInitialValue(limit).build();
+    }
+    if (!(range.increment().getRoot() instanceof IntegerNode)) {
+      increment = declare(localVar + "Increment").setInitialValue(increment).build();
     }
 
-    String limitCode;
-    if (INTEGER.matcher(limitJsExprText).matches()) {
-      limitCode = limitJsExprText;
-    } else {
-      limitCode = varName + "Limit" + nodeId;
-      jsCodeBuilder.appendLine("var ", limitCode, " = ", limitJsExprText, ";");
-    }
+    // Populate Soy to JS var mappings with this for node's local variable.
+    templateTranslationContext.soyToJsVariableMappings().put(varName, id(localVar));
 
-    String incrementCode;
-    if (INTEGER.matcher(incrementJsExprText).matches()) {
-      incrementCode = incrementJsExprText;
-    } else {
-      incrementCode = varName + "Increment" + nodeId;
-      jsCodeBuilder.appendLine("var ", incrementCode, " = ", incrementJsExprText, ";");
-    }
+    // Generate the CodeChunk for the loop body.
+    CodeChunk body = visitChildrenReturningCodeChunk(node);
 
-    // The start of the JS 'for' loop.
-    String incrementStmt = incrementCode.equals("1") ?
-        varName + nodeId + "++" : varName + nodeId + " += " + incrementCode;
-    jsCodeBuilder.appendLine(
-        "for (var ",
-        varName, nodeId, " = ", initCode, "; ",
-        varName, nodeId, " < ", limitCode, "; ",
-        incrementStmt,
-        ") {");
-    jsCodeBuilder.increaseIndent();
+    // Create the entire for block.
+    CodeChunk forChunk = CodeChunk.forCall(localVar, initial, limit, increment, body);
 
-    // Populate the local var translations with the translations from this node.
-    templateTranslationContext
-        .soyToJsVariableMappings()
-        .put(varName, id(varName + nodeId));
-
-    // Generate the code for the loop body.
-    visitChildren(node);
-
-    // The end of the JS 'for' loop.
-    jsCodeBuilder.decreaseIndent();
-    jsCodeBuilder.appendLine("}");
+    jsCodeBuilder.append(forChunk);
   }
 
   /**

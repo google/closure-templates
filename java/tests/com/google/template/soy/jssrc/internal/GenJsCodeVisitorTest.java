@@ -764,7 +764,8 @@ public final class GenJsCodeVisitorTest {
             + "'Hello {$userName}, please click {$startLink}here{$endLink}.', "
             + "{'userName': opt_data.user.userName, "
             + "'startLink': '<a href=\"' + opt_data.url + '\">', "
-            + "'endLink': '</a>'});\n";
+            + "'endLink': '</a>'});\n"
+            + "output += MSG_UNNAMED;\n";
     assertGeneratedJsCode(soyCode, expectedJsCode);
 
     soyCode =
@@ -777,7 +778,8 @@ public final class GenJsCodeVisitorTest {
             + "/** @meaning boo\n"
             + " *  @desc foo\n"
             + " *  @hidden */\n"
-            + "var MSG_UNNAMED = goog.getMsg('Blah');\n";
+            + "var MSG_UNNAMED = goog.getMsg('Blah');\n"
+            + "output += MSG_UNNAMED;\n";
     assertGeneratedJsCode(soyCode, expectedJsCode);
 
     soyCode =
@@ -808,7 +810,8 @@ public final class GenJsCodeVisitorTest {
             + "{'startSpan': htmlTag11, "
             + "'xxx_1': some.func(soy.$$assignDefaults({goo: param14}, opt_data.boo), null, "
             + "opt_ijData), "
-            + "'xxx_2': opt_data.a + 2});\n";
+            + "'xxx_2': opt_data.a + 2});\n"
+            + "output += MSG_UNNAMED;\n";
     assertGeneratedJsCode(soyCode, expectedJsCode);
 
     soyCode =
@@ -817,9 +820,11 @@ public final class GenJsCodeVisitorTest {
             + "{/msg}\n";
     // Make sure JS code doesn't have literal unicode characters, since they
     // don't always get interpreted properly.
-    expectedJsCode = ""
-        + "/** @desc foo */\n"
-        + "var MSG_UNNAMED = goog.getMsg('More \\u00BB');\n";
+    expectedJsCode =
+        ""
+            + "/** @desc foo */\n"
+            + "var MSG_UNNAMED = goog.getMsg('More \\u00BB');\n"
+            + "output += MSG_UNNAMED;\n";
     assertGeneratedJsCode(soyCode, expectedJsCode);
   }
 
@@ -839,7 +844,8 @@ public final class GenJsCodeVisitorTest {
             + "var MSG_UNNAMED = goog.getMsg('Archive');\n"
             + "/** @desc  */\n"
             + "var MSG_UNNAMED$$1 = goog.getMsg('Archive');\n"
-            + "var msg_s = goog.getMsgWithFallback(MSG_UNNAMED, MSG_UNNAMED$$1);\n";
+            + "var msg_s = goog.getMsgWithFallback(MSG_UNNAMED, MSG_UNNAMED$$1);\n"
+            + "output += msg_s;\n";
     // Note: Using getGeneratedJsCode() directly so that ids are not replaced with ###.
     assertThat(getGeneratedJsCode(soyCode, ExplodingErrorReporter.get())).isEqualTo(expectedJsCode);
   }
@@ -861,7 +867,8 @@ public final class GenJsCodeVisitorTest {
             + "/** @desc  */\n"
             + "var MSG_UNNAMED = goog.getMsg("
             + "'Unable to reach {$productNameHtml}. Eeeek!', "
-            + "{'productNameHtml': PRODUCT_NAME_HTML});\n";
+            + "{'productNameHtml': PRODUCT_NAME_HTML});\n"
+            + "output += MSG_UNNAMED;\n";
     assertGeneratedJsCode(soyCode, expectedJsCode);
 
     // global, all caps, leading or trailing underbars.  Placeholder should
@@ -880,7 +887,8 @@ public final class GenJsCodeVisitorTest {
             + "'aField': window._AField, "
             + "'forest': _window_.forest, "
             + "'x': window.size.x, "
-            + "'xxXx': window.size._xx_xx_});\n";
+            + "'xxXx': window.size._xx_xx_});\n"
+            + "output += MSG_UNNAMED;\n";
     assertGeneratedJsCode(soyCode, expectedJsCode);
 
     // global, property name.  Placeholder should be lower case
@@ -892,7 +900,8 @@ public final class GenJsCodeVisitorTest {
             + "var MSG_UNNAMED = goog.getMsg("
             + "'{$bar} {$originalServerName}', "
             + "{'bar': window.FOO.BAR, "
-            + "'originalServerName': window.ORIGINAL_SERVER_NAME});\n";
+            + "'originalServerName': window.ORIGINAL_SERVER_NAME});\n"
+            + "output += MSG_UNNAMED;\n";
     assertGeneratedJsCode(soyCode, expectedJsCode);
 
     // global, camel case name.  Placeholder should be same.
@@ -903,7 +912,8 @@ public final class GenJsCodeVisitorTest {
             + "var MSG_UNNAMED = goog.getMsg("
             + "'{$camelCaseName}{$camelCase}.', "
             + "{'camelCaseName': camelCaseName, "
-            + "'camelCase': global.camelCase});\n";
+            + "'camelCase': global.camelCase});\n"
+            + "output += MSG_UNNAMED;\n";
     assertGeneratedJsCode(soyCode, expectedJsCode);
 
     //  Upper case camel case name becomes lower case in placeholder.
@@ -913,7 +923,8 @@ public final class GenJsCodeVisitorTest {
             + "/** @desc  */\n"
             + "var MSG_UNNAMED = goog.getMsg("
             + "'Unable to reach {$camelCaseName}. Eeeek!', "
-            + "{'camelCaseName': CamelCaseName});\n";
+            + "{'camelCaseName': CamelCaseName});\n"
+            + "output += MSG_UNNAMED;\n";
     assertGeneratedJsCode(soyCode, expectedJsCode);
 
     // Leading and trailing underbars are stripped when creating placeholders.
@@ -933,7 +944,8 @@ public final class GenJsCodeVisitorTest {
             + "'thunderBar': _ThunderBar_, "
             + "'underCar': underCar__, "
             + "'car': window.__car__, "
-            + "'anotherBar': window.__AnotherBar__});\n";
+            + "'anotherBar': window.__AnotherBar__});\n"
+            + "output += MSG_UNNAMED;\n";
     assertGeneratedJsCode(soyCode, expectedJsCode);
   }
 
@@ -956,7 +968,8 @@ public final class GenJsCodeVisitorTest {
             + "/** @desc  */\n"
             + "var MSG_UNNAMED = goog.getMsg("
             + "'Unable to reach {$productNameHtml}. Eeeek!', "
-            + "{'productNameHtml': opt_data.PRODUCT_NAME_HTML});\n";
+            + "{'productNameHtml': opt_data.PRODUCT_NAME_HTML});\n"
+            + "output += MSG_UNNAMED;\n";
     assertGeneratedJsCode(soyCode, expectedJsCode);
 
     // local, property name.  Placeholder should be lower case
@@ -975,7 +988,8 @@ public final class GenJsCodeVisitorTest {
             + "'{$bar}{$originalServer}{$xxXx}', "
             + "{'bar': opt_data.myvar.foo.bar, "
             + "'originalServer': opt_data.myvar.ORIGINAL_SERVER, "
-            + "'xxXx': opt_data.window.size._xx_xx_});\n";
+            + "'xxXx': opt_data.window.size._xx_xx_});\n"
+            + "output += MSG_UNNAMED;\n";
     assertGeneratedJsCode(soyCode, expectedJsCode);
 
     // global, property name, with underbars.  Placeholder should be lower case
@@ -992,7 +1006,8 @@ public final class GenJsCodeVisitorTest {
             + "'{$bar}{$trail}{$barBarBar}', "
             + "{'bar': opt_data.myvar.foo._bar, "
             + "'trail': opt_data.myvar.foo.trail_, "
-            + "'barBarBar': opt_data.myvar.foo._bar_bar_bar_});\n";
+            + "'barBarBar': opt_data.myvar.foo._bar_bar_bar_});\n"
+            + "output += MSG_UNNAMED;\n";
     assertGeneratedJsCode(soyCode, expectedJsCode);
 
     // local, camel case name.  Placeholder should be same, in lower case.
@@ -1008,7 +1023,8 @@ public final class GenJsCodeVisitorTest {
             + "var MSG_UNNAMED = goog.getMsg("
             + "'{$productName}{$otherProductName}', "
             + "{'productName': opt_data.productName, "
-            + "'otherProductName': opt_data.OtherProductName});\n";
+            + "'otherProductName': opt_data.OtherProductName});\n"
+            + "output += MSG_UNNAMED;\n";
     assertGeneratedJsCode(soyCode, expectedJsCode);
   }
 
@@ -1028,7 +1044,8 @@ public final class GenJsCodeVisitorTest {
             + "'Hello {$userName}, please click {$startLink}here{$endLink}.', "
             + "{'userName': opt_data.userName, "
             + "'startLink': '<a href=\"' + opt_data.url + '\">', "
-            + "'endLink': '</a>'});\n";
+            + "'endLink': '</a>'});\n"
+            + "output += MSG_UNNAMED;\n";
     assertGeneratedJsCode(soyCode, expectedJsCode);
   }
 
@@ -1061,8 +1078,8 @@ public final class GenJsCodeVisitorTest {
             + "  var alpha__soy5 = opt_data.boo.foo;\n"
             + "  var beta__soy6 = 'Boo!';\n"
             + "  var gamma__soy8 = '';\n"
-            + "  var iLimit9 = alpha__soy5;\n"
-            + "  for (var i9 = 0; i9 < iLimit9; i9++) {\n"
+            + "  var i9Limit = alpha__soy5;\n"
+            + "  for (var i9 = 0; i9 < i9Limit; i9++) {\n"
             + "    gamma__soy8 += i9 + beta__soy6;\n"
             + "  }\n"
             + "  var delta__soy12 = 'Boop!';\n"
@@ -1249,7 +1266,8 @@ public final class GenJsCodeVisitorTest {
     assertGeneratedJsCode(soyNodeCode, expectedJsCode);
 
     soyNodeCode =
-        "{@param boo : ?}\n"
+        ""
+            + "{@param boo : ?}\n"
             + "{@param goo : ?}\n"
             + "{@param foo : ?}\n"
             + "{for $i in range($boo-$goo, $boo+$goo, $foo)}\n"
@@ -1257,11 +1275,26 @@ public final class GenJsCodeVisitorTest {
             + "{/for}\n";
     expectedJsCode =
         ""
-            + "var iInit3 = opt_data.boo - gooData8;\n"
-            + "var iLimit3 = opt_data.boo + gooData8;\n"
-            + "var iIncrement3 = opt_data.foo;\n"
-            + "for (var i3 = iInit3; i3 < iLimit3; i3 += iIncrement3) {\n"
+            + "var i3Limit = opt_data.boo + gooData8;\n"
+            + "var i3Increment = opt_data.foo;\n"
+            + "for (var i3 = opt_data.boo - gooData8; i3 < i3Limit; i3 += i3Increment) {\n"
             + "  output += i3 + 1 + ' ';\n"
+            + "}\n";
+    assertGeneratedJsCode(soyNodeCode, expectedJsCode);
+
+    soyNodeCode =
+        ""
+            + "{let $boo: ['a': [], 'b': [10, 20, 30]] /}\n"
+            + "{for $i in range($boo.b[0], $boo.b[1], $boo.b[2])}\n"
+            + "  {$i}\n"
+            + "{/for}\n";
+    expectedJsCode =
+        ""
+            + "var boo__soy3 = {a: [], b: [10, 20, 30]};\n"
+            + "var i4Limit = boo__soy3.b[1];\n"
+            + "var i4Increment = boo__soy3.b[2];\n"
+            + "for (var i4 = boo__soy3.b[0]; i4 < i4Limit; i4 += i4Increment) {\n"
+            + "  output += i4;\n"
             + "}\n";
     assertGeneratedJsCode(soyNodeCode, expectedJsCode);
   }
@@ -1410,20 +1443,22 @@ public final class GenJsCodeVisitorTest {
             + "          I see {$person} and {remainder($num_people)} other people in {$place}.\n"
             + "    {/plural}\n"
             + "  {/msg}\n";
-    String expectedJsCode = ""
-        + "/** @desc A sample plural message */\n"
-        + "var MSG_UNNAMED = goog.getMsg("
-        +     "'{NUM_PEOPLE,plural,offset:1 "
-        +         "=0{I see no one in {PLACE}.}"
-        +         "=1{I see {PERSON} in {PLACE}.}"
-        +         "=2{I see {PERSON} and one other person in {PLACE}.}"
-        +         "other{          I see {PERSON} and {XXX} other people in {PLACE}.}"
-        +      "}');\n"
-        + "var msg_s = new goog.i18n.MessageFormat(MSG_UNNAMED).formatIgnoringPound("
-        + "{'NUM_PEOPLE': opt_data.num_people, "
-        + "'PLACE': opt_data.place, "
-        + "'PERSON': opt_data.person, "
-        + "'XXX': opt_data.num_people - 1});\n";
+    String expectedJsCode =
+        ""
+            + "/** @desc A sample plural message */\n"
+            + "var MSG_UNNAMED = goog.getMsg("
+            + "'{NUM_PEOPLE,plural,offset:1 "
+            + "=0{I see no one in {PLACE}.}"
+            + "=1{I see {PERSON} in {PLACE}.}"
+            + "=2{I see {PERSON} and one other person in {PLACE}.}"
+            + "other{          I see {PERSON} and {XXX} other people in {PLACE}.}"
+            + "}');\n"
+            + "var msg_s = new goog.i18n.MessageFormat(MSG_UNNAMED).formatIgnoringPound("
+            + "{'NUM_PEOPLE': opt_data.num_people, "
+            + "'PLACE': opt_data.place, "
+            + "'PERSON': opt_data.person, "
+            + "'XXX': opt_data.num_people - 1});\n"
+            + "output += msg_s;\n";
     assertGeneratedJsCode(soyNodeCode, expectedJsCode);
 
     // A simple plural message with no offset.
@@ -1438,19 +1473,21 @@ public final class GenJsCodeVisitorTest {
             + "      {default}I see {$num_people} persons in {$place}, including {$person}.\n"
             + "    {/plural}\n"
             + "  {/msg}\n";
-    expectedJsCode = ""
-        + "/** @desc A sample plural message */\n"
-        + "var MSG_UNNAMED = goog.getMsg("
-        +     "'{NUM_PEOPLE_1,plural,"
-        +        "=0{I see no one in {PLACE}.}"
-        +        "=1{I see {PERSON} in {PLACE}.}"
-        +        "other{I see {NUM_PEOPLE_2} persons in {PLACE}, including {PERSON}.}"
-        +      "}');\n"
-        + "var msg_s = new goog.i18n.MessageFormat(MSG_UNNAMED).formatIgnoringPound("
-        + "{'NUM_PEOPLE_1': opt_data.num_people, "
-        + "'PLACE': opt_data.place, "
-        + "'PERSON': opt_data.person, "
-        + "'NUM_PEOPLE_2': opt_data.num_people});\n";
+    expectedJsCode =
+        ""
+            + "/** @desc A sample plural message */\n"
+            + "var MSG_UNNAMED = goog.getMsg("
+            + "'{NUM_PEOPLE_1,plural,"
+            + "=0{I see no one in {PLACE}.}"
+            + "=1{I see {PERSON} in {PLACE}.}"
+            + "other{I see {NUM_PEOPLE_2} persons in {PLACE}, including {PERSON}.}"
+            + "}');\n"
+            + "var msg_s = new goog.i18n.MessageFormat(MSG_UNNAMED).formatIgnoringPound("
+            + "{'NUM_PEOPLE_1': opt_data.num_people, "
+            + "'PLACE': opt_data.place, "
+            + "'PERSON': opt_data.person, "
+            + "'NUM_PEOPLE_2': opt_data.num_people});\n"
+            + "output += msg_s;\n";
     assertGeneratedJsCode(soyNodeCode, expectedJsCode);
 
     // Same message as above, but with (a) 0 offset explicitly specified and (b) a plural
@@ -1466,19 +1503,21 @@ public final class GenJsCodeVisitorTest {
             + "          I see {length($persons)} persons in {$place}, including {$persons[0]}.\n"
             + "    {/plural}\n"
             + "  {/msg}\n";
-    expectedJsCode = ""
-        + "/** @desc A sample plural message */\n"
-        + "var MSG_UNNAMED = goog.getMsg("
-        +     "'{NUM,plural,"
-        +        "=0{I see no one in {PLACE}.}"
-        +        "=1{I see {XXX_1} in {PLACE}.}"
-        +        "other{          I see {XXX_2} persons in {PLACE}, including {XXX_1}.}"
-        +      "}');\n"
-        + "var msg_s = new goog.i18n.MessageFormat(MSG_UNNAMED).formatIgnoringPound("
-        + "{'NUM': (opt_data.persons.length), "
-        + "'PLACE': opt_data.place, "
-        + "'XXX_1': opt_data.persons[0], "
-        + "'XXX_2': (opt_data.persons.length)});\n";
+    expectedJsCode =
+        ""
+            + "/** @desc A sample plural message */\n"
+            + "var MSG_UNNAMED = goog.getMsg("
+            + "'{NUM,plural,"
+            + "=0{I see no one in {PLACE}.}"
+            + "=1{I see {XXX_1} in {PLACE}.}"
+            + "other{          I see {XXX_2} persons in {PLACE}, including {XXX_1}.}"
+            + "}');\n"
+            + "var msg_s = new goog.i18n.MessageFormat(MSG_UNNAMED).formatIgnoringPound("
+            + "{'NUM': (opt_data.persons.length), "
+            + "'PLACE': opt_data.place, "
+            + "'XXX_1': opt_data.persons[0], "
+            + "'XXX_2': (opt_data.persons.length)});\n"
+            + "output += msg_s;\n";
     assertGeneratedJsCode(soyNodeCode, expectedJsCode);
 
     // With the plural variable used both as a placeholder and in remainder().
@@ -1494,21 +1533,23 @@ public final class GenJsCodeVisitorTest {
             + "{$persons[0]}, {$persons[1]} and {remainder($num_people)} others.\n"
             + "  {/plural}\n"
             + "{/msg}\n";
-    expectedJsCode = ""
-        + "/** @desc A sample plural with offset */\n"
-        + "var MSG_UNNAMED = goog.getMsg("
-        +     "'{NUM_PEOPLE_1,plural,offset:2 "
-        +        "=0{No people.}"
-        +        "=1{There is one person: {XXX_1}.}"
-        +        "=2{There are two persons: {XXX_1} and {XXX_2}.}"
-        +        "other{There are {NUM_PEOPLE_2} persons: {XXX_1}, {XXX_2} and {XXX_3} others.}"
-        +      "}');\n"
-        + "var msg_s = new goog.i18n.MessageFormat(MSG_UNNAMED).formatIgnoringPound("
-        + "{'NUM_PEOPLE_1': opt_data.num_people, "
-        + "'XXX_1': opt_data.persons[0], "
-        + "'XXX_2': opt_data.persons[1], "
-        + "'NUM_PEOPLE_2': opt_data.num_people, "
-        + "'XXX_3': opt_data.num_people - 2});\n";
+    expectedJsCode =
+        ""
+            + "/** @desc A sample plural with offset */\n"
+            + "var MSG_UNNAMED = goog.getMsg("
+            + "'{NUM_PEOPLE_1,plural,offset:2 "
+            + "=0{No people.}"
+            + "=1{There is one person: {XXX_1}.}"
+            + "=2{There are two persons: {XXX_1} and {XXX_2}.}"
+            + "other{There are {NUM_PEOPLE_2} persons: {XXX_1}, {XXX_2} and {XXX_3} others.}"
+            + "}');\n"
+            + "var msg_s = new goog.i18n.MessageFormat(MSG_UNNAMED).formatIgnoringPound("
+            + "{'NUM_PEOPLE_1': opt_data.num_people, "
+            + "'XXX_1': opt_data.persons[0], "
+            + "'XXX_2': opt_data.persons[1], "
+            + "'NUM_PEOPLE_2': opt_data.num_people, "
+            + "'XXX_3': opt_data.num_people - 2});\n"
+            + "output += msg_s;\n";
     assertGeneratedJsCode(soyNodeCode, expectedJsCode);
   }
 
@@ -1525,16 +1566,18 @@ public final class GenJsCodeVisitorTest {
             + "    {default}{$person} added you to his circle.\n"
             + "  {/select}\n"
             + "{/msg}\n";
-    String expectedJsCode = ""
-        + "/** @desc A sample gender message */\n"
-        + "var MSG_UNNAMED = goog.getMsg("
-        +     "'{GENDER,select,"
-        +         "female{{PERSON} added you to her circle.}"
-        +         "other{{PERSON} added you to his circle.}"
-        +      "}');\n"
-        + "var msg_s = new goog.i18n.MessageFormat(MSG_UNNAMED).formatIgnoringPound("
-        + "{'GENDER': opt_data.gender, "
-        + "'PERSON': opt_data.person});\n";
+    String expectedJsCode =
+        ""
+            + "/** @desc A sample gender message */\n"
+            + "var MSG_UNNAMED = goog.getMsg("
+            + "'{GENDER,select,"
+            + "female{{PERSON} added you to her circle.}"
+            + "other{{PERSON} added you to his circle.}"
+            + "}');\n"
+            + "var msg_s = new goog.i18n.MessageFormat(MSG_UNNAMED).formatIgnoringPound("
+            + "{'GENDER': opt_data.gender, "
+            + "'PERSON': opt_data.person});\n"
+            + "output += msg_s;\n";
     assertGeneratedJsCode(soyNodeCode, expectedJsCode);
 
     // Simple select message: Gender with 'female', 'male', 'neuter' and other.
@@ -1549,18 +1592,20 @@ public final class GenJsCodeVisitorTest {
             + "    {default}{$person} added you to his circle.\n"
             + "  {/select}\n"
             + "{/msg}\n";
-    expectedJsCode = ""
-        + "/** @desc A sample gender message */\n"
-        + "var MSG_UNNAMED = goog.getMsg("
-        +     "'{GENDER,select,"
-        +        "female{{PERSON} added you to her circle.}"
-        +        "male{{PERSON} added you to his circle.}"
-        +        "neuter{{PERSON} added you to its circle.}"
-        +        "other{{PERSON} added you to his circle.}"
-        +      "}');\n"
-        + "var msg_s = new goog.i18n.MessageFormat(MSG_UNNAMED).formatIgnoringPound("
-        + "{'GENDER': opt_data.gender, "
-        + "'PERSON': opt_data.person});\n";
+    expectedJsCode =
+        ""
+            + "/** @desc A sample gender message */\n"
+            + "var MSG_UNNAMED = goog.getMsg("
+            + "'{GENDER,select,"
+            + "female{{PERSON} added you to her circle.}"
+            + "male{{PERSON} added you to his circle.}"
+            + "neuter{{PERSON} added you to its circle.}"
+            + "other{{PERSON} added you to his circle.}"
+            + "}');\n"
+            + "var msg_s = new goog.i18n.MessageFormat(MSG_UNNAMED).formatIgnoringPound("
+            + "{'GENDER': opt_data.gender, "
+            + "'PERSON': opt_data.person});\n"
+            + "output += msg_s;\n";
     assertGeneratedJsCode(soyNodeCode, expectedJsCode);
   }
 
@@ -1577,37 +1622,39 @@ public final class GenJsCodeVisitorTest {
             + "{fallbackmsg desc=\"A message without genders.\"}\n"
             + "  Join {$targetName}'s community.\n"
             + "{/msg}\n";
-    String expectedJsCode = ""
-        + "/** @desc A message with genders. */\n"
-        + "var MSG_UNNAMED = goog.getMsg("
-        +     "'{USER_GENDER,select,"
-        +         "female{{TARGET_GENDER,select,"
-        +             "female{Join {TARGET_NAME}\\'s community.}"
-        +             "male{Join {TARGET_NAME}\\'s community.}"
-        +             "other{Join {TARGET_NAME}\\'s community.}"
-        +         "}}"
-        +         "male{{TARGET_GENDER,select,"
-        +             "female{Join {TARGET_NAME}\\'s community.}"
-        +             "male{Join {TARGET_NAME}\\'s community.}"
-        +             "other{Join {TARGET_NAME}\\'s community.}"
-        +         "}}"
-        +         "other{{TARGET_GENDER,select,"
-        +             "female{Join {TARGET_NAME}\\'s community.}"
-        +             "male{Join {TARGET_NAME}\\'s community.}"
-        +             "other{Join {TARGET_NAME}\\'s community.}"
-        +         "}}"
-        +     "}');\n"
-        + "/** @desc A message without genders. */\n"
-        + "var MSG_UNNAMED$$1 = goog.getMsg("
-        + "'Join {$targetName}\\'s community.', "
-        + "{'targetName': opt_data.targetName});\n"
-        + "var msg_s = goog.getMsgWithFallback(MSG_UNNAMED, MSG_UNNAMED$$1);\n"
-        + "if (msg_s == MSG_UNNAMED) {\n"
-        + "  msg_s = new goog.i18n.MessageFormat(MSG_UNNAMED).formatIgnoringPound("
-        + "{'USER_GENDER': opt_data.userGender, "
-        + "'TARGET_GENDER': opt_data.targetGender, "
-        + "'TARGET_NAME': opt_data.targetName});\n"
-        + "}\n";
+    String expectedJsCode =
+        ""
+            + "/** @desc A message with genders. */\n"
+            + "var MSG_UNNAMED = goog.getMsg("
+            + "'{USER_GENDER,select,"
+            + "female{{TARGET_GENDER,select,"
+            + "female{Join {TARGET_NAME}\\'s community.}"
+            + "male{Join {TARGET_NAME}\\'s community.}"
+            + "other{Join {TARGET_NAME}\\'s community.}"
+            + "}}"
+            + "male{{TARGET_GENDER,select,"
+            + "female{Join {TARGET_NAME}\\'s community.}"
+            + "male{Join {TARGET_NAME}\\'s community.}"
+            + "other{Join {TARGET_NAME}\\'s community.}"
+            + "}}"
+            + "other{{TARGET_GENDER,select,"
+            + "female{Join {TARGET_NAME}\\'s community.}"
+            + "male{Join {TARGET_NAME}\\'s community.}"
+            + "other{Join {TARGET_NAME}\\'s community.}"
+            + "}}"
+            + "}');\n"
+            + "/** @desc A message without genders. */\n"
+            + "var MSG_UNNAMED$$1 = goog.getMsg("
+            + "'Join {$targetName}\\'s community.', "
+            + "{'targetName': opt_data.targetName});\n"
+            + "var msg_s = goog.getMsgWithFallback(MSG_UNNAMED, MSG_UNNAMED$$1);\n"
+            + "if (msg_s == MSG_UNNAMED) {\n"
+            + "  msg_s = new goog.i18n.MessageFormat(MSG_UNNAMED).formatIgnoringPound("
+            + "{'USER_GENDER': opt_data.userGender, "
+            + "'TARGET_GENDER': opt_data.targetGender, "
+            + "'TARGET_NAME': opt_data.targetName});\n"
+            + "}\n"
+            + "output += msg_s;\n";
     // Note: Using getGeneratedJsCode() directly so that ids are not replaced with ###.
     assertThat(getGeneratedJsCode(soyCode, ExplodingErrorReporter.get())).isEqualTo(expectedJsCode);
   }
@@ -1635,28 +1682,30 @@ public final class GenJsCodeVisitorTest {
             + "      {/select}\n"
             + "  {/select}\n"
             + "{/msg}\n";
-    String expectedJsCode = ""
-        + "/** @desc A sample nested message */\n"
-        + "var MSG_UNNAMED = goog.getMsg("
-        +     "'{GENDER,select,"
-        +        "female{"
-        +          "{GENDER_2,select,"
-        +            "female{{PERSON_1} added {PERSON_2} and her friends to her circle.}"
-        +            "other{{PERSON_1} added {PERSON_2} and his friends to her circle.}"
-        +          "}"
-        +        "}"
-        +        "other{"
-        +          "{GENDER_2,select,"
-        +            "female{{PERSON_1} added {PERSON_2} and her friends to his circle.}"
-        +            "other{{PERSON_1} added {PERSON_2} and his friends to his circle.}"
-        +          "}"
-        +        "}"
-        +      "}');\n"
-        + "var msg_s = new goog.i18n.MessageFormat(MSG_UNNAMED).formatIgnoringPound("
-        + "{'GENDER': opt_data.gender, "
-        + "'GENDER_2': opt_data.gender2, "
-        + "'PERSON_1': opt_data.person1, "
-        + "'PERSON_2': opt_data.person2});\n";
+    String expectedJsCode =
+        ""
+            + "/** @desc A sample nested message */\n"
+            + "var MSG_UNNAMED = goog.getMsg("
+            + "'{GENDER,select,"
+            + "female{"
+            + "{GENDER_2,select,"
+            + "female{{PERSON_1} added {PERSON_2} and her friends to her circle.}"
+            + "other{{PERSON_1} added {PERSON_2} and his friends to her circle.}"
+            + "}"
+            + "}"
+            + "other{"
+            + "{GENDER_2,select,"
+            + "female{{PERSON_1} added {PERSON_2} and her friends to his circle.}"
+            + "other{{PERSON_1} added {PERSON_2} and his friends to his circle.}"
+            + "}"
+            + "}"
+            + "}');\n"
+            + "var msg_s = new goog.i18n.MessageFormat(MSG_UNNAMED).formatIgnoringPound("
+            + "{'GENDER': opt_data.gender, "
+            + "'GENDER_2': opt_data.gender2, "
+            + "'PERSON_1': opt_data.person1, "
+            + "'PERSON_2': opt_data.person2});\n"
+            + "output += msg_s;\n";
     assertGeneratedJsCode(soyNodeCode, expectedJsCode);
 
     // Plural nested inside select.
@@ -1678,28 +1727,30 @@ public final class GenJsCodeVisitorTest {
             + "      {/plural}\n"
             + "  {/select}\n"
             + "{/msg}\n";
-    expectedJsCode = ""
-        + "/** @desc A sample nested message */\n"
-        + "var MSG_UNNAMED = goog.getMsg("
-        +     "'{GENDER,select,"
-        +        "female{"
-        +          "{NUM_PEOPLE_1,plural,"
-        +            "=1{{PERSON} added one person to her circle.}"
-        +            "other{{PERSON} added {NUM_PEOPLE_2} to her circle.}"
-        +          "}"
-        +        "}"
-        +        "other{"
-        +          "{NUM_PEOPLE_1,plural,"
-        +            "=1{{PERSON} added one person to his circle.}"
-        +            "other{{PERSON} added {NUM_PEOPLE_2} to his circle.}"
-        +          "}"
-        +        "}"
-        +      "}');\n"
-        + "var msg_s = new goog.i18n.MessageFormat(MSG_UNNAMED).formatIgnoringPound("
-        + "{'GENDER': opt_data.gender, "
-        + "'NUM_PEOPLE_1': opt_data.num_people, "
-        + "'PERSON': opt_data.person, "
-        + "'NUM_PEOPLE_2': opt_data.num_people});\n";
+    expectedJsCode =
+        ""
+            + "/** @desc A sample nested message */\n"
+            + "var MSG_UNNAMED = goog.getMsg("
+            + "'{GENDER,select,"
+            + "female{"
+            + "{NUM_PEOPLE_1,plural,"
+            + "=1{{PERSON} added one person to her circle.}"
+            + "other{{PERSON} added {NUM_PEOPLE_2} to her circle.}"
+            + "}"
+            + "}"
+            + "other{"
+            + "{NUM_PEOPLE_1,plural,"
+            + "=1{{PERSON} added one person to his circle.}"
+            + "other{{PERSON} added {NUM_PEOPLE_2} to his circle.}"
+            + "}"
+            + "}"
+            + "}');\n"
+            + "var msg_s = new goog.i18n.MessageFormat(MSG_UNNAMED).formatIgnoringPound("
+            + "{'GENDER': opt_data.gender, "
+            + "'NUM_PEOPLE_1': opt_data.num_people, "
+            + "'PERSON': opt_data.person, "
+            + "'NUM_PEOPLE_2': opt_data.num_people});\n"
+            + "output += msg_s;\n";
     assertGeneratedJsCode(soyNodeCode, expectedJsCode);
 
     // Plural inside plural should be invalid.
@@ -1768,35 +1819,37 @@ public final class GenJsCodeVisitorTest {
             + "      {/select}\n"
             + "  {/select}\n"
             + "{/msg}\n";
-    String expectedJsCode = ""
-        + "/** @desc A sample nested message */\n"
-        + "var MSG_UNNAMED = goog.getMsg("
-        +     "'{FORMAT,select,"
-        +        "user-centric{"
-        +          "{GENDER_1,select,"
-        +            "female{{PERSON_1} added {PERSON_2} and friends to her circle.}"
-        +            "other{{PERSON_1} added {PERSON_2} and friends to his circle.}"
-        +          "}"
-        +        "}"
-        +        "friend-centric{"
-        +          "{GENDER_2,select,"
-        +            "female{{PERSON_1} added {PERSON_2} and her friends to circle.}"
-        +            "other{{PERSON_1} added {PERSON_2} and his friends to circle.}"
-        +          "}"
-        +        "}"
-        +        "other{"
-        +          "{GENDER_1,select,"
-        +            "female{{PERSON_1} added {PERSON_2} and some friends to her circle.}"
-        +            "other{{PERSON_1} added {PERSON_2} and some friends to his circle.}"
-        +          "}"
-        +        "}"
-        +      "}');\n"
-        + "var msg_s = new goog.i18n.MessageFormat(MSG_UNNAMED).formatIgnoringPound("
-        + "{'FORMAT': opt_data.format, "
-        + "'GENDER_1': opt_data.user.gender, "
-        + "'GENDER_2': opt_data.friend.gender, "
-        + "'PERSON_1': opt_data.person1, "
-        + "'PERSON_2': opt_data.person2});\n";
+    String expectedJsCode =
+        ""
+            + "/** @desc A sample nested message */\n"
+            + "var MSG_UNNAMED = goog.getMsg("
+            + "'{FORMAT,select,"
+            + "user-centric{"
+            + "{GENDER_1,select,"
+            + "female{{PERSON_1} added {PERSON_2} and friends to her circle.}"
+            + "other{{PERSON_1} added {PERSON_2} and friends to his circle.}"
+            + "}"
+            + "}"
+            + "friend-centric{"
+            + "{GENDER_2,select,"
+            + "female{{PERSON_1} added {PERSON_2} and her friends to circle.}"
+            + "other{{PERSON_1} added {PERSON_2} and his friends to circle.}"
+            + "}"
+            + "}"
+            + "other{"
+            + "{GENDER_1,select,"
+            + "female{{PERSON_1} added {PERSON_2} and some friends to her circle.}"
+            + "other{{PERSON_1} added {PERSON_2} and some friends to his circle.}"
+            + "}"
+            + "}"
+            + "}');\n"
+            + "var msg_s = new goog.i18n.MessageFormat(MSG_UNNAMED).formatIgnoringPound("
+            + "{'FORMAT': opt_data.format, "
+            + "'GENDER_1': opt_data.user.gender, "
+            + "'GENDER_2': opt_data.friend.gender, "
+            + "'PERSON_1': opt_data.person1, "
+            + "'PERSON_2': opt_data.person2});\n"
+            + "output += msg_s;\n";
     assertGeneratedJsCode(soyNodeCode, expectedJsCode);
 
     // Selects nested inside a select, with conflicting top-level names.
@@ -1825,35 +1878,37 @@ public final class GenJsCodeVisitorTest {
             + "      {/select}\n"
             + "  {/select}\n"
             + "{/msg}\n";
-    expectedJsCode = ""
-        + "/** @desc A sample nested message */\n"
-        + "var MSG_UNNAMED = goog.getMsg("
-        +     "'{FORMAT,select,"
-        +        "user-centric{"
-        +          "{USER,select,"
-        +            "female{{PERSON_1} added {PERSON_2} and friends to her circle.}"
-        +            "other{{PERSON_1} added {PERSON_2} and friends to his circle.}"
-        +          "}"
-        +        "}"
-        +        "friend-centric{"
-        +          "{FRIEND,select,"
-        +            "female{{PERSON_1} added {PERSON_2} and her friends to circle.}"
-        +            "other{{PERSON_1} added {PERSON_2} and his friends to circle.}"
-        +          "}"
-        +        "}"
-        +        "other{"
-        +          "{USER,select,"
-        +            "female{{PERSON_1} added {PERSON_2} and some friends to her circle.}"
-        +            "other{{PERSON_1} added {PERSON_2} and some friends to his circle.}"
-        +          "}"
-        +        "}"
-        +      "}');\n"
-        + "var msg_s = new goog.i18n.MessageFormat(MSG_UNNAMED).formatIgnoringPound("
-        + "{'FORMAT': opt_data.format, "
-        + "'USER': opt_data.gender.user, "
-        + "'FRIEND': opt_data.gender.friend, "
-        + "'PERSON_1': opt_data.person1, "
-        + "'PERSON_2': opt_data.person2});\n";
+    expectedJsCode =
+        ""
+            + "/** @desc A sample nested message */\n"
+            + "var MSG_UNNAMED = goog.getMsg("
+            + "'{FORMAT,select,"
+            + "user-centric{"
+            + "{USER,select,"
+            + "female{{PERSON_1} added {PERSON_2} and friends to her circle.}"
+            + "other{{PERSON_1} added {PERSON_2} and friends to his circle.}"
+            + "}"
+            + "}"
+            + "friend-centric{"
+            + "{FRIEND,select,"
+            + "female{{PERSON_1} added {PERSON_2} and her friends to circle.}"
+            + "other{{PERSON_1} added {PERSON_2} and his friends to circle.}"
+            + "}"
+            + "}"
+            + "other{"
+            + "{USER,select,"
+            + "female{{PERSON_1} added {PERSON_2} and some friends to her circle.}"
+            + "other{{PERSON_1} added {PERSON_2} and some friends to his circle.}"
+            + "}"
+            + "}"
+            + "}');\n"
+            + "var msg_s = new goog.i18n.MessageFormat(MSG_UNNAMED).formatIgnoringPound("
+            + "{'FORMAT': opt_data.format, "
+            + "'USER': opt_data.gender.user, "
+            + "'FRIEND': opt_data.gender.friend, "
+            + "'PERSON_1': opt_data.person1, "
+            + "'PERSON_2': opt_data.person2});\n"
+            + "output += msg_s;\n";
     assertGeneratedJsCode(soyNodeCode, expectedJsCode);
 
     // Similar message as the previous, but the variables are complex, falling
@@ -1882,35 +1937,37 @@ public final class GenJsCodeVisitorTest {
             + "      {/select}\n"
             + "  {/select}\n"
             + "{/msg}\n";
-    expectedJsCode = ""
-        + "/** @desc A sample nested message */\n"
-        + "var MSG_UNNAMED = goog.getMsg("
-        +     "'{FORMAT,select,"
-        +        "user-centric{"
-        +          "{STATUS_1,select,"
-        +            "female{{PERSON_1} added {PERSON_2} and friends to her circle.}"
-        +            "other{{PERSON_1} added {PERSON_2} and friends to his circle.}"
-        +          "}"
-        +        "}"
-        +        "friend-centric{"
-        +          "{STATUS_2,select,"
-        +            "female{{PERSON_1} added {PERSON_2} and her friends to circle.}"
-        +            "other{{PERSON_1} added {PERSON_2} and his friends to circle.}"
-        +          "}"
-        +        "}"
-        +        "other{"
-        +          "{STATUS_1,select,"
-        +            "female{{PERSON_1} added {PERSON_2} and some friends to her circle.}"
-        +            "other{{PERSON_1} added {PERSON_2} and some friends to his circle.}"
-        +          "}"
-        +        "}"
-        +      "}');\n"
-        + "var msg_s = new goog.i18n.MessageFormat(MSG_UNNAMED).formatIgnoringPound("
-        + "{'FORMAT': opt_data.format, "
-        + "'STATUS_1': opt_data.gender[0], "
-        + "'STATUS_2': opt_data.gender[1], "
-        + "'PERSON_1': opt_data.person1, "
-        + "'PERSON_2': opt_data.person2});\n";
+    expectedJsCode =
+        ""
+            + "/** @desc A sample nested message */\n"
+            + "var MSG_UNNAMED = goog.getMsg("
+            + "'{FORMAT,select,"
+            + "user-centric{"
+            + "{STATUS_1,select,"
+            + "female{{PERSON_1} added {PERSON_2} and friends to her circle.}"
+            + "other{{PERSON_1} added {PERSON_2} and friends to his circle.}"
+            + "}"
+            + "}"
+            + "friend-centric{"
+            + "{STATUS_2,select,"
+            + "female{{PERSON_1} added {PERSON_2} and her friends to circle.}"
+            + "other{{PERSON_1} added {PERSON_2} and his friends to circle.}"
+            + "}"
+            + "}"
+            + "other{"
+            + "{STATUS_1,select,"
+            + "female{{PERSON_1} added {PERSON_2} and some friends to her circle.}"
+            + "other{{PERSON_1} added {PERSON_2} and some friends to his circle.}"
+            + "}"
+            + "}"
+            + "}');\n"
+            + "var msg_s = new goog.i18n.MessageFormat(MSG_UNNAMED).formatIgnoringPound("
+            + "{'FORMAT': opt_data.format, "
+            + "'STATUS_1': opt_data.gender[0], "
+            + "'STATUS_2': opt_data.gender[1], "
+            + "'PERSON_1': opt_data.person1, "
+            + "'PERSON_2': opt_data.person2});\n"
+            + "output += msg_s;\n";
     assertGeneratedJsCode(soyNodeCode, expectedJsCode);
 
     // Plurals, nested inside a select, with plural name fallbacks.
@@ -1936,36 +1993,38 @@ public final class GenJsCodeVisitorTest {
             + "      {/plural}\n"
             + "  {/select}\n"
             + "{/msg}\n";
-    expectedJsCode = ""
-        + "/** @desc A sample nested message */\n"
-        + "var MSG_UNNAMED = goog.getMsg("
-        +     "'{STATUS,select,"
-        +        "female{"
-        +          "{NUM_1,plural,"
-        +            "=1{{PERSON} added one person to her circle.}"
-        +            "other{{PERSON} added {XXX_1} to her circle.}"
-        +          "}"
-        +        "}"
-        +        "male{"
-        +          "{NUM_2,plural,"
-        +            "=1{{PERSON} added one person to his circle.}"
-        +            "other{{PERSON} added {XXX_2} to his circle.}"
-        +          "}"
-        +        "}"
-        +        "other{"
-        +          "{NUM_2,plural,"
-        +            "=1{{PERSON} added one person to his/her circle.}"
-        +            "other{{PERSON} added {XXX_2} to his/her circle.}"
-        +          "}"
-        +        "}"
-        +      "}');\n"
-        + "var msg_s = new goog.i18n.MessageFormat(MSG_UNNAMED).formatIgnoringPound("
-        + "{'STATUS': opt_data.values.gender[0], "
-        + "'NUM_1': opt_data.values.people[0], "
-        + "'NUM_2': opt_data.values.people[1], "
-        + "'PERSON': opt_data.person, "
-        + "'XXX_1': opt_data.values.people[0], "
-        + "'XXX_2': opt_data.values.people[1]});\n";
+    expectedJsCode =
+        ""
+            + "/** @desc A sample nested message */\n"
+            + "var MSG_UNNAMED = goog.getMsg("
+            + "'{STATUS,select,"
+            + "female{"
+            + "{NUM_1,plural,"
+            + "=1{{PERSON} added one person to her circle.}"
+            + "other{{PERSON} added {XXX_1} to her circle.}"
+            + "}"
+            + "}"
+            + "male{"
+            + "{NUM_2,plural,"
+            + "=1{{PERSON} added one person to his circle.}"
+            + "other{{PERSON} added {XXX_2} to his circle.}"
+            + "}"
+            + "}"
+            + "other{"
+            + "{NUM_2,plural,"
+            + "=1{{PERSON} added one person to his/her circle.}"
+            + "other{{PERSON} added {XXX_2} to his/her circle.}"
+            + "}"
+            + "}"
+            + "}');\n"
+            + "var msg_s = new goog.i18n.MessageFormat(MSG_UNNAMED).formatIgnoringPound("
+            + "{'STATUS': opt_data.values.gender[0], "
+            + "'NUM_1': opt_data.values.people[0], "
+            + "'NUM_2': opt_data.values.people[1], "
+            + "'PERSON': opt_data.person, "
+            + "'XXX_1': opt_data.values.people[0], "
+            + "'XXX_2': opt_data.values.people[1]});\n"
+            + "output += msg_s;\n";
     assertGeneratedJsCode(soyNodeCode, expectedJsCode);
 
     // Plurals nested inside select, with conflicts between select var name, plural var names
@@ -1989,29 +2048,31 @@ public final class GenJsCodeVisitorTest {
             + "      {/plural}\n"
             + "  {/select}\n"
             + "{/msg}\n";
-    expectedJsCode = ""
-        + "/** @desc A sample nested message */\n"
-        + "var MSG_UNNAMED = goog.getMsg("
-        +     "'{PERSON_1,select,"
-        +        "female{"
-        +          "{PERSON_2,plural,"
-        +            "=1{{PERSON_3} added one person to her circle.}"
-        +             "other{{PERSON_4} added {PERSON_5} to her circle.}"
-        +          "}"
-        +        "}"
-        +        "other{"
-        +          "{PERSON_2,plural,"
-        +            "=1{{PERSON_3} added one person to his/her circle.}"
-        +            "other{{PERSON_4} added {PERSON_5} to his/her circle.}"
-        +          "}"
-        +        "}"
-        +      "}');\n"
-        + "var msg_s = new goog.i18n.MessageFormat(MSG_UNNAMED).formatIgnoringPound("
-        + "{'PERSON_1': opt_data.gender.person, "
-        + "'PERSON_2': opt_data.number.person, "
-        + "'PERSON_3': opt_data.person, "
-        + "'PERSON_4': opt_data.user.person, "
-        + "'PERSON_5': opt_data.number.person});\n";
+    expectedJsCode =
+        ""
+            + "/** @desc A sample nested message */\n"
+            + "var MSG_UNNAMED = goog.getMsg("
+            + "'{PERSON_1,select,"
+            + "female{"
+            + "{PERSON_2,plural,"
+            + "=1{{PERSON_3} added one person to her circle.}"
+            + "other{{PERSON_4} added {PERSON_5} to her circle.}"
+            + "}"
+            + "}"
+            + "other{"
+            + "{PERSON_2,plural,"
+            + "=1{{PERSON_3} added one person to his/her circle.}"
+            + "other{{PERSON_4} added {PERSON_5} to his/her circle.}"
+            + "}"
+            + "}"
+            + "}');\n"
+            + "var msg_s = new goog.i18n.MessageFormat(MSG_UNNAMED).formatIgnoringPound("
+            + "{'PERSON_1': opt_data.gender.person, "
+            + "'PERSON_2': opt_data.number.person, "
+            + "'PERSON_3': opt_data.person, "
+            + "'PERSON_4': opt_data.user.person, "
+            + "'PERSON_5': opt_data.number.person});\n"
+            + "output += msg_s;\n";
     assertGeneratedJsCode(soyNodeCode, expectedJsCode);
 
     // Same as before, except that plural in one branch has offset, the other one doesn't.
@@ -2036,31 +2097,33 @@ public final class GenJsCodeVisitorTest {
             + "      {/plural}\n"
             + "  {/select}\n"
             + "{/msg}\n";
-    expectedJsCode = ""
-        + "/** @desc A sample nested message */\n"
-        + "var MSG_UNNAMED = goog.getMsg("
-        +     "'{PERSON_1,select,"
-        +        "female{"
-        +          "{PERSON_2,plural,offset:1 "
-        +            "=1{{PERSON_4} added one person to her circle.}"
-        +            "other{{PERSON_5} added {XXX} people to her circle.}"
-        +          "}"
-        +        "}"
-        +        "other{"
-        +          "{PERSON_3,plural,"
-        +            "=1{{PERSON_4} added one person to his/her circle.}"
-        +            "other{{PERSON_5} added {PERSON_6} people to his/her circle.}"
-        +          "}"
-        +        "}"
-        +      "}');\n"
-        + "var msg_s = new goog.i18n.MessageFormat(MSG_UNNAMED).formatIgnoringPound("
-        + "{'PERSON_1': opt_data.gender.person, "
-        + "'PERSON_2': opt_data.number.person, "
-        + "'PERSON_3': opt_data.number.person, "
-        + "'PERSON_4': opt_data.person, "
-        + "'PERSON_5': opt_data.user.person, "
-        + "'XXX': opt_data.number.person - 1, "
-        + "'PERSON_6': opt_data.number.person});\n";
+    expectedJsCode =
+        ""
+            + "/** @desc A sample nested message */\n"
+            + "var MSG_UNNAMED = goog.getMsg("
+            + "'{PERSON_1,select,"
+            + "female{"
+            + "{PERSON_2,plural,offset:1 "
+            + "=1{{PERSON_4} added one person to her circle.}"
+            + "other{{PERSON_5} added {XXX} people to her circle.}"
+            + "}"
+            + "}"
+            + "other{"
+            + "{PERSON_3,plural,"
+            + "=1{{PERSON_4} added one person to his/her circle.}"
+            + "other{{PERSON_5} added {PERSON_6} people to his/her circle.}"
+            + "}"
+            + "}"
+            + "}');\n"
+            + "var msg_s = new goog.i18n.MessageFormat(MSG_UNNAMED).formatIgnoringPound("
+            + "{'PERSON_1': opt_data.gender.person, "
+            + "'PERSON_2': opt_data.number.person, "
+            + "'PERSON_3': opt_data.number.person, "
+            + "'PERSON_4': opt_data.person, "
+            + "'PERSON_5': opt_data.user.person, "
+            + "'XXX': opt_data.number.person - 1, "
+            + "'PERSON_6': opt_data.number.person});\n"
+            + "output += msg_s;\n";
     assertGeneratedJsCode(soyNodeCode, expectedJsCode);
 
     // Select inside select with same variable
@@ -2083,28 +2146,30 @@ public final class GenJsCodeVisitorTest {
             + "      {/select}\n"
             + "  {/select}\n"
             + "{/msg}\n";
-    expectedJsCode = ""
-        + "/** @desc A sample nested message */\n"
-        + "var MSG_UNNAMED = goog.getMsg("
-        +     "'{GENDER_1,select,"
-        +        "female{"
-        +          "{GENDER_1,select,"
-        +            "female{{PERSON_1} added {PERSON_2} and friends to her circle.}"
-        +            "other{{PERSON_1} added {PERSON_2} and friends to his circle.}"
-        +          "}"
-        +        "}"
-        +        "other{"
-        +          "{GENDER_2,select,"
-        +            "female{{PERSON_1} added {PERSON_2} and some friends to her circle.}"
-        +            "other{{PERSON_1} added {PERSON_2} and some friends to his circle.}"
-        +          "}"
-        +        "}"
-        +      "}');\n"
-        + "var msg_s = new goog.i18n.MessageFormat(MSG_UNNAMED).formatIgnoringPound("
-        + "{'GENDER_1': opt_data.user.gender, "
-        + "'GENDER_2': opt_data.friend.gender, "
-        + "'PERSON_1': opt_data.person1, "
-        + "'PERSON_2': opt_data.person2});\n";
+    expectedJsCode =
+        ""
+            + "/** @desc A sample nested message */\n"
+            + "var MSG_UNNAMED = goog.getMsg("
+            + "'{GENDER_1,select,"
+            + "female{"
+            + "{GENDER_1,select,"
+            + "female{{PERSON_1} added {PERSON_2} and friends to her circle.}"
+            + "other{{PERSON_1} added {PERSON_2} and friends to his circle.}"
+            + "}"
+            + "}"
+            + "other{"
+            + "{GENDER_2,select,"
+            + "female{{PERSON_1} added {PERSON_2} and some friends to her circle.}"
+            + "other{{PERSON_1} added {PERSON_2} and some friends to his circle.}"
+            + "}"
+            + "}"
+            + "}');\n"
+            + "var msg_s = new goog.i18n.MessageFormat(MSG_UNNAMED).formatIgnoringPound("
+            + "{'GENDER_1': opt_data.user.gender, "
+            + "'GENDER_2': opt_data.friend.gender, "
+            + "'PERSON_1': opt_data.person1, "
+            + "'PERSON_2': opt_data.person2});\n"
+            + "output += msg_s;\n";
     assertGeneratedJsCode(soyNodeCode, expectedJsCode);
   }
 
@@ -2127,7 +2192,8 @@ public final class GenJsCodeVisitorTest {
             + "{'startSpan': '<span class=\"'"
             + " + goog.getCssName('sharebox-id-email-number') + '\">', "
             + "'num': opt_data.num, "
-            + "'endSpan': '</span>'});\n";
+            + "'endSpan': '</span>'});\n"
+            + "output += MSG_UNNAMED;\n";
     assertGeneratedJsCode(soyNodeCode, expectedJsCode);
 
     soyNodeCode =
@@ -2158,7 +2224,8 @@ public final class GenJsCodeVisitorTest {
             + "'NUM_2': opt_data.num, "
             + "'END_SPAN': '</span>', "
             + "'START_SPAN_2': '<span class=\"' + goog.getCssName('sharebox-id-email-number')"
-            + " + '\">'});\n";
+            + " + '\">'});\n"
+            + "output += msg_s;\n";
     assertGeneratedJsCode(soyNodeCode, expectedJsCode);
   }
 
@@ -2764,7 +2831,7 @@ public final class GenJsCodeVisitorTest {
     if (errorReporter.errorsSince(checkPoint)) {
       return null;
     }
-    SoyNode node = SharedTestUtils.getNode(parseResult.fileSet(), 0);
+    TemplateNode templateNode = parseResult.fileSet().getChild(0).getChild(0);
 
     // Setup the GenJsCodeVisitor's state before the node is visited.
     genJsCodeVisitor.jsCodeBuilder = new JsCodeBuilder();
@@ -2784,7 +2851,9 @@ public final class GenJsCodeVisitorTest {
             .create(translationContext, TEMPLATE_ALIASES, errorReporter);
     genJsCodeVisitor.assistantForMsgs = null; // will be created when used
 
-    genJsCodeVisitor.visitForTesting(node, errorReporter);
+    for (SoyNode child : templateNode.getChildren()) {
+      genJsCodeVisitor.visitForTesting(child, errorReporter);
+    }
 
     return genJsCodeVisitor.jsCodeBuilder.getCode();
   }
