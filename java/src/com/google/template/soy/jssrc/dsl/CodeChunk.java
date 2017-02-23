@@ -266,13 +266,18 @@ public abstract class CodeChunk {
   }
 
   /** Creates a code chunk representing a for loop. */
-  public static CodeChunk forCall(
+  public static CodeChunk forLoop(
       String localVar,
       CodeChunk.WithValue initial,
       CodeChunk.WithValue limit,
       CodeChunk.WithValue increment,
       CodeChunk body) {
     return For.create(localVar, initial, limit, increment, body);
+  }
+
+  /** Creates a code chunk representing a for loop, with default values for initial & increment. */
+  public static CodeChunk forLoop(String localVar, CodeChunk.WithValue limit, CodeChunk body) {
+    return For.create(localVar, number(0), limit, number(1), body);
   }
 
   /** Creates a code chunk that represents a return statement returning the given value. */
@@ -399,8 +404,8 @@ public abstract class CodeChunk {
       return BinaryOperation.or(this, rhs, codeGenerator);
     }
 
-    final CodeChunk.WithValue mod(CodeChunk.WithValue rhs) {
-      return BinaryOperation.create(Operator.MOD, this, rhs);
+    public final CodeChunk.WithValue op(Operator op, CodeChunk.WithValue rhs) {
+      return BinaryOperation.operation(op, ImmutableList.of(this, rhs));
     }
 
     /** Takes in a String identifier for convenience, since that's what most use cases need. */

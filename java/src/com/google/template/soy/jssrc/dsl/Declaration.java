@@ -80,7 +80,9 @@ abstract class Declaration extends CodeChunk.WithValue {
 
   @Override
   void doFormatOutputExpr(FormattingContext ctx, OutputContext outputContext) {
-    ctx.append(varName());
+    if (outputContext == OutputContext.EXPRESSION) {
+      ctx.append(varName());
+    }
   }
 
   @Override

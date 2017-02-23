@@ -59,10 +59,9 @@ abstract class Composite extends CodeChunk.WithValue {
     // Print the variable reference only if the composite is appearing in another expression.
     // The purpose of a composite is to provide a name for reference from other code chunks.
     // If this composite is being asked to appear as its own statement, print nothing.
-    if (outputContext != OutputContext.EXPRESSION) {
-      return;
+    if (outputContext == OutputContext.EXPRESSION) {
+      ctx.append(varName());
     }
-    ctx.append(varName());
   }
 
   @Override

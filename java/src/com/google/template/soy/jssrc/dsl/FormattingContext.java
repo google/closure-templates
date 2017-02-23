@@ -71,13 +71,15 @@ final class FormattingContext implements AutoCloseable {
 
   /** Writes the output expression for the {@code value} to the buffer. */
   FormattingContext appendOutputExpression(CodeChunk.WithValue value, OutputContext context) {
+    int checkpoint = buf.length();
+
     value.doFormatOutputExpr(this, context);
 
-    // If the expression will appear as its own statement, add a trailing semicolon and newline.
-    // The exception is Composites. Composites are sequences of statements that have a variable
-    // allocated to represent them when they appear in other code chunks. They should not produce
-    // any expression output when formatted by themselves.
-    if (context == STATEMENT && !(value instanceof Composite) && !isEmpty()) {
+    // If the value will appear as its own statement (as opposed to a part of another expression),
+    // and if the value actually printed something, add a trailing semicolon and newline.
+    // TODO(user): The existence of this condition strongly suggests that value should not
+    // in fact be a CodeChunk.WithValue.
+    if (context == STATEMENT && (buf.length() > checkpoint)) {
       append(';').endLine();
     }
     return this;

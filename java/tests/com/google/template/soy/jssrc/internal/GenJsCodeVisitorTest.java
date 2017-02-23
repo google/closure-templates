@@ -1230,23 +1230,29 @@ public final class GenJsCodeVisitorTest {
             + "  {if not isFirst($foo)}\n"
             + "    <br>\n"
             + "  {/if}\n"
-            + "  {$foo}s are fools.\n"
+            + "  {$foo} is fool no. {index($foo)}\n"
+            + "  {if isLast($foo)}\n"
+            + "    <br>The end.\n"
+            + "  {/if}\n"
             + "{ifempty}\n"
             + "  No fools here.\n"
             + "{/foreach}\n";
     String expectedJsCode =
         ""
-            + "var fooList9 = opt_data.boo.foos;\n"
-            + "var fooListLen9 = fooList9.length;\n"
-            + "if (fooListLen9 > 0) {\n"
-            + "  for (var fooIndex9 = 0; fooIndex9 < fooListLen9; fooIndex9++) {\n"
-            + "    var fooData9 = fooList9[fooIndex9];\n"
-            + "    output += (!(fooIndex9 == 0) ? '<br>' : '') + fooData9 + 's are fools.';\n"
+            + "var foo13List = opt_data.boo.foos;\n"
+            + "var foo13ListLen = foo13List.length;\n"
+            + "if (foo13ListLen > 0) {\n"
+            + "  for (var foo13Index = 0; foo13Index < foo13ListLen; foo13Index++) {\n"
+            + "    var foo13Data = foo13List[foo13Index];\n"
+            + "    output += (!(foo13Index == 0) ? '<br>' : '') + foo13Data + ' is fool no. '"
+            + " + foo13Index + (foo13Index == foo13ListLen - 1 ? '<br>The end.' : '');\n"
             + "  }\n"
             + "} else {\n"
             + "  output += 'No fools here.';\n"
             + "}\n";
     assertGeneratedJsCode(soyNodeCode, expectedJsCode);
+
+    // TODO(user): Test a foreach-loop with initializing statements
   }
 
   @Test
@@ -1297,6 +1303,8 @@ public final class GenJsCodeVisitorTest {
             + "  output += i4;\n"
             + "}\n";
     assertGeneratedJsCode(soyNodeCode, expectedJsCode);
+
+    // TODO(user): Test a for-loop with initializing statements
   }
 
   @Test

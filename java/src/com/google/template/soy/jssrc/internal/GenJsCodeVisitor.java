@@ -49,6 +49,7 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.IntegerNode;
+import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
@@ -310,8 +311,24 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
   }
 
   /**
+   * Visits the given node, returning a {@link CodeChunk} encapsulating its JavaScript code. The
+   * chunk is indented one level from the current indent level.
+   *
+   * <p>Unlike {@link TranslateExprNodeVisitor}, GenJsCodeVisitor does not return anything as the
+   * result of visiting a subtree. To get recursive chunk-building, we use a hack, swapping out the
+   * {@link JsCodeBuilder} and using the unsound {@link
+   * CodeChunk#treatRawStringAsStatementLegacyOnly} API.
+   */
+  private CodeChunk visitNodeReturningCodeChunk(ParentSoyNode<?> node) {
+    return doVisitReturningCodeChunk(node, false);
+  }
+
+  /**
    * Visits the children of the given node, returning a {@link CodeChunk} encapsulating its
    * JavaScript code. The chunk is indented one level from the current indent level.
+   *
+   * <p>This is needed to prevent infinite recursion when a visit() method needs to visit its
+   * children and return a CodeChunk.
    *
    * <p>Unlike {@link TranslateExprNodeVisitor}, GenJsCodeVisitor does not return anything as the
    * result of visiting a subtree. To get recursive chunk-building, we use a hack, swapping out the
@@ -322,7 +339,10 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
     return doVisitReturningCodeChunk(node, true);
   }
 
-  /** Do not use directly; use {@link visitChildrenReturningCodeChunk} instead. */
+  /**
+   * Do not use directly; use {@link #visitChildrenReturningCodeChunk} or {@link
+   * #visitNodeReturningCodeChunk} instead.
+   */
   private CodeChunk doVisitReturningCodeChunk(SoyNode node, boolean visitChildren) {
     // Replace jsCodeBuilder with a child JsCodeBuilder.
     JsCodeBuilder original = jsCodeBuilder;
@@ -1134,6 +1154,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
 
   /**
    * Example:
+   *
    * <pre>
    *   {foreach $foo in $boo.foos}
    *     ...
@@ -1141,133 +1162,146 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
    *     ...
    *   {/foreach}
    * </pre>
+   *
    * might generate
+   *
    * <pre>
-   *   var fooList2 = opt_data.boo.foos;
-   *   var fooListLen2 = fooList2.length;
-   *   if (fooListLen2 > 0) {
+   *   var foo2List = opt_data.boo.foos;
+   *   var foo2ListLen = foo2List.length;
+   *   if (foo2ListLen > 0) {
    *     ...
    *   } else {
    *     ...
    *   }
    * </pre>
    */
-  @Override protected void visitForeachNode(ForeachNode node) {
+  @Override
+  protected void visitForeachNode(ForeachNode node) {
+
+    boolean hasIfempty = (node.numChildren() == 2);
 
     // Build some local variable names.
     ForeachNonemptyNode nonEmptyNode = (ForeachNonemptyNode) node.getChild(0);
-    String baseVarName = nonEmptyNode.getVarName();
-    String nodeId = Integer.toString(node.getId());
-    String listVarName = baseVarName + "List" + nodeId;
-    String listLenVarName = baseVarName + "ListLen" + nodeId;
+    String varPrefix = nonEmptyNode.getVarName() + node.getId();
+
+    // TODO(user): A more consistent pattern for local variable management.
+    String listName = varPrefix + "List";
+    String limitName = varPrefix + "ListLen";
 
     // Define list var and list-len var.
     CodeChunk.WithValue dataRef = jsExprTranslator.translateToCodeChunk(
         node.getExpr(), node.getExprText(), templateTranslationContext, errorReporter);
 
-    jsCodeBuilder.append(declare(listVarName).setInitialValue(dataRef).build());
-    jsCodeBuilder.appendLine("var ", listLenVarName, " = ", listVarName, ".length;");
+    jsCodeBuilder.append(declare(listName).setInitialValue(dataRef).build());
+    jsCodeBuilder.append(
+        declare(limitName).setInitialValue(dottedIdNoRequire(listName + ".length")).build());
 
-    // If has 'ifempty' node, add the wrapper 'if' statement.
-    boolean hasIfemptyNode = node.numChildren() == 2;
-    if (hasIfemptyNode) {
-      jsCodeBuilder.appendLine("if (", listLenVarName, " > 0) {").increaseIndent();
-    }
+    // Generate the foreach body as a CodeChunk.
+    CodeChunk foreachBody = visitNodeReturningCodeChunk(nonEmptyNode);
 
-    // Generate code for nonempty case.
-    visit(nonEmptyNode);
+    if (hasIfempty) {
+      // If there is an ifempty node, wrap the foreach body in an if statement and append the
+      // ifempty body as the else clause.
+      CodeChunk ifemptyBody = visitChildrenReturningCodeChunk(node.getChild(1));
+      CodeChunk.WithValue limitCheck = id(limitName).op(Operator.GREATER_THAN, number(0));
 
-    // If has 'ifempty' node, add the 'else' block of the wrapper 'if' statement.
-    if (hasIfemptyNode) {
-      jsCodeBuilder.decreaseIndent();
-      jsCodeBuilder.appendLine("} else {").increaseIndent();
-
-      // Generate code for empty case.
-      visit(node.getChild(1));
-      jsCodeBuilder.decreaseIndent();
-      jsCodeBuilder.appendLine("}");
+      CodeChunk foreach =
+          templateTranslationContext
+              .codeGenerator()
+              .newChunk()
+              .if_(limitCheck, foreachBody)
+              .else_(ifemptyBody)
+              .endif()
+              .build();
+      jsCodeBuilder.append(foreach);
+    } else {
+      // Otherwise, simply append the foreach body.
+      jsCodeBuilder.append(foreachBody);
     }
   }
 
   /**
    * Example:
+   *
    * <pre>
    *   {foreach $foo in $boo.foos}
    *     ...
    *   {/foreach}
    * </pre>
+   *
    * might generate
+   *
    * <pre>
-   *   for (var fooIndex2 = 0; fooIndex2 &lt; fooListLen2; fooIndex2++) {
-   *     var fooData2 = fooList2[fooIndex2];
+   *   for (var foo2Index = 0; foo2Index &lt; foo2ListLen; foo2Index++) {
+   *     var foo2Data = foo2List[foo2Index];
    *     ...
    *   }
    * </pre>
    */
-  @Override protected void visitForeachNonemptyNode(ForeachNonemptyNode node) {
+  @Override
+  protected void visitForeachNonemptyNode(ForeachNonemptyNode node) {
 
     // Build some local variable names.
-    String baseVarName = node.getVarName();
-    String foreachNodeId = Integer.toString(node.getForeachNodeId());
-    String listVarName = baseVarName + "List" + foreachNodeId;
-    String listLenVarName = baseVarName + "ListLen" + foreachNodeId;
-    String indexVarName = baseVarName + "Index" + foreachNodeId;
-    String dataVarName = baseVarName + "Data" + foreachNodeId;
+    String varName = node.getVarName();
+    String varPrefix = varName + node.getForeachNodeId();
 
-    // The start of the JS 'for' loop.
-    jsCodeBuilder.appendLine(
-        "for (var ", indexVarName, " = 0; ",
-        indexVarName, " < ", listLenVarName, "; ",
-        indexVarName, "++) {");
-    jsCodeBuilder.increaseIndent();
-    jsCodeBuilder.appendLine("var ", dataVarName, " = ", listVarName, "[", indexVarName, "];");
+    // TODO(user): A more consistent pattern for local variable management.
+    String listName = varPrefix + "List";
+    String loopIndexName = varPrefix + "Index";
+    String dataName = varPrefix + "Data";
+    String limitName = varPrefix + "ListLen";
+
+    CodeChunk.WithValue loopIndex = id(loopIndexName);
+    CodeChunk.WithValue limit = id(limitName);
 
     // Populate the local var translations with the translations from this node.
     templateTranslationContext
         .soyToJsVariableMappings()
-        .put(
-            baseVarName,
-            id(dataVarName))
-        .put(
-            baseVarName + "__isFirst",
-            id(indexVarName)
-                .doubleEquals(
-                    number(0)))
-        .put(
-            baseVarName + "__isLast",
-            id(indexVarName)
-                .doubleEquals(
-                    id(listLenVarName)
-                        .minus(
-                            number(1))))
-        .put(
-            baseVarName + "__index",
-            id(indexVarName));
+        .put(varName, id(dataName))
+        .put(varName + "__isFirst", loopIndex.doubleEquals(number(0)))
+        .put(varName + "__isLast", loopIndex.doubleEquals(limit.minus(number(1))))
+        .put(varName + "__index", loopIndex);
 
-    // Generate the code for the loop body.
-    visitChildren(node);
+    // Generate the loop body.
+    CodeChunk data =
+        declare(dataName).setInitialValue(id(listName).bracketAccess(loopIndex)).build();
+    CodeChunk foreachBody = visitChildrenReturningCodeChunk(node);
+    CodeChunk body =
+        templateTranslationContext
+            .codeGenerator()
+            .newChunk()
+            .statement(data)
+            .statement(foreachBody)
+            .build();
 
-    // The end of the JS 'for' loop.
-    jsCodeBuilder.decreaseIndent();
-    jsCodeBuilder.appendLine("}");
+    // Create the entire for block.
+    CodeChunk forChunk = CodeChunk.forLoop(loopIndexName, limit, body);
+
+    // Do not call visitReturningCodeChunk(); This is already inside the one from visitForeachNode()
+    jsCodeBuilder.append(forChunk);
   }
 
   /**
    * Example:
+   *
    * <pre>
-   *   {for $i in range(1, $boo)}
+   *   {for $i in range(1, $boo, $goo)}
    *     ...
    *   {/for}
    * </pre>
+   *
    * might generate
+   *
    * <pre>
-   *   var iLimit4 = opt_data.boo;
-   *   for (var i4 = 1; i4 &lt; iLimit4; i4++) {
+   *   var i4Limit = opt_data.boo;
+   *   var i4Increment = opt_data.goo
+   *   for (var i4 = 1; i4 &lt; i4Limit; i4 += i4Increment) {
    *     ...
    *   }
    * </pre>
    */
-  @Override protected void visitForNode(ForNode node) {
+  @Override
+  protected void visitForNode(ForNode node) {
 
     String varName = node.getVarName();
     String localVar = varName + node.getId();
@@ -1301,7 +1335,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
     CodeChunk body = visitChildrenReturningCodeChunk(node);
 
     // Create the entire for block.
-    CodeChunk forChunk = CodeChunk.forCall(localVar, initial, limit, increment, body);
+    CodeChunk forChunk = CodeChunk.forLoop(localVar, initial, limit, increment, body);
 
     jsCodeBuilder.append(forChunk);
   }
