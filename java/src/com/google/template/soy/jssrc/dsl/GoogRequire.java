@@ -16,7 +16,7 @@
 package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
-import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 /** Represents a symbol that is imported via a {@code goog.require} statement. */
 @AutoValue
@@ -53,13 +53,11 @@ public abstract class GoogRequire implements Comparable<GoogRequire> {
 
   /** Returns a code chunk that can act as a reference to the required symbol. */
   public CodeChunk.WithValue reference() {
-    CodeChunk.WithValue value;
     if (chunk() instanceof Declaration) {
-      value = CodeChunk.id(((Declaration) chunk()).varName());
+      return CodeChunk.id(((Declaration) chunk()).varName(), ImmutableSet.of(this));
     } else {
-      value = CodeChunk.dottedIdNoRequire(symbol());
+      return CodeChunk.dottedIdWithRequires(symbol(), ImmutableSet.of(this));
     }
-    return GoogRequireDecorator.create(value, ImmutableList.of(this));
   }
 
   /** Access a member of this required symbol. */

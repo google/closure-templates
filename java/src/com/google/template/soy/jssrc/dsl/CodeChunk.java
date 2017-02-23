@@ -69,9 +69,7 @@ public abstract class CodeChunk {
    * Creates a new code chunk from the given expression. The expression's precedence is preserved.
    */
   public static WithValue fromExpr(JsExpr expr, Iterable<GoogRequire> requires) {
-    ImmutableSet<GoogRequire> copy = ImmutableSet.copyOf(requires);
-    Leaf chunk = Leaf.create(expr);
-    return copy.isEmpty() ? chunk : GoogRequireDecorator.create(chunk, copy);
+    return Leaf.create(expr, requires);
   }
 
   /**
@@ -82,6 +80,15 @@ public abstract class CodeChunk {
   public static WithValue id(String id) {
     CodeChunkUtils.checkId(id);
     return Leaf.create(id);
+  }
+  /**
+   * Creates a code chunk representing a JavaScript identifier.
+   *
+   * @throws IllegalArgumentException if {@code id} is not a valid JavaScript identifier.
+   */
+  static WithValue id(String id, Iterable<GoogRequire> requires) {
+    CodeChunkUtils.checkId(id);
+    return Leaf.create(id, requires);
   }
 
   /**
@@ -95,12 +102,21 @@ public abstract class CodeChunk {
    * <p>Most dotted identifiers should be accessed via the {@link GoogRequire} api.
    */
   public static WithValue dottedIdNoRequire(String dotSeparatedIdentifiers) {
+    return dottedIdWithRequires(dotSeparatedIdentifiers, ImmutableSet.<GoogRequire>of());
+  }
+
+  static WithValue dottedIdWithRequires(
+      String dotSeparatedIdentifiers, Iterable<GoogRequire> requires) {
     List<String> ids = Splitter.on('.').splitToList(dotSeparatedIdentifiers);
     Preconditions.checkState(
         !ids.isEmpty(),
         "not a dot-separated sequence of JavaScript identifiers: %s",
         dotSeparatedIdentifiers);
-    CodeChunk.WithValue tip = id(ids.get(0));
+    // Associate the requires with the base id for convenience.  It is arguable that they should
+    // be instead associated with the last dot. Or perhaps with the 'whole' expression somehow.
+    // This is a minor philosophical concern but it should be fine in practice because nothing would
+    // ever split apart a code chunk into sub-chunks.  So the requires could really go anywhere.
+    CodeChunk.WithValue tip = id(ids.get(0), requires);
     for (int i = 1; i < ids.size(); ++i) {
       tip = tip.dotAccess(ids.get(i));
     }
@@ -287,9 +303,7 @@ public abstract class CodeChunk {
    */
   public static CodeChunk treatRawStringAsStatementLegacyOnly(
       String rawString, Iterable<GoogRequire> requires) {
-    ImmutableSet<GoogRequire> copy = ImmutableSet.copyOf(requires);
-    LeafStatement chunk = LeafStatement.create(rawString.trim());
-    return copy.isEmpty() ? chunk : GoogRequireStatementDecorator.create(chunk, copy);
+    return LeafStatement.create(rawString.trim(), requires);
   }
 
 

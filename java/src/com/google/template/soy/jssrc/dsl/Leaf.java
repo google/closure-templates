@@ -17,7 +17,7 @@
 package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
-import com.google.template.soy.jssrc.dsl.CodeChunk.RequiresCollector;
+import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 
 /**
@@ -26,15 +26,22 @@ import com.google.template.soy.jssrc.restricted.JsExpr;
  */
 @AutoValue
 abstract class Leaf extends CodeChunk.WithValue {
-  abstract JsExpr value();
+  static WithValue create(String text, Iterable<GoogRequire> require) {
+    return create(new JsExpr(text, Integer.MAX_VALUE), ImmutableSet.copyOf(require));
+  }
 
   static Leaf create(String text) {
-    return create(new JsExpr(text, Integer.MAX_VALUE));
+    return create(new JsExpr(text, Integer.MAX_VALUE), ImmutableSet.<GoogRequire>of());
   }
 
-  static Leaf create(JsExpr value) {
-    return new AutoValue_Leaf(value);
+  static Leaf create(JsExpr value, Iterable<GoogRequire> requires) {
+    return new AutoValue_Leaf(value, ImmutableSet.copyOf(requires));
   }
+  
+  abstract JsExpr value();
+
+  abstract ImmutableSet<GoogRequire> requires();
+
 
   @Override
   void doFormatInitialStatements(FormattingContext ctx) {
@@ -58,5 +65,8 @@ abstract class Leaf extends CodeChunk.WithValue {
   
   @Override
   public void collectRequires(RequiresCollector collector) {
+    for (GoogRequire require : requires()) {
+      collector.add(require);
+    }
   }
 }

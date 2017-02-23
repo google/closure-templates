@@ -17,6 +17,7 @@
 package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
+import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 
 /**
@@ -26,9 +27,10 @@ import com.google.template.soy.jssrc.restricted.JsExpr;
 @AutoValue
 abstract class LeafStatement extends CodeChunk {
   abstract String value();
+  abstract ImmutableSet<GoogRequire> requires();
 
-  static LeafStatement create(String value) {
-    return new AutoValue_LeafStatement(value);
+  static LeafStatement create(String value, Iterable<GoogRequire> requires) {
+    return new AutoValue_LeafStatement(value, ImmutableSet.copyOf(requires));
   }
 
   @Override
@@ -44,5 +46,8 @@ abstract class LeafStatement extends CodeChunk {
 
   @Override
   public void collectRequires(RequiresCollector collector) {
+    for (GoogRequire require : requires()) {
+      collector.add(require);
+    }
   }
 }
