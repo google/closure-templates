@@ -16,8 +16,6 @@
 
 package com.google.template.soy.jssrc.dsl;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.jssrc.dsl.OutputContext.STATEMENT;
 import static com.google.template.soy.jssrc.dsl.OutputContext.TRAILING_EXPRESSION;
 
@@ -153,62 +151,19 @@ public abstract class CodeChunk {
     return Leaf.create(Double.toString(value));
   }
 
-  /**
-   * Returns a code chunk that assigns a variable with the given name.
-   *
-   * <p>Most callers should use {@link CodeChunk.Generator#assign(WithValue)}. This method should
-   * only be used when this chunk is being inserted into foreign code that requires a variable of
-   * the given name to exist.
-   */
+  /** Creates a code chunk that assigns value to a preexisting variable with the given name. */
   public static CodeChunk assign(String varName, CodeChunk.WithValue rhs) {
     return Assignment.create(varName, rhs);
   }
 
-  /**
-   * Returns a builder for a new code chunk that declares a variable with the given name.
-   *
-   * <p>Most callers should use {@link CodeChunk.Generator#declare(WithValue)}. This method should
-   * only be used when this chunk is being inserted into foreign code that requires a variable of
-   * the given name to exist.
-   */
-  public static DeclarationBuilder declare(String varName) {
-    return new DeclarationBuilder(varName);
+  /** Creates a code chunk that declares a new variable and assigns a value to it. */
+  public static CodeChunk.WithValue declare(String varName, CodeChunk.WithValue rhs) {
+    return Declaration.create(varName, rhs);
   }
 
-  /** A builder for complex declarations. */
-  public static final class DeclarationBuilder {
-    @Nullable String typeExpr;
-    @Nullable ImmutableSet<GoogRequire> requires;
-    String varName;
-    WithValue rhs;
-
-    DeclarationBuilder(String varName) {
-      this.varName = checkNotNull(varName);
-    }
-
-    public DeclarationBuilder setInitialValue(WithValue rhs) {
-      checkState(this.rhs == null);
-      this.rhs = checkNotNull(rhs);
-      return this;
-    }
-
-    public DeclarationBuilder setTypeExpression(String typeExpr) {
-      checkState(this.typeExpr == null);
-      this.typeExpr = checkNotNull(typeExpr);
-      return this;
-    }
-
-    public DeclarationBuilder setGoogRequiresForType(Iterable<GoogRequire> requires) {
-      checkState(this.requires == null);
-      this.requires = ImmutableSet.copyOf(requires);
-      return this;
-    }
-
-    public CodeChunk.WithValue build() {
-      checkState(rhs != null, "must set an initial value");
-      return Declaration.create(
-          typeExpr, varName, rhs, requires == null ? ImmutableSet.<GoogRequire>of() : requires);
-    }
+  public static CodeChunk.WithValue declare(
+      String varName, CodeChunk.WithValue value, String typeExpr, Iterable<GoogRequire> requires) {
+    return Declaration.create(varName, value, typeExpr, requires);
   }
 
   /** Creates a code chunk representing the logical negation {@code !} of the given chunk. */
@@ -679,7 +634,7 @@ public abstract class CodeChunk {
      * value.
      */
     public CodeChunk.WithValue declare(CodeChunk.WithValue rhs) {
-      return CodeChunk.declare(newVarName()).setInitialValue(rhs).build();
+      return CodeChunk.declare(newVarName(), rhs);
     }
 
     /** Returns a builder for a new code chunk that is not initialized to any value. */
@@ -738,7 +693,7 @@ public abstract class CodeChunk {
         children.add(rhs);
         varName = ((Declaration) rhs).varName();
       } else {
-        children.add(CodeChunk.declare(varName()).setInitialValue(rhs).build());
+        children.add(CodeChunk.declare(varName(), rhs));
       }
       return this;
     }

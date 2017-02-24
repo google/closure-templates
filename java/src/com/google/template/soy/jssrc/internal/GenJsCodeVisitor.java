@@ -21,10 +21,12 @@ import static com.google.template.soy.jssrc.dsl.CodeChunk.WithValue.EMPTY_OBJECT
 import static com.google.template.soy.jssrc.dsl.CodeChunk.assign;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.declare;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.dottedIdNoRequire;
+import static com.google.template.soy.jssrc.dsl.CodeChunk.forLoop;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.id;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.number;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.return_;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.stringLiteral;
+import static com.google.template.soy.jssrc.dsl.CodeChunk.switch_;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_IS_OBJECT;
 import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_DATA;
 import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_IJ_DATA;
@@ -56,7 +58,6 @@ import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.html.AbstractHtmlSoyNodeVisitor;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
-import com.google.template.soy.jssrc.dsl.CodeChunk.DeclarationBuilder;
 import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
 import com.google.template.soy.jssrc.dsl.ConditionalBuilder;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
@@ -771,12 +772,11 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
 
     // Generate statement to ensure data is defined, if necessary.
     if (new ShouldEnsureDataIsDefinedVisitor().exec(node)) {
-      jsCodeBuilder.append(
-          CodeChunk.assign("opt_data", OPT_DATA.or(EMPTY_OBJECT_LITERAL, codeGenerator)));
+      jsCodeBuilder.append(assign("opt_data", OPT_DATA.or(EMPTY_OBJECT_LITERAL, codeGenerator)));
     }
     if (shouldEnsureIjDataIsDefined(node)) {
       jsCodeBuilder.append(
-          CodeChunk.assign("opt_ijData", OPT_IJ_DATA.or(EMPTY_OBJECT_LITERAL, codeGenerator)));
+          assign("opt_ijData", OPT_IJ_DATA.or(EMPTY_OBJECT_LITERAL, codeGenerator)));
     }
 
     // ------ Generate function body. ------
@@ -945,7 +945,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
     // Generate code to define the local var.
     CodeChunk.WithValue value = jsExprTranslator.translateToCodeChunk(
         node.getValueExpr(), templateTranslationContext, errorReporter);
-    jsCodeBuilder.append(declare(generatedVarName).setInitialValue(value).build());
+    jsCodeBuilder.append(declare(generatedVarName, value));
 
     // Add a mapping for generating future references to this local var.
     templateTranslationContext
@@ -1103,7 +1103,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
 
     CodeChunk.WithValue switchOn =
         coerceTypeForSwitchComparison(node.getExpr(), node.getExprText());
-    SwitchBuilder switchBuilder = CodeChunk.switch_(switchOn);
+    SwitchBuilder switchBuilder = switch_(switchOn);
     for (SoyNode child : node.getChildren()) {
       if (child instanceof SwitchCaseNode) {
         SwitchCaseNode scn = (SwitchCaseNode) child;
@@ -1192,9 +1192,8 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
     CodeChunk.WithValue dataRef = jsExprTranslator.translateToCodeChunk(
         node.getExpr(), node.getExprText(), templateTranslationContext, errorReporter);
 
-    jsCodeBuilder.append(declare(listName).setInitialValue(dataRef).build());
-    jsCodeBuilder.append(
-        declare(limitName).setInitialValue(dottedIdNoRequire(listName + ".length")).build());
+    jsCodeBuilder.append(declare(listName, dataRef));
+    jsCodeBuilder.append(declare(limitName, dottedIdNoRequire(listName + ".length")));
 
     // Generate the foreach body as a CodeChunk.
     CodeChunk foreachBody = visitNodeReturningCodeChunk(nonEmptyNode);
@@ -1263,8 +1262,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
         .put(varName + "__index", loopIndex);
 
     // Generate the loop body.
-    CodeChunk data =
-        declare(dataName).setInitialValue(id(listName).bracketAccess(loopIndex)).build();
+    CodeChunk data = declare(dataName, id(listName).bracketAccess(loopIndex));
     CodeChunk foreachBody = visitChildrenReturningCodeChunk(node);
     CodeChunk body =
         templateTranslationContext
@@ -1275,7 +1273,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
             .build();
 
     // Create the entire for block.
-    CodeChunk forChunk = CodeChunk.forLoop(loopIndexName, limit, body);
+    CodeChunk forChunk = forLoop(loopIndexName, limit, body);
 
     // Do not call visitReturningCodeChunk(); This is already inside the one from visitForeachNode()
     jsCodeBuilder.append(forChunk);
@@ -1322,10 +1320,10 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
     // they are not calculated multiple times.
     // No need to do so for initial, since it is only executed once.
     if (!(range.limit().getRoot() instanceof IntegerNode)) {
-      limit = declare(localVar + "Limit").setInitialValue(limit).build();
+      limit = declare(localVar + "Limit", limit);
     }
     if (!(range.increment().getRoot() instanceof IntegerNode)) {
-      increment = declare(localVar + "Increment").setInitialValue(increment).build();
+      increment = declare(localVar + "Increment", increment);
     }
 
     // Populate Soy to JS var mappings with this for node's local variable.
@@ -1335,7 +1333,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
     CodeChunk body = visitChildrenReturningCodeChunk(node);
 
     // Create the entire for block.
-    CodeChunk forChunk = CodeChunk.forLoop(localVar, initial, limit, increment, body);
+    CodeChunk forChunk = forLoop(localVar, initial, limit, increment, body);
 
     jsCodeBuilder.append(forChunk);
   }
@@ -1565,14 +1563,9 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
       } else {
         value = paramChunk;
       }
-      DeclarationBuilder builder = declare(paramAlias);
-      if (jsSrcOptions.shouldGenerateJsdoc()) {
-        builder.setTypeExpression(jsType.typeExpr());
-      }
-      CodeChunk.WithValue declaration =
-          builder.setGoogRequiresForType(jsType.getGoogRequires()).setInitialValue(value).build();
 
-      jsCodeBuilder.append(declaration);
+      String closureTypeExpr = jsSrcOptions.shouldGenerateJsdoc() ? jsType.typeExpr() : null;
+      jsCodeBuilder.append(declare(paramAlias, value, closureTypeExpr, jsType.getGoogRequires()));
 
       templateTranslationContext
           .soyToJsVariableMappings()

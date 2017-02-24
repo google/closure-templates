@@ -39,10 +39,14 @@ abstract class Declaration extends CodeChunk.WithValue {
   
   abstract ImmutableSet<GoogRequire> googRequires();
 
+  static Declaration create(String varName, CodeChunk.WithValue rhs) {
+    return new AutoValue_Declaration(varName, rhs, null, ImmutableSet.<GoogRequire>of());
+  }
+
   static Declaration create(
-      @Nullable String closureCompilerTypeExpression,
       String varName,
       CodeChunk.WithValue rhs,
+      @Nullable String closureCompilerTypeExpression,
       Iterable<GoogRequire> googRequires) {
     return new AutoValue_Declaration(
         varName, rhs, closureCompilerTypeExpression, ImmutableSet.copyOf(googRequires));

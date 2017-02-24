@@ -16,7 +16,9 @@
 
 package com.google.template.soy.jssrc.internal;
 
+import static com.google.template.soy.jssrc.dsl.CodeChunk.declare;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.id;
+import static com.google.template.soy.jssrc.dsl.CodeChunk.mapLiteral;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.new_;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.stringLiteral;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_GET_MSG;
@@ -195,11 +197,7 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
     // string to goog.i18n.MessageFormat for postprocessing. This postprocessing is where we're
     // handling all placeholder replacements, even ones that have nothing to do with
     // plural/select.
-    jsCodeBuilder()
-        .append(
-            CodeChunk.declare(tmpVarName)
-                .setInitialValue(getMessageFormatCall(googMsgCodeGenInfo))
-                .build());
+    jsCodeBuilder().append(declare(tmpVarName, getMessageFormatCall(googMsgCodeGenInfo)));
     return tmpVarName;
   }
 
@@ -307,18 +305,14 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
       // replacements, even ones that have nothing to do with plural/select. Therefore, this case
       // is the same as having no placeholder replacements.
       jsCodeBuilder()
-          .append(
-              CodeChunk.declare(googMsgCodeGenInfo.googMsgVarName)
-                  .setInitialValue(GOOG_GET_MSG.call(googMsgContent))
-                  .build());
+          .append(declare(googMsgCodeGenInfo.googMsgVarName, GOOG_GET_MSG.call(googMsgContent)));
     } else {
       // If there are placeholders, pass them as an arg to goog.getMsg.
       jsCodeBuilder()
           .append(
-              CodeChunk.declare(googMsgCodeGenInfo.googMsgVarName)
-                  .setInitialValue(
-                      GOOG_GET_MSG.call(googMsgContent, googMsgCodeGenInfo.placeholders.build()))
-                  .build());
+              declare(
+                  googMsgCodeGenInfo.googMsgVarName,
+                  GOOG_GET_MSG.call(googMsgContent, googMsgCodeGenInfo.placeholders.build())));
       }
 
     return googMsgCodeGenInfo;
@@ -652,7 +646,7 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
     }
 
     CodeChunk.WithValue build() {
-      return CodeChunk.mapLiteral(keys.build(), values.build());
+      return mapLiteral(keys.build(), values.build());
     }
   }
 }

@@ -15,21 +15,27 @@
  */
 package com.google.template.soy.jssrc.dsl;
 
+import static com.google.template.soy.jssrc.dsl.CodeChunk.declare;
+import static com.google.template.soy.jssrc.dsl.CodeChunk.dottedIdNoRequire;
+import static com.google.template.soy.jssrc.dsl.CodeChunk.dottedIdWithRequires;
+import static com.google.template.soy.jssrc.dsl.CodeChunk.id;
+import static com.google.template.soy.jssrc.dsl.CodeChunk.stringLiteral;
+
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
 /** Represents a symbol that is imported via a {@code goog.require} statement. */
 @AutoValue
 public abstract class GoogRequire implements Comparable<GoogRequire> {
-  private static final CodeChunk.WithValue GOOG_REQUIRE =
-      CodeChunk.dottedIdNoRequire("goog.require");
+
+  private static final CodeChunk.WithValue GOOG_REQUIRE = dottedIdNoRequire("goog.require");
 
   /**
    * Creates a new {@code GoogRequire} that requires the given symbol: {@code
    * goog.require('symbol'); }
    */
   public static GoogRequire create(String symbol) {
-    return new AutoValue_GoogRequire(symbol, GOOG_REQUIRE.call(CodeChunk.stringLiteral(symbol)));
+    return new AutoValue_GoogRequire(symbol, GOOG_REQUIRE.call(stringLiteral(symbol)));
   }
 
   /**
@@ -39,24 +45,21 @@ public abstract class GoogRequire implements Comparable<GoogRequire> {
   public static GoogRequire createWithAlias(String symbol, String alias) {
     CodeChunkUtils.checkId(alias);
     return new AutoValue_GoogRequire(
-        symbol,
-        CodeChunk.declare(alias)
-            .setInitialValue(GOOG_REQUIRE.call(CodeChunk.stringLiteral(symbol)))
-            .build());
+        symbol, declare(alias, GOOG_REQUIRE.call(stringLiteral(symbol))));
   }
 
   /** The symbol to require. */
   public abstract String symbol();
 
-  /** a code chunk that will generate the {@code goog.require()}. */
+  /** A code chunk that will generate the {@code goog.require()}. */
   abstract CodeChunk chunk();
 
   /** Returns a code chunk that can act as a reference to the required symbol. */
   public CodeChunk.WithValue reference() {
     if (chunk() instanceof Declaration) {
-      return CodeChunk.id(((Declaration) chunk()).varName(), ImmutableSet.of(this));
+      return id(((Declaration) chunk()).varName(), ImmutableSet.of(this));
     } else {
-      return CodeChunk.dottedIdWithRequires(symbol(), ImmutableSet.of(this));
+      return dottedIdWithRequires(symbol(), ImmutableSet.of(this));
     }
   }
 
