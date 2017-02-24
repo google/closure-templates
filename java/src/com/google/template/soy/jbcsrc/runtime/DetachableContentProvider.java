@@ -22,6 +22,7 @@ import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
+import com.google.template.soy.data.restricted.SoyString;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import com.google.template.soy.jbcsrc.api.AdvisingStringBuilder;
@@ -37,12 +38,11 @@ import javax.annotation.Nullable;
 public abstract class DetachableContentProvider implements SoyValueProvider {
   @Nullable private final ContentKind contentKind;
 
-  // Will be either a SanitizedContent or a StringData, but there is no common super type besides
-  // this.
-  private SoyValue resolvedValue;
+  // Will be either a SanitizedContent or a StringData.
+  private SoyString resolvedValue;
 
   // Will be either an AdvisingStringBuilder or a TeeAdvisingAppendable depending on whether we are
-  // being resolved via 'status()' or via 'renderAndResolve'
+  // being resolved via 'status()' or via 'renderAndResolve()'
   private AdvisingAppendable builder;
 
   protected DetachableContentProvider(@Nullable ContentKind contentKind) {
@@ -51,7 +51,7 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
 
   @Override
   public final SoyValue resolve() {
-    SoyValue local = resolvedValue;
+    SoyString local = resolvedValue;
     checkState(local != null, "called resolve() before status() returned ready.");
     checkState(
         local != TombstoneValue.INSTANCE,

@@ -837,4 +837,4 @@ incompatibilities here:
     internally consistent (soy->soy and java->soy calls are treated
     equivalently) and it is more consistent with the behavior of the Javascript
     Soy backend.
-.
+
