@@ -134,12 +134,17 @@ soydata.getContentDir = function(value) {
 
 
 /**
- * This class is only a holder for {@code soydata.SanitizedHtml.from}. Do not
- * instantiate or extend it. Use {@code goog.soy.data.SanitizedHtml} instead.
+ * Content of type {@link goog.soy.data.SanitizedContentKind.HTML}.
+ *
+ * The content is a string of HTML that can safely be embedded in a PCDATA
+ * context in your app.  If you would be surprised to find that an HTML
+ * sanitizer produced {@code s} (e.g.  it runs code or fetches bad URLs) and
+ * you wouldn't write a template that produces {@code s} on security or privacy
+ * grounds, then don't pass {@code s} here. The default content direction is
+ * unknown, i.e. to be estimated when necessary.
  *
  * @constructor
  * @extends {goog.soy.data.SanitizedHtml}
- * @abstract
  */
 soydata.SanitizedHtml = function() {
   soydata.SanitizedHtml.base(this, 'constructor');  // Throws an exception.
@@ -154,16 +159,18 @@ goog.inherits(soydata.SanitizedHtml, goog.soy.data.SanitizedHtml);
  *
  * @param {*} value The value to convert. If it is already a SanitizedHtml
  *     object, it is left alone.
- * @return {!goog.soy.data.SanitizedHtml} A SanitizedHtml object derived from
- *     the stringified value. It is escaped unless the input is SanitizedHtml or
+ * @return {!soydata.SanitizedHtml} A SanitizedHtml object derived from the
+ *     stringified value. It is escaped unless the input is SanitizedHtml or
  *     SafeHtml.
  */
 soydata.SanitizedHtml.from = function(value) {
   // The check is soydata.isContentKind_() inlined for performance.
   if (value != null &&
       value.contentKind === goog.soy.data.SanitizedContentKind.HTML) {
-    goog.asserts.assert(value.constructor === goog.soy.data.SanitizedHtml);
-    return /** @type {!goog.soy.data.SanitizedHtml} */ (value);
+    goog.asserts.assert(
+        value.constructor === goog.soy.data.SanitizedHtml ||
+        value.constructor === soydata.SanitizedHtml);
+    return /** @type {!soydata.SanitizedHtml} */ (value);
   }
   if (value instanceof goog.html.SafeHtml) {
     return soydata.VERY_UNSAFE.ordainSanitizedHtml(
@@ -171,6 +178,18 @@ soydata.SanitizedHtml.from = function(value) {
   }
   return soydata.VERY_UNSAFE.ordainSanitizedHtml(
       soy.esc.$$escapeHtmlHelper(String(value)), soydata.getContentDir(value));
+};
+
+/**
+ * Checks if the value could be used as the Soy type {html}.
+ * @param {*} value
+ * @return {boolean}
+ */
+soydata.SanitizedHtml.isCompatibleWith = function(value) {
+  return goog.isString(value) ||
+      value instanceof goog.soy.data.SanitizedHtml ||
+      value instanceof goog.soy.data.UnsanitizedText ||
+      value instanceof goog.html.SafeHtml;
 };
 
 
@@ -310,11 +329,11 @@ soydata.markUnsanitizedText = function(content, opt_contentDir) {
  *     privacy grounds, then don't pass {@code s} here.
  * @param {?goog.i18n.bidi.Dir=} opt_contentDir The content direction; null if
  *     unknown and thus to be estimated when necessary. Default: null.
- * @return {!goog.soy.data.SanitizedHtml} Sanitized content wrapper that
+ * @return {!soydata.SanitizedHtml} Sanitized content wrapper that
  *     indicates to Soy not to escape when printed as HTML.
  */
 soydata.VERY_UNSAFE.ordainSanitizedHtml =
-    soydata.$$makeSanitizedContentFactory_(goog.soy.data.SanitizedHtml);
+    soydata.$$makeSanitizedContentFactory_(soydata.SanitizedHtml);
 
 
 /**
@@ -846,12 +865,11 @@ soydata.$$markUnsanitizedTextForInternalBlocks = function(
  * @param {*} content Text.
  * @param {?goog.i18n.bidi.Dir=} opt_contentDir The content direction; null if
  *     unknown and thus to be estimated when necessary. Default: null.
- * @return {!goog.soy.data.SanitizedHtml|soydata.$$EMPTY_STRING_} Wrapped
- *     result.
+ * @return {!soydata.SanitizedHtml|soydata.$$EMPTY_STRING_} Wrapped result.
  */
 soydata.VERY_UNSAFE.$$ordainSanitizedHtmlForInternalBlocks =
     soydata.$$makeSanitizedContentFactoryForInternalBlocks_(
-        goog.soy.data.SanitizedHtml);
+        soydata.SanitizedHtml);
 
 
 /**
@@ -925,7 +943,7 @@ soydata.VERY_UNSAFE.$$ordainSanitizedCssForInternalBlocks =
  *
  * @param {*} value The value to convert. If it is already a SanitizedHtml
  *     object, it is left alone.
- * @return {!goog.soy.data.SanitizedHtml} An escaped version of value.
+ * @return {!soydata.SanitizedHtml} An escaped version of value.
  */
 soy.$$escapeHtml = function(value) {
   return soydata.SanitizedHtml.from(value);
@@ -939,13 +957,14 @@ soy.$$escapeHtml = function(value) {
  * @param {?} value The string-like value to be escaped. May not be a string,
  *     but the value will be coerced to a string.
  * @param {Array<string>=} opt_safeTags Additional tag names to whitelist.
- * @return {!goog.soy.data.SanitizedHtml} A sanitized and normalized version of
- *     value.
+ * @return {!soydata.SanitizedHtml} A sanitized and normalized version of value.
  */
 soy.$$cleanHtml = function(value, opt_safeTags) {
   if (soydata.isContentKind_(value, goog.soy.data.SanitizedContentKind.HTML)) {
-    goog.asserts.assert(value.constructor === goog.soy.data.SanitizedHtml);
-    return /** @type {!goog.soy.data.SanitizedHtml} */ (value);
+    goog.asserts.assert(
+        value.constructor === goog.soy.data.SanitizedHtml ||
+        value.constructor === soydata.SanitizedHtml);
+    return /** @type {!soydata.SanitizedHtml} */ (value);
   }
   var tagWhitelist;
   if (opt_safeTags) {
@@ -994,7 +1013,9 @@ soy.$$normalizeHtml = function(value) {
  */
 soy.$$escapeHtmlRcdata = function(value) {
   if (soydata.isContentKind_(value, goog.soy.data.SanitizedContentKind.HTML)) {
-    goog.asserts.assert(value.constructor === goog.soy.data.SanitizedHtml);
+    goog.asserts.assert(
+        value.constructor === goog.soy.data.SanitizedHtml ||
+        value.constructor === soydata.SanitizedHtml);
     return soy.esc.$$normalizeHtmlHelper(value.getContent());
   }
   return soy.esc.$$escapeHtmlHelper(value);
@@ -1172,7 +1193,9 @@ soy.$$escapeHtmlAttribute = function(value) {
   if (soydata.isContentKind_(value, goog.soy.data.SanitizedContentKind.HTML)) {
     // NOTE: After removing tags, we also escape quotes ("normalize") so that
     // the HTML can be embedded in attribute context.
-    goog.asserts.assert(value.constructor === goog.soy.data.SanitizedHtml);
+    goog.asserts.assert(
+        value.constructor === goog.soy.data.SanitizedHtml ||
+        value.constructor === soydata.SanitizedHtml);
     return soy.esc.$$normalizeHtmlHelper(
         soy.$$stripHtmlTags(value.getContent()));
   }
@@ -1190,7 +1213,9 @@ soy.$$escapeHtmlAttribute = function(value) {
  */
 soy.$$escapeHtmlAttributeNospace = function(value) {
   if (soydata.isContentKind_(value, goog.soy.data.SanitizedContentKind.HTML)) {
-    goog.asserts.assert(value.constructor === goog.soy.data.SanitizedHtml);
+    goog.asserts.assert(
+        value.constructor === goog.soy.data.SanitizedHtml ||
+        value.constructor === soydata.SanitizedHtml);
     return soy.esc.$$normalizeHtmlNospaceHelper(
         soy.$$stripHtmlTags(value.getContent()));
   }
@@ -1590,7 +1615,7 @@ soy.$$filterNoAutoescape = function(value) {
 /**
  * Converts \r\n, \r, and \n to <br>s
  * @param {*} value The string in which to convert newlines.
- * @return {string|!goog.soy.data.SanitizedHtml} A copy of {@code value} with
+ * @return {string|!soydata.SanitizedHtml} A copy of {@code value} with
  *     converted newlines. If {@code value} is SanitizedHtml, the return value
  *     is also SanitizedHtml, of the same known directionality.
  */
@@ -1614,7 +1639,7 @@ soy.$$changeNewlineToBr = function(value) {
  *     types, but the value will be coerced to a string.
  * @param {number} maxCharsBetweenWordBreaks Maximum number of non-space
  *     characters to allow before adding a word break.
- * @return {string|!goog.soy.data.SanitizedHtml} The string including word
+ * @return {string|!soydata.SanitizedHtml} The string including word
  *     breaks. If {@code value} is SanitizedHtml, the return value
  *     is also SanitizedHtml, of the same known directionality.
  * @deprecated The |insertWordBreaks directive is deprecated.
@@ -1856,7 +1881,7 @@ soy.$$bidiSpanWrap = function(bidiGlobalDir, text) {
  * directionality, i.e. either LRE or RLE at the beginning and PDF at the end -
  * but only if text's directionality is neither neutral nor the same as the
  * global context. Otherwise, returns text unchanged.
- * Only treats SanitizedHtml as HTML/HTML-escaped, i.e. ignores mark-up
+ * Only treats soydata.SanitizedHtml as HTML/HTML-escaped, i.e. ignores mark-up
  * and escapes when estimating text's directionality.
  * If text has a goog.i18n.bidi.Dir-valued contentDir, this is used instead of
  * estimating the directionality.
