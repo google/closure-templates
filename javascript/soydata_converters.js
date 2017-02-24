@@ -211,7 +211,7 @@ soydata.packSanitizedUriToProtoSoyRuntimeOnly = function(sanitizedUri) {
 /**
  * Converts a Safe String Proto to HTML Sanitized Content.
  * @param {?proto.webutil.html.types.SafeHtmlProto} x null or a safe string proto.
- * @return {?soydata.SanitizedHtml}
+ * @return {?goog.soy.data.SanitizedHtml}
  */
 soydata.unpackProtoToSanitizedHtml = function(x) {
   if (x instanceof proto.webutil.html.types.SafeHtmlProto) {
