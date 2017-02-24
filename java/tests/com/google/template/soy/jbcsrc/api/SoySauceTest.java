@@ -30,12 +30,11 @@ import com.google.template.soy.SoyModule;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SanitizedContents;
-import com.google.template.soy.data.SoyAbstractCachingValueProvider;
-import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.jbcsrc.api.SoySauce.Continuation;
 import com.google.template.soy.jbcsrc.api.SoySauce.WriteContinuation;
+import com.google.template.soy.jbcsrc.runtime.DetachableSoyValueProvider;
 import java.io.IOException;
 import org.junit.Before;
 import org.junit.Test;
@@ -212,17 +211,14 @@ public class SoySauceTest {
     SoySauce.Renderer tmpl = sauce.renderTemplate("strict_test.callsItself");
 
     SoyValueProvider intProvider =
-        new SoyAbstractCachingValueProvider() {
+        new DetachableSoyValueProvider() {
           @Override
-          public RenderResult status() {
+          protected RenderResult doResolve() {
+            resolvedValue = IntegerData.ZERO;
             return RenderResult.done();
           }
-
-          @Override
-          protected SoyValue compute() {
-            return IntegerData.ZERO;
-          }
         };
+
     try {
       tmpl.setData(ImmutableMap.of("depth", 10, "p", intProvider)).render();
       fail();

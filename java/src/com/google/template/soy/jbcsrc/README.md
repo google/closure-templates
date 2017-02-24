@@ -277,14 +277,14 @@ functionality:
     subclass. This provides a non-reflective mechanism for constructing
     `CompiledTemplate` instances.
 *   A
-    [`SoyAbstractCachingValueProvider`](https://github.com/google/closure-templates/blob/master/java/src/com/google/template/soy/data/SoyAbstractCachingValueProvider.java)
+    [`DetachableSoyValueProvider`](https://github.com/google/closure-templates/blob/master/java/src/com/google/template/soy/jbcsrc/runtime/DetachableSoyValueProvider.java)
     subclass for each
     [`CallParamValueNode`](https://github.com/google/closure-templates/blob/master/java/src/com/google/template/soy/soytree/CallParamValueNode.java)
     and each
     [`LetValueNode`](https://github.com/google/closure-templates/blob/master/java/src/com/google/template/soy/soytree/LetValueNode.java).
     These allow us to implement 'lazy' `{let ...}` and `{param ...}` statements.
 *   A
-    [`RenderableThunk`](https://github.com/google/closure-templates/blob/master/java/src/com/google/template/soy/data/internal/RenderableThunk.java)
+    [`DetachableContentProvider`](https://github.com/google/closure-templates/blob/master/java/src/com/google/template/soy/jbcsrc/runtime/DetachableContentProvider.java)
     subclass for each
     [`CallParamContentNode`](https://github.com/google/closure-templates/blob/master/java/src/com/google/template/soy/soytree/CallParamContentNode.java)
     and each
@@ -354,7 +354,7 @@ Additionally we will enhance some core APIs to expose additional information:
 render(AdvisingAppendable)`. That will allow individual values to detach
 mid-render. Most Soy values will have trivial implementations of this method,
 but for our [lazy transclusion
-values](https://github.com/google/closure-templates/blob/master/java/src/com/google/template/soy/data/internal/RenderableThunk.java)
+values](https://github.com/google/closure-templates/blob/master/java/src/com/google/template/soy/jbcsrc/runtime/DetachableContentProvider.java)
 we will need this.
 
 #### `SoyValueProvider`
@@ -519,11 +519,12 @@ code that produces a SoyValue object, then we will invoke code that looks like
 this:
 
 ~~~
-N:
+case N:
 expr = …;
 expr = context.getPrintDirective("directive1").apply(expr);
 expr = context.getPrintDirective("directive2").apply(expr);
 state = N + 1;
+
 case N+1:
 Result r = expr.render(output);
 if (r.type() != Type.DONE) {
@@ -537,7 +538,7 @@ state = N + 2;
 These nodes are truly trivial. In fact it was probably a mistake to implement
 them as commands instead of just a `SoyFunction`.
 
-In ToFu we currently use a single-element cache optimize renaming. See
+In Tofu we currently use a single-element cache optimize renaming. See
 [CssNode.renameCache](https://github.com/google/closure-templates/blob/master/java/src/com/google/template/soy/soytree/CssNode.java&l=83)
 . This is one of the few examples of an optimization that would be lost in the
 redesign. Based on profiling of SoySauce applications, renaming does not appear
@@ -575,18 +576,23 @@ private static final class let$foo_1 extends DetachableSoyValueProvider {
 
 Then the owner class will declare a field of type let$$foo\_1 and initialize it
 at the normal declaration point. Let-content nodes will be very similar with the
-caveat that the base class will be different (RenderableThunk). Unlike params,
-the fields for let nodes need to be cleared (nulled out), when they go out of
-scope. This is to sure that they behave properly in loops (re-evaluated per
-iteration) and it will also make sure we don’t pin their values in memory too
-long.
+caveat that the base class will be different (DetachableContentProvider). Unlike
+params, the fields for let nodes need to be cleared (nulled out), when they go
+out of scope. This is to sure that they behave properly in loops (re-evaluated
+per iteration) and it will also make sure we don’t pin their values in memory
+too long.
 
-Optimizations performed on lets: * Identify constant lets eagerly evaluate the
-expression to avoid generating the closure. * Identify lets/params that simply
-alias other lets/params and 'inline' the references. e.g. `{let $foo : $bar /}`
-doesn't need a subclass. * TODO: identify lets that (based on control flow
-analysis) will not need detach logic and eagerly evaluate. (Work for this has
-started in `TemplateAnalysis`)
+Optimizations performed on lets:
+
+*   Identify constant lets eagerly evaluate the expression to avoid generating
+    the closure.
+
+*   Identify lets/params that simply alias other lets/params and 'inline' the
+    references. e.g. `{let $foo : $bar /}` doesn't need a subclass.
+
+*   TODO: identify lets that (based on control flow analysis) will not need
+    detach logic and eagerly evaluate. (Work for this has started in
+    `TemplateAnalysis`)
 
 ### IF\_NODE, IF\_COND\_NODE, IF\_ELSE\_NODE
 
@@ -604,7 +610,7 @@ Note: this analysis is based on the assumption that switch case statements may
 be arbitrary expressions. The AST and current implementation imply that they
 are.
 
-TODO(lukes): change soy semantics to ensure that swtich case expressions are
+TODO(lukes): change soy semantics to ensure that switch case expressions are
 constants, then the implementation could resolve to something like a Java
 `switch()` statement, which would be preferable.
 
@@ -649,7 +655,7 @@ calling](#call_basic_nodecall_delegate_node) for a detailed example.
 
 ### CALL\_BASIC\_NODE,CALL\_DELEGATE\_NODE
 
-There are several styles of calls for now I will demonstate a normal call with
+There are several styles of calls. For now I will demonstrate a normal call with
 no data param. e.g.
 
 `{call .foo}{param bar : 1 /}{/call}`
@@ -673,15 +679,17 @@ private ns$$foo fooTemplate;
 parameters like `data = "all"` or `data="$expr"` will simply modify how the
 record is initialized.
 
-For `{delcall...}s` the process is mostly the same, but instead of invoking the
+For `{delcall...}`s the process is mostly the same, but instead of invoking the
 callee constructor directly, we instead trigger deltemplate selection by
 invoking `RenderContext.getDelTemplate` which selects and constructs the target
 callee.
 
-Optimizations and future work: * We should eliminate the `SoyDict` parameter map
-whenever possible. Most calls pass a fixed set of params and in those cases we
-can eliminate allocations and map operations by just generating a specialized
-constructor in the callee.
+Optimizations and future work:
+
+*   We should eliminate the `SoyDict` parameter map whenever possible. Most
+    calls pass a fixed set of params and in those cases we can eliminate
+    allocations and map operations by just generating a specialized constructor
+    in the callee.
 
 ### MSG\_NODE,MSG\_FALLBACK\_GROUP\_NODE
 
@@ -701,9 +709,11 @@ breaks into 2 cases
     placeholder objects. So the compiler mostly generates code to populate the
     placeholder map. See `Runtime.renderSoyMsgWithPlaceholders`
 
-Future Optimizations: * For plurals and gendered messages we can generate more
-specialized calls to avoid boxing the plurals variable and having to pass the
-gender parameter in the placeholder map.
+Future Optimizations:
+
+*   For plurals and gendered messages we can generate more specialized calls to
+    avoid boxing the plurals variable and having to pass the gender parameter in
+    the placeholder map.
 
 ## Compiling soy types
 

@@ -106,9 +106,9 @@ final class TemplateCompiler {
    * <ul>
    *   <li>A {@link com.google.template.soy.jbcsrc.shared.CompiledTemplate.Factory}
    *   <li>A {@link CompiledTemplate}
-   *   <li>A SoyAbstractCachingProvider subclass for each {@link LetValueNode} and {@link
+   *   <li>A DetachableSoyValueProvider subclass for each {@link LetValueNode} and {@link
    *       CallParamValueNode}
-   *   <li>A RenderableThunk subclass for each {@link LetContentNode} and {@link
+   *   <li>A DetachableContentProvider subclass for each {@link LetContentNode} and {@link
    *       CallParamContentNode}
    *       <p>Note: This will <em>not</em> generate classes for other templates, only the template
    *       configured in the constructor. But it will generate classes that <em>reference</em> the

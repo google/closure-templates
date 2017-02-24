@@ -38,8 +38,6 @@ import com.google.common.collect.Iterables;
 import com.google.template.soy.base.internal.UniqueNameGenerator;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
-import com.google.template.soy.data.SoyAbstractCachingValueProvider;
-import com.google.template.soy.data.internal.RenderableThunk;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.jbcsrc.SoyNodeCompiler.CompiledMethodBody;
@@ -79,11 +77,11 @@ import org.objectweb.asm.commons.Method;
  * <ul>
  *   <li>Lazy expression evaluation. Triggered by {@link LetValueNode} or {@link
  *       CallParamValueNode}. For each of these we will generate a subtype of {@link
- *       SoyAbstractCachingValueProvider}.
+ *       DetachableSoyValueProvider}.
  *   <li>Lazy content evaluation. Triggered by {@link LetContentNode} or {@link
  *       CallParamContentNode}. For each of these we will generate a subtype of {@link
- *       RenderableThunk} and appropriately wrap it in a {@link SanitizedContent} or {@link
- *       StringData} value.
+ *       DetachableContentProvider} and appropriately wrap it around a {@link SanitizedContent} or
+ *       {@link StringData} value.
  * </ul>
  *
  * <p>Each of these lazy statements execute in the context of their parents and have access to all
@@ -109,14 +107,15 @@ import org.objectweb.asm.commons.Method;
  * b.render(out);
  * ...
  *
- * final class LetValue$$b extends SoyAbstractCachingValueProvider {
+ * final class LetValue$$b extends DetachableSoyValueProvider {
  *   final SoyValueProvider a;
  *   LetValue$$b(SoyValueProvider a) {
  *     this.a = a;
  *   }
  *
- *   {@literal @}Override protected SoyValue compute() {
- *      return eval(expr, node);
+ *   {@literal @}Override protected RenderResult doResolve() {
+ *      this.resolvedValue = eval(expr, node);
+ *      return RenderResult.done();
  *   }
  * }
  * }</pre>
