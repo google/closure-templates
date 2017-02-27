@@ -674,7 +674,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
     // We prepend "!" to indicate it is non-nullable.
     return (node.getContentKind() == null)
         ? "string"
-        : "!" + NodeContentKinds.toJsSanitizedContentReturnType(node.getContentKind());
+        : "!" + NodeContentKinds.toJsSanitizedContentCtorName(node.getContentKind());
   }
 
   /**
