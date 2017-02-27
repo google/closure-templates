@@ -214,6 +214,25 @@ public class NodeContentKinds {
     return Preconditions.checkNotNull(KIND_TO_JS_CTOR_NAME.get(contentKind));
   }
 
+  // TODO(jakubvrana): Delete this method after converting the users to goog.soy.data.SanitizedHtml.
+  /**
+   * Given a {@link ContentKind}, returns the corresponding JS SanitizedContent return type.
+   *
+   * This differs from {@link #toJsSanitizedContentCtorName} during the transition from {@code
+   * soydata.SanitizedHtml} to {@code goog.soy.data.SanitizedHtml}. The return type of the templates
+   * needs to be {@code soydata.SanitizedHtml} (which extends {@code goog.soy.data.SanitizedHtml})
+   * because the old code expects this type. The types of the parameters need to be {@code
+   * goog.soy.data.SanitizedHtml} which is passed by the new code.
+   */
+  public static String toJsSanitizedContentReturnType(ContentKind contentKind) {
+    switch (contentKind) {
+      case HTML:
+        return "soydata.SanitizedHtml";
+      default:
+        return toJsSanitizedContentCtorName(contentKind);
+    }
+  }
+
   /**
    * Given a {@link ContentKind}, returns the corresponding JS SanitizedContent constructor.
    *
