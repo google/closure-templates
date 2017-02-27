@@ -283,7 +283,7 @@ public final class CheckTemplateParamsVisitorTest {
         "{namespace boo1 autoescape=\"deprecated-noncontextual\"}\n"
             + "\n"
             + "/** Template 1 */\n"
-            + "{template .foo1}\n"
+            + "{template .foo1 deprecatedV1=\"true\"}\n"
             + "  {$goo1}\n"
             + "  {v1Expression('$goo1.moo1()')}\n"
             + // file is not all V2 syntax due to this expression

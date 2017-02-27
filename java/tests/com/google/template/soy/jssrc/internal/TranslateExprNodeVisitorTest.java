@@ -23,6 +23,7 @@ import static com.google.template.soy.exprtree.Operator.PLUS;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.id;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.number;
 import static com.google.template.soy.jssrc.internal.JsSrcSubject.assertThatSoyExpr;
+import static com.google.template.soy.jssrc.internal.JsSrcSubject.assertThatSoyFile;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.basetree.SyntaxVersion;
@@ -311,9 +312,23 @@ public final class TranslateExprNodeVisitorTest {
 
   @Test
   public void testBuiltinFunctions_v1Expression() {
-    assertThatSoyExpr("v1Expression('$goo.length()')")
-        .withInitialLocalVarTranslations(LOCAL_VAR_TRANSLATIONS)
+    String soyFile =
+        ""
+            + "{template foo deprecatedV1=\"true\"}\n"
+            + "  {v1Expression('$goo.length()')}\n"
+            + "{/template}";
+    String expectedJs =
+        ""
+            + "foo = function(opt_data, opt_ignored, opt_ijData) {\n"
+            + "  return soydata.VERY_UNSAFE.ordainSanitizedHtml(opt_data.goo.length());\n"
+            + "};\n"
+            + "if (goog.DEBUG) {\n"
+            + "  foo.soyTemplateName = 'foo';\n"
+            + "}\n";
+
+    assertThatSoyFile(soyFile)
         .withDeclaredSyntaxVersion(SyntaxVersion.V1_0)
-        .generatesCode("gooData8.length()");
+        .generatesTemplateThat()
+        .isEqualTo(expectedJs);
   }
 }

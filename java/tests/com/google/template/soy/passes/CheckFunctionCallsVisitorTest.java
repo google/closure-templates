@@ -178,8 +178,18 @@ public final class CheckFunctionCallsVisitorTest {
     assertPasses(
         SyntaxVersion.V1_0,
         "{namespace ns}\n",
-        "{template .foo}",
+        "{template .foo deprecatedV1=\"true\"}",
         "  {let $m: v1Expression('blah.length') /}",
+        "{/template}");
+
+    assertFunctionCallsInvalid(
+        SyntaxVersion.V1_0,
+        "incorrect v1 syntax: The v1Expression function can only be used in templates "
+            + "marked with the deprecatedV1=\"true\" attribute",
+        "{namespace ns}\n",
+        "{template .foo}",
+        "  {let $blah: 'foo' /}",
+        "  {let $m: v1Expression('$blah') /}",
         "{/template}");
 
     assertFunctionCallsInvalid(

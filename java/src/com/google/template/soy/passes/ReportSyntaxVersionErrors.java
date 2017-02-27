@@ -23,8 +23,11 @@ import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.basetree.SyntaxVersionUpperBound;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
+import com.google.template.soy.soytree.TemplateNode;
 
 /**
  * Reports syntax version errors for unparsed expressions and {@link SyntaxVersionUpperBound}s that
@@ -59,18 +62,20 @@ final class ReportSyntaxVersionErrors {
   }
 
   public void report(SoyFileNode node) {
-    SoyTreeUtils.visitAllNodes(
-        node,
-        new NodeVisitor<Node, Boolean>() {
-          @Override
-          public Boolean exec(Node node) {
-            visitNode(node);
-            return true; // keep visiting
-          }
-        });
+    for (final TemplateNode template : node.getChildren()) {
+      SoyTreeUtils.visitAllNodes(
+          template,
+          new NodeVisitor<Node, Boolean>() {
+            @Override
+            public Boolean exec(Node node) {
+              visitNode(template, node);
+              return true; // keep visiting
+            }
+          });
+    }
   }
 
-  private void visitNode(Node node) {
+  private void visitNode(TemplateNode template, Node node) {
     if (!node.couldHaveSyntaxVersionAtLeast(requiredSyntaxVersion)) {
       SyntaxVersionUpperBound syntaxVersionBound = node.getSyntaxVersionUpperBound();
       Preconditions.checkNotNull(syntaxVersionBound);
@@ -79,6 +84,18 @@ final class ReportSyntaxVersionErrors {
           SYNTAX_VERSION_OUT_OF_BOUNDS,
           errorPreamble,
           syntaxVersionBound.reasonStr);
+    }
+    if (node instanceof FunctionNode) {
+      String functionName = ((FunctionNode) node).getFunctionName();
+      if (functionName.equals(BuiltinFunction.V1_EXPRESSION.getName())
+          && template.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0)) {
+        errorReporter.report(
+            node.getSourceLocation(),
+            SYNTAX_VERSION_OUT_OF_BOUNDS,
+            errorPreamble,
+            "The v1Expression function can only be used in templates marked with the "
+                + "deprecatedV1=\"true\" attribute");
+      }
     }
   }
 }
