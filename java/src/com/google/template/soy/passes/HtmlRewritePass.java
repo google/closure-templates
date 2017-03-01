@@ -54,7 +54,6 @@ import com.google.template.soy.soytree.HtmlAttributeValueNode.Quotes;
 import com.google.template.soy.soytree.HtmlCloseTagNode;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.IfCondNode;
-import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
@@ -69,7 +68,6 @@ import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.Kind;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SwitchCaseNode;
-import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TagName;
 import com.google.template.soy.soytree.TemplateNode;
@@ -81,7 +79,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 
 /**
@@ -141,6 +138,9 @@ public final class HtmlRewritePass extends CompilerFilePass {
   private static final SoyErrorKind BLOCK_ENDS_IN_INVALID_STATE =
       SoyErrorKind.of("''{0}'' block ends in an invalid state ''{1}''");
 
+  private static final SoyErrorKind BLOCK_TRANSITION_DISALLOWED =
+      SoyErrorKind.of("{0} started in ''{1}'', cannot create a {2}.");
+
   private static final SoyErrorKind
       CONDITIONAL_BLOCK_ISNT_GUARANTEED_TO_PRODUCE_ONE_ATTRIBUTE_VALUE =
           SoyErrorKind.of(
@@ -151,7 +151,7 @@ public final class HtmlRewritePass extends CompilerFilePass {
       SoyErrorKind.of("expected an attribute value");
 
   private static final SoyErrorKind EXPECTED_WS_EQ_OR_CLOSE_AFTER_ATTRIBUTE_NAME =
-      SoyErrorKind.of("expected whitespace, ''='' or tag close after a attribute name");
+      SoyErrorKind.of("expected whitespace, ''='' or tag close after an attribute name");
 
   private static final SoyErrorKind EXPECTED_WS_OR_CLOSE_AFTER_TAG_OR_ATTRIBUTE =
       SoyErrorKind.of("expected whitespace or tag close after a tag name or attribute");
@@ -197,9 +197,8 @@ public final class HtmlRewritePass extends CompilerFilePass {
 
   /** Represents features of the parser states. */
   private enum StateFeature {
-    /** Means the state is part of an html 'tag' of a node. */
+    /** Means the state is part of an html 'tag' of a node (but not, inside an attribute value). */
     TAG,
-    INVALID_END_STATE_FOR_RAW_TEXT,
     INVALID_END_STATE_FOR_BLOCK;
   }
 
@@ -226,7 +225,6 @@ public final class HtmlRewritePass extends CompilerFilePass {
     SINGLE_QUOTED_XML_ATTRIBUTE_VALUE,
     DOUBLE_QUOTED_XML_ATTRIBUTE_VALUE,
     HTML_TAG_NAME,
-    AFTER_TAG_NAME_OR_ATTRIBUTE(StateFeature.TAG),
     BEFORE_ATTRIBUTE_NAME(StateFeature.TAG),
     /**
      * This state is weird - it is for <code>
@@ -239,16 +237,12 @@ public final class HtmlRewritePass extends CompilerFilePass {
      * right to BEFORE_ATTRIBUTE_VALUE by looking ahead for an '=' character, but we need it so we
      * can have dynamic attribute names. e.g. {xid foo}=bar.
      */
-    AFTER_ATTRIBUTE_NAME(StateFeature.TAG, StateFeature.INVALID_END_STATE_FOR_RAW_TEXT),
+    AFTER_ATTRIBUTE_NAME(StateFeature.TAG),
     BEFORE_ATTRIBUTE_VALUE(StateFeature.INVALID_END_STATE_FOR_BLOCK),
     SINGLE_QUOTED_ATTRIBUTE_VALUE,
     DOUBLE_QUOTED_ATTRIBUTE_VALUE,
-    /**
-     * This state is 'zero-width' it is intended for delaying the creation of attributes across
-     * conditional blocks.
-     */
-    AFTER_QUOTED_ATTRIBUTE_VALUE(StateFeature.TAG),
-    UNQUOTED_ATTRIBUTE_VALUE(StateFeature.TAG),
+    UNQUOTED_ATTRIBUTE_VALUE,
+    AFTER_TAG_NAME_OR_ATTRIBUTE(StateFeature.TAG),
     ;
 
     /** Gets the {@link State} for the given kind. */
@@ -261,15 +255,18 @@ public final class HtmlRewritePass extends CompilerFilePass {
           return BEFORE_ATTRIBUTE_NAME;
         case HTML:
           return PCDATA;
+          // You might be thinking that some of these should be RCDATA_STYLE or RCDATA_SCRIPT, but
+          // that wouldn't be accurate since rcdata is specific to the context of js on an html page
+          // in a script tag.  General js has different limitations and the autoescaper knows how to
+          // escape js into rcdata_style
         case CSS:
         case JS:
         case TEXT:
         case TRUSTED_RESOURCE_URI:
         case URI:
           return NONE;
-        default:
-          throw new AssertionError("unhandled kind: " + kind);
       }
+      throw new AssertionError("unhandled kind: " + kind);
     }
 
     private final ImmutableSet<StateFeature> stateTypes;
@@ -296,9 +293,10 @@ public final class HtmlRewritePass extends CompilerFilePass {
       }
       // the order of comparisons here depends on the compareTo above to ensure 'this < that'
       if (this == BEFORE_ATTRIBUTE_VALUE
-          && (that == AFTER_QUOTED_ATTRIBUTE_VALUE || that == UNQUOTED_ATTRIBUTE_VALUE)) {
+          && (that == AFTER_TAG_NAME_OR_ATTRIBUTE || that == UNQUOTED_ATTRIBUTE_VALUE)) {
         // These aren't exactly compatible, but rather are an allowed transition because
-        // 1. before and unquoted attribute and in an unquoted attribute are not that different
+        // 1. before an unquoted attribute value and in an unquoted attribute value are not that
+        //   different
         // 2. a complete attribute value is a reasonable thing to constitute a block.  This enables
         //    code like class={if $foo}"bar"{else}"baz"{/if}
         //    and it depends on additional support in the handling of control flow nodes.
@@ -329,17 +327,12 @@ public final class HtmlRewritePass extends CompilerFilePass {
         case AFTER_TAG_NAME_OR_ATTRIBUTE:
           // these all require exact matches
           return null;
-        default:
-          throw new AssertionError("unexpected state: " + this);
       }
+      throw new AssertionError("unexpected state: " + this);
     }
 
     boolean isTagState() {
       return stateTypes.contains(StateFeature.TAG);
-    }
-
-    boolean isInvalidForEndOfRawText() {
-      return stateTypes.contains(StateFeature.INVALID_END_STATE_FOR_RAW_TEXT);
     }
 
     boolean isInvalidForEndOfBlock() {
@@ -491,10 +484,6 @@ public final class HtmlRewritePass extends CompilerFilePass {
           case SINGLE_QUOTED_ATTRIBUTE_VALUE:
             handleQuotedAttributeValue(false);
             break;
-          case AFTER_QUOTED_ATTRIBUTE_VALUE:
-            // TODO(lukes): consider making accessing the currentPoint lazy
-            handleAfterQuotedAttributeValue(currentPoint());
-            break;
           case BEFORE_ATTRIBUTE_VALUE:
             handleBeforeAttributeValue();
             break;
@@ -560,9 +549,6 @@ public final class HtmlRewritePass extends CompilerFilePass {
                   + " index: "
                   + currentRawTextIndex);
         }
-      }
-      if (context.getState().isInvalidForEndOfRawText()) {
-        throw new AssertionError("Shouldn't end a raw text block in state: " + context.getState());
       }
       if (currentRawTextIndex != currentRawText.length()) {
         throw new AssertionError("failed to visit all of the raw text");
@@ -717,7 +703,6 @@ public final class HtmlRewritePass extends CompilerFilePass {
       } else {
         context.setTagName(new TagName(node));
       }
-      context.setState(State.AFTER_TAG_NAME_OR_ATTRIBUTE, currentPointOrEnd());
     }
 
     /**
@@ -763,42 +748,29 @@ public final class HtmlRewritePass extends CompilerFilePass {
         context.resetAttribute();
         return;
       }
-      context.setAttributeName(identifier);
-      int current = currentChar();
-      // if we have hit the end, complete the attribute since there is no way there could be an
-      // '=' sign after this point.
-      if (current == -1) {
-        context.createAttributeNode();
-        context.setState(
-            State.AFTER_TAG_NAME_OR_ATTRIBUTE,
-            currentRawTextNode.getSourceLocation().getEndPoint());
-      } else {
-        context.setState(State.AFTER_ATTRIBUTE_NAME, currentPoint());
-      }
+      context.startAttribute(identifier);
     }
 
     /**
      * Handle immediately after an attribute name.
      *
-     * <p>Look for an '=' sign to signal the presense of an attribute value
+     * <p>Look for an '=' sign to signal the presence of an attribute value
      */
     void handleAfterAttributeName() {
       boolean ws = consumeWhitespace();
       int current = currentChar();
       if (current == '=') {
-        context.setEqualsSignLocation(currentPoint());
+        SourceLocation.Point equalsSignPoint = currentPoint();
         advance();
         consume(); // eat the '='
         consumeWhitespace();
-        context.setState(State.BEFORE_ATTRIBUTE_VALUE, currentPointOrEnd());
+        context.setEqualsSignLocation(equalsSignPoint, currentPointOrEnd());
       } else {
         // we must have seen some non '=' character (or the end of the text), it doesn't matter
         // what it is, finish the attribute.
         context.createAttributeNode();
         if (ws) {
           context.setState(State.BEFORE_ATTRIBUTE_NAME, currentPointOrEnd());
-        } else {
-          context.setState(State.AFTER_TAG_NAME_OR_ATTRIBUTE, currentPointOrEnd());
         }
       }
     }
@@ -813,12 +785,12 @@ public final class HtmlRewritePass extends CompilerFilePass {
       int c = currentChar();
       if (c == '\'' || c == '"') {
         SourceLocation.Point quotePoint = currentPoint();
-        context.startQuotedAttributeValue(currentRawTextNode, quotePoint);
+        context.startQuotedAttributeValue(
+            currentRawTextNode,
+            quotePoint,
+            c == '"' ? State.DOUBLE_QUOTED_ATTRIBUTE_VALUE : State.SINGLE_QUOTED_ATTRIBUTE_VALUE);
         advance();
         consume();
-        context.setState(
-            c == '"' ? State.DOUBLE_QUOTED_ATTRIBUTE_VALUE : State.SINGLE_QUOTED_ATTRIBUTE_VALUE,
-            quotePoint);
       } else {
         context.setState(State.UNQUOTED_ATTRIBUTE_VALUE, currentPoint());
       }
@@ -843,20 +815,7 @@ public final class HtmlRewritePass extends CompilerFilePass {
         context.addAttributeValuePart(node);
       }
       if (foundDelimiter) {
-        if (context.hasUnquotedAttributeValueParts()) {
-          context.createUnquotedAttributeValue();
-          if (context.hasAttributePartsWithValue()) {
-            context.createAttributeNode();
-          } else {
-            context.resetAttribute();
-            errorReporter.report(
-                currentLocation(), FOUND_END_OF_ATTRIBUTE_STARTED_IN_ANOTHER_BLOCK);
-          }
-        } else {
-          context.resetAttribute();
-          errorReporter.report(currentLocation(), EXPECTED_ATTRIBUTE_VALUE);
-        }
-        context.setState(State.AFTER_TAG_NAME_OR_ATTRIBUTE, currentPoint());
+        context.createUnquotedAttributeValue(currentPoint());
       }
       // otherwise keep going, to support things like
       //  <div a=a{$p}>
@@ -878,7 +837,6 @@ public final class HtmlRewritePass extends CompilerFilePass {
       if (hasQuote) {
         if (context.hasQuotedAttributeValueParts()) {
           context.createQuotedAttributeValue(currentRawTextNode, doubleQuoted, currentPoint());
-          context.setState(State.AFTER_QUOTED_ATTRIBUTE_VALUE, currentPoint());
         } else {
           errorReporter.report(currentLocation(), FOUND_END_OF_ATTRIBUTE_STARTED_IN_ANOTHER_BLOCK);
           context.resetAttribute();
@@ -888,33 +846,6 @@ public final class HtmlRewritePass extends CompilerFilePass {
         advance();
         consume();
       }
-    }
-
-    /**
-     * Handle the state immediately after a quoted attribute value.
-     *
-     * <p>This is a special state that exists to support constructs like {@code <div style={if
-     * $p}"foo"{else}"bar"{/if}>}. What we are trying to do is decide whether or not to complete the
-     * current attribute, by separating it into a separate state from {@link
-     * #handleQuotedAttributeValue(boolean)} we can delay it until after a block completes and thus
-     * collect attribute values from multiple branches.
-     *
-     * <p>NOTE: unlike all the other handle methods, this one is called both from visitRawTextNode
-     * and some other methods. So it should avoid accessing any of the raw text node fields.
-     */
-    void handleAfterQuotedAttributeValue(SourceLocation.Point currentPoint) {
-      // we don't actually care what the current character is!
-      if (context.hasAttributePartsWithValue()) {
-        context.createAttributeNode();
-      } else {
-        errorReporter.report(
-            currentPoint.asLocation(filePath), FOUND_END_OF_ATTRIBUTE_STARTED_IN_ANOTHER_BLOCK);
-        context.resetAttribute();
-      }
-      // TODO(lukes): consider switching to BEFORE_ATTRIBUTE_NAME and pretending we saw some
-      // whitespace. Lots of user agents support things like <div a="b"c="d"> just fine, and since
-      // it isn't really ambiguous we could easily support it too.
-      context.setState(State.AFTER_TAG_NAME_OR_ATTRIBUTE, currentPoint);
     }
 
     /** Attempts to finish the current tag, returns true if it did. */
@@ -1170,7 +1101,8 @@ public final class HtmlRewritePass extends CompilerFilePass {
           ImmutableList.<BlockNode>of(node),
           "for loop",
           Functions.constant("loop body"),
-          false /* no guarantee that the children will only execute once. */);
+          false /* no guarantee that the children will execute exactly once. */,
+          false /* no guarantee that the children will execute at least once. */);
     }
 
     @Override
@@ -1188,11 +1120,13 @@ public final class HtmlRewritePass extends CompilerFilePass {
               return "ifempty block";
             }
           },
-          false /* no guarantee that the children will only execute once. */);
+          false /* no guarantee that the children will only execute once. */,
+          node.hasIfEmptyBlock() /* one branch will execute if there is an ifempty block. */);
     }
 
     @Override
     protected void visitIfNode(final IfNode node) {
+      boolean hasElse = node.hasElse();
       visitControlFlowStructure(
           node,
           node.getChildren(),
@@ -1209,12 +1143,14 @@ public final class HtmlRewritePass extends CompilerFilePass {
               return "else block";
             }
           },
-          // at least one child will execute if we have an else
-          Iterables.getLast(node.getChildren()) instanceof IfElseNode);
+          // one and only one child will execute if we have an else
+          hasElse,
+          hasElse);
     }
 
     @Override
     protected void visitSwitchNode(SwitchNode node) {
+      boolean hasDefault = node.hasDefaultCase();
       visitControlFlowStructure(
           node,
           node.getChildren(),
@@ -1228,8 +1164,9 @@ public final class HtmlRewritePass extends CompilerFilePass {
               return "default block";
             }
           },
-          // at least one child will execute if we have an default case
-          Iterables.getLast(node.getChildren()) instanceof SwitchDefaultNode);
+          // one and only one child will execute if we have a default
+          hasDefault,
+          hasDefault);
     }
 
     @Override
@@ -1261,18 +1198,10 @@ public final class HtmlRewritePass extends CompilerFilePass {
 
     void processNonPrintableNode(StandaloneNode node) {
       switch (context.getState()) {
-        case AFTER_QUOTED_ATTRIBUTE_VALUE:
-          handleAfterQuotedAttributeValue(node.getSourceLocation().getBeginPoint());
-          // fall-through
         case AFTER_TAG_NAME_OR_ATTRIBUTE:
         case BEFORE_ATTRIBUTE_NAME:
-          context.addTagChild(node);
-          break;
         case AFTER_ATTRIBUTE_NAME:
-          context.createAttributeNode();
           context.addTagChild(node);
-          context.setState(
-              State.AFTER_TAG_NAME_OR_ATTRIBUTE, node.getSourceLocation().getEndPoint());
           break;
         case BEFORE_ATTRIBUTE_VALUE:
           errorReporter.report(
@@ -1309,74 +1238,10 @@ public final class HtmlRewritePass extends CompilerFilePass {
       }
     }
 
-    /**
-     * Checks whether the given control flow node is in a valid state.
-     *
-     * <p>This should be called prior to visiting the children, to decide whether or not to recurse.
-     */
-    @CheckReturnValue
-    boolean processControlFlowNode(StandaloneNode node, String nodeName) {
-      switch (context.getState()) {
-        case AFTER_QUOTED_ATTRIBUTE_VALUE:
-          handleAfterQuotedAttributeValue(node.getSourceLocation().getBeginPoint());
-          // fall-through
-        case AFTER_TAG_NAME_OR_ATTRIBUTE:
-        case BEFORE_ATTRIBUTE_NAME:
-          context.addTagChild(node);
-          return true;
-        case AFTER_ATTRIBUTE_NAME:
-          context.createAttributeNode();
-          context.addTagChild(node);
-          context.setState(
-              State.AFTER_TAG_NAME_OR_ATTRIBUTE, node.getSourceLocation().getEndPoint());
-          return true;
-        case HTML_TAG_NAME:
-          errorReporter.report(
-              node.getSourceLocation(),
-              INVALID_LOCATION_FOR_CONTROL_FLOW,
-              nodeName,
-              "html tag names can only be constants or print nodes");
-          // give up on parsing this tag :(
-          context.reset();
-          context.setState(State.PCDATA, node.getSourceLocation().getBeginPoint());
-          return false;
-        case BEFORE_ATTRIBUTE_VALUE:
-        case UNQUOTED_ATTRIBUTE_VALUE:
-        case DOUBLE_QUOTED_ATTRIBUTE_VALUE:
-        case SINGLE_QUOTED_ATTRIBUTE_VALUE:
-          context.addAttributeValuePart(node);
-          return true;
-        case HTML_COMMENT:
-        case NONE:
-        case PCDATA:
-        case RCDATA_SCRIPT:
-        case RCDATA_STYLE:
-        case RCDATA_TEXTAREA:
-        case RCDATA_TITLE:
-        case XML_DECLARATION:
-        case CDATA:
-        case DOUBLE_QUOTED_XML_ATTRIBUTE_VALUE:
-        case SINGLE_QUOTED_XML_ATTRIBUTE_VALUE:
-          // do nothing
-          return true;
-
-        default:
-          throw new AssertionError("unexpected control flow exit state: " + context.getState());
-      }
-    }
-
     /** Printable nodes are things like {xid..} and {print ..}. */
     void processPrintableNode(StandaloneNode node) {
       checkState(node.getKind() != Kind.RAW_TEXT_NODE);
       switch (context.getState()) {
-        case AFTER_QUOTED_ATTRIBUTE_VALUE:
-          // finish the pending attribute
-          handleAfterQuotedAttributeValue(node.getSourceLocation().getBeginPoint());
-
-          context.setAttributeName(node);
-          context.setState(State.AFTER_ATTRIBUTE_NAME, node.getSourceLocation().getEndPoint());
-          break;
-
         case AFTER_TAG_NAME_OR_ATTRIBUTE:
           errorReporter.report(
               node.getSourceLocation(), EXPECTED_WS_OR_CLOSE_AFTER_TAG_OR_ATTRIBUTE);
@@ -1388,16 +1253,13 @@ public final class HtmlRewritePass extends CompilerFilePass {
           break;
 
         case BEFORE_ATTRIBUTE_NAME:
-          context.setAttributeName(node);
-          context.setState(State.AFTER_ATTRIBUTE_NAME, node.getSourceLocation().getEndPoint());
+          context.startAttribute(node);
           break;
 
         case HTML_TAG_NAME:
           if (node.getKind() == Kind.PRINT_NODE) {
             context.setTagName(new TagName((PrintNode) node));
             edits.remove(node);
-            context.setState(
-                State.AFTER_TAG_NAME_OR_ATTRIBUTE, node.getSourceLocation().getEndPoint());
           } else {
             errorReporter.report(node.getSourceLocation(), INVALID_TAG_NAME);
           }
@@ -1447,7 +1309,7 @@ public final class HtmlRewritePass extends CompilerFilePass {
       State startState = State.fromKind(blockKind);
       Checkpoint checkpoint = errorReporter.checkpoint();
       ParsingContext newCtx =
-          newParsingContext(startState, parent.getSourceLocation().getBeginPoint());
+          newParsingContext(name, startState, parent.getSourceLocation().getBeginPoint());
       ParsingContext oldCtx = setContext(newCtx);
       visitBlock(startState, parent, name, checkpoint);
       setContext(oldCtx); // restore
@@ -1460,75 +1322,126 @@ public final class HtmlRewritePass extends CompilerFilePass {
      * control flow is complete.
      *
      * @param parent The parent node, each child will be a block representing one of the branches
+     * @param children The child blocks. We don't use {@code parent.getChildren()} directly to make
+     *     it possible to handle ForNodes using this method.
      * @param overallName The name, for error reporting purposes, to assign to the control flow
      *     structure
      * @param blockNamer A function to provide a name for each child block, the key is the index of
      *     the block
      * @param willExactlyOneBranchExecuteOnce Whether or not it is guaranteed that exactly one
      *     branch of the structure will execute exactly one time.
+     * @param willAtLeastOneBranchExecute Whether or not it is guaranteed that at least one of the
+     *     branches will execute (as opposed to no branches executing).
      */
     void visitControlFlowStructure(
         StandaloneNode parent,
         List<? extends BlockNode> children,
         String overallName,
         Function<? super BlockNode, String> blockNamer,
-        boolean willExactlyOneBranchExecuteOnce) {
-      if (!processControlFlowNode(parent, overallName)) {
-        // this means that the node is in a bad location and we reported an error, don't visit
-        // children and just keep going
-        return;
-      }
+        boolean willExactlyOneBranchExecuteOnce,
+        boolean willAtLeastOneBranchExecute) {
 
       // this insane case can happen with SwitchNodes.
       if (children.isEmpty()) {
         return;
       }
-
-      Checkpoint checkpoint = errorReporter.checkpoint();
-      State startState = context.getState();
-      State endingState = null;
-      for (BlockNode block : children) {
-        ParsingContext newCtx =
-            newParsingContext(startState, block.getSourceLocation().getBeginPoint());
-        ParsingContext oldCtx = setContext(newCtx);
-        endingState = visitBlock(startState, block, blockNamer.apply(block), checkpoint);
-        setContext(oldCtx); // restore
-      }
-
-      if (!errorReporter.errorsSince(checkpoint)) {
-        if (startState == State.BEFORE_ATTRIBUTE_VALUE
-            && endingState == State.AFTER_QUOTED_ATTRIBUTE_VALUE) {
-          // This special case exists to support constructs like
-          // <div class={if $p}"foo"{else}"bar"{/if}>
-          //
-          // If we were starting from scratch we might require the quotation marks to go outside the
-          // if, but this is difficult now since this pattern is quite popular.
-          // To handle it correctly we need to know that
+      State startingState = context.getState();
+      State endingState = visitBranches(children, blockNamer);
+      SourceLocation.Point endPoint = parent.getSourceLocation().getEndPoint();
+      switch (startingState) {
+        case AFTER_TAG_NAME_OR_ATTRIBUTE:
+        case BEFORE_ATTRIBUTE_NAME:
+        case AFTER_ATTRIBUTE_NAME:
+          context.addTagChild(parent);
+          // at this point we are in AFTER_TAG_NAME_OR_ATTRIBUTE
+          // the branches should have ended in a similar tag state (or reported an error)
+          // if they ended in BEFORE_ATTRIBUTE_NAME (because they saw whitespace) we should switch
+          // to that.
+          if (willAtLeastOneBranchExecute && endingState == State.BEFORE_ATTRIBUTE_NAME) {
+            context.setState(State.BEFORE_ATTRIBUTE_NAME, endPoint);
+          }
+          break;
+        case HTML_TAG_NAME:
+          errorReporter.report(
+              parent.getSourceLocation(),
+              INVALID_LOCATION_FOR_CONTROL_FLOW,
+              overallName,
+              "html tag names can only be constants or print nodes");
+          context.reset();
+          context.setState(State.PCDATA, parent.getSourceLocation().getBeginPoint());
+          // give up on parsing this tag :(
+          break;
+        case BEFORE_ATTRIBUTE_VALUE:
           if (!willExactlyOneBranchExecuteOnce) {
             errorReporter.report(
                 parent.getSourceLocation(),
                 CONDITIONAL_BLOCK_ISNT_GUARANTEED_TO_PRODUCE_ONE_ATTRIBUTE_VALUE,
                 overallName);
-          } else {
-            // Since we started in BEFORE_ATTRIBUTE_VALUE. the whole control flow node will have
-            // been added as an attributeValue in context. But since we finished in
-            // AFTER_QUOTED_ATTRIBUTE_VALUE we know that this isn't actually a 'part' but rather the
-            // whole thing.  Just move it into attribute parts.
-            // TODO(lukes): This seems arbitrary, maybe we should delay the logic in
-            // processControlFlowNode until after visiting all branches?
-            context.setAttributeValue(Iterables.getOnlyElement(context.attributeValueChildren));
-            context.attributeValueChildren.clear();
-            context.setState(endingState, parent.getSourceLocation().getEndPoint());
+            // we continue and pretend like everything was ok
           }
-        } else {
-          context.setState(endingState, parent.getSourceLocation().getEndPoint());
-        }
+          // theoretically we might want to support x={if $p}y{else}z{/if}w, in which case this
+          // should be an attribute value part. We could support this if the branch ending state
+          // was UNQUOTED_ATTRIBUTE_VALUE and at least one of the branches will execute
+          if (willAtLeastOneBranchExecute && endingState == State.UNQUOTED_ATTRIBUTE_VALUE) {
+            context.addAttributeValuePart(parent);
+            context.setState(State.UNQUOTED_ATTRIBUTE_VALUE, endPoint);
+          } else {
+            context.setAttributeValue(parent);
+            if (willAtLeastOneBranchExecute && endingState == State.BEFORE_ATTRIBUTE_NAME) {
+              context.setState(State.BEFORE_ATTRIBUTE_NAME, endPoint);
+            }
+          }
+          break;
+        case UNQUOTED_ATTRIBUTE_VALUE:
+        case DOUBLE_QUOTED_ATTRIBUTE_VALUE:
+        case SINGLE_QUOTED_ATTRIBUTE_VALUE:
+          context.addAttributeValuePart(parent);
+          // no need to tweak any state, addAttributeValuePart doesn't modify anything
+          break;
+        case HTML_COMMENT:
+        case NONE:
+        case PCDATA:
+        case RCDATA_SCRIPT:
+        case RCDATA_STYLE:
+        case RCDATA_TEXTAREA:
+        case RCDATA_TITLE:
+        case XML_DECLARATION:
+        case CDATA:
+        case DOUBLE_QUOTED_XML_ATTRIBUTE_VALUE:
+        case SINGLE_QUOTED_XML_ATTRIBUTE_VALUE:
+          // do nothing
+          break;
+
+        default:
+          throw new AssertionError("unexpected control flow starting state: " + startingState);
       }
+    }
+
+    /** Visit the branches of a control flow structure. */
+    State visitBranches(
+        List<? extends BlockNode> children, Function<? super BlockNode, String> blockNamer) {
+      Checkpoint checkpoint = errorReporter.checkpoint();
+      State startState = context.getState();
+      State endingState = null;
+      for (BlockNode block : children) {
+        String blockName = blockNamer.apply(block);
+        ParsingContext newCtx =
+            newParsingContext(blockName, startState, block.getSourceLocation().getBeginPoint());
+        ParsingContext oldCtx = setContext(newCtx);
+        endingState = visitBlock(startState, block, blockName, checkpoint);
+        setContext(oldCtx); // restore
+      }
+
+      if (errorReporter.errorsSince(checkpoint)) {
+        return startState;
+      }
+      return endingState;
     }
 
     /** Visits a block and returns the finalState. */
     State visitBlock(State startState, BlockNode node, String blockName, Checkpoint checkpoint) {
       visitChildren(node);
+      context.finishBlock();
       State finalState = context.getState();
       SourceLocation.Point finalStateTransitionPoint = context.getStateTransitionPoint();
       if (finalState.isInvalidForEndOfBlock()) {
@@ -1537,28 +1450,6 @@ public final class HtmlRewritePass extends CompilerFilePass {
         finalState = startState;
       }
       if (!errorReporter.errorsSince(checkpoint)) {
-        // we need to handle a few special cases involving attribute values at the end of blocks.
-        // consider:
-        // 1. {if $p}class=foo{if} -> finish the attribute value and attribute
-        // 2. class={if $p}foo{else}bar{/if} -> do nothing, stay in unquoted attribute
-        // 3. class=x{if $p}foo{else}bar{/if} -> do nothing, stay in unquoted attribute
-        // 4. {if $p}class="foo"{if} -> complete the attribute, go to after attribute or tag name
-        // 5. class={if $p}"foo"{else}"bar"{/if} -> do nothing, stay in after quoted attribute
-        // value
-        if (startState != finalState
-            && (finalState == State.AFTER_QUOTED_ATTRIBUTE_VALUE
-                || finalState == State.UNQUOTED_ATTRIBUTE_VALUE)) {
-          if (finalState == State.AFTER_QUOTED_ATTRIBUTE_VALUE) {
-            if (context.hasAttributePartsWithValue()) {
-              context.createAttributeNode();
-              finalState = State.AFTER_TAG_NAME_OR_ATTRIBUTE;
-            }
-          } else if (context.hasAttributePartsForValue()) {
-            context.createUnquotedAttributeValue();
-            context.createAttributeNode();
-            finalState = State.AFTER_TAG_NAME_OR_ATTRIBUTE;
-          }
-        }
         State reconciled = startState.reconcile(finalState);
         if (reconciled == null) {
           String suggestion = reconciliationFailureHint(startState, finalState);
@@ -1593,14 +1484,15 @@ public final class HtmlRewritePass extends CompilerFilePass {
       // if there were no errors we may need to conditionally add new children, this only really
       // applies to attributes which may be partially finished (to allow for things like
       // foo=a{if $x}b{/if}
+      // TODO(lukes): consider eliminating this method by moving the logic for reparenting into
+      // ParsingContext and do it as part of creating the nodes.
       switch (finalState) {
-        case BEFORE_ATTRIBUTE_NAME:
         case AFTER_TAG_NAME_OR_ATTRIBUTE:
+          blockCtx.maybeFinishPendingAttribute(parent.getSourceLocation().getEndPoint());
+          // fall-through
+        case BEFORE_ATTRIBUTE_NAME:
         case AFTER_ATTRIBUTE_NAME:
           blockCtx.reparentDirectTagChildren(parent);
-          break;
-        case AFTER_QUOTED_ATTRIBUTE_VALUE:
-          blockCtx.reparentAttributeParts(parent);
           break;
         case UNQUOTED_ATTRIBUTE_VALUE:
         case DOUBLE_QUOTED_ATTRIBUTE_VALUE:
@@ -1660,16 +1552,14 @@ public final class HtmlRewritePass extends CompilerFilePass {
         case BEFORE_ATTRIBUTE_NAME:
         case XML_DECLARATION:
         case UNQUOTED_ATTRIBUTE_VALUE:
-        case AFTER_QUOTED_ATTRIBUTE_VALUE:
           // if this wasn't reconciled, it means they probably forgot to close the tag
           if (startState == State.PCDATA) {
             return "Did you forget to close the tag?";
           }
           return null;
         case NONE: // should be impossible, there are no transitions into NONE from non-NONE
-        default:
-          throw new AssertionError("unexpected final state: " + finalState);
       }
+      throw new AssertionError("unexpected final state: " + finalState);
     }
 
     static String didYouForgetToCloseThe(String thing) {
@@ -1683,8 +1573,10 @@ public final class HtmlRewritePass extends CompilerFilePass {
     }
 
     /** @param state The state to start the context in. */
-    ParsingContext newParsingContext(State state, SourceLocation.Point startPoint) {
-      return new ParsingContext(state, startPoint, filePath, edits, errorReporter, nodeIdGen);
+    ParsingContext newParsingContext(
+        String blockName, State state, SourceLocation.Point startPoint) {
+      return new ParsingContext(
+          blockName, state, startPoint, filePath, edits, errorReporter, nodeIdGen);
     }
   }
 
@@ -1765,7 +1657,6 @@ public final class HtmlRewritePass extends CompilerFilePass {
       replacements.clear();
       newChildren.clear();
     }
-
   }
 
   /**
@@ -1778,8 +1669,34 @@ public final class HtmlRewritePass extends CompilerFilePass {
    * only want to parse attributes or attribute values (or parts of attribute values). In theory, we
    * could split it into 3-4 classes one for each case, but I'm not sure it simplifies things over
    * the current solution. See {@link Visitor#reparentNodes} for how we handle those cases.
+   *
+   * <p>The handling of attributes is particularly tricky. It is difficult to decide when to
+   * complete an attribute (that is, create the {@link HtmlAttributeNode}). In theory it should be
+   * obvious, the attribute is 'done' when we see one of the following:
+   *
+   * <ul>
+   *   <li>A non '=' character after an attribute name (a value-less attribute)
+   *   <li>A ' or " character after a quoted attribute value
+   *   <li>A whitespace character after an unquoted attribute value
+   * </ul>
+   *
+   * However, we want to support various control flow for creating attribute values. For example,
+   * <code>href={if $v2}"/foo2"{else}"/foo"{/if}</code>. Here when we see the closing double quote
+   * characters we know that the attribute value is done, but it is too early to close the
+   * attribute. So we need to delay. Thus the rules for when we 'finish' an attribute are:
+   *
+   * <ul>
+   *   <li>If a block starts in {@link State#BEFORE_ATTRIBUTE_VALUE} then the block must be the
+   *       attribute value
+   *   <li>If we see the beginning of a new attribute, we should finish the previous one
+   *   <li>If we see the end of a tag, we should finish the previous attribute.
+   *   <li>At the end of a block, we should complete attribute nodes if the block started in a tag
+   *       state
+   * </ul>
    */
   private static final class ParsingContext {
+    final String blockName;
+    final State startingState;
     final String filePath;
     final IdGenerator nodeIdGen;
     final ErrorReporter errorReporter;
@@ -1804,7 +1721,6 @@ public final class HtmlRewritePass extends CompilerFilePass {
 
     // for tracking the current attribute being built
 
-    /** All the parts of the attribute. */
     StandaloneNode attributeName;
 
     SourceLocation.Point equalsSignLocation;
@@ -1819,18 +1735,28 @@ public final class HtmlRewritePass extends CompilerFilePass {
     final List<StandaloneNode> attributeValueChildren = new ArrayList<>();
 
     ParsingContext(
+        String blockName,
         State startingState,
         SourceLocation.Point startPoint,
         String filePath,
         AstEdits edits,
         ErrorReporter errorReporter,
         IdGenerator nodeIdGen) {
+      this.blockName = checkNotNull(blockName);
+      this.startingState = checkNotNull(startingState);
       this.state = checkNotNull(startingState);
       this.stateTransitionPoint = checkNotNull(startPoint);
       this.filePath = checkNotNull(filePath);
       this.nodeIdGen = checkNotNull(nodeIdGen);
       this.edits = checkNotNull(edits);
       this.errorReporter = checkNotNull(errorReporter);
+    }
+
+    /** Called at the end of a block to finish any pending attribute nodes. */
+    void finishBlock() {
+      if (startingState.isTagState()) {
+        maybeFinishPendingAttribute(stateTransitionPoint);
+      }
     }
 
     /** Attaches the attributeValueChildren to the parent. */
@@ -1841,13 +1767,13 @@ public final class HtmlRewritePass extends CompilerFilePass {
 
     /** Attaches the directTagChildren to the parent. */
     void reparentDirectTagChildren(BlockNode parent) {
+      if (attributeValue != null) {
+        edits.addChild(parent, attributeValue);
+        attributeValue = null;
+      }
+
       edits.addChildren(parent, directTagChildren);
       directTagChildren.clear();
-    }
-
-    void reparentAttributeParts(BlockNode parent) {
-      edits.addChild(parent, checkNotNull(attributeValue));
-      attributeValue = null;
     }
 
     /** Returns true if this has accumulated parts of an unquoted attribute value. */
@@ -1860,25 +1786,17 @@ public final class HtmlRewritePass extends CompilerFilePass {
       return quotedAttributeValueStart != null;
     }
 
-    /** Returns true if this contains an attribute name and an equals sign but no value yet. */
-    boolean hasAttributePartsForValue() {
-      return attributeName != null && equalsSignLocation != null;
-    }
-
-    /** Returns true if this context contains all the parts of a completed attribute with a value */
-    boolean hasAttributePartsWithValue() {
-      return attributeName != null && attributeValue != null;
-    }
-
     boolean hasTagStart() {
       return tagStartNode != null && tagStartPoint != null;
     }
 
     /** Sets the given node as a direct child of the tag currently being built. */
     void addTagChild(StandaloneNode node) {
+      maybeFinishPendingAttribute(node.getSourceLocation().getBeginPoint());
       checkNotNull(node);
       directTagChildren.add(node);
       edits.remove(node);
+      setState(State.AFTER_TAG_NAME_OR_ATTRIBUTE, node.getSourceLocation().getEndPoint());
     }
 
     /** Asserts that the context is empty. */
@@ -1890,6 +1808,10 @@ public final class HtmlRewritePass extends CompilerFilePass {
       }
       if (attributeName != null) {
         error = format(error, "Expected attributeName to be null, got: %s", attributeName);
+      }
+      if (equalsSignLocation != null) {
+        error =
+            format(error, "Expected equalsSignLocation to be null, got: %s", equalsSignLocation);
       }
       if (attributeValue != null) {
         error = format(error, "Expected attributeValue to be null, got: %s", attributeValue);
@@ -1966,6 +1888,19 @@ public final class HtmlRewritePass extends CompilerFilePass {
       checkState(this.tagStartPoint == null);
       checkState(this.tagStartNode == null);
       checkState(this.directTagChildren.isEmpty());
+
+      // need to check if it is safe to transition into a tag.
+      // this is only true if our starting location is pcdata
+      if (startingState != State.PCDATA) {
+        errorReporter.report(
+            point.asLocation(filePath),
+            BLOCK_TRANSITION_DISALLOWED,
+            blockName,
+            startingState,
+            "tag");
+        reset();
+      }
+
       this.tagStartPoint = checkNotNull(point);
       this.tagStartNode = checkNotNull(tagStartNode);
       this.isCloseTag = isCloseTag;
@@ -1978,21 +1913,35 @@ public final class HtmlRewritePass extends CompilerFilePass {
 
     /** Sets the tag name of the tag currently being built. */
     void setTagName(TagName tagName) {
-      checkState(tagStartPoint != null);
       this.tagName = checkNotNull(tagName);
-    }
-    
-    void setAttributeName(StandaloneNode node) {
-      checkNotNull(node);
-      checkState(attributeName == null);
-      edits.remove(node);
-      attributeName = node;
+      setState(State.AFTER_TAG_NAME_OR_ATTRIBUTE, tagName.getTagLocation().getEndPoint());
     }
 
-    void setEqualsSignLocation(SourceLocation.Point location) {
-      checkNotNull(location);
+    void startAttribute(StandaloneNode attrName) {
+      maybeFinishPendingAttribute(attrName.getSourceLocation().getBeginPoint());
+      checkNotNull(attrName);
+      checkState(attributeName == null);
+      if (startingState == State.BEFORE_ATTRIBUTE_VALUE) {
+        errorReporter.report(
+            attrName.getSourceLocation(),
+            BLOCK_TRANSITION_DISALLOWED,
+            blockName,
+            startingState,
+            "attribute");
+        resetAttribute();
+      }
+      edits.remove(attrName);
+      attributeName = attrName;
+      setState(State.AFTER_ATTRIBUTE_NAME, attrName.getSourceLocation().getEndPoint());
+    }
+
+    void setEqualsSignLocation(
+        SourceLocation.Point equalsSignPoint, SourceLocation.Point stateTransitionPoint) {
+      checkNotNull(equalsSignPoint);
+      checkState(attributeName != null);
       checkState(equalsSignLocation == null);
-      equalsSignLocation = location;
+      equalsSignLocation = equalsSignPoint;
+      setState(State.BEFORE_ATTRIBUTE_VALUE, stateTransitionPoint);
     }
 
     void setAttributeValue(StandaloneNode node) {
@@ -2000,6 +1949,7 @@ public final class HtmlRewritePass extends CompilerFilePass {
       checkState(attributeValue == null);
       edits.remove(node);
       attributeValue = node;
+      setState(State.AFTER_TAG_NAME_OR_ATTRIBUTE, node.getSourceLocation().getEndPoint());
     }
 
     /**
@@ -2007,12 +1957,15 @@ public final class HtmlRewritePass extends CompilerFilePass {
      *
      * @param node The node where it started
      * @param point The source location where it started.
+     * @param nextState The next state, either {@link State#DOUBLE_QUOTED_ATTRIBUTE_VALUE} or {@link
+     *     State#SINGLE_QUOTED_ATTRIBUTE_VALUE}.
      */
-    void startQuotedAttributeValue(RawTextNode node, SourceLocation.Point point) {
-      checkState(quotedAttributeValueStart == null);
-      checkState(attributeValueChildren.isEmpty());
+    void startQuotedAttributeValue(RawTextNode node, SourceLocation.Point point, State nextState) {
+      checkState(!hasQuotedAttributeValueParts());
+      checkState(!hasUnquotedAttributeValueParts());
       edits.remove(node);
       quotedAttributeValueStart = checkNotNull(point);
+      setState(nextState, point);
     }
 
     /** Adds a new attribute value part and marks the node for removal. */
@@ -2021,8 +1974,19 @@ public final class HtmlRewritePass extends CompilerFilePass {
       edits.remove(node);
     }
 
-    /** Completes the unquoted attribute value. */
-    void createUnquotedAttributeValue() {
+    /** Completes an unquoted attribute value. */
+    void createUnquotedAttributeValue(SourceLocation.Point endPoint) {
+      if (!hasUnquotedAttributeValueParts()) {
+        if (attributeName != null) {
+          errorReporter.report(endPoint.asLocation(filePath), EXPECTED_ATTRIBUTE_VALUE);
+        } else {
+          errorReporter.report(
+              endPoint.asLocation(filePath), FOUND_END_OF_ATTRIBUTE_STARTED_IN_ANOTHER_BLOCK);
+        }
+        resetAttribute();
+        setState(State.AFTER_TAG_NAME_OR_ATTRIBUTE, endPoint);
+        return;
+      }
       HtmlAttributeValueNode valueNode =
           new HtmlAttributeValueNode(
               nodeIdGen.genId(), getLocationOf(attributeValueChildren), Quotes.NONE);
@@ -2063,7 +2027,7 @@ public final class HtmlRewritePass extends CompilerFilePass {
       attributeName = null;
       equalsSignLocation = null;
       attributeValue = null;
-      directTagChildren.add(attribute);
+      addTagChild(attribute);
     }
 
     /**
@@ -2076,6 +2040,7 @@ public final class HtmlRewritePass extends CompilerFilePass {
      *     of the rcdata states for special tags.
      */
     State createTag(RawTextNode tagEndNode, boolean selfClosing, SourceLocation.Point endPoint) {
+      maybeFinishPendingAttribute(endPoint);
       BlockNode replacement;
       SourceLocation sourceLocation = new SourceLocation(filePath, tagStartPoint, endPoint);
       if (isCloseTag) {
@@ -2125,6 +2090,25 @@ public final class HtmlRewritePass extends CompilerFilePass {
       tagStartNode = null;
       checkEmpty("Expected state to be empty after completing a tag");
       return nextState;
+    }
+
+    void maybeFinishPendingAttribute(SourceLocation.Point currentPoint) {
+      // For quoted attribute values we should have already finished them (when we saw the closing
+      // quote).  But for unquoted attribute values we delay closing them until we see a delimiter
+      // so create one now if we have parts.
+      if (hasUnquotedAttributeValueParts()) {
+        createUnquotedAttributeValue(currentPoint);
+      } else if (hasQuotedAttributeValueParts()) {
+        // if there is a quoted attribute, it should have been finished
+        // which means the only way we could get here is if the attribute was not finished
+        // in a block
+        errorReporter.report(
+            currentPoint.asLocation(filePath), FOUND_END_OF_ATTRIBUTE_STARTED_IN_ANOTHER_BLOCK);
+        resetAttribute();
+      }
+      if (attributeName != null) {
+        createAttributeNode();
+      }
     }
 
     /**

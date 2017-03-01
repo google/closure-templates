@@ -66,6 +66,11 @@ public final class ForeachNode extends AbstractParentCommandNode<BlockNode>
     return Kind.FOREACH_NODE;
   }
 
+  /** Returns true if this {@code foreach} loop has and {@code ifempty} block. */
+  public boolean hasIfEmptyBlock() {
+    return numChildren() > 1;
+  }
+
   /** Returns the text of the expression we're iterating over. */
   public String getExprText() {
     return expr.toSourceString();

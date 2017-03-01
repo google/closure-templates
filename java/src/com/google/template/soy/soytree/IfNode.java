@@ -51,6 +51,11 @@ public final class IfNode extends AbstractParentSoyNode<BlockNode>
     return Kind.IF_NODE;
   }
 
+  /** Returns true if this if statement has an {@code else} block. */
+  public boolean hasElse() {
+    return getChild(numChildren() - 1) instanceof IfElseNode;
+  }
+
   @Override
   public String toSourceString() {
     StringBuilder sb = new StringBuilder();

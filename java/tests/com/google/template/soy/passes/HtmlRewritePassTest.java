@@ -36,10 +36,14 @@ import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.types.SoyTypeRegistry;
 import java.io.StringReader;
-import junit.framework.TestCase;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
-public final class HtmlRewritePassTest extends TestCase {
+@RunWith(JUnit4.class)
+public final class HtmlRewritePassTest {
 
+  @Test
   public void testTags() {
     TemplateNode node = runPass("<div></div>");
     assertThat(node.getChild(0)).isInstanceOf(HtmlOpenTagNode.class);
@@ -48,6 +52,7 @@ public final class HtmlRewritePassTest extends TestCase {
     assertThatASTString(node).isEqualTo("HTML_OPEN_TAG_NODE\n" + "HTML_CLOSE_TAG_NODE\n");
   }
 
+  @Test
   public void testAttributes() {
     TemplateNode node = runPass("<div class=\"foo\"></div>");
     assertThatSourceString(node).isEqualTo("<div class=\"foo\"></div>");
@@ -72,6 +77,7 @@ public final class HtmlRewritePassTest extends TestCase {
     assertThatASTString(node).isEqualTo(structure);
   }
 
+  @Test
   public void testLetAttributes() {
     TemplateNode node = runPass("{let $foo kind=\"attributes\"}class='foo'{/let}");
     assertThatSourceString(node).isEqualTo("{let $foo kind=\"attributes\"}class='foo'{/let}");
@@ -85,6 +91,7 @@ public final class HtmlRewritePassTest extends TestCase {
     assertThatASTString(node).isEqualTo(structure);
   }
 
+  @Test
   public void testSelfClosingTag() {
     TemplateNode node = runPass("<input/>");
     assertThatSourceString(node).isEqualTo("<input/>");
@@ -94,6 +101,7 @@ public final class HtmlRewritePassTest extends TestCase {
     assertThatSourceString(node).isEqualTo("<input/>");
   }
 
+  @Test
   public void testTextNodes() {
     TemplateNode node = runPass("x x<div>content</div> <div>{sp}</div>");
     assertThatSourceString(node).isEqualTo("x x<div>content</div> <div> </div>");
@@ -109,6 +117,7 @@ public final class HtmlRewritePassTest extends TestCase {
                 + "HTML_CLOSE_TAG_NODE\n");
   }
 
+  @Test
   public void testDynamicTagName() {
     TemplateNode node = runPass("{let $t : 'div' /}<{$t}>content</{$t}>");
     assertThatSourceString(node).isEqualTo("{let $t : 'div' /}<{$t}>content</{$t}>");
@@ -123,6 +132,7 @@ public final class HtmlRewritePassTest extends TestCase {
                 + "HTML_CLOSE_TAG_NODE\n");
   }
 
+  @Test
   public void testDynamicAttributeValue() {
     TemplateNode node = runPass("{let $t : 'x' /}<div a={$t}>content</div>");
     assertThatSourceString(node).isEqualTo("{let $t : 'x' /}<div a={$t}>content</div>");
@@ -146,6 +156,7 @@ public final class HtmlRewritePassTest extends TestCase {
     assertThatSourceString(node).isEqualTo("{let $t : 'x' /}<div a='{$t}'>content</div>");
   }
 
+  @Test
   public void testDynamicAttribute() {
     TemplateNode node = runPass("{let $t : 'x' /}<div {$t}>content</div>");
     assertThatSourceString(node).isEqualTo("{let $t : 'x' /}<div {$t}>content</div>");
@@ -176,6 +187,7 @@ public final class HtmlRewritePassTest extends TestCase {
                 + "");
   }
 
+  @Test
   public void testConditionalAttribute() {
     TemplateNode node = runPass("{let $t : 'x' /}<div {if $t}foo{else}bar{/if}>content</div>");
     assertThatSourceString(node)
@@ -196,6 +208,7 @@ public final class HtmlRewritePassTest extends TestCase {
                 + "HTML_CLOSE_TAG_NODE\n");
   }
 
+  @Test
   public void testConditionalAttributeValue() {
     TemplateNode node =
         runPass("{let $t : 'x' /}<div class=\"{if $t}foo{else}bar{/if}\">content</div>");
@@ -222,6 +235,7 @@ public final class HtmlRewritePassTest extends TestCase {
   // ContextualAutoescaper rejects these forms.  once we stop 'desuraging' prior to the autoescaper
   // we can move these tests over.
 
+  @Test
   public void testConditionalContextMerging() {
     TemplateNode node = runPass("{@param p : ?}<div {if $p}foo=bar{else}baz{/if}>");
     assertThatSourceString(node).isEqualTo("<div{if $p} foo=bar{else} baz{/if}>");
@@ -247,6 +261,7 @@ public final class HtmlRewritePassTest extends TestCase {
   }
 
   // Ideally, we wouldn't support this pattern since it adds a fair bit of complexity
+  @Test
   public void testConditionalQuotedAttributeValues() {
     TemplateNode node = runPass("{@param p : ?}<div x={if $p}'foo'{else}'bar'{/if} {$p}>");
     assertThatSourceString(node).isEqualTo("<div x={if $p}'foo'{else}'bar'{/if} {$p}> ");
@@ -305,6 +320,7 @@ public final class HtmlRewritePassTest extends TestCase {
                 + "");
   }
 
+  @Test
   public void testConditionalUnquotedAttributeValue() {
     TemplateNode node = runPass("{@param p : ?}<div class={if $p}x{else}y{/if}>");
     assertThatSourceString(node).isEqualTo("<div class={if $p}x{else}y{/if}>");

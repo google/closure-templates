@@ -62,6 +62,11 @@ public final class SwitchNode extends AbstractParentCommandNode<BlockNode>
     return Kind.SWITCH_NODE;
   }
 
+  /** Returns true if this switch has a {@code default} case. */
+  public boolean hasDefaultCase() {
+    return getChild(numChildren() - 1) instanceof SwitchDefaultNode;
+  }
+
   /** Returns the text for the expression to switch on. */
   public String getExprText() {
     return expr.toSourceString();
