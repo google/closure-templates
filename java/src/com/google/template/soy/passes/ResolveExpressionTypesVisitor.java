@@ -519,7 +519,6 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
           getFieldType(
               node.getBaseExprChild().getType(),
               node.getFieldName(),
-              node.isNullSafe(),
               node.getSourceLocation()));
       tryApplySubstitution(node);
     }
@@ -866,7 +865,7 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
      * @return The type of the field.
      */
     private SoyType getFieldType(
-        SoyType baseType, String fieldName, boolean isNullSafe, SourceLocation sourceLocation) {
+        SoyType baseType, String fieldName, SourceLocation sourceLocation) {
       Preconditions.checkNotNull(baseType);
       switch (baseType.getKind()) {
         case UNKNOWN:
@@ -949,12 +948,12 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
             List<SoyType> fieldTypes = new ArrayList<>(unionType.getMembers().size());
             for (SoyType unionMember : unionType.getMembers()) {
               // TODO: In the future when we have flow-based type analysis, only
-              // exclude nulls when isNullSafe is true.
+              // exclude nulls when fieldAccessNode is null-safe
               if (unionMember.getKind() == SoyType.Kind.NULL) {
                 continue;
               }
 
-              SoyType fieldType = getFieldType(unionMember, fieldName, isNullSafe, sourceLocation);
+              SoyType fieldType = getFieldType(unionMember, fieldName, sourceLocation);
               // If this member's field type resolved to an error, bail out to avoid spamming
               // the user with multiple error messages for the same line.
               if (fieldType == ErrorType.getInstance()) {
