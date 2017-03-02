@@ -277,8 +277,8 @@ public final class SoySauceImpl implements SoySauce {
       result = template.render(out, context);
     } catch (Throwable t) {
       rewriteStackTrace(t);
-      Throwables.propagateIfInstanceOf(t, IOException.class);
-      throw Throwables.propagate(t);
+      Throwables.throwIfInstanceOf(t, IOException.class);
+      throw t;
     }
     if (result.isDone()) {
       return Continuations.done();
