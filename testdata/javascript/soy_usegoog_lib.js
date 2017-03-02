@@ -1479,21 +1479,16 @@ goog.loadModule = function(moduleDef) {
 
 
 /**
- * @private @const {function(string):?}
- *
- * The new type inference warns because this function has no formal
- * parameters, but its jsdoc says that it takes one argument.
- * (The argument is used via arguments[0], but NTI does not detect this.)
- * @suppress {newCheckTypes}
+ * @private @const
  */
-goog.loadModuleFromSource_ = function() {
+goog.loadModuleFromSource_ = /** @type {function(string):?} */ (function() {
   // NOTE: we avoid declaring parameters or local variables here to avoid
   // masking globals or leaking values into the module definition.
   'use strict';
   var exports = {};
   eval(arguments[0]);
   return exports;
-};
+});
 
 
 /**
@@ -1519,6 +1514,15 @@ goog.normalizePath_ = function(path) {
   }
   return components.join('/');
 };
+
+
+/**
+ * Provides a hook for loading a file when using Closure's goog.require() API
+ * with goog.modules.  In particular this hook is provided to support Node.js.
+ *
+ * @type {(function(string):string)|undefined}
+ */
+goog.global.CLOSURE_LOAD_FILE_SYNC;
 
 
 /**
@@ -1990,17 +1994,15 @@ goog.cloneObject = function(obj) {
 
 /**
  * A native implementation of goog.bind.
- * @param {Function} fn A function to partially apply.
- * @param {Object|undefined} selfObj Specifies the object which this should
- *     point to when the function is run.
+ * @param {?function(this:T, ...)} fn A function to partially apply.
+ * @param {T} selfObj Specifies the object which this should point to when the
+ *     function is run.
  * @param {...*} var_args Additional arguments that are partially applied to the
  *     function.
- * @return {!Function} A partially-applied form of the function bind() was
+ * @return {!Function} A partially-applied form of the function goog.bind() was
  *     invoked as a method of.
+ * @template T
  * @private
- * @suppress {deprecated} The compiler thinks that Function.prototype.bind is
- *     deprecated because some people have declared a pure-JS version.
- *     Only the pure-JS version is truly deprecated.
  */
 goog.bindNative_ = function(fn, selfObj, var_args) {
   return /** @type {!Function} */ (fn.call.apply(fn.bind, arguments));
@@ -2009,13 +2011,14 @@ goog.bindNative_ = function(fn, selfObj, var_args) {
 
 /**
  * A pure-JS implementation of goog.bind.
- * @param {Function} fn A function to partially apply.
- * @param {Object|undefined} selfObj Specifies the object which this should
- *     point to when the function is run.
+ * @param {?function(this:T, ...)} fn A function to partially apply.
+ * @param {T} selfObj Specifies the object which this should point to when the
+ *     function is run.
  * @param {...*} var_args Additional arguments that are partially applied to the
  *     function.
- * @return {!Function} A partially-applied form of the function bind() was
+ * @return {!Function} A partially-applied form of the function goog.bind() was
  *     invoked as a method of.
+ * @template T
  * @private
  */
 goog.bindJs_ = function(fn, selfObj, var_args) {
@@ -2213,6 +2216,17 @@ goog.cssNameMapping_;
  * @see goog.setCssNameMapping
  */
 goog.cssNameMappingStyle_;
+
+
+
+/**
+ * A hook for modifying the default behavior goog.getCssName. The function
+ * if present, will recieve the standard output of the goog.getCssName as
+ * its input.
+ *
+ * @type {(function(string):string)|undefined}
+ */
+goog.global.CLOSURE_CSS_NAME_MAP_FN;
 
 
 /**
@@ -2844,11 +2858,22 @@ goog.createRequiresTranspilation_ = function() {
     }
   }
 
+  var userAgent = goog.global.navigator && goog.global.navigator.userAgent ?
+      goog.global.navigator.userAgent :
+      '';
+
   // Identify ES3-only browsers by their incorrect treatment of commas.
   addNewerLanguageTranspilationCheck('es5', function() {
     return evalCheck('[1,].length==1');
   });
   addNewerLanguageTranspilationCheck('es6', function() {
+    // Edge has a non-deterministic (i.e., not reproducible) bug with ES6:
+    // https://github.com/Microsoft/ChakraCore/issues/1496.
+    var re = /Edge\/(\d+)(\.\d)*/i;
+    var edgeUserAgent = userAgent.match(re);
+    if (edgeUserAgent && Number(edgeUserAgent[1]) < 15) {
+      return false;
+    }
     // Test es6: [FF50 (?), Edge 14 (?), Chrome 50]
     //   (a) default params (specifically shadowing locals),
     //   (b) destructuring, (c) block-scoped functions,
@@ -3468,9 +3493,9 @@ goog.addDependency('json/hybrid.js', ['goog.json.hybrid'], ['goog.asserts', 'goo
 goog.addDependency('json/hybrid_test.js', ['goog.json.hybridTest'], ['goog.json', 'goog.json.hybrid', 'goog.testing.PropertyReplacer', 'goog.testing.jsunit', 'goog.testing.recordFunction', 'goog.userAgent'], {});
 goog.addDependency('json/hybridjsonprocessor.js', ['goog.json.HybridJsonProcessor'], ['goog.json.Processor', 'goog.json.hybrid'], {});
 goog.addDependency('json/hybridjsonprocessor_test.js', ['goog.json.HybridJsonProcessorTest'], ['goog.json.HybridJsonProcessor', 'goog.json.hybrid', 'goog.testing.jsunit'], {});
-goog.addDependency('json/json.js', ['goog.json', 'goog.json.Replacer', 'goog.json.Reviver', 'goog.json.Serializer'], [], {});
+goog.addDependency('json/json.js', ['goog.json', 'goog.json.Replacer', 'goog.json.Reviver', 'goog.json.Serializer'], ['goog.log'], {});
 goog.addDependency('json/json_perf.js', ['goog.jsonPerf'], ['goog.dom', 'goog.json', 'goog.math', 'goog.string', 'goog.testing.PerformanceTable', 'goog.testing.PropertyReplacer', 'goog.testing.jsunit'], {});
-goog.addDependency('json/json_test.js', ['goog.jsonTest'], ['goog.functions', 'goog.json', 'goog.testing.jsunit', 'goog.userAgent'], {});
+goog.addDependency('json/json_test.js', ['goog.jsonTest'], ['goog.functions', 'goog.json', 'goog.log', 'goog.testing.PropertyReplacer', 'goog.testing.jsunit', 'goog.userAgent'], {});
 goog.addDependency('json/nativejsonprocessor.js', ['goog.json.NativeJsonProcessor'], ['goog.asserts', 'goog.json.Processor'], {});
 goog.addDependency('json/processor.js', ['goog.json.Processor'], ['goog.string.Parser', 'goog.string.Stringifier'], {});
 goog.addDependency('json/processor_test.js', ['goog.json.processorTest'], ['goog.json.EvalJsonProcessor', 'goog.json.NativeJsonProcessor', 'goog.testing.jsunit', 'goog.userAgent'], {});
@@ -7364,7 +7389,7 @@ goog.array.removeAllIf = function(arr, f, opt_obj) {
  * @return {!Array<?>} The new resultant array.
  */
 goog.array.concat = function(var_args) {
-  return Array.prototype.concat.apply(Array.prototype, arguments);
+  return Array.prototype.concat.apply([], arguments);
 };
 
 
@@ -7375,7 +7400,7 @@ goog.array.concat = function(var_args) {
  * @template T
  */
 goog.array.join = function(var_args) {
-  return Array.prototype.concat.apply(Array.prototype, arguments);
+  return Array.prototype.concat.apply([], arguments);
 };
 
 
@@ -22143,8 +22168,8 @@ goog.dom.getParentElement = function(element) {
 
 /**
  * Whether a node contains another node.
- * @param {?Node} parent The node that should contain the other node.
- * @param {?Node} descendant The node to test presence of.
+ * @param {?Node|undefined} parent The node that should contain the other node.
+ * @param {?Node|undefined} descendant The node to test presence of.
  * @return {boolean} Whether the parent node contains the descendent node.
  */
 goog.dom.contains = function(parent, descendant) {
@@ -26133,13 +26158,14 @@ goog.uri.utils.appendQueryData_ = function(buffer) {
 
 /**
  * Appends key=value pairs to an array, supporting multi-valued objects.
- * @param {string} key The key prefix.
+ * @param {*} key The key prefix.
  * @param {goog.uri.utils.QueryValue} value The value to serialize.
  * @param {!Array<string>} pairs The array to which the 'key=value' strings
  *     should be appended.
  * @private
  */
 goog.uri.utils.appendKeyValuePairs_ = function(key, value, pairs) {
+  goog.asserts.assertString(key);
   if (goog.isArray(value)) {
     // Convince the compiler it's an array.
     goog.asserts.assertArray(value);

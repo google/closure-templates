@@ -33,8 +33,6 @@ import com.google.inject.Injector;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.SoyModule;
-import com.google.template.soy.base.internal.IncrementingIdGenerator;
-import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyAbstractValue;
 import com.google.template.soy.data.SoyDict;
@@ -56,7 +54,6 @@ import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.shared.SoyIdRenamingMap;
-import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -64,14 +61,12 @@ import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
-import com.google.template.soy.types.SoyTypeRegistry;
 import java.io.ByteArrayOutputStream;
 import java.io.FileDescriptor;
 import java.io.FileOutputStream;
 import java.io.Flushable;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.io.StringReader;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nullable;
@@ -388,15 +383,11 @@ public class RenderVisitorTest {
 
     // With msg bundle.
     SoyFileNode file =
-        new SoyFileParser(
-                new SoyTypeRegistry(),
-                new IncrementingIdGenerator(),
-                new StringReader(
-                    "{namespace test}\n{template .foo}\n" + templateBody + "{/template}"),
-                SoyFileKind.SRC,
-                "test.soy",
-                ExplodingErrorReporter.get())
-            .parseSoyFile();
+        SoyFileSetParserBuilder.forFileContents(
+                "{namespace test}\n{template .foo}\n" + templateBody + "{/template}")
+            .parse()
+            .fileSet()
+            .getChild(0);
 
     MsgNode fallbackMsg =
         ((MsgFallbackGroupNode) file.getChildren().get(0).getChildren().get(0)).getChild(1);
