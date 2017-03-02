@@ -31,7 +31,9 @@ import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypes;
+import com.google.template.soy.types.aggregate.ListType;
 import com.google.template.soy.types.primitive.ErrorType;
 import com.google.template.soy.types.primitive.NullType;
 import com.google.template.soy.types.primitive.UnknownType;
@@ -70,7 +72,7 @@ final class CheckProtoInitCallsPass extends CompilerFilePass {
     SoyType soyType = node.getType();
     Preconditions.checkNotNull(soyType);
 
-    if (soyType.getKind() == SoyType.Kind.PROTO) {
+    if (soyType.getKind() == Kind.PROTO) {
       checkProto(node, (SoyProtoType) soyType);
     }
     // else, do nothing. ResolveExpressionTypesVisitor should have already reported an error.
@@ -105,12 +107,22 @@ final class CheckProtoInitCallsPass extends CompilerFilePass {
         errorReporter.report(expr.getSourceLocation(), NULL_ARG_TYPE, fieldName);
       }
 
+      SoyType fieldType = soyType.getFieldType(fieldName);
+
       // Let args with unknown or error types pass
       if (argType.equals(UnknownType.getInstance()) || argType.equals(ErrorType.getInstance())) {
         return;
       }
 
-      SoyType expectedType = SoyTypes.makeNullable(soyType.getFieldType(fieldName));
+      // Same for List<?>, for repeated fields
+      if (fieldType.getKind() == Kind.LIST && argType.getKind() == Kind.LIST) {
+        SoyType argElementType = ((ListType) argType).getElementType();
+        if (argElementType == null || argElementType.equals(UnknownType.getInstance())) {
+          return;
+        }
+      }
+
+      SoyType expectedType = SoyTypes.makeNullable(fieldType);
       if (!expectedType.isAssignableFrom(argType)) {
         errorReporter.report(
             expr.getSourceLocation(), ARGUMENT_TYPE_MISMATCH, fieldName, expectedType, argType);
