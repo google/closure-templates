@@ -602,7 +602,7 @@ public class EscapingConventionsTest {
       };
 
   /** Problematic strings to escape that should stress token boundaries. */
-  private static final List<String> UNTRUSTED_VALUES =
+  private static final ImmutableList<String> UNTRUSTED_VALUES =
       ImmutableList.of(
           "",
           "foo",

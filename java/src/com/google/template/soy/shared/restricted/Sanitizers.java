@@ -38,7 +38,6 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -697,7 +696,7 @@ public final class Sanitizers {
   }
 
   /** From http://www.w3.org/TR/html-markup/syntax.html#syntax-elements */
-  private static final Set<String> HTML5_VOID_ELEMENTS =
+  private static final ImmutableSet<String> HTML5_VOID_ELEMENTS =
       ImmutableSet.of(
           "area", "base", "br", "col", "command", "embed", "hr", "img", "input", "keygen", "link",
           "meta", "param", "source", "track", "wbr");
