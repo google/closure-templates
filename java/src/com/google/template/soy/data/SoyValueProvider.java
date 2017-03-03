@@ -43,7 +43,7 @@ public interface SoyValueProvider {
    * @return The resolved value.
    */
   @Nonnull
-  public SoyValue resolve();
+  SoyValue resolve();
 
   /**
    * Returns {@link RenderResult#done()} if the value provider can be {@link #resolve() resolved}
@@ -52,11 +52,11 @@ public interface SoyValueProvider {
    * <p>Note, once this method returns {@link RenderResult#done()} all future calls must also return
    * {@link RenderResult#done()}.
    *
-   * <p>This method will <em>never</em> return a {@link
-   * com.google.template.soy.jbcsrc.api.RenderResult.Type#LIMITED limited} {@link RenderResult}
+   * <p>This method will <em>never</em> return a {@link RenderResult.Type#LIMITED limited} {@link
+   * RenderResult}
    */
   @Nonnull
-  public RenderResult status();
+  RenderResult status();
 
   /**
    * Renders this value to the given {@link AdvisingAppendable}, possibly partially.
@@ -76,6 +76,5 @@ public interface SoyValueProvider {
    *     must call this method again.
    * @throws IOException If the appendable throws an IOException
    */
-  public RenderResult renderAndResolve(AdvisingAppendable appendable, boolean isLast)
-      throws IOException;
+  RenderResult renderAndResolve(AdvisingAppendable appendable, boolean isLast) throws IOException;
 }

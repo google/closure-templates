@@ -550,7 +550,6 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     Statement initRenderee =
         currentRendereeField.putInstanceField(thisVar, soyValueProvider).labelStart(reattachPoint);
 
-    // This cast will always succeed.
     Expression callRenderAndResolve =
         currentRendereeField
             .accessor(thisVar)

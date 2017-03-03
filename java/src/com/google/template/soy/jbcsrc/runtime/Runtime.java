@@ -197,6 +197,7 @@ public final class Runtime {
       throw new NullPointerException("Attempted to access list item '" + index + "' of null");
     }
     int size = list.size();
+    // use & instead of && to avoid a branch
     if (index < size & index >= 0) {
       SoyValueProvider soyValueProvider = list.get((int) index);
       return soyValueProvider == null ? NULL_PROVIDER : soyValueProvider;
@@ -375,6 +376,7 @@ public final class Runtime {
 
   public static boolean coerceToBoolean(double v) {
     // NaN and 0 should both be falsy, all other numbers are truthy
+    // use & instead of && to avoid a branch
     return v != 0.0 & !Double.isNaN(v);
   }
 
