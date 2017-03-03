@@ -47,7 +47,6 @@ import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.UniqueNameGenerator;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.IntegerNode;
@@ -132,11 +131,6 @@ import javax.inject.Inject;
  *
  */
 public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
-
-  private static final SoyErrorKind NON_NAMESPACED_TEMPLATE =
-      SoyErrorKind.of(
-          "Using the option to provide/require Soy namespaces, but called template "
-              + "does not reside in a namespace.");
 
   /** Regex pattern to look for dots in a template name. */
   private static final Pattern DOT = Pattern.compile("\\.");
@@ -401,9 +395,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
     // not understand them.
     file.append("\n");
     file.append("/**\n");
-    String fileOverviewDescription = node.getNamespace() == null
-        ? ""
-        : " Templates in namespace " + node.getNamespace() + ".";
+    String fileOverviewDescription = " Templates in namespace " + node.getNamespace() + ".";
     file.append(" * @fileoverview").append(fileOverviewDescription).append('\n');
     if (node.getDelPackageName() != null) {
       file.append(" * @modName {").append(node.getDelPackageName()).append("}\n");
@@ -516,9 +508,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
    * @param soyFile The node we're visiting.
    */
   private static void addCodeToProvideSoyNamespace(StringBuilder header, SoyFileNode soyFile) {
-    if (soyFile.getNamespace() != null) {
-      header.append("goog.provide('").append(soyFile.getNamespace()).append("');\n");
-    }
+    header.append("goog.provide('").append(soyFile.getNamespace()).append("');\n");
   }
 
   /**
@@ -640,10 +630,6 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
     for (CallBasicNode node : new FindCalleesNotInFileVisitor().exec(soyFile)) {
       String calleeNotInFile = node.getCalleeName();
       int lastDotIndex = calleeNotInFile.lastIndexOf('.');
-      if (lastDotIndex == -1) {
-        errorReporter.report(node.getSourceLocation(), NON_NAMESPACED_TEMPLATE);
-        continue;
-      }
       calleeNamespaces.add(calleeNotInFile.substring(0, lastDotIndex));
     }
 

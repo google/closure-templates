@@ -361,14 +361,6 @@ public class TemplateNodeTest {
   }
 
   @Test
-  public void testNamespaceRelativeTemplateNameButNoNamespaceDecl() {
-    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
-    parse("{template .foo}{/template}", errorReporter);
-    assertThat(errorReporter.getErrorMessages())
-        .contains("Template has namespace-relative name, but file has no namespace declaration.");
-  }
-
-  @Test
   public void testToSourceString() {
     TemplateNode tn =
         parse(

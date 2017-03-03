@@ -29,7 +29,6 @@ import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.SoyModule;
 import com.google.template.soy.base.internal.UniqueNameGenerator;
-import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.ExplodingErrorReporter;
@@ -332,46 +331,6 @@ public final class GenJsCodeVisitorTest {
             + " */\n"
             + "\n";
 
-    List<String> jsFilesContents =
-        genJsCodeVisitor.gen(
-            parseResult.fileSet(), parseResult.registry(), ExplodingErrorReporter.get());
-    assertThat(jsFilesContents.get(0)).startsWith(expectedJsFileContentStart);
-  }
-
-  @Test
-  public void testSoyFileNoNamespaceWithProvideNamespaceOption() {
-
-    String testFileContent =
-        "/** Test template. */\n"
-            + "{template boo.foo.goo autoescape=\"deprecated-noncontextual\" deprecatedV1=\"true\"}\n"
-            + "  {call boo.foo.goo data=\"all\" /}\n"
-            + "  {call boo.woo.hoo data=\"all\" /}\n" // not defined in this file
-            + "{/template}\n";
-
-    ParseResult parseResult =
-        SoyFileSetParserBuilder.forFileContents(testFileContent)
-            .declaredSyntaxVersion(SyntaxVersion.V1_0)
-            .parse();
-
-    // ------ Using Closure, provide both Soy namespaces and JS functions ------
-    String expectedJsFileContentStart =
-        "// This file was automatically generated from no-path.\n"
-            + "// Please don't edit this file by hand.\n"
-            + "\n"
-            + "/**\n"
-            + " * @fileoverview\n"
-            + " * @public\n"
-            + " */\n"
-            + "\n"
-            + "goog.provide('boo.foo.goo');\n"
-            + "\n"
-            + "goog.require('boo.woo.hoo');\n"
-            + "\n"
-            + "\n";
-
-    jsSrcOptions.setShouldProvideRequireJsFunctions(true);
-    jsSrcOptions.setShouldProvideRequireSoyNamespaces(false);
-    jsSrcOptions.setShouldProvideBothSoyNamespacesAndJsFunctions(true);
     List<String> jsFilesContents =
         genJsCodeVisitor.gen(
             parseResult.fileSet(), parseResult.registry(), ExplodingErrorReporter.get());

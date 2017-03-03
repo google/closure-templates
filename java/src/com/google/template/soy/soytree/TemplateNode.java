@@ -69,10 +69,6 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
   }
 
   // TODO(sparhami): Add error for unused alias.  Maybe make SoyParsingContext collect usages?
-  private static final SoyErrorKind ALIAS_USED_WITHOUT_NAMESPACE =
-      SoyErrorKind.of(
-          "'''{'alias...'' can only be used in files with valid '''{'namespace ...'' "
-              + "declarations");
 
   private static final SoyErrorKind INVALID_ALIAS_FOR_LAST_PART_OF_NAMESPACE =
       SoyErrorKind.of(
@@ -154,13 +150,8 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
         Collection<AliasDeclaration> aliases) {
       Map<String, String> map = Maps.newLinkedHashMap();
       String aliasForFileNamespace =
-          namespaceDeclaration.isDefined()
-              ? BaseUtils.extractPartAfterLastDot(namespaceDeclaration.getNamespace())
-              : null;
+          BaseUtils.extractPartAfterLastDot(namespaceDeclaration.getNamespace());
       for (AliasDeclaration aliasDeclaration : aliases) {
-        if (!namespaceDeclaration.isDefined()) {
-          errorReporter.report(aliasDeclaration.getLocation(), ALIAS_USED_WITHOUT_NAMESPACE);
-        }
         String aliasNamespace = aliasDeclaration.getNamespace();
         String alias = aliasDeclaration.getAlias();
         if (alias.equals(aliasForFileNamespace)

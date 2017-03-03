@@ -32,9 +32,6 @@ public final class NamespaceDeclaration {
   private static final AutoescapeMode DEFAULT_FILE_WIDE_DEFAULT_AUTOESCAPE_MODE =
       AutoescapeMode.STRICT;
 
-  // A 'null' instance for classes with no namespace tag.
-  public static final NamespaceDeclaration NULL = new NamespaceDeclaration();
-
   private final Identifier namespace;
   @Nullable private final AutoescapeMode autoescapeMode;
   @Nullable private final SourceLocation autoescapeModeLocation;
@@ -89,21 +86,6 @@ public final class NamespaceDeclaration {
     this.attrs = ImmutableList.copyOf(attrs);
   }
 
-  private NamespaceDeclaration() {
-    this.namespace = null;
-    this.autoescapeMode = null;
-    this.autoescapeModeLocation = null;
-    this.requiredCssNamespaces = ImmutableList.of();
-    this.cssBaseNamespace = null;
-    this.strictHtml = StrictHtmlMode.UNSET;
-    this.strictHtmlLocation = null;
-    this.attrs = ImmutableList.of();
-  }
-
-  public boolean isDefined() {
-    return this != NULL;
-  }
-
   public AutoescapeMode getDefaultAutoescapeMode() {
     return autoescapeMode == null ? DEFAULT_FILE_WIDE_DEFAULT_AUTOESCAPE_MODE : autoescapeMode;
   }
@@ -118,9 +100,8 @@ public final class NamespaceDeclaration {
     return autoescapeModeLocation;
   }
 
-  @Nullable
   public String getNamespace() {
-    return namespace == null ? null : namespace.identifier();
+    return namespace.identifier();
   }
 
   ImmutableList<String> getRequiredCssNamespaces() {
@@ -148,12 +129,9 @@ public final class NamespaceDeclaration {
 
   /** Returns an approximation of what the original source for this namespace looked like. */
   public String toSourceString() {
-    if (isDefined()) {
-      return "{namespace "
-          + namespace.identifier()
-          + (attrs.isEmpty() ? "" : " " + Joiner.on(' ').join(attrs))
-          + "}\n";
-    }
-    return "";
+    return "{namespace "
+        + namespace.identifier()
+        + (attrs.isEmpty() ? "" : " " + Joiner.on(' ').join(attrs))
+        + "}\n";
   }
 }

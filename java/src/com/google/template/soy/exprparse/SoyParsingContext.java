@@ -22,7 +22,6 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
-import javax.annotation.Nullable;
 
 /**
  * Holds information and services needed for parsing templates and expressions.
@@ -55,8 +54,7 @@ public abstract class SoyParsingContext {
 
   public abstract ErrorReporter errorReporter();
 
-  /** The full namespace of the file being parsed, or null for legacy v1 templates. */
-  @Nullable
+  /** The full namespace of the file being parsed. */
   public abstract String namespace();
 
   /** The alias declarations in the file, if any. */

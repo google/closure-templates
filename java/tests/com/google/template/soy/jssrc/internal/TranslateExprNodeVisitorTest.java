@@ -314,6 +314,7 @@ public final class TranslateExprNodeVisitorTest {
   public void testBuiltinFunctions_v1Expression() {
     String soyFile =
         ""
+            + "{namespace ns}\n"
             + "{template foo deprecatedV1=\"true\"}\n"
             + "  {v1Expression('$goo.length()')}\n"
             + "{/template}";

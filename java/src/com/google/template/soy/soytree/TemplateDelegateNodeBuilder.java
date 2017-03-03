@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.Identifier;
-import com.google.template.soy.base.internal.LegacyInternalSyntaxException;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.error.ErrorReporter;
@@ -90,14 +89,6 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
       Identifier templateName, List<CommandTagAttribute> attrs) {
     this.cmdText = templateName.identifier() + " " + Joiner.on(' ').join(attrs);
 
-    if (soyFileHeaderInfo.namespace == null) {
-      // Abort template parsing if there is no namespace.
-      // TODO(lukes): if we had a more strongly typed way of representing template names we could
-      // use some kind of standard ERROR namespace and continue.
-      throw LegacyInternalSyntaxException.createWithMetaInfo(
-          "Cannot declare deltemplates in files with no namespace declaration.",
-          templateName.location());
-    }
     // deltemplate names must be fully qualified
     if (templateName.isPartialIdentifier()) {
       errorReporter.report(templateName.location(), INVALID_DELTEMPLATE_NAME);

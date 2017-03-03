@@ -891,15 +891,15 @@ TOKEN_MGR_DECLS:
 private SoyFileNode SoyFile() :
 {
   TemplateNode template;
+  NamespaceDeclaration namespace;
   Identifier delpackageName = null;
-  NamespaceDeclaration namespace = NamespaceDeclaration.NULL;
   List<AliasDeclaration> aliases = ImmutableList.of();
   AliasDeclaration alias = null;
 }
 {
   [ delpackageName = DelPackage() ]
 
-  [ namespace = Namespace() ]
+  namespace = Namespace()
 
   (
     alias = Alias()
@@ -931,7 +931,7 @@ private SoyFileNode SoyFile() :
        sfn.addChild(template);
      }
     }
-  )*
+  )+
 
   <EOF>
 
@@ -1159,6 +1159,8 @@ private TemplateNode TemplateHelper(TemplateNodeBuilder builder, Token open) :
   }
 }
 
+// TODO(mknichel): Since all Soy files have namespaces, we can split the parsing so that {template
+// tags can only allow <DOT><NAME> and TemplatedelegateName only allows DottedIdent()
 /**
  * Parses a Template name.  This is either a fully qualified dotted identifier or a partial
  * identifier consisting of a single <DOT><IDENT> sequence.

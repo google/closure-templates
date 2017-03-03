@@ -35,6 +35,7 @@ import org.junit.runners.JUnit4;
 public final class GenPyCodeVisitorTest {
 
   private static final String SOY_NAMESPACE = "{namespace boo.foo autoescape=\"strict\"}\n";
+  private static final String DUMMY_SOY_FILE = SOY_NAMESPACE + "{template .dummy}{/template}\n";
 
   private static final String EXPECTED_PYFILE_START =
       "# coding=utf-8\n"
@@ -71,7 +72,7 @@ public final class GenPyCodeVisitorTest {
 
   @Test
   public void testSoyFile() {
-    assertThatSoyFile(SOY_NAMESPACE).compilesToSourceContaining(EXPECTED_PYFILE_START);
+    assertThatSoyFile(DUMMY_SOY_FILE).compilesToSourceContaining(EXPECTED_PYFILE_START);
 
     // TODO(dcphillips): Add external template dependency import test once templates are supported.
   }
@@ -143,7 +144,7 @@ public final class GenPyCodeVisitorTest {
   public void testBidiConfiguration() {
     String exptectedBidiConfig = "from example import bidi as external_bidi\n";
 
-    assertThatSoyFile(SOY_NAMESPACE)
+    assertThatSoyFile(DUMMY_SOY_FILE)
         .withBidi("example.bidi.fn")
         .compilesToSourceContaining(exptectedBidiConfig);
   }
@@ -154,7 +155,7 @@ public final class GenPyCodeVisitorTest {
         "from example.translate import SimpleTranslator\n"
             + "translator_impl = SimpleTranslator()\n";
 
-    assertThatSoyFile(SOY_NAMESPACE)
+    assertThatSoyFile(DUMMY_SOY_FILE)
         .withTranslationClass("example.translate.SimpleTranslator")
         .compilesToSourceContaining(exptectedTranslationConfig);
   }

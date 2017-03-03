@@ -41,10 +41,6 @@ final class SetFullCalleeNamesVisitor extends AbstractSoyNodeVisitor<Void> {
 
   private static final SoyErrorKind CALL_COLLIDES_WITH_NAMESPACE_ALIAS =
       SoyErrorKind.of("Call collides with namespace alias ''{0}''");
-  private static final SoyErrorKind NAMESPACE_RELATIVE_CALL_IN_FILE_WITHOUT_NAMESPACE_DECL =
-      SoyErrorKind.of(
-          "Namespace-relative template calls are allowed only in files "
-              + "with namespace declarations");
 
   /** The namespace of the current file that we're in (during the pass). */
   private String currNamespace;
@@ -78,40 +74,29 @@ final class SetFullCalleeNamesVisitor extends AbstractSoyNodeVisitor<Void> {
   @Override
   protected void visitCallBasicNode(CallBasicNode node) {
 
-    if (currNamespace == null) {
-      String srcCalleeName = node.getSrcCalleeName();
-      // TODO: If feasible, change existing instances and remove the startsWith(".") part below.
-      if (srcCalleeName.startsWith(".")) {
-        errorReporter.report(
-            node.getSourceLocation(), NAMESPACE_RELATIVE_CALL_IN_FILE_WITHOUT_NAMESPACE_DECL);
-        return; // To prevent IllegalStateException in setCalleeName below
-      }
-      node.setCalleeName(node.getSrcCalleeName());
-
-    } else {
-      String srcCalleeName = node.getSrcCalleeName();
-      if (srcCalleeName.startsWith(".")) {
-        // Case 1: Source callee name is partial.
-        node.setCalleeName(currNamespace + srcCalleeName);
-      } else if (srcCalleeName.contains(".")) {
-        // Case 2: Source callee name is a proper dotted ident.
-        String[] parts = srcCalleeName.split("[.]", 2);
-        if (currAliasToNamespaceMap.containsKey(parts[0])) {
-          // Case 2a: Source callee name's first part is an alias.
-          String aliasNamespace = currAliasToNamespaceMap.get(parts[0]);
-          node.setCalleeName(aliasNamespace + '.' + parts[1]);
-        } else {
-          // Case 2b: Source callee name's first part is not an alias.
-          node.setCalleeName(srcCalleeName);
-        }
+    String srcCalleeName = node.getSrcCalleeName();
+    // TODO: If feasible, change existing instances and remove the startsWith(".") part below.
+    if (srcCalleeName.startsWith(".")) {
+      // Case 1: Source callee name is partial.
+      node.setCalleeName(currNamespace + srcCalleeName);
+    } else if (srcCalleeName.contains(".")) {
+      // Case 2: Source callee name is a proper dotted ident.
+      String[] parts = srcCalleeName.split("[.]", 2);
+      if (currAliasToNamespaceMap.containsKey(parts[0])) {
+        // Case 2a: Source callee name's first part is an alias.
+        String aliasNamespace = currAliasToNamespaceMap.get(parts[0]);
+        node.setCalleeName(aliasNamespace + '.' + parts[1]);
       } else {
-        // Case 3: Source callee name is a single ident (not dotted).
-        if (currAliasToNamespaceMap.containsKey(srcCalleeName)) {
-          errorReporter.report(
-              node.getSourceLocation(), CALL_COLLIDES_WITH_NAMESPACE_ALIAS, srcCalleeName);
-        }
+        // Case 2b: Source callee name's first part is not an alias.
         node.setCalleeName(srcCalleeName);
       }
+    } else {
+      // Case 3: Source callee name is a single ident (not dotted).
+      if (currAliasToNamespaceMap.containsKey(srcCalleeName)) {
+        errorReporter.report(
+            node.getSourceLocation(), CALL_COLLIDES_WITH_NAMESPACE_ALIAS, srcCalleeName);
+      }
+      node.setCalleeName(srcCalleeName);
     }
 
     visitChildren(node);
