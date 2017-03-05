@@ -31,7 +31,6 @@ import com.google.template.soy.msgs.restricted.SoyMsgPluralRemainderPart;
 import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
 import com.google.template.soy.msgs.restricted.SoyMsgSelectPart;
 import java.util.List;
-import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -261,7 +260,7 @@ public class IcuSyntaxUtils {
       Pattern.compile(" ' (?= ['{}\\#] ) | ' $ | [{}] ", Pattern.COMMENTS);
 
   /** Map from ICU syntax char to its escape sequence. */
-  private static final Map<String, String> ICU_SYNTAX_CHAR_ESCAPE_MAP =
+  private static final ImmutableMap<String, String> ICU_SYNTAX_CHAR_ESCAPE_MAP =
       ImmutableMap.of("'", "''", "{", "'{'", "}", "'}'");
 
   /**
