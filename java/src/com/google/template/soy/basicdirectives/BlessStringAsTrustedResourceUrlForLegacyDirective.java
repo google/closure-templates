@@ -44,7 +44,7 @@ final class BlessStringAsTrustedResourceUrlForLegacyDirective
         SoyLibraryAssistedJsSrcPrintDirective,
         SoyPySrcPrintDirective {
 
-  private static final Set<Integer> VALID_ARGS_SIZES = ImmutableSet.of(0);
+  private static final ImmutableSet<Integer> VALID_ARGS_SIZES = ImmutableSet.of(0);
 
   @Inject
   public BlessStringAsTrustedResourceUrlForLegacyDirective() {}

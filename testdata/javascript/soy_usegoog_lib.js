@@ -3042,7 +3042,7 @@ goog.addDependency('date/utcdatetime_test.js', ['goog.date.UtcDateTimeTest'], ['
 goog.addDependency('db/cursor.js', ['goog.db.Cursor'], ['goog.async.Deferred', 'goog.db.Error', 'goog.debug', 'goog.events.EventTarget'], {});
 goog.addDependency('db/db.js', ['goog.db', 'goog.db.BlockedCallback', 'goog.db.UpgradeNeededCallback'], ['goog.asserts', 'goog.async.Deferred', 'goog.db.Error', 'goog.db.IndexedDb', 'goog.db.Transaction'], {});
 goog.addDependency('db/db_test.js', ['goog.dbTest'], ['goog.Disposable', 'goog.Promise', 'goog.array', 'goog.db', 'goog.db.Cursor', 'goog.db.Error', 'goog.db.IndexedDb', 'goog.db.KeyRange', 'goog.db.Transaction', 'goog.events', 'goog.object', 'goog.testing.PropertyReplacer', 'goog.testing.asserts', 'goog.testing.jsunit', 'goog.userAgent.product'], {});
-goog.addDependency('db/error.js', ['goog.db.Error', 'goog.db.Error.ErrorCode', 'goog.db.Error.ErrorName', 'goog.db.Error.VersionChangeBlockedError'], ['goog.debug.Error'], {});
+goog.addDependency('db/error.js', ['goog.db.DomErrorLike', 'goog.db.Error', 'goog.db.Error.ErrorCode', 'goog.db.Error.ErrorName', 'goog.db.Error.VersionChangeBlockedError'], ['goog.debug.Error'], {});
 goog.addDependency('db/index.js', ['goog.db.Index'], ['goog.async.Deferred', 'goog.db.Cursor', 'goog.db.Error', 'goog.debug'], {});
 goog.addDependency('db/indexeddb.js', ['goog.db.IndexedDb'], ['goog.db.Error', 'goog.db.ObjectStore', 'goog.db.Transaction', 'goog.events.Event', 'goog.events.EventHandler', 'goog.events.EventTarget'], {});
 goog.addDependency('db/keyrange.js', ['goog.db.KeyRange'], [], {});
@@ -3311,7 +3311,7 @@ goog.addDependency('format/jsonprettyprinter.js', ['goog.format.JsonPrettyPrinte
 goog.addDependency('format/jsonprettyprinter_test.js', ['goog.format.JsonPrettyPrinterTest'], ['goog.format.JsonPrettyPrinter', 'goog.testing.jsunit'], {});
 goog.addDependency('fs/entry.js', ['goog.fs.DirectoryEntry', 'goog.fs.DirectoryEntry.Behavior', 'goog.fs.Entry', 'goog.fs.FileEntry'], [], {});
 goog.addDependency('fs/entryimpl.js', ['goog.fs.DirectoryEntryImpl', 'goog.fs.EntryImpl', 'goog.fs.FileEntryImpl'], ['goog.array', 'goog.async.Deferred', 'goog.fs.DirectoryEntry', 'goog.fs.Entry', 'goog.fs.Error', 'goog.fs.FileEntry', 'goog.fs.FileWriter', 'goog.functions', 'goog.string'], {});
-goog.addDependency('fs/error.js', ['goog.fs.Error', 'goog.fs.Error.ErrorCode'], ['goog.debug.Error', 'goog.object', 'goog.string'], {});
+goog.addDependency('fs/error.js', ['goog.fs.DOMErrorLike', 'goog.fs.Error', 'goog.fs.Error.ErrorCode'], ['goog.asserts', 'goog.debug.Error', 'goog.object', 'goog.string'], {});
 goog.addDependency('fs/filereader.js', ['goog.fs.FileReader', 'goog.fs.FileReader.EventType', 'goog.fs.FileReader.ReadyState'], ['goog.async.Deferred', 'goog.events.EventTarget', 'goog.fs.Error', 'goog.fs.ProgressEvent'], {});
 goog.addDependency('fs/filesaver.js', ['goog.fs.FileSaver', 'goog.fs.FileSaver.EventType', 'goog.fs.FileSaver.ReadyState'], ['goog.events.EventTarget', 'goog.fs.Error', 'goog.fs.ProgressEvent'], {});
 goog.addDependency('fs/filesystem.js', ['goog.fs.FileSystem'], [], {});
@@ -4750,11 +4750,9 @@ goog.string.isEmptyString = function(str) {
 /**
  * Checks if a string is empty or contains only whitespaces.
  *
- * TODO(user): Deprecate this when clients have been switched over to
- * goog.string.isEmptyOrWhitespace.
- *
  * @param {string} str The string to check.
  * @return {boolean} Whether {@code str} is empty or whitespace only.
+ * @deprecated Use goog.string.isEmptyOrWhitespace instead.
  */
 goog.string.isEmpty = goog.string.isEmptyOrWhitespace;
 
@@ -4775,12 +4773,10 @@ goog.string.isEmptyOrWhitespaceSafe = function(str) {
 /**
  * Checks if a string is null, undefined, empty or contains only whitespaces.
  *
- * TODO(user): Deprecate this when clients have been switched over to
- * goog.string.isEmptyOrWhitespaceSafe.
- *
  * @param {*} str The string to check.
  * @return {boolean} Whether {@code str} is null, undefined, empty, or
  *     whitespace only.
+ * @deprecated Use goog.string.isEmptyOrWhitespace instead.
  */
 goog.string.isEmptySafe = goog.string.isEmptyOrWhitespaceSafe;
 
@@ -14196,7 +14192,7 @@ goog.html.uncheckedconversions.safeScriptFromStringKnownToSatisfyTypeContract =
   goog.asserts.assertString(
       goog.string.Const.unwrap(justification), 'must provide justification');
   goog.asserts.assert(
-      !goog.string.isEmpty(goog.string.Const.unwrap(justification)),
+      !goog.string.isEmptyOrWhitespace(goog.string.Const.unwrap(justification)),
       'must provide non-empty justification');
   return goog.html.SafeScript.createSafeScriptSecurityPrivateDoNotAccessOrElse(
       script);

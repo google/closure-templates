@@ -25,7 +25,6 @@ import com.google.template.soy.msgs.restricted.SoyMsg;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPlaceholderPart;
 import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
-import java.util.Map;
 import javax.annotation.Nullable;
 
 /**
@@ -40,7 +39,7 @@ class XliffGenerator {
   private XliffGenerator() {}
 
   /** Make some effort to use correct XLIFF datatype values. */
-  private static final Map<String, String> CONTENT_TYPE_TO_XLIFF_DATATYPE_MAP =
+  private static final ImmutableMap<String, String> CONTENT_TYPE_TO_XLIFF_DATATYPE_MAP =
       ImmutableMap.<String, String>builder()
           .put("text/plain", "plaintext")
           .put("text/html", "html")
