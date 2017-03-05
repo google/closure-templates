@@ -99,7 +99,7 @@ public final class SoyTypeRegistry {
               }));
 
   // TODO(shwetakarwa): Rename consistently to use "URL".
-  private static final Map<String, SoyType> BUILTIN_TYPES =
+  private static final ImmutableMap<String, SoyType> BUILTIN_TYPES =
       ImmutableMap.<String, SoyType>builder()
           .put("?", UnknownType.getInstance())
           .put("any", AnyType.getInstance())

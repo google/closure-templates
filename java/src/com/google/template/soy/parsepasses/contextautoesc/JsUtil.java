@@ -17,7 +17,6 @@
 package com.google.template.soy.parsepasses.contextautoesc;
 
 import com.google.common.collect.ImmutableSet;
-import java.util.Set;
 
 /**
  * Some utilities for dealing with JavaScript syntax.
@@ -99,7 +98,7 @@ final class JsUtil {
     }
   }
 
-  private static final Set<String> REGEX_PRECEDER_KEYWORDS =
+  private static final ImmutableSet<String> REGEX_PRECEDER_KEYWORDS =
       ImmutableSet.of(
           "break",
           "case",
