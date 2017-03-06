@@ -19,11 +19,13 @@ package com.google.template.soy.parseinfo;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedSet;
+import com.google.errorprone.annotations.Immutable;
 
 /**
  * Parsed info about a template.
  *
  */
+@Immutable
 public class SoyTemplateInfo {
 
   /** Enum for whether a param is required or optional for a specific template. */
