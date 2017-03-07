@@ -44,7 +44,6 @@ import com.google.errorprone.annotations.CompileTimeConstant;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.util.Set;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
@@ -61,7 +60,8 @@ import javax.annotation.ParametersAreNonnullByDefault;
 @ParametersAreNonnullByDefault
 public final class SanitizedContents {
   /** Extensions for static resources that we allow to be treated as safe HTML. */
-  private static final Set<String> SAFE_HTML_FILE_EXTENSIONS = ImmutableSet.of("html", "svg");
+  private static final ImmutableSet<String> SAFE_HTML_FILE_EXTENSIONS =
+      ImmutableSet.of("html", "svg");
 
   /** No constructor. */
   private SanitizedContents() {}
