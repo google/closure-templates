@@ -1228,7 +1228,7 @@ if (goog.DEPENDENCIES_ENABLED) {
    * @private
    */
   goog.protectScriptTag_ = function(str) {
-    return str.replace(/<\/(SCRIPT)/ig, '\\x3c\\$1');
+    return str.replace(/<\/(SCRIPT)/ig, '\\x3c/$1');
   };
 
   /**
@@ -28627,6 +28627,15 @@ goog.soy.StrictTemplate;
 
 
 /**
+ * Type definition for strict Soy HTML templates. Very useful when passing
+ * a template as an argument.
+ * @typedef {function(?, null=, ?Object<string, *>=):
+ *     !goog.soy.data.SanitizedHtml}
+ */
+goog.soy.StrictHtmlTemplate;
+
+
+/**
  * Sets the processed template as the innerHTML of an element. It is recommended
  * to use this helper function instead of directly setting innerHTML in your
  * hand-written code, so that it will be easier to audit the code for cross-site
@@ -29396,7 +29405,7 @@ soy.renderElement = goog.soy.renderElement;
  *
  * @param {?function(ARG_TYPES, null=, Object<string, *>=):*} template
  *     The Soy template defining the element's content.
- * @param {ARG_TYPES} opt_templateData The data for the template.
+ * @param {ARG_TYPES=} opt_templateData The data for the template.
  * @param {Document=} opt_document The document used to create DOM nodes. If not
  *     specified, global document object is used.
  * @param {Object=} opt_injectedData The injected data for the template.
@@ -29421,7 +29430,7 @@ soy.renderAsFragment = function(
  *
  * @param {?function(ARG_TYPES, null=, Object<string, *>=):*} template
  *     The Soy template defining the element's content.
- * @param {ARG_TYPES} opt_templateData The data for the template.
+ * @param {ARG_TYPES=} opt_templateData The data for the template.
  * @param {Document=} opt_document The document used to create DOM nodes. If not
  *     specified, global document object is used.
  * @param {Object=} opt_injectedData The injected data for the template.

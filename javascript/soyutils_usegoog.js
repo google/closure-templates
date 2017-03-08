@@ -429,7 +429,7 @@ soy.renderElement = goog.soy.renderElement;
  *
  * @param {?function(ARG_TYPES, null=, Object<string, *>=):*} template
  *     The Soy template defining the element's content.
- * @param {ARG_TYPES} opt_templateData The data for the template.
+ * @param {ARG_TYPES=} opt_templateData The data for the template.
  * @param {Document=} opt_document The document used to create DOM nodes. If not
  *     specified, global document object is used.
  * @param {Object=} opt_injectedData The injected data for the template.
@@ -454,7 +454,7 @@ soy.renderAsFragment = function(
  *
  * @param {?function(ARG_TYPES, null=, Object<string, *>=):*} template
  *     The Soy template defining the element's content.
- * @param {ARG_TYPES} opt_templateData The data for the template.
+ * @param {ARG_TYPES=} opt_templateData The data for the template.
  * @param {Document=} opt_document The document used to create DOM nodes. If not
  *     specified, global document object is used.
  * @param {Object=} opt_injectedData The injected data for the template.
