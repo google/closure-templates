@@ -27,7 +27,6 @@ import com.google.template.soy.base.SourceLocation.Point;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import java.util.Arrays;
-import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
@@ -44,7 +43,7 @@ public final class RawTextNode extends AbstractSoyNode implements StandaloneNode
   private static final Pattern SPECIAL_CHARS_TO_ESCAPE = Pattern.compile("[\n\r\t{}]");
 
   /** Map from special char to be re-escaped to its special char tag (for toSourceString()). */
-  private static final Map<String, String> SPECIAL_CHAR_TO_TAG =
+  private static final ImmutableMap<String, String> SPECIAL_CHAR_TO_TAG =
       ImmutableMap.<String, String>builder()
           .put("\n", "{\\n}")
           .put("\r", "{\\r}")

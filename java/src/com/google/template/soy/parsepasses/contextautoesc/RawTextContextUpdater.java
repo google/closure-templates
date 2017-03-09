@@ -28,8 +28,6 @@ import com.google.template.soy.soytree.HtmlContext;
 import com.google.template.soy.soytree.RawTextNode;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -316,7 +314,7 @@ final class RawTextContextUpdater {
   }
 
   /** Map of special tag names to their element types. */
-  private static final Map<String, Context.ElementType> SPECIAL_ELEMENT_TYPES =
+  private static final ImmutableMap<String, Context.ElementType> SPECIAL_ELEMENT_TYPES =
       ImmutableMap.<String, Context.ElementType>builder()
           // We currently only treat <img> and SVG's <image> as a media type, since for <video> and
           // <audio> there are concerns that attackers could introduce rich video or audio that
@@ -480,7 +478,7 @@ final class RawTextContextUpdater {
    *
    * @see <a href="http://www.w3.org/TR/html4/index/attributes.html">HTML4 attrs with type %URI</a>
    */
-  private static final Set<String> URI_ATTR_NAMES =
+  private static final ImmutableSet<String> URI_ATTR_NAMES =
       ImmutableSet.of(
           "action",
           "archive",
@@ -763,7 +761,7 @@ final class RawTextContextUpdater {
    * context. The rules each have an associated pattern, and the rule whose pattern matches earliest
    * in the text wins.
    */
-  private static final Map<HtmlContext, List<Transition>> TRANSITIONS =
+  private static final ImmutableMap<HtmlContext, List<Transition>> TRANSITIONS =
       ImmutableMap.<HtmlContext, List<Transition>>builder()
           .put(
               HtmlContext.HTML_PCDATA,
