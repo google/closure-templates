@@ -17,7 +17,6 @@
 package com.google.template.soy.internal.base;
 
 import com.google.common.collect.ImmutableMap;
-import java.util.Map;
 
 /**
  * Utilities for unescaping strings from context-specific formats.
@@ -203,7 +202,7 @@ public class UnescapeUtils {
   }
 
   // Reverse of map used in com.google.common.html.HtmlEscapers.htmlCharEscaper()
-  private static final Map<String, Integer> HTML_ENTITY_TO_CODEPOINT =
+  private static final ImmutableMap<String, Integer> HTML_ENTITY_TO_CODEPOINT =
       ImmutableMap.<String, Integer>builder()
           .put("&quot;", (int) '"')
           .put("&apos;", (int) '\'')
