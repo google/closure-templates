@@ -31,7 +31,6 @@ import com.google.template.soy.soytree.SoyNode.MsgPlaceholderInitialNode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
@@ -65,11 +64,18 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
    * Map from lower-case HTML tag name to human-readable placeholder name. For HTML tags not lised
    * here, the base placeholder name should simply be the tag name in all caps.
    */
-  private static final Map<String, String> LC_TAG_NAME_TO_PLACEHOLDER_NAME_MAP =
+  private static final ImmutableMap<String, String> LC_TAG_NAME_TO_PLACEHOLDER_NAME_MAP =
       ImmutableMap.<String, String>builder()
-          .put("a", "link").put("br", "break").put("b", "bold").put("i", "italic")
-          .put("li", "item").put("ol", "ordered_list").put("ul", "unordered_list")
-          .put("p", "paragraph").put("img", "image").put("em", "emphasis")
+          .put("a", "link")
+          .put("br", "break")
+          .put("b", "bold")
+          .put("i", "italic")
+          .put("li", "item")
+          .put("ol", "ordered_list")
+          .put("ul", "unordered_list")
+          .put("p", "paragraph")
+          .put("img", "image")
+          .put("em", "emphasis")
           .build();
 
 
