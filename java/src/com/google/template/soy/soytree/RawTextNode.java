@@ -417,7 +417,10 @@ public final class RawTextNode extends AbstractSoyNode implements StandaloneNode
         checkArgument(endCol > 0, "expected endCol to be positive: %s", endCol);
 
         if (size != 0 && index <= indexes[size - 1]) {
-          throw new IllegalArgumentException("expected indexes to be added in increasing order");
+          throw new IllegalArgumentException(
+              String.format(
+                  "expected indexes to be added in increasing order: %d vs %d at %d:%d - %d:%d",
+                  index, indexes[size - 1], startLine, startCol, endLine, endCol));
         }
         doAdd(index, startLine, startCol);
         this.endLine = endLine;

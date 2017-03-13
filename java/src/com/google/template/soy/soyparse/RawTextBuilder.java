@@ -108,7 +108,9 @@ final class RawTextBuilder {
     maybeFinishBasic();
     // Note: the LITERAL_RAW_TEXT_CONTENT already has the correct image content (it matches the
     // closing {/literal} but excludes the actual closing tag).
-    append(literalContent, literalContent.image);
+    if (!literalContent.image.isEmpty()) {
+      append(literalContent, literalContent.image);
+    }
     discontinuous = true;
   }
 
@@ -156,6 +158,12 @@ final class RawTextBuilder {
 
   /** updates the location with the given tokens location. */
   private void append(Token token, String content) {
+    if (content.isEmpty()) {
+      throw new IllegalStateException(
+          String.format(
+              "shouldn't append empty content: %s @ %s",
+              SoyFileParserConstants.tokenImage[token.kind], Tokens.createSrcLoc(fileName, token)));
+    }
     // add a new offset if:
     // - this is the first token
     // - the previous token introduced a discontinuity (due to a special token, or whitespace
