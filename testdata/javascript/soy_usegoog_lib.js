@@ -1917,7 +1917,7 @@ goog.removeUid = function(obj) {
   if (obj !== null && 'removeAttribute' in obj) {
     obj.removeAttribute(goog.UID_PROPERTY_);
   }
-  /** @preserveTry */
+
   try {
     delete obj[goog.UID_PROPERTY_];
   } catch (ex) {
@@ -15473,7 +15473,7 @@ goog.iter.toIterator = function(iterable) {
  */
 goog.iter.forEach = function(iterable, f, opt_obj) {
   if (goog.isArrayLike(iterable)) {
-    /** @preserveTry */
+
     try {
       // NOTES: this passes the index number to the second parameter
       // of the callback contrary to the documentation above.
@@ -15486,7 +15486,7 @@ goog.iter.forEach = function(iterable, f, opt_obj) {
     }
   } else {
     iterable = goog.iter.toIterator(iterable);
-    /** @preserveTry */
+
     try {
       while (true) {
         f.call(opt_obj, iterable.next(), undefined, iterable);
@@ -15684,7 +15684,7 @@ goog.iter.reduce = function(iterable, f, val, opt_obj) {
  */
 goog.iter.some = function(iterable, f, opt_obj) {
   iterable = goog.iter.toIterator(iterable);
-  /** @preserveTry */
+
   try {
     while (true) {
       if (f.call(opt_obj, iterable.next(), undefined, iterable)) {
@@ -15718,7 +15718,7 @@ goog.iter.some = function(iterable, f, opt_obj) {
  */
 goog.iter.every = function(iterable, f, opt_obj) {
   iterable = goog.iter.toIterator(iterable);
-  /** @preserveTry */
+
   try {
     while (true) {
       if (!f.call(opt_obj, iterable.next(), undefined, iterable)) {
@@ -18148,7 +18148,7 @@ goog.reflect.sinkValue[' '] = goog.nullFunction;
  *     if obj is null.
  */
 goog.reflect.canAccessProperty = function(obj, prop) {
-  /** @preserveTry */
+
   try {
     goog.reflect.sinkValue(obj[prop]);
     return true;
@@ -18904,7 +18904,7 @@ goog.debug.expose = function(obj, opt_showFn) {
       continue;
     }
     var s = x + ' = ';
-    /** @preserveTry */
+
     try {
       s += obj[x];
     } catch (e) {
@@ -18938,7 +18938,7 @@ goog.debug.deepExpose = function(obj, opt_showFn) {
       return str.replace(/\n/g, '\n' + space);
     };
 
-    /** @preserveTry */
+
     try {
       if (!goog.isDef(obj)) {
         str.push('undefined');
@@ -19019,7 +19019,7 @@ goog.debug.exposeException = function(err, opt_fn) {
  * @deprecated use goog.debug.HtmlFormatter.exposeExceptionAsHtml instead
  */
 goog.debug.exposeExceptionAsHtml = function(err, opt_fn) {
-  /** @preserveTry */
+
   try {
     var e = goog.debug.normalizeErrorObject(err);
     // Create the error message
@@ -19191,7 +19191,7 @@ goog.debug.getStacktraceSimple = function(opt_depth) {
   while (fn && (!opt_depth || depth < opt_depth)) {
     sb.push(goog.debug.getFunctionName(fn));
     sb.push('()\n');
-    /** @preserveTry */
+
     try {
       fn = fn.caller;
     } catch (e) {
@@ -19336,7 +19336,7 @@ goog.debug.getStacktraceHelper_ = function(fn, visited) {
     }
     visited.push(fn);
     sb.push(')\n');
-    /** @preserveTry */
+
     try {
       sb.push(goog.debug.getStacktraceHelper_(fn.caller, visited));
     } catch (e) {
