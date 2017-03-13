@@ -17,7 +17,6 @@
 package com.google.template.soy.jssrc.dsl;
 
 import static com.google.template.soy.exprtree.Operator.Associativity.LEFT;
-import static com.google.template.soy.jssrc.dsl.OutputContext.EXPRESSION;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
@@ -68,7 +67,7 @@ abstract class Call extends Operation {
   }
 
   @Override
-  void doFormatOutputExpr(FormattingContext ctx, OutputContext outputContext) {
+  void doFormatOutputExpr(FormattingContext ctx) {
     formatOperand(receiver(), OperandPosition.LEFT, ctx);
     ctx.append('(');
     boolean first = true;
@@ -80,7 +79,7 @@ abstract class Call extends Operation {
       }
       // The comma is the lowest-precedence JavaScript operator, so none of the args
       // need to be protected.
-      ctx.appendOutputExpression(arg, EXPRESSION);
+      arg.doFormatOutputExpr(ctx);
     }
     ctx.append(')');
   }

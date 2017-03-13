@@ -52,7 +52,7 @@ abstract class PrefixUnaryOperation extends Operation {
   }
 
   @Override
-  void doFormatOutputExpr(FormattingContext ctx, OutputContext outputContext) {
+  void doFormatOutputExpr(FormattingContext ctx) {
     ctx.append(operator());
     formatOperand(arg(), OperandPosition.LEFT /* it's unary, doesn't matter */, ctx);
   }

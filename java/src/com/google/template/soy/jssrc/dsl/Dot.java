@@ -55,7 +55,7 @@ abstract class Dot extends Operation {
   }
 
   @Override
-  void doFormatOutputExpr(FormattingContext ctx, OutputContext outputContext) {
+  void doFormatOutputExpr(FormattingContext ctx) {
     formatOperand(receiver(), OperandPosition.LEFT, ctx);
     ctx.append('.');
     formatOperand(key(), OperandPosition.RIGHT, ctx);

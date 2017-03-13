@@ -59,8 +59,8 @@ abstract class Group extends Operation {
   }
 
   @Override
-  void doFormatOutputExpr(FormattingContext ctx, OutputContext outputContext) {
-    ctx.append('(').appendOutputExpression(underlying(), outputContext).append(')');
+  void doFormatOutputExpr(FormattingContext ctx) {
+    ctx.append('(').appendOutputExpression(underlying()).append(')');
   }
   @Override
   public void collectRequires(RequiresCollector collector) {

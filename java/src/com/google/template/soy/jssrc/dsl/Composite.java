@@ -22,15 +22,14 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 
 /**
- * Represents a sequence of statements that also have a variable allocated to represent them
- * when referenced from other code chunks.
- * TODO(brndn): this is the only {@link CodeChunk} subclass that does not correspond directly
- * to a JavaScript grammatical production. Its behavior is somewhat confused. However, the DSL
- * relies on its behavior to allow {@link Generator#newChunk building new chunks} that don't
- * initially contain a value. Consider refactoring into a "Reference" class.
+ * Represents a sequence of statements that also have a variable allocated to represent them when
+ * referenced from other code chunks. TODO(brndn): this is the only {@link CodeChunk} subclass that
+ * does not correspond directly to a JavaScript grammatical production. Its behavior is somewhat
+ * confused. However, the DSL relies on its behavior to allow {@link Generator#newChunk building new
+ * chunks} that don't initially contain a value. Consider refactoring into a "Reference" class.
  */
 @AutoValue
-abstract class Composite extends CodeChunk.WithValue {
+public abstract class Composite extends CodeChunk.WithValue {
   abstract ImmutableList<CodeChunk> children();
 
   abstract String varName();
@@ -38,6 +37,16 @@ abstract class Composite extends CodeChunk.WithValue {
   static Composite create(ImmutableList<CodeChunk> children, String varName) {
     Preconditions.checkState(children.size() > 1);
     return new AutoValue_Composite(children, varName);
+  }
+
+  /**
+   * {@link CodeChunk#getCode} serializes both the chunk's initial statements and its output
+   * expression. When a composite is the only chunk being serialized, this leads to a redundant
+   * trailing expression (the var name). Override the superclass implementation to omit it.
+   */
+  @Override
+  String getCode(int startingIndent, OutputContext outputContext) {
+    return new FormattingContext(startingIndent).appendInitialStatements(this).toString();
   }
 
   @Override
@@ -55,13 +64,8 @@ abstract class Composite extends CodeChunk.WithValue {
   }
 
   @Override
-  void doFormatOutputExpr(FormattingContext ctx, OutputContext outputContext) {
-    // Print the variable reference only if the composite is appearing in another expression.
-    // The purpose of a composite is to provide a name for reference from other code chunks.
-    // If this composite is being asked to appear as its own statement, print nothing.
-    if (outputContext == OutputContext.EXPRESSION) {
-      ctx.append(varName());
-    }
+  void doFormatOutputExpr(FormattingContext ctx) {
+    ctx.append(varName());
   }
 
   @Override

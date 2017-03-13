@@ -16,10 +16,9 @@
 
 package com.google.template.soy.jssrc.dsl;
 
-import static com.google.template.soy.jssrc.dsl.OutputContext.STATEMENT;
-
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
+import com.google.template.soy.jssrc.dsl.CodeChunk.WithValue;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Set;
@@ -61,7 +60,10 @@ final class FormattingContext implements AutoCloseable {
     return this;
   }
 
-  /** Writes the initial statements for the {@code chunk} to the buffer. */
+  /**
+   * Writes the initial statements for the {@code chunk} to the buffer. This is the only allowed
+   * direct caller of {@link CodeChunk#doFormatInitialStatements}.
+   */
   FormattingContext appendInitialStatements(CodeChunk chunk) {
     if (shouldFormat(chunk)) {
       chunk.doFormatInitialStatements(this);
@@ -70,26 +72,23 @@ final class FormattingContext implements AutoCloseable {
   }
 
   /** Writes the output expression for the {@code value} to the buffer. */
-  FormattingContext appendOutputExpression(CodeChunk.WithValue value, OutputContext context) {
-    int checkpoint = buf.length();
-
-    value.doFormatOutputExpr(this, context);
-
-    // If the value will appear as its own statement (as opposed to a part of another expression),
-    // and if the value actually printed something, add a trailing semicolon and newline.
-    // TODO(user): The existence of this condition strongly suggests that value should not
-    // in fact be a CodeChunk.WithValue.
-    if (context == STATEMENT && (buf.length() > checkpoint)) {
-      append(';').endLine();
-    }
+  FormattingContext appendOutputExpression(WithValue value) {
+    value.doFormatOutputExpr(this);
     return this;
   }
 
   /** Writes all code for the {@code chunk} to the buffer. */
   FormattingContext appendAll(CodeChunk chunk) {
     appendInitialStatements(chunk);
-    if (chunk instanceof CodeChunk.WithValue) {
-      appendOutputExpression((CodeChunk.WithValue) chunk, STATEMENT);
+    if (chunk instanceof CodeChunk.WithValue
+        // Skip Composites and Declarations to prevent a spurious trailing variable name.
+        // TODO(brndn): migrate these classes to be CodeChunks (not CodeChunk.WithValues) and
+        // remove this logic.
+        && !(chunk instanceof Composite)
+        && !(chunk instanceof Declaration)) {
+      appendOutputExpression((CodeChunk.WithValue) chunk);
+      append(";");
+      endLine();
     }
     return this;
   }
@@ -163,8 +162,8 @@ final class FormattingContext implements AutoCloseable {
   }
 
   /**
-   * Returns a FormattingContext representing the concatenation of this FormattingContext
-   * with {@code other}. For use only by {@link CodeChunk#getCode(int, OutputContext, boolean)}.
+   * Returns a FormattingContext representing the concatenation of this FormattingContext with
+   * {@code other}. For use only by {@link CodeChunk#getCode(int, OutputContext)}.
    */
   FormattingContext concat(FormattingContext other) {
     if (isEmpty()) {

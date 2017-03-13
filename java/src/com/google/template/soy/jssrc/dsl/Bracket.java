@@ -17,7 +17,6 @@
 package com.google.template.soy.jssrc.dsl;
 
 import static com.google.template.soy.exprtree.Operator.Associativity.LEFT;
-import static com.google.template.soy.jssrc.dsl.OutputContext.EXPRESSION;
 
 import com.google.auto.value.AutoValue;
 import com.google.template.soy.exprtree.Operator.Associativity;
@@ -63,9 +62,9 @@ abstract class Bracket extends Operation {
   }
 
   @Override
-  void doFormatOutputExpr(FormattingContext ctx, OutputContext outputContext) {
+  void doFormatOutputExpr(FormattingContext ctx) {
     formatOperand(receiver(), OperandPosition.LEFT, ctx);
     // No need to protect the expression in the bracket with parens. it's unambiguous.
-    ctx.append('[').appendOutputExpression(key(), EXPRESSION).append(']');
+    ctx.append('[').appendOutputExpression(key()).append(']');
   }
 }

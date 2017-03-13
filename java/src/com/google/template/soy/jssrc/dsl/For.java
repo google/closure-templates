@@ -16,8 +16,6 @@
 
 package com.google.template.soy.jssrc.dsl;
 
-import static com.google.template.soy.jssrc.dsl.OutputContext.EXPRESSION;
-
 import com.google.auto.value.AutoValue;
 
 /** Represents a {@code for} statement. */
@@ -58,15 +56,15 @@ abstract class For extends CodeChunk {
         .appendInitialStatements(increment());
 
     ctx.append("for (var " + localVar() + " = ")
-        .appendOutputExpression(initial(), EXPRESSION)
+        .appendOutputExpression(initial())
         .append("; " + localVar() + " < ")
-        .appendOutputExpression(limit(), EXPRESSION)
+        .appendOutputExpression(limit())
         .append("; ");
 
     if ((increment() instanceof Leaf) && "1".equals(((Leaf) increment()).value().getText())) {
       ctx.append(localVar() + "++");
     } else {
-      ctx.append(localVar() + " += ").appendOutputExpression(increment(), EXPRESSION);
+      ctx.append(localVar() + " += ").appendOutputExpression(increment());
     }
 
     ctx.append(") ");

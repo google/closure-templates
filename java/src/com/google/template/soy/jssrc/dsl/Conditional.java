@@ -16,8 +16,6 @@
 
 package com.google.template.soy.jssrc.dsl;
 
-import static com.google.template.soy.jssrc.dsl.OutputContext.EXPRESSION;
-
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -65,11 +63,12 @@ abstract class Conditional extends CodeChunk {
       trailingElse().collectRequires(collector);
     }
   }
+
   private void formatIfClause(FormattingContext ctx) {
     IfThenPair first = conditions().get(0);
     ctx.appendInitialStatements(first.predicate)
         .append("if (")
-        .appendOutputExpression(first.predicate, EXPRESSION)
+        .appendOutputExpression(first.predicate)
         .append(") ");
     try (FormattingContext ignored = ctx.enterBlock()) {
       ctx.appendAll(first.consequent);
@@ -82,7 +81,7 @@ abstract class Conditional extends CodeChunk {
    */
   private static void formatElseIfClauseWithNoDependencies(
       IfThenPair condition, FormattingContext ctx) {
-    ctx.append(" else if (").appendOutputExpression(condition.predicate, EXPRESSION).append(") ");
+    ctx.append(" else if (").appendOutputExpression(condition.predicate).append(") ");
     try (FormattingContext ignored = ctx.enterBlock()) {
       ctx.appendAll(condition.consequent);
     }
@@ -103,7 +102,7 @@ abstract class Conditional extends CodeChunk {
     try (FormattingContext ignored = ctx.enterBlock()) {
       ctx.appendInitialStatements(condition.predicate)
           .append("if (")
-          .appendOutputExpression(condition.predicate, EXPRESSION)
+          .appendOutputExpression(condition.predicate)
           .append(") ");
 
       // Most enterBlock callers use try-with-resources to automatically close the block,

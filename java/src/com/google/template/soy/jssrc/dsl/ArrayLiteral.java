@@ -16,8 +16,6 @@
 
 package com.google.template.soy.jssrc.dsl;
 
-import static com.google.template.soy.jssrc.dsl.OutputContext.EXPRESSION;
-
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.jssrc.restricted.JsExpr;
@@ -52,12 +50,12 @@ abstract class ArrayLiteral extends CodeChunk.WithValue {
   @Override
   public JsExpr singleExprOrName() {
     FormattingContext ctx = new FormattingContext();
-    ctx.appendOutputExpression(this, EXPRESSION);
+    doFormatOutputExpr(ctx);
     return new JsExpr(ctx.toString(), Integer.MAX_VALUE);
   }
 
   @Override
-  void doFormatOutputExpr(FormattingContext ctx, OutputContext outputContext) {
+  void doFormatOutputExpr(FormattingContext ctx) {
     ctx.append('[');
     boolean first = true;
     for (CodeChunk.WithValue element : elements()) {
@@ -66,7 +64,7 @@ abstract class ArrayLiteral extends CodeChunk.WithValue {
       } else {
         ctx.append(", ");
       }
-      ctx.appendOutputExpression(element, EXPRESSION);
+      element.doFormatOutputExpr(ctx);
     }
     ctx.append(']');
   }

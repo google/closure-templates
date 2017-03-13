@@ -16,8 +16,6 @@
 
 package com.google.template.soy.jssrc.dsl;
 
-import static com.google.template.soy.jssrc.dsl.OutputContext.EXPRESSION;
-
 import com.google.auto.value.AutoValue;
 
 /** Represents a JavaScript return statement. */
@@ -34,7 +32,7 @@ abstract class Return extends CodeChunk {
   void doFormatInitialStatements(FormattingContext ctx) {
     ctx.appendInitialStatements(value())
         .append("return ")
-        .appendOutputExpression(value(), EXPRESSION)
+        .appendOutputExpression(value())
         .append(';');
   }
   

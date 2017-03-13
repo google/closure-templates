@@ -16,8 +16,6 @@
 
 package com.google.template.soy.jssrc.dsl;
 
-import static com.google.template.soy.jssrc.dsl.OutputContext.EXPRESSION;
-
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -56,20 +54,20 @@ abstract class MapLiteral extends CodeChunk.WithValue {
   @Override
   public JsExpr singleExprOrName() {
     FormattingContext ctx = new FormattingContext();
-    ctx.appendOutputExpression(this, EXPRESSION);
+    ctx.appendOutputExpression(this);
     return new JsExpr(ctx.toString(), Integer.MAX_VALUE);
   }
 
   @Override
-  void doFormatOutputExpr(FormattingContext ctx, OutputContext outputContext) {
+  void doFormatOutputExpr(FormattingContext ctx) {
     ctx.append('{');
     for (int i = 0; i < keys().size(); i++) {
       if (i > 0) {
         ctx.append(", ");
       }
-      ctx.appendOutputExpression(keys().get(i), EXPRESSION)
+      ctx.appendOutputExpression(keys().get(i))
           .append(": ")
-          .appendOutputExpression(values().get(i), EXPRESSION);
+          .appendOutputExpression(values().get(i));
     }
     ctx.append('}');
   }

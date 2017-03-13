@@ -16,14 +16,11 @@
 
 package com.google.template.soy.jssrc.dsl;
 
-import static com.google.template.soy.jssrc.dsl.OutputContext.EXPRESSION;
-
 import com.google.auto.value.AutoValue;
-import com.google.template.soy.jssrc.restricted.JsExpr;
 
 /** Represents an assignment to a variable. */
 @AutoValue
-abstract class Assignment extends CodeChunk.WithValue {
+abstract class Assignment extends CodeChunk {
   abstract String varName();
 
   abstract CodeChunk.WithValue rhs();
@@ -42,28 +39,8 @@ abstract class Assignment extends CodeChunk.WithValue {
     ctx.appendInitialStatements(rhs())
         .append(varName())
         .append(" = ")
-        .appendOutputExpression(rhs(), EXPRESSION)
+        .appendOutputExpression(rhs())
         .append(";")
         .endLine();
-  }
-
-  @Override
-  void doFormatOutputExpr(FormattingContext ctx, OutputContext outputContext) {
-    // Print the variable reference only if the composite is appearing in another expression.
-    // The purpose of a composite is to provide a name for reference from other code chunks.
-    // If this composite is being asked to appear as its own statement, print nothing.
-    if (outputContext == OutputContext.EXPRESSION) {
-      ctx.append(varName());
-    }
-  }
-
-  @Override
-  public boolean isRepresentableAsSingleExpression() {
-    return true;
-  }
-
-  @Override
-  public JsExpr singleExprOrName() {
-    return new JsExpr(varName(), Integer.MAX_VALUE);
   }
 }

@@ -47,7 +47,7 @@ abstract class New extends Operation {
   }
 
   @Override
-  void doFormatOutputExpr(FormattingContext ctx, OutputContext outputContext) {
+  void doFormatOutputExpr(FormattingContext ctx) {
     ctx.append("new ");
     formatOperand(ctor(), OperandPosition.LEFT, ctx);
   }

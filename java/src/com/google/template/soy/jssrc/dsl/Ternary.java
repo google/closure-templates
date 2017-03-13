@@ -60,7 +60,7 @@ abstract class Ternary extends Operation {
   }
 
   @Override
-  void doFormatOutputExpr(FormattingContext ctx, OutputContext outputContext) {
+  void doFormatOutputExpr(FormattingContext ctx) {
     formatOperand(predicate(), OperandPosition.LEFT, ctx);
     ctx.append(" ? ");
     formatOperand(consequent(), OperandPosition.LEFT, ctx);

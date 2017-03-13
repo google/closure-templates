@@ -16,8 +16,6 @@
 
 package com.google.template.soy.jssrc.dsl;
 
-import static com.google.template.soy.jssrc.dsl.OutputContext.EXPRESSION;
-
 import com.google.template.soy.exprtree.Operator.Associativity;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 
@@ -30,7 +28,7 @@ abstract class Operation extends CodeChunk.WithValue {
   @Override
   public final JsExpr singleExprOrName() {
     FormattingContext ctx = new FormattingContext();
-    ctx.appendOutputExpression(this, EXPRESSION);
+    ctx.appendOutputExpression(this);
     return new JsExpr(ctx.toString(), precedence());
   }
 
@@ -48,7 +46,7 @@ abstract class Operation extends CodeChunk.WithValue {
     if (protect) {
       ctx.append('(');
     }
-    ctx.appendOutputExpression(operand, EXPRESSION);
+    operand.doFormatOutputExpr(ctx);
     if (protect) {
       ctx.append(')');
     }

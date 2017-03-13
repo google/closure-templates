@@ -16,8 +16,6 @@
 
 package com.google.template.soy.jssrc.dsl;
 
-import static com.google.template.soy.jssrc.dsl.OutputContext.EXPRESSION;
-
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.jssrc.restricted.JsExpr;
@@ -59,10 +57,9 @@ abstract class Declaration extends CodeChunk.WithValue {
    *   var $$tmp = blah;
    *   $$tmp
    * </code> Override the superclass implementation to omit the trailing expression.
-   * TODO(brndn): this is the only override of the base method. We can probably eliminate it.
    */
   @Override
-  String getCode(int startingIndent, OutputContext outputContext, boolean moreToCome) {
+  String getCode(int startingIndent, OutputContext outputContext) {
     FormattingContext ctx = new FormattingContext(startingIndent);
     ctx.appendInitialStatements(this);
     return ctx.toString();
@@ -77,16 +74,14 @@ abstract class Declaration extends CodeChunk.WithValue {
     ctx.append("var ")
         .append(varName())
         .append(" = ")
-        .appendOutputExpression(rhs(), EXPRESSION)
+        .appendOutputExpression(rhs())
         .append(";")
         .endLine();
   }
 
   @Override
-  void doFormatOutputExpr(FormattingContext ctx, OutputContext outputContext) {
-    if (outputContext == OutputContext.EXPRESSION) {
-      ctx.append(varName());
-    }
+  void doFormatOutputExpr(FormattingContext ctx) {
+    ctx.append(varName());
   }
 
   @Override

@@ -49,7 +49,7 @@ abstract class Leaf extends CodeChunk.WithValue {
   }
 
   @Override
-  void doFormatOutputExpr(FormattingContext ctx, OutputContext outputContext) {
+  void doFormatOutputExpr(FormattingContext ctx) {
     ctx.append(value().getText());
   }
 

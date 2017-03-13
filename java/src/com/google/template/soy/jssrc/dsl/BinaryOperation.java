@@ -89,7 +89,7 @@ abstract class BinaryOperation extends Operation {
   }
 
   @Override
-  void doFormatOutputExpr(FormattingContext ctx, OutputContext outputContext) {
+  void doFormatOutputExpr(FormattingContext ctx) {
     formatOperand(arg1(), OperandPosition.LEFT, ctx);
     ctx.append(' ').append(operator()).append(' ');
     formatOperand(arg2(), OperandPosition.RIGHT, ctx);

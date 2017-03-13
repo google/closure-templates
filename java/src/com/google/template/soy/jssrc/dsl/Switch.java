@@ -16,7 +16,6 @@
 
 package com.google.template.soy.jssrc.dsl;
 
-import static com.google.template.soy.jssrc.dsl.OutputContext.EXPRESSION;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
@@ -51,13 +50,11 @@ abstract class Switch extends CodeChunk {
 
     // Append the output expressions for the switch expression and case labels,
     // together with the complete statements for all the bodies.
-    ctx.append("switch (").appendOutputExpression(switchOn(), EXPRESSION).append(") ");
+    ctx.append("switch (").appendOutputExpression(switchOn()).append(") ");
     try (FormattingContext ignored = ctx.enterBlock()) {
       for (CaseClause caseClause : caseClauses()) {
         for (int i = 0; i < caseClause.caseLabels.size(); ++i) {
-          ctx.append("case ")
-              .appendOutputExpression(caseClause.caseLabels.get(i), EXPRESSION)
-              .append(":");
+          ctx.append("case ").appendOutputExpression(caseClause.caseLabels.get(i)).append(":");
           // The last case label in this clause will have its line ended by enterCaseBody below.
           if (i < caseClause.caseLabels.size() - 1) {
             ctx.endLine();
