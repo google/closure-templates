@@ -16,6 +16,8 @@
 
 package com.google.template.soy.error;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import java.util.ArrayList;
@@ -35,6 +37,7 @@ public final class FormattingErrorReporter extends AbstractErrorReporter {
 
   @Override
   public void report(SourceLocation sourceLocation, SoyErrorKind error, Object... args) {
+    checkNotNull(sourceLocation);
     errorMessages.add(error.format(args));
   }
 

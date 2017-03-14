@@ -16,6 +16,7 @@
 
 package com.google.template.soy.soytree.defn;
 
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.primitive.UnknownType;
 import javax.annotation.Nullable;
@@ -30,8 +31,9 @@ import javax.annotation.concurrent.Immutable;
 @Immutable
 public final class SoyDocParam extends TemplateParam {
 
-  public SoyDocParam(String name, boolean isRequired, @Nullable String desc) {
-    super(name, UnknownType.getInstance(), isRequired, false, desc);
+  public SoyDocParam(
+      String name, boolean isRequired, @Nullable String desc, @Nullable SourceLocation location) {
+    super(name, UnknownType.getInstance(), isRequired, false, desc, location);
   }
 
   private SoyDocParam(SoyDocParam soyDocParam) {
@@ -50,8 +52,8 @@ public final class SoyDocParam extends TemplateParam {
 
   @Override
   public SoyDocParam copyEssential() {
-    // Note: 'desc' is nonessential.
-    SoyDocParam soyDocParam = new SoyDocParam(name(), isRequired(), null);
+    // Note: 'desc', nameLocation are nonessential.
+    SoyDocParam soyDocParam = new SoyDocParam(name(), isRequired(), null, null);
     soyDocParam.setLocalVariableIndex(localVariableIndex());
     return soyDocParam;
   }

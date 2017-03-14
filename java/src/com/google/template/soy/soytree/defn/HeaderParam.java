@@ -31,7 +31,6 @@ import javax.annotation.concurrent.Immutable;
  */
 @Immutable
 public final class HeaderParam extends TemplateParam {
-  private final SourceLocation nameLocation;
   private final TypeNode typeNode;
 
   public HeaderParam(
@@ -42,25 +41,14 @@ public final class HeaderParam extends TemplateParam {
       boolean isRequired,
       boolean isInjected,
       @Nullable String desc) {
-    super(name, type, isRequired, isInjected, desc);
+    super(name, type, isRequired, isInjected, desc, nameLocation);
     Preconditions.checkArgument(type != null);
-    this.nameLocation = nameLocation;
     this.typeNode = typeNode;
   }
 
   @Override
   public DeclLoc declLoc() {
     return DeclLoc.HEADER;
-  }
-
-  /**
-   * Returns the location of the name.
-   *
-   * <p>May be null if this is a param from a {@link #copyEssential()} call.
-   */
-  @Nullable
-  public SourceLocation nameLocation() {
-    return nameLocation;
   }
 
   /**

@@ -34,7 +34,6 @@ import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
-import com.google.template.soy.soytree.defn.HeaderParam;
 import com.google.template.soy.soytree.defn.SoyDocParam;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import java.util.ArrayList;
@@ -195,7 +194,7 @@ public abstract class TemplateNodeBuilder {
     Preconditions.checkArgument(soyDoc.startsWith("/**") && soyDoc.endsWith("*/"));
     String cleanedSoyDoc = cleanSoyDocHelper(soyDoc);
     this.soyDocDesc = parseSoyDocDescHelper(cleanedSoyDoc);
-    this.addParams(parseSoyDocDeclsHelper(cleanedSoyDoc, soyDocLocation));
+    this.addParams(parseSoyDocDeclsHelper(soyDoc, cleanedSoyDoc, soyDocLocation));
 
     return this;
   }
@@ -222,19 +221,13 @@ public abstract class TemplateNodeBuilder {
     // Check new params.
     for (TemplateParam param : params) {
       if (param.name().equals("ij")) {
-        errorReporter.report(paramSourceLocation(param), INVALID_PARAM_NAMED_IJ);
+        errorReporter.report(param.nameLocation(), INVALID_PARAM_NAMED_IJ);
       }
       if (!seenParamKeys.add(param.name())) {
-        errorReporter.report(paramSourceLocation(param), PARAM_ALREADY_DECLARED, param.name());
+        errorReporter.report(param.nameLocation(), PARAM_ALREADY_DECLARED, param.name());
       }
     }
     return this;
-  }
-
-  private SourceLocation paramSourceLocation(TemplateParam param) {
-    // TODO(lukes): these sourcelocations are wrong for SoyDocParams.  Fixing would be tricky, the
-    // best solution is to eliminate support for SoyDoc params.
-    return param instanceof HeaderParam ? ((HeaderParam) param).nameLocation() : sourceLocation;
   }
 
   /** Builds the template node. Will error if not enough info as been set on this builder. */
@@ -486,9 +479,9 @@ public abstract class TemplateNodeBuilder {
    * @return A SoyDocDeclsInfo object with the parsed info.
    */
   private List<SoyDocParam> parseSoyDocDeclsHelper(
-      String cleanedSoyDoc, SourceLocation soyDocSourceLocation) {
+      String originalSoyDoc, String cleanedSoyDoc, SourceLocation soyDocSourceLocation) {
     List<SoyDocParam> params = new ArrayList<>();
-
+    RawTextNode originalSoyDocAsNode = new RawTextNode(-1, originalSoyDoc, soyDocSourceLocation);
     Matcher matcher = SOY_DOC_DECL_PATTERN.matcher(cleanedSoyDoc);
     // Important: This statement finds the param for the first iteration of the loop.
     boolean isFound = matcher.find();
@@ -498,6 +491,13 @@ public abstract class TemplateNodeBuilder {
       String declKeyword = matcher.group(1);
       String declText = matcher.group(2);
 
+      String fullMatch = matcher.group();
+      // find the param in the original soy doc and use the RawTextNode support for
+      // calculating substring locations to get a more accurate location
+      int indexOfParamName = originalSoyDoc.indexOf(declText, originalSoyDoc.indexOf(fullMatch));
+      SourceLocation paramLocation =
+          originalSoyDocAsNode.substringLocation(
+              indexOfParamName, indexOfParamName + declText.length());
       // Find the next declaration in the SoyDoc and extract this declaration's desc string.
       int descStart = matcher.end();
       // Important: This statement finds the param for the next iteration of the loop.
@@ -509,18 +509,16 @@ public abstract class TemplateNodeBuilder {
       if (declKeyword.equals("@param") || declKeyword.equals("@param?")) {
 
         if (SOY_DOC_PARAM_TEXT_PATTERN.matcher(declText).matches()) {
-          params.add(new SoyDocParam(declText, declKeyword.equals("@param"), desc));
+          params.add(new SoyDocParam(declText, declKeyword.equals("@param"), desc, paramLocation));
 
         } else {
           if (declText.startsWith("{")) {
             // v1 is allowed for compatibility reasons
             if (!isMarkedV1) {
-              errorReporter.report(soyDocSourceLocation, LEGACY_COMPATIBLE_PARAM_TAG, declText);
+              errorReporter.report(paramLocation, LEGACY_COMPATIBLE_PARAM_TAG, declText);
             }
           } else {
-            // TODO(lukes): the source location here is not accurate (points to the start of the doc
-            // not the @param line
-            errorReporter.report(soyDocSourceLocation, INVALID_SOYDOC_PARAM, declText);
+            errorReporter.report(paramLocation, INVALID_SOYDOC_PARAM, declText);
           }
         }
 

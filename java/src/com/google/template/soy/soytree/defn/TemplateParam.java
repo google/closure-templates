@@ -16,6 +16,7 @@
 
 package com.google.template.soy.soytree.defn;
 
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.types.SoyType;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
@@ -41,6 +42,8 @@ public abstract class TemplateParam extends AbstractVarDefn {
   /** Whether the param is required. */
   private final boolean isRequired;
 
+  private final SourceLocation nameLocation;
+
   /** Whether the param is an injected param. */
   private final boolean isInjected;
 
@@ -48,11 +51,17 @@ public abstract class TemplateParam extends AbstractVarDefn {
   private final String desc;
 
   public TemplateParam(
-      String name, SoyType type, boolean isRequired, boolean isInjected, @Nullable String desc) {
+      String name,
+      SoyType type,
+      boolean isRequired,
+      boolean isInjected,
+      @Nullable String desc,
+      @Nullable SourceLocation nameLocation) {
     super(name, type);
     this.isRequired = isRequired;
     this.isInjected = isInjected;
     this.desc = desc;
+    this.nameLocation = nameLocation;
   }
 
   TemplateParam(TemplateParam param) {
@@ -60,11 +69,21 @@ public abstract class TemplateParam extends AbstractVarDefn {
     this.isRequired = param.isRequired;
     this.isInjected = param.isInjected;
     this.desc = param.desc;
+    this.nameLocation = param.nameLocation;
   }
 
   @Override
   public Kind kind() {
     return Kind.PARAM;
+  }
+
+  /**
+   * Returns the location of the name.
+   *
+   * <p>May be null if this is a param from a {@link #copyEssential()} call.
+   */
+  public SourceLocation nameLocation() {
+    return nameLocation;
   }
 
   /** Returns the location of the parameter declaration. */

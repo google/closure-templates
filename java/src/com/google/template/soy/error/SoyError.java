@@ -16,6 +16,8 @@
 
 package com.google.template.soy.error;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ComparisonChain;
 import com.google.template.soy.base.SourceLocation;
@@ -33,6 +35,7 @@ public abstract class SoyError implements Comparable<SoyError> {
       new Factory() {
         @Override
         public SoyError create(SourceLocation location, SoyErrorKind kind, Object... args) {
+          checkNotNull(location);
           String message = kind.format(args);
           return createError(location, kind, message, location + ": error: " + message);
         }
