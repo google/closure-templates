@@ -21445,7 +21445,7 @@ goog.dom.getWindow = function(opt_doc) {
  * @private
  */
 goog.dom.getWindow_ = function(doc) {
-  return doc.parentWindow || doc.defaultView;
+  return /** @type {!Window} */ (doc.parentWindow || doc.defaultView);
 };
 
 
