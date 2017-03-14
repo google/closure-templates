@@ -64,6 +64,7 @@ import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.ProtoInitNode;
@@ -336,7 +337,7 @@ public class TranslateExprNodeVisitor
     if (assignments.isEmpty()) {
       // If there are no assignments, we can return the map literal directly without assigning
       // to a tmp var.
-      return JsSrcUtils.wrapInIife(map, false /* don't wrap single exprs */);
+      return map;
     }
 
     // Otherwise, we need to bail to a tmp var and emit assignment statements.
@@ -349,7 +350,7 @@ public class TranslateExprNodeVisitor
               .assign(entry.getValue()));
     }
 
-    return JsSrcUtils.wrapInIife(builder.buildAsValue(), true /* doesn't matter */);
+    return builder.buildAsValue();
   }
 
 
@@ -515,6 +516,13 @@ public class TranslateExprNodeVisitor
   protected CodeChunk.WithValue visitOrOpNode(OrOpNode node) {
     Preconditions.checkArgument(node.numChildren() == 2);
     return visit(node.getChild(0)).or(visit(node.getChild(1)), codeGenerator);
+  }
+
+  @Override
+  protected WithValue visitConditionalOpNode(ConditionalOpNode node) {
+    Preconditions.checkArgument(node.numChildren() == 3);
+    return codeGenerator.conditionalExpression(
+        visit(node.getChild(0)), visit(node.getChild(1)), visit(node.getChild(2)));
   }
 
   @Override

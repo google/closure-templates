@@ -148,11 +148,9 @@ public final class GenJsExprsVisitorTest {
         "{(['a': 'b', $boo: 'c'])[$boo]}");
     String expectedGenCode =
         JOINER.join(
-            "(function() {",
-            "  var $tmp = {a: 'b'};",
-            "  $tmp[soy.$$checkMapKey(opt_data.boo)] = 'c';",
-            "  return $tmp;",
-            "})()[opt_data.boo]");
+            "var $tmp = {a: 'b'};",
+            "$tmp[soy.$$checkMapKey(opt_data.boo)] = 'c';",
+            "$tmp[opt_data.boo]");
     assertGeneratedChunks(soyNodeCode, expectedGenCode);
   }
 

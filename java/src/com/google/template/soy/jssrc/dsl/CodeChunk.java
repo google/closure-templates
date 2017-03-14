@@ -188,22 +188,20 @@ public abstract class CodeChunk {
   /**
    * Creates a code chunk representing the given Soy operator applied to the given operands.
    *
-   * <p>Cannot be used for {@link Operator#AND} and {@link Operator#OR}, as they require access to a
-   * {@link CodeChunk.Generator} to generate temporary variables for short-circuiting. Use {@link
-   * CodeChunk.WithValue#and} and {@link CodeChunk.WithValue#or} instead.
+   * <p>Cannot be used for {@link Operator#AND}, {@link Operator#OR}, or {@link
+   * Operator#CONDITIONAL}, as they require access to a {@link CodeChunk.Generator} to generate
+   * temporary variables for short-circuiting. Use {@link CodeChunk.WithValue#and}, {@link
+   * CodeChunk.WithValue#or}, and {@link CodeChunk.Generator#conditionalExpression} instead.
    */
   public static WithValue operation(Operator op, List<WithValue> operands) {
     Preconditions.checkArgument(operands.size() == op.getNumOperands());
-    // AND and OR have dedicated APIs to handle short-circuiting
-    Preconditions.checkArgument(op != Operator.AND && op != Operator.OR);
+    Preconditions.checkArgument(
+        op != Operator.AND && op != Operator.OR && op != Operator.CONDITIONAL);
     switch (op.getNumOperands()) {
       case 1:
         return PrefixUnaryOperation.create(op, operands.get(0));
       case 2:
         return BinaryOperation.create(op, operands.get(0), operands.get(1));
-      case 3:
-        Preconditions.checkArgument(op == Operator.CONDITIONAL);
-        return Ternary.create(operands.get(0), operands.get(1), operands.get(2));
       default:
         throw new AssertionError();
     }
@@ -629,6 +627,35 @@ public abstract class CodeChunk {
      */
     public CodeChunk.WithValue declare(CodeChunk.WithValue rhs) {
       return CodeChunk.declare(newVarName(), rhs);
+    }
+
+    /**
+     * Returns a code chunk representing an if-then-else condition.
+     *
+     * <p>If all the parameters are {@link WithValue#isRepresentableAsSingleExpression representable
+     * as single expressions}, the returned chunk will use the JavaScript ternary syntax ({@code
+     * predicate ? consequent : alternate}). Otherwise, the returned chunk will use JavaScript
+     * conditional statement syntax: <code>
+     *   var $tmp = null;
+     *   if (predicate) {
+     *     $tmp = consequent;
+     *   } else {
+     *     $tmp = alternate;
+     *   }
+     * </code>
+     */
+    public CodeChunk.WithValue conditionalExpression(
+        CodeChunk.WithValue predicate,
+        CodeChunk.WithValue consequent,
+        CodeChunk.WithValue alternate) {
+      if (consequent.isRepresentableAsSingleExpression()
+          && alternate.isRepresentableAsSingleExpression()) {
+        return Ternary.create(predicate, consequent, alternate);
+      }
+      return newChunk()
+          .createConditionalExpression(
+              Conditional.create(
+                  ImmutableList.of(new IfThenPair(predicate, consequent)), alternate));
     }
 
     /** Returns a builder for a new code chunk that is not initialized to any value. */

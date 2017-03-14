@@ -18,9 +18,6 @@ package com.google.template.soy.jssrc.internal;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.internal.BaseUtils;
-import com.google.template.soy.jssrc.dsl.CodeChunk;
-import com.google.template.soy.jssrc.dsl.CodeChunk.RequiresCollector;
-import com.google.template.soy.jssrc.restricted.JsExpr;
 
 /**
  * Shared utilities specific to the JS Src backend.
@@ -83,29 +80,6 @@ public final class JsSrcUtils {
   static boolean isReservedWord(String key) {
     return LEGACY_JS_RESERVED_WORDS.contains(key);
   }
-
-
-  // TODO(user): this is a hack to make non-single-expr CodeChunks still be JsExpr-compatible
-  // during the transition. Once all of jssrc understands CodeChunks, remove all usage.
-  public static CodeChunk.WithValue wrapInIife(
-      CodeChunk.WithValue chunk, boolean forceWrapSingleExpr) {
-    // TODO(user): This is not right either, but it prevents a lot of test churn.
-    if (chunk.isRepresentableAsSingleExpression() && !forceWrapSingleExpr) {
-      return chunk;
-    }
-
-    StringBuilder iife = new StringBuilder();
-    iife.append("(function() {\n");
-    iife.append(
-        CodeChunk.WithValue
-            .return_(chunk)
-            .getStatementsForInsertingIntoForeignCodeAtIndent(2));
-    iife.append("})()");
-    RequiresCollector.IntoImmutableSet collector = new RequiresCollector.IntoImmutableSet();
-    chunk.collectRequires(collector);
-    return CodeChunk.fromExpr(new JsExpr(iife.toString(), Integer.MAX_VALUE), collector.get());
-  }
-
 
   static final ImmutableSet<String> JS_LITERALS =
       ImmutableSet.of("null", "true", "false", "NaN", "Infinity", "undefined");

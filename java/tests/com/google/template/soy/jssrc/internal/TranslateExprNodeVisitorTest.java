@@ -80,21 +80,14 @@ public final class TranslateExprNodeVisitorTest {
 
     assertThatSoyExpr("quoteKeysIfJs(['aaa': 123, $boo: $foo])")
         .generatesCode(
-            "(function() {",
-            "  var $tmp = {'aaa': 123};",
-            "  $tmp[soy.$$checkMapKey(opt_data.boo)] = opt_data.foo;",
-            "  return $tmp;",
-            "})()");
+            "var $tmp = {'aaa': 123};", "$tmp[soy.$$checkMapKey(opt_data.boo)] = opt_data.foo;");
 
     assertThatSoyExpr("quoteKeysIfJs([$boo: $foo, $goo[0]: 123])")
         .withInitialLocalVarTranslations(LOCAL_VAR_TRANSLATIONS)
         .generatesCode(
-            "(function() {",
-            "  var $tmp = {};",
-            "  $tmp[soy.$$checkMapKey(opt_data.boo)] = opt_data.foo;",
-            "  $tmp[soy.$$checkMapKey(gooData8[0])] = 123;",
-            "  return $tmp;",
-            "})()");
+            "var $tmp = {};",
+            "$tmp[soy.$$checkMapKey(opt_data.boo)] = opt_data.foo;",
+            "$tmp[soy.$$checkMapKey(gooData8[0])] = 123;");
 
     assertThatSoyExpr("quoteKeysIfJs(['aaa': ['bbb': 'blah']])")
         .generatesCode("{'aaa': {bbb: 'blah'}}");
@@ -126,11 +119,7 @@ public final class TranslateExprNodeVisitorTest {
     assertThatSoyExpr("['aaa': 123, $boo: $foo]")
         .withJsSrcOptions(noCompiler)
         .generatesCode(
-            "(function() {",
-            "  var $tmp = {aaa: 123};",
-            "  $tmp[soy.$$checkMapKey(opt_data.boo)] = opt_data.foo;",
-            "  return $tmp;",
-            "})()");
+            "var $tmp = {aaa: 123};", "$tmp[soy.$$checkMapKey(opt_data.boo)] = opt_data.foo;");
 
     assertThatSoyExpr("['aaa': 123, $boo: $foo, $moo: $goo]")
         .withJsSrcOptions(withCompiler)
