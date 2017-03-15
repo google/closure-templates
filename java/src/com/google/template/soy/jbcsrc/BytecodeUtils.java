@@ -749,7 +749,9 @@ final class BytecodeUtils {
    *
    * @return the type of the result of the unbox operation
    */
-  static Type unboxUnchecked(CodeBuilder cb, Type fromType, Class<?> asType) {
+  static Type unboxUnchecked(CodeBuilder cb, SoyRuntimeType soyType, Class<?> asType) {
+    checkArgument(soyType.isBoxed(), "Expected %s to be a boxed type", soyType);
+    Type fromType = soyType.runtimeType();
     checkArgument(
         !SoyValue.class.isAssignableFrom(asType),
         "Can't use unboxUnchecked() to convert from %s to a SoyValue: %s.",

@@ -639,58 +639,35 @@ final class ProtoUtils {
      */
     private Statement handleNormalSetter(final SoyExpression baseArg, final FieldDescriptor field) {
       final MethodRef setterMethod = getSetOrAddMethod(field);
-
-      // Simple case: Arg is not null. Unbox, coerce, and call set<Field>().
-
-      if (baseArg.isNonNullable()) {
-        final Expression arg =
-            shouldUnbox(field) ? baseArg.unboxAs(classToUnboxTo(field)) : baseArg;
-
-        return new Statement() {
-          @Override
-          void doGen(CodeBuilder cb) {
-            arg.gen(cb);
-            coerce(cb, arg.resultType(), field);
-            setterMethod.invokeUnchecked(cb); // builder is already on the stack
-          }
-        };
-      }
-
-      // Complex case: Arg is nullable. Perform a manual null check, and only unbox + coerce + set
-      // if not null.
-
+      final boolean isNullable = !baseArg.isNonNullable();
       return new Statement() {
         @Override
         void doGen(CodeBuilder cb) {
           baseArg.gen(cb);
 
-          Label argIsNull = new Label();
-          Label end = new Label();
-
-          // perform null check
-          cb.dup();
-          cb.ifNull(argIsNull);
+          Label argIsNull = null;
+          Label end = null;
+          if (isNullable) {
+            argIsNull = new Label();
+            end = new Label();
+            // perform null check
+            cb.dup();
+            cb.ifNull(argIsNull);
+          }
 
           // arg is not null; unbox, coerce, set<Field>().
 
-          Type currentType;
-          if (shouldUnbox(field)) {
-            currentType =
-                unboxUnchecked(cb, baseArg.soyRuntimeType().runtimeType(), classToUnboxTo(field));
-          } else {
-            // currently we unbox everything but safe proto fields
-            currentType = SANITIZED_CONTENT_TYPE;
-          }
-
-          coerce(cb, currentType, field);
+          unboxAndCoerce(cb, baseArg, field);
           setterMethod.invokeUnchecked(cb);
-          cb.goTo(end);
+          if (isNullable) {
+            cb.goTo(end);
 
-          // arg is null; pop it off stack.
-          cb.mark(argIsNull);
-          cb.pop();
+            // arg is null; pop it off stack.
+            cb.mark(argIsNull);
+            cb.pop();
 
-          cb.mark(end);
+            cb.mark(end);
+          }
         }
       };
     }
@@ -832,36 +809,7 @@ final class ProtoUtils {
       final MethodRef setterMethod =
           field.isRepeated() ? EXTENDABLE_BUILDER_ADD_EXTENSION : EXTENDABLE_BUILDER_SET_EXTENSION;
 
-      if (baseArg.isNonNullable()) {
-        // Unbox arg to primitive, then convert java primitive to java object
-        final Expression arg =
-            shouldUnbox(field) ? baseArg.unboxAs(classToUnboxTo(field)) : baseArg;
-
-        return new Statement() {
-          @Override
-          void doGen(CodeBuilder cb) {
-            // Cast to ExtendableBuilder
-            cb.checkCast(EXTENDABLE_BUILDER_TYPE);
-
-            // Put extension identifier and arg on the stack, coerce arg
-            extensionIdentifier.gen(cb);
-            arg.gen(cb);
-            coerce(cb, arg.resultType(), field);
-
-            // .setExtension() requires an Object; run .valueOf() on primitives
-            Type fieldType = getRuntimeType(field);
-            if (isPrimitive(fieldType)) {
-              cb.valueOf(fieldType);
-            }
-
-            // Call .setExtension() / .addExtension()
-            setterMethod.invokeUnchecked(cb);
-
-            // Cast back to MyProto.Builder
-            cb.checkCast(builderRuntimeType(descriptor).type());
-          }
-        };
-      }
+      final boolean isNullable = !baseArg.isNonNullable();
 
       return new Statement() {
         @Override
@@ -871,30 +819,18 @@ final class ProtoUtils {
           // Put baseArg on stack
 
           baseArg.gen(cb);
-
-          Label argIsNull = new Label();
-          Label end = new Label();
-
-          // Null check
-          cb.dup();
-          cb.ifNull(argIsNull);
+          Label argIsNull = null;
+          Label end = null;
+          if (isNullable) {
+            argIsNull = new Label();
+            end = new Label();
+            // Null check
+            cb.dup();
+            cb.ifNull(argIsNull);
+          }
 
           // Arg is not null; unbox, coerce, run .valueOf(), add extension id, call .setExtension()
-
-          Type currentType;
-          if (shouldUnbox(field)) {
-            currentType =
-                unboxUnchecked(cb, baseArg.soyRuntimeType().runtimeType(), classToUnboxTo(field));
-          } else {
-            currentType = SANITIZED_CONTENT_TYPE;
-          }
-
-          coerce(cb, currentType, field);
-
-          Type fieldType = getRuntimeType(field);
-          if (isPrimitive(fieldType)) {
-            cb.valueOf(fieldType);
-          }
+          unboxAndCoerce(cb, baseArg, field);
 
           // Put extension identifier on stack, swap to the right order
           extensionIdentifier.gen(cb);
@@ -902,23 +838,40 @@ final class ProtoUtils {
 
           // Call .setExtension() / .addExtension(), skip to end
           setterMethod.invokeUnchecked(cb);
-          cb.goTo(end);
 
           // Arg is null; pop it off stack
+          if (isNullable) {
+            cb.goTo(end);
+            cb.mark(argIsNull);
+            cb.pop();
 
-          cb.mark(argIsNull);
-          cb.pop();
-
-          // Done; cast back to MyProto.Builder
-
-          cb.mark(end);
+            // Done; cast back to MyProto.Builder
+            cb.mark(end);
+          }
           cb.checkCast(builderRuntimeType(descriptor).type());
         }
       };
     }
 
-    private static boolean shouldUnbox(FieldDescriptor field) {
-      return !isSafeProto(field);
+    /**
+     * Assuming that the value of {@code baseArg} is on the top of the stack. unbox and coerce it to
+     * be compatible with the given field descriptor.
+     */
+    private static void unboxAndCoerce(
+        CodeBuilder cb, SoyExpression baseArg, FieldDescriptor field) {
+      Type currentType;
+      if (!isSafeProto(field)) {
+        if (baseArg.isBoxed()) {
+          currentType = unboxUnchecked(cb, baseArg.soyRuntimeType(), classToUnboxTo(field));
+        } else {
+          currentType = baseArg.resultType();
+        }
+      } else {
+        // currently we unbox everything but safe proto fields
+        currentType = SANITIZED_CONTENT_TYPE;
+      }
+
+      coerce(cb, currentType, field);
     }
 
     @Nullable
@@ -947,7 +900,10 @@ final class ProtoUtils {
       }
     }
 
-    /** Generate bytecode that coerces the top of stack to the correct type for the given field. */
+    /**
+     * Generate bytecode that coerces the top of stack to the correct type for the given field
+     * setter.
+     */
     private static void coerce(CodeBuilder cb, Type currentType, FieldDescriptor field) {
       // TODO(user): This might be a good place to do some extra type-checking, by
       // running comparisons between currentType to getRuntimeType(field).
@@ -955,31 +911,31 @@ final class ProtoUtils {
         case BOOLEAN:
         case DOUBLE:
         case STRING:
-          return; // no coercion necessary
+          break; // no coercion necessary
         case FLOAT:
           if (!currentType.equals(Type.FLOAT_TYPE)) {
             cb.cast(currentType, Type.FLOAT_TYPE);
           }
-          return;
+          break;
         case INT:
           if (!currentType.equals(Type.INT_TYPE)) {
             cb.cast(currentType, Type.INT_TYPE);
           }
-          return;
+          break;
         case LONG:
           if (shouldConvertBetweenStringAndLong(field)) {
             MethodRef.LONG_PARSE_LONG.invokeUnchecked(cb);
           }
-          return;
+          break;
         case BYTE_STRING:
           BASE_ENCODING_BASE_64.invokeUnchecked(cb);
           cb.swap();
           BASE_ENCODING_DECODE.invokeUnchecked(cb);
           BYTE_STRING_COPY_FROM.invokeUnchecked(cb);
-          return;
+          break;
         case MESSAGE:
           coerceToMessage(cb, field);
-          return;
+          break;
         case ENUM:
           if (!currentType.equals(Type.INT_TYPE)) {
             cb.cast(currentType, Type.INT_TYPE);
@@ -992,6 +948,13 @@ final class ProtoUtils {
           return;
         default:
           throw new AssertionError("unsupported field type: " + field);
+      }
+      if (field.isExtension()) {
+        // primitive extensions need to be boxed since the api is generic
+        Type fieldType = getRuntimeType(field);
+        if (isPrimitive(fieldType)) {
+          cb.valueOf(fieldType);
+        }
       }
     }
 
