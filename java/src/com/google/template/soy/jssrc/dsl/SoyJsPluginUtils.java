@@ -86,7 +86,6 @@ public final class SoyJsPluginUtils {
       arg.collectRequires(collector);
       if (!arg.isRepresentableAsSingleExpression()) {
         isSingleExpr = false;
-        break;
       }
     }
     if (directive instanceof SoyLibraryAssistedJsSrcPrintDirective) {
