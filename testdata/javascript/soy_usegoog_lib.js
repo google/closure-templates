@@ -2894,13 +2894,15 @@ goog.createRequiresTranspilation_ = function() {
   addNewerLanguageTranspilationCheck('es6-impl', function() {
     return true;
   });
-  // ** and **= are the only new features in 'es7'
+  // We can be confident the browser has full ES7 level support if it
+  // has both ** and Array.prototype.includes().
   addNewerLanguageTranspilationCheck('es7', function() {
-    return evalCheck('2 ** 2 == 4');
+    return evalCheck('[8].includes(2 ** 3)');
   });
-  // async functions are the only new features in 'es8'
+  // We can be confident the browser has full ES8 level support if it
+  // has both async functions and String.prototype.padLeft().
   addNewerLanguageTranspilationCheck('es8', function() {
-    return evalCheck('async () => 1, true');
+    return evalCheck('(async () => 1)("x".padLeft(2)), true');
   });
   return requiresTranspilation;
 };
