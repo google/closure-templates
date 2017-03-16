@@ -27,6 +27,8 @@ import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.soyparse.SoyFileParser;
+import com.google.template.soy.soytree.HtmlAttributeNode;
+import com.google.template.soy.soytree.HtmlAttributeValueNode;
 import com.google.template.soy.soytree.HtmlCloseTagNode;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.RawTextNode;
@@ -77,6 +79,16 @@ public final class HtmlRewritePassTest {
     node = runPass("<div class=foo></div>");
     assertThatSourceString(node).isEqualTo("<div class=foo></div>");
     assertThatASTString(node).isEqualTo(structure);
+
+    // This is a tricky case, according to the spec the '/' belongs to the attribute, not the tag
+    node = runPass("<div class=foo/>");
+    assertThatSourceString(node).isEqualTo("<div class=foo/>");
+    HtmlOpenTagNode openTag = (HtmlOpenTagNode) node.getChild(1);
+    assertThat(openTag.isSelfClosing()).isFalse();
+    HtmlAttributeValueNode attributeValue =
+        (HtmlAttributeValueNode) ((HtmlAttributeNode) openTag.getChild(0)).getChild(1);
+    assertThat(attributeValue.getQuotes()).isEqualTo(HtmlAttributeValueNode.Quotes.NONE);
+    assertThat(((RawTextNode) attributeValue.getChild(0)).getRawText()).isEqualTo("foo/");
   }
 
   @Test

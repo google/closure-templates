@@ -407,13 +407,17 @@ public final class HtmlRewritePass extends CompilerFilePass {
       return -1;
     }
 
-    /** Matches invalid characters for unquoted attribute values. */
-    static final CharMatcher BAD_UNQUOTED_ATTRIBUTE_CHARACTER_MATCHER =
-        CharMatcher.anyOf("\"'`=<> \t\r\n").precomputed();
-
     /** Matches raw text in a tag that isn't a special character or whitespace. */
     static final CharMatcher TAG_RAW_TEXT_MATCHER =
         CharMatcher.whitespace().or(CharMatcher.anyOf(">='\"/")).negate().precomputed();
+    
+    // see https://www.w3.org/TR/html5/syntax.html#attributes-0
+    /** Matches all the characters that are allowed to appear in an unquoted attribute value. */
+    static final CharMatcher UNQUOTED_ATTRIBUTE_VALUE_MATCHER =
+        CharMatcher.whitespace().or(CharMatcher.anyOf("<>='\"`")).negate().precomputed();
+    /** Matches the delimiter characters of an unquoted attribute value. */
+    static final CharMatcher UNQUOTED_ATTRIBUTE_VALUE_DELIMITER =
+        CharMatcher.whitespace().or(CharMatcher.is('>')).precomputed();
 
     static final CharMatcher NOT_DOUBLE_QUOTE = CharMatcher.isNot('"').precomputed();
     static final CharMatcher NOT_SINGLE_QUOTE = CharMatcher.isNot('\'').precomputed();
@@ -474,7 +478,7 @@ public final class HtmlRewritePass extends CompilerFilePass {
         // if whitespace was trimmed prior to the current character (e.g. leading whitespace)
         // handle it.
         if (currentRawTextNode.missingWhitespaceAt(startIndex)) {
-          handleJoinedWhitespace(currentPoint());
+          handleJoinedWhitespace(currentPoint(), false);
         }
         State startState = context.getState();
         switch (startState) {
@@ -568,12 +572,12 @@ public final class HtmlRewritePass extends CompilerFilePass {
       }
       // handle trailing joined whitespace.
       if (currentRawTextNode.missingWhitespaceAt(currentRawText.length())) {
-        handleJoinedWhitespace(currentRawTextNode.getSourceLocation().getEndPoint());
+        handleJoinedWhitespace(currentRawTextNode.getSourceLocation().getEndPoint(), true);
       }
     }
 
     /** Called to handle whitespace that was completely removed from a raw text node. */
-    void handleJoinedWhitespace(SourceLocation.Point point) {
+    void handleJoinedWhitespace(SourceLocation.Point point, boolean atEndOfBlock) {
       switch (context.getState()) {
         case UNQUOTED_ATTRIBUTE_VALUE:
           context.createUnquotedAttributeValue(point);
@@ -581,9 +585,16 @@ public final class HtmlRewritePass extends CompilerFilePass {
         case AFTER_TAG_NAME_OR_ATTRIBUTE:
           context.setState(State.BEFORE_ATTRIBUTE_NAME, point);
           return;
+        case AFTER_ATTRIBUTE_NAME:
+          // if we are at the end of a sequence of raw text, then there will be no equals sign
+          // change states
+          if (atEndOfBlock) {
+            context.setState(State.BEFORE_ATTRIBUTE_NAME, point);
+            return;
+          }
+          // fall through
         case BEFORE_ATTRIBUTE_VALUE:
         case BEFORE_ATTRIBUTE_NAME:
-        case AFTER_ATTRIBUTE_NAME:
         case DOUBLE_QUOTED_XML_ATTRIBUTE_VALUE:
         case HTML_TAG_NAME:
         case HTML_COMMENT:
@@ -667,13 +678,14 @@ public final class HtmlRewritePass extends CompilerFilePass {
       boolean foundDelimiter = advanceWhileMatches(XML_DECLARATION_NON_DELIMITERS);
       if (foundDelimiter) {
         int c = currentChar();
+        SourceLocation.Point currentPoint = currentPoint();
         advance();
         if (c == '"') {
-          context.setState(State.DOUBLE_QUOTED_XML_ATTRIBUTE_VALUE, currentPoint());
+          context.setState(State.DOUBLE_QUOTED_XML_ATTRIBUTE_VALUE, currentPoint);
         } else if (c == '\'') {
-          context.setState(State.SINGLE_QUOTED_XML_ATTRIBUTE_VALUE, currentPoint());
+          context.setState(State.SINGLE_QUOTED_XML_ATTRIBUTE_VALUE, currentPoint);
         } else if (c == '>') {
-          context.setState(State.PCDATA, currentPoint());
+          context.setState(State.PCDATA, currentPoint);
         } else {
           throw new AssertionError("unexpected character: " + c);
         }
@@ -812,11 +824,11 @@ public final class HtmlRewritePass extends CompilerFilePass {
         context.setEqualsSignLocation(equalsSignPoint, currentPointOrEnd());
       } else {
         // we must have seen some non '=' character (or the end of the text), it doesn't matter
-        // what it is, finish the attribute.
-        context.createAttributeNode();
-        if (ws) {
-          context.setState(State.BEFORE_ATTRIBUTE_NAME, currentPointOrEnd());
-        }
+        // what it is, switch to the next state.  (creation of the attribute will happen
+        // automatically if it hasn't already).
+        context.setState(
+            ws ? State.BEFORE_ATTRIBUTE_NAME : State.AFTER_TAG_NAME_OR_ATTRIBUTE,
+            currentPointOrEnd());
       }
     }
 
@@ -827,6 +839,13 @@ public final class HtmlRewritePass extends CompilerFilePass {
      * to UNQUOTED_ATTRIBUTE_VALUE to handle that.
      */
     void handleBeforeAttributeValue() {
+      // per https://www.w3.org/TR/html5/syntax.html#attributes-0
+      // we are allowed an arbitrary amount of whitespace preceding an attribute value.
+      boolean ws = consumeWhitespace();
+      if (ws) {
+        // return without changing states to handle eof conditions
+        return;
+      }
       int c = currentChar();
       if (c == '\'' || c == '"') {
         SourceLocation.Point quotePoint = currentPoint();
@@ -847,20 +866,20 @@ public final class HtmlRewritePass extends CompilerFilePass {
      * <p>Search for whitespace or the end of the tag as a delimiter.
      */
     void handleUnquotedAttributeValue() {
-      boolean foundDelimiter = advanceWhileMatches(TAG_RAW_TEXT_MATCHER);
+      boolean foundDelimiter = advanceWhileMatches(UNQUOTED_ATTRIBUTE_VALUE_MATCHER);
       RawTextNode node = consumeAsRawText();
       if (node != null) {
-        int badCharIndex = BAD_UNQUOTED_ATTRIBUTE_CHARACTER_MATCHER.indexIn(node.getRawText());
-        if (badCharIndex != -1) {
-          errorReporter.report(
-              node.substringLocation(badCharIndex, badCharIndex + 1),
-              ILLEGAL_HTML_ATTRIBUTE_CHARACTER);
-          // keep going
-        }
         context.addAttributeValuePart(node);
       }
       if (foundDelimiter) {
         context.createUnquotedAttributeValue(currentPoint());
+        char c = (char) currentChar();
+        if (!UNQUOTED_ATTRIBUTE_VALUE_DELIMITER.matches(c)) {
+          errorReporter.report(currentLocation(), ILLEGAL_HTML_ATTRIBUTE_CHARACTER);
+          // go past it and consume it
+          advance();
+          consume();
+        }
       }
       // otherwise keep going, to support things like
       //  <div a=a{$p}>
