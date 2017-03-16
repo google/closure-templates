@@ -21,6 +21,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.soytree.RawTextNode;
+import com.google.template.soy.soytree.RawTextNode.SourceOffsets;
+import com.google.template.soy.soytree.RawTextNode.SourceOffsets.Reason;
 import javax.annotation.Nullable;
 
 /**
@@ -64,9 +66,9 @@ final class RawTextBuilder {
   private int endColumnAtStartOfWhitespace;
   // tracks whether the current sequence of whitespace contains a newline
   private boolean basicHasNewline = false;
-  // set to true if the previous sequence of text added isn't a literal.  this will force us to
-  // record a new offset for the next token
-  private boolean discontinuous;
+  // this will be set to non {@code NONE} if the previous sequence of text added isn't a basic
+  // text literal.  this will force us to record a new offset for the next token
+  private SourceOffsets.Reason discontinuityReason = Reason.NONE;
 
   RawTextBuilder(String fileName, IdGenerator nodeIdGen) {
     this.fileName = checkNotNull(fileName);
@@ -111,7 +113,7 @@ final class RawTextBuilder {
     if (!literalContent.image.isEmpty()) {
       append(literalContent, literalContent.image);
     }
-    discontinuous = true;
+    discontinuityReason = Reason.LITERAL;
   }
 
   /** Add the content for a 'textual' command token, like '{sp}'. */
@@ -121,7 +123,7 @@ final class RawTextBuilder {
     if (token.kind != SoyFileParserConstants.CMD_FULL_NIL) {
       append(token, rawTextCmdToString(token));
     }
-    discontinuous = true;
+    discontinuityReason = Reason.COMMAND;
   }
 
   private static String rawTextCmdToString(Token token) {
@@ -144,14 +146,10 @@ final class RawTextBuilder {
     }
   }
 
-  /** Returns {@code null} if the content is empty. */
   RawTextNode build() {
     maybeFinishBasic();
-    if (buffer.length() == 0) {
-      return null;
-    }
     String text = buffer.toString();
-    RawTextNode.SourceOffsets sourceOffsets = offsets.build(text.length());
+    RawTextNode.SourceOffsets sourceOffsets = offsets.build(text.length(), discontinuityReason);
     return new RawTextNode(
         nodeIdGen.genId(), text, sourceOffsets.getSourceLocation(fileName), sourceOffsets);
   }
@@ -172,26 +170,26 @@ final class RawTextBuilder {
     boolean addOffset = false;
     if (offsets.isEmpty()) {
       addOffset = true;
-    } else if (discontinuous) {
+    } else if (discontinuityReason != Reason.NONE) {
       addOffset = true;
     } else {
-      // are the two tokens not adjacent?
+      // are the two tokens not adjacent? We don't actually record comments in the AST or token
+      // stream so this is kind of a guess, but all known cases are due to comments.
       if (offsets.endLine() == token.beginLine) {
         if (offsets.endColumn() + 1 != token.beginColumn) {
           addOffset = true;
+          discontinuityReason = Reason.COMMENT;
         }
       } else if (offsets.endLine() + 1 == token.beginLine && token.beginColumn != 1) {
         addOffset = true;
+        discontinuityReason = Reason.COMMENT;
       }
     }
     if (addOffset) {
-      offsets.add(
-          buffer.length(), token.beginLine, token.beginColumn, token.endLine, token.endColumn);
-      discontinuous = false;
-    } else {
-      // otherwise just extend the end location
-      offsets.setEndLocation(token.endLine, token.endColumn);
+      offsets.add(buffer.length(), token.beginLine, token.beginColumn, discontinuityReason);
+      discontinuityReason = Reason.NONE;
     }
+    offsets.setEndLocation(token.endLine, token.endColumn);
     buffer.append(content);
   }
 
@@ -244,7 +242,7 @@ final class RawTextBuilder {
             offsets.delete(basicStartOfWhitespace);
           }
         }
-        discontinuous = true;
+        discontinuityReason = Reason.WHITESPACE;
         basicHasNewline = false;
       }
       basicStartOfWhitespace = -1;

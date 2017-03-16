@@ -52,12 +52,12 @@ public final class SourceLocationTest {
                 "SoyFileSetNode",
                 "  SoyFileNode",
                 "    TemplateBasicNode          @ /example/file.soy:2:1",
-                "      RawTextNode              @ /example/file.soy:4:3",
+                "      RawTextNode              @ /example/file.soy:4:2",
                 "      PrintNode                @ /example/file.soy:6:3",
                 "      RawTextNode              @ /example/file.soy:7:3",
                 "      CallBasicNode            @ /example/file.soy:9:3",
                 "    TemplateBasicNode          @ /example/file.soy:11:1",
-                "      RawTextNode              @ /example/file.soy:12:3",
+                "      RawTextNode              @ /example/file.soy:12:2",
                 ""),
         Joiner.on('\n')
             .join(
@@ -85,7 +85,7 @@ public final class SourceLocationTest {
                 "SoyFileSetNode",
                 "  SoyFileNode",
                 "    TemplateBasicNode          @ /example/file.soy:2:1",
-                "      RawTextNode              @ /example/file.soy:4:3",
+                "      RawTextNode              @ /example/file.soy:4:2",
                 "      SwitchNode               @ /example/file.soy:5:3",
                 "        SwitchCaseNode         @ /example/file.soy:6:5",
                 "          RawTextNode          @ /example/file.soy:7:7",
@@ -126,7 +126,7 @@ public final class SourceLocationTest {
                 "SoyFileSetNode",
                 "  SoyFileNode",
                 "    TemplateBasicNode          @ /example/file.soy:2:1",
-                "      RawTextNode              @ /example/file.soy:3:3",
+                "      RawTextNode              @ /example/file.soy:3:2",
                 "      ForNode                  @ /example/file.soy:4:3",
                 "        RawTextNode            @ /example/file.soy:5:5",
                 "        PrintNode              @ /example/file.soy:6:5",
@@ -154,7 +154,7 @@ public final class SourceLocationTest {
                 "SoyFileSetNode",
                 "  SoyFileNode",
                 "    TemplateBasicNode          @ /example/file.soy:2:1",
-                "      RawTextNode              @ /example/file.soy:3:3",
+                "      RawTextNode              @ /example/file.soy:3:2",
                 "      ForeachNode              @ /example/file.soy:4:3",
                 "        ForeachNonemptyNode    @ /example/file.soy:4:3",
                 "          RawTextNode          @ /example/file.soy:5:5",
@@ -187,7 +187,7 @@ public final class SourceLocationTest {
                 "SoyFileSetNode",
                 "  SoyFileNode",
                 "    TemplateBasicNode          @ /example/file.soy:2:1",
-                "      RawTextNode              @ /example/file.soy:5:3",
+                "      RawTextNode              @ /example/file.soy:5:2",
                 "      IfNode                   @ /example/file.soy:6:3",
                 "        IfCondNode             @ /example/file.soy:6:3",
                 "          RawTextNode          @ /example/file.soy:7:5",
@@ -282,7 +282,7 @@ public final class SourceLocationTest {
                     ExplodingErrorReporter.get())
                 .parseSoyFile()
                 .getChild(0)
-                .getChild(0);
+                .getChild(1);
     assertThat(rawText.getRawText()).isEqualTo("Hello, \n<span>Bob</span>! What's up?");
 
     assertThat(rawText.getRawText().substring(0, 5)).isEqualTo("Hello");

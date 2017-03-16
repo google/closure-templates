@@ -513,8 +513,8 @@ public final class GenJsCodeVisitorTest {
         ""
             + "boo.foo.goo = function(opt_data, opt_ignored, opt_ijData) {\n"
             + "  var output = '';\n"
-            + "  var moo__soy3 = 90;\n"
-            + "  output += moo__soy3 + opt_ijData.moo;\n"
+            + "  var moo__soy4 = 90;\n"
+            + "  output += moo__soy4 + opt_ijData.moo;\n"
             + "  return output;\n"
             + "};\n"
             + "if (goog.DEBUG) {\n"
@@ -754,22 +754,22 @@ public final class GenJsCodeVisitorTest {
             + "  {$a + 2}\n"
             + "{/msg}\n";
     expectedJsCode =
-        "var htmlTag11 = '<span id=\"';\n"
-            + "for (var i6 = 0; i6 < 3; i6++) {\n"
-            + "  htmlTag11 += i6;\n"
+        ""
+            + "var htmlTag15 = '<span id=\"';\n"
+            + "for (var i10 = 0; i10 < 3; i10++) {\n"
+            + "  htmlTag15 += i10;\n"
             + "}\n"
-            + "htmlTag11 += '\">';\n"
-            + "var param14 = '';\n"
-            + "for (var i15 = 0; i15 < 4; i15++) {\n"
-            + "  param14 += i15;\n"
+            + "htmlTag15 += '\">';\n"
+            + "var param19 = '';\n"
+            + "for (var i21 = 0; i21 < 4; i21++) {\n"
+            + "  param19 += i21;\n"
             + "}\n"
             + "/** @desc A span with generated id. */\n"
-            + "var MSG_UNNAMED = goog.getMsg("
-            + "'{$startSpan}{$xxx_1}{$xxx_2}', "
-            + "{'startSpan': htmlTag11, "
-            + "'xxx_1': some.func(soy.$$assignDefaults({goo: param14}, opt_data.boo), null, "
-            + "opt_ijData), "
-            + "'xxx_2': opt_data.a + 2});\n"
+            + "var MSG_UNNAMED = goog.getMsg('{$startSpan}{$xxx_1}{$xxx_2}', "
+            + "{'startSpan': htmlTag15, "
+            + "'xxx_1': some.func(soy.$$assignDefaults({goo: param19}, opt_data.boo), null, "
+            + "opt_ijData),"
+            + " 'xxx_2': opt_data.a + 2});\n"
             + "output += MSG_UNNAMED;\n";
     assertGeneratedJsCode(soyCode, expectedJsCode);
 
@@ -1034,17 +1034,17 @@ public final class GenJsCodeVisitorTest {
     String expectedJsCode =
         ""
             + "if (opt_data.boo) {\n"
-            + "  var alpha__soy5 = opt_data.boo.foo;\n"
-            + "  var beta__soy6 = 'Boo!';\n"
-            + "  var gamma__soy8 = '';\n"
-            + "  var i9Limit = alpha__soy5;\n"
-            + "  for (var i9 = 0; i9 < i9Limit; i9++) {\n"
-            + "    gamma__soy8 += i9 + beta__soy6;\n"
+            + "  var alpha__soy8 = opt_data.boo.foo;\n"
+            + "  var beta__soy10 = 'Boo!';\n"
+            + "  var gamma__soy13 = '';\n"
+            + "  var i15Limit = alpha__soy8;\n"
+            + "  for (var i15 = 0; i15 < i15Limit; i15++) {\n"
+            + "    gamma__soy13 += i15 + beta__soy10;\n"
             + "  }\n"
-            + "  var delta__soy12 = 'Boop!';\n"
-            + "  delta__soy12 = "
-            + "soydata.VERY_UNSAFE.$$ordainSanitizedHtmlForInternalBlocks(delta__soy12);\n"
-            + "  output += alpha__soy5 + beta__soy6 + gamma__soy8 + delta__soy12;\n"
+            + "  var delta__soy22 = 'Boop!';\n"
+            + "  delta__soy22 = soydata.VERY_UNSAFE.$$ordainSanitizedHtmlForInternalBlocks("
+            + "delta__soy22);\n"
+            + "  output += alpha__soy8 + beta__soy10 + gamma__soy13 + delta__soy22;\n"
             + "}\n";
     assertGeneratedJsCode(soyNodeCode, expectedJsCode);
   }
@@ -1121,8 +1121,8 @@ public final class GenJsCodeVisitorTest {
     expectedJsCode =
         ""
             + "if (opt_data.boo.foo > 0) {\n"
-            + "  for (var i5 = 0; i5 < 4; i5++) {\n"
-            + "    output += i5 + 1 + '<br>';\n"
+            + "  for (var i9 = 0; i9 < 4; i9++) {\n"
+            + "    output += i9 + 1 + '<br>';\n"
             + "  }\n"
             + "} else if (!(('' + gooData8).indexOf('goo') != -1)) {\n"
             + "  output += 'Bleh';\n"
@@ -1198,13 +1198,13 @@ public final class GenJsCodeVisitorTest {
             + "{/foreach}\n";
     String expectedJsCode =
         ""
-            + "var foo13List = opt_data.boo.foos;\n"
-            + "var foo13ListLen = foo13List.length;\n"
-            + "if (foo13ListLen > 0) {\n"
-            + "  for (var foo13Index = 0; foo13Index < foo13ListLen; foo13Index++) {\n"
-            + "    var foo13Data = foo13List[foo13Index];\n"
-            + "    output += (!(foo13Index == 0) ? '<br>' : '') + foo13Data + ' is fool no. '"
-            + " + foo13Index + (foo13Index == foo13ListLen - 1 ? '<br>The end.' : '');\n"
+            + "var foo19List = opt_data.boo.foos;\n"
+            + "var foo19ListLen = foo19List.length;\n"
+            + "if (foo19ListLen > 0) {\n"
+            + "  for (var foo19Index = 0; foo19Index < foo19ListLen; foo19Index++) {\n"
+            + "    var foo19Data = foo19List[foo19Index];\n"
+            + "    output += (!(foo19Index == 0) ? '<br>' : '') + foo19Data + ' is fool no. '"
+            + " + foo19Index + (foo19Index == foo19ListLen - 1 ? '<br>The end.' : '');\n"
             + "  }\n"
             + "} else {\n"
             + "  output += 'No fools here.';\n"
@@ -1225,8 +1225,8 @@ public final class GenJsCodeVisitorTest {
             + "{/for}\n";
     String expectedJsCode =
         ""
-            + "for (var i3 = 8; i3 < 16; i3 += 2) {\n"
-            + "  output += opt_data.boo[i3] + gooData8[i3];\n"
+            + "for (var i6 = 8; i6 < 16; i6 += 2) {\n"
+            + "  output += opt_data.boo[i6] + gooData8[i6];\n"
             + "}\n";
     assertGeneratedJsCode(soyNodeCode, expectedJsCode);
 
@@ -1240,10 +1240,10 @@ public final class GenJsCodeVisitorTest {
             + "{/for}\n";
     expectedJsCode =
         ""
-            + "var i3Limit = opt_data.boo + gooData8;\n"
-            + "var i3Increment = opt_data.foo;\n"
-            + "for (var i3 = opt_data.boo - gooData8; i3 < i3Limit; i3 += i3Increment) {\n"
-            + "  output += i3 + 1 + ' ';\n"
+            + "var i7Limit = opt_data.boo + gooData8;\n"
+            + "var i7Increment = opt_data.foo;\n"
+            + "for (var i7 = opt_data.boo - gooData8; i7 < i7Limit; i7 += i7Increment) {\n"
+            + "  output += i7 + 1 + ' ';\n"
             + "}\n";
     assertGeneratedJsCode(soyNodeCode, expectedJsCode);
 
@@ -1255,11 +1255,11 @@ public final class GenJsCodeVisitorTest {
             + "{/for}\n";
     expectedJsCode =
         ""
-            + "var boo__soy3 = {a: [], b: [10, 20, 30]};\n"
-            + "var i4Limit = boo__soy3.b[1];\n"
-            + "var i4Increment = boo__soy3.b[2];\n"
-            + "for (var i4 = boo__soy3.b[0]; i4 < i4Limit; i4 += i4Increment) {\n"
-            + "  output += i4;\n"
+            + "var boo__soy4 = {a: [], b: [10, 20, 30]};\n"
+            + "var i6Limit = boo__soy4.b[1];\n"
+            + "var i6Increment = boo__soy4.b[2];\n"
+            + "for (var i6 = boo__soy4.b[0]; i6 < i6Limit; i6 += i6Increment) {\n"
+            + "  output += i6;\n"
             + "}\n";
     assertGeneratedJsCode(soyNodeCode, expectedJsCode);
 
@@ -1290,11 +1290,11 @@ public final class GenJsCodeVisitorTest {
             + "{/call}\n";
     String expectedJsCode =
         ""
-            + "var param4 = '';\n"
-            + "for (var i5 = 0; i5 < 7; i5++) {\n"
-            + "  param4 += i5;\n"
+            + "var param6 = '';\n"
+            + "for (var i8 = 0; i8 < 7; i8++) {\n"
+            + "  param6 += i8;\n"
             + "}\n"
-            + "output += some.func(soy.$$assignDefaults({goo: param4}, opt_data.boo), null, "
+            + "output += some.func(soy.$$assignDefaults({goo: param6}, opt_data.boo), null, "
             + "opt_ijData);\n";
     assertGeneratedJsCode(soyNodeCode, expectedJsCode);
   }

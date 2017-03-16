@@ -225,7 +225,6 @@ public final class HtmlRewritePass extends CompilerFilePass {
     SINGLE_QUOTED_XML_ATTRIBUTE_VALUE,
     DOUBLE_QUOTED_XML_ATTRIBUTE_VALUE,
     HTML_TAG_NAME,
-    BEFORE_ATTRIBUTE_NAME(StateFeature.TAG),
     /**
      * This state is weird - it is for <code>
      *   <pre>foo ="bar"
@@ -243,6 +242,7 @@ public final class HtmlRewritePass extends CompilerFilePass {
     DOUBLE_QUOTED_ATTRIBUTE_VALUE,
     UNQUOTED_ATTRIBUTE_VALUE,
     AFTER_TAG_NAME_OR_ATTRIBUTE(StateFeature.TAG),
+    BEFORE_ATTRIBUTE_NAME(StateFeature.TAG),
     ;
 
     /** Gets the {@link State} for the given kind. */
@@ -293,7 +293,9 @@ public final class HtmlRewritePass extends CompilerFilePass {
       }
       // the order of comparisons here depends on the compareTo above to ensure 'this < that'
       if (this == BEFORE_ATTRIBUTE_VALUE
-          && (that == AFTER_TAG_NAME_OR_ATTRIBUTE || that == UNQUOTED_ATTRIBUTE_VALUE)) {
+          && (that == UNQUOTED_ATTRIBUTE_VALUE
+              || that == AFTER_TAG_NAME_OR_ATTRIBUTE
+              || that == BEFORE_ATTRIBUTE_NAME)) {
         // These aren't exactly compatible, but rather are an allowed transition because
         // 1. before an unquoted attribute value and in an unquoted attribute value are not that
         //   different
@@ -469,6 +471,11 @@ public final class HtmlRewritePass extends CompilerFilePass {
       currentRawTextIndex = 0;
       while (currentRawTextIndex < currentRawText.length()) {
         int startIndex = currentRawTextIndex;
+        // if whitespace was trimmed prior to the current character (e.g. leading whitespace)
+        // handle it.
+        if (currentRawTextNode.missingWhitespaceAt(startIndex)) {
+          handleJoinedWhitespace(currentPoint());
+        }
         State startState = context.getState();
         switch (startState) {
           case NONE:
@@ -559,6 +566,44 @@ public final class HtmlRewritePass extends CompilerFilePass {
         RawTextNode suffix = consumeAsRawText();
         edits.replace(node, suffix);
       }
+      // handle trailing joined whitespace.
+      if (currentRawTextNode.missingWhitespaceAt(currentRawText.length())) {
+        handleJoinedWhitespace(currentRawTextNode.getSourceLocation().getEndPoint());
+      }
+    }
+
+    /** Called to handle whitespace that was completely removed from a raw text node. */
+    void handleJoinedWhitespace(SourceLocation.Point point) {
+      switch (context.getState()) {
+        case UNQUOTED_ATTRIBUTE_VALUE:
+          context.createUnquotedAttributeValue(point);
+          return;
+        case AFTER_TAG_NAME_OR_ATTRIBUTE:
+          context.setState(State.BEFORE_ATTRIBUTE_NAME, point);
+          return;
+        case BEFORE_ATTRIBUTE_VALUE:
+        case BEFORE_ATTRIBUTE_NAME:
+        case AFTER_ATTRIBUTE_NAME:
+        case DOUBLE_QUOTED_XML_ATTRIBUTE_VALUE:
+        case HTML_TAG_NAME:
+        case HTML_COMMENT:
+        case CDATA:
+        case NONE:
+        case SINGLE_QUOTED_ATTRIBUTE_VALUE:
+        case DOUBLE_QUOTED_ATTRIBUTE_VALUE:
+          // TODO(lukes): line joining and whitespace removal can happen within quoted attribute
+          // values... we could take steps to undo it... should we?
+        case PCDATA:
+        case RCDATA_SCRIPT:
+        case RCDATA_STYLE:
+        case RCDATA_TEXTAREA:
+        case RCDATA_TITLE:
+        case SINGLE_QUOTED_XML_ATTRIBUTE_VALUE:
+        case XML_DECLARATION:
+          // no op
+          return;
+      }
+      throw new AssertionError();
     }
 
     /**

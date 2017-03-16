@@ -1561,15 +1561,18 @@ private HeaderParam ParamDecl(@Nullable String desc) :
  */
 private List<StandaloneNode> TemplateBlock() :
 {
-  RawTextNode rawText;
-  StatementNode stmt;
+  StandaloneNode node;
 }
 {
   { List<StandaloneNode> templateBlock = Lists.newArrayList(); }
 
   (
-    rawText = RawText() { if (rawText != null) templateBlock.add(rawText); }
-  | stmt = Stmt() { templateBlock.add(stmt); }
+    (
+      node = RawText()
+    | node = Stmt()
+    )
+
+    { templateBlock.add(node); }
   )*
 
   { return templateBlock; }
@@ -1772,7 +1775,7 @@ private List<StandaloneNode> TemplateBlockForMsg() :
     }
     templateBlock.add(msgPluralOrSelectNode);
   }
-  | rawText = RawText() { if (rawText != null) templateBlock.add(rawText); }
+  | rawText = RawText() { templateBlock.add(rawText); }
   | stmt = CallStmt()  { templateBlock.add(new MsgPlaceholderNode(nodeIdGen.genId(), stmt)); }
   | stmt = PrintStmt() { templateBlock.add(new MsgPlaceholderNode(nodeIdGen.genId(), stmt)); }
   | msgHtmlTag = MsgHtmlTag()

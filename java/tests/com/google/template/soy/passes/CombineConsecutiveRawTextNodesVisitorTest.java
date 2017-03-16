@@ -83,7 +83,7 @@ public final class CombineConsecutiveRawTextNodesVisitorTest {
 
     RawTextNode node = (RawTextNode) template.getChild(0);
     assertThat(node.getRawText()).isEqualTo("blah");
-    assertThat(node.getSourceLocation().getBeginPoint()).isEqualTo(Point.create(2, 1));
+    assertThat(node.getSourceLocation().getBeginPoint()).isEqualTo(Point.create(1, 31));
     assertThat(node.getSourceLocation().getEndPoint()).isEqualTo(Point.create(2, 9));
 
     // we also know the locations of individual characters

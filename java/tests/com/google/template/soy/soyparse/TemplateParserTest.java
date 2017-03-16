@@ -47,6 +47,7 @@ import com.google.template.soy.exprtree.OperatorNodes.NegativeOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
+import com.google.template.soy.passes.CombineConsecutiveRawTextNodesVisitor;
 import com.google.template.soy.passes.PassManager;
 import com.google.template.soy.shared.AutoEscapingType;
 import com.google.template.soy.shared.SharedTestUtils;
@@ -1937,16 +1938,21 @@ public final class TemplateParserTest {
     String soyFile =
         SharedTestUtils.buildTestSoyFileContent(
             AutoEscapingType.STRICT, ImmutableList.<String>of(), input);
+    IncrementingIdGenerator nodeIdGen = new IncrementingIdGenerator();
     SoyFileNode file =
         new SoyFileParser(
                 new SoyTypeRegistry(),
-                new IncrementingIdGenerator(),
+                nodeIdGen,
                 new StringReader(soyFile),
                 SoyFileKind.SRC,
                 "test.soy",
                 errorReporter)
             .parseSoyFile();
-    return file != null ? file.getChild(0) : null;
+    if (file != null) {
+      new CombineConsecutiveRawTextNodesVisitor(nodeIdGen).exec(file);
+      return file.getChild(0);
+    }
+    return null;
   }
 
   /**

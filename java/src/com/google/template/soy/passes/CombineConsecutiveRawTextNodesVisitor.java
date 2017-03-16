@@ -51,7 +51,8 @@ public final class CombineConsecutiveRawTextNodesVisitor extends AbstractSoyNode
     // where the most recent sequence of raw text nodes starts
     int rawTextSeqStart = -1;
     for (int i = 0; i < nodeAsParent.numChildren(); i++) {
-      if (nodeAsParent.getChild(i) instanceof RawTextNode) {
+      SoyNode child = nodeAsParent.getChild(i);
+      if (child instanceof RawTextNode) {
         if (rawTextSeqStart == -1) {
           rawTextSeqStart = i;
         }
@@ -70,12 +71,18 @@ public final class CombineConsecutiveRawTextNodesVisitor extends AbstractSoyNode
             // the next item. In other words, the item that was previously at i+1 is now at
             // rawTextSeqStart+1.
             i = rawTextSeqStart;
+          } else {
+            // exactly one node, is it empty?
+            if (((RawTextNode) child).isEmpty()) {
+              nodeAsParent.removeChild(i);
+              i--; // move back
+            }
           }
           // reset the start of the sequence
           rawTextSeqStart = -1;
         }
       } else {
-        visit(nodeAsParent.getChild(i)); // recurse
+        visit(child); // recurse
       }
     }
   }

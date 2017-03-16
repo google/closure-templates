@@ -29,6 +29,7 @@ import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.soytree.HtmlCloseTagNode;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
+import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
@@ -46,8 +47,9 @@ public final class HtmlRewritePassTest {
   @Test
   public void testTags() {
     TemplateNode node = runPass("<div></div>");
-    assertThat(node.getChild(0)).isInstanceOf(HtmlOpenTagNode.class);
-    assertThat(node.getChild(1)).isInstanceOf(HtmlCloseTagNode.class);
+    assertThat(node.getChild(0)).isInstanceOf(RawTextNode.class);
+    assertThat(node.getChild(1)).isInstanceOf(HtmlOpenTagNode.class);
+    assertThat(node.getChild(2)).isInstanceOf(HtmlCloseTagNode.class);
     assertThatSourceString(node).isEqualTo("<div></div>");
     assertThatASTString(node).isEqualTo("HTML_OPEN_TAG_NODE\n" + "HTML_CLOSE_TAG_NODE\n");
   }
@@ -361,7 +363,9 @@ public final class HtmlRewritePassTest {
   }
 
   private static StringSubject assertThatASTString(TemplateNode node) {
-    return assertThat(buildAstString(node, 0, new StringBuilder()).toString());
+    SoyFileNode parent = SoyTreeUtils.cloneNode(node.getParent());
+    new CombineConsecutiveRawTextNodesVisitor(new IncrementingIdGenerator()).exec(parent);
+    return assertThat(buildAstString(parent.getChild(0), 0, new StringBuilder()).toString());
   }
 
   private static StringBuilder buildAstString(ParentSoyNode<?> node, int indent, StringBuilder sb) {
