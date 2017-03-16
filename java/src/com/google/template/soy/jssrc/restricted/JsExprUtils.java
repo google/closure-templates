@@ -166,25 +166,4 @@ public class JsExprUtils {
       return wrapWithFunction(NodeContentKinds.toJsSanitizedContentOrdainer(contentKind), jsExpr);
     }
   }
-
-  /**
-   * Wraps with the proper SanitizedContent constructor if contentKind is non-null, in a way
-   * specific for let/param blocks.
-   *
-   * <p>We generate slightly different code for param and let blocks so that empty strings evaluate
-   * to false; specifically, by not wrapping them in SanitizedContent. However, template return
-   * values are not affected, so that the external interface to Soy remains pristine.
-   *
-   * @param contentKind The kind of sanitized content.
-   * @param jsExpr The expression to wrap.
-   */
-  public static JsExpr maybeWrapAsSanitizedContentForInternalBlocks(
-      @Nullable ContentKind contentKind, JsExpr jsExpr) {
-    if (contentKind == null) {
-      return jsExpr;
-    } else {
-      return wrapWithFunction(
-          NodeContentKinds.toJsSanitizedContentOrdainerForInternalBlocks(contentKind), jsExpr);
-    }
-  }
 }
