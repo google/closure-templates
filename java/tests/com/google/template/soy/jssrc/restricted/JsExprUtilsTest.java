@@ -46,17 +46,6 @@ public class JsExprUtilsTest {
   }
 
   @Test
-  public void testConcatJsExprsForceString() {
-
-    JsExpr concatResult =
-        JsExprUtils.concatJsExprsForceString(
-            ImmutableList.of(
-                new JsExpr("2", Integer.MAX_VALUE), new JsExpr("2", Integer.MAX_VALUE)));
-    assertThat(concatResult.getText()).isEqualTo("'' + 2 + 2");
-    assertThat(concatResult.getPrecedence()).isEqualTo(Operator.PLUS.getPrecedence());
-  }
-
-  @Test
   public void testIsStringLiteral() {
     assertThat(JsExprUtils.isStringLiteral(new JsExpr("''", Integer.MAX_VALUE))).isTrue();
     assertThat(JsExprUtils.isStringLiteral(new JsExpr("'a'", Integer.MAX_VALUE))).isTrue();

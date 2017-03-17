@@ -74,9 +74,6 @@ public final class CodeChunkUtils {
    * Builds a {@link CodeChunk.WithValue} that represents the concatenation of the given code
    * chunks. This doesn't assume the values represented by the inputs are necessarily strings, but
    * guarantees that the value represented by the output is a string.
-   *
-   * <p>This is a port of {@link JsExprUtils#concatJsExprsForceString}, which should eventually go
-   * away. TODO(user): make that go away.
    */
   public static CodeChunk.WithValue concatChunksForceString(
       List<? extends CodeChunk.WithValue> chunks) {

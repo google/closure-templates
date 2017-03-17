@@ -86,29 +86,6 @@ public class JsExprUtils {
     return new JsExpr(resultSb.toString(), plusOpPrec);
   }
 
-  /**
-   * Builds a JS expression which is the string concatenation of individual expressions. This
-   * doesn't assume that the inputs are necessarily strings, but guarantees that the output is a
-   * string.
-   *
-   * @param jsExprs The JS expressions to concatentate.
-   * @return One JS expression that computes the guaranteed string concatenation of the given JS
-   *     expressions.
-   */
-  public static JsExpr concatJsExprsForceString(List<? extends JsExpr> jsExprs) {
-    // If the first or second expression in the list is a string, the plus operator (if any) will
-    // produce a string concatenation, so we are set.
-    if ((!jsExprs.isEmpty() && isStringLiteral(jsExprs.get(0)))
-        || (jsExprs.size() > 1 && isStringLiteral(jsExprs.get(1)))) {
-      return concatJsExprs(jsExprs);
-    }
-    // Add empty string first, which ensures the plus operator always means string concatenation.
-    // Consider:
-    //    '' + 6 + 6 + 6 = '666'
-    //    6 + 6 + 6 + '' = '18'
-    return concatJsExprs(ImmutableList.<JsExpr>builder().add(EMPTY_STRING).addAll(jsExprs).build());
-  }
-
   public static boolean isStringLiteral(JsExpr jsExpr) {
     String jsExprText = jsExpr.getText();
     int jsExprTextLastIndex = jsExprText.length() - 1;
@@ -134,7 +111,15 @@ public class JsExprUtils {
   }
 
   public static JsExpr toString(JsExpr expr) {
-    return concatJsExprsForceString(ImmutableList.of(expr));
+    // If the expression is a string, nothing to do.
+    if (isStringLiteral(expr)) {
+      return expr;
+    }
+    // Add empty string first, which ensures the plus operator always means string concatenation.
+    // Consider:
+    //    '' + 6 + 6 + 6 = '666'
+    //    6 + 6 + 6 + '' = '18'
+    return concatJsExprs(ImmutableList.of(EMPTY_STRING, expr));
   }
 
   /**
