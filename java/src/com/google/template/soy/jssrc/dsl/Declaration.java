@@ -85,11 +85,6 @@ abstract class Declaration extends CodeChunk.WithValue {
   }
 
   @Override
-  public boolean isRepresentableAsSingleExpression() {
-    return rhs().isRepresentableAsSingleExpression();
-  }
-
-  @Override
   public JsExpr singleExprOrName() {
     return new JsExpr(varName(), Integer.MAX_VALUE);
   }
@@ -100,5 +95,10 @@ abstract class Declaration extends CodeChunk.WithValue {
       collector.add(require);
     }
     rhs().collectRequires(collector);
+  }
+
+  @Override
+  public Iterable<? extends CodeChunk> initialStatements() {
+    return rhs().initialStatements();
   }
 }

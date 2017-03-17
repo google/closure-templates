@@ -17,6 +17,7 @@
 package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 
@@ -54,11 +55,6 @@ abstract class Leaf extends CodeChunk.WithValue {
   }
 
   @Override
-  public boolean isRepresentableAsSingleExpression() {
-    return true;
-  }
-
-  @Override
   public JsExpr singleExprOrName() {
     return value();
   }
@@ -68,5 +64,10 @@ abstract class Leaf extends CodeChunk.WithValue {
     for (GoogRequire require : requires()) {
       collector.add(require);
     }
+  }
+
+  @Override
+  public Iterable<? extends CodeChunk> initialStatements() {
+    return ImmutableList.of();
   }
 }

@@ -205,13 +205,8 @@ public class GenCallCodeUtils {
       }
     }
 
-    return call.isRepresentableAsSingleExpression()
-        ? fromExpr(callResult, collector.get())
-        : codeGenerator
-            .newChunk()
-            .statement(call)
-            .assign(fromExpr(callResult, collector.get()))
-            .buildAsValue();
+    return fromExpr(callResult, collector.get())
+        .withInitialStatements(call.initialStatements(), codeGenerator);
   }
 
 

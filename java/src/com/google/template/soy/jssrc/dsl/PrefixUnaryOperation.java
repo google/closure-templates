@@ -42,11 +42,6 @@ abstract class PrefixUnaryOperation extends Operation {
   }
 
   @Override
-  public boolean isRepresentableAsSingleExpression() {
-    return arg().isRepresentableAsSingleExpression();
-  }
-
-  @Override
   void doFormatInitialStatements(FormattingContext ctx) {
     ctx.appendInitialStatements(arg());
   }
@@ -60,5 +55,10 @@ abstract class PrefixUnaryOperation extends Operation {
   @Override
   public void collectRequires(RequiresCollector collector) {
     arg().collectRequires(collector);
+  }
+
+  @Override
+  public Iterable<? extends CodeChunk> initialStatements() {
+    return arg().initialStatements();
   }
 }

@@ -52,20 +52,6 @@ abstract class Call extends Operation {
     }
   }
 
-
-  @Override
-  public boolean isRepresentableAsSingleExpression() {
-    if (!receiver().isRepresentableAsSingleExpression()) {
-      return false;
-    }
-    for (CodeChunk.WithValue arg : args()) {
-      if (!arg.isRepresentableAsSingleExpression()) {
-        return false;
-      }
-    }
-    return true;
-  }
-
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
     formatOperand(receiver(), OperandPosition.LEFT, ctx);
@@ -90,5 +76,15 @@ abstract class Call extends Operation {
     for (CodeChunk.WithValue arg : args()) {
       ctx.appendInitialStatements(arg);
     }
+  }
+
+  @Override
+  public Iterable<? extends CodeChunk> initialStatements() {
+    ImmutableList.Builder<CodeChunk> builder = ImmutableList.builder();
+    builder.addAll(receiver().initialStatements());
+    for (CodeChunk.WithValue arg : args()) {
+      builder.addAll(arg.initialStatements());
+    }
+    return builder.build();
   }
 }

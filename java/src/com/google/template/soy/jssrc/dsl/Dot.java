@@ -19,6 +19,7 @@ package com.google.template.soy.jssrc.dsl;
 import static com.google.template.soy.exprtree.Operator.Associativity.LEFT;
 
 import com.google.auto.value.AutoValue;
+import com.google.common.collect.Iterables;
 import com.google.template.soy.exprtree.Operator.Associativity;
 
 /** Represents a JavaScript member access ({@code .}) expression. */
@@ -44,12 +45,6 @@ abstract class Dot extends Operation {
   }
 
   @Override
-  public boolean isRepresentableAsSingleExpression() {
-    return receiver().isRepresentableAsSingleExpression()
-        && key().isRepresentableAsSingleExpression();
-  }
-
-  @Override
   void doFormatInitialStatements(FormattingContext ctx) {
     ctx.appendInitialStatements(receiver()).appendInitialStatements(key());
   }
@@ -65,5 +60,10 @@ abstract class Dot extends Operation {
   public void collectRequires(RequiresCollector collector) {
     receiver().collectRequires(collector);
     key().collectRequires(collector);
+  }
+
+  @Override
+  public Iterable<? extends CodeChunk> initialStatements() {
+    return Iterables.concat(receiver().initialStatements(), key().initialStatements());
   }
 }

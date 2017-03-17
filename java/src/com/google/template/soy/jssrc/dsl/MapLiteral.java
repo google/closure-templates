@@ -37,21 +37,6 @@ abstract class MapLiteral extends CodeChunk.WithValue {
   }
 
   @Override
-  public boolean isRepresentableAsSingleExpression() {
-    for (CodeChunk.WithValue key : keys()) {
-      if (!key.isRepresentableAsSingleExpression()) {
-        return false;
-      }
-    }
-    for (CodeChunk.WithValue value : values()) {
-      if (!value.isRepresentableAsSingleExpression()) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  @Override
   public JsExpr singleExprOrName() {
     FormattingContext ctx = new FormattingContext();
     ctx.appendOutputExpression(this);
@@ -90,5 +75,17 @@ abstract class MapLiteral extends CodeChunk.WithValue {
     for (CodeChunk.WithValue value : values()) {
       value.collectRequires(collector);
     }
+  }
+
+  @Override
+  public Iterable<? extends CodeChunk> initialStatements() {
+    ImmutableList.Builder<CodeChunk> builder = ImmutableList.builder();
+    for (CodeChunk.WithValue key : keys()) {
+      builder.addAll(key.initialStatements());
+    }
+    for (CodeChunk.WithValue value : values()) {
+      builder.addAll(value.initialStatements());
+    }
+    return builder.build();
   }
 }

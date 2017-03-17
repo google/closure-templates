@@ -24,6 +24,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.errorprone.annotations.ForOverride;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.UniqueNameGenerator;
@@ -395,11 +396,34 @@ public abstract class CodeChunk {
     }
 
     /**
+     * Returns a chunk whose output expression is the same as this chunk's, but which includes the
+     * given initial statements.
+     *
+     * <p>This method is designed for interoperability with parts of the JS codegen system that do
+     * not understand code chunks. For example, when applying plugin functions, {@link
+     * com.google.template.soy.jssrc.internal.TranslateExprNodeVisitor#visitFunctionNode} needs to
+     * downgrade the plugin arguments from CodeChunk.WithValues to {@link JsExpr}s for the plugin
+     * API to process. The result (a JsExpr) needs to be upgraded back to a CodeChunk.WithValue that
+     * includes the initial statements from the original arguments.
+     */
+    public final CodeChunk.WithValue withInitialStatements(
+        Iterable<? extends CodeChunk> initialStatements, CodeChunk.Generator codeGenerator) {
+      // If there are no new initial statements, return the current chunk.
+      if (Iterables.isEmpty(initialStatements)) {
+        return this;
+      }
+      // Otherwise, return a code chunk that includes all of the dependent code.
+      return codeGenerator.newChunk().statements(initialStatements).assign(this).buildAsValue();
+    }
+
+    /**
      * Returns true if this chunk can be represented as a single expression. This method should be
      * rarely used, but is needed when interoperating with parts of the codegen system that do not
      * yet understand CodeChunks (e.g. {@link SoyJsSrcFunction}).
      */
-    public abstract boolean isRepresentableAsSingleExpression();
+    final boolean isRepresentableAsSingleExpression() {
+      return Iterables.isEmpty(initialStatements());
+    }
 
     /**
      * If this chunk can be represented as a single expression, returns that expression. If this
@@ -421,6 +445,13 @@ public abstract class CodeChunk {
      * <p>Must only be called by {@link FormattingContext#appendOutputExpression}.
      */
     abstract void doFormatOutputExpr(FormattingContext ctx);
+
+    /**
+     * Returns the initial statements associated with this value. The statements must be serialized
+     * before this value (for example, they could contain declarations of variables referenced in
+     * this value).
+     */
+    public abstract Iterable<? extends CodeChunk> initialStatements();
   }
 
   /**

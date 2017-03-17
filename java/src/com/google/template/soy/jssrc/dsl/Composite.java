@@ -69,12 +69,12 @@ public abstract class Composite extends CodeChunk.WithValue {
   }
 
   @Override
-  public boolean isRepresentableAsSingleExpression() {
-    return false;
+  public JsExpr singleExprOrName() {
+    return new JsExpr(varName(), Integer.MAX_VALUE);
   }
 
   @Override
-  public JsExpr singleExprOrName() {
-    return new JsExpr(varName(), Integer.MAX_VALUE);
+  public Iterable<? extends CodeChunk> initialStatements() {
+    return children();
   }
 }

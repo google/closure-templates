@@ -41,6 +41,7 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.sanitizedContentT
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.inject.assistedinject.Assisted;
 import com.google.inject.assistedinject.AssistedInject;
 import com.google.protobuf.Descriptors.FieldDescriptor;
@@ -587,18 +588,15 @@ public class TranslateExprNodeVisitor
       }
     } else if (soyFunction instanceof SoyJsSrcFunction) {
       List<CodeChunk.WithValue> args = visitChildren(node);
-      List<CodeChunk> preamble = new ArrayList<>();
       List<JsExpr> functionInputs = new ArrayList<>(args.size());
+      List<CodeChunk> initialStatements = new ArrayList<>();
       RequiresCollector.IntoImmutableSet collector = new RequiresCollector.IntoImmutableSet();
       // SoyJsSrcFunction doesn't understand CodeChunks; it needs JsExprs.
       // Grab the JsExpr for each CodeChunk arg to deliver to the SoyToJsSrcFunction as input.
-      for (CodeChunk arg : args) {
+      for (CodeChunk.WithValue arg : args) {
         arg.collectRequires(collector);
-        CodeChunk.WithValue value = (CodeChunk.WithValue) arg;
-        functionInputs.add(value.singleExprOrName());
-        if (!value.isRepresentableAsSingleExpression()) {
-          preamble.add(value);
-        }
+        functionInputs.add(arg.singleExprOrName());
+        Iterables.addAll(initialStatements, arg.initialStatements());
       }
       // Compute the function on the JsExpr inputs.
       SoyJsSrcFunction soyJsSrcFunction = (SoyJsSrcFunction) soyFunction;
@@ -610,16 +608,7 @@ public class TranslateExprNodeVisitor
       }
       CodeChunk.WithValue functionOutput =
           dontTrustPrecedenceOf(soyJsSrcFunction.computeForJsSrc(functionInputs), collector.get());
-      return preamble.isEmpty()
-          // If all of the input chunks were representable as single expressions,
-          // return the function's output.
-          ? functionOutput
-          // Otherwise, return a code chunk that includes all of the dependent code.
-          : codeGenerator
-              .newChunk()
-              .statements(preamble)
-              .assign(functionOutput)
-              .buildAsValue();
+      return functionOutput.withInitialStatements(initialStatements, codeGenerator);
     } else {
       errorReporter.report(
           node.getSourceLocation(), SOY_JS_SRC_FUNCTION_NOT_FOUND, node.getFunctionName());

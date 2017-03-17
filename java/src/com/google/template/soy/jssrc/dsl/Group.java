@@ -49,11 +49,6 @@ abstract class Group extends Operation {
   }
 
   @Override
-  public boolean isRepresentableAsSingleExpression() {
-    return underlying().isRepresentableAsSingleExpression();
-  }
-
-  @Override
   void doFormatInitialStatements(FormattingContext ctx) {
     ctx.appendInitialStatements(underlying());
   }
@@ -62,8 +57,14 @@ abstract class Group extends Operation {
   void doFormatOutputExpr(FormattingContext ctx) {
     ctx.append('(').appendOutputExpression(underlying()).append(')');
   }
+
   @Override
   public void collectRequires(RequiresCollector collector) {
     underlying().collectRequires(collector);
+  }
+
+  @Override
+  public Iterable<? extends CodeChunk> initialStatements() {
+    return underlying().initialStatements();
   }
 }

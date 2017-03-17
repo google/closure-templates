@@ -20,6 +20,7 @@ import static com.google.template.soy.exprtree.Operator.CONDITIONAL;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Iterables;
 import com.google.template.soy.exprtree.Operator.Associativity;
 
 /**
@@ -69,14 +70,17 @@ abstract class Ternary extends Operation {
   }
 
   @Override
-  public boolean isRepresentableAsSingleExpression() {
-    return true;
-  }
-
-  @Override
   public void collectRequires(RequiresCollector collector) {
     predicate().collectRequires(collector);
     consequent().collectRequires(collector);
     alternate().collectRequires(collector);
+  }
+
+  @Override
+  public Iterable<? extends CodeChunk> initialStatements() {
+    return Iterables.concat(
+        predicate().initialStatements(),
+        consequent().initialStatements(),
+        alternate().initialStatements());
   }
 }

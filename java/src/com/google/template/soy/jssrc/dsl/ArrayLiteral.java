@@ -31,16 +31,6 @@ abstract class ArrayLiteral extends CodeChunk.WithValue {
   }
 
   @Override
-  public boolean isRepresentableAsSingleExpression() {
-    for (CodeChunk.WithValue element : elements()) {
-      if (!element.isRepresentableAsSingleExpression()) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  @Override
   public void collectRequires(RequiresCollector collector) {
     for (CodeChunk.WithValue element : elements()) {
       element.collectRequires(collector);
@@ -74,5 +64,14 @@ abstract class ArrayLiteral extends CodeChunk.WithValue {
     for (CodeChunk.WithValue element : elements()) {
       ctx.appendInitialStatements(element);
     }
+  }
+
+  @Override
+  public Iterable<? extends CodeChunk> initialStatements() {
+    ImmutableList.Builder<CodeChunk> builder = ImmutableList.builder();
+    for (CodeChunk.WithValue element : elements()) {
+      builder.addAll(element.initialStatements());
+    }
+    return builder.build();
   }
 }

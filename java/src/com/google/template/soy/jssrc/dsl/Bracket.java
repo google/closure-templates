@@ -19,6 +19,7 @@ package com.google.template.soy.jssrc.dsl;
 import static com.google.template.soy.exprtree.Operator.Associativity.LEFT;
 
 import com.google.auto.value.AutoValue;
+import com.google.common.collect.Iterables;
 import com.google.template.soy.exprtree.Operator.Associativity;
 
 /** Represents a JavaScript computed member access ({@code []}) expression. */
@@ -45,12 +46,6 @@ abstract class Bracket extends Operation {
   }
 
   @Override
-  public boolean isRepresentableAsSingleExpression() {
-    return receiver().isRepresentableAsSingleExpression()
-        && key().isRepresentableAsSingleExpression();
-  }
-
-  @Override
   public void collectRequires(RequiresCollector collector) {
     receiver().collectRequires(collector);
     key().collectRequires(collector);
@@ -66,5 +61,10 @@ abstract class Bracket extends Operation {
     formatOperand(receiver(), OperandPosition.LEFT, ctx);
     // No need to protect the expression in the bracket with parens. it's unambiguous.
     ctx.append('[').appendOutputExpression(key()).append(']');
+  }
+
+  @Override
+  public Iterable<? extends CodeChunk> initialStatements() {
+    return Iterables.concat(receiver().initialStatements(), key().initialStatements());
   }
 }

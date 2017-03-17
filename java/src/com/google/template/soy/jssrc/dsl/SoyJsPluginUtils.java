@@ -81,12 +81,8 @@ public final class SoyJsPluginUtils {
     JsExpr applied = directive.applyForJsSrc(expr.singleExprOrName(), argExprs);
     RequiresCollector.IntoImmutableSet collector = new RequiresCollector.IntoImmutableSet();
     expr.collectRequires(collector);
-    boolean isSingleExpr = expr.isRepresentableAsSingleExpression();
     for (CodeChunk.WithValue arg : args) {
       arg.collectRequires(collector);
-      if (!arg.isRepresentableAsSingleExpression()) {
-        isSingleExpr = false;
-      }
     }
     if (directive instanceof SoyLibraryAssistedJsSrcPrintDirective) {
       for (String name :
@@ -95,15 +91,12 @@ public final class SoyJsPluginUtils {
       }
     }
 
-    return isSingleExpr
-        ? fromExpr(applied, collector.get())
-        : generator
-            .newChunk()
-            .statement(expr)
-            .statements(args)
-            .assign(fromExpr(applied, collector.get()))
-            .buildAsValue();
-    // TODO(user): Move SoyJsPluginUtils to jssrc/internal then uncomment
-    // return CodeChunk.fromExpr(JsSrcUtils.wrapInIife(generator, toWrap));
+    ImmutableList.Builder<CodeChunk> initialStatements =
+        ImmutableList.<CodeChunk>builder().addAll(expr.initialStatements());
+    for (CodeChunk.WithValue arg : args) {
+      initialStatements.addAll(arg.initialStatements());
+    }
+    return fromExpr(applied, collector.get())
+        .withInitialStatements(initialStatements.build(), generator);
   }
 }

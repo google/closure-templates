@@ -18,6 +18,7 @@ package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Iterables;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.Operator.Associativity;
 
@@ -78,11 +79,6 @@ abstract class BinaryOperation extends Operation {
   }
 
   @Override
-  public boolean isRepresentableAsSingleExpression() {
-    return arg1().isRepresentableAsSingleExpression() && arg2().isRepresentableAsSingleExpression();
-  }
-
-  @Override
   public void collectRequires(RequiresCollector collector) {
     arg1().collectRequires(collector);
     arg2().collectRequires(collector);
@@ -98,5 +94,10 @@ abstract class BinaryOperation extends Operation {
   @Override
   void doFormatInitialStatements(FormattingContext ctx) {
     ctx.appendInitialStatements(arg1()).appendInitialStatements(arg2());
+  }
+
+  @Override
+  public Iterable<? extends CodeChunk> initialStatements() {
+    return Iterables.concat(arg1().initialStatements(), arg2().initialStatements());
   }
 }

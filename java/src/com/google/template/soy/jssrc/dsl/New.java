@@ -53,12 +53,12 @@ abstract class New extends Operation {
   }
 
   @Override
-  public boolean isRepresentableAsSingleExpression() {
-    return ctor().isRepresentableAsSingleExpression();
-  }
-  
-  @Override
   public void collectRequires(RequiresCollector collector) {
     ctor().collectRequires(collector);
+  }
+
+  @Override
+  public Iterable<? extends CodeChunk> initialStatements() {
+    return ctor().initialStatements();
   }
 }
