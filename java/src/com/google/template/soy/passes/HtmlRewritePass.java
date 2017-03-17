@@ -120,8 +120,6 @@ import javax.annotation.Nullable;
  *
  * <ul>
  *   <li>Remove the parsing of {@link MsgHtmlTagNode} from the parser and move it here
- *   <li>Some of the error messages are spammy (1 error triggers 3-4 reports). We should short
- *       circuit earlier for some errors.
  * </ul>
  */
 @VisibleForTesting
@@ -165,6 +163,8 @@ public final class HtmlRewritePass extends CompilerFilePass {
       SoyErrorKind.of(
           "found the end of a tag that was started in another block. Html tags should be opened "
               + "and closed in the same block");
+  private static final SoyErrorKind FOUND_EQ_WITH_ATTRIBUTE_IN_ANOTHER_BLOCK =
+      SoyErrorKind.of("found an ''='' character in a different block than the attribute name.");
 
   private static final SoyErrorKind GENERIC_UNEXPECTED_CHAR =
       SoyErrorKind.of("unexpected character, expected ''{0}'' instead");
@@ -903,8 +903,7 @@ public final class HtmlRewritePass extends CompilerFilePass {
           context.createQuotedAttributeValue(currentRawTextNode, doubleQuoted, currentPoint());
         } else {
           errorReporter.report(currentLocation(), FOUND_END_OF_ATTRIBUTE_STARTED_IN_ANOTHER_BLOCK);
-          context.resetAttribute();
-          context.setState(State.BEFORE_ATTRIBUTE_NAME, currentPoint());
+          throw new AbortParsingBlockError();
         }
         // consume the quote
         advance();
@@ -920,8 +919,8 @@ public final class HtmlRewritePass extends CompilerFilePass {
           SourceLocation.Point point = currentPoint();
           context.setState(context.createTag(currentRawTextNode, false, point), point);
         } else {
-          context.reset();
           errorReporter.report(currentLocation(), FOUND_END_TAG_STARTED_IN_ANOTHER_BLOCK);
+          throw new AbortParsingBlockError();
         }
         advance();
         consume();
@@ -934,8 +933,8 @@ public final class HtmlRewritePass extends CompilerFilePass {
           SourceLocation.Point point = currentPoint();
           context.setState(context.createTag(currentRawTextNode, true, point), point);
         } else {
-          context.reset();
           errorReporter.report(currentLocation(), FOUND_END_TAG_STARTED_IN_ANOTHER_BLOCK);
+          throw new AbortParsingBlockError();
         }
         // consume the rest of the '/>'
         advance();
@@ -1431,10 +1430,8 @@ public final class HtmlRewritePass extends CompilerFilePass {
               INVALID_LOCATION_FOR_CONTROL_FLOW,
               overallName,
               "html tag names can only be constants or print nodes");
-          context.reset();
-          context.setState(State.PCDATA, parent.getSourceLocation().getBeginPoint());
           // give up on parsing this tag :(
-          break;
+          throw new AbortParsingBlockError();
         case BEFORE_ATTRIBUTE_VALUE:
           if (!willExactlyOneBranchExecuteOnce) {
             errorReporter.report(
@@ -1504,7 +1501,39 @@ public final class HtmlRewritePass extends CompilerFilePass {
 
     /** Visits a block and returns the finalState. */
     State visitBlock(State startState, BlockNode node, String blockName, Checkpoint checkpoint) {
-      visitChildren(node);
+      try {
+        visitChildren(node);
+      } catch (AbortParsingBlockError abortProcessingError) {
+        // we reported some error and just gave up on the block
+        // try to switch back to a reasonable state based on the start state and keep going.
+        switch (startState) {
+          case AFTER_ATTRIBUTE_NAME:
+          case AFTER_TAG_NAME_OR_ATTRIBUTE:
+          case BEFORE_ATTRIBUTE_NAME:
+          case BEFORE_ATTRIBUTE_VALUE:
+          case SINGLE_QUOTED_ATTRIBUTE_VALUE:
+          case DOUBLE_QUOTED_ATTRIBUTE_VALUE:
+          case UNQUOTED_ATTRIBUTE_VALUE:
+          case HTML_TAG_NAME:
+            context.resetAttribute();
+            context.setState(State.BEFORE_ATTRIBUTE_NAME, node.getSourceLocation().getEndPoint());
+            break;
+          case CDATA:
+          case DOUBLE_QUOTED_XML_ATTRIBUTE_VALUE:
+          case HTML_COMMENT:
+          case NONE:
+          case PCDATA:
+          case RCDATA_SCRIPT:
+          case RCDATA_STYLE:
+          case RCDATA_TEXTAREA:
+          case RCDATA_TITLE:
+          case SINGLE_QUOTED_XML_ATTRIBUTE_VALUE:
+          case XML_DECLARATION:
+            context.reset();
+            context.setState(startState, node.getSourceLocation().getEndPoint());
+            break;
+        }
+      }
       context.finishBlock();
       State finalState = context.getState();
       SourceLocation.Point finalStateTransitionPoint = context.getStateTransitionPoint();
@@ -1920,23 +1949,19 @@ public final class HtmlRewritePass extends CompilerFilePass {
       return error;
     }
 
-    /** Resets parsing state, this is useful for error recovery. */
+    /** Resets all parsing state, this is useful for error recovery. */
     void reset() {
       tagStartPoint = null;
       tagStartNode = null;
       tagName = null;
       directTagChildren.clear();
       resetAttribute();
-      resetAttributeValue();
     }
 
     void resetAttribute() {
       attributeName = null;
       equalsSignLocation = null;
       attributeValue = null;
-    }
-
-    void resetAttributeValue() {
       quotedAttributeValueStart = null;
       attributeValueChildren.clear();
     }
@@ -1962,7 +1987,7 @@ public final class HtmlRewritePass extends CompilerFilePass {
             blockName,
             startingState,
             "tag");
-        reset();
+        throw new AbortParsingBlockError();
       }
 
       this.tagStartPoint = checkNotNull(point);
@@ -1992,7 +2017,7 @@ public final class HtmlRewritePass extends CompilerFilePass {
             blockName,
             startingState,
             "attribute");
-        resetAttribute();
+        throw new AbortParsingBlockError();
       }
       edits.remove(attrName);
       attributeName = attrName;
@@ -2002,7 +2027,12 @@ public final class HtmlRewritePass extends CompilerFilePass {
     void setEqualsSignLocation(
         SourceLocation.Point equalsSignPoint, SourceLocation.Point stateTransitionPoint) {
       checkNotNull(equalsSignPoint);
-      checkState(attributeName != null);
+      if (attributeName == null) {
+        // the attribute must have been started in another block
+        errorReporter.report(
+            stateTransitionPoint.asLocation(filePath), FOUND_EQ_WITH_ATTRIBUTE_IN_ANOTHER_BLOCK);
+        throw new AbortParsingBlockError();
+      }
       checkState(equalsSignLocation == null);
       equalsSignLocation = equalsSignPoint;
       setState(State.BEFORE_ATTRIBUTE_VALUE, stateTransitionPoint);
@@ -2010,7 +2040,8 @@ public final class HtmlRewritePass extends CompilerFilePass {
 
     void setAttributeValue(StandaloneNode node) {
       checkNotNull(node);
-      checkState(attributeValue == null);
+      checkState(
+          attributeValue == null, "attribute value already set at: %s", node.getSourceLocation());
       edits.remove(node);
       attributeValue = node;
       setState(State.AFTER_TAG_NAME_OR_ATTRIBUTE, node.getSourceLocation().getEndPoint());
@@ -2046,6 +2077,7 @@ public final class HtmlRewritePass extends CompilerFilePass {
         } else {
           errorReporter.report(
               endPoint.asLocation(filePath), FOUND_END_OF_ATTRIBUTE_STARTED_IN_ANOTHER_BLOCK);
+          throw new AbortParsingBlockError();
         }
         resetAttribute();
         setState(State.AFTER_TAG_NAME_OR_ATTRIBUTE, endPoint);
@@ -2168,7 +2200,7 @@ public final class HtmlRewritePass extends CompilerFilePass {
         // in a block
         errorReporter.report(
             currentPoint.asLocation(filePath), FOUND_END_OF_ATTRIBUTE_STARTED_IN_ANOTHER_BLOCK);
-        resetAttribute();
+        throw new AbortParsingBlockError();
       }
       if (attributeName != null) {
         createAttributeNode();
@@ -2211,4 +2243,7 @@ public final class HtmlRewritePass extends CompilerFilePass {
       return location;
     }
   }
+  
+  /** A custom error to halt processing of a given control flow block. */
+  private static final class AbortParsingBlockError extends Error {}
 }
