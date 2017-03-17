@@ -174,7 +174,7 @@ public final class SoyFileSet {
     /** Type registry for this fileset only. */
     private SoyTypeRegistry localTypeRegistry;
 
-    private CoreDependencies coreDependencies;
+    private final CoreDependencies coreDependencies;
     private CheckConformance checkConformance;
     private Provider<SoyMsgBundleHandler> msgBundleHandlerProvider =
         DEFAULT_SOY_MSG_BUNDLE_HANDLER_PROVIDER;
@@ -182,26 +182,14 @@ public final class SoyFileSet {
     /** The SoyProtoTypeProvider builder that will be built for local type registry. */
     private final SoyProtoTypeProvider.Builder protoTypeProviderBuilder;
 
-    /**
-     * Constructs a builder using a statically-injected configuration.
-     *
-     * @deprecated Use the static SoyFileSet.builder() method, or inject SoyFileSet.Builder using
-     *     Guice with SoyModule installed. The behavior of this builder is unpredictable and will
-     *     use the Soy configuration from the most recently configured Injector containing a
-     *     SoyModule, because it relies on Guice's static injection.
-     */
+    // TODO(lukes): inline CoreDependencies?
     @Inject
-    @Deprecated
-    Builder() {
+    Builder(CoreDependencies coreDependencies) {
+      this.coreDependencies = coreDependencies;
       this.filesBuilder = ImmutableMap.builder();
       this.protoTypeProviderBuilder = new SoyProtoTypeProvider.Builder();
       this.cache = null;
       this.lazyGeneralOptions = null;
-    }
-
-    @Inject(optional = true)
-    void setCoreDependencies(CoreDependencies coreDependencies) {
-      this.coreDependencies = coreDependencies;
     }
 
     /** @param msgBundleHandlerProvider Provider for getting an instance of SoyMsgBundleHandler. */
@@ -210,6 +198,8 @@ public final class SoyFileSet {
       this.msgBundleHandlerProvider = msgBundleHandlerProvider;
     }
 
+    // TODO(lukes): make CheckConformance not use optional injection, make it a core compiler
+    // feature
     @Inject(optional = true)
     void setCheckConformance(CheckConformance checkConformance) {
       this.checkConformance = checkConformance;
@@ -248,9 +238,6 @@ public final class SoyFileSet {
      * @return The new {@code SoyFileSet}.
      */
     public SoyFileSet build() {
-      if (coreDependencies == null) {
-        coreDependencies = GuiceInitializer.getHackyCoreDependencies();
-      }
       try {
         if (!protoTypeProviderBuilder.isEmpty()) {
           Set<SoyTypeProvider> typeProviders =

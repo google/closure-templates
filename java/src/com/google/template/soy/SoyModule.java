@@ -64,12 +64,6 @@ public final class SoyModule extends AbstractModule {
     bind(SoyFileSet.Builder.class);
     bind(SoyTypeOps.class);
     bind(SoySauceImpl.Factory.class);
-
-    // This requests "static" initialization as soon as whatever Injector we are in is created.  If
-    // multiple injectors are in the app, it's very likely the caller will get the wrong Injector.
-    // TODO(gboyer): Remove the entirety of GuiceInitializer if we can get all clients of Soy to
-    // inject SoyFileSEt.Builder rather than simply new'ing it.
-    requestStaticInjection(GuiceInitializer.class);
   }
 
   // make this module safe to install multiple times.  This is necessary because things like
