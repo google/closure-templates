@@ -75,7 +75,7 @@
     <java.version>1.8</java.version>
     <guice.version>4.1.0</guice.version>
     <guava.version>21.0</guava.version>
-    <asm.version>5.0.3</asm.version>
+    <asm.version>5.2</asm.version>
     <autovalue.version>1.3</autovalue.version>
     <soy.examples>${project.basedir}/examples</soy.examples>
     <soy.examples.out>${project.build.directory}/examples</soy.examples.out>
