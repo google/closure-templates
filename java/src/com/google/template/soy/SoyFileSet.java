@@ -30,6 +30,7 @@ import com.google.common.io.CharSource;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
+import com.google.inject.util.Providers;
 import com.google.protobuf.Descriptors.DescriptorValidationException;
 import com.google.protobuf.Descriptors.GenericDescriptor;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
@@ -89,6 +90,7 @@ import com.google.template.soy.tofu.internal.BaseTofu.BaseTofuFactory;
 import com.google.template.soy.types.SoyTypeProvider;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.proto.SoyProtoTypeProvider;
+import com.google.template.soy.xliffmsgplugin.XliffMsgPlugin;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -117,11 +119,11 @@ public final class SoyFileSet {
    * only the modules you need, similar to the implementation of this method.
    */
   public static Builder builder() {
+    // We inject based on a plain SoyModule, rather than using GuiceInitializer, to avoid relying
+    // on whatever lingering static state is around.
     return Guice.createInjector(new SoyModule()).getInstance(Builder.class);
   }
 
-  // Implementation detail of SoyFileSet.Builder.
-  // having it as its own 'parameter' class removes a small amount of boilerplate.
   static final class CoreDependencies {
     private final BaseTofuFactory baseTofuFactory;
     private final SoySauceImpl.Factory soyTemplatesFactory;
@@ -133,8 +135,6 @@ public final class SoyFileSet {
     private final SoyTypeRegistry typeRegistry;
     private final ImmutableMap<String, ? extends SoyFunction> soyFunctionMap;
     private final ImmutableMap<String, ? extends SoyPrintDirective> printDirectives;
-    @Nullable private final CheckConformance checkConformance;
-    private final Provider<SoyMsgBundleHandler> msgBundleHandlerProvider;
 
     @Inject
     CoreDependencies(
@@ -147,9 +147,7 @@ public final class SoyFileSet {
         SimplifyVisitor simplifyVisitor,
         SoyTypeRegistry typeRegistry,
         ImmutableMap<String, ? extends SoyFunction> soyFunctionMap,
-        ImmutableMap<String, ? extends SoyPrintDirective> printDirectives,
-        Optional<CheckConformance> checkConformance,
-        Provider<SoyMsgBundleHandler> msgBundleHandlerProvider) {
+        ImmutableMap<String, ? extends SoyPrintDirective> printDirectives) {
       this.baseTofuFactory = baseTofuFactory;
       this.soyTemplatesFactory = soyTemplatesFactory;
       this.jsSrcMainProvider = jsSrcMainProvider;
@@ -160,17 +158,10 @@ public final class SoyFileSet {
       this.typeRegistry = typeRegistry;
       this.soyFunctionMap = soyFunctionMap;
       this.printDirectives = printDirectives;
-      this.checkConformance = checkConformance.orNull();
-      this.msgBundleHandlerProvider = msgBundleHandlerProvider;
     }
   }
 
-  /**
-   * Builder for a {@code SoyFileSet}.
-   *
-   * <p>Instances of this can be obtained by calling {@link #builder()} or by installing {@link
-   * SoyModule} and injecting it.
-   */
+  /** Builder for a {@code SoyFileSet}. */
   public static final class Builder {
     /** The SoyFileSuppliers collected so far in added order, as a set to prevent dupes. */
     private final ImmutableMap.Builder<String, SoyFileSupplier> filesBuilder;
@@ -184,16 +175,34 @@ public final class SoyFileSet {
     private SoyTypeRegistry localTypeRegistry;
 
     private final CoreDependencies coreDependencies;
+    private CheckConformance checkConformance;
+    private Provider<SoyMsgBundleHandler> msgBundleHandlerProvider =
+        DEFAULT_SOY_MSG_BUNDLE_HANDLER_PROVIDER;
 
     /** The SoyProtoTypeProvider builder that will be built for local type registry. */
     private final SoyProtoTypeProvider.Builder protoTypeProviderBuilder;
 
+    // TODO(lukes): inline CoreDependencies?
+    @Inject
     Builder(CoreDependencies coreDependencies) {
       this.coreDependencies = coreDependencies;
       this.filesBuilder = ImmutableMap.builder();
       this.protoTypeProviderBuilder = new SoyProtoTypeProvider.Builder();
       this.cache = null;
       this.lazyGeneralOptions = null;
+    }
+
+    /** @param msgBundleHandlerProvider Provider for getting an instance of SoyMsgBundleHandler. */
+    @Inject(optional = true)
+    void setMsgBundleHandlerProvider(Provider<SoyMsgBundleHandler> msgBundleHandlerProvider) {
+      this.msgBundleHandlerProvider = msgBundleHandlerProvider;
+    }
+
+    // TODO(lukes): make CheckConformance not use optional injection, make it a core compiler
+    // feature
+    @Inject(optional = true)
+    void setCheckConformance(CheckConformance checkConformance) {
+      this.checkConformance = checkConformance;
     }
 
     /**
@@ -252,8 +261,8 @@ public final class SoyFileSet {
           filesBuilder.build(),
           getGeneralOptions(),
           cache,
-          coreDependencies.msgBundleHandlerProvider,
-          coreDependencies.checkConformance);
+          msgBundleHandlerProvider,
+          checkConformance);
     }
 
     /**
@@ -579,6 +588,10 @@ public final class SoyFileSet {
       return this;
     }
   }
+
+  /** Default SoyMsgBundleHandler uses the XLIFF message plugin. */
+  private static final Provider<SoyMsgBundleHandler> DEFAULT_SOY_MSG_BUNDLE_HANDLER_PROVIDER =
+      Providers.of(new SoyMsgBundleHandler(new XliffMsgPlugin()));
 
   /** Provider for getting an instance of SoyMsgBundleHandler. */
   private final Provider<SoyMsgBundleHandler> msgBundleHandlerProvider;

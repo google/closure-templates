@@ -16,17 +16,11 @@
 
 package com.google.template.soy;
 
-import com.google.common.base.Optional;
 import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
 import com.google.inject.multibindings.Multibinder;
-import com.google.inject.multibindings.OptionalBinder;
-import com.google.template.soy.conformance.CheckConformance;
 import com.google.template.soy.incrementaldomsrc.IncrementalDomSrcModule;
 import com.google.template.soy.jbcsrc.api.SoySauceImpl;
 import com.google.template.soy.jssrc.internal.JsSrcModule;
-import com.google.template.soy.msgs.SoyMsgBundleHandler;
-import com.google.template.soy.msgs.SoyMsgPlugin;
 import com.google.template.soy.parsepasses.contextautoesc.ContextualAutoescaper;
 import com.google.template.soy.passes.SharedPassesModule;
 import com.google.template.soy.pysrc.internal.PySrcModule;
@@ -35,7 +29,6 @@ import com.google.template.soy.tofu.internal.TofuModule;
 import com.google.template.soy.types.SoyTypeOps;
 import com.google.template.soy.types.SoyTypeProvider;
 import com.google.template.soy.types.SoyTypeRegistry;
-import com.google.template.soy.xliffmsgplugin.XliffMsgPlugin;
 import javax.inject.Singleton;
 
 /**
@@ -68,30 +61,9 @@ public final class SoyModule extends AbstractModule {
     // Bindings for when explicit dependencies are required.
     // Note: We don't promise to support this. We actually frown upon requireExplicitBindings.
     bind(ContextualAutoescaper.class);
+    bind(SoyFileSet.Builder.class);
     bind(SoyTypeOps.class);
     bind(SoySauceImpl.Factory.class);
-    // TODO(lukes): make this non-optional? move entirely into SoyFileSet.Builder?
-    OptionalBinder.newOptionalBinder(binder(), CheckConformance.class);
-    // optionally depend on a user supplied msg plugin
-    OptionalBinder.newOptionalBinder(binder(), SoyMsgPlugin.class);
-  }
-
-  @Provides
-  SoyMsgBundleHandler provideHandler(Optional<SoyMsgPlugin> plugin) {
-    if (plugin.isPresent()) {
-      return new SoyMsgBundleHandler(plugin.get());
-    }
-    // default
-    return new SoyMsgBundleHandler(new XliffMsgPlugin());
-  }
-
-  // N.B. we provide the builder here instead of having an @Inject constructor to get guice to
-  // provide less spammy error messages.  Now instead of complaining that we are missing every
-  // dependency of CoreDependencies, guice will simply complain that there is no binding for
-  // SoyFileSet.Builder.
-  @Provides
-  SoyFileSet.Builder provideBuilder(SoyFileSet.CoreDependencies coreDeps) {
-    return new SoyFileSet.Builder(coreDeps);
   }
 
   // make this module safe to install multiple times.  This is necessary because things like
