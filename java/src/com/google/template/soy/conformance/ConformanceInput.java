@@ -17,8 +17,8 @@
 package com.google.template.soy.conformance;
 
 import com.google.auto.value.AutoValue;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableListMultimap;
 import com.google.template.soy.parsepasses.contextautoesc.SlicedRawTextNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 
@@ -33,11 +33,15 @@ public abstract class ConformanceInput {
 
   public static ConformanceInput create(
       SoyFileSetNode soyTree, ImmutableList<SlicedRawTextNode> slicedRawTextNodes) {
-    return new AutoValue_ConformanceInput(
-        Preconditions.checkNotNull(soyTree), Preconditions.checkNotNull(slicedRawTextNodes));
+    ImmutableListMultimap.Builder<String, SlicedRawTextNode> byFile =
+        ImmutableListMultimap.builder();
+    for (SlicedRawTextNode node : slicedRawTextNodes) {
+      byFile.put(node.getRawTextNode().getSourceLocation().getFilePath(), node);
+    }
+    return new AutoValue_ConformanceInput(soyTree, byFile.build());
   }
 
   public abstract SoyFileSetNode getSoyTree();
 
-  public abstract ImmutableList<SlicedRawTextNode> getSlicedRawTextNodes();
+  public abstract ImmutableListMultimap<String, SlicedRawTextNode> getSlicedRawTextNodesByFile();
 }
