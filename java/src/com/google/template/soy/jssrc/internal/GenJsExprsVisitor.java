@@ -29,7 +29,7 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
-import com.google.template.soy.jssrc.dsl.ConditionalBuilder;
+import com.google.template.soy.jssrc.dsl.ConditionalExpressionBuilder;
 import com.google.template.soy.jssrc.dsl.SoyJsPluginUtils;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
@@ -331,16 +331,16 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<CodeChunk.Wit
 
     Preconditions.checkState(ifs.size() == thens.size());
 
-    ConditionalBuilder builder = generator.newChunk()
-        .if_(ifs.get(0), thens.get(0));
+    ConditionalExpressionBuilder builder = CodeChunk.ifExpression(ifs.get(0), thens.get(0));
 
     for (int i = 1; i < ifs.size(); i++) {
       builder.elseif_(ifs.get(i), thens.get(i));
     }
 
-    CodeChunk.WithValue ifChunk = (trailingElse != null)
-        ? builder.else_(trailingElse).endif().buildAsValue()
-        : builder.else_(LITERAL_EMPTY_STRING).endif().buildAsValue();
+    CodeChunk.WithValue ifChunk =
+        trailingElse != null
+            ? builder.else_(trailingElse).build(generator)
+            : builder.else_(LITERAL_EMPTY_STRING).build(generator);
 
     chunks.add(ifChunk);
   }

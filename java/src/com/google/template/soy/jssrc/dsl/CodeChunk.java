@@ -70,6 +70,18 @@ public abstract class CodeChunk {
     return StatementList.of(ImmutableList.of(this, other));
   }
 
+  /** Starts a conditional statement beginning with the given predicate and consequent chunks. */
+  public static ConditionalBuilder ifStatement(
+      CodeChunk.WithValue predicate, CodeChunk consequent) {
+    return new ConditionalBuilder(predicate, consequent);
+  }
+
+  /** Starts a conditional expression beginning with the given predicate and consequent chunks. */
+  public static ConditionalExpressionBuilder ifExpression(
+      CodeChunk.WithValue predicate, CodeChunk.WithValue consequent) {
+    return new ConditionalExpressionBuilder(predicate, consequent);
+  }
+
   /**
    * Creates a new code chunk from the given expression. The expression's precedence is preserved.
    */
@@ -164,11 +176,11 @@ public abstract class CodeChunk {
   }
 
   /** Creates a code chunk that declares a new variable and assigns a value to it. */
-  public static CodeChunk.WithValue declare(String varName, CodeChunk.WithValue rhs) {
+  public static Declaration declare(String varName, CodeChunk.WithValue rhs) {
     return Declaration.create(varName, rhs);
   }
 
-  public static CodeChunk.WithValue declare(
+  public static Declaration declare(
       String varName, CodeChunk.WithValue value, String typeExpr, Iterable<GoogRequire> requires) {
     return Declaration.create(varName, value, typeExpr, requires);
   }
@@ -664,7 +676,7 @@ public abstract class CodeChunk {
      * Creates a code chunk declaring an automatically-named variable initialized to the given
      * value.
      */
-    public CodeChunk.WithValue declare(CodeChunk.WithValue rhs) {
+    public Declaration declare(CodeChunk.WithValue rhs) {
       return CodeChunk.declare(newVarName(), rhs);
     }
 
@@ -691,14 +703,11 @@ public abstract class CodeChunk {
           && alternate.isRepresentableAsSingleExpression()) {
         return Ternary.create(predicate, consequent, alternate);
       }
-      return newChunk()
-          .createConditionalExpression(
-              Conditional.create(
-                  ImmutableList.of(new IfThenPair(predicate, consequent)), alternate));
+      return ifExpression(predicate, consequent).else_(alternate).build(this);
     }
 
     /** Returns a builder for a new code chunk that is not initialized to any value. */
-    public Builder newChunk() {
+    Builder newChunk() {
       return new Builder(this);
     }
 
@@ -738,11 +747,6 @@ public abstract class CodeChunk {
       return this;
     }
 
-    /** Starts a conditional statement beginning with the given predicate and consequent chunks. */
-    public ConditionalBuilder if_(CodeChunk.WithValue predicate, CodeChunk consequent) {
-      return new ConditionalBuilder(predicate, consequent, this);
-    }
-
     /** Sets the value represented by this code chunk to be the given chunk.*/
     public Builder assign(CodeChunk.WithValue rhs) {
       if (decl != null) {
@@ -778,39 +782,8 @@ public abstract class CodeChunk {
     public CodeChunk.WithValue buildAsValue() {
       CodeChunk chunk = build();
       return chunk instanceof Conditional
-          ? createConditionalExpression((Conditional) chunk)
+          ? ((Conditional) chunk).asConditionalExpression(owner)
           : (CodeChunk.WithValue) chunk;
-    }
-
-    void addChild(CodeChunk child) {
-      children.add(child);
-    }
-
-    /**
-     * If every branch in an {@code if}-{@code else if}-{@code else} statement represents a value,
-     * the whole statement represents a value, namely that of the taken branch. Make this explicit
-     * by declaring a variable before the statement and assigning into it in every branch.
-     */
-    private CodeChunk.WithValue createConditionalExpression(Conditional conditional) {
-      Preconditions.checkState(conditional.everyBranchHasAValue());
-      CodeChunk.WithValue var = owner.declare(WithValue.LITERAL_NULL);
-      ConditionalBuilder builder = null;
-      for (IfThenPair oldCondition : conditional.conditions()) {
-        CodeChunk.WithValue newConsequent =
-            var.assign((CodeChunk.WithValue) oldCondition.consequent);
-        if (builder == null) {
-          builder = owner
-              .newChunk()
-              .assign(var)
-              .if_(oldCondition.predicate, newConsequent);
-        } else {
-          builder.elseif_(oldCondition.predicate, newConsequent);
-        }
-      }
-      return (CodeChunk.WithValue) builder
-          .else_(var.assign((CodeChunk.WithValue) conditional.trailingElse()))
-          .endif()
-          .build();
     }
   }
 }

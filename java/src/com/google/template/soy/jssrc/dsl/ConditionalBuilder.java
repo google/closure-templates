@@ -26,12 +26,10 @@ import javax.annotation.Nullable;
 public final class ConditionalBuilder {
 
   private final ImmutableList.Builder<IfThenPair> conditions = ImmutableList.builder();
-  private final CodeChunk.Builder owner;
 
   @Nullable private CodeChunk trailingElse = null;
 
-  ConditionalBuilder(CodeChunk.WithValue predicate, CodeChunk consequent, CodeChunk.Builder owner) {
-    this.owner = owner;
+  ConditionalBuilder(CodeChunk.WithValue predicate, CodeChunk consequent) {
     conditions.add(new IfThenPair(predicate, consequent));
   }
 
@@ -50,23 +48,18 @@ public final class ConditionalBuilder {
     return this;
   }
 
-  /**
-   * Finishes building this conditional, returning the {@link CodeChunk.Builder} that created it for
-   * additional chaining.
-   */
+  /** Finishes building this conditional. */
   @CheckReturnValue
-  public CodeChunk.Builder endif() {
+  public CodeChunk build() {
     ImmutableList<IfThenPair> pairs = conditions.build();
     if (isRepresentableAsTernaryExpression(pairs)) {
-      owner.addChild(
-          Ternary.create(
-              pairs.get(0).predicate,
-              (CodeChunk.WithValue) pairs.get(0).consequent,
-              (CodeChunk.WithValue) trailingElse));
+      return Ternary.create(
+          pairs.get(0).predicate,
+          (CodeChunk.WithValue) pairs.get(0).consequent,
+          (CodeChunk.WithValue) trailingElse);
     } else {
-      owner.addChild(Conditional.create(pairs, trailingElse));
+      return Conditional.create(pairs, trailingElse);
     }
-    return owner;
   }
 
   private boolean isRepresentableAsTernaryExpression(ImmutableList<IfThenPair> pairs) {

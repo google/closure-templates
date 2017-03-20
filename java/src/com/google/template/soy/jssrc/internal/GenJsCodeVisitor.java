@@ -1039,8 +1039,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
         CodeChunk consequent = visitChildrenReturningCodeChunk(condNode);
         // Add if-block to conditional.
         if (conditional == null) {
-          conditional =
-              templateTranslationContext.codeGenerator().newChunk().if_(predicate, consequent);
+          conditional = CodeChunk.ifStatement(predicate, consequent);
         } else {
           conditional.elseif_(predicate, consequent);
         }
@@ -1055,7 +1054,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
       }
     }
 
-    jsCodeBuilder.append(conditional.endif().build());
+    jsCodeBuilder.append(conditional.build());
   }
 
   /**
@@ -1126,12 +1125,9 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
         || type.equals(UnknownType.getInstance())) {
       CodeChunk.Generator codeGenerator = templateTranslationContext.codeGenerator();
       CodeChunk.WithValue tmp = codeGenerator.declare(switchOn);
-      return codeGenerator
-          .newChunk()
-          .if_(GOOG_IS_OBJECT.call(tmp), tmp.dotAccess("toString").call())
+      return CodeChunk.ifExpression(GOOG_IS_OBJECT.call(tmp), tmp.dotAccess("toString").call())
           .else_(tmp)
-          .endif()
-          .buildAsValue();
+          .build(codeGenerator);
     }
     // For everything else just pass through.  switching on objects/collections is unlikely to
     // have reasonably defined behavior.
@@ -1190,14 +1186,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
       CodeChunk ifemptyBody = visitChildrenReturningCodeChunk(node.getChild(1));
       CodeChunk.WithValue limitCheck = id(limitName).op(Operator.GREATER_THAN, number(0));
 
-      CodeChunk foreach =
-          templateTranslationContext
-              .codeGenerator()
-              .newChunk()
-              .if_(limitCheck, foreachBody)
-              .else_(ifemptyBody)
-              .endif()
-              .build();
+      CodeChunk foreach = CodeChunk.ifStatement(limitCheck, foreachBody).else_(ifemptyBody).build();
       jsCodeBuilder.append(foreach);
     } else {
       // Otherwise, simply append the foreach body.

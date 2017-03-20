@@ -669,13 +669,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     VarRefNode varRefNode = (VarRefNode) opNode.getLeftChild();
     CodeChunk.WithValue varName =
         templateTranslationContext.soyToJsVariableMappings().get(varRefNode.getName());
-    CodeChunk conditionalCall =
-        templateTranslationContext
-            .codeGenerator()
-            .newChunk()
-            .if_(varName, varName.call())
-            .endif()
-            .build();
+    CodeChunk conditionalCall = CodeChunk.ifStatement(varName, varName.call()).build();
     jsCodeBuilder.append(conditionalCall);
     return GenerateFunctionCallResult.EMITTED;
   }

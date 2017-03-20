@@ -17,6 +17,7 @@
 package com.google.template.soy.jssrc.internal;
 
 import static com.google.template.soy.jssrc.dsl.CodeChunk.WithValue.LITERAL_NULL;
+import static com.google.template.soy.jssrc.dsl.CodeChunk.ifExpression;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_ARRAY_MAP;
 
 import com.google.auto.value.AutoValue;
@@ -30,10 +31,9 @@ import java.util.List;
 import javax.annotation.Nullable;
 
 /**
- * Represents a chain of (possibly null-safe) dot or bracket accesses.
- * Used by {@link TranslateExprNodeVisitor#visitNullSafeNode}.
- * TODO(user): remove; simply emit {@link
- * CodeChunk.Builder#if_ conditional statements}. We can't do this yet though, because we can't
+ * Represents a chain of (possibly null-safe) dot or bracket accesses. Used by {@link
+ * TranslateExprNodeVisitor#visitNullSafeNode}. TODO(user): remove; simply emit {@link
+ * CodeChunk#ifStatement conditional statements}. We can't do this yet though, because we can't
  * generate non-expression outside of test code.
  */
 final class NullSafeAccumulator {
@@ -116,13 +116,7 @@ final class NullSafeAccumulator {
       CodeChunk.WithValue chunk = intermediateValues.get(i);
       boolean nullSafe = chain.get(i).nullSafe;
       if (nullSafe) {
-        cur =
-            codeGenerator
-                .newChunk()
-                .if_(chunk.doubleEqualsNull(), LITERAL_NULL)
-                .else_(cur)
-                .endif()
-                .buildAsValue();
+        cur = ifExpression(chunk.doubleEqualsNull(), LITERAL_NULL).else_(cur).build(codeGenerator);
       }
     }
 

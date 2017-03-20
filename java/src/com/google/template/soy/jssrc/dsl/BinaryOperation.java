@@ -18,6 +18,7 @@ package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.Operator.Associativity;
@@ -61,8 +62,10 @@ abstract class BinaryOperation extends Operation {
     }
     // Otherwise, generate explicit short-circuiting code.
     // rhs should be evaluated only if lhs evaluates to true.
-    CodeChunk.WithValue tmp = codeGenerator.declare(lhs);
-    return codeGenerator.newChunk(tmp).if_(tmp, tmp.assign(rhs)).endif().buildAsValue();
+    Declaration tmp = codeGenerator.declare(lhs);
+    return Composite.create(
+        ImmutableList.of(CodeChunk.ifStatement(tmp, tmp.assign(rhs)).build()),
+        VariableReference.of(tmp));
   }
 
   static CodeChunk.WithValue or(
@@ -74,8 +77,10 @@ abstract class BinaryOperation extends Operation {
     }
     // Otherwise, generate explicit short-circuiting code.
     // rhs should be evaluated only if lhs evaluates to false.
-    CodeChunk.WithValue tmp = codeGenerator.declare(lhs);
-    return codeGenerator.newChunk(tmp).if_(not(tmp), tmp.assign(rhs)).endif().buildAsValue();
+    Declaration tmp = codeGenerator.declare(lhs);
+    return Composite.create(
+        ImmutableList.of(CodeChunk.ifStatement(not(tmp), tmp.assign(rhs)).build()),
+        VariableReference.of(tmp));
   }
 
   @Override

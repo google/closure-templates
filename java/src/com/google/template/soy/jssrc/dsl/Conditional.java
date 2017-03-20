@@ -125,12 +125,35 @@ abstract class Conditional extends CodeChunk {
     ctx.endLine();
   }
 
-  boolean everyBranchHasAValue() {
+  private boolean everyBranchHasAValue() {
     for (IfThenPair condition : conditions()) {
       if (!(condition.consequent instanceof CodeChunk.WithValue)) {
         return false;
       }
     }
     return trailingElse() instanceof CodeChunk.WithValue;
+  }
+
+  /**
+   * If every branch in an {@code if}-{@code else if}-{@code else} statement represents a value, the
+   * whole statement represents a value, namely that of the taken branch. Make this explicit by
+   * declaring a variable before the statement and assigning into it in every branch.
+   */
+  CodeChunk.WithValue asConditionalExpression(CodeChunk.Generator codeGenerator) {
+    Preconditions.checkState(everyBranchHasAValue());
+    Declaration var = codeGenerator.declare(WithValue.LITERAL_NULL);
+    ConditionalBuilder builder = null;
+    for (IfThenPair oldCondition : conditions()) {
+      CodeChunk.WithValue newConsequent = var.assign((CodeChunk.WithValue) oldCondition.consequent);
+      if (builder == null) {
+        builder = CodeChunk.ifStatement(oldCondition.predicate, newConsequent);
+      } else {
+        builder.elseif_(oldCondition.predicate, newConsequent);
+      }
+    }
+    if (trailingElse() != null) {
+      builder.else_(var.assign((CodeChunk.WithValue) trailingElse()));
+    }
+    return Composite.create(ImmutableList.of(var, builder.build()), VariableReference.of(var));
   }
 }

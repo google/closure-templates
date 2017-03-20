@@ -483,7 +483,7 @@ public class TranslateExprNodeVisitor
   @Override protected CodeChunk.WithValue visitNullCoalescingOpNode(NullCoalescingOpNode node) {
     List<CodeChunk.WithValue> operands = visitChildren(node);
     CodeChunk.WithValue consequent = operands.get(0);
-    CodeChunk alternate = operands.get(1);
+    CodeChunk.WithValue alternate = operands.get(1);
     // TODO(user): use the CodeChunk DSL to get variable initialization for free:
     //  return codeGenerator
     //      .newChunk()
@@ -495,16 +495,9 @@ public class TranslateExprNodeVisitor
     //      .build();
     // We can't do this yet because that chunk is never representable as a single expression.
 
-    return codeGenerator
-        .newChunk()
-        .if_(
-            id("$$temp")
-                .assign(consequent)
-                .doubleEqualsNull(),
-            alternate)
+    return CodeChunk.ifExpression(id("$$temp").assign(consequent).doubleEqualsNull(), alternate)
         .else_(id("$$temp"))
-        .endif()
-        .buildAsValue();
+        .build(codeGenerator);
   }
 
   @Override

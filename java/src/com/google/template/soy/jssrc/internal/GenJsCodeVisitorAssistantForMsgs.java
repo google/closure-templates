@@ -18,6 +18,7 @@ package com.google.template.soy.jssrc.internal;
 
 import static com.google.template.soy.jssrc.dsl.CodeChunk.declare;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.id;
+import static com.google.template.soy.jssrc.dsl.CodeChunk.ifStatement;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.mapLiteral;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.new_;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.stringLiteral;
@@ -236,13 +237,9 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
         CodeChunk.WithValue tmpVar = id(tmpVarName);
         jsCodeBuilder()
             .append(
-                translationContext
-                    .codeGenerator()
-                    .newChunk()
-                    .if_(
+                ifStatement(
                         tmpVar.doubleEquals(id(childGoogMsgCodeGenInfo.googMsgVarName)),
                         tmpVar.assign(getMessageFormatCall(childGoogMsgCodeGenInfo)))
-                    .endif()
                     .build());
       }
     }
