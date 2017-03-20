@@ -457,13 +457,17 @@ public final class HtmlRewritePass extends CompilerFilePass {
       currentRawText = node.getRawText();
       currentRawTextOffset = 0;
       currentRawTextIndex = 0;
+      int prevStartIndex = -1;
       while (currentRawTextIndex < currentRawText.length()) {
         int startIndex = currentRawTextIndex;
         // if whitespace was trimmed prior to the current character (e.g. leading whitespace)
         // handle it.
-        if (currentRawTextNode.missingWhitespaceAt(startIndex)) {
+        // However, we should only handle it once, otherwise state transitions which don't consume
+        // input may cause the same joined whitespace to be handled multiple times.
+        if (startIndex != prevStartIndex && currentRawTextNode.missingWhitespaceAt(startIndex)) {
           handleJoinedWhitespace(currentPoint(), false);
         }
+        prevStartIndex = startIndex;
         State startState = context.getState();
         switch (startState) {
           case NONE:

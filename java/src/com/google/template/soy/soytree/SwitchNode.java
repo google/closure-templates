@@ -64,7 +64,7 @@ public final class SwitchNode extends AbstractParentCommandNode<BlockNode>
 
   /** Returns true if this switch has a {@code default} case. */
   public boolean hasDefaultCase() {
-    return getChild(numChildren() - 1) instanceof SwitchDefaultNode;
+    return numChildren() > 0 && getChild(numChildren() - 1) instanceof SwitchDefaultNode;
   }
 
   /** Returns the text for the expression to switch on. */
