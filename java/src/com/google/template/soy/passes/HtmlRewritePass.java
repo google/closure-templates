@@ -366,51 +366,35 @@ public final class HtmlRewritePass extends CompilerFilePass {
   }
 
   private static final class Visitor extends AbstractSoyNodeVisitor<Void> {
-    // https://www.w3.org/TR/REC-xml/#NT-Name
-
-    /** Matches the first character of an xml name. */
-    static final CharMatcher NAME_START_CHAR_MATCHER =
-        CharMatcher.anyOf(":_")
-            .or(CharMatcher.inRange('A', 'Z'))
-            .or(CharMatcher.inRange('a', 'z'))
-            .or(CharMatcher.inRange('\u00C0', '\u00D6'))
-            .or(CharMatcher.inRange('\u00D8', '\u00F6'))
-            .or(CharMatcher.inRange('\u00F8', '\u02FF'))
-            .or(CharMatcher.inRange('\u0370', '\u037D'))
-            .or(CharMatcher.inRange('\u037F', '\u1FFF'))
-            .or(CharMatcher.inRange('\u200C', '\u200D'))
-            .or(CharMatcher.inRange('\u2070', '\u218F'))
-            .or(CharMatcher.inRange('\u2C00', '\u2FEF'))
-            .or(CharMatcher.inRange('\u3001', '\uD7FF'))
-            .or(CharMatcher.inRange('\uF900', '\uFDCF'))
-            .or(CharMatcher.inRange('\uFDF0', '\uFFFD'))
-            .precomputed();
-
-    /** Matches a 'non-first' character in an xml name. */
-    static final CharMatcher NAME_PART_CHAR_MATCHER =
-        CharMatcher.anyOf(".-\u00B7")
-            .or(CharMatcher.inRange('0', '9'))
-            .or(CharMatcher.inRange('\u0300', '\u036F'))
-            .or(CharMatcher.inRange('\u203F', '\u2040'))
-            .or(NAME_START_CHAR_MATCHER)
-            .precomputed();
-
-    static int indexOfInvalidNameCharacter(String name) {
-      if (!NAME_START_CHAR_MATCHER.matches(name.charAt(0))) {
-        return 0;
-      }
-      for (int i = 1; i < name.length(); i++) {
-        if (!NAME_PART_CHAR_MATCHER.matches(name.charAt(i))) {
-          return i;
-        }
-      }
-      return -1;
-    }
-
-    /** Matches raw text in a tag that isn't a special character or whitespace. */
-    static final CharMatcher TAG_RAW_TEXT_MATCHER =
-        CharMatcher.whitespace().or(CharMatcher.anyOf(">='\"/")).negate().precomputed();
     
+    /**
+     * Matches a subset of the inverse of {@link #TAG_IDENTIFIER_MATCHER} which indicate a parsing
+     * error instead of a delimiter.
+     */
+    static final CharMatcher INVALID_IDENTIFIER_CHAR_MATCHER =
+        CharMatcher.anyOf("\0'\"").precomputed();
+
+    /**
+     * Matches raw text in a tag that isn't a special character or whitespace.
+     *
+     * <p>This is based on the attribute parsing spec:
+     * https://www.w3.org/TR/html5/syntax.html#attributes-0
+     */
+    static final CharMatcher TAG_IDENTIFIER_MATCHER =
+        // delimiter charachters
+        CharMatcher.whitespace()
+            .or(CharMatcher.anyOf(">=/"))
+            .or(INVALID_IDENTIFIER_CHAR_MATCHER)
+            .or(
+                new CharMatcher() {
+                  @Override
+                  public boolean matches(char c) {
+                    return Character.getType(c) == Character.CONTROL;
+                  }
+                })
+            .negate()
+            .precomputed();
+
     // see https://www.w3.org/TR/html5/syntax.html#attributes-0
     /** Matches all the characters that are allowed to appear in an unquoted attribute value. */
     static final CharMatcher UNQUOTED_ATTRIBUTE_VALUE_MATCHER =
@@ -581,7 +565,7 @@ public final class HtmlRewritePass extends CompilerFilePass {
       switch (context.getState()) {
         case UNQUOTED_ATTRIBUTE_VALUE:
           context.createUnquotedAttributeValue(point);
-          return;
+          // fall-through
         case AFTER_TAG_NAME_OR_ATTRIBUTE:
           context.setState(State.BEFORE_ATTRIBUTE_NAME, point);
           return;
@@ -973,15 +957,14 @@ public final class HtmlRewritePass extends CompilerFilePass {
     RawTextNode consumeHtmlIdentifier() {
       // rather than use a regex to match the prefix, we just consume all non-whitespace/non-meta
       // characters and then validate the text afterwards.
-      advanceWhileMatches(TAG_RAW_TEXT_MATCHER);
+      boolean foundDelimiter = advanceWhileMatches(TAG_IDENTIFIER_MATCHER);
       RawTextNode node = consumeAsRawText();
       if (node != null) {
-        int invalidChar = indexOfInvalidNameCharacter(node.getRawText());
-        if (invalidChar != -1) {
-          errorReporter.report(
-              node.substringLocation(invalidChar, invalidChar + 1),
-              INVALID_IDENTIFIER,
-              node.getRawText().charAt(invalidChar));
+        if (foundDelimiter && INVALID_IDENTIFIER_CHAR_MATCHER.matches((char) currentChar())) {
+          errorReporter.report(currentLocation(), INVALID_IDENTIFIER, (char) currentChar());
+          // consume the bad char
+          advance();
+          consume();
         }
       } else {
         errorReporter.report(currentLocation(), GENERIC_UNEXPECTED_CHAR, "an html identifier");
@@ -1416,13 +1399,10 @@ public final class HtmlRewritePass extends CompilerFilePass {
         case BEFORE_ATTRIBUTE_NAME:
         case AFTER_ATTRIBUTE_NAME:
           context.addTagChild(parent);
-          // at this point we are in AFTER_TAG_NAME_OR_ATTRIBUTE
-          // the branches should have ended in a similar tag state (or reported an error)
-          // if they ended in BEFORE_ATTRIBUTE_NAME (because they saw whitespace) we should switch
-          // to that.
-          if (willAtLeastOneBranchExecute && endingState == State.BEFORE_ATTRIBUTE_NAME) {
-            context.setState(State.BEFORE_ATTRIBUTE_NAME, endPoint);
-          }
+          // at this point we are in AFTER_TAG_NAME_OR_ATTRIBUTE, switch to whatever the branches
+          // ended in, the reconcilation logic may have calculated a better state (like
+          // BEFORE_ATTRIBUTE_NAME).
+          context.setState(endingState, endPoint);
           break;
         case HTML_TAG_NAME:
           errorReporter.report(
@@ -2106,26 +2086,6 @@ public final class HtmlRewritePass extends CompilerFilePass {
       setAttributeValue(valueNode);
     }
 
-    /** Creates an {@link HtmlAttributeNode}. */
-    void createAttributeNode() {
-      SourceLocation location = attributeName.getSourceLocation();
-      HtmlAttributeNode attribute;
-      if (attributeValue != null) {
-        attribute =
-            new HtmlAttributeNode(nodeIdGen.genId(), location, checkNotNull(equalsSignLocation));
-        location = location.extend(attributeValue.getSourceLocation());
-        edits.addChild(attribute, attributeName);
-        edits.addChild(attribute, attributeValue);
-      } else {
-        attribute = new HtmlAttributeNode(nodeIdGen.genId(), location, null);
-        edits.addChild(attribute, attributeName);
-      }
-      attributeName = null;
-      equalsSignLocation = null;
-      attributeValue = null;
-      addTagChild(attribute);
-    }
-
     /**
      * Creates an HtmlOpenTagNode or an HtmlCloseTagNode
      *
@@ -2203,7 +2163,26 @@ public final class HtmlRewritePass extends CompilerFilePass {
         throw new AbortParsingBlockError();
       }
       if (attributeName != null) {
-        createAttributeNode();
+        SourceLocation location = attributeName.getSourceLocation();
+        HtmlAttributeNode attribute;
+        if (attributeValue != null) {
+          attribute =
+              new HtmlAttributeNode(nodeIdGen.genId(), location, checkNotNull(equalsSignLocation));
+          location = location.extend(attributeValue.getSourceLocation());
+          edits.addChild(attribute, attributeName);
+          edits.addChild(attribute, attributeValue);
+        } else {
+          attribute = new HtmlAttributeNode(nodeIdGen.genId(), location, null);
+          edits.addChild(attribute, attributeName);
+        }
+        attributeName = null;
+        equalsSignLocation = null;
+        attributeValue = null;
+        // We don't call addDirectTagChild to avoid
+        // 1. calling maybeFinishPendingAttribute recursively
+        // 2. to avoid changing the state field
+        directTagChildren.add(attribute);
+        edits.remove(attribute);
       }
     }
 
