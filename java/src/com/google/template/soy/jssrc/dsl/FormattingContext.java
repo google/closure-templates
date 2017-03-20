@@ -171,6 +171,7 @@ final class FormattingContext implements AutoCloseable {
     } else if (other.isEmpty()) {
       return this;
     } else {
+      curIndent = ""; // don't serialize trailing whitespace in front of the next FormattingContext.
       return append(other.toString());
     }
   }

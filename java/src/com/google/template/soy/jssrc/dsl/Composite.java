@@ -19,62 +19,61 @@ package com.google.template.soy.jssrc.dsl;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 
-/**
- * Represents a sequence of statements that also have a variable allocated to represent them when
- * referenced from other code chunks. TODO(brndn): this is the only {@link CodeChunk} subclass that
- * does not correspond directly to a JavaScript grammatical production. Its behavior is somewhat
- * confused. However, the DSL relies on its behavior to allow {@link Generator#newChunk building new
- * chunks} that don't initially contain a value. Consider refactoring into a "Reference" class.
- */
+/** Represents an expression preceded by one or more initial statements. */
 @AutoValue
 public abstract class Composite extends CodeChunk.WithValue {
-  abstract ImmutableList<CodeChunk> children();
+  abstract ImmutableList<CodeChunk> initialStmts();
 
-  abstract String varName();
+  abstract CodeChunk.WithValue value();
 
-  static Composite create(ImmutableList<CodeChunk> children, String varName) {
-    Preconditions.checkState(children.size() > 1);
-    return new AutoValue_Composite(children, varName);
+  static Composite create(ImmutableList<CodeChunk> initialStatements, CodeChunk.WithValue value) {
+    Preconditions.checkState(!initialStatements.isEmpty());
+    return new AutoValue_Composite(initialStatements, value);
   }
 
   /**
    * {@link CodeChunk#getCode} serializes both the chunk's initial statements and its output
-   * expression. When a composite is the only chunk being serialized, this leads to a redundant
-   * trailing expression (the var name). Override the superclass implementation to omit it.
+   * expression. When a composite is the only chunk being serialized, and its value is a variable
+   * reference, this leads to a redundant trailing expression (the variable name). Override the
+   * superclass implementation to omit it.
    */
   @Override
   String getCode(int startingIndent, OutputContext outputContext) {
-    return new FormattingContext(startingIndent).appendInitialStatements(this).toString();
+    return value() instanceof VariableReference
+        ? new FormattingContext(startingIndent).appendInitialStatements(this).toString()
+        : super.getCode(startingIndent, outputContext);
   }
 
   @Override
   void doFormatInitialStatements(FormattingContext ctx) {
-    for (CodeChunk child : children()) {
-      ctx.appendInitialStatements(child);
+    for (CodeChunk stmt : initialStmts()) {
+      ctx.appendAll(stmt);
     }
   }
 
   @Override
   public void collectRequires(RequiresCollector collector) {
-    for (CodeChunk child : children()) {
-      child.collectRequires(collector);
+    for (CodeChunk stmt : initialStmts()) {
+      stmt.collectRequires(collector);
     }
+    value().collectRequires(collector);
   }
 
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
-    ctx.append(varName());
+    ctx.appendOutputExpression(value());
   }
 
   @Override
   public JsExpr singleExprOrName() {
-    return new JsExpr(varName(), Integer.MAX_VALUE);
+    return value().singleExprOrName();
   }
 
   @Override
   public Iterable<? extends CodeChunk> initialStatements() {
-    return children();
+    return Iterables.concat(initialStmts(), value().initialStatements());
   }
 }

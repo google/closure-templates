@@ -96,7 +96,6 @@ public final class SoyJsPluginUtils {
     for (CodeChunk.WithValue arg : args) {
       initialStatements.addAll(arg.initialStatements());
     }
-    return fromExpr(applied, collector.get())
-        .withInitialStatements(initialStatements.build(), generator);
+    return fromExpr(applied, collector.get()).withInitialStatements(initialStatements.build());
   }
 }

@@ -342,10 +342,11 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   private CodeChunk.WithValue generateTextCall(CodeChunk.WithValue textValue) {
     Generator cg = templateTranslationContext.codeGenerator();
     CodeChunk.WithValue var = cg.declare(textValue);
-    return cg.newChunk()
-        .statement(GOOG_ASSERTS_ASSERT.call(var.doubleNotEquals(CodeChunk.WithValue.LITERAL_NULL)))
-        .statement(INCREMENTAL_DOM_TEXT.call(var))
-        .buildAsValue();
+    return INCREMENTAL_DOM_TEXT
+        .call(var)
+        .withInitialStatements(
+            ImmutableList.of(
+                GOOG_ASSERTS_ASSERT.call(var.doubleNotEquals(CodeChunk.WithValue.LITERAL_NULL))));
   }
 
   /**

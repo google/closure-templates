@@ -64,6 +64,12 @@ import javax.annotation.Nullable;
  */
 public abstract class CodeChunk {
 
+
+  /** Returns a chunk representing the concatenation of this chunk with the other. */
+  public final CodeChunk concat(CodeChunk other) {
+    return StatementList.of(ImmutableList.of(this, other));
+  }
+
   /**
    * Creates a new code chunk from the given expression. The expression's precedence is preserved.
    */
@@ -407,13 +413,13 @@ public abstract class CodeChunk {
      * includes the initial statements from the original arguments.
      */
     public final CodeChunk.WithValue withInitialStatements(
-        Iterable<? extends CodeChunk> initialStatements, CodeChunk.Generator codeGenerator) {
+        Iterable<? extends CodeChunk> initialStatements) {
       // If there are no new initial statements, return the current chunk.
       if (Iterables.isEmpty(initialStatements)) {
         return this;
       }
       // Otherwise, return a code chunk that includes all of the dependent code.
-      return codeGenerator.newChunk().statements(initialStatements).assign(this).buildAsValue();
+      return Composite.create(ImmutableList.copyOf(initialStatements), this);
     }
 
     /**
@@ -450,6 +456,8 @@ public abstract class CodeChunk {
      * Returns the initial statements associated with this value. The statements must be serialized
      * before this value (for example, they could contain declarations of variables referenced in
      * this value).
+     *
+     * <p>These are direct dependencies only, not transitive.
      */
     public abstract Iterable<? extends CodeChunk> initialStatements();
   }
@@ -709,7 +717,7 @@ public abstract class CodeChunk {
      * The first {@link #assign assignment} to this chunk should also create a declaration. This
      * variable keeps track of that.
      */
-    @Nullable private String varName;
+    @Nullable private Declaration decl;
 
     private Builder(Generator owner) {
       this.owner = owner;
@@ -737,24 +745,18 @@ public abstract class CodeChunk {
 
     /** Sets the value represented by this code chunk to be the given chunk.*/
     public Builder assign(CodeChunk.WithValue rhs) {
-      if (varName != null) {
-        children.add(Assignment.create(varName(), rhs));
+      if (decl != null) {
+        children.add(Assignment.create(decl.varName(), rhs));
       } else if (rhs instanceof Declaration) {
         // If this is the first assignment to this code chunk, reuse the declaration's variable name
         // instead of making an alias.
+        decl = (Declaration) rhs;
         children.add(rhs);
-        varName = ((Declaration) rhs).varName();
       } else {
-        children.add(CodeChunk.declare(varName(), rhs));
+        decl = (Declaration) CodeChunk.declare(owner.newVarName(), rhs);
+        children.add(decl);
       }
       return this;
-    }
-
-    private String varName() {
-      if (varName == null) {
-        varName = owner.newVarName();
-      }
-      return varName;
     }
 
     /** Returns a {@link CodeChunk} built from this builder's state. */
@@ -764,7 +766,7 @@ public abstract class CodeChunk {
           "CodeChunk.Builder with no chunks makes no sense");
 
       return chunks.size() > 1
-          ? Composite.create(chunks, varName())
+          ? Composite.create(chunks, VariableReference.of(Preconditions.checkNotNull(decl)))
           : chunks.get(0); // no point in returning a composite with 1 child. return child itself.
     }
 

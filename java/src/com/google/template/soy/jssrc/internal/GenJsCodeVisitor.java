@@ -1250,13 +1250,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
     // Generate the loop body.
     CodeChunk data = declare(dataName, id(listName).bracketAccess(loopIndex));
     CodeChunk foreachBody = visitChildrenReturningCodeChunk(node);
-    CodeChunk body =
-        templateTranslationContext
-            .codeGenerator()
-            .newChunk()
-            .statement(data)
-            .statement(foreachBody)
-            .build();
+    CodeChunk body = data.concat(foreachBody);
 
     // Create the entire for block.
     CodeChunk forChunk = forLoop(loopIndexName, limit, body);
@@ -1533,7 +1527,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
       CodeChunk.WithValue coerced = jsType.getValueCoercion(paramChunk, generator);
       if (coerced != null) {
         // since we have coercion logic, dump into a temporary
-        paramChunk = generator.newChunk().assign(coerced).buildAsValue();
+        paramChunk = generator.declare(coerced);
       }
       // The param value to assign
       CodeChunk.WithValue value;

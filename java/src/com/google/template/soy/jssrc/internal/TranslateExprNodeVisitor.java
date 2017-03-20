@@ -608,7 +608,7 @@ public class TranslateExprNodeVisitor
       }
       CodeChunk.WithValue functionOutput =
           dontTrustPrecedenceOf(soyJsSrcFunction.computeForJsSrc(functionInputs), collector.get());
-      return functionOutput.withInitialStatements(initialStatements, codeGenerator);
+      return functionOutput.withInitialStatements(initialStatements);
     } else {
       errorReporter.report(
           node.getSourceLocation(), SOY_JS_SRC_FUNCTION_NOT_FOUND, node.getFunctionName());

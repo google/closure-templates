@@ -135,7 +135,6 @@ public class GenCallCodeUtils {
       TranslationContext translationContext,
       ErrorReporter errorReporter) {
 
-    CodeChunk.Generator codeGenerator = translationContext.codeGenerator();
     // Build the JS CodeChunk for the callee's name.
     CodeChunk.WithValue callee;
     if (callNode instanceof CallBasicNode) {
@@ -205,8 +204,7 @@ public class GenCallCodeUtils {
       }
     }
 
-    return fromExpr(callResult, collector.get())
-        .withInitialStatements(call.initialStatements(), codeGenerator);
+    return fromExpr(callResult, collector.get()).withInitialStatements(call.initialStatements());
   }
 
 
