@@ -25,7 +25,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.regex.Pattern;
-import javax.inject.Inject;
 
 /**
  * Handler for writing {@code SoyMsgBundle}s to file format and for creating {@code SoyMsgBundle}s
@@ -95,7 +94,6 @@ public class SoyMsgBundleHandler {
 
   private final SoyMsgPlugin msgPlugin;
 
-  @Inject
   public SoyMsgBundleHandler(SoyMsgPlugin msgPlugin) {
     this.msgPlugin = msgPlugin;
   }
