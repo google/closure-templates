@@ -465,7 +465,7 @@ public final class HtmlRewritePass extends CompilerFilePass {
         // However, we should only handle it once, otherwise state transitions which don't consume
         // input may cause the same joined whitespace to be handled multiple times.
         if (startIndex != prevStartIndex && currentRawTextNode.missingWhitespaceAt(startIndex)) {
-          handleJoinedWhitespace(currentPoint(), false);
+          handleJoinedWhitespace(currentPoint());
         }
         prevStartIndex = startIndex;
         State startState = context.getState();
@@ -560,12 +560,12 @@ public final class HtmlRewritePass extends CompilerFilePass {
       }
       // handle trailing joined whitespace.
       if (currentRawTextNode.missingWhitespaceAt(currentRawText.length())) {
-        handleJoinedWhitespace(currentRawTextNode.getSourceLocation().getEndPoint(), true);
+        handleJoinedWhitespace(currentRawTextNode.getSourceLocation().getEndPoint());
       }
     }
 
     /** Called to handle whitespace that was completely removed from a raw text node. */
-    void handleJoinedWhitespace(SourceLocation.Point point, boolean atEndOfBlock) {
+    void handleJoinedWhitespace(SourceLocation.Point point) {
       switch (context.getState()) {
         case UNQUOTED_ATTRIBUTE_VALUE:
           context.createUnquotedAttributeValue(point);
@@ -574,9 +574,12 @@ public final class HtmlRewritePass extends CompilerFilePass {
           context.setState(State.BEFORE_ATTRIBUTE_NAME, point);
           return;
         case AFTER_ATTRIBUTE_NAME:
-          // if we are at the end of a sequence of raw text, then there will be no equals sign
-          // change states
-          if (atEndOfBlock) {
+          int currentChar = currentChar();
+          // We are at the end of the raw text, or it is some character other than whitespace or an
+          // equals sign -> BEFORE_ATTRIBUTE_NAME
+          if (currentChar == -1
+              || (!CharMatcher.whitespace().matches((char) currentChar)
+                  && '=' != (char) currentChar)) {
             context.setState(State.BEFORE_ATTRIBUTE_NAME, point);
             return;
           }
