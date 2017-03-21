@@ -50,6 +50,11 @@ abstract class Declaration extends CodeChunk.WithValue {
         varName, rhs, closureCompilerTypeExpression, ImmutableSet.copyOf(googRequires));
   }
 
+  /** Returns a {@link CodeChunk.WithValue} representing a reference to this declared variable. */
+  CodeChunk.WithValue ref() {
+    return VariableReference.of(this);
+  }
+
   /**
    * {@link CodeChunk#getCode} serializes both the chunk's initial statements and its output
    * expression. When a declaration is the only chunk being serialized, this leads to a redundant

@@ -34,7 +34,6 @@ import com.google.template.soy.exprtree.Operator.Associativity;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import java.util.Arrays;
 import java.util.List;
-import javax.annotation.Nullable;
 
 /**
  * DSL for constructing sequences of JavaScript code. Unlike {@link JsExpr}, it can handle code that
@@ -287,12 +286,12 @@ public abstract class CodeChunk {
   /**
    * Marker class for a chunk of code that represents a value.
    *
-   * <p>Expressions represent values. Sequences of statements can represent a value
-   * (for example, if the first statement declares a variable and subsequent statements
-   * update the variable's state), but they are not required to.
+   * <p>Expressions represent values. Sequences of statements can represent a value (for example, if
+   * the first statement declares a variable and subsequent statements update the variable's state),
+   * but they are not required to.
    *
-   * <p>Chunks representing values are required in certain contexts
-   * (for example, the right-hand side of an {@link CodeChunk.Builder#assign assignment}).
+   * <p>Chunks representing values are required in certain contexts (for example, the right-hand
+   * side of an {@link CodeChunk.WithValue#assign assignment}).
    */
   public abstract static class WithValue extends CodeChunk {
 
@@ -432,6 +431,11 @@ public abstract class CodeChunk {
       }
       // Otherwise, return a code chunk that includes all of the dependent code.
       return Composite.create(ImmutableList.copyOf(initialStatements), this);
+    }
+
+    /** Convenience method for {@code withInitialStatements(ImmutableList.of(statement))}. */
+    public final CodeChunk.WithValue withInitialStatement(CodeChunk initialStatement) {
+      return withInitialStatements(ImmutableList.of(initialStatement));
     }
 
     /**
@@ -704,86 +708,6 @@ public abstract class CodeChunk {
         return Ternary.create(predicate, consequent, alternate);
       }
       return ifExpression(predicate, consequent).else_(alternate).build(this);
-    }
-
-    /** Returns a builder for a new code chunk that is not initialized to any value. */
-    Builder newChunk() {
-      return new Builder(this);
-    }
-
-    /** Returns a builder for a new code chunk whose value is initially the given value. */
-    public Builder newChunk(CodeChunk.WithValue initialValue) {
-      return new Builder(this).assign(initialValue);
-    }
-  }
-
-  /** Builds a single {@link CodeChunk}. */
-  public static final class Builder {
-    private final Generator owner;
-    private final ImmutableList.Builder<CodeChunk> children;
-
-    /**
-     * The first {@link #assign assignment} to this chunk should also create a declaration. This
-     * variable keeps track of that.
-     */
-    @Nullable private Declaration decl;
-
-    private Builder(Generator owner) {
-      this.owner = owner;
-      this.children = ImmutableList.builder();
-    }
-
-    /** Adds the statement represented by the given chunk to this sequence. */
-    public Builder statement(CodeChunk chunk) {
-      children.add(Statement.create(chunk));
-      return this;
-    }
-
-    /** Adds the statements represented by the given chunks to this sequence. */
-    public Builder statements(Iterable<? extends CodeChunk> statements) {
-      for (CodeChunk statement : statements) {
-        this.statement(statement);
-      }
-      return this;
-    }
-
-    /** Sets the value represented by this code chunk to be the given chunk.*/
-    public Builder assign(CodeChunk.WithValue rhs) {
-      if (decl != null) {
-        children.add(Assignment.create(decl.varName(), rhs));
-      } else if (rhs instanceof Declaration) {
-        // If this is the first assignment to this code chunk, reuse the declaration's variable name
-        // instead of making an alias.
-        decl = (Declaration) rhs;
-        children.add(rhs);
-      } else {
-        decl = (Declaration) CodeChunk.declare(owner.newVarName(), rhs);
-        children.add(decl);
-      }
-      return this;
-    }
-
-    /** Returns a {@link CodeChunk} built from this builder's state. */
-    public CodeChunk build() {
-      ImmutableList<CodeChunk> chunks = children.build();
-      Preconditions.checkState(!chunks.isEmpty(),
-          "CodeChunk.Builder with no chunks makes no sense");
-
-      return chunks.size() > 1
-          ? Composite.create(chunks, VariableReference.of(Preconditions.checkNotNull(decl)))
-          : chunks.get(0); // no point in returning a composite with 1 child. return child itself.
-    }
-
-    /**
-     * Returns a {@link CodeChunk.WithValue} built from this builder's state.
-     * @throws ClassCastException if the code does not actually represent a value.
-     *     Such an exception indicates a programmer error.
-     */
-    public CodeChunk.WithValue buildAsValue() {
-      CodeChunk chunk = build();
-      return chunk instanceof Conditional
-          ? ((Conditional) chunk).asConditionalExpression(owner)
-          : (CodeChunk.WithValue) chunk;
     }
   }
 }

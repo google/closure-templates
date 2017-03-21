@@ -343,15 +343,12 @@ public class TranslateExprNodeVisitor
 
     // Otherwise, we need to bail to a tmp var and emit assignment statements.
     CodeChunk.WithValue mapVar = codeGenerator.declare(map);
-    CodeChunk.Builder builder = codeGenerator.newChunk(mapVar);
+    ImmutableList.Builder<CodeChunk> initialStatements = ImmutableList.builder();
     for (Map.Entry<CodeChunk.WithValue, CodeChunk.WithValue> entry : assignments.entrySet()) {
-      builder.statement(
-          mapVar
-              .bracketAccess(entry.getKey())
-              .assign(entry.getValue()));
+      initialStatements.add(mapVar.bracketAccess(entry.getKey()).assign(entry.getValue()));
     }
 
-    return builder.buildAsValue();
+    return mapVar.withInitialStatements(initialStatements.build());
   }
 
 
@@ -528,8 +525,12 @@ public class TranslateExprNodeVisitor
   protected CodeChunk.WithValue visitProtoInitNode(ProtoInitNode node) {
     SoyProtoType type = (SoyProtoType) node.getType();
     CodeChunk.WithValue proto = new_(protoConstructor(type)).call();
+    if (node.numChildren() == 0) {
+      // If there's no further structure to the proto, no need to declare a variable.
+      return proto;
+    }
     CodeChunk.WithValue protoVar = codeGenerator.declare(proto);
-    CodeChunk.Builder builder = codeGenerator.newChunk(protoVar);
+    ImmutableList.Builder<CodeChunk> initialStatements = ImmutableList.builder();
 
     for (int i = 0; i < node.numChildren(); i++) {
       String fieldName = node.getParamName(i);
@@ -547,14 +548,14 @@ public class TranslateExprNodeVisitor
       // See go/jspb for setter and getter names.  // MOE: strip_line
       if (fieldDesc.isExtension()) {
         CodeChunk.WithValue extInfo = extensionField(fieldDesc);
-        builder.statement(protoVar.dotAccess("setExtension").call(extInfo, fieldValue));
+        initialStatements.add(protoVar.dotAccess("setExtension").call(extInfo, fieldValue));
       } else {
         String setFn = "set" + LOWER_CAMEL.to(UPPER_CAMEL, fieldName);
-        builder.statement(protoVar.dotAccess(setFn).call(fieldValue));
+        initialStatements.add(protoVar.dotAccess(setFn).call(fieldValue));
       }
     }
 
-    return builder.buildAsValue();
+    return protoVar.withInitialStatements(initialStatements.build());
   }
 
   // -----------------------------------------------------------------------------------------------

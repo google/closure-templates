@@ -42,7 +42,8 @@ public abstract class Composite extends CodeChunk.WithValue {
    */
   @Override
   String getCode(int startingIndent, OutputContext outputContext) {
-    return value() instanceof VariableReference
+    return (value() instanceof Declaration || value() instanceof VariableReference)
+        // TODO(brndn): Declaration shouldn't be a CodeChunk.WithValue
         ? new FormattingContext(startingIndent).appendInitialStatements(this).toString()
         : super.getCode(startingIndent, outputContext);
   }
@@ -52,6 +53,7 @@ public abstract class Composite extends CodeChunk.WithValue {
     for (CodeChunk stmt : initialStmts()) {
       ctx.appendAll(stmt);
     }
+    ctx.appendInitialStatements(value());
   }
 
   @Override
