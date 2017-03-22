@@ -49,6 +49,7 @@ public final class HtmlTransformVisitorTest {
   private static SoyFileSetNode performVisitor(String templateBody, ErrorReporter er) {
     SoyFileSetNode sfsn =
         SoyFileSetParserBuilder.forTemplateContents(AutoEscapingType.STRICT, templateBody)
+            .errorReporter(er)
             .parse()
             .fileSet();
 

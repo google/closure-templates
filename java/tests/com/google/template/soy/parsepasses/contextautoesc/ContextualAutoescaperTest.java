@@ -310,26 +310,6 @@ public final class ContextualAutoescaperTest {
             "<input{if $p} disabled{/if}>\n",
             "{/template}"));
 
-    assertRewriteFails(
-        "In file no-path:5:18, template ns.bar: Tag names should not be split up. For example, "
-            + "Soy can't easily understand that <s{if 1}cript{/if}> is a script tag.",
-        join(
-            "{namespace ns}\n\n",
-            "{template .bar}\n",
-            "  {@param p: ?}\n",
-            "<a{if $p} on{/if}click='javscript:alert(1)'>\n",
-            "{/template}"));
-
-    assertRewriteFails(
-        "In file no-path:5:12, template ns.bar: {if} command branch ends in a different context "
-            + "than preceding branches: {else}<script disabled",
-        join(
-            "{namespace ns}\n\n",
-            "{template .bar}\n",
-            "  {@param p: ?}\n",
-            "{if $p}<div{else}<script disabled{/if}>\n",
-            "{/template}"));
-
     assertContextualRewritingNoop(
         join(
             "{namespace ns}\n\n",
@@ -361,7 +341,7 @@ public final class ContextualAutoescaperTest {
             "{namespace ns}\n\n",
             "{template .good4}\n",
             "  {@param p: ?}\n",
-            "<div{if $p} onclick=foo(){/if} x=y>\n",
+            "<div {if $p}onclick=foo() {/if} x=y>\n",
             "{/template}"));
 
     assertContextualRewritingNoop(
@@ -369,7 +349,7 @@ public final class ContextualAutoescaperTest {
             "{namespace ns}\n\n",
             "{template .good4}\n",
             "  {@param p: ?}\n",
-            "<div foo=bar{if $p} onclick=foo(){/if} x=y>\n",
+            "<div foo=bar {if $p}onclick=foo() {/if} x=y>\n",
             "{/template}"));
 
     assertContextualRewriting(
@@ -385,62 +365,13 @@ public final class ContextualAutoescaperTest {
             "\n" + "<input{if $x} onclick={$x}{/if}>\n",
             "{/template}"));
 
-    assertRewriteFails(
-        "In file no-path:5:7, template ns.bar: {if} command without {else} changes context : "
-            + "{if $p} disabled=\"true{/if}",
-        join(
-            "{namespace ns}\n\n",
-            "{template .bar}\n",
-            "  {@param p: ?}\n",
-            "<input{if $p} disabled=\"true{/if} x=y>\n",
-            "{/template}"));
-
     assertContextualRewritingNoop(
         join(
             "{namespace ns}\n\n",
             "{template .good4}\n",
             "  {@param p: ?}\n",
-            "<input{if $p} disabled=\"true\"{/if}>",
-            "<input{if $p} onclick=\"foo()\"{/if}>\n",
-            "{/template}"));
-
-    // in this case the states match on both sides of the conditional, so we can continue the
-    // attribute.
-    assertContextualRewriting(
-        join(
-            "{namespace ns}\n\n",
-            "{template .good4}\n",
-            "  {@param x: ?}\n",
-            "  {@param y: ?}\n",
-            "<div {if $x}data-foo=prefix{else}title=prefix{/if}{$y |escapeHtmlAttributeNospace}>\n",
-            "{/template}"),
-        join(
-            "{namespace ns}\n\n",
-            "{template .good4}\n",
-            "  {@param x: ?}\n",
-            "  {@param y: ?}\n",
-            "<div {if $x}data-foo=prefix{else}title=prefix{/if}{$y}>\n",
-            "{/template}"));
-
-    // This case passes for the same reason as the last one and the fact that we always reset
-    // mismatched SlashTypes to UNKNOWN when attempting to union.
-    assertContextualRewriting(
-        join(
-            "{namespace ns}\n\n",
-            "{template .bar}\n",
-            "  {@param b: ?}\n",
-            "  {@param x: ?}\n",
-            "<a onclick={if $x}a+{else}b{/if}{$x |escapeJsValue |escapeHtmlAttributeNospace}>",
-            "<div {if $b}onclick=a+{else}onmouseover=b{/if}",
-            "{$x |escapeJsValue |escapeHtmlAttributeNospace}>\n",
-            "{/template}"),
-        join(
-            "{namespace ns}\n\n",
-            "{template .bar}\n",
-            "  {@param b: ?}\n",
-            "  {@param x: ?}\n",
-            "<a onclick={if $x}a+{else}b{/if}{$x}>",
-            "<div {if $b}onclick=a+{else}onmouseover=b{/if}{$x}>\n",
+            "<input {if $p}disabled=\"true\"{/if}>",
+            "<input {if $p}onclick=\"foo()\"{/if}>\n",
             "{/template}"));
   }
 
@@ -1711,46 +1642,10 @@ public final class ContextualAutoescaperTest {
             "  {@param x: ?}\n",
             "<{$x}>\n",
             "{/template}"));
-    assertRewriteFails(
-        "In file no-path:5:3, template ns.foo: Dynamic values are not permitted in the middle"
-            + " of an HTML tag name; try adding a space before.",
-        join(
-            "{namespace ns}\n\n",
-            "/** @param headerLevel */\n",
-            "{template .foo}\n",
-            "<h{$headerLevel}>Header</h{$headerLevel}>\n",
-            "{/template}"));
-    assertRewriteFails(
-        "In file no-path:5:10, template ns.foo: Tag names should not be split up. "
-            + "For example, Soy can't easily understand that <s{if 1}cript{/if}> is a script tag.",
-        join(
-            "{namespace ns}\n\n",
-            "/** @param x */\n",
-            "{template .foo}\n",
-            "<s{if $x}cript{else}ub{/if}>Content</s{if $x}cript{else}ub{/if}>\n",
-            "{/template}"));
-    assertRewriteFails(
-        "In file no-path:5:15, template ns.foo: {if} command branch ends in a different "
-            + "context than preceding branches: {else}div",
-        join(
-            "{namespace ns}\n\n",
-            "/** @param x */\n",
-            "{template .foo}\n",
-            "<{if $x}script{else}div{/if}>Test<{if $x}/script{else}div{/if}>\n",
-            "{/template}"));
   }
 
   @Test
   public void testTagNameEdgeCases() {
-    assertRewriteFails(
-        "In file no-path:5:2, template ns.foo: {if} command without {else} changes context : "
-            + "{if $x}/{/if}",
-        join(
-            "{namespace ns}\n\n",
-            "/** @param x */\n",
-            "{template .foo}\n",
-            "<{if $x}/{/if}div>\n",
-            "{/template}"));
     assertRewriteFails(
         "In file no-path:3:16, template ns.foo: "
             + "Saw unmatched close tag for context-changing tag: script",
@@ -1762,9 +1657,6 @@ public final class ContextualAutoescaperTest {
     assertRewriteFails(
         "In file no-path:3:16, template ns.foo: Invalid end-tag name.",
         join("{namespace ns}\n\n", "{template .foo}\n", "</3>\n", "{/template}"));
-    assertRewriteFails(
-        "In file no-path:3:16, template ns.foo: Invalid end-tag name.",
-        join("{namespace ns}\n\n", "{template .foo}\n", "</ div>\n", "{/template}"));
   }
 
   @Test
@@ -1951,23 +1843,6 @@ public final class ContextualAutoescaperTest {
             "<div>{$y}</div>",
             "{/let}",
             "{$y}'</script>\n",
-            "{/template}"));
-  }
-
-  @Test
-  public void testTypedLetBlockMustEndInStartContext() {
-    assertRewriteFails(
-        "In file no-path:5:1, template ns.t: "
-            + "A strict block of kind=\"html\" cannot end in context (Context JS REGEX). "
-            + "Likely cause is an unclosed script block or attribute: "
-            + "{let $l kind=\"html\"}",
-        join(
-            "{namespace ns}\n\n",
-            "{template .t autoescape=\"deprecated-contextual\"}\n",
-            "  {@param y: ?}\n",
-            "{let $l kind=\"html\"}\n",
-            "<script> var y ='{$y}';",
-            "{/let}\n",
             "{/template}"));
   }
 
@@ -2170,27 +2045,6 @@ public final class ContextualAutoescaperTest {
             "{call .callee}{param x kind=\"html\"}",
             "<script> var y ='{$y}';</script>",
             "{/param}{/call}",
-            "</div>\n",
-            "{/template}\n\n",
-            "{template .callee autoescape=\"deprecated-contextual\" private=\"true\"}\n",
-            "  {@param x: ?}\n",
-            "<b>{$x}</b>\n",
-            "{/template}"));
-  }
-
-  @Test
-  public void testTypedParamBlockMustEndInStartContext() {
-    assertRewriteFails(
-        "In file no-path:5:20, template ns.caller: "
-            + "A strict block of kind=\"html\" cannot end in context (Context JS REGEX). "
-            + "Likely cause is an unclosed script block or attribute: "
-            + "{param x kind=\"html\"}",
-        join(
-            "{namespace ns}\n\n",
-            "{template .caller autoescape=\"deprecated-contextual\"}\n",
-            "  {@param y: ?}\n",
-            "<div>",
-            "{call .callee}{param x kind=\"html\"}<script> var y ='{$y}';{/param}{/call}",
             "</div>\n",
             "{/template}\n\n",
             "{template .callee autoescape=\"deprecated-contextual\" private=\"true\"}\n",
@@ -2667,14 +2521,10 @@ public final class ContextualAutoescaperTest {
   public void testStrictModeRequiresStartAndEndToBeCompatible() {
     assertRewriteFails(
         "In file no-path:3:1, template ns.main: "
-            + "A strict block of kind=\"html\" cannot end in context (Context JS_SQ_STRING). "
+            + "A strict block of kind=\"js\" cannot end in context (Context JS_SQ_STRING). "
             + "Likely cause is an unterminated string literal: "
-            + "{template .main autoescape=\"strict\"}",
-        join(
-            "{namespace ns}\n\n",
-            "{template .main autoescape=\"strict\"}\n",
-            "<script>var x='\n",
-            "{/template}"));
+            + "{template .main kind=\"js\"}",
+        join("{namespace ns}\n\n", "{template .main kind=\"js\"}\n", "var x='\n", "{/template}"));
   }
 
   @Test
@@ -2743,23 +2593,6 @@ public final class ContextualAutoescaperTest {
             "checked ",
             "foo=\"bar\" ",
             "title='{$z}'",
-            "\n{/template}"));
-  }
-
-  @Test
-  public void testStrictAttributesMustBeTerminated() {
-    // Basic "forgot to close attribute" issue.
-    assertRewriteFails(
-        "In file no-path:3:1, template ns.foo: "
-            + "A strict block of kind=\"attributes\" cannot end in context "
-            + "(Context HTML_NORMAL_ATTR_VALUE PLAIN_TEXT DOUBLE_QUOTE). "
-            + "Likely cause is an unterminated attribute value, or ending with an unquoted "
-            + "attribute: {template .foo autoescape=\"strict\" kind=\"attributes\"}",
-        join(
-            "{namespace ns}\n\n",
-            "{template .foo autoescape=\"strict\" kind=\"attributes\"}\n",
-            "  {@param x: ?}\n",
-            "foo=\"{$x}",
             "\n{/template}"));
   }
 

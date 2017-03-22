@@ -67,6 +67,7 @@ import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.Kind;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
+import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.SwitchCaseNode;
 import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TagName;
@@ -362,6 +363,10 @@ public final class HtmlRewritePass extends CompilerFilePass {
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
     if (enabled) {
       new Visitor(nodeIdGen, file.getFilePath(), errorReporter).exec(file);
+    } else {
+      // otherwise, run on a copy of the node.
+      // this will cause all of our edits to be discarded
+      new Visitor(nodeIdGen, file.getFilePath(), errorReporter).exec(SoyTreeUtils.cloneNode(file));
     }
   }
 
