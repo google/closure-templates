@@ -17,9 +17,11 @@
 package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
+import com.google.errorprone.annotations.Immutable;
 
 /** Represents a JavaScript return statement. */
 @AutoValue
+@Immutable
 abstract class Return extends CodeChunk {
 
   abstract CodeChunk.WithValue value();

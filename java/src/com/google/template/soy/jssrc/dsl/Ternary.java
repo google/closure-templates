@@ -20,7 +20,8 @@ import static com.google.template.soy.exprtree.Operator.CONDITIONAL;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Iterables;
+import com.google.common.collect.ImmutableSet;
+import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.exprtree.Operator.Associativity;
 
 /**
@@ -28,6 +29,7 @@ import com.google.template.soy.exprtree.Operator.Associativity;
  * representable as single expressions, though its predicate can be more complex.
  */
 @AutoValue
+@Immutable
 abstract class Ternary extends Operation {
   abstract CodeChunk.WithValue predicate();
 
@@ -41,7 +43,15 @@ abstract class Ternary extends Operation {
       CodeChunk.WithValue alternate) {
     Preconditions.checkArgument(consequent.isRepresentableAsSingleExpression());
     Preconditions.checkArgument(alternate.isRepresentableAsSingleExpression());
-    return new AutoValue_Ternary(predicate, consequent, alternate);
+    return new AutoValue_Ternary(
+        ImmutableSet.<CodeChunk>builder()
+            .addAll(predicate.initialStatements())
+            .addAll(consequent.initialStatements())
+            .addAll(alternate.initialStatements())
+            .build(),
+        predicate,
+        consequent,
+        alternate);
   }
 
   @Override
@@ -74,13 +84,5 @@ abstract class Ternary extends Operation {
     predicate().collectRequires(collector);
     consequent().collectRequires(collector);
     alternate().collectRequires(collector);
-  }
-
-  @Override
-  public Iterable<? extends CodeChunk> initialStatements() {
-    return Iterables.concat(
-        predicate().initialStatements(),
-        consequent().initialStatements(),
-        alternate().initialStatements());
   }
 }

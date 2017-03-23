@@ -19,10 +19,12 @@ package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
+import com.google.errorprone.annotations.Immutable;
 import javax.annotation.Nullable;
 
 /** Represents a {@code switch} statement. */
 @AutoValue
+@Immutable
 abstract class Switch extends CodeChunk {
   abstract CodeChunk.WithValue switchOn();
 
@@ -92,6 +94,7 @@ abstract class Switch extends CodeChunk {
    * Represents a single clause of a {@code switch} statement: one or more {@code case} labels
    * followed by a body.
    */
+  @Immutable
   static final class CaseClause {
     private final ImmutableList<WithValue> caseLabels;
     private final CodeChunk caseBody;

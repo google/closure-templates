@@ -18,6 +18,7 @@ package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
+import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import javax.annotation.Nullable;
 
@@ -26,6 +27,7 @@ import javax.annotation.Nullable;
  * {@link CodeChunk}, not {@link CodeChunk.WithValue}.
  */
 @AutoValue
+@Immutable
 abstract class Declaration extends CodeChunk.WithValue {
 
   abstract String varName();
@@ -38,7 +40,8 @@ abstract class Declaration extends CodeChunk.WithValue {
   abstract ImmutableSet<GoogRequire> googRequires();
 
   static Declaration create(String varName, CodeChunk.WithValue rhs) {
-    return new AutoValue_Declaration(varName, rhs, null, ImmutableSet.<GoogRequire>of());
+    return new AutoValue_Declaration(
+        rhs.initialStatements(), varName, rhs, null, ImmutableSet.<GoogRequire>of());
   }
 
   static Declaration create(
@@ -47,7 +50,11 @@ abstract class Declaration extends CodeChunk.WithValue {
       @Nullable String closureCompilerTypeExpression,
       Iterable<GoogRequire> googRequires) {
     return new AutoValue_Declaration(
-        varName, rhs, closureCompilerTypeExpression, ImmutableSet.copyOf(googRequires));
+        rhs.initialStatements(),
+        varName,
+        rhs,
+        closureCompilerTypeExpression,
+        ImmutableSet.copyOf(googRequires));
   }
 
   /** Returns a {@link CodeChunk.WithValue} representing a reference to this declared variable. */
@@ -100,10 +107,5 @@ abstract class Declaration extends CodeChunk.WithValue {
       collector.add(require);
     }
     rhs().collectRequires(collector);
-  }
-
-  @Override
-  public Iterable<? extends CodeChunk> initialStatements() {
-    return rhs().initialStatements();
   }
 }

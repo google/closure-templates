@@ -19,11 +19,14 @@ package com.google.template.soy.jssrc.dsl;
 import static com.google.template.soy.exprtree.Operator.Associativity.LEFT;
 
 import com.google.auto.value.AutoValue;
+import com.google.common.collect.ImmutableSet;
+import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.Operator.Associativity;
 
 /** Represents a JavaScript unary operation. */
 @AutoValue
+@Immutable
 abstract class PrefixUnaryOperation extends Operation {
   abstract String operator();
 
@@ -58,7 +61,7 @@ abstract class PrefixUnaryOperation extends Operation {
   }
 
   @Override
-  public Iterable<? extends CodeChunk> initialStatements() {
+  public ImmutableSet<CodeChunk> initialStatements() {
     return arg().initialStatements();
   }
 }

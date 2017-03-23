@@ -19,10 +19,13 @@ package com.google.template.soy.jssrc.dsl;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 
 /** Represents a JavaScript map literal expression. */
 @AutoValue
+@Immutable
 abstract class MapLiteral extends CodeChunk.WithValue {
 
   abstract ImmutableList<? extends CodeChunk.WithValue> keys();
@@ -33,7 +36,14 @@ abstract class MapLiteral extends CodeChunk.WithValue {
       ImmutableList<? extends CodeChunk.WithValue> keys,
       ImmutableList<? extends CodeChunk.WithValue> values) {
     Preconditions.checkArgument(keys.size() == values.size(), "Mismatch between keys and values.");
-    return new AutoValue_MapLiteral(keys, values);
+    ImmutableSet.Builder<CodeChunk> initialStatements = ImmutableSet.builder();
+    for (CodeChunk.WithValue key : keys) {
+      initialStatements.addAll(key.initialStatements());
+    }
+    for (CodeChunk.WithValue value : values) {
+      initialStatements.addAll(value.initialStatements());
+    }
+    return new AutoValue_MapLiteral(initialStatements.build(), keys, values);
   }
 
   @Override
@@ -75,17 +85,5 @@ abstract class MapLiteral extends CodeChunk.WithValue {
     for (CodeChunk.WithValue value : values()) {
       value.collectRequires(collector);
     }
-  }
-
-  @Override
-  public Iterable<? extends CodeChunk> initialStatements() {
-    ImmutableList.Builder<CodeChunk> builder = ImmutableList.builder();
-    for (CodeChunk.WithValue key : keys()) {
-      builder.addAll(key.initialStatements());
-    }
-    for (CodeChunk.WithValue value : values()) {
-      builder.addAll(value.initialStatements());
-    }
-    return builder.build();
   }
 }

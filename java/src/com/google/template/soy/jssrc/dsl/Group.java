@@ -19,6 +19,8 @@ package com.google.template.soy.jssrc.dsl;
 import static com.google.template.soy.exprtree.Operator.Associativity.LEFT;
 
 import com.google.auto.value.AutoValue;
+import com.google.common.collect.ImmutableSet;
+import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.exprtree.Operator.Associativity;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 
@@ -30,6 +32,7 @@ import com.google.template.soy.jssrc.restricted.JsExpr;
  * {@link JsExpr} that may have come from a plugin, and whose precedence may be untrustworthy.
  */
 @AutoValue
+@Immutable
 abstract class Group extends Operation {
   abstract CodeChunk.WithValue underlying();
 
@@ -64,7 +67,7 @@ abstract class Group extends Operation {
   }
 
   @Override
-  public Iterable<? extends CodeChunk> initialStatements() {
+  public ImmutableSet<CodeChunk> initialStatements() {
     return underlying().initialStatements();
   }
 }

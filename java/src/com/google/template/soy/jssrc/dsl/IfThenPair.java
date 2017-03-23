@@ -16,7 +16,10 @@
 
 package com.google.template.soy.jssrc.dsl;
 
+import com.google.errorprone.annotations.Immutable;
+
 /** Represents {@code if} or {@code else if} clauses. */
+@Immutable
 final class IfThenPair {
   final CodeChunk.WithValue predicate;
   final CodeChunk consequent;

@@ -16,6 +16,7 @@
 
 package com.google.template.soy.internal.targetexpr;
 
+import com.google.errorprone.annotations.Immutable;
 import java.util.Objects;
 
 /**
@@ -30,6 +31,7 @@ import java.util.Objects;
  * when used for generating the target code as well.
  *
  */
+@Immutable
 public class TargetExpr {
 
   /** The expression text in the target language. */

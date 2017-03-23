@@ -26,6 +26,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.errorprone.annotations.ForOverride;
+import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.UniqueNameGenerator;
 import com.google.template.soy.exprtree.IntegerNode;
@@ -58,9 +59,10 @@ import java.util.List;
  *     someFunction();
  *   }
  *   $$tmp0 = $$tmp0 * 5;
- * </code> TODO(user): do all JS code generation with this DSL (that is, remove
- * {@link com.google.template.soy.jssrc.internal.JsCodeBuilder}).
+ * </code> TODO(user): do all JS code generation with this DSL (that is, remove {@link
+ * com.google.template.soy.jssrc.internal.JsCodeBuilder}).
  */
+@Immutable
 public abstract class CodeChunk {
 
 
@@ -293,6 +295,7 @@ public abstract class CodeChunk {
    * <p>Chunks representing values are required in certain contexts (for example, the right-hand
    * side of an {@link CodeChunk.WithValue#assign assignment}).
    */
+  @Immutable
   public abstract static class WithValue extends CodeChunk {
 
     public static final WithValue LITERAL_TRUE = id("true");
@@ -475,7 +478,7 @@ public abstract class CodeChunk {
      *
      * <p>These are direct dependencies only, not transitive.
      */
-    public abstract Iterable<? extends CodeChunk> initialStatements();
+    public abstract ImmutableSet<CodeChunk> initialStatements();
   }
 
   /**

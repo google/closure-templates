@@ -19,10 +19,12 @@ package com.google.template.soy.jssrc.dsl;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.errorprone.annotations.Immutable;
 import javax.annotation.Nullable;
 
 /** Represents an {@code if}-{@code else if}-{@code else} statement. */
 @AutoValue
+@Immutable
 abstract class Conditional extends CodeChunk {
   abstract ImmutableList<IfThenPair> conditions();
   @Nullable abstract CodeChunk trailingElse();

@@ -20,17 +20,25 @@ import static com.google.template.soy.exprtree.Operator.Associativity.LEFT;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.exprtree.Operator.Associativity;
 
 /** Represents a JavaScript function call. */
 @AutoValue
+@Immutable
 abstract class Call extends Operation {
   abstract CodeChunk.WithValue receiver();
 
   abstract ImmutableList<CodeChunk.WithValue> args();
 
   static Call create(CodeChunk.WithValue receiver, ImmutableList<CodeChunk.WithValue> args) {
-    return new AutoValue_Call(receiver, args);
+    ImmutableSet.Builder<CodeChunk> builder = ImmutableSet.builder();
+    builder.addAll(receiver.initialStatements());
+    for (CodeChunk.WithValue arg : args) {
+      builder.addAll(arg.initialStatements());
+    }
+    return new AutoValue_Call(builder.build(), receiver, args);
   }
 
   @Override
@@ -76,15 +84,5 @@ abstract class Call extends Operation {
     for (CodeChunk.WithValue arg : args()) {
       ctx.appendInitialStatements(arg);
     }
-  }
-
-  @Override
-  public Iterable<? extends CodeChunk> initialStatements() {
-    ImmutableList.Builder<CodeChunk> builder = ImmutableList.builder();
-    builder.addAll(receiver().initialStatements());
-    for (CodeChunk.WithValue arg : args()) {
-      builder.addAll(arg.initialStatements());
-    }
-    return builder.build();
   }
 }

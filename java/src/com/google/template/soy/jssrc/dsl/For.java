@@ -17,9 +17,11 @@
 package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
+import com.google.errorprone.annotations.Immutable;
 
 /** Represents a {@code for} statement. */
 @AutoValue
+@Immutable
 abstract class For extends CodeChunk {
 
   abstract String localVar();

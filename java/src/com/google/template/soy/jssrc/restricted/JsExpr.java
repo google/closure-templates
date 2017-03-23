@@ -16,6 +16,7 @@
 
 package com.google.template.soy.jssrc.restricted;
 
+import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.internal.targetexpr.TargetExpr;
 
 /**
@@ -28,6 +29,7 @@ import com.google.template.soy.internal.targetexpr.TargetExpr;
  * between languages and retain plugin behavior.
  *
  */
+@Immutable
 public final class JsExpr extends TargetExpr {
 
   /**

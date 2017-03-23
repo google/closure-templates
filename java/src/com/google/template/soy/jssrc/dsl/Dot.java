@@ -19,11 +19,13 @@ package com.google.template.soy.jssrc.dsl;
 import static com.google.template.soy.exprtree.Operator.Associativity.LEFT;
 
 import com.google.auto.value.AutoValue;
-import com.google.common.collect.Iterables;
+import com.google.common.collect.ImmutableSet;
+import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.exprtree.Operator.Associativity;
 
 /** Represents a JavaScript member access ({@code .}) expression. */
 @AutoValue
+@Immutable
 abstract class Dot extends Operation {
 
   abstract CodeChunk.WithValue receiver();
@@ -31,7 +33,13 @@ abstract class Dot extends Operation {
   abstract CodeChunk.WithValue key();
 
   static Dot create(CodeChunk.WithValue receiver, CodeChunk.WithValue key) {
-    return new AutoValue_Dot(receiver, key);
+    return new AutoValue_Dot(
+        ImmutableSet.<CodeChunk>builder()
+            .addAll(receiver.initialStatements())
+            .addAll(key.initialStatements())
+            .build(),
+        receiver,
+        key);
   }
 
   @Override
@@ -55,15 +63,10 @@ abstract class Dot extends Operation {
     ctx.append('.');
     formatOperand(key(), OperandPosition.RIGHT, ctx);
   }
-  
+
   @Override
   public void collectRequires(RequiresCollector collector) {
     receiver().collectRequires(collector);
     key().collectRequires(collector);
-  }
-
-  @Override
-  public Iterable<? extends CodeChunk> initialStatements() {
-    return Iterables.concat(receiver().initialStatements(), key().initialStatements());
   }
 }

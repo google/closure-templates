@@ -19,12 +19,14 @@ package com.google.template.soy.jssrc.dsl;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
+import com.google.common.collect.ImmutableSet;
+import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.Operator.Associativity;
 
 /** Represents a JavaScript binary operation. */
 @AutoValue
+@Immutable
 abstract class BinaryOperation extends Operation {
   abstract String operator();
 
@@ -50,7 +52,16 @@ abstract class BinaryOperation extends Operation {
       Associativity associativity,
       CodeChunk.WithValue arg1,
       CodeChunk.WithValue arg2) {
-    return new AutoValue_BinaryOperation(precedence, associativity, operator, arg1, arg2);
+    return new AutoValue_BinaryOperation(
+        ImmutableSet.<CodeChunk>builder()
+            .addAll(arg1.initialStatements())
+            .addAll(arg2.initialStatements())
+            .build(),
+        precedence,
+        associativity,
+        operator,
+        arg1,
+        arg2);
   }
 
   static CodeChunk.WithValue and(
@@ -99,10 +110,5 @@ abstract class BinaryOperation extends Operation {
   @Override
   void doFormatInitialStatements(FormattingContext ctx) {
     ctx.appendInitialStatements(arg1()).appendInitialStatements(arg2());
-  }
-
-  @Override
-  public Iterable<? extends CodeChunk> initialStatements() {
-    return Iterables.concat(arg1().initialStatements(), arg2().initialStatements());
   }
 }

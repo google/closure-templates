@@ -17,9 +17,11 @@
 package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
+import com.google.errorprone.annotations.Immutable;
 
 /** Represents an assignment to a variable. */
 @AutoValue
+@Immutable
 abstract class Assignment extends CodeChunk {
   abstract String varName();
 

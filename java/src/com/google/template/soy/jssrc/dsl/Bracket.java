@@ -19,11 +19,13 @@ package com.google.template.soy.jssrc.dsl;
 import static com.google.template.soy.exprtree.Operator.Associativity.LEFT;
 
 import com.google.auto.value.AutoValue;
-import com.google.common.collect.Iterables;
+import com.google.common.collect.ImmutableSet;
+import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.exprtree.Operator.Associativity;
 
 /** Represents a JavaScript computed member access ({@code []}) expression. */
 @AutoValue
+@Immutable
 abstract class Bracket extends Operation {
 
   abstract CodeChunk.WithValue receiver();
@@ -31,7 +33,13 @@ abstract class Bracket extends Operation {
   abstract CodeChunk.WithValue key();
 
   static Bracket create(CodeChunk.WithValue receiver, CodeChunk.WithValue key) {
-    return new AutoValue_Bracket(receiver, key);
+    return new AutoValue_Bracket(
+        ImmutableSet.<CodeChunk>builder()
+            .addAll(receiver.initialStatements())
+            .addAll(key.initialStatements())
+            .build(),
+        receiver,
+        key);
   }
 
   @Override
@@ -61,10 +69,5 @@ abstract class Bracket extends Operation {
     formatOperand(receiver(), OperandPosition.LEFT, ctx);
     // No need to protect the expression in the bracket with parens. it's unambiguous.
     ctx.append('[').appendOutputExpression(key()).append(']');
-  }
-
-  @Override
-  public Iterable<? extends CodeChunk> initialStatements() {
-    return Iterables.concat(receiver().initialStatements(), key().initialStatements());
   }
 }

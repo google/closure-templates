@@ -17,8 +17,8 @@
 package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 
 /**
@@ -26,6 +26,7 @@ import com.google.template.soy.jssrc.restricted.JsExpr;
  * (namely, the {@link #value} from which they are built).
  */
 @AutoValue
+@Immutable
 abstract class Leaf extends CodeChunk.WithValue {
   static WithValue create(String text, Iterable<GoogRequire> require) {
     return create(new JsExpr(text, Integer.MAX_VALUE), ImmutableSet.copyOf(require));
@@ -67,7 +68,7 @@ abstract class Leaf extends CodeChunk.WithValue {
   }
 
   @Override
-  public Iterable<? extends CodeChunk> initialStatements() {
-    return ImmutableList.of();
+  public ImmutableSet<CodeChunk> initialStatements() {
+    return ImmutableSet.of();
   }
 }

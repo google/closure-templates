@@ -23,9 +23,11 @@ import static com.google.template.soy.jssrc.dsl.CodeChunk.stringLiteral;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
+import com.google.errorprone.annotations.Immutable;
 
 /** Represents a symbol that is imported via a {@code goog.require} statement. */
 @AutoValue
+@Immutable
 public abstract class GoogRequire implements Comparable<GoogRequire> {
 
   private static final CodeChunk.WithValue GOOG_REQUIRE = dottedIdNoRequire("goog.require");

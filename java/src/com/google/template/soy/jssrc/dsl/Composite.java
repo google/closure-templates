@@ -19,11 +19,13 @@ package com.google.template.soy.jssrc.dsl;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
+import com.google.common.collect.ImmutableSet;
+import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 
 /** Represents an expression preceded by one or more initial statements. */
 @AutoValue
+@Immutable
 public abstract class Composite extends CodeChunk.WithValue {
   abstract ImmutableList<CodeChunk> initialStmts();
 
@@ -31,7 +33,13 @@ public abstract class Composite extends CodeChunk.WithValue {
 
   static Composite create(ImmutableList<CodeChunk> initialStatements, CodeChunk.WithValue value) {
     Preconditions.checkState(!initialStatements.isEmpty());
-    return new AutoValue_Composite(initialStatements, value);
+    return new AutoValue_Composite(
+        ImmutableSet.<CodeChunk>builder()
+            .addAll(initialStatements)
+            .addAll(value.initialStatements())
+            .build(),
+        initialStatements,
+        value);
   }
 
   /**
@@ -72,10 +80,5 @@ public abstract class Composite extends CodeChunk.WithValue {
   @Override
   public JsExpr singleExprOrName() {
     return value().singleExprOrName();
-  }
-
-  @Override
-  public Iterable<? extends CodeChunk> initialStatements() {
-    return Iterables.concat(initialStmts(), value().initialStatements());
   }
 }

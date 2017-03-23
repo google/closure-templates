@@ -18,6 +18,7 @@ package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
+import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 
 /**
@@ -25,6 +26,7 @@ import com.google.template.soy.jssrc.restricted.JsExpr;
  * This class holds such instances.
  */
 @AutoValue
+@Immutable
 abstract class LeafStatement extends CodeChunk {
   abstract String value();
   abstract ImmutableSet<GoogRequire> requires();
