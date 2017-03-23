@@ -341,7 +341,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
    */
   private CodeChunk.WithValue generateTextCall(CodeChunk.WithValue textValue) {
     Generator cg = templateTranslationContext.codeGenerator();
-    CodeChunk.WithValue var = cg.declare(textValue);
+    CodeChunk.WithValue var = cg.declare(textValue).ref();
     return INCREMENTAL_DOM_TEXT
         .call(var)
         .withInitialStatements(

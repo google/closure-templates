@@ -18,17 +18,13 @@ package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
-import com.google.errorprone.annotations.Immutable;
-import com.google.template.soy.jssrc.restricted.JsExpr;
 import javax.annotation.Nullable;
+import javax.annotation.concurrent.Immutable;
 
-/**
- * Represents a variable declaration. TODO(brndn): declarations are statements. This should subclass
- * {@link CodeChunk}, not {@link CodeChunk.WithValue}.
- */
+/** Represents a variable declaration. */
 @AutoValue
 @Immutable
-abstract class Declaration extends CodeChunk.WithValue {
+public abstract class Declaration extends CodeChunk {
 
   abstract String varName();
 
@@ -40,8 +36,7 @@ abstract class Declaration extends CodeChunk.WithValue {
   abstract ImmutableSet<GoogRequire> googRequires();
 
   static Declaration create(String varName, CodeChunk.WithValue rhs) {
-    return new AutoValue_Declaration(
-        rhs.initialStatements(), varName, rhs, null, ImmutableSet.<GoogRequire>of());
+    return new AutoValue_Declaration(varName, rhs, null, ImmutableSet.<GoogRequire>of());
   }
 
   static Declaration create(
@@ -50,15 +45,11 @@ abstract class Declaration extends CodeChunk.WithValue {
       @Nullable String closureCompilerTypeExpression,
       Iterable<GoogRequire> googRequires) {
     return new AutoValue_Declaration(
-        rhs.initialStatements(),
-        varName,
-        rhs,
-        closureCompilerTypeExpression,
-        ImmutableSet.copyOf(googRequires));
+        varName, rhs, closureCompilerTypeExpression, ImmutableSet.copyOf(googRequires));
   }
 
   /** Returns a {@link CodeChunk.WithValue} representing a reference to this declared variable. */
-  CodeChunk.WithValue ref() {
+  public CodeChunk.WithValue ref() {
     return VariableReference.of(this);
   }
 
@@ -89,16 +80,6 @@ abstract class Declaration extends CodeChunk.WithValue {
         .appendOutputExpression(rhs())
         .append(";")
         .endLine();
-  }
-
-  @Override
-  void doFormatOutputExpr(FormattingContext ctx) {
-    ctx.append(varName());
-  }
-
-  @Override
-  public JsExpr singleExprOrName() {
-    return new JsExpr(varName(), Integer.MAX_VALUE);
   }
 
   @Override

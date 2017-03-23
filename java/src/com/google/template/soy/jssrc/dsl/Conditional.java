@@ -39,8 +39,9 @@ abstract class Conditional extends CodeChunk {
   void doFormatInitialStatements(FormattingContext ctx) {
     formatIfClause(ctx);
     int numRightBracesToClose = 0;
+    CodeChunk.WithValue firstPredicate = conditions().get(0).predicate;
     for (IfThenPair condition : conditions().subList(1, conditions().size())) {
-      if (condition.predicate.isRepresentableAsSingleExpression()) {
+      if (firstPredicate.initialStatements().containsAll(condition.predicate.initialStatements())) {
         formatElseIfClauseWithNoDependencies(condition, ctx);
       } else {
         formatElseIfClauseWithDependencies(condition, ctx);
@@ -143,7 +144,8 @@ abstract class Conditional extends CodeChunk {
    */
   CodeChunk.WithValue asConditionalExpression(CodeChunk.Generator codeGenerator) {
     Preconditions.checkState(everyBranchHasAValue());
-    Declaration var = codeGenerator.declare(WithValue.LITERAL_NULL);
+    Declaration decl = codeGenerator.declare(WithValue.LITERAL_NULL);
+    CodeChunk.WithValue var = decl.ref();
     ConditionalBuilder builder = null;
     for (IfThenPair oldCondition : conditions()) {
       CodeChunk.WithValue newConsequent = var.assign((CodeChunk.WithValue) oldCondition.consequent);
@@ -156,6 +158,6 @@ abstract class Conditional extends CodeChunk {
     if (trailingElse() != null) {
       builder.else_(var.assign((CodeChunk.WithValue) trailingElse()));
     }
-    return Composite.create(ImmutableList.of(var, builder.build()), VariableReference.of(var));
+    return var.withInitialStatements(ImmutableList.of(decl, builder.build()));
   }
 }

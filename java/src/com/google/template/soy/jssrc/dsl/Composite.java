@@ -50,8 +50,7 @@ public abstract class Composite extends CodeChunk.WithValue {
    */
   @Override
   String getCode(int startingIndent, OutputContext outputContext) {
-    return (value() instanceof Declaration || value() instanceof VariableReference)
-        // TODO(brndn): Declaration shouldn't be a CodeChunk.WithValue
+    return value() instanceof VariableReference
         ? new FormattingContext(startingIndent).appendInitialStatements(this).toString()
         : super.getCode(startingIndent, outputContext);
   }

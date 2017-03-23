@@ -1124,7 +1124,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
         || type.equals(AnyType.getInstance())
         || type.equals(UnknownType.getInstance())) {
       CodeChunk.Generator codeGenerator = templateTranslationContext.codeGenerator();
-      CodeChunk.WithValue tmp = codeGenerator.declare(switchOn);
+      CodeChunk.WithValue tmp = codeGenerator.declare(switchOn).ref();
       return CodeChunk.ifExpression(GOOG_IS_OBJECT.call(tmp), tmp.dotAccess("toString").call())
           .else_(tmp)
           .build(codeGenerator);
@@ -1289,10 +1289,10 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
     // they are not calculated multiple times.
     // No need to do so for initial, since it is only executed once.
     if (!(range.limit().getRoot() instanceof IntegerNode)) {
-      limit = declare(localVar + "Limit", limit);
+      limit = declare(localVar + "Limit", limit).ref();
     }
     if (!(range.increment().getRoot() instanceof IntegerNode)) {
-      increment = declare(localVar + "Increment", increment);
+      increment = declare(localVar + "Increment", increment).ref();
     }
 
     // Populate Soy to JS var mappings with this for node's local variable.
@@ -1516,7 +1516,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
       CodeChunk.WithValue coerced = jsType.getValueCoercion(paramChunk, generator);
       if (coerced != null) {
         // since we have coercion logic, dump into a temporary
-        paramChunk = generator.declare(coerced);
+        paramChunk = generator.declare(coerced).ref();
       }
       // The param value to assign
       CodeChunk.WithValue value;

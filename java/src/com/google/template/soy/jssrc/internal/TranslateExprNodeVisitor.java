@@ -342,7 +342,7 @@ public class TranslateExprNodeVisitor
     }
 
     // Otherwise, we need to bail to a tmp var and emit assignment statements.
-    CodeChunk.WithValue mapVar = codeGenerator.declare(map);
+    CodeChunk.WithValue mapVar = codeGenerator.declare(map).ref();
     ImmutableList.Builder<CodeChunk> initialStatements = ImmutableList.builder();
     for (Map.Entry<CodeChunk.WithValue, CodeChunk.WithValue> entry : assignments.entrySet()) {
       initialStatements.add(mapVar.bracketAccess(entry.getKey()).assign(entry.getValue()));
@@ -529,7 +529,7 @@ public class TranslateExprNodeVisitor
       // If there's no further structure to the proto, no need to declare a variable.
       return proto;
     }
-    CodeChunk.WithValue protoVar = codeGenerator.declare(proto);
+    CodeChunk.WithValue protoVar = codeGenerator.declare(proto).ref();
     ImmutableList.Builder<CodeChunk> initialStatements = ImmutableList.builder();
 
     for (int i = 0; i < node.numChildren(); i++) {

@@ -19,6 +19,7 @@ package com.google.template.soy.jssrc.dsl;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import com.google.template.soy.jssrc.dsl.CodeChunk.WithValue;
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 
@@ -68,9 +69,13 @@ public final class ConditionalBuilder {
     }
 
     IfThenPair ifThen = Iterables.getOnlyElement(pairs);
-    return ifThen.consequent instanceof CodeChunk.WithValue
+    CodeChunk.WithValue predicate = ifThen.predicate;
+    CodeChunk consequent = ifThen.consequent;
+    return consequent instanceof CodeChunk.WithValue
         && trailingElse instanceof CodeChunk.WithValue
-        && ((CodeChunk.WithValue) ifThen.consequent).isRepresentableAsSingleExpression()
-        && ((CodeChunk.WithValue) trailingElse).isRepresentableAsSingleExpression();
+        && predicate.initialStatements().containsAll(((WithValue) consequent).initialStatements())
+        && predicate
+            .initialStatements()
+            .containsAll(((WithValue) trailingElse).initialStatements());
   }
 }

@@ -706,8 +706,8 @@ public abstract class CodeChunk {
         CodeChunk.WithValue predicate,
         CodeChunk.WithValue consequent,
         CodeChunk.WithValue alternate) {
-      if (consequent.isRepresentableAsSingleExpression()
-          && alternate.isRepresentableAsSingleExpression()) {
+      if (predicate.initialStatements().containsAll(consequent.initialStatements())
+          && predicate.initialStatements().containsAll(alternate.initialStatements())) {
         return Ternary.create(predicate, consequent, alternate);
       }
       return ifExpression(predicate, consequent).else_(alternate).build(this);

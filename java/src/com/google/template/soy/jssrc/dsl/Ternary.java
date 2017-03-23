@@ -41,8 +41,10 @@ abstract class Ternary extends Operation {
       CodeChunk.WithValue predicate,
       CodeChunk.WithValue consequent,
       CodeChunk.WithValue alternate) {
-    Preconditions.checkArgument(consequent.isRepresentableAsSingleExpression());
-    Preconditions.checkArgument(alternate.isRepresentableAsSingleExpression());
+    Preconditions.checkArgument(
+        predicate.initialStatements().containsAll(consequent.initialStatements()));
+    Preconditions.checkArgument(
+        predicate.initialStatements().containsAll(alternate.initialStatements()));
     return new AutoValue_Ternary(
         ImmutableSet.<CodeChunk>builder()
             .addAll(predicate.initialStatements())

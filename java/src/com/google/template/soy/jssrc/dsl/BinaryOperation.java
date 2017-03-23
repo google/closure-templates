@@ -66,32 +66,30 @@ abstract class BinaryOperation extends Operation {
 
   static CodeChunk.WithValue and(
       CodeChunk.WithValue lhs, CodeChunk.WithValue rhs, CodeChunk.Generator codeGenerator) {
-    // If rhs is representable as a single expression, use the JS && operator directly.
+    // If rhs has no initial statements, use the JS && operator directly.
     // It's already short-circuiting.
-    if (rhs.isRepresentableAsSingleExpression()) {
+    if (lhs.initialStatements().containsAll(rhs.initialStatements())) {
       return create("&&", Operator.AND.getPrecedence(), Operator.AND.getAssociativity(), lhs, rhs);
     }
     // Otherwise, generate explicit short-circuiting code.
     // rhs should be evaluated only if lhs evaluates to true.
-    Declaration tmp = codeGenerator.declare(lhs);
+    CodeChunk.WithValue tmp = codeGenerator.declare(lhs).ref();
     return Composite.create(
-        ImmutableList.of(CodeChunk.ifStatement(tmp, tmp.assign(rhs)).build()),
-        VariableReference.of(tmp));
+        ImmutableList.of(CodeChunk.ifStatement(tmp, tmp.assign(rhs)).build()), tmp);
   }
 
   static CodeChunk.WithValue or(
       CodeChunk.WithValue lhs, CodeChunk.WithValue rhs, CodeChunk.Generator codeGenerator) {
-    // If rhs is representable as a single expression, use the JS || operator directly.
+    // If rhs has no initial statements, use the JS || operator directly.
     // It's already short-circuiting.
-    if (rhs.isRepresentableAsSingleExpression()) {
+    if (lhs.initialStatements().containsAll(rhs.initialStatements())) {
       return create("||", Operator.OR.getPrecedence(), Operator.OR.getAssociativity(), lhs, rhs);
     }
     // Otherwise, generate explicit short-circuiting code.
     // rhs should be evaluated only if lhs evaluates to false.
-    Declaration tmp = codeGenerator.declare(lhs);
+    CodeChunk.WithValue tmp = codeGenerator.declare(lhs).ref();
     return Composite.create(
-        ImmutableList.of(CodeChunk.ifStatement(not(tmp), tmp.assign(rhs)).build()),
-        VariableReference.of(tmp));
+        ImmutableList.of(CodeChunk.ifStatement(not(tmp), tmp.assign(rhs)).build()), tmp);
   }
 
   @Override
