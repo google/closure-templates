@@ -25,6 +25,7 @@ import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.IN
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_PRINT;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_RENDER_DYNAMIC_CONTENT;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.WithValue.LITERAL_EMPTY_STRING;
+import static com.google.template.soy.jssrc.dsl.CodeChunk.declare;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.id;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.stringLiteral;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_ASSERTS_ASSERT;
@@ -237,7 +238,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
         jsCodeBuilder.appendLine("};");
         break;
       default:
-        jsCodeBuilder.appendLine("var ", generatedVarName, " = '';");
+        jsCodeBuilder.append(declare(generatedVarName, LITERAL_EMPTY_STRING));
         visitChildren(node);
         break;
     }

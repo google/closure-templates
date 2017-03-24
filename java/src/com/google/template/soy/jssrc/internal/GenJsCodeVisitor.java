@@ -23,11 +23,14 @@ import static com.google.template.soy.jssrc.dsl.CodeChunk.declare;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.dottedIdNoRequire;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.forLoop;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.id;
+import static com.google.template.soy.jssrc.dsl.CodeChunk.ifStatement;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.number;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.return_;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.stringLiteral;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.switch_;
+import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_DEBUG;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_IS_OBJECT;
+import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_REQUIRE;
 import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_DATA;
 import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_IJ_DATA;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_ASSERTS_ASSERT_TYPE;
@@ -567,13 +570,13 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
       // Add a require of the module
       String namespaceAlias = "$import" + counter++;
       String importNamespace = getGoogModuleNamespace(namespace);
-      jsCodeBuilder.appendLine("var ", namespaceAlias, " = goog.require('", importNamespace, "');");
-
+      jsCodeBuilder.append(
+          declare(namespaceAlias, GOOG_REQUIRE.call(stringLiteral(importNamespace))));
       // Alias all the templates used from the module
       for (String fullyQualifiedName : namespaceToTemplates.get(namespace)) {
         String alias = templateAliases.get(fullyQualifiedName);
         String shortName = fullyQualifiedName.substring(fullyQualifiedName.lastIndexOf('.'));
-        jsCodeBuilder.appendLine("var ", alias, " = ", namespaceAlias, shortName, ";");
+        jsCodeBuilder.append(declare(alias, dottedIdNoRequire(namespaceAlias + shortName)));
       }
     }
   }
@@ -772,7 +775,8 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
     jsCodeBuilder.decreaseIndent();
     if (addToExports) {
       jsCodeBuilder.appendLine("}");
-      jsCodeBuilder.appendLine("exports.", partialName.substring(1), " = ", alias, ";");
+      jsCodeBuilder.append(
+          assign("exports" /* partialName starts with a dot */ + partialName, id(alias)));
     } else {
       jsCodeBuilder.appendLine("};");
     }
@@ -786,11 +790,9 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
     }
 
     // ------ Add the fully qualified template name to the function to use in debug code. ------
-    jsCodeBuilder.appendLine("if (goog.DEBUG) {");
-    jsCodeBuilder.increaseIndent();
-    jsCodeBuilder.appendLine(alias + ".soyTemplateName = '" + templateName + "';");
-    jsCodeBuilder.decreaseIndent();
-    jsCodeBuilder.appendLine("}");
+    jsCodeBuilder.append(
+        ifStatement(GOOG_DEBUG, assign(alias + ".soyTemplateName", stringLiteral(templateName)))
+            .build());
 
     // ------ If delegate template, generate a statement to register it. ------
     if (node instanceof TemplateDelegateNode) {
@@ -1039,7 +1041,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
         CodeChunk consequent = visitChildrenReturningCodeChunk(condNode);
         // Add if-block to conditional.
         if (conditional == null) {
-          conditional = CodeChunk.ifStatement(predicate, consequent);
+          conditional = ifStatement(predicate, consequent);
         } else {
           conditional.elseif_(predicate, consequent);
         }
@@ -1186,7 +1188,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
       CodeChunk ifemptyBody = visitChildrenReturningCodeChunk(node.getChild(1));
       CodeChunk.WithValue limitCheck = id(limitName).op(Operator.GREATER_THAN, number(0));
 
-      CodeChunk foreach = CodeChunk.ifStatement(limitCheck, foreachBody).else_(ifemptyBody).build();
+      CodeChunk foreach = ifStatement(limitCheck, foreachBody).else_(ifemptyBody).build();
       jsCodeBuilder.append(foreach);
     } else {
       // Otherwise, simply append the foreach body.

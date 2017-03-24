@@ -51,6 +51,8 @@ public final class JsRuntime {
   public static final CodeChunk.WithValue GOOG_ASSERTS_ASSERT =
       GOOG_ASSERTS.reference().dotAccess("assert");
 
+  public static final CodeChunk.WithValue GOOG_DEBUG = dottedIdNoRequire("goog.DEBUG");
+
   public static final CodeChunk.WithValue GOOG_GET_CSS_NAME = dottedIdNoRequire("goog.getCssName");
 
   public static final CodeChunk.WithValue GOOG_GET_MSG = dottedIdNoRequire("goog.getMsg");
@@ -66,6 +68,8 @@ public final class JsRuntime {
   public static final CodeChunk.WithValue GOOG_IS_OBJECT = dottedIdNoRequire("goog.isObject");
 
   public static final CodeChunk.WithValue GOOG_IS_STRING = dottedIdNoRequire("goog.isString");
+
+  public static final CodeChunk.WithValue GOOG_REQUIRE = dottedIdNoRequire("goog.require");
 
   public static final CodeChunk.WithValue GOOG_SOY_DATA_SANITIZED_CONTENT =
       GoogRequire.create("goog.soy.data.SanitizedContent").reference();
