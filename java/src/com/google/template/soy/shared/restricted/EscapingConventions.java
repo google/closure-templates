@@ -780,7 +780,10 @@ public final class EscapingConventions {
             // See http://www.owasp.org/index.php/XSS_(Cross_Site_Scripting)_Prevention_Cheat_Sheet
             // #RULE_.234_-_CSS_Escape_Before_Inserting_Untrusted_Data_into_HTML_Style_Property_Values
             // for an explanation of why expression and moz-binding are bad.
-            "^(?!-*(?:expression|(?:moz-)?binding))(?:"
+            "^(?!-*(?:expression|(?:moz-)?binding))"
+                + // Should not start with spaces. Since we allow spaces between sub-values,
+                // we need this condition to disable space-only values.
+                "(?!\\s+)(?:"
                 + // A latin class name or ID, CSS identifier, hex color or unicode range.
                 "[.#]?-?(?:[_a-z0-9-]+)(?:-[_a-z0-9-]+)*-?|"
                 + // A non-hex color
@@ -789,9 +792,9 @@ public final class EscapingConventions {
                 "-?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)(?:[a-z]{1,2}|%)?|"
                 + // The special value !important.
                 "!important|"
-                + // Nothing.
-                ""
-                + ")\\z",
+                + // Spaces.
+                "\\s+"
+                + ")*\\z",
             Pattern.CASE_INSENSITIVE);
 
     /** Implements the {@code |filterCssValue} directive. */

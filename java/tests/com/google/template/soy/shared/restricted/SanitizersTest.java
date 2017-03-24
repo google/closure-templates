@@ -174,6 +174,10 @@ public class SanitizersTest {
     assertEquals(".class", Sanitizers.filterCssValue(".class"));
     assertEquals("red", Sanitizers.filterCssValue("red"));
     assertEquals("#aabbcc", Sanitizers.filterCssValue("#aabbcc"));
+    assertEquals(
+        "0px 5px 10px  rgba(0,0,0, 0.3)",
+        Sanitizers.filterCssValue("0px 5px 10px  rgba(0,0,0, 0.3)"));
+    assertEquals("zSoyz", Sanitizers.filterCssValue(" "));
     assertEquals("zSoyz", Sanitizers.filterCssValue("expression"));
     assertEquals("zSoyz", Sanitizers.filterCssValue(StringData.forValue("expression")));
     assertEquals("zSoyz", Sanitizers.filterCssValue("Expression"));
