@@ -959,13 +959,9 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
     // Optimization: {msg} nodes emit statements and result in a JsExpr with a single variable.  Use
     // that variable (typically the MSG_* from getMsg) as-is instead of wrapping a new var around it
     if (node.getChildren().size() == 1 && node.getChild(0) instanceof MsgFallbackGroupNode) {
-      String msgVar = getAssistantForMsgs()
-          .generateMsgGroupVariable((MsgFallbackGroupNode) node.getChild(0));
-      templateTranslationContext
-          .soyToJsVariableMappings()
-          .put(
-              node.getVarName(),
-              id(msgVar));
+      CodeChunk.WithValue msgVar =
+          getAssistantForMsgs().generateMsgGroupVariable((MsgFallbackGroupNode) node.getChild(0));
+      templateTranslationContext.soyToJsVariableMappings().put(node.getVarName(), msgVar);
       return;
     }
 

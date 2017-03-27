@@ -677,7 +677,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
 
   @Override
   protected void visitMsgFallbackGroupNode(MsgFallbackGroupNode node) {
-    String msgExpression;
+    CodeChunk.WithValue msgExpression;
     switch (node.getHtmlContext()) {
       case HTML_PCDATA:
         new AssistantForHtmlMsgs(
@@ -708,12 +708,11 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
                     templateTranslationContext,
                     errorReporter)
                 .generateMsgGroupVariable(node);
-        getJsCodeBuilder()
-            .addChunkToOutputVar(GOOG_STRING_UNESCAPE_ENTITIES.call(id(msgExpression)));
+        getJsCodeBuilder().addChunkToOutputVar(GOOG_STRING_UNESCAPE_ENTITIES.call(msgExpression));
         break;
       default:
         msgExpression = getAssistantForMsgs().generateMsgGroupVariable(node);
-        getJsCodeBuilder().addChunkToOutputVar(id(msgExpression));
+        getJsCodeBuilder().addChunkToOutputVar(msgExpression);
         break;
     }
   }

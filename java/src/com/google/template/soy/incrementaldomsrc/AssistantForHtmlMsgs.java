@@ -16,6 +16,8 @@
 package com.google.template.soy.incrementaldomsrc;
 
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_TEXT;
+import static com.google.template.soy.jssrc.dsl.CodeChunk.WithValue.LITERAL_UNDEFINED;
+import static com.google.template.soy.jssrc.dsl.CodeChunk.assign;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.id;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_STRING_UNESCAPE_ENTITIES;
 
@@ -86,7 +88,7 @@ final class AssistantForHtmlMsgs extends GenJsCodeVisitorAssistantForMsgs {
   }
 
   @Override
-  public String generateMsgGroupVariable(MsgFallbackGroupNode node) {
+  public CodeChunk.WithValue generateMsgGroupVariable(MsgFallbackGroupNode node) {
     throw new IllegalStateException(
         "This class should only be used for via the new idom entry-point.");
   }
@@ -137,11 +139,11 @@ final class AssistantForHtmlMsgs extends GenJsCodeVisitorAssistantForMsgs {
     // It'd be nice to move this codegen to a Soy template...
 
     // The raw translated text, with placeholder placeholders.
-    String translationVar = super.generateMsgGroupVariable(node);
+    CodeChunk.WithValue translationVar = super.generateMsgGroupVariable(node);
 
     // If there are no placeholders, we don't need anything special (but we still need to unescape).
     if (placeholderNames.isEmpty()) {
-      CodeChunk.WithValue unescape = GOOG_STRING_UNESCAPE_ENTITIES.call(id(translationVar));
+      CodeChunk.WithValue unescape = GOOG_STRING_UNESCAPE_ENTITIES.call(translationVar);
       jsCodeBuilder().append(INCREMENTAL_DOM_TEXT.call(unescape));
       return;
     }
@@ -170,8 +172,14 @@ final class AssistantForHtmlMsgs extends GenJsCodeVisitorAssistantForMsgs {
     jsCodeBuilder().appendLine("do {");
     jsCodeBuilder().increaseIndent();
     // Find the placeholder.
-    jsCodeBuilder().appendLine(matchVar, " = ", regexVar,
-        ".exec(", translationVar, ") || undefined;");
+    jsCodeBuilder()
+        .append(
+            assign(
+                matchVar,
+                id(regexVar)
+                    .dotAccess("exec")
+                    .call(translationVar)
+                    .or(LITERAL_UNDEFINED, translationContext.codeGenerator())));
     // Replace null with undefined.  This is necessary to make substring() treat falsy as an omitted
     // parameter, so that it goes until the end of the string.  Otherwise, the non-numeric parameter
     // would be coerced to zero.
@@ -182,7 +190,7 @@ final class AssistantForHtmlMsgs extends GenJsCodeVisitorAssistantForMsgs {
         id(matchVar).and(id(matchVar).dotAccess("index"), translationContext.codeGenerator());
     CodeChunk.WithValue unescape =
         GOOG_STRING_UNESCAPE_ENTITIES.call(
-            id(translationVar).dotAccess("substring").call(id(lastIndexVar), endIndex));
+            translationVar.dotAccess("substring").call(id(lastIndexVar), endIndex));
 
     jsCodeBuilder().append(INCREMENTAL_DOM_TEXT.call(unescape));
     jsCodeBuilder().appendLine(lastIndexVar, " = ", regexVar, ".lastIndex;");
