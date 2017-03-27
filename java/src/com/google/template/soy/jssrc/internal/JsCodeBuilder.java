@@ -23,6 +23,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
+import com.google.template.soy.jssrc.dsl.CodeChunk.RequiresCollector;
 import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
 import java.util.ArrayDeque;
@@ -108,7 +109,7 @@ public class JsCodeBuilder {
    * <p>TODO(user): this is always an {@link CodeChunk#id}. Consider exposing a subclass of
    * CodeChunk so we can enforce this invariant at compile time.
    */
-  @Nullable private CodeChunk.WithValue currOutputVar;
+  @Nullable protected CodeChunk.WithValue currOutputVar;
 
   /** Whether the current output variable is initialized. */
   private boolean currOutputVarIsInited;
@@ -290,7 +291,7 @@ public class JsCodeBuilder {
    * @param codeFragments The code string(s) to append.
    * @return This CodeBuilder (for stringing together operations).
    */
-  JsCodeBuilder appendLineStart(String... codeFragments) {
+  public JsCodeBuilder appendLineStart(String... codeFragments) {
     code.append(indent);
     append(codeFragments);
     return this;
@@ -302,10 +303,14 @@ public class JsCodeBuilder {
    * @param codeFragments The code string(s) to append.
    * @return This CodeBuilder (for stringing together operations).
    */
-  JsCodeBuilder appendLineEnd(String... codeFragments) {
+  public JsCodeBuilder appendLineEnd(String... codeFragments) {
     append(codeFragments);
     code.append("\n");
     return this;
+  }
+
+  public RequiresCollector getRequiresCollector() {
+    return requireCollector;
   }
 
   /**
@@ -313,7 +318,7 @@ public class JsCodeBuilder {
    *
    * @param require The namespace being required
    */
-  protected void addGoogRequire(GoogRequire require) {
+  public void addGoogRequire(GoogRequire require) {
     GoogRequire oldRequire = googRequires.put(require.symbol(), require);
     if (oldRequire != null && !oldRequire.equals(require)) {
       throw new IllegalArgumentException(

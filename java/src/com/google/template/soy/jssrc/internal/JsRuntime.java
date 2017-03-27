@@ -57,9 +57,6 @@ public final class JsRuntime {
 
   public static final CodeChunk.WithValue GOOG_GET_MSG = dottedIdNoRequire("goog.getMsg");
 
-  public static final CodeChunk.WithValue GOOG_GET_MSG_WITH_FALLBACK =
-      dottedIdNoRequire("goog.getMsgWithFallback");
-
   public static final CodeChunk.WithValue GOOG_IS_ARRAY = dottedIdNoRequire("goog.isArray");
 
   public static final CodeChunk.WithValue GOOG_IS_BOOLEAN = dottedIdNoRequire("goog.isBoolean");
