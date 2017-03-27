@@ -20,7 +20,6 @@
  *
  * <p>
  * The top portion of this file contains utilities for Soy users:<ul>
- *   <li> soy.StringBuilder: Compatible with the 'stringbuilder' code style.
  *   <li> soy.renderElement: Render template and set as innerHTML of an element.
  *   <li> soy.renderAsFragment: Render template and return as HTML fragment.
  * </ul>
@@ -33,7 +32,6 @@
  */
 
 goog.provide('soy');
-goog.provide('soy.StringBuilder');
 goog.provide('soy.asserts');
 goog.provide('soy.esc');
 goog.provide('soydata');
@@ -67,21 +65,6 @@ goog.require('goog.soy.data.SanitizedUri');
 goog.require('goog.soy.data.UnsanitizedText');
 goog.require('goog.string');
 goog.require('goog.string.Const');
-goog.require('goog.string.StringBuffer');
-
-
-// -----------------------------------------------------------------------------
-// StringBuilder (compatible with the 'stringbuilder' code style).
-
-
-/**
- * Utility class to facilitate much faster string concatenation in IE,
- * using Array.join() rather than the '+' operator. For other browsers
- * we simply use the '+' operator.
- *
- * @const
- */
-soy.StringBuilder = goog.string.StringBuffer;
 
 
 // -----------------------------------------------------------------------------
@@ -699,12 +682,12 @@ soy.$$getDelegateFn = function(
  * that is returned whenever there's no delegate implementation found.
  *
  * @param {Object<string, *>=} opt_data
- * @param {soy.StringBuilder=} opt_sb
+ * @param {?=} opt_ignored  TODO(b/36644846) remove
  * @param {Object<string, *>=} opt_ijData
  * @return {string}
  * @private
  */
-soy.$$EMPTY_TEMPLATE_FN_ = function(opt_data, opt_sb, opt_ijData) {
+soy.$$EMPTY_TEMPLATE_FN_ = function(opt_data, opt_ignored, opt_ijData) {
   return '';
 };
 
