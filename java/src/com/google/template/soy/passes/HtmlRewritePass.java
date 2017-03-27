@@ -351,7 +351,6 @@ public final class HtmlRewritePass extends CompilerFilePass {
   private final ErrorReporter errorReporter;
   private final boolean enabled;
 
-  @VisibleForTesting
   public HtmlRewritePass(ImmutableList<String> experimentalFeatures, ErrorReporter errorReporter) {
     // TODO(lukes): this is currently conditionally enabled for stricthtml to enable testing.
     // Turn it on unconditionally.
@@ -958,6 +957,7 @@ public final class HtmlRewritePass extends CompilerFilePass {
       int startIndex = currentRawTextIndex;
       advanceWhileMatches(CharMatcher.whitespace());
       consume();
+      edits.remove(currentRawTextNode); // mark the current node for removal
       return currentRawTextIndex != startIndex;
     }
 
@@ -1689,11 +1689,15 @@ public final class HtmlRewritePass extends CompilerFilePass {
     void apply() {
       for (StandaloneNode nodeToRemove : toRemove) {
         BlockNode parent = nodeToRemove.getParent();
+        int index = parent.getChildIndex(nodeToRemove);
+        // NOTE:  we need to remove the child before adding the new children  to handle the case
+        // where we are doing a no-op replacement or the replacement nodes contains nodeToRemove.
+        // no-op replacements can occur when there are pcdata sections that contain no tags
+        parent.removeChild(index);
         List<StandaloneNode> children = replacements.get(nodeToRemove);
         if (!children.isEmpty()) {
-          parent.addChildren(parent.getChildIndex(nodeToRemove), children);
+          parent.addChildren(index, children);
         }
-        parent.removeChild(nodeToRemove);
       }
       for (Map.Entry<BlockNode, List<StandaloneNode>> entry : asMap(newChildren).entrySet()) {
         entry.getKey().addChildren(entry.getValue());

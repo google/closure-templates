@@ -156,6 +156,8 @@ final class DesugarHtmlNodesPass extends CompilerFilePass {
       // 2. if the preceding node is a quoted attribute value
       //    -This would always work, but is technically out of spec so we should probably avoid it.
       if (needsSpaceForAttribute) {
+        // TODO(lukes): in this case, if the attribute is dynamic and ultimately renders the
+        // empty string, we will render an extra space.
         replacements.add(
             new RawTextNode(idGenerator.genId(), " ", node.getSourceLocation().getBeginLocation()));
       } else {

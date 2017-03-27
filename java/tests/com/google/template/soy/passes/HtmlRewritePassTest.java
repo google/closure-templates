@@ -278,7 +278,7 @@ public final class HtmlRewritePassTest {
   @Test
   public void testConditionalQuotedAttributeValues() {
     TemplateNode node = runPass("{@param p : ?}<div x={if $p}'foo'{else}'bar'{/if} {$p}>");
-    assertThatSourceString(node).isEqualTo("<div x={if $p}'foo'{else}'bar'{/if} {$p}> ");
+    assertThatSourceString(node).isEqualTo("<div x={if $p}'foo'{else}'bar'{/if} {$p}>");
     assertThatASTString(node)
         .isEqualTo(
             ""
@@ -294,7 +294,6 @@ public final class HtmlRewritePassTest {
                 + "          RAW_TEXT_NODE\n"
                 + "  HTML_ATTRIBUTE_NODE\n"
                 + "    PRINT_NODE\n"
-                + "RAW_TEXT_NODE\n"
                 + "");
 
     node =
@@ -304,7 +303,7 @@ public final class HtmlRewritePassTest {
     assertThatSourceString(node)
         .isEqualTo(
             "<div x={if $p}{if $p2}'foo'{else}'bar'{/if}{else}{if $p2}'foo'{else}'bar'{/if}{/if}"
-                + " {$p}> ");
+                + " {$p}>");
     assertThatASTString(node)
         .isEqualTo(
             ""
@@ -330,7 +329,6 @@ public final class HtmlRewritePassTest {
                 + "              RAW_TEXT_NODE\n"
                 + "  HTML_ATTRIBUTE_NODE\n"
                 + "    PRINT_NODE\n"
-                + "RAW_TEXT_NODE\n"
                 + "");
   }
 

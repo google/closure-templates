@@ -60,6 +60,30 @@ public final class DesugarHtmlNodesPassTest {
         .isEqualTo("{let $foo kind=\"attributes\"}class=foo{/let}");
   }
 
+  // This is a regression test for a bug where we failed to correctly remove whitespace seen in the
+  // middle of an html tag that appeared by itself.  in particular the whitespace character between
+  // the print node and the if node was preserved and then moved!.
+  @Test
+  public void testRewrites_handle_whitespace() {
+    assertRewrite(
+            "\n"
+                + "{let $t: 1 /}\n"
+                + "<{$t ? 'div' : 'span'} {if $t}onclick=\"foo()\"{/if}>\n"
+                + "</{$t ? 'div' : 'span'}>")
+        .isEqualTo(
+            ""
+                + "{let $t: 1 /}"
+                + "<{$t ? 'div' : 'span'}{if $t} onclick=\"foo()\"{/if}></{$t ? 'div' : 'span'}>");
+  }
+
+  // This is a regression test for a bug where we failed to handle pcdata blocks containing only
+  // raw text with no tags
+  @Test
+  public void testRewrites_handleBlocksWithPcDataContent() {
+    assertRewrite("{let $t: 1 /}{if $t}hello{else}world{/if}")
+        .isEqualTo("{let $t: 1 /}{if $t}hello{else}world{/if}");
+  }
+
   private static StringSubject assertRewrite(String input) {
     return assertThat(runPass(input));
   }
