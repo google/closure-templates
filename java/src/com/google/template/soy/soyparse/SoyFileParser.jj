@@ -550,7 +550,7 @@ TOKEN_MGR_DECLS:
 // NOTE: the TEMPLATE_* states can't be specified here because it would interfere with the
 // interpretation of url schemes in 'raw text' e.g. http://foo.com  So those lexical states use a
 // different set of tokens.
-<DEFAULT, IN_CMD_TAG_STRUCTURED, EXPR> SKIP: {
+<DEFAULT, IN_CMD_TAG_STRUCTURED, TYPE_EXPR> SKIP: {
   < <WS> >
 |  < <LINE_COMMENT> >
 }
@@ -558,7 +558,7 @@ TOKEN_MGR_DECLS:
 // In all these states, SKIP multiline comments
 // NOTE: we don't just configure this for state * because these comments shouldn't work in things
 // like string literals or attribute values
-<DEFAULT, IN_CMD_TAG_STRUCTURED, EXPR, TEMPLATE_DEFAULT, TEMPLATE_DEFAULT_IN_MSG_BLOCK> MORE: {
+<DEFAULT, IN_CMD_TAG_STRUCTURED, TYPE_EXPR, TEMPLATE_DEFAULT, TEMPLATE_DEFAULT_IN_MSG_BLOCK> MORE: {
   <"/*"> { pushState(IN_MULTILINE_COMMENT); }
 }
 
@@ -735,7 +735,7 @@ TOKEN_MGR_DECLS:
 
 // ------------ Step 2: Match the command text and closing delimiter ------------
 
-<IN_CMD_TAG_UNSTRUCTURED, IN_CMD_TAG_STRUCTURED, EXPR> TOKEN: {
+<IN_CMD_TAG_UNSTRUCTURED, IN_CMD_TAG_STRUCTURED, TYPE_EXPR> TOKEN: {
   < CMD_END : "}" > { popState(); }
 | < CMD_SELF_CLOSE : "/}" > { popState(); }
 }
@@ -749,22 +749,22 @@ TOKEN_MGR_DECLS:
 
 
 <IN_CMD_TAG_STRUCTURED> TOKEN: {
-  // This is for {@param foo : int} and (eventually) {let $foo : someExpression()}.  A colon in a
-  // structured tag transitions us into the EXPR state.
-  < TAG_COLON : ":"  >: EXPR
+  // This is for {@param foo : int}.
+  // A colon in a structured tag transitions us into the TYPE_EXPR state.
+  < TAG_COLON : ":"  >: TYPE_EXPR
 | <EQ : "=">
 | <AS: "as">
 }
 
-<IN_CMD_TAG_STRUCTURED, EXPR> TOKEN: {
+<IN_CMD_TAG_STRUCTURED, TYPE_EXPR> TOKEN: {
   // This makes NAME a matchable token within structured tags and exprs (IDENT is otherwise private)
   < NAME : <IDENT> >
 | < DOT: "." >
 }
 
-// EXPR is for type expressions and (eventually) soy expressions
+// TYPE_EXPR is for type expressions
 
-<EXPR> TOKEN: {
+<TYPE_EXPR> TOKEN: {
    < LANGLE: "<" >
  | < RANGLE: ">" >
  | < LBRACKET: "[" >
@@ -780,6 +780,8 @@ TOKEN_MGR_DECLS:
  | < VBAR: "|" >
  | < QMARK: "?" >
 }
+
+// IN_CMD_TAG_UNSTRUCTURED matches arbitrary non-tag-closing strings
 
 <IN_CMD_TAG_UNSTRUCTURED> TOKEN: {
   // Allow any non-string token, or complete quoted string literals.
@@ -874,7 +876,7 @@ TOKEN_MGR_DECLS:
 // instead this will get turned into ParseExceptions which have more debugging information.
 // NOTE: this has to come after any single character token definition in these states.
 // TODO(slaks): Apply to all states.
-<DEFAULT, IN_CMD_TAG_STRUCTURED, EXPR> TOKEN : {
+<DEFAULT, IN_CMD_TAG_STRUCTURED, TYPE_EXPR> TOKEN : {
     < UNEXPECTED_TOKEN : ~[] >
 }
 
@@ -2642,7 +2644,7 @@ private DebuggerNode DebuggerStmt() :
 // handled by making our token definitions more complex, but this is generally antithetical to
 // performance.
 //
-// NOTE: all the tokens we are consuming are defined in the EXPR lexical state.
+// NOTE: all the tokens we are consuming are defined in the TYPE_EXPR lexical state.
 
 /**
  * TypeExpr -> Primary ("|" Primary)*
