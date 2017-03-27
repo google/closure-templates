@@ -99,6 +99,25 @@ final class HtmlTagEntry {
   }
 
   /**
+   * A method that should be called after we visit a control flow node ({@code IfNode} or {@code
+   * SwitchNode}).
+   *
+   * <p>Compared to {@code matchOrError} methods, this method does not report an error when one of
+   * the deques is empty. However, if both deques are not empty but the top do not match, we should
+   * report an error.
+   */
+  public static void tryMatchOrError(
+      ArrayDeque<HtmlTagEntry> openStack,
+      ArrayDeque<HtmlTagEntry> closeQueue,
+      ErrorReporter errorReporter) {
+    while (!openStack.isEmpty() && !closeQueue.isEmpty()) {
+      if (!matchOrError(openStack.pollFirst(), closeQueue.pollFirst(), errorReporter)) {
+        return;
+      }
+    }
+  }
+
+  /**
    * A helper method that matches a list of open tags and a list of close tags. We need to compare
    * the last open tag and the first close tag one by one.
    */

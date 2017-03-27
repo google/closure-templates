@@ -231,6 +231,9 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
         closeTagQueue.add(new HtmlTagEntry(closeTagBranches));
         closeTagBranches.clear();
       }
+      // At this point we should try to match openTagStack and closeTagQueue and remove anything
+      // that matches.
+      HtmlTagEntry.tryMatchOrError(openTagStack, closeTagQueue, errorReporter);
       openTagBranches.addAll(outerOpenTagBranches);
       closeTagBranches.addAll(outerCloseTagBranches);
     }
@@ -270,6 +273,9 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
         closeTagQueue.add(new HtmlTagEntry(closeTagBranches));
         closeTagBranches.clear();
       }
+      // At this point we should try to match openTagStack and closeTagQueue and remove anything
+      // that matches.
+      HtmlTagEntry.tryMatchOrError(openTagStack, closeTagQueue, errorReporter);
       openTagBranches.addAll(outerOpenTagBranches);
       closeTagBranches.addAll(outerCloseTagBranches);
     }
