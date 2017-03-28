@@ -140,6 +140,17 @@ final class ConditionalBranches {
     }
   }
 
+  /** Removes optional tags from all branches. */
+  void popOptionalTags() {
+    for (ConditionalBranch branch : branches) {
+      HtmlTagEntry entry = branch.deque().peekFirst();
+      while (entry != null && entry.isDefinitelyOptional()) {
+        entry = branch.deque().pollFirst();
+      }
+    }
+    removeEmptyDeque();
+  }
+
   boolean isEmpty() {
     removeEmptyDeque();
     return branches.isEmpty();

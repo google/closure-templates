@@ -16,9 +16,7 @@
 
 package com.google.template.soy.passes;
 
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.error.ErrorReporter;
@@ -70,13 +68,6 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
 
   private final boolean enabledStrictHtml;
   private final ErrorReporter errorReporter;
-
-  // According to https://www.w3.org/TR/html-markup/syntax.html#syntax-elements, this is a list of
-  // void tags in HTML spec.
-  private static final ImmutableSet<String> VOID_TAG_NAMES =
-      ImmutableSet.of(
-          "area", "base", "br", "col", "command", "embed", "hr", "img", "input", "keygen", "link",
-          "meta", "param", "source", "track", "wbr");
 
   StrictHtmlValidationPass(
       ImmutableList<String> experimentalFeatures, ErrorReporter errorReporter) {
@@ -178,7 +169,24 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
       }
       // Push the node into open tag stack.
       if (!node.isSelfClosing() && !isDefinitelyVoid(node)) {
-        openTagStack.push(new HtmlTagEntry(node.getTagName()));
+        openTagStack.addFirst(new HtmlTagEntry(node.getTagName()));
+      }
+    }
+
+    private void popOptionalTags(boolean popBranches) {
+      while (!openTagStack.isEmpty()) {
+        HtmlTagEntry entry = openTagStack.peekFirst();
+        if (entry.isDefinitelyOptional()) {
+          openTagStack.pollFirst();
+          continue;
+        } else if (!entry.hasTagName() && popBranches) {
+          entry.getBranches().popOptionalTags();
+          if (entry.getBranches().isEmpty()) {
+            openTagStack.pollFirst();
+            continue;
+          }
+        }
+        return;
       }
     }
 
@@ -192,15 +200,21 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
             node.getTagName().getStaticTagName().getRawText());
         return;
       }
+      TagName closeTag = node.getTagName();
+      // If close tag is not optional, we pop all optional tags from the open tag stack.
+      // Notably here we should NOT pop optional tags from the branches. Only pop optional tags in
+      // the same block.
+      if (!closeTag.isDefinitelyOptional()) {
+        popOptionalTags(false);
+      }
       // Check if we can find a matching open tag within the current block.
-      if (!openTagStack.isEmpty() && openTagStack.peek().hasTagName()) {
-        TagName openTag = openTagStack.pop().getTagName();
-        TagName closeTag = node.getTagName();
+      if (!openTagStack.isEmpty() && openTagStack.peekFirst().hasTagName()) {
+        TagName openTag = openTagStack.pollFirst().getTagName();
         HtmlTagEntry.matchOrError(openTag, closeTag, errorReporter);
       } else {
         // If we cannot find a matching open tag in current block, put the current tag into
         // closeTagQueue and compare everything after we visit the entire template node.
-        closeTagQueue.add(new HtmlTagEntry(node.getTagName()));
+        closeTagQueue.addLast(new HtmlTagEntry(closeTag));
       }
     }
 
@@ -224,11 +238,11 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
       closeTagBranches.clear();
       visitChildren(node);
       if (!openTagBranches.isEmpty()) {
-        openTagStack.push(new HtmlTagEntry(openTagBranches));
+        openTagStack.addFirst(new HtmlTagEntry(openTagBranches));
         openTagBranches.clear();
       }
       if (!closeTagBranches.isEmpty()) {
-        closeTagQueue.add(new HtmlTagEntry(closeTagBranches));
+        closeTagQueue.addLast(new HtmlTagEntry(closeTagBranches));
         closeTagBranches.clear();
       }
       // At this point we should try to match openTagStack and closeTagQueue and remove anything
@@ -266,11 +280,11 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
       closeTagBranches.clear();
       visitChildren(node);
       if (!openTagBranches.isEmpty()) {
-        openTagStack.push(new HtmlTagEntry(openTagBranches));
+        openTagStack.addFirst(new HtmlTagEntry(openTagBranches));
         openTagBranches.clear();
       }
       if (!closeTagBranches.isEmpty()) {
-        closeTagQueue.add(new HtmlTagEntry(closeTagBranches));
+        closeTagQueue.addLast(new HtmlTagEntry(closeTagBranches));
         closeTagBranches.clear();
       }
       // At this point we should try to match openTagStack and closeTagQueue and remove anything
@@ -301,6 +315,21 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
       currentCondition = outerCondition.copy();
     }
 
+    private void removeEmptyEntries() {
+      if (!openTagStack.isEmpty()) {
+        HtmlTagEntry entry = openTagStack.peekFirst();
+        while (entry != null && !entry.hasTagName() && entry.getBranches().isEmpty()) {
+          entry = openTagStack.pollFirst();
+        }
+      }
+      if (!closeTagQueue.isEmpty()) {
+        HtmlTagEntry entry = closeTagQueue.peekFirst();
+        while (entry != null && !entry.hasTagName() && entry.getBranches().isEmpty()) {
+          entry = closeTagQueue.pollFirst();
+        }
+      }
+    }
+
     /**
      * A help method that checks openTagStack and closeTagQueue. It recursively compare the top of
      * the stack and the front of the queue. Since it is recursive, we only report the "first" error
@@ -308,25 +337,43 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
      */
     private void matchTagsInDeques() {
       while (!openTagStack.isEmpty() && !closeTagQueue.isEmpty()) {
-        HtmlTagEntry openTag = openTagStack.pop();
-        if (!openTag.hasTagName() && openTag.getBranches().isEmpty()) {
-          continue;
+        HtmlTagEntry openTag = openTagStack.peekFirst();
+        HtmlTagEntry closeTag = closeTagQueue.peekFirst();
+        // For an optional close tag, try to match it with the top of stack.
+        // If matches, remove the close tag from the queue and continue.
+        // Otherwise, report an error.
+        if (closeTag != null && closeTag.isDefinitelyOptional()) {
+          if (openTag != null
+              && openTag.isDefinitelyOptional()
+              && openTag.getTagName().equals(closeTag.getTagName())) {
+            openTagStack.pollFirst();
+            closeTagQueue.pollFirst();
+            continue;
+          } else {
+            errorReporter.report(closeTag.getSourceLocation(), UNEXPECTED_CLOSE_TAG);
+            return;
+          }
+        } else if (closeTag.hasTagName()) {
+          // Pop optional tags from open stack if the current close tag is not an optional tag.
+          popOptionalTags(true);
         }
-        HtmlTagEntry closeTag = closeTagQueue.poll();
+        openTag = openTagStack.pollFirst();
+        closeTag = closeTagQueue.pollFirst();
         if (!HtmlTagEntry.matchOrError(openTag, closeTag, errorReporter)) {
           return;
         }
       }
+      removeEmptyEntries();
       // checks if both deques are empty at the end. If any of them is not empty,
       // report an error accordingly.
       if (openTagStack.isEmpty() && closeTagQueue.isEmpty()) {
         return;
       }
       if (openTagStack.isEmpty()) {
-        HtmlTagEntry entry = closeTagQueue.poll();
+        HtmlTagEntry entry = closeTagQueue.pollFirst();
         errorReporter.report(entry.getSourceLocation(), UNEXPECTED_CLOSE_TAG);
       } else {
-        HtmlTagEntry entry = openTagStack.pop();
+        HtmlTagEntry entry = openTagStack.pollFirst();
         errorReporter.report(entry.getSourceLocation(), OPEN_TAG_NOT_CLOSED);
       }
     }
@@ -345,15 +392,11 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
     }
 
     private static boolean isDefinitelyVoid(HtmlOpenTagNode node) {
-      return isDefinitelyVoid(node.getTagName().getStaticTagNameAsLowerCase());
+      return node.getTagName().isDefinitelyVoid();
     }
 
     private static boolean isDefinitelyVoid(HtmlCloseTagNode node) {
-      return isDefinitelyVoid(node.getTagName().getStaticTagNameAsLowerCase());
-    }
-
-    private static boolean isDefinitelyVoid(Optional<String> staticTagName) {
-      return VOID_TAG_NAMES.contains(staticTagName.orNull());
+      return node.getTagName().isDefinitelyVoid();
     }
 
     @Override

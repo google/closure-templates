@@ -46,7 +46,7 @@ final class HtmlTagEntry {
   private static final SoyErrorKind UNEXPECTED_CLOSE_TAG =
       SoyErrorKind.of("Unexpected HTML close tag.");
   private static final SoyErrorKind UNEXPECTED_CLOSE_TAG_WITH_EXPECTATION =
-      SoyErrorKind.of("Unexpected HTML close tag. Expected: ''{0}''.");
+      SoyErrorKind.of("Unexpected HTML close tag. Expected: ''</{0}>''.");
   private static final SoyErrorKind OPEN_TAG_NOT_CLOSED =
       SoyErrorKind.of("Expected tag to be closed.");
   // TODO(user): Improve this error message.
@@ -93,6 +93,10 @@ final class HtmlTagEntry {
     return SourceLocation.UNKNOWN;
   }
 
+  boolean isDefinitelyOptional() {
+    return hasTagName() && tagName.isDefinitelyOptional();
+  }
+
   @Override
   public String toString() {
     return hasTagName() ? tagName.toString() : branches.toString();
@@ -126,7 +130,14 @@ final class HtmlTagEntry {
       ArrayDeque<HtmlTagEntry> closeQueue,
       ErrorReporter errorReporter) {
     while (!openStack.isEmpty() && !closeQueue.isEmpty()) {
-      if (!matchOrError(openStack.pop(), closeQueue.poll(), errorReporter)) {
+      // If close tag is not optional tag, but open tag is optional tag, pop the open tag and
+      // continue.
+      if (!closeQueue.peekFirst().isDefinitelyOptional()
+          && openStack.peekFirst().isDefinitelyOptional()) {
+        openStack.pollFirst();
+        continue;
+      }
+      if (!matchOrError(openStack.pollFirst(), closeQueue.pollFirst(), errorReporter)) {
         return false;
       }
     }
@@ -170,7 +181,20 @@ final class HtmlTagEntry {
 
   /** A helper method that compare two {@code HtmlTagEntry}s. */
   public static boolean matchOrError(
-      HtmlTagEntry openTag, HtmlTagEntry closeTag, ErrorReporter errorReporter) {
+      @Nullable HtmlTagEntry openTag,
+      @Nullable HtmlTagEntry closeTag,
+      ErrorReporter errorReporter) {
+    if (openTag == null && closeTag == null) {
+      return true;
+    }
+    if (openTag == null && closeTag != null) {
+      errorReporter.report(closeTag.getSourceLocation(), UNEXPECTED_CLOSE_TAG);
+      return false;
+    }
+    if (openTag != null && closeTag == null) {
+      errorReporter.report(openTag.getSourceLocation(), OPEN_TAG_NOT_CLOSED);
+      return false;
+    }
     if (openTag.hasTagName() != closeTag.hasTagName()) {
       boolean matchCommonPrefix = false;
       // Try to match common prefixes if possible.
@@ -179,9 +203,6 @@ final class HtmlTagEntry {
         if (closeTag.getBranches().hasCommonPrefix(openTagName)) {
           closeTag.getBranches().popAllBranches();
           matchCommonPrefix = true;
-          // TODO(user): In this case, it is still possible that these remaining elements can
-          // be matched by another condition flow later in the template. However, is it really
-          // worthy to support this use case?
           if (!closeTag.getBranches().isEmpty()) {
             matchCommonPrefix = false;
             errorReporter.report(
@@ -197,9 +218,6 @@ final class HtmlTagEntry {
         if (openTag.getBranches().hasCommonPrefix(closeTagName)) {
           openTag.getBranches().popAllBranches();
           matchCommonPrefix = true;
-          // TODO(user): In this case, it is still possible that these remaining elements can
-          // be matched by another condition flow later in the template. However, is it really
-          // worthy to support this use case?
           if (!openTag.getBranches().isEmpty()) {
             matchCommonPrefix = false;
             errorReporter.report(openTag.getSourceLocation(), OPEN_TAG_NOT_CLOSED);
@@ -234,13 +252,16 @@ final class HtmlTagEntry {
         }
         ArrayDeque<HtmlTagEntry> openStack = openBranch.deque();
         ArrayDeque<HtmlTagEntry> closeQueue = closeBranch.deque();
-        if (openStack.size() != closeQueue.size()) {
-          errorReporter.report(location, MISMATCH_TAG);
-          return false;
-        }
         while (!openStack.isEmpty() && !closeQueue.isEmpty()) {
+          // If close tag is not optional tag, but open tag is optional tag, pop the open tag and
+          // continue.
+          if (!closeQueue.peekFirst().isDefinitelyOptional()
+              && openStack.peekFirst().isDefinitelyOptional()) {
+            openStack.pollFirst();
+            continue;
+          }
           // Recursively compare
-          if (!matchOrError(openStack.pop(), closeQueue.poll(), errorReporter)) {
+          if (!matchOrError(openStack.pollFirst(), closeQueue.pollFirst(), errorReporter)) {
             // We have already report an error recursively, so do not need to report again here.
             return false;
           }

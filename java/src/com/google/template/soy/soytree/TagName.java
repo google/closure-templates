@@ -21,6 +21,7 @@ import static com.google.common.base.Preconditions.checkState;
 
 import com.google.common.base.Ascii;
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import java.util.List;
@@ -58,6 +59,18 @@ public final class TagName {
     }
   }
 
+  // According to https://www.w3.org/TR/html-markup/syntax.html#syntax-elements, this is a list of
+  // void tags in HTML spec.
+  private static final ImmutableSet<String> VOID_TAG_NAMES =
+      ImmutableSet.of(
+          "area", "base", "br", "col", "command", "embed", "hr", "img", "input", "keygen", "link",
+          "meta", "param", "source", "track", "wbr");
+
+  // According to https://www.w3.org/TR/html5/syntax.html#optional-tags, this is a list of tags
+  // that can potentially omit the end tags.
+  // TODO(b/34516452): Add more tags.
+  private static final ImmutableSet<String> OPTIONAL_TAG_NAMES = ImmutableSet.of("li");
+
   private final StandaloneNode node;
   @Nullable private final String nameAsLowerCase;
   @Nullable private final SpecialTagName specialTagName;
@@ -92,6 +105,14 @@ public final class TagName {
 
   public boolean isStatic() {
     return node instanceof RawTextNode;
+  }
+
+  public boolean isDefinitelyVoid() {
+    return VOID_TAG_NAMES.contains(nameAsLowerCase);
+  }
+
+  public boolean isDefinitelyOptional() {
+    return OPTIONAL_TAG_NAMES.contains(nameAsLowerCase);
   }
 
   @Nullable
@@ -161,7 +182,7 @@ public final class TagName {
     }
     return true;
   }
-  
+
   private static int hashPrintNode(PrintNode node) {
     ExprUnionEquivalence exprUnionEquivalence = ExprUnionEquivalence.get();
     int hc = exprUnionEquivalence.hash(node.getExprUnion());
