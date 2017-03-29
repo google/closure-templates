@@ -17,6 +17,7 @@
 package com.google.template.soy.passes;
 
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.error.ErrorReporter;
@@ -65,6 +66,9 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
       SoyErrorKind.of("''{0}'' tag is not allowed to be self-closing.");
   private static final SoyErrorKind INVALID_CLOSE_TAG =
       SoyErrorKind.of("''{0}'' tag is a void element and must not specify a close tag.");
+  private static final SoyErrorKind SWITCH_HTML_MODE_IN_BLOCK =
+      SoyErrorKind.of("Foreign elements (svg) must be opened and closed within the same block.");
+  private static final SoyErrorKind NESTED_SVG = SoyErrorKind.of("Nested SVG tags are disallowed.");
 
   private final boolean enabledStrictHtml;
   private final ErrorReporter errorReporter;
@@ -146,6 +150,16 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
      */
     private final ArrayDeque<HtmlTagEntry> closeTagQueue = new ArrayDeque<>();
 
+    /**
+     * A boolean indicates that the current snippet is in a foreign content (in particular, svg). If
+     * this is true, we treat later tags as xml tags (that can be either self-closing or explicitly
+     * closed) until we leave foreign content.
+     */
+    private boolean inForeignContent = false;
+
+    private SourceLocation foreignContentStartLocation = SourceLocation.UNKNOWN;
+    private SourceLocation foreignContentEndLocation = SourceLocation.UNKNOWN;
+
     private final ErrorReporter errorReporter;
 
     HtmlTagVisitor(ErrorReporter errorReporter) {
@@ -154,22 +168,32 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
 
     @Override
     protected void visitHtmlOpenTagNode(HtmlOpenTagNode node) {
+      TagName openTag = node.getTagName();
+      // Switch to xml mode if we reach a <svg> tag.
+      if (openTag.isForeignContent()) {
+        if (inForeignContent) {
+          errorReporter.report(node.getSourceLocation(), NESTED_SVG);
+        }
+        inForeignContent = true;
+        foreignContentStartLocation = node.getSourceLocation();
+      }
       // For static tag, check if it is a valid self-closing tag.
-      if (node.getTagName().isStatic()) {
+      if (openTag.isStatic()) {
         // Report errors for non-void tags that are self-closing.
         // For void tags, we don't care if they are self-closing or not. But when we visit
         // a HtmlCloseTagNode we will throw an error if it is a void tag.
-        if (!isDefinitelyVoid(node) && node.isSelfClosing()) {
+        // Ignore this check if we are currently in a foreign content (svg).
+        if (!inForeignContent && !isDefinitelyVoid(node) && node.isSelfClosing()) {
           errorReporter.report(
               node.getSourceLocation(),
               INVALID_SELF_CLOSING_TAG,
-              node.getTagName().getStaticTagName().getRawText());
+              openTag.getStaticTagName().getRawText());
           return;
         }
       }
       // Push the node into open tag stack.
       if (!node.isSelfClosing() && !isDefinitelyVoid(node)) {
-        openTagStack.addFirst(new HtmlTagEntry(node.getTagName()));
+        openTagStack.addFirst(new HtmlTagEntry(openTag));
       }
     }
 
@@ -192,15 +216,18 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
 
     @Override
     protected void visitHtmlCloseTagNode(HtmlCloseTagNode node) {
+      TagName closeTag = node.getTagName();
       // Report an error if this node is a void tag. Void tag should never be closed.
       if (isDefinitelyVoid(node)) {
         errorReporter.report(
-            node.getSourceLocation(),
-            INVALID_CLOSE_TAG,
-            node.getTagName().getStaticTagName().getRawText());
+            node.getSourceLocation(), INVALID_CLOSE_TAG, closeTag.getStaticTagName().getRawText());
         return;
       }
-      TagName closeTag = node.getTagName();
+      // Switch back to html mode if we leave a svg tag.
+      if (closeTag.isForeignContent()) {
+        foreignContentEndLocation = node.getSourceLocation();
+        inForeignContent = false;
+      }
       // If close tag is not optional, we pop all optional tags from the open tag stack.
       // Notably here we should NOT pop optional tags from the branches. Only pop optional tags in
       // the same block.
@@ -423,6 +450,7 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
       outerCloseTagQueue.addAll(closeTagQueue);
       openTagStack.clear();
       closeTagQueue.clear();
+      boolean inForeignContentBeforeBlock = inForeignContent;
       visitChildren(node);
       // After we visit all children, we check if deques are empty or not.
       if (inControlBlock) {
@@ -444,6 +472,15 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
       // Restore the deques.
       openTagStack.addAll(outerOpenTagStack);
       closeTagQueue.addAll(outerCloseTagQueue);
+      // If inForeignContent has been changed after visiting a block, it means there is a svg tag
+      // that has not been closed.
+      if (inForeignContent != inForeignContentBeforeBlock) {
+        errorReporter.report(
+            inForeignContent ? foreignContentStartLocation : foreignContentEndLocation,
+            SWITCH_HTML_MODE_IN_BLOCK);
+      }
+      // Switch back to the original html mode.
+      inForeignContent = inForeignContentBeforeBlock;
     }
   }
 }

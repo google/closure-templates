@@ -136,6 +136,10 @@ public final class TagName {
     return OPTIONAL_TAG_NAMES.contains(nameAsLowerCase);
   }
 
+  public boolean isForeignContent() {
+    return "svg".equals(nameAsLowerCase);
+  }
+
   @Nullable
   public RcDataTagName getRcDataTagName() {
     return rcDataTagName;
