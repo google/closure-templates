@@ -18,10 +18,11 @@ package com.google.template.soy.soytree;
 
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 
 /** An Html attributed value with optional surrounding quotation marks. */
-public final class HtmlAttributeValueNode extends AbstractParentSoyNode<SoyNode.StandaloneNode>
-    implements SoyNode.StandaloneNode, SoyNode.BlockNode {
+public final class HtmlAttributeValueNode extends AbstractParentSoyNode<StandaloneNode>
+    implements StandaloneNode {
 
   /** The quotation mark style. */
   public enum Quotes {
@@ -75,8 +76,9 @@ public final class HtmlAttributeValueNode extends AbstractParentSoyNode<SoyNode.
     return sb.toString();
   }
 
+  @SuppressWarnings("unchecked")
   @Override
-  public BlockNode getParent() {
-    return (BlockNode) super.getParent();
+  public ParentSoyNode<StandaloneNode> getParent() {
+    return (ParentSoyNode<StandaloneNode>) super.getParent();
   }
 }

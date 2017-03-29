@@ -66,6 +66,7 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.Kind;
+import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.SwitchCaseNode;
@@ -1682,13 +1683,13 @@ public final class HtmlRewritePass extends CompilerFilePass {
     final Set<StandaloneNode> toRemove = new LinkedHashSet<>();
     final ListMultimap<StandaloneNode, StandaloneNode> replacements =
         MultimapBuilder.linkedHashKeys().arrayListValues().build();
-    final ListMultimap<BlockNode, StandaloneNode> newChildren =
+    final ListMultimap<ParentSoyNode<StandaloneNode>, StandaloneNode> newChildren =
         MultimapBuilder.linkedHashKeys().arrayListValues().build();
 
     /** Apply all edits. */
     void apply() {
       for (StandaloneNode nodeToRemove : toRemove) {
-        BlockNode parent = nodeToRemove.getParent();
+        ParentSoyNode<StandaloneNode> parent = nodeToRemove.getParent();
         int index = parent.getChildIndex(nodeToRemove);
         // NOTE:  we need to remove the child before adding the new children  to handle the case
         // where we are doing a no-op replacement or the replacement nodes contains nodeToRemove.
@@ -1699,7 +1700,8 @@ public final class HtmlRewritePass extends CompilerFilePass {
           parent.addChildren(index, children);
         }
       }
-      for (Map.Entry<BlockNode, List<StandaloneNode>> entry : asMap(newChildren).entrySet()) {
+      for (Map.Entry<ParentSoyNode<StandaloneNode>, List<StandaloneNode>> entry :
+          asMap(newChildren).entrySet()) {
         entry.getKey().addChildren(entry.getValue());
       }
       clear();
@@ -1716,13 +1718,13 @@ public final class HtmlRewritePass extends CompilerFilePass {
     }
 
     /** Add children to the given parent. */
-    void addChildren(BlockNode parent, Iterable<StandaloneNode> children) {
+    void addChildren(ParentSoyNode<StandaloneNode> parent, Iterable<StandaloneNode> children) {
       checkNotNull(parent);
       newChildren.putAll(parent, children);
     }
 
     /** Adds the child to the given parent. */
-    void addChild(BlockNode parent, StandaloneNode child) {
+    void addChild(ParentSoyNode<StandaloneNode> parent, StandaloneNode child) {
       checkNotNull(parent);
       checkNotNull(child);
       newChildren.put(parent, child);
@@ -1999,6 +2001,7 @@ public final class HtmlRewritePass extends CompilerFilePass {
     /** Sets the tag name of the tag currently being built. */
     void setTagName(TagName tagName) {
       this.tagName = checkNotNull(tagName);
+      edits.remove(tagName.getNode());
       setState(State.AFTER_TAG_NAME_OR_ATTRIBUTE, tagName.getTagLocation().getEndPoint());
     }
 
@@ -2113,7 +2116,7 @@ public final class HtmlRewritePass extends CompilerFilePass {
      */
     State createTag(RawTextNode tagEndNode, boolean selfClosing, SourceLocation.Point endPoint) {
       maybeFinishPendingAttribute(endPoint);
-      BlockNode replacement;
+      ParentSoyNode<StandaloneNode> replacement;
       SourceLocation sourceLocation = new SourceLocation(filePath, tagStartPoint, endPoint);
       if (isCloseTag) {
         // TODO(lukes): move the error reporting into the caller?
@@ -2153,8 +2156,9 @@ public final class HtmlRewritePass extends CompilerFilePass {
         }
       }
       edits.remove(tagEndNode);
+      edits.addChild(replacement, tagName.getNode());
       edits.addChildren(replacement, directTagChildren);
-      // cast is safe because Html(Open|Close)TagNode implement BlockNode and StandaloneNode
+      // cast is safe because Html(Open|Close)TagNode implement StandaloneNode
       edits.replace(tagStartNode, (StandaloneNode) replacement);
       directTagChildren.clear();
       tagStartPoint = null;

@@ -154,9 +154,10 @@ public abstract class LetNode extends AbstractCommandNode
     return getVarName() + "__soy" + getId();
   }
 
+  @SuppressWarnings("unchecked")
   @Override
-  public BlockNode getParent() {
-    return (BlockNode) super.getParent();
+  public ParentSoyNode<StandaloneNode> getParent() {
+    return (ParentSoyNode<StandaloneNode>) super.getParent();
   }
 
   /** Get the local variable defined by this node. */

@@ -29,17 +29,16 @@ public final class HtmlCloseTagNodeTest {
 
   @Test
   public void testToSourceString() {
-    HtmlCloseTagNode closeTag =
-        new HtmlCloseTagNode(
-            1,
-            new TagName(new RawTextNode(0, "div", SourceLocation.UNKNOWN)),
-            SourceLocation.UNKNOWN);
+    RawTextNode node = new RawTextNode(0, "div", SourceLocation.UNKNOWN);
+    HtmlCloseTagNode closeTag = new HtmlCloseTagNode(1, new TagName(node), SourceLocation.UNKNOWN);
+    closeTag.addChild(node);
     assertThat(closeTag.toSourceString()).isEqualTo("</div>");
     PrintNode dynamicTagName =
         new PrintNode.Builder(2, true, SourceLocation.UNKNOWN)
             .exprText("$tag")
             .build(SoyParsingContext.exploding());
     closeTag = new HtmlCloseTagNode(1, new TagName(dynamicTagName), SourceLocation.UNKNOWN);
+    closeTag.addChild(dynamicTagName);
     assertThat(closeTag.toSourceString()).isEqualTo("</{$tag}>");
   }
 }

@@ -46,9 +46,10 @@ public final class DebuggerNode extends AbstractCommandNode
     return Kind.DEBUGGER_NODE;
   }
 
+  @SuppressWarnings("unchecked")
   @Override
-  public BlockNode getParent() {
-    return (BlockNode) super.getParent();
+  public ParentSoyNode<StandaloneNode> getParent() {
+    return (ParentSoyNode<StandaloneNode>) super.getParent();
   }
 
   @Override

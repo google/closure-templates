@@ -217,10 +217,12 @@ public final class RawTextNode extends AbstractSoyNode implements StandaloneNode
     return sb.toString();
   }
 
+  @SuppressWarnings("unchecked")
   @Override
-  public BlockNode getParent() {
-    return (BlockNode) super.getParent();
+  public ParentSoyNode<StandaloneNode> getParent() {
+    return (ParentSoyNode<StandaloneNode>) super.getParent();
   }
+
 
   @Override
   public RawTextNode copy(CopyState copyState) {

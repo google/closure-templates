@@ -20,6 +20,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.soytree.AbstractSoyNode;
 import com.google.template.soy.soytree.SoyNode;
+import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 
 /** A Node representing the closing tag of an HTML Element. */
@@ -56,9 +57,10 @@ public final class IncrementalHtmlCloseTagNode extends AbstractSoyNode implement
     return "</" + tagName + ">";
   }
 
+  @SuppressWarnings("unchecked")
   @Override
-  public BlockNode getParent() {
-    return (BlockNode) super.getParent();
+  public ParentSoyNode<StandaloneNode> getParent() {
+    return (ParentSoyNode<StandaloneNode>) super.getParent();
   }
 
   @Override

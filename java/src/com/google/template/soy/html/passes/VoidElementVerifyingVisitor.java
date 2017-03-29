@@ -23,7 +23,6 @@ import com.google.template.soy.html.HtmlDefinitions;
 import com.google.template.soy.html.IncrementalHtmlCloseTagNode;
 import com.google.template.soy.html.IncrementalHtmlOpenTagNode;
 import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 
@@ -55,7 +54,7 @@ public final class VoidElementVerifyingVisitor extends AbstractHtmlSoyNodeVisito
       return;
     }
 
-    BlockNode parent = node.getParent();
+    ParentSoyNode<StandaloneNode> parent = node.getParent();
     int previousIndex = parent.getChildIndex(node) - 1;
 
     // The close tag is the first node in its parent. In theory, the template could still be valid

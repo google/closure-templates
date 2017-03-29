@@ -239,9 +239,10 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
     return this;
   }
 
+  @SuppressWarnings("unchecked")
   @Override
-  public BlockNode getParent() {
-    return (BlockNode) super.getParent();
+  public ParentSoyNode<StandaloneNode> getParent() {
+    return (ParentSoyNode<StandaloneNode>) super.getParent();
   }
 
   /**

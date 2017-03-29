@@ -30,9 +30,9 @@ import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import javax.inject.Inject;
 
 /**
@@ -107,7 +107,7 @@ public class OptimizeBidiCodeGenVisitor extends AbstractSoyNodeVisitor<Void> {
       return;
     }
 
-    BlockNode parent = node.getParent();
+    ParentSoyNode<StandaloneNode> parent = node.getParent();
     if (parent instanceof MsgBlockNode) {
       return; // don't replace this node
     }

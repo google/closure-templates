@@ -176,7 +176,7 @@ public interface SoyNode extends Node {
   interface StandaloneNode extends SoyNode {
 
     @Override
-    BlockNode getParent();
+    ParentSoyNode<StandaloneNode> getParent();
   }
 
 

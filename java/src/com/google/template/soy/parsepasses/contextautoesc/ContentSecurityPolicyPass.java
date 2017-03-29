@@ -37,6 +37,8 @@ import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
+import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.defn.InjectedParam;
 import com.google.template.soy.types.primitive.StringType;
 import java.util.List;
@@ -390,7 +392,7 @@ public final class ContentSecurityPolicyPass {
       ImmutableListMultimap<RawTextNode, InjectedSoyGenerator> groupedInjectedAttrs) {
     for (RawTextNode rawTextNode : groupedInjectedAttrs.keySet()) {
       String rawText = rawTextNode.getRawText();
-      SoyNode.BlockNode parent = rawTextNode.getParent();
+      ParentSoyNode<StandaloneNode> parent = rawTextNode.getParent();
       IdGenerator idGenerator =
           parent.getNearestAncestor(SoyFileSetNode.class).getNodeIdGenerator();
 

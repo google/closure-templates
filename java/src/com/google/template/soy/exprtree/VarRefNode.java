@@ -130,6 +130,9 @@ public final class VarRefNode extends AbstractExprNode {
    * unknown, then it returns true.
    */
   public Boolean isPossibleParam() {
+    if (defn == null) {
+      throw new NullPointerException(getSourceLocation().toString());
+    }
     return defn.kind() == VarDefn.Kind.PARAM || defn.kind() == VarDefn.Kind.UNDECLARED;
   }
 

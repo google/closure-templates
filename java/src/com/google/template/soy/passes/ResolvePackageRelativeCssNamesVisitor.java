@@ -23,8 +23,8 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CssNode;
 import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.TemplateNode;
 
 /** Converts package-relative CSS class names to absolute names. */
@@ -82,7 +82,7 @@ final class ResolvePackageRelativeCssNamesVisitor extends AbstractSoyNodeVisitor
     }
 
     // Remove this CssNode. Save the index because we'll need it for inserting the new nodes.
-    BlockNode parent = node.getParent();
+    ParentSoyNode<StandaloneNode> parent = node.getParent();
     int indexInParent = parent.getChildIndex(node);
     parent.removeChild(indexInParent);
 

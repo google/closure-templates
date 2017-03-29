@@ -70,9 +70,6 @@ public final class PassManager {
             .add(new RewriteRemaindersPass())
             .add(new HtmlRewritePass(options.getExperimentalFeatures(), errorReporter))
             .add(new StrictHtmlValidationPass(options.getExperimentalFeatures(), errorReporter))
-            // TODO(lukes): run this very early for now, as support increases this should get moved
-            // later and later in the compiler
-            .add(new DesugarHtmlNodesPass())
             .add(new RewriteGlobalsPass(registry, options.getCompileTimeGlobals(), errorReporter))
             .add(new RewriteFunctionsPass(registry))
             .add(new SetFullCalleeNamesPass())
@@ -101,6 +98,8 @@ public final class PassManager {
       singleFilePassesBuilder.add(new EnforceStrictAutoescapingPass());
     }
 
+    // TODO(lukes): move this to run after autoescaping.
+    singleFilePassesBuilder.add(new DesugarHtmlNodesPass());
     this.singleFilePasses = singleFilePassesBuilder.build();
     // Fileset passes run on the whole tree and should be reserved for checks that need transitive
     // call information (or full delegate sets).

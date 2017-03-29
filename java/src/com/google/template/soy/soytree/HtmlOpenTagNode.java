@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 
 /**
  * An HtmlOpenTagNode represents an opening html tag.
@@ -28,11 +29,10 @@ import com.google.template.soy.basetree.CopyState;
  *
  * <p>The first child is guaranteed to be the tag name, any after that are guaranteed to be in
  * attribute context. There is always at least one child.
- *
- * <p>TODO(lukes): Change the parser to remove leading/trailing whitepace from children
  */
-public final class HtmlOpenTagNode extends AbstractParentSoyNode<SoyNode.StandaloneNode>
-    implements SoyNode.StandaloneNode, SoyNode.BlockNode {
+public final class HtmlOpenTagNode extends AbstractParentSoyNode<StandaloneNode>
+    implements StandaloneNode {
+
   /**
    * Whether or not the node is a self closing tag because it ends with {@code />} instead of {@code
    * >}.
@@ -75,17 +75,22 @@ public final class HtmlOpenTagNode extends AbstractParentSoyNode<SoyNode.Standal
     return new HtmlOpenTagNode(this, copyState);
   }
 
+  @SuppressWarnings("unchecked")
   @Override
-  public BlockNode getParent() {
-    return (BlockNode) super.getParent();
+  public ParentSoyNode<StandaloneNode> getParent() {
+    return (ParentSoyNode<StandaloneNode>) super.getParent();
   }
 
   @Override
   public String toSourceString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("<").append(getTagName());
-    for (StandaloneNode child : getChildren()) {
-      sb.append(" ").append(child.toSourceString());
+    sb.append('<');
+    for (int i = 0; i < numChildren(); i++) {
+      StandaloneNode child = getChild(i);
+      if (i != 0) {
+        sb.append(' ');
+      }
+      sb.append(child.toSourceString());
     }
     sb.append(selfClosing ? "/>" : ">");
     return sb.toString();

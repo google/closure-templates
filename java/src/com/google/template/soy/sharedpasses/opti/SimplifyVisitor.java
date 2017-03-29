@@ -111,7 +111,7 @@ public final class SimplifyVisitor {
         return;
       }
 
-      BlockNode parent = node.getParent();
+      ParentSoyNode<StandaloneNode> parent = node.getParent();
       if (parent instanceof MsgBlockNode) {
         return; // don't prerender
       }
@@ -376,7 +376,7 @@ public final class SimplifyVisitor {
   private static void replaceNodeWithList(
       StandaloneNode origNode, List<? extends StandaloneNode> replacementNodes) {
 
-    BlockNode parent = origNode.getParent();
+    ParentSoyNode<StandaloneNode> parent = origNode.getParent();
     int indexInParent = parent.getChildIndex(origNode);
     parent.removeChild(indexInParent);
     parent.addChildren(indexInParent, replacementNodes);

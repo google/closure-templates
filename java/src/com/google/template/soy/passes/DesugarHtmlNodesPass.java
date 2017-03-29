@@ -87,7 +87,6 @@ final class DesugarHtmlNodesPass extends CompilerFilePass {
       needsSpaceForAttribute = false;
 
       replacements.add(createPrefix("</", node));
-      replacements.add(node.getTagName().getNode());
       replacements.addAll(node.getChildren());
       replacements.add(createSuffix(">", node));
     }
@@ -99,7 +98,6 @@ final class DesugarHtmlNodesPass extends CompilerFilePass {
       needsSpaceForAttribute = false;
 
       replacements.add(createPrefix("<", node));
-      replacements.add(node.getTagName().getNode());
       replacements.addAll(node.getChildren());
       replacements.add(createSuffix(node.isSelfClosing() ? "/>" : ">", node));
     }
@@ -230,20 +228,24 @@ final class DesugarHtmlNodesPass extends CompilerFilePass {
 
     @Override
     protected void visitChildren(ParentSoyNode<?> node) {
-      if (node instanceof BlockNode) {
-        BlockNode blockNode = (BlockNode) node;
-        List<? extends SoyNode> children = node.getChildren();
-        for (int i = 0; i < children.size(); i++) {
-          visit(children.get(i));
-          if (!replacements.isEmpty()) {
-            blockNode.removeChild(i);
-            blockNode.addChildren(i, replacements);
-            i += replacements.size() - 1;
-            replacements.clear();
-          }
+      doVisitChildren(node);
+    }
+
+    // extracted as a helper method to capture the type variable
+    private <C extends SoyNode> void doVisitChildren(ParentSoyNode<C> parent) {
+      for (int i = 0; i < parent.numChildren(); i++) {
+        C child = parent.getChild(i);
+        visit(child);
+        if (!replacements.isEmpty()) {
+          parent.removeChild(i);
+          // safe because every replacement always replaces a standalone node with other standalone
+          // nodes.
+          @SuppressWarnings("unchecked")
+          List<? extends C> typedReplacements = (List<? extends C>) replacements;
+          parent.addChildren(i, typedReplacements);
+          i += replacements.size() - 1;
+          replacements.clear();
         }
-      } else {
-        super.visitChildren(node);
       }
       checkState(replacements.isEmpty());
     }

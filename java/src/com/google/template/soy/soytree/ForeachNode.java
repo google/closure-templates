@@ -86,9 +86,10 @@ public final class ForeachNode extends AbstractParentCommandNode<BlockNode>
     return ImmutableList.of(new ExprUnion(expr));
   }
 
+  @SuppressWarnings("unchecked")
   @Override
-  public BlockNode getParent() {
-    return (BlockNode) super.getParent();
+  public ParentSoyNode<StandaloneNode> getParent() {
+    return (ParentSoyNode<StandaloneNode>) super.getParent();
   }
 
   @Override

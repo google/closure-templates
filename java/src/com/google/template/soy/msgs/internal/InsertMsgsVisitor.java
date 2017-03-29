@@ -35,7 +35,6 @@ import com.google.template.soy.soytree.MsgSelectNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import java.util.List;
@@ -128,7 +127,7 @@ public final class InsertMsgsVisitor extends AbstractSoyNodeVisitor<Void> {
     }
 
     // Replace this MsgFallbackGroupNode with the replacement nodes.
-    BlockNode parent = node.getParent();
+    ParentSoyNode<StandaloneNode> parent = node.getParent();
     int indexInParent = parent.getChildIndex(node);
     parent.removeChild(indexInParent);
     parent.addChildren(indexInParent, currReplacementNodes);

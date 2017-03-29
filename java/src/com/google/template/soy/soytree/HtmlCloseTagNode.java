@@ -26,12 +26,9 @@ import com.google.template.soy.soytree.SoyNode.StandaloneNode;
  * An HtmlCloseTagNode represents a closing html tag.
  *
  * <p>For example, <code> </{$tag}> </code>.
- *
- * <p>TODO(lukes): change the grammar to ensure there is only a single child and it is guaranteed to
- * be the tag name.
  */
-public final class HtmlCloseTagNode extends AbstractParentSoyNode<SoyNode.StandaloneNode>
-    implements SoyNode.StandaloneNode, SoyNode.BlockNode {
+public final class HtmlCloseTagNode extends AbstractParentSoyNode<StandaloneNode>
+    implements StandaloneNode {
 
   private final TagName tagName;
 
@@ -54,9 +51,10 @@ public final class HtmlCloseTagNode extends AbstractParentSoyNode<SoyNode.Standa
     return tagName;
   }
 
+  @SuppressWarnings("unchecked")
   @Override
-  public BlockNode getParent() {
-    return (BlockNode) super.getParent();
+  public ParentSoyNode<StandaloneNode> getParent() {
+    return (ParentSoyNode<StandaloneNode>) super.getParent();
   }
 
   @Override
@@ -67,11 +65,15 @@ public final class HtmlCloseTagNode extends AbstractParentSoyNode<SoyNode.Standa
   @Override
   public String toSourceString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("</").append(getTagName());
-    for (StandaloneNode child : getChildren()) {
-      sb.append(" ").append(child.toSourceString());
+    sb.append("</");
+    for (int i = 0; i < numChildren(); i++) {
+      StandaloneNode child = getChild(i);
+      if (i != 0) {
+        sb.append(' ');
+      }
+      sb.append(child.toSourceString());
     }
-    sb.append(">");
+    sb.append('>');
     return sb.toString();
   }
 }

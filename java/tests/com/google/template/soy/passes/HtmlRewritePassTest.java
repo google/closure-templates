@@ -53,7 +53,13 @@ public final class HtmlRewritePassTest {
     assertThat(node.getChild(1)).isInstanceOf(HtmlOpenTagNode.class);
     assertThat(node.getChild(2)).isInstanceOf(HtmlCloseTagNode.class);
     assertThatSourceString(node).isEqualTo("<div></div>");
-    assertThatASTString(node).isEqualTo("HTML_OPEN_TAG_NODE\n" + "HTML_CLOSE_TAG_NODE\n");
+    assertThatASTString(node)
+        .isEqualTo(
+            "HTML_OPEN_TAG_NODE\n"
+                + "  RAW_TEXT_NODE\n"
+                + "HTML_CLOSE_TAG_NODE\n"
+                + "  RAW_TEXT_NODE\n"
+                + "");
   }
 
   @Test
@@ -63,11 +69,14 @@ public final class HtmlRewritePassTest {
     String structure =
         ""
             + "HTML_OPEN_TAG_NODE\n"
+            + "  RAW_TEXT_NODE\n"
             + "  HTML_ATTRIBUTE_NODE\n"
             + "    RAW_TEXT_NODE\n"
             + "    HTML_ATTRIBUTE_VALUE_NODE\n"
             + "      RAW_TEXT_NODE\n"
-            + "HTML_CLOSE_TAG_NODE\n";
+            + "HTML_CLOSE_TAG_NODE\n"
+            + "  RAW_TEXT_NODE\n"
+            + "";
     assertThatASTString(node).isEqualTo(structure);
 
     // test alternate quotation marks
@@ -86,7 +95,7 @@ public final class HtmlRewritePassTest {
     HtmlOpenTagNode openTag = (HtmlOpenTagNode) node.getChild(1);
     assertThat(openTag.isSelfClosing()).isFalse();
     HtmlAttributeValueNode attributeValue =
-        (HtmlAttributeValueNode) ((HtmlAttributeNode) openTag.getChild(0)).getChild(1);
+        (HtmlAttributeValueNode) ((HtmlAttributeNode) openTag.getChild(1)).getChild(1);
     assertThat(attributeValue.getQuotes()).isEqualTo(HtmlAttributeValueNode.Quotes.NONE);
     assertThat(((RawTextNode) attributeValue.getChild(0)).getRawText()).isEqualTo("foo/");
   }
@@ -121,14 +130,20 @@ public final class HtmlRewritePassTest {
     assertThatSourceString(node).isEqualTo("x x<div>content</div> <div> </div>");
     assertThatASTString(node)
         .isEqualTo(
-            "RAW_TEXT_NODE\n"
+            ""
+                + "RAW_TEXT_NODE\n"
                 + "HTML_OPEN_TAG_NODE\n"
+                + "  RAW_TEXT_NODE\n"
                 + "RAW_TEXT_NODE\n"
                 + "HTML_CLOSE_TAG_NODE\n"
+                + "  RAW_TEXT_NODE\n"
                 + "RAW_TEXT_NODE\n"
                 + "HTML_OPEN_TAG_NODE\n"
+                + "  RAW_TEXT_NODE\n"
                 + "RAW_TEXT_NODE\n"
-                + "HTML_CLOSE_TAG_NODE\n");
+                + "HTML_CLOSE_TAG_NODE\n"
+                + "  RAW_TEXT_NODE\n"
+                + "");
   }
 
   @Test
@@ -142,8 +157,11 @@ public final class HtmlRewritePassTest {
             ""
                 + "LET_VALUE_NODE\n"
                 + "HTML_OPEN_TAG_NODE\n"
+                + "  PRINT_NODE\n"
                 + "RAW_TEXT_NODE\n"
-                + "HTML_CLOSE_TAG_NODE\n");
+                + "HTML_CLOSE_TAG_NODE\n"
+                + "  PRINT_NODE\n"
+                + "");
   }
 
   @Test
@@ -155,12 +173,14 @@ public final class HtmlRewritePassTest {
             ""
                 + "LET_VALUE_NODE\n"
                 + "HTML_OPEN_TAG_NODE\n"
+                + "  RAW_TEXT_NODE\n"
                 + "  HTML_ATTRIBUTE_NODE\n"
                 + "    RAW_TEXT_NODE\n"
                 + "    HTML_ATTRIBUTE_VALUE_NODE\n"
                 + "      PRINT_NODE\n"
                 + "RAW_TEXT_NODE\n"
                 + "HTML_CLOSE_TAG_NODE\n"
+                + "  RAW_TEXT_NODE\n"
                 + "");
     // try alternate quotes
     node = runPass("{let $t : 'x' /}<div a=\"{$t}\">content</div>");
@@ -179,10 +199,12 @@ public final class HtmlRewritePassTest {
             ""
                 + "LET_VALUE_NODE\n"
                 + "HTML_OPEN_TAG_NODE\n"
+                + "  RAW_TEXT_NODE\n"
                 + "  HTML_ATTRIBUTE_NODE\n"
                 + "    PRINT_NODE\n"
                 + "RAW_TEXT_NODE\n"
                 + "HTML_CLOSE_TAG_NODE\n"
+                + "  RAW_TEXT_NODE\n"
                 + "");
 
     // and with a value
@@ -190,14 +212,17 @@ public final class HtmlRewritePassTest {
     assertThatSourceString(node).isEqualTo("{let $t : 'x' /}<div {$t}=x>content</div>");
     assertThatASTString(node)
         .isEqualTo(
-            "LET_VALUE_NODE\n"
+            ""
+                + "LET_VALUE_NODE\n"
                 + "HTML_OPEN_TAG_NODE\n"
+                + "  RAW_TEXT_NODE\n"
                 + "  HTML_ATTRIBUTE_NODE\n"
                 + "    PRINT_NODE\n"
                 + "    HTML_ATTRIBUTE_VALUE_NODE\n"
                 + "      RAW_TEXT_NODE\n"
                 + "RAW_TEXT_NODE\n"
                 + "HTML_CLOSE_TAG_NODE\n"
+                + "  RAW_TEXT_NODE\n"
                 + "");
   }
 
@@ -211,6 +236,7 @@ public final class HtmlRewritePassTest {
             ""
                 + "LET_VALUE_NODE\n"
                 + "HTML_OPEN_TAG_NODE\n"
+                + "  RAW_TEXT_NODE\n"
                 + "  IF_NODE\n"
                 + "    IF_COND_NODE\n"
                 + "      HTML_ATTRIBUTE_NODE\n"
@@ -219,7 +245,9 @@ public final class HtmlRewritePassTest {
                 + "      HTML_ATTRIBUTE_NODE\n"
                 + "        RAW_TEXT_NODE\n"
                 + "RAW_TEXT_NODE\n"
-                + "HTML_CLOSE_TAG_NODE\n");
+                + "HTML_CLOSE_TAG_NODE\n"
+                + "  RAW_TEXT_NODE\n"
+                + "");
   }
 
   @Test
@@ -233,6 +261,7 @@ public final class HtmlRewritePassTest {
             ""
                 + "LET_VALUE_NODE\n"
                 + "HTML_OPEN_TAG_NODE\n"
+                + "  RAW_TEXT_NODE\n"
                 + "  HTML_ATTRIBUTE_NODE\n"
                 + "    RAW_TEXT_NODE\n"
                 + "    HTML_ATTRIBUTE_VALUE_NODE\n"
@@ -242,7 +271,9 @@ public final class HtmlRewritePassTest {
                 + "        IF_ELSE_NODE\n"
                 + "          RAW_TEXT_NODE\n"
                 + "RAW_TEXT_NODE\n"
-                + "HTML_CLOSE_TAG_NODE\n");
+                + "HTML_CLOSE_TAG_NODE\n"
+                + "  RAW_TEXT_NODE\n"
+                + "");
   }
 
   // TODO(lukes): ideally these would all be implemented in the CompilerIntegrationTests but the
@@ -257,6 +288,7 @@ public final class HtmlRewritePassTest {
         .isEqualTo(
             ""
                 + "HTML_OPEN_TAG_NODE\n"
+                + "  RAW_TEXT_NODE\n"
                 + "  IF_NODE\n"
                 + "    IF_COND_NODE\n"
                 + "      HTML_ATTRIBUTE_NODE\n"
@@ -283,6 +315,7 @@ public final class HtmlRewritePassTest {
         .isEqualTo(
             ""
                 + "HTML_OPEN_TAG_NODE\n"
+                + "  RAW_TEXT_NODE\n"
                 + "  HTML_ATTRIBUTE_NODE\n"
                 + "    RAW_TEXT_NODE\n"
                 + "    IF_NODE\n"
@@ -308,6 +341,7 @@ public final class HtmlRewritePassTest {
         .isEqualTo(
             ""
                 + "HTML_OPEN_TAG_NODE\n"
+                + "  RAW_TEXT_NODE\n"
                 + "  HTML_ATTRIBUTE_NODE\n"
                 + "    RAW_TEXT_NODE\n"
                 + "    IF_NODE\n"

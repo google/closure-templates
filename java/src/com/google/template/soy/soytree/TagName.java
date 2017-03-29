@@ -36,9 +36,6 @@ import javax.annotation.Nullable;
  *
  * <p>For {@code DynamicTagName}, the equality semantics are based on the {@code ExprUnion}
  * associated with the {@code PrintNode}.
- *
- * <p>TODO(b/31771679): Convert this to a Soy AST node so that it is visible for {@code
- * NodeVisitor}.
  */
 public final class TagName {
   /**

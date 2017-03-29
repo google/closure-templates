@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkState;
 
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import javax.annotation.Nullable;
 
 /**
@@ -28,8 +29,8 @@ import javax.annotation.Nullable;
  * <p>TODO(lukes): consider adding more structure, possibly splitting into 2 nodes for when we have
  * a single attribute or a dynamic attribute (which may print 0-N attributes dynamically).
  */
-public final class HtmlAttributeNode extends AbstractParentSoyNode<SoyNode.StandaloneNode>
-    implements SoyNode.StandaloneNode, SoyNode.BlockNode {
+public final class HtmlAttributeNode extends AbstractParentSoyNode<StandaloneNode>
+    implements StandaloneNode {
 
   /** Will be null if this attribute node doesn't have a value. */
   @Nullable private final SourceLocation.Point equalsSignLocation;
@@ -75,8 +76,9 @@ public final class HtmlAttributeNode extends AbstractParentSoyNode<SoyNode.Stand
     return sb.toString();
   }
 
+  @SuppressWarnings("unchecked")
   @Override
-  public BlockNode getParent() {
-    return (BlockNode) super.getParent();
+  public ParentSoyNode<StandaloneNode> getParent() {
+    return (ParentSoyNode<StandaloneNode>) super.getParent();
   }
 }

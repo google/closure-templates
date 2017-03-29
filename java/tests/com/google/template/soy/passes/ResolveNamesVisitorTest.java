@@ -19,12 +19,16 @@ package com.google.template.soy.passes;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.error.FormattingErrorReporter;
+import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
+import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.soytree.ForeachNode;
 import com.google.template.soy.soytree.ForeachNonemptyNode;
 import com.google.template.soy.soytree.IfCondNode;
@@ -32,6 +36,7 @@ import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
+import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeProvider;
@@ -227,6 +232,19 @@ public final class ResolveNamesVisitorTest {
   }
 
   @Test
+  public void testLetReferencedInsideAttributeValue() {
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(constructTemplateSource("{let $t: 1 /}<{$t}>"))
+            .options(
+                new SoyGeneralOptions().setExperimentalFeatures(ImmutableList.of("stricthtml")))
+            .parse()
+            .fileSet();
+    TemplateNode n = soyTree.getChild(0).getChild(0);
+    VarRefNode node = Iterables.getOnlyElement(SoyTreeUtils.getAllNodesOfType(n, VarRefNode.class));
+    assertThat(node.getDefnDecl().kind()).isEqualTo(VarDefn.Kind.LOCAL_VAR);
+  }
+
+  @Test
   @Ignore
   public void testNameLookupFailure() {
     // This fails currently because we aren't setting SyntaxVersion.V9_9
@@ -249,7 +267,7 @@ public final class ResolveNamesVisitorTest {
    */
   private static String constructTemplateSource(String... body) {
     return ""
-        + "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
+        + "{namespace ns}\n"
         + "/***/\n"
         + "{template .aaa}\n"
         + "  "

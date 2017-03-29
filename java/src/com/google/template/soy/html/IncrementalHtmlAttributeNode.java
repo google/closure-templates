@@ -22,7 +22,7 @@ import com.google.template.soy.soytree.AbstractParentSoyNode;
 import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.SoyNode.BlockNode;
+import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 
 /**
@@ -31,7 +31,7 @@ import com.google.template.soy.soytree.SoyNode.StandaloneNode;
  * values of the children are combined during render to generate the attribute's value.
  */
 public final class IncrementalHtmlAttributeNode extends AbstractParentSoyNode<StandaloneNode>
-    implements StandaloneNode, BlockNode {
+    implements StandaloneNode {
 
   private final String name;
 
@@ -70,9 +70,10 @@ public final class IncrementalHtmlAttributeNode extends AbstractParentSoyNode<St
     return sb.append("\"").toString();
   }
 
+  @SuppressWarnings("unchecked")
   @Override
-  public BlockNode getParent() {
-    return (BlockNode) super.getParent();
+  public ParentSoyNode<StandaloneNode> getParent() {
+    return (ParentSoyNode<StandaloneNode>) super.getParent();
   }
 
   @Override
