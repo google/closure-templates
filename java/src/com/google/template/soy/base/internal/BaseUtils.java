@@ -56,13 +56,6 @@ public class BaseUtils {
   /** Pattern for a dotted identifier. */
   private static final Pattern DOTTED_IDENT_PATTERN = Pattern.compile(DOTTED_IDENT_RE);
 
-  /** Regular expression for an identifier that also allows dashes. */
-  private static final String DASHED_IDENT_RE = IDENT_RE + "(?:[-][a-zA-Z_0-9]*)*";
-
-  /** Pattern for an identifier that allows either dots or dashes, but not both. */
-  private static final Pattern DOTTED_OR_DASHED_IDENT_PATTERN =
-      Pattern.compile(String.format("(?:%s)|(?:%s)", DOTTED_IDENT_RE, DASHED_IDENT_RE));
-
   /** Pattern for a leading or trailing underscore. */
   private static final Pattern LEADING_OR_TRAILING_UNDERSCORE_PATTERN =
       Pattern.compile("^_+|_+\\Z");
@@ -134,17 +127,6 @@ public class BaseUtils {
    */
   public static boolean isIdentifierWithLeadingDot(String s) {
     return IDENT_WITH_LEADING_DOT_PATTERN.matcher(s).matches();
-  }
-
-  /**
-   * Determines whether the given string is a "dotted or dashed" identifier. This allows dots, or
-   * dashes, but not both.
-   *
-   * @param s The string to check.
-   * @return True if the given string is a dotted-or-dashed identifier.
-   */
-  public static boolean isDottedOrDashedIdent(String s) {
-    return DOTTED_OR_DASHED_IDENT_PATTERN.matcher(s).matches();
   }
 
   /**

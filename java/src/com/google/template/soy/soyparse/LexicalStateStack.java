@@ -66,11 +66,6 @@ final class LexicalStateStack {
     size = 0;
   }
 
-  /** Returns the current size of the stack. */
-  int size() {
-    return size;
-  }
-
   /** Returns the state at the top of the stack or -1 if the stack is empty. */
   int peek() {
     int localSize = size;

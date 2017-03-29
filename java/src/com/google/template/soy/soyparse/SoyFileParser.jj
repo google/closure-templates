@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-//
+
 // JavaCC grammar specification for a Soy file.
 //
 // @author Kai Huang
@@ -513,9 +513,9 @@ TOKEN_MGR_DECLS:
     SwitchTo(newState);
   }
 
- /**
-  * Switch back to the previous state stored in {@link #stateStack}.
-  */
+  /**
+   * Switch back to the previous state stored in {@link #stateStack}.
+   */
   void popState() {
     SwitchTo(stateStack.pop());
   }
@@ -538,12 +538,15 @@ TOKEN_MGR_DECLS:
   }
 }
 
+
 // Tips on writing a good lexer
 // https://javacc.java.net/doc/lexertips.html
+
 
 // =================================================================================================
 // File (non-template) tokens
 // =================================================================================================
+
 
 // In default (outside of templates) structured tags and expressions, skip whitespace and line
 // comments
@@ -552,7 +555,7 @@ TOKEN_MGR_DECLS:
 // different set of tokens.
 <DEFAULT, IN_CMD_TAG_STRUCTURED, TYPE_EXPR> SKIP: {
   < <WS> >
-|  < <LINE_COMMENT> >
+| < <LINE_COMMENT> >
 }
 
 // In all these states, SKIP multiline comments
@@ -562,11 +565,11 @@ TOKEN_MGR_DECLS:
   <"/*"> { pushState(IN_MULTILINE_COMMENT); }
 }
 
-<IN_MULTILINE_COMMENT, IN_SOYDOC> MORE : {
+<IN_MULTILINE_COMMENT, IN_SOYDOC> MORE: {
   < ~[] >
 }
 
-<IN_MULTILINE_COMMENT> SKIP : {
+<IN_MULTILINE_COMMENT> SKIP: {
   <"*/"> { popState(); }
 }
 
@@ -586,15 +589,15 @@ TOKEN_MGR_DECLS:
 
 // NOTE: we don't use all the same states as normal multiline comments (see above), this is because
 // the distinction between 'doc comments' and 'multiline comments' is only relevant in these states.
-<DEFAULT, TEMPLATE_DEFAULT, TEMPLATE_DEFAULT_IN_MSG_BLOCK> MORE : {
-   "/**" { pushState(IN_SOYDOC); }
+<DEFAULT, TEMPLATE_DEFAULT, TEMPLATE_DEFAULT_IN_MSG_BLOCK> MORE: {
+  "/**" { pushState(IN_SOYDOC); }
 }
 
-<IN_SOYDOC> SPECIAL_TOKEN : {
+<IN_SOYDOC> SPECIAL_TOKEN: {
   <SOYDOC: "*/" > { popState(); }
 }
 
-<DEFAULT> TOKEN : {
+<DEFAULT> TOKEN: {
   <ALIAS_OPEN: "{alias"> { pushState(IN_CMD_TAG_STRUCTURED); }
 | <NAMESPACE_OPEN: "{namespace"> { pushState(IN_CMD_TAG_STRUCTURED); }
 | <DELPACKAGE_OPEN: "{delpackage"> { pushState(IN_CMD_TAG_STRUCTURED); }
@@ -611,22 +614,22 @@ TOKEN_MGR_DECLS:
 // In attribute values accumulate all non-double quote characters unless they are escaped.  N.B.
 // This includes newlines which is important for backwards compatibility.
 <IN_ATTRIBUTE_VALUE> MORE: {
- <~[]>
+  <~[]>
 | "\\\""
 }
 
 // Templates
 
-<DEFAULT> TOKEN : {
+<DEFAULT> TOKEN: {
   <DELTEMPLATE_OPEN : "{deltemplate" > { pushState(IN_CMD_TAG_STRUCTURED); }
 | <TEMPLATE_OPEN: "{template" > { pushState(IN_CMD_TAG_STRUCTURED); }
 }
 
 
-
 // =================================================================================================
 // Template tokens (only used inside templates)
 // =================================================================================================
+
 
 // -------------------------------------------------------------------------------------------------
 // Line comment.
@@ -635,11 +638,9 @@ TOKEN_MGR_DECLS:
 // TEMPLATE_DEFAULT_IN_MSG_BLOCK are only interpreted as such if there is preceding whitespace.
 // Other lexical states don't have this requirement.  The fact that comments swallow a leading
 // whitespace character doesn't affect output because of how line joining works.
-<TEMPLATE_DEFAULT, TEMPLATE_DEFAULT_IN_MSG_BLOCK> SKIP:
-{
+<TEMPLATE_DEFAULT, TEMPLATE_DEFAULT_IN_MSG_BLOCK> SKIP: {
   < <WS> <LINE_COMMENT> >
 }
-
 
 // -------------------------------------------------------------------------------------------------
 // Soy commands.
@@ -662,10 +663,9 @@ TOKEN_MGR_DECLS:
 // IN_CMD_TAG_UNSTRUCTURED is for older or more-complex tags that are parsed through regexes, or the
 // expression parser.  It swallows any kind of token into CMD_TEXT_ARBITRARY_TOKEN.
 
-<TEMPLATE_DEFAULT, TEMPLATE_DEFAULT_IN_MSG_BLOCK> TOKEN:
-{
-  <CMD_CLOSE_TEMPLATE            : "{/template}"> { clearAndSwitchToDefault(); }
-| <CMD_CLOSE_DELTEMPLATE         : "{/deltemplate}"> { clearAndSwitchToDefault(); }
+<TEMPLATE_DEFAULT, TEMPLATE_DEFAULT_IN_MSG_BLOCK> TOKEN: {
+  < CMD_CLOSE_TEMPLATE           : "{/template}"> { clearAndSwitchToDefault(); }
+| < CMD_CLOSE_DELTEMPLATE        : "{/deltemplate}"> { clearAndSwitchToDefault(); }
 
 | < DECL_BEGIN_PARAM             : "{@param"    >  { pushState(IN_CMD_TAG_STRUCTURED); }
 | < DECL_BEGIN_OPT_PARAM         : "{@param?"   >  { pushState(IN_CMD_TAG_STRUCTURED); }
@@ -688,15 +688,15 @@ TOKEN_MGR_DECLS:
 | < CMD_CLOSE_CALL               : "{/call}"       >
 | < CMD_CLOSE_DELCALL            : "{/delcall}"    >
 
-| < CMD_BEGIN_PARAM              : "{param" <WS>     > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
-| < CMD_CLOSE_PARAM              : "{/param}"   >
+| < CMD_BEGIN_PARAM              : "{param" <WS>  > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
+| < CMD_CLOSE_PARAM              : "{/param}"     >
 
-| < CMD_BEGIN_MSG                : "{msg" <WS>  > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
-| < CMD_BEGIN_FALLBACK_MSG  : "{fallbackmsg" <WS> > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
-| < CMD_CLOSE_MSG           : "{/msg}"     >
+| < CMD_BEGIN_MSG                : "{msg" <WS>    > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
+| < CMD_BEGIN_FALLBACK_MSG       : "{fallbackmsg" <WS> > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
+| < CMD_CLOSE_MSG                : "{/msg}"       >
 
-| < CMD_BEGIN_PRINT              : "{print" <WS>   > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
-| < CMD_BEGIN_XID                : "{xid" <WS>    > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
+| < CMD_BEGIN_PRINT              : "{print" <WS>  > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
+| < DECL_BEGIN_XID               : "{xid" <WS>    > { pushState(IN_CMD_TAG_STRUCTURED); }
 | < CMD_BEGIN_CSS                : "{css" <WS>    > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
 
 | < CMD_BEGIN_IF                 : "{if" <WS>     > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
@@ -741,28 +741,29 @@ TOKEN_MGR_DECLS:
 }
 
 <IN_CMD_TAG_UNSTRUCTURED> TOKEN: {
- < CMD_TEXT_DIRECTIVE_NAME: "|" <IDENT> >
+  < CMD_TEXT_DIRECTIVE_NAME: "|" <IDENT> >
 // TODO(lukes): Once we merge in the ExpressionParser, use CommandTagAttribute () instead.
 | < CMD_TEXT_PHNAME_ATTR: <WS_CHAR> "phname=\"" <IDENT> "\"" >
 | < XXX_CMD_TEXT_PHNAME_NOT_IDENT: <WS_CHAR> "phname=\"" ( ~["\""] )* "\"" >
 }
 
-
 <IN_CMD_TAG_STRUCTURED> TOKEN: {
   // This is for {@param foo : int}.
   // A colon in a structured tag transitions us into the TYPE_EXPR state.
-  < TAG_COLON : ":"  >: TYPE_EXPR
-| <EQ : "=">
-| <AS: "as">
+  < TAG_COLON: ":" > : TYPE_EXPR
+| < EQ: "=" >
+| < AS: "as" >
 }
 
 <IN_CMD_TAG_STRUCTURED, TYPE_EXPR> TOKEN: {
   // This makes NAME a matchable token within structured tags and exprs (IDENT is otherwise private)
   < NAME : <IDENT> >
 | < DOT: "." >
+| < DASH: "-" >
 }
 
-// TYPE_EXPR is for type expressions
+// -------------------------------------------------------------------------------------------------
+// Type expressions.
 
 <TYPE_EXPR> TOKEN: {
    < LANGLE: "<" >
@@ -781,7 +782,8 @@ TOKEN_MGR_DECLS:
  | < QMARK: "?" >
 }
 
-// IN_CMD_TAG_UNSTRUCTURED matches arbitrary non-tag-closing strings
+// -------------------------------------------------------------------------------------------------
+// IN_CMD_TAG_UNSTRUCTURED matches arbitrary non-tag-closing strings.
 
 <IN_CMD_TAG_UNSTRUCTURED> TOKEN: {
   // Allow any non-string token, or complete quoted string literals.
@@ -814,11 +816,9 @@ TOKEN_MGR_DECLS:
 
 // The only difference between states TEMPLATE_DEFAULT and
 // TEMPLATE_DEFAULT_IN_MSG_BLOCK is that the latter also create tokens for HTML tag open/close.
-<TEMPLATE_DEFAULT_IN_MSG_BLOCK> TOKEN:
-{
+<TEMPLATE_DEFAULT_IN_MSG_BLOCK> TOKEN: {
   < MSG_HTML_TAG_OPEN:  "<" >
-|
-  < MSG_HTML_TAG_CLOSE: ">" >
+| < MSG_HTML_TAG_CLOSE: ">" >
 }
 
 
@@ -826,14 +826,12 @@ TOKEN_MGR_DECLS:
 // In a 'literal' block.
 
 // Collect the literal text using MORE.
-<IN_LITERAL_BLOCK> MORE:
-{
+<IN_LITERAL_BLOCK> MORE: {
   < <ANY_CHAR> >
 }
 
 // When we reach the '/literal' tag, return the collected text content (minus the end tag).
-<IN_LITERAL_BLOCK> TOKEN:
-{
+<IN_LITERAL_BLOCK> TOKEN: {
   < LITERAL_RAW_TEXT_CONTENT: "{/literal}" >
   {
     // Note: 'image' is cumulative over MOREs while 'lengthOfMatch' is just the end tag length.
@@ -845,40 +843,33 @@ TOKEN_MGR_DECLS:
 // -------------------------------------------------------------------------------------------------
 // Text.
 
-<TEMPLATE_DEFAULT, TEMPLATE_DEFAULT_IN_MSG_BLOCK> TOKEN:
-{
+<TEMPLATE_DEFAULT, TEMPLATE_DEFAULT_IN_MSG_BLOCK> TOKEN: {
   < TOKEN_WS: <WS> >
-|
-  < TOKEN_NOT_WS: <NOT_WS> >
+| < TOKEN_NOT_WS: <NOT_WS> >
 }
 
+// -------------------------------------------------------------------------------------------------
 // Private helper regexes.
-<*> TOKEN:
-{
+
+<*> TOKEN: {
   < #ANY_CHAR: ~[] >
-|
-  < #WS: " " | "\t" | "\n" | "\r" | "\r\n" >
-|
-  < #WS_CHAR: " " | "\t" | "\n" | "\r" >
-|
-  < #NOT_WS: ~[" ","\t","\n","\r"] >
-|
-  < #NOT_NL: ~["\n","\r"] >
-|
-  < #BRACE: ["{","}"] >
-|
-  < #IDENT: ["a"-"z","A"-"Z","_"] ( ["a"-"z","A"-"Z","_","0"-"9"] )* >
-|
-  < #LINE_COMMENT: "//" ( <NOT_NL> )* >
+| < #WS: " " | "\t" | "\n" | "\r" | "\r\n" >
+| < #WS_CHAR: " " | "\t" | "\n" | "\r" >
+| < #NOT_WS: ~[" ","\t","\n","\r"] >
+| < #NOT_NL: ~["\n","\r"] >
+| < #BRACE: ["{","}"] >
+| < #IDENT: ["a"-"z","A"-"Z","_"] ( ["a"-"z","A"-"Z","_","0"-"9"] )* >
+| < #LINE_COMMENT: "//" ( <NOT_NL> )* >
 }
 
 // Match everything else as an 'unexpected' token to prevent TokenMgrErrors from being thrown and
 // instead this will get turned into ParseExceptions which have more debugging information.
 // NOTE: this has to come after any single character token definition in these states.
 // TODO(slaks): Apply to all states.
-<DEFAULT, IN_CMD_TAG_STRUCTURED, TYPE_EXPR> TOKEN : {
+<DEFAULT, IN_CMD_TAG_STRUCTURED, TYPE_EXPR> TOKEN: {
     < UNEXPECTED_TOKEN : ~[] >
 }
+
 
 // =================================================================================================
 // Grammar
@@ -1254,6 +1245,8 @@ private Token reportTemplateBodyErrorAndSkipTo(ParseException error, int kind) {
   } while (t.kind != kind && t.kind != EOF);
   return t;
 }
+
+
 // =================================================================================================
 // Grammar - Templates
 // =================================================================================================
@@ -1531,11 +1524,8 @@ private HeaderParam ParamDecl(@Nullable String desc) :
   <TAG_COLON>
   try {
     paramTypeNode = TypeExpr()
-    {
-      paramType = typeRegistry.getOrCreateType(paramTypeNode, errorReporter);
-    }
+    { paramType = typeRegistry.getOrCreateType(paramTypeNode, errorReporter); }
     tagEnd = <CMD_END>
-
   } catch (ParseException parseException) {
     tagEnd = reportTemplateBodyErrorAndSkipTo(parseException, CMD_END);
   }
@@ -2145,21 +2135,54 @@ private PrintNode PrintStmt() :
 
 
 /**
- * XidStmt -> XidTag
+ * XidStmt -> <DECL_BEGIN_XID> <NAME> ( ( . <NAME> )+ | ( - <NAME> ) + )? <CMD_END>
+ *
+ * Valid xid names are one or more identifiers, separated by either all dots or all dashes, but
+ * not both in the same xid.
  */
 private XidNode XidStmt() :
 {
-  Token cmdBegin, cmdEnd;
-  String cmdText;
+  Token cmdBegin, tok;
+  Token cmdEnd = null;
+  Token first = null;
+  StringBuilder value = null;
 }
 {
-  cmdBegin = <CMD_BEGIN_XID>
-  cmdText = CmdText()
-  cmdEnd = <CMD_END>
-  {
-    return new XidNode.Builder(nodeIdGen.genId(), cmdText, createSrcLoc(cmdBegin, cmdEnd))
-        .build(errorReporter);
+  cmdBegin = <DECL_BEGIN_XID>
+
+  try {
+    first = <NAME>
+    (
+      (
+        <DOT>
+        tok = <NAME>
+        { if (value == null) {
+            value = new StringBuilder().append(first.image);
+          }
+          value.append('.').append(tok.image);
+        }
+      )+
+    |
+      (
+        <DASH>
+        tok = <NAME>
+        { if (value == null) {
+            value = new StringBuilder().append(first.image);
+          }
+          value.append('-').append(tok.image);
+        }
+      )+
+    )?
+
+    cmdEnd = <CMD_END>
+
+  } catch (ParseException e) {
+    reportTemplateBodyErrorAndSkipTo(e, CMD_END);
+    return XidNode.error(createSrcLoc(cmdBegin));
   }
+
+  { String xid = (value == null) ? first.image : value.toString();
+    return new XidNode(nodeIdGen.genId(), createSrcLoc(cmdBegin, cmdEnd), xid); }
 }
 
 

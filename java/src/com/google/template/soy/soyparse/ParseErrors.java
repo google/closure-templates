@@ -29,6 +29,7 @@ import java.util.regex.Pattern;
 /** Helpers for interpreting parse errors as soy errors. */
 final class ParseErrors {
   private static final Pattern EXTRACT_LOCATION = Pattern.compile("at line (\\d+), column (\\d+).");
+
   private static final SoyErrorKind UNEXPECTED_TOKEN_MGR_ERROR =
       SoyErrorKind.of(
           "Unexpected fatal Soy error. Please file a bug with your Soy file and "
@@ -37,28 +38,28 @@ final class ParseErrors {
       SoyErrorKind.of(
           "Unexpected end of file.  Did you forget to close an attribute value or a comment?");
 
-  private static final SoyErrorKind INVALID_STRING_LITERAL =
-      SoyErrorKind.of("Invalid string literal found in Soy command.");
-  private static final SoyErrorKind UNEXPECTED_RIGHT_BRACE =
-      SoyErrorKind.of("Unexpected ''}''; did you mean '''{'rb'}'''?");
   private static final SoyErrorKind BAD_PHNAME_VALUE =
       SoyErrorKind.of("Found ''phname'' attribute that is not a valid identifier");
+  private static final SoyErrorKind INVALID_STRING_LITERAL =
+      SoyErrorKind.of("Invalid string literal found in Soy command.");
   private static final SoyErrorKind UNEXPECTED_PARAM_DECL =
       SoyErrorKind.of(
           "Unexpected parameter declaration. Param declarations must come before any code in "
               + "your template.");
+  private static final SoyErrorKind UNEXPECTED_RIGHT_BRACE =
+      SoyErrorKind.of("Unexpected ''}''; did you mean '''{'rb'}'''?");
 
   private ParseErrors() {}
 
   static void reportSoyFileParseException(
       ErrorReporter reporter, String filePath, ParseException e) {
+    Token currentToken = e.currentToken;
+
     // currentToken is the 'last successfully consumed token', but the error is usually due to the
     // first unsuccessful token.  use that for the source location
-    Token errorToken = e.currentToken;
-    if (errorToken.next != null) {
-      errorToken = errorToken.next;
-    }
+    Token errorToken = (currentToken.next != null) ? currentToken.next : currentToken;
     SourceLocation location = Tokens.createSrcLoc(filePath, errorToken);
+
     // handle a few special cases.
     switch (errorToken.kind) {
       case SoyFileParserConstants.XXX_BRACE_INVALID:
@@ -79,6 +80,7 @@ final class ParseErrors {
       default:
         //fall-through
     }
+
     ImmutableSet.Builder<String> expectedTokenImages = ImmutableSet.builder();
     for (int[] expected : e.expectedTokenSequences) {
       // We only display the first token of any expected sequence
@@ -130,7 +132,7 @@ final class ParseErrors {
         return "{fallbackmsg";
       case SoyFileParserConstants.CMD_BEGIN_PRINT:
         return "{print";
-      case SoyFileParserConstants.CMD_BEGIN_XID:
+      case SoyFileParserConstants.DECL_BEGIN_XID:
         return "{xid";
       case SoyFileParserConstants.CMD_BEGIN_CSS:
         return "{css";

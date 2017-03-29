@@ -310,7 +310,7 @@ TOKEN:
 | < TRUE: "true">
 | < FALSE: "false" >
 | < DEC_INTEGER: <DEC_DIGITS> >
-| < HEX_INTEGER : "0x" (<HEX_DIGIT>)+ >
+| < HEX_INTEGER: "0x" (<HEX_DIGIT>)+ >
 | < FLOAT:
         <DEC_DIGITS> "." <DEC_DIGITS> ( "e" ( ["+","-"] )? <DEC_DIGITS> )?
       | <DEC_DIGITS> "e" ( ["+","-"] )? <DEC_DIGITS>
@@ -333,7 +333,7 @@ TOKEN:
 // Operators.
 TOKEN:
 {
-  <QMARK: "?" >     // Precedence 1 operators
+  < QMARK: "?" >    // Precedence 1 operators
 | < COLON: ":" >    // Also used as part of part of map literal syntax
 | < QCOLON: "?:" >
 | < OR: "or" >      // Precedence 2 operators
@@ -365,12 +365,10 @@ TOKEN:
 TOKEN:
 {
   < IDENT: ["a"-"z","A"-"Z","_"] ( ["a"-"z","A"-"Z","_","0"-"9"] )* >
-|
   // N.B. it is important for this to be defined above DOLLAR_IDENT so $ij isn't parsed as that
   // token
-  < IJ :  "$ij" >
-|
-  < DOLLAR_IDENT: "$" <IDENT> >
+| < IJ:  "$ij" >
+| < DOLLAR_IDENT: "$" <IDENT> >
 }
 
 
