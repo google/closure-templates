@@ -35,7 +35,7 @@ import javax.annotation.Nullable;
  * <p>Important: Only use this class from message plugins!
  *
  */
-public class SoyMsgBundleImpl implements SoyMsgBundle {
+public class SoyMsgBundleImpl extends SoyMsgBundle {
 
   /** The language/locale string of this bundle's messages. */
   private final String localeString;

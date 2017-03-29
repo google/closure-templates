@@ -24,14 +24,14 @@ import java.util.Iterator;
  * Represents a full set of messages in some language/locale.
  *
  */
-public interface SoyMsgBundle extends Iterable<SoyMsg> {
+public abstract class SoyMsgBundle implements Iterable<SoyMsg> {
 
   /**
    * Gets the language/locale string of this bundle of messages.
    *
    * @return The language/locale string of the messages provided by this bundle.
    */
-  public String getLocaleString();
+  public abstract String getLocaleString();
 
   /**
    * Retrieves a message by its unique message id.
@@ -39,14 +39,14 @@ public interface SoyMsgBundle extends Iterable<SoyMsg> {
    * @param msgId The message id of the message to retrieve.
    * @return The corresponding message, or null if not found.
    */
-  public SoyMsg getMsg(long msgId);
+  public abstract SoyMsg getMsg(long msgId);
 
   /**
    * Gets the number of messages in this bundle.
    *
    * @return The number of messages in this bundle.
    */
-  public int getNumMsgs();
+  public abstract int getNumMsgs();
 
   /**
    * Returns an iterator over all the messages.
@@ -54,13 +54,13 @@ public interface SoyMsgBundle extends Iterable<SoyMsg> {
    * @return An iterator over all the messages.
    */
   @Override
-  public Iterator<SoyMsg> iterator();
+  public abstract Iterator<SoyMsg> iterator();
 
   // -----------------------------------------------------------------------------------------------
   // Null object.
 
   /** Null object for SoyMsgBundle, assumes English Locale. */
-  public static SoyMsgBundle EMPTY =
+  public static final SoyMsgBundle EMPTY =
       new SoyMsgBundle() {
 
         @Override

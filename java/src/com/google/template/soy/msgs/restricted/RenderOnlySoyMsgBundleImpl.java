@@ -40,7 +40,7 @@ import javax.annotation.Nullable;
  * of the message instead of storing them.
  *
  */
-final class RenderOnlySoyMsgBundleImpl implements SoyMsgBundle {
+final class RenderOnlySoyMsgBundleImpl extends SoyMsgBundle {
 
   /** The language/locale string of this bundle's messages. */
   private final String localeString;
