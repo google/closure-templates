@@ -42,12 +42,12 @@ import javax.annotation.Nullable;
  */
 public final class TagName {
   /**
-   * An enum to represent special tag names.
+   * An enum to represent tags that have {@code rcdata} content.
    *
    * <p>These tag names imply important changes in how children of the tag should be interpreted,
    * specifically the content should be interpreted as {@code rcdata} instead of {@code pcdata}.
    */
-  public enum SpecialTagName {
+  public enum RcDataTagName {
     SCRIPT,
     STYLE,
     TITLE,
@@ -94,26 +94,26 @@ public final class TagName {
 
   private final StandaloneNode node;
   @Nullable private final String nameAsLowerCase;
-  @Nullable private final SpecialTagName specialTagName;
+  @Nullable private final RcDataTagName rcDataTagName;
 
   public TagName(RawTextNode node) {
     this.node = checkNotNull(node);
     this.nameAsLowerCase = Ascii.toLowerCase(node.getRawText());
     switch (nameAsLowerCase) {
       case "script":
-        specialTagName = SpecialTagName.SCRIPT;
+        rcDataTagName = RcDataTagName.SCRIPT;
         break;
       case "style":
-        specialTagName = SpecialTagName.STYLE;
+        rcDataTagName = RcDataTagName.STYLE;
         break;
       case "textarea":
-        specialTagName = SpecialTagName.TEXTAREA;
+        rcDataTagName = RcDataTagName.TEXTAREA;
         break;
       case "title":
-        specialTagName = SpecialTagName.TITLE;
+        rcDataTagName = RcDataTagName.TITLE;
         break;
       default:
-        specialTagName = null;
+        rcDataTagName = null;
         break;
     }
   }
@@ -121,7 +121,7 @@ public final class TagName {
   public TagName(PrintNode node) {
     this.node = checkNotNull(node);
     this.nameAsLowerCase = null;
-    this.specialTagName = null;
+    this.rcDataTagName = null;
   }
 
   public boolean isStatic() {
@@ -137,8 +137,8 @@ public final class TagName {
   }
 
   @Nullable
-  public SpecialTagName getSpecialTagName() {
-    return specialTagName;
+  public RcDataTagName getRcDataTagName() {
+    return rcDataTagName;
   }
 
   /** Returns the static name. */

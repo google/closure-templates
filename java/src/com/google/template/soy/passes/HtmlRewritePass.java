@@ -506,16 +506,16 @@ public final class HtmlRewritePass extends CompilerFilePass {
             handleHtmlTagName();
             break;
           case RCDATA_STYLE:
-            handleRcData(TagName.SpecialTagName.STYLE);
+            handleRcData(TagName.RcDataTagName.STYLE);
             break;
           case RCDATA_TITLE:
-            handleRcData(TagName.SpecialTagName.TITLE);
+            handleRcData(TagName.RcDataTagName.TITLE);
             break;
           case RCDATA_SCRIPT:
-            handleRcData(TagName.SpecialTagName.SCRIPT);
+            handleRcData(TagName.RcDataTagName.SCRIPT);
             break;
           case RCDATA_TEXTAREA:
-            handleRcData(TagName.SpecialTagName.TEXTAREA);
+            handleRcData(TagName.RcDataTagName.TEXTAREA);
             break;
           case CDATA:
             handleCData();
@@ -617,7 +617,7 @@ public final class HtmlRewritePass extends CompilerFilePass {
      *
      * <p>Scans for {@code </tagName} and if it finds it, enters {@link State#PCDATA}.
      */
-    void handleRcData(TagName.SpecialTagName tagName) {
+    void handleRcData(TagName.RcDataTagName tagName) {
       boolean foundLt = advanceWhileMatches(NOT_LT);
       if (foundLt) {
         if (matchPrefixIgnoreCase("</" + tagName, false /* don't advance */)) {
@@ -2132,9 +2132,9 @@ public final class HtmlRewritePass extends CompilerFilePass {
       // Depending on the tag name, we may need to enter a special state after the tag.
       State nextState = State.PCDATA;
       if (!selfClosing && !isCloseTag) {
-        TagName.SpecialTagName specialTag = tagName.getSpecialTagName();
-        if (specialTag != null) {
-          switch (specialTag) {
+        TagName.RcDataTagName rcDataTag = tagName.getRcDataTagName();
+        if (rcDataTag != null) {
+          switch (rcDataTag) {
             case SCRIPT:
               nextState = State.RCDATA_SCRIPT;
               break;
@@ -2148,7 +2148,7 @@ public final class HtmlRewritePass extends CompilerFilePass {
               nextState = State.RCDATA_TITLE;
               break;
             default:
-              throw new AssertionError(specialTag);
+              throw new AssertionError(rcDataTag);
           }
         }
       }
