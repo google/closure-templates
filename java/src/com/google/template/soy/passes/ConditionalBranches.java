@@ -68,6 +68,11 @@ final class ConditionalBranches {
     return branches;
   }
 
+  @Override
+  public String toString() {
+    return branches.toString();
+  }
+
   private void removeEmptyDeque() {
     // Remove the empty deque if necessary.
     for (Iterator<ConditionalBranch> it = branches.iterator(); it.hasNext(); ) {

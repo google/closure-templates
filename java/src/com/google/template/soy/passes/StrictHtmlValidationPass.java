@@ -373,8 +373,12 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
         HtmlTagEntry entry = closeTagQueue.pollFirst();
         errorReporter.report(entry.getSourceLocation(), UNEXPECTED_CLOSE_TAG);
       } else {
+        // Try to pop remaining optional tags
+        popOptionalTags(false);
         HtmlTagEntry entry = openTagStack.pollFirst();
-        errorReporter.report(entry.getSourceLocation(), OPEN_TAG_NOT_CLOSED);
+        if (entry != null) {
+          errorReporter.report(entry.getSourceLocation(), OPEN_TAG_NOT_CLOSED);
+        }
       }
     }
 

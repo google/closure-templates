@@ -67,9 +67,30 @@ public final class TagName {
           "meta", "param", "source", "track", "wbr");
 
   // According to https://www.w3.org/TR/html5/syntax.html#optional-tags, this is a list of tags
-  // that can potentially omit the end tags.
-  // TODO(b/34516452): Add more tags.
-  private static final ImmutableSet<String> OPTIONAL_TAG_NAMES = ImmutableSet.of("li");
+  // that can potentially omit the end tags. We are not supporting cases that start tags might be
+  // omitted.
+  private static final ImmutableSet<String> OPTIONAL_TAG_NAMES =
+      ImmutableSet.of(
+          "body",
+          "colgroup",
+          "dd",
+          "dt",
+          "head",
+          "html",
+          "li",
+          "optgroup",
+          "option",
+          "p",
+          "rb",
+          "rp",
+          "rt",
+          "rtc",
+          "tbody",
+          "td",
+          "tfoot",
+          "th",
+          "thead",
+          "tr");
 
   private final StandaloneNode node;
   @Nullable private final String nameAsLowerCase;

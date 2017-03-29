@@ -57,6 +57,11 @@ abstract class Condition {
     }
 
     @Override
+    public String toString() {
+      return "EMPTY_CONDITION";
+    }
+
+    @Override
     boolean isDefaultCond() {
       return true;
     }
@@ -95,6 +100,11 @@ abstract class Condition {
     @Override
     Condition copy() {
       return new IfCondition(this);
+    }
+
+    @Override
+    public String toString() {
+      return "IF_CONDITION: " + this.expr;
     }
 
     @Override
@@ -145,6 +155,11 @@ abstract class Condition {
     @Override
     Condition copy() {
       return new SwitchCondition(switchExpr, caseExprs);
+    }
+
+    @Override
+    public String toString() {
+      return "SWITCH_CONDITION: " + this.switchExpr + ", CASE: " + this.caseExprs;
     }
 
     @Override
