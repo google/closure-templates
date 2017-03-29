@@ -1122,11 +1122,11 @@ private TemplateNode Template(SoyFileHeaderInfo soyFileHeaderInfo) :
  */
 private TemplateNode TemplateHelper(TemplateNodeBuilder builder, Token open) :
 {
-  Token close;
-  List<StandaloneNode> templateBodyNodes;
-  RawTextNode initialRawText;
   Identifier templateName;
   List<CommandTagAttribute> attributes;
+  Token close;
+  RawTextNode initialWhitespace;
+  List<StandaloneNode> templateBodyNodes;
 }
 {
   {
@@ -1134,6 +1134,7 @@ private TemplateNode TemplateHelper(TemplateNodeBuilder builder, Token open) :
     // file will change.  TODO(user): remove ids
     builder.setId(nodeIdGen.genId());
   }
+
   templateName = TemplateName()
   attributes = CommandAttributes()
   {
@@ -1147,14 +1148,17 @@ private TemplateNode TemplateHelper(TemplateNodeBuilder builder, Token open) :
     }
     pushState(TEMPLATE_DEFAULT);
   }
+
   close = <CMD_END>
   { builder.setSourceLocation(createSrcLoc(open, close)); }
-  initialRawText = TemplateHeader(builder)
+
+  initialWhitespace = TemplateHeader(builder)
   templateBodyNodes = TemplateBlock()
+
   {
     TemplateNode templateNode = builder.build();
-    if (initialRawText != null) {
-      templateNode.addChild(initialRawText);
+    if (initialWhitespace != null) {
+      templateNode.addChild(initialWhitespace);
     }
     templateNode.addChildren(templateBodyNodes);
     return templateNode;
@@ -1179,7 +1183,7 @@ private Identifier TemplateName():
     // The partial name case.
     dot = <DOT>
     name = <NAME>
-    { ident= Identifier.create("." + name.image, createSrcLoc(dot, name)); }
+    { ident = Identifier.create("." + name.image, createSrcLoc(dot, name)); }
   |
     ident = DottedIdent()
   )
@@ -1217,7 +1221,7 @@ JAVACODE
 /**
  * Reports the error and skips to the given token.
  *
- * See https://javacc.java.net/doc/errorrecovery.html
+ * See https://javacc.org/tutorials/errorrecovery
  */
 private Token reportErrorAndSkipTo(ParseException error, int kind) {
   ParseErrors.reportSoyFileParseException(errorReporter, filePath, error);
@@ -1235,7 +1239,7 @@ JAVACODE
  * Reports the error and skips to the given token if it observes the end of a template, throws an
  * exception to halt parsing.
  *
- * See https://javacc.java.net/doc/errorrecovery.html
+ * See https://javacc.org/tutorials/errorrecovery
  */
 private Token reportTemplateBodyErrorAndSkipTo(ParseException error, int kind) {
   ParseErrors.reportSoyFileParseException(errorReporter, filePath, error);
@@ -1448,7 +1452,7 @@ private RawTextNode RawText() :
  *
  * Whether or not a particular piece of whitespace is part of the header or part of an initial raw
  * text node is ambiguous.  So if there is a trailing piece of non-trivial whitespace it will be
- * consumed here.  So we return the both
+ * consumed here, and returned as RawTextNode.
  */
 private RawTextNode TemplateHeader(TemplateNodeBuilder templateBuilder) :
 {
@@ -1494,8 +1498,8 @@ private RawTextNode TemplateHeader(TemplateNodeBuilder templateBuilder) :
 
 
 /**
- * ParamDecl -> SoyTagOpen ( <CMD_NAME_PARAM_DECL> | <CMD_NAME_INJECTED_PARAM_DECL> )
- *              [ <QMARK> ] <WS_AFTER_CMD_NAME> CmdText RegSoyTagClose
+ * ParamDecl -> ( <DECL_BEGIN_PARAM> | <DECL_BEGIN_OPT_PARAM> | <DECL_BEGIN_INJECT_PARAM
+                | <DECL_BEGIN_OPT_INJECT_PARAM ) <NAME> <TAG_COLON> TypeExpr() <CMD_END>
  *
  * @param desc The doc comment that was attached to whitespace preceding this param, if any.
  */
@@ -1553,6 +1557,7 @@ private HeaderParam ParamDecl(@Nullable String desc) :
         desc);
   }
 }
+
 
 // -------------------------------------------------------------------------------------------------
 // Template block.
@@ -1986,8 +1991,7 @@ private MsgHtmlTagNode MsgHtmlTag() :
 
 
 /**
- * PrintTag -> SoyTagOpen [ CmdNamePrint WsAfterCmdName ] CmdTextParts RegSoyTagClose
- *
+ * PrintTag -> ( <CMD_BEGIN_PRINT> | <CMD_BEGIN_IMPLICIT_PRINT> ) CmdTextParts() <CMD_END>
  */
 private SourceItemInfo<List<String>> PrintTag() :
 {
