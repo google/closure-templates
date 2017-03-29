@@ -266,6 +266,16 @@ final class HtmlTagEntry {
             return false;
           }
         }
+        // Check the stack and queue again
+        if (openStack.isEmpty() && closeQueue.isEmpty()) {
+          continue;
+        } else if (openStack.isEmpty()) {
+          errorReporter.report(closeQueue.pollFirst().getSourceLocation(), UNEXPECTED_CLOSE_TAG);
+          return false;
+        } else {
+          errorReporter.report(openStack.pollFirst().getSourceLocation(), OPEN_TAG_NOT_CLOSED);
+          return false;
+        }
       }
       return true;
     }
