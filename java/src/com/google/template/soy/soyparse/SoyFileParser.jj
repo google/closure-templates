@@ -568,7 +568,7 @@ TOKEN_MGR_DECLS:
 // NOTE: we don't just configure this for state * because these comments shouldn't work in things
 // like string literals or attribute values
 <DEFAULT, IN_CMD_TAG_STRUCTURED, TYPE_EXPR, TEMPLATE_DEFAULT, TEMPLATE_DEFAULT_IN_MSG_BLOCK> MORE: {
-  <"/*"> { pushState(IN_MULTILINE_COMMENT); }
+  < "/*" > { pushState(IN_MULTILINE_COMMENT); }
 }
 
 <IN_MULTILINE_COMMENT, IN_SOYDOC> MORE: {
@@ -576,10 +576,13 @@ TOKEN_MGR_DECLS:
 }
 
 <IN_MULTILINE_COMMENT> SKIP: {
-  <"*/"> { popState(); }
+  < "*/" > { popState(); }
 }
 
-// SOYDOC
+
+// -------------------------------------------------------------------------------------------------
+// Soydoc.
+
 // Capture all soydoc into a SPECIAL_TOKEN.
 // SPECIAL_TOKEN (http://www.engr.mun.ca/~theo/JavaCC-FAQ/javacc-faq-moz.htm#tth_sEc3.10)
 // is a special javacc mechanism whereby we can create a 'token' that isn't directly passed to the
@@ -603,6 +606,10 @@ TOKEN_MGR_DECLS:
   <SOYDOC: "*/" > { popState(); }
 }
 
+
+// -------------------------------------------------------------------------------------------------
+// File header declarations.
+
 <DEFAULT> TOKEN: {
   <ALIAS_OPEN: "{alias"> { pushState(IN_CMD_TAG_STRUCTURED); }
 | <NAMESPACE_OPEN: "{namespace"> { pushState(IN_CMD_TAG_STRUCTURED); }
@@ -624,7 +631,9 @@ TOKEN_MGR_DECLS:
 | "\\\""
 }
 
-// Templates
+
+// -------------------------------------------------------------------------------------------------
+// Templates.
 
 <DEFAULT> TOKEN: {
   <DELTEMPLATE_OPEN : "{deltemplate" > { pushState(IN_CMD_TAG_STRUCTURED); }
@@ -647,6 +656,7 @@ TOKEN_MGR_DECLS:
 <TEMPLATE_DEFAULT, TEMPLATE_DEFAULT_IN_MSG_BLOCK> SKIP: {
   < <WS> <LINE_COMMENT> >
 }
+
 
 // -------------------------------------------------------------------------------------------------
 // Soy commands.
@@ -747,9 +757,9 @@ TOKEN_MGR_DECLS:
 }
 
 <IN_CMD_TAG_UNSTRUCTURED> TOKEN: {
-  < CMD_TEXT_DIRECTIVE_NAME: "|" <IDENT> >
+  < CMD_TEXT_DIRECTIVE_NAME: "|" <RAW_IDENT> >
 // TODO(lukes): Once we merge in the ExpressionParser, use CommandTagAttribute () instead.
-| < CMD_TEXT_PHNAME_ATTR: <WS_CHAR> "phname=\"" <IDENT> "\"" >
+| < CMD_TEXT_PHNAME_ATTR: <WS_CHAR> "phname=\"" <RAW_IDENT> "\"" >
 | < XXX_CMD_TEXT_PHNAME_NOT_IDENT: <WS_CHAR> "phname=\"" ( ~["\""] )* "\"" >
 }
 
@@ -762,31 +772,33 @@ TOKEN_MGR_DECLS:
 }
 
 <IN_CMD_TAG_STRUCTURED, TYPE_EXPR> TOKEN: {
-  // This makes NAME a matchable token within structured tags and exprs (IDENT is otherwise private)
-  < NAME : <IDENT> >
+  // This makes NAME a matchable token within structured tags and exprs (RAW_IDENT is private)
+  < NAME : <RAW_IDENT> >
 | < DOT: "." >
 | < DASH: "-" >
 }
+
 
 // -------------------------------------------------------------------------------------------------
 // Type expressions.
 
 <TYPE_EXPR> TOKEN: {
-   < LANGLE: "<" >
- | < RANGLE: ">" >
- | < LBRACKET: "[" >
- | < RBRACKET: "]" >
- | < COMMA: "," >
- | < COLON : ":"  >
-  // NOTE: this means that "|" <IDENT> is a valid matchable token sequence. But for print
-  // directives we have "|"<IDENT> as a single token.  This is bad since any|null will get
-  // tokenized as <IDENT> <CMD_TEXT_DIRECTIVE_NAME> instead of <IDENT> <VBAR> <IDENT>.  The
+   < T_LANGLE: "<" >
+ | < T_RANGLE: ">" >
+ | < T_LBRACKET: "[" >
+ | < T_RBRACKET: "]" >
+ | < T_COMMA: "," >
+ | < T_COLON : ":"  >
+  // NOTE: this means that "|" <NAME> is a valid matchable token sequence. But for print
+  // directives we have "|"<RAW_IDENT> as a single token.  This is bad since any|null will get
+  // tokenized as <RAW_IDENT> <CMD_TEXT_DIRECTIVE_NAME> instead of <NAME> <T_VBAR> <NAME>.  The
   // reason this isn't currently a problem is because CMD_TEXT_DIRECTIVE_NAME is defined in a
   // different lexical state.  This will become a problem when we switch print node to use
   // structured tag parsing.
- | < VBAR: "|" >
- | < QMARK: "?" >
+ | < T_VBAR: "|" >
+ | < T_QMARK: "?" >
 }
+
 
 // -------------------------------------------------------------------------------------------------
 // IN_CMD_TAG_UNSTRUCTURED matches arbitrary non-tag-closing strings.
@@ -846,6 +858,7 @@ TOKEN_MGR_DECLS:
   }
 }
 
+
 // -------------------------------------------------------------------------------------------------
 // Text.
 
@@ -853,6 +866,7 @@ TOKEN_MGR_DECLS:
   < TOKEN_WS: <WS> >
 | < TOKEN_NOT_WS: <NOT_WS> >
 }
+
 
 // -------------------------------------------------------------------------------------------------
 // Private helper regexes.
@@ -864,7 +878,7 @@ TOKEN_MGR_DECLS:
 | < #NOT_WS: ~[" ","\t","\n","\r"] >
 | < #NOT_NL: ~["\n","\r"] >
 | < #BRACE: ["{","}"] >
-| < #IDENT: ["a"-"z","A"-"Z","_"] ( ["a"-"z","A"-"Z","_","0"-"9"] )* >
+| < #RAW_IDENT: ["a"-"z","A"-"Z","_"] ( ["a"-"z","A"-"Z","_","0"-"9"] )* >
 | < #LINE_COMMENT: "//" ( <NOT_NL> )* >
 }
 
@@ -1163,7 +1177,7 @@ private TemplateNode TemplateHelper(TemplateNodeBuilder builder, Token open, boo
 
 /**
  * Parses a Template name.  This is either a fully qualified dotted identifier or a partial
- * identifier consisting of a single <DOT><IDENT> sequence.
+ * identifier consisting of a single <DOT><NAME> sequence.
  *
  * TemplateName -> (<DOT> <NAME> | DottedIdent() )
  */
@@ -2700,7 +2714,7 @@ private TypeNode TypeExpr() :
   first = PrimaryType()
 
   (
-    <VBAR>
+    <T_VBAR>
     next = PrimaryType()
     {
       if (members == null) {
@@ -2747,7 +2761,7 @@ private TypeNode RecordType() :
   RecordTypeNode.Property prop;
 }
 {
-  open = <LBRACKET>
+  open = <T_LBRACKET>
 
   (
     prop = RecordField()
@@ -2756,7 +2770,7 @@ private TypeNode RecordType() :
       properties.add(prop);
     }
     (
-      <COMMA>
+      <T_COMMA>
       prop = RecordField()
       {
         properties.add(prop);
@@ -2765,7 +2779,7 @@ private TypeNode RecordType() :
 
   )?
 
-  close = <RBRACKET>
+  close = <T_RBRACKET>
 
   {
    return RecordTypeNode.create(createSrcLoc(open, close), properties);
@@ -2783,7 +2797,7 @@ private RecordTypeNode.Property RecordField() :
 }
 {
   fieldName = <NAME>
-  <COLON>
+  <T_COLON>
   fieldType = TypeExpr()
 
   {
@@ -2793,7 +2807,7 @@ private RecordTypeNode.Property RecordField() :
 
 
 /**
- * NamedType -> IDENT ("." IDENT)* [< TypExpr() ("," TypeExpr())* >]
+ * NamedType -> NAME ( "." NAME )* [ < TypeExpr() ("," TypeExpr())* > ]
  *
  * <p>This includes any named type including our generic types
  */
@@ -2828,7 +2842,7 @@ private TypeNode NamedType() :
   }
 
   [
-    open = <LANGLE>
+    open = <T_LANGLE>
     [
       arg = TypeExpr()
       {
@@ -2836,14 +2850,14 @@ private TypeNode NamedType() :
         genericArgs.add(arg);
       }
       (
-        <COMMA>
+        <T_COMMA>
         arg = TypeExpr()
         {
           genericArgs.add(arg);
         }
       )*
     ]
-    close = <RANGLE>
+    close = <T_RANGLE>
     {
       return GenericTypeNode.create(
           fullLocation.extend(createSrcLoc(close)),
@@ -2856,14 +2870,15 @@ private TypeNode NamedType() :
   }
 }
 
+
 /**
- * UnknownType -> QMARK
+ * UnknownType -> T_QMARK
  */
 private TypeNode UnknownType() :
 {
   Token tok;
 }
 {
-  tok = <QMARK>
+  tok = <T_QMARK>
   { return NamedTypeNode.create(createSrcLoc(tok), "?"); }
 }
