@@ -203,6 +203,7 @@ public final class MsgNode extends AbstractBlockCommandNode
   }
 
   /** Returns the meaning string if set, otherwise null (usually null). */
+  @Nullable
   public String getMeaning() {
     return meaning;
   }

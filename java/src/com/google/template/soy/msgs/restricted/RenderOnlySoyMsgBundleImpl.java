@@ -120,7 +120,8 @@ final class RenderOnlySoyMsgBundleImpl extends SoyMsgBundle {
         (value instanceof SoyMsgPart)
             ? ImmutableList.of((SoyMsgPart) value)
             : ((ImmutableList<SoyMsgPart>) value);
-    return new SoyMsg(id, localeString, MsgPartUtils.hasPlrselPart(parts), parts);
+    return SoyMsg.internalCreateForRenderingOnly(
+        id, localeString, MsgPartUtils.hasPlrselPart(parts), parts);
   }
 
   @Override

@@ -17,6 +17,7 @@
 package com.google.template.soy.msgs.restricted;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -35,6 +36,151 @@ import javax.annotation.Nullable;
  *
  */
 public final class SoyMsg {
+  /** Returns a new builder for {@link SoyMsg}. */
+  public static Builder builder() {
+    return new Builder();
+  }
+
+  /** A builder for SoyMsg. */
+  public static final class Builder {
+    private long id;
+    private long altId = -1;
+    private @Nullable String localeString;
+    private @Nullable String meaning;
+    private @Nullable String desc;
+    private boolean isHidden;
+    private @Nullable String contentType;
+    private @Nullable SourceLocation sourceLocation;
+    private boolean isPlrselMsg;
+    private ImmutableList<? extends SoyMsgPart> parts;
+
+    private Builder() {}
+
+    /** @param id A unique id for this message (same across all translations). */
+    public Builder setId(long id) {
+      checkArgument(id >= 0L);
+      this.id = id;
+      return this;
+    }
+
+    /** @param altId An alternate unique id for this message. */
+    public Builder setAltId(long altId) {
+      checkArgument(altId >= 0L);
+      this.altId = altId;
+      return this;
+    }
+
+    /**
+     * @param localeString The language/locale string, or null if unknown. Should only be null for
+     *     messages newly extracted from source files. Should always be set for messages parsed from
+     *     message files/resources
+     */
+    public Builder setLocaleString(String localeString) {
+      this.localeString = checkNotNull(localeString);
+      return this;
+    }
+
+    /**
+     * @param meaning The meaning string, or null if not necessary (usually null). This is a string
+     *     to create unique messages for two otherwise identical messages. This is usually done for
+     *     messages used in different contexts. (For example, the same word can be used as a noun in
+     *     one location and as a verb in another location, and the message texts would be the same
+     *     but the messages would have meanings of "noun" and "verb".). May not be applicable to all
+     *     message plugins.
+     */
+    public Builder setMeaning(String meaning) {
+      this.meaning = checkNotNull(meaning);
+      return this;
+    }
+
+    /** @param desc The description for translators. */
+    public Builder setDesc(String desc) {
+      this.desc = checkNotNull(desc);
+      return this;
+    }
+
+    /**
+     * @param isHidden Whether this message should be hidden. May not be applicable to all message
+     *     plugins.
+     */
+    public Builder setIsHidden(boolean isHidden) {
+      this.isHidden = isHidden;
+      return this;
+    }
+
+    /**
+     * @param contentType Content type of the document that this message will appear in (e.g.
+     *     "{@code text/html}"). May not be applicable to all message plugins.
+     */
+    public Builder setContentType(String contentType) {
+      this.contentType = checkNotNull(contentType);
+      return this;
+    }
+
+    /**
+     * @param sourceLocation Location of a source file that this message comes from. More sources
+     *     can be added using {@code addSourceLocation()}. May not be applicable to all message
+     *     plugins.
+     */
+    public Builder setSourceLocation(SourceLocation sourceLocation) {
+      this.sourceLocation = checkNotNull(sourceLocation);
+      return this;
+    }
+
+    /** @param isPlrselMsg Whether this is a plural/select message. */
+    public Builder setIsPlrselMsg(boolean isPlrselMsg) {
+      this.isPlrselMsg = isPlrselMsg;
+      return this;
+    }
+
+    /** @param parts The parts that make up the message content. */
+    public Builder setParts(Iterable<? extends SoyMsgPart> parts) {
+      this.parts = ImmutableList.copyOf(parts);
+      return this;
+    }
+
+    public SoyMsg build() {
+      return new SoyMsg(
+          id,
+          altId,
+          localeString,
+          meaning,
+          desc,
+          isHidden,
+          contentType,
+          sourceLocation,
+          isPlrselMsg,
+          parts);
+    }
+  }
+
+  /**
+   * Creates a SoyMsg with just enough information for rendering only.
+   *
+   * <p>Using this constructor results in a working renderable message but uses much less memory
+   * than providing all the information for the full constructor.
+   *
+   * <p>This is for soy internal uses only, everyone else should use {@link SoyMsg#builder()}.
+   *
+   * @param id A unique id for this message (same across all translations).
+   * @param localeString The language/locale string, or null if unknown. Should only be null for
+   *     messages newly extracted from source files. Should always be set for messages parsed from
+   *     message files/resources.
+   * @param isPlrselMsg Whether this is a plural/select message.
+   * @param parts The parts that make up the message content.
+   */
+  public static SoyMsg internalCreateForRenderingOnly(
+      long id,
+      @Nullable String localeString,
+      boolean isPlrselMsg,
+      Iterable<? extends SoyMsgPart> parts) {
+    return builder()
+        .setId(id)
+        .setLocaleString(localeString)
+        .setIsPlrselMsg(isPlrselMsg)
+        .setParts(parts)
+        .build();
+  }
 
   /** A unique id for this message (same across all translations). */
   private final long id;
@@ -87,7 +233,9 @@ public final class SoyMsg {
    *     be added using {@code addSourceLocation()}. May not be applicable to all message plugins.
    * @param isPlrselMsg Whether this is a plural/select message.
    * @param parts The parts that make up the message content.
+   * @deprecated use {@link #builder()} instead
    */
+  @Deprecated
   public SoyMsg(
       long id,
       long altId,
@@ -136,7 +284,9 @@ public final class SoyMsg {
    * @param sourceLocation Location of a source file that this message comes from. More sources can
    *     be added using {@code addSourceLocation()}. May not be applicable to all message plugins.
    * @param parts The parts that make up the message content.
+   * @deprecated use {@link #builder()} instead
    */
+  @Deprecated
   public SoyMsg(
       long id,
       @Nullable String localeString,
@@ -161,7 +311,9 @@ public final class SoyMsg {
    *     message files/resources.
    * @param isPlrselMsg Whether this is a plural/select message.
    * @param parts The parts that make up the message content.
+   * @deprecated use {@link #internalCreateForRenderingOnly(long, String, boolean, Iterable)}
    */
+  @Deprecated
   public SoyMsg(
       long id,
       @Nullable String localeString,

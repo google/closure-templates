@@ -392,15 +392,11 @@ public class RenderVisitorTest {
     MsgNode fallbackMsg =
         ((MsgFallbackGroupNode) file.getChildren().get(0).getChildren().get(0)).getChild(1);
     SoyMsg translatedFallbackMsg =
-        new SoyMsg(
-            MsgUtils.computeMsgIdForDualFormat(fallbackMsg),
-            "x-zz",
-            null,
-            null,
-            false,
-            null,
-            null,
-            ImmutableList.<SoyMsgPart>of(SoyMsgRawTextPart.of("zbleh")));
+        SoyMsg.builder()
+            .setId(MsgUtils.computeMsgIdForDualFormat(fallbackMsg))
+            .setLocaleString("x-zz")
+            .setParts(ImmutableList.<SoyMsgPart>of(SoyMsgRawTextPart.of("zbleh")))
+            .build();
     SoyMsgBundle msgBundle =
         new SoyMsgBundleImpl("x-zz", Lists.newArrayList(translatedFallbackMsg));
     assertThat(renderWithDataAndMsgBundle(templateBody, TEST_DATA, msgBundle)).isEqualTo("zbleh");

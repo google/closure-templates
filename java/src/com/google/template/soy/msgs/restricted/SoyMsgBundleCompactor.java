@@ -59,7 +59,8 @@ public final class SoyMsgBundleCompactor {
     for (SoyMsg msg : input) {
       ImmutableList<SoyMsgPart> parts = compactParts(msg.getParts());
       builder.add(
-          new SoyMsg(msg.getId(), msg.getLocaleString(), MsgPartUtils.hasPlrselPart(parts), parts));
+          SoyMsg.internalCreateForRenderingOnly(
+              msg.getId(), msg.getLocaleString(), MsgPartUtils.hasPlrselPart(parts), parts));
     }
     return new RenderOnlySoyMsgBundleImpl(input.getLocaleString(), builder.build());
   }

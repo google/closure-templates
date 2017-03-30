@@ -44,33 +44,43 @@ public class RenderOnlySoyMsgBundleImplTest {
 
   /** Creates a text-only message. */
   private SoyMsg createSimpleMsg(long id) {
-    return new SoyMsg(id, LOCALE, false, ImmutableList.of(SoyMsgRawTextPart.of("Message #" + id)));
+    return SoyMsg.builder()
+        .setId(id)
+        .setLocaleString(LOCALE)
+        .setIsPlrselMsg(false)
+        .setParts(ImmutableList.of(SoyMsgRawTextPart.of("Message #" + id)))
+        .build();
   }
 
   /** Creates a message with two parts. */
   private SoyMsg createMessageWithPlaceholder(long id) {
-    return new SoyMsg(
-        id,
-        LOCALE,
-        false,
-        ImmutableList.of(SoyMsgRawTextPart.of("Message "), new SoyMsgPlaceholderPart("ph_" + id)));
+    return SoyMsg.builder()
+        .setId(id)
+        .setLocaleString(LOCALE)
+        .setIsPlrselMsg(false)
+        .setParts(
+            ImmutableList.of(
+                SoyMsgRawTextPart.of("Message "), new SoyMsgPlaceholderPart("ph_" + id)))
+        .build();
   }
 
   /** Creates a message that has a select. */
   private SoyMsg createSelectMsg(long id) {
-    return new SoyMsg(
-        id,
-        LOCALE,
-        true,
-        ImmutableList.of(
-            new SoyMsgSelectPart(
-                "varname",
-                ImmutableList.of(
-                    SoyMsgPart.Case.create(
-                        "male", ImmutableList.of(SoyMsgRawTextPart.of("Male message " + id))),
-                    SoyMsgPart.Case.create(
-                        "female",
-                        ImmutableList.of(SoyMsgRawTextPart.of("Female message " + id)))))));
+    return SoyMsg.builder()
+        .setId(id)
+        .setLocaleString(LOCALE)
+        .setIsPlrselMsg(true)
+        .setParts(
+            ImmutableList.of(
+                new SoyMsgSelectPart(
+                    "varname",
+                    ImmutableList.of(
+                        SoyMsgPart.Case.create(
+                            "male", ImmutableList.of(SoyMsgRawTextPart.of("Male message " + id))),
+                        SoyMsgPart.Case.create(
+                            "female",
+                            ImmutableList.of(SoyMsgRawTextPart.of("Female message " + id)))))))
+        .build();
   }
 
   @Before

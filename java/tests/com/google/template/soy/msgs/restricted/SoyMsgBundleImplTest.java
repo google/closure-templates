@@ -41,39 +41,37 @@ public class SoyMsgBundleImplTest {
     List<SoyMsg> inMsgs = Lists.newArrayList();
     SourceLocation source1 = new SourceLocation("/path/to/source1", 10, 1, 10, 10);
     inMsgs.add(
-        new SoyMsg(
-            0x123,
-            "x-zz",
-            null,
-            "Boo message.",
-            false,
-            null,
-            source1,
-            ImmutableList.<SoyMsgPart>of(SoyMsgRawTextPart.of("Boo!"))));
+        SoyMsg.builder()
+            .setId(0x123)
+            .setLocaleString("x-zz")
+            .setDesc("Boo message.")
+            .setSourceLocation(source1)
+            .setParts(ImmutableList.<SoyMsgPart>of(SoyMsgRawTextPart.of("Boo!")))
+            .build());
     inMsgs.add(
-        new SoyMsg(
-            0xABC,
-            "x-zz",
-            "abc",
-            "",
-            true,
-            "text/html",
-            null,
-            ImmutableList.<SoyMsgPart>of(
-                SoyMsgRawTextPart.of("Hello, "),
-                new SoyMsgPlaceholderPart("NAME"),
-                SoyMsgRawTextPart.of("!"))));
+        SoyMsg.builder()
+            .setId(0xABC)
+            .setLocaleString("x-zz")
+            .setMeaning("abc")
+            .setDesc("")
+            .setIsHidden(true)
+            .setContentType("text/html")
+            .setParts(
+                ImmutableList.<SoyMsgPart>of(
+                    SoyMsgRawTextPart.of("Hello, "),
+                    new SoyMsgPlaceholderPart("NAME"),
+                    SoyMsgRawTextPart.of("!")))
+            .build());
     SourceLocation source2 = new SourceLocation("/path/to/source2", 20, 1, 20, 10);
     inMsgs.add(
-        new SoyMsg(
-            0x123,
-            "x-zz", // duplicate msg id
-            null,
-            "Boo message 2.",
-            false,
-            null,
-            source2,
-            ImmutableList.<SoyMsgPart>of(SoyMsgRawTextPart.of("Boo 2!"))));
+        SoyMsg.builder()
+            .setId(0x123)
+            .setLocaleString("x-zz")
+            .setDesc("Boo message 2.")
+            .setIsHidden(false)
+            .setSourceLocation(source2)
+            .setParts(ImmutableList.<SoyMsgPart>of(SoyMsgRawTextPart.of("Boo 2!")))
+            .build());
     SoyMsgBundle msgBundle = new SoyMsgBundleImpl("x-zz", inMsgs);
 
     assertEquals("x-zz", msgBundle.getLocaleString());

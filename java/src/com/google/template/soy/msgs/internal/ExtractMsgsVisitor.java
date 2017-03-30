@@ -80,18 +80,20 @@ public final class ExtractMsgsVisitor extends AbstractSoyNodeVisitor<SoyMsgBundl
   @Override
   protected void visitMsgNode(MsgNode node) {
     MsgPartsAndIds msgPartsAndIds = MsgUtils.buildMsgPartsAndComputeMsgIdForDualFormat(node);
-    msgs.add(
-        new SoyMsg(
-            msgPartsAndIds.id,
-            -1L,
-            null,
-            node.getMeaning(),
-            node.getDesc(),
-            node.isHidden(),
-            node.getContentType(),
-            node.getSourceLocation(),
-            node.isPlrselMsg(),
-            msgPartsAndIds.parts));
+    SoyMsg.Builder builder = SoyMsg.builder().setId(msgPartsAndIds.id);
+    if (node.getMeaning() != null) {
+      builder.setMeaning(node.getMeaning());
+    }
+    SoyMsg msg =
+        builder
+            .setDesc(node.getDesc())
+            .setIsHidden(node.isHidden())
+            .setContentType(node.getContentType())
+            .setSourceLocation(node.getSourceLocation())
+            .setIsPlrselMsg(node.isPlrselMsg())
+            .setParts(msgPartsAndIds.parts)
+            .build();
+    msgs.add(msg);
   }
 
   // -----------------------------------------------------------------------------------------------

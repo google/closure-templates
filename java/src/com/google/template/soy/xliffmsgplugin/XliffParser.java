@@ -182,8 +182,11 @@ class XliffParser {
         isInMsg = false;
         if (!currMsgParts.isEmpty()) {
           msgs.add(
-              new SoyMsg(
-                  currMsgId, targetLocaleString, null, null, false, null, null, currMsgParts));
+              SoyMsg.builder()
+                  .setId(currMsgId)
+                  .setLocaleString(targetLocaleString)
+                  .setParts(currMsgParts)
+                  .build());
         }
       }
     }

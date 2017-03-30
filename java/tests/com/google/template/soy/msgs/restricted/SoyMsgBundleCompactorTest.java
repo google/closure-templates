@@ -42,55 +42,67 @@ public class SoyMsgBundleCompactorTest {
 
   /** Creates a text-only message. */
   private SoyMsg createSimpleMsg(String locale, long id) {
-    return new SoyMsg(
-        id, locale, false, ImmutableList.<SoyMsgPart>of(SoyMsgRawTextPart.of("Message #" + id)));
+    return SoyMsg.builder()
+        .setId(id)
+        .setLocaleString(locale)
+        .setIsPlrselMsg(false)
+        .setParts(ImmutableList.<SoyMsgPart>of(SoyMsgRawTextPart.of("Message #" + id)))
+        .build();
   }
 
   /** Creates a message with two parts. */
   private SoyMsg createMessageWithPlaceholder(String locale, long id) {
-    return new SoyMsg(
-        id,
-        locale,
-        false,
-        ImmutableList.of(SoyMsgRawTextPart.of("Message "), new SoyMsgPlaceholderPart("ph_" + id)));
+    return SoyMsg.builder()
+        .setId(id)
+        .setLocaleString(locale)
+        .setIsPlrselMsg(false)
+        .setParts(
+            ImmutableList.of(
+                SoyMsgRawTextPart.of("Message "), new SoyMsgPlaceholderPart("ph_" + id)))
+        .build();
   }
 
   /** Creates a message that has a select with different cases. */
   private SoyMsg createSelectMsgDifferent(String locale, long id) {
-    return new SoyMsg(
-        id,
-        locale,
-        true,
-        ImmutableList.of(
-            new SoyMsgSelectPart(
-                "varname",
-                ImmutableList.of(
-                    SoyMsgPart.Case.create(
-                        "male", ImmutableList.of(SoyMsgRawTextPart.of("Male message " + id))),
-                    SoyMsgPart.Case.create(
-                        "female", ImmutableList.of(SoyMsgRawTextPart.of("Female message " + id))),
-                    SoyMsgPart.Case.create(
-                        (String) null,
-                        ImmutableList.of(SoyMsgRawTextPart.of("Other message " + id)))))));
+    return SoyMsg.builder()
+        .setId(id)
+        .setLocaleString(locale)
+        .setIsPlrselMsg(true)
+        .setParts(
+            ImmutableList.of(
+                new SoyMsgSelectPart(
+                    "varname",
+                    ImmutableList.of(
+                        SoyMsgPart.Case.create(
+                            "male", ImmutableList.of(SoyMsgRawTextPart.of("Male message " + id))),
+                        SoyMsgPart.Case.create(
+                            "female",
+                            ImmutableList.of(SoyMsgRawTextPart.of("Female message " + id))),
+                        SoyMsgPart.Case.create(
+                            (String) null,
+                            ImmutableList.of(SoyMsgRawTextPart.of("Other message " + id)))))))
+        .build();
   }
 
   /** Creates a message that has a select with identical cases. */
   private SoyMsg createSelectMsgSame(String locale, long id) {
-    return new SoyMsg(
-        id,
-        locale,
-        true,
-        ImmutableList.of(
-            new SoyMsgSelectPart(
-                "varname",
-                ImmutableList.of(
-                    SoyMsgPart.Case.create(
-                        "male", ImmutableList.of(SoyMsgRawTextPart.of("Same message " + id))),
-                    SoyMsgPart.Case.create(
-                        "female", ImmutableList.of(SoyMsgRawTextPart.of("Same message " + id))),
-                    SoyMsgPart.Case.create(
-                        (String) null,
-                        ImmutableList.of(SoyMsgRawTextPart.of("Same message " + id)))))));
+    return SoyMsg.builder()
+        .setId(id)
+        .setLocaleString(locale)
+        .setIsPlrselMsg(true)
+        .setParts(
+            ImmutableList.of(
+                new SoyMsgSelectPart(
+                    "varname",
+                    ImmutableList.of(
+                        SoyMsgPart.Case.create(
+                            "male", ImmutableList.of(SoyMsgRawTextPart.of("Same message " + id))),
+                        SoyMsgPart.Case.create(
+                            "female", ImmutableList.of(SoyMsgRawTextPart.of("Same message " + id))),
+                        SoyMsgPart.Case.create(
+                            (String) null,
+                            ImmutableList.of(SoyMsgRawTextPart.of("Same message " + id)))))))
+        .build();
   }
 
   @Before

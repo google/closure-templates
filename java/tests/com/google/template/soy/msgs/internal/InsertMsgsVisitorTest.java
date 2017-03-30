@@ -136,20 +136,17 @@ public final class InsertMsgsVisitorTest {
     // Original (en): random{{FOO}}{{START_LINK}}slimy{{END_LINK}}
     // Translation (x-zz): {{START_LINK}}zslimy{{END_LINK}}{{FOO}}zrandom
     translatedMsgs.add(
-        new SoyMsg(
-            MsgUtils.computeMsgIdForDualFormat(msg),
-            "x-zz",
-            null,
-            null,
-            false,
-            null,
-            null,
-            ImmutableList.of(
-                new SoyMsgPlaceholderPart("START_LINK"),
-                SoyMsgRawTextPart.of("zslimy"),
-                new SoyMsgPlaceholderPart("END_LINK"),
-                new SoyMsgPlaceholderPart("FOO"),
-                SoyMsgRawTextPart.of("zrandom"))));
+        SoyMsg.builder()
+            .setId(MsgUtils.computeMsgIdForDualFormat(msg))
+            .setLocaleString("x-zz")
+            .setParts(
+                ImmutableList.of(
+                    new SoyMsgPlaceholderPart("START_LINK"),
+                    SoyMsgRawTextPart.of("zslimy"),
+                    new SoyMsgPlaceholderPart("END_LINK"),
+                    new SoyMsgPlaceholderPart("FOO"),
+                    SoyMsgRawTextPart.of("zrandom")))
+            .build());
     // Note: This bundle has no translation for the message "dairy{$moo}".
     SoyMsgBundle msgBundle = new SoyMsgBundleImpl("x-zz", translatedMsgs);
 
@@ -296,26 +293,18 @@ public final class InsertMsgsVisitorTest {
     List<SoyMsg> translatedMsgs = Lists.newArrayList();
     MsgNode trans1FirstInstance = ((MsgFallbackGroupNode) template.getChild(1)).getChild(0);
     translatedMsgs.add(
-        new SoyMsg(
-            MsgUtils.computeMsgIdForDualFormat(trans1FirstInstance),
-            "x-zz",
-            null,
-            null,
-            false,
-            null,
-            null,
-            ImmutableList.<SoyMsgPart>of(SoyMsgRawTextPart.of("ztrans1"))));
+        SoyMsg.builder()
+            .setId(MsgUtils.computeMsgIdForDualFormat(trans1FirstInstance))
+            .setLocaleString("x-zz")
+            .setParts(ImmutableList.<SoyMsgPart>of(SoyMsgRawTextPart.of("ztrans1")))
+            .build());
     MsgNode trans2FirstInstance = ((MsgFallbackGroupNode) template.getChild(2)).getChild(1);
     translatedMsgs.add(
-        new SoyMsg(
-            MsgUtils.computeMsgIdForDualFormat(trans2FirstInstance),
-            "x-zz",
-            null,
-            null,
-            false,
-            null,
-            null,
-            ImmutableList.<SoyMsgPart>of(SoyMsgRawTextPart.of("ztrans2"))));
+        SoyMsg.builder()
+            .setId(MsgUtils.computeMsgIdForDualFormat(trans2FirstInstance))
+            .setLocaleString("x-zz")
+            .setParts(ImmutableList.<SoyMsgPart>of(SoyMsgRawTextPart.of("ztrans2")))
+            .build());
     SoyMsgBundle msgBundle = new SoyMsgBundleImpl("x-zz", translatedMsgs);
 
     // Execute the visitor.
