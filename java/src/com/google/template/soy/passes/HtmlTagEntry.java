@@ -109,23 +109,12 @@ final class HtmlTagEntry {
    * <p>Compared to {@code matchOrError} methods, this method does not report an error when one of
    * the deques is empty. However, if both deques are not empty but the top do not match, we should
    * report an error.
+   *
+   * <p>Another difference is that we don't try to remove all optional tags from the openStack, if
+   * the closeQueue is empty. It is possible that some of the optional tags are ended in another
+   * control block, and we cannot remove them too eagerly.
    */
-  public static void tryMatchOrError(
-      ArrayDeque<HtmlTagEntry> openStack,
-      ArrayDeque<HtmlTagEntry> closeQueue,
-      ErrorReporter errorReporter) {
-    while (!openStack.isEmpty() && !closeQueue.isEmpty()) {
-      if (!matchOrError(openStack.pollFirst(), closeQueue.pollFirst(), errorReporter)) {
-        return;
-      }
-    }
-  }
-
-  /**
-   * A helper method that matches a list of open tags and a list of close tags. We need to compare
-   * the last open tag and the first close tag one by one.
-   */
-  public static boolean matchOrError(
+  public static boolean tryMatchOrError(
       ArrayDeque<HtmlTagEntry> openStack,
       ArrayDeque<HtmlTagEntry> closeQueue,
       ErrorReporter errorReporter) {
@@ -140,6 +129,24 @@ final class HtmlTagEntry {
       if (!matchOrError(openStack.pollFirst(), closeQueue.pollFirst(), errorReporter)) {
         return false;
       }
+    }
+    return true;
+  }
+
+  /**
+   * A helper method that matches a list of open tags and a list of close tags. We need to compare
+   * the last open tag and the first close tag one by one.
+   */
+  public static boolean matchOrError(
+      ArrayDeque<HtmlTagEntry> openStack,
+      ArrayDeque<HtmlTagEntry> closeQueue,
+      ErrorReporter errorReporter) {
+    if (!tryMatchOrError(openStack, closeQueue, errorReporter)) {
+      return false;
+    }
+    // Try to remove any remaining optional tags in the open stack.
+    while (!openStack.isEmpty() && openStack.peekFirst().isDefinitelyOptional()) {
+      openStack.pollFirst();
     }
     if (!openStack.isEmpty()) {
       errorReporter.report(openStack.peek().getSourceLocation(), OPEN_TAG_NOT_CLOSED);
@@ -252,28 +259,7 @@ final class HtmlTagEntry {
         }
         ArrayDeque<HtmlTagEntry> openStack = openBranch.deque();
         ArrayDeque<HtmlTagEntry> closeQueue = closeBranch.deque();
-        while (!openStack.isEmpty() && !closeQueue.isEmpty()) {
-          // If close tag is not optional tag, but open tag is optional tag, pop the open tag and
-          // continue.
-          if (!closeQueue.peekFirst().isDefinitelyOptional()
-              && openStack.peekFirst().isDefinitelyOptional()) {
-            openStack.pollFirst();
-            continue;
-          }
-          // Recursively compare
-          if (!matchOrError(openStack.pollFirst(), closeQueue.pollFirst(), errorReporter)) {
-            // We have already report an error recursively, so do not need to report again here.
-            return false;
-          }
-        }
-        // Check the stack and queue again
-        if (openStack.isEmpty() && closeQueue.isEmpty()) {
-          continue;
-        } else if (openStack.isEmpty()) {
-          errorReporter.report(closeQueue.pollFirst().getSourceLocation(), UNEXPECTED_CLOSE_TAG);
-          return false;
-        } else {
-          errorReporter.report(openStack.pollFirst().getSourceLocation(), OPEN_TAG_NOT_CLOSED);
+        if (!matchOrError(openStack, closeQueue, errorReporter)) {
           return false;
         }
       }
