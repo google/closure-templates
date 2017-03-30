@@ -46,8 +46,6 @@ import java.util.List;
  */
 public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
 
-  private static final SoyErrorKind INVALID_DELTEMPLATE_NAME =
-      SoyErrorKind.of("Invalid name.  deltemplate names should be fully qualified.");
   private static final SoyErrorKind INVALID_VARIANT_EXPR =
       SoyErrorKind.of(
           "Invalid variant expression "
@@ -89,10 +87,6 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
       Identifier templateName, List<CommandTagAttribute> attrs) {
     this.cmdText = templateName.identifier() + " " + Joiner.on(' ').join(attrs);
 
-    // deltemplate names must be fully qualified
-    if (templateName.isPartialIdentifier()) {
-      errorReporter.report(templateName.location(), INVALID_DELTEMPLATE_NAME);
-    }
     this.delTemplateName = templateName.identifier();
     AutoescapeMode autoescapeMode = soyFileHeaderInfo.defaultAutoescapeMode;
     ContentKind kind = null;

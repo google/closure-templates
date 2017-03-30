@@ -357,6 +357,12 @@ public class SoyFileParser {
   private static final SoyErrorKind UNEXPECTED_CONTENT_AFTER =
       SoyErrorKind.of("Unexpected content after ''{0}'', expected only comments or whitespace.");
 
+  private static final SoyErrorKind INVALID_TEMPLATE_NAME = SoyErrorKind.of(
+      "Template name ''{0}'' must be relative to the file namespace, i.e. a dot followed by "
+      + "an identifier.");
+  private static final SoyErrorKind INVALID_DELTEMPLATE_NAME =
+      SoyErrorKind.of("Deltemplate ''{0}'' must have a fully qualified name.");
+
   /** Type registry for resolving type names. */
   private SoyTypeRegistry typeRegistry;
 
@@ -1084,7 +1090,7 @@ private TemplateNode Template(SoyFileHeaderInfo soyFileHeaderInfo) :
     open = <TEMPLATE_OPEN>
     { builder = new TemplateBasicNodeBuilder(soyFileHeaderInfo, errorReporter); }
     try {
-      templateNode = TemplateHelper(builder, open)
+      templateNode = TemplateHelper(builder, open, false)
       <CMD_CLOSE_TEMPLATE>
     } catch (ParseException e) {
       reportErrorAndSkipTo(e, CMD_CLOSE_TEMPLATE);
@@ -1096,7 +1102,7 @@ private TemplateNode Template(SoyFileHeaderInfo soyFileHeaderInfo) :
   | open = <DELTEMPLATE_OPEN>
     { builder = new TemplateDelegateNodeBuilder(soyFileHeaderInfo, errorReporter); }
     try {
-      templateNode = TemplateHelper(builder, open)
+      templateNode = TemplateHelper(builder, open, true)
       <CMD_CLOSE_DELTEMPLATE>
     } catch (ParseException e) {
       reportErrorAndSkipTo(e, CMD_CLOSE_DELTEMPLATE);
@@ -1111,7 +1117,7 @@ private TemplateNode Template(SoyFileHeaderInfo soyFileHeaderInfo) :
 /**
  * A helper for parsing everything except the open and close tags of a template.
  */
-private TemplateNode TemplateHelper(TemplateNodeBuilder builder, Token open) :
+private TemplateNode TemplateHelper(TemplateNodeBuilder builder, Token open, boolean isDeltemplate) :
 {
   Identifier templateName;
   List<CommandTagAttribute> attributes;
@@ -1125,8 +1131,7 @@ private TemplateNode TemplateHelper(TemplateNodeBuilder builder, Token open) :
     // file will change.  TODO(user): remove ids
     builder.setId(nodeIdGen.genId());
   }
-
-  templateName = TemplateName()
+  templateName = TemplateName(isDeltemplate)
   attributes = CommandAttributes()
   {
     builder.setCommandValues(templateName, attributes);
@@ -1156,15 +1161,13 @@ private TemplateNode TemplateHelper(TemplateNodeBuilder builder, Token open) :
   }
 }
 
-// TODO(mknichel): Since all Soy files have namespaces, we can split the parsing so that {template
-// tags can only allow <DOT><NAME> and TemplatedelegateName only allows DottedIdent()
 /**
  * Parses a Template name.  This is either a fully qualified dotted identifier or a partial
  * identifier consisting of a single <DOT><IDENT> sequence.
  *
  * TemplateName -> (<DOT> <NAME> | DottedIdent() )
  */
-private Identifier TemplateName():
+private Identifier TemplateName(boolean isDeltemplate):
 {
   Token dot, name;
   Identifier ident;
@@ -1174,9 +1177,19 @@ private Identifier TemplateName():
     // The partial name case.
     dot = <DOT>
     name = <NAME>
-    { ident = Identifier.create("." + name.image, createSrcLoc(dot, name)); }
+    {
+      ident = Identifier.create("." + name.image, createSrcLoc(dot, name));
+      if (isDeltemplate) {
+        errorReporter.report(ident.location(), INVALID_DELTEMPLATE_NAME, ident.identifier());
+      }
+    }
   |
     ident = DottedIdent()
+    {
+      if (!isDeltemplate) {
+        errorReporter.report(ident.location(), INVALID_TEMPLATE_NAME, ident.identifier());
+      }
+    }
   )
   { return ident; }
 }

@@ -26,7 +26,6 @@ import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.basetree.SyntaxVersionUpperBound;
@@ -54,8 +53,6 @@ public abstract class TemplateNodeBuilder {
 
   private static final SoyErrorKind INVALID_SOYDOC_PARAM =
       SoyErrorKind.of("Found invalid soydoc param name ''{0}''");
-  private static final SoyErrorKind INVALID_TEMPLATE_NAME =
-      SoyErrorKind.of("Invalid template name ''{0}''");
   private static final SoyErrorKind INVALID_PARAM_NAMED_IJ =
       SoyErrorKind.of("Invalid param name ''ij'' (''ij'' is for injected data).");
   private static final SoyErrorKind KIND_BUT_NOT_STRICT =
@@ -324,14 +321,6 @@ public abstract class TemplateNodeBuilder {
       String templateName, SourceLocation nameLocation, @Nullable String partialTemplateName) {
     this.templateName = templateName;
     this.partialTemplateName = partialTemplateName;
-
-    if (partialTemplateName != null && !BaseUtils.isIdentifierWithLeadingDot(partialTemplateName)) {
-      errorReporter.report(nameLocation, INVALID_TEMPLATE_NAME, partialTemplateName);
-    }
-
-    if (!BaseUtils.isDottedIdentifier(templateName)) {
-      errorReporter.report(nameLocation, INVALID_TEMPLATE_NAME, templateName);
-    }
   }
 
   protected StrictHtmlMode getStrictHtmlMode() {

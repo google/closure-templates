@@ -304,16 +304,16 @@ public final class TranslateExprNodeVisitorTest {
     String soyFile =
         ""
             + "{namespace ns}\n"
-            + "{template foo deprecatedV1=\"true\"}\n"
+            + "{template .foo deprecatedV1=\"true\"}\n"
             + "  {v1Expression('$goo.length()')}\n"
             + "{/template}";
     String expectedJs =
         ""
-            + "foo = function(opt_data, opt_ignored, opt_ijData) {\n"
+            + "ns.foo = function(opt_data, opt_ignored, opt_ijData) {\n"
             + "  return soydata.VERY_UNSAFE.ordainSanitizedHtml(opt_data.goo.length());\n"
             + "};\n"
             + "if (goog.DEBUG) {\n"
-            + "  foo.soyTemplateName = 'foo';\n"
+            + "  ns.foo.soyTemplateName = 'ns.foo';\n"
             + "}\n";
 
     assertThatSoyFile(soyFile)

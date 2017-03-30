@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.Identifier;
-import com.google.template.soy.base.internal.LegacyInternalSyntaxException;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.error.ErrorReporter;
@@ -39,11 +38,6 @@ import javax.annotation.Nullable;
  *
  */
 public class TemplateBasicNodeBuilder extends TemplateNodeBuilder {
-  private static final SoyErrorKind FULLY_QUALIFIED_NAME =
-      SoyErrorKind.of(
-          "Soy V2 template names must be relative to the file namespace, i.e. a dot "
-              + "followed by an identifier.  Templates with fully qualified names are only allowed "
-              + "in legacy templates marked with the deprecatedV1=\"true\" attribute.");
   private static final SoyErrorKind PRIVATE_AND_VISIBILITY =
       SoyErrorKind.of("Cannot specify both private=\"true\" and visibility=\"{0}\".");
 
@@ -134,28 +128,10 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder {
     }
     setAutoescapeInfo(autoescapeMode, kind, kindLocation);
 
-    if (templateName.isPartialIdentifier()) {
-      if (soyFileHeaderInfo.namespace == null) {
-        // In this case, throwing a SoySyntaxException and halting compilation of the current file
-        // is preferable to reporting a SoyErrorKind and continuing. To continue, we could make up
-        // an "error" template name/namespace, but that would cause spurious duplicate template
-        // errors (for every namespace-relative name in a non-namespaced file).
-        // It's also dangerous, since "error" is a common real-world template/namespace name.
-        throw LegacyInternalSyntaxException.createWithMetaInfo(
-            "Template has namespace-relative name, but file has no namespace declaration.",
-            templateName.location());
-      }
-      setTemplateNames(
-          soyFileHeaderInfo.namespace + templateName.identifier(),
-          templateName.location(),
-          templateName.identifier());
-    } else {
-      if (!isMarkedV1 && !templateName.isPartialIdentifier()) {
-        // only allow fully qualified template names if it is also marked as v1
-        errorReporter.report(templateName.location(), FULLY_QUALIFIED_NAME);
-      }
-      setTemplateNames(templateName.identifier(), templateName.location(), null);
-    }
+    setTemplateNames(
+        soyFileHeaderInfo.namespace + templateName.identifier(),
+        templateName.location(),
+        templateName.identifier());
     this.templateNameForUserMsgs = getTemplateName();
     return this;
   }

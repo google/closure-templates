@@ -159,9 +159,8 @@ public class TemplateNodeTest {
     parse("{namespace ns}\n{template autoescape=\"strict\"}{/template}", errorReporter);
     assertThat(errorReporter.getErrorMessages())
         .containsExactly(
-            "Soy V2 template names must be relative to the file namespace, i.e. a dot followed by "
-                + "an identifier.  Templates with fully qualified names are only allowed in legacy "
-                + "templates marked with the deprecatedV1=\"true\" attribute.",
+            "Template name 'autoescape' must be relative to the file namespace, i.e. a dot "
+                + "followed by an identifier.",
             "parse error at '=': expected }, identifier, or .");
 
     errorReporter = new FormattingErrorReporter();
