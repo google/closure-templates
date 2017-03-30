@@ -120,8 +120,8 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
       SoyErrorKind.of("type {0} does not support bracket access");
   private static final SoyErrorKind BRACKET_ACCESS_NULLABLE_UNION =
       SoyErrorKind.of(
-          "union type that is nullable cannot use bracket access. "
-              + "To access this value, first check for null.");
+          "union type that is nullable cannot use bracket access. To access this value, "
+              + "first check for null or use null-safe (\"?[\") operations..");
   private static final SoyErrorKind CHECK_NOT_NULL_ON_COMPILE_TIME_NULL =
       SoyErrorKind.of("Cannot call checkNotNull on a parameter with a static type of ''null''");
   private static final SoyErrorKind DOT_ACCESS_NOT_SUPPORTED =
@@ -531,6 +531,7 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
           getItemType(
               node.getBaseExprChild().getType(),
               node.getKeyExprChild().getType(),
+              node.isNullSafe(),
               node.getSourceLocation());
       node.setType(itemType);
       tryApplySubstitution(node);
@@ -947,12 +948,10 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
             UnionType unionType = (UnionType) baseType;
             List<SoyType> fieldTypes = new ArrayList<>(unionType.getMembers().size());
             for (SoyType unionMember : unionType.getMembers()) {
-              // TODO: In the future when we have flow-based type analysis, only
-              // exclude nulls when fieldAccessNode is null-safe
+              // TODO: Only exclude nulls when FieldAccessNode is null-safe.
               if (unionMember.getKind() == SoyType.Kind.NULL) {
                 continue;
               }
-
               SoyType fieldType = getFieldType(unionMember, fieldName, sourceLocation);
               // If this member's field type resolved to an error, bail out to avoid spamming
               // the user with multiple error messages for the same line.
@@ -976,7 +975,8 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
     }
 
     /** Given a base type and an item key type, compute the item value type. */
-    private SoyType getItemType(SoyType baseType, SoyType keyType, SourceLocation sourceLocation) {
+    private SoyType getItemType(
+        SoyType baseType, SoyType keyType, boolean isNullSafe, SourceLocation sourceLocation) {
       Preconditions.checkNotNull(baseType);
       Preconditions.checkNotNull(keyType);
       switch (baseType.getKind()) {
@@ -1026,7 +1026,7 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
               if (unionMember.equals(NullType.getInstance())) {
                 continue;
               }
-              SoyType itemType = getItemType(unionMember, keyType, sourceLocation);
+              SoyType itemType = getItemType(unionMember, keyType, isNullSafe, sourceLocation);
               // If this member's item type resolved to an error, bail out to avoid spamming
               // the user with multiple error messages for the same line.
               if (itemType == ErrorType.getInstance()) {
@@ -1034,9 +1034,8 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
               }
               itemTypes.add(itemType);
             }
-            // If this is a nullable union type, and all other union members support bracket access,
-            // we report a special error here indicating that this might be an optional parameter.
-            if (unionType.isNullable()) {
+            // If this is a nullable union type but the operation is not null-safe, throw an error.
+            if (unionType.isNullable() && !isNullSafe) {
               errorReporter.report(sourceLocation, BRACKET_ACCESS_NULLABLE_UNION);
               return ErrorType.getInstance();
             }
