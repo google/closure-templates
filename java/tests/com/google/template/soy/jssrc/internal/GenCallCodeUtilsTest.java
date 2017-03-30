@@ -29,6 +29,7 @@ import com.google.template.soy.base.internal.UniqueNameGenerator;
 import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.shared.SharedTestUtils;
+import com.google.template.soy.shared.internal.GuiceSimpleScope;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import org.junit.Test;
@@ -217,18 +218,19 @@ public final class GenCallCodeUtilsTest {
     // Manually setting the escaping directives.
     callNode.setEscapingDirectiveNames(escapingDirectives);
 
-    JsSrcTestUtils.simulateNewApiCall(INJECTOR);
-    GenCallCodeUtils genCallCodeUtils = INJECTOR.getInstance(GenCallCodeUtils.class);
-    UniqueNameGenerator nameGenerator = JsSrcNameGenerators.forLocalVariables();
-    CodeChunk call =
-        genCallCodeUtils.gen(
-            callNode,
-            AliasUtils.IDENTITY_ALIASES,
-            TranslationContext.of(
-                SoyToJsVariableMappings.forNewTemplate(),
-                CodeChunk.Generator.create(nameGenerator),
-                nameGenerator),
-            ExplodingErrorReporter.get());
-    return call.getExpressionTestOnly();
+    try (GuiceSimpleScope.InScope inScope = JsSrcTestUtils.simulateNewApiCall(INJECTOR)) {
+      GenCallCodeUtils genCallCodeUtils = INJECTOR.getInstance(GenCallCodeUtils.class);
+      UniqueNameGenerator nameGenerator = JsSrcNameGenerators.forLocalVariables();
+      CodeChunk call =
+          genCallCodeUtils.gen(
+              callNode,
+              AliasUtils.IDENTITY_ALIASES,
+              TranslationContext.of(
+                  SoyToJsVariableMappings.forNewTemplate(),
+                  CodeChunk.Generator.create(nameGenerator),
+                  nameGenerator),
+              ExplodingErrorReporter.get());
+      return call.getExpressionTestOnly();
+    }
   }
 }

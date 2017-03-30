@@ -31,7 +31,6 @@ import com.google.template.soy.pysrc.SoyPySrcOptions;
 import com.google.template.soy.pysrc.internal.PyApiCallScopeBindingAnnotations.PyCurrentManifest;
 import com.google.template.soy.shared.internal.ApiCallScopeUtils;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
-import com.google.template.soy.shared.internal.GuiceSimpleScope.WithScope;
 import com.google.template.soy.shared.internal.MainEntryPointUtils;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.ApiCall;
 import com.google.template.soy.sharedpasses.opti.SimplifyVisitor;
@@ -98,15 +97,15 @@ public final class PySrcMain {
       ErrorReporter errorReporter)
       throws SoySyntaxException {
 
-    try (WithScope withScope = apiCallScope.enter()) {
+    try (GuiceSimpleScope.InScope inScope = apiCallScope.enter()) {
       // Seed the scoped parameters.
-      apiCallScope.seed(SoyPySrcOptions.class, pySrcOptions);
-      apiCallScope.seed(
+      inScope.seed(SoyPySrcOptions.class, pySrcOptions);
+      inScope.seed(
           new Key<ImmutableMap<String, String>>(PyCurrentManifest.class) {}, currentManifest);
 
       BidiGlobalDir bidiGlobalDir =
           SoyBidiUtils.decodeBidiGlobalDirFromPyOptions(pySrcOptions.getBidiIsRtlFn());
-      ApiCallScopeUtils.seedSharedParams(apiCallScope, null, bidiGlobalDir);
+      ApiCallScopeUtils.seedSharedParams(inScope, null, bidiGlobalDir);
 
       simplifyVisitor.simplify(soyTree, templateRegistry);
       return genPyCodeVisitorProvider.get().gen(soyTree, errorReporter);

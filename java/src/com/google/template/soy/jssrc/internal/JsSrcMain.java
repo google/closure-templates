@@ -32,7 +32,6 @@ import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.internal.InsertMsgsVisitor;
 import com.google.template.soy.shared.internal.ApiCallScopeUtils;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
-import com.google.template.soy.shared.internal.GuiceSimpleScope.WithScope;
 import com.google.template.soy.shared.internal.MainEntryPointUtils;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.ApiCall;
 import com.google.template.soy.sharedpasses.opti.SimplifyVisitor;
@@ -112,13 +111,13 @@ public class JsSrcMain {
         "Do not specify useGoogIsRtlForBidiGlobalDir without either"
             + " shouldProvideRequireSoyNamespaces or shouldProvideRequireJsFunctions.");
 
-    try (WithScope withScope = apiCallScope.enter()) {
+    try (GuiceSimpleScope.InScope inScope = apiCallScope.enter()) {
       // Seed the scoped parameters.
-      apiCallScope.seed(SoyJsSrcOptions.class, jsSrcOptions);
+      inScope.seed(SoyJsSrcOptions.class, jsSrcOptions);
       BidiGlobalDir bidiGlobalDir =
           SoyBidiUtils.decodeBidiGlobalDirFromJsOptions(
               jsSrcOptions.getBidiGlobalDir(), jsSrcOptions.getUseGoogIsRtlForBidiGlobalDir());
-      ApiCallScopeUtils.seedSharedParams(apiCallScope, msgBundle, bidiGlobalDir);
+      ApiCallScopeUtils.seedSharedParams(inScope, msgBundle, bidiGlobalDir);
 
       // Replace MsgNodes.
       if (jsSrcOptions.shouldGenerateGoogMsgDefs()) {

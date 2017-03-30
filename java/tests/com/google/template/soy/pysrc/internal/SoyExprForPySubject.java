@@ -32,6 +32,7 @@ import com.google.template.soy.SoyModule;
 import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.Operator;
+import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.pysrc.internal.GenPyExprsVisitor.GenPyExprsVisitorFactory;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyExprUtils;
@@ -112,7 +113,7 @@ public final class SoyExprForPySubject extends Subject<SoyExprForPySubject, Stri
         SoyFileSetParserBuilder.forTemplateContents(getSubject()).parse().fileSet();
     SoyNode node = SharedTestUtils.getNode(soyTree, 0);
 
-    SharedTestUtils.simulateNewApiCall(injector);
+    SharedTestUtils.simulateNewApiCall(injector, null, BidiGlobalDir.LTR);
     GenPyExprsVisitor genPyExprsVisitor =
         injector
             .getInstance(GenPyExprsVisitorFactory.class)

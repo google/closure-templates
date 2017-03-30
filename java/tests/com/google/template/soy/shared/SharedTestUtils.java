@@ -59,16 +59,6 @@ public final class SharedTestUtils {
    * scoped values common to all backends. Does not seed backend-specific API call parameters.
    *
    * @param injector The Guice injector responsible for injections during the API call.
-   */
-  public static GuiceSimpleScope simulateNewApiCall(Injector injector) {
-    return simulateNewApiCall(injector, null, BidiGlobalDir.LTR);
-  }
-
-  /**
-   * Simulates the start of a new Soy API call by entering/re-entering the ApiCallScope and seeding
-   * scoped values common to all backends. Does not seed backend-specific API call parameters.
-   *
-   * @param injector The Guice injector responsible for injections during the API call.
    * @param msgBundle The bundle of translated messages, or null to use the messages from the Soy
    *     source.
    * @param bidiGlobalDir The bidi global directionality. If null, it is derived from the msgBundle
@@ -76,21 +66,17 @@ public final class SharedTestUtils {
    * @return The ApiCallScope object (for use by the caller of this method to seed additional API
    *     call parameters, such as backend-specific parameters).
    */
-  @SuppressWarnings("CheckReturnValue") // the call to apiCallScope.enter()
-  public static GuiceSimpleScope simulateNewApiCall(
+  public static GuiceSimpleScope.InScope simulateNewApiCall(
       Injector injector, @Nullable SoyMsgBundle msgBundle, @Nullable BidiGlobalDir bidiGlobalDir) {
 
     GuiceSimpleScope apiCallScope =
         injector.getInstance(Key.get(GuiceSimpleScope.class, ApiCall.class));
 
-    if (apiCallScope.isActive()) {
-      apiCallScope.exit();
-    }
-    apiCallScope.enter();
+    GuiceSimpleScope.InScope inscope = apiCallScope.enter();
 
-    ApiCallScopeUtils.seedSharedParams(apiCallScope, msgBundle, bidiGlobalDir);
+    ApiCallScopeUtils.seedSharedParams(inscope, msgBundle, bidiGlobalDir);
 
-    return apiCallScope;
+    return inscope;
   }
 
   /**
@@ -180,7 +166,8 @@ public final class SharedTestUtils {
           case "isFirst":
           case "isLast":
             loopVarNames.add(((VarRefNode) node.getChild(0)).getName());
-            break; // dont visitChildren
+            break;
+          default: // fall out
         }
         visitChildren(node);
       }

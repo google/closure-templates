@@ -32,6 +32,7 @@ import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.passes.ResolveFunctionsVisitor;
+import com.google.template.soy.shared.internal.GuiceSimpleScope;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -50,53 +51,55 @@ public final class JsExprTranslatorTest {
 
   @Test
   public void testTranslateToCodeChunk() {
-    JsSrcTestUtils.simulateNewApiCall(INJECTOR);
-    JsExprTranslator jsExprTranslator = INJECTOR.getInstance(JsExprTranslator.class);
+    JsExprTranslator jsExprTranslator;
+    try (GuiceSimpleScope.InScope inScope = JsSrcTestUtils.simulateNewApiCall(INJECTOR)) {
+      jsExprTranslator = INJECTOR.getInstance(JsExprTranslator.class);
 
-    TimesOpNode expr = new TimesOpNode(SourceLocation.UNKNOWN);
-    expr.addChild(new IntegerNode(3, SourceLocation.UNKNOWN));
-    // will be replaced with one of the functions below
-    expr.addChild(new NullNode(SourceLocation.UNKNOWN));
+      TimesOpNode expr = new TimesOpNode(SourceLocation.UNKNOWN);
+      expr.addChild(new IntegerNode(3, SourceLocation.UNKNOWN));
+      // will be replaced with one of the functions below
+      expr.addChild(new NullNode(SourceLocation.UNKNOWN));
 
-    FunctionNode userFnNode = new FunctionNode("userFn", SourceLocation.UNKNOWN);
-    userFnNode.addChild(new IntegerNode(5, SourceLocation.UNKNOWN));
+      FunctionNode userFnNode = new FunctionNode("userFn", SourceLocation.UNKNOWN);
+      userFnNode.addChild(new IntegerNode(5, SourceLocation.UNKNOWN));
 
-    FunctionNode randomIntFnNode = new FunctionNode("randomInt", SourceLocation.UNKNOWN);
-    randomIntFnNode.addChild(new IntegerNode(4, SourceLocation.UNKNOWN));
+      FunctionNode randomIntFnNode = new FunctionNode("randomInt", SourceLocation.UNKNOWN);
+      randomIntFnNode.addChild(new IntegerNode(4, SourceLocation.UNKNOWN));
 
-    // Test unsupported function (Soy V1 syntax).
-    expr.replaceChild(1, userFnNode);
-    new ResolveFunctionsVisitor(SOY_FUNCTIONS).exec(expr);
-    String exprText = "3   *   userFn(5)";
-    UniqueNameGenerator nameGenerator = JsSrcNameGenerators.forLocalVariables();
-    assertThat(
-            jsExprTranslator
-                .translateToCodeChunk(
-                    expr,
-                    exprText,
-                    TranslationContext.of(
-                        SoyToJsVariableMappings.forNewTemplate(),
-                        CodeChunk.Generator.create(nameGenerator),
-                        nameGenerator),
-                    ExplodingErrorReporter.get())
-                .getCode())
-        .isEqualTo("3 * userFn(5);");
+      // Test unsupported function (Soy V1 syntax).
+      expr.replaceChild(1, userFnNode);
+      new ResolveFunctionsVisitor(SOY_FUNCTIONS).exec(expr);
+      String exprText = "3   *   userFn(5)";
+      UniqueNameGenerator nameGenerator = JsSrcNameGenerators.forLocalVariables();
+      assertThat(
+              jsExprTranslator
+                  .translateToCodeChunk(
+                      expr,
+                      exprText,
+                      TranslationContext.of(
+                          SoyToJsVariableMappings.forNewTemplate(),
+                          CodeChunk.Generator.create(nameGenerator),
+                          nameGenerator),
+                      ExplodingErrorReporter.get())
+                  .getCode())
+          .isEqualTo("3 * userFn(5);");
 
-    // Test supported function.
-    expr.replaceChild(1, randomIntFnNode);
-    new ResolveFunctionsVisitor(SOY_FUNCTIONS).exec(expr);
-    exprText = "3   *   randomInt(4)";
-    assertThat(
-            jsExprTranslator
-                .translateToCodeChunk(
-                    expr,
-                    exprText,
-                    TranslationContext.of(
-                        SoyToJsVariableMappings.forNewTemplate(),
-                        CodeChunk.Generator.create(nameGenerator),
-                        nameGenerator),
-                    ExplodingErrorReporter.get())
-                .getCode())
-        .isEqualTo("3 * (Math.floor(Math.random() * 4));");
+      // Test supported function.
+      expr.replaceChild(1, randomIntFnNode);
+      new ResolveFunctionsVisitor(SOY_FUNCTIONS).exec(expr);
+      exprText = "3   *   randomInt(4)";
+      assertThat(
+              jsExprTranslator
+                  .translateToCodeChunk(
+                      expr,
+                      exprText,
+                      TranslationContext.of(
+                          SoyToJsVariableMappings.forNewTemplate(),
+                          CodeChunk.Generator.create(nameGenerator),
+                          nameGenerator),
+                      ExplodingErrorReporter.get())
+                  .getCode())
+          .isEqualTo("3 * (Math.floor(Math.random() * 4));");
+    }
   }
 }

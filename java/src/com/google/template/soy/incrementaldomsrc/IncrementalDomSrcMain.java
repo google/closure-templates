@@ -31,7 +31,6 @@ import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.internal.OptimizeBidiCodeGenVisitor;
 import com.google.template.soy.shared.internal.ApiCallScopeUtils;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
-import com.google.template.soy.shared.internal.GuiceSimpleScope.WithScope;
 import com.google.template.soy.shared.internal.MainEntryPointUtils;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.ApiCall;
 import com.google.template.soy.sharedpasses.opti.SimplifyVisitor;
@@ -103,14 +102,14 @@ public class IncrementalDomSrcMain {
 
     SoyJsSrcOptions incrementalJSSrcOptions = options.toJsSrcOptions();
 
-    try (WithScope withScope = apiCallScope.enter()) {
+    try (GuiceSimpleScope.InScope inScope = apiCallScope.enter()) {
       // Seed the scoped parameters.
-      apiCallScope.seed(SoyJsSrcOptions.class, incrementalJSSrcOptions);
+      inScope.seed(SoyJsSrcOptions.class, incrementalJSSrcOptions);
       BidiGlobalDir bidiGlobalDir =
           SoyBidiUtils.decodeBidiGlobalDirFromJsOptions(
               incrementalJSSrcOptions.getBidiGlobalDir(),
               incrementalJSSrcOptions.getUseGoogIsRtlForBidiGlobalDir());
-      ApiCallScopeUtils.seedSharedParams(apiCallScope, null /* msgBundle */, bidiGlobalDir);
+      ApiCallScopeUtils.seedSharedParams(inScope, null /* msgBundle */, bidiGlobalDir);
 
       // Do the code generation.
       optimizeBidiCodeGenVisitorProvider.get().exec(soyTree);

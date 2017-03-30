@@ -45,6 +45,7 @@ import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprparse.SoyParsingContext;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.sharedpasses.render.EvalVisitor.EvalVisitorFactory;
@@ -82,7 +83,7 @@ public class EvalVisitorTest {
   @Before
   public void setUp() {
     testData = createTestData();
-    SharedTestUtils.simulateNewApiCall(INJECTOR);
+    SharedTestUtils.simulateNewApiCall(INJECTOR, null, BidiGlobalDir.LTR);
   }
 
   protected SoyRecord createTestData() {

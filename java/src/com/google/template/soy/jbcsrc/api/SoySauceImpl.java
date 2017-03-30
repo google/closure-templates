@@ -40,7 +40,6 @@ import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.internal.ApiCallScopeUtils;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
-import com.google.template.soy.shared.internal.GuiceSimpleScope.WithScope;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.ApiCall;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
@@ -159,13 +158,13 @@ public final class SoySauceImpl implements SoySauce {
 
     @Override
     public RendererImpl setIj(Map<String, ?> record) {
-      this.ij = (SoyRecord) converter.convert(checkNotNull(record));
+      this.ij = converter.newDictFromMap(checkNotNull(record));
       return this;
     }
 
     @Override
     public RendererImpl setData(Map<String, ?> record) {
-      this.data = (SoyRecord) converter.convert(checkNotNull(record));
+      this.data = converter.newDictFromMap(checkNotNull(record));
       return this;
     }
 
@@ -273,7 +272,7 @@ public final class SoySauceImpl implements SoySauce {
       CompiledTemplate template, Scoper scoper, AdvisingAppendable out, RenderContext context)
       throws IOException {
     RenderResult result;
-    try (WithScope scope = scoper.enter()) {
+    try (GuiceSimpleScope.InScope scope = scoper.enter()) {
       result = template.render(out, context);
     } catch (Throwable t) {
       rewriteStackTrace(t);
@@ -334,11 +333,12 @@ public final class SoySauceImpl implements SoySauce {
       this.localeString = localeString;
     }
 
-    WithScope enter() {
+    GuiceSimpleScope.InScope enter() {
       // TODO(lukes): this isn't right, re-entering the scope shouldn't retrigger injection of
-      // items, we need an explicit detach api.
-      WithScope withScope = scope.enter();
-      ApiCallScopeUtils.seedSharedParams(scope, dir, localeString);
+      // items, we need an explicit detach api.  This happens to be fine because these are the only
+      // 2 keys available in this scope
+      GuiceSimpleScope.InScope withScope = scope.enter();
+      ApiCallScopeUtils.seedSharedParams(withScope, dir, localeString);
       return withScope;
     }
   }

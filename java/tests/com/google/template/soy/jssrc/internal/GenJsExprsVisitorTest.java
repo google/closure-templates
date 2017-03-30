@@ -35,10 +35,12 @@ import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.internal.GenJsExprsVisitor.GenJsExprsVisitorFactory;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.shared.SharedTestUtils;
+import com.google.template.soy.shared.internal.GuiceSimpleScope;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import java.util.ArrayList;
 import java.util.List;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -78,10 +80,17 @@ public final class GenJsExprsVisitorTest {
               id("gooIndex8"))
           .build();
 
+  private GuiceSimpleScope.InScope inScope;
+
   @Before
   public void setUp() {
     SoyJsSrcOptions jsSrcOptions = new SoyJsSrcOptions();
-    JsSrcTestUtils.simulateNewApiCall(INJECTOR, jsSrcOptions);
+    inScope = JsSrcTestUtils.simulateNewApiCall(INJECTOR, jsSrcOptions);
+  }
+
+  @After
+  public void tearDown() {
+    inScope.close();
   }
 
   @Test

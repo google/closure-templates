@@ -43,6 +43,7 @@ import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ExplodingErrorReporter;
+import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.internal.MsgUtils;
 import com.google.template.soy.msgs.restricted.SoyMsg;
@@ -153,7 +154,7 @@ public class RenderVisitorTest {
 
   @Before
   public void setUp() {
-    SharedTestUtils.simulateNewApiCall(INJECTOR);
+    SharedTestUtils.simulateNewApiCall(INJECTOR, null, BidiGlobalDir.LTR);
   }
 
   /**

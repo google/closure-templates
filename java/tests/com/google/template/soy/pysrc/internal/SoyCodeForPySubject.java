@@ -30,12 +30,15 @@ import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.SoyModule;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.error.ExplodingErrorReporter;
+import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.pysrc.SoyPySrcOptions;
 import com.google.template.soy.pysrc.internal.GenPyExprsVisitor.GenPyExprsVisitorFactory;
 import com.google.template.soy.pysrc.internal.PyApiCallScopeBindingAnnotations.PyCurrentManifest;
 import com.google.template.soy.shared.AutoEscapingType;
 import com.google.template.soy.shared.SharedTestUtils;
+import com.google.template.soy.shared.internal.ApiCallScopeUtils;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
+import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.ApiCall;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import java.util.List;
@@ -148,7 +151,7 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
     }
   }
 
-  private GenPyCodeVisitor getGenPyCodeVisitor() {
+  private GuiceSimpleScope.InScope enterScope() {
     // Setup default configs.
     SoyPySrcOptions pySrcOptions =
         new SoyPySrcOptions(
@@ -158,20 +161,25 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
             translationClass,
             namespaceManifest,
             false);
-    GuiceSimpleScope apiCallScope = SharedTestUtils.simulateNewApiCall(injector);
-    apiCallScope.seed(SoyPySrcOptions.class, pySrcOptions);
-    apiCallScope.seed(
+    GuiceSimpleScope apiCallScope1 =
+        injector.getInstance(Key.get(GuiceSimpleScope.class, ApiCall.class));
+
+    GuiceSimpleScope.InScope scope = apiCallScope1.enter();
+    ApiCallScopeUtils.seedSharedParams(scope, null, BidiGlobalDir.LTR);
+    scope.seed(SoyPySrcOptions.class, pySrcOptions);
+    scope.seed(
         new Key<ImmutableMap<String, String>>(PyCurrentManifest.class) {},
         ImmutableMap.<String, String>of());
-
-    // Execute the compiler.
-    return injector.getInstance(GenPyCodeVisitor.class);
+    return scope;
   }
 
   private String compileFile() {
     SoyFileSetNode node = SoyFileSetParserBuilder.forFileContents(actual()).parse().fileSet();
-    List<String> fileContents = getGenPyCodeVisitor().gen(node, ExplodingErrorReporter.get());
-    return fileContents.get(0).replaceAll("([a-zA-Z]+)\\d+", "$1###");
+    try (GuiceSimpleScope.InScope inScope = enterScope()) {
+      List<String> fileContents =
+          injector.getInstance(GenPyCodeVisitor.class).gen(node, ExplodingErrorReporter.get());
+      return fileContents.get(0).replaceAll("([a-zA-Z]+)\\d+", "$1###");
+    }
   }
 
   private String compileBody() {
@@ -184,20 +192,22 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
             0);
 
     // Setup the GenPyCodeVisitor's state before the node is visited.
-    GenPyCodeVisitor genPyCodeVisitor = getGenPyCodeVisitor();
-    genPyCodeVisitor.pyCodeBuilder = new PyCodeBuilder();
-    genPyCodeVisitor.pyCodeBuilder.pushOutputVar("output");
-    genPyCodeVisitor.pyCodeBuilder.setOutputVarInited();
-    genPyCodeVisitor.localVarExprs = new LocalVariableStack();
-    genPyCodeVisitor.localVarExprs.pushFrame();
-    genPyCodeVisitor.genPyExprsVisitor =
-        injector
-            .getInstance(GenPyExprsVisitorFactory.class)
-            .create(genPyCodeVisitor.localVarExprs, ExplodingErrorReporter.get());
+    try (GuiceSimpleScope.InScope inScope = enterScope()) {
+      GenPyCodeVisitor genPyCodeVisitor = injector.getInstance(GenPyCodeVisitor.class);
+      genPyCodeVisitor.pyCodeBuilder = new PyCodeBuilder();
+      genPyCodeVisitor.pyCodeBuilder.pushOutputVar("output");
+      genPyCodeVisitor.pyCodeBuilder.setOutputVarInited();
+      genPyCodeVisitor.localVarExprs = new LocalVariableStack();
+      genPyCodeVisitor.localVarExprs.pushFrame();
+      genPyCodeVisitor.genPyExprsVisitor =
+          injector
+              .getInstance(GenPyExprsVisitorFactory.class)
+              .create(genPyCodeVisitor.localVarExprs, ExplodingErrorReporter.get());
 
-    genPyCodeVisitor.visitForTesting(node, ExplodingErrorReporter.get());
+      genPyCodeVisitor.visitForTesting(node, ExplodingErrorReporter.get());
 
-    return genPyCodeVisitor.pyCodeBuilder.getCode().replaceAll("([a-zA-Z]+)\\d+", "$1###");
+      return genPyCodeVisitor.pyCodeBuilder.getCode().replaceAll("([a-zA-Z]+)\\d+", "$1###");
+    }
   }
 
   //-----------------------------------------------------------------------------------------------

@@ -40,6 +40,7 @@ import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
 import com.google.template.soy.shared.AutoEscapingType;
 import com.google.template.soy.shared.SharedTestUtils;
+import com.google.template.soy.shared.internal.GuiceSimpleScope;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.TemplateNode;
@@ -48,6 +49,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -112,13 +114,19 @@ public final class GenJsCodeVisitorTest {
 
   private SoyJsSrcOptions jsSrcOptions;
   private GenJsCodeVisitor genJsCodeVisitor;
+  private GuiceSimpleScope.InScope inScope;
 
   @Before
   public void setUp() {
     jsSrcOptions = new SoyJsSrcOptions();
-    JsSrcTestUtils.simulateNewApiCall(INJECTOR, jsSrcOptions);
+    inScope = JsSrcTestUtils.simulateNewApiCall(INJECTOR, jsSrcOptions);
     genJsCodeVisitor = INJECTOR.getInstance(GenJsCodeVisitor.class);
     genJsCodeVisitor.templateAliases = TEMPLATE_ALIASES;
+  }
+
+  @After
+  public void tearDown() {
+    inScope.close();
   }
 
   @Test

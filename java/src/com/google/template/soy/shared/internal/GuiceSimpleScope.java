@@ -16,15 +16,13 @@
 
 package com.google.template.soy.shared.internal;
 
-import static com.google.common.base.Preconditions.checkState;
-
-import com.google.common.collect.Maps;
 import com.google.inject.Key;
 import com.google.inject.OutOfScopeException;
 import com.google.inject.Provider;
 import com.google.inject.Scope;
+import java.util.ArrayDeque;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.Stack;
 import javax.annotation.CheckReturnValue;
 
 /**
@@ -36,13 +34,11 @@ import javax.annotation.CheckReturnValue;
  *
  * <pre>
  *   scope.enter();
- *   try {
+ *   try (GuiceSimpleScope.InScope inScope = scope.enter()) {
  *     // explicitly seed some seed objects
- *     scope.seed(SomeObject.class, someObject);
+ *     inScope.seed(SomeObject.class, someObject);
  *     // create and access scoped objects
  *     ...
- *   } finally {
- *     scope.exit();
  *   }
  * </pre>
  *
@@ -58,10 +54,70 @@ import javax.annotation.CheckReturnValue;
  * </pre>
  *
  */
-public class GuiceSimpleScope implements Scope {
-  public interface WithScope extends AutoCloseable {
+public final class GuiceSimpleScope implements Scope {
+  /** Represents {@code null} in the scope map. */
+  private static final Object NULL_SENTINEL = new Object();
+
+  /**
+   * An autoclosable object that can be used to seed and exit scopes.
+   *
+   * <p>Obtain an instance with {@link GuiceSimpleScope#enter()}.
+   */
+  public final class InScope implements AutoCloseable {
+    private boolean isClosed;
+    private final Thread openThread = Thread.currentThread();
+    private final ArrayDeque<HashMap<Key<?>, Object>> deque;
+
+    InScope(ArrayDeque<HashMap<Key<?>, Object>> deque) {
+      this.deque = deque;
+    }
+
+    /**
+     * Seeds a value in the current occurrence of this scope.
+     *
+     * @param key The key to seed.
+     * @param value The value for the key.
+     */
+    public <T> void seed(Key<T> key, T value) {
+      checkOpenAndOnCorrectThread();
+      HashMap<Key<?>, Object> scopedObjects = deque.peek();
+      Object prev = scopedObjects.put(key, value == null ? NULL_SENTINEL : value);
+      if (prev != null) {
+        throw new IllegalStateException(
+            String.format(
+                "A value for the key %s was already seeded in this scope. Old value: %s "
+                    + "New value: %s",
+                key, prev, value));
+      }
+    }
+
+    /**
+     * Seeds a value in the current occurrence of this scope.
+     *
+     * @param clazz The class to seed.
+     * @param value The value for the key.
+     */
+    public <T> void seed(Class<T> clazz, T value) {
+      seed(Key.get(clazz), value);
+    }
+
+    /** Exits the scope */
     @Override
-    public void close();
+    public void close() {
+      checkOpenAndOnCorrectThread();
+      isClosed = true;
+      deque.pop();
+    }
+
+    private void checkOpenAndOnCorrectThread() {
+      if (isClosed) {
+        throw new IllegalStateException("called close() more than once!");
+      }
+      if (Thread.currentThread() != openThread) {
+        throw new IllegalStateException("cannot move the scope to another thread");
+      }
+    }
+
   }
 
   /** Provider to use as the unscoped provider for scoped parameters. Always throws exception. */
@@ -88,87 +144,19 @@ public class GuiceSimpleScope implements Scope {
   }
 
   /** The ThreadLocal holding all the values in scope. */
-  private final ThreadLocal<Stack<Map<Key<?>, Object>>> scopedValuesTl = new ThreadLocal<>();
-
-  private final WithScope exiter =
-      new WithScope() {
-        @Override
-        public void close() {
-          exit();
-        }
-      };
+  private final ThreadLocal<ArrayDeque<HashMap<Key<?>, Object>>> scopedValuesTl =
+      new ThreadLocal<>();
 
   /** Enters an occurrence of this scope. */
   @CheckReturnValue
-  public WithScope enter() {
-    Stack<Map<Key<?>, Object>> stack = scopedValuesTl.get();
+  public InScope enter() {
+    ArrayDeque<HashMap<Key<?>, Object>> stack = scopedValuesTl.get();
     if (stack == null) {
-      stack = new Stack<>();
+      stack = new ArrayDeque<>();
       scopedValuesTl.set(stack);
     }
-    stack.push(Maps.<Key<?>, Object>newHashMap());
-    return exiter;
-  }
-
-  /** Exits the current occurrence of this scope. */
-  public void exit() {
-    checkState(isActive(), "No scoping block in progress");
-    Stack<Map<Key<?>, Object>> stack = scopedValuesTl.get();
-    stack.pop();
-    if (stack.isEmpty()) {
-      scopedValuesTl.remove();
-    }
-  }
-
-  /** Whether we're currently in an occurrence of this scope. */
-  public boolean isActive() {
-    Stack<Map<Key<?>, Object>> stack = scopedValuesTl.get();
-    return stack != null && !stack.isEmpty();
-  }
-
-  /**
-   * Seeds a value in the current occurrence of this scope.
-   *
-   * @param key The key to seed.
-   * @param value The value for the key.
-   */
-  public <T> void seed(Key<T> key, T value) {
-
-    Map<Key<?>, Object> scopedObjects = getScopedValues(key);
-    checkState(
-        !scopedObjects.containsKey(key),
-        "A value for the key %s was already seeded in this scope. Old value: %s New value: %s",
-        key,
-        scopedObjects.get(key),
-        value);
-    scopedObjects.put(key, value);
-  }
-
-  /**
-   * Seeds a value in the current occurrence of this scope.
-   *
-   * @param class0 The class to seed.
-   * @param value The value for the key.
-   */
-  public <T> void seed(Class<T> class0, T value) {
-    seed(Key.get(class0), value);
-  }
-
-  /**
-   * Gets a value in the current occurrence of this scope.
-   *
-   * @param key The key to get.
-   * @return The scoped value for the given key.
-   */
-  public <T> T getForTesting(Key<T> key) {
-
-    Map<Key<?>, Object> scopedValues = getScopedValues(key);
-    @SuppressWarnings("unchecked")
-    T value = (T) scopedValues.get(key);
-    if (value == null && !scopedValues.containsKey(key)) {
-      throw new IllegalStateException("The key " + key + " has not been seeded in this scope");
-    }
-    return value;
+    stack.push(new HashMap<Key<?>, Object>());
+    return new InScope(stack);
   }
 
   @Override
@@ -177,27 +165,20 @@ public class GuiceSimpleScope implements Scope {
     return new Provider<T>() {
       @Override
       public T get() {
-        Map<Key<?>, Object> scopedValues = getScopedValues(key);
-        @SuppressWarnings("unchecked")
-        T value = (T) scopedValues.get(key);
-        if (value == null && !scopedValues.containsKey(key)) {
-          value = unscopedProvider.get();
-          scopedValues.put(key, value);
+        ArrayDeque<HashMap<Key<?>, Object>> arrayDeque = scopedValuesTl.get();
+        if (arrayDeque == null || arrayDeque.isEmpty()) {
+          throw new OutOfScopeException("Cannot access " + key + " outside of a scoping block");
         }
-        return value;
+        Map<Key<?>, Object> scopedValues = arrayDeque.peek();
+        Object value = scopedValues.get(key);
+        if (value == null) {
+          value = unscopedProvider.get();
+          scopedValues.put(key, value == null ? NULL_SENTINEL : value);
+        }
+        @SuppressWarnings("unchecked")
+        T typedValue = value == NULL_SENTINEL ? null : (T) value;
+        return typedValue;
       }
     };
-  }
-
-  /**
-   * Private helper to get the map of scoped values specific to the current thread.
-   *
-   * @param key The key that is intended to be retrieved from the returned map.
-   */
-  private <T> Map<Key<?>, Object> getScopedValues(Key<T> key) {
-    if (!isActive()) {
-      throw new OutOfScopeException("Cannot access " + key + " outside of a scoping block");
-    }
-    return scopedValuesTl.get().peek();
   }
 }

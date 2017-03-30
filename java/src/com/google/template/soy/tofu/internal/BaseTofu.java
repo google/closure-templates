@@ -34,7 +34,7 @@ import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.internal.ApiCallScopeUtils;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
-import com.google.template.soy.shared.internal.GuiceSimpleScope.WithScope;
+import com.google.template.soy.shared.internal.GuiceSimpleScope.InScope;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.ApiCall;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
@@ -186,9 +186,9 @@ public class BaseTofu implements SoyTofu {
       activeDelPackageNames = Predicates.alwaysFalse();
     }
 
-    try (WithScope withScope = apiCallScope.enter()) {
+    try (InScope inScope = apiCallScope.enter()) {
       // Seed the scoped parameters.
-      ApiCallScopeUtils.seedSharedParams(apiCallScope, msgBundle);
+      ApiCallScopeUtils.seedSharedParams(inScope, msgBundle);
 
       // Do the rendering.
       return renderMainHelper(
