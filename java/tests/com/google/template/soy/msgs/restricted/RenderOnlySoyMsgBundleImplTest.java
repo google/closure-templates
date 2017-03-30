@@ -16,6 +16,7 @@
 
 package com.google.template.soy.msgs.restricted;
 
+import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -105,7 +106,16 @@ public class RenderOnlySoyMsgBundleImplTest {
   @Test
   public void testBasic() {
     assertEquals(LOCALE, bundle.getLocaleString());
+    assertThat(bundle.isRtl()).isFalse();
     assertEquals(testMessages.size(), bundle.getNumMsgs());
+  }
+
+  @Test
+  public void testIsRtl() {
+    assertThat(new RenderOnlySoyMsgBundleImpl("ar", ImmutableList.<SoyMsg>of()).isRtl()).isTrue();
+    assertThat(new RenderOnlySoyMsgBundleImpl("iw", ImmutableList.<SoyMsg>of()).isRtl()).isTrue();
+    assertThat(new RenderOnlySoyMsgBundleImpl("fr", ImmutableList.<SoyMsg>of()).isRtl()).isFalse();
+    assertThat(new RenderOnlySoyMsgBundleImpl("en", ImmutableList.<SoyMsg>of()).isRtl()).isFalse();
   }
 
   @Test

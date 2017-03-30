@@ -21,6 +21,7 @@ import static com.google.common.base.Preconditions.checkState;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
+import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -44,6 +45,7 @@ final class RenderOnlySoyMsgBundleImpl extends SoyMsgBundle {
 
   /** The language/locale string of this bundle's messages. */
   private final String localeString;
+  private final boolean isRtl;
 
   /**
    * Sorted array of message ID's that can be binary searched.
@@ -70,6 +72,7 @@ final class RenderOnlySoyMsgBundleImpl extends SoyMsgBundle {
   public RenderOnlySoyMsgBundleImpl(@Nullable String localeString, Iterable<SoyMsg> msgs) {
 
     this.localeString = localeString;
+    this.isRtl = BidiGlobalDir.forStaticLocale(localeString) == BidiGlobalDir.RTL;
 
     // First, build a sorted map from message ID to the message representation.
     SortedMap<Long, Object> partsMap = Maps.newTreeMap();
@@ -127,6 +130,11 @@ final class RenderOnlySoyMsgBundleImpl extends SoyMsgBundle {
   @Override
   public String getLocaleString() {
     return localeString;
+  }
+
+  @Override
+  public boolean isRtl() {
+    return isRtl;
   }
 
   @Override

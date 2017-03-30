@@ -17,6 +17,7 @@
 package com.google.template.soy.msgs;
 
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.msgs.restricted.SoyMsg;
 import java.util.Iterator;
 
@@ -32,6 +33,14 @@ public abstract class SoyMsgBundle implements Iterable<SoyMsg> {
    * @return The language/locale string of the messages provided by this bundle.
    */
   public abstract String getLocaleString();
+
+  /**
+   * Returns true if this is an RTL locale. Subclasses are encouraged to override this to provide
+   * efficient implementations.
+   */
+  public boolean isRtl() {
+    return BidiGlobalDir.forStaticLocale(getLocaleString()) == BidiGlobalDir.RTL;
+  }
 
   /**
    * Retrieves a message by its unique message id.
@@ -71,6 +80,11 @@ public abstract class SoyMsgBundle implements Iterable<SoyMsg> {
         @Override
         public SoyMsg getMsg(long msgId) {
           return null;
+        }
+
+        @Override
+        public boolean isRtl() {
+          return false;
         }
 
         @Override

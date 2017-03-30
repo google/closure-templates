@@ -62,7 +62,7 @@ public class ApiCallScopeUtils {
 
     String localeString = (msgBundle != null) ? msgBundle.getLocaleString() : null;
     if (bidiGlobalDir == null) {
-      bidiGlobalDir = BidiGlobalDir.forStaticLocale(localeString);
+      bidiGlobalDir = BidiGlobalDir.forStaticIsRtl(msgBundle == null ? false : msgBundle.isRtl());
     }
 
     seedSharedParams(inScope, bidiGlobalDir, localeString);

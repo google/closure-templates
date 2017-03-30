@@ -16,6 +16,7 @@
 
 package com.google.template.soy.msgs.restricted;
 
+import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -75,6 +76,7 @@ public class SoyMsgBundleImplTest {
     SoyMsgBundle msgBundle = new SoyMsgBundleImpl("x-zz", inMsgs);
 
     assertEquals("x-zz", msgBundle.getLocaleString());
+    assertThat(msgBundle.isRtl()).isFalse();
     assertEquals(2, msgBundle.getNumMsgs());
 
     List<SoyMsg> outMsgs = Lists.newArrayList();
@@ -111,5 +113,13 @@ public class SoyMsgBundleImplTest {
     assertEquals("Hello, ", ((SoyMsgRawTextPart) helloMsgParts.get(0)).getRawText());
     assertEquals("NAME", ((SoyMsgPlaceholderPart) helloMsgParts.get(1)).getPlaceholderName());
     assertEquals("!", ((SoyMsgRawTextPart) helloMsgParts.get(2)).getRawText());
+  }
+
+  @Test
+  public void testIsRtl() {
+    assertThat(new SoyMsgBundleImpl("ar", ImmutableList.<SoyMsg>of()).isRtl()).isTrue();
+    assertThat(new SoyMsgBundleImpl("iw", ImmutableList.<SoyMsg>of()).isRtl()).isTrue();
+    assertThat(new SoyMsgBundleImpl("fr", ImmutableList.<SoyMsg>of()).isRtl()).isFalse();
+    assertThat(new SoyMsgBundleImpl("en", ImmutableList.<SoyMsg>of()).isRtl()).isFalse();
   }
 }

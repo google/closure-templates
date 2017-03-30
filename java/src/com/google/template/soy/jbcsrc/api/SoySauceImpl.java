@@ -238,8 +238,9 @@ public final class SoySauceImpl implements SoySauce {
               .withMessageBundle(msgs)
               .withActiveDelPackageSelector(activeDelegatePackages)
               .build();
-      BidiGlobalDir dir = BidiGlobalDir.forStaticLocale(msgs.getLocaleString());
-      Scoper scoper = new Scoper(apiCallScope, dir, msgs.getLocaleString());
+      Scoper scoper =
+          new Scoper(
+              apiCallScope, BidiGlobalDir.forStaticIsRtl(msgs.isRtl()), msgs.getLocaleString());
       CompiledTemplate template = templateFactory.create(data, ij);
       return doRender(template, scoper, out, context);
     }
