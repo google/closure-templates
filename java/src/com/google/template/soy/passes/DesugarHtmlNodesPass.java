@@ -18,6 +18,7 @@ package com.google.template.soy.passes;
 
 import static com.google.common.base.Preconditions.checkState;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
@@ -33,13 +34,14 @@ import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.RawTextNode;
-import com.google.template.soy.soytree.SoyFileNode;
+import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.TemplateRegistry;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -49,16 +51,22 @@ import java.util.List;
  *
  * <p>This pass ensures that the rest of the compiler can remain agnostic about these nodes.
  */
-final class DesugarHtmlNodesPass extends CompilerFilePass {
+final class DesugarHtmlNodesPass extends CompilerFileSetPass {
 
   @Override
-  public void run(SoyFileNode file, IdGenerator idGenerator) {
-    new RewritingVisitor(idGenerator).exec(file);
+  public void run(SoyFileSetNode fileSet, TemplateRegistry registry) {
+    IdGenerator idGenerator = fileSet.getNodeIdGenerator();
+    run(fileSet, idGenerator);
+  }
+
+  @VisibleForTesting
+  void run(SoyNode node, IdGenerator idGenerator) {
+    new RewritingVisitor(idGenerator).exec(node);
     // Whether or not we have replaced any nodes, we still need to merge adjacent RawTextNodes since
     // the parser may have divided them up in such a way that the Autoescaper can't handle it. In
     // particular the autoescaper expects to be able to see whole close tags, so it can handle
     // </script> as a single rawtextnode, but not as </,script,> (3 raw text nodes).
-    new CombineConsecutiveRawTextNodesVisitor(idGenerator).exec(file);
+    new CombineConsecutiveRawTextNodesVisitor(idGenerator).exec(node);
   }
 
   private static final class RewritingVisitor extends AbstractSoyNodeVisitor<Void> {

@@ -98,8 +98,6 @@ public final class PassManager {
       singleFilePassesBuilder.add(new EnforceStrictAutoescapingPass());
     }
 
-    // TODO(lukes): move this to run after autoescaping.
-    singleFilePassesBuilder.add(new DesugarHtmlNodesPass());
     this.singleFilePasses = singleFilePassesBuilder.build();
     // Fileset passes run on the whole tree and should be reserved for checks that need transitive
     // call information (or full delegate sets).
@@ -115,6 +113,8 @@ public final class PassManager {
     if (Objects.equals(options.allowExternalCalls(), Boolean.FALSE)) {
       fileSetPassBuilder.add(new StrictDepsPass());
     }
+    // TODO(lukes): move this to run after autoescaping.
+    fileSetPassBuilder.add(new DesugarHtmlNodesPass());
     this.fileSetPasses = fileSetPassBuilder.build();
   }
 
