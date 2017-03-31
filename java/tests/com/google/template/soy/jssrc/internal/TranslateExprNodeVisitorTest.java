@@ -309,7 +309,8 @@ public final class TranslateExprNodeVisitorTest {
             + "{/template}";
     String expectedJs =
         ""
-            + "ns.foo = function(opt_data, opt_ignored, opt_ijData) {\n"
+            + "ns.foo = function(opt_data, opt_ijData, opt_ijData_deprecated) {\n"
+            + "  opt_ijData = opt_ijData_deprecated || opt_ijData;\n"
             + "  return soydata.VERY_UNSAFE.ordainSanitizedHtml(opt_data.goo.length());\n"
             + "};\n"
             + "if (goog.DEBUG) {\n"

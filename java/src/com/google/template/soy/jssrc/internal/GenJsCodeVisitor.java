@@ -733,8 +733,8 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
         jsCodeBuilder.append("Object<string, *>=");
       }
       jsCodeBuilder.appendLine("} opt_data");
-      jsCodeBuilder.appendLine(" * @param {(null|undefined)=} opt_ignored");
       jsCodeBuilder.appendLine(" * @param {Object<string, *>=} opt_ijData");
+      jsCodeBuilder.appendLine(" * @param {Object<string, *>=} opt_ijData_deprecated");
       String returnType = getTemplateReturnType(node);
       jsCodeBuilder.appendLine(" * @return {", returnType, "}");
       String suppressions = "checkTypes";
@@ -747,11 +747,13 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
 
     // ------ Generate function definition up to opening brace. ------
     if (addToExports) {
-      jsCodeBuilder.appendLine("function ", alias, "(opt_data, opt_ignored, opt_ijData) {");
+      jsCodeBuilder.appendLine(
+          "function ", alias, "(opt_data, opt_ijData, opt_ijData_deprecated) {");
     } else {
-      jsCodeBuilder.appendLine(alias, " = function(opt_data, opt_ignored, opt_ijData) {");
+      jsCodeBuilder.appendLine(alias, " = function(opt_data, opt_ijData, opt_ijData_deprecated) {");
     }
     jsCodeBuilder.increaseIndent();
+    jsCodeBuilder.appendLine("opt_ijData = opt_ijData_deprecated || opt_ijData;");
     // If there are any null coalescing operators or switch nodes then we need to generate an
     // additional temporary variable.
     if (!SoyTreeUtils.getAllNodesOfType(node, NullCoalescingOpNode.class).isEmpty()
@@ -836,7 +838,6 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
   protected void generateFunctionBody(TemplateNode node) {
     // Type check parameters.
     genParamTypeChecks(node);
-
     CodeChunk.WithValue templateBody;
     if (isComputableAsJsExprsVisitor.exec(node)) {
       // Case 1: The code style is 'concat' and the whole template body can be represented as JS
