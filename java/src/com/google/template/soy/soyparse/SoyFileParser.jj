@@ -780,16 +780,12 @@ TOKEN_MGR_DECLS: {
 | < XXX_CMD_TEXT_PHNAME_NOT_IDENT: <WS_CHAR> "phname=\"" ( ~["\""] )* "\"" >
 }
 
-<IN_CMD_TAG_STRUCTURED> TOKEN: {
-  < CMD_COLON: ":" >
-| < CMD_EQ: "=" >
-}
-
-<IN_CMD_TAG_STRUCTURED, ALIAS, TYPE_EXPR> TOKEN: {
-  // This makes NAME a matchable token within structured tags and exprs (RAW_IDENT is private)
+<IN_CMD_TAG_STRUCTURED, ALIAS> TOKEN: {
   < NAME: <RAW_IDENT> >
-| < DOT: "." >
-| < DASH: "-" >
+| < CMD_COLON: ":" >
+| < CMD_EQ: "=" >
+| < CMD_DOT: "." >
+| < CMD_DASH: "-" >
 }
 
 
@@ -797,20 +793,22 @@ TOKEN_MGR_DECLS: {
 // Type expressions.
 
 <TYPE_EXPR> TOKEN: {
-   < T_LANGLE: "<" >
- | < T_RANGLE: ">" >
- | < T_LBRACKET: "[" >
- | < T_RBRACKET: "]" >
- | < T_COMMA: "," >
- | < T_COLON : ":"  >
+  < T_NAME: <RAW_IDENT> >
+| < T_DOT: "." >
+| < T_LANGLE: "<" >
+| < T_RANGLE: ">" >
+| < T_LBRACKET: "[" >
+| < T_RBRACKET: "]" >
+| < T_COMMA: "," >
+| < T_COLON : ":"  >
   // NOTE: this means that "|" <NAME> is a valid matchable token sequence. But for print
   // directives we have "|"<RAW_IDENT> as a single token.  This is bad since any|null will get
   // tokenized as <RAW_IDENT> <CMD_TEXT_DIRECTIVE_NAME> instead of <NAME> <T_VBAR> <NAME>.  The
   // reason this isn't currently a problem is because CMD_TEXT_DIRECTIVE_NAME is defined in a
   // different lexical state.  This will become a problem when we switch print node to use
   // structured tag parsing.
- | < T_VBAR: "|" >
- | < T_QMARK: "?" >
+| < T_VBAR: "|" >
+| < T_QMARK: "?" >
 }
 
 
@@ -1194,9 +1192,9 @@ private TemplateNode TemplateHelper(TemplateNodeBuilder builder, Token open, boo
 
 /**
  * Parses a Template name.  This is either a fully qualified dotted identifier or a partial
- * identifier consisting of a single <DOT><NAME> sequence.
+ * identifier consisting of a single <CMD_DOT> <NAME> sequence.
  *
- * TemplateName -> (<DOT> <NAME> | DottedIdent() )
+ * TemplateName -> (<CMD_DOT> <NAME> | DottedIdent() )
  */
 private Identifier TemplateName(boolean isDeltemplate):
 {
@@ -1206,7 +1204,7 @@ private Identifier TemplateName(boolean isDeltemplate):
 {
   (
     // The partial name case.
-    dot = <DOT>
+    dot = <CMD_DOT>
     name = <NAME>
     {
       ident = Identifier.create("." + name.image, createSrcLoc(dot, name));
@@ -1226,7 +1224,7 @@ private Identifier TemplateName(boolean isDeltemplate):
 }
 
 /**
- * DottedIdent -> <NAME> (<DOT> <NAME>)*
+ * DottedIdent -> <NAME> (<CMD_DOT> <NAME>)*
  */
 private Identifier DottedIdent():
 {
@@ -1236,7 +1234,7 @@ private Identifier DottedIdent():
 {
   name = <NAME>
   (
-    dot = <DOT>
+    dot = <CMD_DOT>
     next = <NAME>
     { if (sb == null) {
         sb = new StringBuilder();
@@ -2201,7 +2199,7 @@ private XidNode XidStmt() :
     first = <NAME>
     (
       (
-        <DOT>
+        <CMD_DOT>
         tok = <NAME>
         { if (value == null) {
             value = new StringBuilder().append(first.image);
@@ -2211,7 +2209,7 @@ private XidNode XidStmt() :
       )+
     |
       (
-        <DASH>
+        <CMD_DASH>
         tok = <NAME>
         { if (value == null) {
             value = new StringBuilder().append(first.image);
@@ -2809,7 +2807,7 @@ private TypeNode RecordType() :
 
 
 /**
- * RecordField -> NAME ":" TypeExpr
+ * RecordField -> T_NAME ":" TypeExpr
  */
 private RecordTypeNode.Property RecordField() :
 {
@@ -2817,7 +2815,7 @@ private RecordTypeNode.Property RecordField() :
   TypeNode fieldType;
 }
 {
-  fieldName = <NAME>
+  fieldName = <T_NAME>
   <T_COLON>
   fieldType = TypeExpr()
 
@@ -2828,7 +2826,7 @@ private RecordTypeNode.Property RecordField() :
 
 
 /**
- * NamedType -> NAME ( "." NAME )* [ < TypeExpr() ("," TypeExpr())* > ]
+ * NamedType -> T_NAME ( "." T_NAME )* [ < TypeExpr() ("," TypeExpr())* > ]
  *
  * <p>This includes any named type including our generic types
  */
@@ -2845,10 +2843,10 @@ private TypeNode NamedType() :
 }
 {
 
-  first = <NAME>
+  first = <T_NAME>
   (
-    <DOT>
-    next = <NAME>
+    <T_DOT>
+    next = <T_NAME>
     {
       if (sb == null) {
         sb = new StringBuilder(first.image);

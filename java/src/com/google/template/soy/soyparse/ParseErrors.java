@@ -120,6 +120,7 @@ final class ParseErrors {
         return "{/delcall}";
 
       case SoyFileParserConstants.NAME:
+      case SoyFileParserConstants.T_NAME:
         return "identifier";
       case SoyFileParserConstants.EOF:
         return "eof";
