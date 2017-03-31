@@ -764,10 +764,8 @@ TOKEN_MGR_DECLS:
 }
 
 <IN_CMD_TAG_STRUCTURED> TOKEN: {
-  // This is for {@param foo : int}.
-  // A colon in a structured tag transitions us into the TYPE_EXPR state.
-  < TAG_COLON: ":" > : TYPE_EXPR
-| < EQ: "=" >
+  < CMD_COLON: ":" >
+| < CMD_EQ: "=" >
 | < AS: "as" >
 }
 
@@ -1033,7 +1031,7 @@ private List<CommandTagAttribute> CommandAttributes() :
 /**
  * Matches a name value pair.
  *
- * Attribute -> <NAME> <EQ> <ATTRIBUTE_VALUE>
+ * Attribute -> <NAME> <CMD_EQ> <ATTRIBUTE_VALUE>
  */
 private CommandTagAttribute Attribute() :
 {
@@ -1043,7 +1041,7 @@ private CommandTagAttribute Attribute() :
 }
 {
   name = <NAME>
-  eq = <EQ>
+  eq = <CMD_EQ>
   value = <ATTRIBUTE_VALUE>
   {
     return new CommandTagAttribute(
@@ -1519,7 +1517,7 @@ private RawTextNode TemplateHeader(TemplateNodeBuilder templateBuilder) :
 
 /**
  * ParamDecl -> ( <DECL_BEGIN_PARAM> | <DECL_BEGIN_OPT_PARAM> | <DECL_BEGIN_INJECT_PARAM
-                | <DECL_BEGIN_OPT_INJECT_PARAM ) <NAME> <TAG_COLON> TypeExpr() <CMD_END>
+                | <DECL_BEGIN_OPT_INJECT_PARAM ) <NAME> <CMD_COLON> TypeExpr() <CMD_END>
  *
  * @param desc The doc comment that was attached to whitespace preceding this param, if any.
  */
@@ -1548,7 +1546,10 @@ private HeaderParam ParamDecl(@Nullable String desc) :
   }
 
   name = <NAME>
-  <TAG_COLON>
+
+  <CMD_COLON>
+  { token_source.SwitchTo(TYPE_EXPR); }
+
   try {
     paramTypeNode = TypeExpr()
     { paramType = typeRegistry.getOrCreateType(paramTypeNode, errorReporter); }
@@ -2699,6 +2700,7 @@ private DebuggerNode DebuggerStmt() :
 // performance.
 //
 // NOTE: all the tokens we are consuming are defined in the TYPE_EXPR lexical state.
+
 
 /**
  * TypeExpr -> Primary ("|" Primary)*
