@@ -67,12 +67,4 @@ public abstract class Identifier {
   public abstract SourceLocation location();
 
   public abstract Type type();
-
-  /**
-   * Returns true if this is a partial identifier. That is, a single dot followed by a single
-   * identifier.
-   */
-  public boolean isPartialIdentifier() {
-    return type() == Type.DOT_IDENT;
-  }
 }
