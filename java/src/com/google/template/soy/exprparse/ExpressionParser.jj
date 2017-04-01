@@ -39,6 +39,8 @@ PARSER_BEGIN(ExpressionParser)
 
 package com.google.template.soy.exprparse;
 
+import static com.google.template.soy.exprtree.Operator.createOperatorNode;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Longs;
 import com.google.template.soy.base.SourceLocation;
@@ -48,7 +50,6 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.ExprNode;
-import com.google.template.soy.exprtree.ExprNode.OperatorNode;
 import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FloatNode;
@@ -272,18 +273,6 @@ public final class ExpressionParser {
           "Expected a variable name ", parentSourceLocation, e);
       return VarRefNode.ERROR;
     }
-  }
-
-  /**
-   * Private helper to create an operator node.
-   */
-  private static final OperatorNode createOperatorNode(
-      String op, int prec, ExprNode... children) {
-    Operator operator = Operator.of(op, children.length);
-    if (operator.getPrecedence() != prec) {
-      throw new IllegalArgumentException("invalid precedence " + prec + " for operator " + op);
-    }
-    return operator.createNode(children);
   }
 
   private SourceLocation createSrcLoc(Token token) {

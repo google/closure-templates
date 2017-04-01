@@ -24,9 +24,9 @@ import static com.google.template.soy.exprtree.Operator.Constants.OPERAND_1;
 import static com.google.template.soy.exprtree.Operator.Constants.OPERAND_2;
 import static com.google.template.soy.exprtree.Operator.Constants.SP;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableTable;
+import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.exprtree.ExprNode.OperatorNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
@@ -192,27 +192,29 @@ public enum Operator {
   }
 
   /**
-   * Fetches an Operator given the pair (tokenString, numOperands).
+   * Create an operator node, given the token, precedence, and list of children (arguments).
    *
-   * @param tokenString A string listing the operator token. If multiple tokens (e.g. the ternary
-   *     conditional operator), separate them using a space.
-   * @param numOperands The number of operands this operator takes.
-   * @return The matching Operator object.
+   * @param op A string listing the operator token. If multiple tokens (e.g. the ternary conditional
+   *     operator), separate them using a space.
+   * @param prec The precedence of an operator. Must match the precedence specified by {@code op}.
+   * @param children The list of children (arguments) for the operator.
+   * @return The matching OperatorNode.
    * @throws IllegalArgumentException If there is no Soy operator matching the given data.
    */
-  public static Operator of(String tokenString, int numOperands) {
-    Operator op = OPERATOR_TABLE.get(tokenString, numOperands);
-    if (op != null) {
-      return op;
-    } else {
-      throw new IllegalArgumentException();
+  public static final OperatorNode createOperatorNode(String op, int prec, ExprNode... children) {
+    checkArgument(OPERATOR_TABLE.containsRow(op));
+
+    Operator operator = OPERATOR_TABLE.get(op, children.length);
+    if (operator.getPrecedence() != prec) {
+      throw new IllegalArgumentException("invalid precedence " + prec + " for operator " + op);
     }
+    return operator.createNode(children);
   }
 
   // -----------------------------------------------------------------------------------------------
 
   /** The canonical syntax for this operator, including spacing. */
-  private final List<SyntaxElement> syntax;
+  private final ImmutableList<SyntaxElement> syntax;
 
   /**
    * This operator's token. Multiple tokens (e.g. the ternary conditional operator) are separated
@@ -239,7 +241,8 @@ public enum Operator {
    * @param precedence This operator's precedence level.
    * @param associativity This operator's associativity.
    */
-  private Operator(List<SyntaxElement> syntax, int precedence, Associativity associativity) {
+  private Operator(
+      ImmutableList<SyntaxElement> syntax, int precedence, Associativity associativity) {
     this(syntax, precedence, associativity, null /* description */);
   }
 
@@ -252,12 +255,12 @@ public enum Operator {
    * @param description A short description of this operator.
    */
   private Operator(
-      List<SyntaxElement> syntax,
+      ImmutableList<SyntaxElement> syntax,
       int precedence,
       Associativity associativity,
       @Nullable String description) {
 
-    this.syntax = ImmutableList.copyOf(syntax);
+    this.syntax = syntax;
 
     String tokenString = null;
     int numOperands = 0;
@@ -272,7 +275,7 @@ public enum Operator {
         }
       }
     }
-    Preconditions.checkArgument(tokenString != null && numOperands > 0);
+    checkArgument(tokenString != null && numOperands > 0);
     this.tokenString = tokenString;
     this.numOperands = numOperands;
 
@@ -341,9 +344,11 @@ public enum Operator {
   }
 
   /** Represents a syntax element (used in a syntax specification for an operator). */
+  @Immutable
   public static interface SyntaxElement {}
 
   /** A syntax element for an operand. */
+  @Immutable
   public static class Operand implements SyntaxElement {
 
     private final int index;
@@ -359,6 +364,7 @@ public enum Operator {
   }
 
   /** A syntax element for a token. */
+  @Immutable
   public static class Token implements SyntaxElement {
 
     private final String value;
@@ -374,6 +380,7 @@ public enum Operator {
   }
 
   /** A syntax element for a space character. */
+  @Immutable
   public static class Spacer implements SyntaxElement {
 
     private Spacer() {}
