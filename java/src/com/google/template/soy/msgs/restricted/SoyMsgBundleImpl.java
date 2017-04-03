@@ -23,6 +23,7 @@ import com.google.common.collect.Maps;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.msgs.SoyMsgBundle;
+import com.ibm.icu.util.ULocale;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -40,6 +41,7 @@ public class SoyMsgBundleImpl extends SoyMsgBundle {
 
   /** The language/locale string of this bundle's messages. */
   private final String localeString;
+  private final ULocale locale;
   private final boolean isRtl;
 
   /** Map from unique message id to message. Iteration order is sorted order of message id. */
@@ -58,6 +60,7 @@ public class SoyMsgBundleImpl extends SoyMsgBundle {
   public SoyMsgBundleImpl(@Nullable String localeString, List<SoyMsg> msgs) {
 
     this.localeString = localeString;
+    this.locale = localeString == null ? null : new ULocale(localeString);
     this.isRtl = BidiGlobalDir.forStaticLocale(localeString) == BidiGlobalDir.RTL;
 
     SortedMap<Long, SoyMsg> tempMsgMap = Maps.newTreeMap();
@@ -82,6 +85,12 @@ public class SoyMsgBundleImpl extends SoyMsgBundle {
   @Override
   public String getLocaleString() {
     return localeString;
+  }
+
+  @Override
+  @Nullable
+  public ULocale getLocale() {
+    return locale;
   }
 
   @Override

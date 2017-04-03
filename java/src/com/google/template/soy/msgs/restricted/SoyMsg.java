@@ -22,7 +22,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.SourceLocation;
-import com.ibm.icu.util.ULocale;
 import java.util.Objects;
 import javax.annotation.Nullable;
 
@@ -326,12 +325,6 @@ public final class SoyMsg {
   @Nullable
   public String getLocaleString() {
     return localeString;
-  }
-
-  @Nullable
-  public ULocale getLocale() {
-    // TODO(lukes): Consider storing this in preference to the localeString
-    return localeString == null ? null : new ULocale(localeString);
   }
 
   /** Returns the unique id for this message (same across all translations). */

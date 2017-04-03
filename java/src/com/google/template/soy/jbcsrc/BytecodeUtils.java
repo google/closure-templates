@@ -697,6 +697,15 @@ final class BytecodeUtils {
     };
   }
 
+  /**
+   * Returns an expression that returns a new {@code ImmutableList} containing the given items.
+   *
+   * <p>NOTE: {@code ImmutableList} rejects null elements.
+   */
+  static Expression asImmutableList(Iterable<? extends Expression> items) {
+    return MethodRef.IMMUTABLE_LIST_COPY_OF_COLLECTION.invoke(asList(items));
+  }
+
   /** Returns an expression that returns a new {@link ArrayList} containing all the given items. */
   static Expression asList(Iterable<? extends Expression> items) {
     final ImmutableList<Expression> copy = ImmutableList.copyOf(items);

@@ -31,7 +31,6 @@ import com.google.template.soy.jbcsrc.api.AdvisingStringBuilder;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
-import com.google.template.soy.msgs.restricted.SoyMsg;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPlaceholderPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPluralPart;
@@ -41,6 +40,7 @@ import com.google.template.soy.msgs.restricted.SoyMsgSelectPart;
 import com.google.template.soy.shared.internal.ShortCircuitable;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
+import com.ibm.icu.util.ULocale;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -226,9 +226,13 @@ public final class Runtime {
   }
 
   /** Render a 'complex' message containing with placeholders. */
-  public static void renderSoyMsgWithPlaceholders(
-      SoyMsg msg, Map<String, Object> placeholders, Appendable out) throws IOException {
-    if (msg.getParts().isEmpty()) {
+  public static void renderSoyMsgPartsWithPlaceholders(
+      ImmutableList<SoyMsgPart> msgParts,
+      @Nullable ULocale locale,
+      Map<String, Object> placeholders,
+      Appendable out)
+      throws IOException {
+    if (msgParts.isEmpty()) {
       // TODO(lukes): RenderVisitorAssistantForMsgs does this... but this seems like a weird case
       // investigate eliminating it
       return;
@@ -239,13 +243,15 @@ public final class Runtime {
     // microoptimization.  This could potentially allow us to eliminate the hashmap entry+boxing for
     // plural variables when rendering a direct plural tag.  ditto for selects, though that is
     // more complicated due to the fact that selects can be nested.
-    SoyMsgPart firstPart = msg.getParts().get(0);
+    SoyMsgPart firstPart = msgParts.get(0);
     if (firstPart instanceof SoyMsgPluralPart) {
-      renderPlural(msg, (SoyMsgPluralPart) firstPart, placeholders, out);
+      renderPlural(locale, (SoyMsgPluralPart) firstPart, placeholders, out);
     } else if (firstPart instanceof SoyMsgSelectPart) {
-      renderSelect(msg, (SoyMsgSelectPart) firstPart, placeholders, out);
+      renderSelect(locale, (SoyMsgSelectPart) firstPart, placeholders, out);
     } else {
-      for (SoyMsgPart msgPart : msg.getParts()) {
+      // avoid allocating the iterator
+      for (int i = 0; i < msgParts.size(); i++) {
+        SoyMsgPart msgPart = msgParts.get(i);
         if (msgPart instanceof SoyMsgRawTextPart) {
           writeRawText((SoyMsgRawTextPart) msgPart, out);
         } else if (msgPart instanceof SoyMsgPlaceholderPart) {
@@ -263,14 +269,17 @@ public final class Runtime {
    * children.
    */
   private static void renderSelect(
-      SoyMsg msg, SoyMsgSelectPart firstPart, Map<String, Object> placeholders, Appendable out)
+      @Nullable ULocale locale,
+      SoyMsgSelectPart firstPart,
+      Map<String, Object> placeholders,
+      Appendable out)
       throws IOException {
     String selectCase = getSelectCase(placeholders, firstPart.getSelectVarName());
     for (SoyMsgPart casePart : firstPart.lookupCase(selectCase)) {
       if (casePart instanceof SoyMsgSelectPart) {
-        renderSelect(msg, (SoyMsgSelectPart) casePart, placeholders, out);
+        renderSelect(locale, (SoyMsgSelectPart) casePart, placeholders, out);
       } else if (casePart instanceof SoyMsgPluralPart) {
-        renderPlural(msg, (SoyMsgPluralPart) casePart, placeholders, out);
+        renderPlural(locale, (SoyMsgPluralPart) casePart, placeholders, out);
       } else if (casePart instanceof SoyMsgPlaceholderPart) {
         writePlaceholder((SoyMsgPlaceholderPart) casePart, placeholders, out);
       } else if (casePart instanceof SoyMsgRawTextPart) {
@@ -288,10 +297,13 @@ public final class Runtime {
    * children.
    */
   private static void renderPlural(
-      SoyMsg msg, SoyMsgPluralPart plural, Map<String, Object> placeholders, Appendable out)
+      @Nullable ULocale locale,
+      SoyMsgPluralPart plural,
+      Map<String, Object> placeholders,
+      Appendable out)
       throws IOException {
     int pluralValue = getPlural(placeholders, plural.getPluralVarName());
-    for (SoyMsgPart casePart : plural.lookupCase(pluralValue, msg.getLocale())) {
+    for (SoyMsgPart casePart : plural.lookupCase(pluralValue, locale)) {
       if (casePart instanceof SoyMsgPlaceholderPart) {
         writePlaceholder((SoyMsgPlaceholderPart) casePart, placeholders, out);
 

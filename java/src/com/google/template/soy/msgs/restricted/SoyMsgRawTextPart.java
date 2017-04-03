@@ -26,6 +26,8 @@ import java.util.Arrays;
  *
  */
 public abstract class SoyMsgRawTextPart extends SoyMsgPart {
+  // TODO(lukes): when java9 is released, remove this.. the optimization performed by these
+  // subclasses is getting added to the vm. see http://openjdk.java.net/jeps/254
 
   private static final int BYTES_PER_CHAR = 2;
 

@@ -21,6 +21,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.protobuf.Message;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
@@ -31,10 +32,12 @@ import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.restricted.SoyMsg;
+import com.google.template.soy.msgs.restricted.SoyMsgPart;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
+import com.ibm.icu.util.ULocale;
 import java.util.Map;
 import javax.annotation.Nullable;
 
@@ -83,6 +86,11 @@ public final class RenderContext {
     this.soyJavaDirectivesMap = builder.soyJavaDirectivesMap;
     this.converter = builder.converter;
     this.msgBundle = builder.msgBundle;
+  }
+  
+  @Nullable
+  public ULocale getLocale() {
+    return msgBundle.getLocale();
   }
 
   public String renameCssSelector(String selector) {
@@ -149,19 +157,22 @@ public final class RenderContext {
   /** Returns {@code true} if the primary msg should be used instead of the fallback. */
   public boolean usePrimaryMsg(long msgId, long fallbackId) {
     // Note: we need to make sure the fallback msg is actually present if we are going to fallback.
-    return msgBundle.getMsg(msgId) != null || msgBundle.getMsg(fallbackId) == null;
+    // use getMsgParts() since if the bundle is a RenderOnlySoyMsgBundleImpl then this will be
+    // allocation free.
+    return !msgBundle.getMsgParts(msgId).isEmpty() || msgBundle.getMsgParts(fallbackId).isEmpty();
   }
 
   /**
    * Returns the {@link SoyMsg} associated with the {@code msgId} or the fallback (aka english)
    * translation if there is no such message.
    */
-  public SoyMsg getSoyMsg(long msgId, SoyMsg defaultMsg) {
-    SoyMsg msg = msgBundle.getMsg(msgId);
-    if (msg == null) {
-      return defaultMsg;
+  public ImmutableList<SoyMsgPart> getSoyMsgParts(
+      long msgId, ImmutableList<SoyMsgPart> defaultMsgParts) {
+    ImmutableList<SoyMsgPart> msgParts = msgBundle.getMsgParts(msgId);
+    if (msgParts.isEmpty()) {
+      return defaultMsgParts;
     }
-    return msg;
+    return msgParts;
   }
 
   @VisibleForTesting

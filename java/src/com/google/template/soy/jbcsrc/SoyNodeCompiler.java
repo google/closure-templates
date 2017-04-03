@@ -659,6 +659,10 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       MsgNode fallback = node.getFallbackMsg();
       MsgPartsAndIds fallbackIdAndParts =
           MsgUtils.buildMsgPartsAndComputeMsgIdForDualFormat(fallback);
+      // TODO(lukes): consider changing the control flow here by 'inlining' the usePrimaryMsg logic
+      // it would save some lookups.  Right now we will do to 2- 3 calls to
+      // SoyMsgBundle.getMsgParts (each of which requires a binary search).  We could reduce that
+      // to 1-2 in the worse case by inlining and storing the lists in local variables.
       IfBlock ifAvailableRenderDefault =
           IfBlock.create(
               parameterLookup

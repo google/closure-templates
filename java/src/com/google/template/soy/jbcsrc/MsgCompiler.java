@@ -26,7 +26,6 @@ import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.msgs.internal.MsgUtils.MsgPartsAndIds;
-import com.google.template.soy.msgs.restricted.SoyMsg;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPart.Case;
 import com.google.template.soy.msgs.restricted.SoyMsgPlaceholderPart;
@@ -54,8 +53,6 @@ import org.objectweb.asm.Label;
 
 /** A helper for compiling {@link MsgNode messages} */
 final class MsgCompiler {
-  private static final ConstructorRef SOY_MSG =
-      ConstructorRef.create(SoyMsg.class, long.class, String.class, boolean.class, Iterable.class);
   private static final ConstructorRef SOY_MSG_PLACEHOLDER_PART =
       ConstructorRef.create(SoyMsgPlaceholderPart.class, String.class);
   private static final ConstructorRef SOY_MSG_PLURAL_REMAINDER_PART =
@@ -140,7 +137,8 @@ final class MsgCompiler {
   /**
    * Compiles the given {@link MsgNode} to a statement with the given escaping directives applied.
    *
-   * <p>The returned statement must be written to a location with a stack depth of zero.
+   * <p>The returned statement must be written to a location with a stack depth of zero, since
+   * placeholder formatting may require detach logic.
    *
    * @param partsAndId The computed msg id
    * @param msg The msg node
@@ -148,19 +146,27 @@ final class MsgCompiler {
    */
   Statement compileMessage(
       MsgPartsAndIds partsAndId, MsgNode msg, List<String> escapingDirectives) {
-    Expression soyMsgDefault = compileDefaultMessageConstant(partsAndId, msg);
-    Expression soyMsg =
+    Expression soyMsgDefaultParts = compileDefaultMessagePartsConstant(partsAndId);
+    Expression soyMsgParts =
         parameterLookup
             .getRenderContext()
-            .invoke(MethodRef.RENDER_CONTEXT_GET_SOY_MSG, constant(partsAndId.id), soyMsgDefault);
+            .invoke(
+                MethodRef.RENDER_CONTEXT_GET_SOY_MSG_PARTS,
+                constant(partsAndId.id),
+                soyMsgDefaultParts);
     Statement printMsg;
     if (msg.isRawTextMsg()) {
       // Simplest case, just a static string translation
-      printMsg = handleBasicTranslation(escapingDirectives, soyMsg);
+      printMsg = handleBasicTranslation(escapingDirectives, soyMsgParts);
     } else {
       // String translation + placeholders
       printMsg =
-          handleTranslationWithPlaceholders(msg, escapingDirectives, soyMsg, partsAndId.parts);
+          handleTranslationWithPlaceholders(
+              msg,
+              escapingDirectives,
+              soyMsgParts,
+              parameterLookup.getRenderContext().invoke(MethodRef.RENDER_CONTEXT_GET_LOCALE),
+              partsAndId.parts);
     }
     return Statement.concat(
         printMsg.withSourceLocation(msg.getSourceLocation()),
@@ -168,23 +174,18 @@ final class MsgCompiler {
   }
 
   /**
-   * Returns an expression the evaluates to a constant SoyMsg object used as the default message for
-   * when translations don't exist.
+   * Returns an expression that evaluates to a constant {@code ImmutableList<SoyMsgPart>} used as
+   * the default message for when translations don't exist.
    *
-   * <p>For each msg we generate a static final field that holds a SoyMsg object which means we have
-   * to go through the somewhat awkward process of generating code to construct objects we have at
-   * compile time. We could do something like use java serialization, but just invoking the
-   * constructors isn't too hard.
+   * <p>For each msg we generate a static final field that holds an {@code
+   * ImmutableList<SoyMsgPart>} which means we have to go through the somewhat awkward process of
+   * generating code to construct objects we have at compile time. We could do something like use
+   * java serialization, but just invoking the SoyMsgPart constructors isn't too hard.
    */
-  private Expression compileDefaultMessageConstant(MsgPartsAndIds partsAndId, MsgNode msgNode) {
-    Expression constructSoyMsg =
-        SOY_MSG.construct(
-            constant(partsAndId.id), // id
-            // locale, technically uknown so pass null
-            BytecodeUtils.constantNull(BytecodeUtils.STRING_TYPE),
-            constant(msgNode.isPlrselMsg()),
-            partsToPartsList(partsAndId.parts));
-    return variables.addStaticField("msg_" + partsAndId.id, constructSoyMsg).accessor();
+  private Expression compileDefaultMessagePartsConstant(MsgPartsAndIds partsAndId) {
+    return variables
+        .addStaticField("msg_parts_" + partsAndId.id, partsToPartsList(partsAndId.parts))
+        .accessor();
   }
 
   private Expression partsToPartsList(ImmutableList<SoyMsgPart> parts) throws AssertionError {
@@ -192,7 +193,8 @@ final class MsgCompiler {
     for (SoyMsgPart part : parts) {
       partsExprs.add(partToPartExpression(part));
     }
-    return BytecodeUtils.asList(partsExprs);
+    // ensure that the runtime type is immutablelist, ensures monomorphism
+    return BytecodeUtils.asImmutableList(partsExprs);
   }
 
   /** Returns an {@link Expression} that evaluates to an equivalent SoyMsgPart as the argument. */
@@ -241,13 +243,13 @@ final class MsgCompiler {
   }
 
   /** Handles a translation consisting of a single raw text node. */
-  private Statement handleBasicTranslation(List<String> escapingDirectives, Expression soyMsg) {
+  private Statement handleBasicTranslation(
+      List<String> escapingDirectives, Expression soyMsgParts) {
     // optimize for simple constant translations (very common)
     // this becomes: renderContext.getSoyMessge(<id>).getParts().get(o).getRawText()
     SoyExpression text =
         SoyExpression.forString(
-            soyMsg
-                .invoke(MethodRef.SOY_MSG_GET_PARTS)
+            soyMsgParts
                 .invoke(MethodRef.LIST_GET, constant(0))
                 .checkedCast(SoyMsgRawTextPart.class)
                 .invoke(MethodRef.SOY_MSG_RAW_TEXT_PART_GET_RAW_TEXT));
@@ -261,7 +263,8 @@ final class MsgCompiler {
   private Statement handleTranslationWithPlaceholders(
       MsgNode msg,
       List<String> escapingDirectives,
-      Expression soyMsg,
+      Expression soyMsgParts,
+      Expression locale,
       ImmutableList<SoyMsgPart> parts) {
     // We need to render placeholders into a buffer and then pack them into a map to pass to
     // Runtime.renderSoyMsgWithPlaceholders.
@@ -276,13 +279,13 @@ final class MsgCompiler {
     Statement render;
     if (escapingDirectives.isEmpty()) {
       render =
-          MethodRef.RUNTIME_RENDER_SOY_MSG_WITH_PLACEHOLDERS.invokeVoid(
-              soyMsg, placeholderMap, appendableExpression);
+          MethodRef.RUNTIME_RENDER_SOY_MSG_PARTS_WITH_PLACEHOLDERS.invokeVoid(
+              soyMsgParts, locale, placeholderMap, appendableExpression);
     } else {
       // render into the handy buffer we already have!
       Statement renderToBuffer =
-          MethodRef.RUNTIME_RENDER_SOY_MSG_WITH_PLACEHOLDERS.invokeVoid(
-              soyMsg, placeholderMap, tempBuffer());
+          MethodRef.RUNTIME_RENDER_SOY_MSG_PARTS_WITH_PLACEHOLDERS.invokeVoid(
+              soyMsgParts, locale, placeholderMap, tempBuffer());
       // N.B. the type here is always 'string'
       SoyExpression value =
           SoyExpression.forString(

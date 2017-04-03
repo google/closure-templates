@@ -16,11 +16,11 @@
 
 package com.google.template.soy.sharedpasses.render;
 
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.internal.MsgUtils;
-import com.google.template.soy.msgs.restricted.SoyMsg;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPlaceholderPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPluralPart;
@@ -42,6 +42,7 @@ import com.google.template.soy.soytree.MsgSelectNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.ibm.icu.util.ULocale;
 import java.util.List;
+import javax.annotation.Nullable;
 
 /**
  * Assistant visitor for RenderVisitor to handle messages.
@@ -84,9 +85,10 @@ final class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
     boolean foundTranslation = false;
     if (msgBundle != null) {
       for (MsgNode msg : node.getChildren()) {
-        SoyMsg translation = msgBundle.getMsg(MsgUtils.computeMsgIdForDualFormat(msg));
-        if (translation != null) {
-          renderMsgFromTranslation(msg, translation);
+        ImmutableList<SoyMsgPart> translation =
+            msgBundle.getMsgParts(MsgUtils.computeMsgIdForDualFormat(msg));
+        if (!translation.isEmpty()) {
+          renderMsgFromTranslation(msg, translation, msgBundle.getLocale());
           foundTranslation = true;
           break;
         }
@@ -98,20 +100,17 @@ final class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
   }
 
   /** Private helper for visitMsgFallbackGroupNode() to render a message from its translation. */
-  private void renderMsgFromTranslation(MsgNode msg, SoyMsg translation) {
-
-    List<SoyMsgPart> msgParts = translation.getParts();
-
+  private void renderMsgFromTranslation(
+      MsgNode msg, ImmutableList<SoyMsgPart> msgParts, @Nullable ULocale locale) {
+    // TODO(lukes): remove this if statement, it makes no sense.
     if (!msgParts.isEmpty()) {
       SoyMsgPart firstPart = msgParts.get(0);
 
       if (firstPart instanceof SoyMsgPluralPart) {
-        (new PlrselMsgPartsVisitor(msg, translation.getLocale()))
-            .visitPart((SoyMsgPluralPart) firstPart);
+        new PlrselMsgPartsVisitor(msg, locale).visitPart((SoyMsgPluralPart) firstPart);
 
       } else if (firstPart instanceof SoyMsgSelectPart) {
-        (new PlrselMsgPartsVisitor(msg, translation.getLocale()))
-            .visitPart((SoyMsgSelectPart) firstPart);
+        new PlrselMsgPartsVisitor(msg, locale).visitPart((SoyMsgSelectPart) firstPart);
 
       } else {
         for (SoyMsgPart msgPart : msgParts) {

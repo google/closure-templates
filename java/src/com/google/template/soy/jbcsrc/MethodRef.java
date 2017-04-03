@@ -51,10 +51,12 @@ import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
 import com.google.template.soy.shared.internal.SharedRuntime;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
+import com.ibm.icu.util.ULocale;
 import java.io.PrintStream;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -97,6 +99,9 @@ abstract class MethodRef {
   // cheap() because it's zero-arg
   static final MethodRef IMMUTABLE_LIST_OF =
       create(ImmutableList.class, "of").asCheap().asNonNullable();
+
+  static final MethodRef IMMUTABLE_LIST_COPY_OF_COLLECTION =
+      create(ImmutableList.class, "copyOf", Collection.class).asCheap().asNonNullable();
 
   static final MethodRef INTEGER_DATA_FOR_VALUE =
       create(IntegerData.class, "forValue", long.class).asNonNullable();
@@ -151,11 +156,13 @@ abstract class MethodRef {
   static final MethodRef RENDER_CONTEXT_GET_FUNCTION =
       create(RenderContext.class, "getFunction", String.class);
 
+  static final MethodRef RENDER_CONTEXT_GET_LOCALE = create(RenderContext.class, "getLocale");
+
   static final MethodRef RENDER_CONTEXT_GET_PRINT_DIRECTIVE =
       create(RenderContext.class, "getPrintDirective", String.class);
 
-  static final MethodRef RENDER_CONTEXT_GET_SOY_MSG =
-      create(RenderContext.class, "getSoyMsg", long.class, SoyMsg.class);
+  static final MethodRef RENDER_CONTEXT_GET_SOY_MSG_PARTS =
+      create(RenderContext.class, "getSoyMsgParts", long.class, ImmutableList.class);
 
   static final MethodRef RENDER_CONTEXT_RENAME_CSS_SELECTOR =
       create(RenderContext.class, "renameCssSelector", String.class).asNonNullable();
@@ -233,9 +240,14 @@ abstract class MethodRef {
   static final MethodRef RUNTIME_PLUS =
       create(SharedRuntime.class, "plus", SoyValue.class, SoyValue.class).asNonNullable();
 
-  static final MethodRef RUNTIME_RENDER_SOY_MSG_WITH_PLACEHOLDERS =
+  static final MethodRef RUNTIME_RENDER_SOY_MSG_PARTS_WITH_PLACEHOLDERS =
       create(
-          Runtime.class, "renderSoyMsgWithPlaceholders", SoyMsg.class, Map.class, Appendable.class);
+          Runtime.class,
+          "renderSoyMsgPartsWithPlaceholders",
+          ImmutableList.class,
+          ULocale.class,
+          Map.class,
+          Appendable.class);
 
   static final MethodRef RUNTIME_STRING_EQUALS_AS_NUMBER =
       create(Runtime.class, "stringEqualsAsNumber", String.class, double.class).asNonNullable();

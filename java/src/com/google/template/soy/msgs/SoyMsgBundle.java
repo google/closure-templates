@@ -19,27 +19,51 @@ package com.google.template.soy.msgs;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.msgs.restricted.SoyMsg;
+import com.google.template.soy.msgs.restricted.SoyMsgPart;
+import com.ibm.icu.util.ULocale;
 import java.util.Iterator;
+import javax.annotation.Nullable;
 
 /**
  * Represents a full set of messages in some language/locale.
  *
  */
 public abstract class SoyMsgBundle implements Iterable<SoyMsg> {
-
   /**
    * Gets the language/locale string of this bundle of messages.
    *
    * @return The language/locale string of the messages provided by this bundle.
    */
+  @Nullable
   public abstract String getLocaleString();
 
   /**
-   * Returns true if this is an RTL locale. Subclasses are encouraged to override this to provide
-   * efficient implementations.
+   * Returns {@code true} if this is an RTL (right-to-left) locale. Subclasses are encouraged to
+   * override this to provide efficient implementations.
    */
   public boolean isRtl() {
     return BidiGlobalDir.forStaticLocale(getLocaleString()) == BidiGlobalDir.RTL;
+  }
+
+  /**
+   * Returns the {@link ULocale} of this message bundle. Subclasses are encouraged to override this
+   * to provide efficient implementations.
+   */
+  @Nullable
+  public ULocale getLocale() {
+    return getLocaleString() == null ? null : new ULocale(getLocaleString());
+  }
+
+  /**
+   * Returns the message parts, or an empty array if there is no such message.
+   *
+   * <p>This is useful for rendering only usecases when the rest of the {@link SoyMsg} doesn't
+   * matter. The default implementation is just {@link SoyMsg#getParts} but some subclasses may have
+   * more efficient implementations
+   */
+  public ImmutableList<SoyMsgPart> getMsgParts(long msgId) {
+    SoyMsg msg = getMsg(msgId);
+    return msg == null ? ImmutableList.<SoyMsgPart>of() : msg.getParts();
   }
 
   /**
@@ -78,8 +102,19 @@ public abstract class SoyMsgBundle implements Iterable<SoyMsg> {
         }
 
         @Override
+        @Nullable
+        public ULocale getLocale() {
+          return ULocale.ENGLISH;
+        }
+
+        @Override
         public SoyMsg getMsg(long msgId) {
           return null;
+        }
+
+        @Override
+        public ImmutableList<SoyMsgPart> getMsgParts(long msgId) {
+          return ImmutableList.of();
         }
 
         @Override
