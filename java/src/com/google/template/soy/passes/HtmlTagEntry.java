@@ -16,6 +16,7 @@
 
 package com.google.template.soy.passes;
 
+import com.google.common.base.Preconditions;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -119,14 +120,39 @@ final class HtmlTagEntry {
       ArrayDeque<HtmlTagEntry> closeQueue,
       ErrorReporter errorReporter) {
     while (!openStack.isEmpty() && !closeQueue.isEmpty()) {
-      // If close tag is not optional tag, but open tag is optional tag, pop the open tag and
-      // continue.
-      if (!closeQueue.peekFirst().isDefinitelyOptional()
-          && openStack.peekFirst().isDefinitelyOptional()) {
-        openStack.pollFirst();
-        continue;
+      HtmlTagEntry openTag = openStack.peekFirst();
+      HtmlTagEntry closeTag = closeQueue.peekFirst();
+      if (closeTag.isDefinitelyOptional()) {
+        if (closeTag.getTagName().equals(openTag.getTagName())) {
+          openStack.pollFirst();
+          closeQueue.pollFirst();
+          continue;
+        }
+        if (!openTag.hasTagName()) {
+          return tryMatchCommonPrefix(openTag, closeTag, errorReporter);
+        }
       }
-      if (!matchOrError(openStack.pollFirst(), closeQueue.pollFirst(), errorReporter)) {
+      // Remove optional tags from the open stack before we try to match the current close tag.
+      if (closeTag.hasTagName()) {
+        while (!openStack.isEmpty()) {
+          openTag = openStack.peekFirst();
+          if (openTag.isDefinitelyOptional()) {
+            openStack.pollFirst();
+            continue;
+          } else if (!openTag.hasTagName()) {
+            openTag.getBranches().popOptionalTags();
+            if (openTag.getBranches().isEmpty()) {
+              openStack.pollFirst();
+              continue;
+            }
+          }
+          break;
+        }
+      }
+      if (matchOrError(openTag, closeTag, errorReporter)) {
+        openStack.pollFirst();
+        closeQueue.pollFirst();
+      } else {
         return false;
       }
     }
@@ -203,37 +229,7 @@ final class HtmlTagEntry {
       return false;
     }
     if (openTag.hasTagName() != closeTag.hasTagName()) {
-      boolean matchCommonPrefix = false;
-      // Try to match common prefixes if possible.
-      if (openTag.hasTagName()) {
-        TagName openTagName = openTag.getTagName();
-        if (closeTag.getBranches().hasCommonPrefix(openTagName)) {
-          closeTag.getBranches().popAllBranches();
-          matchCommonPrefix = true;
-          if (!closeTag.getBranches().isEmpty()) {
-            matchCommonPrefix = false;
-            errorReporter.report(
-                closeTag.getSourceLocation(),
-                UNEXPECTED_CLOSE_TAG_WITH_EXPECTATION,
-                openTagName.getStaticTagNameAsLowerCase().get());
-          }
-        } else {
-          errorReporter.report(openTagName.getTagLocation(), OPEN_TAG_NOT_CLOSED);
-        }
-      } else {
-        TagName closeTagName = closeTag.getTagName();
-        if (openTag.getBranches().hasCommonPrefix(closeTagName)) {
-          openTag.getBranches().popAllBranches();
-          matchCommonPrefix = true;
-          if (!openTag.getBranches().isEmpty()) {
-            matchCommonPrefix = false;
-            errorReporter.report(openTag.getSourceLocation(), OPEN_TAG_NOT_CLOSED);
-          }
-        } else {
-          errorReporter.report(closeTagName.getTagLocation(), UNEXPECTED_CLOSE_TAG);
-        }
-      }
-      return matchCommonPrefix;
+      return tryMatchCommonPrefix(openTag, closeTag, errorReporter);
     }
     // Now both tags should be either tag names or conditional branches.
     if (openTag.hasTagName()) {
@@ -265,5 +261,42 @@ final class HtmlTagEntry {
       }
       return true;
     }
+  }
+
+  /** Tries to find common prefix and report errors accordingly. */
+  private static boolean tryMatchCommonPrefix(
+      HtmlTagEntry openTag, HtmlTagEntry closeTag, ErrorReporter errorReporter) {
+    Preconditions.checkArgument(openTag.hasTagName() != closeTag.hasTagName());
+    boolean matchCommonPrefix = false;
+    // Try to match common prefixes if possible.
+    if (openTag.hasTagName()) {
+      TagName openTagName = openTag.getTagName();
+      if (closeTag.getBranches().hasCommonPrefix(openTagName)) {
+        closeTag.getBranches().popAllBranches();
+        matchCommonPrefix = true;
+        if (!closeTag.getBranches().isEmpty()) {
+          matchCommonPrefix = false;
+          errorReporter.report(
+              closeTag.getSourceLocation(),
+              UNEXPECTED_CLOSE_TAG_WITH_EXPECTATION,
+              openTagName.getStaticTagNameAsLowerCase().get());
+        }
+      } else {
+        errorReporter.report(openTagName.getTagLocation(), OPEN_TAG_NOT_CLOSED);
+      }
+    } else {
+      TagName closeTagName = closeTag.getTagName();
+      if (openTag.getBranches().hasCommonPrefix(closeTagName)) {
+        openTag.getBranches().popAllBranches();
+        matchCommonPrefix = true;
+        if (!openTag.getBranches().isEmpty()) {
+          matchCommonPrefix = false;
+          errorReporter.report(openTag.getSourceLocation(), OPEN_TAG_NOT_CLOSED);
+        }
+      } else {
+        errorReporter.report(closeTagName.getTagLocation(), UNEXPECTED_CLOSE_TAG);
+      }
+    }
+    return matchCommonPrefix;
   }
 }

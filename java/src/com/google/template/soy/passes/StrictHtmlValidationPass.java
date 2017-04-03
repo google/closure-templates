@@ -58,10 +58,6 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
       SoyErrorKind.of("stricthtml=\"true\" must be used with autoescape=\"strict\".");
   private static final SoyErrorKind STRICT_HTML_WITH_NON_HTML =
       SoyErrorKind.of("stricthtml=\"true\" can only be used with kind=\"html\".");
-  private static final SoyErrorKind UNEXPECTED_CLOSE_TAG =
-      SoyErrorKind.of("Unexpected HTML close tag.");
-  private static final SoyErrorKind OPEN_TAG_NOT_CLOSED =
-      SoyErrorKind.of("Expected tag to be closed in this block.");
   private static final SoyErrorKind INVALID_SELF_CLOSING_TAG =
       SoyErrorKind.of("''{0}'' tag is not allowed to be self-closing.");
   private static final SoyErrorKind INVALID_CLOSE_TAG =
@@ -197,23 +193,6 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
       }
     }
 
-    private void popOptionalTags(boolean popBranches) {
-      while (!openTagStack.isEmpty()) {
-        HtmlTagEntry entry = openTagStack.peekFirst();
-        if (entry.isDefinitelyOptional()) {
-          openTagStack.pollFirst();
-          continue;
-        } else if (!entry.hasTagName() && popBranches) {
-          entry.getBranches().popOptionalTags();
-          if (entry.getBranches().isEmpty()) {
-            openTagStack.pollFirst();
-            continue;
-          }
-        }
-        return;
-      }
-    }
-
     @Override
     protected void visitHtmlCloseTagNode(HtmlCloseTagNode node) {
       TagName closeTag = node.getTagName();
@@ -228,18 +207,20 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
         foreignContentEndLocation = node.getSourceLocation();
         inForeignContent = false;
       }
-      // If close tag is not optional, we pop all optional tags from the open tag stack.
-      // Notably here we should NOT pop optional tags from the branches. Only pop optional tags in
-      // the same block.
-      if (!closeTag.isDefinitelyOptional()) {
-        popOptionalTags(false);
+      // Pop out every optional tags that does not match the current close tag.
+      HtmlTagEntry openTag = openTagStack.peekFirst();
+      while (openTag != null
+          && openTag.hasTagName()
+          && !openTag.getTagName().equals(closeTag)
+          && openTag.isDefinitelyOptional()) {
+        openTagStack.pollFirst();
+        openTag = openTagStack.peekFirst();
       }
       // Check if we can find a matching open tag within the current block.
-      if (!openTagStack.isEmpty() && openTagStack.peekFirst().hasTagName()) {
-        TagName openTag = openTagStack.peekFirst().getTagName();
+      if (openTag != null && openTag.hasTagName()) {
         // Only pop the tag from the open stack if we find a match.
         // This way we do not emit cascade errors for a misplace closed tag.
-        if (HtmlTagEntry.matchOrError(openTag, closeTag, errorReporter)) {
+        if (HtmlTagEntry.matchOrError(openTag.getTagName(), closeTag, errorReporter)) {
           openTagStack.pollFirst();
         }
       } else {
@@ -346,73 +327,6 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
       currentCondition = outerCondition.copy();
     }
 
-    private void removeEmptyEntries() {
-      if (!openTagStack.isEmpty()) {
-        HtmlTagEntry entry = openTagStack.peekFirst();
-        while (entry != null && !entry.hasTagName() && entry.getBranches().isEmpty()) {
-          entry = openTagStack.pollFirst();
-        }
-      }
-      if (!closeTagQueue.isEmpty()) {
-        HtmlTagEntry entry = closeTagQueue.peekFirst();
-        while (entry != null && !entry.hasTagName() && entry.getBranches().isEmpty()) {
-          entry = closeTagQueue.pollFirst();
-        }
-      }
-    }
-
-    /**
-     * A help method that checks openTagStack and closeTagQueue. It recursively compare the top of
-     * the stack and the front of the queue. Since it is recursive, we only report the "first" error
-     * to avoid an explosion of errors (whenever we see an error we will return).
-     */
-    private void matchTagsInDeques() {
-      while (!openTagStack.isEmpty() && !closeTagQueue.isEmpty()) {
-        HtmlTagEntry openTag = openTagStack.peekFirst();
-        HtmlTagEntry closeTag = closeTagQueue.peekFirst();
-        // For an optional close tag, try to match it with the top of stack.
-        // If matches, remove the close tag from the queue and continue.
-        // Otherwise, report an error.
-        if (closeTag != null && closeTag.isDefinitelyOptional()) {
-          if (openTag != null
-              && openTag.isDefinitelyOptional()
-              && openTag.getTagName().equals(closeTag.getTagName())) {
-            openTagStack.pollFirst();
-            closeTagQueue.pollFirst();
-            continue;
-          } else {
-            errorReporter.report(closeTag.getSourceLocation(), UNEXPECTED_CLOSE_TAG);
-            return;
-          }
-        } else if (closeTag.hasTagName()) {
-          // Pop optional tags from open stack if the current close tag is not an optional tag.
-          popOptionalTags(true);
-        }
-        openTag = openTagStack.pollFirst();
-        closeTag = closeTagQueue.pollFirst();
-        if (!HtmlTagEntry.matchOrError(openTag, closeTag, errorReporter)) {
-          return;
-        }
-      }
-      removeEmptyEntries();
-      // checks if both deques are empty at the end. If any of them is not empty,
-      // report an error accordingly.
-      if (openTagStack.isEmpty() && closeTagQueue.isEmpty()) {
-        return;
-      }
-      if (openTagStack.isEmpty()) {
-        HtmlTagEntry entry = closeTagQueue.pollFirst();
-        errorReporter.report(entry.getSourceLocation(), UNEXPECTED_CLOSE_TAG);
-      } else {
-        // Try to pop remaining optional tags
-        popOptionalTags(false);
-        HtmlTagEntry entry = openTagStack.pollFirst();
-        if (entry != null) {
-          errorReporter.report(entry.getSourceLocation(), OPEN_TAG_NOT_CLOSED);
-        }
-      }
-    }
-
     @Override
     protected void visitTemplateNode(TemplateNode node) {
       Checkpoint checkpoint = errorReporter.checkpoint();
@@ -423,7 +337,7 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
         return;
       }
       // Match the tags in the deques.
-      matchTagsInDeques();
+      HtmlTagEntry.matchOrError(openTagStack, closeTagQueue, errorReporter);
     }
 
     private static boolean isDefinitelyVoid(HtmlOpenTagNode node) {
