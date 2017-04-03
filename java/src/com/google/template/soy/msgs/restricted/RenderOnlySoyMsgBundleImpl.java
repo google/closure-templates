@@ -115,9 +115,13 @@ final class RenderOnlySoyMsgBundleImpl extends SoyMsgBundle {
 
   /** Brings a message back to life from only its ID and parts. */
   @SuppressWarnings("unchecked") // The constructor guarantees the type of ImmutableList.
-  private SoyMsg resurrectMsg(long id, ImmutableList<SoyMsgPart> value) {
-    return SoyMsg.internalCreateForRenderingOnly(
-        id, localeString, MsgPartUtils.hasPlrselPart(value), value);
+  private SoyMsg resurrectMsg(long id, ImmutableList<SoyMsgPart> parts) {
+    return SoyMsg.builder()
+        .setId(id)
+        .setLocaleString(localeString)
+        .setIsPlrselMsg(MsgPartUtils.hasPlrselPart(parts))
+        .setParts(parts)
+        .build();
   }
 
   @Override

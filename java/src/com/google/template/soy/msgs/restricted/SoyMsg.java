@@ -19,10 +19,11 @@ package com.google.template.soy.msgs.restricted;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.errorprone.annotations.DoNotMock;
 import com.google.template.soy.base.SourceLocation;
-import java.util.Objects;
 import javax.annotation.Nullable;
 
 /**
@@ -34,7 +35,10 @@ import javax.annotation.Nullable;
  * because their empty implementations are singletons.
  *
  */
-public final class SoyMsg {
+@DoNotMock("use the builder() instead to construct a real instance")
+@AutoValue
+public abstract class SoyMsg {
+
   /** Returns a new builder for {@link SoyMsg}. */
   public static Builder builder() {
     return new Builder();
@@ -51,7 +55,7 @@ public final class SoyMsg {
     private @Nullable String contentType;
     private @Nullable SourceLocation sourceLocation;
     private boolean isPlrselMsg;
-    private ImmutableList<? extends SoyMsgPart> parts;
+    private ImmutableList<SoyMsgPart> parts;
 
     private Builder() {}
 
@@ -139,223 +143,43 @@ public final class SoyMsg {
     }
 
     public SoyMsg build() {
-      return new SoyMsg(
-          id,
-          altId,
-          localeString,
-          meaning,
-          desc,
-          isHidden,
-          contentType,
-          sourceLocation,
-          isPlrselMsg,
-          parts);
+      SoyMsg msg =
+          new AutoValue_SoyMsg(
+              localeString, id, altId, meaning, desc, isHidden, contentType, isPlrselMsg, parts);
+      if (sourceLocation != null) {
+        msg.addSourceLocation(sourceLocation);
+      }
+      return msg;
     }
   }
-
-  /**
-   * Creates a SoyMsg with just enough information for rendering only.
-   *
-   * <p>Using this constructor results in a working renderable message but uses much less memory
-   * than providing all the information for the full constructor.
-   *
-   * <p>This is for soy internal uses only, everyone else should use {@link SoyMsg#builder()}.
-   *
-   * @param id A unique id for this message (same across all translations).
-   * @param localeString The language/locale string, or null if unknown. Should only be null for
-   *     messages newly extracted from source files. Should always be set for messages parsed from
-   *     message files/resources.
-   * @param isPlrselMsg Whether this is a plural/select message.
-   * @param parts The parts that make up the message content.
-   */
-  public static SoyMsg internalCreateForRenderingOnly(
-      long id,
-      @Nullable String localeString,
-      boolean isPlrselMsg,
-      Iterable<? extends SoyMsgPart> parts) {
-    return builder()
-        .setId(id)
-        .setLocaleString(localeString)
-        .setIsPlrselMsg(isPlrselMsg)
-        .setParts(parts)
-        .build();
-  }
-
-  /** A unique id for this message (same across all translations). */
-  private final long id;
-
-  /** An alternate unique id for this message. */
-  private final long altId;
-
-  /** The language/locale string. */
-  private final String localeString;
-
-  /** The meaning string if set, otherwise null (usually null). */
-  private final String meaning;
-
-  /** The description for translators. */
-  private final String desc;
-
-  /** Whether this message should be hidden. */
-  private final boolean isHidden;
-
-  /** Content type of the document that this message will appear in. */
-  private final String contentType;
 
   /** Location(s) of the source file(s) that this message comes from. */
-  private ImmutableSet<SourceLocation> sourceLocations;
-
-  /** Whether this is a plural/select message. */
-  private final boolean isPlrselMsg;
-
-  /** The parts that make up the message content. */
-  private final ImmutableList<SoyMsgPart> parts;
-
-  /**
-   * @param id A unique id for this message (same across all translations).
-   * @param altId An alternate unique id for this message, or -1L if not applicable.
-   * @param localeString The language/locale string, or null if unknown. Should only be null for
-   *     messages newly extracted from source files. Should always be set for messages parsed from
-   *     message files/resources.
-   * @param meaning The meaning string, or null if not necessary (usually null). This is a string to
-   *     create unique messages for two otherwise identical messages. This is usually done for
-   *     messages used in different contexts. (For example, the same word can be used as a noun in
-   *     one location and as a verb in another location, and the message texts would be the same but
-   *     the messages would have meanings of "noun" and "verb".). May not be applicable to all
-   *     message plugins.
-   * @param desc The description for translators.
-   * @param isHidden Whether this message should be hidden. May not be applicable to all message
-   *     plugins.
-   * @param contentType Content type of the document that this message will appear in (e.g. "{@code
-   *     text/html}"). May not be applicable to all message plugins.
-   * @param sourceLocation Location of a source file that this message comes from. More sources can
-   *     be added using {@code addSourceLocation()}. May not be applicable to all message plugins.
-   * @param isPlrselMsg Whether this is a plural/select message.
-   * @param parts The parts that make up the message content.
-   * @deprecated use {@link #builder()} instead
-   */
-  @Deprecated
-  public SoyMsg(
-      long id,
-      long altId,
-      @Nullable String localeString,
-      @Nullable String meaning,
-      @Nullable String desc,
-      boolean isHidden,
-      @Nullable String contentType,
-      @Nullable SourceLocation sourceLocation,
-      boolean isPlrselMsg,
-      Iterable<? extends SoyMsgPart> parts) {
-
-    checkArgument(id >= 0L);
-    checkArgument(altId >= -1L);
-    this.id = id;
-    this.altId = altId;
-    this.localeString = localeString;
-    this.meaning = meaning;
-    this.desc = desc;
-    this.isHidden = isHidden;
-    this.contentType = contentType;
-    this.sourceLocations = ImmutableSet.of();
-    if (sourceLocation != null) {
-      addSourceLocation(sourceLocation);
-    }
-    this.isPlrselMsg = isPlrselMsg;
-    this.parts = ImmutableList.copyOf(parts);
-  }
-
-  /**
-   * @param id A unique id for this message (same across all translations).
-   * @param localeString The language/locale string, or null if unknown. Should only be null for
-   *     messages newly extracted from source files. Should always be set for messages parsed from
-   *     message files/resources.
-   * @param meaning The meaning string, or null if not necessary (usually null). This is a string to
-   *     create unique messages for two otherwise identical messages. This is usually done for
-   *     messages used in different contexts. (For example, the same word can be used as a noun in
-   *     one location and as a verb in another location, and the message texts would be the same but
-   *     the messages would have meanings of "noun" and "verb".). May not be applicable to all
-   *     message plugins.
-   * @param desc The description for translators.
-   * @param isHidden Whether this message should be hidden. May not be applicable to all message
-   *     plugins.
-   * @param contentType Content type of the document that this message will appear in (e.g. "{@code
-   *     text/html}"). May not be applicable to all message plugins.
-   * @param sourceLocation Location of a source file that this message comes from. More sources can
-   *     be added using {@code addSourceLocation()}. May not be applicable to all message plugins.
-   * @param parts The parts that make up the message content.
-   * @deprecated use {@link #builder()} instead
-   */
-  @Deprecated
-  public SoyMsg(
-      long id,
-      @Nullable String localeString,
-      @Nullable String meaning,
-      @Nullable String desc,
-      boolean isHidden,
-      @Nullable String contentType,
-      @Nullable SourceLocation sourceLocation,
-      Iterable<? extends SoyMsgPart> parts) {
-    this(id, -1L, localeString, meaning, desc, isHidden, contentType, sourceLocation, false, parts);
-  }
-
-  /**
-   * Constructor with just enough information for rendering only.
-   *
-   * <p>Using this constructor results in a working renderable message but uses much less memory
-   * than providing all the information for the full constructor.
-   *
-   * @param id A unique id for this message (same across all translations).
-   * @param localeString The language/locale string, or null if unknown. Should only be null for
-   *     messages newly extracted from source files. Should always be set for messages parsed from
-   *     message files/resources.
-   * @param isPlrselMsg Whether this is a plural/select message.
-   * @param parts The parts that make up the message content.
-   * @deprecated use {@link #internalCreateForRenderingOnly(long, String, boolean, Iterable)}
-   */
-  @Deprecated
-  public SoyMsg(
-      long id,
-      @Nullable String localeString,
-      boolean isPlrselMsg,
-      Iterable<? extends SoyMsgPart> parts) {
-    this(id, -1L, localeString, null, null, false, null, null, isPlrselMsg, parts);
-  }
+  private ImmutableSet<SourceLocation> sourceLocations = ImmutableSet.of();
 
   /** Returns the language/locale string. */
   @Nullable
-  public String getLocaleString() {
-    return localeString;
-  }
+  public abstract String getLocaleString();
 
   /** Returns the unique id for this message (same across all translations). */
-  public long getId() {
-    return id;
-  }
+  public abstract long getId();
 
   /** Returns the alternate unique id for this message, or -1L if not applicable. */
-  public long getAltId() {
-    return altId;
-  }
+  public abstract long getAltId();
 
   /** Returns the meaning string if set, otherwise null (usually null). */
-  public String getMeaning() {
-    return meaning;
-  }
+  @Nullable
+  public abstract String getMeaning();
 
   /** Returns the description for translators. */
-  public String getDesc() {
-    return desc;
-  }
+  @Nullable
+  public abstract String getDesc();
 
   /** Returns whether this message should be hiddens. */
-  public boolean isHidden() {
-    return isHidden;
-  }
+  public abstract boolean isHidden();
 
   /** Returns the content type of the document that this message will appear in. */
-  public String getContentType() {
-    return contentType;
-  }
+  @Nullable
+  public abstract String getContentType();
 
   /** @param sourceLocation Location of a source file that this message comes from. */
   public void addSourceLocation(SourceLocation sourceLocation) {
@@ -369,64 +193,8 @@ public final class SoyMsg {
   }
 
   /** Returns whether this is a plural/select message. */
-  public boolean isPlrselMsg() {
-    return isPlrselMsg;
-  }
+  public abstract boolean isPlrselMsg();
 
   /** Returns the parts that make up the message content. */
-  public ImmutableList<SoyMsgPart> getParts() {
-    return parts;
-  }
-
-  @Override
-  public boolean equals(Object otherObject) {
-    if (!(otherObject instanceof SoyMsg)) {
-      return false;
-    }
-    SoyMsg other = (SoyMsg) otherObject;
-    // NOTE: Source locations are not considered part of the object's identity,
-    // since they're mutable.
-    return id == other.id
-        && altId == other.altId
-        && Objects.equals(localeString, other.localeString)
-        && Objects.equals(meaning, other.meaning)
-        && Objects.equals(desc, other.desc)
-        && isHidden == other.isHidden
-        && Objects.equals(contentType, other.contentType)
-        && isPlrselMsg == other.isPlrselMsg
-        && Objects.equals(parts, other.parts);
-  }
-
-  @Override
-  public int hashCode() {
-    // NOTE: Source paths are not considered part of the object's identity, since they're mutable.
-    return Objects.hash(
-        this.getClass(), id, altId, localeString, meaning, desc, contentType, isPlrselMsg, parts);
-  }
-
-  @Override
-  public String toString() {
-    return this.getClass()
-        + "("
-        + id
-        + ", "
-        + altId
-        + ", "
-        + localeString
-        + ", "
-        + meaning
-        + ", "
-        + desc
-        + ", "
-        + isHidden
-        + ", "
-        + contentType
-        + ", "
-        + sourceLocations
-        + ", "
-        + isPlrselMsg
-        + ", "
-        + parts
-        + ")";
-  }
+  public abstract ImmutableList<SoyMsgPart> getParts();
 }
