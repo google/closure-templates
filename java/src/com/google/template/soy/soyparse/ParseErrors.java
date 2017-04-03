@@ -30,24 +30,31 @@ import java.util.regex.Pattern;
 final class ParseErrors {
   private static final Pattern EXTRACT_LOCATION = Pattern.compile("at line (\\d+), column (\\d+).");
 
-  private static final SoyErrorKind UNEXPECTED_TOKEN_MGR_ERROR =
-      SoyErrorKind.of(
-          "Unexpected fatal Soy error. Please file a bug with your Soy file and "
-              + "we''ll take a look.  {0}");
-  private static final SoyErrorKind UNEXPECTED_EOF =
-      SoyErrorKind.of(
-          "Unexpected end of file.  Did you forget to close an attribute value or a comment?");
-
   private static final SoyErrorKind BAD_PHNAME_VALUE =
       SoyErrorKind.of("Found ''phname'' attribute that is not a valid identifier");
   private static final SoyErrorKind INVALID_STRING_LITERAL =
       SoyErrorKind.of("Invalid string literal found in Soy command.");
+  private static final SoyErrorKind LEGACY_AND_ERROR =
+      SoyErrorKind.of("Found use of ''&&'' instead of the ''and'' operator");
+  private static final SoyErrorKind LEGACY_OR_ERROR =
+      SoyErrorKind.of("Found use of ''||'' instead of the ''or'' operator");
+  private static final SoyErrorKind LEGACY_NOT_ERROR =
+      SoyErrorKind.of("Found use of ''!'' instead of the ''not'' operator");
+  private static final SoyErrorKind LEGACY_DOUBLE_QUOTED_STRING =
+      SoyErrorKind.of("Found use of double quotes, Soy strings use single quotes");
+  private static final SoyErrorKind UNEXPECTED_EOF =
+      SoyErrorKind.of(
+          "Unexpected end of file.  Did you forget to close an attribute value or a comment?");
   private static final SoyErrorKind UNEXPECTED_PARAM_DECL =
       SoyErrorKind.of(
           "Unexpected parameter declaration. Param declarations must come before any code in "
               + "your template.");
   private static final SoyErrorKind UNEXPECTED_RIGHT_BRACE =
       SoyErrorKind.of("Unexpected ''}''; did you mean '''{'rb'}'''?");
+  private static final SoyErrorKind UNEXPECTED_TOKEN_MGR_ERROR =
+      SoyErrorKind.of(
+          "Unexpected fatal Soy error. Please file a bug with your Soy file and "
+              + "we''ll take a look.  {0}");
 
   private ParseErrors() {}
 
@@ -76,6 +83,18 @@ final class ParseErrors {
       case SoyFileParserConstants.DECL_BEGIN_INJECT_PARAM:
       case SoyFileParserConstants.DECL_BEGIN_OPT_INJECT_PARAM:
         reporter.report(location, UNEXPECTED_PARAM_DECL);
+        return;
+      case SoyFileParserConstants.LEGACY_AND:
+        reporter.report(location, LEGACY_AND_ERROR);
+        return;
+      case SoyFileParserConstants.LEGACY_OR:
+        reporter.report(location, LEGACY_OR_ERROR);
+        return;
+      case SoyFileParserConstants.LEGACY_NOT:
+        reporter.report(location, LEGACY_NOT_ERROR);
+        return;
+      case SoyFileParserConstants.DOUBLE_QUOTE:
+        reporter.report(location, LEGACY_DOUBLE_QUOTED_STRING);
         return;
       default:
         //fall-through
@@ -169,6 +188,17 @@ final class ParseErrors {
         return "text";
       case SoyFileParserConstants.TOKEN_WS:
         return "whitespace";
+
+      case SoyFileParserConstants.HEX_INTEGER:
+      case SoyFileParserConstants.DEC_INTEGER:
+      case SoyFileParserConstants.FLOAT:
+        return "number";
+      case SoyFileParserConstants.STRING:
+        return "string";
+      case SoyFileParserConstants.IDENT:
+        return "an identifier";
+      case SoyFileParserConstants.DOLLAR_IDENT:
+        return "variable";
 
       case SoyFileParserConstants.UNEXPECTED_TOKEN:
         throw new AssertionError("we should never expect the unexpected token");

@@ -29,13 +29,7 @@ final class ParseErrors {
   private ParseErrors() {}
 
   static void reportExprParseException(
-      ErrorReporter reporter, SourceLocation parentSourceLocation, ParseException e) {
-    reportExprParseException(reporter, "", parentSourceLocation, e);
-  }
-
-  static void reportExprParseException(
       ErrorReporter reporter,
-      String expectation,
       SourceLocation parentSourceLocation,
       ParseException e) {
     // currentToken is the 'last successfully consumed token', but the error is usually due to the
@@ -63,6 +57,8 @@ final class ParseErrors {
       case ExpressionParserConstants.DOUBLE_QUOTE:
         reporter.report(errorLocation, V1ExpressionErrors.LEGACY_DOUBLE_QUOTED_STRING);
         return;
+      default:
+        break;
     }
     // otherwise log a generic unexpected token error message
     ImmutableSet.Builder<String> expectedTokenImages = ImmutableSet.builder();
@@ -72,7 +68,7 @@ final class ParseErrors {
     }
     reporter.report(
         errorLocation,
-        SoyErrorKind.of(expectation + "{0}"),
+        SoyErrorKind.of("{0}"),
         formatParseExceptionDetails(errorToken.image, expectedTokenImages.build().asList()));
   }
 

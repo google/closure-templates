@@ -270,8 +270,7 @@ public final class ExpressionParser {
       }
       return node;
     } catch (ParseException e) {
-      ParseErrors.reportExprParseException(errorReporter,
-          "Expected a variable name ", parentSourceLocation, e);
+      ParseErrors.reportExprParseException(errorReporter, parentSourceLocation, e);
       return VarRefNode.ERROR;
     }
   }
