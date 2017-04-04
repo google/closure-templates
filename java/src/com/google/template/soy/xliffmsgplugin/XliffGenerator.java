@@ -107,9 +107,12 @@ class XliffGenerator {
         if (msgPart instanceof SoyMsgRawTextPart) {
           String rawText = ((SoyMsgRawTextPart) msgPart).getRawText();
           ilb.append(contentEscaper.escape(rawText));
-        } else {
+        } else if (msgPart instanceof SoyMsgPlaceholderPart) {
           String placeholderName = ((SoyMsgPlaceholderPart) msgPart).getPlaceholderName();
           ilb.appendParts("<x id=\"", attributeEscaper.escape(placeholderName), "\"/>");
+        } else {
+          throw new RuntimeException(
+              "Xliff doesn't support plurals or genders. " + msg.getSourceLocations());
         }
       }
       ilb.appendLineEnd("</source>");
