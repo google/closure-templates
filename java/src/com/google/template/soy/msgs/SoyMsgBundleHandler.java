@@ -167,7 +167,7 @@ public class SoyMsgBundleHandler {
 
     CharSequence cs = msgPlugin.generateExtractedMsgsFile(msgBundle, options);
     BaseUtils.ensureDirsExistInPath(outputFile.getPath());
-    Files.write(cs, outputFile, UTF_8);
+    Files.asCharSink(outputFile, UTF_8).write(cs);
   }
 
   /**
@@ -195,6 +195,6 @@ public class SoyMsgBundleHandler {
 
     CharSequence cs = msgPluginCast.generateTranslatedMsgsFile(msgBundle, options);
     BaseUtils.ensureDirsExistInPath(outputFile.getPath());
-    Files.write(cs, outputFile, UTF_8);
+    Files.asCharSink(outputFile, UTF_8).write(cs);
   }
 }
