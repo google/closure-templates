@@ -200,7 +200,7 @@ public final class CommandTextAttributesParser {
     public static final Collection<String> ALLOW_ALL_VALUES = null;
 
     /** Use this as the allowed values set for a boolean attribute. */
-    public static final Collection<String> BOOLEAN_VALUES = ImmutableSet.of("true", "false");
+    public static final ImmutableSet<String> BOOLEAN_VALUES = ImmutableSet.of("true", "false");
 
     /**
      * Use this as the default attribute value when there should not be a default because the
