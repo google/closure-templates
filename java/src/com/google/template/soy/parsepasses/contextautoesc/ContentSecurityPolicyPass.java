@@ -421,7 +421,7 @@ public final class ContentSecurityPolicyPass {
                 idGenerator.genId(),
                 rawTextNode.getSourceLocation(),
                 "if",
-                new ExprUnion(makeReferenceToInjectedCspNonce(rawTextNode.getSourceLocation())));
+                makeReferenceToInjectedCspNonce(rawTextNode.getSourceLocation()));
         parent.addChild(childIndex, ifNode);
         ++childIndex;
         ifNode.addChild(ifCondNode);

@@ -496,8 +496,12 @@ public class SoyFileParser {
     return new SourceItemInfo<T>(parsed, begin.extend(end));
   }
 
-  private SourceLocation createSrcLoc(Token tok1, Token ...rest) {
+  private SourceLocation createSrcLoc(Token tok1, Token... rest) {
     return Tokens.createSrcLoc(filePath, tok1, rest);
+  }
+
+  private ExprNode errorExpr(Token tok1, Token... rest) {
+    return VarRefNode.error(createSrcLoc(tok1, rest));
   }
 
   // Methods for managing lexical states from the parser
@@ -682,8 +686,8 @@ TOKEN_MGR_DECLS: {
 // Templates.
 
 <DEFAULT> TOKEN: {
-  <DELTEMPLATE_OPEN : "{deltemplate" > { pushState(IN_CMD_TAG_STRUCTURED); }
-| <TEMPLATE_OPEN: "{template" > { pushState(IN_CMD_TAG_STRUCTURED); }
+  < DELTEMPLATE_OPEN : "{deltemplate" > { pushState(IN_CMD_TAG_STRUCTURED); }
+| < TEMPLATE_OPEN: "{template" > { pushState(IN_CMD_TAG_STRUCTURED); }
 }
 
 
@@ -734,7 +738,7 @@ TOKEN_MGR_DECLS: {
 | < DECL_BEGIN_INJECT_PARAM      : "{@inject"   >  { pushState(IN_CMD_TAG_STRUCTURED); }
 | < DECL_BEGIN_OPT_INJECT_PARAM  : "{@inject?"  >  { pushState(IN_CMD_TAG_STRUCTURED); }
 
-| < XXX_BRACE_INVALID            : "}" >
+| < XXX_BRACE_INVALID            : "}"          >  // catch and die on an unexpected right brace
 | < CMD_FULL_SP                  : "{sp}"       >
 | < CMD_FULL_NIL                 : "{nil}"      >
 | < CMD_FULL_LF                  : "{\\n}"      >
@@ -761,8 +765,8 @@ TOKEN_MGR_DECLS: {
 | < CMD_BEGIN_XID                : "{xid" <WS>    > { pushState(IN_CMD_TAG_STRUCTURED); }
 | < CMD_BEGIN_CSS                : "{css" <WS>    > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
 
-| < CMD_BEGIN_IF                 : "{if" <WS>     > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
-| < CMD_BEGIN_ELSEIF             : "{elseif" <WS> > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
+| < CMD_BEGIN_IF                 : "{if" <WS>     > { pushState(EXPR); }
+| < CMD_BEGIN_ELSEIF             : "{elseif" <WS> > { pushState(EXPR); }
 | < CMD_FULL_ELSE                : "{else}"       >
 | < CMD_CLOSE_IF                 : "{/if}"        >
 
@@ -2441,49 +2445,58 @@ private LetNode LetStmt() :
  */
 private IfNode IfStmt() :
 {
-  String cmdText;
-  List<StandaloneNode> templateBlock;
   Token cmdBegin, cmdEnd;
   Token elseTag;
+  ExprNode ifExpr;
+  List<StandaloneNode> templateBlock;
 }
 {
-  { IfCondNode ifCondNode; }
-
   cmdBegin = <CMD_BEGIN_IF>
-  cmdText = CmdText()
-  cmdEnd = <CMD_END>
+  try {
+    ifExpr = Expr()
+    cmdEnd = <CMD_END>
+  } catch (ParseException e) {
+    ifExpr = errorExpr(cmdBegin);
+    cmdEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END);
+  }
+
   {
-    SourceLocation ifTagLocation = createSrcLoc(cmdBegin, cmdEnd);
-    IfNode ifNode = new IfNode(nodeIdGen.genId(), ifTagLocation);
-    ifCondNode = IfCondNode.ifBuilder(
-        nodeIdGen.genId(), cmdText, ifTagLocation)
-        .build(context);
+    SourceLocation location = createSrcLoc(cmdBegin, cmdEnd);
+    IfNode ifNode = new IfNode(nodeIdGen.genId(), location);
+    IfCondNode ifCondNode = new IfCondNode(nodeIdGen.genId(), location, "if", ifExpr);
     ifNode.addChild(ifCondNode);
   }
+
   templateBlock = TemplateBlock()
   { ifCondNode.addChildren(templateBlock); }
 
   (
     cmdBegin = <CMD_BEGIN_ELSEIF>
-    cmdText = CmdText()
-    cmdEnd = <CMD_END>
+    try {
+      ifExpr = Expr()
+      cmdEnd = <CMD_END>
+    } catch (ParseException e) {
+      ifExpr = errorExpr(cmdBegin);
+      cmdEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END);
+    }
+
     {
-      SourceLocation elseIfLocation = createSrcLoc(cmdBegin, cmdEnd);
-      ifCondNode = IfCondNode.elseifBuilder(
-          nodeIdGen.genId(), cmdText, elseIfLocation).build(context);
+      location = createSrcLoc(cmdBegin, cmdEnd);
+      ifCondNode = new IfCondNode(nodeIdGen.genId(), location, "elseif", ifExpr);
       ifNode.addChild(ifCondNode);
     }
+
     templateBlock = TemplateBlock()
     { ifCondNode.addChildren(templateBlock); }
   )*
 
   [
-
     elseTag = <CMD_FULL_ELSE>
     {
       IfElseNode ifElseNode = new IfElseNode(nodeIdGen.genId(), createSrcLoc(elseTag));
       ifNode.addChild(ifElseNode);
     }
+
     templateBlock = TemplateBlock()
     { ifElseNode.addChildren(templateBlock); }
   ]
@@ -2512,7 +2525,7 @@ private SwitchNode SwitchStmt() :
     switchExpr = Expr()
     cmdEnd = <CMD_END>
   } catch (ParseException e) {
-    switchExpr = VarRefNode.error(createSrcLoc(cmdBegin));
+    switchExpr = errorExpr(cmdBegin);
     cmdEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END);
   }
 

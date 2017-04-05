@@ -20,8 +20,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.exprparse.ExpressionParser;
-import com.google.template.soy.exprparse.SoyParsingContext;
+import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.ConditionalBlockNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
@@ -41,33 +40,15 @@ public final class IfCondNode extends AbstractBlockCommandNode
   private final ExprUnion exprUnion;
 
   /**
-   * @param id The node's id.
-   * @param commandText The node's command text.
-   * @param sourceLocation The node's source location.
-   */
-  public static Builder ifBuilder(int id, String commandText, SourceLocation sourceLocation) {
-    return new Builder(id, "if", commandText, sourceLocation);
-  }
-
-  /**
-   * @param id The node's id.
-   * @param commandText The node's command text.
-   * @param sourceLocation The node's source location.
-   */
-  public static Builder elseifBuilder(int id, String commandText, SourceLocation sourceLocation) {
-    return new Builder(id, "elseif", commandText, sourceLocation);
-  }
-
-  /**
    * @param id The id for this node.
+   * @param location The node's source location.
    * @param commandName The command name -- either 'if' or 'elseif'.
-   * @param exprUnion Determines when the body is performed.
+   * @param expr The if condition.
    */
-  public IfCondNode(
-      int id, SourceLocation sourceLocation, String commandName, ExprUnion exprUnion) {
-    super(id, sourceLocation, commandName, exprUnion.getExprText());
+  public IfCondNode(int id, SourceLocation location, String commandName, ExprNode expr) {
+    super(id, location, commandName, expr.toSourceString());
     Preconditions.checkArgument(commandName.equals("if") || commandName.equals("elseif"));
-    this.exprUnion = Preconditions.checkNotNull(exprUnion);
+    this.exprUnion = new ExprUnion(new ExprRootNode(expr));
   }
 
   /**
@@ -122,29 +103,5 @@ public final class IfCondNode extends AbstractBlockCommandNode
   @Override
   public IfCondNode copy(CopyState copyState) {
     return new IfCondNode(this, copyState);
-  }
-
-  /** Builder for {@link IfCondNode}. */
-  public static final class Builder {
-    private final int id;
-    private final String commandName;
-    private final String commandText;
-    private final SourceLocation sourceLocation;
-
-    private Builder(int id, String commandName, String commandText, SourceLocation sourceLocation) {
-      this.id = id;
-      this.commandName = commandName;
-      this.commandText = commandText;
-      this.sourceLocation = sourceLocation;
-    }
-
-    /** Returns a new {@link IfCondNode} built from this builder's state. */
-    public IfCondNode build(SoyParsingContext context) {
-      ExprRootNode expr =
-          new ExprRootNode(
-              new ExpressionParser(commandText, sourceLocation, context).parseExpression());
-      ExprUnion condition = new ExprUnion(expr);
-      return new IfCondNode(id, sourceLocation, commandName, condition);
-    }
   }
 }
