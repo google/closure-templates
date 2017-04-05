@@ -44,11 +44,7 @@ import com.google.template.soy.soytree.TagName;
 import com.google.template.soy.soytree.TemplateNode;
 import java.util.ArrayDeque;
 
-/**
- * A {@link CompilerFilePass} that checks strict html mode.
- *
- * <p>TODO(b/31771679): Add more validations as needed.
- */
+/** A {@link CompilerFilePass} that checks strict html mode. See go/soy-html for usages. */
 final class StrictHtmlValidationPass extends CompilerFilePass {
   private static final SoyErrorKind STRICT_HTML_DISABLED =
       SoyErrorKind.of(

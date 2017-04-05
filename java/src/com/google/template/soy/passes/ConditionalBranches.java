@@ -143,6 +143,7 @@ final class ConditionalBranches {
         entry.getBranches().popAllBranches();
       }
     }
+    removeEmptyDeque();
   }
 
   /** Removes optional tags from all branches. */

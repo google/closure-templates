@@ -78,6 +78,10 @@ final class HtmlTagEntry {
     return branches;
   }
 
+  boolean hasEmptyBranches() {
+    return branches != null && branches.isEmpty();
+  }
+
   /**
    * Return source location for this entry. If it is a tag name, return its location, otherwise try
    * to recursively find a tag name in branches.
@@ -129,7 +133,13 @@ final class HtmlTagEntry {
           continue;
         }
         if (!openTag.hasTagName()) {
-          return tryMatchCommonPrefix(openTag, closeTag, errorReporter);
+          // Mutate the stack/queue if we found common prefix.
+          if (tryMatchCommonPrefix(openTag, closeTag, errorReporter)) {
+            openStack.pollFirst();
+            closeQueue.pollFirst();
+            return true;
+          }
+          return false;
         }
       }
       // Remove optional tags from the open stack before we try to match the current close tag.
@@ -170,12 +180,14 @@ final class HtmlTagEntry {
     if (!tryMatchOrError(openStack, closeQueue, errorReporter)) {
       return false;
     }
-    // Try to remove any remaining optional tags in the open stack.
-    while (!openStack.isEmpty() && openStack.peekFirst().isDefinitelyOptional()) {
+    // Try to remove any remaining optional tags or tags with empty branches in the open stack.
+    HtmlTagEntry openTag = openStack.peekFirst();
+    while (openTag != null && (openTag.isDefinitelyOptional() || openTag.hasEmptyBranches())) {
+      openTag = openStack.peekFirst();
       openStack.pollFirst();
     }
     if (!openStack.isEmpty()) {
-      errorReporter.report(openStack.peek().getSourceLocation(), OPEN_TAG_NOT_CLOSED);
+      errorReporter.report(openTag.getSourceLocation(), OPEN_TAG_NOT_CLOSED);
       return false;
     }
     if (!closeQueue.isEmpty()) {
