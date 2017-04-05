@@ -31,6 +31,10 @@ import com.google.template.soy.soytree.SoyNode.StatementNode;
  */
 public final class XidNode extends AbstractCommandNode implements StandaloneNode, StatementNode {
 
+  public static XidNode error(SourceLocation sourceLocation) {
+    return new XidNode(-1, sourceLocation, "error");
+  }
+
   /** The text of the identifier. */
   private final String text;
 
@@ -51,10 +55,6 @@ public final class XidNode extends AbstractCommandNode implements StandaloneNode
   public XidNode(int id, SourceLocation sourceLocation, String commandText) {
     super(id, sourceLocation, "xid", commandText);
     text = commandText;
-  }
-
-  public static XidNode error(SourceLocation sourceLocation) {
-    return new XidNode(-1, sourceLocation, "error");
   }
 
   /**

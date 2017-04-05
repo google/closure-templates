@@ -31,6 +31,10 @@ public final class VarRefNode extends AbstractExprNode {
   public static final VarRefNode ERROR =
       new VarRefNode("error", SourceLocation.UNKNOWN, false, null);
 
+  public static VarRefNode error(SourceLocation location) {
+    return new VarRefNode("error", location, false, null);
+  }
+
   /** The name of the variable. */
   private final String name;
 

@@ -348,44 +348,31 @@ public class SoyFileParser {
   // Template errors:
   private static final SoyErrorKind FOUND_DOUBLE_BRACE =
       SoyErrorKind.of("Soy '{{command}}' syntax is no longer supported.  Use single braces.");
-
   private static final SoyErrorKind INVALID_ALIAS_NAME =
       SoyErrorKind.of("An alias must be a single identifier. Found ''{0}''.");
-
   private static final SoyErrorKind INVALID_DECLARATION =
       SoyErrorKind.of("Invalid declaration ''{0}''.");
-
   private static final SoyErrorKind INVALID_DELTEMPLATE_NAME =
       SoyErrorKind.of("Deltemplate ''{0}'' must have a fully qualified name.");
-
   private static final SoyErrorKind INVALID_PRINT_PREFIX =
       SoyErrorKind.of("Command ''{0}'' cannot have arguments.");
-
   private static final SoyErrorKind INVALID_PRINT_COMMAND_TEXT =
       SoyErrorKind.of("Invalid ''print'' command text \"{0}\" (check the directives).");
-
-  private static final SoyErrorKind INVALID_PRINT_FILE_COMMAND =
+  private static final SoyErrorKind INVALID_TEMPLATE_COMMAND =
       SoyErrorKind.of("Command ''{0}'' cannot appear in templates.");
-
   private static final SoyErrorKind INVALID_TEMPLATE_NAME =
       SoyErrorKind.of("Template name ''{0}'' must be relative to the file namespace, i.e. a dot "
           + "followed by an identifier.");
-
   private static final SoyErrorKind MULTIPLE_PHNAME_ATTRIBUTES_IN_COMMAND =
       SoyErrorKind.of("Found multiple ''phname'' attributes in command text \"{0}\".");
-
   private static final SoyErrorKind PLURAL_AND_SELECT_NOT_ALLOWED_INSIDE_PLURAL_BLOCK =
       SoyErrorKind.of("Tags ''plural'' and ''select'' are not allowed inside ''plural'' blocks.");
-
   private static final SoyErrorKind PRINT_COMMAND_WITH_EMPTY_TEXT =
       SoyErrorKind.of("Found ''print'' command with empty command text.");
-
   private static final SoyErrorKind UNEXPECTED_CLOSING_TAG =
       SoyErrorKind.of("Unexpected closing tag ''{0}''.");
-
   private static final SoyErrorKind UNEXPECTED_CONTENT_AFTER =
       SoyErrorKind.of("Unexpected content after ''{0}'', expected only comments or whitespace.");
-
   private static final SoyErrorKind UNEXPECTED_CONTENT_BEFORE =
       SoyErrorKind.of("Unexpected content before ''{0}'', expected only comments or whitespace.");
 
@@ -771,7 +758,7 @@ TOKEN_MGR_DECLS: {
 | < CMD_CLOSE_MSG                : "{/msg}"       >
 
 | < CMD_BEGIN_PRINT              : "{print" <WS>  > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
-| < DECL_BEGIN_XID               : "{xid" <WS>    > { pushState(IN_CMD_TAG_STRUCTURED); }
+| < CMD_BEGIN_XID                : "{xid" <WS>    > { pushState(IN_CMD_TAG_STRUCTURED); }
 | < CMD_BEGIN_CSS                : "{css" <WS>    > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
 
 | < CMD_BEGIN_IF                 : "{if" <WS>     > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
@@ -791,11 +778,11 @@ TOKEN_MGR_DECLS: {
 | < CMD_BEGIN_SELECT             : "{select" <WS> > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
 | < CMD_CLOSE_SELECT             : "{/select}"    >
 
-| < CMD_BEGIN_SWITCH             : "{switch" <WS> > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
+| < CMD_BEGIN_SWITCH             : "{switch" <WS> > { pushState(EXPR); }
 | < CMD_CLOSE_SWITCH             : "{/switch}"    >
 
-| < CMD_FULL_DEFAULT             : "{default}"    >
 | < CMD_BEGIN_CASE               : "{case" <WS>   > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
+| < CMD_FULL_DEFAULT             : "{default}"    >
 
 | < CMD_BEGIN_FOREACH            : "{foreach" <WS>> { pushState(IN_CMD_TAG_UNSTRUCTURED); }
 | < CMD_FULL_IFEMPTY             : "{ifempty}"  >
@@ -810,7 +797,7 @@ TOKEN_MGR_DECLS: {
 
 // ------------ Step 2: Match the command text and closing delimiter ------------
 
-<IN_CMD_TAG_UNSTRUCTURED, IN_CMD_TAG_STRUCTURED, ALIAS, TYPE_EXPR> TOKEN: {
+<IN_CMD_TAG_UNSTRUCTURED, IN_CMD_TAG_STRUCTURED, ALIAS, EXPR, TYPE_EXPR> TOKEN: {
   < CMD_END : "}" > { popState(); }
 | < CMD_SELF_CLOSE : "/}" > { popState(); }
 }
@@ -2006,10 +1993,12 @@ private MsgPluralNode MsgPlural() :
         nodeIdGen.genId(), cmdText, createSrcLoc(cmdBegin, cmdEnd))
         .build(context);
   }
+
+  // consume all whitespace between {plural} and the first {case}
+  // later {case} and {default} tags will naturally consume whitespace due via RawText()
+  SkipWhitespace()
+
   try {
-    // consume all whitespace between {plural} and the first {case}
-    // later {case} and {default} tags will naturally consume whitespace due via RawText()
-    SkipWhitespace()
     (
       cmdBegin = <CMD_BEGIN_CASE>
       cmdText = CmdText()
@@ -2079,9 +2068,11 @@ private MsgSelectNode MsgSelect() :
     MsgSelectNode msgSelectNode = new MsgSelectNode.Builder(
         nodeIdGen.genId(), cmdText, createSrcLoc(cmdBegin, cmdEnd)).build(context);
   }
+
   // consume all whitespace between {select} and the first {case}
   // later {case} and {default} tags will naturally consume whitespace due to RawText()
   SkipWhitespace()
+
   try {
     (
       cmdBegin = <CMD_BEGIN_CASE>
@@ -2194,7 +2185,7 @@ private SourceItemInfo<List<String>> PrintTag() :
     } else if (printTagParts.get(0).startsWith("{")) {
       errorReporter.report(createSrcLoc(tagBegin, tagEnd), FOUND_DOUBLE_BRACE);
     } else if (INVALID_PRINT_FILE_PREFIX_PATTERN.matcher(printTagParts.get(0)).matches()) {
-      errorReporter.report(createSrcLoc(tagBegin, tagEnd), INVALID_PRINT_FILE_COMMAND,
+      errorReporter.report(createSrcLoc(tagBegin, tagEnd), INVALID_TEMPLATE_COMMAND,
           "{" + printTagParts.get(0));
     } else if (INVALID_PRINT_PREFIX_PATTERN.matcher(printTagParts.get(0)).matches()) {
       errorReporter.report(createSrcLoc(tagBegin, tagEnd), INVALID_PRINT_PREFIX,
@@ -2236,7 +2227,7 @@ private PrintNode PrintStmt() :
     } else if (cmdTextParts.get(0).startsWith("{")) {
       errorReporter.report(location, FOUND_DOUBLE_BRACE);
     } else if (INVALID_PRINT_FILE_PREFIX_PATTERN.matcher(cmdTextParts.get(0)).matches()) {
-      errorReporter.report(location, INVALID_PRINT_FILE_COMMAND, "{" + cmdTextParts.get(0));
+      errorReporter.report(location, INVALID_TEMPLATE_COMMAND, "{" + cmdTextParts.get(0));
     } else if (INVALID_PRINT_PREFIX_PATTERN.matcher(cmdTextParts.get(0)).matches()) {
       errorReporter.report(location, INVALID_PRINT_PREFIX, "{" + cmdTextParts.get(0));
     }
@@ -2318,7 +2309,7 @@ private PrintNode PrintStmt() :
 
 
 /**
- * XidStmt -> <DECL_BEGIN_XID> <NAME> ( ( . <NAME> )+ | ( - <NAME> ) + )? <CMD_END>
+ * XidStmt -> <CMD_BEGIN_XID> <NAME> ( ( . <NAME> )+ | ( - <NAME> ) + )? <CMD_END>
  *
  * Valid xid names are one or more identifiers, separated by either all dots or all dashes, but
  * not both in the same xid.
@@ -2331,7 +2322,7 @@ private XidNode XidStmt() :
   StringBuilder value = null;
 }
 {
-  cmdBegin = <DECL_BEGIN_XID>
+  cmdBegin = <CMD_BEGIN_XID>
 
   try {
     first = <NAME>
@@ -2509,24 +2500,32 @@ private IfNode IfStmt() :
  */
 private SwitchNode SwitchStmt() :
 {
-  String cmdText;
-  List<StandaloneNode> templateBlock;
   Token cmdBegin, cmdEnd;
   Token defaultTag;
+  ExprNode switchExpr;
+  List<StandaloneNode> templateBlock;
+  String cmdText;
 }
 {
   cmdBegin = <CMD_BEGIN_SWITCH>
-  cmdText = CmdText()
-  cmdEnd = <CMD_END>
-  {
-    SwitchNode switchNode = new SwitchNode.Builder(
-        nodeIdGen.genId(), cmdText, createSrcLoc(cmdBegin, cmdEnd))
-        .build(context);
+  try {
+    switchExpr = Expr()
+    cmdEnd = <CMD_END>
+  } catch (ParseException e) {
+    switchExpr = VarRefNode.error(createSrcLoc(cmdBegin));
+    cmdEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END);
   }
+
+  {
+    SwitchNode switchNode =
+        new SwitchNode(nodeIdGen.genId(), createSrcLoc(cmdBegin, cmdEnd), switchExpr);
+  }
+
   // consume all whitespace between {switch} and the first {case}
   // later {case} and {default} tags will naturally consume and drop whitespace due to how RawText()
   // line joining works
   SkipWhitespace()
+
   try {
     (
       cmdBegin = <CMD_BEGIN_CASE>
@@ -2538,25 +2537,28 @@ private SwitchNode SwitchStmt() :
             .build(context);
         switchNode.addChild(switchCaseNode);
       }
+
       templateBlock = TemplateBlock()
       { switchCaseNode.addChildren(templateBlock); }
     )*
+    // TODO(user): This should be a +. No switches without case statements.
 
     [
       defaultTag = <CMD_FULL_DEFAULT>
       {
-        SwitchDefaultNode switchDefaultNode = new SwitchDefaultNode(
-            nodeIdGen.genId(), createSrcLoc(defaultTag));
+        SwitchDefaultNode switchDefaultNode =
+            new SwitchDefaultNode(nodeIdGen.genId(), createSrcLoc(defaultTag));
         switchNode.addChild(switchDefaultNode);
       }
+
       templateBlock = TemplateBlock()
       { switchDefaultNode.addChildren(templateBlock); }
     ]
 
     <CMD_CLOSE_SWITCH>
- } catch (ParseException e) {
-   reportTemplateBodyErrorAndSkipTo(e, CMD_CLOSE_SWITCH);
- }
+  } catch (ParseException e) {
+    reportTemplateBodyErrorAndSkipTo(e, CMD_CLOSE_SWITCH);
+  }
 
   { return switchNode; }
 }
@@ -2904,39 +2906,6 @@ private PrimitiveNode Primitive() :
 // =================================================================================================
 // Grammar
 // =================================================================================================
-
-
-/**
- * Matches the whole input if it is a comma-separated list of one or more expressions.
- *
- * ExprListInput -> ExprList EOF
- */
-private List<ExprNode> ExprListInput() :
-{
-  List<ExprNode> exprList;
-}
-{
-  exprList = ExprList()
-  <EOF>
-  { return exprList; }
-}
-
-
-/**
- * Matches the whole input if it is a full expression.
- *
- * ExprInput -> Expr EOF
- */
-private ExprNode ExprInput() :
-{
-  ExprNode expr;
-}
-{
-  expr = Expr()
-  <EOF>
-  { return expr; }
-}
-
 
 
 /**

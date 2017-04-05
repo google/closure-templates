@@ -19,8 +19,6 @@ package com.google.template.soy.soytree;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.exprparse.ExpressionParser;
-import com.google.template.soy.exprparse.SoyParsingContext;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.BlockNode;
@@ -42,9 +40,9 @@ public final class SwitchNode extends AbstractParentCommandNode<BlockNode>
   /** The parsed expression. */
   private final ExprRootNode expr;
 
-  private SwitchNode(int id, String commandText, ExprRootNode expr, SourceLocation sourceLocation) {
-    super(id, sourceLocation, "switch", commandText);
-    this.expr = expr;
+  public SwitchNode(int id, SourceLocation location, ExprNode expr) {
+    super(id, location, "switch", expr.toSourceString());
+    this.expr = new ExprRootNode(expr);
   }
 
   /**
@@ -96,32 +94,5 @@ public final class SwitchNode extends AbstractParentCommandNode<BlockNode>
   @Override
   public SwitchNode copy(CopyState copyState) {
     return new SwitchNode(this, copyState);
-  }
-
-  /** Builder for {@link SwitchNode}. */
-  public static final class Builder {
-    private final int id;
-    private final String commandText;
-    private final SourceLocation sourceLocation;
-
-    /**
-     * @param id The node's id.
-     * @param commandText The node's command text.
-     * @param sourceLocation The node's source location.
-     */
-    public Builder(int id, String commandText, SourceLocation sourceLocation) {
-      this.id = id;
-      this.commandText = commandText;
-      this.sourceLocation = sourceLocation;
-    }
-
-    /**
-     * Returns a new {@link SwitchNode} built from this builder's state, reporting syntax errors to
-     * the given {@link ErrorReporter}.
-     */
-    public SwitchNode build(SoyParsingContext context) {
-      ExprNode expr = new ExpressionParser(commandText, sourceLocation, context).parseExpression();
-      return new SwitchNode(id, commandText, new ExprRootNode(expr), sourceLocation);
-    }
   }
 }

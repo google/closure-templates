@@ -152,7 +152,7 @@ final class ParseErrors {
         return "{fallbackmsg";
       case SoyFileParserConstants.CMD_BEGIN_PRINT:
         return "{print";
-      case SoyFileParserConstants.DECL_BEGIN_XID:
+      case SoyFileParserConstants.CMD_BEGIN_XID:
         return "{xid";
       case SoyFileParserConstants.CMD_BEGIN_CSS:
         return "{css";
