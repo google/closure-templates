@@ -145,7 +145,8 @@ public final class SlicedRawTextNodeTest {
           " title='unclosed");
     } catch (SoyAutoescapeException ex) {
       assertThat(ex)
-          .hasMessage(
+          .hasMessageThat()
+          .isEqualTo(
               "In file no-path:3:16, template ns.foo:"
                   + " Inserting ` title='unclosed` would cause text node to end in context"
                   + " (Context HTML_NORMAL_ATTR_VALUE SCRIPT PLAIN_TEXT SINGLE_QUOTE) instead of"

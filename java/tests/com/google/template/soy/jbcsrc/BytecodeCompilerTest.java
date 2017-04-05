@@ -842,7 +842,8 @@ public class BytecodeCompilerTest {
       fail();
     } catch (IllegalArgumentException iae) {
       assertThat(iae)
-          .hasMessage(
+          .hasMessageThat()
+          .isEqualTo(
               "Found no active impl for delegate call to 'myApp.myDelegate' "
                   + "(and no attribute allowemptydefault=\"true\").");
     }

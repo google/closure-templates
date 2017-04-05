@@ -145,7 +145,8 @@ public class CleanHtmlDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
       fail();
     } catch (IllegalArgumentException e) {
       assertThat(e)
-          .hasMessage(
+          .hasMessageThat()
+          .isEqualTo(
               "The cleanHtml directive expects arguments to be tag name string "
                   + "literals, such as 'span'. Encountered: $myExtraSafeTags");
     }
@@ -201,7 +202,8 @@ public class CleanHtmlDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
       fail("Non-String allowed to be used as a safe-tag in 'clean_html'");
     } catch (IllegalArgumentException e) {
       assertThat(e)
-          .hasMessage(
+          .hasMessageThat()
+          .isEqualTo(
               "The cleanHtml directive expects arguments to be tag name string "
                   + "literals, such as 'span'. Encountered: $myExtraSafeTags");
     }
