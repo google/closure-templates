@@ -682,12 +682,13 @@ soy.$$getDelegateFn = function(
  * that is returned whenever there's no delegate implementation found.
  *
  * @param {Object<string, *>=} opt_data
- * @param {?=} opt_ignored  TODO(b/36644846) remove
  * @param {Object<string, *>=} opt_ijData
+ * @param {Object<string, *>=} opt_ijData_deprecated TODO(b/36644846): remove
  * @return {string}
  * @private
  */
-soy.$$EMPTY_TEMPLATE_FN_ = function(opt_data, opt_ignored, opt_ijData) {
+soy.$$EMPTY_TEMPLATE_FN_ = function(
+    opt_data, opt_ijData, opt_ijData_deprecated) {
   return '';
 };
 
