@@ -167,7 +167,7 @@ public class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>> {
     TranslateToPyExprVisitor translator =
         new TranslateToPyExprVisitor(localVarExprs, errorReporter);
 
-    PyExpr pyExpr = translator.exec(node.getExprUnion().getExpr());
+    PyExpr pyExpr = translator.exec(node.getExpr());
 
     // Process directives.
     for (PrintDirectiveNode directiveNode : node.getChildren()) {
@@ -312,7 +312,7 @@ public class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>> {
         pyExprTextSb.append(condBlock.getText());
 
         // Append the conditional and if/else syntax.
-        PyExpr condPyExpr = translator.exec(icn.getExprUnion().getExpr());
+        PyExpr condPyExpr = translator.exec(icn.getExpr());
         pyExprTextSb.append(" if ").append(condPyExpr.getText()).append(" else ");
 
       } else if (child instanceof IfElseNode) {

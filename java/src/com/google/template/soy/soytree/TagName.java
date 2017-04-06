@@ -23,6 +23,8 @@ import com.google.common.base.Ascii;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.exprtree.ExprEquivalence;
+import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import java.util.List;
 import javax.annotation.Nullable;
@@ -34,7 +36,7 @@ import javax.annotation.Nullable;
  * <p>For {code @StaticTagName}, the equality semantics are based on the lower-ascii tag name and
  * ignore source location. So 'DIV' and 'div' are considered equivalent.
  *
- * <p>For {@code DynamicTagName}, the equality semantics are based on the {@code ExprUnion}
+ * <p>For {@code DynamicTagName}, the equality semantics are based on the {@code ExprRootNode}
  * associated with the {@code PrintNode}.
  */
 public final class TagName {
@@ -181,8 +183,8 @@ public final class TagName {
   }
 
   private boolean comparePrintNode(PrintNode firstNode, PrintNode secondNode) {
-    ExprUnionEquivalence exprUnionEquivalence = ExprUnionEquivalence.get();
-    if (!exprUnionEquivalence.equivalent(firstNode.getExprUnion(), secondNode.getExprUnion())) {
+    ExprEquivalence exprEquivalence = ExprEquivalence.get();
+    if (!exprEquivalence.equivalent(firstNode.getExpr(), secondNode.getExpr())) {
       return false;
     }
     List<PrintDirectiveNode> firstNodeDirectives = firstNode.getChildren();
@@ -194,11 +196,12 @@ public final class TagName {
       if (firstNodeDirectives.get(i).getName().equals(secondNodeDirectives.get(i).getName())) {
         return false;
       }
-      if (!exprUnionEquivalence
-          .pairwise()
-          .equivalent(
-              firstNodeDirectives.get(i).getAllExprUnions(),
-              secondNodeDirectives.get(i).getAllExprUnions())) {
+      // cast ImmutableList<ExprRootNode> to List<ExprNode>
+      @SuppressWarnings("unchecked")
+      List<ExprNode> one = (List<ExprNode>) ((List<?>) firstNodeDirectives.get(i).getExprList());
+      @SuppressWarnings("unchecked")
+      List<ExprNode> two = (List<ExprNode>) ((List<?>) secondNodeDirectives.get(i).getExprList());
+      if (!exprEquivalence.pairwise().equivalent(one, two)) {
         return false;
       }
     }
@@ -206,11 +209,14 @@ public final class TagName {
   }
 
   private static int hashPrintNode(PrintNode node) {
-    ExprUnionEquivalence exprUnionEquivalence = ExprUnionEquivalence.get();
-    int hc = exprUnionEquivalence.hash(node.getExprUnion());
+    ExprEquivalence exprEquivalence = ExprEquivalence.get();
+    int hc = exprEquivalence.hash(node.getExpr());
     for (PrintDirectiveNode child : node.getChildren()) {
+      // cast ImmutableList<ExprRootNode> to List<ExprNode>
+      @SuppressWarnings("unchecked")
+      List<ExprNode> list = (List<ExprNode>) ((List<?>) child.getExprList());
       hc = 31 * hc + child.getName().hashCode();
-      hc = 31 * hc + exprUnionEquivalence.pairwise().hash(child.getAllExprUnions());
+      hc = 31 * hc + exprEquivalence.pairwise().hash(list);
     }
     return hc;
   }

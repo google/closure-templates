@@ -28,7 +28,6 @@ import com.google.template.soy.error.SoyErrors;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.passes.FindIndirectParamsVisitor.IndirectParamsInfo;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
-import com.google.template.soy.soytree.ExprUnion;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
@@ -110,16 +109,6 @@ final class CheckTemplateParamsVisitor extends AbstractSoyNodeVisitor<Void> {
             if (!node.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0)) {
               allV2.set(false);
               return false;
-            }
-            // TODO(lukes): it would be nice if the fact that an ExprHolderNode contains v1
-            // expressions was reflected in its inferred syntax version.
-            if (node instanceof SoyNode.ExprHolderNode) {
-              for (ExprUnion union : ((SoyNode.ExprHolderNode) node).getAllExprUnions()) {
-                if (union.getExpr() == null) {
-                  allV2.set(false);
-                  return false;
-                }
-              }
             }
             return true;
           }

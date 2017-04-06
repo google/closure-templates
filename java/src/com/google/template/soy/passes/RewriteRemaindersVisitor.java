@@ -68,10 +68,7 @@ public final class RewriteRemaindersVisitor extends AbstractSoyNodeVisitor<Void>
     // parsed, that should be fine.  I don't think this can fail at all, but whatever.
     SoyParsingContext context = SoyParsingContext.empty(errorReporter, "fake.namespace");
 
-    ExprRootNode exprRootNode = node.getExprUnion().getExpr();
-    if (exprRootNode == null) {
-      return;
-    }
+    ExprRootNode exprRootNode = node.getExpr();
 
     // Check for the function node with the function "remainder()".
     if (exprRootNode.getRoot() instanceof FunctionNode) {

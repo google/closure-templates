@@ -894,11 +894,11 @@ public final class TemplateParserTest {
     assertEquals(0, pn0.getChildren().size());
     assertEquals("FOO", pn0.genBasePhName());
     assertEquals("{$boo.foo}", pn0.toSourceString());
-    assertTrue(pn0.getExprUnion().getExpr().getRoot() instanceof FieldAccessNode);
+    assertTrue(pn0.getExpr().getRoot() instanceof FieldAccessNode);
 
     PrintNode pn1 = (PrintNode) nodes.get(1);
     assertTrue(pn0.genSamenessKey().equals(pn1.genSamenessKey()));
-    assertTrue(pn1.getExprUnion().getExpr().getRoot() instanceof FieldAccessNode);
+    assertTrue(pn1.getExpr().getRoot() instanceof FieldAccessNode);
 
     PrintNode pn2 = (PrintNode) nodes.get(2);
     assertTrue(pn2.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0));
@@ -908,7 +908,7 @@ public final class TemplateParserTest {
     assertTrue(pn2d0.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0));
     assertEquals("|noAutoescape", pn2d0.getName());
     assertEquals("XXX", pn2.genBasePhName());
-    assertTrue(pn2.getExprUnion().getExpr().getRoot() instanceof PlusOpNode);
+    assertTrue(pn2.getExpr().getRoot() instanceof PlusOpNode);
 
     PrintNode pn3 = (PrintNode) nodes.get(3);
     assertTrue(pn3.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0));
@@ -922,7 +922,7 @@ public final class TemplateParserTest {
     assertEquals("|insertWordBreaks", pn3d1.getName());
     assertEquals(8, ((IntegerNode) pn3d1.getArgs().get(0).getRoot()).getValue());
     assertEquals("XXX", pn3.genBasePhName());
-    assertTrue(pn3.getExprUnion().getExpr().getRoot() instanceof StringNode);
+    assertTrue(pn3.getExpr().getRoot() instanceof StringNode);
 
     assertFalse(pn0.genSamenessKey().equals(pn2.genSamenessKey()));
     assertFalse(pn3.genSamenessKey().equals(pn0.genSamenessKey()));
@@ -952,7 +952,7 @@ public final class TemplateParserTest {
     assertEquals("{$boo.foo phname=\"booFoo\"}", pn1.toSourceString());
     assertTrue(pn1.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0));
     assertEquals(0, pn1.getChildren().size());
-    assertTrue(pn1.getExprUnion().getExpr().getRoot() instanceof FieldAccessNode);
+    assertTrue(pn1.getExpr().getRoot() instanceof FieldAccessNode);
 
     PrintNode pn2 = (PrintNode) nodes.get(2);
     assertEquals("$boo.foo", pn2.getExprText());
@@ -1249,19 +1249,19 @@ public final class TemplateParserTest {
     IfNode in0 = (IfNode) nodes.get(0);
     assertEquals(1, in0.numChildren());
     IfCondNode in0icn0 = (IfCondNode) in0.getChild(0);
-    assertEquals("$zoo", in0icn0.getExprText());
+    assertEquals("$zoo", in0icn0.getCommandText());
     assertEquals(1, in0icn0.numChildren());
     assertEquals("$zoo", ((PrintNode) in0icn0.getChild(0)).getExprText());
-    assertTrue(in0icn0.getExprUnion().getExpr().getRoot() instanceof VarRefNode);
+    assertTrue(in0icn0.getExpr().getRoot() instanceof VarRefNode);
 
     IfNode in1 = (IfNode) nodes.get(1);
     assertEquals(3, in1.numChildren());
     IfCondNode in1icn0 = (IfCondNode) in1.getChild(0);
-    assertEquals("$boo", in1icn0.getExprText());
-    assertTrue(in1icn0.getExprUnion().getExpr().getRoot() instanceof VarRefNode);
+    assertEquals("$boo", in1icn0.getCommandText());
+    assertTrue(in1icn0.getExpr().getRoot() instanceof VarRefNode);
     IfCondNode in1icn1 = (IfCondNode) in1.getChild(1);
-    assertEquals("$foo.goo > 2", in1icn1.getExprText());
-    assertTrue(in1icn1.getExprUnion().getExpr().getRoot() instanceof GreaterThanOpNode);
+    assertEquals("$foo.goo > 2", in1icn1.getCommandText());
+    assertTrue(in1icn1.getExpr().getRoot() instanceof GreaterThanOpNode);
     assertEquals("", ((IfElseNode) in1.getChild(2)).getCommandText());
     assertEquals(
         "{if $boo}Blah{elseif $foo.goo > 2}{$moo}{else}Blah {$moo}{/if}", in1.toSourceString());
@@ -1356,7 +1356,7 @@ public final class TemplateParserTest {
     assertEquals(4, fn1fnn0.numChildren());
     IfNode fn1fnn0in = (IfNode) fn1fnn0.getChild(3);
     assertEquals(1, fn1fnn0in.numChildren());
-    assertEquals("not isLast($boo)", ((IfCondNode) fn1fnn0in.getChild(0)).getExprText());
+    assertEquals("not isLast($boo)", ((IfCondNode) fn1fnn0in.getChild(0)).getCommandText());
 
     ForeachIfemptyNode fn1fin1 = (ForeachIfemptyNode) fn1.getChild(1);
     assertEquals(1, fn1fin1.numChildren());
@@ -1457,8 +1457,8 @@ public final class TemplateParserTest {
     {
       final CallParamValueNode cn4cpvn0 = (CallParamValueNode) cn3.getChild(0);
       assertEquals("yoo", cn4cpvn0.getKey());
-      assertEquals("round($too)", cn4cpvn0.getValueExprText());
-      assertTrue(cn4cpvn0.getValueExprUnion().getExpr().getRoot() instanceof FunctionNode);
+      assertEquals("round($too)", cn4cpvn0.getExprText());
+      assertTrue(cn4cpvn0.getExpr().getRoot() instanceof FunctionNode);
     }
 
     {
@@ -1471,7 +1471,7 @@ public final class TemplateParserTest {
     {
       final CallParamValueNode cn4cpvn2 = (CallParamValueNode) cn3.getChild(2);
       assertEquals("zoo", cn4cpvn2.getKey());
-      assertEquals("0", cn4cpvn2.getValueExprText());
+      assertEquals("0", cn4cpvn2.getExprText());
     }
 
     {
@@ -1527,8 +1527,8 @@ public final class TemplateParserTest {
 
     CallParamValueNode cn2cpvn0 = (CallParamValueNode) cn2.getChild(0);
     assertEquals("yoo", cn2cpvn0.getKey());
-    assertEquals("round($too)", cn2cpvn0.getValueExprText());
-    assertTrue(cn2cpvn0.getValueExprUnion().getExpr().getRoot() instanceof FunctionNode);
+    assertEquals("round($too)", cn2cpvn0.getExprText());
+    assertTrue(cn2cpvn0.getExpr().getRoot() instanceof FunctionNode);
 
     CallParamContentNode cn2cpcn1 = (CallParamContentNode) cn2.getChild(1);
     assertEquals("woo", cn2cpcn1.getKey());

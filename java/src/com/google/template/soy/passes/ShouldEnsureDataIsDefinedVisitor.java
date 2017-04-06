@@ -19,10 +19,10 @@ package com.google.template.soy.passes;
 import com.google.template.soy.basetree.AbstractNodeVisitor;
 import com.google.template.soy.basetree.Node;
 import com.google.template.soy.basetree.ParentNode;
+import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.CallNode;
-import com.google.template.soy.soytree.ExprUnion;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
@@ -96,12 +96,10 @@ public final class ShouldEnsureDataIsDefinedVisitor {
           }
         }
         if (node instanceof ExprHolderNode) {
-          for (ExprUnion exprUnion : ((ExprHolderNode) node).getAllExprUnions()) {
-            if (exprUnion.getExpr() != null) {
-              visit(exprUnion.getExpr());
-              if (shouldEnsureDataIsDefined) {
-                return;
-              }
+          for (ExprRootNode expr : ((ExprHolderNode) node).getExprList()) {
+            visit(expr);
+            if (shouldEnsureDataIsDefined) {
+              return;
             }
           }
         }

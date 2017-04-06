@@ -199,8 +199,8 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<CodeChunk.Wit
    * </pre>
    */
   @Override protected void visitPrintNode(PrintNode node) {
-    CodeChunk.WithValue expr = jsExprTranslator.translateToCodeChunk(
-        node.getExprUnion(), translationContext, errorReporter);
+    CodeChunk.WithValue expr =
+        jsExprTranslator.translateToCodeChunk(node.getExpr(), translationContext, errorReporter);
 
     // Process directives.
     for (PrintDirectiveNode directiveNode : node.getChildren()) {
@@ -319,8 +319,9 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<CodeChunk.Wit
       if (child instanceof IfCondNode) {
         IfCondNode ifCond = (IfCondNode) child;
 
-        ifs.add(jsExprTranslator.translateToCodeChunk(
-            ifCond.getExprUnion(), translationContext, errorReporter));
+        ifs.add(
+            jsExprTranslator.translateToCodeChunk(
+                ifCond.getExpr(), translationContext, errorReporter));
         thens.add(CodeChunkUtils.concatChunks(genJsExprsVisitor.exec(ifCond)));
       } else if (child instanceof IfElseNode) {
         trailingElse = CodeChunkUtils.concatChunks(genJsExprsVisitor.exec(child));

@@ -32,8 +32,6 @@ import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 
@@ -214,10 +212,10 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
   }
 
   @Override
-  public List<ExprUnion> getAllExprUnions() {
+  public ImmutableList<ExprRootNode> getExprList() {
     return (dataAttr.dataExpr() != null)
-        ? ImmutableList.of(new ExprUnion(dataAttr.dataExpr()))
-        : Collections.<ExprUnion>emptyList();
+        ? ImmutableList.of(dataAttr.dataExpr())
+        : ImmutableList.<ExprRootNode>of();
   }
 
   @Override

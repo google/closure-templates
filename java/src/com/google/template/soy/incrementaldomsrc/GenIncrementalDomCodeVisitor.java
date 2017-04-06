@@ -39,7 +39,6 @@ import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
-import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
@@ -65,7 +64,6 @@ import com.google.template.soy.jssrc.internal.TranslationContext;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamNode;
-import com.google.template.soy.soytree.ExprUnion;
 import com.google.template.soy.soytree.HtmlContext;
 import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.LetContentNode;
@@ -589,10 +587,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
    */
   @Override
   protected void visitPrintNode(PrintNode node) {
-    ExprUnion exprUnion = node.getExprUnion();
-    ExprRootNode expr = exprUnion.getExpr();
-    List<ExprNode> exprNodes = expr.getChildren();
-    ExprNode firstNode = exprNodes.get(0);
+    ExprNode firstNode = node.getExpr().getRoot();
 
     // TODO(sparhami): Raise an error if there are any directives.
     switch (node.getHtmlContext()) {

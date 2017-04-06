@@ -145,7 +145,7 @@ public class EvalVisitorTest {
                 .getChild(0)
                 .getChild(0)
                 .getChild(0);
-    ExprNode expr = ((FunctionNode) code.getExprUnion().getExpr().getChild(0)).getChild(0);
+    ExprNode expr = ((FunctionNode) code.getExpr().getChild(0)).getChild(0);
 
     EvalVisitor evalVisitor =
         INJECTOR

@@ -196,7 +196,7 @@ public final class CallParamContentNode extends CallParamNode implements RenderU
     }
 
     public CallParamContentNode build(Checkpoint checkpoint, ErrorReporter errorReporter) {
-      if (parseResult.valueExprUnion != null) {
+      if (parseResult.valueExpr != null) {
         errorReporter.report(
             sourceLocation,
             PARAM_HAS_VALUE_BUT_IS_NOT_SELF_CLOSING,

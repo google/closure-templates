@@ -1033,7 +1033,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
         // Convert predicate.
         CodeChunk.WithValue predicate =
             jsExprTranslator.translateToCodeChunk(
-                condNode.getExprUnion(), templateTranslationContext, errorReporter);
+                condNode.getExpr(), templateTranslationContext, errorReporter);
         // Convert body.
         CodeChunk consequent = visitChildrenReturningCodeChunk(condNode);
         // Add if-block to conditional.

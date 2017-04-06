@@ -19,8 +19,9 @@ package com.google.template.soy.passes;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.soytree.ExprUnion;
-import com.google.template.soy.soytree.ExprUnionEquivalence;
+import com.google.template.soy.exprtree.ExprEquivalence;
+import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.ExprRootNode;
 import java.util.List;
 
 /** Condition for a particular control flow branch. */
@@ -37,12 +38,15 @@ abstract class Condition {
     return new IfCondition();
   }
 
-  static Condition createIfCondition(ExprUnion expr) {
+  static Condition createIfCondition(ExprNode expr) {
     return new IfCondition(expr);
   }
 
-  static Condition createSwitchCondition(ExprUnion switchExpr, List<ExprUnion> caseExprs) {
-    return new SwitchCondition(switchExpr, caseExprs);
+  static Condition createSwitchCondition(ExprNode switchExpr, List<ExprRootNode> caseExprs) {
+    // cast ImmutableList<ExprRootNode> to List<ExprNode>
+    @SuppressWarnings("unchecked")
+    List<ExprNode> list = (List<ExprNode>) ((List<?>) caseExprs);
+    return new SwitchCondition(switchExpr, list);
   }
 
   /** A placeholder for an empty condition. */
@@ -70,16 +74,16 @@ abstract class Condition {
   /** A condition for an {@code IfCondNode} or an {@code IfElseNode}. */
   private static final class IfCondition extends Condition {
     /**
-     * An optional {@code ExprUnion} for {@code IfCondNode} or {@code IfElseNode}. This should only
+     * An optional {@code ExprNode} for {@code IfCondNode} or {@code IfElseNode}. This should only
      * be absent if it is for an {@code IfElseNode}.
      */
-    private final Optional<ExprUnion> expr;
+    private final Optional<ExprNode> expr;
 
     IfCondition() {
       this.expr = Optional.absent();
     }
 
-    IfCondition(ExprUnion expr) {
+    IfCondition(ExprNode expr) {
       this.expr = Optional.of(expr);
     }
 
@@ -114,19 +118,19 @@ abstract class Condition {
       }
       if (object instanceof IfCondition) {
         IfCondition cond = (IfCondition) object;
-        return ExprUnionEquivalence.get().equivalent(expr.orNull(), cond.expr.orNull());
+        return ExprEquivalence.get().equivalent(expr.orNull(), cond.expr.orNull());
       }
       return false;
     }
 
     @Override
     public int hashCode() {
-      return ExprUnionEquivalence.get().hash(expr.orNull());
+      return ExprEquivalence.get().hash(expr.orNull());
     }
   }
 
   /**
-   * A {@code Condition} for children of {@code SwitchNode}. It is an union of an expression of
+   * A {@code Condition} for children of {@code SwitchNode}. It is a union of an expression of
    * {@code SwitchNode} and a list of expressions for the current child.
    *
    * <p>TODO(user): make this class comparable so that we can sort the switch conditions.
@@ -134,15 +138,15 @@ abstract class Condition {
   private static final class SwitchCondition extends Condition {
 
     /** A expression for the parent {@code SwitchNode}. */
-    private final ExprUnion switchExpr;
+    private final ExprNode switchExpr;
 
     /**
-     * A list of {@code ExprUnion} for a {@code SwitchCaseNode} or a {@code SwitchDefaultNode}. An
+     * A list of {@code ExprNode} for a {@code SwitchCaseNode} or a {@code SwitchDefaultNode}. An
      * empty list of caseExprs implies that this condition is for a SwitchDefaultNode.
      */
-    private final ImmutableList<ExprUnion> caseExprs;
+    private final ImmutableList<ExprNode> caseExprs;
 
-    SwitchCondition(ExprUnion switchExpr, List<ExprUnion> caseExprs) {
+    SwitchCondition(ExprNode switchExpr, List<ExprNode> caseExprs) {
       this.switchExpr = switchExpr;
       this.caseExprs = ImmutableList.copyOf(caseExprs);
     }
@@ -169,16 +173,16 @@ abstract class Condition {
       }
       if (object instanceof SwitchCondition) {
         SwitchCondition cond = (SwitchCondition) object;
-        return ExprUnionEquivalence.get().equivalent(switchExpr, cond.switchExpr)
-            && ExprUnionEquivalence.get().pairwise().equivalent(caseExprs, cond.caseExprs);
+        return ExprEquivalence.get().equivalent(switchExpr, cond.switchExpr)
+            && ExprEquivalence.get().pairwise().equivalent(caseExprs, cond.caseExprs);
       }
       return false;
     }
 
     @Override
     public int hashCode() {
-      return 31 * ExprUnionEquivalence.get().hash(switchExpr)
-          + ExprUnionEquivalence.get().pairwise().hash(caseExprs);
+      return 31 * ExprEquivalence.get().hash(switchExpr)
+          + ExprEquivalence.get().pairwise().hash(caseExprs);
     }
   }
 }

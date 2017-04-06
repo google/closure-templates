@@ -488,10 +488,10 @@ private ExprNode ExprInput() :
  * Matches a comma-separated list of one or more expressions.
  * ExprList -> Expr ( "," Expr )*
  */
-private List<ExprNode> ExprList() :
+private ImmutableList<ExprNode> ExprList() :
 {
   ExprNode expr;
-  List<ExprNode> exprList = new ArrayList<ExprNode>();
+  ImmutableList.Builder<ExprNode> exprList = ImmutableList.builder();
 }
 {
 
@@ -504,7 +504,7 @@ private List<ExprNode> ExprList() :
     { exprList.add(expr); }
   )*
 
-  { return exprList; }
+  { return exprList.build(); }
 }
 
 

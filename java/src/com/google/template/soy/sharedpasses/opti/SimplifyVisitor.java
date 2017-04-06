@@ -100,14 +100,13 @@ public final class SimplifyVisitor {
     protected void visitPrintNode(PrintNode node) {
 
       // We attempt to prerender this node if and only if it:
-      // (a) could be in V2 syntax and has a V2 expression,
+      // (a) is in V2 syntax,
       // (b) is not a child of a MsgBlockNode,
       // (c) has a constant expression,
       // (d) has constant expressions for all directive arguments (if any).
       // The prerender attempt may fail due to other reasons not checked above.
 
-      if (!node.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0)
-          || node.getExprUnion().getExpr() == null) {
+      if (!node.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0)) {
         return;
       }
 
@@ -116,7 +115,7 @@ public final class SimplifyVisitor {
         return; // don't prerender
       }
 
-      if (!isConstant(node.getExprUnion().getExpr())) {
+      if (!isConstant(node.getExpr())) {
         return; // don't prerender
       }
 
@@ -162,7 +161,7 @@ public final class SimplifyVisitor {
         if (child instanceof IfCondNode) {
           IfCondNode condNode = (IfCondNode) child;
 
-          ExprRootNode condExpr = condNode.getExprUnion().getExpr();
+          ExprRootNode condExpr = condNode.getExpr();
           if (!isConstant(condExpr)) {
             continue; // cannot simplify this child
           }

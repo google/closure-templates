@@ -22,7 +22,6 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.internal.TranslateExprNodeVisitor.TranslateExprNodeVisitorFactory;
-import com.google.template.soy.soytree.ExprUnion;
 import javax.inject.Inject;
 
 /**
@@ -32,7 +31,7 @@ import javax.inject.Inject;
  * {@link TranslateExprNodeVisitor}.
  *
  */
-// TODO(user): Consider removing this layer once ExprUnion is gone.
+// TODO(user): Consider removing this layer.
 public final class JsExprTranslator {
 
   private final TranslateExprNodeVisitorFactory translateExprNodeVisitorFactory;
@@ -41,7 +40,6 @@ public final class JsExprTranslator {
   JsExprTranslator(TranslateExprNodeVisitorFactory translateExprNodeVisitorFactory) {
     this.translateExprNodeVisitorFactory = translateExprNodeVisitorFactory;
   }
-
 
   /**
    * Translates a Soy expression to the equivalent JS expression.
@@ -55,15 +53,5 @@ public final class JsExprTranslator {
       ExprNode expr, TranslationContext translationContext, ErrorReporter errorReporter) {
     checkNotNull(expr);
     return translateExprNodeVisitorFactory.create(translationContext, errorReporter).exec(expr);
-  }
-
-  /**
-   * Translates a Soy expression to the equivalent JS expression. Detects whether an expression
-   * is Soy V2 or V1 syntax and performs the translation accordingly.
-   */
-  CodeChunk.WithValue translateToCodeChunk(
-      ExprUnion union, TranslationContext translationContext, ErrorReporter errorReporter) {
-    checkNotNull(union.getExpr());
-    return translateToCodeChunk(union.getExpr(), translationContext, errorReporter);
   }
 }

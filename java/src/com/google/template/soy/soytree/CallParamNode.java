@@ -48,18 +48,18 @@ public abstract class CallParamNode extends AbstractCommandNode {
     /** The parsed key. */
     final String key;
     /** The parsed value expr, or null if none. */
-    @Nullable final ExprUnion valueExprUnion;
+    @Nullable final ExprRootNode valueExpr;
     /** The parsed param's content kind, or null if none. */
     @Nullable public final ContentKind contentKind;
 
     private CommandTextParseResult(
         String originalCommantText,
         String key,
-        @Nullable ExprUnion valueExprUnion,
+        @Nullable ExprRootNode valueExpr,
         @Nullable ContentKind contentKind) {
       this.originalCommantText = originalCommantText;
       this.key = key;
-      this.valueExprUnion = valueExprUnion;
+      this.valueExpr = valueExpr;
       this.contentKind = contentKind;
     }
   }
@@ -131,7 +131,7 @@ public abstract class CallParamNode extends AbstractCommandNode {
     if (!nctMatcher.matches()) {
       context.report(location, INVALID_COMMAND_TEXT, commandText);
       return new CommandTextParseResult(
-          commandText, "bad_key", null /* valueExprUnion */, null /* contentKind */);
+          commandText, "bad_key", null /* valueExpr */, null /* contentKind */);
     }
     // Convert {param foo : $bar/} and {param foo kind="xyz"/} syntax into attributes.
     String key = nctMatcher.group(1);
@@ -152,10 +152,10 @@ public abstract class CallParamNode extends AbstractCommandNode {
 
     String valueExprText = nctMatcher.group(2);
     if (valueExprText == null) {
-      return new CommandTextParseResult(commandText, key, null /* valueExprUnion */, contentKind);
+      return new CommandTextParseResult(commandText, key, null /* valueExpr */, contentKind);
     }
     ExprRootNode expr =
         new ExprRootNode(new ExpressionParser(valueExprText, location, context).parseExpression());
-    return new CommandTextParseResult(commandText, key, new ExprUnion(expr), contentKind);
+    return new CommandTextParseResult(commandText, key, expr, contentKind);
   }
 }

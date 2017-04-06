@@ -26,9 +26,10 @@ import com.google.common.collect.Ordering;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.exprparse.SoyParsingContext;
+import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.EscapingMode;
-import com.google.template.soy.soytree.ExprUnion;
 import com.google.template.soy.soytree.HtmlContext;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfNode;
@@ -446,7 +447,7 @@ public final class ContentSecurityPolicyPass {
   // ---------------------------------------------------------------------------------------------
 
   /** Builds the Soy expression {@code $ij.csp_nonce} with an appropriate type. */
-  private static VarRefNode makeReferenceToInjectedCspNonce(SourceLocation location) {
+  private static ExprNode makeReferenceToInjectedCspNonce(SourceLocation location) {
     return new VarRefNode(
         CSP_NONCE_VARIABLE_NAME, location, true /*injected*/, IMPLICIT_CSP_NONCE_DEFN);
   }
@@ -459,7 +460,7 @@ public final class ContentSecurityPolicyPass {
                 idGenerator.genId(),
                 true, // Implicit.  {$ij.csp_nonce} not {print $ij.csp_nonce}
                 location)
-            .exprUnion(new ExprUnion(makeReferenceToInjectedCspNonce(location)))
+            .exprRoot(new ExprRootNode(makeReferenceToInjectedCspNonce(location)))
             .build(SoyParsingContext.exploding());
     // Add an escaping directive to ensure that malicious csp_nonce values don't introduce XSSs
     printNode.addChild(

@@ -24,6 +24,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprparse.SoyParsingContext;
+import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
@@ -94,8 +95,8 @@ public final class MsgFallbackGroupNode extends AbstractParentSoyNode<MsgNode>
   public PrintNode makePrintNode(IdGenerator nodeIdGen, VarDefn var) {
     PrintNode printNode =
         new PrintNode.Builder(nodeIdGen.genId(), true /* implicit */, getSourceLocation())
-            .exprUnion(
-                new ExprUnion(
+            .exprRoot(
+                new ExprRootNode(
                     new VarRefNode(var.name(), getSourceLocation(), false /* not ij */, var)))
             .build(SoyParsingContext.exploding());
     printNode.setHtmlContext(htmlContext);

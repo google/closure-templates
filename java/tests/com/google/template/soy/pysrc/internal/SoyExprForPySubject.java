@@ -162,7 +162,7 @@ public final class SoyExprForPySubject extends Subject<SoyExprForPySubject, Stri
             .parse()
             .fileSet();
     PrintNode node = (PrintNode) SharedTestUtils.getNode(soyTree, 0);
-    ExprNode exprNode = node.getExprUnion().getExpr();
+    ExprNode exprNode = node.getExpr();
 
     PyExpr actualPyExpr =
         new TranslateToPyExprVisitor(localVarExprs, ExplodingErrorReporter.get()).exec(exprNode);

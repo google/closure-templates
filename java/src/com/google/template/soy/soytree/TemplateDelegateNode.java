@@ -30,7 +30,6 @@ import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
-import java.util.List;
 
 /**
  * Node representing a delegate template.
@@ -177,11 +176,11 @@ public final class TemplateDelegateNode extends TemplateNode implements ExprHold
   }
 
   @Override
-  public List<ExprUnion> getAllExprUnions() {
+  public ImmutableList<ExprRootNode> getExprList() {
     if (delTemplateVariantExpr == null) {
       return ImmutableList.of();
     }
-    return ImmutableList.of(new ExprUnion(delTemplateVariantExpr));
+    return ImmutableList.of(delTemplateVariantExpr);
   }
 
   /**

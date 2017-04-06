@@ -29,8 +29,6 @@ import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
-import java.util.Collections;
-import java.util.List;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
@@ -127,11 +125,6 @@ public final class CssNode extends AbstractCommandNode
     return componentNameExpr;
   }
 
-  /** Returns the component name text, or null if this node has no component expression. */
-  public String getComponentNameText() {
-    return (componentNameExpr != null) ? componentNameExpr.toSourceString() : null;
-  }
-
   /** Returns the selector text from this command. */
   public String getSelectorText() {
     return selectorText;
@@ -158,10 +151,10 @@ public final class CssNode extends AbstractCommandNode
   }
 
   @Override
-  public List<ExprUnion> getAllExprUnions() {
+  public ImmutableList<ExprRootNode> getExprList() {
     return (componentNameExpr != null)
-        ? ImmutableList.of(new ExprUnion(componentNameExpr))
-        : Collections.<ExprUnion>emptyList();
+        ? ImmutableList.of(componentNameExpr)
+        : ImmutableList.<ExprRootNode>of();
   }
 
   @SuppressWarnings("unchecked")

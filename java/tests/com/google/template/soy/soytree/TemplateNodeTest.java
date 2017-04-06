@@ -30,6 +30,7 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.error.FormattingErrorReporter;
 import com.google.template.soy.exprtree.BooleanNode;
+import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.StringNode;
@@ -265,16 +266,14 @@ public class TemplateNodeTest {
     assertEquals("test.GLOBAL_CONSTANT", node.getDelTemplateVariant());
     assertEquals("test.GLOBAL_CONSTANT", node.getDelTemplateKey().variant());
     // Verify the global expression.
-    List<ExprUnion> exprUnions = node.getAllExprUnions();
-    assertEquals(1, exprUnions.size());
-    ExprUnion exprUnion = exprUnions.get(0);
-    assertEquals("test.GLOBAL_CONSTANT", exprUnion.getExprText());
-    assertEquals(1, exprUnion.getExpr().numChildren());
-    assertTrue(exprUnion.getExpr().getRoot() instanceof GlobalNode);
+    List<ExprRootNode> exprs = node.getExprList();
+    assertEquals(1, exprs.size());
+    ExprRootNode expr = exprs.get(0);
+    assertEquals("test.GLOBAL_CONSTANT", expr.toSourceString());
+    assertEquals(1, expr.numChildren());
+    assertTrue(expr.getRoot() instanceof GlobalNode);
     // Substitute the global expression.
-    exprUnion
-        .getExpr()
-        .replaceChild(0, new IntegerNode(123, exprUnion.getExpr().getRoot().getSourceLocation()));
+    expr.replaceChild(0, new IntegerNode(123, expr.getRoot().getSourceLocation()));
     // Check the new values.
     assertEquals("123", node.getDelTemplateVariant());
     assertEquals("123", node.getDelTemplateKey().variant());
@@ -287,10 +286,7 @@ public class TemplateNodeTest {
                     "{namespace ns}",
                     "{deltemplate namespace.boo variant=\"test.GLOBAL_CONSTANT\"}",
                     "{/deltemplate}"));
-    node.getAllExprUnions()
-        .get(0)
-        .getExpr()
-        .replaceChild(0, new StringNode("variant", node.getSourceLocation()));
+    node.getExprList().get(0).replaceChild(0, new StringNode("variant", node.getSourceLocation()));
     assertEquals("variant", node.getDelTemplateVariant());
     assertEquals("variant", node.getDelTemplateKey().variant());
   }
@@ -305,10 +301,7 @@ public class TemplateNodeTest {
                     "{namespace ns}",
                     "{deltemplate namespace.boo variant=\"test.GLOBAL_CONSTANT\"}",
                     "{/deltemplate}"));
-    node.getAllExprUnions()
-        .get(0)
-        .getExpr()
-        .replaceChild(0, new BooleanNode(true, node.getSourceLocation()));
+    node.getExprList().get(0).replaceChild(0, new BooleanNode(true, node.getSourceLocation()));
     try {
       node.getDelTemplateVariant();
       fail("An error is expected when an invalid node type is used.");
@@ -324,9 +317,8 @@ public class TemplateNodeTest {
                     "{namespace ns}",
                     "{deltemplate namespace.boo variant=\"test.GLOBAL_CONSTANT\"}",
                     "{/deltemplate}"));
-    node.getAllExprUnions()
+    node.getExprList()
         .get(0)
-        .getExpr()
         .replaceChild(0, new StringNode("Not and Identifier!", node.getSourceLocation()));
     try {
       node.getDelTemplateVariant();

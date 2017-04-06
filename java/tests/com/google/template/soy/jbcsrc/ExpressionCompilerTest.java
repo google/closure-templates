@@ -614,8 +614,7 @@ public class ExpressionCompilerTest {
                 .getChild(0)
                 .getChild(0)
                 .getChild(0);
-    return testExpressionCompiler.compile(
-        ((FunctionNode) code.getExprUnion().getExpr().getChild(0)).getChild(0));
+    return testExpressionCompiler.compile(((FunctionNode) code.getExpr().getChild(0)).getChild(0));
   }
 
   private String createTemplateBody(String soyExpr) {

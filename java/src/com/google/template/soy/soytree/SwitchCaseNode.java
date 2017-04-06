@@ -16,14 +16,13 @@
 
 package com.google.template.soy.soytree;
 
-import com.google.common.collect.Lists;
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.ConditionalBlockNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
-import java.util.List;
 
 /**
  * Node representing a 'case' block in a 'switch' block.
@@ -35,9 +34,9 @@ public final class SwitchCaseNode extends CaseOrDefaultNode
     implements ConditionalBlockNode, ExprHolderNode {
 
   /** The parsed expression list. */
-  private final List<ExprRootNode> exprList;
+  private final ImmutableList<ExprRootNode> exprList;
 
-  public SwitchCaseNode(int id, SourceLocation location, List<ExprNode> exprList) {
+  public SwitchCaseNode(int id, SourceLocation location, ImmutableList<ExprNode> exprList) {
     super(id, location, "case", SoyTreeUtils.toSourceString(exprList));
     this.exprList = ExprRootNode.wrap(exprList);
   }
@@ -49,10 +48,11 @@ public final class SwitchCaseNode extends CaseOrDefaultNode
    */
   private SwitchCaseNode(SwitchCaseNode orig, CopyState copyState) {
     super(orig, copyState);
-    this.exprList = Lists.newArrayListWithCapacity(orig.exprList.size());
+    ImmutableList.Builder<ExprRootNode> builder = ImmutableList.builder();
     for (ExprRootNode origExpr : orig.exprList) {
-      this.exprList.add(origExpr.copy(copyState));
+      builder.add(origExpr.copy(copyState));
     }
+    this.exprList = builder.build();
   }
 
   @Override
@@ -60,14 +60,9 @@ public final class SwitchCaseNode extends CaseOrDefaultNode
     return Kind.SWITCH_CASE_NODE;
   }
 
-  /** Returns the parsed expression list, or null if the expression list is not in V2 syntax. */
-  public List<ExprRootNode> getExprList() {
-    return exprList;
-  }
-
   @Override
-  public List<ExprUnion> getAllExprUnions() {
-    return ExprUnion.createList(exprList);
+  public ImmutableList<ExprRootNode> getExprList() {
+    return exprList;
   }
 
   @Override

@@ -24,7 +24,6 @@ import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.ConditionalBlockNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
-import java.util.List;
 
 /**
  * Node representing a block within an 'if' statement that has a conditional expression (i.e. either
@@ -37,7 +36,7 @@ public final class IfCondNode extends AbstractBlockCommandNode
     implements ConditionalBlockNode, ExprHolderNode {
 
   /** The parsed expression. */
-  private final ExprUnion exprUnion;
+  private final ExprRootNode expr;
 
   /**
    * @param id The id for this node.
@@ -48,7 +47,7 @@ public final class IfCondNode extends AbstractBlockCommandNode
   public IfCondNode(int id, SourceLocation location, String commandName, ExprNode expr) {
     super(id, location, commandName, expr.toSourceString());
     Preconditions.checkArgument(commandName.equals("if") || commandName.equals("elseif"));
-    this.exprUnion = new ExprUnion(new ExprRootNode(expr));
+    this.expr = new ExprRootNode(expr);
   }
 
   /**
@@ -58,7 +57,7 @@ public final class IfCondNode extends AbstractBlockCommandNode
    */
   private IfCondNode(IfCondNode orig, CopyState copyState) {
     super(orig, copyState);
-    this.exprUnion = orig.exprUnion.copy(copyState);
+    this.expr = orig.expr.copy(copyState);
   }
 
   @Override
@@ -66,14 +65,9 @@ public final class IfCondNode extends AbstractBlockCommandNode
     return Kind.IF_COND_NODE;
   }
 
-  /** Returns the text of the conditional expression. */
-  public String getExprText() {
-    return exprUnion.getExprText();
-  }
-
   /** Returns the parsed expression. */
-  public ExprUnion getExprUnion() {
-    return exprUnion;
+  public ExprRootNode getExpr() {
+    return expr;
   }
 
   @Override
@@ -83,7 +77,7 @@ public final class IfCondNode extends AbstractBlockCommandNode
 
   @Override
   public String getCommandText() {
-    return exprUnion.getExprText();
+    return expr.toSourceString();
   }
 
   @Override
@@ -96,8 +90,8 @@ public final class IfCondNode extends AbstractBlockCommandNode
   }
 
   @Override
-  public List<ExprUnion> getAllExprUnions() {
-    return ImmutableList.of(exprUnion);
+  public ImmutableList<ExprRootNode> getExprList() {
+    return ImmutableList.of(expr);
   }
 
   @Override

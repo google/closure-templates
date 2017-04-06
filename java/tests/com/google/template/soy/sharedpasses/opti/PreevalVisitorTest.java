@@ -125,7 +125,7 @@ public final class PreevalVisitorTest {
                 .getChild(0)
                 .getChild(0)
                 .getChild(0);
-    ExprRootNode expr = code.getExprUnion().getExpr();
+    ExprRootNode expr = code.getExpr();
     PreevalVisitor preevalVisitor =
         INJECTOR
             .getInstance(PreevalVisitorFactory.class)

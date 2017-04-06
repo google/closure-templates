@@ -23,9 +23,9 @@ import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.AutoescapeMode;
-import com.google.template.soy.soytree.ExprUnion;
 import com.google.template.soy.soytree.HtmlCloseTagNode;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.IfCondNode;
@@ -263,7 +263,7 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
     @Override
     protected void visitIfCondNode(IfCondNode node) {
       Condition outerCondition = currentCondition.copy();
-      currentCondition = Condition.createIfCondition(node.getExprUnion());
+      currentCondition = Condition.createIfCondition(node.getExpr());
       visitBlockChildren(node, true);
       currentCondition = outerCondition.copy();
     }
@@ -306,8 +306,7 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
     protected void visitSwitchCaseNode(SwitchCaseNode node) {
       Condition outerCondition = currentCondition.copy();
       SwitchNode parent = (SwitchNode) node.getParent();
-      currentCondition =
-          Condition.createSwitchCondition(new ExprUnion(parent.getExpr()), node.getAllExprUnions());
+      currentCondition = Condition.createSwitchCondition(parent.getExpr(), node.getExprList());
       visitBlockChildren(node, true);
       currentCondition = outerCondition.copy();
     }
@@ -317,8 +316,7 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
       Condition outerCondition = currentCondition.copy();
       SwitchNode parent = (SwitchNode) node.getParent();
       currentCondition =
-          Condition.createSwitchCondition(
-              new ExprUnion(parent.getExpr()), ImmutableList.<ExprUnion>of());
+          Condition.createSwitchCondition(parent.getExpr(), ImmutableList.<ExprRootNode>of());
       visitBlockChildren(node, true);
       currentCondition = outerCondition.copy();
     }

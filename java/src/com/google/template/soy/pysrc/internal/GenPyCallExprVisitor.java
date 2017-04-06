@@ -212,7 +212,7 @@ final class GenPyCallExprVisitor extends AbstractReturningSoyNodeVisitor<PyExpr>
 
       if (child instanceof CallParamValueNode) {
         CallParamValueNode cpvn = (CallParamValueNode) child;
-        additionalParams.put(key, translator.exec(cpvn.getValueExprUnion().getExpr()));
+        additionalParams.put(key, translator.exec(cpvn.getExpr()));
       } else {
         CallParamContentNode cpcn = (CallParamContentNode) child;
         PyExpr valuePyExpr;

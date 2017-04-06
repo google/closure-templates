@@ -16,12 +16,13 @@
 
 package com.google.template.soy.soytree;
 
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.Node;
 import com.google.template.soy.basetree.ParentNode;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.VarDefn;
-import java.util.List;
 import javax.annotation.Nullable;
 
 /**
@@ -287,7 +288,7 @@ public interface SoyNode extends Node {
   interface ExprHolderNode extends SoyNode {
 
     /** Returns the list of expressions in this node. */
-    List<ExprUnion> getAllExprUnions();
+    ImmutableList<ExprRootNode> getExprList();
   }
 
 

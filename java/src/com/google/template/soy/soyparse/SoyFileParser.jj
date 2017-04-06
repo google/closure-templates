@@ -51,7 +51,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Predicates;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import com.google.common.primitives.Longs;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
@@ -1487,7 +1486,7 @@ private SourceItemInfo<List<String>> CmdTextPartsWithSource() :
 {
   Token first = null;
   Token current = null;
-  List<String> cmdTextParts = Lists.newArrayList();
+  List<String> cmdTextParts = new ArrayList<String>();
   StringBuilder currCmdTextPartSb = new StringBuilder();
 }
 {
@@ -1741,7 +1740,7 @@ private List<StandaloneNode> TemplateBlock() :
   StandaloneNode node;
 }
 {
-  { List<StandaloneNode> templateBlock = Lists.newArrayList(); }
+  { List<StandaloneNode> templateBlock = new ArrayList<StandaloneNode>(); }
 
   (
     (
@@ -1903,7 +1902,7 @@ private List<StandaloneNode> TemplateBlockForMsg() :
   int pluralOrSelectIndex = -1;
   // Whether or not the first node is just whitespace.
   boolean firstNodeIsWhitespace = false;
-  List<StandaloneNode> templateBlock = Lists.newArrayList();
+  List<StandaloneNode> templateBlock = new ArrayList<StandaloneNode>();
 }
 {
   // For template blocks, we have two different options.
@@ -2195,7 +2194,7 @@ private SourceItemInfo<List<String>> PrintTag() :
 {
   Token tagBegin, tagEnd;
   List<String> cmdTextParts;
-  List<String> printTagParts = Lists.newArrayList();
+  List<String> printTagParts = new ArrayList<String>();
 }
 {
 
@@ -2546,7 +2545,7 @@ private SwitchNode SwitchStmt() :
   Token cmdBegin, cmdEnd;
   Token defaultTag;
   ExprNode switchExpr;
-  List<ExprNode> caseExprs;
+  ImmutableList<ExprNode> caseExprs;
   List<StandaloneNode> templateBlock;
 }
 {
@@ -2954,10 +2953,10 @@ private PrimitiveNode Primitive() :
  * Matches a comma-separated list of one or more expressions.
  * ExprList -> Expr ( "," Expr )*
  */
-private List<ExprNode> ExprList() :
+private ImmutableList<ExprNode> ExprList() :
 {
   ExprNode expr;
-  List<ExprNode> exprList = new ArrayList<ExprNode>();
+  ImmutableList.Builder<ExprNode> exprList = ImmutableList.builder();
 }
 {
 
@@ -2970,7 +2969,7 @@ private List<ExprNode> ExprList() :
     { exprList.add(expr); }
   )*
 
-  { return exprList; }
+  { return exprList.build(); }
 }
 
 

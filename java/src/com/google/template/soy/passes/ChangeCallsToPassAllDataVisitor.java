@@ -83,10 +83,10 @@ public final class ChangeCallsToPassAllDataVisitor extends AbstractSoyNodeVisito
         return;
       }
       CallParamValueNode valueParam = (CallParamValueNode) param;
-      if (!("$" + valueParam.getKey()).equals(valueParam.getValueExprText())) {
+      if (!("$" + valueParam.getKey()).equals(valueParam.getExprText())) {
         return;
       }
-      ExprRootNode valueExprRoot = ((CallParamValueNode) param).getValueExprUnion().getExpr();
+      ExprRootNode valueExprRoot = ((CallParamValueNode) param).getExpr();
       if (valueExprRoot == null) {
         return;
       }

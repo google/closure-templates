@@ -24,6 +24,7 @@ import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.internal.i18n.SoyBidiUtils;
@@ -40,7 +41,6 @@ import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.DebuggerNode;
-import com.google.template.soy.soytree.ExprUnion;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForeachIfemptyNode;
 import com.google.template.soy.soytree.ForeachNode;
@@ -365,7 +365,7 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       for (SoyNode child : node.getChildren()) {
         if (child instanceof IfCondNode) {
           IfCondNode icn = (IfCondNode) child;
-          PyExpr condPyExpr = translator.exec(icn.getExprUnion().getExpr());
+          PyExpr condPyExpr = translator.exec(icn.getExpr());
 
           if (icn.getCommandName().equals("if")) {
             pyCodeBuilder.appendLine("if ", condPyExpr.getText(), ":");
@@ -508,8 +508,8 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       // Build the xrange call. Since the Python param syntax matches Soy range syntax, params can
       // be directly dropped in.
       PyFunctionExprBuilder funcBuilder = new PyFunctionExprBuilder("xrange");
-      for (ExprUnion arg : node.getAllExprUnions()) {
-        funcBuilder.addArg(translator.exec(arg.getExpr()));
+      for (ExprRootNode arg : node.getExprList()) {
+        funcBuilder.addArg(translator.exec(arg));
       }
 
       pyCodeBuilder.appendLineEnd(funcBuilder.asPyExpr().getText(), ":");

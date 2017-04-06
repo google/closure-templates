@@ -26,7 +26,6 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
-import java.util.List;
 
 /**
  * Node representing a 'param' with a value expression.
@@ -49,17 +48,17 @@ public final class CallParamValueNode extends CallParamNode implements ExprHolde
   private final String key;
 
   /** The parsed expression for the param value. */
-  private final ExprUnion valueExprUnion;
+  private final ExprRootNode valueExpr;
 
   private CallParamValueNode(
       int id,
       SourceLocation sourceLocation,
       String key,
-      ExprUnion valueExprUnion,
+      ExprRootNode valueExpr,
       String commandText) {
     super(id, sourceLocation, commandText);
     this.key = Preconditions.checkNotNull(key);
-    this.valueExprUnion = Preconditions.checkNotNull(valueExprUnion);
+    this.valueExpr = Preconditions.checkNotNull(valueExpr);
   }
 
   /**
@@ -70,8 +69,7 @@ public final class CallParamValueNode extends CallParamNode implements ExprHolde
   private CallParamValueNode(CallParamValueNode orig, CopyState copyState) {
     super(orig, copyState);
     this.key = orig.key;
-    this.valueExprUnion =
-        (orig.valueExprUnion != null) ? orig.valueExprUnion.copy(copyState) : null;
+    this.valueExpr = orig.valueExpr.copy(copyState);
   }
 
   @Override
@@ -85,13 +83,13 @@ public final class CallParamValueNode extends CallParamNode implements ExprHolde
   }
 
   /** Returns the expression text for the param value. */
-  public String getValueExprText() {
-    return valueExprUnion.getExprText();
+  public String getExprText() {
+    return valueExpr.toSourceString();
   }
 
   /** Returns the parsed expression for the param value. */
-  public ExprUnion getValueExprUnion() {
-    return valueExprUnion;
+  public ExprRootNode getExpr() {
+    return valueExpr;
   }
 
   @Override
@@ -100,8 +98,8 @@ public final class CallParamValueNode extends CallParamNode implements ExprHolde
   }
 
   @Override
-  public List<ExprUnion> getAllExprUnions() {
-    return ImmutableList.of(valueExprUnion);
+  public ImmutableList<ExprRootNode> getExprList() {
+    return ImmutableList.of(valueExpr);
   }
 
   @Override
@@ -116,7 +114,7 @@ public final class CallParamValueNode extends CallParamNode implements ExprHolde
           -1,
           SourceLocation.UNKNOWN,
           "error",
-          new ExprUnion(new ExprRootNode(new IntegerNode(1, SourceLocation.UNKNOWN))),
+          new ExprRootNode(new IntegerNode(1, SourceLocation.UNKNOWN)),
           "error: error");
     }
 
@@ -125,7 +123,7 @@ public final class CallParamValueNode extends CallParamNode implements ExprHolde
     }
 
     public CallParamValueNode build(Checkpoint checkpoint, ErrorReporter errorReporter) {
-      if (parseResult.valueExprUnion == null) {
+      if (parseResult.valueExpr == null) {
         errorReporter.report(
             sourceLocation, SELF_ENDING_TAG_WITHOUT_VALUE, parseResult.originalCommantText);
       }
@@ -143,7 +141,7 @@ public final class CallParamValueNode extends CallParamNode implements ExprHolde
           id,
           sourceLocation,
           parseResult.key,
-          parseResult.valueExprUnion,
+          parseResult.valueExpr,
           parseResult.originalCommantText);
     }
   }

@@ -232,9 +232,8 @@ public final class ForNode extends AbstractBlockCommandNode
   }
 
   @Override
-  public List<ExprUnion> getAllExprUnions() {
-    return ExprUnion.createList(
-        ImmutableList.of(rangeArgs.start(), rangeArgs.limit(), rangeArgs.increment()));
+  public ImmutableList<ExprRootNode> getExprList() {
+    return ImmutableList.of(rangeArgs.start(), rangeArgs.limit(), rangeArgs.increment());
   }
 
   @SuppressWarnings("unchecked")

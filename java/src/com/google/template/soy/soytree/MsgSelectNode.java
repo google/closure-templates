@@ -26,7 +26,6 @@ import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.MsgSubstUnitNode;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
-import java.util.List;
 import javax.annotation.Nullable;
 
 /**
@@ -124,8 +123,8 @@ public final class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefault
   }
 
   @Override
-  public List<ExprUnion> getAllExprUnions() {
-    return ImmutableList.of(new ExprUnion(selectExpr));
+  public ImmutableList<ExprRootNode> getExprList() {
+    return ImmutableList.of(selectExpr);
   }
 
   @Override

@@ -25,7 +25,6 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
-import java.util.List;
 
 /**
  * Node representing a 'let' statement with a value expression.
@@ -84,8 +83,8 @@ public final class LetValueNode extends LetNode implements ExprHolderNode {
   }
 
   @Override
-  public List<ExprUnion> getAllExprUnions() {
-    return ImmutableList.of(new ExprUnion(valueExpr));
+  public ImmutableList<ExprRootNode> getExprList() {
+    return ImmutableList.of(valueExpr);
   }
 
   @Override

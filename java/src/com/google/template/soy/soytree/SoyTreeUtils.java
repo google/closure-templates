@@ -95,10 +95,8 @@ public final class SoyTreeUtils {
         queue.addAll(((ParentNode<?>) current).getChildren());
       }
       if (current instanceof ExprHolderNode) {
-        for (ExprUnion union : ((ExprHolderNode) current).getAllExprUnions()) {
-          if (union.getExpr() != null) {
-            queue.add(union.getExpr());
-          }
+        for (ExprRootNode union : ((ExprHolderNode) current).getExprList()) {
+          queue.add(union);
         }
       }
     }
@@ -152,26 +150,26 @@ public final class SoyTreeUtils {
             }
             : null;
 
-      AbstractNodeVisitor<SoyNode, Void> visitor = new AbstractNodeVisitor<SoyNode, Void>() {
-      @Override protected void visit(SoyNode soyNode) {
-        if (classObject.isInstance(soyNode)) {
-          matchedNodesBuilder.add(classObject.cast(soyNode));
-          if (!doSearchSubtreesOfMatchedNodes) {
-            return;
-          }
-        }
-        if (soyNode instanceof ParentSoyNode<?>) {
-          visitChildren((ParentSoyNode<?>) soyNode);
-        }
-        if (exploreExpressions && soyNode instanceof ExprHolderNode) {
-          for (ExprUnion exprUnion : ((ExprHolderNode) soyNode).getAllExprUnions()) {
-            if (exprUnion.getExpr() != null) {
-              exprVisitor.exec(exprUnion.getExpr());
+    AbstractNodeVisitor<SoyNode, Void> visitor =
+        new AbstractNodeVisitor<SoyNode, Void>() {
+          @Override
+          protected void visit(SoyNode soyNode) {
+            if (classObject.isInstance(soyNode)) {
+              matchedNodesBuilder.add(classObject.cast(soyNode));
+              if (!doSearchSubtreesOfMatchedNodes) {
+                return;
+              }
+            }
+            if (soyNode instanceof ParentSoyNode<?>) {
+              visitChildren((ParentSoyNode<?>) soyNode);
+            }
+            if (exploreExpressions && soyNode instanceof ExprHolderNode) {
+              for (ExprRootNode expr : ((ExprHolderNode) soyNode).getExprList()) {
+                exprVisitor.exec(expr);
+              }
             }
           }
-        }
-      }
-    };
+        };
 
     visitor.exec(rootSoyNode);
     return matchedNodesBuilder.build();
@@ -218,11 +216,8 @@ public final class SoyTreeUtils {
       }
 
       if (node instanceof ExprHolderNode) {
-        for (ExprUnion exprUnion : ((ExprHolderNode) node).getAllExprUnions()) {
-          ExprRootNode expr = exprUnion.getExpr();
-          if (expr != null) {
-            exprNodeVisitor.exec(expr);
-          }
+        for (ExprRootNode expr : ((ExprHolderNode) node).getExprList()) {
+          exprNodeVisitor.exec(expr);
         }
       }
     }

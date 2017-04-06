@@ -29,7 +29,6 @@ import com.google.template.soy.soytree.CommandTextAttributesParser.Attribute;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.MsgSubstUnitNode;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
-import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -129,8 +128,8 @@ public final class MsgPluralNode extends AbstractParentCommandNode<CaseOrDefault
   }
 
   @Override
-  public List<ExprUnion> getAllExprUnions() {
-    return ImmutableList.of(new ExprUnion(pluralExpr));
+  public ImmutableList<ExprRootNode> getExprList() {
+    return ImmutableList.of(pluralExpr);
   }
 
   @Override

@@ -29,7 +29,6 @@ import com.google.template.soy.soytree.SoyNode.MsgPlaceholderInitialNode;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
-import java.util.List;
 import javax.annotation.Nullable;
 
 /**
@@ -52,7 +51,7 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
   private final boolean isImplicit;
 
   /** The parsed expression. */
-  private final ExprUnion exprUnion;
+  private final ExprRootNode expr;
 
   /** The user-supplied placeholder name, or null if not supplied or not applicable. */
   @Nullable private final String userSuppliedPlaceholderName;
@@ -62,12 +61,12 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
   private PrintNode(
       int id,
       boolean isImplicit,
-      ExprUnion exprUnion,
+      ExprRootNode expr,
       SourceLocation sourceLocation,
       @Nullable String userSuppliedPlaceholderName) {
     super(id, sourceLocation, "print", "");
     this.isImplicit = isImplicit;
-    this.exprUnion = exprUnion;
+    this.expr = Preconditions.checkNotNull(expr);
     this.userSuppliedPlaceholderName = userSuppliedPlaceholderName;
   }
 
@@ -79,7 +78,7 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
   private PrintNode(PrintNode orig, CopyState copyState) {
     super(orig, copyState);
     this.isImplicit = orig.isImplicit;
-    this.exprUnion = (orig.exprUnion != null) ? orig.exprUnion.copy(copyState) : null;
+    this.expr = orig.expr.copy(copyState);
     this.userSuppliedPlaceholderName = orig.userSuppliedPlaceholderName;
     this.htmlContext = orig.htmlContext;
   }
@@ -110,12 +109,12 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
 
   /** Returns the text of the expression to print. */
   public String getExprText() {
-    return exprUnion.getExprText();
+    return expr.toSourceString();
   }
 
   /** Returns the parsed expression, or null if the expression is not in V2 syntax. */
-  public ExprUnion getExprUnion() {
-    return exprUnion;
+  public ExprRootNode getExpr() {
+    return expr;
   }
 
   @Override
@@ -130,13 +129,12 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
       return BaseUtils.convertToUpperUnderscore(userSuppliedPlaceholderName);
     }
 
-    ExprRootNode exprRoot = exprUnion.getExpr();
-    if (exprRoot == null) {
+    if (this.expr == null) {
       return FALLBACK_BASE_PLACEHOLDER_NAME;
     }
 
     return MsgSubstUnitBaseVarNameUtils.genNaiveBaseNameForExpr(
-        exprRoot.getRoot(), FALLBACK_BASE_PLACEHOLDER_NAME);
+        expr.getRoot(), FALLBACK_BASE_PLACEHOLDER_NAME);
   }
 
   @Override
@@ -146,14 +144,14 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
   }
 
   @Override
-  public List<ExprUnion> getAllExprUnions() {
-    return ImmutableList.of(exprUnion);
+  public ImmutableList<ExprRootNode> getExprList() {
+    return ImmutableList.of(expr);
   }
 
   @Override
   public String getCommandText() {
     StringBuilder sb = new StringBuilder();
-    sb.append(exprUnion.getExprText());
+    sb.append(expr.toSourceString());
     for (PrintDirectiveNode child : getChildren()) {
       sb.append(' ').append(child.toSourceString());
     }
@@ -191,7 +189,7 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
     private final SourceLocation sourceLocation;
 
     @Nullable private String exprText;
-    @Nullable private ExprUnion exprUnion;
+    @Nullable private ExprRootNode expr;
     @Nullable private String userSuppliedPlaceholderName;
 
     /**
@@ -208,26 +206,26 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
     /**
      * @param exprText The node's expression text.
      * @return This builder, for chaining.
-     * @throws java.lang.IllegalStateException if {@link #exprText} or {@link #exprUnion} has
-     *     already been set.
+     * @throws java.lang.IllegalStateException if {@link #exprText} or {@link #expr} has already
+     *     been set.
      */
     public Builder exprText(String exprText) {
       Preconditions.checkState(this.exprText == null);
-      Preconditions.checkState(this.exprUnion == null);
+      Preconditions.checkState(this.expr == null);
       this.exprText = exprText;
       return this;
     }
 
     /**
-     * @param exprUnion The parsed expression for this print node.
+     * @param exprRoot The parsed expression for this print node.
      * @return This builder, for chaining.
-     * @throws java.lang.IllegalStateException if {@link #exprText} or {@link #exprUnion} has
-     *     already been set.
+     * @throws java.lang.IllegalStateException if {@link #exprText} or {@link #expr} has already
+     *     been set.
      */
-    public Builder exprUnion(ExprUnion exprUnion) {
+    public Builder exprRoot(ExprRootNode exprRoot) {
       Preconditions.checkState(this.exprText == null);
-      Preconditions.checkState(this.exprUnion == null);
-      this.exprUnion = exprUnion;
+      Preconditions.checkState(this.expr == null);
+      this.expr = exprRoot;
       return this;
     }
 
@@ -243,23 +241,21 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
     /**
      * Returns a new {@link PrintNode} built from this builder's state.
      *
-     * @throws java.lang.IllegalStateException if neither {@link #exprText} nor {@link #exprUnion}
-     *     have been set.
+     * @throws java.lang.IllegalStateException if neither {@link #exprText} nor {@link #expr} have
+     *     been set.
      */
     public PrintNode build(SoyParsingContext context) {
-      ExprUnion exprUnion = getOrParseExprUnion(context);
-      return new PrintNode(id, isImplicit, exprUnion, sourceLocation, userSuppliedPlaceholderName);
+      ExprRootNode exprRoot = getOrParseExpr(context);
+      return new PrintNode(id, isImplicit, exprRoot, sourceLocation, userSuppliedPlaceholderName);
     }
 
-    private ExprUnion getOrParseExprUnion(SoyParsingContext context) {
-      if (exprUnion != null) {
-        return exprUnion;
+    private ExprRootNode getOrParseExpr(SoyParsingContext context) {
+      if (expr != null) {
+        return expr;
       }
       Preconditions.checkNotNull(exprText);
-      ExprRootNode expr =
-          new ExprRootNode(
-              new ExpressionParser(exprText, sourceLocation, context).parseExpression());
-      return new ExprUnion(expr);
+      return new ExprRootNode(
+          new ExpressionParser(exprText, sourceLocation, context).parseExpression());
     }
   }
 }

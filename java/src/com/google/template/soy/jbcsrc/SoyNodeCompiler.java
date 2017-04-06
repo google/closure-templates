@@ -225,7 +225,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     for (SoyNode child : node.getChildren()) {
       if (child instanceof IfCondNode) {
         IfCondNode icn = (IfCondNode) child;
-        SoyExpression cond = exprCompiler.compile(icn.getExprUnion().getExpr()).coerceToBoolean();
+        SoyExpression cond = exprCompiler.compile(icn.getExpr()).coerceToBoolean();
         Statement block = visitChildrenInNewScope(icn);
         ifs.add(IfBlock.create(cond, block));
       } else {
@@ -494,7 +494,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     // expression that evaluates to a SoyValueProvider.  This will allow us to render incrementally
     if (node.getChildren().isEmpty()) {
       Label reattachPoint = new Label();
-      ExprRootNode expr = node.getExprUnion().getExpr();
+      ExprRootNode expr = node.getExpr();
       Optional<Expression> asSoyValueProvider =
           expressionToSoyValueProviderCompiler.compileAvoidingBoxing(expr, reattachPoint);
       if (asSoyValueProvider.isPresent()) {
@@ -511,7 +511,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
 
   private SoyExpression compilePrintNodeAsExpression(PrintNode node, Label reattachPoint) {
     BasicExpressionCompiler basic = exprCompiler.asBasicCompiler(reattachPoint);
-    SoyExpression value = basic.compile(node.getExprUnion().getExpr());
+    SoyExpression value = basic.compile(node.getExpr());
     // We may have print directives, that means we need to pass the render value through a bunch of
     // SoyJavaPrintDirective.apply methods.  This means lots and lots of boxing.
     // TODO(user): tracks adding streaming print directives which would help with this,
@@ -804,10 +804,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         } else {
           valueExpr =
               lazyClosureCompiler.compileLazyExpression(
-                  "param",
-                  child,
-                  paramKey,
-                  ((CallParamValueNode) child).getValueExprUnion().getExpr());
+                  "param", child, paramKey, ((CallParamValueNode) child).getExpr());
         }
         // ParamStore.setField return 'this' so we can just chain the invocations together.
         paramStoreExpression =

@@ -19,7 +19,6 @@ package com.google.template.soy.soytree;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.basetree.CopyState;
@@ -33,8 +32,6 @@ import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.soytree.CommandTextAttributesParser.Attribute;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -359,13 +356,13 @@ public final class CallDelegateNode extends CallNode {
   }
 
   @Override
-  public List<ExprUnion> getAllExprUnions() {
-    List<ExprUnion> allExprUnions = Lists.newArrayListWithCapacity(2);
+  public ImmutableList<ExprRootNode> getExprList() {
+    ImmutableList.Builder<ExprRootNode> allExprs = ImmutableList.builder();
     if (delCalleeVariantExpr != null) {
-      allExprUnions.add(new ExprUnion(delCalleeVariantExpr));
+      allExprs.add(delCalleeVariantExpr);
     }
-    allExprUnions.addAll(super.getAllExprUnions());
-    return Collections.unmodifiableList(allExprUnions);
+    allExprs.addAll(super.getExprList());
+    return allExprs.build();
   }
 
   @Override

@@ -96,14 +96,13 @@ public class OptimizeBidiCodeGenVisitor extends AbstractSoyNodeVisitor<Void> {
   protected void visitPrintNode(PrintNode node) {
 
     // We replace this node if and only if it:
-    // (a) could be in V2 syntax and has a V2 expression,
+    // (a) is in V2 syntax,
     // (b) is not a child of a MsgBlockNode,
     // (c) has a single call to bidiMark(), bidiStartEdge(), or bidiEndEdge() as its expression and
     //     the global directionality is static,
     // (d) doesn't have directives other than "|id", "|noAutoescape", and "|escapeHtml".
 
-    if (!node.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0)
-        || node.getExprUnion().getExpr() == null) {
+    if (!node.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0)) {
       return;
     }
 
@@ -112,7 +111,7 @@ public class OptimizeBidiCodeGenVisitor extends AbstractSoyNodeVisitor<Void> {
       return; // don't replace this node
     }
 
-    ExprNode expr = node.getExprUnion().getExpr().getRoot();
+    ExprNode expr = node.getExpr().getRoot();
     if (!(expr instanceof FunctionNode)) {
       return; // don't replace this node
     }

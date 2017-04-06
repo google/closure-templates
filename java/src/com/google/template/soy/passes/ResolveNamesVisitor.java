@@ -31,7 +31,6 @@ import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
-import com.google.template.soy.soytree.ExprUnion;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForeachNonemptyNode;
 import com.google.template.soy.soytree.LetContentNode;
@@ -316,10 +315,8 @@ final class ResolveNamesVisitor extends AbstractSoyNodeVisitor<Void> {
 
   private void visitExpressions(ExprHolderNode node) {
     ResolveNamesExprVisitor exprVisitor = new ResolveNamesExprVisitor();
-    for (ExprUnion exprUnion : node.getAllExprUnions()) {
-      if (exprUnion.getExpr() != null) {
-        exprVisitor.exec(exprUnion.getExpr());
-      }
+    for (ExprRootNode expr : node.getExprList()) {
+      exprVisitor.exec(expr);
     }
   }
 

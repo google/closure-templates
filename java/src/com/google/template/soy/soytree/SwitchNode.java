@@ -26,7 +26,6 @@ import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
-import java.util.List;
 
 /**
  * Node representing a 'switch' statement.
@@ -76,8 +75,8 @@ public final class SwitchNode extends AbstractParentCommandNode<BlockNode>
   }
 
   @Override
-  public List<ExprUnion> getAllExprUnions() {
-    return ImmutableList.of(new ExprUnion(expr));
+  public ImmutableList<ExprRootNode> getExprList() {
+    return ImmutableList.of(expr);
   }
 
   @Override

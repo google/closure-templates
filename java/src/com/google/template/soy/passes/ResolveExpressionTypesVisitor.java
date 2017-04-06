@@ -67,7 +67,6 @@ import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
-import com.google.template.soy.soytree.ExprUnion;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForeachNonemptyNode;
 import com.google.template.soy.soytree.IfCondNode;
@@ -187,7 +186,7 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
   protected void visitPrintNode(PrintNode node) {
     visitSoyNode(node);
 
-    ExprRootNode expr = node.getExprUnion().getExpr();
+    ExprRootNode expr = node.getExpr();
     if (expr != null && expr.getType().equals(BoolType.getInstance())) {
       String errorMsg = "Bool values can no longer be printed";
       // Append some possibly helpful info in the case that the expr's top level is the 'or'
@@ -244,9 +243,7 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
 
         // Visit the conditional expression to compute which types can be narrowed.
         TypeNarrowingConditionVisitor visitor = new TypeNarrowingConditionVisitor();
-        if (icn.getExprUnion().getExpr() != null) {
-          visitor.exec(icn.getExprUnion().getExpr());
-        }
+        visitor.exec(icn.getExpr());
 
         // Save the state of substitutions from the previous if block.
         TypeSubstitution previousSubstitutionState = substitutions;
@@ -319,10 +316,8 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
 
   private void visitExpressions(ExprHolderNode node) {
     ResolveTypesExprVisitor exprVisitor = new ResolveTypesExprVisitor(node);
-    for (ExprUnion exprUnion : node.getAllExprUnions()) {
-      if (exprUnion.getExpr() != null) {
-        exprVisitor.exec(exprUnion.getExpr());
-      }
+    for (ExprRootNode expr : node.getExprList()) {
+      exprVisitor.exec(expr);
     }
   }
 

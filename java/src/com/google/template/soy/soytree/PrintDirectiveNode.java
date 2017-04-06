@@ -93,8 +93,8 @@ public final class PrintDirectiveNode extends AbstractSoyNode implements ExprHol
   }
 
   @Override
-  public List<ExprUnion> getAllExprUnions() {
-    return ExprUnion.createList(args);
+  public ImmutableList<ExprRootNode> getExprList() {
+    return args;
   }
 
   @Override

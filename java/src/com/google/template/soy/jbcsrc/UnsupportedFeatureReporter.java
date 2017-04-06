@@ -21,11 +21,11 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
+import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.AutoescapeMode;
-import com.google.template.soy.soytree.ExprUnion;
 import com.google.template.soy.soytree.NamespaceDeclaration;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
@@ -71,15 +71,8 @@ final class UnsupportedFeatureReporter {
         visitChildren((ParentSoyNode<?>) node);
       }
       if (node instanceof ExprHolderNode) {
-        for (ExprUnion exprUnion : ((ExprHolderNode) node).getAllExprUnions()) {
-          if (exprUnion.getExpr() == null) {
-            errorReporter.report(
-                node.getSourceLocation(),
-                SoyErrorKind.of("jbcsrc does not support soy v1 expressions: {0}"),
-                exprUnion.getExprText());
-          } else {
-            exprVisitor.exec(exprUnion.getExpr());
-          }
+        for (ExprRootNode expr : ((ExprHolderNode) node).getExprList()) {
+          exprVisitor.exec(expr);
         }
       }
     }

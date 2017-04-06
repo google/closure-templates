@@ -278,7 +278,7 @@ public class GenCallCodeUtils {
         CallParamValueNode cpvn = (CallParamValueNode) child;
         CodeChunk.WithValue value =
             jsExprTranslator.translateToCodeChunk(
-                cpvn.getValueExprUnion(), translationContext, errorReporter);
+                cpvn.getExpr(), translationContext, errorReporter);
         values.add(value);
       } else {
         CallParamContentNode cpcn = (CallParamContentNode) child;

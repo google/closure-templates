@@ -342,7 +342,7 @@ abstract class JsSrcSubject<T extends Subject<T, String>> extends Subject<T, Str
           SoyTreeUtils.getAllNodesOfType(parseResult.fileSet().getChild(0), PrintNode.class);
       assertThat(printNodes).hasSize(1);
 
-      ExprNode exprNode = printNodes.get(0).getExprUnion().getExpr();
+      ExprNode exprNode = printNodes.get(0).getExpr();
       UniqueNameGenerator nameGenerator = JsSrcNameGenerators.forLocalVariables();
       this.chunk =
           new TranslateExprNodeVisitor(

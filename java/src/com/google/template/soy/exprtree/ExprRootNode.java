@@ -21,7 +21,6 @@ import static com.google.common.base.Preconditions.checkArgument;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.basetree.CopyState;
-import java.util.List;
 
 /**
  * Dummy node that serves as the root of an expression tree so that the tree can be arbitrarily
@@ -33,7 +32,8 @@ import java.util.List;
  *
  */
 public final class ExprRootNode extends AbstractParentExprNode {
-  public static List<ExprNode> unwrap(Iterable<ExprRootNode> exprs) {
+
+  public static ImmutableList<ExprNode> unwrap(Iterable<ExprRootNode> exprs) {
     ImmutableList.Builder<ExprNode> builder = ImmutableList.builder();
     for (ExprRootNode expr : exprs) {
       builder.add(expr.getRoot());
@@ -41,7 +41,7 @@ public final class ExprRootNode extends AbstractParentExprNode {
     return builder.build();
   }
 
-  public static List<ExprRootNode> wrap(Iterable<? extends ExprNode> exprs) {
+  public static ImmutableList<ExprRootNode> wrap(Iterable<? extends ExprNode> exprs) {
     ImmutableList.Builder<ExprRootNode> builder = ImmutableList.builder();
     for (ExprNode expr : exprs) {
       builder.add(new ExprRootNode(expr));

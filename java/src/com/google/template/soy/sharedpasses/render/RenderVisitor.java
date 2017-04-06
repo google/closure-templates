@@ -309,7 +309,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
   @Override
   protected void visitPrintNode(PrintNode node) {
 
-    SoyValue result = eval(node.getExprUnion().getExpr(), node);
+    SoyValue result = eval(node.getExpr(), node);
     if (result instanceof UndefinedData) {
       throw RenderException.createWithSource(
           "In 'print' tag, expression \"" + node.getExprText() + "\" evaluates to undefined.",
@@ -385,7 +385,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
       if (child instanceof IfCondNode) {
         IfCondNode icn = (IfCondNode) child;
-        if (eval(icn.getExprUnion().getExpr(), node).coerceToBoolean()) {
+        if (eval(icn.getExpr(), node).coerceToBoolean()) {
           visit(icn);
           return;
         }
@@ -607,8 +607,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
         if (child instanceof CallParamValueNode) {
           mutableCallData.setField(
-              child.getKey(),
-              lazyEval(((CallParamValueNode) child).getValueExprUnion().getExpr(), child));
+              child.getKey(), lazyEval(((CallParamValueNode) child).getExpr(), child));
 
         } else if (child instanceof CallParamContentNode) {
           mutableCallData.setField(

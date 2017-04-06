@@ -58,7 +58,6 @@ import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.CssNode;
 import com.google.template.soy.soytree.DebuggerNode;
-import com.google.template.soy.soytree.ExprUnion;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForNode.RangeArgs;
 import com.google.template.soy.soytree.ForeachIfemptyNode;
@@ -188,7 +187,7 @@ final class TemplateAnalysis {
 
     @Override
     protected void visitPrintNode(PrintNode node) {
-      evalInline(node.getExprUnion());
+      evalInline(node.getExpr());
       for (PrintDirectiveNode directive : node.getChildren()) {
         for (ExprRootNode arg : directive.getArgs()) {
           evalInline(arg);
@@ -344,14 +343,14 @@ final class TemplateAnalysis {
           Block caseBlockEnd = exec(caseBlockStart, scn);
           branchEnds.add(caseBlockEnd);
 
-          for (ExprUnion expr : scn.getAllExprUnions()) {
+          for (ExprRootNode expr : scn.getExprList()) {
             if (conditions == null) {
               evalInline(expr); // the very first condition is always evaluated
               conditions = this.current;
             } else {
               // otherwise we are only maybe evaluating this condition
               Block condition = conditions.addBranch();
-              conditions = exprVisitor.eval(condition, expr.getExpr());
+              conditions = exprVisitor.eval(condition, expr);
             }
             conditions.successors.add(caseBlockStart);
           }
@@ -396,7 +395,7 @@ final class TemplateAnalysis {
       for (SoyNode child : node.getChildren()) {
         if (child instanceof IfCondNode) {
           IfCondNode icn = (IfCondNode) child;
-          ExprRootNode conditionExpression = icn.getExprUnion().getExpr();
+          ExprRootNode conditionExpression = icn.getExpr();
           if (conditionFork == null) {
             // first condition is always evaluated
             evalInline(conditionExpression);
@@ -472,7 +471,7 @@ final class TemplateAnalysis {
     @Override
     protected void visitCallParamValueNode(CallParamValueNode node) {
       // params are evaluated in their own fork.
-      evalInline(node.getValueExprUnion());
+      evalInline(node.getExpr());
     }
 
     @Override
@@ -558,11 +557,6 @@ final class TemplateAnalysis {
     @Override
     protected void visitChildren(ParentSoyNode<?> node) {
       super.visitChildren(node);
-    }
-
-    /** Evaluates the given expression in the current block. */
-    void evalInline(ExprUnion expr) {
-      evalInline(expr.getExpr());
     }
 
     /** Evaluates the given expression in the current block. */

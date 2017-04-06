@@ -195,7 +195,7 @@ public final class MsgNode extends AbstractBlockCommandNode
   }
 
   @Override
-  public List<ExprUnion> getAllExprUnions() {
+  public ImmutableList<ExprRootNode> getExprList() {
     if (genderExprs != null) {
       throw new AssertionError();
     }

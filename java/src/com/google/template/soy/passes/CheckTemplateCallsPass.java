@@ -202,7 +202,7 @@ final class CheckTemplateCallsPass extends CompilerFileSetPass {
         SoyType argType = null;
         if (callerParam.getKind() == SoyNode.Kind.CALL_PARAM_VALUE_NODE) {
           CallParamValueNode node = (CallParamValueNode) callerParam;
-          ExprNode expr = node.getValueExprUnion().getExpr();
+          ExprNode expr = node.getExpr();
           if (expr != null) {
             argType = maybeCoerceType(node, expr.getType(), declaredParamTypes);
           }
@@ -326,7 +326,7 @@ final class CheckTemplateCallsPass extends CompilerFileSetPass {
           }
         }
 
-        ExprRootNode root = paramNode.getValueExprUnion().getExpr();
+        ExprRootNode root = paramNode.getExpr();
 
         // create a node to wrap param in float coercion
         FunctionNode newParam =

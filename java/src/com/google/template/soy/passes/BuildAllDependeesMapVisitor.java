@@ -23,9 +23,9 @@ import com.google.common.collect.Sets;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
+import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
-import com.google.template.soy.soytree.ExprUnion;
 import com.google.template.soy.soytree.LetNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -44,8 +44,6 @@ import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
 /**
@@ -171,8 +169,8 @@ public final class BuildAllDependeesMapVisitor
     Set<String> topLevelRefs;
     if (node instanceof ExprHolderNode) {
       topLevelRefs = Sets.newHashSet();
-      for (ExprUnion exprUnion : ((ExprHolderNode) node).getAllExprUnions()) {
-        topLevelRefs.addAll(getTopLevelRefsInExpr(exprUnion));
+      for (ExprRootNode expr : ((ExprHolderNode) node).getExprList()) {
+        topLevelRefs.addAll(new GetTopLevelRefsInExprVisitor().exec(expr));
       }
     } else {
       topLevelRefs = null;
@@ -258,23 +256,6 @@ public final class BuildAllDependeesMapVisitor
   // Helper to retrieve top-level references from a Soy expression.
 
   /**
-   * Finds the top-level references within a Soy expression (V1 or V2 syntax).
-   *
-   * @param exprUnion The expression (V1 or V2 syntax).
-   * @return The set of top-level references in the given expression.
-   */
-  private Set<String> getTopLevelRefsInExpr(ExprUnion exprUnion) {
-
-    if (exprUnion.getExpr() != null) {
-      // V2 expression.
-      return new GetTopLevelRefsInExprVisitor().exec(exprUnion.getExpr());
-    } else {
-      // V1 expression.
-      return getTopLevelRefsInV1Expr(exprUnion.getExprText());
-    }
-  }
-
-  /**
    * Helper for getTopLevelRefsInExpr() to get top-level references from a Soy V2 expression.
    * Returns the set of top-level references in the given expression.
    */
@@ -301,24 +282,5 @@ public final class BuildAllDependeesMapVisitor
         visitChildren((ParentExprNode) node);
       }
     }
-  }
-
-  /** Regex for a top-level reference in a Soy V1 expression. Used by getTopLevelRefsInV1Expr(). */
-  private static final Pattern TOP_LEVEL_REF = Pattern.compile("\\$([a-zA-Z0-9_]+)");
-
-  /**
-   * Helper for getTopLevelRefsInExpr() to get top-level references from a Soy V1 expression.
-   *
-   * @param exprText The text of the expression.
-   * @return The set of top-level references in the expression.
-   */
-  private static Set<String> getTopLevelRefsInV1Expr(String exprText) {
-
-    Set<String> topLevelRefs = Sets.newHashSet();
-    Matcher matcher = TOP_LEVEL_REF.matcher(exprText);
-    while (matcher.find()) {
-      topLevelRefs.add(matcher.group(1));
-    }
-    return topLevelRefs;
   }
 }
