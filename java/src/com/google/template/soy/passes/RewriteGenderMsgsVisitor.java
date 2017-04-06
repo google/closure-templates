@@ -146,13 +146,11 @@ final class RewriteGenderMsgsVisitor extends AbstractSoyNodeVisitor<Void> {
     // parsed, that should be fine.  I don't think this can fail at all, but whatever.
     SoyParsingContext context = SoyParsingContext.empty(errorReporter, "fake.namespace");
 
-    MsgSelectCaseNode femaleCase
-        = new MsgSelectCaseNode.Builder(nodeIdGen.genId(), "'female'", msg.getSourceLocation())
-            .build(context);
+    MsgSelectCaseNode femaleCase =
+        new MsgSelectCaseNode(nodeIdGen.genId(), msg.getSourceLocation(), "female");
     femaleCase.addChildren(SoyTreeUtils.cloneListWithNewIds(origChildren, nodeIdGen));
-    MsgSelectCaseNode maleCase
-        = new MsgSelectCaseNode.Builder(nodeIdGen.genId(), "'male'", msg.getSourceLocation())
-            .build(context);
+    MsgSelectCaseNode maleCase =
+        new MsgSelectCaseNode(nodeIdGen.genId(), msg.getSourceLocation(), "male");
     maleCase.addChildren(SoyTreeUtils.cloneListWithNewIds(origChildren, nodeIdGen));
     MsgSelectDefaultNode defaultCase
         = new MsgSelectDefaultNode(nodeIdGen.genId(), msg.getSourceLocation());

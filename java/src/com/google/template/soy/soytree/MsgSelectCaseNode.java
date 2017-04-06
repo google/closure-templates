@@ -16,14 +16,10 @@
 
 package com.google.template.soy.soytree;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.error.ErrorReporter.Checkpoint;
-import com.google.template.soy.error.SoyErrorKind;
-import com.google.template.soy.exprparse.ExpressionParser;
-import com.google.template.soy.exprparse.SoyParsingContext;
-import com.google.template.soy.exprtree.ExprRootNode;
-import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
 
 /**
@@ -34,16 +30,12 @@ import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
  */
 public final class MsgSelectCaseNode extends CaseOrDefaultNode implements MsgBlockNode {
 
-  private static final SoyErrorKind INVALID_STRING_FOR_SELECT_CASE =
-      SoyErrorKind.of("Invalid string for select ''case''.");
-
   /** The value for this case. */
   private final String caseValue;
 
-  private MsgSelectCaseNode(
-      int id, SourceLocation sourceLocation, String commandText, String caseValue) {
-    super(id, sourceLocation, "case", commandText);
-    this.caseValue = caseValue;
+  public MsgSelectCaseNode(int id, SourceLocation location, String caseValue) {
+    super(id, location, "case", String.format("'%s'", caseValue));
+    this.caseValue = checkNotNull(caseValue);
   }
 
   /**
@@ -69,52 +61,5 @@ public final class MsgSelectCaseNode extends CaseOrDefaultNode implements MsgBlo
   @Override
   public MsgSelectCaseNode copy(CopyState copyState) {
     return new MsgSelectCaseNode(this, copyState);
-  }
-
-  /** Builder for {@link MsgSelectCaseNode}. */
-  public static final class Builder {
-    private static MsgSelectCaseNode error() {
-      return new MsgSelectCaseNode(-1, SourceLocation.UNKNOWN, "error", "error");
-    }
-
-    private final int id;
-    private final String commandText;
-    private final SourceLocation sourceLocation;
-
-    /**
-     * @param id The node's id.
-     * @param commandText The node's command text.
-     * @param sourceLocation The node's source location.
-     */
-    public Builder(int id, String commandText, SourceLocation sourceLocation) {
-      this.id = id;
-      this.commandText = commandText;
-      this.sourceLocation = sourceLocation;
-    }
-
-    /**
-     * Returns a new {@link MsgSelectCaseNode} built from the builder's state. If the builder's
-     * state is invalid, errors are reported to the {@code errorReporter} and {@link Builder#error}
-     * is returned.
-     */
-    public MsgSelectCaseNode build(SoyParsingContext context) {
-      Checkpoint checkpoint = context.errorReporter().checkpoint();
-
-      ExprRootNode strLit =
-          new ExprRootNode(
-              new ExpressionParser(commandText, sourceLocation, context).parseExpression());
-
-      // Make sure the expression is a string.
-      if (!(strLit.numChildren() == 1 && strLit.getRoot() instanceof StringNode)) {
-        context.report(sourceLocation, INVALID_STRING_FOR_SELECT_CASE);
-      }
-
-      if (context.errorReporter().errorsSince(checkpoint)) {
-        return error();
-      }
-
-      String caseValue = ((StringNode) (strLit.getRoot())).getValue();
-      return new MsgSelectCaseNode(id, sourceLocation, commandText, caseValue);
-    }
   }
 }

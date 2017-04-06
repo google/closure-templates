@@ -367,8 +367,14 @@ public class SoyFileParser {
       SoyErrorKind.of("Found multiple ''phname'' attributes in command text \"{0}\".");
   private static final SoyErrorKind PLURAL_AND_SELECT_NOT_ALLOWED_INSIDE_PLURAL_BLOCK =
       SoyErrorKind.of("Tags ''plural'' and ''select'' are not allowed inside ''plural'' blocks.");
+  private static final SoyErrorKind PLURAL_CASE_OUT_OF_BOUNDS =
+      SoyErrorKind.of("Plural case ''{0}'' must be nonnegative integers.");
+  private static final SoyErrorKind PLURAL_CASE_MALFORMED =
+      SoyErrorKind.of("Invalid number in ''plural case'' command text");
   private static final SoyErrorKind PRINT_COMMAND_WITH_EMPTY_TEXT =
       SoyErrorKind.of("Found ''print'' command with empty command text.");
+  private static final SoyErrorKind SELECT_CASE_INVALID_STRING =
+      SoyErrorKind.of("Invalid string for select ''case''.");
   private static final SoyErrorKind UNEXPECTED_CLOSING_TAG =
       SoyErrorKind.of("Unexpected closing tag ''{0}''.");
   private static final SoyErrorKind UNEXPECTED_CONTENT_AFTER =
@@ -785,7 +791,7 @@ TOKEN_MGR_DECLS: {
 | < CMD_BEGIN_SWITCH             : "{switch" <WS> > { pushState(EXPR); }
 | < CMD_CLOSE_SWITCH             : "{/switch}"    >
 
-| < CMD_BEGIN_CASE               : "{case" <WS>   > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
+| < CMD_BEGIN_CASE               : "{case" <WS>   > { pushState(EXPR); }
 | < CMD_FULL_DEFAULT             : "{default}"    >
 
 | < CMD_BEGIN_FOREACH            : "{foreach" <WS>> { pushState(IN_CMD_TAG_UNSTRUCTURED); }
@@ -1984,9 +1990,10 @@ private List<StandaloneNode> TemplateBlockForMsg() :
 private MsgPluralNode MsgPlural() :
 {
   String cmdText;
-  List<StandaloneNode> templateBlock;
   Token cmdBegin, cmdEnd;
   Token defaultTag;
+  ExprNode caseExpr;
+  List<StandaloneNode> templateBlock;
 }
 {
   cmdBegin = <CMD_BEGIN_PLURAL>
@@ -2005,14 +2012,26 @@ private MsgPluralNode MsgPlural() :
   try {
     (
       cmdBegin = <CMD_BEGIN_CASE>
-      cmdText = CmdText()
+      caseExpr = Expr()
       cmdEnd = <CMD_END>
       {
-        MsgPluralCaseNode msgPluralCaseNode = new MsgPluralCaseNode.Builder(
-            nodeIdGen.genId(), cmdText, createSrcLoc(cmdBegin, cmdEnd))
-            .build(errorReporter);
-        msgPluralNode.addChild(msgPluralCaseNode);
+        int value;
+        if (!(caseExpr instanceof IntegerNode)) {
+          errorReporter.report(caseExpr.getSourceLocation(), PLURAL_CASE_MALFORMED);
+          value = 0;
+        } else {
+          value = (int) ((IntegerNode) caseExpr).getValue();
+          if (value < 0) {
+            errorReporter.report(caseExpr.getSourceLocation(), PLURAL_CASE_OUT_OF_BOUNDS, value);
+            value = 0;
+          }
+        }
+
+        MsgPluralCaseNode caseNode =
+            new MsgPluralCaseNode(nodeIdGen.genId(), createSrcLoc(cmdBegin, cmdEnd), value);
+        msgPluralNode.addChild(caseNode);
       }
+
       templateBlock = TemplateBlockForMsg()
       { if (templateBlock.size() == 1 &&
             (templateBlock.get(0) instanceof MsgPluralNode ||
@@ -2021,16 +2040,17 @@ private MsgPluralNode MsgPlural() :
               templateBlock.get(0).getSourceLocation(),
               PLURAL_AND_SELECT_NOT_ALLOWED_INSIDE_PLURAL_BLOCK);
         }
-        msgPluralCaseNode.addChildren(templateBlock);
+        caseNode.addChildren(templateBlock);
       }
     )*
 
     defaultTag = <CMD_FULL_DEFAULT>
     {
-      MsgPluralDefaultNode msgPluralDefaultNode = new MsgPluralDefaultNode(
-          nodeIdGen.genId(), createSrcLoc(defaultTag));
-      msgPluralNode.addChild(msgPluralDefaultNode);
+      MsgPluralDefaultNode defaultNode =
+          new MsgPluralDefaultNode(nodeIdGen.genId(), createSrcLoc(defaultTag));
+      msgPluralNode.addChild(defaultNode);
     }
+
     templateBlock = TemplateBlockForMsg()
     { if (templateBlock.size() == 1 &&
           (templateBlock.get(0) instanceof MsgPluralNode ||
@@ -2039,7 +2059,7 @@ private MsgPluralNode MsgPlural() :
             templateBlock.get(0).getSourceLocation(),
             PLURAL_AND_SELECT_NOT_ALLOWED_INSIDE_PLURAL_BLOCK);
       }
-      msgPluralDefaultNode.addChildren(templateBlock);
+      defaultNode.addChildren(templateBlock);
     }
 
     <CMD_CLOSE_PLURAL>
@@ -2059,10 +2079,11 @@ private MsgPluralNode MsgPlural() :
  */
 private MsgSelectNode MsgSelect() :
 {
-  Token defaultTag;
   String cmdText;
-  List<StandaloneNode> templateBlock;
   Token cmdBegin, cmdEnd;
+  Token defaultTag;
+  ExprNode caseExpr;
+  List<StandaloneNode> templateBlock;
 }
 {
   cmdBegin = <CMD_BEGIN_SELECT>
@@ -2080,26 +2101,35 @@ private MsgSelectNode MsgSelect() :
   try {
     (
       cmdBegin = <CMD_BEGIN_CASE>
-      cmdText = CmdText()
+      caseExpr = Expr()
       cmdEnd = <CMD_END>
       {
-        MsgSelectCaseNode msgSelectCaseNode = new MsgSelectCaseNode.Builder(
-            nodeIdGen.genId(), cmdText, createSrcLoc(cmdBegin, cmdEnd))
-            .build(context);
-        msgSelectNode.addChild(msgSelectCaseNode);
+        String value;
+        if (!(caseExpr instanceof StringNode)) {
+          errorReporter.report(caseExpr.getSourceLocation(), SELECT_CASE_INVALID_STRING);
+          value = "";
+        } else {
+          value = ((StringNode) caseExpr).getValue();
+        }
+
+        MsgSelectCaseNode caseNode =
+            new MsgSelectCaseNode(nodeIdGen.genId(), createSrcLoc(cmdBegin, cmdEnd), value);
+        msgSelectNode.addChild(caseNode);
       }
+
       templateBlock = TemplateBlockForMsg()
-      { msgSelectCaseNode.addChildren(templateBlock); }
+      { caseNode.addChildren(templateBlock); }
     )*
 
     defaultTag = <CMD_FULL_DEFAULT>
     {
-      MsgSelectDefaultNode msgSelectDefaultNode
-          = new MsgSelectDefaultNode(nodeIdGen.genId(), createSrcLoc(defaultTag));
-      msgSelectNode.addChild(msgSelectDefaultNode);
+      MsgSelectDefaultNode defaultNode =
+          new MsgSelectDefaultNode(nodeIdGen.genId(), createSrcLoc(defaultTag));
+      msgSelectNode.addChild(defaultNode);
     }
+
     templateBlock = TemplateBlockForMsg()
-    { msgSelectDefaultNode.addChildren(templateBlock); }
+    { defaultNode.addChildren(templateBlock); }
 
     <CMD_CLOSE_SELECT>
   } catch (ParseException e) {
@@ -2516,8 +2546,8 @@ private SwitchNode SwitchStmt() :
   Token cmdBegin, cmdEnd;
   Token defaultTag;
   ExprNode switchExpr;
+  List<ExprNode> caseExprs;
   List<StandaloneNode> templateBlock;
-  String cmdText;
 }
 {
   cmdBegin = <CMD_BEGIN_SWITCH>
@@ -2542,30 +2572,29 @@ private SwitchNode SwitchStmt() :
   try {
     (
       cmdBegin = <CMD_BEGIN_CASE>
-      cmdText = CmdText()
+      caseExprs = ExprList()
       cmdEnd = <CMD_END>
       {
-        SwitchCaseNode switchCaseNode = new SwitchCaseNode.Builder(
-            nodeIdGen.genId(), cmdText, createSrcLoc(cmdBegin, cmdEnd))
-            .build(context);
-        switchNode.addChild(switchCaseNode);
+        SwitchCaseNode caseNode =
+            new SwitchCaseNode(nodeIdGen.genId(), createSrcLoc(cmdBegin, cmdEnd), caseExprs);
+        switchNode.addChild(caseNode);
       }
 
       templateBlock = TemplateBlock()
-      { switchCaseNode.addChildren(templateBlock); }
+      { caseNode.addChildren(templateBlock); }
     )*
     // TODO(user): This should be a +. No switches without case statements.
 
     [
       defaultTag = <CMD_FULL_DEFAULT>
       {
-        SwitchDefaultNode switchDefaultNode =
+        SwitchDefaultNode defaultNode =
             new SwitchDefaultNode(nodeIdGen.genId(), createSrcLoc(defaultTag));
-        switchNode.addChild(switchDefaultNode);
+        switchNode.addChild(defaultNode);
       }
 
       templateBlock = TemplateBlock()
-      { switchDefaultNode.addChildren(templateBlock); }
+      { defaultNode.addChildren(templateBlock); }
     ]
 
     <CMD_CLOSE_SWITCH>

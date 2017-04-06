@@ -1289,21 +1289,23 @@ public final class TemplateParserTest {
     assertEquals(4, sn.numChildren());
 
     SwitchCaseNode scn0 = (SwitchCaseNode) sn.getChild(0);
-    assertEquals("0", scn0.getExprListText());
     assertEquals(1, scn0.getExprList().size());
     assertTrue(scn0.getExprList().get(0).getRoot() instanceof IntegerNode);
+    assertEquals(0, ((IntegerNode) scn0.getExprList().get(0).getRoot()).getValue());
 
     SwitchCaseNode scn1 = (SwitchCaseNode) sn.getChild(1);
-    assertEquals("$foo.goo", scn1.getExprListText());
     assertEquals(1, scn1.getExprList().size());
     assertTrue(scn1.getExprList().get(0).getRoot() instanceof FieldAccessNode);
+    assertEquals("$foo.goo", scn1.getExprList().get(0).getRoot().toSourceString());
 
     SwitchCaseNode scn2 = (SwitchCaseNode) sn.getChild(2);
-    assertEquals("-1, 1, $moo", scn2.getExprListText());
     assertEquals(3, scn2.getExprList().size());
     assertTrue(scn2.getExprList().get(0).getRoot() instanceof NegativeOpNode);
     assertTrue(scn2.getExprList().get(1).getRoot() instanceof IntegerNode);
     assertTrue(scn2.getExprList().get(2).getRoot() instanceof VarRefNode);
+    assertEquals("-1", scn2.getExprList().get(0).getRoot().toSourceString());
+    assertEquals("1", scn2.getExprList().get(1).getRoot().toSourceString());
+    assertEquals("$moo", scn2.getExprList().get(2).getRoot().toSourceString());
     assertEquals("Bluh", ((RawTextNode) scn2.getChild(0)).getRawText());
 
     assertEquals(

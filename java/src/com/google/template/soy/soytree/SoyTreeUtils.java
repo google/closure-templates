@@ -18,6 +18,7 @@ package com.google.template.soy.soytree;
 
 import static com.google.common.base.Preconditions.checkState;
 
+import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.IdGenerator;
@@ -48,6 +49,9 @@ import java.util.Map;
  *
  */
 public final class SoyTreeUtils {
+
+  private static final Joiner COMMA_JOINER = Joiner.on(", ");
+
   private SoyTreeUtils() {}
 
   /** Returns true if the given {@code node} contains any children of the given types. */
@@ -351,6 +355,9 @@ public final class SoyTreeUtils {
   }
 
 
+  // -----------------------------------------------------------------------------------------------
+  // Miscellaneous.
+
   /** Returns true if {@code node} is a descendant of {@code ancestor}. */
   public static boolean isDescendantOf(SoyNode node, SoyNode ancestor) {
     for (; node != null; node = node.getParent()) {
@@ -359,5 +366,13 @@ public final class SoyTreeUtils {
       }
     }
     return false;
+  }
+
+  public static String toSourceString(List<? extends Node> nodes) {
+    List<String> strings = new ArrayList<String>(nodes.size());
+    for (Node node : nodes) {
+      strings.add(node.toSourceString());
+    }
+    return COMMA_JOINER.join(strings);
   }
 }

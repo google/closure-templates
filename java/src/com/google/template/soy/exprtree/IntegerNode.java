@@ -16,6 +16,7 @@
 
 package com.google.template.soy.exprtree;
 
+import com.google.common.base.Preconditions;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.types.primitive.IntType;
@@ -48,6 +49,7 @@ public final class IntegerNode extends AbstractPrimitiveNode {
    */
   public IntegerNode(long value, SourceLocation sourceLocation) {
     super(sourceLocation);
+    Preconditions.checkArgument(isInRange(value));
     this.value = value;
   }
 

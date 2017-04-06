@@ -265,13 +265,12 @@ public class MsgNodeTest {
     MsgSelectNode selectNode = new MsgSelectNode.Builder(0, "$gender", X).build(FAIL);
 
     // case 'female'
-    MsgSelectCaseNode femaleNode = new MsgSelectCaseNode.Builder(0, "'female'", X).build(FAIL);
+    MsgSelectCaseNode femaleNode = new MsgSelectCaseNode(0, X, "female");
 
     MsgPluralNode pluralNode1 =
         new MsgPluralNode.Builder(0, "$values.people[0] offset=\"1\"", X).build(FAIL);
 
-    MsgPluralCaseNode pluralCaseNode11 =
-        new MsgPluralCaseNode.Builder(0, "1", X).build(ExplodingErrorReporter.get());
+    MsgPluralCaseNode pluralCaseNode11 = new MsgPluralCaseNode(0, X, 1);
     MsgPlaceholderNode placeholderNode111 =
         new MsgPlaceholderNode(
             0, new PrintNode.Builder(0, false /* isImplicit */, X).exprText("$person").build(FAIL));
@@ -296,12 +295,11 @@ public class MsgNodeTest {
     selectNode.addChild(femaleNode);
 
     // case 'male'
-    MsgSelectCaseNode maleNode = new MsgSelectCaseNode.Builder(0, "'male'", X).build(FAIL);
+    MsgSelectCaseNode maleNode = new MsgSelectCaseNode(0, X, "male");
 
     MsgPluralNode pluralNode2 = new MsgPluralNode.Builder(0, "$values.people[1]", X).build(FAIL);
 
-    MsgPluralCaseNode pluralCaseNode21 =
-        new MsgPluralCaseNode.Builder(0, "1", X).build(ExplodingErrorReporter.get());
+    MsgPluralCaseNode pluralCaseNode21 = new MsgPluralCaseNode(0, X, 1);
     MsgPlaceholderNode placeholderNode211 =
         new MsgPlaceholderNode(
             0, new PrintNode.Builder(0, false /* isImplicit */, X).exprText("$person").build(FAIL));
@@ -330,8 +328,7 @@ public class MsgNodeTest {
 
     MsgPluralNode pluralNode3 = new MsgPluralNode.Builder(0, "$values.people[1]", X).build(FAIL);
 
-    MsgPluralCaseNode pluralCaseNode31 =
-        new MsgPluralCaseNode.Builder(0, "1", X).build(ExplodingErrorReporter.get());
+    MsgPluralCaseNode pluralCaseNode31 = new MsgPluralCaseNode(0, X, 1);
     MsgPlaceholderNode placeholderNode311 =
         new MsgPlaceholderNode(
             0, new PrintNode.Builder(0, false /* isImplicit */, X).exprText("$person").build(FAIL));
@@ -411,12 +408,11 @@ public class MsgNodeTest {
     MsgSelectNode selectNode = new MsgSelectNode.Builder(0, "$gender[5]", X).build(FAIL);
 
     // case 'female'
-    MsgSelectCaseNode femaleNode = new MsgSelectCaseNode.Builder(0, "'female'", X).build(FAIL);
+    MsgSelectCaseNode femaleNode = new MsgSelectCaseNode(0, X, "female");
 
     MsgPluralNode pluralNode1 = new MsgPluralNode.Builder(0, "$woman.num_friends", X).build(FAIL);
 
-    MsgPluralCaseNode pluralCaseNode11 =
-        new MsgPluralCaseNode.Builder(0, "1", X).build(ExplodingErrorReporter.get());
+    MsgPluralCaseNode pluralCaseNode11 = new MsgPluralCaseNode(0, X, 1);
     MsgPlaceholderNode placeholderNode111 =
         new MsgPlaceholderNode(
             0, new PrintNode.Builder(0, false /* isImplicit */, X).exprText("$person").build(FAIL));
@@ -441,12 +437,11 @@ public class MsgNodeTest {
     selectNode.addChild(femaleNode);
 
     // case 'male'
-    MsgSelectCaseNode maleNode = new MsgSelectCaseNode.Builder(0, "'male'", X).build(FAIL);
+    MsgSelectCaseNode maleNode = new MsgSelectCaseNode(0, X, "male");
 
     MsgPluralNode pluralNode2 = new MsgPluralNode.Builder(0, "$man.num_friends", X).build(FAIL);
 
-    MsgPluralCaseNode pluralCaseNode21 =
-        new MsgPluralCaseNode.Builder(0, "1", X).build(ExplodingErrorReporter.get());
+    MsgPluralCaseNode pluralCaseNode21 = new MsgPluralCaseNode(0, X, 1);
     MsgPlaceholderNode placeholderNode211 =
         new MsgPlaceholderNode(
             0, new PrintNode.Builder(0, false /* isImplicit */, X).exprText("$person").build(FAIL));
@@ -475,8 +470,7 @@ public class MsgNodeTest {
 
     MsgPluralNode pluralNode3 = new MsgPluralNode.Builder(0, "$thing.nEntities", X).build(FAIL);
 
-    MsgPluralCaseNode pluralCaseNode31 =
-        new MsgPluralCaseNode.Builder(0, "1", X).build(ExplodingErrorReporter.get());
+    MsgPluralCaseNode pluralCaseNode31 = new MsgPluralCaseNode(0, X, 1);
     MsgPlaceholderNode placeholderNode311 =
         new MsgPlaceholderNode(
             0, new PrintNode.Builder(0, false /* isImplicit */, X).exprText("$person").build(FAIL));
@@ -547,13 +541,12 @@ public class MsgNodeTest {
     MsgSelectNode selectNode = new MsgSelectNode.Builder(0, "$gender.person", X).build(FAIL);
 
     // case 'female'
-    MsgSelectCaseNode femaleNode = new MsgSelectCaseNode.Builder(0, "'female'", X).build(FAIL);
+    MsgSelectCaseNode femaleNode = new MsgSelectCaseNode(0, X, "female");
 
     MsgPluralNode pluralNode1 =
         new MsgPluralNode.Builder(0, "$woman.num_friends.person", X).build(FAIL);
 
-    MsgPluralCaseNode pluralCaseNode11 =
-        new MsgPluralCaseNode.Builder(0, "1", X).build(ExplodingErrorReporter.get());
+    MsgPluralCaseNode pluralCaseNode11 = new MsgPluralCaseNode(0, X, 1);
     MsgPlaceholderNode placeholderNode111 =
         new MsgPlaceholderNode(
             0, new PrintNode.Builder(0, false /* isImplicit */, X).exprText("$person").build(FAIL));
@@ -584,8 +577,7 @@ public class MsgNodeTest {
     MsgPluralNode pluralNode3 =
         new MsgPluralNode.Builder(0, "$man.num_friends.person", X).build(FAIL);
 
-    MsgPluralCaseNode pluralCaseNode31 =
-        new MsgPluralCaseNode.Builder(0, "1", X).build(ExplodingErrorReporter.get());
+    MsgPluralCaseNode pluralCaseNode31 = new MsgPluralCaseNode(0, X, 1);
     MsgPlaceholderNode placeholderNode311 =
         new MsgPlaceholderNode(
             0, new PrintNode.Builder(0, false /* isImplicit */, X).exprText("$person").build(FAIL));
@@ -673,12 +665,11 @@ public class MsgNodeTest {
     MsgSelectNode selectNode = new MsgSelectNode.Builder(0, "$gender", X).build(FAIL);
 
     // case 'female'
-    MsgSelectCaseNode femaleNode = new MsgSelectCaseNode.Builder(0, "'female'", X).build(FAIL);
+    MsgSelectCaseNode femaleNode = new MsgSelectCaseNode(0, X, "female");
 
     MsgPluralNode pluralNode1 = new MsgPluralNode.Builder(0, "$woman.num", X).build(FAIL);
 
-    MsgPluralCaseNode pluralCaseNode11 =
-        new MsgPluralCaseNode.Builder(0, "1", X).build(ExplodingErrorReporter.get());
+    MsgPluralCaseNode pluralCaseNode11 = new MsgPluralCaseNode(0, X, 1);
     MsgPlaceholderNode placeholderNode111 =
         new MsgPlaceholderNode(
             0, new PrintNode.Builder(0, false /* isImplicit */, X).exprText("$person").build(FAIL));
@@ -703,12 +694,11 @@ public class MsgNodeTest {
     selectNode.addChild(femaleNode);
 
     // case 'male'
-    MsgSelectCaseNode maleNode = new MsgSelectCaseNode.Builder(0, "'male'", X).build(FAIL);
+    MsgSelectCaseNode maleNode = new MsgSelectCaseNode(0, X, "male");
 
     MsgPluralNode pluralNode2 = new MsgPluralNode.Builder(0, "$man.num", X).build(FAIL);
 
-    MsgPluralCaseNode pluralCaseNode21 =
-        new MsgPluralCaseNode.Builder(0, "1", X).build(ExplodingErrorReporter.get());
+    MsgPluralCaseNode pluralCaseNode21 = new MsgPluralCaseNode(0, X, 1);
     MsgPlaceholderNode placeholderNode211 =
         new MsgPlaceholderNode(
             0, new PrintNode.Builder(0, false /* isImplicit */, X).exprText("$person").build(FAIL));
@@ -738,8 +728,7 @@ public class MsgNodeTest {
     MsgPluralNode pluralNode3 =
         new MsgPluralNode.Builder(0, "max($woman.num, $man.num)", X).build(FAIL);
 
-    MsgPluralCaseNode pluralCaseNode31 =
-        new MsgPluralCaseNode.Builder(0, "1", X).build(ExplodingErrorReporter.get());
+    MsgPluralCaseNode pluralCaseNode31 = new MsgPluralCaseNode(0, X, 1);
     MsgPlaceholderNode placeholderNode311 =
         new MsgPlaceholderNode(
             0, new PrintNode.Builder(0, false /* isImplicit */, X).exprText("$person").build(FAIL));
@@ -804,7 +793,7 @@ public class MsgNodeTest {
     MsgSelectNode selectNode = new MsgSelectNode.Builder(0, "$gender.person", X).build(FAIL);
 
     // case 'female'
-    MsgSelectCaseNode femaleNode = new MsgSelectCaseNode.Builder(0, "'female'", X).build(FAIL);
+    MsgSelectCaseNode femaleNode = new MsgSelectCaseNode(0, X, "female");
     RawTextNode femaleTextNode = new RawTextNode(0, "female", X);
     femaleNode.addChild(femaleTextNode);
     selectNode.addChild(femaleNode);
@@ -838,8 +827,7 @@ public class MsgNodeTest {
 
     MsgPluralNode pluralNode1 = new MsgPluralNode.Builder(0, "$woman.num", X).build(FAIL);
 
-    MsgPluralCaseNode pluralCaseNode11 =
-        new MsgPluralCaseNode.Builder(0, "1", X).build(ExplodingErrorReporter.get());
+    MsgPluralCaseNode pluralCaseNode11 = new MsgPluralCaseNode(0, X, 1);
     MsgPlaceholderNode placeholderNode111 =
         new MsgPlaceholderNode(
             0, new PrintNode.Builder(0, false /* isImplicit */, X).exprText("$person").build(FAIL));
