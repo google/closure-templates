@@ -14519,6 +14519,909 @@ goog.debug.fnNameCache_ = {};
  */
 goog.debug.fnNameResolver_;
 
+//javascript/closure/structs/inversionmap.js
+// Copyright 2008 The Closure Library Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS-IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+/**
+ * @fileoverview Provides inversion and inversion map functionality for storing
+ * integer ranges and corresponding values.
+ *
+ */
+
+goog.provide('goog.structs.InversionMap');
+
+goog.require('goog.array');
+goog.require('goog.asserts');
+
+
+
+/**
+ * Maps ranges to values.
+ * @param {Array<number>} rangeArray An array of monotonically
+ *     increasing integer values, with at least one instance.
+ * @param {Array<T>} valueArray An array of corresponding values.
+ *     Length must be the same as rangeArray.
+ * @param {boolean=} opt_delta If true, saves only delta from previous value.
+ * @constructor
+ * @template T
+ */
+goog.structs.InversionMap = function(rangeArray, valueArray, opt_delta) {
+  /**
+   * @protected {Array<number>}
+   */
+  this.rangeArray = null;
+
+  goog.asserts.assert(
+      rangeArray.length == valueArray.length,
+      'rangeArray and valueArray must have the same length.');
+  this.storeInversion_(rangeArray, opt_delta);
+
+  /** @protected {Array<T>} */
+  this.values = valueArray;
+};
+
+
+/**
+ * Stores the integers as ranges (half-open).
+ * If delta is true, the integers are delta from the previous value and
+ * will be restored to the absolute value.
+ * When used as a set, even indices are IN, and odd are OUT.
+ * @param {Array<number>} rangeArray An array of monotonically
+ *     increasing integer values, with at least one instance.
+ * @param {boolean=} opt_delta If true, saves only delta from previous value.
+ * @private
+ */
+goog.structs.InversionMap.prototype.storeInversion_ = function(
+    rangeArray, opt_delta) {
+  this.rangeArray = rangeArray;
+
+  for (var i = 1; i < rangeArray.length; i++) {
+    if (rangeArray[i] == null) {
+      rangeArray[i] = rangeArray[i - 1] + 1;
+    } else if (opt_delta) {
+      rangeArray[i] += rangeArray[i - 1];
+    }
+  }
+};
+
+
+/**
+ * Splices a range -> value map into this inversion map.
+ * @param {Array<number>} rangeArray An array of monotonically
+ *     increasing integer values, with at least one instance.
+ * @param {Array<T>} valueArray An array of corresponding values.
+ *     Length must be the same as rangeArray.
+ * @param {boolean=} opt_delta If true, saves only delta from previous value.
+ */
+goog.structs.InversionMap.prototype.spliceInversion = function(
+    rangeArray, valueArray, opt_delta) {
+  // By building another inversion map, we build the arrays that we need
+  // to splice in.
+  var otherMap =
+      new goog.structs.InversionMap(rangeArray, valueArray, opt_delta);
+
+  // Figure out where to splice those arrays.
+  var startRange = otherMap.rangeArray[0];
+  var endRange =
+      /** @type {number} */ (goog.array.peek(otherMap.rangeArray));
+  var startSplice = this.getLeast(startRange);
+  var endSplice = this.getLeast(endRange);
+
+  // The inversion map works by storing the start points of ranges...
+  if (startRange != this.rangeArray[startSplice]) {
+    // ...if we're splicing in a start point that isn't already here,
+    // then we need to insert it after the insertion point.
+    startSplice++;
+  }  // otherwise we overwrite the insertion point.
+
+  this.rangeArray = this.rangeArray.slice(0, startSplice)
+                        .concat(otherMap.rangeArray)
+                        .concat(this.rangeArray.slice(endSplice + 1));
+  this.values = this.values.slice(0, startSplice)
+                    .concat(otherMap.values)
+                    .concat(this.values.slice(endSplice + 1));
+};
+
+
+/**
+ * Gets the value corresponding to a number from the inversion map.
+ * @param {number} intKey The number for which value needs to be retrieved
+ *     from inversion map.
+ * @return {T|null} Value retrieved from inversion map; null if not found.
+ */
+goog.structs.InversionMap.prototype.at = function(intKey) {
+  var index = this.getLeast(intKey);
+  if (index < 0) {
+    return null;
+  }
+  return this.values[index];
+};
+
+
+/**
+ * Gets the largest index such that rangeArray[index] <= intKey from the
+ * inversion map.
+ * @param {number} intKey The probe for which rangeArray is searched.
+ * @return {number} Largest index such that rangeArray[index] <= intKey.
+ * @protected
+ */
+goog.structs.InversionMap.prototype.getLeast = function(intKey) {
+  var arr = this.rangeArray;
+  var low = 0;
+  var high = arr.length;
+  while (high - low > 8) {
+    var mid = (high + low) >> 1;
+    if (arr[mid] <= intKey) {
+      low = mid;
+    } else {
+      high = mid;
+    }
+  }
+  for (; low < high; ++low) {
+    if (intKey < arr[low]) {
+      break;
+    }
+  }
+  return low - 1;
+};
+
+//javascript/closure/i18n/graphemebreak.js
+// Copyright 2006 The Closure Library Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS-IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+/**
+ * @fileoverview Detect Grapheme Cluster Break in a pair of codepoints. Follows
+ * Unicode 5.1 UAX#29. Tailoring for Virama × Indic Consonants is used.
+ *
+ */
+
+goog.provide('goog.i18n.GraphemeBreak');
+
+goog.require('goog.structs.InversionMap');
+
+
+/**
+ * Enum for all Grapheme Cluster Break properties.
+ * These enums directly corresponds to Grapheme_Cluster_Break property values
+ * mentioned in http://unicode.org/reports/tr29 table 2. VIRAMA and
+ * INDIC_CONSONANT are for the Virama × Base tailoring mentioned in the notes.
+ *
+ * CR and LF are moved to the bottom of the list because they occur only once
+ * and so good candidates to take 2 decimal digit values.
+ * @enum {number}
+ * @protected
+ */
+goog.i18n.GraphemeBreak.property = {
+  ANY: 0,
+  CONTROL: 1,
+  EXTEND: 2,
+  PREPEND: 3,
+  SPACING_MARK: 4,
+  INDIC_CONSONANT: 5,
+  VIRAMA: 6,
+  L: 7,
+  V: 8,
+  T: 9,
+  LV: 10,
+  LVT: 11,
+  CR: 12,
+  LF: 13,
+  REGIONAL_INDICATOR: 14
+};
+
+
+/**
+ * Grapheme Cluster Break property values for all codepoints as inversion map.
+ * Constructed lazily.
+ *
+ * @type {goog.structs.InversionMap}
+ * @private
+ */
+goog.i18n.GraphemeBreak.inversions_ = null;
+
+
+/**
+ * There are two kinds of grapheme clusters: 1) Legacy 2)Extended. This method
+ * is to check for legacy rules.
+ *
+ * @param {number} prop_a The property enum value of the first character.
+ * @param {number} prop_b The property enum value of the second character.
+ * @return {boolean} True if a & b do not form a cluster; False otherwise.
+ * @private
+ */
+goog.i18n.GraphemeBreak.applyLegacyBreakRules_ = function(prop_a, prop_b) {
+
+  var prop = goog.i18n.GraphemeBreak.property;
+
+  if (prop_a == prop.CR && prop_b == prop.LF) {
+    return false;
+  }
+  if (prop_a == prop.CONTROL || prop_a == prop.CR || prop_a == prop.LF) {
+    return true;
+  }
+  if (prop_b == prop.CONTROL || prop_b == prop.CR || prop_b == prop.LF) {
+    return true;
+  }
+  if ((prop_a == prop.L) && (prop_b == prop.L || prop_b == prop.V ||
+                             prop_b == prop.LV || prop_b == prop.LVT)) {
+    return false;
+  }
+  if ((prop_a == prop.LV || prop_a == prop.V) &&
+      (prop_b == prop.V || prop_b == prop.T)) {
+    return false;
+  }
+  if ((prop_a == prop.LVT || prop_a == prop.T) && (prop_b == prop.T)) {
+    return false;
+  }
+  if (prop_b == prop.EXTEND || prop_b == prop.VIRAMA) {
+    return false;
+  }
+  if (prop_a == prop.VIRAMA && prop_b == prop.INDIC_CONSONANT) {
+    return false;
+  }
+  return true;
+};
+
+
+/**
+ * Method to return property enum value of the codepoint. If it is Hangul LV or
+ * LVT, then it is computed; for the rest it is picked from the inversion map.
+ * @param {number} acode The code point value of the character.
+ * @return {number} Property enum value of codepoint.
+ * @private
+ */
+goog.i18n.GraphemeBreak.getBreakProp_ = function(acode) {
+  if (0xAC00 <= acode && acode <= 0xD7A3) {
+    var prop = goog.i18n.GraphemeBreak.property;
+    if (acode % 0x1C == 0x10) {
+      return prop.LV;
+    }
+    return prop.LVT;
+  } else {
+    if (!goog.i18n.GraphemeBreak.inversions_) {
+      goog.i18n.GraphemeBreak.inversions_ = new goog.structs.InversionMap(
+          [
+            0,    10,  1,      2,   1,     18,    95,  33,    13,   1,    594,
+            112,  275, 7,      263, 45,    1,     1,   1,     2,    1,    2,
+            1,    1,   56,     5,   11,    11,    48,  21,    16,   1,    101,
+            7,    1,   1,      6,   2,     2,     1,   4,     33,   1,    1,
+            1,    30,  27,     91,  11,    58,    9,   34,    4,    1,    9,
+            1,    3,   1,      5,   43,    3,     136, 31,    1,    17,   37,
+            1,    1,   1,      1,   3,     8,     4,   1,     2,    1,    7,
+            8,    2,   2,      21,  8,     1,     2,   17,    39,   1,    1,
+            1,    2,   6,      6,   1,     9,     5,   4,     2,    2,    12,
+            2,    15,  2,      1,   17,    39,    2,   3,     12,   4,    8,
+            6,    17,  2,      3,   14,    1,     17,  39,    1,    1,    3,
+            8,    4,   1,      20,  2,     29,    1,   2,     17,   39,   1,
+            1,    2,   1,      6,   6,     9,     6,   4,     2,    2,    13,
+            1,    16,  1,      18,  41,    1,     1,   1,     12,   1,    9,
+            1,    41,  3,      17,  37,    4,     3,   5,     7,    8,    3,
+            2,    8,   2,      30,  2,     17,    39,  1,     1,    1,    1,
+            2,    1,   3,      1,   5,     1,     8,   9,     1,    3,    2,
+            30,   2,   17,     38,  3,     1,     2,   5,     7,    1,    9,
+            1,    10,  2,      30,  2,     22,    48,  5,     1,    2,    6,
+            7,    19,  2,      13,  46,    2,     1,   1,     1,    6,    1,
+            12,   8,   50,     46,  2,     1,     1,   1,     9,    11,   6,
+            14,   2,   58,     2,   27,    1,     1,   1,     1,    1,    4,
+            2,    49,  14,     1,   4,     1,     1,   2,     5,    48,   9,
+            1,    57,  33,     12,  4,     1,     6,   1,     2,    2,    2,
+            1,    16,  2,      4,   2,     2,     4,   3,     1,    3,    2,
+            7,    3,   4,      13,  1,     1,     1,   2,     6,    1,    1,
+            14,   1,   98,     96,  72,    88,    349, 3,     931,  15,   2,
+            1,    14,  15,     2,   1,     14,    15,  2,     15,   15,   14,
+            35,   17,  2,      1,   7,     8,     1,   2,     9,    1,    1,
+            9,    1,   45,     3,   155,   1,     87,  31,    3,    4,    2,
+            9,    1,   6,      3,   20,    19,    29,  44,    9,    3,    2,
+            1,    69,  23,     2,   3,     4,     45,  6,     2,    1,    1,
+            1,    8,   1,      1,   1,     2,     8,   6,     13,   128,  4,
+            1,    14,  33,     1,   1,     5,     1,   1,     5,    1,    1,
+            1,    7,   31,     9,   12,    2,     1,   7,     23,   1,    4,
+            2,    2,   2,      2,   2,     11,    3,   2,     36,   2,    1,
+            1,    2,   3,      1,   1,     3,     2,   12,    36,   8,    8,
+            2,    2,   21,     3,   128,   3,     1,   13,    1,    7,    4,
+            1,    4,   2,      1,   203,   64,    523, 1,     2,    2,    24,
+            7,    49,  16,     96,  33,    3070,  3,   141,   1,    96,   32,
+            554,  6,   105,    2,   30164, 4,     1,   10,    33,   1,    80,
+            2,    272, 1,      3,   1,     4,     1,   23,    2,    2,    1,
+            24,   30,  4,      4,   3,     8,     1,   1,     13,   2,    16,
+            34,   16,  1,      27,  18,    24,    24,  4,     8,    2,    23,
+            11,   1,   1,      12,  32,    3,     1,   5,     3,    3,    36,
+            1,    2,   4,      2,   1,     3,     1,   69,    35,   6,    2,
+            2,    2,   2,      12,  1,     8,     1,   1,     18,   16,   1,
+            3,    6,   1,      5,   48,    1,     1,   3,     2,    2,    5,
+            2,    1,   1,      32,  9,     1,     2,   2,     5,    1,    1,
+            201,  14,  2,      1,   1,     9,     8,   2,     1,    2,    1,
+            2,    1,   1,      1,   18,    11184, 27,  49,    1028, 1024, 6942,
+            1,    737, 16,     16,  7,     216,   1,   158,   2,    89,   3,
+            513,  1,   2051,   15,  40,    7,     1,   1472,  1,    1,    1,
+            53,   14,  1,      57,  2,     1,     45,  3,     4,    2,    1,
+            1,    2,   1,      66,  3,     36,    5,   1,     6,    2,    75,
+            2,    1,   48,     3,   9,     1,     1,   1258,  1,    1,    1,
+            2,    6,   1,      1,   22681, 62,    4,   25042, 1,    1,    3,
+            3,    1,   5,      8,   8,     2,     7,   30,    4,    148,  3,
+            8097, 26,  790017, 255
+          ],
+          [
+            1, 13, 1, 12, 1, 0, 1, 0, 1,  0, 2, 0, 2, 0, 2, 0, 2, 0, 2, 0, 2,
+            0, 2,  0, 1,  0, 2, 0, 2, 0,  2, 0, 2, 1, 0, 2, 0, 2, 0, 2, 0, 1,
+            0, 2,  0, 2,  0, 2, 0, 2, 0,  2, 0, 2, 0, 2, 0, 2, 0, 2, 0, 2, 4,
+            0, 5,  2, 4,  2, 0, 4, 2, 4,  6, 4, 0, 2, 5, 0, 2, 0, 5, 2, 4, 0,
+            5, 2,  0, 2,  4, 2, 4, 6, 0,  2, 5, 0, 2, 0, 5, 0, 2, 4, 0, 5, 2,
+            4, 2,  6, 2,  5, 0, 2, 0, 2,  4, 0, 5, 2, 0, 4, 2, 4, 6, 0, 2, 0,
+            2, 4,  0, 5,  2, 0, 2, 4, 2,  4, 6, 2, 5, 0, 2, 0, 5, 0, 2, 0, 5,
+            2, 4,  2, 4,  6, 0, 2, 0, 4,  0, 5, 0, 2, 4, 2, 6, 2, 5, 0, 2, 0,
+            4, 0,  5, 2,  0, 4, 2, 4, 2,  4, 2, 4, 2, 6, 2, 5, 0, 2, 0, 4, 0,
+            5, 0,  2, 4,  2, 4, 6, 0, 2,  0, 2, 0, 4, 0, 5, 6, 2, 4, 2, 4, 2,
+            4, 0,  5, 0,  2, 0, 4, 2, 6,  0, 2, 0, 5, 0, 2, 0, 4, 2, 0, 2, 0,
+            5, 0,  2, 0,  2, 0, 2, 0, 2,  0, 4, 5, 2, 4, 2, 6, 0, 2, 0, 2, 0,
+            2, 0,  5, 0,  2, 4, 2, 0, 6,  4, 2, 5, 0, 5, 0, 4, 2, 5, 2, 5, 0,
+            5, 0,  5, 2,  5, 2, 0, 4, 2,  0, 2, 5, 0, 2, 0, 7, 8, 9, 0, 2, 0,
+            5, 2,  6, 0,  5, 2, 6, 0, 5,  2, 0, 5, 2, 5, 0, 2, 4, 2, 4, 2, 4,
+            2, 6,  2, 0,  2, 0, 2, 0, 2,  0, 5, 2, 4, 2, 4, 2, 4, 2, 0, 5, 0,
+            5, 0,  4, 0,  4, 0, 5, 2, 4,  0, 5, 0, 5, 4, 2, 4, 2, 6, 0, 2, 0,
+            2, 4,  2, 0,  2, 4, 0, 5, 2,  4, 2, 4, 2, 4, 2, 4, 6, 5, 0, 2, 0,
+            2, 4,  0, 5,  4, 2, 4, 2, 6,  4, 5, 0, 5, 0, 5, 0, 2, 4, 2, 4, 2,
+            4, 2,  6, 0,  5, 4, 2, 4, 2,  0, 5, 0, 2, 0, 2, 4, 2, 0, 2, 0, 4,
+            2, 0,  2, 0,  1, 2, 1, 0, 1,  0, 1, 0, 2, 0, 2, 0, 6, 0, 2, 0, 2,
+            0, 2,  0, 2,  0, 2, 0, 2, 0,  2, 0, 2, 0, 6, 5, 2, 5, 4, 2, 4, 0,
+            5, 0,  5, 0,  5, 0, 5, 0, 4,  0, 5, 4, 6, 0, 2, 0, 5, 0, 2, 0, 5,
+            2, 4,  6, 0,  7, 2, 4, 0, 5,  0, 5, 2, 4, 2, 4, 2, 4, 6, 0, 5, 2,
+            4, 2,  4, 2,  0, 2, 0, 2, 4,  0, 5, 0, 5, 0, 5, 0, 5, 2, 0, 2, 0,
+            2, 0,  2, 0,  2, 0, 5, 4, 2,  4, 0, 4, 6, 0, 5, 0, 5, 0, 5, 0, 4,
+            2, 4,  2, 4,  0, 4, 6, 0, 11, 8, 9, 0, 2, 0, 2, 0, 2, 0, 2, 0, 1,
+            0, 2,  0, 1,  0, 2, 0, 2, 0,  2, 6, 0, 4, 2, 4, 0, 2, 6, 0, 2, 4,
+            0, 4,  2, 4,  6, 2, 0, 1, 0,  2, 0, 2, 4, 2, 6, 0, 2, 4, 0, 4, 2,
+            4, 6,  0, 2,  4, 2, 4, 2, 6,  2, 0, 4, 2, 0, 2, 4, 2, 0, 4, 2, 1,
+            2, 0,  2, 0,  2, 0, 2, 0, 14, 0, 1, 2
+          ],
+          true);
+    }
+    return /** @type {number} */ (
+        goog.i18n.GraphemeBreak.inversions_.at(acode));
+  }
+};
+
+
+/**
+ * There are two kinds of grapheme clusters: 1) Legacy 2)Extended. This method
+ * is to check for both using a boolean flag to switch between them.
+ * @param {number} a The code point value of the first character.
+ * @param {number} b The code point value of the second character.
+ * @param {boolean=} opt_extended If true, indicates extended grapheme cluster;
+ *     If false, indicates legacy cluster.
+ * @return {boolean} True if a & b do not form a cluster; False otherwise.
+ */
+goog.i18n.GraphemeBreak.hasGraphemeBreak = function(a, b, opt_extended) {
+
+  var prop_a = goog.i18n.GraphemeBreak.getBreakProp_(a);
+  var prop_b = goog.i18n.GraphemeBreak.getBreakProp_(b);
+  var prop = goog.i18n.GraphemeBreak.property;
+
+  return goog.i18n.GraphemeBreak.applyLegacyBreakRules_(prop_a, prop_b) &&
+      !(opt_extended &&
+        (prop_a == prop.PREPEND || prop_b == prop.SPACING_MARK));
+};
+
+//javascript/closure/format/format.js
+// Copyright 2006 The Closure Library Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS-IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+/**
+ * @fileoverview Provides utility functions for formatting strings, numbers etc.
+ *
+ */
+
+goog.provide('goog.format');
+
+goog.require('goog.i18n.GraphemeBreak');
+goog.require('goog.string');
+goog.require('goog.userAgent');
+
+
+/**
+ * Formats a number of bytes in human readable form.
+ * 54, 450K, 1.3M, 5G etc.
+ * @param {number} bytes The number of bytes to show.
+ * @param {number=} opt_decimals The number of decimals to use.  Defaults to 2.
+ * @return {string} The human readable form of the byte size.
+ */
+goog.format.fileSize = function(bytes, opt_decimals) {
+  return goog.format.numBytesToString(bytes, opt_decimals, false);
+};
+
+
+/**
+ * Checks whether string value containing scaling units (K, M, G, T, P, m,
+ * u, n) can be converted to a number.
+ *
+ * Where there is a decimal, there must be a digit to the left of the
+ * decimal point.
+ *
+ * Negative numbers are valid.
+ *
+ * Examples:
+ *   0, 1, 1.0, 10.4K, 2.3M, -0.3P, 1.2m
+ *
+ * @param {string} val String value to check.
+ * @return {boolean} True if string could be converted to a numeric value.
+ */
+goog.format.isConvertableScaledNumber = function(val) {
+  return goog.format.SCALED_NUMERIC_RE_.test(val);
+};
+
+
+/**
+ * Converts a string to numeric value, taking into account the units.
+ * If string ends in 'B', use binary conversion.
+ * @param {string} stringValue String to be converted to numeric value.
+ * @return {number} Numeric value for string.
+ */
+goog.format.stringToNumericValue = function(stringValue) {
+  if (goog.string.endsWith(stringValue, 'B')) {
+    return goog.format.stringToNumericValue_(
+        stringValue, goog.format.NUMERIC_SCALES_BINARY_);
+  }
+  return goog.format.stringToNumericValue_(
+      stringValue, goog.format.NUMERIC_SCALES_SI_);
+};
+
+
+/**
+ * Converts a string to number of bytes, taking into account the units.
+ * Binary conversion.
+ * @param {string} stringValue String to be converted to numeric value.
+ * @return {number} Numeric value for string.
+ */
+goog.format.stringToNumBytes = function(stringValue) {
+  return goog.format.stringToNumericValue_(
+      stringValue, goog.format.NUMERIC_SCALES_BINARY_);
+};
+
+
+/**
+ * Converts a numeric value to string representation. SI conversion.
+ * @param {number} val Value to be converted.
+ * @param {number=} opt_decimals The number of decimals to use.  Defaults to 2.
+ * @return {string} String representation of number.
+ */
+goog.format.numericValueToString = function(val, opt_decimals) {
+  return goog.format.numericValueToString_(
+      val, goog.format.NUMERIC_SCALES_SI_, opt_decimals);
+};
+
+
+/**
+ * Converts number of bytes to string representation. Binary conversion.
+ * Default is to return the additional 'B' suffix only for scales greater than
+ * 1K, e.g. '10.5KB' to minimize confusion with counts that are scaled by powers
+ * of 1000. Otherwise, suffix is empty string.
+ * @param {number} val Value to be converted.
+ * @param {number=} opt_decimals The number of decimals to use.  Defaults to 2.
+ * @param {boolean=} opt_suffix If true, include trailing 'B' in returned
+ *     string.  Default is true.
+ * @param {boolean=} opt_useSeparator If true, number and scale will be
+ *     separated by a no break space. Default is false.
+ * @return {string} String representation of number of bytes.
+ */
+goog.format.numBytesToString = function(
+    val, opt_decimals, opt_suffix, opt_useSeparator) {
+  var suffix = '';
+  if (!goog.isDef(opt_suffix) || opt_suffix) {
+    suffix = 'B';
+  }
+  return goog.format.numericValueToString_(
+      val, goog.format.NUMERIC_SCALES_BINARY_, opt_decimals, suffix,
+      opt_useSeparator);
+};
+
+
+/**
+ * Converts a string to numeric value, taking into account the units.
+ * @param {string} stringValue String to be converted to numeric value.
+ * @param {Object} conversion Dictionary of conversion scales.
+ * @return {number} Numeric value for string.  If it cannot be converted,
+ *    returns NaN.
+ * @private
+ */
+goog.format.stringToNumericValue_ = function(stringValue, conversion) {
+  var match = stringValue.match(goog.format.SCALED_NUMERIC_RE_);
+  if (!match) {
+    return NaN;
+  }
+  var val = Number(match[1]) * conversion[match[2]];
+  return val;
+};
+
+
+/**
+ * Converts a numeric value to string, using specified conversion
+ * scales.
+ * @param {number} val Value to be converted.
+ * @param {Object} conversion Dictionary of scaling factors.
+ * @param {number=} opt_decimals The number of decimals to use.  Default is 2.
+ * @param {string=} opt_suffix Optional suffix to append.
+ * @param {boolean=} opt_useSeparator If true, number and scale will be
+ *     separated by a space. Default is false.
+ * @return {string} The human readable form of the byte size.
+ * @private
+ */
+goog.format.numericValueToString_ = function(
+    val, conversion, opt_decimals, opt_suffix, opt_useSeparator) {
+  var prefixes = goog.format.NUMERIC_SCALE_PREFIXES_;
+  var orig_val = val;
+  var symbol = '';
+  var separator = '';
+  var scale = 1;
+  if (val < 0) {
+    val = -val;
+  }
+  for (var i = 0; i < prefixes.length; i++) {
+    var unit = prefixes[i];
+    scale = conversion[unit];
+    if (val >= scale || (scale <= 1 && val > 0.1 * scale)) {
+      // Treat values less than 1 differently, allowing 0.5 to be "0.5" rather
+      // than "500m"
+      symbol = unit;
+      break;
+    }
+  }
+  if (!symbol) {
+    scale = 1;
+  } else {
+    if (opt_suffix) {
+      symbol += opt_suffix;
+    }
+    if (opt_useSeparator) {
+      separator = ' ';
+    }
+  }
+  var ex = Math.pow(10, goog.isDef(opt_decimals) ? opt_decimals : 2);
+  return Math.round(orig_val / scale * ex) / ex + separator + symbol;
+};
+
+
+/**
+ * Regular expression for detecting scaling units, such as K, M, G, etc. for
+ * converting a string representation to a numeric value.
+ *
+ * Also allow 'k' to be aliased to 'K'.  These could be used for SI (powers
+ * of 1000) or Binary (powers of 1024) conversions.
+ *
+ * Also allow final 'B' to be interpreted as byte-count, implicitly triggering
+ * binary conversion (e.g., '10.2MB').
+ *
+ * @type {RegExp}
+ * @private
+ */
+goog.format.SCALED_NUMERIC_RE_ = /^([-]?\d+\.?\d*)([K,M,G,T,P,k,m,u,n]?)[B]?$/;
+
+
+/**
+ * Ordered list of scaling prefixes in decreasing order.
+ * @private {Array<string>}
+ */
+goog.format.NUMERIC_SCALE_PREFIXES_ =
+    ['P', 'T', 'G', 'M', 'K', '', 'm', 'u', 'n'];
+
+
+/**
+ * Scaling factors for conversion of numeric value to string.  SI conversion.
+ * @type {Object}
+ * @private
+ */
+goog.format.NUMERIC_SCALES_SI_ = {
+  '': 1,
+  'n': 1e-9,
+  'u': 1e-6,
+  'm': 1e-3,
+  'k': 1e3,
+  'K': 1e3,
+  'M': 1e6,
+  'G': 1e9,
+  'T': 1e12,
+  'P': 1e15
+};
+
+
+/**
+ * Scaling factors for conversion of numeric value to string.  Binary
+ * conversion.
+ * @type {Object}
+ * @private
+ */
+goog.format.NUMERIC_SCALES_BINARY_ = {
+  '': 1,
+  'n': Math.pow(1024, -3),
+  'u': Math.pow(1024, -2),
+  'm': 1.0 / 1024,
+  'k': 1024,
+  'K': 1024,
+  'M': Math.pow(1024, 2),
+  'G': Math.pow(1024, 3),
+  'T': Math.pow(1024, 4),
+  'P': Math.pow(1024, 5)
+};
+
+
+/**
+ * First Unicode code point that has the Mark property.
+ * @type {number}
+ * @private
+ */
+goog.format.FIRST_GRAPHEME_EXTEND_ = 0x300;
+
+
+/**
+ * Returns true if and only if given character should be treated as a breaking
+ * space. All ASCII control characters, the main Unicode range of spacing
+ * characters (U+2000 to U+200B inclusive except for U+2007), and several other
+ * Unicode space characters are treated as breaking spaces.
+ * @param {number} charCode The character code under consideration.
+ * @return {boolean} True if the character is a breaking space.
+ * @private
+ */
+goog.format.isTreatedAsBreakingSpace_ = function(charCode) {
+  return (charCode <= goog.format.WbrToken_.SPACE) ||
+      (charCode >= 0x1000 &&
+       ((charCode >= 0x2000 && charCode <= 0x2006) ||
+        (charCode >= 0x2008 && charCode <= 0x200B) || charCode == 0x1680 ||
+        charCode == 0x180E || charCode == 0x2028 || charCode == 0x2029 ||
+        charCode == 0x205f || charCode == 0x3000));
+};
+
+
+/**
+ * Returns true if and only if given character is an invisible formatting
+ * character.
+ * @param {number} charCode The character code under consideration.
+ * @return {boolean} True if the character is an invisible formatting character.
+ * @private
+ */
+goog.format.isInvisibleFormattingCharacter_ = function(charCode) {
+  // See: http://unicode.org/charts/PDF/U2000.pdf
+  return (charCode >= 0x200C && charCode <= 0x200F) ||
+      (charCode >= 0x202A && charCode <= 0x202E);
+};
+
+
+/**
+ * Inserts word breaks into an HTML string at a given interval.  The counter is
+ * reset if a space or a character which behaves like a space is encountered,
+ * but it isn't incremented if an invisible formatting character is encountered.
+ * WBRs aren't inserted into HTML tags or entities.  Entities count towards the
+ * character count, HTML tags do not.
+ *
+ * With common strings aliased, objects allocations are constant based on the
+ * length of the string: N + 3. This guarantee does not hold if the string
+ * contains an element >= U+0300 and hasGraphemeBreak is non-trivial.
+ *
+ * @param {string} str HTML to insert word breaks into.
+ * @param {function(number, number, boolean): boolean} hasGraphemeBreak A
+ *     function determining if there is a grapheme break between two characters,
+ *     in the same signature as goog.i18n.GraphemeBreak.hasGraphemeBreak.
+ * @param {number=} opt_maxlen Maximum length after which to ensure
+ *     there is a break.  Default is 10 characters.
+ * @return {string} The string including word breaks.
+ * @private
+ */
+goog.format.insertWordBreaksGeneric_ = function(
+    str, hasGraphemeBreak, opt_maxlen) {
+  var maxlen = opt_maxlen || 10;
+  if (maxlen > str.length) return str;
+
+  var rv = [];
+  var n = 0;  // The length of the current token
+
+  // This will contain the ampersand or less-than character if one of the
+  // two has been seen; otherwise, the value is zero.
+  var nestingCharCode = 0;
+
+  // First character position from input string that has not been outputted.
+  var lastDumpPosition = 0;
+
+  var charCode = 0;
+  for (var i = 0; i < str.length; i++) {
+    // Using charCodeAt versus charAt avoids allocating new string objects.
+    var lastCharCode = charCode;
+    charCode = str.charCodeAt(i);
+
+    // Don't add a WBR before characters that might be grapheme extending.
+    var isPotentiallyGraphemeExtending =
+        charCode >= goog.format.FIRST_GRAPHEME_EXTEND_ &&
+        !hasGraphemeBreak(lastCharCode, charCode, true);
+
+    // Don't add a WBR at the end of a word. For the purposes of determining
+    // work breaks, all ASCII control characters and some commonly encountered
+    // Unicode spacing characters are treated as breaking spaces.
+    if (n >= maxlen && !goog.format.isTreatedAsBreakingSpace_(charCode) &&
+        !isPotentiallyGraphemeExtending) {
+      // Flush everything seen so far, and append a word break.
+      rv.push(str.substring(lastDumpPosition, i), goog.format.WORD_BREAK_HTML);
+      lastDumpPosition = i;
+      n = 0;
+    }
+
+    if (!nestingCharCode) {
+      // Not currently within an HTML tag or entity
+
+      if (charCode == goog.format.WbrToken_.LT ||
+          charCode == goog.format.WbrToken_.AMP) {
+        // Entering an HTML Entity '&' or open tag '<'
+        nestingCharCode = charCode;
+      } else if (goog.format.isTreatedAsBreakingSpace_(charCode)) {
+        // A space or control character -- reset the token length
+        n = 0;
+      } else if (!goog.format.isInvisibleFormattingCharacter_(charCode)) {
+        // A normal flow character - increment.  For grapheme extending
+        // characters, this is not *technically* a new character.  However,
+        // since the grapheme break detector might be overly conservative,
+        // we have to continue incrementing, or else we won't even be able
+        // to add breaks when we get to things like punctuation.  For the
+        // case where we have a full grapheme break detector, it is okay if
+        // we occasionally break slightly early.
+        n++;
+      }
+    } else if (
+        charCode == goog.format.WbrToken_.GT &&
+        nestingCharCode == goog.format.WbrToken_.LT) {
+      // Leaving an HTML tag, treat the tag as zero-length
+      nestingCharCode = 0;
+    } else if (
+        charCode == goog.format.WbrToken_.SEMI_COLON &&
+        nestingCharCode == goog.format.WbrToken_.AMP) {
+      // Leaving an HTML entity, treat it as length one
+      nestingCharCode = 0;
+      n++;
+    }
+  }
+
+  // Take care of anything we haven't flushed so far.
+  rv.push(str.substr(lastDumpPosition));
+
+  return rv.join('');
+};
+
+
+/**
+ * Inserts word breaks into an HTML string at a given interval.
+ *
+ * This method is as aggressive as possible, using a full table of Unicode
+ * characters where it is legal to insert word breaks; however, this table
+ * comes at a 2.5k pre-gzip (~1k post-gzip) size cost.  Consider using
+ * insertWordBreaksBasic to minimize the size impact.
+ *
+ * @param {string} str HTML to insert word breaks into.
+ * @param {number=} opt_maxlen Maximum length after which to ensure there is a
+ *     break.  Default is 10 characters.
+ * @return {string} The string including word breaks.
+ * @deprecated Prefer wrapping with CSS word-wrap: break-word.
+ */
+goog.format.insertWordBreaks = function(str, opt_maxlen) {
+  return goog.format.insertWordBreaksGeneric_(
+      str, goog.i18n.GraphemeBreak.hasGraphemeBreak, opt_maxlen);
+};
+
+
+/**
+ * Determines conservatively if a character has a Grapheme break.
+ *
+ * Conforms to a similar signature as goog.i18n.GraphemeBreak, but is overly
+ * conservative, returning true only for characters in common scripts that
+ * are simple to account for.
+ *
+ * @param {number} lastCharCode The previous character code.  Ignored.
+ * @param {number} charCode The character code under consideration.  It must be
+ *     at least \u0300 as a precondition -- this case is covered by
+ *     insertWordBreaksGeneric_.
+ * @param {boolean=} opt_extended Ignored, to conform with the interface.
+ * @return {boolean} Whether it is one of the recognized subsets of characters
+ *     with a grapheme break.
+ * @private
+ */
+goog.format.conservativelyHasGraphemeBreak_ = function(
+    lastCharCode, charCode, opt_extended) {
+  // Return false for everything except the most common Cyrillic characters.
+  // Don't worry about Latin characters, because insertWordBreaksGeneric_
+  // itself already handles those.
+  // TODO(gboyer): Also account for Greek, Armenian, and Georgian if it is
+  // simple to do so.
+  return charCode >= 0x400 && charCode < 0x523;
+};
+
+
+// TODO(gboyer): Consider using a compile-time flag to switch implementations
+// rather than relying on the developers to toggle implementations.
+/**
+ * Inserts word breaks into an HTML string at a given interval.
+ *
+ * This method is less aggressive than insertWordBreaks, only inserting
+ * breaks next to punctuation and between Latin or Cyrillic characters.
+ * However, this is good enough for the common case of URLs.  It also
+ * works for all Latin and Cyrillic languages, plus CJK has no need for word
+ * breaks.  When this method is used, goog.i18n.GraphemeBreak may be dead
+ * code eliminated.
+ *
+ * @param {string} str HTML to insert word breaks into.
+ * @param {number=} opt_maxlen Maximum length after which to ensure there is a
+ *     break.  Default is 10 characters.
+ * @return {string} The string including word breaks.
+ * @deprecated Prefer wrapping with CSS word-wrap: break-word.
+ */
+goog.format.insertWordBreaksBasic = function(str, opt_maxlen) {
+  return goog.format.insertWordBreaksGeneric_(
+      str, goog.format.conservativelyHasGraphemeBreak_, opt_maxlen);
+};
+
+
+/**
+ * True iff the current userAgent is IE8 or above.
+ * @type {boolean}
+ * @private
+ */
+goog.format.IS_IE8_OR_ABOVE_ =
+    goog.userAgent.IE && goog.userAgent.isVersionOrHigher(8);
+
+
+/**
+ * Constant for the WBR replacement used by insertWordBreaks.  Safari requires
+ * <wbr></wbr>, Opera needs the &shy; entity, though this will give a visible
+ * hyphen at breaks.  IE8 uses a zero width space.
+ * Other browsers just use <wbr>.
+ * @type {string}
+ */
+goog.format.WORD_BREAK_HTML =
+    goog.userAgent.WEBKIT ? '<wbr></wbr>' : goog.userAgent.OPERA ?
+                            '&shy;' :
+                            goog.format.IS_IE8_OR_ABOVE_ ? '&#8203;' : '<wbr>';
+
+
+/**
+ * Tokens used within insertWordBreaks.
+ * @private
+ * @enum {number}
+ */
+goog.format.WbrToken_ = {
+  LT: 60,          // '<'.charCodeAt(0)
+  GT: 62,          // '>'.charCodeAt(0)
+  AMP: 38,         // '&'.charCodeAt(0)
+  SEMI_COLON: 59,  // ';'.charCodeAt(0)
+  SPACE: 32        // ' '.charCodeAt(0)
+};
+
 //javascript/closure/dom/tagname.js
 // Copyright 2007 The Closure Library Authors. All Rights Reserved.
 //
@@ -16066,236 +16969,6 @@ goog.i18n.bidi.DirectionalString.prototype
  * @return {?goog.i18n.bidi.Dir} The known direction. Null if unknown.
  */
 goog.i18n.bidi.DirectionalString.prototype.getDirection;
-
-//javascript/closure/math/size.js
-// Copyright 2007 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-/**
- * @fileoverview A utility class for representing two-dimensional sizes.
- * @author pupius@google.com (Dan Pupius)
- * @author brenneman@google.com (Shawn Brenneman)
- */
-
-
-goog.provide('goog.math.Size');
-
-
-
-/**
- * Class for representing sizes consisting of a width and height. Undefined
- * width and height support is deprecated and results in compiler warning.
- * @param {number} width Width.
- * @param {number} height Height.
- * @struct
- * @constructor
- */
-goog.math.Size = function(width, height) {
-  /**
-   * Width
-   * @type {number}
-   */
-  this.width = width;
-
-  /**
-   * Height
-   * @type {number}
-   */
-  this.height = height;
-};
-
-
-/**
- * Compares sizes for equality.
- * @param {goog.math.Size} a A Size.
- * @param {goog.math.Size} b A Size.
- * @return {boolean} True iff the sizes have equal widths and equal
- *     heights, or if both are null.
- */
-goog.math.Size.equals = function(a, b) {
-  if (a == b) {
-    return true;
-  }
-  if (!a || !b) {
-    return false;
-  }
-  return a.width == b.width && a.height == b.height;
-};
-
-
-/**
- * @return {!goog.math.Size} A new copy of the Size.
- */
-goog.math.Size.prototype.clone = function() {
-  return new goog.math.Size(this.width, this.height);
-};
-
-
-if (goog.DEBUG) {
-  /**
-   * Returns a nice string representing size.
-   * @return {string} In the form (50 x 73).
-   * @override
-   */
-  goog.math.Size.prototype.toString = function() {
-    return '(' + this.width + ' x ' + this.height + ')';
-  };
-}
-
-
-/**
- * @return {number} The longer of the two dimensions in the size.
- */
-goog.math.Size.prototype.getLongest = function() {
-  return Math.max(this.width, this.height);
-};
-
-
-/**
- * @return {number} The shorter of the two dimensions in the size.
- */
-goog.math.Size.prototype.getShortest = function() {
-  return Math.min(this.width, this.height);
-};
-
-
-/**
- * @return {number} The area of the size (width * height).
- */
-goog.math.Size.prototype.area = function() {
-  return this.width * this.height;
-};
-
-
-/**
- * @return {number} The perimeter of the size (width + height) * 2.
- */
-goog.math.Size.prototype.perimeter = function() {
-  return (this.width + this.height) * 2;
-};
-
-
-/**
- * @return {number} The ratio of the size's width to its height.
- */
-goog.math.Size.prototype.aspectRatio = function() {
-  return this.width / this.height;
-};
-
-
-/**
- * @return {boolean} True if the size has zero area, false if both dimensions
- *     are non-zero numbers.
- */
-goog.math.Size.prototype.isEmpty = function() {
-  return !this.area();
-};
-
-
-/**
- * Clamps the width and height parameters upward to integer values.
- * @return {!goog.math.Size} This size with ceil'd components.
- */
-goog.math.Size.prototype.ceil = function() {
-  this.width = Math.ceil(this.width);
-  this.height = Math.ceil(this.height);
-  return this;
-};
-
-
-/**
- * @param {!goog.math.Size} target The target size.
- * @return {boolean} True if this Size is the same size or smaller than the
- *     target size in both dimensions.
- */
-goog.math.Size.prototype.fitsInside = function(target) {
-  return this.width <= target.width && this.height <= target.height;
-};
-
-
-/**
- * Clamps the width and height parameters downward to integer values.
- * @return {!goog.math.Size} This size with floored components.
- */
-goog.math.Size.prototype.floor = function() {
-  this.width = Math.floor(this.width);
-  this.height = Math.floor(this.height);
-  return this;
-};
-
-
-/**
- * Rounds the width and height parameters to integer values.
- * @return {!goog.math.Size} This size with rounded components.
- */
-goog.math.Size.prototype.round = function() {
-  this.width = Math.round(this.width);
-  this.height = Math.round(this.height);
-  return this;
-};
-
-
-/**
- * Scales this size by the given scale factors. The width and height are scaled
- * by {@code sx} and {@code opt_sy} respectively.  If {@code opt_sy} is not
- * given, then {@code sx} is used for both the width and height.
- * @param {number} sx The scale factor to use for the width.
- * @param {number=} opt_sy The scale factor to use for the height.
- * @return {!goog.math.Size} This Size object after scaling.
- */
-goog.math.Size.prototype.scale = function(sx, opt_sy) {
-  var sy = goog.isNumber(opt_sy) ? opt_sy : sx;
-  this.width *= sx;
-  this.height *= sy;
-  return this;
-};
-
-
-/**
- * Uniformly scales the size to perfectly cover the dimensions of a given size.
- * If the size is already larger than the target, it will be scaled down to the
- * minimum size at which it still covers the entire target. The original aspect
- * ratio will be preserved.
- *
- * This function assumes that both Sizes contain strictly positive dimensions.
- * @param {!goog.math.Size} target The target size.
- * @return {!goog.math.Size} This Size object, after optional scaling.
- */
-goog.math.Size.prototype.scaleToCover = function(target) {
-  var s = this.aspectRatio() <= target.aspectRatio() ?
-      target.width / this.width :
-      target.height / this.height;
-
-  return this.scale(s);
-};
-
-
-/**
- * Uniformly scales the size to fit inside the dimensions of a given size. The
- * original aspect ratio will be preserved.
- *
- * This function assumes that both Sizes contain strictly positive dimensions.
- * @param {!goog.math.Size} target The target size.
- * @return {!goog.math.Size} This Size object, after optional scaling.
- */
-goog.math.Size.prototype.scaleToFit = function(target) {
-  var s = this.aspectRatio() > target.aspectRatio() ?
-      target.width / this.width :
-      target.height / this.height;
-
-  return this.scale(s);
-};
 
 //javascript/closure/string/typedstring.js
 // Copyright 2013 The Closure Library Authors. All Rights Reserved.
@@ -18326,362 +18999,6 @@ goog.html.SafeUrl.ABOUT_BLANK =
     goog.html.SafeUrl.createSafeUrlSecurityPrivateDoNotAccessOrElse(
         'about:blank');
 
-//javascript/closure/math/coordinate.js
-// Copyright 2006 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-/**
- * @fileoverview A utility class for representing two-dimensional positions.
- */
-
-
-goog.provide('goog.math.Coordinate');
-
-goog.require('goog.math');
-
-
-
-/**
- * Class for representing coordinates and positions.
- * @param {number=} opt_x Left, defaults to 0.
- * @param {number=} opt_y Top, defaults to 0.
- * @struct
- * @constructor
- */
-goog.math.Coordinate = function(opt_x, opt_y) {
-  /**
-   * X-value
-   * @type {number}
-   */
-  this.x = goog.isDef(opt_x) ? opt_x : 0;
-
-  /**
-   * Y-value
-   * @type {number}
-   */
-  this.y = goog.isDef(opt_y) ? opt_y : 0;
-};
-
-
-/**
- * Returns a new copy of the coordinate.
- * @return {!goog.math.Coordinate} A clone of this coordinate.
- */
-goog.math.Coordinate.prototype.clone = function() {
-  return new goog.math.Coordinate(this.x, this.y);
-};
-
-
-if (goog.DEBUG) {
-  /**
-   * Returns a nice string representing the coordinate.
-   * @return {string} In the form (50, 73).
-   * @override
-   */
-  goog.math.Coordinate.prototype.toString = function() {
-    return '(' + this.x + ', ' + this.y + ')';
-  };
-}
-
-
-/**
- * Returns whether the specified value is equal to this coordinate.
- * @param {*} other Some other value.
- * @return {boolean} Whether the specified value is equal to this coordinate.
- */
-goog.math.Coordinate.prototype.equals = function(other) {
-  return other instanceof goog.math.Coordinate &&
-      goog.math.Coordinate.equals(this, other);
-};
-
-
-/**
- * Compares coordinates for equality.
- * @param {goog.math.Coordinate} a A Coordinate.
- * @param {goog.math.Coordinate} b A Coordinate.
- * @return {boolean} True iff the coordinates are equal, or if both are null.
- */
-goog.math.Coordinate.equals = function(a, b) {
-  if (a == b) {
-    return true;
-  }
-  if (!a || !b) {
-    return false;
-  }
-  return a.x == b.x && a.y == b.y;
-};
-
-
-/**
- * Returns the distance between two coordinates.
- * @param {!goog.math.Coordinate} a A Coordinate.
- * @param {!goog.math.Coordinate} b A Coordinate.
- * @return {number} The distance between {@code a} and {@code b}.
- */
-goog.math.Coordinate.distance = function(a, b) {
-  var dx = a.x - b.x;
-  var dy = a.y - b.y;
-  return Math.sqrt(dx * dx + dy * dy);
-};
-
-
-/**
- * Returns the magnitude of a coordinate.
- * @param {!goog.math.Coordinate} a A Coordinate.
- * @return {number} The distance between the origin and {@code a}.
- */
-goog.math.Coordinate.magnitude = function(a) {
-  return Math.sqrt(a.x * a.x + a.y * a.y);
-};
-
-
-/**
- * Returns the angle from the origin to a coordinate.
- * @param {!goog.math.Coordinate} a A Coordinate.
- * @return {number} The angle, in degrees, clockwise from the positive X
- *     axis to {@code a}.
- */
-goog.math.Coordinate.azimuth = function(a) {
-  return goog.math.angle(0, 0, a.x, a.y);
-};
-
-
-/**
- * Returns the squared distance between two coordinates. Squared distances can
- * be used for comparisons when the actual value is not required.
- *
- * Performance note: eliminating the square root is an optimization often used
- * in lower-level languages, but the speed difference is not nearly as
- * pronounced in JavaScript (only a few percent.)
- *
- * @param {!goog.math.Coordinate} a A Coordinate.
- * @param {!goog.math.Coordinate} b A Coordinate.
- * @return {number} The squared distance between {@code a} and {@code b}.
- */
-goog.math.Coordinate.squaredDistance = function(a, b) {
-  var dx = a.x - b.x;
-  var dy = a.y - b.y;
-  return dx * dx + dy * dy;
-};
-
-
-/**
- * Returns the difference between two coordinates as a new
- * goog.math.Coordinate.
- * @param {!goog.math.Coordinate} a A Coordinate.
- * @param {!goog.math.Coordinate} b A Coordinate.
- * @return {!goog.math.Coordinate} A Coordinate representing the difference
- *     between {@code a} and {@code b}.
- */
-goog.math.Coordinate.difference = function(a, b) {
-  return new goog.math.Coordinate(a.x - b.x, a.y - b.y);
-};
-
-
-/**
- * Returns the sum of two coordinates as a new goog.math.Coordinate.
- * @param {!goog.math.Coordinate} a A Coordinate.
- * @param {!goog.math.Coordinate} b A Coordinate.
- * @return {!goog.math.Coordinate} A Coordinate representing the sum of the two
- *     coordinates.
- */
-goog.math.Coordinate.sum = function(a, b) {
-  return new goog.math.Coordinate(a.x + b.x, a.y + b.y);
-};
-
-
-/**
- * Rounds the x and y fields to the next larger integer values.
- * @return {!goog.math.Coordinate} This coordinate with ceil'd fields.
- */
-goog.math.Coordinate.prototype.ceil = function() {
-  this.x = Math.ceil(this.x);
-  this.y = Math.ceil(this.y);
-  return this;
-};
-
-
-/**
- * Rounds the x and y fields to the next smaller integer values.
- * @return {!goog.math.Coordinate} This coordinate with floored fields.
- */
-goog.math.Coordinate.prototype.floor = function() {
-  this.x = Math.floor(this.x);
-  this.y = Math.floor(this.y);
-  return this;
-};
-
-
-/**
- * Rounds the x and y fields to the nearest integer values.
- * @return {!goog.math.Coordinate} This coordinate with rounded fields.
- */
-goog.math.Coordinate.prototype.round = function() {
-  this.x = Math.round(this.x);
-  this.y = Math.round(this.y);
-  return this;
-};
-
-
-/**
- * Translates this box by the given offsets. If a {@code goog.math.Coordinate}
- * is given, then the x and y values are translated by the coordinate's x and y.
- * Otherwise, x and y are translated by {@code tx} and {@code opt_ty}
- * respectively.
- * @param {number|goog.math.Coordinate} tx The value to translate x by or the
- *     the coordinate to translate this coordinate by.
- * @param {number=} opt_ty The value to translate y by.
- * @return {!goog.math.Coordinate} This coordinate after translating.
- */
-goog.math.Coordinate.prototype.translate = function(tx, opt_ty) {
-  if (tx instanceof goog.math.Coordinate) {
-    this.x += tx.x;
-    this.y += tx.y;
-  } else {
-    this.x += Number(tx);
-    if (goog.isNumber(opt_ty)) {
-      this.y += opt_ty;
-    }
-  }
-  return this;
-};
-
-
-/**
- * Scales this coordinate by the given scale factors. The x and y values are
- * scaled by {@code sx} and {@code opt_sy} respectively.  If {@code opt_sy}
- * is not given, then {@code sx} is used for both x and y.
- * @param {number} sx The scale factor to use for the x dimension.
- * @param {number=} opt_sy The scale factor to use for the y dimension.
- * @return {!goog.math.Coordinate} This coordinate after scaling.
- */
-goog.math.Coordinate.prototype.scale = function(sx, opt_sy) {
-  var sy = goog.isNumber(opt_sy) ? opt_sy : sx;
-  this.x *= sx;
-  this.y *= sy;
-  return this;
-};
-
-
-/**
- * Rotates this coordinate clockwise about the origin (or, optionally, the given
- * center) by the given angle, in radians.
- * @param {number} radians The angle by which to rotate this coordinate
- *     clockwise about the given center, in radians.
- * @param {!goog.math.Coordinate=} opt_center The center of rotation. Defaults
- *     to (0, 0) if not given.
- */
-goog.math.Coordinate.prototype.rotateRadians = function(radians, opt_center) {
-  var center = opt_center || new goog.math.Coordinate(0, 0);
-
-  var x = this.x;
-  var y = this.y;
-  var cos = Math.cos(radians);
-  var sin = Math.sin(radians);
-
-  this.x = (x - center.x) * cos - (y - center.y) * sin + center.x;
-  this.y = (x - center.x) * sin + (y - center.y) * cos + center.y;
-};
-
-
-/**
- * Rotates this coordinate clockwise about the origin (or, optionally, the given
- * center) by the given angle, in degrees.
- * @param {number} degrees The angle by which to rotate this coordinate
- *     clockwise about the given center, in degrees.
- * @param {!goog.math.Coordinate=} opt_center The center of rotation. Defaults
- *     to (0, 0) if not given.
- */
-goog.math.Coordinate.prototype.rotateDegrees = function(degrees, opt_center) {
-  this.rotateRadians(goog.math.toRadians(degrees), opt_center);
-};
-
-//javascript/closure/dom/browserfeature.js
-// Copyright 2010 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-/**
- * @fileoverview Browser capability checks for the dom package.
- *
- */
-
-
-goog.provide('goog.dom.BrowserFeature');
-
-goog.require('goog.userAgent');
-
-
-/**
- * Enum of browser capabilities.
- * @enum {boolean}
- */
-goog.dom.BrowserFeature = {
-  /**
-   * Whether attributes 'name' and 'type' can be added to an element after it's
-   * created. False in Internet Explorer prior to version 9.
-   */
-  CAN_ADD_NAME_OR_TYPE_ATTRIBUTES:
-      !goog.userAgent.IE || goog.userAgent.isDocumentModeOrHigher(9),
-
-  /**
-   * Whether we can use element.children to access an element's Element
-   * children. Available since Gecko 1.9.1, IE 9. (IE<9 also includes comment
-   * nodes in the collection.)
-   */
-  CAN_USE_CHILDREN_ATTRIBUTE: !goog.userAgent.GECKO && !goog.userAgent.IE ||
-      goog.userAgent.IE && goog.userAgent.isDocumentModeOrHigher(9) ||
-      goog.userAgent.GECKO && goog.userAgent.isVersionOrHigher('1.9.1'),
-
-  /**
-   * Opera, Safari 3, and Internet Explorer 9 all support innerText but they
-   * include text nodes in script and style tags. Not document-mode-dependent.
-   */
-  CAN_USE_INNER_TEXT:
-      (goog.userAgent.IE && !goog.userAgent.isVersionOrHigher('9')),
-
-  /**
-   * MSIE, Opera, and Safari>=4 support element.parentElement to access an
-   * element's parent if it is an Element.
-   */
-  CAN_USE_PARENT_ELEMENT_PROPERTY:
-      goog.userAgent.IE || goog.userAgent.OPERA || goog.userAgent.WEBKIT,
-
-  /**
-   * Whether NoScope elements need a scoped element written before them in
-   * innerHTML.
-   * MSDN: http://msdn.microsoft.com/en-us/library/ms533897(VS.85).aspx#1
-   */
-  INNER_HTML_NEEDS_SCOPED_ELEMENT: goog.userAgent.IE,
-
-  /**
-   * Whether we use legacy IE range API.
-   */
-  LEGACY_IE_RANGES:
-      goog.userAgent.IE && !goog.userAgent.isDocumentModeOrHigher(9)
-};
-
 //javascript/closure/html/safehtml.js
 // Copyright 2013 The Closure Library Authors. All Rights Reserved.
 //
@@ -19678,689 +19995,6 @@ goog.html.SafeHtml.BR =
     goog.html.SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse(
         '<br>', goog.i18n.bidi.Dir.NEUTRAL);
 
-//javascript/closure/dom/safe.js
-// Copyright 2013 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-/**
- * @fileoverview Type-safe wrappers for unsafe DOM APIs.
- *
- * This file provides type-safe wrappers for DOM APIs that can result in
- * cross-site scripting (XSS) vulnerabilities, if the API is supplied with
- * untrusted (attacker-controlled) input.  Instead of plain strings, the type
- * safe wrappers consume values of types from the goog.html package whose
- * contract promises that values are safe to use in the corresponding context.
- *
- * Hence, a program that exclusively uses the wrappers in this file (i.e., whose
- * only reference to security-sensitive raw DOM APIs are in this file) is
- * guaranteed to be free of XSS due to incorrect use of such DOM APIs (modulo
- * correctness of code that produces values of the respective goog.html types,
- * and absent code that violates type safety).
- *
- * For example, assigning to an element's .innerHTML property a string that is
- * derived (even partially) from untrusted input typically results in an XSS
- * vulnerability. The type-safe wrapper goog.dom.safe.setInnerHtml consumes a
- * value of type goog.html.SafeHtml, whose contract states that using its values
- * in a HTML context will not result in XSS. Hence a program that is free of
- * direct assignments to any element's innerHTML property (with the exception of
- * the assignment to .innerHTML in this file) is guaranteed to be free of XSS
- * due to assignment of untrusted strings to the innerHTML property.
- */
-
-goog.provide('goog.dom.safe');
-goog.provide('goog.dom.safe.InsertAdjacentHtmlPosition');
-
-goog.require('goog.asserts');
-goog.require('goog.html.SafeHtml');
-goog.require('goog.html.SafeStyle');
-goog.require('goog.html.SafeUrl');
-goog.require('goog.html.TrustedResourceUrl');
-goog.require('goog.string');
-goog.require('goog.string.Const');
-
-
-/** @enum {string} */
-goog.dom.safe.InsertAdjacentHtmlPosition = {
-  AFTERBEGIN: 'afterbegin',
-  AFTEREND: 'afterend',
-  BEFOREBEGIN: 'beforebegin',
-  BEFOREEND: 'beforeend'
-};
-
-
-/**
- * Inserts known-safe HTML into a Node, at the specified position.
- * @param {!Node} node The node on which to call insertAdjacentHTML.
- * @param {!goog.dom.safe.InsertAdjacentHtmlPosition} position Position where
- *     to insert the HTML.
- * @param {!goog.html.SafeHtml} html The known-safe HTML to insert.
- */
-goog.dom.safe.insertAdjacentHtml = function(node, position, html) {
-  node.insertAdjacentHTML(position, goog.html.SafeHtml.unwrap(html));
-};
-
-
-/**
- * Tags not allowed in goog.dom.safe.setInnerHtml.
- * @private @const {!Object<string, boolean>}
- */
-goog.dom.safe.SET_INNER_HTML_DISALLOWED_TAGS_ = {
-  'MATH': true,
-  'SCRIPT': true,
-  'STYLE': true,
-  'SVG': true,
-  'TEMPLATE': true
-};
-
-
-/**
- * Assigns known-safe HTML to an element's innerHTML property.
- * @param {!Element} elem The element whose innerHTML is to be assigned to.
- * @param {!goog.html.SafeHtml} html The known-safe HTML to assign.
- * @throws {Error} If called with one of these tags: math, script, style, svg,
- *     template.
- */
-goog.dom.safe.setInnerHtml = function(elem, html) {
-  if (goog.asserts.ENABLE_ASSERTS) {
-    var tagName = elem.tagName.toUpperCase();
-    if (goog.dom.safe.SET_INNER_HTML_DISALLOWED_TAGS_[tagName]) {
-      throw Error(
-          'goog.dom.safe.setInnerHtml cannot be used to set content of ' +
-          elem.tagName + '.');
-    }
-  }
-  elem.innerHTML = goog.html.SafeHtml.unwrap(html);
-};
-
-
-/**
- * Assigns known-safe HTML to an element's outerHTML property.
- * @param {!Element} elem The element whose outerHTML is to be assigned to.
- * @param {!goog.html.SafeHtml} html The known-safe HTML to assign.
- */
-goog.dom.safe.setOuterHtml = function(elem, html) {
-  elem.outerHTML = goog.html.SafeHtml.unwrap(html);
-};
-
-
-/**
- * Sets the given element's style property to the contents of the provided
- * SafeStyle object.
- * @param {!Element} elem
- * @param {!goog.html.SafeStyle} style
- */
-goog.dom.safe.setStyle = function(elem, style) {
-  elem.style.cssText = goog.html.SafeStyle.unwrap(style);
-};
-
-
-/**
- * Writes known-safe HTML to a document.
- * @param {!Document} doc The document to be written to.
- * @param {!goog.html.SafeHtml} html The known-safe HTML to assign.
- */
-goog.dom.safe.documentWrite = function(doc, html) {
-  doc.write(goog.html.SafeHtml.unwrap(html));
-};
-
-
-/**
- * Safely assigns a URL to an anchor element's href property.
- *
- * If url is of type goog.html.SafeUrl, its value is unwrapped and assigned to
- * anchor's href property.  If url is of type string however, it is first
- * sanitized using goog.html.SafeUrl.sanitize.
- *
- * Example usage:
- *   goog.dom.safe.setAnchorHref(anchorEl, url);
- * which is a safe alternative to
- *   anchorEl.href = url;
- * The latter can result in XSS vulnerabilities if url is a
- * user-/attacker-controlled value.
- *
- * @param {!HTMLAnchorElement} anchor The anchor element whose href property
- *     is to be assigned to.
- * @param {string|!goog.html.SafeUrl} url The URL to assign.
- * @see goog.html.SafeUrl#sanitize
- */
-goog.dom.safe.setAnchorHref = function(anchor, url) {
-  goog.dom.safe.assertIsHTMLAnchorElement_(anchor);
-  /** @type {!goog.html.SafeUrl} */
-  var safeUrl;
-  if (url instanceof goog.html.SafeUrl) {
-    safeUrl = url;
-  } else {
-    safeUrl = goog.html.SafeUrl.sanitize(url);
-  }
-  anchor.href = goog.html.SafeUrl.unwrap(safeUrl);
-};
-
-
-/**
- * Safely assigns a URL to an image element's src property.
- *
- * If url is of type goog.html.SafeUrl, its value is unwrapped and assigned to
- * image's src property.  If url is of type string however, it is first
- * sanitized using goog.html.SafeUrl.sanitize.
- *
- * @param {!HTMLImageElement} imageElement The image element whose src property
- *     is to be assigned to.
- * @param {string|!goog.html.SafeUrl} url The URL to assign.
- * @see goog.html.SafeUrl#sanitize
- */
-goog.dom.safe.setImageSrc = function(imageElement, url) {
-  goog.dom.safe.assertIsHTMLImageElement_(imageElement);
-  /** @type {!goog.html.SafeUrl} */
-  var safeUrl;
-  if (url instanceof goog.html.SafeUrl) {
-    safeUrl = url;
-  } else {
-    safeUrl = goog.html.SafeUrl.sanitize(url);
-  }
-  imageElement.src = goog.html.SafeUrl.unwrap(safeUrl);
-};
-
-
-/**
- * Safely assigns a URL to an embed element's src property.
- *
- * Example usage:
- *   goog.dom.safe.setEmbedSrc(embedEl, url);
- * which is a safe alternative to
- *   embedEl.src = url;
- * The latter can result in loading untrusted code unless it is ensured that
- * the URL refers to a trustworthy resource.
- *
- * @param {!HTMLEmbedElement} embed The embed element whose src property
- *     is to be assigned to.
- * @param {!goog.html.TrustedResourceUrl} url The URL to assign.
- */
-goog.dom.safe.setEmbedSrc = function(embed, url) {
-  goog.dom.safe.assertIsHTMLEmbedElement_(embed);
-  embed.src = goog.html.TrustedResourceUrl.unwrap(url);
-};
-
-
-/**
- * Safely assigns a URL to a frame element's src property.
- *
- * Example usage:
- *   goog.dom.safe.setFrameSrc(frameEl, url);
- * which is a safe alternative to
- *   frameEl.src = url;
- * The latter can result in loading untrusted code unless it is ensured that
- * the URL refers to a trustworthy resource.
- *
- * @param {!HTMLFrameElement} frame The frame element whose src property
- *     is to be assigned to.
- * @param {!goog.html.TrustedResourceUrl} url The URL to assign.
- */
-goog.dom.safe.setFrameSrc = function(frame, url) {
-  goog.dom.safe.assertIsHTMLFrameElement_(frame);
-  frame.src = goog.html.TrustedResourceUrl.unwrap(url);
-};
-
-
-/**
- * Safely assigns a URL to an iframe element's src property.
- *
- * Example usage:
- *   goog.dom.safe.setIframeSrc(iframeEl, url);
- * which is a safe alternative to
- *   iframeEl.src = url;
- * The latter can result in loading untrusted code unless it is ensured that
- * the URL refers to a trustworthy resource.
- *
- * @param {!HTMLIFrameElement} iframe The iframe element whose src property
- *     is to be assigned to.
- * @param {!goog.html.TrustedResourceUrl} url The URL to assign.
- */
-goog.dom.safe.setIframeSrc = function(iframe, url) {
-  goog.dom.safe.assertIsHTMLIFrameElement_(iframe);
-  iframe.src = goog.html.TrustedResourceUrl.unwrap(url);
-};
-
-
-/**
- * Safely assigns HTML to an iframe element's srcdoc property.
- *
- * Example usage:
- *   goog.dom.safe.setIframeSrcdoc(iframeEl, safeHtml);
- * which is a safe alternative to
- *   iframeEl.srcdoc = html;
- * The latter can result in loading untrusted code.
- *
- * @param {!HTMLIFrameElement} iframe The iframe element whose srcdoc property
- *     is to be assigned to.
- * @param {!goog.html.SafeHtml} html The HTML to assign.
- */
-goog.dom.safe.setIframeSrcdoc = function(iframe, html) {
-  goog.dom.safe.assertIsHTMLIFrameElement_(iframe);
-  iframe.srcdoc = goog.html.SafeHtml.unwrap(html);
-};
-
-
-/**
- * Safely sets a link element's href and rel properties. Whether or not
- * the URL assigned to href has to be a goog.html.TrustedResourceUrl
- * depends on the value of the rel property. If rel contains "stylesheet"
- * then a TrustedResourceUrl is required.
- *
- * Example usage:
- *   goog.dom.safe.setLinkHrefAndRel(linkEl, url, 'stylesheet');
- * which is a safe alternative to
- *   linkEl.rel = 'stylesheet';
- *   linkEl.href = url;
- * The latter can result in loading untrusted code unless it is ensured that
- * the URL refers to a trustworthy resource.
- *
- * @param {!HTMLLinkElement} link The link element whose href property
- *     is to be assigned to.
- * @param {string|!goog.html.SafeUrl|!goog.html.TrustedResourceUrl} url The URL
- *     to assign to the href property. Must be a TrustedResourceUrl if the
- *     value assigned to rel contains "stylesheet". A string value is
- *     sanitized with goog.html.SafeUrl.sanitize.
- * @param {string} rel The value to assign to the rel property.
- * @throws {Error} if rel contains "stylesheet" and url is not a
- *     TrustedResourceUrl
- * @see goog.html.SafeUrl#sanitize
- */
-goog.dom.safe.setLinkHrefAndRel = function(link, url, rel) {
-  goog.dom.safe.assertIsHTMLLinkElement_(link);
-  link.rel = rel;
-  if (goog.string.caseInsensitiveContains(rel, 'stylesheet')) {
-    goog.asserts.assert(
-        url instanceof goog.html.TrustedResourceUrl,
-        'URL must be TrustedResourceUrl because "rel" contains "stylesheet"');
-    link.href = goog.html.TrustedResourceUrl.unwrap(url);
-  } else if (url instanceof goog.html.TrustedResourceUrl) {
-    link.href = goog.html.TrustedResourceUrl.unwrap(url);
-  } else if (url instanceof goog.html.SafeUrl) {
-    link.href = goog.html.SafeUrl.unwrap(url);
-  } else {  // string
-    // SafeUrl.sanitize must return legitimate SafeUrl when passed a string.
-    link.href = goog.html.SafeUrl.sanitize(url).getTypedStringValue();
-  }
-};
-
-
-/**
- * Safely assigns a URL to an object element's data property.
- *
- * Example usage:
- *   goog.dom.safe.setObjectData(objectEl, url);
- * which is a safe alternative to
- *   objectEl.data = url;
- * The latter can result in loading untrusted code unless setit is ensured that
- * the URL refers to a trustworthy resource.
- *
- * @param {!HTMLObjectElement} object The object element whose data property
- *     is to be assigned to.
- * @param {!goog.html.TrustedResourceUrl} url The URL to assign.
- */
-goog.dom.safe.setObjectData = function(object, url) {
-  goog.dom.safe.assertIsHTMLObjectElement_(object);
-  object.data = goog.html.TrustedResourceUrl.unwrap(url);
-};
-
-
-/**
- * Safely assigns a URL to an script element's src property.
- *
- * Example usage:
- *   goog.dom.safe.setScriptSrc(scriptEl, url);
- * which is a safe alternative to
- *   scriptEl.src = url;
- * The latter can result in loading untrusted code unless it is ensured that
- * the URL refers to a trustworthy resource.
- *
- * @param {!HTMLScriptElement} script The script element whose src property
- *     is to be assigned to.
- * @param {!goog.html.TrustedResourceUrl} url The URL to assign.
- */
-goog.dom.safe.setScriptSrc = function(script, url) {
-  goog.dom.safe.assertIsHTMLScriptElement_(script);
-  script.src = goog.html.TrustedResourceUrl.unwrap(url);
-};
-
-
-/**
- * Safely assigns a URL to a Location object's href property.
- *
- * If url is of type goog.html.SafeUrl, its value is unwrapped and assigned to
- * loc's href property.  If url is of type string however, it is first sanitized
- * using goog.html.SafeUrl.sanitize.
- *
- * Example usage:
- *   goog.dom.safe.setLocationHref(document.location, redirectUrl);
- * which is a safe alternative to
- *   document.location.href = redirectUrl;
- * The latter can result in XSS vulnerabilities if redirectUrl is a
- * user-/attacker-controlled value.
- *
- * @param {!Location} loc The Location object whose href property is to be
- *     assigned to.
- * @param {string|!goog.html.SafeUrl} url The URL to assign.
- * @see goog.html.SafeUrl#sanitize
- */
-goog.dom.safe.setLocationHref = function(loc, url) {
-  goog.dom.safe.assertIsLocation_(loc);
-  /** @type {!goog.html.SafeUrl} */
-  var safeUrl;
-  if (url instanceof goog.html.SafeUrl) {
-    safeUrl = url;
-  } else {
-    safeUrl = goog.html.SafeUrl.sanitize(url);
-  }
-  loc.href = goog.html.SafeUrl.unwrap(safeUrl);
-};
-
-
-/**
- * Safely opens a URL in a new window (via window.open).
- *
- * If url is of type goog.html.SafeUrl, its value is unwrapped and passed in to
- * window.open.  If url is of type string however, it is first sanitized
- * using goog.html.SafeUrl.sanitize.
- *
- * Note that this function does not prevent leakages via the referer that is
- * sent by window.open. It is advised to only use this to open 1st party URLs.
- *
- * Example usage:
- *   goog.dom.safe.openInWindow(url);
- * which is a safe alternative to
- *   window.open(url);
- * The latter can result in XSS vulnerabilities if redirectUrl is a
- * user-/attacker-controlled value.
- *
- * @param {string|!goog.html.SafeUrl} url The URL to open.
- * @param {Window=} opt_openerWin Window of which to call the .open() method.
- *     Defaults to the global window.
- * @param {!goog.string.Const=} opt_name Name of the window to open in. Can be
- *     _top, etc as allowed by window.open().
- * @param {string=} opt_specs Comma-separated list of specifications, same as
- *     in window.open().
- * @param {boolean=} opt_replace Whether to replace the current entry in browser
- *     history, same as in window.open().
- * @return {Window} Window the url was opened in.
- */
-goog.dom.safe.openInWindow = function(
-    url, opt_openerWin, opt_name, opt_specs, opt_replace) {
-  /** @type {!goog.html.SafeUrl} */
-  var safeUrl;
-  if (url instanceof goog.html.SafeUrl) {
-    safeUrl = url;
-  } else {
-    safeUrl = goog.html.SafeUrl.sanitize(url);
-  }
-  var win = opt_openerWin || window;
-  return win.open(
-      goog.html.SafeUrl.unwrap(safeUrl),
-      // If opt_name is undefined, simply passing that in to open() causes IE to
-      // reuse the current window instead of opening a new one. Thus we pass ''
-      // in instead, which according to spec opens a new window. See
-      // https://html.spec.whatwg.org/multipage/browsers.html#dom-open .
-      opt_name ? goog.string.Const.unwrap(opt_name) : '', opt_specs,
-      opt_replace);
-};
-
-
-/*
- * Custom assertions for use in the above wrapper methods to ensure that they
- * are indeed invoked on an element of the appropriate type.
- *
- * Using a goog.dom.safe wrapper on an object on the incorrect type (via an
- * incorrect static type cast) can result in security bugs: For instance,
- * g.d.s.setAnchorHref ensures that the URL assigned to the .href attribute
- * satisfies the SafeUrl contract, i.e., is safe to dereference as a hyperlink.
- * However, the value assigned to a HTMLLinkElement's .href property requires
- * the stronger TrustedResourceUrl contract, since it can refer to a stylesheet.
- * Thus, using g.d.s.setAnchorHref on an (incorrectly statically typed) object
- * of type HTMLLinkElement can result in a security vulnerability.
- * Assertions of the correct run-time type help prevent such incorrect use.
- *
- * In some cases, code using the DOM API is tested using mock objects (e.g., a
- * plain object such as {'href': url} instead of an actual Location object).
- * To allow such mocking, the assertions permit objects of types that are not
- * relevant DOM API objects at all (for instance, not Element or Location).
- *
- * Note that instanceof checks don't work straightforwardly in older versions of
- * IE, or across frames (see,
- * http://stackoverflow.com/questions/384286/javascript-isdom-how-do-you-check-if-a-javascript-object-is-a-dom-object,
- * http://stackoverflow.com/questions/26248599/instanceof-htmlelement-in-iframe-is-not-element-or-object).
- *
- * Hence, these assertions may pass vacuously in such scenarios. The resulting
- * risk of security bugs is limited by the following factors:
- *  - A bug can only arise in scenarios involving incorrect static typing (the
- *    wrapper methods are statically typed to demand objects of the appropriate,
- *    precise type).
- *  - Operations on elements across frames are relatively rare.
- *  - Typically, code is tested and exercised in multiple browsers.
- */
-
-/**
- * Asserts that a given object is a Location.
- *
- * To permit this assertion to pass in the context of tests where DOM APIs might
- * be mocked, also accepts any other type except for subtypes of {!Element}.
- * This is to ensure that, for instance, HTMLLinkElement is not being used in
- * place of a Location, since this could result in security bugs due to stronger
- * contracts required for assignments to the href property of the latter.
- *
- * @param {?Object} o The object whose type to assert.
- * @return {!Location}
- * @private
- */
-goog.dom.safe.assertIsLocation_ = function(o) {
-  if (goog.asserts.ENABLE_ASSERTS && typeof Location != 'undefined' &&
-      typeof Element != 'undefined') {
-    goog.asserts.assert(
-        o && (o instanceof Location || !(o instanceof Element)),
-        'Argument is not a Location (or a non-Element mock); got: %s',
-        goog.dom.safe.debugStringForType_(o));
-  }
-  return /** @type {!Location} */ (o);
-};
-
-/**
- * Asserts that a given object is a HTMLAnchorElement.
- *
- * To permit this assertion to pass in the context of tests where elements might
- * be mocked, also accepts objects that are not of type Location nor a subtype
- * of Element.
- *
- * @param {?Object} o The object whose type to assert.
- * @return {!HTMLAnchorElement}
- * @private
- */
-goog.dom.safe.assertIsHTMLAnchorElement_ = function(o) {
-  if (goog.asserts.ENABLE_ASSERTS && typeof HTMLAnchorElement != 'undefined' &&
-      typeof Location != 'undefined' && typeof Element != 'undefined') {
-    goog.asserts.assert(
-        o && (o instanceof HTMLAnchorElement ||
-              !((o instanceof Location) || (o instanceof Element))),
-        'Argument is not a HTMLAnchorElement (or a non-Element mock); got: %s',
-        goog.dom.safe.debugStringForType_(o));
-  }
-  return /** @type {!HTMLAnchorElement} */ (o);
-};
-
-/**
- * Asserts that a given object is a HTMLLinkElement.
- *
- * To permit this assertion to pass in the context of tests where elements might
- * be mocked, also accepts objects that are not a subtype of Element.
- *
- * @param {?Object} o The object whose type to assert.
- * @return {!HTMLLinkElement}
- * @private
- */
-goog.dom.safe.assertIsHTMLLinkElement_ = function(o) {
-  if (goog.asserts.ENABLE_ASSERTS && typeof HTMLLinkElement != 'undefined' &&
-      typeof Location != 'undefined' && typeof Element != 'undefined') {
-    goog.asserts.assert(
-        o && (o instanceof HTMLLinkElement ||
-              !((o instanceof Location) || (o instanceof Element))),
-        'Argument is not a HTMLLinkElement (or a non-Element mock); got: %s',
-        goog.dom.safe.debugStringForType_(o));
-  }
-  return /** @type {!HTMLLinkElement} */ (o);
-};
-
-/**
- * Asserts that a given object is a HTMLImageElement.
- *
- * To permit this assertion to pass in the context of tests where elements might
- * be mocked, also accepts objects that are not a subtype of Element.
- *
- * @param {?Object} o The object whose type to assert.
- * @return {!HTMLImageElement}
- * @private
- */
-goog.dom.safe.assertIsHTMLImageElement_ = function(o) {
-  if (goog.asserts.ENABLE_ASSERTS && typeof HTMLImageElement != 'undefined' &&
-      typeof Element != 'undefined') {
-    goog.asserts.assert(
-        o && (o instanceof HTMLImageElement || !(o instanceof Element)),
-        'Argument is not a HTMLImageElement (or a non-Element mock); got: %s',
-        goog.dom.safe.debugStringForType_(o));
-  }
-  return /** @type {!HTMLImageElement} */ (o);
-};
-
-/**
- * Asserts that a given object is a HTMLEmbedElement.
- *
- * To permit this assertion to pass in the context of tests where elements might
- * be mocked, also accepts objects that are not a subtype of Element.
- *
- * @param {?Object} o The object whose type to assert.
- * @return {!HTMLEmbedElement}
- * @private
- */
-goog.dom.safe.assertIsHTMLEmbedElement_ = function(o) {
-  if (goog.asserts.ENABLE_ASSERTS && typeof HTMLEmbedElement != 'undefined' &&
-      typeof Element != 'undefined') {
-    goog.asserts.assert(
-        o && (o instanceof HTMLEmbedElement || !(o instanceof Element)),
-        'Argument is not a HTMLEmbedElement (or a non-Element mock); got: %s',
-        goog.dom.safe.debugStringForType_(o));
-  }
-  return /** @type {!HTMLEmbedElement} */ (o);
-};
-
-/**
- * Asserts that a given object is a HTMLFrameElement.
- *
- * To permit this assertion to pass in the context of tests where elements might
- * be mocked, also accepts objects that are not a subtype of Element.
- *
- * @param {?Object} o The object whose type to assert.
- * @return {!HTMLFrameElement}
- * @private
- */
-goog.dom.safe.assertIsHTMLFrameElement_ = function(o) {
-  if (goog.asserts.ENABLE_ASSERTS && typeof HTMLFrameElement != 'undefined' &&
-      typeof Element != 'undefined') {
-    goog.asserts.assert(
-        o && (o instanceof HTMLFrameElement || !(o instanceof Element)),
-        'Argument is not a HTMLFrameElement (or a non-Element mock); got: %s',
-        goog.dom.safe.debugStringForType_(o));
-  }
-  return /** @type {!HTMLFrameElement} */ (o);
-};
-
-/**
- * Asserts that a given object is a HTMLIFrameElement.
- *
- * To permit this assertion to pass in the context of tests where elements might
- * be mocked, also accepts objects that are not a subtype of Element.
- *
- * @param {?Object} o The object whose type to assert.
- * @return {!HTMLIFrameElement}
- * @private
- */
-goog.dom.safe.assertIsHTMLIFrameElement_ = function(o) {
-  if (goog.asserts.ENABLE_ASSERTS && typeof HTMLIFrameElement != 'undefined' &&
-      typeof Element != 'undefined') {
-    goog.asserts.assert(
-        o && (o instanceof HTMLIFrameElement || !(o instanceof Element)),
-        'Argument is not a HTMLIFrameElement (or a non-Element mock); got: %s',
-        goog.dom.safe.debugStringForType_(o));
-  }
-  return /** @type {!HTMLIFrameElement} */ (o);
-};
-
-/**
- * Asserts that a given object is a HTMLObjectElement.
- *
- * To permit this assertion to pass in the context of tests where elements might
- * be mocked, also accepts objects that are not a subtype of Element.
- *
- * @param {?Object} o The object whose type to assert.
- * @return {!HTMLObjectElement}
- * @private
- */
-goog.dom.safe.assertIsHTMLObjectElement_ = function(o) {
-  if (goog.asserts.ENABLE_ASSERTS && typeof HTMLObjectElement != 'undefined' &&
-      typeof Element != 'undefined') {
-    goog.asserts.assert(
-        o && (o instanceof HTMLObjectElement || !(o instanceof Element)),
-        'Argument is not a HTMLObjectElement (or a non-Element mock); got: %s',
-        goog.dom.safe.debugStringForType_(o));
-  }
-  return /** @type {!HTMLObjectElement} */ (o);
-};
-
-/**
- * Asserts that a given object is a HTMLScriptElement.
- *
- * To permit this assertion to pass in the context of tests where elements might
- * be mocked, also accepts objects that are not a subtype of Element.
- *
- * @param {?Object} o The object whose type to assert.
- * @return {!HTMLScriptElement}
- * @private
- */
-goog.dom.safe.assertIsHTMLScriptElement_ = function(o) {
-  if (goog.asserts.ENABLE_ASSERTS && typeof HTMLScriptElement != 'undefined' &&
-      typeof Element != 'undefined') {
-    goog.asserts.assert(
-        o && (o instanceof HTMLScriptElement || !(o instanceof Element)),
-        'Argument is not a HTMLScriptElement (or a non-Element mock); got: %s',
-        goog.dom.safe.debugStringForType_(o));
-  }
-  return /** @type {!HTMLScriptElement} */ (o);
-};
-
-/**
- * Returns a string representation of a value's type.
- *
- * @param {*} value An object, or primitive.
- * @return {string} The best display name for the value.
- * @private
- */
-goog.dom.safe.debugStringForType_ = function(value) {
-  if (goog.isObject(value)) {
-    return value.constructor.displayName || value.constructor.name ||
-        Object.prototype.toString.call(value);
-  } else {
-    return value === undefined ? 'undefined' :
-                                 value === null ? 'null' : typeof value;
-  }
-};
-
 //javascript/closure/html/uncheckedconversions.js
 // Copyright 2013 The Closure Library Authors. All Rights Reserved.
 //
@@ -20615,4076 +20249,6 @@ goog.html.uncheckedconversions
       'must provide non-empty justification');
   return goog.html.TrustedResourceUrl
       .createTrustedResourceUrlSecurityPrivateDoNotAccessOrElse(url);
-};
-
-//javascript/closure/dom/dom.js
-// Copyright 2006 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-/**
- * @fileoverview Utilities for manipulating the browser's Document Object Model
- * Inspiration taken *heavily* from mochikit (http://mochikit.com/).
- *
- * You can use {@link goog.dom.DomHelper} to create new dom helpers that refer
- * to a different document object.  This is useful if you are working with
- * frames or multiple windows.
- *
- * @author pupius@google.com (Daniel Pupius)
- * @author arv@google.com (Erik Arvidsson)
- */
-
-
-// TODO(arv): Rename/refactor getTextContent and getRawTextContent. The problem
-// is that getTextContent should mimic the DOM3 textContent. We should add a
-// getInnerText (or getText) which tries to return the visible text, innerText.
-
-
-goog.provide('goog.dom');
-goog.provide('goog.dom.Appendable');
-goog.provide('goog.dom.DomHelper');
-
-goog.require('goog.array');
-goog.require('goog.asserts');
-goog.require('goog.dom.BrowserFeature');
-goog.require('goog.dom.NodeType');
-goog.require('goog.dom.TagName');
-goog.require('goog.dom.safe');
-goog.require('goog.html.SafeHtml');
-goog.require('goog.html.uncheckedconversions');
-goog.require('goog.math.Coordinate');
-goog.require('goog.math.Size');
-goog.require('goog.object');
-goog.require('goog.string');
-goog.require('goog.string.Unicode');
-goog.require('goog.userAgent');
-
-
-/**
- * @define {boolean} Whether we know at compile time that the browser is in
- * quirks mode.
- */
-goog.define('goog.dom.ASSUME_QUIRKS_MODE', false);
-
-
-/**
- * @define {boolean} Whether we know at compile time that the browser is in
- * standards compliance mode.
- */
-goog.define('goog.dom.ASSUME_STANDARDS_MODE', false);
-
-
-/**
- * Whether we know the compatibility mode at compile time.
- * @type {boolean}
- * @private
- */
-goog.dom.COMPAT_MODE_KNOWN_ =
-    goog.dom.ASSUME_QUIRKS_MODE || goog.dom.ASSUME_STANDARDS_MODE;
-
-
-/**
- * Gets the DomHelper object for the document where the element resides.
- * @param {(Node|Window)=} opt_element If present, gets the DomHelper for this
- *     element.
- * @return {!goog.dom.DomHelper} The DomHelper.
- */
-goog.dom.getDomHelper = function(opt_element) {
-  return opt_element ?
-      new goog.dom.DomHelper(goog.dom.getOwnerDocument(opt_element)) :
-      (goog.dom.defaultDomHelper_ ||
-       (goog.dom.defaultDomHelper_ = new goog.dom.DomHelper()));
-};
-
-
-/**
- * Cached default DOM helper.
- * @type {!goog.dom.DomHelper|undefined}
- * @private
- */
-goog.dom.defaultDomHelper_;
-
-
-/**
- * Gets the document object being used by the dom library.
- * @return {!Document} Document object.
- */
-goog.dom.getDocument = function() {
-  return document;
-};
-
-
-/**
- * Gets an element from the current document by element id.
- *
- * If an Element is passed in, it is returned.
- *
- * @param {string|Element} element Element ID or a DOM node.
- * @return {Element} The element with the given ID, or the node passed in.
- */
-goog.dom.getElement = function(element) {
-  return goog.dom.getElementHelper_(document, element);
-};
-
-
-/**
- * Gets an element by id from the given document (if present).
- * If an element is given, it is returned.
- * @param {!Document} doc
- * @param {string|Element} element Element ID or a DOM node.
- * @return {Element} The resulting element.
- * @private
- */
-goog.dom.getElementHelper_ = function(doc, element) {
-  return goog.isString(element) ? doc.getElementById(element) : element;
-};
-
-
-/**
- * Gets an element by id, asserting that the element is found.
- *
- * This is used when an element is expected to exist, and should fail with
- * an assertion error if it does not (if assertions are enabled).
- *
- * @param {string} id Element ID.
- * @return {!Element} The element with the given ID, if it exists.
- */
-goog.dom.getRequiredElement = function(id) {
-  return goog.dom.getRequiredElementHelper_(document, id);
-};
-
-
-/**
- * Helper function for getRequiredElementHelper functions, both static and
- * on DomHelper.  Asserts the element with the given id exists.
- * @param {!Document} doc
- * @param {string} id
- * @return {!Element} The element with the given ID, if it exists.
- * @private
- */
-goog.dom.getRequiredElementHelper_ = function(doc, id) {
-  // To prevent users passing in Elements as is permitted in getElement().
-  goog.asserts.assertString(id);
-  var element = goog.dom.getElementHelper_(doc, id);
-  element =
-      goog.asserts.assertElement(element, 'No element found with id: ' + id);
-  return element;
-};
-
-
-/**
- * Alias for getElement.
- * @param {string|Element} element Element ID or a DOM node.
- * @return {Element} The element with the given ID, or the node passed in.
- * @deprecated Use {@link goog.dom.getElement} instead.
- */
-goog.dom.$ = goog.dom.getElement;
-
-
-/**
- * Gets elements by tag name.
- * @param {!goog.dom.TagName<T>} tagName
- * @param {(!Document|!Element)=} opt_parent Parent element or document where to
- *     look for elements. Defaults to document.
- * @return {!NodeList<R>} List of elements. The members of the list are
- *     {!Element} if tagName is not a member of goog.dom.TagName or more
- *     specific types if it is (e.g. {!HTMLAnchorElement} for
- *     goog.dom.TagName.A).
- * @template T
- * @template R := cond(isUnknown(T), 'Element', T) =:
- */
-goog.dom.getElementsByTagName = function(tagName, opt_parent) {
-  var parent = opt_parent || document;
-  return parent.getElementsByTagName(String(tagName));
-};
-
-
-/**
- * Looks up elements by both tag and class name, using browser native functions
- * ({@code querySelectorAll}, {@code getElementsByTagName} or
- * {@code getElementsByClassName}) where possible. This function
- * is a useful, if limited, way of collecting a list of DOM elements
- * with certain characteristics.  {@code goog.dom.query} offers a
- * more powerful and general solution which allows matching on CSS3
- * selector expressions, but at increased cost in code size. If all you
- * need is particular tags belonging to a single class, this function
- * is fast and sleek.
- *
- * Note that tag names are case sensitive in the SVG namespace, and this
- * function converts opt_tag to uppercase for comparisons. For queries in the
- * SVG namespace you should use querySelector or querySelectorAll instead.
- * https://bugzilla.mozilla.org/show_bug.cgi?id=963870
- * https://bugs.webkit.org/show_bug.cgi?id=83438
- *
- * @see {goog.dom.query}
- *
- * @param {(string|?goog.dom.TagName<T>)=} opt_tag Element tag name.
- * @param {?string=} opt_class Optional class name.
- * @param {(Document|Element)=} opt_el Optional element to look in.
- * @return {!IArrayLike<R>} Array-like list of elements (only a length property
- *     and numerical indices are guaranteed to exist). The members of the array
- *     are {!Element} if opt_tag is not a member of goog.dom.TagName or more
- *     specific types if it is (e.g. {!HTMLAnchorElement} for
- *     goog.dom.TagName.A).
- * @template T
- * @template R := cond(isUnknown(T), 'Element', T) =:
- */
-goog.dom.getElementsByTagNameAndClass = function(opt_tag, opt_class, opt_el) {
-  return goog.dom.getElementsByTagNameAndClass_(
-      document, opt_tag, opt_class, opt_el);
-};
-
-
-/**
- * Returns a static, array-like list of the elements with the provided
- * className.
- * @see {goog.dom.query}
- * @param {string} className the name of the class to look for.
- * @param {(Document|Element)=} opt_el Optional element to look in.
- * @return {!IArrayLike<!Element>} The items found with the class name provided.
- */
-goog.dom.getElementsByClass = function(className, opt_el) {
-  var parent = opt_el || document;
-  if (goog.dom.canUseQuerySelector_(parent)) {
-    return parent.querySelectorAll('.' + className);
-  }
-  return goog.dom.getElementsByTagNameAndClass_(
-      document, '*', className, opt_el);
-};
-
-
-/**
- * Returns the first element with the provided className.
- * @see {goog.dom.query}
- * @param {string} className the name of the class to look for.
- * @param {Element|Document=} opt_el Optional element to look in.
- * @return {Element} The first item with the class name provided.
- */
-goog.dom.getElementByClass = function(className, opt_el) {
-  var parent = opt_el || document;
-  var retVal = null;
-  if (parent.getElementsByClassName) {
-    retVal = parent.getElementsByClassName(className)[0];
-  } else if (goog.dom.canUseQuerySelector_(parent)) {
-    retVal = parent.querySelector('.' + className);
-  } else {
-    retVal = goog.dom.getElementsByTagNameAndClass_(
-        document, '*', className, opt_el)[0];
-  }
-  return retVal || null;
-};
-
-
-/**
- * Ensures an element with the given className exists, and then returns the
- * first element with the provided className.
- * @see {goog.dom.query}
- * @param {string} className the name of the class to look for.
- * @param {!Element|!Document=} opt_root Optional element or document to look
- *     in.
- * @return {!Element} The first item with the class name provided.
- * @throws {goog.asserts.AssertionError} Thrown if no element is found.
- */
-goog.dom.getRequiredElementByClass = function(className, opt_root) {
-  var retValue = goog.dom.getElementByClass(className, opt_root);
-  return goog.asserts.assert(
-      retValue, 'No element found with className: ' + className);
-};
-
-
-/**
- * Prefer the standardized (http://www.w3.org/TR/selectors-api/), native and
- * fast W3C Selectors API.
- * @param {!(Element|Document)} parent The parent document object.
- * @return {boolean} whether or not we can use parent.querySelector* APIs.
- * @private
- */
-goog.dom.canUseQuerySelector_ = function(parent) {
-  return !!(parent.querySelectorAll && parent.querySelector);
-};
-
-
-/**
- * Helper for {@code getElementsByTagNameAndClass}.
- * @param {!Document} doc The document to get the elements in.
- * @param {(string|?goog.dom.TagName<T>)=} opt_tag Element tag name.
- * @param {?string=} opt_class Optional class name.
- * @param {(Document|Element)=} opt_el Optional element to look in.
- * @return {!IArrayLike<R>} Array-like list of elements (only a length property
- *     and numerical indices are guaranteed to exist). The members of the array
- *     are {!Element} if opt_tag is not a member of goog.dom.TagName or more
- *     specific types if it is (e.g. {!HTMLAnchorElement} for
- *     goog.dom.TagName.A).
- * @template T
- * @template R := cond(isUnknown(T), 'Element', T) =:
- * @private
- */
-goog.dom.getElementsByTagNameAndClass_ = function(
-    doc, opt_tag, opt_class, opt_el) {
-  var parent = opt_el || doc;
-  var tagName =
-      (opt_tag && opt_tag != '*') ? String(opt_tag).toUpperCase() : '';
-
-  if (goog.dom.canUseQuerySelector_(parent) && (tagName || opt_class)) {
-    var query = tagName + (opt_class ? '.' + opt_class : '');
-    return parent.querySelectorAll(query);
-  }
-
-  // Use the native getElementsByClassName if available, under the assumption
-  // that even when the tag name is specified, there will be fewer elements to
-  // filter through when going by class than by tag name
-  if (opt_class && parent.getElementsByClassName) {
-    var els = parent.getElementsByClassName(opt_class);
-
-    if (tagName) {
-      var arrayLike = {};
-      var len = 0;
-
-      // Filter for specific tags if requested.
-      for (var i = 0, el; el = els[i]; i++) {
-        if (tagName == el.nodeName) {
-          arrayLike[len++] = el;
-        }
-      }
-      arrayLike.length = len;
-
-      return /** @type {!IArrayLike<!Element>} */ (arrayLike);
-    } else {
-      return els;
-    }
-  }
-
-  var els = parent.getElementsByTagName(tagName || '*');
-
-  if (opt_class) {
-    var arrayLike = {};
-    var len = 0;
-    for (var i = 0, el; el = els[i]; i++) {
-      var className = el.className;
-      // Check if className has a split function since SVG className does not.
-      if (typeof className.split == 'function' &&
-          goog.array.contains(className.split(/\s+/), opt_class)) {
-        arrayLike[len++] = el;
-      }
-    }
-    arrayLike.length = len;
-    return /** @type {!IArrayLike<!Element>} */ (arrayLike);
-  } else {
-    return els;
-  }
-};
-
-
-/**
- * Alias for {@code getElementsByTagNameAndClass}.
- * @param {(string|?goog.dom.TagName<T>)=} opt_tag Element tag name.
- * @param {?string=} opt_class Optional class name.
- * @param {Element=} opt_el Optional element to look in.
- * @return {!IArrayLike<R>} Array-like list of elements (only a length property
- *     and numerical indices are guaranteed to exist). The members of the array
- *     are {!Element} if opt_tag is not a member of goog.dom.TagName or more
- *     specific types if it is (e.g. {!HTMLAnchorElement} for
- *     goog.dom.TagName.A).
- * @template T
- * @template R := cond(isUnknown(T), 'Element', T) =:
- * @deprecated Use {@link goog.dom.getElementsByTagNameAndClass} instead.
- */
-goog.dom.$$ = goog.dom.getElementsByTagNameAndClass;
-
-
-/**
- * Sets multiple properties, and sometimes attributes, on an element. Note that
- * properties are simply object properties on the element instance, while
- * attributes are visible in the DOM. Many properties map to attributes with the
- * same names, some with different names, and there are also unmappable cases.
- *
- * This method sets properties by default (which means that custom attributes
- * are not supported). These are the exeptions (some of which is legacy):
- * - "style": Even though this is an attribute name, it is translated to a
- *   property, "style.cssText". Note that this property sanitizes and formats
- *   its value, unlike the attribute.
- * - "class": This is an attribute name, it is translated to the "className"
- *   property.
- * - "for": This is an attribute name, it is translated to the "htmlFor"
- *   property.
- * - Entries in {@see goog.dom.DIRECT_ATTRIBUTE_MAP_} are set as attributes,
- *   this is probably due to browser quirks.
- * - "aria-*", "data-*": Always set as attributes, they have no property
- *   counterparts.
- *
- * @param {Element} element DOM node to set properties on.
- * @param {Object} properties Hash of property:value pairs.
- */
-goog.dom.setProperties = function(element, properties) {
-  goog.object.forEach(properties, function(val, key) {
-    if (key == 'style') {
-      element.style.cssText = val;
-    } else if (key == 'class') {
-      element.className = val;
-    } else if (key == 'for') {
-      element.htmlFor = val;
-    } else if (goog.dom.DIRECT_ATTRIBUTE_MAP_.hasOwnProperty(key)) {
-      element.setAttribute(goog.dom.DIRECT_ATTRIBUTE_MAP_[key], val);
-    } else if (
-        goog.string.startsWith(key, 'aria-') ||
-        goog.string.startsWith(key, 'data-')) {
-      element.setAttribute(key, val);
-    } else {
-      element[key] = val;
-    }
-  });
-};
-
-
-/**
- * Map of attributes that should be set using
- * element.setAttribute(key, val) instead of element[key] = val.  Used
- * by goog.dom.setProperties.
- *
- * @private {!Object<string, string>}
- * @const
- */
-goog.dom.DIRECT_ATTRIBUTE_MAP_ = {
-  'cellpadding': 'cellPadding',
-  'cellspacing': 'cellSpacing',
-  'colspan': 'colSpan',
-  'frameborder': 'frameBorder',
-  'height': 'height',
-  'maxlength': 'maxLength',
-  'nonce': 'nonce',
-  'role': 'role',
-  'rowspan': 'rowSpan',
-  'type': 'type',
-  'usemap': 'useMap',
-  'valign': 'vAlign',
-  'width': 'width'
-};
-
-
-/**
- * Gets the dimensions of the viewport.
- *
- * Gecko Standards mode:
- * docEl.clientWidth  Width of viewport excluding scrollbar.
- * win.innerWidth     Width of viewport including scrollbar.
- * body.clientWidth   Width of body element.
- *
- * docEl.clientHeight Height of viewport excluding scrollbar.
- * win.innerHeight    Height of viewport including scrollbar.
- * body.clientHeight  Height of document.
- *
- * Gecko Backwards compatible mode:
- * docEl.clientWidth  Width of viewport excluding scrollbar.
- * win.innerWidth     Width of viewport including scrollbar.
- * body.clientWidth   Width of viewport excluding scrollbar.
- *
- * docEl.clientHeight Height of document.
- * win.innerHeight    Height of viewport including scrollbar.
- * body.clientHeight  Height of viewport excluding scrollbar.
- *
- * IE6/7 Standards mode:
- * docEl.clientWidth  Width of viewport excluding scrollbar.
- * win.innerWidth     Undefined.
- * body.clientWidth   Width of body element.
- *
- * docEl.clientHeight Height of viewport excluding scrollbar.
- * win.innerHeight    Undefined.
- * body.clientHeight  Height of document element.
- *
- * IE5 + IE6/7 Backwards compatible mode:
- * docEl.clientWidth  0.
- * win.innerWidth     Undefined.
- * body.clientWidth   Width of viewport excluding scrollbar.
- *
- * docEl.clientHeight 0.
- * win.innerHeight    Undefined.
- * body.clientHeight  Height of viewport excluding scrollbar.
- *
- * Opera 9 Standards and backwards compatible mode:
- * docEl.clientWidth  Width of viewport excluding scrollbar.
- * win.innerWidth     Width of viewport including scrollbar.
- * body.clientWidth   Width of viewport excluding scrollbar.
- *
- * docEl.clientHeight Height of document.
- * win.innerHeight    Height of viewport including scrollbar.
- * body.clientHeight  Height of viewport excluding scrollbar.
- *
- * WebKit:
- * Safari 2
- * docEl.clientHeight Same as scrollHeight.
- * docEl.clientWidth  Same as innerWidth.
- * win.innerWidth     Width of viewport excluding scrollbar.
- * win.innerHeight    Height of the viewport including scrollbar.
- * frame.innerHeight  Height of the viewport exluding scrollbar.
- *
- * Safari 3 (tested in 522)
- *
- * docEl.clientWidth  Width of viewport excluding scrollbar.
- * docEl.clientHeight Height of viewport excluding scrollbar in strict mode.
- * body.clientHeight  Height of viewport excluding scrollbar in quirks mode.
- *
- * @param {Window=} opt_window Optional window element to test.
- * @return {!goog.math.Size} Object with values 'width' and 'height'.
- */
-goog.dom.getViewportSize = function(opt_window) {
-  // TODO(arv): This should not take an argument
-  return goog.dom.getViewportSize_(opt_window || window);
-};
-
-
-/**
- * Helper for {@code getViewportSize}.
- * @param {Window} win The window to get the view port size for.
- * @return {!goog.math.Size} Object with values 'width' and 'height'.
- * @private
- */
-goog.dom.getViewportSize_ = function(win) {
-  var doc = win.document;
-  var el = goog.dom.isCss1CompatMode_(doc) ? doc.documentElement : doc.body;
-  return new goog.math.Size(el.clientWidth, el.clientHeight);
-};
-
-
-/**
- * Calculates the height of the document.
- *
- * @return {number} The height of the current document.
- */
-goog.dom.getDocumentHeight = function() {
-  return goog.dom.getDocumentHeight_(window);
-};
-
-/**
- * Calculates the height of the document of the given window.
- *
- * @param {!Window} win The window whose document height to retrieve.
- * @return {number} The height of the document of the given window.
- */
-goog.dom.getDocumentHeightForWindow = function(win) {
-  return goog.dom.getDocumentHeight_(win);
-};
-
-/**
- * Calculates the height of the document of the given window.
- *
- * Function code copied from the opensocial gadget api:
- *   gadgets.window.adjustHeight(opt_height)
- *
- * @private
- * @param {!Window} win The window whose document height to retrieve.
- * @return {number} The height of the document of the given window.
- */
-goog.dom.getDocumentHeight_ = function(win) {
-  // NOTE(eae): This method will return the window size rather than the document
-  // size in webkit quirks mode.
-  var doc = win.document;
-  var height = 0;
-
-  if (doc) {
-    // Calculating inner content height is hard and different between
-    // browsers rendering in Strict vs. Quirks mode.  We use a combination of
-    // three properties within document.body and document.documentElement:
-    // - scrollHeight
-    // - offsetHeight
-    // - clientHeight
-    // These values differ significantly between browsers and rendering modes.
-    // But there are patterns.  It just takes a lot of time and persistence
-    // to figure out.
-
-    var body = doc.body;
-    var docEl = /** @type {!HTMLElement} */ (doc.documentElement);
-    if (!(docEl && body)) {
-      return 0;
-    }
-
-    // Get the height of the viewport
-    var vh = goog.dom.getViewportSize_(win).height;
-    if (goog.dom.isCss1CompatMode_(doc) && docEl.scrollHeight) {
-      // In Strict mode:
-      // The inner content height is contained in either:
-      //    document.documentElement.scrollHeight
-      //    document.documentElement.offsetHeight
-      // Based on studying the values output by different browsers,
-      // use the value that's NOT equal to the viewport height found above.
-      height =
-          docEl.scrollHeight != vh ? docEl.scrollHeight : docEl.offsetHeight;
-    } else {
-      // In Quirks mode:
-      // documentElement.clientHeight is equal to documentElement.offsetHeight
-      // except in IE.  In most browsers, document.documentElement can be used
-      // to calculate the inner content height.
-      // However, in other browsers (e.g. IE), document.body must be used
-      // instead.  How do we know which one to use?
-      // If document.documentElement.clientHeight does NOT equal
-      // document.documentElement.offsetHeight, then use document.body.
-      var sh = docEl.scrollHeight;
-      var oh = docEl.offsetHeight;
-      if (docEl.clientHeight != oh) {
-        sh = body.scrollHeight;
-        oh = body.offsetHeight;
-      }
-
-      // Detect whether the inner content height is bigger or smaller
-      // than the bounding box (viewport).  If bigger, take the larger
-      // value.  If smaller, take the smaller value.
-      if (sh > vh) {
-        // Content is larger
-        height = sh > oh ? sh : oh;
-      } else {
-        // Content is smaller
-        height = sh < oh ? sh : oh;
-      }
-    }
-  }
-
-  return height;
-};
-
-
-/**
- * Gets the page scroll distance as a coordinate object.
- *
- * @param {Window=} opt_window Optional window element to test.
- * @return {!goog.math.Coordinate} Object with values 'x' and 'y'.
- * @deprecated Use {@link goog.dom.getDocumentScroll} instead.
- */
-goog.dom.getPageScroll = function(opt_window) {
-  var win = opt_window || goog.global || window;
-  return goog.dom.getDomHelper(win.document).getDocumentScroll();
-};
-
-
-/**
- * Gets the document scroll distance as a coordinate object.
- *
- * @return {!goog.math.Coordinate} Object with values 'x' and 'y'.
- */
-goog.dom.getDocumentScroll = function() {
-  return goog.dom.getDocumentScroll_(document);
-};
-
-
-/**
- * Helper for {@code getDocumentScroll}.
- *
- * @param {!Document} doc The document to get the scroll for.
- * @return {!goog.math.Coordinate} Object with values 'x' and 'y'.
- * @private
- */
-goog.dom.getDocumentScroll_ = function(doc) {
-  var el = goog.dom.getDocumentScrollElement_(doc);
-  var win = goog.dom.getWindow_(doc);
-  if (goog.userAgent.IE && goog.userAgent.isVersionOrHigher('10') &&
-      win.pageYOffset != el.scrollTop) {
-    // The keyboard on IE10 touch devices shifts the page using the pageYOffset
-    // without modifying scrollTop. For this case, we want the body scroll
-    // offsets.
-    return new goog.math.Coordinate(el.scrollLeft, el.scrollTop);
-  }
-  return new goog.math.Coordinate(
-      win.pageXOffset || el.scrollLeft, win.pageYOffset || el.scrollTop);
-};
-
-
-/**
- * Gets the document scroll element.
- * @return {!Element} Scrolling element.
- */
-goog.dom.getDocumentScrollElement = function() {
-  return goog.dom.getDocumentScrollElement_(document);
-};
-
-
-/**
- * Helper for {@code getDocumentScrollElement}.
- * @param {!Document} doc The document to get the scroll element for.
- * @return {!Element} Scrolling element.
- * @private
- */
-goog.dom.getDocumentScrollElement_ = function(doc) {
-  // Old WebKit needs body.scrollLeft in both quirks mode and strict mode. We
-  // also default to the documentElement if the document does not have a body
-  // (e.g. a SVG document).
-  // Uses http://dev.w3.org/csswg/cssom-view/#dom-document-scrollingelement to
-  // avoid trying to guess about browser behavior from the UA string.
-  if (doc.scrollingElement) {
-    return doc.scrollingElement;
-  }
-  if (!goog.userAgent.WEBKIT && goog.dom.isCss1CompatMode_(doc)) {
-    return doc.documentElement;
-  }
-  return doc.body || doc.documentElement;
-};
-
-
-/**
- * Gets the window object associated with the given document.
- *
- * @param {Document=} opt_doc  Document object to get window for.
- * @return {!Window} The window associated with the given document.
- */
-goog.dom.getWindow = function(opt_doc) {
-  // TODO(arv): This should not take an argument.
-  return opt_doc ? goog.dom.getWindow_(opt_doc) : window;
-};
-
-
-/**
- * Helper for {@code getWindow}.
- *
- * @param {!Document} doc  Document object to get window for.
- * @return {!Window} The window associated with the given document.
- * @private
- */
-goog.dom.getWindow_ = function(doc) {
-  return /** @type {!Window} */ (doc.parentWindow || doc.defaultView);
-};
-
-
-/**
- * Returns a dom node with a set of attributes.  This function accepts varargs
- * for subsequent nodes to be added.  Subsequent nodes will be added to the
- * first node as childNodes.
- *
- * So:
- * <code>createDom(goog.dom.TagName.DIV, null, createDom(goog.dom.TagName.P), createDom(goog.dom.TagName.P));</code>
- * would return a div with two child paragraphs
- *
- * For passing properties, please see {@link goog.dom.setProperties} for more
- * information.
- *
- * @param {string|!goog.dom.TagName<T>} tagName Tag to create.
- * @param {(Object|Array<string>|string)=} opt_properties If object, then a map
- *     of name-value pairs for properties. If a string, then this is the
- *     className of the new element. If an array, the elements will be joined
- *     together as the className of the new element.
- * @param {...(Object|string|Array|NodeList)} var_args Further DOM nodes or
- *     strings for text nodes. If one of the var_args is an array or NodeList,
- *     its elements will be added as childNodes instead.
- * @return {R} Reference to a DOM node. The return type is {!Element} if tagName
- *     is a string or a more specific type if it is a member of
- *     goog.dom.TagName (e.g. {!HTMLAnchorElement} for goog.dom.TagName.A).
- * @template T
- * @template R := cond(isUnknown(T), 'Element', T) =:
- */
-goog.dom.createDom = function(tagName, opt_properties, var_args) {
-  return goog.dom.createDom_(document, arguments);
-};
-
-
-/**
- * Helper for {@code createDom}.
- * @param {!Document} doc The document to create the DOM in.
- * @param {!Arguments} args Argument object passed from the callers. See
- *     {@code goog.dom.createDom} for details.
- * @return {!Element} Reference to a DOM node.
- * @private
- */
-goog.dom.createDom_ = function(doc, args) {
-  var tagName = String(args[0]);
-  var attributes = args[1];
-
-  // Internet Explorer is dumb:
-  // name: https://msdn.microsoft.com/en-us/library/ms534184(v=vs.85).aspx
-  // type: https://msdn.microsoft.com/en-us/library/ms534700(v=vs.85).aspx
-  // Also does not allow setting of 'type' attribute on 'input' or 'button'.
-  if (!goog.dom.BrowserFeature.CAN_ADD_NAME_OR_TYPE_ATTRIBUTES && attributes &&
-      (attributes.name || attributes.type)) {
-    var tagNameArr = ['<', tagName];
-    if (attributes.name) {
-      tagNameArr.push(' name="', goog.string.htmlEscape(attributes.name), '"');
-    }
-    if (attributes.type) {
-      tagNameArr.push(' type="', goog.string.htmlEscape(attributes.type), '"');
-
-      // Clone attributes map to remove 'type' without mutating the input.
-      var clone = {};
-      goog.object.extend(clone, attributes);
-
-      // JSCompiler can't see how goog.object.extend added this property,
-      // because it was essentially added by reflection.
-      // So it needs to be quoted.
-      delete clone['type'];
-
-      attributes = clone;
-    }
-    tagNameArr.push('>');
-    tagName = tagNameArr.join('');
-  }
-
-  var element = doc.createElement(tagName);
-
-  if (attributes) {
-    if (goog.isString(attributes)) {
-      element.className = attributes;
-    } else if (goog.isArray(attributes)) {
-      element.className = attributes.join(' ');
-    } else {
-      goog.dom.setProperties(element, attributes);
-    }
-  }
-
-  if (args.length > 2) {
-    goog.dom.append_(doc, element, args, 2);
-  }
-
-  return element;
-};
-
-
-/**
- * Appends a node with text or other nodes.
- * @param {!Document} doc The document to create new nodes in.
- * @param {!Node} parent The node to append nodes to.
- * @param {!Arguments} args The values to add. See {@code goog.dom.append}.
- * @param {number} startIndex The index of the array to start from.
- * @private
- */
-goog.dom.append_ = function(doc, parent, args, startIndex) {
-  function childHandler(child) {
-    // TODO(pupius): More coercion, ala MochiKit?
-    if (child) {
-      parent.appendChild(
-          goog.isString(child) ? doc.createTextNode(child) : child);
-    }
-  }
-
-  for (var i = startIndex; i < args.length; i++) {
-    var arg = args[i];
-    // TODO(attila): Fix isArrayLike to return false for a text node.
-    if (goog.isArrayLike(arg) && !goog.dom.isNodeLike(arg)) {
-      // If the argument is a node list, not a real array, use a clone,
-      // because forEach can't be used to mutate a NodeList.
-      goog.array.forEach(
-          goog.dom.isNodeList(arg) ? goog.array.toArray(arg) : arg,
-          childHandler);
-    } else {
-      childHandler(arg);
-    }
-  }
-};
-
-
-/**
- * Alias for {@code createDom}.
- * @param {string|!goog.dom.TagName<T>} tagName Tag to create.
- * @param {(string|Object)=} opt_properties If object, then a map of name-value
- *     pairs for properties. If a string, then this is the className of the new
- *     element.
- * @param {...(Object|string|Array|NodeList)} var_args Further DOM nodes or
- *     strings for text nodes. If one of the var_args is an array, its
- *     children will be added as childNodes instead.
- * @return {R} Reference to a DOM node. The return type is {!Element} if tagName
- *     is a string or a more specific type if it is a member of
- *     goog.dom.TagName (e.g. {!HTMLAnchorElement} for goog.dom.TagName.A).
- * @template T
- * @template R := cond(isUnknown(T), 'Element', T) =:
- * @deprecated Use {@link goog.dom.createDom} instead.
- */
-goog.dom.$dom = goog.dom.createDom;
-
-
-/**
- * Creates a new element.
- * @param {string|!goog.dom.TagName<T>} name Tag to create.
- * @return {R} The new element. The return type is {!Element} if name is
- *     a string or a more specific type if it is a member of goog.dom.TagName
- *     (e.g. {!HTMLAnchorElement} for goog.dom.TagName.A).
- * @template T
- * @template R := cond(isUnknown(T), 'Element', T) =:
- */
-goog.dom.createElement = function(name) {
-  return goog.dom.createElement_(document, name);
-};
-
-
-/**
- * Creates a new element.
- * @param {!Document} doc The document to create the element in.
- * @param {string|!goog.dom.TagName<T>} name Tag to create.
- * @return {R} The new element. The return type is {!Element} if name is
- *     a string or a more specific type if it is a member of goog.dom.TagName
- *     (e.g. {!HTMLAnchorElement} for goog.dom.TagName.A).
- * @template T
- * @template R := cond(isUnknown(T), 'Element', T) =:
- * @private
- */
-goog.dom.createElement_ = function(doc, name) {
-  return doc.createElement(String(name));
-};
-
-
-/**
- * Creates a new text node.
- * @param {number|string} content Content.
- * @return {!Text} The new text node.
- */
-goog.dom.createTextNode = function(content) {
-  return document.createTextNode(String(content));
-};
-
-
-/**
- * Create a table.
- * @param {number} rows The number of rows in the table.  Must be >= 1.
- * @param {number} columns The number of columns in the table.  Must be >= 1.
- * @param {boolean=} opt_fillWithNbsp If true, fills table entries with
- *     {@code goog.string.Unicode.NBSP} characters.
- * @return {!Element} The created table.
- */
-goog.dom.createTable = function(rows, columns, opt_fillWithNbsp) {
-  // TODO(mlourenco): Return HTMLTableElement, also in prototype function.
-  // Callers need to be updated to e.g. not assign numbers to table.cellSpacing.
-  return goog.dom.createTable_(document, rows, columns, !!opt_fillWithNbsp);
-};
-
-
-/**
- * Create a table.
- * @param {!Document} doc Document object to use to create the table.
- * @param {number} rows The number of rows in the table.  Must be >= 1.
- * @param {number} columns The number of columns in the table.  Must be >= 1.
- * @param {boolean} fillWithNbsp If true, fills table entries with
- *     {@code goog.string.Unicode.NBSP} characters.
- * @return {!HTMLTableElement} The created table.
- * @private
- */
-goog.dom.createTable_ = function(doc, rows, columns, fillWithNbsp) {
-  var table = goog.dom.createElement_(doc, goog.dom.TagName.TABLE);
-  var tbody =
-      table.appendChild(goog.dom.createElement_(doc, goog.dom.TagName.TBODY));
-  for (var i = 0; i < rows; i++) {
-    var tr = goog.dom.createElement_(doc, goog.dom.TagName.TR);
-    for (var j = 0; j < columns; j++) {
-      var td = goog.dom.createElement_(doc, goog.dom.TagName.TD);
-      // IE <= 9 will create a text node if we set text content to the empty
-      // string, so we avoid doing it unless necessary. This ensures that the
-      // same DOM tree is returned on all browsers.
-      if (fillWithNbsp) {
-        goog.dom.setTextContent(td, goog.string.Unicode.NBSP);
-      }
-      tr.appendChild(td);
-    }
-    tbody.appendChild(tr);
-  }
-  return table;
-};
-
-
-
-/**
- * Creates a new Node from constant strings of HTML markup.
- * @param {...!goog.string.Const} var_args The HTML strings to concatenate then
- *     convert into a node.
- * @return {!Node}
- */
-goog.dom.constHtmlToNode = function(var_args) {
-  var stringArray = goog.array.map(arguments, goog.string.Const.unwrap);
-  var safeHtml =
-      goog.html.uncheckedconversions
-          .safeHtmlFromStringKnownToSatisfyTypeContract(
-              goog.string.Const.from(
-                  'Constant HTML string, that gets turned into a ' +
-                  'Node later, so it will be automatically balanced.'),
-              stringArray.join(''));
-  return goog.dom.safeHtmlToNode(safeHtml);
-};
-
-
-/**
- * Converts HTML markup into a node. This is a safe version of
- * {@code goog.dom.htmlToDocumentFragment} which is now deleted.
- * @param {!goog.html.SafeHtml} html The HTML markup to convert.
- * @return {!Node} The resulting node.
- */
-goog.dom.safeHtmlToNode = function(html) {
-  return goog.dom.safeHtmlToNode_(document, html);
-};
-
-
-/**
- * Helper for {@code safeHtmlToNode}.
- * @param {!Document} doc The document.
- * @param {!goog.html.SafeHtml} html The HTML markup to convert.
- * @return {!Node} The resulting node.
- * @private
- */
-goog.dom.safeHtmlToNode_ = function(doc, html) {
-  var tempDiv = goog.dom.createElement_(doc, goog.dom.TagName.DIV);
-  if (goog.dom.BrowserFeature.INNER_HTML_NEEDS_SCOPED_ELEMENT) {
-    goog.dom.safe.setInnerHtml(
-        tempDiv, goog.html.SafeHtml.concat(goog.html.SafeHtml.BR, html));
-    tempDiv.removeChild(tempDiv.firstChild);
-  } else {
-    goog.dom.safe.setInnerHtml(tempDiv, html);
-  }
-  return goog.dom.childrenToNode_(doc, tempDiv);
-};
-
-
-/**
- * Helper for {@code safeHtmlToNode_}.
- * @param {!Document} doc The document.
- * @param {!Node} tempDiv The input node.
- * @return {!Node} The resulting node.
- * @private
- */
-goog.dom.childrenToNode_ = function(doc, tempDiv) {
-  if (tempDiv.childNodes.length == 1) {
-    return tempDiv.removeChild(tempDiv.firstChild);
-  } else {
-    var fragment = doc.createDocumentFragment();
-    while (tempDiv.firstChild) {
-      fragment.appendChild(tempDiv.firstChild);
-    }
-    return fragment;
-  }
-};
-
-
-/**
- * Returns true if the browser is in "CSS1-compatible" (standards-compliant)
- * mode, false otherwise.
- * @return {boolean} True if in CSS1-compatible mode.
- */
-goog.dom.isCss1CompatMode = function() {
-  return goog.dom.isCss1CompatMode_(document);
-};
-
-
-/**
- * Returns true if the browser is in "CSS1-compatible" (standards-compliant)
- * mode, false otherwise.
- * @param {!Document} doc The document to check.
- * @return {boolean} True if in CSS1-compatible mode.
- * @private
- */
-goog.dom.isCss1CompatMode_ = function(doc) {
-  if (goog.dom.COMPAT_MODE_KNOWN_) {
-    return goog.dom.ASSUME_STANDARDS_MODE;
-  }
-
-  return doc.compatMode == 'CSS1Compat';
-};
-
-
-/**
- * Determines if the given node can contain children, intended to be used for
- * HTML generation.
- *
- * IE natively supports node.canHaveChildren but has inconsistent behavior.
- * Prior to IE8 the base tag allows children and in IE9 all nodes return true
- * for canHaveChildren.
- *
- * In practice all non-IE browsers allow you to add children to any node, but
- * the behavior is inconsistent:
- *
- * <pre>
- *   var a = goog.dom.createElement(goog.dom.TagName.BR);
- *   a.appendChild(document.createTextNode('foo'));
- *   a.appendChild(document.createTextNode('bar'));
- *   console.log(a.childNodes.length);  // 2
- *   console.log(a.innerHTML);  // Chrome: "", IE9: "foobar", FF3.5: "foobar"
- * </pre>
- *
- * For more information, see:
- * http://dev.w3.org/html5/markup/syntax.html#syntax-elements
- *
- * TODO(pupius): Rename shouldAllowChildren() ?
- *
- * @param {Node} node The node to check.
- * @return {boolean} Whether the node can contain children.
- */
-goog.dom.canHaveChildren = function(node) {
-  if (node.nodeType != goog.dom.NodeType.ELEMENT) {
-    return false;
-  }
-  switch (/** @type {!Element} */ (node).tagName) {
-    case String(goog.dom.TagName.APPLET):
-    case String(goog.dom.TagName.AREA):
-    case String(goog.dom.TagName.BASE):
-    case String(goog.dom.TagName.BR):
-    case String(goog.dom.TagName.COL):
-    case String(goog.dom.TagName.COMMAND):
-    case String(goog.dom.TagName.EMBED):
-    case String(goog.dom.TagName.FRAME):
-    case String(goog.dom.TagName.HR):
-    case String(goog.dom.TagName.IMG):
-    case String(goog.dom.TagName.INPUT):
-    case String(goog.dom.TagName.IFRAME):
-    case String(goog.dom.TagName.ISINDEX):
-    case String(goog.dom.TagName.KEYGEN):
-    case String(goog.dom.TagName.LINK):
-    case String(goog.dom.TagName.NOFRAMES):
-    case String(goog.dom.TagName.NOSCRIPT):
-    case String(goog.dom.TagName.META):
-    case String(goog.dom.TagName.OBJECT):
-    case String(goog.dom.TagName.PARAM):
-    case String(goog.dom.TagName.SCRIPT):
-    case String(goog.dom.TagName.SOURCE):
-    case String(goog.dom.TagName.STYLE):
-    case String(goog.dom.TagName.TRACK):
-    case String(goog.dom.TagName.WBR):
-      return false;
-  }
-  return true;
-};
-
-
-/**
- * Appends a child to a node.
- * @param {Node} parent Parent.
- * @param {Node} child Child.
- */
-goog.dom.appendChild = function(parent, child) {
-  parent.appendChild(child);
-};
-
-
-/**
- * Appends a node with text or other nodes.
- * @param {!Node} parent The node to append nodes to.
- * @param {...goog.dom.Appendable} var_args The things to append to the node.
- *     If this is a Node it is appended as is.
- *     If this is a string then a text node is appended.
- *     If this is an array like object then fields 0 to length - 1 are appended.
- */
-goog.dom.append = function(parent, var_args) {
-  goog.dom.append_(goog.dom.getOwnerDocument(parent), parent, arguments, 1);
-};
-
-
-/**
- * Removes all the child nodes on a DOM node.
- * @param {Node} node Node to remove children from.
- */
-goog.dom.removeChildren = function(node) {
-  // Note: Iterations over live collections can be slow, this is the fastest
-  // we could find. The double parenthesis are used to prevent JsCompiler and
-  // strict warnings.
-  var child;
-  while ((child = node.firstChild)) {
-    node.removeChild(child);
-  }
-};
-
-
-/**
- * Inserts a new node before an existing reference node (i.e. as the previous
- * sibling). If the reference node has no parent, then does nothing.
- * @param {Node} newNode Node to insert.
- * @param {Node} refNode Reference node to insert before.
- */
-goog.dom.insertSiblingBefore = function(newNode, refNode) {
-  if (refNode.parentNode) {
-    refNode.parentNode.insertBefore(newNode, refNode);
-  }
-};
-
-
-/**
- * Inserts a new node after an existing reference node (i.e. as the next
- * sibling). If the reference node has no parent, then does nothing.
- * @param {Node} newNode Node to insert.
- * @param {Node} refNode Reference node to insert after.
- */
-goog.dom.insertSiblingAfter = function(newNode, refNode) {
-  if (refNode.parentNode) {
-    refNode.parentNode.insertBefore(newNode, refNode.nextSibling);
-  }
-};
-
-
-/**
- * Insert a child at a given index. If index is larger than the number of child
- * nodes that the parent currently has, the node is inserted as the last child
- * node.
- * @param {Element} parent The element into which to insert the child.
- * @param {Node} child The element to insert.
- * @param {number} index The index at which to insert the new child node. Must
- *     not be negative.
- */
-goog.dom.insertChildAt = function(parent, child, index) {
-  // Note that if the second argument is null, insertBefore
-  // will append the child at the end of the list of children.
-  parent.insertBefore(child, parent.childNodes[index] || null);
-};
-
-
-/**
- * Removes a node from its parent.
- * @param {Node} node The node to remove.
- * @return {Node} The node removed if removed; else, null.
- */
-goog.dom.removeNode = function(node) {
-  return node && node.parentNode ? node.parentNode.removeChild(node) : null;
-};
-
-
-/**
- * Replaces a node in the DOM tree. Will do nothing if {@code oldNode} has no
- * parent.
- * @param {Node} newNode Node to insert.
- * @param {Node} oldNode Node to replace.
- */
-goog.dom.replaceNode = function(newNode, oldNode) {
-  var parent = oldNode.parentNode;
-  if (parent) {
-    parent.replaceChild(newNode, oldNode);
-  }
-};
-
-
-/**
- * Flattens an element. That is, removes it and replace it with its children.
- * Does nothing if the element is not in the document.
- * @param {Element} element The element to flatten.
- * @return {Element|undefined} The original element, detached from the document
- *     tree, sans children; or undefined, if the element was not in the document
- *     to begin with.
- */
-goog.dom.flattenElement = function(element) {
-  var child, parent = element.parentNode;
-  if (parent && parent.nodeType != goog.dom.NodeType.DOCUMENT_FRAGMENT) {
-    // Use IE DOM method (supported by Opera too) if available
-    if (element.removeNode) {
-      return /** @type {Element} */ (element.removeNode(false));
-    } else {
-      // Move all children of the original node up one level.
-      while ((child = element.firstChild)) {
-        parent.insertBefore(child, element);
-      }
-
-      // Detach the original element.
-      return /** @type {Element} */ (goog.dom.removeNode(element));
-    }
-  }
-};
-
-
-/**
- * Returns an array containing just the element children of the given element.
- * @param {Element} element The element whose element children we want.
- * @return {!(Array<!Element>|NodeList<!Element>)} An array or array-like list
- *     of just the element children of the given element.
- */
-goog.dom.getChildren = function(element) {
-  // We check if the children attribute is supported for child elements
-  // since IE8 misuses the attribute by also including comments.
-  if (goog.dom.BrowserFeature.CAN_USE_CHILDREN_ATTRIBUTE &&
-      element.children != undefined) {
-    return element.children;
-  }
-  // Fall back to manually filtering the element's child nodes.
-  return goog.array.filter(element.childNodes, function(node) {
-    return node.nodeType == goog.dom.NodeType.ELEMENT;
-  });
-};
-
-
-/**
- * Returns the first child node that is an element.
- * @param {Node} node The node to get the first child element of.
- * @return {Element} The first child node of {@code node} that is an element.
- */
-goog.dom.getFirstElementChild = function(node) {
-  if (goog.isDef(node.firstElementChild)) {
-    return /** @type {!Element} */ (node).firstElementChild;
-  }
-  return goog.dom.getNextElementNode_(node.firstChild, true);
-};
-
-
-/**
- * Returns the last child node that is an element.
- * @param {Node} node The node to get the last child element of.
- * @return {Element} The last child node of {@code node} that is an element.
- */
-goog.dom.getLastElementChild = function(node) {
-  if (goog.isDef(node.lastElementChild)) {
-    return /** @type {!Element} */ (node).lastElementChild;
-  }
-  return goog.dom.getNextElementNode_(node.lastChild, false);
-};
-
-
-/**
- * Returns the first next sibling that is an element.
- * @param {Node} node The node to get the next sibling element of.
- * @return {Element} The next sibling of {@code node} that is an element.
- */
-goog.dom.getNextElementSibling = function(node) {
-  if (goog.isDef(node.nextElementSibling)) {
-    return /** @type {!Element} */ (node).nextElementSibling;
-  }
-  return goog.dom.getNextElementNode_(node.nextSibling, true);
-};
-
-
-/**
- * Returns the first previous sibling that is an element.
- * @param {Node} node The node to get the previous sibling element of.
- * @return {Element} The first previous sibling of {@code node} that is
- *     an element.
- */
-goog.dom.getPreviousElementSibling = function(node) {
-  if (goog.isDef(node.previousElementSibling)) {
-    return /** @type {!Element} */ (node).previousElementSibling;
-  }
-  return goog.dom.getNextElementNode_(node.previousSibling, false);
-};
-
-
-/**
- * Returns the first node that is an element in the specified direction,
- * starting with {@code node}.
- * @param {Node} node The node to get the next element from.
- * @param {boolean} forward Whether to look forwards or backwards.
- * @return {Element} The first element.
- * @private
- */
-goog.dom.getNextElementNode_ = function(node, forward) {
-  while (node && node.nodeType != goog.dom.NodeType.ELEMENT) {
-    node = forward ? node.nextSibling : node.previousSibling;
-  }
-
-  return /** @type {Element} */ (node);
-};
-
-
-/**
- * Returns the next node in source order from the given node.
- * @param {Node} node The node.
- * @return {Node} The next node in the DOM tree, or null if this was the last
- *     node.
- */
-goog.dom.getNextNode = function(node) {
-  if (!node) {
-    return null;
-  }
-
-  if (node.firstChild) {
-    return node.firstChild;
-  }
-
-  while (node && !node.nextSibling) {
-    node = node.parentNode;
-  }
-
-  return node ? node.nextSibling : null;
-};
-
-
-/**
- * Returns the previous node in source order from the given node.
- * @param {Node} node The node.
- * @return {Node} The previous node in the DOM tree, or null if this was the
- *     first node.
- */
-goog.dom.getPreviousNode = function(node) {
-  if (!node) {
-    return null;
-  }
-
-  if (!node.previousSibling) {
-    return node.parentNode;
-  }
-
-  node = node.previousSibling;
-  while (node && node.lastChild) {
-    node = node.lastChild;
-  }
-
-  return node;
-};
-
-
-/**
- * Whether the object looks like a DOM node.
- * @param {?} obj The object being tested for node likeness.
- * @return {boolean} Whether the object looks like a DOM node.
- */
-goog.dom.isNodeLike = function(obj) {
-  return goog.isObject(obj) && obj.nodeType > 0;
-};
-
-
-/**
- * Whether the object looks like an Element.
- * @param {?} obj The object being tested for Element likeness.
- * @return {boolean} Whether the object looks like an Element.
- */
-goog.dom.isElement = function(obj) {
-  return goog.isObject(obj) && obj.nodeType == goog.dom.NodeType.ELEMENT;
-};
-
-
-/**
- * Returns true if the specified value is a Window object. This includes the
- * global window for HTML pages, and iframe windows.
- * @param {?} obj Variable to test.
- * @return {boolean} Whether the variable is a window.
- */
-goog.dom.isWindow = function(obj) {
-  return goog.isObject(obj) && obj['window'] == obj;
-};
-
-
-/**
- * Returns an element's parent, if it's an Element.
- * @param {Element} element The DOM element.
- * @return {Element} The parent, or null if not an Element.
- */
-goog.dom.getParentElement = function(element) {
-  var parent;
-  if (goog.dom.BrowserFeature.CAN_USE_PARENT_ELEMENT_PROPERTY) {
-    var isIe9 = goog.userAgent.IE && goog.userAgent.isVersionOrHigher('9') &&
-        !goog.userAgent.isVersionOrHigher('10');
-    // SVG elements in IE9 can't use the parentElement property.
-    // goog.global['SVGElement'] is not defined in IE9 quirks mode.
-    if (!(isIe9 && goog.global['SVGElement'] &&
-          element instanceof goog.global['SVGElement'])) {
-      parent = element.parentElement;
-      if (parent) {
-        return parent;
-      }
-    }
-  }
-  parent = element.parentNode;
-  return goog.dom.isElement(parent) ? /** @type {!Element} */ (parent) : null;
-};
-
-
-/**
- * Whether a node contains another node.
- * @param {?Node|undefined} parent The node that should contain the other node.
- * @param {?Node|undefined} descendant The node to test presence of.
- * @return {boolean} Whether the parent node contains the descendent node.
- */
-goog.dom.contains = function(parent, descendant) {
-  if (!parent || !descendant) {
-    return false;
-  }
-  // We use browser specific methods for this if available since it is faster
-  // that way.
-
-  // IE DOM
-  if (parent.contains && descendant.nodeType == goog.dom.NodeType.ELEMENT) {
-    return parent == descendant || parent.contains(descendant);
-  }
-
-  // W3C DOM Level 3
-  if (typeof parent.compareDocumentPosition != 'undefined') {
-    return parent == descendant ||
-        Boolean(parent.compareDocumentPosition(descendant) & 16);
-  }
-
-  // W3C DOM Level 1
-  while (descendant && parent != descendant) {
-    descendant = descendant.parentNode;
-  }
-  return descendant == parent;
-};
-
-
-/**
- * Compares the document order of two nodes, returning 0 if they are the same
- * node, a negative number if node1 is before node2, and a positive number if
- * node2 is before node1.  Note that we compare the order the tags appear in the
- * document so in the tree <b><i>text</i></b> the B node is considered to be
- * before the I node.
- *
- * @param {Node} node1 The first node to compare.
- * @param {Node} node2 The second node to compare.
- * @return {number} 0 if the nodes are the same node, a negative number if node1
- *     is before node2, and a positive number if node2 is before node1.
- */
-goog.dom.compareNodeOrder = function(node1, node2) {
-  // Fall out quickly for equality.
-  if (node1 == node2) {
-    return 0;
-  }
-
-  // Use compareDocumentPosition where available
-  if (node1.compareDocumentPosition) {
-    // 4 is the bitmask for FOLLOWS.
-    return node1.compareDocumentPosition(node2) & 2 ? 1 : -1;
-  }
-
-  // Special case for document nodes on IE 7 and 8.
-  if (goog.userAgent.IE && !goog.userAgent.isDocumentModeOrHigher(9)) {
-    if (node1.nodeType == goog.dom.NodeType.DOCUMENT) {
-      return -1;
-    }
-    if (node2.nodeType == goog.dom.NodeType.DOCUMENT) {
-      return 1;
-    }
-  }
-
-  // Process in IE using sourceIndex - we check to see if the first node has
-  // a source index or if its parent has one.
-  if ('sourceIndex' in node1 ||
-      (node1.parentNode && 'sourceIndex' in node1.parentNode)) {
-    var isElement1 = node1.nodeType == goog.dom.NodeType.ELEMENT;
-    var isElement2 = node2.nodeType == goog.dom.NodeType.ELEMENT;
-
-    if (isElement1 && isElement2) {
-      return node1.sourceIndex - node2.sourceIndex;
-    } else {
-      var parent1 = node1.parentNode;
-      var parent2 = node2.parentNode;
-
-      if (parent1 == parent2) {
-        return goog.dom.compareSiblingOrder_(node1, node2);
-      }
-
-      if (!isElement1 && goog.dom.contains(parent1, node2)) {
-        return -1 * goog.dom.compareParentsDescendantNodeIe_(node1, node2);
-      }
-
-
-      if (!isElement2 && goog.dom.contains(parent2, node1)) {
-        return goog.dom.compareParentsDescendantNodeIe_(node2, node1);
-      }
-
-      return (isElement1 ? node1.sourceIndex : parent1.sourceIndex) -
-          (isElement2 ? node2.sourceIndex : parent2.sourceIndex);
-    }
-  }
-
-  // For Safari, we compare ranges.
-  var doc = goog.dom.getOwnerDocument(node1);
-
-  var range1, range2;
-  range1 = doc.createRange();
-  range1.selectNode(node1);
-  range1.collapse(true);
-
-  range2 = doc.createRange();
-  range2.selectNode(node2);
-  range2.collapse(true);
-
-  return range1.compareBoundaryPoints(
-      goog.global['Range'].START_TO_END, range2);
-};
-
-
-/**
- * Utility function to compare the position of two nodes, when
- * {@code textNode}'s parent is an ancestor of {@code node}.  If this entry
- * condition is not met, this function will attempt to reference a null object.
- * @param {!Node} textNode The textNode to compare.
- * @param {Node} node The node to compare.
- * @return {number} -1 if node is before textNode, +1 otherwise.
- * @private
- */
-goog.dom.compareParentsDescendantNodeIe_ = function(textNode, node) {
-  var parent = textNode.parentNode;
-  if (parent == node) {
-    // If textNode is a child of node, then node comes first.
-    return -1;
-  }
-  var sibling = node;
-  while (sibling.parentNode != parent) {
-    sibling = sibling.parentNode;
-  }
-  return goog.dom.compareSiblingOrder_(sibling, textNode);
-};
-
-
-/**
- * Utility function to compare the position of two nodes known to be non-equal
- * siblings.
- * @param {Node} node1 The first node to compare.
- * @param {!Node} node2 The second node to compare.
- * @return {number} -1 if node1 is before node2, +1 otherwise.
- * @private
- */
-goog.dom.compareSiblingOrder_ = function(node1, node2) {
-  var s = node2;
-  while ((s = s.previousSibling)) {
-    if (s == node1) {
-      // We just found node1 before node2.
-      return -1;
-    }
-  }
-
-  // Since we didn't find it, node1 must be after node2.
-  return 1;
-};
-
-
-/**
- * Find the deepest common ancestor of the given nodes.
- * @param {...Node} var_args The nodes to find a common ancestor of.
- * @return {Node} The common ancestor of the nodes, or null if there is none.
- *     null will only be returned if two or more of the nodes are from different
- *     documents.
- */
-goog.dom.findCommonAncestor = function(var_args) {
-  var i, count = arguments.length;
-  if (!count) {
-    return null;
-  } else if (count == 1) {
-    return arguments[0];
-  }
-
-  var paths = [];
-  var minLength = Infinity;
-  for (i = 0; i < count; i++) {
-    // Compute the list of ancestors.
-    var ancestors = [];
-    var node = arguments[i];
-    while (node) {
-      ancestors.unshift(node);
-      node = node.parentNode;
-    }
-
-    // Save the list for comparison.
-    paths.push(ancestors);
-    minLength = Math.min(minLength, ancestors.length);
-  }
-  var output = null;
-  for (i = 0; i < minLength; i++) {
-    var first = paths[0][i];
-    for (var j = 1; j < count; j++) {
-      if (first != paths[j][i]) {
-        return output;
-      }
-    }
-    output = first;
-  }
-  return output;
-};
-
-
-/**
- * Returns the owner document for a node.
- * @param {Node|Window} node The node to get the document for.
- * @return {!Document} The document owning the node.
- */
-goog.dom.getOwnerDocument = function(node) {
-  // TODO(nnaze): Update param signature to be non-nullable.
-  goog.asserts.assert(node, 'Node cannot be null or undefined.');
-  return /** @type {!Document} */ (
-      node.nodeType == goog.dom.NodeType.DOCUMENT ? node : node.ownerDocument ||
-              node.document);
-};
-
-
-/**
- * Cross-browser function for getting the document element of a frame or iframe.
- * @param {Element} frame Frame element.
- * @return {!Document} The frame content document.
- */
-goog.dom.getFrameContentDocument = function(frame) {
-  return frame.contentDocument ||
-      /** @type {!HTMLFrameElement} */ (frame).contentWindow.document;
-};
-
-
-/**
- * Cross-browser function for getting the window of a frame or iframe.
- * @param {Element} frame Frame element.
- * @return {Window} The window associated with the given frame, or null if none
- *     exists.
- */
-goog.dom.getFrameContentWindow = function(frame) {
-  try {
-    return frame.contentWindow ||
-        (frame.contentDocument ? goog.dom.getWindow(frame.contentDocument) :
-                                 null);
-  } catch (e) {
-    // NOTE(jfedor): In IE8, checking the contentWindow or contentDocument
-    // properties will throw a "Unspecified Error" exception if the iframe is
-    // not inserted in the DOM. If we get this we can be sure that no window
-    // exists, so return null.
-  }
-  return null;
-};
-
-
-/**
- * Sets the text content of a node, with cross-browser support.
- * @param {Node} node The node to change the text content of.
- * @param {string|number} text The value that should replace the node's content.
- */
-goog.dom.setTextContent = function(node, text) {
-  goog.asserts.assert(
-      node != null,
-      'goog.dom.setTextContent expects a non-null value for node');
-
-  if ('textContent' in node) {
-    node.textContent = text;
-  } else if (node.nodeType == goog.dom.NodeType.TEXT) {
-    node.data = text;
-  } else if (
-      node.firstChild && node.firstChild.nodeType == goog.dom.NodeType.TEXT) {
-    // If the first child is a text node we just change its data and remove the
-    // rest of the children.
-    while (node.lastChild != node.firstChild) {
-      node.removeChild(node.lastChild);
-    }
-    node.firstChild.data = text;
-  } else {
-    goog.dom.removeChildren(node);
-    var doc = goog.dom.getOwnerDocument(node);
-    node.appendChild(doc.createTextNode(String(text)));
-  }
-};
-
-
-/**
- * Gets the outerHTML of a node, which islike innerHTML, except that it
- * actually contains the HTML of the node itself.
- * @param {Element} element The element to get the HTML of.
- * @return {string} The outerHTML of the given element.
- */
-goog.dom.getOuterHtml = function(element) {
-  goog.asserts.assert(
-      element !== null,
-      'goog.dom.getOuterHtml expects a non-null value for element');
-  // IE, Opera and WebKit all have outerHTML.
-  if ('outerHTML' in element) {
-    return element.outerHTML;
-  } else {
-    var doc = goog.dom.getOwnerDocument(element);
-    var div = goog.dom.createElement_(doc, goog.dom.TagName.DIV);
-    div.appendChild(element.cloneNode(true));
-    return div.innerHTML;
-  }
-};
-
-
-/**
- * Finds the first descendant node that matches the filter function, using
- * a depth first search. This function offers the most general purpose way
- * of finding a matching element. You may also wish to consider
- * {@code goog.dom.query} which can express many matching criteria using
- * CSS selector expressions. These expressions often result in a more
- * compact representation of the desired result.
- * @see goog.dom.query
- *
- * @param {Node} root The root of the tree to search.
- * @param {function(Node) : boolean} p The filter function.
- * @return {Node|undefined} The found node or undefined if none is found.
- */
-goog.dom.findNode = function(root, p) {
-  var rv = [];
-  var found = goog.dom.findNodes_(root, p, rv, true);
-  return found ? rv[0] : undefined;
-};
-
-
-/**
- * Finds all the descendant nodes that match the filter function, using a
- * a depth first search. This function offers the most general-purpose way
- * of finding a set of matching elements. You may also wish to consider
- * {@code goog.dom.query} which can express many matching criteria using
- * CSS selector expressions. These expressions often result in a more
- * compact representation of the desired result.
-
- * @param {Node} root The root of the tree to search.
- * @param {function(Node) : boolean} p The filter function.
- * @return {!Array<!Node>} The found nodes or an empty array if none are found.
- */
-goog.dom.findNodes = function(root, p) {
-  var rv = [];
-  goog.dom.findNodes_(root, p, rv, false);
-  return rv;
-};
-
-
-/**
- * Finds the first or all the descendant nodes that match the filter function,
- * using a depth first search.
- * @param {Node} root The root of the tree to search.
- * @param {function(Node) : boolean} p The filter function.
- * @param {!Array<!Node>} rv The found nodes are added to this array.
- * @param {boolean} findOne If true we exit after the first found node.
- * @return {boolean} Whether the search is complete or not. True in case findOne
- *     is true and the node is found. False otherwise.
- * @private
- */
-goog.dom.findNodes_ = function(root, p, rv, findOne) {
-  if (root != null) {
-    var child = root.firstChild;
-    while (child) {
-      if (p(child)) {
-        rv.push(child);
-        if (findOne) {
-          return true;
-        }
-      }
-      if (goog.dom.findNodes_(child, p, rv, findOne)) {
-        return true;
-      }
-      child = child.nextSibling;
-    }
-  }
-  return false;
-};
-
-
-/**
- * Map of tags whose content to ignore when calculating text length.
- * @private {!Object<string, number>}
- * @const
- */
-goog.dom.TAGS_TO_IGNORE_ = {
-  'SCRIPT': 1,
-  'STYLE': 1,
-  'HEAD': 1,
-  'IFRAME': 1,
-  'OBJECT': 1
-};
-
-
-/**
- * Map of tags which have predefined values with regard to whitespace.
- * @private {!Object<string, string>}
- * @const
- */
-goog.dom.PREDEFINED_TAG_VALUES_ = {
-  'IMG': ' ',
-  'BR': '\n'
-};
-
-
-/**
- * Returns true if the element has a tab index that allows it to receive
- * keyboard focus (tabIndex >= 0), false otherwise.  Note that some elements
- * natively support keyboard focus, even if they have no tab index.
- * @param {!Element} element Element to check.
- * @return {boolean} Whether the element has a tab index that allows keyboard
- *     focus.
- */
-goog.dom.isFocusableTabIndex = function(element) {
-  return goog.dom.hasSpecifiedTabIndex_(element) &&
-      goog.dom.isTabIndexFocusable_(element);
-};
-
-
-/**
- * Enables or disables keyboard focus support on the element via its tab index.
- * Only elements for which {@link goog.dom.isFocusableTabIndex} returns true
- * (or elements that natively support keyboard focus, like form elements) can
- * receive keyboard focus.  See http://go/tabindex for more info.
- * @param {Element} element Element whose tab index is to be changed.
- * @param {boolean} enable Whether to set or remove a tab index on the element
- *     that supports keyboard focus.
- */
-goog.dom.setFocusableTabIndex = function(element, enable) {
-  if (enable) {
-    element.tabIndex = 0;
-  } else {
-    // Set tabIndex to -1 first, then remove it. This is a workaround for
-    // Safari (confirmed in version 4 on Windows). When removing the attribute
-    // without setting it to -1 first, the element remains keyboard focusable
-    // despite not having a tabIndex attribute anymore.
-    element.tabIndex = -1;
-    element.removeAttribute('tabIndex');  // Must be camelCase!
-  }
-};
-
-
-/**
- * Returns true if the element can be focused, i.e. it has a tab index that
- * allows it to receive keyboard focus (tabIndex >= 0), or it is an element
- * that natively supports keyboard focus.
- * @param {!Element} element Element to check.
- * @return {boolean} Whether the element allows keyboard focus.
- */
-goog.dom.isFocusable = function(element) {
-  var focusable;
-  // Some elements can have unspecified tab index and still receive focus.
-  if (goog.dom.nativelySupportsFocus_(element)) {
-    // Make sure the element is not disabled ...
-    focusable = !element.disabled &&
-        // ... and if a tab index is specified, it allows focus.
-        (!goog.dom.hasSpecifiedTabIndex_(element) ||
-         goog.dom.isTabIndexFocusable_(element));
-  } else {
-    focusable = goog.dom.isFocusableTabIndex(element);
-  }
-
-  // IE requires elements to be visible in order to focus them.
-  return focusable && goog.userAgent.IE ?
-      goog.dom.hasNonZeroBoundingRect_(/** @type {!HTMLElement} */ (element)) :
-      focusable;
-};
-
-
-/**
- * Returns true if the element has a specified tab index.
- * @param {!Element} element Element to check.
- * @return {boolean} Whether the element has a specified tab index.
- * @private
- */
-goog.dom.hasSpecifiedTabIndex_ = function(element) {
-  // IE8 and below don't support hasAttribute(), instead check whether the
-  // 'tabindex' attributeNode is specified. Otherwise check hasAttribute().
-  if (goog.userAgent.IE && !goog.userAgent.isVersionOrHigher('9')) {
-    var attrNode = element.getAttributeNode('tabindex');  // Must be lowercase!
-    return goog.isDefAndNotNull(attrNode) && attrNode.specified;
-  } else {
-    return element.hasAttribute('tabindex');
-  }
-};
-
-
-/**
- * Returns true if the element's tab index allows the element to be focused.
- * @param {!Element} element Element to check.
- * @return {boolean} Whether the element's tab index allows focus.
- * @private
- */
-goog.dom.isTabIndexFocusable_ = function(element) {
-  var index = /** @type {!HTMLElement} */ (element).tabIndex;
-  // NOTE: IE9 puts tabIndex in 16-bit int, e.g. -2 is 65534.
-  return goog.isNumber(index) && index >= 0 && index < 32768;
-};
-
-
-/**
- * Returns true if the element is focusable even when tabIndex is not set.
- * @param {!Element} element Element to check.
- * @return {boolean} Whether the element natively supports focus.
- * @private
- */
-goog.dom.nativelySupportsFocus_ = function(element) {
-  return element.tagName == goog.dom.TagName.A ||
-      element.tagName == goog.dom.TagName.INPUT ||
-      element.tagName == goog.dom.TagName.TEXTAREA ||
-      element.tagName == goog.dom.TagName.SELECT ||
-      element.tagName == goog.dom.TagName.BUTTON;
-};
-
-
-/**
- * Returns true if the element has a bounding rectangle that would be visible
- * (i.e. its width and height are greater than zero).
- * @param {!HTMLElement} element Element to check.
- * @return {boolean} Whether the element has a non-zero bounding rectangle.
- * @private
- */
-goog.dom.hasNonZeroBoundingRect_ = function(element) {
-  var rect;
-  if (!goog.isFunction(element['getBoundingClientRect']) ||
-      // In IE, getBoundingClientRect throws on detached nodes.
-      (goog.userAgent.IE && element.parentElement == null)) {
-    rect = {'height': element.offsetHeight, 'width': element.offsetWidth};
-  } else {
-    rect = element.getBoundingClientRect();
-  }
-  return goog.isDefAndNotNull(rect) && rect.height > 0 && rect.width > 0;
-};
-
-
-/**
- * Returns the text content of the current node, without markup and invisible
- * symbols. New lines are stripped and whitespace is collapsed,
- * such that each character would be visible.
- *
- * In browsers that support it, innerText is used.  Other browsers attempt to
- * simulate it via node traversal.  Line breaks are canonicalized in IE.
- *
- * @param {Node} node The node from which we are getting content.
- * @return {string} The text content.
- */
-goog.dom.getTextContent = function(node) {
-  var textContent;
-  // Note(arv): IE9, Opera, and Safari 3 support innerText but they include
-  // text nodes in script tags. So we revert to use a user agent test here.
-  if (goog.dom.BrowserFeature.CAN_USE_INNER_TEXT && node !== null &&
-      ('innerText' in node)) {
-    textContent = goog.string.canonicalizeNewlines(node.innerText);
-    // Unfortunately .innerText() returns text with &shy; symbols
-    // We need to filter it out and then remove duplicate whitespaces
-  } else {
-    var buf = [];
-    goog.dom.getTextContent_(node, buf, true);
-    textContent = buf.join('');
-  }
-
-  // Strip &shy; entities. goog.format.insertWordBreaks inserts them in Opera.
-  textContent = textContent.replace(/ \xAD /g, ' ').replace(/\xAD/g, '');
-  // Strip &#8203; entities. goog.format.insertWordBreaks inserts them in IE8.
-  textContent = textContent.replace(/\u200B/g, '');
-
-  // Skip this replacement on old browsers with working innerText, which
-  // automatically turns &nbsp; into ' ' and / +/ into ' ' when reading
-  // innerText.
-  if (!goog.dom.BrowserFeature.CAN_USE_INNER_TEXT) {
-    textContent = textContent.replace(/ +/g, ' ');
-  }
-  if (textContent != ' ') {
-    textContent = textContent.replace(/^\s*/, '');
-  }
-
-  return textContent;
-};
-
-
-/**
- * Returns the text content of the current node, without markup.
- *
- * Unlike {@code getTextContent} this method does not collapse whitespaces
- * or normalize lines breaks.
- *
- * @param {Node} node The node from which we are getting content.
- * @return {string} The raw text content.
- */
-goog.dom.getRawTextContent = function(node) {
-  var buf = [];
-  goog.dom.getTextContent_(node, buf, false);
-
-  return buf.join('');
-};
-
-
-/**
- * Recursive support function for text content retrieval.
- *
- * @param {Node} node The node from which we are getting content.
- * @param {Array<string>} buf string buffer.
- * @param {boolean} normalizeWhitespace Whether to normalize whitespace.
- * @private
- */
-goog.dom.getTextContent_ = function(node, buf, normalizeWhitespace) {
-  if (node.nodeName in goog.dom.TAGS_TO_IGNORE_) {
-    // ignore certain tags
-  } else if (node.nodeType == goog.dom.NodeType.TEXT) {
-    if (normalizeWhitespace) {
-      buf.push(String(node.nodeValue).replace(/(\r\n|\r|\n)/g, ''));
-    } else {
-      buf.push(node.nodeValue);
-    }
-  } else if (node.nodeName in goog.dom.PREDEFINED_TAG_VALUES_) {
-    buf.push(goog.dom.PREDEFINED_TAG_VALUES_[node.nodeName]);
-  } else {
-    var child = node.firstChild;
-    while (child) {
-      goog.dom.getTextContent_(child, buf, normalizeWhitespace);
-      child = child.nextSibling;
-    }
-  }
-};
-
-
-/**
- * Returns the text length of the text contained in a node, without markup. This
- * is equivalent to the selection length if the node was selected, or the number
- * of cursor movements to traverse the node. Images & BRs take one space.  New
- * lines are ignored.
- *
- * @param {Node} node The node whose text content length is being calculated.
- * @return {number} The length of {@code node}'s text content.
- */
-goog.dom.getNodeTextLength = function(node) {
-  return goog.dom.getTextContent(node).length;
-};
-
-
-/**
- * Returns the text offset of a node relative to one of its ancestors. The text
- * length is the same as the length calculated by goog.dom.getNodeTextLength.
- *
- * @param {Node} node The node whose offset is being calculated.
- * @param {Node=} opt_offsetParent The node relative to which the offset will
- *     be calculated. Defaults to the node's owner document's body.
- * @return {number} The text offset.
- */
-goog.dom.getNodeTextOffset = function(node, opt_offsetParent) {
-  var root = opt_offsetParent || goog.dom.getOwnerDocument(node).body;
-  var buf = [];
-  while (node && node != root) {
-    var cur = node;
-    while ((cur = cur.previousSibling)) {
-      buf.unshift(goog.dom.getTextContent(cur));
-    }
-    node = node.parentNode;
-  }
-  // Trim left to deal with FF cases when there might be line breaks and empty
-  // nodes at the front of the text
-  return goog.string.trimLeft(buf.join('')).replace(/ +/g, ' ').length;
-};
-
-
-/**
- * Returns the node at a given offset in a parent node.  If an object is
- * provided for the optional third parameter, the node and the remainder of the
- * offset will stored as properties of this object.
- * @param {Node} parent The parent node.
- * @param {number} offset The offset into the parent node.
- * @param {Object=} opt_result Object to be used to store the return value. The
- *     return value will be stored in the form {node: Node, remainder: number}
- *     if this object is provided.
- * @return {Node} The node at the given offset.
- */
-goog.dom.getNodeAtOffset = function(parent, offset, opt_result) {
-  var stack = [parent], pos = 0, cur = null;
-  while (stack.length > 0 && pos < offset) {
-    cur = stack.pop();
-    if (cur.nodeName in goog.dom.TAGS_TO_IGNORE_) {
-      // ignore certain tags
-    } else if (cur.nodeType == goog.dom.NodeType.TEXT) {
-      var text = cur.nodeValue.replace(/(\r\n|\r|\n)/g, '').replace(/ +/g, ' ');
-      pos += text.length;
-    } else if (cur.nodeName in goog.dom.PREDEFINED_TAG_VALUES_) {
-      pos += goog.dom.PREDEFINED_TAG_VALUES_[cur.nodeName].length;
-    } else {
-      for (var i = cur.childNodes.length - 1; i >= 0; i--) {
-        stack.push(cur.childNodes[i]);
-      }
-    }
-  }
-  if (goog.isObject(opt_result)) {
-    opt_result.remainder = cur ? cur.nodeValue.length + offset - pos - 1 : 0;
-    opt_result.node = cur;
-  }
-
-  return cur;
-};
-
-
-/**
- * Returns true if the object is a {@code NodeList}.  To qualify as a NodeList,
- * the object must have a numeric length property and an item function (which
- * has type 'string' on IE for some reason).
- * @param {Object} val Object to test.
- * @return {boolean} Whether the object is a NodeList.
- */
-goog.dom.isNodeList = function(val) {
-  // TODO(attila): Now the isNodeList is part of goog.dom we can use
-  // goog.userAgent to make this simpler.
-  // A NodeList must have a length property of type 'number' on all platforms.
-  if (val && typeof val.length == 'number') {
-    // A NodeList is an object everywhere except Safari, where it's a function.
-    if (goog.isObject(val)) {
-      // A NodeList must have an item function (on non-IE platforms) or an item
-      // property of type 'string' (on IE).
-      return typeof val.item == 'function' || typeof val.item == 'string';
-    } else if (goog.isFunction(val)) {
-      // On Safari, a NodeList is a function with an item property that is also
-      // a function.
-      return typeof val.item == 'function';
-    }
-  }
-
-  // Not a NodeList.
-  return false;
-};
-
-
-/**
- * Walks up the DOM hierarchy returning the first ancestor that has the passed
- * tag name and/or class name. If the passed element matches the specified
- * criteria, the element itself is returned.
- * @param {Node} element The DOM node to start with.
- * @param {?(goog.dom.TagName<T>|string)=} opt_tag The tag name to match (or
- *     null/undefined to match only based on class name).
- * @param {?string=} opt_class The class name to match (or null/undefined to
- *     match only based on tag name).
- * @param {number=} opt_maxSearchSteps Maximum number of levels to search up the
- *     dom.
- * @return {?R} The first ancestor that matches the passed criteria, or
- *     null if no match is found. The return type is {?Element} if opt_tag is
- *     not a member of goog.dom.TagName or a more specific type if it is (e.g.
- *     {?HTMLAnchorElement} for goog.dom.TagName.A).
- * @template T
- * @template R := cond(isUnknown(T), 'Element', T) =:
- */
-goog.dom.getAncestorByTagNameAndClass = function(
-    element, opt_tag, opt_class, opt_maxSearchSteps) {
-  if (!opt_tag && !opt_class) {
-    return null;
-  }
-  var tagName = opt_tag ? String(opt_tag).toUpperCase() : null;
-  return /** @type {Element} */ (goog.dom.getAncestor(element, function(node) {
-    return (!tagName || node.nodeName == tagName) &&
-        (!opt_class ||
-         goog.isString(node.className) &&
-             goog.array.contains(node.className.split(/\s+/), opt_class));
-  }, true, opt_maxSearchSteps));
-};
-
-
-/**
- * Walks up the DOM hierarchy returning the first ancestor that has the passed
- * class name. If the passed element matches the specified criteria, the
- * element itself is returned.
- * @param {Node} element The DOM node to start with.
- * @param {string} className The class name to match.
- * @param {number=} opt_maxSearchSteps Maximum number of levels to search up the
- *     dom.
- * @return {Element} The first ancestor that matches the passed criteria, or
- *     null if none match.
- */
-goog.dom.getAncestorByClass = function(element, className, opt_maxSearchSteps) {
-  return goog.dom.getAncestorByTagNameAndClass(
-      element, null, className, opt_maxSearchSteps);
-};
-
-
-/**
- * Walks up the DOM hierarchy returning the first ancestor that passes the
- * matcher function.
- * @param {Node} element The DOM node to start with.
- * @param {function(Node) : boolean} matcher A function that returns true if the
- *     passed node matches the desired criteria.
- * @param {boolean=} opt_includeNode If true, the node itself is included in
- *     the search (the first call to the matcher will pass startElement as
- *     the node to test).
- * @param {number=} opt_maxSearchSteps Maximum number of levels to search up the
- *     dom.
- * @return {Node} DOM node that matched the matcher, or null if there was
- *     no match.
- */
-goog.dom.getAncestor = function(
-    element, matcher, opt_includeNode, opt_maxSearchSteps) {
-  if (element && !opt_includeNode) {
-    element = element.parentNode;
-  }
-  var steps = 0;
-  while (element &&
-         (opt_maxSearchSteps == null || steps <= opt_maxSearchSteps)) {
-    goog.asserts.assert(element.name != 'parentNode');
-    if (matcher(element)) {
-      return element;
-    }
-    element = element.parentNode;
-    steps++;
-  }
-  // Reached the root of the DOM without a match
-  return null;
-};
-
-
-/**
- * Determines the active element in the given document.
- * @param {Document} doc The document to look in.
- * @return {Element} The active element.
- */
-goog.dom.getActiveElement = function(doc) {
-  try {
-    return doc && doc.activeElement;
-  } catch (e) {
-    // NOTE(nicksantos): Sometimes, evaluating document.activeElement in IE
-    // throws an exception. I'm not 100% sure why, but I suspect it chokes
-    // on document.activeElement if the activeElement has been recently
-    // removed from the DOM by a JS operation.
-    //
-    // We assume that an exception here simply means
-    // "there is no active element."
-  }
-
-  return null;
-};
-
-
-/**
- * Gives the current devicePixelRatio.
- *
- * By default, this is the value of window.devicePixelRatio (which should be
- * preferred if present).
- *
- * If window.devicePixelRatio is not present, the ratio is calculated with
- * window.matchMedia, if present. Otherwise, gives 1.0.
- *
- * Some browsers (including Chrome) consider the browser zoom level in the pixel
- * ratio, so the value may change across multiple calls.
- *
- * @return {number} The number of actual pixels per virtual pixel.
- */
-goog.dom.getPixelRatio = function() {
-  var win = goog.dom.getWindow();
-  if (goog.isDef(win.devicePixelRatio)) {
-    return win.devicePixelRatio;
-  } else if (win.matchMedia) {
-    // Should be for IE10 and FF6-17 (this basically clamps to lower)
-    // Note that the order of these statements is important
-    return goog.dom.matchesPixelRatio_(3) || goog.dom.matchesPixelRatio_(2) ||
-           goog.dom.matchesPixelRatio_(1.5) || goog.dom.matchesPixelRatio_(1) ||
-           .75;
-  }
-  return 1;
-};
-
-
-/**
- * Calculates a mediaQuery to check if the current device supports the
- * given actual to virtual pixel ratio.
- * @param {number} pixelRatio The ratio of actual pixels to virtual pixels.
- * @return {number} pixelRatio if applicable, otherwise 0.
- * @private
- */
-goog.dom.matchesPixelRatio_ = function(pixelRatio) {
-  var win = goog.dom.getWindow();
-  /**
-   * Due to the 1:96 fixed ratio of CSS in to CSS px, 1dppx is equivalent to
-   * 96dpi.
-   * @const {number}
-   */
-  var dpiPerDppx = 96;
-  var query =
-      // FF16-17
-      '(min-resolution: ' + pixelRatio + 'dppx),' +
-      // FF6-15
-      '(min--moz-device-pixel-ratio: ' + pixelRatio + '),' +
-      // IE10 (this works for the two browsers above too but I don't want to
-      // trust the 1:96 fixed ratio magic)
-      '(min-resolution: ' + (pixelRatio * dpiPerDppx) + 'dpi)';
-  return win.matchMedia(query).matches ? pixelRatio : 0;
-};
-
-
-/**
- * Gets '2d' context of a canvas. Shortcut for canvas.getContext('2d') with a
- * type information.
- * @param {!HTMLCanvasElement} canvas
- * @return {!CanvasRenderingContext2D}
- */
-goog.dom.getCanvasContext2D = function(canvas) {
-  return /** @type {!CanvasRenderingContext2D} */ (canvas.getContext('2d'));
-};
-
-
-
-/**
- * Create an instance of a DOM helper with a new document object.
- * @param {Document=} opt_document Document object to associate with this
- *     DOM helper.
- * @constructor
- */
-goog.dom.DomHelper = function(opt_document) {
-  /**
-   * Reference to the document object to use
-   * @type {!Document}
-   * @private
-   */
-  this.document_ = opt_document || goog.global.document || document;
-};
-
-
-/**
- * Gets the dom helper object for the document where the element resides.
- * @param {Node=} opt_node If present, gets the DomHelper for this node.
- * @return {!goog.dom.DomHelper} The DomHelper.
- */
-goog.dom.DomHelper.prototype.getDomHelper = goog.dom.getDomHelper;
-
-
-/**
- * Sets the document object.
- * @param {!Document} document Document object.
- */
-goog.dom.DomHelper.prototype.setDocument = function(document) {
-  this.document_ = document;
-};
-
-
-/**
- * Gets the document object being used by the dom library.
- * @return {!Document} Document object.
- */
-goog.dom.DomHelper.prototype.getDocument = function() {
-  return this.document_;
-};
-
-
-/**
- * Alias for {@code getElementById}. If a DOM node is passed in then we just
- * return that.
- * @param {string|Element} element Element ID or a DOM node.
- * @return {Element} The element with the given ID, or the node passed in.
- */
-goog.dom.DomHelper.prototype.getElement = function(element) {
-  return goog.dom.getElementHelper_(this.document_, element);
-};
-
-
-/**
- * Gets an element by id, asserting that the element is found.
- *
- * This is used when an element is expected to exist, and should fail with
- * an assertion error if it does not (if assertions are enabled).
- *
- * @param {string} id Element ID.
- * @return {!Element} The element with the given ID, if it exists.
- */
-goog.dom.DomHelper.prototype.getRequiredElement = function(id) {
-  return goog.dom.getRequiredElementHelper_(this.document_, id);
-};
-
-
-/**
- * Alias for {@code getElement}.
- * @param {string|Element} element Element ID or a DOM node.
- * @return {Element} The element with the given ID, or the node passed in.
- * @deprecated Use {@link goog.dom.DomHelper.prototype.getElement} instead.
- */
-goog.dom.DomHelper.prototype.$ = goog.dom.DomHelper.prototype.getElement;
-
-
-/**
- * Gets elements by tag name.
- * @param {!goog.dom.TagName<T>} tagName
- * @param {(!Document|!Element)=} opt_parent Parent element or document where to
- *     look for elements. Defaults to document of this DomHelper.
- * @return {!NodeList<R>} List of elements. The members of the list are
- *     {!Element} if tagName is not a member of goog.dom.TagName or more
- *     specific types if it is (e.g. {!HTMLAnchorElement} for
- *     goog.dom.TagName.A).
- * @template T
- * @template R := cond(isUnknown(T), 'Element', T) =:
- */
-goog.dom.DomHelper.prototype.getElementsByTagName =
-    function(tagName, opt_parent) {
-  var parent = opt_parent || this.document_;
-  return parent.getElementsByTagName(String(tagName));
-};
-
-
-/**
- * Looks up elements by both tag and class name, using browser native functions
- * ({@code querySelectorAll}, {@code getElementsByTagName} or
- * {@code getElementsByClassName}) where possible. The returned array is a live
- * NodeList or a static list depending on the code path taken.
- *
- * @see goog.dom.query
- *
- * @param {(string|?goog.dom.TagName<T>)=} opt_tag Element tag name or * for all
- *     tags.
- * @param {?string=} opt_class Optional class name.
- * @param {(Document|Element)=} opt_el Optional element to look in.
- * @return {!IArrayLike<R>} Array-like list of elements (only a length property
- *     and numerical indices are guaranteed to exist). The members of the array
- *     are {!Element} if opt_tag is not a member of goog.dom.TagName or more
- *     specific types if it is (e.g. {!HTMLAnchorElement} for
- *     goog.dom.TagName.A).
- * @template T
- * @template R := cond(isUnknown(T), 'Element', T) =:
- */
-goog.dom.DomHelper.prototype.getElementsByTagNameAndClass = function(
-    opt_tag, opt_class, opt_el) {
-  return goog.dom.getElementsByTagNameAndClass_(
-      this.document_, opt_tag, opt_class, opt_el);
-};
-
-
-/**
- * Returns an array of all the elements with the provided className.
- * @see {goog.dom.query}
- * @param {string} className the name of the class to look for.
- * @param {Element|Document=} opt_el Optional element to look in.
- * @return {!IArrayLike<!Element>} The items found with the class name provided.
- */
-goog.dom.DomHelper.prototype.getElementsByClass = function(className, opt_el) {
-  var doc = opt_el || this.document_;
-  return goog.dom.getElementsByClass(className, doc);
-};
-
-
-/**
- * Returns the first element we find matching the provided class name.
- * @see {goog.dom.query}
- * @param {string} className the name of the class to look for.
- * @param {(Element|Document)=} opt_el Optional element to look in.
- * @return {Element} The first item found with the class name provided.
- */
-goog.dom.DomHelper.prototype.getElementByClass = function(className, opt_el) {
-  var doc = opt_el || this.document_;
-  return goog.dom.getElementByClass(className, doc);
-};
-
-
-/**
- * Ensures an element with the given className exists, and then returns the
- * first element with the provided className.
- * @see {goog.dom.query}
- * @param {string} className the name of the class to look for.
- * @param {(!Element|!Document)=} opt_root Optional element or document to look
- *     in.
- * @return {!Element} The first item found with the class name provided.
- * @throws {goog.asserts.AssertionError} Thrown if no element is found.
- */
-goog.dom.DomHelper.prototype.getRequiredElementByClass = function(
-    className, opt_root) {
-  var root = opt_root || this.document_;
-  return goog.dom.getRequiredElementByClass(className, root);
-};
-
-
-/**
- * Alias for {@code getElementsByTagNameAndClass}.
- * @deprecated Use DomHelper getElementsByTagNameAndClass.
- * @see goog.dom.query
- *
- * @param {(string|?goog.dom.TagName<T>)=} opt_tag Element tag name.
- * @param {?string=} opt_class Optional class name.
- * @param {Element=} opt_el Optional element to look in.
- * @return {!IArrayLike<R>} Array-like list of elements (only a length property
- *     and numerical indices are guaranteed to exist). The members of the array
- *     are {!Element} if opt_tag is a string or more specific types if it is
- *     a member of goog.dom.TagName (e.g. {!HTMLAnchorElement} for
- *     goog.dom.TagName.A).
- * @template T
- * @template R := cond(isUnknown(T), 'Element', T) =:
- */
-goog.dom.DomHelper.prototype.$$ =
-    goog.dom.DomHelper.prototype.getElementsByTagNameAndClass;
-
-
-/**
- * Sets a number of properties on a node.
- * @param {Element} element DOM node to set properties on.
- * @param {Object} properties Hash of property:value pairs.
- */
-goog.dom.DomHelper.prototype.setProperties = goog.dom.setProperties;
-
-
-/**
- * Gets the dimensions of the viewport.
- * @param {Window=} opt_window Optional window element to test. Defaults to
- *     the window of the Dom Helper.
- * @return {!goog.math.Size} Object with values 'width' and 'height'.
- */
-goog.dom.DomHelper.prototype.getViewportSize = function(opt_window) {
-  // TODO(arv): This should not take an argument. That breaks the rule of a
-  // a DomHelper representing a single frame/window/document.
-  return goog.dom.getViewportSize(opt_window || this.getWindow());
-};
-
-
-/**
- * Calculates the height of the document.
- *
- * @return {number} The height of the document.
- */
-goog.dom.DomHelper.prototype.getDocumentHeight = function() {
-  return goog.dom.getDocumentHeight_(this.getWindow());
-};
-
-
-/**
- * Typedef for use with goog.dom.createDom and goog.dom.append.
- * @typedef {Object|string|Array|NodeList}
- */
-goog.dom.Appendable;
-
-
-/**
- * Returns a dom node with a set of attributes.  This function accepts varargs
- * for subsequent nodes to be added.  Subsequent nodes will be added to the
- * first node as childNodes.
- *
- * So:
- * <code>createDom(goog.dom.TagName.DIV, null, createDom(goog.dom.TagName.P), createDom(goog.dom.TagName.P));</code>
- * would return a div with two child paragraphs
- *
- * An easy way to move all child nodes of an existing element to a new parent
- * element is:
- * <code>createDom(goog.dom.TagName.DIV, null, oldElement.childNodes);</code>
- * which will remove all child nodes from the old element and add them as
- * child nodes of the new DIV.
- *
- * @param {string|!goog.dom.TagName<T>} tagName Tag to create.
- * @param {Object|string=} opt_attributes If object, then a map of name-value
- *     pairs for attributes. If a string, then this is the className of the new
- *     element.
- * @param {...goog.dom.Appendable} var_args Further DOM nodes or
- *     strings for text nodes. If one of the var_args is an array or
- *     NodeList, its elements will be added as childNodes instead.
- * @return {R} Reference to a DOM node. The return type is {!Element} if tagName
- *     is a string or a more specific type if it is a member of
- *     goog.dom.TagName (e.g. {!HTMLAnchorElement} for goog.dom.TagName.A).
- * @template T
- * @template R := cond(isUnknown(T), 'Element', T) =:
- */
-goog.dom.DomHelper.prototype.createDom = function(
-    tagName, opt_attributes, var_args) {
-  return goog.dom.createDom_(this.document_, arguments);
-};
-
-
-/**
- * Alias for {@code createDom}.
- * @param {string|!goog.dom.TagName<T>} tagName Tag to create.
- * @param {(Object|string)=} opt_attributes If object, then a map of name-value
- *     pairs for attributes. If a string, then this is the className of the new
- *     element.
- * @param {...goog.dom.Appendable} var_args Further DOM nodes or strings for
- *     text nodes.  If one of the var_args is an array, its children will be
- *     added as childNodes instead.
- * @return {R} Reference to a DOM node. The return type is {!Element} if tagName
- *     is a string or a more specific type if it is a member of
- *     goog.dom.TagName (e.g. {!HTMLAnchorElement} for goog.dom.TagName.A).
- * @template T
- * @template R := cond(isUnknown(T), 'Element', T) =:
- * @deprecated Use {@link goog.dom.DomHelper.prototype.createDom} instead.
- */
-goog.dom.DomHelper.prototype.$dom = goog.dom.DomHelper.prototype.createDom;
-
-
-/**
- * Creates a new element.
- * @param {string|!goog.dom.TagName<T>} name Tag to create.
- * @return {R} The new element. The return type is {!Element} if name is
- *     a string or a more specific type if it is a member of goog.dom.TagName
- *     (e.g. {!HTMLAnchorElement} for goog.dom.TagName.A).
- * @template T
- * @template R := cond(isUnknown(T), 'Element', T) =:
- */
-goog.dom.DomHelper.prototype.createElement = function(name) {
-  return goog.dom.createElement_(this.document_, name);
-};
-
-
-/**
- * Creates a new text node.
- * @param {number|string} content Content.
- * @return {!Text} The new text node.
- */
-goog.dom.DomHelper.prototype.createTextNode = function(content) {
-  return this.document_.createTextNode(String(content));
-};
-
-
-/**
- * Create a table.
- * @param {number} rows The number of rows in the table.  Must be >= 1.
- * @param {number} columns The number of columns in the table.  Must be >= 1.
- * @param {boolean=} opt_fillWithNbsp If true, fills table entries with
- *     {@code goog.string.Unicode.NBSP} characters.
- * @return {!HTMLElement} The created table.
- */
-goog.dom.DomHelper.prototype.createTable = function(
-    rows, columns, opt_fillWithNbsp) {
-  return goog.dom.createTable_(
-      this.document_, rows, columns, !!opt_fillWithNbsp);
-};
-
-
-/**
- * Converts an HTML into a node or a document fragment. A single Node is used if
- * {@code html} only generates a single node. If {@code html} generates multiple
- * nodes then these are put inside a {@code DocumentFragment}. This is a safe
- * version of {@code goog.dom.DomHelper#htmlToDocumentFragment} which is now
- * deleted.
- * @param {!goog.html.SafeHtml} html The HTML markup to convert.
- * @return {!Node} The resulting node.
- */
-goog.dom.DomHelper.prototype.safeHtmlToNode = function(html) {
-  return goog.dom.safeHtmlToNode_(this.document_, html);
-};
-
-
-/**
- * Returns true if the browser is in "CSS1-compatible" (standards-compliant)
- * mode, false otherwise.
- * @return {boolean} True if in CSS1-compatible mode.
- */
-goog.dom.DomHelper.prototype.isCss1CompatMode = function() {
-  return goog.dom.isCss1CompatMode_(this.document_);
-};
-
-
-/**
- * Gets the window object associated with the document.
- * @return {!Window} The window associated with the given document.
- */
-goog.dom.DomHelper.prototype.getWindow = function() {
-  return goog.dom.getWindow_(this.document_);
-};
-
-
-/**
- * Gets the document scroll element.
- * @return {!Element} Scrolling element.
- */
-goog.dom.DomHelper.prototype.getDocumentScrollElement = function() {
-  return goog.dom.getDocumentScrollElement_(this.document_);
-};
-
-
-/**
- * Gets the document scroll distance as a coordinate object.
- * @return {!goog.math.Coordinate} Object with properties 'x' and 'y'.
- */
-goog.dom.DomHelper.prototype.getDocumentScroll = function() {
-  return goog.dom.getDocumentScroll_(this.document_);
-};
-
-
-/**
- * Determines the active element in the given document.
- * @param {Document=} opt_doc The document to look in.
- * @return {Element} The active element.
- */
-goog.dom.DomHelper.prototype.getActiveElement = function(opt_doc) {
-  return goog.dom.getActiveElement(opt_doc || this.document_);
-};
-
-
-/**
- * Appends a child to a node.
- * @param {Node} parent Parent.
- * @param {Node} child Child.
- */
-goog.dom.DomHelper.prototype.appendChild = goog.dom.appendChild;
-
-
-/**
- * Appends a node with text or other nodes.
- * @param {!Node} parent The node to append nodes to.
- * @param {...goog.dom.Appendable} var_args The things to append to the node.
- *     If this is a Node it is appended as is.
- *     If this is a string then a text node is appended.
- *     If this is an array like object then fields 0 to length - 1 are appended.
- */
-goog.dom.DomHelper.prototype.append = goog.dom.append;
-
-
-/**
- * Determines if the given node can contain children, intended to be used for
- * HTML generation.
- *
- * @param {Node} node The node to check.
- * @return {boolean} Whether the node can contain children.
- */
-goog.dom.DomHelper.prototype.canHaveChildren = goog.dom.canHaveChildren;
-
-
-/**
- * Removes all the child nodes on a DOM node.
- * @param {Node} node Node to remove children from.
- */
-goog.dom.DomHelper.prototype.removeChildren = goog.dom.removeChildren;
-
-
-/**
- * Inserts a new node before an existing reference node (i.e., as the previous
- * sibling). If the reference node has no parent, then does nothing.
- * @param {Node} newNode Node to insert.
- * @param {Node} refNode Reference node to insert before.
- */
-goog.dom.DomHelper.prototype.insertSiblingBefore = goog.dom.insertSiblingBefore;
-
-
-/**
- * Inserts a new node after an existing reference node (i.e., as the next
- * sibling). If the reference node has no parent, then does nothing.
- * @param {Node} newNode Node to insert.
- * @param {Node} refNode Reference node to insert after.
- */
-goog.dom.DomHelper.prototype.insertSiblingAfter = goog.dom.insertSiblingAfter;
-
-
-/**
- * Insert a child at a given index. If index is larger than the number of child
- * nodes that the parent currently has, the node is inserted as the last child
- * node.
- * @param {Element} parent The element into which to insert the child.
- * @param {Node} child The element to insert.
- * @param {number} index The index at which to insert the new child node. Must
- *     not be negative.
- */
-goog.dom.DomHelper.prototype.insertChildAt = goog.dom.insertChildAt;
-
-
-/**
- * Removes a node from its parent.
- * @param {Node} node The node to remove.
- * @return {Node} The node removed if removed; else, null.
- */
-goog.dom.DomHelper.prototype.removeNode = goog.dom.removeNode;
-
-
-/**
- * Replaces a node in the DOM tree. Will do nothing if {@code oldNode} has no
- * parent.
- * @param {Node} newNode Node to insert.
- * @param {Node} oldNode Node to replace.
- */
-goog.dom.DomHelper.prototype.replaceNode = goog.dom.replaceNode;
-
-
-/**
- * Flattens an element. That is, removes it and replace it with its children.
- * @param {Element} element The element to flatten.
- * @return {Element|undefined} The original element, detached from the document
- *     tree, sans children, or undefined if the element was already not in the
- *     document.
- */
-goog.dom.DomHelper.prototype.flattenElement = goog.dom.flattenElement;
-
-
-/**
- * Returns an array containing just the element children of the given element.
- * @param {Element} element The element whose element children we want.
- * @return {!(Array<!Element>|NodeList<!Element>)} An array or array-like list
- *     of just the element children of the given element.
- */
-goog.dom.DomHelper.prototype.getChildren = goog.dom.getChildren;
-
-
-/**
- * Returns the first child node that is an element.
- * @param {Node} node The node to get the first child element of.
- * @return {Element} The first child node of {@code node} that is an element.
- */
-goog.dom.DomHelper.prototype.getFirstElementChild =
-    goog.dom.getFirstElementChild;
-
-
-/**
- * Returns the last child node that is an element.
- * @param {Node} node The node to get the last child element of.
- * @return {Element} The last child node of {@code node} that is an element.
- */
-goog.dom.DomHelper.prototype.getLastElementChild = goog.dom.getLastElementChild;
-
-
-/**
- * Returns the first next sibling that is an element.
- * @param {Node} node The node to get the next sibling element of.
- * @return {Element} The next sibling of {@code node} that is an element.
- */
-goog.dom.DomHelper.prototype.getNextElementSibling =
-    goog.dom.getNextElementSibling;
-
-
-/**
- * Returns the first previous sibling that is an element.
- * @param {Node} node The node to get the previous sibling element of.
- * @return {Element} The first previous sibling of {@code node} that is
- *     an element.
- */
-goog.dom.DomHelper.prototype.getPreviousElementSibling =
-    goog.dom.getPreviousElementSibling;
-
-
-/**
- * Returns the next node in source order from the given node.
- * @param {Node} node The node.
- * @return {Node} The next node in the DOM tree, or null if this was the last
- *     node.
- */
-goog.dom.DomHelper.prototype.getNextNode = goog.dom.getNextNode;
-
-
-/**
- * Returns the previous node in source order from the given node.
- * @param {Node} node The node.
- * @return {Node} The previous node in the DOM tree, or null if this was the
- *     first node.
- */
-goog.dom.DomHelper.prototype.getPreviousNode = goog.dom.getPreviousNode;
-
-
-/**
- * Whether the object looks like a DOM node.
- * @param {?} obj The object being tested for node likeness.
- * @return {boolean} Whether the object looks like a DOM node.
- */
-goog.dom.DomHelper.prototype.isNodeLike = goog.dom.isNodeLike;
-
-
-/**
- * Whether the object looks like an Element.
- * @param {?} obj The object being tested for Element likeness.
- * @return {boolean} Whether the object looks like an Element.
- */
-goog.dom.DomHelper.prototype.isElement = goog.dom.isElement;
-
-
-/**
- * Returns true if the specified value is a Window object. This includes the
- * global window for HTML pages, and iframe windows.
- * @param {?} obj Variable to test.
- * @return {boolean} Whether the variable is a window.
- */
-goog.dom.DomHelper.prototype.isWindow = goog.dom.isWindow;
-
-
-/**
- * Returns an element's parent, if it's an Element.
- * @param {Element} element The DOM element.
- * @return {Element} The parent, or null if not an Element.
- */
-goog.dom.DomHelper.prototype.getParentElement = goog.dom.getParentElement;
-
-
-/**
- * Whether a node contains another node.
- * @param {Node} parent The node that should contain the other node.
- * @param {Node} descendant The node to test presence of.
- * @return {boolean} Whether the parent node contains the descendent node.
- */
-goog.dom.DomHelper.prototype.contains = goog.dom.contains;
-
-
-/**
- * Compares the document order of two nodes, returning 0 if they are the same
- * node, a negative number if node1 is before node2, and a positive number if
- * node2 is before node1.  Note that we compare the order the tags appear in the
- * document so in the tree <b><i>text</i></b> the B node is considered to be
- * before the I node.
- *
- * @param {Node} node1 The first node to compare.
- * @param {Node} node2 The second node to compare.
- * @return {number} 0 if the nodes are the same node, a negative number if node1
- *     is before node2, and a positive number if node2 is before node1.
- */
-goog.dom.DomHelper.prototype.compareNodeOrder = goog.dom.compareNodeOrder;
-
-
-/**
- * Find the deepest common ancestor of the given nodes.
- * @param {...Node} var_args The nodes to find a common ancestor of.
- * @return {Node} The common ancestor of the nodes, or null if there is none.
- *     null will only be returned if two or more of the nodes are from different
- *     documents.
- */
-goog.dom.DomHelper.prototype.findCommonAncestor = goog.dom.findCommonAncestor;
-
-
-/**
- * Returns the owner document for a node.
- * @param {Node} node The node to get the document for.
- * @return {!Document} The document owning the node.
- */
-goog.dom.DomHelper.prototype.getOwnerDocument = goog.dom.getOwnerDocument;
-
-
-/**
- * Cross browser function for getting the document element of an iframe.
- * @param {Element} iframe Iframe element.
- * @return {!Document} The frame content document.
- */
-goog.dom.DomHelper.prototype.getFrameContentDocument =
-    goog.dom.getFrameContentDocument;
-
-
-/**
- * Cross browser function for getting the window of a frame or iframe.
- * @param {Element} frame Frame element.
- * @return {Window} The window associated with the given frame.
- */
-goog.dom.DomHelper.prototype.getFrameContentWindow =
-    goog.dom.getFrameContentWindow;
-
-
-/**
- * Sets the text content of a node, with cross-browser support.
- * @param {Node} node The node to change the text content of.
- * @param {string|number} text The value that should replace the node's content.
- */
-goog.dom.DomHelper.prototype.setTextContent = goog.dom.setTextContent;
-
-
-/**
- * Gets the outerHTML of a node, which islike innerHTML, except that it
- * actually contains the HTML of the node itself.
- * @param {Element} element The element to get the HTML of.
- * @return {string} The outerHTML of the given element.
- */
-goog.dom.DomHelper.prototype.getOuterHtml = goog.dom.getOuterHtml;
-
-
-/**
- * Finds the first descendant node that matches the filter function. This does
- * a depth first search.
- * @param {Node} root The root of the tree to search.
- * @param {function(Node) : boolean} p The filter function.
- * @return {Node|undefined} The found node or undefined if none is found.
- */
-goog.dom.DomHelper.prototype.findNode = goog.dom.findNode;
-
-
-/**
- * Finds all the descendant nodes that matches the filter function. This does a
- * depth first search.
- * @param {Node} root The root of the tree to search.
- * @param {function(Node) : boolean} p The filter function.
- * @return {Array<Node>} The found nodes or an empty array if none are found.
- */
-goog.dom.DomHelper.prototype.findNodes = goog.dom.findNodes;
-
-
-/**
- * Returns true if the element has a tab index that allows it to receive
- * keyboard focus (tabIndex >= 0), false otherwise.  Note that some elements
- * natively support keyboard focus, even if they have no tab index.
- * @param {!Element} element Element to check.
- * @return {boolean} Whether the element has a tab index that allows keyboard
- *     focus.
- */
-goog.dom.DomHelper.prototype.isFocusableTabIndex = goog.dom.isFocusableTabIndex;
-
-
-/**
- * Enables or disables keyboard focus support on the element via its tab index.
- * Only elements for which {@link goog.dom.isFocusableTabIndex} returns true
- * (or elements that natively support keyboard focus, like form elements) can
- * receive keyboard focus.  See http://go/tabindex for more info.
- * @param {Element} element Element whose tab index is to be changed.
- * @param {boolean} enable Whether to set or remove a tab index on the element
- *     that supports keyboard focus.
- */
-goog.dom.DomHelper.prototype.setFocusableTabIndex =
-    goog.dom.setFocusableTabIndex;
-
-
-/**
- * Returns true if the element can be focused, i.e. it has a tab index that
- * allows it to receive keyboard focus (tabIndex >= 0), or it is an element
- * that natively supports keyboard focus.
- * @param {!Element} element Element to check.
- * @return {boolean} Whether the element allows keyboard focus.
- */
-goog.dom.DomHelper.prototype.isFocusable = goog.dom.isFocusable;
-
-
-/**
- * Returns the text contents of the current node, without markup. New lines are
- * stripped and whitespace is collapsed, such that each character would be
- * visible.
- *
- * In browsers that support it, innerText is used.  Other browsers attempt to
- * simulate it via node traversal.  Line breaks are canonicalized in IE.
- *
- * @param {Node} node The node from which we are getting content.
- * @return {string} The text content.
- */
-goog.dom.DomHelper.prototype.getTextContent = goog.dom.getTextContent;
-
-
-/**
- * Returns the text length of the text contained in a node, without markup. This
- * is equivalent to the selection length if the node was selected, or the number
- * of cursor movements to traverse the node. Images & BRs take one space.  New
- * lines are ignored.
- *
- * @param {Node} node The node whose text content length is being calculated.
- * @return {number} The length of {@code node}'s text content.
- */
-goog.dom.DomHelper.prototype.getNodeTextLength = goog.dom.getNodeTextLength;
-
-
-/**
- * Returns the text offset of a node relative to one of its ancestors. The text
- * length is the same as the length calculated by
- * {@code goog.dom.getNodeTextLength}.
- *
- * @param {Node} node The node whose offset is being calculated.
- * @param {Node=} opt_offsetParent Defaults to the node's owner document's body.
- * @return {number} The text offset.
- */
-goog.dom.DomHelper.prototype.getNodeTextOffset = goog.dom.getNodeTextOffset;
-
-
-/**
- * Returns the node at a given offset in a parent node.  If an object is
- * provided for the optional third parameter, the node and the remainder of the
- * offset will stored as properties of this object.
- * @param {Node} parent The parent node.
- * @param {number} offset The offset into the parent node.
- * @param {Object=} opt_result Object to be used to store the return value. The
- *     return value will be stored in the form {node: Node, remainder: number}
- *     if this object is provided.
- * @return {Node} The node at the given offset.
- */
-goog.dom.DomHelper.prototype.getNodeAtOffset = goog.dom.getNodeAtOffset;
-
-
-/**
- * Returns true if the object is a {@code NodeList}.  To qualify as a NodeList,
- * the object must have a numeric length property and an item function (which
- * has type 'string' on IE for some reason).
- * @param {Object} val Object to test.
- * @return {boolean} Whether the object is a NodeList.
- */
-goog.dom.DomHelper.prototype.isNodeList = goog.dom.isNodeList;
-
-
-/**
- * Walks up the DOM hierarchy returning the first ancestor that has the passed
- * tag name and/or class name. If the passed element matches the specified
- * criteria, the element itself is returned.
- * @param {Node} element The DOM node to start with.
- * @param {?(goog.dom.TagName<T>|string)=} opt_tag The tag name to match (or
- *     null/undefined to match only based on class name).
- * @param {?string=} opt_class The class name to match (or null/undefined to
- *     match only based on tag name).
- * @param {number=} opt_maxSearchSteps Maximum number of levels to search up the
- *     dom.
- * @return {?R} The first ancestor that matches the passed criteria, or
- *     null if no match is found. The return type is {?Element} if opt_tag is
- *     not a member of goog.dom.TagName or a more specific type if it is (e.g.
- *     {?HTMLAnchorElement} for goog.dom.TagName.A).
- * @template T
- * @template R := cond(isUnknown(T), 'Element', T) =:
- */
-goog.dom.DomHelper.prototype.getAncestorByTagNameAndClass =
-    goog.dom.getAncestorByTagNameAndClass;
-
-
-/**
- * Walks up the DOM hierarchy returning the first ancestor that has the passed
- * class name. If the passed element matches the specified criteria, the
- * element itself is returned.
- * @param {Node} element The DOM node to start with.
- * @param {string} class The class name to match.
- * @param {number=} opt_maxSearchSteps Maximum number of levels to search up the
- *     dom.
- * @return {Element} The first ancestor that matches the passed criteria, or
- *     null if none match.
- */
-goog.dom.DomHelper.prototype.getAncestorByClass = goog.dom.getAncestorByClass;
-
-
-/**
- * Walks up the DOM hierarchy returning the first ancestor that passes the
- * matcher function.
- * @param {Node} element The DOM node to start with.
- * @param {function(Node) : boolean} matcher A function that returns true if the
- *     passed node matches the desired criteria.
- * @param {boolean=} opt_includeNode If true, the node itself is included in
- *     the search (the first call to the matcher will pass startElement as
- *     the node to test).
- * @param {number=} opt_maxSearchSteps Maximum number of levels to search up the
- *     dom.
- * @return {Node} DOM node that matched the matcher, or null if there was
- *     no match.
- */
-goog.dom.DomHelper.prototype.getAncestor = goog.dom.getAncestor;
-
-
-/**
- * Gets '2d' context of a canvas. Shortcut for canvas.getContext('2d') with a
- * type information.
- * @param {!HTMLCanvasElement} canvas
- * @return {!CanvasRenderingContext2D}
- */
-goog.dom.DomHelper.prototype.getCanvasContext2D = goog.dom.getCanvasContext2D;
-
-//javascript/closure/structs/inversionmap.js
-// Copyright 2008 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-/**
- * @fileoverview Provides inversion and inversion map functionality for storing
- * integer ranges and corresponding values.
- *
- * @author cibu@google.com (Cibu Johny)
- * @author markdavis@google.com (Mark Davis)
- */
-
-goog.provide('goog.structs.InversionMap');
-
-goog.require('goog.array');
-goog.require('goog.asserts');
-
-
-
-/**
- * Maps ranges to values.
- * @param {Array<number>} rangeArray An array of monotonically
- *     increasing integer values, with at least one instance.
- * @param {Array<T>} valueArray An array of corresponding values.
- *     Length must be the same as rangeArray.
- * @param {boolean=} opt_delta If true, saves only delta from previous value.
- * @constructor
- * @template T
- */
-goog.structs.InversionMap = function(rangeArray, valueArray, opt_delta) {
-  /**
-   * @protected {Array<number>}
-   */
-  this.rangeArray = null;
-
-  goog.asserts.assert(
-      rangeArray.length == valueArray.length,
-      'rangeArray and valueArray must have the same length.');
-  this.storeInversion_(rangeArray, opt_delta);
-
-  /** @protected {Array<T>} */
-  this.values = valueArray;
-};
-
-
-/**
- * Stores the integers as ranges (half-open).
- * If delta is true, the integers are delta from the previous value and
- * will be restored to the absolute value.
- * When used as a set, even indices are IN, and odd are OUT.
- * @param {Array<number>} rangeArray An array of monotonically
- *     increasing integer values, with at least one instance.
- * @param {boolean=} opt_delta If true, saves only delta from previous value.
- * @private
- */
-goog.structs.InversionMap.prototype.storeInversion_ = function(
-    rangeArray, opt_delta) {
-  this.rangeArray = rangeArray;
-
-  for (var i = 1; i < rangeArray.length; i++) {
-    if (rangeArray[i] == null) {
-      rangeArray[i] = rangeArray[i - 1] + 1;
-    } else if (opt_delta) {
-      rangeArray[i] += rangeArray[i - 1];
-    }
-  }
-};
-
-
-/**
- * Splices a range -> value map into this inversion map.
- * @param {Array<number>} rangeArray An array of monotonically
- *     increasing integer values, with at least one instance.
- * @param {Array<T>} valueArray An array of corresponding values.
- *     Length must be the same as rangeArray.
- * @param {boolean=} opt_delta If true, saves only delta from previous value.
- */
-goog.structs.InversionMap.prototype.spliceInversion = function(
-    rangeArray, valueArray, opt_delta) {
-  // By building another inversion map, we build the arrays that we need
-  // to splice in.
-  var otherMap =
-      new goog.structs.InversionMap(rangeArray, valueArray, opt_delta);
-
-  // Figure out where to splice those arrays.
-  var startRange = otherMap.rangeArray[0];
-  var endRange =
-      /** @type {number} */ (goog.array.peek(otherMap.rangeArray));
-  var startSplice = this.getLeast(startRange);
-  var endSplice = this.getLeast(endRange);
-
-  // The inversion map works by storing the start points of ranges...
-  if (startRange != this.rangeArray[startSplice]) {
-    // ...if we're splicing in a start point that isn't already here,
-    // then we need to insert it after the insertion point.
-    startSplice++;
-  }  // otherwise we overwrite the insertion point.
-
-  this.rangeArray = this.rangeArray.slice(0, startSplice)
-                        .concat(otherMap.rangeArray)
-                        .concat(this.rangeArray.slice(endSplice + 1));
-  this.values = this.values.slice(0, startSplice)
-                    .concat(otherMap.values)
-                    .concat(this.values.slice(endSplice + 1));
-};
-
-
-/**
- * Gets the value corresponding to a number from the inversion map.
- * @param {number} intKey The number for which value needs to be retrieved
- *     from inversion map.
- * @return {T|null} Value retrieved from inversion map; null if not found.
- */
-goog.structs.InversionMap.prototype.at = function(intKey) {
-  var index = this.getLeast(intKey);
-  if (index < 0) {
-    return null;
-  }
-  return this.values[index];
-};
-
-
-/**
- * Gets the largest index such that rangeArray[index] <= intKey from the
- * inversion map.
- * @param {number} intKey The probe for which rangeArray is searched.
- * @return {number} Largest index such that rangeArray[index] <= intKey.
- * @protected
- */
-goog.structs.InversionMap.prototype.getLeast = function(intKey) {
-  var arr = this.rangeArray;
-  var low = 0;
-  var high = arr.length;
-  while (high - low > 8) {
-    var mid = (high + low) >> 1;
-    if (arr[mid] <= intKey) {
-      low = mid;
-    } else {
-      high = mid;
-    }
-  }
-  for (; low < high; ++low) {
-    if (intKey < arr[low]) {
-      break;
-    }
-  }
-  return low - 1;
-};
-
-//javascript/closure/i18n/graphemebreak.js
-// Copyright 2006 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-/**
- * @fileoverview Detect Grapheme Cluster Break in a pair of codepoints. Follows
- * Unicode 5.1 UAX#29. Tailoring for Virama × Indic Consonants is used.
- *
- * @author cibu@google.com (Cibu Johny)
- */
-
-goog.provide('goog.i18n.GraphemeBreak');
-
-goog.require('goog.structs.InversionMap');
-
-
-/**
- * Enum for all Grapheme Cluster Break properties.
- * These enums directly corresponds to Grapheme_Cluster_Break property values
- * mentioned in http://unicode.org/reports/tr29 table 2. VIRAMA and
- * INDIC_CONSONANT are for the Virama × Base tailoring mentioned in the notes.
- *
- * CR and LF are moved to the bottom of the list because they occur only once
- * and so good candidates to take 2 decimal digit values.
- * @enum {number}
- * @protected
- */
-goog.i18n.GraphemeBreak.property = {
-  ANY: 0,
-  CONTROL: 1,
-  EXTEND: 2,
-  PREPEND: 3,
-  SPACING_MARK: 4,
-  INDIC_CONSONANT: 5,
-  VIRAMA: 6,
-  L: 7,
-  V: 8,
-  T: 9,
-  LV: 10,
-  LVT: 11,
-  CR: 12,
-  LF: 13,
-  REGIONAL_INDICATOR: 14
-};
-
-
-/**
- * Grapheme Cluster Break property values for all codepoints as inversion map.
- * Constructed lazily.
- *
- * @type {goog.structs.InversionMap}
- * @private
- */
-goog.i18n.GraphemeBreak.inversions_ = null;
-
-
-/**
- * There are two kinds of grapheme clusters: 1) Legacy 2)Extended. This method
- * is to check for legacy rules.
- *
- * @param {number} prop_a The property enum value of the first character.
- * @param {number} prop_b The property enum value of the second character.
- * @return {boolean} True if a & b do not form a cluster; False otherwise.
- * @private
- */
-goog.i18n.GraphemeBreak.applyLegacyBreakRules_ = function(prop_a, prop_b) {
-
-  var prop = goog.i18n.GraphemeBreak.property;
-
-  if (prop_a == prop.CR && prop_b == prop.LF) {
-    return false;
-  }
-  if (prop_a == prop.CONTROL || prop_a == prop.CR || prop_a == prop.LF) {
-    return true;
-  }
-  if (prop_b == prop.CONTROL || prop_b == prop.CR || prop_b == prop.LF) {
-    return true;
-  }
-  if ((prop_a == prop.L) && (prop_b == prop.L || prop_b == prop.V ||
-                             prop_b == prop.LV || prop_b == prop.LVT)) {
-    return false;
-  }
-  if ((prop_a == prop.LV || prop_a == prop.V) &&
-      (prop_b == prop.V || prop_b == prop.T)) {
-    return false;
-  }
-  if ((prop_a == prop.LVT || prop_a == prop.T) && (prop_b == prop.T)) {
-    return false;
-  }
-  if (prop_b == prop.EXTEND || prop_b == prop.VIRAMA) {
-    return false;
-  }
-  if (prop_a == prop.VIRAMA && prop_b == prop.INDIC_CONSONANT) {
-    return false;
-  }
-  return true;
-};
-
-
-/**
- * Method to return property enum value of the codepoint. If it is Hangul LV or
- * LVT, then it is computed; for the rest it is picked from the inversion map.
- * @param {number} acode The code point value of the character.
- * @return {number} Property enum value of codepoint.
- * @private
- */
-goog.i18n.GraphemeBreak.getBreakProp_ = function(acode) {
-  if (0xAC00 <= acode && acode <= 0xD7A3) {
-    var prop = goog.i18n.GraphemeBreak.property;
-    if (acode % 0x1C == 0x10) {
-      return prop.LV;
-    }
-    return prop.LVT;
-  } else {
-    if (!goog.i18n.GraphemeBreak.inversions_) {
-      goog.i18n.GraphemeBreak.inversions_ = new goog.structs.InversionMap(
-          [
-            0,    10,  1,      2,   1,     18,    95,  33,    13,   1,    594,
-            112,  275, 7,      263, 45,    1,     1,   1,     2,    1,    2,
-            1,    1,   56,     5,   11,    11,    48,  21,    16,   1,    101,
-            7,    1,   1,      6,   2,     2,     1,   4,     33,   1,    1,
-            1,    30,  27,     91,  11,    58,    9,   34,    4,    1,    9,
-            1,    3,   1,      5,   43,    3,     136, 31,    1,    17,   37,
-            1,    1,   1,      1,   3,     8,     4,   1,     2,    1,    7,
-            8,    2,   2,      21,  8,     1,     2,   17,    39,   1,    1,
-            1,    2,   6,      6,   1,     9,     5,   4,     2,    2,    12,
-            2,    15,  2,      1,   17,    39,    2,   3,     12,   4,    8,
-            6,    17,  2,      3,   14,    1,     17,  39,    1,    1,    3,
-            8,    4,   1,      20,  2,     29,    1,   2,     17,   39,   1,
-            1,    2,   1,      6,   6,     9,     6,   4,     2,    2,    13,
-            1,    16,  1,      18,  41,    1,     1,   1,     12,   1,    9,
-            1,    41,  3,      17,  37,    4,     3,   5,     7,    8,    3,
-            2,    8,   2,      30,  2,     17,    39,  1,     1,    1,    1,
-            2,    1,   3,      1,   5,     1,     8,   9,     1,    3,    2,
-            30,   2,   17,     38,  3,     1,     2,   5,     7,    1,    9,
-            1,    10,  2,      30,  2,     22,    48,  5,     1,    2,    6,
-            7,    19,  2,      13,  46,    2,     1,   1,     1,    6,    1,
-            12,   8,   50,     46,  2,     1,     1,   1,     9,    11,   6,
-            14,   2,   58,     2,   27,    1,     1,   1,     1,    1,    4,
-            2,    49,  14,     1,   4,     1,     1,   2,     5,    48,   9,
-            1,    57,  33,     12,  4,     1,     6,   1,     2,    2,    2,
-            1,    16,  2,      4,   2,     2,     4,   3,     1,    3,    2,
-            7,    3,   4,      13,  1,     1,     1,   2,     6,    1,    1,
-            14,   1,   98,     96,  72,    88,    349, 3,     931,  15,   2,
-            1,    14,  15,     2,   1,     14,    15,  2,     15,   15,   14,
-            35,   17,  2,      1,   7,     8,     1,   2,     9,    1,    1,
-            9,    1,   45,     3,   155,   1,     87,  31,    3,    4,    2,
-            9,    1,   6,      3,   20,    19,    29,  44,    9,    3,    2,
-            1,    69,  23,     2,   3,     4,     45,  6,     2,    1,    1,
-            1,    8,   1,      1,   1,     2,     8,   6,     13,   128,  4,
-            1,    14,  33,     1,   1,     5,     1,   1,     5,    1,    1,
-            1,    7,   31,     9,   12,    2,     1,   7,     23,   1,    4,
-            2,    2,   2,      2,   2,     11,    3,   2,     36,   2,    1,
-            1,    2,   3,      1,   1,     3,     2,   12,    36,   8,    8,
-            2,    2,   21,     3,   128,   3,     1,   13,    1,    7,    4,
-            1,    4,   2,      1,   203,   64,    523, 1,     2,    2,    24,
-            7,    49,  16,     96,  33,    3070,  3,   141,   1,    96,   32,
-            554,  6,   105,    2,   30164, 4,     1,   10,    33,   1,    80,
-            2,    272, 1,      3,   1,     4,     1,   23,    2,    2,    1,
-            24,   30,  4,      4,   3,     8,     1,   1,     13,   2,    16,
-            34,   16,  1,      27,  18,    24,    24,  4,     8,    2,    23,
-            11,   1,   1,      12,  32,    3,     1,   5,     3,    3,    36,
-            1,    2,   4,      2,   1,     3,     1,   69,    35,   6,    2,
-            2,    2,   2,      12,  1,     8,     1,   1,     18,   16,   1,
-            3,    6,   1,      5,   48,    1,     1,   3,     2,    2,    5,
-            2,    1,   1,      32,  9,     1,     2,   2,     5,    1,    1,
-            201,  14,  2,      1,   1,     9,     8,   2,     1,    2,    1,
-            2,    1,   1,      1,   18,    11184, 27,  49,    1028, 1024, 6942,
-            1,    737, 16,     16,  7,     216,   1,   158,   2,    89,   3,
-            513,  1,   2051,   15,  40,    7,     1,   1472,  1,    1,    1,
-            53,   14,  1,      57,  2,     1,     45,  3,     4,    2,    1,
-            1,    2,   1,      66,  3,     36,    5,   1,     6,    2,    75,
-            2,    1,   48,     3,   9,     1,     1,   1258,  1,    1,    1,
-            2,    6,   1,      1,   22681, 62,    4,   25042, 1,    1,    3,
-            3,    1,   5,      8,   8,     2,     7,   30,    4,    148,  3,
-            8097, 26,  790017, 255
-          ],
-          [
-            1, 13, 1, 12, 1, 0, 1, 0, 1,  0, 2, 0, 2, 0, 2, 0, 2, 0, 2, 0, 2,
-            0, 2,  0, 1,  0, 2, 0, 2, 0,  2, 0, 2, 1, 0, 2, 0, 2, 0, 2, 0, 1,
-            0, 2,  0, 2,  0, 2, 0, 2, 0,  2, 0, 2, 0, 2, 0, 2, 0, 2, 0, 2, 4,
-            0, 5,  2, 4,  2, 0, 4, 2, 4,  6, 4, 0, 2, 5, 0, 2, 0, 5, 2, 4, 0,
-            5, 2,  0, 2,  4, 2, 4, 6, 0,  2, 5, 0, 2, 0, 5, 0, 2, 4, 0, 5, 2,
-            4, 2,  6, 2,  5, 0, 2, 0, 2,  4, 0, 5, 2, 0, 4, 2, 4, 6, 0, 2, 0,
-            2, 4,  0, 5,  2, 0, 2, 4, 2,  4, 6, 2, 5, 0, 2, 0, 5, 0, 2, 0, 5,
-            2, 4,  2, 4,  6, 0, 2, 0, 4,  0, 5, 0, 2, 4, 2, 6, 2, 5, 0, 2, 0,
-            4, 0,  5, 2,  0, 4, 2, 4, 2,  4, 2, 4, 2, 6, 2, 5, 0, 2, 0, 4, 0,
-            5, 0,  2, 4,  2, 4, 6, 0, 2,  0, 2, 0, 4, 0, 5, 6, 2, 4, 2, 4, 2,
-            4, 0,  5, 0,  2, 0, 4, 2, 6,  0, 2, 0, 5, 0, 2, 0, 4, 2, 0, 2, 0,
-            5, 0,  2, 0,  2, 0, 2, 0, 2,  0, 4, 5, 2, 4, 2, 6, 0, 2, 0, 2, 0,
-            2, 0,  5, 0,  2, 4, 2, 0, 6,  4, 2, 5, 0, 5, 0, 4, 2, 5, 2, 5, 0,
-            5, 0,  5, 2,  5, 2, 0, 4, 2,  0, 2, 5, 0, 2, 0, 7, 8, 9, 0, 2, 0,
-            5, 2,  6, 0,  5, 2, 6, 0, 5,  2, 0, 5, 2, 5, 0, 2, 4, 2, 4, 2, 4,
-            2, 6,  2, 0,  2, 0, 2, 0, 2,  0, 5, 2, 4, 2, 4, 2, 4, 2, 0, 5, 0,
-            5, 0,  4, 0,  4, 0, 5, 2, 4,  0, 5, 0, 5, 4, 2, 4, 2, 6, 0, 2, 0,
-            2, 4,  2, 0,  2, 4, 0, 5, 2,  4, 2, 4, 2, 4, 2, 4, 6, 5, 0, 2, 0,
-            2, 4,  0, 5,  4, 2, 4, 2, 6,  4, 5, 0, 5, 0, 5, 0, 2, 4, 2, 4, 2,
-            4, 2,  6, 0,  5, 4, 2, 4, 2,  0, 5, 0, 2, 0, 2, 4, 2, 0, 2, 0, 4,
-            2, 0,  2, 0,  1, 2, 1, 0, 1,  0, 1, 0, 2, 0, 2, 0, 6, 0, 2, 0, 2,
-            0, 2,  0, 2,  0, 2, 0, 2, 0,  2, 0, 2, 0, 6, 5, 2, 5, 4, 2, 4, 0,
-            5, 0,  5, 0,  5, 0, 5, 0, 4,  0, 5, 4, 6, 0, 2, 0, 5, 0, 2, 0, 5,
-            2, 4,  6, 0,  7, 2, 4, 0, 5,  0, 5, 2, 4, 2, 4, 2, 4, 6, 0, 5, 2,
-            4, 2,  4, 2,  0, 2, 0, 2, 4,  0, 5, 0, 5, 0, 5, 0, 5, 2, 0, 2, 0,
-            2, 0,  2, 0,  2, 0, 5, 4, 2,  4, 0, 4, 6, 0, 5, 0, 5, 0, 5, 0, 4,
-            2, 4,  2, 4,  0, 4, 6, 0, 11, 8, 9, 0, 2, 0, 2, 0, 2, 0, 2, 0, 1,
-            0, 2,  0, 1,  0, 2, 0, 2, 0,  2, 6, 0, 4, 2, 4, 0, 2, 6, 0, 2, 4,
-            0, 4,  2, 4,  6, 2, 0, 1, 0,  2, 0, 2, 4, 2, 6, 0, 2, 4, 0, 4, 2,
-            4, 6,  0, 2,  4, 2, 4, 2, 6,  2, 0, 4, 2, 0, 2, 4, 2, 0, 4, 2, 1,
-            2, 0,  2, 0,  2, 0, 2, 0, 14, 0, 1, 2
-          ],
-          true);
-    }
-    return /** @type {number} */ (
-        goog.i18n.GraphemeBreak.inversions_.at(acode));
-  }
-};
-
-
-/**
- * There are two kinds of grapheme clusters: 1) Legacy 2)Extended. This method
- * is to check for both using a boolean flag to switch between them.
- * @param {number} a The code point value of the first character.
- * @param {number} b The code point value of the second character.
- * @param {boolean=} opt_extended If true, indicates extended grapheme cluster;
- *     If false, indicates legacy cluster.
- * @return {boolean} True if a & b do not form a cluster; False otherwise.
- */
-goog.i18n.GraphemeBreak.hasGraphemeBreak = function(a, b, opt_extended) {
-
-  var prop_a = goog.i18n.GraphemeBreak.getBreakProp_(a);
-  var prop_b = goog.i18n.GraphemeBreak.getBreakProp_(b);
-  var prop = goog.i18n.GraphemeBreak.property;
-
-  return goog.i18n.GraphemeBreak.applyLegacyBreakRules_(prop_a, prop_b) &&
-      !(opt_extended &&
-        (prop_a == prop.PREPEND || prop_b == prop.SPACING_MARK));
-};
-
-//javascript/closure/format/format.js
-// Copyright 2006 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-/**
- * @fileoverview Provides utility functions for formatting strings, numbers etc.
- *
- * @author pupius@google.com (Daniel Pupius)
- */
-
-goog.provide('goog.format');
-
-goog.require('goog.i18n.GraphemeBreak');
-goog.require('goog.string');
-goog.require('goog.userAgent');
-
-
-/**
- * Formats a number of bytes in human readable form.
- * 54, 450K, 1.3M, 5G etc.
- * @param {number} bytes The number of bytes to show.
- * @param {number=} opt_decimals The number of decimals to use.  Defaults to 2.
- * @return {string} The human readable form of the byte size.
- */
-goog.format.fileSize = function(bytes, opt_decimals) {
-  return goog.format.numBytesToString(bytes, opt_decimals, false);
-};
-
-
-/**
- * Checks whether string value containing scaling units (K, M, G, T, P, m,
- * u, n) can be converted to a number.
- *
- * Where there is a decimal, there must be a digit to the left of the
- * decimal point.
- *
- * Negative numbers are valid.
- *
- * Examples:
- *   0, 1, 1.0, 10.4K, 2.3M, -0.3P, 1.2m
- *
- * @param {string} val String value to check.
- * @return {boolean} True if string could be converted to a numeric value.
- */
-goog.format.isConvertableScaledNumber = function(val) {
-  return goog.format.SCALED_NUMERIC_RE_.test(val);
-};
-
-
-/**
- * Converts a string to numeric value, taking into account the units.
- * If string ends in 'B', use binary conversion.
- * @param {string} stringValue String to be converted to numeric value.
- * @return {number} Numeric value for string.
- */
-goog.format.stringToNumericValue = function(stringValue) {
-  if (goog.string.endsWith(stringValue, 'B')) {
-    return goog.format.stringToNumericValue_(
-        stringValue, goog.format.NUMERIC_SCALES_BINARY_);
-  }
-  return goog.format.stringToNumericValue_(
-      stringValue, goog.format.NUMERIC_SCALES_SI_);
-};
-
-
-/**
- * Converts a string to number of bytes, taking into account the units.
- * Binary conversion.
- * @param {string} stringValue String to be converted to numeric value.
- * @return {number} Numeric value for string.
- */
-goog.format.stringToNumBytes = function(stringValue) {
-  return goog.format.stringToNumericValue_(
-      stringValue, goog.format.NUMERIC_SCALES_BINARY_);
-};
-
-
-/**
- * Converts a numeric value to string representation. SI conversion.
- * @param {number} val Value to be converted.
- * @param {number=} opt_decimals The number of decimals to use.  Defaults to 2.
- * @return {string} String representation of number.
- */
-goog.format.numericValueToString = function(val, opt_decimals) {
-  return goog.format.numericValueToString_(
-      val, goog.format.NUMERIC_SCALES_SI_, opt_decimals);
-};
-
-
-/**
- * Converts number of bytes to string representation. Binary conversion.
- * Default is to return the additional 'B' suffix only for scales greater than
- * 1K, e.g. '10.5KB' to minimize confusion with counts that are scaled by powers
- * of 1000. Otherwise, suffix is empty string.
- * @param {number} val Value to be converted.
- * @param {number=} opt_decimals The number of decimals to use.  Defaults to 2.
- * @param {boolean=} opt_suffix If true, include trailing 'B' in returned
- *     string.  Default is true.
- * @param {boolean=} opt_useSeparator If true, number and scale will be
- *     separated by a no break space. Default is false.
- * @return {string} String representation of number of bytes.
- */
-goog.format.numBytesToString = function(
-    val, opt_decimals, opt_suffix, opt_useSeparator) {
-  var suffix = '';
-  if (!goog.isDef(opt_suffix) || opt_suffix) {
-    suffix = 'B';
-  }
-  return goog.format.numericValueToString_(
-      val, goog.format.NUMERIC_SCALES_BINARY_, opt_decimals, suffix,
-      opt_useSeparator);
-};
-
-
-/**
- * Converts a string to numeric value, taking into account the units.
- * @param {string} stringValue String to be converted to numeric value.
- * @param {Object} conversion Dictionary of conversion scales.
- * @return {number} Numeric value for string.  If it cannot be converted,
- *    returns NaN.
- * @private
- */
-goog.format.stringToNumericValue_ = function(stringValue, conversion) {
-  var match = stringValue.match(goog.format.SCALED_NUMERIC_RE_);
-  if (!match) {
-    return NaN;
-  }
-  var val = Number(match[1]) * conversion[match[2]];
-  return val;
-};
-
-
-/**
- * Converts a numeric value to string, using specified conversion
- * scales.
- * @param {number} val Value to be converted.
- * @param {Object} conversion Dictionary of scaling factors.
- * @param {number=} opt_decimals The number of decimals to use.  Default is 2.
- * @param {string=} opt_suffix Optional suffix to append.
- * @param {boolean=} opt_useSeparator If true, number and scale will be
- *     separated by a space. Default is false.
- * @return {string} The human readable form of the byte size.
- * @private
- */
-goog.format.numericValueToString_ = function(
-    val, conversion, opt_decimals, opt_suffix, opt_useSeparator) {
-  var prefixes = goog.format.NUMERIC_SCALE_PREFIXES_;
-  var orig_val = val;
-  var symbol = '';
-  var separator = '';
-  var scale = 1;
-  if (val < 0) {
-    val = -val;
-  }
-  for (var i = 0; i < prefixes.length; i++) {
-    var unit = prefixes[i];
-    scale = conversion[unit];
-    if (val >= scale || (scale <= 1 && val > 0.1 * scale)) {
-      // Treat values less than 1 differently, allowing 0.5 to be "0.5" rather
-      // than "500m"
-      symbol = unit;
-      break;
-    }
-  }
-  if (!symbol) {
-    scale = 1;
-  } else {
-    if (opt_suffix) {
-      symbol += opt_suffix;
-    }
-    if (opt_useSeparator) {
-      separator = ' ';
-    }
-  }
-  var ex = Math.pow(10, goog.isDef(opt_decimals) ? opt_decimals : 2);
-  return Math.round(orig_val / scale * ex) / ex + separator + symbol;
-};
-
-
-/**
- * Regular expression for detecting scaling units, such as K, M, G, etc. for
- * converting a string representation to a numeric value.
- *
- * Also allow 'k' to be aliased to 'K'.  These could be used for SI (powers
- * of 1000) or Binary (powers of 1024) conversions.
- *
- * Also allow final 'B' to be interpreted as byte-count, implicitly triggering
- * binary conversion (e.g., '10.2MB').
- *
- * @type {RegExp}
- * @private
- */
-goog.format.SCALED_NUMERIC_RE_ = /^([-]?\d+\.?\d*)([K,M,G,T,P,k,m,u,n]?)[B]?$/;
-
-
-/**
- * Ordered list of scaling prefixes in decreasing order.
- * @private {Array<string>}
- */
-goog.format.NUMERIC_SCALE_PREFIXES_ =
-    ['P', 'T', 'G', 'M', 'K', '', 'm', 'u', 'n'];
-
-
-/**
- * Scaling factors for conversion of numeric value to string.  SI conversion.
- * @type {Object}
- * @private
- */
-goog.format.NUMERIC_SCALES_SI_ = {
-  '': 1,
-  'n': 1e-9,
-  'u': 1e-6,
-  'm': 1e-3,
-  'k': 1e3,
-  'K': 1e3,
-  'M': 1e6,
-  'G': 1e9,
-  'T': 1e12,
-  'P': 1e15
-};
-
-
-/**
- * Scaling factors for conversion of numeric value to string.  Binary
- * conversion.
- * @type {Object}
- * @private
- */
-goog.format.NUMERIC_SCALES_BINARY_ = {
-  '': 1,
-  'n': Math.pow(1024, -3),
-  'u': Math.pow(1024, -2),
-  'm': 1.0 / 1024,
-  'k': 1024,
-  'K': 1024,
-  'M': Math.pow(1024, 2),
-  'G': Math.pow(1024, 3),
-  'T': Math.pow(1024, 4),
-  'P': Math.pow(1024, 5)
-};
-
-
-/**
- * First Unicode code point that has the Mark property.
- * @type {number}
- * @private
- */
-goog.format.FIRST_GRAPHEME_EXTEND_ = 0x300;
-
-
-/**
- * Returns true if and only if given character should be treated as a breaking
- * space. All ASCII control characters, the main Unicode range of spacing
- * characters (U+2000 to U+200B inclusive except for U+2007), and several other
- * Unicode space characters are treated as breaking spaces.
- * @param {number} charCode The character code under consideration.
- * @return {boolean} True if the character is a breaking space.
- * @private
- */
-goog.format.isTreatedAsBreakingSpace_ = function(charCode) {
-  return (charCode <= goog.format.WbrToken_.SPACE) ||
-      (charCode >= 0x1000 &&
-       ((charCode >= 0x2000 && charCode <= 0x2006) ||
-        (charCode >= 0x2008 && charCode <= 0x200B) || charCode == 0x1680 ||
-        charCode == 0x180E || charCode == 0x2028 || charCode == 0x2029 ||
-        charCode == 0x205f || charCode == 0x3000));
-};
-
-
-/**
- * Returns true if and only if given character is an invisible formatting
- * character.
- * @param {number} charCode The character code under consideration.
- * @return {boolean} True if the character is an invisible formatting character.
- * @private
- */
-goog.format.isInvisibleFormattingCharacter_ = function(charCode) {
-  // See: http://unicode.org/charts/PDF/U2000.pdf
-  return (charCode >= 0x200C && charCode <= 0x200F) ||
-      (charCode >= 0x202A && charCode <= 0x202E);
-};
-
-
-/**
- * Inserts word breaks into an HTML string at a given interval.  The counter is
- * reset if a space or a character which behaves like a space is encountered,
- * but it isn't incremented if an invisible formatting character is encountered.
- * WBRs aren't inserted into HTML tags or entities.  Entities count towards the
- * character count, HTML tags do not.
- *
- * With common strings aliased, objects allocations are constant based on the
- * length of the string: N + 3. This guarantee does not hold if the string
- * contains an element >= U+0300 and hasGraphemeBreak is non-trivial.
- *
- * @param {string} str HTML to insert word breaks into.
- * @param {function(number, number, boolean): boolean} hasGraphemeBreak A
- *     function determining if there is a grapheme break between two characters,
- *     in the same signature as goog.i18n.GraphemeBreak.hasGraphemeBreak.
- * @param {number=} opt_maxlen Maximum length after which to ensure
- *     there is a break.  Default is 10 characters.
- * @return {string} The string including word breaks.
- * @private
- */
-goog.format.insertWordBreaksGeneric_ = function(
-    str, hasGraphemeBreak, opt_maxlen) {
-  var maxlen = opt_maxlen || 10;
-  if (maxlen > str.length) return str;
-
-  var rv = [];
-  var n = 0;  // The length of the current token
-
-  // This will contain the ampersand or less-than character if one of the
-  // two has been seen; otherwise, the value is zero.
-  var nestingCharCode = 0;
-
-  // First character position from input string that has not been outputted.
-  var lastDumpPosition = 0;
-
-  var charCode = 0;
-  for (var i = 0; i < str.length; i++) {
-    // Using charCodeAt versus charAt avoids allocating new string objects.
-    var lastCharCode = charCode;
-    charCode = str.charCodeAt(i);
-
-    // Don't add a WBR before characters that might be grapheme extending.
-    var isPotentiallyGraphemeExtending =
-        charCode >= goog.format.FIRST_GRAPHEME_EXTEND_ &&
-        !hasGraphemeBreak(lastCharCode, charCode, true);
-
-    // Don't add a WBR at the end of a word. For the purposes of determining
-    // work breaks, all ASCII control characters and some commonly encountered
-    // Unicode spacing characters are treated as breaking spaces.
-    if (n >= maxlen && !goog.format.isTreatedAsBreakingSpace_(charCode) &&
-        !isPotentiallyGraphemeExtending) {
-      // Flush everything seen so far, and append a word break.
-      rv.push(str.substring(lastDumpPosition, i), goog.format.WORD_BREAK_HTML);
-      lastDumpPosition = i;
-      n = 0;
-    }
-
-    if (!nestingCharCode) {
-      // Not currently within an HTML tag or entity
-
-      if (charCode == goog.format.WbrToken_.LT ||
-          charCode == goog.format.WbrToken_.AMP) {
-        // Entering an HTML Entity '&' or open tag '<'
-        nestingCharCode = charCode;
-      } else if (goog.format.isTreatedAsBreakingSpace_(charCode)) {
-        // A space or control character -- reset the token length
-        n = 0;
-      } else if (!goog.format.isInvisibleFormattingCharacter_(charCode)) {
-        // A normal flow character - increment.  For grapheme extending
-        // characters, this is not *technically* a new character.  However,
-        // since the grapheme break detector might be overly conservative,
-        // we have to continue incrementing, or else we won't even be able
-        // to add breaks when we get to things like punctuation.  For the
-        // case where we have a full grapheme break detector, it is okay if
-        // we occasionally break slightly early.
-        n++;
-      }
-    } else if (
-        charCode == goog.format.WbrToken_.GT &&
-        nestingCharCode == goog.format.WbrToken_.LT) {
-      // Leaving an HTML tag, treat the tag as zero-length
-      nestingCharCode = 0;
-    } else if (
-        charCode == goog.format.WbrToken_.SEMI_COLON &&
-        nestingCharCode == goog.format.WbrToken_.AMP) {
-      // Leaving an HTML entity, treat it as length one
-      nestingCharCode = 0;
-      n++;
-    }
-  }
-
-  // Take care of anything we haven't flushed so far.
-  rv.push(str.substr(lastDumpPosition));
-
-  return rv.join('');
-};
-
-
-/**
- * Inserts word breaks into an HTML string at a given interval.
- *
- * This method is as aggressive as possible, using a full table of Unicode
- * characters where it is legal to insert word breaks; however, this table
- * comes at a 2.5k pre-gzip (~1k post-gzip) size cost.  Consider using
- * insertWordBreaksBasic to minimize the size impact.
- *
- * @param {string} str HTML to insert word breaks into.
- * @param {number=} opt_maxlen Maximum length after which to ensure there is a
- *     break.  Default is 10 characters.
- * @return {string} The string including word breaks.
- * @deprecated Prefer wrapping with CSS word-wrap: break-word.
- */
-goog.format.insertWordBreaks = function(str, opt_maxlen) {
-  return goog.format.insertWordBreaksGeneric_(
-      str, goog.i18n.GraphemeBreak.hasGraphemeBreak, opt_maxlen);
-};
-
-
-/**
- * Determines conservatively if a character has a Grapheme break.
- *
- * Conforms to a similar signature as goog.i18n.GraphemeBreak, but is overly
- * conservative, returning true only for characters in common scripts that
- * are simple to account for.
- *
- * @param {number} lastCharCode The previous character code.  Ignored.
- * @param {number} charCode The character code under consideration.  It must be
- *     at least \u0300 as a precondition -- this case is covered by
- *     insertWordBreaksGeneric_.
- * @param {boolean=} opt_extended Ignored, to conform with the interface.
- * @return {boolean} Whether it is one of the recognized subsets of characters
- *     with a grapheme break.
- * @private
- */
-goog.format.conservativelyHasGraphemeBreak_ = function(
-    lastCharCode, charCode, opt_extended) {
-  // Return false for everything except the most common Cyrillic characters.
-  // Don't worry about Latin characters, because insertWordBreaksGeneric_
-  // itself already handles those.
-  // TODO(gboyer): Also account for Greek, Armenian, and Georgian if it is
-  // simple to do so.
-  return charCode >= 0x400 && charCode < 0x523;
-};
-
-
-// TODO(gboyer): Consider using a compile-time flag to switch implementations
-// rather than relying on the developers to toggle implementations.
-/**
- * Inserts word breaks into an HTML string at a given interval.
- *
- * This method is less aggressive than insertWordBreaks, only inserting
- * breaks next to punctuation and between Latin or Cyrillic characters.
- * However, this is good enough for the common case of URLs.  It also
- * works for all Latin and Cyrillic languages, plus CJK has no need for word
- * breaks.  When this method is used, goog.i18n.GraphemeBreak may be dead
- * code eliminated.
- *
- * @param {string} str HTML to insert word breaks into.
- * @param {number=} opt_maxlen Maximum length after which to ensure there is a
- *     break.  Default is 10 characters.
- * @return {string} The string including word breaks.
- * @deprecated Prefer wrapping with CSS word-wrap: break-word.
- */
-goog.format.insertWordBreaksBasic = function(str, opt_maxlen) {
-  return goog.format.insertWordBreaksGeneric_(
-      str, goog.format.conservativelyHasGraphemeBreak_, opt_maxlen);
-};
-
-
-/**
- * True iff the current userAgent is IE8 or above.
- * @type {boolean}
- * @private
- */
-goog.format.IS_IE8_OR_ABOVE_ =
-    goog.userAgent.IE && goog.userAgent.isVersionOrHigher(8);
-
-
-/**
- * Constant for the WBR replacement used by insertWordBreaks.  Safari requires
- * <wbr></wbr>, Opera needs the &shy; entity, though this will give a visible
- * hyphen at breaks.  IE8 uses a zero width space.
- * Other browsers just use <wbr>.
- * @type {string}
- */
-goog.format.WORD_BREAK_HTML =
-    goog.userAgent.WEBKIT ? '<wbr></wbr>' : goog.userAgent.OPERA ?
-                            '&shy;' :
-                            goog.format.IS_IE8_OR_ABOVE_ ? '&#8203;' : '<wbr>';
-
-
-/**
- * Tokens used within insertWordBreaks.
- * @private
- * @enum {number}
- */
-goog.format.WbrToken_ = {
-  LT: 60,          // '<'.charCodeAt(0)
-  GT: 62,          // '>'.charCodeAt(0)
-  AMP: 38,         // '&'.charCodeAt(0)
-  SEMI_COLON: 59,  // ';'.charCodeAt(0)
-  SPACE: 32        // ' '.charCodeAt(0)
 };
 
 //javascript/closure/i18n/bidiformatter.js
@@ -26327,194 +21891,6 @@ goog.uri.utils.makeUnique = function(uri) {
   return goog.uri.utils.setParam(
       uri, goog.uri.utils.StandardQueryParam.RANDOM,
       goog.string.getRandomString());
-};
-
-//javascript/closure/html/legacyconversions.js
-// Copyright 2013 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-/**
- * @fileoverview Transitional utilities to unsafely trust random strings as
- * goog.html types. Intended for temporary use when upgrading a library that
- * used to accept plain strings to use safe types, but where it's not
- * practical to transitively update callers.
- *
- * IMPORTANT: No new code should use the conversion functions in this file,
- * they are intended for refactoring old code to use goog.html types. New code
- * should construct goog.html types via their APIs, template systems or
- * sanitizers. If that’s not possible it should use
- * goog.html.uncheckedconversions and undergo security review.
-
- * MOE:begin_intracomment_strip
- * At Google goog.html.legacyconversions are restricted via both BUILD
- * visibility and Conformance rules. The goal is to allow us to progressively
- * get rid of using strings to represent HTML-related data which is passed to
- * DOM APIs that execute script (like innerHTML or Anchor.href), while avoiding
- * regressions. Please carefully read the documentation below before using
- * these functions. If you have questions contact ise-hardening@ and we’ll
- * gladly help.
- * MOE:end_intracomment_strip
- *
- * The semantics of the conversions in goog.html.legacyconversions are very
- * different from the ones provided by goog.html.uncheckedconversions. The
- * latter are for use in code where it has been established through manual
- * security review that the value produced by a piece of code will always
- * satisfy the SafeHtml contract (e.g., the output of a secure HTML sanitizer).
- * In uses of goog.html.legacyconversions, this guarantee is not given -- the
- * value in question originates in unreviewed legacy code and there is no
- * guarantee that it satisfies the SafeHtml contract.
- *
- * There are only three valid uses of legacyconversions:
- *
- * 1. Introducing a goog.html version of a function which currently consumes
- * string and passes that string to a DOM API which can execute script - and
- * hence cause XSS - like innerHTML. For example, Dialog might expose a
- * setContent method which takes a string and sets the innerHTML property of
- * an element with it. In this case a setSafeHtmlContent function could be
- * added, consuming goog.html.SafeHtml instead of string, and using
- * goog.dom.safe.setInnerHtml instead of directly setting innerHTML.
- * setContent could then internally use legacyconversions to create a SafeHtml
- * from string and pass the SafeHtml to setSafeHtmlContent. In this scenario
- * remember to document the use of legacyconversions in the modified setContent
- * and consider deprecating it as well.
- *
- * 2. Automated refactoring of application code which handles HTML as string
- * but needs to call a function which only takes goog.html types. For example,
- * in the Dialog scenario from (1) an alternative option would be to refactor
- * setContent to accept goog.html.SafeHtml instead of string and then refactor
- * all current callers to use legacyconversions to pass SafeHtml. This is
- * generally preferable to (1) because it keeps the library clean of
- * legacyconversions, and makes code sites in application code that are
- * potentially vulnerable to XSS more apparent.
- *
- * 3. Old code which needs to call APIs which consume goog.html types and for
- * which it is prohibitively expensive to refactor to use goog.html types.
- * Generally, this is code where safety from XSS is either hopeless or
- * unimportant.
- *
- * @visibility {//javascript/closure/html:approved_for_legacy_conversion}
- * @visibility {//javascript/closure/bin/sizetests:__pkg__}
- */
-
-
-goog.provide('goog.html.legacyconversions');
-
-goog.require('goog.html.SafeHtml');
-goog.require('goog.html.SafeStyle');
-goog.require('goog.html.SafeStyleSheet');
-goog.require('goog.html.SafeUrl');
-goog.require('goog.html.TrustedResourceUrl');
-
-
-/**
- * Performs an "unchecked conversion" from string to SafeHtml for legacy API
- * purposes.
- *
- * Please read fileoverview documentation before using.
- *
- * @param {string} html A string to be converted to SafeHtml.
- * @return {!goog.html.SafeHtml} The value of html, wrapped in a SafeHtml
- *     object.
- */
-goog.html.legacyconversions.safeHtmlFromString = function(html) {
-  goog.html.legacyconversions.reportCallback_();
-  return goog.html.SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse(
-      html, null /* dir */);
-};
-
-
-/**
- * Performs an "unchecked conversion" from string to SafeStyle for legacy API
- * purposes.
- *
- * Please read fileoverview documentation before using.
- *
- * @param {string} style A string to be converted to SafeStyle.
- * @return {!goog.html.SafeStyle} The value of style, wrapped in a SafeStyle
- *     object.
- */
-goog.html.legacyconversions.safeStyleFromString = function(style) {
-  goog.html.legacyconversions.reportCallback_();
-  return goog.html.SafeStyle.createSafeStyleSecurityPrivateDoNotAccessOrElse(
-      style);
-};
-
-
-/**
- * Performs an "unchecked conversion" from string to SafeStyleSheet for legacy
- * API purposes.
- *
- * Please read fileoverview documentation before using.
- *
- * @param {string} styleSheet A string to be converted to SafeStyleSheet.
- * @return {!goog.html.SafeStyleSheet} The value of style sheet, wrapped in
- *     a SafeStyleSheet object.
- */
-goog.html.legacyconversions.safeStyleSheetFromString = function(styleSheet) {
-  goog.html.legacyconversions.reportCallback_();
-  return goog.html.SafeStyleSheet
-      .createSafeStyleSheetSecurityPrivateDoNotAccessOrElse(styleSheet);
-};
-
-
-/**
- * Performs an "unchecked conversion" from string to SafeUrl for legacy API
- * purposes.
- *
- * Please read fileoverview documentation before using.
- *
- * @param {string} url A string to be converted to SafeUrl.
- * @return {!goog.html.SafeUrl} The value of url, wrapped in a SafeUrl
- *     object.
- */
-goog.html.legacyconversions.safeUrlFromString = function(url) {
-  goog.html.legacyconversions.reportCallback_();
-  return goog.html.SafeUrl.createSafeUrlSecurityPrivateDoNotAccessOrElse(url);
-};
-
-
-/**
- * Performs an "unchecked conversion" from string to TrustedResourceUrl for
- * legacy API purposes.
- *
- * Please read fileoverview documentation before using.
- *
- * @param {string} url A string to be converted to TrustedResourceUrl.
- * @return {!goog.html.TrustedResourceUrl} The value of url, wrapped in a
- *     TrustedResourceUrl object.
- */
-goog.html.legacyconversions.trustedResourceUrlFromString = function(url) {
-  goog.html.legacyconversions.reportCallback_();
-  return goog.html.TrustedResourceUrl
-      .createTrustedResourceUrlSecurityPrivateDoNotAccessOrElse(url);
-};
-
-/**
- * @private {function(): undefined}
- */
-goog.html.legacyconversions.reportCallback_ = goog.nullFunction;
-
-
-/**
- * Sets a function that will be called every time a legacy conversion is
- * performed. The function is called with no parameters but it can use
- * goog.debug.getStacktrace to get a stacktrace.
- *
- * @param {function(): undefined} callback Error callback as defined above.
- */
-goog.html.legacyconversions.setReportCallback = function(callback) {
-  goog.html.legacyconversions.reportCallback_ = callback;
 };
 
 //javascript/closure/uri/uri.js
@@ -28494,303 +23870,6 @@ goog.soy.data.SanitizedCss.isCompatibleWith = function(value) {
       value instanceof goog.html.SafeStyle;
 };
 
-//javascript/closure/soy/soy.js
-// Copyright 2011 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-/**
- * @fileoverview Provides utility methods to render soy template.
- * @author kai@google.com (Kai Huang)
- * @author ptucker@google.com (Philip Tucker)
- * @author chrishenry@google.com (Chris Henry)
- */
-
-goog.provide('goog.soy');
-
-goog.require('goog.asserts');
-goog.require('goog.dom');
-goog.require('goog.dom.NodeType');
-goog.require('goog.dom.TagName');
-goog.require('goog.html.legacyconversions');
-goog.require('goog.soy.data.SanitizedContent');
-goog.require('goog.soy.data.SanitizedContentKind');
-goog.require('goog.string');
-
-
-/**
- * @define {boolean} Whether to require all Soy templates to be "strict html".
- * Soy templates that use strict autoescaping forbid noAutoescape along with
- * many dangerous directives, and return a runtime type SanitizedContent that
- * marks them as safe.
- *
- * If this flag is enabled, Soy templates will fail to render if a template
- * returns plain text -- indicating it is a non-strict template.
- */
-goog.define('goog.soy.REQUIRE_STRICT_AUTOESCAPE', false);
-
-
-/**
- * Type definition for strict Soy templates. Very useful when passing a template
- * as an argument.
- * @typedef {function(?, null=, ?Object<string, *>=):
- *     !goog.soy.data.SanitizedContent}
- */
-goog.soy.StrictTemplate;
-
-
-/**
- * Type definition for strict Soy HTML templates. Very useful when passing
- * a template as an argument.
- * @typedef {function(?, null=, ?Object<string, *>=):
- *     !goog.soy.data.SanitizedHtml}
- */
-goog.soy.StrictHtmlTemplate;
-
-
-/**
- * Sets the processed template as the innerHTML of an element. It is recommended
- * to use this helper function instead of directly setting innerHTML in your
- * hand-written code, so that it will be easier to audit the code for cross-site
- * scripting vulnerabilities.
- *
- * @param {?Element} element The element whose content we are rendering into.
- * @param {!goog.soy.data.SanitizedContent} templateResult The processed
- *     template of kind HTML or TEXT (which will be escaped).
- * @template ARG_TYPES
- */
-goog.soy.renderHtml = function(element, templateResult) {
-  element.innerHTML = goog.soy.ensureTemplateOutputHtml_(templateResult);
-};
-
-
-/**
- * Renders a Soy template and then set the output string as
- * the innerHTML of an element. It is recommended to use this helper function
- * instead of directly setting innerHTML in your hand-written code, so that it
- * will be easier to audit the code for cross-site scripting vulnerabilities.
- *
- * @param {Element} element The element whose content we are rendering into.
- * @param {null|function(ARG_TYPES, null=, Object<string, *>=):*} template
- *     The Soy template defining the element's content.
- * @param {ARG_TYPES=} opt_templateData The data for the template.
- * @param {Object=} opt_injectedData The injected data for the template.
- * @template ARG_TYPES
- */
-goog.soy.renderElement = function(
-    element, template, opt_templateData, opt_injectedData) {
-  // Soy template parameter is only nullable for historical reasons.
-  goog.asserts.assert(template, 'Soy template may not be null.');
-  element.innerHTML = goog.soy.ensureTemplateOutputHtml_(
-      template(
-          opt_templateData || goog.soy.defaultTemplateData_, undefined,
-          opt_injectedData));
-};
-
-
-/**
- * Renders a Soy template into a single node or a document
- * fragment. If the rendered HTML string represents a single node, then that
- * node is returned (note that this is *not* a fragment, despite them name of
- * the method). Otherwise a document fragment is returned containing the
- * rendered nodes.
- *
- * @param {null|function(ARG_TYPES, null=, Object<string, *>=):*} template
- *     The Soy template defining the element's content.
- * @param {ARG_TYPES=} opt_templateData The data for the template.
- * @param {Object=} opt_injectedData The injected data for the template.
- * @param {goog.dom.DomHelper=} opt_domHelper The DOM helper used to
- *     create DOM nodes; defaults to {@code goog.dom.getDomHelper}.
- * @return {!Node} The resulting node or document fragment.
- * @template ARG_TYPES
- */
-goog.soy.renderAsFragment = function(
-    template, opt_templateData, opt_injectedData, opt_domHelper) {
-  // Soy template parameter is only nullable for historical reasons.
-  goog.asserts.assert(template, 'Soy template may not be null.');
-  var dom = opt_domHelper || goog.dom.getDomHelper();
-  var output = template(
-      opt_templateData || goog.soy.defaultTemplateData_, undefined,
-      opt_injectedData);
-  var html = goog.soy.ensureTemplateOutputHtml_(output);
-  goog.soy.assertFirstTagValid_(html);
-  var safeHtml = output instanceof goog.soy.data.SanitizedContent ?
-      output.toSafeHtml() :
-      goog.html.legacyconversions.safeHtmlFromString(html);
-  return dom.safeHtmlToNode(safeHtml);
-};
-
-
-/**
- * Renders a Soy template into a single node. If the rendered
- * HTML string represents a single node, then that node is returned. Otherwise,
- * a DIV element is returned containing the rendered nodes.
- *
- * @param {null|function(ARG_TYPES, null=, Object<string, *>=):*} template
- *     The Soy template defining the element's content.
- * @param {ARG_TYPES=} opt_templateData The data for the template.
- * @param {Object=} opt_injectedData The injected data for the template.
- * @param {goog.dom.DomHelper=} opt_domHelper The DOM helper used to
- *     create DOM nodes; defaults to {@code goog.dom.getDomHelper}.
- * @return {!Element} Rendered template contents, wrapped in a parent DIV
- *     element if necessary.
- * @template ARG_TYPES
- */
-goog.soy.renderAsElement = function(
-    template, opt_templateData, opt_injectedData, opt_domHelper) {
-  // Soy template parameter is only nullable for historical reasons.
-  goog.asserts.assert(template, 'Soy template may not be null.');
-  return goog.soy.convertToElement_(
-      template(
-          opt_templateData || goog.soy.defaultTemplateData_, undefined,
-          opt_injectedData),
-      opt_domHelper);
-};
-
-
-/**
- * Converts a processed Soy template into a single node. If the rendered
- * HTML string represents a single node, then that node is returned. Otherwise,
- * a DIV element is returned containing the rendered nodes.
- *
- * @param {!goog.soy.data.SanitizedContent} templateResult The processed
- *     template of kind HTML or TEXT (which will be escaped).
- * @param {?goog.dom.DomHelper=} opt_domHelper The DOM helper used to
- *     create DOM nodes; defaults to {@code goog.dom.getDomHelper}.
- * @return {!Element} Rendered template contents, wrapped in a parent DIV
- *     element if necessary.
- */
-goog.soy.convertToElement = function(templateResult, opt_domHelper) {
-  return goog.soy.convertToElement_(templateResult, opt_domHelper);
-};
-
-
-/**
- * Non-strict version of {@code goog.soy.convertToElement}.
- *
- * @param {*} templateResult The processed template.
- * @param {?goog.dom.DomHelper=} opt_domHelper The DOM helper used to
- *     create DOM nodes; defaults to {@code goog.dom.getDomHelper}.
- * @return {!Element} Rendered template contents, wrapped in a parent DIV
- *     element if necessary.
- * @private
- */
-goog.soy.convertToElement_ = function(templateResult, opt_domHelper) {
-  var dom = opt_domHelper || goog.dom.getDomHelper();
-  var wrapper = dom.createElement(goog.dom.TagName.DIV);
-  var html = goog.soy.ensureTemplateOutputHtml_(templateResult);
-  goog.soy.assertFirstTagValid_(html);
-  wrapper.innerHTML = html;
-
-  // If the template renders as a single element, return it.
-  if (wrapper.childNodes.length == 1) {
-    var firstChild = wrapper.firstChild;
-    if (firstChild.nodeType == goog.dom.NodeType.ELEMENT) {
-      return /** @type {!Element} */ (firstChild);
-    }
-  }
-
-  // Otherwise, return the wrapper DIV.
-  return wrapper;
-};
-
-
-/**
- * Ensures the result is "safe" to insert as HTML.
- *
- * Note if the template has non-strict autoescape, the guarantees here are very
- * weak. It is recommended applications switch to requiring strict
- * autoescaping over time by tweaking goog.soy.REQUIRE_STRICT_AUTOESCAPE.
- *
- * In the case the argument is a SanitizedContent object, it either must
- * already be of kind HTML, or if it is kind="text", the output will be HTML
- * escaped.
- *
- * @param {*} templateResult The template result.
- * @return {string} The assumed-safe HTML output string.
- * @private
- */
-goog.soy.ensureTemplateOutputHtml_ = function(templateResult) {
-  // Allow strings as long as strict autoescaping is not mandated. Note we
-  // allow everything that isn't an object, because some non-escaping templates
-  // end up returning non-strings if their only print statement is a
-  // non-escaped argument, plus some unit tests spoof templates.
-  // TODO(gboyer): Track down and fix these cases.
-  if (!goog.soy.REQUIRE_STRICT_AUTOESCAPE && !goog.isObject(templateResult)) {
-    return String(templateResult);
-  }
-
-  // Allow SanitizedContent of kind HTML.
-  if (templateResult instanceof goog.soy.data.SanitizedContent) {
-    templateResult =
-        /** @type {!goog.soy.data.SanitizedContent} */ (templateResult);
-    var ContentKind = goog.soy.data.SanitizedContentKind;
-    if (templateResult.contentKind === ContentKind.HTML) {
-      return goog.asserts.assertString(templateResult.getContent());
-    }
-    if (templateResult.contentKind === ContentKind.TEXT) {
-      // Allow text to be rendered, as long as we escape it. Other content
-      // kinds will fail, since we don't know what to do with them.
-      // TODO(gboyer): Perhaps also include URI in this case.
-      return goog.string.htmlEscape(templateResult.getContent());
-    }
-  }
-
-  goog.asserts.fail(
-      'Soy template output is unsafe for use as HTML: ' + templateResult);
-
-  // In production, return a safe string, rather than failing hard.
-  return 'zSoyz';
-};
-
-
-/**
- * Checks that the rendered HTML does not start with an invalid tag that would
- * likely cause unexpected output from renderAsElement or renderAsFragment.
- * See {@link http://www.w3.org/TR/html5/semantics.html#semantics} for reference
- * as to which HTML elements can be parents of each other.
- * @param {string} html The output of a template.
- * @private
- */
-goog.soy.assertFirstTagValid_ = function(html) {
-  if (goog.asserts.ENABLE_ASSERTS) {
-    var matches = html.match(goog.soy.INVALID_TAG_TO_RENDER_);
-    goog.asserts.assert(
-        !matches, 'This template starts with a %s, which ' +
-            'cannot be a child of a <div>, as required by soy internals. ' +
-            'Consider using goog.soy.renderElement instead.\nTemplate output: %s',
-        matches && matches[0], html);
-  }
-};
-
-
-/**
- * A pattern to find templates that cannot be rendered by renderAsElement or
- * renderAsFragment, as these elements cannot exist as the child of a <div>.
- * @type {!RegExp}
- * @private
- */
-goog.soy.INVALID_TAG_TO_RENDER_ =
-    /^<(body|caption|col|colgroup|head|html|tr|td|th|tbody|thead|tfoot)>/i;
-
-
-/**
- * Immutable object that is passed into templates that are rendered
- * without any data.
- * @private @const
- */
-goog.soy.defaultTemplateData_ = {};
-
 //javascript/closure/string/stringbuffer.js
 // Copyright 2006 The Closure Library Authors. All Rights Reserved.
 //
@@ -28916,18 +23995,16 @@ goog.string.StringBuffer.prototype.toString = function() {
 
 /**
  * @fileoverview
- * Utility functions and classes for Soy.
+ * Utility functions and classes for Soy gencode
  *
  * <p>
- * The top portion of this file contains utilities for Soy users:<ul>
- *   <li> soy.renderElement: Render template and set as innerHTML of an element.
- *   <li> soy.renderAsFragment: Render template and return as HTML fragment.
- * </ul>
+ * This file contains utilities that should only be called by Soy-generated
+ * JS code. Please do not use these functions directly from
+ * your hand-writen code. Their names all start with '$$', or exist within the
+ * soydata.VERY_UNSAFE namespace.
  *
- * <p>
- * The bottom portion of this file contains utilities that should only be called
- * by Soy-generated JS code. Please do not use these functions directly from
- * your hand-writen code. Their names all start with '$$'.
+ * <p>TODO(lukes): ensure that the above pattern is actually followed
+ * consistently.
  *
  * @author Garrett Boyer
  * @author Mike Samuel
@@ -28945,7 +24022,6 @@ goog.provide('soydata.VERY_UNSAFE');
 goog.require('goog.array');
 goog.require('goog.asserts');
 goog.require('goog.debug');
-goog.require('goog.dom.DomHelper');
 goog.require('goog.format');
 goog.require('goog.html.SafeHtml');
 goog.require('goog.html.SafeScript');
@@ -28957,7 +24033,6 @@ goog.require('goog.html.uncheckedconversions');
 goog.require('goog.i18n.BidiFormatter');
 goog.require('goog.i18n.bidi');
 goog.require('goog.object');
-goog.require('goog.soy');
 goog.require('goog.soy.data.SanitizedContent');
 goog.require('goog.soy.data.SanitizedContentKind');
 goog.require('goog.soy.data.SanitizedCss');
@@ -29283,82 +24358,8 @@ soydata.VERY_UNSAFE.ordainSanitizedCss =
 
 
 // -----------------------------------------------------------------------------
-// Public utilities.
-
-
-/**
- * Helper function to render a Soy template and then set the output string as
- * the innerHTML of an element. It is recommended to use this helper function
- * instead of directly setting innerHTML in your hand-written code, so that it
- * will be easier to audit the code for cross-site scripting vulnerabilities.
- *
- * NOTE: New code should consider using goog.soy.renderElement instead.
- *
- * @param {Element} element The element whose content we are rendering.
- * @param {?function(ARG_TYPES, null=, Object<string, *>=):*} template
- *     The Soy template defining the element's content.
- * @param {ARG_TYPES} opt_templateData The data for the template.
- * @param {Object=} opt_injectedData The injected data for the template.
- * @template ARG_TYPES
- */
-soy.renderElement = goog.soy.renderElement;
-
-
-/**
- * Helper function to render a Soy template into a single node or a document
- * fragment. If the rendered HTML string represents a single node, then that
- * node is returned (note that this is *not* a fragment, despite them name of
- * the method). Otherwise a document fragment is returned containing the
- * rendered nodes.
- *
- * NOTE: New code should consider using goog.soy.renderAsFragment
- * instead (note that the arguments are different).
- *
- * @param {?function(ARG_TYPES, null=, Object<string, *>=):*} template
- *     The Soy template defining the element's content.
- * @param {ARG_TYPES=} opt_templateData The data for the template.
- * @param {Document=} opt_document The document used to create DOM nodes. If not
- *     specified, global document object is used.
- * @param {Object=} opt_injectedData The injected data for the template.
- * @return {!Node} The resulting node or document fragment.
- * @template ARG_TYPES
- */
-soy.renderAsFragment = function(
-    template, opt_templateData, opt_document, opt_injectedData) {
-  return goog.soy.renderAsFragment(
-      template, opt_templateData, opt_injectedData,
-      new goog.dom.DomHelper(opt_document));
-};
-
-
-/**
- * Helper function to render a Soy template into a single node. If the rendered
- * HTML string represents a single node, then that node is returned. Otherwise,
- * a DIV element is returned containing the rendered nodes.
- *
- * NOTE: New code should consider using goog.soy.renderAsElement
- * instead (note that the arguments are different).
- *
- * @param {?function(ARG_TYPES, null=, Object<string, *>=):*} template
- *     The Soy template defining the element's content.
- * @param {ARG_TYPES=} opt_templateData The data for the template.
- * @param {Document=} opt_document The document used to create DOM nodes. If not
- *     specified, global document object is used.
- * @param {Object=} opt_injectedData The injected data for the template.
- * @return {!Element} Rendered template contents, wrapped in a parent DIV
- *     element if necessary.
- * @template ARG_TYPES
- */
-soy.renderAsElement = function(
-    template, opt_templateData, opt_document, opt_injectedData) {
-  return goog.soy.renderAsElement(
-      template, opt_templateData, opt_injectedData,
-      new goog.dom.DomHelper(opt_document));
-};
-
-
-// -----------------------------------------------------------------------------
-// Below are private utilities to be used by Soy-generated code only.
+// Soy-generated utilities in the soy namespace.  Contains implementations for
+// common soyfunctions (e.g. keys()) and escaping/print directives.
 
 
 /**
