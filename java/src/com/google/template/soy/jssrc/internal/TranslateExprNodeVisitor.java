@@ -156,8 +156,6 @@ public class TranslateExprNodeVisitor
   private static final SoyErrorKind MAP_LITERAL_WITH_NON_ID_KEY_REQUIRES_QUOTE_KEYS_IF_JS =
       SoyErrorKind.of(
           "Map literal with non-identifier key {0} must be wrapped in quoteKeysIfJs().");
-  private static final SoyErrorKind SOY_JS_SRC_FUNCTION_NOT_FOUND =
-      SoyErrorKind.of("Failed to find SoyJsSrcFunction ''{0}''.");
   private static final SoyErrorKind UNION_ACCESSOR_MISMATCH =
       SoyErrorKind.of(
           "Cannot access field ''{0}'' of type ''{1}'', "
@@ -569,7 +567,9 @@ public class TranslateExprNodeVisitor
   @Override
   protected CodeChunk.WithValue visitFunctionNode(FunctionNode node) {
     SoyFunction soyFunction = node.getSoyFunction();
-    if (soyFunction == null) {
+    // TODO(user): Eliminate this case
+    if (soyFunction == null
+        || !(soyFunction instanceof BuiltinFunction || soyFunction instanceof SoyJsSrcFunction)) {
       // No function found. This is a v1 expression, only possible if allowDeprecatedSyntax == true
       soyFunction = getUnknownFunction(node.getFunctionName(), node.numChildren());
     }
@@ -617,9 +617,7 @@ public class TranslateExprNodeVisitor
           dontTrustPrecedenceOf(soyJsSrcFunction.computeForJsSrc(functionInputs), collector.get());
       return functionOutput.withInitialStatements(initialStatements);
     } else {
-      errorReporter.report(
-          node.getSourceLocation(), SOY_JS_SRC_FUNCTION_NOT_FOUND, node.getFunctionName());
-      return stringLiteral("SOY_FUNCTION_FAILED");
+      throw new AssertionError();
     }
   }
 
