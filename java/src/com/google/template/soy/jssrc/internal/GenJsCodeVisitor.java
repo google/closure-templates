@@ -1085,8 +1085,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
    */
   @Override protected void visitSwitchNode(SwitchNode node) {
 
-    CodeChunk.WithValue switchOn =
-        coerceTypeForSwitchComparison(node.getExpr(), node.getExprText());
+    CodeChunk.WithValue switchOn = coerceTypeForSwitchComparison(node.getExpr());
     SwitchBuilder switchBuilder = switch_(switchOn);
     for (SoyNode child : node.getChildren()) {
       if (child instanceof SwitchCaseNode) {
@@ -1113,11 +1112,10 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
   // js switch statements use === for comparing the switch expr to the cases.  In order to preserve
   // soy equality semantics for sanitized content objects we need to coerce cases and switch exprs
   // to strings.
-  private CodeChunk.WithValue coerceTypeForSwitchComparison(ExprRootNode v2Expr, String v1Expr) {
+  private CodeChunk.WithValue coerceTypeForSwitchComparison(ExprRootNode expr) {
     CodeChunk.WithValue switchOn =
-        jsExprTranslator.translateToCodeChunk(
-            v2Expr, v1Expr, templateTranslationContext, errorReporter);
-    SoyType type = v2Expr.getType();
+        jsExprTranslator.translateToCodeChunk(expr, templateTranslationContext, errorReporter);
+    SoyType type = expr.getType();
     // If the type is possibly a sanitized content type then we need to toString it.
     if (SoyTypes.makeNullable(StringType.getInstance()).isAssignableFrom(type)
         || type.equals(AnyType.getInstance())
@@ -1170,8 +1168,9 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
     String limitName = varPrefix + "ListLen";
 
     // Define list var and list-len var.
-    CodeChunk.WithValue dataRef = jsExprTranslator.translateToCodeChunk(
-        node.getExpr(), node.getExprText(), templateTranslationContext, errorReporter);
+    CodeChunk.WithValue dataRef =
+        jsExprTranslator.translateToCodeChunk(
+            node.getExpr(), templateTranslationContext, errorReporter);
 
     jsCodeBuilder.append(declare(listName, dataRef));
     jsCodeBuilder.append(declare(limitName, dottedIdNoRequire(listName + ".length")));

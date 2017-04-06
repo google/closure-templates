@@ -158,10 +158,8 @@ public class GenCallCodeUtils {
         variant = LITERAL_EMPTY_STRING;
       } else {
         // Case 2b: Delegate call with variant expression.
-        // TODO(lukes): the use of toSourceString() here is strange.  Remove it.
         variant = jsExprTranslator.translateToCodeChunk(
             variantSoyExpr,
-            variantSoyExpr.toSourceString(),
             translationContext,
             errorReporter);
       }

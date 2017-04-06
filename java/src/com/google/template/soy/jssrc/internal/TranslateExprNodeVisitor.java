@@ -39,8 +39,10 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.protoConstructor;
 import static com.google.template.soy.jssrc.internal.JsRuntime.protoToSanitizedContentConverterFunction;
 import static com.google.template.soy.jssrc.internal.JsRuntime.sanitizedContentToProtoConverterFunction;
 
+import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.inject.assistedinject.Assisted;
 import com.google.inject.assistedinject.AssistedInject;
@@ -90,6 +92,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Visitor for translating a Soy expression (in the form of an {@code ExprNode}) into an
@@ -143,6 +146,8 @@ import java.util.Map;
  */
 public class TranslateExprNodeVisitor
     extends AbstractReturningExprNodeVisitor<CodeChunk.WithValue> {
+
+  private static final Joiner COMMA_JOINER = Joiner.on(", ");
 
   private static final SoyErrorKind CONSTANT_USED_AS_KEY_IN_MAP_LITERAL =
       SoyErrorKind.of("Keys in map literals cannot be constants (found constant ''{0}'').");
@@ -561,8 +566,14 @@ public class TranslateExprNodeVisitor
   // -----------------------------------------------------------------------------------------------
   // Implementations for functions.
 
-  @Override protected CodeChunk.WithValue visitFunctionNode(FunctionNode node) {
+  @Override
+  protected CodeChunk.WithValue visitFunctionNode(FunctionNode node) {
     SoyFunction soyFunction = node.getSoyFunction();
+    if (soyFunction == null) {
+      // No function found. This is a v1 expression, only possible if allowDeprecatedSyntax == true
+      soyFunction = getUnknownFunction(node.getFunctionName(), node.numChildren());
+    }
+
     if (soyFunction instanceof BuiltinFunction) {
       switch ((BuiltinFunction) soyFunction) {
         case IS_FIRST:
@@ -585,6 +596,7 @@ public class TranslateExprNodeVisitor
       List<JsExpr> functionInputs = new ArrayList<>(args.size());
       List<CodeChunk> initialStatements = new ArrayList<>();
       RequiresCollector.IntoImmutableSet collector = new RequiresCollector.IntoImmutableSet();
+
       // SoyJsSrcFunction doesn't understand CodeChunks; it needs JsExprs.
       // Grab the JsExpr for each CodeChunk arg to deliver to the SoyToJsSrcFunction as input.
       for (CodeChunk.WithValue arg : args) {
@@ -592,6 +604,7 @@ public class TranslateExprNodeVisitor
         functionInputs.add(arg.singleExprOrName());
         Iterables.addAll(initialStatements, arg.initialStatements());
       }
+
       // Compute the function on the JsExpr inputs.
       SoyJsSrcFunction soyJsSrcFunction = (SoyJsSrcFunction) soyFunction;
       if (soyJsSrcFunction instanceof SoyLibraryAssistedJsSrcFunction) {
@@ -635,5 +648,28 @@ public class TranslateExprNodeVisitor
         V1JsExprTranslator.translateToJsExpr(
             exprText, node.getSourceLocation(), variableMappings, errorReporter),
         ImmutableList.<GoogRequire>of());
+  }
+
+  private static SoyJsSrcFunction getUnknownFunction(final String name, final int argSize) {
+    return new SoyJsSrcFunction() {
+      @Override
+      public JsExpr computeForJsSrc(List<JsExpr> args) {
+        List<String> argStrings = new ArrayList<>();
+        for (JsExpr arg : args) {
+          argStrings.add(arg.getText());
+        }
+        return new JsExpr(name + "(" + COMMA_JOINER.join(argStrings) + ")", Integer.MAX_VALUE);
+      }
+
+      @Override
+      public String getName() {
+        return name;
+      }
+
+      @Override
+      public Set<Integer> getValidArgsSizes() {
+        return ImmutableSet.of(argSize);
+      }
+    };
   }
 }

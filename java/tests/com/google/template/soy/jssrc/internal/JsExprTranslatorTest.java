@@ -69,30 +69,26 @@ public final class JsExprTranslatorTest {
       // Test unsupported function (Soy V1 syntax).
       expr.replaceChild(1, userFnNode);
       new ResolveFunctionsVisitor(SOY_FUNCTIONS).exec(expr);
-      String exprText = "3   *   userFn(5)";
       UniqueNameGenerator nameGenerator = JsSrcNameGenerators.forLocalVariables();
       assertThat(
               jsExprTranslator
                   .translateToCodeChunk(
                       expr,
-                      exprText,
                       TranslationContext.of(
                           SoyToJsVariableMappings.forNewTemplate(),
                           CodeChunk.Generator.create(nameGenerator),
                           nameGenerator),
                       ExplodingErrorReporter.get())
                   .getCode())
-          .isEqualTo("3 * userFn(5);");
+          .isEqualTo("3 * (userFn(5));");
 
       // Test supported function.
       expr.replaceChild(1, randomIntFnNode);
       new ResolveFunctionsVisitor(SOY_FUNCTIONS).exec(expr);
-      exprText = "3   *   randomInt(4)";
       assertThat(
               jsExprTranslator
                   .translateToCodeChunk(
                       expr,
-                      exprText,
                       TranslationContext.of(
                           SoyToJsVariableMappings.forNewTemplate(),
                           CodeChunk.Generator.create(nameGenerator),
