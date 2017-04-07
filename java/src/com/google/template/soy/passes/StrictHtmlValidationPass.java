@@ -203,25 +203,9 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
         foreignContentEndLocation = node.getSourceLocation();
         inForeignContent = false;
       }
-      // Pop out every optional tags that does not match the current close tag.
-      HtmlTagEntry openTag = openTagStack.peekFirst();
-      while (openTag != null
-          && openTag.hasTagName()
-          && !openTag.getTagName().equals(closeTag)
-          && openTag.isDefinitelyOptional()) {
-        openTagStack.pollFirst();
-        openTag = openTagStack.peekFirst();
-      }
-      // Check if we can find a matching open tag within the current block.
-      if (openTag != null && openTag.hasTagName()) {
-        // Only pop the tag from the open stack if we find a match.
-        // This way we do not emit cascade errors for a misplace closed tag.
-        if (HtmlTagEntry.matchOrError(openTag.getTagName(), closeTag, errorReporter)) {
-          openTagStack.pollFirst();
-        }
-      } else {
-        // If we cannot find a matching open tag in current block, put the current tag into
-        // closeTagQueue and compare everything after we visit the entire template node.
+      // If we cannot find a matching open tag in current block, put the current tag into
+      // closeTagQueue and compare everything after we visit the entire template node.
+      if (!HtmlTagEntry.tryMatchCloseTag(openTagStack, closeTag, errorReporter)) {
         closeTagQueue.addLast(new HtmlTagEntry(closeTag));
       }
     }

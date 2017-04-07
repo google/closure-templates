@@ -119,7 +119,7 @@ final class HtmlTagEntry {
    * the closeQueue is empty. It is possible that some of the optional tags are ended in another
    * control block, and we cannot remove them too eagerly.
    */
-  public static boolean tryMatchOrError(
+  static boolean tryMatchOrError(
       ArrayDeque<HtmlTagEntry> openStack,
       ArrayDeque<HtmlTagEntry> closeQueue,
       ErrorReporter errorReporter) {
@@ -173,7 +173,7 @@ final class HtmlTagEntry {
    * A helper method that matches a list of open tags and a list of close tags. We need to compare
    * the last open tag and the first close tag one by one.
    */
-  public static boolean matchOrError(
+  static boolean matchOrError(
       ArrayDeque<HtmlTagEntry> openStack,
       ArrayDeque<HtmlTagEntry> closeQueue,
       ErrorReporter errorReporter) {
@@ -201,8 +201,7 @@ final class HtmlTagEntry {
    * A helper method that compare two tags and report corresponding error. Note that the order of
    * inputs matters.
    */
-  public static boolean matchOrError(
-      TagName openTag, TagName closeTag, ErrorReporter errorReporter) {
+  static boolean matchOrError(TagName openTag, TagName closeTag, ErrorReporter errorReporter) {
     if (openTag.isStatic() != closeTag.isStatic()) {
       // We only allow the same kind of nodes for dynamic tag names. We do not want to support
       // runtime validations, so something like <div></{$foo}> is not allowed.
@@ -275,40 +274,124 @@ final class HtmlTagEntry {
     }
   }
 
+  /**
+   * Try to match a close tag with a stack of open tags, and report errors accordingly.
+   *
+   * <p>Return false if openStack is empty or we cannot find a common prefix for the current close
+   * tag. Notably returning true does not mean we find a match for the current close tag. When we
+   * definitely know there is a mismatch and report an error for that, we still return true. The
+   * return value is used by {@code StrictHtmlValidationPass} to decide whether we should add the
+   * closeTag to the queue.
+   */
+  static boolean tryMatchCloseTag(
+      ArrayDeque<HtmlTagEntry> openStack, TagName closeTag, ErrorReporter errorReporter) {
+    // Pop out every optional tags that does not match the current close tag.
+    HtmlTagEntry openTag = openStack.peekFirst();
+    while (openTag != null
+        && openTag.hasTagName()
+        && !openTag.getTagName().equals(closeTag)
+        && openTag.isDefinitelyOptional()) {
+      openStack.pollFirst();
+      openTag = openStack.peekFirst();
+    }
+    if (openTag == null) {
+      return false;
+    } else if (openTag.hasTagName()) {
+      // Check if we can find a matching open tag within the current block.
+      // Only pop the tag from the open stack if we find a match.
+      // This way we do not emit cascade errors for a misplace closed tag.
+      if (matchOrError(openTag.getTagName(), closeTag, errorReporter)) {
+        openStack.pollFirst();
+      }
+    } else {
+      boolean matchCommonPrefix = tryMatchCommonPrefix(openStack.peekFirst(), closeTag);
+      if (matchCommonPrefix && openStack.peekFirst().hasEmptyBranches()) {
+        openStack.pollFirst();
+      }
+      if (!matchCommonPrefix) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  static boolean tryMatchCloseTag(
+      ArrayDeque<HtmlTagEntry> openStack, HtmlTagEntry closeTag, ErrorReporter errorReporter) {
+    if (closeTag.hasTagName()) {
+      return tryMatchCloseTag(openStack, closeTag.getTagName(), errorReporter);
+    }
+    HtmlTagEntry openTag = openStack.peekFirst();
+    if (openTag == null) {
+      return false;
+    } else if (openTag.hasTagName()) {
+      boolean matchCommonPrefix = tryMatchCommonPrefix(closeTag, openTag.getTagName());
+      if (matchCommonPrefix && closeTag.hasEmptyBranches()) {
+        return true;
+      }
+      if (!matchCommonPrefix) {
+        return false;
+      }
+    } else {
+      if (matchOrError(openTag, closeTag, errorReporter)) {
+        openStack.pollFirst();
+      } else {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /**
+   * Check if there is a common prefix matching for a given {@code HtmlTagEntry} and a {@code
+   * TagName}. If find a common prefix, remove them from the branches. Note that this method mutates
+   * the {@code HtmlTagEntry} (removing optional tags and common prefix).
+   */
+  static boolean tryMatchCommonPrefix(HtmlTagEntry entry, TagName tagName) {
+    Preconditions.checkArgument(!entry.hasTagName());
+    if (entry.getBranches().hasCommonPrefix(tagName)) {
+      entry.getBranches().popAllBranches();
+      return true;
+    }
+    return false;
+  }
+
+  private static boolean tryMatchCommonPrefix(
+      HtmlTagEntry openTag, TagName closeTag, ErrorReporter errorReporter) {
+    boolean matchCommonPrefix = tryMatchCommonPrefix(openTag, closeTag);
+    // TODO(user): Remove this once we support partial prefix matching.
+    if (matchCommonPrefix && !openTag.getBranches().isEmpty()) {
+      matchCommonPrefix = false;
+      errorReporter.report(openTag.getSourceLocation(), OPEN_TAG_NOT_CLOSED);
+    }
+    if (!matchCommonPrefix) {
+      errorReporter.report(closeTag.getTagLocation(), UNEXPECTED_CLOSE_TAG);
+    }
+    return matchCommonPrefix;
+  }
+
+  private static boolean tryMatchCommonPrefix(
+      TagName openTag, HtmlTagEntry closeTag, ErrorReporter errorReporter) {
+    boolean matchCommonPrefix = tryMatchCommonPrefix(closeTag, openTag);
+    // TODO(user): Remove this once we support partial prefix matching.
+    if (matchCommonPrefix && !closeTag.getBranches().isEmpty()) {
+      matchCommonPrefix = false;
+      errorReporter.report(
+          closeTag.getSourceLocation(),
+          UNEXPECTED_CLOSE_TAG_WITH_EXPECTATION,
+          openTag.getStaticTagNameAsLowerCase().get());
+    }
+    if (!matchCommonPrefix) {
+      errorReporter.report(openTag.getTagLocation(), OPEN_TAG_NOT_CLOSED);
+    }
+    return matchCommonPrefix;
+  }
+
   /** Tries to find common prefix and report errors accordingly. */
   private static boolean tryMatchCommonPrefix(
       HtmlTagEntry openTag, HtmlTagEntry closeTag, ErrorReporter errorReporter) {
     Preconditions.checkArgument(openTag.hasTagName() != closeTag.hasTagName());
-    boolean matchCommonPrefix = false;
-    // Try to match common prefixes if possible.
-    if (openTag.hasTagName()) {
-      TagName openTagName = openTag.getTagName();
-      if (closeTag.getBranches().hasCommonPrefix(openTagName)) {
-        closeTag.getBranches().popAllBranches();
-        matchCommonPrefix = true;
-        if (!closeTag.getBranches().isEmpty()) {
-          matchCommonPrefix = false;
-          errorReporter.report(
-              closeTag.getSourceLocation(),
-              UNEXPECTED_CLOSE_TAG_WITH_EXPECTATION,
-              openTagName.getStaticTagNameAsLowerCase().get());
-        }
-      } else {
-        errorReporter.report(openTagName.getTagLocation(), OPEN_TAG_NOT_CLOSED);
-      }
-    } else {
-      TagName closeTagName = closeTag.getTagName();
-      if (openTag.getBranches().hasCommonPrefix(closeTagName)) {
-        openTag.getBranches().popAllBranches();
-        matchCommonPrefix = true;
-        if (!openTag.getBranches().isEmpty()) {
-          matchCommonPrefix = false;
-          errorReporter.report(openTag.getSourceLocation(), OPEN_TAG_NOT_CLOSED);
-        }
-      } else {
-        errorReporter.report(closeTagName.getTagLocation(), UNEXPECTED_CLOSE_TAG);
-      }
-    }
-    return matchCommonPrefix;
+    return openTag.hasTagName()
+        ? tryMatchCommonPrefix(openTag.getTagName(), closeTag, errorReporter)
+        : tryMatchCommonPrefix(openTag, closeTag.getTagName(), errorReporter);
   }
 }
