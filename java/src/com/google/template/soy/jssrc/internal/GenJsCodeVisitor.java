@@ -89,7 +89,6 @@ import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.SwitchCaseNode;
@@ -1402,13 +1401,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   @Override protected void visitSoyNode(SoyNode node) {
     // TODO(lukes): this method is suspicious...delete? always throw unsupportedoperationexception?
     if (node instanceof ParentSoyNode<?>) {
-
-      if (node instanceof BlockNode) {
-        visitChildren((BlockNode) node);
-      } else {
-        visitChildren((ParentSoyNode<?>) node);
-      }
-
+      visitChildren((ParentSoyNode<?>) node);
       return;
     }
 
