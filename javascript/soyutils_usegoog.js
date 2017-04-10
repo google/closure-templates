@@ -16,18 +16,16 @@
 
 /**
  * @fileoverview
- * Utility functions and classes for Soy.
+ * Utility functions and classes for Soy gencode
  *
  * <p>
- * The top portion of this file contains utilities for Soy users:<ul>
- *   <li> soy.renderElement: Render template and set as innerHTML of an element.
- *   <li> soy.renderAsFragment: Render template and return as HTML fragment.
- * </ul>
+ * This file contains utilities that should only be called by Soy-generated
+ * JS code. Please do not use these functions directly from
+ * your hand-writen code. Their names all start with '$$', or exist within the
+ * soydata.VERY_UNSAFE namespace.
  *
- * <p>
- * The bottom portion of this file contains utilities that should only be called
- * by Soy-generated JS code. Please do not use these functions directly from
- * your hand-writen code. Their names all start with '$$'.
+ * <p>TODO(lukes): ensure that the above pattern is actually followed
+ * consistently.
  *
  */
 
@@ -41,6 +39,7 @@ goog.provide('soydata.VERY_UNSAFE');
 goog.require('goog.array');
 goog.require('goog.asserts');
 goog.require('goog.debug');
+/** @suppress {extraRequire} */  // TODO(lukes): remove
 goog.require('goog.dom.DomHelper');
 goog.require('goog.format');
 goog.require('goog.html.SafeHtml');
@@ -53,6 +52,7 @@ goog.require('goog.html.uncheckedconversions');
 goog.require('goog.i18n.BidiFormatter');
 goog.require('goog.i18n.bidi');
 goog.require('goog.object');
+/** @suppress {extraRequire} */  // TODO(lukes): remove
 goog.require('goog.soy');
 goog.require('goog.soy.data.SanitizedContent');
 goog.require('goog.soy.data.SanitizedContentKind');
@@ -379,82 +379,8 @@ soydata.VERY_UNSAFE.ordainSanitizedCss =
 
 
 // -----------------------------------------------------------------------------
-// Public utilities.
-
-
-/**
- * Helper function to render a Soy template and then set the output string as
- * the innerHTML of an element. It is recommended to use this helper function
- * instead of directly setting innerHTML in your hand-written code, so that it
- * will be easier to audit the code for cross-site scripting vulnerabilities.
- *
- * NOTE: New code should consider using goog.soy.renderElement instead.
- *
- * @param {Element} element The element whose content we are rendering.
- * @param {?function(ARG_TYPES, null=, Object<string, *>=):*} template
- *     The Soy template defining the element's content.
- * @param {ARG_TYPES} opt_templateData The data for the template.
- * @param {Object=} opt_injectedData The injected data for the template.
- * @template ARG_TYPES
- */
-soy.renderElement = goog.soy.renderElement;
-
-
-/**
- * Helper function to render a Soy template into a single node or a document
- * fragment. If the rendered HTML string represents a single node, then that
- * node is returned (note that this is *not* a fragment, despite them name of
- * the method). Otherwise a document fragment is returned containing the
- * rendered nodes.
- *
- * NOTE: New code should consider using goog.soy.renderAsFragment
- * instead (note that the arguments are different).
- *
- * @param {?function(ARG_TYPES, null=, Object<string, *>=):*} template
- *     The Soy template defining the element's content.
- * @param {ARG_TYPES=} opt_templateData The data for the template.
- * @param {Document=} opt_document The document used to create DOM nodes. If not
- *     specified, global document object is used.
- * @param {Object=} opt_injectedData The injected data for the template.
- * @return {!Node} The resulting node or document fragment.
- * @template ARG_TYPES
- */
-soy.renderAsFragment = function(
-    template, opt_templateData, opt_document, opt_injectedData) {
-  return goog.soy.renderAsFragment(
-      template, opt_templateData, opt_injectedData,
-      new goog.dom.DomHelper(opt_document));
-};
-
-
-/**
- * Helper function to render a Soy template into a single node. If the rendered
- * HTML string represents a single node, then that node is returned. Otherwise,
- * a DIV element is returned containing the rendered nodes.
- *
- * NOTE: New code should consider using goog.soy.renderAsElement
- * instead (note that the arguments are different).
- *
- * @param {?function(ARG_TYPES, null=, Object<string, *>=):*} template
- *     The Soy template defining the element's content.
- * @param {ARG_TYPES=} opt_templateData The data for the template.
- * @param {Document=} opt_document The document used to create DOM nodes. If not
- *     specified, global document object is used.
- * @param {Object=} opt_injectedData The injected data for the template.
- * @return {!Element} Rendered template contents, wrapped in a parent DIV
- *     element if necessary.
- * @template ARG_TYPES
- */
-soy.renderAsElement = function(
-    template, opt_templateData, opt_document, opt_injectedData) {
-  return goog.soy.renderAsElement(
-      template, opt_templateData, opt_injectedData,
-      new goog.dom.DomHelper(opt_document));
-};
-
-
-// -----------------------------------------------------------------------------
-// Below are private utilities to be used by Soy-generated code only.
+// Soy-generated utilities in the soy namespace.  Contains implementations for
+// common soyfunctions (e.g. keys()) and escaping/print directives.
 
 
 /**
