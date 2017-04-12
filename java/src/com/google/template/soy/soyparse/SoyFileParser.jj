@@ -470,6 +470,42 @@ public class SoyFileParser {
     return soyFileNode;
   }
 
+  /**
+   * Reports the error and skips to the given token.
+   *
+   * See https://javacc.org/tutorials/errorrecovery
+   */
+  private Token reportFileErrorAndSkipTo(ParseException error, int kind) {
+    ParseErrors.reportSoyFileParseException(errorReporter, filePath, error);
+    Token t;
+    do {
+      t = getNextToken();
+    // We need to halt when observing EOF.  The behavior of the token manager is to keep returning
+    // EOF from getNextToken(), so if we don't check for it this will become an infinite loop.
+    } while (t.kind != kind && t.kind != EOF);
+    return t;
+  }
+
+  /**
+   * Reports the error and skips to the given token if it observes the end of a template, throws an
+   * exception to halt parsing.
+   *
+   * See https://javacc.org/tutorials/errorrecovery
+   */
+  private Token reportTemplateBodyErrorAndSkipTo(ParseException error, int kind) {
+    ParseErrors.reportSoyFileParseException(errorReporter, filePath, error);
+    Token t;
+    do {
+      t = getNextToken();
+      if (t.kind == CMD_CLOSE_TEMPLATE || t.kind == CMD_CLOSE_DELTEMPLATE) {
+        throw new AbortParsingError();
+      }
+    // We need to halt when observing EOF.  The behavior of the token manager is to keep returning
+    // EOF from getNextToken(), so if we don't check for it this will become an infinite loop.
+    } while (t.kind != kind && t.kind != EOF);
+    return t;
+  }
+
   private <T> SourceItemInfo<T> newSourceItemInfo(T parsed, Token token) {
     return newSourceItemInfo(
         parsed, token.beginLine, token.beginColumn, token.endLine, token.endColumn);
@@ -502,10 +538,12 @@ public class SoyFileParser {
     return new SourceItemInfo<T>(parsed, begin.extend(end));
   }
 
+  /** Create a SourceLocation spanning all given tokens. */
   private SourceLocation createSrcLoc(Token tok1, Token... rest) {
     return Tokens.createSrcLoc(filePath, tok1, rest);
   }
 
+  /** Create an error ExprNode at the location of the given tokens. */
   private ExprNode errorExpr(Token tok1, Token... rest) {
     return VarRefNode.error(createSrcLoc(tok1, rest));
   }
@@ -1257,7 +1295,7 @@ private TemplateNode Template(SoyFileHeaderInfo soyFileHeaderInfo) :
       templateNode = TemplateHelper(builder, open, false)
       <CMD_CLOSE_TEMPLATE>
     } catch (ParseException e) {
-      reportErrorAndSkipTo(e, CMD_CLOSE_TEMPLATE);
+      reportFileErrorAndSkipTo(e, CMD_CLOSE_TEMPLATE);
     } catch (AbortParsingError e) {
       // do nothing, continue trying to parse other templates
       return null;
@@ -1269,7 +1307,7 @@ private TemplateNode Template(SoyFileHeaderInfo soyFileHeaderInfo) :
       templateNode = TemplateHelper(builder, open, true)
       <CMD_CLOSE_DELTEMPLATE>
     } catch (ParseException e) {
-      reportErrorAndSkipTo(e, CMD_CLOSE_DELTEMPLATE);
+      reportFileErrorAndSkipTo(e, CMD_CLOSE_DELTEMPLATE);
     } catch (AbortParsingError e) {
       // do nothing, continue trying to parse other templates
       return null;
@@ -1383,44 +1421,6 @@ private Identifier DottedIdent():
       ? Identifier.create(name.image, createSrcLoc(name))
       : Identifier.create(sb.toString(), createSrcLoc(name, next));
   }
-}
-
-JAVACODE
-/**
- * Reports the error and skips to the given token.
- *
- * See https://javacc.org/tutorials/errorrecovery
- */
-private Token reportErrorAndSkipTo(ParseException error, int kind) {
-  ParseErrors.reportSoyFileParseException(errorReporter, filePath, error);
-  Token t;
-  do {
-    t = getNextToken();
-  // We need to halt when observing EOF.  The behavior of the token manager is to keep returning
-  // EOF from getNextToken(), so if we don't check for it this will become an infinite loop.
-  } while (t.kind != kind && t.kind != EOF);
-  return t;
-}
-
-JAVACODE
-/**
- * Reports the error and skips to the given token if it observes the end of a template, throws an
- * exception to halt parsing.
- *
- * See https://javacc.org/tutorials/errorrecovery
- */
-private Token reportTemplateBodyErrorAndSkipTo(ParseException error, int kind) {
-  ParseErrors.reportSoyFileParseException(errorReporter, filePath, error);
-  Token t;
-  do {
-    t = getNextToken();
-    if (t.kind == CMD_CLOSE_TEMPLATE || t.kind == CMD_CLOSE_DELTEMPLATE) {
-      throw new AbortParsingError();
-    }
-  // We need to halt when observing EOF.  The behavior of the token manager is to keep returning
-  // EOF from getNextToken(), so if we don't check for it this will become an infinite loop.
-  } while (t.kind != kind && t.kind != EOF);
-  return t;
 }
 
 
