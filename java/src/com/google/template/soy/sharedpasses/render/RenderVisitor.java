@@ -312,7 +312,9 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     SoyValue result = eval(node.getExpr(), node);
     if (result instanceof UndefinedData) {
       throw RenderException.createWithSource(
-          "In 'print' tag, expression \"" + node.getExprText() + "\" evaluates to undefined.",
+          "In 'print' tag, expression \""
+              + node.getExpr().toSourceString()
+              + "\" evaluates to undefined.",
           node);
     }
 

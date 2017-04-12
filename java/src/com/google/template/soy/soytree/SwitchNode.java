@@ -64,11 +64,6 @@ public final class SwitchNode extends AbstractParentCommandNode<BlockNode>
     return numChildren() > 0 && getChild(numChildren() - 1) instanceof SwitchDefaultNode;
   }
 
-  /** Returns the text for the expression to switch on. */
-  public String getExprText() {
-    return expr.toSourceString();
-  }
-
   /** Returns the parsed expression. */
   public ExprRootNode getExpr() {
     return expr;

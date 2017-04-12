@@ -92,14 +92,14 @@ public final class ExtractMsgVariablesVisitorTest {
     assertThat(m0.getRepPlaceholderNode("USER_NAME")).isEqualTo(gm0p1);
     assertThat(m0.getPlaceholderName(gm0p1)).isEqualTo("USER_NAME");
     PrintNode gm0pc1 = (PrintNode) gm0p1.getChild(0);
-    assertThat(gm0pc1.getExprText()).isEqualTo("$userName");
+    assertThat(gm0pc1.getExpr().toSourceString()).isEqualTo("$userName");
     assertThat(((RawTextNode) m0.getChild(2)).getRawText()).isEqualTo(", please click ");
     MsgPlaceholderNode gm0p3 = (MsgPlaceholderNode) m0.getChild(3);
     assertThat(m0.getRepPlaceholderNode("START_LINK")).isEqualTo(gm0p3);
     assertThat(m0.getPlaceholderName(gm0p3)).isEqualTo("START_LINK");
     MsgHtmlTagNode gm0pc3 = (MsgHtmlTagNode) gm0p3.getChild(0);
     assertThat(gm0pc3.numChildren()).isEqualTo(3);
-    assertThat(((PrintNode) gm0pc3.getChild(1)).getExprText()).isEqualTo("$url");
+    assertThat(((PrintNode) gm0pc3.getChild(1)).getExpr().toSourceString()).isEqualTo("$url");
     assertThat(((RawTextNode) m0.getChild(4)).getRawText()).isEqualTo("here");
     MsgPlaceholderNode gm0p5 = (MsgPlaceholderNode) m0.getChild(5);
     assertThat(m0.getRepPlaceholderNode("END_LINK")).isEqualTo(gm0p5);

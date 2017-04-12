@@ -70,11 +70,6 @@ public final class ForeachNode extends AbstractParentCommandNode<BlockNode>
     return numChildren() > 1;
   }
 
-  /** Returns the text of the expression we're iterating over. */
-  public String getExprText() {
-    return expr.toSourceString();
-  }
-
   /** Returns the parsed expression. */
   public ExprRootNode getExpr() {
     return expr;

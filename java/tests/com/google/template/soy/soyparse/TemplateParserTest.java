@@ -65,7 +65,6 @@ import com.google.template.soy.soytree.ForeachIfemptyNode;
 import com.google.template.soy.soytree.ForeachNode;
 import com.google.template.soy.soytree.ForeachNonemptyNode;
 import com.google.template.soy.soytree.IfCondNode;
-import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
@@ -890,7 +889,7 @@ public final class TemplateParserTest {
 
     PrintNode pn0 = (PrintNode) nodes.get(0);
     assertTrue(pn0.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0));
-    assertEquals("$boo.foo", pn0.getExprText());
+    assertEquals("$boo.foo", pn0.getExpr().toSourceString());
     assertEquals(0, pn0.getChildren().size());
     assertEquals("FOO", pn0.genBasePhName());
     assertEquals("{$boo.foo}", pn0.toSourceString());
@@ -902,7 +901,7 @@ public final class TemplateParserTest {
 
     PrintNode pn2 = (PrintNode) nodes.get(2);
     assertTrue(pn2.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0));
-    assertEquals("$goo + 1", pn2.getExprText());
+    assertEquals("$goo + 1", pn2.getExpr().toSourceString());
     assertEquals(1, pn2.getChildren().size());
     PrintDirectiveNode pn2d0 = pn2.getChild(0);
     assertTrue(pn2d0.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0));
@@ -912,7 +911,7 @@ public final class TemplateParserTest {
 
     PrintNode pn3 = (PrintNode) nodes.get(3);
     assertTrue(pn3.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0));
-    assertEquals("'blah    blahblahblah'", pn3.getExprText());
+    assertEquals("'blah    blahblahblah'", pn3.getExpr().toSourceString());
     assertEquals(2, pn3.getChildren().size());
     PrintDirectiveNode pn3d0 = pn3.getChild(0);
     assertTrue(pn3d0.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0));
@@ -942,12 +941,12 @@ public final class TemplateParserTest {
     assertEquals(4, nodes.size());
 
     PrintNode pn0 = (PrintNode) nodes.get(0);
-    assertEquals("$boo.foo", pn0.getExprText());
+    assertEquals("$boo.foo", pn0.getExpr().toSourceString());
     assertEquals("FOO", pn0.genBasePhName());
     assertEquals("{$boo.foo}", pn0.toSourceString());
 
     PrintNode pn1 = (PrintNode) nodes.get(1);
-    assertEquals("$boo.foo", pn1.getExprText());
+    assertEquals("$boo.foo", pn1.getExpr().toSourceString());
     assertEquals("BOO_FOO", pn1.genBasePhName());
     assertEquals("{$boo.foo phname=\"booFoo\"}", pn1.toSourceString());
     assertTrue(pn1.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0));
@@ -955,12 +954,12 @@ public final class TemplateParserTest {
     assertTrue(pn1.getExpr().getRoot() instanceof FieldAccessNode);
 
     PrintNode pn2 = (PrintNode) nodes.get(2);
-    assertEquals("$boo.foo", pn2.getExprText());
+    assertEquals("$boo.foo", pn2.getExpr().toSourceString());
     assertEquals("BOO_FOO", pn2.genBasePhName());
     assertEquals("{$boo.foo phname=\"booFoo\"}", pn2.toSourceString());
 
     PrintNode pn3 = (PrintNode) nodes.get(3);
-    assertEquals("$boo.foo", pn3.getExprText());
+    assertEquals("$boo.foo", pn3.getExpr().toSourceString());
     assertEquals("BOO_FOO", pn3.genBasePhName());
     assertEquals("{print $boo.foo phname=\"boo_foo\"}", pn3.toSourceString());
 
@@ -980,10 +979,10 @@ public final class TemplateParserTest {
 
     List<StandaloneNode> nodes = parseTemplateBody(templateBody, FAIL).getChildren();
     assertEquals(4, nodes.size());
-    assertEquals("selected-option", ((CssNode) nodes.get(0)).getCommandText());
-    assertEquals("CSS_SELECTED_OPTION", ((CssNode) nodes.get(1)).getCommandText());
-    assertEquals("$cssSelectedOption", ((CssNode) nodes.get(2)).getCommandText());
-    assertEquals("%SelectedOption", ((CssNode) nodes.get(3)).getCommandText());
+    assertEquals("selected-option", ((CssNode) nodes.get(0)).getSelectorText());
+    assertEquals("CSS_SELECTED_OPTION", ((CssNode) nodes.get(1)).getSelectorText());
+    assertEquals("$cssSelectedOption", ((CssNode) nodes.get(2)).getSelectorText());
+    assertEquals("%SelectedOption", ((CssNode) nodes.get(3)).getSelectorText());
   }
 
   @Test
@@ -1024,7 +1023,7 @@ public final class TemplateParserTest {
 
     assertEquals("You're currently using ", ((RawTextNode) mn0.getChild(0)).getRawText());
     MsgPlaceholderNode mpn1 = (MsgPlaceholderNode) mn0.getChild(1);
-    assertEquals("$usedMb", ((PrintNode) mpn1.getChild(0)).getExprText());
+    assertEquals("$usedMb", ((PrintNode) mpn1.getChild(0)).getExpr().toSourceString());
     assertEquals(" MB of your quota. ", ((RawTextNode) mn0.getChild(2)).getRawText());
 
     MsgPlaceholderNode mpn3 = (MsgPlaceholderNode) mn0.getChild(3);
@@ -1035,7 +1034,7 @@ public final class TemplateParserTest {
 
     assertEquals(3, mhtn3.numChildren());
     assertEquals("<a href=\"", ((RawTextNode) mhtn3.getChild(0)).getRawText());
-    assertEquals("$learnMoreUrl", ((PrintNode) mhtn3.getChild(1)).getExprText());
+    assertEquals("$learnMoreUrl", ((PrintNode) mhtn3.getChild(1)).getExpr().toSourceString());
     assertEquals("\">", ((RawTextNode) mhtn3.getChild(2)).getRawText());
 
     assertEquals("Learn more", ((RawTextNode) mn0.getChild(4)).getRawText());
@@ -1249,20 +1248,19 @@ public final class TemplateParserTest {
     IfNode in0 = (IfNode) nodes.get(0);
     assertEquals(1, in0.numChildren());
     IfCondNode in0icn0 = (IfCondNode) in0.getChild(0);
-    assertEquals("$zoo", in0icn0.getCommandText());
+    assertEquals("$zoo", in0icn0.getExpr().toSourceString());
     assertEquals(1, in0icn0.numChildren());
-    assertEquals("$zoo", ((PrintNode) in0icn0.getChild(0)).getExprText());
+    assertEquals("$zoo", ((PrintNode) in0icn0.getChild(0)).getExpr().toSourceString());
     assertTrue(in0icn0.getExpr().getRoot() instanceof VarRefNode);
 
     IfNode in1 = (IfNode) nodes.get(1);
     assertEquals(3, in1.numChildren());
     IfCondNode in1icn0 = (IfCondNode) in1.getChild(0);
-    assertEquals("$boo", in1icn0.getCommandText());
+    assertEquals("$boo", in1icn0.getExpr().toSourceString());
     assertTrue(in1icn0.getExpr().getRoot() instanceof VarRefNode);
     IfCondNode in1icn1 = (IfCondNode) in1.getChild(1);
-    assertEquals("$foo.goo > 2", in1icn1.getCommandText());
+    assertEquals("$foo.goo > 2", in1icn1.getExpr().toSourceString());
     assertTrue(in1icn1.getExpr().getRoot() instanceof GreaterThanOpNode);
-    assertEquals("", ((IfElseNode) in1.getChild(2)).getCommandText());
     assertEquals(
         "{if $boo}Blah{elseif $foo.goo > 2}{$moo}{else}Blah {$moo}{/if}", in1.toSourceString());
   }
@@ -1334,29 +1332,30 @@ public final class TemplateParserTest {
     assertEquals(2, nodes.size());
 
     ForeachNode fn0 = (ForeachNode) nodes.get(0);
-    assertEquals("$goose", fn0.getExprText());
+    assertEquals("$goose", fn0.getExpr().toSourceString());
     assertTrue(fn0.getExpr().getRoot() instanceof VarRefNode);
     assertEquals(1, fn0.numChildren());
 
     ForeachNonemptyNode fn0fnn0 = (ForeachNonemptyNode) fn0.getChild(0);
     assertEquals("goo", fn0fnn0.getVarName());
     assertEquals(2, fn0fnn0.numChildren());
-    assertEquals("$goose.numKids", ((PrintNode) fn0fnn0.getChild(0)).getExprText());
+    assertEquals("$goose.numKids", ((PrintNode) fn0fnn0.getChild(0)).getExpr().toSourceString());
     assertEquals(" goslings.\n", ((RawTextNode) fn0fnn0.getChild(1)).getRawText());
 
     ForeachNode fn1 = (ForeachNode) nodes.get(1);
-    assertEquals("$foo.booze", fn1.getExprText());
+    assertEquals("$foo.booze", fn1.getExpr().toSourceString());
     assertTrue(fn1.getExpr().getRoot() instanceof FieldAccessNode);
     assertEquals(2, fn1.numChildren());
 
     ForeachNonemptyNode fn1fnn0 = (ForeachNonemptyNode) fn1.getChild(0);
     assertEquals("boo", fn1fnn0.getVarName());
-    assertEquals("$foo.booze", fn1fnn0.getExprText());
+    assertEquals("$foo.booze", fn1fnn0.getExpr().toSourceString());
     assertEquals("boo", fn1fnn0.getVarName());
     assertEquals(4, fn1fnn0.numChildren());
     IfNode fn1fnn0in = (IfNode) fn1fnn0.getChild(3);
     assertEquals(1, fn1fnn0in.numChildren());
-    assertEquals("not isLast($boo)", ((IfCondNode) fn1fnn0in.getChild(0)).getCommandText());
+    assertEquals(
+        "not isLast($boo)", ((IfCondNode) fn1fnn0in.getChild(0)).getExpr().toSourceString());
 
     ForeachIfemptyNode fn1fin1 = (ForeachIfemptyNode) fn1.getChild(1);
     assertEquals(1, fn1fin1.numChildren());
@@ -1390,10 +1389,11 @@ public final class TemplateParserTest {
     MsgNode mn = ((MsgFallbackGroupNode) ((ForNode) nodes.get(0)).getChild(0)).getChild(0);
     assertEquals(4, mn.numChildren());
     assertEquals(
-        "$i", ((PrintNode) ((MsgPlaceholderNode) mn.getChild(0)).getChild(0)).getExprText());
+        "$i",
+        ((PrintNode) ((MsgPlaceholderNode) mn.getChild(0)).getChild(0)).getExpr().toSourceString());
     assertEquals(
         "$items[$i - 1]",
-        ((PrintNode) ((MsgPlaceholderNode) mn.getChild(2)).getChild(0)).getExprText());
+        ((PrintNode) ((MsgPlaceholderNode) mn.getChild(2)).getChild(0)).getExpr().toSourceString());
   }
 
   @SuppressWarnings({"ConstantConditions"})
@@ -1457,7 +1457,7 @@ public final class TemplateParserTest {
     {
       final CallParamValueNode cn4cpvn0 = (CallParamValueNode) cn3.getChild(0);
       assertEquals("yoo", cn4cpvn0.getKey());
-      assertEquals("round($too)", cn4cpvn0.getExprText());
+      assertEquals("round($too)", cn4cpvn0.getExpr().toSourceString());
       assertTrue(cn4cpvn0.getExpr().getRoot() instanceof FunctionNode);
     }
 
@@ -1471,7 +1471,7 @@ public final class TemplateParserTest {
     {
       final CallParamValueNode cn4cpvn2 = (CallParamValueNode) cn3.getChild(2);
       assertEquals("zoo", cn4cpvn2.getKey());
-      assertEquals("0", cn4cpvn2.getExprText());
+      assertEquals("0", cn4cpvn2.getExpr().toSourceString());
     }
 
     {
@@ -1527,7 +1527,7 @@ public final class TemplateParserTest {
 
     CallParamValueNode cn2cpvn0 = (CallParamValueNode) cn2.getChild(0);
     assertEquals("yoo", cn2cpvn0.getKey());
-    assertEquals("round($too)", cn2cpvn0.getExprText());
+    assertEquals("round($too)", cn2cpvn0.getExpr().toSourceString());
     assertTrue(cn2cpvn0.getExpr().getRoot() instanceof FunctionNode);
 
     CallParamContentNode cn2cpcn1 = (CallParamContentNode) cn2.getChild(1);
@@ -1587,7 +1587,7 @@ public final class TemplateParserTest {
     LogNode logNode = (LogNode) nodes.get(0);
     assertEquals(3, logNode.numChildren());
     assertEquals("Blah ", ((RawTextNode) logNode.getChild(0)).getRawText());
-    assertEquals("$foo", ((PrintNode) logNode.getChild(1)).getExprText());
+    assertEquals("$foo", ((PrintNode) logNode.getChild(1)).getExpr().toSourceString());
   }
 
   @Test
@@ -1625,7 +1625,7 @@ public final class TemplateParserTest {
     assertEquals("A sample plural message", mn.getDesc());
 
     MsgPluralNode pn = (MsgPluralNode) mn.getChild(0);
-    assertEquals("$num_people offset=\"1\"", pn.getCommandText());
+    assertEquals("$num_people", pn.getExpr().toSourceString());
     assertEquals(1, pn.getOffset());
     assertEquals(4, pn.numChildren()); // 3 cases and default
 
@@ -1727,12 +1727,12 @@ public final class TemplateParserTest {
     assertEquals("A sample gender message", mn.getDesc());
 
     MsgSelectNode sn = (MsgSelectNode) mn.getChild(0);
-    assertEquals("$gender", sn.getCommandText());
+    assertEquals("$gender", sn.getExpr().toSourceString());
     assertEquals(2, sn.numChildren()); // female and default
 
     // Case 'female'
     MsgSelectCaseNode cnf = (MsgSelectCaseNode) sn.getChild(0);
-    assertEquals("'female'", cnf.getCommandText());
+    assertEquals("female", cnf.getCaseValue());
     assertEquals(2, cnf.numChildren());
 
     MsgPlaceholderNode phnf = (MsgPlaceholderNode) cnf.getChild(0);
@@ -1779,22 +1779,22 @@ public final class TemplateParserTest {
 
     // Outer select
     MsgSelectNode sn = (MsgSelectNode) mn.getChild(0);
-    assertEquals("$gender1", sn.getCommandText());
+    assertEquals("$gender1", sn.getExpr().toSourceString());
     assertEquals(2, sn.numChildren()); // female and default
 
     // Outer select: Case 'female'
     MsgSelectCaseNode cnf = (MsgSelectCaseNode) sn.getChild(0);
-    assertEquals("'female'", cnf.getCommandText());
+    assertEquals("female", cnf.getCaseValue());
     assertEquals(1, cnf.numChildren()); // Another select
 
     // Outer select: Case 'female': Inner select
     MsgSelectNode sn2 = (MsgSelectNode) cnf.getChild(0);
-    assertEquals("$gender2", sn2.getCommandText());
+    assertEquals("$gender2", sn2.getExpr().toSourceString());
     assertEquals(2, sn2.numChildren()); // female and default
 
     // Outer select: Case 'female': Inner select: Case 'female'
     MsgSelectCaseNode cnf2 = (MsgSelectCaseNode) sn2.getChild(0);
-    assertEquals("'female'", cnf2.getCommandText());
+    assertEquals("female", cnf2.getCaseValue());
     assertEquals(4, cnf2.numChildren());
 
     // Outer select: Case 'female': Inner select: Case 'female': Placeholder $person1
@@ -1839,12 +1839,12 @@ public final class TemplateParserTest {
 
     // Outer select: Default: Inner select
     MsgSelectNode sn3 = (MsgSelectNode) dn.getChild(0);
-    assertEquals("$gender2", sn3.getCommandText());
+    assertEquals("$gender2", sn3.getExpr().toSourceString());
     assertEquals(2, sn3.numChildren()); // female and default
 
     // Outer select: Default: Inner select: Case 'female'
     MsgSelectCaseNode cnf3 = (MsgSelectCaseNode) sn3.getChild(0);
-    assertEquals("'female'", cnf3.getCommandText());
+    assertEquals("female", cnf3.getCaseValue());
     assertEquals(4, cnf3.numChildren());
 
     // Outer select: Default: Inner select: Case 'female': Placeholder $person1

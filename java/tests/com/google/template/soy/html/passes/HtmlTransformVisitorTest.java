@@ -93,9 +93,9 @@ public final class HtmlTransformVisitorTest {
     assertThat(((IncrementalHtmlOpenTagNode) getNode(n, 0)).getTagName()).isEqualTo("div");
     assertThat(((IncrementalHtmlAttributeNode) getNode(n, 0, 0)).getName()).isEqualTo("class");
     assertThat(((RawTextNode) getNode(n, 0, 0, 0)).getRawText()).isEqualTo("Class1 ");
-    assertThat(((PrintNode) getNode(n, 0, 0, 1)).getExprText()).isEqualTo("$foo");
+    assertThat(((PrintNode) getNode(n, 0, 0, 1)).getExpr().toSourceString()).isEqualTo("$foo");
     assertThat(((RawTextNode) getNode(n, 0, 0, 2)).getRawText()).isEqualTo(" Class2 ");
-    assertThat(((PrintNode) getNode(n, 0, 0, 3)).getExprText()).isEqualTo("$bar");
+    assertThat(((PrintNode) getNode(n, 0, 0, 3)).getExpr().toSourceString()).isEqualTo("$bar");
     assertThat(((TemplateNode) getNode(n)).getChildren()).hasSize(1);
   }
 
@@ -105,7 +105,7 @@ public final class HtmlTransformVisitorTest {
 
     SoyFileSetNode n = performVisitor(templateBody, FAIL);
     assertThat(((IncrementalHtmlOpenTagNode) getNode(n, 0)).getTagName()).isEqualTo("div");
-    assertThat(((CssNode) getNode(n, 0, 0, 0)).getCommandText()).isEqualTo("Foobar");
+    assertThat(((CssNode) getNode(n, 0, 0, 0)).getSelectorText()).isEqualTo("Foobar");
     assertThat(((RawTextNode) getNode(n, 0, 0, 1)).getRawText()).isEqualTo(" Baz");
   }
 
@@ -115,7 +115,7 @@ public final class HtmlTransformVisitorTest {
 
     SoyFileSetNode n = performVisitor(templateBody, FAIL);
     assertThat(((RawTextNode) getNode(n, 0, 0, 0)).getRawText()).isEqualTo("foo ");
-    assertThat(((PrintNode) getNode(n, 0, 0, 1)).getExprText()).isEqualTo("$foo");
+    assertThat(((PrintNode) getNode(n, 0, 0, 1)).getExpr().toSourceString()).isEqualTo("$foo");
     assertThat(((PrintNode) getNode(n, 0, 0, 1)).getHtmlContext())
         .isEqualTo(HtmlContext.HTML_NORMAL_ATTR_VALUE);
     assertThat(((RawTextNode) getNode(n, 0, 0, 2)).getRawText()).isEqualTo(" bar");
@@ -126,7 +126,7 @@ public final class HtmlTransformVisitorTest {
     String templateBody = "{@param foo : ?}\n<div{if $foo} id=\"foo {$foo}\"{/if}></div>\n";
 
     SoyFileSetNode n = performVisitor(templateBody, FAIL);
-    assertThat(((IfCondNode) getNode(n, 0, 0, 0)).getCommandText()).isEqualTo("$foo");
+    assertThat(((IfCondNode) getNode(n, 0, 0, 0)).getExpr().toSourceString()).isEqualTo("$foo");
     assertThat(((IncrementalHtmlAttributeNode) getNode(n, 0, 0, 0, 0)).getName()).isEqualTo("id");
     assertThat(((PrintNode) getNode(n, 0, 0, 0, 0, 1)).getHtmlContext())
         .isEqualTo(HtmlContext.HTML_NORMAL_ATTR_VALUE);
@@ -163,7 +163,7 @@ public final class HtmlTransformVisitorTest {
 
     SoyFileSetNode n = performVisitor(templateBody, FAIL);
     assertThat(((IncrementalHtmlAttributeNode) getNode(n, 0, 0)).getName()).isEqualTo("id");
-    assertThat(((IfCondNode) getNode(n, 0, 0, 1, 0)).getCommandText()).isEqualTo("$foo");
+    assertThat(((IfCondNode) getNode(n, 0, 0, 1, 0)).getExpr().toSourceString()).isEqualTo("$foo");
     assertThat(((PrintNode) getNode(n, 0, 0, 1, 0, 0)).getHtmlContext())
         .isEqualTo(HtmlContext.HTML_NORMAL_ATTR_VALUE);
   }
@@ -193,7 +193,8 @@ public final class HtmlTransformVisitorTest {
 
     SoyFileSetNode n = performVisitor(templateBody, FAIL);
     assertThat(((IncrementalHtmlAttributeNode) getNode(n, 0, 0)).getName()).isEqualTo("foo");
-    assertThat(((IfCondNode) getNode(n, 0, 1, 0)).getCommandText()).isEqualTo("$disabled");
+    assertThat(((IfCondNode) getNode(n, 0, 1, 0)).getExpr().toSourceString())
+        .isEqualTo("$disabled");
     assertThat(((IncrementalHtmlAttributeNode) getNode(n, 0, 1, 0, 0)).getName())
         .isEqualTo("disabled");
     assertThat(((RawTextNode) getNode(n, 0, 1, 0, 0, 0)).getRawText()).isEqualTo("true ");
@@ -252,11 +253,11 @@ public final class HtmlTransformVisitorTest {
             + "{/let}";
 
     SoyFileSetNode n = performVisitor(templateBody, FAIL);
-    assertThat(((IfCondNode) getNode(n, 0, 1, 0)).getCommandText()).isEqualTo("$foo");
+    assertThat(((IfCondNode) getNode(n, 0, 1, 0)).getExpr().toSourceString()).isEqualTo("$foo");
     assertThat(((RawTextNode) getNode(n, 0, 1, 0, 0)).getRawText()).isEqualTo("Hello world");
     assertThat(((RawTextNode) getNode(n, 0, 1, 0, 0)).getHtmlContext())
         .isEqualTo(HtmlContext.HTML_PCDATA);
-    assertThat(((IfCondNode) getNode(n, 0, 2, 0)).getCommandText()).isEqualTo("$foo");
+    assertThat(((IfCondNode) getNode(n, 0, 2, 0)).getExpr().toSourceString()).isEqualTo("$foo");
     assertThat(((IncrementalHtmlOpenTagNode) getNode(n, 0, 2, 0, 0)).getTagName()).isEqualTo("div");
   }
 

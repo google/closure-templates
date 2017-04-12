@@ -98,18 +98,18 @@ public final class InsertMsgsVisitorTest {
 
     // After.
     assertThat(template.numChildren()).isEqualTo(12);
-    assertThat(((PrintNode) template.getChild(0)).getExprText()).isEqualTo("$boo");
+    assertThat(((PrintNode) template.getChild(0)).getExpr().toSourceString()).isEqualTo("$boo");
     assertThat(((RawTextNode) template.getChild(1)).getRawText()).isEqualTo("scary ");
     assertThat(((RawTextNode) template.getChild(2)).getRawText()).isEqualTo("random");
-    assertThat(((PrintNode) template.getChild(3)).getExprText()).isEqualTo("$foo");
+    assertThat(((PrintNode) template.getChild(3)).getExpr().toSourceString()).isEqualTo("$foo");
     assertThat(((RawTextNode) template.getChild(4)).getRawText()).isEqualTo("<a href=\"");
-    assertThat(((PrintNode) template.getChild(5)).getExprText()).isEqualTo("$goo");
+    assertThat(((PrintNode) template.getChild(5)).getExpr().toSourceString()).isEqualTo("$goo");
     assertThat(((RawTextNode) template.getChild(6)).getRawText()).isEqualTo("\">");
     assertThat(((RawTextNode) template.getChild(7)).getRawText()).isEqualTo("slimy");
     assertThat(((RawTextNode) template.getChild(8)).getRawText()).isEqualTo("</a>");
     assertThat(((RawTextNode) template.getChild(9)).getRawText()).isEqualTo(" ");
     assertThat(((RawTextNode) template.getChild(10)).getRawText()).isEqualTo("dairy");
-    assertThat(((PrintNode) template.getChild(11)).getExprText()).isEqualTo("$moo");
+    assertThat(((PrintNode) template.getChild(11)).getExpr().toSourceString()).isEqualTo("$moo");
   }
 
   @Test
@@ -155,18 +155,18 @@ public final class InsertMsgsVisitorTest {
 
     // After.
     assertThat(template.numChildren()).isEqualTo(12);
-    assertThat(((PrintNode) template.getChild(0)).getExprText()).isEqualTo("$boo");
+    assertThat(((PrintNode) template.getChild(0)).getExpr().toSourceString()).isEqualTo("$boo");
     assertThat(((RawTextNode) template.getChild(1)).getRawText()).isEqualTo("scary ");
     assertThat(((RawTextNode) template.getChild(2)).getRawText()).isEqualTo("<a href=\"");
-    assertThat(((PrintNode) template.getChild(3)).getExprText()).isEqualTo("$goo");
+    assertThat(((PrintNode) template.getChild(3)).getExpr().toSourceString()).isEqualTo("$goo");
     assertThat(((RawTextNode) template.getChild(4)).getRawText()).isEqualTo("\">");
     assertThat(((RawTextNode) template.getChild(5)).getRawText()).isEqualTo("zslimy");
     assertThat(((RawTextNode) template.getChild(6)).getRawText()).isEqualTo("</a>");
-    assertThat(((PrintNode) template.getChild(7)).getExprText()).isEqualTo("$foo");
+    assertThat(((PrintNode) template.getChild(7)).getExpr().toSourceString()).isEqualTo("$foo");
     assertThat(((RawTextNode) template.getChild(8)).getRawText()).isEqualTo("zrandom");
     assertThat(((RawTextNode) template.getChild(9)).getRawText()).isEqualTo(" ");
     assertThat(((RawTextNode) template.getChild(10)).getRawText()).isEqualTo("dairy");
-    assertThat(((PrintNode) template.getChild(11)).getExprText()).isEqualTo("$moo");
+    assertThat(((PrintNode) template.getChild(11)).getExpr().toSourceString()).isEqualTo("$moo");
   }
 
   // -----------------------------------------------------------------------------------------------

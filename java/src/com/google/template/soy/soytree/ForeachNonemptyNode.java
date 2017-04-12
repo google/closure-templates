@@ -74,11 +74,6 @@ public final class ForeachNonemptyNode extends AbstractBlockNode
     return var.name();
   }
 
-  /** Returns the text of the expression we're iterating over. */
-  public String getExprText() {
-    return getParent().getExprText();
-  }
-
   /** Returns the expression we're iterating over. */
   public ExprRootNode getExpr() {
     return getParent().getExpr();

@@ -21,6 +21,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprparse.SoyParsingContext;
+import com.google.template.soy.exprtree.ExprEquivalence;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
@@ -118,8 +119,12 @@ public final class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefault
 
   @Override
   public boolean shouldUseSameVarNameAs(MsgSubstUnitNode other) {
-    return (other instanceof MsgSelectNode)
-        && this.getCommandText().equals(((MsgSelectNode) other).getCommandText());
+    if (!(other instanceof MsgSelectNode)) {
+      return false;
+    }
+
+    MsgSelectNode that = (MsgSelectNode) other;
+    return ExprEquivalence.get().equivalent(this.selectExpr, that.selectExpr);
   }
 
   @Override

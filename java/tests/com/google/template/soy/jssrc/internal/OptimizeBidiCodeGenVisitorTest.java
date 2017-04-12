@@ -60,10 +60,13 @@ public final class OptimizeBidiCodeGenVisitorTest {
 
     assertThat(template.numChildren()).isEqualTo(5);
     assertThat(((RawTextNode) template.getChild(0)).getRawText()).isEqualTo("\\u200Eleftright");
-    assertThat(((PrintNode) template.getChild(1)).getExprText()).isEqualTo("$goo");
-    assertThat(((PrintNode) template.getChild(2)).getExprText()).isEqualTo("bidiDirAttr($moo)");
-    assertThat(((PrintNode) template.getChild(3)).getExprText()).isEqualTo("bidiMark()");
-    assertThat(((PrintNode) template.getChild(4)).getExprText()).isEqualTo("bidiStartEdge()");
+    assertThat(((PrintNode) template.getChild(1)).getExpr().toSourceString()).isEqualTo("$goo");
+    assertThat(((PrintNode) template.getChild(2)).getExpr().toSourceString())
+        .isEqualTo("bidiDirAttr($moo)");
+    assertThat(((PrintNode) template.getChild(3)).getExpr().toSourceString())
+        .isEqualTo("bidiMark()");
+    assertThat(((PrintNode) template.getChild(4)).getExpr().toSourceString())
+        .isEqualTo("bidiStartEdge()");
   }
 
   @Test
@@ -84,13 +87,19 @@ public final class OptimizeBidiCodeGenVisitorTest {
     TemplateNode template = (TemplateNode) SharedTestUtils.getNode(soyTree);
 
     assertThat(template.numChildren()).isEqualTo(7);
-    assertThat(((PrintNode) template.getChild(0)).getExprText()).isEqualTo("bidiMark()");
-    assertThat(((PrintNode) template.getChild(1)).getExprText()).isEqualTo("bidiStartEdge()");
-    assertThat(((PrintNode) template.getChild(2)).getExprText()).isEqualTo("bidiEndEdge()");
-    assertThat(((PrintNode) template.getChild(3)).getExprText()).isEqualTo("$goo");
-    assertThat(((PrintNode) template.getChild(4)).getExprText()).isEqualTo("bidiDirAttr($moo)");
-    assertThat(((PrintNode) template.getChild(5)).getExprText()).isEqualTo("bidiMark()");
-    assertThat(((PrintNode) template.getChild(6)).getExprText()).isEqualTo("bidiStartEdge()");
+    assertThat(((PrintNode) template.getChild(0)).getExpr().toSourceString())
+        .isEqualTo("bidiMark()");
+    assertThat(((PrintNode) template.getChild(1)).getExpr().toSourceString())
+        .isEqualTo("bidiStartEdge()");
+    assertThat(((PrintNode) template.getChild(2)).getExpr().toSourceString())
+        .isEqualTo("bidiEndEdge()");
+    assertThat(((PrintNode) template.getChild(3)).getExpr().toSourceString()).isEqualTo("$goo");
+    assertThat(((PrintNode) template.getChild(4)).getExpr().toSourceString())
+        .isEqualTo("bidiDirAttr($moo)");
+    assertThat(((PrintNode) template.getChild(5)).getExpr().toSourceString())
+        .isEqualTo("bidiMark()");
+    assertThat(((PrintNode) template.getChild(6)).getExpr().toSourceString())
+        .isEqualTo("bidiStartEdge()");
   }
 
   private static SoyFileSetNode parse(String soyCode) {

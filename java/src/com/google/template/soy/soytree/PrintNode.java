@@ -107,11 +107,6 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
     return isImplicit;
   }
 
-  /** Returns the text of the expression to print. */
-  public String getExprText() {
-    return expr.toSourceString();
-  }
-
   /** Returns the parsed expression, or null if the expression is not in V2 syntax. */
   public ExprRootNode getExpr() {
     return expr;

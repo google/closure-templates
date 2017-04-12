@@ -23,6 +23,7 @@ import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprparse.SoyParsingContext;
+import com.google.template.soy.exprtree.ExprEquivalence;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.CommandTextAttributesParser.Attribute;
@@ -105,11 +106,6 @@ public final class MsgPluralNode extends AbstractParentCommandNode<CaseOrDefault
     return offset;
   }
 
-  /** Returns the expression text. */
-  public String getExprText() {
-    return pluralExpr.toSourceString();
-  }
-
   /** Returns the parsed expression. */
   public ExprRootNode getExpr() {
     return pluralExpr;
@@ -123,8 +119,13 @@ public final class MsgPluralNode extends AbstractParentCommandNode<CaseOrDefault
 
   @Override
   public boolean shouldUseSameVarNameAs(MsgSubstUnitNode other) {
-    return (other instanceof MsgPluralNode)
-        && this.getCommandText().equals(((MsgPluralNode) other).getCommandText());
+    if (!(other instanceof MsgPluralNode)) {
+      return false;
+    }
+
+    MsgPluralNode that = (MsgPluralNode) other;
+    return ExprEquivalence.get().equivalent(this.pluralExpr, that.pluralExpr)
+        && this.offset == that.offset;
   }
 
   @Override

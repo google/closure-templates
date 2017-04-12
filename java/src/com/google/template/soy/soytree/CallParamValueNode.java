@@ -82,11 +82,6 @@ public final class CallParamValueNode extends CallParamNode implements ExprHolde
     return key;
   }
 
-  /** Returns the expression text for the param value. */
-  public String getExprText() {
-    return valueExpr.toSourceString();
-  }
-
   /** Returns the parsed expression for the param value. */
   public ExprRootNode getExpr() {
     return valueExpr;
