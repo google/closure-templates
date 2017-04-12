@@ -372,8 +372,9 @@ public class SoyFileParser {
       SoyErrorKind.of("Invalid number in ''plural case'' command text");
   private static final SoyErrorKind PRINT_COMMAND_WITH_EMPTY_TEXT =
       SoyErrorKind.of("Found ''print'' command with empty command text.");
-  private static final SoyErrorKind SELECT_CASE_INVALID_STRING =
-      SoyErrorKind.of("Invalid string for select ''case''.");
+  private static final SoyErrorKind SELECT_CASE_INVALID_VALUE =
+      SoyErrorKind.of("Invalid value for select ''case'', "
+          + "expected ''female'', ''male'', or ''other''.");
   private static final SoyErrorKind UNEXPECTED_CLOSING_TAG =
       SoyErrorKind.of("Unexpected closing tag ''{0}''.");
   private static final SoyErrorKind UNEXPECTED_CONTENT_AFTER =
@@ -2105,7 +2106,7 @@ private MsgSelectNode MsgSelect() :
       {
         String value;
         if (!(caseExpr instanceof StringNode)) {
-          errorReporter.report(caseExpr.getSourceLocation(), SELECT_CASE_INVALID_STRING);
+          errorReporter.report(caseExpr.getSourceLocation(), SELECT_CASE_INVALID_VALUE);
           value = "";
         } else {
           value = ((StringNode) caseExpr).getValue();

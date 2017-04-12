@@ -294,11 +294,10 @@ public interface SoyNode extends Node {
 
   // -----------------------------------------------------------------------------------------------
 
-
   /**
    * A substitution unit is any non-raw-text message part, since it will be replaced when the
-   * message is rendered. Currently, one of MsgPlaceholderNode, MsgSelectNode, MsgPluralNode, or
-   * MsgPluralRemainderNode.
+   * message is rendered. Currently, one of {@link MsgPlaceholderNode}, {@link MsgSelectNode}, or
+   * {@link MsgPluralNode}.
    */
   interface MsgSubstUnitNode extends StandaloneNode {
 
