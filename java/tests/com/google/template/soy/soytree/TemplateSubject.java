@@ -16,8 +16,7 @@
 
 package com.google.template.soy.soytree;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.truth.FailureStrategy;
 import com.google.common.truth.Subject;
@@ -28,7 +27,6 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.FixedIdGenerator;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
-import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.error.PrettyErrorFactory;
 import com.google.template.soy.error.SnippetFormatter;
 import com.google.template.soy.error.SoyError;
@@ -46,7 +44,7 @@ import javax.annotation.Nullable;
 public final class TemplateSubject extends Subject<TemplateSubject, String> {
 
   private SourceLocation actualSourceLocation;
-  private ContentKind kind = ContentKind.HTML;
+  private SoyFileNode fileNode;
 
   private static final SubjectFactory<TemplateSubject, String> FACTORY =
       new SubjectFactory<TemplateSubject, String>() {
@@ -62,11 +60,6 @@ public final class TemplateSubject extends Subject<TemplateSubject, String> {
 
   public static TemplateSubject assertThatTemplateContent(String input) {
     return Truth.assertAbout(FACTORY).that(input);
-  }
-
-  public TemplateSubject withKind(ContentKind kind) {
-    this.kind = checkNotNull(kind);
-    return this;
   }
 
   public TemplateSubject causesError(SoyErrorKind error) {
@@ -93,6 +86,27 @@ public final class TemplateSubject extends Subject<TemplateSubject, String> {
     return this;
   }
 
+  public void at(int expectedLine, int expectedColumn) {
+    expectedLine += 2; // Compensate for the extra lines of template wrapper
+    if (expectedLine != actualSourceLocation.getBeginLine()
+        || expectedColumn != actualSourceLocation.getBeginColumn()) {
+      failWithRawMessage(
+          String.format(
+              "expected error to point to %d:%d, but it actually points to %d:%d",
+              expectedLine,
+              expectedColumn,
+              actualSourceLocation.getBeginLine(),
+              actualSourceLocation.getBeginColumn()));
+    }
+  }
+
+  public TemplateNode getTemplateNode() {
+    isWellFormed();
+    Preconditions.checkNotNull(fileNode);
+    Preconditions.checkArgument(fileNode.numChildren() == 1);
+    return fileNode.getChild(0);
+  }
+
   public void isWellFormed() {
     ErrorReporterImpl errorReporter = doParse();
     Truth.assertThat(errorReporter.getErrors()).isEmpty();
@@ -106,11 +120,11 @@ public final class TemplateSubject extends Subject<TemplateSubject, String> {
   private ErrorReporterImpl doParse() {
     SoyFileSupplier sourceFile =
         SoyFileSupplier.Factory.create(
-            "{namespace test}\n{template .foo"
-                + (kind != ContentKind.HTML ? " kind=\"" + kind.name().toLowerCase() + "\"" : "")
-                + "}\n"
+            "{namespace test}\n"
+                + "{template .foo kind=\"html\"}\n"
                 + actual()
-                + "\n{/template}",
+                + "\n"
+                + "{/template}",
             SoyFileKind.SRC,
             "example.soy");
     ErrorReporterImpl errorReporter =
@@ -118,32 +132,19 @@ public final class TemplateSubject extends Subject<TemplateSubject, String> {
             new PrettyErrorFactory(
                 new SnippetFormatter(ImmutableMap.of(sourceFile.getFilePath(), sourceFile))));
     try {
-      new SoyFileParser(
-              new SoyTypeRegistry(),
-              new FixedIdGenerator(),
-              sourceFile.open(),
-              sourceFile.getSoyFileKind(),
-              sourceFile.getFilePath(),
-              errorReporter)
-          .parseSoyFile();
+      fileNode =
+          new SoyFileParser(
+                  new SoyTypeRegistry(),
+                  new FixedIdGenerator(),
+                  sourceFile.open(),
+                  sourceFile.getSoyFileKind(),
+                  sourceFile.getFilePath(),
+                  errorReporter)
+              .parseSoyFile();
     } catch (IOException e) {
       throw new AssertionError(e); // impossible
     }
     return errorReporter;
-  }
-
-  public void at(int expectedLine, int expectedColumn) {
-    expectedLine += 2; // Compensate for the extra lines of template wrapper
-    if (expectedLine != actualSourceLocation.getBeginLine()
-        || expectedColumn != actualSourceLocation.getBeginColumn()) {
-      failWithRawMessage(
-          String.format(
-              "expected error to point to %d:%d, but it actually points to %d:%d",
-              expectedLine,
-              expectedColumn,
-              actualSourceLocation.getBeginLine(),
-              actualSourceLocation.getBeginColumn()));
-    }
   }
 
   @Nullable
