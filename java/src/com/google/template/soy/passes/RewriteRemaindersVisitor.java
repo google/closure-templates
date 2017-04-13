@@ -94,7 +94,6 @@ public final class RewriteRemaindersVisitor extends AbstractSoyNodeVisitor<Void>
         }
 
         // 'remainder' with a different expression than the enclosing 'plural'. Bad!
-        //if (!functionNode.getChild(0).toSourceString().equals(currPluralNode.getExpr().toSourceString())) {
         if (!ExprEquivalence.get()
             .equivalent(functionNode.getChild(0), currPluralNode.getExpr().getRoot())) {
           errorReporter.report(functionNode.getSourceLocation(), REMAINDER_PLURAL_EXPR_MISMATCH);

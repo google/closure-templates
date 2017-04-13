@@ -774,72 +774,72 @@ TOKEN_MGR_DECLS: {
 // expression parser.  It swallows any kind of token into CMD_TEXT_ARBITRARY_TOKEN.
 
 <TEMPLATE_DEFAULT, TEMPLATE_DEFAULT_IN_MSG_BLOCK> TOKEN: {
-  < CMD_CLOSE_TEMPLATE           : "{/template}"> { clearAndSwitchToDefault(); }
-| < CMD_CLOSE_DELTEMPLATE        : "{/deltemplate}"> { clearAndSwitchToDefault(); }
+  < CMD_CLOSE_TEMPLATE           : "{/template}"    > { clearAndSwitchToDefault(); }
+| < CMD_CLOSE_DELTEMPLATE        : "{/deltemplate}" > { clearAndSwitchToDefault(); }
 
-| < DECL_BEGIN_PARAM             : "{@param"    >  { pushState(IN_CMD_TAG_STRUCTURED); }
-| < DECL_BEGIN_OPT_PARAM         : "{@param?"   >  { pushState(IN_CMD_TAG_STRUCTURED); }
-| < DECL_BEGIN_INJECT_PARAM      : "{@inject"   >  { pushState(IN_CMD_TAG_STRUCTURED); }
-| < DECL_BEGIN_OPT_INJECT_PARAM  : "{@inject?"  >  { pushState(IN_CMD_TAG_STRUCTURED); }
+| < DECL_BEGIN_PARAM             : "{@param"        >  { pushState(IN_CMD_TAG_STRUCTURED); }
+| < DECL_BEGIN_OPT_PARAM         : "{@param?"       >  { pushState(IN_CMD_TAG_STRUCTURED); }
+| < DECL_BEGIN_INJECT_PARAM      : "{@inject"       >  { pushState(IN_CMD_TAG_STRUCTURED); }
+| < DECL_BEGIN_OPT_INJECT_PARAM  : "{@inject?"      >  { pushState(IN_CMD_TAG_STRUCTURED); }
 
-| < XXX_BRACE_INVALID            : "}"          >  // catch and die on an unexpected right brace
-| < CMD_FULL_SP                  : "{sp}"       >
-| < CMD_FULL_NIL                 : "{nil}"      >
-| < CMD_FULL_LF                  : "{\\n}"      >
-| < CMD_FULL_CR                  : "{\\r}"      >
-| < CMD_FULL_TAB                 : "{\\t}"      >
-| < CMD_FULL_LB                  : "{lb}"       >
-| < CMD_FULL_RB                  : "{rb}"       >
+| < XXX_BRACE_INVALID            : "}"              >  // catch and die on an unexpected right brace
+| < CMD_FULL_SP                  : "{sp}"           >
+| < CMD_FULL_NIL                 : "{nil}"          >
+| < CMD_FULL_LF                  : "{\\n}"          >
+| < CMD_FULL_CR                  : "{\\r}"          >
+| < CMD_FULL_TAB                 : "{\\t}"          >
+| < CMD_FULL_LB                  : "{lb}"           >
+| < CMD_FULL_RB                  : "{rb}"           >
 
-| < CMD_OPEN_LITERAL             : "{literal}"  >  { pushState(IN_LITERAL_BLOCK); }
+| < CMD_OPEN_LITERAL             : "{literal}"      >  { pushState(IN_LITERAL_BLOCK); }
 
-| < CMD_BEGIN_CALL               : "{call" <WS>    > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
-| < CMD_BEGIN_DELCALL            : "{delcall" <WS> > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
-| < CMD_CLOSE_CALL               : "{/call}"       >
-| < CMD_CLOSE_DELCALL            : "{/delcall}"    >
+| < CMD_BEGIN_CALL               : "{call" <WS>     > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
+| < CMD_BEGIN_DELCALL            : "{delcall" <WS>  > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
+| < CMD_CLOSE_CALL               : "{/call}"        >
+| < CMD_CLOSE_DELCALL            : "{/delcall}"     >
 
-| < CMD_BEGIN_PARAM              : "{param" <WS>  > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
-| < CMD_CLOSE_PARAM              : "{/param}"     >
+| < CMD_BEGIN_PARAM              : "{param" <WS>    > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
+| < CMD_CLOSE_PARAM              : "{/param}"       >
 
-| < CMD_BEGIN_MSG                : "{msg" <WS>    > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
+| < CMD_BEGIN_MSG                : "{msg" <WS>      > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
 | < CMD_BEGIN_FALLBACK_MSG       : "{fallbackmsg" <WS> > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
-| < CMD_CLOSE_MSG                : "{/msg}"       >
+| < CMD_CLOSE_MSG                : "{/msg}"         >
 
-| < CMD_BEGIN_PRINT              : "{print" <WS>  > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
-| < CMD_BEGIN_XID                : "{xid" <WS>    > { pushState(IN_CMD_TAG_STRUCTURED); }
-| < CMD_BEGIN_CSS                : "{css" <WS>    > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
+| < CMD_BEGIN_PRINT              : "{print" <WS>    > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
+| < CMD_BEGIN_XID                : "{xid" <WS>      > { pushState(IN_CMD_TAG_STRUCTURED); }
+| < CMD_BEGIN_CSS                : "{css" <WS>      > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
 
-| < CMD_BEGIN_IF                 : "{if" <WS>     > { pushState(EXPR); }
-| < CMD_BEGIN_ELSEIF             : "{elseif" <WS> > { pushState(EXPR); }
-| < CMD_FULL_ELSE                : "{else}"       >
-| < CMD_CLOSE_IF                 : "{/if}"        >
+| < CMD_BEGIN_IF                 : "{if" <WS>       > { pushState(EXPR); }
+| < CMD_BEGIN_ELSEIF             : "{elseif" <WS>   > { pushState(EXPR); }
+| < CMD_FULL_ELSE                : "{else}"         >
+| < CMD_CLOSE_IF                 : "{/if}"          >
 
-| < CMD_BEGIN_LET                : "{let" <WS>    > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
-| < CMD_CLOSE_LET                : "{/let}"       >
+| < CMD_BEGIN_LET                : "{let" <WS>      > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
+| < CMD_CLOSE_LET                : "{/let}"         >
 
-| < CMD_BEGIN_FOR                : "{for" <WS>    > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
-| < CMD_CLOSE_FOR                : "{/for}"       >
+| < CMD_BEGIN_FOR                : "{for" <WS>      > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
+| < CMD_CLOSE_FOR                : "{/for}"         >
 
-| < CMD_BEGIN_PLURAL             : "{plural" <WS> > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
-| < CMD_CLOSE_PLURAL             : "{/plural}"    >
+| < CMD_BEGIN_PLURAL             : "{plural" <WS>   > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
+| < CMD_CLOSE_PLURAL             : "{/plural}"      >
 
-| < CMD_BEGIN_SELECT             : "{select" <WS> > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
-| < CMD_CLOSE_SELECT             : "{/select}"    >
+| < CMD_BEGIN_SELECT             : "{select" <WS>   > { pushState(EXPR); }
+| < CMD_CLOSE_SELECT             : "{/select}"      >
 
-| < CMD_BEGIN_SWITCH             : "{switch" <WS> > { pushState(EXPR); }
-| < CMD_CLOSE_SWITCH             : "{/switch}"    >
+| < CMD_BEGIN_SWITCH             : "{switch" <WS>   > { pushState(EXPR); }
+| < CMD_CLOSE_SWITCH             : "{/switch}"      >
 
-| < CMD_BEGIN_CASE               : "{case" <WS>   > { pushState(EXPR); }
-| < CMD_FULL_DEFAULT             : "{default}"    >
+| < CMD_BEGIN_CASE               : "{case" <WS>     > { pushState(EXPR); }
+| < CMD_FULL_DEFAULT             : "{default}"      >
 
-| < CMD_BEGIN_FOREACH            : "{foreach" <WS>> { pushState(IN_CMD_TAG_UNSTRUCTURED); }
-| < CMD_FULL_IFEMPTY             : "{ifempty}"  >
-| < CMD_CLOSE_FOREACH            : "{/foreach}" >
+| < CMD_BEGIN_FOREACH            : "{foreach" <WS>  > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
+| < CMD_FULL_IFEMPTY             : "{ifempty}"      >
+| < CMD_CLOSE_FOREACH            : "{/foreach}"     >
 
-| < CMD_OPEN_LOG                 : "{log}"      >
-| < CMD_CLOSE_LOG                : "{/log}"     >
-| < CMD_FULL_DEBUGGER            : "{debugger}" >
-| < CMD_BEGIN_IMPLICIT_PRINT     : "{"          > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
+| < CMD_OPEN_LOG                 : "{log}"          >
+| < CMD_CLOSE_LOG                : "{/log}"         >
+| < CMD_FULL_DEBUGGER            : "{debugger}"     >
+| < CMD_BEGIN_IMPLICIT_PRINT     : "{"              > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
 }
 
 
@@ -1626,6 +1626,7 @@ private RawTextNode RawText() :
  */
 private RawTextNode TemplateHeader(TemplateNodeBuilder templateBuilder) :
 {
+  Token tok;
   HeaderParam param;
   List<HeaderParam> params = ImmutableList.of();
   RawTextNode whitespace = null;
@@ -1634,18 +1635,18 @@ private RawTextNode TemplateHeader(TemplateNodeBuilder templateBuilder) :
 {
   ( LOOKAHEAD(1)  // prefer consuming whitespace here instead of in a subsequent RawTextNode
     (
-    { Token tok;
-      RawTextBuilder builder = new RawTextBuilder(filePath, nodeIdGen);
-    }
-    ( LOOKAHEAD(1)  // prefer staying in the loop
-      tok = <TOKEN_WS>
-      { if (tok.specialToken != null) {
-          soyDoc = tok.specialToken.image;
+      { RawTextBuilder builder = new RawTextBuilder(filePath, nodeIdGen); }
+
+      ( LOOKAHEAD(1)  // prefer staying in the loop
+        tok = <TOKEN_WS>
+        { if (tok.specialToken != null) {
+            soyDoc = tok.specialToken.image;
+          }
+          builder.addBasic(tok);
         }
-        builder.addBasic(tok);
-      }
-    )+
-    { whitespace = builder.build(); }
+      )+
+
+      { whitespace = builder.build(); }
     |
       param = ParamDecl(soyDoc)
       {
@@ -2079,19 +2080,25 @@ private MsgPluralNode MsgPlural() :
  */
 private MsgSelectNode MsgSelect() :
 {
-  String cmdText;
   Token cmdBegin, cmdEnd;
   Token defaultTag;
+  ExprNode selectExpr;
   ExprNode caseExpr;
   List<StandaloneNode> templateBlock;
 }
 {
   cmdBegin = <CMD_BEGIN_SELECT>
-  cmdText = CmdText()
-  cmdEnd = <CMD_END>
+  try {
+    selectExpr = Expr()
+    cmdEnd = <CMD_END>
+  } catch (ParseException e) {
+    selectExpr = errorExpr(cmdBegin);
+    cmdEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END);
+  }
+
   {
-    MsgSelectNode msgSelectNode = new MsgSelectNode.Builder(
-        nodeIdGen.genId(), cmdText, createSrcLoc(cmdBegin, cmdEnd)).build(context);
+    MsgSelectNode selectNode =
+        new MsgSelectNode(nodeIdGen.genId(), createSrcLoc(cmdBegin, cmdEnd), selectExpr);
   }
 
   // consume all whitespace between {select} and the first {case}
@@ -2114,7 +2121,7 @@ private MsgSelectNode MsgSelect() :
 
         MsgSelectCaseNode caseNode =
             new MsgSelectCaseNode(nodeIdGen.genId(), createSrcLoc(cmdBegin, cmdEnd), value);
-        msgSelectNode.addChild(caseNode);
+        selectNode.addChild(caseNode);
       }
 
       templateBlock = TemplateBlockForMsg()
@@ -2125,7 +2132,7 @@ private MsgSelectNode MsgSelect() :
     {
       MsgSelectDefaultNode defaultNode =
           new MsgSelectDefaultNode(nodeIdGen.genId(), createSrcLoc(defaultTag));
-      msgSelectNode.addChild(defaultNode);
+      selectNode.addChild(defaultNode);
     }
 
     templateBlock = TemplateBlockForMsg()
@@ -2136,7 +2143,7 @@ private MsgSelectNode MsgSelect() :
     reportTemplateBodyErrorAndSkipTo(e, CMD_CLOSE_SELECT);
   }
 
-  { return msgSelectNode; }
+  { return selectNode; }
 }
 
 

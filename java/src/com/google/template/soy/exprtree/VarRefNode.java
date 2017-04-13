@@ -35,7 +35,7 @@ public final class VarRefNode extends AbstractExprNode {
     return new VarRefNode("error", location, false, null);
   }
 
-  /** The name of the variable. */
+  /** The name of the variable, without the preceding dollar sign. */
   private final String name;
 
   /** Whether this is an injected parameter reference. */

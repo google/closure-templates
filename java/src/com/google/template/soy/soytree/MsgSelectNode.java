@@ -19,8 +19,6 @@ package com.google.template.soy.soytree;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.exprparse.ExpressionParser;
-import com.google.template.soy.exprparse.SoyParsingContext;
 import com.google.template.soy.exprtree.ExprEquivalence;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
@@ -47,11 +45,11 @@ public final class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefault
   /** The base select var name (what the translator sees). */
   private final String baseSelectVarName;
 
-  private MsgSelectNode(
-      int id, String commandText, ExprRootNode selectExpr, SourceLocation sourceLocation) {
-    super(id, sourceLocation, "select", commandText);
-
-    this.selectExpr = selectExpr;
+  public MsgSelectNode(int id, SourceLocation location, ExprNode selectExpr) {
+    // TODO(user): the command text is wrong. however, this should not break anything (since
+    // we shouldn't be using command text for anything), and command text will be removed soon.
+    super(id, location, "select", "");
+    this.selectExpr = new ExprRootNode(selectExpr);
 
     // TODO: Maybe allow user to write 'phname' attribute in 'select' tag.
     // Note: If we do add support for 'phname' for 'select', it would also be a good time to clean
@@ -59,9 +57,9 @@ public final class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefault
     // 'print' needs it to be parsed in TemplateParser.jj (due to print directives possibly
     // appearing between the expression and the 'phname' attribute). But for 'call', it should
     // really be parsed in CallNode.
-    baseSelectVarName =
+    this.baseSelectVarName =
         MsgSubstUnitBaseVarNameUtils.genNaiveBaseNameForExpr(
-            selectExpr.getRoot(), FALLBACK_BASE_SELECT_VAR_NAME);
+            selectExpr, FALLBACK_BASE_SELECT_VAR_NAME);
   }
 
   /**
@@ -140,33 +138,5 @@ public final class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefault
   @Override
   public MsgSelectNode copy(CopyState copyState) {
     return new MsgSelectNode(this, copyState);
-  }
-
-  /** Builder for {@link MsgSelectNode}. */
-  public static final class Builder {
-    private final int id;
-    private final String commandText;
-    private final SourceLocation sourceLocation;
-
-    /**
-     * @param id The node's id.
-     * @param commandText The node's command text.
-     * @param sourceLocation The node's source location.
-     */
-    public Builder(int id, String commandText, SourceLocation sourceLocation) {
-      this.id = id;
-      this.commandText = commandText;
-      this.sourceLocation = sourceLocation;
-    }
-
-    /**
-     * Returns a new {@link MsgSelectNode} built from this builder's state, reporting syntax errors
-     * to the given {@link ErrorReporter}.
-     */
-    public MsgSelectNode build(SoyParsingContext context) {
-      ExprNode selectExpr =
-          new ExpressionParser(commandText, sourceLocation, context).parseExpression();
-      return new MsgSelectNode(id, commandText, new ExprRootNode(selectExpr), sourceLocation);
-    }
   }
 }

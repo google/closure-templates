@@ -26,6 +26,11 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.exprparse.SoyParsingContext;
+import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.FieldAccessNode;
+import com.google.template.soy.exprtree.IntegerNode;
+import com.google.template.soy.exprtree.ItemAccessNode;
+import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -33,6 +38,9 @@ import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for MsgNode.
+ *
+ * <p>TODO(user): Consider re-writing this entire file to invoke the parser and assert on results,
+ * rather than building the tree by hand.
  *
  */
 @RunWith(JUnit4.class)
@@ -262,7 +270,10 @@ public class MsgNodeTest {
 
     // Build the message.
     MsgNode msg = MsgNode.msg(0, "desc=\"\"", X).build(FAIL);
-    MsgSelectNode selectNode = new MsgSelectNode.Builder(0, "$gender", X).build(FAIL);
+
+    // select $gender
+    ExprNode selectExpr = new VarRefNode("gender", X, false, null);
+    MsgSelectNode selectNode = new MsgSelectNode(0, X, selectExpr);
 
     // case 'female'
     MsgSelectCaseNode femaleNode = new MsgSelectCaseNode(0, X, "female");
@@ -405,7 +416,12 @@ public class MsgNodeTest {
 
     // Build the message.
     MsgNode msg = MsgNode.msg(0, "desc=\"\"", X).build(FAIL);
-    MsgSelectNode selectNode = new MsgSelectNode.Builder(0, "$gender[5]", X).build(FAIL);
+
+    // select $gender[5]
+    ExprNode base = new VarRefNode("gender", X, false, null);
+    ExprNode key = new IntegerNode(5, X);
+    ExprNode selectExpr = new ItemAccessNode(base, key, X, false);
+    MsgSelectNode selectNode = new MsgSelectNode(0, X, selectExpr);
 
     // case 'female'
     MsgSelectCaseNode femaleNode = new MsgSelectCaseNode(0, X, "female");
@@ -538,7 +554,11 @@ public class MsgNodeTest {
 
     // Build the message.
     MsgNode msg = MsgNode.msg(0, "desc=\"\"", X).build(FAIL);
-    MsgSelectNode selectNode = new MsgSelectNode.Builder(0, "$gender.person", X).build(FAIL);
+
+    // select $gender.person
+    ExprNode base = new VarRefNode("gender", X, false, null);
+    ExprNode selectExpr = new FieldAccessNode(base, "person", X, false);
+    MsgSelectNode selectNode = new MsgSelectNode(0, X, selectExpr);
 
     // case 'female'
     MsgSelectCaseNode femaleNode = new MsgSelectCaseNode(0, X, "female");
@@ -662,7 +682,11 @@ public class MsgNodeTest {
 
     // Build the message.
     MsgNode msg = MsgNode.msg(0, "desc=\"\"", X).build(FAIL);
-    MsgSelectNode selectNode = new MsgSelectNode.Builder(0, "$gender", X).build(FAIL);
+
+    // select $gender
+    ExprNode selectExpr = new VarRefNode("gender", X, false, null);
+    MsgSelectNode selectNode = new MsgSelectNode(0, X, selectExpr);
+
 
     // case 'female'
     MsgSelectCaseNode femaleNode = new MsgSelectCaseNode(0, X, "female");
@@ -790,7 +814,11 @@ public class MsgNodeTest {
 
     // Build the message.
     MsgNode msg = MsgNode.msg(0, "desc=\"\"", X).build(FAIL);
-    MsgSelectNode selectNode = new MsgSelectNode.Builder(0, "$gender.person", X).build(FAIL);
+
+    // select $gender.person
+    ExprNode base = new VarRefNode("gender", X, false, null);
+    ExprNode selectExpr = new FieldAccessNode(base, "person", X, false);
+    MsgSelectNode selectNode = new MsgSelectNode(0, X, selectExpr);
 
     // case 'female'
     MsgSelectCaseNode femaleNode = new MsgSelectCaseNode(0, X, "female");

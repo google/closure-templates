@@ -24,7 +24,7 @@ import java.util.NoSuchElementException;
  * A simple stack data structure for managing lexical states.
  *
  * <p>In the parser we need to enter/exit states recursively and an explicit stack is the best way
- * to go. We are using a custom datastructure to avoid boxing since this is called by the parser
+ * to go. We are using a custom data structure to avoid boxing since this is called by the parser
  * very frequently.
  */
 final class LexicalStateStack {

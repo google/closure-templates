@@ -16,6 +16,7 @@
 
 package com.google.template.soy.exprtree;
 
+import com.google.common.base.Preconditions;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.basetree.CopyState;
@@ -38,7 +39,7 @@ public final class StringNode extends AbstractPrimitiveNode {
    */
   public StringNode(String value, SourceLocation sourceLocation) {
     super(sourceLocation);
-    this.value = value;
+    this.value = Preconditions.checkNotNull(value);
   }
 
   /**
