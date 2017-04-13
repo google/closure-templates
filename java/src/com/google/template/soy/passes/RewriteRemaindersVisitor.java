@@ -16,12 +16,16 @@
 
 package com.google.template.soy.passes;
 
-import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprparse.SoyParsingContext;
+import com.google.template.soy.exprtree.ExprEquivalence;
+import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.exprtree.IntegerNode;
+import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.MsgPluralNode;
 import com.google.template.soy.soytree.PrintNode;
@@ -90,10 +94,9 @@ public final class RewriteRemaindersVisitor extends AbstractSoyNodeVisitor<Void>
         }
 
         // 'remainder' with a different expression than the enclosing 'plural'. Bad!
-        if (!functionNode
-            .getChild(0)
-            .toSourceString()
-            .equals(currPluralNode.getExpr().toSourceString())) {
+        //if (!functionNode.getChild(0).toSourceString().equals(currPluralNode.getExpr().toSourceString())) {
+        if (!ExprEquivalence.get()
+            .equivalent(functionNode.getChild(0), currPluralNode.getExpr().getRoot())) {
           errorReporter.report(functionNode.getSourceLocation(), REMAINDER_PLURAL_EXPR_MISMATCH);
         }
 
@@ -108,11 +111,14 @@ public final class RewriteRemaindersVisitor extends AbstractSoyNodeVisitor<Void>
         }
 
         // Now rewrite the PrintNode (reusing the old node id).
-        String newExprText =
-            "(" + currPluralNode.getExpr().toSourceString() + ") - " + currPluralNode.getOffset();
+        ExprNode plural = currPluralNode.getExpr().getRoot().copy(new CopyState());
+        ExprNode offset =
+            new IntegerNode(currPluralNode.getOffset(), functionNode.getSourceLocation());
+        ExprNode remainder =
+            Operator.createOperatorNode("-", Operator.MINUS.getPrecedence(), plural, offset);
         PrintNode newPrintNode =
-            new PrintNode.Builder(node.getId(), node.isImplicit(), SourceLocation.UNKNOWN)
-                .exprText(newExprText)
+            new PrintNode.Builder(node.getId(), node.isImplicit(), node.getSourceLocation())
+                .exprRoot(new ExprRootNode(remainder))
                 .build(context);
         newPrintNode.addChildren(node.getChildren());
         node.getParent().replaceChild(node, newPrintNode);

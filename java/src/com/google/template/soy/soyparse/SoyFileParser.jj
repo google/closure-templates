@@ -1103,7 +1103,7 @@ private SoyFileNode SoyFile() :
   (
     alias = Alias()
     { if (aliases.isEmpty()) {
-       aliases = new ArrayList<AliasDeclaration>();
+        aliases = new ArrayList<AliasDeclaration>();
       }
       if (alias != null) {
         aliases.add(alias);
@@ -1128,9 +1128,9 @@ private SoyFileNode SoyFile() :
   (
     template = Template(soyFileHeaderInfo)
     { if (template != null) {
-       // it will be null if a parsing error occurred
-       sfn.addChild(template);
-     }
+        // it will be null if a parsing error occurred
+        sfn.addChild(template);
+      }
     }
   )+
 
@@ -1202,7 +1202,7 @@ private List<CommandTagAttribute> CommandAttributes() :
   List<CommandTagAttribute> attributes = ImmutableList.of();
 }
 {
-   (
+  (
     attr = Attribute()
     { if (attributes.isEmpty()) {
         attributes = new ArrayList<CommandTagAttribute>();
@@ -1836,7 +1836,7 @@ private StatementNode ControlFlowStmt() :
 
 /**
  * MsgStmt -> <CMD_BEGIN_MSG> CmdText <CMD_END> TemplateBlockForMsg
-   ( <CMD_BEGIN_FALLBACK_MSG> CmdText <CMD_END> TemplateBlockForMsg )? <CMD_CLOSE_MSG>
+ * ( <CMD_BEGIN_FALLBACK_MSG> CmdText <CMD_END> TemplateBlockForMsg )? <CMD_CLOSE_MSG>
  */
 private MsgFallbackGroupNode MsgStmt() :
 {
@@ -1867,7 +1867,7 @@ private MsgFallbackGroupNode MsgStmt() :
     cmdText = CmdText()
     tagEnd = <CMD_END>
     {
-     location = createSrcLoc(tagBegin, tagEnd);
+      location = createSrcLoc(tagBegin, tagEnd);
       msgNode = MsgNode.fallbackmsg(nodeIdGen.genId(), cmdText, location).build(context);
       msgFbGrpNode.addChild(msgNode);
     }
@@ -3103,9 +3103,9 @@ private ExprNode PrecExpr4() :
   expr = PrecExpr5()
   (
     (
-       op = <EQ>
+      op = <EQ>
     |
-       op = <NOT_EQ>
+      op = <NOT_EQ>
     )
     rightHand = PrecExpr5()
 
@@ -3129,13 +3129,13 @@ private ExprNode PrecExpr5() :
   expr = PrecExpr6()
   (
     (
-       op = <LANGLE>
-     |
-       op = <RANGLE>
-     |
-       op = <LT_EQ>
-     |
-       op = <GT_EQ>
+      op = <LANGLE>
+    |
+      op = <RANGLE>
+    |
+      op = <LT_EQ>
+    |
+      op = <GT_EQ>
     )
     rightHand = PrecExpr6()
 
@@ -3159,9 +3159,9 @@ private ExprNode PrecExpr6() :
   expr = PrecExpr7()
   (
     (
-       op = <PLUS>
-     |
-       op = <MINUS>
+      op = <PLUS>
+    |
+      op = <MINUS>
     )
     rightHand = PrecExpr7()
 
@@ -3185,11 +3185,11 @@ private ExprNode PrecExpr7() :
   expr = PrecExpr8()
   (
     (
-       op = <TIMES>
-     |
-       op = <DIV>
-     |
-       op = <MOD>
+      op = <TIMES>
+    |
+      op = <DIV>
+    |
+      op = <MOD>
     )
     rightHand = PrecExpr8()
 
@@ -3216,9 +3216,9 @@ private ExprNode PrecExpr8() :
     expr = PrecExpr9()
   |
     (
-       unaryOp = <NOT>
-     |
-       unaryOp = <MINUS>
+      unaryOp = <NOT>
+    |
+      unaryOp = <MINUS>
     )
     expr = PrecExpr8()
     { expr = createOperatorNode(unaryOp.image, 8, expr); }
@@ -3651,9 +3651,7 @@ private TypeNode RecordType() :
 
   close = <T_RBRACKET>
 
-  {
-   return RecordTypeNode.create(createSrcLoc(open, close), properties);
-  }
+  { return RecordTypeNode.create(createSrcLoc(open, close), properties); }
 }
 
 
