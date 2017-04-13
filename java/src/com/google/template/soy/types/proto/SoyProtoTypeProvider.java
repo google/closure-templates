@@ -295,7 +295,7 @@ public final class SoyProtoTypeProvider implements SoyTypeProvider {
 
     @Override
     void visitFieldDescriptor(FieldDescriptor fieldDescriptor) {
-      if (Protos.shouldJsIgnoreField(fieldDescriptor)) {
+      if (ProtoUtils.shouldJsIgnoreField(fieldDescriptor)) {
         return;
       }
       maybeWalkFieldType(fieldDescriptor);
@@ -308,7 +308,7 @@ public final class SoyProtoTypeProvider implements SoyTypeProvider {
 
     @Override
     void visitExtensionDescriptor(FieldDescriptor extension) {
-      if (Protos.shouldJsIgnoreField(extension)) {
+      if (ProtoUtils.shouldJsIgnoreField(extension)) {
         return;
       }
       String containingType = extension.getContainingType().getFullName();

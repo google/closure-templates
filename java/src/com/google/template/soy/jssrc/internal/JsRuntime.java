@@ -25,7 +25,7 @@ import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
-import com.google.template.soy.types.proto.Protos;
+import com.google.template.soy.types.proto.ProtoUtils;
 import com.google.template.soy.types.proto.SoyProtoType;
 
 /**
@@ -112,8 +112,8 @@ public final class JsRuntime {
 
   /** Returns the field containing the extension object for the given field descriptor. */
   public static CodeChunk.WithValue extensionField(FieldDescriptor desc) {
-    String jsExtensionImport = Protos.getJsExtensionImport(desc);
-    String jsExtensionName = Protos.getJsExtensionName(desc);
+    String jsExtensionImport = ProtoUtils.getJsExtensionImport(desc);
+    String jsExtensionName = ProtoUtils.getJsExtensionName(desc);
     return symbolWithNamespace(jsExtensionImport, jsExtensionName);
   }
 

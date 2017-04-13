@@ -24,14 +24,10 @@ import com.google.protobuf.Descriptors.FieldDescriptor.Type;
 import com.google.protobuf.Descriptors.FileDescriptor;
 import com.google.protobuf.Descriptors.GenericDescriptor;
 
-/**
- * A collection of protobuf utility methods.
- *
- * <p>TODO(user): Rename to ProtoUtils, to follow soy convention
- */
-public final class Protos {
+/** A collection of protobuf utility methods. */
+public final class ProtoUtils {
 
-  private Protos() {
+  private ProtoUtils() {
     // Static only.
   }
 

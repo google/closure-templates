@@ -57,7 +57,7 @@ public final class SoyProtoEnumType implements SoyType {
   public String getNameForBackend(SoyBackendKind backend) {
     switch (backend) {
       case JS_SRC:
-        return Protos.calculateJsEnumName(descriptor);
+        return ProtoUtils.calculateJsEnumName(descriptor);
       case TOFU:
         return JavaQualifiedNames.getQualifiedName(descriptor) + ".getDescriptor()";
       default:

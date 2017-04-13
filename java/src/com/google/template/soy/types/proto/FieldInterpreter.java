@@ -57,7 +57,7 @@ abstract class FieldInterpreter {
   static FieldInterpreter create(SoyTypeRegistry typeRegistry, FieldDescriptor fieldDescriptor) {
     FieldInterpreter field = getScalarType(typeRegistry, fieldDescriptor);
     if (fieldDescriptor.isRepeated()) {
-      if (Protos.hasJsMapKey(fieldDescriptor)) {
+      if (ProtoUtils.hasJsMapKey(fieldDescriptor)) {
         return getMapType(typeRegistry, field, fieldDescriptor);
       } else {
         return getListType(typeRegistry, field);
@@ -102,7 +102,7 @@ abstract class FieldInterpreter {
       SoyTypeRegistry typeRegistry,
       final FieldInterpreter scalarImpl,
       FieldDescriptor fieldDescriptor) {
-    String keyFieldName = Protos.getJsMapKeyFieldName(fieldDescriptor);
+    String keyFieldName = ProtoUtils.getJsMapKeyFieldName(fieldDescriptor);
     final FieldDescriptor keyDescriptor =
         fieldDescriptor.getMessageType().findFieldByName(keyFieldName);
     if (keyDescriptor == null) {
@@ -148,8 +148,8 @@ abstract class FieldInterpreter {
   private static FieldInterpreter getScalarType(
       SoyTypeRegistry typeRegistry, FieldDescriptor fieldDescriptor) {
     // Field definition includes an option that overrides normal type.
-    if (Protos.hasJsType(fieldDescriptor)) {
-      Protos.JsType jsType = Protos.getJsType(fieldDescriptor);
+    if (ProtoUtils.hasJsType(fieldDescriptor)) {
+      ProtoUtils.JsType jsType = ProtoUtils.getJsType(fieldDescriptor);
       switch (jsType) {
         case INT52:
         case NUMBER:

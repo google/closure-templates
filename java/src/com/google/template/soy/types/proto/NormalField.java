@@ -109,7 +109,7 @@ class NormalField implements Field {
 
   private static String fieldSuffix(FieldDescriptor field) {
     if (field.isRepeated()) {
-      if (Protos.hasJsMapKey(field)) {
+      if (ProtoUtils.hasJsMapKey(field)) {
         return "Map";
       }
       return "List";

@@ -25,6 +25,8 @@ import static com.google.template.soy.jbcsrc.BytecodeUtils.numericConversion;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.unboxUnchecked;
 import static com.google.template.soy.types.proto.JavaQualifiedNames.getFieldName;
 import static com.google.template.soy.types.proto.JavaQualifiedNames.underscoresToCamelCase;
+import static com.google.template.soy.types.proto.ProtoUtils.getJsType;
+import static com.google.template.soy.types.proto.ProtoUtils.hasJsType;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Supplier;
@@ -63,7 +65,7 @@ import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.aggregate.ListType;
 import com.google.template.soy.types.primitive.SanitizedType;
 import com.google.template.soy.types.proto.JavaQualifiedNames;
-import com.google.template.soy.types.proto.Protos;
+import com.google.template.soy.types.proto.ProtoUtils.JsType;
 import com.google.template.soy.types.proto.SoyProtoType;
 import java.util.List;
 import javax.annotation.Nullable;
@@ -975,9 +977,9 @@ final class ProtoUtils {
   }
 
   private static boolean shouldConvertBetweenStringAndLong(FieldDescriptor descriptor) {
-    if (Protos.hasJsType(descriptor)) {
-      Protos.JsType jsType = Protos.getJsType(descriptor);
-      if (jsType == Protos.JsType.STRING) {
+    if (hasJsType(descriptor)) {
+      JsType jsType = getJsType(descriptor);
+      if (jsType == JsType.STRING) {
         return true;
       }
     }

@@ -51,7 +51,7 @@ public final class SoyProtoType implements SoyType {
 
     ImmutableMap.Builder<String, Field> fields = ImmutableMap.builder();
     for (FieldDescriptor fieldDescriptor : descriptor.getFields()) {
-      if (Protos.shouldJsIgnoreField(fieldDescriptor)) {
+      if (ProtoUtils.shouldJsIgnoreField(fieldDescriptor)) {
         continue;
       }
       NormalField field = new NormalField(typeRegistry, fieldDescriptor);
@@ -154,7 +154,7 @@ public final class SoyProtoType implements SoyType {
         // The 'proto' prefix is JSPB-specific. If we ever support some other
         // JavaScript proto implementation, we'll need some way to determine which
         // proto implementation the user wants to use at this point.
-        return Protos.calculateQualifiedJsName(typeDescriptor);
+        return ProtoUtils.calculateQualifiedJsName(typeDescriptor);
       case TOFU:
       case JBC_SRC:
         return JavaQualifiedNames.getClassName(typeDescriptor);

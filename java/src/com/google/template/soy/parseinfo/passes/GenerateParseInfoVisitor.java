@@ -62,7 +62,7 @@ import com.google.template.soy.types.aggregate.ListType;
 import com.google.template.soy.types.aggregate.MapType;
 import com.google.template.soy.types.aggregate.RecordType;
 import com.google.template.soy.types.aggregate.UnionType;
-import com.google.template.soy.types.proto.Protos;
+import com.google.template.soy.types.proto.ProtoUtils;
 import com.google.template.soy.types.proto.SoyProtoEnumType;
 import com.google.template.soy.types.proto.SoyProtoType;
 import java.util.ArrayList;
@@ -343,7 +343,7 @@ public final class GenerateParseInfoVisitor
           FieldDescriptor desc =
               ((SoyProtoType) baseType).getFieldDescriptor(fieldAccess.getFieldName());
           if (desc.isExtension()) {
-            protoTypes.add(Protos.getTofuExtensionImport(desc));
+            protoTypes.add(ProtoUtils.getTofuExtensionImport(desc));
           }
         }
       }

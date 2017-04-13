@@ -194,7 +194,7 @@ public final class SoyProtoValueImpl extends SoyAbstractValue implements SoyProt
   @Override
   public String coerceToString() {
     // TODO(gboyer): Make this consistent with Javascript or AbstractMap.
-    // TODO(gboyer): Respect Protos.shouldJsIgnoreField(...)?
+    // TODO(gboyer): Respect ProtoUtils.shouldJsIgnoreField(...)?
     return proto.toString();
   }
 

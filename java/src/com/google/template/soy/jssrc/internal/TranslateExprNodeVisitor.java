@@ -86,7 +86,7 @@ import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.aggregate.UnionType;
-import com.google.template.soy.types.proto.Protos;
+import com.google.template.soy.types.proto.ProtoUtils;
 import com.google.template.soy.types.proto.SoyProtoType;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -440,7 +440,7 @@ public class TranslateExprNodeVisitor
 
   private static FieldAccess genCodeForProtoAccess(SoyProtoType type, String fieldName) {
     FieldDescriptor desc = type.getFieldDescriptor(fieldName);
-    boolean isSanitizedContent = Protos.isSanitizedContentField(desc);
+    boolean isSanitizedContent = ProtoUtils.isSanitizedContentField(desc);
     Preconditions.checkNotNull(
         desc,
         "Error in proto %s, field not found: %s",
@@ -539,7 +539,7 @@ public class TranslateExprNodeVisitor
       String fieldName = node.getParamName(i);
       FieldDescriptor fieldDesc = type.getFieldDescriptor(fieldName);
       CodeChunk.WithValue fieldValue = visit(node.getChild(i));
-      if (Protos.isSanitizedContentField(fieldDesc)) {
+      if (ProtoUtils.isSanitizedContentField(fieldDesc)) {
         CodeChunk.WithValue sanitizedContentPackFn =
             sanitizedContentToProtoConverterFunction(fieldDesc.getMessageType());
         fieldValue =
