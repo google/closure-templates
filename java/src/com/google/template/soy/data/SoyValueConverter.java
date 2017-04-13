@@ -53,8 +53,7 @@ import javax.annotation.Nullable;
  * directly available.
  *
  */
-// TODO(user): Make final after SoyValueHelper is removed
-public class SoyValueConverter {
+public final class SoyValueConverter {
 
   /** Static instance of this class that does not include any custom value converters. */
   public static final SoyValueConverter UNCUSTOMIZED_INSTANCE = new SoyValueConverter();
