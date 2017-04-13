@@ -705,12 +705,7 @@ public final class SoyFileSet {
     // types have to be, this should be possible.  Currently it is disabled for backwards
     // compatibility
     ParseResult result =
-        parse(
-            SyntaxVersion.V2_0,
-            true /* allow unknown globals */,
-            true /* allow unknown functions */,
-            typeRegistry,
-            soyFunctionMap);
+        parse(passManagerBuilder(SyntaxVersion.V2_0).allowUnknownGlobals().allowUnknownFunctions());
     throwIfErrorsPresent();
 
     SoyFileSetNode soyTree = result.fileSet();
@@ -739,17 +734,21 @@ public final class SoyFileSet {
    */
   public SoyMsgBundle extractMsgs() {
     resetErrorReporter();
+    // extractMsgs disables a bunch of passes since it is typically not configured with things
+    // like global definitions, type definitions, etc.
     SoyFileSetNode soyTree =
         parse(
-                SyntaxVersion.V1_0,
-                true /* allow unknown globals */,
-                true /* allow unknown functions */,
-                SoyTypeRegistry.DEFAULT_UNKNOWN,
-                soyFunctionMap)
+                passManagerBuilder(SyntaxVersion.V1_0)
+                    .allowUnknownGlobals()
+                    .allowUnknownFunctions()
+                    // override the type registry so that the parser doesn't report errors when it
+                    // can't resolve strict types
+                    .setTypeRegistry(SoyTypeRegistry.DEFAULT_UNKNOWN)
+                    .disableAllTypeChecking())
             .fileSet();
+    throwIfErrorsPresent();
     SoyMsgBundle bundle = new ExtractMsgsVisitor().exec(soyTree);
-    // TODO(lukes): this should call throwIfErrorsPresent(), but can't because it will break
-    // build rules.
+    throwIfErrorsPresent();
     return bundle;
   }
 
@@ -775,11 +774,13 @@ public final class SoyFileSet {
     if (memoizedExtractedMsgIdsForPruning == null) {
       ParseResult result =
           parse(
-              SyntaxVersion.V1_0,
-              true /* allow unknown globals */,
-              true /* allow unknown functions */,
-              SoyTypeRegistry.DEFAULT_UNKNOWN,
-              soyFunctionMap);
+              passManagerBuilder(SyntaxVersion.V1_0)
+                  // override the type registry so that the parser doesn't report errors when it
+                  // can't resolve strict types
+                  .setTypeRegistry(SoyTypeRegistry.DEFAULT_UNKNOWN)
+                  .allowUnknownGlobals()
+                  .allowUnknownFunctions()
+                  .disableAllTypeChecking());
 
       SoyFileSetNode soyTree = result.fileSet();
       TemplateRegistry registry = result.registry();
@@ -977,13 +978,8 @@ public final class SoyFileSet {
     // JS has traditionally allowed unknown globals, as a way for soy to reference normal js enums
     // and constants.  For consistency/reusability of templates it would be nice to not allow that
     // but the cat is out of the bag.
-    ParseResult parseResult =
-        parse(
-            SyntaxVersion.V2_0,
-            true /* allow unknown globals */,
-            false /* allow unknown functions */,
-            typeRegistry,
-            soyFunctionMap);
+    PassManager.Builder builder = passManagerBuilder(SyntaxVersion.V2_0).allowUnknownGlobals();
+    ParseResult parseResult = parse(builder);
     throwIfErrorsPresent();
     TemplateRegistry registry = parseResult.registry();
     SoyFileSetNode fileSet = parseResult.fileSet();
@@ -1023,15 +1019,8 @@ public final class SoyFileSet {
     if (jsSrcOptions.shouldAllowDeprecatedSyntax()) {
       generalOptions.setDeclaredSyntaxVersionName("1.0");
     }
-
     // Allow unknown globals for backwards compatibility
-    ParseResult result =
-        parse(
-            SyntaxVersion.V2_0,
-            true /* allow unknown globals */,
-            false /* allow unknown functions */,
-            typeRegistry,
-            soyFunctionMap);
+    ParseResult result = parse(passManagerBuilder(SyntaxVersion.V2_0).allowUnknownGlobals());
     throwIfErrorsPresent();
 
     SoyFileSetNode soyTree = result.fileSet();
@@ -1190,46 +1179,20 @@ public final class SoyFileSet {
 
   // Parse the current file set with the given default syntax version.
   private ParseResult parse(SyntaxVersion defaultVersion) {
-    return parse(
-        defaultVersion,
-        false /* allow unknown globals */,
-        false /* allow unknown functions */,
-        typeRegistry,
-        soyFunctionMap);
+    return parse(passManagerBuilder(defaultVersion));
   }
 
-  /**
-   * A parse method that allows disabling certain features. All callers should prefer the {@link
-   * #parse(SyntaxVersion)} overload whenever possible.
-   *
-   * @param defaultVersion The default declared syntax version
-   * @param allowUnknownGlobals Whether to allow unknown globals
-   * @param typeRegistry The type registry to use
-   * @param soyFunctionMap The map of Soy functions to use
-   */
-  private ParseResult parse(
-      SyntaxVersion defaultVersion,
-      boolean allowUnknownGlobals,
-      boolean allowUnknownFunctions,
-      SoyTypeRegistry typeRegistry,
-      ImmutableMap<String, ? extends SoyFunction> soyFunctionMap) {
-    SyntaxVersion declaredSyntaxVersion = generalOptions.getDeclaredSyntaxVersion(defaultVersion);
-    PassManager.Builder builder =
-        new PassManager.Builder()
-            .setTypeRegistry(typeRegistry)
-            .setGeneralOptions(generalOptions)
-            .setDeclaredSyntaxVersion(declaredSyntaxVersion)
-            .setSoyFunctionMap(soyFunctionMap)
-            .setErrorReporter(errorReporter);
-    if (allowUnknownGlobals) {
-      builder.allowUnknownGlobals();
-    }
-    if (allowUnknownFunctions) {
-      builder.allowUnknownFunctions();
-    }
-    return new SoyFileSetParser(
-            typeRegistry, cache, soyFileSuppliers, builder.build(), errorReporter)
-        .parse();
+  private PassManager.Builder passManagerBuilder(SyntaxVersion defaultVersion) {
+    return new PassManager.Builder()
+        .setTypeRegistry(typeRegistry)
+        .setGeneralOptions(generalOptions)
+        .setDeclaredSyntaxVersion(generalOptions.getDeclaredSyntaxVersion(defaultVersion))
+        .setSoyFunctionMap(soyFunctionMap)
+        .setErrorReporter(errorReporter);
+  }
+
+  private ParseResult parse(PassManager.Builder builder) {
+    return new SoyFileSetParser(cache, soyFileSuppliers, builder.build(), errorReporter).parse();
   }
 
   // TODO(gboyer): There are several fields on this class that end up saving around some state, and

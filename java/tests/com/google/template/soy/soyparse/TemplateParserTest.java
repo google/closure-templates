@@ -1974,7 +1974,6 @@ public final class TemplateParserTest {
         new ErrorReporterImpl(new PrettyErrorFactory(new SnippetFormatter(files)));
     SoyFileSetParser fileSetParser =
         new SoyFileSetParser(
-            new SoyTypeRegistry(),
             null /* ast cache */,
             files,
             new PassManager.Builder()

@@ -16,6 +16,8 @@
 
 package com.google.template.soy;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
@@ -54,9 +56,6 @@ public final class SoyFileSetParser {
     public abstract TemplateRegistry registry();
   }
 
-  /** The type registry to resolve type names. */
-  private final SoyTypeRegistry typeRegistry;
-
   /** Optional file cache. */
   @Nullable private final SoyAstCache cache;
 
@@ -70,26 +69,18 @@ public final class SoyFileSetParser {
   private final ErrorReporter errorReporter;
 
   /**
-   * @param typeRegistry The type registry to resolve type names.
    * @param astCache The AST cache to use, if any.
    * @param soyFileSuppliers The suppliers for the Soy files. Each must have a unique file name.
    */
   public SoyFileSetParser(
-      SoyTypeRegistry typeRegistry,
       @Nullable SoyAstCache astCache,
       ImmutableMap<String, ? extends SoyFileSupplier> soyFileSuppliers,
-      @Nullable PassManager passManager,
+      PassManager passManager,
       ErrorReporter errorReporter) {
-    Preconditions.checkArgument(
-        (astCache == null) || (passManager != null),
-        "AST caching is only allowed when all parsing and checking passes are enabled, to avoid "
-            + "caching inconsistent versions");
-    this.typeRegistry = typeRegistry;
     this.cache = astCache;
-    this.soyFileSuppliers = soyFileSuppliers;
-    this.errorReporter = errorReporter;
-
-    this.passManager = passManager;
+    this.soyFileSuppliers = checkNotNull(soyFileSuppliers);
+    this.errorReporter = checkNotNull(errorReporter);
+    this.passManager = checkNotNull(passManager);
   }
 
   /** Parses a set of Soy files, returning a structure containing the parse tree and any errors. */
@@ -124,7 +115,7 @@ public final class SoyFileSetParser {
       if (cachedFile == null) {
         //noinspection SynchronizationOnLocalVariableOrMethodParameter IntelliJ
         synchronized (nodeIdGen) { // Avoid using the same ID generator in multiple threads.
-          node = parseSoyFileHelper(fileSupplier, nodeIdGen, typeRegistry);
+          node = parseSoyFileHelper(fileSupplier, nodeIdGen, passManager.getTypeRegistry());
           // TODO(user): implement error recovery and keep on trucking in order to display
           // as many errors as possible. Currently, the later passes just spew NPEs if run on
           // a malformed parse tree.

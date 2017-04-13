@@ -53,6 +53,7 @@ public final class PassManager {
   private final SyntaxVersion declaredSyntaxVersion;
   private final SoyGeneralOptions options;
   private final boolean allowUnknownGlobals;
+  private final boolean disableAllTypeChecking;
 
   private PassManager(Builder builder) {
     this.registry = checkNotNull(builder.registry);
@@ -61,6 +62,7 @@ public final class PassManager {
     this.declaredSyntaxVersion = checkNotNull(builder.declaredSyntaxVersion);
     this.options = checkNotNull(builder.opts);
     this.allowUnknownGlobals = builder.allowUnknownGlobals;
+    this.disableAllTypeChecking = builder.disableAllTypeChecking;
 
     boolean enabledStrictHtml = options.getExperimentalFeatures().contains("stricthtml");
 
@@ -74,10 +76,13 @@ public final class PassManager {
             .add(new RewriteFunctionsPass(registry))
             .add(new SetFullCalleeNamesPass())
             .add(new ResolveNamesPass())
-            .add(new ResolveFunctionsPass())
-            .add(new ResolveExpressionTypesPass())
-            .add(new ResolvePackageRelativeCssNamesPass())
-            .add(new VerifyPhnameAttrOnlyOnPlaceholdersPass());
+            .add(new ResolveFunctionsPass());
+    if (!disableAllTypeChecking) {
+      singleFilePassesBuilder.add(new ResolveExpressionTypesPass());
+    }
+    singleFilePassesBuilder
+        .add(new ResolvePackageRelativeCssNamesPass())
+        .add(new VerifyPhnameAttrOnlyOnPlaceholdersPass());
     if (!allowUnknownGlobals) {
       // Must come after RewriteGlobalsPass since that is when values are substituted.
       // We should also run after the ResolveNamesPass which checks for global/param ambiguity and
@@ -87,12 +92,15 @@ public final class PassManager {
     singleFilePassesBuilder
         .add(new CheckInvalidParamsPass())
         .add(new ValidateAliasesPass())
-        .add(new CheckSyntaxVersionPass())
-        // Must run after ResolveExpressionTypesPass, which adds the SoyProtoType info.
-        .add(new CheckProtoInitCallsPass(errorReporter))
-        .add(
-            new CheckFunctionCallsPass(
-                builder.allowUnknownFunctions, declaredSyntaxVersion, errorReporter));
+        .add(new CheckSyntaxVersionPass());
+    if (!disableAllTypeChecking) {
+      // Must run after ResolveExpressionTypesPass, which adds the SoyProtoType info.
+      singleFilePassesBuilder
+          .add(new CheckProtoInitCallsPass(errorReporter))
+          .add(
+              new CheckFunctionCallsPass(
+                  builder.allowUnknownFunctions, declaredSyntaxVersion, errorReporter));
+    }
     // If requiring strict autoescaping, check and enforce it.
     if (options.isStrictAutoescapingRequired()) {
       singleFilePassesBuilder.add(new EnforceStrictAutoescapingPass());
@@ -104,11 +112,11 @@ public final class PassManager {
     // Notably, the results of these passes cannot be cached in the AST cache.  So minimize their
     // use.
     ImmutableList.Builder<CompilerFileSetPass> fileSetPassBuilder =
-        ImmutableList.<CompilerFileSetPass>builder()
-            .add(new CheckTemplateParamsPass())
-            .add(new CheckTemplateCallsPass(enabledStrictHtml, errorReporter))
-            .add(new CheckVisibilityPass())
-            .add(new CheckDelegatesPass());
+        ImmutableList.<CompilerFileSetPass>builder().add(new CheckTemplateParamsPass());
+    if (!disableAllTypeChecking) {
+      fileSetPassBuilder.add(new CheckTemplateCallsPass(enabledStrictHtml, errorReporter));
+    }
+    fileSetPassBuilder.add(new CheckVisibilityPass()).add(new CheckDelegatesPass());
     // If disallowing external calls, perform the check.
     if (Objects.equals(options.allowExternalCalls(), Boolean.FALSE)) {
       fileSetPassBuilder.add(new StrictDepsPass());
@@ -116,6 +124,10 @@ public final class PassManager {
     // TODO(lukes): move this to run after autoescaping.
     fileSetPassBuilder.add(new DesugarHtmlNodesPass());
     this.fileSetPasses = fileSetPassBuilder.build();
+  }
+
+  public SoyTypeRegistry getTypeRegistry() {
+    return registry;
   }
 
   public void runSingleFilePasses(SoyFileNode file, IdGenerator nodeIdGen) {
@@ -143,6 +155,7 @@ public final class PassManager {
     private SoyGeneralOptions opts;
     private boolean allowUnknownGlobals;
     private boolean allowUnknownFunctions;
+    private boolean disableAllTypeChecking;
 
     public Builder setErrorReporter(ErrorReporter errorReporter) {
       this.errorReporter = checkNotNull(errorReporter);
@@ -166,6 +179,17 @@ public final class PassManager {
 
     public Builder setGeneralOptions(SoyGeneralOptions opts) {
       this.opts = opts;
+      return this;
+    }
+
+    /**
+     * Disables all the passes which enforce and rely on type information.
+     *
+     * <p>This should only be used for things like message extraction which doesn't tend to be
+     * configured with a type registry.
+     */
+    public Builder disableAllTypeChecking() {
+      this.disableAllTypeChecking = true;
       return this;
     }
 
