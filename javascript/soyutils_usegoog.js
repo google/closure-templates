@@ -39,8 +39,6 @@ goog.provide('soydata.VERY_UNSAFE');
 goog.require('goog.array');
 goog.require('goog.asserts');
 goog.require('goog.debug');
-/** @suppress {extraRequire} */  // TODO(lukes): remove
-goog.require('goog.dom.DomHelper');
 goog.require('goog.format');
 goog.require('goog.html.SafeHtml');
 goog.require('goog.html.SafeScript');
@@ -52,8 +50,6 @@ goog.require('goog.html.uncheckedconversions');
 goog.require('goog.i18n.BidiFormatter');
 goog.require('goog.i18n.bidi');
 goog.require('goog.object');
-/** @suppress {extraRequire} */  // TODO(lukes): remove
-goog.require('goog.soy');
 goog.require('goog.soy.data.SanitizedContent');
 goog.require('goog.soy.data.SanitizedContentKind');
 goog.require('goog.soy.data.SanitizedCss');

@@ -3641,8 +3641,8 @@ goog.addDependency('math/interpolator/spline1_test.js', ['goog.math.interpolator
 goog.addDependency('math/irect.js', ['goog.math.IRect'], [], {});
 goog.addDependency('math/line.js', ['goog.math.Line'], ['goog.math', 'goog.math.Coordinate'], {});
 goog.addDependency('math/line_test.js', ['goog.math.LineTest'], ['goog.math.Coordinate', 'goog.math.Line', 'goog.testing.jsunit'], {});
-goog.addDependency('math/long.js', ['goog.math.Long'], ['goog.reflect'], {});
-goog.addDependency('math/long_test.js', ['goog.math.LongTest'], ['goog.math.Long', 'goog.testing.jsunit'], {});
+goog.addDependency('math/long.js', ['goog.math.Long'], ['goog.asserts', 'goog.reflect'], {});
+goog.addDependency('math/long_test.js', ['goog.math.LongTest'], ['goog.asserts', 'goog.math.Long', 'goog.testing.jsunit'], {});
 goog.addDependency('math/math.js', ['goog.math'], ['goog.array', 'goog.asserts'], {});
 goog.addDependency('math/math_test.js', ['goog.mathTest'], ['goog.math', 'goog.testing.jsunit'], {});
 goog.addDependency('math/matrix.js', ['goog.math.Matrix'], ['goog.array', 'goog.asserts', 'goog.math', 'goog.math.Size', 'goog.string'], {});
@@ -28949,8 +28949,6 @@ goog.provide('soydata.VERY_UNSAFE');
 goog.require('goog.array');
 goog.require('goog.asserts');
 goog.require('goog.debug');
-/** @suppress {extraRequire} */  // TODO(lukes): remove
-goog.require('goog.dom.DomHelper');
 goog.require('goog.format');
 goog.require('goog.html.SafeHtml');
 goog.require('goog.html.SafeScript');
@@ -28962,8 +28960,6 @@ goog.require('goog.html.uncheckedconversions');
 goog.require('goog.i18n.BidiFormatter');
 goog.require('goog.i18n.bidi');
 goog.require('goog.object');
-/** @suppress {extraRequire} */  // TODO(lukes): remove
-goog.require('goog.soy');
 goog.require('goog.soy.data.SanitizedContent');
 goog.require('goog.soy.data.SanitizedContentKind');
 goog.require('goog.soy.data.SanitizedCss');
