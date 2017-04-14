@@ -726,9 +726,8 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
       jsCodeBuilder.appendLine("/**");
       jsCodeBuilder.append(" * @param {");
       if (useStrongTyping) {
-        // TODO(lukes): use the typedef here
         paramsRecordType = genParamsRecordType(node);
-        jsCodeBuilder.append(paramsRecordType);
+        jsCodeBuilder.append(alias + ".Params");
       } else {
         jsCodeBuilder.append("Object<string, *>=");
       }

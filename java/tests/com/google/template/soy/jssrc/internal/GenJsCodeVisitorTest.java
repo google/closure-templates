@@ -2328,14 +2328,7 @@ public final class GenJsCodeVisitorTest {
             parseResult.fileSet(), parseResult.registry(), ExplodingErrorReporter.get());
 
     // Ensure that the use of header params generates a record type for opt_data.
-    assertThat(jsFilesContents.get(0))
-        .contains(
-            Joiner.on('\n')
-                .join(
-                    "@param {{",
-                    " *  moo: (!goog.soy.data.SanitizedContent|string),",
-                    " *  goo: (!goog.soy.data.SanitizedContent|null|string|undefined)",
-                    " * }} opt_data"));
+    assertThat(jsFilesContents.get(0)).contains("@param {boo.foo.goo.Params} opt_data");
     assertThat(jsFilesContents.get(0))
         .contains(
             Joiner.on('\n')
