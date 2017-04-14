@@ -1991,18 +1991,18 @@ private List<StandaloneNode> TemplateBlockForMsg() :
 private MsgPluralNode MsgPlural() :
 {
   String cmdText;
-  Token cmdBegin, cmdEnd;
+  Token tagBegin, tagEnd;
   Token defaultTag;
   ExprNode caseExpr;
   List<StandaloneNode> templateBlock;
 }
 {
-  cmdBegin = <CMD_BEGIN_PLURAL>
+  tagBegin = <CMD_BEGIN_PLURAL>
   cmdText = CmdText()
-  cmdEnd = <CMD_END>
+  tagEnd = <CMD_END>
   {
     MsgPluralNode msgPluralNode = new MsgPluralNode.Builder(
-        nodeIdGen.genId(), cmdText, createSrcLoc(cmdBegin, cmdEnd))
+        nodeIdGen.genId(), cmdText, createSrcLoc(tagBegin, tagEnd))
         .build(context);
   }
 
@@ -2012,9 +2012,9 @@ private MsgPluralNode MsgPlural() :
 
   try {
     (
-      cmdBegin = <CMD_BEGIN_CASE>
+      tagBegin = <CMD_BEGIN_CASE>
       caseExpr = Expr()
-      cmdEnd = <CMD_END>
+      tagEnd = <CMD_END>
       {
         int value;
         if (!(caseExpr instanceof IntegerNode)) {
@@ -2029,7 +2029,7 @@ private MsgPluralNode MsgPlural() :
         }
 
         MsgPluralCaseNode caseNode =
-            new MsgPluralCaseNode(nodeIdGen.genId(), createSrcLoc(cmdBegin, cmdEnd), value);
+            new MsgPluralCaseNode(nodeIdGen.genId(), createSrcLoc(tagBegin, tagEnd), value);
         msgPluralNode.addChild(caseNode);
       }
 
@@ -2080,25 +2080,25 @@ private MsgPluralNode MsgPlural() :
  */
 private MsgSelectNode MsgSelect() :
 {
-  Token cmdBegin, cmdEnd;
+  Token tagBegin, tagEnd;
   Token defaultTag;
   ExprNode selectExpr;
   ExprNode caseExpr;
   List<StandaloneNode> templateBlock;
 }
 {
-  cmdBegin = <CMD_BEGIN_SELECT>
+  tagBegin = <CMD_BEGIN_SELECT>
   try {
     selectExpr = Expr()
-    cmdEnd = <CMD_END>
+    tagEnd = <CMD_END>
   } catch (ParseException e) {
-    selectExpr = errorExpr(cmdBegin);
-    cmdEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END);
+    selectExpr = errorExpr(tagBegin);
+    tagEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END);
   }
 
   {
     MsgSelectNode selectNode =
-        new MsgSelectNode(nodeIdGen.genId(), createSrcLoc(cmdBegin, cmdEnd), selectExpr);
+        new MsgSelectNode(nodeIdGen.genId(), createSrcLoc(tagBegin, tagEnd), selectExpr);
   }
 
   // consume all whitespace between {select} and the first {case}
@@ -2107,9 +2107,9 @@ private MsgSelectNode MsgSelect() :
 
   try {
     (
-      cmdBegin = <CMD_BEGIN_CASE>
+      tagBegin = <CMD_BEGIN_CASE>
       caseExpr = Expr()
-      cmdEnd = <CMD_END>
+      tagEnd = <CMD_END>
       {
         String value;
         if (!(caseExpr instanceof StringNode)) {
@@ -2120,7 +2120,7 @@ private MsgSelectNode MsgSelect() :
         }
 
         MsgSelectCaseNode caseNode =
-            new MsgSelectCaseNode(nodeIdGen.genId(), createSrcLoc(cmdBegin, cmdEnd), value);
+            new MsgSelectCaseNode(nodeIdGen.genId(), createSrcLoc(tagBegin, tagEnd), value);
         selectNode.addChild(caseNode);
       }
 
@@ -2357,13 +2357,13 @@ private PrintNode PrintStmt() :
  */
 private XidNode XidStmt() :
 {
-  Token cmdBegin, tok;
-  Token cmdEnd = null;
+  Token tagBegin, tok;
+  Token tagEnd = null;
   Token first = null;
   StringBuilder value = null;
 }
 {
-  cmdBegin = <CMD_BEGIN_XID>
+  tagBegin = <CMD_BEGIN_XID>
 
   try {
     first = <NAME>
@@ -2389,15 +2389,15 @@ private XidNode XidStmt() :
       )+
     )?
 
-    cmdEnd = <CMD_END>
+    tagEnd = <CMD_END>
 
   } catch (ParseException e) {
     reportTemplateBodyErrorAndSkipTo(e, CMD_END);
-    return XidNode.error(createSrcLoc(cmdBegin));
+    return XidNode.error(createSrcLoc(tagBegin));
   }
 
   { String xid = (value == null) ? first.image : value.toString();
-    return new XidNode(nodeIdGen.genId(), createSrcLoc(cmdBegin, cmdEnd), xid); }
+    return new XidNode(nodeIdGen.genId(), createSrcLoc(tagBegin, tagEnd), xid); }
 }
 
 
@@ -2406,15 +2406,15 @@ private XidNode XidStmt() :
  */
 private CssNode CssStmt() :
 {
-  Token cmdBegin, cmdEnd;
+  Token tagBegin, tagEnd;
   String cmdText;
 }
 {
-  cmdBegin = <CMD_BEGIN_CSS>
+  tagBegin = <CMD_BEGIN_CSS>
   cmdText = CmdText()
-  cmdEnd = <CMD_END>
+  tagEnd = <CMD_END>
   {
-    return new CssNode.Builder(nodeIdGen.genId(), cmdText, createSrcLoc(cmdBegin, cmdEnd))
+    return new CssNode.Builder(nodeIdGen.genId(), cmdText, createSrcLoc(tagBegin, tagEnd))
         .build(context);
   }
 }
@@ -2482,23 +2482,23 @@ private LetNode LetStmt() :
  */
 private IfNode IfStmt() :
 {
-  Token cmdBegin, cmdEnd;
+  Token tagBegin, tagEnd;
   Token elseTag;
   ExprNode ifExpr;
   List<StandaloneNode> templateBlock;
 }
 {
-  cmdBegin = <CMD_BEGIN_IF>
+  tagBegin = <CMD_BEGIN_IF>
   try {
     ifExpr = Expr()
-    cmdEnd = <CMD_END>
+    tagEnd = <CMD_END>
   } catch (ParseException e) {
-    ifExpr = errorExpr(cmdBegin);
-    cmdEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END);
+    ifExpr = errorExpr(tagBegin);
+    tagEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END);
   }
 
   {
-    SourceLocation location = createSrcLoc(cmdBegin, cmdEnd);
+    SourceLocation location = createSrcLoc(tagBegin, tagEnd);
     IfNode ifNode = new IfNode(nodeIdGen.genId(), location);
     IfCondNode ifCondNode = new IfCondNode(nodeIdGen.genId(), location, "if", ifExpr);
     ifNode.addChild(ifCondNode);
@@ -2508,17 +2508,17 @@ private IfNode IfStmt() :
   { ifCondNode.addChildren(templateBlock); }
 
   (
-    cmdBegin = <CMD_BEGIN_ELSEIF>
+    tagBegin = <CMD_BEGIN_ELSEIF>
     try {
       ifExpr = Expr()
-      cmdEnd = <CMD_END>
+      tagEnd = <CMD_END>
     } catch (ParseException e) {
-      ifExpr = errorExpr(cmdBegin);
-      cmdEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END);
+      ifExpr = errorExpr(tagBegin);
+      tagEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END);
     }
 
     {
-      location = createSrcLoc(cmdBegin, cmdEnd);
+      location = createSrcLoc(tagBegin, tagEnd);
       ifCondNode = new IfCondNode(nodeIdGen.genId(), location, "elseif", ifExpr);
       ifNode.addChild(ifCondNode);
     }
@@ -2550,25 +2550,25 @@ private IfNode IfStmt() :
  */
 private SwitchNode SwitchStmt() :
 {
-  Token cmdBegin, cmdEnd;
+  Token tagBegin, tagEnd;
   Token defaultTag;
   ExprNode switchExpr;
   ImmutableList<ExprNode> caseExprs;
   List<StandaloneNode> templateBlock;
 }
 {
-  cmdBegin = <CMD_BEGIN_SWITCH>
+  tagBegin = <CMD_BEGIN_SWITCH>
   try {
     switchExpr = Expr()
-    cmdEnd = <CMD_END>
+    tagEnd = <CMD_END>
   } catch (ParseException e) {
-    switchExpr = errorExpr(cmdBegin);
-    cmdEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END);
+    switchExpr = errorExpr(tagBegin);
+    tagEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END);
   }
 
   {
     SwitchNode switchNode =
-        new SwitchNode(nodeIdGen.genId(), createSrcLoc(cmdBegin, cmdEnd), switchExpr);
+        new SwitchNode(nodeIdGen.genId(), createSrcLoc(tagBegin, tagEnd), switchExpr);
   }
 
   // consume all whitespace between {switch} and the first {case}
@@ -2578,12 +2578,12 @@ private SwitchNode SwitchStmt() :
 
   try {
     (
-      cmdBegin = <CMD_BEGIN_CASE>
+      tagBegin = <CMD_BEGIN_CASE>
       caseExprs = ExprList()
-      cmdEnd = <CMD_END>
+      tagEnd = <CMD_END>
       {
         SwitchCaseNode caseNode =
-            new SwitchCaseNode(nodeIdGen.genId(), createSrcLoc(cmdBegin, cmdEnd), caseExprs);
+            new SwitchCaseNode(nodeIdGen.genId(), createSrcLoc(tagBegin, tagEnd), caseExprs);
         switchNode.addChild(caseNode);
       }
 
@@ -2620,16 +2620,16 @@ private ForeachNode ForeachStmt() :
 {
   String cmdText;
   List<StandaloneNode> templateBlock;
-  Token cmdBegin, cmdEnd;
+  Token tagBegin, tagEnd;
   Token ifemptyTag;
 }
 {
-  cmdBegin = <CMD_BEGIN_FOREACH>
+  tagBegin = <CMD_BEGIN_FOREACH>
   cmdText = CmdText()
-  cmdEnd = <CMD_END>
+  tagEnd = <CMD_END>
   {
     ForeachBuilder builder = ForeachBuilder.create(nodeIdGen, context)
-        .setCommandLocation(createSrcLoc(cmdBegin, cmdEnd))
+        .setCommandLocation(createSrcLoc(tagBegin, tagEnd))
         .setCommandText(cmdText);
   }
 
@@ -2658,18 +2658,18 @@ private ForeachNode ForeachStmt() :
 private ForNode ForStmt() :
 {
   String cmdText;
-  Token cmdBegin, cmdEnd;
+  Token tagBegin, tagEnd;
   List<StandaloneNode> templateBlock;
 }
 {
-  cmdBegin = <CMD_BEGIN_FOR>
+  tagBegin = <CMD_BEGIN_FOR>
   cmdText = CmdText()
-  cmdEnd = <CMD_END>
+  tagEnd = <CMD_END>
   {
     ForNode forNode = new ForNode(
         nodeIdGen.genId(),
         cmdText,
-        createSrcLoc(cmdBegin, cmdEnd),
+        createSrcLoc(tagBegin, tagEnd),
         context);
   }
 
