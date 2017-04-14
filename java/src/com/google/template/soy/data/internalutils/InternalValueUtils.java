@@ -52,25 +52,27 @@ public class InternalValueUtils {
    * Converts a primitive data object into a primitive expression node.
    *
    * @param primitiveData The primitive data object to convert. Must not be undefined.
+   * @param location The node's source location.
    * @return The resulting primitive expression node.
    */
   @Nullable
-  public static PrimitiveNode convertPrimitiveDataToExpr(PrimitiveData primitiveData) {
+  public static PrimitiveNode convertPrimitiveDataToExpr(
+      PrimitiveData primitiveData, SourceLocation location) {
     if (primitiveData instanceof StringData) {
-      return new StringNode(primitiveData.stringValue(), SourceLocation.UNKNOWN);
+      return new StringNode(primitiveData.stringValue(), location);
     } else if (primitiveData instanceof BooleanData) {
-      return new BooleanNode(primitiveData.booleanValue(), SourceLocation.UNKNOWN);
+      return new BooleanNode(primitiveData.booleanValue(), location);
     } else if (primitiveData instanceof IntegerData) {
       // NOTE: We only support numbers in the range of JS [MIN_SAFE_INTEGER, MAX_SAFE_INTEGER]
       if (!IntegerNode.isInRange(primitiveData.longValue())) {
         return null;
       } else {
-        return new IntegerNode(primitiveData.longValue(), SourceLocation.UNKNOWN);
+        return new IntegerNode(primitiveData.longValue(), location);
       }
     } else if (primitiveData instanceof FloatData) {
-      return new FloatNode(primitiveData.floatValue(), SourceLocation.UNKNOWN);
+      return new FloatNode(primitiveData.floatValue(), location);
     } else if (primitiveData instanceof NullData) {
-      return new NullNode(SourceLocation.UNKNOWN);
+      return new NullNode(location);
     } else {
       throw new IllegalArgumentException();
     }

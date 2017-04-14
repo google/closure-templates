@@ -217,7 +217,8 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
       return; // failed to preevaluate
     }
     PrimitiveNode newNode =
-        InternalValueUtils.convertPrimitiveDataToExpr((PrimitiveData) preevalResult);
+        InternalValueUtils.convertPrimitiveDataToExpr(
+            (PrimitiveData) preevalResult, node.getSourceLocation());
     if (newNode != null) {
       node.getParent().replaceChild(node, newNode);
     }

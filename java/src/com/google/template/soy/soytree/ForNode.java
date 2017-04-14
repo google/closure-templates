@@ -55,8 +55,11 @@ public final class ForNode extends AbstractBlockCommandNode
   /** The arguments to a {@code range(...)} expression in a {@code {for ...}} loop statement. */
   @AutoValue
   public abstract static class RangeArgs {
-    private static final RangeArgs ERROR =
-        create(VarRefNode.ERROR, VarRefNode.ERROR, VarRefNode.ERROR);
+
+    static RangeArgs error(SourceLocation location) {
+      VarRefNode error = VarRefNode.error(location);
+      return create(error, error, error);
+    }
 
     static RangeArgs create(ExprNode start, ExprNode limit, ExprNode increment) {
       return new AutoValue_ForNode_RangeArgs(
@@ -139,7 +142,7 @@ public final class ForNode extends AbstractBlockCommandNode
     Matcher matcher = COMMAND_TEXT_PATTERN.matcher(commandText);
     if (!matcher.matches()) {
       context.report(sourceLocation, INVALID_COMMAND_TEXT);
-      this.rangeArgs = RangeArgs.ERROR;
+      this.rangeArgs = RangeArgs.error(sourceLocation);
       this.var = new LocalVar("error", this, null);
       // Return early to avoid IllegalStateException below
       return;
@@ -150,7 +153,7 @@ public final class ForNode extends AbstractBlockCommandNode
 
     if (rangeArgs.size() > 3 || rangeArgs.isEmpty()) {
       context.report(sourceLocation, INVALID_RANGE_SPECIFICATION);
-      this.rangeArgs = RangeArgs.ERROR;
+      this.rangeArgs = RangeArgs.error(sourceLocation);
     } else {
       // OK, now interpret the args
 

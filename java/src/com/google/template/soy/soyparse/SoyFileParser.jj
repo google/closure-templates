@@ -3370,7 +3370,7 @@ private ExprNode GlobalOrFunction() :
               || !BaseUtils.isIdentifier(((GlobalNode) first).getName())) {
             errorReporter.report(
                 first.getSourceLocation(), INVALID_PARAM_NAME, first.toSourceString());
-            first = GlobalNode.ERROR;
+            first = GlobalNode.error(first.getSourceLocation());
           }
 
           paramNames = new LinkedHashSet<String>();

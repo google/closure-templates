@@ -247,7 +247,7 @@ public final class ExpressionParser {
       return ExprInput();
     } catch (ParseException e) {
       ParseErrors.reportExprParseException(errorReporter, parentSourceLocation, e);
-      return VarRefNode.ERROR;
+      return VarRefNode.error(parentSourceLocation);
     }
   }
 
@@ -266,12 +266,12 @@ public final class ExpressionParser {
       VarRefNode node = VarRef();
       if (node.isDollarSignIjParameter()) {
         errorReporter.report(node.getSourceLocation(), UNEXPECTED_IJ_DATA_REFERENCE);
-        return VarRefNode.ERROR;
+        return VarRefNode.error(node.getSourceLocation());
       }
       return node;
     } catch (ParseException e) {
       ParseErrors.reportExprParseException(errorReporter, parentSourceLocation, e);
-      return VarRefNode.ERROR;
+      return VarRefNode.error(parentSourceLocation);
     }
   }
 
@@ -897,7 +897,7 @@ private ExprNode GlobalOrFunction() :
               || !BaseUtils.isIdentifier(((GlobalNode) first).getName())) {
             errorReporter.report(
                 first.getSourceLocation(), INVALID_PARAM_NAME, first.toSourceString());
-            first = GlobalNode.ERROR;
+            first = GlobalNode.error(first.getSourceLocation());
           }
 
           paramNames = new LinkedHashSet<String>();

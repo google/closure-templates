@@ -24,7 +24,6 @@ import static org.junit.Assert.assertTrue;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.soytree.AbstractParentSoyNode;
 import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.SoyNode.Kind;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;

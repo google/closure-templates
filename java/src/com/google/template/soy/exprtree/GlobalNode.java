@@ -31,7 +31,9 @@ import com.google.template.soy.types.primitive.UnknownType;
  */
 public final class GlobalNode extends AbstractExprNode {
 
-  public static final GlobalNode ERROR = new GlobalNode("error", SourceLocation.UNKNOWN);
+  public static GlobalNode error(SourceLocation location) {
+    return new GlobalNode("error", location);
+  }
 
   /** The name of the global. Not final in order to handle aliases in {@link RewriteGlobalsPass.} */
   private String name;

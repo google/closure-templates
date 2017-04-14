@@ -51,6 +51,16 @@ public final class SourceLocation implements Comparable<SourceLocation> {
    */
   @Deprecated public static final SourceLocation UNKNOWN = new SourceLocation("unknown");
 
+  /** Extracts the file name from a path. */
+  public static String fileNameFromPath(String filePath) {
+    // TODO(lukes): consider using Java 7 File APIs here.
+    int lastSlashIndex = CharMatcher.anyOf("/\\").lastIndexIn(filePath);
+    if (lastSlashIndex != -1 && lastSlashIndex != filePath.length() - 1) {
+      return filePath.substring(lastSlashIndex + 1);
+    }
+    return filePath;
+  }
+
   /**
    * @param filePath A file path or URI useful for error messages.
    * @param beginLine The line number in the source file where this location begins (1-based), or -1
@@ -82,16 +92,6 @@ public final class SourceLocation implements Comparable<SourceLocation> {
     this.filePath = filePath;
     this.begin = checkNotNull(begin);
     this.end = checkNotNull(end);
-  }
-
-  /** Extracts the file name from a path. */
-  public static String fileNameFromPath(String filePath) {
-    // TODO(lukes): consider using Java 7 File APIs here.
-    int lastSlashIndex = CharMatcher.anyOf("/\\").lastIndexIn(filePath);
-    if (lastSlashIndex != -1 && lastSlashIndex != filePath.length() - 1) {
-      return filePath.substring(lastSlashIndex + 1);
-    }
-    return filePath;
   }
 
   /**
@@ -131,6 +131,16 @@ public final class SourceLocation implements Comparable<SourceLocation> {
   /** Returns the column number in the source file where this location ends (1-based). */
   public int getEndColumn() {
     return end.column();
+  }
+
+  /** Returns true if this location ends one character before the other location starts. */
+  public boolean isJustBefore(SourceLocation that) {
+    if (!this.filePath.equals(that.filePath)) {
+      return false;
+    }
+
+    return this.getEndLine() == that.getBeginLine()
+        && this.getEndColumn() + 1 == that.getBeginColumn();
   }
 
   /**

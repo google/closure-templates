@@ -115,7 +115,8 @@ final class RewriteGlobalsPass extends CompilerFilePass {
     // if that doesn't work, see if it was registered in the globals file.
     PrimitiveData value = compileTimeGlobals.get(global.getName());
     if (value != null) {
-      PrimitiveNode expr = InternalValueUtils.convertPrimitiveDataToExpr(value);
+      PrimitiveNode expr =
+          InternalValueUtils.convertPrimitiveDataToExpr(value, global.getSourceLocation());
       global.resolve(expr.getType(), expr);
     }
   }

@@ -49,29 +49,35 @@ public class InternalValueUtilsTest {
 
   @Test
   public void testConvertPrimitiveDataToExpr() {
+    SourceLocation location = SourceLocation.UNKNOWN;
 
     assertTrue(
-        InternalValueUtils.convertPrimitiveDataToExpr(NullData.INSTANCE) instanceof NullNode);
+        InternalValueUtils.convertPrimitiveDataToExpr(NullData.INSTANCE, location)
+            instanceof NullNode);
     assertEquals(
         false,
-        ((BooleanNode) InternalValueUtils.convertPrimitiveDataToExpr(BooleanData.FALSE))
+        ((BooleanNode) InternalValueUtils.convertPrimitiveDataToExpr(BooleanData.FALSE, location))
             .getValue());
     assertEquals(
         26,
-        ((IntegerNode) InternalValueUtils.convertPrimitiveDataToExpr(IntegerData.forValue(26)))
+        ((IntegerNode)
+                InternalValueUtils.convertPrimitiveDataToExpr(IntegerData.forValue(26), location))
             .getValue());
     assertEquals(
         -3.14159,
-        ((FloatNode) InternalValueUtils.convertPrimitiveDataToExpr(FloatData.forValue(-3.14159)))
+        ((FloatNode)
+                InternalValueUtils.convertPrimitiveDataToExpr(
+                    FloatData.forValue(-3.14159), location))
             .getValue(),
         0.0);
     assertEquals(
         "boo",
-        ((StringNode) InternalValueUtils.convertPrimitiveDataToExpr(StringData.forValue("boo")))
+        ((StringNode)
+                InternalValueUtils.convertPrimitiveDataToExpr(StringData.forValue("boo"), location))
             .getValue());
 
     try {
-      InternalValueUtils.convertPrimitiveDataToExpr(UndefinedData.INSTANCE);
+      InternalValueUtils.convertPrimitiveDataToExpr(UndefinedData.INSTANCE, location);
       fail();
     } catch (IllegalArgumentException iae) {
       // Test passes.

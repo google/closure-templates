@@ -72,7 +72,8 @@ public final class SoyUtils {
 
     for (Map.Entry<String, PrimitiveData> entry : compileTimeGlobals.entrySet()) {
       String valueSrcStr =
-          InternalValueUtils.convertPrimitiveDataToExpr(entry.getValue()).toSourceString();
+          InternalValueUtils.convertPrimitiveDataToExpr(entry.getValue(), SourceLocation.UNKNOWN)
+              .toSourceString();
       output.append(entry.getKey()).append(" = ").append(valueSrcStr).append("\n");
     }
   }
