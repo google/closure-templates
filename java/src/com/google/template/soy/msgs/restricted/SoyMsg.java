@@ -139,6 +139,7 @@ public abstract class SoyMsg {
     /** @param parts The parts that make up the message content. */
     public Builder setParts(Iterable<? extends SoyMsgPart> parts) {
       this.parts = ImmutableList.copyOf(parts);
+      checkArgument(!this.parts.isEmpty(), "Parts should never be empty");
       return this;
     }
 

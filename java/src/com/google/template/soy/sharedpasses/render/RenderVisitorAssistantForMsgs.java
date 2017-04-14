@@ -102,31 +102,28 @@ final class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
   /** Private helper for visitMsgFallbackGroupNode() to render a message from its translation. */
   private void renderMsgFromTranslation(
       MsgNode msg, ImmutableList<SoyMsgPart> msgParts, @Nullable ULocale locale) {
-    // TODO(lukes): remove this if statement, it makes no sense.
-    if (!msgParts.isEmpty()) {
-      SoyMsgPart firstPart = msgParts.get(0);
+    SoyMsgPart firstPart = msgParts.get(0);
 
-      if (firstPart instanceof SoyMsgPluralPart) {
-        new PlrselMsgPartsVisitor(msg, locale).visitPart((SoyMsgPluralPart) firstPart);
+    if (firstPart instanceof SoyMsgPluralPart) {
+      new PlrselMsgPartsVisitor(msg, locale).visitPart((SoyMsgPluralPart) firstPart);
 
-      } else if (firstPart instanceof SoyMsgSelectPart) {
-        new PlrselMsgPartsVisitor(msg, locale).visitPart((SoyMsgSelectPart) firstPart);
+    } else if (firstPart instanceof SoyMsgSelectPart) {
+      new PlrselMsgPartsVisitor(msg, locale).visitPart((SoyMsgSelectPart) firstPart);
 
-      } else {
-        for (SoyMsgPart msgPart : msgParts) {
+    } else {
+      for (SoyMsgPart msgPart : msgParts) {
 
-          if (msgPart instanceof SoyMsgRawTextPart) {
-            RenderVisitor.append(
-                master.getCurrOutputBufForUseByAssistants(),
-                ((SoyMsgRawTextPart) msgPart).getRawText());
+        if (msgPart instanceof SoyMsgRawTextPart) {
+          RenderVisitor.append(
+              master.getCurrOutputBufForUseByAssistants(),
+              ((SoyMsgRawTextPart) msgPart).getRawText());
 
-          } else if (msgPart instanceof SoyMsgPlaceholderPart) {
-            String placeholderName = ((SoyMsgPlaceholderPart) msgPart).getPlaceholderName();
-            visit(msg.getRepPlaceholderNode(placeholderName));
+        } else if (msgPart instanceof SoyMsgPlaceholderPart) {
+          String placeholderName = ((SoyMsgPlaceholderPart) msgPart).getPlaceholderName();
+          visit(msg.getRepPlaceholderNode(placeholderName));
 
-          } else {
-            throw new AssertionError();
-          }
+        } else {
+          throw new AssertionError();
         }
       }
     }

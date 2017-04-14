@@ -16,6 +16,8 @@
 
 package com.google.template.soy.soytree;
 
+import static com.google.common.base.Preconditions.checkState;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.LinkedListMultimap;
@@ -230,17 +232,20 @@ public final class MsgNode extends AbstractBlockCommandNode
 
   /** Returns whether this is a select message. */
   public boolean isSelectMsg() {
-    return getChildren().size() == 1 && (getChild(0) instanceof MsgSelectNode);
+    checkState(numChildren() > 0);
+    return numChildren() == 1 && (getChild(0) instanceof MsgSelectNode);
   }
 
   /** Returns whether this is a plural message. */
   public boolean isPluralMsg() {
-    return getChildren().size() == 1 && (getChild(0) instanceof MsgPluralNode);
+    checkState(numChildren() > 0);
+    return numChildren() == 1 && (getChild(0) instanceof MsgPluralNode);
   }
 
   /** Returns whether this is a raw text message. */
   public boolean isRawTextMsg() {
-    return getChildren().size() == 1 && (getChild(0) instanceof RawTextNode);
+    checkState(numChildren() > 0);
+    return numChildren() == 1 && (getChild(0) instanceof RawTextNode);
   }
 
   /**

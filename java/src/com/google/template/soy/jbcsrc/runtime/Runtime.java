@@ -232,11 +232,6 @@ public final class Runtime {
       Map<String, Object> placeholders,
       Appendable out)
       throws IOException {
-    if (msgParts.isEmpty()) {
-      // TODO(lukes): RenderVisitorAssistantForMsgs does this... but this seems like a weird case
-      // investigate eliminating it
-      return;
-    }
     // TODO(lukes): the initial plural/select nesting structure of the SoyMsg is determined at
     // compile time (though the number of cases varies per locale).
     // We could allow the generated code to call renderSelect/renderPlural directly as a

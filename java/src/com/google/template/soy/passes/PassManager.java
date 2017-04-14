@@ -92,6 +92,8 @@ public final class PassManager {
     singleFilePassesBuilder
         .add(new CheckInvalidParamsPass())
         .add(new ValidateAliasesPass())
+        // could run anywhere
+        .add(new CheckNonEmptyMsgNodesPass(errorReporter))
         .add(new CheckSyntaxVersionPass());
     if (!disableAllTypeChecking) {
       // Must run after ResolveExpressionTypesPass, which adds the SoyProtoType info.

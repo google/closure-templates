@@ -341,8 +341,8 @@ public final class TemplateParserTest {
 
     assertValidTemplate("{call blah} {param a: ['blah': '{} abc\\\\\\\\def {}' ] /} {/call}");
 
-    assertValidTemplate("{msg desc=\"\"}{/msg}");
-    assertValidTemplate("{msg desc=\"Hi! I'm short! {}\"}{/msg}");
+    assertValidTemplate("{msg desc=\"\\\"\"}x{/msg}");
+    assertValidTemplate("{msg desc=\"Hi! I'm short! {}\"}x{/msg}");
   }
 
   @Test
