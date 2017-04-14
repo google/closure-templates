@@ -140,6 +140,7 @@ final class ParseErrors {
 
       case SoyFileParserConstants.NAME:
       case SoyFileParserConstants.T_NAME:
+      case SoyFileParserConstants.IDENT:
         return "identifier";
       case SoyFileParserConstants.EOF:
         return "eof";
@@ -195,8 +196,6 @@ final class ParseErrors {
         return "number";
       case SoyFileParserConstants.STRING:
         return "string";
-      case SoyFileParserConstants.IDENT:
-        return "an identifier";
       case SoyFileParserConstants.DOLLAR_IDENT:
         return "variable";
 

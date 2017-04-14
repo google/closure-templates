@@ -173,8 +173,8 @@ public class TemplateNodeTest {
     parse("{namespace ns}\n{template .foo autoescape=\"false\"}{/template}", errorReporter);
     assertThat(errorReporter.getErrorMessages())
         .containsExactly(
-            "Invalid attribute value, expected one of [deprecated-contextual, "
-                + "deprecated-noncontextual, strict].");
+            "Invalid value for attribute 'autoescape', expected one of "
+                + "[deprecated-contextual, deprecated-noncontextual, strict].");
 
     // assertion inside no-arg templateBasicNode() is that there is no exception.
     parse("{namespace ns}\n{template .foo autoescape=\n\t\r \"strict\"}{/template}");

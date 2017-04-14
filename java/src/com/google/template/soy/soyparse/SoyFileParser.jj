@@ -75,6 +75,7 @@ import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.Operator;
+import com.google.template.soy.exprtree.OperatorNodes.NegativeOpNode;
 import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
@@ -362,14 +363,20 @@ public class SoyFileParser {
   private static final SoyErrorKind INVALID_TEMPLATE_NAME =
       SoyErrorKind.of("Template name ''{0}'' must be relative to the file namespace, i.e. a dot "
           + "followed by an identifier.");
+  private static final SoyErrorKind MISSING_WHITESPACE_BEFORE_ATTRIBUTE =
+      SoyErrorKind.of("parse error at ''{0}'': expected whitespace");
   private static final SoyErrorKind MULTIPLE_PHNAME_ATTRIBUTES_IN_COMMAND =
       SoyErrorKind.of("Found multiple ''phname'' attributes in command text \"{0}\".");
   private static final SoyErrorKind PLURAL_AND_SELECT_NOT_ALLOWED_INSIDE_PLURAL_BLOCK =
       SoyErrorKind.of("Tags ''plural'' and ''select'' are not allowed inside ''plural'' blocks.");
   private static final SoyErrorKind PLURAL_CASE_OUT_OF_BOUNDS =
-      SoyErrorKind.of("Plural case ''{0}'' must be nonnegative integers.");
+      SoyErrorKind.of("Plural case ''{0}'' must be a nonnegative integer.");
   private static final SoyErrorKind PLURAL_CASE_MALFORMED =
-      SoyErrorKind.of("Invalid number in ''plural case'' command text");
+      SoyErrorKind.of("Invalid number in ''plural case'' command text.");
+  private static final SoyErrorKind PLURAL_COMMAND_INVALID_ATTRIBUTE =
+      SoyErrorKind.of("Invalid ''plural'' command attribute \"{0}\".");
+  private static final SoyErrorKind PLURAL_OFFSET_OUT_OF_BOUNDS =
+      SoyErrorKind.of("The ''offset'' for plural (''{0}'') must be a positive integer.");
   private static final SoyErrorKind PRINT_COMMAND_WITH_EMPTY_TEXT =
       SoyErrorKind.of("Found ''print'' command with empty command text.");
   private static final SoyErrorKind SELECT_CASE_INVALID_VALUE =
@@ -449,6 +456,7 @@ public class SoyFileParser {
   /**
    * Attempts to parse the given input as a Soy file, returns null if parsing fails.
    */
+  @Nullable
   public SoyFileNode parseSoyFile() {
     Preconditions.checkNotNull(typeRegistry);
     Preconditions.checkNotNull(nodeIdGen);
@@ -463,6 +471,7 @@ public class SoyFileParser {
     } catch (TokenMgrError e) {
       ParseErrors.reportTokenMgrError(errorReporter, filePath, e);
     }
+
     // our callers expect us to return null when encountering parsing errors.
     if (errorReporter.errorsSince(checkpoint)) {
       return null;
@@ -820,7 +829,7 @@ TOKEN_MGR_DECLS: {
 | < CMD_BEGIN_FOR                : "{for" <WS>      > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
 | < CMD_CLOSE_FOR                : "{/for}"         >
 
-| < CMD_BEGIN_PLURAL             : "{plural" <WS>   > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
+| < CMD_BEGIN_PLURAL             : "{plural" <WS>   > { pushState(EXPR); }
 | < CMD_CLOSE_PLURAL             : "{/plural}"      >
 
 | < CMD_BEGIN_SELECT             : "{select" <WS>   > { pushState(EXPR); }
@@ -1220,7 +1229,7 @@ private List<CommandTagAttribute> CommandAttributes() :
 
 
 /**
- * Matches a name value pair.
+ * Matches an attribute, starting from IN_CMD_TAG_STRUCTURED lexical state.
  *
  * Attribute -> <NAME> <CMD_EQ> <ATTRIBUTE_VALUE>
  */
@@ -1232,6 +1241,34 @@ private CommandTagAttribute Attribute() :
 }
 {
   name = <NAME>
+  eq = <CMD_EQ>
+  value = <ATTRIBUTE_VALUE>
+  {
+    return new CommandTagAttribute(
+        Identifier.create(name.image, createSrcLoc(name)),
+        // trim quotes off the token and unescape internal quotation marks
+        value.image.substring(1, value.image.length() - 1).replace("\\\"", "\""),
+        createSrcLoc(value));
+  }
+}
+
+/**
+ * Matches an attribute, starting from EXPR lexical state. Ends in IN_CMD_TAG_STRUCTURED state.
+ *
+ * TODO(user): Once all tags are switched out of IN_CMD_TAG_UNSTRUCTURED, consider rolling
+ * all uses of Attribute() into this state.
+ *
+ * Attribute -> <IDENT> <CMD_EQ> <ATTRIBUTE_VALUE>
+ */
+private CommandTagAttribute ExprAttribute() :
+{
+  Token name;
+  Token eq;
+  Token value;
+}
+{
+  { token_source.SwitchTo(IN_CMD_TAG_STRUCTURED); }
+  name = <IDENT>
   eq = <CMD_EQ>
   value = <ATTRIBUTE_VALUE>
   {
@@ -1990,20 +2027,54 @@ private List<StandaloneNode> TemplateBlockForMsg() :
  */
 private MsgPluralNode MsgPlural() :
 {
-  String cmdText;
   Token tagBegin, tagEnd;
   Token defaultTag;
+  ExprNode pluralExpr;
   ExprNode caseExpr;
+  CommandTagAttribute offsetAttr = null;
   List<StandaloneNode> templateBlock;
 }
 {
   tagBegin = <CMD_BEGIN_PLURAL>
-  cmdText = CmdText()
-  tagEnd = <CMD_END>
+  try {
+    pluralExpr = Expr()
+    [ offsetAttr = ExprAttribute() ]
+    tagEnd = <CMD_END>
+  } catch (ParseException e) {
+    pluralExpr = errorExpr(tagBegin);
+    tagEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END);
+  }
+
   {
-    MsgPluralNode msgPluralNode = new MsgPluralNode.Builder(
-        nodeIdGen.genId(), cmdText, createSrcLoc(tagBegin, tagEnd))
-        .build(context);
+    int offset = 0;
+
+    if (offsetAttr != null) {
+      if (pluralExpr.getSourceLocation().isJustBefore(offsetAttr.getName().location())) {
+        errorReporter.report(
+            offsetAttr.getName().location(),
+            MISSING_WHITESPACE_BEFORE_ATTRIBUTE,
+            offsetAttr.getName().identifier());
+      }
+
+      if (!offsetAttr.getName().identifier().equals("offset")) {
+        errorReporter.report(
+            offsetAttr.getName().location(),
+            PLURAL_COMMAND_INVALID_ATTRIBUTE,
+            offsetAttr.getName().identifier());
+        offsetAttr = null;
+      }
+    }
+
+    if (offsetAttr != null) {
+      offset = offsetAttr.valueAsInteger(errorReporter, 0);
+      if (offset <= 0) {
+        errorReporter.report(offsetAttr.getValueLocation(), PLURAL_OFFSET_OUT_OF_BOUNDS, offset);
+        offset = 0;
+      }
+    }
+
+    MsgPluralNode pluralNode =
+        new MsgPluralNode(nodeIdGen.genId(), createSrcLoc(tagBegin, tagEnd), pluralExpr, offset);
   }
 
   // consume all whitespace between {plural} and the first {case}
@@ -2018,7 +2089,14 @@ private MsgPluralNode MsgPlural() :
       {
         int value;
         if (!(caseExpr instanceof IntegerNode)) {
-          errorReporter.report(caseExpr.getSourceLocation(), PLURAL_CASE_MALFORMED);
+          if (caseExpr instanceof NegativeOpNode) {
+            errorReporter.report(
+                caseExpr.getSourceLocation(),
+                PLURAL_CASE_OUT_OF_BOUNDS,
+                caseExpr.toSourceString());
+          } else {
+            errorReporter.report(caseExpr.getSourceLocation(), PLURAL_CASE_MALFORMED);
+          }
           value = 0;
         } else {
           value = (int) ((IntegerNode) caseExpr).getValue();
@@ -2030,7 +2108,7 @@ private MsgPluralNode MsgPlural() :
 
         MsgPluralCaseNode caseNode =
             new MsgPluralCaseNode(nodeIdGen.genId(), createSrcLoc(tagBegin, tagEnd), value);
-        msgPluralNode.addChild(caseNode);
+        pluralNode.addChild(caseNode);
       }
 
       templateBlock = TemplateBlockForMsg()
@@ -2049,7 +2127,7 @@ private MsgPluralNode MsgPlural() :
     {
       MsgPluralDefaultNode defaultNode =
           new MsgPluralDefaultNode(nodeIdGen.genId(), createSrcLoc(defaultTag));
-      msgPluralNode.addChild(defaultNode);
+      pluralNode.addChild(defaultNode);
     }
 
     templateBlock = TemplateBlockForMsg()
@@ -2070,7 +2148,7 @@ private MsgPluralNode MsgPlural() :
     reportTemplateBodyErrorAndSkipTo(e, CMD_CLOSE_PLURAL);
   }
 
-  { return msgPluralNode; }
+  { return pluralNode; }
 }
 
 
@@ -3409,8 +3487,11 @@ private ExprNode GlobalOrFunction() :
 
         closeParen = <RPAREN>
 
-        { FunctionNode fnNode =
-              new FunctionNode(ident.identifier(), ident.location().extend(createSrcLoc(closeParen)));
+        {
+          FunctionNode fnNode =
+              new FunctionNode(
+                  ident.identifier(),
+                  ident.location().extend(createSrcLoc(closeParen)));
           fnNode.addChildren(params);
           return fnNode;
         }

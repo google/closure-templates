@@ -16,23 +16,16 @@
 
 package com.google.template.soy.soytree;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.error.ErrorReporter.Checkpoint;
-import com.google.template.soy.error.SoyErrorKind;
-import com.google.template.soy.exprparse.ExpressionParser;
-import com.google.template.soy.exprparse.SoyParsingContext;
 import com.google.template.soy.exprtree.ExprEquivalence;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
-import com.google.template.soy.soytree.CommandTextAttributesParser.Attribute;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.MsgSubstUnitNode;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Node representing a 'plural' block.
@@ -42,22 +35,6 @@ import java.util.regex.Pattern;
  */
 public final class MsgPluralNode extends AbstractParentCommandNode<CaseOrDefaultNode>
     implements MsgSubstUnitNode, SplitLevelTopNode<CaseOrDefaultNode>, ExprHolderNode {
-
-  private static final SoyErrorKind INVALID_PLURAL_COMMAND_TEXT =
-      SoyErrorKind.of("Invalid ''plural'' command text \"{0}\".");
-  private static final SoyErrorKind PLURAL_OFFSET_OUT_OF_BOUNDS =
-      SoyErrorKind.of("The ''offset'' for plural must be a nonnegative integer.");
-  private static final SoyErrorKind MALFORMED_PLURAL_OFFSET =
-      SoyErrorKind.of("Invalid offset in ''plural'' command text \"{0}\".");
-
-  /** An expression, and optional "offset" attribute. */
-  private static final Pattern COMMAND_TEXT_PATTERN =
-      Pattern.compile("(.+?) ( \\s+ offset= .+ )?", Pattern.COMMENTS);
-
-  /** Parser for the attributes in the command text. */
-  private static final CommandTextAttributesParser ATTRIBUTES_PARSER =
-      new CommandTextAttributesParser(
-          "plural", new Attribute("offset", Attribute.ALLOW_ALL_VALUES, null));
 
   /** Fallback base plural var name. */
   public static final String FALLBACK_BASE_PLURAL_VAR_NAME = "NUM";
@@ -71,17 +48,19 @@ public final class MsgPluralNode extends AbstractParentCommandNode<CaseOrDefault
   /** The base plural var name (what the translator sees). */
   private final String basePluralVarName;
 
-  private MsgPluralNode(
-      int id,
-      SourceLocation sourceLocation,
-      String commandText,
-      int offset,
-      ExprRootNode pluralExpr,
-      String basePluralVarName) {
-    super(id, sourceLocation, "plural", commandText);
+  public MsgPluralNode(int id, SourceLocation location, ExprNode expr, int offset) {
+    // TODO(user): the command text should but does not include possible the possible offset
+    // attribute. this should not break anything, and command text will be removed soon.
+    super(id, location, "plural", expr.toSourceString());
     this.offset = offset;
-    this.pluralExpr = pluralExpr;
-    this.basePluralVarName = basePluralVarName;
+    this.pluralExpr = new ExprRootNode(expr);
+    this.basePluralVarName =
+        MsgSubstUnitBaseVarNameUtils.genNaiveBaseNameForExpr(expr, FALLBACK_BASE_PLURAL_VAR_NAME);
+  }
+
+  @VisibleForTesting
+  MsgPluralNode(int id, SourceLocation location, ExprNode expr) {
+    this(id, location, expr, 0);
   }
 
   /**
@@ -141,73 +120,5 @@ public final class MsgPluralNode extends AbstractParentCommandNode<CaseOrDefault
   @Override
   public MsgPluralNode copy(CopyState copyState) {
     return new MsgPluralNode(this, copyState);
-  }
-
-  /** Builder for {@link MsgPluralNode}. */
-  public static final class Builder {
-
-    private static MsgPluralNode error() {
-      return new Builder(-1, "plural", SourceLocation.UNKNOWN)
-          .build(SoyParsingContext.exploding()); // guaranteed to be valid
-    }
-
-    private final int id;
-    private final String commandText;
-    private final SourceLocation sourceLocation;
-
-    /**
-     * @param id The node's id.
-     * @param commandText The node's command text.
-     * @param sourceLocation The node's source location.
-     */
-    public Builder(int id, String commandText, SourceLocation sourceLocation) {
-      this.id = id;
-      this.commandText = commandText;
-      this.sourceLocation = sourceLocation;
-    }
-
-    /**
-     * Returns a new {@link MsgPluralNode} built from the builder's state. If the builder's state is
-     * invalid, errors are reported to {@code errorReporter} and {@link Builder#error} is returned.
-     */
-    public MsgPluralNode build(SoyParsingContext context) {
-      Checkpoint checkpoint = context.errorReporter().checkpoint();
-
-      Matcher matcher = COMMAND_TEXT_PATTERN.matcher(commandText);
-      if (!matcher.matches()) {
-        context.report(sourceLocation, INVALID_PLURAL_COMMAND_TEXT, commandText);
-      }
-
-      ExprNode pluralExpr =
-          new ExpressionParser(matcher.group(1), sourceLocation, context).parseExpression();
-
-      int offset = 0;
-
-      // If attributes were given, parse them.
-      if (matcher.group(2) != null) {
-        try {
-          Map<String, String> attributes =
-              ATTRIBUTES_PARSER.parse(matcher.group(2).trim(), context, sourceLocation);
-          String offsetAttribute = attributes.get("offset");
-          offset = Integer.parseInt(offsetAttribute);
-          if (offset < 0) {
-            context.report(sourceLocation, PLURAL_OFFSET_OUT_OF_BOUNDS);
-          }
-        } catch (NumberFormatException nfe) {
-          context.report(sourceLocation, MALFORMED_PLURAL_OFFSET, commandText);
-        }
-      }
-
-      String basePluralVarName =
-          MsgSubstUnitBaseVarNameUtils.genNaiveBaseNameForExpr(
-              pluralExpr, FALLBACK_BASE_PLURAL_VAR_NAME);
-
-      if (context.errorReporter().errorsSince(checkpoint)) {
-        return error();
-      }
-
-      return new MsgPluralNode(
-          id, sourceLocation, commandText, offset, new ExprRootNode(pluralExpr), basePluralVarName);
-    }
   }
 }

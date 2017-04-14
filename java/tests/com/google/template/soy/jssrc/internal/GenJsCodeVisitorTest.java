@@ -1483,13 +1483,12 @@ public final class GenJsCodeVisitorTest {
             + "output += msg_s;\n";
     assertGeneratedJsCode(soyNodeCode, expectedJsCode);
 
-    // Same message as above, but with (a) 0 offset explicitly specified and (b) a plural
-    // expression that is a function call, specifically length(...).
+    // Same message as above, but with a plural expression that is a function call, length(...).
     soyNodeCode =
         "{@param persons : ?}\n"
             + "{@param place : ?}\n"
             + "  {msg desc=\"A sample plural message\"}\n"
-            + "    {plural length($persons) offset=\"0\"}\n"
+            + "    {plural length($persons)}\n"
             + "      {case 0}I see no one in {$place}.\n"
             + "      {case 1}I see {$persons[0]} in {$place}.\n"
             + "      {default}"

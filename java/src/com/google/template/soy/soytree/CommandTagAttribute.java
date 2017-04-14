@@ -35,24 +35,23 @@ import javax.annotation.Nullable;
 
 /** A name-attribute pair (e.g. {@code <name>="<attribute>"}) as parsed from a soy command. */
 public final class CommandTagAttribute {
-  private static final SoyErrorKind DUPLICATE_ATTRIBUTE =
-      SoyErrorKind.of("Attribute was already specified.");
 
+  private static final SoyErrorKind DUPLICATE_ATTRIBUTE =
+      SoyErrorKind.of("Attribute ''{0}'' was already specified.");
+  private static final SoyErrorKind INVALID_ATTRIBUTE =
+      SoyErrorKind.of("Invalid value for attribute ''{0}'', expected {1}.");
+  private static final SoyErrorKind INVALID_ATTRIBUTE_LIST =
+      SoyErrorKind.of("Invalid value for attribute ''{0}'', expected one of {1}.");
+  private static final SoyErrorKind INVALID_CSS_BASE_NAMESPACE_NAME =
+      SoyErrorKind.of("Invalid CSS base namespace name ''{0}''.");
+  private static final SoyErrorKind INVALID_REQUIRE_CSS_ATTRIBUTE =
+      SoyErrorKind.of("Invalid required CSS namespace name ''{0}'', expected an identifier.");
   static final SoyErrorKind UNSUPPORTED_ATTRIBUTE_KEY =
       SoyErrorKind.of("Unsupported attribute ''{0}'', expected one of {1}.");
 
-  private static final SoyErrorKind INVALID_ATTRIBUTE =
-      SoyErrorKind.of("Invalid attribute value, expected one of {1}.");
-
-  private static final SoyErrorKind INVALID_REQUIRE_CSS_ATTRIBUTE =
-      SoyErrorKind.of("Invalid required CSS namespace name ''{0}'', expected an identifier.");
-
-  private static final SoyErrorKind INVALID_CSS_BASE_NAMESPACE_NAME =
-      SoyErrorKind.of("Invalid CSS base namespace name ''{0}''");
-
   /**
-   * Identifies duplicates and reports an error for each one and removes them from the {@link
-   * Iterable}
+   * Identifies duplicate attributes, reports an error for each one, and removes them from the
+   * {@link Iterable}.
    */
   public static void removeDuplicatesAndReportErrors(
       Iterable<CommandTagAttribute> attrs, ErrorReporter errorReporter) {
@@ -61,15 +60,15 @@ public final class CommandTagAttribute {
       CommandTagAttribute attr = iterator.next();
       Identifier name = attr.getName();
       if (!seenAttributes.add(name.identifier())) {
-        errorReporter.report(name.location(), CommandTagAttribute.DUPLICATE_ATTRIBUTE);
+        errorReporter.report(name.location(), DUPLICATE_ATTRIBUTE, name.identifier());
         iterator.remove();
       }
     }
   }
 
-  private final SourceLocation valueLocation;
   private final Identifier key;
   private final String value;
+  private final SourceLocation valueLocation;
 
   public CommandTagAttribute(Identifier key, String value, SourceLocation valueLocation) {
     checkArgument(key.type() == Type.SINGLE_IDENT, "expected a single identifier, got: %s", key);
@@ -87,7 +86,7 @@ public final class CommandTagAttribute {
     return value;
   }
 
-  SourceLocation getValueLocation() {
+  public SourceLocation getValueLocation() {
     return valueLocation;
   }
 
@@ -98,7 +97,19 @@ public final class CommandTagAttribute {
       return false;
     } else {
       errorReporter.report(
-          valueLocation, INVALID_ATTRIBUTE, key.identifier(), ImmutableList.of("true", "false"));
+          valueLocation,
+          INVALID_ATTRIBUTE_LIST,
+          key.identifier(),
+          ImmutableList.of("true", "false"));
+      return defaultValue;
+    }
+  }
+
+  public int valueAsInteger(ErrorReporter errorReporter, int defaultValue) {
+    try {
+      return Integer.parseInt(value);
+    } catch (NumberFormatException e) {
+      errorReporter.report(valueLocation, INVALID_ATTRIBUTE, key.identifier(), "an integer");
       return defaultValue;
     }
   }
@@ -110,7 +121,10 @@ public final class CommandTagAttribute {
       return StrictHtmlMode.NO;
     } else {
       errorReporter.report(
-          valueLocation, INVALID_ATTRIBUTE, key.identifier(), ImmutableList.of("true", "false"));
+          valueLocation,
+          INVALID_ATTRIBUTE_LIST,
+          key.identifier(),
+          ImmutableList.of("true", "false"));
       return StrictHtmlMode.UNSET;
     }
   }
@@ -133,7 +147,7 @@ public final class CommandTagAttribute {
       mode = AutoescapeMode.STRICT; // default for unparsed
       errorReporter.report(
           valueLocation,
-          INVALID_ATTRIBUTE,
+          INVALID_ATTRIBUTE_LIST,
           key.identifier(),
           ImmutableList.copyOf(AutoescapeMode.getAttributeValues()));
     }
@@ -146,7 +160,7 @@ public final class CommandTagAttribute {
     if (visibility == null) {
       errorReporter.report(
           valueLocation,
-          INVALID_ATTRIBUTE,
+          INVALID_ATTRIBUTE_LIST,
           key.identifier(),
           ImmutableList.copyOf(Visibility.getAttributeValues()));
     }
@@ -159,7 +173,7 @@ public final class CommandTagAttribute {
     if (contentKind == null) {
       errorReporter.report(
           valueLocation,
-          INVALID_ATTRIBUTE,
+          INVALID_ATTRIBUTE_LIST,
           key.identifier(),
           ImmutableList.copyOf(NodeContentKinds.getAttributeValues()));
     }
