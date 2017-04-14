@@ -251,18 +251,6 @@ public final class GenPyCodeVisitorTest {
   }
 
   @Test
-  public void testSwitch_defaultOnly() {
-    String soyCode =
-        "{@param boo : ?}\n"
-            + "{switch $boo}\n"
-            + "  {default}\n"
-            + "     Hello World!\n"
-            + "{/switch}\n";
-    String expectedPyCode = "switchValue = data.get('boo')\n" + "output.append('Hello World!')\n";
-    assertThatSoyCode(soyCode).compilesTo(expectedPyCode);
-  }
-
-  @Test
   public void testFor() {
     String soyCode =
         "{@param boo : ?}\n" + "{for $i in range(5)}\n" + "  {$boo[$i]}\n" + "{/for}\n";

@@ -109,46 +109,33 @@ public final class TemplateAnalysisTest {
 
   @Test
   public void testSwitch() {
-    // empty switch
-    runTest("{@param p : int}", "{switch $p}", "{/switch}", "{notrefed($p)}");
-
-    // only default, switch expression still not evaluated
-    runTest(
-        "{@param p : int}",
-        "{@param p2 : int}",
-        "{switch $p}",
-        "{default}",
-        "  {$p2}",
-        "{/switch}",
-        "{notrefed($p)}",
-        "{refed($p2)}");
-
     // cases
     runTest(
         "{@param p : int}",
         "{@param p2 : int}",
         "{switch $p}",
-        "{case $p2}",
-        "  {refed($p)}",
-        "  {refed($p2)}",
-        "{default}",
-        "  {$p2}",
+        "  {case $p2}",
+        "    {refed($p)}",
+        "    {refed($p2)}",
+        "  {default}",
+        "    {$p2}",
         "{/switch}",
         "{refed($p)}",
         "{refed($p2)}");
+
     // cases
     runTest(
         "{@param p : int}",
         "{@param p2 : int}",
         "{@param p3 : int}",
         "{switch $p}",
-        "{case $p2}",
-        "  {refed($p)}",
-        "  {refed($p2)}",
-        "{case $p3}",
-        "  {refed($p)}",
-        "  {refed($p2)}",
-        "  {refed($p3)}",
+        "  {case $p2}",
+        "    {refed($p)}",
+        "    {refed($p2)}",
+        "  {case $p3}",
+        "    {refed($p)}",
+        "    {refed($p2)}",
+        "    {refed($p3)}",
         "{/switch}",
         "{refed($p)}",
         "{refed($p2)}",

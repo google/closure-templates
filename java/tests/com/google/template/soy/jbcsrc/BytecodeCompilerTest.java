@@ -424,16 +424,6 @@ public class BytecodeCompilerTest {
   }
 
   @Test
-  public void testSwitchNode_empty() {
-    assertThatTemplateBody("{switch 1}", "{/switch}").rendersAs("");
-  }
-
-  @Test
-  public void testSwitchNode_defaultOnly() {
-    assertThatTemplateBody("{switch 1}", "  {default}Hello", "{/switch}").rendersAs("Hello");
-  }
-
-  @Test
   public void testNestedSwitch() {
     assertThatTemplateBody(
             "{switch 'a'}",

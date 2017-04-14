@@ -2589,8 +2589,7 @@ private SwitchNode SwitchStmt() :
 
       templateBlock = TemplateBlock()
       { caseNode.addChildren(templateBlock); }
-    )*
-    // TODO(user): This should be a +. No switches without case statements.
+    )+
 
     [
       defaultTag = <CMD_FULL_DEFAULT>

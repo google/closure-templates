@@ -1190,12 +1190,17 @@ public final class GenJsCodeVisitorTest {
         "{@param alpha : ?}\n"
             + "{@param beta : ?}\n"
             + "{switch $alpha ?: $beta}\n"
+            + "  {case 1}\n"
+            + "    Blah\n"
             + "  {default}\n"
             + "    Bluh\n"
             + "{/switch}\n";
     String expectedJsCode =
         "var $tmp = ($$temp = opt_data.alpha) == null ? opt_data.beta : $$temp;\n"
             + "switch (goog.isObject($tmp) ? $tmp.toString() : $tmp) {\n"
+            + "  case 1:\n"
+            + "    output += 'Blah';\n"
+            + "    break;\n"
             + "  default:\n"
             + "    output += 'Bluh';\n"
             + "}\n";
