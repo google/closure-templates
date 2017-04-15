@@ -99,6 +99,8 @@ public final class PassManager {
       // Must run after ResolveExpressionTypesPass, which adds the SoyProtoType info.
       singleFilePassesBuilder
           .add(new CheckProtoInitCallsPass(errorReporter))
+          // uses the syntax version to conditionally enable unknown functions for v1 templates
+          // TODO(lukes): remove!
           .add(
               new CheckFunctionCallsPass(
                   builder.allowUnknownFunctions, declaredSyntaxVersion, errorReporter));
@@ -281,6 +283,9 @@ public final class PassManager {
   private final class ResolveExpressionTypesPass extends CompilerFilePass {
     @Override
     public void run(SoyFileNode file, IdGenerator nodeIdGen) {
+      // Needs the syntax version to decide
+      // 1. whether the type of boolean operators is bool
+      // 2. whether to allow printing bools
       new ResolveExpressionTypesVisitor(registry, declaredSyntaxVersion, errorReporter).exec(file);
     }
   }
@@ -319,6 +324,8 @@ public final class PassManager {
   private final class CheckTemplateParamsPass extends CompilerFileSetPass {
     @Override
     public void run(SoyFileSetNode fileSet, TemplateRegistry registry) {
+      // Syntax version is used to decide whether or not to enforce that params are correctly
+      // delcared.  Switch this to using the deprecatedV1 bit
       new CheckTemplateParamsVisitor(registry, declaredSyntaxVersion, errorReporter).exec(fileSet);
     }
   }

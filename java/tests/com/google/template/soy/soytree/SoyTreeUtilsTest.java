@@ -287,9 +287,6 @@ public final class SoyTreeUtilsTest extends TestCase {
       assertEquals(clonedMsgHtmlTagNode.getId(), origMsgHtmlTagNode.getId());
       assertEquals(clonedMsgHtmlTagNode.getFullTagText(), origMsgHtmlTagNode.getFullTagText());
       assertEquals(clonedMsgHtmlTagNode.getLcTagName(), origMsgHtmlTagNode.getLcTagName());
-      assertEquals(
-          clonedMsgHtmlTagNode.getSyntaxVersionUpperBound(),
-          origMsgHtmlTagNode.getSyntaxVersionUpperBound());
     }
   }
 

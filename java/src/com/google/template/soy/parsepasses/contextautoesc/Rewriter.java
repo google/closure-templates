@@ -184,7 +184,6 @@ final class Rewriter {
                   .sourceCalleeName(derivedCalleeName)
                   .dataAttribute(callNode.dataAttribute())
                   .userSuppliedPlaceholderName(callNode.getUserSuppliedPhName())
-                  .syntaxVersionBound(callNode.getSyntaxVersionUpperBound())
                   .escapingDirectiveNames(callNode.getEscapingDirectiveNames())
                   .build(context);
         } else {

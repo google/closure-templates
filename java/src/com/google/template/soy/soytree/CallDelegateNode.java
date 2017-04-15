@@ -75,7 +75,7 @@ public final class CallDelegateNode extends CallNode {
         Boolean allowsEmptyDefault,
         DataAttribute dataAttr,
         @Nullable String userSuppliedPlaceholderName) {
-      super(commandText, dataAttr, userSuppliedPlaceholderName, null);
+      super(commandText, dataAttr, userSuppliedPlaceholderName);
       this.delCalleeName = delCalleeName;
       this.delCalleeVariantExpr = delCalleeVariantExpr;
       this.allowsEmptyDefault = allowsEmptyDefault;

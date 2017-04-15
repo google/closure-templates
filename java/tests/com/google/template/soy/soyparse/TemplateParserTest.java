@@ -888,7 +888,6 @@ public final class TemplateParserTest {
     assertEquals(4, nodes.size());
 
     PrintNode pn0 = (PrintNode) nodes.get(0);
-    assertTrue(pn0.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0));
     assertEquals("$boo.foo", pn0.getExpr().toSourceString());
     assertEquals(0, pn0.getChildren().size());
     assertEquals("FOO", pn0.genBasePhName());
@@ -900,24 +899,19 @@ public final class TemplateParserTest {
     assertTrue(pn1.getExpr().getRoot() instanceof FieldAccessNode);
 
     PrintNode pn2 = (PrintNode) nodes.get(2);
-    assertTrue(pn2.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0));
     assertEquals("$goo + 1", pn2.getExpr().toSourceString());
     assertEquals(1, pn2.getChildren().size());
     PrintDirectiveNode pn2d0 = pn2.getChild(0);
-    assertTrue(pn2d0.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0));
     assertEquals("|noAutoescape", pn2d0.getName());
     assertEquals("XXX", pn2.genBasePhName());
     assertTrue(pn2.getExpr().getRoot() instanceof PlusOpNode);
 
     PrintNode pn3 = (PrintNode) nodes.get(3);
-    assertTrue(pn3.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0));
     assertEquals("'blah    blahblahblah'", pn3.getExpr().toSourceString());
     assertEquals(2, pn3.getChildren().size());
     PrintDirectiveNode pn3d0 = pn3.getChild(0);
-    assertTrue(pn3d0.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0));
     assertEquals("|escapeHtml", pn3d0.getName());
     PrintDirectiveNode pn3d1 = pn3.getChild(1);
-    assertTrue(pn3d1.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0));
     assertEquals("|insertWordBreaks", pn3d1.getName());
     assertEquals(8, ((IntegerNode) pn3d1.getArgs().get(0).getRoot()).getValue());
     assertEquals("XXX", pn3.genBasePhName());
@@ -949,7 +943,6 @@ public final class TemplateParserTest {
     assertEquals("$boo.foo", pn1.getExpr().toSourceString());
     assertEquals("BOO_FOO", pn1.genBasePhName());
     assertEquals("{$boo.foo phname=\"booFoo\"}", pn1.toSourceString());
-    assertTrue(pn1.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0));
     assertEquals(0, pn1.getChildren().size());
     assertTrue(pn1.getExpr().getRoot() instanceof FieldAccessNode);
 
@@ -1415,7 +1408,6 @@ public final class TemplateParserTest {
     assertThat(nodes).hasSize(4);
 
     CallBasicNode cn0 = (CallBasicNode) nodes.get(0);
-    assertTrue(cn0.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0));
     assertEquals(null, cn0.getCalleeName());
     assertEquals(".booTemplate_", cn0.getSrcCalleeName());
     assertEquals(false, cn0.dataAttribute().isPassingData());
@@ -1425,7 +1417,6 @@ public final class TemplateParserTest {
     assertEquals(0, cn0.numChildren());
 
     CallBasicNode cn1 = (CallBasicNode) nodes.get(1);
-    assertTrue(cn1.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0));
     assertEquals(null, cn1.getCalleeName());
     assertEquals("foo.goo.mooTemplate", cn1.getSrcCalleeName());
     assertEquals(true, cn1.dataAttribute().isPassingData());
@@ -1435,7 +1426,6 @@ public final class TemplateParserTest {
     assertEquals(0, cn1.numChildren());
 
     CallBasicNode cn2 = (CallBasicNode) nodes.get(2);
-    assertTrue(cn2.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0));
     assertEquals(null, cn2.getCalleeName());
     assertEquals(".booTemplate_", cn2.getSrcCalleeName());
     assertFalse(cn2.dataAttribute().isPassingData());
@@ -1445,7 +1435,6 @@ public final class TemplateParserTest {
     assertEquals(0, cn2.numChildren());
 
     CallBasicNode cn3 = (CallBasicNode) nodes.get(3);
-    assertTrue(cn3.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0));
     assertEquals(null, cn3.getCalleeName());
     assertEquals(".zooTemplate", cn3.getSrcCalleeName());
     assertEquals(true, cn3.dataAttribute().isPassingData());
@@ -1499,7 +1488,6 @@ public final class TemplateParserTest {
     assertEquals(3, nodes.size());
 
     CallDelegateNode cn0 = (CallDelegateNode) nodes.get(0);
-    assertTrue(cn0.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0));
     assertEquals("booTemplate", cn0.getDelCalleeName());
     assertEquals(false, cn0.dataAttribute().isPassingData());
     assertEquals(false, cn0.dataAttribute().isPassingAllData());
@@ -1508,7 +1496,6 @@ public final class TemplateParserTest {
     assertEquals(0, cn0.numChildren());
 
     CallDelegateNode cn1 = (CallDelegateNode) nodes.get(1);
-    assertTrue(cn1.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0));
     assertEquals("foo.goo.mooTemplate", cn1.getDelCalleeName());
     assertEquals(true, cn1.dataAttribute().isPassingData());
     assertEquals(true, cn1.dataAttribute().isPassingAllData());
@@ -1517,7 +1504,6 @@ public final class TemplateParserTest {
     assertEquals(0, cn1.numChildren());
 
     CallDelegateNode cn2 = (CallDelegateNode) nodes.get(2);
-    assertTrue(cn2.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0));
     assertEquals("MySecretFeature.zooTemplate", cn2.getDelCalleeName());
     assertEquals(true, cn2.dataAttribute().isPassingData());
     assertEquals(false, cn2.dataAttribute().isPassingAllData());
@@ -1552,7 +1538,6 @@ public final class TemplateParserTest {
 
     CallBasicNode cn0 = (CallBasicNode) nodes.get(0);
     assertEquals("BOO_TEMPLATE", cn0.genBasePhName());
-    assertTrue(cn0.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0));
     assertEquals(null, cn0.getCalleeName());
     assertEquals(".booTemplate_", cn0.getSrcCalleeName());
     assertEquals(false, cn0.dataAttribute().isPassingData());
@@ -1564,7 +1549,6 @@ public final class TemplateParserTest {
 
     CallDelegateNode cn2 = (CallDelegateNode) nodes.get(2);
     assertEquals("SECRET_ZOO", cn2.genBasePhName());
-    assertTrue(cn2.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0));
     assertEquals("MySecretFeature.zooTemplate", cn2.getDelCalleeName());
     assertEquals(true, cn2.dataAttribute().isPassingData());
     assertEquals(false, cn2.dataAttribute().isPassingAllData());

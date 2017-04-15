@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.basetree.SyntaxVersionUpperBound;
 import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprparse.SoyParsingContext;
 import com.google.template.soy.exprtree.ExprRootNode;
@@ -58,17 +57,14 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
     private final String commandText;
     private final DataAttribute dataAttribute;
     @Nullable private final String userSuppliedPlaceholderName;
-    @Nullable protected final SyntaxVersionUpperBound syntaxVersionBound;
 
     public CommandTextInfo(
         String commandText,
         DataAttribute dataAttribute,
-        @Nullable String userSuppliedPlaceholderName,
-        @Nullable SyntaxVersionUpperBound syntaxVersionBound) {
+        @Nullable String userSuppliedPlaceholderName) {
       this.commandText = commandText;
       this.dataAttribute = dataAttribute;
       this.userSuppliedPlaceholderName = userSuppliedPlaceholderName;
-      this.syntaxVersionBound = syntaxVersionBound;
     }
   }
 
@@ -111,7 +107,6 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
     this.dataAttr = commandTextInfo.dataAttribute;
     this.userSuppliedPlaceholderName = commandTextInfo.userSuppliedPlaceholderName;
     this.escapingDirectiveNames = escapingDirectiveNames;
-    maybeSetSyntaxVersionUpperBound(commandTextInfo.syntaxVersionBound);
   }
 
   /** A Parsed {@code data} attribute. */

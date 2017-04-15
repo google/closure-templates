@@ -19,7 +19,6 @@ package com.google.template.soy.sharedpasses.opti;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.internal.IdGenerator;
-import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
@@ -105,10 +104,6 @@ public final class SimplifyVisitor {
       // (c) has a constant expression,
       // (d) has constant expressions for all directive arguments (if any).
       // The prerender attempt may fail due to other reasons not checked above.
-
-      if (!node.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0)) {
-        return;
-      }
 
       ParentSoyNode<StandaloneNode> parent = node.getParent();
       if (parent instanceof MsgBlockNode) {

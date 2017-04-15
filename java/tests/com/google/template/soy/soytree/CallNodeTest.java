@@ -85,13 +85,10 @@ public final class CallNodeTest {
             .sourceCalleeName(callNode.getSrcCalleeName())
             .dataAttribute(callNode.dataAttribute())
             .userSuppliedPlaceholderName(callNode.getUserSuppliedPhName())
-            .syntaxVersionBound(callNode.getSyntaxVersionUpperBound())
             .escapingDirectiveNames(NO_ESCAPERS)
             .build(SoyParsingContext.exploding());
 
     assertThat(normCallNode.getCommandText()).isEqualTo(expectedCommandText);
-    assertThat(normCallNode.getSyntaxVersionUpperBound())
-        .isEqualTo(callNode.getSyntaxVersionUpperBound());
     assertThat(normCallNode.getCalleeName()).isEqualTo(callNode.getCalleeName());
     assertThat(normCallNode.dataAttribute()).isEqualTo(callNode.dataAttribute());
   }

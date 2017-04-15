@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.basetree.SyntaxVersionUpperBound;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprparse.SoyParsingContext;
@@ -58,9 +57,8 @@ public final class CallBasicNode extends CallNode {
         String commandText,
         String srcCalleeName,
         DataAttribute dataAttr,
-        @Nullable String userSuppliedPlaceholderName,
-        @Nullable SyntaxVersionUpperBound syntaxVersionBound) {
-      super(commandText, dataAttr, userSuppliedPlaceholderName, syntaxVersionBound);
+        @Nullable String userSuppliedPlaceholderName) {
+      super(commandText, dataAttr, userSuppliedPlaceholderName);
       this.srcCalleeName = srcCalleeName;
     }
   }
@@ -184,7 +182,6 @@ public final class CallBasicNode extends CallNode {
     @Nullable private String userSuppliedPlaceholderName;
     @Nullable private String calleeName;
     @Nullable private String sourceCalleeName;
-    @Nullable private SyntaxVersionUpperBound syntaxVersionBound;
 
     public Builder(int id, SourceLocation sourceLocation) {
       this.id = id;
@@ -222,11 +219,6 @@ public final class CallBasicNode extends CallNode {
       return this;
     }
 
-    public Builder syntaxVersionBound(SyntaxVersionUpperBound syntaxVersionBound) {
-      this.syntaxVersionBound = syntaxVersionBound;
-      return this;
-    }
-
     @Override
     public Builder userSuppliedPlaceholderName(String userSuppliedPlaceholderName) {
       this.userSuppliedPlaceholderName = userSuppliedPlaceholderName;
@@ -257,7 +249,6 @@ public final class CallBasicNode extends CallNode {
 
       String cmdTextForParsing = commandText;
 
-      SyntaxVersionUpperBound syntaxVersionBound = null;
 
       Matcher ncnMatcher = NONATTRIBUTE_CALLEE_NAME.matcher(cmdTextForParsing);
       if (ncnMatcher.find()) {
@@ -278,7 +269,7 @@ public final class CallBasicNode extends CallNode {
           parseDataAttributeHelper(attributes.get("data"), sourceLocation, context);
 
       return new CommandTextInfo(
-          cmdText, sourceCalleeName, dataAttrInfo, userSuppliedPlaceholderName, syntaxVersionBound);
+          cmdText, sourceCalleeName, dataAttrInfo, userSuppliedPlaceholderName);
     }
 
     // TODO(user): eliminate side-channel parsing. This should be a part of the grammar.
@@ -295,7 +286,7 @@ public final class CallBasicNode extends CallNode {
       }
 
       return new CommandTextInfo(
-          commandText, sourceCalleeName, dataAttr, userSuppliedPlaceholderName, syntaxVersionBound);
+          commandText, sourceCalleeName, dataAttr, userSuppliedPlaceholderName);
     }
   }
 }
