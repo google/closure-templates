@@ -1,0 +1,29 @@
+{
+  "name": "closure-templates",
+  "version": "1.0.0",
+  "description": "Closure Templates are a client- and server-side templating system that helps you dynamically build reusable HTML and UI elements.",
+  "private": true,
+  "keywords": ["closure", "templates"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/google/closure-templates.git"
+  },
+  "bugs": {
+    "url": "https://github.com/google/closure-templates/issues"
+  },
+  "homepage": "https://developers.google.com/closure/templates/",
+  "author": {
+    "name": "Soy template authors"
+  },
+  "license": "Apache-2.0",
+  "scripts": {
+    "version-update": "npm version patch"
+  },
+  "files": [
+    "CONTRIBUTING",
+    "COPYING",
+    "README.md",
+    "examples/",
+    "javascript/"
+  ]
+}
