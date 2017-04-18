@@ -36,13 +36,34 @@ import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.Objects;
 
 /**
- * Configures all the parsing passes.
+ * Configures all compiler passes.
  *
- * <p>The parsing passes are a collection of operations that mutate/rewrite parts of the parse tree
- * in trivial/obvious ways. These passes are logically part of parsing the literal text of the soy
- * file and each one could theoretically be done as part of the parser, but for maintainability it
- * is easier to pull them out into separate passes. It is expected that each of these passes will
- * mutate the AST in critical ways.
+ * <p>This arranges all compiler passes into two phases.
+ *
+ * <ul>
+ *   <li>The single file passes. This includes AST rewriting passes such as {@link HtmlRewritePass}
+ *       and {@link RewriteGendersPass} and other kinds of validation that doesn't require
+ *       information about the full file set.
+ *   <li>The file set passes. This includes AST validation passes like the {@link
+ *       CheckVisibilityPass}. Passes should run here if they need to check the relationships
+ *       between templates.
+ * </ul>
+ *
+ * <p>The reason things have been divided in this way is partially to create consistency and also to
+ * enable other compiler features. For example, for in process (server side) compilation we can
+ * cache the results of the single file passes to speed up edit-refresh flows. Also, theoretically,
+ * we could run the single file passes for each file in parallel.
+ *
+ * <p>There are 2 parts of the compiler that are not currently managed by this class. The contextual
+ * autoescaper and the optimizer. These are currently excluded because they don't fit into the model
+ * above. Notably, the autoescaper can actually create new templates and as such it invalidates the
+ * type registry, and the optimizer needs to run after the autoescaper in order to optimize the
+ * newly created templates.
+ *
+ * <p>A note on ordering. There is no real structure to the ordering of the passes beyond what is
+ * documented in comments. Many passes do rely on running before/after a different pass (e.g. {@link
+ * CheckFunctionCallsPass} needs to run after {@link ResolveExpressionTypesVisitor} which needs to
+ * run after {@link ResolveNamesPass}), but there isn't any dependency system in place.
  */
 public final class PassManager {
   private final ImmutableList<CompilerFilePass> singleFilePasses;
