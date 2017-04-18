@@ -198,6 +198,7 @@ final class Rewriter {
                   .escapingDirectiveNames(callNode.getEscapingDirectiveNames())
                   .build(context);
         }
+        // TODO(user): This should not be using getCommandText().
         if (!callNode.getCommandText().equals(newCallNode.getCommandText())) {
           moveChildrenTo(callNode, newCallNode);
           replaceChild(callNode, newCallNode);

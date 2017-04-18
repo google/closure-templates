@@ -23,7 +23,6 @@ import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.SoyErrorKind;
-import com.google.template.soy.exprparse.SoyParsingContext;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.MsgNode;
@@ -55,13 +54,12 @@ final class RewriteGenderMsgsVisitor extends AbstractSoyNodeVisitor<Void> {
               + "(otherwise, combinatorial explosion would cause a gigantic generated message).");
 
   /** Fallback base select var name. */
-  public static final String FALLBACK_BASE_SELECT_VAR_NAME = "GENDER";
+  private static final String FALLBACK_BASE_SELECT_VAR_NAME = "GENDER";
+
   private final ErrorReporter errorReporter;
 
-
   /** Node id generator for the Soy tree being visited. */
-  private IdGenerator nodeIdGen;
-
+  private final IdGenerator nodeIdGen;
 
   /**
    * Constructs a rewriter using the same node ID generator as the tree.
@@ -69,7 +67,7 @@ final class RewriteGenderMsgsVisitor extends AbstractSoyNodeVisitor<Void> {
    * @param nodeIdGen The same node ID generator used to generate the existing tree nodes.
    */
   public RewriteGenderMsgsVisitor(IdGenerator nodeIdGen, ErrorReporter errorReporter) {
-    this.errorReporter = errorReporter;
+    this.errorReporter = Preconditions.checkNotNull(errorReporter);
     this.nodeIdGen = Preconditions.checkNotNull(nodeIdGen);
   }
 
@@ -129,8 +127,9 @@ final class RewriteGenderMsgsVisitor extends AbstractSoyNodeVisitor<Void> {
 
 
   /**
-   * Helper to split a msg for gender, by adding a 'select' node and cloning the msg's contents
-   * into all 3 cases of the 'select' node ('female'/'male'/default).
+   * Helper to split a msg for gender, by adding a 'select' node and cloning the msg's contents into
+   * all 3 cases of the 'select' node ('female'/'male'/default).
+   *
    * @param msg The message to split.
    * @param genderExpr The expression for the gender value.
    * @param baseSelectVarName The base select var name to use, or null if it should be generated
@@ -142,22 +141,19 @@ final class RewriteGenderMsgsVisitor extends AbstractSoyNodeVisitor<Void> {
     List<StandaloneNode> origChildren = ImmutableList.copyOf(msg.getChildren());
     msg.clearChildren();
 
-    // We cannot easily access the original context.  However, because everything has already been
-    // parsed, that should be fine.  I don't think this can fail at all, but whatever.
-    SoyParsingContext context = SoyParsingContext.empty(errorReporter, "fake.namespace");
-
     MsgSelectCaseNode femaleCase =
         new MsgSelectCaseNode(nodeIdGen.genId(), msg.getSourceLocation(), "female");
     femaleCase.addChildren(SoyTreeUtils.cloneListWithNewIds(origChildren, nodeIdGen));
     MsgSelectCaseNode maleCase =
         new MsgSelectCaseNode(nodeIdGen.genId(), msg.getSourceLocation(), "male");
     maleCase.addChildren(SoyTreeUtils.cloneListWithNewIds(origChildren, nodeIdGen));
-    MsgSelectDefaultNode defaultCase
-        = new MsgSelectDefaultNode(nodeIdGen.genId(), msg.getSourceLocation());
+    MsgSelectDefaultNode defaultCase =
+        new MsgSelectDefaultNode(nodeIdGen.genId(), msg.getSourceLocation());
     defaultCase.addChildren(SoyTreeUtils.cloneListWithNewIds(origChildren, nodeIdGen));
 
-    MsgSelectNode selectNode = new MsgSelectNode(
-        nodeIdGen.genId(), msg.getSourceLocation(), genderExpr, baseSelectVarName);
+    MsgSelectNode selectNode =
+        new MsgSelectNode(
+            nodeIdGen.genId(), msg.getSourceLocation(), genderExpr, baseSelectVarName);
     selectNode.addChild(femaleCase);
     selectNode.addChild(maleCase);
     selectNode.addChild(defaultCase);
