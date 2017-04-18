@@ -16,7 +16,6 @@
 
 package com.google.template.soy.soytree;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
@@ -51,16 +50,11 @@ public final class MsgPluralNode extends AbstractParentCommandNode<CaseOrDefault
   public MsgPluralNode(int id, SourceLocation location, ExprNode expr, int offset) {
     // TODO(user): the command text should but does not include possible the possible offset
     // attribute. this should not break anything, and command text will be removed soon.
-    super(id, location, "plural", expr.toSourceString());
+    super(id, location, "plural");
     this.offset = offset;
     this.pluralExpr = new ExprRootNode(expr);
     this.basePluralVarName =
         MsgSubstUnitBaseVarNameUtils.genNaiveBaseNameForExpr(expr, FALLBACK_BASE_PLURAL_VAR_NAME);
-  }
-
-  @VisibleForTesting
-  MsgPluralNode(int id, SourceLocation location, ExprNode expr) {
-    this(id, location, expr, 0);
   }
 
   /**
@@ -105,6 +99,13 @@ public final class MsgPluralNode extends AbstractParentCommandNode<CaseOrDefault
     MsgPluralNode that = (MsgPluralNode) other;
     return ExprEquivalence.get().equivalent(this.pluralExpr, that.pluralExpr)
         && this.offset == that.offset;
+  }
+
+  @Override
+  public String getCommandText() {
+    return (offset > 0)
+        ? pluralExpr.toSourceString() + " offset=" + offset
+        : pluralExpr.toSourceString();
   }
 
   @Override

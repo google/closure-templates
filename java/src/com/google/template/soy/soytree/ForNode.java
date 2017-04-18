@@ -130,6 +130,9 @@ public final class ForNode extends AbstractBlockCommandNode
   /** The parsed range args. */
   private final RangeArgs rangeArgs;
 
+  // TODO(user): Remove.
+  private final String commandText;
+
   /**
    * @param id The id for this node.
    * @param commandText The command text.
@@ -137,7 +140,8 @@ public final class ForNode extends AbstractBlockCommandNode
    */
   public ForNode(
       int id, String commandText, SourceLocation sourceLocation, SoyParsingContext context) {
-    super(id, sourceLocation, "for", commandText);
+    super(id, sourceLocation, "for");
+    this.commandText = commandText;
 
     Matcher matcher = COMMAND_TEXT_PATTERN.matcher(commandText);
     if (!matcher.matches()) {
@@ -212,6 +216,7 @@ public final class ForNode extends AbstractBlockCommandNode
     super(orig, copyState);
     this.var = new LocalVar(orig.var, this);
     this.rangeArgs = orig.rangeArgs.copy(copyState);
+    this.commandText = orig.commandText;
   }
 
   @Override
@@ -237,6 +242,11 @@ public final class ForNode extends AbstractBlockCommandNode
   @Override
   public ImmutableList<ExprRootNode> getExprList() {
     return ImmutableList.of(rangeArgs.start(), rangeArgs.limit(), rangeArgs.increment());
+  }
+
+  @Override
+  public String getCommandText() {
+    return commandText;
   }
 
   @SuppressWarnings("unchecked")

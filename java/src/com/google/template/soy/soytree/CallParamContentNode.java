@@ -20,6 +20,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.MixinParentNode;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.SoyErrorKind;
@@ -52,17 +53,11 @@ public final class CallParamContentNode extends CallParamNode implements RenderU
   /**
    * @param id The id for this node.
    * @param sourceLocation The node's source location.
-   * @param commandText The command text.
    */
   private CallParamContentNode(
-      int id,
-      SourceLocation sourceLocation,
-      String key,
-      ContentKind contentKind,
-      String commandText) {
-    super(id, sourceLocation, commandText);
-    parentMixin = new MixinParentNode<>(this);
-
+      int id, SourceLocation sourceLocation, String key, ContentKind contentKind) {
+    super(id, sourceLocation);
+    this.parentMixin = new MixinParentNode<>(this);
     this.key = key;
     this.contentKind = contentKind;
   }
@@ -95,11 +90,12 @@ public final class CallParamContentNode extends CallParamNode implements RenderU
     return contentKind;
   }
 
-  // -----------------------------------------------------------------------------------------------
-  // ParentSoyNode stuff.
-  // Note: Most concrete nodes simply inherit this functionality from AbstractParentCommandNode or
-  // AbstractParentSoyNode. But this class need to include its own MixinParentNode field because
-  // it needs to subclass CallParamNode (and Java doesn't allow multiple inheritance).
+  @Override
+  public String getCommandText() {
+    return (contentKind == null)
+        ? key
+        : key + " kind=\"" + NodeContentKinds.toAttributeValue(contentKind) + "\"";
+  }
 
   @Override
   public String toSourceString() {
@@ -109,6 +105,17 @@ public final class CallParamContentNode extends CallParamNode implements RenderU
     sb.append("{/").append(getCommandName()).append('}');
     return sb.toString();
   }
+
+  @Override
+  public CallParamContentNode copy(CopyState copyState) {
+    return new CallParamContentNode(this, copyState);
+  }
+
+  // -----------------------------------------------------------------------------------------------
+  // ParentSoyNode stuff.
+  // Note: Most concrete nodes simply inherit this functionality from AbstractParentCommandNode or
+  // AbstractParentSoyNode. But this class need to include its own MixinParentNode field because
+  // it needs to subclass CallParamNode (and Java doesn't allow multiple inheritance).
 
   @Override
   public int numChildren() {
@@ -180,15 +187,10 @@ public final class CallParamContentNode extends CallParamNode implements RenderU
     parentMixin.appendSourceStringForChildren(sb);
   }
 
-  @Override
-  public CallParamContentNode copy(CopyState copyState) {
-    return new CallParamContentNode(this, copyState);
-  }
-
   public static final class Builder extends CallParamNode.Builder {
 
     private static CallParamContentNode error() {
-      return new CallParamContentNode(-1, SourceLocation.UNKNOWN, "error", null, "error");
+      return new CallParamContentNode(-1, SourceLocation.UNKNOWN, "error", null);
     }
 
     public Builder(int id, CommandTextParseResult parseResult, SourceLocation sourceLocation) {
@@ -200,19 +202,14 @@ public final class CallParamContentNode extends CallParamNode implements RenderU
         errorReporter.report(
             sourceLocation,
             PARAM_HAS_VALUE_BUT_IS_NOT_SELF_CLOSING,
-            parseResult.originalCommantText);
+            parseResult.originalCommandText);
       }
 
       if (errorReporter.errorsSince(checkpoint)) {
         return error();
       }
 
-      return new CallParamContentNode(
-          id,
-          sourceLocation,
-          parseResult.key,
-          parseResult.contentKind,
-          parseResult.originalCommantText);
+      return new CallParamContentNode(id, sourceLocation, parseResult.key, parseResult.contentKind);
     }
   }
 }

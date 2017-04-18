@@ -33,7 +33,7 @@ public final class IfElseNode extends AbstractBlockCommandNode implements Condit
    * @param sourceLocation The node's source location.
    */
   public IfElseNode(int id, SourceLocation sourceLocation) {
-    super(id, sourceLocation, "else", "");
+    super(id, sourceLocation, "else");
   }
 
   /**

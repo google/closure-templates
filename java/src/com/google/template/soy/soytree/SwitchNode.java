@@ -40,7 +40,7 @@ public final class SwitchNode extends AbstractParentCommandNode<BlockNode>
   private final ExprRootNode expr;
 
   public SwitchNode(int id, SourceLocation location, ExprNode expr) {
-    super(id, location, "switch", expr.toSourceString());
+    super(id, location, "switch");
     this.expr = new ExprRootNode(expr);
   }
 
@@ -70,13 +70,13 @@ public final class SwitchNode extends AbstractParentCommandNode<BlockNode>
   }
 
   @Override
-  public ImmutableList<ExprRootNode> getExprList() {
-    return ImmutableList.of(expr);
+  public String getCommandText() {
+    return expr.toSourceString();
   }
 
   @Override
-  public String getCommandText() {
-    return expr.toSourceString();
+  public ImmutableList<ExprRootNode> getExprList() {
+    return ImmutableList.of(expr);
   }
 
   @SuppressWarnings("unchecked")

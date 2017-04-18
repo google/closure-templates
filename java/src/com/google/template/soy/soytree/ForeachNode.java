@@ -39,6 +39,9 @@ public final class ForeachNode extends AbstractParentCommandNode<BlockNode>
   /** The parsed expression for the list that we're iterating over. */
   private final ExprRootNode expr;
 
+  // TODO(user): Remove.
+  private final String commandText;
+
   /**
    * @param id The id for this node.
    * @param expr The loop collection expression
@@ -46,8 +49,9 @@ public final class ForeachNode extends AbstractParentCommandNode<BlockNode>
    * @param sourceLocation The node's source location.
    */
   public ForeachNode(int id, ExprRootNode expr, String commandText, SourceLocation sourceLocation) {
-    super(id, sourceLocation, "foreach", commandText);
+    super(id, sourceLocation, "foreach");
     this.expr = expr;
+    this.commandText = commandText;
   }
 
   /**
@@ -58,6 +62,7 @@ public final class ForeachNode extends AbstractParentCommandNode<BlockNode>
   private ForeachNode(ForeachNode orig, CopyState copyState) {
     super(orig, copyState);
     this.expr = orig.expr.copy(copyState);
+    this.commandText = orig.commandText;
   }
 
   @Override
@@ -73,6 +78,11 @@ public final class ForeachNode extends AbstractParentCommandNode<BlockNode>
   /** Returns the parsed expression. */
   public ExprRootNode getExpr() {
     return expr;
+  }
+
+  @Override
+  public String getCommandText() {
+    return commandText;
   }
 
   @Override

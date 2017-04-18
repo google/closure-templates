@@ -42,14 +42,18 @@ public final class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefault
   /** The expression for the value to select on. */
   private final ExprRootNode selectExpr;
 
-  /** The base select var name (what the translator sees). */
-  private final String baseSelectVarName;
+  /**
+   * The base select var name (what the translator sees). Null if it should be generated from the
+   * select expression.
+   */
+  @Nullable private final String baseSelectVarName;
 
   public MsgSelectNode(int id, SourceLocation location, ExprNode selectExpr) {
     // TODO(user): the command text is wrong. however, this should not break anything (since
     // we shouldn't be using command text for anything), and command text will be removed soon.
-    super(id, location, "select", "");
+    super(id, location, "select");
     this.selectExpr = new ExprRootNode(selectExpr);
+    this.baseSelectVarName = null;
 
     // TODO: Maybe allow user to write 'phname' attribute in 'select' tag.
     // Note: If we do add support for 'phname' for 'select', it would also be a good time to clean
@@ -57,9 +61,6 @@ public final class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefault
     // 'print' needs it to be parsed in TemplateParser.jj (due to print directives possibly
     // appearing between the expression and the 'phname' attribute). But for 'call', it should
     // really be parsed in CallNode.
-    this.baseSelectVarName =
-        MsgSubstUnitBaseVarNameUtils.genNaiveBaseNameForExpr(
-            selectExpr, FALLBACK_BASE_SELECT_VAR_NAME);
   }
 
   /**
@@ -74,18 +75,9 @@ public final class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefault
       SourceLocation sourceLocation,
       ExprRootNode selectExpr,
       @Nullable String baseSelectVarName) {
-    super(
-        id,
-        sourceLocation,
-        "select",
-        selectExpr.toSourceString()
-            + ((baseSelectVarName != null) ? " phname=\"" + baseSelectVarName + "\"" : ""));
+    super(id, sourceLocation, "select");
     this.selectExpr = selectExpr;
-    this.baseSelectVarName =
-        (baseSelectVarName != null)
-            ? baseSelectVarName
-            : MsgSubstUnitBaseVarNameUtils.genNaiveBaseNameForExpr(
-                selectExpr.getRoot(), FALLBACK_BASE_SELECT_VAR_NAME);
+    this.baseSelectVarName = baseSelectVarName;
   }
 
   /**
@@ -112,7 +104,10 @@ public final class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefault
   /** Returns the base select var name (what the translator sees). */
   @Override
   public String getBaseVarName() {
-    return baseSelectVarName;
+    return (baseSelectVarName != null)
+        ? baseSelectVarName
+        : MsgSubstUnitBaseVarNameUtils.genNaiveBaseNameForExpr(
+            selectExpr.getRoot(), FALLBACK_BASE_SELECT_VAR_NAME);
   }
 
   @Override
@@ -123,6 +118,13 @@ public final class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefault
 
     MsgSelectNode that = (MsgSelectNode) other;
     return ExprEquivalence.get().equivalent(this.selectExpr, that.selectExpr);
+  }
+
+  @Override
+  public String getCommandText() {
+    return (baseSelectVarName == null)
+        ? selectExpr.toSourceString()
+        : selectExpr.toSourceString() + " phname=\"" + baseSelectVarName + "\"";
   }
 
   @Override

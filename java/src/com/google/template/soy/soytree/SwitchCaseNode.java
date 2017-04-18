@@ -37,7 +37,7 @@ public final class SwitchCaseNode extends CaseOrDefaultNode
   private final ImmutableList<ExprRootNode> exprList;
 
   public SwitchCaseNode(int id, SourceLocation location, ImmutableList<ExprNode> exprList) {
-    super(id, location, "case", SoyTreeUtils.toSourceString(exprList));
+    super(id, location, "case");
     this.exprList = ExprRootNode.wrap(exprList);
   }
 
@@ -58,6 +58,11 @@ public final class SwitchCaseNode extends CaseOrDefaultNode
   @Override
   public Kind getKind() {
     return Kind.SWITCH_CASE_NODE;
+  }
+
+  @Override
+  public String getCommandText() {
+    return SoyTreeUtils.toSourceString(exprList);
   }
 
   @Override

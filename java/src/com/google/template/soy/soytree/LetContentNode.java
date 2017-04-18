@@ -54,9 +54,9 @@ public final class LetContentNode extends LetNode implements RenderUnitNode {
       String localVarName,
       String commandText,
       ContentKind contentKind) {
-    super(id, sourceLocation, localVarName, commandText);
+    super(id, sourceLocation, localVarName);
     this.contentKind = contentKind;
-    parentMixin = new MixinParentNode<>(this);
+    this.parentMixin = new MixinParentNode<>(this);
   }
 
   /**
@@ -103,11 +103,12 @@ public final class LetContentNode extends LetNode implements RenderUnitNode {
     return contentKind;
   }
 
-  // -----------------------------------------------------------------------------------------------
-  // ParentSoyNode stuff.
-  // Note: Most concrete nodes simply inherit this functionality from AbstractParentCommandNode or
-  // AbstractParentSoyNode. But this class need to include its own MixinParentNode field because
-  // it needs to subclass LetNode (and Java doesn't allow multiple inheritance).
+  @Override
+  public String getCommandText() {
+    return (contentKind == null)
+        ? "$" + var.name()
+        : "$" + var.name() + " kind=\"" + getContentKind().toString().toLowerCase() + "\"";
+  }
 
   @Override
   public String toSourceString() {
@@ -117,6 +118,17 @@ public final class LetContentNode extends LetNode implements RenderUnitNode {
     sb.append("{/").append(getCommandName()).append("}");
     return sb.toString();
   }
+
+  @Override
+  public LetContentNode copy(CopyState copyState) {
+    return new LetContentNode(this, copyState);
+  }
+
+  // -----------------------------------------------------------------------------------------------
+  // ParentSoyNode stuff.
+  // Note: Most concrete nodes simply inherit this functionality from AbstractParentCommandNode or
+  // AbstractParentSoyNode. But this class need to include its own MixinParentNode field because
+  // it needs to subclass LetNode (and Java doesn't allow multiple inheritance).
 
   @Override
   public int numChildren() {
@@ -186,11 +198,6 @@ public final class LetContentNode extends LetNode implements RenderUnitNode {
   @Override
   public void appendSourceStringForChildren(StringBuilder sb) {
     parentMixin.appendSourceStringForChildren(sb);
-  }
-
-  @Override
-  public LetContentNode copy(CopyState copyState) {
-    return new LetContentNode(this, copyState);
   }
 
   /** Builder for {@link LetContentNode}. */

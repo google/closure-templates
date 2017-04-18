@@ -218,6 +218,9 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
 
   private int maxLocalVariableTableSize = -1;
 
+  // TODO(user): Remove.
+  private final String commandText;
+
   /**
    * Main constructor. This is package-private because Template*Node instances should be built using
    * the Template*NodeBuilder classes.
@@ -234,7 +237,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
       SoyFileHeaderInfo soyFileHeaderInfo,
       Visibility visibility,
       @Nullable ImmutableList<TemplateParam> params) {
-    super(nodeBuilder.getId(), nodeBuilder.sourceLocation, cmdName, nodeBuilder.getCmdText());
+    super(nodeBuilder.getId(), nodeBuilder.sourceLocation, cmdName);
     maybeSetSyntaxVersionUpperBound(nodeBuilder.getSyntaxVersionBound());
     this.soyFileHeaderInfo = soyFileHeaderInfo;
     this.templateName = nodeBuilder.getTemplateName();
@@ -274,6 +277,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
     // Note: These used to be nullable, but now return an empty list.
     this.params = regularParams.build();
     this.injectedParams = injectedParams.build();
+    this.commandText = nodeBuilder.getCmdText().trim();
   }
 
   /**
@@ -299,6 +303,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
     this.injectedParams = orig.injectedParams;
     this.maxLocalVariableTableSize = orig.maxLocalVariableTableSize;
     this.strictHtml = orig.strictHtml;
+    this.commandText = orig.commandText;
   }
 
   /** Returns info from the containing Soy file's header declarations. */
@@ -426,6 +431,11 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
   @Override
   public SoyFileNode getParent() {
     return (SoyFileNode) super.getParent();
+  }
+
+  @Override
+  public String getCommandText() {
+    return commandText;
   }
 
   @Override

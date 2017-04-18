@@ -77,15 +77,19 @@ public final class CssNode extends AbstractCommandNode
    */
   Pair<SoyCssRenamingMap, String> renameCache;
 
+  // TODO(user): Remove.
+  private final String commandText;
+
   private CssNode(
       int id,
       String commandText,
       @Nullable ExprRootNode componentNameExpr,
       String selectorText,
       SourceLocation sourceLocation) {
-    super(id, sourceLocation, "css", commandText);
+    super(id, sourceLocation, "css");
     this.componentNameExpr = componentNameExpr;
     this.selectorText = selectorText;
+    this.commandText = commandText;
   }
 
   /**
@@ -99,6 +103,7 @@ public final class CssNode extends AbstractCommandNode
     this.componentNameExpr =
         (orig.componentNameExpr != null) ? orig.componentNameExpr.copy(copyState) : null;
     this.selectorText = orig.selectorText;
+    this.commandText = orig.commandText;
   }
 
   /**
@@ -112,6 +117,7 @@ public final class CssNode extends AbstractCommandNode
     this.componentNameExpr =
         (orig.componentNameExpr != null) ? orig.componentNameExpr.copy(copyState) : null;
     this.selectorText = newSelectorText;
+    this.commandText = orig.commandText;
   }
 
   @Override
@@ -148,6 +154,11 @@ public final class CssNode extends AbstractCommandNode
       }
     }
     return selectorText;
+  }
+
+  @Override
+  public String getCommandText() {
+    return commandText;
   }
 
   @Override

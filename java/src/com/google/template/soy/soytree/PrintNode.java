@@ -64,7 +64,7 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
       ExprRootNode expr,
       SourceLocation sourceLocation,
       @Nullable String userSuppliedPlaceholderName) {
-    super(id, sourceLocation, "print", "");
+    super(id, sourceLocation, "print");
     this.isImplicit = isImplicit;
     this.expr = Preconditions.checkNotNull(expr);
     this.userSuppliedPlaceholderName = userSuppliedPlaceholderName;
@@ -144,6 +144,11 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
   }
 
   @Override
+  public String getCommandName() {
+    return isImplicit ? "" : "print";
+  }
+
+  @Override
   public String getCommandText() {
     StringBuilder sb = new StringBuilder();
     sb.append(expr.toSourceString());
@@ -154,11 +159,6 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
       sb.append(" phname=\"").append(userSuppliedPlaceholderName).append('"');
     }
     return sb.toString();
-  }
-
-  @Override
-  public String getTagString() {
-    return buildTagStringHelper(false, isImplicit);
   }
 
   @Override

@@ -196,13 +196,6 @@ public interface SoyNode extends Node {
 
     /** Returns the command text (may be the empty string). */
     String getCommandText();
-
-    /**
-     * Builds a Soy tag string that could be the Soy tag for this node. Note that this may not
-     * necessarily be the actual original Soy tag, but a (sort of) canonical equivalent.
-     * @return A Soy tag string that could be the Soy tag for this node.
-     */
-    String getTagString();
   }
 
 

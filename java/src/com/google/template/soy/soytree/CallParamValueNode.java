@@ -50,15 +50,19 @@ public final class CallParamValueNode extends CallParamNode implements ExprHolde
   /** The parsed expression for the param value. */
   private final ExprRootNode valueExpr;
 
+  // TODO(user): Remove.
+  private final String commandText;
+
   private CallParamValueNode(
       int id,
       SourceLocation sourceLocation,
       String key,
       ExprRootNode valueExpr,
       String commandText) {
-    super(id, sourceLocation, commandText);
+    super(id, sourceLocation);
     this.key = Preconditions.checkNotNull(key);
     this.valueExpr = Preconditions.checkNotNull(valueExpr);
+    this.commandText = commandText;
   }
 
   /**
@@ -70,6 +74,7 @@ public final class CallParamValueNode extends CallParamNode implements ExprHolde
     super(orig, copyState);
     this.key = orig.key;
     this.valueExpr = orig.valueExpr.copy(copyState);
+    this.commandText = orig.commandText;
   }
 
   @Override
@@ -88,8 +93,13 @@ public final class CallParamValueNode extends CallParamNode implements ExprHolde
   }
 
   @Override
+  public String getCommandText() {
+    return commandText;
+  }
+
+  @Override
   public String getTagString() {
-    return buildTagStringHelper(true);
+    return getTagString(true); // self-ending
   }
 
   @Override
@@ -120,12 +130,12 @@ public final class CallParamValueNode extends CallParamNode implements ExprHolde
     public CallParamValueNode build(Checkpoint checkpoint, ErrorReporter errorReporter) {
       if (parseResult.valueExpr == null) {
         errorReporter.report(
-            sourceLocation, SELF_ENDING_TAG_WITHOUT_VALUE, parseResult.originalCommantText);
+            sourceLocation, SELF_ENDING_TAG_WITHOUT_VALUE, parseResult.originalCommandText);
       }
 
       if (parseResult.contentKind != null) {
         errorReporter.report(
-            sourceLocation, SELF_ENDING_TAG_WITH_KIND_ATTRIBUTE, parseResult.originalCommantText);
+            sourceLocation, SELF_ENDING_TAG_WITH_KIND_ATTRIBUTE, parseResult.originalCommandText);
       }
 
       if (errorReporter.errorsSince(checkpoint)) {
@@ -137,7 +147,7 @@ public final class CallParamValueNode extends CallParamNode implements ExprHolde
           sourceLocation,
           parseResult.key,
           parseResult.valueExpr,
-          parseResult.originalCommantText);
+          parseResult.originalCommandText);
     }
   }
 }

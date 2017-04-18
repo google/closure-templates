@@ -34,7 +34,7 @@ public final class MsgSelectCaseNode extends CaseOrDefaultNode implements MsgBlo
   private final String caseValue;
 
   public MsgSelectCaseNode(int id, SourceLocation location, String caseValue) {
-    super(id, location, "case", String.format("'%s'", caseValue));
+    super(id, location, "case");
     this.caseValue = checkNotNull(caseValue);
   }
 
@@ -56,6 +56,11 @@ public final class MsgSelectCaseNode extends CaseOrDefaultNode implements MsgBlo
   /** Returns the case value. */
   public String getCaseValue() {
     return caseValue;
+  }
+
+  @Override
+  public String getCommandText() {
+    return String.format("'%s'", caseValue);
   }
 
   @Override

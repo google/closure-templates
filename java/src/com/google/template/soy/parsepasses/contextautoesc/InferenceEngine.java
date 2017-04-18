@@ -129,16 +129,13 @@ final class InferenceEngine {
    */
   private static void checkStrictBlockEndContext(RenderUnitNode node, Context endContext) {
     if (!endContext.isValidEndContextForContentKind(node.getContentKind())) {
-      throw SoyAutoescapeException.createWithNode(
-          "A strict block of kind=\""
-              + NodeContentKinds.toAttributeValue(node.getContentKind())
-              + "\" cannot end in context "
-              + endContext
-              + ". Likely cause is "
-              + endContext.getLikelyEndContextMismatchCause(node.getContentKind())
-              + ": "
-              + node.getTagString(),
-          node);
+      String msg =
+          String.format(
+              "A strict block of kind=\"%s\" cannot end in context %s. Likely cause is %s.",
+              NodeContentKinds.toAttributeValue(node.getContentKind()),
+              endContext,
+              endContext.getLikelyEndContextMismatchCause(node.getContentKind()));
+      throw SoyAutoescapeException.createWithNode(msg, node);
     }
   }
 
@@ -458,9 +455,7 @@ final class InferenceEngine {
         Optional<Context> combined = Context.union(context, afterBody);
         if (!combined.isPresent()) {
           throw SoyAutoescapeException.createWithNode(
-              "{for} command changes context so it cannot be reentered : "
-                  + forNode.toSourceString(),
-              forNode);
+              "{for} command changes context so it cannot be reentered.", forNode);
         }
         context = combined.get();
       } catch (SoyAutoescapeException ex) {
@@ -493,9 +488,7 @@ final class InferenceEngine {
           Optional<Context> combined = Context.union(elseContext, afterBody);
           if (!combined.isPresent()) {
             throw SoyAutoescapeException.createWithNode(
-                "{foreach} body does not end in the same context after repeated entries : "
-                    + neNode.toSourceString(),
-                neNode);
+                "{foreach} body does not end in the same context after repeated entries.", neNode);
           }
           afterBody = combined.get();
         }
@@ -509,9 +502,8 @@ final class InferenceEngine {
         if (!combined.isPresent()) {
           throw SoyAutoescapeException.createWithNode(
               (ieNode == null
-                      ? "{foreach} body changes context : "
-                      : "{foreach} body does not end in the same context as {ifempty} : ")
-                  + foreachNode.toSourceString(),
+                  ? "{foreach} body changes context."
+                  : "{foreach} body does not end in the same context as {ifempty}."),
               ieNode == null ? foreachNode : ieNode);
         }
         context = combined.get();
@@ -585,14 +577,9 @@ final class InferenceEngine {
           }
           inferences.setEscapingDirectives(printNode, context, escapingModesToSet);
         } else if (!context.isCompatibleWith(escapingModes.get(0))) {
-          throw SoyAutoescapeException.createWithNode(
-              "Escaping modes "
-                  + escapingModes
-                  + " not compatible with "
-                  + context
-                  + " : "
-                  + printNode.toSourceString(),
-              printNode);
+          String msg =
+              String.format("Escaping modes %s not compatible with %s.", escapingModes, context);
+          throw SoyAutoescapeException.createWithNode(msg, printNode);
         }
 
         // Figure out the context at the end.
@@ -695,8 +682,7 @@ final class InferenceEngine {
           // double-escaping. HTML is more consistent because externs behave the same as interns.
           throw SoyAutoescapeException.createWithNode(
               "Soy strict autoescaping currently forbids calls to non-strict templates, unless "
-                  + "the context is kind=\"text\", since there's no guarantee the callee is safe: "
-                  + callNode.getTagString(),
+                  + "the context is kind=\"text\", since there's no guarantee the callee is safe.",
               callNode);
         }
 
@@ -714,18 +700,15 @@ final class InferenceEngine {
           // We're a little loose in this check to allow calling URI templates within URI
           // attributes, even though it's not technically valid HTML, in order to help migration.
           if (!startContext.isValidStartContextForContentKindLoose(calleeStrictContentKind)) {
-            throw SoyAutoescapeException.createWithNode(
-                "Cannot call strictly autoescaped template "
-                    + templateName
-                    + " of kind=\""
-                    + NodeContentKinds.toAttributeValue(calleeStrictContentKind)
-                    + "\" from incompatible context "
-                    + startContext
-                    + ". Strict templates "
-                    + "generate extra code to safely call templates of other content kinds, but "
-                    + "non-strict templates do not: "
-                    + callNode.getTagString(),
-                callNode);
+            String msg =
+                String.format(
+                    "Cannot call strictly autoescaped template %s of kind=\"%s\" from "
+                        + "incompatible context %s. Strict templates generate extra code to safely "
+                        + "call templates of other content kinds, but non-strict templates do not.",
+                    templateName,
+                    NodeContentKinds.toAttributeValue(calleeStrictContentKind),
+                    startContext);
+            throw SoyAutoescapeException.createWithNode(msg, callNode);
           }
           return Pair.of(templateName, startContext);
         } else {
@@ -904,9 +887,8 @@ final class InferenceEngine {
           if (!combined.isPresent()) {
             throw SoyAutoescapeException.createWithNode(
                 (node instanceof IfNode
-                        ? "{if} command without {else} changes context : "
-                        : "{switch} command without {default} changes context : ")
-                    + node.toSourceString(),
+                    ? "{if} command without {else} changes context."
+                    : "{switch} command without {default} changes context."),
                 node);
           }
           out = combined.get();
@@ -943,7 +925,7 @@ final class InferenceEngine {
               .inferChildren(node, Context.HTML_PCDATA);
       if (!paramContentNodeEndContext.equals(Context.HTML_PCDATA)) {
         throw SoyAutoescapeException.createWithNode(
-            "Blocks should start and end in HTML context: " + node.getTagString(), node);
+            "Blocks should start and end in HTML context.", node);
       }
     }
   }
@@ -970,7 +952,6 @@ final class InferenceEngine {
    *
    * @param node The node to print in case of an error.
    * @param startContext The start context -- must be a "context before dynamic value".
-   * @param escapingModes The escaping sequence being used.
    */
   private static Context getContextAfterEscaping(SoyNode node, Context startContext) {
     try {

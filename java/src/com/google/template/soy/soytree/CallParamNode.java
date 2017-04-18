@@ -44,7 +44,7 @@ public abstract class CallParamNode extends AbstractCommandNode {
 
   /** Return value for {@code parseCommandTextHelper()}. */
   public static final class CommandTextParseResult {
-    final String originalCommantText;
+    final String originalCommandText;
     /** The parsed key. */
     final String key;
     /** The parsed value expr, or null if none. */
@@ -53,11 +53,11 @@ public abstract class CallParamNode extends AbstractCommandNode {
     @Nullable public final ContentKind contentKind;
 
     private CommandTextParseResult(
-        String originalCommantText,
+        String originalCommandText,
         String key,
         @Nullable ExprRootNode valueExpr,
         @Nullable ContentKind contentKind) {
-      this.originalCommantText = originalCommantText;
+      this.originalCommandText = originalCommandText;
       this.key = key;
       this.valueExpr = valueExpr;
       this.contentKind = contentKind;
@@ -79,10 +79,9 @@ public abstract class CallParamNode extends AbstractCommandNode {
   /**
    * @param id The id for this node.
    * @param sourceLocation The node's source location.
-   * @param commandText The command text.
    */
-  protected CallParamNode(int id, SourceLocation sourceLocation, String commandText) {
-    super(id, sourceLocation, "param", commandText);
+  protected CallParamNode(int id, SourceLocation sourceLocation) {
+    super(id, sourceLocation, "param");
   }
 
   /**

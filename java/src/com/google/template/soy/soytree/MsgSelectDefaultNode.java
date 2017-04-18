@@ -30,7 +30,7 @@ public final class MsgSelectDefaultNode extends CaseOrDefaultNode implements Msg
 
   /** @param id The id for this node. */
   public MsgSelectDefaultNode(int id, SourceLocation sourceLocation) {
-    super(id, sourceLocation, "default", "");
+    super(id, sourceLocation, "default");
   }
 
   /**

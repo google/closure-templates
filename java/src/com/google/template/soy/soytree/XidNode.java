@@ -50,11 +50,11 @@ public final class XidNode extends AbstractCommandNode implements StandaloneNode
   /**
    * @param id The id for this node.
    * @param sourceLocation The node's source location.
-   * @param commandText The xid command text.
+   * @param text The xid command text.
    */
-  public XidNode(int id, SourceLocation sourceLocation, String commandText) {
-    super(id, sourceLocation, "xid", commandText);
-    text = commandText;
+  public XidNode(int id, SourceLocation sourceLocation, String text) {
+    super(id, sourceLocation, "xid");
+    this.text = text;
   }
 
   /**
@@ -64,7 +64,7 @@ public final class XidNode extends AbstractCommandNode implements StandaloneNode
    */
   private XidNode(XidNode orig, CopyState copyState) {
     super(orig, copyState);
-    text = orig.text;
+    this.text = orig.text;
   }
 
   @Override
@@ -96,6 +96,11 @@ public final class XidNode extends AbstractCommandNode implements StandaloneNode
     }
     // Default to pseudo obfuscate with trailing _ since that is what the JS implementation does.
     return text + "_";
+  }
+
+  @Override
+  public String getCommandText() {
+    return text;
   }
 
   @SuppressWarnings("unchecked")

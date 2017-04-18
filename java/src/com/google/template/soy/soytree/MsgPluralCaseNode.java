@@ -29,12 +29,11 @@ import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
  */
 public final class MsgPluralCaseNode extends CaseOrDefaultNode implements MsgBlockNode {
 
-  // A plural 'case' can only have a number in the command text.
-  /** The number for this case */
+  /** The number for this case. Plural 'case' nodes can only have numbers. */
   private final int caseNumber;
 
   public MsgPluralCaseNode(int id, SourceLocation location, int caseNumber) {
-    super(id, location, "case", Integer.toString(caseNumber));
+    super(id, location, "case");
     Preconditions.checkArgument(caseNumber >= 0);
     this.caseNumber = caseNumber;
   }
@@ -57,6 +56,11 @@ public final class MsgPluralCaseNode extends CaseOrDefaultNode implements MsgBlo
   /** Returns the case number. */
   public int getCaseNumber() {
     return caseNumber;
+  }
+
+  @Override
+  public String getCommandText() {
+    return Integer.toString(caseNumber);
   }
 
   @Override

@@ -420,9 +420,7 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
         genGoogMsgCodeForSelectNode((MsgSelectNode) child, msgNode, codeGenInfo);
       } else {
         String nodeStringForErrorMsg =
-            (child instanceof CommandNode)
-                ? "Tag " + ((CommandNode) child).getTagString()
-                : "Node " + child;
+            (child instanceof CommandNode) ? "Tag " + child.toSourceString() : "Node " + child;
         throw new AssertionError(
             nodeStringForErrorMsg
                 + " is not allowed to be a direct child of a 'msg' tag. At :"

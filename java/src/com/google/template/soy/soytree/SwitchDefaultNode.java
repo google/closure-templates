@@ -33,7 +33,7 @@ public final class SwitchDefaultNode extends CaseOrDefaultNode implements Condit
    * @param sourceLocation The node's source location.
    */
   public SwitchDefaultNode(int id, SourceLocation sourceLocation) {
-    super(id, sourceLocation, "default", "");
+    super(id, sourceLocation, "default");
   }
 
   /**

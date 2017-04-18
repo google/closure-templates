@@ -87,6 +87,9 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
   /** True if this node is within a HTML context. */
   private boolean isPcData = false;
 
+  // TODO(user): Remove.
+  private final String commandText;
+
   /**
    * Protected constructor for use by subclasses.
    *
@@ -103,10 +106,11 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
       String commandName,
       CommandTextInfo commandTextInfo,
       ImmutableList<String> escapingDirectiveNames) {
-    super(id, sourceLocation, commandName, commandTextInfo.commandText);
+    super(id, sourceLocation, commandName);
     this.dataAttr = commandTextInfo.dataAttribute;
     this.userSuppliedPlaceholderName = commandTextInfo.userSuppliedPlaceholderName;
     this.escapingDirectiveNames = escapingDirectiveNames;
+    this.commandText = commandTextInfo.commandText;
   }
 
   /** A Parsed {@code data} attribute. */
@@ -176,6 +180,7 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
     this.userSuppliedPlaceholderName = orig.userSuppliedPlaceholderName;
     this.escapingDirectiveNames = orig.escapingDirectiveNames;
     this.isPcData = orig.getIsPcData();
+    this.commandText = orig.commandText;
   }
 
   /** The parsed 'data' attribute. */
@@ -197,8 +202,13 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
   }
 
   @Override
+  public String getCommandText() {
+    return commandText;
+  }
+
+  @Override
   public String getTagString() {
-    return buildTagStringHelper(numChildren() == 0);
+    return getTagString(numChildren() == 0); // tag is self-ending if it has no children
   }
 
   @Override
@@ -227,7 +237,7 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
   @Override
   public Object genSamenessKey() {
     // CallNodes are never considered the same placeholder. We return the node instance as the info
-    // for determining sameness. Sinces nodes have identity semantics this will only compare equal
+    // for determining sameness. Since nodes have identity semantics this will only compare equal
     // to itself.
     return this;
   }

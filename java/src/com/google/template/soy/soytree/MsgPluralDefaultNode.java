@@ -33,7 +33,7 @@ public final class MsgPluralDefaultNode extends CaseOrDefaultNode implements Msg
    * @param sourceLocation The node's source location.
    */
   public MsgPluralDefaultNode(int id, SourceLocation sourceLocation) {
-    super(id, sourceLocation, "default", "");
+    super(id, sourceLocation, "default");
   }
 
   /**

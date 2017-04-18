@@ -87,11 +87,11 @@ public abstract class LetNode extends AbstractCommandNode
 
   /**
    * @param id The id for this node.
-   * @param commandText The command text.
+   * @param sourceLocation The node's source location.
+   * @param localVarName The let variable name.
    */
-  protected LetNode(
-      int id, SourceLocation sourceLocation, String localVarName, String commandText) {
-    super(id, sourceLocation, "let", commandText);
+  protected LetNode(int id, SourceLocation sourceLocation, String localVarName) {
+    super(id, sourceLocation, "let");
     this.var = new LocalVar(localVarName, this, null /* type */);
   }
 

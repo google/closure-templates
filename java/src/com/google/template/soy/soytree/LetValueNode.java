@@ -46,14 +46,18 @@ public final class LetValueNode extends LetNode implements ExprHolderNode {
   /** The value expression that the variable is set to. */
   private final ExprRootNode valueExpr;
 
+  // TODO(user): Remove.
+  private final String commandText;
+
   private LetValueNode(
       int id,
       SourceLocation sourceLocation,
       String localVarName,
       String commandText,
       ExprRootNode valueExpr) {
-    super(id, sourceLocation, localVarName, commandText);
+    super(id, sourceLocation, localVarName);
     this.valueExpr = valueExpr;
+    this.commandText = commandText;
   }
 
   /**
@@ -64,6 +68,7 @@ public final class LetValueNode extends LetNode implements ExprHolderNode {
   private LetValueNode(LetValueNode orig, CopyState copyState) {
     super(orig, copyState);
     this.valueExpr = orig.valueExpr.copy(copyState);
+    this.commandText = orig.commandText;
   }
 
   @Override
@@ -83,6 +88,16 @@ public final class LetValueNode extends LetNode implements ExprHolderNode {
   }
 
   @Override
+  public String getCommandText() {
+    return commandText;
+  }
+
+  @Override
+  public String getTagString() {
+    return getTagString(true); // self-ending
+  }
+
+  @Override
   public ImmutableList<ExprRootNode> getExprList() {
     return ImmutableList.of(valueExpr);
   }
@@ -90,11 +105,6 @@ public final class LetValueNode extends LetNode implements ExprHolderNode {
   @Override
   public LetValueNode copy(CopyState copyState) {
     return new LetValueNode(this, copyState);
-  }
-
-  @Override
-  public String getTagString() {
-    return this.buildTagStringHelper(true);
   }
 
   /** Builder for {@link LetValueNode}. */

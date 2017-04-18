@@ -29,7 +29,7 @@ public final class DebuggerNode extends AbstractCommandNode
     implements StandaloneNode, StatementNode {
 
   public DebuggerNode(int id, SourceLocation sourceLocation) {
-    super(id, sourceLocation, "debugger", "");
+    super(id, sourceLocation, "debugger");
   }
 
   /**

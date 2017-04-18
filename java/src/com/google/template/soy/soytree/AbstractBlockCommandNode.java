@@ -32,11 +32,9 @@ abstract class AbstractBlockCommandNode extends AbstractParentCommandNode<Standa
    * @param id The id for this node.
    * @param sourceLocation The node's source location.
    * @param commandName The name of the Soy command.
-   * @param commandText The command text, or empty string if none.
    */
-  public AbstractBlockCommandNode(
-      int id, SourceLocation sourceLocation, String commandName, String commandText) {
-    super(id, sourceLocation, commandName, commandText);
+  public AbstractBlockCommandNode(int id, SourceLocation sourceLocation, String commandName) {
+    super(id, sourceLocation, commandName);
   }
 
   /**

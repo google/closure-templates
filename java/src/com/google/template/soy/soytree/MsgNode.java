@@ -137,6 +137,9 @@ public final class MsgNode extends AbstractBlockCommandNode
   /** The substitution unit info (var name mappings, or null if not yet generated. */
   private SubstUnitInfo substUnitInfo = null;
 
+  // TODO(user): Remove.
+  private final String commandText;
+
   private MsgNode(
       int id,
       SourceLocation sourceLocation,
@@ -146,11 +149,12 @@ public final class MsgNode extends AbstractBlockCommandNode
       String meaning,
       String desc,
       boolean isHidden) {
-    super(id, sourceLocation, commandName, commandText);
+    super(id, sourceLocation, commandName);
     this.genderExprs = genderExprs;
     this.meaning = meaning;
     this.desc = desc;
     this.isHidden = isHidden;
+    this.commandText = commandText;
   }
 
   /**
@@ -175,7 +179,8 @@ public final class MsgNode extends AbstractBlockCommandNode
     // The only reason we don't run genSubstUnitInfo from the other constructors is because the
     // children haven't been added yet. But for cloning, the children already exist, so there's no
     // reason not to run genSubstUnitInfo now.
-    substUnitInfo = genSubstUnitInfo(this);
+    this.substUnitInfo = genSubstUnitInfo(this);
+    this.commandText = orig.commandText;
   }
 
   @Override
@@ -332,6 +337,11 @@ public final class MsgNode extends AbstractBlockCommandNode
       substUnitInfo = genSubstUnitInfo(this);
     }
     return substUnitInfo.varNameToRepNodeMap;
+  }
+
+  @Override
+  public String getCommandText() {
+    return commandText;
   }
 
   @Override

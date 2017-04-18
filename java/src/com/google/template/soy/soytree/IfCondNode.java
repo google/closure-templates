@@ -45,7 +45,7 @@ public final class IfCondNode extends AbstractBlockCommandNode
    * @param expr The if condition.
    */
   public IfCondNode(int id, SourceLocation location, String commandName, ExprNode expr) {
-    super(id, location, commandName, expr.toSourceString());
+    super(id, location, commandName);
     Preconditions.checkArgument(commandName.equals("if") || commandName.equals("elseif"));
     this.expr = new ExprRootNode(expr);
   }

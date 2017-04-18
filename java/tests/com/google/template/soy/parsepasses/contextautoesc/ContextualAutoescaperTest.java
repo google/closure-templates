@@ -517,7 +517,7 @@ public final class ContextualAutoescaperTest {
     assertRewriteFails(
         "In file no-path:5:22, template ns.foo: "
             + "Escaping modes [ESCAPE_JS_VALUE] not compatible with"
-            + " (Context JS_SQ_STRING) : {$world |escapeJsValue}",
+            + " (Context JS_SQ_STRING).",
         join(
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"deprecated-contextual\"}\n",
@@ -578,9 +578,7 @@ public final class ContextualAutoescaperTest {
   public void testBrokenForLoop() throws Exception {
     assertRewriteFails(
         "In file no-path:6:5, template ns.bar: "
-            + "{for} command changes context so it cannot be reentered : "
-            + "{for $i in range($n)}.foo{$i |filterCssValue}:before "
-            + "{lb}content: '{$i |escapeCssString}{rb}{/for}",
+            + "{for} command changes context so it cannot be reentered.",
         join(
             "{namespace ns}\n\n",
             "{template .bar autoescape=\"deprecated-contextual\"}\n",
@@ -623,9 +621,7 @@ public final class ContextualAutoescaperTest {
   @Test
   public void testBrokenForeachLoop() throws Exception {
     assertRewriteFails(
-        "In file no-path:6:5, template ns.baz: "
-            + "{foreach} body changes context : "
-            + "{foreach $x in $foo}<li class={$x}{/foreach}",
+        "In file no-path:6:5, template ns.baz: {foreach} body changes context.",
         join(
             "{namespace ns}\n\n",
             "{template .baz autoescape=\"deprecated-contextual\"}\n",
@@ -1092,7 +1088,7 @@ public final class ContextualAutoescaperTest {
             + "\n- In file no-path:10:27, template ns.quot__C4011: Error while re-contextualizing"
             + " template ns.quot in context (Context JS_DQ_STRING):"
             + "\n- In file no-path:10:5, template ns.quot__C14: {if} command without {else} changes"
-            + " context : {if randomInt(10) < 5}{call .quot data=\"all\" /}{/if}",
+            + " context.",
         join(
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"deprecated-contextual\"}\n",
@@ -1894,8 +1890,7 @@ public final class ContextualAutoescaperTest {
     assertRewriteFails(
         "In file no-path:5:4, template ns.t: "
             + "Soy strict autoescaping currently forbids calls to non-strict templates, unless the "
-            + "context is kind=\"text\", since there's no guarantee the callee is safe: "
-            + "{call .other data=\"all\" /}",
+            + "context is kind=\"text\", since there's no guarantee the callee is safe.",
         join(
             "{namespace ns}\n\n",
             "{template .t autoescape=\"deprecated-contextual\"}\n",
@@ -1910,8 +1905,7 @@ public final class ContextualAutoescaperTest {
     assertRewriteFails(
         "In file no-path:5:4, template ns.t: "
             + "Soy strict autoescaping currently forbids calls to non-strict templates, unless the "
-            + "context is kind=\"text\", since there's no guarantee the callee is safe: "
-            + "{call .other data=\"all\" /}",
+            + "context is kind=\"text\", since there's no guarantee the callee is safe.",
         join(
             "{namespace ns}\n\n",
             "{template .t autoescape=\"deprecated-contextual\"}\n",
@@ -1947,7 +1941,7 @@ public final class ContextualAutoescaperTest {
   public void testNonTypedParamMustEndInHtmlContextButWasAttribute() throws Exception {
     assertRewriteFails(
         "In file no-path:5:5, template ns.caller: "
-            + "Blocks should start and end in HTML context: {param foo}",
+            + "Blocks should start and end in HTML context.",
         join(
             "{namespace ns}\n\n",
             "{template .caller autoescape=\"deprecated-contextual\"}\n",
@@ -1965,7 +1959,7 @@ public final class ContextualAutoescaperTest {
   public void testNonTypedParamMustEndInHtmlContextButWasScript() throws Exception {
     assertRewriteFails(
         "In file no-path:5:5, template ns.caller: "
-            + "Blocks should start and end in HTML context: {param foo}",
+            + "Blocks should start and end in HTML context.",
         join(
             "{namespace ns}\n\n",
             "{template .caller autoescape=\"deprecated-contextual\"}\n",
@@ -2099,8 +2093,7 @@ public final class ContextualAutoescaperTest {
     assertRewriteFails(
         "In file no-path:5:41, template ns.caller: "
             + "Soy strict autoescaping currently forbids calls to non-strict templates, unless the "
-            + "context is kind=\"text\", since there's no guarantee the callee is safe: "
-            + "{call .subCallee data=\"all\" /}",
+            + "context is kind=\"text\", since there's no guarantee the callee is safe.",
         join(
             "{namespace ns}\n\n",
             "{template .caller autoescape=\"strict\"}\n",
@@ -2212,8 +2205,7 @@ public final class ContextualAutoescaperTest {
     assertRewriteFails(
         "In file no-path:4:41, template ns.caller: "
             + "Soy strict autoescaping currently forbids calls to non-strict templates, unless the "
-            + "context is kind=\"text\", since there's no guarantee the callee is safe: "
-            + "{call .subCallee data=\"all\" /}",
+            + "context is kind=\"text\", since there's no guarantee the callee is safe.",
         join(
             "{namespace ns}\n\n",
             "{template .caller autoescape=\"deprecated-contextual\"}\n",
@@ -2408,8 +2400,7 @@ public final class ContextualAutoescaperTest {
     assertRewriteFails(
         "In file no-path:4:4, template ns.main: "
             + "Soy strict autoescaping currently forbids calls to non-strict templates, unless the "
-            + "context is kind=\"text\", since there's no guarantee the callee is safe: "
-            + "{call .bar data=\"all\" /}",
+            + "context is kind=\"text\", since there's no guarantee the callee is safe.",
         join(
             "{namespace ns}\n\n",
             "{template .main autoescape=\"strict\" kind=\"html\"}\n",
@@ -2420,8 +2411,7 @@ public final class ContextualAutoescaperTest {
     assertRewriteFails(
         "In file no-path-0:4:1, template ns.main: "
             + "Soy strict autoescaping currently forbids calls to non-strict templates, unless the "
-            + "context is kind=\"text\", since there's no guarantee the callee is safe: "
-            + "{delcall ns.foo}",
+            + "context is kind=\"text\", since there's no guarantee the callee is safe.",
         join(
             "{namespace ns}\n\n",
             "{template .main autoescape=\"strict\"}\n",
@@ -2452,8 +2442,7 @@ public final class ContextualAutoescaperTest {
         "In file no-path:4:1, template ns.main: "
             + "Cannot call strictly autoescaped template ns.foo of kind=\"text\" from incompatible "
             + "context (Context HTML_PCDATA). Strict templates generate extra code to safely call "
-            + "templates of other content kinds, but non-strict templates do not: "
-            + "{call .foo}",
+            + "templates of other content kinds, but non-strict templates do not.",
         join(
             "{namespace ns}\n\n",
             "{template .main autoescape=\"deprecated-contextual\"}\n",
@@ -2469,8 +2458,7 @@ public final class ContextualAutoescaperTest {
         "In file no-path-0:4:1, template ns.main: "
             + "Cannot call strictly autoescaped template ns.foo of kind=\"text\" from incompatible "
             + "context (Context HTML_PCDATA). Strict templates generate extra code to safely call "
-            + "templates of other content kinds, but non-strict templates do not: "
-            + "{delcall ns.foo}",
+            + "templates of other content kinds, but non-strict templates do not.",
         join(
             "{namespace ns}\n\n",
             "{template .main autoescape=\"deprecated-contextual\"}\n",
@@ -2522,9 +2510,8 @@ public final class ContextualAutoescaperTest {
     assertRewriteFails(
         "In file no-path:3:1, template ns.main: "
             + "A strict block of kind=\"js\" cannot end in context (Context JS_SQ_STRING). "
-            + "Likely cause is an unterminated string literal: "
-            + "{template .main kind=\"js\"}",
-        join("{namespace ns}\n\n", "{template .main kind=\"js\"}\n", "var x='\n", "{/template}"));
+            + "Likely cause is an unterminated string literal.",
+        join("{namespace ns}\n\n", "{template .main kind=\"js\"}\nvar x='\n{/template}\n"));
   }
 
   @Test
@@ -2532,8 +2519,7 @@ public final class ContextualAutoescaperTest {
     assertRewriteFails(
         "In file no-path:3:1, template ns.main: "
             + "A strict block of kind=\"uri\" cannot end in context (Context URI START NORMAL). "
-            + "Likely cause is an unterminated or empty URI: "
-            + "{template .main autoescape=\"strict\" kind=\"uri\"}",
+            + "Likely cause is an unterminated or empty URI.",
         join(
             "{namespace ns}\n\n",
             "{template .main autoescape=\"strict\" kind=\"uri\"}\n",
@@ -2605,7 +2591,7 @@ public final class ContextualAutoescaperTest {
             + "A strict block of kind=\"attributes\" cannot end in context "
             + "(Context JS SCRIPT SPACE_OR_TAG_END DIV_OP). "
             + "Likely cause is an unterminated attribute value, or ending with an unquoted "
-            + "attribute: {template .foo autoescape=\"strict\" kind=\"attributes\"}",
+            + "attribute.",
         join(
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"strict\" kind=\"attributes\"}\n",
@@ -2618,7 +2604,7 @@ public final class ContextualAutoescaperTest {
             + "A strict block of kind=\"attributes\" cannot end in context "
             + "(Context HTML_NORMAL_ATTR_VALUE PLAIN_TEXT SPACE_OR_TAG_END). "
             + "Likely cause is an unterminated attribute value, or ending with an unquoted "
-            + "attribute: {template .foo autoescape=\"strict\" kind=\"attributes\"}",
+            + "attribute.",
         join(
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"strict\" kind=\"attributes\"}\n",
