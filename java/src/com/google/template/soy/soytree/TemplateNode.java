@@ -337,7 +337,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
     return visibility;
   }
 
-  /** Returns the mode of autoescaping, if any, done for this template. */
+  /** Returns the mode of autoescaping. */
   public AutoescapeMode getAutoescapeMode() {
     return autoescapeMode;
   }

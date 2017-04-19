@@ -80,7 +80,7 @@ public final class FunctionNodeTest {
         };
 
     SoyFileSetNode root =
-        SoyFileSetParserBuilder.forTemplateContents("<a class=\"{foo(bar(1))}\"")
+        SoyFileSetParserBuilder.forTemplateContents("<a class=\"{foo(bar(1))}\">")
             .addSoyFunction(foo)
             .addSoyFunction(bar)
             .parse()

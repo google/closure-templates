@@ -40,6 +40,7 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
+import com.google.template.soy.soytree.AutoescapeMode;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamValueNode;
@@ -420,6 +421,9 @@ public final class HtmlRewritePass extends CompilerFilePass {
     final String filePath;
     final AstEdits edits = new AstEdits();
     final ErrorReporter errorReporter;
+
+    // mode for the current template
+    private AutoescapeMode autoescapeMode;
 
     // RawText handling fields.
     RawTextNode currentRawTextNode;
@@ -1099,6 +1103,7 @@ public final class HtmlRewritePass extends CompilerFilePass {
       // reset everything for each template
       edits.clear();
       context = null;
+      autoescapeMode = node.getAutoescapeMode();
 
       Checkpoint checkPoint = errorReporter.checkpoint();
       visitScopedBlock(node.getContentKind(), node, "template");
@@ -1107,6 +1112,7 @@ public final class HtmlRewritePass extends CompilerFilePass {
       if (!errorReporter.errorsSince(checkPoint)) {
         edits.apply();
       }
+      autoescapeMode = null;
     }
 
     @Override
@@ -1364,7 +1370,27 @@ public final class HtmlRewritePass extends CompilerFilePass {
     }
 
     /** Visits a block whose content is in an entirely separate content scope. */
-    void visitScopedBlock(ContentKind blockKind, BlockNode parent, String name) {
+    void visitScopedBlock(@Nullable ContentKind blockKind, BlockNode parent, String name) {
+      // blockKind will be null if
+      // * This is a non-strict template
+      // * this is a let/param block without a kind parameter (these are only legal in non-strict
+      //   templates)
+      if (blockKind == null) {
+        switch (autoescapeMode) {
+          case CONTEXTUAL:
+          case NONCONTEXTUAL:
+            blockKind = ContentKind.HTML;
+            break;
+          case STRICT:
+            // TODO(lukes): in this case an error will be reported by a later part of the compiler.
+            // we could change the CheckEscapingSanitiyVisitor to run before this pass.  By leaving
+            // blockKind == null we will avoid parsing this block. (since State will == NONE).
+            // we could also just assume html... but that might be confusing in some cases?
+            break;
+          default:
+            throw new AssertionError();
+        }
+      }
       State startState = State.fromKind(blockKind);
       Checkpoint checkpoint = errorReporter.checkpoint();
       ParsingContext newCtx =
