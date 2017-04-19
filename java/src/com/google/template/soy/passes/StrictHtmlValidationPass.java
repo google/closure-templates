@@ -229,6 +229,11 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
       openTagBranches.clear();
       closeTagBranches.clear();
       visitChildren(node);
+      if (!openTagBranches.isEmpty() && !closeTagBranches.isEmpty()) {
+        throw new AssertionError(
+            "This should not happen. "
+                + "After visiting IfNode, at least one of the branches should be empty.");
+      }
       if (!openTagBranches.isEmpty()) {
         openTagStack.addFirst(new HtmlTagEntry(openTagBranches));
         openTagBranches.clear();
@@ -271,6 +276,11 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
       openTagBranches.clear();
       closeTagBranches.clear();
       visitChildren(node);
+      if (!openTagBranches.isEmpty() && !closeTagBranches.isEmpty()) {
+        throw new AssertionError(
+            "This should not happen. "
+                + "After visiting SwitchNode, at least one of the branches should be empty.");
+      }
       if (!openTagBranches.isEmpty()) {
         openTagStack.addFirst(new HtmlTagEntry(openTagBranches));
         openTagBranches.clear();
@@ -350,11 +360,16 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
       visitChildren(node);
       // After we visit all children, we check if deques are empty or not.
       if (inControlBlock) {
+        boolean matched = HtmlTagEntry.tryMatchOrError(openTagStack, closeTagQueue, errorReporter);
+        if (matched && !openTagStack.isEmpty() && !closeTagQueue.isEmpty()) {
+          throw new AssertionError(
+              "This should not happen. At least one of the stack/queue should be empty.");
+        }
         // If we are in a control block, we add non-empty deques to the branches.
-        if (!openTagStack.isEmpty()) {
+        if (!openTagStack.isEmpty() && closeTagQueue.isEmpty()) {
           openTagBranches.add(currentCondition, openTagStack);
         }
-        if (!closeTagQueue.isEmpty()) {
+        if (openTagStack.isEmpty() && !closeTagQueue.isEmpty()) {
           closeTagBranches.add(currentCondition, closeTagQueue);
         }
       } else {

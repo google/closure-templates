@@ -118,6 +118,13 @@ final class HtmlTagEntry {
    * <p>Another difference is that we don't try to remove all optional tags from the openStack, if
    * the closeQueue is empty. It is possible that some of the optional tags are ended in another
    * control block, and we cannot remove them too eagerly.
+   *
+   * <p>After calling this method,
+   *
+   * <ul>
+   *   <li>if it returns true, at least one of the stack/queue will be empty.
+   *   <li>if it returns false, we have already reported an error.
+   * </ul>
    */
   static boolean tryMatchOrError(
       ArrayDeque<HtmlTagEntry> openStack,
@@ -137,8 +144,9 @@ final class HtmlTagEntry {
           if (tryMatchCommonPrefix(openTag, closeTag, errorReporter)) {
             openStack.pollFirst();
             closeQueue.pollFirst();
-            return true;
+            continue;
           }
+          errorReporter.report(closeTag.getSourceLocation(), UNEXPECTED_CLOSE_TAG);
           return false;
         }
       }
@@ -163,9 +171,11 @@ final class HtmlTagEntry {
         openStack.pollFirst();
         closeQueue.pollFirst();
       } else {
+        // We already reported an error in matchOrError.
         return false;
       }
     }
+    // At this point, at least one of the stack/queue should be empty.
     return true;
   }
 
