@@ -47,7 +47,7 @@ public final class MixinParentNode<N extends Node> {
   /** @param master The master node that delegates to this instance. */
   public MixinParentNode(ParentNode<N> master) {
     this.master = checkNotNull(master);
-    children = Lists.newArrayList();
+    this.children = Lists.newArrayList();
   }
 
   /**
@@ -57,7 +57,7 @@ public final class MixinParentNode<N extends Node> {
    * @param newMaster The master node for the copy.
    */
   public MixinParentNode(MixinParentNode<N> orig, ParentNode<N> newMaster, CopyState copyState) {
-    this.master = newMaster;
+    this.master = checkNotNull(newMaster);
     this.children = Lists.newArrayListWithCapacity(orig.children.size());
     for (N origChild : orig.children) {
       @SuppressWarnings("unchecked")
@@ -116,6 +116,7 @@ public final class MixinParentNode<N extends Node> {
    * @param child The child to add.
    */
   public void addChild(N child) {
+    checkNotNull(child);
     tryRemoveFromOldParent(child);
     children.add(child);
     child.setParent(master);
@@ -128,6 +129,7 @@ public final class MixinParentNode<N extends Node> {
    * @param child The child to add.
    */
   public void addChild(int index, N child) {
+    checkNotNull(child);
     tryRemoveFromOldParent(child);
     children.add(index, child);
     child.setParent(master);
@@ -160,6 +162,7 @@ public final class MixinParentNode<N extends Node> {
    * @param newChild The new child.
    */
   public void replaceChild(int index, N newChild) {
+    checkNotNull(newChild);
     tryRemoveFromOldParent(newChild);
     N oldChild = children.set(index, newChild);
     oldChild.setParent(null);

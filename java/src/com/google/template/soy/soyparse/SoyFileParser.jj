@@ -1807,7 +1807,11 @@ private List<StandaloneNode> TemplateBlock() :
     | node = Stmt()
     )
 
-    { templateBlock.add(node); }
+    {
+      if (node != null) {
+        templateBlock.add(node);
+      }
+    }
   )*
 
   { return templateBlock; }
@@ -2492,7 +2496,7 @@ private XidNode XidStmt() :
 
   } catch (ParseException e) {
     reportTemplateBodyErrorAndSkipTo(e, CMD_END);
-    return XidNode.error(createSrcLoc(tagBegin));
+    return null;
   }
 
   { String xid = (value == null) ? first.image : value.toString();
@@ -2572,8 +2576,7 @@ private LetNode LetStmt() :
         skipTo(CMD_CLOSE_LET);
       }
 
-      // TODO(user): return null
-      return LetValueNode.error(createSrcLoc(tagBegin, tagEnd));
+      return null;
     }
 
     // If tagEnd != null, then this error is from TemplateBlock() or CMD_CLOSE_LET. Propagate.

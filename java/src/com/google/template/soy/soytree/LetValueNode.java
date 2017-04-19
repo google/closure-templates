@@ -21,7 +21,6 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
-import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 
 /**
@@ -31,10 +30,6 @@ import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
  *
  */
 public final class LetValueNode extends LetNode implements ExprHolderNode {
-
-  public static LetValueNode error(SourceLocation location) {
-    return new LetValueNode(-1, location, "error", VarRefNode.error(location));
-  }
 
   /** The value expression that the variable is set to. */
   private final ExprRootNode valueExpr;

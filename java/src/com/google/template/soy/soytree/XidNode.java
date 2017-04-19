@@ -31,10 +31,6 @@ import com.google.template.soy.soytree.SoyNode.StatementNode;
  */
 public final class XidNode extends AbstractCommandNode implements StandaloneNode, StatementNode {
 
-  public static XidNode error(SourceLocation sourceLocation) {
-    return new XidNode(-1, sourceLocation, "error");
-  }
-
   /** The text of the identifier. */
   private final String text;
 
