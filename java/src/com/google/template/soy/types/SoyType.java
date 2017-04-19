@@ -47,7 +47,6 @@ public interface SoyType {
    *             considered to be dynamically typed.
    *         <li>ERROR: Placeholder which represents a type that failed to parse.
    *       </ul>
-   *
    *   <li>Primitive types:
    *       <ul>
    *         <li>NULL: The type of the "null" value
@@ -56,8 +55,7 @@ public interface SoyType {
    *         <li>FLOAT
    *         <li>STRING
    *       </ul>
-   *
-   *   <li> Sanitized types (subtypes of string):
+   *   <li>Sanitized types (subtypes of string):
    *       <ul>
    *         <li>HTML: Possibly containing HTML markup
    *         <li>ATTRIBUTES: key="value" pairs
@@ -66,8 +64,7 @@ public interface SoyType {
    *         <li>URI
    *         <li>TRUSTED_RESOURCE_URI
    *       </ul>
-   *
-   *   <li> Aggregate types:
+   *   <li>Aggregate types:
    *       <ul>
    *         <li>LIST: Sequence of items indexed by integer.
    *         <li>RECORD: Open-ended record type.
@@ -77,7 +74,6 @@ public interface SoyType {
    *         <li>UNION: Used to indicate a parameter that can accept multiple alternatives, e.g.
    *             a|b.
    *       </ul>
-   *
    * </ul>
    */
   public enum Kind {

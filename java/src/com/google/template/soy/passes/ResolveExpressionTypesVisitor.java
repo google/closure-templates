@@ -154,6 +154,8 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
       SoyErrorKind.of("Unknown proto type ''{0}''");
   private static final SoyErrorKind VAR_REF_MISSING_SOY_TYPE =
       SoyErrorKind.of("Missing Soy type for variable");
+  private static final SoyErrorKind TYPE_MISMATCH =
+      SoyErrorKind.of("Soy types ''{0}'' and ''{1}'' are not comparable.");
 
   /** User-declared syntax version. */
   private final SyntaxVersion declaredSyntaxVersion;
@@ -512,9 +514,7 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
       visit(node.getBaseExprChild());
       node.setType(
           getFieldType(
-              node.getBaseExprChild().getType(),
-              node.getFieldName(),
-              node.getSourceLocation()));
+              node.getBaseExprChild().getType(), node.getFieldName(), node.getSourceLocation()));
       tryApplySubstitution(node);
     }
 
@@ -629,12 +629,12 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
 
     @Override
     protected void visitEqualOpNode(EqualOpNode node) {
-      visitComparisonOpNode(node);
+      visitEqualComparisonOpNode(node);
     }
 
     @Override
     protected void visitNotEqualOpNode(NotEqualOpNode node) {
-      visitComparisonOpNode(node);
+      visitEqualComparisonOpNode(node);
     }
 
     @Override
@@ -824,6 +824,62 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
     private void visitComparisonOpNode(AbstractOperatorNode node) {
       visitChildren(node);
       node.setType(BoolType.getInstance());
+      // TODO(b/37359174): Add type checking for these comparisons.
+    }
+
+    private void visitEqualComparisonOpNode(AbstractOperatorNode node) {
+      visitChildren(node);
+      node.setType(BoolType.getInstance());
+      SoyType left = node.getChild(0).getType();
+      SoyType right = node.getChild(1).getType();
+      if (!checkTypeForEqualComparisonOp(left, right)) {
+        errorReporter.report(node.getSourceLocation(), TYPE_MISMATCH, left, right);
+      }
+    }
+
+    /**
+     * For == and != operations, check if two {@code SoyType}s are comparable.
+     *
+     * <p>In particular,
+     *
+     * <ul>
+     *   <li>Comparing anything with UNKNOWN, ANY, and NULL is legitimate.
+     *   <li>If one is assignable from another, comparing them is legitimate.
+     *   <li>If both are primitive types, comparing them is legitimate.
+     *   <li>All other comparisons should have exactly the same types on both sides. Coercing is
+     *       unsafe, especially in JS backend. An example is a jspb message that contains a single
+     *       enum. Assuming that the enum is 1, the representation in JS is {@code [1]}, and this is
+     *       equivalent to a number.
+     * </ul>
+     */
+    private boolean checkTypeForEqualComparisonOp(SoyType left, SoyType right) {
+      if (SoyTypes.isDefiniteComparable(left) || SoyTypes.isDefiniteComparable(right)) {
+        return true;
+      }
+      left = SoyTypes.removeNull(left);
+      right = SoyTypes.removeNull(right);
+      if (SoyTypes.isDefinitePrimitive(left) && SoyTypes.isDefinitePrimitive(right)) {
+        return true;
+      }
+      if (left.equals(right)) {
+        return true;
+      }
+      // TODO(b/37359174): Investigate if we need the recursive logic for union types.
+      if (left.getKind() == SoyType.Kind.UNION) {
+        for (SoyType type : ((UnionType) left).getMembers()) {
+          if (checkTypeForEqualComparisonOp(type, right)) {
+            return true;
+          }
+        }
+      }
+      if (right.getKind() == SoyType.Kind.UNION) {
+        for (SoyType type : ((UnionType) right).getMembers()) {
+          if (checkTypeForEqualComparisonOp(left, type)) {
+            return true;
+          }
+        }
+      }
+      return false;
     }
 
     private void visitArithmeticOpNode(AbstractOperatorNode node) {
@@ -834,9 +890,10 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
       if (arithmeticType.isPresent()) {
         node.setType(arithmeticType.get());
       } else {
-        // TODO(b/21712154): jssrc will do some type coercions here, tofu will throw exceptions.
-        // so the best idea is probably to add an error.  However, 'number' is probably the most
-        // accurate (even if sometimes it will fail).
+        // TODO(b/37359174): Be more strict about arithmetic operations as well.
+        // jssrc will do some type coercions here, tofu will throw exceptions.
+        // so the best idea is probably to add an error.
+        // 'number' is probably the most accurate (even if sometimes it will fail).
         node.setType(SoyTypes.NUMBER_TYPE);
       }
       tryApplySubstitution(node);

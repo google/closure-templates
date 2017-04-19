@@ -17,6 +17,8 @@ package com.google.template.soy.types;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import com.google.template.soy.types.aggregate.UnionType;
 import com.google.template.soy.types.primitive.FloatType;
 import com.google.template.soy.types.primitive.IntType;
@@ -27,6 +29,34 @@ public final class SoyTypes {
   /** Shared constant for the 'number' type. */
   public static final SoyType NUMBER_TYPE =
       UnionType.of(IntType.getInstance(), FloatType.getInstance());
+
+  private static final ImmutableSet<SoyType.Kind> ALWAYS_COMPARABLE_KINDS =
+      Sets.immutableEnumSet(SoyType.Kind.UNKNOWN, SoyType.Kind.ANY, SoyType.Kind.NULL);
+
+  private static final ImmutableSet<SoyType.Kind> BOOLEAN_AND_NUMERIC_PRIMITIVES =
+      Sets.immutableEnumSet(
+          SoyType.Kind.BOOL, SoyType.Kind.INT, SoyType.Kind.FLOAT, SoyType.Kind.PROTO_ENUM);
+
+  /** Returns true if it is always "safe" to compare the input type to another type. */
+  public static boolean isDefiniteComparable(SoyType type) {
+    return ALWAYS_COMPARABLE_KINDS.contains(type.getKind());
+  }
+
+  /**
+   * Returns true if the input type is a primitive type. This includes bool, int, float, string and
+   * all sanitized contents. Two special cases are proto enum and number: these are proto or
+   * aggregate type in Soy's type system, but they should really be treated as primitive types.
+   */
+  public static boolean isDefinitePrimitive(SoyType type) {
+    SoyType.Kind kind = type.getKind();
+    if (BOOLEAN_AND_NUMERIC_PRIMITIVES.contains(kind) || kind.isKnownStringOrSanitizedContent()) {
+      return true;
+    }
+    if (type.isAssignableFrom(NUMBER_TYPE) || NUMBER_TYPE.isAssignableFrom(type)) {
+      return true;
+    }
+    return false;
+  }
 
   public static SoyType removeNull(SoyType type) {
     checkArgument(!NullType.getInstance().equals(type), "Can't remove null from null");
