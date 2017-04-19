@@ -54,7 +54,7 @@ final class ParseErrors {
   private static final SoyErrorKind UNEXPECTED_TOKEN_MGR_ERROR =
       SoyErrorKind.of(
           "Unexpected fatal Soy error. Please file a bug with your Soy file and "
-              + "we''ll take a look.  {0}");
+              + "we''ll take a look. (error code {0})\n{1}");
 
   private ParseErrors() {}
 
@@ -217,23 +217,29 @@ final class ParseErrors {
 
   static void reportTokenMgrError(
       ErrorReporter reporter, String filePath, TokenMgrError exception) {
+    int errorCode = exception.errorCode;
+    String message = exception.getMessage();
+
+    SourceLocation location;
+    Matcher loc = EXTRACT_LOCATION.matcher(message);
+    if (loc.find()) {
+      int line = Integer.parseInt(loc.group(1));
+      // javacc's column numbers are 0-based, while Soy's are 1-based
+      int column = Integer.parseInt(loc.group(2)) + 1;
+      location = new SourceLocation(filePath, line, column, line, column);
+    } else {
+      location = new SourceLocation(filePath);
+    }
+
     // If the file is terminated in the middle of an attribute value or a multiline comment a
     // TokenMgrError will be thrown (due to our use of MORE productions).  The only way to tell is
     // to test the message for "<EOF>".  The suggested workaround for this is to submit the
     // generated TokenMgrError code into source control and rewrite the constructor.  This would
     // also allow us to avoid using a regex to extract line number information.
-    String message = exception.getMessage();
     if (exception.errorCode == TokenMgrError.LEXICAL_ERROR && message.contains("<EOF>")) {
-      Matcher line = EXTRACT_LOCATION.matcher(message);
-      if (line.find()) {
-        int startLine = Integer.parseInt(line.group(1));
-        // javacc's column numbers are 0-based, while Soy's are 1-based
-        int column = Integer.parseInt(line.group(2)) + 1;
-        reporter.report(
-            new SourceLocation(filePath, startLine, column, startLine, column), UNEXPECTED_EOF);
-        return;
-      }
+      reporter.report(location, UNEXPECTED_EOF);
+    } else {
+      reporter.report(location, UNEXPECTED_TOKEN_MGR_ERROR, errorCode, message);
     }
-    reporter.report(new SourceLocation(filePath), UNEXPECTED_TOKEN_MGR_ERROR, message);
   }
 }

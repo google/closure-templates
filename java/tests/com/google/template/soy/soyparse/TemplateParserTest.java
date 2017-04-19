@@ -1212,14 +1212,16 @@ public final class TemplateParserTest {
     assertEquals(ContentKind.HTML, deltaNode.getContentKind());
 
     // Test error case.
-    TemplateSubject.assertThatTemplateContent("{let $alpha /}")
-        .causesError(LetValueNode.SELF_ENDING_WITHOUT_VALUE)
-        .at(1, 1);
+    TemplateSubject.assertThatTemplateContent("{let $alpha /}{/let}")
+        .causesError("parse error at '/}': expected }, ':', or identifier")
+        .at(1, 13);
 
     // Test error case.
     TemplateSubject.assertThatTemplateContent("{let $alpha: $boo.foo}{/let}")
-        .causesError(LetContentNode.NON_SELF_ENDING_WITH_VALUE)
-        .at(1, 1);
+        .causesError(
+            "parse error at '}': expected /}, ?, '?:', or, and, ==, !=, <, >, <=, >=, +, -, *, /, "
+                + "%, ., ?., [, or ?[")
+        .at(1, 22);
   }
 
   @Test
@@ -1876,17 +1878,13 @@ public final class TemplateParserTest {
             + "{delcall 123 /}\n" // Invalid delegate name "123" for 'delcall' command.
             + "{foreach foo in bar}{/foreach}\n" // Invalid 'foreach' command text "foo in bar".
             + "{let /}\n",
-        errorReporter); // Invalid 'let' command text "".
+        errorReporter);
     List<String> errors = errorReporter.getErrorMessages();
-    assertThat(errors).hasSize(5);
+    assertThat(errors).hasSize(4);
     assertThat(errors.get(0)).contains("Invalid callee name \"123\" for 'call' command.");
     assertThat(errors.get(1)).contains("Invalid delegate name \"123\" for 'delcall' command.");
     assertThat(errors.get(2)).contains("Invalid 'foreach' command text \"foo in bar\".");
-    assertThat(errors.get(3)).contains("Invalid 'let' command text.");
-    assertThat(errors.get(4))
-        .contains(
-            "A 'let' tag should be self-ending (with a trailing '/') if and only if it also "
-                + "contains a value (invalid tag is {let  /}).");
+    assertThat(errors.get(3)).contains("parse error at '/}': expected $ij, or variable");
   }
 
   // -----------------------------------------------------------------------------------------------

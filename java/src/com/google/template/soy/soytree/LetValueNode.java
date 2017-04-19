@@ -19,11 +19,9 @@ package com.google.template.soy.soytree;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ErrorReporter.Checkpoint;
-import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
-import com.google.template.soy.exprtree.IntegerNode;
+import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 
 /**
@@ -34,30 +32,16 @@ import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
  */
 public final class LetValueNode extends LetNode implements ExprHolderNode {
 
-  public static final SoyErrorKind SELF_ENDING_WITHOUT_VALUE =
-      SoyErrorKind.of(
-          "A ''let'' tag should be self-ending (with a trailing ''/'') if and only if "
-              + "it also contains a value (invalid tag is '{'let {0} /'}').");
-  private static final SoyErrorKind KIND_ATTRIBUTE_NOT_ALLOWED_WITH_VALUE =
-      SoyErrorKind.of(
-          "The ''kind'' attribute is not allowed on self-ending ''let'' tags that "
-              + "contain a value (invalid tag is '{'let {0} /'}').");
+  public static LetValueNode error(SourceLocation location) {
+    return new LetValueNode(-1, location, "error", VarRefNode.error(location));
+  }
 
   /** The value expression that the variable is set to. */
   private final ExprRootNode valueExpr;
 
-  // TODO(user): Remove.
-  private final String commandText;
-
-  private LetValueNode(
-      int id,
-      SourceLocation sourceLocation,
-      String localVarName,
-      String commandText,
-      ExprRootNode valueExpr) {
-    super(id, sourceLocation, localVarName);
-    this.valueExpr = valueExpr;
-    this.commandText = commandText;
+  public LetValueNode(int id, SourceLocation location, String varName, ExprNode expr) {
+    super(id, location, varName);
+    this.valueExpr = new ExprRootNode(expr);
   }
 
   /**
@@ -68,7 +52,6 @@ public final class LetValueNode extends LetNode implements ExprHolderNode {
   private LetValueNode(LetValueNode orig, CopyState copyState) {
     super(orig, copyState);
     this.valueExpr = orig.valueExpr.copy(copyState);
-    this.commandText = orig.commandText;
   }
 
   @Override
@@ -76,20 +59,14 @@ public final class LetValueNode extends LetNode implements ExprHolderNode {
     return Kind.LET_VALUE_NODE;
   }
 
-  /** Return The local variable name (without preceding '$'). */
-  @Override
-  public final String getVarName() {
-    return var.name();
-  }
-
-  /** Returns the value expression that the variable is set to. */
+  /** Returns the value expression that this variable is set to. */
   public ExprRootNode getValueExpr() {
     return valueExpr;
   }
 
   @Override
   public String getCommandText() {
-    return commandText;
+    return "$" + getVarName() + " : " + getValueExpr().toSourceString();
   }
 
   @Override
@@ -105,59 +82,5 @@ public final class LetValueNode extends LetNode implements ExprHolderNode {
   @Override
   public LetValueNode copy(CopyState copyState) {
     return new LetValueNode(this, copyState);
-  }
-
-  /** Builder for {@link LetValueNode}. */
-  public static final class Builder {
-    private static LetValueNode error() {
-      return new LetValueNode(
-          -1,
-          SourceLocation.UNKNOWN,
-          "$error",
-          "$error: 1",
-          new ExprRootNode(new IntegerNode(1, SourceLocation.UNKNOWN)));
-    }
-
-    private final int id;
-    private final CommandTextParseResult parseResult;
-    private final SourceLocation sourceLocation;
-
-    /**
-     * @param id The node's id.
-     * @param commandText The node's command text.
-     * @param sourceLocation The node's source location.
-     */
-    public Builder(int id, CommandTextParseResult parseResult, SourceLocation sourceLocation) {
-      this.id = id;
-      this.parseResult = parseResult;
-      this.sourceLocation = sourceLocation;
-    }
-
-    /**
-     * Returns a new {@link LetValueNode} built from the builder's state. If the builder's state is
-     * invalid, errors are reported to the {@code errorManager} and {Builder#error} is returned.
-     */
-    public LetValueNode build(Checkpoint checkpoint, ErrorReporter errorReporter) {
-      if (parseResult.valueExpr == null) {
-        errorReporter.report(
-            sourceLocation, SELF_ENDING_WITHOUT_VALUE, parseResult.originalCommandText);
-      }
-
-      if (parseResult.contentKind != null) {
-        errorReporter.report(
-            sourceLocation, KIND_ATTRIBUTE_NOT_ALLOWED_WITH_VALUE, parseResult.originalCommandText);
-      }
-
-      if (errorReporter.errorsSince(checkpoint)) {
-        return error();
-      }
-
-      return new LetValueNode(
-          id,
-          sourceLocation,
-          parseResult.localVarName,
-          parseResult.originalCommandText,
-          parseResult.valueExpr);
-    }
   }
 }

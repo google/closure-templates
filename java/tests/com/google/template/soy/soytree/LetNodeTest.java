@@ -32,11 +32,11 @@ public final class LetNodeTest {
 
   @Test
   public void testInvalidCommandText() {
-    assertThatTemplateContent("{let foo /}\n").causesError(LetNode.INVALID_COMMAND_TEXT).at(1, 6);
-    // Let nodes don't have accurate source location information for their command texts yet.
-    // TODO(user): fix.
+    assertThatTemplateContent("{let foo /}\n")
+        .causesError("parse error at 'foo': expected $ij, or variable")
+        .at(1, 6);
     assertThatTemplateContent("{let\n\n\nfoo /}\n")
-        .causesError(LetNode.INVALID_COMMAND_TEXT)
-        .at(2, 1);
+        .causesError("parse error at 'foo': expected $ij, or variable")
+        .at(4, 1);
   }
 }

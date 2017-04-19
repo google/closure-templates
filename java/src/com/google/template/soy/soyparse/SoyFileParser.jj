@@ -27,9 +27,10 @@ options {
   JDK_VERSION = "1.7";
   STATIC = false;
   UNICODE_INPUT = true;
-  DEBUG_TOKEN_MANAGER = false;
-  DEBUG_PARSER = false;
   SUPPORT_CLASS_VISIBILITY_PUBLIC = false;
+
+  DEBUG_PARSER = false;
+  DEBUG_TOKEN_MANAGER = false;
 }
 
 
@@ -51,6 +52,8 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Predicates;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
@@ -58,6 +61,7 @@ import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.LegacyInternalSyntaxException;
 import com.google.template.soy.base.internal.SoyFileKind;
+import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -363,18 +367,16 @@ public class SoyFileParser {
   private static final SoyErrorKind INVALID_TEMPLATE_NAME =
       SoyErrorKind.of("Template name ''{0}'' must be relative to the file namespace, i.e. a dot "
           + "followed by an identifier.");
-  private static final SoyErrorKind MISSING_WHITESPACE_BEFORE_ATTRIBUTE =
-      SoyErrorKind.of("parse error at ''{0}'': expected whitespace");
   private static final SoyErrorKind MULTIPLE_PHNAME_ATTRIBUTES_IN_COMMAND =
       SoyErrorKind.of("Found multiple ''phname'' attributes in command text \"{0}\".");
+  private static final SoyErrorKind PARSER_ERROR =
+      SoyErrorKind.of("parse error at ''{0}'': expected {1}");
   private static final SoyErrorKind PLURAL_AND_SELECT_NOT_ALLOWED_INSIDE_PLURAL_BLOCK =
       SoyErrorKind.of("Tags ''plural'' and ''select'' are not allowed inside ''plural'' blocks.");
   private static final SoyErrorKind PLURAL_CASE_OUT_OF_BOUNDS =
       SoyErrorKind.of("Plural case ''{0}'' must be a nonnegative integer.");
   private static final SoyErrorKind PLURAL_CASE_MALFORMED =
       SoyErrorKind.of("Invalid number in ''plural case'' command text.");
-  private static final SoyErrorKind PLURAL_COMMAND_INVALID_ATTRIBUTE =
-      SoyErrorKind.of("Invalid ''plural'' command attribute \"{0}\".");
   private static final SoyErrorKind PLURAL_OFFSET_OUT_OF_BOUNDS =
       SoyErrorKind.of("The ''offset'' for plural (''{0}'') must be a positive integer.");
   private static final SoyErrorKind PRINT_COMMAND_WITH_EMPTY_TEXT =
@@ -484,14 +486,14 @@ public class SoyFileParser {
    *
    * See https://javacc.org/tutorials/errorrecovery
    */
-  private Token reportFileErrorAndSkipTo(ParseException error, int kind) {
+  private Token reportFileErrorAndSkipTo(ParseException error, int skipTo) {
     ParseErrors.reportSoyFileParseException(errorReporter, filePath, error);
     Token t;
     do {
       t = getNextToken();
     // We need to halt when observing EOF.  The behavior of the token manager is to keep returning
     // EOF from getNextToken(), so if we don't check for it this will become an infinite loop.
-    } while (t.kind != kind && t.kind != EOF);
+    } while (t.kind != skipTo && t.kind != EOF);
     return t;
   }
 
@@ -501,8 +503,10 @@ public class SoyFileParser {
    *
    * See https://javacc.org/tutorials/errorrecovery
    */
-  private Token reportTemplateBodyErrorAndSkipTo(ParseException error, int kind) {
+  private Token reportTemplateBodyErrorAndSkipTo(ParseException error, int... skipTo) {
     ParseErrors.reportSoyFileParseException(errorReporter, filePath, error);
+
+    ImmutableSet<Integer> skipToKinds = ImmutableSet.copyOf(Ints.asList(skipTo));
     Token t;
     do {
       t = getNextToken();
@@ -511,7 +515,17 @@ public class SoyFileParser {
       }
     // We need to halt when observing EOF.  The behavior of the token manager is to keep returning
     // EOF from getNextToken(), so if we don't check for it this will become an infinite loop.
-    } while (t.kind != kind && t.kind != EOF);
+    } while (!skipToKinds.contains(t.kind) && t.kind != EOF);
+    return t;
+  }
+
+  private Token skipTo(int skipTo) {
+    Token t;
+    do {
+      t = getNextToken();
+    // We need to halt when observing EOF.  The behavior of the token manager is to keep returning
+    // EOF from getNextToken(), so if we don't check for it this will become an infinite loop.
+    } while (t.kind != skipTo && t.kind != EOF);
     return t;
   }
 
@@ -553,8 +567,13 @@ public class SoyFileParser {
   }
 
   /** Create an error ExprNode at the location of the given tokens. */
-  private ExprNode errorExpr(Token tok1, Token... rest) {
+  private VarRefNode errorExpr(Token tok1, Token... rest) {
     return VarRefNode.error(createSrcLoc(tok1, rest));
+  }
+
+  /** Create an error ExprNode at the given source location. */
+  private VarRefNode errorExpr(SourceLocation location) {
+    return VarRefNode.error(location);
   }
 
   // Methods for managing lexical states from the parser
@@ -823,7 +842,7 @@ TOKEN_MGR_DECLS: {
 | < CMD_FULL_ELSE                : "{else}"         >
 | < CMD_CLOSE_IF                 : "{/if}"          >
 
-| < CMD_BEGIN_LET                : "{let" <WS>      > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
+| < CMD_BEGIN_LET                : "{let" <WS>      > { pushState(EXPR); }
 | < CMD_CLOSE_LET                : "{/let}"         >
 
 | < CMD_BEGIN_FOR                : "{for" <WS>      > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
@@ -1081,7 +1100,7 @@ TOKEN_MGR_DECLS: {
 // instead this will get turned into ParseExceptions which have more debugging information.
 // NOTE: this has to come after any single character token definition in these states.
 // TODO(slaks): Apply to all states.
-<DEFAULT, IN_CMD_TAG_STRUCTURED, ALIAS, TYPE_EXPR> TOKEN: {
+<DEFAULT, IN_CMD_TAG_STRUCTURED, ALIAS, EXPR, TYPE_EXPR> TOKEN: {
   < UNEXPECTED_TOKEN : ~[] >
 }
 
@@ -2051,15 +2070,18 @@ private MsgPluralNode MsgPlural() :
       if (pluralExpr.getSourceLocation().isJustBefore(offsetAttr.getName().location())) {
         errorReporter.report(
             offsetAttr.getName().location(),
-            MISSING_WHITESPACE_BEFORE_ATTRIBUTE,
-            offsetAttr.getName().identifier());
+            PARSER_ERROR,
+            offsetAttr.getName().identifier(),
+            "whitespace");
       }
 
       if (!offsetAttr.getName().identifier().equals("offset")) {
         errorReporter.report(
             offsetAttr.getName().location(),
-            PLURAL_COMMAND_INVALID_ATTRIBUTE,
-            offsetAttr.getName().identifier());
+            CommandTagAttribute.UNSUPPORTED_ATTRIBUTE_KEY_SINGLE,
+            offsetAttr.getName().identifier(),
+            "plural",
+            "offset");
         offsetAttr = null;
       }
     }
@@ -2503,55 +2525,79 @@ private CssNode CssStmt() :
  */
 private LetNode LetStmt() :
 {
-  SourceItemInfo<String> cmdText;
-  Token tagBegin, tagEnd;
-  LetNode letNode;
+  Token tagBegin, tagEnd = null, colon = null;
+  VarRefNode letVar = null;
+  ExprNode valueExpr = null;
+  CommandTagAttribute attr = null;
+  List<StandaloneNode> templateBlock = ImmutableList.of();
 }
 {
   tagBegin = <CMD_BEGIN_LET>
-  cmdText = CmdTextWithSource()
-  {
-    Checkpoint cmdTextCheckpoint = errorReporter.checkpoint();
-    LetNode.CommandTextParseResult result =
-        LetNode.parseCommandTextHelper(
-            cmdText.parsedContent(),
-            context,
-            cmdText.srcLocation());
-  }
-  (
-    tagEnd = <CMD_SELF_CLOSE>
 
-    { letNode = new LetValueNode.Builder(
-          nodeIdGen.genId(), result, createSrcLoc(tagBegin, tagEnd))
-          .build(cmdTextCheckpoint, errorReporter);
-    }
-  |
-    {
-      pushState(TEMPLATE_DEFAULT);
-      Checkpoint checkpoint = errorReporter.checkpoint();
-    }
-    tagEnd = <CMD_END>
-    { LetContentNode letContentNode = new LetContentNode.Builder(
-          nodeIdGen.genId(), result, createSrcLoc(tagBegin, tagEnd))
-          .build(cmdTextCheckpoint, errorReporter);
-      List<StandaloneNode> templateBlock;
-    }
-    templateBlock = TemplateBlock()
-    { letContentNode.addChildren(templateBlock);
-      letNode = letContentNode;
-    }
-    {
-      // if there was an error or there is about to be one, be more careful popping the stack.
-      if (errorReporter.errorsSince(checkpoint) || getToken(1).kind != CMD_CLOSE_LET) {
-        popStateIfStateIs(TEMPLATE_DEFAULT);
-      } else {
-        popState();
+  try {
+    letVar = VarRef()
+
+    (
+      // Value expression
+      colon = <COLON>
+      valueExpr = Expr()
+      tagEnd = <CMD_SELF_CLOSE>
+    |
+      // Content block
+      [
+        attr = ExprAttribute()
+        {
+          if (!attr.getName().identifier().equals("kind")) {
+            errorReporter.report(
+                attr.getName().location(),
+                CommandTagAttribute.UNSUPPORTED_ATTRIBUTE_KEY_SINGLE,
+                attr.getName().identifier(),
+                "let",
+                "kind");
+            attr = null;
+          }
+        }
+      ]
+      tagEnd = <CMD_END>
+      templateBlock = TemplateBlock()
+      <CMD_CLOSE_LET>
+    )
+  } catch (ParseException e) {
+    if (tagEnd == null) {
+      tagEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END, CMD_SELF_CLOSE);
+
+      // If this is a let content block, still parse the content body but throw it away.
+      if ((letVar != null && colon == null) || (letVar == null && tagEnd.kind == CMD_END)) {
+        templateBlock = TemplateBlock();
+        skipTo(CMD_CLOSE_LET);
       }
-    }
-    <CMD_CLOSE_LET>
-  )
 
-  { return letNode; }
+      // TODO(user): return null
+      return LetValueNode.error(createSrcLoc(tagBegin, tagEnd));
+    }
+
+    // If tagEnd != null, then this error is from TemplateBlock() or CMD_CLOSE_LET. Propagate.
+    throw e;
+  }
+
+  {
+    // TODO(user): Add another production that doesn't allow for $ij
+    if (letVar.isDollarSignIjParameter()) {
+      errorReporter.report(letVar.getSourceLocation(), UNEXPECTED_IJ_DATA_REFERENCE);
+      letVar = errorExpr(letVar.getSourceLocation());
+    }
+
+    SourceLocation loc = createSrcLoc(tagBegin, tagEnd);
+
+    if (valueExpr != null) {
+      return new LetValueNode(nodeIdGen.genId(), loc, letVar.getName(), valueExpr);
+    }
+
+    ContentKind contentKind = (attr != null) ? attr.valueAsContentKind(errorReporter) : null;
+    LetContentNode node = new LetContentNode(nodeIdGen.genId(), loc, letVar.getName(), contentKind);
+    node.addChildren(templateBlock);
+    return node;
+  }
 }
 
 

@@ -47,7 +47,9 @@ public final class CommandTagAttribute {
   private static final SoyErrorKind INVALID_REQUIRE_CSS_ATTRIBUTE =
       SoyErrorKind.of("Invalid required CSS namespace name ''{0}'', expected an identifier.");
   static final SoyErrorKind UNSUPPORTED_ATTRIBUTE_KEY =
-      SoyErrorKind.of("Unsupported attribute ''{0}'', expected one of {1}.");
+      SoyErrorKind.of("Unsupported attribute ''{0}'' for ''{1}'' tag, expected one of {2}.");
+  public static final SoyErrorKind UNSUPPORTED_ATTRIBUTE_KEY_SINGLE =
+      SoyErrorKind.of("Unsupported attribute ''{0}'' for ''{1}'' tag, expected ''{2}''.");
 
   /**
    * Identifies duplicate attributes, reports an error for each one, and removes them from the
@@ -168,7 +170,7 @@ public final class CommandTagAttribute {
   }
 
   @Nullable
-  ContentKind valueAsContentKind(ErrorReporter errorReporter) {
+  public ContentKind valueAsContentKind(ErrorReporter errorReporter) {
     ContentKind contentKind = NodeContentKinds.forAttributeValue(value);
     if (contentKind == null) {
       errorReporter.report(

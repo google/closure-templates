@@ -67,12 +67,12 @@ public final class DesugarHtmlNodesPassTest {
   public void testRewrites_handle_whitespace() {
     assertRewrite(
             "\n"
-                + "{let $t: 1 /}\n"
+                + "{let $t : 1 /}\n"
                 + "<{$t ? 'div' : 'span'} {if $t}onclick=\"foo()\"{/if}>\n"
                 + "</{$t ? 'div' : 'span'}>")
         .isEqualTo(
             ""
-                + "{let $t: 1 /}"
+                + "{let $t : 1 /}"
                 + "<{$t ? 'div' : 'span'}{if $t} onclick=\"foo()\"{/if}></{$t ? 'div' : 'span'}>");
   }
 
@@ -80,8 +80,8 @@ public final class DesugarHtmlNodesPassTest {
   // raw text with no tags
   @Test
   public void testRewrites_handleBlocksWithPcDataContent() {
-    assertRewrite("{let $t: 1 /}{if $t}hello{else}world{/if}")
-        .isEqualTo("{let $t: 1 /}{if $t}hello{else}world{/if}");
+    assertRewrite("{let $t : 1 /}{if $t}hello{else}world{/if}")
+        .isEqualTo("{let $t : 1 /}{if $t}hello{else}world{/if}");
   }
 
   private static StringSubject assertRewrite(String input) {

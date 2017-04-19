@@ -148,6 +148,7 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
               name.location(),
               CommandTagAttribute.UNSUPPORTED_ATTRIBUTE_KEY,
               name.identifier(),
+              "deltemplate",
               ImmutableList.of(
                   "autoescape",
                   "kind",

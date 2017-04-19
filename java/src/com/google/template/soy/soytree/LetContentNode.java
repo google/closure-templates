@@ -20,9 +20,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.MixinParentNode;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
-import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ErrorReporter.Checkpoint;
-import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 import com.google.template.soy.types.primitive.SanitizedType;
 import com.google.template.soy.types.primitive.StringType;
@@ -37,10 +35,20 @@ import javax.annotation.Nullable;
  */
 public final class LetContentNode extends LetNode implements RenderUnitNode {
 
-  public static final SoyErrorKind NON_SELF_ENDING_WITH_VALUE =
-      SoyErrorKind.of(
-          "A ''let'' tag should contain a value if and only if it is also self-ending "
-              + "(with a trailing ''/'').");
+  /**
+   * Creates a LetContentNode for a compiler-generated variable. Use this in passes that rewrite the
+   * tree and introduce local temporary variables.
+   */
+  public static LetContentNode forVariable(
+      int id, SourceLocation sourceLocation, String varName, @Nullable ContentKind contentKind) {
+    LetContentNode node = new LetContentNode(id, sourceLocation, varName, contentKind);
+    node.getVar()
+        .setType(
+            contentKind != null
+                ? SanitizedType.getTypeForContentKind(contentKind)
+                : StringType.getInstance());
+    return node;
+  }
 
   /** The mixin object that implements the ParentNode functionality. */
   private final MixinParentNode<StandaloneNode> parentMixin;
@@ -48,31 +56,11 @@ public final class LetContentNode extends LetNode implements RenderUnitNode {
   /** The let node's content kind, or null if no 'kind' attribute was present. */
   @Nullable private final ContentKind contentKind;
 
-  private LetContentNode(
-      int id,
-      SourceLocation sourceLocation,
-      String localVarName,
-      String commandText,
-      ContentKind contentKind) {
-    super(id, sourceLocation, localVarName);
+  public LetContentNode(
+      int id, SourceLocation location, String varName, @Nullable ContentKind contentKind) {
+    super(id, location, varName);
     this.contentKind = contentKind;
     this.parentMixin = new MixinParentNode<>(this);
-  }
-
-  /**
-   * Creates a LetContentNode for a compiler-generated variable. Use this in passes that rewrite the
-   * tree and introduce local temporary variables.
-   */
-  public static LetContentNode forVariable(
-      int id, SourceLocation sourceLocation, String varName, ContentKind contentKind) {
-    LetContentNode node =
-        new LetContentNode(id, sourceLocation, varName, "$" + varName, contentKind);
-    node.getVar()
-        .setType(
-            contentKind != null
-                ? SanitizedType.getTypeForContentKind(contentKind)
-                : StringType.getInstance());
-    return node;
   }
 
   /**
@@ -91,12 +79,6 @@ public final class LetContentNode extends LetNode implements RenderUnitNode {
     return Kind.LET_CONTENT_NODE;
   }
 
-  /** Return The local variable name (without preceding '$'). */
-  @Override
-  public final String getVarName() {
-    return var.name();
-  }
-
   @Override
   @Nullable
   public ContentKind getContentKind() {
@@ -106,8 +88,8 @@ public final class LetContentNode extends LetNode implements RenderUnitNode {
   @Override
   public String getCommandText() {
     return (contentKind == null)
-        ? "$" + var.name()
-        : "$" + var.name() + " kind=\"" + getContentKind().toString().toLowerCase() + "\"";
+        ? "$" + getVarName()
+        : "$" + getVarName() + " kind=\"" + NodeContentKinds.toAttributeValue(contentKind) + "\"";
   }
 
   @Override
@@ -198,50 +180,5 @@ public final class LetContentNode extends LetNode implements RenderUnitNode {
   @Override
   public void appendSourceStringForChildren(StringBuilder sb) {
     parentMixin.appendSourceStringForChildren(sb);
-  }
-
-  /** Builder for {@link LetContentNode}. */
-  public static final class Builder {
-
-    private static LetContentNode error() {
-      return new LetContentNode(-1, SourceLocation.UNKNOWN, "$error", "$error", null);
-    }
-
-    private final int id;
-    private final CommandTextParseResult parseResult;
-    private final SourceLocation sourceLocation;
-
-    /**
-     * @param id The node's id.
-     * @param commandText The node's command text.
-     * @param sourceLocation The node's source location.
-     */
-    public Builder(int id, CommandTextParseResult parseResult, SourceLocation sourceLocation) {
-      this.id = id;
-      this.parseResult = parseResult;
-      this.sourceLocation = sourceLocation;
-    }
-
-    /**
-     * Returns a new {@link LetContentNode} built from the builder's state. If the builder's state
-     * is invalid, errors are reported to the {@code errorManager} and {Builder#error} is returned.
-     */
-    public LetContentNode build(Checkpoint checkpoint, ErrorReporter errorReporter) {
-
-      if (parseResult.valueExpr != null) {
-        errorReporter.report(sourceLocation, NON_SELF_ENDING_WITH_VALUE);
-      }
-
-      if (errorReporter.errorsSince(checkpoint)) {
-        return error();
-      }
-
-      return new LetContentNode(
-          id,
-          sourceLocation,
-          parseResult.localVarName,
-          parseResult.originalCommandText,
-          parseResult.contentKind);
-    }
   }
 }

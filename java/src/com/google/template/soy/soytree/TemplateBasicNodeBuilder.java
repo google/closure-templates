@@ -111,6 +111,7 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder {
               name.location(),
               CommandTagAttribute.UNSUPPORTED_ATTRIBUTE_KEY,
               name.identifier(),
+              "template",
               ImmutableList.of(
                   "private",
                   "visibility",

@@ -71,6 +71,7 @@ public final class NamespaceDeclaration {
               attr.getName().location(),
               CommandTagAttribute.UNSUPPORTED_ATTRIBUTE_KEY,
               attr.getName().identifier(),
+              "namespace",
               ImmutableList.of("autoescape", "cssbase", "requirecss", "stricthtml"));
           break;
       }

@@ -59,8 +59,7 @@ public final class VarRefNode extends AbstractExprNode {
       boolean isDollarSignIjParameter,
       @Nullable VarDefn defn) {
     super(sourceLocation);
-    Preconditions.checkArgument(name != null);
-    this.name = name;
+    this.name = Preconditions.checkNotNull(name);
     this.isDollarSignIjParameter = isDollarSignIjParameter;
     this.defn = defn;
   }
