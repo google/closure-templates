@@ -2044,8 +2044,9 @@ private List<StandaloneNode> TemplateBlockForMsg() :
 
 
 /**
- * MsgPlural -> PluralTag MaybeWhitespace ( CaseTag TemplateBlockForMsg )*
- *              DefaultTag TemplateBlockForMsg EndPluralTag
+ * MsgPlural -> CmdBeginPlural Expr [ ExprAttribute ] CmdEnd SkipWhitespace
+ *              ( CmdBeginCase Expr CmdEnd TemplateBlockForMsg )*
+ *              CmdFullDefault TemplateBlockForMsg CmdClosePlural
  */
 private MsgPluralNode MsgPlural() :
 {
@@ -2178,8 +2179,9 @@ private MsgPluralNode MsgPlural() :
 
 
 /**
- * MsgSelect -> SelectTag MaybeWhitespace ( CaseTag TemplateBlockForMsg )*
- *              DefaultTag TemplateBlockForMsg EndSelectTag
+ * MsgSelect -> CmdBeginSelect Expr CmdEnd SkipWhitespace
+ *              ( CmdBeginCase Expr CmdEnd TemplateBlockForMsg )*
+ *              CmdFullDefault TemplateBlockForMsg CmdCloseSelect
  */
 private MsgSelectNode MsgSelect() :
 {
@@ -2453,7 +2455,7 @@ private PrintNode PrintStmt() :
 
 
 /**
- * XidStmt -> <CMD_BEGIN_XID> <NAME> ( ( . <NAME> )+ | ( - <NAME> ) + )? <CMD_END>
+ * XidStmt -> CmdBeginXid Name ( ( "." Name )+ | ( - Name )+ )? CmdEnd
  *
  * Valid xid names are one or more identifiers, separated by either all dots or all dashes, but
  * not both in the same xid.
@@ -2524,8 +2526,8 @@ private CssNode CssStmt() :
 
 
 /**
- * LetStmt -> <CMD_BEGIN_LET> CmdText()
- *            ( <CMD_SELF_CLOSE> | <CMD_END> TemplateBlock() <CMD_CLOSE_LET> )
+ * LetStmt -> CmdBeginLet
+ *            ( ":" Expr CmdSelfClose | [ ExprAttribute ] CmdEnd TemplateBlock CmdCloseLet )
  */
 private LetNode LetStmt() :
 {
@@ -2605,7 +2607,10 @@ private LetNode LetStmt() :
 
 
 /**
- * IfStmt -> IfTag TemplateBlock ( ElseifTag TemplateBlock )* [ ElseTag TemplateBlock ] EndIfTag
+ * IfStmt -> CmdBeginIf Expr CmdEnd TemplateBlock
+ *           ( CmdBeginElseif Expr CmdEnd TemplateBlock )*
+ *           [ CmdFullElse TemplateBlock ]
+ *           CmdCloseIf
  */
 private IfNode IfStmt() :
 {
@@ -2672,8 +2677,10 @@ private IfNode IfStmt() :
 
 
 /**
- * SwitchStmt -> SwitchTag MaybeWhitespace ( CaseTag TemplateBlock )* [ DefaultTag TemplateBlock ]
- *               EndSwitchTag
+ * SwitchStmt -> CmdBeginSwitch Expr CmdEnd SkipWhitespace
+ *               ( CmdBeginCase ExprList CmdEnd TemplateBlock )+
+ *               [ CmdFullDefault TemplateBlock ]
+ *               CmdCloseSwitch
  */
 private SwitchNode SwitchStmt() :
 {
@@ -2984,7 +2991,7 @@ private CallParamNode CallParam() :
 
 
 /**
- * LogStmt -> LogTag TemplateBlock EndLogTag
+ * LogStmt -> CmdOpenLog TemplateBlock CmdCloseLog
  */
 private LogNode LogStmt() :
 {
@@ -2993,9 +3000,7 @@ private LogNode LogStmt() :
 }
 {
   open = <CMD_OPEN_LOG>
-  {
-    LogNode logNode = new LogNode(nodeIdGen.genId(), createSrcLoc(open));
-  }
+  { LogNode logNode = new LogNode(nodeIdGen.genId(), createSrcLoc(open)); }
 
   templateBlock = TemplateBlock()
   { logNode.addChildren(templateBlock); }
@@ -3007,7 +3012,7 @@ private LogNode LogStmt() :
 
 
 /**
- * DebuggerStmt -> DebuggerTag TemplateBlock EndDebuggerTag
+ * DebuggerStmt -> CmdFullDebugger
  */
 private DebuggerNode DebuggerStmt() :
 {
