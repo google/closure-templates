@@ -1884,7 +1884,7 @@ public final class TemplateParserTest {
     assertThat(errors.get(0)).contains("Invalid callee name \"123\" for 'call' command.");
     assertThat(errors.get(1)).contains("Invalid delegate name \"123\" for 'delcall' command.");
     assertThat(errors.get(2)).contains("Invalid 'foreach' command text \"foo in bar\".");
-    assertThat(errors.get(3)).contains("parse error at '/}': expected $ij, or variable");
+    assertThat(errors.get(3)).contains("parse error at '/}': expected variable");
   }
 
   // -----------------------------------------------------------------------------------------------

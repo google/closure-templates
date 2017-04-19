@@ -406,8 +406,6 @@ public class SoyFileParser {
   private static final SoyErrorKind SINGLE_IDENTIFIER_KEY_IN_MAP_LITERAL =
       SoyErrorKind.of("Disallowed single-identifier key \"{0}\" in map literal "
           + "(please surround with single quotes for string or parentheses for global).");
-  private static final SoyErrorKind UNEXPECTED_IJ_DATA_REFERENCE =
-      SoyErrorKind.of("Expected a variable name, but found an ''ij'' data reference.");
 
 
   /** Type registry for resolving type names. */
@@ -2586,12 +2584,6 @@ private LetNode LetStmt() :
   }
 
   {
-    // TODO(user): Add another production that doesn't allow for $ij
-    if (letVar.isDollarSignIjParameter()) {
-      errorReporter.report(letVar.getSourceLocation(), UNEXPECTED_IJ_DATA_REFERENCE);
-      letVar = errorExpr(letVar.getSourceLocation());
-    }
-
     SourceLocation loc = createSrcLoc(tagBegin, tagEnd);
 
     if (valueExpr != null) {
@@ -3422,7 +3414,7 @@ private ExprNode PrecExpr9() :
 
 
 /**
- * Primary -> "(" Expr ")" | VarRef | GlobalOrFunction | CollectionLiteral | Primitive
+ * Primary -> "(" Expr ")" | IjRef | VarRef | GlobalOrFunction | CollectionLiteral | Primitive
  */
 private ExprNode Primary() :
 {
@@ -3433,6 +3425,8 @@ private ExprNode Primary() :
     <LPAREN>
     primary = Expr()
     <RPAREN>
+  |
+    primary = IjRef()
   |
     primary = VarRef()
   |
@@ -3450,31 +3444,37 @@ private ExprNode Primary() :
 
 
 /**
- * VarRef -> ( "$ij." Ident | DollarIdent )
+ * IjRef -> "$ij" "." Ident
  */
-private VarRefNode VarRef() :
+private VarRefNode IjRef() :
 {
   Token ij;
   Token ident;
 }
 {
-  (
-    ij = <IJ>
-    // avoid a choice conflict with field access by always prefering to grab the <DOT> from this
-    // production instead of field access
-    [ LOOKAHEAD(1)
-      <DOT>
-      ident = <IDENT>
-      { return new VarRefNode(ident.image, createSrcLoc(ij, ident), true, null); }
-    ]
-    { SourceLocation loc = createSrcLoc(ij);
-      errorReporter.report(loc, INVALID_VAR_NAME_IJ);
-      return new VarRefNode("ij", loc, false, null);  // keep going as best we can
-    }
-  |
-    ident = <DOLLAR_IDENT>
-    { return new VarRefNode(ident.image.substring(1), createSrcLoc(ident), false, null); }
-  )
+  ij = <IJ>
+  try {
+    <DOT>
+    ident = <IDENT>
+    { return new VarRefNode(ident.image, createSrcLoc(ij, ident), true, null); }
+  } catch (ParseException e) {
+    SourceLocation loc = createSrcLoc(ij);
+    errorReporter.report(loc, INVALID_VAR_NAME_IJ);
+    return new VarRefNode("ij", loc, false, null);
+  }
+}
+
+
+/**
+ * VarRef -> DollarIdent
+ */
+private VarRefNode VarRef() :
+{
+  Token ident;
+}
+{
+  ident = <DOLLAR_IDENT>
+  { return new VarRefNode(ident.image.substring(1), createSrcLoc(ident), false, null); }
 }
 
 

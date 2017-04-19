@@ -33,10 +33,10 @@ public final class LetNodeTest {
   @Test
   public void testInvalidCommandText() {
     assertThatTemplateContent("{let foo /}\n")
-        .causesError("parse error at 'foo': expected $ij, or variable")
+        .causesError("parse error at 'foo': expected variable")
         .at(1, 6);
     assertThatTemplateContent("{let\n\n\nfoo /}\n")
-        .causesError("parse error at 'foo': expected $ij, or variable")
+        .causesError("parse error at 'foo': expected variable")
         .at(4, 1);
   }
 }
