@@ -27,6 +27,7 @@ package com.google.template.soy.parsepasses.contextautoesc;
  * {template main}
  *   &lt;a onclick="alert({call foo/})"&gt;{call foo /}&lt;/a&gt;
  * {/template}
+ *
  * {template <b>foo</b> private="true" autoescape="contextual"}
  *   {print $msg}
  * {/template}
@@ -39,10 +40,12 @@ package com.google.template.soy.parsepasses.contextautoesc;
  * {template main}
  *   &lt;a onclick="alert({call foo/})"&gt;{call foo /}&lt;/a&gt;
  * {/template}
+ *
  * {template <abbr title="derived for PCDATA">foo</abbr> private="true"}
  *   {print $msg <b>|escapeHtml</b>}
  * {/template}
- * {template <abbr title="derived for JS">foo__X1234</abbr> private="true"}
+ *
+ * {template <abbr title="derived for JS">foo__C1234</abbr> private="true"}
  *   {print $msg <b>|escapeJsValue</b>}
  * {/template}
  * </pre>

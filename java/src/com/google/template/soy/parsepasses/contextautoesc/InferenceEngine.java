@@ -299,7 +299,7 @@ final class InferenceEngine {
               node);
         }
         Context.MsgEscapingStrategy strategy = maybeStrategy.get();
-        inferences.setEscapingDirectives(node, context, strategy.escapingModesForFullMessage);
+        inferences.setEscapingDirectives(node, strategy.escapingModesForFullMessage);
 
         // (2) Run the inference engine on the parts of the message in that context.
         Context msgEndContext =
@@ -575,7 +575,7 @@ final class InferenceEngine {
               escapingModes = ImmutableList.of(defaultEscapingMode);
               break;
           }
-          inferences.setEscapingDirectives(printNode, context, escapingModesToSet);
+          inferences.setEscapingDirectives(printNode, escapingModesToSet);
         } else if (!context.isCompatibleWith(escapingModes.get(0))) {
           String msg =
               String.format("Escaping modes %s not compatible with %s.", escapingModes, context);
@@ -668,7 +668,6 @@ final class InferenceEngine {
           // bad existing templates.
           inferences.setEscapingDirectives(
               callNode,
-              callContext,
               callContext.getEscapingModes(ImmutableList.<PrintDirectiveNode>of()));
           return Pair.of(templateName, getContextAfterDynamicValue(callNode, startContext));
         } else if (startContext.state == HtmlContext.TEXT) {

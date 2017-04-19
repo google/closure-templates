@@ -1592,7 +1592,8 @@ private SourceItemInfo<List<String>> CmdTextPartsWithSource() :
 
 /**
  * Matches whitespace for the purpose of ignoring it.
- * SkipWhitespace ->  ( <TOKEN_WS> )*
+ *
+ * SkipWhitespace -> ( <TOKEN_WS> )*
  */
 private void SkipWhitespace() : { }
 {
@@ -1794,14 +1795,12 @@ private List<StandaloneNode> TemplateBlock() :
 }
 
 
-
 // -------------------------------------------------------------------------------------------------
 // Soy statements.
 
 
 /**
- * Stmt ->   MsgStmt | PrintStmt | XidStmt | CssStmt | LetStmt | IfStmt | SwitchStmt
- *         | ForeachStmt | ForStmt| CallStmt | LogStmt | DebuggerStmt
+ * Stmt -> NonPrintableStmt | PrintableStmt | ControlFlowStmt
  */
 private StatementNode Stmt() :
 {
@@ -1818,7 +1817,7 @@ private StatementNode Stmt() :
 }
 
 /**
- * NonPrintableStmt ->  LetStmt | LogStmt | DebuggerStmt
+ * NonPrintableStmt -> LetStmt | LogStmt | DebuggerStmt
  */
 private StatementNode NonPrintableStmt() :
 {
@@ -1835,7 +1834,7 @@ private StatementNode NonPrintableStmt() :
 }
 
 /**
- * PrintableStmt ->   MsgStmt | PrintStmt | XidStmt | CssStmt | CallStmt
+ * PrintableStmt -> MsgStmt | XidStmt | CssStmt | CallStmt | PrintStmt
  */
 private StatementNode PrintableStmt() :
 {
@@ -1874,7 +1873,7 @@ private StatementNode ControlFlowStmt() :
 
 /**
  * MsgStmt -> <CMD_BEGIN_MSG> CmdText <CMD_END> TemplateBlockForMsg
- * ( <CMD_BEGIN_FALLBACK_MSG> CmdText <CMD_END> TemplateBlockForMsg )? <CMD_CLOSE_MSG>
+ *            ( <CMD_BEGIN_FALLBACK_MSG> CmdText <CMD_END> TemplateBlockForMsg )? <CMD_CLOSE_MSG>
  */
 private MsgFallbackGroupNode MsgStmt() :
 {
@@ -1927,7 +1926,7 @@ private MsgFallbackGroupNode MsgStmt() :
 
 
 /**
- * TemplateBlockForMsg ->   (Whitespace) MsgPlural MaybeWhitespace
+ * TemplateBlockForMsg -> (Whitespace) MsgPlural MaybeWhitespace
  *                        | MaybeWhitespace MsgSelect MaybeWhitespace
  *                        | ( ContiguousRawTextAsNode | Stmt | MsgHtmlTag )*
  */
@@ -2499,7 +2498,8 @@ private CssNode CssStmt() :
 
 
 /**
- * LetStmt -> <CMD_BEGIN_LET> CmdText() (<CMD_SELF_CLOSE>|<CMD_END> TemplateBlock() <CMD_CLOSE_LET>)
+ * LetStmt -> <CMD_BEGIN_LET> CmdText()
+ *            ( <CMD_SELF_CLOSE> | <CMD_END> TemplateBlock() <CMD_CLOSE_LET> )
  */
 private LetNode LetStmt() :
 {
@@ -3036,6 +3036,7 @@ private PrimitiveNode Primitive() :
 
 /**
  * Matches a comma-separated list of one or more expressions.
+ *
  * ExprList -> Expr ( "," Expr )*
  */
 private ImmutableList<ExprNode> ExprList() :
@@ -3060,6 +3061,7 @@ private ImmutableList<ExprNode> ExprList() :
 
 /**
  * Matches a full expression.
+ *
  * Expr -> PrecExpr1
  */
 private ExprNode Expr() :
@@ -3091,13 +3093,14 @@ private ExprNode Expr() :
 // the potential for ambiguity (in the tokenizer only) with minus.  This is resolved by
 // handling those cases separately.
 
+
 /**
  * Matches expressions with precedence levels 1 and higher.
  *
  * This rule handles precedence level 1, which includes the binary null-coalescing operator "?:" and
  * the ternary conditional operator "? :".
  *
- * PrecExpr1 -> PrecExpr(2) [ ( "?:" PrecExpr1 | "?" PrecExpr1 ":" PrecExpr1 ) ]
+ * PrecExpr1 -> PrecExpr2 [ ( "?:" PrecExpr1 | "?" PrecExpr1 ":" PrecExpr1 ) ]
  */
 private ExprNode PrecExpr1() :
 {
@@ -3126,6 +3129,7 @@ private ExprNode PrecExpr1() :
 
   { return expr; }
 }
+
 
 /**
  * Matches expressions with precedence levels 2 and higher.
@@ -3199,6 +3203,7 @@ private ExprNode PrecExpr4() :
   { return expr; }
 }
 
+
 /**
  * Matches expressions with precedence levels 5 and higher.
  */
@@ -3229,6 +3234,7 @@ private ExprNode PrecExpr5() :
   { return expr; }
 }
 
+
 /**
  * Matches expressions with precedence levels 6 and higher.
  */
@@ -3254,6 +3260,7 @@ private ExprNode PrecExpr6() :
 
   { return expr; }
 }
+
 
 /**
  * Matches expressions with precedence levels 7 and higher.
@@ -3310,6 +3317,7 @@ private ExprNode PrecExpr8() :
   { return expr; }
 }
 
+
 /**
  * Matches expressions with precedence level 9.
  *
@@ -3360,8 +3368,7 @@ private ExprNode PrecExpr9() :
 
 
 /**
- * Primary ->   "(" Expr ")"
- *            | VarRef | GlobalOrFunction | ListLiteral | MapLiteral | Primitive
+ * Primary -> "(" Expr ")" | VarRef | GlobalOrFunction | CollectionLiteral | Primitive
  */
 private ExprNode Primary() :
 {
@@ -3387,8 +3394,9 @@ private ExprNode Primary() :
   { return primary; }
 }
 
+
 /**
- * VarRef ->  ( "$ij." Ident | DollarIdent )
+ * VarRef -> ( "$ij." Ident | DollarIdent )
  */
 private VarRefNode VarRef() :
 {
@@ -3420,7 +3428,8 @@ private VarRefNode VarRef() :
  * Parses a global, a function call, or a proto init call.
  * These share a production because they share a common prefix.
  *
- * GlobalOrFunction -> Identifier() [ "(" [ Expr() ( "," Expr() )* | Ident ":" Expr() ( "," Ident ":" Expr() )* ] ")" ]
+ * GlobalOrFunction -> Identifier
+ *                     [ "(" [ Expr ( ( "," Expr )* | ":" Expr ( "," Ident ":" Expr )* ) ] ")" ]
  */
 private ExprNode GlobalOrFunction() :
 {
@@ -3515,9 +3524,10 @@ private ExprNode GlobalOrFunction() :
 }
 
 /**
- * Parses map and list literals.  Both are primary expressions that start with '['
+ * Parses map and list literals.  Both are primary expressions that start with "[".
  *
- * CollectionLiteral -> "[ ( "]" | :" "]" | Expr() (("," Expr())* | ( ":" Expr() ("," Expr() ":" Expr())*) [","]]))
+ * CollectionLiteral -> "[" ( "]" | ":" "]"
+ *                      | Expr ( ( ("," Expr)* | ( ":" Expr ( "," Expr ":" Expr )* ) ) [","] "]" ) )
  */
 private ExprNode CollectionLiteral() :
 {
@@ -3607,10 +3617,11 @@ private ExprNode MapKeyOrExpr() :
   { return itemExpr; }
 }
 
+
 /**
  * A helper to parse a dotted identifier.
  *
- * Identifier -> Ident ( Dot Ident )*
+ * Identifier -> Ident ( "." Ident )*
  */
 private Identifier Identifier() :
 {
@@ -3658,7 +3669,7 @@ private Identifier Identifier() :
 
 
 /**
- * TypeExpr -> Primary ("|" Primary)*
+ * TypeExpr -> Primary ( "|" Primary )*
  */
 private TypeNode TypeExpr() :
 {
@@ -3698,10 +3709,8 @@ private TypeNode PrimaryType() :
 {
   (
     type = NamedType()
-  |
-    type = UnknownType()
-  |
-    type = RecordType()
+  | type = UnknownType()
+  | type = RecordType()
   )
 
   { return type; }
@@ -3762,7 +3771,7 @@ private RecordTypeNode.Property RecordField() :
 
 
 /**
- * NamedType -> T_NAME ( "." T_NAME )* [ < TypeExpr() ("," TypeExpr())* > ]
+ * NamedType -> T_NAME ( "." T_NAME )* [ "<" TypeExpr ( "," TypeExpr )* ">" ]
  *
  * <p>This includes any named type including our generic types
  */

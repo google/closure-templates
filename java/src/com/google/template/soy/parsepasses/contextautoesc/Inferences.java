@@ -18,7 +18,6 @@ package com.google.template.soy.parsepasses.contextautoesc;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -83,9 +82,6 @@ final class Inferences {
 
   /** The types of templates. */
   private final Map<String, Context> templateNameToEndContext = Maps.newLinkedHashMap();
-
-  /** Maps IDs of <code>{print}</code> commands to the context in which they start. */
-  private final Map<SoyNode, Context> nodeToStartContext = Maps.newIdentityHashMap();
 
   /** Maps IDs of print and call commands to the inferred escaping modes. */
   private final Map<SoyNode, ImmutableList<EscapingMode>> nodeToEscapingModes =
@@ -189,17 +185,13 @@ final class Inferences {
     return modes.build();
   }
 
-  /**
-   * Records inferred escaping modes so a directive can be later added to the Soy parse tree.
-   */
-  public void setEscapingDirectives(
-      SoyNode node, Context startContext, List<EscapingMode> escapingModes) {
+  /** Records inferred escaping modes so a directive can be later added to the Soy parse tree. */
+  public void setEscapingDirectives(SoyNode node, List<EscapingMode> escapingModes) {
     Preconditions.checkArgument(
         (node instanceof PrintNode)
             || (node instanceof CallNode)
             || (node instanceof MsgFallbackGroupNode),
         "Escaping directives may only be set for {print}, {msg}, or {call} nodes");
-    nodeToStartContext.put(node, startContext);
     if (escapingModes != null) {
       nodeToEscapingModes.put(node, ImmutableList.copyOf(escapingModes));
     }
@@ -219,13 +211,10 @@ final class Inferences {
     return modes;
   }
 
-  public ImmutableMap<SoyNode, Context> getPrintNodeStartContexts() {
-    return ImmutableMap.copyOf(nodeToStartContext);
-  }
-
   /**
-   * Derives a <code>{call}</code> site so that it uses a version of the template appropriate to
-   * the start context.
+   * Derives a <code>{call}</code> site so that it uses a version of the template appropriate to the
+   * start context.
+   *
    * @param derivedCalleeName A qualified template name.
    */
   public void retargetCall(CallNode cn, String derivedCalleeName) {
@@ -236,6 +225,7 @@ final class Inferences {
    * The name of the derived template that the call with the given id should call, or null if the
    * call with the given id should not be retargeted to a derived template.
    */
+  @Nullable
   public String getDerivedCalleeNameForCall(CallNode callNode) {
     return callNodeToDerivedCalleeName.get(callNode);
   }
@@ -334,7 +324,6 @@ final class Inferences {
    */
   public void foldIntoParent() {
     parent.nodeToEscapingModes.putAll(nodeToEscapingModes);
-    parent.nodeToStartContext.putAll(nodeToStartContext);
     parent.templateNameToEndContext.putAll(templateNameToEndContext);
     parent.callNodeToDerivedCalleeName.putAll(callNodeToDerivedCalleeName);
     parent.templatesByName.putAll(templatesByName);
