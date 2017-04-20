@@ -352,22 +352,40 @@ public final class HtmlRewritePass extends CompilerFilePass {
 
   private final ErrorReporter errorReporter;
   private final boolean enabled;
+  private final ImmutableList<CompilerFilePass> extraPasses;
 
-  public HtmlRewritePass(ImmutableList<String> experimentalFeatures, ErrorReporter errorReporter) {
+  /**
+   * @param experimentalFeatures The experimental features that are enabled in the compiler
+   * @param errorReporter The error reporter
+   * @param extraPasses Extra passes to run on the rewritten tree. This is a temporary feature of
+   *     this pass while it is still possible to run this as a 'checking' only pass
+   */
+  public HtmlRewritePass(
+      ImmutableList<String> experimentalFeatures,
+      ErrorReporter errorReporter,
+      CompilerFilePass... extraPasses) {
     // TODO(lukes): this is currently conditionally enabled for stricthtml to enable testing.
-    // Turn it on unconditionally.
+    // Otherwise we run in a mode where we enforce all the checks, but drop the rewrites.
     this.enabled = experimentalFeatures.contains("stricthtml");
     this.errorReporter = errorReporter;
+    this.extraPasses = ImmutableList.copyOf(extraPasses);
   }
 
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
     if (enabled) {
       new Visitor(nodeIdGen, file.getFilePath(), errorReporter).exec(file);
+      for (CompilerFilePass extraPass : extraPasses) {
+        extraPass.run(file, nodeIdGen);
+      }
     } else {
       // otherwise, run on a copy of the node.
       // this will cause all of our edits to be discarded
-      new Visitor(nodeIdGen, file.getFilePath(), errorReporter).exec(SoyTreeUtils.cloneNode(file));
+      SoyFileNode clone = SoyTreeUtils.cloneNode(file);
+      new Visitor(nodeIdGen, file.getFilePath(), errorReporter).exec(clone);
+      for (CompilerFilePass extraPass : extraPasses) {
+        extraPass.run(clone, nodeIdGen);
+      }
     }
   }
 
