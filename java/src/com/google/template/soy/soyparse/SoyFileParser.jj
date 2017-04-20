@@ -362,6 +362,8 @@ public class SoyFileParser {
       SoyErrorKind.of("Command ''{0}'' cannot have arguments.");
   private static final SoyErrorKind INVALID_PRINT_COMMAND_TEXT =
       SoyErrorKind.of("Invalid ''print'' command text \"{0}\" (check the directives).");
+  private static final SoyErrorKind INVALID_RANGE_SPECIFICATION =
+      SoyErrorKind.of("Invalid range specification");
   private static final SoyErrorKind INVALID_TEMPLATE_COMMAND =
       SoyErrorKind.of("Command ''{0}'' cannot appear in templates.");
   private static final SoyErrorKind INVALID_TEMPLATE_NAME =
@@ -803,10 +805,10 @@ TOKEN_MGR_DECLS: {
   < CMD_CLOSE_TEMPLATE           : "{/template}"    > { clearAndSwitchToDefault(); }
 | < CMD_CLOSE_DELTEMPLATE        : "{/deltemplate}" > { clearAndSwitchToDefault(); }
 
-| < DECL_BEGIN_PARAM             : "{@param"        >  { pushState(IN_CMD_TAG_STRUCTURED); }
-| < DECL_BEGIN_OPT_PARAM         : "{@param?"       >  { pushState(IN_CMD_TAG_STRUCTURED); }
-| < DECL_BEGIN_INJECT_PARAM      : "{@inject"       >  { pushState(IN_CMD_TAG_STRUCTURED); }
-| < DECL_BEGIN_OPT_INJECT_PARAM  : "{@inject?"      >  { pushState(IN_CMD_TAG_STRUCTURED); }
+| < DECL_BEGIN_PARAM             : "{@param"        > { pushState(IN_CMD_TAG_STRUCTURED); }
+| < DECL_BEGIN_OPT_PARAM         : "{@param?"       > { pushState(IN_CMD_TAG_STRUCTURED); }
+| < DECL_BEGIN_INJECT_PARAM      : "{@inject"       > { pushState(IN_CMD_TAG_STRUCTURED); }
+| < DECL_BEGIN_OPT_INJECT_PARAM  : "{@inject?"      > { pushState(IN_CMD_TAG_STRUCTURED); }
 
 | < XXX_BRACE_INVALID            : "}"              >  // catch and die on an unexpected right brace
 | < CMD_FULL_SP                  : "{sp}"           >
@@ -817,7 +819,7 @@ TOKEN_MGR_DECLS: {
 | < CMD_FULL_LB                  : "{lb}"           >
 | < CMD_FULL_RB                  : "{rb}"           >
 
-| < CMD_OPEN_LITERAL             : "{literal}"      >  { pushState(IN_LITERAL_BLOCK); }
+| < CMD_OPEN_LITERAL             : "{literal}"      > { pushState(IN_LITERAL_BLOCK); }
 
 | < CMD_BEGIN_CALL               : "{call" <WS>     > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
 | < CMD_BEGIN_DELCALL            : "{delcall" <WS>  > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
@@ -843,7 +845,7 @@ TOKEN_MGR_DECLS: {
 | < CMD_BEGIN_LET                : "{let" <WS>      > { pushState(EXPR); }
 | < CMD_CLOSE_LET                : "{/let}"         >
 
-| < CMD_BEGIN_FOR                : "{for" <WS>      > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
+| < CMD_BEGIN_FOR                : "{for" <WS>      > { pushState(EXPR); }
 | < CMD_CLOSE_FOR                : "{/for}"         >
 
 | < CMD_BEGIN_PLURAL             : "{plural" <WS>   > { pushState(EXPR); }
@@ -1066,14 +1068,14 @@ TOKEN_MGR_DECLS: {
 // TokenMgrErrors from being thrown and instead this will get turned into ParseExceptions which
 // have more debugging information.
 <EXPR> TOKEN: {
-    < LEGACY_AND : "&&" >
-|   < LEGACY_OR : "||" >
-|   < LEGACY_NOT : "!" >
-    // We could support double quoted strings except for the fact that in some cases expressions
-    // need to be able to be written in attribute values (variant expressions, data expressions).
-    // It isn't clear how we would support double quoted strings in that context.  Similarly, this
-    // is why the SoyFileParser requires attributes values to be double quoted.
-|   < DOUBLE_QUOTE : "\"" >
+  < LEGACY_AND : "&&" >
+| < LEGACY_OR : "||" >
+| < LEGACY_NOT : "!" >
+  // We could support double quoted strings except for the fact that in some cases expressions
+  // need to be able to be written in attribute values (variant expressions, data expressions).
+  // It isn't clear how we would support double quoted strings in that context.  Similarly, this
+  // is why the SoyFileParser requires attributes values to be double quoted.
+| < DOUBLE_QUOTE : "\"" >
 }
 
 
@@ -2778,24 +2780,59 @@ private ForeachNode ForeachStmt() :
 
 
 /**
- * ForStmt -> ForTag TemplateBlock EndForTag
+ * ForStmt -> CmdBeginFor VarRef Ident GlobalOrFunction CmdEnd TemplateBlock CmdCloseFor
  */
 private ForNode ForStmt() :
 {
-  String cmdText;
-  Token tagBegin, tagEnd;
+  Token tagBegin, tagEnd, in;
+  VarRefNode forVar = null;
+  ExprNode rangeExpr;
+  List<ExprNode> rangeArgs = ImmutableList.of();
   List<StandaloneNode> templateBlock;
 }
 {
   tagBegin = <CMD_BEGIN_FOR>
-  cmdText = CmdText()
-  tagEnd = <CMD_END>
+
+  try {
+    forVar = VarRef()
+
+    in = <IDENT>
+    {
+      // Making "in" a token would conflict with its usage in other contexts.
+      // Instead, check its value manually here.
+      if (!in.image.equals("in")) {
+        throw generateParseException();
+      }
+    }
+
+    rangeExpr = Expr()
+    {
+      // Same as above, we do not want to make "range" a token.
+      if (!(rangeExpr instanceof FunctionNode)
+          || !((FunctionNode) rangeExpr).getFunctionName().equals("range")) {
+        errorReporter.report(
+            rangeExpr.getSourceLocation(), PARSER_ERROR, rangeExpr.toSourceString(), "range()");
+      } else {
+        rangeArgs = ((FunctionNode) rangeExpr).getChildren();
+        if (rangeArgs.size() == 0 || rangeArgs.size() > 3) {
+          errorReporter.report(rangeExpr.getSourceLocation(), INVALID_RANGE_SPECIFICATION);
+        }
+      }
+    }
+
+    tagEnd = <CMD_END>
+  } catch (ParseException e) {
+    tagEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END);
+
+    if (forVar == null) {
+      forVar = errorExpr(tagBegin);
+    }
+  }
+
   {
-    ForNode forNode = new ForNode(
-        nodeIdGen.genId(),
-        cmdText,
-        createSrcLoc(tagBegin, tagEnd),
-        context);
+    ForNode forNode =
+        new ForNode(
+            nodeIdGen.genId(), createSrcLoc(tagBegin, tagEnd), errorReporter, forVar, rangeArgs);
   }
 
   templateBlock = TemplateBlock()

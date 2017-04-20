@@ -501,7 +501,7 @@ public final class ContextualAutoescaperTest {
             "{template .bar autoescape=\"deprecated-contextual\"}\n",
             "  {@param n: ?}\n",
             "<style>",
-            "{for $i in range($n)}",
+            "{for $i in range(0, $n, 1)}",
             ".foo{$i |filterCssValue}:before {lb}",
             "content: '{$i |escapeCssString}'",
             "{rb}",
