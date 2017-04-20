@@ -166,13 +166,13 @@ final class ConditionalBranches {
     removeEmptyDeque();
   }
 
-  /** Removes optional tags from all branches. */
+  /**
+   * Removes optional tags from all branches. This method should only be called for removing the
+   * optional open tags from the top of the open tag stack.
+   */
   void popOptionalTags() {
     for (ConditionalBranch branch : branches) {
-      HtmlTagEntry entry = branch.deque().peekFirst();
-      while (entry != null && entry.isDefinitelyOptional()) {
-        entry = branch.deque().pollFirst();
-      }
+      HtmlTagEntry.popOptionalTags(branch.deque());
     }
     removeEmptyDeque();
   }

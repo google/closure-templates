@@ -152,20 +152,7 @@ final class HtmlTagEntry {
       }
       // Remove optional tags from the open stack before we try to match the current close tag.
       if (closeTag.hasTagName()) {
-        while (!openStack.isEmpty()) {
-          openTag = openStack.peekFirst();
-          if (openTag.isDefinitelyOptional()) {
-            openStack.pollFirst();
-            continue;
-          } else if (!openTag.hasTagName()) {
-            openTag.getBranches().popOptionalTags();
-            if (openTag.getBranches().isEmpty()) {
-              openStack.pollFirst();
-              continue;
-            }
-          }
-          break;
-        }
+        openTag = popOptionalTags(openStack);
       }
       if (matchOrError(openTag, closeTag, errorReporter)) {
         openStack.pollFirst();
@@ -180,6 +167,29 @@ final class HtmlTagEntry {
   }
 
   /**
+   * A helper method that recursively pops optional start tags from a stack. Returns the top of the
+   * deque.
+   */
+  static HtmlTagEntry popOptionalTags(ArrayDeque<HtmlTagEntry> deque) {
+    HtmlTagEntry entry = null;
+    while (!deque.isEmpty()) {
+      entry = deque.peekFirst();
+      if (entry.isDefinitelyOptional()) {
+        deque.pollFirst();
+        continue;
+      } else if (!entry.hasTagName()) {
+        entry.getBranches().popOptionalTags();
+        if (entry.getBranches().isEmpty()) {
+          deque.pollFirst();
+          continue;
+        }
+      }
+      break;
+    }
+    return entry;
+  }
+
+  /**
    * A helper method that matches a list of open tags and a list of close tags. We need to compare
    * the last open tag and the first close tag one by one.
    */
@@ -191,11 +201,7 @@ final class HtmlTagEntry {
       return false;
     }
     // Try to remove any remaining optional tags or tags with empty branches in the open stack.
-    HtmlTagEntry openTag = openStack.peekFirst();
-    while (openTag != null && (openTag.isDefinitelyOptional() || openTag.hasEmptyBranches())) {
-      openTag = openStack.peekFirst();
-      openStack.pollFirst();
-    }
+    HtmlTagEntry openTag = popOptionalTags(openStack);
     if (!openStack.isEmpty()) {
       errorReporter.report(openTag.getSourceLocation(), OPEN_TAG_NOT_CLOSED);
       return false;
