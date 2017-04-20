@@ -61,6 +61,10 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
   private static final SoyErrorKind SWITCH_HTML_MODE_IN_BLOCK =
       SoyErrorKind.of("Foreign elements (svg) must be opened and closed within the same block.");
   private static final SoyErrorKind NESTED_SVG = SoyErrorKind.of("Nested SVG tags are disallowed.");
+  private static final SoyErrorKind UNEXPECTED_CLOSE_TAG =
+      SoyErrorKind.of(
+          "Unexpected HTML close tag. Within an if or switch block, "
+              + "all branches must end with unmatched open tags or unmatched close tags.");
 
   private final boolean enabledStrictHtml;
   private final ErrorReporter errorReporter;
@@ -230,9 +234,9 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
       closeTagBranches.clear();
       visitChildren(node);
       if (!openTagBranches.isEmpty() && !closeTagBranches.isEmpty()) {
-        throw new AssertionError(
-            "This should not happen. "
-                + "After visiting IfNode, at least one of the branches should be empty.");
+        errorReporter.report(closeTagBranches.getSourceLocation(), UNEXPECTED_CLOSE_TAG);
+        openTagBranches.clear();
+        closeTagBranches.clear();
       }
       if (!openTagBranches.isEmpty()) {
         openTagStack.addFirst(new HtmlTagEntry(openTagBranches));
@@ -277,9 +281,9 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
       closeTagBranches.clear();
       visitChildren(node);
       if (!openTagBranches.isEmpty() && !closeTagBranches.isEmpty()) {
-        throw new AssertionError(
-            "This should not happen. "
-                + "After visiting SwitchNode, at least one of the branches should be empty.");
+        errorReporter.report(closeTagBranches.getSourceLocation(), UNEXPECTED_CLOSE_TAG);
+        openTagBranches.clear();
+        closeTagBranches.clear();
       }
       if (!openTagBranches.isEmpty()) {
         openTagStack.addFirst(new HtmlTagEntry(openTagBranches));

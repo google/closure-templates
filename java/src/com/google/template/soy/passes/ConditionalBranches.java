@@ -21,6 +21,7 @@ import static com.google.common.base.Preconditions.checkState;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.Iterables;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.soytree.TagName;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -66,6 +67,17 @@ final class ConditionalBranches {
   List<ConditionalBranch> getBranches() {
     removeEmptyDeque();
     return branches;
+  }
+
+  /** Return source location for the first entry in all branches. */
+  SourceLocation getSourceLocation() {
+    removeEmptyDeque();
+    if (branches.isEmpty()) {
+      return SourceLocation.UNKNOWN;
+    }
+    ConditionalBranch branch = branches.get(0);
+    // removeEmptyDeque guarantees that the deque is not empty.
+    return branch.deque().peekFirst().getSourceLocation();
   }
 
   @Override
