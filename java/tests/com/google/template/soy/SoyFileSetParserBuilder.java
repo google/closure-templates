@@ -21,7 +21,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import com.google.common.io.CharSource;
 import com.google.inject.Guice;
 import com.google.inject.Key;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
@@ -59,7 +58,6 @@ public final class SoyFileSetParserBuilder {
       Guice.createInjector(new SharedModule())
           .getInstance(new Key<ImmutableMap<String, ? extends SoyFunction>>() {});
   private SoyGeneralOptions options = new SoyGeneralOptions();
-  private ImmutableList<CharSource> conformanceConfigs = ImmutableList.of();
 
   /**
    * Returns a builder that gets its Soy inputs from the given strings, treating each string as the
@@ -146,11 +144,6 @@ public final class SoyFileSetParserBuilder {
     return this;
   }
 
-  public SoyFileSetParserBuilder setConformanceConfigs(Iterable<CharSource> configs) {
-    this.conformanceConfigs = ImmutableList.copyOf(configs);
-    return this;
-  }
-
   private static List<SoyFileSupplier> buildTestSoyFileSuppliers(String... soyFileContents) {
 
     List<SoyFileSupplier> soyFileSuppliers = Lists.newArrayList();
@@ -180,14 +173,11 @@ public final class SoyFileSetParserBuilder {
             .setSoyFunctionMap(soyFunctionMap)
             .setErrorReporter(errorReporter)
             .setTypeRegistry(typeRegistry)
-            .setGeneralOptions(options)
-            .setConformanceConfigs(conformanceConfigs);
+            .setGeneralOptions(options);
     if (allowUnboundGlobals) {
       passManager.allowUnknownGlobals();
     }
     return new SoyFileSetParser(astCache, soyFileSuppliers, passManager.build(), errorReporter)
         .parse();
   }
-
-
 }

@@ -20,7 +20,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.io.CharSource;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.error.ErrorReporter;
@@ -87,16 +86,12 @@ public final class PassManager {
     this.disableAllTypeChecking = builder.disableAllTypeChecking;
 
     boolean enabledStrictHtml = options.getExperimentalFeatures().contains("stricthtml");
-    HtmlRewritePass rewritePass =
-        new HtmlRewritePass(
-            options.getExperimentalFeatures(),
-            errorReporter);
 
     ImmutableList.Builder<CompilerFilePass> singleFilePassesBuilder =
         ImmutableList.<CompilerFilePass>builder()
             .add(new RewriteGendersPass())
             .add(new RewriteRemaindersPass())
-            .add(rewritePass)
+            .add(new HtmlRewritePass(options.getExperimentalFeatures(), errorReporter))
             .add(new StrictHtmlValidationPass(options.getExperimentalFeatures(), errorReporter))
             .add(new RewriteGlobalsPass(registry, options.getCompileTimeGlobals(), errorReporter))
             .add(new RewriteFunctionsPass(registry))
@@ -186,7 +181,6 @@ public final class PassManager {
     private boolean allowUnknownGlobals;
     private boolean allowUnknownFunctions;
     private boolean disableAllTypeChecking;
-    private ImmutableList<CharSource> conformanceConfigs = ImmutableList.of();
 
     public Builder setErrorReporter(ErrorReporter errorReporter) {
       this.errorReporter = checkNotNull(errorReporter);
@@ -248,12 +242,6 @@ public final class PassManager {
 
     public PassManager build() {
       return new PassManager(this);
-    }
-
-    /** Configures this passmanager to run the given conformance pass using these configs */
-    public Builder setConformanceConfigs(ImmutableList<CharSource> conformanceConfigs) {
-      this.conformanceConfigs = checkNotNull(conformanceConfigs);
-      return this;
     }
   }
 

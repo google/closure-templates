@@ -38,6 +38,8 @@ import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.base.internal.VolatileSoyFileSupplier;
 import com.google.template.soy.basetree.SyntaxVersion;
+import com.google.template.soy.conformance.CheckConformance;
+import com.google.template.soy.conformance.ConformanceInput;
 import com.google.template.soy.error.PrettyErrorFactory;
 import com.google.template.soy.error.SnippetFormatter;
 import com.google.template.soy.error.SoyCompilationException;
@@ -131,6 +133,7 @@ public final class SoyFileSet {
     private final SoyTypeRegistry typeRegistry;
     private final ImmutableMap<String, ? extends SoyFunction> soyFunctionMap;
     private final ImmutableMap<String, ? extends SoyPrintDirective> printDirectives;
+    @Nullable private final CheckConformance checkConformance;
     private final Provider<SoyMsgBundleHandler> msgBundleHandlerProvider;
 
     @Inject
@@ -145,6 +148,7 @@ public final class SoyFileSet {
         SoyTypeRegistry typeRegistry,
         ImmutableMap<String, ? extends SoyFunction> soyFunctionMap,
         ImmutableMap<String, ? extends SoyPrintDirective> printDirectives,
+        Optional<CheckConformance> checkConformance,
         Provider<SoyMsgBundleHandler> msgBundleHandlerProvider) {
       this.baseTofuFactory = baseTofuFactory;
       this.soyTemplatesFactory = soyTemplatesFactory;
@@ -156,6 +160,7 @@ public final class SoyFileSet {
       this.typeRegistry = typeRegistry;
       this.soyFunctionMap = soyFunctionMap;
       this.printDirectives = printDirectives;
+      this.checkConformance = checkConformance.orNull();
       this.msgBundleHandlerProvider = msgBundleHandlerProvider;
     }
   }
@@ -177,12 +182,11 @@ public final class SoyFileSet {
     private SoyGeneralOptions lazyGeneralOptions;
     /** Type registry for this fileset only. */
     private SoyTypeRegistry localTypeRegistry;
+
     private final CoreDependencies coreDependencies;
 
     /** The SoyProtoTypeProvider builder that will be built for local type registry. */
     private final SoyProtoTypeProvider.Builder protoTypeProviderBuilder;
-
-    private ImmutableList<CharSource> conformanceConfigs = ImmutableList.of();
 
     Builder(CoreDependencies coreDependencies) {
       this.coreDependencies = coreDependencies;
@@ -249,7 +253,7 @@ public final class SoyFileSet {
           getGeneralOptions(),
           cache,
           coreDependencies.msgBundleHandlerProvider,
-          conformanceConfigs);
+          coreDependencies.checkConformance);
     }
 
     /**
@@ -612,7 +616,7 @@ public final class SoyFileSet {
   /** The general compiler options. */
   private final SoyGeneralOptions generalOptions;
 
-  private final ImmutableList<CharSource> conformanceConfigs;
+  private final CheckConformance checkConformance;
 
   /** For private use by pruneTranslatedMsgs(). */
   private ImmutableSet<Long> memoizedExtractedMsgIdsForPruning;
@@ -649,7 +653,7 @@ public final class SoyFileSet {
       SoyGeneralOptions generalOptions,
       @Nullable SoyAstCache cache,
       Provider<SoyMsgBundleHandler> msgBundleHandlerProvider,
-      ImmutableList<CharSource> conformanceConfigs) {
+      CheckConformance checkConformance) {
     // Default value is optionally replaced using method injection.
     this.soyTemplatesFactory = soyTemplatesFactory;
     this.baseTofuFactory = baseTofuFactory;
@@ -668,7 +672,7 @@ public final class SoyFileSet {
     this.soyFunctionMap = soyFunctionMap;
     this.printDirectives = printDirectives;
     this.msgBundleHandlerProvider = msgBundleHandlerProvider;
-    this.conformanceConfigs = conformanceConfigs;
+    this.checkConformance = checkConformance;
   }
 
   /** Returns the list of suppliers for the input Soy files. For testing use only! */
@@ -1179,15 +1183,12 @@ public final class SoyFileSet {
   }
 
   private PassManager.Builder passManagerBuilder(SyntaxVersion defaultVersion) {
-    PassManager.Builder builder =
-        new PassManager.Builder()
-            .setTypeRegistry(typeRegistry)
-            .setGeneralOptions(generalOptions)
-            .setDeclaredSyntaxVersion(generalOptions.getDeclaredSyntaxVersion(defaultVersion))
-            .setSoyFunctionMap(soyFunctionMap)
-            .setErrorReporter(errorReporter)
-            .setConformanceConfigs(conformanceConfigs);
-    return builder;
+    return new PassManager.Builder()
+        .setTypeRegistry(typeRegistry)
+        .setGeneralOptions(generalOptions)
+        .setDeclaredSyntaxVersion(generalOptions.getDeclaredSyntaxVersion(defaultVersion))
+        .setSoyFunctionMap(soyFunctionMap)
+        .setErrorReporter(errorReporter);
   }
 
   private ParseResult parse(PassManager.Builder builder) {
@@ -1218,6 +1219,11 @@ public final class SoyFileSet {
     // contextual autoescaping may actually add new templates to the tree so we need to reconstruct
     // the registry
     registry = new TemplateRegistry(soyTree, errorReporter);
+    if (checkConformance != null) {
+      checkConformance.check(
+          ConformanceInput.create(soyTree, contextualAutoescaper.getSlicedRawTextNodes()),
+          errorReporter);
+    }
     // Add print directives that mark inline-scripts as safe to run.
     ContentSecurityPolicyPass.blessAuthorSpecifiedScripts(
         contextualAutoescaper.getSlicedRawTextNodes());
