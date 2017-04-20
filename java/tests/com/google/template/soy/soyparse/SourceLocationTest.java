@@ -153,7 +153,7 @@ public final class SourceLocationTest {
             "    TemplateBasicNode          @ /example/file.soy:2:1",
             "      RawTextNode              @ /example/file.soy:3:2",
             "      ForeachNode              @ /example/file.soy:4:3",
-            "        ForeachNonemptyNode    @ /example/file.soy:4:3",
+            "        ForeachNonemptyNode    @ /example/file.soy:4:12",
             "          RawTextNode          @ /example/file.soy:5:5",
             "          PrintNode            @ /example/file.soy:6:5",
             "        ForeachIfemptyNode     @ /example/file.soy:7:3",

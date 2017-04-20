@@ -31,10 +31,10 @@ public final class ForeachIfemptyNode extends AbstractBlockCommandNode
 
   /**
    * @param id The id for this node.
-   * @param sourceLocation The node's source location.
+   * @param location The node's source location.
    */
-  public ForeachIfemptyNode(int id, SourceLocation sourceLocation) {
-    super(id, sourceLocation, "ifempty");
+  public ForeachIfemptyNode(int id, SourceLocation location) {
+    super(id, location, "ifempty");
   }
 
   /**

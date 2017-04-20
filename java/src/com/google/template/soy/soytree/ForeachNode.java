@@ -19,6 +19,7 @@ package com.google.template.soy.soytree;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
@@ -39,19 +40,14 @@ public final class ForeachNode extends AbstractParentCommandNode<BlockNode>
   /** The parsed expression for the list that we're iterating over. */
   private final ExprRootNode expr;
 
-  // TODO(user): Remove.
-  private final String commandText;
-
   /**
    * @param id The id for this node.
+   * @param location The node's source location
    * @param expr The loop collection expression
-   * @param commandText The command text.
-   * @param sourceLocation The node's source location.
    */
-  public ForeachNode(int id, ExprRootNode expr, String commandText, SourceLocation sourceLocation) {
-    super(id, sourceLocation, "foreach");
-    this.expr = expr;
-    this.commandText = commandText;
+  public ForeachNode(int id, SourceLocation location, ExprNode expr) {
+    super(id, location, "foreach");
+    this.expr = new ExprRootNode(expr);
   }
 
   /**
@@ -62,7 +58,6 @@ public final class ForeachNode extends AbstractParentCommandNode<BlockNode>
   private ForeachNode(ForeachNode orig, CopyState copyState) {
     super(orig, copyState);
     this.expr = orig.expr.copy(copyState);
-    this.commandText = orig.commandText;
   }
 
   @Override
@@ -82,7 +77,7 @@ public final class ForeachNode extends AbstractParentCommandNode<BlockNode>
 
   @Override
   public String getCommandText() {
-    return commandText;
+    return "$" + ((ForeachNonemptyNode) getChild(0)).getVarName() + " in " + expr.toSourceString();
   }
 
   @Override

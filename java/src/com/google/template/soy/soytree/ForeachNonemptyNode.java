@@ -37,11 +37,11 @@ public final class ForeachNonemptyNode extends AbstractBlockNode
 
   /**
    * @param id The id for this node.
-   * @param varName The variable name of the loop index variable
-   * @param sourceLocation The node's source location.
+   * @param location The node's source location.
+   * @param varName The variable name of the loop index variable.
    */
-  public ForeachNonemptyNode(int id, String varName, SourceLocation sourceLocation) {
-    super(id, sourceLocation);
+  public ForeachNonemptyNode(int id, SourceLocation location, String varName) {
+    super(id, location);
     this.var = new LoopVar(varName, this, null);
   }
 

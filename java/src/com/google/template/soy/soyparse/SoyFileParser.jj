@@ -96,7 +96,9 @@ import com.google.template.soy.soytree.CommandTagAttribute;
 import com.google.template.soy.soytree.CssNode;
 import com.google.template.soy.soytree.DebuggerNode;
 import com.google.template.soy.soytree.ForNode;
+import com.google.template.soy.soytree.ForeachIfemptyNode;
 import com.google.template.soy.soytree.ForeachNode;
+import com.google.template.soy.soytree.ForeachNonemptyNode;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
@@ -846,7 +848,7 @@ TOKEN_MGR_DECLS: {
 | < CMD_BEGIN_CASE               : "{case" <WS>     > { pushState(EXPR); }
 | < CMD_FULL_DEFAULT             : "{default}"      >
 
-| < CMD_BEGIN_FOREACH            : "{foreach" <WS>  > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
+| < CMD_BEGIN_FOREACH            : "{foreach" <WS>  > { pushState(EXPR); }
 | < CMD_FULL_IFEMPTY             : "{ifempty}"      >
 | < CMD_CLOSE_FOREACH            : "{/foreach}"     >
 
@@ -2736,41 +2738,61 @@ private SwitchNode SwitchStmt() :
 
 
 /**
- * ForeachStmt -> ForeachTag TemplateBlock [ IfemptyTag TemplateBlock ] EndForeachTag
+ * ForeachStmt -> CmdBeginForeach VarRef Ident Expr CmdEnd TemplateBlock
+ *                [ CmdFullIfempty TemplateBlock ] CmdCloseForeach
  */
 private ForeachNode ForeachStmt() :
 {
-  String cmdText;
+  Token tagBegin, tagEnd, in, ifemptyTag;
+  VarRefNode var = null;
+  ExprNode expr = null;
   List<StandaloneNode> templateBlock;
-  Token tagBegin, tagEnd;
-  Token ifemptyTag;
 }
 {
   tagBegin = <CMD_BEGIN_FOREACH>
-  cmdText = CmdText()
-  tagEnd = <CMD_END>
+
+  try {
+    var = VarRef()
+    in = Keyword("in")
+    expr = Expr()
+
+    tagEnd = <CMD_END>
+  } catch (ParseException e) {
+    tagEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END);
+
+    if (var == null) {
+      var = errorExpr(tagBegin);
+    }
+    if (expr == null) {
+      expr = errorExpr(tagBegin);
+    }
+  }
+
   {
-    ForeachBuilder builder = ForeachBuilder.create(nodeIdGen, context)
-        .setCommandLocation(createSrcLoc(tagBegin, tagEnd))
-        .setCommandText(cmdText);
+    ForeachNode foreachNode =
+        new ForeachNode(nodeIdGen.genId(), createSrcLoc(tagBegin, tagEnd), expr);
+    ForeachNonemptyNode nonEmpty =
+        new ForeachNonemptyNode(nodeIdGen.genId(), var.getSourceLocation(), var.getName());
+    foreachNode.addChild(nonEmpty);
   }
 
   templateBlock = TemplateBlock()
-  {
-    builder.setLoopBody(templateBlock);
-  }
+  { nonEmpty.addChildren(templateBlock); }
 
   [
     ifemptyTag = <CMD_FULL_IFEMPTY>
     templateBlock = TemplateBlock()
     {
-      builder.setIfEmptyBody(createSrcLoc(ifemptyTag), templateBlock);
+      ForeachIfemptyNode ifempty =
+          new ForeachIfemptyNode(nodeIdGen.genId(), createSrcLoc(ifemptyTag));
+      ifempty.addChildren(templateBlock);
+      foreachNode.addChild(ifempty);
     }
   ]
 
   <CMD_CLOSE_FOREACH>
 
-  { return builder.build(); }
+  { return foreachNode; }
 }
 
 

@@ -244,9 +244,14 @@ public final class TemplateParserTest {
     assertIsTemplateBody("\n/**}\n}*/\n");
     assertIsTemplateBody("\n /**}\n*/\n");
 
+    assertIsTemplateBody(
+        ""
+            + "{foreach $item // }\n"
+            + "                                   in $items}\n"
+            + "{$item}\n"
+            + "{/foreach}\n");
+
     assertIsNotTemplateBody("{css // }");
-    assertIsNotTemplateBody(
-        "{foreach $item // }\n" + "         in $items}\n" + "{$item}{/foreach}\n");
     assertIsNotTemplateBody("aa////}\n");
     assertIsNotTemplateBody("{nil}//}\n");
   }
@@ -1883,7 +1888,7 @@ public final class TemplateParserTest {
     assertThat(errors).hasSize(4);
     assertThat(errors.get(0)).contains("Invalid callee name \"123\" for 'call' command.");
     assertThat(errors.get(1)).contains("Invalid delegate name \"123\" for 'delcall' command.");
-    assertThat(errors.get(2)).contains("Invalid 'foreach' command text \"foo in bar\".");
+    assertThat(errors.get(2)).contains("parse error at 'foo': expected variable");
     assertThat(errors.get(3)).contains("parse error at '/}': expected variable");
   }
 
