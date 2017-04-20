@@ -824,7 +824,11 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
     private void visitComparisonOpNode(AbstractOperatorNode node) {
       visitChildren(node);
       node.setType(BoolType.getInstance());
-      // TODO(b/37359174): Add type checking for these comparisons.
+      SoyType left = node.getChild(0).getType();
+      SoyType right = node.getChild(1).getType();
+      if (!checkTypeForComparisonOp(left, right)) {
+        errorReporter.report(node.getSourceLocation(), TYPE_MISMATCH, left, right);
+      }
     }
 
     private void visitEqualComparisonOpNode(AbstractOperatorNode node) {
@@ -835,6 +839,42 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
       if (!checkTypeForEqualComparisonOp(left, right)) {
         errorReporter.report(node.getSourceLocation(), TYPE_MISMATCH, left, right);
       }
+    }
+
+    /**
+     * For <, >, <=, and >= operations, check if two {@code SoyType}s are comparable.
+     *
+     * <p>In particular,
+     *
+     * <ul>
+     *   <li>Comparing anything with UNKNOWN, ANY, and NULL is legitimate.
+     *   <li>Comparing primitive types is legitimate.
+     *   <li>All other comparisons are invalid. It causes inconsistent behaviors in different
+     *       backends.
+     * </ul>
+     *
+     * <p>Note that string-number comparisons and string-string comparisons do NOT work with Java
+     * backends (both tofu and jbcsrc). These comparisons yield to a {@code RuntimeException}. In
+     * contrast, JS backend allows these comparisons.
+     *
+     * <ul>
+     *   <li>For string-number comparisons, JS tries to convert string to number. If string is
+     *       numeric, it compares them numerically. For example, '1' < 2 is true and '1' > 2 is
+     *       false. If string is not numeric, it always return false. For example, both '1a' < 2 and
+     *       '1a' > 2 return false.
+     *   <li>For string-string comparisons, JS compares them alphabetically.
+     * </ul>
+     *
+     * TODO(b/37359174): consider whether we should support these comparisons in other backends, or
+     * forbid these comparisons in all backends.
+     */
+    private boolean checkTypeForComparisonOp(SoyType left, SoyType right) {
+      if (SoyTypes.isDefiniteComparable(left) || SoyTypes.isDefiniteComparable(right)) {
+        return true;
+      }
+      left = SoyTypes.removeNull(left);
+      right = SoyTypes.removeNull(right);
+      return SoyTypes.isDefinitePrimitive(left) && SoyTypes.isDefinitePrimitive(right);
     }
 
     /**

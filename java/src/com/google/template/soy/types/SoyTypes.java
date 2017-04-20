@@ -43,19 +43,27 @@ public final class SoyTypes {
   }
 
   /**
-   * Returns true if the input type is a primitive type. This includes bool, int, float, string and
-   * all sanitized contents. Two special cases are proto enum and number: these are proto or
-   * aggregate type in Soy's type system, but they should really be treated as primitive types.
+   * Returns true if the input type is a numeric primitive type, such as bool, int, float, proto
+   * enum, and number.
    */
-  public static boolean isDefinitePrimitive(SoyType type) {
+  public static boolean isNumericPrimitive(SoyType type) {
     SoyType.Kind kind = type.getKind();
-    if (BOOLEAN_AND_NUMERIC_PRIMITIVES.contains(kind) || kind.isKnownStringOrSanitizedContent()) {
+    if (BOOLEAN_AND_NUMERIC_PRIMITIVES.contains(kind)) {
       return true;
     }
     if (type.isAssignableFrom(NUMBER_TYPE) || NUMBER_TYPE.isAssignableFrom(type)) {
       return true;
     }
     return false;
+  }
+
+  /**
+   * Returns true if the input type is a primitive type. This includes bool, int, float, string and
+   * all sanitized contents. Two special cases are proto enum and number: these are proto or
+   * aggregate type in Soy's type system, but they should really be treated as primitive types.
+   */
+  public static boolean isDefinitePrimitive(SoyType type) {
+    return isNumericPrimitive(type) || type.getKind().isKnownStringOrSanitizedContent();
   }
 
   public static SoyType removeNull(SoyType type) {
