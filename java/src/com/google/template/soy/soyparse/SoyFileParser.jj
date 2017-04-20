@@ -610,7 +610,7 @@ PARSER_END(SoyFileParser)
 
 
 // =================================================================================================
-// Tokens
+// Token manager
 // =================================================================================================
 
 
@@ -665,31 +665,29 @@ TOKEN_MGR_DECLS: {
 
 
 // -------------------------------------------------------------------------------------------------
-// Whitespace and line comments.
+// Whitespace and comments.
 
-// NOTE: the TEMPLATE_* states can't be specified here because it would interfere with the
-// interpretation of url schemes in 'raw text' e.g. http://foo.com  So those lexical states use a
-// different set of tokens.
-<DEFAULT, IN_CMD_TAG_STRUCTURED, ALIAS, TYPE_EXPR> SKIP: {
+<DEFAULT, IN_CMD_TAG_STRUCTURED, EXPR, TYPE_EXPR> SKIP: {
   < <WS> >
 | < <LINE_COMMENT> >
 }
 
-<EXPR> SKIP: {
-  < <WS> >
+// Due to ambiguity with uri schemes, line comments in TEMPLATE_DEFAULT and
+// TEMPLATE_DEFAULT_IN_MSG_BLOCK are only interpreted as such if there is preceding whitespace.
+// Other lexical states don't have this requirement.  The fact that comments swallow a leading
+// whitespace character doesn't affect output because of how line joining works.
+<TEMPLATE_DEFAULT, TEMPLATE_DEFAULT_IN_MSG_BLOCK> SKIP: {
+  < <WS> <LINE_COMMENT> >
 }
-
-// -------------------------------------------------------------------------------------------------
-// Multiline comments.
 
 // NOTE: we don't just configure this for state * because these comments shouldn't work in things
 // like string literals or attribute values
-<DEFAULT, TEMPLATE_DEFAULT, TEMPLATE_DEFAULT_IN_MSG_BLOCK,
-    IN_CMD_TAG_STRUCTURED, ALIAS, TYPE_EXPR> MORE: {
+<DEFAULT, TEMPLATE_DEFAULT, TEMPLATE_DEFAULT_IN_MSG_BLOCK, IN_CMD_TAG_STRUCTURED,
+    EXPR, TYPE_EXPR> SKIP: {
   < "/*" > { pushState(IN_MULTILINE_COMMENT); }
 }
 
-<IN_MULTILINE_COMMENT, IN_SOYDOC> MORE: {
+<IN_MULTILINE_COMMENT> SKIP: {
   < ~[] >
 }
 
@@ -720,6 +718,10 @@ TOKEN_MGR_DECLS: {
   "/**" { pushState(IN_SOYDOC); }
 }
 
+<IN_SOYDOC> MORE: {
+  < ~[] >
+}
+
 <IN_SOYDOC> SPECIAL_TOKEN: {
   <SOYDOC: "*/" > { popState(); }
 }
@@ -729,7 +731,7 @@ TOKEN_MGR_DECLS: {
 // File header declarations.
 
 <DEFAULT> TOKEN: {
-  < ALIAS_OPEN: "{alias" > { pushState(ALIAS); }
+  < ALIAS_OPEN: "{alias" > { pushState(EXPR); }
 | < NAMESPACE_OPEN: "{namespace" > { pushState(IN_CMD_TAG_STRUCTURED); }
 | < DELPACKAGE_OPEN: "{delpackage" > { pushState(IN_CMD_TAG_STRUCTURED); }
 }
@@ -749,10 +751,6 @@ TOKEN_MGR_DECLS: {
 | "\\\""
 }
 
-<ALIAS> TOKEN: {
-  < AS: "as" >
-}
-
 
 // -------------------------------------------------------------------------------------------------
 // Templates.
@@ -766,18 +764,6 @@ TOKEN_MGR_DECLS: {
 // =================================================================================================
 // Template tokens (only used inside templates)
 // =================================================================================================
-
-
-// -------------------------------------------------------------------------------------------------
-// Line comment.
-
-// Due to ambiguity with uri schemes, line comments in TEMPLATE_DEFAULT and
-// TEMPLATE_DEFAULT_IN_MSG_BLOCK are only interpreted as such if there is preceding whitespace.
-// Other lexical states don't have this requirement.  The fact that comments swallow a leading
-// whitespace character doesn't affect output because of how line joining works.
-<TEMPLATE_DEFAULT, TEMPLATE_DEFAULT_IN_MSG_BLOCK> SKIP: {
-  < <WS> <LINE_COMMENT> >
-}
 
 
 // -------------------------------------------------------------------------------------------------
@@ -873,7 +859,7 @@ TOKEN_MGR_DECLS: {
 
 // ------------ Step 2: Match the command text and closing delimiter ------------
 
-<IN_CMD_TAG_UNSTRUCTURED, IN_CMD_TAG_STRUCTURED, ALIAS, EXPR, TYPE_EXPR> TOKEN: {
+<IN_CMD_TAG_UNSTRUCTURED, IN_CMD_TAG_STRUCTURED, EXPR, TYPE_EXPR> TOKEN: {
   < CMD_END : "}" > { popState(); }
 | < CMD_SELF_CLOSE : "/}" > { popState(); }
 }
@@ -885,7 +871,7 @@ TOKEN_MGR_DECLS: {
 | < XXX_CMD_TEXT_PHNAME_NOT_IDENT: <WS_CHAR> "phname=\"" ( ~["\""] )* "\"" >
 }
 
-<IN_CMD_TAG_STRUCTURED, ALIAS> TOKEN: {
+<IN_CMD_TAG_STRUCTURED> TOKEN: {
   < NAME: <RAW_IDENT> >
 | < CMD_COLON: ":" >
 | < CMD_EQ: "=" >
@@ -1100,7 +1086,7 @@ TOKEN_MGR_DECLS: {
 // instead this will get turned into ParseExceptions which have more debugging information.
 // NOTE: this has to come after any single character token definition in these states.
 // TODO(slaks): Apply to all states.
-<DEFAULT, IN_CMD_TAG_STRUCTURED, ALIAS, EXPR, TYPE_EXPR> TOKEN: {
+<DEFAULT, IN_CMD_TAG_STRUCTURED, EXPR, TYPE_EXPR> TOKEN: {
   < UNEXPECTED_TOKEN : ~[] >
 }
 
@@ -1167,6 +1153,7 @@ private SoyFileNode SoyFile() :
   { return sfn; }
 }
 
+
 /**
  * Matches an {alias ...} declaration.
  */
@@ -1179,10 +1166,10 @@ private AliasDeclaration Alias() :
 {
   (
     open = <ALIAS_OPEN>
-    namespace = DottedIdent()
+    namespace = Identifier()
     [
-      as = <AS>
-      alias = DottedIdent()
+      as = Keyword("as")
+      alias = Identifier()
     ]
     close = <CMD_END>
   )
@@ -1200,6 +1187,7 @@ private AliasDeclaration Alias() :
     return new AliasDeclaration(namespace.identifier(), aliasString, srcLoc);
   }
 }
+
 
 /**
  * Matches a {namespace ...} declaration.
@@ -1220,6 +1208,7 @@ private NamespaceDeclaration Namespace() :
     return new NamespaceDeclaration(name, attributes, errorReporter);
   }
 }
+
 
 /**
  * Matches an arbitrary sequence of CommandAttributes()
@@ -1372,6 +1361,7 @@ private TemplateNode Template(SoyFileHeaderInfo soyFileHeaderInfo) :
   { return templateNode; }
 }
 
+
 /**
  * A helper for parsing everything except the open and close tags of a template.
  */
@@ -1419,13 +1409,14 @@ private TemplateNode TemplateHelper(TemplateNodeBuilder builder, Token open, boo
   }
 }
 
+
 /**
  * Parses a Template name.  This is either a fully qualified dotted identifier or a partial
  * identifier consisting of a single <CMD_DOT> <NAME> sequence.
  *
  * TemplateName -> (<CMD_DOT> <NAME> | DottedIdent() )
  */
-private Identifier TemplateName(boolean isDeltemplate):
+private Identifier TemplateName(boolean isDeltemplate) :
 {
   Token dot, name;
   Identifier ident;
@@ -1454,8 +1445,11 @@ private Identifier TemplateName(boolean isDeltemplate):
 
 /**
  * DottedIdent -> <NAME> (<CMD_DOT> <NAME>)*
+ *
+ * TODO(user): Merge with Identifier() - the two are identical save for lexical states
+ * (IN_CMD_TAG_STRUCTURED vs EXPR)
  */
-private Identifier DottedIdent():
+private Identifier DottedIdent() :
 {
   StringBuilder sb = null;
   Token dot, name, next = null;
@@ -1668,8 +1662,10 @@ private RawTextNode RawText() :
 // Grammar
 // =================================================================================================
 
+
 // -------------------------------------------------------------------------------------------------
 // Template header.
+
 
 /**
  * Important: The template header consists of a sequence of ParamDecls() separated by optional
@@ -1722,7 +1718,6 @@ private RawTextNode TemplateHeader(TemplateNodeBuilder templateBuilder) :
     return whitespace;
   }
 }
-
 
 
 /**
@@ -2780,7 +2775,7 @@ private ForeachNode ForeachStmt() :
 
 
 /**
- * ForStmt -> CmdBeginFor VarRef Ident GlobalOrFunction CmdEnd TemplateBlock CmdCloseFor
+ * ForStmt -> CmdBeginFor VarRef Ident Expr CmdEnd TemplateBlock CmdCloseFor
  */
 private ForNode ForStmt() :
 {
@@ -2795,16 +2790,7 @@ private ForNode ForStmt() :
 
   try {
     forVar = VarRef()
-
-    in = <IDENT>
-    {
-      // Making "in" a token would conflict with its usage in other contexts.
-      // Instead, check its value manually here.
-      if (!in.image.equals("in")) {
-        throw generateParseException();
-      }
-    }
-
+    in = Keyword("in")
     rangeExpr = Expr()
     {
       // Same as above, we do not want to make "range" a token.
@@ -3056,65 +3042,6 @@ private DebuggerNode DebuggerStmt() :
 // -------------------------------------------------------------------------------------------------
 // Soy Expressions.
 
-
-/**
- * Primitive -> Null | Boolean | Integer | Float | String
- */
-private PrimitiveNode Primitive() :
-{
-  Token tok;
-  PrimitiveNode primitive;
-}
-{
-
-  (
-    tok = <NULL>
-    { primitive = new NullNode(createSrcLoc(tok)); }
-  |
-    tok = <TRUE>
-    { primitive = new BooleanNode(true, createSrcLoc(tok)); }
-  |
-    tok = <FALSE>
-    { primitive = new BooleanNode(false, createSrcLoc(tok)); }
-  |
-    tok = <DEC_INTEGER>
-    { SourceLocation loc = createSrcLoc(tok);
-      Long parsed = Longs.tryParse(tok.image, 10);
-      if (parsed == null || !IntegerNode.isInRange(parsed)) {
-        errorReporter.report(loc, INTEGER_OUT_OF_RANGE);
-        parsed = 0L;
-      }
-      primitive = new IntegerNode(parsed, loc);
-    }
-  |
-    tok = <HEX_INTEGER>
-    { SourceLocation loc = createSrcLoc(tok);
-      Long parsed = Longs.tryParse(tok.image.substring(2), 16);
-      if (parsed == null || !IntegerNode.isInRange(parsed)) {
-        errorReporter.report(loc, INTEGER_OUT_OF_RANGE);
-        parsed = 0L;
-      }
-      primitive = new IntegerNode(parsed, loc);
-    }
-  |
-    tok = <FLOAT>
-    { primitive = new FloatNode(Double.parseDouble(tok.image), createSrcLoc(tok)); }
-  |
-    tok = <STRING>
-    { String strNoQuotes = tok.image.substring(1, tok.image.length() - 1);
-      // TODO(lukes): a common strategy for string literals is to use a custom lexer state and a
-      // MORE production.  Once the parsers are merged do that.
-      primitive = new StringNode(UnescapeUtils.unescapeJs(strNoQuotes), createSrcLoc(tok));
-    }
-  )
-
-  { return primitive; }
-}
-
-
-// =================================================================================================
-// Grammar
-// =================================================================================================
 
 
 /**
@@ -3710,6 +3637,61 @@ private ExprNode MapKeyOrExpr() :
 
 
 /**
+ * Primitive -> Null | Boolean | Integer | Float | String
+ */
+private PrimitiveNode Primitive() :
+{
+  Token tok;
+  PrimitiveNode primitive;
+}
+{
+
+  (
+    tok = <NULL>
+    { primitive = new NullNode(createSrcLoc(tok)); }
+  |
+    tok = <TRUE>
+    { primitive = new BooleanNode(true, createSrcLoc(tok)); }
+  |
+    tok = <FALSE>
+    { primitive = new BooleanNode(false, createSrcLoc(tok)); }
+  |
+    tok = <DEC_INTEGER>
+    { SourceLocation loc = createSrcLoc(tok);
+      Long parsed = Longs.tryParse(tok.image, 10);
+      if (parsed == null || !IntegerNode.isInRange(parsed)) {
+        errorReporter.report(loc, INTEGER_OUT_OF_RANGE);
+        parsed = 0L;
+      }
+      primitive = new IntegerNode(parsed, loc);
+    }
+  |
+    tok = <HEX_INTEGER>
+    { SourceLocation loc = createSrcLoc(tok);
+      Long parsed = Longs.tryParse(tok.image.substring(2), 16);
+      if (parsed == null || !IntegerNode.isInRange(parsed)) {
+        errorReporter.report(loc, INTEGER_OUT_OF_RANGE);
+        parsed = 0L;
+      }
+      primitive = new IntegerNode(parsed, loc);
+    }
+  |
+    tok = <FLOAT>
+    { primitive = new FloatNode(Double.parseDouble(tok.image), createSrcLoc(tok)); }
+  |
+    tok = <STRING>
+    { String strNoQuotes = tok.image.substring(1, tok.image.length() - 1);
+      // TODO(lukes): a common strategy for string literals is to use a custom lexer state and a
+      // MORE production.  Once the parsers are merged do that.
+      primitive = new StringNode(UnescapeUtils.unescapeJs(strNoQuotes), createSrcLoc(tok));
+    }
+  )
+
+  { return primitive; }
+}
+
+
+/**
  * A helper to parse a dotted identifier.
  *
  * Identifier -> Ident ( "." Ident )*
@@ -3728,21 +3710,42 @@ private Identifier Identifier() :
   ( LOOKAHEAD(1)
     <DOT>
     next = <IDENT>
-    { if (sb == null) {
+    {
+      if (sb == null) {
         sb = new StringBuilder();
         sb.append(first.image);
       }
       sb.append('.').append(next.image);
     }
   )*
-  { if (sb != null) {
-      return Identifier.create(sb.toString(), createSrcLoc(first, next));
-    } else {
-      return Identifier.create(first.image, createSrcLoc(first));
-    }
+  {
+    return sb == null
+      ? Identifier.create(first.image, createSrcLoc(first))
+      : Identifier.create(sb.toString(), createSrcLoc(first, next));
   }
 }
 
+
+
+
+/**
+ * A helper to parse identifiers as keywords.
+ *
+ * Keyword -> Ident
+ */
+private Token Keyword(String keyword) :
+{
+  Token ident;
+}
+{
+  ident = <IDENT>
+  {
+    if (!ident.image.equals(keyword)) {
+      throw generateParseException();
+    }
+    return ident;
+  }
+}
 
 
 // -------------------------------------------------------------------------------------------------
