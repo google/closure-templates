@@ -128,12 +128,14 @@ final class ConditionalBranches {
       }
       HtmlTagEntry entry = branch.deque().peek();
       // Remove optional tags that do not match the desired tag.
-      while (entry != null
-          && entry.hasTagName()
+      while (entry.hasTagName()
           && !entry.getTagName().equals(tag)
           && entry.isDefinitelyOptional()) {
         branch.deque().poll();
         entry = branch.deque().peek();
+        if (entry == null) {
+          return false;
+        }
       }
       if (entry.hasTagName()) {
         if (!entry.getTagName().equals(tag)) {

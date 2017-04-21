@@ -133,25 +133,33 @@ final class HtmlTagEntry {
     while (!openStack.isEmpty() && !closeQueue.isEmpty()) {
       HtmlTagEntry openTag = openStack.peekFirst();
       HtmlTagEntry closeTag = closeQueue.peekFirst();
-      if (closeTag.isDefinitelyOptional()) {
+      if (closeTag.hasTagName()) {
         if (closeTag.getTagName().equals(openTag.getTagName())) {
           openStack.pollFirst();
           closeQueue.pollFirst();
           continue;
-        }
-        if (!openTag.hasTagName()) {
-          // Mutate the stack/queue if we found common prefix.
-          if (tryMatchCommonPrefix(openTag, closeTag, errorReporter)) {
+        } else {
+          // This logic is similar to popOptionalTag(), but there is no good way to extract this.
+          if (openTag.isDefinitelyOptional()) {
             openStack.pollFirst();
-            closeQueue.pollFirst();
             continue;
+          } else if (!openTag.hasTagName()) {
+            openTag.getBranches().popOptionalTags();
+            if (openTag.getBranches().isEmpty()) {
+              openStack.pollFirst();
+              continue;
+            }
+            // Mutate the stack/queue if we found common prefix.
+            if (tryMatchCommonPrefix(openTag, closeTag, errorReporter)) {
+              openStack.pollFirst();
+              closeQueue.pollFirst();
+              continue;
+            }
+            // We already report an error in tryMatchCommonPrefix.
+            return false;
           }
-          errorReporter.report(closeTag.getSourceLocation(), UNEXPECTED_CLOSE_TAG);
-          return false;
         }
-      }
-      // Remove optional tags from the open stack before we try to match the current close tag.
-      if (closeTag.hasTagName()) {
+        // Remove optional tags from the open stack before we try to match the current close tag.
         openTag = popOptionalTags(openStack);
       }
       if (matchOrError(openTag, closeTag, errorReporter)) {
