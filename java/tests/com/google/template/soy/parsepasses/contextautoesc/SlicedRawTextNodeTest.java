@@ -103,7 +103,8 @@ public final class SlicedRawTextNodeTest {
             "<script INJE='CTED'>alert('Hi');</script>",
             "<!-- <script>notAScript()</script> -->",
             "<textarea><script>notAScript()</script></textarea>",
-            "<script is-script=yes>document.write('<script>not()<\\/script>');</script>",
+            "<script is-script=yes INJE='CTED'>document.write('<script>not()<\\/script>');",
+            "</script>",
             "<a href=\"//google.com/search?q=<script>hi()</script>\">Link</a>\n",
             "{/template}"),
         join(

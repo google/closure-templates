@@ -2628,6 +2628,32 @@ public final class ContextualAutoescaperTest {
             "{/template}"));
   }
 
+  // Regression test for a bug where we would enter rcdata area but not exit it, so things after it
+  // would be stuck in rcdata context.  the issue is that the 'close tag' inside of rcdata would
+  // cause use to early exit the search for transition points
+  @Test
+  public void testExitSpecialRcDataArea() {
+    assertContextualRewriting(
+        join(
+            "{namespace ns}\n\n",
+            "{template .main}\n",
+            "  {@param p: ?}\n",
+            "<textarea>{$p |escapeHtmlRcdata}</div></textarea>",
+            "{$p |escapeHtml}", // this used to be |escapeHtmlRcData
+            "<textarea></textarea>\n",
+            "{/template}"),
+        join(
+            "{namespace ns}\n\n",
+            "{template .main}\n",
+            "  {@param p: ?}\n",
+            "<textarea>{$p}</div></textarea>",
+            "{$p}",
+            // this is needed at the end to prevent the bug from causing an error
+            "<textarea></textarea>",
+            "{/template}"));
+  }
+
+
   // TODO: Tests for dynamic attributes: <a on{$name}="...">,
   // <div data-{$name}={$value}>
 

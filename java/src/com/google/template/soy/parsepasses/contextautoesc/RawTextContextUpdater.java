@@ -206,7 +206,7 @@ final class RawTextContextUpdater {
    * @param text Non empty.
    */
   private void processNextToken(String text, Context context) throws SoyAutoescapeException {
-    // Find the transition whose pattern matches earliest in the raw text.
+    // Find the transition whose pattern matches earliest in the raw text (and is applicable)
     int earliestStart = Integer.MAX_VALUE;
     int earliestEnd = -1;
     Transition earliestTransition = null;
@@ -214,16 +214,19 @@ final class RawTextContextUpdater {
     for (Transition transition : TRANSITIONS.get(context.state)) {
       Matcher matcher = transition.pattern.matcher(text);
       try {
-        if (matcher.find()) {
+        // For each transition:
+        // look for matches, if the match is later than the current earliest match, give up
+        // otherwise if the match is applicable, store it.
+        // NOTE: matcher.find() returns matches in sequential order.
+        while (matcher.find() && matcher.start() < earliestStart) {
           int start = matcher.start();
-          if (start < earliestStart) {
-            int end = matcher.end();
-            if (transition.isApplicableTo(context, matcher)) {
-              earliestStart = start;
-              earliestEnd = end;
-              earliestTransition = transition;
-              earliestMatcher = matcher;
-            }
+          int end = matcher.end();
+          if (transition.isApplicableTo(context, matcher)) {
+            earliestStart = start;
+            earliestEnd = end;
+            earliestTransition = transition;
+            earliestMatcher = matcher;
+            break;
           }
         }
       } catch (StackOverflowError soe) {
