@@ -23,7 +23,9 @@ import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprparse.SoyParsingContext;
+import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.CommandTextAttributesParser.Attribute;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import java.util.Collection;
@@ -56,9 +58,10 @@ public final class CallBasicNode extends CallNode {
     CommandTextInfo(
         String commandText,
         String srcCalleeName,
-        DataAttribute dataAttr,
+        boolean isPassingAllData,
+        @Nullable ExprRootNode dataExpr,
         @Nullable String userSuppliedPlaceholderName) {
-      super(commandText, dataAttr, userSuppliedPlaceholderName);
+      super(commandText, isPassingAllData, dataExpr, userSuppliedPlaceholderName);
       this.srcCalleeName = srcCalleeName;
     }
   }
@@ -176,7 +179,8 @@ public final class CallBasicNode extends CallNode {
     private final SourceLocation sourceLocation;
 
     private ImmutableList<String> escapingDirectiveNames = ImmutableList.of();
-    private DataAttribute dataAttr = DataAttribute.none();
+    private boolean isPassingAllData = false;
+    @Nullable private ExprRootNode dataExpr = null;
 
     @Nullable private String commandText;
     @Nullable private String userSuppliedPlaceholderName;
@@ -209,8 +213,13 @@ public final class CallBasicNode extends CallNode {
       return this;
     }
 
-    public Builder dataAttribute(DataAttribute dataAttr) {
-      this.dataAttr = dataAttr;
+    public Builder dataExpr(ExprRootNode dataExpr) {
+      this.dataExpr = dataExpr;
+      return this;
+    }
+
+    public Builder isPassingAllData(boolean isPassingAllData) {
+      this.isPassingAllData = isPassingAllData;
       return this;
     }
 
@@ -265,28 +274,37 @@ public final class CallBasicNode extends CallNode {
       Map<String, String> attributes =
           ATTRIBUTES_PARSER.parse(cmdTextForParsing, context, sourceLocation);
 
-      DataAttribute dataAttrInfo =
-          parseDataAttributeHelper(attributes.get("data"), sourceLocation, context);
+      String dataAttr = attributes.get("data");
+
+      boolean isPassingAllData = false;
+      ExprRootNode dataExpr = null;
+
+      if ("all".equals(dataAttr)) {
+        isPassingAllData = true;
+      } else if (dataAttr != null) {
+        dataExpr =
+            new ExprRootNode(
+                new ExpressionParser(dataAttr, sourceLocation, context).parseExpression());
+      }
 
       return new CommandTextInfo(
-          cmdText, sourceCalleeName, dataAttrInfo, userSuppliedPlaceholderName);
+          cmdText, sourceCalleeName, isPassingAllData, dataExpr, userSuppliedPlaceholderName);
     }
 
     // TODO(user): eliminate side-channel parsing. This should be a part of the grammar.
     private CommandTextInfo buildCommandText() {
       String commandText = sourceCalleeName;
-      if (dataAttr.isPassingAllData()) {
+      if (isPassingAllData) {
         commandText += " data=\"all\"";
-      } else if (dataAttr.isPassingData()) {
-        assert dataAttr.dataExpr() != null; // suppress warnings
-        commandText += " data=\"" + dataAttr.dataExpr().toSourceString() + '"';
+      } else if (dataExpr != null) {
+        commandText += " data=\"" + dataExpr.toSourceString() + '"';
       }
       if (userSuppliedPlaceholderName != null) {
         commandText += " phname=\"" + userSuppliedPlaceholderName + '"';
       }
 
       return new CommandTextInfo(
-          commandText, sourceCalleeName, dataAttr, userSuppliedPlaceholderName);
+          commandText, sourceCalleeName, isPassingAllData, dataExpr, userSuppliedPlaceholderName);
     }
   }
 }

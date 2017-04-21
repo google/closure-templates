@@ -82,7 +82,7 @@ public final class ShouldEnsureDataIsDefinedVisitor {
           }
         }
         if (node instanceof CallNode) {
-          if (((CallNode) node).dataAttribute().isPassingAllData()) {
+          if (((CallNode) node).isPassingAllData()) {
             shouldEnsureDataIsDefined = true;
             return;
           }

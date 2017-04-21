@@ -49,7 +49,6 @@ import com.google.template.soy.soytree.AbstractReturningSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallNode;
-import com.google.template.soy.soytree.CallNode.DataAttribute;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.CallParamValueNode;
@@ -787,13 +786,12 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   }
 
   private Expression prepareParamsHelper(CallNode node, Label reattachPoint) {
-    DataAttribute dataAttribute = node.dataAttribute();
     if (node.numChildren() == 0) {
       // Easy, just use the data attribute
-      return getDataExpression(dataAttribute, reattachPoint);
+      return getDataExpression(node, reattachPoint);
     } else {
       // Otherwise we need to build a dictionary from {param} statements.
-      Expression paramStoreExpression = getParamStoreExpression(node, dataAttribute, reattachPoint);
+      Expression paramStoreExpression = getParamStoreExpression(node, reattachPoint);
       for (CallParamNode child : node.getChildren()) {
         String paramKey = child.getKey();
         Expression valueExpr;
@@ -816,13 +814,12 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   }
 
   /** Returns an expression that creates a new {@link ParamStore} suitable for holding all the */
-  private Expression getParamStoreExpression(
-      CallNode node, DataAttribute dataAttribute, Label reattachPoint) {
+  private Expression getParamStoreExpression(CallNode node, Label reattachPoint) {
     Expression paramStoreExpression;
-    if (dataAttribute.isPassingData()) {
+    if (node.isPassingData()) {
       paramStoreExpression =
           ConstructorRef.AUGMENTED_PARAM_STORE.construct(
-              getDataExpression(dataAttribute, reattachPoint), constant(node.numChildren()));
+              getDataExpression(node, reattachPoint), constant(node.numChildren()));
     } else {
       paramStoreExpression =
           ConstructorRef.BASIC_PARAM_STORE.construct(constant(node.numChildren()));
@@ -830,13 +827,13 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     return paramStoreExpression;
   }
 
-  private Expression getDataExpression(DataAttribute dataAttribute, Label reattachPoint) {
-    if (dataAttribute.isPassingData()) {
-      if (dataAttribute.isPassingAllData()) {
+  private Expression getDataExpression(CallNode node, Label reattachPoint) {
+    if (node.isPassingData()) {
+      if (node.isPassingAllData()) {
         return parameterLookup.getParamsRecord();
       } else {
         return exprCompiler
-            .compile(dataAttribute.dataExpr(), reattachPoint)
+            .compile(node.getDataExpr(), reattachPoint)
             .box()
             .checkedCast(SoyRecord.class);
       }

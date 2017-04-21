@@ -83,13 +83,15 @@ public final class CallNodeTest {
         new CallBasicNode.Builder(0, SourceLocation.UNKNOWN)
             .calleeName(callNode.getCalleeName())
             .sourceCalleeName(callNode.getSrcCalleeName())
-            .dataAttribute(callNode.dataAttribute())
+            .isPassingAllData(callNode.isPassingAllData())
+            .dataExpr(callNode.getDataExpr())
             .userSuppliedPlaceholderName(callNode.getUserSuppliedPhName())
             .escapingDirectiveNames(NO_ESCAPERS)
             .build(SoyParsingContext.exploding());
 
     assertThat(normCallNode.getCommandText()).isEqualTo(expectedCommandText);
     assertThat(normCallNode.getCalleeName()).isEqualTo(callNode.getCalleeName());
-    assertThat(normCallNode.dataAttribute()).isEqualTo(callNode.dataAttribute());
+    assertThat(normCallNode.isPassingAllData()).isEqualTo(callNode.isPassingAllData());
+    assertThat(normCallNode.getDataExpr()).isEqualTo(callNode.getDataExpr());
   }
 }

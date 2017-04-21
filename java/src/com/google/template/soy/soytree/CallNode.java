@@ -16,12 +16,10 @@
 
 package com.google.template.soy.soytree;
 
-import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprparse.SoyParsingContext;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
@@ -47,6 +45,9 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
         ExprHolderNode,
         MsgPlaceholderInitialNode {
 
+  /** Fallback base placeholder name. */
+  private static final String FALLBACK_BASE_PLACEHOLDER_NAME = "XXX";
+
   /**
    * Private helper class used by constructors. Encapsulates all the info derived from the command
    * text.
@@ -55,24 +56,27 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
   protected static class CommandTextInfo {
 
     private final String commandText;
-    private final DataAttribute dataAttribute;
+    private final boolean isPassingAllData;
+    @Nullable private final ExprRootNode dataExpr;
     @Nullable private final String userSuppliedPlaceholderName;
 
     public CommandTextInfo(
         String commandText,
-        DataAttribute dataAttribute,
+        boolean isPassingAllData,
+        @Nullable ExprRootNode dataExpr,
         @Nullable String userSuppliedPlaceholderName) {
       this.commandText = commandText;
-      this.dataAttribute = dataAttribute;
+      this.isPassingAllData = isPassingAllData;
+      this.dataExpr = dataExpr;
       this.userSuppliedPlaceholderName = userSuppliedPlaceholderName;
     }
   }
 
-  /** Fallback base placeholder name. */
-  public static final String FALLBACK_BASE_PLACEHOLDER_NAME = "XXX";
+  /** True if this call is passing data="all". */
+  private final boolean isPassingAllData;
 
-  /** Parsed metadata from the 'data' attribute. */
-  private final DataAttribute dataAttr;
+  /** The data= expression, or null if the call does not pass data or passes data="all". */
+  @Nullable private final ExprRootNode dataExpr;
 
   /** The user-supplied placeholder name, or null if not supplied or not applicable. */
   @Nullable private final String userSuppliedPlaceholderName;
@@ -107,66 +111,11 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
       CommandTextInfo commandTextInfo,
       ImmutableList<String> escapingDirectiveNames) {
     super(id, sourceLocation, commandName);
-    this.dataAttr = commandTextInfo.dataAttribute;
+    this.isPassingAllData = commandTextInfo.isPassingAllData;
+    this.dataExpr = commandTextInfo.dataExpr;
     this.userSuppliedPlaceholderName = commandTextInfo.userSuppliedPlaceholderName;
     this.escapingDirectiveNames = escapingDirectiveNames;
     this.commandText = commandTextInfo.commandText;
-  }
-
-  /** A Parsed {@code data} attribute. */
-  @AutoValue
-  public abstract static class DataAttribute {
-    public static DataAttribute none() {
-      return new AutoValue_CallNode_DataAttribute(false, null);
-    }
-
-    public static DataAttribute all() {
-      return new AutoValue_CallNode_DataAttribute(true, null);
-    }
-
-    public static DataAttribute expr(ExprRootNode expr) {
-      return new AutoValue_CallNode_DataAttribute(true, expr);
-    }
-
-    DataAttribute() {}
-
-    public abstract boolean isPassingData();
-
-    public final boolean isPassingAllData() {
-      return isPassingData() && dataExpr() == null;
-    }
-
-    @Nullable
-    public abstract ExprRootNode dataExpr();
-
-    DataAttribute copy(CopyState copyState) {
-      if (dataExpr() == null) {
-        return this;
-      }
-      return new AutoValue_CallNode_DataAttribute(true, dataExpr().copy(copyState));
-    }
-  }
-
-  /**
-   * Private helper function for subclass constructors to parse the 'data' attribute.
-   *
-   * @param dataAttr The 'data' attribute in a call.
-   * @param sourceLocation The 'data' attribute's source location.
-   * @param errorReporter For reporting syntax errors.
-   * @return A pair (isPassingData, dataExpr) where dataExpr may be null.
-   */
-  protected static DataAttribute parseDataAttributeHelper(
-      String dataAttr, SourceLocation sourceLocation, SoyParsingContext context) {
-
-    if (dataAttr == null) {
-      return DataAttribute.none();
-    } else if (dataAttr.equals("all")) {
-      return DataAttribute.all();
-    } else {
-      return DataAttribute.expr(
-          new ExprRootNode(
-              new ExpressionParser(dataAttr, sourceLocation, context).parseExpression()));
-    }
   }
 
   /**
@@ -176,16 +125,25 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
    */
   protected CallNode(CallNode orig, CopyState copyState) {
     super(orig, copyState);
-    this.dataAttr = orig.dataAttr.copy(copyState);
+    this.isPassingAllData = orig.isPassingAllData;
+    this.dataExpr = (orig.dataExpr != null) ? orig.dataExpr.copy(copyState) : null;
     this.userSuppliedPlaceholderName = orig.userSuppliedPlaceholderName;
     this.escapingDirectiveNames = orig.escapingDirectiveNames;
     this.isPcData = orig.getIsPcData();
     this.commandText = orig.commandText;
   }
 
-  /** The parsed 'data' attribute. */
-  public DataAttribute dataAttribute() {
-    return dataAttr;
+  public boolean isPassingData() {
+    return isPassingAllData || dataExpr != null;
+  }
+
+  public boolean isPassingAllData() {
+    return isPassingAllData;
+  }
+
+  @Nullable
+  public ExprRootNode getDataExpr() {
+    return dataExpr;
   }
 
   public boolean getIsPcData() {
@@ -199,6 +157,23 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
   @Override
   public String getUserSuppliedPhName() {
     return userSuppliedPlaceholderName;
+  }
+
+  @Override
+  public String genBasePhName() {
+    if (userSuppliedPlaceholderName != null) {
+      return BaseUtils.convertToUpperUnderscore(userSuppliedPlaceholderName);
+    }
+    return FALLBACK_BASE_PLACEHOLDER_NAME;
+  }
+
+  @SuppressWarnings("UnnecessaryBoxing") // for IntelliJ
+  @Override
+  public Object genSamenessKey() {
+    // CallNodes are never considered the same placeholder. We return the node instance as the info
+    // for determining sameness. Since nodes have identity semantics this will only compare equal
+    // to itself.
+    return this;
   }
 
   @Override
@@ -218,28 +193,7 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
 
   @Override
   public ImmutableList<ExprRootNode> getExprList() {
-    return (dataAttr.dataExpr() != null)
-        ? ImmutableList.of(dataAttr.dataExpr())
-        : ImmutableList.<ExprRootNode>of();
-  }
-
-  @Override
-  public String genBasePhName() {
-
-    if (userSuppliedPlaceholderName != null) {
-      return BaseUtils.convertToUpperUnderscore(userSuppliedPlaceholderName);
-    }
-
-    return FALLBACK_BASE_PLACEHOLDER_NAME;
-  }
-
-  @SuppressWarnings("UnnecessaryBoxing") // for IntelliJ
-  @Override
-  public Object genSamenessKey() {
-    // CallNodes are never considered the same placeholder. We return the node instance as the info
-    // for determining sameness. Since nodes have identity semantics this will only compare equal
-    // to itself.
-    return this;
+    return (dataExpr != null) ? ImmutableList.of(dataExpr) : ImmutableList.<ExprRootNode>of();
   }
 
   @SuppressWarnings("unchecked")

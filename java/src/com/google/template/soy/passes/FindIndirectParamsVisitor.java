@@ -310,7 +310,7 @@ public class FindIndirectParamsVisitor extends AbstractSoyNodeVisitor<IndirectPa
     visitChildren(node);
 
     // We only want to recurse on calls that pass all data.
-    if (!node.dataAttribute().isPassingAllData()) {
+    if (!node.isPassingAllData()) {
       return;
     }
 
@@ -334,7 +334,7 @@ public class FindIndirectParamsVisitor extends AbstractSoyNodeVisitor<IndirectPa
     visitChildren(node);
 
     // We only want to recurse on calls that pass all data.
-    if (!node.dataAttribute().isPassingAllData()) {
+    if (!node.isPassingAllData()) {
       return;
     }
 

@@ -24,7 +24,6 @@ import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallNode;
-import com.google.template.soy.soytree.CallNode.DataAttribute;
 import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -70,7 +69,7 @@ public final class ChangeCallsToPassAllDataVisitor extends AbstractSoyNodeVisito
     visitChildrenAllowingConcurrentModification(node);
 
     // If this call already passes data (but not all data), then this optimization doesn't apply.
-    if (node.dataAttribute().isPassingData() && !node.dataAttribute().isPassingAllData()) {
+    if (node.isPassingData() && !node.isPassingAllData()) {
       return;
     }
 
@@ -104,7 +103,8 @@ public final class ChangeCallsToPassAllDataVisitor extends AbstractSoyNodeVisito
           new CallBasicNode.Builder(node.getId(), node.getSourceLocation())
               .calleeName(nodeCast.getCalleeName())
               .sourceCalleeName(nodeCast.getSrcCalleeName())
-              .dataAttribute(DataAttribute.all())
+              .isPassingAllData(true)
+              .dataExpr(null)
               .userSuppliedPlaceholderName(node.getUserSuppliedPhName())
               .escapingDirectiveNames(node.getEscapingDirectiveNames())
               // Use the exploding reporter since we know it won't report any errors
@@ -116,7 +116,8 @@ public final class ChangeCallsToPassAllDataVisitor extends AbstractSoyNodeVisito
               .delCalleeName(nodeCast.getDelCalleeName())
               .delCalleeVariantExpr(nodeCast.getDelCalleeVariantExpr())
               .allowEmptyDefault(nodeCast.allowsEmptyDefault())
-              .dataAttribute(DataAttribute.all())
+              .isPassingAllData(true)
+              .dataExpr(null)
               .userSuppliedPlaceholderName(node.getUserSuppliedPhName())
               .escapingDirectiveNames(node.getEscapingDirectiveNames())
               // Use the exploding reporter since we know it won't report any errors

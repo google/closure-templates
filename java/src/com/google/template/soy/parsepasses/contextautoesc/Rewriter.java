@@ -182,7 +182,8 @@ final class Rewriter {
               new CallBasicNode.Builder(callNode.getId(), callNode.getSourceLocation())
                   .calleeName(derivedCalleeName)
                   .sourceCalleeName(derivedCalleeName)
-                  .dataAttribute(callNode.dataAttribute())
+                  .isPassingAllData(callNode.isPassingAllData())
+                  .dataExpr(callNode.getDataExpr())
                   .userSuppliedPlaceholderName(callNode.getUserSuppliedPhName())
                   .escapingDirectiveNames(callNode.getEscapingDirectiveNames())
                   .build(context);
@@ -193,7 +194,8 @@ final class Rewriter {
                   .delCalleeName(derivedCalleeName)
                   .delCalleeVariantExpr(callNodeCast.getDelCalleeVariantExpr())
                   .allowEmptyDefault(callNodeCast.allowsEmptyDefault())
-                  .dataAttribute(callNode.dataAttribute())
+                  .isPassingAllData(callNode.isPassingAllData())
+                  .dataExpr(callNode.getDataExpr())
                   .userSuppliedPlaceholderName(callNode.getUserSuppliedPhName())
                   .escapingDirectiveNames(callNode.getEscapingDirectiveNames())
                   .build(context);

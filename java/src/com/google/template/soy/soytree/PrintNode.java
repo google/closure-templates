@@ -45,7 +45,7 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
         MsgPlaceholderInitialNode {
 
   /** Fallback base placeholder name. */
-  public static final String FALLBACK_BASE_PLACEHOLDER_NAME = "XXX";
+  private static final String FALLBACK_BASE_PLACEHOLDER_NAME = "XXX";
 
   /** Whether the command 'print' is implicit. */
   private final boolean isImplicit;

@@ -191,10 +191,10 @@ final class GenPyCallExprVisitor extends AbstractReturningSoyNodeVisitor<PyExpr>
 
     // Generate the expression for the original data to pass.
     String dataToPass;
-    if (callNode.dataAttribute().isPassingAllData()) {
+    if (callNode.isPassingAllData()) {
       dataToPass = "data";
-    } else if (callNode.dataAttribute().isPassingData()) {
-      dataToPass = translator.exec(callNode.dataAttribute().dataExpr()).getText();
+    } else if (callNode.isPassingData()) {
+      dataToPass = translator.exec(callNode.getDataExpr()).getText();
     } else {
       dataToPass = "{}";
     }
@@ -241,7 +241,7 @@ final class GenPyCallExprVisitor extends AbstractReturningSoyNodeVisitor<PyExpr>
     PyExpr additionalParamsExpr = PyExprUtils.convertMapToPyExpr(additionalParams);
 
     // Cases 2 and 3: Additional params with and without original data to pass.
-    if (callNode.dataAttribute().isPassingData()) {
+    if (callNode.isPassingData()) {
       // make a shallow copy so we don't accidentally modify the param
       dataToPass = "dict(" + dataToPass + ")";
       return "runtime.merge_into_dict(" + dataToPass + ", " + additionalParamsExpr.getText() + ")";

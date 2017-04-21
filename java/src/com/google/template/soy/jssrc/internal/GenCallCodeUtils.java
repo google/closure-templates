@@ -252,12 +252,12 @@ public class GenCallCodeUtils {
 
     // ------ Generate the expression for the original data to pass ------
     CodeChunk.WithValue dataToPass;
-    if (callNode.dataAttribute().isPassingAllData()) {
+    if (callNode.isPassingAllData()) {
       dataToPass = JsRuntime.OPT_DATA;
-    } else if (callNode.dataAttribute().isPassingData()) {
+    } else if (callNode.isPassingData()) {
       dataToPass =
           jsExprTranslator.translateToCodeChunk(
-              callNode.dataAttribute().dataExpr(), translationContext, errorReporter);
+              callNode.getDataExpr(), translationContext, errorReporter);
     } else {
       dataToPass = LITERAL_NULL;
     }
@@ -303,7 +303,7 @@ public class GenCallCodeUtils {
     CodeChunk.WithValue params = CodeChunk.mapLiteral(keys.build(), values.build());
 
     // ------ Cases 2 and 3: Additional params with and without original data to pass ------
-    if (callNode.dataAttribute().isPassingData()) {
+    if (callNode.isPassingData()) {
       CodeChunk.WithValue allData = SOY_ASSIGN_DEFAULTS.call(params, dataToPass);
       return allData;
     } else {

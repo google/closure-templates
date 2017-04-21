@@ -240,8 +240,8 @@ final class CheckTemplateCallsPass extends CompilerFileSetPass {
 
       // If the caller is passing data via data="all" then we look for matching static param
       // declarations in the callers template and see if there are type errors there.
-      if (call.dataAttribute().isPassingData()) {
-        if (call.dataAttribute().isPassingAllData() && callerTemplate.getParams() != null) {
+      if (call.isPassingData()) {
+        if (call.isPassingAllData() && callerTemplate.getParams() != null) {
           // Check indirect params that are passed via data="all".
           // We only need to check explicit params of calling template here.
           for (TemplateParam callerParam : callerTemplate.getParams()) {
@@ -466,7 +466,7 @@ final class CheckTemplateCallsPass extends CompilerFileSetPass {
     private void checkCallParamNames(CallNode caller, TemplateNode callee) {
       // If all the data keys being passed are listed using 'param' commands, then check that all
       // required params of the callee are included.
-      if (!caller.dataAttribute().isPassingData()) {
+      if (!caller.isPassingData()) {
         // Do the check if the callee node has declared params.
         if (callee != null && callee.getParams() != null) {
           // Get param keys passed by caller.

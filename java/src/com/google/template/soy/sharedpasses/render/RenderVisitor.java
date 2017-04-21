@@ -564,10 +564,10 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
     // ------ Build the call data. ------
     SoyRecord dataToPass;
-    if (node.dataAttribute().isPassingAllData()) {
+    if (node.isPassingAllData()) {
       dataToPass = data;
-    } else if (node.dataAttribute().isPassingData()) {
-      SoyValue dataRefValue = eval(node.dataAttribute().dataExpr(), node);
+    } else if (node.isPassingData()) {
+      SoyValue dataRefValue = eval(node.getDataExpr(), node);
       if (!(dataRefValue instanceof SoyRecord)) {
         throw RenderException.create(
                 "In 'call' command "

@@ -73,9 +73,10 @@ public final class CallDelegateNode extends CallNode {
         String delCalleeName,
         @Nullable ExprRootNode delCalleeVariantExpr,
         Boolean allowsEmptyDefault,
-        DataAttribute dataAttr,
+        boolean isPassingAllData,
+        @Nullable ExprRootNode dataExpr,
         @Nullable String userSuppliedPlaceholderName) {
-      super(commandText, dataAttr, userSuppliedPlaceholderName);
+      super(commandText, isPassingAllData, dataExpr, userSuppliedPlaceholderName);
       this.delCalleeName = delCalleeName;
       this.delCalleeVariantExpr = delCalleeVariantExpr;
       this.allowsEmptyDefault = allowsEmptyDefault;
@@ -130,8 +131,9 @@ public final class CallDelegateNode extends CallNode {
     private final SourceLocation sourceLocation;
 
     private boolean allowEmptyDefault;
-    private DataAttribute dataAttribute = DataAttribute.none();
     private ImmutableList<String> escapingDirectiveNames = ImmutableList.of();
+    private boolean isPassingAllData = false;
+    @Nullable private ExprRootNode dataExpr = null;
 
     @Nullable private String commandText;
     @Nullable private String delCalleeName;
@@ -174,8 +176,13 @@ public final class CallDelegateNode extends CallNode {
       return this;
     }
 
-    public Builder dataAttribute(DataAttribute dataAttribute) {
-      this.dataAttribute = dataAttribute;
+    public Builder dataExpr(ExprRootNode dataExpr) {
+      this.dataExpr = dataExpr;
+      return this;
+    }
+
+    public Builder isPassingAllData(boolean isPassingAllData) {
+      this.isPassingAllData = isPassingAllData;
       return this;
     }
 
@@ -242,8 +249,18 @@ public final class CallDelegateNode extends CallNode {
         delCalleeVariantExpr = new ExprRootNode(expr);
       }
 
-      DataAttribute dataAttrInfo =
-          parseDataAttributeHelper(attributes.get("data"), sourceLocation, context);
+      String dataAttr = attributes.get("data");
+
+      boolean isPassingAllData = false;
+      ExprRootNode dataExpr = null;
+
+      if ("all".equals(dataAttr)) {
+        isPassingAllData = true;
+      } else if (dataAttr != null) {
+        dataExpr =
+            new ExprRootNode(
+                new ExpressionParser(dataAttr, sourceLocation, context).parseExpression());
+      }
 
       String allowemptydefaultAttr = attributes.get("allowemptydefault");
       Boolean allowsEmptyDefault =
@@ -254,7 +271,8 @@ public final class CallDelegateNode extends CallNode {
           delCalleeName,
           delCalleeVariantExpr,
           allowsEmptyDefault,
-          dataAttrInfo,
+          isPassingAllData,
+          dataExpr,
           userSuppliedPlaceholderName);
     }
 
@@ -263,11 +281,10 @@ public final class CallDelegateNode extends CallNode {
       Preconditions.checkArgument(BaseUtils.isDottedIdentifier(delCalleeName));
       String commandText = "";
       commandText += delCalleeName;
-      if (dataAttribute.isPassingAllData()) {
+      if (isPassingAllData) {
         commandText += " data=\"all\"";
-      } else if (dataAttribute.isPassingData()) {
-        assert dataAttribute.dataExpr() != null; // suppress warnings
-        commandText += " data=\"" + dataAttribute.dataExpr().toSourceString() + '"';
+      } else if (dataExpr != null) {
+        commandText += " data=\"" + dataExpr.toSourceString() + '"';
       }
       if (userSuppliedPlaceholderName != null) {
         commandText += " phname=\"" + userSuppliedPlaceholderName + '"';
@@ -278,7 +295,8 @@ public final class CallDelegateNode extends CallNode {
           delCalleeName,
           delCalleeVariantExpr,
           allowEmptyDefault,
-          dataAttribute,
+          isPassingAllData,
+          dataExpr,
           userSuppliedPlaceholderName);
     }
   }

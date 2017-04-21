@@ -445,7 +445,7 @@ final class TemplateAnalysis {
     @Override
     protected void visitCallNode(CallNode node) {
       // If there is a data="<expr>" this is always evaluated first.
-      ExprRootNode dataExpr = node.dataAttribute().dataExpr();
+      ExprRootNode dataExpr = node.getDataExpr();
       if (dataExpr != null) {
         evalInline(dataExpr);
       }
