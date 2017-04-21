@@ -748,8 +748,7 @@ public final class SoyFileSet {
                 soyFunctionMap)
             .fileSet();
     SoyMsgBundle bundle = new ExtractMsgsVisitor().exec(soyTree);
-    // TODO(lukes): this should call throwIfErrorsPresent(), but can't because it will break
-    // build rules.
+    throwIfErrorsPresent();
     return bundle;
   }
 
