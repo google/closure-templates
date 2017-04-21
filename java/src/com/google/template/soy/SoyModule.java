@@ -21,7 +21,6 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.OptionalBinder;
-import com.google.template.soy.conformance.CheckConformance;
 import com.google.template.soy.incrementaldomsrc.IncrementalDomSrcModule;
 import com.google.template.soy.jbcsrc.api.SoySauceImpl;
 import com.google.template.soy.jssrc.internal.JsSrcModule;
@@ -70,8 +69,6 @@ public final class SoyModule extends AbstractModule {
     bind(ContextualAutoescaper.class);
     bind(SoyTypeOps.class);
     bind(SoySauceImpl.Factory.class);
-    // TODO(lukes): make this non-optional? move entirely into SoyFileSet.Builder?
-    OptionalBinder.newOptionalBinder(binder(), CheckConformance.class);
     // optionally depend on a user supplied msg plugin
     OptionalBinder.newOptionalBinder(binder(), SoyMsgPlugin.class);
   }
