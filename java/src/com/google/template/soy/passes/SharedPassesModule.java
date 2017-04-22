@@ -20,6 +20,7 @@ import com.google.inject.AbstractModule;
 import com.google.template.soy.sharedpasses.opti.OptiModule;
 import com.google.template.soy.sharedpasses.render.EvalVisitor.EvalVisitorFactory;
 import com.google.template.soy.sharedpasses.render.EvalVisitorFactoryImpl;
+import com.google.template.soy.sharedpasses.render.RenderVisitorFactory;
 
 /**
  * Guice module for shared passes.
@@ -38,6 +39,7 @@ public final class SharedPassesModule extends AbstractModule {
 
     // Bind factories.
     bind(EvalVisitorFactory.class).to(EvalVisitorFactoryImpl.class);
+    bind(RenderVisitorFactory.class);
   }
 
   @Override

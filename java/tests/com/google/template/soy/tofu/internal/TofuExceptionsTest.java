@@ -31,7 +31,6 @@ import com.google.template.soy.SoyModule;
 import com.google.template.soy.data.SoyDict;
 import com.google.template.soy.data.SoyFutureException;
 import com.google.template.soy.data.SoyValueConverter;
-import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.tofu.SoyTofu;
 import com.google.template.soy.tofu.SoyTofuException;
 import com.google.template.soy.tofu.internal.BaseTofu.BaseTofuFactory;
@@ -83,8 +82,7 @@ public final class TofuExceptionsTest {
             .getInstance(BaseTofuFactory.class)
             .create(
                 SoyFileSetParserBuilder.forFileContents(SOY_FILE).parse().registry(),
-                ImmutableMap.<String, ImmutableSortedSet<String>>of(),
-                ImmutableMap.<String, SoyPrintDirective>of());
+                ImmutableMap.<String, ImmutableSortedSet<String>>of());
   }
 
   @Test

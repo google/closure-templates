@@ -30,10 +30,6 @@ public final class TofuModule extends AbstractModule {
 
   @Override
   protected void configure() {
-    // Bindings for when explicit dependencies are required.
-    bind(TofuEvalVisitorFactory.class);
-    bind(TofuRenderVisitorFactory.class);
-
     // Bind providers of factories (created via assisted inject).
     install(new FactoryModuleBuilder().build(BaseTofuFactory.class));
   }

@@ -836,9 +836,7 @@ public final class SoyFileSet {
   /** Helper method to compile SoyTofu from {@link ServerCompilationPrimitives} */
   private SoyTofu doCompileToTofu(ServerCompilationPrimitives primitives) {
     return baseTofuFactory.create(
-        primitives.registry,
-        getTransitiveIjs(primitives.soyTree, primitives.registry),
-        printDirectives);
+        primitives.registry, getTransitiveIjs(primitives.soyTree, primitives.registry));
   }
 
   /**

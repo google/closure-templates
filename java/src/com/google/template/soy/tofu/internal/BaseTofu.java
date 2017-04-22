@@ -36,10 +36,9 @@ import com.google.template.soy.shared.internal.ApiCallScopeUtils;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
 import com.google.template.soy.shared.internal.GuiceSimpleScope.InScope;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.ApiCall;
-import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
-import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.sharedpasses.render.RenderException;
 import com.google.template.soy.sharedpasses.render.RenderVisitor;
+import com.google.template.soy.sharedpasses.render.RenderVisitorFactory;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.Visibility;
@@ -66,12 +65,10 @@ public class BaseTofu implements SoyTofu {
     /**
      * @param templates The full set of templates.
      * @param templateToIjParamsInfoMap the ij params for each template.
-     * @param printDirectives The map of print directives.
      */
     BaseTofu create(
         TemplateRegistry templates,
-        ImmutableMap<String, ImmutableSortedSet<String>> templateToIjParamsInfoMap,
-        ImmutableMap<String, ? extends SoyPrintDirective> printDirectives);
+        ImmutableMap<String, ImmutableSortedSet<String>> templateToIjParamsInfoMap);
   }
 
   private final SoyValueConverter valueConverter;
@@ -79,40 +76,29 @@ public class BaseTofu implements SoyTofu {
   /** The scope object that manages the API call scope. */
   private final GuiceSimpleScope apiCallScope;
 
-  private final TofuRenderVisitorFactory tofuRenderVisitorFactory;
+  private final RenderVisitorFactory renderVisitorFactory;
 
   private final TemplateRegistry templateRegistry;
 
   private final ImmutableMap<String, ImmutableSortedSet<String>> templateToIjParamsInfoMap;
 
-  private final ImmutableMap<String, ? extends SoyJavaPrintDirective> printDirectives;
-
   /**
    * @param valueConverter Instance of SoyValueConverter to use.
    * @param apiCallScope The scope object that manages the API call scope.
-   * @param tofuRenderVisitorFactory Factory for creating an instance of TofuRenderVisitor.
+   * @param renderVisitorFactory Factory for creating an instance of RenderVisitor.
    */
   @AssistedInject
   public BaseTofu(
       SoyValueConverter valueConverter,
       @ApiCall GuiceSimpleScope apiCallScope,
-      TofuRenderVisitorFactory tofuRenderVisitorFactory,
+      RenderVisitorFactory renderVisitorFactory,
       @Assisted TemplateRegistry templates,
-      @Assisted ImmutableMap<String, ImmutableSortedSet<String>> templateToIjParamsInfoMap,
-      @Assisted ImmutableMap<String, ? extends SoyPrintDirective> printDirectives) {
+      @Assisted ImmutableMap<String, ImmutableSortedSet<String>> templateToIjParamsInfoMap) {
     this.valueConverter = valueConverter;
     this.apiCallScope = apiCallScope;
-    this.tofuRenderVisitorFactory = tofuRenderVisitorFactory;
+    this.renderVisitorFactory = renderVisitorFactory;
     this.templateRegistry = templates;
     this.templateToIjParamsInfoMap = templateToIjParamsInfoMap;
-
-    ImmutableMap.Builder<String, SoyJavaPrintDirective> builder = ImmutableMap.builder();
-    for (Map.Entry<String, ? extends SoyPrintDirective> entry : printDirectives.entrySet()) {
-      if (entry.getValue() instanceof SoyJavaPrintDirective) {
-        builder.put(entry.getKey(), (SoyJavaPrintDirective) entry.getValue());
-      }
-    }
-    this.printDirectives = builder.build();
   }
 
   /**
@@ -245,10 +231,9 @@ public class BaseTofu implements SoyTofu {
 
     try {
       RenderVisitor rv =
-          tofuRenderVisitorFactory.create(
+          renderVisitorFactory.create(
               outputBuf,
               templateRegistry,
-              printDirectives,
               data,
               ijData,
               activeDelPackageNames,
