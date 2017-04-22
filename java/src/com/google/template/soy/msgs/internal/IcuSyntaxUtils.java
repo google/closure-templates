@@ -58,12 +58,11 @@ public class IcuSyntaxUtils {
    *     plural/select parts, otherwise the original msg parts.
    */
   public static ImmutableList<SoyMsgPart> convertMsgPartsToEmbeddedIcuSyntax(
-      List<SoyMsgPart> origMsgParts, boolean allowIcuEscapingInRawText) {
+      ImmutableList<SoyMsgPart> origMsgParts, boolean allowIcuEscapingInRawText) {
 
     // If origMsgParts doesn't have plural/select parts, simply return it.
     if (!MsgPartUtils.hasPlrselPart(origMsgParts)) {
-      // TODO: Once ImmutableList<SoyMsgPart> is everywhere, remove ImmutableList.copyOf() here.
-      return ImmutableList.copyOf(origMsgParts);
+      return origMsgParts;
     }
 
     // Build the new msg parts.
