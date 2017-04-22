@@ -13950,6 +13950,10 @@ goog.userAgent.DOCUMENT_MODE = (function() {
 goog.provide('goog.debug');
 
 goog.require('goog.array');
+/**
+ * This is a workaround for projects with an indirect dependency.
+ * @suppress {extraRequire}
+ */
 goog.require('goog.structs.Set');
 goog.require('goog.userAgent');
 
@@ -14062,10 +14066,9 @@ goog.debug.expose = function(obj, opt_showFn) {
 
 /**
  * Creates a string representing a given primitive or object, and for an
- * object, all its properties and nested objects.  WARNING: If an object is
- * given, it and all its nested objects will be modified.  To detect reference
- * cycles, this method identifies objects using goog.getUid() which mutates the
- * object.
+ * object, all its properties and nested objects. NOTE: The output will include
+ * Uids on all objects that were exposed. Any added Uids will be removed before
+ * returning.
  * @param {*} obj Object to expose.
  * @param {boolean=} opt_showFn Also show properties that are functions (by
  *     default, functions are omitted).
@@ -14074,9 +14077,14 @@ goog.debug.expose = function(obj, opt_showFn) {
 goog.debug.deepExpose = function(obj, opt_showFn) {
   var str = [];
 
-  var helper = function(obj, space, parentSeen) {
+  // Track any objects where deepExpose added a Uid, so they can be cleaned up
+  // before return. We do this globally, rather than only on ancestors so that
+  // if the same object appears in the output, you can see it.
+  var uidsToCleanup = [];
+  var ancestorUids = {};
+
+  var helper = function(obj, space) {
     var nestspace = space + '  ';
-    var seen = new goog.structs.Set(parentSeen);
 
     var indentMultiline = function(str) {
       return str.replace(/\n/g, '\n' + space);
@@ -14093,10 +14101,15 @@ goog.debug.deepExpose = function(obj, opt_showFn) {
       } else if (goog.isFunction(obj)) {
         str.push(indentMultiline(String(obj)));
       } else if (goog.isObject(obj)) {
-        if (seen.contains(obj)) {
-          str.push('*** reference loop detected ***');
+        // Add a Uid if needed. The struct calls implicitly adds them.
+        if (!goog.hasUid(obj)) {
+          uidsToCleanup.push(obj);
+        }
+        var uid = goog.getUid(obj);
+        if (ancestorUids[uid]) {
+          str.push('*** reference loop detected (id=' + uid + ') ***');
         } else {
-          seen.add(obj);
+          ancestorUids[uid] = true;
           str.push('{');
           for (var x in obj) {
             if (!opt_showFn && goog.isFunction(obj[x])) {
@@ -14105,9 +14118,10 @@ goog.debug.deepExpose = function(obj, opt_showFn) {
             str.push('\n');
             str.push(nestspace);
             str.push(x + ' = ');
-            helper(obj[x], nestspace, seen);
+            helper(obj[x], nestspace);
           }
           str.push('\n' + space + '}');
+          delete ancestorUids[uid];
         }
       } else {
         str.push(obj);
@@ -14117,7 +14131,13 @@ goog.debug.deepExpose = function(obj, opt_showFn) {
     }
   };
 
-  helper(obj, '', new goog.structs.Set());
+  helper(obj, '');
+
+  // Cleanup any Uids that were added by the deepExpose.
+  for (var i = 0; i < uidsToCleanup.length; i++) {
+    goog.removeUid(uidsToCleanup[i]);
+  }
+
   return str.join('');
 };
 
