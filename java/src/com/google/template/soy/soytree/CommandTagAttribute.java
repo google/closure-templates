@@ -24,6 +24,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.Identifier.Type;
+import com.google.template.soy.base.internal.TriState;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.error.ErrorReporter;
@@ -116,18 +117,18 @@ public final class CommandTagAttribute {
     }
   }
 
-  StrictHtmlMode valueAsStrictHtmlMode(ErrorReporter errorReporter) {
+  TriState valueAsTriState(ErrorReporter errorReporter) {
     if ("true".equals(value)) {
-      return StrictHtmlMode.YES;
+      return TriState.ENABLED;
     } else if ("false".equals(value)) {
-      return StrictHtmlMode.NO;
+      return TriState.DISABLED;
     } else {
       errorReporter.report(
           valueLocation,
           INVALID_ATTRIBUTE_LIST,
           key.identifier(),
           ImmutableList.of("true", "false"));
-      return StrictHtmlMode.UNSET;
+      return TriState.UNSET;
     }
   }
 

@@ -112,7 +112,7 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
           markDeprecatedV1(attribute.valueAsBoolean(errorReporter, false));
           break;
         case "stricthtml":
-          strictHtmlMode = attribute.valueAsStrictHtmlMode(errorReporter);
+          strictHtmlMode = attribute.valueAsTriState(errorReporter);
           break;
         case "variant":
           // need to get variant parsing out of this.  maybe we can expose some sort of limited

@@ -27,6 +27,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
+import com.google.template.soy.base.internal.TriState;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.basetree.SyntaxVersionUpperBound;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
@@ -128,7 +129,7 @@ public abstract class TemplateNodeBuilder {
 
   protected boolean isMarkedV1;
 
-  protected StrictHtmlMode strictHtmlMode;
+  protected TriState strictHtmlMode;
 
   SourceLocation sourceLocation;
 
@@ -137,7 +138,7 @@ public abstract class TemplateNodeBuilder {
     this.soyFileHeaderInfo = soyFileHeaderInfo;
     this.errorReporter = errorReporter;
     this.syntaxVersionBound = null;
-    this.strictHtmlMode = StrictHtmlMode.UNSET;
+    this.strictHtmlMode = TriState.UNSET;
     // All other fields default to null.
   }
 
@@ -323,7 +324,7 @@ public abstract class TemplateNodeBuilder {
     this.partialTemplateName = partialTemplateName;
   }
 
-  protected StrictHtmlMode getStrictHtmlMode() {
+  protected TriState getStrictHtmlMode() {
     return strictHtmlMode;
   }
 

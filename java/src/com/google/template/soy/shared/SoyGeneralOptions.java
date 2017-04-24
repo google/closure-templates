@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
 import com.google.template.soy.SoyUtils;
+import com.google.template.soy.base.internal.TriState;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.data.internalutils.InternalValueUtils;
 import com.google.template.soy.data.restricted.PrimitiveData;
@@ -40,15 +41,6 @@ import javax.annotation.Nullable;
  *
  */
 public final class SoyGeneralOptions implements Cloneable {
-  public enum TriState {
-    ENABLED,
-    DISABLED,
-    UNSET;
-
-    static TriState from(boolean b) {
-      return b ? ENABLED : DISABLED;
-    }
-  }
 
   /** User-declared syntax version, or null if not set. */
   @Nullable private SyntaxVersion declaredSyntaxVersion;

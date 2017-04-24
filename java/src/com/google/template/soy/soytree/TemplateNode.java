@@ -25,6 +25,7 @@ import com.google.common.collect.Maps;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.Identifier;
+import com.google.template.soy.base.internal.TriState;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.error.ErrorReporter;
@@ -101,7 +102,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
     final Priority priority;
     @Nullable public final String namespace;
     public final AutoescapeMode defaultAutoescapeMode;
-    public final StrictHtmlMode strictHtmlMode;
+    public final TriState strictHtmlMode;
 
     public SoyFileHeaderInfo(
         ErrorReporter errorReporter,
@@ -123,7 +124,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
           null,
           namespace,
           AutoescapeMode.NONCONTEXTUAL,
-          StrictHtmlMode.UNSET, // Don't use stricthtml mode for testing.
+          TriState.UNSET, // Don't use stricthtml mode for testing.
           ImmutableMap.<String, String>of(),
           ImmutableList.<AliasDeclaration>of());
     }
@@ -132,7 +133,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
         @Nullable String delPackageName,
         String namespace,
         AutoescapeMode defaultAutoescapeMode,
-        StrictHtmlMode strictHtmlMode,
+        TriState strictHtmlMode,
         ImmutableMap<String, String> aliasToNamespaceMap,
         ImmutableList<AliasDeclaration> aliasDeclarations) {
       this.delPackageName = delPackageName;
@@ -250,13 +251,13 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
     this.cssBaseNamespace = nodeBuilder.getCssBaseNamespace();
     this.soyDoc = nodeBuilder.getSoyDoc();
     this.soyDocDesc = nodeBuilder.getSoyDocDesc();
-    if (nodeBuilder.getStrictHtmlMode() != StrictHtmlMode.UNSET) {
+    if (nodeBuilder.getStrictHtmlMode() != TriState.UNSET) {
       // use the value that is explicitly set in template.
-      this.strictHtml = nodeBuilder.getStrictHtmlMode() == StrictHtmlMode.YES;
-    } else if (soyFileHeaderInfo.strictHtmlMode != StrictHtmlMode.UNSET
+      this.strictHtml = nodeBuilder.getStrictHtmlMode() == TriState.ENABLED;
+    } else if (soyFileHeaderInfo.strictHtmlMode != TriState.UNSET
         && contentKind == ContentKind.HTML) {
       // If the value is not set, HTML templates will inherit from namespace declaration.
-      this.strictHtml = soyFileHeaderInfo.strictHtmlMode == StrictHtmlMode.YES;
+      this.strictHtml = soyFileHeaderInfo.strictHtmlMode == TriState.ENABLED;
     } else {
       // Default value is false.
       this.strictHtml = false;

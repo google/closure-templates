@@ -22,6 +22,7 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
+import com.google.template.soy.base.internal.TriState;
 import com.google.template.soy.error.ErrorReporter;
 import java.util.List;
 import javax.annotation.Nullable;
@@ -37,7 +38,7 @@ public final class NamespaceDeclaration {
   @Nullable private final SourceLocation autoescapeModeLocation;
   private final ImmutableList<String> requiredCssNamespaces;
   private final String cssBaseNamespace;
-  private final StrictHtmlMode strictHtml;
+  private final TriState strictHtml;
   @Nullable private final SourceLocation strictHtmlLocation;
 
   final ImmutableList<CommandTagAttribute> attrs;
@@ -48,7 +49,7 @@ public final class NamespaceDeclaration {
     SourceLocation autoescapeModeLocation = null;
     ImmutableList<String> requiredCssNamespaces = ImmutableList.of();
     String cssBaseNamespace = null;
-    StrictHtmlMode strictHtml = StrictHtmlMode.UNSET;
+    TriState strictHtml = TriState.UNSET;
     SourceLocation strictHtmlLocation = null;
     for (CommandTagAttribute attr : attrs) {
       switch (attr.getName().identifier()) {
@@ -63,7 +64,7 @@ public final class NamespaceDeclaration {
           cssBaseNamespace = attr.getValue();
           break;
         case "stricthtml":
-          strictHtml = attr.valueAsStrictHtmlMode(errorReporter);
+          strictHtml = attr.valueAsTriState(errorReporter);
           strictHtmlLocation = attr.getValueLocation();
           break;
         default:
@@ -114,7 +115,7 @@ public final class NamespaceDeclaration {
     return cssBaseNamespace;
   }
 
-  public StrictHtmlMode getStrictHtmlMode() {
+  public TriState getStrictHtmlMode() {
     return strictHtml;
   }
 

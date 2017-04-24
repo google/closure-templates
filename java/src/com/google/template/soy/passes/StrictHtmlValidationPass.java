@@ -19,6 +19,7 @@ package com.google.template.soy.passes;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.base.internal.TriState;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
@@ -36,7 +37,6 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
-import com.google.template.soy.soytree.StrictHtmlMode;
 import com.google.template.soy.soytree.SwitchCaseNode;
 import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
@@ -79,13 +79,13 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
     // First check namespace declarations, and return if there is any violation.
     NamespaceDeclaration namespace = file.getNamespaceDeclaration();
-    if (namespace.getStrictHtmlMode() != StrictHtmlMode.UNSET) {
-      if (!enabledStrictHtml && namespace.getStrictHtmlMode() == StrictHtmlMode.YES) {
+    if (namespace.getStrictHtmlMode() != TriState.UNSET) {
+      if (!enabledStrictHtml && namespace.getStrictHtmlMode() == TriState.ENABLED) {
         errorReporter.report(namespace.getStrictHtmlModeLocation(), STRICT_HTML_DISABLED);
         return;
       }
       if (namespace.getDefaultAutoescapeMode() != AutoescapeMode.STRICT
-          && namespace.getStrictHtmlMode() == StrictHtmlMode.YES) {
+          && namespace.getStrictHtmlMode() == TriState.ENABLED) {
         errorReporter.report(namespace.getAutoescapeModeLocation(), STRICT_HTML_WITHOUT_AUTOESCAPE);
         return;
       }

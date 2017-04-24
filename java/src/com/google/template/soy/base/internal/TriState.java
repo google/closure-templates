@@ -1,5 +1,5 @@
 /*
- * Copyright 2011 Google Inc.
+ * Copyright 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,11 +14,15 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.soytree;
+package com.google.template.soy.base.internal;
 
-/** Specify strict html mode for a particular template/namespace declaration. */
-public enum StrictHtmlMode {
-  YES, // Explicitly set stricthtml="true"
-  NO, // Explicitly set stricthtml="false"
-  UNSET // Do not explicitly set stricthtml
+/** A Enum that specifies true/false or unset. */
+public enum TriState {
+  ENABLED,
+  DISABLED,
+  UNSET;
+
+  public static TriState from(boolean b) {
+    return b ? ENABLED : DISABLED;
+  }
 }

@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.CharSource;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.base.internal.TriState;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
@@ -134,7 +135,7 @@ public final class PassManager {
                   builder.allowUnknownFunctions, declaredSyntaxVersion, errorReporter));
     }
     // If requiring strict autoescaping, check and enforce it.
-    if (options.isStrictAutoescapingRequired() == SoyGeneralOptions.TriState.ENABLED) {
+    if (options.isStrictAutoescapingRequired() == TriState.ENABLED) {
       singleFilePassesBuilder.add(new EnforceStrictAutoescapingPass());
     }
 
@@ -155,7 +156,7 @@ public final class PassManager {
         // calls.  Make this a singlefile pass when deprecated-noncontextual is dead.
         .add(new CheckEscapingSanityFileSetPass(errorReporter));
     // If disallowing external calls, perform the check.
-    if (options.allowExternalCalls() == SoyGeneralOptions.TriState.DISABLED) {
+    if (options.allowExternalCalls() == TriState.DISABLED) {
       fileSetPassBuilder.add(new StrictDepsPass());
     }
     // TODO(lukes): move this to run after autoescaping.
