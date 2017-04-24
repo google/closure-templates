@@ -19,7 +19,6 @@ package com.google.template.soy.pysrc.internal;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
-import com.google.template.soy.base.internal.LegacyInternalSyntaxException;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -702,13 +701,6 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
      */
     @Override
     protected void visitLetContentNode(LetContentNode node) {
-      if (node.getContentKind() == null) {
-        throw LegacyInternalSyntaxException.createWithMetaInfo(
-            "Let content node is missing a content kind. This may be due to using a non-strict "
-                + "template, which is unsupported in the Python compiler.",
-            node.getSourceLocation());
-      }
-
       String generatedVarName = node.getUniqueVarName();
 
       // Traverse the children and push them onto the generated variable.

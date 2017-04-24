@@ -40,15 +40,24 @@ import javax.annotation.Nullable;
  *
  */
 public final class SoyGeneralOptions implements Cloneable {
+  public enum TriState {
+    ENABLED,
+    DISABLED,
+    UNSET;
+
+    static TriState from(boolean b) {
+      return b ? ENABLED : DISABLED;
+    }
+  }
 
   /** User-declared syntax version, or null if not set. */
   @Nullable private SyntaxVersion declaredSyntaxVersion;
 
   /** Whether to allow external calls (calls to undefined templates). Null if not explicitly set. */
-  private Boolean allowExternalCalls;
+  private TriState allowExternalCalls = TriState.UNSET;
 
   /** Whether Strict autoescaping is required. */
-  private boolean strictAutoescapingRequired;
+  private TriState strictAutoescapingRequired = TriState.UNSET;
 
   /** Map from compile-time global name to value. */
   private ImmutableMap<String, PrimitiveData> compileTimeGlobals;
@@ -110,15 +119,15 @@ public final class SoyGeneralOptions implements Cloneable {
    * @param allowExternalCalls The value to set.
    */
   public SoyGeneralOptions setAllowExternalCalls(boolean allowExternalCalls) {
-    this.allowExternalCalls = allowExternalCalls;
+    this.allowExternalCalls = TriState.from(allowExternalCalls);
     return this;
   }
 
   /**
    * Returns whether to allow external calls (calls to undefined templates). If this option was
-   * never explicitly set, then returns null.
+   * never explicitly set, then returns {@link TriState#UNSET}.
    */
-  public Boolean allowExternalCalls() {
+  public TriState allowExternalCalls() {
     return allowExternalCalls;
   }
 
@@ -128,12 +137,15 @@ public final class SoyGeneralOptions implements Cloneable {
    * @param strictAutoescapingRequired Whether autoescaping is required.
    */
   public SoyGeneralOptions setStrictAutoescapingRequired(boolean strictAutoescapingRequired) {
-    this.strictAutoescapingRequired = strictAutoescapingRequired;
+    this.strictAutoescapingRequired = TriState.from(strictAutoescapingRequired);
     return this;
   }
 
-  /** Returns whether strict autoescaping is required. */
-  public boolean isStrictAutoescapingRequired() {
+  /**
+   * Returns whether strict autoescaping is required. If this option was never explicitly set, then
+   * returns {@link TriState#UNSET}.
+   */
+  public TriState isStrictAutoescapingRequired() {
     return strictAutoescapingRequired;
   }
 

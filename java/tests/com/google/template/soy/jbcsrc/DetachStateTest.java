@@ -283,7 +283,7 @@ public final class DetachStateTest {
             "{template .caller}",
             "  {@param callerParam : string}",
             "  {call .callee}",
-            "    {param calleeParam}",
+            "    {param calleeParam kind=\"text\"}",
             "      prefix {$callerParam} suffix",
             "    {/param}",
             "  {/call}",

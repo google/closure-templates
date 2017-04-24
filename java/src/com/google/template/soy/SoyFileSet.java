@@ -71,6 +71,7 @@ import com.google.template.soy.pysrc.SoyPySrcOptions;
 import com.google.template.soy.pysrc.internal.PySrcMain;
 import com.google.template.soy.shared.SoyAstCache;
 import com.google.template.soy.shared.SoyGeneralOptions;
+import com.google.template.soy.shared.SoyGeneralOptions.TriState;
 import com.google.template.soy.shared.internal.MainEntryPointUtils;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
@@ -939,14 +940,26 @@ public final class SoyFileSet {
   }
 
   private void disallowExternalCalls() {
-    Boolean allowExternalCalls = generalOptions.allowExternalCalls();
-    if (allowExternalCalls == null) {
+    TriState allowExternalCalls = generalOptions.allowExternalCalls();
+    if (allowExternalCalls == TriState.UNSET) {
       generalOptions.setAllowExternalCalls(false);
-    } else if (allowExternalCalls) {
+    } else if (allowExternalCalls == TriState.ENABLED) {
       throw new IllegalStateException(
           "SoyGeneralOptions.setAllowExternalCalls(true) is not supported with this method");
     }
     // otherwise, it was already explicitly set to false which is what we want.
+  }
+
+  private void requireStrictAutoescaping() {
+    TriState strictAutoescapingRequired = generalOptions.isStrictAutoescapingRequired();
+    if (strictAutoescapingRequired == TriState.UNSET) {
+      generalOptions.setStrictAutoescapingRequired(true);
+    } else if (strictAutoescapingRequired == TriState.DISABLED) {
+      throw new IllegalStateException(
+          "SoyGeneralOptions.isStrictAutoescapingRequired(false) is not supported with this"
+              + " method");
+    }
+    // otherwise, it was already explicitly set to true which is what we want.
   }
 
   /**
@@ -1126,7 +1139,7 @@ public final class SoyFileSet {
     Preconditions.checkState(
         declaredSyntaxVersion.num >= SyntaxVersion.V2_0.num,
         "Incremental DOM code generation only supports syntax version of V2 or higher.");
-
+    requireStrictAutoescaping();
     ParseResult result = parse(SyntaxVersion.V2_0);
 
     throwIfErrorsPresent();

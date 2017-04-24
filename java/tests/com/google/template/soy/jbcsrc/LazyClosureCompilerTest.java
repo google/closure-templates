@@ -49,7 +49,7 @@ import org.junit.runners.JUnit4;
 public class LazyClosureCompilerTest {
   @Test
   public void testLetContentNode() {
-    assertThatTemplateBody("{let $foo}", "  foo bar baz", "{/let}", "{$foo}")
+    assertThatTemplateBody("{let $foo kind=\"text\"}", "  foo bar baz", "{/let}", "{$foo}")
         .rendersAs("foo bar baz");
   }
 
@@ -62,7 +62,11 @@ public class LazyClosureCompilerTest {
   @Test
   public void testLetNodes_nested() {
     assertThatTemplateBody(
-            "{let $foo}", "  {let $foo}foo bar baz{/let}", "  {$foo}", "{/let}", "{$foo}")
+            "{let $foo kind=\"text\"}",
+            "  {let $foo kind=\"text\"}foo bar baz{/let}",
+            "  {$foo}",
+            "{/let}",
+            "{$foo}")
         .rendersAs("foo bar baz");
   }
 
@@ -71,7 +75,11 @@ public class LazyClosureCompilerTest {
     SettableFuture<String> bar = SettableFuture.create();
     CompiledTemplates templates =
         compileTemplateBody(
-            "{@param bar : string }", "{let $foo}", "  hello {$bar}", "{/let}", "{$foo}");
+            "{@param bar : string }",
+            "{let $foo kind=\"text\"}",
+            "  hello {$bar}",
+            "{/let}",
+            "{$foo}");
     CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.foo");
     RenderContext context = getDefaultContext(templates);
     CompiledTemplate template = factory.create(asRecord(ImmutableMap.of("bar", bar)), EMPTY_DICT);

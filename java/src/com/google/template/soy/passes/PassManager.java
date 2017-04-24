@@ -34,7 +34,6 @@ import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.types.SoyTypeRegistry;
-import java.util.Objects;
 
 /**
  * Configures all compiler passes.
@@ -135,7 +134,7 @@ public final class PassManager {
                   builder.allowUnknownFunctions, declaredSyntaxVersion, errorReporter));
     }
     // If requiring strict autoescaping, check and enforce it.
-    if (options.isStrictAutoescapingRequired()) {
+    if (options.isStrictAutoescapingRequired() == SoyGeneralOptions.TriState.ENABLED) {
       singleFilePassesBuilder.add(new EnforceStrictAutoescapingPass());
     }
 
@@ -149,9 +148,14 @@ public final class PassManager {
     if (!disableAllTypeChecking) {
       fileSetPassBuilder.add(new CheckTemplateCallsPass(enabledStrictHtml, errorReporter));
     }
-    fileSetPassBuilder.add(new CheckVisibilityPass()).add(new CheckDelegatesPass());
+    fileSetPassBuilder
+        .add(new CheckVisibilityPass())
+        .add(new CheckDelegatesPass())
+        // Could run ~anywhere, needs to be a fileset pass to validate deprecated-noncontextual
+        // calls.  Make this a singlefile pass when deprecated-noncontextual is dead.
+        .add(new CheckEscapingSanityFileSetPass(errorReporter));
     // If disallowing external calls, perform the check.
-    if (Objects.equals(options.allowExternalCalls(), Boolean.FALSE)) {
+    if (options.allowExternalCalls() == SoyGeneralOptions.TriState.DISABLED) {
       fileSetPassBuilder.add(new StrictDepsPass());
     }
     // TODO(lukes): move this to run after autoescaping.

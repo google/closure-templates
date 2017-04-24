@@ -211,7 +211,7 @@ public final class ResolveNamesVisitorTest {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
                 constructTemplateSource(
-                    "{let $a}",
+                    "{let $a kind=\"text\"}",
                     "  {if true}", // introduce an extra scope
                     "    {let $b: 2 /}",
                     "    {$b}",

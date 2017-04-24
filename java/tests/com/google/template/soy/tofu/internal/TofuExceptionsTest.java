@@ -64,7 +64,7 @@ public final class TofuExceptionsTest {
               "{template .transclusionCaller}",
               "  {@param foo: int}",
               "  {call .transclusionCallee}",
-              "    {param content}{$foo}{/param}",
+              "    {param content kind=\"text\"}{$foo}{/param}",
               "  {/call}",
               "{/template}",
               "", // line 20

@@ -20,7 +20,6 @@ import static com.google.template.soy.pysrc.internal.SoyCodeForPySubject.assertT
 import static com.google.template.soy.pysrc.internal.SoyCodeForPySubject.assertThatSoyFile;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.template.soy.base.SoySyntaxException;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -395,13 +394,6 @@ public final class GenPyCodeVisitorTest {
     String expectedPyCode = "pdb.set_trace()\n";
 
     assertThatSoyCode(soyCode).compilesTo(expectedPyCode);
-  }
-
-  @Test
-  public void testLetContent_noContentKind() {
-    String soyCode = "{@param boo : ?}\n" + "{let $foo}\n" + "  Hello {$boo}\n" + "{/let}\n";
-
-    assertThatSoyCode(soyCode).compilesWithException(SoySyntaxException.class);
   }
 
   @Test
