@@ -746,7 +746,20 @@ private ExprNode PrecExpr8() :
        unaryOp = <MINUS>
     )
     expr = PrecExpr8()
-    { expr = createOperatorNode(unaryOp.image, 8, expr); }
+
+    {
+      if (unaryOp.kind == MINUS && expr instanceof IntegerNode) {
+        SourceLocation newLoc = createSrcLoc(unaryOp).extend(expr.getSourceLocation());
+        long value = -1 * ((IntegerNode) expr).getValue();
+        expr = new IntegerNode(value, newLoc);
+      } else if (unaryOp.kind == MINUS && expr instanceof FloatNode) {
+        SourceLocation newLoc = createSrcLoc(unaryOp).extend(expr.getSourceLocation());
+        double value = -1 * ((FloatNode) expr).getValue();
+        expr = new FloatNode(value, newLoc);
+      } else {
+        expr = createOperatorNode(unaryOp.image, 8, expr);
+      }
+    }
   )
   { return expr; }
 }

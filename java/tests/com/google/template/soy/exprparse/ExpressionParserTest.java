@@ -39,7 +39,6 @@ import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.EqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.MinusOpNode;
-import com.google.template.soy.exprtree.OperatorNodes.NegativeOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
@@ -474,8 +473,8 @@ public final class ExpressionParserTest {
   @Test
   public void testParseOperators() throws Exception {
     ExprNode expr = assertThatExpression("-11").isValidExpression();
-    NegativeOpNode negOp = (NegativeOpNode) expr;
-    assertThat(((IntegerNode) negOp.getChild(0)).getValue()).isEqualTo(11);
+    IntegerNode negInt = (IntegerNode) expr;
+    assertThat(negInt.getValue()).isEqualTo(-11);
 
     expr = assertThatExpression("not false").isValidExpression();
     NotOpNode notOp = (NotOpNode) expr;
@@ -537,7 +536,7 @@ public final class ExpressionParserTest {
 
     // all together now!
     assertThat(precedenceString("1 + - 2 * 3 + 4 % 2 ?: 3"))
-        .isEqualTo("((1 + ((- 2) * 3)) + (4 % 2)) ?: 3");
+        .isEqualTo("((1 + (-2 * 3)) + (4 % 2)) ?: 3");
 
     assertThat(precedenceString("-$a.b > 0 ? $c.d : $c")).isEqualTo("((- $a.b) > 0) ? $c.d : $c");
   }

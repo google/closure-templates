@@ -43,7 +43,6 @@ import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.OperatorNodes.GreaterThanOpNode;
-import com.google.template.soy.exprtree.OperatorNodes.NegativeOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
@@ -1298,7 +1297,7 @@ public final class TemplateParserTest {
 
     SwitchCaseNode scn2 = (SwitchCaseNode) sn.getChild(2);
     assertEquals(3, scn2.getExprList().size());
-    assertTrue(scn2.getExprList().get(0).getRoot() instanceof NegativeOpNode);
+    assertTrue(scn2.getExprList().get(0).getRoot() instanceof IntegerNode);
     assertTrue(scn2.getExprList().get(1).getRoot() instanceof IntegerNode);
     assertTrue(scn2.getExprList().get(2).getRoot() instanceof VarRefNode);
     assertEquals("-1", scn2.getExprList().get(0).getRoot().toSourceString());

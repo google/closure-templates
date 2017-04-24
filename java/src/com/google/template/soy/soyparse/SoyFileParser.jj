@@ -79,7 +79,6 @@ import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.Operator;
-import com.google.template.soy.exprtree.OperatorNodes.NegativeOpNode;
 import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
@@ -2112,14 +2111,7 @@ private MsgPluralNode MsgPlural() :
       {
         int value;
         if (!(caseExpr instanceof IntegerNode)) {
-          if (caseExpr instanceof NegativeOpNode) {
-            errorReporter.report(
-                caseExpr.getSourceLocation(),
-                PLURAL_CASE_OUT_OF_BOUNDS,
-                caseExpr.toSourceString());
-          } else {
-            errorReporter.report(caseExpr.getSourceLocation(), PLURAL_CASE_MALFORMED);
-          }
+          errorReporter.report(caseExpr.getSourceLocation(), PLURAL_CASE_MALFORMED);
           value = 0;
         } else {
           value = (int) ((IntegerNode) caseExpr).getValue();
@@ -3344,7 +3336,20 @@ private ExprNode PrecExpr8() :
       unaryOp = <MINUS>
     )
     expr = PrecExpr8()
-    { expr = createOperatorNode(unaryOp.image, 8, expr); }
+
+    {
+      if (unaryOp.kind == MINUS && expr instanceof IntegerNode) {
+        SourceLocation newLoc = createSrcLoc(unaryOp).extend(expr.getSourceLocation());
+        long value = -1 * ((IntegerNode) expr).getValue();
+        expr = new IntegerNode(value, newLoc);
+      } else if (unaryOp.kind == MINUS && expr instanceof FloatNode) {
+        SourceLocation newLoc = createSrcLoc(unaryOp).extend(expr.getSourceLocation());
+        double value = -1 * ((FloatNode) expr).getValue();
+        expr = new FloatNode(value, newLoc);
+      } else {
+        expr = createOperatorNode(unaryOp.image, 8, expr);
+      }
+    }
   )
   { return expr; }
 }

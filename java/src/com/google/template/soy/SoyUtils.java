@@ -21,8 +21,6 @@ import com.google.common.io.CharSource;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.data.internalutils.InternalValueUtils;
-import com.google.template.soy.data.restricted.FloatData;
-import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.PrimitiveData;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ExplodingErrorReporter;
@@ -31,10 +29,7 @@ import com.google.template.soy.exprparse.ExpressionParser;
 import com.google.template.soy.exprparse.SoyParsingContext;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
-import com.google.template.soy.exprtree.FloatNode;
 import com.google.template.soy.exprtree.GlobalNode;
-import com.google.template.soy.exprtree.IntegerNode;
-import com.google.template.soy.exprtree.OperatorNodes.NegativeOpNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -128,21 +123,6 @@ public final class SoyUtils {
         ExprNode valueExpr =
             new ExpressionParser(valueText, sourceLocation, SoyParsingContext.exploding())
                 .parseExpression();
-
-        // Handle negative numbers as a special case.
-        // TODO: Consider changing parser to actually parse negative numbers as primitives.
-        if (valueExpr instanceof NegativeOpNode) {
-          ExprNode childExpr = ((NegativeOpNode) valueExpr).getChild(0);
-          if (childExpr instanceof IntegerNode) {
-            compileTimeGlobalsBuilder.put(
-                name, IntegerData.forValue(-((IntegerNode) childExpr).getValue()));
-            continue;
-          } else if (childExpr instanceof FloatNode) {
-            compileTimeGlobalsBuilder.put(
-                name, FloatData.forValue(-((FloatNode) childExpr).getValue()));
-            continue;
-          }
-        }
 
         // Record error for non-primitives.
         // TODO: Consider allowing non-primitives (e.g. list/map literals).
