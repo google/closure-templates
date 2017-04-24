@@ -133,10 +133,10 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
   protected final SoyMsgBundle msgBundle;
 
   /** xid renaming map. */
-  @Nullable protected final SoyIdRenamingMap xidRenamingMap;
+  protected final SoyIdRenamingMap xidRenamingMap;
 
   /** CSS renaming map. */
-  @Nullable protected final SoyCssRenamingMap cssRenamingMap;
+  protected final SoyCssRenamingMap cssRenamingMap;
 
   /** The EvalVisitor for this instance (can reuse since 'data' and 'env' references stay same). */
   // Note: Don't use directly. Call eval() instead.
@@ -194,8 +194,8 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     this.ijData = ijData;
     this.activeDelPackageSelector = activeDelPackageSelector;
     this.msgBundle = msgBundle;
-    this.xidRenamingMap = xidRenamingMap;
-    this.cssRenamingMap = cssRenamingMap;
+    this.xidRenamingMap = (xidRenamingMap == null) ? SoyCssRenamingMap.EMPTY : xidRenamingMap;
+    this.cssRenamingMap = (cssRenamingMap == null) ? SoyCssRenamingMap.EMPTY : cssRenamingMap;
 
     this.evalVisitor = null; // lazily initialized
     this.assistantForMsgs = null; // lazily initialized

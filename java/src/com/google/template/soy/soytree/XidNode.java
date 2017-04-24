@@ -22,7 +22,6 @@ import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
-import javax.annotation.Nullable;
 
 /**
  * Node representing an 'xid' statement.
@@ -74,7 +73,7 @@ public final class XidNode extends AbstractCommandNode implements StandaloneNode
     return text;
   }
 
-  public String getRenamedText(@Nullable SoyIdRenamingMap idRenamingMap) {
+  public String getRenamedText(SoyIdRenamingMap idRenamingMap) {
     // Copy the property to a local here as it may be written to in a separate thread.
     // The cached value is a pair that keeps a reference to the map that was used for renaming it.
     // If the same map is passed to this call, we use the cached value, otherwise we rename
@@ -84,13 +83,13 @@ public final class XidNode extends AbstractCommandNode implements StandaloneNode
     if (cache != null && cache.first == idRenamingMap) {
       return cache.second;
     }
-    if (idRenamingMap != null) {
-      String mappedText = idRenamingMap.get(text);
-      if (mappedText != null) {
-        renameCache = Pair.of(idRenamingMap, mappedText);
-        return mappedText;
-      }
+
+    String mappedText = idRenamingMap.get(text);
+    if (mappedText != null) {
+      renameCache = Pair.of(idRenamingMap, mappedText);
+      return mappedText;
     }
+
     // Default to pseudo obfuscate with trailing _ since that is what the JS implementation does.
     return text + "_";
   }

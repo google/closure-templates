@@ -28,7 +28,7 @@ import javax.annotation.ParametersAreNonnullByDefault;
 public interface SoyCssRenamingMap extends SoyIdRenamingMap {
 
   /** A renaming map that has no entries. */
-  static final SoyCssRenamingMap EMPTY =
+  SoyCssRenamingMap EMPTY =
       new SoyCssRenamingMap() {
         @Nullable
         @Override
@@ -38,7 +38,7 @@ public interface SoyCssRenamingMap extends SoyIdRenamingMap {
       };
 
   /** A renaming map that maps every name to itself. */
-  public static final SoyCssRenamingMap IDENTITY =
+  SoyCssRenamingMap IDENTITY =
       new SoyCssRenamingMap() {
         @Nullable
         @Override
