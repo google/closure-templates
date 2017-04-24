@@ -61,6 +61,14 @@ import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.LogNode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.MsgHtmlTagNode;
+import com.google.template.soy.soytree.MsgNode;
+import com.google.template.soy.soytree.MsgPlaceholderNode;
+import com.google.template.soy.soytree.MsgPluralCaseNode;
+import com.google.template.soy.soytree.MsgPluralDefaultNode;
+import com.google.template.soy.soytree.MsgPluralNode;
+import com.google.template.soy.soytree.MsgSelectCaseNode;
+import com.google.template.soy.soytree.MsgSelectDefaultNode;
+import com.google.template.soy.soytree.MsgSelectNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -96,15 +104,15 @@ import javax.annotation.Nullable;
  * the answer is that soy has some language features that interfere with writing such a grammar.
  *
  * <ul>
- *   <li>Soy has special commands for manipulating text, notably: {@code {nil}, {sp}, {\n}} cause
- *       difficulties when writing grammar productions for html elements. This would be manageable
- *       by preventing the use of these commands within html tags (though some of them such as
- *       {@code {sp}} are popular so there are some compatibility concerns)
- *   <li>Soy has a {@code {literal}...{/literal}} command. such commands often contain html tags so
- *       within the grammar we would need to start writing grammar production which match the
- *       contents of literal blocks. This is possible but would require duplicating all the lexical
- *       states for literals. (Also we would need to deal with tags split across literal blocks e.g.
- *       {@code <div{literal} a="foo">{/literal}}).
+ *   <li>Soy has special commands for manipulating text, notably: <code> {nil}, {sp}, {\n}</code>
+ *       cause difficulties when writing grammar productions for html elements. This would be
+ *       manageable by preventing the use of these commands within html tags (though some of them
+ *       such as <code> {sp}</code> are popular so there are some compatibility concerns)
+ *   <li>Soy has a <code> {literal}...{/literal}</code> command. such commands often contain html
+ *       tags so within the grammar we would need to start writing grammar production which match
+ *       the contents of literal blocks. This is possible but would require duplicating all the
+ *       lexical states for literals. (Also we would need to deal with tags split across literal
+ *       blocks e.g. <code><div{literal} a="foo">{/literal}</code>).
  *   <li>Transitioning between lexical states after seeing a {@code <script>} tag or after parsing a
  *       {@code kind="html"} attributes is complex (And 'semantic lexical transitions' are not
  *       recommended).
@@ -1170,9 +1178,59 @@ public final class HtmlRewritePass extends CompilerFilePass {
 
     @Override
     protected void visitMsgFallbackGroupNode(MsgFallbackGroupNode node) {
-      // TODO(lukes): Start parsing html tags in {msg} nodes here instead of in the parser.
-      // to avoid doing it now, we don't visit children
       processPrintableNode(node);
+      // TODO(lukes): Start parsing html tags in {msg} nodes here instead of in the parser.
+      // to avoid doing it now, we reset the state to NONE
+      State oldState = context.setState(State.NONE, node.getSourceLocation().getBeginPoint());
+      visitChildren(node);
+      context.setState(oldState, node.getSourceLocation().getEndPoint());
+    }
+
+    // NOTE because we visit msg nodes in state NONE we don't need to worry about the
+    // transitions and how it interacts with these control flow-like mechanisms.
+    @Override
+    protected void visitMsgNode(MsgNode node) {
+      visitChildren(node);
+    }
+
+    @Override
+    protected void visitMsgHtmlTagNode(MsgHtmlTagNode node) {
+      visitChildren(node);
+    }
+
+    @Override
+    protected void visitMsgPluralNode(MsgPluralNode node) {
+      visitChildren(node);
+    }
+
+    @Override
+    protected void visitMsgPluralCaseNode(MsgPluralCaseNode node) {
+      visitChildren(node);
+    }
+
+    @Override
+    protected void visitMsgPluralDefaultNode(MsgPluralDefaultNode node) {
+      visitChildren(node);
+    }
+
+    @Override
+    protected void visitMsgPlaceholderNode(MsgPlaceholderNode node) {
+      visitChildren(node);
+    }
+
+    @Override
+    protected void visitMsgSelectNode(MsgSelectNode node) {
+      visitChildren(node);
+    }
+
+    @Override
+    protected void visitMsgSelectCaseNode(MsgSelectCaseNode node) {
+      visitChildren(node);
+    }
+
+    @Override
+    protected void visitMsgSelectDefaultNode(MsgSelectDefaultNode node) {
+      visitChildren(node);
     }
 
     // control flow blocks
