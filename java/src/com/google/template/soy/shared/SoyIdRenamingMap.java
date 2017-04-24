@@ -16,6 +16,7 @@
 
 package com.google.template.soy.shared;
 
+import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
 /**
@@ -32,7 +33,8 @@ public interface SoyIdRenamingMap {
    * other {@code key} value.
    *
    * @param key The text to be replaced, never null.
-   * @return The value to substitute for {@code key}.
+   * @return The value to substitute for {@code key}, or null if not found in map.
    */
+  @Nullable
   String get(String key);
 }

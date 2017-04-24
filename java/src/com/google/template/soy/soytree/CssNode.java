@@ -136,7 +136,7 @@ public final class CssNode extends AbstractCommandNode
     return selectorText;
   }
 
-  public String getRenamedSelectorText(SoyCssRenamingMap cssRenamingMap) {
+  public String getRenamedSelectorText(@Nullable SoyCssRenamingMap cssRenamingMap) {
     // Copy the property to a local here as it may be written to in a separate thread.
     // The cached value is a pair that keeps a reference to the map that was used for renaming it.
     // If the same map is passed to this call, we use the cached value, otherwise we rename

@@ -133,6 +133,7 @@ public class RenderVisitorTest {
 
   private static final SoyIdRenamingMap TEST_XID_RENAMING_MAP =
       new SoyIdRenamingMap() {
+        @Nullable
         @Override
         public String get(String key) {
           return key + "_id_renamed";
@@ -141,6 +142,7 @@ public class RenderVisitorTest {
 
   private static final SoyCssRenamingMap TEST_CSS_RENAMING_MAP =
       new SoyCssRenamingMap() {
+        @Nullable
         @Override
         public String get(String key) {
           return key + "_renamed";

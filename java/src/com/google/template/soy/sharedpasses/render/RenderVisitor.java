@@ -133,10 +133,10 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
   protected final SoyMsgBundle msgBundle;
 
   /** xid renaming map. */
-  protected final SoyIdRenamingMap xidRenamingMap;
+  @Nullable protected final SoyIdRenamingMap xidRenamingMap;
 
   /** CSS renaming map. */
-  protected final SoyCssRenamingMap cssRenamingMap;
+  @Nullable protected final SoyCssRenamingMap cssRenamingMap;
 
   /** The EvalVisitor for this instance (can reuse since 'data' and 'env' references stay same). */
   // Note: Don't use directly. Call eval() instead.
