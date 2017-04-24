@@ -85,30 +85,6 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
   }
 
   // -----------------------------------------------------------------------------------------------
-  // Implementations for reference nodes.
-
-  // TODO: Port this to the new representation once we figure out what it does.
-  /*
-    @Override protected void visitDataRefNode(DataRefNode node) {
-
-      boolean allExprsAreConstant = true;
-      for (ExprNode child : node.getChildren()) {
-        if (child instanceof DataRefAccessExprNode) {
-          ExprNode expr = ((DataRefAccessExprNode) child).getChild(0);
-          visit(expr);
-          if (! (expr instanceof ConstantNode)) {
-            allExprsAreConstant = false;
-          }
-        }
-      }
-
-      if (allExprsAreConstant) {
-        attemptPreeval(node);
-      }
-    }
-  */
-
-  // -----------------------------------------------------------------------------------------------
   // Implementations for operators.
 
   @Override

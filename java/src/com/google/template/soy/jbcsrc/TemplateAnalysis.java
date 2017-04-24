@@ -655,6 +655,8 @@ final class TemplateAnalysis {
             return;
           case QUOTE_KEYS_IF_JS:
           case CHECK_NOT_NULL:
+          case CSS:
+          case XID:
             // fall through
             break;
           case V1_EXPRESSION:

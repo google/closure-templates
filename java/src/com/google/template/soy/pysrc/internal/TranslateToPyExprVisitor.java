@@ -376,6 +376,10 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
         return visitMapLiteralNode((MapLiteralNode) node.getChild(0));
       case CHECK_NOT_NULL:
         return visitCheckNotNullFunction(node);
+      case CSS:
+        return visitCssFunction(node);
+      case XID:
+        return visitXidFunction(node);
       case V1_EXPRESSION:
         throw new UnsupportedOperationException(
             "the v1Expression function can't be used in templates compiled to Python");
@@ -384,14 +388,22 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
     }
   }
 
+  private PyExpr visitForEachFunction(FunctionNode node, String suffix) {
+    String varName = ((VarRefNode) node.getChild(0)).getName();
+    return localVarExprs.getVariableExpression(varName + suffix);
+  }
+
   private PyExpr visitCheckNotNullFunction(FunctionNode node) {
     PyExpr childExpr = visit(node.getChild(0));
     return new PyFunctionExprBuilder("runtime.check_not_null").addArg(childExpr).asPyExpr();
   }
 
-  private PyExpr visitForEachFunction(FunctionNode node, String suffix) {
-    String varName = ((VarRefNode) node.getChild(0)).getName();
-    return localVarExprs.getVariableExpression(varName + suffix);
+  private PyExpr visitCssFunction(FunctionNode node) {
+    throw new UnsupportedOperationException();
+  }
+
+  private PyExpr visitXidFunction(FunctionNode node) {
+    throw new UnsupportedOperationException();
   }
 
   /**

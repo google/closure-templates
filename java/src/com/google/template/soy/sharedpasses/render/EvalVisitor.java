@@ -544,6 +544,10 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
           return visitMapLiteralNode((MapLiteralNode) node.getChild(0));
         case CHECK_NOT_NULL:
           return visitCheckNotNullFunction(node.getChild(0));
+        case CSS:
+          return visitCssFunction(node);
+        case XID:
+          return visitXidFunction(node);
         case V1_EXPRESSION:
           throw new UnsupportedOperationException(
               "the v1Expression function can't be used in templates compiled to Java");
@@ -649,6 +653,15 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     }
     return convertResult(localVarIndex);
   }
+
+  private SoyValue visitCssFunction(FunctionNode node) {
+    throw new UnsupportedOperationException();
+  }
+
+  private SoyValue visitXidFunction(FunctionNode node) {
+    throw new UnsupportedOperationException();
+  }
+
 
   // -----------------------------------------------------------------------------------------------
   // Private helpers.

@@ -57,12 +57,8 @@ final class CheckFunctionCallsPass extends CompilerFilePass {
       SoyErrorKind.of("Function ''{0}'' called with incorrect arg type {1} (expected {2}).");
   private static final SoyErrorKind LOOP_VARIABLE_NOT_IN_SCOPE =
       SoyErrorKind.of("Function ''{0}'' must have a foreach loop variable as its argument.");
-  private static final SoyErrorKind QUOTE_KEYS_IF_JS_REQUIRES_MAP_LITERAL_ARG =
-      SoyErrorKind.of(
-          "Function ''quoteKeysIfJs'' called with argument of type {0} (expected map literal).");
-  private static final SoyErrorKind V1_EXPRESSION_REQUIRES_STRING_ARG =
-      SoyErrorKind.of(
-          "Function ''v1Expression'' called with argument of type {0} (expected string literal).");
+  private static final SoyErrorKind STRING_LITERAL_REQUIRED =
+      SoyErrorKind.of("Argument to function ''{0}'' must be a string literal.");
   private static final SoyErrorKind UNKNOWN_FUNCTION = SoyErrorKind.of("Unknown function ''{0}''.");
 
   private final ErrorReporter errorReporter;
@@ -130,33 +126,48 @@ final class CheckFunctionCallsPass extends CompilerFilePass {
     }
 
     private void visitNonpluginFunction(BuiltinFunction nonpluginFn, FunctionNode node) {
-      // All non-plugin functions so far have exactly 1 arg
-      ExprNode arg = node.getChild(0);
+      // Most non-plugin functions have exactly 1 arg
+      ExprNode arg1 = node.getChild(0);
 
       // Check argument types.
       switch (nonpluginFn) {
         case INDEX:
         case IS_FIRST:
         case IS_LAST:
-          requireLoopVariableInScope(node, arg);
+          requireLoopVariableInScope(node, arg1);
           break;
         case QUOTE_KEYS_IF_JS:
-          if (!(arg instanceof MapLiteralNode)) {
+          if (!(arg1 instanceof MapLiteralNode)) {
             errorReporter.report(
-                node.getSourceLocation(),
-                QUOTE_KEYS_IF_JS_REQUIRES_MAP_LITERAL_ARG,
-                arg.getType().toString());
+                arg1.getSourceLocation(),
+                INCORRECT_ARG_TYPE,
+                "quoteKeysIfJs",
+                arg1.getType(),
+                "map literal");
           }
           break;
         case CHECK_NOT_NULL:
           // Do nothing.  All types are valid.
           break;
+        case CSS:
+          ExprNode selectorNode = node.getChild(node.numChildren() - 1);
+          if (!(selectorNode instanceof StringNode)) {
+            errorReporter.report(selectorNode.getSourceLocation(), STRING_LITERAL_REQUIRED, "css");
+          }
+          break;
+        case XID:
+          if (!(arg1 instanceof StringNode)) {
+            errorReporter.report(arg1.getSourceLocation(), STRING_LITERAL_REQUIRED, "xid");
+          }
+          break;
         case V1_EXPRESSION:
-          if (!(arg instanceof StringNode)) {
+          if (!(arg1 instanceof StringNode)) {
             errorReporter.report(
-                node.getSourceLocation(),
-                V1_EXPRESSION_REQUIRES_STRING_ARG,
-                node.getChild(0).getType().toString());
+                arg1.getSourceLocation(),
+                INCORRECT_ARG_TYPE,
+                "v1Expression",
+                arg1.getType(),
+                "string literal");
           }
           break;
         default:

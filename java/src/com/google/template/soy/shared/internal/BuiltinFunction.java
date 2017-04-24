@@ -35,6 +35,8 @@ public enum BuiltinFunction implements SoyFunction {
   INDEX("index"),
   QUOTE_KEYS_IF_JS("quoteKeysIfJs"),
   CHECK_NOT_NULL("checkNotNull"),
+  CSS("css"),
+  XID("xid"),
   V1_EXPRESSION("v1Expression"),
   ;
 
@@ -73,6 +75,9 @@ public enum BuiltinFunction implements SoyFunction {
 
   @Override
   public Set<Integer> getValidArgsSizes() {
-    return ImmutableSet.of(1); // All built-in functions are unary.
+    if (this == CSS) {
+      return ImmutableSet.of(1, 2);
+    }
+    return ImmutableSet.of(1);
   }
 }

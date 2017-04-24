@@ -22,6 +22,8 @@ import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.firstNonNull;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.logicalNot;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.ternary;
+import static com.google.template.soy.jbcsrc.SyntheticVarName.foreachLoopIndex;
+import static com.google.template.soy.jbcsrc.SyntheticVarName.foreachLoopLength;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Supplier;
@@ -66,6 +68,8 @@ import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.jbcsrc.ExpressionDetacher.BasicDetacher;
+import com.google.template.soy.soytree.ForeachNonemptyNode;
+import com.google.template.soy.soytree.SoyNode.LocalVarNode;
 import com.google.template.soy.soytree.defn.InjectedParam;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
@@ -739,7 +743,10 @@ final class ExpressionCompiler {
     // Builtin functions
 
     @Override
-    SoyExpression visitIsFirstFunction(FunctionNode node, SyntheticVarName indexVar) {
+    SoyExpression visitIsFirstFunction(FunctionNode node) {
+      VarRefNode varRef = (VarRefNode) node.getChild(0);
+      LocalVarNode foreach = ((LocalVar) varRef.getDefnDecl()).declaringNode();
+      SyntheticVarName indexVar = foreachLoopIndex((ForeachNonemptyNode) foreach);
       final Expression expr = parameters.getLocal(indexVar);
 
       return SoyExpression.forBool(
@@ -761,8 +768,12 @@ final class ExpressionCompiler {
     }
 
     @Override
-    SoyExpression visitIsLastFunction(
-        FunctionNode node, SyntheticVarName indexVar, SyntheticVarName lengthVar) {
+    SoyExpression visitIsLastFunction(FunctionNode node) {
+      VarRefNode varRef = (VarRefNode) node.getChild(0);
+      LocalVarNode foreach = ((LocalVar) varRef.getDefnDecl()).declaringNode();
+      SyntheticVarName indexVar = foreachLoopIndex((ForeachNonemptyNode) foreach);
+      SyntheticVarName lengthVar = foreachLoopLength((ForeachNonemptyNode) foreach);
+
       final Expression index = parameters.getLocal(indexVar);
       final Expression length = parameters.getLocal(lengthVar);
       // basically 'index + 1 == length'
@@ -788,7 +799,11 @@ final class ExpressionCompiler {
     }
 
     @Override
-    SoyExpression visitIndexFunction(FunctionNode node, SyntheticVarName indexVar) {
+    SoyExpression visitIndexFunction(FunctionNode node) {
+      VarRefNode varRef = (VarRefNode) node.getChild(0);
+      LocalVarNode foreach = ((LocalVar) varRef.getDefnDecl()).declaringNode();
+      SyntheticVarName indexVar = foreachLoopIndex((ForeachNonemptyNode) foreach);
+
       // '(long) index'
       return SoyExpression.forInt(
           BytecodeUtils.numericConversion(parameters.getLocal(indexVar), Type.LONG_TYPE));
@@ -815,6 +830,16 @@ final class ExpressionCompiler {
                 }
               })
           .asNonNullable();
+    }
+
+    @Override
+    SoyExpression visitCssFunction(FunctionNode node) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    SoyExpression visitXidFunction(FunctionNode node) {
+      throw new UnsupportedOperationException();
     }
 
     // Non-builtin functions

@@ -260,7 +260,6 @@ public class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>> {
 
   @Override
   protected void visitXidNode(XidNode node) {
-    // preliminary xid implementation.  just uses the css renaming map
     StringBuilder sb =
         new StringBuilder("runtime.get_xid_name('").append(node.getText()).append("')");
     pyExprs.add(new PyExpr(sb.toString(), Integer.MAX_VALUE));

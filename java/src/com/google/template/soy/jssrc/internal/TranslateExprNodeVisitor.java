@@ -260,9 +260,9 @@ public class TranslateExprNodeVisitor
     // any unquoted map literal keys are string literals, since Closure Compiler can rename unquoted
     // map keys and we want everything to be renamed at the same time.
     boolean isProbablyUsingClosureCompiler =
-        jsSrcOptions.shouldGenerateJsdoc() ||
-        jsSrcOptions.shouldProvideRequireSoyNamespaces() ||
-        jsSrcOptions.shouldProvideRequireJsFunctions();
+        jsSrcOptions.shouldGenerateJsdoc()
+            || jsSrcOptions.shouldProvideRequireSoyNamespaces()
+            || jsSrcOptions.shouldProvideRequireJsFunctions();
 
     // We will divide the map literal contents into two categories.
     //
@@ -567,12 +567,6 @@ public class TranslateExprNodeVisitor
   @Override
   protected CodeChunk.WithValue visitFunctionNode(FunctionNode node) {
     SoyFunction soyFunction = node.getSoyFunction();
-    // TODO(user): Eliminate this case
-    if (soyFunction == null
-        || !(soyFunction instanceof BuiltinFunction || soyFunction instanceof SoyJsSrcFunction)) {
-      // No function found. This is a v1 expression, only possible if allowDeprecatedSyntax == true
-      soyFunction = getUnknownFunction(node.getFunctionName(), node.numChildren());
-    }
 
     if (soyFunction instanceof BuiltinFunction) {
       switch ((BuiltinFunction) soyFunction) {
@@ -586,12 +580,22 @@ public class TranslateExprNodeVisitor
           return visitMapLiteralNodeHelper((MapLiteralNode) node.getChild(0), true);
         case CHECK_NOT_NULL:
           return visitCheckNotNullFunction(node);
+        case CSS:
+          return visitCssFunction(node);
+        case XID:
+          return visitXidFunction(node);
         case V1_EXPRESSION:
           return visitV1ExpressionFunction(node);
         default:
           throw new AssertionError();
       }
-    } else if (soyFunction instanceof SoyJsSrcFunction) {
+    } else {
+      if (!(soyFunction instanceof SoyJsSrcFunction)) {
+        // No SoyJsSrcFunction found. This is either a non-JS function or a v1 experssion.
+        // TODO(user): Eliminate this case.
+        soyFunction = getUnknownFunction(node.getFunctionName(), node.numChildren());
+      }
+
       List<CodeChunk.WithValue> args = visitChildren(node);
       List<JsExpr> functionInputs = new ArrayList<>(args.size());
       List<CodeChunk> initialStatements = new ArrayList<>();
@@ -616,8 +620,6 @@ public class TranslateExprNodeVisitor
       CodeChunk.WithValue functionOutput =
           dontTrustPrecedenceOf(soyJsSrcFunction.computeForJsSrc(functionInputs), collector.get());
       return functionOutput.withInitialStatements(initialStatements);
-    } else {
-      throw new AssertionError();
     }
   }
 
@@ -640,12 +642,20 @@ public class TranslateExprNodeVisitor
     return variableMappings.get(varName + "__index");
   }
 
+  private CodeChunk.WithValue visitCssFunction(FunctionNode node) {
+    throw new UnsupportedOperationException();
+  }
+
+  private CodeChunk.WithValue visitXidFunction(FunctionNode node) {
+    throw new UnsupportedOperationException();
+  }
+
   private CodeChunk.WithValue visitV1ExpressionFunction(FunctionNode node) {
     String exprText = ((StringNode) node.getChild(0)).getValue();
-    return CodeChunk.fromExpr(
+    JsExpr jsExpr =
         V1JsExprTranslator.translateToJsExpr(
-            exprText, node.getSourceLocation(), variableMappings, errorReporter),
-        ImmutableList.<GoogRequire>of());
+            exprText, node.getSourceLocation(), variableMappings, errorReporter);
+    return CodeChunk.fromExpr(jsExpr, ImmutableList.<GoogRequire>of());
   }
 
   private static SoyJsSrcFunction getUnknownFunction(final String name, final int argSize) {

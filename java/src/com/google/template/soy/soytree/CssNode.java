@@ -38,9 +38,6 @@ import javax.annotation.Nullable;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-// TODO: Figure out why the CSS @component syntax doesn't support
-// injected data ($ij.foo).  It looks like Soy is not checking CssNodes for
-// injected data.
 public final class CssNode extends AbstractCommandNode
     implements StandaloneNode, StatementNode, ExprHolderNode {
 

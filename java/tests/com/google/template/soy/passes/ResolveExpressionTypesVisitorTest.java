@@ -767,7 +767,7 @@ public final class ResolveExpressionTypesVisitorTest {
   }
 
   @Test
-  public void testFunctionTyping() {
+  public void testBuiltinFunctionTyping() {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
                 constructTemplateSource(
@@ -778,6 +778,8 @@ public final class ResolveExpressionTypesVisitorTest {
                     "   {captureType(isFirst($item))}",
                     "   {captureType($item)}",
                     "   {captureType(checkNotNull($item))}",
+                    "   {captureType(css('foo'))}",
+                    "   {captureType(xid('bar'))}",
                     "{/foreach}"))
             .addSoyFunction(CAPTURE_TYPE_FUNCTION)
             .parse()
@@ -788,6 +790,8 @@ public final class ResolveExpressionTypesVisitorTest {
     assertThat(types.get(2)).isEqualTo(BoolType.getInstance());
     assertThat(types.get(3)).isEqualTo(makeNullable(IntType.getInstance()));
     assertThat(types.get(4)).isEqualTo(IntType.getInstance());
+    assertThat(types.get(5)).isEqualTo(StringType.getInstance());
+    assertThat(types.get(6)).isEqualTo(StringType.getInstance());
   }
 
   @Test

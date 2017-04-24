@@ -166,10 +166,66 @@ public final class CheckFunctionCallsVisitorTest {
         "{/template}");
 
     assertFunctionCallsInvalid(
-        "Function 'quoteKeysIfJs' called with argument of type string (expected map literal).",
+        "Function 'quoteKeysIfJs' called with incorrect arg type string (expected map literal).",
         "{namespace ns}\n",
         "{template .foo}",
         "  {let $m: quoteKeysIfJs('blah') /}",
+        "{/template}");
+  }
+
+  @Test
+  public void testCssFunction() {
+    assertSuccess(
+        "{namespace ns}\n",
+        "{template .foo}",
+        "  {@param x : ?}",
+        "  {css('foo')}",
+        "  {css($x, 'foo')}",
+        "  {css('foo', 'bar')}",
+        "{/template}");
+
+    assertFunctionCallsInvalid(
+        "Argument to function 'css' must be a string literal.",
+        "{namespace ns}\n",
+        "{template .foo}",
+        "  {@param x : ?}",
+        "  {css($x)}",
+        "{/template}");
+
+    assertFunctionCallsInvalid(
+        "Argument to function 'css' must be a string literal.",
+        "{namespace ns}\n",
+        "{template .foo}",
+        "  {@param x : ?}",
+        "  {css($x, $x)}",
+        "{/template}");
+
+    assertFunctionCallsInvalid(
+        "Argument to function 'css' must be a string literal.",
+        "{namespace ns}\n",
+        "{template .foo}",
+        "  {@param x : ?}",
+        "  {css($x, 10)}",
+        "{/template}");
+  }
+
+  @Test
+  public void testXidFunction() {
+    assertSuccess("{namespace ns}\n", "{template .foo}", "  {xid('foo')}", "{/template}");
+
+    assertFunctionCallsInvalid(
+        "Argument to function 'xid' must be a string literal.",
+        "{namespace ns}\n",
+        "{template .foo}",
+        "  {xid(10)}",
+        "{/template}");
+
+    assertFunctionCallsInvalid(
+        "Argument to function 'xid' must be a string literal.",
+        "{namespace ns}\n",
+        "{template .foo}",
+        "  {@param x : string}",
+        "  {xid($x)}",
         "{/template}");
   }
 
@@ -194,7 +250,7 @@ public final class CheckFunctionCallsVisitorTest {
 
     assertFunctionCallsInvalid(
         SyntaxVersion.V1_0,
-        "Function 'v1Expression' called with argument of type string (expected string literal).",
+        "Function 'v1Expression' called with incorrect arg type string (expected string literal).",
         "{namespace ns}\n",
         "{template .foo deprecatedV1=\"true\"}",
         "  {let $blah: 'foo' /}",
