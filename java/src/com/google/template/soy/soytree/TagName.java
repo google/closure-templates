@@ -139,6 +139,7 @@ public final class TagName {
     return "svg".equals(nameAsLowerCase);
   }
 
+  /** Returns the {@link RcDataTagName} for this node, if any. */
   @Nullable
   public RcDataTagName getRcDataTagName() {
     return rcDataTagName;

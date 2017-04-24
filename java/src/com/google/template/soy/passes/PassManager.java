@@ -97,6 +97,10 @@ public final class PassManager {
             .add(new RewriteGendersPass())
             .add(new RewriteRemaindersPass())
             .add(rewritePass)
+            // needs to run after htmlrewriting, before resolvenames and autoescaping
+            .add(
+                new ContentSecurityPolicyNonceInjectionPass(
+                    options.getExperimentalFeatures(), errorReporter))
             .add(new StrictHtmlValidationPass(options.getExperimentalFeatures(), errorReporter))
             .add(new RewriteGlobalsPass(registry, options.getCompileTimeGlobals(), errorReporter))
             .add(new RewriteFunctionsPass(registry))
@@ -116,7 +120,6 @@ public final class PassManager {
       singleFilePassesBuilder.add(new CheckGlobalsPass(errorReporter));
     }
     singleFilePassesBuilder
-        .add(new CheckInvalidParamsPass())
         .add(new ValidateAliasesPass())
         // could run anywhere
         .add(new CheckNonEmptyMsgNodesPass(errorReporter))
@@ -334,13 +337,6 @@ public final class PassManager {
     @Override
     public void run(SoyFileNode file, IdGenerator nodeIdGen) {
       new VerifyPhnameAttrOnlyOnPlaceholdersVisitor(errorReporter).exec(file);
-    }
-  }
-
-  private final class CheckInvalidParamsPass extends CompilerFilePass {
-    @Override
-    public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-      new CheckInvalidParamsVisitor(errorReporter).exec(file);
     }
   }
 

@@ -1216,9 +1216,12 @@ public final class SoyFileSet {
     // contextual autoescaping may actually add new templates to the tree so we need to reconstruct
     // the registry
     registry = new TemplateRegistry(soyTree, errorReporter);
-    // Add print directives that mark inline-scripts as safe to run.
-    ContentSecurityPolicyPass.blessAuthorSpecifiedScripts(
-        contextualAutoescaper.getSlicedRawTextNodes());
+    // If stricthtml is enabled, then nonces have already been injected.
+    if (!generalOptions.getExperimentalFeatures().contains("stricthtml")) {
+      // Add print directives that mark inline-scripts as safe to run.
+      ContentSecurityPolicyPass.blessAuthorSpecifiedScripts(
+          contextualAutoescaper.getSlicedRawTextNodes());
+    }
 
     return registry;
   }

@@ -20,30 +20,53 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertEquals;
 
 import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.SoyFileSet;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ExplodingErrorReporter;
+import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateNode;
+import java.util.Arrays;
 import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 /**
  * Test for {@link ContentSecurityPolicyPass}.
  *
  */
-@RunWith(JUnit4.class)
+@RunWith(Parameterized.class)
 public final class ContentSecurityPolicyPassTest {
 
-  private static final String NONCE =
+  @Parameters
+  public static Iterable<Object[]> data() {
+    return Arrays.asList(new Object[][] {{true}, {false}});
+  }
+
+  private final boolean strictHtmlEnabled;
+
+  // this constructor will be injected by the test runner
+  // note, we cannot use @Parameter because it isn't supported by our version of junit.
+  public ContentSecurityPolicyPassTest(boolean strictHtmlEnabled) {
+    this.strictHtmlEnabled = strictHtmlEnabled;
+  }
+
+  private static final String OLD_NONCE =
       "{if $ij.csp_nonce} nonce=\"{$ij.csp_nonce |filterCspNonceValue}\"{/if}";
+  private static final String STRICT_HTML_NONCE =
+      "{if $ij.csp_nonce} nonce=\"{$ij.csp_nonce |escapeHtmlAttribute}\"{/if}";
+
+  private String nonce() {
+    return strictHtmlEnabled ? STRICT_HTML_NONCE : OLD_NONCE;
+  }
 
   @Test
   public void testTrivialTemplate() {
@@ -57,7 +80,7 @@ public final class ContentSecurityPolicyPassTest {
     assertInjected(
         join(
             "{template .foo}\n",
-            "<script" + NONCE + ">alert('Hello, World!')</script>\n",
+            "<script" + nonce() + ">alert('Hello, World!')</script>\n",
             "{/template}"),
         join("{template .foo}\n", "<script>alert('Hello, World!')</script>\n", "{/template}"));
   }
@@ -65,26 +88,32 @@ public final class ContentSecurityPolicyPassTest {
   @Test
   public void testOneSrcedScript() {
     assertInjected(
-        join("{template .foo}\n", "<script src=\"app.js\"" + NONCE + "></script>\n", "{/template}"),
+        join(
+            "{template .foo}\n",
+            "<script src=\"app.js\"" + nonce() + "></script>\n",
+            "{/template}"),
         join("{template .foo}\n", "<script src=\"app.js\"></script>\n", "{/template}"));
   }
 
   @Test
   public void testManyScripts() {
+    // TODO(b/31770394): some of these tests are disabled in stricthtml mode because the autoescaper
+    // rejects the code injected even though it is safe.  It is better to wait for when the
+    // autoescaper is rewritten to account for the html nodes than to try to make it compatible.
     assertInjected(
         join(
             "{template .foo}\n",
-            "<script src=\"one.js\"" + NONCE + "></script>",
-            "<script src=two.js" + NONCE + "></script>",
-            "<script src=three.js " + NONCE + "/></script>",
+            "<script src=\"one.js\"" + nonce() + "></script>",
+            strictHtmlEnabled ? "" : "<script src=two.js" + nonce() + "></script>",
+            strictHtmlEnabled ? "" : "<script src=three.js " + nonce() + "/></script>",
             "<h1>Not a script</h1>",
-            "<script type='text/javascript'" + NONCE + ">main()</script>\n",
+            "<script type='text/javascript'" + nonce() + ">main()</script>\n",
             "{/template}"),
         join(
             "{template .foo}\n",
             "<script src=\"one.js\"></script>",
-            "<script src=two.js></script>",
-            "<script src=three.js /></script>",
+            strictHtmlEnabled ? "" : "<script src=two.js></script>",
+            strictHtmlEnabled ? "" : "<script src=three.js /></script>",
             "<h1>Not a script</h1>",
             "<script type='text/javascript'>main()</script>\n",
             "{/template}"));
@@ -96,11 +125,11 @@ public final class ContentSecurityPolicyPassTest {
         join(
             "{template .foo}\n",
             "<noscript></noscript>",
-            "<script" + NONCE + ">alert('Hi');</script>",
+            "<script" + nonce() + ">alert('Hi');</script>",
             "<!-- <script>notAScript()</script> -->",
             "<textarea><script>notAScript()</script></textarea>",
             "<script is-script=yes"
-                + NONCE
+                + nonce()
                 + ">document.write('<script>not()<\\/script>');</script>",
             "<a href=\"//google.com/search?q=<script>hi()</script>\">Link</a>\n",
             "{/template}"),
@@ -125,7 +154,7 @@ public final class ContentSecurityPolicyPassTest {
             "  {@param appScriptUrl: ?}\n",
             "<script src=",
             "'{$appScriptUrl |filterTrustedResourceUri |escapeHtmlAttribute}'",
-            NONCE + ">",
+            nonce() + ">",
             "alert('Hello, World!')</script>\n",
             "{/template}"),
         join(
@@ -142,7 +171,7 @@ public final class ContentSecurityPolicyPassTest {
         join(
             "{template .foo}\n",
             "<style type=text/css",
-            NONCE,
+            nonce(),
             ">",
             "p {lb} color: purple {rb}",
             "</style>\n",
@@ -155,10 +184,16 @@ public final class ContentSecurityPolicyPassTest {
 
   @Test
   public void testTrailingSlashes() {
+    if (strictHtmlEnabled) {
+      // This test is disabled since the autoescaper doesn't trust the code we inject
+      // even though it is safe
+      // TODO(b/31770394): reenable
+      return;
+    }
     assertInjected(
         join(
             "{template .foo}\n",
-            "<script src=//example.com/unquoted/url/" + NONCE + "></script>\n",
+            "<script src=//example.com/unquoted/url/" + nonce() + "></script>\n",
             "{/template}"),
         join(
             "{template .foo}\n",
@@ -184,14 +219,14 @@ public final class ContentSecurityPolicyPassTest {
             // untrusted suffix.
             "<a href='#' onmouseover=foo()",
             " style=color:red>",
-            "<input checked ONCHANGE = \"",
+            // stricthtml mode doesn't preserve the whitespace around the equals sign
+            "<input checked ONCHANGE" + (strictHtmlEnabled ? "=" : " = ") + "\"",
             "Panic()\"",
             ">",
-            "<script onerror= '",
+            // ditto
+            "<script onerror=" + (strictHtmlEnabled ? "" : " ") + "'",
             "scriptError()'",
-            "{if $ij.csp_nonce}",
-            " nonce=\"{$ij.csp_nonce |filterCspNonceValue}\"",
-            "{/if}",
+            nonce(),
             ">baz()</script>\n",
             "{/template}"),
         join(
@@ -255,23 +290,40 @@ public final class ContentSecurityPolicyPassTest {
     return Joiner.on("").join(lines);
   }
 
-  private static SoyFileSetNode parseAndApplyCspPass(String input) {
+  private SoyFileSetNode parseAndApplyCspPass(String input) {
     String namespace = "{namespace ns autoescape=\"deprecated-contextual\"}\n\n";
     ErrorReporter boom = ExplodingErrorReporter.get();
-    ParseResult parseResult =
-        SoyFileSetParserBuilder.forFileContents(namespace + input).errorReporter(boom).parse();
+    // in stricthtml mode insertion is handled by the normal passmanager
+    if (strictHtmlEnabled) {
+      ParseResult parseResult =
+          SoyFileSetParserBuilder.forFileContents(namespace + input)
+              .options(
+                  new SoyGeneralOptions().setExperimentalFeatures(ImmutableList.of("stricthtml")))
+              .errorReporter(boom)
+              .parse();
+      autoescape(boom, parseResult);
+      return parseResult.fileSet();
+    } else {
+      ParseResult parseResult =
+          SoyFileSetParserBuilder.forFileContents(namespace + input).errorReporter(boom).parse();
 
+      ContextualAutoescaper contextualAutoescaper = autoescape(boom, parseResult);
+
+      ContentSecurityPolicyPass.blessAuthorSpecifiedScripts(
+          contextualAutoescaper.getSlicedRawTextNodes());
+      return parseResult.fileSet();
+    }
+  }
+
+  private ContextualAutoescaper autoescape(ErrorReporter reporter, ParseResult parseResult) {
     ContextualAutoescaper contextualAutoescaper =
         new ContextualAutoescaper(ImmutableMap.<String, SoyPrintDirective>of());
     List<TemplateNode> extras =
-        contextualAutoescaper.rewrite(parseResult.fileSet(), parseResult.registry(), boom);
+        contextualAutoescaper.rewrite(parseResult.fileSet(), parseResult.registry(), reporter);
 
     SoyFileNode file = parseResult.fileSet().getChild(parseResult.fileSet().numChildren() - 1);
     file.addChildren(file.numChildren(), extras);
-
-    ContentSecurityPolicyPass.blessAuthorSpecifiedScripts(
-        contextualAutoescaper.getSlicedRawTextNodes());
-    return parseResult.fileSet();
+    return contextualAutoescaper;
   }
 
   /**
@@ -279,7 +331,7 @@ public final class ContentSecurityPolicyPassTest {
    *
    * <p>The Soy tree may have multiple files, but only the source code for the first is returned.
    */
-  private static void assertInjected(String expectedOutput, String input) {
+  private void assertInjected(String expectedOutput, String input) {
     SoyFileSetNode soyTree = parseAndApplyCspPass(input);
 
     StringBuilder src = new StringBuilder();
