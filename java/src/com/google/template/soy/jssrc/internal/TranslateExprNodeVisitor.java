@@ -30,10 +30,12 @@ import static com.google.template.soy.jssrc.dsl.CodeChunk.number;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.operation;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.stringLiteral;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_ARRAY_MAP;
+import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_GET_CSS_NAME;
 import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_DATA;
 import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_IJ_DATA;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_CHECK_MAP_KEY;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_CHECK_NOT_NULL;
+import static com.google.template.soy.jssrc.internal.JsRuntime.XID;
 import static com.google.template.soy.jssrc.internal.JsRuntime.extensionField;
 import static com.google.template.soy.jssrc.internal.JsRuntime.protoConstructor;
 import static com.google.template.soy.jssrc.internal.JsRuntime.protoToSanitizedContentConverterFunction;
@@ -643,11 +645,11 @@ public class TranslateExprNodeVisitor
   }
 
   private CodeChunk.WithValue visitCssFunction(FunctionNode node) {
-    throw new UnsupportedOperationException();
+    return GOOG_GET_CSS_NAME.call(visitChildren(node));
   }
 
   private CodeChunk.WithValue visitXidFunction(FunctionNode node) {
-    throw new UnsupportedOperationException();
+    return XID.call(visitChildren(node));
   }
 
   private CodeChunk.WithValue visitV1ExpressionFunction(FunctionNode node) {

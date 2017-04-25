@@ -23,6 +23,7 @@ import com.google.common.collect.Iterables;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -65,6 +66,11 @@ public final class PyFunctionExprBuilder {
 
   public PyFunctionExprBuilder addArg(PyExpr arg) {
     this.argList.add(arg);
+    return this;
+  }
+
+  public PyFunctionExprBuilder addArgs(List<PyExpr> argList) {
+    this.argList.addAll(argList);
     return this;
   }
 

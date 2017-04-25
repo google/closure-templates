@@ -183,8 +183,20 @@ public class TranslateToPyExprVisitorTest {
   }
 
   @Test
-  public void testBuiltinFunction() {
+  public void testCheckNotNull() {
     assertThatSoyExpr("checkNotNull($boo) ? 1 : 0")
         .translatesTo("1 if runtime.check_not_null(data.get('boo')) else 0", Operator.CONDITIONAL);
+  }
+
+  @Test
+  public void testCss() {
+    assertThatSoyExpr("css('foo')").translatesTo("runtime.get_css_name('foo')", Integer.MAX_VALUE);
+    assertThatSoyExpr("css($foo, 'base')")
+        .translatesTo("runtime.get_css_name(data.get('foo'), 'base')", Integer.MAX_VALUE);
+  }
+
+  @Test
+  public void testXid() {
+    assertThatSoyExpr("xid('foo')").translatesTo("runtime.get_xid_name('foo')", Integer.MAX_VALUE);
   }
 }

@@ -27,6 +27,7 @@ import static com.google.template.soy.shared.internal.SharedRuntime.plus;
 import static com.google.template.soy.shared.internal.SharedRuntime.times;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.template.soy.data.SoyAbstractValue;
@@ -77,6 +78,8 @@ import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
 import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
+import com.google.template.soy.shared.SoyCssRenamingMap;
+import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
@@ -106,31 +109,49 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     /**
      * Creates an EvalVisitor.
      *
-     * @param ijData The current injected data.
      * @param env The current environment.
+     * @param ijData The current injected data.
+     * @param cssRenamingMap The CSS renaming map, or null if not applicable.
+     * @param xidRenamingMap The XID renaming map, or null if not applicable.
      * @return The newly created EvalVisitor instance.
      */
-    EvalVisitor create(@Nullable SoyRecord ijData, Environment env);
+    EvalVisitor create(
+        Environment env,
+        @Nullable SoyRecord ijData,
+        @Nullable SoyCssRenamingMap cssRenamingMap,
+        @Nullable SoyIdRenamingMap xidRenamingMap);
   }
 
   /** Instance of SoyValueConverter to use. */
   private final SoyValueConverter valueConverter;
 
-  /** The current injected data. */
-  private final SoyRecord ijData;
-
   /** The current environment. */
   private final Environment env;
+
+  /** The current injected data. */
+  @Nullable private final SoyRecord ijData;
+
+  /** The current CSS renaming map. */
+  private final SoyCssRenamingMap cssRenamingMap;
+
+  /** The current XID renaming map. */
+  private final SoyIdRenamingMap xidRenamingMap;
 
   /**
    * @param ijData The current injected data.
    * @param env The current environment.
    */
   protected EvalVisitor(
-      SoyValueConverter valueConverter, @Nullable SoyRecord ijData, Environment env) {
-    this.valueConverter = valueConverter;
-    this.ijData = ijData;
+      SoyValueConverter valueConverter,
+      Environment env,
+      @Nullable SoyRecord ijData,
+      @Nullable SoyCssRenamingMap cssRenamingMap,
+      @Nullable SoyIdRenamingMap xidRenamingMap) {
+    this.valueConverter = checkNotNull(valueConverter);
     this.env = checkNotNull(env);
+    this.ijData = ijData;
+    this.cssRenamingMap = (cssRenamingMap == null) ? SoyCssRenamingMap.EMPTY : cssRenamingMap;
+    this.xidRenamingMap = (xidRenamingMap == null) ? SoyCssRenamingMap.EMPTY : xidRenamingMap;
   }
 
   // -----------------------------------------------------------------------------------------------
@@ -655,11 +676,26 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
   }
 
   private SoyValue visitCssFunction(FunctionNode node) {
-    throw new UnsupportedOperationException();
+    List<SoyValue> children = visitChildren(node);
+    String selector = Iterables.getLast(children).stringValue();
+
+    String renamedSelector = cssRenamingMap.get(selector);
+    if (renamedSelector == null) {
+      renamedSelector = selector;
+    }
+
+    if (node.numChildren() == 1) {
+      return StringData.forValue(renamedSelector);
+    } else {
+      String fullSelector = children.get(0).stringValue() + "-" + renamedSelector;
+      return StringData.forValue(fullSelector);
+    }
   }
 
   private SoyValue visitXidFunction(FunctionNode node) {
-    throw new UnsupportedOperationException();
+    String xid = visit(node.getChild(0)).stringValue();
+    String renamed = xidRenamingMap.get(xid);
+    return (renamed != null) ? StringData.forValue(renamed) : StringData.forValue(xid + "_");
   }
 
 

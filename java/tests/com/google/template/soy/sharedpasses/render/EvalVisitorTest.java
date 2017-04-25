@@ -23,7 +23,6 @@ import static org.junit.Assert.fail;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Maps;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.template.soy.SoyFileSetParserBuilder;
@@ -47,10 +46,11 @@ import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.shared.SharedTestUtils;
+import com.google.template.soy.shared.SoyCssRenamingMap;
+import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.sharedpasses.render.EvalVisitor.EvalVisitorFactory;
 import com.google.template.soy.soytree.PrintNode;
-import java.util.Map;
 import java.util.Set;
 import javax.annotation.Nullable;
 import org.junit.Before;
@@ -70,15 +70,33 @@ public class EvalVisitorTest {
   protected static final SoyValueConverter CONVERTER =
       INJECTOR.getInstance(SoyValueConverter.class);
 
-  private SoyRecord testData;
   private static final SoyRecord TEST_IJ_DATA =
       CONVERTER.newDict("ijBool", true, "ijInt", 26, "ijStr", "injected");
 
-  private final Map<String, SoyValueProvider> locals =
-      Maps.newHashMap(
-          ImmutableMap.<String, SoyValueProvider>of(
-              "zoo", StringData.forValue("loo"),
-              "woo", FloatData.forValue(-1.618)));
+  private static final ImmutableMap<String, SoyValueProvider> LOCALS =
+      ImmutableMap.<String, SoyValueProvider>of(
+          "zoo", StringData.forValue("loo"),
+          "woo", FloatData.forValue(-1.618));
+
+  private static final SoyIdRenamingMap TEST_XID_RENAMING_MAP =
+      new SoyIdRenamingMap() {
+        @Override
+        public String get(String key) {
+          return key + "_renamed_xid";
+        }
+      };
+
+  private static final SoyCssRenamingMap TEST_CSS_RENAMING_MAP =
+      new SoyCssRenamingMap() {
+        @Override
+        public String get(String key) {
+          return key + "_renamed_css";
+        }
+      };
+
+  private SoyRecord testData;
+  private SoyIdRenamingMap xidRenamingMap = null;
+  private SoyCssRenamingMap cssRenamingMap = null;
 
   @Before
   public void setUp() {
@@ -150,7 +168,11 @@ public class EvalVisitorTest {
     EvalVisitor evalVisitor =
         INJECTOR
             .getInstance(EvalVisitorFactory.class)
-            .create(TEST_IJ_DATA, TestingEnvironment.createForTest(testData, locals));
+            .create(
+                TestingEnvironment.createForTest(testData, LOCALS),
+                TEST_IJ_DATA,
+                cssRenamingMap,
+                xidRenamingMap);
     return evalVisitor.exec(expr);
   }
 
@@ -550,5 +572,25 @@ public class EvalVisitorTest {
     assertEval("isNonnull($boo)", true);
     assertEval("isNonnull($foo.goo2)", true);
     assertEval("isNonnull($map0)", true);
+  }
+
+  @Test
+  public void testCss() throws Exception {
+    cssRenamingMap = TEST_CSS_RENAMING_MAP;
+    assertEval("css('class')", "class_renamed_css");
+    assertEval("css($zoo, 'class')", "loo-class_renamed_css");
+
+    cssRenamingMap = null;
+    assertEval("css('class')", "class");
+    assertEval("css($zoo, 'class')", "loo-class");
+  }
+
+  @Test
+  public void testXid() throws Exception {
+    xidRenamingMap = TEST_XID_RENAMING_MAP;
+    assertEval("xid('id')", "id_renamed_xid");
+
+    xidRenamingMap = null;
+    assertEval("xid('id')", "id_");
   }
 }

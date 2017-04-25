@@ -47,7 +47,12 @@ final class PreevalVisitor extends EvalVisitor {
    * @param env The current environment.
    */
   PreevalVisitor(SoyValueConverter valueConverter, Environment env) {
-    super(valueConverter, null /* ijData */, env);
+    super(
+        valueConverter,
+        env,
+        null /* ijData */,
+        null /* cssRenamingMap */,
+        null /* xidRenamingMap */);
   }
 
   // -----------------------------------------------------------------------------------------------

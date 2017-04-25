@@ -20,6 +20,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.template.soy.SoyFileSetParserBuilder;
@@ -28,10 +29,10 @@ import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.sharedpasses.render.Environment;
 import com.google.template.soy.sharedpasses.render.RenderException;
 import com.google.template.soy.sharedpasses.render.TestingEnvironment;
 import com.google.template.soy.soytree.PrintNode;
-import java.util.HashMap;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -126,14 +127,12 @@ public final class PreevalVisitorTest {
                 .getChild(0)
                 .getChild(0);
     ExprRootNode expr = code.getExpr();
-    PreevalVisitor preevalVisitor =
-        INJECTOR
-            .getInstance(PreevalVisitorFactory.class)
-            .create(
-                null,
-                TestingEnvironment.createForTest(
-                    SoyValueConverter.UNCUSTOMIZED_INSTANCE.newDict("boo", 8),
-                    new HashMap<String, SoyValueProvider>()));
+    Environment env =
+        TestingEnvironment.createForTest(
+            SoyValueConverter.UNCUSTOMIZED_INSTANCE.newDict("boo", 8),
+            ImmutableMap.<String, SoyValueProvider>of());
+
+    PreevalVisitor preevalVisitor = INJECTOR.getInstance(PreevalVisitorFactory.class).create(env);
     return preevalVisitor.exec(expr);
   }
 }

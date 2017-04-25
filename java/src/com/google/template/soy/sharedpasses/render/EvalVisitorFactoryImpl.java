@@ -18,6 +18,8 @@ package com.google.template.soy.sharedpasses.render;
 
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueConverter;
+import com.google.template.soy.shared.SoyCssRenamingMap;
+import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.sharedpasses.render.EvalVisitor.EvalVisitorFactory;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
@@ -41,7 +43,11 @@ public final class EvalVisitorFactoryImpl implements EvalVisitorFactory {
   }
 
   @Override
-  public EvalVisitor create(@Nullable SoyRecord ijData, Environment env) {
-    return new EvalVisitor(valueConverter, ijData, env);
+  public EvalVisitor create(
+      Environment env,
+      @Nullable SoyRecord ijData,
+      @Nullable SoyCssRenamingMap cssRenamingMap,
+      @Nullable SoyIdRenamingMap xidRenamingMap) {
+    return new EvalVisitor(valueConverter, env, ijData, cssRenamingMap, xidRenamingMap);
   }
 }

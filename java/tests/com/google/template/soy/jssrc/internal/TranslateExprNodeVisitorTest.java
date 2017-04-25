@@ -269,7 +269,7 @@ public final class TranslateExprNodeVisitorTest {
   }
 
   @Test
-  public void testBuiltinFunctions() {
+  public void testForeachFunctions() {
     assertThatSoyExpr("isFirst($goo) ? 1 : 0")
         .withInitialLocalVarTranslations(LOCAL_VAR_TRANSLATIONS)
         .generatesCode("gooIndex8 == 0 ? 1 : 0")
@@ -284,15 +284,17 @@ public final class TranslateExprNodeVisitorTest {
         .withInitialLocalVarTranslations(LOCAL_VAR_TRANSLATIONS)
         .generatesCode("gooIndex8 + 1")
         .withPrecedence(PLUS);
+  }
 
-    assertThatSoyExpr("['abc': $goo]")
-        .withInitialLocalVarTranslations(LOCAL_VAR_TRANSLATIONS)
-        .generatesCode("{abc: gooData8}");
-
+  @Test
+  public void testQuoteKeysIfJs() {
     assertThatSoyExpr("quoteKeysIfJs(['abc': $goo])")
         .withInitialLocalVarTranslations(LOCAL_VAR_TRANSLATIONS)
         .generatesCode("{'abc': gooData8}");
+  }
 
+  @Test
+  public void testCheckNotNull() {
     assertThatSoyExpr("checkNotNull($goo) ? 1 : 0")
         .withInitialLocalVarTranslations(LOCAL_VAR_TRANSLATIONS)
         .generatesCode("soy.$$checkNotNull(gooData8) ? 1 : 0")
@@ -300,7 +302,21 @@ public final class TranslateExprNodeVisitorTest {
   }
 
   @Test
-  public void testBuiltinFunctions_v1Expression() {
+  public void testCss() {
+    assertThatSoyExpr("css('foo')").generatesCode("goog.getCssName('foo')");
+    assertThatSoyExpr("css($base, 'bar')").generatesCode("goog.getCssName(opt_data.base, 'bar')");
+    assertThatSoyExpr("css($goo, 'bar')")
+        .withInitialLocalVarTranslations(LOCAL_VAR_TRANSLATIONS)
+        .generatesCode("goog.getCssName(gooData8, 'bar')");
+  }
+
+  @Test
+  public void testXid() {
+    assertThatSoyExpr("xid('foo')").generatesCode("xid('foo')");
+  }
+
+  @Test
+  public void testV1Expression() {
     String soyFile =
         ""
             + "{namespace ns}\n"

@@ -71,6 +71,8 @@ public final class CssNode extends AbstractCommandNode
    * the number of actually occuring maps is very low and should really be at max 2 (one for
    * obfuscated and one for unobfuscated renaming). Also in production only one of the maps should
    * really be used, so that cache hit rate approaches 100%.
+   *
+   * <p>Note: Not used for css() function calls. TODO(user): Remove.
    */
   Pair<SoyCssRenamingMap, String> renameCache;
 

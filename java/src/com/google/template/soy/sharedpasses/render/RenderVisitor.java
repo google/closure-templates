@@ -758,7 +758,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
     // Lazily initialize evalVisitor.
     if (evalVisitor == null) {
-      evalVisitor = evalVisitorFactory.create(ijData, env);
+      evalVisitor = evalVisitorFactory.create(env, ijData, cssRenamingMap, xidRenamingMap);
     }
 
     try {

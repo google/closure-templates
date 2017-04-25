@@ -832,14 +832,42 @@ final class ExpressionCompiler {
           .asNonNullable();
     }
 
+    // TODO(lukes):  The RenderVisitor optimizes css/xid renaming by stashing a one element cache in
+    // the CSS node itself (keyed off the identity of the renaming map).  We could easily add such
+    // an optimization via a static field in the Template class. Though im not sure it makes sense
+    // as an optimization... this should just be an immutable map lookup keyed off of a constant
+    // string. If we cared a lot, we could employ a simpler (and more compact) optimization by
+    // assigning each selector a unique integer id and then instead of hashing we can just reference
+    // an array (aka perfect hashing).  This could be part of our runtime library and ids could be
+    // assigned at startup.
+
     @Override
     SoyExpression visitCssFunction(FunctionNode node) {
-      throw new UnsupportedOperationException();
+      StringNode selector = (StringNode) Iterables.getLast(node.getChildren());
+      Expression renamedSelector =
+          parameters
+              .getRenderContext()
+              .invoke(MethodRef.RENDER_CONTEXT_RENAME_CSS_SELECTOR, constant(selector.getValue()));
+
+      if (node.numChildren() == 1) {
+        return SoyExpression.forString(renamedSelector);
+      } else {
+        SoyExpression base = visit(node.getChild(0)).coerceToString();
+        Expression fullSelector =
+            base.invoke(MethodRef.STRING_CONCAT, constant("-"))
+                .invoke(MethodRef.STRING_CONCAT, renamedSelector);
+        return base.withSource(fullSelector).asNonNullable();
+      }
     }
 
     @Override
     SoyExpression visitXidFunction(FunctionNode node) {
-      throw new UnsupportedOperationException();
+      StringNode xid = (StringNode) Iterables.getOnlyElement(node.getChildren());
+      Expression renamedXid =
+          parameters
+              .getRenderContext()
+              .invoke(MethodRef.RENDER_CONTEXT_RENAME_XID, constant(xid.getValue()));
+      return SoyExpression.forString(renamedXid);
     }
 
     // Non-builtin functions

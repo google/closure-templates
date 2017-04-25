@@ -399,11 +399,15 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
   }
 
   private PyExpr visitCssFunction(FunctionNode node) {
-    throw new UnsupportedOperationException();
+    return new PyFunctionExprBuilder("runtime.get_css_name")
+        .addArgs(visitChildren(node))
+        .asPyExpr();
   }
 
   private PyExpr visitXidFunction(FunctionNode node) {
-    throw new UnsupportedOperationException();
+    return new PyFunctionExprBuilder("runtime.get_xid_name")
+        .addArg(visit(node.getChild(0)))
+        .asPyExpr();
   }
 
   /**

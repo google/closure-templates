@@ -19,6 +19,8 @@ package com.google.template.soy.sharedpasses.opti;
 import com.google.common.base.Preconditions;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueConverter;
+import com.google.template.soy.shared.SoyCssRenamingMap;
+import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.sharedpasses.render.Environment;
 import com.google.template.soy.sharedpasses.render.EvalVisitor.EvalVisitorFactory;
 import javax.annotation.Nullable;
@@ -47,7 +49,11 @@ public final class PreevalVisitorFactory implements EvalVisitorFactory {
   }
 
   @Override
-  public PreevalVisitor create(@Nullable SoyRecord ijData, Environment env) {
+  public PreevalVisitor create(
+      Environment env,
+      @Nullable SoyRecord ijData,
+      @Nullable SoyCssRenamingMap cssRenamingMap,
+      @Nullable SoyIdRenamingMap xidRenamingMap) {
 
     // PreevalVisitor cannot handle ijData references.
     Preconditions.checkArgument(ijData == null);
