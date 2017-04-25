@@ -53,10 +53,25 @@ _NUMBER_TYPES = (int, long, float)
 # The mapping of css class names for get_css_name.
 _css_name_mapping = None
 
+# The xid map for get_xid_name.
+_xid_name_mapping = None
 
-def get_xid_name(name):   # pylint: disable=unused-argument
-  """Not currently implemented."""
-  raise NotImplementedError('xid is not implemented')
+
+def get_xid_name(xid):
+  """Return the mapped xid name.
+
+  Args:
+    xid: The xid name to modify.
+
+  Returns:
+    The renamed xid.
+  """
+  if _xid_name_mapping:
+    renamed = _xid_name_mapping.get(xid)
+    if renamed:
+      return renamed
+
+  return xid + '_'
 
 
 def get_css_name(class_name, modifier=None):
@@ -101,6 +116,16 @@ def set_css_name_mapping(mapping):
   """
   global _css_name_mapping
   _css_name_mapping = mapping
+
+
+def set_xid_name_mapping(mapping):
+  """Sets the mapping of xids.
+
+  Args:
+    mapping: A dictionary of xid names.
+  """
+  global _xid_name_mapping
+  _xid_name_mapping = mapping
 
 
 def get_delegate_fn(template_id, variant, allow_empty_default):
@@ -270,8 +295,8 @@ def register_delegate_fn(template_id, variant, priority, fn, fn_name):
         priority an error will be raised.
   """
   map_key = _gen_delegate_id(template_id, variant)
-  curr_priority, _, curr_fn_name = _DELEGATE_REGISTRY.get(map_key,
-                                                          (None, None, None))
+  curr_priority, _, curr_fn_name = _DELEGATE_REGISTRY.get(
+      map_key, (None, None, None))
 
   # Ignore unless at a equal or higher priority.
   if curr_priority is None or priority > curr_priority:
