@@ -381,7 +381,7 @@ public class SoyFileParser {
   private static final SoyErrorKind PLURAL_CASE_MALFORMED =
       SoyErrorKind.of("Invalid number in ''plural case'' command text.");
   private static final SoyErrorKind PLURAL_OFFSET_OUT_OF_BOUNDS =
-      SoyErrorKind.of("The ''offset'' for plural (''{0}'') must be a positive integer.");
+      SoyErrorKind.of("The ''offset'' for plural must be a positive integer.");
   private static final SoyErrorKind PRINT_COMMAND_WITH_EMPTY_TEXT =
       SoyErrorKind.of("Found ''print'' command with empty command text.");
   private static final SoyErrorKind SELECT_CASE_INVALID_VALUE =
@@ -737,16 +737,27 @@ TOKEN_MGR_DECLS: {
 | < DELPACKAGE_OPEN: "{delpackage" > { pushState(IN_CMD_TAG_STRUCTURED); }
 }
 
-<IN_CMD_TAG_STRUCTURED> MORE: {
-  "\"" : IN_ATTRIBUTE_VALUE
+<IN_CMD_TAG_STRUCTURED> SKIP: {
+  < "\"" > { pushState(IN_ATTRIBUTE_VALUE); }
+}
+
+<EXPR> TOKEN: {
+  < EQUAL: "=" >
+| < DOUBLE_QUOTE: "\"" > { pushState(IN_ATTRIBUTE_VALUE); }
 }
 
 <IN_ATTRIBUTE_VALUE> TOKEN: {
-  <ATTRIBUTE_VALUE: "\""> : IN_CMD_TAG_STRUCTURED
+  < ATTRIBUTE_VALUE: "\"" >
+  {
+    // trim off trailing quote, unescape internal quotation marks
+    matchedToken.image = image.substring(0, image.length() - 1).replace("\\\"", "\"");
+    matchedToken.endColumn -= 1;
+    popState();
+  }
 }
 
-// In attribute values accumulate all non-double quote characters unless they are escaped.  N.B.
-// This includes newlines which is important for backwards compatibility.
+// In attribute values accumulate all non-double quote characters unless they are escaped.
+// N.B. This includes newlines which is important for backwards compatibility.
 <IN_ATTRIBUTE_VALUE> MORE: {
   <~[]>
 | "\\\""
@@ -991,6 +1002,10 @@ TOKEN_MGR_DECLS: {
       | <DEC_DIGITS> "e" ( ["+","-"] )? <DEC_DIGITS>
   >
   // Must match <IN_CMD_TAG_UNSTRUCTURED> CMD_TEXT_ARBITRARY_TOKEN in SoyFileParser.jj.
+  // We could support double quoted strings except for the fact that in some cases expressions
+  // need to be able to be written in attribute values (variant expressions, data expressions).
+  // It isn't clear how we would support double quoted strings in that context.  Similarly, this
+  // is why the SoyFileParser requires attributes values to be double quoted.
 | < STRING:
       "'"
       (
@@ -1058,11 +1073,6 @@ TOKEN_MGR_DECLS: {
   < LEGACY_AND : "&&" >
 | < LEGACY_OR : "||" >
 | < LEGACY_NOT : "!" >
-  // We could support double quoted strings except for the fact that in some cases expressions
-  // need to be able to be written in attribute values (variant expressions, data expressions).
-  // It isn't clear how we would support double quoted strings in that context.  Similarly, this
-  // is why the SoyFileParser requires attributes values to be double quoted.
-| < DOUBLE_QUOTE : "\"" >
 }
 
 
@@ -1212,7 +1222,9 @@ private NamespaceDeclaration Namespace() :
 
 
 /**
- * Matches an arbitrary sequence of CommandAttributes()
+ * Matches a sequence of command attributes.
+ *
+ * CommandAttributes -> ( Attribute )*
  */
 private List<CommandTagAttribute> CommandAttributes() :
 {
@@ -1240,7 +1252,7 @@ private List<CommandTagAttribute> CommandAttributes() :
 /**
  * Matches an attribute, starting from IN_CMD_TAG_STRUCTURED lexical state.
  *
- * Attribute -> <NAME> <CMD_EQ> <ATTRIBUTE_VALUE>
+ * Attribute -> Name CmdEq AttributeValue
  */
 private CommandTagAttribute Attribute() :
 {
@@ -1254,38 +1266,30 @@ private CommandTagAttribute Attribute() :
   value = <ATTRIBUTE_VALUE>
   {
     return new CommandTagAttribute(
-        Identifier.create(name.image, createSrcLoc(name)),
-        // trim quotes off the token and unescape internal quotation marks
-        value.image.substring(1, value.image.length() - 1).replace("\\\"", "\""),
-        createSrcLoc(value));
+        Identifier.create(name.image, createSrcLoc(name)), value.image, createSrcLoc(value));
   }
 }
 
 /**
- * Matches an attribute, starting from EXPR lexical state. Ends in IN_CMD_TAG_STRUCTURED state.
+ * Matches an attribute, starting from EXPR lexical state.
  *
  * TODO(user): Once all tags are switched out of IN_CMD_TAG_UNSTRUCTURED, consider rolling
  * all uses of Attribute() into this state.
  *
- * Attribute -> <IDENT> <CMD_EQ> <ATTRIBUTE_VALUE>
+ * Attribute -> Ident Equal DoubleQuote AttributeValue
  */
 private CommandTagAttribute ExprAttribute() :
 {
-  Token name;
-  Token eq;
-  Token value;
+  Token name, value;
 }
 {
-  { token_source.SwitchTo(IN_CMD_TAG_STRUCTURED); }
   name = <IDENT>
-  eq = <CMD_EQ>
-  value = <ATTRIBUTE_VALUE>
+  <EQUAL>
+  <DOUBLE_QUOTE>
+  value = <ATTRIBUTE_VALUE> // ATTRIBUTE_VALUE includes the end quote
   {
     return new CommandTagAttribute(
-        Identifier.create(name.image, createSrcLoc(name)),
-        // trim quotes off the token and unescape internal quotation marks
-        value.image.substring(1, value.image.length() - 1).replace("\\\"", "\""),
-        createSrcLoc(value));
+        Identifier.create(name.image, createSrcLoc(name)), value.image, createSrcLoc(value));
   }
 }
 
@@ -2090,7 +2094,7 @@ private MsgPluralNode MsgPlural() :
     if (offsetAttr != null) {
       offset = offsetAttr.valueAsInteger(errorReporter, 0);
       if (offset <= 0) {
-        errorReporter.report(offsetAttr.getValueLocation(), PLURAL_OFFSET_OUT_OF_BOUNDS, offset);
+        errorReporter.report(offsetAttr.getValueLocation(), PLURAL_OFFSET_OUT_OF_BOUNDS);
         offset = 0;
       }
     }
