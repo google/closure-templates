@@ -55,17 +55,14 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
   @Immutable
   protected static class CommandTextInfo {
 
-    private final String commandText;
     private final boolean isPassingAllData;
     @Nullable private final ExprRootNode dataExpr;
     @Nullable private final String userSuppliedPlaceholderName;
 
     public CommandTextInfo(
-        String commandText,
         boolean isPassingAllData,
         @Nullable ExprRootNode dataExpr,
         @Nullable String userSuppliedPlaceholderName) {
-      this.commandText = commandText;
       this.isPassingAllData = isPassingAllData;
       this.dataExpr = dataExpr;
       this.userSuppliedPlaceholderName = userSuppliedPlaceholderName;
@@ -91,9 +88,6 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
   /** True if this node is within a HTML context. */
   private boolean isPcData = false;
 
-  // TODO(user): Remove.
-  private final String commandText;
-
   /**
    * Protected constructor for use by subclasses.
    *
@@ -115,7 +109,6 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
     this.dataExpr = commandTextInfo.dataExpr;
     this.userSuppliedPlaceholderName = commandTextInfo.userSuppliedPlaceholderName;
     this.escapingDirectiveNames = escapingDirectiveNames;
-    this.commandText = commandTextInfo.commandText;
   }
 
   /**
@@ -130,8 +123,19 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
     this.userSuppliedPlaceholderName = orig.userSuppliedPlaceholderName;
     this.escapingDirectiveNames = orig.escapingDirectiveNames;
     this.isPcData = orig.getIsPcData();
-    this.commandText = orig.commandText;
   }
+
+  /**
+   * Create a CallNode with new callee name but otherwise identical parameters (including node id).
+   * Children are not copied over.
+   */
+  public abstract CallNode withNewName(String newName);
+
+  /**
+   * Create a CallNode with data="all" but otherwise identical parameters (including node id).
+   * Children are not copied over.
+   */
+  public abstract CallNode withDataAll();
 
   public boolean isPassingData() {
     return isPassingAllData || dataExpr != null;
@@ -174,11 +178,6 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
     // for determining sameness. Since nodes have identity semantics this will only compare equal
     // to itself.
     return this;
-  }
-
-  @Override
-  public String getCommandText() {
-    return commandText;
   }
 
   @Override

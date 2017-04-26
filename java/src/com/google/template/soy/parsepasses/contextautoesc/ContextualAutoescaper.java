@@ -201,7 +201,7 @@ public final class ContextualAutoescaper {
 
     // Now that we know we don't fail with exceptions, apply the changes to the given files.
     List<TemplateNode> extraTemplates =
-        new Rewriter(inferences, sanitizedContentOperators, errorReporter).rewrite(fileSet);
+        new Rewriter(inferences, sanitizedContentOperators).rewrite(fileSet);
 
     runVisitorOnAllTemplatesIncludingNewOnes(
         inferences,

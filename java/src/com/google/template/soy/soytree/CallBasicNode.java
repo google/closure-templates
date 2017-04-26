@@ -56,12 +56,11 @@ public final class CallBasicNode extends CallNode {
     private final String srcCalleeName;
 
     CommandTextInfo(
-        String commandText,
         String srcCalleeName,
         boolean isPassingAllData,
         @Nullable ExprRootNode dataExpr,
         @Nullable String userSuppliedPlaceholderName) {
-      super(commandText, isPassingAllData, dataExpr, userSuppliedPlaceholderName);
+      super(isPassingAllData, dataExpr, userSuppliedPlaceholderName);
       this.srcCalleeName = srcCalleeName;
     }
   }
@@ -124,6 +123,26 @@ public final class CallBasicNode extends CallNode {
   }
 
   @Override
+  public CallBasicNode withNewName(String newName) {
+    return new CallBasicNode(
+        getId(),
+        getSourceLocation(),
+        new CommandTextInfo(newName, isPassingAllData(), getDataExpr(), getUserSuppliedPhName()),
+        getEscapingDirectiveNames(),
+        newName);
+  }
+
+  @Override
+  public CallBasicNode withDataAll() {
+    return new CallBasicNode(
+        getId(),
+        getSourceLocation(),
+        new CommandTextInfo(getSrcCalleeName(), true, null, getUserSuppliedPhName()),
+        getEscapingDirectiveNames(),
+        getCalleeName());
+  }
+
+  @Override
   public Kind getKind() {
     return Kind.CALL_BASIC_NODE;
   }
@@ -160,6 +179,21 @@ public final class CallBasicNode extends CallNode {
   /** Returns the full name of the template being called, or null if not yet set. */
   public String getCalleeName() {
     return calleeName;
+  }
+
+  @Override
+  public String getCommandText() {
+    String commandText = sourceCalleeName;
+    if (isPassingAllData()) {
+      commandText += " data=\"all\"";
+    } else if (getDataExpr() != null) {
+      commandText += " data=\"" + getDataExpr().toSourceString() + '"';
+    }
+    if (getUserSuppliedPhName() != null) {
+      commandText += " phname=\"" + getUserSuppliedPhName() + '"';
+    }
+
+    return commandText;
   }
 
   @Override
@@ -250,14 +284,7 @@ public final class CallBasicNode extends CallNode {
 
     // TODO(user): eliminate side-channel parsing. This should be a part of the grammar.
     private CommandTextInfo parseCommandText(SoyParsingContext context) {
-      String cmdText =
-          commandText
-              + ((userSuppliedPlaceholderName != null)
-                  ? " phname=\"" + userSuppliedPlaceholderName + "\""
-                  : "");
-
       String cmdTextForParsing = commandText;
-
 
       Matcher ncnMatcher = NONATTRIBUTE_CALLEE_NAME.matcher(cmdTextForParsing);
       if (ncnMatcher.find()) {
@@ -288,23 +315,13 @@ public final class CallBasicNode extends CallNode {
       }
 
       return new CommandTextInfo(
-          cmdText, sourceCalleeName, isPassingAllData, dataExpr, userSuppliedPlaceholderName);
+          sourceCalleeName, isPassingAllData, dataExpr, userSuppliedPlaceholderName);
     }
 
     // TODO(user): eliminate side-channel parsing. This should be a part of the grammar.
     private CommandTextInfo buildCommandText() {
-      String commandText = sourceCalleeName;
-      if (isPassingAllData) {
-        commandText += " data=\"all\"";
-      } else if (dataExpr != null) {
-        commandText += " data=\"" + dataExpr.toSourceString() + '"';
-      }
-      if (userSuppliedPlaceholderName != null) {
-        commandText += " phname=\"" + userSuppliedPlaceholderName + '"';
-      }
-
       return new CommandTextInfo(
-          commandText, sourceCalleeName, isPassingAllData, dataExpr, userSuppliedPlaceholderName);
+          sourceCalleeName, isPassingAllData, dataExpr, userSuppliedPlaceholderName);
     }
   }
 }

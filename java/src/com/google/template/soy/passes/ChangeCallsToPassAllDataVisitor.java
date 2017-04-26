@@ -17,12 +17,9 @@
 package com.google.template.soy.passes;
 
 import com.google.common.base.Preconditions;
-import com.google.template.soy.exprparse.SoyParsingContext;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
-import com.google.template.soy.soytree.CallBasicNode;
-import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.CallParamValueNode;
@@ -96,33 +93,7 @@ public final class ChangeCallsToPassAllDataVisitor extends AbstractSoyNodeVisito
     }
 
     // Change this call to pass data="all" and remove all params. (We reuse the node id.)
-    CallNode newCallNode;
-    if (node instanceof CallBasicNode) {
-      CallBasicNode nodeCast = (CallBasicNode) node;
-      newCallNode =
-          new CallBasicNode.Builder(node.getId(), node.getSourceLocation())
-              .calleeName(nodeCast.getCalleeName())
-              .sourceCalleeName(nodeCast.getSrcCalleeName())
-              .isPassingAllData(true)
-              .dataExpr(null)
-              .userSuppliedPlaceholderName(node.getUserSuppliedPhName())
-              .escapingDirectiveNames(node.getEscapingDirectiveNames())
-              // Use the exploding reporter since we know it won't report any errors
-              .build(SoyParsingContext.exploding());
-    } else {
-      CallDelegateNode nodeCast = (CallDelegateNode) node;
-      newCallNode =
-          new CallDelegateNode.Builder(node.getId(), node.getSourceLocation())
-              .delCalleeName(nodeCast.getDelCalleeName())
-              .delCalleeVariantExpr(nodeCast.getDelCalleeVariantExpr())
-              .allowEmptyDefault(nodeCast.allowsEmptyDefault())
-              .isPassingAllData(true)
-              .dataExpr(null)
-              .userSuppliedPlaceholderName(node.getUserSuppliedPhName())
-              .escapingDirectiveNames(node.getEscapingDirectiveNames())
-              // Use the exploding reporter since we know it won't report any errors
-              .build(SoyParsingContext.exploding());
-    }
+    CallNode newCallNode = node.withDataAll();
     node.getParent().replaceChild(node, newCallNode);
   }
 

@@ -20,7 +20,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprparse.SoyParsingContext;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
@@ -59,16 +58,9 @@ final class Rewriter {
   /** Maps print directive names to the content kinds they consume and produce. */
   private final Map<String, ContentKind> sanitizedContentOperators;
 
-  /** For reporting errors. */
-  private final ErrorReporter errorReporter;
-
-  Rewriter(
-      Inferences inferences,
-      Map<String, ContentKind> sanitizedContentOperators,
-      ErrorReporter errorReporter) {
+  Rewriter(Inferences inferences, Map<String, ContentKind> sanitizedContentOperators) {
     this.inferences = inferences;
     this.sanitizedContentOperators = sanitizedContentOperators;
-    this.errorReporter = errorReporter;
   }
 
   /** @return Derived templates that should be added to the parse tree. */
@@ -166,53 +158,40 @@ final class Rewriter {
      * <p>TODO: Modify contextual autoescape to deal with delegates appropriately.
      */
     @Override
-    protected void visitCallNode(CallNode callNode) {
-      // We cannot easily access the original context.  However, because everything has already been
-      // parsed, that should be fine.  I don't think this can fail at all, but whatever.
-      SoyParsingContext context = SoyParsingContext.empty(errorReporter, "fake.namespace");
-
-      String derivedCalleeName = inferences.getDerivedCalleeNameForCall(callNode);
+    protected void visitCallNode(CallNode node) {
+      String derivedCalleeName = inferences.getDerivedCalleeNameForCall(node);
       if (derivedCalleeName != null) {
+
         // Creates a new call node, but with a different target name.
-        // TODO: Create a CallNode.withNewName() convenience method.
-        CallNode newCallNode;
-        if (callNode instanceof CallBasicNode) {
-          // For simplicity, use the full callee name as the source callee name.
-          newCallNode =
-              new CallBasicNode.Builder(callNode.getId(), callNode.getSourceLocation())
-                  .calleeName(derivedCalleeName)
-                  .sourceCalleeName(derivedCalleeName)
-                  .isPassingAllData(callNode.isPassingAllData())
-                  .dataExpr(callNode.getDataExpr())
-                  .userSuppliedPlaceholderName(callNode.getUserSuppliedPhName())
-                  .escapingDirectiveNames(callNode.getEscapingDirectiveNames())
-                  .build(context);
+        if (node instanceof CallBasicNode) {
+          CallBasicNode basicCall = (CallBasicNode) node;
+          CallBasicNode newCall = basicCall.withNewName(derivedCalleeName);
+
+          if (!newCall.getCalleeName().equals(basicCall.getCalleeName())) {
+            moveChildrenTo(basicCall, newCall);
+            replaceChild(basicCall, newCall);
+          }
+
+          // Ensure we visit the new node instead of the old one.
+          node = newCall;
         } else {
-          CallDelegateNode callNodeCast = (CallDelegateNode) callNode;
-          newCallNode =
-              new CallDelegateNode.Builder(callNode.getId(), callNode.getSourceLocation())
-                  .delCalleeName(derivedCalleeName)
-                  .delCalleeVariantExpr(callNodeCast.getDelCalleeVariantExpr())
-                  .allowEmptyDefault(callNodeCast.allowsEmptyDefault())
-                  .isPassingAllData(callNode.isPassingAllData())
-                  .dataExpr(callNode.getDataExpr())
-                  .userSuppliedPlaceholderName(callNode.getUserSuppliedPhName())
-                  .escapingDirectiveNames(callNode.getEscapingDirectiveNames())
-                  .build(context);
+          CallDelegateNode delCall = (CallDelegateNode) node;
+          CallDelegateNode newCall = delCall.withNewName(derivedCalleeName);
+
+          if (!newCall.getDelCalleeName().equals(delCall.getDelCalleeName())) {
+            moveChildrenTo(delCall, newCall);
+            replaceChild(delCall, newCall);
+          }
+
+          // Ensure we visit the new node instead of the old one.
+          node = newCall;
         }
-        // TODO(user): This should not be using getCommandText().
-        if (!callNode.getCommandText().equals(newCallNode.getCommandText())) {
-          moveChildrenTo(callNode, newCallNode);
-          replaceChild(callNode, newCallNode);
-        }
-        // Ensure we visit the new node instead of the old one.
-        callNode = newCallNode;
       }
 
       // For strict templates, set any necessary escaping directives.
-      callNode.setEscapingDirectiveNames(getDirectiveNamesForNode(callNode));
+      node.setEscapingDirectiveNames(getDirectiveNamesForNode(node));
 
-      visitChildrenAllowingConcurrentModification(callNode);
+      visitChildrenAllowingConcurrentModification(node);
     }
 
     /** Recurses to children. */

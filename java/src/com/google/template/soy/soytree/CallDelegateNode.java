@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
+import com.google.template.soy.base.internal.TriState;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.SoyErrorKind;
@@ -66,20 +67,19 @@ public final class CallDelegateNode extends CallNode {
 
     public final String delCalleeName;
     @Nullable public final ExprRootNode delCalleeVariantExpr;
-    public final Boolean allowsEmptyDefault;
+    public final TriState allowEmptyDefault;
 
     public CommandTextInfo(
-        String commandText,
         String delCalleeName,
         @Nullable ExprRootNode delCalleeVariantExpr,
-        Boolean allowsEmptyDefault,
+        TriState allowEmptyDefault,
         boolean isPassingAllData,
         @Nullable ExprRootNode dataExpr,
         @Nullable String userSuppliedPlaceholderName) {
-      super(commandText, isPassingAllData, dataExpr, userSuppliedPlaceholderName);
+      super(isPassingAllData, dataExpr, userSuppliedPlaceholderName);
       this.delCalleeName = delCalleeName;
       this.delCalleeVariantExpr = delCalleeVariantExpr;
-      this.allowsEmptyDefault = allowsEmptyDefault;
+      this.allowEmptyDefault = allowEmptyDefault;
     }
   }
 
@@ -102,10 +102,12 @@ public final class CallDelegateNode extends CallNode {
   @Nullable private final ExprRootNode delCalleeVariantExpr;
 
   /**
-   * User-specified value of whether this delegate call defaults to empty string if there's no
-   * active implementation, or null if the attribute is not specified.
+   * User-specified attribute to determine whether this delegate call defaults to empty string if
+   * there is no active implementation. Default is false.
+   *
+   * <p>TriState.UNSET if attribute is not specified.
    */
-  private Boolean allowsEmptyDefault;
+  private final TriState allowEmptyDefault;
 
   /**
    * The list of params that need to be type checked when this node is run on a per delegate basis.
@@ -130,7 +132,7 @@ public final class CallDelegateNode extends CallNode {
     private final int id;
     private final SourceLocation sourceLocation;
 
-    private boolean allowEmptyDefault;
+    private TriState allowEmptyDefault = TriState.UNSET;
     private ImmutableList<String> escapingDirectiveNames = ImmutableList.of();
     private boolean isPassingAllData = false;
     @Nullable private ExprRootNode dataExpr = null;
@@ -143,11 +145,6 @@ public final class CallDelegateNode extends CallNode {
     public Builder(int id, SourceLocation sourceLocation) {
       this.id = id;
       this.sourceLocation = sourceLocation;
-    }
-
-    public Builder allowEmptyDefault(boolean allowEmptyDefault) {
-      this.allowEmptyDefault = allowEmptyDefault;
-      return this;
     }
 
     @Override
@@ -263,14 +260,15 @@ public final class CallDelegateNode extends CallNode {
       }
 
       String allowemptydefaultAttr = attributes.get("allowemptydefault");
-      Boolean allowsEmptyDefault =
-          (allowemptydefaultAttr == null) ? null : allowemptydefaultAttr.equals("true");
+      TriState allowEmptyDefault =
+          (allowemptydefaultAttr == null)
+              ? TriState.UNSET
+              : TriState.from(allowemptydefaultAttr.equals("true"));
 
       return new CommandTextInfo(
-          commandText,
           delCalleeName,
           delCalleeVariantExpr,
-          allowsEmptyDefault,
+          allowEmptyDefault,
           isPassingAllData,
           dataExpr,
           userSuppliedPlaceholderName);
@@ -279,19 +277,8 @@ public final class CallDelegateNode extends CallNode {
     private CommandTextInfo buildCommandText() {
 
       Preconditions.checkArgument(BaseUtils.isDottedIdentifier(delCalleeName));
-      String commandText = "";
-      commandText += delCalleeName;
-      if (isPassingAllData) {
-        commandText += " data=\"all\"";
-      } else if (dataExpr != null) {
-        commandText += " data=\"" + dataExpr.toSourceString() + '"';
-      }
-      if (userSuppliedPlaceholderName != null) {
-        commandText += " phname=\"" + userSuppliedPlaceholderName + '"';
-      }
 
       return new CommandTextInfo(
-          commandText,
           delCalleeName,
           delCalleeVariantExpr,
           allowEmptyDefault,
@@ -309,7 +296,7 @@ public final class CallDelegateNode extends CallNode {
     super(id, sourceLocation, "delcall", commandTextInfo, escapingDirectiveNames);
     this.delCalleeName = commandTextInfo.delCalleeName;
     this.delCalleeVariantExpr = commandTextInfo.delCalleeVariantExpr;
-    this.allowsEmptyDefault = commandTextInfo.allowsEmptyDefault;
+    this.allowEmptyDefault = commandTextInfo.allowEmptyDefault;
   }
 
   /**
@@ -317,14 +304,43 @@ public final class CallDelegateNode extends CallNode {
    *
    * @param orig The node to copy.
    */
-  @SuppressWarnings("ConstantConditions") // for IntelliJ
   private CallDelegateNode(CallDelegateNode orig, CopyState copyState) {
     super(orig, copyState);
     this.delCalleeName = orig.delCalleeName;
     this.delCalleeVariantExpr =
         (orig.delCalleeVariantExpr != null) ? orig.delCalleeVariantExpr.copy(copyState) : null;
-    this.allowsEmptyDefault = orig.allowsEmptyDefault;
+    this.allowEmptyDefault = orig.allowEmptyDefault;
     this.paramsToRuntimeCheckByDelegate = orig.paramsToRuntimeCheckByDelegate;
+  }
+
+  @Override
+  public CallDelegateNode withNewName(String newName) {
+    return new CallDelegateNode(
+        getId(),
+        getSourceLocation(),
+        new CommandTextInfo(
+            newName,
+            getDelCalleeVariantExpr(),
+            allowEmptyDefault,
+            isPassingAllData(),
+            getDataExpr(),
+            getUserSuppliedPhName()),
+        getEscapingDirectiveNames());
+  }
+
+  @Override
+  public CallDelegateNode withDataAll() {
+    return new CallDelegateNode(
+        getId(),
+        getSourceLocation(),
+        new CommandTextInfo(
+            getDelCalleeName(),
+            getDelCalleeVariantExpr(),
+            allowEmptyDefault,
+            true,
+            null,
+            getUserSuppliedPhName()),
+        getEscapingDirectiveNames());
   }
 
   @Override
@@ -365,12 +381,30 @@ public final class CallDelegateNode extends CallNode {
   }
 
   /** Returns whether this delegate call defaults to empty string if there's no active impl. */
-  public boolean allowsEmptyDefault() {
+  public boolean allowEmptyDefault() {
     // Default to 'false' if not specified.
-    if (allowsEmptyDefault == null) {
-      return false;
+    return allowEmptyDefault == TriState.ENABLED;
+  }
+
+  @Override
+  public String getCommandText() {
+    String commandText = delCalleeName;
+
+    if (isPassingAllData()) {
+      commandText += " data=\"all\"";
+    } else if (getDataExpr() != null) {
+      commandText += " data=\"" + getDataExpr().toSourceString() + '"';
     }
-    return allowsEmptyDefault;
+
+    if (getUserSuppliedPhName() != null) {
+      commandText += " phname=\"" + getUserSuppliedPhName() + '"';
+    }
+
+    if (allowEmptyDefault.isSet()) {
+      commandText += " allowemptydefault=\"" + (allowEmptyDefault == TriState.ENABLED) + '"';
+    }
+
+    return commandText;
   }
 
   @Override

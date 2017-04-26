@@ -25,4 +25,8 @@ public enum TriState {
   public static TriState from(boolean b) {
     return b ? ENABLED : DISABLED;
   }
+
+  public boolean isSet() {
+    return this != UNSET;
+  }
 }

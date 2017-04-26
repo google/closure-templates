@@ -168,7 +168,7 @@ public class GenCallCodeUtils {
           SOY_GET_DELEGATE_FN.call(
               calleeId,
               variant,
-              callDelegateNode.allowsEmptyDefault() ? LITERAL_TRUE : LITERAL_FALSE);
+              callDelegateNode.allowEmptyDefault() ? LITERAL_TRUE : LITERAL_FALSE);
     }
 
     // Generate the data object to pass to callee

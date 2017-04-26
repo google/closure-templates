@@ -547,7 +547,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     if (callee != null) {
       visitCallNodeHelper(node, callee);
 
-    } else if (node.allowsEmptyDefault()) {
+    } else if (node.allowEmptyDefault()) {
       return; // no active delegate implementation, so the call output is empty string
 
     } else {

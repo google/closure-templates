@@ -715,7 +715,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
                 MethodRef.RENDER_CONTEXT_GET_DELTEMPLATE,
                 constant(node.getDelCalleeName()),
                 variantExpr,
-                constant(node.allowsEmptyDefault()),
+                constant(node.allowEmptyDefault()),
                 prepareParamsHelper(node, reattachPoint),
                 parameterLookup.getIjRecord());
     if (!node.getEscapingDirectiveNames().isEmpty()) {

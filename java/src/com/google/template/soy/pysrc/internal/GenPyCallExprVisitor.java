@@ -170,7 +170,7 @@ final class GenPyCallExprVisitor extends AbstractReturningSoyNodeVisitor<PyExpr>
         new PyFunctionExprBuilder("runtime.get_delegate_fn")
             .addArg(node.getDelCalleeName())
             .addArg(variantPyExpr)
-            .addArg(node.allowsEmptyDefault())
+            .addArg(node.allowEmptyDefault())
             .build();
 
     String callExprText = calleeExprText + "(" + genObjToPass(node) + ", ijData)";
