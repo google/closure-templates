@@ -19,6 +19,7 @@ package com.google.template.soy.soytree;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.MixinParentNode;
+import com.google.template.soy.basetree.Node;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import java.util.List;
 
@@ -74,7 +75,7 @@ abstract class AbstractParentCommandNode<N extends SoyNode> extends AbstractComm
   }
 
   @Override
-  public int getChildIndex(N child) {
+  public int getChildIndex(Node child) {
     return parentMixin.getChildIndex(child);
   }
 

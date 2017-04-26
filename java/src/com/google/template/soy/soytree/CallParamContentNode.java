@@ -19,6 +19,7 @@ package com.google.template.soy.soytree;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.MixinParentNode;
+import com.google.template.soy.basetree.Node;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.error.ErrorReporter;
@@ -128,7 +129,7 @@ public final class CallParamContentNode extends CallParamNode implements RenderU
   }
 
   @Override
-  public int getChildIndex(StandaloneNode child) {
+  public int getChildIndex(Node child) {
     return parentMixin.getChildIndex(child);
   }
 

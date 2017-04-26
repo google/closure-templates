@@ -19,6 +19,7 @@ package com.google.template.soy.exprtree;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.MixinParentNode;
+import com.google.template.soy.basetree.Node;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.types.SoyType;
 import java.util.List;
@@ -81,7 +82,7 @@ public abstract class AbstractParentExprNode extends AbstractExprNode implements
   }
 
   @Override
-  public int getChildIndex(ExprNode child) {
+  public int getChildIndex(Node child) {
     return parentMixin.getChildIndex(child);
   }
 

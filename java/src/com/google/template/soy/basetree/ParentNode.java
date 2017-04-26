@@ -52,7 +52,7 @@ public interface ParentNode<N extends Node> extends Node {
    * @param child The child to find the index of.
    * @return The index of the given child, or -1 if the given child is not a child of this node.
    */
-  public int getChildIndex(N child);
+  public int getChildIndex(Node child);
 
   /**
    * Gets the list of children.
