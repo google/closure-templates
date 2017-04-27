@@ -92,6 +92,8 @@ abstract class MethodRef {
 
   static final MethodRef EQUALS = create(Object.class, "equals", Object.class);
 
+  static final MethodRef STRING_COMPARE_TO = create(String.class, "compareTo", String.class);
+
   static final MethodRef FLOAT_DATA_FOR_VALUE =
       create(FloatData.class, "forValue", double.class).asNonNullable();
 

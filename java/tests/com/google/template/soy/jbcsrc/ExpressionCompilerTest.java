@@ -298,9 +298,40 @@ public class ExpressionCompilerTest {
     variables.put("oneFloat", untypedBoxedSoyExpression(SoyExpression.forFloat(constant(1.0))));
     variables.put("twoInt", untypedBoxedSoyExpression(SoyExpression.forInt(constant(2L))));
     variables.put("twoFloat", untypedBoxedSoyExpression(SoyExpression.forFloat(constant(2.0))));
+    variables.put("oneStr", untypedBoxedSoyExpression(SoyExpression.forString(constant("kill"))));
+    variables.put("twoStr", untypedBoxedSoyExpression(SoyExpression.forString(constant("zoo"))));
 
     for (String one : ImmutableList.of("1", "1.0", "$oneInt", "$oneFloat")) {
       for (String two : ImmutableList.of("2", "2.0", "$twoInt", "$twoFloat")) {
+        assertExpression(one + " < " + two).evaluatesTo(true);
+        assertExpression(one + " < " + one).evaluatesTo(false);
+        assertExpression(two + " < " + one).evaluatesTo(false);
+
+        assertExpression(one + " <= " + two).evaluatesTo(true);
+        assertExpression(one + " <= " + one).evaluatesTo(true);
+        assertExpression(two + " <= " + one).evaluatesTo(false);
+
+        assertExpression(one + " > " + two).evaluatesTo(false);
+        assertExpression(one + " > " + one).evaluatesTo(false);
+        assertExpression(two + " > " + one).evaluatesTo(true);
+
+        assertExpression(one + " >= " + two).evaluatesTo(false);
+        assertExpression(one + " >= " + one).evaluatesTo(true);
+        assertExpression(two + " >= " + one).evaluatesTo(true);
+
+        assertExpression(one + " == " + two).evaluatesTo(false);
+        assertExpression(one + " == " + one).evaluatesTo(true);
+        assertExpression(two + " == " + one).evaluatesTo(false);
+
+        assertExpression(one + " != " + two).evaluatesTo(true);
+        assertExpression(one + " != " + one).evaluatesTo(false);
+        assertExpression(two + " != " + one).evaluatesTo(true);
+      }
+    }
+
+    // Unit tests for string comparisons.
+    for (String one : ImmutableList.of("'bar'", "'hello'", "$oneStr")) {
+      for (String two : ImmutableList.of("'too'", "'world'", "$twoStr")) {
         assertExpression(one + " < " + two).evaluatesTo(true);
         assertExpression(one + " < " + one).evaluatesTo(false);
         assertExpression(two + " < " + one).evaluatesTo(false);

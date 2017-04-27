@@ -361,6 +361,9 @@ final class ExpressionCompiler {
         return SoyExpression.forBool(
             compare(Opcodes.IFLT, left.coerceToDouble(), right.coerceToDouble()));
       }
+      if (left.assignableToNullableString() && right.assignableToNullableString()) {
+        return createStringComparisonOperator(Opcodes.IFLT, left, right);
+      }
       return SoyExpression.forBool(MethodRef.RUNTIME_LESS_THAN.invoke(left.box(), right.box()));
     }
 
@@ -375,6 +378,9 @@ final class ExpressionCompiler {
       if (left.assignableToNullableNumber() && right.assignableToNullableNumber()) {
         return SoyExpression.forBool(
             compare(Opcodes.IFGT, left.coerceToDouble(), right.coerceToDouble()));
+      }
+      if (left.assignableToNullableString() && right.assignableToNullableString()) {
+        return createStringComparisonOperator(Opcodes.IFGT, left, right);
       }
       // Note the argument reversal
       return SoyExpression.forBool(MethodRef.RUNTIME_LESS_THAN.invoke(right.box(), left.box()));
@@ -392,6 +398,9 @@ final class ExpressionCompiler {
         return SoyExpression.forBool(
             compare(Opcodes.IFLE, left.coerceToDouble(), right.coerceToDouble()));
       }
+      if (left.assignableToNullableString() && right.assignableToNullableString()) {
+        return createStringComparisonOperator(Opcodes.IFLE, left, right);
+      }
       return SoyExpression.forBool(
           MethodRef.RUNTIME_LESS_THAN_OR_EQUAL.invoke(left.box(), right.box()));
     }
@@ -408,9 +417,21 @@ final class ExpressionCompiler {
         return SoyExpression.forBool(
             compare(Opcodes.IFGE, left.coerceToDouble(), right.coerceToDouble()));
       }
+      if (left.assignableToNullableString() && right.assignableToNullableString()) {
+        return createStringComparisonOperator(Opcodes.IFGE, left, right);
+      }
       // Note the reversal of the arguments.
       return SoyExpression.forBool(
           MethodRef.RUNTIME_LESS_THAN_OR_EQUAL.invoke(right.box(), left.box()));
+    }
+
+    private SoyExpression createStringComparisonOperator(
+        int operator, SoyExpression left, SoyExpression right) {
+      return SoyExpression.forBool(
+          compare(
+              operator,
+              left.coerceToString().invoke(MethodRef.STRING_COMPARE_TO, right.coerceToString()),
+              BytecodeUtils.constant(0)));
     }
 
     // Binary operators

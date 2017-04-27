@@ -851,8 +851,9 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
      * <p>In particular,
      *
      * <ul>
-     *   <li>Comparing anything with UNKNOWN, ANY, and NULL is legitimate.
-     *   <li>Comparing primitive types is legitimate.
+     *   <li>Comparing anything with UNKNOWN and ANY is legitimate.
+     *   <li>Comparing numeric types is legitimate.
+     *   <li>Comparing string types is legtimate.
      *   <li>All other comparisons are invalid. It causes inconsistent behaviors in different
      *       backends.
      * </ul>
@@ -869,8 +870,8 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
      *   <li>For string-string comparisons, JS compares them alphabetically.
      * </ul>
      *
-     * TODO(b/37359174): consider whether we should support these comparisons in other backends, or
-     * forbid these comparisons in all backends.
+     * TODO(b/37359174): Should we allow comparing NULL and numbers, and disallow comparing NULL and
+     * strings? NULL is essentially 0 in JS backend.
      */
     private boolean checkTypeForComparisonOp(SoyType left, SoyType right) {
       if (SoyTypes.isDefiniteComparable(left) || SoyTypes.isDefiniteComparable(right)) {
@@ -878,7 +879,11 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
       }
       left = SoyTypes.removeNull(left);
       right = SoyTypes.removeNull(right);
-      return SoyTypes.isDefinitePrimitive(left) && SoyTypes.isDefinitePrimitive(right);
+      if (SoyTypes.isNumericPrimitive(left) && SoyTypes.isNumericPrimitive(right)) {
+        return true;
+      }
+      return left.getKind().isKnownStringOrSanitizedContent()
+          && right.getKind().isKnownStringOrSanitizedContent();
     }
 
     /**

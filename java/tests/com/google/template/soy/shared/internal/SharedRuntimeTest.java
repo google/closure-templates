@@ -88,6 +88,12 @@ public class SharedRuntimeTest {
 
     assertFalse(lessThan(FloatData.forValue(1), FloatData.forValue(1)));
     assertTrue(lessThan(FloatData.forValue(1), FloatData.forValue(2)));
+
+    assertFalse(lessThan(StringData.forValue("World"), StringData.forValue("Hello")));
+    assertTrue(lessThan(StringData.forValue("Hello"), StringData.forValue("World")));
+
+    assertFalse(lessThan(StringData.forValue("foobar"), StringData.forValue("foo")));
+    assertTrue(lessThan(StringData.forValue("foo"), StringData.forValue("foobar")));
   }
 
   @Test
@@ -99,5 +105,12 @@ public class SharedRuntimeTest {
     assertFalse(lessThanOrEqual(FloatData.forValue(2), FloatData.forValue(1)));
     assertTrue(lessThanOrEqual(FloatData.forValue(1), FloatData.forValue(1)));
     assertTrue(lessThanOrEqual(FloatData.forValue(1), FloatData.forValue(2)));
+
+    assertFalse(lessThanOrEqual(StringData.forValue("foobar"), StringData.forValue("foo")));
+    assertTrue(lessThanOrEqual(StringData.forValue("foo"), StringData.forValue("foobar")));
+    assertTrue(lessThanOrEqual(StringData.forValue("foo"), StringData.forValue("foo")));
+
+    assertTrue(lessThanOrEqual(StringData.forValue(""), StringData.forValue("!?_")));
+    assertTrue(lessThanOrEqual(StringData.forValue(""), StringData.forValue("")));
   }
 }

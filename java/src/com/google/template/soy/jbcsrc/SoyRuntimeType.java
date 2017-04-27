@@ -233,6 +233,12 @@ abstract class SoyRuntimeType {
     return assignableToNullableType(SoyTypes.NUMBER_TYPE);
   }
 
+  boolean assignableToNullableString() {
+    return soyType.getKind().isKnownStringOrSanitizedContent()
+        || (soyType.getKind() == Kind.UNION
+            && SoyTypes.removeNull(soyType).getKind().isKnownStringOrSanitizedContent());
+  }
+
   private boolean assignableToNullableType(SoyType type) {
     return type.isAssignableFrom(soyType)
         || (soyType.getKind() == Kind.UNION && type.isAssignableFrom(SoyTypes.removeNull(soyType)));

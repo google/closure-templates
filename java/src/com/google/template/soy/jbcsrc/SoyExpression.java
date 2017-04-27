@@ -199,6 +199,10 @@ class SoyExpression extends Expression {
     return soyRuntimeType.assignableToNullableNumber();
   }
 
+  boolean assignableToNullableString() {
+    return soyRuntimeType.assignableToNullableString();
+  }
+
   boolean isBoxed() {
     return soyRuntimeType.isBoxed();
   }
