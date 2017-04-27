@@ -88,7 +88,10 @@ public class IncrementalDomSrcMain {
    * optional bundle of translated messages.
    *
    * @param soyTree The Soy parse tree to generate JS source code for.
+   * @param registry The template registry that contains all the template information.
    * @param options The compilation options relevant to this backend.
+   * @param isOptimizerEnabled Whether we want to run optimizer in this backend.
+   * @param errorReporter The Soy error reporter that collects errors during code generation.
    * @return A list of strings where each string represents the JS source code that belongs in one
    *     JS file. The generated JS files correspond one-to-one to the original Soy source files.
    * @throws SoySyntaxException If a syntax error is found.
@@ -97,6 +100,7 @@ public class IncrementalDomSrcMain {
       SoyFileSetNode soyTree,
       TemplateRegistry registry,
       SoyIncrementalDomSrcOptions options,
+      boolean isOptimizerEnabled,
       ErrorReporter errorReporter)
       throws SoySyntaxException {
 
@@ -113,7 +117,9 @@ public class IncrementalDomSrcMain {
 
       // Do the code generation.
       optimizeBidiCodeGenVisitorProvider.get().exec(soyTree);
-      simplifyVisitor.simplify(soyTree, registry);
+      if (isOptimizerEnabled) {
+        simplifyVisitor.simplify(soyTree, registry);
+      }
 
       new HtmlTransformVisitor(errorReporter).exec(soyTree);
 
@@ -131,9 +137,12 @@ public class IncrementalDomSrcMain {
    * optional bundle of translated messages, and information on where to put the output files.
    *
    * @param soyTree The Soy parse tree to generate JS source code for.
+   * @param templateRegistry The template registry that contains all the template information.
    * @param jsSrcOptions The compilation options relevant to this backend.
    * @param outputPathFormat The format string defining how to build the output file path
    *     corresponding to an input file path.
+   * @param isOptimizerEnabled Whether we want to run optimizer in this backend.
+   * @param errorReporter The Soy error reporter that collects errors during code generation.
    * @throws SoySyntaxException If a syntax error is found.
    * @throws IOException If there is an error in opening/writing an output JS file.
    */
@@ -142,10 +151,12 @@ public class IncrementalDomSrcMain {
       TemplateRegistry templateRegistry,
       SoyIncrementalDomSrcOptions jsSrcOptions,
       String outputPathFormat,
+      boolean isOptimizerEnabled,
       ErrorReporter errorReporter)
       throws IOException {
 
-    List<String> jsFileContents = genJsSrc(soyTree, templateRegistry, jsSrcOptions, errorReporter);
+    List<String> jsFileContents =
+        genJsSrc(soyTree, templateRegistry, jsSrcOptions, isOptimizerEnabled, errorReporter);
 
     ImmutableList<SoyFileNode> srcsToCompile =
         ImmutableList.copyOf(

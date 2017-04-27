@@ -179,6 +179,7 @@ public final class SoyFileSet {
     private SoyGeneralOptions lazyGeneralOptions;
     /** Type registry for this fileset only. */
     private SoyTypeRegistry localTypeRegistry;
+
     private final CoreDependencies coreDependencies;
 
     /** The SoyProtoTypeProvider builder that will be built for local type registry. */
@@ -454,6 +455,18 @@ public final class SoyFileSet {
      */
     public Builder setExperimentalFeatures(List<String> experimentalFeatures) {
       getGeneralOptions().setExperimentalFeatures(experimentalFeatures);
+      return this;
+    }
+
+    /**
+     * Disables optimizer. The optimizer tries to simplify the Soy AST by evaluating constant
+     * expressions. It generally improves performance and should only be disabled in integration
+     * tests.
+     *
+     * @return This builder.
+     */
+    Builder disableOptimizer() {
+      getGeneralOptions().disableOptimizer();
       return this;
     }
 
@@ -995,7 +1008,15 @@ public final class SoyFileSet {
     optimize(registry, fileSet);
     throwIfErrorsPresent();
     List<String> generatedSrcs =
-        jsSrcMainProvider.get().genJsSrc(fileSet, registry, jsSrcOptions, msgBundle, errorReporter);
+        jsSrcMainProvider
+            .get()
+            .genJsSrc(
+                fileSet,
+                registry,
+                jsSrcOptions,
+                msgBundle,
+                generalOptions.isOptimizerEnabled(),
+                errorReporter);
     throwIfErrorsPresent();
     return generatedSrcs;
   }
@@ -1048,6 +1069,7 @@ public final class SoyFileSet {
               null,
               outputPathFormat,
               inputFilePathPrefix,
+              generalOptions.isOptimizerEnabled(),
               errorReporter);
 
     } else {
@@ -1081,6 +1103,7 @@ public final class SoyFileSet {
                 msgBundle,
                 outputPathFormat,
                 inputFilePathPrefix,
+                generalOptions.isOptimizerEnabled(),
                 errorReporter);
       }
     }
@@ -1102,7 +1125,12 @@ public final class SoyFileSet {
     List<String> generatedSrcs =
         incrementalDomSrcMainProvider
             .get()
-            .genJsSrc(result.fileSet(), result.registry(), jsSrcOptions, errorReporter);
+            .genJsSrc(
+                result.fileSet(),
+                result.registry(),
+                jsSrcOptions,
+                generalOptions.isOptimizerEnabled(),
+                errorReporter);
     throwIfErrorsPresent();
     return generatedSrcs;
   }
@@ -1126,7 +1154,12 @@ public final class SoyFileSet {
     incrementalDomSrcMainProvider
         .get()
         .genJsFiles(
-            result.fileSet(), result.registry(), jsSrcOptions, outputPathFormat, errorReporter);
+            result.fileSet(),
+            result.registry(),
+            jsSrcOptions,
+            outputPathFormat,
+            generalOptions.isOptimizerEnabled(),
+            errorReporter);
 
     throwIfErrorsPresent();
   }
@@ -1146,8 +1179,9 @@ public final class SoyFileSet {
     throwIfErrorsPresent();
     SoyFileSetNode soyTree = result.fileSet();
     new ChangeCallsToPassAllDataVisitor().exec(soyTree);
-    simplifyVisitor.simplify(soyTree, result.registry());
-
+    if (generalOptions.isOptimizerEnabled()) {
+      simplifyVisitor.simplify(soyTree, result.registry());
+    }
     throwIfErrorsPresent();
     return result;
   }
@@ -1180,7 +1214,13 @@ public final class SoyFileSet {
     pySrcMainProvider
         .get()
         .genPyFiles(
-            soyTree, registry, pySrcOptions, outputPathFormat, inputFilePathPrefix, errorReporter);
+            soyTree,
+            registry,
+            pySrcOptions,
+            outputPathFormat,
+            inputFilePathPrefix,
+            generalOptions.isOptimizerEnabled(),
+            errorReporter);
 
     throwIfErrorsPresent();
   }
@@ -1243,7 +1283,9 @@ public final class SoyFileSet {
   private void optimize(TemplateRegistry registry, SoyFileSetNode soyTree) {
     // Attempt to simplify the tree.
     new ChangeCallsToPassAllDataVisitor().exec(soyTree);
-    simplifyVisitor.simplify(soyTree, registry);
+    if (generalOptions.isOptimizerEnabled()) {
+      simplifyVisitor.simplify(soyTree, registry);
+    }
   }
 
   private void doContextualEscaping(SoyFileSetNode soyTree, TemplateRegistry registry) {

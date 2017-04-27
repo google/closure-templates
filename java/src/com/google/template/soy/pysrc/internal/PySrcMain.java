@@ -82,8 +82,11 @@ public final class PySrcMain {
    * Generates Python source code given a Soy parse tree and an options object.
    *
    * @param soyTree The Soy parse tree to generate Python source code for.
+   * @param templateRegistry The template registry that contains all the template information.
    * @param pySrcOptions The compilation options relevant to this backend.
    * @param currentManifest The namespace manifest for current sources.
+   * @param isOptimizerEnabled Whether we want to run optimizer in this backend.
+   * @param errorReporter The Soy error reporter that collects errors during code generation.
    * @return A list of strings where each string represents the Python source code that belongs in
    *     one Python file. The generated Python files correspond one-to-one to the original Soy
    *     source files.
@@ -94,6 +97,7 @@ public final class PySrcMain {
       TemplateRegistry templateRegistry,
       SoyPySrcOptions pySrcOptions,
       ImmutableMap<String, String> currentManifest,
+      boolean isOptimizerEnabled,
       ErrorReporter errorReporter)
       throws SoySyntaxException {
 
@@ -106,8 +110,9 @@ public final class PySrcMain {
       BidiGlobalDir bidiGlobalDir =
           SoyBidiUtils.decodeBidiGlobalDirFromPyOptions(pySrcOptions.getBidiIsRtlFn());
       ApiCallScopeUtils.seedSharedParams(inScope, null, bidiGlobalDir);
-
-      simplifyVisitor.simplify(soyTree, templateRegistry);
+      if (isOptimizerEnabled) {
+        simplifyVisitor.simplify(soyTree, templateRegistry);
+      }
       return genPyCodeVisitorProvider.get().gen(soyTree, errorReporter);
     }
   }
@@ -117,10 +122,13 @@ public final class PySrcMain {
    * where to put the output files.
    *
    * @param soyTree The Soy parse tree to generate Python source code for.
+   * @param templateRegistry The template registry that contains all the template information.
    * @param pySrcOptions The compilation options relevant to this backend.
    * @param outputPathFormat The format string defining how to build the output file path
    *     corresponding to an input file path.
    * @param inputPathsPrefix The input path prefix, or empty string if none.
+   * @param isOptimizerEnabled Whether we want to run optimizer in this backend.
+   * @param errorReporter The Soy error reporter that collects errors during code generation.
    * @throws SoySyntaxException If a syntax error is found.
    * @throws IOException If there is an error in opening/writing an output Python file.
    */
@@ -130,6 +138,7 @@ public final class PySrcMain {
       SoyPySrcOptions pySrcOptions,
       String outputPathFormat,
       String inputPathsPrefix,
+      boolean isOptimizerEnabled,
       ErrorReporter errorReporter)
       throws SoySyntaxException, IOException {
 
@@ -148,7 +157,8 @@ public final class PySrcMain {
 
     // Generate the Python source.
     List<String> pyFileContents =
-        genPySrc(soyTree, templateRegistry, pySrcOptions, manifest, errorReporter);
+        genPySrc(
+            soyTree, templateRegistry, pySrcOptions, manifest, isOptimizerEnabled, errorReporter);
 
     if (srcsToCompile.size() != pyFileContents.size()) {
       throw new AssertionError(

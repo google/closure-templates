@@ -137,6 +137,16 @@ abstract class AbstractSoyCompiler {
   )
   private static final List<String> experimentalFeatures = new ArrayList<>();
 
+  @Option(
+    name = "--disableOptimizerForTestingUseOnly",
+    usage =
+        "Disable optimizer in Soy compiler. Optimzer tries to simplify the Soy AST and improves "
+            + "the performance in general. "
+            + "This flag should only be set in integration test environment.",
+    handler = MainClassUtils.BooleanOptionHandler.class
+  )
+  private boolean disableOptimizer = false;
+
   /** The remaining arguments after parsing command-line flags. */
   @Argument private final List<String> arguments = new ArrayList<>();
 
@@ -183,6 +193,10 @@ abstract class AbstractSoyCompiler {
     }
     // Set experimental features that are not generally available.
     sfsBuilder.setExperimentalFeatures(experimentalFeatures);
+    // Disable optimizer if the flag is set to true.
+    if (disableOptimizer) {
+      sfsBuilder.disableOptimizer();
+    }
     compile(sfsBuilder, injector);
   }
 
