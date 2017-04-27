@@ -22,11 +22,11 @@ import com.google.common.truth.FailureStrategy;
 import com.google.common.truth.Subject;
 import com.google.common.truth.SubjectFactory;
 import com.google.common.truth.Truth;
-import com.google.template.soy.ErrorReporterImpl;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.FixedIdGenerator;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
+import com.google.template.soy.error.ErrorReporterImpl;
 import com.google.template.soy.error.PrettyErrorFactory;
 import com.google.template.soy.error.SnippetFormatter;
 import com.google.template.soy.error.SoyError;
@@ -109,12 +109,12 @@ public final class TemplateSubject extends Subject<TemplateSubject, String> {
 
   public void isWellFormed() {
     ErrorReporterImpl errorReporter = doParse();
-    Truth.assertThat(errorReporter.getErrors()).isEmpty();
+    Truth.assertThat(errorReporter.hasErrors()).isFalse();
   }
 
   public void isNotWellFormed() {
     ErrorReporterImpl errorReporter = doParse();
-    Truth.assertThat(errorReporter.getErrors()).isNotEmpty();
+    Truth.assertThat(errorReporter.hasErrors()).isTrue();
   }
 
   private ErrorReporterImpl doParse() {

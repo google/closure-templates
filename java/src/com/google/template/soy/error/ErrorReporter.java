@@ -46,8 +46,9 @@ public interface ErrorReporter {
    */
   boolean errorsSince(Checkpoint checkpoint);
 
-  /**
-   * Opaque token, used by {@link ErrorReporter#checkpoint} and {@link ErrorReporter#errorsSince}.
-   */
+  /** Returns true if any errors have been reported. */
+  boolean hasErrors();
+
+  /** Opaque token, used by {@link #checkpoint} and {@link #errorsSince}. */
   public interface Checkpoint {}
 }

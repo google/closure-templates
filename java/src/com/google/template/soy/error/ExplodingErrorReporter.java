@@ -50,6 +50,11 @@ public final class ExplodingErrorReporter extends AbstractErrorReporter {
   }
 
   @Override
+  public boolean hasErrors() {
+    return false;
+  }
+
+  @Override
   protected int getCurrentNumberOfErrors() {
     return 0;
   }

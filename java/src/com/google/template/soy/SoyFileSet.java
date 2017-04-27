@@ -39,6 +39,7 @@ import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.base.internal.TriState;
 import com.google.template.soy.base.internal.VolatileSoyFileSupplier;
 import com.google.template.soy.basetree.SyntaxVersion;
+import com.google.template.soy.error.ErrorReporterImpl;
 import com.google.template.soy.error.PrettyErrorFactory;
 import com.google.template.soy.error.SnippetFormatter;
 import com.google.template.soy.error.SoyCompilationException;

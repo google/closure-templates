@@ -27,7 +27,6 @@ import static org.junit.Assert.fail;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
-import com.google.template.soy.ErrorReporterImpl;
 import com.google.template.soy.SoyFileSetParser;
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
 import com.google.template.soy.base.internal.SoyFileKind;
@@ -35,6 +34,7 @@ import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.ErrorReporterImpl;
 import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.error.FormattingErrorReporter;
 import com.google.template.soy.error.PrettyErrorFactory;
@@ -1971,7 +1971,7 @@ public final class TemplateParserTest {
                 .build(),
             reporter);
     fileSetParser.parse();
-    assertThat(reporter.getErrors()).isEmpty();
+    assertThat(reporter.hasErrors()).isFalse();
   }
 
   /**

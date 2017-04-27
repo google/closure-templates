@@ -46,6 +46,11 @@ public final class FormattingErrorReporter extends AbstractErrorReporter {
   }
 
   @Override
+  public boolean hasErrors() {
+    return !errorMessages.isEmpty();
+  }
+
+  @Override
   protected int getCurrentNumberOfErrors() {
     return errorMessages.size();
   }

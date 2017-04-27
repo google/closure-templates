@@ -14,13 +14,10 @@
  * limitations under the License.
  */
 
-package com.google.template.soy;
+package com.google.template.soy.error;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.error.AbstractErrorReporter;
-import com.google.template.soy.error.SoyError;
-import com.google.template.soy.error.SoyErrorKind;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,11 +29,6 @@ import java.util.List;
 public final class ErrorReporterImpl extends AbstractErrorReporter {
   private final List<SoyError> errors = new ArrayList<>();
   private final SoyError.Factory errorFactory;
-
-  // TODO(lukes): eliminate this default constructor.  It is currently used by a few expr nodes
-  public ErrorReporterImpl() {
-    this.errorFactory = SoyError.DEFAULT_FACTORY;
-  }
 
   public ErrorReporterImpl(SoyError.Factory defaultFactory) {
     this.errorFactory = defaultFactory;
@@ -52,8 +44,8 @@ public final class ErrorReporterImpl extends AbstractErrorReporter {
     return ImmutableList.copyOf(errors);
   }
 
-  /** Returns true if any errors have been reported. */
-  boolean hasErrors() {
+  @Override
+  public boolean hasErrors() {
     return !errors.isEmpty();
   }
 
