@@ -158,6 +158,7 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
     this.isPcData = isPcData;
   }
 
+  @Nullable
   @Override
   public String getUserSuppliedPhName() {
     return userSuppliedPlaceholderName;

@@ -17,6 +17,7 @@
 package com.google.template.soy.passes;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
@@ -25,7 +26,6 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
-import java.util.Map;
 
 /**
  * Sets the full callee name on each {@link CallBasicNode} whose callee name in the source code
@@ -46,7 +46,7 @@ final class SetFullCalleeNamesVisitor extends AbstractSoyNodeVisitor<Void> {
   private String currNamespace;
 
   /** Alias-to-namespace map of the current file (during the pass). */
-  private Map<String, String> currAliasToNamespaceMap;
+  private ImmutableMap<String, String> currAliasToNamespaceMap;
 
   private final ErrorReporter errorReporter;
 
@@ -75,7 +75,7 @@ final class SetFullCalleeNamesVisitor extends AbstractSoyNodeVisitor<Void> {
   protected void visitCallBasicNode(CallBasicNode node) {
 
     String srcCalleeName = node.getSrcCalleeName();
-    // TODO: If feasible, change existing instances and remove the startsWith(".") part below.
+
     if (srcCalleeName.startsWith(".")) {
       // Case 1: Source callee name is partial.
       node.setCalleeName(currNamespace + srcCalleeName);

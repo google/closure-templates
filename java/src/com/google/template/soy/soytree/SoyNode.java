@@ -335,12 +335,15 @@ public interface SoyNode extends Node {
     /**
      * Gets the user-supplied placeholder name, or null if not supplied or not applicable. Note that
      * this raw name can be any identifier (not necessarily in upper-underscore format).
+     *
      * @return The user-supplied placeholder name, or null if not supplied or not applicable.
      */
+    @Nullable
     String getUserSuppliedPhName();
 
     /**
      * Generates the base placeholder name for this node.
+     *
      * @return The base placeholder name for this node.
      */
     String genBasePhName();
@@ -348,6 +351,7 @@ public interface SoyNode extends Node {
     /**
      * Generates the key object used in comparisons to determine whether two placeholder nodes
      * should be represented by the same placeholder.
+     *
      * @return The key object for determining whether this node and another node should be
      *     represented by the same placeholder.
      */

@@ -145,12 +145,15 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
   }
 
 
-  @Override public String getUserSuppliedPhName() {
+  @Nullable
+  @Override
+  public String getUserSuppliedPhName() {
     return userSuppliedPlaceholderName;
   }
 
 
-  @Override public String genBasePhName() {
+  @Override
+  public String genBasePhName() {
 
     if (userSuppliedPlaceholderName != null) {
       return BaseUtils.convertToUpperUnderscore(userSuppliedPlaceholderName);

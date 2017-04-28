@@ -17,7 +17,7 @@
 package com.google.template.soy.passes;
 
 import com.google.common.base.Preconditions;
-import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallNode;
@@ -71,23 +71,25 @@ public final class ChangeCallsToPassAllDataVisitor extends AbstractSoyNodeVisito
     }
 
     // Check whether the params (i.e. children) are all
-    // (a) of the form {param <key>: $<key> /}, and
-    // (b) referencing regular data (not local vars or injected data).
+    // (a) referencing regular data (not local vars or injected data)
+    // (b) of the form {param <key>: $<key> /}.
     // If not, then stop (i.e. return) because we cannot pass data="all" instead.
     for (CallParamNode param : node.getChildren()) {
       if (!(param instanceof CallParamValueNode)) {
         return;
       }
-      CallParamValueNode valueParam = (CallParamValueNode) param;
-      if (!("$" + valueParam.getKey()).equals(valueParam.getExpr().toSourceString())) {
+
+      CallParamValueNode paramNode = (CallParamValueNode) param;
+      ExprNode valueExpr = paramNode.getExpr().getRoot();
+      if (!(valueExpr instanceof VarRefNode)) {
         return;
       }
-      ExprRootNode valueExprRoot = ((CallParamValueNode) param).getExpr();
-      if (valueExprRoot == null) {
-        return;
-      }
-      VarRefNode valueDataRef = (VarRefNode) valueExprRoot.getRoot();
+
+      VarRefNode valueDataRef = (VarRefNode) valueExpr;
       if (valueDataRef.isLocalVar() || valueDataRef.isInjected()) {
+        return;
+      }
+      if (!paramNode.getKey().equals(valueDataRef.getName())) {
         return;
       }
     }
@@ -95,6 +97,7 @@ public final class ChangeCallsToPassAllDataVisitor extends AbstractSoyNodeVisito
     // Change this call to pass data="all" and remove all params. (We reuse the node id.)
     CallNode newCallNode = node.withDataAll();
     node.getParent().replaceChild(node, newCallNode);
+    // children are not copied over
   }
 
   // -----------------------------------------------------------------------------------------------

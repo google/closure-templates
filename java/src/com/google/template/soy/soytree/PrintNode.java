@@ -112,6 +112,7 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
     return expr;
   }
 
+  @Nullable
   @Override
   public String getUserSuppliedPhName() {
     return userSuppliedPlaceholderName;

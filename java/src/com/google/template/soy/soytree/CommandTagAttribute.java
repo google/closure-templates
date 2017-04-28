@@ -18,6 +18,7 @@ package com.google.template.soy.soytree;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
@@ -29,6 +30,7 @@ import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.exprtree.ExprNode;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
@@ -52,6 +54,8 @@ public final class CommandTagAttribute {
   public static final SoyErrorKind UNSUPPORTED_ATTRIBUTE_KEY_SINGLE =
       SoyErrorKind.of("Unsupported attribute ''{0}'' for ''{1}'' tag, expected ''{2}''.");
 
+  private static final String TO_STRING_FORMAT = "%s=\"%s\"";
+
   /**
    * Identifies duplicate attributes, reports an error for each one, and removes them from the
    * {@link Iterable}.
@@ -70,14 +74,25 @@ public final class CommandTagAttribute {
   }
 
   private final Identifier key;
-  private final String value;
+  // either value or valueExpr must be set, but not both.
+  @Nullable private final String value;
+  @Nullable private final ExprNode valueExpr;
   private final SourceLocation valueLocation;
 
   public CommandTagAttribute(Identifier key, String value, SourceLocation valueLocation) {
     checkArgument(key.type() == Type.SINGLE_IDENT, "expected a single identifier, got: %s", key);
     this.key = checkNotNull(key);
     this.value = checkNotNull(value);
+    this.valueExpr = null;
     this.valueLocation = checkNotNull(valueLocation);
+  }
+
+  public CommandTagAttribute(Identifier key, ExprNode valueExpr) {
+    checkArgument(key.type() == Type.SINGLE_IDENT, "expected a single identifier, got: %s", key);
+    this.key = checkNotNull(key);
+    this.value = null;
+    this.valueExpr = checkNotNull(valueExpr);
+    this.valueLocation = valueExpr.getSourceLocation();
   }
 
   /** Returns the name. It is guaranteed to be a single identifier. */
@@ -85,8 +100,9 @@ public final class CommandTagAttribute {
     return key;
   }
 
+  /** Returns the string value. Do not call on an expression attribute. */
   public String getValue() {
-    return value;
+    return checkNotNull(value);
   }
 
   public SourceLocation getValueLocation() {
@@ -94,6 +110,8 @@ public final class CommandTagAttribute {
   }
 
   boolean valueAsBoolean(ErrorReporter errorReporter, boolean defaultValue) {
+    checkState(valueExpr == null);
+
     if ("true".equals(value)) {
       return true;
     } else if ("false".equals(value)) {
@@ -109,6 +127,8 @@ public final class CommandTagAttribute {
   }
 
   public int valueAsInteger(ErrorReporter errorReporter, int defaultValue) {
+    checkState(valueExpr == null);
+
     try {
       return Integer.parseInt(value);
     } catch (NumberFormatException e) {
@@ -118,6 +138,8 @@ public final class CommandTagAttribute {
   }
 
   TriState valueAsTriState(ErrorReporter errorReporter) {
+    checkState(valueExpr == null);
+
     if ("true".equals(value)) {
       return TriState.ENABLED;
     } else if ("false".equals(value)) {
@@ -133,6 +155,8 @@ public final class CommandTagAttribute {
   }
 
   ImmutableList<String> valueAsRequireCss(ErrorReporter errorReporter) {
+    checkState(valueExpr == null);
+
     String[] namespaces = value.trim().split("\\s*,\\s*");
     boolean hasError = false;
     for (String namespace : namespaces) {
@@ -145,6 +169,8 @@ public final class CommandTagAttribute {
   }
 
   AutoescapeMode valueAsAutoescapeMode(ErrorReporter errorReporter) {
+    checkState(valueExpr == null);
+
     AutoescapeMode mode = AutoescapeMode.forAttributeValue(value);
     if (mode == null) {
       mode = AutoescapeMode.STRICT; // default for unparsed
@@ -159,6 +185,8 @@ public final class CommandTagAttribute {
 
   @Nullable
   Visibility valueAsVisibility(ErrorReporter errorReporter) {
+    checkState(valueExpr == null);
+
     Visibility visibility = Visibility.forAttributeValue(value);
     if (visibility == null) {
       errorReporter.report(
@@ -172,6 +200,8 @@ public final class CommandTagAttribute {
 
   @Nullable
   public ContentKind valueAsContentKind(ErrorReporter errorReporter) {
+    checkState(valueExpr == null);
+
     ContentKind contentKind = NodeContentKinds.forAttributeValue(value);
     if (contentKind == null) {
       errorReporter.report(
@@ -184,14 +214,23 @@ public final class CommandTagAttribute {
   }
 
   String valueAsCssBase(ErrorReporter errorReporter) {
+    checkState(valueExpr == null);
+
     if (!BaseUtils.isDottedIdentifier(value)) {
       errorReporter.report(valueLocation, INVALID_CSS_BASE_NAMESPACE_NAME, value);
     }
     return value;
   }
 
+  /** Returns the value as an expression. Only call on an expression attribute. */
+  public ExprNode valueAsExpr() {
+    checkState(value == null);
+    return checkNotNull(valueExpr);
+  }
+
   @Override
   public String toString() {
-    return key.identifier() + "=\"" + value.replace("\"", "\\\"") + "\"";
+    String valueStr = (value != null) ? value.replace("\"", "\\\"") : valueExpr.toSourceString();
+    return String.format(TO_STRING_FORMAT, key.identifier(), valueStr);
   }
 }

@@ -78,6 +78,7 @@ public final class CallBasicNode extends CallNode {
   private final String sourceCalleeName;
 
   /** The full name of the template being called. Briefly null before being set. */
+  // TODO(user): Consider folding SetFullCalleeVisitor into parser and removing this field
   private String calleeName;
 
   /**

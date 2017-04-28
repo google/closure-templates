@@ -26,8 +26,6 @@ import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
-import com.google.template.soy.exprparse.ExpressionParser;
-import com.google.template.soy.exprparse.SoyParsingContext;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.GlobalNode;
@@ -118,15 +116,7 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
           // need to get variant parsing out of this.  maybe we can expose some sort of limited
           // primitiveOrGlobal parsing solution?
           this.delTemplateVariant = null;
-          ExprNode variantExpr =
-              new ExpressionParser(
-                      attribute.getValue(),
-                      attribute.getValueLocation(),
-                      SoyParsingContext.create(
-                          errorReporter,
-                          soyFileHeaderInfo.namespace,
-                          soyFileHeaderInfo.aliasToNamespaceMap))
-                  .parseExpression();
+          ExprNode variantExpr = attribute.valueAsExpr();
           if (variantExpr instanceof StringNode) {
             // A string literal is being used as template variant, so the expression value can
             // immediately be evaluated.

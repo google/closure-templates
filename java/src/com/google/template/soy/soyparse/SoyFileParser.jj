@@ -43,12 +43,12 @@ PARSER_BEGIN(SoyFileParser)
 
 package com.google.template.soy.soyparse;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.template.soy.exprtree.Operator.createOperatorNode;
 
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
-import com.google.common.base.Preconditions;
 import com.google.common.base.Predicates;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
@@ -427,6 +427,7 @@ public class SoyFileParser {
   private ErrorReporter errorReporter;
 
   /** Can only be used in templates. */
+  // TODO(user): Won't be needed once everything is parsed in javacc
   private SoyParsingContext context;
 
   /**
@@ -447,13 +448,11 @@ public class SoyFileParser {
       String filePath,
       ErrorReporter errorReporter) {
     this(input);
-    Preconditions.checkNotNull(typeRegistry);
-    Preconditions.checkNotNull(nodeIdGen);
-    this.typeRegistry = typeRegistry;
-    this.nodeIdGen = nodeIdGen;
-    this.soyFileKind = soyFileKind;
-    this.filePath = filePath;
-    this.errorReporter = errorReporter;
+    this.typeRegistry = checkNotNull(typeRegistry);
+    this.nodeIdGen = checkNotNull(nodeIdGen);
+    this.soyFileKind = checkNotNull(soyFileKind);
+    this.filePath = checkNotNull(filePath);
+    this.errorReporter = checkNotNull(errorReporter);
   }
 
   /**
@@ -461,8 +460,8 @@ public class SoyFileParser {
    */
   @Nullable
   public SoyFileNode parseSoyFile() {
-    Preconditions.checkNotNull(typeRegistry);
-    Preconditions.checkNotNull(nodeIdGen);
+    checkNotNull(typeRegistry);
+    checkNotNull(nodeIdGen);
     Checkpoint checkpoint = errorReporter.checkpoint();
     SoyFileNode soyFileNode = null;
     try {
@@ -737,19 +736,31 @@ TOKEN_MGR_DECLS: {
 | < DELPACKAGE_OPEN: "{delpackage" > { pushState(IN_CMD_TAG_STRUCTURED); }
 }
 
-<IN_CMD_TAG_STRUCTURED> SKIP: {
-  < "\"" > { pushState(IN_ATTRIBUTE_VALUE); }
+
+// -------------------------------------------------------------------------------------------------
+// Tag attributes.
+
+<IN_CMD_TAG_STRUCTURED> TOKEN: {
+  < CMD_QUOTE: "\"" > { pushState(IN_ATTRIBUTE_VALUE); }
+
+// While most Soy tag attributes are parsed as one big text blob in the IN_ATTRIBUTE_VALUE state,
+// the attributes below need to be parsed as Soy expressions. Since javacc parsers do not backtrack,
+// we want to switch the parser in the EXPR state, and parse the expression directly from the input
+// stream. (Otherwise we would need to create a whole new SoyFileParser with just the attribute text
+// as input.)
+| < DATA_ATTR: "data" ( <WS> )* "=" ( <WS> )* "\"" > { SwitchTo(EXPR); }
+| < VARIANT_ATTR: "variant" ( <WS> )* "=" ( <WS> )* "\"" > { SwitchTo(EXPR); }
 }
 
 <EXPR> TOKEN: {
-  < EQUAL: "=" >
-| < DOUBLE_QUOTE: "\"" > { pushState(IN_ATTRIBUTE_VALUE); }
+  < EQ_QUOTE: "=" ( <WS> )* "\"" > { pushState(IN_ATTRIBUTE_VALUE); }
+| < DOUBLE_QUOTE: "\"" >
 }
 
 <IN_ATTRIBUTE_VALUE> TOKEN: {
   < ATTRIBUTE_VALUE: "\"" >
   {
-    // trim off trailing quote, unescape internal quotation marks
+    // trim off trailing quote, unescape internal quotation marks, return to previous state
     matchedToken.image = image.substring(0, image.length() - 1).replace("\\\"", "\"");
     matchedToken.endColumn -= 1;
     popState();
@@ -1137,10 +1148,15 @@ private SoyFileNode SoyFile() :
   )*
 
   {
-    SoyFileHeaderInfo soyFileHeaderInfo = new SoyFileHeaderInfo(errorReporter,
-      delpackageName, namespace, aliases);
-    context = SoyParsingContext.create(errorReporter, soyFileHeaderInfo.namespace,
-        soyFileHeaderInfo.aliasToNamespaceMap);
+    SoyFileHeaderInfo soyFileHeaderInfo =
+        new SoyFileHeaderInfo(errorReporter, delpackageName, namespace, aliases);
+
+    context =
+        SoyParsingContext.create(
+            errorReporter,
+            soyFileHeaderInfo.namespace,
+            soyFileHeaderInfo.aliasToNamespaceMap);
+
     SoyFileNode sfn =
         new SoyFileNode(
             nodeIdGen.genId(),
@@ -1213,7 +1229,7 @@ private NamespaceDeclaration Namespace() :
 {
   open = <NAMESPACE_OPEN>
   name = DottedIdent()
-  attributes = CommandAttributes()
+  attributes = Attributes()
   close = <CMD_END>
   {
     return new NamespaceDeclaration(name, attributes, errorReporter);
@@ -1222,11 +1238,11 @@ private NamespaceDeclaration Namespace() :
 
 
 /**
- * Matches a sequence of command attributes.
+ * Matches a sequence of attributes in IN_CMD_TAG_STRUCTURED lexical state.
  *
- * CommandAttributes -> ( Attribute )*
+ * Attributes -> ( Attribute )*
  */
-private List<CommandTagAttribute> CommandAttributes() :
+private List<CommandTagAttribute> Attributes() :
 {
   CommandTagAttribute attr;
   List<CommandTagAttribute> attributes = ImmutableList.of();
@@ -1243,40 +1259,62 @@ private List<CommandTagAttribute> CommandAttributes() :
 
   // None of our commands ever allow attributes to be duplicated.
   // Drop duplicates and report errors before returning to our caller.
-  { CommandTagAttribute.removeDuplicatesAndReportErrors(attributes, errorReporter);
+  {
+    CommandTagAttribute.removeDuplicatesAndReportErrors(attributes, errorReporter);
     return attributes;
   }
 }
 
 
 /**
- * Matches an attribute, starting from IN_CMD_TAG_STRUCTURED lexical state.
+ * Matches an attribute in IN_CMD_TAG_STRUCTURED lexical state. Uses special tokens to parse
+ * attributes that require an expression as the attribute value, e.g. data=""
  *
- * Attribute -> Name CmdEq AttributeValue
+ * Attribute -> ( Name CmdEq CmdQuote AttributeValue
+ *              | ( DataAttr | VariantAttr ) Expr DoubleQuote )
  */
 private CommandTagAttribute Attribute() :
 {
-  Token name;
-  Token eq;
-  Token value;
+  Token name, value;
+  Token attrTag;
+  String attrName;
+  ExprNode expr;
 }
 {
-  name = <NAME>
-  eq = <CMD_EQ>
-  value = <ATTRIBUTE_VALUE>
-  {
-    return new CommandTagAttribute(
-        Identifier.create(name.image, createSrcLoc(name)), value.image, createSrcLoc(value));
-  }
+  (
+    // Non-expression attributes
+    name = <NAME>
+    <CMD_EQ>
+    <CMD_QUOTE>
+    value = <ATTRIBUTE_VALUE> // ATTRIBUTE_VALUE includes the end quote
+    {
+      return new CommandTagAttribute(
+          Identifier.create(name.image, createSrcLoc(name)), value.image, createSrcLoc(value));
+    }
+  |
+    // Expression attributes
+    (
+      attrTag = <DATA_ATTR>
+      { attrName = "data"; }
+    |
+      attrTag = <VARIANT_ATTR>
+      { attrName = "variant"; }
+    )
+
+    expr = Expr()
+
+    <DOUBLE_QUOTE>
+    { token_source.SwitchTo(IN_CMD_TAG_STRUCTURED); }
+
+    { return new CommandTagAttribute(Identifier.create(attrName, createSrcLoc(attrTag)), expr); }
+  )
 }
 
+
 /**
- * Matches an attribute, starting from EXPR lexical state.
+ * Matches an attribute in EXPR lexical state.
  *
- * TODO(user): Once all tags are switched out of IN_CMD_TAG_UNSTRUCTURED, consider rolling
- * all uses of Attribute() into this state.
- *
- * Attribute -> Ident Equal DoubleQuote AttributeValue
+ * ExprAttribute -> Ident EqQuote AttributeValue
  */
 private CommandTagAttribute ExprAttribute() :
 {
@@ -1284,8 +1322,7 @@ private CommandTagAttribute ExprAttribute() :
 }
 {
   name = <IDENT>
-  <EQUAL>
-  <DOUBLE_QUOTE>
+  <EQ_QUOTE> // switch state to IN_ATTRIBUTE_VALUE
   value = <ATTRIBUTE_VALUE> // ATTRIBUTE_VALUE includes the end quote
   {
     return new CommandTagAttribute(
@@ -1313,7 +1350,7 @@ private Identifier DelPackage() :
  * Template -> (
  *   <TEMPLATE_OPEN>
  *   TemplateName()
- *   CommandAttributes()
+ *   Attributes()
  *   <CMD_END>
  *   TemplateHeader()
  *   TemplateBlock()
@@ -1321,7 +1358,7 @@ private Identifier DelPackage() :
  * |
  *   <DELTEMPLATE_OPEN>
  *   TemplateName()
- *   CommandAttributes()
+ *   Attributes()
  *   <CMD_END>
  *   TemplateHeader()
  *   TemplateBlock()
@@ -1385,7 +1422,7 @@ private TemplateNode TemplateHelper(TemplateNodeBuilder builder, Token open, boo
     builder.setId(nodeIdGen.genId());
   }
   templateName = TemplateName(isDeltemplate)
-  attributes = CommandAttributes()
+  attributes = Attributes()
   {
     builder.setCommandValues(templateName, attributes);
     // We can't set soy doc until after setCommandValues due to conditions in the builder.
@@ -1481,11 +1518,6 @@ private Identifier DottedIdent() :
 
 // =================================================================================================
 // Grammar - Templates
-// =================================================================================================
-
-
-// =================================================================================================
-// Grammar basics
 // =================================================================================================
 
 
@@ -1662,10 +1694,6 @@ private RawTextNode RawText() :
 
   { return builder.build(); }
 }
-
-// =================================================================================================
-// Grammar
-// =================================================================================================
 
 
 // -------------------------------------------------------------------------------------------------
@@ -3780,10 +3808,10 @@ private Token Keyword(String keyword) :
 
 
 // -------------------------------------------------------------------------------------------------
-// Type Expressions.
-//
+// Type expressions.
+
 // The Soy type grammar is relatively simple.  We have 1 'operator' "|" for type unions, but other
-// than that, it is just a small set of primary productions that are relatively unambiguous
+// than that, it is just a small set of primary productions that are relatively unambiguous.
 //
 // The most complex part of this is our handling of generic types since there is a small amount of
 // ambiguity with nominal types because both start with a single identifier.  In the past this was
