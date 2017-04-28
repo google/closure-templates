@@ -931,8 +931,9 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
     String generatedVarName = node.getUniqueVarName();
 
     // Generate code to define the local var.
-    CodeChunk.WithValue value = jsExprTranslator.translateToCodeChunk(
-        node.getValueExpr(), templateTranslationContext, errorReporter);
+    CodeChunk.WithValue value =
+        jsExprTranslator.translateToCodeChunk(
+            node.getExpr(), templateTranslationContext, errorReporter);
     jsCodeBuilder.append(declare(generatedVarName, value));
 
     // Add a mapping for generating future references to this local var.

@@ -209,7 +209,7 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
   @Override
   protected void visitLetValueNode(LetValueNode node) {
     visitSoyNode(node);
-    node.getVar().setType(node.getValueExpr().getType());
+    node.getVar().setType(node.getExpr().getType());
   }
 
   @Override

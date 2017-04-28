@@ -55,13 +55,13 @@ public final class LetValueNode extends LetNode implements ExprHolderNode {
   }
 
   /** Returns the value expression that this variable is set to. */
-  public ExprRootNode getValueExpr() {
+  public ExprRootNode getExpr() {
     return valueExpr;
   }
 
   @Override
   public String getCommandText() {
-    return "$" + getVarName() + " : " + getValueExpr().toSourceString();
+    return "$" + getVarName() + " : " + getExpr().toSourceString();
   }
 
   @Override

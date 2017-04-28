@@ -671,7 +671,7 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       // Generate code to define the local var.
       TranslateToPyExprVisitor translator =
           new TranslateToPyExprVisitor(localVarExprs, errorReporter);
-      PyExpr valuePyExpr = translator.exec(node.getValueExpr());
+      PyExpr valuePyExpr = translator.exec(node.getExpr());
       pyCodeBuilder.appendLine(generatedVarName, " = ", valuePyExpr.getText());
 
       // Add a mapping for generating future references to this local var.

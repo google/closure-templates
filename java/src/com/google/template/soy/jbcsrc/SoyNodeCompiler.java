@@ -850,8 +850,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   @Override
   protected Statement visitLetValueNode(LetValueNode node) {
     Expression newLetValue =
-        lazyClosureCompiler.compileLazyExpression(
-            "let", node, node.getVarName(), node.getValueExpr());
+        lazyClosureCompiler.compileLazyExpression("let", node, node.getVarName(), node.getExpr());
     return currentScope.create(node.getVarName(), newLetValue, STORE).initializer();
   }
 

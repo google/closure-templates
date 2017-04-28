@@ -1201,7 +1201,7 @@ public final class TemplateParserTest {
 
     LetValueNode alphaNode = (LetValueNode) nodes.get(0);
     assertEquals("alpha", alphaNode.getVarName());
-    assertEquals("$boo.foo", alphaNode.getValueExpr().toSourceString());
+    assertEquals("$boo.foo", alphaNode.getExpr().toSourceString());
     LetContentNode betaNode = (LetContentNode) nodes.get(1);
     assertEquals("beta", betaNode.getVarName());
     assertEquals("Boo!", ((RawTextNode) betaNode.getChild(0)).getRawText());

@@ -155,9 +155,9 @@ public final class ResolveNamesVisitorTest {
     assertThat(firstLet.getVar().localVariableIndex()).isEqualTo(0);
     assertThat(secondLet.getVar().localVariableIndex()).isEqualTo(1);
     assertThat(thirdLet.getVar().localVariableIndex()).isEqualTo(2);
-    assertThat(((VarRefNode) secondLet.getValueExpr().getRoot()).getDefnDecl())
+    assertThat(((VarRefNode) secondLet.getExpr().getRoot()).getDefnDecl())
         .isEqualTo(firstLet.getVar());
-    assertThat(((VarRefNode) thirdLet.getValueExpr().getRoot()).getDefnDecl())
+    assertThat(((VarRefNode) thirdLet.getExpr().getRoot()).getDefnDecl())
         .isEqualTo(secondLet.getVar());
   }
 

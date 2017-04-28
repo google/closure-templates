@@ -372,7 +372,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
   @Override
   protected void visitLetValueNode(LetValueNode node) {
-    env.bind(node.getVar(), lazyEval(node.getValueExpr(), node));
+    env.bind(node.getVar(), lazyEval(node.getExpr(), node));
   }
 
   @Override

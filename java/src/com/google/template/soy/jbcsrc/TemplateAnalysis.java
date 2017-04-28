@@ -310,7 +310,7 @@ final class TemplateAnalysis {
     protected void visitLetValueNode(LetValueNode node) {
       // see visitLetContentNode
       Block start = new Block();
-      Block end = exprVisitor.eval(start, node.getValueExpr());
+      Block end = exprVisitor.eval(start, node.getExpr());
       letNodes.put(node.getVar(), new AccessGraph(start, end));
     }
 
