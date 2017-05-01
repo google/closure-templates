@@ -1421,7 +1421,19 @@ private TemplateNode TemplateHelper(TemplateNodeBuilder builder, Token open, boo
     // file will change.  TODO(user): remove ids
     builder.setId(nodeIdGen.genId());
   }
-  templateName = TemplateName(isDeltemplate)
+
+  templateName = TemplateName()
+  {
+    if (!isDeltemplate && templateName.identifier().charAt(0) != '.') {
+      errorReporter.report(
+          templateName.location(), INVALID_TEMPLATE_NAME, templateName.identifier());
+    }
+    if (isDeltemplate && templateName.identifier().charAt(0) == '.') {
+      errorReporter.report(
+          templateName.location(), INVALID_DELTEMPLATE_NAME, templateName.identifier());
+    }
+  }
+
   attributes = Attributes()
   {
     builder.setCommandValues(templateName, attributes);
@@ -1456,31 +1468,22 @@ private TemplateNode TemplateHelper(TemplateNodeBuilder builder, Token open, boo
  * Parses a Template name.  This is either a fully qualified dotted identifier or a partial
  * identifier consisting of a single <CMD_DOT> <NAME> sequence.
  *
- * TemplateName -> (<CMD_DOT> <NAME> | DottedIdent() )
+ * TemplateName -> ( CmdDot Name | DottedIdent )
  */
-private Identifier TemplateName(boolean isDeltemplate) :
+private Identifier TemplateName() :
 {
   Token dot, name;
   Identifier ident;
 }
 {
   (
-    // The partial name case.
+    // Partial name.
     dot = <CMD_DOT>
     name = <NAME>
-    {
-      ident = Identifier.create("." + name.image, createSrcLoc(dot, name));
-      if (isDeltemplate) {
-        errorReporter.report(ident.location(), INVALID_DELTEMPLATE_NAME, ident.identifier());
-      }
-    }
+    { ident = Identifier.create("." + name.image, createSrcLoc(dot, name)); }
   |
+    // Fully qualified name.
     ident = DottedIdent()
-    {
-      if (!isDeltemplate) {
-        errorReporter.report(ident.location(), INVALID_TEMPLATE_NAME, ident.identifier());
-      }
-    }
   )
   { return ident; }
 }
