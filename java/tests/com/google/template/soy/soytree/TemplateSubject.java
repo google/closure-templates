@@ -16,14 +16,16 @@
 
 package com.google.template.soy.soytree;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.truth.FailureStrategy;
 import com.google.common.truth.Subject;
 import com.google.common.truth.SubjectFactory;
 import com.google.common.truth.Truth;
+import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.internal.FixedIdGenerator;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.error.ErrorReporterImpl;
@@ -31,9 +33,6 @@ import com.google.template.soy.error.PrettyErrorFactory;
 import com.google.template.soy.error.SnippetFormatter;
 import com.google.template.soy.error.SoyError;
 import com.google.template.soy.error.SoyErrorKind;
-import com.google.template.soy.soyparse.SoyFileParser;
-import com.google.template.soy.types.SoyTypeRegistry;
-import java.io.IOException;
 import javax.annotation.Nullable;
 
 /**
@@ -109,7 +108,7 @@ public final class TemplateSubject extends Subject<TemplateSubject, String> {
 
   public void isWellFormed() {
     ErrorReporterImpl errorReporter = doParse();
-    Truth.assertThat(errorReporter.hasErrors()).isFalse();
+    assertThat(errorReporter.getErrors()).named("the template parsed successfully").isEmpty();
   }
 
   public void isNotWellFormed() {
@@ -131,19 +130,12 @@ public final class TemplateSubject extends Subject<TemplateSubject, String> {
         new ErrorReporterImpl(
             new PrettyErrorFactory(
                 new SnippetFormatter(ImmutableMap.of(sourceFile.getFilePath(), sourceFile))));
-    try {
-      fileNode =
-          new SoyFileParser(
-                  new SoyTypeRegistry(),
-                  new FixedIdGenerator(),
-                  sourceFile.open(),
-                  sourceFile.getSoyFileKind(),
-                  sourceFile.getFilePath(),
-                  errorReporter)
-              .parseSoyFile();
-    } catch (IOException e) {
-      throw new AssertionError(e); // impossible
-    }
+    SoyFileSetNode fileSet =
+        SoyFileSetParserBuilder.forSuppliers(sourceFile)
+            .errorReporter(errorReporter)
+            .parse()
+            .fileSet();
+    fileNode = fileSet.numChildren() == 1 ? fileSet.getChild(0) : null;
     return errorReporter;
   }
 

@@ -65,7 +65,13 @@ public class MsgNodeTest {
     // 3. However, since GOO_2 is already used for {$goo2}, we use GOO_1 and GOO_3 instead.
 
     String template =
-        ""
+        "{@param url1 : ?}"
+            + "{@param boo : ?}"
+            + "{@param foo : ?}"
+            + "{@param url2 : ?}"
+            + "{@param goo : ?}\n"
+            + "{@param goo2 : ?}\n"
+            + "{@param zoo : ?}\n"
             + "{msg desc=\"\"}\n"
             + "  <a href=\"{$url1}\">\n"
             + "    {$boo}{$foo.goo}{1 + 1}{2 + 2}\n"
@@ -150,7 +156,7 @@ public class MsgNodeTest {
   @Test
   public void testGenPlrselVarNames1() {
     String template =
-        ""
+        "{@param gender : ?}{@param values :?}{@param person : ?}\n"
             + "{msg desc=\"\"}\n"
             + "  {select $gender}\n" // Normal select variable.  GENDER.
             + "    {case 'female'}\n"
@@ -200,7 +206,12 @@ public class MsgNodeTest {
   @Test
   public void testGenPlrselVarNames2() {
     String template =
-        ""
+        "{@param gender : ?}"
+            + "{@param man : ?}"
+            + "{@param woman : ?}"
+            + "{@param thing : ?}"
+            + "{@param person : ?}"
+            + "{@param object : ?}\n"
             + "{msg desc=\"\"}\n"
             + "  {select $gender[5]}\n" // Select variable, fall back to STATUS.
             + "    {case 'female'}\n"
@@ -248,7 +259,11 @@ public class MsgNodeTest {
   @Test
   public void testGenPlrselVarNames3() {
     String template =
-        ""
+        "{@param gender : ?}"
+            + "{@param man : ?}"
+            + "{@param woman : ?}"
+            + "{@param person : ?}"
+            + "{@param person2 : ?}\n"
             + "{msg desc=\"\"}\n"
             + "  {select $gender.person}\n" // Select variable, fall back to PERSON_1.
             + "    {case 'female'}\n"
@@ -302,7 +317,11 @@ public class MsgNodeTest {
   @Test
   public void testGenPlrselVarNames4() {
     String template =
-        ""
+        "{@param gender : ?}"
+            + "{@param man : ?}"
+            + "{@param woman : ?}"
+            + "{@param person : ?}"
+            + "{@param object : ?}\n"
             + "{msg desc=\"\"}\n"
             + "  {select $gender}\n" // Select variable, fall back to GENDER.
             + "    {case 'female'}\n"
@@ -350,7 +369,7 @@ public class MsgNodeTest {
   @Test
   public void testIsSelectMsg() {
     String template =
-        ""
+        "{@param gender : ?}"
             + "{msg desc=\"\"}\n"
             + "  {select $gender.person}\n" // Select variable, fall back to PERSON_1.
             + "    {case 'female'}\n"
@@ -372,7 +391,8 @@ public class MsgNodeTest {
   @Test
   public void testIsPluralMsg() {
     String template =
-        ""
+        "{@param woman : ?}"
+            + "{@param person : ?}"
             + "{msg desc=\"\"}\n"
             + "  {plural $woman.num}\n" // Plural variable, NUM_1
             + "    {case 1}{$person} added one person to her circle.\n"

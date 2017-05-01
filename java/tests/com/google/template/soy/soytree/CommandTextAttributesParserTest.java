@@ -27,6 +27,6 @@ public final class CommandTextAttributesParserTest {
 
   @Test
   public void testParse() {
-    assertThatTemplateContent("{msg desc=\"a\\\"b\"}{/msg}\n").isWellFormed();
+    assertThatTemplateContent("{msg desc=\"a\\\"b\"}content{/msg}\n").isWellFormed();
   }
 }
