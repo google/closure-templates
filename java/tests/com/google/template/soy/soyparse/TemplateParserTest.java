@@ -20,25 +20,15 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
-import com.google.template.soy.SoyFileSetParser;
-import com.google.template.soy.base.internal.IncrementingIdGenerator;
-import com.google.template.soy.base.internal.SoyFileKind;
-import com.google.template.soy.base.internal.SoyFileSupplier;
-import com.google.template.soy.basetree.SyntaxVersion;
+import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ErrorReporterImpl;
 import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.error.FormattingErrorReporter;
-import com.google.template.soy.error.PrettyErrorFactory;
-import com.google.template.soy.error.SnippetFormatter;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.IntegerNode;
@@ -46,12 +36,8 @@ import com.google.template.soy.exprtree.OperatorNodes.GreaterThanOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
-import com.google.template.soy.passes.CombineConsecutiveRawTextNodesVisitor;
-import com.google.template.soy.passes.PassManager;
 import com.google.template.soy.shared.AutoEscapingType;
 import com.google.template.soy.shared.SharedTestUtils;
-import com.google.template.soy.shared.SoyGeneralOptions;
-import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallNode;
@@ -81,7 +67,7 @@ import com.google.template.soy.soytree.MsgSelectNode;
 import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
-import com.google.template.soy.soytree.SoyFileNode;
+import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SwitchCaseNode;
 import com.google.template.soy.soytree.SwitchDefaultNode;
@@ -89,12 +75,8 @@ import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateSubject;
 import com.google.template.soy.soytree.XidNode;
-import com.google.template.soy.soytree.defn.HeaderParam;
 import com.google.template.soy.soytree.defn.TemplateParam;
-import com.google.template.soy.types.SoyTypeRegistry;
-import java.io.StringReader;
 import java.util.List;
-import junit.framework.AssertionFailedError;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -114,9 +96,9 @@ public final class TemplateParserTest {
   @Test
   public void testRecognizeSoyTag() throws Exception {
 
-    assertIsTemplateBody("{sp}");
-    assertIsTemplateBody("{space}");
-    assertIsTemplateBody("{ sp }");
+    assertValidTemplate("{sp}");
+    assertInvalidTemplate("{space}", "Unbound global 'space'");
+    assertInvalidTemplate("{ sp }", "Unbound global 'sp'");
 
     TemplateSubject.assertThatTemplateContent("{{sp}}")
         .causesError("Soy {{command}} syntax is no longer supported.  Use single braces.");
@@ -159,51 +141,53 @@ public final class TemplateParserTest {
     TemplateSubject.assertThatTemplateContent("{print }")
         .causesError("Found 'print' command with empty command text.");
 
-    assertIsTemplateBody("{if $blah == 'phname = \"foo\"'}{/if}");
-    assertIsNotTemplateBody("{blah phname=\"\"}");
+    assertValidTemplate("{@param blah : ?}\n{if $blah == 'phname = \"foo\"'}{/if}");
+    assertInvalidTemplate("{blah phname=\"\"}");
 
-    assertIsNotTemplateBody("{");
-    assertIsNotTemplateBody("{{ {sp} }}");
-    assertIsNotTemplateBody("{{ {} }}");
-    assertIsNotTemplateBody("{{ }s{p  { }}");
-    assertIsNotTemplateBody("{}");
-    assertIsNotTemplateBody("{namespace");
-    assertIsNotTemplateBody("{sp");
-    assertIsNotTemplateBody("{sp blah}");
-    assertIsNotTemplateBody("{print } }");
-    assertIsNotTemplateBody("{print }}");
-    assertIsNotTemplateBody("{{}}");
-    assertIsNotTemplateBody("{{{blah: blah}}}");
-    assertIsNotTemplateBody("blah}blah");
-    assertIsNotTemplateBody("blah}}blah");
-    assertIsNotTemplateBody("{{print {{ }}");
+    assertInvalidTemplate("{");
+    assertInvalidTemplate("{{ {sp} }}");
+    assertInvalidTemplate("{{ {} }}");
+    assertInvalidTemplate("{{ }s{p  { }}");
+    assertInvalidTemplate("{}");
+    assertInvalidTemplate("{namespace");
+    assertInvalidTemplate("{sp");
+    assertInvalidTemplate("{sp blah}");
+    assertInvalidTemplate("{print } }");
+    assertInvalidTemplate("{print }}");
+    assertInvalidTemplate("{{}}");
+    assertInvalidTemplate("{{{blah: blah}}}");
+    assertInvalidTemplate("blah}blah");
+    assertInvalidTemplate("blah}}blah");
+    assertInvalidTemplate("{{print {{ }}");
   }
 
   @Test
   public void testRecognizeRawText() throws Exception {
-    assertIsTemplateBody("blah>blah<blah<blah>blah>blah>blah>blah<blah");
-    assertIsTemplateBody("{sp}{nil}{\\n}{\\r}{\\t}{lb}{rb}");
-    assertIsTemplateBody(
-        "blah{literal}{ {{{ } }{ {}} { }}}}}}}\n" + "}}}}}}}}}{ { {{/literal}blah");
+    // prevent parsing as tags by setting content kind to text
+    assertValidTemplate(ContentKind.TEXT, "blah>blah<blah<blah>blah>blah>blah>blah<blah");
+    assertValidTemplate("{sp}{nil}{\\n}{\\r}{\\t}{lb}{rb}");
+    assertValidTemplate("blah{literal}{ {{{ } }{ {}} { }}}}}}}\n" + "}}}}}}}}}{ { {{/literal}blah");
 
-    assertIsTemplateBody("{literal}{literal}{/literal}");
+    assertValidTemplate("{literal}{literal}{/literal}");
 
-    assertIsNotTemplateBody("{/literal}");
-    assertIsNotTemplateBody("{literal attr=\"value\"}");
+    assertInvalidTemplate("{/literal}");
+    assertInvalidTemplate("{literal attr=\"value\"}");
   }
 
   @Test
   public void testRecognizeComments() throws Exception {
-    assertIsTemplateBody(
-        ""
+    assertValidTemplate(
+        "{@param boo : ?}\n"
+            + "{@param items : list<[name:string]>}\n"
             + "blah // }\n"
             + "{$boo}{msg desc=\"\"} //}\n"
-            + "{/msg} // {/msg}\n"
+            + "msg content{/msg} // {/msg}\n"
             + "{foreach $item in $items}\t// }\n"
             + "{$item.name}{/foreach} //{{{{\n");
 
-    assertIsTemplateBody(
-        ""
+    assertValidTemplate(
+        "{@param boo : ?}\n"
+            + "{@param items : list<[name:string]>}\n"
             + "blah /* } */\n"
             + "{msg desc=\"\"} /*}*/{$boo}\n"
             + "/******************/ {/msg}\n"
@@ -212,8 +196,9 @@ public final class TemplateParserTest {
             + "{foreach $item in $items} /* }\n"
             + "{{{{{*/{$item.name}{/foreach}/*{{{{*/\n");
 
-    assertIsTemplateBody(
-        ""
+    assertValidTemplate(
+        "{@param boo : ?}\n"
+            + "{@param items : list<[name:string]>}\n"
             + "blah /** } */\n"
             + "{msg desc=\"\"} /**}*/{$boo}\n"
             + "/******************/ {/msg}\n"
@@ -222,51 +207,51 @@ public final class TemplateParserTest {
             + "{foreach $item in $items} /** }\n"
             + "{{{{{*/{$item.name}{/foreach}/**{{{{*/\n");
 
-    assertIsTemplateBody(" // Not an invalid command: }\n");
-    assertIsTemplateBody(" // Not an invalid command: {{let}}\n");
-    assertIsTemplateBody(" // Not an invalid command: {@let }\n");
-    assertIsTemplateBody(" // Not an invalid command: phname=\"???\"\n");
-    assertIsTemplateBody("{msg desc=\"\"} // <{/msg}> '<<>\n{/msg}");
+    assertValidTemplate(" // Not an invalid command: }\n");
+    assertValidTemplate(" // Not an invalid command: {{let}}\n");
+    assertValidTemplate(" // Not an invalid command: {@let }\n");
+    assertValidTemplate(" // Not an invalid command: phname=\"???\"\n");
+    assertValidTemplate("{msg desc=\"\"} content // <{/msg}> '<<>\n{/msg}");
 
-    assertIsTemplateBody("//}\n");
-    assertIsTemplateBody(" //}\n");
-    assertIsTemplateBody("\n//}\n");
-    assertIsTemplateBody("\n //}\n");
+    assertValidTemplate("//}\n");
+    assertValidTemplate(" //}\n");
+    assertValidTemplate("\n//}\n");
+    assertValidTemplate("\n //}\n");
 
-    assertIsTemplateBody("/*}*/\n");
-    assertIsTemplateBody(" /*}*/\n");
-    assertIsTemplateBody("\n/*}\n}*/\n");
-    assertIsTemplateBody("\n /*}\n*/\n");
+    assertValidTemplate("/*}*/\n");
+    assertValidTemplate(" /*}*/\n");
+    assertValidTemplate("\n/*}\n}*/\n");
+    assertValidTemplate("\n /*}\n*/\n");
 
-    assertIsTemplateBody("/**}*/\n");
-    assertIsTemplateBody(" /**}*/\n");
-    assertIsTemplateBody("\n/**}\n}*/\n");
-    assertIsTemplateBody("\n /**}\n*/\n");
+    assertValidTemplate("/**}*/\n");
+    assertValidTemplate(" /**}*/\n");
+    assertValidTemplate("\n/**}\n}*/\n");
+    assertValidTemplate("\n /**}\n*/\n");
 
-    assertIsTemplateBody(
-        ""
+    assertValidTemplate(
+        "{@param items : list<string>}\n"
             + "{foreach $item // }\n"
             + "                                   in $items}\n"
             + "{$item}\n"
             + "{/foreach}\n");
 
-    assertIsNotTemplateBody("{css // }");
-    assertIsNotTemplateBody("aa////}\n");
-    assertIsNotTemplateBody("{nil}//}\n");
+    assertInvalidTemplate("{css // }");
+    assertInvalidTemplate("aa////}\n");
+    assertInvalidTemplate("{nil}//}\n");
   }
 
   @Test
   public void testRecognizeHeaderParams() throws Exception {
-    assertIsTemplateContent("{@param foo: int}\n");
-    assertIsTemplateContent("{@param foo: int}\nBODY");
-    assertIsTemplateContent("  {@param foo: int}\n  BODY");
-    assertIsTemplateContent("\n{@param foo: int}\n");
-    assertIsTemplateContent("  \n{@param foo: int}\nBODY");
-    assertIsTemplateContent("  \n  {@param foo:\n  int}\n  BODY");
+    assertValidTemplate("{@param foo: int}\n{$foo}");
+    assertValidTemplate("{@param foo: int}\nBODY{$foo}");
+    assertValidTemplate("  {@param foo: int}\n  BODY{$foo}");
+    assertValidTemplate("\n{@param foo: int}\n{$foo}");
+    assertValidTemplate("  \n{@param foo: int}\nBODY{$foo}");
+    assertValidTemplate("  \n  {@param foo:\n  int}\n  BODY{$foo}");
 
-    assertIsTemplateContent("{@param foo: int|list<[a: map<string, int|string>, b:?|null]>}\n");
+    assertValidTemplate("{@param foo: int|list<[a: map<string, int|string>, b:?|null]>}\n{$foo}");
 
-    assertIsTemplateContent(
+    assertValidTemplate(
         ""
             + "  {@param foo1: int}  {@param foo2: int}\n"
             + "  {@param foo3: int}  /** ... */\n" // doc comment
@@ -284,47 +269,47 @@ public final class TemplateParserTest {
             + "  {@param foo7: int}  /*\n" // nondoc comment
             + "      ... */  \n"
             + "\n"
-            + "  BODY\n");
+            + "  BODY\n{$foo1 + $foo2 + $foo3 + $foo4 + $foo5 + $foo6 + $foo7}");
 
-    assertIsTemplateContent(
+    assertValidTemplate(
         ""
             + "  /** */{@param foo1: int}\n" // doc comment
             + "  /** \n" // doc comment
             + "   */{@param foo2: int}\n"
             + "\n"
-            + "  BODY\n");
+            + "  BODY\n{$foo1 + $foo2}");
 
-    assertIsTemplateContent("{@param foo: int}");
-    assertIsNotTemplateContent("{@ param foo: int}\n");
-    assertIsNotTemplateContent("{@foo}\n");
-    assertIsNotTemplateContent("{@foo foo: int}\n");
+    assertValidTemplate("{@param foo: int}{$foo}");
+    assertInvalidTemplate("{@ param foo: int}\n");
+    assertInvalidTemplate("{@foo}\n");
+    assertInvalidTemplate("{@foo foo: int}\n");
 
-    assertIsTemplateContent(
+    assertValidTemplate(
         ""
             + "  /** ... */\n" // doc comment
             + "  {@param foo: int}\n"
-            + "  BODY\n");
-    assertIsTemplateContent(
+            + "  BODY\n{$foo}");
+    assertValidTemplate(
         ""
             + "  {@param foo1: int}\n"
             + "  /**\n" // doc comment
             + "   * ...\n"
             + "   */\n"
             + "  {@param foo2: int}\n"
-            + "  BODY\n");
-    assertIsTemplateContent(
+            + "  BODY\n{$foo1 + $foo2}");
+    assertValidTemplate(
         ""
             + "  {@param foo1: int}  /*\n"
             + "      */  /** ... */\n" // doc comment
             + "  {@param foo2: int}\n"
-            + "  BODY\n");
+            + "  BODY\n{$foo1 + $foo2}");
 
-    assertIsNotTemplateContent("{@param 33: int}");
-    assertIsNotTemplateContent("{@param f-oo: int}");
-    assertIsNotTemplateContent("{@param foo}");
-    assertIsNotTemplateContent("{@param foo:}");
-    assertIsNotTemplateContent("{@param : int}");
-    assertIsNotTemplateContent("{@param foo int}");
+    assertInvalidTemplate("{@param 33: int}");
+    assertInvalidTemplate("{@param f-oo: int}");
+    assertInvalidTemplate("{@param foo}");
+    assertInvalidTemplate("{@param foo:}");
+    assertInvalidTemplate("{@param : int}");
+    assertInvalidTemplate("{@param foo int}");
   }
 
   @Test
@@ -351,14 +336,14 @@ public final class TemplateParserTest {
 
   @Test
   public void testRecognizeHeaderInjectedParams() throws Exception {
-    assertIsTemplateContent("{@inject foo: int}\n");
-    assertIsTemplateContent("{@inject foo: int}\nBODY");
-    assertIsTemplateContent("  {@inject foo: int}\n  BODY");
-    assertIsTemplateContent("\n{@inject foo: int}\n");
-    assertIsTemplateContent("  \n{@inject foo: int}\nBODY");
-    assertIsTemplateContent("  \n  {@inject foo:\n   int}\n  BODY");
+    assertValidTemplate("{@inject foo: int}\n{$foo}");
+    assertValidTemplate("{@inject foo: int}\nBODY{$foo}");
+    assertValidTemplate("  {@inject foo: int}\n  BODY{$foo}");
+    assertValidTemplate("\n{@inject foo: int}\n{$foo}");
+    assertValidTemplate("  \n{@inject foo: int}\nBODY{$foo}");
+    assertValidTemplate("  \n  {@inject foo:\n   int}\n  BODY{$foo}");
 
-    assertIsTemplateContent(
+    assertValidTemplate(
         ""
             + "  {@inject foo1: int}  {@inject foo2: int}\n"
             + "  {@inject foo3: int}  /** ... */\n" // doc comment
@@ -376,80 +361,93 @@ public final class TemplateParserTest {
             + "  {@inject foo7: int}  /*\n" // nondoc comment
             + "      ... */  \n"
             + "\n"
-            + "  BODY\n");
+            + "  {$foo1 + $foo2 + $foo3 + $foo4 + $foo5 + $foo6 + $foo7}\n");
 
-    assertIsTemplateContent(
+    assertValidTemplate(
         ""
             + "  /** */{@inject foo1: int}\n" // doc comment
             + "  /** \n" // doc comment
             + "   */{@inject foo2: int}\n"
             + "\n"
-            + "  BODY\n");
+            + "  {$foo1 + $foo2}\n");
 
-    assertIsTemplateContent("{@inject foo: int}");
-    assertIsNotTemplateContent("{@ param foo: int}\n");
-    assertIsNotTemplateContent("{@foo}\n");
-    assertIsNotTemplateContent("{@foo foo: int}\n");
+    assertValidTemplate("{@inject foo: int}{$foo}");
+    assertInvalidTemplate("{@ param foo: int}\n");
+    assertInvalidTemplate("{@foo}\n");
+    assertInvalidTemplate("{@foo foo: int}\n");
 
-    assertIsTemplateContent(
+    assertValidTemplate(
         ""
             + "  /** ... */\n" // doc comment
             + "  {@inject foo: int}\n"
-            + "  BODY\n");
-    assertIsTemplateContent(
+            + "  {$foo}\n");
+    assertValidTemplate(
         ""
             + "  {@inject foo1: int}\n"
             + "  /**\n" // doc comment
             + "   * ...\n"
             + "   */\n"
             + "  {@inject foo2: int}\n"
-            + "  BODY\n");
-    assertIsTemplateContent(
+            + "  {$foo1 + $foo2}\n");
+    assertValidTemplate(
         ""
             + "  {@inject foo1: int}  /*\n"
             + "      */  /** ... */\n" // doc comment
             + "  {@inject foo2: int}\n"
-            + "  BODY\n");
+            + "  {$foo1 + $foo2}\n");
   }
 
   @Test
   public void testRecognizeCommands() throws Exception {
-    assertIsTemplateBody("{formatDate($blah)}"); // Starts with `for`
-    assertIsTemplateBody("{msgblah($blah)}"); // Starts with `msg`
-    assertIsTemplateBody("{let $a: b /}"); // Not a print
+    // Starts with `for`
+    assertInvalidTemplate(
+        "{@param blah : ? }\n{formatDate($blah)}", "Unknown function 'formatDate'");
+    // Starts with `msg`
+    assertInvalidTemplate("{@param blah : ? }\n{msgblah($blah)}", "Unknown function 'msgblah'");
+    assertValidTemplate("{let $a: 2 /}"); // Not a print
 
-    assertIsTemplateBody(
-        ""
+    assertValidTemplate(
+        "{@param foo : ?}\n"
+            + "{@param fooUrl : ?}\n"
+            + "{@param boo : ?}\n"
             + "{msg desc=\"blah\" hidden=\"true\"}\n"
             + "  {$boo} is a <a href=\"{$fooUrl}\">{$foo}</a>.\n"
             + "{/msg}");
-    assertIsTemplateBody(
+    assertValidTemplate(
         ""
             + "{msg meaning=\"verb\" desc=\"\"}\n"
             + "  Archive\n"
             + "{fallbackmsg desc=\"\"}\n"
             + "  Archive\n"
             + "{/msg}");
-    assertIsTemplateBody("{$aaa + 1}{print $bbb.ccc[$ddd] |noescape}");
-    assertIsTemplateBody("{css selected-option}{css CSS_SELECTED_OPTION}{css $cssSelectedOption}");
-    assertIsTemplateBody("{xid selected-option}{xid SELECTED_OPTION_ID}");
-    assertIsTemplateBody("{if $boo}foo{elseif $goo}moo{else}zoo{/if}");
-    assertIsTemplateBody(
-        ""
+    assertValidTemplate(
+        "{@param aaa : ?}{@param bbb : ?}{@param ddd : ?}\n"
+            + "{$aaa + 1}{print $bbb.ccc[$ddd] |noescape}");
+    assertValidTemplate("{css selected-option}{css CSS_SELECTED_OPTION}{css $cssSelectedOption}");
+    assertValidTemplate("{xid selected-option}{xid SELECTED_OPTION_ID}");
+    assertValidTemplate(
+        "{@param boo : ?}{@param goo : ?}" + "{if $boo}foo{elseif $goo}moo{else}zoo{/if}");
+    assertValidTemplate(
+        "{@param foo : ?}{@param boo : ?}{@param goo : ?}"
             + "  {switch $boo}\n"
             + "    {case $foo} blah blah\n"
             + "    {case 2, $goo.moo, 'too'} bleh bleh\n"
             + "    {default} bluh bluh\n"
             + "  {/switch}\n");
-    assertIsTemplateBody("{foreach $item in $items}{index($item)}. {$item.name}<br>{/foreach}");
-    assertIsTemplateBody(
-        "" + "{for $i in range($boo + 1,\n" + "                 88, 11)}\n" + "Number {$i}.{/for}");
-    assertIsTemplateBody("{call aaa.bbb.ccc data=\"all\" /}");
-    assertIsTemplateBody(
-        ""
+    assertValidTemplate(
+        "{@param items : list<?>}"
+            + "{foreach $item in $items}{index($item)}. {$item.name}<br>{/foreach}");
+    assertValidTemplate(
+        "{@param boo : ?}"
+            + "{for $i in range($boo + 1,\n"
+            + "                 88, 11)}\n"
+            + "Number {$i}.{/for}");
+    assertValidTemplate("{call aaa.bbb.ccc data=\"all\" /}");
+    assertValidTemplate(
+        "{@param boo : ?}"
             + "{call .aaa}\n"
             + "  {param boo: $boo /}\n"
-            + "  {param foo}blah blah{/param}\n"
+            + "  {param foo kind=\"text\"}blah blah{/param}\n"
             + "  {param foo kind=\"html\"}blah blah{/param}\n"
             + "{/call}");
 
@@ -460,22 +458,24 @@ public final class TemplateParserTest {
             "{call .aaa}\n" + "  {param foo : bar \" baz/}\n" + "{/call}\n")
         .causesError("Invalid string literal found in Soy command.");
 
-    assertIsTemplateBody("{call aaa.bbb.ccc data=\"all\" /}");
-    assertIsTemplateBody(
-        ""
+    assertValidTemplate("{call aaa.bbb.ccc data=\"all\" /}");
+    assertValidTemplate(
+        "{@param boo : ?}"
             + "{call .aaa}\n"
             + "  {param boo: $boo /}\n"
-            + "  {param foo}blah blah{/param}\n"
+            + "  {param foo kind=\"text\"}blah blah{/param}\n"
             + "{/call}");
-    assertIsTemplateBody("{delcall aaa.bbb.ccc data=\"all\" /}");
-    assertIsTemplateBody(
-        ""
+    assertValidTemplate("{delcall aaa.bbb.ccc data=\"all\" /}");
+    assertValidTemplate(
+        "{@param boo : ?}"
             + "{delcall ddd.eee}\n"
             + "  {param boo: $boo /}\n"
-            + "  {param foo}blah blah{/param}\n"
+            + "  {param foo kind=\"text\"}blah blah{/param}\n"
             + "{/delcall}");
-    assertIsTemplateBody(
-        ""
+    assertValidTemplate(
+        "{@param boo : ?}"
+            + "{@param foo : ?}"
+            + "{@param fooUrl : ?}"
             + "{msg meaning=\"boo\" desc=\"blah\"}\n"
             + "  {$boo phname=\"foo\"} is a \n"
             + "  <a phname=\"begin_link\" href=\"{$fooUrl}\">\n"
@@ -484,12 +484,12 @@ public final class TemplateParserTest {
             + "  {call .aaa data=\"all\"\nphname=\"AaaBbb\"/}\n"
             + "  {call .aaa phname=\"AaaBbb\" data=\"all\"}{/call}\n"
             + "{/msg}");
-    assertIsTemplateBody("{log}Blah blah.{/log}");
-    assertIsTemplateBody("{debugger}");
-    assertIsTemplateBody("{let $foo : 1 + 2/}\n");
-    assertIsTemplateBody("{let $foo : '\"'/}\n");
-    assertIsTemplateBody("{let $foo}Hello{/let}\n");
-    assertIsTemplateBody("{let $foo kind=\"html\"}Hello{/let}\n");
+    assertValidTemplate("{log}Blah blah.{/log}");
+    assertValidTemplate("{debugger}");
+    assertValidTemplate("{let $foo : 1 + 2/}\n");
+    assertValidTemplate("{let $foo : '\"'/}\n");
+    assertValidTemplate("{let $foo kind=\"text\"}Hello{/let}\n");
+    assertValidTemplate("{let $foo kind=\"html\"}Hello{/let}\n");
 
     TemplateSubject.assertThatTemplateContent("{{let a: b}}")
         .causesError("Soy {{command}} syntax is no longer supported.  Use single braces.");
@@ -499,15 +499,15 @@ public final class TemplateParserTest {
         .causesError(
             "parse error at '/}': expected }, <CMD_TEXT_DIRECTIVE_NAME>, <CMD_TEXT_PHNAME_ATTR>, "
                 + "or <CMD_TEXT_ARBITRARY_TOKEN>");
-    assertIsNotTemplateBody("{{let a: b /}}");
+    assertInvalidTemplate("{{let a: b /}}");
 
-    assertIsNotTemplateBody("{namespace}");
-    assertIsNotTemplateBody("{template}\n" + "blah\n" + "{/template}\n");
-    assertIsNotTemplateBody("{msg}blah{/msg}");
-    assertIsNotTemplateBody("{/msg}");
-    assertIsNotTemplateBody("{msg desc=\"\"}<a href=http://www.google.com{/msg}");
-    assertIsNotTemplateBody("{msg desc=\"\"}blah{msg desc=\"\"}bleh{/msg}bluh{/msg}");
-    assertIsNotTemplateBody("{msg desc=\"\"}blah{/msg blah}");
+    assertInvalidTemplate("{namespace}");
+    assertInvalidTemplate("{template}\n" + "blah\n" + "{/template}\n");
+    assertInvalidTemplate("{msg}blah{/msg}");
+    assertInvalidTemplate("{/msg}");
+    assertInvalidTemplate("{msg desc=\"\"}<a href=http://www.google.com{/msg}");
+    assertInvalidTemplate("{msg desc=\"\"}blah{msg desc=\"\"}bleh{/msg}bluh{/msg}");
+    assertInvalidTemplate("{msg desc=\"\"}blah{/msg blah}");
 
     TemplateSubject.assertThatTemplateContent(
             "" + "{msg meaning=\"verb\" desc=\"\"}\n" + "  Hi {if blah}a{/if}\n" + "{/msg}")
@@ -528,27 +528,30 @@ public final class TemplateParserTest {
             "parse error at '{fallbackmsg ': expected "
                 + "text, {literal, {call, {delcall, {/msg}, {print, {plural, {select, {, <, "
                 + "or whitespace");
-    assertIsNotTemplateBody("{print $boo /}");
-    assertIsNotTemplateBody("{if true}aaa{else/}bbb{/if}");
-    assertIsNotTemplateBody("{call .aaa.bbb /}");
-    assertIsNotTemplateBody("{delcall ddd.eee}{param foo: 0}{/call}");
-    assertIsNotTemplateBody("{delcall .dddEee /}");
-    assertIsNotTemplateBody("{call.aaa}{param boo kind=\"html\": 123 /}{/call}\n");
-    assertIsNotTemplateBody("{log}");
-    assertIsNotTemplateBody("{log 'Blah blah.'}");
-    assertIsNotTemplateBody("{let $foo kind=\"html\" : 1 + 1/}\n");
-    assertIsNotTemplateBody("{xid a.b-c}");
-    assertIsNotTemplateBody("{msg desc=\"\"}{$boo phname=\"boo.foo\"}{/msg}");
-    assertIsNotTemplateBody("{msg desc=\"\"}<br phname=\"boo-foo\" />{/msg}");
-    assertIsNotTemplateBody("{msg desc=\"\"}{call .boo phname=\"boo\" phname=\"boo\" /}{/msg}");
-    assertIsNotTemplateBody("{msg desc=\"\"}<br phname=\"break\" phname=\"break\" />{/msg}");
+    assertInvalidTemplate("{print $boo /}");
+    assertInvalidTemplate("{if true}aaa{else/}bbb{/if}");
+    assertInvalidTemplate("{call .aaa.bbb /}");
+    assertInvalidTemplate("{delcall ddd.eee}{param foo: 0}{/call}");
+    assertInvalidTemplate("{delcall .dddEee /}");
+    assertInvalidTemplate("{call.aaa}{param boo kind=\"html\": 123 /}{/call}\n");
+    assertInvalidTemplate("{log}");
+    assertInvalidTemplate("{log 'Blah blah.'}");
+    assertInvalidTemplate("{let $foo kind=\"html\" : 1 + 1/}\n");
+    assertInvalidTemplate("{xid a.b-c}");
+    assertInvalidTemplate("{msg desc=\"\"}{$boo phname=\"boo.foo\"}{/msg}");
+    assertInvalidTemplate("{msg desc=\"\"}<br phname=\"boo-foo\" />{/msg}");
+    assertInvalidTemplate("{msg desc=\"\"}{call .boo phname=\"boo\" phname=\"boo\" /}{/msg}");
+    assertInvalidTemplate("{msg desc=\"\"}<br phname=\"break\" phname=\"break\" />{/msg}");
   }
 
   @Test
   public void testRecognizeMsgPlural() throws Exception {
     // Normal, valid plural message.
-    assertIsTemplateBody(
-        "  {msg desc=\"A sample plural message\"}\n"
+    assertValidTemplate(
+        "{@param num_people : int}\n"
+            + "{@param person: int}\n"
+            + "{@param place : int}\n"
+            + "  {msg desc=\"A sample plural message\"}\n"
             + "    {plural $num_people offset=\"1\"}\n"
             + "      {case 0}I see no one in {$place}.\n"
             + "      {case 1}I see {$person} in {$place}.\n"
@@ -558,7 +561,7 @@ public final class TemplateParserTest {
             + "    {/plural}\n"
             + "  {/msg}\n");
 
-    assertIsTemplateBody(
+    assertValidTemplate(
         "  {let $roundedWeeksSinceStart : 3 /}\n"
             + "  {msg desc=\"Message for number of weeks ago something happened.\"}\n"
             + "    {plural $roundedWeeksSinceStart}\n"
@@ -568,8 +571,11 @@ public final class TemplateParserTest {
             + "  {/msg}");
 
     // Offset is optional.
-    assertIsTemplateBody(
-        "  {msg desc=\"A sample plural message\"}\n"
+    assertValidTemplate(
+        "{@param num_people : int}\n"
+            + "{@param person: int}\n"
+            + "{@param place : int}\n"
+            + "  {msg desc=\"A sample plural message\"}\n"
             + "    {plural $num_people}\n"
             + "      {case 0}I see no one in {$place}.\n"
             + "      {case 1}I see {$person} in {$place}.\n"
@@ -578,8 +584,11 @@ public final class TemplateParserTest {
             + "  {/msg}\n");
 
     // Plural message should have a default clause.
-    assertIsNotTemplateBody(
-        "  {msg desc=\"A sample plural message\"}\n"
+    assertInvalidTemplate(
+        "{@param num_people : int}\n"
+            + "{@param person: int}\n"
+            + "{@param place : int}\n"
+            + "  {msg desc=\"A sample plural message\"}\n"
             + "    {plural $num_people offset=\"1\"}\n"
             + "      {case 0}I see no one in {$place}.\n"
             + "      {case 1}I see {$person} in {$place}.\n"
@@ -588,8 +597,11 @@ public final class TemplateParserTest {
             + "  {/msg}\n");
 
     // default should be the last clause, after all cases.
-    assertIsNotTemplateBody(
-        "  {msg desc=\"A sample plural message\"}\n"
+    assertInvalidTemplate(
+        "{@param num_people : int}\n"
+            + "{@param person: int}\n"
+            + "{@param place : int}\n"
+            + "  {msg desc=\"A sample plural message\"}\n"
             + "    {plural $num_people offset=\"1\"}\n"
             + "      {default}I see {$person} and {remainder($num_people)} "
             + "other people in {$place}.\n"
@@ -600,8 +612,11 @@ public final class TemplateParserTest {
             + "  {/msg}\n");
 
     // Order is irrelevant for cases.
-    assertIsTemplateBody(
-        "  {msg desc=\"A sample plural message\"}\n"
+    assertValidTemplate(
+        "{@param num_people : int}\n"
+            + "{@param person: int}\n"
+            + "{@param place : int}\n"
+            + "  {msg desc=\"A sample plural message\"}\n"
             + "    {plural $num_people offset=\"1\"}\n"
             + "      {case 1}I see {$person} in {$place}.\n"
             + "      {case 0}I see no one in {$place}.\n"
@@ -612,8 +627,11 @@ public final class TemplateParserTest {
             + "  {/msg}\n");
 
     // Offset should not be less than 0.
-    assertIsNotTemplateBody(
-        "  {msg desc=\"A sample plural message\"}\n"
+    assertInvalidTemplate(
+        "{@param num_people : int}\n"
+            + "{@param person: int}\n"
+            + "{@param place : int}\n"
+            + "  {msg desc=\"A sample plural message\"}\n"
             + "    {plural $num_people offset=\"-1\"}\n"
             + "      {case 0}I see no one in {$place}.\n"
             + "      {case 1}I see {$person} in {$place}.\n"
@@ -624,8 +642,11 @@ public final class TemplateParserTest {
             + "  {/msg}\n");
 
     // Case should not be less than 0.
-    assertIsNotTemplateBody(
-        "  {msg desc=\"A sample plural message\"}\n"
+    assertInvalidTemplate(
+        "{@param num_people : int}\n"
+            + "{@param person: int}\n"
+            + "{@param place : int}\n"
+            + "  {msg desc=\"A sample plural message\"}\n"
             + "    {plural $num_people offset=\"1\"}\n"
             + "      {case 0}I see no one in {$place}.\n"
             + "      {case -1}I see {$person} in {$place}.\n"
@@ -638,8 +659,10 @@ public final class TemplateParserTest {
 
   @Test
   public void testRecognizeMsgSelect() throws Exception {
-    assertIsTemplateBody(
-        "{msg desc=\"A sample gender message\"}\n"
+    assertValidTemplate(
+        "{@param gender : ?}\n"
+            + "{@param person: ?}\n"
+            + "{msg desc=\"A sample gender message\"}\n"
             + "  {select $gender}\n"
             + "    {case 'female'}{$person} added you to her circle.\n"
             + "    {default}{$person} added you to his circle.\n"
@@ -647,15 +670,19 @@ public final class TemplateParserTest {
             + "{/msg}\n");
 
     // Default should be present.
-    assertIsNotTemplateBody(
-        "  {select $gender}\n"
+    assertInvalidTemplate(
+        "{@param gender : ?}\n"
+            + "{@param person: ?}\n"
+            + "  {select $gender}\n"
             + "    {case 'female'}{$person} added you to her circle.\n"
             + "    {default}{$person} added you to his circle.\n"
             + "  {/select}\n");
 
     // Default should be the last clause.
-    assertIsNotTemplateBody(
-        "{msg desc=\"A sample gender message\"}\n"
+    assertInvalidTemplate(
+        "{@param gender : ?}\n"
+            + "{@param person: ?}\n"
+            + "{msg desc=\"A sample gender message\"}\n"
             + "  {select $gender}\n"
             + "    {default}{$person} added you to his circle.\n"
             + "    {case 'female'}{$person} added you to her circle.\n"
@@ -663,8 +690,10 @@ public final class TemplateParserTest {
             + "{/msg}\n");
 
     // There is no restriction that 'female' and 'male' should not occur together.
-    assertIsTemplateBody(
-        "{msg desc=\"A sample gender message\"}\n"
+    assertValidTemplate(
+        "{@param gender : ?}\n"
+            + "{@param person: ?}\n"
+            + "{msg desc=\"A sample gender message\"}\n"
             + "  {select $gender}\n"
             + "    {case 'female'}{$person} added you to her circle.\n"
             + "    {case 'male'}{$person} added you to his circle.\n"
@@ -673,8 +702,10 @@ public final class TemplateParserTest {
             + "{/msg}\n");
 
     // There is no restriction of case keywords. An arbitrary word like 'neuter' is fine.
-    assertIsTemplateBody(
-        "{msg desc=\"A sample gender message\"}\n"
+    assertValidTemplate(
+        "{@param gender : ?}\n"
+            + "{@param person: ?}\n"
+            + "{msg desc=\"A sample gender message\"}\n"
             + "  {select $gender}\n"
             + "    {case 'female'}{$person} added you to her circle.\n"
             + "    {case 'male'}{$person} added you to his circle.\n"
@@ -684,8 +715,10 @@ public final class TemplateParserTest {
             + "{/msg}\n");
 
     // It is not possible to have more than one string in a case.
-    assertIsNotTemplateBody(
-        "{msg desc=\"A sample gender message\"}\n"
+    assertInvalidTemplate(
+        "{@param job : ?}\n"
+            + "{@param person: ?}\n"
+            + "{msg desc=\"A sample gender message\"}\n"
             + "  {select $job}\n"
             + "    {case 'hw_engineer', 'sw_engineer'}{$person}, an engineer, liked this.\n"
             + "    {default}{$person} liked this.\n"
@@ -693,8 +726,10 @@ public final class TemplateParserTest {
             + "{/msg}\n");
 
     // select should have a default.
-    assertIsNotTemplateBody(
-        "{msg desc=\"A sample gender message\"}\n"
+    assertInvalidTemplate(
+        "{@param gender : ?}\n"
+            + "{@param person: ?}\n"
+            + "{msg desc=\"A sample gender message\"}\n"
             + "  {select $gender}\n"
             + "    {case 'female'}{$person} added you to her circle.\n"
             + "    {case 'male'}{$person} added you to his circle.\n"
@@ -705,8 +740,9 @@ public final class TemplateParserTest {
   @Test
   public void testRecognizeNestedPlrsel() throws Exception {
     // Select nested inside select should be allowed.
-    assertIsTemplateBody(
-        "{msg desc=\"A sample nested message\"}\n"
+    assertValidTemplate(
+        "{@param gender : ?}{@param gender2 : ?}{@param person1 : ?}{@param person2 : ?}\n"
+            + "{msg desc=\"A sample nested message\"}\n"
             + "  {select $gender}\n"
             + "    {case 'female'}\n"
             + "      {select $gender2}\n"
@@ -722,8 +758,9 @@ public final class TemplateParserTest {
             + "{/msg}\n");
 
     // Plural nested inside select should be allowed.
-    assertIsTemplateBody(
-        "{msg desc=\"A sample nested message\"}\n"
+    assertValidTemplate(
+        "{@param gender : ?}{@param person : ?}{@param num_people : ?}\n"
+            + "{msg desc=\"A sample nested message\"}\n"
             + "  {select $gender}\n"
             + "    {case 'female'}\n"
             + "      {plural $num_people}\n"
@@ -739,8 +776,9 @@ public final class TemplateParserTest {
             + "{/msg}\n");
 
     // Plural inside plural should not be allowed.
-    assertIsNotTemplateBody(
-        "{msg desc=\"A sample nested message\"}\n"
+    assertInvalidTemplate(
+        "{@param n_friends : ?}{@param n_circles : ?}\n"
+            + "{msg desc=\"A sample nested message\"}\n"
             + "  {plural $n_friends}\n"
             + "    {case 1}\n"
             + "      {plural $n_circles}\n"
@@ -756,8 +794,9 @@ public final class TemplateParserTest {
             + "{/msg}\n");
 
     // Select inside plural should not be allowed.
-    assertIsNotTemplateBody(
-        "{msg desc=\"A sample nested message\"}\n"
+    assertInvalidTemplate(
+        "{@param n_friends : ?}{@param gender : ?}{@param person : ?}\n"
+            + "{msg desc=\"A sample nested message\"}\n"
             + "  {plural $n_friends}\n"
             + "    {case 1}\n"
             + "      {select $gender}\n"
@@ -773,8 +812,9 @@ public final class TemplateParserTest {
             + "{/msg}\n");
 
     // Messages with more than one plural/gender clauses should not be allowed.
-    assertIsNotTemplateBody(
-        "{msg desc=\"A sample plural message\"}\n"
+    assertInvalidTemplate(
+        "{@param num_people : ?}{@param gender : ?}{@param person : ?}{@param place : ?}\n"
+            + "{msg desc=\"A sample plural message\"}\n"
             + "  {select $gender}\n"
             + "    {case 'female'}{$person} added you to her circle.\n"
             + "    {default}{$person} added you to his circle.\n"
@@ -804,7 +844,7 @@ public final class TemplateParserTest {
             + "hhh }{  {/literal}  \n"
             + "  \u2222\uEEEE\u9EC4\u607A\n";
 
-    List<StandaloneNode> nodes = parseTemplateBody(templateBody, FAIL).getChildren();
+    List<StandaloneNode> nodes = parseTemplateContent(templateBody, FAIL).getChildren();
 
     assertEquals(1, nodes.size());
     RawTextNode rtn = (RawTextNode) nodes.get(0);
@@ -839,7 +879,7 @@ public final class TemplateParserTest {
             // not a comment if "//" preceded by a non-space such as ":"
             + "  http://www.google.com\n";
 
-    List<StandaloneNode> nodes = parseTemplateBody(templateBody, FAIL).getChildren();
+    List<StandaloneNode> nodes = parseTemplateContent(templateBody, FAIL).getChildren();
     assertEquals(1, nodes.size());
     assertEquals("       http://www.google.com", ((RawTextNode) nodes.get(0)).getRawText());
   }
@@ -857,11 +897,13 @@ public final class TemplateParserTest {
             + "  // {@param commentedOut: string}\n"
             + "  {@param moo: string}{@param too: string}\n"
             + "  {@param? woo: string}  /** Something exciting. */  {@param hoo: string}\n"
-            + "  BODY\n";
+            + "  {$boo + $foo + $goo + $moo + $too + $woo + $hoo}\n"; // use all the params
 
     TemplateNode result = parseTemplateContent(templateHeaderAndBody, FAIL);
     assertEquals(7, Iterables.size(result.getAllParams()));
-    assertEquals("BODY", result.getChildren().get(0).toSourceString());
+    assertEquals(
+        "{$boo + $foo + $goo + $moo + $too + $woo + $hoo}",
+        result.getChildren().get(0).toSourceString());
 
     List<TemplateParam> declInfos = ImmutableList.copyOf(result.getAllParams());
     assertFalse(declInfos.get(0).isInjected());
@@ -884,11 +926,12 @@ public final class TemplateParserTest {
   public void testParsePrintStmt() throws Exception {
 
     String templateBody =
-        "  {$boo.foo}{$boo.foo}\n"
+        "{@param boo : ?}{@param goo : ?}\n"
+            + "  {$boo.foo}{$boo.foo}\n"
             + "  {$goo + 1 |noAutoescape}\n"
             + "  {print 'blah    blahblahblah' |escapeHtml|insertWordBreaks:8}\n";
 
-    List<StandaloneNode> nodes = parseTemplateBody(templateBody, FAIL).getChildren();
+    List<StandaloneNode> nodes = parseTemplateContent(templateBody, FAIL).getChildren();
     assertEquals(4, nodes.size());
 
     PrintNode pn0 = (PrintNode) nodes.get(0);
@@ -929,33 +972,38 @@ public final class TemplateParserTest {
   public void testParsePrintStmtWithPhname() throws Exception {
 
     String templateBody =
-        ""
+        "{@param boo : ?}\n"
+            + "{msg desc=\"...\"}\n"
             + "  {$boo.foo}\n"
             + "  {$boo.foo phname=\"booFoo\"}\n"
             + "  {$boo.foo    phname=\"booFoo\"    }\n"
-            + "  {print $boo.foo phname=\"boo_foo\"}\n";
+            + "    {print $boo.foo phname=\"boo_foo\"}\n"
+            + "{/msg}";
 
-    List<StandaloneNode> nodes = parseTemplateBody(templateBody, FAIL).getChildren();
+    List<StandaloneNode> nodes =
+        ((MsgFallbackGroupNode) parseTemplateContent(templateBody, FAIL).getChild(0))
+            .getChild(0)
+            .getChildren();
     assertEquals(4, nodes.size());
 
-    PrintNode pn0 = (PrintNode) nodes.get(0);
+    PrintNode pn0 = (PrintNode) ((MsgPlaceholderNode) nodes.get(0)).getChild(0);
     assertEquals("$boo.foo", pn0.getExpr().toSourceString());
     assertEquals("FOO", pn0.genBasePhName());
     assertEquals("{$boo.foo}", pn0.toSourceString());
 
-    PrintNode pn1 = (PrintNode) nodes.get(1);
+    PrintNode pn1 = (PrintNode) ((MsgPlaceholderNode) nodes.get(1)).getChild(0);
     assertEquals("$boo.foo", pn1.getExpr().toSourceString());
     assertEquals("BOO_FOO", pn1.genBasePhName());
     assertEquals("{$boo.foo phname=\"booFoo\"}", pn1.toSourceString());
     assertEquals(0, pn1.getChildren().size());
     assertTrue(pn1.getExpr().getRoot() instanceof FieldAccessNode);
 
-    PrintNode pn2 = (PrintNode) nodes.get(2);
+    PrintNode pn2 = (PrintNode) ((MsgPlaceholderNode) nodes.get(2)).getChild(0);
     assertEquals("$boo.foo", pn2.getExpr().toSourceString());
     assertEquals("BOO_FOO", pn2.genBasePhName());
     assertEquals("{$boo.foo phname=\"booFoo\"}", pn2.toSourceString());
 
-    PrintNode pn3 = (PrintNode) nodes.get(3);
+    PrintNode pn3 = (PrintNode) ((MsgPlaceholderNode) nodes.get(3)).getChild(0);
     assertEquals("$boo.foo", pn3.getExpr().toSourceString());
     assertEquals("BOO_FOO", pn3.genBasePhName());
     assertEquals("{print $boo.foo phname=\"boo_foo\"}", pn3.toSourceString());
@@ -969,17 +1017,22 @@ public final class TemplateParserTest {
   public void testParseCssStmt() throws Exception {
 
     String templateBody =
-        "{css selected-option}\n"
+        "{@param cssSelectedOption : ?}\n"
+            + "{css selected-option}\n"
             + "{css CSS_SELECTED_OPTION}\n"
-            + "{css $cssSelectedOption}\n"
+            + "{css $cssSelectedOption, foo}\n"
             + "{css %SelectedOption}";
 
-    List<StandaloneNode> nodes = parseTemplateBody(templateBody, FAIL).getChildren();
+    List<StandaloneNode> nodes =
+        assertValidTemplate(ContentKind.ATTRIBUTES, "requirecss=\"foo.bar\"", templateBody)
+            .getChildren();
     assertEquals(4, nodes.size());
     assertEquals("selected-option", ((CssNode) nodes.get(0)).getSelectorText());
     assertEquals("CSS_SELECTED_OPTION", ((CssNode) nodes.get(1)).getSelectorText());
-    assertEquals("$cssSelectedOption", ((CssNode) nodes.get(2)).getSelectorText());
-    assertEquals("%SelectedOption", ((CssNode) nodes.get(3)).getSelectorText());
+    assertEquals(
+        "$cssSelectedOption", ((CssNode) nodes.get(2)).getComponentNameExpr().toSourceString());
+    assertEquals("foo", ((CssNode) nodes.get(2)).getSelectorText());
+    assertEquals("fooBarSelectedOption", ((CssNode) nodes.get(3)).getSelectorText());
   }
 
   @Test
@@ -988,7 +1041,7 @@ public final class TemplateParserTest {
     String templateBody =
         "{xid selected-option}\n" + "{xid selected.option}\n" + "{xid XID_SELECTED_OPTION}";
 
-    List<StandaloneNode> nodes = parseTemplateBody(templateBody, FAIL).getChildren();
+    List<StandaloneNode> nodes = parseTemplateContent(templateBody, FAIL).getChildren();
     assertEquals(3, nodes.size());
     assertEquals("selected-option", ((XidNode) nodes.get(0)).getText());
     assertEquals("selected.option", ((XidNode) nodes.get(1)).getText());
@@ -999,7 +1052,8 @@ public final class TemplateParserTest {
   public void testParseMsgStmt() throws Exception {
 
     String templateBody =
-        "  {msg desc=\"Tells user's quota usage.\"}\n"
+        "{@param usedMb :?}{@param learnMoreUrl :?}\n"
+            + "  {msg desc=\"Tells user's quota usage.\"}\n"
             + "    You're currently using {$usedMb} MB of your quota.{sp}\n"
             + "    <a href=\"{$learnMoreUrl}\">Learn more</A>\n"
             + "    <br /><br />\n"
@@ -1009,7 +1063,7 @@ public final class TemplateParserTest {
             + "  {msg meaning=\"verb\" desc=\"\"}Archive{/msg}\n"
             + "  {msg desc=\"\"}Archive{/msg}\n";
 
-    List<StandaloneNode> nodes = parseTemplateBody(templateBody, FAIL).getChildren();
+    List<StandaloneNode> nodes = parseTemplateContent(templateBody, FAIL).getChildren();
     assertEquals(5, nodes.size());
 
     MsgNode mn0 = ((MsgFallbackGroupNode) nodes.get(0)).getMsg();
@@ -1064,7 +1118,7 @@ public final class TemplateParserTest {
   public void testParseMsgHtmlTagWithPhname() throws Exception {
 
     String templateBody =
-        ""
+        "{@param learnMoreUrl :?}\n"
             + "  {msg desc=\"\"}\n"
             + "    <a href=\"{$learnMoreUrl}\" phname=\"beginLearnMoreLink\">\n"
             + "      Learn more\n"
@@ -1073,7 +1127,7 @@ public final class TemplateParserTest {
             + "<br phname=\"break_tag\" />\n"
             + "  {/msg}\n";
 
-    List<StandaloneNode> nodes = parseTemplateBody(templateBody, FAIL).getChildren();
+    List<StandaloneNode> nodes = parseTemplateContent(templateBody, FAIL).getChildren();
     assertEquals(1, nodes.size());
 
     MsgNode mn0 = ((MsgFallbackGroupNode) nodes.get(0)).getChild(0);
@@ -1120,12 +1174,12 @@ public final class TemplateParserTest {
         "  {msg desc=\"Blah.\"}\n"
             + "    Blah {call .helper_ data=\"all\" /} blah{sp}\n"
             + "    {call .helper_}\n"
-            + "      {param foo}Foo{/param}\n"
+            + "      {param foo : 'foo' /}\n"
             + "    {/call}{sp}\n"
             + "    blah.\n"
             + "  {/msg}\n";
 
-    List<StandaloneNode> nodes = parseTemplateBody(templateBody, FAIL).getChildren();
+    List<StandaloneNode> nodes = parseTemplateContent(templateBody, FAIL).getChildren();
     assertEquals(1, nodes.size());
 
     MsgNode mn = ((MsgFallbackGroupNode) nodes.get(0)).getChild(0);
@@ -1140,17 +1194,20 @@ public final class TemplateParserTest {
 
   @Test
   public void testParseMsgStmtWithIf() throws Exception {
-    TemplateSubject.assertThatTemplateContent(
-            "  {msg desc=\"Blah.\"}\n"
-                + "    Blah \n"
-                + "    {if $boo}\n"
-                + "      bleh\n"
-                + "    {else}\n"
-                + "      bluh\n"
-                + "    {/if}\n"
-                + "    .\n"
-                + "  {/msg}\n")
-        .isNotWellFormed();
+    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+    parseTemplateContent(
+        "{@param boo :?}\n"
+            + "  {msg desc=\"Blah.\"}\n"
+            + "    Blah \n"
+            + "    {if $boo}\n"
+            + "      bleh\n"
+            + "    {else}\n"
+            + "      bluh\n"
+            + "    {/if}\n"
+            + "    .\n"
+            + "  {/msg}\n",
+        errorReporter);
+    assertThat(errorReporter.getErrorMessages()).isNotEmpty();
   }
 
   @Test
@@ -1164,7 +1221,7 @@ public final class TemplateParserTest {
             + "  Archive\n"
             + "{/msg}";
 
-    List<StandaloneNode> nodes = parseTemplateBody(templateBody, FAIL).getChildren();
+    List<StandaloneNode> nodes = parseTemplateContent(templateBody, FAIL).getChildren();
     assertEquals(1, nodes.size());
 
     MsgFallbackGroupNode mfgn = (MsgFallbackGroupNode) nodes.get(0);
@@ -1187,16 +1244,17 @@ public final class TemplateParserTest {
   public void testParseLetStmt() throws Exception {
 
     String templateBody =
-        "  {let $alpha: $boo.foo /}\n"
-            + "  {let $beta}Boo!{/let}\n"
-            + "  {let $gamma}\n"
+        "{@param boo : ?}\n"
+            + "  {let $alpha: $boo.foo /}\n"
+            + "  {let $beta kind=\"html\"}Boo!{/let}\n"
+            + "  {let $gamma kind=\"html\"}\n"
             + "    {for $i in range($alpha)}\n"
             + "      {$i}{$beta}\n"
             + "    {/for}\n"
             + "  {/let}\n"
             + "  {let $delta kind=\"html\"}Boo!{/let}\n";
 
-    List<StandaloneNode> nodes = parseTemplateBody(templateBody, FAIL).getChildren();
+    List<StandaloneNode> nodes = parseTemplateContent(templateBody, FAIL).getChildren();
     assertEquals(4, nodes.size());
 
     LetValueNode alphaNode = (LetValueNode) nodes.get(0);
@@ -1205,11 +1263,11 @@ public final class TemplateParserTest {
     LetContentNode betaNode = (LetContentNode) nodes.get(1);
     assertEquals("beta", betaNode.getVarName());
     assertEquals("Boo!", ((RawTextNode) betaNode.getChild(0)).getRawText());
-    assertNull(betaNode.getContentKind());
+    assertEquals(ContentKind.HTML, betaNode.getContentKind());
     LetContentNode gammaNode = (LetContentNode) nodes.get(2);
     assertEquals("gamma", gammaNode.getVarName());
     assertTrue(gammaNode.getChild(0) instanceof ForNode);
-    assertNull(gammaNode.getContentKind());
+    assertEquals(ContentKind.HTML, gammaNode.getContentKind());
     LetContentNode deltaNode = (LetContentNode) nodes.get(3);
     assertEquals("delta", deltaNode.getVarName());
     assertEquals("Boo!", ((RawTextNode) betaNode.getChild(0)).getRawText());
@@ -1232,7 +1290,8 @@ public final class TemplateParserTest {
   public void testParseIfStmt() throws Exception {
 
     String templateBody =
-        "  {if $zoo}{$zoo}{/if}\n"
+        "{@param zoo : ?}{@param boo: ?}{@param foo : ?}{@param moo : ?}\n"
+            + "  {if $zoo}{$zoo}{/if}\n"
             + "  {if $boo}\n"
             + "    Blah\n"
             + "  {elseif $foo.goo > 2}\n"
@@ -1241,7 +1300,7 @@ public final class TemplateParserTest {
             + "    Blah {$moo}\n"
             + "  {/if}\n";
 
-    List<StandaloneNode> nodes = parseTemplateBody(templateBody, FAIL).getChildren();
+    List<StandaloneNode> nodes = parseTemplateContent(templateBody, FAIL).getChildren();
     assertEquals(2, nodes.size());
 
     IfNode in0 = (IfNode) nodes.get(0);
@@ -1268,7 +1327,8 @@ public final class TemplateParserTest {
   public void testParseSwitchStmt() throws Exception {
 
     String templateBody =
-        "  {switch $boo} {case 0}Blah\n"
+        "{@param boo: ?}{@param foo : ?}{@param moo : ?}\n"
+            + "  {switch $boo} {case 0}Blah\n"
             + "    {case $foo.goo}\n"
             + "      Bleh\n"
             + "    {case -1, 1, $moo}\n"
@@ -1277,7 +1337,7 @@ public final class TemplateParserTest {
             + "      Bloh\n"
             + "  {/switch}\n";
 
-    List<StandaloneNode> nodes = parseTemplateBody(templateBody, FAIL).getChildren();
+    List<StandaloneNode> nodes = parseTemplateContent(templateBody, FAIL).getChildren();
     assertEquals(1, nodes.size());
 
     SwitchNode sn = (SwitchNode) nodes.get(0);
@@ -1317,7 +1377,8 @@ public final class TemplateParserTest {
   public void testParseForeachStmt() throws Exception {
 
     String templateBody =
-        "  {foreach $goo in $goose}\n"
+        "{@param goose : ?}{@param foo: ?}\n"
+            + "  {foreach $goo in $goose}\n"
             + "    {$goose.numKids} goslings.{\\n}\n"
             + "  {/foreach}\n"
             + "  {foreach $boo in $foo.booze}\n"
@@ -1327,7 +1388,7 @@ public final class TemplateParserTest {
             + "    Sorry, no booze.\n"
             + "  {/foreach}\n";
 
-    List<StandaloneNode> nodes = parseTemplateBody(templateBody, FAIL).getChildren();
+    List<StandaloneNode> nodes = parseTemplateContent(templateBody, FAIL).getChildren();
     assertEquals(2, nodes.size());
 
     ForeachNode fn0 = (ForeachNode) nodes.get(0);
@@ -1365,13 +1426,14 @@ public final class TemplateParserTest {
   public void testParseForStmt() throws Exception {
 
     String templateBody =
-        "  {for $i in range(10, $itemsLength + 1)}\n"
+        "{@param items : ?}{@param itemsLength : ?}\n"
+            + "  {for $i in range(10, $itemsLength + 1)}\n"
             + "    {msg desc=\"Numbered item.\"}\n"
             + "      {$i}: {$items[$i - 1]}{\\n}\n"
             + "    {/msg}\n"
             + "  {/for}\n";
 
-    List<StandaloneNode> nodes = parseTemplateBody(templateBody, FAIL).getChildren();
+    List<StandaloneNode> nodes = parseTemplateContent(templateBody, FAIL).getChildren();
     assertEquals(1, nodes.size());
 
     ForNode fn = (ForNode) nodes.get(0);
@@ -1400,21 +1462,22 @@ public final class TemplateParserTest {
   public void testParseBasicCallStmt() throws Exception {
 
     String templateBody =
-        "  {call .booTemplate_ /}\n"
+        "{@param too : ?}{@param animals: ?}\n"
+            + "  {call .booTemplate_ /}\n"
             + "  {call foo.goo.mooTemplate data=\"all\" /}\n"
             + "  {call .booTemplate_ /}\n"
             + "  {call .zooTemplate data=\"$animals\"}\n"
             + "    {param yoo: round($too) /}\n"
-            + "    {param woo}poo{/param}\n"
+            + "    {param woo kind=\"html\"}poo{/param}\n"
             + "    {param zoo: 0 /}\n"
             + "    {param doo kind=\"html\"}doopoo{/param}\n"
             + "  {/call}\n";
 
-    List<StandaloneNode> nodes = parseTemplateBody(templateBody, FAIL).getChildren();
+    List<StandaloneNode> nodes = parseTemplateContent(templateBody, FAIL).getChildren();
     assertThat(nodes).hasSize(4);
 
     CallBasicNode cn0 = (CallBasicNode) nodes.get(0);
-    assertEquals(null, cn0.getCalleeName());
+    assertEquals("brittle.test.ns.booTemplate_", cn0.getCalleeName());
     assertEquals(".booTemplate_", cn0.getSrcCalleeName());
     assertEquals(false, cn0.isPassingData());
     assertEquals(false, cn0.isPassingAllData());
@@ -1423,7 +1486,7 @@ public final class TemplateParserTest {
     assertEquals(0, cn0.numChildren());
 
     CallBasicNode cn1 = (CallBasicNode) nodes.get(1);
-    assertEquals(null, cn1.getCalleeName());
+    assertEquals("foo.goo.mooTemplate", cn1.getCalleeName());
     assertEquals("foo.goo.mooTemplate", cn1.getSrcCalleeName());
     assertEquals(true, cn1.isPassingData());
     assertEquals(true, cn1.isPassingAllData());
@@ -1432,7 +1495,7 @@ public final class TemplateParserTest {
     assertEquals(0, cn1.numChildren());
 
     CallBasicNode cn2 = (CallBasicNode) nodes.get(2);
-    assertEquals(null, cn2.getCalleeName());
+    assertEquals("brittle.test.ns.booTemplate_", cn2.getCalleeName());
     assertEquals(".booTemplate_", cn2.getSrcCalleeName());
     assertFalse(cn2.isPassingData());
     assertEquals(false, cn2.isPassingAllData());
@@ -1441,7 +1504,7 @@ public final class TemplateParserTest {
     assertEquals(0, cn2.numChildren());
 
     CallBasicNode cn3 = (CallBasicNode) nodes.get(3);
-    assertEquals(null, cn3.getCalleeName());
+    assertEquals("brittle.test.ns.zooTemplate", cn3.getCalleeName());
     assertEquals(".zooTemplate", cn3.getSrcCalleeName());
     assertEquals(true, cn3.isPassingData());
     assertEquals(false, cn3.isPassingAllData());
@@ -1459,7 +1522,7 @@ public final class TemplateParserTest {
     {
       final CallParamContentNode cn4cpcn1 = (CallParamContentNode) cn3.getChild(1);
       assertEquals("woo", cn4cpcn1.getKey());
-      assertNull(cn4cpcn1.getContentKind());
+      assertEquals(ContentKind.HTML, cn4cpcn1.getContentKind());
       assertEquals("poo", ((RawTextNode) cn4cpcn1.getChild(0)).getRawText());
     }
 
@@ -1483,14 +1546,15 @@ public final class TemplateParserTest {
   public void testParseDelegateCallStmt() throws Exception {
 
     String templateBody =
-        "  {delcall booTemplate /}\n"
+        "{@param animals : ?}{@param too : ?}\n"
+            + "  {delcall booTemplate /}\n"
             + "  {delcall foo.goo.mooTemplate data=\"all\" /}\n"
             + "  {delcall MySecretFeature.zooTemplate data=\"$animals\"}\n"
             + "    {param yoo: round($too) /}\n"
-            + "    {param woo}poo{/param}\n"
+            + "    {param woo kind=\"html\"}poo{/param}\n"
             + "  {/delcall}\n";
 
-    List<StandaloneNode> nodes = parseTemplateBody(templateBody, FAIL).getChildren();
+    List<StandaloneNode> nodes = parseTemplateContent(templateBody, FAIL).getChildren();
     assertEquals(3, nodes.size());
 
     CallDelegateNode cn0 = (CallDelegateNode) nodes.get(0);
@@ -1532,28 +1596,33 @@ public final class TemplateParserTest {
   public void testParseCallStmtWithPhname() throws Exception {
 
     String templateBody =
-        ""
+        "{@param animals:?}\n"
+            + "{msg desc=\"...\"}\n"
             + "  {call .booTemplate_ phname=\"booTemplate_\" /}\n"
             + "  {call .booTemplate_ phname=\"booTemplate_\" /}\n"
             + "  {delcall MySecretFeature.zooTemplate data=\"$animals\" phname=\"secret_zoo\"}\n"
             + "    {param zoo: 0 /}\n"
-            + "  {/delcall}\n";
+            + "  {/delcall}\n"
+            + "{/msg}";
 
-    List<StandaloneNode> nodes = parseTemplateBody(templateBody, FAIL).getChildren();
+    List<StandaloneNode> nodes =
+        ((MsgFallbackGroupNode) parseTemplateContent(templateBody, FAIL).getChild(0))
+            .getChild(0)
+            .getChildren();
     assertEquals(3, nodes.size());
 
-    CallBasicNode cn0 = (CallBasicNode) nodes.get(0);
+    CallBasicNode cn0 = (CallBasicNode) ((MsgPlaceholderNode) nodes.get(0)).getChild(0);
     assertEquals("BOO_TEMPLATE", cn0.genBasePhName());
-    assertEquals(null, cn0.getCalleeName());
+    assertEquals("brittle.test.ns.booTemplate_", cn0.getCalleeName());
     assertEquals(".booTemplate_", cn0.getSrcCalleeName());
     assertEquals(false, cn0.isPassingData());
     assertEquals(false, cn0.isPassingAllData());
     assertEquals(null, cn0.getDataExpr());
     assertEquals(0, cn0.numChildren());
 
-    CallBasicNode cn1 = (CallBasicNode) nodes.get(1);
+    CallBasicNode cn1 = (CallBasicNode) ((MsgPlaceholderNode) nodes.get(1)).getChild(0);
 
-    CallDelegateNode cn2 = (CallDelegateNode) nodes.get(2);
+    CallDelegateNode cn2 = (CallDelegateNode) ((MsgPlaceholderNode) nodes.get(2)).getChild(0);
     assertEquals("SECRET_ZOO", cn2.genBasePhName());
     assertEquals("MySecretFeature.zooTemplate", cn2.getDelCalleeName());
     assertEquals(true, cn2.isPassingData());
@@ -1569,9 +1638,9 @@ public final class TemplateParserTest {
   @Test
   public void testParseLogStmt() throws Exception {
 
-    String templateBody = "{log}Blah {$foo}.{/log}";
+    String templateBody = "{@param foo : ?}\n" + "{log}Blah {$foo}.{/log}";
 
-    List<StandaloneNode> nodes = parseTemplateBody(templateBody, FAIL).getChildren();
+    List<StandaloneNode> nodes = parseTemplateContent(templateBody, FAIL).getChildren();
     assertEquals(1, nodes.size());
 
     LogNode logNode = (LogNode) nodes.get(0);
@@ -1585,7 +1654,7 @@ public final class TemplateParserTest {
 
     String templateBody = "{debugger}";
 
-    List<StandaloneNode> nodes = parseTemplateBody(templateBody, FAIL).getChildren();
+    List<StandaloneNode> nodes = parseTemplateContent(templateBody, FAIL).getChildren();
     assertEquals(1, nodes.size());
 
     assertTrue(nodes.get(0) instanceof DebuggerNode);
@@ -1597,7 +1666,8 @@ public final class TemplateParserTest {
   @Test
   public void testParseMsgStmtWithPlural() throws Exception {
     String templateBody =
-        "  {msg desc=\"A sample plural message\"}\n"
+        "{@param num_people : ?}{@param person : ?}{@param place : ?}\n"
+            + "  {msg desc=\"A sample plural message\"}\n"
             + "    {plural $num_people offset=\"1\"}\n"
             + "      {case 0}I see no one in {$place}.\n"
             + "      {case 1}I see {$person} in {$place}.\n"
@@ -1607,7 +1677,7 @@ public final class TemplateParserTest {
             + "    {/plural}"
             + "  {/msg}\n";
 
-    List<StandaloneNode> nodes = parseTemplateBody(templateBody, FAIL).getChildren();
+    List<StandaloneNode> nodes = parseTemplateContent(templateBody, FAIL).getChildren();
     assertEquals(1, nodes.size());
 
     MsgNode mn = ((MsgFallbackGroupNode) nodes.get(0)).getChild(0);
@@ -1687,7 +1757,7 @@ public final class TemplateParserTest {
     assertEquals(" and ", rtnd2.getRawText());
 
     MsgPlaceholderNode phnd2 = (MsgPlaceholderNode) dn.getChild(3);
-    assertEquals("{remainder($num_people)}", phnd2.toSourceString());
+    assertEquals("{$num_people - 1}", phnd2.toSourceString());
 
     RawTextNode rtnd3 = (RawTextNode) dn.getChild(4);
     assertEquals(" other people in ", rtnd3.getRawText());
@@ -1702,14 +1772,15 @@ public final class TemplateParserTest {
   @Test
   public void testParseMsgStmtWithSelect() throws Exception {
     String templateBody =
-        "{msg desc=\"A sample gender message\"}\n"
+        "{@param gender : ?}{@param person : ?}\n"
+            + "{msg desc=\"A sample gender message\"}\n"
             + "  {select $gender}\n"
             + "    {case 'female'}{$person} added you to her circle.\n"
             + "    {default}{$person} added you to his circle.\n"
             + "  {/select}\n"
             + "{/msg}\n";
 
-    List<StandaloneNode> nodes = parseTemplateBody(templateBody, FAIL).getChildren();
+    List<StandaloneNode> nodes = parseTemplateContent(templateBody, FAIL).getChildren();
     assertEquals(1, nodes.size());
 
     MsgNode mn = ((MsgFallbackGroupNode) nodes.get(0)).getChild(0);
@@ -1745,7 +1816,8 @@ public final class TemplateParserTest {
   @Test
   public void testParseMsgStmtWithNestedSelects() throws Exception {
     String templateBody =
-        "{msg desc=\"A sample nested message\"}\n"
+        "{@param gender1 : ?}{@param gender2: ?}{@param person1 : ?}{@param person2: ?}\n"
+            + "{msg desc=\"A sample nested message\"}\n"
             + "  {select $gender1}\n"
             + "    {case 'female'}\n"
             + "      {select $gender2}\n"
@@ -1760,7 +1832,7 @@ public final class TemplateParserTest {
             + "  {/select}\n"
             + "{/msg}\n";
 
-    List<StandaloneNode> nodes = parseTemplateBody(templateBody, FAIL).getChildren();
+    List<StandaloneNode> nodes = parseTemplateContent(templateBody, FAIL).getChildren();
     assertEquals(1, nodes.size());
 
     MsgNode mn = ((MsgFallbackGroupNode) nodes.get(0)).getChild(0);
@@ -1877,7 +1949,7 @@ public final class TemplateParserTest {
   @Test
   public void testMultipleErrors() throws ParseException {
     FormattingErrorReporter errorReporter = new FormattingErrorReporter();
-    parseTemplateBody(
+    parseTemplateContent(
         "{call 123 /}\n" // Invalid callee name "123" for 'call' command.
             + "{delcall 123 /}\n" // Invalid delegate name "123" for 'delcall' command.
             + "{foreach foo in bar}{/foreach}\n" // Invalid 'foreach' command text "foo in bar".
@@ -1895,27 +1967,6 @@ public final class TemplateParserTest {
   // Helpers.
 
   /**
-   * Parses the given input as a template body.
-   *
-   * @param input The input string to parse.
-   * @throws TokenMgrError When the given input has a token error.
-   * @throws ParseException When the given input has a parse error.
-   * @return The parse tree nodes created.
-   */
-  private static TemplateNode parseTemplateBody(String input, ErrorReporter errorReporter)
-      throws ParseException {
-    TemplateNode result = parseTemplateContent(input, errorReporter);
-    if (result != null) {
-      for (TemplateParam param : result.getAllParams()) {
-        if (param instanceof HeaderParam) {
-          fail("expected no params");
-        }
-      }
-    }
-    return result;
-  }
-
-  /**
    * Parses the given input as a template content (header and body).
    *
    * @param input The input string to parse.
@@ -1926,21 +1977,13 @@ public final class TemplateParserTest {
     String soyFile =
         SharedTestUtils.buildTestSoyFileContent(
             AutoEscapingType.STRICT, ImmutableList.<String>of(), input);
-    IncrementingIdGenerator nodeIdGen = new IncrementingIdGenerator();
-    SoyFileNode file =
-        new SoyFileParser(
-                new SoyTypeRegistry(),
-                nodeIdGen,
-                new StringReader(soyFile),
-                SoyFileKind.SRC,
-                "test.soy",
-                errorReporter)
-            .parseSoyFile();
-    if (file != null) {
-      new CombineConsecutiveRawTextNodesVisitor(nodeIdGen).exec(file);
-      return file.getChild(0);
-    }
-    return null;
+
+    SoyFileSetNode fileSet =
+        SoyFileSetParserBuilder.forFileContents(soyFile)
+            .errorReporter(errorReporter)
+            .parse()
+            .fileSet();
+    return fileSet.numChildren() > 0 ? fileSet.getChild(0).getChild(0) : null;
   }
 
   /**
@@ -1948,71 +1991,45 @@ public final class TemplateParserTest {
    *
    * @param input The input string to parse.
    */
-  private static void assertValidTemplate(String input) {
-    ImmutableMap<String, SoyFileSupplier> files =
-        ImmutableMap.of(
-            "example.soy",
-            SoyFileSupplier.Factory.create(
-                "{namespace test}{template .test}\n" + input + "\n{/template}",
-                SoyFileKind.SRC,
-                "example.soy"));
-    ErrorReporterImpl reporter =
-        new ErrorReporterImpl(new PrettyErrorFactory(new SnippetFormatter(files)));
-    SoyFileSetParser fileSetParser =
-        new SoyFileSetParser(
-            null /* ast cache */,
-            files,
-            new PassManager.Builder()
-                .setErrorReporter(reporter)
-                .setTypeRegistry(new SoyTypeRegistry())
-                .setSoyFunctionMap(ImmutableMap.<String, SoyFunction>of())
-                .setDeclaredSyntaxVersion(SyntaxVersion.V1_0)
-                .setGeneralOptions(new SoyGeneralOptions())
-                .build(),
-            reporter);
-    fileSetParser.parse();
-    assertThat(reporter.hasErrors()).isFalse();
+  private static TemplateNode assertValidTemplate(String input) {
+    return assertValidTemplate(ContentKind.HTML, input);
   }
 
-  /**
-   * Asserts that the given input is a valid template.
-   *
-   * @param input The input string to parse.
-   * @throws TokenMgrError When the given input has a token error.
-   * @throws ParseException When the given input has a parse error.
-   */
-  private static void assertIsTemplateBody(String input) throws TokenMgrError, ParseException {
-    TemplateSubject.assertThatTemplateContent(input).isWellFormed();
+  private static TemplateNode assertValidTemplate(ContentKind kind, String input) {
+    return assertValidTemplate(kind, "", input);
   }
 
-  /**
-   * Asserts that the given input is a valid template content (header and body).
-   *
-   * @param input The input string to parse.
-   * @throws TokenMgrError When the given input has a token error.
-   * @throws ParseException When the given input has a parse error.
-   */
-  private static void assertIsTemplateContent(String input) throws TokenMgrError, ParseException {
-    TemplateSubject.assertThatTemplateContent(input).isWellFormed();
+  private static TemplateNode assertValidTemplate(
+      ContentKind kind, String namespaceAttrs, String input) {
+    StringBuilder soyFileContentBuilder = new StringBuilder();
+    soyFileContentBuilder
+        .append("{namespace brittle.test.ns autoescape=\"")
+        .append(AutoEscapingType.STRICT.getKey())
+        .append("\" ")
+        .append(namespaceAttrs)
+        .append("}\n\n")
+        .append("{template .brittleTestTemplate kind=\"")
+        .append(kind.toString().toLowerCase())
+        .append("\"}\n")
+        .append(input)
+        .append("\n{/template}\n");
+    return SoyFileSetParserBuilder.forFileContents(soyFileContentBuilder.toString())
+        .parse()
+        .fileSet()
+        .getChild(0)
+        .getChild(0);
   }
 
-  /**
-   * Asserts that the given input is not a valid template.
-   *
-   * @param input The input string to parse.
-   * @throws AssertionFailedError When the given input is actually a valid template.
-   */
-  private static void assertIsNotTemplateBody(String input) throws AssertionFailedError {
-    TemplateSubject.assertThatTemplateContent(input).isNotWellFormed();
+  private static void assertInvalidTemplate(String input) {
+    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+    parseTemplateContent(input, errorReporter);
+    assertThat(errorReporter.getErrorMessages()).isNotEmpty();
   }
 
-  /**
-   * Asserts that the given input is not a valid template content (header and body).
-   *
-   * @param input The input string to parse.
-   * @throws AssertionFailedError When the given input is actually a valid template.
-   */
-  private static void assertIsNotTemplateContent(String input) throws AssertionFailedError {
-    TemplateSubject.assertThatTemplateContent(input).isNotWellFormed();
+  private static void assertInvalidTemplate(String input, String expectedErrorMessage) {
+    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+    parseTemplateContent(input, errorReporter);
+    assertThat(errorReporter.getErrorMessages()).hasSize(1);
+    assertThat(errorReporter.getErrorMessages().get(0)).contains(expectedErrorMessage);
   }
 }
