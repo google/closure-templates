@@ -17,18 +17,27 @@
 package com.google.template.soy.passes;
 
 import com.google.common.base.CaseFormat;
+import com.google.common.collect.Iterables;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.exprtree.StringNode;
+import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CssNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
+import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
+import java.util.List;
 
 /** Converts package-relative CSS class names to absolute names. */
 final class ResolvePackageRelativeCssNamesVisitor extends AbstractSoyNodeVisitor<Void> {
+
+  private static final String RELATIVE_SELECTOR_PREFIX = "%";
 
   private static final SoyErrorKind PACKAGE_RELATIVE_CLASS_NAME_USED_WITH_COMPONENT_NAME =
       SoyErrorKind.of(
@@ -49,7 +58,6 @@ final class ResolvePackageRelativeCssNamesVisitor extends AbstractSoyNodeVisitor
     // 1) cssbase on the template
     // 2) cssbase on the namespace
     // 3) first requirecss on the namespace
-    packagePrefix = null;
     if (node.getCssBaseNamespace() != null) {
       packagePrefix = toCamelCase(node.getCssBaseNamespace());
     } else if (node.getParent().getCssBaseNamespace() != null) {
@@ -58,14 +66,22 @@ final class ResolvePackageRelativeCssNamesVisitor extends AbstractSoyNodeVisitor
       packagePrefix = toCamelCase(node.getParent().getRequiredCssNamespaces().get(0));
     }
 
-    super.visitTemplateNode(node);
+    // TODO(user): remove.
+    List<CssNode> cssNodes = SoyTreeUtils.getAllNodesOfType(node, CssNode.class);
+    for (CssNode css : cssNodes) {
+      resolveSelector(css);
+    }
+
+    List<FunctionNode> fnNodes = SoyTreeUtils.getAllNodesOfType(node, FunctionNode.class);
+    for (FunctionNode fn : fnNodes) {
+      resolveSelector(fn);
+    }
   }
 
-  @Override
-  protected void visitCssNode(CssNode node) {
+  private void resolveSelector(CssNode node) {
     // Determine if this is a package-relative selector, do nothing if it's not.
     String selectorText = node.getSelectorText();
-    if (!selectorText.startsWith("%")) {
+    if (!selectorText.startsWith(RELATIVE_SELECTOR_PREFIX)) {
       return;
     }
 
@@ -81,13 +97,45 @@ final class ResolvePackageRelativeCssNamesVisitor extends AbstractSoyNodeVisitor
       errorReporter.report(node.getSourceLocation(), NO_CSS_PACKAGE, selectorText);
     }
 
-    // Remove this CssNode. Save the index because we'll need it for inserting the new nodes.
+    // Replace this CssNode with a new node with the resolved selector text.
+    String prefixed = packagePrefix + selectorText.substring(RELATIVE_SELECTOR_PREFIX.length());
+    CssNode newNode = new CssNode(node, prefixed, new CopyState());
     ParentSoyNode<StandaloneNode> parent = node.getParent();
-    int indexInParent = parent.getChildIndex(node);
-    parent.removeChild(indexInParent);
+    parent.replaceChild(node, newNode);
+  }
 
-    CssNode newNode = new CssNode(node, packagePrefix + selectorText.substring(1), new CopyState());
-    parent.addChild(indexInParent, newNode);
+  private void resolveSelector(FunctionNode node) {
+    if (node.getSoyFunction() != BuiltinFunction.CSS) {
+      return;
+    }
+
+    ExprNode lastChild = Iterables.getLast(node.getChildren());
+    if (!(lastChild instanceof StringNode)) {
+      // this will generate an error in CheckFunctionCallsVisitor
+      return;
+    }
+
+    StringNode selector = (StringNode) Iterables.getLast(node.getChildren());
+    String selectorText = selector.getValue();
+    if (!selectorText.startsWith(RELATIVE_SELECTOR_PREFIX)) {
+      return;
+    }
+
+    if (node.numChildren() > 1) {
+      errorReporter.report(
+          selector.getSourceLocation(),
+          PACKAGE_RELATIVE_CLASS_NAME_USED_WITH_COMPONENT_NAME,
+          selectorText);
+    }
+
+    if (packagePrefix == null) {
+      errorReporter.report(selector.getSourceLocation(), NO_CSS_PACKAGE, selectorText);
+    }
+
+    // Replace the selector text with resolved selector text
+    String prefixed = packagePrefix + selectorText.substring(RELATIVE_SELECTOR_PREFIX.length());
+    StringNode newSelector = new StringNode(prefixed, selector.getSourceLocation());
+    node.replaceChild(selector, newSelector);
   }
 
   @Override

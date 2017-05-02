@@ -23,6 +23,7 @@ import com.google.common.base.Optional;
 import com.google.common.base.Splitter;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -35,20 +36,22 @@ import com.google.template.soy.base.internal.IndentedLinesBuilder;
 import com.google.template.soy.base.internal.LegacyInternalSyntaxException;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.exprtree.FieldAccessNode;
+import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.ProtoInitNode;
+import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.parseinfo.SoyFileInfo.CssTagsPrefixPresence;
 import com.google.template.soy.passes.FindIjParamsVisitor;
 import com.google.template.soy.passes.FindIjParamsVisitor.IjParamsInfo;
 import com.google.template.soy.passes.FindIndirectParamsVisitor;
 import com.google.template.soy.passes.FindIndirectParamsVisitor.IndirectParamsInfo;
+import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CssNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
@@ -97,7 +100,7 @@ public final class GenerateParseInfoVisitor
 
   /** Represents the source of the generated Java class names. */
   @VisibleForTesting
-  static enum JavaClassNameSource {
+  enum JavaClassNameSource {
     /** AaaBbb.soy or aaa_bbb.soy --> AaaBbbSoyInfo. */
     SOY_FILE_NAME,
 
@@ -985,33 +988,36 @@ public final class GenerateParseInfoVisitor
 
     @Override
     public SortedMap<String, CssTagsPrefixPresence> exec(SoyNode node) {
-      visit(node);
+      List<CssNode> cssNodes = SoyTreeUtils.getAllNodesOfType(node, CssNode.class);
+      for (CssNode css : cssNodes) {
+        collectSelector(css.getSelectorText(), css.getComponentNameExpr() != null);
+      }
+
+      List<FunctionNode> fnNodes = SoyTreeUtils.getAllNodesOfType(node, FunctionNode.class);
+      for (FunctionNode fn : fnNodes) {
+        if (fn.getSoyFunction() != BuiltinFunction.CSS) {
+          continue;
+        }
+
+        String selector = ((StringNode) Iterables.getLast(fn.getChildren())).getValue();
+        collectSelector(selector, fn.numChildren() > 1);
+      }
+
       return cssNamesMap;
     }
 
-    @Override
-    protected void visitCssNode(CssNode node) {
-
-      String cssName = node.getSelectorText();
-      CssTagsPrefixPresence existingCssTagsPrefixPresence = cssNamesMap.get(cssName);
+    private void collectSelector(String selector, boolean hasComponentName) {
+      CssTagsPrefixPresence existingCssTagsPrefixPresence = cssNamesMap.get(selector);
       CssTagsPrefixPresence additionalCssTagsPrefixPresence =
-          (node.getComponentNameExpr() == null)
-              ? CssTagsPrefixPresence.NEVER
-              : CssTagsPrefixPresence.ALWAYS;
+          (hasComponentName) ? CssTagsPrefixPresence.ALWAYS : CssTagsPrefixPresence.NEVER;
 
       if (existingCssTagsPrefixPresence == null) {
-        cssNamesMap.put(cssName, additionalCssTagsPrefixPresence);
+        cssNamesMap.put(selector, additionalCssTagsPrefixPresence);
       } else if (existingCssTagsPrefixPresence != additionalCssTagsPrefixPresence) {
-        cssNamesMap.put(cssName, CssTagsPrefixPresence.SOMETIMES);
+        // this CSS selector string has a prefix in some cases
+        cssNamesMap.put(selector, CssTagsPrefixPresence.SOMETIMES);
       } else {
         // Nothing to change.
-      }
-    }
-
-    @Override
-    protected void visitSoyNode(SoyNode node) {
-      if (node instanceof ParentSoyNode<?>) {
-        visitChildren((ParentSoyNode<?>) node);
       }
     }
   }

@@ -30,7 +30,7 @@ public class SoyFileInfo {
    * Note that it's possible for the same CSS name to appear in multiple 'css' tags, some of which
    * contain prefixes and some of which don't.
    */
-  public static enum CssTagsPrefixPresence {
+  public enum CssTagsPrefixPresence {
     ALWAYS,
     NEVER,
     SOMETIMES;

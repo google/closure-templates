@@ -32,5 +32,5 @@ public interface NodeVisitor<N extends Node, R> {
    *
    * @param node The node to execute the function on.
    */
-  public R exec(N node);
+  R exec(N node);
 }

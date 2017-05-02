@@ -35,6 +35,12 @@ public enum BuiltinFunction implements SoyFunction {
   INDEX("index"),
   QUOTE_KEYS_IF_JS("quoteKeysIfJs"),
   CHECK_NOT_NULL("checkNotNull"),
+  /**
+   * Function for substituting CSS class names according to a lookup map.
+   *
+   * <p>Takes 1 or 2 arguments: an optional prefix (if present, this is the first arg), followed by
+   * a string literal selector name.
+   */
   CSS("css"),
   XID("xid"),
   V1_EXPRESSION("v1Expression"),
