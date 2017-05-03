@@ -56,9 +56,11 @@ frameworks. Here are a few options for getting started:
 * Gulp
   * https://www.npmjs.com/package/gulp-soynode
   * https://www.npmjs.com/package/gulp-soy
+  * https://www.npmjs.com/package/soyer
 * Grunt
   * https://www.npmjs.com/package/grunt-closure-soy
   * https://www.npmjs.com/package/grunt-soy
+  * https://www.npmjs.com/package/grunt-soy-compile
 * NPM
   * https://www.npmjs.com/package/google-closure-templates
 * Maven
