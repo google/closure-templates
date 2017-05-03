@@ -184,14 +184,14 @@ public final class ExpressionParser {
 
 
   private static final SoyErrorKind DUPLICATE_PARAM_NAME =
-      SoyErrorKind.of("Duplicate param name ''{0}''");
+      SoyErrorKind.of("Duplicate param name ''{0}''.");
   private static final SoyErrorKind INTEGER_OUT_OF_RANGE =
       SoyErrorKind.of("Soy integers are constrained to the range of JavaScript integers: "
           + "https://www.ecma-international.org/ecma-262/5.1/#sec-8.5");
   private static final SoyErrorKind INVALID_FUNCTION_NAME =
-      SoyErrorKind.of("Invalid function name ''{0}''");
+      SoyErrorKind.of("Invalid function name ''{0}''.");
   private static final SoyErrorKind INVALID_PARAM_NAME =
-      SoyErrorKind.of("Invalid param name ''{0}''");
+      SoyErrorKind.of("Invalid param name ''{0}''.");
   private static final SoyErrorKind INVALID_VAR_NAME_IJ =
       SoyErrorKind.of("Invalid var name ''ij'' (''ij'' is for injected data ref).");
   private static final SoyErrorKind SINGLE_IDENTIFIER_KEY_IN_MAP_LITERAL =

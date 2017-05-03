@@ -18,6 +18,7 @@ package com.google.template.soy.soytree;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
@@ -34,7 +35,7 @@ public final class CallParamValueNode extends CallParamNode implements ExprHolde
   /** The parsed expression for the param value. */
   private final ExprRootNode valueExpr;
 
-  public CallParamValueNode(int id, SourceLocation location, String key, ExprNode valueExpr) {
+  public CallParamValueNode(int id, SourceLocation location, Identifier key, ExprNode valueExpr) {
     super(id, location, key);
     this.valueExpr = new ExprRootNode(valueExpr);
   }
@@ -61,7 +62,7 @@ public final class CallParamValueNode extends CallParamNode implements ExprHolde
 
   @Override
   public String getCommandText() {
-    return getKey() + " : " + valueExpr.toSourceString();
+    return getKey().identifier() + " : " + valueExpr.toSourceString();
   }
 
   @Override

@@ -19,6 +19,7 @@ package com.google.template.soy.soytree;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
 
 /**
@@ -30,10 +31,9 @@ import com.google.template.soy.basetree.CopyState;
 public abstract class CallParamNode extends AbstractCommandNode {
 
   /** The param key. */
-  // TODO(user): Turn this into an Identifier.
-  private final String key;
+  private final Identifier key;
 
-  protected CallParamNode(int id, SourceLocation sourceLocation, String key) {
+  protected CallParamNode(int id, SourceLocation sourceLocation, Identifier key) {
     super(id, sourceLocation, "param");
     this.key = checkNotNull(key);
   }
@@ -49,7 +49,7 @@ public abstract class CallParamNode extends AbstractCommandNode {
   }
 
   /** Returns the param key. */
-  public String getKey() {
+  public Identifier getKey() {
     return key;
   }
 

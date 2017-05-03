@@ -1514,27 +1514,27 @@ public final class TemplateParserTest {
 
     {
       final CallParamValueNode cn4cpvn0 = (CallParamValueNode) cn3.getChild(0);
-      assertEquals("yoo", cn4cpvn0.getKey());
+      assertEquals("yoo", cn4cpvn0.getKey().identifier());
       assertEquals("round($too)", cn4cpvn0.getExpr().toSourceString());
       assertTrue(cn4cpvn0.getExpr().getRoot() instanceof FunctionNode);
     }
 
     {
       final CallParamContentNode cn4cpcn1 = (CallParamContentNode) cn3.getChild(1);
-      assertEquals("woo", cn4cpcn1.getKey());
+      assertEquals("woo", cn4cpcn1.getKey().identifier());
       assertEquals(ContentKind.HTML, cn4cpcn1.getContentKind());
       assertEquals("poo", ((RawTextNode) cn4cpcn1.getChild(0)).getRawText());
     }
 
     {
       final CallParamValueNode cn4cpvn2 = (CallParamValueNode) cn3.getChild(2);
-      assertEquals("zoo", cn4cpvn2.getKey());
+      assertEquals("zoo", cn4cpvn2.getKey().identifier());
       assertEquals("0", cn4cpvn2.getExpr().toSourceString());
     }
 
     {
       final CallParamContentNode cn4cpcn3 = (CallParamContentNode) cn3.getChild(3);
-      assertEquals("doo", cn4cpcn3.getKey());
+      assertEquals("doo", cn4cpcn3.getKey().identifier());
       assertNotNull(cn4cpcn3.getContentKind());
       assertEquals(ContentKind.HTML, cn4cpcn3.getContentKind());
       assertEquals("doopoo", ((RawTextNode) cn4cpcn3.getChild(0)).getRawText());
@@ -1582,12 +1582,12 @@ public final class TemplateParserTest {
     assertEquals(2, cn2.numChildren());
 
     CallParamValueNode cn2cpvn0 = (CallParamValueNode) cn2.getChild(0);
-    assertEquals("yoo", cn2cpvn0.getKey());
+    assertEquals("yoo", cn2cpvn0.getKey().identifier());
     assertEquals("round($too)", cn2cpvn0.getExpr().toSourceString());
     assertTrue(cn2cpvn0.getExpr().getRoot() instanceof FunctionNode);
 
     CallParamContentNode cn2cpcn1 = (CallParamContentNode) cn2.getChild(1);
-    assertEquals("woo", cn2cpcn1.getKey());
+    assertEquals("woo", cn2cpcn1.getKey().identifier());
     assertEquals("poo", ((RawTextNode) cn2cpcn1.getChild(0)).getRawText());
   }
 

@@ -208,7 +208,7 @@ final class GenPyCallExprVisitor extends AbstractReturningSoyNodeVisitor<PyExpr>
     Map<PyExpr, PyExpr> additionalParams = new LinkedHashMap<>();
 
     for (CallParamNode child : callNode.getChildren()) {
-      PyExpr key = new PyStringExpr("'" + child.getKey() + "'");
+      PyExpr key = new PyStringExpr("'" + child.getKey().identifier() + "'");
 
       if (child instanceof CallParamValueNode) {
         CallParamValueNode cpvn = (CallParamValueNode) child;

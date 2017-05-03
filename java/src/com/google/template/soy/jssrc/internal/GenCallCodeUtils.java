@@ -272,7 +272,7 @@ public class GenCallCodeUtils {
     ImmutableList.Builder<CodeChunk.WithValue> values = ImmutableList.builder();
 
     for (CallParamNode child : callNode.getChildren()) {
-      keys.add(id(child.getKey()));
+      keys.add(id(child.getKey().identifier()));
 
       if (child instanceof CallParamValueNode) {
         CallParamValueNode cpvn = (CallParamValueNode) child;

@@ -609,11 +609,11 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
         if (child instanceof CallParamValueNode) {
           mutableCallData.setField(
-              child.getKey(), lazyEval(((CallParamValueNode) child).getExpr(), child));
+              child.getKey().identifier(), lazyEval(((CallParamValueNode) child).getExpr(), child));
 
         } else if (child instanceof CallParamContentNode) {
           mutableCallData.setField(
-              child.getKey(), renderRenderUnitNode((CallParamContentNode) child));
+              child.getKey().identifier(), renderRenderUnitNode((CallParamContentNode) child));
 
         } else {
           throw new AssertionError();

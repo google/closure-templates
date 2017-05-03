@@ -793,7 +793,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       // Otherwise we need to build a dictionary from {param} statements.
       Expression paramStoreExpression = getParamStoreExpression(node, reattachPoint);
       for (CallParamNode child : node.getChildren()) {
-        String paramKey = child.getKey();
+        String paramKey = child.getKey().identifier();
         Expression valueExpr;
         if (child instanceof CallParamContentNode) {
           valueExpr =

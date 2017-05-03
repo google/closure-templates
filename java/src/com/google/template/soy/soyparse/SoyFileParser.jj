@@ -393,14 +393,14 @@ public class SoyFileParser {
 
 
   private static final SoyErrorKind DUPLICATE_PARAM_NAME =
-      SoyErrorKind.of("Duplicate param name ''{0}''");
+      SoyErrorKind.of("Duplicate param name ''{0}''.");
   private static final SoyErrorKind INTEGER_OUT_OF_RANGE =
       SoyErrorKind.of("Soy integers are constrained to the range of JavaScript integers: "
           + "https://www.ecma-international.org/ecma-262/5.1/#sec-8.5");
   private static final SoyErrorKind INVALID_FUNCTION_NAME =
-      SoyErrorKind.of("Invalid function name ''{0}''");
+      SoyErrorKind.of("Invalid function name ''{0}''.");
   private static final SoyErrorKind INVALID_PARAM_NAME =
-      SoyErrorKind.of("Invalid param name ''{0}''");
+      SoyErrorKind.of("Invalid param name ''{0}''.");
   private static final SoyErrorKind INVALID_VAR_NAME_IJ =
       SoyErrorKind.of("Invalid var name ''ij'' (''ij'' is for injected data ref).");
   private static final SoyErrorKind SINGLE_IDENTIFIER_KEY_IN_MAP_LITERAL =
@@ -3018,7 +3018,8 @@ private void AddParams(CallNode callNode) :
  */
 private CallParamNode CallParam() :
 {
-  Token tagBegin, tagEnd, key = null;
+  Token tagBegin, tagEnd;
+  Identifier key;
   ExprNode valueExpr = null;
   CommandTagAttribute attr = null;
   List<StandaloneNode> templateBlock = ImmutableList.of();
@@ -3027,10 +3028,17 @@ private CallParamNode CallParam() :
   tagBegin = <CMD_BEGIN_PARAM>
 
   try {
-    key = <IDENT>
+    key = Identifier()
   } catch (ParseException e) {
+    key = Identifier.create("error", createSrcLoc(tagBegin));
     tagEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_SELF_CLOSE, CMD_END);
-    return new CallParamValueNode(-1, createSrcLoc(tagBegin, tagEnd), "error", errorExpr(tagBegin));
+    return new CallParamValueNode(-1, createSrcLoc(tagBegin, tagEnd), key, errorExpr(tagBegin));
+  }
+
+  {
+    if (key.type() != Identifier.Type.SINGLE_IDENT) {
+      errorReporter.report(key.location(), INVALID_PARAM_NAME, key.identifier());
+    }
   }
 
   (
@@ -3049,7 +3057,7 @@ private CallParamNode CallParam() :
       return new CallParamValueNode(
           nodeIdGen.genId(),
           createSrcLoc(tagBegin, tagEnd),
-          key.image,
+          key,
           valueExpr);
     }
   |
@@ -3071,7 +3079,7 @@ private CallParamNode CallParam() :
           new CallParamContentNode(
               nodeIdGen.genId(),
               createSrcLoc(tagBegin, tagEnd),
-              key.image,
+              key,
               attr,
               errorReporter);
       node.addChildren(templateBlock);

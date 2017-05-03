@@ -89,7 +89,7 @@ public final class ChangeCallsToPassAllDataVisitor extends AbstractSoyNodeVisito
       if (valueDataRef.isLocalVar() || valueDataRef.isInjected()) {
         return;
       }
-      if (!paramNode.getKey().equals(valueDataRef.getName())) {
+      if (!paramNode.getKey().identifier().equals(valueDataRef.getName())) {
         return;
       }
     }

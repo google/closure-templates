@@ -28,6 +28,8 @@ import java.text.MessageFormat;
  * <p>Classes that report SoyErrorKinds should declare them as static final fields, making it easy
  * for readers to inspect the errors that the class could report.
  *
+ * <p>Error messages should be capitalized, and concluded with a punctuation mark.
+ *
  * @author brndn@google.com (Brendan Linn)
  */
 public final class SoyErrorKind {

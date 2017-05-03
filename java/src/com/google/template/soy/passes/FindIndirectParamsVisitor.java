@@ -366,7 +366,7 @@ public class FindIndirectParamsVisitor extends AbstractSoyNodeVisitor<IndirectPa
     Set<String> prevAllCallParamKeys = callerStack.peek().allCallParamKeys;
     Set<String> additionalCallParamKeys = Sets.newHashSet();
     for (CallParamNode callParamNode : caller.getChildren()) {
-      String callParamKey = callParamNode.getKey();
+      String callParamKey = callParamNode.getKey().identifier();
       if (!prevAllCallParamKeys.contains(callParamKey)) {
         additionalCallParamKeys.add(callParamKey);
       }

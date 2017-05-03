@@ -19,6 +19,7 @@ package com.google.template.soy.soytree;
 import static com.google.template.soy.soytree.CommandTagAttribute.UNSUPPORTED_ATTRIBUTE_KEY_SINGLE;
 
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.MixinParentNode;
 import com.google.template.soy.basetree.Node;
@@ -46,7 +47,7 @@ public final class CallParamContentNode extends CallParamNode implements RenderU
   public CallParamContentNode(
       int id,
       SourceLocation location,
-      String key,
+      Identifier key,
       @Nullable CommandTagAttribute kindAttr,
       ErrorReporter errorReporter) {
     super(id, location, key);
@@ -89,8 +90,11 @@ public final class CallParamContentNode extends CallParamNode implements RenderU
   @Override
   public String getCommandText() {
     return (contentKind == null)
-        ? getKey()
-        : getKey() + " kind=\"" + NodeContentKinds.toAttributeValue(contentKind) + "\"";
+        ? getKey().identifier()
+        : getKey().identifier()
+            + " kind=\""
+            + NodeContentKinds.toAttributeValue(contentKind)
+            + "\"";
   }
 
   @Override

@@ -187,7 +187,7 @@ final class CheckTemplateCallsPass extends CompilerFileSetPass {
 
       // First check all the {param} blocks of the caller to make sure that the types match.
       for (CallParamNode callerParam : call.getChildren()) {
-        String paramName = callerParam.getKey();
+        String paramName = callerParam.getKey().identifier();
         // The types of the parameters. If this is an explicitly declared parameter,
         // then this collection will have only one member; If it's an implicit
         // parameter then this may contain multiple types. Note we don't use
@@ -472,11 +472,13 @@ final class CheckTemplateCallsPass extends CompilerFileSetPass {
           // Get param keys passed by caller.
           Set<String> callerParamKeys = Sets.newHashSet();
           for (CallParamNode callerParam : caller.getChildren()) {
-            boolean isUnique = callerParamKeys.add(callerParam.getKey());
+            boolean isUnique = callerParamKeys.add(callerParam.getKey().identifier());
             if (!isUnique) {
               // Found a duplicate param.
               errorReporter.report(
-                  callerParam.getSourceLocation(), DUPLICATE_PARAM, callerParam.getKey());
+                  callerParam.getKey().location(),
+                  DUPLICATE_PARAM,
+                  callerParam.getKey().identifier());
             }
           }
           // Check param keys required by callee.
