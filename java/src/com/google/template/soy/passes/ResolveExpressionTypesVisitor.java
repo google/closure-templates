@@ -527,7 +527,8 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
               node.getBaseExprChild().getType(),
               node.getKeyExprChild().getType(),
               node.isNullSafe(),
-              node.getSourceLocation());
+              node.getSourceLocation(),
+              node.getKeyExprChild().getSourceLocation());
       node.setType(itemType);
       tryApplySubstitution(node);
     }
@@ -1077,7 +1078,11 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
 
     /** Given a base type and an item key type, compute the item value type. */
     private SoyType getItemType(
-        SoyType baseType, SoyType keyType, boolean isNullSafe, SourceLocation sourceLocation) {
+        SoyType baseType,
+        SoyType keyType,
+        boolean isNullSafe,
+        SourceLocation baseLocation,
+        SourceLocation keyLocation) {
       Preconditions.checkNotNull(baseType);
       Preconditions.checkNotNull(keyType);
       switch (baseType.getKind()) {
@@ -1089,13 +1094,14 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
         case LIST:
           ListType listType = (ListType) baseType;
           if (listType.equals(ListType.EMPTY_LIST)) {
-            errorReporter.report(sourceLocation, EMPTY_LIST_ACCESS);
+            errorReporter.report(baseLocation, EMPTY_LIST_ACCESS);
             return ErrorType.getInstance();
           }
+
           // For lists, the key type must either be unknown or assignable to integer.
           if (keyType.getKind() != SoyType.Kind.UNKNOWN
               && !IntType.getInstance().isAssignableFrom(keyType)) {
-            errorReporter.report(sourceLocation, BAD_INDEX_TYPE, keyType, baseType);
+            errorReporter.report(keyLocation, BAD_INDEX_TYPE, keyType, baseType);
             // fall through and report the element type.  This will allow more later type checks to
             // be evaluated.
           }
@@ -1104,13 +1110,14 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
         case MAP:
           MapType mapType = (MapType) baseType;
           if (mapType.equals(MapType.EMPTY_MAP)) {
-            errorReporter.report(sourceLocation, EMPTY_MAP_ACCESS);
+            errorReporter.report(baseLocation, EMPTY_MAP_ACCESS);
             return ErrorType.getInstance();
           }
+
           // For maps, the key type must either be unknown or assignable to the declared key type.
           if (keyType.getKind() != SoyType.Kind.UNKNOWN
               && !mapType.getKeyType().isAssignableFrom(keyType)) {
-            errorReporter.report(sourceLocation, BAD_KEY_TYPE, keyType, baseType);
+            errorReporter.report(keyLocation, BAD_KEY_TYPE, keyType, baseType);
             // fall through and report the value type.  This will allow more later type checks to
             // be evaluated.
           }
@@ -1127,7 +1134,8 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
               if (unionMember.equals(NullType.getInstance())) {
                 continue;
               }
-              SoyType itemType = getItemType(unionMember, keyType, isNullSafe, sourceLocation);
+              SoyType itemType =
+                  getItemType(unionMember, keyType, isNullSafe, baseLocation, keyLocation);
               // If this member's item type resolved to an error, bail out to avoid spamming
               // the user with multiple error messages for the same line.
               if (itemType == ErrorType.getInstance()) {
@@ -1137,7 +1145,7 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
             }
             // If this is a nullable union type but the operation is not null-safe, throw an error.
             if (unionType.isNullable() && !isNullSafe) {
-              errorReporter.report(sourceLocation, BRACKET_ACCESS_NULLABLE_UNION);
+              errorReporter.report(baseLocation, BRACKET_ACCESS_NULLABLE_UNION);
               return ErrorType.getInstance();
             }
             return typeOps.computeLowestCommonType(itemTypes);
@@ -1147,7 +1155,7 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
           return ErrorType.getInstance();
 
         default:
-          errorReporter.report(sourceLocation, BRACKET_ACCESS_NOT_SUPPORTED, baseType);
+          errorReporter.report(baseLocation, BRACKET_ACCESS_NOT_SUPPORTED, baseType);
           return ErrorType.getInstance();
       }
     }

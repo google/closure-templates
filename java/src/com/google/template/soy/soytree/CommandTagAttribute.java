@@ -100,6 +100,11 @@ public final class CommandTagAttribute {
     return key;
   }
 
+  /** Returns true if the attribute name is equal to the given string. */
+  public boolean hasName(String name) {
+    return key.identifier().equals(name);
+  }
+
   /** Returns the string value. Do not call on an expression attribute. */
   public String getValue() {
     return checkNotNull(value);

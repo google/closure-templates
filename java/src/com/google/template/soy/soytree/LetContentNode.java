@@ -16,13 +16,17 @@
 
 package com.google.template.soy.soytree;
 
+import static com.google.template.soy.soytree.CommandTagAttribute.UNSUPPORTED_ATTRIBUTE_KEY_SINGLE;
+
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.MixinParentNode;
 import com.google.template.soy.basetree.Node;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
+import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.primitive.SanitizedType;
 import com.google.template.soy.types.primitive.StringType;
 import java.util.List;
@@ -40,14 +44,15 @@ public final class LetContentNode extends LetNode implements RenderUnitNode {
    * Creates a LetContentNode for a compiler-generated variable. Use this in passes that rewrite the
    * tree and introduce local temporary variables.
    */
+  // TODO(user): Delete.
   public static LetContentNode forVariable(
       int id, SourceLocation sourceLocation, String varName, @Nullable ContentKind contentKind) {
     LetContentNode node = new LetContentNode(id, sourceLocation, varName, contentKind);
-    node.getVar()
-        .setType(
-            contentKind != null
-                ? SanitizedType.getTypeForContentKind(contentKind)
-                : StringType.getInstance());
+    SoyType type =
+        (contentKind != null)
+            ? SanitizedType.getTypeForContentKind(contentKind)
+            : StringType.getInstance();
+    node.getVar().setType(type);
     return node;
   }
 
@@ -58,10 +63,31 @@ public final class LetContentNode extends LetNode implements RenderUnitNode {
   @Nullable private final ContentKind contentKind;
 
   public LetContentNode(
+      int id,
+      SourceLocation location,
+      String varName,
+      @Nullable CommandTagAttribute kindAttr,
+      ErrorReporter errorReporter) {
+    super(id, location, varName);
+    this.parentMixin = new MixinParentNode<>(this);
+
+    if (kindAttr != null && !kindAttr.hasName("kind")) {
+      errorReporter.report(
+          kindAttr.getName().location(),
+          UNSUPPORTED_ATTRIBUTE_KEY_SINGLE,
+          kindAttr.getName().identifier(),
+          "let",
+          "kind");
+      kindAttr = null;
+    }
+    this.contentKind = (kindAttr != null) ? kindAttr.valueAsContentKind(errorReporter) : null;
+  }
+
+  private LetContentNode(
       int id, SourceLocation location, String varName, @Nullable ContentKind contentKind) {
     super(id, location, varName);
-    this.contentKind = contentKind;
     this.parentMixin = new MixinParentNode<>(this);
+    this.contentKind = contentKind;
   }
 
   /**

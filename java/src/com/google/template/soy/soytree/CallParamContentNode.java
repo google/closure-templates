@@ -16,6 +16,8 @@
 
 package com.google.template.soy.soytree;
 
+import static com.google.template.soy.soytree.CommandTagAttribute.UNSUPPORTED_ATTRIBUTE_KEY_SINGLE;
+
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.MixinParentNode;
@@ -23,8 +25,6 @@ import com.google.template.soy.basetree.Node;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ErrorReporter.Checkpoint;
-import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 import java.util.List;
 import javax.annotation.Nullable;
@@ -37,30 +37,31 @@ import javax.annotation.Nullable;
  */
 public final class CallParamContentNode extends CallParamNode implements RenderUnitNode {
 
-  private static final SoyErrorKind PARAM_HAS_VALUE_BUT_IS_NOT_SELF_CLOSING =
-      SoyErrorKind.of(
-          "A ''param'' tag should contain a value if and only if it is also self-ending "
-              + "(with a trailing ''/'') (invalid tag is '{'param {0}'}').");
-
   /** The mixin object that implements the ParentNode functionality. */
   private final MixinParentNode<StandaloneNode> parentMixin;
-
-  /** The param key. */
-  private final String key;
 
   /** The param's content kind, or null if no 'kind' attribute was present. */
   @Nullable private final ContentKind contentKind;
 
-  /**
-   * @param id The id for this node.
-   * @param sourceLocation The node's source location.
-   */
-  private CallParamContentNode(
-      int id, SourceLocation sourceLocation, String key, ContentKind contentKind) {
-    super(id, sourceLocation);
+  public CallParamContentNode(
+      int id,
+      SourceLocation location,
+      String key,
+      @Nullable CommandTagAttribute kindAttr,
+      ErrorReporter errorReporter) {
+    super(id, location, key);
     this.parentMixin = new MixinParentNode<>(this);
-    this.key = key;
-    this.contentKind = contentKind;
+
+    if (kindAttr != null && !kindAttr.hasName("kind")) {
+      errorReporter.report(
+          kindAttr.getName().location(),
+          UNSUPPORTED_ATTRIBUTE_KEY_SINGLE,
+          kindAttr.getName().identifier(),
+          "param",
+          "kind");
+      kindAttr = null;
+    }
+    this.contentKind = (kindAttr != null) ? kindAttr.valueAsContentKind(errorReporter) : null;
   }
 
   /**
@@ -71,18 +72,12 @@ public final class CallParamContentNode extends CallParamNode implements RenderU
   private CallParamContentNode(CallParamContentNode orig, CopyState copyState) {
     super(orig, copyState);
     this.parentMixin = new MixinParentNode<>(orig.parentMixin, this, copyState);
-    this.key = orig.key;
     this.contentKind = orig.contentKind;
   }
 
   @Override
   public Kind getKind() {
     return Kind.CALL_PARAM_CONTENT_NODE;
-  }
-
-  @Override
-  public String getKey() {
-    return key;
   }
 
   @Override
@@ -94,8 +89,8 @@ public final class CallParamContentNode extends CallParamNode implements RenderU
   @Override
   public String getCommandText() {
     return (contentKind == null)
-        ? key
-        : key + " kind=\"" + NodeContentKinds.toAttributeValue(contentKind) + "\"";
+        ? getKey()
+        : getKey() + " kind=\"" + NodeContentKinds.toAttributeValue(contentKind) + "\"";
   }
 
   @Override
@@ -186,31 +181,5 @@ public final class CallParamContentNode extends CallParamNode implements RenderU
   @Override
   public void appendSourceStringForChildren(StringBuilder sb) {
     parentMixin.appendSourceStringForChildren(sb);
-  }
-
-  public static final class Builder extends CallParamNode.Builder {
-
-    private static CallParamContentNode error() {
-      return new CallParamContentNode(-1, SourceLocation.UNKNOWN, "error", null);
-    }
-
-    public Builder(int id, CommandTextParseResult parseResult, SourceLocation sourceLocation) {
-      super(id, parseResult, sourceLocation);
-    }
-
-    public CallParamContentNode build(Checkpoint checkpoint, ErrorReporter errorReporter) {
-      if (parseResult.valueExpr != null) {
-        errorReporter.report(
-            sourceLocation,
-            PARAM_HAS_VALUE_BUT_IS_NOT_SELF_CLOSING,
-            parseResult.originalCommandText);
-      }
-
-      if (errorReporter.errorsSince(checkpoint)) {
-        return error();
-      }
-
-      return new CallParamContentNode(id, sourceLocation, parseResult.key, parseResult.contentKind);
-    }
   }
 }

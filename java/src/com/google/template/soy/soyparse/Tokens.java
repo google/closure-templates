@@ -54,19 +54,28 @@ final class Tokens {
   /**
    * Checks that the parser is exactly one token ahead of the parser.
    *
-   * <p>Our grammar is (mostly) LL(1) so this should be the standard case, but if LOOKAHEAD is
-   * introduced http://www.engr.mun.ca/~theo/JavaCC-FAQ/javacc-faq-moz.htm#tth_sEc3.12
+   * <p>Our grammar is mostly LL(1), and most of our LOOKAHEAD commands happen in EXPR state. See
+   * http://www.engr.mun.ca/~theo/JavaCC-FAQ/javacc-faq-moz.htm#tth_sEc3.12
    *
    * @param parser The parser.
    */
   static void checkLexerIsExactlyOneTokenAhead(SoyFileParser parser) {
     Token current = parser.getToken(0);
+    if (current.next == null) {
+      throw new IllegalStateException(
+          createSrcLoc(parser.getFilePath(), current) + ": lexer is 0 tokens ahead.");
+    } else if (current.next.next != null) {
+      throw new IllegalStateException(
+          createSrcLoc(parser.getFilePath(), current.next.next)
+              + ": lexer is more than 1 token ahead.");
+    }
+  }
+
+  static void checkLexerIsExactlyZeroTokensAhead(SoyFileParser parser) {
+    Token current = parser.getToken(0);
     if (current.next != null) {
-      if (current.next.next != null) {
-        throw new IllegalStateException("lexer is more than one token ahead");
-      }
-    } else {
-      throw new IllegalStateException("lexer is 0 tokens ahead, this should be impossible.");
+      throw new IllegalStateException(
+          createSrcLoc(parser.getFilePath(), current) + ": lexer is more than 0 tokens ahead.");
     }
   }
 }

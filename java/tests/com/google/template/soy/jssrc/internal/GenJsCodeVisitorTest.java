@@ -781,14 +781,14 @@ public final class GenJsCodeVisitorTest {
             + "  htmlTag15 += i10;\n"
             + "}\n"
             + "htmlTag15 += '\">';\n"
-            + "var param18 = '';\n"
-            + "for (var i20 = 0; i20 < 4; i20++) {\n"
-            + "  param18 += i20;\n"
+            + "var param22 = '';\n"
+            + "for (var i19 = 0; i19 < 4; i19++) {\n"
+            + "  param22 += i19;\n"
             + "}\n"
             + "/** @desc A span with generated id. */\n"
             + "var MSG_UNNAMED = goog.getMsg('{$startSpan}{$xxx_1}{$xxx_2}', "
             + "{'startSpan': htmlTag15, "
-            + "'xxx_1': some.func(soy.$$assignDefaults({goo: param18}, opt_data.boo), null, "
+            + "'xxx_1': some.func(soy.$$assignDefaults({goo: param22}, opt_data.boo), null, "
             + "opt_ijData),"
             + " 'xxx_2': opt_data.a + 2});\n"
             + "output += MSG_UNNAMED;\n";
@@ -1316,11 +1316,11 @@ public final class GenJsCodeVisitorTest {
             + "{/call}\n";
     String expectedJsCode =
         ""
-            + "var param6 = '';\n"
-            + "for (var i8 = 0; i8 < 7; i8++) {\n"
-            + "  param6 += i8;\n"
+            + "var param12 = '';\n"
+            + "for (var i7 = 0; i7 < 7; i7++) {\n"
+            + "  param12 += i7;\n"
             + "}\n"
-            + "output += some.func(soy.$$assignDefaults({goo: param6}, opt_data.boo), null, "
+            + "output += some.func(soy.$$assignDefaults({goo: param12}, opt_data.boo), null, "
             + "opt_ijData);\n";
     assertGeneratedJsCode(soyNodeCode, expectedJsCode);
   }

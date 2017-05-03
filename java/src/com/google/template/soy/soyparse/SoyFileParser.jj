@@ -61,7 +61,6 @@ import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.LegacyInternalSyntaxException;
 import com.google.template.soy.base.internal.SoyFileKind;
-import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -479,6 +478,10 @@ public class SoyFileParser {
     return soyFileNode;
   }
 
+  String getFilePath() {
+    return filePath;
+  }
+
   /**
    * Reports the error and skips to the given token.
    *
@@ -501,10 +504,10 @@ public class SoyFileParser {
    *
    * See https://javacc.org/tutorials/errorrecovery
    */
-  private Token reportTemplateBodyErrorAndSkipTo(ParseException error, int... skipTo) {
+  private Token reportTemplateBodyErrorAndSkipTo(ParseException error, int... kinds) {
     ParseErrors.reportSoyFileParseException(errorReporter, filePath, error);
 
-    ImmutableSet<Integer> skipToKinds = ImmutableSet.copyOf(Ints.asList(skipTo));
+    ImmutableSet<Integer> skipTo = ImmutableSet.copyOf(Ints.asList(kinds));
     Token t;
     do {
       t = getNextToken();
@@ -513,17 +516,7 @@ public class SoyFileParser {
       }
     // We need to halt when observing EOF.  The behavior of the token manager is to keep returning
     // EOF from getNextToken(), so if we don't check for it this will become an infinite loop.
-    } while (!skipToKinds.contains(t.kind) && t.kind != EOF);
-    return t;
-  }
-
-  private Token skipTo(int skipTo) {
-    Token t;
-    do {
-      t = getNextToken();
-    // We need to halt when observing EOF.  The behavior of the token manager is to keep returning
-    // EOF from getNextToken(), so if we don't check for it this will become an infinite loop.
-    } while (t.kind != skipTo && t.kind != EOF);
+    } while (!skipTo.contains(t.kind) && t.kind != EOF);
     return t;
   }
 
@@ -588,9 +581,19 @@ public class SoyFileParser {
     token_source.pushState(nextState);
   }
 
+  private void pushStateAtZero(int nextState) {
+    Tokens.checkLexerIsExactlyZeroTokensAhead(this);
+    token_source.pushState(nextState);
+  }
+
   /** pop the stack and switch to that state. */
   private void popState() {
     Tokens.checkLexerIsExactlyOneTokenAhead(this);
+    token_source.popState();
+  }
+
+  private void popStateAtZero() {
+    Tokens.checkLexerIsExactlyZeroTokensAhead(this);
     token_source.popState();
   }
 
@@ -649,6 +652,11 @@ TOKEN_MGR_DECLS: {
   private void clearAndSwitchToDefault() {
     stateStack.clear();
     SwitchTo(DEFAULT);
+  }
+
+  @Override
+  public String toString() {
+    return stateStack.toString() + " " + SoyFileParserTokenManager.lexStateNames[curLexState];
   }
 }
 
@@ -833,7 +841,7 @@ TOKEN_MGR_DECLS: {
 | < CMD_CLOSE_CALL               : "{/call}"        >
 | < CMD_CLOSE_DELCALL            : "{/delcall}"     >
 
-| < CMD_BEGIN_PARAM              : "{param" <WS>    > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
+| < CMD_BEGIN_PARAM              : "{param" <WS>    > { pushState(EXPR); }
 | < CMD_CLOSE_PARAM              : "{/param}"       >
 
 | < CMD_BEGIN_MSG                : "{msg" <WS>      > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
@@ -2560,12 +2568,12 @@ private CssNode CssStmt() :
 
 
 /**
- * LetStmt -> CmdBeginLet
+ * LetStmt -> CmdBeginLet VarRef
  *            ( ":" Expr CmdSelfClose | [ ExprAttribute ] CmdEnd TemplateBlock CmdCloseLet )
  */
 private LetNode LetStmt() :
 {
-  Token tagBegin, tagEnd = null, colon = null;
+  Token tagBegin, tagEnd;
   VarRefNode letVar = null;
   ExprNode valueExpr = null;
   CommandTagAttribute attr = null;
@@ -2576,61 +2584,58 @@ private LetNode LetStmt() :
 
   try {
     letVar = VarRef()
+  } catch (ParseException e) {
+    tagEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_SELF_CLOSE, CMD_END);
+    return new LetValueNode(-1, createSrcLoc(tagBegin, tagEnd), "error", errorExpr(tagBegin));
+  }
 
-    (
-      // Value expression
-      colon = <COLON>
+  (
+    // Value expression
+    try {
+      <COLON>
       valueExpr = Expr()
       tagEnd = <CMD_SELF_CLOSE>
-    |
-      // Content block
-      [
-        attr = ExprAttribute()
-        {
-          if (!attr.getName().identifier().equals("kind")) {
-            errorReporter.report(
-                attr.getName().location(),
-                CommandTagAttribute.UNSUPPORTED_ATTRIBUTE_KEY_SINGLE,
-                attr.getName().identifier(),
-                "let",
-                "kind");
-            attr = null;
-          }
-        }
-      ]
-      tagEnd = <CMD_END>
-      templateBlock = TemplateBlock()
-      <CMD_CLOSE_LET>
-    )
-  } catch (ParseException e) {
-    if (tagEnd == null) {
-      tagEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END, CMD_SELF_CLOSE);
-
-      // If this is a let content block, still parse the content body but throw it away.
-      if ((letVar != null && colon == null) || (letVar == null && tagEnd.kind == CMD_END)) {
-        templateBlock = TemplateBlock();
-        skipTo(CMD_CLOSE_LET);
+    } catch (ParseException e) {
+      tagEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_SELF_CLOSE, CMD_END);
+      if (valueExpr == null) {
+        valueExpr = errorExpr(tagEnd);
       }
-
-      return null;
     }
 
-    // If tagEnd != null, then this error is from TemplateBlock() or CMD_CLOSE_LET. Propagate.
-    throw e;
-  }
-
-  {
-    SourceLocation loc = createSrcLoc(tagBegin, tagEnd);
-
-    if (valueExpr != null) {
-      return new LetValueNode(nodeIdGen.genId(), loc, letVar.getName(), valueExpr);
+    {
+      return new LetValueNode(
+          nodeIdGen.genId(),
+          createSrcLoc(tagBegin, tagEnd),
+          letVar.getName(),
+          valueExpr);
+    }
+  |
+    // Content block
+    try {
+      [ attr = ExprAttribute() ]
+      tagEnd = <CMD_END>
+    } catch (ParseException e) {
+      tagEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END, CMD_SELF_CLOSE);
     }
 
-    ContentKind contentKind = (attr != null) ? attr.valueAsContentKind(errorReporter) : null;
-    LetContentNode node = new LetContentNode(nodeIdGen.genId(), loc, letVar.getName(), contentKind);
-    node.addChildren(templateBlock);
-    return node;
-  }
+    // inside of a {let} block is always TEMPLATE_DEFAULT, never TEMPLATE_DEFAULT_IN_MSG_BLOCK
+    { pushStateAtZero(TEMPLATE_DEFAULT); }
+    templateBlock = TemplateBlock()
+    <CMD_CLOSE_LET>
+
+    {
+      popStateAtZero();
+      LetContentNode node =
+          new LetContentNode(
+              nodeIdGen.genId(),
+              createSrcLoc(tagBegin, tagEnd),
+              letVar.getName(),
+              attr,
+              errorReporter);
+      node.addChildren(templateBlock);
+      return node;
+    }
+  )
 }
 
 
@@ -3008,59 +3013,71 @@ private void AddParams(CallNode callNode) :
 
 
 /**
- * CallParam -> <CMD_BEGIN_PARAM> CmdText() (<CMD_SELF_CLOSE>|<CMD_END> TemplateBlock() <CMD_CLOSE_PARAM>)
+ * CallParam -> CmdBeginParam Ident
+ *              ( ":" Expr CmdSelfClose | [ ExprAttribute ] CmdEnd TemplateBlock CmdCloseParam )
  */
 private CallParamNode CallParam() :
 {
-  Token tagBegin, tagEnd;
-  SourceItemInfo<String> cmdText;
-  CallParamNode callParamNode = null;
+  Token tagBegin, tagEnd, key = null;
+  ExprNode valueExpr = null;
+  CommandTagAttribute attr = null;
+  List<StandaloneNode> templateBlock = ImmutableList.of();
 }
 {
   tagBegin = <CMD_BEGIN_PARAM>
-  cmdText = CmdTextWithSource()
-  {
-    Checkpoint cmdTextCheckpoint = errorReporter.checkpoint();
-    CallParamNode.CommandTextParseResult result =
-        CallParamNode.parseCommandTextHelper(
-            cmdText.parsedContent(),
-            context,
-            cmdText.srcLocation());
+
+  try {
+    key = <IDENT>
+  } catch (ParseException e) {
+    tagEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_SELF_CLOSE, CMD_END);
+    return new CallParamValueNode(-1, createSrcLoc(tagBegin, tagEnd), "error", errorExpr(tagBegin));
   }
+
   (
-    tagEnd = <CMD_SELF_CLOSE>
-    {
-      callParamNode = new CallParamValueNode.Builder(
-          nodeIdGen.genId(), result, createSrcLoc(tagBegin, tagEnd))
-          .build(cmdTextCheckpoint, errorReporter);
-    }
-  |
-    {
-      pushState(TEMPLATE_DEFAULT);
-      Checkpoint checkpoint = errorReporter.checkpoint();
-    }
-    tagEnd = <CMD_END>
-    {
-      CallParamContentNode cpcn = new CallParamContentNode.Builder(
-          nodeIdGen.genId(), result, createSrcLoc(tagBegin, tagEnd))
-          .build(cmdTextCheckpoint, errorReporter);
-      List<StandaloneNode> templateBlock;
-    }
-    templateBlock = TemplateBlock()
-    { cpcn.addChildren(templateBlock);
-      callParamNode = cpcn;
-    }
-    {
-      if (errorReporter.errorsSince(checkpoint) || getToken(1).kind != CMD_CLOSE_PARAM) {
-        popStateIfStateIs(TEMPLATE_DEFAULT);
-      } else {
-        popState();
+    try {
+      <COLON>
+      valueExpr = Expr()
+      tagEnd = <CMD_SELF_CLOSE>
+    } catch (ParseException e) {
+      tagEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_SELF_CLOSE, CMD_END);
+      if (valueExpr == null) {
+        valueExpr = errorExpr(tagEnd);
       }
     }
-    <CMD_CLOSE_PARAM>
-  )
 
-  { return callParamNode; }
+    {
+      return new CallParamValueNode(
+          nodeIdGen.genId(),
+          createSrcLoc(tagBegin, tagEnd),
+          key.image,
+          valueExpr);
+    }
+  |
+    try {
+      [ attr = ExprAttribute() ]
+      tagEnd = <CMD_END>
+    } catch (ParseException e) {
+      tagEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END, CMD_SELF_CLOSE);
+    }
+
+    // inside of a {param} block is always TEMPLATE_DEFAULT, never TEMPLATE_DEFAULT_IN_MSG_BLOCK
+    { pushStateAtZero(TEMPLATE_DEFAULT); }
+    templateBlock = TemplateBlock()
+    <CMD_CLOSE_PARAM>
+
+    {
+      popStateAtZero();
+      CallParamContentNode node =
+          new CallParamContentNode(
+              nodeIdGen.genId(),
+              createSrcLoc(tagBegin, tagEnd),
+              key.image,
+              attr,
+              errorReporter);
+      node.addChildren(templateBlock);
+      return node;
+    }
+  )
 }
 
 
@@ -3646,7 +3663,7 @@ private ExprNode CollectionLiteral() :
     // The next item will be a comma for a list, or a colon for a map
     (
       ( // this lookahead is necessary to make this loop unambiguous with the trailing comma
-        LOOKAHEAD({ getToken(1).kind == COMMA && getToken(2).kind != RBRACKET } )
+        LOOKAHEAD( { getToken(1).kind == COMMA && getToken(2).kind != RBRACKET } )
         <COMMA>
         itemExpr = Expr()
         { items.add(itemExpr); }
@@ -3661,7 +3678,7 @@ private ExprNode CollectionLiteral() :
       { items.add(itemExpr); }
       (
         // this lookahead is necessary to make this loop unambiguous with the trailing comma
-        LOOKAHEAD({ getToken(1).kind == COMMA && getToken(2).kind != RBRACKET } )
+        LOOKAHEAD( { getToken(1).kind == COMMA && getToken(2).kind != RBRACKET } )
         <COMMA>
         itemExpr = MapKeyOrExpr()
         { items.add(itemExpr); }

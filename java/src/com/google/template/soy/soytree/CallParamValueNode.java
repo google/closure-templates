@@ -16,15 +16,11 @@
 
 package com.google.template.soy.soytree;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ErrorReporter.Checkpoint;
-import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
-import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 
 /**
@@ -35,34 +31,12 @@ import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
  */
 public final class CallParamValueNode extends CallParamNode implements ExprHolderNode {
 
-  private static final SoyErrorKind SELF_ENDING_TAG_WITHOUT_VALUE =
-      SoyErrorKind.of(
-          "A ''param'' tag should be self-ending (with a trailing ''/'') if and only if "
-              + "it also contains a value (invalid tag is '{'param {0} /'}').");
-  private static final SoyErrorKind SELF_ENDING_TAG_WITH_KIND_ATTRIBUTE =
-      SoyErrorKind.of(
-          "The ''kind'' attribute is not allowed on self-ending ''param'' tags "
-              + "(invalid tag is '{'param {0} /'}').");
-
-  /** The param key. */
-  private final String key;
-
   /** The parsed expression for the param value. */
   private final ExprRootNode valueExpr;
 
-  // TODO(user): Remove.
-  private final String commandText;
-
-  private CallParamValueNode(
-      int id,
-      SourceLocation sourceLocation,
-      String key,
-      ExprRootNode valueExpr,
-      String commandText) {
-    super(id, sourceLocation);
-    this.key = Preconditions.checkNotNull(key);
-    this.valueExpr = Preconditions.checkNotNull(valueExpr);
-    this.commandText = commandText;
+  public CallParamValueNode(int id, SourceLocation location, String key, ExprNode valueExpr) {
+    super(id, location, key);
+    this.valueExpr = new ExprRootNode(valueExpr);
   }
 
   /**
@@ -72,19 +46,12 @@ public final class CallParamValueNode extends CallParamNode implements ExprHolde
    */
   private CallParamValueNode(CallParamValueNode orig, CopyState copyState) {
     super(orig, copyState);
-    this.key = orig.key;
     this.valueExpr = orig.valueExpr.copy(copyState);
-    this.commandText = orig.commandText;
   }
 
   @Override
   public Kind getKind() {
     return Kind.CALL_PARAM_VALUE_NODE;
-  }
-
-  @Override
-  public String getKey() {
-    return key;
   }
 
   /** Returns the parsed expression for the param value. */
@@ -94,7 +61,7 @@ public final class CallParamValueNode extends CallParamNode implements ExprHolde
 
   @Override
   public String getCommandText() {
-    return commandText;
+    return getKey() + " : " + valueExpr.toSourceString();
   }
 
   @Override
@@ -110,44 +77,5 @@ public final class CallParamValueNode extends CallParamNode implements ExprHolde
   @Override
   public CallParamValueNode copy(CopyState copyState) {
     return new CallParamValueNode(this, copyState);
-  }
-
-  public static final class Builder extends CallParamNode.Builder {
-
-    private static CallParamValueNode error() {
-      return new CallParamValueNode(
-          -1,
-          SourceLocation.UNKNOWN,
-          "error",
-          new ExprRootNode(new IntegerNode(1, SourceLocation.UNKNOWN)),
-          "error: error");
-    }
-
-    public Builder(int id, CommandTextParseResult parseResult, SourceLocation sourceLocation) {
-      super(id, parseResult, sourceLocation);
-    }
-
-    public CallParamValueNode build(Checkpoint checkpoint, ErrorReporter errorReporter) {
-      if (parseResult.valueExpr == null) {
-        errorReporter.report(
-            sourceLocation, SELF_ENDING_TAG_WITHOUT_VALUE, parseResult.originalCommandText);
-      }
-
-      if (parseResult.contentKind != null) {
-        errorReporter.report(
-            sourceLocation, SELF_ENDING_TAG_WITH_KIND_ATTRIBUTE, parseResult.originalCommandText);
-      }
-
-      if (errorReporter.errorsSince(checkpoint)) {
-        return error();
-      }
-
-      return new CallParamValueNode(
-          id,
-          sourceLocation,
-          parseResult.key,
-          parseResult.valueExpr,
-          parseResult.originalCommandText);
-    }
   }
 }

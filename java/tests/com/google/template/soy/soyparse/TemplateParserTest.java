@@ -451,11 +451,9 @@ public final class TemplateParserTest {
             + "  {param foo kind=\"html\"}blah blah{/param}\n"
             + "{/call}");
 
-    TemplateSubject.assertThatTemplateContent(
-            "{call .aaa}\n" + "  {param foo : bar ' baz/}\n" + "{/call}\n")
+    TemplateSubject.assertThatTemplateContent("{bar ' baz}")
         .causesError("Invalid string literal found in Soy command.");
-    TemplateSubject.assertThatTemplateContent(
-            "{call .aaa}\n" + "  {param foo : bar \" baz/}\n" + "{/call}\n")
+    TemplateSubject.assertThatTemplateContent("{bar \" baz}")
         .causesError("Invalid string literal found in Soy command.");
 
     assertValidTemplate("{call aaa.bbb.ccc data=\"all\" /}");
