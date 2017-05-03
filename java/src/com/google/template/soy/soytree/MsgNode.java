@@ -84,7 +84,7 @@ public final class MsgNode extends AbstractBlockCommandNode
     return new Builder(id, "fallbackmsg", commandText, sourceLocation);
   }
 
-  private static class SubstUnitInfo {
+  private static final class SubstUnitInfo {
 
     /**
      * The generated map from substitution unit var name to representative node.
@@ -176,10 +176,7 @@ public final class MsgNode extends AbstractBlockCommandNode
     this.meaning = orig.meaning;
     this.desc = orig.desc;
     this.isHidden = orig.isHidden;
-    // The only reason we don't run genSubstUnitInfo from the other constructors is because the
-    // children haven't been added yet. But for cloning, the children already exist, so there's no
-    // reason not to run genSubstUnitInfo now.
-    this.substUnitInfo = genSubstUnitInfo(this);
+    this.substUnitInfo = orig.substUnitInfo;
     this.commandText = orig.commandText;
   }
 
@@ -204,7 +201,7 @@ public final class MsgNode extends AbstractBlockCommandNode
   @Override
   public ImmutableList<ExprRootNode> getExprList() {
     if (genderExprs != null) {
-      throw new AssertionError();
+      return ImmutableList.copyOf(genderExprs);
     }
     return ImmutableList.of();
   }
@@ -251,6 +248,17 @@ public final class MsgNode extends AbstractBlockCommandNode
   public boolean isRawTextMsg() {
     checkState(numChildren() > 0);
     return numChildren() == 1 && (getChild(0) instanceof RawTextNode);
+  }
+
+  /**
+   * This class lazily allocates some datastructures for accessing data about nested placeholders.
+   * This method ensures that generation and access to that data structure hasn't happened yet. This
+   * is important if passes are adding new placeholder nodes.
+   */
+  public void ensureSubstUnitInfoHasNotBeenAccessed() {
+    if (substUnitInfo != null) {
+      throw new IllegalStateException("Substitution info has already been accessed.");
+    }
   }
 
   /**

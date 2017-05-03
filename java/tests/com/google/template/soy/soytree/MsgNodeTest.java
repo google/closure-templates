@@ -24,7 +24,10 @@ import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
+import com.google.common.collect.ImmutableSet;
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -364,6 +367,44 @@ public class MsgNodeTest {
     assertSame(repPluralNode2, nodePlural2);
     MsgPluralNode repPluralNode3 = msg.getRepPluralNode("NUM_3");
     assertSame(repPluralNode3, nodePlural3);
+  }
+
+  /**
+   * Tests how automatic placeholders work with genders. rewrite genders forks the message into all
+   * branches, however placeholders should be shared across the branches.
+   */
+  @Test
+  public void testGenPlaceholdersForGenders() {
+    String template =
+        "{@param gender : ?}"
+            + "{@param person : ?}"
+            + "{msg desc=\"\" genders=\"$gender\"}\n"
+            + "  {$person} invited you to a group conversation with {call .everyoneElse /}"
+            + "{/msg}";
+
+    TemplateNode templateNode = assertThatTemplateContent(template).getTemplateNode();
+    MsgNode msg = getAllNodesOfType(templateNode, MsgFallbackGroupNode.class).get(0).getMsg();
+
+    // Test.
+    MsgSelectNode nodeSelect = (MsgSelectNode) msg.getChild(0);
+    assertEquals("GENDER", msg.getSelectVarName(nodeSelect));
+    assertSame(nodeSelect, msg.getRepSelectNode("GENDER"));
+
+    CaseOrDefaultNode firstCase = nodeSelect.getChild(0);
+    assertEquals("PERSON", ((MsgPlaceholderNode) firstCase.getChild(0)).getBaseVarName());
+    assertEquals(
+        " invited you to a group conversation with ",
+        ((RawTextNode) firstCase.getChild(1)).getRawText());
+    assertEquals("XXX", ((MsgPlaceholderNode) firstCase.getChild(2)).getBaseVarName());
+    Set<String> placeholders = new TreeSet<>();
+    for (MsgPlaceholderNode placeholder :
+        SoyTreeUtils.getAllNodesOfType(msg, MsgPlaceholderNode.class)) {
+      placeholders.add(msg.getPlaceholderName(placeholder));
+    }
+    // These are the only placeholders generated
+    assertEquals(ImmutableSet.of("PERSON", "XXX"), placeholders);
+    assertSame(firstCase.getChild(0), msg.getRepPlaceholderNode("PERSON"));
+    assertSame(firstCase.getChild(2), msg.getRepPlaceholderNode("XXX"));
   }
 
   @Test

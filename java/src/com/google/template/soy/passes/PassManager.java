@@ -94,13 +94,17 @@ public final class PassManager {
 
     ImmutableList.Builder<CompilerFilePass> singleFilePassesBuilder =
         ImmutableList.<CompilerFilePass>builder()
-            .add(new RewriteGendersPass())
-            .add(new RewriteRemaindersPass())
             .add(rewritePass)
             // needs to run after htmlrewriting, before resolvenames and autoescaping
             .add(
                 new ContentSecurityPolicyNonceInjectionPass(
                     options.getExperimentalFeatures(), errorReporter))
+            // Needs to run after HtmlRewritePass
+            .add(new InsertMsgPlaceholderNodesPass(errorReporter))
+            .add(new RewriteGendersPass())
+            .add(new RewriteRemaindersPass())
+            // Needs to run after inserting msg placeholders to ensure that genders="..."
+            // expressions do not introduce extra placeholders for call and print nodes.
             .add(new StrictHtmlValidationPass(options.getExperimentalFeatures(), errorReporter))
             .add(new RewriteGlobalsPass(registry, options.getCompileTimeGlobals(), errorReporter))
             .add(new RewriteFunctionsPass(registry))
@@ -110,9 +114,7 @@ public final class PassManager {
     if (!disableAllTypeChecking) {
       singleFilePassesBuilder.add(new ResolveExpressionTypesPass());
     }
-    singleFilePassesBuilder
-        .add(new ResolvePackageRelativeCssNamesPass())
-        .add(new VerifyPhnameAttrOnlyOnPlaceholdersPass());
+    singleFilePassesBuilder.add(new ResolvePackageRelativeCssNamesPass());
     if (!allowUnknownGlobals) {
       // Must come after RewriteGlobalsPass since that is when values are substituted.
       // We should also run after the ResolveNamesPass which checks for global/param ambiguity and
@@ -335,13 +337,6 @@ public final class PassManager {
     @Override
     public void run(SoyFileNode file, IdGenerator nodeIdGen) {
       new ResolvePackageRelativeCssNamesVisitor(errorReporter).exec(file);
-    }
-  }
-
-  private final class VerifyPhnameAttrOnlyOnPlaceholdersPass extends CompilerFilePass {
-    @Override
-    public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-      new VerifyPhnameAttrOnlyOnPlaceholdersVisitor(errorReporter).exec(file);
     }
   }
 

@@ -108,7 +108,6 @@ import com.google.template.soy.soytree.LogNode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.MsgHtmlTagNode;
 import com.google.template.soy.soytree.MsgNode;
-import com.google.template.soy.soytree.MsgPlaceholderNode;
 import com.google.template.soy.soytree.MsgPluralCaseNode;
 import com.google.template.soy.soytree.MsgPluralDefaultNode;
 import com.google.template.soy.soytree.MsgPluralNode;
@@ -120,7 +119,6 @@ import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileNode;
-import com.google.template.soy.soytree.SoyNode.MsgPlaceholderInitialNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
 import com.google.template.soy.soytree.SwitchCaseNode;
@@ -1823,7 +1821,7 @@ private HeaderParam ParamDecl(@Nullable String desc) :
 
 
 /**
- * TemplateBlock -> ( RawText | Stmt )*
+ * TemplateBlock -> (TemplateBlockItem )*
  */
 private List<StandaloneNode> TemplateBlock() :
 {
@@ -1833,11 +1831,7 @@ private List<StandaloneNode> TemplateBlock() :
   { List<StandaloneNode> templateBlock = new ArrayList<StandaloneNode>(); }
 
   (
-    (
-      node = RawText()
-    | node = Stmt()
-    )
-
+    node = TemplateBlockItem()
     {
       if (node != null) {
         templateBlock.add(node);
@@ -1848,6 +1842,22 @@ private List<StandaloneNode> TemplateBlock() :
   { return templateBlock; }
 }
 
+/**
+ * TemplateBlockItem -> ( RawText | Stmt )
+ *
+ * <p>returns {@code null} if there was a parsing error
+ */
+private StandaloneNode TemplateBlockItem() :
+{
+  StandaloneNode node;
+}
+{
+  (
+    node = RawText()
+  | node = Stmt()
+  )
+  { return node; }
+}
 
 // -------------------------------------------------------------------------------------------------
 // Soy statements.
@@ -1983,12 +1993,14 @@ private MsgFallbackGroupNode MsgStmt() :
  * TemplateBlockForMsg -> (Whitespace) MsgPlural MaybeWhitespace
  *                        | MaybeWhitespace MsgSelect MaybeWhitespace
  *                        | ( ContiguousRawTextAsNode | Stmt | MsgHtmlTag )*
+ *
+ * <p>The difference between TemplateBlockForMsg and Template Block is the special handling of
+ * {plural} and {select} blocks.
  */
 private List<StandaloneNode> TemplateBlockForMsg() :
 {
   RawTextNode rawText;
-  MsgPlaceholderInitialNode stmt;
-  MsgPlaceholderInitialNode msgHtmlTag;
+  StandaloneNode stmt;
   StandaloneNode msgPluralOrSelectNode;
   // The index of the plural or select node, if any
   int pluralOrSelectIndex = -1;
@@ -2043,11 +2055,9 @@ private List<StandaloneNode> TemplateBlockForMsg() :
     }
     templateBlock.add(msgPluralOrSelectNode);
   }
-  | rawText = RawText() { templateBlock.add(rawText); }
-  | stmt = CallStmt()  { templateBlock.add(new MsgPlaceholderNode(nodeIdGen.genId(), stmt)); }
-  | stmt = PrintStmt() { templateBlock.add(new MsgPlaceholderNode(nodeIdGen.genId(), stmt)); }
-  | msgHtmlTag = MsgHtmlTag()
-    { templateBlock.add(new MsgPlaceholderNode(nodeIdGen.genId(), msgHtmlTag)); }
+  | stmt = TemplateBlockItem()  { if (stmt != null) { templateBlock.add(stmt); } }
+  // TODO(lukes): remove and move into the HtmlRewritePass
+  | stmt = MsgHtmlTag() { templateBlock.add(stmt); }
   )*
 
   {

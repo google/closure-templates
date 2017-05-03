@@ -510,11 +510,13 @@ public final class TemplateParserTest {
     assertInvalidTemplate("{msg desc=\"\"}blah{/msg blah}");
 
     TemplateSubject.assertThatTemplateContent(
-            "" + "{msg meaning=\"verb\" desc=\"\"}\n" + "  Hi {if blah}a{/if}\n" + "{/msg}")
+            "{@param blah : ?}\n"
+                + "{msg meaning=\"verb\" desc=\"\"}\n"
+                + "  Hi {if $blah}a{/if}\n"
+                + "{/msg}")
         .causesError(
-            "parse error at '{if ': expected "
-                + "text, {literal, {call, {delcall, {fallbackmsg, {/msg}, {print, {plural, "
-                + "{select, {, <, or whitespace");
+            "Unexpected soy command in '{msg ...}' block. Only message placeholder commands "
+                + "({print, {call and html tags) are allowed to be direct children of messages.");
     TemplateSubject.assertThatTemplateContent(
             ""
                 + "{msg meaning=\"verb\" desc=\"\"}\n"
@@ -525,9 +527,9 @@ public final class TemplateParserTest {
                 + "  Store\n"
                 + "{/msg}")
         .causesError(
-            "parse error at '{fallbackmsg ': expected "
-                + "text, {literal, {call, {delcall, {/msg}, {print, {plural, {select, {, <, "
-                + "or whitespace");
+            "parse error at '{fallbackmsg ': expected text, {literal, {call, {delcall, {msg, "
+                + "{/msg}, {print, {xid, {css, {if, {let, {for, {plural, {select, {switch, "
+                + "{foreach, {log}, {debugger}, {, <, or whitespace");
     assertInvalidTemplate("{print $boo /}");
     assertInvalidTemplate("{if true}aaa{else/}bbb{/if}");
     assertInvalidTemplate("{call .aaa.bbb /}");
