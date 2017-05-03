@@ -16,11 +16,8 @@
 
 package com.google.template.soy.soytree;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 
 /**
  * An HtmlOpenTagNode represents an opening html tag.
@@ -30,8 +27,7 @@ import com.google.template.soy.soytree.SoyNode.StandaloneNode;
  * <p>The first child is guaranteed to be the tag name, any after that are guaranteed to be in
  * attribute context. There is always at least one child.
  */
-public final class HtmlOpenTagNode extends AbstractParentSoyNode<StandaloneNode>
-    implements StandaloneNode {
+public final class HtmlOpenTagNode extends HtmlTagNode {
 
   /**
    * Whether or not the node is a self closing tag because it ends with {@code />} instead of {@code
@@ -39,22 +35,15 @@ public final class HtmlOpenTagNode extends AbstractParentSoyNode<StandaloneNode>
    */
   private final boolean selfClosing;
 
-  private final TagName tagName;
-
-  // TODO(lukes): consider adding a pointer to the closing tag, if known, or annotating it as a
-  // void tag if we know that it is one (e.g. for <br>, <hr>)
-
   public HtmlOpenTagNode(
       int id, TagName tagName, SourceLocation sourceLocation, boolean selfClosing) {
-    super(id, sourceLocation);
-    this.tagName = checkNotNull(tagName);
+    super(id, tagName, sourceLocation);
     this.selfClosing = selfClosing;
   }
 
   private HtmlOpenTagNode(HtmlOpenTagNode orig, CopyState copyState) {
     super(orig, copyState);
     this.selfClosing = orig.selfClosing;
-    this.tagName = orig.tagName;
   }
 
   @Override
@@ -66,19 +55,9 @@ public final class HtmlOpenTagNode extends AbstractParentSoyNode<StandaloneNode>
     return selfClosing;
   }
 
-  public TagName getTagName() {
-    return tagName;
-  }
-
   @Override
   public HtmlOpenTagNode copy(CopyState copyState) {
     return new HtmlOpenTagNode(this, copyState);
-  }
-
-  @SuppressWarnings("unchecked")
-  @Override
-  public ParentSoyNode<StandaloneNode> getParent() {
-    return (ParentSoyNode<StandaloneNode>) super.getParent();
   }
 
   @Override

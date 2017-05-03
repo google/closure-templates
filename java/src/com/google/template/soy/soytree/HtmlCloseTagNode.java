@@ -16,45 +16,27 @@
 
 package com.google.template.soy.soytree;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 
 /**
  * An HtmlCloseTagNode represents a closing html tag.
  *
  * <p>For example, <code> </{$tag}> </code>.
  */
-public final class HtmlCloseTagNode extends AbstractParentSoyNode<StandaloneNode>
-    implements StandaloneNode {
-
-  private final TagName tagName;
+public final class HtmlCloseTagNode extends HtmlTagNode {
 
   public HtmlCloseTagNode(int id, TagName tagName, SourceLocation sourceLocation) {
-    super(id, sourceLocation);
-    this.tagName = checkNotNull(tagName);
+    super(id, tagName, sourceLocation);
   }
 
   private HtmlCloseTagNode(HtmlCloseTagNode orig, CopyState copyState) {
     super(orig, copyState);
-    this.tagName = orig.tagName;
   }
 
   @Override
   public Kind getKind() {
     return Kind.HTML_CLOSE_TAG_NODE;
-  }
-
-  public TagName getTagName() {
-    return tagName;
-  }
-
-  @SuppressWarnings("unchecked")
-  @Override
-  public ParentSoyNode<StandaloneNode> getParent() {
-    return (ParentSoyNode<StandaloneNode>) super.getParent();
   }
 
   @Override
