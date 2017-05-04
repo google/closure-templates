@@ -93,7 +93,6 @@ import com.google.template.soy.types.SoyType.Kind;
 import java.io.Flushable;
 import java.io.IOException;
 import java.util.ArrayDeque;
-import java.util.Collection;
 import java.util.Deque;
 import java.util.List;
 import javax.annotation.Nullable;
@@ -257,7 +256,8 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
   }
 
   /** A private helper to render templates with optimized type checking. */
-  private void renderTemplate(TemplateNode template, Collection<TemplateParam> paramsToTypeCheck) {
+  private void renderTemplate(
+      TemplateNode template, ImmutableList<TemplateParam> paramsToTypeCheck) {
     env = Environment.create(template, data, ijData);
     checkStrictParamTypes(template, paramsToTypeCheck);
     visitChildren(template);
@@ -869,7 +869,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     }
   }
 
-  private void checkStrictParamTypes(TemplateNode node, Collection<TemplateParam> params) {
+  private void checkStrictParamTypes(TemplateNode node, ImmutableList<TemplateParam> params) {
     for (TemplateParam param : params) {
       checkStrictParamType(node, param, env.getVarProvider(param));
     }

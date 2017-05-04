@@ -16,7 +16,6 @@
 
 package com.google.template.soy.soytree;
 
-
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.AbstractNode;
 import com.google.template.soy.basetree.CopyState;
@@ -42,7 +41,7 @@ public abstract class AbstractSoyNode extends AbstractNode implements SoyNode {
    */
   protected AbstractSoyNode(int id, SourceLocation sourceLocation) {
     this.id = id;
-    srcLoc = sourceLocation;
+    this.srcLoc = sourceLocation;
   }
 
   /**

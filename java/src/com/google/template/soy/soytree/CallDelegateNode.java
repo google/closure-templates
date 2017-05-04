@@ -16,6 +16,8 @@
 
 package com.google.template.soy.soytree;
 
+import static com.google.common.base.Preconditions.checkState;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -32,7 +34,6 @@ import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.soytree.CommandTextAttributesParser.Attribute;
 import com.google.template.soy.soytree.defn.TemplateParam;
-import java.util.Collection;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -95,8 +96,14 @@ public final class CallDelegateNode extends CallNode {
           new Attribute("data", Attribute.ALLOW_ALL_VALUES, null),
           new Attribute("allowemptydefault", Attribute.BOOLEAN_VALUES, null));
 
-  /** The name of the delegate template being called. */
-  private final String delCalleeName;
+  /**
+   * The name of the delegate template being called.
+   *
+   * <p>Not final. The contextual autoescaper can rewrite the callee name, if the same callee
+   * template is called into from two different contexts, and the autoescaper needs to clone a
+   * template and retarget the call.
+   */
+  private String delCalleeName;
 
   /** The variant expression for the delegate being called, or null. */
   @Nullable private final ExprRootNode delCalleeVariantExpr;
@@ -118,8 +125,9 @@ public final class CallDelegateNode extends CallNode {
    * <p>NOTE:This list will be a subset of the params of the callee, not a subset of the params
    * passed from this caller.
    */
+  @Nullable
   private ImmutableMap<TemplateDelegateNode, ImmutableList<TemplateParam>>
-      paramsToRuntimeCheckByDelegate;
+      paramsToRuntimeCheckByDelegate = null;
 
   public static final class Builder extends CallNode.Builder {
 
@@ -314,36 +322,6 @@ public final class CallDelegateNode extends CallNode {
   }
 
   @Override
-  public CallDelegateNode withNewName(String newName) {
-    return new CallDelegateNode(
-        getId(),
-        getSourceLocation(),
-        new CommandTextInfo(
-            newName,
-            getDelCalleeVariantExpr(),
-            allowEmptyDefault,
-            isPassingAllData(),
-            getDataExpr(),
-            getUserSuppliedPhName()),
-        getEscapingDirectiveNames());
-  }
-
-  @Override
-  public CallDelegateNode withDataAll() {
-    return new CallDelegateNode(
-        getId(),
-        getSourceLocation(),
-        new CommandTextInfo(
-            getDelCalleeName(),
-            getDelCalleeVariantExpr(),
-            allowEmptyDefault,
-            true,
-            null,
-            getUserSuppliedPhName()),
-        getEscapingDirectiveNames());
-  }
-
-  @Override
   public Kind getKind() {
     return Kind.CALL_DELEGATE_NODE;
   }
@@ -351,6 +329,12 @@ public final class CallDelegateNode extends CallNode {
   /** Returns the name of the delegate template being called. */
   public String getDelCalleeName() {
     return delCalleeName;
+  }
+
+  /** Do not call this method outside the contextual autoescaper. */
+  public void setDelCalleeName(String delCalleeName) {
+    Preconditions.checkArgument(BaseUtils.isDottedIdentifier(delCalleeName));
+    this.delCalleeName = delCalleeName;
   }
 
   /** Returns the variant expression for the delegate being called, or null if it's a string. */
@@ -364,11 +348,12 @@ public final class CallDelegateNode extends CallNode {
    */
   public void setParamsToRuntimeCheck(
       ImmutableMap<TemplateDelegateNode, ImmutableList<TemplateParam>> paramsToRuntimeCheck) {
+    checkState(this.paramsToRuntimeCheckByDelegate == null);
     this.paramsToRuntimeCheckByDelegate = Preconditions.checkNotNull(paramsToRuntimeCheck);
   }
 
   @Override
-  public Collection<TemplateParam> getParamsToRuntimeCheck(TemplateNode callee) {
+  public ImmutableList<TemplateParam> getParamsToRuntimeCheck(TemplateNode callee) {
     if (paramsToRuntimeCheckByDelegate == null) {
       return callee.getParams();
     }

@@ -38,6 +38,7 @@ import com.google.template.soy.soytree.TemplateNode;
  * or ancestor of a template).
  *
  */
+// TODO(user): This optimization causes suprising bugs. Remove.
 public final class ChangeCallsToPassAllDataVisitor extends AbstractSoyNodeVisitor<Void> {
 
   @Override
@@ -94,10 +95,9 @@ public final class ChangeCallsToPassAllDataVisitor extends AbstractSoyNodeVisito
       }
     }
 
-    // Change this call to pass data="all" and remove all params. (We reuse the node id.)
-    CallNode newCallNode = node.withDataAll();
-    node.getParent().replaceChild(node, newCallNode);
-    // children are not copied over
+    // Change this call to pass data="all" and remove all params.
+    node.setDataAll();
+    node.clearChildren();
   }
 
   // -----------------------------------------------------------------------------------------------

@@ -16,6 +16,8 @@
 
 package com.google.template.soy.soytree;
 
+import static com.google.common.base.Preconditions.checkState;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
@@ -74,11 +76,17 @@ public final class CallBasicNode extends CallNode {
       new CommandTextAttributesParser(
           "call", new Attribute("data", Attribute.ALLOW_ALL_VALUES, null));
 
-  /** The callee name string as it appears in the source code. */
-  private final String sourceCalleeName;
+  /**
+   * The callee name string as it appears in the source code.
+   *
+   * <p>Not final. The contextual autoescaper can rewrite the callee name, if the same callee
+   * template is called into from two different contexts, and the autoescaper needs to clone a
+   * template and retarget the call.
+   */
+  private String sourceCalleeName;
 
   /** The full name of the template being called. Briefly null before being set. */
-  // TODO(user): Consider folding SetFullCalleeVisitor into parser and removing this field
+  // TODO(user): Fold SetFullCalleeVisitor into parser, remove this field.
   private String calleeName;
 
   /**
@@ -90,7 +98,7 @@ public final class CallBasicNode extends CallNode {
    * <p>NOTE:This list will be a subset of the params of the callee, not a subset of the params
    * passed from this caller.
    */
-  private ImmutableList<TemplateParam> paramsToRuntimeTypeCheck;
+  @Nullable private ImmutableList<TemplateParam> paramsToRuntimeTypeCheck = null;
 
   /**
    * Private constructor. {@link Builder} is the public API.
@@ -124,26 +132,6 @@ public final class CallBasicNode extends CallNode {
   }
 
   @Override
-  public CallBasicNode withNewName(String newName) {
-    return new CallBasicNode(
-        getId(),
-        getSourceLocation(),
-        new CommandTextInfo(newName, isPassingAllData(), getDataExpr(), getUserSuppliedPhName()),
-        getEscapingDirectiveNames(),
-        newName);
-  }
-
-  @Override
-  public CallBasicNode withDataAll() {
-    return new CallBasicNode(
-        getId(),
-        getSourceLocation(),
-        new CommandTextInfo(getSrcCalleeName(), true, null, getUserSuppliedPhName()),
-        getEscapingDirectiveNames(),
-        getCalleeName());
-  }
-
-  @Override
   public Kind getKind() {
     return Kind.CALL_BASIC_NODE;
   }
@@ -153,13 +141,24 @@ public final class CallBasicNode extends CallNode {
     return sourceCalleeName;
   }
 
+  /** Do not call this method outside the contextual autoescaper. */
+  public void setSrcCalleeName(String sourceCalleeName) {
+    this.sourceCalleeName = sourceCalleeName;
+  }
+
+  /** Returns the full name of the template being called, or null if not yet set. */
+  // TODO(user): remove
+  public String getCalleeName() {
+    return calleeName;
+  }
+
   /**
    * Sets the full name of the template being called (must not be a partial name).
    *
    * @param calleeName The full name of the template being called.
    */
+  // TODO(user): Remove.
   public void setCalleeName(String calleeName) {
-    Preconditions.checkState(this.calleeName == null);
     Preconditions.checkArgument(BaseUtils.isDottedIdentifier(calleeName));
     this.calleeName = calleeName;
   }
@@ -169,17 +168,13 @@ public final class CallBasicNode extends CallNode {
    * types.
    */
   public void setParamsToRuntimeCheck(Collection<TemplateParam> paramNames) {
+    checkState(this.paramsToRuntimeTypeCheck == null);
     this.paramsToRuntimeTypeCheck = ImmutableList.copyOf(paramNames);
   }
 
   @Override
-  public Collection<TemplateParam> getParamsToRuntimeCheck(TemplateNode callee) {
+  public ImmutableList<TemplateParam> getParamsToRuntimeCheck(TemplateNode callee) {
     return paramsToRuntimeTypeCheck == null ? callee.getParams() : paramsToRuntimeTypeCheck;
-  }
-
-  /** Returns the full name of the template being called, or null if not yet set. */
-  public String getCalleeName() {
-    return calleeName;
   }
 
   @Override

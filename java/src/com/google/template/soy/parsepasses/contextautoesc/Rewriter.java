@@ -34,7 +34,6 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
-import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.TemplateNode;
 import java.util.List;
 import java.util.Map;
@@ -86,6 +85,7 @@ final class Rewriter {
 
   /** A visitor that applies the changes in Inferences to a Soy tree. */
   private final class RewriterVisitor extends AbstractSoyNodeVisitor<Void> {
+
     /** Keep track of template nodes so we know which are derived and which aren't. */
     @Override
     protected void visitTemplateNode(TemplateNode templateNode) {
@@ -148,43 +148,17 @@ final class Rewriter {
       visitChildren(node);
     }
 
-    /**
-     * Rewrite call targets.
-     *
-     * <p>Note that this processing is only applicable for CallBasicNodes. The reason is that
-     * CallDelegateNodes are always calling public templates (delegate templates are always public),
-     * and public templates never need rewriting.
-     *
-     * <p>TODO: Modify contextual autoescape to deal with delegates appropriately.
-     */
+    /** Rewrite call targets. */
     @Override
     protected void visitCallNode(CallNode node) {
       String derivedCalleeName = inferences.getDerivedCalleeNameForCall(node);
       if (derivedCalleeName != null) {
-
-        // Creates a new call node, but with a different target name.
         if (node instanceof CallBasicNode) {
-          CallBasicNode basicCall = (CallBasicNode) node;
-          CallBasicNode newCall = basicCall.withNewName(derivedCalleeName);
-
-          if (!newCall.getCalleeName().equals(basicCall.getCalleeName())) {
-            moveChildrenTo(basicCall, newCall);
-            replaceChild(basicCall, newCall);
-          }
-
-          // Ensure we visit the new node instead of the old one.
-          node = newCall;
+          CallBasicNode cast = (CallBasicNode) node;
+          cast.setCalleeName(derivedCalleeName);
+          cast.setSrcCalleeName(derivedCalleeName);
         } else {
-          CallDelegateNode delCall = (CallDelegateNode) node;
-          CallDelegateNode newCall = delCall.withNewName(derivedCalleeName);
-
-          if (!newCall.getDelCalleeName().equals(delCall.getDelCalleeName())) {
-            moveChildrenTo(delCall, newCall);
-            replaceChild(delCall, newCall);
-          }
-
-          // Ensure we visit the new node instead of the old one.
-          node = newCall;
+          ((CallDelegateNode) node).setDelCalleeName(derivedCalleeName);
         }
       }
 
@@ -201,17 +175,5 @@ final class Rewriter {
         visitChildrenAllowingConcurrentModification((ParentSoyNode<?>) node);
       }
     }
-  }
-
-  /** Replaces old child with new child. */
-  private static void replaceChild(StandaloneNode oldChild, StandaloneNode newChild) {
-    oldChild.getParent().replaceChild(oldChild, newChild);
-  }
-
-  private static <T extends SoyNode> void moveChildrenTo(
-      ParentSoyNode<T> oldParent, ParentSoyNode<T> newParent) {
-    List<T> children = ImmutableList.copyOf(oldParent.getChildren());
-    oldParent.clearChildren();
-    newParent.addChildren(children);
   }
 }

@@ -414,12 +414,12 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
   }
 
   /** Returns the params from template header or SoyDoc. */
-  public List<TemplateParam> getParams() {
+  public ImmutableList<TemplateParam> getParams() {
     return params;
   }
 
   /** Returns the injected params from template header. */
-  public List<TemplateParam> getInjectedParams() {
+  public ImmutableList<TemplateParam> getInjectedParams() {
     return injectedParams;
   }
 

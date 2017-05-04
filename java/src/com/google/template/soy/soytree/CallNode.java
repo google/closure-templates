@@ -28,7 +28,6 @@ import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
-import java.util.Collection;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 
@@ -70,10 +69,10 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
   }
 
   /** True if this call is passing data="all". */
-  private final boolean isPassingAllData;
+  private boolean isPassingAllData;
 
   /** The data= expression, or null if the call does not pass data or passes data="all". */
-  @Nullable private final ExprRootNode dataExpr;
+  @Nullable private ExprRootNode dataExpr;
 
   /** The user-supplied placeholder name, or null if not supplied or not applicable. */
   @Nullable private final String userSuppliedPlaceholderName;
@@ -125,18 +124,6 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
     this.isPcData = orig.getIsPcData();
   }
 
-  /**
-   * Create a CallNode with new callee name but otherwise identical parameters (including node id).
-   * Children are not copied over.
-   */
-  public abstract CallNode withNewName(String newName);
-
-  /**
-   * Create a CallNode with data="all" but otherwise identical parameters (including node id).
-   * Children are not copied over.
-   */
-  public abstract CallNode withDataAll();
-
   public boolean isPassingData() {
     return isPassingAllData || dataExpr != null;
   }
@@ -148,6 +135,13 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
   @Nullable
   public ExprRootNode getDataExpr() {
     return dataExpr;
+  }
+
+  /** Sets this CallNode to pass data="all". */
+  // TODO(user): Remove once ChangeCallsToPassAllDataVisitor is gone.
+  public void setDataAll() {
+    this.isPassingAllData = true;
+    this.dataExpr = null;
   }
 
   public boolean getIsPcData() {
@@ -206,7 +200,7 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
    * Returns the subset of {@link TemplateParam params} of the {@code callee} that require runtime
    * type checking when this node is being rendered.
    */
-  public Collection<TemplateParam> getParamsToRuntimeCheck(TemplateNode callee) {
+  public ImmutableList<TemplateParam> getParamsToRuntimeCheck(TemplateNode callee) {
     return callee.getParams();
   }
 

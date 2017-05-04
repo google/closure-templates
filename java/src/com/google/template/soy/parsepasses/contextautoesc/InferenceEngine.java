@@ -327,7 +327,6 @@ final class InferenceEngine {
       }
     }
 
-    // TODO: Reorder visitCall* methods in AbstractSoyNodeVisitor order.
     /**
      * {@link DerivedTemplateUtils Derive} a template from the given call's target if necessary, and
      * figure out the template's end context.
