@@ -175,7 +175,7 @@ public abstract class SoyMsg {
   @Nullable
   public abstract String getDesc();
 
-  /** Returns whether this message should be hiddens. */
+  /** Returns whether this message should be hidden. */
   public abstract boolean isHidden();
 
   /** Returns the content type of the document that this message will appear in. */

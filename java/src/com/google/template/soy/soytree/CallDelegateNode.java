@@ -16,7 +16,9 @@
 
 package com.google.template.soy.soytree;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.template.soy.soytree.CommandTagAttribute.UNSUPPORTED_ATTRIBUTE_KEY;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -25,20 +27,15 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.TriState;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.error.ErrorReporter.Checkpoint;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
-import com.google.template.soy.exprparse.ExpressionParser;
-import com.google.template.soy.exprparse.SoyParsingContext;
 import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.StringNode;
-import com.google.template.soy.soytree.CommandTextAttributesParser.Attribute;
 import com.google.template.soy.soytree.defn.TemplateParam;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.List;
 import javax.annotation.Nullable;
-import javax.annotation.concurrent.Immutable;
 
 /**
  * Node representing a call to a delegate template.
@@ -48,53 +45,10 @@ import javax.annotation.concurrent.Immutable;
  */
 public final class CallDelegateNode extends CallNode {
 
-  private static final SoyErrorKind MISSING_CALLEE_NAME =
-      SoyErrorKind.of(
-          "The ''delcall'' command text must contain the callee name "
-              + "(encountered command text \"{0}\").");
-  public static final SoyErrorKind INVALID_DELEGATE_NAME =
-      SoyErrorKind.of("Invalid delegate name \"{0}\" for ''delcall'' command.");
   private static final SoyErrorKind INVALID_VARIANT_EXPRESSION =
       SoyErrorKind.of(
           "Invalid variant expression \"{0}\" in ''delcall''"
               + " (variant expression must evaluate to an identifier).");
-
-  /**
-   * Private helper class used by constructors. Encapsulates all the info derived from the command
-   * text.
-   */
-  @Immutable
-  private static class CommandTextInfo extends CallNode.CommandTextInfo {
-
-    public final String delCalleeName;
-    @Nullable public final ExprRootNode delCalleeVariantExpr;
-    public final TriState allowEmptyDefault;
-
-    public CommandTextInfo(
-        String delCalleeName,
-        @Nullable ExprRootNode delCalleeVariantExpr,
-        TriState allowEmptyDefault,
-        boolean isPassingAllData,
-        @Nullable ExprRootNode dataExpr,
-        @Nullable String userSuppliedPlaceholderName) {
-      super(isPassingAllData, dataExpr, userSuppliedPlaceholderName);
-      this.delCalleeName = delCalleeName;
-      this.delCalleeVariantExpr = delCalleeVariantExpr;
-      this.allowEmptyDefault = allowEmptyDefault;
-    }
-  }
-
-  /** Pattern for a callee name. */
-  private static final Pattern NONATTRIBUTE_CALLEE_NAME =
-      Pattern.compile("^\\s* ([.\\w]+) (?= \\s | $)", Pattern.COMMENTS);
-
-  /** Parser for the command text. */
-  private static final CommandTextAttributesParser ATTRIBUTES_PARSER =
-      new CommandTextAttributesParser(
-          "delcall",
-          new Attribute("variant", Attribute.ALLOW_ALL_VALUES, null),
-          new Attribute("data", Attribute.ALLOW_ALL_VALUES, null),
-          new Attribute("allowemptydefault", Attribute.BOOLEAN_VALUES, null));
 
   /**
    * The name of the delegate template being called.
@@ -106,7 +60,7 @@ public final class CallDelegateNode extends CallNode {
   private String delCalleeName;
 
   /** The variant expression for the delegate being called, or null. */
-  @Nullable private final ExprRootNode delCalleeVariantExpr;
+  @Nullable private final ExprRootNode variantExpr;
 
   /**
    * User-specified attribute to determine whether this delegate call defaults to empty string if
@@ -129,182 +83,56 @@ public final class CallDelegateNode extends CallNode {
   private ImmutableMap<TemplateDelegateNode, ImmutableList<TemplateParam>>
       paramsToRuntimeCheckByDelegate = null;
 
-  public static final class Builder extends CallNode.Builder {
-
-    private static CallDelegateNode error() {
-      return new Builder(-1, SourceLocation.UNKNOWN)
-          .commandText("error.error")
-          .build(SoyParsingContext.exploding()); // guaranteed to be valid
-    }
-
-    private final int id;
-    private final SourceLocation sourceLocation;
-
-    private TriState allowEmptyDefault = TriState.UNSET;
-    private ImmutableList<String> escapingDirectiveNames = ImmutableList.of();
-    private boolean isPassingAllData = false;
-    @Nullable private ExprRootNode dataExpr = null;
-
-    @Nullable private String commandText;
-    @Nullable private String delCalleeName;
-    @Nullable private ExprRootNode delCalleeVariantExpr;
-    @Nullable private String userSuppliedPlaceholderName;
-
-    public Builder(int id, SourceLocation sourceLocation) {
-      this.id = id;
-      this.sourceLocation = sourceLocation;
-    }
-
-    @Override
-    public SourceLocation getSourceLocation() {
-      return sourceLocation;
-    }
-
-    @Override
-    public Builder commandText(String commandText) {
-      this.commandText = commandText;
-      return this;
-    }
-
-    public Builder delCalleeName(String delCalleeName) {
-      this.delCalleeName = delCalleeName;
-      return this;
-    }
-
-    public Builder delCalleeVariantExpr(ExprRootNode delCalleeVariantExpr) {
-      this.delCalleeVariantExpr = delCalleeVariantExpr;
-      return this;
-    }
-
-    public Builder escapingDirectiveNames(ImmutableList<String> escapingDirectiveNames) {
-      this.escapingDirectiveNames = escapingDirectiveNames;
-      return this;
-    }
-
-    public Builder dataExpr(ExprRootNode dataExpr) {
-      this.dataExpr = dataExpr;
-      return this;
-    }
-
-    public Builder isPassingAllData(boolean isPassingAllData) {
-      this.isPassingAllData = isPassingAllData;
-      return this;
-    }
-
-    @Override
-    public Builder userSuppliedPlaceholderName(String userSuppliedPlaceholderName) {
-      this.userSuppliedPlaceholderName = userSuppliedPlaceholderName;
-      return this;
-    }
-
-    @Override
-    public CallDelegateNode build(SoyParsingContext context) {
-      Checkpoint checkpoint = context.errorReporter().checkpoint();
-      CommandTextInfo commandTextInfo =
-          commandText != null ? parseCommandText(context) : buildCommandText();
-      if (context.errorReporter().errorsSince(checkpoint)) {
-        return error();
-      }
-      CallDelegateNode callDelegateNode =
-          new CallDelegateNode(id, sourceLocation, commandTextInfo, escapingDirectiveNames);
-      return callDelegateNode;
-    }
-
-    private CommandTextInfo parseCommandText(SoyParsingContext context) {
-      String commandTextWithoutPhnameAttr = this.commandText;
-
-      String commandText =
-          commandTextWithoutPhnameAttr
-              + ((userSuppliedPlaceholderName != null)
-                  ? " phname=\"" + userSuppliedPlaceholderName + "\""
-                  : "");
-
-      // Handle callee name not listed as an attribute.
-      Matcher ncnMatcher = NONATTRIBUTE_CALLEE_NAME.matcher(commandTextWithoutPhnameAttr);
-      String delCalleeName;
-      if (ncnMatcher.find()) {
-        delCalleeName = ncnMatcher.group(1);
-        if (!BaseUtils.isDottedIdentifier(delCalleeName)) {
-          context.report(sourceLocation, INVALID_DELEGATE_NAME, delCalleeName);
-        }
-        commandTextWithoutPhnameAttr =
-            commandTextWithoutPhnameAttr.substring(ncnMatcher.end()).trim();
-      } else {
-        delCalleeName = null;
-        context.report(sourceLocation, MISSING_CALLEE_NAME, commandText);
-      }
-
-      Map<String, String> attributes =
-          ATTRIBUTES_PARSER.parse(commandTextWithoutPhnameAttr, context, sourceLocation);
-
-      String variantExprText = attributes.get("variant");
-      ExprRootNode delCalleeVariantExpr;
-      if (variantExprText == null) {
-        delCalleeVariantExpr = null;
-      } else {
-        ExprNode expr =
-            new ExpressionParser(variantExprText, sourceLocation, context).parseExpression();
-        // If the variant is a fixed string, do a sanity check.
-        if (expr instanceof StringNode) {
-          String fixedVariantStr = ((StringNode) expr).getValue();
-          if (!BaseUtils.isIdentifier(fixedVariantStr)) {
-            context.report(sourceLocation, INVALID_VARIANT_EXPRESSION, variantExprText);
-          }
-        }
-        delCalleeVariantExpr = new ExprRootNode(expr);
-      }
-
-      String dataAttr = attributes.get("data");
-
-      boolean isPassingAllData = false;
-      ExprRootNode dataExpr = null;
-
-      if ("all".equals(dataAttr)) {
-        isPassingAllData = true;
-      } else if (dataAttr != null) {
-        dataExpr =
-            new ExprRootNode(
-                new ExpressionParser(dataAttr, sourceLocation, context).parseExpression());
-      }
-
-      String allowemptydefaultAttr = attributes.get("allowemptydefault");
-      TriState allowEmptyDefault =
-          (allowemptydefaultAttr == null)
-              ? TriState.UNSET
-              : TriState.from(allowemptydefaultAttr.equals("true"));
-
-      return new CommandTextInfo(
-          delCalleeName,
-          delCalleeVariantExpr,
-          allowEmptyDefault,
-          isPassingAllData,
-          dataExpr,
-          userSuppliedPlaceholderName);
-    }
-
-    private CommandTextInfo buildCommandText() {
-
-      Preconditions.checkArgument(BaseUtils.isDottedIdentifier(delCalleeName));
-
-      return new CommandTextInfo(
-          delCalleeName,
-          delCalleeVariantExpr,
-          allowEmptyDefault,
-          isPassingAllData,
-          dataExpr,
-          userSuppliedPlaceholderName);
-    }
-  }
-
-  private CallDelegateNode(
+  public CallDelegateNode(
       int id,
-      SourceLocation sourceLocation,
-      CommandTextInfo commandTextInfo,
-      ImmutableList<String> escapingDirectiveNames) {
-    super(id, sourceLocation, "delcall", commandTextInfo, escapingDirectiveNames);
-    this.delCalleeName = commandTextInfo.delCalleeName;
-    this.delCalleeVariantExpr = commandTextInfo.delCalleeVariantExpr;
-    this.allowEmptyDefault = commandTextInfo.allowEmptyDefault;
+      SourceLocation location,
+      String delCalleeName,
+      List<CommandTagAttribute> attributes,
+      ErrorReporter errorReporter) {
+    super(id, location, "delcall", attributes);
+    this.delCalleeName = delCalleeName;
+
+    ExprRootNode variantExpr = null;
+    TriState allowEmptyDefault = TriState.UNSET;
+
+    for (CommandTagAttribute attr : attributes) {
+      String name = attr.getName().identifier();
+
+      switch (name) {
+        case "data":
+        case "phname":
+          // Parsed in CallNode.
+          break;
+        case "variant":
+          ExprNode value = attr.valueAsExpr();
+          // Do some sanity checks on the variant expression.
+          if (value instanceof StringNode) {
+            // If the variant is a fixed string, it evaluate to an identifier.
+            String variantStr = ((StringNode) value).getValue();
+            if (!BaseUtils.isIdentifier(variantStr)) {
+              errorReporter.report(location, INVALID_VARIANT_EXPRESSION, variantStr);
+            }
+          } else if (value instanceof PrimitiveNode) {
+            // Variant should not be other primitives (boolean, number, etc.)
+            errorReporter.report(location, INVALID_VARIANT_EXPRESSION, value.toSourceString());
+          }
+          variantExpr = new ExprRootNode(value);
+          break;
+        case "allowemptydefault":
+          allowEmptyDefault = attr.valueAsTriState(errorReporter);
+          break;
+        default:
+          errorReporter.report(
+              attr.getName().location(),
+              UNSUPPORTED_ATTRIBUTE_KEY,
+              name,
+              "call",
+              ImmutableList.of("data", "phname", "variant", "allowemptydefault"));
+      }
+    }
+
+    this.variantExpr = variantExpr;
+    this.allowEmptyDefault = allowEmptyDefault;
   }
 
   /**
@@ -315,8 +143,7 @@ public final class CallDelegateNode extends CallNode {
   private CallDelegateNode(CallDelegateNode orig, CopyState copyState) {
     super(orig, copyState);
     this.delCalleeName = orig.delCalleeName;
-    this.delCalleeVariantExpr =
-        (orig.delCalleeVariantExpr != null) ? orig.delCalleeVariantExpr.copy(copyState) : null;
+    this.variantExpr = (orig.variantExpr != null) ? orig.variantExpr.copy(copyState) : null;
     this.allowEmptyDefault = orig.allowEmptyDefault;
     this.paramsToRuntimeCheckByDelegate = orig.paramsToRuntimeCheckByDelegate;
   }
@@ -340,16 +167,14 @@ public final class CallDelegateNode extends CallNode {
   /** Returns the variant expression for the delegate being called, or null if it's a string. */
   @Nullable
   public ExprRootNode getDelCalleeVariantExpr() {
-    return delCalleeVariantExpr;
+    return variantExpr;
   }
 
-  /**
-   * Sets the template params that require runtime type checking for each possible delegate target.
-   */
+  /** Sets the params that require runtime type checking for each possible delegate target. */
   public void setParamsToRuntimeCheck(
       ImmutableMap<TemplateDelegateNode, ImmutableList<TemplateParam>> paramsToRuntimeCheck) {
     checkState(this.paramsToRuntimeCheckByDelegate == null);
-    this.paramsToRuntimeCheckByDelegate = Preconditions.checkNotNull(paramsToRuntimeCheck);
+    this.paramsToRuntimeCheckByDelegate = checkNotNull(paramsToRuntimeCheck);
   }
 
   @Override
@@ -380,11 +205,12 @@ public final class CallDelegateNode extends CallNode {
     } else if (getDataExpr() != null) {
       commandText += " data=\"" + getDataExpr().toSourceString() + '"';
     }
-
     if (getUserSuppliedPhName() != null) {
       commandText += " phname=\"" + getUserSuppliedPhName() + '"';
     }
-
+    if (variantExpr != null) {
+      commandText += " variant=\"" + variantExpr.toSourceString() + '"';
+    }
     if (allowEmptyDefault.isSet()) {
       commandText += " allowemptydefault=\"" + (allowEmptyDefault == TriState.ENABLED) + '"';
     }
@@ -395,8 +221,8 @@ public final class CallDelegateNode extends CallNode {
   @Override
   public ImmutableList<ExprRootNode> getExprList() {
     ImmutableList.Builder<ExprRootNode> allExprs = ImmutableList.builder();
-    if (delCalleeVariantExpr != null) {
-      allExprs.add(delCalleeVariantExpr);
+    if (variantExpr != null) {
+      allExprs.add(variantExpr);
     }
     allExprs.addAll(super.getExprList());
     return allExprs.build();

@@ -60,6 +60,7 @@ public final class CommandTagAttribute {
    * Identifies duplicate attributes, reports an error for each one, and removes them from the
    * {@link Iterable}.
    */
+  @SuppressWarnings("unused") // used by parser
   public static void removeDuplicatesAndReportErrors(
       Iterable<CommandTagAttribute> attrs, ErrorReporter errorReporter) {
     Set<String> seenAttributes = new HashSet<>();

@@ -1950,17 +1950,17 @@ public final class TemplateParserTest {
   public void testMultipleErrors() throws ParseException {
     FormattingErrorReporter errorReporter = new FormattingErrorReporter();
     parseTemplateContent(
-        "{call 123 /}\n" // Invalid callee name "123" for 'call' command.
-            + "{delcall 123 /}\n" // Invalid delegate name "123" for 'delcall' command.
-            + "{foreach foo in bar}{/foreach}\n" // Invalid 'foreach' command text "foo in bar".
-            + "{let /}\n",
+        "{call 123 /}\n" // Invalid callee name
+            + "{delcall 456 /}\n" // Invalid callee name
+            + "{foreach foo in bar}{/foreach}\n" // Invalid foreach var
+            + "{let /}\n", // Missing let var
         errorReporter);
     List<String> errors = errorReporter.getErrorMessages();
     assertThat(errors).hasSize(4);
-    assertThat(errors.get(0)).contains("Invalid callee name \"123\" for 'call' command.");
-    assertThat(errors.get(1)).contains("Invalid delegate name \"123\" for 'delcall' command.");
-    assertThat(errors.get(2)).contains("parse error at 'foo': expected variable");
-    assertThat(errors.get(3)).contains("parse error at '/}': expected variable");
+    assertThat(errors.get(0)).isEqualTo("parse error at '1': expected identifier, or .");
+    assertThat(errors.get(1)).isEqualTo("parse error at '4': expected identifier, or .");
+    assertThat(errors.get(2)).isEqualTo("parse error at 'foo': expected variable");
+    assertThat(errors.get(3)).isEqualTo("parse error at '/}': expected variable");
   }
 
   // -----------------------------------------------------------------------------------------------

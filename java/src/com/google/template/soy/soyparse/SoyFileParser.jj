@@ -352,6 +352,8 @@ public class SoyFileParser {
       SoyErrorKind.of("Soy '{{command}}' syntax is no longer supported.  Use single braces.");
   private static final SoyErrorKind INVALID_ALIAS_NAME =
       SoyErrorKind.of("An alias must be a single identifier. Found ''{0}''.");
+  private static final SoyErrorKind INVALID_CALLEE_NAME =
+      SoyErrorKind.of("Invalid callee name ''{0}''.");
   private static final SoyErrorKind INVALID_DECLARATION =
       SoyErrorKind.of("Invalid declaration ''{0}''.");
   private static final SoyErrorKind INVALID_DELTEMPLATE_NAME =
@@ -836,8 +838,8 @@ TOKEN_MGR_DECLS: {
 
 | < CMD_OPEN_LITERAL             : "{literal}"      > { pushState(IN_LITERAL_BLOCK); }
 
-| < CMD_BEGIN_CALL               : "{call" <WS>     > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
-| < CMD_BEGIN_DELCALL            : "{delcall" <WS>  > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
+| < CMD_BEGIN_CALL               : "{call" <WS>     > { pushState(IN_CMD_TAG_STRUCTURED); }
+| < CMD_BEGIN_DELCALL            : "{delcall" <WS>  > { pushState(IN_CMD_TAG_STRUCTURED); }
 | < CMD_CLOSE_CALL               : "{/call}"        >
 | < CMD_CLOSE_DELCALL            : "{/delcall}"     >
 
@@ -882,6 +884,7 @@ TOKEN_MGR_DECLS: {
 | < CMD_OPEN_LOG                 : "{log}"          >
 | < CMD_CLOSE_LOG                : "{/log}"         >
 | < CMD_FULL_DEBUGGER            : "{debugger}"     >
+
 | < CMD_BEGIN_IMPLICIT_PRINT     : "{"              > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
 }
 
@@ -1307,12 +1310,18 @@ private CommandTagAttribute Attribute() :
       { attrName = "variant"; }
     )
 
-    expr = Expr()
+    try {
+      expr = Expr()
+      <DOUBLE_QUOTE>
+    } catch (ParseException e) {
+      expr = errorExpr(e.currentToken);
+      reportTemplateBodyErrorAndSkipTo(e, DOUBLE_QUOTE);
+    }
 
-    <DOUBLE_QUOTE>
-    { token_source.SwitchTo(IN_CMD_TAG_STRUCTURED); }
-
-    { return new CommandTagAttribute(Identifier.create(attrName, createSrcLoc(attrTag)), expr); }
+    {
+      token_source.SwitchTo(IN_CMD_TAG_STRUCTURED);
+      return new CommandTagAttribute(Identifier.create(attrName, createSrcLoc(attrTag)), expr);
+    }
   )
 }
 
@@ -1353,23 +1362,8 @@ private Identifier DelPackage() :
 
 
 /**
- * Template -> (
- *   <TEMPLATE_OPEN>
- *   TemplateName()
- *   Attributes()
- *   <CMD_END>
- *   TemplateHeader()
- *   TemplateBlock()
- *   <CMD_CLOSE_TEMPLATE>
- * |
- *   <DELTEMPLATE_OPEN>
- *   TemplateName()
- *   Attributes()
- *   <CMD_END>
- *   TemplateHeader()
- *   TemplateBlock()
- *   <CMD_CLOSE_DELTEMPLATE>
- * )
+ * Template -> ( TemplateOpen TemplateHelper CmdCloseTemplate
+ *             | DeltemplateOpen TemplateHelper CmdCloseDeltemplate )
  *
  * @param soyFileHeaderInfo Info from the containing Soy file's header declarations. Needed by the
  *     TemplateNode constructors.
@@ -1393,8 +1387,8 @@ private TemplateNode Template(SoyFileHeaderInfo soyFileHeaderInfo) :
       // do nothing, continue trying to parse other templates
       return null;
     }
-
-  | open = <DELTEMPLATE_OPEN>
+  |
+    open = <DELTEMPLATE_OPEN>
     { builder = new TemplateDelegateNodeBuilder(soyFileHeaderInfo, errorReporter); }
     try {
       templateNode = TemplateHelper(builder, open, true)
@@ -1412,6 +1406,12 @@ private TemplateNode Template(SoyFileHeaderInfo soyFileHeaderInfo) :
 
 /**
  * A helper for parsing everything except the open and close tags of a template.
+ *
+ * TemplateHelper -> TemplateName Attributes CmdEnd TemplateHeader TemplateBlock
+ *
+ * @param builder Template node builder.
+ * @param open The {template or {deltemplate token.
+ * @param isDeltemplate True if the template is a deltemplate.
  */
 private TemplateNode TemplateHelper(TemplateNodeBuilder builder, Token open, boolean isDeltemplate) :
 {
@@ -1430,11 +1430,11 @@ private TemplateNode TemplateHelper(TemplateNodeBuilder builder, Token open, boo
 
   templateName = TemplateName()
   {
-    if (!isDeltemplate && templateName.identifier().charAt(0) != '.') {
+    if (!isDeltemplate && templateName.type() != Identifier.Type.DOT_IDENT) {
       errorReporter.report(
           templateName.location(), INVALID_TEMPLATE_NAME, templateName.identifier());
     }
-    if (isDeltemplate && templateName.identifier().charAt(0) == '.') {
+    if (isDeltemplate && templateName.type() == Identifier.Type.DOT_IDENT) {
       errorReporter.report(
           templateName.location(), INVALID_DELTEMPLATE_NAME, templateName.identifier());
     }
@@ -2895,120 +2895,113 @@ private ForNode ForStmt() :
 
 
 /**
- * CallStmt ->
- *   <CMD_BEGIN_CALL> CmdTextParts() (<CMD_SELF_CLOSE> | <CMD_END> CallParams <CMD_CLOSE_CALL>)
- * | <CMD_BEGIN_DELCALL> CmdTextParts() (<CMD_SELF_CLOSE> | <CMD_END> CallParams <CMD_CLOSE_DELCALL>)
+ * CallStmt -> ( CmdBeginCall TemplateName Attributes
+ *               ( CmdSelfClose | CmdEnd CallParams CmdCloseCall) )
+ *             | CmdBeginDelcall TemplateName Attributes
+ *               ( CmdSelfClose | CmdEnd CallParams CmdCloseDelcall) )
  */
 private CallNode CallStmt() :
 {
-  Token tagBegin, tagEnd;
-  List<String> cmdTextParts;
-  CallNode callNode = null;
+  Token tagBegin, tagEnd, callClose;
+  Identifier calleeName = null;
+  List<CommandTagAttribute> attributes = ImmutableList.of();
+  List<CallParamNode> params = ImmutableList.of();
 }
 {
   (
+    // {call}
     tagBegin = <CMD_BEGIN_CALL>
-    cmdTextParts = CmdTextParts()
-    (
-      tagEnd = <CMD_SELF_CLOSE>
-      { callNode =
-          setCommandTextAndPlaceholderName(
-              new CallBasicNode.Builder(nodeIdGen.genId(), createSrcLoc(tagBegin, tagEnd)),
-              cmdTextParts)
-              .build(context);
-      }
-    |
-      tagEnd = <CMD_END>
-      { callNode =
-          setCommandTextAndPlaceholderName(
-              new CallBasicNode.Builder(nodeIdGen.genId(), createSrcLoc(tagBegin, tagEnd)),
-              cmdTextParts)
-              .build(context);
-      }
-      try {
-        AddParams(callNode)
+
+    try {
+      calleeName = TemplateName()
+      attributes = Attributes()
+      (
+        tagEnd = <CMD_SELF_CLOSE>
+      |
+        tagEnd = <CMD_END>
+        params = CallParams()
         <CMD_CLOSE_CALL>
-      } catch (ParseException e) {
-        reportTemplateBodyErrorAndSkipTo(e, CMD_CLOSE_CALL);
+      )
+    } catch (ParseException e) {
+      tagEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_SELF_CLOSE, CMD_CLOSE_CALL);
+      if (calleeName == null) {
+        calleeName = Identifier.create("error", createSrcLoc(tagBegin));
       }
-    )
-  |
-    tagBegin = <CMD_BEGIN_DELCALL>
-    cmdTextParts = CmdTextParts()
-    (
-      tagEnd = <CMD_SELF_CLOSE>
-      { callNode =
-          setCommandTextAndPlaceholderName(
-              new CallDelegateNode.Builder(nodeIdGen.genId(), createSrcLoc(tagBegin, tagEnd)),
-              cmdTextParts)
-              .build(context);
-      }
-    |
-      tagEnd = <CMD_END>
-      { callNode =
-          setCommandTextAndPlaceholderName(
-              new CallDelegateNode.Builder(nodeIdGen.genId(), createSrcLoc(tagBegin, tagEnd)),
-              cmdTextParts)
-              .build(context);
-      }
-      try {
-        AddParams(callNode)
-        <CMD_CLOSE_DELCALL>
-      } catch (ParseException e) {
-        reportTemplateBodyErrorAndSkipTo(e, CMD_CLOSE_DELCALL);
-      }
-    )
-  )
-  { return callNode; }
-}
-
-JAVACODE
-/**
- * Interprets the cmdTextParts to extract the phname attribute (if any) and then set it into the
- * builder.
- *
- * <p>TODO(lukes): switch calls to use 'structured' parsing.  It would simplify a lot of this and
- * yield better error messages
- */
-private CallNode.Builder setCommandTextAndPlaceholderName(
-    CallNode.Builder builder,
-    List<String> cmdTextParts) {
-  StringBuilder cmdTextSb = new StringBuilder();
-  String phnameAttr = null;
-  for (int i = 0; i < cmdTextParts.size(); i++) {
-    String cmdTextPart = cmdTextParts.get(i);
-    if (cmdTextPart.startsWith(" phname=\"") && cmdTextPart.endsWith("\"")) {
-      if (phnameAttr != null) {
-        errorReporter.report(
-            builder.getSourceLocation(),
-            MULTIPLE_PHNAME_ATTRIBUTES_IN_COMMAND,
-            Joiner.on("").join(cmdTextParts));
-      }
-      phnameAttr = cmdTextPart;
-    } else {
-      cmdTextSb.append(cmdTextPart);
     }
-  }
 
-  // 9 == the length of ' phname="'... yes this is lame
-  String userSuppliedPhName =
-        (phnameAttr != null) ? phnameAttr.substring(9, phnameAttr.length() - 1) : null;
-  return builder.commandText(cmdTextSb.toString()).userSuppliedPlaceholderName(userSuppliedPhName);
+    {
+      CallBasicNode node = new CallBasicNode(
+          nodeIdGen.genId(),
+          createSrcLoc(tagBegin, tagEnd),
+          calleeName.identifier(),
+          attributes,
+          errorReporter);
+      node.addChildren(params);
+      return node;
+    }
+  |
+    // {delcall}
+    tagBegin = <CMD_BEGIN_DELCALL>
+
+    try {
+      calleeName = TemplateName()
+      attributes = Attributes()
+      (
+        tagEnd = <CMD_SELF_CLOSE>
+      |
+        tagEnd = <CMD_END>
+        params = CallParams()
+        <CMD_CLOSE_DELCALL>
+      )
+    } catch (ParseException e) {
+      tagEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_SELF_CLOSE, CMD_CLOSE_DELCALL);
+      if (calleeName == null) {
+        calleeName = Identifier.create("error", createSrcLoc(tagBegin));
+      }
+    }
+
+    {
+      if (calleeName.type() == Identifier.Type.DOT_IDENT) {
+        errorReporter.report(calleeName.location(), INVALID_CALLEE_NAME, calleeName.identifier());
+      }
+
+      CallDelegateNode node = new CallDelegateNode(
+          nodeIdGen.genId(),
+          createSrcLoc(tagBegin, tagEnd),
+          calleeName.identifier(),
+          attributes,
+          errorReporter);
+      node.addChildren(params);
+      return node;
+    }
+  )
 }
 
 
-private void AddParams(CallNode callNode) :
+/**
+ * CallParams -> SkipWhitespace ( CallParam SkipWhitespace )*
+ */
+private List<CallParamNode> CallParams() :
 {
-  CallParamNode callParam;
+  List<CallParamNode> params = ImmutableList.of();
+  CallParamNode paramNode;
 }
 {
   // consume all whitespace between {call}/{delcall} and the first {param} as well as between params
   SkipWhitespace()
   (
-    callParam = CallParam()
-    { callNode.addChild(callParam); }
+    paramNode = CallParam()
+    {
+      if (params.isEmpty()) {
+        params = new ArrayList<CallParamNode>();
+      }
+      params.add(paramNode);
+    }
+
     SkipWhitespace()
   )*
+
+  { return params; }
 }
 
 

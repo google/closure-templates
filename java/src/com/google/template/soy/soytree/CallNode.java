@@ -20,16 +20,17 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.exprparse.SoyParsingContext;
+import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.MsgPlaceholderInitialNode;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
+import java.util.List;
 import javax.annotation.Nullable;
-import javax.annotation.concurrent.Immutable;
 
 /**
  * Node representing a call.
@@ -47,27 +48,6 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
   /** Fallback base placeholder name. */
   private static final String FALLBACK_BASE_PLACEHOLDER_NAME = "XXX";
 
-  /**
-   * Private helper class used by constructors. Encapsulates all the info derived from the command
-   * text.
-   */
-  @Immutable
-  protected static class CommandTextInfo {
-
-    private final boolean isPassingAllData;
-    @Nullable private final ExprRootNode dataExpr;
-    @Nullable private final String userSuppliedPlaceholderName;
-
-    public CommandTextInfo(
-        boolean isPassingAllData,
-        @Nullable ExprRootNode dataExpr,
-        @Nullable String userSuppliedPlaceholderName) {
-      this.isPassingAllData = isPassingAllData;
-      this.dataExpr = dataExpr;
-      this.userSuppliedPlaceholderName = userSuppliedPlaceholderName;
-    }
-  }
-
   /** True if this call is passing data="all". */
   private boolean isPassingAllData;
 
@@ -81,33 +61,44 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
    * Escaping directives names (including the vertical bar) to apply to the return value. With
    * strict autoescape, the result of each call site is escaped, which is potentially a no-op if the
    * template's return value is the correct SanitizedContent object.
+   *
+   * <p>Set by the contextual rewriter.
    */
   private ImmutableList<String> escapingDirectiveNames = ImmutableList.of();
 
   /** True if this node is within a HTML context. */
   private boolean isPcData = false;
 
-  /**
-   * Protected constructor for use by subclasses.
-   *
-   * @param id The id for this node.
-   * @param sourceLocation The node's source location.
-   * @param commandTextInfo All the info derived from the command text.
-   * @param escapingDirectiveNames Call-site escaping directives used by strict autoescaping. This
-   *     is inferred by the autoescaper and not part of the syntax, and thus is not in the
-   *     CommandTextInfo.
-   */
+  /** Protected constructor for use by subclasses. */
   protected CallNode(
-      int id,
-      SourceLocation sourceLocation,
-      String commandName,
-      CommandTextInfo commandTextInfo,
-      ImmutableList<String> escapingDirectiveNames) {
-    super(id, sourceLocation, commandName);
-    this.isPassingAllData = commandTextInfo.isPassingAllData;
-    this.dataExpr = commandTextInfo.dataExpr;
-    this.userSuppliedPlaceholderName = commandTextInfo.userSuppliedPlaceholderName;
-    this.escapingDirectiveNames = escapingDirectiveNames;
+      int id, SourceLocation location, String commandName, List<CommandTagAttribute> attributes) {
+    super(id, location, commandName);
+
+    String phname = null;
+
+    for (CommandTagAttribute attr : attributes) {
+      String name = attr.getName().identifier();
+
+      switch (name) {
+        case "data":
+          ExprNode dataExpr = attr.valueAsExpr();
+          if ((dataExpr instanceof GlobalNode) && ((GlobalNode) dataExpr).getName().equals("all")) {
+            this.isPassingAllData = true;
+            this.dataExpr = null;
+          } else {
+            this.isPassingAllData = false;
+            this.dataExpr = new ExprRootNode(dataExpr);
+          }
+          break;
+        case "phname":
+          phname = attr.getValue();
+          break;
+        default:
+          // do nothing
+      }
+    }
+
+    this.userSuppliedPlaceholderName = phname;
   }
 
   /**
@@ -166,7 +157,6 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
     return FALLBACK_BASE_PLACEHOLDER_NAME;
   }
 
-  @SuppressWarnings("UnnecessaryBoxing") // for IntelliJ
   @Override
   public Object genSamenessKey() {
     // CallNodes are never considered the same placeholder. We return the node instance as the info
@@ -200,14 +190,7 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
    * Returns the subset of {@link TemplateParam params} of the {@code callee} that require runtime
    * type checking when this node is being rendered.
    */
-  public ImmutableList<TemplateParam> getParamsToRuntimeCheck(TemplateNode callee) {
-    return callee.getParams();
-  }
-
-  /** Sets the inferred escaping directives. */
-  public void setEscapingDirectiveNames(ImmutableList<String> escapingDirectiveNames) {
-    this.escapingDirectiveNames = escapingDirectiveNames;
-  }
+  public abstract ImmutableList<TemplateParam> getParamsToRuntimeCheck(TemplateNode callee);
 
   /**
    * Returns the escaping directives, applied from left to right.
@@ -218,14 +201,8 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
     return escapingDirectiveNames;
   }
 
-  /** Base Builder for CallNode and CallDelegateNode. */
-  public abstract static class Builder {
-    public abstract SourceLocation getSourceLocation();
-
-    public abstract Builder commandText(String commandText);
-
-    public abstract Builder userSuppliedPlaceholderName(String commandText);
-
-    public abstract CallNode build(SoyParsingContext context);
+  /** Sets the inferred escaping directives. */
+  public void setEscapingDirectiveNames(ImmutableList<String> escapingDirectiveNames) {
+    this.escapingDirectiveNames = escapingDirectiveNames;
   }
 }

@@ -43,7 +43,7 @@ public abstract class AbstractNode implements Node {
    * @param orig The node to copy.
    */
   protected AbstractNode(AbstractNode orig, CopyState copyState) {
-    parent = null; // important: should not copy parent pointer
+    this.parent = null; // important: should not copy parent pointer
     this.syntaxVersionBound = orig.syntaxVersionBound;
   }
 

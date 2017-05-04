@@ -19,14 +19,16 @@ package com.google.template.soy.soytree;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.soytree.TemplateRegistrySubject.assertThatRegistry;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.error.FormattingErrorReporter;
-import com.google.template.soy.exprparse.SoyParsingContext;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -38,6 +40,10 @@ import org.junit.runners.JUnit4;
  */
 @RunWith(JUnit4.class)
 public final class TemplateRegistryTest {
+
+  private static final ImmutableList<CommandTagAttribute> NO_ATTRS = ImmutableList.of();
+  private static final ErrorReporter FAIL = ExplodingErrorReporter.get();
+
   @Test
   public void testSimple() {
     TemplateRegistry registry =
@@ -188,11 +194,7 @@ public final class TemplateRegistryTest {
                     "example.soy"))
             .parse()
             .registry();
-    CallNode node =
-        new CallBasicNode.Builder(0, SourceLocation.UNKNOWN)
-            .commandText("ns.foo")
-            .calleeName("ns.foo")
-            .build(SoyParsingContext.exploding());
+    CallBasicNode node = new CallBasicNode(0, SourceLocation.UNKNOWN, "ns.foo", NO_ATTRS, FAIL);
     assertThat(registry.getCallContentKind(node)).hasValue(ContentKind.ATTRIBUTES);
   }
 
@@ -209,11 +211,7 @@ public final class TemplateRegistryTest {
                     "example.soy"))
             .parse()
             .registry();
-    CallNode node =
-        new CallBasicNode.Builder(0, SourceLocation.UNKNOWN)
-            .commandText("ns.moo")
-            .calleeName("ns.moo")
-            .build(SoyParsingContext.exploding());
+    CallBasicNode node = new CallBasicNode(0, SourceLocation.UNKNOWN, "ns.moo", NO_ATTRS, FAIL);
     assertThat(registry.getCallContentKind(node)).isAbsent();
   }
 
@@ -230,11 +228,8 @@ public final class TemplateRegistryTest {
                     "example.soy"))
             .parse()
             .registry();
-    CallNode node =
-        new CallDelegateNode.Builder(0, SourceLocation.UNKNOWN)
-            .commandText("ns.foo")
-            .delCalleeName("ns.foo")
-            .build(SoyParsingContext.exploding());
+    CallDelegateNode node =
+        new CallDelegateNode(0, SourceLocation.UNKNOWN, "ns.foo", NO_ATTRS, FAIL);
     assertThat(registry.getCallContentKind(node)).hasValue(ContentKind.ATTRIBUTES);
   }
 
@@ -251,11 +246,8 @@ public final class TemplateRegistryTest {
                     "example.soy"))
             .parse()
             .registry();
-    CallNode node =
-        new CallDelegateNode.Builder(0, SourceLocation.UNKNOWN)
-            .commandText("ns.moo")
-            .delCalleeName("ns.moo")
-            .build(SoyParsingContext.exploding());
+    CallDelegateNode node =
+        new CallDelegateNode(0, SourceLocation.UNKNOWN, "ns.moo", NO_ATTRS, FAIL);
     assertThat(registry.getCallContentKind(node)).isAbsent();
   }
 }

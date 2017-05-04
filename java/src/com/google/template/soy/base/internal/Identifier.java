@@ -28,6 +28,7 @@ import com.google.template.soy.base.SourceLocation;
  */
 @AutoValue
 public abstract class Identifier {
+
   /** What flavor of identifier this is. */
   public enum Type {
     /** A single identifier, for example: {@code foo} */
@@ -61,7 +62,6 @@ public abstract class Identifier {
     return new AutoValue_Identifier(identifier, location, type);
   }
 
-  /** The identifier */
   public abstract String identifier();
 
   public abstract SourceLocation location();
