@@ -18,6 +18,7 @@ package com.google.template.soy.jbcsrc;
 
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
@@ -34,6 +35,12 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 
 /** A visitor that scans for features not supported by jbcsrc and reports errors for them. */
 final class UnsupportedFeatureReporter {
+
+  // TODO(lukes): Delete.
+  private static final SoyErrorKind UNDECLARED_TEMPLATE_PARAM =
+      SoyErrorKind.of(
+          "jbcsrc does not support undeclared template params.", StyleAllowance.NO_CAPS);
+
   private final SoyNodeVisitor errorChecker;
   private final ErrorReporter errorReporter;
 
@@ -89,9 +96,7 @@ final class UnsupportedFeatureReporter {
         case PARAM:
           break;
         case UNDECLARED:
-          errorReporter.report(
-              node.getSourceLocation(),
-              SoyErrorKind.of("jbcsrc does not support undeclared template params"));
+          errorReporter.report(node.getSourceLocation(), UNDECLARED_TEMPLATE_PARAM);
           break;
         default:
           throw new AssertionError();

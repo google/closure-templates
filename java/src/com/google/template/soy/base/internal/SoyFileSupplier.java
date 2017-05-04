@@ -91,7 +91,7 @@ public interface SoyFileSupplier {
   final class Factory {
 
     private static final SoyErrorKind FILE_URL_SYNTAX =
-        SoyErrorKind.of("file URL has invalid syntax: ''{0}''");
+        SoyErrorKind.of("File URL has invalid syntax: ''{0}''");
 
     /**
      * Creates a new {@code SoyFileSupplier} given a {@code CharSource} for the file content, as

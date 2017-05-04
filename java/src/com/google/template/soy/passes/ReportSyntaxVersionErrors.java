@@ -23,6 +23,7 @@ import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.basetree.SyntaxVersionUpperBound;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -36,11 +37,18 @@ import com.google.template.soy.soytree.TemplateNode;
  */
 final class ReportSyntaxVersionErrors {
 
-  private static final SoyErrorKind SYNTAX_VERSION_OUT_OF_BOUNDS = SoyErrorKind.of("{0}: {1}");
+  private static final SoyErrorKind INCORRECT_V1_SYNTAX =
+      SoyErrorKind.of("Incorrect syntax for version {0}: {1}", StyleAllowance.NO_PUNCTUATION);
+  private static final SoyErrorKind DECLARED_VERSION_NOT_SATISFIED =
+      SoyErrorKind.of(
+          "Declared syntax version {0} not satisfied: {1}", StyleAllowance.NO_PUNCTUATION);
+  private static final SoyErrorKind INFERRED_VERSION_NOT_SATISFIED =
+      SoyErrorKind.of(
+          "Inferred syntax version {0} not satisfied: {1}", StyleAllowance.NO_PUNCTUATION);
 
   private final SyntaxVersion requiredSyntaxVersion;
   private final ErrorReporter errorReporter;
-  private final String errorPreamble;
+  private final SoyErrorKind errorKind;
 
   /**
    * @param requiredSyntaxVersion The required minimum syntax version to check for.
@@ -52,13 +60,10 @@ final class ReportSyntaxVersionErrors {
       SyntaxVersion requiredSyntaxVersion, boolean isDeclared, ErrorReporter errorReporter) {
     this.errorReporter = errorReporter;
     this.requiredSyntaxVersion = requiredSyntaxVersion;
-    this.errorPreamble =
+    this.errorKind =
         (requiredSyntaxVersion == SyntaxVersion.V1_0)
-            ? "incorrect v1 syntax"
-            : ((isDeclared ? "declared" : "inferred")
-                + " syntax version "
-                + requiredSyntaxVersion
-                + " not satisfied");
+            ? INCORRECT_V1_SYNTAX
+            : (isDeclared ? DECLARED_VERSION_NOT_SATISFIED : INFERRED_VERSION_NOT_SATISFIED);
   }
 
   public void report(SoyFileNode node) {
@@ -80,10 +85,7 @@ final class ReportSyntaxVersionErrors {
       SyntaxVersionUpperBound syntaxVersionBound = node.getSyntaxVersionUpperBound();
       Preconditions.checkNotNull(syntaxVersionBound);
       errorReporter.report(
-          node.getSourceLocation(),
-          SYNTAX_VERSION_OUT_OF_BOUNDS,
-          errorPreamble,
-          syntaxVersionBound.reasonStr);
+          node.getSourceLocation(), errorKind, requiredSyntaxVersion, syntaxVersionBound.reasonStr);
     }
     if (node instanceof FunctionNode) {
       String functionName = ((FunctionNode) node).getFunctionName();
@@ -91,10 +93,10 @@ final class ReportSyntaxVersionErrors {
           && template.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0)) {
         errorReporter.report(
             node.getSourceLocation(),
-            SYNTAX_VERSION_OUT_OF_BOUNDS,
-            errorPreamble,
+            errorKind,
+            requiredSyntaxVersion,
             "The v1Expression function can only be used in templates marked with the "
-                + "deprecatedV1=\"true\" attribute");
+                + "deprecatedV1=\"true\" attribute.");
       }
     }
   }

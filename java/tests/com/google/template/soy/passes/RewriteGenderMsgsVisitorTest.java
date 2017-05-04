@@ -103,7 +103,7 @@ public final class RewriteGenderMsgsVisitorTest {
     FormattingErrorReporter errorReporter = new FormattingErrorReporter();
     SoyFileSetParserBuilder.forTemplateContents(soyCode).errorReporter(errorReporter).parse();
     assertThat(errorReporter.getErrorMessages())
-        .containsExactly("Attribute 'genders' does not contain 1-3 expressions");
+        .containsExactly("Attribute 'genders' does not contain 1-3 expressions.");
   }
 
   @Test

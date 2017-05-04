@@ -39,6 +39,7 @@ import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.AutoescapeMode;
 import com.google.template.soy.soytree.CallNode;
@@ -142,10 +143,11 @@ public final class HtmlRewritePass extends CompilerFilePass {
   private static final boolean DEBUG = false;
 
   private static final SoyErrorKind BLOCK_CHANGES_CONTEXT =
-      SoyErrorKind.of("{0} changes context from ''{1}'' to ''{2}''.{3}");
+      SoyErrorKind.of(
+          "{0} changes context from ''{1}'' to ''{2}''.{3}", StyleAllowance.NO_PUNCTUATION);
 
   private static final SoyErrorKind BLOCK_ENDS_IN_INVALID_STATE =
-      SoyErrorKind.of("''{0}'' block ends in an invalid state ''{1}''");
+      SoyErrorKind.of("''{0}'' block ends in an invalid state ''{1}''.");
 
   private static final SoyErrorKind BLOCK_TRANSITION_DISALLOWED =
       SoyErrorKind.of("{0} started in ''{1}'', cannot create a {2}.");
@@ -153,62 +155,65 @@ public final class HtmlRewritePass extends CompilerFilePass {
   private static final SoyErrorKind
       CONDITIONAL_BLOCK_ISNT_GUARANTEED_TO_PRODUCE_ONE_ATTRIBUTE_VALUE =
           SoyErrorKind.of(
-              "expected exactly one attribute value, the {0} isn''t guaranteed to produce exactly "
-                  + "one");
+              "Expected exactly one attribute value, the {0} isn''t guaranteed to produce exactly "
+                  + "one.");
 
-  private static final SoyErrorKind EXPECTED_TAG_NAME =
-      SoyErrorKind.of("Expected an html tag name.");
+  private static final SoyErrorKind CONTROL_FLOW_IN_HTML_TAG_NAME =
+      SoyErrorKind.of(
+          "Invalid location for a ''{0}'' node, html tag names can only be constants or "
+              + "print nodes.");
 
   private static final SoyErrorKind EXPECTED_ATTRIBUTE_NAME =
       SoyErrorKind.of("Expected an attribute name.");
 
   private static final SoyErrorKind EXPECTED_ATTRIBUTE_VALUE =
-      SoyErrorKind.of("expected an attribute value");
+      SoyErrorKind.of("Expected an attribute value.");
+
+  private static final SoyErrorKind EXPECTED_TAG_NAME =
+      SoyErrorKind.of("Expected an html tag name.");
 
   private static final SoyErrorKind EXPECTED_WS_EQ_OR_CLOSE_AFTER_ATTRIBUTE_NAME =
-      SoyErrorKind.of("expected whitespace, ''='' or tag close after an attribute name");
+      SoyErrorKind.of("Expected whitespace, ''='' or tag close after an attribute name.");
 
   private static final SoyErrorKind EXPECTED_WS_OR_CLOSE_AFTER_TAG_OR_ATTRIBUTE =
-      SoyErrorKind.of("expected whitespace or tag close after a tag name or attribute");
+      SoyErrorKind.of("Expected whitespace or tag close after a tag name or attribute.");
 
   private static final SoyErrorKind FOUND_END_OF_ATTRIBUTE_STARTED_IN_ANOTHER_BLOCK =
       SoyErrorKind.of(
-          "found the end of an html attribute that was started in another block. Html attributes "
-              + "should be opened and closed in the same block");
+          "Found the end of an html attribute that was started in another block. Html attributes "
+              + "should be opened and closed in the same block.");
 
   private static final SoyErrorKind FOUND_END_TAG_STARTED_IN_ANOTHER_BLOCK =
       SoyErrorKind.of(
-          "found the end of a tag that was started in another block. Html tags should be opened "
-              + "and closed in the same block");
-  private static final SoyErrorKind FOUND_EQ_WITH_ATTRIBUTE_IN_ANOTHER_BLOCK =
-      SoyErrorKind.of("found an ''='' character in a different block than the attribute name.");
+          "Found the end of a tag that was started in another block. Html tags should be opened "
+              + "and closed in the same block.");
 
+  private static final SoyErrorKind FOUND_EQ_WITH_ATTRIBUTE_IN_ANOTHER_BLOCK =
+      SoyErrorKind.of("Found an ''='' character in a different block than the attribute name.");
 
   private static final SoyErrorKind ILLEGAL_HTML_ATTRIBUTE_CHARACTER =
-      SoyErrorKind.of("illegal unquoted attribute value character");
+      SoyErrorKind.of("Illegal unquoted attribute value character.");
 
   private static final SoyErrorKind INVALID_IDENTIFIER =
-      SoyErrorKind.of("invalid html identifier, ''{0}'' is an illegal character");
-
-  private static final SoyErrorKind INVALID_LOCATION_FOR_CONTROL_FLOW =
-      SoyErrorKind.of("invalid location for a ''{0}'' node, {1}");
+      SoyErrorKind.of("Invalid html identifier, ''{0}'' is an illegal character.");
 
   private static final SoyErrorKind INVALID_LOCATION_FOR_NONPRINTABLE =
-      SoyErrorKind.of("invalid location for a non-printable node: {0}");
+      SoyErrorKind.of(
+          "Invalid location for a non-printable node: {0}", StyleAllowance.NO_PUNCTUATION);
 
   private static final SoyErrorKind INVALID_TAG_NAME =
       SoyErrorKind.of(
-          "tag names may only be raw text or print nodes, consider extracting a '''{'let...'' "
-              + "variable");
+          "Tag names may only be raw text or print nodes, consider extracting a '''{'let...'' "
+              + "variable.");
 
   private static final SoyErrorKind SELF_CLOSING_CLOSE_TAG =
-      SoyErrorKind.of("close tags should not be self closing");
+      SoyErrorKind.of("Close tags should not be self closing.");
 
   private static final SoyErrorKind UNEXPECTED_CLOSE_TAG_CONTENT =
-      SoyErrorKind.of("unexpected close tag content, only whitespace is allowed in close tags");
+      SoyErrorKind.of("Unexpected close tag content, only whitespace is allowed in close tags.");
 
   private static final SoyErrorKind UNEXPECTED_WS_AFTER_LT =
-      SoyErrorKind.of("unexpected whitespace after ''<'', did you mean ''&lt;''?");
+      SoyErrorKind.of("Unexpected whitespace after ''<'', did you mean ''&lt;''?");
 
   /** Represents features of the parser states. */
   private enum StateFeature {
@@ -1002,7 +1007,7 @@ public final class HtmlRewritePass extends CompilerFilePass {
      * Scans until the next whitespace, > or />, validates that the matched text is an html
      * identifier and returns it.
      *
-     * <p>Requires that we are not at the end of input
+     * <p>Requires that we are not at the end of input.
      */
     @Nullable
     RawTextNode consumeHtmlIdentifier(SoyErrorKind errorForMissingIdentifier) {
@@ -1532,10 +1537,7 @@ public final class HtmlRewritePass extends CompilerFilePass {
           break;
         case HTML_TAG_NAME:
           errorReporter.report(
-              parent.getSourceLocation(),
-              INVALID_LOCATION_FOR_CONTROL_FLOW,
-              overallName,
-              "html tag names can only be constants or print nodes");
+              parent.getSourceLocation(), CONTROL_FLOW_IN_HTML_TAG_NAME, overallName);
           // give up on parsing this tag :(
           throw new AbortParsingBlockError();
         case BEFORE_ATTRIBUTE_VALUE:

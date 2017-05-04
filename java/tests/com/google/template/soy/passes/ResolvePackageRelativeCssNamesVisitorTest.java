@@ -155,7 +155,7 @@ public final class ResolvePackageRelativeCssNamesVisitorTest {
         errorReporter);
     assertThat(errorReporter.getErrorMessages()).hasSize(1);
     assertThat(errorReporter.getErrorMessages().get(0))
-        .isEqualTo("No CSS package defined for package-relative class name '%AAA'");
+        .isEqualTo("No CSS package defined for package-relative class name '%AAA'.");
 
     errorReporter = new FormattingErrorReporter();
     compileTemplate(
@@ -167,7 +167,7 @@ public final class ResolvePackageRelativeCssNamesVisitorTest {
         errorReporter);
     assertThat(errorReporter.getErrorMessages()).hasSize(1);
     assertThat(errorReporter.getErrorMessages().get(0))
-        .isEqualTo("No CSS package defined for package-relative class name '%AAA'");
+        .isEqualTo("No CSS package defined for package-relative class name '%AAA'.");
   }
 
   @Test
@@ -183,9 +183,9 @@ public final class ResolvePackageRelativeCssNamesVisitorTest {
         errorReporter);
     assertThat(errorReporter.getErrorMessages()).hasSize(2);
     assertThat(errorReporter.getErrorMessages().get(0))
-        .isEqualTo("Package-relative class name '%AAA' cannot be used with component expression");
+        .isEqualTo("Package-relative class name '%AAA' cannot be used with component expression.");
     assertThat(errorReporter.getErrorMessages().get(1))
-        .isEqualTo("No CSS package defined for package-relative class name '%AAA'");
+        .isEqualTo("No CSS package defined for package-relative class name '%AAA'.");
 
     errorReporter = new FormattingErrorReporter();
     compileTemplate(
@@ -198,9 +198,9 @@ public final class ResolvePackageRelativeCssNamesVisitorTest {
         errorReporter);
     assertThat(errorReporter.getErrorMessages()).hasSize(2);
     assertThat(errorReporter.getErrorMessages().get(0))
-        .isEqualTo("Package-relative class name '%AAA' cannot be used with component expression");
+        .isEqualTo("Package-relative class name '%AAA' cannot be used with component expression.");
     assertThat(errorReporter.getErrorMessages().get(1))
-        .isEqualTo("No CSS package defined for package-relative class name '%AAA'");
+        .isEqualTo("No CSS package defined for package-relative class name '%AAA'.");
   }
 
   private static TemplateNode compileTemplate(String templateText) {

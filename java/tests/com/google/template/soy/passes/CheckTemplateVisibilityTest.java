@@ -70,7 +70,7 @@ public final class CheckTemplateVisibilityTest {
         .parse();
     assertThat(errorReporter.getErrorMessages()).hasSize(1);
     assertThat(Iterables.getOnlyElement(errorReporter.getErrorMessages()))
-        .isEqualTo("ns.foo has private access in no-path");
+        .isEqualTo("ns.foo has private access in no-path.");
   }
 
   @Test
@@ -91,7 +91,7 @@ public final class CheckTemplateVisibilityTest {
         .parse();
     assertThat(errorReporter.getErrorMessages()).hasSize(1);
     assertThat(Iterables.getOnlyElement(errorReporter.getErrorMessages()))
-        .isEqualTo("ns.foo has private access in no-path");
+        .isEqualTo("ns.foo has private access in no-path.");
   }
 
   // There was a bug in the visibility pass where you could call private templates if the caller was
@@ -120,6 +120,6 @@ public final class CheckTemplateVisibilityTest {
         .parse();
     assertThat(errorReporter.getErrorMessages()).hasSize(1);
     assertThat(Iterables.getOnlyElement(errorReporter.getErrorMessages()))
-        .isEqualTo("ns.foo has private access in foo/bar.soy");
+        .isEqualTo("ns.foo has private access in foo/bar.soy.");
   }
 }

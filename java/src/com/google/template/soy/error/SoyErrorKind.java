@@ -34,6 +34,12 @@ import java.text.MessageFormat;
  */
 public final class SoyErrorKind {
 
+  /** Enum to enable exceptions to Soy error message formatting rules. */
+  public enum StyleAllowance {
+    NO_CAPS,
+    NO_PUNCTUATION,
+  }
+
   private final MessageFormat messageFormat;
   private final int requiredArgs;
 
@@ -51,12 +57,12 @@ public final class SoyErrorKind {
     return messageFormat.format(args);
   }
 
-  public static SoyErrorKind of(String format) {
-    checkFormat(format);
+  public static SoyErrorKind of(String format, StyleAllowance... exceptions) {
+    checkFormat(format, exceptions);
     return new SoyErrorKind(new MessageFormat(format));
   }
 
-  private static void checkFormat(String format) {
+  private static void checkFormat(String format, StyleAllowance... exceptions) {
     // Check for unmatched single quotes.  MessageFormat has some stupid legacy behavior to support
     // unmatched single quotes which is interpreted as 'escape the rest of the format string', this
     // is error prone.  If someone really wants to do that they can just add a "'" at the end of the
@@ -70,6 +76,30 @@ public final class SoyErrorKind {
             "Found an unmatched single quote at char: " + index + " in '" + format + "'");
       }
       index = nextIndex + 1;
+    }
+
+    boolean checkCaps = true;
+    boolean checkPunctuation = true;
+    for (StyleAllowance ex : exceptions) {
+      if (ex == StyleAllowance.NO_CAPS) {
+        checkCaps = false;
+      }
+      if (ex == StyleAllowance.NO_PUNCTUATION) {
+        checkPunctuation = false;
+      }
+    }
+
+    // Error messages always start with a capital letter.
+    if (checkCaps && Character.isLowerCase(format.charAt(0))) {
+      throw new IllegalArgumentException("Message must start with a capital letter: " + format);
+    }
+
+    // Error messages should end with punctuation, unless it is a colon: statement
+    if (checkPunctuation) {
+      char lastChar = format.charAt(format.length() - 1);
+      if (Character.getType(lastChar) != Character.OTHER_PUNCTUATION) {
+        throw new IllegalArgumentException("Message must end with punctuation: " + format);
+      }
     }
   }
 

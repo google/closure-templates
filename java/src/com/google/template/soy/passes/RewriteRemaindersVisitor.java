@@ -48,7 +48,7 @@ public final class RewriteRemaindersVisitor extends AbstractSoyNodeVisitor<Void>
   private static final SoyErrorKind REMAINDER_OUTSIDE_PLURAL =
       SoyErrorKind.of("Special function ''remainder'' is for use in plural messages only.");
   private static final SoyErrorKind REMAINDER_PLURAL_EXPR_MISMATCH =
-      SoyErrorKind.of("Argument to ''remainder'' must be the same as the ''plural'' variable");
+      SoyErrorKind.of("Argument to ''remainder'' must be the same as the ''plural'' variable.");
   private static final SoyErrorKind REMAINDER_UNNECESSARY_AT_OFFSET_0 =
       SoyErrorKind.of("''remainder'' is unnecessary since offset=0.");
   private static final SoyErrorKind REMAINDER_WITH_PHNAME =

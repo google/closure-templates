@@ -64,6 +64,7 @@ import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.exprparse.SoyParsingContext;
 import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.ExprNode;
@@ -363,7 +364,7 @@ public class SoyFileParser {
   private static final SoyErrorKind INVALID_PRINT_COMMAND_TEXT =
       SoyErrorKind.of("Invalid ''print'' command text \"{0}\" (check the directives).");
   private static final SoyErrorKind INVALID_RANGE_SPECIFICATION =
-      SoyErrorKind.of("Invalid range specification");
+      SoyErrorKind.of("Invalid range specification.");
   private static final SoyErrorKind INVALID_TEMPLATE_COMMAND =
       SoyErrorKind.of("Command ''{0}'' cannot appear in templates.");
   private static final SoyErrorKind INVALID_TEMPLATE_NAME =
@@ -371,8 +372,6 @@ public class SoyFileParser {
           + "followed by an identifier.");
   private static final SoyErrorKind MULTIPLE_PHNAME_ATTRIBUTES_IN_COMMAND =
       SoyErrorKind.of("Found multiple ''phname'' attributes in command text \"{0}\".");
-  private static final SoyErrorKind PARSER_ERROR =
-      SoyErrorKind.of("parse error at ''{0}'': expected {1}");
   private static final SoyErrorKind PLURAL_AND_SELECT_NOT_ALLOWED_INSIDE_PLURAL_BLOCK =
       SoyErrorKind.of("Tags ''plural'' and ''select'' are not allowed inside ''plural'' blocks.");
   private static final SoyErrorKind PLURAL_CASE_OUT_OF_BOUNDS =
@@ -393,12 +392,21 @@ public class SoyFileParser {
   private static final SoyErrorKind UNEXPECTED_CONTENT_BEFORE =
       SoyErrorKind.of("Unexpected content before ''{0}'', expected only comments or whitespace.");
 
+  // Error message that mimics a ParseException
+  private static final SoyErrorKind PARSER_ERROR =
+      SoyErrorKind.of(
+          "parse error at ''{0}'': expected {1}",
+          StyleAllowance.NO_CAPS,
+          StyleAllowance.NO_PUNCTUATION);
+
 
   private static final SoyErrorKind DUPLICATE_PARAM_NAME =
       SoyErrorKind.of("Duplicate param name ''{0}''.");
   private static final SoyErrorKind INTEGER_OUT_OF_RANGE =
-      SoyErrorKind.of("Soy integers are constrained to the range of JavaScript integers: "
-          + "https://www.ecma-international.org/ecma-262/5.1/#sec-8.5");
+      SoyErrorKind.of(
+          "Soy integers are constrained to the range of JavaScript integers: "
+              + "https://www.ecma-international.org/ecma-262/5.1/#sec-8.5",
+          StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind INVALID_FUNCTION_NAME =
       SoyErrorKind.of("Invalid function name ''{0}''.");
   private static final SoyErrorKind INVALID_PARAM_NAME =

@@ -240,8 +240,8 @@ public final class CheckFunctionCallsVisitorTest {
 
     assertFunctionCallsInvalid(
         SyntaxVersion.V1_0,
-        "incorrect v1 syntax: The v1Expression function can only be used in templates "
-            + "marked with the deprecatedV1=\"true\" attribute",
+        "Incorrect syntax for version 1.0: The v1Expression function can only be used in templates "
+            + "marked with the deprecatedV1=\"true\" attribute.",
         "{namespace ns}\n",
         "{template .foo}",
         "  {let $blah: 'foo' /}",

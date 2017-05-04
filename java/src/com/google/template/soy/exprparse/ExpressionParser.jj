@@ -48,6 +48,7 @@ import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
@@ -186,8 +187,10 @@ public final class ExpressionParser {
   private static final SoyErrorKind DUPLICATE_PARAM_NAME =
       SoyErrorKind.of("Duplicate param name ''{0}''.");
   private static final SoyErrorKind INTEGER_OUT_OF_RANGE =
-      SoyErrorKind.of("Soy integers are constrained to the range of JavaScript integers: "
-          + "https://www.ecma-international.org/ecma-262/5.1/#sec-8.5");
+      SoyErrorKind.of(
+          "Soy integers are constrained to the range of JavaScript integers: "
+              + "https://www.ecma-international.org/ecma-262/5.1/#sec-8.5",
+          StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind INVALID_FUNCTION_NAME =
       SoyErrorKind.of("Invalid function name ''{0}''.");
   private static final SoyErrorKind INVALID_PARAM_NAME =

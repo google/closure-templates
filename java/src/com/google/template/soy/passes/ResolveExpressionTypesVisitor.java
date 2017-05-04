@@ -29,6 +29,7 @@ import com.google.template.soy.basicfunctions.ParseFloatFunction;
 import com.google.template.soy.basicfunctions.ParseIntFunction;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.error.SoyErrors;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.AbstractOperatorNode;
@@ -112,48 +113,50 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
 
   // Keep in alphabetical order.
   private static final SoyErrorKind BAD_FOREACH_TYPE =
-      SoyErrorKind.of("cannot iterate over {0} of type {1}");
-  private static final SoyErrorKind BAD_INDEX_TYPE = SoyErrorKind.of("bad index type {0} for {1}");
-  private static final SoyErrorKind BAD_KEY_TYPE = SoyErrorKind.of("bad key type {0} for {1}");
+      SoyErrorKind.of("Cannot iterate over {0} of type {1}.");
+  private static final SoyErrorKind BAD_INDEX_TYPE = SoyErrorKind.of("Bad index type {0} for {1}.");
+  private static final SoyErrorKind BAD_KEY_TYPE = SoyErrorKind.of("Bad key type {0} for {1}.");
   private static final SoyErrorKind BRACKET_ACCESS_NOT_SUPPORTED =
-      SoyErrorKind.of("type {0} does not support bracket access");
+      SoyErrorKind.of("Type {0} does not support bracket access.");
   private static final SoyErrorKind BRACKET_ACCESS_NULLABLE_UNION =
       SoyErrorKind.of(
-          "union type that is nullable cannot use bracket access. To access this value, "
-              + "first check for null or use null-safe (\"?[\") operations..");
+          "Union type that is nullable cannot use bracket access. To access this value, "
+              + "first check for null or use null-safe (\"?[\") operations.");
   private static final SoyErrorKind CHECK_NOT_NULL_ON_COMPILE_TIME_NULL =
-      SoyErrorKind.of("Cannot call checkNotNull on a parameter with a static type of ''null''");
+      SoyErrorKind.of("Cannot call checkNotNull on a parameter with a static type of ''null''.");
   private static final SoyErrorKind DOT_ACCESS_NOT_SUPPORTED =
-      SoyErrorKind.of("type {0} does not support dot access");
+      SoyErrorKind.of("Type {0} does not support dot access.");
   private static final SoyErrorKind DOT_ACCESS_NOT_SUPPORTED_CONSIDER_RECORD =
-      SoyErrorKind.of("type {0} does not support dot access (consider record instead of map)");
+      SoyErrorKind.of("Type {0} does not support dot access (consider record instead of map).");
   private static final SoyErrorKind DUPLICATE_KEY_IN_RECORD_LITERAL =
       SoyErrorKind.of(
           "Record literals with duplicate keys are not allowed.  Duplicate key: ''{0}''");
   private static final SoyErrorKind EMPTY_LIST_ACCESS =
-      SoyErrorKind.of("accessing item in empty list");
+      SoyErrorKind.of("Accessing item in empty list.");
   private static final SoyErrorKind EMPTY_LIST_FOREACH =
-      SoyErrorKind.of("cannot iterate over empty list");
+      SoyErrorKind.of("Cannot iterate over empty list.");
   private static final SoyErrorKind EMPTY_MAP_ACCESS =
-      SoyErrorKind.of("accessing item in empty map");
+      SoyErrorKind.of("Accessing item in empty map.");
   private static final SoyErrorKind LIST_LENGTH_ERROR =
       SoyErrorKind.of(
           "Soy lists do not have a ''length'' field. Use function length(...) instead.");
   private static final SoyErrorKind MISSING_SOY_TYPE =
-      SoyErrorKind.of("Missing Soy type for node {0}");
+      SoyErrorKind.of("Missing Soy type for node {0}.");
   private static final SoyErrorKind NOT_A_PROTO_TYPE =
       SoyErrorKind.of("''{0}'' is a ''{1}'', expected a protocol buffer.");
   private static final SoyErrorKind STRING_LENGTH_ERROR =
       SoyErrorKind.of(
           "Soy strings do not have a ''length'' field. Use function strLen(...) instead.");
   private static final SoyErrorKind UNDEFINED_FIELD_FOR_PROTO_TYPE =
-      SoyErrorKind.of("Undefined field ''{0}'' for proto type {1}.{2}");
+      SoyErrorKind.of(
+          "Undefined field ''{0}'' for proto type {1}.{2}", StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind UNDEFINED_FIELD_FOR_RECORD_TYPE =
-      SoyErrorKind.of("Undefined field ''{0}'' for record type {1}.{2}");
+      SoyErrorKind.of(
+          "Undefined field ''{0}'' for record type {1}.{2}", StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind UNKNOWN_PROTO_TYPE =
-      SoyErrorKind.of("Unknown proto type ''{0}''");
+      SoyErrorKind.of("Unknown proto type ''{0}''.");
   private static final SoyErrorKind VAR_REF_MISSING_SOY_TYPE =
-      SoyErrorKind.of("Missing Soy type for variable");
+      SoyErrorKind.of("Missing Soy type for variable.");
   private static final SoyErrorKind TYPE_MISMATCH =
       SoyErrorKind.of("Soy types ''{0}'' and ''{1}'' are not comparable.");
 

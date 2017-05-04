@@ -188,11 +188,11 @@ public final class ResolveExpressionTypesVisitorTest {
   @Test
   public void testDataRefTypesError() {
     assertResolveExpressionTypesFails(
-        "bad key type int for map<string,float>",
+        "Bad key type int for map<string,float>.",
         constructTemplateSource("{@param pa: map<string, float>}", "{$pa[0]}"));
 
     assertResolveExpressionTypesFails(
-        "bad key type bool for map<int,float>",
+        "Bad key type bool for map<int,float>.",
         constructTemplateSource("{@param pa: map<int, float>}", "{@param pb: bool}", "{$pa[$pb]}"));
   }
 
@@ -797,13 +797,13 @@ public final class ResolveExpressionTypesVisitorTest {
   @Test
   public void testBadForEach() {
     assertResolveExpressionTypesFails(
-        "cannot iterate over $p of type int",
+        "Cannot iterate over $p of type int.",
         constructTemplateSource("{@param p: int}", "{foreach $item in $p}{/foreach}"));
     assertResolveExpressionTypesFails(
-        "cannot iterate over $p of type int|string",
+        "Cannot iterate over $p of type int|string.",
         constructTemplateSource("{@param p: int|string}", "{foreach $item in $p}{/foreach}"));
     assertResolveExpressionTypesFails(
-        "cannot iterate over $p of type list<string>|string|uri",
+        "Cannot iterate over $p of type list<string>|string|uri.",
         constructTemplateSource(
             "{@param p: list<string>|string|uri}", "{foreach $item in $p}{/foreach}"));
   }
@@ -828,11 +828,11 @@ public final class ResolveExpressionTypesVisitorTest {
   @Test
   public void testErrorMessagesInUnionTypes() {
     assertResolveExpressionTypesFails(
-        "type float does not support bracket access",
+        "Type float does not support bracket access.",
         constructTemplateSource("{@param p: float|int}", "{$p[1]}"));
 
     assertResolveExpressionTypesFails(
-        "type float does not support dot access",
+        "Type float does not support dot access.",
         constructTemplateSource("{@param p: float|int}", "{$p.a}"));
   }
 

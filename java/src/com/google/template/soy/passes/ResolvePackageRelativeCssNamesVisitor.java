@@ -41,9 +41,9 @@ final class ResolvePackageRelativeCssNamesVisitor extends AbstractSoyNodeVisitor
 
   private static final SoyErrorKind PACKAGE_RELATIVE_CLASS_NAME_USED_WITH_COMPONENT_NAME =
       SoyErrorKind.of(
-          "Package-relative class name ''{0}'' cannot be used with component expression");
+          "Package-relative class name ''{0}'' cannot be used with component expression.");
   private static final SoyErrorKind NO_CSS_PACKAGE =
-      SoyErrorKind.of("No CSS package defined for package-relative class name ''{0}''");
+      SoyErrorKind.of("No CSS package defined for package-relative class name ''{0}''.");
 
   private final ErrorReporter errorReporter;
   private String packagePrefix = null;

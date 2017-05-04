@@ -36,7 +36,7 @@ import com.google.template.soy.soytree.Visibility;
 final class CheckTemplateVisibility extends AbstractSoyNodeVisitor<Void> {
 
   private static final SoyErrorKind CALLEE_NOT_VISIBLE =
-      SoyErrorKind.of("{0} has {1} access in {2}");
+      SoyErrorKind.of("{0} has {1} access in {2}.");
 
   private final ErrorReporter errorReporter;
 

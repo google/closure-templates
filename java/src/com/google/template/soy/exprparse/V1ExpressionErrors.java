@@ -19,15 +19,16 @@ package com.google.template.soy.exprparse;
 import com.google.template.soy.error.SoyErrorKind;
 
 /** Permanent errors for Soy v1 expressions. */
+// TODO(user): Delete when exprparse is deleted.
 public final class V1ExpressionErrors {
   public static final SoyErrorKind LEGACY_AND_ERROR =
-      SoyErrorKind.of("Found use of ''&&'' instead of the ''and'' operator");
+      SoyErrorKind.of("Found use of ''&&'' instead of the ''and'' operator.");
   public static final SoyErrorKind LEGACY_OR_ERROR =
-      SoyErrorKind.of("Found use of ''||'' instead of the ''or'' operator");
+      SoyErrorKind.of("Found use of ''||'' instead of the ''or'' operator.");
   public static final SoyErrorKind LEGACY_NOT_ERROR =
-      SoyErrorKind.of("Found use of ''!'' instead of the ''not'' operator");
+      SoyErrorKind.of("Found use of ''!'' instead of the ''not'' operator.");
   public static final SoyErrorKind LEGACY_DOUBLE_QUOTED_STRING =
-      SoyErrorKind.of("Found use of double quotes, Soy strings use single quotes");
+      SoyErrorKind.of("Found use of double quotes, Soy strings use single quotes.");
 
   private V1ExpressionErrors() {}
 }

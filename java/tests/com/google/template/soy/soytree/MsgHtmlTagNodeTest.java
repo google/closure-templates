@@ -76,7 +76,7 @@ public final class MsgHtmlTagNodeTest {
     FormattingErrorReporter errorReporter = new FormattingErrorReporter();
     parseMsgHtmlTagNode("<div phname=\".+\" />", errorReporter);
     assertThat(errorReporter.getErrorMessages())
-        .contains("'phname' attribute is not a valid identifier");
+        .contains("'phname' attribute is not a valid identifier.");
   }
 
   private static MsgHtmlTagNode parseMsgHtmlTagNode(String htmlTag, String... params) {

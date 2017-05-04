@@ -294,7 +294,7 @@ public final class HtmlTransformVisitorTest {
     assertThat(fer.getErrorMessages())
         .contains(
             "Ending context of the content within a Soy tag "
-                + "must match the starting context. Transition was from HTML_PCDATA to HTML_TAG");
+                + "must match the starting context. Transition was from HTML_PCDATA to HTML_TAG.");
   }
 
   @Test

@@ -47,7 +47,7 @@ final class HtmlTagEntry {
   private static final SoyErrorKind UNEXPECTED_CLOSE_TAG =
       SoyErrorKind.of("Unexpected HTML close tag.");
   private static final SoyErrorKind UNEXPECTED_CLOSE_TAG_WITH_EXPECTATION =
-      SoyErrorKind.of("Unexpected HTML close tag. Expected: ''</{0}>''.");
+      SoyErrorKind.of("Unexpected HTML close tag. Expected: ''</{0}>''");
   private static final SoyErrorKind OPEN_TAG_NOT_CLOSED =
       SoyErrorKind.of("Expected tag to be closed.");
   // TODO(user): Improve this error message.

@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 
 /** Helpers for interpreting parse errors as soy errors. */
 final class ParseErrors {
@@ -68,7 +69,7 @@ final class ParseErrors {
     }
     reporter.report(
         errorLocation,
-        SoyErrorKind.of("{0}"),
+        SoyErrorKind.of("{0}", StyleAllowance.values()),
         formatParseExceptionDetails(errorToken.image, expectedTokenImages.build().asList()));
   }
 

@@ -51,6 +51,6 @@ public final class VerifyPhnameAttrOnlyOnPlaceholdersVisitorTest {
     FormattingErrorReporter errors = new FormattingErrorReporter();
     SoyFileSetParserBuilder.forTemplateContents(soyCode).errorReporter(errors).parse();
     assertThat(errors.getErrorMessages())
-        .contains("'phname' attributes are only valid inside '{msg...' tags");
+        .contains("'phname' attributes are only valid inside '{msg...' tags.");
   }
 }

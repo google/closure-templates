@@ -26,6 +26,7 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.soytree.SoyNode.MsgPlaceholderInitialNode;
 import java.util.ArrayList;
@@ -44,11 +45,13 @@ import javax.annotation.Nullable;
 public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceholderInitialNode {
 
   private static final SoyErrorKind HTML_COMMENT_WITHIN_MSG_BLOCK =
-      SoyErrorKind.of("Found HTML comment within ''msg'' block: {0}");
+      SoyErrorKind.of(
+          "Found HTML comment within ''msg'' block: {0}", StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind UNNAMED_HTML_TAG_WITHIN_MSG_BLOCK =
-      SoyErrorKind.of("HTML tag within ''msg'' block has no tag name: {0}");
+      SoyErrorKind.of(
+          "HTML tag within ''msg'' block has no tag name: {0}", StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind INVALID_PHNAME_ATTRIBUTE =
-      SoyErrorKind.of("''phname'' attribute is not a valid identifier");
+      SoyErrorKind.of("''phname'' attribute is not a valid identifier.");
   private static final SoyErrorKind MULTIPLE_PHNAME_ATTRIBUTES =
       SoyErrorKind.of("Multiple ''phname'' attributes in HTML tag.");
 

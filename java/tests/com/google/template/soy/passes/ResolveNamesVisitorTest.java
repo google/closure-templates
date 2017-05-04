@@ -164,17 +164,17 @@ public final class ResolveNamesVisitorTest {
   @Test
   public void testVariableNameRedefinition() {
     assertResolveNamesFails(
-        "variable '$la' already defined at line 4",
+        "Variable '$la' already defined at line 4.",
         constructTemplateSource("{let $la: 1 /}", "{let $la: $la /}"));
     assertResolveNamesFails(
-        "variable '$pa' already defined",
+        "Variable '$pa' already defined at line 4.",
         constructTemplateSource("{@param pa: bool}", "{let $pa: not $pa /}"));
     assertResolveNamesFails(
-        "variable '$la' already defined at line 4",
+        "Variable '$la' already defined at line 4.",
         constructTemplateSource(
             "{let $la: 1 /}", "{foreach $item in ['a', 'b']}", "  {let $la: $la /}", "{/foreach}"));
     assertResolveNamesFails(
-        "variable '$group' already defined",
+        "Variable '$group' already defined at line 4.",
         constructTemplateSource(
             "{@param group: string}",
             "{foreach $group in ['a', 'b']}",

@@ -33,7 +33,7 @@ import com.google.template.soy.soytree.SoyTreeUtils;
 final class CheckNonEmptyMsgNodesPass extends CompilerFilePass {
 
   private static final SoyErrorKind EMPTY_MSG_ERROR =
-      SoyErrorKind.of("empty messages are forbidden");
+      SoyErrorKind.of("Empty messages are forbidden.");
   private final ErrorReporter errorReporter;
 
   CheckNonEmptyMsgNodesPass(ErrorReporter errorReporter) {

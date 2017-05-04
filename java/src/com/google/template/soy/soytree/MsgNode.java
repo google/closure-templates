@@ -60,7 +60,7 @@ public final class MsgNode extends AbstractBlockCommandNode
     implements ExprHolderNode, MsgBlockNode {
 
   static final SoyErrorKind WRONG_NUMBER_OF_GENDER_EXPRS =
-      SoyErrorKind.of("Attribute ''genders'' does not contain 1-3 expressions");
+      SoyErrorKind.of("Attribute ''genders'' does not contain 1-3 expressions.");
 
   /**
    * Returns a new {@link Builder} representing a {@code msg} MsgNode.

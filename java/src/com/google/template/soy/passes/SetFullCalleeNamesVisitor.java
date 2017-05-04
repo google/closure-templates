@@ -40,7 +40,7 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 final class SetFullCalleeNamesVisitor extends AbstractSoyNodeVisitor<Void> {
 
   private static final SoyErrorKind CALL_COLLIDES_WITH_NAMESPACE_ALIAS =
-      SoyErrorKind.of("Call collides with namespace alias ''{0}''");
+      SoyErrorKind.of("Call collides with namespace alias ''{0}''.");
 
   /** The namespace of the current file that we're in (during the pass). */
   private String currNamespace;

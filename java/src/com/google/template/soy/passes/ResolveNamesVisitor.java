@@ -29,6 +29,7 @@ import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.VarDefn;
+import com.google.template.soy.exprtree.VarDefn.Kind;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.ForNode;
@@ -64,7 +65,7 @@ final class ResolveNamesVisitor extends AbstractSoyNodeVisitor<Void> {
           "Found global reference aliasing a local variable ''{0}'', did you mean " + "''${0}''?");
 
   private static final SoyErrorKind VARIABLE_ALREADY_DEFINED =
-      SoyErrorKind.of("variable ''${0}'' already defined{1}");
+      SoyErrorKind.of("Variable ''${0}'' already defined{1}.");
 
   /**
    * A data structure that assigns a unique (small) integer to all local variable definitions that
@@ -321,8 +322,10 @@ final class ResolveNamesVisitor extends AbstractSoyNodeVisitor<Void> {
   }
 
   private static Optional<SourceLocation> forVarDefn(VarDefn varDefn) {
-    if (varDefn instanceof LocalVar) {
+    if (varDefn.kind() == Kind.LOCAL_VAR) {
       return Optional.of(((LocalVar) varDefn).declaringNode().getSourceLocation());
+    } else if (varDefn.kind() == Kind.PARAM) {
+      return Optional.of(((TemplateParam) varDefn).nameLocation());
     } else {
       // TODO(user): plumb source locations through to other VarDefn impls.
       return Optional.absent();

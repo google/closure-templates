@@ -33,6 +33,7 @@ import com.google.template.soy.basetree.SyntaxVersionUpperBound;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 import com.google.template.soy.soytree.defn.SoyDocParam;
 import com.google.template.soy.soytree.defn.TemplateParam;
@@ -53,11 +54,13 @@ import javax.annotation.Nullable;
 public abstract class TemplateNodeBuilder {
 
   private static final SoyErrorKind INVALID_SOYDOC_PARAM =
-      SoyErrorKind.of("Found invalid soydoc param name ''{0}''");
+      SoyErrorKind.of("Found invalid soydoc param name ''{0}''.");
   private static final SoyErrorKind INVALID_PARAM_NAMED_IJ =
       SoyErrorKind.of("Invalid param name ''ij'' (''ij'' is for injected data).");
   private static final SoyErrorKind KIND_BUT_NOT_STRICT =
-      SoyErrorKind.of("kind=\"...\" attribute is only valid with autoescape=\"strict\".");
+      SoyErrorKind.of(
+          "kind=\"...\" attribute is only valid with autoescape=\"strict\".",
+          StyleAllowance.NO_CAPS);
   private static final SoyErrorKind LEGACY_COMPATIBLE_PARAM_TAG =
       SoyErrorKind.of(
           "Found invalid SoyDoc param tag ''{0}'', tags like this are only allowed in "
@@ -65,7 +68,7 @@ public abstract class TemplateNodeBuilder {
               + "syntax is: ''@param <name> <optional comment>''. Soy does not understand JsDoc "
               + "style type declarations in SoyDoc.");
   private static final SoyErrorKind PARAM_ALREADY_DECLARED =
-      SoyErrorKind.of("Param ''{0}'' already declared");
+      SoyErrorKind.of("Param ''{0}'' already declared.");
 
   /** Info from the containing Soy file's header declarations. */
   protected final SoyFileHeaderInfo soyFileHeaderInfo;

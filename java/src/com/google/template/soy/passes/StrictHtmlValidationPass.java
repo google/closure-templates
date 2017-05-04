@@ -24,6 +24,7 @@ import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.AutoescapeMode;
@@ -51,9 +52,11 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
           "Strict HTML mode is disabled by default. In order to use stricthtml syntax in your Soy "
               + "template, explicitly pass --enabledExperimentalFeatures=stricthtml to compiler.");
   private static final SoyErrorKind STRICT_HTML_WITHOUT_AUTOESCAPE =
-      SoyErrorKind.of("stricthtml=\"true\" must be used with autoescape=\"strict\".");
+      SoyErrorKind.of(
+          "stricthtml=\"true\" must be used with autoescape=\"strict\".", StyleAllowance.NO_CAPS);
   private static final SoyErrorKind STRICT_HTML_WITH_NON_HTML =
-      SoyErrorKind.of("stricthtml=\"true\" can only be used with kind=\"html\".");
+      SoyErrorKind.of(
+          "stricthtml=\"true\" can only be used with kind=\"html\".", StyleAllowance.NO_CAPS);
   private static final SoyErrorKind INVALID_SELF_CLOSING_TAG =
       SoyErrorKind.of("''{0}'' tag is not allowed to be self-closing.");
   private static final SoyErrorKind INVALID_CLOSE_TAG =

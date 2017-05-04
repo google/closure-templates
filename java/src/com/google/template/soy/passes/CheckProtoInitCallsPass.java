@@ -25,6 +25,7 @@ import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.error.SoyErrors;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ProtoInitNode;
@@ -49,7 +50,7 @@ import java.util.Set;
 final class CheckProtoInitCallsPass extends CompilerFilePass {
 
   private static final SoyErrorKind FIELD_DOES_NOT_EXIST =
-      SoyErrorKind.of("Proto field ''{0}'' does not exist.{1}");
+      SoyErrorKind.of("Proto field ''{0}'' does not exist.{1}", StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind MISSING_REQUIRED_FIELD =
       SoyErrorKind.of("Missing required proto field ''{0}''.");
   private static final SoyErrorKind NULL_ARG_TYPE =

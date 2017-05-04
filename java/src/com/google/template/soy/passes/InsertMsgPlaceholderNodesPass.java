@@ -45,7 +45,7 @@ import java.util.List;
  */
 final class InsertMsgPlaceholderNodesPass extends CompilerFilePass {
   private static final SoyErrorKind INVALID_PLACEHOLDER =
-      SoyErrorKind.of("''phname'' attributes are only valid inside '''{'msg...'' tags");
+      SoyErrorKind.of("''phname'' attributes are only valid inside '''{'msg...'' tags.");
 
   private static final SoyErrorKind UNEXPECTED_COMMAND_IN_MSG =
       SoyErrorKind.of(

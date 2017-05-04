@@ -28,6 +28,7 @@ import com.google.template.soy.basicfunctions.FloatFunction;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FunctionNode;
@@ -83,7 +84,8 @@ import javax.annotation.Nullable;
 final class CheckTemplateCallsPass extends CompilerFileSetPass {
 
   static final SoyErrorKind ARGUMENT_TYPE_MISMATCH =
-      SoyErrorKind.of("Type mismatch on param {0}: expected: {1}, actual: {2}.");
+      SoyErrorKind.of(
+          "Type mismatch on param {0}: expected: {1}, actual: {2}", StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind DUPLICATE_PARAM = SoyErrorKind.of("Duplicate param ''{0}''.");
   private static final SoyErrorKind MISSING_PARAM = SoyErrorKind.of("Call missing required {0}.");
   private static final SoyErrorKind PASSING_PROTOBUF_FROM_STRICT_TO_NON_STRICT =

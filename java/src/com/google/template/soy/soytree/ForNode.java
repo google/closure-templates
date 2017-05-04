@@ -22,6 +22,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.IntegerNode;
@@ -50,7 +51,7 @@ public final class ForNode extends AbstractBlockCommandNode
         LocalVarBlockNode {
 
   private static final SoyErrorKind RANGE_OUT_OF_RANGE =
-      SoyErrorKind.of("Range specification is too large: {0}");
+      SoyErrorKind.of("Range specification is too large: {0}", StyleAllowance.NO_PUNCTUATION);
 
   /** The arguments to a {@code range(...)} expression in a {@code {for ...}} loop statement. */
   @AutoValue

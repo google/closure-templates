@@ -83,18 +83,18 @@ public final class HtmlTransformVisitor extends AbstractSoyNodeVisitor<Void> {
   private static final SoyErrorKind ENDING_STATE_MISMATCH =
       SoyErrorKind.of(
           "Ending context of the content within a Soy tag must match the starting context. "
-              + "Transition was from {0} to {1}");
+              + "Transition was from {0} to {1}.");
 
   private static final SoyErrorKind EXPECTED_ATTRIBUTE_VALUE =
-      SoyErrorKind.of("Expected to find a quoted " + "attribute value, but found \"{0}\".");
+      SoyErrorKind.of("Expected to find a quoted attribute value, but found \"{0}\".");
 
   private static final SoyErrorKind EXPECTED_TAG_CLOSE =
       SoyErrorKind.of("Expected to find the tag close character, >, but found \"{0}\".");
 
   private static final SoyErrorKind INVALID_SELF_CLOSING_TAG =
       SoyErrorKind.of(
-          "Invalid self-closing tag for \"{0}\". Self-closing tags are only valid for void tags and"
-              + " SVG content (partially supported). For a list of void elements, see "
+          "Invalid self-closing tag for \"{0}\". Self-closing tags are only valid for void tags "
+              + "and SVG content (partially supported). For a list of void elements, see "
               + "https://www.w3.org/TR/html5/syntax.html#void-elements.");
 
   private static final SoyErrorKind SOY_TAG_BEFORE_ATTR_VALUE =
@@ -103,10 +103,10 @@ public final class HtmlTransformVisitor extends AbstractSoyNodeVisitor<Void> {
               + "allowed before an attribute value. They should be moved inside a quotation mark.");
 
   private static final SoyErrorKind MISSING_TAG_NAME =
-      SoyErrorKind.of("Found a tag with an empty tag " + "name.");
+      SoyErrorKind.of("Found a tag with an empty tag name.");
 
   private static final SoyErrorKind NON_STRICT_FILE =
-      SoyErrorKind.of("The incremental HTML Soy backend " + "requires strict autoescape mode");
+      SoyErrorKind.of("The incremental HTML Soy backend requires strict autoescape mode.");
 
   private static final SoyErrorKind NON_STRICT_TEMPLATE =
       SoyErrorKind.of(
@@ -116,7 +116,7 @@ public final class HtmlTransformVisitor extends AbstractSoyNodeVisitor<Void> {
   private static final SoyErrorKind UNKNOWN_CONTENT_KIND =
       SoyErrorKind.of(
           "The incremental HTML Soy backend requires all let statements and parameters with "
-              + "content to have a content kind");
+              + "content to have a content kind.");
 
   private static final SoyErrorKind INVALID_CSS_NODE_LOCATION =
       SoyErrorKind.of(

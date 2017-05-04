@@ -23,6 +23,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.LegacyInternalSyntaxException;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -31,17 +32,17 @@ final class ParseErrors {
   private static final Pattern EXTRACT_LOCATION = Pattern.compile("at line (\\d+), column (\\d+).");
 
   private static final SoyErrorKind BAD_PHNAME_VALUE =
-      SoyErrorKind.of("Found ''phname'' attribute that is not a valid identifier");
+      SoyErrorKind.of("Found ''phname'' attribute that is not a valid identifier.");
   private static final SoyErrorKind INVALID_STRING_LITERAL =
       SoyErrorKind.of("Invalid string literal found in Soy command.");
   private static final SoyErrorKind LEGACY_AND_ERROR =
-      SoyErrorKind.of("Found use of ''&&'' instead of the ''and'' operator");
+      SoyErrorKind.of("Found use of ''&&'' instead of the ''and'' operator.");
   private static final SoyErrorKind LEGACY_OR_ERROR =
-      SoyErrorKind.of("Found use of ''||'' instead of the ''or'' operator");
+      SoyErrorKind.of("Found use of ''||'' instead of the ''or'' operator.");
   private static final SoyErrorKind LEGACY_NOT_ERROR =
-      SoyErrorKind.of("Found use of ''!'' instead of the ''not'' operator");
+      SoyErrorKind.of("Found use of ''!'' instead of the ''not'' operator.");
   private static final SoyErrorKind LEGACY_DOUBLE_QUOTED_STRING =
-      SoyErrorKind.of("Found use of double quotes, Soy strings use single quotes");
+      SoyErrorKind.of("Found use of double quotes, Soy strings use single quotes.");
   private static final SoyErrorKind UNEXPECTED_EOF =
       SoyErrorKind.of(
           "Unexpected end of file.  Did you forget to close an attribute value or a comment?");
@@ -54,7 +55,8 @@ final class ParseErrors {
   private static final SoyErrorKind UNEXPECTED_TOKEN_MGR_ERROR =
       SoyErrorKind.of(
           "Unexpected fatal Soy error. Please file a bug with your Soy file and "
-              + "we''ll take a look. (error code {0})\n{1}");
+              + "we''ll take a look. (error code {0})\n{1}",
+          StyleAllowance.NO_PUNCTUATION);
 
   private ParseErrors() {}
 
@@ -108,7 +110,7 @@ final class ParseErrors {
 
     reporter.report(
         location,
-        SoyErrorKind.of("{0}"),
+        SoyErrorKind.of("{0}", StyleAllowance.values()),
         formatParseExceptionDetails(errorToken.image, expectedTokenImages.build().asList()));
   }
 

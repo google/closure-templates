@@ -132,7 +132,7 @@ public class TemplateNodeTest {
             + "/**@param foo @param goo @param? foo */\n"
             + "{template .boo}{/template}",
         errorReporter);
-    assertThat(errorReporter.getErrorMessages()).containsExactly("Param 'foo' already declared");
+    assertThat(errorReporter.getErrorMessages()).containsExactly("Param 'foo' already declared.");
 
     errorReporter = new FormattingErrorReporter();
     parse(
@@ -141,7 +141,7 @@ public class TemplateNodeTest {
             + "{@param goo : null}{@param foo:string}{@param foo : int}\n"
             + "{/template}",
         errorReporter);
-    assertThat(errorReporter.getErrorMessages()).containsExactly("Param 'foo' already declared");
+    assertThat(errorReporter.getErrorMessages()).containsExactly("Param 'foo' already declared.");
 
     errorReporter = new FormattingErrorReporter();
     parse(
@@ -151,7 +151,7 @@ public class TemplateNodeTest {
             + "{@param foo : string}\n"
             + "{/template}",
         errorReporter);
-    assertThat(errorReporter.getErrorMessages()).containsExactly("Param 'foo' already declared");
+    assertThat(errorReporter.getErrorMessages()).containsExactly("Param 'foo' already declared.");
   }
 
   @Test
