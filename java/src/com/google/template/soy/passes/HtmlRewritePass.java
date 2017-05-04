@@ -156,6 +156,12 @@ public final class HtmlRewritePass extends CompilerFilePass {
               "expected exactly one attribute value, the {0} isn''t guaranteed to produce exactly "
                   + "one");
 
+  private static final SoyErrorKind EXPECTED_TAG_NAME =
+      SoyErrorKind.of("Expected an html tag name.");
+
+  private static final SoyErrorKind EXPECTED_ATTRIBUTE_NAME =
+      SoyErrorKind.of("Expected an attribute name.");
+
   private static final SoyErrorKind EXPECTED_ATTRIBUTE_VALUE =
       SoyErrorKind.of("expected an attribute value");
 
@@ -177,8 +183,6 @@ public final class HtmlRewritePass extends CompilerFilePass {
   private static final SoyErrorKind FOUND_EQ_WITH_ATTRIBUTE_IN_ANOTHER_BLOCK =
       SoyErrorKind.of("found an ''='' character in a different block than the attribute name.");
 
-  private static final SoyErrorKind GENERIC_UNEXPECTED_CHAR =
-      SoyErrorKind.of("unexpected character, expected ''{0}'' instead");
 
   private static final SoyErrorKind ILLEGAL_HTML_ATTRIBUTE_CHARACTER =
       SoyErrorKind.of("illegal unquoted attribute value character");
@@ -400,23 +404,24 @@ public final class HtmlRewritePass extends CompilerFilePass {
   private static final class Visitor extends AbstractSoyNodeVisitor<Void> {
     
     /**
-     * Matches a subset of the inverse of {@link #TAG_IDENTIFIER_MATCHER} which indicate a parsing
-     * error instead of a delimiter.
+     * Matches a characters that should cause parse errors if they occur inside an html identifier.
+     *
+     * <p>see https://www.w3.org/TR/html51/syntax.html#attribute-name-state
      */
     static final CharMatcher INVALID_IDENTIFIER_CHAR_MATCHER =
-        CharMatcher.anyOf("\0'\"").precomputed();
+        CharMatcher.anyOf("<\0'\"").precomputed();
 
     /**
      * Matches raw text in a tag that isn't a special character or whitespace.
      *
      * <p>This is based on the attribute parsing spec:
-     * https://www.w3.org/TR/html5/syntax.html#attributes-0
+     * https://www.w3.org/TR/html5/syntax.html#attributes-0 also see
+     * https://www.w3.org/TR/html51/syntax.html#attribute-name-state
      */
-    static final CharMatcher TAG_IDENTIFIER_MATCHER =
-        // delimiter charachters
+    static final CharMatcher TAG_DELIMITER_MATCHER =
+        // delimiter characters
         CharMatcher.whitespace()
             .or(CharMatcher.anyOf(">=/"))
-            .or(INVALID_IDENTIFIER_CHAR_MATCHER)
             .or(
                 new CharMatcher() {
                   @Override
@@ -777,10 +782,9 @@ public final class HtmlRewritePass extends CompilerFilePass {
         context.setState(State.PCDATA, currentPointOrEnd());
         return;
       }
-      RawTextNode node = consumeHtmlIdentifier();
+      RawTextNode node = consumeHtmlIdentifier(EXPECTED_TAG_NAME);
       if (node == null) {
-        // we must have immediately come across a delimiter like <, =, >, ' or "
-        errorReporter.report(currentLocation(), GENERIC_UNEXPECTED_CHAR, "an html tag");
+        // consumeHtmlIdentifier will have already reported an error, try to keep going
         context.setTagName(
             new TagName(new RawTextNode(nodeIdGen.genId(), "$parse-error$", currentLocation())));
       } else {
@@ -825,7 +829,9 @@ public final class HtmlRewritePass extends CompilerFilePass {
         // We have to return in case we hit the end of the raw text.
         return;
       }
-      RawTextNode identifier = consumeHtmlIdentifier();
+      RawTextNode identifier = consumeHtmlIdentifier(EXPECTED_ATTRIBUTE_NAME);
+      // TODO(lukes): add some additional validation. tag names are more restrictive than attribute
+      // names.
       if (identifier == null) {
         // consumeHtmlIdentifier will have already reported an error
         context.resetAttribute();
@@ -995,25 +1001,30 @@ public final class HtmlRewritePass extends CompilerFilePass {
     /**
      * Scans until the next whitespace, > or />, validates that the matched text is an html
      * identifier and returns it.
+     *
+     * <p>Requires that we are not at the end of input
      */
     @Nullable
-    RawTextNode consumeHtmlIdentifier() {
+    RawTextNode consumeHtmlIdentifier(SoyErrorKind errorForMissingIdentifier) {
       // rather than use a regex to match the prefix, we just consume all non-whitespace/non-meta
       // characters and then validate the text afterwards.
-      boolean foundDelimiter = advanceWhileMatches(TAG_IDENTIFIER_MATCHER);
+      boolean foundDelimiter = advanceWhileMatches(TAG_DELIMITER_MATCHER);
       RawTextNode node = consumeAsRawText();
       if (node != null) {
-        if (foundDelimiter && INVALID_IDENTIFIER_CHAR_MATCHER.matches((char) currentChar())) {
-          errorReporter.report(currentLocation(), INVALID_IDENTIFIER, (char) currentChar());
-          // consume the bad char
-          advance();
-          consume();
+        int indexIn = INVALID_IDENTIFIER_CHAR_MATCHER.indexIn(node.getRawText());
+        if (indexIn != -1) {
+          errorReporter.report(
+              node.substringLocation(indexIn, indexIn + 1),
+              INVALID_IDENTIFIER,
+              node.getRawText().charAt(indexIn));
         }
-      } else {
-        errorReporter.report(currentLocation(), GENERIC_UNEXPECTED_CHAR, "an html identifier");
-        // consume the character
+      } else if (foundDelimiter) {
+        errorReporter.report(currentLocation(), errorForMissingIdentifier);
+        // consume the bad char
         advance();
         consume();
+      } else {
+        throw new AssertionError("impossible");
       }
       return node;
     }
