@@ -98,6 +98,9 @@ final class ParseErrors {
       case SoyFileParserConstants.DOUBLE_QUOTE:
         reporter.report(location, LEGACY_DOUBLE_QUOTED_STRING);
         return;
+      case SoyFileParserConstants.EOF:
+        reporter.report(location, UNEXPECTED_EOF);
+        return;
       default:
         //fall-through
     }

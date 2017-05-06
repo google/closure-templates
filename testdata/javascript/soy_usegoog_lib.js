@@ -2931,7 +2931,6 @@ goog.createRequiresTranspilation_ = function() {
 // clang-format off
 
 goog.addDependency('../../third_party/javascript/closure/caja/string/html/htmlparser.js', ['goog.string.html', 'goog.string.html.HtmlParser', 'goog.string.html.HtmlParser.EFlags', 'goog.string.html.HtmlParser.Elements', 'goog.string.html.HtmlParser.Entities', 'goog.string.html.HtmlSaxHandler'], [], {});
-goog.addDependency('../../third_party/javascript/closure/caja/string/html/htmlsanitizer.js', ['goog.string.html.HtmlSanitizer', 'goog.string.html.HtmlSanitizer.AttributeType', 'goog.string.html.HtmlSanitizer.Attributes', 'goog.string.html.htmlSanitize'], ['goog.string.StringBuffer', 'goog.string.html.HtmlParser', 'goog.string.html.HtmlSaxHandler'], {});
 goog.addDependency('../../third_party/javascript/closure/dojo/dom/query.js', ['goog.dom.query'], ['goog.array', 'goog.dom', 'goog.functions', 'goog.string', 'goog.userAgent'], {});
 goog.addDependency('../../third_party/javascript/closure/loremipsum/text/loremipsum.js', ['goog.text.LoremIpsum'], ['goog.array', 'goog.math', 'goog.string', 'goog.structs.Map', 'goog.structs.Set'], {});
 goog.addDependency('../../third_party/javascript/closure/mochikit/async/deferred.js', ['goog.async.Deferred', 'goog.async.Deferred.AlreadyCalledError', 'goog.async.Deferred.CanceledError'], ['goog.Promise', 'goog.Thenable', 'goog.array', 'goog.asserts', 'goog.debug.Error'], {});
@@ -3424,7 +3423,7 @@ goog.addDependency('html/safestylesheet_test.js', ['goog.html.safeStyleSheetTest
 goog.addDependency('html/safeurl.js', ['goog.html.SafeUrl'], ['goog.asserts', 'goog.fs.url', 'goog.html.TrustedResourceUrl', 'goog.i18n.bidi.Dir', 'goog.i18n.bidi.DirectionalString', 'goog.string', 'goog.string.Const', 'goog.string.TypedString'], {});
 goog.addDependency('html/safeurl_test.js', ['goog.html.safeUrlTest'], ['goog.html.SafeUrl', 'goog.html.TrustedResourceUrl', 'goog.i18n.bidi.Dir', 'goog.object', 'goog.string.Const', 'goog.testing.jsunit', 'goog.userAgent'], {});
 goog.addDependency('html/sanitizer/attributewhitelist.js', ['goog.html.sanitizer.AttributeSanitizedWhitelist', 'goog.html.sanitizer.AttributeWhitelist'], [], {});
-goog.addDependency('html/sanitizer/csssanitizer.js', ['goog.html.sanitizer.CssSanitizer'], ['goog.array', 'goog.dom', 'goog.dom.TagName', 'goog.html.SafeStyle', 'goog.html.uncheckedconversions', 'goog.object', 'goog.string'], {});
+goog.addDependency('html/sanitizer/csssanitizer.js', ['goog.html.sanitizer.CssSanitizer'], ['goog.array', 'goog.dom', 'goog.dom.TagName', 'goog.html.SafeStyle', 'goog.html.SafeUrl', 'goog.html.uncheckedconversions', 'goog.object', 'goog.string'], {});
 goog.addDependency('html/sanitizer/htmlsanitizer.js', ['goog.html.sanitizer.HtmlSanitizer', 'goog.html.sanitizer.HtmlSanitizer.Builder', 'goog.html.sanitizer.HtmlSanitizerPolicy', 'goog.html.sanitizer.HtmlSanitizerPolicyContext', 'goog.html.sanitizer.HtmlSanitizerPolicyHints'], ['goog.array', 'goog.asserts', 'goog.dom', 'goog.dom.NodeType', 'goog.functions', 'goog.html.SafeHtml', 'goog.html.SafeStyle', 'goog.html.SafeUrl', 'goog.html.sanitizer.AttributeSanitizedWhitelist', 'goog.html.sanitizer.AttributeWhitelist', 'goog.html.sanitizer.CssSanitizer', 'goog.html.sanitizer.TagBlacklist', 'goog.html.sanitizer.TagWhitelist', 'goog.html.uncheckedconversions', 'goog.object', 'goog.string', 'goog.string.Const', 'goog.userAgent'], {});
 goog.addDependency('html/sanitizer/tagblacklist.js', ['goog.html.sanitizer.TagBlacklist'], [], {});
 goog.addDependency('html/sanitizer/tagwhitelist.js', ['goog.html.sanitizer.TagWhitelist'], [], {});
@@ -16760,7 +16759,7 @@ goog.html.uncheckedconversions.safeScriptFromStringKnownToSatisfyTypeContract =
  * known to satisfy the SafeStyle type contract.
  *
  * IMPORTANT: Uses of this method must be carefully security-reviewed to ensure
- * that the value of {@code style} satisfies the SafeUrl type contract in all
+ * that the value of {@code style} satisfies the SafeStyle type contract in all
  * possible program states.
  *
  * MOE:begin_intracomment_strip
@@ -16793,8 +16792,8 @@ goog.html.uncheckedconversions.safeStyleFromStringKnownToSatisfyTypeContract =
  * that is known to satisfy the SafeStyleSheet type contract.
  *
  * IMPORTANT: Uses of this method must be carefully security-reviewed to ensure
- * that the value of {@code styleSheet} satisfies the SafeUrl type contract in
- * all possible program states.
+ * that the value of {@code styleSheet} satisfies the SafeStyleSheet type
+ * contract in all possible program states.
  *
  * MOE:begin_intracomment_strip
  * See http://go/safehtml-unchecked for guidelines on using these functions.
@@ -22875,6 +22874,24 @@ goog.Uri.QueryData.prototype.containsValue = function(value) {
 
 
 /**
+ * Runs a callback on every key-value pair in the map, including duplicate keys.
+ * This won't maintain original order when duplicate keys are interspersed (like
+ * getKeys() / getValues()).
+ * @param {function(this:SCOPE, ?, string, !goog.Uri.QueryData)} f
+ * @param {SCOPE=} opt_scope The value of "this" inside f.
+ * @template SCOPE
+ */
+goog.Uri.QueryData.prototype.forEach = function(f, opt_scope) {
+  this.ensureKeyMapInitialized_();
+  this.keyMap_.forEach(function(values, key) {
+    goog.array.forEach(values, function(value) {
+      f.call(opt_scope, value, key, this);
+    }, this);
+  }, this);
+};
+
+
+/**
  * Returns all the keys of the parameters. If a key is used multiple times
  * it will be included multiple times in the returned array
  * @return {!Array<string>} All the keys of the parameters.
@@ -23114,8 +23131,10 @@ goog.Uri.QueryData.prototype.setIgnoreCase = function(ignoreCase) {
  * Extends a query data object with another query data or map like object. This
  * operates 'in-place', it does not create a new QueryData object.
  *
- * @param {...(goog.Uri.QueryData|goog.structs.Map<?, ?>|Object)} var_args
+ * @param {...(?goog.Uri.QueryData|?goog.structs.Map<?, ?>|?Object)} var_args
  *     The object from which key value pairs will be copied.
+ * @suppress {deprecated} Use deprecated goog.structs.forEach to allow different
+ * types of parameters.
  */
 goog.Uri.QueryData.prototype.extend = function(var_args) {
   for (var i = 0; i < arguments.length; i++) {
