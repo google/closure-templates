@@ -836,6 +836,19 @@ public final class ResolveExpressionTypesVisitorTest {
         constructTemplateSource("{@param p: float|int}", "{$p.a}"));
   }
 
+  @Test
+  public void testTypeNarrowingError() {
+    assertResolveExpressionTypesFails(
+        "Expected expression of type 'string', found 'null'.",
+        constructTemplateSource(
+            "{@param p: [a: string]}",
+            "{if $p.a != null}",
+            "  x: {$p.a}",
+            "{else}",
+            "  y: {$p.a}",
+            "{/if}"));
+  }
+
   /**
    * Helper function that constructs a boilerplate template given a list of body statements to
    * insert into the middle of the template. The body statements will be indented and separated with

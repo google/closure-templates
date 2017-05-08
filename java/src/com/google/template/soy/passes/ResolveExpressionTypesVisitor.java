@@ -16,8 +16,6 @@
 
 package com.google.template.soy.passes;
 
-import static com.google.common.base.Preconditions.checkState;
-
 import com.google.common.base.Equivalence.Wrapper;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
@@ -137,6 +135,8 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
       SoyErrorKind.of("Cannot iterate over empty list.");
   private static final SoyErrorKind EMPTY_MAP_ACCESS =
       SoyErrorKind.of("Accessing item in empty map.");
+  private static final SoyErrorKind INVALID_TYPE_SUBSTITUTION =
+      SoyErrorKind.of("Expected expression of type ''{0}'', found ''{1}''.");
   private static final SoyErrorKind LIST_LENGTH_ERROR =
       SoyErrorKind.of(
           "Soy lists do not have a ''length'' field. Use function length(...) instead.");
@@ -1146,7 +1146,7 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
               }
               itemTypes.add(itemType);
             }
-            // If this is a nullable union type but the operation is not null-safe, throw an error.
+            // If this is a nullable union type but the operation is not null-safe, report an error.
             if (unionType.isNullable() && !isNullSafe) {
               errorReporter.report(baseLocation, BRACKET_ACCESS_NULLABLE_UNION);
               return ErrorType.getInstance();
@@ -1166,11 +1166,13 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
     private void tryApplySubstitution(AbstractParentExprNode parentNode) {
       SoyType newType = getTypeSubstitution(parentNode);
       if (newType != null) {
-        checkState(
-            parentNode.getType().isAssignableFrom(newType),
-            "Tried to override '%s' with '%s'",
-            parentNode.getType(),
-            newType);
+        if (!parentNode.getType().isAssignableFrom(newType)) {
+          errorReporter.report(
+              parentNode.getSourceLocation(),
+              INVALID_TYPE_SUBSTITUTION,
+              parentNode.getType(),
+              newType);
+        }
         parentNode.setType(newType);
       }
     }
