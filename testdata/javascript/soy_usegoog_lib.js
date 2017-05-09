@@ -15050,6 +15050,7 @@ goog.html.TrustedResourceUrl.unwrap = function(trustedResourceUrl) {
  * - `https://<origin>/`
  * - `//<origin>/`
  * - `/<pathStart>`
+ * - `about:blank`
  *
  * `<origin>` must contain only alphanumeric or any of the following: `-.:[]`.
  * `<pathStart>` is any character except `/` and `\`.
@@ -15138,7 +15139,7 @@ goog.html.TrustedResourceUrl.FORMAT_MARKER_ = /%{(\w+)}/g;
  * @private @const {!RegExp}
  */
 goog.html.TrustedResourceUrl.BASE_URL_ =
-    /^(?:https:)?\/\/[0-9a-z.:[\]-]+\/|^\/[^\/\\]/i;
+    /^(?:https:)?\/\/[0-9a-z.:[\]-]+\/|^\/[^\/\\]|^about:blank(#|$)/i;
 
 
 /**
