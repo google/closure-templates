@@ -104,7 +104,7 @@ import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.SoyTypeOps;
+import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.primitive.AnyType;
 import com.google.template.soy.types.primitive.NullType;
@@ -173,8 +173,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
 
   protected TemplateRegistry templateRegistry;
 
-  /** Type operators. */
-  private final SoyTypeOps typeOps;
+  private final SoyTypeRegistry typeRegistry;
 
   protected ErrorReporter errorReporter;
   protected TranslationContext templateTranslationContext;
@@ -194,7 +193,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
       IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor,
       CanInitOutputVarVisitor canInitOutputVarVisitor,
       GenJsExprsVisitorFactory genJsExprsVisitorFactory,
-      SoyTypeOps typeOps) {
+      SoyTypeRegistry typeRegistry) {
     this.jsSrcOptions = jsSrcOptions;
     this.jsExprTranslator = jsExprTranslator;
     this.delTemplateNamer = delTemplateNamer;
@@ -202,7 +201,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
     this.isComputableAsJsExprsVisitor = isComputableAsJsExprsVisitor;
     this.canInitOutputVarVisitor = canInitOutputVarVisitor;
     this.genJsExprsVisitorFactory = genJsExprsVisitorFactory;
-    this.typeOps = typeOps;
+    this.typeRegistry = typeRegistry;
   }
 
   public List<String> gen(
@@ -1471,13 +1470,13 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
           continue;
         }
         Collection<SoyType> paramTypes = ipi.indirectParamTypes.get(indirectParamName);
-        SoyType combinedType = typeOps.computeLowestCommonType(paramTypes);
+        SoyType combinedType = SoyTypes.computeLowestCommonType(typeRegistry, paramTypes);
         // Note that Union folds duplicate types and flattens unions, so if
         // the combinedType is already a union this will do the right thing.
         // TODO: detect cases where nullable is not needed (requires flow
         // analysis to determine if the template is always called.)
-        SoyType indirectParamType = typeOps.getTypeRegistry()
-            .getOrCreateUnionType(combinedType, NullType.getInstance());
+        SoyType indirectParamType =
+            typeRegistry.getOrCreateUnionType(combinedType, NullType.getInstance());
         JsType jsType = getJsType(indirectParamType);
         // NOTE: we do not add goog.requires for indirect types.  This is because it might introduce
         // strict deps errors.  This should be fine though since the transitive soy template that

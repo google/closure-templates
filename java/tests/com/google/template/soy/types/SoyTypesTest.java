@@ -703,6 +703,69 @@ public class SoyTypesTest {
     assertIsNotInstance(utype, NULL_DATA, BOOLEAN_DATA, FLOAT_DATA, LIST_DATA, MAP_DATA, DICT_DATA);
   }
 
+  @Test
+  public void testLeastCommonType() {
+    SoyTypeRegistry typeRegistry = new SoyTypeRegistry();
+
+    assertThat(
+            SoyTypes.computeLowestCommonType(
+                typeRegistry, IntType.getInstance(), AnyType.getInstance()))
+        .isEqualTo(AnyType.getInstance());
+    assertThat(
+            SoyTypes.computeLowestCommonType(
+                typeRegistry, IntType.getInstance(), UnknownType.getInstance()))
+        .isEqualTo(UnknownType.getInstance());
+    assertThat(
+            SoyTypes.computeLowestCommonType(
+                typeRegistry, UnknownType.getInstance(), IntType.getInstance()))
+        .isEqualTo(UnknownType.getInstance());
+    assertThat(
+            SoyTypes.computeLowestCommonType(
+                typeRegistry, AnyType.getInstance(), IntType.getInstance()))
+        .isEqualTo(AnyType.getInstance());
+    assertThat(
+            SoyTypes.computeLowestCommonType(
+                typeRegistry, StringType.getInstance(), HtmlType.getInstance()))
+        .isEqualTo(StringType.getInstance());
+    assertThat(
+            SoyTypes.computeLowestCommonType(
+                typeRegistry, HtmlType.getInstance(), StringType.getInstance()))
+        .isEqualTo(StringType.getInstance());
+    assertThat(
+            SoyTypes.computeLowestCommonType(
+                typeRegistry, IntType.getInstance(), FloatType.getInstance()))
+        .isEqualTo(UnionType.of(IntType.getInstance(), FloatType.getInstance()));
+    assertThat(
+            SoyTypes.computeLowestCommonType(
+                typeRegistry, FloatType.getInstance(), IntType.getInstance()))
+        .isEqualTo(UnionType.of(IntType.getInstance(), FloatType.getInstance()));
+  }
+
+  @Test
+  public void testLeastCommonTypeArithmetic() {
+    SoyType intT = IntType.getInstance();
+    SoyType anyT = AnyType.getInstance();
+    SoyType unknownT = UnknownType.getInstance();
+    SoyType floatT = FloatType.getInstance();
+    SoyType stringT = StringType.getInstance();
+    SoyType htmlT = HtmlType.getInstance();
+    SoyType numberT = SoyTypes.NUMBER_TYPE;
+
+    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(intT, anyT)).isAbsent();
+    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(anyT, intT)).isAbsent();
+    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(stringT, htmlT)).isAbsent();
+    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(htmlT, stringT)).isAbsent();
+    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(intT, floatT)).hasValue(floatT);
+    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(floatT, intT)).hasValue(floatT);
+    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(floatT, unknownT)).hasValue(unknownT);
+    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(unknownT, floatT)).hasValue(unknownT);
+    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(intT, intT)).hasValue(intT);
+    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(floatT, floatT)).hasValue(floatT);
+    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(floatT, numberT)).hasValue(numberT);
+    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(intT, numberT)).hasValue(numberT);
+    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(numberT, numberT)).hasValue(numberT);
+  }
+
   private static void assertIsInstance(SoyType type, SoyValue... values) {
     for (SoyValue value : values) {
       assertWithMessage(

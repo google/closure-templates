@@ -31,7 +31,6 @@ import com.google.template.soy.passes.SharedPassesModule;
 import com.google.template.soy.pysrc.internal.PySrcModule;
 import com.google.template.soy.shared.internal.SharedModule;
 import com.google.template.soy.tofu.internal.TofuModule;
-import com.google.template.soy.types.SoyTypeOps;
 import com.google.template.soy.types.SoyTypeProvider;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.xliffmsgplugin.XliffMsgPlugin;
@@ -67,7 +66,6 @@ public final class SoyModule extends AbstractModule {
     // Bindings for when explicit dependencies are required.
     // Note: We don't promise to support this. We actually frown upon requireExplicitBindings.
     bind(ContextualAutoescaper.class);
-    bind(SoyTypeOps.class);
     bind(SoySauceImpl.Factory.class);
     // optionally depend on a user supplied msg plugin
     OptionalBinder.newOptionalBinder(binder(), SoyMsgPlugin.class);

@@ -78,7 +78,7 @@ import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.SoyTypeOps;
+import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.Nullable;
@@ -119,7 +119,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       IsComputableAsIncrementalDomExprsVisitor isComputableAsJsExprsVisitor,
       CanInitOutputVarVisitor canInitOutputVarVisitor,
       GenIncrementalDomExprsVisitorFactory genIncrementalDomExprsVisitorFactory,
-      SoyTypeOps typeOps) {
+      SoyTypeRegistry typeRegistry) {
     super(
         jsSrcOptions,
         jsExprTranslator,
@@ -128,7 +128,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
         isComputableAsJsExprsVisitor,
         canInitOutputVarVisitor,
         genIncrementalDomExprsVisitorFactory,
-        typeOps);
+        typeRegistry);
   }
 
   @Override
