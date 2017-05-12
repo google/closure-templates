@@ -31,6 +31,8 @@ import java.util.regex.Pattern;
 final class ParseErrors {
   private static final Pattern EXTRACT_LOCATION = Pattern.compile("at line (\\d+), column (\\d+).");
 
+  private static final SoyErrorKind PLAIN_ERROR = SoyErrorKind.of("{0}", StyleAllowance.values());
+
   private static final SoyErrorKind BAD_PHNAME_VALUE =
       SoyErrorKind.of("Found ''phname'' attribute that is not a valid identifier.");
   private static final SoyErrorKind INVALID_STRING_LITERAL =
@@ -113,7 +115,7 @@ final class ParseErrors {
 
     reporter.report(
         location,
-        SoyErrorKind.of("{0}", StyleAllowance.values()),
+        PLAIN_ERROR,
         formatParseExceptionDetails(errorToken.image, expectedTokenImages.build().asList()));
   }
 
@@ -217,7 +219,7 @@ final class ParseErrors {
     if (!sourceLocation.isKnown()) {
       sourceLocation = new SourceLocation(filePath);
     }
-    reporter.report(sourceLocation, SoyErrorKind.of("{0}"), exception.getOriginalMessage());
+    reporter.report(sourceLocation, PLAIN_ERROR, exception.getOriginalMessage());
   }
 
   static void reportTokenMgrError(

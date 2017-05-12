@@ -36,6 +36,10 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 /** A visitor that scans for features not supported by jbcsrc and reports errors for them. */
 final class UnsupportedFeatureReporter {
 
+  private static final SoyErrorKind NON_STRICT_AUTOESCAPE =
+      SoyErrorKind.of(
+          "jbcsrc only supports strict autoescape templates, found ''{0}''.",
+          StyleAllowance.NO_CAPS);
   // TODO(lukes): Delete.
   private static final SoyErrorKind UNDECLARED_TEMPLATE_PARAM =
       SoyErrorKind.of(
@@ -67,7 +71,7 @@ final class UnsupportedFeatureReporter {
       if (namespaceDeclaration.getDefaultAutoescapeMode() != AutoescapeMode.STRICT) {
         errorReporter.report(
             namespaceDeclaration.getAutoescapeModeLocation(),
-            SoyErrorKind.of("jbcsrc only supports strict autoescape templates, found : ''{0}''"),
+            NON_STRICT_AUTOESCAPE,
             namespaceDeclaration.getDefaultAutoescapeMode());
       }
     }

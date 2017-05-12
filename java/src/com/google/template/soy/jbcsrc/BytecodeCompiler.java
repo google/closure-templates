@@ -26,6 +26,7 @@ import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -48,7 +49,20 @@ import java.util.zip.ZipEntry;
 
 /** The entry point to the {@code jbcsrc} compiler. */
 public final class BytecodeCompiler {
+
   private static final Logger logger = Logger.getLogger(BytecodeCompiler.class.getName());
+
+  private static final SoyErrorKind UNEXPECTED_COMPILER_FAILURE =
+      SoyErrorKind.of(
+          "Unexpected error while compiling template: ''{0}''\n"
+              + "Soy Stack:\n{1}\n"
+              + "Compiler Stack:\n{2}",
+          StyleAllowance.NO_PUNCTUATION);
+
+  private static final SoyErrorKind UNEXPECTED_ERROR =
+      SoyErrorKind.of(
+          "Unexpected error while compiling template: ''{0}''\n{1}", StyleAllowance.NO_PUNCTUATION);
+
   /**
    * Compiles all the templates in the given registry.
    *
@@ -279,9 +293,7 @@ public final class BytecodeCompiler {
       } catch (UnexpectedCompilerFailureException e) {
         errorReporter.report(
             e.getOriginalLocation(),
-            SoyErrorKind.of(
-                "Unexpected error while compiling template: ''{0}''\nSoy Stack:\n{1}"
-                    + "\nCompiler Stack:{2}"),
+            UNEXPECTED_COMPILER_FAILURE,
             name,
             e.printSoyStack(),
             Throwables.getStackTraceAsString(e));
@@ -289,7 +301,7 @@ public final class BytecodeCompiler {
       } catch (Throwable t) {
         errorReporter.report(
             classInfo.node().getSourceLocation(),
-            SoyErrorKind.of("Unexpected error while compiling template: ''{0}''\n{1}"),
+            UNEXPECTED_ERROR,
             name,
             Throwables.getStackTraceAsString(t));
       }
