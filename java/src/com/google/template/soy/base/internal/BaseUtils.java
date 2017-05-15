@@ -323,15 +323,18 @@ public class BaseUtils {
   }
 
   private static String maybeQuoteForParseError(String token) {
-    // the literal matches are surrounded in double quotes, remove them, unless the token starts
-    // or ends with a whitespace character, a comma or a colon, because those characters could
-    // create ambiguity in the error messages.
+    // the literal matches are surrounded in double quotes, so remove them
     if (token.length() > 1 && token.charAt(0) == '"' && token.charAt(token.length() - 1) == '"') {
       token = token.substring(1, token.length() - 1);
     }
-    if (whitespaceCommaOrColon.matchesAnyOf(token)) {
+
+    // if the token starts or ends with a whitespace character, a comma, or a colon, then put them
+    // in single quotes to avoid ambiguity in the error messages.
+    if (whitespaceCommaOrColon.matches(token.charAt(0))
+        || whitespaceCommaOrColon.matches(token.charAt(token.length() - 1))) {
       token = "'" + token + "'";
     }
+
     return escapeWhitespaceForErrorPrinting(token);
   }
 

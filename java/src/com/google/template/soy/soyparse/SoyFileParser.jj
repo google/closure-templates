@@ -858,7 +858,6 @@ TOKEN_MGR_DECLS: {
 | < CMD_BEGIN_FALLBACK_MSG       : "{fallbackmsg" <WS> > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
 | < CMD_CLOSE_MSG                : "{/msg}"         >
 
-| < CMD_BEGIN_PRINT              : "{print" <WS>    > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
 | < CMD_BEGIN_XID                : "{xid" <WS>      > { pushState(IN_CMD_TAG_STRUCTURED); }
 | < CMD_BEGIN_CSS                : "{css" <WS>      > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
 
@@ -893,6 +892,7 @@ TOKEN_MGR_DECLS: {
 | < CMD_CLOSE_LOG                : "{/log}"         >
 | < CMD_FULL_DEBUGGER            : "{debugger}"     >
 
+| < CMD_BEGIN_PRINT              : "{print" <WS>    > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
 | < CMD_BEGIN_IMPLICIT_PRINT     : "{"              > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
 }
 

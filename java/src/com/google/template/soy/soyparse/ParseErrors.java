@@ -125,41 +125,25 @@ final class ParseErrors {
    */
   private static String getSoyFileParserTokenDisplayName(int tokenId) {
     switch (tokenId) {
-      case SoyFileParserConstants.ATTRIBUTE_VALUE:
-        return "attribute-value";
-
         // File-level tokens:
       case SoyFileParserConstants.DELTEMPLATE_OPEN:
         return "{deltemplate";
       case SoyFileParserConstants.TEMPLATE_OPEN:
         return "{template";
+      case SoyFileParserConstants.EOF:
+        return "eof";
 
         // Template tokens:
       case SoyFileParserConstants.CMD_BEGIN_CALL:
         return "{call";
-      case SoyFileParserConstants.CMD_CLOSE_CALL:
-        return "{/call}";
-
       case SoyFileParserConstants.CMD_BEGIN_DELCALL:
         return "{delcall";
-      case SoyFileParserConstants.CMD_CLOSE_DELCALL:
-        return "{/delcall}";
-
-      case SoyFileParserConstants.NAME:
-      case SoyFileParserConstants.T_NAME:
-      case SoyFileParserConstants.IDENT:
-        return "identifier";
-      case SoyFileParserConstants.EOF:
-        return "eof";
-        // TODO(slaks): Gather all CMD_BEGIN* constants using Reflection & string manipulation?
       case SoyFileParserConstants.CMD_BEGIN_PARAM:
         return "{param";
       case SoyFileParserConstants.CMD_BEGIN_MSG:
         return "{msg";
       case SoyFileParserConstants.CMD_BEGIN_FALLBACK_MSG:
         return "{fallbackmsg";
-      case SoyFileParserConstants.CMD_BEGIN_PRINT:
-        return "{print";
       case SoyFileParserConstants.CMD_BEGIN_XID:
         return "{xid";
       case SoyFileParserConstants.CMD_BEGIN_CSS:
@@ -182,8 +166,17 @@ final class ParseErrors {
         return "{case";
       case SoyFileParserConstants.CMD_BEGIN_FOREACH:
         return "{foreach";
-      case SoyFileParserConstants.CMD_OPEN_LITERAL:
-        return "{literal";
+      case SoyFileParserConstants.CMD_BEGIN_PRINT:
+        return "{print";
+
+      case SoyFileParserConstants.NAME:
+      case SoyFileParserConstants.T_NAME:
+      case SoyFileParserConstants.IDENT:
+        return "identifier";
+      case SoyFileParserConstants.ATTRIBUTE_VALUE:
+        return "attribute-value";
+      case SoyFileParserConstants.EQ_QUOTE:
+        return "=";
 
       case SoyFileParserConstants.CMD_FULL_SP:
       case SoyFileParserConstants.CMD_FULL_NIL:
@@ -197,6 +190,7 @@ final class ParseErrors {
       case SoyFileParserConstants.TOKEN_WS:
         return "whitespace";
 
+        // Expression tokens:
       case SoyFileParserConstants.HEX_INTEGER:
       case SoyFileParserConstants.DEC_INTEGER:
       case SoyFileParserConstants.FLOAT:
