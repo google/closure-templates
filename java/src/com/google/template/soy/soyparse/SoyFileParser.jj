@@ -1203,9 +1203,11 @@ private SoyFileNode SoyFile() :
  */
 private AliasDeclaration Alias() :
 {
-  Token open, close;
-  Identifier namespace, alias = null;
+  Token open;
+  Token close;
   Token as = null;
+  Identifier namespace;
+  Identifier alias = null;
 }
 {
   (
@@ -1238,7 +1240,8 @@ private AliasDeclaration Alias() :
  */
 private NamespaceDeclaration Namespace() :
 {
-  Token open, close;
+  Token open;
+  Token close;
   Identifier name;
   CommandTagAttribute attr;
   List<CommandTagAttribute> attributes;
@@ -1292,7 +1295,8 @@ private List<CommandTagAttribute> Attributes() :
  */
 private CommandTagAttribute Attribute() :
 {
-  Token name, value;
+  Token name;
+  Token value;
   Token attrTag;
   String attrName;
   ExprNode expr;
@@ -1341,7 +1345,8 @@ private CommandTagAttribute Attribute() :
  */
 private CommandTagAttribute ExprAttribute() :
 {
-  Token name, value;
+  Token name;
+  Token value;
 }
 {
   name = <IDENT>
@@ -1486,7 +1491,8 @@ private TemplateNode TemplateHelper(TemplateNodeBuilder builder, Token open, boo
  */
 private Identifier TemplateName() :
 {
-  Token dot, name;
+  Token dot;
+  Token name;
   Identifier ident;
 }
 {
@@ -1511,7 +1517,9 @@ private Identifier TemplateName() :
 private Identifier DottedIdent() :
 {
   StringBuilder sb = null;
-  Token dot, name, next = null;
+  Token dot;
+  Token name;
+  Token next = null;
 }
 {
   name = <NAME>
@@ -1764,7 +1772,8 @@ private RawTextNode TemplateHeader(TemplateNodeBuilder templateBuilder) :
     )
   )*
 
-  { templateBuilder.addParams(params);
+  {
+    templateBuilder.addParams(params);
     return whitespace;
   }
 }
@@ -1778,7 +1787,10 @@ private RawTextNode TemplateHeader(TemplateNodeBuilder templateBuilder) :
  */
 private HeaderParam ParamDecl(@Nullable String desc) :
 {
-  Token ws, tagBegin, name, tagEnd;
+  Token ws;
+  Token tagBegin;
+  Token name;
+  Token tagEnd;
   TypeNode paramTypeNode = null;
   SoyType paramType = ErrorType.getInstance();
   String cmdText;
@@ -1959,7 +1971,8 @@ private MsgFallbackGroupNode MsgStmt() :
 {
   String cmdText;
   List<StandaloneNode> templateBlockForMsg;
-  Token tagBegin, tagEnd;
+  Token tagBegin;
+  Token tagEnd;
   MsgNode msgNode;
 }
 {
@@ -2107,7 +2120,8 @@ private List<StandaloneNode> TemplateBlockForMsg() :
  */
 private MsgPluralNode MsgPlural() :
 {
-  Token tagBegin, tagEnd;
+  Token tagBegin;
+  Token tagEnd;
   Token defaultTag;
   ExprNode pluralExpr;
   ExprNode caseExpr;
@@ -2235,7 +2249,8 @@ private MsgPluralNode MsgPlural() :
  */
 private MsgSelectNode MsgSelect() :
 {
-  Token tagBegin, tagEnd;
+  Token tagBegin;
+  Token tagEnd;
   Token defaultTag;
   ExprNode selectExpr;
   ExprNode caseExpr;
@@ -2355,7 +2370,8 @@ private MsgHtmlTagNode MsgHtmlTag() :
  */
 private SourceItemInfo<List<String>> PrintTag() :
 {
-  Token tagBegin, tagEnd;
+  Token tagBegin;
+  Token tagEnd;
   List<String> cmdTextParts;
   List<String> printTagParts = new ArrayList<String>();
 }
@@ -2396,7 +2412,8 @@ private SourceItemInfo<List<String>> PrintTag() :
  */
 private PrintNode PrintStmt() :
 {
-  Token tagBegin, tagEnd;
+  Token tagBegin;
+  Token tagEnd;
   List<String> cmdTextParts;
   boolean isImplicit;
 }
@@ -2512,7 +2529,8 @@ private PrintNode PrintStmt() :
  */
 private XidNode XidStmt() :
 {
-  Token tagBegin, tok;
+  Token tagBegin;
+  Token tok;
   Token tagEnd = null;
   Token first = null;
   StringBuilder value = null;
@@ -2551,8 +2569,10 @@ private XidNode XidStmt() :
     return null;
   }
 
-  { String xid = (value == null) ? first.image : value.toString();
-    return new XidNode(nodeIdGen.genId(), createSrcLoc(tagBegin, tagEnd), xid); }
+  {
+    String xid = (value == null) ? first.image : value.toString();
+    return new XidNode(nodeIdGen.genId(), createSrcLoc(tagBegin, tagEnd), xid);
+  }
 }
 
 
@@ -2561,7 +2581,8 @@ private XidNode XidStmt() :
  */
 private CssNode CssStmt() :
 {
-  Token tagBegin, tagEnd;
+  Token tagBegin;
+  Token tagEnd;
   String cmdText;
 }
 {
@@ -2581,7 +2602,8 @@ private CssNode CssStmt() :
  */
 private LetNode LetStmt() :
 {
-  Token tagBegin, tagEnd;
+  Token tagBegin;
+  Token tagEnd;
   VarRefNode letVar = null;
   ExprNode valueExpr = null;
   CommandTagAttribute attr = null;
@@ -2655,7 +2677,8 @@ private LetNode LetStmt() :
  */
 private IfNode IfStmt() :
 {
-  Token tagBegin, tagEnd;
+  Token tagBegin;
+  Token tagEnd;
   Token elseTag;
   ExprNode ifExpr;
   List<StandaloneNode> templateBlock;
@@ -2725,7 +2748,8 @@ private IfNode IfStmt() :
  */
 private SwitchNode SwitchStmt() :
 {
-  Token tagBegin, tagEnd;
+  Token tagBegin;
+  Token tagEnd;
   Token defaultTag;
   ExprNode switchExpr;
   ImmutableList<ExprNode> caseExprs;
@@ -2793,7 +2817,10 @@ private SwitchNode SwitchStmt() :
  */
 private ForeachNode ForeachStmt() :
 {
-  Token tagBegin, tagEnd, in, ifemptyTag;
+  Token tagBegin;
+  Token tagEnd;
+  Token in;
+  Token ifemptyTag;
   VarRefNode var = null;
   ExprNode expr = null;
   List<StandaloneNode> templateBlock;
@@ -2851,7 +2878,9 @@ private ForeachNode ForeachStmt() :
  */
 private ForNode ForStmt() :
 {
-  Token tagBegin, tagEnd, in;
+  Token tagBegin;
+  Token tagEnd;
+  Token in;
   VarRefNode forVar = null;
   ExprNode rangeExpr;
   List<ExprNode> rangeArgs = ImmutableList.of();
@@ -2910,7 +2939,9 @@ private ForNode ForStmt() :
  */
 private CallNode CallStmt() :
 {
-  Token tagBegin, tagEnd, callClose;
+  Token tagBegin;
+  Token tagEnd;
+  Token callClose;
   Identifier calleeName = null;
   List<CommandTagAttribute> attributes = ImmutableList.of();
   List<CallParamNode> params = ImmutableList.of();
@@ -3019,7 +3050,8 @@ private List<CallParamNode> CallParams() :
  */
 private CallParamNode CallParam() :
 {
-  Token tagBegin, tagEnd;
+  Token tagBegin;
+  Token tagEnd;
   Identifier key;
   ExprNode valueExpr = null;
   CommandTagAttribute attr = null;
@@ -3199,7 +3231,8 @@ private ExprNode Expr() :
  */
 private ExprNode PrecExpr1() :
 {
-  ExprNode expr1, expr2;
+  ExprNode expr1;
+  ExprNode expr2;
 }
 {
   { ExprNode expr; }
@@ -3433,8 +3466,12 @@ private ExprNode PrecExpr8() :
  */
 private ExprNode PrecExpr9() :
 {
-  ExprNode expr, keyExpr;
-  Token ident, open, close, op;
+  ExprNode expr;
+  ExprNode keyExpr;
+  Token ident;
+  Token open;
+  Token close;
+  Token op;
 }
 {
   expr = Primary()
@@ -3550,7 +3587,9 @@ private VarRefNode VarRef() :
 private ExprNode GlobalOrFunction() :
 {
   Identifier ident;
-  Token openParen = null, closeParen = null, paramName;
+  Token openParen = null;
+  Token closeParen = null;
+  Token paramName;
   ExprNode first, expr;
   List<ExprNode> params = new ArrayList<ExprNode>();
   LinkedHashSet<String> paramNames;
@@ -3647,7 +3686,8 @@ private ExprNode GlobalOrFunction() :
  */
 private ExprNode CollectionLiteral() :
 {
-  Token begin, end;
+  Token begin;
+  Token end;
   ExprNode itemExpr;
   List<ExprNode> items = ImmutableList.of();
 }
@@ -3796,7 +3836,8 @@ private PrimitiveNode Primitive() :
  */
 private Identifier Identifier() :
 {
-  Token first, next = null;
+  Token first;
+  Token next = null;
   StringBuilder sb = null;  // lazily allocated
 }
 {
@@ -3885,9 +3926,7 @@ private TypeNode TypeExpr() :
     }
   )*
 
-  {
-    return members == null ? first : UnionTypeNode.create(members);
-  }
+  { return members == null ? first : UnionTypeNode.create(members); }
 }
 
 
@@ -3915,7 +3954,8 @@ private TypeNode PrimaryType() :
 private TypeNode RecordType() :
 {
   List<RecordTypeNode.Property> properties = ImmutableList.of();
-  Token open, close;
+  Token open;
+  Token close;
   RecordTypeNode.Property prop;
 }
 {
@@ -3927,6 +3967,7 @@ private TypeNode RecordType() :
       properties = new ArrayList<RecordTypeNode.Property>();
       properties.add(prop);
     }
+
     (
       <T_COMMA>
       prop = RecordField()
@@ -3934,7 +3975,6 @@ private TypeNode RecordType() :
         properties.add(prop);
       }
     )*
-
   )?
 
   close = <T_RBRACKET>
@@ -3956,9 +3996,7 @@ private RecordTypeNode.Property RecordField() :
   <T_COLON>
   fieldType = TypeExpr()
 
-  {
-    return RecordTypeNode.Property.create(createSrcLoc(fieldName), fieldName.image, fieldType);
-  }
+  { return RecordTypeNode.Property.create(createSrcLoc(fieldName), fieldName.image, fieldType); }
 }
 
 
@@ -3969,7 +4007,9 @@ private RecordTypeNode.Property RecordField() :
  */
 private TypeNode NamedType() :
 {
-  Token first, open, close;
+  Token first;
+  Token open;
+  Token close;
   Token next = null;
   String ident;
   SourceLocation fullLocation;
@@ -4014,12 +4054,7 @@ private TypeNode NamedType() :
       )*
     ]
     close = <T_RANGLE>
-    {
-      return GenericTypeNode.create(
-          fullLocation.extend(createSrcLoc(close)),
-          ident,
-          genericArgs);
-    }
+    { return GenericTypeNode.create(fullLocation.extend(createSrcLoc(close)), ident, genericArgs); }
   ]
   {
     return NamedTypeNode.create(fullLocation, ident);
