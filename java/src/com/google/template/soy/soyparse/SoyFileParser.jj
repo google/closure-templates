@@ -194,12 +194,10 @@ import javax.annotation.Nullable;
  *
  * 5. Template:
  *    + Each template must be immediately preceded by a SoyDoc block.
- *    + The 'template' tag and the '/template' tag much each appear on its own line(s) and start
+ *    + The {template} tag and the {/template} tag must each appear on its own line(s) and start
  *      at the start of a line.
- *    + The template content is parsed by TemplateParser.jj.
  *    Examples:
  *    /**
- *     * New style.
  *     * &#64;param boo Something scary.
  *     * &#64;param? goo Something slimy (optional).
  *     *&#47;
@@ -215,10 +213,10 @@ import javax.annotation.Nullable;
  *    + The file must end with a newline.
  *
  * Template contents are parsed as follows:
+ *
  * Header:
  *
  * 1. Comments:
- *    + Comments are only allowed outside of Soy tags.
  *    + Standard "//" for a rest-of-line comment. Must appear at start of line or after a space.
  *    + Standard slash-star (/*) ... star-slash (*&#47;) for a block comment.
  *    + Doc comments are not allowed, except when attached to a valid declaration.
@@ -227,7 +225,7 @@ import javax.annotation.Nullable;
  *    + Soy tag with command name "@param" and command text "key: type".
  *    + Optional desc string is written as a block doc comment, which either must
  *      precede the param tag, or must start on the same line as the end of the '@param' tag.
- *    + Examples:
+ *    Examples:
  *    {@param foo: bool}
  *    {@param foo: list<int>}  /** A list of numbers. *&#47;
  *    {@param? foo:
@@ -240,7 +238,7 @@ import javax.annotation.Nullable;
  *    + Soy tag with command name "@inject" and command text "key: type".
  *    + Optional desc string is written as a block doc comment, which either must
  *      precede the param tag, or must start on the same line as the end of the '@inject' tag.
- *    + Examples:
+ *    Examples:
  *    {@inject foo: bool}
  *    {@inject foo: list<int>}  /** A list of numbers. *&#47;
  *    {@inject? foo:
@@ -257,8 +255,6 @@ import javax.annotation.Nullable;
  *    + If there is a command name, it must come immediately after the opening delimiter.
  *    + The command name must be followed by either the closing delimiter (if the command does not
  *      take any command text) or a whitespace (if the command takes command text).
- *    + It is an error to provide command text when it's not applicable, and vice versa.
- *    + This parser does not parse command text (that will be separate).
  *    Examples:
  *    {print $boo}   // explicit 'print' command
  *    {$boo.foo}   // implicit 'print' command
@@ -277,13 +273,13 @@ import javax.annotation.Nullable;
  *      {literal}...{/literal}
  *
  * 3. Msg blocks:
- *    + A block between 'msg' and '/msg' tags represents a message for translation.
- *    + It is an error to nest 'msg' blocks.
- *    + Within a 'msg' block, the parsing of Soy tags is the same. The only difference is that we
+ *    + A block between {msg} and {/msg} tags represents a message for translation.
+ *    + It is an error to nest {msg} blocks.
+ *    + Within a {msg} block, the parsing of Soy tags is the same. The only difference is that we
  *      also recognize "&lt;" and "&gt;" as opening and closing an HTML tag. This is because each
  *      HTML tag as a whole needs to be turned into a single placeholder in the message.
- *    + A 'msg' block may have a 'plural' or 'select' block as its only content.
- *    + A 'msg' block may be followed by optional additional 'fallbackmsg' blocks.
+ *    + A {msg} block may have a {plural} or {select} block as its only content.
+ *    + A {msg} block may be followed by one optional additional {fallbackmsg} block.
  *    Example:
  *    {msg desc="Event title."}
  *      Join event &lt;a href="{$event.url}"&gt;{$event.title}&lt;/a&gt;.
@@ -1138,15 +1134,15 @@ TOKEN_MGR_DECLS: {
 /**
  * Matches the whole input if it is a valid Soy file.
  *
- * SoyFile -> [ DelpackageTag ] [ NamespaceTag ] ( AliasTag )* ( Template )* EOF
+ * SoyFile -> [ DelPackage ] Namespace ( Alias )* ( Template )+ EOF
  */
 private SoyFileNode SoyFile() :
 {
-  TemplateNode template;
-  NamespaceDeclaration namespace;
   Identifier delpackageName = null;
+  NamespaceDeclaration namespace;
+  AliasDeclaration alias;
   List<AliasDeclaration> aliases = ImmutableList.of();
-  AliasDeclaration alias = null;
+  TemplateNode template;
 }
 {
   [ delpackageName = DelPackage() ]
@@ -1185,7 +1181,8 @@ private SoyFileNode SoyFile() :
 
   (
     template = Template(soyFileHeaderInfo)
-    { if (template != null) {
+    {
+      if (template != null) {
         // it will be null if a parsing error occurred
         sfn.addChild(template);
       }
@@ -1200,14 +1197,14 @@ private SoyFileNode SoyFile() :
 
 /**
  * Matches an {alias ...} declaration.
+ *
+ * Alias -> AliasOpen Identifier [ "as" Identifier ] CmdEnd
  */
 private AliasDeclaration Alias() :
 {
-  Token open;
-  Token close;
+  Token open, close;
+  Identifier namespace, alias = null;
   Token as = null;
-  Identifier namespace;
-  Identifier alias = null;
 }
 {
   (
@@ -1237,13 +1234,13 @@ private AliasDeclaration Alias() :
 
 /**
  * Matches a {namespace ...} declaration.
+ *
+ * Namespace -> NamespaceOpen DottedIdent Attributes CmdEnd
  */
 private NamespaceDeclaration Namespace() :
 {
-  Token open;
-  Token close;
+  Token open, close;
   Identifier name;
-  CommandTagAttribute attr;
   List<CommandTagAttribute> attributes;
 }
 {
@@ -1251,9 +1248,7 @@ private NamespaceDeclaration Namespace() :
   name = DottedIdent()
   attributes = Attributes()
   close = <CMD_END>
-  {
-    return new NamespaceDeclaration(name, attributes, errorReporter);
-  }
+  { return new NamespaceDeclaration(name, attributes, errorReporter); }
 }
 
 
@@ -1295,9 +1290,7 @@ private List<CommandTagAttribute> Attributes() :
  */
 private CommandTagAttribute Attribute() :
 {
-  Token name;
-  Token value;
-  Token attrTag;
+  Token name, value, attrTag;
   String attrName;
   ExprNode expr;
 }
@@ -1345,8 +1338,7 @@ private CommandTagAttribute Attribute() :
  */
 private CommandTagAttribute ExprAttribute() :
 {
-  Token name;
-  Token value;
+  Token name, value;
 }
 {
   name = <IDENT>
@@ -1361,6 +1353,8 @@ private CommandTagAttribute ExprAttribute() :
 
 /**
  * Matches a {delpackage ...} declaration.
+ *
+ * DelPackage -> DelpackageOpen DottedIdent CmdEnd
  */
 private Identifier DelPackage() :
 {
@@ -1491,8 +1485,7 @@ private TemplateNode TemplateHelper(TemplateNodeBuilder builder, Token open, boo
  */
 private Identifier TemplateName() :
 {
-  Token dot;
-  Token name;
+  Token dot, name;
   Identifier ident;
 }
 {
@@ -1508,8 +1501,9 @@ private Identifier TemplateName() :
   { return ident; }
 }
 
+
 /**
- * DottedIdent -> <NAME> (<CMD_DOT> <NAME>)*
+ * DottedIdent -> Name ( CmdDot Name )*
  *
  * TODO(user): Merge with Identifier() - the two are identical save for lexical states
  * (IN_CMD_TAG_STRUCTURED vs EXPR)
@@ -1517,9 +1511,7 @@ private Identifier TemplateName() :
 private Identifier DottedIdent() :
 {
   StringBuilder sb = null;
-  Token dot;
-  Token name;
-  Token next = null;
+  Token dot, name, next = null;
 }
 {
   name = <NAME>
@@ -1772,8 +1764,7 @@ private RawTextNode TemplateHeader(TemplateNodeBuilder templateBuilder) :
     )
   )*
 
-  {
-    templateBuilder.addParams(params);
+  { templateBuilder.addParams(params);
     return whitespace;
   }
 }
@@ -1787,10 +1778,7 @@ private RawTextNode TemplateHeader(TemplateNodeBuilder templateBuilder) :
  */
 private HeaderParam ParamDecl(@Nullable String desc) :
 {
-  Token ws;
-  Token tagBegin;
-  Token name;
-  Token tagEnd;
+  Token ws, tagBegin, name, tagEnd;
   TypeNode paramTypeNode = null;
   SoyType paramType = ErrorType.getInstance();
   String cmdText;
@@ -1971,8 +1959,7 @@ private MsgFallbackGroupNode MsgStmt() :
 {
   String cmdText;
   List<StandaloneNode> templateBlockForMsg;
-  Token tagBegin;
-  Token tagEnd;
+  Token tagBegin, tagEnd;
   MsgNode msgNode;
 }
 {
@@ -2120,8 +2107,7 @@ private List<StandaloneNode> TemplateBlockForMsg() :
  */
 private MsgPluralNode MsgPlural() :
 {
-  Token tagBegin;
-  Token tagEnd;
+  Token tagBegin, tagEnd;
   Token defaultTag;
   ExprNode pluralExpr;
   ExprNode caseExpr;
@@ -2249,8 +2235,7 @@ private MsgPluralNode MsgPlural() :
  */
 private MsgSelectNode MsgSelect() :
 {
-  Token tagBegin;
-  Token tagEnd;
+  Token tagBegin, tagEnd;
   Token defaultTag;
   ExprNode selectExpr;
   ExprNode caseExpr;
@@ -2366,54 +2351,11 @@ private MsgHtmlTagNode MsgHtmlTag() :
 
 
 /**
- * PrintTag -> ( <CMD_BEGIN_PRINT> | <CMD_BEGIN_IMPLICIT_PRINT> ) CmdTextParts() <CMD_END>
- */
-private SourceItemInfo<List<String>> PrintTag() :
-{
-  Token tagBegin;
-  Token tagEnd;
-  List<String> cmdTextParts;
-  List<String> printTagParts = new ArrayList<String>();
-}
-{
-
-  (
-    tagBegin = <CMD_BEGIN_PRINT>  { printTagParts.add("print"); }
-  | tagBegin = <CMD_BEGIN_IMPLICIT_PRINT>  // Implicit print
-  )
-  cmdTextParts = CmdTextParts()
-  { printTagParts.addAll(cmdTextParts); }
-  tagEnd = <CMD_END>
-
-  {
-    if (printTagParts.isEmpty()) {
-      // This error is reported in the command, to catch both {print} and {}.
-    } else if (printTagParts.get(0).startsWith("/")) {
-      errorReporter.report(createSrcLoc(tagBegin, tagEnd), UNEXPECTED_CLOSING_TAG,
-          "{" + Joiner.on("").join(printTagParts) + "}");
-    } else if (printTagParts.get(0).startsWith("@")) {
-      errorReporter.report(createSrcLoc(tagBegin, tagEnd), INVALID_DECLARATION,
-          "{" + printTagParts.get(0));
-    } else if (printTagParts.get(0).startsWith("{")) {
-      errorReporter.report(createSrcLoc(tagBegin, tagEnd), FOUND_DOUBLE_BRACE);
-    } else if (INVALID_PRINT_FILE_PREFIX_PATTERN.matcher(printTagParts.get(0)).matches()) {
-      errorReporter.report(createSrcLoc(tagBegin, tagEnd), INVALID_TEMPLATE_COMMAND,
-          "{" + printTagParts.get(0));
-    } else if (INVALID_PRINT_PREFIX_PATTERN.matcher(printTagParts.get(0)).matches()) {
-      errorReporter.report(createSrcLoc(tagBegin, tagEnd), INVALID_PRINT_PREFIX,
-          "{" + printTagParts.get(0));
-    }
-    return newSourceItemInfo(printTagParts, tagBegin, tagEnd);
-  }
-}
-
-/**
  * PrintStmt -> PrintTag
  */
 private PrintNode PrintStmt() :
 {
-  Token tagBegin;
-  Token tagEnd;
+  Token tagBegin, tagEnd;
   List<String> cmdTextParts;
   boolean isImplicit;
 }
@@ -2529,8 +2471,7 @@ private PrintNode PrintStmt() :
  */
 private XidNode XidStmt() :
 {
-  Token tagBegin;
-  Token tok;
+  Token tagBegin, tok;
   Token tagEnd = null;
   Token first = null;
   StringBuilder value = null;
@@ -2569,10 +2510,8 @@ private XidNode XidStmt() :
     return null;
   }
 
-  {
-    String xid = (value == null) ? first.image : value.toString();
-    return new XidNode(nodeIdGen.genId(), createSrcLoc(tagBegin, tagEnd), xid);
-  }
+  { String xid = (value == null) ? first.image : value.toString();
+    return new XidNode(nodeIdGen.genId(), createSrcLoc(tagBegin, tagEnd), xid); }
 }
 
 
@@ -2581,8 +2520,7 @@ private XidNode XidStmt() :
  */
 private CssNode CssStmt() :
 {
-  Token tagBegin;
-  Token tagEnd;
+  Token tagBegin, tagEnd;
   String cmdText;
 }
 {
@@ -2602,8 +2540,7 @@ private CssNode CssStmt() :
  */
 private LetNode LetStmt() :
 {
-  Token tagBegin;
-  Token tagEnd;
+  Token tagBegin, tagEnd;
   VarRefNode letVar = null;
   ExprNode valueExpr = null;
   CommandTagAttribute attr = null;
@@ -2677,8 +2614,7 @@ private LetNode LetStmt() :
  */
 private IfNode IfStmt() :
 {
-  Token tagBegin;
-  Token tagEnd;
+  Token tagBegin, tagEnd;
   Token elseTag;
   ExprNode ifExpr;
   List<StandaloneNode> templateBlock;
@@ -2748,8 +2684,7 @@ private IfNode IfStmt() :
  */
 private SwitchNode SwitchStmt() :
 {
-  Token tagBegin;
-  Token tagEnd;
+  Token tagBegin, tagEnd;
   Token defaultTag;
   ExprNode switchExpr;
   ImmutableList<ExprNode> caseExprs;
@@ -2817,10 +2752,7 @@ private SwitchNode SwitchStmt() :
  */
 private ForeachNode ForeachStmt() :
 {
-  Token tagBegin;
-  Token tagEnd;
-  Token in;
-  Token ifemptyTag;
+  Token tagBegin, tagEnd, in, ifemptyTag;
   VarRefNode var = null;
   ExprNode expr = null;
   List<StandaloneNode> templateBlock;
@@ -2878,9 +2810,7 @@ private ForeachNode ForeachStmt() :
  */
 private ForNode ForStmt() :
 {
-  Token tagBegin;
-  Token tagEnd;
-  Token in;
+  Token tagBegin, tagEnd, in;
   VarRefNode forVar = null;
   ExprNode rangeExpr;
   List<ExprNode> rangeArgs = ImmutableList.of();
@@ -2939,9 +2869,7 @@ private ForNode ForStmt() :
  */
 private CallNode CallStmt() :
 {
-  Token tagBegin;
-  Token tagEnd;
-  Token callClose;
+  Token tagBegin, tagEnd, callClose;
   Identifier calleeName = null;
   List<CommandTagAttribute> attributes = ImmutableList.of();
   List<CallParamNode> params = ImmutableList.of();
@@ -3050,8 +2978,7 @@ private List<CallParamNode> CallParams() :
  */
 private CallParamNode CallParam() :
 {
-  Token tagBegin;
-  Token tagEnd;
+  Token tagBegin, tagEnd;
   Identifier key;
   ExprNode valueExpr = null;
   CommandTagAttribute attr = null;
@@ -3231,8 +3158,7 @@ private ExprNode Expr() :
  */
 private ExprNode PrecExpr1() :
 {
-  ExprNode expr1;
-  ExprNode expr2;
+  ExprNode expr1, expr2;
 }
 {
   { ExprNode expr; }
@@ -3466,12 +3392,8 @@ private ExprNode PrecExpr8() :
  */
 private ExprNode PrecExpr9() :
 {
-  ExprNode expr;
-  ExprNode keyExpr;
-  Token ident;
-  Token open;
-  Token close;
-  Token op;
+  ExprNode expr, keyExpr;
+  Token ident, open, close, op;
 }
 {
   expr = Primary()
@@ -3587,9 +3509,7 @@ private VarRefNode VarRef() :
 private ExprNode GlobalOrFunction() :
 {
   Identifier ident;
-  Token openParen = null;
-  Token closeParen = null;
-  Token paramName;
+  Token openParen = null, closeParen = null, paramName;
   ExprNode first, expr;
   List<ExprNode> params = new ArrayList<ExprNode>();
   LinkedHashSet<String> paramNames;
@@ -3686,8 +3606,7 @@ private ExprNode GlobalOrFunction() :
  */
 private ExprNode CollectionLiteral() :
 {
-  Token begin;
-  Token end;
+  Token begin, end;
   ExprNode itemExpr;
   List<ExprNode> items = ImmutableList.of();
 }
@@ -3836,8 +3755,7 @@ private PrimitiveNode Primitive() :
  */
 private Identifier Identifier() :
 {
-  Token first;
-  Token next = null;
+  Token first, next = null;
   StringBuilder sb = null;  // lazily allocated
 }
 {
@@ -3926,7 +3844,9 @@ private TypeNode TypeExpr() :
     }
   )*
 
-  { return members == null ? first : UnionTypeNode.create(members); }
+  {
+    return members == null ? first : UnionTypeNode.create(members);
+  }
 }
 
 
@@ -3954,8 +3874,7 @@ private TypeNode PrimaryType() :
 private TypeNode RecordType() :
 {
   List<RecordTypeNode.Property> properties = ImmutableList.of();
-  Token open;
-  Token close;
+  Token open, close;
   RecordTypeNode.Property prop;
 }
 {
@@ -3967,7 +3886,6 @@ private TypeNode RecordType() :
       properties = new ArrayList<RecordTypeNode.Property>();
       properties.add(prop);
     }
-
     (
       <T_COMMA>
       prop = RecordField()
@@ -3975,6 +3893,7 @@ private TypeNode RecordType() :
         properties.add(prop);
       }
     )*
+
   )?
 
   close = <T_RBRACKET>
@@ -3996,7 +3915,9 @@ private RecordTypeNode.Property RecordField() :
   <T_COLON>
   fieldType = TypeExpr()
 
-  { return RecordTypeNode.Property.create(createSrcLoc(fieldName), fieldName.image, fieldType); }
+  {
+    return RecordTypeNode.Property.create(createSrcLoc(fieldName), fieldName.image, fieldType);
+  }
 }
 
 
@@ -4007,9 +3928,7 @@ private RecordTypeNode.Property RecordField() :
  */
 private TypeNode NamedType() :
 {
-  Token first;
-  Token open;
-  Token close;
+  Token first, open, close;
   Token next = null;
   String ident;
   SourceLocation fullLocation;
@@ -4054,7 +3973,12 @@ private TypeNode NamedType() :
       )*
     ]
     close = <T_RANGLE>
-    { return GenericTypeNode.create(fullLocation.extend(createSrcLoc(close)), ident, genericArgs); }
+    {
+      return GenericTypeNode.create(
+          fullLocation.extend(createSrcLoc(close)),
+          ident,
+          genericArgs);
+    }
   ]
   {
     return NamedTypeNode.create(fullLocation, ident);
