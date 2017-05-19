@@ -35,7 +35,7 @@ public final class PyFunctionExprBuilderTest {
   public void testSingleNumberArgument() {
     PyFunctionExprBuilder func = new PyFunctionExprBuilder("some_func");
     func.addArg(600851475143L);
-    assertEquals(func.build(), "some_func(600851475143)");
+    assertEquals("some_func(600851475143)", func.build());
   }
 
   @Test
@@ -77,21 +77,21 @@ public final class PyFunctionExprBuilderTest {
     PyFunctionExprBuilder func = new PyFunctionExprBuilder("some_func");
     func.addArg(nestedFunc.asPyExpr());
 
-    assertEquals(func.build(), "some_func(nested_func(10))");
+    assertEquals("some_func(nested_func(10))", func.build());
   }
 
   @Test
   public void testSingleKeyedStringArgument() {
     PyFunctionExprBuilder func = new PyFunctionExprBuilder("some_func");
     func.addKwarg("foo", "bar");
-    assertEquals(func.build(), "some_func(foo='bar')");
+    assertEquals("some_func(foo='bar')", func.build());
   }
 
   @Test
   public void testSingleKeyedIntArgument() {
     PyFunctionExprBuilder func = new PyFunctionExprBuilder("some_func");
     func.addKwarg("foo", 10);
-    assertEquals(func.build(), "some_func(foo=10)");
+    assertEquals("some_func(foo=10)", func.build());
   }
 
   @Test
@@ -102,7 +102,7 @@ public final class PyFunctionExprBuilderTest {
     PyFunctionExprBuilder func = new PyFunctionExprBuilder("some_func");
     func.addKwarg("foo", nestedFunc.asPyExpr());
 
-    assertEquals(func.build(), "some_func(foo=nested_func(10))");
+    assertEquals("some_func(foo=nested_func(10))", func.build());
   }
 
   @Test
@@ -112,7 +112,7 @@ public final class PyFunctionExprBuilderTest {
     func.addArg("foobar");
     func.addKwarg("foo1", 10);
     func.addKwarg("foo", "bar");
-    assertEquals(func.build(), "some_func(42, 'foobar', foo1=10, foo='bar')");
+    assertEquals("some_func(42, 'foobar', foo1=10, foo='bar')", func.build());
   }
 
   @Test
