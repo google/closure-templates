@@ -463,9 +463,12 @@ public final class SoyFileSet {
      * expressions. It generally improves performance and should only be disabled in integration
      * tests.
      *
+     * <p>This is public only because we need to set it in {@code SoyFileSetHelper}, that are
+     * necessary for integration tests. Normal users should not use this.
+     *
      * @return This builder.
      */
-    Builder disableOptimizer() {
+    public Builder disableOptimizer() {
       getGeneralOptions().disableOptimizer();
       return this;
     }
