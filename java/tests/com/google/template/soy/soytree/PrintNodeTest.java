@@ -18,10 +18,13 @@ package com.google.template.soy.soytree;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
+import static com.google.template.soy.soytree.SoyTreeUtils.getAllNodesOfType;
+import static com.google.template.soy.soytree.TemplateSubject.assertThatTemplateContent;
 
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.exprparse.SoyParsingContext;
+import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -37,61 +40,34 @@ public final class PrintNodeTest {
 
   @Test
   public void testPlaceholderMethods() throws SoySyntaxException {
-    PrintNode pn =
-        new PrintNode.Builder(0, true /* isImplicit */, SourceLocation.UNKNOWN)
-            .exprText("$boo")
-            .build(FAIL);
+    String template =
+        "{@param boo: ?}\n"
+            + "{$boo}\n" // 0
+            + "{$boo}\n" // 1
+            + "{$boo.foo}\n" // 2
+            + "{$boo.foo}\n" // 3
+            + "{$boo.foo |insertWordBreaks}\n" // 4
+            + "{$boo['moo']}\n" // 5
+            + "{$boo + $boo.foo}\n"; // 6
+
+    TemplateNode templateNode = assertThatTemplateContent(template).getTemplateNode();
+    List<PrintNode> printNodes = getAllNodesOfType(templateNode, PrintNode.class);
+
+    assertThat(printNodes).hasSize(7);
+
+    PrintNode pn = printNodes.get(0);
     assertThat(pn.genBasePhName()).isEqualTo("BOO");
-    assertThat(pn.genSamenessKey())
-        .isEqualTo(
-            new PrintNode.Builder(4, true /* isImplicit */, SourceLocation.UNKNOWN)
-                .exprText("$boo")
-                .build(FAIL)
-                .genSamenessKey());
-    assertThat(pn.genSamenessKey())
-        .isEqualTo(
-            new PrintNode.Builder(4, true /* isImplicit */, SourceLocation.UNKNOWN)
-                .exprText("  $boo  ")
-                .build(FAIL)
-                .genSamenessKey());
+    assertThat(pn.genSamenessKey()).isEqualTo(printNodes.get(1).genSamenessKey());
 
-    pn =
-        new PrintNode.Builder(0, true /* isImplicit */, SourceLocation.UNKNOWN)
-            .exprText("$boo.foo")
-            .build(FAIL);
+    pn = printNodes.get(2);
     assertThat(pn.genBasePhName()).isEqualTo("FOO");
-    assertThat(pn.genSamenessKey())
-        .isNotEqualTo(
-            new PrintNode.Builder(4, true /* isImplicit */, SourceLocation.UNKNOWN)
-                .exprText("$boo")
-                .build(FAIL)
-                .genSamenessKey());
+    assertThat(pn.genSamenessKey()).isEqualTo(printNodes.get(3).genSamenessKey());
+    assertThat(pn.genSamenessKey()).isNotEqualTo(printNodes.get(4).genSamenessKey());
 
-    pn =
-        new PrintNode.Builder(0, true /* isImplicit */, SourceLocation.UNKNOWN)
-            .exprText("$boo.foo")
-            .build(FAIL);
-    pn.addChild(
-        new PrintDirectiveNode.Builder(0, "|insertWordBreaks", "8", SourceLocation.UNKNOWN)
-            .build(FAIL));
-    assertThat(pn.genBasePhName()).isEqualTo("FOO");
-    assertThat(pn.genSamenessKey())
-        .isNotEqualTo(
-            new PrintNode.Builder(4, true /* isImplicit */, SourceLocation.UNKNOWN)
-                .exprText("$boo.foo")
-                .build(FAIL)
-                .genSamenessKey());
-
-    pn =
-        new PrintNode.Builder(0, true /* isImplicit */, SourceLocation.UNKNOWN)
-            .exprText("$boo['foo']")
-            .build(FAIL);
+    pn = printNodes.get(5);
     assertWithMessage("Fallback value expected.").that(pn.genBasePhName()).isEqualTo("XXX");
 
-    pn =
-        new PrintNode.Builder(0, true /* isImplicit */, SourceLocation.UNKNOWN)
-            .exprText("$boo + $foo")
-            .build(FAIL);
+    pn = printNodes.get(6);
     assertWithMessage("Fallback value expected.").that(pn.genBasePhName()).isEqualTo("XXX");
   }
 
