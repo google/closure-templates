@@ -101,45 +101,39 @@ public final class TemplateParserTest {
     assertInvalidTemplate("{ sp }", "Unbound global 'sp'");
 
     TemplateSubject.assertThatTemplateContent("{{sp}}")
-        .causesError("Soy {{command}} syntax is no longer supported.  Use single braces.");
+        .causesError("Soy {{command}} syntax is no longer supported. Use single braces.");
     TemplateSubject.assertThatTemplateContent("{{print { }}")
-        .causesError("Soy {{command}} syntax is no longer supported.  Use single braces.");
+        .causesError("Soy {{command}} syntax is no longer supported. Use single braces.");
     TemplateSubject.assertThatTemplateContent("a {} b")
-        .causesError("Found 'print' command with empty command text.");
+        .causesError(
+            "parse error at '}': expected null, true, false, number, string, -, not, [, (, "
+                + "identifier, $ij, or variable");
     TemplateSubject.assertThatTemplateContent("{msg desc=\"\"}a {} b{/msg}")
-        .causesError("Found 'print' command with empty command text.");
+        .causesError(
+            "parse error at '}': expected null, true, false, number, string, -, not, [, (, "
+                + "identifier, $ij, or variable");
     TemplateSubject.assertThatTemplateContent("{msg desc=\"\"}<a> {} </a>{/msg}")
-        .causesError("Found 'print' command with empty command text.");
+        .causesError(
+            "parse error at '}': expected null, true, false, number, string, -, not, [, (, "
+                + "identifier, $ij, or variable");
     TemplateSubject.assertThatTemplateContent("{msg desc=\"\"}<a href=\"{}\" />{/msg}")
-        .causesError("Found 'print' command with empty command text.");
+        .causesError(
+            "parse error at '}': expected null, true, false, number, string, -, not, [, (, "
+                + "identifier, $ij, or variable");
 
-    TemplateSubject.assertThatTemplateContent("{/blah}")
-        .causesError("Unexpected closing tag '{/blah}'.");
+    TemplateSubject.assertThatTemplateContent("{/blah}").causesError("Unexpected closing tag.");
 
     TemplateSubject.assertThatTemplateContent("}")
         .causesError("Unexpected '}'; did you mean '{rb}'?");
 
     TemplateSubject.assertThatTemplateContent("{@blah}")
-        .causesError("Invalid declaration '{@blah'.");
+        .causesError(
+            "parse error at '@': expected null, true, false, number, string, -, not, "
+                + "[, (, identifier, $ij, or variable");
     TemplateSubject.assertThatTemplateContent("{sp ace}")
-        .causesError("Command '{sp ace' cannot have arguments.");
+        .causesError("parse error at '}': expected attribute value");
     TemplateSubject.assertThatTemplateContent("{literal a=b}")
-        .causesError("Command '{literal a=b' cannot have arguments.");
-    TemplateSubject.assertThatTemplateContent("{else(a)}")
-        .causesError("Command '{else(a)' cannot have arguments.");
-
-    TemplateSubject.assertThatTemplateContent("{template}")
-        .causesError("Command '{template' cannot appear in templates.");
-    TemplateSubject.assertThatTemplateContent("{deltemplate a=b}")
-        .causesError("Command '{deltemplate a=b' cannot appear in templates.");
-    TemplateSubject.assertThatTemplateContent("{namespace()}")
-        .causesError("Command '{namespace()' cannot appear in templates.");
-
-    TemplateSubject.assertThatTemplateContent("{}")
-        .causesError("Found 'print' command with empty command text.");
-
-    TemplateSubject.assertThatTemplateContent("{print }")
-        .causesError("Found 'print' command with empty command text.");
+        .causesError("parse error at '=': expected attribute value");
 
     assertValidTemplate("{@param blah : ?}\n{if $blah == 'phname = \"foo\"'}{/if}");
     assertInvalidTemplate("{blah phname=\"\"}");
@@ -451,10 +445,12 @@ public final class TemplateParserTest {
             + "  {param foo kind=\"html\"}blah blah{/param}\n"
             + "{/call}");
 
-    TemplateSubject.assertThatTemplateContent("{bar ' baz}")
-        .causesError("Invalid string literal found in Soy command.");
-    TemplateSubject.assertThatTemplateContent("{bar \" baz}")
-        .causesError("Invalid string literal found in Soy command.");
+    TemplateSubject.assertThatTemplateContent("{'unfinished}")
+        .causesError(
+            "parse error at ''': expected null, true, false, number, string, -, not, "
+                + "[, (, identifier, $ij, or variable");
+    TemplateSubject.assertThatTemplateContent("{\"unfinished}")
+        .causesError("Found use of double quotes, Soy strings use single quotes.");
 
     assertValidTemplate("{call aaa.bbb.ccc data=\"all\" /}");
     assertValidTemplate(
@@ -490,13 +486,11 @@ public final class TemplateParserTest {
     assertValidTemplate("{let $foo kind=\"html\"}Hello{/let}\n");
 
     TemplateSubject.assertThatTemplateContent("{{let a: b}}")
-        .causesError("Soy {{command}} syntax is no longer supported.  Use single braces.");
+        .causesError("Soy {{command}} syntax is no longer supported. Use single braces.");
 
     // This is parsed as a print command, which shouldn't end in /}
     TemplateSubject.assertThatTemplateContent("{{let a: b /}}")
-        .causesError(
-            "parse error at '/}': expected }, <CMD_TEXT_DIRECTIVE_NAME>, <CMD_TEXT_PHNAME_ATTR>, "
-                + "or <CMD_TEXT_ARBITRARY_TOKEN>");
+        .causesError("Soy {{command}} syntax is no longer supported. Use single braces.");
     assertInvalidTemplate("{{let a: b /}}");
 
     assertInvalidTemplate("{namespace}");
@@ -1957,8 +1951,8 @@ public final class TemplateParserTest {
         errorReporter);
     List<String> errors = errorReporter.getErrorMessages();
     assertThat(errors).hasSize(4);
-    assertThat(errors.get(0)).isEqualTo("parse error at '1': expected identifier, or .");
-    assertThat(errors.get(1)).isEqualTo("parse error at '4': expected identifier, or .");
+    assertThat(errors.get(0)).isEqualTo("parse error at '1': expected identifier or .");
+    assertThat(errors.get(1)).isEqualTo("parse error at '4': expected identifier or .");
     assertThat(errors.get(2)).isEqualTo("parse error at 'foo': expected variable");
     assertThat(errors.get(3)).isEqualTo("parse error at '/}': expected variable");
   }

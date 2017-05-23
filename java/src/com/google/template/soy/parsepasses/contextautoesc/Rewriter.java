@@ -20,7 +20,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
-import com.google.template.soy.exprparse.SoyParsingContext;
+import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
@@ -100,12 +100,11 @@ final class Rewriter {
       ImmutableList<EscapingMode> escapingModes = inferences.getEscapingModesForNode(printNode);
       for (EscapingMode escapingMode : escapingModes) {
         PrintDirectiveNode newPrintDirective =
-            new PrintDirectiveNode.Builder(
-                    inferences.getIdGenerator().genId(),
-                    escapingMode.directiveName,
-                    "",
-                    printNode.getSourceLocation())
-                .build(SoyParsingContext.exploding());
+            new PrintDirectiveNode(
+                inferences.getIdGenerator().genId(),
+                printNode.getSourceLocation(),
+                escapingMode.directiveName,
+                ImmutableList.<ExprNode>of());
 
         // Figure out where to put the new directive.
         // Normally they go at the end to ensure that the value printed is of the appropriate type,

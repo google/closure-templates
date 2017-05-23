@@ -301,25 +301,27 @@ public class BaseUtils {
       normalizedTokensBuilder.add(maybeQuoteForParseError(t));
     }
     expectedTokens = normalizedTokensBuilder.build().asList();
-    String details;
+
+    StringBuilder details = new StringBuilder();
     int numExpectedTokens = expectedTokens.size();
     if (numExpectedTokens != 0) {
-      StringBuilder builder = new StringBuilder(": expected ");
+      details.append(": expected ");
       for (int i = 0; i < numExpectedTokens; i++) {
-        builder.append(expectedTokens.get(i));
-        if (i != numExpectedTokens - 1) {
-          builder.append(", ");
+        details.append(expectedTokens.get(i));
+        if (i < numExpectedTokens - 2) {
+          details.append(", ");
         }
         if (i == numExpectedTokens - 2) {
-          builder.append("or ");
+          if (numExpectedTokens > 2) {
+            details.append(',');
+          }
+          details.append(" or ");
         }
       }
-      details = builder.toString();
-    } else {
-      details = "";
     }
+
     return String.format(
-        "parse error at '%s'%s", escapeWhitespaceForErrorPrinting(errorToken), details);
+        "parse error at '%s'%s", escapeWhitespaceForErrorPrinting(errorToken), details.toString());
   }
 
   private static String maybeQuoteForParseError(String token) {

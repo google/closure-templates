@@ -19,11 +19,10 @@ package com.google.template.soy.parsepasses.contextautoesc;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.coredirectives.EscapeHtmlDirective;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.exprparse.SoyParsingContext;
+import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.AutoescapeMode;
 import com.google.template.soy.soytree.PrintDirectiveNode;
@@ -114,9 +113,11 @@ final class PerformDeprecatedNonContextualAutoescapeVisitor extends AbstractSoyN
     // ideally should migrate off of deprecated-noncontextual autoescape.
     if (autoescapeMode == AutoescapeMode.NONCONTEXTUAL && !shouldCancelAutoescape) {
       PrintDirectiveNode newEscapeHtmlDirectiveNode =
-          new PrintDirectiveNode.Builder(
-                  nodeIdGen.genId(), EscapeHtmlDirective.NAME, "", SourceLocation.UNKNOWN)
-              .build(SoyParsingContext.exploding()); // Known valid
+          new PrintDirectiveNode(
+              nodeIdGen.genId(),
+              node.getSourceLocation(),
+              EscapeHtmlDirective.NAME,
+              ImmutableList.<ExprNode>of());
       node.addChild(0, newEscapeHtmlDirectiveNode);
     }
   }

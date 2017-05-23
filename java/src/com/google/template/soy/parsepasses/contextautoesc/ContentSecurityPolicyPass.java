@@ -25,9 +25,8 @@ import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.Ordering;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
-import com.google.template.soy.exprparse.SoyParsingContext;
+import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
-import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.EscapingMode;
 import com.google.template.soy.soytree.HtmlContext;
@@ -456,16 +455,18 @@ public final class ContentSecurityPolicyPass {
   private static PrintNode makeInjectedCspNoncePrintNode(
       SourceLocation location, IdGenerator idGenerator, EscapingMode escapeMode) {
     PrintNode printNode =
-        new PrintNode.Builder(
-                idGenerator.genId(),
-                true, // Implicit.  {$ij.csp_nonce} not {print $ij.csp_nonce}
-                location)
-            .exprRoot(new ExprRootNode(makeReferenceToInjectedCspNonce(location)))
-            .build(SoyParsingContext.exploding());
+        new PrintNode(
+            idGenerator.genId(),
+            location,
+            true, // Implicit.  {$ij.csp_nonce} not {print $ij.csp_nonce}
+            makeReferenceToInjectedCspNonce(location),
+            null /* phname */,
+            ExplodingErrorReporter.get());
+
     // Add an escaping directive to ensure that malicious csp_nonce values don't introduce XSSs
     printNode.addChild(
-        new PrintDirectiveNode.Builder(idGenerator.genId(), escapeMode.directiveName, "", location)
-            .build(SoyParsingContext.exploding()));
+        new PrintDirectiveNode(
+            idGenerator.genId(), location, escapeMode.directiveName, ImmutableList.<ExprNode>of()));
     return printNode;
   }
 }

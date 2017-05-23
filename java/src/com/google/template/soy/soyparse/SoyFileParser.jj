@@ -49,8 +49,6 @@ import static com.google.template.soy.exprtree.Operator.createOperatorNode;
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
-import com.google.common.base.Predicates;
-import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.primitives.Ints;
@@ -143,7 +141,6 @@ import com.google.template.soy.types.primitive.UnknownType;
 import com.google.template.soy.types.primitive.NullType;
 import java.io.Reader;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -329,40 +326,19 @@ public class SoyFileParser {
     }
   };
 
-  /** Pattern for invalid implicit print prefixes (used to throw errors for invalid commands). */
-  private static final Pattern INVALID_PRINT_PREFIX_PATTERN = Pattern.compile(
-      // tokenImage contains token names for error messages. For literal tokens, it stores the token
-      // value as-is, wrapped in quotes. Use this to extract simple token names without duplication.
-      "^(" + Joiner.on("|").join(FluentIterable.from(Arrays.asList(tokenImage))
-              .filter(Predicates.containsPattern("^\"\\{[a-z]+\\}\"$"))
-              .transform(new RegexFromTokenImageFunction()))
-      + ")\\b.+");
-
-  /** Pattern for invalid implicit print prefixes (used to throw errors for invalid commands). */
-  private static final Pattern INVALID_PRINT_FILE_PREFIX_PATTERN = Pattern.compile(
-      "^(namespace|(del)?template|typedef|alias)\\b.*");
-
   private static final Joiner NO_SEP_JOINER = Joiner.on("");
 
   // Template errors:
-  private static final SoyErrorKind FOUND_DOUBLE_BRACE =
-      SoyErrorKind.of("Soy '{{command}}' syntax is no longer supported.  Use single braces.");
   private static final SoyErrorKind INVALID_ALIAS_NAME =
       SoyErrorKind.of("An alias must be a single identifier. Found ''{0}''.");
   private static final SoyErrorKind INVALID_CALLEE_NAME =
       SoyErrorKind.of("Invalid callee name ''{0}''.");
-  private static final SoyErrorKind INVALID_DECLARATION =
-      SoyErrorKind.of("Invalid declaration ''{0}''.");
   private static final SoyErrorKind INVALID_DELTEMPLATE_NAME =
       SoyErrorKind.of("Deltemplate ''{0}'' must have a fully qualified name.");
-  private static final SoyErrorKind INVALID_PRINT_PREFIX =
-      SoyErrorKind.of("Command ''{0}'' cannot have arguments.");
   private static final SoyErrorKind INVALID_PRINT_COMMAND_TEXT =
       SoyErrorKind.of("Invalid ''print'' command text \"{0}\" (check the directives).");
   private static final SoyErrorKind INVALID_RANGE_SPECIFICATION =
       SoyErrorKind.of("Invalid range specification.");
-  private static final SoyErrorKind INVALID_TEMPLATE_COMMAND =
-      SoyErrorKind.of("Command ''{0}'' cannot appear in templates.");
   private static final SoyErrorKind INVALID_TEMPLATE_NAME =
       SoyErrorKind.of("Template name ''{0}'' must be relative to the file namespace, i.e. a dot "
           + "followed by an identifier.");
@@ -381,8 +357,6 @@ public class SoyFileParser {
   private static final SoyErrorKind SELECT_CASE_INVALID_VALUE =
       SoyErrorKind.of("Invalid value for select ''case'', "
           + "expected ''female'', ''male'', or ''other''.");
-  private static final SoyErrorKind UNEXPECTED_CLOSING_TAG =
-      SoyErrorKind.of("Unexpected closing tag ''{0}''.");
   private static final SoyErrorKind UNEXPECTED_CONTENT_AFTER =
       SoyErrorKind.of("Unexpected content after ''{0}'', expected only comments or whitespace.");
   private static final SoyErrorKind UNEXPECTED_CONTENT_BEFORE =
@@ -610,7 +584,7 @@ public class SoyFileParser {
 
   // An error that can be thrown to abort parsing.  This is useful if an error has been reported
   // and it is known that parsing cannot continue.
-  private static final class AbortParsingError extends Error {}
+  static final class AbortParsingError extends Error {}
 }
 
 PARSER_END(SoyFileParser)
@@ -658,6 +632,16 @@ TOKEN_MGR_DECLS: {
   private void clearAndSwitchToDefault() {
     stateStack.clear();
     SwitchTo(DEFAULT);
+  }
+
+  void skipTo(int kind) {
+    Token t;
+    do {
+      t = getNextToken();
+      if (t.kind == CMD_CLOSE_TEMPLATE || t.kind == CMD_CLOSE_DELTEMPLATE) {
+        throw new SoyFileParser.AbortParsingError();
+      }
+    } while (t.kind != kind && t.kind != EOF);
   }
 
   @Override
@@ -888,8 +872,8 @@ TOKEN_MGR_DECLS: {
 | < CMD_CLOSE_LOG                : "{/log}"         >
 | < CMD_FULL_DEBUGGER            : "{debugger}"     >
 
-| < CMD_BEGIN_PRINT              : "{print" <WS>    > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
-| < CMD_BEGIN_IMPLICIT_PRINT     : "{"              > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
+| < CMD_BEGIN_PRINT              : "{print" <WS>    > { pushState(EXPR); }
+| < CMD_BEGIN_IMPLICIT_PRINT     : "{"              > { pushState(EXPR); }
 }
 
 
@@ -913,6 +897,10 @@ TOKEN_MGR_DECLS: {
 | < CMD_EQ: "=" >
 | < CMD_DOT: "." >
 | < CMD_DASH: "-" >
+}
+
+<EXPR> TOKEN: {
+  < PRINT_DIRECTIVE: "|" <IDENT> >
 }
 
 
@@ -1088,17 +1076,25 @@ TOKEN_MGR_DECLS: {
 
 
 // -------------------------------------------------------------------------------------------------
-// Legacy tokens.
+// Legacy and unexpected tokens.
 
-// Match everything else as an 'unexpected' or as a special LEGACY token. This prevents
-// TokenMgrErrors from being thrown and instead this will get turned into ParseExceptions which
-// have more debugging information.
 <EXPR> TOKEN: {
   < LEGACY_AND : "&&" >
 | < LEGACY_OR : "||" >
 | < LEGACY_NOT : "!" >
+| < UNEXPECTED_PIPE : "|" >
 }
 
+
+<TEMPLATE_DEFAULT> TOKEN: {
+  < UNEXPECTED_DOUBLE_BRACE : "{{" >
+| < UNEXPECTED_CLOSE_TAG    : "{/" >
+| < UNEXPECTED_ALIAS        : "{alias" >
+| < UNEXPECTED_NAMESPACE    : "{namespace" >
+| < UNEXPECTED_DELPACKAGE   : "{delpackage" >
+| < UNEXPECTED_TEMPLATE     : "{template" >
+| < UNEXPECTED_DELTEMPLATE  : "{deltemplate" >
+}
 
 
 // =================================================================================================
@@ -1265,7 +1261,8 @@ private List<CommandTagAttribute> Attributes() :
 {
   (
     attr = Attribute()
-    { if (attributes.isEmpty()) {
+    {
+      if (attributes.isEmpty()) {
         attributes = new ArrayList<CommandTagAttribute>();
       }
       attributes.add(attr);
@@ -2351,114 +2348,98 @@ private MsgHtmlTagNode MsgHtmlTag() :
 
 
 /**
- * PrintStmt -> PrintTag
+ * PrintStmt -> ( CmdBeginPrint | CmdBeginImplicitPrint ) Expr
+ *              [ PrintDirectives ] [ ExprAttribute ] CmdEnd
  */
 private PrintNode PrintStmt() :
 {
-  Token tagBegin, tagEnd;
-  List<String> cmdTextParts;
+  Token tagBegin;
+  Token tagEnd;
+  Token tok;
+  Token directive;
   boolean isImplicit;
+  ExprNode expr = null;
+  List<PrintDirectiveNode> directives = ImmutableList.of();
+  CommandTagAttribute phname = null;
 }
 {
   (
     tagBegin = <CMD_BEGIN_PRINT>  { isImplicit = false; }
   | tagBegin = <CMD_BEGIN_IMPLICIT_PRINT>  { isImplicit = true; }
   )
-  cmdTextParts = CmdTextParts()
-  tagEnd = <CMD_END>
+
+  try {
+    expr = Expr()
+    directives = PrintDirectives()
+    [ phname = ExprAttribute() ]
+    tagEnd = <CMD_END>
+  } catch (ParseException e) {
+    if (expr == null) {
+      expr = errorExpr(tagBegin);
+    }
+    tagEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END);
+  }
+
   {
-    SourceLocation location = createSrcLoc(tagBegin, tagEnd);
-    // This will also capture invalid forms of actual commands that did not match those commands'
-    // actual tokens (eg, `{else blah}`), then try to parse them as implicit prints.  We check for
-    // these errors here, catching any kind of invalid construction that starts with { and is not
-    // matched by a token.
-    if (cmdTextParts.isEmpty()) {
-      errorReporter.report(location, PRINT_COMMAND_WITH_EMPTY_TEXT);
-    } else if (cmdTextParts.get(0).startsWith("/")) {
-      errorReporter.report(location, UNEXPECTED_CLOSING_TAG,
-          "{" + Joiner.on("").join(cmdTextParts) + "}");
-    } else if (cmdTextParts.get(0).startsWith("@")) {
-      errorReporter.report(location, INVALID_DECLARATION, "{" + cmdTextParts.get(0));
-    } else if (cmdTextParts.get(0).startsWith("{")) {
-      errorReporter.report(location, FOUND_DOUBLE_BRACE);
-    } else if (INVALID_PRINT_FILE_PREFIX_PATTERN.matcher(cmdTextParts.get(0)).matches()) {
-      errorReporter.report(location, INVALID_TEMPLATE_COMMAND, "{" + cmdTextParts.get(0));
-    } else if (INVALID_PRINT_PREFIX_PATTERN.matcher(cmdTextParts.get(0)).matches()) {
-      errorReporter.report(location, INVALID_PRINT_PREFIX, "{" + cmdTextParts.get(0));
-    }
+    PrintNode node = new PrintNode(
+        nodeIdGen.genId(),
+        createSrcLoc(tagBegin, tagEnd),
+        isImplicit,
+        expr,
+        phname,
+        errorReporter);
+    node.addChildren(directives);
+    return node;
+  }
+}
 
-    // ------ Process command name (implicit or explicit). ------
-    String cmdText = Joiner.on("").join(cmdTextParts);
 
-    // ------ Process 'phname' attribute (if any). ------
-    String phnameAttr = null;
-    for (String cmdTextPart : cmdTextParts) {
-      if (cmdTextPart.startsWith(" phname=\"") && cmdTextPart.endsWith("\"")) {
-        if (phnameAttr != null) {
-          errorReporter.report(location, MULTIPLE_PHNAME_ATTRIBUTES_IN_COMMAND, cmdText);
-        }
-        phnameAttr = cmdTextPart;
+/**
+ * PrintDirectives -> ( PrintDirective )*
+ */
+private List<PrintDirectiveNode> PrintDirectives() :
+{
+  PrintDirectiveNode node;
+  List<PrintDirectiveNode> directives = ImmutableList.of();
+}
+{
+  (
+    node = PrintDirective()
+    {
+      if (directives.isEmpty()) {
+        directives = new ArrayList<PrintDirectiveNode>();
       }
+      directives.add(node);
     }
-    String userSuppliedPhName;
-    if (phnameAttr != null) {
-      cmdTextParts.remove(phnameAttr);
-      userSuppliedPhName = phnameAttr.substring(9, phnameAttr.length() - 1);
-    } else {
-      userSuppliedPhName = null;
-    }
+  )*
 
-    // ------ Process expression. ------
-    // Note: First part is expression, rest of parts are directives or directive args.
-    // if cmdTextParts is empty, we already reported an error above, so pretend it is a literal
-    // empty string and keep going.
-    String exprText = cmdTextParts.isEmpty() ? "''" : cmdTextParts.get(0).trim();
-    PrintNode printNode
-        = new PrintNode.Builder(nodeIdGen.genId(), isImplicit, location)
-            .exprText(exprText)
-            .userSuppliedPlaceholderName(userSuppliedPhName)
-            .build(context);
+  { return directives; }
+}
 
-    // ------ Process directives (if any). ------
-    String directiveName = null;
-    for (int i = 1, n = cmdTextParts.size(); i < n; i++) {
-      String cmdTextPart = cmdTextParts.get(i);
 
-      if (cmdTextPart.startsWith("|")) {
-        // Create previous directive and save current directive name.
-        if (directiveName != null) {
-          printNode.addChild(new PrintDirectiveNode.Builder(
-              nodeIdGen.genId(), directiveName, "", location)
-              .build(context));
-        }
-        directiveName = cmdTextPart;
+/**
+ * PrintDirective -> PrintDirective [ ":" ExprList ]
+ */
+private PrintDirectiveNode PrintDirective() :
+{
+  Token directive;
+  ImmutableList<ExprNode> args = ImmutableList.of();
+}
+{
+  directive = <PRINT_DIRECTIVE>
 
-      } else if (cmdTextPart.startsWith(":")) {
-        // Create previous directive with current args text.
-        if (directiveName == null) {
-          throw new AssertionError();
-        }
-        String argsText = cmdTextPart.substring(1);
-        printNode.addChild(new PrintDirectiveNode.Builder(
-            nodeIdGen.genId(), directiveName, argsText, location)
-            .build(context));
-        directiveName = null;
+  [
+    <COLON>
+    args = ExprList()
+  ]
 
-      } else if (cmdTextPart.trim().length() == 0) {
-        continue;
-
-      } else {
-        errorReporter.report(printNode.getSourceLocation(), INVALID_PRINT_COMMAND_TEXT, cmdText);
-      }
-    }
-    // Add last directive.
-    if (directiveName != null) {
-      printNode.addChild(new PrintDirectiveNode.Builder(
-          nodeIdGen.genId(), directiveName, "", location)
-          .build(context));
+  {
+    SourceLocation loc = createSrcLoc(directive);
+    if (!args.isEmpty()) {
+      loc.extend(args.get(args.size() - 1).getSourceLocation());
     }
 
-    return printNode;
+    return new PrintDirectiveNode(nodeIdGen.genId(), loc, directive.image, args);
   }
 }
 
@@ -3527,7 +3508,8 @@ private ExprNode GlobalOrFunction() :
         // parens contain a list of ident : expr pairs - this is a proto init call
         <COLON>
         expr = Expr()
-        { if (!(first instanceof GlobalNode)
+        {
+          if (!(first instanceof GlobalNode)
               || !BaseUtils.isIdentifier(((GlobalNode) first).getName())) {
             errorReporter.report(
                 first.getSourceLocation(), INVALID_PARAM_NAME, first.toSourceString());
@@ -3544,7 +3526,8 @@ private ExprNode GlobalOrFunction() :
           <COMMA>
 
           paramName = <IDENT>
-          { if (!paramNames.add(paramName.image)) {
+          {
+            if (!paramNames.add(paramName.image)) {
               errorReporter.report(createSrcLoc(paramName), DUPLICATE_PARAM_NAME, paramName.image);
             }
           }
@@ -3554,7 +3537,9 @@ private ExprNode GlobalOrFunction() :
         )*
 
         closeParen = <RPAREN>
-        { ProtoInitNode pNode = new ProtoInitNode(
+        {
+          // TODO(user): Add source locations to paramNames
+          ProtoInitNode pNode = new ProtoInitNode(
               ident.identifier(), paramNames, ident.location().extend(createSrcLoc(closeParen)));
           pNode.addChildren(params);
           return pNode;

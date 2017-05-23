@@ -23,7 +23,9 @@ import static com.google.template.soy.soytree.TemplateSubject.assertThatTemplate
 
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
-import com.google.template.soy.exprparse.SoyParsingContext;
+import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.ExplodingErrorReporter;
+import com.google.template.soy.exprtree.VarRefNode;
 import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -36,7 +38,8 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public final class PrintNodeTest {
 
-  private static final SoyParsingContext FAIL = SoyParsingContext.exploding();
+  private static final ErrorReporter FAIL = ExplodingErrorReporter.get();
+  private static final SourceLocation X = SourceLocation.UNKNOWN;
 
   @Test
   public void testPlaceholderMethods() throws SoySyntaxException {
@@ -73,16 +76,12 @@ public final class PrintNodeTest {
 
   @Test
   public void testToSourceString() {
-    PrintNode pn =
-        new PrintNode.Builder(0, true /* isImplicit */, SourceLocation.UNKNOWN)
-            .exprText("$boo")
-            .build(FAIL);
+    VarRefNode boo = new VarRefNode("boo", X, false, null);
+
+    PrintNode pn = new PrintNode(0, X, true /* isImplicit */, boo, null, FAIL);
     assertThat(pn.toSourceString()).isEqualTo("{$boo}");
 
-    pn =
-        new PrintNode.Builder(0, false /* isImplicit */, SourceLocation.UNKNOWN)
-            .exprText("$boo")
-            .build(FAIL);
+    pn = new PrintNode(0, X, false /* isImplicit */, boo, null, FAIL);
     assertThat(pn.toSourceString()).isEqualTo("{print $boo}");
   }
 }

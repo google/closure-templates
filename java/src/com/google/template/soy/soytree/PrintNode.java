@@ -16,13 +16,15 @@
 
 package com.google.template.soy.soytree;
 
+import static com.google.template.soy.soytree.CommandTagAttribute.UNSUPPORTED_ATTRIBUTE_KEY_SINGLE;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.exprparse.ExpressionParser;
-import com.google.template.soy.exprparse.SoyParsingContext;
+import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.MsgPlaceholderInitialNode;
@@ -58,16 +60,33 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
 
   @Nullable private HtmlContext htmlContext;
 
-  private PrintNode(
+  // TODO(user): Consider adding static factory methods for implicit vs explicit print.
+  public PrintNode(
       int id,
+      SourceLocation location,
       boolean isImplicit,
-      ExprRootNode expr,
-      SourceLocation sourceLocation,
-      @Nullable String userSuppliedPlaceholderName) {
-    super(id, sourceLocation, "print");
+      ExprNode expr,
+      @Nullable CommandTagAttribute phname,
+      ErrorReporter errorReporter) {
+    super(id, location, "print");
     this.isImplicit = isImplicit;
-    this.expr = Preconditions.checkNotNull(expr);
-    this.userSuppliedPlaceholderName = userSuppliedPlaceholderName;
+    this.expr = new ExprRootNode(expr);
+
+    if (phname == null) {
+      this.userSuppliedPlaceholderName = null;
+    } else {
+      if (phname.hasName("phname")) {
+        this.userSuppliedPlaceholderName = phname.getValue();
+      } else {
+        errorReporter.report(
+            phname.getName().location(),
+            UNSUPPORTED_ATTRIBUTE_KEY_SINGLE,
+            phname.getName().identifier(),
+            "print",
+            "phname");
+        this.userSuppliedPlaceholderName = null;
+      }
+    }
   }
 
   /**
@@ -107,7 +126,7 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
     return isImplicit;
   }
 
-  /** Returns the parsed expression, or null if the expression is not in V2 syntax. */
+  /** Returns the parsed expression. */
   public ExprRootNode getExpr() {
     return expr;
   }
@@ -123,10 +142,6 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
 
     if (userSuppliedPlaceholderName != null) {
       return BaseUtils.convertToUpperUnderscore(userSuppliedPlaceholderName);
-    }
-
-    if (this.expr == null) {
-      return FALLBACK_BASE_PLACEHOLDER_NAME;
     }
 
     return MsgSubstUnitBaseVarNameUtils.genNaiveBaseNameForExpr(
@@ -176,82 +191,5 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
   @Override
   public PrintNode copy(CopyState copyState) {
     return new PrintNode(this, copyState);
-  }
-
-  /** Builder for {@link PrintNode}. */
-  public static final class Builder {
-    private final int id;
-    private final boolean isImplicit;
-    private final SourceLocation sourceLocation;
-
-    @Nullable private String exprText;
-    @Nullable private ExprRootNode expr;
-    @Nullable private String userSuppliedPlaceholderName;
-
-    /**
-     * @param id The node's id.
-     * @param isImplicit Whether the command {@code print} is implicit.
-     * @param sourceLocation The node's source location.
-     */
-    public Builder(int id, boolean isImplicit, SourceLocation sourceLocation) {
-      this.id = id;
-      this.isImplicit = isImplicit;
-      this.sourceLocation = sourceLocation;
-    }
-
-    /**
-     * @param exprText The node's expression text.
-     * @return This builder, for chaining.
-     * @throws java.lang.IllegalStateException if {@link #exprText} or {@link #expr} has already
-     *     been set.
-     */
-    public Builder exprText(String exprText) {
-      Preconditions.checkState(this.exprText == null);
-      Preconditions.checkState(this.expr == null);
-      this.exprText = exprText;
-      return this;
-    }
-
-    /**
-     * @param exprRoot The parsed expression for this print node.
-     * @return This builder, for chaining.
-     * @throws java.lang.IllegalStateException if {@link #exprText} or {@link #expr} has already
-     *     been set.
-     */
-    public Builder exprRoot(ExprRootNode exprRoot) {
-      Preconditions.checkState(this.exprText == null);
-      Preconditions.checkState(this.expr == null);
-      this.expr = exprRoot;
-      return this;
-    }
-
-    /**
-     * @param userSuppliedPlaceholderName The user-supplied placeholder name.
-     * @return This object, for chaining.
-     */
-    public Builder userSuppliedPlaceholderName(String userSuppliedPlaceholderName) {
-      this.userSuppliedPlaceholderName = userSuppliedPlaceholderName;
-      return this;
-    }
-
-    /**
-     * Returns a new {@link PrintNode} built from this builder's state.
-     *
-     * @throws java.lang.IllegalStateException if neither {@link #exprText} nor {@link #expr} have
-     *     been set.
-     */
-    public PrintNode build(SoyParsingContext context) {
-      ExprRootNode exprRoot = getOrParseExpr(context);
-      return new PrintNode(id, isImplicit, exprRoot, sourceLocation, userSuppliedPlaceholderName);
-    }
-
-    private ExprRootNode getOrParseExpr(SoyParsingContext context) {
-      if (expr != null) {
-        return expr;
-      }
-      Preconditions.checkNotNull(exprText);
-      return new ExprRootNode(
-          new ExpressionParser(exprText, sourceLocation, context).parseExpression());
-    }
   }
 }

@@ -35,8 +35,12 @@ final class ParseErrors {
 
   private static final SoyErrorKind BAD_PHNAME_VALUE =
       SoyErrorKind.of("Found ''phname'' attribute that is not a valid identifier.");
+  private static final SoyErrorKind FOUND_DOUBLE_BRACE =
+      SoyErrorKind.of("Soy '{{command}}' syntax is no longer supported. Use single braces.");
   private static final SoyErrorKind INVALID_STRING_LITERAL =
       SoyErrorKind.of("Invalid string literal found in Soy command.");
+  private static final SoyErrorKind INVALID_TEMPLATE_COMMAND =
+      SoyErrorKind.of("Command ''{0}'' cannot appear in templates.");
   private static final SoyErrorKind LEGACY_AND_ERROR =
       SoyErrorKind.of("Found use of ''&&'' instead of the ''and'' operator.");
   private static final SoyErrorKind LEGACY_OR_ERROR =
@@ -45,6 +49,8 @@ final class ParseErrors {
       SoyErrorKind.of("Found use of ''!'' instead of the ''not'' operator.");
   private static final SoyErrorKind LEGACY_DOUBLE_QUOTED_STRING =
       SoyErrorKind.of("Found use of double quotes, Soy strings use single quotes.");
+  private static final SoyErrorKind UNEXPECTED_CLOSE_TAG =
+      SoyErrorKind.of("Unexpected closing tag.");
   private static final SoyErrorKind UNEXPECTED_EOF =
       SoyErrorKind.of(
           "Unexpected end of file.  Did you forget to close an attribute value or a comment?");
@@ -52,6 +58,8 @@ final class ParseErrors {
       SoyErrorKind.of(
           "Unexpected parameter declaration. Param declarations must come before any code in "
               + "your template.");
+  private static final SoyErrorKind UNEXPECTED_PIPE =
+      SoyErrorKind.of("Unexpected ''|''. Print directives should not have whitespace after ''|''.");
   private static final SoyErrorKind UNEXPECTED_RIGHT_BRACE =
       SoyErrorKind.of("Unexpected ''}''; did you mean '''{'rb'}'''?");
   private static final SoyErrorKind UNEXPECTED_TOKEN_MGR_ERROR =
@@ -97,6 +105,22 @@ final class ParseErrors {
       case SoyFileParserConstants.LEGACY_NOT:
         reporter.report(location, LEGACY_NOT_ERROR);
         return;
+      case SoyFileParserConstants.UNEXPECTED_PIPE:
+        reporter.report(location, UNEXPECTED_PIPE);
+        return;
+      case SoyFileParserConstants.UNEXPECTED_DOUBLE_BRACE:
+        reporter.report(location, FOUND_DOUBLE_BRACE);
+        return;
+      case SoyFileParserConstants.UNEXPECTED_CLOSE_TAG:
+        reporter.report(location, UNEXPECTED_CLOSE_TAG);
+        return;
+      case SoyFileParserConstants.UNEXPECTED_ALIAS:
+      case SoyFileParserConstants.UNEXPECTED_NAMESPACE:
+      case SoyFileParserConstants.UNEXPECTED_DELPACKAGE:
+      case SoyFileParserConstants.UNEXPECTED_TEMPLATE:
+      case SoyFileParserConstants.UNEXPECTED_DELTEMPLATE:
+        reporter.report(location, INVALID_TEMPLATE_COMMAND, errorToken.image);
+        return;
       case SoyFileParserConstants.DOUBLE_QUOTE:
         reporter.report(location, LEGACY_DOUBLE_QUOTED_STRING);
         return;
@@ -125,6 +149,7 @@ final class ParseErrors {
    */
   private static String getSoyFileParserTokenDisplayName(int tokenId) {
     switch (tokenId) {
+
         // File-level tokens:
       case SoyFileParserConstants.DELTEMPLATE_OPEN:
         return "{deltemplate";
@@ -173,10 +198,11 @@ final class ParseErrors {
       case SoyFileParserConstants.T_NAME:
       case SoyFileParserConstants.IDENT:
         return "identifier";
+      case SoyFileParserConstants.PRINT_DIRECTIVE:
+        return "print directive";
       case SoyFileParserConstants.ATTRIBUTE_VALUE:
-        return "attribute-value";
       case SoyFileParserConstants.EQ_QUOTE:
-        return "=";
+        return "attribute value";
 
       case SoyFileParserConstants.CMD_FULL_SP:
       case SoyFileParserConstants.CMD_FULL_NIL:
@@ -202,6 +228,7 @@ final class ParseErrors {
 
       case SoyFileParserConstants.UNEXPECTED_TOKEN:
         throw new AssertionError("we should never expect the unexpected token");
+
       default:
         return SoyFileParserConstants.tokenImage[tokenId];
     }

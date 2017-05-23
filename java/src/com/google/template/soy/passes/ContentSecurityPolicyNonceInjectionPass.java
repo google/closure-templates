@@ -22,9 +22,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
-import com.google.template.soy.exprparse.SoyParsingContext;
-import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.HtmlAttributeValueNode;
@@ -171,12 +170,13 @@ final class ContentSecurityPolicyNonceInjectionPass extends CompilerFilePass {
     // we are running before the autoescaper, so the escaper should insert whatever print directives
     // are appropriate.
     PrintNode printNode =
-        new PrintNode.Builder(
-                nodeIdGen.genId(),
-                true, // Implicit.  {$ij.csp_nonce} not {print $ij.csp_nonce}
-                insertionLocation)
-            .exprRoot(new ExprRootNode(referenceCspNonce(insertionLocation)))
-            .build(SoyParsingContext.exploding());
+        new PrintNode(
+            nodeIdGen.genId(),
+            insertionLocation,
+            true, // Implicit.  {$ij.csp_nonce} not {print $ij.csp_nonce}
+            referenceCspNonce(insertionLocation),
+            null, // phname
+            ExplodingErrorReporter.get());
     attributeValue.addChild(printNode);
     return ifNode;
   }

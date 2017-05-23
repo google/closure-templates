@@ -16,12 +16,11 @@
 
 package com.google.template.soy.soytree;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.exprparse.ExpressionParser;
-import com.google.template.soy.exprparse.SoyParsingContext;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
@@ -38,22 +37,15 @@ public final class PrintDirectiveNode extends AbstractSoyNode implements ExprHol
   /** The directive name (including vertical bar). */
   private final String name;
 
-  /** The text of all the args. */
-  private final String argsText;
-
   /** The parsed args. */
   private final ImmutableList<ExprRootNode> args;
 
-  private PrintDirectiveNode(
-      int id,
-      String name,
-      ImmutableList<ExprRootNode> args,
-      String argsText,
-      SourceLocation sourceLocation) {
-    super(id, sourceLocation);
+  public PrintDirectiveNode(
+      int id, SourceLocation location, String name, ImmutableList<ExprNode> args) {
+    super(id, location);
+    Preconditions.checkArgument(name.charAt(0) == '|');
     this.name = name;
-    this.args = args;
-    this.argsText = argsText;
+    this.args = ExprRootNode.wrap(args);
   }
 
   /**
@@ -64,7 +56,6 @@ public final class PrintDirectiveNode extends AbstractSoyNode implements ExprHol
   private PrintDirectiveNode(PrintDirectiveNode orig, CopyState copyState) {
     super(orig, copyState);
     this.name = orig.name;
-    this.argsText = orig.argsText;
     List<ExprRootNode> tempArgs = Lists.newArrayListWithCapacity(orig.args.size());
     for (ExprRootNode origArg : orig.args) {
       tempArgs.add(origArg.copy(copyState));
@@ -89,7 +80,7 @@ public final class PrintDirectiveNode extends AbstractSoyNode implements ExprHol
 
   @Override
   public String toSourceString() {
-    return name + ((argsText.length() > 0) ? ":" + argsText : "");
+    return args.isEmpty() ? name : name + ":" + SoyTreeUtils.toSourceString(args);
   }
 
   @Override
@@ -100,47 +91,5 @@ public final class PrintDirectiveNode extends AbstractSoyNode implements ExprHol
   @Override
   public PrintDirectiveNode copy(CopyState copyState) {
     return new PrintDirectiveNode(this, copyState);
-  }
-
-  /** Builder for {@link PrintDirectiveNode}. */
-  public static final class Builder {
-    private final int id;
-    private final String name;
-    private final String argsText;
-    private final SourceLocation sourceLocation;
-
-    /**
-     * @param id The node's id.
-     * @param name The directive name in source code (including vertical bar).
-     * @param argsText The text of all the args, or empty string if none (usually empty string).
-     * @param sourceLocation The node's source location.
-     */
-    public Builder(int id, String name, String argsText, SourceLocation sourceLocation) {
-      this.id = id;
-      this.name = name;
-      this.argsText = argsText;
-      this.sourceLocation = sourceLocation;
-    }
-
-    /**
-     * Returns a new {@link PrintDirectiveNode} from the state of this builder, reporting syntax
-     * errors to the given {@link ErrorReporter}.
-     */
-    public PrintDirectiveNode build(SoyParsingContext context) {
-      ImmutableList<ExprRootNode> args = parseArgs(context);
-      return new PrintDirectiveNode(id, name, args, argsText, sourceLocation);
-    }
-
-    private ImmutableList<ExprRootNode> parseArgs(SoyParsingContext context) {
-      if (this.argsText.isEmpty()) {
-        return ImmutableList.of();
-      }
-      ImmutableList.Builder<ExprRootNode> args = ImmutableList.builder();
-      for (ExprNode expr :
-          new ExpressionParser(argsText, sourceLocation, context).parseExpressionList()) {
-        args.add(new ExprRootNode(expr));
-      }
-      return args.build();
-    }
   }
 }
