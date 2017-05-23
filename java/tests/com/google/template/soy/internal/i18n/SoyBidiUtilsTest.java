@@ -76,15 +76,15 @@ public class SoyBidiUtilsTest {
 
     bidiGlobalDir = SoyBidiUtils.decodeBidiGlobalDirFromJsOptions(1, false);
     assertTrue(bidiGlobalDir.isStaticValue());
-    assertEquals(bidiGlobalDir.getStaticValue(), 1);
+    assertEquals(1, bidiGlobalDir.getStaticValue());
 
     bidiGlobalDir = SoyBidiUtils.decodeBidiGlobalDirFromJsOptions(-1, false);
     assertTrue(bidiGlobalDir.isStaticValue());
-    assertEquals(bidiGlobalDir.getStaticValue(), -1);
+    assertEquals(-1, bidiGlobalDir.getStaticValue());
 
     bidiGlobalDir = SoyBidiUtils.decodeBidiGlobalDirFromJsOptions(0, true);
     assertFalse(bidiGlobalDir.isStaticValue());
-    assertEquals(bidiGlobalDir.getCodeSnippet(), "soy.$$IS_LOCALE_RTL?-1:1");
+    assertEquals("soy.$$IS_LOCALE_RTL?-1:1", bidiGlobalDir.getCodeSnippet());
   }
 
   @Test
@@ -96,11 +96,11 @@ public class SoyBidiUtilsTest {
 
     bidiGlobalDir = SoyBidiUtils.decodeBidiGlobalDirFromPyOptions("mod.is_rtl");
     assertFalse(bidiGlobalDir.isStaticValue());
-    assertEquals(bidiGlobalDir.getCodeSnippet(), "-1 if external_bidi.is_rtl() else 1");
+    assertEquals("-1 if external_bidi.is_rtl() else 1", bidiGlobalDir.getCodeSnippet());
 
     bidiGlobalDir = SoyBidiUtils.decodeBidiGlobalDirFromPyOptions("package.mod.is_rtl");
     assertFalse(bidiGlobalDir.isStaticValue());
-    assertEquals(bidiGlobalDir.getCodeSnippet(), "-1 if external_bidi.is_rtl() else 1");
+    assertEquals("-1 if external_bidi.is_rtl() else 1", bidiGlobalDir.getCodeSnippet());
   }
 
   @Test
