@@ -19,16 +19,15 @@ package com.google.template.soy.msgs.restricted;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.ibm.icu.util.ULocale;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.SortedMap;
 import javax.annotation.Nullable;
 
 /**
@@ -38,7 +37,6 @@ import javax.annotation.Nullable;
  *
  */
 public class SoyMsgBundleImpl extends SoyMsgBundle {
-
   /** The language/locale string of this bundle's messages. */
   private final String localeString;
   private final ULocale locale;
@@ -63,16 +61,17 @@ public class SoyMsgBundleImpl extends SoyMsgBundle {
     this.locale = localeString == null ? null : new ULocale(localeString);
     this.isRtl = BidiGlobalDir.forStaticLocale(localeString) == BidiGlobalDir.RTL;
 
-    SortedMap<Long, SoyMsg> tempMsgMap = Maps.newTreeMap();
+    // Preserve the ordering of the input.
+    Map<Long, SoyMsg> tempMsgMap = new LinkedHashMap<>();
     for (SoyMsg msg : msgs) {
       checkArgument(Objects.equals(msg.getLocaleString(), localeString));
       long msgId = msg.getId();
 
-      if (!tempMsgMap.containsKey(msgId)) { // new message id
+      SoyMsg existingMsg = tempMsgMap.get(msgId);
+      if (existingMsg == null) { // new message id
         tempMsgMap.put(msgId, msg);
 
       } else { // duplicate message id
-        SoyMsg existingMsg = tempMsgMap.get(msgId);
         for (SourceLocation source : msg.getSourceLocations()) {
           existingMsg.addSourceLocation(source);
         }
