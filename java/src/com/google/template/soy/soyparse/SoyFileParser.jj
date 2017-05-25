@@ -306,7 +306,7 @@ import javax.annotation.Nullable;
  *
  * 5. Misc:
  *    + The following commands are not allowed to appear in a template:
- *      {alias ...}   {namespace ...}   {delpackage ...}   {template ...}   {deltemplate ...}
+ *      {namespace ...}   {template ...}   {/template}
  * </pre>
  *
  * <p>TODO(lukes):  This parser has a lot of issues:
@@ -315,7 +315,6 @@ import javax.annotation.Nullable;
  *
  */
 public class SoyFileParser {
-
   /** Regex string used in patterns below. Note the first set of spaces is reluctant. */
   private static final String LINE_BOUNDARY_REGEX = "\\s*?(\\n|\\r)\\s*";
 
@@ -622,11 +621,11 @@ PARSER_END(SoyFileParser)
 
 
 TOKEN_MGR_DECLS: {
-
-  private static final Pattern ESCAPED_QUOTE = Pattern.compile("\\\"");
+  // Template parser:
 
   // Used for returning to our prior lexical state when completing a multiline comment.
   private final LexicalStateStack stateStack = new LexicalStateStack();
+
 
   /** Saves the current lexical state and switch to a new one.  To switch back call
    * {@link #popState()}.
@@ -770,9 +769,8 @@ TOKEN_MGR_DECLS: {
 // we want to switch the parser in the EXPR state, and parse the expression directly from the input
 // stream. (Otherwise we would need to create a whole new SoyFileParser with just the attribute text
 // as input.)
-| < DATA_ATTR: "data" ( <WS> )* "=" ( <WS> )* "\"" > : EXPR
-| < VARIANT_ATTR: "variant" ( <WS> )* "=" ( <WS> )* "\"" > : EXPR
-| < GENDERS_ATTR: "genders" ( <WS> )* "=" ( <WS> )* "\"" > : EXPR
+| < DATA_ATTR: "data" ( <WS> )* "=" ( <WS> )* "\"" > { SwitchTo(EXPR); }
+| < VARIANT_ATTR: "variant" ( <WS> )* "=" ( <WS> )* "\"" > { SwitchTo(EXPR); }
 }
 
 <EXPR> TOKEN: {
@@ -783,15 +781,9 @@ TOKEN_MGR_DECLS: {
 <IN_ATTRIBUTE_VALUE> TOKEN: {
   < ATTRIBUTE_VALUE: "\"" >
   {
-    // trim off trailing quote, unescape internal quotation marks
-    String value = matchedToken.image;
-    value = value.substring(0, value.length() - 1);
-    value = ESCAPED_QUOTE.matcher(value).replaceAll("\"");
-
-    matchedToken.image = value;
+    // trim off trailing quote, unescape internal quotation marks, return to previous state
+    matchedToken.image = image.substring(0, image.length() - 1).replace("\\\"", "\"");
     matchedToken.endColumn -= 1;
-
-    // Return to previous state
     popState();
   }
 }
@@ -867,8 +859,8 @@ TOKEN_MGR_DECLS: {
 | < CMD_BEGIN_PARAM              : "{param" <WS>    > { pushState(EXPR); }
 | < CMD_CLOSE_PARAM              : "{/param}"       >
 
-| < CMD_BEGIN_MSG                : "{msg" <WS>      > { pushState(IN_CMD_TAG_STRUCTURED); }
-| < CMD_BEGIN_FALLBACK_MSG       : "{fallbackmsg" <WS> > { pushState(IN_CMD_TAG_STRUCTURED); }
+| < CMD_BEGIN_MSG                : "{msg" <WS>      > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
+| < CMD_BEGIN_FALLBACK_MSG       : "{fallbackmsg" <WS> > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
 | < CMD_CLOSE_MSG                : "{/msg}"         >
 
 | < CMD_BEGIN_XID                : "{xid" <WS>      > { pushState(IN_CMD_TAG_STRUCTURED); }
@@ -1322,7 +1314,7 @@ private CommandTagAttribute Attribute() :
 {
   Token name, value, attrTag;
   String attrName;
-  ImmutableList<ExprNode> exprList;
+  ExprNode expr;
 }
 {
   (
@@ -1343,22 +1335,19 @@ private CommandTagAttribute Attribute() :
     |
       attrTag = <VARIANT_ATTR>
       { attrName = "variant"; }
-    |
-      attrTag = <GENDERS_ATTR>
-      { attrName = "genders"; }
     )
 
     try {
-      exprList = ExprList()
+      expr = Expr()
       <DOUBLE_QUOTE>
     } catch (ParseException e) {
-      exprList = ImmutableList.<ExprNode>of(errorExpr(e.currentToken));
+      expr = errorExpr(e.currentToken);
       reportTemplateBodyErrorAndSkipTo(e, DOUBLE_QUOTE);
     }
 
     {
       token_source.SwitchTo(IN_CMD_TAG_STRUCTURED);
-      return new CommandTagAttribute(Identifier.create(attrName, createSrcLoc(attrTag)), exprList);
+      return new CommandTagAttribute(Identifier.create(attrName, createSrcLoc(attrTag)), expr);
     }
   )
 }
@@ -1870,21 +1859,18 @@ private HeaderParam ParamDecl(@Nullable String desc) :
 
 
 /**
- * TemplateBlock -> ( TemplateBlockItem )*
+ * TemplateBlock -> (TemplateBlockItem )*
  */
 private List<StandaloneNode> TemplateBlock() :
 {
   StandaloneNode node;
-  List<StandaloneNode> templateBlock = ImmutableList.of();
 }
 {
+  { List<StandaloneNode> templateBlock = new ArrayList<StandaloneNode>(); }
+
   (
     node = TemplateBlockItem()
     {
-      if (templateBlock.isEmpty()) {
-        templateBlock = new ArrayList<StandaloneNode>();
-      }
-
       if (node != null) {
         templateBlock.add(node);
       }
@@ -1908,7 +1894,6 @@ private StandaloneNode TemplateBlockItem() :
     node = RawText()
   | node = Stmt()
   )
-
   { return node; }
 }
 
@@ -1989,66 +1974,56 @@ private StatementNode ControlFlowStmt() :
 
 
 /**
- * MsgStmt -> CmdBeginMsg Attributes CmdEnd TemplateBlockForMsg
- *            [ CmdBeginFallbackMsg Attributes CmdEnd TemplateBlockForMsg ] CmdCloseMsg
+ * MsgStmt -> <CMD_BEGIN_MSG> CmdText <CMD_END> TemplateBlockForMsg
+ *            ( <CMD_BEGIN_FALLBACK_MSG> CmdText <CMD_END> TemplateBlockForMsg )? <CMD_CLOSE_MSG>
  */
 private MsgFallbackGroupNode MsgStmt() :
 {
+  String cmdText;
+  List<StandaloneNode> templateBlockForMsg;
   Token tagBegin, tagEnd;
-  List<CommandTagAttribute> attributes = ImmutableList.of();
-  List<StandaloneNode> templateBlock;
+  MsgNode msgNode;
 }
 {
   tagBegin = <CMD_BEGIN_MSG>
-
-  try {
-    attributes = Attributes()
-    tagEnd = <CMD_END>
-  } catch (ParseException e) {
-    tagEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END);
+  cmdText = CmdText()
+  {
+    pushState(TEMPLATE_DEFAULT_IN_MSG_BLOCK);
+    Checkpoint checkpoint = errorReporter.checkpoint();
   }
+  tagEnd = <CMD_END>
+  {
+    SourceLocation location = createSrcLoc(tagBegin, tagEnd);
+    MsgFallbackGroupNode msgFbGrpNode = new MsgFallbackGroupNode(nodeIdGen.genId(), location);
+    msgNode = MsgNode.msg(nodeIdGen.genId(), cmdText, location).build(context);
+    msgFbGrpNode.addChild(msgNode);
+  }
+  templateBlockForMsg = TemplateBlockForMsg()
+  { msgNode.addChildren(templateBlockForMsg); }
+
+  (
+    tagBegin = <CMD_BEGIN_FALLBACK_MSG>
+    cmdText = CmdText()
+    tagEnd = <CMD_END>
+    {
+      location = createSrcLoc(tagBegin, tagEnd);
+      msgNode = MsgNode.fallbackmsg(nodeIdGen.genId(), cmdText, location).build(context);
+      msgFbGrpNode.addChild(msgNode);
+    }
+    templateBlockForMsg = TemplateBlockForMsg()
+    { msgNode.addChildren(templateBlockForMsg); }
+  )?
 
   {
-    SourceLocation loc = createSrcLoc(tagBegin, tagEnd);
-    MsgFallbackGroupNode msgGroup = new MsgFallbackGroupNode(nodeIdGen.genId(), loc);
-
-    MsgNode msg = new MsgNode(nodeIdGen.genId(), loc, "msg", attributes, errorReporter);
-    msgGroup.addChild(msg);
-
-    // {msg} blocks contain a separate lexical state.
-    { pushStateAtZero(TEMPLATE_DEFAULT_IN_MSG_BLOCK); }
+    if (errorReporter.errorsSince(checkpoint) || getToken(1).kind != CMD_CLOSE_MSG) {
+      popStateIfStateIs(TEMPLATE_DEFAULT_IN_MSG_BLOCK);
+    } else {
+      popState();
+    }
   }
-
-  templateBlock = TemplateBlockForMsg()
-  { msg.addChildren(templateBlock); }
-
-  [
-    tagBegin = <CMD_BEGIN_FALLBACK_MSG>
-
-    try {
-      attributes = Attributes()
-      tagEnd = <CMD_END>
-    } catch (ParseException e) {
-      tagEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END);
-    }
-
-    {
-      loc = createSrcLoc(tagBegin, tagEnd);
-      MsgNode fallback =
-          new MsgNode(nodeIdGen.genId(), loc, "fallbackmsg", attributes, errorReporter);
-      msgGroup.addChild(fallback);
-    }
-
-    templateBlock = TemplateBlockForMsg()
-    { fallback.addChildren(templateBlock); }
-  ]
-
   <CMD_CLOSE_MSG>
 
-  {
-    popStateAtZero();
-    return msgGroup;
-  }
+  { return msgFbGrpNode; }
 }
 
 
@@ -2118,7 +2093,7 @@ private List<StandaloneNode> TemplateBlockForMsg() :
     }
     templateBlock.add(msgPluralOrSelectNode);
   }
-  | stmt = TemplateBlockItem() { if (stmt != null) { templateBlock.add(stmt); } }
+  | stmt = TemplateBlockItem()  { if (stmt != null) { templateBlock.add(stmt); } }
   // TODO(lukes): remove and move into the HtmlRewritePass
   | stmt = MsgHtmlTag() { templateBlock.add(stmt); }
   )*

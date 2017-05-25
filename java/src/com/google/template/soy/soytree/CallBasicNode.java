@@ -148,18 +148,17 @@ public final class CallBasicNode extends CallNode {
 
   @Override
   public String getCommandText() {
-    StringBuilder commandText = new StringBuilder(sourceCalleeName);
-
+    String commandText = sourceCalleeName;
     if (isPassingAllData()) {
-      commandText.append(" data=\"all\"");
+      commandText += " data=\"all\"";
     } else if (getDataExpr() != null) {
-      commandText.append(" data=\"").append(getDataExpr().toSourceString()).append('"');
+      commandText += " data=\"" + getDataExpr().toSourceString() + '"';
     }
     if (getUserSuppliedPhName() != null) {
-      commandText.append(" phname=\"").append(getUserSuppliedPhName()).append('"');
+      commandText += " phname=\"" + getUserSuppliedPhName() + '"';
     }
 
-    return commandText.toString();
+    return commandText;
   }
 
   @Override

@@ -200,10 +200,6 @@ final class ParseErrors {
         return "identifier";
       case SoyFileParserConstants.PRINT_DIRECTIVE:
         return "print directive";
-      case SoyFileParserConstants.DATA_ATTR:
-      case SoyFileParserConstants.VARIANT_ATTR:
-      case SoyFileParserConstants.GENDERS_ATTR:
-        return "attribute name";
       case SoyFileParserConstants.ATTRIBUTE_VALUE:
       case SoyFileParserConstants.EQ_QUOTE:
         return "attribute value";

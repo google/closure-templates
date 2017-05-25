@@ -103,7 +103,7 @@ public final class RewriteGenderMsgsVisitorTest {
     FormattingErrorReporter errorReporter = new FormattingErrorReporter();
     SoyFileSetParserBuilder.forTemplateContents(soyCode).errorReporter(errorReporter).parse();
     assertThat(errorReporter.getErrorMessages())
-        .containsExactly("Attribute 'genders' should contain 1-3 expressions.");
+        .containsExactly("Attribute 'genders' does not contain 1-3 expressions.");
   }
 
   @Test
@@ -151,7 +151,7 @@ public final class RewriteGenderMsgsVisitorTest {
     MsgNode msgAfterRewrite = (MsgNode) SharedTestUtils.getNode(soyTree, 0, 0);
     assertEquals(
         // Note: Still has genders="..." in command text.
-        "{msg desc=\"Button text.\" genders=\"$userGender\"}"
+        "{msg genders=\"$userGender\" desc=\"Button text.\"}"
             + "{select $userGender}{case 'female'}Save{case 'male'}Save{default}Save{/select}",
         msgAfterRewrite.toSourceString());
 
@@ -192,7 +192,7 @@ public final class RewriteGenderMsgsVisitorTest {
     MsgNode msgAfterRewrite = (MsgNode) SharedTestUtils.getNode(soyTree, 0, 0);
     assertEquals(
         // Note: Still has genders="..." in command text.
-        "{msg desc=\"...\" genders=\"$userGender\"}"
+        "{msg genders=\"$userGender\" desc=\"...\"}"
             + "{select $userGender}"
             + "{case 'female'}{plural $num}{case 1}Send it{default}Send {$num}{/plural}"
             + "{case 'male'}{plural $num}{case 1}Send it{default}Send {$num}{/plural}"
@@ -248,7 +248,7 @@ public final class RewriteGenderMsgsVisitorTest {
         ""
             +
             // Note: Still has genders="..." in command text.
-            "{msg desc=\"...\" genders=\"$ij.userGender, $target[0].gender, $target[1].gender\"}"
+            "{msg genders=\"$ij.userGender, $target[0].gender, $target[1].gender\" desc=\"...\"}"
             + "{select $ij.userGender}"
             + // note: 'phname' not specified because generated is same
             "{case 'female'}"

@@ -17,20 +17,19 @@
 package com.google.template.soy.soytree;
 
 import static com.google.common.base.Preconditions.checkState;
-import static com.google.template.soy.soytree.CommandTagAttribute.MISSING_ATTRIBUTE;
-import static com.google.template.soy.soytree.CommandTagAttribute.UNSUPPORTED_ATTRIBUTE_KEY;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.internal.TriState;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.exprparse.ExpressionParser;
+import com.google.template.soy.exprparse.SoyParsingContext;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.internal.base.Pair;
+import com.google.template.soy.soytree.CommandTextAttributesParser.Attribute;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
 import java.util.ArrayDeque;
@@ -39,7 +38,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
 /**
@@ -61,14 +59,30 @@ import javax.annotation.Nullable;
 public final class MsgNode extends AbstractBlockCommandNode
     implements ExprHolderNode, MsgBlockNode {
 
-  private static final SoyErrorKind WRONG_NUMBER_OF_GENDER_EXPRS =
-      SoyErrorKind.of("Attribute ''genders'' should contain 1-3 expressions.");
+  static final SoyErrorKind WRONG_NUMBER_OF_GENDER_EXPRS =
+      SoyErrorKind.of("Attribute ''genders'' does not contain 1-3 expressions.");
 
-  // Note that the first set of whitespace is reluctant.
-  private static final Pattern LINE_BOUNDARY_PATTERN = Pattern.compile("\\s*?(\\n|\\r)\\s*");
+  /**
+   * Returns a new {@link Builder} representing a {@code msg} MsgNode.
+   *
+   * @param id The node's id.
+   * @param commandText The node's command text.
+   * @param sourceLocation The node's source location.
+   */
+  public static Builder msg(int id, String commandText, SourceLocation sourceLocation) {
+    return new Builder(id, "msg", commandText, sourceLocation);
+  }
 
-  /** We don't use different content types. It may be a historical artifact in the TC. */
-  private static final String DEFAULT_CONTENT_TYPE = "text/html";
+  /**
+   * Returns a new {@link Builder} representing a {@code fallbackmsg} MsgNode.
+   *
+   * @param id The node's id.
+   * @param commandText The node's command text.
+   * @param sourceLocation The node's source location.
+   */
+  public static Builder fallbackmsg(int id, String commandText, SourceLocation sourceLocation) {
+    return new Builder(id, "fallbackmsg", commandText, sourceLocation);
+  }
 
   private static final class SubstUnitInfo {
 
@@ -80,7 +94,6 @@ public final class MsgNode extends AbstractBlockCommandNode
      * then their var names will be different, even if their base var names are the same.
      */
     public final ImmutableMap<String, MsgSubstUnitNode> varNameToRepNodeMap;
-
     /**
      * The generated map from substitution unit node to var name.
      *
@@ -96,83 +109,52 @@ public final class MsgNode extends AbstractBlockCommandNode
     }
   }
 
+  /** Parser for the command text. */
+  private static final CommandTextAttributesParser ATTRIBUTES_PARSER =
+      new CommandTextAttributesParser(
+          "msg",
+          new Attribute("genders", Attribute.ALLOW_ALL_VALUES, null),
+          new Attribute("meaning", Attribute.ALLOW_ALL_VALUES, null),
+          new Attribute(
+              "desc", Attribute.ALLOW_ALL_VALUES, Attribute.NO_DEFAULT_VALUE_BECAUSE_REQUIRED),
+          new Attribute("hidden", Attribute.BOOLEAN_VALUES, "false"));
+
+  /** We don't use different content types. It may be a historical artifact in the TC. */
+  private static final String DEFAULT_CONTENT_TYPE = "text/html";
+
   /** The list of expressions for gender values. Null after rewriting. */
-  @Nullable private ImmutableList<ExprRootNode> genderExprs;
+  @Nullable private List<ExprRootNode> genderExprs;
 
   /** The meaning string if set, otherwise null (usually null). */
-  @Nullable private final String meaning;
+  private final String meaning;
 
-  /** The description string for translators. Required. */
+  /** The description string for translators. */
   private final String desc;
 
   /** Whether the message should be added as 'hidden' in the TC. */
-  private final TriState isHidden;
+  private final boolean isHidden;
 
-  /** The string representation of genderExprs, for debugging. */
-  @Nullable private final String genderExprsString;
+  /** The substitution unit info (var name mappings, or null if not yet generated. */
+  private SubstUnitInfo substUnitInfo = null;
 
-  /** The substitution unit info (var name mappings, or null if not yet generated). */
-  @Nullable private SubstUnitInfo substUnitInfo = null;
+  // TODO(user): Remove.
+  private final String commandText;
 
-  public MsgNode(
+  private MsgNode(
       int id,
-      SourceLocation location,
+      SourceLocation sourceLocation,
+      @Nullable List<ExprRootNode> genderExprs,
       String commandName,
-      List<CommandTagAttribute> attributes,
-      ErrorReporter errorReporter) {
-    super(id, location, commandName);
-
-    String meaning = null;
-    String desc = null;
-    TriState hidden = TriState.UNSET;
-    ImmutableList<ExprRootNode> genders = null;
-
-    for (CommandTagAttribute attr : attributes) {
-      String name = attr.getName().identifier();
-
-      switch (attr.getName().identifier()) {
-        case "meaning":
-          meaning = attr.getValue();
-          // join multi-line meaning strings
-          meaning = LINE_BOUNDARY_PATTERN.matcher(meaning).replaceAll(" ");
-          break;
-        case "desc":
-          desc = attr.getValue();
-          // join multi-line descriptions
-          desc = LINE_BOUNDARY_PATTERN.matcher(desc).replaceAll(" ");
-          break;
-        case "hidden":
-          hidden = attr.valueAsTriState(errorReporter);
-          break;
-        case "genders":
-          genders = ExprRootNode.wrap(attr.valueAsExprList());
-          if (genders.isEmpty() || genders.size() > 3) {
-            errorReporter.report(attr.getValueLocation(), WRONG_NUMBER_OF_GENDER_EXPRS);
-          }
-          break;
-        default:
-          errorReporter.report(
-              attr.getName().location(),
-              UNSUPPORTED_ATTRIBUTE_KEY,
-              name,
-              commandName,
-              ImmutableList.of("meaning", "desc", "hidden", "genders"));
-          break;
-      }
-    }
-
-    if (desc == null) {
-      errorReporter.report(location, MISSING_ATTRIBUTE, "desc", commandName);
-      desc = "";
-    }
-
+      String commandText,
+      String meaning,
+      String desc,
+      boolean isHidden) {
+    super(id, sourceLocation, commandName);
+    this.genderExprs = genderExprs;
     this.meaning = meaning;
     this.desc = desc;
-    this.isHidden = hidden;
-    this.genderExprs = genders;
-
-    // Calculate eagerly so we still have this even after getAndRemoveGenderExprs() is called.
-    this.genderExprsString = (genders != null) ? SoyTreeUtils.toSourceString(genders) : null;
+    this.isHidden = isHidden;
+    this.commandText = commandText;
   }
 
   /**
@@ -182,7 +164,6 @@ public final class MsgNode extends AbstractBlockCommandNode
    */
   private MsgNode(MsgNode orig, CopyState copyState) {
     super(orig, copyState);
-
     if (orig.genderExprs != null) {
       ImmutableList.Builder<ExprRootNode> builder = ImmutableList.builder();
       for (ExprRootNode node : orig.genderExprs) {
@@ -192,12 +173,11 @@ public final class MsgNode extends AbstractBlockCommandNode
     } else {
       this.genderExprs = null;
     }
-
     this.meaning = orig.meaning;
     this.desc = orig.desc;
     this.isHidden = orig.isHidden;
     this.substUnitInfo = orig.substUnitInfo;
-    this.genderExprsString = orig.genderExprsString;
+    this.commandText = orig.commandText;
   }
 
   @Override
@@ -206,11 +186,10 @@ public final class MsgNode extends AbstractBlockCommandNode
   }
 
   /**
-   * Returns the list of expressions for gender values and sets that field to null.
-   *
-   * <p>Note that this node's command text will still contain the substring genders="...". We think
-   * this is okay since the command text is only used for reporting errors (in fact, it might be
-   * good as a reminder of how the msg was originally written).
+   * Returns the list of expressions for gender values and sets that field to null. Note that this
+   * node's command text will still contain the substring genders="...". We think this is okay since
+   * the command text is only used for reporting errors (in fact, it might be good as a reminder of
+   * how the msg was originally written).
    */
   @Nullable
   public List<ExprRootNode> getAndRemoveGenderExprs() {
@@ -240,8 +219,7 @@ public final class MsgNode extends AbstractBlockCommandNode
 
   /** Returns whether the message should be added as 'hidden' in the TC. */
   public boolean isHidden() {
-    // Default is false.
-    return isHidden == TriState.ENABLED;
+    return isHidden;
   }
 
   /** Returns the content type for the TC. */
@@ -371,20 +349,7 @@ public final class MsgNode extends AbstractBlockCommandNode
 
   @Override
   public String getCommandText() {
-    StringBuilder commandText = new StringBuilder();
-    if (meaning != null) {
-      commandText.append(" meaning=\"").append(meaning).append('"');
-    }
-    if (desc != null) {
-      commandText.append(" desc=\"").append(desc).append('"');
-    }
-    if (isHidden != TriState.UNSET) {
-      commandText.append(" hidden=\"").append(isHidden == TriState.ENABLED).append('"');
-    }
-    if (genderExprsString != null) {
-      commandText.append(" genders=\"").append(genderExprsString).append('"');
-    }
-    return commandText.toString().trim();
+    return commandText;
   }
 
   @Override
@@ -558,5 +523,49 @@ public final class MsgNode extends AbstractBlockCommandNode
     return new SubstUnitInfo(
         ImmutableMap.copyOf(substUnitVarNameToRepNodeMap),
         ImmutableMap.copyOf(substUnitNodeToVarNameMap));
+  }
+
+  /**
+   * Builder for {@link MsgNode}. Access through {@link MsgNode#msg} or {@link MsgNode#fallbackmsg}.
+   */
+  public static final class Builder {
+    private final int id;
+    private final String commandName;
+    private final String commandText;
+    private final SourceLocation sourceLocation;
+
+    private Builder(int id, String commandName, String commandText, SourceLocation sourceLocation) {
+      this.id = id;
+      this.commandName = commandName;
+      this.commandText = commandText;
+      this.sourceLocation = sourceLocation;
+    }
+
+    /**
+     * Returns a new {@link MsgNode} from the state of this builder, reporting syntax errors to the
+     * given {@link ErrorReporter}.
+     */
+    public MsgNode build(SoyParsingContext context) {
+
+      Map<String, String> attributes =
+          ATTRIBUTES_PARSER.parse(commandText, context, sourceLocation);
+
+      String gendersAttr = attributes.get("genders");
+      List<ExprRootNode> genderExprs = null;
+      if (gendersAttr != null) {
+        genderExprs =
+            ExprRootNode.wrap(
+                new ExpressionParser(gendersAttr, sourceLocation, context).parseExpressionList());
+        if (genderExprs.isEmpty() || genderExprs.size() > 3) {
+          context.report(sourceLocation, WRONG_NUMBER_OF_GENDER_EXPRS);
+        }
+      }
+
+      String meaning = attributes.get("meaning");
+      String desc = attributes.get("desc");
+      boolean isHidden = attributes.get("hidden").equals("true");
+      return new MsgNode(
+          id, sourceLocation, genderExprs, commandName, commandText, meaning, desc, isHidden);
+    }
   }
 }

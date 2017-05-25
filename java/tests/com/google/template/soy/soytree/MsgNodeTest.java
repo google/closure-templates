@@ -464,8 +464,11 @@ public class MsgNodeTest {
 
   @Test
   public void testWrongNumberOfGenderExprs() {
+    assertThatTemplateContent("{msg desc=\"\" genders=\"\"}{/msg}")
+        .causesError(MsgNode.WRONG_NUMBER_OF_GENDER_EXPRS)
+        .at(1, 1);
     assertThatTemplateContent("{msg desc=\"\" genders=\"$foo, $bar, $baz, $quux\"}{/msg}")
-        .causesError("Attribute 'genders' should contain 1-3 expressions.")
-        .at(1, 23);
+        .causesError(MsgNode.WRONG_NUMBER_OF_GENDER_EXPRS)
+        .at(1, 1);
   }
 }
