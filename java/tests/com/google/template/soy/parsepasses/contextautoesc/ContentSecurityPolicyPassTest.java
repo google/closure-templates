@@ -46,9 +46,9 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public final class ContentSecurityPolicyPassTest {
 
-  @Parameters
+  @Parameters(name = "strictHtml {0}")
   public static Iterable<Object[]> data() {
-    return Arrays.asList(new Object[][] {{true}, {false}});
+    return Arrays.asList(new Object[][] {{false}});
   }
 
   private final boolean strictHtmlEnabled;
@@ -116,6 +116,27 @@ public final class ContentSecurityPolicyPassTest {
             strictHtmlEnabled ? "" : "<script src=three.js /></script>",
             "<h1>Not a script</h1>",
             "<script type='text/javascript'>main()</script>\n",
+            "{/template}"));
+  }
+
+  @Test
+  public void testTooManyNonces() {
+    assertInjected(
+        join(
+            "{template .foo}\n",
+            "  {@param jsUrls: list<string>}\n",
+            "{foreach $jsUrl in $jsUrls}",
+            "<script type=\"text/javascript\" ",
+            "src='{$jsUrl |filterTrustedResourceUri |escapeHtmlAttribute}'",
+            nonce() + "></script>",
+            "{/foreach}\n",
+            "{/template}"),
+        join(
+            "{template .foo}\n",
+            "  {@param jsUrls: list<string>}\n",
+            "{foreach $jsUrl in $jsUrls}\n",
+            "<script type=\"text/javascript\" src='{$jsUrl}'></script>\n",
+            "{/foreach}\n",
             "{/template}"));
   }
 

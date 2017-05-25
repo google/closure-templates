@@ -16,11 +16,10 @@
 
 package com.google.template.soy.parsepasses.contextautoesc;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Preconditions;
+import com.google.auto.value.AutoValue;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
-import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.template.soy.soytree.RawTextNode;
 import java.util.Collections;
@@ -49,162 +48,41 @@ public final class SlicedRawTextNode {
    *
    * <p>
    */
-  public static final class RawTextSlice {
+  @AutoValue
+  abstract static class RawTextSlice {
+    static RawTextSlice create(
+        Context context, RawTextNode rawTextNode, int startOffset, int endOffset) {
+      return new AutoValue_SlicedRawTextNode_RawTextSlice(
+          context, rawTextNode, startOffset, endOffset);
+    }
 
     /** The context of the slice. */
-    public final Context context;
+    abstract Context getContext();
 
     /** The text node containing the slice. */
-    public final SlicedRawTextNode slicedRawTextNode;
+    abstract RawTextNode getRawTextNode();
 
     /** The start offset (inclusive) into the text node's text. */
-    private int startOffset;
+    abstract int getStartOffset();
 
     /** The end offset (exclusive) into the text node's text. */
-    private int endOffset;
-
-    RawTextSlice(
-        Context context, SlicedRawTextNode slicedRawTextNode, int startOffset, int endOffset) {
-      this.context = context;
-      this.slicedRawTextNode = slicedRawTextNode;
-      this.startOffset = startOffset;
-      this.endOffset = endOffset;
-    }
-
-    /** The start offset (inclusive) into the text node's text. */
-    public int getStartOffset() {
-      return startOffset;
-    }
+    abstract int getEndOffset();
 
     /** The length of the slice in {@code char}s. */
     public int getLength() {
-      return endOffset - startOffset;
-    }
-
-    public SlicedRawTextNode getSlicedRawTextNode() {
-      return slicedRawTextNode;
-    }
-
-    /**
-     * Splits this slice in two at the given offset and returns the slice after the split.
-     *
-     * @param offset into the slice.
-     */
-    private RawTextSlice split(int offset) {
-      int indexInParent = slicedRawTextNode.slices.indexOf(this);
-      if (indexInParent < 0) {
-        throw new AssertionError("slice is not in its parent");
-      }
-      Preconditions.checkElementIndex(offset, getLength(), "slice offset");
-      RawTextSlice secondSlice = slicedRawTextNode.insertSlice(indexInParent + 1, context, 0);
-      int wholeTextOffset = offset + startOffset;
-      secondSlice.startOffset = wholeTextOffset;
-      this.endOffset = wholeTextOffset;
-      return secondSlice;
-    }
-
-    /**
-     * Mutates the parse tree by replacing the sliced text node with a text node that includes the
-     * given text at the given point within this slice.
-     *
-     * @param text A string in context context.
-     * @param offset An offset between 0 (inclusive) and {@link #getLength()} (exclusive).
-     * @param context the context of text.
-     * @throws SoyAutoescapeException if inserting text would violate context assumptions made by
-     *     the contextual autoescaper.
-     */
-    public void insertText(int offset, String text) throws SoyAutoescapeException {
-      int indexInParent = slicedRawTextNode.slices.indexOf(this);
-      if (indexInParent < 0) {
-        throw new AssertionError("slice is not in its parent");
-      }
-      Preconditions.checkElementIndex(offset, getLength(), "slice offset");
-
-      // Figure out at which character offset to insert text.
-      int insertionIndex = -1;
-      int insertionOffset = -1;
-
-      // Split or recurse as necessary so that we are called at the boundary of a slice.
-      if (offset == 0) {
-        insertionIndex = indexInParent;
-        insertionOffset = startOffset;
-      } else if (offset == getLength()) {
-        insertionIndex = indexInParent;
-        insertionOffset = endOffset;
-      } else {
-        split(offset).insertText(0, text);
-        return;
-      }
-
-      // Compute the new raw text and create a node to hold it.
-      // We re-use the node ID since we're going to remove the old node and discard it.
-      RawTextNode rawTextNode = slicedRawTextNode.getRawTextNode();
-      String originalText = rawTextNode.getRawText();
-      String replacementText =
-          originalText.substring(0, insertionOffset)
-              + text
-              + originalText.substring(insertionOffset);
-      RawTextNode replacementNode =
-          new RawTextNode(rawTextNode.getId(), replacementText, rawTextNode.getSourceLocation());
-
-      // Rerun the context update algo so that we can figure out the context of the inserted slices
-      // and ensure that the inserted text does not invalidate any of the security assumptions made
-      // by the auto-escaper.
-      Context startContext = slicedRawTextNode.startContext;
-      Context expectedEndContext = slicedRawTextNode.endContext;
-      SlicedRawTextNode retyped =
-          RawTextContextUpdater.processRawText(replacementNode, startContext);
-      Context actualEndContext = retyped.getEndContext();
-
-      if (!expectedEndContext.equals(actualEndContext)) {
-        // Inserting the text would invalidate typing assumptions made earlier.
-        throw SoyAutoescapeException.createWithNode(
-            "Inserting `"
-                + text
-                + "` would cause text node to end in context "
-                + actualEndContext
-                + " instead of "
-                + expectedEndContext,
-            rawTextNode);
-      }
-
-      // Now that we know that it's valid to insert the text at that location, replace the text node
-      // and insert slices for each of the slices in builder corresponding to characters in text.
-      slicedRawTextNode.replaceNode(replacementNode);
-      int insertionEndOffset = insertionOffset + text.length();
-      for (RawTextSlice slice : retyped.slices) {
-        if (slice.endOffset <= insertionOffset) {
-          continue;
-        }
-        if (slice.startOffset >= insertionEndOffset) {
-          break;
-        }
-        int length =
-            Math.min(insertionEndOffset, slice.endOffset)
-                - Math.max(insertionOffset, slice.startOffset);
-        slicedRawTextNode.insertSlice(insertionIndex, slice.context, length);
-        // Increment the insertion index to point past the slice just inserted so that
-        // we're ready for the next one.
-        ++insertionIndex;
-      }
+      return getEndOffset() - getStartOffset();
     }
 
     /** The raw text of the slice. */
     public String getRawText() {
-      return slicedRawTextNode.rawTextNode.getRawText().substring(startOffset, endOffset);
-    }
-
-    /** Adjusts the start and end offsets right by the given amount. */
-    void shiftOffsets(int delta) {
-      startOffset += delta;
-      endOffset += delta;
+      return getRawTextNode().getRawText().substring(getStartOffset(), getEndOffset());
     }
 
     /** For debugging. */
     @Override
     public String toString() {
       String rawText = getRawText();
-      int id = slicedRawTextNode.rawTextNode.getId();
+      int id = getRawTextNode().getId();
       // "<rawText>"@<textNodeId> with \ and " escaped.
       return "\"" + rawText.replaceAll("\"|\\\\", "\\\\$0") + "\"#" + id;
     }
@@ -253,62 +131,12 @@ public final class SlicedRawTextNode {
     // Merge adjacent tokens that don't change context.
     if (lastSliceIndex >= 0) {
       RawTextSlice last = slices.get(lastSliceIndex);
-      if (last.endOffset == startOffset && context.equals(last.context)) {
+      if (last.getEndOffset() == startOffset && context.equals(last.getContext())) {
         slices.remove(lastSliceIndex);
-        startOffset = last.startOffset;
+        startOffset = last.getStartOffset();
       }
     }
-    slices.add(new RawTextSlice(context, this, startOffset, endOffset));
-  }
-
-  /** Replaces the backing node in the parse tree and internally. */
-  void replaceNode(RawTextNode replacement) {
-    rawTextNode.getParent().replaceChild(rawTextNode, replacement);
-    this.rawTextNode = replacement;
-  }
-
-  /**
-   * Inserts a slice, updating the offsets of any following slices and returns the newly created
-   * slice.
-   */
-  RawTextSlice insertSlice(int index, Context context, int length) {
-    if (length < 0) {
-      throw new IllegalArgumentException("length " + length + " < 0");
-    }
-    int startOffset = index == 0 ? 0 : slices.get(index - 1).endOffset;
-    for (RawTextSlice follower : slices.subList(index, slices.size())) {
-      follower.shiftOffsets(length);
-    }
-    RawTextSlice slice = new RawTextSlice(context, this, startOffset, startOffset + length);
-    slices.add(index, slice);
-    return slice;
-  }
-
-  @VisibleForTesting
-  void mergeAdjacentSlicesWithSameContext() {
-    // Rewrite list from left to right merging adjacent slices with the same context.
-    int nMerged = 0;
-    for (int i = 0, n = slices.size(), next; i < n; i = next, ++nMerged) {
-      next = i + 1;
-      RawTextSlice slice = slices.get(i);
-      // Walk next forward until we see a different context.
-      while (next < n && slice.context.equals(slices.get(next).context)) {
-        ++next;
-      }
-      // Modify slices in place to have exactly one slice corresponding to [i, next).
-      RawTextSlice merged;
-      if (next - i == 1) {
-        // If there haven't been modifications since the last merge, don't orphan slices.
-        merged = slice;
-      } else {
-        merged =
-            new RawTextSlice(
-                slice.context, this, slice.startOffset, slices.get(next - 1).endOffset);
-      }
-      slices.set(nMerged, merged);
-    }
-    // Truncate.
-    slices.subList(nMerged, slices.size()).clear();
+    slices.add(RawTextSlice.create(context, rawTextNode, startOffset, endOffset));
   }
 
   /**
@@ -318,7 +146,7 @@ public final class SlicedRawTextNode {
    * which slices can appear in the template's output because it is dependent on the ordering of
    * individual templates in the parsed input.
    *
-   * @param slicedRawTextNodes The sliced raw text nodes to search.
+   * @param slicedTextNodes The sliced raw text nodes to search.
    * @param prevContextPredicate Applied to the context before the slice being tested.
    * @param sliceContextPredicate Applied to the context of the slice being tested.
    * @param nextContextPredicate Applied to the context after the slice being tested.
@@ -340,33 +168,29 @@ public final class SlicedRawTextNode {
       nextContextPredicate = Predicates.<Context>alwaysTrue();
     }
 
-    ImmutableList.Builder<RawTextSlice> matches = ImmutableList.builder();
+    // TODO(lukes): we need to dedupe.  In some cases the inference engine produces duplicates, so
+    // we eliminate them here.  This code should all be deleted soon so this is a more expedient fix
+    ImmutableSet.Builder<RawTextSlice> matches = ImmutableSet.builder();
     for (SlicedRawTextNode slicedTextNode : slicedTextNodes) {
-      // insertText can leave adjacent slices with the same context.
-      // Merge slices so that each element in find()'s result list stands alone.
-      // This could cause problems with concurrent iteration over two find lists, but the mutators
-      // check that a slice is part of its parent so we will fail fast.
-      slicedTextNode.mergeAdjacentSlicesWithSameContext();
-
       Context prevContext = slicedTextNode.startContext;
       List<RawTextSlice> slices = slicedTextNode.slices;
       for (int i = 0, n = slices.size(); i < n; ++i) {
         RawTextSlice current = slices.get(i);
         Context nextContext;
         if (i + 1 < n) {
-          nextContext = slices.get(i + 1).context;
+          nextContext = slices.get(i + 1).getContext();
         } else {
           nextContext = slicedTextNode.endContext;
         }
         // Apply the predicates.
         if (prevContextPredicate.apply(prevContext)
-            && sliceContextPredicate.apply(current.context)
+            && sliceContextPredicate.apply(current.getContext())
             && nextContextPredicate.apply(nextContext)) {
           matches.add(current);
         }
-        prevContext = current.context;
+        prevContext = current.getContext();
       }
     }
-    return matches.build();
+    return matches.build().asList();
   }
 }

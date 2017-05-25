@@ -482,6 +482,9 @@ final class InferenceEngine {
         Context afterBody = context;
         if (neNode != null) {
           afterBody = infer(neNode, context);
+          // This causes duplicate rawtextslices to be produced.  rather than fix just ignore
+          // (see SlicedRawTextNode::find) since all the sliced raw text node infrastructure will
+          // soon be deleted.
           // Make sure that repeated invocations of the body end up in the same state.
           Context elseContext = infer(neNode, afterBody);
           Optional<Context> combined = Context.union(elseContext, afterBody);

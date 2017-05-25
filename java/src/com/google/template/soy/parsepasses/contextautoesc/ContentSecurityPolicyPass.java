@@ -28,6 +28,7 @@ import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.VarRefNode;
+import com.google.template.soy.parsepasses.contextautoesc.SlicedRawTextNode.RawTextSlice;
 import com.google.template.soy.soytree.EscapingMode;
 import com.google.template.soy.soytree.HtmlContext;
 import com.google.template.soy.soytree.IfCondNode;
@@ -308,12 +309,13 @@ public final class ContentSecurityPolicyPass {
 
     // Step 3: identify slices that end a <script> element so we can find a location where it it is
     // safe to insert an attribute.
-    for (SlicedRawTextNode.RawTextSlice slice :
+    List<RawTextSlice> transitions =
         SlicedRawTextNode.find(
             slicedRawTextNodes,
             null,
             IN_SCRIPT_OR_STYLE_TAG_PREDICATE,
-            IN_SCRIPT_OR_STYLE_BODY_PREDICATE)) {
+            IN_SCRIPT_OR_STYLE_BODY_PREDICATE);
+    for (SlicedRawTextNode.RawTextSlice slice : transitions) {
       String rawText = slice.getRawText();
       int rawTextLen = rawText.length();
       // Step 4: find a safe place to insert attributes.
@@ -328,8 +330,7 @@ public final class ContentSecurityPolicyPass {
 
       // Step 5: create a generator for the CSP nonce attribute.
       out.add(
-          new NonceAttrGenerator(
-              slice.slicedRawTextNode.getRawTextNode(), slice.getStartOffset() + insertionPoint));
+          new NonceAttrGenerator(slice.getRawTextNode(), slice.getStartOffset() + insertionPoint));
     }
   }
 
@@ -359,18 +360,19 @@ public final class ContentSecurityPolicyPass {
         ImmutableListMultimap.builder();
     for (RawTextNode node : byNode.keySet()) {
       List<InjectedSoyGenerator> group = BY_OFFSET.sortedCopy(byNode.get(node));
-      for (int i = 0, end; i < group.size(); i++) {
+      for (int i = 0; i < group.size(); ) {
         InjectedSoyGenerator firstGroupMember = group.get(i);
-        end = i + 1;
-        while (end < group.size() && group.get(end).offset == firstGroupMember.offset) {
-          ++end;
+        int start = i;
+        ++i;
+        while (i < group.size() && group.get(i).offset == firstGroupMember.offset) {
+          ++i;
         }
         // NOTE: currently it doesn't appear to be possible for there to be multiple injectors at
         // the same offset, but we support it nonetheless.
         InjectedSoyGenerator groupGenerator =
-            end == i + 1
+            i == start + 1
                 ? firstGroupMember
-                : new GroupOfInjectedSoyGenerator(group.subList(i, end));
+                : new GroupOfInjectedSoyGenerator(group.subList(start, i));
         groupedAndSorted.put(node, groupGenerator);
       }
     }
