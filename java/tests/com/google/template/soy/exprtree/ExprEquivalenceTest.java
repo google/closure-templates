@@ -19,11 +19,9 @@ package com.google.template.soy.exprtree;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.base.Equivalence.Wrapper;
-import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.exprparse.ExpressionParser;
-import com.google.template.soy.exprparse.SoyParsingContext;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
+import com.google.template.soy.soyparse.SoyFileParser;
 import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -55,8 +53,7 @@ public final class ExprEquivalenceTest {
   }
 
   private static ExprNode parse(String input) {
-    return new ExpressionParser(input, SourceLocation.UNKNOWN, SoyParsingContext.exploding())
-        .parseExpression();
+    return SoyFileParser.parseExprOrDie(input);
   }
 
   private void assertEquivalent(ExprNode left, ExprNode right) {

@@ -17,6 +17,7 @@
 package com.google.template.soy;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMap.Builder;
 import com.google.common.io.CharSource;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
@@ -25,12 +26,11 @@ import com.google.template.soy.data.restricted.PrimitiveData;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
-import com.google.template.soy.exprparse.ExpressionParser;
-import com.google.template.soy.exprparse.SoyParsingContext;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.VarRefNode;
+import com.google.template.soy.soyparse.SoyFileParser;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.Map;
@@ -95,11 +95,11 @@ public final class SoyUtils {
    * @param inputSource A source that returns a reader for the globals file.
    * @return The parsed globals map.
    * @throws IOException If an error occurs while reading the globals file.
-   * @throws java.lang.IllegalStateException If the globals file is not in the correct format.
+   * @throws IllegalStateException If the globals file is not in the correct format.
    */
   public static ImmutableMap<String, PrimitiveData> parseCompileTimeGlobals(CharSource inputSource)
       throws IOException {
-    ImmutableMap.Builder<String, PrimitiveData> compileTimeGlobalsBuilder = ImmutableMap.builder();
+    Builder<String, PrimitiveData> compileTimeGlobalsBuilder = ImmutableMap.builder();
     ErrorReporter errorReporter = ExplodingErrorReporter.get();
 
     try (BufferedReader reader = new BufferedReader(inputSource.openStream())) {
@@ -120,9 +120,7 @@ public final class SoyUtils {
         String name = matcher.group(1);
         String valueText = matcher.group(2).trim();
 
-        ExprNode valueExpr =
-            new ExpressionParser(valueText, sourceLocation, SoyParsingContext.exploding())
-                .parseExpression();
+        ExprNode valueExpr = SoyFileParser.parseExprOrDie(valueText);
 
         // Record error for non-primitives.
         // TODO: Consider allowing non-primitives (e.g. list/map literals).

@@ -14,43 +14,43 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.exprparse;
+package com.google.template.soy.soyparse;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.truth.FailureStrategy;
 import com.google.common.truth.Subject;
 import com.google.common.truth.SubjectFactory;
 import com.google.common.truth.Truth;
-import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.FormattingErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.VarRefNode;
-import java.util.List;
 
 /**
- * Custom Truth subject for testing {@link ExpressionParser}.
+ * Custom Truth subject for testing expression parsing.
  *
  * @author brndn@google.com (Brendan Linn)
  */
 final class ExpressionSubject extends Subject<ExpressionSubject, String> {
 
+  private final FormattingErrorReporter errorReporter;
+
   private static final SubjectFactory<ExpressionSubject, String> FACTORY =
       new SubjectFactory<ExpressionSubject, String>() {
         @Override
         public ExpressionSubject getSubject(FailureStrategy failureStrategy, String s) {
-          return new ExpressionSubject(failureStrategy, s);
+          return new ExpressionSubject(failureStrategy, s, new FormattingErrorReporter());
         }
       };
 
   private final ImmutableMap.Builder<String, String> aliasesBuilder = ImmutableMap.builder();
 
-  public ExpressionSubject(FailureStrategy failureStrategy, String s) {
+  public ExpressionSubject(
+      FailureStrategy failureStrategy, String s, FormattingErrorReporter errorReporter) {
     super(failureStrategy, s);
+    this.errorReporter = errorReporter;
   }
 
   static ExpressionSubject assertThatExpression(String input) {
@@ -66,69 +66,45 @@ final class ExpressionSubject extends Subject<ExpressionSubject, String> {
   }
 
   void isNotValidExpression() {
-    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
-    expressionParser(errorReporter).parseExpression();
-    if (errorReporter.getErrorMessages().isEmpty()) {
+    parseExpression();
+    if (!errorReporter.hasErrors()) {
       fail("is an invalid expression");
     }
   }
 
-  void isNotValidExpressionList() {
-    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
-    expressionParser(errorReporter).parseExpressionList();
-    if (errorReporter.getErrorMessages().isEmpty()) {
-      fail("is an invalid expression list");
-    }
-  }
-
   void isNotValidGlobal() {
-    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
-    ExprNode expr = expressionParser(errorReporter).parseExpression();
-    ImmutableList<String> errorMessages = errorReporter.getErrorMessages();
-    if (expr instanceof GlobalNode && errorMessages.isEmpty()) {
+    ExprNode expr = parseExpression();
+    if (expr instanceof GlobalNode && !errorReporter.hasErrors()) {
       fail("is an invalid global");
     }
   }
 
   void isNotValidVar() {
-    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
-    expressionParser(errorReporter).parseVariable();
-    if (errorReporter.getErrorMessages().isEmpty()) {
+    ExprNode expr = parseExpression();
+    if (expr instanceof VarRefNode && !errorReporter.hasErrors()) {
       fail("is an invalid var");
     }
   }
 
   ExprNode isValidExpression() {
-    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
-    ExprNode expr = expressionParser(errorReporter).parseExpression();
-    if (!errorReporter.getErrorMessages().isEmpty()) {
+    ExprNode expr = parseExpression();
+    if (errorReporter.hasErrors()) {
       fail("is a valid expression", errorReporter.getErrorMessages());
     }
     return expr;
   }
 
-  List<ExprNode> isValidExpressionList() {
-    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
-    List<ExprNode> exprList = expressionParser(errorReporter).parseExpressionList();
-    if (!errorReporter.getErrorMessages().isEmpty()) {
-      fail("is a valid expression list", errorReporter.getErrorMessages());
-    }
-    return exprList;
-  }
-
   void isValidGlobal() {
-    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
-    ExprNode expr = expressionParser(errorReporter).parseExpression();
-    if (!errorReporter.getErrorMessages().isEmpty()) {
+    ExprNode expr = parseExpression();
+    if (errorReporter.hasErrors()) {
       fail("is a valid global", errorReporter.getErrorMessages());
     }
     Truth.assertThat(expr).named(actualAsString()).isInstanceOf(GlobalNode.class);
   }
 
   void isValidGlobalNamed(String name) {
-    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
-    GlobalNode globalNode = (GlobalNode) expressionParser(errorReporter).parseExpression();
-    if (!errorReporter.getErrorMessages().isEmpty()) {
+    GlobalNode globalNode = (GlobalNode) parseExpression();
+    if (errorReporter.hasErrors()) {
       fail("is valid global", errorReporter.getErrorMessages());
     }
     String actualName = globalNode.getName();
@@ -142,18 +118,16 @@ final class ExpressionSubject extends Subject<ExpressionSubject, String> {
   }
 
   void isValidVar() {
-    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
-    expressionParser(errorReporter).parseVariable();
-    if (!errorReporter.getErrorMessages().isEmpty()) {
+    ExprNode expr = parseExpression();
+    if (!(expr instanceof VarRefNode) || errorReporter.hasErrors()) {
       fail("is a valid var", errorReporter.getErrorMessages());
     }
   }
 
   void isValidVarNamed(String name) {
-    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
-    VarRefNode varNode = expressionParser(errorReporter).parseVariable();
+    VarRefNode varNode = (VarRefNode) parseExpression();
 
-    assertThat(errorReporter.getErrorMessages()).isEmpty();
+    assertThat(errorReporter.hasErrors()).isFalse();
 
     String actualName = varNode.getName();
     if (!actualName.equals(name)) {
@@ -169,10 +143,7 @@ final class ExpressionSubject extends Subject<ExpressionSubject, String> {
     return this;
   }
 
-  private ExpressionParser expressionParser(ErrorReporter reporter) {
-    return new ExpressionParser(
-        actual(),
-        SourceLocation.UNKNOWN,
-        SoyParsingContext.create(reporter, "fake.namespace", aliasesBuilder.build()));
+  private ExprNode parseExpression() {
+    return SoyFileParser.parseExpression(actual(), errorReporter);
   }
 }

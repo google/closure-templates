@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.exprparse;
+package com.google.template.soy.soyparse;
 
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.template.soy.exprparse.ExpressionSubject.assertThatExpression;
+import static com.google.template.soy.soyparse.ExpressionSubject.assertThatExpression;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
@@ -42,22 +42,20 @@ import com.google.template.soy.exprtree.OperatorNodes.MinusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
-import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
 import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
-import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 /**
- * Unit tests for the Soy expression parser.
+ * Unit tests for Soy expression parsing.
  *
  */
 @RunWith(JUnit4.class)
-public final class ExpressionParserTest {
+public final class ParseExpressionTest {
 
   @Test
   public void testRecognizeVariable() {
@@ -306,13 +304,6 @@ public final class ExpressionParserTest {
   }
 
   @Test
-  public void testRecognizeExpressionList() {
-    assertThatExpression("$aaa, $bbb.ccc + 1, index($ddd)").isValidExpressionList();
-    assertThatExpression("").isNotValidExpressionList();
-    assertThatExpression("1, , 3").isNotValidExpressionList();
-  }
-
-  @Test
   public void testParseVariable() {
     assertThatExpression("$boo").isValidVarNamed("boo");
   }
@@ -504,16 +495,6 @@ public final class ExpressionParserTest {
     assertThat(condOp.getChild(0)).isInstanceOf(EqualOpNode.class);
     assertThat(condOp.getChild(1)).isInstanceOf(TimesOpNode.class);
     assertThat(condOp.getChild(2)).isInstanceOf(IntegerNode.class);
-  }
-
-  @Test
-  public void testParseExpressionList() throws Exception {
-    List<ExprNode> exprList =
-        assertThatExpression("$aaa, $bbb.ccc + 1, index($ddd)").isValidExpressionList();
-    assertThat(exprList).hasSize(3);
-    assertThat(exprList.get(0)).isInstanceOf(VarRefNode.class);
-    assertThat(exprList.get(1)).isInstanceOf(PlusOpNode.class);
-    assertThat(exprList.get(2)).isInstanceOf(FunctionNode.class);
   }
 
   @Test

@@ -61,6 +61,7 @@ import com.google.template.soy.base.internal.LegacyInternalSyntaxException;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.exprparse.SoyParsingContext;
@@ -140,6 +141,7 @@ import com.google.template.soy.types.primitive.ErrorType;
 import com.google.template.soy.types.primitive.UnknownType;
 import com.google.template.soy.types.primitive.NullType;
 import java.io.Reader;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -388,6 +390,24 @@ public class SoyFileParser {
       SoyErrorKind.of("Disallowed single-identifier key \"{0}\" in map literal "
           + "(please surround with single quotes for string or parentheses for global).");
 
+  /** Attempts to parse the given input as a Soy expression. */
+  public static ExprNode parseExprOrDie(String exprText) {
+    return parseExpression(exprText, ExplodingErrorReporter.get());
+  }
+
+  /** Attempts to parse the given input as a Soy expression. Returns null if parsing fails. */
+  @Nullable
+  public static ExprNode parseExpression(String exprText, ErrorReporter errorReporter) {
+    SoyFileParser parser = new SoyFileParser(exprText, errorReporter);
+    parser.pushStateAtZero(EXPR);
+
+    try {
+      return parser.ExprInput();
+    } catch (ParseException e) {
+      ParseErrors.reportSoyFileParseException(errorReporter, "expression parser", e);
+      return null;
+    }
+  }
 
   /** Type registry for resolving type names. */
   private SoyTypeRegistry typeRegistry;
@@ -433,9 +453,14 @@ public class SoyFileParser {
     this.errorReporter = checkNotNull(errorReporter);
   }
 
-  /**
-   * Attempts to parse the given input as a Soy file, returns null if parsing fails.
-   */
+  /** Constructor for use by parseExpression() only. */
+  private SoyFileParser(String input, ErrorReporter errorReporter) {
+    this(new StringReader(input));
+    this.filePath = "expression parser";
+    this.errorReporter = checkNotNull(errorReporter);
+  }
+
+  /** Attempts to parse the given input as a Soy file. Returns null if parsing fails. */
   @Nullable
   public SoyFileNode parseSoyFile() {
     checkNotNull(typeRegistry);
@@ -3092,6 +3117,22 @@ private DebuggerNode DebuggerStmt() :
 // -------------------------------------------------------------------------------------------------
 // Soy Expressions.
 
+
+
+/**
+ * Matches the whole input if it is a full expression.
+ *
+ * ExprInput -> Expr EOF
+ */
+private ExprNode ExprInput() :
+{
+  ExprNode expr;
+}
+{
+  expr = Expr()
+  <EOF>
+  { return expr; }
+}
 
 
 /**

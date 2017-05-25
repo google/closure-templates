@@ -21,12 +21,10 @@ import static org.junit.Assert.assertEquals;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.error.FormattingErrorReporter;
-import com.google.template.soy.exprparse.ExpressionParser;
-import com.google.template.soy.exprparse.SoyParsingContext;
 import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.soyparse.SoyFileParser;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.Test;
@@ -39,8 +37,6 @@ import org.junit.runners.JUnit4;
  */
 @RunWith(JUnit4.class)
 public final class MsgSubstUnitBaseVarNameUtilsTest {
-
-  private static final SoyParsingContext FAIL = SoyParsingContext.exploding();
 
   @Test
   public void testGenBaseNames() {
@@ -168,6 +164,6 @@ public final class MsgSubstUnitBaseVarNameUtilsTest {
   }
 
   private ExprNode parse(String exprText) {
-    return new ExpressionParser(exprText, SourceLocation.UNKNOWN, FAIL).parseExpression();
+    return SoyFileParser.parseExprOrDie(exprText);
   }
 }
