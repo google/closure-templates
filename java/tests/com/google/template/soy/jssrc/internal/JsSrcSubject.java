@@ -317,6 +317,12 @@ abstract class JsSrcSubject<T extends Subject<T, String>> extends Subject<T, Str
         public void failComparing(String message, CharSequence expected, CharSequence actual) {
           delegate.failComparing(prependMessage(message), expected, actual);
         }
+
+        @Override
+        public void failComparing(
+            String message, CharSequence expected, CharSequence actual, Throwable cause) {
+          delegate.failComparing(prependMessage(message), expected, actual, cause);
+        }
       };
     }
 
