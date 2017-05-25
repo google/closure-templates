@@ -162,7 +162,7 @@ public class TemplateNodeTest {
         .containsExactly(
             "Template name 'autoescape' must be relative to the file namespace, i.e. a dot "
                 + "followed by an identifier.",
-            "parse error at '=': expected <DATA_ATTR>, <VARIANT_ATTR>, }, identifier, or .");
+            "parse error at '=': expected attribute name, }, identifier, or .");
 
     errorReporter = new FormattingErrorReporter();
     parse("{namespace ns}\n{template .foo autoescape=\"}{/template}", errorReporter);
