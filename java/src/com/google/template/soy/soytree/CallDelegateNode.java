@@ -198,24 +198,27 @@ public final class CallDelegateNode extends CallNode {
 
   @Override
   public String getCommandText() {
-    String commandText = delCalleeName;
+    StringBuilder commandText = new StringBuilder(delCalleeName);
 
     if (isPassingAllData()) {
-      commandText += " data=\"all\"";
+      commandText.append(" data=\"all\"");
     } else if (getDataExpr() != null) {
-      commandText += " data=\"" + getDataExpr().toSourceString() + '"';
+      commandText.append(" data=\"").append(getDataExpr().toSourceString()).append('"');
     }
     if (getUserSuppliedPhName() != null) {
-      commandText += " phname=\"" + getUserSuppliedPhName() + '"';
+      commandText.append(" phname=\"").append(getUserSuppliedPhName()).append('"');
     }
     if (variantExpr != null) {
-      commandText += " variant=\"" + variantExpr.toSourceString() + '"';
+      commandText.append(" variant=\"").append(variantExpr.toSourceString()).append('"');
     }
     if (allowEmptyDefault.isSet()) {
-      commandText += " allowemptydefault=\"" + (allowEmptyDefault == TriState.ENABLED) + '"';
+      commandText
+          .append(" allowemptydefault=\"")
+          .append(allowEmptyDefault == TriState.ENABLED)
+          .append('"');
     }
 
-    return commandText;
+    return commandText.toString();
   }
 
   @Override
