@@ -307,6 +307,103 @@ import javax.annotation.Nullable;
  * 5. Misc:
  *    + The following commands are not allowed to appear in a template:
  *      {namespace ...}   {template ...}   {/template}
+ *
+ * Expressions:
+ *
+ * A. Variable:
+ *    + A dollar sign "$" followed by an identifier (no space between).
+ *
+ * B. Data reference:
+ *    + The first part must be "$" followed by the first key name (no space between).
+ *    + The first key name cannot be a number.
+ *    + A variable will only have the first part. A data reference may have subsequent parts.
+ *    + Subsequent parts may be:
+ *       - A dot "." or question-dot "?." followed by a key name or array index (spaces between are
+ *         allowed).
+ *       - Brackets "[ ]" or question-brackets "?[ ]" with any expression inside the brackets (see
+ *         below for definition of expression).
+ *    + A special case is when the first key name is "ij". In this case, it's a reference to
+ *      injected data, and the reference is considered to start from the second key (i.e. the second
+ *      key actually becomes the first key in the parsed node).
+ *    Examples:   $aaa   $ij.aaa   $aaa.bbb.0.ccc.12   $aaa[0]['bbb'].ccc   $aaa[$bbb + $ccc]
+ *
+ * C. Global:
+ *    + One or more identifiers. If more than one, a dot "." is used to separate them.
+ *    + Must not be preceded by a dollar sign "$".
+ *    Examples:   AAA   aaa.bbb.CCC   a22.b88_
+ *
+ * D. Expression list:
+ *    + A comma-separated list of one or more expressions (see below for definition of expression).
+ *    Examples:   $aaa, $bbb.ccc + 1, round(3.14)
+ *
+ * E. Named parameter list:
+ *    + A named parameter list, used only for proto initialization calls.
+ *    + A comma-separate list of named expressions, in which names and expressions are separated by
+ *      a colon ":".
+ *    + Named and unnamed expressions cannot be mixed within the same function call.
+ *    Examples:   foo: $aaa, bar: $bbb.ccc + 1, baz: round(3.14)
+ *
+ * F. Expression:
+ *
+ *    1. Data reference:
+ *       + See above for definition.
+ *
+ *    2. Global:
+ *       + See above for definition.
+ *
+ *    3. Null:   null
+ *
+ *    4. Boolean:   false   true
+ *
+ *    5. Integer:
+ *       + No octal numbers.
+ *       + Hex numbers have strict lower case "x" in "0x" and "A-F" or "a-f".
+ *       Examples:   0   26   -729   0x1a2B
+ *
+ *    6. Float:
+ *       + Decimal numbers only.
+ *       + Must have digits on both sides of decimal point.
+ *       + Exponents have strict lower case "e".
+ *       Examples:   0.0   3.14159   -20.0   6.03e23   -3e-3
+ *
+ *    7. String:
+ *       + Single quotes only.
+ *       + Escape sequences:   \\   \'   \"   \n   \r   \t   \b   \f
+ *       + Unicode escape:   \ u ####   (backslash, "u", four hex digits -- no spaces in between)
+ *       Examples:   ''   'abc'   'blah bleh bluh'   'aa\\bb\'cc\ndd'   '\u263a'
+ *
+ *    8. List literal:
+ *       + Delimited by brackets.
+ *       Examples:   []   ['blah', 123, $foo]
+ *
+ *    9. Map literal:
+ *       + Delimited by brackets.
+ *       + Empty map has a single colon within the brackets (to distinguish from empty list).
+ *       + Keys must be strings (or expressions that will evaluate to strings).
+ *       Examples:   [:]   ['aaa': 'blah', 'bbb': 123, $boo: $foo]
+ *
+ *    10. Operator:
+ *       + Parentheses can be used to override precedence rules:   ( )
+ *       + Precedence 8:   - (unary)   not
+ *       + Precedence 7:   *   /   %
+ *       + Precedence 6:   +   - (binary)
+ *       + Precedence 5:   <   >   <=   >=
+ *       + Precedence 4:   ==   !=
+ *       + Precedence 3:   and
+ *       + Precedence 2:   or
+ *       + Precedence 1:   ?: (binary)   ? : (ternary)
+ *
+ *    11. Function:
+ *       + Function name, open parenthesis, optional expression list, close parenthesis.
+ *       + The function name is one or more identifiers, seperated by dots.
+ *       + See above for the definition of an expression list.
+ *       Examples:   foo()   isFirst($item)   my.new.Proto(a: 'str', b: $foo)
+ *
+ *    12. Proto initialization:
+ *       + Fully qualified proto name, open parenthesis, optional named parameter list,
+ *         close parenthesis.
+ *       + See above for the definition of a named parameter list.
+ *       Examples:   proto()   my.new.Proto(a: 'str', b: $foo)*
  * </pre>
  *
  * <p>TODO(lukes):  This parser has a lot of issues:

@@ -50,18 +50,6 @@ public abstract class AbstractExprNode extends AbstractNode implements ExprNode 
     this.sourceLocation = orig.sourceLocation;
   }
 
-  /**
-   * TODO(user): The quality of source locations in expression nodes is not great. These source
-   * locations are computed by the expression parser, and they depend on the parentSourceLocation
-   * that is passed in to the ExpressionParser constructor. The quality of these
-   * parentSourceLocations varies. Callers often perform regex-based munging of expression texts
-   * before passing them to the ExpressionParser (example: {@code
-   * CallParamNode.Builder#parseCommandTextHelper}), which implies that the parentSourceLocation
-   * passed along with the munged text is inaccurate.
-   *
-   * <p>Until this is fixed, source locations obtained from expression nodes should be treated as
-   * best-effort only.
-   */
   @Override
   public SourceLocation getSourceLocation() {
     return sourceLocation;
