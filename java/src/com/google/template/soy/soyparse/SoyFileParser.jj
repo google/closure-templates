@@ -3702,6 +3702,7 @@ private ExprNode GlobalOrFunction() :
         closeParen = <RPAREN>
         {
           // TODO(user): Add source locations to paramNames
+          // TODO(user): Also add type, then remove code from RETV
           ProtoInitNode pNode = new ProtoInitNode(
               ident.identifier(), paramNames, ident.location().extend(createSrcLoc(closeParen)));
           pNode.addChildren(params);
@@ -3738,11 +3739,15 @@ private ExprNode GlobalOrFunction() :
       return new GlobalNode(ident.identifier(), ident.location());
     }
 
-    // we found parens, but no param content. For exprs with no params, prefer functions.
-    // TODO(user): Right now, the ambiguity is resolved in RewriteFunctionsPass, because
-    // ExpressionParser doesn't have access to the type registry. Once ExprParser gets rolled into
-    // SoyFileParser, get rid of RewriteFunctionsPass and do it in the parser.
-    return new FunctionNode(ident.identifier(), ident.location().extend(createSrcLoc(closeParen)));
+    // Look up ident in the type registry, see if it's a proto. Otherwise, it is a function.
+    String name = ident.identifier();
+    SourceLocation loc = ident.location().extend(createSrcLoc(closeParen));
+    SoyType type = (typeRegistry == null) ? null : typeRegistry.getType(ident.identifier());
+    if (type != null && type.getKind() == SoyType.Kind.PROTO) {
+      return new ProtoInitNode(name, ImmutableList.<String>of(), loc);
+    } else {
+      return new FunctionNode(name, loc);
+    }
   }
 }
 
