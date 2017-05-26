@@ -43,6 +43,14 @@ import java.util.regex.Pattern;
  */
 public final class SoyUtils {
 
+  // Error types for bad lines in the compile-time globals file.
+  private static final SoyErrorKind INVALID_FORMAT =
+      SoyErrorKind.of("Invalid globals line format ''{0}''.");
+  private static final SoyErrorKind INVALID_VALUE =
+      SoyErrorKind.of("Invalid global value ''{0}''.");
+  private static final SoyErrorKind NON_PRIMITIVE_VALUE =
+      SoyErrorKind.of("Non-primitive global value ''{0}''.");
+
   private SoyUtils() {}
 
   /**
@@ -71,13 +79,6 @@ public final class SoyUtils {
               .toSourceString();
       output.append(entry.getKey()).append(" = ").append(valueSrcStr).append("\n");
     }
-  }
-
-  /** Error types for bad lines in the compile-time globals file. */
-  private static final class CompileTimeGlobalsFileErrors {
-    static final SoyErrorKind INVALID_FORMAT = SoyErrorKind.of("Invalid line format: {0}");
-    static final SoyErrorKind INVALID_VALUE = SoyErrorKind.of("Invalid value: {0}");
-    static final SoyErrorKind NON_PRIMITIVE_VALUE = SoyErrorKind.of("Non-primitive value: {0}");
   }
 
   /**
@@ -114,7 +115,7 @@ public final class SoyUtils {
 
         Matcher matcher = COMPILE_TIME_GLOBAL_LINE.matcher(line);
         if (!matcher.matches()) {
-          errorReporter.report(sourceLocation, CompileTimeGlobalsFileErrors.INVALID_FORMAT, line);
+          errorReporter.report(sourceLocation, INVALID_FORMAT, line);
           continue;
         }
         String name = matcher.group(1);
@@ -126,10 +127,9 @@ public final class SoyUtils {
         // TODO: Consider allowing non-primitives (e.g. list/map literals).
         if (!(valueExpr instanceof PrimitiveNode)) {
           if (valueExpr instanceof GlobalNode || valueExpr instanceof VarRefNode) {
-            errorReporter.report(sourceLocation, CompileTimeGlobalsFileErrors.INVALID_VALUE, line);
+            errorReporter.report(sourceLocation, INVALID_VALUE, valueExpr.toSourceString());
           } else {
-            errorReporter.report(
-                sourceLocation, CompileTimeGlobalsFileErrors.NON_PRIMITIVE_VALUE, line);
+            errorReporter.report(sourceLocation, NON_PRIMITIVE_VALUE, valueExpr.toSourceString());
           }
           continue;
         }
