@@ -1472,7 +1472,7 @@ public final class TemplateParserTest {
 
     CallBasicNode cn0 = (CallBasicNode) nodes.get(0);
     assertEquals("brittle.test.ns.booTemplate_", cn0.getCalleeName());
-    assertEquals(".booTemplate_", cn0.getSrcCalleeName());
+    assertEquals(".booTemplate_", cn0.getSourceCalleeName());
     assertEquals(false, cn0.isPassingData());
     assertEquals(false, cn0.isPassingAllData());
     assertEquals(null, cn0.getDataExpr());
@@ -1481,7 +1481,7 @@ public final class TemplateParserTest {
 
     CallBasicNode cn1 = (CallBasicNode) nodes.get(1);
     assertEquals("foo.goo.mooTemplate", cn1.getCalleeName());
-    assertEquals("foo.goo.mooTemplate", cn1.getSrcCalleeName());
+    assertEquals("foo.goo.mooTemplate", cn1.getSourceCalleeName());
     assertEquals(true, cn1.isPassingData());
     assertEquals(true, cn1.isPassingAllData());
     assertEquals(null, cn1.getDataExpr());
@@ -1490,7 +1490,7 @@ public final class TemplateParserTest {
 
     CallBasicNode cn2 = (CallBasicNode) nodes.get(2);
     assertEquals("brittle.test.ns.booTemplate_", cn2.getCalleeName());
-    assertEquals(".booTemplate_", cn2.getSrcCalleeName());
+    assertEquals(".booTemplate_", cn2.getSourceCalleeName());
     assertFalse(cn2.isPassingData());
     assertEquals(false, cn2.isPassingAllData());
     assertEquals(null, cn2.getDataExpr());
@@ -1499,7 +1499,7 @@ public final class TemplateParserTest {
 
     CallBasicNode cn3 = (CallBasicNode) nodes.get(3);
     assertEquals("brittle.test.ns.zooTemplate", cn3.getCalleeName());
-    assertEquals(".zooTemplate", cn3.getSrcCalleeName());
+    assertEquals(".zooTemplate", cn3.getSourceCalleeName());
     assertEquals(true, cn3.isPassingData());
     assertEquals(false, cn3.isPassingAllData());
     assertTrue(cn3.getDataExpr().getRoot() != null);
@@ -1608,7 +1608,7 @@ public final class TemplateParserTest {
     CallBasicNode cn0 = (CallBasicNode) ((MsgPlaceholderNode) nodes.get(0)).getChild(0);
     assertEquals("BOO_TEMPLATE", cn0.genBasePhName());
     assertEquals("brittle.test.ns.booTemplate_", cn0.getCalleeName());
-    assertEquals(".booTemplate_", cn0.getSrcCalleeName());
+    assertEquals(".booTemplate_", cn0.getSourceCalleeName());
     assertEquals(false, cn0.isPassingData());
     assertEquals(false, cn0.isPassingAllData());
     assertEquals(null, cn0.getDataExpr());

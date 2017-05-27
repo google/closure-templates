@@ -194,7 +194,8 @@ public final class TemplateRegistryTest {
                     "example.soy"))
             .parse()
             .registry();
-    CallBasicNode node = new CallBasicNode(0, SourceLocation.UNKNOWN, "ns.foo", NO_ATTRS, FAIL);
+    CallBasicNode node =
+        new CallBasicNode(0, SourceLocation.UNKNOWN, "ns.foo", "ns.foo", NO_ATTRS, FAIL);
     assertThat(registry.getCallContentKind(node)).hasValue(ContentKind.ATTRIBUTES);
   }
 
@@ -211,7 +212,8 @@ public final class TemplateRegistryTest {
                     "example.soy"))
             .parse()
             .registry();
-    CallBasicNode node = new CallBasicNode(0, SourceLocation.UNKNOWN, "ns.moo", NO_ATTRS, FAIL);
+    CallBasicNode node =
+        new CallBasicNode(0, SourceLocation.UNKNOWN, "ns.moo", "ns.moo", NO_ATTRS, FAIL);
     assertThat(registry.getCallContentKind(node)).isAbsent();
   }
 

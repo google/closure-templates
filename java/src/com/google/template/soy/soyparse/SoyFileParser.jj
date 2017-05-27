@@ -520,6 +520,9 @@ public class SoyFileParser {
   /** For reporting errors during parsing. */
   private ErrorReporter errorReporter;
 
+  /** The header info for the file we are parsing. */
+  private SoyFileHeaderInfo headerInfo;
+
   /** Can only be used in templates. */
   // TODO(user): Won't be needed once everything is parsed in javacc
   private SoyParsingContext context;
@@ -1276,14 +1279,13 @@ private SoyFileNode SoyFile() :
   )*
 
   {
-    SoyFileHeaderInfo soyFileHeaderInfo =
-        new SoyFileHeaderInfo(errorReporter, delpackageName, namespace, aliases);
+    headerInfo = new SoyFileHeaderInfo(errorReporter, delpackageName, namespace, aliases);
 
     context =
         SoyParsingContext.create(
             errorReporter,
-            soyFileHeaderInfo.namespace,
-            soyFileHeaderInfo.aliasToNamespaceMap);
+            headerInfo.namespace,
+            headerInfo.aliasToNamespaceMap);
 
     SoyFileNode sfn =
         new SoyFileNode(
@@ -1291,11 +1293,11 @@ private SoyFileNode SoyFile() :
             filePath,
             soyFileKind,
             namespace,
-            soyFileHeaderInfo);
+            headerInfo);
   }
 
   (
-    template = Template(soyFileHeaderInfo)
+    template = Template(headerInfo)
     {
       if (template != null) {
         // it will be null if a parsing error occurred
@@ -2961,10 +2963,13 @@ private CallNode CallStmt() :
     }
 
     {
+      String fullName =
+          SoyParseUtils.calculateFullCalleeName(calleeName, headerInfo, errorReporter);
       CallBasicNode node = new CallBasicNode(
           nodeIdGen.genId(),
           createSrcLoc(tagBegin, tagEnd),
           calleeName.identifier(),
+          fullName,
           attributes,
           errorReporter);
       node.addChildren(params);

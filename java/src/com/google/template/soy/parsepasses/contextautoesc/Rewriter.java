@@ -154,8 +154,7 @@ final class Rewriter {
       if (derivedCalleeName != null) {
         if (node instanceof CallBasicNode) {
           CallBasicNode cast = (CallBasicNode) node;
-          cast.setCalleeName(derivedCalleeName);
-          cast.setSrcCalleeName(derivedCalleeName);
+          cast.setNewCalleeName(derivedCalleeName);
         } else {
           ((CallDelegateNode) node).setDelCalleeName(derivedCalleeName);
         }

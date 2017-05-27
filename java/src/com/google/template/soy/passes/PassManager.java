@@ -107,7 +107,6 @@ public final class PassManager {
             // expressions do not introduce extra placeholders for call and print nodes.
             .add(new StrictHtmlValidationPass(options.getExperimentalFeatures(), errorReporter))
             .add(new RewriteGlobalsPass(registry, options.getCompileTimeGlobals(), errorReporter))
-            .add(new SetFullCalleeNamesPass())
             .add(new ResolveNamesPass())
             .add(new ResolveFunctionsPass());
     if (!disableAllTypeChecking) {
@@ -298,13 +297,6 @@ public final class PassManager {
     @Override
     public void run(SoyFileNode file, IdGenerator nodeIdGen) {
       new RewriteRemaindersVisitor(errorReporter).exec(file);
-    }
-  }
-
-  private final class SetFullCalleeNamesPass extends CompilerFilePass {
-    @Override
-    public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-      new SetFullCalleeNamesVisitor(errorReporter).exec(file);
     }
   }
 

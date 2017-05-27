@@ -51,9 +51,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
- * <p>Precondition: All template and callee names should be full names (i.e. you must execute {@code
- * SetFullCalleeNamesVisitor} before executing this visitor).
- *
  * <p>Note this visitor only works for code in Soy V2 syntax.
  *
  * <p>{@link #exec} should be called on a full parse tree. There is no return value. However, errors

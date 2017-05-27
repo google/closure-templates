@@ -39,17 +39,16 @@ import javax.annotation.Nullable;
 public final class CallBasicNode extends CallNode {
 
   /**
-   * The callee name string as it appears in the source code.
+   * The full name of the template being called, after namespace / alias resolution.
    *
    * <p>Not final. The contextual autoescaper can rewrite the callee name, if the same callee
    * template is called into from two different contexts, and the autoescaper needs to clone a
    * template and retarget the call.
    */
-  private String sourceCalleeName;
+  private String fullCalleeName;
 
-  /** The full name of the template being called. Briefly null before being set. */
-  // TODO(user): Fold SetFullCalleeVisitor into parser, remove this field.
-  private String calleeName;
+  /** The callee name string as it appears in the source code. */
+  private String sourceCalleeName;
 
   /**
    * The list of params that need to be type checked when this node is run. All the params that
@@ -65,12 +64,15 @@ public final class CallBasicNode extends CallNode {
   public CallBasicNode(
       int id,
       SourceLocation location,
-      String calleeName,
+      String sourceCalleeName,
+      String fullCalleeName,
       List<CommandTagAttribute> attributes,
       ErrorReporter errorReporter) {
     super(id, location, "call", attributes);
-    this.sourceCalleeName = calleeName;
-    this.calleeName = calleeName;
+    checkArgument(BaseUtils.isDottedIdentifier(fullCalleeName));
+
+    this.sourceCalleeName = sourceCalleeName;
+    this.fullCalleeName = fullCalleeName;
 
     for (CommandTagAttribute attr : attributes) {
       String name = attr.getName().identifier();
@@ -99,7 +101,7 @@ public final class CallBasicNode extends CallNode {
   private CallBasicNode(CallBasicNode orig, CopyState copyState) {
     super(orig, copyState);
     this.sourceCalleeName = orig.sourceCalleeName;
-    this.calleeName = orig.calleeName;
+    this.fullCalleeName = orig.fullCalleeName;
     this.paramsToRuntimeTypeCheck = orig.paramsToRuntimeTypeCheck;
   }
 
@@ -109,30 +111,20 @@ public final class CallBasicNode extends CallNode {
   }
 
   /** Returns the callee name string as it appears in the source code. */
-  public String getSrcCalleeName() {
+  public String getSourceCalleeName() {
     return sourceCalleeName;
   }
 
-  /** Do not call this method outside the contextual autoescaper. */
-  public void setSrcCalleeName(String sourceCalleeName) {
-    this.sourceCalleeName = sourceCalleeName;
-  }
-
   /** Returns the full name of the template being called, or null if not yet set. */
-  // TODO(user): remove
   public String getCalleeName() {
-    return calleeName;
+    return fullCalleeName;
   }
 
-  /**
-   * Sets the full name of the template being called (must not be a partial name).
-   *
-   * @param calleeName The full name of the template being called.
-   */
-  // TODO(user): Remove.
-  public void setCalleeName(String calleeName) {
-    checkArgument(BaseUtils.isDottedIdentifier(calleeName));
-    this.calleeName = calleeName;
+  /** Do not call this method outside the contextual autoescaper. */
+  public void setNewCalleeName(String name) {
+    checkArgument(BaseUtils.isDottedIdentifier(name));
+    this.sourceCalleeName = name;
+    this.fullCalleeName = name;
   }
 
   /** Sets the names of the params that require runtime type checking against callee's types. */
