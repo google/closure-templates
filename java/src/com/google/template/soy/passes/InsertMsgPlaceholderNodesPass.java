@@ -21,11 +21,6 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallNode;
-import com.google.template.soy.soytree.HtmlAttributeNode;
-import com.google.template.soy.soytree.HtmlAttributeValueNode;
-import com.google.template.soy.soytree.HtmlCloseTagNode;
-import com.google.template.soy.soytree.HtmlOpenTagNode;
-import com.google.template.soy.soytree.HtmlTagNode;
 import com.google.template.soy.soytree.MsgHtmlTagNode;
 import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.MsgPlaceholderNode;
@@ -38,6 +33,7 @@ import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
 import com.google.template.soy.soytree.SoyNode.MsgPlaceholderInitialNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -67,7 +63,7 @@ final class InsertMsgPlaceholderNodesPass extends CompilerFilePass {
   }
 
   private static final class Visitor extends AbstractSoyNodeVisitor<Void> {
-    final List<SoyNode> nodesToReplace = new ArrayList<>();
+    final List<SoyNode.MsgPlaceholderInitialNode> nodesToReplace = new ArrayList<>();
     final IdGenerator nodeIdGen;
     final ErrorReporter errorReporter;
     boolean inMsgNode = false;
@@ -83,8 +79,8 @@ final class InsertMsgPlaceholderNodesPass extends CompilerFilePass {
       inMsgNode = true;
       visitChildren(msgNode);
       inMsgNode = false;
-      for (SoyNode node : nodesToReplace) {
-        ParentSoyNode<?> parent = node.getParent();
+      for (SoyNode.MsgPlaceholderInitialNode node : nodesToReplace) {
+        ParentSoyNode<StandaloneNode> parent = node.getParent();
         if (!(parent instanceof MsgBlockNode)) {
           throw new AssertionError(
               "Expected parent: "
@@ -96,14 +92,7 @@ final class InsertMsgPlaceholderNodesPass extends CompilerFilePass {
         }
         int index = parent.getChildIndex(node);
         parent.removeChild(index);
-        MsgPlaceholderInitialNode newNode;
-        if (node instanceof HtmlTagNode) {
-          newNode = MsgHtmlTagNode.fromNode(nodeIdGen.genId(), (HtmlTagNode) node, errorReporter);
-        } else {
-          // print, and call nodes don't get additional wrappers.
-          newNode = (MsgPlaceholderInitialNode) node;
-        }
-        ((MsgBlockNode) parent).addChild(index, new MsgPlaceholderNode(nodeIdGen.genId(), newNode));
+        parent.addChild(index, new MsgPlaceholderNode(nodeIdGen.genId(), node));
       }
       nodesToReplace.clear();
     }
@@ -138,28 +127,7 @@ final class InsertMsgPlaceholderNodesPass extends CompilerFilePass {
 
     @Override
     protected void visitMsgHtmlTagNode(MsgHtmlTagNode node) {
-      throw new AssertionError("Unexpected node: " + node.toSourceString());
-    }
-
-    @Override
-    protected void visitHtmlOpenTagNode(HtmlOpenTagNode node) {
       maybeAddAndVisitChildren(node);
-      // NOTE: it is OK for these nodes to have phname attrs outside of msg blocks for backwards
-      // compatibility
-    }
-
-    @Override
-    protected void visitHtmlCloseTagNode(HtmlCloseTagNode node) {
-      maybeAddAndVisitChildren(node);
-
-      if (!inMsgNode) {
-        // phname is the only allowed close tag attribute, and even then it is only allowed inside
-        // of messages
-        HtmlAttributeNode attr = node.getPhNameNode();
-        if (attr != null) {
-          errorReporter.report(attr.getSourceLocation(), INVALID_PLACEHOLDER);
-        }
-      }
     }
 
     @Override
@@ -169,28 +137,11 @@ final class InsertMsgPlaceholderNodesPass extends CompilerFilePass {
     }
 
     @Override
-    protected void visitHtmlAttributeNode(HtmlAttributeNode node) {
-      // TODO(lukes): This will happen for cases like: <a {msg desc="..."}class=var{/msg}>  which
-      // is actually reported as an error later on in the autoescaper, consider if it makes sense to
-      // move that logic here.  For now we just traverse the node to prevent reporting an error
-      visitChildren(node);
-    }
-
-    @Override
-    protected void visitHtmlAttributeValueNode(HtmlAttributeValueNode node) {
-      // TODO(lukes): This will happen for cases like: <a title={msg desc="..."}Hello{/msg}>  which
-      // is actually reported as an error later on in the autoescaper, consider if it makes sense to
-      // move that logic here.  For now we just traverse the node to prevent reporting an error
-      // overridden so it doesn't default to visitSoyNode and report an error.
-      visitChildren(node);
-    }
-
-    @Override
     protected void visitMsgPlaceholderNode(MsgPlaceholderNode node) {
-      throw new AssertionError("Unexpected node: " + node.toSourceString());
+      throw new IllegalStateException(node.toSourceString());
     }
 
-    private void maybeAddAndVisitChildren(SoyNode node) {
+    private void maybeAddAndVisitChildren(SoyNode.MsgPlaceholderInitialNode node) {
       if (inMsgNode) {
         nodesToReplace.add(node);
       }

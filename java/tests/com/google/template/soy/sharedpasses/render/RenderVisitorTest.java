@@ -367,7 +367,7 @@ public class RenderVisitorTest {
         templateBody,
         "You're currently using 26 MB of your quota. "
             + "<a href=\"baz\">Learn more</A>"
-            + "<br/><br/>"
+            + "<br /><br />"
             + "ArchiveArchiveArchiveArchive");
   }
 

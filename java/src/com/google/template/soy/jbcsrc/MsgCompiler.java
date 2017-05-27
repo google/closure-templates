@@ -384,13 +384,10 @@ final class MsgCompiler {
       Map<String, Statement> placeholderNameToPutStatement,
       SoyMsgPlaceholderPart placeholder)
       throws AssertionError {
+    MsgPlaceholderNode repPlaceholderNode =
+        originalMsg.getRepPlaceholderNode(placeholder.getPlaceholderName());
     String placeholderName = placeholder.getPlaceholderName();
     if (!placeholderNameToPutStatement.containsKey(placeholderName)) {
-      MsgPlaceholderNode repPlaceholderNode =
-          originalMsg.getRepPlaceholderNode(placeholder.getPlaceholderName());
-      if (repPlaceholderNode.numChildren() == 0) {
-        throw new IllegalStateException("empty rep node for: " + placeholderName);
-      }
       StandaloneNode initialNode = repPlaceholderNode.getChild(0);
       Statement putEntyInMap;
       if (initialNode instanceof MsgHtmlTagNode) {

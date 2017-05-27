@@ -18,7 +18,6 @@ package com.google.template.soy.soytree;
 
 import static com.google.common.base.Preconditions.checkState;
 
-import com.google.common.base.Ascii;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
@@ -54,15 +53,6 @@ public final class HtmlAttributeNode extends AbstractParentSoyNode<StandaloneNod
   public SourceLocation getEqualsLocation() {
     checkState(equalsSignLocation != null, "This attribute doesn't have a value");
     return equalsSignLocation.asLocation(getSourceLocation().getFilePath());
-  }
-
-  /**
-   * Returns {@code true} if the attribute name is static and matches the given name (ignoring
-   * case).
-   */
-  public boolean definitelyMatchesAttributeName(String attributeName) {
-    return getChild(0) instanceof RawTextNode
-        && Ascii.equalsIgnoreCase(attributeName, ((RawTextNode) getChild(0)).getRawText());
   }
 
   @Override

@@ -33,9 +33,6 @@ import com.google.template.soy.soytree.HtmlCloseTagNode;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.LetContentNode;
-import com.google.template.soy.soytree.MsgFallbackGroupNode;
-import com.google.template.soy.soytree.MsgPluralNode;
-import com.google.template.soy.soytree.MsgSelectNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
@@ -217,28 +214,13 @@ final class DesugarHtmlNodesPass extends CompilerFileSetPass {
       visitControlFlowBranches(node.getChildren());
     }
 
-    @Override
-    protected void visitMsgFallbackGroupNode(MsgFallbackGroupNode node) {
-      visitControlFlowBranches(node.getChildren());
-    }
-
-    @Override
-    protected void visitMsgPluralNode(MsgPluralNode node) {
-      visitControlFlowBranches(node.getChildren());
-    }
-
-    @Override
-    protected void visitMsgSelectNode(MsgSelectNode node) {
-      visitControlFlowBranches(node.getChildren());
-    }
-
-    private void visitControlFlowBranches(List<? extends ParentSoyNode<?>> branches) {
+    private void visitControlFlowBranches(List<BlockNode> branches) {
       // If any one of the branches sets needsSpaceForAttribute to true, then it should get set to
       // true for the whole control flow block.
       boolean start = needsSpaceForAttribute;
       boolean end = needsSpaceForAttribute;
-      for (ParentSoyNode<?> branch : branches) {
-        visitChildren(branch);
+      for (BlockNode child : branches) {
+        visitChildren(child);
         end |= needsSpaceForAttribute;
         needsSpaceForAttribute = start;
       }

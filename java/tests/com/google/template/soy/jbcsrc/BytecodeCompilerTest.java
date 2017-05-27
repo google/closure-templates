@@ -776,7 +776,7 @@ public class BytecodeCompilerTest {
         .rendersAs(
             "You're currently using 26 MB of your quota. "
                 + "<a href=\"http://foo.com\">Learn more</A>"
-                + "<br/><br/>"
+                + "<br /><br />"
                 + "ArchiveArchiveArchiveArchive",
             ImmutableMap.of("quota", 26, "url", "http://foo.com"));
   }
