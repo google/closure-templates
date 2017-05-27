@@ -48,8 +48,8 @@ public final class MsgHtmlTagNodeTest {
   public void testPlaceholderBreak() {
     MsgHtmlTagNode mhtn = parseMsgHtmlTagNode("<br />");
     assertThat(mhtn.genBasePhName()).isEqualTo("BREAK");
-    assertThat(mhtn.genSamenessKey()).isNotEqualTo(parseMsgHtmlTagNode("<br/>").genSamenessKey());
-    assertThat(mhtn.toSourceString()).isEqualTo("<br />");
+    assertThat(mhtn.genSamenessKey()).isEqualTo(parseMsgHtmlTagNode("<br/>").genSamenessKey());
+    assertThat(mhtn.toSourceString()).isEqualTo("<br/>");
   }
 
   @Test

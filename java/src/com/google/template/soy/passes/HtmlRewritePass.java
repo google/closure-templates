@@ -27,6 +27,7 @@ import com.google.common.base.Ascii;
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
+import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -45,6 +46,7 @@ import com.google.template.soy.soytree.AutoescapeMode;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamValueNode;
+import com.google.template.soy.soytree.CaseOrDefaultNode;
 import com.google.template.soy.soytree.CssNode;
 import com.google.template.soy.soytree.DebuggerNode;
 import com.google.template.soy.soytree.ForNode;
@@ -61,14 +63,8 @@ import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.LogNode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
-import com.google.template.soy.soytree.MsgHtmlTagNode;
 import com.google.template.soy.soytree.MsgNode;
-import com.google.template.soy.soytree.MsgPlaceholderNode;
-import com.google.template.soy.soytree.MsgPluralCaseNode;
-import com.google.template.soy.soytree.MsgPluralDefaultNode;
 import com.google.template.soy.soytree.MsgPluralNode;
-import com.google.template.soy.soytree.MsgSelectCaseNode;
-import com.google.template.soy.soytree.MsgSelectDefaultNode;
 import com.google.template.soy.soytree.MsgSelectNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
@@ -76,6 +72,7 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.Kind;
+import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
@@ -127,12 +124,6 @@ import javax.annotation.Nullable;
  * href="https://www.w3.org/TR/html5/syntax.html#syntax">Html syntax standard</a>. Though we do not
  * attempt to implement the contextual element model, and matching tags is handled by a different
  * pass, the {@link StrictHtmlValidationPass}.
- *
- * <p>TODO(lukes): there are some missing features:
- *
- * <ul>
- *   <li>Remove the parsing of {@link MsgHtmlTagNode} from the parser and move it here
- * </ul>
  */
 @VisibleForTesting
 public final class HtmlRewritePass extends CompilerFilePass {
@@ -190,6 +181,9 @@ public final class HtmlRewritePass extends CompilerFilePass {
 
   private static final SoyErrorKind FOUND_EQ_WITH_ATTRIBUTE_IN_ANOTHER_BLOCK =
       SoyErrorKind.of("Found an ''='' character in a different block than the attribute name.");
+
+  private static final SoyErrorKind HTML_COMMENT_WITHIN_MSG_BLOCK =
+      SoyErrorKind.of("Found HTML comment within ''msg'' block. This is not allowed.");
 
   private static final SoyErrorKind ILLEGAL_HTML_ATTRIBUTE_CHARACTER =
       SoyErrorKind.of("Illegal unquoted attribute value character.");
@@ -385,23 +379,89 @@ public final class HtmlRewritePass extends CompilerFilePass {
     // Otherwise we run in a mode where we enforce all the checks, but drop the rewrites.
     this.enabled = experimentalFeatures.contains("stricthtml");
     this.errorReporter = errorReporter;
-    this.extraPasses = ImmutableList.copyOf(extraPasses);
+    this.extraPasses =
+        ImmutableList.<CompilerFilePass>builder()
+            .add(new ValidateCloseTagChildren(errorReporter))
+            .add(extraPasses)
+            .build();
   }
 
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
+    // The basic flow
+    // 1. rewrite the tree
+    // 2. run extra passes
+    //
+    // however if we are not enabled things are more complex.  We need to:
+    // 1. rewrite a clone of the tree
+    // 2. rewrite only the msg nodes of the original tree
+    // 3. run extra passes on the clone
+    //
+    // It is somewhat wasteful to run the visitor twice, but the extra passes need the fully
+    // rewritten tree and later passes need the tags in msg nodes to be rewritten so running it
+    // twice is the easiest approach.
     if (enabled) {
-      new Visitor(nodeIdGen, file.getFilePath(), errorReporter).exec(file);
+      new Visitor(
+              nodeIdGen,
+              file.getFilePath(),
+              errorReporter,
+              false /* discardEditsOutsideOfMsgNodes */)
+          .exec(file);
       for (CompilerFilePass extraPass : extraPasses) {
         extraPass.run(file, nodeIdGen);
       }
     } else {
       // otherwise, run on a copy of the node.
       // this will cause all of our edits to be discarded
+      Checkpoint checkpoint = errorReporter.checkpoint();
       SoyFileNode clone = SoyTreeUtils.cloneNode(file);
-      new Visitor(nodeIdGen, file.getFilePath(), errorReporter).exec(clone);
+      new Visitor(
+              nodeIdGen,
+              file.getFilePath(),
+              errorReporter,
+              false /* discardEditsOutsideOfMsgNodes */)
+          .exec(clone);
+      if (!errorReporter.errorsSince(checkpoint)) {
+        // if we parsed succesfully, go back and rewrite just the tags inside of msg blocks
+        new Visitor(
+                nodeIdGen,
+                file.getFilePath(),
+                errorReporter,
+                true /* discardEditsOutsideOfMsgNodes */)
+            .exec(file);
+      }
       for (CompilerFilePass extraPass : extraPasses) {
         extraPass.run(clone, nodeIdGen);
+      }
+    }
+  }
+
+  /**
+   * Validates that the only children of close tags can be {@code phname} attributes.
+   *
+   * <p>Later passes validate that phnames for close tags only appear in messages.
+   */
+  private static final class ValidateCloseTagChildren extends CompilerFilePass {
+    final ErrorReporter errorReporter;
+
+    ValidateCloseTagChildren(ErrorReporter errorReporter) {
+      this.errorReporter = errorReporter;
+    }
+
+    @Override
+    public void run(SoyFileNode file, IdGenerator nodeIdGen) {
+      for (HtmlCloseTagNode closeTag :
+          SoyTreeUtils.getAllNodesOfType(file, HtmlCloseTagNode.class)) {
+        List<StandaloneNode> children = closeTag.getChildren();
+        HtmlAttributeNode phNameAttribute = closeTag.getPhNameNode();
+        // the child at index 0 is the tag name
+        for (int i = 1; i < children.size(); i++) {
+          StandaloneNode child = children.get(i);
+          if (child == phNameAttribute) {
+            continue; // the phname attribute is validated later
+          }
+          errorReporter.report(child.getSourceLocation(), UNEXPECTED_CLOSE_TAG_CONTENT);
+        }
       }
     }
   }
@@ -455,7 +515,7 @@ public final class HtmlRewritePass extends CompilerFilePass {
 
     final IdGenerator nodeIdGen;
     final String filePath;
-    final AstEdits edits = new AstEdits();
+    final AstEdits edits;
     final ErrorReporter errorReporter;
 
     // mode for the current template
@@ -469,10 +529,39 @@ public final class HtmlRewritePass extends CompilerFilePass {
 
     ParsingContext context;
 
-    Visitor(IdGenerator nodeIdGen, String filePath, ErrorReporter errorReporter) {
+    /**
+     * Whether or not we are currently (directly) inside of a <code>{msg ...}</code> node.
+     * 'directly' means that if we are inside a nested <code>{param ...}{/param}</code> block inside
+     * a {@code msg} block this parameter should be false.
+     */
+    boolean inMsgNode;
+
+    /**
+     * @param nodeIdGen The id generator
+     * @param filePath The current file path
+     * @param errorReporter The error reporter
+     * @param discardEditsOutsideOfMsgNodes Whether to discard edits outside of message nodes. This
+     *     is a temporary parameter while parsing is still being rolled out. This allows us to only
+     *     rewrite html tags inside of msg tags, but nowhere else. Once full parsing is rolled out
+     *     this will go away.
+     */
+    Visitor(
+        IdGenerator nodeIdGen,
+        String filePath,
+        ErrorReporter errorReporter,
+        boolean discardEditsOutsideOfMsgNodes) {
       this.nodeIdGen = nodeIdGen;
       this.filePath = filePath;
       this.errorReporter = errorReporter;
+      this.edits =
+          new AstEdits(
+              discardEditsOutsideOfMsgNodes,
+              new Supplier<Boolean>() {
+                @Override
+                public Boolean get() {
+                  return inMsgNode;
+                }
+              });
     }
 
     /**
@@ -754,6 +843,11 @@ public final class HtmlRewritePass extends CompilerFilePass {
       if (foundLt) {
         SourceLocation.Point ltPoint = currentPoint();
         if (matchPrefix("<!--", true)) {
+          // TODO(lukes): we should probably ban CDATA and XML_DECLARATION within msg blocks as well
+          if (inMsgNode) {
+            errorReporter.report(
+                ltPoint.asLocation(filePath).offsetEndCol(4), HTML_COMMENT_WITHIN_MSG_BLOCK);
+          }
           context.setState(State.HTML_COMMENT, ltPoint);
         } else if (matchPrefixIgnoreCase("<![cdata", true)) {
           context.setState(State.CDATA, ltPoint);
@@ -1185,7 +1279,14 @@ public final class HtmlRewritePass extends CompilerFilePass {
 
     @Override
     protected void visitCallNode(CallNode node) {
+      // save/restore the inMsgNode flag to handle call params inside of msg noes.
+      // consider
+      // {msg desc="foo"}YYY{call .foo}{param p}ZZZ{/param}{/call}{/msg}
+      // YYY is inside a msg node but ZZZ is not.
+      boolean oldInMsgNode = this.inMsgNode;
+      this.inMsgNode = false;
       visitChildren(node);
+      this.inMsgNode = oldInMsgNode;
       processPrintableNode(node);
       if (context.getState() == State.PCDATA) {
         node.setIsPcData(true);
@@ -1193,60 +1294,38 @@ public final class HtmlRewritePass extends CompilerFilePass {
     }
 
     @Override
-    protected void visitMsgFallbackGroupNode(MsgFallbackGroupNode node) {
-      processPrintableNode(node);
-      // TODO(lukes): Start parsing html tags in {msg} nodes here instead of in the parser.
-      // to avoid doing it now, we reset the state to NONE
-      State oldState = context.setState(State.NONE, node.getSourceLocation().getBeginPoint());
-      visitChildren(node);
-      context.setState(oldState, node.getSourceLocation().getEndPoint());
-    }
-
-    // NOTE because we visit msg nodes in state NONE we don't need to worry about the
-    // transitions and how it interacts with these control flow-like mechanisms.
-    @Override
-    protected void visitMsgNode(MsgNode node) {
-      visitChildren(node);
-    }
-
-    @Override
-    protected void visitMsgHtmlTagNode(MsgHtmlTagNode node) {
-      visitChildren(node);
-    }
-
-    @Override
-    protected void visitMsgPluralNode(MsgPluralNode node) {
-      visitChildren(node);
-    }
-
-    @Override
-    protected void visitMsgPluralCaseNode(MsgPluralCaseNode node) {
-      visitChildren(node);
-    }
-
-    @Override
-    protected void visitMsgPluralDefaultNode(MsgPluralDefaultNode node) {
-      visitChildren(node);
-    }
-
-    @Override
-    protected void visitMsgPlaceholderNode(MsgPlaceholderNode node) {
-      visitChildren(node);
-    }
-
-    @Override
-    protected void visitMsgSelectNode(MsgSelectNode node) {
-      visitChildren(node);
-    }
-
-    @Override
-    protected void visitMsgSelectCaseNode(MsgSelectCaseNode node) {
-      visitChildren(node);
-    }
-
-    @Override
-    protected void visitMsgSelectDefaultNode(MsgSelectDefaultNode node) {
-      visitChildren(node);
+    protected void visitMsgFallbackGroupNode(final MsgFallbackGroupNode node) {
+      // messages act a lot like a nested sequence of switch statements.
+      // at the top level it is a msg or a fallback
+      // below that it is a select or a plural (optional)
+      // below that it is another select or plural (also optional)
+      // across all those branches exactly one thing will execute.
+      // So we collect all the branches and treat the whole thing like a switch statement.
+      visitControlFlowStructure(
+          node,
+          collectMsgBranches(node),
+          "msg",
+          new Function<BlockNode, String>() {
+            @Override
+            public String apply(BlockNode input) {
+              switch (input.getKind()) {
+                case MSG_FALLBACK_GROUP_NODE:
+                  return "fallbackmsg";
+                case MSG_NODE:
+                  return "msg";
+                case MSG_PLURAL_CASE_NODE:
+                case MSG_SELECT_CASE_NODE:
+                  return "case block";
+                case MSG_PLURAL_DEFAULT_NODE:
+                case MSG_SELECT_DEFAULT_NODE:
+                  return "default block";
+                default:
+                  throw new AssertionError("unexepected node: " + input);
+              }
+            }
+          },
+          true, // exactly one branch will execute once
+          true); // at least one branch will execute once
     }
 
     // control flow blocks
@@ -1593,12 +1672,18 @@ public final class HtmlRewritePass extends CompilerFilePass {
       State startState = context.getState();
       State endingState = null;
       for (BlockNode block : children) {
+        if (block instanceof MsgBlockNode) {
+          this.inMsgNode = true;
+        }
         String blockName = blockNamer.apply(block);
         ParsingContext newCtx =
             newParsingContext(blockName, startState, block.getSourceLocation().getBeginPoint());
         ParsingContext oldCtx = setContext(newCtx);
         endingState = visitBlock(startState, block, blockName, checkpoint);
         setContext(oldCtx); // restore
+        if (block instanceof MsgBlockNode) {
+          this.inMsgNode = false;
+        }
       }
 
       if (errorReporter.errorsSince(checkpoint)) {
@@ -1800,6 +1885,18 @@ public final class HtmlRewritePass extends CompilerFilePass {
         MultimapBuilder.linkedHashKeys().arrayListValues().build();
     final ListMultimap<ParentSoyNode<StandaloneNode>, StandaloneNode> newChildren =
         MultimapBuilder.linkedHashKeys().arrayListValues().build();
+    final boolean discardEditsOutsideOfMsgNodes;
+    final Supplier<Boolean> inMsgNode;
+
+    /** @param discardEditsOutsideOfMsgNodes */
+    AstEdits(boolean discardEditsOutsideOfMsgNodes, Supplier<Boolean> inMsgNode) {
+      this.discardEditsOutsideOfMsgNodes = discardEditsOutsideOfMsgNodes;
+      this.inMsgNode = inMsgNode;
+    }
+
+    private boolean discardEdit() {
+      return discardEditsOutsideOfMsgNodes && !inMsgNode.get();
+    }
 
     /** Apply all edits. */
     void apply() {
@@ -1825,6 +1922,9 @@ public final class HtmlRewritePass extends CompilerFilePass {
     /** Mark a node for removal. */
     void remove(StandaloneNode node) {
       checkNotNull(node);
+      if (discardEdit()) {
+        return;
+      }
       // only record this if the node is actually in the tree already.  Sometimes we call remove
       // on new nodes that don't have parents yet.
       if (node.getParent() != null) {
@@ -1835,6 +1935,9 @@ public final class HtmlRewritePass extends CompilerFilePass {
     /** Add children to the given parent. */
     void addChildren(ParentSoyNode<StandaloneNode> parent, Iterable<StandaloneNode> children) {
       checkNotNull(parent);
+      if (discardEdit()) {
+        return;
+      }
       newChildren.putAll(parent, children);
     }
 
@@ -1842,12 +1945,18 @@ public final class HtmlRewritePass extends CompilerFilePass {
     void addChild(ParentSoyNode<StandaloneNode> parent, StandaloneNode child) {
       checkNotNull(parent);
       checkNotNull(child);
+      if (discardEdit()) {
+        return;
+      }
       newChildren.put(parent, child);
     }
 
     /** Replace a given node with the new nodes. */
     void replace(StandaloneNode oldNode, Iterable<StandaloneNode> newNodes) {
       checkState(oldNode.getParent() != null, "oldNode must be in the tree in order to replace it");
+      if (discardEdit()) {
+        return;
+      }
       remove(oldNode);
       replacements.putAll(oldNode, newNodes);
     }
@@ -2234,11 +2343,10 @@ public final class HtmlRewritePass extends CompilerFilePass {
       ParentSoyNode<StandaloneNode> replacement;
       SourceLocation sourceLocation = new SourceLocation(filePath, tagStartPoint, endPoint);
       if (isCloseTag) {
-        // TODO(lukes): move the error reporting into the caller?
-        if (!directTagChildren.isEmpty()) {
-          errorReporter.report(
-              directTagChildren.get(0).getSourceLocation(), UNEXPECTED_CLOSE_TAG_CONTENT);
-        }
+        // we allow for attributes in close tags in the parser since there is a usecase for msg
+        // tags
+        // this is validated after parsing  (we can't validate it here because the full nodes are
+        // not constructed yet, children aren't attached.)
         if (selfClosing) {
           errorReporter.report(
               endPoint.asLocation(filePath).offsetStartCol(-1), SELF_CLOSING_CLOSE_TAG);
@@ -2357,7 +2465,30 @@ public final class HtmlRewritePass extends CompilerFilePass {
       return location;
     }
   }
-  
+
+  private static List<? extends MsgBlockNode> collectMsgBranches(MsgFallbackGroupNode node) {
+    List<MsgBlockNode> msgBranches = new ArrayList<>();
+    for (MsgNode child : node.getChildren()) {
+      collectMsgBranches(child, msgBranches);
+    }
+    return msgBranches;
+  }
+
+  private static void collectMsgBranches(MsgBlockNode parent, List<MsgBlockNode> msgBranches) {
+    StandaloneNode firstChild = Iterables.getFirst(parent.getChildren(), null);
+    if (firstChild instanceof MsgPluralNode) {
+      for (CaseOrDefaultNode caseOrDefault : ((MsgPluralNode) firstChild).getChildren()) {
+        collectMsgBranches((MsgBlockNode) caseOrDefault, msgBranches);
+      }
+    } else if (firstChild instanceof MsgSelectNode) {
+      for (CaseOrDefaultNode caseOrDefault : ((MsgSelectNode) firstChild).getChildren()) {
+        collectMsgBranches((MsgBlockNode) caseOrDefault, msgBranches);
+      }
+    } else {
+      msgBranches.add(parent);
+    }
+  }
+
   /** A custom error to halt processing of a given control flow block. */
   private static final class AbortParsingBlockError extends Error {}
 }

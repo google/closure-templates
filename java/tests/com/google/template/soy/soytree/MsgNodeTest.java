@@ -103,9 +103,9 @@ public class MsgNodeTest {
     assertEquals("XXX_2", msg.getPlaceholderName(placeholders.get(4)));
     assertEquals("END_LINK", msg.getPlaceholderName(placeholders.get(5)));
     assertEquals("START_BREAK", msg.getPlaceholderName(placeholders.get(6)));
-    assertEquals("BREAK_1", msg.getPlaceholderName(placeholders.get(7)));
-    assertEquals("BREAK_2", msg.getPlaceholderName(placeholders.get(8)));
-    assertEquals("BREAK_2", msg.getPlaceholderName(placeholders.get(9)));
+    assertEquals("BREAK", msg.getPlaceholderName(placeholders.get(7)));
+    assertEquals("BREAK", msg.getPlaceholderName(placeholders.get(8)));
+    assertEquals("BREAK", msg.getPlaceholderName(placeholders.get(9)));
     assertEquals("START_BREAK", msg.getPlaceholderName(placeholders.get(10)));
     assertEquals("START_LINK_2", msg.getPlaceholderName(placeholders.get(11)));
     assertEquals("BOO", msg.getPlaceholderName(placeholders.get(12)));
@@ -129,9 +129,7 @@ public class MsgNodeTest {
     assertSame(placeholders.get(4), msg.getRepPlaceholderNode("XXX_2"));
     assertSame(placeholders.get(5), msg.getRepPlaceholderNode("END_LINK"));
     assertSame(placeholders.get(6), msg.getRepPlaceholderNode("START_BREAK"));
-    assertSame(placeholders.get(7), msg.getRepPlaceholderNode("BREAK_1"));
-    assertSame(placeholders.get(8), msg.getRepPlaceholderNode("BREAK_2"));
-    assertNotSame(placeholders.get(9), msg.getRepPlaceholderNode("BREAK_2"));
+    assertSame(placeholders.get(7), msg.getRepPlaceholderNode("BREAK"));
     assertNotSame(placeholders.get(10), msg.getRepPlaceholderNode("START_BREAK"));
     assertSame(placeholders.get(11), msg.getRepPlaceholderNode("START_LINK_2"));
     assertNotSame(placeholders.get(12), msg.getRepPlaceholderNode("BOO"));

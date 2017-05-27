@@ -16,24 +16,17 @@
 
 package com.google.template.soy.soytree;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Iterables;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.basetree.Node;
+import com.google.template.soy.basetree.NodeVisitor;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ErrorReporter.Checkpoint;
-import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
-import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
+import com.google.template.soy.exprtree.ExprEquivalence;
 import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.soytree.SoyNode.MsgPlaceholderInitialNode;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
 /**
@@ -44,27 +37,138 @@ import javax.annotation.Nullable;
  */
 public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceholderInitialNode {
 
-  private static final SoyErrorKind HTML_COMMENT_WITHIN_MSG_BLOCK =
-      SoyErrorKind.of(
-          "Found HTML comment within ''msg'' block: {0}", StyleAllowance.NO_PUNCTUATION);
-  private static final SoyErrorKind UNNAMED_HTML_TAG_WITHIN_MSG_BLOCK =
-      SoyErrorKind.of(
-          "HTML tag within ''msg'' block has no tag name: {0}", StyleAllowance.NO_PUNCTUATION);
+  private static final SoyErrorKind DYNAMIC_TAG_NAME_IN_MSG_BLOCK =
+      SoyErrorKind.of("HTML tags within within ''msg'' blocks must use constant tag names.");
   private static final SoyErrorKind INVALID_PHNAME_ATTRIBUTE =
       SoyErrorKind.of("''phname'' attribute is not a valid identifier.");
   private static final SoyErrorKind MULTIPLE_PHNAME_ATTRIBUTES =
       SoyErrorKind.of("Multiple ''phname'' attributes in HTML tag.");
 
-  /** Pattern for matching the 'phname' attribute. */
-  private static final Pattern PHNAME_ATTR_PATTERN =
-      Pattern.compile("\\s phname=\" ( [^\"]* ) \"", Pattern.COMMENTS);
-
-  /** Pattern for matching the tag name in the initial raw text. */
-  private static final Pattern TAG_NAME_PATTERN =
-      Pattern.compile("(?<= ^< ) /? [a-zA-Z0-9]+", Pattern.COMMENTS);
+  /**
+   * Creates a {@link MsgHtmlTagNode} from a {@link HtmlTagNode}.
+   *
+   * <p>If the node contains a {@code phname} attribute, it will be <em>removed</em> from the node
+   * and used as the placeholder name, it will _not_ be rendered.
+   */
+  public static MsgHtmlTagNode fromNode(int id, HtmlTagNode tagNode, ErrorReporter errorReporter) {
+    String fullTagText = getFullTagText(tagNode); // do this before removing the phname attribute
+    String userSpecifiedPhName = getUserSpecifiedPhName(tagNode, errorReporter);
+    String lcTagName = getLcTagName(errorReporter, tagNode.getTagName());
+    if (tagNode instanceof HtmlCloseTagNode) {
+      // TODO(lukes): the lcTagName logic below requires this leading '/' for close tags.  Just make
+      // it understand the node type instead.
+      lcTagName = "/" + lcTagName;
+    }
+    return new MsgHtmlTagNode(
+        id,
+        tagNode.getSourceLocation(),
+        userSpecifiedPhName,
+        lcTagName,
+        tagNode instanceof HtmlOpenTagNode && ((HtmlOpenTagNode) tagNode).isSelfClosing(),
+        fullTagText != null,
+        fullTagText,
+        tagNode);
+  }
 
   /**
-   * Map from lower-case HTML tag name to human-readable placeholder name. For HTML tags not lised
+   * This method calculates a string that can be used to tell if two tags that were turned into
+   * placeholders are equivalent and thus could be turned into identical placeholders.
+   *
+   * <p>In theory we should use something like {@link ExprEquivalence} to see if two nodes would
+   * render the same thing. However, for backwards compatibility we need to use a different
+   * heuristic. The old code would simply detect if the node had a single child and use the {@link
+   * SoyNode#toSourceString()} of it for the tag text. Due to how the children were constructed,
+   * this would only happen if the tag was a single {@link RawTextNode}, e.g. {@code <foo
+   * class=bar>}. Now that we are actually parsing the html tags the rules are more complex. We
+   * should instead only use the {@link SoyNode#toSourceString()} if the only (transitive) children
+   * are {@link RawTextNode}, {@link HtmlAttributeNode} or {@link HtmlAttributeValueNode}.
+   */
+  @Nullable
+  private static String getFullTagText(HtmlTagNode openTagNode) {
+    final boolean[] isConstantContent = {true};
+    SoyTreeUtils.visitAllNodes(
+        openTagNode,
+        new NodeVisitor<Node, Boolean>() {
+          @Override
+          public Boolean exec(Node node) {
+            if (node instanceof RawTextNode
+                || node instanceof HtmlAttributeNode
+                || node instanceof HtmlAttributeValueNode
+                || node instanceof HtmlOpenTagNode
+                || node instanceof HtmlCloseTagNode) {
+              return true; // keep going
+            }
+            isConstantContent[0] = false;
+            return false; // abort
+          }
+        });
+    if (isConstantContent[0]) {
+      // toSourceString is lame, but how this worked before
+      return openTagNode.toSourceString();
+    }
+    return null;
+  }
+
+  /**
+   * Returns the value of the {@code phname} attribute and removes it from the tag if one exists,
+   * otherwise returns {@code null}.
+   */
+  @Nullable
+  private static String getUserSpecifiedPhName(HtmlTagNode tagNode, ErrorReporter errorReporter) {
+    HtmlAttributeNode phNameAttribute = tagNode.getPhNameNode();
+    if (phNameAttribute == null) {
+      return null;
+    }
+    String userSpecifiedPhName = getUserSpecifiedPhName(phNameAttribute, errorReporter);
+    // Remove it, we don't actually want to render it
+    tagNode.removeChild(phNameAttribute);
+    // see if there is more than one.
+    phNameAttribute = tagNode.getPhNameNode();
+    // TODO(lukes): we should probably have a check that no tag contains multiple copies of an
+    // attribute since it is disallowed:
+    // https://html.spec.whatwg.org/multipage/syntax.html#attributes-2
+    if (phNameAttribute != null) {
+      errorReporter.report(phNameAttribute.getSourceLocation(), MULTIPLE_PHNAME_ATTRIBUTES);
+    }
+    return userSpecifiedPhName;
+  }
+
+  /** Validates and returns the phname attribute, or {@code null} if there is no phname. */
+  @Nullable
+  private static String getUserSpecifiedPhName(
+      HtmlAttributeNode htmlAttributeNode, ErrorReporter errorReporter) {
+    StandaloneNode valueNode = htmlAttributeNode.getChild(1);
+    if (valueNode instanceof HtmlAttributeValueNode) {
+      HtmlAttributeValueNode attributeValueNode = (HtmlAttributeValueNode) valueNode;
+      if (attributeValueNode.numChildren() == 1
+          && attributeValueNode.getChild(0) instanceof RawTextNode) {
+        String attributeName = ((RawTextNode) attributeValueNode.getChild(0)).getRawText();
+        if (BaseUtils.isIdentifier(attributeName)) {
+          // delete the attribute
+          return attributeName;
+        }
+      }
+    }
+    errorReporter.report(valueNode.getSourceLocation(), INVALID_PHNAME_ATTRIBUTE);
+    return null;
+  }
+
+  private static String getLcTagName(ErrorReporter errorReporter, TagName tagName) {
+    // TODO(lukes): consider removing this restriction, it is only necessary due to how we calculate
+    // placeholdernames, we should be able to use the placeholder logic for print nodes as a
+    // substitute.
+    String lcTagName;
+    if (!tagName.isStatic()) {
+      errorReporter.report(tagName.getTagLocation(), DYNAMIC_TAG_NAME_IN_MSG_BLOCK);
+      lcTagName = "error";
+    } else {
+      lcTagName = tagName.getStaticTagNameAsLowerCase().get();
+    }
+    return lcTagName;
+  }
+
+  /**
+   * Map from lower-case HTML tag name to human-readable placeholder name. For HTML tags not listed
    * here, the base placeholder name should simply be the tag name in all caps.
    */
   private static final ImmutableMap<String, String> LC_TAG_NAME_TO_PLACEHOLDER_NAME_MAP =
@@ -81,7 +185,6 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
           .put("em", "emphasis")
           .build();
 
-
   /** The lower-case HTML tag name (includes '/' for end tags). */
   private final String lcTagName;
 
@@ -97,7 +200,6 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
   /** The user-supplied placeholder name, or null if not supplied or not applicable. */
   @Nullable private final String userSuppliedPlaceholderName;
 
-
   private MsgHtmlTagNode(
       int id,
       SourceLocation sourceLocation,
@@ -106,14 +208,14 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
       boolean isSelfEnding,
       boolean isOnlyRawText,
       String fullTagText,
-      List<StandaloneNode> children) {
+      StandaloneNode child) {
     super(id, sourceLocation);
     this.userSuppliedPlaceholderName = userSuppliedPlaceholderName;
     this.lcTagName = lcTagName;
     this.isSelfEnding = isSelfEnding;
     this.isOnlyRawText = isOnlyRawText;
     this.fullTagText = fullTagText;
-    addChildren(children);
+    addChild(child);
   }
 
 
@@ -226,136 +328,5 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
 
   @Override public MsgHtmlTagNode copy(CopyState copyState) {
     return new MsgHtmlTagNode(this, copyState);
-  }
-
-  /**
-   * Builder for {@link MsgHtmlTagNode}.
-   */
-  public static final class Builder {
-
-    private static MsgHtmlTagNode error(SourceLocation location) {
-      return new Builder(
-              -1,
-              ImmutableList.<StandaloneNode>of(new RawTextNode(-1, "<body/>", location)),
-              location)
-          .build(ExplodingErrorReporter.get()); // guaranteed to be valid
-    }
-
-    private final int id;
-    private ImmutableList<StandaloneNode> children;
-    private final SourceLocation sourceLocation;
-
-    /**
-     * @param id The node's id.
-     * @param children The node's children.
-     * @param sourceLocation The node's source location.
-     */
-    public Builder(int id, ImmutableList<StandaloneNode> children, SourceLocation sourceLocation) {
-      this.id = id;
-      this.children = children;
-      this.sourceLocation = sourceLocation;
-    }
-
-    /**
-     * Returns a new {@link MsgHtmlTagNode} built from the builder's state. If the builder's state
-     * is invalid, errors are reported to the {@code errorManager} and {Builder#error} is returned.
-     */
-    public MsgHtmlTagNode build(ErrorReporter errorReporter) {
-      Checkpoint checkpoint = errorReporter.checkpoint();
-
-      String userSuppliedPlaceholderName = computePlaceholderName(errorReporter);
-      String lcTagName = computeLcTagName(errorReporter);
-      boolean selfEnding = isSelfEnding();
-      boolean isOnlyRawText = children.size() == 1;
-      String fullTagText = computeFullTagText();
-
-      if (errorReporter.errorsSince(checkpoint)) {
-        return error(sourceLocation);
-      }
-
-      return new MsgHtmlTagNode(
-          id,
-          sourceLocation,
-          userSuppliedPlaceholderName,
-          lcTagName,
-          selfEnding,
-          isOnlyRawText,
-          fullTagText,
-          children);
-    }
-
-    private boolean isSelfEnding() {
-      int numChildren = children.size();
-      String lastChildText = ((RawTextNode) children.get(numChildren - 1)).getRawText();
-      return lastChildText.endsWith("/>");
-    }
-
-    private String computeFullTagText() {
-      String fullTagText = null;
-      if (children.size() == 1) {
-        StringBuilder fullTagTextSb = new StringBuilder();
-        for (StandaloneNode child : children) {
-          fullTagTextSb.append(child.toSourceString());
-        }
-        fullTagText = fullTagTextSb.toString();
-      }
-      return fullTagText;
-    }
-
-    @Nullable private String computeLcTagName(ErrorReporter errorReporter) {
-      String firstChildText = ((RawTextNode) children.get(0)).getRawText();
-      Matcher matcher = TAG_NAME_PATTERN.matcher(firstChildText);
-      if (!matcher.find()) {
-        if (firstChildText.startsWith("<!--")) {
-          errorReporter.report(sourceLocation, HTML_COMMENT_WITHIN_MSG_BLOCK, firstChildText);
-        } else {
-          errorReporter.report(sourceLocation, UNNAMED_HTML_TAG_WITHIN_MSG_BLOCK, firstChildText);
-        }
-        return null;
-      }
-      return matcher.group().toLowerCase(Locale.ENGLISH);
-    }
-
-    @Nullable private String computePlaceholderName(ErrorReporter errorReporter) {
-      List<String> names = new ArrayList<>();
-      ImmutableList.Builder<StandaloneNode> transformedChildren = new ImmutableList.Builder<>();
-      for (StandaloneNode child : children) {
-        transformedChildren.add(extractPlaceholderName(child, names));
-      }
-      children = transformedChildren.build();
-
-      for (String name : names) {
-        if (!BaseUtils.isIdentifier(name)) {
-          errorReporter.report(sourceLocation, INVALID_PHNAME_ATTRIBUTE);
-        }
-      }
-
-      if (names.size() > 1) {
-        errorReporter.report(sourceLocation, MULTIPLE_PHNAME_ATTRIBUTES);
-      }
-
-      return Iterables.getFirst(names, null);
-    }
-
-    private static StandaloneNode extractPlaceholderName(
-        StandaloneNode node, List<String> names) {
-      if (!(node instanceof RawTextNode)) {
-        return node;
-      }
-      String rawText = ((RawTextNode) node).getRawText();
-      Matcher matcher = PHNAME_ATTR_PATTERN.matcher(rawText);
-
-      if (matcher.find()) {
-        StringBuffer sb = new StringBuffer(rawText.length());
-        do {
-          String userSuppliedPlaceholderName = matcher.group(1);
-          names.add(userSuppliedPlaceholderName);
-          matcher.appendReplacement(sb, "");
-        } while (matcher.find());
-        String replacementText = matcher.appendTail(sb).toString();
-        return new RawTextNode(node.getId(), replacementText, node.getSourceLocation());
-      }
-      return node;
-    }
   }
 }
