@@ -33,12 +33,8 @@ final class ParseErrors {
 
   private static final SoyErrorKind PLAIN_ERROR = SoyErrorKind.of("{0}", StyleAllowance.values());
 
-  private static final SoyErrorKind BAD_PHNAME_VALUE =
-      SoyErrorKind.of("Found ''phname'' attribute that is not a valid identifier.");
   private static final SoyErrorKind FOUND_DOUBLE_BRACE =
       SoyErrorKind.of("Soy '{{command}}' syntax is no longer supported. Use single braces.");
-  private static final SoyErrorKind INVALID_STRING_LITERAL =
-      SoyErrorKind.of("Invalid string literal found in Soy command.");
   private static final SoyErrorKind INVALID_TEMPLATE_COMMAND =
       SoyErrorKind.of("Command ''{0}'' cannot appear in templates.");
   private static final SoyErrorKind LEGACY_AND_ERROR =
@@ -84,17 +80,14 @@ final class ParseErrors {
       case SoyFileParserConstants.XXX_BRACE_INVALID:
         reporter.report(location, UNEXPECTED_RIGHT_BRACE);
         return;
-      case SoyFileParserConstants.XXX_INVALID_STRING_LITERAL:
-        reporter.report(location, INVALID_STRING_LITERAL);
-        return;
-      case SoyFileParserConstants.XXX_CMD_TEXT_PHNAME_NOT_IDENT:
-        reporter.report(location, BAD_PHNAME_VALUE);
-        return;
       case SoyFileParserConstants.DECL_BEGIN_PARAM:
       case SoyFileParserConstants.DECL_BEGIN_OPT_PARAM:
       case SoyFileParserConstants.DECL_BEGIN_INJECT_PARAM:
       case SoyFileParserConstants.DECL_BEGIN_OPT_INJECT_PARAM:
         reporter.report(location, UNEXPECTED_PARAM_DECL);
+        return;
+      case SoyFileParserConstants.DOUBLE_QUOTE:
+        reporter.report(location, LEGACY_DOUBLE_QUOTED_STRING);
         return;
       case SoyFileParserConstants.LEGACY_AND:
         reporter.report(location, LEGACY_AND_ERROR);
@@ -120,9 +113,6 @@ final class ParseErrors {
       case SoyFileParserConstants.UNEXPECTED_TEMPLATE:
       case SoyFileParserConstants.UNEXPECTED_DELTEMPLATE:
         reporter.report(location, INVALID_TEMPLATE_COMMAND, errorToken.image);
-        return;
-      case SoyFileParserConstants.DOUBLE_QUOTE:
-        reporter.report(location, LEGACY_DOUBLE_QUOTED_STRING);
         return;
       case SoyFileParserConstants.EOF:
         reporter.report(location, UNEXPECTED_EOF);
