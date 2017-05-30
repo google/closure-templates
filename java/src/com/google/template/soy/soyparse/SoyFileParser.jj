@@ -105,7 +105,6 @@ import com.google.template.soy.soytree.LetNode;
 import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.LogNode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
-import com.google.template.soy.soytree.MsgHtmlTagNode;
 import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.MsgPluralCaseNode;
 import com.google.template.soy.soytree.MsgPluralDefaultNode;
@@ -726,6 +725,8 @@ TOKEN_MGR_DECLS: {
   private static final Pattern ESCAPED_QUOTE = Pattern.compile("\\\"");
 
   // Used for returning to our prior lexical state when completing a multiline comment.
+  // TODO(lukes): remove, it should now be the case that this stack is never more than 1 deep.  So
+  // this can be replaced with a simple int field.
   private final LexicalStateStack stateStack = new LexicalStateStack();
 
   /** Saves the current lexical state and switch to a new one.  To switch back call
@@ -794,18 +795,17 @@ TOKEN_MGR_DECLS: {
 | < <LINE_COMMENT> >
 }
 
-// Due to ambiguity with uri schemes, line comments in TEMPLATE_DEFAULT and
-// TEMPLATE_DEFAULT_IN_MSG_BLOCK are only interpreted as such if there is preceding whitespace.
+// Due to ambiguity with uri schemes, line comments in TEMPLATE_DEFAULT are only interpreted as such
+// if there is preceding whitespace.
 // Other lexical states don't have this requirement.  The fact that comments swallow a leading
 // whitespace character doesn't affect output because of how line joining works.
-<TEMPLATE_DEFAULT, TEMPLATE_DEFAULT_IN_MSG_BLOCK> SKIP: {
+<TEMPLATE_DEFAULT> SKIP: {
   < <WS> <LINE_COMMENT> >
 }
 
 // NOTE: we don't just configure this for state * because these comments shouldn't work in things
 // like string literals or attribute values
-<DEFAULT, TEMPLATE_DEFAULT, TEMPLATE_DEFAULT_IN_MSG_BLOCK, IN_CMD_TAG_STRUCTURED,
-    EXPR, TYPE_EXPR> SKIP: {
+<DEFAULT, TEMPLATE_DEFAULT, IN_CMD_TAG_STRUCTURED, EXPR, TYPE_EXPR> SKIP: {
   < "/*" > { pushState(IN_MULTILINE_COMMENT); }
 }
 
@@ -836,7 +836,7 @@ TOKEN_MGR_DECLS: {
 
 // NOTE: we don't use all the same states as normal multiline comments (see above), this is because
 // the distinction between 'doc comments' and 'multiline comments' is only relevant in these states.
-<DEFAULT, TEMPLATE_DEFAULT, TEMPLATE_DEFAULT_IN_MSG_BLOCK> MORE: {
+<DEFAULT, TEMPLATE_DEFAULT> MORE: {
   "/**" { pushState(IN_SOYDOC); }
 }
 
@@ -939,7 +939,7 @@ TOKEN_MGR_DECLS: {
 // IN_CMD_TAG_UNSTRUCTURED is for older or more-complex tags that are parsed through regexes, or the
 // expression parser.  It swallows any kind of token into CMD_TEXT_ARBITRARY_TOKEN.
 
-<TEMPLATE_DEFAULT, TEMPLATE_DEFAULT_IN_MSG_BLOCK> TOKEN: {
+<TEMPLATE_DEFAULT> TOKEN: {
   < CMD_CLOSE_TEMPLATE           : "{/template}"    > { clearAndSwitchToDefault(); }
 | < CMD_CLOSE_DELTEMPLATE        : "{/deltemplate}" > { clearAndSwitchToDefault(); }
 
@@ -1090,17 +1090,6 @@ TOKEN_MGR_DECLS: {
 
 
 // -------------------------------------------------------------------------------------------------
-// In a 'msg' block.
-
-// The only difference between states TEMPLATE_DEFAULT and
-// TEMPLATE_DEFAULT_IN_MSG_BLOCK is that the latter also create tokens for HTML tag open/close.
-<TEMPLATE_DEFAULT_IN_MSG_BLOCK> TOKEN: {
-  < MSG_HTML_TAG_OPEN:  "<" >
-| < MSG_HTML_TAG_CLOSE: ">" >
-}
-
-
-// -------------------------------------------------------------------------------------------------
 // In a 'literal' block.
 
 // Collect the literal text using MORE.
@@ -1122,7 +1111,7 @@ TOKEN_MGR_DECLS: {
 // -------------------------------------------------------------------------------------------------
 // Text.
 
-<TEMPLATE_DEFAULT, TEMPLATE_DEFAULT_IN_MSG_BLOCK> TOKEN: {
+<TEMPLATE_DEFAULT> TOKEN: {
   < TOKEN_WS: <WS> >
 | < TOKEN_NOT_WS: <NOT_WS> >
 }
@@ -2114,8 +2103,6 @@ private MsgFallbackGroupNode MsgStmt() :
     MsgNode msg = new MsgNode(nodeIdGen.genId(), loc, "msg", attributes, errorReporter);
     msgGroup.addChild(msg);
 
-    // {msg} blocks contain a separate lexical state.
-    { pushStateAtZero(TEMPLATE_DEFAULT_IN_MSG_BLOCK); }
   }
 
   templateBlock = TemplateBlockForMsg()
@@ -2145,7 +2132,6 @@ private MsgFallbackGroupNode MsgStmt() :
   <CMD_CLOSE_MSG>
 
   {
-    popStateAtZero();
     return msgGroup;
   }
 }
@@ -2154,7 +2140,7 @@ private MsgFallbackGroupNode MsgStmt() :
 /**
  * TemplateBlockForMsg -> (Whitespace) MsgPlural MaybeWhitespace
  *                        | MaybeWhitespace MsgSelect MaybeWhitespace
- *                        | ( ContiguousRawTextAsNode | Stmt | MsgHtmlTag )*
+ *                        | ( ContiguousRawTextAsNode | Stmt )*
  *
  * <p>The difference between TemplateBlockForMsg and Template Block is the special handling of
  * {plural} and {select} blocks.
@@ -2218,8 +2204,6 @@ private List<StandaloneNode> TemplateBlockForMsg() :
     templateBlock.add(msgPluralOrSelectNode);
   }
   | stmt = TemplateBlockItem() { if (stmt != null) { templateBlock.add(stmt); } }
-  // TODO(lukes): remove and move into the HtmlRewritePass
-  | stmt = MsgHtmlTag() { templateBlock.add(stmt); }
   )*
 
   {
@@ -2445,54 +2429,6 @@ private MsgSelectNode MsgSelect() :
   }
 
   { return selectNode; }
-}
-
-
-/**
- * MsgHtmlTag -> MsgHtmlTagOpen TemplateBlock MsgHtmlTagClose
- */
-private MsgHtmlTagNode MsgHtmlTag() :
-{
-  Token htmlTagOpen;
-  List<StandaloneNode> templateBlock;
-}
-{
-  htmlTagOpen = <MSG_HTML_TAG_OPEN>
-  templateBlock = TemplateBlock()
-  <MSG_HTML_TAG_CLOSE>
-
-  {
-    SourceLocation srcLoc = createSrcLoc(htmlTagOpen);
-    // TODO(lukes): Massively simplify this by creating more nodes.  Also fix SourceLocation.
-    // First, we add back the HTML tag's opening and closing angle brackets.
-    // Minor note: If there's only one RawTextNode, we'll replace it twice. No big deal.
-    if (templateBlock.get(0) instanceof RawTextNode) {
-      RawTextNode firstNode = (RawTextNode) templateBlock.get(0);
-      RawTextNode newNode = new RawTextNode(
-          nodeIdGen.genId(),
-          "<" + firstNode.getRawText(),
-          srcLoc.extend(firstNode.getSourceLocation()));
-      templateBlock.set(0, newNode);
-    } else {
-      templateBlock.add(0, new RawTextNode(nodeIdGen.genId(), "<", srcLoc));
-    }
-    int lastNodeIndex = templateBlock.size() - 1;
-    if (templateBlock.get(lastNodeIndex) instanceof RawTextNode) {
-      RawTextNode lastNode = (RawTextNode) templateBlock.get(lastNodeIndex);
-      RawTextNode newNode =
-          new RawTextNode(nodeIdGen.genId(), lastNode.getRawText() + ">",
-          lastNode.getSourceLocation().extend(srcLoc));
-
-      templateBlock.set(lastNodeIndex, newNode);
-    } else {
-      templateBlock.add(new RawTextNode(nodeIdGen.genId(), ">", srcLoc));
-    }
-    return new MsgHtmlTagNode.Builder(
-        nodeIdGen.genId(),
-        ImmutableList.copyOf(templateBlock),
-        createSrcLoc(htmlTagOpen))
-        .build(errorReporter);
-  }
 }
 
 

@@ -21,6 +21,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
+import javax.annotation.Nullable;
 
 /**
  * Base class for html tags. Provides easy access to the {@link TagName}.
@@ -51,5 +52,28 @@ public abstract class HtmlTagNode extends AbstractParentSoyNode<StandaloneNode>
 
   public final TagName getTagName() {
     return tagName;
+  }
+
+  /**
+   * Returns a direct child attribute node for a {@code phname} attribute, or {@code null} if there
+   * is no such attribute.
+   *
+   * <p>The {@code phname} attribute has special handling within {@code msg} tags, where it is used
+   * to allow users to specify their own placeholders.
+   */
+  @Nullable
+  public HtmlAttributeNode getPhNameNode() {
+    // the child at index 0 is the tag name
+    for (int i = 1; i < numChildren(); i++) {
+      StandaloneNode child = getChild(i);
+      if (child instanceof HtmlAttributeNode) {
+        HtmlAttributeNode attr = (HtmlAttributeNode) child;
+        if (attr.definitelyMatchesAttributeName("phname") && attr.hasValue()) {
+          // leave actual value validation until later
+          return attr;
+        }
+      }
+    }
+    return null;
   }
 }

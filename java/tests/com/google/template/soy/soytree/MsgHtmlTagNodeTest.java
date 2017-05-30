@@ -48,8 +48,8 @@ public final class MsgHtmlTagNodeTest {
   public void testPlaceholderBreak() {
     MsgHtmlTagNode mhtn = parseMsgHtmlTagNode("<br />");
     assertThat(mhtn.genBasePhName()).isEqualTo("BREAK");
-    assertThat(mhtn.genSamenessKey()).isNotEqualTo(parseMsgHtmlTagNode("<br/>").genSamenessKey());
-    assertThat(mhtn.toSourceString()).isEqualTo("<br />");
+    assertThat(mhtn.genSamenessKey()).isEqualTo(parseMsgHtmlTagNode("<br/>").genSamenessKey());
+    assertThat(mhtn.toSourceString()).isEqualTo("<br/>");
   }
 
   @Test
@@ -77,6 +77,22 @@ public final class MsgHtmlTagNodeTest {
     parseMsgHtmlTagNode("<div phname=\".+\" />", errorReporter);
     assertThat(errorReporter.getErrorMessages())
         .contains("'phname' attribute is not a valid identifier.");
+  }
+
+  @Test
+  public void testPlaceholderCustomTagNameWithHyphen() {
+    MsgHtmlTagNode mhtn = parseMsgHtmlTagNode("<foo-bar>");
+    assertThat(mhtn.genBasePhName()).isEqualTo("START_FOO_BAR");
+    mhtn = parseMsgHtmlTagNode("<foo-bar />");
+    assertThat(mhtn.genBasePhName()).isEqualTo("FOO_BAR");
+  }
+
+  @Test
+  public void testAutomaticPlaceholderName() {
+    MsgHtmlTagNode mhtn = parseMsgHtmlTagNode("<h2>");
+    assertThat(mhtn.genBasePhName()).isEqualTo("START_H2");
+    mhtn = parseMsgHtmlTagNode("</h2>");
+    assertThat(mhtn.genBasePhName()).isEqualTo("END_H2");
   }
 
   private static MsgHtmlTagNode parseMsgHtmlTagNode(String htmlTag, String... params) {

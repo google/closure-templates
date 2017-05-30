@@ -521,7 +521,7 @@ public final class TemplateParserTest {
         .causesError(
             "parse error at '{fallbackmsg ': expected text, {literal}, {call, {delcall, {msg, "
                 + "{/msg}, {xid, {css, {if, {let, {for, {plural, {select, {switch, "
-                + "{foreach, {log}, {debugger}, {print, {, <, or whitespace");
+                + "{foreach, {log}, {debugger}, {print, {, or whitespace");
     assertInvalidTemplate("{print $boo /}");
     assertInvalidTemplate("{if true}aaa{else/}bbb{/if}");
     assertInvalidTemplate("{call .aaa.bbb /}");
@@ -1144,7 +1144,7 @@ public final class TemplateParserTest {
     MsgHtmlTagNode mhtn3 = (MsgHtmlTagNode) mpn3.getChild(0);
     assertEquals("br", mhtn3.getLcTagName());
     assertEquals("BREAK_TAG", mhtn3.genBasePhName());
-    assertEquals("<br  phname=\"breakTag\"/>", mhtn3.toSourceString());
+    assertEquals("<br phname=\"breakTag\"/>", mhtn3.toSourceString());
 
     MsgPlaceholderNode mpn4 = (MsgPlaceholderNode) mn0.getChild(4);
     MsgHtmlTagNode mhtn4 = (MsgHtmlTagNode) mpn4.getChild(0);
@@ -1153,7 +1153,7 @@ public final class TemplateParserTest {
     MsgHtmlTagNode mhtn5 = (MsgHtmlTagNode) mpn5.getChild(0);
     assertEquals("br", mhtn5.getLcTagName());
     assertEquals("BREAK_TAG", mhtn5.genBasePhName());
-    assertEquals("<br  phname=\"break_tag\"/>", mhtn5.toSourceString());
+    assertEquals("<br phname=\"break_tag\"/>", mhtn5.toSourceString());
 
     assertFalse(mhtn0.genSamenessKey().equals(mhtn2.genSamenessKey()));
     assertFalse(mhtn0.genSamenessKey().equals(mhtn3.genSamenessKey()));
