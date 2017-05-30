@@ -972,7 +972,7 @@ TOKEN_MGR_DECLS: {
 | < CMD_CLOSE_MSG                : "{/msg}"         >
 
 | < CMD_BEGIN_XID                : "{xid" <WS>      > { pushState(IN_CMD_TAG_STRUCTURED); }
-| < CMD_BEGIN_CSS                : "{css" <WS>      > { pushState(IN_CMD_TAG_UNSTRUCTURED); }
+| < CMD_BEGIN_CSS                : "{css" <WS>      > { pushState(IN_CMD_TAG_STRUCTURED); }
 
 | < CMD_BEGIN_IF                 : "{if" <WS>       > { pushState(EXPR); }
 | < CMD_BEGIN_ELSEIF             : "{elseif" <WS>   > { pushState(EXPR); }
@@ -1029,7 +1029,8 @@ TOKEN_MGR_DECLS: {
 | < CMD_COLON: ":" >
 | < CMD_EQ: "=" >
 | < CMD_DOT: "." >
-| < CMD_DASH: "-" >
+// https://www.w3.org/TR/CSS21/grammar.html
+| < CSS_SELECTOR: ( "-" | "%" )? <RAW_IDENT> ( "-" | <RAW_IDENT> | <DEC_DIGITS> )* >
 }
 
 <EXPR> TOKEN: {
@@ -1149,8 +1150,6 @@ TOKEN_MGR_DECLS: {
       )*
       "'"
   >
-| < #DEC_DIGITS: ( ["0"-"9"] )+ >
-| < #HEX_DIGIT: ["0"-"9","A"-"F","a"-"f"] >
 }
 
 
@@ -1231,6 +1230,8 @@ TOKEN_MGR_DECLS: {
 | < #NOT_NL: ~["\n","\r"] >
 | < #BRACE: ["{","}"] >
 | < #RAW_IDENT: ["a"-"z","A"-"Z","_"] ( ["a"-"z","A"-"Z","_","0"-"9"] )* >
+| < #DEC_DIGITS: ( ["0"-"9"] )+ >
+| < #HEX_DIGIT: ["0"-"9","A"-"F","a"-"f"] >
 | < #LINE_COMMENT: "//" ( <NOT_NL> )* >
 }
 
@@ -2537,47 +2538,34 @@ private PrintDirectiveNode PrintDirective() :
  */
 private XidNode XidStmt() :
 {
-  Token tagBegin, tok;
-  Token tagEnd = null;
-  Token first = null;
-  StringBuilder value = null;
+  Token tagBegin, tagEnd, tok = null;
+  Identifier ident = null;
 }
 {
   tagBegin = <CMD_BEGIN_XID>
 
   try {
-    first = <NAME>
     (
-      (
-        <CMD_DOT>
-        tok = <NAME>
-        { if (value == null) {
-            value = new StringBuilder().append(first.image);
-          }
-          value.append('.').append(tok.image);
+      ident = DottedIdent()
+    | tok = <CSS_SELECTOR>  // valid xids are a subset of valid CSS selectors
+      {
+        if (tok.image.charAt(0) == '-' || tok.image.charAt(0) == '%') {
+          throw generateParseException();
         }
-      )+
-    |
-      (
-        <CMD_DASH>
-        tok = <NAME>
-        { if (value == null) {
-            value = new StringBuilder().append(first.image);
-          }
-          value.append('-').append(tok.image);
-        }
-      )+
-    )?
+      }
+    )
 
     tagEnd = <CMD_END>
-
   } catch (ParseException e) {
-    reportTemplateBodyErrorAndSkipTo(e, CMD_END);
-    return null;
+    tok = new Token(NAME, "error");
+    tagEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END);
   }
 
-  { String xid = (value == null) ? first.image : value.toString();
-    return new XidNode(nodeIdGen.genId(), createSrcLoc(tagBegin, tagEnd), xid); }
+  {
+
+    String xid = (ident != null) ? ident.identifier() : tok.image;
+    return new XidNode(nodeIdGen.genId(), createSrcLoc(tagBegin, tagEnd), xid);
+  }
 }
 
 
@@ -2586,17 +2574,24 @@ private XidNode XidStmt() :
  */
 private CssNode CssStmt() :
 {
-  Token tagBegin, tagEnd;
-  String cmdText;
+  Token tagBegin, tagEnd, selector;
 }
 {
   tagBegin = <CMD_BEGIN_CSS>
-  cmdText = CmdText()
-  tagEnd = <CMD_END>
-  {
-    return new CssNode.Builder(nodeIdGen.genId(), cmdText, createSrcLoc(tagBegin, tagEnd))
-        .build(context);
+
+  try {
+    (
+      selector = <NAME>
+    | selector = <CSS_SELECTOR>
+    )
+
+    tagEnd = <CMD_END>
+  } catch (ParseException e) {
+    selector = new Token(NAME, "error");
+    tagEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END);
   }
+
+  { return new CssNode(nodeIdGen.genId(), createSrcLoc(tagBegin, tagEnd), null, selector.image); }
 }
 
 

@@ -48,8 +48,6 @@ public final class MsgPluralNode extends AbstractParentCommandNode<CaseOrDefault
   private final String basePluralVarName;
 
   public MsgPluralNode(int id, SourceLocation location, ExprNode expr, int offset) {
-    // TODO(user): the command text should but does not include possible the possible offset
-    // attribute. this should not break anything, and command text will be removed soon.
     super(id, location, "plural");
     this.offset = offset;
     this.pluralExpr = new ExprRootNode(expr);

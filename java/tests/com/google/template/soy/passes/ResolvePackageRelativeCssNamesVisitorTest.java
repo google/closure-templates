@@ -178,21 +178,6 @@ public final class ResolvePackageRelativeCssNamesVisitorTest {
             + "/** Test template. */\n"
             + "{template .foo}\n"
             + "  {@param goo: string}\n"
-            + "  <div class=\"{css $goo, %AAA}\">\n"
-            + "{/template}\n",
-        errorReporter);
-    assertThat(errorReporter.getErrorMessages()).hasSize(2);
-    assertThat(errorReporter.getErrorMessages().get(0))
-        .isEqualTo("Package-relative class name '%AAA' cannot be used with component expression.");
-    assertThat(errorReporter.getErrorMessages().get(1))
-        .isEqualTo("No CSS package defined for package-relative class name '%AAA'.");
-
-    errorReporter = new FormattingErrorReporter();
-    compileTemplate(
-        "{namespace boo}\n\n"
-            + "/** Test template. */\n"
-            + "{template .foo}\n"
-            + "  {@param goo: string}\n"
             + "  <div class=\"{css($goo, '%AAA')}\">\n"
             + "{/template}\n",
         errorReporter);

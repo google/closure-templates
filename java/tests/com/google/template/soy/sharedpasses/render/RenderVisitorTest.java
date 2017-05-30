@@ -801,18 +801,16 @@ public class RenderVisitorTest {
   @Test
   public void testRenderWithCssRenaming() throws Exception {
     cssRenamingMap = TEST_CSS_RENAMING_MAP;
-    String templateBody =
-        "{@param component : ? }\n" + "..{css class}" + "..{css $component, selector}";
+    String templateBody = "{@param component : ? }\n" + "{css class} {css($component, 'selector')}";
 
-    assertRender(templateBody, "..class_renamed" + "..comp-selector_renamed");
+    assertRender(templateBody, "class_renamed comp-selector_renamed");
   }
 
   @Test
   public void testRenderWithoutCssRenaming() throws Exception {
-    String templateBody =
-        "{@param component : ? }\n" + "..{css class}" + "..{css $component, selector}";
+    String templateBody = "{@param component : ? }\n" + "{css class} {css($component, 'selector')}";
 
-    assertRender(templateBody, "..class" + "..comp-selector");
+    assertRender(templateBody, "class comp-selector");
   }
 
   @Test

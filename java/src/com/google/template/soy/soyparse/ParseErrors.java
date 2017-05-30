@@ -197,6 +197,7 @@ final class ParseErrors {
       case SoyFileParserConstants.NAME:
       case SoyFileParserConstants.T_NAME:
       case SoyFileParserConstants.IDENT:
+      case SoyFileParserConstants.CSS_SELECTOR:
         return "identifier";
       case SoyFileParserConstants.PRINT_DIRECTIVE:
         return "print directive";

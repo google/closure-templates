@@ -181,9 +181,10 @@ public final class GenJsExprsVisitorTest {
         "{css selected-option}",
         "goog.getCssName('selected-option')");
 
-    assertGeneratedChunks(JOINER.join(
-        "{@param foo : ?}",
-        "{css $foo, bar}"),
+    assertGeneratedChunks("{css('selected-option')}", "goog.getCssName('selected-option')");
+
+    assertGeneratedChunks(
+        JOINER.join("{@param foo : ?}", "{css($foo, 'bar')}"),
         "goog.getCssName(opt_data.foo, 'bar')");
   }
 

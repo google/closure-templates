@@ -43,7 +43,7 @@ public final class GenPyExprsVisitorTest {
     assertThatSoyExpr("{css primary}")
         .compilesTo(new PyExpr("runtime.get_css_name('primary')", Integer.MAX_VALUE));
 
-    assertThatSoyExpr("{@param foo:?}\n{css $foo, bar}")
+    assertThatSoyExpr("{@param foo:?}\n{css($foo, 'bar')}")
         .compilesTo(new PyExpr("runtime.get_css_name(data.get('foo'), 'bar')", Integer.MAX_VALUE));
   }
 

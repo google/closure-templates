@@ -417,7 +417,7 @@ public final class TemplateParserTest {
     assertValidTemplate(
         "{@param aaa : ?}{@param bbb : ?}{@param ddd : ?}\n"
             + "{$aaa + 1}{print $bbb.ccc[$ddd] |noescape}");
-    assertValidTemplate("{css selected-option}{css CSS_SELECTED_OPTION}{css $cssSelectedOption}");
+    assertValidTemplate("{css selected-option}{css CSS_SELECTED_OPTION}");
     assertValidTemplate("{xid selected-option}{xid SELECTED_OPTION_ID}");
     assertValidTemplate(
         "{@param boo : ?}{@param goo : ?}" + "{if $boo}foo{elseif $goo}moo{else}zoo{/if}");
@@ -1011,22 +1011,15 @@ public final class TemplateParserTest {
   public void testParseCssStmt() throws Exception {
 
     String templateBody =
-        "{@param cssSelectedOption : ?}\n"
-            + "{css selected-option}\n"
-            + "{css CSS_SELECTED_OPTION}\n"
-            + "{css $cssSelectedOption, foo}\n"
-            + "{css %SelectedOption}";
+        "{css selected-option}\n" + "{css CSS_SELECTED_OPTION}\n" + "{css %SelectedOption}";
 
     List<StandaloneNode> nodes =
         assertValidTemplate(ContentKind.ATTRIBUTES, "requirecss=\"foo.bar\"", templateBody)
             .getChildren();
-    assertEquals(4, nodes.size());
+    assertThat(nodes).hasSize(3);
     assertEquals("selected-option", ((CssNode) nodes.get(0)).getSelectorText());
     assertEquals("CSS_SELECTED_OPTION", ((CssNode) nodes.get(1)).getSelectorText());
-    assertEquals(
-        "$cssSelectedOption", ((CssNode) nodes.get(2)).getComponentNameExpr().toSourceString());
-    assertEquals("foo", ((CssNode) nodes.get(2)).getSelectorText());
-    assertEquals("fooBarSelectedOption", ((CssNode) nodes.get(3)).getSelectorText());
+    assertEquals("fooBarSelectedOption", ((CssNode) nodes.get(2)).getSelectorText());
   }
 
   @Test

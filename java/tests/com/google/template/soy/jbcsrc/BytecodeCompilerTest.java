@@ -509,7 +509,6 @@ public class BytecodeCompilerTest {
     FakeRenamingMap renamingMap = new FakeRenamingMap(ImmutableMap.of("foo", "bar"));
     assertThatTemplateBody("{css foo}").withCssRenamingMap(renamingMap).rendersAs("bar");
     assertThatTemplateBody("{css foo2}").withCssRenamingMap(renamingMap).rendersAs("foo2");
-    assertThatTemplateBody("{css 1+2, foo2}").withCssRenamingMap(renamingMap).rendersAs("3-foo2");
   }
 
   @Test
