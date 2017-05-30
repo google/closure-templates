@@ -19,7 +19,7 @@ package com.google.template.soy.types.ast;
 import com.google.auto.value.AutoValue;
 import com.google.template.soy.base.SourceLocation;
 
-/** A simple named type (may be an instrinsic type, '?', or a custom type). */
+/** A simple named type (may be an intrinsic type, '?', or a custom type). */
 @AutoValue
 public abstract class NamedTypeNode extends TypeNode {
   public static NamedTypeNode create(SourceLocation sourceLocation, String name) {
