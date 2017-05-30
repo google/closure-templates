@@ -3433,8 +3433,8 @@ goog.addDependency('html/safescript.js', ['goog.html.SafeScript'], ['goog.assert
 goog.addDependency('html/safescript_test.js', ['goog.html.safeScriptTest'], ['goog.html.SafeScript', 'goog.object', 'goog.string.Const', 'goog.testing.jsunit'], {});
 goog.addDependency('html/safestyle.js', ['goog.html.SafeStyle'], ['goog.array', 'goog.asserts', 'goog.string', 'goog.string.Const', 'goog.string.TypedString'], {});
 goog.addDependency('html/safestyle_test.js', ['goog.html.safeStyleTest'], ['goog.html.SafeStyle', 'goog.object', 'goog.string.Const', 'goog.testing.jsunit'], {});
-goog.addDependency('html/safestylesheet.js', ['goog.html.SafeStyleSheet'], ['goog.array', 'goog.asserts', 'goog.string', 'goog.string.Const', 'goog.string.TypedString'], {});
-goog.addDependency('html/safestylesheet_test.js', ['goog.html.safeStyleSheetTest'], ['goog.html.SafeStyleSheet', 'goog.object', 'goog.string.Const', 'goog.testing.jsunit'], {});
+goog.addDependency('html/safestylesheet.js', ['goog.html.SafeStyleSheet'], ['goog.array', 'goog.asserts', 'goog.html.SafeStyle', 'goog.object', 'goog.string', 'goog.string.Const', 'goog.string.TypedString'], {});
+goog.addDependency('html/safestylesheet_test.js', ['goog.html.safeStyleSheetTest'], ['goog.html.SafeStyle', 'goog.html.SafeStyleSheet', 'goog.object', 'goog.string.Const', 'goog.testing.jsunit'], {});
 goog.addDependency('html/safeurl.js', ['goog.html.SafeUrl'], ['goog.asserts', 'goog.fs.url', 'goog.html.TrustedResourceUrl', 'goog.i18n.bidi.Dir', 'goog.i18n.bidi.DirectionalString', 'goog.string', 'goog.string.Const', 'goog.string.TypedString'], {});
 goog.addDependency('html/safeurl_test.js', ['goog.html.safeUrlTest'], ['goog.html.SafeUrl', 'goog.html.TrustedResourceUrl', 'goog.i18n.bidi.Dir', 'goog.object', 'goog.string.Const', 'goog.testing.jsunit', 'goog.userAgent'], {});
 goog.addDependency('html/sanitizer/attributewhitelist.js', ['goog.html.sanitizer.AttributeSanitizedWhitelist', 'goog.html.sanitizer.AttributeWhitelist'], [], {});
@@ -13615,6 +13615,10 @@ goog.html.SafeStyle.INNOCUOUS_STRING = 'zClosurez';
 
 /**
  * Mapping of property names to their values.
+ * We don't support numbers even though some values might be numbers (e.g.
+ * line-height or 0 for any length). The reason is that most numeric values need
+ * units (e.g. '1px') and allowing numbers could cause users forgetting about
+ * them.
  * @typedef {!Object<string, goog.string.Const|string>}
  */
 goog.html.SafeStyle.PropertyMap;
@@ -13767,6 +13771,8 @@ goog.provide('goog.html.SafeStyleSheet');
 
 goog.require('goog.array');
 goog.require('goog.asserts');
+goog.require('goog.html.SafeStyle');
+goog.require('goog.object');
 goog.require('goog.string');
 goog.require('goog.string.Const');
 goog.require('goog.string.TypedString');
@@ -13851,6 +13857,70 @@ goog.html.SafeStyleSheet.prototype.implementsGoogStringTypedString = true;
  * @private
  */
 goog.html.SafeStyleSheet.TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_ = {};
+
+
+/**
+ * Creates a style sheet consisting of one selector and one style definition.
+ * Use {@link goog.html.SafeStyleSheet.concat} to create longer style sheets.
+ * This function doesn't support @import, @media and similar constructs.
+ * @param {string} selector CSS selector, e.g. '#id' or 'tag .class, #id'. We
+ *     support CSS3 selectors: https://w3.org/TR/css3-selectors/#selectors.
+ * @param {!goog.html.SafeStyle.PropertyMap|!goog.html.SafeStyle} style Style
+ *     definition associated with the selector.
+ * @return {!goog.html.SafeStyleSheet}
+ * @throws {Error} If invalid selector is provided.
+ */
+goog.html.SafeStyleSheet.createRule = function(selector, style) {
+  if (goog.string.contains(selector, '<')) {
+    throw Error('Selector does not allow \'<\', got: ' + selector);
+  }
+
+  // Remove strings.
+  var selectorToCheck =
+      selector.replace(/('|")((?!\1)[^\r\n\f\\]|\\[\s\S])*\1/g, '');
+
+  // Check characters allowed in CSS3 selectors.
+  if (!/^[-_a-zA-Z0-9#.:* ,>+~[\]()=^$|]+$/.test(selectorToCheck)) {
+    throw Error(
+        'Selector allows only [-_a-zA-Z0-9#.:* ,>+~[\\]()=^$|] and ' +
+        'strings, got: ' + selector);
+  }
+
+  // Check balanced () and [].
+  if (!goog.html.SafeStyleSheet.hasBalancedBrackets_(selectorToCheck)) {
+    throw Error('() and [] in selector must be balanced, got: ' + selector);
+  }
+
+  if (!(style instanceof goog.html.SafeStyle)) {
+    style = goog.html.SafeStyle.create(style);
+  }
+  var styleSheet = selector + '{' + goog.html.SafeStyle.unwrap(style) + '}';
+  return goog.html.SafeStyleSheet
+      .createSafeStyleSheetSecurityPrivateDoNotAccessOrElse(styleSheet);
+};
+
+
+/**
+ * Checks if a string has balanced () and [] brackets.
+ * @param {string} s String to check.
+ * @return {boolean}
+ * @private
+ */
+goog.html.SafeStyleSheet.hasBalancedBrackets_ = function(s) {
+  var brackets = {'(': ')', '[': ']'};
+  var expectedBrackets = [];
+  for (var i = 0; i < s.length; i++) {
+    var ch = s[i];
+    if (brackets[ch]) {
+      expectedBrackets.push(brackets[ch]);
+    } else if (goog.object.contains(brackets, ch)) {
+      if (expectedBrackets.pop() != ch) {
+        return false;
+      }
+    }
+  }
+  return expectedBrackets.length == 0;
+};
 
 
 /**
