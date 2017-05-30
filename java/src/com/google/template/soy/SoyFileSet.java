@@ -1177,10 +1177,13 @@ public final class SoyFileSet {
         declaredSyntaxVersion.num >= SyntaxVersion.V2_0.num,
         "Incremental DOM code generation only supports syntax version of V2 or higher.");
     requireStrictAutoescaping();
-    ParseResult result = parse(SyntaxVersion.V2_0);
+    // incremental dom requires the html rewriting pass.  It is currently incompatible with the
+    // other backends though because of issues with the autoescaper.  When that is fixed this will
+    // be come the default behavior.
+    ParseResult result = parse(passManagerBuilder(SyntaxVersion.V2_0).enhableHtmlRewriting());
+    SoyFileSetNode soyTree = result.fileSet();
 
     throwIfErrorsPresent();
-    SoyFileSetNode soyTree = result.fileSet();
     new ChangeCallsToPassAllDataVisitor().exec(soyTree);
     if (generalOptions.isOptimizerEnabled()) {
       simplifyVisitor.simplify(soyTree, result.registry());

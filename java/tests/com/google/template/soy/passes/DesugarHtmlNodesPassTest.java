@@ -19,7 +19,6 @@ package com.google.template.soy.passes;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.base.Joiner;
-import com.google.common.collect.ImmutableList;
 import com.google.common.truth.StringSubject;
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
 import com.google.template.soy.base.internal.SoyFileKind;
@@ -108,8 +107,7 @@ public final class DesugarHtmlNodesPassTest {
                 "test.soy",
                 ExplodingErrorReporter.get())
             .parseSoyFile();
-    new HtmlRewritePass(ImmutableList.of("stricthtml"), ExplodingErrorReporter.get())
-        .run(node, nodeIdGen);
+    new HtmlRewritePass(true, ExplodingErrorReporter.get()).run(node, nodeIdGen);
     new DesugarHtmlNodesPass().run(node, nodeIdGen);
     assertThat(hasHtmlNodes(node)).isFalse();
     StringBuilder sb = new StringBuilder();

@@ -76,6 +76,7 @@ public final class PassManager {
   private final SoyGeneralOptions options;
   private final boolean allowUnknownGlobals;
   private final boolean disableAllTypeChecking;
+  private final boolean enableHtmlRewriting;
 
   private PassManager(Builder builder) {
     this.registry = checkNotNull(builder.registry);
@@ -85,11 +86,13 @@ public final class PassManager {
     this.options = checkNotNull(builder.opts);
     this.allowUnknownGlobals = builder.allowUnknownGlobals;
     this.disableAllTypeChecking = builder.disableAllTypeChecking;
+    this.enableHtmlRewriting = builder.enableHtmlRewriting;
 
     boolean enabledStrictHtml = options.getExperimentalFeatures().contains("stricthtml");
     HtmlRewritePass rewritePass =
         new HtmlRewritePass(
-            options.getExperimentalFeatures(),
+            // TODO(lukes): enable this unconditionally
+            enabledStrictHtml || enableHtmlRewriting,
             errorReporter);
 
     ImmutableList.Builder<CompilerFilePass> singleFilePassesBuilder =
@@ -159,8 +162,15 @@ public final class PassManager {
     if (options.allowExternalCalls() == TriState.DISABLED) {
       fileSetPassBuilder.add(new StrictDepsPass());
     }
-    // TODO(lukes): move this to run after autoescaping.
-    fileSetPassBuilder.add(new DesugarHtmlNodesPass());
+    // if htmlrewriting is enabled, don't desugar.
+    if (!enableHtmlRewriting) {
+      // TODO(lukes): move this to run after autoescaping.
+      fileSetPassBuilder.add(new DesugarHtmlNodesPass());
+    }
+    // A number of the passes above (desuagar, htmlrewrite), may chop up raw text nodes in ways
+    // that can be later stitched together.  Do that here.  This also drops empty RawTextNodes,
+    // which some of the backends don't like (incremental dom can generate bad code in some cases).
+    fileSetPassBuilder.add(new CombinedRawTextNodesPass());
     this.fileSetPasses = fileSetPassBuilder.build();
   }
 
@@ -185,7 +195,9 @@ public final class PassManager {
     }
   }
 
+  /** A builder for configuring the pass manager. */
   public static final class Builder {
+    private boolean enableHtmlRewriting;
     private SoyTypeRegistry registry;
     private ImmutableMap<String, ? extends SoyFunction> soyFunctionMap;
     private ErrorReporter errorReporter;
@@ -243,6 +255,17 @@ public final class PassManager {
       return this;
     }
 
+    /**
+     * This option triggers the {@link HtmlRewritePass} and disables the {@link
+     * DesugarHtmlNodesPass}.
+     *
+     * <p>Setting this will override the normal mechanism of enabling this via {@link
+     * SoyGeneralOptions#getExperimentalFeatures() experimental features}.
+     */
+    public Builder enhableHtmlRewriting() {
+      this.enableHtmlRewriting = true;
+      return this;
+    }
     /**
      * Allows unknown functions.
      *
@@ -372,6 +395,15 @@ public final class PassManager {
     @Override
     public void run(SoyFileSetNode fileSet, TemplateRegistry registry) {
       new StrictDepsVisitor(registry, errorReporter).exec(fileSet);
+    }
+  }
+
+  // TODO(lukes): this pass should maybe be run after any time the tree is modified.  Some of the
+  // code generators choke on extra empty raw text nodes
+  private static final class CombinedRawTextNodesPass extends CompilerFileSetPass {
+    @Override
+    public void run(SoyFileSetNode fileSet, TemplateRegistry registry) {
+      new CombineConsecutiveRawTextNodesVisitor(fileSet.getNodeIdGenerator()).exec(fileSet);
     }
   }
 
