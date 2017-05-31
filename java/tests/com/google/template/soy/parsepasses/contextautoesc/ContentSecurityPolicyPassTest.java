@@ -48,7 +48,7 @@ public final class ContentSecurityPolicyPassTest {
 
   @Parameters(name = "strictHtml {0}")
   public static Iterable<Object[]> data() {
-    return Arrays.asList(new Object[][] {{false}});
+    return Arrays.asList(new Object[][] {{false}, {true}});
   }
 
   private final boolean strictHtmlEnabled;
