@@ -19,7 +19,6 @@ package com.google.template.soy;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.auto.value.AutoValue;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
@@ -59,13 +58,11 @@ public final class SoyFileSetParser {
   /** Optional file cache. */
   @Nullable private final SoyAstCache cache;
 
-  /** The suppliers of the Soy files to parse. */
+  /** Files to parse. */
   private final ImmutableMap<String, ? extends SoyFileSupplier> soyFileSuppliers;
 
-  /** Parsing passes. null means that they are disabled. */
-  @Nullable private final PassManager passManager;
+  private final PassManager passManager;
 
-  /** For reporting parse errors. */
   private final ErrorReporter errorReporter;
 
   /**
@@ -99,22 +96,19 @@ public final class SoyFileSetParser {
    * registry.
    */
   private ParseResult parseWithVersions() throws IOException {
-    Preconditions.checkState(
-        (cache == null) || passManager != null,
-        "AST caching is only allowed when all parsing and checking passes are enabled, to avoid "
-            + "caching inconsistent versions");
     IdGenerator nodeIdGen =
         (cache != null) ? cache.getNodeIdGenerator() : new IncrementingIdGenerator();
     SoyFileSetNode soyTree = new SoyFileSetNode(nodeIdGen.genId(), nodeIdGen);
     boolean filesWereSkipped = false;
-    for (SoyFileSupplier fileSupplier : soyFileSuppliers.values()) {
-      SoyFileSupplier.Version version = fileSupplier.getVersion();
-      VersionedFile cachedFile =
-          cache != null ? cache.get(fileSupplier.getFilePath(), version) : null;
-      SoyFileNode node;
-      if (cachedFile == null) {
-        //noinspection SynchronizationOnLocalVariableOrMethodParameter IntelliJ
-        synchronized (nodeIdGen) { // Avoid using the same ID generator in multiple threads.
+    // TODO(lukes): there are other places in the compiler (autoescaper) which may use the id
+    // generator but fail to lock on it.  Eliminate the id system to avoid this whole issue.
+    synchronized (nodeIdGen) { // Avoid using the same ID generator in multiple threads.
+      for (SoyFileSupplier fileSupplier : soyFileSuppliers.values()) {
+        SoyFileSupplier.Version version = fileSupplier.getVersion();
+        VersionedFile cachedFile =
+            cache != null ? cache.get(fileSupplier.getFilePath(), version) : null;
+        SoyFileNode node;
+        if (cachedFile == null) {
           node = parseSoyFileHelper(fileSupplier, nodeIdGen, passManager.getTypeRegistry());
           // TODO(user): implement error recovery and keep on trucking in order to display
           // as many errors as possible. Currently, the later passes just spew NPEs if run on
@@ -123,27 +117,25 @@ public final class SoyFileSetParser {
             filesWereSkipped = true;
             continue;
           }
-          if (passManager != null) {
-            // Run passes that are considered part of initial parsing.
-            passManager.runSingleFilePasses(node, nodeIdGen);
+          // Run passes that are considered part of initial parsing.
+          passManager.runSingleFilePasses(node, nodeIdGen);
+          // Run passes that check the tree.
+          if (cache != null) {
+            cache.put(fileSupplier.getFilePath(), VersionedFile.of(node, version));
           }
+        } else {
+          node = cachedFile.file();
         }
-        // Run passes that check the tree.
-        if (cache != null) {
-          cache.put(fileSupplier.getFilePath(), VersionedFile.of(node, version));
-        }
-      } else {
-        node = cachedFile.file();
+        soyTree.addChild(node);
       }
-      soyTree.addChild(node);
-    }
 
-    TemplateRegistry registry = new TemplateRegistry(soyTree, errorReporter);
-    // Run passes that check the tree iff we successfully parsed every file.
-    if (!filesWereSkipped && passManager != null) {
-      passManager.runWholeFilesetPasses(registry, soyTree);
+      TemplateRegistry registry = new TemplateRegistry(soyTree, errorReporter);
+      // Run passes that check the tree iff we successfully parsed every file.
+      if (!filesWereSkipped) {
+        passManager.runWholeFilesetPasses(registry, soyTree);
+      }
+      return ParseResult.create(soyTree, registry);
     }
-    return ParseResult.create(soyTree, registry);
   }
 
   /**
