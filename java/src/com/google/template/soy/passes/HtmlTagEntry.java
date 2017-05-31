@@ -238,7 +238,7 @@ final class HtmlTagEntry {
         errorReporter.report(
             closeTag.getTagLocation(),
             UNEXPECTED_CLOSE_TAG_WITH_EXPECTATION,
-            openTag.getStaticTagNameAsLowerCase().get());
+            openTag.getStaticTagNameAsLowerCase());
       } else {
         errorReporter.report(closeTag.getTagLocation(), MISMATCH_DYNAMIC_TAG);
       }
@@ -402,7 +402,7 @@ final class HtmlTagEntry {
       errorReporter.report(
           closeTag.getSourceLocation(),
           UNEXPECTED_CLOSE_TAG_WITH_EXPECTATION,
-          openTag.getStaticTagNameAsLowerCase().get());
+          openTag.getStaticTagNameAsLowerCase());
     }
     if (!matchCommonPrefix) {
       errorReporter.report(openTag.getTagLocation(), OPEN_TAG_NOT_CLOSED);

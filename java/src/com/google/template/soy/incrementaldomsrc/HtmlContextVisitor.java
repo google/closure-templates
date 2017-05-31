@@ -157,8 +157,7 @@ final class HtmlContextVisitor extends AbstractSoyNodeVisitor<Void> {
           htmlOpenTagNode
               .getTagName()
               .getStaticTagNameAsLowerCase()
-              .get()
-              .equals(node.getTagName().getStaticTagNameAsLowerCase().get());
+              .equals(node.getTagName().getStaticTagNameAsLowerCase());
     }
   }
 
@@ -168,7 +167,7 @@ final class HtmlContextVisitor extends AbstractSoyNodeVisitor<Void> {
       errorReporter.report(node.getTagName().getTagLocation(), DYNAMIC_TAG_NAME);
       return;
     }
-    String tagName = node.getTagName().getStaticTagNameAsLowerCase().get();
+    String tagName = node.getTagName().getStaticTagNameAsLowerCase();
     InferredElementNamespace namespace = getNamespace(tagName);
     if (node.isSelfClosing()
         && namespace == InferredElementNamespace.XHTML

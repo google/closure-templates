@@ -53,7 +53,7 @@ public final class HtmlOpenTagNodeTest {
     HtmlOpenTagNode openTag = parseTag("<DiV>");
     assertThat(openTag.toSourceString()).isEqualTo("<DiV>");
     assertThat(openTag.isSelfClosing()).isFalse();
-    assertThat(openTag.getTagName().getStaticTagNameAsLowerCase()).hasValue("div");
+    assertThat(openTag.getTagName().getStaticTagNameAsLowerCase()).isEqualTo("div");
   }
 
   @Test

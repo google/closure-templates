@@ -164,7 +164,7 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
       errorReporter.report(tagName.getTagLocation(), DYNAMIC_TAG_NAME_IN_MSG_BLOCK);
       lcTagName = "error";
     } else {
-      lcTagName = tagName.getStaticTagNameAsLowerCase().get();
+      lcTagName = tagName.getStaticTagNameAsLowerCase();
     }
     return lcTagName;
   }

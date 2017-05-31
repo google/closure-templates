@@ -20,7 +20,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
 import com.google.common.base.Ascii;
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.exprtree.ExprEquivalence;
@@ -151,8 +150,14 @@ public final class TagName {
     return (RawTextNode) node;
   }
 
-  public Optional<String> getStaticTagNameAsLowerCase() {
-    return Optional.fromNullable(nameAsLowerCase);
+  /**
+   * Returns the static name in ascii lowercase.
+   *
+   * @throws IllegalStateException if this tag name isn't static.
+   */
+  public String getStaticTagNameAsLowerCase() {
+    checkState(isStatic());
+    return nameAsLowerCase;
   }
 
   public StandaloneNode getNode() {
