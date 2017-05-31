@@ -69,7 +69,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
     }
   }
 
-  // TODO(sparhami): Add error for unused alias.  Maybe make SoyParsingContext collect usages?
+  // TODO(sparhami): Add error for unused alias.
 
   private static final SoyErrorKind INVALID_ALIAS_FOR_LAST_PART_OF_NAMESPACE =
       SoyErrorKind.of(
