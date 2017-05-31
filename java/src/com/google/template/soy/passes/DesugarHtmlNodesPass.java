@@ -65,11 +65,6 @@ final class DesugarHtmlNodesPass extends CompilerFileSetPass {
   @VisibleForTesting
   void run(SoyNode node, IdGenerator idGenerator) {
     new RewritingVisitor(idGenerator).exec(node);
-    // Whether or not we have replaced any nodes, we still need to merge adjacent RawTextNodes since
-    // the parser may have divided them up in such a way that the Autoescaper can't handle it. In
-    // particular the autoescaper expects to be able to see whole close tags, so it can handle
-    // </script> as a single rawtextnode, but not as </,script,> (3 raw text nodes).
-    new CombineConsecutiveRawTextNodesVisitor(idGenerator).exec(node);
   }
 
   private static final class RewritingVisitor extends AbstractSoyNodeVisitor<Void> {

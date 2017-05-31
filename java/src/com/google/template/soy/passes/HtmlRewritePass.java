@@ -366,18 +366,15 @@ public final class HtmlRewritePass extends CompilerFilePass {
   private final ImmutableList<CompilerFilePass> extraPasses;
 
   /**
-   * @param experimentalFeatures The experimental features that are enabled in the compiler
+   * @param enableRewriting If {@code true} then this will rewrite the AST to contain the new nodes
+   *     otherwise we will run in 'checking only' mode.
    * @param errorReporter The error reporter
    * @param extraPasses Extra passes to run on the rewritten tree. This is a temporary feature of
    *     this pass while it is still possible to run this as a 'checking' only pass
    */
   public HtmlRewritePass(
-      ImmutableList<String> experimentalFeatures,
-      ErrorReporter errorReporter,
-      CompilerFilePass... extraPasses) {
-    // TODO(lukes): this is currently conditionally enabled for stricthtml to enable testing.
-    // Otherwise we run in a mode where we enforce all the checks, but drop the rewrites.
-    this.enabled = experimentalFeatures.contains("stricthtml");
+      boolean enableRewriting, ErrorReporter errorReporter, CompilerFilePass... extraPasses) {
+    this.enabled = enableRewriting;
     this.errorReporter = errorReporter;
     this.extraPasses =
         ImmutableList.<CompilerFilePass>builder()
@@ -1751,7 +1748,7 @@ public final class HtmlRewritePass extends CompilerFilePass {
           reparentNodes(node, context, finalState);
         }
       } else {
-        // an error occured, restore the start state to help avoid an error explosion
+        // an error occurred, restore the start state to help avoid an error explosion
         finalState = startState;
       }
       context.setState(finalState, node.getSourceLocation().getEndPoint());
@@ -2192,7 +2189,7 @@ public final class HtmlRewritePass extends CompilerFilePass {
      * Records the start of an html tag
      *
      * @param tagStartNode The node where it started
-     * @param isCloseTag is is a close tag
+     * @param isCloseTag If the current tag is a close tag.
      * @param point the source location of the {@code <} character.
      */
     void startTag(RawTextNode tagStartNode, boolean isCloseTag, SourceLocation.Point point) {

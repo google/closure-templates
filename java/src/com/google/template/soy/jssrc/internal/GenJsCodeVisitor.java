@@ -57,7 +57,6 @@ import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
-import com.google.template.soy.html.AbstractHtmlSoyNodeVisitor;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
@@ -70,6 +69,7 @@ import com.google.template.soy.passes.FindIndirectParamsVisitor;
 import com.google.template.soy.passes.FindIndirectParamsVisitor.IndirectParamsInfo;
 import com.google.template.soy.passes.ShouldEnsureDataIsDefinedVisitor;
 import com.google.template.soy.shared.internal.FindCalleesNotInFileVisitor;
+import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallNode;
@@ -126,14 +126,14 @@ import javax.inject.Inject;
 /**
  * Visitor for generating full JS code (i.e. statements) for parse tree nodes.
  *
- * <p> Precondition: MsgNode should not exist in the tree.
+ * <p>Precondition: MsgNode should not exist in the tree.
  *
- * <p> {@link #gen} should be called on a full parse tree. JS source code will be generated for
- * all the Soy files. The return value is a list of strings, each string being the content of one
+ * <p>{@link #gen} should be called on a full parse tree. JS source code will be generated for all
+ * the Soy files. The return value is a list of strings, each string being the content of one
  * generated JS file (corresponding to one Soy file).
  *
  */
-public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
+public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
   /** Regex pattern to look for dots in a template name. */
   private static final Pattern DOT = Pattern.compile("\\.");
@@ -1412,7 +1412,7 @@ public class GenJsCodeVisitor extends AbstractHtmlSoyNodeVisitor<List<String>> {
   // Fallback implementation.
 
   @Override protected void visitSoyNode(SoyNode node) {
-
+    // TODO(lukes): this method is suspicious...delete? always throw unsupportedoperationexception?
     if (node instanceof ParentSoyNode<?>) {
 
       if (node instanceof BlockNode) {

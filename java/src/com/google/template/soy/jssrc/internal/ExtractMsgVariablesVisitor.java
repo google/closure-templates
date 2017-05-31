@@ -18,9 +18,9 @@ package com.google.template.soy.jssrc.internal;
 
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
-import com.google.template.soy.html.IncrementalHtmlAttributeNode;
 import com.google.template.soy.passes.BuildAllDependeesMapVisitor;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
+import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -110,8 +110,8 @@ public class ExtractMsgVariablesVisitor extends AbstractSoyNodeVisitor<Void> {
     // Find the actual content kind that this node prints in.
     RenderUnitNode container = msgFbGrpNode.getNearestAncestor(RenderUnitNode.class);
     ContentKind kind = container.getContentKind();
-    IncrementalHtmlAttributeNode containingAttribute =
-        msgFbGrpNode.getNearestAncestor(IncrementalHtmlAttributeNode.class);
+    HtmlAttributeNode containingAttribute =
+        msgFbGrpNode.getNearestAncestor(HtmlAttributeNode.class);
     if (containingAttribute != null
         && SoyTreeUtils.isDescendantOf(containingAttribute, container)) {
       kind = ContentKind.TEXT;
@@ -141,7 +141,7 @@ public class ExtractMsgVariablesVisitor extends AbstractSoyNodeVisitor<Void> {
     SoyNode nearestDependee = allDependees.get(0);
     if (nearestDependee instanceof LocalVarInlineNode) {
       newParent = (BlockNode) nearestDependee.getParent();
-      indexUnderNewParent = newParent.getChildIndex((LocalVarInlineNode) nearestDependee) + 1;
+      indexUnderNewParent = newParent.getChildIndex(nearestDependee) + 1;
     } else if (nearestDependee instanceof BlockNode) {
       newParent = (BlockNode) nearestDependee;
       indexUnderNewParent = 0;

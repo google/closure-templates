@@ -16,11 +16,8 @@
 
 package com.google.template.soy.jssrc.internal;
 
-import com.google.template.soy.html.AbstractReturningHtmlSoyNodeVisitor;
-import com.google.template.soy.html.IncrementalHtmlAttributeNode;
-import com.google.template.soy.html.IncrementalHtmlCloseTagNode;
-import com.google.template.soy.html.IncrementalHtmlOpenTagNode;
 import com.google.template.soy.shared.internal.ApiCallScope;
+import com.google.template.soy.soytree.AbstractReturningSoyNodeVisitor;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamValueNode;
@@ -28,6 +25,10 @@ import com.google.template.soy.soytree.CssNode;
 import com.google.template.soy.soytree.DebuggerNode;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForeachNode;
+import com.google.template.soy.soytree.HtmlAttributeNode;
+import com.google.template.soy.soytree.HtmlAttributeValueNode;
+import com.google.template.soy.soytree.HtmlCloseTagNode;
+import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
@@ -64,7 +65,7 @@ import javax.inject.Inject;
  *
  */
 @ApiCallScope
-public class IsComputableAsJsExprsVisitor extends AbstractReturningHtmlSoyNodeVisitor<Boolean> {
+public class IsComputableAsJsExprsVisitor extends AbstractReturningSoyNodeVisitor<Boolean> {
 
   /** The memoized results of past visits to nodes. */
   private final Map<SoyNode, Boolean> memoizedResults;
@@ -201,17 +202,22 @@ public class IsComputableAsJsExprsVisitor extends AbstractReturningHtmlSoyNodeVi
   }
 
   @Override
-  protected Boolean visitIncrementalHtmlAttributeNode(IncrementalHtmlAttributeNode node) {
+  protected Boolean visitHtmlAttributeValueNode(HtmlAttributeValueNode node) {
+    return areChildrenComputableAsJsExprs(node);
+  }
+
+  @Override
+  protected Boolean visitHtmlAttributeNode(HtmlAttributeNode node) {
     return false;
   }
 
   @Override
-  protected Boolean visitIncrementalHtmlOpenTagNode(IncrementalHtmlOpenTagNode node) {
+  protected Boolean visitHtmlOpenTagNode(HtmlOpenTagNode node) {
     return false;
   }
 
   @Override
-  protected Boolean visitIncrementalHtmlCloseTagNode(IncrementalHtmlCloseTagNode node) {
+  protected Boolean visitHtmlCloseTagNode(HtmlCloseTagNode node) {
     return false;
   }
 
