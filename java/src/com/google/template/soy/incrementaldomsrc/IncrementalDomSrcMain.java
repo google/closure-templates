@@ -24,11 +24,11 @@ import com.google.common.collect.Multimap;
 import com.google.common.io.Files;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.html.passes.HtmlTransformVisitor;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.internal.i18n.SoyBidiUtils;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.internal.OptimizeBidiCodeGenVisitor;
-import com.google.template.soy.passes.CombineConsecutiveRawTextNodesVisitor;
 import com.google.template.soy.shared.internal.ApiCallScopeUtils;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
 import com.google.template.soy.shared.internal.MainEntryPointUtils;
@@ -116,19 +116,17 @@ public class IncrementalDomSrcMain {
       ApiCallScopeUtils.seedSharedParams(inScope, null /* msgBundle */, bidiGlobalDir);
 
       // Do the code generation.
-      new CombineConsecutiveRawTextNodesVisitor(soyTree.getNodeIdGenerator()).exec(soyTree);
       optimizeBidiCodeGenVisitorProvider.get().exec(soyTree);
       if (isOptimizerEnabled) {
         simplifyVisitor.simplify(soyTree, registry);
       }
 
-      new HtmlContextVisitor(errorReporter).exec(soyTree);
+      new HtmlTransformVisitor(errorReporter).exec(soyTree);
 
       new UnescapingVisitor().exec(soyTree);
 
       // Must happen after HtmlTransformVisitor, so it can infer context for {msg} nodes.
       new IncrementalDomExtractMsgVariablesVisitor().exec(soyTree);
-      
 
       return genIncrementalDomCodeVisitorProvider.get().gen(soyTree, registry, errorReporter);
     }

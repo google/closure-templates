@@ -20,6 +20,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableList;
 import com.google.common.truth.StringSubject;
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
 import com.google.template.soy.base.internal.SoyFileKind;
@@ -391,7 +392,7 @@ public final class HtmlRewritePassTest {
                 errorReporter)
             .parseSoyFile();
     if (node != null) {
-      new HtmlRewritePass(true, errorReporter).run(node, nodeIdGen);
+      new HtmlRewritePass(ImmutableList.of("stricthtml"), errorReporter).run(node, nodeIdGen);
       return node.getChild(0);
     }
     return null;

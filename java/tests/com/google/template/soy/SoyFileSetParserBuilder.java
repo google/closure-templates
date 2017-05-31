@@ -60,7 +60,6 @@ public final class SoyFileSetParserBuilder {
           .getInstance(new Key<ImmutableMap<String, ? extends SoyFunction>>() {});
   private SoyGeneralOptions options = new SoyGeneralOptions();
   private ImmutableList<CharSource> conformanceConfigs = ImmutableList.of();
-  private boolean enableHtmlRewriting;
 
   /**
    * Returns a builder that gets its Soy inputs from the given strings, treating each string as the
@@ -132,7 +131,7 @@ public final class SoyFileSetParserBuilder {
 
   public SoyFileSetParserBuilder options(SoyGeneralOptions options) {
     this.options = checkNotNull(options);
-    // allow the version in the options to override the declared default, if there is one.
+    // allow the version in the options to override the the declared default, if there is one.
     this.declaredSyntaxVersion = options.getDeclaredSyntaxVersion(declaredSyntaxVersion);
     return this;
   }
@@ -149,11 +148,6 @@ public final class SoyFileSetParserBuilder {
 
   public SoyFileSetParserBuilder setConformanceConfigs(Iterable<CharSource> configs) {
     this.conformanceConfigs = ImmutableList.copyOf(configs);
-    return this;
-  }
-
-  public SoyFileSetParserBuilder enableHtmlRewriting() {
-    this.enableHtmlRewriting = true;
     return this;
   }
 
@@ -191,11 +185,9 @@ public final class SoyFileSetParserBuilder {
     if (allowUnboundGlobals) {
       passManager.allowUnknownGlobals();
     }
-    if (enableHtmlRewriting) {
-      passManager.enhableHtmlRewriting();
-    }
     return new SoyFileSetParser(astCache, soyFileSuppliers, passManager.build(), errorReporter)
         .parse();
   }
+
 
 }

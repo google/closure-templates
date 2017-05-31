@@ -19,6 +19,7 @@ package com.google.template.soy.soytree;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.error.ExplodingErrorReporter;
@@ -75,7 +76,8 @@ public final class HtmlOpenTagNodeTest {
                 "test.soy",
                 ExplodingErrorReporter.get())
             .parseSoyFile();
-    new HtmlRewritePass(true, ExplodingErrorReporter.get()).run(node, nodeIdGen);
+    new HtmlRewritePass(ImmutableList.of("stricthtml"), ExplodingErrorReporter.get())
+        .run(node, nodeIdGen);
     new CombineConsecutiveRawTextNodesVisitor(nodeIdGen).exec(node);
     return (HtmlOpenTagNode) node.getChild(0).getChild(0);
   }

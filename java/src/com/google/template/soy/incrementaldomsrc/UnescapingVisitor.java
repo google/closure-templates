@@ -16,8 +16,8 @@
 package com.google.template.soy.incrementaldomsrc;
 
 import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.html.AbstractHtmlSoyNodeVisitor;
 import com.google.template.soy.internal.base.UnescapeUtils;
-import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.HtmlContext;
 import com.google.template.soy.soytree.LetContentNode;
@@ -35,7 +35,7 @@ import com.google.template.soy.soytree.TemplateNode;
  * ContentKind#ATTRIBUTES} contexts. This is used for Incremental DOM compilation, which treats raw
  * content in these contexts as text rather than HTML source.
  */
-final class UnescapingVisitor extends AbstractSoyNodeVisitor<Void> {
+final class UnescapingVisitor extends AbstractHtmlSoyNodeVisitor<Void> {
 
   @Override
   protected void visitSoyNode(SoyNode node) {
