@@ -46,6 +46,9 @@ package com.google.template.soy.soyparse;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.template.soy.exprtree.Operator.createOperatorNode;
 
+import com.google.common.base.CharMatcher;
+import com.google.common.base.Function;
+import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.primitives.Ints;
@@ -61,6 +64,7 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
+import com.google.template.soy.exprparse.SoyParsingContext;
 import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
@@ -133,6 +137,7 @@ import com.google.template.soy.types.ast.TypeNode;
 import com.google.template.soy.types.ast.UnionTypeNode;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.primitive.ErrorType;
+import com.google.template.soy.types.primitive.UnknownType;
 import com.google.template.soy.types.primitive.NullType;
 import java.io.Reader;
 import java.io.StringReader;
@@ -400,8 +405,27 @@ import javax.annotation.Nullable;
  *       Examples:   proto()   my.new.Proto(a: 'str', b: $foo)*
  * </pre>
  *
+ * <p>TODO(lukes):  This parser has a lot of issues:
+ * Too much parsing logic is handled by the AST nodes with regular expressions.  This is probably
+ * slower than handling it in the parser and it leads to redundant error handling code.
+ *
  */
 public class SoyFileParser {
+
+  /** Regex string used in patterns below. Note the first set of spaces is reluctant. */
+  private static final String LINE_BOUNDARY_REGEX = "\\s*?(\\n|\\r)\\s*";
+
+  /** Pattern for a line boundary. */
+  private static final Pattern LINE_BOUNDARY_PATTERN = Pattern.compile(LINE_BOUNDARY_REGEX);
+
+  private static class RegexFromTokenImageFunction implements Function<String, String> {
+    @Override public String apply(String o) {
+      // Strip the surrounding quotes and braces.
+      return Pattern.quote(o.substring(2, o.length() - 2));
+    }
+  };
+
+  private static final Joiner NO_SEP_JOINER = Joiner.on("");
 
   // Template errors:
   private static final SoyErrorKind INVALID_ALIAS_NAME =
@@ -437,7 +461,14 @@ public class SoyFileParser {
   private static final SoyErrorKind UNEXPECTED_CONTENT_BEFORE =
       SoyErrorKind.of("Unexpected content before ''{0}'', expected only comments or whitespace.");
 
-  // Expression errors:
+  // Error message that mimics a ParseException
+  private static final SoyErrorKind PARSER_ERROR =
+      SoyErrorKind.of(
+          "parse error at ''{0}'': expected {1}",
+          StyleAllowance.NO_CAPS,
+          StyleAllowance.NO_PUNCTUATION);
+
+
   private static final SoyErrorKind DUPLICATE_PARAM_NAME =
       SoyErrorKind.of("Duplicate param name ''{0}''.");
   private static final SoyErrorKind INTEGER_OUT_OF_RANGE =
@@ -454,14 +485,6 @@ public class SoyFileParser {
   private static final SoyErrorKind SINGLE_IDENTIFIER_KEY_IN_MAP_LITERAL =
       SoyErrorKind.of("Disallowed single-identifier key \"{0}\" in map literal "
           + "(please surround with single quotes for string or parentheses for global).");
-
-  // Error message that mimics a ParseException
-  private static final SoyErrorKind PARSER_ERROR =
-      SoyErrorKind.of(
-          "parse error at ''{0}'': expected {1}",
-          StyleAllowance.NO_CAPS,
-          StyleAllowance.NO_PUNCTUATION);
-
 
   /** Attempts to parse the given input as a Soy expression. */
   public static ExprNode parseExprOrDie(String exprText) {
@@ -499,6 +522,10 @@ public class SoyFileParser {
 
   /** The header info for the file we are parsing. */
   private SoyFileHeaderInfo headerInfo;
+
+  /** Can only be used in templates. */
+  // TODO(user): Won't be needed once everything is parsed in javacc
+  private SoyParsingContext context;
 
   /**
    * Constructor that takes a reader object providing the input.
@@ -596,6 +623,38 @@ public class SoyFileParser {
     // EOF from getNextToken(), so if we don't check for it this will become an infinite loop.
     } while (!skipTo.contains(t.kind) && t.kind != EOF);
     return t;
+  }
+
+  private <T> SourceItemInfo<T> newSourceItemInfo(T parsed, Token token) {
+    return newSourceItemInfo(
+        parsed, token.beginLine, token.beginColumn, token.endLine, token.endColumn);
+  }
+
+  private <T> SourceItemInfo<T> newSourceItemInfo(T parsed, Token begin, Token end) {
+    return newSourceItemInfo(
+        parsed, begin.beginLine, begin.beginColumn, end.endLine, end.endColumn);
+  }
+
+  private <T> SourceItemInfo<T> newSourceItemInfo(T parsed, SourceItemInfo<?> begin,
+      SourceItemInfo<?> end) {
+    return new SourceItemInfo<T>(parsed, begin, end);
+  }
+
+  private <T> SourceItemInfo<T> newSourceItemInfo(
+      T parsed, int lineNum, int columnNum, int lineNumEnd, int columnNumEnd) {
+    return new SourceItemInfo<T>(filePath, parsed,
+        lineNum, columnNum,
+        lineNumEnd, columnNumEnd);
+  }
+
+  private <T> SourceItemInfo<T> newSourceItemInfo(
+      T parsed, SourceLocation location) {
+    return new SourceItemInfo<T>(parsed, location);
+  }
+
+  private <T> SourceItemInfo<T> newSourceItemInfo(
+      T parsed, SourceLocation begin, SourceLocation end) {
+    return new SourceItemInfo<T>(parsed, begin.extend(end));
   }
 
   /** Create a SourceLocation spanning all given tokens. */
@@ -871,6 +930,15 @@ TOKEN_MGR_DECLS: {
 // OPEN tags must include trailing whitespace, to prevent them from matching implicit print commands
 // which begin with the same characters (eg, `{format(blah)}`).
 
+// IN_CMD_TAG_STRUCTURED is used for commands that parse their command text in the tokenizer. It has
+// tokens for each valid construct that can appear in these tags.
+//
+// In the long run, all commands should have structured parsing, for now it is only {@param} and
+// {@inject}
+//
+// IN_CMD_TAG_UNSTRUCTURED is for older or more-complex tags that are parsed through regexes, or the
+// expression parser.  It swallows any kind of token into CMD_TEXT_ARBITRARY_TOKEN.
+
 <TEMPLATE_DEFAULT> TOKEN: {
   < CMD_CLOSE_TEMPLATE           : "{/template}"    > { clearAndSwitchToDefault(); }
 | < CMD_CLOSE_DELTEMPLATE        : "{/deltemplate}" > { clearAndSwitchToDefault(); }
@@ -944,9 +1012,16 @@ TOKEN_MGR_DECLS: {
 
 // ------------ Step 2: Match the command text and closing delimiter ------------
 
-<IN_CMD_TAG_STRUCTURED, EXPR, TYPE_EXPR> TOKEN: {
+<IN_CMD_TAG_UNSTRUCTURED, IN_CMD_TAG_STRUCTURED, EXPR, TYPE_EXPR> TOKEN: {
   < CMD_END : "}" > { popState(); }
 | < CMD_SELF_CLOSE : "/}" > { popState(); }
+}
+
+<IN_CMD_TAG_UNSTRUCTURED> TOKEN: {
+  < CMD_TEXT_DIRECTIVE_NAME: "|" <RAW_IDENT> >
+// TODO(lukes): Once we merge in the ExpressionParser, use CommandTagAttribute () instead.
+| < CMD_TEXT_PHNAME_ATTR: <WS_CHAR> "phname=\"" <RAW_IDENT> "\"" >
+| < XXX_CMD_TEXT_PHNAME_NOT_IDENT: <WS_CHAR> "phname=\"" ( ~["\""] )* "\"" >
 }
 
 <IN_CMD_TAG_STRUCTURED> TOKEN: {
@@ -975,8 +1050,43 @@ TOKEN_MGR_DECLS: {
 | < T_RBRACKET: "]" >
 | < T_COMMA: "," >
 | < T_COLON : ":"  >
+  // NOTE: this means that "|" <NAME> is a valid matchable token sequence. But for print
+  // directives we have "|"<RAW_IDENT> as a single token.  This is bad since any|null will get
+  // tokenized as <RAW_IDENT> <CMD_TEXT_DIRECTIVE_NAME> instead of <NAME> <T_VBAR> <NAME>.  The
+  // reason this isn't currently a problem is because CMD_TEXT_DIRECTIVE_NAME is defined in a
+  // different lexical state.  This will become a problem when we switch print node to use
+  // structured tag parsing.
 | < T_VBAR: "|" >
 | < T_QMARK: "?" >
+}
+
+
+// -------------------------------------------------------------------------------------------------
+// IN_CMD_TAG_UNSTRUCTURED matches arbitrary non-tag-closing strings.
+
+<IN_CMD_TAG_UNSTRUCTURED> TOKEN: {
+  // Allow any non-string token, or complete quoted string literals.
+  < CMD_TEXT_ARBITRARY_TOKEN:
+      ~["'", "\"", "}"]
+    // | ("/" ~["}"])  // Allow /, but not /} (so we don't swallow self-closing tags)
+    | "\""
+      (
+          ~["\"","\\"]
+        | "\\" ~[]
+      )*
+      "\""
+    // Must match <STRING> in ExpressionParser.jj, but allow newlines and lowercase hex literals
+    // (for legacy templates).
+    | "'"
+      (
+          ~["'","\\"]
+        | "\\" ["n","r","t","b","f","\\","'","\""]
+        | "\\u" (["0"-"9","A"-"F", "a"-"f"]){4}
+      )*
+      "'"
+  >
+  // Force friendly error messages by providing a token to match error cases.
+| <XXX_INVALID_STRING_LITERAL: ["'", "\""]>
 }
 
 
@@ -1026,6 +1136,11 @@ TOKEN_MGR_DECLS: {
         <DEC_DIGITS> "." <DEC_DIGITS> ( "e" ( ["+","-"] )? <DEC_DIGITS> )?
       | <DEC_DIGITS> "e" ( ["+","-"] )? <DEC_DIGITS>
   >
+  // Must match <IN_CMD_TAG_UNSTRUCTURED> CMD_TEXT_ARBITRARY_TOKEN in SoyFileParser.jj.
+  // We could support double quoted strings except for the fact that in some cases expressions
+  // need to be able to be written in attribute values (variant expressions, data expressions).
+  // It isn't clear how we would support double quoted strings in that context.  Similarly, this
+  // is why the SoyFileParser requires attributes values to be double quoted.
 | < STRING:
       "'"
       (
@@ -1090,6 +1205,7 @@ TOKEN_MGR_DECLS: {
 | < LEGACY_NOT : "!" >
 | < UNEXPECTED_PIPE : "|" >
 }
+
 
 <TEMPLATE_DEFAULT> TOKEN: {
   < UNEXPECTED_DOUBLE_BRACE : "{{" >
@@ -1165,6 +1281,12 @@ private SoyFileNode SoyFile() :
 
   {
     headerInfo = new SoyFileHeaderInfo(errorReporter, delpackageName, namespace, aliases);
+
+    context =
+        SoyParsingContext.create(
+            errorReporter,
+            headerInfo.namespace,
+            headerInfo.aliasToNamespaceMap);
 
     SoyFileNode sfn =
         new SoyFileNode(
@@ -1539,6 +1661,122 @@ private Identifier DottedIdent() :
 
 
 // -------------------------------------------------------------------------------------------------
+// Soy tag parts.
+
+/**
+ * TODO(slaks): Eventually, replace this with tokens for actual command content (eg, attributes).
+ * CmdText -> CmdTextParts
+ */
+private String CmdText():
+{
+  List<String> cmdTextParts;
+}
+{
+  cmdTextParts = CmdTextParts()
+  { return NO_SEP_JOINER.join(cmdTextParts); }
+}
+
+/**
+ * Same as CmdText() but with source information.
+ */
+private SourceItemInfo<String> CmdTextWithSource():
+{
+  SourceItemInfo<List<String>> parts;
+}
+{
+  parts = CmdTextPartsWithSource()
+  {
+    return newSourceItemInfo(
+        NO_SEP_JOINER.join(parts.parsedContent()),
+        parts.srcLocation());
+  }
+}
+
+/**
+ * CmdTextParts -> CmdTextPartsWithSource
+ */
+private List<String> CmdTextParts() :
+{
+  SourceItemInfo<List<String>> parts;
+}
+{
+  parts = CmdTextPartsWithSource()
+  {
+    return parts.parsedContent();
+  }
+}
+
+/**
+ * CmdTextPartsWithSource -> ( CmdTextToken | CmdTextDirectiveName | CmdTextPhnameAttr )*
+ */
+private SourceItemInfo<List<String>> CmdTextPartsWithSource() :
+{
+  Token first = null;
+  Token current = null;
+  List<String> cmdTextParts = new ArrayList<String>();
+  StringBuilder currCmdTextPartSb = new StringBuilder();
+}
+{
+  (
+    (
+      current = <CMD_TEXT_ARBITRARY_TOKEN> { currCmdTextPartSb.append(current.image); }
+    | (
+        current = <CMD_TEXT_DIRECTIVE_NAME>
+      | current = <CMD_TEXT_PHNAME_ATTR>
+      )
+      { // Add the preceding part if nonempty.
+        if (currCmdTextPartSb.length() > 0) {
+          cmdTextParts.add(currCmdTextPartSb.toString());
+          currCmdTextPartSb.setLength(0);
+        }
+        // Add the special part.
+        cmdTextParts.add(current.image);
+      }
+    )
+  { if (first == null) {
+      first = current;
+    }
+  }
+  )*
+
+  {
+    // Add the last part if nonempty.
+    if (currCmdTextPartSb.length() > 0) {
+      cmdTextParts.add(currCmdTextPartSb.toString());
+      currCmdTextPartSb.setLength(0);
+    }
+
+    // Process whitespace.
+    // TODO(user): this is the beginning of a code path that should be eliminated.
+    // These trimmed command strings are typically passed into Node constructors and then
+    // re-passed into the expression parser for further parsing. The trimming and re-parsing
+    // makes it hard to reconstruct accurate source location information for expression trees.
+    // This file should be the source of truth for all source location information in Soy.
+    for (int i = 0, n = cmdTextParts.size(); i < n; i++) {
+      String cmdTextPart = cmdTextParts.get(i);
+      if (i == 0) {
+        cmdTextPart = CharMatcher.whitespace().trimLeadingFrom(cmdTextPart);
+      }
+      if (i == n - 1) {
+        cmdTextPart = CharMatcher.whitespace().trimTrailingFrom(cmdTextPart);
+      }
+      cmdTextPart = LINE_BOUNDARY_PATTERN.matcher(cmdTextPart).replaceAll(" ");
+      cmdTextParts.set(i, cmdTextPart);
+    }
+    SourceLocation location;
+    if (current == null) {
+      // use the most recently consumed token for the sourcelocation when the cmd text is empty.
+      location = createSrcLoc(getToken(0));
+    } else if (current == first) {
+      location = createSrcLoc(first);
+    } else {
+      location = createSrcLoc(first, current);
+    }
+    return newSourceItemInfo(cmdTextParts, location);
+  }
+}
+
+// -------------------------------------------------------------------------------------------------
 // Raw text.
 
 /**
@@ -1865,6 +2103,7 @@ private MsgFallbackGroupNode MsgStmt() :
 
     MsgNode msg = new MsgNode(nodeIdGen.genId(), loc, "msg", attributes, errorReporter);
     msgGroup.addChild(msg);
+
   }
 
   templateBlock = TemplateBlockForMsg()
@@ -1953,18 +2192,18 @@ private List<StandaloneNode> TemplateBlockForMsg() :
     | msgPluralOrSelectNode = MsgSelect()
     )
     SkipWhitespace()  // we want to ignore all whitespace after a plural or select, just expect it
-    {
-      if (firstNodeIsWhitespace) {
-        // The first node was just basic whitespace.  Which is allowed but ignored prior to a plural
-        // or select.  So just drop it.
-        templateBlock.remove(0);
-        firstNodeIsWhitespace = false;
-      }
-      if (pluralOrSelectIndex == -1) {
-        pluralOrSelectIndex = templateBlock.size();
-      }
-      templateBlock.add(msgPluralOrSelectNode);
+  {
+    if (firstNodeIsWhitespace) {
+      // The first node was just basic whitespace.  Which is allowed but ignored prior to a plural
+      // or select.  So just drop it.
+      templateBlock.remove(0);
+      firstNodeIsWhitespace = false;
     }
+    if (pluralOrSelectIndex == -1) {
+      pluralOrSelectIndex = templateBlock.size();
+    }
+    templateBlock.add(msgPluralOrSelectNode);
+  }
   | stmt = TemplateBlockItem() { if (stmt != null) { templateBlock.add(stmt); } }
   )*
 
@@ -3631,6 +3870,8 @@ private Identifier Identifier() :
       : Identifier.create(sb.toString(), createSrcLoc(first, next));
   }
 }
+
+
 
 
 /**
