@@ -472,7 +472,6 @@ public class SoyFileParser {
   @Nullable
   public static ExprNode parseExpression(String exprText, ErrorReporter errorReporter) {
     SoyFileParser parser = new SoyFileParser(exprText, errorReporter);
-    parser.pushStateAtZero(EXPR);
 
     try {
       return parser.ExprInput();
@@ -527,7 +526,8 @@ public class SoyFileParser {
 
   /** Constructor for use by parseExpression() only. */
   private SoyFileParser(String input, ErrorReporter errorReporter) {
-    this(new StringReader(input));
+    // this starts the lexer in EXPR state instead of DEFAULT
+    this(new SoyFileParserTokenManager(new SimpleCharStream(new StringReader(input), 1, 1), EXPR));
     this.filePath = "expression parser";
     this.errorReporter = checkNotNull(errorReporter);
   }
@@ -613,41 +613,6 @@ public class SoyFileParser {
     return VarRefNode.error(location);
   }
 
-  // Methods for managing lexical states from the parser
-  // Be careful using these.  You should only use them at fixed points where you know.
-  // * The lexer is only one token ahead (and you generally know the exact token)
-  // * The state change isn't possible to perform from the lexer directly. For example, because it
-  //   depends on a 'syntactic element' such as a tag attribute (e.g. kind="html")
-  // * There is a clear matching syntactic element for exiting the state (e.g. a close tag)
-
-
-  /** Switch the parser to a new state and push the current state onto the stack. */
-  private void pushState(int nextState) {
-    Tokens.checkLexerIsExactlyOneTokenAhead(this);
-    token_source.pushState(nextState);
-  }
-
-  private void pushStateAtZero(int nextState) {
-    Tokens.checkLexerIsExactlyZeroTokensAhead(this);
-    token_source.pushState(nextState);
-  }
-
-  /** pop the stack and switch to that state. */
-  private void popState() {
-    Tokens.checkLexerIsExactlyOneTokenAhead(this);
-    token_source.popState();
-  }
-
-  private void popStateAtZero() {
-    Tokens.checkLexerIsExactlyZeroTokensAhead(this);
-    token_source.popState();
-  }
-
-  private void popStateIfStateIs(int state) {
-    Tokens.checkLexerIsExactlyOneTokenAhead(this);
-    token_source.popStateIfStateIs(state);
-  }
-
   // An error that can be thrown to abort parsing.  This is useful if an error has been reported
   // and it is known that parsing cannot continue.
   static final class AbortParsingError extends Error {}
@@ -665,41 +630,41 @@ TOKEN_MGR_DECLS: {
 
   private static final Pattern ESCAPED_QUOTE = Pattern.compile("\\\"");
 
-  // Used for returning to our prior lexical state when completing a multiline comment.
-  // TODO(lukes): remove, it should now be the case that this stack is never more than 1 deep.  So
-  // this can be replaced with a simple int field.
-  private final LexicalStateStack stateStack = new LexicalStateStack();
+  private boolean isInTemplate;
+  private int prevState = -1;
 
-  /** Saves the current lexical state and switch to a new one.  To switch back call
+  /**
+   * Saves the current lexical state and switch to a new one.  To switch back call
    * {@link #popState()}.
    */
   void pushState(int newState) {
-    stateStack.push(curLexState);
+    if (prevState != -1) {
+      // pushState is only used with lexical states (see below) that cannot mutually nest, so if
+      // prevState isn't unset (i.e. -1) then something has gone wrong
+      throw new IllegalStateException("pushed too deep");
+    }
+    if (newState != IN_ATTRIBUTE_VALUE & newState != IN_SOYDOC & newState != IN_MULTILINE_COMMENT) {
+      throw new IllegalArgumentException("not allowed to push " + lexStateNames[newState]);
+    }
+    prevState = curLexState;
     SwitchTo(newState);
   }
 
   /**
-   * Switch back to the previous state stored in {@link #stateStack}.
+   * Switch back to the previous state stored in {@link #prevState}.
    */
   void popState() {
-    SwitchTo(stateStack.pop());
-  }
-
-  /**
-   * Conditionally pops the given state if it is at the top of the stack and the stack isn't empty.
-   *
-   * <p>Most users should use {@link #popState()} but in error conditions this can be useful to
-   * prevent underflowing the stack.
-   */
-  void popStateIfStateIs(int state) {
-    if (stateStack.peek() == state) {
-      popState();
+    int p = prevState;
+    if (p == -1) {
+      throw new IllegalStateException("popped too far");
     }
+    SwitchTo(p);
+    prevState = -1;
   }
 
-  private void clearAndSwitchToDefault() {
-    stateStack.clear();
-    SwitchTo(DEFAULT);
+  private void resetState() {
+    isInTemplate = false;
+    prevState = -1;
   }
 
   void skipTo(int kind) {
@@ -714,7 +679,7 @@ TOKEN_MGR_DECLS: {
 
   @Override
   public String toString() {
-    return stateStack.toString() + " " + SoyFileParserTokenManager.lexStateNames[curLexState];
+    return "TokenManager{" + lexStateNames[curLexState] + "}";
   }
 }
 
@@ -794,9 +759,9 @@ TOKEN_MGR_DECLS: {
 // File header declarations.
 
 <DEFAULT> TOKEN: {
-  < ALIAS_OPEN: "{alias" > { pushState(EXPR); }
-| < NAMESPACE_OPEN: "{namespace" > { pushState(IN_CMD_TAG_STRUCTURED); }
-| < DELPACKAGE_OPEN: "{delpackage" > { pushState(IN_CMD_TAG_STRUCTURED); }
+  < ALIAS_OPEN: "{alias" > : EXPR
+| < NAMESPACE_OPEN: "{namespace" > : IN_CMD_TAG_STRUCTURED
+| < DELPACKAGE_OPEN: "{delpackage" > : IN_CMD_TAG_STRUCTURED
 }
 
 
@@ -849,8 +814,8 @@ TOKEN_MGR_DECLS: {
 // Templates.
 
 <DEFAULT> TOKEN: {
-  < DELTEMPLATE_OPEN : "{deltemplate" > { pushState(IN_CMD_TAG_STRUCTURED); }
-| < TEMPLATE_OPEN: "{template" > { pushState(IN_CMD_TAG_STRUCTURED); }
+  < DELTEMPLATE_OPEN : "{deltemplate" > { isInTemplate = true; } : IN_CMD_TAG_STRUCTURED
+| < TEMPLATE_OPEN: "{template" > { isInTemplate = true; } : IN_CMD_TAG_STRUCTURED
 }
 
 
@@ -872,13 +837,13 @@ TOKEN_MGR_DECLS: {
 // which begin with the same characters (eg, `{format(blah)}`).
 
 <TEMPLATE_DEFAULT> TOKEN: {
-  < CMD_CLOSE_TEMPLATE           : "{/template}"    > { clearAndSwitchToDefault(); }
-| < CMD_CLOSE_DELTEMPLATE        : "{/deltemplate}" > { clearAndSwitchToDefault(); }
+  < CMD_CLOSE_TEMPLATE           : "{/template}"    > { resetState(); } : DEFAULT
+| < CMD_CLOSE_DELTEMPLATE        : "{/deltemplate}" > { resetState(); } : DEFAULT
 
-| < DECL_BEGIN_PARAM             : "{@param"        > { pushState(IN_CMD_TAG_STRUCTURED); }
-| < DECL_BEGIN_OPT_PARAM         : "{@param?"       > { pushState(IN_CMD_TAG_STRUCTURED); }
-| < DECL_BEGIN_INJECT_PARAM      : "{@inject"       > { pushState(IN_CMD_TAG_STRUCTURED); }
-| < DECL_BEGIN_OPT_INJECT_PARAM  : "{@inject?"      > { pushState(IN_CMD_TAG_STRUCTURED); }
+| < DECL_BEGIN_PARAM             : "{@param"        > : IN_CMD_TAG_STRUCTURED
+| < DECL_BEGIN_OPT_PARAM         : "{@param?"       > : IN_CMD_TAG_STRUCTURED
+| < DECL_BEGIN_INJECT_PARAM      : "{@inject"       > : IN_CMD_TAG_STRUCTURED
+| < DECL_BEGIN_OPT_INJECT_PARAM  : "{@inject?"      > : IN_CMD_TAG_STRUCTURED
 
 | < XXX_BRACE_INVALID            : "}"              >  // catch and die on an unexpected right brace
 | < CMD_FULL_SP                  : "{sp}"           >
@@ -889,47 +854,47 @@ TOKEN_MGR_DECLS: {
 | < CMD_FULL_LB                  : "{lb}"           >
 | < CMD_FULL_RB                  : "{rb}"           >
 
-| < CMD_OPEN_LITERAL             : "{literal}"      > { pushState(IN_LITERAL_BLOCK); }
+| < CMD_OPEN_LITERAL             : "{literal}"      > : IN_LITERAL_BLOCK
 
-| < CMD_BEGIN_CALL               : "{call" <WS>     > { pushState(IN_CMD_TAG_STRUCTURED); }
-| < CMD_BEGIN_DELCALL            : "{delcall" <WS>  > { pushState(IN_CMD_TAG_STRUCTURED); }
+| < CMD_BEGIN_CALL               : "{call" <WS>     > : IN_CMD_TAG_STRUCTURED
+| < CMD_BEGIN_DELCALL            : "{delcall" <WS>  > : IN_CMD_TAG_STRUCTURED
 | < CMD_CLOSE_CALL               : "{/call}"        >
 | < CMD_CLOSE_DELCALL            : "{/delcall}"     >
 
-| < CMD_BEGIN_PARAM              : "{param" <WS>    > { pushState(EXPR); }
+| < CMD_BEGIN_PARAM              : "{param" <WS>    > : EXPR
 | < CMD_CLOSE_PARAM              : "{/param}"       >
 
-| < CMD_BEGIN_MSG                : "{msg" <WS>      > { pushState(IN_CMD_TAG_STRUCTURED); }
-| < CMD_BEGIN_FALLBACK_MSG       : "{fallbackmsg" <WS> > { pushState(IN_CMD_TAG_STRUCTURED); }
+| < CMD_BEGIN_MSG                : "{msg" <WS>      > : IN_CMD_TAG_STRUCTURED
+| < CMD_BEGIN_FALLBACK_MSG       : "{fallbackmsg" <WS> > : IN_CMD_TAG_STRUCTURED
 | < CMD_CLOSE_MSG                : "{/msg}"         >
 
-| < CMD_BEGIN_XID                : "{xid" <WS>      > { pushState(IN_CMD_TAG_STRUCTURED); }
-| < CMD_BEGIN_CSS                : "{css" <WS>      > { pushState(IN_CMD_TAG_STRUCTURED); }
+| < CMD_BEGIN_XID                : "{xid" <WS>      > : IN_CMD_TAG_STRUCTURED
+| < CMD_BEGIN_CSS                : "{css" <WS>      > : IN_CMD_TAG_STRUCTURED
 
-| < CMD_BEGIN_IF                 : "{if" <WS>       > { pushState(EXPR); }
-| < CMD_BEGIN_ELSEIF             : "{elseif" <WS>   > { pushState(EXPR); }
+| < CMD_BEGIN_IF                 : "{if" <WS>       > : EXPR
+| < CMD_BEGIN_ELSEIF             : "{elseif" <WS>   > : EXPR
 | < CMD_FULL_ELSE                : "{else}"         >
 | < CMD_CLOSE_IF                 : "{/if}"          >
 
-| < CMD_BEGIN_LET                : "{let" <WS>      > { pushState(EXPR); }
+| < CMD_BEGIN_LET                : "{let" <WS>      > : EXPR
 | < CMD_CLOSE_LET                : "{/let}"         >
 
-| < CMD_BEGIN_FOR                : "{for" <WS>      > { pushState(EXPR); }
+| < CMD_BEGIN_FOR                : "{for" <WS>      > : EXPR
 | < CMD_CLOSE_FOR                : "{/for}"         >
 
-| < CMD_BEGIN_PLURAL             : "{plural" <WS>   > { pushState(EXPR); }
+| < CMD_BEGIN_PLURAL             : "{plural" <WS>   > : EXPR
 | < CMD_CLOSE_PLURAL             : "{/plural}"      >
 
-| < CMD_BEGIN_SELECT             : "{select" <WS>   > { pushState(EXPR); }
+| < CMD_BEGIN_SELECT             : "{select" <WS>   > : EXPR
 | < CMD_CLOSE_SELECT             : "{/select}"      >
 
-| < CMD_BEGIN_SWITCH             : "{switch" <WS>   > { pushState(EXPR); }
+| < CMD_BEGIN_SWITCH             : "{switch" <WS>   > : EXPR
 | < CMD_CLOSE_SWITCH             : "{/switch}"      >
 
-| < CMD_BEGIN_CASE               : "{case" <WS>     > { pushState(EXPR); }
+| < CMD_BEGIN_CASE               : "{case" <WS>     > : EXPR
 | < CMD_FULL_DEFAULT             : "{default}"      >
 
-| < CMD_BEGIN_FOREACH            : "{foreach" <WS>  > { pushState(EXPR); }
+| < CMD_BEGIN_FOREACH            : "{foreach" <WS>  > : EXPR
 | < CMD_FULL_IFEMPTY             : "{ifempty}"      >
 | < CMD_CLOSE_FOREACH            : "{/foreach}"     >
 
@@ -937,16 +902,18 @@ TOKEN_MGR_DECLS: {
 | < CMD_CLOSE_LOG                : "{/log}"         >
 | < CMD_FULL_DEBUGGER            : "{debugger}"     >
 
-| < CMD_BEGIN_PRINT              : "{print" <WS>    > { pushState(EXPR); }
-| < CMD_BEGIN_IMPLICIT_PRINT     : "{"              > { pushState(EXPR); }
+| < CMD_BEGIN_PRINT              : "{print" <WS>    > : EXPR
+| < CMD_BEGIN_IMPLICIT_PRINT     : "{"              > : EXPR
 }
 
 
 // ------------ Step 2: Match the command text and closing delimiter ------------
 
 <IN_CMD_TAG_STRUCTURED, EXPR, TYPE_EXPR> TOKEN: {
-  < CMD_END : "}" > { popState(); }
-| < CMD_SELF_CLOSE : "/}" > { popState(); }
+  < CMD_END : "}" > { SwitchTo(isInTemplate ? TEMPLATE_DEFAULT : DEFAULT); }
+  // there are technically no self closing tags in DEFAULT, but this should yield better error
+  // recovery
+| < CMD_SELF_CLOSE : "/}" > { SwitchTo(isInTemplate ? TEMPLATE_DEFAULT : DEFAULT); }
 }
 
 <IN_CMD_TAG_STRUCTURED> TOKEN: {
@@ -994,8 +961,7 @@ TOKEN_MGR_DECLS: {
   {
     // Note: 'image' is cumulative over MOREs while 'lengthOfMatch' is just the end tag length.
     matchedToken.image = image.substring(0, image.length() - lengthOfMatch);
-    popState();
-  }
+  } : TEMPLATE_DEFAULT
 }
 
 
@@ -1457,7 +1423,6 @@ private TemplateNode TemplateHelper(TemplateNodeBuilder builder, Token open, boo
     if (soyDoc != null && soyDoc.kind == SOYDOC) {
       builder.setSoyDoc(soyDoc.image, createSrcLoc(soyDoc));
     }
-    pushState(TEMPLATE_DEFAULT);
   }
 
   close = <CMD_END>
@@ -2407,13 +2372,10 @@ private LetNode LetStmt() :
       tagEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END, CMD_SELF_CLOSE);
     }
 
-    // inside of a {let} block is always TEMPLATE_DEFAULT, never TEMPLATE_DEFAULT_IN_MSG_BLOCK
-    { pushStateAtZero(TEMPLATE_DEFAULT); }
     templateBlock = TemplateBlock()
     <CMD_CLOSE_LET>
 
     {
-      popStateAtZero();
       LetContentNode node =
           new LetContentNode(
               nodeIdGen.genId(),
@@ -2853,13 +2815,10 @@ private CallParamNode CallParam() :
       tagEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END, CMD_SELF_CLOSE);
     }
 
-    // inside of a {param} block is always TEMPLATE_DEFAULT, never TEMPLATE_DEFAULT_IN_MSG_BLOCK
-    { pushStateAtZero(TEMPLATE_DEFAULT); }
     templateBlock = TemplateBlock()
     <CMD_CLOSE_PARAM>
 
     {
-      popStateAtZero();
       CallParamContentNode node =
           new CallParamContentNode(
               nodeIdGen.genId(),
