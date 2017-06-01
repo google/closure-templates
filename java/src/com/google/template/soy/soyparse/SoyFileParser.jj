@@ -139,7 +139,6 @@ import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
 /**
@@ -628,8 +627,6 @@ PARSER_END(SoyFileParser)
 
 TOKEN_MGR_DECLS: {
 
-  private static final Pattern ESCAPED_QUOTE = Pattern.compile("\\\"");
-
   private boolean isInTemplate;
   private int prevState = -1;
 
@@ -696,7 +693,7 @@ TOKEN_MGR_DECLS: {
 // -------------------------------------------------------------------------------------------------
 // Whitespace and comments.
 
-<DEFAULT, IN_CMD_TAG_STRUCTURED, EXPR, TYPE_EXPR> SKIP: {
+<DEFAULT, IN_CMD_TAG, EXPR, TYPE_EXPR> SKIP: {
   < <WS> >
 | < <LINE_COMMENT> >
 }
@@ -711,7 +708,7 @@ TOKEN_MGR_DECLS: {
 
 // NOTE: we don't just configure this for state * because these comments shouldn't work in things
 // like string literals or attribute values
-<DEFAULT, TEMPLATE_DEFAULT, IN_CMD_TAG_STRUCTURED, EXPR, TYPE_EXPR> SKIP: {
+<DEFAULT, TEMPLATE_DEFAULT, IN_CMD_TAG, EXPR, TYPE_EXPR> SKIP: {
   < "/*" > { pushState(IN_MULTILINE_COMMENT); }
 }
 
@@ -760,15 +757,15 @@ TOKEN_MGR_DECLS: {
 
 <DEFAULT> TOKEN: {
   < ALIAS_OPEN: "{alias" > : EXPR
-| < NAMESPACE_OPEN: "{namespace" > : IN_CMD_TAG_STRUCTURED
-| < DELPACKAGE_OPEN: "{delpackage" > : IN_CMD_TAG_STRUCTURED
+| < NAMESPACE_OPEN: "{namespace" > : IN_CMD_TAG
+| < DELPACKAGE_OPEN: "{delpackage" > : IN_CMD_TAG
 }
 
 
 // -------------------------------------------------------------------------------------------------
 // Tag attributes.
 
-<IN_CMD_TAG_STRUCTURED> TOKEN: {
+<IN_CMD_TAG> TOKEN: {
   < CMD_QUOTE: "\"" > { pushState(IN_ATTRIBUTE_VALUE); }
 
 // While most Soy tag attributes are parsed as one big text blob in the IN_ATTRIBUTE_VALUE state,
@@ -792,7 +789,7 @@ TOKEN_MGR_DECLS: {
     // trim off trailing quote, unescape internal quotation marks
     String value = matchedToken.image;
     value = value.substring(0, value.length() - 1);
-    value = ESCAPED_QUOTE.matcher(value).replaceAll("\"");
+    value = value.replace("\\\"", "\"");
 
     matchedToken.image = value;
     matchedToken.endColumn -= 1;
@@ -814,8 +811,8 @@ TOKEN_MGR_DECLS: {
 // Templates.
 
 <DEFAULT> TOKEN: {
-  < DELTEMPLATE_OPEN : "{deltemplate" > { isInTemplate = true; } : IN_CMD_TAG_STRUCTURED
-| < TEMPLATE_OPEN: "{template" > { isInTemplate = true; } : IN_CMD_TAG_STRUCTURED
+  < DELTEMPLATE_OPEN : "{deltemplate" > { isInTemplate = true; } : IN_CMD_TAG
+| < TEMPLATE_OPEN: "{template" > { isInTemplate = true; } : IN_CMD_TAG
 }
 
 
@@ -840,10 +837,10 @@ TOKEN_MGR_DECLS: {
   < CMD_CLOSE_TEMPLATE           : "{/template}"    > { resetState(); } : DEFAULT
 | < CMD_CLOSE_DELTEMPLATE        : "{/deltemplate}" > { resetState(); } : DEFAULT
 
-| < DECL_BEGIN_PARAM             : "{@param"        > : IN_CMD_TAG_STRUCTURED
-| < DECL_BEGIN_OPT_PARAM         : "{@param?"       > : IN_CMD_TAG_STRUCTURED
-| < DECL_BEGIN_INJECT_PARAM      : "{@inject"       > : IN_CMD_TAG_STRUCTURED
-| < DECL_BEGIN_OPT_INJECT_PARAM  : "{@inject?"      > : IN_CMD_TAG_STRUCTURED
+| < DECL_BEGIN_PARAM             : "{@param"        > : IN_CMD_TAG
+| < DECL_BEGIN_OPT_PARAM         : "{@param?"       > : IN_CMD_TAG
+| < DECL_BEGIN_INJECT_PARAM      : "{@inject"       > : IN_CMD_TAG
+| < DECL_BEGIN_OPT_INJECT_PARAM  : "{@inject?"      > : IN_CMD_TAG
 
 | < XXX_BRACE_INVALID            : "}"              >  // catch and die on an unexpected right brace
 | < CMD_FULL_SP                  : "{sp}"           >
@@ -856,20 +853,20 @@ TOKEN_MGR_DECLS: {
 
 | < CMD_OPEN_LITERAL             : "{literal}"      > : IN_LITERAL_BLOCK
 
-| < CMD_BEGIN_CALL               : "{call" <WS>     > : IN_CMD_TAG_STRUCTURED
-| < CMD_BEGIN_DELCALL            : "{delcall" <WS>  > : IN_CMD_TAG_STRUCTURED
+| < CMD_BEGIN_CALL               : "{call" <WS>     > : IN_CMD_TAG
+| < CMD_BEGIN_DELCALL            : "{delcall" <WS>  > : IN_CMD_TAG
 | < CMD_CLOSE_CALL               : "{/call}"        >
 | < CMD_CLOSE_DELCALL            : "{/delcall}"     >
 
 | < CMD_BEGIN_PARAM              : "{param" <WS>    > : EXPR
 | < CMD_CLOSE_PARAM              : "{/param}"       >
 
-| < CMD_BEGIN_MSG                : "{msg" <WS>      > : IN_CMD_TAG_STRUCTURED
-| < CMD_BEGIN_FALLBACK_MSG       : "{fallbackmsg" <WS> > : IN_CMD_TAG_STRUCTURED
+| < CMD_BEGIN_MSG                : "{msg" <WS>      > : IN_CMD_TAG
+| < CMD_BEGIN_FALLBACK_MSG       : "{fallbackmsg" <WS> > : IN_CMD_TAG
 | < CMD_CLOSE_MSG                : "{/msg}"         >
 
-| < CMD_BEGIN_XID                : "{xid" <WS>      > : IN_CMD_TAG_STRUCTURED
-| < CMD_BEGIN_CSS                : "{css" <WS>      > : IN_CMD_TAG_STRUCTURED
+| < CMD_BEGIN_XID                : "{xid" <WS>      > : IN_CMD_TAG
+| < CMD_BEGIN_CSS                : "{css" <WS>      > : IN_CMD_TAG
 
 | < CMD_BEGIN_IF                 : "{if" <WS>       > : EXPR
 | < CMD_BEGIN_ELSEIF             : "{elseif" <WS>   > : EXPR
@@ -909,14 +906,14 @@ TOKEN_MGR_DECLS: {
 
 // ------------ Step 2: Match the command text and closing delimiter ------------
 
-<IN_CMD_TAG_STRUCTURED, EXPR, TYPE_EXPR> TOKEN: {
+<IN_CMD_TAG, EXPR, TYPE_EXPR> TOKEN: {
   < CMD_END : "}" > { SwitchTo(isInTemplate ? TEMPLATE_DEFAULT : DEFAULT); }
   // there are technically no self closing tags in DEFAULT, but this should yield better error
   // recovery
 | < CMD_SELF_CLOSE : "/}" > { SwitchTo(isInTemplate ? TEMPLATE_DEFAULT : DEFAULT); }
 }
 
-<IN_CMD_TAG_STRUCTURED> TOKEN: {
+<IN_CMD_TAG> TOKEN: {
   < NAME: <RAW_IDENT> >
 | < CMD_COLON: ":" >
 | < CMD_EQ: "=" >
@@ -955,7 +952,7 @@ TOKEN_MGR_DECLS: {
   < <ANY_CHAR> >
 }
 
-// When we reach the '/literal' tag, return the collected text content (minus the end tag).
+// When we reach the '{/literal}' tag, return the collected text content (minus the end tag).
 <IN_LITERAL_BLOCK> TOKEN: {
   < LITERAL_RAW_TEXT_CONTENT: "{/literal}" >
   {
@@ -1090,7 +1087,7 @@ TOKEN_MGR_DECLS: {
 // instead this will get turned into ParseExceptions which have more debugging information.
 // NOTE: this has to come after any single character token definition in these states.
 // TODO(slaks): Apply to all states.
-<DEFAULT, IN_CMD_TAG_STRUCTURED, EXPR, TYPE_EXPR> TOKEN: {
+<DEFAULT, IN_CMD_TAG, EXPR, TYPE_EXPR> TOKEN: {
   < UNEXPECTED_TOKEN : ~[] >
 }
 
@@ -1131,14 +1128,8 @@ private SoyFileNode SoyFile() :
 
   {
     headerInfo = new SoyFileHeaderInfo(errorReporter, delpackageName, namespace, aliases);
-
     SoyFileNode sfn =
-        new SoyFileNode(
-            nodeIdGen.genId(),
-            filePath,
-            soyFileKind,
-            namespace,
-            headerInfo);
+        new SoyFileNode(nodeIdGen.genId(), filePath, soyFileKind, namespace, headerInfo);
   }
 
   (
@@ -1215,7 +1206,7 @@ private NamespaceDeclaration Namespace() :
 
 
 /**
- * Matches a sequence of attributes in IN_CMD_TAG_STRUCTURED lexical state.
+ * Matches a sequence of attributes in IN_CMD_TAG lexical state.
  *
  * Attributes -> ( Attribute )*
  */
@@ -1245,8 +1236,8 @@ private List<CommandTagAttribute> Attributes() :
 
 
 /**
- * Matches an attribute in IN_CMD_TAG_STRUCTURED lexical state. Uses special tokens to parse
- * attributes that require an expression as the attribute value, e.g. data=""
+ * Matches an attribute in IN_CMD_TAG lexical state. Uses special tokens to parse attributes that
+ * require an expression as the attribute value, e.g. data=""
  *
  * Attribute -> ( Name CmdEq CmdQuote AttributeValue
  *              | ( DataAttr | VariantAttr ) Expr DoubleQuote )
@@ -1290,7 +1281,7 @@ private CommandTagAttribute Attribute() :
     }
 
     {
-      token_source.SwitchTo(IN_CMD_TAG_STRUCTURED);
+      token_source.SwitchTo(IN_CMD_TAG);
       return new CommandTagAttribute(Identifier.create(attrName, createSrcLoc(attrTag)), exprList);
     }
   )
@@ -1469,9 +1460,6 @@ private Identifier TemplateName() :
 
 /**
  * DottedIdent -> Name ( CmdDot Name )*
- *
- * TODO(user): Merge with Identifier() - the two are identical save for lexical states
- * (IN_CMD_TAG_STRUCTURED vs EXPR)
  */
 private Identifier DottedIdent() :
 {
@@ -1506,6 +1494,7 @@ private Identifier DottedIdent() :
 // -------------------------------------------------------------------------------------------------
 // Raw text.
 
+
 /**
  * Matches whitespace for the purpose of ignoring it.
  *
@@ -1520,8 +1509,6 @@ private void SkipWhitespace() : { }
 
 /**
  * RawTextNode -> ( BasicRawText | LiteralRawText | SpecialCharRawText )+
- *
- * May return null if all content is dropped (due to comments, line joining, etc).
  */
 private RawTextNode RawText() :
 {
@@ -1540,11 +1527,11 @@ private RawTextNode RawText() :
         token = <TOKEN_NOT_WS>
       | token = <TOKEN_WS>
       )
-    { builder.addBasic(token); }
+      { builder.addBasic(token); }
     |
       <CMD_OPEN_LITERAL>
       token = <LITERAL_RAW_TEXT_CONTENT>
-    { builder.addLiteral(token); }
+      { builder.addLiteral(token); }
     |
       ( token = <CMD_FULL_SP>
       | token = <CMD_FULL_NIL>
@@ -1554,7 +1541,7 @@ private RawTextNode RawText() :
       | token = <CMD_FULL_LB>
       | token = <CMD_FULL_RB>
       )
-    { builder.addTextualCommand(token); }
+      { builder.addTextualCommand(token); }
     )
   )+
 
@@ -1700,10 +1687,7 @@ private List<StandaloneNode> TemplateBlock() :
       if (templateBlock.isEmpty()) {
         templateBlock = new ArrayList<StandaloneNode>();
       }
-
-      if (node != null) {
-        templateBlock.add(node);
-      }
+      templateBlock.add(node);
     }
   )*
 
@@ -1712,8 +1696,6 @@ private List<StandaloneNode> TemplateBlock() :
 
 /**
  * TemplateBlockItem -> ( RawText | Stmt )
- *
- * <p>returns {@code null} if there was a parsing error
  */
 private StandaloneNode TemplateBlockItem() :
 {
@@ -1869,7 +1851,7 @@ private MsgFallbackGroupNode MsgStmt() :
  *                        | MaybeWhitespace MsgSelect MaybeWhitespace
  *                        | ( ContiguousRawTextAsNode | Stmt )*
  *
- * <p>The difference between TemplateBlockForMsg and Template Block is the special handling of
+ * <p>The difference between TemplateBlockForMsg and TemplateBlock is the special handling of
  * {plural} and {select} blocks.
  */
 private List<StandaloneNode> TemplateBlockForMsg() :
@@ -2296,7 +2278,7 @@ private XidNode XidStmt() :
 
 
 /**
- * CssStmt -> CssTag
+ * CssStmt -> CmdBeginCss ( Name | CssSelector ) CmdEnd
  */
 private CssNode CssStmt() :
 {
@@ -2590,7 +2572,7 @@ private ForeachNode ForeachStmt() :
 
 
 /**
- * ForStmt -> CmdBeginFor VarRef Ident Expr CmdEnd TemplateBlock CmdCloseFor
+ * ForStmt -> CmdBeginFor VarRef "in" Expr CmdEnd TemplateBlock CmdCloseFor
  */
 private ForNode ForStmt() :
 {
@@ -2867,9 +2849,9 @@ private DebuggerNode DebuggerStmt() :
 }
 
 
-// -------------------------------------------------------------------------------------------------
-// Soy Expressions.
-
+// =================================================================================================
+// Soy expressions.
+// =================================================================================================
 
 
 /**

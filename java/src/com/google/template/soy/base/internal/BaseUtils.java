@@ -18,13 +18,10 @@ package com.google.template.soy.base.internal;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-import com.google.common.base.CharMatcher;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.common.hash.Hashing;
 import java.io.File;
-import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -278,72 +275,8 @@ public class BaseUtils {
    * @return The partial SHA-1 hash value as a hex string.
    */
   public static String computePartialSha1AsHexString(String strToHash, int numBits) {
-
     Preconditions.checkArgument(numBits > 0 && numBits <= 160 && numBits % 8 == 0);
     int numBytes = numBits / 8;
     return Hashing.sha1().hashString(strToHash, UTF_8).toString().substring(0, numBytes * 2);
-  }
-
-  private static final CharMatcher whitespaceCommaOrColon =
-      CharMatcher.whitespace().or(CharMatcher.is(',')).or(CharMatcher.is(':')).precomputed();
-
-  /**
-   * A helper method for formating javacc ParseExceptions.
-   *
-   * @param errorToken The piece of text that we were unable to parse.
-   * @param expectedTokens The set of formatted tokens that we were expecting next.
-   */
-  public static String formatParseExceptionDetails(String errorToken, List<String> expectedTokens) {
-    // quotes/normalize the expected tokens before rendering, just in case after normalization some
-    // can be deduplicated.
-    ImmutableSet.Builder<String> normalizedTokensBuilder = ImmutableSet.builder();
-    for (String t : expectedTokens) {
-      normalizedTokensBuilder.add(maybeQuoteForParseError(t));
-    }
-    expectedTokens = normalizedTokensBuilder.build().asList();
-
-    StringBuilder details = new StringBuilder();
-    int numExpectedTokens = expectedTokens.size();
-    if (numExpectedTokens != 0) {
-      details.append(": expected ");
-      for (int i = 0; i < numExpectedTokens; i++) {
-        details.append(expectedTokens.get(i));
-        if (i < numExpectedTokens - 2) {
-          details.append(", ");
-        }
-        if (i == numExpectedTokens - 2) {
-          if (numExpectedTokens > 2) {
-            details.append(',');
-          }
-          details.append(" or ");
-        }
-      }
-    }
-
-    return String.format(
-        "parse error at '%s'%s", escapeWhitespaceForErrorPrinting(errorToken), details.toString());
-  }
-
-  private static String maybeQuoteForParseError(String token) {
-    // the literal matches are surrounded in double quotes, so remove them
-    if (token.length() > 1 && token.charAt(0) == '"' && token.charAt(token.length() - 1) == '"') {
-      token = token.substring(1, token.length() - 1);
-    }
-
-    // if the token starts or ends with a whitespace character, a comma, or a colon, then put them
-    // in single quotes to avoid ambiguity in the error messages.
-    if (whitespaceCommaOrColon.matches(token.charAt(0))
-        || whitespaceCommaOrColon.matches(token.charAt(token.length() - 1))) {
-      token = "'" + token + "'";
-    }
-
-    return escapeWhitespaceForErrorPrinting(token);
-  }
-
-  private static String escapeWhitespaceForErrorPrinting(String s) {
-    s = s.replaceAll("\r", "\\\\r");
-    s = s.replaceAll("\n", "\\\\n");
-    s = s.replaceAll("\t", "\\\\t");
-    return s;
   }
 }

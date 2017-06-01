@@ -49,8 +49,6 @@ public final class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefault
   @Nullable private final String baseSelectVarName;
 
   public MsgSelectNode(int id, SourceLocation location, ExprNode selectExpr) {
-    // TODO(user): the command text is wrong. however, this should not break anything (since
-    // we shouldn't be using command text for anything), and command text will be removed soon.
     super(id, location, "select");
     this.selectExpr = new ExprRootNode(selectExpr);
     this.baseSelectVarName = null;

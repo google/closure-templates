@@ -16,14 +16,14 @@
 
 package com.google.template.soy.soyparse;
 
-import static com.google.template.soy.base.internal.BaseUtils.formatParseExceptionDetails;
-
+import com.google.common.base.CharMatcher;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.LegacyInternalSyntaxException;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -63,6 +63,9 @@ final class ParseErrors {
           "Unexpected fatal Soy error. Please file a bug with your Soy file and "
               + "we''ll take a look. (error code {0})\n{1}",
           StyleAllowance.NO_PUNCTUATION);
+
+  private static final CharMatcher TOKENS_TO_QUOTE =
+      CharMatcher.whitespace().or(CharMatcher.is(',')).or(CharMatcher.is(':')).precomputed();
 
   private ParseErrors() {}
 
@@ -264,5 +267,66 @@ final class ParseErrors {
     } else {
       reporter.report(location, UNEXPECTED_TOKEN_MGR_ERROR, errorCode, message);
     }
+  }
+
+  /**
+   * A helper method for formating javacc ParseExceptions.
+   *
+   * @param errorToken The piece of text that we were unable to parse.
+   * @param expectedTokens The set of formatted tokens that we were expecting next.
+   */
+  private static String formatParseExceptionDetails(
+      String errorToken, List<String> expectedTokens) {
+    // quotes/normalize the expected tokens before rendering, just in case after normalization some
+    // can be deduplicated.
+    ImmutableSet.Builder<String> normalizedTokensBuilder = ImmutableSet.builder();
+    for (String t : expectedTokens) {
+      normalizedTokensBuilder.add(maybeQuoteForParseError(t));
+    }
+    expectedTokens = normalizedTokensBuilder.build().asList();
+
+    StringBuilder details = new StringBuilder();
+    int numExpectedTokens = expectedTokens.size();
+    if (numExpectedTokens != 0) {
+      details.append(": expected ");
+      for (int i = 0; i < numExpectedTokens; i++) {
+        details.append(expectedTokens.get(i));
+        if (i < numExpectedTokens - 2) {
+          details.append(", ");
+        }
+        if (i == numExpectedTokens - 2) {
+          if (numExpectedTokens > 2) {
+            details.append(',');
+          }
+          details.append(" or ");
+        }
+      }
+    }
+
+    return String.format(
+        "parse error at '%s'%s", escapeWhitespaceForErrorPrinting(errorToken), details.toString());
+  }
+
+  private static String maybeQuoteForParseError(String token) {
+    // the literal matches are surrounded in double quotes, so remove them
+    if (token.length() > 1 && token.charAt(0) == '"' && token.charAt(token.length() - 1) == '"') {
+      token = token.substring(1, token.length() - 1);
+    }
+
+    // if the token starts or ends with a whitespace character, a comma, or a colon, then put them
+    // in single quotes to avoid ambiguity in the error messages.
+    if (TOKENS_TO_QUOTE.matches(token.charAt(0))
+        || TOKENS_TO_QUOTE.matches(token.charAt(token.length() - 1))) {
+      token = "'" + token + "'";
+    }
+
+    return escapeWhitespaceForErrorPrinting(token);
+  }
+
+  private static String escapeWhitespaceForErrorPrinting(String s) {
+    s = s.replace("\r", "\\r");
+    s = s.replace("\n", "\\n");
+    s = s.replace("\t", "\\t");
+    return s;
   }
 }

@@ -81,10 +81,7 @@ public final class SoyUtils {
     }
   }
 
-  /**
-   * Pattern for one line in the compile-time globals file. TODO(user): consider replacing with
-   * {@link java.util.Properties}.
-   */
+  /** Pattern for one line in the compile-time globals file. */
   // Note: group 1 = key, group 2 = value.
   private static final Pattern COMPILE_TIME_GLOBAL_LINE =
       Pattern.compile("([a-zA-Z_][a-zA-Z_0-9.]*) \\s* = \\s* (.+)", Pattern.COMMENTS);

@@ -118,7 +118,7 @@ public class MainEntryPointUtils {
     }
 
     // Remove redundant /'s if any placeholder representing a directory was empty.
-    path = path.replaceAll("//", "/");
+    path = path.replace("//", "/");
 
     return path;
   }
