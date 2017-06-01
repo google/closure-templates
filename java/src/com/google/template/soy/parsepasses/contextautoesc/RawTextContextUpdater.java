@@ -16,10 +16,10 @@
 
 package com.google.template.soy.parsepasses.contextautoesc;
 
+import com.google.common.base.Ascii;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.internal.base.UnescapeUtils;
 import com.google.template.soy.parsepasses.contextautoesc.Context.UriPart;
@@ -297,41 +297,6 @@ final class RawTextContextUpdater {
   }
 
   /**
-   * A pattern to match the beginning of a tag with the given name.
-   *
-   * @param allowClose true to match a close tag and leave any {@code "/"} indicating that the tag
-   *     starts with {@code </} in group 1.
-   * @return Given {@code "script"}, a pattern that matches the prefix {@code "<script"} of {@code
-   *     "<script>"} but does not match any prefix of {@code "<scriptsareawesome>"}.
-   */
-  private static String regexForSpecialTagNamed(String tagName, boolean allowClose) {
-    return ("(?i)" // Tag names are case-insensitive
-        + "<" // Starts tag
-        + (allowClose ? "(/?)" : "")
-        + tagName
-        + "(?=" // Lookahead to make sure we're not matching just a prefix of the tag name.
-        + "[\\s>/]|\\z" // Tag names are terminated by a space, or tag end marker, or end of input.
-        + ")");
-    // The "/" in the lookahead is correct.
-    // <script/>alert(1)</script> and <script/style>alert(2)</script> both alert in Chrome.  Whee!
-  }
-
-  /** Map of special tag names to their element types. */
-  private static final ImmutableMap<String, Context.ElementType> SPECIAL_ELEMENT_TYPES =
-      ImmutableMap.<String, Context.ElementType>builder()
-          // We currently only treat <img> and SVG's <image> as a media type, since for <video> and
-          // <audio> there are concerns that attackers could introduce rich video or audio that
-          // facilitates social engineering.  Upon further review, it's possible we may allow them.
-          .put("img", Context.ElementType.MEDIA)
-          .put("image", Context.ElementType.MEDIA)
-          .put("script", Context.ElementType.SCRIPT)
-          .put("style", Context.ElementType.STYLE)
-          .put("textarea", Context.ElementType.TEXTAREA)
-          .put("title", Context.ElementType.TITLE)
-          .put("xmp", Context.ElementType.XMP)
-          .build();
-
-  /**
    * Transition from left angle bracket (and optional slash) to a tag name.
    *
    * <p>Note that this will not match things like < script because the space breaks the tag name.
@@ -344,26 +309,8 @@ final class RawTextContextUpdater {
       new Transition("(?i)^([a-z][a-z0-9:-]*)") {
         @Override
         Context computeNextContext(Context prior, Matcher matcher) {
-          String tagName = matcher.group(1).toLowerCase(Locale.ENGLISH);
-          Context.ElementType elType = SPECIAL_ELEMENT_TYPES.get(tagName);
-          if (elType == null) {
-            elType = Context.ElementType.NORMAL;
-          }
-          if (prior.state == HtmlContext.HTML_BEFORE_CLOSE_TAG_NAME
-              && elType != Context.ElementType.NORMAL
-              && elType != Context.ElementType.MEDIA) {
-            // For special tags that change context (other than normal and media) we flag it as an
-            // error when seeing an unmatched close tag.  e.g. </script> suggests something fishy
-            // happened earlier.
-            throw SoyAutoescapeException.createWithoutMetaInfo(
-                "Saw unmatched close tag for context-changing tag: " + tagName);
-          }
-          return prior
-              .toBuilder()
-              .withState(HtmlContext.HTML_TAG_NAME)
-              .withoutAttrContext()
-              .withElType(elType)
-              .build();
+          String tagName = matcher.group(1);
+          return prior.transitionToTagName(Ascii.toLowerCase(tagName));
         }
       };
 
@@ -374,42 +321,16 @@ final class RawTextContextUpdater {
         Context computeNextContext(Context prior, Matcher matcher) {
           // Make sure the element type was pre-determined when setting the tag name.
           Preconditions.checkArgument(prior.elType != Context.ElementType.NONE);
-          return prior.toBuilder().withState(HtmlContext.HTML_TAG).withoutAttrContext().build();
+          return prior.transitionToTagBody();
         }
       };
-
-  /** A transition on a template tag that updates the template nest depth. */
-  private static Transition makeTemplateTagTransition() {
-    String regex = regexForSpecialTagNamed("template", true);
-    return new Transition(regex) {
-      @Override
-      Context computeNextContext(Context prior, Matcher matcher) {
-        boolean isEndTag = "/".equals(matcher.group(1));
-        if (isEndTag && prior.templateNestDepth == 0) {
-          throw SoyAutoescapeException.createWithoutMetaInfo(
-              "Saw an html5 </template> without encountering <template>.");
-        }
-        Context.Builder builder =
-            prior
-                .toBuilder()
-                .withTemplateNestDepth(prior.templateNestDepth + (isEndTag ? -1 : 1))
-                .withoutAttrContext();
-        if (isEndTag) {
-          builder.withState(HtmlContext.HTML_TAG).withElType(Context.ElementType.NORMAL);
-        } else {
-          builder.withState(HtmlContext.HTML_PCDATA).withElType(Context.ElementType.NONE);
-        }
-        return builder.build();
-      }
-    };
-  }
 
   /** A transition back to a context in the body of an open tag. */
   private static Transition makeTransitionBackToTag(String regex) {
     return new Transition(regex) {
       @Override
       Context computeNextContext(Context prior, Matcher matcher) {
-        return prior.toBuilder().withState(HtmlContext.HTML_TAG).withoutAttrContext().build();
+        return prior.transitionToTagBody();
       }
     };
   }
@@ -423,42 +344,8 @@ final class RawTextContextUpdater {
     return new Transition(regex) {
       @Override
       Context computeNextContext(Context prior, Matcher matcher) {
-        String attrName = matcher.group(1).toLowerCase(Locale.ENGLISH);
-        // Get the local name so we can treat xlink:href and svg:style as per HTML.
-        int colon = attrName.lastIndexOf(':');
-        String localName = attrName.substring(colon + 1);
-
-        Context.AttributeType attr;
-        UriType uriType = UriType.NONE;
-        if (localName.startsWith("on")) {
-          attr = Context.AttributeType.SCRIPT;
-        } else if ("style".equals(localName)) {
-          attr = Context.AttributeType.STYLE;
-        } else if (prior.elType == Context.ElementType.MEDIA
-            && ("src".equals(attrName) || "xlink:href".equals(attrName))) {
-          // TODO(gboyer): We should treat script srcs as trusted and impose additional
-          // restrictions.
-          attr = Context.AttributeType.URI;
-          uriType = UriType.MEDIA;
-        } else if (prior.elType == Context.ElementType.SCRIPT && "src".equals(attrName)) {
-          attr = Context.AttributeType.URI;
-          uriType = Context.UriType.TRUSTED_RESOURCE;
-        } else if (URI_ATTR_NAMES.contains(localName)
-            || CUSTOM_URI_ATTR_NAMING_CONVENTION.matcher(localName).find()
-            || "xmlns".equals(attrName)
-            || attrName.startsWith("xmlns:")) {
-          attr = Context.AttributeType.URI;
-          uriType = UriType.NORMAL;
-        } else {
-          attr = Context.AttributeType.PLAIN_TEXT;
-        }
-        return prior
-            .toBuilder()
-            .withState(HtmlContext.HTML_ATTRIBUTE_NAME)
-            .withoutAttrContext()
-            .withAttrType(attr)
-            .withUriType(uriType)
-            .build();
+        String attrName = matcher.group(1);
+        return prior.transitionToAttrName(attrName);
       }
     };
   }
@@ -469,63 +356,17 @@ final class RawTextContextUpdater {
     return new Transition(regex) {
       @Override
       Context computeNextContext(Context prior, Matcher matcher) {
-        return Context.computeContextAfterAttributeDelimiter(
-            prior.elType, prior.attrType, delim, prior.uriType, prior.templateNestDepth);
+        return prior.transitionToAttrValue(delim);
       }
     };
   }
-
-  /**
-   * Lower case names of attributes whose value is a URI. This does not identify attributes like
-   * {@code <meta content>} which is conditionally a URI depending on the value of other attributes.
-   *
-   * @see <a href="http://www.w3.org/TR/html4/index/attributes.html">HTML4 attrs with type %URI</a>
-   */
-  private static final ImmutableSet<String> URI_ATTR_NAMES =
-      ImmutableSet.of(
-          "action",
-          "archive",
-          "base",
-          "background",
-          "cite",
-          "classid",
-          "codebase",
-          /**
-           * TODO: content is only a URL sometimes depending on other parameters and existing
-           * templates use content with non-URL values. Fix those templates or otherwise flag
-           * interpolations into content.
-           */
-          // "content",
-          "data",
-          "dsync",
-          "formaction",
-          "href",
-          "icon",
-          "longdesc",
-          "manifest",
-          "poster",
-          "src",
-          "usemap",
-          // Custom attributes that are reliably URLs in existing code.
-          "entity");
-
-  /** Matches lower-case attribute local names that start or end with "url" or "uri". */
-  private static final Pattern CUSTOM_URI_ATTR_NAMING_CONVENTION =
-      Pattern.compile("\\bur[il]|ur[il]s?$");
 
   /** A transition to the given state. */
   private static Transition makeTransitionToState(String regex, final HtmlContext state) {
     return new Transition(regex) {
       @Override
       Context computeNextContext(Context prior, Matcher matcher) {
-        Context.Builder builder = prior.toBuilder().withState(state).withUriPart(UriPart.NONE);
-        if (prior.uriPart != UriPart.NONE) {
-          // Only reset the URI type if we're leaving a URI; intentionally, URI type needs to
-          // remain prior to the URI, for example, to maintain state between "src", the "=", and
-          // the opening quotes (if any).
-          builder.withUriType(UriType.NONE);
-        }
-        return builder.build();
+        return prior.transitionToState(state);
       }
     };
   }
@@ -770,9 +611,11 @@ final class RawTextContextUpdater {
               HtmlContext.HTML_PCDATA,
               ImmutableList.of(
                   makeTransitionToState("<!--", HtmlContext.HTML_COMMENT),
-                  makeTemplateTagTransition(),
+                  // TODO(b/31770394): delete after finishing migration
                   makeTransitionToState("<", HtmlContext.HTML_BEFORE_OPEN_TAG_NAME),
                   makeTransitionToSelf("[^<]+")))
+
+          // TODO(b/31770394): delete after finishing migration
           .put(
               HtmlContext.HTML_BEFORE_OPEN_TAG_NAME,
               ImmutableList.of(
@@ -781,10 +624,14 @@ final class RawTextContextUpdater {
                   makeTransitionToState("^/", HtmlContext.HTML_BEFORE_CLOSE_TAG_NAME),
                   // This is for things like "I <3 Kittens" or "Styles < Scripts"
                   makeTransitionTo("", ContentKind.HTML)))
+
+          // TODO(b/31770394): delete after finishing migration
           .put(
               HtmlContext.HTML_BEFORE_CLOSE_TAG_NAME,
               ImmutableList.of(
                   TRANSITION_TO_TAG_NAME, makeTransitionToError("", "Invalid end-tag name.")))
+
+          // TODO(b/31770394): delete after finishing migration
           .put(
               HtmlContext.HTML_TAG_NAME,
               ImmutableList.of(
@@ -794,6 +641,8 @@ final class RawTextContextUpdater {
                       "\\z",
                       "Tag names should not be split up. For example, Soy can't easily understand "
                           + "that <s{if 1}cript{/if}> is a script tag.")))
+
+          // TODO(b/31770394): delete after finishing migration
           .put(
               HtmlContext.HTML_TAG,
               ImmutableList.of(
@@ -813,39 +662,11 @@ final class RawTextContextUpdater {
                   new Transition("^\\s*/?>") {
                     @Override
                     Context computeNextContext(Context prior, Matcher matcher) {
-                      Context.Builder builder = prior.toBuilder();
-                      builder.withoutAttrContext();
-                      switch (prior.elType) {
-                        case SCRIPT:
-                          builder
-                              .withState(HtmlContext.JS)
-                              .withSlashType(Context.JsFollowingSlash.REGEX)
-                              .withElType(Context.ElementType.NONE);
-                          break;
-                        case STYLE:
-                          builder.withState(HtmlContext.CSS).withElType(Context.ElementType.NONE);
-                          break;
-                        case TEXTAREA:
-                        case TITLE:
-                        case XMP:
-                          builder.withState(HtmlContext.HTML_RCDATA);
-                          break;
-                          // All normal or void tags fit here.
-                        case NORMAL:
-                        case MEDIA:
-                          builder
-                              .withState(HtmlContext.HTML_PCDATA)
-                              .withElType(Context.ElementType.NONE);
-                          break;
-                        case NONE:
-                          throw new IllegalStateException();
-                        default:
-                          throw new AssertionError("Unrecognized state " + prior.elType);
-                      }
-                      return builder.build();
+                      return prior.transitionToAfterTag();
                     }
                   },
                   makeTransitionToSelf("^\\s+\\z")))
+          // TODO(b/31770394): delete after finishing migration
           .put(
               HtmlContext.HTML_ATTRIBUTE_NAME,
               ImmutableList.of(
@@ -853,6 +674,7 @@ final class RawTextContextUpdater {
                   // For a value-less attribute, make an epsilon transition back to the tag body
                   // context to look for a tag end or another attribute name.
                   makeTransitionBackToTag("^")))
+          // TODO(b/31770394): delete after finishing migration
           .put(
               HtmlContext.HTML_BEFORE_ATTRIBUTE_VALUE,
               ImmutableList.of(

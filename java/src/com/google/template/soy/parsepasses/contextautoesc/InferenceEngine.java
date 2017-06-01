@@ -36,7 +36,12 @@ import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForeachIfemptyNode;
 import com.google.template.soy.soytree.ForeachNode;
 import com.google.template.soy.soytree.ForeachNonemptyNode;
+import com.google.template.soy.soytree.HtmlAttributeNode;
+import com.google.template.soy.soytree.HtmlAttributeValueNode;
+import com.google.template.soy.soytree.HtmlCloseTagNode;
 import com.google.template.soy.soytree.HtmlContext;
+import com.google.template.soy.soytree.HtmlOpenTagNode;
+import com.google.template.soy.soytree.HtmlTagNode;
 import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.LetContentNode;
@@ -47,6 +52,7 @@ import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.CommandNode;
+import com.google.template.soy.soytree.SoyNode.Kind;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 import com.google.template.soy.soytree.SwitchDefaultNode;
@@ -601,6 +607,75 @@ final class InferenceEngine {
       } catch (SoyAutoescapeException ex) {
         throw ex.maybeAssociateNode(printNode);
       }
+    }
+
+    @Override
+    protected void visitHtmlOpenTagNode(HtmlOpenTagNode node) {
+      visitHtmlTagNode(node);
+    }
+
+    @Override
+    protected void visitHtmlCloseTagNode(HtmlCloseTagNode node) {
+      visitHtmlTagNode(node);
+    }
+
+    private void visitHtmlTagNode(HtmlTagNode tag) {
+      context =
+          context.transitionToState(
+              tag.getKind() == Kind.HTML_OPEN_TAG_NODE
+                  ? HtmlContext.HTML_BEFORE_OPEN_TAG_NAME
+                  : HtmlContext.HTML_BEFORE_CLOSE_TAG_NAME);
+      // if the tag name is a constant, transition to an appropriate tag state
+      if (tag.getTagName().isStatic()) {
+        context = context.transitionToTagName(tag.getTagName().getStaticTagNameAsLowerCase());
+      } else {
+        visit(tag.getChild(0));
+      }
+      // Make sure the element type was pre-determined when setting the tag name.
+      Preconditions.checkArgument(context.elType != Context.ElementType.NONE);
+      context = context.transitionToTagBody();
+      // 0 is the tag name
+      for (int i = 1; i < tag.numChildren(); i++) {
+        visit(tag.getChild(i));
+      }
+      context = context.transitionToAfterTag();
+    }
+
+    @Override
+    protected void visitHtmlAttributeNode(HtmlAttributeNode node) {
+      SoyNode first = node.getChild(0);
+      if (first.getKind() == SoyNode.Kind.RAW_TEXT_NODE) {
+        context = context.transitionToAttrName(((RawTextNode) first).getRawText());
+      } else {
+        visit(first);
+      }
+      if (node.hasValue()) {
+        visit(node.getChild(1));
+      }
+      context = context.transitionToTagBody();
+    }
+
+    @Override
+    protected void visitHtmlAttributeValueNode(HtmlAttributeValueNode node) {
+      // TODO(b/31770394): do we still need 'before_attribute_value' after the migration to the new
+      // html nodes?  i think not.
+      context = context.transitionToState(HtmlContext.HTML_BEFORE_ATTRIBUTE_VALUE);
+      Context.AttributeEndDelimiter delim;
+      switch (node.getQuotes()) {
+        case DOUBLE:
+          delim = Context.AttributeEndDelimiter.DOUBLE_QUOTE;
+          break;
+        case NONE:
+          delim = Context.AttributeEndDelimiter.SPACE_OR_TAG_END;
+          break;
+        case SINGLE:
+          delim = Context.AttributeEndDelimiter.SINGLE_QUOTE;
+          break;
+        default:
+          throw new AssertionError();
+      }
+      context = context.transitionToAttrValue(delim);
+      visitChildren(node);
     }
 
     /** Handle conjunction nodes. */

@@ -17,11 +17,14 @@
 package com.google.template.soy.parsepasses.contextautoesc;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Ascii;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.soytree.EscapingMode;
 import com.google.template.soy.soytree.HtmlContext;
@@ -32,6 +35,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.regex.Pattern;
+import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 
 /**
@@ -50,6 +55,7 @@ import javax.annotation.Nullable;
  * the {@link Context#packedBits bitpacked} form of the context to generate a unique template name.
  *
  */
+@Immutable
 public final class Context {
 
   /** The state the text preceding the context point describes. */
@@ -202,6 +208,7 @@ public final class Context {
     return this;
   }
 
+  // TODO(lukes): see if this method makes sense after the migration to the html tag nodes
   /** Returns a context that can be used to compute the escaping mode for a dynamic value. */
   Context getContextBeforeDynamicValue() {
     // Some epsilon transitions need to be delayed until we get into a branch.
@@ -214,7 +221,7 @@ public final class Context {
     // But we need to force epsilon transitions to happen consistentky before a dynamic value is
     // considered as in
     //    <a href={print $x}>
-    // where we consider $x as happening in an unquoted attribute value context, not as occuring
+    // where we consider $x as happening in an unquoted attribute value context, not as occurring
     // before an attribute value.
     if (state == HtmlContext.HTML_BEFORE_ATTRIBUTE_VALUE) {
       return computeContextAfterAttributeDelimiter(
@@ -1040,6 +1047,207 @@ public final class Context {
           return "unknown to compiler";
         }
     }
+  }
+
+  /** Returns a new context in the given {@link HtmlContext state}. */
+  @CheckReturnValue
+  Context transitionToState(HtmlContext state) {
+    Context.Builder builder = toBuilder().withState(state).withUriPart(UriPart.NONE);
+    if (uriPart != UriPart.NONE) {
+      // Only reset the URI type if we're leaving a URI; intentionally, URI type needs to
+      // remain prior to the URI, for example, to maintain state between "src", the "=", and
+      // the opening quotes (if any).
+      builder.withUriType(UriType.NONE);
+    }
+    return builder.build();
+  }
+
+  /**
+   * Returns a new context given the tag name.
+   *
+   * <p>This mostly handles special context changing tags like {@code <script>}.
+   */
+  @CheckReturnValue
+  Context transitionToTagName(String tagName) {
+    // according to spec ascii case is not meaningful for tag names.
+    tagName = Ascii.toLowerCase(tagName);
+    boolean isEndTag = state == HtmlContext.HTML_BEFORE_CLOSE_TAG_NAME;
+    Context.ElementType elType;
+    int newTemplateNestDepth = templateNestDepth;
+    // We currently only treat <img> and SVG's <image> as a media type, since for <video> and
+    // <audio> there are concerns that attackers could introduce rich video or audio that
+    // facilitates social engineering.  Upon further review, it's possible we may allow them.
+    switch (tagName) {
+      case "img":
+      case "image":
+        elType = ElementType.MEDIA;
+        break;
+      case "script":
+        elType = Context.ElementType.SCRIPT;
+        break;
+      case "style":
+        elType = Context.ElementType.STYLE;
+        break;
+      case "textarea":
+        elType = Context.ElementType.TEXTAREA;
+        break;
+      case "title":
+        elType = Context.ElementType.TITLE;
+        break;
+      case "xmp":
+        elType = Context.ElementType.XMP;
+        break;
+      case "template":
+        elType = Context.ElementType.NORMAL;
+        newTemplateNestDepth += isEndTag ? -1 : 1;
+        if (newTemplateNestDepth < 0) {
+          throw SoyAutoescapeException.createWithoutMetaInfo(
+              "Saw an html5 </template> without encountering <template>.");
+        }
+        break;
+      default:
+        elType = Context.ElementType.NORMAL;
+        break;
+    }
+    if (isEndTag && elType != Context.ElementType.NORMAL && elType != Context.ElementType.MEDIA) {
+      // For special tags that change context (other than normal and media) we flag it as an
+      // error when seeing an unmatched close tag.  e.g. </script> suggests something fishy
+      // happened earlier.
+      throw SoyAutoescapeException.createWithoutMetaInfo(
+          "Saw unmatched close tag for context-changing tag: " + tagName);
+    }
+    return toBuilder()
+        .withState(HtmlContext.HTML_TAG_NAME)
+        .withoutAttrContext()
+        .withElType(elType)
+        .withTemplateNestDepth(newTemplateNestDepth)
+        .build();
+  }
+
+  /** Returns a new context that is in {@link HtmlContext#HTML_TAG}. */
+  @CheckReturnValue
+  Context transitionToTagBody() {
+    return toBuilder().withState(HtmlContext.HTML_TAG).withoutAttrContext().build();
+  }
+
+  /** Returns a new context in whatever state is appropriate given the current {@code elType}. */
+  @CheckReturnValue
+  Context transitionToAfterTag() {
+    Context.Builder builder = toBuilder();
+    builder.withoutAttrContext();
+    switch (elType) {
+      case SCRIPT:
+        builder
+            .withState(HtmlContext.JS)
+            .withSlashType(Context.JsFollowingSlash.REGEX)
+            .withElType(Context.ElementType.NONE);
+        break;
+      case STYLE:
+        builder.withState(HtmlContext.CSS).withElType(Context.ElementType.NONE);
+        break;
+      case TEXTAREA:
+      case TITLE:
+      case XMP:
+        builder.withState(HtmlContext.HTML_RCDATA);
+        break;
+        // All normal or void tags fit here.
+      case NORMAL:
+      case MEDIA:
+        builder.withState(HtmlContext.HTML_PCDATA).withElType(Context.ElementType.NONE);
+        break;
+      case NONE:
+        throw new IllegalStateException();
+      default:
+        throw new AssertionError("Unrecognized state " + elType);
+    }
+    return builder.build();
+  }
+
+  /**
+   * Lower case names of attributes whose value is a URI. This does not identify attributes like
+   * {@code <meta content>} which is conditionally a URI depending on the value of other attributes.
+   *
+   * @see <a href="http://www.w3.org/TR/html4/index/attributes.html">HTML4 attrs with type %URI</a>
+   */
+  private static final ImmutableSet<String> URI_ATTR_NAMES =
+      ImmutableSet.of(
+          "action",
+          "archive",
+          "base",
+          "background",
+          "cite",
+          "classid",
+          "codebase",
+          /**
+           * TODO: content is only a URL sometimes depending on other parameters and existing
+           * templates use content with non-URL values. Fix those templates or otherwise flag
+           * interpolations into content.
+           */
+          // "content",
+          "data",
+          "dsync",
+          "formaction",
+          "href",
+          "icon",
+          "longdesc",
+          "manifest",
+          "poster",
+          "src",
+          "usemap",
+          // Custom attributes that are reliably URLs in existing code.
+          "entity");
+
+  /** Matches lower-case attribute local names that start or end with "url" or "uri". */
+  private static final Pattern CUSTOM_URI_ATTR_NAMING_CONVENTION =
+      Pattern.compile("\\bur[il]|ur[il]s?$");
+
+  /** Returns a new context based on the attribute name and current element type. */
+  @CheckReturnValue
+  Context transitionToAttrName(String attrName) {
+    // according to spec ascii case is not meaningful for attributes.
+    attrName = Ascii.toLowerCase(attrName);
+    // Get the local name so we can treat xlink:href and svg:style as per HTML.
+    int colon = attrName.lastIndexOf(':');
+    String localName = attrName.substring(colon + 1);
+
+    Context.AttributeType attr;
+    UriType uriType = UriType.NONE;
+    if (localName.startsWith("on")) {
+      attr = Context.AttributeType.SCRIPT;
+    } else if ("style".equals(localName)) {
+      attr = Context.AttributeType.STYLE;
+    } else if (elType == Context.ElementType.MEDIA
+        && ("src".equals(attrName) || "xlink:href".equals(attrName))) {
+      // TODO(gboyer): We should treat script srcs as trusted and impose additional
+      // restrictions.
+      attr = Context.AttributeType.URI;
+      uriType = UriType.MEDIA;
+    } else if (elType == Context.ElementType.SCRIPT && "src".equals(attrName)) {
+      attr = Context.AttributeType.URI;
+      uriType = Context.UriType.TRUSTED_RESOURCE;
+    } else if (URI_ATTR_NAMES.contains(localName)
+        || CUSTOM_URI_ATTR_NAMING_CONVENTION.matcher(localName).find()
+        || "xmlns".equals(attrName)
+        || attrName.startsWith("xmlns:")) {
+      attr = Context.AttributeType.URI;
+      uriType = UriType.NORMAL;
+    } else {
+      attr = Context.AttributeType.PLAIN_TEXT;
+    }
+    return toBuilder()
+        .withState(HtmlContext.HTML_ATTRIBUTE_NAME)
+        .withoutAttrContext()
+        .withAttrType(attr)
+        .withUriType(uriType)
+        .build();
+  }
+
+  /** Returns a new context that is in attribute value using the given attribute delimiter. */
+  @CheckReturnValue
+  Context transitionToAttrValue(AttributeEndDelimiter delim) {
+    // TODO(lukes): inline this method?
+    return computeContextAfterAttributeDelimiter(
+        elType, attrType, delim, uriType, templateNestDepth);
   }
 
   /** A type of HTML element. */

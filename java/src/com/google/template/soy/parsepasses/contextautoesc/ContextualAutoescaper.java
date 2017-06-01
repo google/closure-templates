@@ -141,6 +141,7 @@ public final class ContextualAutoescaper {
     // Defensively copy so our loops below hold.
     List<SoyFileNode> files = ImmutableList.copyOf(fileSet.getChildren());
 
+    // TODO(lukes): why aren't we just using the TemplateRegistry?
     Map<String, ImmutableList<TemplateNode>> templatesByName = findTemplates(files);
 
     // Inferences collects all the typing decisions we make, templates we derive, and escaping modes
