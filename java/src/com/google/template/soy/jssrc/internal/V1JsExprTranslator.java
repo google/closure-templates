@@ -26,12 +26,9 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.restricted.JsExpr;
-
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import javax.annotation.Nullable;
-
 
 /**
  * Translator of Soy V1 expressions to their equivalent JS expressions. Needed in order to provide
@@ -42,8 +39,10 @@ import javax.annotation.Nullable;
  */
 final class V1JsExprTranslator {
 
-  private static final SoyErrorKind MALFORMED_FUNCTION_CALL =
-      SoyErrorKind.of("Malformed function call.");
+  private static final SoyErrorKind UNSUPPORTED_FUNTION =
+      SoyErrorKind.of(
+          "''v1Expression'' no longer supports the ''index'', ''isFirst'' or ''isLast'' functions. "
+              + "Migrate to a v2 expression to access this functionality.");
 
   /** Regex for a template variable or data reference. */
   // 2 capturing groups: first part (excluding '$'), rest
@@ -57,10 +56,6 @@ final class V1JsExprTranslator {
   // 2 capturing groups: function name, variable name (excluding '$').
   private static final String SOY_FUNCTION_RE =
       "(isFirst|isLast|index)\\(\\s*\\$([a-zA-Z0-9_]+)\\s*\\)";
-
-  /** Regex pattern for a Soy function. */
-  // 2 capturing groups: function name, variable name.
-  private static final Pattern SOY_FUNCTION = Pattern.compile(SOY_FUNCTION_RE);
 
   /** Regex pattern for operators to translate: 'not', 'and', 'or'. */
   private static final Pattern BOOL_OP_RE = Pattern.compile("\\b(not|and|or)\\b");
@@ -119,11 +114,7 @@ final class V1JsExprTranslator {
             jsExprTextSb,
             Matcher.quoteReplacement(translateBoolOp(group)));
       } else {
-        String translation =
-            translateFunction(group, variableMappings, sourceLocation, errorReporter);
-        if (translation != null) {
-          matcher.appendReplacement(jsExprTextSb, Matcher.quoteReplacement(translation));
-        }
+        errorReporter.report(sourceLocation, UNSUPPORTED_FUNTION);
       }
     }
     matcher.appendTail(jsExprTextSb);
@@ -206,35 +197,6 @@ final class V1JsExprTranslator {
         throw new AssertionError();
     }
   }
-
-
-  /**
-   * Private helper for {@code genExpressionCode} to generate code for a
-   * special function call.
-   *
-   * @param functionText The text of the special function call.
-   * @param variableMappings The current replacement JS expressions for the local
-   *     variables (and foreach-loop special functions) current in scope.
-   * @param errorReporter For reporting syntax errors.
-   * @return The translated string, or null if the function text was malformed or the translation
-   *     couldn't be found.
-   */
-  @Nullable private static String translateFunction(
-      String functionText,
-      SoyToJsVariableMappings variableMappings,
-      SourceLocation sourceLocation,
-      ErrorReporter errorReporter) {
-    Matcher matcher = SOY_FUNCTION.matcher(functionText);
-    if (!matcher.matches()) {
-      errorReporter.report(sourceLocation, MALFORMED_FUNCTION_CALL);
-      return null;
-    }
-
-    String funcName = matcher.group(1);
-    String varName = matcher.group(2);
-    return getLocalVarTranslation(varName + "__" + funcName, variableMappings);
-  }
-
 
   // We guess the precedence of the expression by searching for characters that appear in
   // operator tokens. This is of course far from accurate, but it's a reasonable effort.

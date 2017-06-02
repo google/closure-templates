@@ -18,7 +18,6 @@ package com.google.template.soy.jssrc.internal;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.id;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.number;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.SourceLocation;
@@ -43,21 +42,6 @@ public final class V1JsExprTranslatorTest {
           .put(
               "goo",
               id("gooData8"))
-          .put(
-              "goo__isFirst",
-              id("gooIndex8")
-                  .doubleEquals(
-                      number(0)))
-          .put(
-              "goo__isLast",
-              id("gooIndex8")
-                  .doubleEquals(
-                      id("gooListLen8")
-                          .minus(
-                              number(1))))
-          .put(
-              "goo__index",
-              id("gooIndex8"))
           .build();
 
   @Test
@@ -83,19 +67,6 @@ public final class V1JsExprTranslatorTest {
                   new JsExpr("! opt_data.boo || true && gooData8", Operator.OR.getPrecedence()));
     runTestHelper("( (8-4) + (2-1) )",
                   new JsExpr("( (8-4) + (2-1) )", Operator.PLUS.getPrecedence()));
-  }
-
-  @Test
-  public void testFunctions() {
-    runTestHelper("isFirst($goo)",
-                  new JsExpr("(gooIndex8 == 0)", Operator.EQUAL.getPrecedence()));
-    runTestHelper("not isLast($goo)",
-                  new JsExpr("! (gooIndex8 == gooListLen8 - 1)", Operator.NOT.getPrecedence()),
-                  true /* lenient */);
-    runTestHelper("index($goo) + 1",
-                  new JsExpr("gooIndex8 + 1", Operator.PLUS.getPrecedence()));
-    runTestHelper("$boo.length",
-                  new JsExpr("opt_data.boo.length", Integer.MAX_VALUE));
   }
 
   private static void runTestHelper(String soyExpr, JsExpr expectedJsExpr) {
