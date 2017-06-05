@@ -33,7 +33,6 @@ import com.google.template.soy.shared.internal.ApiCallScopeUtils;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
 import com.google.template.soy.shared.internal.MainEntryPointUtils;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.ApiCall;
-import com.google.template.soy.sharedpasses.opti.SimplifyVisitor;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateRegistry;
@@ -57,24 +56,18 @@ public final class PySrcMain {
   /** The scope object that manages the API call scope. */
   private final GuiceSimpleScope apiCallScope;
 
-  /** The instanceof of SimplifyVisitor to use. */
-  private final SimplifyVisitor simplifyVisitor;
-
   /** Provider for getting an instance of GenPyCodeVisitor. */
   private final Provider<GenPyCodeVisitor> genPyCodeVisitorProvider;
 
   /**
    * @param apiCallScope The scope object that manages the API call scope.
-   * @param simplifyVisitor The instance of SimplifyVisitor to use.
    * @param genPyCodeVisitorProvider Provider for getting an instance of GenPyCodeVisitor.
    */
   @Inject
   public PySrcMain(
       @ApiCall GuiceSimpleScope apiCallScope,
-      SimplifyVisitor simplifyVisitor,
       Provider<GenPyCodeVisitor> genPyCodeVisitorProvider) {
     this.apiCallScope = apiCallScope;
-    this.simplifyVisitor = simplifyVisitor;
     this.genPyCodeVisitorProvider = genPyCodeVisitorProvider;
   }
 
@@ -85,7 +78,6 @@ public final class PySrcMain {
    * @param templateRegistry The template registry that contains all the template information.
    * @param pySrcOptions The compilation options relevant to this backend.
    * @param currentManifest The namespace manifest for current sources.
-   * @param isOptimizerEnabled Whether we want to run optimizer in this backend.
    * @param errorReporter The Soy error reporter that collects errors during code generation.
    * @return A list of strings where each string represents the Python source code that belongs in
    *     one Python file. The generated Python files correspond one-to-one to the original Soy
@@ -97,7 +89,6 @@ public final class PySrcMain {
       TemplateRegistry templateRegistry,
       SoyPySrcOptions pySrcOptions,
       ImmutableMap<String, String> currentManifest,
-      boolean isOptimizerEnabled,
       ErrorReporter errorReporter)
       throws SoySyntaxException {
 
@@ -110,9 +101,6 @@ public final class PySrcMain {
       BidiGlobalDir bidiGlobalDir =
           SoyBidiUtils.decodeBidiGlobalDirFromPyOptions(pySrcOptions.getBidiIsRtlFn());
       ApiCallScopeUtils.seedSharedParams(inScope, null, bidiGlobalDir);
-      if (isOptimizerEnabled) {
-        simplifyVisitor.simplify(soyTree, templateRegistry);
-      }
       return genPyCodeVisitorProvider.get().gen(soyTree, errorReporter);
     }
   }
@@ -127,7 +115,6 @@ public final class PySrcMain {
    * @param outputPathFormat The format string defining how to build the output file path
    *     corresponding to an input file path.
    * @param inputPathsPrefix The input path prefix, or empty string if none.
-   * @param isOptimizerEnabled Whether we want to run optimizer in this backend.
    * @param errorReporter The Soy error reporter that collects errors during code generation.
    * @throws SoySyntaxException If a syntax error is found.
    * @throws IOException If there is an error in opening/writing an output Python file.
@@ -138,7 +125,6 @@ public final class PySrcMain {
       SoyPySrcOptions pySrcOptions,
       String outputPathFormat,
       String inputPathsPrefix,
-      boolean isOptimizerEnabled,
       ErrorReporter errorReporter)
       throws SoySyntaxException, IOException {
 
@@ -157,8 +143,7 @@ public final class PySrcMain {
 
     // Generate the Python source.
     List<String> pyFileContents =
-        genPySrc(
-            soyTree, templateRegistry, pySrcOptions, manifest, isOptimizerEnabled, errorReporter);
+        genPySrc(soyTree, templateRegistry, pySrcOptions, manifest, errorReporter);
 
     if (srcsToCompile.size() != pyFileContents.size()) {
       throw new AssertionError(

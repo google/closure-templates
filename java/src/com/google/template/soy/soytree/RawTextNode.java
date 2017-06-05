@@ -78,6 +78,9 @@ public final class RawTextNode extends AbstractSoyNode implements StandaloneNode
 
   public RawTextNode(int id, String rawText, SourceLocation sourceLocation, SourceOffsets offsets) {
     super(id, sourceLocation);
+    if (rawText.equals("<i>")) {
+      new Exception().printStackTrace();
+    }
     this.rawText = checkNotNull(rawText);
     this.offsets = offsets;
   }

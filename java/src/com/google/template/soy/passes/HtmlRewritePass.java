@@ -463,6 +463,11 @@ public final class HtmlRewritePass extends CompilerFilePass {
     }
   }
 
+  @Override
+  public String toString() {
+    return name() + "{enabled: " + enabled + ", extraPasses: " + extraPasses + "}";
+  }
+
   private static final class Visitor extends AbstractSoyNodeVisitor<Void> {
     
     /**

@@ -33,7 +33,6 @@ import com.google.template.soy.shared.internal.ApiCallScopeUtils;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
 import com.google.template.soy.shared.internal.MainEntryPointUtils;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.ApiCall;
-import com.google.template.soy.sharedpasses.opti.SimplifyVisitor;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateRegistry;
@@ -54,9 +53,6 @@ public class IncrementalDomSrcMain {
   /** The scope object that manages the API call scope. */
   private final GuiceSimpleScope apiCallScope;
 
-  /** The instanceof of SimplifyVisitor to use. */
-  private final SimplifyVisitor simplifyVisitor;
-
   /** Provider for getting an instance of OptimizeBidiCodeGenVisitor. */
   private final Provider<OptimizeBidiCodeGenVisitor> optimizeBidiCodeGenVisitorProvider;
 
@@ -65,7 +61,6 @@ public class IncrementalDomSrcMain {
 
   /**
    * @param apiCallScope The scope object that manages the API call scope.
-   * @param simplifyVisitor The instance of SimplifyVisitor to use.
    * @param optimizeBidiCodeGenVisitorProvider Provider for getting an instance of
    *     OptimizeBidiCodeGenVisitor.
    * @param genIncrementalDomCodeVisitorProvider Provider for getting an instance of
@@ -74,11 +69,9 @@ public class IncrementalDomSrcMain {
   @Inject
   public IncrementalDomSrcMain(
       @ApiCall GuiceSimpleScope apiCallScope,
-      SimplifyVisitor simplifyVisitor,
       Provider<OptimizeBidiCodeGenVisitor> optimizeBidiCodeGenVisitorProvider,
       Provider<GenIncrementalDomCodeVisitor> genIncrementalDomCodeVisitorProvider) {
     this.apiCallScope = apiCallScope;
-    this.simplifyVisitor = simplifyVisitor;
     this.optimizeBidiCodeGenVisitorProvider = optimizeBidiCodeGenVisitorProvider;
     this.genIncrementalDomCodeVisitorProvider = genIncrementalDomCodeVisitorProvider;
   }
@@ -90,7 +83,6 @@ public class IncrementalDomSrcMain {
    * @param soyTree The Soy parse tree to generate JS source code for.
    * @param registry The template registry that contains all the template information.
    * @param options The compilation options relevant to this backend.
-   * @param isOptimizerEnabled Whether we want to run optimizer in this backend.
    * @param errorReporter The Soy error reporter that collects errors during code generation.
    * @return A list of strings where each string represents the JS source code that belongs in one
    *     JS file. The generated JS files correspond one-to-one to the original Soy source files.
@@ -100,7 +92,6 @@ public class IncrementalDomSrcMain {
       SoyFileSetNode soyTree,
       TemplateRegistry registry,
       SoyIncrementalDomSrcOptions options,
-      boolean isOptimizerEnabled,
       ErrorReporter errorReporter)
       throws SoySyntaxException {
 
@@ -116,20 +107,16 @@ public class IncrementalDomSrcMain {
       ApiCallScopeUtils.seedSharedParams(inScope, null /* msgBundle */, bidiGlobalDir);
 
       // Do the code generation.
-      new CombineConsecutiveRawTextNodesVisitor(soyTree.getNodeIdGenerator()).exec(soyTree);
       optimizeBidiCodeGenVisitorProvider.get().exec(soyTree);
-      if (isOptimizerEnabled) {
-        simplifyVisitor.simplify(soyTree, registry);
-      }
 
       new HtmlContextVisitor(errorReporter).exec(soyTree);
 
       new UnescapingVisitor().exec(soyTree);
 
-      // Must happen after HtmlTransformVisitor, so it can infer context for {msg} nodes.
+      // Must happen after HtmlContextVisitor, so it can infer context for {msg} nodes.
       new IncrementalDomExtractMsgVariablesVisitor().exec(soyTree);
-      
-
+      // some of the above passes may slice up raw text nodes, recombine them.
+      new CombineConsecutiveRawTextNodesVisitor().exec(soyTree);
       return genIncrementalDomCodeVisitorProvider.get().gen(soyTree, registry, errorReporter);
     }
   }
@@ -143,7 +130,6 @@ public class IncrementalDomSrcMain {
    * @param jsSrcOptions The compilation options relevant to this backend.
    * @param outputPathFormat The format string defining how to build the output file path
    *     corresponding to an input file path.
-   * @param isOptimizerEnabled Whether we want to run optimizer in this backend.
    * @param errorReporter The Soy error reporter that collects errors during code generation.
    * @throws SoySyntaxException If a syntax error is found.
    * @throws IOException If there is an error in opening/writing an output JS file.
@@ -153,12 +139,10 @@ public class IncrementalDomSrcMain {
       TemplateRegistry templateRegistry,
       SoyIncrementalDomSrcOptions jsSrcOptions,
       String outputPathFormat,
-      boolean isOptimizerEnabled,
       ErrorReporter errorReporter)
       throws IOException {
 
-    List<String> jsFileContents =
-        genJsSrc(soyTree, templateRegistry, jsSrcOptions, isOptimizerEnabled, errorReporter);
+    List<String> jsFileContents = genJsSrc(soyTree, templateRegistry, jsSrcOptions, errorReporter);
 
     ImmutableList<SoyFileNode> srcsToCompile =
         ImmutableList.copyOf(

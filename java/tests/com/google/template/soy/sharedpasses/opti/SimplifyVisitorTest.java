@@ -19,13 +19,16 @@ package com.google.template.soy.sharedpasses.opti;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.Guice;
-import com.google.inject.Injector;
+import com.google.inject.Inject;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.SoyModule;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.error.ExplodingErrorReporter;
+import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.MsgNode;
@@ -65,7 +68,7 @@ public class SimplifyVisitorTest {
     assertEquals(6, template.numChildren());
     assertEquals(5, forNode.numChildren());
 
-    SimplifyVisitor simplifyVisitor = INJECTOR.getInstance(SimplifyVisitor.class);
+    SimplifyVisitor simplifyVisitor = createSimplifyVisitor();
     simplifyVisitor.simplify(soyTree, new TemplateRegistry(soyTree, ExplodingErrorReporter.get()));
 
     assertEquals(4, template.numChildren());
@@ -251,20 +254,28 @@ public class SimplifyVisitorTest {
   // -----------------------------------------------------------------------------------------------
   // Helpers.
 
-  private static final Injector INJECTOR = Guice.createInjector(new SoyModule());
+  {
+    Guice.createInjector(new SoyModule()).injectMembers(this);
+  }
 
-  private static List<StandaloneNode> simplifySoyCode(String soyCode) throws Exception {
+  @Inject ImmutableMap<String, ? extends SoyPrintDirective> printDirectives;
+  @Inject SoyValueConverter valueConverter;
+
+  private SimplifyVisitor createSimplifyVisitor() {
+    return SimplifyVisitor.create(printDirectives, valueConverter);
+  }
+
+  private List<StandaloneNode> simplifySoyCode(String soyCode) throws Exception {
 
     ParseResult parse = SoyFileSetParserBuilder.forTemplateContents(soyCode).parse();
-    SimplifyVisitor simplifyVisitor = INJECTOR.getInstance(SimplifyVisitor.class);
+    SimplifyVisitor simplifyVisitor = createSimplifyVisitor();
     simplifyVisitor.simplify(parse.fileSet(), parse.registry());
     return parse.fileSet().getChild(0).getChild(0).getChildren();
   }
 
-  private static SoyFileSetNode simplifySoyFiles(String... soyFileContents) throws Exception {
-
+  private SoyFileSetNode simplifySoyFiles(String... soyFileContents) throws Exception {
     ParseResult parse = SoyFileSetParserBuilder.forFileContents(soyFileContents).parse();
-    SimplifyVisitor simplifyVisitor = INJECTOR.getInstance(SimplifyVisitor.class);
+    SimplifyVisitor simplifyVisitor = createSimplifyVisitor();
     simplifyVisitor.simplify(parse.fileSet(), parse.registry());
     return parse.fileSet();
   }

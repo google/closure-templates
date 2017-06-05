@@ -129,10 +129,12 @@ public final class SoyFileSetParser {
         soyTree.addChild(node);
       }
 
-      TemplateRegistry registry = new TemplateRegistry(soyTree, errorReporter);
+      TemplateRegistry registry;
       // Run passes that check the tree iff we successfully parsed every file.
       if (!filesWereSkipped) {
-        passManager.runWholeFilesetPasses(registry, soyTree);
+        registry = passManager.runWholeFilesetPasses(soyTree);
+      } else {
+        registry = new TemplateRegistry(soyTree, errorReporter);
       }
       return ParseResult.create(soyTree, registry);
     }

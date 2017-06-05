@@ -20,12 +20,16 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.Guice;
-import com.google.inject.Injector;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.SoyModule;
+import com.google.template.soy.data.SoyValueConverter;
+import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.sharedpasses.render.RenderException;
+import javax.inject.Inject;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -145,8 +149,12 @@ public class PrerenderVisitorTest {
   // -----------------------------------------------------------------------------------------------
   // Helpers.
 
-  private static final Injector INJECTOR = Guice.createInjector(new SoyModule());
+  @Inject ImmutableMap<String, ? extends SoyJavaPrintDirective> soyJavaDirectivesMap;
 
+  @Before
+  public void setUp() {
+    Guice.createInjector(new SoyModule()).injectMembers(this);
+  }
   /**
    * Renders the given input string (should be a template body) and returns the result.
    *
@@ -154,12 +162,15 @@ public class PrerenderVisitorTest {
    * @return The rendered result.
    * @throws Exception If there's an error.
    */
-  private static String prerender(String input) throws Exception {
+  private String prerender(String input) throws Exception {
     ParseResult result = SoyFileSetParserBuilder.forTemplateContents(input).parse();
 
     StringBuilder outputSb = new StringBuilder();
     PrerenderVisitor prerenderVisitor =
-        INJECTOR.getInstance(PrerenderVisitorFactory.class).create(outputSb, result.registry());
+        new PrerenderVisitorFactory(
+                soyJavaDirectivesMap,
+                new PreevalVisitorFactory(SoyValueConverter.UNCUSTOMIZED_INSTANCE))
+            .create(outputSb, result.registry());
     prerenderVisitor.exec(result.fileSet().getChild(0).getChild(0));
     return outputSb.toString();
   }

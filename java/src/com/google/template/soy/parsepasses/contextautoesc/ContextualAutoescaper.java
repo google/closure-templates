@@ -49,7 +49,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import javax.inject.Inject;
 
 /**
  * Inserts directives into print commands by looking at the context in which a print appears, and
@@ -98,8 +97,8 @@ public final class ContextualAutoescaper {
    *     soyDirectivesMap.get(key).getName().equals(key)} for all key in {@code
    *     soyDirectivesMap.keySet()}.
    */
-  @Inject
-  ContextualAutoescaper(final ImmutableMap<String, ? extends SoyPrintDirective> soyDirectivesMap) {
+  public ContextualAutoescaper(
+      final ImmutableMap<String, ? extends SoyPrintDirective> soyDirectivesMap) {
     // Compute the set of directives that are escaping directives.
     this(
         ImmutableSet.copyOf(

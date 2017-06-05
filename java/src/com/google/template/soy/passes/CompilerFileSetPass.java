@@ -35,4 +35,9 @@ abstract class CompilerFileSetPass {
     }
     return simpleName;
   }
+
+  @Override
+  public String toString() {
+    return name();
+  }
 }

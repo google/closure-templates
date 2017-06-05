@@ -23,7 +23,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.io.CharSource;
 import com.google.inject.Guice;
-import com.google.inject.Key;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
@@ -37,10 +36,12 @@ import com.google.template.soy.shared.SoyAstCache;
 import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.shared.internal.SharedModule;
 import com.google.template.soy.shared.restricted.SoyFunction;
+import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.Arrays;
 import java.util.List;
 import javax.annotation.Nullable;
+import javax.inject.Inject;
 
 /**
  * Fluent builder for configuring {@link com.google.template.soy.SoyFileSetParser}s in tests.
@@ -55,12 +56,13 @@ public final class SoyFileSetParserBuilder {
   @Nullable private SoyAstCache astCache = null;
   private ErrorReporter errorReporter = ExplodingErrorReporter.get(); // See #parse for discussion.
   private boolean allowUnboundGlobals;
-  private ImmutableMap<String, ? extends SoyFunction> soyFunctionMap =
-      Guice.createInjector(new SharedModule())
-          .getInstance(new Key<ImmutableMap<String, ? extends SoyFunction>>() {});
-  private SoyGeneralOptions options = new SoyGeneralOptions();
+  @Inject private ImmutableMap<String, ? extends SoyFunction> soyFunctionMap;
+  @Inject private ImmutableMap<String, ? extends SoyPrintDirective> soyPrintDirectiveMap;
+  // disable optimization by default
+  private SoyGeneralOptions options = new SoyGeneralOptions().disableOptimizer();
   private ImmutableList<CharSource> conformanceConfigs = ImmutableList.of();
   private boolean enableHtmlRewriting;
+  private boolean desugarHtmlNodes = true;
 
   /**
    * Returns a builder that gets its Soy inputs from the given strings, treating each string as the
@@ -108,6 +110,8 @@ public final class SoyFileSetParserBuilder {
       builder.put(supplier.getFilePath(), supplier);
     }
     this.soyFileSuppliers = builder.build();
+    // inject our @Inject fields to get the default set of functions and print directives
+    Guice.createInjector(new SharedModule()).injectMembers(this);
   }
 
   /** Sets the parser's declared syntax version. Returns this object, for chaining. */
@@ -157,6 +161,11 @@ public final class SoyFileSetParserBuilder {
     return this;
   }
 
+  public SoyFileSetParserBuilder desugarHtmlNodes(boolean desugarHtmlNodes) {
+    this.desugarHtmlNodes = desugarHtmlNodes;
+    return this;
+  }
+
   private static List<SoyFileSupplier> buildTestSoyFileSuppliers(String... soyFileContents) {
 
     List<SoyFileSupplier> soyFileSuppliers = Lists.newArrayList();
@@ -184,15 +193,21 @@ public final class SoyFileSetParserBuilder {
         new PassManager.Builder()
             .setDeclaredSyntaxVersion(declaredSyntaxVersion)
             .setSoyFunctionMap(soyFunctionMap)
+            .setSoyPrintDirectiveMap(soyPrintDirectiveMap)
             .setErrorReporter(errorReporter)
             .setTypeRegistry(typeRegistry)
+            .desugarHtmlNodes(desugarHtmlNodes)
             .setGeneralOptions(options)
-            .setConformanceConfigs(conformanceConfigs);
+            .setConformanceConfigs(conformanceConfigs)
+            // TODO(lukes): disabled for compatibility with unit tests.  fix tests relying on the
+            // escaper not running and enable by default.  This configuration bit only really exists
+            // for incrementaldom not tests
+            .setAutoescaperEnabled(false);
     if (allowUnboundGlobals) {
       passManager.allowUnknownGlobals();
     }
     if (enableHtmlRewriting) {
-      passManager.enhableHtmlRewriting();
+      passManager.enableHtmlRewriting();
     }
     return new SoyFileSetParser(astCache, soyFileSuppliers, passManager.build(), errorReporter)
         .parse();

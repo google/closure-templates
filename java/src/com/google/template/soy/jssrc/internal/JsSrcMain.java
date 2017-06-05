@@ -30,11 +30,11 @@ import com.google.template.soy.internal.i18n.SoyBidiUtils;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.internal.InsertMsgsVisitor;
+import com.google.template.soy.passes.CombineConsecutiveRawTextNodesVisitor;
 import com.google.template.soy.shared.internal.ApiCallScopeUtils;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
 import com.google.template.soy.shared.internal.MainEntryPointUtils;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.ApiCall;
-import com.google.template.soy.sharedpasses.opti.SimplifyVisitor;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateRegistry;
@@ -57,9 +57,6 @@ public class JsSrcMain {
   /** The scope object that manages the API call scope. */
   private final GuiceSimpleScope apiCallScope;
 
-  /** The instanceof of SimplifyVisitor to use. */
-  private final SimplifyVisitor simplifyVisitor;
-
   /** Provider for getting an instance of OptimizeBidiCodeGenVisitor. */
   private final Provider<OptimizeBidiCodeGenVisitor> optimizeBidiCodeGenVisitorProvider;
 
@@ -68,7 +65,6 @@ public class JsSrcMain {
 
   /**
    * @param apiCallScope The scope object that manages the API call scope.
-   * @param simplifyVisitor The instance of SimplifyVisitor to use.
    * @param optimizeBidiCodeGenVisitorProvider Provider for getting an instance of
    *     OptimizeBidiCodeGenVisitor.
    * @param genJsCodeVisitorProvider Provider for getting an instance of GenJsCodeVisitor.
@@ -76,11 +72,9 @@ public class JsSrcMain {
   @Inject
   public JsSrcMain(
       @ApiCall GuiceSimpleScope apiCallScope,
-      SimplifyVisitor simplifyVisitor,
       Provider<OptimizeBidiCodeGenVisitor> optimizeBidiCodeGenVisitorProvider,
       Provider<GenJsCodeVisitor> genJsCodeVisitorProvider) {
     this.apiCallScope = apiCallScope;
-    this.simplifyVisitor = simplifyVisitor;
     this.optimizeBidiCodeGenVisitorProvider = optimizeBidiCodeGenVisitorProvider;
     this.genJsCodeVisitorProvider = genJsCodeVisitorProvider;
   }
@@ -94,7 +88,6 @@ public class JsSrcMain {
    * @param jsSrcOptions The compilation options relevant to this backend.
    * @param msgBundle The bundle of translated messages, or null to use the messages from the Soy
    *     source.
-   * @param isOptimizerEnabled Whether we want to run optimizer in this backend.
    * @param errorReporter The Soy error reporter that collects errors during code generation.
    * @return A list of strings where each string represents the JS source code that belongs in one
    *     JS file. The generated JS files correspond one-to-one to the original Soy source files.
@@ -104,7 +97,6 @@ public class JsSrcMain {
       TemplateRegistry templateRegistry,
       SoyJsSrcOptions jsSrcOptions,
       @Nullable SoyMsgBundle msgBundle,
-      boolean isOptimizerEnabled,
       ErrorReporter errorReporter) {
 
     // Make sure that we don't try to use goog.i18n.bidi when we aren't supposed to use Closure.
@@ -134,13 +126,11 @@ public class JsSrcMain {
             bidiGlobalDir == null || bidiGlobalDir.isStaticValue(),
             "If using bidiGlobalIsRtlCodeSnippet, must also enable shouldGenerateGoogMsgDefs.");
         new InsertMsgsVisitor(msgBundle, errorReporter).exec(soyTree);
+        new CombineConsecutiveRawTextNodesVisitor().exec(soyTree);
       }
 
       // Do the code generation.
       optimizeBidiCodeGenVisitorProvider.get().exec(soyTree);
-      if (isOptimizerEnabled) {
-        simplifyVisitor.simplify(soyTree, templateRegistry);
-      }
       return genJsCodeVisitorProvider.get().gen(soyTree, templateRegistry, errorReporter);
     }
   }
@@ -158,7 +148,6 @@ public class JsSrcMain {
    * @param outputPathFormat The format string defining how to build the output file path
    *     corresponding to an input file path.
    * @param inputPathsPrefix The input path prefix, or empty string if none.
-   * @param isOptimizerEnabled Whether we want to run optimizer in this backend.
    * @param errorReporter The Soy error reporter that collects errors during code generation.
    * @throws SoySyntaxException If a syntax error is found.
    * @throws IOException If there is an error in opening/writing an output JS file.
@@ -171,13 +160,11 @@ public class JsSrcMain {
       @Nullable SoyMsgBundle msgBundle,
       String outputPathFormat,
       String inputPathsPrefix,
-      boolean isOptimizerEnabled,
       ErrorReporter errorReporter)
       throws IOException {
 
     List<String> jsFileContents =
-        genJsSrc(
-            soyTree, templateRegistry, jsSrcOptions, msgBundle, isOptimizerEnabled, errorReporter);
+        genJsSrc(soyTree, templateRegistry, jsSrcOptions, msgBundle, errorReporter);
 
     ImmutableList<SoyFileNode> srcsToCompile =
         ImmutableList.copyOf(

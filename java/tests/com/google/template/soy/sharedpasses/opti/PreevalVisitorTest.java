@@ -21,10 +21,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
 import com.google.template.soy.SoyFileSetParserBuilder;
-import com.google.template.soy.SoyModule;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueProvider;
@@ -105,8 +102,6 @@ public final class PreevalVisitorTest {
   // -----------------------------------------------------------------------------------------------
   // Helpers.
 
-  private static final Injector INJECTOR = Guice.createInjector(new SoyModule());
-
   /**
    * Evaluates the given expression and returns the result.
    *
@@ -132,7 +127,8 @@ public final class PreevalVisitorTest {
             SoyValueConverter.UNCUSTOMIZED_INSTANCE.newDict("boo", 8),
             ImmutableMap.<String, SoyValueProvider>of());
 
-    PreevalVisitor preevalVisitor = INJECTOR.getInstance(PreevalVisitorFactory.class).create(env);
-    return preevalVisitor.exec(expr);
+    return new PreevalVisitorFactory(SoyValueConverter.UNCUSTOMIZED_INSTANCE)
+        .create(env)
+        .exec(expr);
   }
 }

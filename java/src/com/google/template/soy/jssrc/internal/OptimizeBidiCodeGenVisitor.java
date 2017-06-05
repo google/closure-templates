@@ -87,7 +87,7 @@ public class OptimizeBidiCodeGenVisitor extends AbstractSoyNodeVisitor<Void> {
 
     // If we made any replacements, we may have created consecutive RawTextNodes, so clean them up.
     if (madeReplacement) {
-      new CombineConsecutiveRawTextNodesVisitor(node.getNodeIdGenerator()).exec(node);
+      new CombineConsecutiveRawTextNodesVisitor().exec(node);
     }
   }
 

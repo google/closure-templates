@@ -52,7 +52,8 @@ import java.util.Map;
  */
 public final class SoyExprForPySubject extends Subject<SoyExprForPySubject, String> {
 
-  private final SoyGeneralOptions opts = new SoyGeneralOptions();
+  // disable optimizer for backwards compatibility
+  private final SoyGeneralOptions opts = new SoyGeneralOptions().disableOptimizer();
 
   private final LocalVariableStack localVarExprs;
 

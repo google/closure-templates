@@ -24,7 +24,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.io.ByteSink;
 import com.google.common.io.CharSource;
 import com.google.inject.Guice;
@@ -39,6 +38,7 @@ import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.base.internal.TriState;
 import com.google.template.soy.base.internal.VolatileSoyFileSupplier;
 import com.google.template.soy.basetree.SyntaxVersion;
+import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.error.ErrorReporterImpl;
 import com.google.template.soy.error.PrettyErrorFactory;
 import com.google.template.soy.error.SnippetFormatter;
@@ -59,10 +59,6 @@ import com.google.template.soy.msgs.internal.ExtractMsgsVisitor;
 import com.google.template.soy.msgs.restricted.SoyMsg;
 import com.google.template.soy.msgs.restricted.SoyMsgBundleImpl;
 import com.google.template.soy.parseinfo.passes.GenerateParseInfoVisitor;
-import com.google.template.soy.parsepasses.contextautoesc.ContentSecurityPolicyPass;
-import com.google.template.soy.parsepasses.contextautoesc.ContextualAutoescaper;
-import com.google.template.soy.parsepasses.contextautoesc.DerivedTemplateUtils;
-import com.google.template.soy.passes.ChangeCallsToPassAllDataVisitor;
 import com.google.template.soy.passes.ClearSoyDocStringsVisitor;
 import com.google.template.soy.passes.FindIjParamsVisitor;
 import com.google.template.soy.passes.FindIjParamsVisitor.IjParamsInfo;
@@ -76,11 +72,9 @@ import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.shared.internal.MainEntryPointUtils;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
-import com.google.template.soy.sharedpasses.opti.SimplifyVisitor;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
-import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.Visibility;
@@ -96,7 +90,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import javax.annotation.CheckReturnValue;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -128,8 +121,7 @@ public final class SoyFileSet {
     private final Provider<JsSrcMain> jsSrcMainProvider;
     private final Provider<IncrementalDomSrcMain> incrementalDomSrcMainProvider;
     private final Provider<PySrcMain> pySrcMainProvider;
-    private final ContextualAutoescaper contextualAutoescaper;
-    private final SimplifyVisitor simplifyVisitor;
+    private final SoyValueConverter valueConverter;
     private final SoyTypeRegistry typeRegistry;
     private final ImmutableMap<String, ? extends SoyFunction> soyFunctionMap;
     private final ImmutableMap<String, ? extends SoyPrintDirective> printDirectives;
@@ -142,8 +134,7 @@ public final class SoyFileSet {
         Provider<JsSrcMain> jsSrcMainProvider,
         Provider<IncrementalDomSrcMain> incrementalDomSrcMainProvider,
         Provider<PySrcMain> pySrcMainProvider,
-        ContextualAutoescaper contextualAutoescaper,
-        SimplifyVisitor simplifyVisitor,
+        SoyValueConverter valueConverter,
         SoyTypeRegistry typeRegistry,
         ImmutableMap<String, ? extends SoyFunction> soyFunctionMap,
         ImmutableMap<String, ? extends SoyPrintDirective> printDirectives,
@@ -153,8 +144,7 @@ public final class SoyFileSet {
       this.jsSrcMainProvider = jsSrcMainProvider;
       this.incrementalDomSrcMainProvider = incrementalDomSrcMainProvider;
       this.pySrcMainProvider = pySrcMainProvider;
-      this.contextualAutoescaper = contextualAutoescaper;
-      this.simplifyVisitor = simplifyVisitor;
+      this.valueConverter = valueConverter;
       this.typeRegistry = typeRegistry;
       this.soyFunctionMap = soyFunctionMap;
       this.printDirectives = printDirectives;
@@ -243,8 +233,7 @@ public final class SoyFileSet {
           coreDependencies.jsSrcMainProvider,
           coreDependencies.incrementalDomSrcMainProvider,
           coreDependencies.pySrcMainProvider,
-          coreDependencies.contextualAutoescaper,
-          coreDependencies.simplifyVisitor,
+          coreDependencies.valueConverter,
           localTypeRegistry == null ? coreDependencies.typeRegistry : localTypeRegistry,
           coreDependencies.soyFunctionMap,
           coreDependencies.printDirectives,
@@ -597,37 +586,20 @@ public final class SoyFileSet {
   /** Provider for getting an instance of SoyMsgBundleHandler. */
   private final Provider<SoyMsgBundleHandler> msgBundleHandlerProvider;
 
-  /** Factory for creating an instance of BaseTofu. */
   private final BaseTofuFactory baseTofuFactory;
-
-  /** Factory for creating an instance of BaseTofu. */
   private final SoySauceImpl.Factory soyTemplatesFactory;
-
-  /** Provider for getting an instance of JsSrcMain. */
   private final Provider<JsSrcMain> jsSrcMainProvider;
-
-  /** Provider for getting an instance of IncrementalDomSrcMain. */
   private final Provider<IncrementalDomSrcMain> incrementalDomSrcMainProvider;
-
-  /** Provider for getting an instance of PySrcMain. */
   private final Provider<PySrcMain> pySrcMainProvider;
 
-  /** The instance of ContextualAutoescaper to use. */
-  private final ContextualAutoescaper contextualAutoescaper;
+  private final SoyValueConverter valueConverter;
 
-  /** The instance of SimplifyVisitor to use. */
-  private final SimplifyVisitor simplifyVisitor;
-
-  /** The type registry for resolving type names. */
   private final SoyTypeRegistry typeRegistry;
-
-  /** The suppliers for the input Soy files. */
   private final ImmutableMap<String, SoyFileSupplier> soyFileSuppliers;
 
   /** Optional soy tree cache for faster recompile times. */
-  private final SoyAstCache cache;
+  @Nullable private final SoyAstCache cache;
 
-  /** The general compiler options. */
   private final SoyGeneralOptions generalOptions;
 
   private final ImmutableList<CharSource> conformanceConfigs;
@@ -646,8 +618,6 @@ public final class SoyFileSet {
    * @param jsSrcMainProvider Provider for getting an instance of JsSrcMain.
    * @param incrementalDomSrcMainProvider Provider for getting an instance of IncrementalDomSrcMain.
    * @param pySrcMainProvider Provider for getting an instance of PySrcMain.
-   * @param contextualAutoescaper The instance of ContextualAutoescaper to use.
-   * @param simplifyVisitor The instance of SimplifyVisitor to use.
    * @param typeRegistry The type registry to resolve parameter type names.
    * @param soyFileSuppliers The suppliers for the input Soy files.
    * @param generalOptions The general compiler options.
@@ -658,8 +628,7 @@ public final class SoyFileSet {
       Provider<JsSrcMain> jsSrcMainProvider,
       Provider<IncrementalDomSrcMain> incrementalDomSrcMainProvider,
       Provider<PySrcMain> pySrcMainProvider,
-      ContextualAutoescaper contextualAutoescaper,
-      SimplifyVisitor simplifyVisitor,
+      SoyValueConverter valueConverter,
       SoyTypeRegistry typeRegistry,
       ImmutableMap<String, ? extends SoyFunction> soyFunctionMap,
       ImmutableMap<String, ? extends SoyPrintDirective> printDirectives,
@@ -674,8 +643,7 @@ public final class SoyFileSet {
     this.jsSrcMainProvider = jsSrcMainProvider;
     this.incrementalDomSrcMainProvider = incrementalDomSrcMainProvider;
     this.pySrcMainProvider = pySrcMainProvider;
-    this.contextualAutoescaper = contextualAutoescaper;
-    this.simplifyVisitor = simplifyVisitor;
+    this.valueConverter = valueConverter;
 
     Preconditions.checkArgument(
         !soyFileSuppliers.isEmpty(), "Must have non-zero number of input Soy files.");
@@ -718,19 +686,19 @@ public final class SoyFileSet {
     // TODO(lukes): see if we can enforce that globals are provided at compile time here. given that
     // types have to be, this should be possible.  Currently it is disabled for backwards
     // compatibility
-    ParseResult result =
-        parse(passManagerBuilder(SyntaxVersion.V2_0).allowUnknownGlobals().allowUnknownFunctions());
-    throwIfErrorsPresent();
-
-    SoyFileSetNode soyTree = result.fileSet();
-    TemplateRegistry registry = result.registry();
-    registry = autoescape(registry, soyTree);
     // N.B. we do not run the optimizer here for 2 reasons:
     // 1. it would just waste time, since we are not running code generation the optimization work
     //    doesn't help anything
     // 2. it potentially removes metadata from the tree by precalculating expressions. For example,
     //    trivial print nodes are evaluated, which can remove globals from the tree, but the
     //    generator requires data about globals to generate accurate proto descriptors.
+    generalOptions.disableOptimizer();
+    ParseResult result =
+        parse(passManagerBuilder(SyntaxVersion.V2_0).allowUnknownGlobals().allowUnknownFunctions());
+    throwIfErrorsPresent();
+
+    SoyFileSetNode soyTree = result.fileSet();
+    TemplateRegistry registry = result.registry();
 
     // Do renaming of package-relative class names.
     ImmutableMap<String, String> parseInfo =
@@ -930,9 +898,6 @@ public final class SoyFileSet {
 
     SoyFileSetNode soyTree = result.fileSet();
     TemplateRegistry registry = result.registry();
-    registry = autoescape(registry, soyTree);
-    optimize(registry, soyTree);
-
     // Clear the SoyDoc strings because they use unnecessary memory, unless we have a cache, in
     // which case it is pointless.
     if (cache == null) {
@@ -1007,9 +972,6 @@ public final class SoyFileSet {
     throwIfErrorsPresent();
     TemplateRegistry registry = parseResult.registry();
     SoyFileSetNode fileSet = parseResult.fileSet();
-    registry = autoescape(registry, fileSet);
-    optimize(registry, fileSet);
-    throwIfErrorsPresent();
     List<String> generatedSrcs =
         jsSrcMainProvider
             .get()
@@ -1018,7 +980,6 @@ public final class SoyFileSet {
                 registry,
                 jsSrcOptions,
                 msgBundle,
-                generalOptions.isOptimizerEnabled(),
                 errorReporter);
     throwIfErrorsPresent();
     return generatedSrcs;
@@ -1057,9 +1018,6 @@ public final class SoyFileSet {
 
     SoyFileSetNode soyTree = result.fileSet();
     TemplateRegistry registry = result.registry();
-    registry = autoescape(registry, soyTree);
-    optimize(registry, soyTree);
-    throwIfErrorsPresent();
     if (locales.isEmpty()) {
       // Not generating localized JS.
       jsSrcMainProvider
@@ -1072,7 +1030,6 @@ public final class SoyFileSet {
               null,
               outputPathFormat,
               inputFilePathPrefix,
-              generalOptions.isOptimizerEnabled(),
               errorReporter);
 
     } else {
@@ -1106,7 +1063,6 @@ public final class SoyFileSet {
                 msgBundle,
                 outputPathFormat,
                 inputFilePathPrefix,
-                generalOptions.isOptimizerEnabled(),
                 errorReporter);
       }
     }
@@ -1132,7 +1088,6 @@ public final class SoyFileSet {
                 result.fileSet(),
                 result.registry(),
                 jsSrcOptions,
-                generalOptions.isOptimizerEnabled(),
                 errorReporter);
     throwIfErrorsPresent();
     return generatedSrcs;
@@ -1161,7 +1116,6 @@ public final class SoyFileSet {
             result.registry(),
             jsSrcOptions,
             outputPathFormat,
-            generalOptions.isOptimizerEnabled(),
             errorReporter);
 
     throwIfErrorsPresent();
@@ -1180,14 +1134,12 @@ public final class SoyFileSet {
     // incremental dom requires the html rewriting pass.  It is currently incompatible with the
     // other backends though because of issues with the autoescaper.  When that is fixed this will
     // be come the default behavior.
-    ParseResult result = parse(passManagerBuilder(SyntaxVersion.V2_0).enhableHtmlRewriting());
-    SoyFileSetNode soyTree = result.fileSet();
-
-    throwIfErrorsPresent();
-    new ChangeCallsToPassAllDataVisitor().exec(soyTree);
-    if (generalOptions.isOptimizerEnabled()) {
-      simplifyVisitor.simplify(soyTree, result.registry());
-    }
+    ParseResult result =
+        parse(
+            passManagerBuilder(SyntaxVersion.V2_0)
+                .enableHtmlRewriting()
+                .desugarHtmlNodes(false)
+                .setAutoescaperEnabled(false));
     throwIfErrorsPresent();
     return result;
   }
@@ -1211,11 +1163,7 @@ public final class SoyFileSet {
     ParseResult result = parse(SyntaxVersion.V2_0);
     throwIfErrorsPresent();
     SoyFileSetNode soyTree = result.fileSet();
-
     TemplateRegistry registry = result.registry();
-    registry = autoescape(registry, result.fileSet());
-    optimize(registry, soyTree);
-    throwIfErrorsPresent();
 
     pySrcMainProvider
         .get()
@@ -1225,7 +1173,6 @@ public final class SoyFileSet {
             pySrcOptions,
             outputPathFormat,
             inputFilePathPrefix,
-            generalOptions.isOptimizerEnabled(),
             errorReporter);
 
     throwIfErrorsPresent();
@@ -1243,6 +1190,8 @@ public final class SoyFileSet {
             .setGeneralOptions(generalOptions)
             .setDeclaredSyntaxVersion(generalOptions.getDeclaredSyntaxVersion(defaultVersion))
             .setSoyFunctionMap(soyFunctionMap)
+            .setSoyPrintDirectiveMap(printDirectives)
+            .setValueConverter(valueConverter)
             .setErrorReporter(errorReporter)
             .setConformanceConfigs(conformanceConfigs);
     return builder;
@@ -1250,75 +1199,6 @@ public final class SoyFileSet {
 
   private ParseResult parse(PassManager.Builder builder) {
     return new SoyFileSetParser(cache, soyFileSuppliers, builder.build(), errorReporter).parse();
-  }
-
-  // TODO(gboyer): There are several fields on this class that end up saving around some state, and
-  // thus are not safe to be used by multiple threads at once. Here, we add synchronized as a
-  // stop-gap. However, given that most users of SoyFileSet use it once and throw it away, that
-  // might be a better precondition.
-  /**
-   * Runs the autoescaper and conformance passes on the given Soy tree.
-   *
-   * @param soyTree The Soy tree to run middleend passes on.
-   * @return A new TemplateRegistry. The contextual autoescaper occasionally adds new templates and
-   *     so the TemplateRegistry needs to be recreated.
-   */
-  @CheckReturnValue
-  private synchronized TemplateRegistry autoescape(
-      TemplateRegistry registry, SoyFileSetNode soyTree) {
-
-    // Run contextual escaping after CSS and substitutions have been done.
-    doContextualEscaping(soyTree, registry);
-    // Further passes that rely on sliced raw text nodes, such as conformance and CSP, can't
-    // proceed if contextual escaping failed.
-    throwIfErrorsPresent();
-
-    // contextual autoescaping may actually add new templates to the tree so we need to reconstruct
-    // the registry
-    registry = new TemplateRegistry(soyTree, errorReporter);
-    // If stricthtml is enabled, then nonces have already been injected.
-    if (!generalOptions.getExperimentalFeatures().contains("stricthtml")) {
-      // Add print directives that mark inline-scripts as safe to run.
-      ContentSecurityPolicyPass.blessAuthorSpecifiedScripts(
-          contextualAutoescaper.getSlicedRawTextNodes());
-    }
-
-    return registry;
-  }
-
-  private void optimize(TemplateRegistry registry, SoyFileSetNode soyTree) {
-    // Attempt to simplify the tree.
-    new ChangeCallsToPassAllDataVisitor().exec(soyTree);
-    if (generalOptions.isOptimizerEnabled()) {
-      simplifyVisitor.simplify(soyTree, registry);
-    }
-  }
-
-  private void doContextualEscaping(SoyFileSetNode soyTree, TemplateRegistry registry) {
-    List<TemplateNode> extraTemplates =
-        contextualAutoescaper.rewrite(soyTree, registry, errorReporter);
-    // TODO: Run the redundant template remover here and rename after CL 16642341 is in.
-    if (!extraTemplates.isEmpty()) {
-      // TODO: pull out somewhere else.  Ideally do the merge as part of the redundant template
-      // removal.
-      Map<String, SoyFileNode> containingFile = Maps.newHashMap();
-      for (SoyFileNode fileNode : soyTree.getChildren()) {
-        for (TemplateNode templateNode : fileNode.getChildren()) {
-          String name =
-              templateNode instanceof TemplateDelegateNode
-                  ? ((TemplateDelegateNode) templateNode).getDelTemplateName()
-                  : templateNode.getTemplateName();
-          containingFile.put(DerivedTemplateUtils.getBaseName(name), fileNode);
-        }
-      }
-      for (TemplateNode extraTemplate : extraTemplates) {
-        String name =
-            extraTemplate instanceof TemplateDelegateNode
-                ? ((TemplateDelegateNode) extraTemplate).getDelTemplateName()
-                : extraTemplate.getTemplateName();
-        containingFile.get(DerivedTemplateUtils.getBaseName(name)).addChild(extraTemplate);
-      }
-    }
   }
 
   /**

@@ -18,7 +18,6 @@ package com.google.template.soy.passes;
 
 import static com.google.template.soy.parsepasses.contextautoesc.ContentSecurityPolicyPass.CSP_NONCE_VARIABLE_NAME;
 
-import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
@@ -100,9 +99,8 @@ final class ContentSecurityPolicyNonceInjectionPass extends CompilerFilePass {
   private final boolean insertionEnabled;
   private final ErrorReporter errorReporter;
 
-  ContentSecurityPolicyNonceInjectionPass(
-      ImmutableList<String> experimentalOptions, ErrorReporter errorReporter) {
-    this.insertionEnabled = experimentalOptions.contains("stricthtml");
+  ContentSecurityPolicyNonceInjectionPass(boolean insertionEnabled, ErrorReporter errorReporter) {
+    this.insertionEnabled = insertionEnabled;
     this.errorReporter = errorReporter;
   }
 

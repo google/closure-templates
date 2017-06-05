@@ -43,7 +43,6 @@ import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.sharedpasses.render.Environment;
 import com.google.template.soy.sharedpasses.render.RenderException;
-import javax.inject.Inject;
 
 /**
  * Visitor for simplifying expressions based on constant values known at compile time.
@@ -56,7 +55,6 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
   /** The PreevalVisitor for this instance (can reuse). */
   private final PreevalVisitor preevalVisitor;
 
-  @Inject
   SimplifyExprVisitor(PreevalVisitorFactory preevalVisitorFactory) {
     this.preevalVisitor = preevalVisitorFactory.create(Environment.prerenderingEnvironment());
   }

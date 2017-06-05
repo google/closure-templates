@@ -16,7 +16,6 @@
 
 package com.google.template.soy.jssrc.internal;
 
-import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.truth.Truth.assertAbout;
 import static com.google.common.truth.Truth.assertThat;
 
@@ -24,9 +23,7 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.truth.FailureStrategy;
-import com.google.common.truth.IterableSubject;
 import com.google.common.truth.StringSubject;
 import com.google.common.truth.Subject;
 import com.google.common.truth.SubjectFactory;
@@ -60,8 +57,6 @@ import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 
@@ -87,7 +82,7 @@ abstract class JsSrcSubject<T extends Subject<T, String>> extends Subject<T, Str
         }
       };
 
-  private SoyGeneralOptions generalOptions = new SoyGeneralOptions();
+  private SoyGeneralOptions generalOptions = new SoyGeneralOptions().disableOptimizer();
   SoyJsSrcOptions jsSrcOptions = new SoyJsSrcOptions();
   private SoyTypeRegistry typeRegistry = new SoyTypeRegistry();
   ErrorReporter errorReporter = ExplodingErrorReporter.get();
@@ -166,16 +161,6 @@ abstract class JsSrcSubject<T extends Subject<T, String>> extends Subject<T, Str
     return typedThis();
   }
 
-  T addSoyFunction(SoyFunction function) {
-    soyFunctions.add(checkNotNull(function));
-    return typedThis();
-  }
-
-  T withGeneralOptions(SoyGeneralOptions generalOptions) {
-    this.generalOptions = generalOptions;
-    return typedThis();
-  }
-
   T withTypeRegistry(SoyTypeRegistry typeRegistry) {
     this.typeRegistry = typeRegistry;
     return typedThis();
@@ -246,11 +231,6 @@ abstract class JsSrcSubject<T extends Subject<T, String>> extends Subject<T, Str
       }
     }
 
-    StringSubject generatesCodeThat() {
-      generateCode();
-      return new StringSubject(badCodeStrategy(failureStrategy, "soy file"), file);
-    }
-
     StringSubject generatesTemplateThat() {
       generateCode();
       if (fileNode.numChildren() != 1) {
@@ -276,20 +256,6 @@ abstract class JsSrcSubject<T extends Subject<T, String>> extends Subject<T, Str
         templateBody = file.substring(startOfFunction, endOfFunction);
       }
       return new StringSubject(badCodeStrategy(failureStrategy, "template body"), templateBody);
-    }
-
-    IterableSubject generatesRequiresThat() {
-      generateCode();
-      Pattern googRequire = Pattern.compile("goog.require\\('(.*)'\\);");
-      ImmutableSet.Builder<String> requires = ImmutableSet.builder();
-      Matcher matcher = googRequire.matcher(file);
-      while (matcher.find()) {
-        requires.add(matcher.group(1));
-      }
-      // have to make an anonymous subclass to construct it since the constructor is protected,
-      // lame.
-      return new IterableSubject(
-          badCodeStrategy(failureStrategy, "goog requires"), requires.build()) {};
     }
 
     private FailureStrategy badCodeStrategy(final FailureStrategy delegate, final String type) {

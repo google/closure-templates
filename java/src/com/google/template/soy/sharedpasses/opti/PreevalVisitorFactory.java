@@ -24,8 +24,6 @@ import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.sharedpasses.render.Environment;
 import com.google.template.soy.sharedpasses.render.EvalVisitor.EvalVisitorFactory;
 import javax.annotation.Nullable;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 
 /**
  * A factory for creating PreevalVisitor objects.
@@ -33,14 +31,12 @@ import javax.inject.Singleton;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-@Singleton
-public final class PreevalVisitorFactory implements EvalVisitorFactory {
+final class PreevalVisitorFactory implements EvalVisitorFactory {
 
   /** Instance of SoyValueConverter to use. */
   private final SoyValueConverter valueConverter;
 
-  @Inject
-  public PreevalVisitorFactory(SoyValueConverter valueConverter) {
+  PreevalVisitorFactory(SoyValueConverter valueConverter) {
     this.valueConverter = valueConverter;
   }
 
