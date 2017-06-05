@@ -22,7 +22,6 @@ import static com.google.common.truth.Truth.assertThat;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.truth.FailureStrategy;
 import com.google.common.truth.StringSubject;
 import com.google.common.truth.Subject;
@@ -44,7 +43,6 @@ import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.CodeChunk.RequiresCollector;
-import com.google.template.soy.jssrc.dsl.CodeChunk.WithValue;
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
@@ -301,7 +299,6 @@ abstract class JsSrcSubject<T extends Subject<T, String>> extends Subject<T, Str
   /** For asserting on the contents of a single soy expression. */
   static final class ForExprs extends JsSrcSubject<ForExprs> {
     private CodeChunk.WithValue chunk;
-    private ImmutableMap<String, WithValue> initialLocalVarTranslations = ImmutableMap.of();
 
     private ForExprs(FailureStrategy fs, String templateThatContainsOneExpression) {
       super(fs, templateThatContainsOneExpression);
@@ -320,17 +317,10 @@ abstract class JsSrcSubject<T extends Subject<T, String>> extends Subject<T, Str
           new TranslateExprNodeVisitor(
                   jsSrcOptions,
                   TranslationContext.of(
-                      SoyToJsVariableMappings.startingWith(initialLocalVarTranslations),
-                      CodeChunk.Generator.create(nameGenerator),
-                      nameGenerator),
+                      SoyToJsVariableMappings.create(nameGenerator),
+                      CodeChunk.Generator.create(nameGenerator)),
                   errorReporter)
               .exec(exprNode);
-    }
-
-    JsSrcSubject.ForExprs withInitialLocalVarTranslations(
-        ImmutableMap<String, CodeChunk.WithValue> initialLocalVarTranslations) {
-      this.initialLocalVarTranslations = initialLocalVarTranslations;
-      return this;
     }
 
     @CanIgnoreReturnValue

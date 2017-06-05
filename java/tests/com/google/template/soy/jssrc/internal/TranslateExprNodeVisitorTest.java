@@ -20,15 +20,12 @@ import static com.google.template.soy.exprtree.Operator.CONDITIONAL;
 import static com.google.template.soy.exprtree.Operator.NULL_COALESCING;
 import static com.google.template.soy.exprtree.Operator.OR;
 import static com.google.template.soy.exprtree.Operator.PLUS;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.id;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.number;
 import static com.google.template.soy.jssrc.internal.JsSrcSubject.assertThatSoyExpr;
 import static com.google.template.soy.jssrc.internal.JsSrcSubject.assertThatSoyFile;
+import static com.google.template.soy.jssrc.internal.JsSrcSubject.assertThatTemplateBody;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
-import com.google.template.soy.jssrc.dsl.CodeChunk;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -39,15 +36,6 @@ import org.junit.runners.JUnit4;
  */
 @RunWith(JUnit4.class)
 public final class TranslateExprNodeVisitorTest {
-
-  // Let 'goo' simulate a local variable from a 'foreach' loop.
-  private static final ImmutableMap<String, CodeChunk.WithValue> LOCAL_VAR_TRANSLATIONS =
-      ImmutableMap.<String, CodeChunk.WithValue>builder()
-          .put("goo", id("gooData8"))
-          .put("goo__isFirst", id("gooIndex8").doubleEquals(number(0)))
-          .put("goo__isLast", id("gooIndex8").doubleEquals(id("gooListLen8").minus(number(1))))
-          .put("goo__index", id("gooIndex8"))
-          .build();
 
   @Test
   public void testStringLiteral() {
@@ -83,11 +71,10 @@ public final class TranslateExprNodeVisitorTest {
             "var $tmp = {'aaa': 123};", "$tmp[soy.$$checkMapKey(opt_data.boo)] = opt_data.foo;");
 
     assertThatSoyExpr("quoteKeysIfJs([$boo: $foo, $goo[0]: 123])")
-        .withInitialLocalVarTranslations(LOCAL_VAR_TRANSLATIONS)
         .generatesCode(
             "var $tmp = {};",
             "$tmp[soy.$$checkMapKey(opt_data.boo)] = opt_data.foo;",
-            "$tmp[soy.$$checkMapKey(gooData8[0])] = 123;");
+            "$tmp[soy.$$checkMapKey(opt_data.goo[0])] = 123;");
 
     assertThatSoyExpr("quoteKeysIfJs(['aaa': ['bbb': 'blah']])")
         .generatesCode("{'aaa': {bbb: 'blah'}}");
@@ -132,17 +119,12 @@ public final class TranslateExprNodeVisitorTest {
   public void testDataRef() {
     assertThatSoyExpr("$boo").generatesCode("opt_data.boo");
     assertThatSoyExpr("$boo.goo").generatesCode("opt_data.boo.goo");
-    assertThatSoyExpr("$goo")
-        .withInitialLocalVarTranslations(LOCAL_VAR_TRANSLATIONS)
-        .generatesCode("gooData8");
-    assertThatSoyExpr("$goo.boo")
-        .withInitialLocalVarTranslations(LOCAL_VAR_TRANSLATIONS)
-        .generatesCode("gooData8.boo");
+    assertThatSoyExpr("$goo").generatesCode("opt_data.goo");
+    assertThatSoyExpr("$goo.boo").generatesCode("opt_data.goo.boo");
     assertThatSoyExpr("$boo[0][1].foo[2]").generatesCode("opt_data.boo[0][1].foo[2]");
     assertThatSoyExpr("$boo[0][1]").generatesCode("opt_data.boo[0][1]");
     assertThatSoyExpr("$boo[$foo][$goo+1]")
-        .withInitialLocalVarTranslations(LOCAL_VAR_TRANSLATIONS)
-        .generatesCode("opt_data.boo[opt_data.foo][gooData8 + 1]");
+        .generatesCode("opt_data.boo[opt_data.foo][opt_data.goo + 1]");
     assertThatSoyExpr("$class").generatesCode("opt_data.class");
     assertThatSoyExpr("$boo.yield").generatesCode("opt_data.boo.yield");
 
@@ -150,8 +132,7 @@ public final class TranslateExprNodeVisitorTest {
         .generatesCode("opt_data.boo == null ? null : opt_data.boo.goo")
         .withPrecedence(CONDITIONAL);
     assertThatSoyExpr("$goo?.boo")
-        .withInitialLocalVarTranslations(LOCAL_VAR_TRANSLATIONS)
-        .generatesCode("gooData8 == null ? null : gooData8.boo")
+        .generatesCode("opt_data.goo == null ? null : opt_data.goo.boo")
         .withPrecedence(CONDITIONAL);
 
     // TODO(user): the gencode currently re-evaluates nested null-safe accesses,
@@ -212,8 +193,7 @@ public final class TranslateExprNodeVisitorTest {
   @Test
   public void testOperators() {
     assertThatSoyExpr("not $boo or true and $goo")
-        .withInitialLocalVarTranslations(LOCAL_VAR_TRANSLATIONS)
-        .generatesCode("!opt_data.boo || true && gooData8")
+        .generatesCode("!opt_data.boo || true && opt_data.goo")
         .withPrecedence(OR);
 
     assertThatSoyExpr("( (8-4) + (2-1) )").generatesCode("8 - 4 + (2 - 1)").withPrecedence(PLUS);
@@ -270,34 +250,28 @@ public final class TranslateExprNodeVisitorTest {
 
   @Test
   public void testForeachFunctions() {
-    assertThatSoyExpr("isFirst($goo) ? 1 : 0")
-        .withInitialLocalVarTranslations(LOCAL_VAR_TRANSLATIONS)
-        .generatesCode("gooIndex8 == 0 ? 1 : 0")
-        .withPrecedence(CONDITIONAL);
+    // These need to use full templates so that variables get initialized properly
+    assertThatTemplateBody("{foreach $foo in [null]}{isFirst($foo) ? 1 : 0}{/foreach}")
+        .generatesTemplateThat()
+        .contains("fooIndex == 0 ? 1 : 0");
 
-    assertThatSoyExpr("not isLast($goo) ? 1 : 0")
-        .withInitialLocalVarTranslations(LOCAL_VAR_TRANSLATIONS)
-        .generatesCode("!(gooIndex8 == gooListLen8 - 1) ? 1 : 0")
-        .withPrecedence(CONDITIONAL);
-
-    assertThatSoyExpr("index($goo) + 1")
-        .withInitialLocalVarTranslations(LOCAL_VAR_TRANSLATIONS)
-        .generatesCode("gooIndex8 + 1")
-        .withPrecedence(PLUS);
+    assertThatTemplateBody("{foreach $foo in [null]}{not isLast($foo) ? 1 : 0}{/foreach}")
+        .generatesTemplateThat()
+        .contains("!(fooIndex == fooListLen - 1) ? 1 : 0");
+    assertThatTemplateBody("{foreach $foo in [null]}{index($foo) + 1}{/foreach}")
+        .generatesTemplateThat()
+        .contains("fooIndex + 1");
   }
 
   @Test
   public void testQuoteKeysIfJs() {
-    assertThatSoyExpr("quoteKeysIfJs(['abc': $goo])")
-        .withInitialLocalVarTranslations(LOCAL_VAR_TRANSLATIONS)
-        .generatesCode("{'abc': gooData8}");
+    assertThatSoyExpr("quoteKeysIfJs(['abc': $goo])").generatesCode("{'abc': opt_data.goo}");
   }
 
   @Test
   public void testCheckNotNull() {
     assertThatSoyExpr("checkNotNull($goo) ? 1 : 0")
-        .withInitialLocalVarTranslations(LOCAL_VAR_TRANSLATIONS)
-        .generatesCode("soy.$$checkNotNull(gooData8) ? 1 : 0")
+        .generatesCode("soy.$$checkNotNull(opt_data.goo) ? 1 : 0")
         .withPrecedence(CONDITIONAL);
   }
 
@@ -305,9 +279,7 @@ public final class TranslateExprNodeVisitorTest {
   public void testCss() {
     assertThatSoyExpr("css('foo')").generatesCode("goog.getCssName('foo')");
     assertThatSoyExpr("css($base, 'bar')").generatesCode("goog.getCssName(opt_data.base, 'bar')");
-    assertThatSoyExpr("css($goo, 'bar')")
-        .withInitialLocalVarTranslations(LOCAL_VAR_TRANSLATIONS)
-        .generatesCode("goog.getCssName(gooData8, 'bar')");
+    assertThatSoyExpr("css($goo, 'bar')").generatesCode("goog.getCssName(opt_data.goo, 'bar')");
   }
 
   @Test

@@ -17,12 +17,9 @@
 package com.google.template.soy.jssrc.internal;
 
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.id;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.number;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.template.soy.SoyFileSetParserBuilder;
@@ -56,29 +53,6 @@ public final class GenJsExprsVisitorTest {
   private static final Joiner JOINER = Joiner.on('\n');
 
   private static final Injector INJECTOR = Guice.createInjector(new SoyModule());
-
-  // Let 'goo' simulate a local variable from a 'foreach' loop.
-  private static final ImmutableMap<String, CodeChunk.WithValue> LOCAL_VAR_TRANSLATIONS =
-      ImmutableMap.<String, CodeChunk.WithValue>builder()
-          .put(
-              "goo",
-              id("gooData8"))
-          .put(
-              "goo__isFirst",
-              id("gooIndex8")
-                  .doubleEquals(
-                      number(0)))
-          .put(
-              "goo__isLast",
-              id("gooIndex8")
-                  .doubleEquals(
-                      id("gooListLen8")
-                          .minus(
-                              number(1))))
-          .put(
-              "goo__index",
-              id("gooIndex8"))
-          .build();
 
   private GuiceSimpleScope.InScope inScope;
 
@@ -138,15 +112,10 @@ public final class GenJsExprsVisitorTest {
         "{$boo.foo}"),
         "opt_data.boo.foo");
 
-    assertGeneratedChunks(JOINER.join(
-        "{@param goo : ?}",
-        "{$goo.moo}"),
-        "gooData8.moo");
+    assertGeneratedChunks(JOINER.join("{@param goo : ?}", "{$goo.moo}"), "opt_data.goo.moo");
 
-    assertGeneratedChunks(JOINER.join(
-        "{@param goo : ?}",
-        "{isNonnull($goo)+1}"),
-        "(gooData8 != null) + 1");
+    assertGeneratedChunks(
+        JOINER.join("{@param goo : ?}", "{isNonnull($goo)+1}"), "(opt_data.goo != null) + 1");
   }
 
   @Test
@@ -206,7 +175,7 @@ public final class GenJsExprsVisitorTest {
             "var $tmp = null;",
             "if (opt_data.boo) {",
             "  $tmp = 'Blah';",
-            "} else if (!(gooData8 != null)) {",
+            "} else if (!(opt_data.goo != null)) {",
             "  $tmp = 'Bleh';",
             "} else {",
             "  $tmp = 'Bluh';",
@@ -231,7 +200,7 @@ public final class GenJsExprsVisitorTest {
             "var $tmp = null;",
             "if (opt_data.boo) {",
             "  $tmp = 'Blah';",
-            "} else if (!(gooData8 != null)) {",
+            "} else if (!(opt_data.goo != null)) {",
             "  $tmp = 'Bleh';",
             "} else {",
             "  $tmp = '';",
@@ -304,7 +273,8 @@ public final class GenJsExprsVisitorTest {
             "  {param goo}{lb}{isNonnull($goo)}{rb} is {$goo.moo}{/param}",
             "{/call}");
     expectedJsExprText =
-        "some.func({goo: '{' + (gooData8 != null) + '} is ' + gooData8.moo}, null, opt_ijData)";
+        "some.func({goo: '{' + (opt_data.goo != null) + '} is ' + opt_data.goo.moo}, null,"
+            + " opt_ijData)";
     assertGeneratedChunks(soyNodeCode, expectedJsExprText);
   }
 
@@ -353,9 +323,8 @@ public final class GenJsExprsVisitorTest {
             .getInstance(GenJsExprsVisitorFactory.class)
             .create(
                 TranslationContext.of(
-                    SoyToJsVariableMappings.startingWith(LOCAL_VAR_TRANSLATIONS),
-                    CodeChunk.Generator.create(nameGenerator),
-                    nameGenerator),
+                    SoyToJsVariableMappings.create(nameGenerator),
+                    CodeChunk.Generator.create(nameGenerator)),
                 AliasUtils.IDENTITY_ALIASES,
                 boom);
     return visitor.exec(node);

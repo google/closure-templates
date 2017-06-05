@@ -20,7 +20,9 @@ import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.primitive.UnknownType;
 
 /**
- * An injected parameter.
+ * An {@code $ij} parameter.
+ *
+ * <p>NOTE: {@code @inject} parameters are represented as {@link TemplateParam}s
  *
  */
 public final class InjectedParam extends AbstractVarDefn {

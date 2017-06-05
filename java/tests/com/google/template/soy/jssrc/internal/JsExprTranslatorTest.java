@@ -75,9 +75,8 @@ public final class JsExprTranslatorTest {
                   .translateToCodeChunk(
                       expr,
                       TranslationContext.of(
-                          SoyToJsVariableMappings.forNewTemplate(),
-                          CodeChunk.Generator.create(nameGenerator),
-                          nameGenerator),
+                          SoyToJsVariableMappings.create(nameGenerator),
+                          CodeChunk.Generator.create(nameGenerator)),
                       ExplodingErrorReporter.get())
                   .getCode())
           .isEqualTo("3 * (userFn(5));");
@@ -90,9 +89,8 @@ public final class JsExprTranslatorTest {
                   .translateToCodeChunk(
                       expr,
                       TranslationContext.of(
-                          SoyToJsVariableMappings.forNewTemplate(),
-                          CodeChunk.Generator.create(nameGenerator),
-                          nameGenerator),
+                          SoyToJsVariableMappings.create(nameGenerator),
+                          CodeChunk.Generator.create(nameGenerator)),
                       ExplodingErrorReporter.get())
                   .getCode())
           .isEqualTo("3 * (Math.floor(Math.random() * 4));");

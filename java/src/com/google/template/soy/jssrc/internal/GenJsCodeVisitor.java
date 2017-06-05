@@ -64,6 +64,7 @@ import com.google.template.soy.jssrc.dsl.ConditionalBuilder;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
 import com.google.template.soy.jssrc.dsl.SwitchBuilder;
 import com.google.template.soy.jssrc.internal.GenJsExprsVisitor.GenJsExprsVisitorFactory;
+import com.google.template.soy.jssrc.internal.SoyToJsVariableMappings.VarKey;
 import com.google.template.soy.parsepasses.contextautoesc.ContentSecurityPolicyPass;
 import com.google.template.soy.passes.FindIndirectParamsVisitor;
 import com.google.template.soy.passes.FindIndirectParamsVisitor.IndirectParamsInfo;
@@ -707,13 +708,28 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       alias = templateAliases.get(templateName);
     }
 
-    // TODO(lukes): reserve all the namespace prefixes that are in scope
-    // TODO(lukes): use this for all local variable declarations
+    // TODO(b/35794086): use this for all local variable declarations
     UniqueNameGenerator nameGenerator = JsSrcNameGenerators.forLocalVariables();
+    // TODO(b/35203585): reserve all the namespace prefixes that are in scope.  This may require
+    // changing
+    // how names are assigned to be lazy so we can collect namespaces first.
+    // for now claim some common namespaces to ensure that any locals using these names will
+    // get mangled
+    nameGenerator.claimName("proto");
+    nameGenerator.claimName("soy");
+    nameGenerator.claimName("soydata");
+    nameGenerator.claimName("goog");
+    nameGenerator.claimName("asserts");
+
+    // TODO(lukes): these could easily be mangled, but for now just claim them which should also
+    // be fine.
+    nameGenerator.claimName("opt_data");
+    nameGenerator.claimName("opt_ijData");
+    nameGenerator.claimName("opt_ijData_deprecated");
+
     CodeChunk.Generator codeGenerator = CodeChunk.Generator.create(nameGenerator);
     templateTranslationContext =
-        TranslationContext.of(
-            SoyToJsVariableMappings.forNewTemplate(), codeGenerator, nameGenerator);
+        TranslationContext.of(SoyToJsVariableMappings.create(nameGenerator), codeGenerator);
     genJsExprsVisitor =
         genJsExprsVisitorFactory.create(templateTranslationContext, templateAliases, errorReporter);
     assistantForMsgs = null;
@@ -867,10 +883,15 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       }
     } else {
       // Case 2: Normal case.
+      CodeChunk.WithValue varName =
+          id(
+              templateTranslationContext
+                  .variableMappings()
+                  .createName(VarKey.createOutputVar(node)));
 
-      jsCodeBuilder.pushOutputVar("output");
+      jsCodeBuilder.pushOutputVar(varName);
       visitChildren(node);
-      templateBody = id("output");
+      templateBody = varName;
       jsCodeBuilder.popOutputVar();
     }
 
@@ -927,20 +948,14 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    */
   @Override protected void visitLetValueNode(LetValueNode node) {
 
-    String generatedVarName = node.getUniqueVarName();
+    String generatedVarName =
+        templateTranslationContext.variableMappings().createName(VarKey.createLocalVar(node));
 
     // Generate code to define the local var.
     CodeChunk.WithValue value =
         jsExprTranslator.translateToCodeChunk(
             node.getExpr(), templateTranslationContext, errorReporter);
     jsCodeBuilder.append(declare(generatedVarName, value));
-
-    // Add a mapping for generating future references to this local var.
-    templateTranslationContext
-        .soyToJsVariableMappings()
-        .put(
-            node.getVarName(),
-            id(generatedVarName));
   }
 
   /**
@@ -958,18 +973,18 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   @Override protected void visitLetContentNode(LetContentNode node) {
     // Optimization: {msg} nodes emit statements and result in a JsExpr with a single variable.  Use
     // that variable (typically the MSG_* from getMsg) as-is instead of wrapping a new var around it
+    VarKey varKey = VarKey.createLocalVar(node);
     if (node.getChildren().size() == 1 && node.getChild(0) instanceof MsgFallbackGroupNode) {
       String msgVar =
           getAssistantForMsgs().generateMsgGroupVariable((MsgFallbackGroupNode) node.getChild(0));
-      templateTranslationContext.soyToJsVariableMappings().put(node.getVarName(), id(msgVar));
+      templateTranslationContext.variableMappings().registerMapping(varKey, id(msgVar));
       return;
     }
 
-    String generatedVarName = node.getUniqueVarName();
-    CodeChunk.WithValue generatedVar = id(generatedVarName);
-
+    String generatedVarName = templateTranslationContext.variableMappings().createName(varKey);
     // Generate code to define the local var.
-    jsCodeBuilder.pushOutputVar(generatedVarName);
+    CodeChunk.WithValue generatedVar = id(generatedVarName);
+    jsCodeBuilder.pushOutputVar(generatedVar);
 
     visitChildren(node);
 
@@ -989,8 +1004,6 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
                   .call(generatedVar)));
     }
 
-    // Add a mapping for generating future references to this local var.
-    templateTranslationContext.soyToJsVariableMappings().put(node.getVarName(), generatedVar);
   }
 
   /**
@@ -1157,14 +1170,12 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   protected void visitForeachNode(ForeachNode node) {
 
     boolean hasIfempty = (node.numChildren() == 2);
-
+    SoyToJsVariableMappings mappings = templateTranslationContext.variableMappings();
     // Build some local variable names.
     ForeachNonemptyNode nonEmptyNode = (ForeachNonemptyNode) node.getChild(0);
-    String varPrefix = nonEmptyNode.getVarName() + node.getId();
 
-    // TODO(user): A more consistent pattern for local variable management.
-    String listName = varPrefix + "List";
-    String limitName = varPrefix + "ListLen";
+    String listName = mappings.createName(VarKey.createListVar(nonEmptyNode));
+    String limitName = mappings.createName(VarKey.createListLenVar(nonEmptyNode));
 
     // Define list var and list-len var.
     CodeChunk.WithValue dataRef =
@@ -1211,30 +1222,18 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    */
   @Override
   protected void visitForeachNonemptyNode(ForeachNonemptyNode node) {
-
-    // Build some local variable names.
-    String varName = node.getVarName();
-    String varPrefix = varName + node.getForeachNodeId();
+    SoyToJsVariableMappings mappings = templateTranslationContext.variableMappings();
 
     // TODO(user): A more consistent pattern for local variable management.
-    String listName = varPrefix + "List";
-    String loopIndexName = varPrefix + "Index";
-    String dataName = varPrefix + "Data";
-    String limitName = varPrefix + "ListLen";
+    CodeChunk.WithValue listName = mappings.getIdentifier(VarKey.createListVar(node));
+    CodeChunk.WithValue limit = mappings.getIdentifier(VarKey.createListLenVar(node));
+    String loopIndexName = mappings.createName(VarKey.createIndexVar(node));
+    String dataName = mappings.createName(VarKey.createLocalVar(node));
 
     CodeChunk.WithValue loopIndex = id(loopIndexName);
-    CodeChunk.WithValue limit = id(limitName);
-
-    // Populate the local var translations with the translations from this node.
-    templateTranslationContext
-        .soyToJsVariableMappings()
-        .put(varName, id(dataName))
-        .put(varName + "__isFirst", loopIndex.doubleEquals(number(0)))
-        .put(varName + "__isLast", loopIndex.doubleEquals(limit.minus(number(1))))
-        .put(varName + "__index", loopIndex);
 
     // Generate the loop body.
-    CodeChunk data = declare(dataName, id(listName).bracketAccess(loopIndex));
+    CodeChunk data = declare(dataName, listName.bracketAccess(loopIndex));
     CodeChunk foreachBody = visitChildrenReturningCodeChunk(node);
     CodeChunk body = data.concat(foreachBody);
 
@@ -1266,9 +1265,8 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    */
   @Override
   protected void visitForNode(ForNode node) {
-
-    String varName = node.getVarName();
-    String localVar = varName + node.getId();
+    SoyToJsVariableMappings varMappings = templateTranslationContext.variableMappings();
+    String localVar = varMappings.createName(VarKey.createLocalVar(node));
 
     // Get CodeChunks for the initial/limit/increment values.
     RangeArgs range = node.getRangeArgs();
@@ -1286,14 +1284,13 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     // they are not calculated multiple times.
     // No need to do so for initial, since it is only executed once.
     if (!(range.limit().getRoot() instanceof IntegerNode)) {
-      limit = declare(localVar + "Limit", limit).ref();
+      String limitVar = varMappings.createName(VarKey.createLimitVar(node));
+      limit = declare(limitVar, limit).ref();
     }
     if (!(range.increment().getRoot() instanceof IntegerNode)) {
-      increment = declare(localVar + "Increment", increment).ref();
+      String incrementVar = varMappings.createName(VarKey.createIncrementVar(node));
+      increment = declare(incrementVar, increment).ref();
     }
-
-    // Populate Soy to JS var mappings with this for node's local variable.
-    templateTranslationContext.soyToJsVariableMappings().put(varName, id(localVar));
 
     // Generate the CodeChunk for the loop body.
     CodeChunk body = visitChildrenReturningCodeChunk(node);
@@ -1351,7 +1348,9 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
           "Should only define 'param<n>' when not computable as JS expressions.");
     }
 
-    jsCodeBuilder.pushOutputVar("param" + node.getId());
+    CodeChunk.WithValue id =
+        id(templateTranslationContext.variableMappings().createName(VarKey.createOutputVar(node)));
+    jsCodeBuilder.pushOutputVar(id);
 
     visitChildren(node);
 
@@ -1383,14 +1382,18 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       jsCodeBuilder.append(WINDOW_CONSOLE_LOG.call(CodeChunkUtils.concatChunks(logMsgChunks)));
     } else {
       // Must build log msg in a local var logMsg_s##.
-      String outputVarName = "logMsg_s" + node.getId();
-      jsCodeBuilder.pushOutputVar(outputVarName);
+      CodeChunk.WithValue outputVar =
+          id(
+              templateTranslationContext
+                  .variableMappings()
+                  .createName(VarKey.createOutputVar(node)));
+      jsCodeBuilder.pushOutputVar(outputVar);
 
       visitChildren(node);
 
       jsCodeBuilder.popOutputVar();
 
-      jsCodeBuilder.append(WINDOW_CONSOLE_LOG.call(id(outputVarName)));
+      jsCodeBuilder.append(WINDOW_CONSOLE_LOG.call(outputVar));
     }
   }
 
@@ -1501,15 +1504,14 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       if (param.declLoc() != TemplateParam.DeclLoc.HEADER) {
         continue;
       }
-      String paramName = param.name();
+      String paramName =
+          templateTranslationContext.variableMappings().createName(VarKey.createParam(param));
       SoyType paramType = param.type();
       CodeChunk.Generator generator = templateTranslationContext.codeGenerator();
       CodeChunk.WithValue paramChunk =
-          TranslateExprNodeVisitor.genCodeForParamAccess(
-              paramName, param.isInjected());
+          TranslateExprNodeVisitor.genCodeForParamAccess(param.name(), param.isInjected());
       JsType jsType = getJsType(paramType);
       // The opt_param.name value that will be type-tested.
-      String paramAlias = genParamAlias(paramName);
       CodeChunk.WithValue coerced = jsType.getValueCoercion(paramChunk, generator);
       if (coerced != null) {
         // since we have coercion logic, dump into a temporary
@@ -1523,7 +1525,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         value =
             SOY_ASSERTS_ASSERT_TYPE.call(
                 typeAssertion.get(),
-                stringLiteral(paramName),
+                stringLiteral(param.name()),
                 paramChunk,
                 stringLiteral(jsType.typeExpr()));
       } else {
@@ -1531,11 +1533,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       }
 
       String closureTypeExpr = jsSrcOptions.shouldGenerateJsdoc() ? jsType.typeExpr() : null;
-      jsCodeBuilder.append(declare(paramAlias, value, closureTypeExpr, jsType.getGoogRequires()));
-
-      templateTranslationContext
-          .soyToJsVariableMappings()
-          .put(paramName, id(paramAlias));
+      jsCodeBuilder.append(declare(paramName, value, closureTypeExpr, jsType.getGoogRequires()));
     }
   }
 

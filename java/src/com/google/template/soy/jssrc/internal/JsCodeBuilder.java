@@ -17,7 +17,6 @@
 package com.google.template.soy.jssrc.internal;
 
 import static com.google.template.soy.jssrc.dsl.CodeChunk.declare;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.id;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
@@ -215,10 +214,11 @@ public class JsCodeBuilder {
 
   /**
    * Pushes on a new current output variable.
+   *
    * @param outputVarName The new output variable name.
    */
-  public JsCodeBuilder pushOutputVar(String outputVarName) {
-    currOutputVar = id(outputVarName);
+  public JsCodeBuilder pushOutputVar(CodeChunk.WithValue outputVarName) {
+    currOutputVar = outputVarName;
     outputVars.push(new OutputVar(currOutputVar, false));
     currOutputVarIsInited = false;
     return this;
