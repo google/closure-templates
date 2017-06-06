@@ -209,7 +209,9 @@ public final class PassManager {
       // the nodes.
       simplificationPassesBuilder.add(new DesugarHtmlNodesPass());
     }
-    simplificationPassesBuilder.add(new OptimizationPass());
+    if (builder.optimize) {
+      simplificationPassesBuilder.add(new OptimizationPass());
+    }
     // A number of the passes above (desuagar, htmlrewrite), may chop up raw text nodes in ways
     // that can be later stitched together.  Do that here.  This also drops empty RawTextNodes,
     // which some of the backends don't like (incremental dom can generate bad code in some cases).
@@ -301,6 +303,7 @@ public final class PassManager {
     private boolean allowUnknownFunctions;
     private boolean disableAllTypeChecking;
     private boolean desugarHtmlNodes = true;
+    private boolean optimize = true;
     private ImmutableList<CharSource> conformanceConfigs = ImmutableList.of();
     private boolean autoescaperEnabled = true;
     private SoyValueConverter valueConverter = SoyValueConverter.UNCUSTOMIZED_INSTANCE;
@@ -384,6 +387,16 @@ public final class PassManager {
      */
     public Builder desugarHtmlNodes(boolean desugarHtmlNodes) {
       this.desugarHtmlNodes = desugarHtmlNodes;
+      return this;
+    }
+
+    /**
+     * Whether to run any of the optimization passes.
+     *
+     * <p>The default is {@code true}.
+     */
+    public Builder optimize(boolean optimize) {
+      this.optimize = optimize;
       return this;
     }
 

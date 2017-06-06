@@ -691,10 +691,14 @@ public final class SoyFileSet {
     //    doesn't help anything
     // 2. it potentially removes metadata from the tree by precalculating expressions. For example,
     //    trivial print nodes are evaluated, which can remove globals from the tree, but the
-    //    generator requires data about globals to generate accurate proto descriptors.
-    generalOptions.disableOptimizer();
+    //    generator requires data about globals to generate accurate proto descriptors.  Also, the
+    //    ChangeCallsToPassAllData pass will change the params of templates.
     ParseResult result =
-        parse(passManagerBuilder(SyntaxVersion.V2_0).allowUnknownGlobals().allowUnknownFunctions());
+        parse(
+            passManagerBuilder(SyntaxVersion.V2_0)
+                .allowUnknownGlobals()
+                .allowUnknownFunctions()
+                .optimize(false));
     throwIfErrorsPresent();
 
     SoyFileSetNode soyTree = result.fileSet();
