@@ -36,6 +36,7 @@ import com.google.template.soy.jssrc.dsl.CodeChunk.RequiresCollector;
 import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
 import com.google.template.soy.jssrc.internal.GenJsExprsVisitor.GenJsExprsVisitorFactory;
+import com.google.template.soy.jssrc.internal.SoyToJsVariableMappings.VarKey;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcPrintDirective;
@@ -292,7 +293,8 @@ public class GenCallCodeUtils {
         } else {
           // This is a param with content that cannot be represented as JS expressions, so we assume
           // that code has been generated to define the temporary variable 'param<n>'.
-          content = id("param" + cpcn.getId());
+          content =
+              translationContext.variableMappings().getIdentifier(VarKey.createOutputVar(cpcn));
         }
 
         content = maybeWrapContent(translationContext.codeGenerator(), cpcn, content);

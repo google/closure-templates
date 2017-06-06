@@ -18,6 +18,7 @@ package com.google.template.soy.jssrc.internal;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
+import static com.google.template.soy.jssrc.dsl.CodeChunk.id;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
@@ -28,6 +29,7 @@ import com.google.template.soy.SoyModule;
 import com.google.template.soy.base.internal.UniqueNameGenerator;
 import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
+import com.google.template.soy.jssrc.internal.GenJsExprsVisitor.GenJsExprsVisitorFactory;
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
 import com.google.template.soy.soytree.CallNode;
@@ -52,18 +54,12 @@ public final class GenCallCodeUtilsTest {
     assertThat(getCallExprTextHelper("{call some.func data=\"all\" /}"))
         .isEqualTo("some.func(opt_data, null, opt_ijData)");
 
-    assertThat(
-        getCallExprTextHelper(
-            "{@param boo : ?}",
-            "{call some.func data=\"$boo.foo\" /}"))
+    assertThat(getCallExprTextHelper("{@param boo : ?}", "{call some.func data=\"$boo.foo\" /}"))
         .isEqualTo("some.func(opt_data.boo.foo, null, opt_ijData)");
 
     assertThat(
             getCallExprTextHelper(
-                "{@param moo : ?}",
-                "{call some.func}",
-                "  {param goo: $moo /}",
-                "{/call}"))
+                "{@param moo : ?}", "{call some.func}", "  {param goo: $moo /}", "{/call}"))
         .isEqualTo("some.func({goo: opt_data.moo}, null, opt_ijData)");
 
     assertThat(
@@ -82,7 +78,13 @@ public final class GenCallCodeUtilsTest {
                 + "    {for $i in range(3)}{$i}{/for}\n"
                 + "  {/param}\n"
                 + "{/call}\n");
-    assertThat(callExprText).matches("some[.]func[(][{]goo: param[0-9]+[}], null, opt_ijData[)]");
+    assertThat(callExprText)
+        .isEqualTo(
+            "var param_goo = '';\n"
+                + "for (var i = 0; i < 3; i++) {\n"
+                + "  param_goo += i;\n"
+                + "}\n"
+                + "some.func({goo: param_goo}, null, opt_ijData)");
   }
 
   @Test
@@ -107,12 +109,15 @@ public final class GenCallCodeUtilsTest {
                 + "{/call}\n");
     // NOTE: Soy generates a param### variable to store the output of the for loop.
     assertWithMessage("Actual result: " + callExprText)
-        .that(
-            callExprText.matches(
-                "some[.]func[(][{]goo: soydata.VERY_UNSAFE.[$][$]"
-                    + "ordainSanitizedHtmlForInternalBlocks["
-                    + "(]param[0-9]+[)][}], null, opt_ijData[)]"))
-        .isTrue();
+        .that(callExprText)
+        .isEqualTo(
+            "var param_goo = '';\n"
+                + "for (var i = 0; i < 3; i++) {\n"
+                + "  param_goo += i;\n"
+                + "}\n"
+                + "some.func({goo: "
+                + "soydata.VERY_UNSAFE.$$ordainSanitizedHtmlForInternalBlocks(param_goo)}, null,"
+                + " opt_ijData)");
   }
 
   @Test
@@ -187,13 +192,16 @@ public final class GenCallCodeUtilsTest {
             "  {/param}",
             "{/delcall}");
     assertWithMessage("Actual text:" + callExprText)
-        .that(
-            callExprText.matches(
-                "soy.\\$\\$getDelegateFn\\("
-                    + "soy.\\$\\$getDelTemplateId\\('my.other.delegate'\\), '', false\\)"
-                    + "[(][{]goo: soydata.VERY_UNSAFE.[$][$]ordainSanitizedHtmlForInternalBlocks"
-                    + "[(]param[0-9]+[)][}], null, opt_ijData[)]"))
-        .isTrue();
+        .that(callExprText)
+        .isEqualTo(
+            ""
+                + "var param_goo = '';\n"
+                + "for (var i = 0; i < 3; i++) {\n"
+                + "  param_goo += i;\n"
+                + "}\n"
+                + "soy.$$getDelegateFn(soy.$$getDelTemplateId('my.other.delegate'), '', false)("
+                + "{goo: soydata.VERY_UNSAFE.$$ordainSanitizedHtmlForInternalBlocks(param_goo)}, "
+                + "null, opt_ijData)");
   }
 
   @Test
@@ -219,18 +227,32 @@ public final class GenCallCodeUtilsTest {
     callNode.setEscapingDirectiveNames(escapingDirectives);
 
     try (GuiceSimpleScope.InScope inScope = JsSrcTestUtils.simulateNewApiCall(INJECTOR)) {
-      GenCallCodeUtils genCallCodeUtils = INJECTOR.getInstance(GenCallCodeUtils.class);
+      GenJsCodeVisitor genJsCodeVisitor = INJECTOR.getInstance(GenJsCodeVisitor.class);
+      JsCodeBuilder jsCodeBuilder = new JsCodeBuilder();
+      jsCodeBuilder.pushOutputVar(id("output"));
+      jsCodeBuilder.setOutputVarInited();
+      genJsCodeVisitor.jsCodeBuilder = jsCodeBuilder;
       UniqueNameGenerator nameGenerator = JsSrcNameGenerators.forLocalVariables();
-      CodeChunk call =
-          genCallCodeUtils.gen(
-              callNode,
-              AliasUtils.IDENTITY_ALIASES,
-              TranslationContext.of(
-                  SoyToJsVariableMappings.forNewTemplate(),
-                  CodeChunk.Generator.create(nameGenerator),
-                  nameGenerator),
-              ExplodingErrorReporter.get());
-      return call.getExpressionTestOnly();
+      genJsCodeVisitor.templateTranslationContext =
+          TranslationContext.of(
+              SoyToJsVariableMappings.create(nameGenerator),
+              CodeChunk.Generator.create(nameGenerator));
+      genJsCodeVisitor.templateAliases = AliasUtils.IDENTITY_ALIASES;
+      genJsCodeVisitor.genJsExprsVisitor =
+          INJECTOR
+              .getInstance(GenJsExprsVisitorFactory.class)
+              .create(
+                  genJsCodeVisitor.templateTranslationContext,
+                  genJsCodeVisitor.templateAliases,
+                  ExplodingErrorReporter.get());
+      genJsCodeVisitor.visitForTesting(callNode, ExplodingErrorReporter.get());
+      String code = genJsCodeVisitor.jsCodeBuilder.getCode();
+
+      code = code.replace("output += ", "");
+      if (code.endsWith(";\n")) {
+        code = code.substring(0, code.length() - 2);
+      }
+      return code;
     }
   }
 }

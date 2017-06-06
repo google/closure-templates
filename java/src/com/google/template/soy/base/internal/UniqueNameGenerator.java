@@ -83,12 +83,11 @@ public final class UniqueNameGenerator {
    */
   public String generateName(String name) {
     checkName(name);
-    names.add(name);
-    int count = names.count(name);
-    if (count == 1) {
+    int count = names.add(name, 1);
+    if (count == 0) {
       return name;
     }
-    return name + collisionSeparator + (count - 1);
+    return name + collisionSeparator + count;
   }
 
   public boolean hasName(String name) {

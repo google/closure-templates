@@ -146,4 +146,73 @@ public final class JsSrcUtils {
           .add("soy")
           .add("soydata")
           .build();
+
+  /**
+   * Standard global objects and functions
+   *
+   * <p>https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects
+   */
+  static final ImmutableSet<String> JS_GLOBALS =
+      ImmutableSet.of(
+          "eval",
+          "uneval",
+          "isFinite",
+          "isNaN",
+          "parseFloat",
+          "parseInt",
+          "decodeURI",
+          "decodeURIComponent",
+          "encodeURI",
+          "encodeURIComponent",
+          "escape",
+          "unescape",
+          "Object",
+          "Function",
+          "Boolean",
+          "Symbol",
+          "Error",
+          "EvalError",
+          "InternalError",
+          "RangeError",
+          "ReferenceError",
+          "SyntaxError",
+          "TypeError",
+          "URIError",
+          "Number",
+          "Math",
+          "Date",
+          "String",
+          "RegExp",
+          "Array",
+          "Int8Array",
+          "Uint8Array",
+          "Uint8ClampedArray",
+          "Int16Array",
+          "Uint16Array",
+          "Int32Array",
+          "Uint32Array",
+          "Float32Array",
+          "Float64Array",
+          "Map",
+          "Set",
+          "WeakMap",
+          "WeakSet",
+          "SIMD",
+          "ArrayBuffer",
+          "SharedArrayBuffer",
+          "Atomics",
+          "DataView",
+          "JSON",
+          "Promise",
+          "Generator",
+          "GeneratorFunction",
+          "AsyncFunction",
+          "Reflect",
+          "Proxy",
+          "Intl",
+          "WebAssembly",
+          "Iterator",
+          "ParallelArray",
+          "StopIteration",
+          "arguments");
 }

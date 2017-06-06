@@ -30,6 +30,8 @@ import com.google.template.soy.jssrc.internal.GenJsCodeVisitorAssistantForMsgs;
 import com.google.template.soy.jssrc.internal.GenJsExprsVisitor;
 import com.google.template.soy.jssrc.internal.IsComputableAsJsExprsVisitor;
 import com.google.template.soy.jssrc.internal.JsExprTranslator;
+import com.google.template.soy.jssrc.internal.SoyToJsVariableMappings;
+import com.google.template.soy.jssrc.internal.SoyToJsVariableMappings.VarKey;
 import com.google.template.soy.jssrc.internal.TemplateAliases;
 import com.google.template.soy.jssrc.internal.TranslationContext;
 import com.google.template.soy.soytree.HtmlContext;
@@ -147,11 +149,12 @@ final class AssistantForHtmlMsgs extends GenJsCodeVisitorAssistantForMsgs {
     }
 
     // The mutable (tracking index of last match) regex to find the placeholder placeholders.
-    String regexVar = "partRe_" + node.getId();
+    SoyToJsVariableMappings varMappings = translationContext.variableMappings();
+    String regexVar = varMappings.createName(VarKey.createSyntheticVariable("partRe", node));
     // The current placeholder placeholder from the regex.
-    String matchVar = "match_" + node.getId();
+    String matchVar = varMappings.createName(VarKey.createSyntheticVariable("match", node));
     // The index of the end of the previous placeholder, where the next raw text run starts.
-    String lastIndexVar = "lastIndex_" + node.getId();
+    String lastIndexVar = varMappings.createName(VarKey.createSyntheticVariable("lastIndex", node));
 
     // Declare everything.
     jsCodeBuilder()
