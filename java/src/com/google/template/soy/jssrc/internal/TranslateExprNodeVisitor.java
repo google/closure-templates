@@ -81,15 +81,11 @@ import com.google.template.soy.jssrc.dsl.CodeChunk.RequiresCollector;
 import com.google.template.soy.jssrc.dsl.CodeChunk.WithValue;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
 import com.google.template.soy.jssrc.internal.NullSafeAccumulator.FieldAccess;
-import com.google.template.soy.jssrc.internal.SoyToJsVariableMappings.VarKey;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcFunction;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.restricted.SoyFunction;
-import com.google.template.soy.soytree.defn.LocalVar;
-import com.google.template.soy.soytree.defn.LoopVar;
-import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.aggregate.UnionType;
 import com.google.template.soy.types.proto.ProtoUtils;
@@ -193,7 +189,7 @@ public class TranslateExprNodeVisitor
       @Assisted ErrorReporter errorReporter) {
     this.jsSrcOptions = jsSrcOptions;
     this.errorReporter = errorReporter;
-    this.variableMappings = translationContext.variableMappings();
+    this.variableMappings = translationContext.soyToJsVariableMappings();
     this.codeGenerator = translationContext.codeGenerator();
   }
 
@@ -366,33 +362,17 @@ public class TranslateExprNodeVisitor
 
   @Override
   protected CodeChunk.WithValue visitVarRefNode(VarRefNode node) {
-    VarKey varKey;
-    switch (node.getDefnDecl().kind()) {
-      case PARAM:
-        varKey = VarKey.createParam((TemplateParam) node.getDefnDecl());
-        break;
-      case LOCAL_VAR:
-        varKey = VarKey.createLocalVar(((LocalVar) node.getDefnDecl()).declaringNode());
-        break;
-      case IJ_PARAM:
-        // Why aren't ij params bounced into local variables?
-        return OPT_IJ_DATA.dotAccess(node.getName());
-      case UNDECLARED:
-        // Soy V1 support
-        return genCodeForParamAccess(node.getName(), node.getDefnDecl().isInjected());
-      default:
-        throw new AssertionError();
-    }
-    CodeChunk.WithValue id = variableMappings.maybeGetIdentifier(varKey);
-    if (id == null) {
-      // This case exists for
-      // 1. soydoc params
-      // 2. weird unit test environments
-      // Neither of these situations make much sense...
-      // TODO(lukes): eliminate these cases.
+    CodeChunk.WithValue translation;
+    if (node.isDollarSignIjParameter()) {
+      // Case 1: Injected data reference.
+      return OPT_IJ_DATA.dotAccess(node.getName());
+    } else if ((translation = variableMappings.maybeGet(node.getName())) != null) {
+      // Case 2: In-scope local var.
+      return translation;
+    } else {
+      // Case 3: Data reference.
       return genCodeForParamAccess(node.getName(), node.getDefnDecl().isInjected());
     }
-    return id;
   }
 
   @Override
@@ -650,24 +630,18 @@ public class TranslateExprNodeVisitor
   }
 
   private CodeChunk.WithValue visitIsFirstFunction(FunctionNode node) {
-    LoopVar loopVar = (LoopVar) ((VarRefNode) node.getChild(0)).getDefnDecl();
-    CodeChunk.WithValue index =
-        variableMappings.getIdentifier(VarKey.createIndexVar(loopVar.declaringNode()));
-    return index.doubleEquals(CodeChunk.number(0));
+    String varName = ((VarRefNode) node.getChild(0)).getName();
+    return variableMappings.get(varName + "__isFirst");
   }
 
   private CodeChunk.WithValue visitIsLastFunction(FunctionNode node) {
-    LoopVar loopVar = (LoopVar) ((VarRefNode) node.getChild(0)).getDefnDecl();
-    CodeChunk.WithValue index =
-        variableMappings.getIdentifier(VarKey.createIndexVar(loopVar.declaringNode()));
-    CodeChunk.WithValue length =
-        variableMappings.getIdentifier(VarKey.createListLenVar(loopVar.declaringNode()));
-    return index.doubleEquals(length.minus(number(1)));
+    String varName = ((VarRefNode) node.getChild(0)).getName();
+    return variableMappings.get(varName + "__isLast");
   }
 
   private CodeChunk.WithValue visitIndexFunction(FunctionNode node) {
-    LoopVar loopVar = (LoopVar) ((VarRefNode) node.getChild(0)).getDefnDecl();
-    return variableMappings.getIdentifier(VarKey.createIndexVar(loopVar.declaringNode()));
+    String varName = ((VarRefNode) node.getChild(0)).getName();
+    return variableMappings.get(varName + "__index");
   }
 
   private CodeChunk.WithValue visitCssFunction(FunctionNode node) {

@@ -55,7 +55,6 @@ import com.google.template.soy.jssrc.internal.GenJsExprsVisitor;
 import com.google.template.soy.jssrc.internal.IsComputableAsJsExprsVisitor;
 import com.google.template.soy.jssrc.internal.JsCodeBuilder;
 import com.google.template.soy.jssrc.internal.JsExprTranslator;
-import com.google.template.soy.jssrc.internal.SoyToJsVariableMappings.VarKey;
 import com.google.template.soy.jssrc.internal.TemplateAliases;
 import com.google.template.soy.jssrc.internal.TranslationContext;
 import com.google.template.soy.soytree.CallNode;
@@ -79,8 +78,6 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.defn.LocalVar;
-import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.ArrayList;
@@ -196,11 +193,9 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     // computable as a JsExpr. A JavaScript compiler, such as Closure Compiler, is able to perform
     // the transformation.
     if (isTextTemplate) {
-      String outputName =
-          templateTranslationContext.variableMappings().createName(VarKey.createOutputVar(node));
-      jsCodeBuilder.append(CodeChunk.declare(outputName, CodeChunk.stringLiteral("")));
+      jsCodeBuilder.appendLine("var output = '';");
       // We do our own initialization, so mark it as such.
-      jsCodeBuilder.pushOutputVar(id(outputName)).setOutputVarInited();
+      jsCodeBuilder.pushOutputVar("output").setOutputVarInited();
     }
 
     genParamTypeChecks(node);
@@ -234,7 +229,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     ContentKind prevContentKind = jsCodeBuilder.getContentKind();
 
     // We do our own initialization, so mark it as such.
-    jsCodeBuilder.pushOutputVar(id(generatedVarName)).setOutputVarInited();
+    jsCodeBuilder.pushOutputVar(generatedVarName).setOutputVarInited();
     jsCodeBuilder.setContentKind(node.getContentKind());
 
     // The html transform step, performed by HTMLTransformVisitor, ensures that
@@ -269,16 +264,16 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   @Override
   protected void visitLetContentNode(LetContentNode node) {
     // TODO(slaks): Call base class for non-HTML to get {msg} inlining.
-    String generatedVarName =
-        templateTranslationContext.variableMappings().createName(VarKey.createLocalVar(node));
+    String generatedVarName = node.getUniqueVarName();
     visitLetParamContentNode(node, generatedVarName);
+    templateTranslationContext
+        .soyToJsVariableMappings()
+        .put(node.getVarName(), id(generatedVarName));
   }
 
   @Override
   protected void visitCallParamContentNode(CallParamContentNode node) {
-    String generatedVarName =
-        templateTranslationContext.variableMappings().createName(VarKey.createOutputVar(node));
-
+    String generatedVarName = "param" + node.getId();
     visitLetParamContentNode(node, generatedVarName);
   }
 
@@ -676,7 +671,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     if (expr instanceof VarRefNode && expr.getType().getKind() == expectedKind) {
       VarRefNode varRefNode = (VarRefNode) expr;
       CodeChunk.WithValue call =
-          templateTranslationContext.variableMappings().getIdentifier(getVarKey(varRefNode)).call();
+          templateTranslationContext.soyToJsVariableMappings().get(varRefNode.getName()).call();
       jsCodeBuilder.append(call);
       return GenerateFunctionCallResult.EMITTED;
     }
@@ -699,27 +694,10 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     }
     VarRefNode varRefNode = (VarRefNode) opNode.getLeftChild();
     CodeChunk.WithValue varName =
-        templateTranslationContext.variableMappings().getIdentifier(getVarKey(varRefNode));
+        templateTranslationContext.soyToJsVariableMappings().get(varRefNode.getName());
     CodeChunk conditionalCall = CodeChunk.ifStatement(varName, varName.call()).build();
     jsCodeBuilder.append(conditionalCall);
     return GenerateFunctionCallResult.EMITTED;
-  }
-
-  private VarKey getVarKey(VarRefNode varRefNode) {
-    VarKey varKey;
-    switch (varRefNode.getDefnDecl().kind()) {
-      case PARAM:
-        varKey = VarKey.createParam((TemplateParam) varRefNode.getDefnDecl());
-        break;
-      case LOCAL_VAR:
-        varKey = VarKey.createLocalVar(((LocalVar) varRefNode.getDefnDecl()).declaringNode());
-        break;
-      case IJ_PARAM:
-      case UNDECLARED:
-      default:
-        throw new AssertionError();
-    }
-    return varKey;
   }
 
   @Override

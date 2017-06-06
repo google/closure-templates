@@ -33,21 +33,20 @@ public final class JsCodeBuilderTest {
 
   @Test
   public void testOutputVarWithConcat() {
-    JsCodeBuilder jcb = new JsCodeBuilder().pushOutputVar(id("output"));
+    JsCodeBuilder jcb = new JsCodeBuilder().pushOutputVar("output");
     jcb.initOutputVarIfNecessary();
     assertThat(jcb.getCode()).isEqualTo("var output = '';\n");
-    jcb.pushOutputVar(id("param5"))
-        .setOutputVarInited()
-        .initOutputVarIfNecessary(); // nothing added
+    jcb.pushOutputVar("param5").setOutputVarInited().initOutputVarIfNecessary(); // nothing added
     assertThat(jcb.getCode()).isEqualTo("var output = '';\n");
 
-    jcb = new JsCodeBuilder().pushOutputVar(id("output")).addChunkToOutputVar(id("boo"));
+    jcb = new JsCodeBuilder().pushOutputVar("output").addChunkToOutputVar(id("boo"));
     assertThat(jcb.getCode()).isEqualTo("var output = '' + boo;\n");
-    jcb.pushOutputVar(id("param5"))
+    jcb.pushOutputVar("param5")
         .setOutputVarInited()
-        .addChunksToOutputVar(
-            ImmutableList.of(
-                id("a").minus(id("b")), id("c").minus(id("d")), id("e").times(id("f"))));
+        .addChunksToOutputVar(ImmutableList.of(
+            id("a").minus(id("b")),
+            id("c").minus(id("d")),
+            id("e").times(id("f"))));
     assertThat(jcb.getCode())
         .isEqualTo("var output = '' + boo;\nparam5 += a - b + (c - d) + e * f;\n");
   }
