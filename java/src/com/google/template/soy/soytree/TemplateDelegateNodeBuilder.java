@@ -223,26 +223,20 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
    */
   private void genInternalTemplateNameHelper(SourceLocation nameLocation) {
     Preconditions.checkState(id != null);
-
-    // Compute a SHA-1 hash value for the delPackageName plus delTemplateKey, and take the first 32
-    // bits worth as a hex string. This will be included in the generated internal-use template name
-    // to prevent collisions in the case where not all Soy files are compiled at once (not really
-    // the intended usage of the Soy compiler, but some projects use it this way). Note that the
-    // node id is also included in the generated name, which is already sufficient for guaranteeing
-    // unique names in the case where all Soy files are compiled together at once.
-    // TODO(lukes): why calculate a hash? just cat the bits together to get a
-    // reasonable and unique string?  is this for client obfuscation?
-    String delPackageAndDelTemplateStr =
+    // encode all the deltemplate information into the name to get a unique string
+    // though... it might make more sense for this to not have a user visible name given that the
+    // calling convention is indirect.
+    String delPackageTemplateAndVariantStr =
         (soyFileHeaderInfo.delPackageName == null ? "" : soyFileHeaderInfo.delPackageName)
-            + "~"
-            + delTemplateName
-            + "~"
-            + delTemplateVariant;
-    String collisionPreventionStr =
-        BaseUtils.computePartialSha1AsHexString(delPackageAndDelTemplateStr, 32);
-
+            + "_"
+            + delTemplateName.replace('.', '_')
+            + "_"
+            + (delTemplateVariant == null
+                ? delTemplateVariantExpr.toSourceString()
+                : delTemplateVariant);
+    delPackageTemplateAndVariantStr = delPackageTemplateAndVariantStr.replace('.', '_');
     // Generate the actual internal-use template name.
-    String generatedPartialTemplateName = ".__deltemplate_s" + id + "_" + collisionPreventionStr;
+    String generatedPartialTemplateName = ".__deltemplate_" + delPackageTemplateAndVariantStr;
     String generatedTemplateName = soyFileHeaderInfo.namespace + generatedPartialTemplateName;
     setTemplateNames(generatedTemplateName, nameLocation, generatedPartialTemplateName);
   }

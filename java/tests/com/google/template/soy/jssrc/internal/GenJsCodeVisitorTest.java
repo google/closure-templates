@@ -376,18 +376,18 @@ public final class GenJsCodeVisitorTest {
             + "goog.require('soy');\n"
             + "\n"
             + "\n"
-            + "boo.foo.__deltemplate_s2_34da4ced = function("
+            + "boo.foo.__deltemplate_MySecretFeature_myDelegates_goo_ = function("
             + "opt_data, opt_ijData, opt_ijData_deprecated) {\n"
             + "  opt_ijData = opt_ijData_deprecated || opt_ijData;\n"
             + "  return '' + soy.$$getDelegateFn(soy.$$getDelTemplateId('myDelegates.soo'), "
             + "'', false)(null, null, opt_ijData);\n"
             + "};\n"
             + "if (goog.DEBUG) {\n"
-            + "  boo.foo.__deltemplate_s2_34da4ced.soyTemplateName = "
-            + "'boo.foo.__deltemplate_s2_34da4ced';\n"
+            + "  boo.foo.__deltemplate_MySecretFeature_myDelegates_goo_.soyTemplateName = "
+            + "'boo.foo.__deltemplate_MySecretFeature_myDelegates_goo_';\n"
             + "}\n"
             + "soy.$$registerDelegateFn(soy.$$getDelTemplateId('myDelegates.goo'), '', 1,"
-            + " boo.foo.__deltemplate_s2_34da4ced);\n";
+            + " boo.foo.__deltemplate_MySecretFeature_myDelegates_goo_);\n";
 
     jsSrcOptions.setShouldProvideRequireSoyNamespaces(true);
     List<String> jsFilesContents =
@@ -423,18 +423,18 @@ public final class GenJsCodeVisitorTest {
             + "goog.require('soy');\n"
             + "\n"
             + "\n"
-            + "boo.foo.__deltemplate_s2_784ed7a8 = function("
+            + "boo.foo.__deltemplate__myDelegates_goo_googoo = function("
             + "opt_data, opt_ijData, opt_ijData_deprecated) {\n"
             + "  opt_ijData = opt_ijData_deprecated || opt_ijData;\n"
             + "  return '' + soy.$$getDelegateFn(soy.$$getDelTemplateId('myDelegates.moo'), "
             + "'moomoo', false)(null, null, opt_ijData);\n"
             + "};\n"
             + "if (goog.DEBUG) {\n"
-            + "  boo.foo.__deltemplate_s2_784ed7a8.soyTemplateName = "
-            + "'boo.foo.__deltemplate_s2_784ed7a8';\n"
+            + "  boo.foo.__deltemplate__myDelegates_goo_googoo.soyTemplateName = "
+            + "'boo.foo.__deltemplate__myDelegates_goo_googoo';\n"
             + "}\n"
             + "soy.$$registerDelegateFn(soy.$$getDelTemplateId('myDelegates.goo'), 'googoo', 0,"
-            + " boo.foo.__deltemplate_s2_784ed7a8);\n";
+            + " boo.foo.__deltemplate__myDelegates_goo_googoo);\n";
 
     jsSrcOptions.setShouldProvideRequireSoyNamespaces(true);
     List<String> jsFilesContents =
@@ -654,17 +654,17 @@ public final class GenJsCodeVisitorTest {
             + "goog.require('soy');\n"
             + "\n"
             + "\n"
-            + "boo.foo.__deltemplate_s2_ad618961 = function("
+            + "boo.foo.__deltemplate__myDelegates_goo_ = function("
             + "opt_data, opt_ijData, opt_ijData_deprecated) {\n"
             + "  opt_ijData = opt_ijData_deprecated || opt_ijData;\n"
             + "  return 'Blah';\n"
             + "};\n"
             + "if (goog.DEBUG) {\n"
-            + "  boo.foo.__deltemplate_s2_ad618961.soyTemplateName = "
-            + "'boo.foo.__deltemplate_s2_ad618961';\n"
+            + "  boo.foo.__deltemplate__myDelegates_goo_.soyTemplateName = "
+            + "'boo.foo.__deltemplate__myDelegates_goo_';\n"
             + "}\n"
             + "soy.$$registerDelegateFn(soy.$$getDelTemplateId('myDelegates.goo'), '', 0,"
-            + " boo.foo.__deltemplate_s2_ad618961);\n";
+            + " boo.foo.__deltemplate__myDelegates_goo_);\n";
 
     genJsCodeVisitor.jsSrcOptions.setShouldProvideRequireSoyNamespaces(true);
     // Setup the GenJsCodeVisitor's state before the template is visited.
@@ -697,18 +697,18 @@ public final class GenJsCodeVisitorTest {
     // ------ Code style 'concat'. ------
     String expectedJsCode =
         ""
-            + "boo.foo.__deltemplate_s2_b66e4cb3 = function("
+            + "boo.foo.__deltemplate_MySecretFeature_myDelegates_goo_moo = function("
             + "opt_data, opt_ijData, opt_ijData_deprecated) {\n"
             + "  opt_ijData = opt_ijData_deprecated || opt_ijData;\n"
             + "  return 'Blah';\n"
             + "};\n"
             + "if (goog.DEBUG) {\n"
-            + "  boo.foo.__deltemplate_s2_b66e4cb3.soyTemplateName = "
-            + "'boo.foo.__deltemplate_s2_b66e4cb3';\n"
+            + "  boo.foo.__deltemplate_MySecretFeature_myDelegates_goo_moo.soyTemplateName = "
+            + "'boo.foo.__deltemplate_MySecretFeature_myDelegates_goo_moo';\n"
             + "}\n"
             + "soy.$$registerDelegateFn("
             + "soy.$$getDelTemplateId('myDelegates.goo'), 'moo', 1,"
-            + " boo.foo.__deltemplate_s2_b66e4cb3);\n";
+            + " boo.foo.__deltemplate_MySecretFeature_myDelegates_goo_moo);\n";
 
     // Setup the GenJsCodeVisitor's state before the template is visited.
     genJsCodeVisitor.jsCodeBuilder = new JsCodeBuilder();

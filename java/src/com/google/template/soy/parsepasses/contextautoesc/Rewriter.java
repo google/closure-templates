@@ -89,8 +89,8 @@ final class Rewriter {
     /** Keep track of template nodes so we know which are derived and which aren't. */
     @Override
     protected void visitTemplateNode(TemplateNode templateNode) {
-      Preconditions.checkState(!visitedTemplateNames.contains(templateNode.getTemplateName()));
-      visitedTemplateNames.add(templateNode.getTemplateName());
+      boolean firstTime = visitedTemplateNames.add(templateNode.getTemplateName());
+      Preconditions.checkState(firstTime, "already visited: %s", templateNode.getTemplateName());
       visitChildrenAllowingConcurrentModification(templateNode);
     }
 
