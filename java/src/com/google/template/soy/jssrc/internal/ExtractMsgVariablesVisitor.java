@@ -18,11 +18,13 @@ package com.google.template.soy.jssrc.internal;
 
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.msgs.internal.MsgUtils;
 import com.google.template.soy.passes.BuildAllDependeesMapVisitor;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
+import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.BlockNode;
@@ -40,10 +42,8 @@ import java.util.Map;
  * expression instead of a statement. After this pass, all MsgFallbackGroupNodes will only appear
  * inside {@link LetContentNodes}.
  *
- * <p>TODO(slaks): Generalize to extract all nodes that create statements but must appear in
- * expression context ({@link MsgHtmlTagNode}, {@link CallParamNode}, {@link LogNode}, & idom
- * attribute values) to variables. This will let us completely remove the many paths in jssrc that
- * conditionally emit temporary variables.
+ * <p>TODO(lukes,slaks): Rewrite any code relying on this pass to instead take advantage of the code
+ * chunk api.
  *
  * <p>{@link #exec} must be called on a full parse tree.
  *
@@ -54,6 +54,8 @@ public class ExtractMsgVariablesVisitor extends AbstractSoyNodeVisitor<Void> {
   private List<MsgFallbackGroupNode> msgFbGrpNodes;
 
   private Map<SoyNode, List<SoyNode>> allDependeesMap;
+
+  private int counter;
 
   @Override
   public Void exec(SoyNode node) {
@@ -67,7 +69,7 @@ public class ExtractMsgVariablesVisitor extends AbstractSoyNodeVisitor<Void> {
 
   @Override
   protected void visitSoyFileSetNode(SoyFileSetNode node) {
-
+    counter = 0;
     // We find all the MsgFallbackGroupNodes before replacing them because we don't want the
     // modifications to interfere with the traversal.
 
@@ -105,7 +107,13 @@ public class ExtractMsgVariablesVisitor extends AbstractSoyNodeVisitor<Void> {
 
   protected void wrapMsgFallbackGroupNodeHelper(
       MsgFallbackGroupNode msgFbGrpNode, IdGenerator nodeIdGen) {
-    String varName = "msg_" + nodeIdGen.genId();
+    // try to generate a unique variable name
+    // due to an optimization in GenJsCodeVisitor this variable is never actually used directly.
+    // though it may be for incrementaldomsrc.
+    String varName = "msg_" + ++counter;
+    for (MsgNode msg : msgFbGrpNode.getChildren()) {
+      varName += "_" + MsgUtils.computeMsgIdForDualFormat(msg);
+    }
 
     // Find the actual content kind that this node prints in.
     RenderUnitNode container = msgFbGrpNode.getNearestAncestor(RenderUnitNode.class);

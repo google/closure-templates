@@ -16,11 +16,7 @@
 
 package com.google.template.soy.base.internal;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-
-import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
-import com.google.common.hash.Hashing;
 import java.io.File;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -263,20 +259,5 @@ public class BaseUtils {
           .append(HEX_DIGITS[(codePoint >>> 4) & 0xF])
           .append(HEX_DIGITS[codePoint & 0xF]);
     }
-  }
-
-  /**
-   * Computes the SHA-1 hash value of the input string's UTF-8 representation and returns the first
-   * numBits bits of the result as a hex value in string form.
-   *
-   * @param strToHash The string to compute SHA-1 of.
-   * @param numBits The number of bits worth to return. Must be a positive number at most 160 and
-   *     divisible by 8 (since we process the result 8 bits at a time).
-   * @return The partial SHA-1 hash value as a hex string.
-   */
-  public static String computePartialSha1AsHexString(String strToHash, int numBits) {
-    Preconditions.checkArgument(numBits > 0 && numBits <= 160 && numBits % 8 == 0);
-    int numBytes = numBits / 8;
-    return Hashing.sha1().hashString(strToHash, UTF_8).toString().substring(0, numBytes * 2);
   }
 }
