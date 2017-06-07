@@ -25,6 +25,7 @@ import com.google.template.soy.base.internal.IncrementingIdGenerator;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ExplodingErrorReporter;
+import com.google.template.soy.error.FormattingErrorReporter;
 import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.HtmlAttributeValueNode;
@@ -369,6 +370,27 @@ public final class HtmlRewritePassTest {
   public void testConditionalUnquotedAttributeValue() {
     TemplateNode node = runPass("{@param p : ?}<div class={if $p}x{else}y{/if}>");
     assertThatSourceString(node).isEqualTo("<div class={if $p}x{else}y{/if}>");
+  }
+
+  @Test
+  public void testUnmatchedContextChangingCloseTagUnquotedAttributeValue() {
+    // matched script is fine
+    runPass("<script>xxx</script>");
+    // unmatched closing div is fine.
+    runPass("</div>");
+    for (String tag : new String[] {"</script>", "</style>", "</title>", "</textarea>", "</xmp>"}) {
+      FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+      runPass(tag, errorReporter);
+      assertThat(errorReporter.getErrorMessages())
+          .named("error message for: %s", tag)
+          .containsExactly("Unexpected close tag for context-changing tag.");
+    }
+  }
+
+  // regression test for a bug where we would drop rcdata content.
+  @Test
+  public void testRcDataTags() {
+    assertThatSourceString(runPass("<script>xxx</script>")).isEqualTo("<script>xxx</script>");
   }
 
   private static TemplateNode runPass(String input) {
