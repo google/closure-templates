@@ -46,7 +46,6 @@ import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
-import com.google.template.soy.pysrc.internal.LocalVariableStack.VarKey;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyExprUtils;
 import com.google.template.soy.pysrc.restricted.PyFunctionExprBuilder;
@@ -54,10 +53,6 @@ import com.google.template.soy.pysrc.restricted.PyStringExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.restricted.SoyFunction;
-import com.google.template.soy.soytree.ForeachNonemptyNode;
-import com.google.template.soy.soytree.SoyNode.LocalVarNode;
-import com.google.template.soy.soytree.defn.LocalVar;
-import com.google.template.soy.soytree.defn.LoopVar;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import java.util.LinkedHashMap;
@@ -195,29 +190,13 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
             // Case 1: Injected data reference.
             return genCodeForLiteralKeyAccess("ijData", varRef.getName());
           } else {
-            switch (varRef.getDefnDecl().kind()) {
-              case LOCAL_VAR:
-                LocalVarNode declaringNode = ((LocalVar) varRef.getDefnDecl()).declaringNode();
-                try {
-                  return localVarExprs
-                      .getVariableExpression(VarKey.createLocalVar(declaringNode))
-                      .getText();
-                } catch (RuntimeException rte) {
-                  throw new RuntimeException(
-                      "declaringNode: "
-                          + declaringNode.getKind()
-                          + " @"
-                          + declaringNode.getSourceLocation()
-                          + " \nref: "
-                          + node.getSourceLocation(),
-                      rte);
-                }
-              case PARAM:
-                return genCodeForLiteralKeyAccess("data", varRef.getName());
-              case IJ_PARAM: // handled above
-              case UNDECLARED: // impossible
-              default:
-                throw new AssertionError();
+            PyExpr translation = localVarExprs.getVariableExpression(varRef.getName());
+            if (translation != null) {
+              // Case 2: In-scope local var.
+              return translation.getText();
+            } else {
+              // Case 3: Data reference.
+              return genCodeForLiteralKeyAccess("data", varRef.getName());
             }
           }
         }
@@ -387,11 +366,11 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
   private PyExpr visitNonPluginFunction(FunctionNode node, BuiltinFunction nonpluginFn) {
     switch (nonpluginFn) {
       case IS_FIRST:
-        return visitIsFirstFunction(node);
+        return visitForEachFunction(node, "__isFirst");
       case IS_LAST:
-        return visitIsLastFunction(node);
+        return visitForEachFunction(node, "__isLast");
       case INDEX:
-        return visitIndexFunction(node);
+        return visitForEachFunction(node, "__index");
       case QUOTE_KEYS_IF_JS:
         // 'quoteKeysIfJs' is ignored in Python.
         return visitMapLiteralNode((MapLiteralNode) node.getChild(0));
@@ -409,28 +388,9 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
     }
   }
 
-  private PyExpr visitIsFirstFunction(FunctionNode node) {
-    PyExpr index = visitIndexFunction(node);
-    return new PyExpr(
-        index.getText() + " == 0", PyExprUtils.pyPrecedenceForOperator(Operator.EQUAL));
-  }
-
-  public PyExpr visitIndexFunction(FunctionNode node) {
-    ForeachNonemptyNode nonEmpty = getForeachNodeFromForeachFunction(node);
-    return localVarExprs.getVariableExpression(VarKey.createIndexVar(nonEmpty));
-  }
-
-  private PyExpr visitIsLastFunction(FunctionNode node) {
-    ForeachNonemptyNode nonEmpty = getForeachNodeFromForeachFunction(node);
-    PyExpr index = localVarExprs.getVariableExpression(VarKey.createIndexVar(nonEmpty));
-    PyExpr list = localVarExprs.getVariableExpression(VarKey.createListVar(nonEmpty));
-    return new PyExpr(
-        index.getText() + " == len(" + list.getText() + ") - 1",
-        PyExprUtils.pyPrecedenceForOperator(Operator.EQUAL));
-  }
-
-  private ForeachNonemptyNode getForeachNodeFromForeachFunction(FunctionNode node) {
-    return ((LoopVar) ((VarRefNode) node.getChild(0)).getDefnDecl()).declaringNode();
+  private PyExpr visitForEachFunction(FunctionNode node, String suffix) {
+    String varName = ((VarRefNode) node.getChild(0)).getName();
+    return localVarExprs.getVariableExpression(varName + suffix);
   }
 
   private PyExpr visitCheckNotNullFunction(FunctionNode node) {

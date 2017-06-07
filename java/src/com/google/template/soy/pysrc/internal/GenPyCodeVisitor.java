@@ -24,11 +24,11 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.internal.i18n.SoyBidiUtils;
 import com.google.template.soy.pysrc.SoyPySrcOptions;
 import com.google.template.soy.pysrc.internal.GenPyExprsVisitor.GenPyExprsVisitorFactory;
-import com.google.template.soy.pysrc.internal.LocalVariableStack.VarKey;
 import com.google.template.soy.pysrc.internal.PyApiCallScopeBindingAnnotations.PyCurrentManifest;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyExprUtils;
@@ -275,9 +275,6 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
      */
     @Override
     protected void visitTemplateNode(TemplateNode node) {
-      // TODO(lukes): We should initialize this object with the set of currently 'claimed' global
-      // symbols.  This includes builtin functions and imported namespaces.  Otherwise a user
-      // selected name might conflict and hide a global.
       localVarExprs = new LocalVariableStack();
       genPyExprsVisitor = genPyExprsVisitorFactory.create(localVarExprs, errorReporter);
 
@@ -501,11 +498,11 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       TranslateToPyExprVisitor translator =
           new TranslateToPyExprVisitor(localVarExprs, errorReporter);
 
-      VarKey localVar = VarKey.createLocalVar(node);
-      String varName = localVarExprs.createVariable(localVar);
+      String varName = node.getVarName();
+      String nodeId = Integer.toString(node.getId());
 
       // The start of the Python 'for' loop.
-      pyCodeBuilder.appendLineStart("for ", varName, " in ");
+      pyCodeBuilder.appendLineStart("for ", varName, nodeId, " in ");
 
       // Build the xrange call. Since the Python param syntax matches Soy range syntax, params can
       // be directly dropped in.
@@ -518,7 +515,7 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
       // Add a new localVarExprs frame and populate it with the translations from this node.
       localVarExprs.pushFrame();
-      localVarExprs.addVariable(localVar);
+      localVarExprs.addVariable(varName, new PyExpr(varName + nodeId, Integer.MAX_VALUE));
 
       // Generate the code for the loop body.
       pyCodeBuilder.increaseIndent();
@@ -557,9 +554,9 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     protected void visitForeachNode(ForeachNode node) {
       // Build the local variable names.
       ForeachNonemptyNode nonEmptyNode = (ForeachNonemptyNode) node.getChild(0);
-      VarKey listVarKey = VarKey.createListVar(nonEmptyNode);
-      String listVarName = localVarExprs.createVariable(listVarKey);
-      localVarExprs.addVariable(listVarKey);
+      String baseVarName = nonEmptyNode.getVarName();
+      String listVarName = String.format("%sList%d", baseVarName, node.getId());
+
       // Define list variable
       TranslateToPyExprVisitor translator =
           new TranslateToPyExprVisitor(localVarExprs, errorReporter);
@@ -614,20 +611,27 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     @Override
     protected void visitForeachNonemptyNode(ForeachNonemptyNode node) {
       // Build the local variable names.
-      VarKey dataVarKey = VarKey.createLocalVar(node);
-      String dataVarName = localVarExprs.createVariable(dataVarKey);
-      PyExpr listVarName = localVarExprs.getVariableExpression(VarKey.createListVar(node));
-      VarKey indexVarKey = VarKey.createIndexVar(node);
-      String indexVarName = localVarExprs.createVariable(indexVarKey);
+      String baseVarName = node.getVarName();
+      String foreachNodeId = Integer.toString(node.getForeachNodeId());
+      String listVarName = baseVarName + "List" + foreachNodeId;
+      String indexVarName = baseVarName + "Index" + foreachNodeId;
+      String dataVarName = baseVarName + "Data" + foreachNodeId;
 
       // Create the loop with an enumeration.
       pyCodeBuilder.appendLine(
-          "for ", indexVarName, ", ", dataVarName, " in enumerate(", listVarName.getText(), "):");
+          "for ", indexVarName, ", ", dataVarName, " in enumerate(", listVarName, "):");
       pyCodeBuilder.increaseIndent();
 
       // Add a new localVarExprs frame and populate it with the translations from this loop.
+      int eqPrecedence = PyExprUtils.pyPrecedenceForOperator(Operator.EQUAL);
       localVarExprs.pushFrame();
-      localVarExprs.addVariable(dataVarKey).addVariable(indexVarKey);
+      localVarExprs
+          .addVariable(baseVarName, new PyExpr(dataVarName, Integer.MAX_VALUE))
+          .addVariable(baseVarName + "__isFirst", new PyExpr(indexVarName + " == 0", eqPrecedence))
+          .addVariable(
+              baseVarName + "__isLast",
+              new PyExpr(indexVarName + " == len(" + listVarName + ") - 1", eqPrecedence))
+          .addVariable(baseVarName + "__index", new PyExpr(indexVarName, Integer.MAX_VALUE));
 
       // Generate the code for the loop body.
       visitChildren(node);
@@ -662,16 +666,16 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
      */
     @Override
     protected void visitLetValueNode(LetValueNode node) {
-      VarKey varKey = VarKey.createLocalVar(node);
+      String generatedVarName = node.getUniqueVarName();
 
       // Generate code to define the local var.
       TranslateToPyExprVisitor translator =
           new TranslateToPyExprVisitor(localVarExprs, errorReporter);
       PyExpr valuePyExpr = translator.exec(node.getExpr());
-      pyCodeBuilder.appendLine(localVarExprs.createVariable(varKey), " = ", valuePyExpr.getText());
+      pyCodeBuilder.appendLine(generatedVarName, " = ", valuePyExpr.getText());
 
       // Add a mapping for generating future references to this local var.
-      localVarExprs.addVariable(varKey);
+      localVarExprs.addVariable(node.getVarName(), new PyExpr(generatedVarName, Integer.MAX_VALUE));
     }
 
     /**
@@ -697,10 +701,10 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
      */
     @Override
     protected void visitLetContentNode(LetContentNode node) {
-      VarKey varKey = VarKey.createLocalVar(node);
+      String generatedVarName = node.getUniqueVarName();
+
       // Traverse the children and push them onto the generated variable.
       localVarExprs.pushFrame();
-      String generatedVarName = localVarExprs.createVariable(varKey);
       pyCodeBuilder.pushOutputVar(generatedVarName);
 
       visitChildren(node);
@@ -716,7 +720,7 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
           PyExprUtils.wrapAsSanitizedContent(node.getContentKind(), generatedContent).getText());
 
       // Add a mapping for generating future references to this local var.
-      localVarExprs.addVariable(varKey);
+      localVarExprs.addVariable(node.getVarName(), new PyExpr(generatedVarName, Integer.MAX_VALUE));
     }
 
     /**
@@ -748,15 +752,11 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       Preconditions.checkArgument(
           !isComputableAsPyExprVisitor.exec(node),
           "Should only define 'param<n>' when not computable as Python expressions.");
-      VarKey outputVar = VarKey.createOutputVar(node);
-      String outputVarName = localVarExprs.createVariable(outputVar);
-      localVarExprs.pushFrame();
-      pyCodeBuilder.pushOutputVar(outputVarName);
+
+      pyCodeBuilder.pushOutputVar("param" + node.getId());
       pyCodeBuilder.initOutputVarIfNecessary();
       visitChildren(node);
       pyCodeBuilder.popOutputVar();
-      localVarExprs.popFrame();
-      localVarExprs.addListVariable(outputVar);
     }
 
     @Override
@@ -766,7 +766,7 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
     @Override
     protected void visitLogNode(LogNode node) {
-      String outputVarName = localVarExprs.createVariable(VarKey.createOutputVar(node));
+      String outputVarName = "logger_" + node.getId();
       pyCodeBuilder.pushOutputVar(outputVarName);
       pyCodeBuilder.initOutputVarIfNecessary();
       visitChildren(node);
@@ -910,8 +910,8 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     private void generateFunctionBody(TemplateNode node) {
       // Add a new frame for local variable translations.
       localVarExprs.pushFrame();
-      String outputVarName = localVarExprs.createVariable(VarKey.createOutputVar(node));
-      pyCodeBuilder.pushOutputVar(outputVarName);
+
+      pyCodeBuilder.pushOutputVar("output");
 
       visitChildren(node);
 

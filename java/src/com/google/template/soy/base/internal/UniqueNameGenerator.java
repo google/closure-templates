@@ -99,7 +99,7 @@ public final class UniqueNameGenerator {
     checkArgument(!name.isEmpty());
     checkArgument(
         !name.contains(collisionSeparator),
-        "%s contains the collision separator: '%s', this may cause ambiguity",
+        "%s contains the separation character: '%s'",
         name,
         collisionSeparator);
     checkArgument(!bannedCharacters.matchesAnyOf(name), "%s contains dangerous characters!", name);
