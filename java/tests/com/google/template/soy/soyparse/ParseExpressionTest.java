@@ -163,11 +163,18 @@ public final class ParseExpressionTest {
     assertThatExpression("''").isValidExpression();
     assertThatExpression("'{}'").isValidExpression();
     assertThatExpression("'abc'").isValidExpression();
-    assertThatExpression("'\\\\ \\' \\\" \\n \\r \\t \\b \\f  \\u00A9 \\u2468'")
+    assertThatExpression("'\\\\ \\' \\\" \\> \\n \\r \\t \\b \\f  \\xe9 \\u00A9 \\u2468'")
         .isValidExpression();
+    assertThatExpression("'\\014 \\77'").isValidExpression();
+    assertThatExpression("'\\\\'").isValidExpression();
+    assertThatExpression("'\\\\\\\\'").isValidExpression();
 
-    assertThatExpression("'\\xA9'").isNotValidExpression();
-    assertThatExpression("'\\077'").isNotValidExpression();
+    assertThatExpression("'\\xA'").isNotValidExpression();
+    assertThatExpression("'\\x0G'").isNotValidExpression();
+    assertThatExpression("'\\u123'").isNotValidExpression();
+    assertThatExpression("'\\u00AG'").isNotValidExpression();
+    assertThatExpression("'\\8'").isNotValidExpression();
+    assertThatExpression("'\\a'").isNotValidExpression();
     assertThatExpression("\"\"").isNotValidExpression();
     assertThatExpression("\"abc\"").isNotValidExpression();
   }

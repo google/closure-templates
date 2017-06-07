@@ -446,9 +446,7 @@ public final class TemplateParserTest {
             + "{/call}");
 
     TemplateSubject.assertThatTemplateContent("{'unfinished}")
-        .causesError(
-            "parse error at ''': expected null, true, false, number, string, -, not, "
-                + "[, (, identifier, $ij, or variable");
+        .causesError("Unexpected newline in Soy string.");
     TemplateSubject.assertThatTemplateContent("{\"unfinished}")
         .causesError("Found use of double quotes, Soy strings use single quotes.");
 

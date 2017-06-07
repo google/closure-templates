@@ -29,9 +29,9 @@ import java.util.regex.Pattern;
 
 /** Helpers for interpreting parse errors as soy errors. */
 final class ParseErrors {
-  private static final Pattern EXTRACT_LOCATION = Pattern.compile("at line (\\d+), column (\\d+).");
+  static final SoyErrorKind PLAIN_ERROR = SoyErrorKind.of("{0}", StyleAllowance.values());
 
-  private static final SoyErrorKind PLAIN_ERROR = SoyErrorKind.of("{0}", StyleAllowance.values());
+  private static final Pattern EXTRACT_LOCATION = Pattern.compile("at line (\\d+), column (\\d+).");
 
   private static final SoyErrorKind FOUND_DOUBLE_BRACE =
       SoyErrorKind.of("Soy '{{command}}' syntax is no longer supported. Use single braces.");
@@ -50,6 +50,8 @@ final class ParseErrors {
   private static final SoyErrorKind UNEXPECTED_EOF =
       SoyErrorKind.of(
           "Unexpected end of file.  Did you forget to close an attribute value or a comment?");
+  private static final SoyErrorKind UNEXPECTED_NEWLINE =
+      SoyErrorKind.of("Unexpected newline in Soy string.");
   private static final SoyErrorKind UNEXPECTED_PARAM_DECL =
       SoyErrorKind.of(
           "Unexpected parameter declaration. Param declarations must come before any code in "
@@ -116,6 +118,9 @@ final class ParseErrors {
       case SoyFileParserConstants.UNEXPECTED_TEMPLATE:
       case SoyFileParserConstants.UNEXPECTED_DELTEMPLATE:
         reporter.report(location, INVALID_TEMPLATE_COMMAND, errorToken.image);
+        return;
+      case SoyFileParserConstants.UNEXPECTED_NEWLINE:
+        reporter.report(location, UNEXPECTED_NEWLINE);
         return;
       case SoyFileParserConstants.EOF:
         reporter.report(location, UNEXPECTED_EOF);
@@ -219,7 +224,7 @@ final class ParseErrors {
       case SoyFileParserConstants.DEC_INTEGER:
       case SoyFileParserConstants.FLOAT:
         return "number";
-      case SoyFileParserConstants.STRING:
+      case SoyFileParserConstants.SINGLE_QUOTE:
         return "string";
       case SoyFileParserConstants.DOLLAR_IDENT:
         return "variable";
@@ -232,7 +237,7 @@ final class ParseErrors {
     }
   }
 
-  static void report(
+  static void reportLegacyInternalSyntaxException(
       ErrorReporter reporter, String filePath, LegacyInternalSyntaxException exception) {
     SourceLocation sourceLocation = exception.getSourceLocation();
     if (!sourceLocation.isKnown()) {

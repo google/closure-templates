@@ -77,7 +77,6 @@ import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
-import com.google.template.soy.internal.base.UnescapeUtils;
 import com.google.template.soy.soytree.defn.HeaderParam;
 import com.google.template.soy.soytree.AliasDeclaration;
 import com.google.template.soy.soytree.CallBasicNode;
@@ -543,7 +542,7 @@ public class SoyFileParser {
     } catch (ParseException e) {
       ParseErrors.reportSoyFileParseException(errorReporter, filePath, e);
     } catch (LegacyInternalSyntaxException e) {
-      ParseErrors.report(errorReporter, filePath, e);
+      ParseErrors.reportLegacyInternalSyntaxException(errorReporter, filePath, e);
     } catch (TokenMgrError e) {
       ParseErrors.reportTokenMgrError(errorReporter, filePath, e);
     }
@@ -989,15 +988,29 @@ TOKEN_MGR_DECLS: {
         <DEC_DIGITS> "." <DEC_DIGITS> ( "e" ( ["+","-"] )? <DEC_DIGITS> )?
       | <DEC_DIGITS> "e" ( ["+","-"] )? <DEC_DIGITS>
   >
-| < STRING:
-      "'"
-      (
-          ~["'","\\","\n","\r"]
-        | "\\" ["n","r","t","b","f","\\","'","\""]
-        | "\\u" (<HEX_DIGIT>){4}
-      )*
-      "'"
-  >
+}
+
+
+// -------------------------------------------------------------------------------------------------
+// Strings.
+
+<EXPR> TOKEN: {
+  < SINGLE_QUOTE: "'" > : IN_STRING
+}
+
+<IN_STRING> TOKEN: {
+  < STRING: "'" >
+  { matchedToken.image = matchedToken.image.substring(0, matchedToken.image.length() - 1); }
+  : EXPR
+  // We switch to TEMPLATE_DEFAULT rather than remaining in EXPR in order to not clobber the
+  // rest of the template in case the dev forgot to close a string, e.g. {print 'foo}
+| < UNEXPECTED_NEWLINE: ( "\n" | "\r" ) > : TEMPLATE_DEFAULT
+}
+
+<IN_STRING> MORE: {
+  < ~["\n","\r"] >
+| "\\\\"
+| "\\'"
 }
 
 
@@ -3489,7 +3502,7 @@ private ExprNode MapKeyOrExpr() :
  */
 private PrimitiveNode Primitive() :
 {
-  Token tok;
+  Token tok, quote;
   PrimitiveNode primitive;
 }
 {
@@ -3527,11 +3540,12 @@ private PrimitiveNode Primitive() :
     tok = <FLOAT>
     { primitive = new FloatNode(Double.parseDouble(tok.image), createSrcLoc(tok)); }
   |
+    quote = <SINGLE_QUOTE>
     tok = <STRING>
-    { String strNoQuotes = tok.image.substring(1, tok.image.length() - 1);
-      // TODO(lukes): a common strategy for string literals is to use a custom lexer state and a
-      // MORE production.  Once the parsers are merged do that.
-      primitive = new StringNode(UnescapeUtils.unescapeJs(strNoQuotes), createSrcLoc(tok));
+    {
+      SourceLocation loc = createSrcLoc(quote, tok);
+      String unescaped = SoyParseUtils.unescapeString(tok.image, errorReporter, loc);
+      primitive = new StringNode(unescaped, loc);
     }
   )
 
