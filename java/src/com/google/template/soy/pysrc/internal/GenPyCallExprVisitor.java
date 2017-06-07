@@ -22,10 +22,10 @@ import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.pysrc.internal.GenPyExprsVisitor.GenPyExprsVisitorFactory;
+import com.google.template.soy.pysrc.internal.LocalVariableStack.VarKey;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyExprUtils;
 import com.google.template.soy.pysrc.restricted.PyFunctionExprBuilder;
-import com.google.template.soy.pysrc.restricted.PyListExpr;
 import com.google.template.soy.pysrc.restricted.PyStringExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcPrintDirective;
 import com.google.template.soy.soytree.AbstractReturningSoyNodeVisitor;
@@ -221,12 +221,12 @@ final class GenPyCallExprVisitor extends AbstractReturningSoyNodeVisitor<PyExpr>
               PyExprUtils.concatPyExprs(
                   genPyExprsVisitorFactory.create(localVarStack, errorReporter).exec(cpcn));
         } else {
+          VarKey outputVar = VarKey.createOutputVar(cpcn);
           // This is a param with content that cannot be represented as Python expressions, so we
           // assume that code has been generated to define the temporary variable 'param<n>'.
-          String paramExpr = "param" + cpcn.getId();
           // The param can be assumed to be a list at this point since it was created as an output
           // variable.
-          valuePyExpr = new PyListExpr(paramExpr, Integer.MAX_VALUE);
+          valuePyExpr = localVarStack.getVariableExpression(outputVar);
         }
 
         // Param content nodes require a content kind in strict autoescaping, so the content must be

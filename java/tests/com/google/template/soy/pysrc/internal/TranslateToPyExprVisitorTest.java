@@ -19,12 +19,10 @@ package com.google.template.soy.pysrc.internal;
 import static com.google.template.soy.pysrc.internal.SoyExprForPySubject.assertThatSoyExpr;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyListExpr;
 import com.google.template.soy.pysrc.restricted.PyStringExpr;
-import java.util.Map;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -131,17 +129,6 @@ public class TranslateToPyExprVisitorTest {
                 + "runtime.key_safe_data_access("
                 + "runtime.key_safe_data_access(data.get('boo'), 0), 1)",
             Operator.CONDITIONAL);
-  }
-
-  @Test
-  public void testDataRef_localVars() {
-    Map<String, PyExpr> frame = Maps.newHashMap();
-    frame.put("zoo", new PyExpr("zooData8", Integer.MAX_VALUE));
-
-    assertThatSoyExpr("$zoo").with(frame).translatesTo("zooData8", Integer.MAX_VALUE);
-    assertThatSoyExpr("$zoo.boo")
-        .with(frame)
-        .translatesTo("zooData8.get('boo')", Integer.MAX_VALUE);
   }
 
   @Test

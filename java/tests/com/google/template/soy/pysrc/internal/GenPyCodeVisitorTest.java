@@ -215,8 +215,8 @@ public final class GenPyCodeVisitorTest {
             + "def helloWorld(data={}, ijData={}):\n"
             + "  output = []\n"
             + "  if data.get('foo'):\n"
-            + "    for i### in xrange(0, 5, 1):\n"
-            + "      output.append(str(runtime.key_safe_data_access(data.get('boo'), i###)))\n"
+            + "    for i in xrange(0, 5, 1):\n"
+            + "      output.append(str(runtime.key_safe_data_access(data.get('boo'), i)))\n"
             + "  else:\n"
             + "    output.append('Blah')\n"
             + "  return sanitize.SanitizedHtml(''.join(output), "
@@ -254,14 +254,14 @@ public final class GenPyCodeVisitorTest {
     String soyCode =
         "{@param boo : ?}\n" + "{for $i in range(5)}\n" + "  {$boo[$i]}\n" + "{/for}\n";
     String expectedPyCode =
-        "for i### in xrange(0, 5, 1):\n"
-            + "  output.append(str(runtime.key_safe_data_access(data.get('boo'), i###)))\n";
+        "for i in xrange(0, 5, 1):\n"
+            + "  output.append(str(runtime.key_safe_data_access(data.get('boo'), i)))\n";
     assertThatSoyCode(soyCode).compilesTo(expectedPyCode);
 
     soyCode = "{@param boo : ?}\n" + "{for $i in range(5, 10)}\n" + "  {$boo[$i]}\n" + "{/for}\n";
     expectedPyCode =
-        "for i### in xrange(5, 10, 1):\n"
-            + "  output.append(str(runtime.key_safe_data_access(data.get('boo'), i###)))\n";
+        "for i in xrange(5, 10, 1):\n"
+            + "  output.append(str(runtime.key_safe_data_access(data.get('boo'), i)))\n";
     assertThatSoyCode(soyCode).compilesTo(expectedPyCode);
 
     soyCode =
@@ -272,8 +272,8 @@ public final class GenPyCodeVisitorTest {
             + "  {$boo[$i]}\n"
             + "{/for}\n";
     expectedPyCode =
-        "for i### in xrange(data.get('foo'), data.get('boo'), data.get('goo')):\n"
-            + "  output.append(str(runtime.key_safe_data_access(data.get('boo'), i###)))\n";
+        "for i in xrange(data.get('foo'), data.get('boo'), data.get('goo')):\n"
+            + "  output.append(str(runtime.key_safe_data_access(data.get('boo'), i)))\n";
     assertThatSoyCode(soyCode).compilesTo(expectedPyCode);
   }
 
@@ -288,9 +288,9 @@ public final class GenPyCodeVisitorTest {
     // There's no simple way to account for all instances of the id in these variables, so for now
     // we just hardcode '3'.
     String expectedPyCode =
-        "operandList### = data.get('operands')\n"
-            + "for operandIndex###, operandData### in enumerate(operandList###):\n"
-            + "  output.append(str(operandData###))\n";
+        "operandList = data.get('operands')\n"
+            + "for operandIndex, operand in enumerate(operandList):\n"
+            + "  output.append(str(operand))\n";
 
     assertThatSoyCode(soyCode).compilesTo(expectedPyCode);
 
@@ -303,11 +303,11 @@ public final class GenPyCodeVisitorTest {
             + "{/foreach}\n";
 
     expectedPyCode =
-        "operandList### = data.get('operands')\n"
-            + "for operandIndex###, operandData### in enumerate(operandList###):\n"
-            + "  output.extend([str(1 if operandIndex### == 0 else 0),"
-            + "str(1 if operandIndex### == len(operandList###) - 1 else 0),"
-            + "str(operandIndex###)])\n";
+        "operandList = data.get('operands')\n"
+            + "for operandIndex, operand in enumerate(operandList):\n"
+            + "  output.extend([str(1 if operandIndex == 0 else 0),"
+            + "str(1 if operandIndex == len(operandList) - 1 else 0),"
+            + "str(operandIndex)])\n";
 
     assertThatSoyCode(soyCode).compilesTo(expectedPyCode);
   }
@@ -324,10 +324,10 @@ public final class GenPyCodeVisitorTest {
             + "{/foreach}\n";
 
     String expectedPyCode =
-        "operandList### = data.get('operands')\n"
-            + "if operandList###:\n"
-            + "  for operandIndex###, operandData### in enumerate(operandList###):\n"
-            + "    output.append(str(operandData###))\n"
+        "operandList = data.get('operands')\n"
+            + "if operandList:\n"
+            + "  for operandIndex, operand in enumerate(operandList):\n"
+            + "    output.append(str(operand))\n"
             + "else:\n"
             + "  output.append(str(data.get('foo')))\n";
 
@@ -337,7 +337,7 @@ public final class GenPyCodeVisitorTest {
   @Test
   public void testLetValue() {
     assertThatSoyCode("{@param boo : ?}\n" + "{let $foo: $boo /}\n")
-        .compilesTo("foo__soy### = data.get('boo')\n");
+        .compilesTo("foo = data.get('boo')\n");
   }
 
   @Test
@@ -346,8 +346,8 @@ public final class GenPyCodeVisitorTest {
         "{@param boo : ?}\n" + "{let $foo kind=\"html\"}\n" + "  Hello {$boo}\n" + "{/let}\n";
 
     String expectedPyCode =
-        "foo__soy### = ['Hello ',str(data.get('boo'))]\n"
-            + "foo__soy### = sanitize.SanitizedHtml(''.join(foo__soy###), "
+        "foo = ['Hello ',str(data.get('boo'))]\n"
+            + "foo = sanitize.SanitizedHtml(''.join(foo), "
             + SANITIZATION_APPROVAL
             + ")\n";
 
@@ -366,11 +366,11 @@ public final class GenPyCodeVisitorTest {
             + "{/let}\n";
 
     String expectedPyCode =
-        "foo__soy### = []\n"
-            + "for num### in xrange(0, 5, 1):\n"
-            + "  foo__soy###.append(str(num###))\n"
-            + "foo__soy###.extend(['Hello ',str(data.get('boo'))])\n"
-            + "foo__soy### = sanitize.SanitizedHtml(''.join(foo__soy###), "
+        "foo = []\n"
+            + "for num in xrange(0, 5, 1):\n"
+            + "  foo.append(str(num))\n"
+            + "foo.extend(['Hello ',str(data.get('boo'))])\n"
+            + "foo = sanitize.SanitizedHtml(''.join(foo), "
             + SANITIZATION_APPROVAL
             + ")\n";
 
@@ -382,7 +382,7 @@ public final class GenPyCodeVisitorTest {
     String soyCode = "{@param boo : ?}\n" + "{log}\n" + "  {$boo}\n" + "{/log}\n";
 
     String expectedPyCode =
-        "logger_5 = []\n" + "logger_5.append(str(data.get('boo')))\n" + "print logger_5\n" + "";
+        "log = []\n" + "log.append(str(data.get('boo')))\n" + "print log\n" + "";
 
     assertThatSoyCode(soyCode).compilesTo(expectedPyCode);
   }

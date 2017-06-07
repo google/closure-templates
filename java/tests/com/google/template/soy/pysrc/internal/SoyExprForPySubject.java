@@ -42,7 +42,6 @@ import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Truth assertion which compiles the provided soy code and asserts that the generated PyExprs match
@@ -63,20 +62,6 @@ public final class SoyExprForPySubject extends Subject<SoyExprForPySubject, Stri
     super(failureStrategy, expr);
     localVarExprs = new LocalVariableStack();
     injector = Guice.createInjector(new SoyModule());
-  }
-
-  /**
-   * Adds a frame of local variables to the top of the {@link LocalVariableStack}.
-   *
-   * @param localVarFrame one frame of local variables
-   * @return the current subject for chaining
-   */
-  public SoyExprForPySubject with(Map<String, PyExpr> localVarFrame) {
-    localVarExprs.pushFrame();
-    for (Map.Entry<String, PyExpr> entry : localVarFrame.entrySet()) {
-      localVarExprs.addVariable(entry.getKey(), entry.getValue());
-    }
-    return this;
   }
 
   /**

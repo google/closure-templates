@@ -117,7 +117,7 @@ public final class GenPyCallExprVisitorTest {
             + "  {/param}\n"
             + "{/call}\n";
     String expectedPyCode =
-        "goo({'moo': sanitize.UnsanitizedText(''.join(param###), "
+        "goo({'moo': sanitize.UnsanitizedText(''.join(param_moo), "
             + SANITIZED_APPROVAL
             + ")}, ijData)";
 
