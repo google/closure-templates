@@ -1450,7 +1450,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     Map<String, String> record = new LinkedHashMap<>();
     for (TemplateParam param : node.getParams()) {
       JsType jsType = getJsType(param.type());
-      record.put(genParamAlias(param.name()), jsType.typeExprForRecordMember());
+      record.put(param.name(), jsType.typeExprForRecordMember());
       for (GoogRequire require : jsType.getGoogRequires()) {
         jsCodeBuilder.addGoogRequire(require);
       }
@@ -1484,7 +1484,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         // NOTE: we do not add goog.requires for indirect types.  This is because it might introduce
         // strict deps errors.  This should be fine though since the transitive soy template that
         // actually has the param will add them.
-        record.put(genParamAlias(indirectParamName), jsType.typeExprForRecordMember());
+        record.put(indirectParamName, jsType.typeExprForRecordMember());
       }
     }
     StringBuilder sb = new StringBuilder();
@@ -1541,17 +1541,6 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     boolean isIncrementalDom = !getClass().equals(GenJsCodeVisitor.class);
     return JsType.forSoyType(paramType, isIncrementalDom);
   }
-
-  /**
-   * Generate a name for the local variable which will store the value of a parameter, avoiding
-   * collision with JavaScript reserved words.
-   *
-   * <p>TODO(lukes): remove, all the current callers are wrong.
-   */
-  private String genParamAlias(String paramName) {
-    return JsSrcUtils.isReservedWord(paramName) ? "param$" + paramName : paramName;
-  }
-
 
   /**
    * Return true if the template has at least one strict param.
