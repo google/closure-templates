@@ -71,6 +71,16 @@ public final class JsSrcUtils {
   }
 
 
+  /**
+   * Returns true if key is a JavaScript reserved word.
+   *
+   * <p>TODO(lukes): rename to 'needs quoting for property access' and move callers using this for
+   * local variables to use the name generator instead.
+   */
+  static boolean isReservedWord(String key) {
+    return LEGACY_JS_RESERVED_WORDS.contains(key);
+  }
+
   static final ImmutableSet<String> JS_LITERALS =
       ImmutableSet.of("null", "true", "false", "NaN", "Infinity", "undefined");
 
@@ -121,6 +131,21 @@ public final class JsSrcUtils {
           /* future reserved words */
           "async",
           "await");
+
+  /**
+   * Set of words that JavaScript considers reserved words. These words cannot be used as
+   * identifiers. This list is from the ECMA-262 v5, section 7.6.1:
+   * http://www.ecma-international.org/publications/files/drafts/tc39-2009-050.pdf plus the keywords
+   * for boolean values and {@code null}. (Also includes the identifiers "soy" and "soydata" which
+   * are used internally by Soy.)
+   */
+  private static final ImmutableSet<String> LEGACY_JS_RESERVED_WORDS =
+      ImmutableSet.<String>builder()
+          .addAll(JS_LITERALS)
+          .addAll(JS_RESERVED_WORDS)
+          .add("soy")
+          .add("soydata")
+          .build();
 
   /**
    * Standard global objects and functions
