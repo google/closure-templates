@@ -35,7 +35,6 @@ public final class JsSrcNameGenerators {
     UniqueNameGenerator generator = new UniqueNameGenerator(DANGEROUS_CHARACTERS, "$$");
     generator.reserve(JsSrcUtils.JS_LITERALS);
     generator.reserve(JsSrcUtils.JS_RESERVED_WORDS);
-    generator.reserve(JsSrcUtils.JS_GLOBALS);
     return generator;
   }
 }

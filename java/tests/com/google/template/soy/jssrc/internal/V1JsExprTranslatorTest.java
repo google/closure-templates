@@ -17,10 +17,13 @@
 package com.google.template.soy.jssrc.internal;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.template.soy.jssrc.dsl.CodeChunk.id;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.exprtree.Operator;
+import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -33,27 +36,35 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public final class V1JsExprTranslatorTest {
 
+  // Let 'goo' simulate a local variable from a 'foreach' loop.
+  private static final ImmutableMap<String, CodeChunk.WithValue> LOCAL_VAR_TRANSLATIONS =
+      ImmutableMap.<String, CodeChunk.WithValue>builder()
+          .put(
+              "goo",
+              id("gooData8"))
+          .build();
+
   @Test
   public void testDataRef() {
     runTestHelper("$boo",
                   new JsExpr("opt_data.boo", Integer.MAX_VALUE));
     runTestHelper("$boo.goo",
                   new JsExpr("opt_data.boo.goo", Integer.MAX_VALUE));
-    runTestHelper("$goo", new JsExpr("opt_data.goo", Integer.MAX_VALUE));
-    runTestHelper("$goo.boo", new JsExpr("opt_data.goo.boo", Integer.MAX_VALUE));
+    runTestHelper("$goo",
+                  new JsExpr("gooData8", Integer.MAX_VALUE));
+    runTestHelper("$goo.boo",
+                  new JsExpr("gooData8.boo", Integer.MAX_VALUE));
     runTestHelper("$boo.0.1.foo.2",
                   new JsExpr("opt_data.boo[0][1].foo[2]", Integer.MAX_VALUE));
-    runTestHelper(
-        "$boo[$foo][$goo+1]",
-        new JsExpr("opt_data.boo[opt_data.foo][opt_data.goo+1]", Integer.MAX_VALUE),
-        true /* lenient */);
+    runTestHelper("$boo[$foo][$goo+1]",
+                  new JsExpr("opt_data.boo[opt_data.foo][gooData8+1]", Integer.MAX_VALUE),
+                  true /* lenient */);
   }
 
   @Test
   public void testOperators() {
-    runTestHelper(
-        "not $boo or true and $goo",
-        new JsExpr("! opt_data.boo || true && opt_data.goo", Operator.OR.getPrecedence()));
+    runTestHelper("not $boo or true and $goo",
+                  new JsExpr("! opt_data.boo || true && gooData8", Operator.OR.getPrecedence()));
     runTestHelper("( (8-4) + (2-1) )",
                   new JsExpr("( (8-4) + (2-1) )", Operator.PLUS.getPrecedence()));
   }
@@ -68,7 +79,7 @@ public final class V1JsExprTranslatorTest {
         V1JsExprTranslator.translateToJsExpr(
             soyExpr,
             SourceLocation.UNKNOWN,
-            SoyToJsVariableMappings.create(JsSrcNameGenerators.forLocalVariables()),
+            SoyToJsVariableMappings.startingWith(LOCAL_VAR_TRANSLATIONS),
             ExplodingErrorReporter.get());
     assertThat(actualJsExpr.getText()).isEqualTo(expectedJsExpr.getText());
     if (shouldBeLenient) {

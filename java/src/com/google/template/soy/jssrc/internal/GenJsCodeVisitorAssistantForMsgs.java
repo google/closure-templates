@@ -33,7 +33,6 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
-import com.google.template.soy.jssrc.internal.SoyToJsVariableMappings.VarKey;
 import com.google.template.soy.msgs.internal.IcuSyntaxUtils;
 import com.google.template.soy.msgs.internal.MsgUtils;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
@@ -173,10 +172,7 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
    * and return {@code "MSG_UNNAMED_10"}.
    */
   public String generateMsgGroupVariable(MsgFallbackGroupNode node) {
-    String tmpVarName =
-        translationContext
-            .variableMappings()
-            .createName(VarKey.createSyntheticVariable("msg_s", node));
+    String tmpVarName = translationContext.nameGenerator().generateName("msg_s");
     if (node.numChildren() == 1) {
       return generateSingleMsgVariable(node.getChild(0), tmpVarName);
     } else { // has fallbackmsg children
@@ -262,9 +258,7 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
         jsSrcOptions.googMsgsAreExternal()
             ? "MSG_EXTERNAL_" + MsgUtils.computeMsgIdForDualFormat(msgNode)
             : "MSG_UNNAMED";
-    return translationContext
-        .variableMappings()
-        .createName(VarKey.createSyntheticVariable(desiredName, msgNode));
+    return translationContext.nameGenerator().generateName(desiredName);
   }
 
 
@@ -545,10 +539,7 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
         // This is a MsgHtmlTagNode that is not computable as JS expressions. Visit it to
         // generate code to define the 'htmlTag<n>' variable.
         visit(contentNode);
-        contentChunks.add(
-            translationContext
-                .variableMappings()
-                .getIdentifier(VarKey.createOutputVar((MsgHtmlTagNode) contentNode)));
+        contentChunks.add(id("htmlTag" + contentNode.getId()));
 
       } else if (contentNode instanceof CallNode) {
         // If the CallNode has any CallParamContentNode children that are not computable as JS
@@ -604,9 +595,8 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
       throw new AssertionError(
           "Should only define 'htmlTag<n>' when not computable as JS expressions.");
     }
-    String tagOutputName =
-        translationContext.variableMappings().createName(VarKey.createOutputVar(node));
-    jsCodeBuilder().pushOutputVar(id(tagOutputName));
+
+    jsCodeBuilder().pushOutputVar("htmlTag" + node.getId());
     visitChildren(node);
     jsCodeBuilder().popOutputVar();
   }

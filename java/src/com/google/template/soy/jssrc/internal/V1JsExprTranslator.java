@@ -275,7 +275,7 @@ final class V1JsExprTranslator {
    */
   @Nullable
   private static String getLocalVarTranslation(String ident, SoyToJsVariableMappings mappings) {
-    CodeChunk.WithValue translation = mappings.maybeGetIdentifierForV1ExpressionReference(ident);
+    CodeChunk.WithValue translation = mappings.maybeGet(ident);
     if (translation == null) {
       return null;
     }

@@ -17,6 +17,7 @@
 package com.google.template.soy.jssrc.internal;
 
 import com.google.auto.value.AutoValue;
+import com.google.template.soy.base.internal.UniqueNameGenerator;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 
 /**
@@ -28,12 +29,15 @@ import com.google.template.soy.jssrc.dsl.CodeChunk;
 @AutoValue
 public abstract class TranslationContext {
 
-  public abstract SoyToJsVariableMappings variableMappings();
-
+  public abstract SoyToJsVariableMappings soyToJsVariableMappings();
   public abstract CodeChunk.Generator codeGenerator();
+  /** The name generator for this template. */
+  abstract UniqueNameGenerator nameGenerator();
 
   public static TranslationContext of(
-      SoyToJsVariableMappings variableMappings, CodeChunk.Generator codeGenerator) {
-    return new AutoValue_TranslationContext(variableMappings, codeGenerator);
+      SoyToJsVariableMappings soyToJsVariableMappings,
+      CodeChunk.Generator codeGenerator,
+      UniqueNameGenerator nameGenerator) {
+    return new AutoValue_TranslationContext(soyToJsVariableMappings, codeGenerator, nameGenerator);
   }
 }
