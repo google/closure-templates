@@ -62,7 +62,7 @@ public abstract class Declaration extends CodeChunk {
    * </code> Override the superclass implementation to omit the trailing expression.
    */
   @Override
-  String getCode(int startingIndent, OutputContext outputContext) {
+  String getCode(int startingIndent) {
     FormattingContext ctx = new FormattingContext(startingIndent);
     ctx.appendInitialStatements(this);
     return ctx.toString();

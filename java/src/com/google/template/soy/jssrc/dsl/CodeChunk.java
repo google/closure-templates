@@ -16,10 +16,6 @@
 
 package com.google.template.soy.jssrc.dsl;
 
-import static com.google.template.soy.jssrc.dsl.OutputContext.STATEMENT;
-import static com.google.template.soy.jssrc.dsl.OutputContext.TRAILING_EXPRESSION;
-
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
@@ -523,7 +519,7 @@ public abstract class CodeChunk {
    * in a newline.
    */
   public final String getCode() {
-    return getCode(0, OutputContext.STATEMENT);
+    return getCode(0);
   }
 
   /**
@@ -546,24 +542,8 @@ public abstract class CodeChunk {
    *
    */
   public final String getStatementsForInsertingIntoForeignCodeAtIndent(int startingIndent) {
-    String code = getCode(startingIndent, STATEMENT);
+    String code = getCode(startingIndent);
     return code.endsWith("\n") ? code : code + "\n";
-  }
-
-  /**
-   * Returns a sequence of JavaScript statements. In the special case that this chunk is
-   * representable as a single expression, returns that expression
-   * <em>without</em> a trailing semicolon. (By contrast, {@link #getCode()} does send
-   * the trailing semicolon in such cases.)
-   *
-   * <p>This method is generally not safe, since concatenating statements that do not end
-   * in semicolons can cause arbitrary lexical errors. It's intended for use by unit tests
-   * whose assertions are currently written without trailing semicolons.
-   * TODO: migrate the unit tests and delete this method.
-   */
-  @VisibleForTesting
-  public final String getExpressionTestOnly() {
-    return getCode(0, TRAILING_EXPRESSION);
   }
 
   /**
@@ -634,16 +614,14 @@ public abstract class CodeChunk {
    *     </ul>
    */
   @ForOverride
-  String getCode(int startingIndent, OutputContext outputContext) {
+  String getCode(int startingIndent) {
     FormattingContext initialStatements = new FormattingContext(startingIndent);
     initialStatements.appendInitialStatements(this);
 
     FormattingContext outputExprs = new FormattingContext(startingIndent);
     if (this instanceof WithValue) {
       outputExprs.appendOutputExpression((WithValue) this);
-      if (outputContext == STATEMENT) {
-        outputExprs.append(';').endLine();
-      }
+      outputExprs.append(';').endLine();
     }
 
     return initialStatements.concat(outputExprs).toString();

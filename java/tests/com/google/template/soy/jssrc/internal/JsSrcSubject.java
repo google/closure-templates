@@ -348,7 +348,7 @@ abstract class JsSrcSubject<T extends Subject<T, String>> extends Subject<T, Str
       generateCode();
 
       String expected = Joiner.on('\n').join(expectedLines);
-      assertThat(chunk.getExpressionTestOnly()).isEqualTo(expected);
+      assertThat(chunk.getCode()).isEqualTo(expected);
 
       return this;
     }

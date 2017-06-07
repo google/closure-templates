@@ -49,10 +49,10 @@ public abstract class Composite extends CodeChunk.WithValue {
    * superclass implementation to omit it.
    */
   @Override
-  String getCode(int startingIndent, OutputContext outputContext) {
+  String getCode(int startingIndent) {
     return value() instanceof VariableReference
         ? new FormattingContext(startingIndent).appendInitialStatements(this).toString()
-        : super.getCode(startingIndent, outputContext);
+        : super.getCode(startingIndent);
   }
 
   @Override
