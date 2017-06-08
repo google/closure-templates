@@ -1554,6 +1554,14 @@ public final class ContextualAutoescaperTest {
   @Test
   public void testTagNameEdgeCases() {
     assertRewriteFails(
+        "In file no-path:4:1, template ns.foo: "
+            + "Saw unmatched close tag for context-changing tag: script",
+        join("{namespace ns}\n\n", "{template .foo}\n", "</script>\n", "{/template}"));
+    assertRewriteFails(
+        "In file no-path:4:1, template ns.foo: "
+            + "Saw unmatched close tag for context-changing tag: xmp",
+        join("{namespace ns}\n\n", "{template .foo}\n", "</xmp>\n", "{/template}"));
+    assertRewriteFails(
         "In file no-path:4:1, template ns.foo: Invalid end-tag name.",
         join("{namespace ns}\n\n", "{template .foo}\n", "</3>\n", "{/template}"));
   }

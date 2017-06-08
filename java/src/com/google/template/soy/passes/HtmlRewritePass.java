@@ -209,14 +209,10 @@ public final class HtmlRewritePass extends CompilerFilePass {
   private static final SoyErrorKind UNEXPECTED_WS_AFTER_LT =
       SoyErrorKind.of("Unexpected whitespace after ''<'', did you mean ''&lt;''?");
 
-  private static final SoyErrorKind UNEXPECTED_CLOSE_TAG =
-      SoyErrorKind.of("Unexpected close tag for context-changing tag.");
-
   /** Represents features of the parser states. */
   private enum StateFeature {
     /** Means the state is part of an html 'tag' of a node (but not, inside an attribute value). */
     TAG,
-    RCDATA,
     INVALID_END_STATE_FOR_BLOCK;
   }
 
@@ -229,11 +225,10 @@ public final class HtmlRewritePass extends CompilerFilePass {
   private enum State {
     NONE,
     PCDATA,
-    RCDATA_SCRIPT(StateFeature.RCDATA),
-    RCDATA_TEXTAREA(StateFeature.RCDATA),
-    RCDATA_TITLE(StateFeature.RCDATA),
-    RCDATA_STYLE(StateFeature.RCDATA),
-    RCDATA_XMP(StateFeature.RCDATA),
+    RCDATA_SCRIPT,
+    RCDATA_TEXTAREA,
+    RCDATA_TITLE,
+    RCDATA_STYLE,
     HTML_COMMENT,
     CDATA,
     /**
@@ -331,7 +326,6 @@ public final class HtmlRewritePass extends CompilerFilePass {
         case PCDATA:
         case RCDATA_STYLE:
         case RCDATA_TITLE:
-        case RCDATA_XMP:
         case RCDATA_SCRIPT:
         case RCDATA_TEXTAREA:
         case DOUBLE_QUOTED_ATTRIBUTE_VALUE:
@@ -359,10 +353,6 @@ public final class HtmlRewritePass extends CompilerFilePass {
 
     boolean isInvalidForEndOfBlock() {
       return stateTypes.contains(StateFeature.INVALID_END_STATE_FOR_BLOCK);
-    }
-
-    boolean isRcDataState() {
-      return stateTypes.contains(StateFeature.RCDATA);
     }
 
     @Override
@@ -653,9 +643,6 @@ public final class HtmlRewritePass extends CompilerFilePass {
           case RCDATA_TITLE:
             handleRcData(TagName.RcDataTagName.TITLE);
             break;
-          case RCDATA_XMP:
-            handleRcData(TagName.RcDataTagName.XMP);
-            break;
           case RCDATA_SCRIPT:
             handleRcData(TagName.RcDataTagName.SCRIPT);
             break;
@@ -749,7 +736,6 @@ public final class HtmlRewritePass extends CompilerFilePass {
         case RCDATA_STYLE:
         case RCDATA_TEXTAREA:
         case RCDATA_TITLE:
-        case RCDATA_XMP:
         case SINGLE_QUOTED_XML_ATTRIBUTE_VALUE:
         case XML_DECLARATION:
           // no op
@@ -761,14 +747,15 @@ public final class HtmlRewritePass extends CompilerFilePass {
     /**
      * Handle rcdata blocks (script, style, title, textarea).
      *
-     * <p>Scans for {@code </tagName} and if it finds it parses it as a close tag.
+     * <p>Scans for {@code </tagName} and if it finds it, enters {@link State#PCDATA}.
      */
     void handleRcData(TagName.RcDataTagName tagName) {
       boolean foundLt = advanceWhileMatches(NOT_LT);
       if (foundLt) {
         if (matchPrefixIgnoreCase("</" + tagName, false /* don't advance */)) {
-          // pseudo re-enter pcdata so that we trigger the normal logic for starting a tag
-          handlePcData();
+          // we don't advance.  instead we just switch to pcdata and since the current index is on
+          // a '<' character, this will cause us to parse a close tag, which is what we want
+          context.setState(State.PCDATA, currentPoint());
         } else {
           advance();
         }
@@ -1478,7 +1465,6 @@ public final class HtmlRewritePass extends CompilerFilePass {
         case RCDATA_STYLE:
         case RCDATA_TEXTAREA:
         case RCDATA_TITLE:
-        case RCDATA_XMP:
         case XML_DECLARATION:
         case CDATA:
         case DOUBLE_QUOTED_XML_ATTRIBUTE_VALUE:
@@ -1534,7 +1520,6 @@ public final class HtmlRewritePass extends CompilerFilePass {
         case RCDATA_STYLE:
         case RCDATA_TEXTAREA:
         case RCDATA_TITLE:
-        case RCDATA_XMP:
         case XML_DECLARATION:
         case CDATA:
         case DOUBLE_QUOTED_XML_ATTRIBUTE_VALUE:
@@ -1670,7 +1655,6 @@ public final class HtmlRewritePass extends CompilerFilePass {
         case RCDATA_STYLE:
         case RCDATA_TEXTAREA:
         case RCDATA_TITLE:
-        case RCDATA_XMP:
         case XML_DECLARATION:
         case CDATA:
         case DOUBLE_QUOTED_XML_ATTRIBUTE_VALUE:
@@ -1738,7 +1722,6 @@ public final class HtmlRewritePass extends CompilerFilePass {
           case RCDATA_STYLE:
           case RCDATA_TEXTAREA:
           case RCDATA_TITLE:
-          case RCDATA_XMP:
           case SINGLE_QUOTED_XML_ATTRIBUTE_VALUE:
           case XML_DECLARATION:
             context.reset();
@@ -1811,7 +1794,6 @@ public final class HtmlRewritePass extends CompilerFilePass {
         case RCDATA_STYLE:
         case RCDATA_TEXTAREA:
         case RCDATA_TITLE:
-        case RCDATA_XMP:
         case XML_DECLARATION:
         case CDATA:
         case DOUBLE_QUOTED_XML_ATTRIBUTE_VALUE:
@@ -1852,8 +1834,6 @@ public final class HtmlRewritePass extends CompilerFilePass {
           return didYouForgetToCloseThe("<textare> block");
         case RCDATA_TITLE:
           return didYouForgetToCloseThe("<title> block");
-        case RCDATA_XMP:
-          return didYouForgetToCloseThe("<xmp> block");
         case HTML_TAG_NAME: // kind of crazy
         case AFTER_ATTRIBUTE_NAME:
         case AFTER_TAG_NAME_OR_ATTRIBUTE:
@@ -2051,7 +2031,6 @@ public final class HtmlRewritePass extends CompilerFilePass {
     SourceLocation.Point tagStartPoint;
     RawTextNode tagStartNode;
     TagName tagName;
-    State tagStartState;
 
     // TODO(lukes): consider lazily allocating these lists.
     /** All the 'direct' children of the current tag. */
@@ -2170,9 +2149,6 @@ public final class HtmlRewritePass extends CompilerFilePass {
       if (tagStartNode != null) {
         error = format(error, "Expected tagStartNode to be null, got: %s", tagStartNode);
       }
-      if (tagStartState != null) {
-        error = format(error, "Expected tagStartState to be null, got: %s", tagStartState);
-      }
       if (quotedAttributeValueStart != null) {
         error =
             format(
@@ -2202,7 +2178,6 @@ public final class HtmlRewritePass extends CompilerFilePass {
       tagStartPoint = null;
       tagStartNode = null;
       tagName = null;
-      tagStartState = null;
       directTagChildren.clear();
       resetAttribute();
     }
@@ -2225,12 +2200,10 @@ public final class HtmlRewritePass extends CompilerFilePass {
     void startTag(RawTextNode tagStartNode, boolean isCloseTag, SourceLocation.Point point) {
       checkState(this.tagStartPoint == null);
       checkState(this.tagStartNode == null);
-      checkState(this.tagStartState == null);
       checkState(this.directTagChildren.isEmpty());
 
       // need to check if it is safe to transition into a tag.
-      // this is only true if our starting location is pcdata, this is how we prevent people from
-      // escaping kind=js blocks with a '</script'
+      // this is only true if our starting location is pcdata
       if (startingState != State.PCDATA) {
         errorReporter.report(
             point.asLocation(filePath),
@@ -2241,7 +2214,6 @@ public final class HtmlRewritePass extends CompilerFilePass {
         throw new AbortParsingBlockError();
       }
 
-      this.tagStartState = state;
       this.tagStartPoint = checkNotNull(point);
       this.tagStartNode = checkNotNull(tagStartNode);
       this.isCloseTag = isCloseTag;
@@ -2386,14 +2358,27 @@ public final class HtmlRewritePass extends CompilerFilePass {
         replacement = new HtmlOpenTagNode(nodeIdGen.genId(), tagName, sourceLocation, selfClosing);
       }
       // Depending on the tag name, we may need to enter a special state after the tag.
-      State nextState = getNextState(tagName);
-      // if we see a naked </script report an error
-      if (isCloseTag && nextState.isRcDataState() && tagStartState != nextState) {
-        errorReporter.report(tagStartLocation(), UNEXPECTED_CLOSE_TAG);
-      }
-      if (selfClosing || isCloseTag) {
-        // next state for close tags is always pcdata (special blocks don't recursively nest)
-        nextState = State.PCDATA;
+      State nextState = State.PCDATA;
+      if (!selfClosing && !isCloseTag) {
+        TagName.RcDataTagName rcDataTag = tagName.getRcDataTagName();
+        if (rcDataTag != null) {
+          switch (rcDataTag) {
+            case SCRIPT:
+              nextState = State.RCDATA_SCRIPT;
+              break;
+            case STYLE:
+              nextState = State.RCDATA_STYLE;
+              break;
+            case TEXTAREA:
+              nextState = State.RCDATA_TEXTAREA;
+              break;
+            case TITLE:
+              nextState = State.RCDATA_TITLE;
+              break;
+            default:
+              throw new AssertionError(rcDataTag);
+          }
+        }
       }
       edits.remove(tagEndNode);
       edits.addChild(replacement, tagName.getNode());
@@ -2403,30 +2388,9 @@ public final class HtmlRewritePass extends CompilerFilePass {
       directTagChildren.clear();
       tagStartPoint = null;
       tagName = null;
-      tagStartState = null;
       tagStartNode = null;
       checkEmpty("Expected state to be empty after completing a tag");
       return nextState;
-    }
-
-    private static State getNextState(TagName tagName) {
-      if (tagName.getRcDataTagName() == null) {
-        return State.PCDATA;
-      }
-      switch (tagName.getRcDataTagName()) {
-        case SCRIPT:
-          return State.RCDATA_SCRIPT;
-        case STYLE:
-          return State.RCDATA_STYLE;
-        case TEXTAREA:
-          return State.RCDATA_TEXTAREA;
-        case TITLE:
-          return State.RCDATA_TITLE;
-        case XMP:
-          return State.RCDATA_XMP;
-        default:
-          throw new AssertionError(tagName.getRcDataTagName());
-      }
     }
 
     void maybeFinishPendingAttribute(SourceLocation.Point currentPoint) {

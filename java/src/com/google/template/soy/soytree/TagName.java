@@ -49,8 +49,7 @@ public final class TagName {
     SCRIPT,
     STYLE,
     TITLE,
-    TEXTAREA,
-    XMP;
+    TEXTAREA;
 
     @Override
     public String toString() {
@@ -110,9 +109,6 @@ public final class TagName {
         break;
       case "title":
         rcDataTagName = RcDataTagName.TITLE;
-        break;
-      case "xmp":
-        rcDataTagName = RcDataTagName.XMP;
         break;
       default:
         rcDataTagName = null;

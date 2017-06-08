@@ -105,7 +105,7 @@ public final class ContentSecurityPolicyPassTest {
             "{template .foo}\n",
             "<script src=\"one.js\"" + nonce() + "></script>",
             strictHtmlEnabled ? "" : "<script src=two.js" + nonce() + "></script>",
-            strictHtmlEnabled ? "" : "<script src=three.js " + nonce() + "></script>",
+            strictHtmlEnabled ? "" : "<script src=three.js " + nonce() + "/></script>",
             "<h1>Not a script</h1>",
             "<script type='text/javascript'" + nonce() + ">main()</script>\n",
             "{/template}"),
@@ -113,7 +113,7 @@ public final class ContentSecurityPolicyPassTest {
             "{template .foo}\n",
             "<script src=\"one.js\"></script>",
             strictHtmlEnabled ? "" : "<script src=two.js></script>",
-            strictHtmlEnabled ? "" : "<script src=three.js ></script>",
+            strictHtmlEnabled ? "" : "<script src=three.js /></script>",
             "<h1>Not a script</h1>",
             "<script type='text/javascript'>main()</script>\n",
             "{/template}"));
