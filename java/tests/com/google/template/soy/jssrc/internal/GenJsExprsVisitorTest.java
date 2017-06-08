@@ -97,7 +97,7 @@ public final class GenJsExprsVisitorTest {
   public void testRawText() {
 
     assertGeneratedChunks("I'm feeling lucky!", "'I\\'m feeling lucky!';");
-    assertGeneratedChunks("</script>", "'<\\/script>';");
+    assertGeneratedChunks("<script></script>", "'<script><\\/script>';");
     // Ensure Unicode gets escaped, since there's no guarantee about the output encoding of the JS.
     assertGeneratedChunks("More \u00BB", "'More \\u00BB';");
   }
