@@ -690,7 +690,9 @@ public final class GenerateParseInfoVisitor
     }
 
     appendIjParamSet(ilb, ijParamsInfo);
-    ilb.appendLineEnd(");");
+
+    ilb.appendLineEnd(",");
+    ilb.appendLine("\"", node.getAutoescapeMode().getAttributeValue(), "\");");
     ilb.decreaseIndent(2);
 
     ilb.decreaseIndent();

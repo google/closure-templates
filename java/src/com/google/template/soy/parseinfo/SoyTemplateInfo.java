@@ -43,6 +43,17 @@ public class SoyTemplateInfo {
   /** Set of injected params used by this template (or a transitive callee). */
   private final ImmutableSortedSet<String> ijParamSet;
 
+  /** If the template is using strict auto escaping mode. */
+  private final String autoescapeMode;
+
+  @Deprecated
+  public SoyTemplateInfo(
+      String name,
+      ImmutableMap<String, ParamRequisiteness> paramMap,
+      ImmutableSortedSet<String> ijParamSet) {
+    this(name, paramMap, ijParamSet, "STRICT");
+  }
+
   /**
    * Constructor for internal use only, for the general case.
    *
@@ -52,15 +63,18 @@ public class SoyTemplateInfo {
    * @param name The full template name.
    * @param paramMap Map from each param to whether it's required for this template.
    * @param ijParamSet Set of injected params used by this template (or a transitive callee).
+   * @param autoescapeMode The auto escape mode used by this template.
    */
-  public SoyTemplateInfo(
+  protected SoyTemplateInfo(
       String name,
       ImmutableMap<String, ParamRequisiteness> paramMap,
-      ImmutableSortedSet<String> ijParamSet) {
+      ImmutableSortedSet<String> ijParamSet,
+      String autoescapeMode) {
     this.name = name;
     Preconditions.checkArgument(name.lastIndexOf('.') > 0);
     this.paramMap = paramMap;
     this.ijParamSet = ijParamSet;
+    this.autoescapeMode = autoescapeMode;
   }
 
   /** Returns the full template name, e.g. {@code myNamespace.myTemplate}. */
@@ -81,5 +95,10 @@ public class SoyTemplateInfo {
   /** Returns the set of injected params used by this template (or a transitive callee). */
   public ImmutableSortedSet<String> getUsedIjParams() {
     return ijParamSet;
+  }
+
+  /** Returns if the current template is using strict auto escaping mode. */
+  public String getAutoescapeMode() {
+    return autoescapeMode;
   }
 }
