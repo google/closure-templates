@@ -429,6 +429,18 @@ public final class ContextualAutoescaperTest {
   }
 
   @Test
+  public void testBranchesEndInDifferentQuotingContexts() {
+    // branches end in different contexts
+    assertContextualRewritingNoop(
+        join(
+            "{namespace ns}\n\n",
+            "{template .good4}\n",
+            "  {@param p: ?}\n",
+            "<input class={if $p}\"x\"{else}'y'{/if}>\n",
+            "{/template}"));
+  }
+
+  @Test
   public void testSwitch() throws Exception {
     assertContextualRewriting(
         join(
@@ -2731,8 +2743,7 @@ public final class ContextualAutoescaperTest {
     return Joiner.on("").join(lines);
   }
 
-  private void assertContextualRewriting(String expectedOutput, String... inputs)
-      throws SoyAutoescapeException {
+  private void assertContextualRewriting(String expectedOutput, String... inputs) {
     String source = rewrite(inputs).toSourceString();
     // remove the nonce, it is just distracting
     source = source.replace(nonce(), "");

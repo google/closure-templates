@@ -662,6 +662,7 @@ final class InferenceEngine {
       }
       context = context.transitionToAttrValue(delim);
       visitChildren(node);
+      context = context.transitionToTagBody();
     }
 
     /** Handle conjunction nodes. */
