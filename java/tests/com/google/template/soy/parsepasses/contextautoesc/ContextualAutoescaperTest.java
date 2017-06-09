@@ -22,24 +22,18 @@ import static org.junit.Assert.fail;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.SoyFileSetParserBuilder;
-import com.google.template.soy.base.internal.SoyFileKind;
-import com.google.template.soy.base.internal.SoyFileSupplier;
-import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContentOperator;
-import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.error.FormattingErrorReporter;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.CallNode;
+import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.TemplateRegistry;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import javax.annotation.Nonnull;
@@ -47,66 +41,77 @@ import javax.annotation.Nullable;
 import junit.framework.ComparisonFailure;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
-@RunWith(JUnit4.class)
+@RunWith(Parameterized.class)
 public final class ContextualAutoescaperTest {
 
+  @Parameters(name = "useHtmlRewriting {0}")
+  public static Iterable<Object[]> data() {
+    return Arrays.asList(new Object[][] {{false}, {true}});
+  }
+
+  private final boolean useHtmlRewriting;
+
+  // this constructor will be injected by the test runner
+  // note, we cannot use @Parameter because it isn't supported by our version of junit.
+  public ContextualAutoescaperTest(boolean useHtmlRewriting) {
+    this.useHtmlRewriting = useHtmlRewriting;
+  }
+
   /** Custom print directives used in tests below. */
-  private static final ImmutableMap<String, SoyPrintDirective> SOY_PRINT_DIRECTIVES =
-      ImmutableMap.of(
-          "|customEscapeDirective",
-              new SoyPrintDirective() {
-                @Override
-                public String getName() {
-                  return "|customEscapeDirective";
-                }
+  private static final ImmutableList<SoyPrintDirective> SOY_PRINT_DIRECTIVES =
+      ImmutableList.of(
+          new SoyPrintDirective() {
+            @Override
+            public String getName() {
+              return "|customEscapeDirective";
+            }
 
-                @Override
-                public Set<Integer> getValidArgsSizes() {
-                  return ImmutableSet.of(0);
-                }
+            @Override
+            public Set<Integer> getValidArgsSizes() {
+              return ImmutableSet.of(0);
+            }
 
-                @Override
-                public boolean shouldCancelAutoescape() {
-                  return true;
-                }
-              },
-          "|customOtherDirective",
-              new SoyPrintDirective() {
-                @Override
-                public String getName() {
-                  return "|customOtherDirective";
-                }
+            @Override
+            public boolean shouldCancelAutoescape() {
+              return true;
+            }
+          },
+          new SoyPrintDirective() {
+            @Override
+            public String getName() {
+              return "|customOtherDirective";
+            }
 
-                @Override
-                public Set<Integer> getValidArgsSizes() {
-                  return ImmutableSet.of(0);
-                }
+            @Override
+            public Set<Integer> getValidArgsSizes() {
+              return ImmutableSet.of(0);
+            }
 
-                @Override
-                public boolean shouldCancelAutoescape() {
-                  return false;
-                }
-              },
-          "|noAutoescape",
-              new SoyPrintDirective() {
-                @Override
-                public String getName() {
-                  return "|noAutoescape";
-                }
+            @Override
+            public boolean shouldCancelAutoescape() {
+              return false;
+            }
+          },
+          new SoyPrintDirective() {
+            @Override
+            public String getName() {
+              return "|noAutoescape";
+            }
 
-                @Override
-                public Set<Integer> getValidArgsSizes() {
-                  return ImmutableSet.of(0);
-                }
+            @Override
+            public Set<Integer> getValidArgsSizes() {
+              return ImmutableSet.of(0);
+            }
 
-                @Override
-                public boolean shouldCancelAutoescape() {
-                  return true;
-                }
-              },
-          "|bidiSpanWrap", new FakeBidiSpanWrapDirective());
+            @Override
+            public boolean shouldCancelAutoescape() {
+              return true;
+            }
+          },
+          new FakeBidiSpanWrapDirective());
 
   @Test
   public void testStrictModeIsDefault() {
@@ -330,7 +335,16 @@ public final class ContextualAutoescaperTest {
             "<input{if $p} disabled{/if}{if $p2} checked{/if}>\n",
             "{/template}"));
 
-    assertContextualRewritingNoop(
+    assertContextualRewriting(
+        join(
+            "{namespace ns}\n\n",
+            "{template .bar}\n",
+            "  {@param p: ?}\n",
+            "  {@param p2: ?}\n",
+            useHtmlRewriting
+                ? "<input{if $p} disabled{/if}{if $p2} checked{/if}>\n"
+                : "<input {if $p}disabled{/if}{if $p2} checked{/if}>\n",
+            "{/template}"),
         join(
             "{namespace ns}\n\n",
             "{template .bar}\n",
@@ -347,7 +361,15 @@ public final class ContextualAutoescaperTest {
             "<div{if $p} x=x{/if} x=y>\n",
             "{/template}"));
 
-    assertContextualRewritingNoop(
+    assertContextualRewriting(
+        join(
+            "{namespace ns}\n\n",
+            "{template .good4}\n",
+            "  {@param p: ?}\n",
+            useHtmlRewriting
+                ? "<div{if $p} onclick=foo(){/if} x=y>\n"
+                : "<div {if $p}onclick=foo() {/if} x=y>\n",
+            "{/template}"),
         join(
             "{namespace ns}\n\n",
             "{template .good4}\n",
@@ -355,7 +377,15 @@ public final class ContextualAutoescaperTest {
             "<div {if $p}onclick=foo() {/if} x=y>\n",
             "{/template}"));
 
-    assertContextualRewritingNoop(
+    assertContextualRewriting(
+        join(
+            "{namespace ns}\n\n",
+            "{template .good4}\n",
+            "  {@param p: ?}\n",
+            useHtmlRewriting
+                ? "<div foo=bar{if $p} onclick=foo(){/if} x=y>\n"
+                : "<div foo=bar {if $p}onclick=foo() {/if} x=y>\n",
+            "{/template}"),
         join(
             "{namespace ns}\n\n",
             "{template .good4}\n",
@@ -376,7 +406,19 @@ public final class ContextualAutoescaperTest {
             "\n" + "<input{if $x} onclick={$x}{/if}>\n",
             "{/template}"));
 
-    assertContextualRewritingNoop(
+    assertContextualRewriting(
+        join(
+            "{namespace ns}\n\n",
+            "{template .good4}\n",
+            "  {@param p: ?}\n",
+            useHtmlRewriting
+                ? join(
+                    "<input{if $p} disabled=\"true\"{/if}>",
+                    "<input{if $p} onclick=\"foo()\"{/if}>\n")
+                : join(
+                    "<input {if $p}disabled=\"true\"{/if}>",
+                    "<input {if $p}onclick=\"foo()\"{/if}>\n"),
+            "{/template}"),
         join(
             "{namespace ns}\n\n",
             "{template .good4}\n",
@@ -788,7 +830,8 @@ public final class ContextualAutoescaperTest {
         "In file no-path:8:5, template ns.foo: "
             + "Slash (/) cannot follow the preceding branches since it is unclear whether the slash"
             + " is a RegExp literal or division operator."
-            + "  Please add parentheses in the branches leading to `/ 2  </script>`",
+            + "  Please add parentheses in the branches leading to `/ 2  "
+            + (useHtmlRewriting ? "`" : "</script>`"),
         join(
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"deprecated-contextual\"}\n",
@@ -1360,7 +1403,9 @@ public final class ContextualAutoescaperTest {
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"deprecated-contextual\"}\n",
             "  {@param className: ?}\n",
-            "<div {if $className} class=\"{$className |escapeHtmlAttribute}\"{/if} id=x>\n",
+            useHtmlRewriting
+                ? "<div{if $className} class=\"{$className |escapeHtmlAttribute}\"{/if} id=x>\n"
+                : "<div {if $className} class=\"{$className |escapeHtmlAttribute}\"{/if} id=x>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
@@ -1553,7 +1598,18 @@ public final class ContextualAutoescaperTest {
 
   @Test
   public void testOptionalValuelessAttributes() throws Exception {
-    assertContextualRewritingNoop(
+    assertContextualRewriting(
+        join(
+            "{namespace ns}\n\n",
+            "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            useHtmlRewriting
+                ? join(
+                    "<input{if c} checked{/if}>",
+                    "<input{if c} id={id |customEscapeDirective}{/if}>\n")
+                : join(
+                    "<input {if c}checked{/if}>",
+                    "<input {if c}id={id |customEscapeDirective}{/if}>\n"),
+            "{/template}"),
         join(
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"deprecated-contextual\"}\n",
@@ -2199,7 +2255,7 @@ public final class ContextualAutoescaperTest {
             "Hello World\n",
             "{/template}"));
     assertRewriteFails(
-        "In file no-path-0:4:1, template ns.main: "
+        "In file no-path:4:1, template ns.main: "
             + "Soy strict autoescaping currently forbids calls to non-strict templates, unless the "
             + "context is kind=\"text\", since there's no guarantee the callee is safe.",
         join(
@@ -2245,7 +2301,7 @@ public final class ContextualAutoescaperTest {
             "<b>{$x}</b>\n",
             "{/template}"));
     assertRewriteFails(
-        "In file no-path-0:4:1, template ns.main: "
+        "In file no-path:4:1, template ns.main: "
             + "Cannot call strictly autoescaped template ns.foo of kind=\"text\" from incompatible "
             + "context (Context HTML_PCDATA). Strict templates generate extra code to safely call "
             + "templates of other content kinds, but non-strict templates do not.",
@@ -2274,25 +2330,19 @@ public final class ContextualAutoescaperTest {
 
   @Test
   public void testStrictModeAllowsNonAutoescapeCancellingDirectives() {
-    SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forFileContents(
-                join(
-                    "{namespace ns}\n\n",
-                    "{template .main autoescape=\"strict\"}\n",
-                    "  {@param foo: ?}\n",
-                    "<b>{$foo |customOtherDirective}</b>\n",
-                    "{/template}"))
-            .parse()
-            .fileSet();
-    String rewrittenTemplate = rewrittenSource(soyTree);
-    assertThat(rewrittenTemplate.trim())
-        .isEqualTo(
-            join(
-                "{namespace ns}\n\n",
-                "{template .main autoescape=\"strict\"}\n",
-                "  {@param foo: ?}\n",
-                "<b>{$foo |customOtherDirective |escapeHtml}</b>\n",
-                "{/template}"));
+    assertContextualRewriting(
+        join(
+            "{namespace ns}\n\n",
+            "{template .main autoescape=\"strict\"}\n",
+            "  {@param foo: ?}\n",
+            "<b>{$foo |customOtherDirective |escapeHtml}</b>\n",
+            "{/template}"),
+        join(
+            "{namespace ns}\n\n",
+            "{template .main autoescape=\"strict\"}\n",
+            "  {@param foo: ?}\n",
+            "<b>{$foo |customOtherDirective}</b>\n",
+            "{/template}"));
   }
 
   @Test
@@ -2376,6 +2426,37 @@ public final class ContextualAutoescaperTest {
   public void testStrictAttributesMustNotEndInUnquotedAttributeValue() {
     // Ensure that any final attribute-value pair is quoted -- otherwise, if the use site of the
     // value forgets to add spaces, the next attribute will be swallowed.
+    if (useHtmlRewriting) {
+      // The html rewriting mode allows for this since there is no way to interpolate this template
+      // into another tag attribute that creates ambiguity.
+      assertContextualRewriting(
+          join(
+              "{namespace ns}\n\n",
+              "{template .foo autoescape=\"strict\" kind=\"attributes\"}\n",
+              "  {@param x: ?}\n",
+              "onclick={$x |escapeJsValue |escapeHtmlAttributeNospace}",
+              "\n{/template}"),
+          join(
+              "{namespace ns}\n\n",
+              "{template .foo autoescape=\"strict\" kind=\"attributes\"}\n",
+              "  {@param x: ?}\n",
+              "onclick={$x}",
+              "\n{/template}"));
+
+      assertContextualRewriting(
+          join(
+              "{namespace ns}\n\n",
+              "{template .foo autoescape=\"strict\" kind=\"attributes\"}\n",
+              "  {@param x: ?}\n",
+              "title={$x |escapeHtmlAttributeNospace}",
+              "\n{/template}"),
+          join(
+              "{namespace ns}\n\n",
+              "{template .foo autoescape=\"strict\" kind=\"attributes\"}\n",
+              "  {@param x: ?}\n",
+              "title={$x}",
+              "\n{/template}"));
+    } else {
     assertRewriteFails(
         "In file no-path:3:1, template ns.foo: "
             + "A strict block of kind=\"attributes\" cannot end in context "
@@ -2401,6 +2482,7 @@ public final class ContextualAutoescaperTest {
             "  {@param x: ?}\n",
             "title={$x}",
             "\n{/template}"));
+    }
   }
 
   @Test
@@ -2463,12 +2545,7 @@ public final class ContextualAutoescaperTest {
             + "foo()"
             + "\n{/template}";
 
-    ErrorReporter boom = ExplodingErrorReporter.get();
-    ParseResult parseResult =
-        SoyFileSetParserBuilder.forFileContents(source).errorReporter(boom).parse();
-    SoyFileSetNode soyTree = parseResult.fileSet();
-    new ContextualAutoescaper(SOY_PRINT_DIRECTIVES).rewrite(soyTree, parseResult.registry(), boom);
-    TemplateNode mainTemplate = soyTree.getChild(0).getChild(0);
+    TemplateNode mainTemplate = rewrite(source).getChild(0);
     assertWithMessage("Sanity check").that(mainTemplate.getTemplateName()).isEqualTo("ns.main");
     final List<CallNode> callNodes = SoyTreeUtils.getAllNodesOfType(mainTemplate, CallNode.class);
     assertThat(callNodes).hasSize(4);
@@ -2503,13 +2580,7 @@ public final class ContextualAutoescaperTest {
             + "Hello World"
             + "\n{/deltemplate}";
 
-    ErrorReporter boom = ExplodingErrorReporter.get();
-
-    ParseResult parseResult =
-        SoyFileSetParserBuilder.forFileContents(source).errorReporter(boom).parse();
-    SoyFileSetNode soyTree = parseResult.fileSet();
-    new ContextualAutoescaper(SOY_PRINT_DIRECTIVES).rewrite(soyTree, parseResult.registry(), boom);
-    TemplateNode mainTemplate = soyTree.getChild(0).getChild(0);
+    TemplateNode mainTemplate = rewrite(source).getChild(0);
     assertWithMessage("Sanity check").that(mainTemplate.getTemplateName()).isEqualTo("ns.main");
     final List<CallNode> callNodes = SoyTreeUtils.getAllNodesOfType(mainTemplate, CallNode.class);
     assertThat(callNodes).hasSize(2);
@@ -2660,17 +2731,25 @@ public final class ContextualAutoescaperTest {
     return Joiner.on("").join(lines);
   }
 
-  /**
-   * Returns the contextually rewritten source.
-   *
-   * <p>The Soy tree may have multiple files, but only the source code for the first is returned.
-   */
-  private static String rewrittenSource(SoyFileSetNode soyTree) {
+  private void assertContextualRewriting(String expectedOutput, String... inputs)
+      throws SoyAutoescapeException {
+    String source = rewrite(inputs).toSourceString();
+    // remove the nonce, it is just distracting
+    source = source.replace(nonce(), "");
+    assertThat(source.trim()).isEqualTo(expectedOutput);
+  }
 
+  public SoyFileNode rewrite(String... inputs) {
     FormattingErrorReporter reporter = new FormattingErrorReporter();
-    List<TemplateNode> tmpls =
-        new ContextualAutoescaper(SOY_PRINT_DIRECTIVES)
-            .rewrite(soyTree, new TemplateRegistry(soyTree, reporter), reporter);
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(inputs)
+            .errorReporter(reporter)
+            .allowUnboundGlobals(true)
+            .enableHtmlRewriting(useHtmlRewriting)
+            .addPrintDirectives(SOY_PRINT_DIRECTIVES)
+            .runAutoescaper(true)
+            .parse()
+            .fileSet();
 
     if (!reporter.getErrorMessages().isEmpty()) {
       String message = reporter.getErrorMessages().get(0);
@@ -2688,28 +2767,16 @@ public final class ContextualAutoescaperTest {
         throw new IllegalStateException("Unexpected error: " + message);
       }
     }
-
-    StringBuilder src = new StringBuilder();
-    src.append(soyTree.getChild(0).toSourceString());
-    for (TemplateNode tn : tmpls) {
-      src.append('\n').append(tn.toSourceString());
-    }
-    return src.toString();
+    return soyTree.getChild(0);
   }
 
-  private void assertContextualRewriting(String expectedOutput, String... inputs)
-      throws SoyAutoescapeException {
+  private static final String OLD_NONCE =
+      "{if $ij.csp_nonce} nonce=\"{$ij.csp_nonce |filterCspNonceValue}\"{/if}";
+  private static final String STRICT_HTML_NONCE =
+      "{if $ij.csp_nonce} nonce=\"{$ij.csp_nonce |escapeHtmlAttribute}\"{/if}";
 
-    ErrorReporter boom = ExplodingErrorReporter.get();
-    SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forFileContents(inputs)
-            .errorReporter(boom)
-            .allowUnboundGlobals(true)
-            .parse()
-            .fileSet();
-
-    String source = rewrittenSource(soyTree);
-    assertThat(source.trim()).isEqualTo(expectedOutput);
+  private String nonce() {
+    return useHtmlRewriting ? STRICT_HTML_NONCE : OLD_NONCE;
   }
 
   private void assertContextualRewritingNoop(String expectedOutput) throws SoyAutoescapeException {
@@ -2719,21 +2786,10 @@ public final class ContextualAutoescaperTest {
   /**
    * @param msg Message that should be reported to the template ns.author. Null means don't care.
    */
-  private static void assertRewriteFails(@Nullable String msg, String... inputs) {
-    SoyFileSupplier[] soyFileSuppliers = new SoyFileSupplier[inputs.length];
-    for (int i = 0; i < inputs.length; ++i) {
-      soyFileSuppliers[i] =
-          SoyFileSupplier.Factory.create(
-              inputs[i], SoyFileKind.SRC, inputs.length == 1 ? "no-path" : "no-path-" + i);
-    }
-    SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forSuppliers(soyFileSuppliers)
-            .declaredSyntaxVersion(SyntaxVersion.V2_0)
-            .parse()
-            .fileSet();
-
+  private void assertRewriteFails(@Nullable String msg, String... inputs) {
     try {
-      rewrittenSource(soyTree);
+      rewrite(inputs);
+      fail();
     } catch (SoyAutoescapeException ex) {
       // Find the root cause; during contextualization, we re-wrap exceptions on the path to a
       // template.
@@ -2743,9 +2799,7 @@ public final class ContextualAutoescaperTest {
       if (msg != null && !msg.equals(ex.getMessage())) {
         throw (ComparisonFailure) new ComparisonFailure("", msg, ex.getMessage()).initCause(ex);
       }
-      return;
     }
-    fail("Expected failure but was " + soyTree.getChild(0).toSourceString());
   }
 
   static final class FakeBidiSpanWrapDirective

@@ -55,6 +55,11 @@ public final class DesugarHtmlNodesPassTest {
     assertRewrite("<div     class='foo'>").isEqualTo("<div class='foo'>");
     assertRewrite("<div {if true}class='foo'{/if} id='2'>")
         .isEqualTo("<div{if true} class='foo'{/if} id='2'>");
+
+    // notice that the space moves inside the conditional
+    assertRewrite("<div {if true}class='foo'{else}style='baz'{/if}>")
+        .isEqualTo("<div{if true} class='foo'{else} style='baz'{/if}>");
+
     assertRewrite("{let $foo kind=\"attributes\"}     class=foo    {/let}")
         .isEqualTo("{let $foo kind=\"attributes\"}class=foo{/let}");
   }

@@ -16,7 +16,6 @@
 
 package com.google.template.soy.parsepasses.contextautoesc;
 
-import com.google.common.base.Ascii;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -310,7 +309,7 @@ final class RawTextContextUpdater {
         @Override
         Context computeNextContext(Context prior, Matcher matcher) {
           String tagName = matcher.group(1);
-          return prior.transitionToTagName(Ascii.toLowerCase(tagName));
+          return prior.transitionToTagName(tagName);
         }
       };
 

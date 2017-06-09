@@ -1066,55 +1066,47 @@ public final class Context {
    * Returns a new context given the tag name.
    *
    * <p>This mostly handles special context changing tags like {@code <script>}.
+   *
+   * @param tagName The name of the tag
    */
   @CheckReturnValue
   Context transitionToTagName(String tagName) {
     // according to spec ascii case is not meaningful for tag names.
     tagName = Ascii.toLowerCase(tagName);
     boolean isEndTag = state == HtmlContext.HTML_BEFORE_CLOSE_TAG_NAME;
-    Context.ElementType elType;
+    Context.ElementType elType = ElementType.NORMAL;
     int newTemplateNestDepth = templateNestDepth;
-    // We currently only treat <img> and SVG's <image> as a media type, since for <video> and
-    // <audio> there are concerns that attackers could introduce rich video or audio that
-    // facilitates social engineering.  Upon further review, it's possible we may allow them.
-    switch (tagName) {
-      case "img":
-      case "image":
-        elType = ElementType.MEDIA;
-        break;
-      case "script":
-        elType = Context.ElementType.SCRIPT;
-        break;
-      case "style":
-        elType = Context.ElementType.STYLE;
-        break;
-      case "textarea":
-        elType = Context.ElementType.TEXTAREA;
-        break;
-      case "title":
-        elType = Context.ElementType.TITLE;
-        break;
-      case "xmp":
-        elType = Context.ElementType.XMP;
-        break;
-      case "template":
-        elType = Context.ElementType.NORMAL;
-        newTemplateNestDepth += isEndTag ? -1 : 1;
-        if (newTemplateNestDepth < 0) {
-          throw SoyAutoescapeException.createWithoutMetaInfo(
-              "Saw an html5 </template> without encountering <template>.");
-        }
-        break;
-      default:
-        elType = Context.ElementType.NORMAL;
-        break;
-    }
-    if (isEndTag && elType != Context.ElementType.NORMAL && elType != Context.ElementType.MEDIA) {
-      // For special tags that change context (other than normal and media) we flag it as an
-      // error when seeing an unmatched close tag.  e.g. </script> suggests something fishy
-      // happened earlier.
-      throw SoyAutoescapeException.createWithoutMetaInfo(
-          "Saw unmatched close tag for context-changing tag: " + tagName);
+    if (tagName.equals("template")) {
+      newTemplateNestDepth += isEndTag ? -1 : 1;
+      if (newTemplateNestDepth < 0) {
+        throw SoyAutoescapeException.createWithoutMetaInfo(
+            "Saw an html5 </template> without encountering <template>.");
+      }
+    } else if (!isEndTag) {
+      // We currently only treat <img> and SVG's <image> as a media type, since for <video> and
+      // <audio> there are concerns that attackers could introduce rich video or audio that
+      // facilitates social engineering.  Upon further review, it's possible we may allow them.
+      switch (tagName) {
+        case "img":
+        case "image":
+          elType = ElementType.MEDIA;
+          break;
+        case "script":
+          elType = ElementType.SCRIPT;
+          break;
+        case "style":
+          elType = ElementType.STYLE;
+          break;
+        case "textarea":
+          elType = ElementType.TEXTAREA;
+          break;
+        case "title":
+          elType = ElementType.TITLE;
+          break;
+        case "xmp":
+          elType = ElementType.XMP;
+          break;
+      }
     }
     return toBuilder()
         .withState(HtmlContext.HTML_TAG_NAME)

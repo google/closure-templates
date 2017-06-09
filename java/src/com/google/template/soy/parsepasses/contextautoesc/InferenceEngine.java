@@ -614,6 +614,7 @@ final class InferenceEngine {
       if (tag.getTagName().isStatic()) {
         context = context.transitionToTagName(tag.getTagName().getStaticTagNameAsLowerCase());
       } else {
+        // dynamic tag name
         visit(tag.getChild(0));
       }
       // Make sure the element type was pre-determined when setting the tag name.

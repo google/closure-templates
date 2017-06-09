@@ -39,7 +39,9 @@ import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 
@@ -63,6 +65,10 @@ public final class SoyFileSetParserBuilder {
   private ImmutableList<CharSource> conformanceConfigs = ImmutableList.of();
   private boolean enableHtmlRewriting;
   private boolean desugarHtmlNodes = true;
+  // TODO(lukes): disabled for compatibility with unit tests.  fix tests relying on the
+  // escaper not running and enable by default.  This configuration bit only really exists
+  // for incrementaldomsrc, not tests
+  private boolean runAutoescaper = false;
 
   /**
    * Returns a builder that gets its Soy inputs from the given strings, treating each string as the
@@ -126,12 +132,26 @@ public final class SoyFileSetParserBuilder {
   }
 
   public SoyFileSetParserBuilder addSoyFunction(SoyFunction function) {
-    this.soyFunctionMap =
-        ImmutableMap.<String, SoyFunction>builder()
-            .putAll(soyFunctionMap)
-            .put(function.getName(), function)
-            .build();
+    Map<String, SoyFunction> functions = new LinkedHashMap<>();
+    functions.putAll(soyFunctionMap);
+    functions.put(function.getName(), function);
+    this.soyFunctionMap = ImmutableMap.copyOf(functions);
     return this;
+  }
+
+  public SoyFileSetParserBuilder addPrintDirectives(
+      Iterable<? extends SoyPrintDirective> soyPrintDirectives) {
+    Map<String, SoyPrintDirective> directives = new LinkedHashMap<>();
+    directives.putAll(soyPrintDirectiveMap);
+    for (SoyPrintDirective printDirective : soyPrintDirectives) {
+      directives.put(printDirective.getName(), printDirective);
+    }
+    this.soyPrintDirectiveMap = ImmutableMap.copyOf(directives);
+    return this;
+  }
+
+  public SoyFileSetParserBuilder addPrintDirective(SoyPrintDirective printDirective) {
+    return addPrintDirectives(ImmutableList.of(printDirective));
   }
 
   public SoyFileSetParserBuilder options(SoyGeneralOptions options) {
@@ -156,13 +176,18 @@ public final class SoyFileSetParserBuilder {
     return this;
   }
 
-  public SoyFileSetParserBuilder enableHtmlRewriting() {
-    this.enableHtmlRewriting = true;
+  public SoyFileSetParserBuilder enableHtmlRewriting(boolean useHtmlRewriting) {
+    this.enableHtmlRewriting = useHtmlRewriting;
     return this;
   }
 
   public SoyFileSetParserBuilder desugarHtmlNodes(boolean desugarHtmlNodes) {
     this.desugarHtmlNodes = desugarHtmlNodes;
+    return this;
+  }
+
+  public SoyFileSetParserBuilder runAutoescaper(boolean runAutoescaper) {
+    this.runAutoescaper = runAutoescaper;
     return this;
   }
 
@@ -199,10 +224,7 @@ public final class SoyFileSetParserBuilder {
             .desugarHtmlNodes(desugarHtmlNodes)
             .setGeneralOptions(options)
             .setConformanceConfigs(conformanceConfigs)
-            // TODO(lukes): disabled for compatibility with unit tests.  fix tests relying on the
-            // escaper not running and enable by default.  This configuration bit only really exists
-            // for incrementaldom not tests
-            .setAutoescaperEnabled(false);
+            .setAutoescaperEnabled(runAutoescaper);
     if (allowUnboundGlobals) {
       passManager.allowUnknownGlobals();
     }
