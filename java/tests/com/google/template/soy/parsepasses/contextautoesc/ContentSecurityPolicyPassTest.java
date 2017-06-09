@@ -20,20 +20,11 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertEquals;
 
 import com.google.common.base.Joiner;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.SoyFileSet;
-import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.SoyFileSetParserBuilder;
-import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ExplodingErrorReporter;
-import com.google.template.soy.shared.SoyGeneralOptions;
-import com.google.template.soy.shared.restricted.SoyPrintDirective;
-import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
-import com.google.template.soy.soytree.TemplateNode;
 import java.util.Arrays;
-import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -46,7 +37,7 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public final class ContentSecurityPolicyPassTest {
 
-  @Parameters(name = "strictHtml {0}")
+  @Parameters(name = "useHtmlRewriting {0}")
   public static Iterable<Object[]> data() {
     return Arrays.asList(new Object[][] {{false}, {true}});
   }
@@ -205,12 +196,6 @@ public final class ContentSecurityPolicyPassTest {
 
   @Test
   public void testTrailingSlashes() {
-    if (strictHtmlEnabled) {
-      // This test is disabled since the autoescaper doesn't trust the code we inject
-      // even though it is safe
-      // TODO(b/31770394): reenable
-      return;
-    }
     assertInjected(
         join(
             "{template .foo}\n",
@@ -311,49 +296,21 @@ public final class ContentSecurityPolicyPassTest {
     return Joiner.on("").join(lines);
   }
 
-  private SoyFileSetNode parseAndApplyCspPass(String input) {
-    String namespace = "{namespace ns autoescape=\"deprecated-contextual\"}\n\n";
-    ErrorReporter boom = ExplodingErrorReporter.get();
-    // in stricthtml mode insertion is handled by the normal passmanager
-    if (strictHtmlEnabled) {
-      ParseResult parseResult =
-          SoyFileSetParserBuilder.forFileContents(namespace + input)
-              .options(
-                  new SoyGeneralOptions().setExperimentalFeatures(ImmutableList.of("stricthtml")))
-              .errorReporter(boom)
-              .parse();
-      autoescape(boom, parseResult);
-      return parseResult.fileSet();
-    } else {
-      ParseResult parseResult =
-          SoyFileSetParserBuilder.forFileContents(namespace + input).errorReporter(boom).parse();
-
-      ContextualAutoescaper contextualAutoescaper = autoescape(boom, parseResult);
-
-      ContentSecurityPolicyPass.blessAuthorSpecifiedScripts(
-          contextualAutoescaper.getSlicedRawTextNodes());
-      return parseResult.fileSet();
-    }
-  }
-
-  private ContextualAutoescaper autoescape(ErrorReporter reporter, ParseResult parseResult) {
-    ContextualAutoescaper contextualAutoescaper =
-        new ContextualAutoescaper(ImmutableMap.<String, SoyPrintDirective>of());
-    List<TemplateNode> extras =
-        contextualAutoescaper.rewrite(parseResult.fileSet(), parseResult.registry(), reporter);
-
-    SoyFileNode file = parseResult.fileSet().getChild(parseResult.fileSet().numChildren() - 1);
-    file.addChildren(file.numChildren(), extras);
-    return contextualAutoescaper;
-  }
-
   /**
    * Returns the contextually rewritten and injected source.
    *
    * <p>The Soy tree may have multiple files, but only the source code for the first is returned.
    */
   private void assertInjected(String expectedOutput, String input) {
-    SoyFileSetNode soyTree = parseAndApplyCspPass(input);
+    String namespace = "{namespace ns autoescape=\"deprecated-contextual\"}\n\n";
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(namespace + input)
+            // The CSP pass is run as long as either 'enableHtmlRewriting' is true or
+            // 'runAutoescaper' is
+            .enableHtmlRewriting(strictHtmlEnabled)
+            .runAutoescaper(true)
+            .parse()
+            .fileSet();
 
     StringBuilder src = new StringBuilder();
     src.append(soyTree.getChild(0).toSourceString());
