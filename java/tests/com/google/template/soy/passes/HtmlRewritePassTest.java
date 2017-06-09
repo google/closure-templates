@@ -400,6 +400,25 @@ public final class HtmlRewritePassTest {
     assertThat(errorReporter.getErrorMessages()).containsExactly("Illegal tag name character.");
   }
 
+  @Test
+  public void testBadAttributeName() {
+    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+    runPass("<div foo-->", errorReporter);
+    assertThat(errorReporter.getErrorMessages())
+        .containsExactly("Illegal attribute name character.");
+    errorReporter = new FormattingErrorReporter();
+    runPass("<div 0a>", errorReporter);
+    assertThat(errorReporter.getErrorMessages())
+        .containsExactly("Illegal attribute name character.");
+
+    // these are fine, for weird reasons.  afaik, these characters aren't allowed by any defined
+    // html attributes... but we'll allow them since some users are using them for weird reasons.
+    // polymer uses _src and _style apparently
+    runPass("<div _src='foo'>");
+    runPass("<div $src='foo'>");
+    runPass("<div $src_='foo'>");
+  }
+
   private static TemplateNode runPass(String input) {
     return runPass(input, ExplodingErrorReporter.get());
   }

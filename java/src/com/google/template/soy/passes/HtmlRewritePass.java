@@ -508,7 +508,7 @@ public final class HtmlRewritePass extends CompilerFilePass {
      * numeric, underscore color and dash, ending in alpha, numeric, question or dollar characters.
      */
     static final Pattern ATTRIBUTE_NAME =
-        Pattern.compile("[a-z](?:[a-z0-9_:?$\\\\-]*[a-z0-9?$])?", Pattern.CASE_INSENSITIVE);
+        Pattern.compile("[a-z_$](?:[a-z0-9_:?$\\\\-]*[a-z0-9?$_])?", Pattern.CASE_INSENSITIVE);
 
     /**
      * Matches raw text in a tag that isn't a special character or whitespace.
