@@ -361,28 +361,9 @@ final class InferenceEngine {
       visitChildren(callNode);
     }
 
-    /**
-     * For param content nodes with a {@code kind} attribute, visit the node's content with the
-     * strict contextual escaper in the start context indicated by the {@code kind} attribute.
-     *
-     * <p>If the param content nodes with a {@code kind} attribute is in non-contextual template it
-     * is handled by another visitor ({@link
-     * ContextualAutoescaper.NonContextualTypedRenderUnitNodesVisitor}) called from {@link
-     * ContextualAutoescaper}. Here only nodes in strict or contextual templates are handled.
-     */
     @Override
     protected void visitCallParamContentNode(CallParamContentNode node) {
-      if (node.getContentKind() != null
-          && (autoescapeMode == AutoescapeMode.CONTEXTUAL
-              || autoescapeMode == AutoescapeMode.STRICT)) {
-        inferInStrictMode(node);
-      } else if (autoescapeMode == AutoescapeMode.CONTEXTUAL) {
-        inferInContextualModeForHtml(node);
-      } else {
-        // No contextual inference. We should never reach this in strict mode, since all param
-        // blocks must have an explicit kind, checked in CheckEscapingSanityVisitor.
-        Preconditions.checkState(autoescapeMode != AutoescapeMode.STRICT);
-      }
+      visitRenderUnitNode(node);
     }
 
     /** Pass over 'xid' nodes. */
@@ -403,27 +384,31 @@ final class InferenceEngine {
       // an attribute value context like a class, id, or for.
     }
 
-    /**
-     * For let content nodes with a {@code kind} attribute, visit the node's content with the strict
-     * contextual escaper in the start context indicated by the {@code kind} attribute.
-     *
-     * <p>If the let content nodes with a {@code kind} attribute is in non-contextual template it is
-     * handled by another visitor ({@link
-     * ContextualAutoescaper.NonContextualTypedRenderUnitNodesVisitor}) called from {@link
-     * ContextualAutoescaper}. Here only nodes in strict or contextual templates are handled.
-     */
     @Override
     protected void visitLetContentNode(LetContentNode node) {
-      if (node.getContentKind() != null
-          && (autoescapeMode == AutoescapeMode.CONTEXTUAL
-              || autoescapeMode == AutoescapeMode.STRICT)) {
-        inferInStrictMode(node);
-      } else if (autoescapeMode == AutoescapeMode.CONTEXTUAL) {
-        inferInContextualModeForHtml(node);
-      } else {
-        // No contextual inference. We should never reach this in strict mode, since all param
-        // blocks must have an explicit kind, checked in CheckEscapingSanityVisitor.
-        Preconditions.checkState(autoescapeMode != AutoescapeMode.STRICT);
+      visitRenderUnitNode(node);
+    }
+
+    private void visitRenderUnitNode(RenderUnitNode node) {
+      switch (autoescapeMode) {
+        case CONTEXTUAL:
+          // if there is a kind and we are contextual, respect it, otherwise, html it is!
+          if (node.getContentKind() == null) {
+            inferInContextualModeForHtml(node);
+          } else {
+            inferInStrictMode(node);
+          }
+          break;
+        case STRICT:
+          // The CheckEscapingSanityVisitor ensures that node.getContentKind is non-null
+          inferInStrictMode(node);
+          break;
+        case NONCONTEXTUAL:
+          // do nothing.  If the let content nodes with a {@code kind} attribute is in
+          // non-contextual template it is handled by another visitor:
+          // ContextualAutoescaper.NonContextualTypedRenderUnitNodesVisitor called from
+          // ContextualAutoescaper.
+          break;
       }
     }
 
