@@ -393,6 +393,13 @@ public final class HtmlRewritePassTest {
     assertThatSourceString(runPass("<script>xxx</script>")).isEqualTo("<script>xxx</script>");
   }
 
+  @Test
+  public void testBadTagName() {
+    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+    runPass("<3 >", errorReporter);
+    assertThat(errorReporter.getErrorMessages()).containsExactly("Illegal tag name character.");
+  }
+
   private static TemplateNode runPass(String input) {
     return runPass(input, ExplodingErrorReporter.get());
   }

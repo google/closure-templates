@@ -1552,13 +1552,6 @@ public final class ContextualAutoescaperTest {
   }
 
   @Test
-  public void testTagNameEdgeCases() {
-    assertRewriteFails(
-        "In file no-path:4:1, template ns.foo: Invalid end-tag name.",
-        join("{namespace ns}\n\n", "{template .foo}\n", "</3>\n", "{/template}"));
-  }
-
-  @Test
   public void testOptionalValuelessAttributes() throws Exception {
     assertContextualRewritingNoop(
         join(

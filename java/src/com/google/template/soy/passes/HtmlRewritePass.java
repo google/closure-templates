@@ -88,6 +88,8 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
 /**
@@ -164,10 +166,18 @@ public final class HtmlRewritePass extends CompilerFilePass {
       SoyErrorKind.of("Expected an html tag name.");
 
   private static final SoyErrorKind EXPECTED_WS_EQ_OR_CLOSE_AFTER_ATTRIBUTE_NAME =
-      SoyErrorKind.of("Expected whitespace, ''='' or tag close after an attribute name.");
+      SoyErrorKind.of(
+          "Expected whitespace, ''='' or tag close after an attribute name.  If you "
+              + "are trying to create an attribute from a mix of text and print nodes, try moving "
+              + "it all inside the print node. For example, instead of ''data-'{$foo}''' write "
+              + "'''{'''data-'' + $foo'}'''.");
 
   private static final SoyErrorKind EXPECTED_WS_OR_CLOSE_AFTER_TAG_OR_ATTRIBUTE =
-      SoyErrorKind.of("Expected whitespace or tag close after a tag name or attribute.");
+      SoyErrorKind.of(
+          "Expected whitespace or tag close after a tag name or attribute. If you "
+              + "are trying to create an attribute or tag name from a mix of text and print nodes, "
+              + "try moving it all inside the print node. For example, instead of ''data-'{$foo}'''"
+              + " write '''{'''data-'' + $foo'}'''.");
 
   private static final SoyErrorKind FOUND_END_OF_ATTRIBUTE_STARTED_IN_ANOTHER_BLOCK =
       SoyErrorKind.of(
@@ -188,8 +198,10 @@ public final class HtmlRewritePass extends CompilerFilePass {
   private static final SoyErrorKind ILLEGAL_HTML_ATTRIBUTE_CHARACTER =
       SoyErrorKind.of("Illegal unquoted attribute value character.");
 
-  private static final SoyErrorKind INVALID_IDENTIFIER =
-      SoyErrorKind.of("Invalid html identifier, ''{0}'' is an illegal character.");
+  private static final SoyErrorKind BAD_TAG_NAME = SoyErrorKind.of("Illegal tag name character.");
+
+  private static final SoyErrorKind BAD_ATTRIBUTE_NAME =
+      SoyErrorKind.of("Illegal attribute name character.");
 
   private static final SoyErrorKind INVALID_LOCATION_FOR_NONPRINTABLE =
       SoyErrorKind.of(
@@ -479,14 +491,24 @@ public final class HtmlRewritePass extends CompilerFilePass {
   }
 
   private static final class Visitor extends AbstractSoyNodeVisitor<Void> {
-    
     /**
-     * Matches a characters that should cause parse errors if they occur inside an html identifier.
-     *
-     * <p>see https://www.w3.org/TR/html51/syntax.html#attribute-name-state
+     * Spec: http://www.w3.org/TR/html5/syntax.html#tag-name-state -- however, unlike the spec,
+     * which appears to allow arbitrary Unicode chars after the first char, we only parse ASCII
+     * identifier tag names.
      */
-    static final CharMatcher INVALID_IDENTIFIER_CHAR_MATCHER =
-        CharMatcher.anyOf("<\0'\"").precomputed();
+    static final Pattern TAG_NAME = Pattern.compile("[a-z][a-z0-9:-]*", Pattern.CASE_INSENSITIVE);
+    /**
+     * Regex for allowed attribute names. Intentionally more restrictive than spec:
+     * https://html.spec.whatwg.org/multipage/syntax.html#attribute-name-state Allows {@code
+     * data-foo} and other dashed attribute names, but intentionally disallows "--" as an attribute
+     * name so that a tag ending after a value-less attribute named "--" cannot be confused with an
+     * HTML comment end ("-->"). Also prevents unicode normalized characters. Regular expression is
+     * a case insensitive match of any number of whitespace characters followed by a capture group
+     * for an attribute name composed of an alphabetic character followed by any number of alpha,
+     * numeric, underscore color and dash, ending in alpha, numeric, question or dollar characters.
+     */
+    static final Pattern ATTRIBUTE_NAME =
+        Pattern.compile("[a-z](?:[a-z0-9_:?$\\\\-]*[a-z0-9?$])?", Pattern.CASE_INSENSITIVE);
 
     /**
      * Matches raw text in a tag that isn't a special character or whitespace.
@@ -902,6 +924,7 @@ public final class HtmlRewritePass extends CompilerFilePass {
         context.setTagName(
             new TagName(new RawTextNode(nodeIdGen.genId(), "$parse-error$", currentLocation())));
       } else {
+        validateIdentifier(node, TAG_NAME, BAD_TAG_NAME);
         context.setTagName(new TagName(node));
       }
     }
@@ -944,14 +967,39 @@ public final class HtmlRewritePass extends CompilerFilePass {
         return;
       }
       RawTextNode identifier = consumeHtmlIdentifier(EXPECTED_ATTRIBUTE_NAME);
-      // TODO(lukes): add some additional validation. tag names are more restrictive than attribute
-      // names.
       if (identifier == null) {
         // consumeHtmlIdentifier will have already reported an error
         context.resetAttribute();
         return;
+      } else {
+        validateIdentifier(identifier, ATTRIBUTE_NAME, BAD_ATTRIBUTE_NAME);
       }
       context.startAttribute(identifier);
+    }
+
+    /**
+     * Reports an error if the identifier doesn't match the validation pattern.
+     *
+     * <p>The error message should point at the first range of characters that fail to match the
+     * pattern.
+     */
+    private void validateIdentifier(
+        RawTextNode identifier, Pattern validator, SoyErrorKind badIdentifierError) {
+      Matcher matcher = validator.matcher(identifier.getRawText());
+      if (!matcher.matches()) {
+        matcher.reset();
+        int startErrorIndex = 0;
+        int endErrorIndex = identifier.getRawText().length();
+        if (matcher.find()) {
+          if (matcher.start() > 0) {
+            endErrorIndex = matcher.start();
+          } else {
+            startErrorIndex = matcher.end();
+          }
+        }
+        errorReporter.report(
+            identifier.substringLocation(startErrorIndex, endErrorIndex), badIdentifierError);
+      }
     }
 
     /**
@@ -1124,21 +1172,11 @@ public final class HtmlRewritePass extends CompilerFilePass {
       // characters and then validate the text afterwards.
       boolean foundDelimiter = advanceWhileMatches(TAG_DELIMITER_MATCHER);
       RawTextNode node = consumeAsRawText();
-      if (node != null) {
-        int indexIn = INVALID_IDENTIFIER_CHAR_MATCHER.indexIn(node.getRawText());
-        if (indexIn != -1) {
-          errorReporter.report(
-              node.substringLocation(indexIn, indexIn + 1),
-              INVALID_IDENTIFIER,
-              node.getRawText().charAt(indexIn));
-        }
-      } else if (foundDelimiter) {
+      if (node == null && foundDelimiter) {
         errorReporter.report(currentLocation(), errorForMissingIdentifier);
         // consume the bad char
         advance();
         consume();
-      } else {
-        throw new AssertionError("impossible");
       }
       return node;
     }
