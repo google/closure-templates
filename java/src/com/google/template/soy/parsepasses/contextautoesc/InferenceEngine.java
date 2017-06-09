@@ -414,16 +414,16 @@ final class InferenceEngine {
      */
     @Override
     protected void visitLetContentNode(LetContentNode node) {
-      if (node.getContentKind() == null) {
-        // Nodes without kind attribute are treated by the contextual autoescaper as before (i.e.
-        // visted in whatever context the let node appears.
-        // TODO: Consider unconditionally visiting as HTML_PCDATA to be consistent with {param}.
-        super.visitLetContentNode(node);
+      if (node.getContentKind() != null
+          && (autoescapeMode == AutoescapeMode.CONTEXTUAL
+              || autoescapeMode == AutoescapeMode.STRICT)) {
+        inferInStrictMode(node);
+      } else if (autoescapeMode == AutoescapeMode.CONTEXTUAL) {
+        inferInContextualModeForHtml(node);
       } else {
-        if (autoescapeMode == AutoescapeMode.CONTEXTUAL
-            || autoescapeMode == AutoescapeMode.STRICT) {
-          inferInStrictMode(node);
-        }
+        // No contextual inference. We should never reach this in strict mode, since all param
+        // blocks must have an explicit kind, checked in CheckEscapingSanityVisitor.
+        Preconditions.checkState(autoescapeMode != AutoescapeMode.STRICT);
       }
     }
 

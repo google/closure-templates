@@ -1644,8 +1644,7 @@ public final class ContextualAutoescaperTest {
 
   @Test
   public void testUntypedLetBlockIsContextuallyEscaped() {
-    // Test that the behavior for let blocks without kind attribute is unchanged (i.e., they are
-    // contextually escaped in the context the {let} command appears in).
+    // Test that the behavior for let blocks without kind attribute is inferred to be html.
     assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
@@ -1653,7 +1652,7 @@ public final class ContextualAutoescaperTest {
             "  {@param y: ?}\n",
             "<script> var y = '",
             "{let $l}",
-            "<div>{$y |escapeJsString}</div>",
+            "<div>{$y |escapeHtml}</div>",
             "{/let}",
             "{$y |escapeJsString}'</script>\n",
             "{/template}"),
