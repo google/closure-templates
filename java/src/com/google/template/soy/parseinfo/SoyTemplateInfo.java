@@ -46,14 +46,6 @@ public class SoyTemplateInfo {
   /** If the template is using strict auto escaping mode. */
   private final String autoescapeMode;
 
-  @Deprecated
-  public SoyTemplateInfo(
-      String name,
-      ImmutableMap<String, ParamRequisiteness> paramMap,
-      ImmutableSortedSet<String> ijParamSet) {
-    this(name, paramMap, ijParamSet, "STRICT");
-  }
-
   /**
    * Constructor for internal use only, for the general case.
    *
