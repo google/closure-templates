@@ -1170,13 +1170,10 @@ public final class HtmlRewritePass extends CompilerFilePass {
     RawTextNode consumeHtmlIdentifier(SoyErrorKind errorForMissingIdentifier) {
       // rather than use a regex to match the prefix, we just consume all non-whitespace/non-meta
       // characters and then validate the text afterwards.
-      boolean foundDelimiter = advanceWhileMatches(TAG_DELIMITER_MATCHER);
+      advanceWhileMatches(TAG_DELIMITER_MATCHER);
       RawTextNode node = consumeAsRawText();
-      if (node == null && foundDelimiter) {
+      if (node == null) {
         errorReporter.report(currentLocation(), errorForMissingIdentifier);
-        // consume the bad char
-        advance();
-        consume();
       }
       return node;
     }
