@@ -308,7 +308,7 @@ public final class Sanitizers {
     if (EscapingConventions.FilterCssValue.INSTANCE.getValueFilter().matcher(value).find()) {
       return value;
     }
-    logger.log(Level.WARNING, "|filterCssValue received bad value {0}", value);
+    logger.log(Level.WARNING, "|filterCssValue received bad value ''{0}''", value);
     return EscapingConventions.FilterCssValue.INSTANCE.getInnocuousOutput();
   }
 
@@ -358,7 +358,7 @@ public final class Sanitizers {
     if (EscapingConventions.FilterNormalizeUri.INSTANCE.getValueFilter().matcher(value).find()) {
       return EscapingConventions.FilterNormalizeUri.INSTANCE.escape(value);
     }
-    logger.log(Level.WARNING, "|filterNormalizeUri received bad value {0}", value);
+    logger.log(Level.WARNING, "|filterNormalizeUri received bad value ''{0}''", value);
     return EscapingConventions.FilterNormalizeUri.INSTANCE.getInnocuousOutput();
   }
 
@@ -387,7 +387,7 @@ public final class Sanitizers {
         .find()) {
       return EscapingConventions.FilterNormalizeMediaUri.INSTANCE.escape(value);
     }
-    logger.log(Level.WARNING, "|filterNormalizeMediaUri received bad value {0}", value);
+    logger.log(Level.WARNING, "|filterNormalizeMediaUri received bad value ''{0}''", value);
     return EscapingConventions.FilterNormalizeMediaUri.INSTANCE.getInnocuousOutput();
   }
 
@@ -396,7 +396,7 @@ public final class Sanitizers {
     if (isSanitizedContentOfKind(value, SanitizedContent.ContentKind.TRUSTED_RESOURCE_URI)) {
       return value.coerceToString();
     }
-    logger.log(Level.WARNING, "|filterTrustedResourceUri received bad value {0}", value);
+    logger.log(Level.WARNING, "|filterTrustedResourceUri received bad value ''{0}''", value);
     return "about:invalid#" + EscapingConventions.INNOCUOUS_OUTPUT;
   }
 
@@ -437,7 +437,7 @@ public final class Sanitizers {
       // NOTE: No need to escape.
       return UnsafeSanitizedContentOrdainer.ordainAsSafe(value, ContentKind.URI);
     }
-    logger.log(Level.WARNING, "|filterImageDataUri received bad value {0}", value);
+    logger.log(Level.WARNING, "|filterImageDataUri received bad value ''{0}''", value);
     return UnsafeSanitizedContentOrdainer.ordainAsSafe(
         EscapingConventions.FilterImageDataUri.INSTANCE.getInnocuousOutput(),
         SanitizedContent.ContentKind.URI);
@@ -454,7 +454,7 @@ public final class Sanitizers {
       // NOTE: No need to escape. Escaping for other contexts (e.g. HTML) happen after this.
       return UnsafeSanitizedContentOrdainer.ordainAsSafe(value, ContentKind.URI);
     }
-    logger.log(Level.WARNING, "|filterTelUri received bad value {0}", value);
+    logger.log(Level.WARNING, "|filterTelUri received bad value ''{0}''", value);
     return UnsafeSanitizedContentOrdainer.ordainAsSafe(
         EscapingConventions.FilterTelUri.INSTANCE.getInnocuousOutput(),
         SanitizedContent.ContentKind.URI);
@@ -491,7 +491,7 @@ public final class Sanitizers {
     if (EscapingConventions.FilterHtmlAttributes.INSTANCE.getValueFilter().matcher(value).find()) {
       return value;
     }
-    logger.log(Level.WARNING, "|filterHtmlAttributes received bad value {0}", value);
+    logger.log(Level.WARNING, "|filterHtmlAttributes received bad value ''{0}''", value);
     return EscapingConventions.FilterHtmlAttributes.INSTANCE.getInnocuousOutput();
   }
 
@@ -505,7 +505,7 @@ public final class Sanitizers {
     if (EscapingConventions.FilterHtmlElementName.INSTANCE.getValueFilter().matcher(value).find()) {
       return value;
     }
-    logger.log(Level.WARNING, "|filterHtmlElementName received bad value {0}", value);
+    logger.log(Level.WARNING, "|filterHtmlElementName received bad value ''{0}''", value);
     return EscapingConventions.FilterHtmlElementName.INSTANCE.getInnocuousOutput();
   }
 
@@ -521,7 +521,7 @@ public final class Sanitizers {
     if (isSanitizedContentOfKind(value, SanitizedContent.ContentKind.TEXT)) {
       logger.log(
           Level.WARNING,
-          "|noAutoescape received value explicitly tagged as ContentKind.TEXT: {0}",
+          "|noAutoescape received value explicitly tagged as ContentKind.TEXT: ''{0}''",
           value);
       return StringData.forValue(EscapingConventions.INNOCUOUS_OUTPUT);
     }
@@ -534,7 +534,7 @@ public final class Sanitizers {
     if (EscapingConventions.FilterCspNonceValue.INSTANCE.getValueFilter().matcher(value).find()) {
       return value;
     }
-    logger.log(Level.WARNING, "|filterCspNonceValue received bad value {0}", value);
+    logger.log(Level.WARNING, "|filterCspNonceValue received bad value ''{0}''", value);
     return EscapingConventions.FilterCspNonceValue.INSTANCE.getInnocuousOutput();
   }
 
