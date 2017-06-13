@@ -38,14 +38,14 @@ import javax.inject.Singleton;
 /**
  * A function that determines the index of the first occurrence of a string within another string.
  *
- * <p><code>strIndexOf(expr1, expr2, expr3)</code> requires <code>expr1</code>, <code>expr2</code> to be
- * of type string or {@link com.google.template.soy.data.SanitizedContent} and <code>expr3</code> of type boolean.
- * <code>expr3</code> is optional for case insensitive compare.
+ * <p><code>strIndexOf(expr1, expr2, expr3)</code> requires <code>expr1</code>, <code>expr2</code>
+ * to be of type string or {@link com.google.template.soy.data.SanitizedContent} and <code>expr3
+ * </code> of type boolean. <code>expr3</code> is optional for case insensitive compare.
  *
  * <p>It returns the index within the string <code>expr1</code> of the first occurrence of the
  * specified substring <code>expr2</code>. If no such index exists, then <code>-1</code>is returned.
- * <code>strIndexOf</code> by default is case sensitive and the string indices are zero based. If <code>expr3</code>
- * is specified and is <code>true</code>, then case insensitive compare is done.
+ * <code>strIndexOf</code> by default is case sensitive and the string indices are zero based. If
+ * <code>expr3</code> is specified and is <code>true</code>, then case insensitive compare is done.
  *
  */
 @Singleton
@@ -92,8 +92,8 @@ final class StrIndexOfFunction implements SoyJavaFunction, SoyJsSrcFunction, Soy
     String strArg1 = arg1.coerceToString();
 
     if (arg2 != null && arg2.coerceToBoolean()) {
-      strArg0 = strArg0.toLowerCase();
-      strArg1 = strArg1.toLowerCase();
+      strArg0 = strArg0.toUpperCase();
+      strArg1 = strArg1.toUpperCase();
     }
 
     return IntegerData.forValue(strArg0.indexOf(strArg1));
@@ -106,9 +106,9 @@ final class StrIndexOfFunction implements SoyJavaFunction, SoyJsSrcFunction, Soy
     String arg1 = JsExprUtils.toString(args.get(1)).getText();
     JsExpr arg2 = args.size() == 3 ? args.get(2) : null;
 
-    if (arg2 != null && arg2.getText().toLowerCase().equals("true")){
-      arg0 = arg0.toLowerCase();
-      arg1 = arg1.toLowerCase();
+    if (arg2 != null && arg2.getText().toUpperCase().equals("TRUE")) {
+      arg0 = arg0.toUpperCase();
+      arg1 = arg1.toUpperCase();
     }
 
     return new JsExpr("(" + arg0 + ").indexOf(" + arg1 + ")", Integer.MAX_VALUE);
@@ -121,11 +121,13 @@ final class StrIndexOfFunction implements SoyJavaFunction, SoyJsSrcFunction, Soy
     String arg1 = args.get(1).toPyString().getText();
     PyExpr arg2 = args.size() == 3 ? args.get(2) : null;
 
-    if (arg2 != null && arg2.toPyString().getText().toLowerCase().equals("true")){
-      arg0 = arg0.toLowerCase();
-      arg1 = arg1.toLowerCase();
+    String exprText;
+    if (arg2 != null && arg2.toPyString().getText().toUpperCase().equals("TRUE")) {
+      exprText = "(" + arg0 + ".upper().find(" + arg1 + ".upper()))";
+    } else {
+      exprText = "(" + arg0 + ").find(" + arg1 + ")";
     }
 
-    return new PyExpr("(" + arg0 + ").find(" + arg1 + ")", Integer.MAX_VALUE);
+    return new PyExpr(exprText, Integer.MAX_VALUE);
   }
 }

@@ -37,10 +37,10 @@ import org.junit.runners.JUnit4;
 /**
  * Unit tests for {@link com.google.template.soy.basicfunctions.StrIndexOfFunction}.
  *
+ * @author Christian Czekay
  */
 @RunWith(JUnit4.class)
 public class StrIndexOfFunctionTest {
-
   @Test
   public void testComputeForJava_containsString() {
     StrIndexOfFunction strIndexOf = new StrIndexOfFunction();
@@ -55,7 +55,8 @@ public class StrIndexOfFunctionTest {
     SoyValue arg0 = StringData.forValue("fooBarFoo");
     SoyValue arg1 = StringData.forValue("bar");
     SoyValue arg2 = BooleanData.forValue(true);
-    assertEquals(IntegerData.forValue(3), strIndexOf.computeForJava(ImmutableList.of(arg0, arg1, arg2)));
+    assertEquals(
+        IntegerData.forValue(3), strIndexOf.computeForJava(ImmutableList.of(arg0, arg1, arg2)));
   }
 
   @Test
@@ -72,7 +73,8 @@ public class StrIndexOfFunctionTest {
     SoyValue arg0 = ordainAsSafe("foobaRfoo", ContentKind.TEXT);
     SoyValue arg1 = ordainAsSafe("bar", ContentKind.TEXT);
     SoyValue arg2 = BooleanData.forValue(true);
-    assertEquals(IntegerData.forValue(3), strIndexOf.computeForJava(ImmutableList.of(arg0, arg1, arg2)));
+    assertEquals(
+        IntegerData.forValue(3), strIndexOf.computeForJava(ImmutableList.of(arg0, arg1, arg2)));
   }
 
   @Test
@@ -82,7 +84,6 @@ public class StrIndexOfFunctionTest {
     SoyValue arg1 = StringData.forValue("bar");
     assertEquals(IntegerData.forValue(-1), strIndexOf.computeForJava(ImmutableList.of(arg0, arg1)));
   }
-
 
   @Test
   public void testComputeForJava_doesNotContainSanitizedContent() {
@@ -97,8 +98,7 @@ public class StrIndexOfFunctionTest {
     StrIndexOfFunction strIndexOf = new StrIndexOfFunction();
     JsExpr arg0 = new JsExpr("'foo' + 'bar'", Operator.PLUS.getPrecedence());
     JsExpr arg1 = new JsExpr("'ba' + 'r'", Operator.PLUS.getPrecedence());
-    assertEquals(
-        new JsExpr("('' + ('foo' + 'bar')).indexOf('' + ('ba' + 'r'))", Integer.MAX_VALUE),
+    assertEquals(new JsExpr("('' + ('foo' + 'bar')).indexOf('' + ('ba' + 'r'))", Integer.MAX_VALUE),
         strIndexOf.computeForJsSrc(ImmutableList.of(arg0, arg1)));
   }
 
@@ -108,9 +108,8 @@ public class StrIndexOfFunctionTest {
     JsExpr arg0 = new JsExpr("'foo' + 'Bar'", Operator.PLUS.getPrecedence());
     JsExpr arg1 = new JsExpr("'ba' + 'r'", Operator.PLUS.getPrecedence());
     JsExpr arg2 = new JsExpr("true", 0);
-    assertEquals(
-            new JsExpr("('' + ('foo' + 'bar')).indexOf('' + ('ba' + 'r'))", Integer.MAX_VALUE),
-            strIndexOf.computeForJsSrc(ImmutableList.of(arg0, arg1, arg2)));
+    assertEquals(new JsExpr("('' + ('FOO' + 'BAR')).indexOf('' + ('BA' + 'R'))", Integer.MAX_VALUE),
+        strIndexOf.computeForJsSrc(ImmutableList.of(arg0, arg1, arg2)));
   }
 
   @Test
@@ -118,8 +117,7 @@ public class StrIndexOfFunctionTest {
     StrIndexOfFunction strIndexOf = new StrIndexOfFunction();
     JsExpr arg0 = new JsExpr("'foobar'", Integer.MAX_VALUE);
     JsExpr arg1 = new JsExpr("'bar'", Integer.MAX_VALUE);
-    assertEquals(
-        new JsExpr("('foobar').indexOf('bar')", Integer.MAX_VALUE),
+    assertEquals(new JsExpr("('foobar').indexOf('bar')", Integer.MAX_VALUE),
         strIndexOf.computeForJsSrc(ImmutableList.of(arg0, arg1)));
   }
 
@@ -130,9 +128,8 @@ public class StrIndexOfFunctionTest {
     JsExpr arg1 = new JsExpr("'Bar'", Integer.MAX_VALUE);
     JsExpr arg2 = new JsExpr("true", 0);
 
-    assertEquals(
-            new JsExpr("('foobar').indexOf('bar')", Integer.MAX_VALUE),
-            strIndexOf.computeForJsSrc(ImmutableList.of(arg0, arg1, arg2)));
+    assertEquals(new JsExpr("('FOOBAR').indexOf('BAR')", Integer.MAX_VALUE),
+        strIndexOf.computeForJsSrc(ImmutableList.of(arg0, arg1, arg2)));
   }
 
   @Test
@@ -151,7 +148,7 @@ public class StrIndexOfFunctionTest {
     PyExpr substring = new PyStringExpr("'bar'", Integer.MAX_VALUE);
     PyExpr caseInsensitive = new PyStringExpr("true", Integer.MAX_VALUE);
     assertThat(strIndexOf.computeForPySrc(ImmutableList.of(base, substring, caseInsensitive)))
-            .isEqualTo(new PyExpr("('foobar').find('bar')", Integer.MAX_VALUE));
+        .isEqualTo(new PyExpr("('fooBar'.upper().find('bar'.upper()))", Integer.MAX_VALUE));
   }
 
   @Test
@@ -170,6 +167,6 @@ public class StrIndexOfFunctionTest {
     PyExpr substring = new PyExpr("bAr", Integer.MAX_VALUE);
     PyExpr caseInsensitive = new PyStringExpr("true", Integer.MAX_VALUE);
     assertThat(strIndexOf.computeForPySrc(ImmutableList.of(base, substring, caseInsensitive)))
-            .isEqualTo(new PyExpr("(str(foobar)).find(str(bar))", Integer.MAX_VALUE));
+        .isEqualTo(new PyExpr("(str(fooBar).upper().find(str(bAr).upper()))", Integer.MAX_VALUE));
   }
 }
