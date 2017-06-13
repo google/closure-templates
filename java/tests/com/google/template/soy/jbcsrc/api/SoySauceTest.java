@@ -42,7 +42,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 /** Tests basic soy sauce interaction */
-@SuppressWarnings("CheckReturnValue")
 @RunWith(JUnit4.class)
 public class SoySauceTest {
 

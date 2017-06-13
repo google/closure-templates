@@ -78,7 +78,6 @@ public abstract class StringData extends PrimitiveData implements SoyString {
     return toString();
   }
 
-  @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
   @Override
   public boolean equals(Object other) {
     return other != null && getValue().equals(other.toString());

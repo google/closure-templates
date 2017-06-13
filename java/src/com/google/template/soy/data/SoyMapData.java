@@ -152,10 +152,14 @@ public class SoyMapData extends CollectionData implements SoyDict {
     return toString();
   }
 
-  @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
   @Override
-  public boolean equals(Object other) {
+  public final boolean equals(Object other) {
     return this == other; // fall back to object equality
+  }
+
+  @Override
+  public final int hashCode() {
+    return System.identityHashCode(this);
   }
 
   // -----------------------------------------------------------------------------------------------

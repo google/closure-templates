@@ -116,10 +116,14 @@ public final class SoyListData extends CollectionData implements Iterable<SoyDat
     return toString();
   }
 
-  @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
   @Override
-  public boolean equals(Object other) {
+  public final boolean equals(Object other) {
     return this == other; // fall back to object equality
+  }
+
+  @Override
+  public final int hashCode() {
+    return System.identityHashCode(this);
   }
 
   /**

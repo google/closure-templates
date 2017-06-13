@@ -154,6 +154,11 @@ abstract class ListBackedList extends SoyAbstractValue implements SoyList {
     return this == other;
   }
 
+  @Override
+  public final int hashCode() {
+    return System.identityHashCode(this);
+  }
+
   /**
    * This implementation is always truthy (to match JS behavior).
    *

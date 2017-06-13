@@ -171,6 +171,11 @@ public final class DictImpl extends SoyAbstractValue implements SoyDict {
   }
 
   @Override
+  public final int hashCode() {
+    return System.identityHashCode(this);
+  }
+
+  @Override
   public String toString() {
     // TODO(gboyer): Remove this override, and instead change RenderVisitor to use coerceToString()
     // instead of simply toString().  Alternately, have SoyAbstractValue ensure that toString()
