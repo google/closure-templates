@@ -64,11 +64,7 @@ public final class CompiledTemplates {
           throw new IllegalArgumentException(
               String.format(
                   "Found multiple deltemplates with the same name (%s) and package (%s). %s and %s",
-                  delTemplateName,
-                  delpackage,
-                  delTemplateImplName,
-                  Names.soyTemplateNameFromJavaClassName(
-                      prev.factory.getClass().getDeclaringClass().getName())));
+                  delTemplateName, delpackage, delTemplateImplName, prev.soyTemplateName()));
         }
       } else {
         TemplateData prev = builder.addDefault(delTemplateName, data.variant, data);
@@ -76,10 +72,7 @@ public final class CompiledTemplates {
           throw new IllegalArgumentException(
               String.format(
                   "Found multiple default deltemplates with the same name (%s). %s and %s",
-                  delTemplateName,
-                  delTemplateImplName,
-                  Names.soyTemplateNameFromJavaClassName(
-                      prev.factory.getClass().getDeclaringClass().getName())));
+                  delTemplateName, delTemplateImplName, prev.soyTemplateName()));
         }
       }
     }
@@ -93,7 +86,11 @@ public final class CompiledTemplates {
 
   /** Returns a factory for the given fully qualified template name. */
   public CompiledTemplate.Factory getTemplateFactory(String name) {
-    return getTemplateData(name).factory;
+    CompiledTemplate.Factory factory = getTemplateData(name).factory;
+    if (factory == null) {
+      throw new IllegalArgumentException("cannot get a factory for the private template: " + name);
+    }
+    return factory;
   }
 
   /** Eagerly load all the given templates. */
@@ -133,7 +130,14 @@ public final class CompiledTemplates {
       String delTemplateName, String variant, Predicate<String> activeDelPackageSelector) {
     TemplateData selectedTemplate =
         selector.selectTemplate(delTemplateName, variant, activeDelPackageSelector);
-    return selectedTemplate == null ? null : selectedTemplate.factory;
+    if (selectedTemplate == null) {
+      return null;
+    }
+    if (selectedTemplate.factory == null) {
+      throw new IllegalArgumentException(
+          "cannot get a factory for the private template: " + selectedTemplate.soyTemplateName());
+    }
+    return selectedTemplate.factory;
   }
 
   private TemplateData getTemplateData(String name) {
@@ -150,26 +154,16 @@ public final class CompiledTemplates {
   }
 
   private static TemplateData loadFactory(String name, ClassLoader loader) {
-    // We construct the factories via reflection to bridge the gap between generated and
-    // non-generated code.  However, each factory only needs to be constructed once so the
-    // reflective cost isn't paid on a per render basis.
-    CompiledTemplate.Factory factory;
+    Class<? extends CompiledTemplate> templateClass;
     try {
-      String factoryName = Names.javaClassNameFromSoyTemplateName(name) + "$Factory";
-      Class<? extends CompiledTemplate.Factory> factoryClass =
-          Class.forName(factoryName, true /* run clinit */, loader)
-              .asSubclass(CompiledTemplate.Factory.class);
-      factory = factoryClass.getConstructor().newInstance();
+      String templateName = Names.javaClassNameFromSoyTemplateName(name);
+      templateClass =
+          Class.forName(templateName, true /* run clinit */, loader)
+              .asSubclass(CompiledTemplate.class);
     } catch (ClassNotFoundException e) {
       throw new IllegalArgumentException("No class was compiled for template: " + name, e);
-    } catch (ReflectiveOperationException e) {
-      // this should be impossible since our factories are public with a default constructor.
-      // TODO(lukes): failures of bytecode verification will propagate as Errors, we should
-      // consider catching them here to add information about our generated types. (e.g. add the
-      // class trace and a pointer on how to file a soy bug)
-      throw new AssertionError(e);
     }
-    return new TemplateData(factory);
+    return new TemplateData(templateClass);
   }
 
   /** Adds all transitively called templates to {@code visited} */
@@ -190,7 +184,9 @@ public final class CompiledTemplates {
 
   /** This is mostly a copy of the {@link TemplateMetadata} annotation. */
   private static final class TemplateData {
-    final CompiledTemplate.Factory factory;
+    final Class<? extends CompiledTemplate> templateClass;
+    // will be null for private templates since we don't compile factories for them.
+    @Nullable final CompiledTemplate.Factory factory;
     final Optional<ContentKind> kind;
     final ImmutableSet<String> callees;
     final ImmutableSet<String> delCallees;
@@ -205,12 +201,34 @@ public final class CompiledTemplates {
     // general this is only needed for relatively few templates.
     ImmutableSortedSet<String> transitiveIjParams;
 
-    TemplateData(CompiledTemplate.Factory factory) {
-      this.factory = factory;
+    TemplateData(Class<? extends CompiledTemplate> template) {
+      this.templateClass = template;
+      CompiledTemplate.Factory localFactory = null;
+      for (Class<?> innerClass : template.getClasses()) {
+        if (innerClass.getSimpleName().equals("Factory")) {
+          // We construct the factories via reflection to bridge the gap between generated and
+          // non-generated code.  However, each factory only needs to be constructed once so the
+          // reflective cost isn't paid on a per render basis.
+          try {
+            localFactory =
+                innerClass
+                    .asSubclass(CompiledTemplate.Factory.class)
+                    .getDeclaredConstructor()
+                    .newInstance();
+          } catch (ReflectiveOperationException e) {
+            // this should be impossible since our factories are public with a default constructor.
+            // TODO(lukes): failures of bytecode verification will propagate as Errors, we should
+            // consider catching them here to add information about our generated types. (e.g. add
+            // the
+            // class trace and a pointer on how to file a soy bug)
+            throw new AssertionError(e);
+          }
+        }
+      }
+      this.factory = localFactory;
       // We pull the content kind off the templatemetadata eagerly since the parsing+reflection each
       // time is expensive.
-      TemplateMetadata annotation =
-          factory.getClass().getDeclaringClass().getAnnotation(TemplateMetadata.class);
+      TemplateMetadata annotation = template.getAnnotation(TemplateMetadata.class);
       String contentKind = annotation.contentKind();
       this.kind =
           contentKind.isEmpty()
@@ -231,6 +249,10 @@ public final class CompiledTemplates {
         this.delTemplateName = Optional.absent();
         this.delPackage = Optional.absent();
       }
+    }
+
+    String soyTemplateName() {
+      return Names.soyTemplateNameFromJavaClassName(templateClass.getName());
     }
   }
 }

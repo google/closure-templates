@@ -49,6 +49,7 @@ import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import java.util.ArrayList;
@@ -120,10 +121,12 @@ final class TemplateCompiler {
     List<ClassData> classes = new ArrayList<>();
 
     // first generate the factory
-    // TODO(lukes): don't generate factory if the template is private?  The factories are only
-    // useful to instantiate templates for calls from java.  Soy->Soy calls should invoke
-    // constructors directly.
-    new TemplateFactoryCompiler(template, innerClasses).compile();
+    if (template.node().getVisibility() != Visibility.PRIVATE) {
+      // Don't generate factory if the template is private.  The factories are only
+      // useful to instantiate templates for calls from java.  Soy->Soy calls should invoke
+      // constructors directly.
+      new TemplateFactoryCompiler(template, innerClasses).compile();
+    }
 
     writer =
         SoyClassWriter.builder(template.typeInfo())

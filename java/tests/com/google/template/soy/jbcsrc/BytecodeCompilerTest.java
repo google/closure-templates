@@ -742,6 +742,21 @@ public class BytecodeCompilerTest {
   }
 
   @Test
+  public void testBasicFunctionality_privateTemplate() {
+    // make sure you can't access factories for priate tempaltes
+    CompiledTemplates templates =
+        TemplateTester.compileFile(
+            "{namespace ns}{template .foo visibility=\"private\"}hello world{/template}");
+    try {
+      templates.getTemplateFactory("ns.foo");
+      fail();
+    } catch (IllegalArgumentException expected) {
+    }
+    // we can still access metadata
+    assertThat(templates.getTemplateContentKind("ns.foo")).hasValue(ContentKind.HTML);
+  }
+
+  @Test
   public void testContentKindNonStrict() {
     assertThat(
             TemplateTester.compileFile(
