@@ -41,10 +41,22 @@ Closure Templates are precompiled into efficient JavaScript.
 * Work through [Hello World Using Java](https://developers.google.com/closure/templates/docs/helloworld_java).
 * Read the [Documentation](https://developers.google.com/closure/templates/docs/overview).
 
-## Options for Getting Help
+## Support and Project status
+
+Closure Templates is widely used and well maintained internally at Google but
+does not currently have staffing to support the open source release.  As such
+this project is mostly a 'code dump' and support is _minimal_.  For certain
+issues, like build integration we are in an especially bad position to offer
+support.
+
+To get assistance you can use any of the following forums
+
 1. Look through the [documentation](https://developers.google.com/closure/templates/docs/overview).
 2. Post a question to the [closure-templates-discuss](https://groups.google.com/forum/#!forum/closure-templates-discuss)
    mailing list.
+3. File a [bug on github](https://github.com/google/closure-templates/issues)
+
+Though, given our support staffing, we may not be able to help.
 
 ## Using Closure Templates with other open source frameworks
 
