@@ -1163,7 +1163,7 @@ public final class SoyFileSet {
       String outputPathFormat, String inputFilePathPrefix, SoyPySrcOptions pySrcOptions)
       throws IOException {
     resetErrorReporter();
-
+    requireStrictAutoescaping();
     ParseResult result = parse(SyntaxVersion.V2_0);
     throwIfErrorsPresent();
     SoyFileSetNode soyTree = result.fileSet();

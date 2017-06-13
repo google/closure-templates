@@ -270,7 +270,10 @@ public class NodeContentKinds {
   /** Given a {@link ContentKind}, returns the corresponding Python sanitize class. */
   public static String toPySanitizedContentOrdainer(ContentKind contentKind) {
     // Sanitization classes are defined in sanitize.py.
-    return Preconditions.checkNotNull(KIND_TO_PY_SANITIZED_NAME.get(contentKind));
+    return Preconditions.checkNotNull(
+        KIND_TO_PY_SANITIZED_NAME.get(contentKind),
+        "expected to have an ordainer for %s",
+        contentKind);
   }
 
   // Prevent instantiation.
