@@ -281,7 +281,7 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       // Generate function definition up to colon.
       pyCodeBuilder.appendLine(
           "def ",
-          node.getPartialTemplateName().substring(1),
+          GenPyCallExprVisitor.getLocalTemplateName(node),
           // These defaults are safe because soy only ever reads from these parameters.  If that
           // changes, bad things could happen.
           "(data={}, ijData={}):");
