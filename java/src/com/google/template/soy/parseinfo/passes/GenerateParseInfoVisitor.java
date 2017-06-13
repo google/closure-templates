@@ -559,7 +559,7 @@ public final class GenerateParseInfoVisitor
   @Override
   protected void visitTemplateNode(TemplateNode node) {
     // Don't generate anything for private or delegate templates.
-    if (node.getVisibility() == Visibility.LEGACY_PRIVATE || node instanceof TemplateDelegateNode) {
+    if (node.getVisibility() != Visibility.PUBLIC || node instanceof TemplateDelegateNode) {
       return;
     }
 
@@ -883,7 +883,7 @@ public final class GenerateParseInfoVisitor
       resultSb.append(template.getTemplateNameForUserMsgs());
     }
 
-    if (template.getVisibility() == Visibility.LEGACY_PRIVATE) {
+    if (template.getVisibility() != Visibility.PUBLIC) {
       resultSb.append(" (private)");
     }
     if (template instanceof TemplateDelegateNode) {
