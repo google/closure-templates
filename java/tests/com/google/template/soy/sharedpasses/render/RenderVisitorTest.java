@@ -921,6 +921,12 @@ public class RenderVisitorTest {
       progress.append(val);
       return val;
     }
+
+    @Override
+    public String toString() {
+      // override toString since super.toString() may call .get()
+      return "a future";
+    }
   }
 
   @Test
