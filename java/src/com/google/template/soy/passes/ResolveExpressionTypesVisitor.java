@@ -571,7 +571,7 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
       if (SoyTypes.isNumericOrUnknown(left) && SoyTypes.isNumericOrUnknown(right)) {
         node.setType(FloatType.getInstance());
       } else {
-        // TODO(b/21712154): jssrc will do some type coercions here, tofu and jbcsrc will throw
+        // TODO(b/37359174): jssrc will do some type coercions here, tofu and jbcsrc will throw
         // exceptions.  Consider making this a compiler error
         node.setType(UnknownType.getInstance());
       }

@@ -663,12 +663,6 @@ public final class SoyFileSet {
     return soyFileSuppliers;
   }
 
-  /** Returns the general compiler options. For testing use only! */
-  @VisibleForTesting
-  SoyGeneralOptions getOptionsForTesting() {
-    return generalOptions;
-  }
-
   /**
    * Generates Java classes containing parse info (param names, template names, meta info). There
    * will be one Java class per Soy file.
