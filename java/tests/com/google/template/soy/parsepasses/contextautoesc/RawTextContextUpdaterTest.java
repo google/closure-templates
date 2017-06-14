@@ -68,6 +68,7 @@ public class RawTextContextUpdaterTest {
     assertTransition("HTML_PCDATA", "<a onclick=\"", "JS NORMAL SCRIPT DOUBLE_QUOTE REGEX");
     assertTransition("HTML_PCDATA", "<a onclick=\'", "JS NORMAL SCRIPT SINGLE_QUOTE REGEX");
     assertTransition("HTML_PCDATA", "<a onclick=", "HTML_BEFORE_ATTRIBUTE_VALUE NORMAL SCRIPT");
+    assertTransition("HTML_PCDATA", "<a ng-init=\"", "JS NORMAL SCRIPT DOUBLE_QUOTE REGEX");
     assertTransition(
         "HTML_PCDATA", "<a onclick=\"</script>", "JS_REGEX NORMAL SCRIPT DOUBLE_QUOTE");
     assertTransition("HTML_PCDATA", "<xmp style=\"", "CSS XMP STYLE DOUBLE_QUOTE");

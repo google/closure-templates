@@ -3176,7 +3176,7 @@ goog.addDependency('dom/range.js', ['goog.dom.Range'], ['goog.dom', 'goog.dom.Ab
 goog.addDependency('dom/range_test.js', ['goog.dom.RangeTest'], ['goog.dom', 'goog.dom.NodeType', 'goog.dom.Range', 'goog.dom.RangeType', 'goog.dom.TagName', 'goog.dom.TextRange', 'goog.dom.browserrange', 'goog.testing.dom', 'goog.testing.jsunit', 'goog.userAgent'], {});
 goog.addDependency('dom/rangeendpoint.js', ['goog.dom.RangeEndpoint'], [], {});
 goog.addDependency('dom/safe.js', ['goog.dom.safe', 'goog.dom.safe.InsertAdjacentHtmlPosition'], ['goog.asserts', 'goog.dom.asserts', 'goog.html.SafeHtml', 'goog.html.SafeScript', 'goog.html.SafeStyle', 'goog.html.SafeUrl', 'goog.html.TrustedResourceUrl', 'goog.string', 'goog.string.Const'], {});
-goog.addDependency('dom/safe_test.js', ['goog.dom.safeTest'], ['goog.dom.safe', 'goog.dom.safe.InsertAdjacentHtmlPosition', 'goog.html.SafeHtml', 'goog.html.SafeScript', 'goog.html.SafeStyle', 'goog.html.SafeUrl', 'goog.html.TrustedResourceUrl', 'goog.html.testing', 'goog.string', 'goog.string.Const', 'goog.testing', 'goog.testing.jsunit', 'goog.userAgent'], {});
+goog.addDependency('dom/safe_test.js', ['goog.dom.safeTest'], ['goog.asserts', 'goog.dom.safe', 'goog.dom.safe.InsertAdjacentHtmlPosition', 'goog.html.SafeHtml', 'goog.html.SafeScript', 'goog.html.SafeStyle', 'goog.html.SafeUrl', 'goog.html.TrustedResourceUrl', 'goog.html.testing', 'goog.string', 'goog.string.Const', 'goog.testing', 'goog.testing.jsunit', 'goog.userAgent'], {});
 goog.addDependency('dom/savedcaretrange.js', ['goog.dom.SavedCaretRange'], ['goog.array', 'goog.dom', 'goog.dom.SavedRange', 'goog.dom.TagName', 'goog.string'], {});
 goog.addDependency('dom/savedcaretrange_test.js', ['goog.dom.SavedCaretRangeTest'], ['goog.dom', 'goog.dom.Range', 'goog.dom.SavedCaretRange', 'goog.testing.dom', 'goog.testing.jsunit', 'goog.userAgent'], {});
 goog.addDependency('dom/savedrange.js', ['goog.dom.SavedRange'], ['goog.Disposable', 'goog.log'], {});
@@ -3548,7 +3548,7 @@ goog.addDependency('labs/net/webchannel/forwardchannelrequestpool.js', ['goog.la
 goog.addDependency('labs/net/webchannel/forwardchannelrequestpool_test.js', ['goog.labs.net.webChannel.forwardChannelRequestPoolTest'], ['goog.labs.net.webChannel.ChannelRequest', 'goog.labs.net.webChannel.ForwardChannelRequestPool', 'goog.testing.PropertyReplacer', 'goog.testing.asserts', 'goog.testing.jsunit'], {});
 goog.addDependency('labs/net/webchannel/netutils.js', ['goog.labs.net.webChannel.netUtils'], ['goog.Uri', 'goog.labs.net.webChannel.WebChannelDebug'], {});
 goog.addDependency('labs/net/webchannel/requeststats.js', ['goog.labs.net.webChannel.requestStats', 'goog.labs.net.webChannel.requestStats.Event', 'goog.labs.net.webChannel.requestStats.ServerReachability', 'goog.labs.net.webChannel.requestStats.ServerReachabilityEvent', 'goog.labs.net.webChannel.requestStats.Stat', 'goog.labs.net.webChannel.requestStats.StatEvent', 'goog.labs.net.webChannel.requestStats.TimingEvent'], ['goog.events.Event', 'goog.events.EventTarget'], {});
-goog.addDependency('labs/net/webchannel/webchannelbase.js', ['goog.labs.net.webChannel.WebChannelBase'], ['goog.Uri', 'goog.array', 'goog.asserts', 'goog.debug.TextFormatter', 'goog.json', 'goog.labs.net.webChannel.BaseTestChannel', 'goog.labs.net.webChannel.Channel', 'goog.labs.net.webChannel.ChannelRequest', 'goog.labs.net.webChannel.ConnectionState', 'goog.labs.net.webChannel.ForwardChannelRequestPool', 'goog.labs.net.webChannel.WebChannelDebug', 'goog.labs.net.webChannel.Wire', 'goog.labs.net.webChannel.WireV8', 'goog.labs.net.webChannel.netUtils', 'goog.labs.net.webChannel.requestStats', 'goog.labs.net.webChannel.requestStats.Stat', 'goog.log', 'goog.net.WebChannel', 'goog.net.XhrIo', 'goog.net.rpc.HttpCors', 'goog.object', 'goog.string', 'goog.structs', 'goog.structs.CircularBuffer'], {});
+goog.addDependency('labs/net/webchannel/webchannelbase.js', ['goog.labs.net.webChannel.WebChannelBase'], ['goog.Uri', 'goog.array', 'goog.asserts', 'goog.debug.TextFormatter', 'goog.json', 'goog.labs.net.webChannel.BaseTestChannel', 'goog.labs.net.webChannel.Channel', 'goog.labs.net.webChannel.ChannelRequest', 'goog.labs.net.webChannel.ConnectionState', 'goog.labs.net.webChannel.ForwardChannelRequestPool', 'goog.labs.net.webChannel.WebChannelDebug', 'goog.labs.net.webChannel.Wire', 'goog.labs.net.webChannel.WireV8', 'goog.labs.net.webChannel.netUtils', 'goog.labs.net.webChannel.requestStats', 'goog.log', 'goog.net.WebChannel', 'goog.net.XhrIo', 'goog.net.rpc.HttpCors', 'goog.object', 'goog.string', 'goog.structs', 'goog.structs.CircularBuffer'], {});
 goog.addDependency('labs/net/webchannel/webchannelbase_test.js', ['goog.labs.net.webChannel.webChannelBaseTest'], ['goog.Timer', 'goog.array', 'goog.dom', 'goog.functions', 'goog.json', 'goog.labs.net.webChannel.ChannelRequest', 'goog.labs.net.webChannel.ForwardChannelRequestPool', 'goog.labs.net.webChannel.WebChannelBase', 'goog.labs.net.webChannel.WebChannelBaseTransport', 'goog.labs.net.webChannel.WebChannelDebug', 'goog.labs.net.webChannel.Wire', 'goog.labs.net.webChannel.netUtils', 'goog.labs.net.webChannel.requestStats', 'goog.labs.net.webChannel.requestStats.Stat', 'goog.structs.Map', 'goog.testing.MockClock', 'goog.testing.PropertyReplacer', 'goog.testing.asserts', 'goog.testing.jsunit'], {});
 goog.addDependency('labs/net/webchannel/webchannelbasetransport.js', ['goog.labs.net.webChannel.WebChannelBaseTransport'], ['goog.asserts', 'goog.events.EventTarget', 'goog.json', 'goog.labs.net.webChannel.ChannelRequest', 'goog.labs.net.webChannel.WebChannelBase', 'goog.log', 'goog.net.WebChannel', 'goog.net.WebChannelTransport', 'goog.object', 'goog.string', 'goog.string.path'], {});
 goog.addDependency('labs/net/webchannel/webchannelbasetransport_test.js', ['goog.labs.net.webChannel.webChannelBaseTransportTest'], ['goog.events', 'goog.functions', 'goog.json', 'goog.labs.net.webChannel.ChannelRequest', 'goog.labs.net.webChannel.WebChannelBase', 'goog.labs.net.webChannel.WebChannelBaseTransport', 'goog.net.WebChannel', 'goog.testing.PropertyReplacer', 'goog.testing.jsunit'], {});
@@ -3972,7 +3972,7 @@ goog.addDependency('structs/trie.js', ['goog.structs.Trie'], ['goog.object', 'go
 goog.addDependency('structs/trie_test.js', ['goog.structs.TrieTest'], ['goog.object', 'goog.structs', 'goog.structs.Trie', 'goog.testing.jsunit'], {});
 goog.addDependency('structs/weak/weak.js', ['goog.structs.weak'], ['goog.userAgent'], {});
 goog.addDependency('structs/weak/weak_test.js', ['goog.structs.weakTest'], ['goog.array', 'goog.structs.weak', 'goog.testing.jsunit'], {});
-goog.addDependency('style/bidi.js', ['goog.style.bidi'], ['goog.dom', 'goog.style', 'goog.userAgent'], {});
+goog.addDependency('style/bidi.js', ['goog.style.bidi'], ['goog.dom', 'goog.style', 'goog.userAgent', 'goog.userAgent.product', 'goog.userAgent.product.isVersion'], {});
 goog.addDependency('style/bidi_test.js', ['goog.style.bidiTest'], ['goog.dom', 'goog.style', 'goog.style.bidi', 'goog.testing.jsunit', 'goog.userAgent'], {});
 goog.addDependency('style/cursor.js', ['goog.style.cursor'], ['goog.userAgent'], {});
 goog.addDependency('style/cursor_test.js', ['goog.style.cursorTest'], ['goog.style.cursor', 'goog.testing.jsunit', 'goog.userAgent'], {});
@@ -15715,6 +15715,38 @@ goog.html.SafeUrl.sanitize = function(url) {
   return goog.html.SafeUrl.createSafeUrlSecurityPrivateDoNotAccessOrElse(url);
 };
 
+/**
+ * Creates a SafeUrl object from {@code url}. If {@code url} is a
+ * goog.html.SafeUrl then it is simply returned. Otherwise the input string is
+ * validated to match a pattern of commonly used safe URLs.
+ *
+ * {@code url} may be a URL with the http, https, mailto or ftp scheme,
+ * or a relative URL (i.e., a URL without a scheme; specifically, a
+ * scheme-relative, absolute-path-relative, or path-relative URL).
+ *
+ * This function asserts (using goog.asserts) that the URL matches this pattern.
+ * If it does not, in addition to failing the assert, an innocous URL will be
+ * returned.
+ *
+ * @see http://url.spec.whatwg.org/#concept-relative-url
+ * @param {string|!goog.string.TypedString} url The URL to validate.
+ * @return {!goog.html.SafeUrl} The validated URL, wrapped as a SafeUrl.
+ */
+goog.html.SafeUrl.sanitizeAssertUnchanged = function(url) {
+  if (url instanceof goog.html.SafeUrl) {
+    return url;
+  } else if (url.implementsGoogStringTypedString) {
+    url = url.getTypedStringValue();
+  } else {
+    url = String(url);
+  }
+  if (!goog.asserts.assert(goog.html.SAFE_URL_PATTERN_.test(url))) {
+    url = goog.html.SafeUrl.INNOCUOUS_STRING;
+  }
+  return goog.html.SafeUrl.createSafeUrlSecurityPrivateDoNotAccessOrElse(url);
+};
+
+
 
 /**
  * Type marker for the SafeUrl type, used to implement additional run-time
@@ -25763,13 +25795,13 @@ soy.esc.$$ESCAPE_MAP_FOR_ESCAPE_JS_STRING__AND__ESCAPE_JS_REGEX_ = {
   '\x3d': '\\x3d',
   '\x3e': '\\x3e',
   '?': '\\x3f',
-  '[': '\\x5b',
+  '\x5b': '\\x5b',
   '\\': '\\\\',
-  ']': '\\x5d',
+  '\x5d': '\\x5d',
   '^': '\\x5e',
-  '{': '\\x7b',
+  '\x7b': '\\x7b',
   '|': '\\x7c',
-  '}': '\\x7d',
+  '\x7d': '\\x7d',
   '\x85': '\\x85',
   '\u2028': '\\u2028',
   '\u2029': '\\u2029'
@@ -25811,8 +25843,8 @@ soy.esc.$$ESCAPE_MAP_FOR_ESCAPE_CSS_STRING_ = {
   '\x3e': '\\3e ',
   '@': '\\40 ',
   '\\': '\\5c ',
-  '{': '\\7b ',
-  '}': '\\7d ',
+  '\x7b': '\\7b ',
+  '\x7d': '\\7d ',
   '\x85': '\\85 ',
   '\xa0': '\\a0 ',
   '\u2028': '\\2028 ',
@@ -25874,8 +25906,8 @@ soy.esc.$$ESCAPE_MAP_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_N
   '\x3c': '%3C',
   '\x3e': '%3E',
   '\\': '%5C',
-  '{': '%7B',
-  '}': '%7D',
+  '\x7b': '%7B',
+  '\x7d': '%7D',
   '\x7f': '%7F',
   '\x85': '%C2%85',
   '\xa0': '%C2%A0',
@@ -25933,7 +25965,7 @@ soy.esc.$$MATCHER_FOR_NORMALIZE_HTML_NOSPACE_ = /[\x00\x09-\x0d \x22\x27\x2d\/\x
  * Matches characters that need to be escaped for the named directives.
  * @private {!RegExp}
  */
-soy.esc.$$MATCHER_FOR_ESCAPE_JS_STRING_ = /[\x00\x08-\x0d\x22\x26\x27\/\x3c-\x3e\\\x85\u2028\u2029]/g;
+soy.esc.$$MATCHER_FOR_ESCAPE_JS_STRING_ = /[\x00\x08-\x0d\x22\x26\x27\/\x3c-\x3e\x5b-\x5d\x7b\x7d\x85\u2028\u2029]/g;
 
 /**
  * Matches characters that need to be escaped for the named directives.

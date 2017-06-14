@@ -103,6 +103,18 @@ public class EscapingConventionsTest {
   }
 
   @Test
+  public void testAngularInterpolationInJavaScriptString() throws Exception {
+    assertEscaping(
+        "var x = '[[1+2]] {$s}';",
+        "escapeJsString",
+        ANGULAR_INTERPOLATION_LEXER,
+        ImmutableList.of("\\[[1+2]]", "{{{1:2} }}", "{ { {[1+2]}", "[] [{1+2}]"),
+        "var x = '",
+        "[[1+2]]",
+        null);
+  }
+
+  @Test
   public void testJavaRegexStringDirective() throws Exception {
     assertEscaping(
         "var x = /foo-{$s}/; x.test('foo-bar');",
@@ -600,6 +612,18 @@ public class EscapingConventionsTest {
           return out.build();
         }
       };
+
+  private static final Function<String, List<String>> ANGULAR_INTERPOLATION_LEXER =
+      makeLexer(
+          "^(",
+          // Usual interpolation symbols wrapping Angular expressions
+          "\\{\\{.*?(\\}\\}|$)|",
+          "\\[\\{.*?(\\}\\]|$)|",
+          "\\{\\[.*?(\\]\\}|$)|",
+          "\\[\\[.*?(\\]\\]|$)|",
+          // A string not containing interpolation start and end symbols
+          "([^{\\[]|[{\\[]([^{\\[]|$))+",
+          ")");
 
   /** Problematic strings to escape that should stress token boundaries. */
   private static final ImmutableList<String> UNTRUSTED_VALUES =

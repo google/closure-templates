@@ -75,9 +75,9 @@ public class SanitizersTest {
             + " !\\x22#$%\\x26\\x27()*+,-.\\/"
             + "0123456789:;\\x3c\\x3d\\x3e?"
             + "@ABCDEFGHIJKLMNO"
-            + "PQRSTUVWXYZ[\\\\]^_"
+            + "PQRSTUVWXYZ\\x5b\\\\\\x5d^_"
             + "`abcdefghijklmno"
-            + "pqrstuvwxyz{|}~\u007f");
+            + "pqrstuvwxyz\\x7b|\\x7d~\u007f");
     assertEquals(escapedAscii, Sanitizers.escapeJsString(ASCII_CHARS));
     assertEquals(escapedAscii, Sanitizers.escapeJsString(ASCII_CHARS_SOYDATA));
   }

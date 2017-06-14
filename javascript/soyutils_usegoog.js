@@ -1925,13 +1925,13 @@ soy.esc.$$ESCAPE_MAP_FOR_ESCAPE_JS_STRING__AND__ESCAPE_JS_REGEX_ = {
   '\x3d': '\\x3d',
   '\x3e': '\\x3e',
   '?': '\\x3f',
-  '[': '\\x5b',
+  '\x5b': '\\x5b',
   '\\': '\\\\',
-  ']': '\\x5d',
+  '\x5d': '\\x5d',
   '^': '\\x5e',
-  '{': '\\x7b',
+  '\x7b': '\\x7b',
   '|': '\\x7c',
-  '}': '\\x7d',
+  '\x7d': '\\x7d',
   '\x85': '\\x85',
   '\u2028': '\\u2028',
   '\u2029': '\\u2029'
@@ -1973,8 +1973,8 @@ soy.esc.$$ESCAPE_MAP_FOR_ESCAPE_CSS_STRING_ = {
   '\x3e': '\\3e ',
   '@': '\\40 ',
   '\\': '\\5c ',
-  '{': '\\7b ',
-  '}': '\\7d ',
+  '\x7b': '\\7b ',
+  '\x7d': '\\7d ',
   '\x85': '\\85 ',
   '\xa0': '\\a0 ',
   '\u2028': '\\2028 ',
@@ -2036,8 +2036,8 @@ soy.esc.$$ESCAPE_MAP_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_N
   '\x3c': '%3C',
   '\x3e': '%3E',
   '\\': '%5C',
-  '{': '%7B',
-  '}': '%7D',
+  '\x7b': '%7B',
+  '\x7d': '%7D',
   '\x7f': '%7F',
   '\x85': '%C2%85',
   '\xa0': '%C2%A0',
@@ -2095,7 +2095,7 @@ soy.esc.$$MATCHER_FOR_NORMALIZE_HTML_NOSPACE_ = /[\x00\x09-\x0d \x22\x27\x2d\/\x
  * Matches characters that need to be escaped for the named directives.
  * @private {!RegExp}
  */
-soy.esc.$$MATCHER_FOR_ESCAPE_JS_STRING_ = /[\x00\x08-\x0d\x22\x26\x27\/\x3c-\x3e\\\x85\u2028\u2029]/g;
+soy.esc.$$MATCHER_FOR_ESCAPE_JS_STRING_ = /[\x00\x08-\x0d\x22\x26\x27\/\x3c-\x3e\x5b-\x5d\x7b\x7d\x85\u2028\u2029]/g;
 
 /**
  * Matches characters that need to be escaped for the named directives.

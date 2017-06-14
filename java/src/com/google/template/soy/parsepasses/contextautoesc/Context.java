@@ -1206,6 +1206,32 @@ public final class Context {
     UriType uriType = UriType.NONE;
     if (localName.startsWith("on")) {
       attr = Context.AttributeType.SCRIPT;
+    } else if ("ng-init".equals(attrName)) {
+      // ng-init is an attribute used in the AngularJS framework. According to its documentation,
+      // "There are only a few appropriate uses of ngInit, such as [...] injecting data via server
+      // side scripting" (https://docs.angularjs.org/api/ng/directive/ngInit). Soy supports this by
+      // ensuring that interpolating server side data inside the ng-init attribute will not lead to
+      // Angular expression injection vulnerabilities (https://docs.angularjs.org/guide/security).
+      //
+      // The content of the attribute follows an expression syntax very similar to JavaScript. In
+      // fact, the syntax is a subset of JS, though the bitwise OR operator has different semantics
+      // (piping into a filter function). Because of this, treating the attribute as JS in Soy will
+      // ensure that the injected data will always be interpreted as a primitive data type by
+      // Angular and won't be parsed as an expression (similarly to how Soy prevents JS injection
+      // in on* attributes). See the documentation for details on the syntax:
+      // https://docs.angularjs.org/guide/expression#angularjs-expressions-vs-javascript-expressions
+      //
+      // The set of places where Angular tries to find and interpret expressions in the DOM depends
+      // on its interpolation rules (https://docs.angularjs.org/guide/interpolation) and directives
+      // (https://docs.angularjs.org/guide/directive). Since
+      // - each application can define additional directives
+      // - directives can be triggered by HTML comments, element names, attributes (not just ng-
+      //   attributes) and a special CSS class syntax
+      // - the interpolation start and end symbols can be changed
+      // it is not feasible to cover all cases in Soy. Instead, we rely on the fact that all
+      // templates can be refactored to use ng-init for passing the server side data. In other
+      // words, Soy enables safely passing data, but it doesn't (and can't) force it.
+      attr = Context.AttributeType.SCRIPT;
     } else if ("style".equals(localName)) {
       attr = Context.AttributeType.STYLE;
     } else if (elType == Context.ElementType.MEDIA

@@ -196,7 +196,7 @@ _MATCHER_FOR_ESCAPE_HTML_NOSPACE = re.compile(r'[\x00\x09-\x0d \x22\x26\x27\x2d\
 
 _MATCHER_FOR_NORMALIZE_HTML_NOSPACE = re.compile(r'[\x00\x09-\x0d \x22\x27\x2d\/\x3c-\x3e`\x85\xa0\u2028\u2029]', re.U)
 
-_MATCHER_FOR_ESCAPE_JS_STRING = re.compile(r'[\x00\x08-\x0d\x22\x26\x27\/\x3c-\x3e\\\x85\u2028\u2029]', re.U)
+_MATCHER_FOR_ESCAPE_JS_STRING = re.compile(r'[\x00\x08-\x0d\x22\x26\x27\/\x3c-\x3e\x5b-\x5d\x7b\x7d\x85\u2028\u2029]', re.U)
 
 _MATCHER_FOR_ESCAPE_JS_REGEX = re.compile(r'[\x00\x08-\x0d\x22\x24\x26-\/\x3a\x3c-\x3f\x5b-\x5e\x7b-\x7d\x85\u2028\u2029]', re.U)
 

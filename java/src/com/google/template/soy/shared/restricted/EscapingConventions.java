@@ -678,6 +678,23 @@ public final class EscapingConventions {
           // HTML special characters.  Note, that this provides added protection against problems
           // with </script> <![CDATA[, ]]>, <!--, -->, etc.
           .escapeAll("<>&=")
+          // Characters used in Angular start and end symbols. In AngularJS applications, the text
+          // between start and end symbols (usually {{}}, [[]], [{}] or {[]}) is interpreted as an
+          // Angular expression. Escaping these in JS strings is desirable for two main reasons:
+          // - if the start symbol shows up in an on* attribute, AngularJS throws an exception
+          //   (saying that it cannot do interpolation in on* attributes) and the application breaks
+          // - ng-init is treated similarly to on* attributes by Soy to make it possible to safely
+          //   pass values from Soy to Angular. It is possible because AngularJS expects the ng-init
+          //   attribute to contain an Angular expression, and the Angular expression syntax is a
+          //   subset of the JS syntax. Independently of treating the whole attribute value as an
+          //   Angular expression, it will still look for interpolation symbols inside it, so not
+          //   escaping these characters would make it possible to introduce an Angular injection
+          //   there, which we want to avoid. For example:
+          //   <div ng-init="x='{$x}'">  -->  <div ng-init="x='this is executed: [[1+2]]'">
+          //   Hex escaping the common start and end symbols prevents this, since the interpolation
+          //   looks for the start and end symbols on the HTML attribute level, and doesn't parse JS
+          //   escapes.
+          .escapeAll("{}[]")
           .build();
     }
   }
