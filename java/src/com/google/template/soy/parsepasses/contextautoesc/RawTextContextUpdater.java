@@ -77,7 +77,7 @@ final class RawTextContextUpdater {
       if (attrValueEnd == -1) {
         // Outside an attribute value.  No need to decode.
         RawTextContextUpdater cu = new RawTextContextUpdater();
-        cu.processNextToken(unprocessedRawText, context);
+        cu.processNextToken(rawTextNode, offset, unprocessedRawText, context);
         endOffset = offset + cu.numCharsConsumed;
         endContext = cu.next;
 
@@ -129,7 +129,7 @@ final class RawTextContextUpdater {
         RawTextContextUpdater cu = new RawTextContextUpdater();
         Context attrContext = startContext;
         while (attrValueTail.length() != 0) {
-          cu.processNextToken(attrValueTail, attrContext);
+          cu.processNextToken(rawTextNode, offset, attrValueTail, attrContext);
           attrValueTail = attrValueTail.substring(cu.numCharsConsumed);
           attrContext = cu.next;
         }
@@ -202,9 +202,12 @@ final class RawTextContextUpdater {
   /**
    * Consume a portion of text and compute the next context. Output is stored in member variables.
    *
+   * @param node The node currently being processed
+   * @param offset The offset into the node where text starts
    * @param text Non empty.
+   * @param context the current contex
    */
-  private void processNextToken(String text, Context context) throws SoyAutoescapeException {
+  private void processNextToken(RawTextNode node, int offset, String text, Context context) {
     // Find the transition whose pattern matches earliest in the raw text (and is applicable)
     int earliestStart = Integer.MAX_VALUE;
     int earliestEnd = -1;
@@ -235,11 +238,20 @@ final class RawTextContextUpdater {
     }
 
     if (earliestTransition != null) {
-      this.next = earliestTransition.computeNextContext(context, earliestMatcher);
+      int transitionOffset = offset;
+      // the earliest start might be at the end for null transitions.
+      if (earliestStart < text.length()) {
+        transitionOffset += earliestStart;
+      }
+      this.next =
+          earliestTransition.computeNextContext(node, transitionOffset, context, earliestMatcher);
       this.numCharsConsumed = earliestEnd;
     } else {
-      throw SoyAutoescapeException.createWithoutMetaInfo(
-          "Error determining next state when encountering \"" + text + "\" in " + context);
+      throw SoyAutoescapeException.createWithNode(
+          "Error determining next state when encountering \"" + text + "\" in " + context,
+          // calculate a raw text node that points at the beginning of the string that couldn't
+          // bet matched.
+          node.substring(Integer.MAX_VALUE /* bogus id */, offset));
     }
     if (numCharsConsumed == 0 && this.next.state == context.state) {
       throw new IllegalStateException("Infinite loop at `" + text + "` / " + context);
@@ -277,12 +289,28 @@ final class RawTextContextUpdater {
     /**
      * Computes the context that this production transitions to after rawText[0:matcher.end()].
      *
+     * @param originalNode The original raw text node
+     * @param offset The current offset into the node, useful for calculating better locations for
+     *     error messages
      * @param prior The context prior to the token in matcher.
      * @param matcher The token matched by {@code this.pattern}.
      * @return The context after the given token.
      */
-    abstract Context computeNextContext(Context prior, Matcher matcher)
-        throws SoyAutoescapeException;
+    Context computeNextContext(
+        RawTextNode originalNode, int offset, Context prior, Matcher matcher) {
+      return computeNextContext(prior, matcher);
+    }
+
+    /**
+     * Computes the context that this production transitions to after rawText[0:matcher.end()].
+     *
+     * @param prior The context prior to the token in matcher.
+     * @param matcher The token matched by {@code this.pattern}.
+     * @return The context after the given token.
+     */
+    Context computeNextContext(Context prior, Matcher matcher) {
+      throw new AbstractMethodError();
+    }
   }
 
   /** A transition to a given context. */
@@ -374,8 +402,9 @@ final class RawTextContextUpdater {
   private static Transition makeTransitionToError(String regex, final String message) {
     return new Transition(regex) {
       @Override
-      Context computeNextContext(Context prior, Matcher matcher) {
-        throw SoyAutoescapeException.createWithoutMetaInfo(message);
+      Context computeNextContext(RawTextNode node, int offset, Context prior, Matcher matcher) {
+        throw SoyAutoescapeException.createWithNode(
+            message, node.substring(Integer.MAX_VALUE, offset));
       }
     };
   }
@@ -409,7 +438,8 @@ final class RawTextContextUpdater {
   private static final Transition TRANSITION_TO_SELF = makeTransitionToSelf("\\z");
   // Matching at the end is lowest possible precedence.
 
-  private static UriPart getNextUriPart(UriPart uriPart, char matchChar) {
+  private static UriPart getNextUriPart(
+      RawTextNode node, int offset, UriPart uriPart, char matchChar) {
     // This switch statement is designed to process a URI in order via a sequence of fall throughs.
     switch (uriPart) {
       case MAYBE_SCHEME:
@@ -426,12 +456,13 @@ final class RawTextContextUpdater {
             // see a colon. While this could be relatively safe if it's a {$host}:{$port} pair,
             // at compile-time, we can't be sure that "$host" isn't something like "javascript"
             // and "$port" isn't "deleteMyAccount()".
-            throw SoyAutoescapeException.createWithoutMetaInfo(
+            throw SoyAutoescapeException.createWithNode(
                 "Soy can't safely process a URI that might start with a variable scheme. "
                     + "For example, {$x}:{$y} could have an XSS if $x is 'javascript' and $y is "
                     + "attacker-controlled. Either use a hard-coded scheme, or introduce "
                     + "disambiguating characters (e.g. http://{$x}:{$y}, ./{$x}:{$y}, or "
-                    + "{$x}?foo=:{$y})");
+                    + "{$x}?foo=:{$y})",
+                node.substring(Integer.MAX_VALUE, offset));
           } else {
             // At the start of the URL, and we just saw some hard-coded characters and a colon,
             // like http:. This is safe (assuming it's a good scheme), and now we're on our way to
@@ -507,14 +538,14 @@ final class RawTextContextUpdater {
         }
 
         @Override
-        Context computeNextContext(Context prior, Matcher matcher) {
+        Context computeNextContext(RawTextNode node, int offset, Context prior, Matcher matcher) {
           UriPart uriPart = prior.uriPart;
           if (uriPart == UriPart.START) {
             uriPart = UriPart.MAYBE_SCHEME;
           }
           String match = matcher.group(1);
           if (match != null) {
-            uriPart = getNextUriPart(uriPart, match.charAt(0));
+            uriPart = getNextUriPart(node, offset, uriPart, match.charAt(0));
           }
           return prior.derive(uriPart);
         }
@@ -776,7 +807,8 @@ final class RawTextContextUpdater {
                   makeTransitionToJsString("'", HtmlContext.JS_SQ_STRING),
                   new Transition("/") {
                     @Override
-                    Context computeNextContext(Context prior, Matcher matcher) {
+                    Context computeNextContext(
+                        RawTextNode node, int offset, Context prior, Matcher matcher) {
                       switch (prior.slashType) {
                         case DIV_OP:
                           return prior
@@ -793,12 +825,13 @@ final class RawTextContextUpdater {
                         default:
                           StringBuffer rest = new StringBuffer();
                           matcher.appendTail(rest);
-                          throw SoyAutoescapeException.createWithoutMetaInfo(
+                          throw SoyAutoescapeException.createWithNode(
                               "Slash (/) cannot follow the preceding branches since it is unclear "
                                   + "whether the slash is a RegExp literal or division operator.  "
                                   + "Please add parentheses in the branches leading to `"
                                   + rest
-                                  + "`");
+                                  + "`",
+                              node.substring(Integer.MAX_VALUE, offset));
                       }
                     }
                   },

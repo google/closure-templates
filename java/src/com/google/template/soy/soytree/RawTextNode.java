@@ -160,6 +160,19 @@ public final class RawTextNode extends AbstractSoyNode implements StandaloneNode
   }
 
   /**
+   * Returns a new RawTextNode that represents the given {@link String#substring(int)} of this raw
+   * text node.
+   *
+   * <p>Unlike {@link String#substring(int)} the range must be non-empty
+   *
+   * @param newId the new node id to use
+   * @param start the start location
+   */
+  public RawTextNode substring(int newId, int start) {
+    return substring(newId, start, rawText.length());
+  }
+
+  /**
    * Returns a new RawTextNode that represents the given {@link String#substring(int, int)} of this
    * raw text node.
    *
@@ -170,9 +183,13 @@ public final class RawTextNode extends AbstractSoyNode implements StandaloneNode
    * @param end the end location
    */
   public RawTextNode substring(int newId, int start, int end) {
-    checkArgument(start >= 0);
-    checkArgument(start < end);
-    checkArgument(end <= rawText.length());
+    checkArgument(start >= 0, "start (%s) should be greater than or equal to 0", start);
+    checkArgument(start < end, "start (%s) should be less that end (%s)", start, end);
+    checkArgument(
+        end <= rawText.length(),
+        "end (%s) should be less than or equal to the length (%s)",
+        end,
+        rawText.length());
     if (start == 0 && end == rawText.length()) {
       return this;
     }
