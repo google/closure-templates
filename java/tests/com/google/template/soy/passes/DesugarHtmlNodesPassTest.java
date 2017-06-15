@@ -46,6 +46,10 @@ public final class DesugarHtmlNodesPassTest {
     assertNoOp("<div class>");
     assertNoOp("<div class=foo></div>");
     assertNoOp("{let $foo kind=\"attributes\"}class=foo{/let}");
+    assertNoOp("<div/>");
+    assertNoOp("<div class=foo/>");
+    // we used to rewrite this as foo/>, which is wrong the trailing space is important.
+    assertNoOp("<div class=foo />");
   }
 
   // The only time we don't perfectly preserve things is in the presense of whitespace.  This is

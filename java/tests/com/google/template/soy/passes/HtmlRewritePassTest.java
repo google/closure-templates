@@ -147,6 +147,16 @@ public final class HtmlRewritePassTest {
   }
 
   @Test
+  public void testUnquotedAttributeValue() {
+    TemplateNode node = runPass("<div class=foo />");
+    assertThat(((HtmlOpenTagNode) node.getChild(1)).isSelfClosing()).isTrue();
+    node = runPass("<div class=foo/>");
+    assertThat(((HtmlOpenTagNode) node.getChild(1)).isSelfClosing()).isFalse();
+    node = runPass("<div class/>");
+    assertThat(((HtmlOpenTagNode) node.getChild(1)).isSelfClosing()).isTrue();
+  }
+
+  @Test
   public void testDynamicTagName() {
     TemplateNode node = runPass("{let $t : 'div' /}<{$t}>content</{$t}>");
     assertThatSourceString(node).isEqualTo("{let $t : 'div' /}<{$t}>content</{$t}>");

@@ -31,6 +31,7 @@ import com.google.template.soy.soytree.HtmlAttributeValueNode;
 import com.google.template.soy.soytree.HtmlAttributeValueNode.Quotes;
 import com.google.template.soy.soytree.HtmlCloseTagNode;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
+import com.google.template.soy.soytree.HtmlTagNode;
 import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
@@ -41,6 +42,7 @@ import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateNode;
@@ -73,6 +75,12 @@ final class DesugarHtmlNodesPass extends CompilerFileSetPass {
     /** Tracks whether we need a space character before the next attribute character. */
     boolean needsSpaceForAttribute;
 
+    /**
+     * Tracks whether we need a space character the '/' of a self closing tag. This is only
+     * necessary if there is an unquoted attribute as the final attribute.
+     */
+    boolean needsSpaceSelfClosingTag;
+
     /** Tracks all the nodes that should replace the current node. */
     final List<StandaloneNode> replacements = new ArrayList<>();
 
@@ -86,26 +94,30 @@ final class DesugarHtmlNodesPass extends CompilerFileSetPass {
       visitChildren(node);
     }
 
-    @Override
-    protected void visitHtmlCloseTagNode(HtmlCloseTagNode node) {
+    private void visitHtmlTagNode(HtmlTagNode tag) {
       needsSpaceForAttribute = true;
-      visitChildren(node);
+      visitChildren(tag);
       needsSpaceForAttribute = false;
 
-      replacements.add(createPrefix("</", node));
-      replacements.addAll(node.getChildren());
-      replacements.add(createSuffix(">", node));
+      replacements.add(createPrefix(tag instanceof HtmlOpenTagNode ? "<" : "</", tag));
+      replacements.addAll(tag.getChildren());
+      replacements.add(
+          createSuffix(
+              tag instanceof HtmlOpenTagNode && ((HtmlOpenTagNode) tag).isSelfClosing()
+                  ? (needsSpaceSelfClosingTag ? " />" : "/>")
+                  : ">",
+              tag));
+      needsSpaceSelfClosingTag = false;
+    }
+
+    @Override
+    protected void visitHtmlCloseTagNode(HtmlCloseTagNode node) {
+      visitHtmlTagNode(node);
     }
 
     @Override
     protected void visitHtmlOpenTagNode(HtmlOpenTagNode node) {
-      needsSpaceForAttribute = true;
-      visitChildren(node);
-      needsSpaceForAttribute = false;
-
-      replacements.add(createPrefix("<", node));
-      replacements.addAll(node.getChildren());
-      replacements.add(createSuffix(node.isSelfClosing() ? "/>" : ">", node));
+      visitHtmlTagNode(node);
     }
 
     @Override
@@ -115,10 +127,12 @@ final class DesugarHtmlNodesPass extends CompilerFileSetPass {
       Quotes quotes = node.getQuotes();
       if (quotes == Quotes.NONE) {
         replacements.addAll(node.getChildren());
+        needsSpaceSelfClosingTag = true;
       } else {
         replacements.add(createPrefix(quotes.getQuotationCharacter(), node));
         replacements.addAll(node.getChildren());
         replacements.add(createSuffix(quotes.getQuotationCharacter(), node));
+        needsSpaceSelfClosingTag = false;
       }
     }
 
@@ -178,18 +192,22 @@ final class DesugarHtmlNodesPass extends CompilerFileSetPass {
 
     @Override
     protected void visitCallParamContentNode(CallParamContentNode node) {
-      boolean oldInTag = needsSpaceForAttribute;
-      needsSpaceForAttribute = false;
-      visitChildren(node);
-      needsSpaceForAttribute = oldInTag;
+      visitRenderUnitNode(node);
     }
 
     @Override
     protected void visitLetContentNode(LetContentNode node) {
-      boolean prev = needsSpaceForAttribute;
+      visitRenderUnitNode(node);
+    }
+
+    private void visitRenderUnitNode(RenderUnitNode node) {
+      boolean prevNeedsSpaceForAttribute = needsSpaceForAttribute;
       needsSpaceForAttribute = false;
+      boolean prevNeedsSpaceForSelfClosingTag = needsSpaceSelfClosingTag;
+      needsSpaceSelfClosingTag = false;
       visitChildren(node);
-      needsSpaceForAttribute = prev;
+      needsSpaceForAttribute = prevNeedsSpaceForAttribute;
+      needsSpaceSelfClosingTag = prevNeedsSpaceForSelfClosingTag;
     }
 
     @Override
@@ -230,14 +248,19 @@ final class DesugarHtmlNodesPass extends CompilerFileSetPass {
     private void visitControlFlowBranches(List<? extends ParentSoyNode<?>> branches) {
       // If any one of the branches sets needsSpaceForAttribute to true, then it should get set to
       // true for the whole control flow block.
-      boolean start = needsSpaceForAttribute;
-      boolean end = needsSpaceForAttribute;
+      boolean startNeedsSpaceForAttribute = needsSpaceForAttribute;
+      boolean endNeedsSpaceForAttribute = needsSpaceForAttribute;
+      boolean startNeedsSpaceForSelfClosingTag = needsSpaceSelfClosingTag;
+      boolean endNeedsSpaceForSelfClosingTag = needsSpaceSelfClosingTag;
       for (ParentSoyNode<?> branch : branches) {
         visitChildren(branch);
-        end |= needsSpaceForAttribute;
-        needsSpaceForAttribute = start;
+        endNeedsSpaceForAttribute |= needsSpaceForAttribute;
+        needsSpaceForAttribute = startNeedsSpaceForAttribute;
+        endNeedsSpaceForSelfClosingTag |= needsSpaceSelfClosingTag;
+        needsSpaceSelfClosingTag = startNeedsSpaceForSelfClosingTag;
       }
-      needsSpaceForAttribute = end;
+      needsSpaceForAttribute = endNeedsSpaceForAttribute;
+      needsSpaceSelfClosingTag = endNeedsSpaceForSelfClosingTag;
     }
 
     @Override
