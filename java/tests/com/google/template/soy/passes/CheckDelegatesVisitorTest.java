@@ -47,7 +47,7 @@ public final class CheckDelegatesVisitorTest {
             + "{namespace ns2 autoescape=\"deprecated-noncontextual\"}\n"
             + "\n"
             + "/***/\n"
-            + "{template .foo private=\"true\"}\n"
+            + "{template .foo}\n"
             + "  blah\n"
             + "{/template}\n");
   }
@@ -328,7 +328,7 @@ public final class CheckDelegatesVisitorTest {
             + "{namespace ns2 autoescape=\"deprecated-noncontextual\"}\n"
             + "\n"
             + "/***/\n"
-            + "{template .foo private=\"true\"}\n"
+            + "{template .foo}\n"
             + "  blah\n"
             + "{/template}\n");
   }

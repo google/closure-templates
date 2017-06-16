@@ -180,9 +180,9 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder {
           .append(NodeContentKinds.toAttributeValue(contentKind))
           .append('"');
     }
-    if (visibility == Visibility.LEGACY_PRIVATE) {
-      // TODO(brndn): generate code for other visibility levels. b/15190131
-      cmdTextBuilder.append(" private=\"true\"");
+    // public is the default, don't generate code for it
+    if (visibility != Visibility.PUBLIC) {
+      cmdTextBuilder.append(" visibility=\"").append(visibility.getAttributeValue()).append("\"");
     }
     if (!requiredCssNamespaces.isEmpty()) {
       cmdTextBuilder

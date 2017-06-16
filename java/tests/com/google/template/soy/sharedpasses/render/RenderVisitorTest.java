@@ -1058,7 +1058,7 @@ public class RenderVisitorTest {
             + "{namespace ns3 autoescape=\"deprecated-noncontextual\"}\n"
             + "\n"
             + "/** @param boo */\n"
-            + "{template .helper private=\"true\"}\n"
+            + "{template .helper}\n"
             + "  {$boo} {$ij.ijStr}\n"
             + "{/template}\n";
 

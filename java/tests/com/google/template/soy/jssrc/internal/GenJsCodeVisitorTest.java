@@ -2682,47 +2682,6 @@ public final class GenJsCodeVisitorTest {
   }
 
   @Test
-  public void testLegacyPrivateTemplateDoesNotHavePrivateJsDocAnnotationInGencode() {
-    jsSrcOptions.setShouldGenerateJsdoc(true);
-
-    String testFileContent =
-        "{namespace boo.foo autoescape=\"deprecated-noncontextual\"}\n"
-            + "\n"
-            + "/** Test template. */\n"
-            + "{template .goo private=\"true\"}\n"
-            + "  Blah\n"
-            + "{/template}\n";
-
-    TemplateNode template =
-        (TemplateNode)
-            SharedTestUtils.getNode(
-                SoyFileSetParserBuilder.forFileContents(testFileContent).parse().fileSet());
-
-    String expectedJsCode =
-        ""
-            + "/**\n"
-            + " * @param {Object<string, *>=} opt_data\n"
-            + " * @param {Object<string, *>=} opt_ijData\n"
-            + " * @param {Object<string, *>=} opt_ijData_deprecated\n"
-            + " * @return {string}\n"
-            + " * @suppress {checkTypes}\n"
-            + " */\n"
-            + "boo.foo.goo = function(opt_data, opt_ijData, opt_ijData_deprecated) {\n"
-            + "  opt_ijData = opt_ijData_deprecated || opt_ijData;\n"
-            + "  return 'Blah';\n"
-            + "};\n"
-            + "if (goog.DEBUG) {\n"
-            + "  boo.foo.goo.soyTemplateName = 'boo.foo.goo';\n"
-            + "}\n";
-
-    // Setup the GenJsCodeVisitor's state before the template is visited.
-    genJsCodeVisitor.jsCodeBuilder = new JsCodeBuilder();
-
-    genJsCodeVisitor.visitForTesting(template, ExplodingErrorReporter.get());
-    assertThat(genJsCodeVisitor.jsCodeBuilder.getCode()).isEqualTo(expectedJsCode);
-  }
-
-  @Test
   public void testGoogModuleGeneration() {
     jsSrcOptions.setShouldDeclareTopLevelNamespaces(false);
     jsSrcOptions.setShouldGenerateGoogModules(true);

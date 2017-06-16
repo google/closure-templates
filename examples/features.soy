@@ -324,7 +324,7 @@
  * @param? name The name of the person who took a trip (optional).
  * @param? destination The destination of the trip (optional).
  */
-{template .tripReport_ private="true" kind="text"}
+{template .tripReport_ visibility="private" kind="text"}
   // Note: The template name demonstrates the good practice of adding a trailing underscore to
   // private templates (template that should never be called from hand-written code).
 
@@ -377,7 +377,7 @@
  * @param message A message with HTML markup.
  * @param listItems A HTML-formatted list.
  */
-{template .demoParamWithKindAttributeCallee_ private="true"}
+{template .demoParamWithKindAttributeCallee_ visibility="private" }
   // Note that both $message and $listItems contain HTML markup produced by a {param} block in the
   // the calling template. Since the {param} blocks are declared to have HTML content, their values
   // are wrapped as goog.soy.data.SanitizedHtml objects. This in turn causes them to be emitted here
@@ -456,7 +456,7 @@
  * Private helper to build a comma separated list.
  * @param items The list of items.
  */
-{template .buildCommaSeparatedList_ private="true" kind="text"}
+{template .buildCommaSeparatedList_ visibility="private" kind="text"}
   {foreach $item in $items}
     {if not isFirst($item)}
       ,{sp}

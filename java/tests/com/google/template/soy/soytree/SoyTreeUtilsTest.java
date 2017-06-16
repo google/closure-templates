@@ -119,7 +119,7 @@ public final class SoyTreeUtilsTest extends TestCase {
           .join(
               "{namespace ns autoescape=\"deprecated-noncontextual\"}",
               "/** example for cloning. */",
-              "{template .ex1 private=\"true\"}",
+              "{template .ex1 visibility=\"private\"}",
               "  {@param a : ?}",
               "  {@param b : ?}",
               "  {@param c : ?}",

@@ -123,7 +123,7 @@ public class BytecodeCompilerTest {
                 "{namespace ns3 autoescape=\"strict\"}",
                 "",
                 "/** */",
-                "{template .helper private=\"true\"}",
+                "{template .helper}",
                 "  {@param boo : string}",
                 "  {$boo}",
                 "{/template}",
