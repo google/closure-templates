@@ -40,6 +40,8 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.extensionField;
 import static com.google.template.soy.jssrc.internal.JsRuntime.protoConstructor;
 import static com.google.template.soy.jssrc.internal.JsRuntime.protoToSanitizedContentConverterFunction;
 import static com.google.template.soy.jssrc.internal.JsRuntime.sanitizedContentToProtoConverterFunction;
+import static com.google.template.soy.parsepasses.contextautoesc.ContentSecurityPolicyPass.CSP_NONCE_VARIABLE_NAME;
+import static com.google.template.soy.passes.AddHtmlCommentsForDebugPass.DEBUG_VARIABLE_NAME;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
@@ -97,53 +99,50 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Visitor for translating a Soy expression (in the form of an {@code ExprNode}) into an
- * equivalent chunk of JavaScript code.
+ * Visitor for translating a Soy expression (in the form of an {@code ExprNode}) into an equivalent
+ * chunk of JavaScript code.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
- *
- * <hr>
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  * <h3>Types and Dependencies</h3>
  *
- * Types are used to allow reflective access to protobuf values even after JSCompiler has
- * rewritten field names.
+ * Types are used to allow reflective access to protobuf values even after JSCompiler has rewritten
+ * field names.
  *
- * <p>
- * For example, one might normally access field foo on a protocol buffer by calling
- *    <pre>my_pb.getFoo()</pre>
+ * <p>For example, one might normally access field foo on a protocol buffer by calling
+ *
+ * <pre>my_pb.getFoo()</pre>
+ *
  * A Soy author can access the same by writing
- *    <pre>{$my_pb.foo}</pre>
+ *
+ * <pre>{$my_pb.foo}</pre>
+ *
  * But the relationship between "foo" and "getFoo" is not preserved by JSCompiler's renamer.
  *
- * <p>
- * To avoid adding many spurious dependencies on all protocol buffers compiled with a Soy
+ * <p>To avoid adding many spurious dependencies on all protocol buffers compiled with a Soy
  * template, we make type-unsound (see CAVEAT below) assumptions:
+ *
  * <ul>
  *   <li>That the top-level inputs, opt_data and opt_ijData, do not need conversion.
- *   <li>That we can enumerate the concrete types of a container when the default
- *     field lookup strategy would fail.  For example, if an instance of {@code my.Proto}
- *     can be passed to the param {@code $my_pb}, then {@code $my_pb}'s static type is a
- *     super-type of {@code my.Proto}.</li>
- *   <li>That the template contains enough information to determine types that need to be
- *     converted.
- *     <br>
- *     Pluggable {@link com.google.template.soy.types.SoyTypeRegistry SoyTypeRegistries}
- *     allow recognizing input coercion, for example between {@code goog.html.type.SafeHtml}
- *     and Soy's {@code html} string sub-type.
- *     <br>
- *     When the converted type is a protocol-buffer type, we assume that the expression to be
- *     converted can be fully-typed by expressionTypesVisitor.
+ *   <li>That we can enumerate the concrete types of a container when the default field lookup
+ *       strategy would fail. For example, if an instance of {@code my.Proto} can be passed to the
+ *       param {@code $my_pb}, then {@code $my_pb}'s static type is a super-type of {@code
+ *       my.Proto}.
+ *   <li>That the template contains enough information to determine types that need to be converted.
+ *       <br>
+ *       Pluggable {@link com.google.template.soy.types.SoyTypeRegistry SoyTypeRegistries} allow
+ *       recognizing input coercion, for example between {@code goog.html.type.SafeHtml} and Soy's
+ *       {@code html} string sub-type. <br>
+ *       When the converted type is a protocol-buffer type, we assume that the expression to be
+ *       converted can be fully-typed by expressionTypesVisitor.
  * </ul>
  *
- * <p>
- * CAVEAT: These assumptions are unsound, but necessary to be able to deploy JavaScript
- * binaries of acceptable size.
- * <p>
- * Type-failures are correctness issues but do not lead to increased exposure to XSS or
- * otherwise compromise security or privacy since a failure to unpack a type leads to a
- * value that coerces to a trivial value like {@code undefined} or {@code "[Object]"}.
- * </p>
+ * <p>CAVEAT: These assumptions are unsound, but necessary to be able to deploy JavaScript binaries
+ * of acceptable size.
+ *
+ * <p>Type-failures are correctness issues but do not lead to increased exposure to XSS or otherwise
+ * compromise security or privacy since a failure to unpack a type leads to a value that coerces to
+ * a trivial value like {@code undefined} or {@code "[Object]"}.
  *
  */
 public class TranslateExprNodeVisitor
@@ -163,9 +162,10 @@ public class TranslateExprNodeVisitor
           "Cannot access field ''{0}'' of type ''{1}'', "
               + "because the different union member types have different access methods.");
 
-  /**
-   * Injectable factory for creating an instance of this class.
-   */
+  private static final ImmutableSet<String> SOY_INTERNAL_IJ_DATA =
+      ImmutableSet.of(CSP_NONCE_VARIABLE_NAME, DEBUG_VARIABLE_NAME);
+
+  /** Injectable factory for creating an instance of this class. */
   public interface TranslateExprNodeVisitorFactory {
     TranslateExprNodeVisitor create(
         TranslationContext translationContext, ErrorReporter errorReporter);
@@ -179,6 +179,7 @@ public class TranslateExprNodeVisitor
    * functions) current in scope.
    */
   private final SoyToJsVariableMappings variableMappings;
+
   private final ErrorReporter errorReporter;
   private final CodeChunk.Generator codeGenerator;
 
@@ -195,6 +196,7 @@ public class TranslateExprNodeVisitor
 
   /**
    * Method that returns code to access a named parameter.
+   *
    * @param paramName the name of the parameter.
    * @param isInjected true if this is an injected parameter.
    * @return The code to access the value of that parameter.
@@ -203,7 +205,8 @@ public class TranslateExprNodeVisitor
     return isInjected ? OPT_IJ_DATA.dotAccess(paramName) : OPT_DATA.dotAccess(paramName);
   }
 
-  @Override protected CodeChunk.WithValue visitExprRootNode(ExprRootNode node) {
+  @Override
+  protected CodeChunk.WithValue visitExprRootNode(ExprRootNode node) {
     // ExprRootNode is some indirection to make it easier to replace expressions. All we need to do
     // is visit the only child
     return visit(node.getRoot());
@@ -232,24 +235,25 @@ public class TranslateExprNodeVisitor
     return LITERAL_NULL;
   }
 
-  @Override protected CodeChunk.WithValue visitStringNode(StringNode node) {
+  @Override
+  protected CodeChunk.WithValue visitStringNode(StringNode node) {
     return stringLiteral(node.getValue());
   }
 
   // -----------------------------------------------------------------------------------------------
   // Implementations for collections.
 
-  @Override protected CodeChunk.WithValue visitListLiteralNode(ListLiteralNode node) {
+  @Override
+  protected CodeChunk.WithValue visitListLiteralNode(ListLiteralNode node) {
     return arrayLiteral(visitChildren(node));
   }
 
-  @Override protected CodeChunk.WithValue visitMapLiteralNode(MapLiteralNode node) {
+  @Override
+  protected CodeChunk.WithValue visitMapLiteralNode(MapLiteralNode node) {
     return visitMapLiteralNodeHelper(node, false);
   }
 
-  /**
-   * Helper to visit a MapLiteralNode, with the extra option of whether to quote keys.
-   */
+  /** Helper to visit a MapLiteralNode, with the extra option of whether to quote keys. */
   private CodeChunk.WithValue visitMapLiteralNodeHelper(MapLiteralNode node, boolean doQuoteKeys) {
 
     // If there are only string keys, then the expression will be
@@ -276,7 +280,7 @@ public class TranslateExprNodeVisitor
     LinkedHashMap<CodeChunk.WithValue, CodeChunk.WithValue> objLiteral = new LinkedHashMap<>();
     LinkedHashMap<CodeChunk.WithValue, CodeChunk.WithValue> assignments = new LinkedHashMap<>();
 
-  // Process children
+    // Process children
 
     for (int i = 0; i < node.numChildren(); i += 2) {
       ExprNode keyNode = node.getChild(i);
@@ -333,7 +337,7 @@ public class TranslateExprNodeVisitor
       }
     }
 
-  // Build the map literal
+    // Build the map literal
 
     ImmutableList<CodeChunk.WithValue> keys = ImmutableList.copyOf(objLiteral.keySet());
     ImmutableList<CodeChunk.WithValue> values = ImmutableList.copyOf(objLiteral.values());
@@ -356,7 +360,6 @@ public class TranslateExprNodeVisitor
     return mapVar.withInitialStatements(initialStatements.build());
   }
 
-
   // -----------------------------------------------------------------------------------------------
   // Implementations for data references.
 
@@ -364,6 +367,12 @@ public class TranslateExprNodeVisitor
   protected CodeChunk.WithValue visitVarRefNode(VarRefNode node) {
     CodeChunk.WithValue translation;
     if (node.isDollarSignIjParameter()) {
+      // Case 0: special cases for csp_nonce and debug_soy_template_info. These two are created
+      // by the compiler itself, and users should not need to set these. So, instead of generating
+      // opt_ij_data.csp_nonce, we generate opt_ij_data && opt_ij_data.csp_nonce.
+      if (SOY_INTERNAL_IJ_DATA.contains(node.getName())) {
+        return OPT_IJ_DATA.and(OPT_IJ_DATA.dotAccess(node.getName()), codeGenerator);
+      }
       // Case 1: Injected data reference.
       return OPT_IJ_DATA.dotAccess(node.getName());
     } else if ((translation = variableMappings.maybeGet(node.getName())) != null) {
@@ -469,7 +478,8 @@ public class TranslateExprNodeVisitor
         : FieldAccess.call(getter);
   }
 
-  @Override protected CodeChunk.WithValue visitGlobalNode(GlobalNode node) {
+  @Override
+  protected CodeChunk.WithValue visitGlobalNode(GlobalNode node) {
     if (node.isResolved()) {
       return visit(node.getValue());
     }
@@ -482,7 +492,8 @@ public class TranslateExprNodeVisitor
   // -----------------------------------------------------------------------------------------------
   // Implementations for operators.
 
-  @Override protected CodeChunk.WithValue visitNullCoalescingOpNode(NullCoalescingOpNode node) {
+  @Override
+  protected CodeChunk.WithValue visitNullCoalescingOpNode(NullCoalescingOpNode node) {
     List<CodeChunk.WithValue> operands = visitChildren(node);
     CodeChunk.WithValue consequent = operands.get(0);
     CodeChunk.WithValue alternate = operands.get(1);

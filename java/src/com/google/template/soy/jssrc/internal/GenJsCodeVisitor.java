@@ -32,7 +32,6 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_DEBUG;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_IS_OBJECT;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_REQUIRE;
 import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_DATA;
-import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_IJ_DATA;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_ASSERTS_ASSERT_TYPE;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_GET_DELTEMPLATE_ID;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_REGISTER_DELEGATE_FN;
@@ -55,8 +54,6 @@ import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
-import com.google.template.soy.exprtree.VarDefn;
-import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
@@ -64,7 +61,6 @@ import com.google.template.soy.jssrc.dsl.ConditionalBuilder;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
 import com.google.template.soy.jssrc.dsl.SwitchBuilder;
 import com.google.template.soy.jssrc.internal.GenJsExprsVisitor.GenJsExprsVisitorFactory;
-import com.google.template.soy.parsepasses.contextautoesc.ContentSecurityPolicyPass;
 import com.google.template.soy.passes.FindIndirectParamsVisitor;
 import com.google.template.soy.passes.FindIndirectParamsVisitor.IndirectParamsInfo;
 import com.google.template.soy.passes.ShouldEnsureDataIsDefinedVisitor;
@@ -763,10 +759,6 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     if (new ShouldEnsureDataIsDefinedVisitor().exec(node)) {
       jsCodeBuilder.append(assign("opt_data", OPT_DATA.or(EMPTY_OBJECT_LITERAL, codeGenerator)));
     }
-    if (shouldEnsureIjDataIsDefined(node)) {
-      jsCodeBuilder.append(
-          assign("opt_ijData", OPT_IJ_DATA.or(EMPTY_OBJECT_LITERAL, codeGenerator)));
-    }
 
     // ------ Generate function body. ------
     generateFunctionBody(node);
@@ -805,29 +797,6 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
               number(nodeAsDelTemplate.getDelPriority().getValue()),
               dottedIdNoRequire(alias)));
     }
-  }
-
-  /**
-   * Returns true if the given template should ensure that the {@code opt_ijData} param is defined.
-   *
-   * <p>The current logic exists for CSP support which is enabled by default.  CSP support works by
-   * generating references to an {@code $ij} param called {@code csp_nonce}, so to ensure that
-   * templates are compatible we only need to ensure the opt_ijData param is available is if the
-   * template references {@code $ij.csp_nonce}.
-   */
-  private static boolean shouldEnsureIjDataIsDefined(TemplateNode node) {
-    for (VarRefNode ref : SoyTreeUtils.getAllNodesOfType(node, VarRefNode.class)) {
-      if (ref.isDollarSignIjParameter()) {
-        if (ref.getName().equals(ContentSecurityPolicyPass.CSP_NONCE_VARIABLE_NAME)) {
-          return true;
-        }
-      } else if (ref.getDefnDecl().isInjected() && ref.getDefnDecl().kind() == VarDefn.Kind.PARAM) {
-        // if it is an {@inject } param then we will generate unconditional type assertions that
-        // dereference opt_ijData.  So there is no need to ensure it is defined.
-        return false;
-      }
-    }
-    return false;
   }
 
   /**
