@@ -853,6 +853,11 @@ final class ExpressionCompiler {
           .asNonNullable();
     }
 
+    @Override
+    SoyExpression visitDebugModeFunction(FunctionNode node) {
+      return SoyExpression.TRUE;
+    }
+
     // TODO(lukes):  The RenderVisitor optimizes css/xid renaming by stashing a one element cache in
     // the CSS node itself (keyed off the identity of the renaming map).  We could easily add such
     // an optimization via a static field in the Template class. Though im not sure it makes sense

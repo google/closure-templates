@@ -93,6 +93,8 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
           // this function is a no-op in non JS backends, the CheckFunctionCallsVisitor ensures that
           // there is only one child and it is a MapLiteralNode
           return visitMapLiteralNode((MapLiteralNode) node.getChild(0));
+        case DEBUG_MODE:
+          return visitDebugModeFunction(node);
         case CHECK_NOT_NULL:
           return visitCheckNotNullFunction(node);
         case CSS:
@@ -155,6 +157,10 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
   }
 
   T visitPluginFunction(FunctionNode node) {
+    return visitExprNode(node);
+  }
+
+  T visitDebugModeFunction(FunctionNode node) {
     return visitExprNode(node);
   }
 }

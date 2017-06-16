@@ -563,6 +563,8 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
           return visitIndexFunction(node);
         case QUOTE_KEYS_IF_JS:
           return visitMapLiteralNode((MapLiteralNode) node.getChild(0));
+        case DEBUG_MODE:
+          return BooleanData.TRUE;
         case CHECK_NOT_NULL:
           return visitCheckNotNullFunction(node.getChild(0));
         case CSS:

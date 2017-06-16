@@ -580,6 +580,8 @@ public class TranslateExprNodeVisitor
           return visitIndexFunction(node);
         case QUOTE_KEYS_IF_JS:
           return visitMapLiteralNodeHelper((MapLiteralNode) node.getChild(0), true);
+        case DEBUG_MODE:
+          return id("goog").dotAccess("DEBUG");
         case CHECK_NOT_NULL:
           return visitCheckNotNullFunction(node);
         case CSS:
