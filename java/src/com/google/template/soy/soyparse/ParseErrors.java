@@ -29,7 +29,7 @@ import java.util.regex.Pattern;
 
 /** Helpers for interpreting parse errors as soy errors. */
 final class ParseErrors {
-  static final SoyErrorKind PLAIN_ERROR = SoyErrorKind.of("{0}", StyleAllowance.values());
+  private static final SoyErrorKind PLAIN_ERROR = SoyErrorKind.of("{0}", StyleAllowance.values());
 
   private static final Pattern EXTRACT_LOCATION = Pattern.compile("at line (\\d+), column (\\d+).");
 
@@ -72,14 +72,14 @@ final class ParseErrors {
   private ParseErrors() {}
 
   static void reportSoyFileParseException(
-      ErrorReporter reporter, String filePath, ParseException e) {
+      ErrorReporter reporter, String filePath, ParseException e, int currentLexicalState) {
     Token currentToken = e.currentToken;
 
     // currentToken is the 'last successfully consumed token', but the error is usually due to the
     // first unsuccessful token.  use that for the source location
     Token errorToken = (currentToken.next != null) ? currentToken.next : currentToken;
     SourceLocation location = Tokens.createSrcLoc(filePath, errorToken);
-
+    String optionalAdvice = "";
     // handle a few special cases.
     switch (errorToken.kind) {
       case SoyFileParserConstants.XXX_BRACE_INVALID:
@@ -123,10 +123,17 @@ final class ParseErrors {
         reporter.report(location, UNEXPECTED_NEWLINE);
         return;
       case SoyFileParserConstants.EOF:
-        reporter.report(location, UNEXPECTED_EOF);
-        return;
+        // The image for this token is usually pointing at some whitespace, which is confusing
+        errorToken.image = "eof";
+        if (currentLexicalState == SoyFileParserConstants.IN_ATTRIBUTE_VALUE) {
+          optionalAdvice = ". Did you forget to close an attribute?";
+        } else if (currentLexicalState == SoyFileParserConstants.IN_MULTILINE_COMMENT
+            || currentLexicalState == SoyFileParserConstants.IN_SOYDOC) {
+          optionalAdvice = ". Did you forget to close a comment?";
+        }
+        // fall-through
       default:
-        //fall-through
+        // fall-through
     }
 
     ImmutableSet.Builder<String> expectedTokenImages = ImmutableSet.builder();
@@ -138,7 +145,8 @@ final class ParseErrors {
     reporter.report(
         location,
         PLAIN_ERROR,
-        formatParseExceptionDetails(errorToken.image, expectedTokenImages.build().asList()));
+        formatParseExceptionDetails(errorToken.image, expectedTokenImages.build().asList())
+            + optionalAdvice);
   }
 
   /**

@@ -474,7 +474,8 @@ public class SoyFileParser {
     try {
       return parser.ExprInput();
     } catch (ParseException e) {
-      ParseErrors.reportSoyFileParseException(errorReporter, "expression parser", e);
+      ParseErrors.reportSoyFileParseException(
+          errorReporter, "expression parser", e, parser.token_source.curLexState);
       return null;
     }
   }
@@ -540,7 +541,7 @@ public class SoyFileParser {
     try {
       soyFileNode = SoyFile();
     } catch (ParseException e) {
-      ParseErrors.reportSoyFileParseException(errorReporter, filePath, e);
+      ParseErrors.reportSoyFileParseException(errorReporter, filePath, e, token_source.curLexState);
     } catch (LegacyInternalSyntaxException e) {
       ParseErrors.reportLegacyInternalSyntaxException(errorReporter, filePath, e);
     } catch (TokenMgrError e) {
@@ -564,7 +565,8 @@ public class SoyFileParser {
    * See https://javacc.org/tutorials/errorrecovery
    */
   private Token reportFileErrorAndSkipTo(ParseException error, int skipTo) {
-    ParseErrors.reportSoyFileParseException(errorReporter, filePath, error);
+    ParseErrors.reportSoyFileParseException(
+        errorReporter, filePath, error, token_source.curLexState);
     Token t;
     do {
       t = getNextToken();
@@ -581,7 +583,8 @@ public class SoyFileParser {
    * See https://javacc.org/tutorials/errorrecovery
    */
   private Token reportTemplateBodyErrorAndSkipTo(ParseException error, int... kinds) {
-    ParseErrors.reportSoyFileParseException(errorReporter, filePath, error);
+    ParseErrors.reportSoyFileParseException(
+        errorReporter, filePath, error, token_source.curLexState);
 
     ImmutableSet<Integer> skipTo = ImmutableSet.copyOf(Ints.asList(kinds));
     Token t;

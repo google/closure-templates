@@ -40,6 +40,10 @@ final class Tokens {
       endLine = next.endLine;
       endColumn = next.endColumn;
     }
+    // this special case happens for completely empty files.
+    if (beginLine == 0 && endLine == 0 && beginColumn == 0 && endColumn == 0) {
+      return new SourceLocation(filePath);
+    }
     return new SourceLocation(filePath, beginLine, beginColumn, endLine, endColumn);
   }
 
