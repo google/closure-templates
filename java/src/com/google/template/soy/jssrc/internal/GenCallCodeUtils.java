@@ -16,12 +16,12 @@
 
 package com.google.template.soy.jssrc.internal;
 
-import static com.google.template.soy.jssrc.dsl.CodeChunk.WithValue.LITERAL_EMPTY_STRING;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.WithValue.LITERAL_FALSE;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.WithValue.LITERAL_NULL;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.WithValue.LITERAL_TRUE;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.WithValue.id;
+import static com.google.template.soy.jssrc.dsl.CodeChunk.LITERAL_EMPTY_STRING;
+import static com.google.template.soy.jssrc.dsl.CodeChunk.LITERAL_FALSE;
+import static com.google.template.soy.jssrc.dsl.CodeChunk.LITERAL_NULL;
+import static com.google.template.soy.jssrc.dsl.CodeChunk.LITERAL_TRUE;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.fromExpr;
+import static com.google.template.soy.jssrc.dsl.CodeChunk.id;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.stringLiteral;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_ASSIGN_DEFAULTS;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_GET_DELEGATE_FN;

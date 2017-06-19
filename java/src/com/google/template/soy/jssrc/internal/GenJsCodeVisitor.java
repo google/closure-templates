@@ -17,7 +17,7 @@
 package com.google.template.soy.jssrc.internal;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.WithValue.EMPTY_OBJECT_LITERAL;
+import static com.google.template.soy.jssrc.dsl.CodeChunk.EMPTY_OBJECT_LITERAL;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.assign;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.declare;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.dottedIdNoRequire;

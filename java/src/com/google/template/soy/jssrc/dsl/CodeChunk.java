@@ -60,7 +60,11 @@ import java.util.List;
  */
 @Immutable
 public abstract class CodeChunk {
-
+  public static final WithValue LITERAL_TRUE = id("true");
+  public static final WithValue LITERAL_FALSE = id("false");
+  public static final WithValue LITERAL_NULL = id("null");
+  public static final WithValue LITERAL_EMPTY_STRING = Leaf.create("''");
+  public static final WithValue EMPTY_OBJECT_LITERAL = Leaf.create("{}");
 
   /** Returns a chunk representing the concatenation of this chunk with the other. */
   public final CodeChunk concat(CodeChunk other) {
@@ -293,14 +297,13 @@ public abstract class CodeChunk {
    */
   @Immutable
   public abstract static class WithValue extends CodeChunk {
+    // Do not put public static constants or methods on this class.  If you do then this can trigger
+    // classloading deadlocks due to cyclic references between this class, CodeChunk and the
+    // implementation class of the constant.
 
-    public static final WithValue LITERAL_TRUE = id("true");
-    public static final WithValue LITERAL_FALSE = id("false");
-    public static final WithValue LITERAL_NULL = id("null");
-    public static final WithValue LITERAL_EMPTY_STRING = Leaf.create("''");
-    public static final WithValue EMPTY_OBJECT_LITERAL = Leaf.create("{}");
-
-    WithValue() { /* no subclasses outside this package */ }
+    WithValue() {
+      /* no subclasses outside this package */
+    }
 
     public final CodeChunk.WithValue plus(CodeChunk.WithValue rhs) {
       return BinaryOperation.create(Operator.PLUS, this, rhs);

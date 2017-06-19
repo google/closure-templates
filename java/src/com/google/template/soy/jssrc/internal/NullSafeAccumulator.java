@@ -16,7 +16,7 @@
 
 package com.google.template.soy.jssrc.internal;
 
-import static com.google.template.soy.jssrc.dsl.CodeChunk.WithValue.LITERAL_NULL;
+import static com.google.template.soy.jssrc.dsl.CodeChunk.LITERAL_NULL;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.ifExpression;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_ARRAY_MAP;
 

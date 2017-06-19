@@ -18,9 +18,9 @@ package com.google.template.soy.jssrc.internal;
 
 import static com.google.common.base.CaseFormat.LOWER_CAMEL;
 import static com.google.common.base.CaseFormat.UPPER_CAMEL;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.WithValue.LITERAL_FALSE;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.WithValue.LITERAL_NULL;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.WithValue.LITERAL_TRUE;
+import static com.google.template.soy.jssrc.dsl.CodeChunk.LITERAL_FALSE;
+import static com.google.template.soy.jssrc.dsl.CodeChunk.LITERAL_NULL;
+import static com.google.template.soy.jssrc.dsl.CodeChunk.LITERAL_TRUE;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.arrayLiteral;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.dontTrustPrecedenceOf;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.id;
