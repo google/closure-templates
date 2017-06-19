@@ -72,7 +72,7 @@ public final class AddHtmlCommentsForDebugPass extends CompilerFilePass {
   }
 
   private final class AddHtmlCommentsForDebugVisitor extends AbstractSoyNodeVisitor<Void> {
-    private static final String HTML_COMMENTS_PREFIX = "<!--dta_of(%s, %s)-->";
+    private static final String HTML_COMMENTS_PREFIX = "<!--dta_of(%s, %s, %s)-->";
     private static final String HTML_COMMENTS_SUFFIX = "<!--dta_cf(%s)-->";
 
     private final IdGenerator nodeIdGen;
@@ -125,7 +125,11 @@ public final class AddHtmlCommentsForDebugPass extends CompilerFilePass {
           createSoyDebug(
               node.getSourceLocation(),
               nodeIdGen,
-              String.format(HTML_COMMENTS_PREFIX, templateName, this.filePath)));
+              String.format(
+                  HTML_COMMENTS_PREFIX,
+                  templateName,
+                  this.filePath,
+                  node.getSourceLocation().getBeginLine())));
       node.addChild(
           createSoyDebug(
               node.getSourceLocation(),

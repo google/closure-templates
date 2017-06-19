@@ -50,25 +50,25 @@ public final class AddHtmlCommentsForDebugPassTest {
     // Templates that explicitly set ContentKind and/or AutoescapeMode.
     assertThat(runPass("{template .t kind=\"html\"}{/template}"))
         .isEqualTo(
-            "{if debugMode() and $ij.debug_soy_template_info}<!--dta_of(ns.t, test.soy)-->{/if}"
+            "{if debugMode() and $ij.debug_soy_template_info}<!--dta_of(ns.t, test.soy, 1)-->{/if}"
                 + "{if debugMode() and $ij.debug_soy_template_info}<!--dta_cf(ns.t)-->{/if}");
     assertThat(runPass("{template .t kind=\"html\" autoescape=\"strict\"}{/template}"))
         .isEqualTo(
-            "{if debugMode() and $ij.debug_soy_template_info}<!--dta_of(ns.t, test.soy)-->{/if}"
+            "{if debugMode() and $ij.debug_soy_template_info}<!--dta_of(ns.t, test.soy, 1)-->{/if}"
                 + "{if debugMode() and $ij.debug_soy_template_info}<!--dta_cf(ns.t)-->{/if}");
 
     assertThat(runPass("{template .t}{/template}"))
         .isEqualTo(
-            "{if debugMode() and $ij.debug_soy_template_info}<!--dta_of(ns.t, test.soy)-->{/if}"
+            "{if debugMode() and $ij.debug_soy_template_info}<!--dta_of(ns.t, test.soy, 1)-->{/if}"
                 + "{if debugMode() and $ij.debug_soy_template_info}<!--dta_cf(ns.t)-->{/if}");
     assertThat(runPass("{template .t}foo{/template}"))
         .isEqualTo(
-            "{if debugMode() and $ij.debug_soy_template_info}<!--dta_of(ns.t, test.soy)-->{/if}"
+            "{if debugMode() and $ij.debug_soy_template_info}<!--dta_of(ns.t, test.soy, 1)-->{/if}"
                 + "foo"
                 + "{if debugMode() and $ij.debug_soy_template_info}<!--dta_cf(ns.t)-->{/if}");
     assertThat(runPass("{template .t}{if $foo}bar{/if}{/template}"))
         .isEqualTo(
-            "{if debugMode() and $ij.debug_soy_template_info}<!--dta_of(ns.t, test.soy)-->{/if}"
+            "{if debugMode() and $ij.debug_soy_template_info}<!--dta_of(ns.t, test.soy, 1)-->{/if}"
                 + "{if $foo}bar{/if}"
                 + "{if debugMode() and $ij.debug_soy_template_info}<!--dta_cf(ns.t)-->{/if}");
   }
