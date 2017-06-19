@@ -882,7 +882,7 @@ final class ExpressionCompiler {
         Expression fullSelector =
             base.invoke(MethodRef.STRING_CONCAT, constant("-"))
                 .invoke(MethodRef.STRING_CONCAT, renamedSelector);
-        return base.withSource(fullSelector).asNonNullable();
+        return SoyExpression.forString(fullSelector);
       }
     }
 

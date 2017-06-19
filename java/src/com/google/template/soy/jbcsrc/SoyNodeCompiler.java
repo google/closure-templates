@@ -36,6 +36,7 @@ import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.jbcsrc.ControlFlow.IfBlock;
 import com.google.template.soy.jbcsrc.ExpressionCompiler.BasicExpressionCompiler;
@@ -45,6 +46,7 @@ import com.google.template.soy.jbcsrc.TemplateVariableManager.Variable;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.msgs.internal.MsgUtils;
 import com.google.template.soy.msgs.internal.MsgUtils.MsgPartsAndIds;
+import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.AbstractReturningSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
@@ -500,12 +502,22 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         return renderIncrementally(node, asSoyValueProvider.get(), reattachPoint);
       }
     }
+
     // otherwise we need to do some escapes or simply cannot do incremental rendering
     Label reattachPoint = new Label();
     SoyExpression value = compilePrintNodeAsExpression(node, reattachPoint);
     AppendableExpression renderSoyValue =
         appendableExpression.appendString(value.coerceToString()).labelStart(reattachPoint);
-    return detachState.detachLimited(renderSoyValue).withSourceLocation(node.getSourceLocation());
+
+    Statement stmt;
+    if (shouldCheckBuffer(node)) {
+      stmt = detachState.detachLimited(renderSoyValue);
+      ;
+    } else {
+      stmt = renderSoyValue.toStatement();
+    }
+
+    return stmt.withSourceLocation(node.getSourceLocation());
   }
 
   private SoyExpression compilePrintNodeAsExpression(PrintNode node, Label reattachPoint) {
@@ -563,6 +575,30 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         currentRendereeField.putInstanceField(thisVar, constantNull(SOY_VALUE_PROVIDER_TYPE));
     return Statement.concat(initRenderee, doCall, clearRenderee)
         .withSourceLocation(node.getSourceLocation());
+  }
+
+  /**
+   * Returns true if the print expression should check the rendering buffer and generate a detach.
+   *
+   * <p>We do not generate detaches for css() and xid() builtin functions, since they are typically
+   * very short.
+   */
+  private static boolean shouldCheckBuffer(PrintNode node) {
+    if (!(node.getExpr().getRoot() instanceof FunctionNode)) {
+      return true;
+    }
+
+    FunctionNode fn = (FunctionNode) node.getExpr().getRoot();
+    if (!(fn.getSoyFunction() instanceof BuiltinFunction)) {
+      return true;
+    }
+
+    BuiltinFunction bfn = (BuiltinFunction) fn.getSoyFunction();
+    if (bfn != BuiltinFunction.XID && bfn != BuiltinFunction.CSS) {
+      return true;
+    }
+
+    return false;
   }
 
   @Override

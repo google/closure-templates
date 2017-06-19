@@ -95,6 +95,44 @@ public final class DetachStateTest {
   }
 
   @Test
+  public void testDetach_css() throws IOException {
+    CompiledTemplates templates =
+        TemplateTester.compileTemplateBody(
+            "{let $foo: 'foo'/}", "{css($foo, 'bar')}", "{css('baz')}");
+    CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.foo");
+    RenderContext context = getDefaultContext(templates);
+    CompiledTemplate template = factory.create(EMPTY_DICT, EMPTY_DICT);
+    // Basic stuff works
+    TestAppendable output = new TestAppendable();
+    assertEquals(RenderResult.done(), template.render(output, context));
+    assertEquals("foo-barbaz", output.toString());
+
+    output = new TestAppendable();
+    output.softLimitReached = true;
+    // css() does not detach
+    assertEquals(RenderResult.done(), template.render(output, context));
+    assertEquals("foo-barbaz", output.toString());
+  }
+
+  @Test
+  public void testDetach_xid() throws IOException {
+    CompiledTemplates templates = TemplateTester.compileTemplateBody("{xid('foo')}");
+    CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.foo");
+    RenderContext context = getDefaultContext(templates);
+    CompiledTemplate template = factory.create(EMPTY_DICT, EMPTY_DICT);
+    // Basic stuff works
+    TestAppendable output = new TestAppendable();
+    assertEquals(RenderResult.done(), template.render(output, context));
+    assertEquals("foo_", output.toString());
+
+    output = new TestAppendable();
+    output.softLimitReached = true;
+    // xid() does not detach
+    assertEquals(RenderResult.done(), template.render(output, context));
+    assertEquals("foo_", output.toString());
+  }
+
+  @Test
   public void testDetach_multipleNodes() throws IOException {
     CompiledTemplates templates =
         TemplateTester.compileTemplateBody(
