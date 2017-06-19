@@ -16,6 +16,8 @@
 
 package com.google.template.soy.parsepasses.contextautoesc;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Ascii;
 import com.google.common.base.Optional;
@@ -98,6 +100,9 @@ public final class Context {
   /** The count of {@code <template>} elements entered and not subsequently exited. */
   public final int templateNestDepth;
 
+  /** The count of {@code js template} elements entered and not subsequently exited. */
+  public final int jsTemplateLiteralNestDepth;
+
   /** Use {@link Builder} to construct instances. */
   private Context(
       HtmlContext state,
@@ -107,7 +112,8 @@ public final class Context {
       JsFollowingSlash slashType,
       UriPart uriPart,
       UriType uriType,
-      int templateNestDepth) {
+      int templateNestDepth,
+      int jsTemplateLiteralNestDepth) {
     this.state = state;
     this.elType = elType;
     this.attrType = attrType;
@@ -123,6 +129,7 @@ public final class Context {
         uriType,
         uriPart);
     this.templateNestDepth = templateNestDepth;
+    this.jsTemplateLiteralNestDepth = jsTemplateLiteralNestDepth;
   }
 
   /** A context in the given state outside any element, attribute, or Javascript content. */
@@ -135,6 +142,7 @@ public final class Context {
         JsFollowingSlash.NONE,
         UriPart.NONE,
         UriType.NONE,
+        0,
         0);
   }
 
@@ -276,7 +284,8 @@ public final class Context {
         "uriType=%s but attrType=%s",
         uriType,
         attrType);
-    return new Context(state, elType, attrType, delim, slash, uriPart, uriType, templateNestDepth);
+    return new Context(
+        state, elType, attrType, delim, slash, uriPart, uriType, templateNestDepth, 0);
   }
 
   /**
@@ -803,6 +812,9 @@ public final class Context {
     if (templateNestDepth != 0) {
       sb.append(" templateNestDepth=").append(templateNestDepth);
     }
+    if (jsTemplateLiteralNestDepth != 0) {
+      sb.append(" jsTemplateLiteralNestDepth=").append(jsTemplateLiteralNestDepth);
+    }
     return sb.append(')').toString();
   }
 
@@ -866,6 +878,18 @@ public final class Context {
       if (part.startsWith(prefix)) {
         try {
           builder.withTemplateNestDepth(Integer.parseInt(part.substring(prefix.length())));
+          parts.remove();
+        } catch (NumberFormatException ex) {
+          // OK
+        }
+      }
+    }
+    if (!parts.isEmpty()) {
+      String part = parts.element();
+      String prefix = "jsTemplateLiteralNestDepth=";
+      if (part.startsWith(prefix)) {
+        try {
+          builder.withJsTemplateLiteralNestDepth(Integer.parseInt(part.substring(prefix.length())));
           parts.remove();
         } catch (NumberFormatException ex) {
           // OK
@@ -1506,6 +1530,7 @@ public final class Context {
     private UriPart uriPart;
     private UriType uriType;
     private int templateNestDepth;
+    private int jsTemplateLiteralNestDepth;
 
     private Builder(Context context) {
       this.state = context.state;
@@ -1516,6 +1541,7 @@ public final class Context {
       this.uriPart = context.uriPart;
       this.uriType = context.uriType;
       this.templateNestDepth = context.templateNestDepth;
+      this.jsTemplateLiteralNestDepth = context.jsTemplateLiteralNestDepth;
     }
 
     Builder withState(HtmlContext state) {
@@ -1554,8 +1580,18 @@ public final class Context {
     }
 
     Builder withTemplateNestDepth(int templateNestDepth) {
-      Preconditions.checkArgument(templateNestDepth >= 0);
+      checkArgument(
+          templateNestDepth >= 0, "expected template depth (%s) to be >= 0", templateNestDepth);
       this.templateNestDepth = templateNestDepth;
+      return this;
+    }
+
+    Builder withJsTemplateLiteralNestDepth(int jsTemplateLiteralNestDepth) {
+      checkArgument(
+          jsTemplateLiteralNestDepth >= 0,
+          "expected js template string nest depth (%s) to be >= 0",
+          jsTemplateLiteralNestDepth);
+      this.jsTemplateLiteralNestDepth = jsTemplateLiteralNestDepth;
       return this;
     }
 
@@ -1610,7 +1646,15 @@ public final class Context {
 
     Context build() {
       return new Context(
-          state, elType, attrType, delimType, slashType, uriPart, uriType, templateNestDepth);
+          state,
+          elType,
+          attrType,
+          delimType,
+          slashType,
+          uriPart,
+          uriType,
+          templateNestDepth,
+          jsTemplateLiteralNestDepth);
     }
   }
 }

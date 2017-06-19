@@ -105,6 +105,13 @@ public enum HtmlContext {
   /** In JavaScript inside a regular expression literal. */
   JS_REGEX(EscapingMode.ESCAPE_JS_REGEX),
 
+  /**
+   * In JavaScript inside a template literal string.
+   *
+   * <p>See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Template_literals
+   */
+  JS_TEMPLATE_LITERAL("Js template literals cannot contain dynamic values"),
+
   /** In a URI, which may or may not be in an HTML attribute. */
   URI(EscapingMode.NORMALIZE_URI),
 

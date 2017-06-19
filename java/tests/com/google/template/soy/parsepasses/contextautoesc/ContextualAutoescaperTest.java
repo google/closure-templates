@@ -544,6 +544,68 @@ public final class ContextualAutoescaperTest {
   }
 
   @Test
+  public void testJsTemplateStrings() {
+    // these first three examples used to fail because the '/' in '</div' would be interpreted as a
+    // regex and then we would get an error for exiting the script or template in js regex.
+
+    assertContextualRewritingNoop(
+        join(
+            "{namespace ns}\n\n",
+            "{template .foo}\n",
+            "<script>",
+            // the ' " and / characters are important to make sure we detect the '}' first
+            "`{\\n}<div a=\"q\">${lb}foo{rb}\"'</div>{\\n}`;",
+            "</script>\n",
+            "{/template}"));
+
+    assertContextualRewritingNoop(
+        join(
+            "{namespace ns}\n\n",
+            "{template .foo}\n",
+            "<script>",
+            "`<div a=\"q\"></div>`;{\\n}",
+            "</script>\n",
+            "{/template}"));
+
+    assertContextualRewritingNoop(
+        join(
+            "{namespace ns}\n\n",
+            "{template .foo kind=\"js\"}\n",
+            "`<div a=\"q\"></div>`;{\\n}\n",
+            "{/template}"));
+
+    assertContextualRewriting(
+        join(
+            "{namespace ns}\n\n",
+            "{template .foo kind=\"js\"}\n",
+            "`<div a=\"q\">${lb} {$ij.foo |escapeJsValue} {rb}</div>`\n",
+            "{/template}"),
+        join(
+            "{namespace ns}\n\n",
+            "{template .foo kind=\"js\"}\n",
+            "`<div a=\"q\">${lb} {$ij.foo} {rb}</div>`\n",
+            "{/template}"));
+
+    assertRewriteFails(
+        "In file no-path:4:13, template ns.foo: Js template literals cannot contain dynamic values",
+        join(
+            "{namespace ns}\n\n",
+            "{template .foo kind=\"js\"}\n",
+            "`<div a=\"q\">{$ij.foo}</div>`\n",
+            "{/template}"));
+
+    // can't merge accross different template depths
+    assertRewriteFails(
+        "In file no-path:4:23, template ns.foo: {if} command branch ends in a different context "
+            + "than preceding branches: {else}</div>",
+        join(
+            "{namespace ns}\n\n",
+            "{template .foo kind=\"js\"}\n",
+            "{if $ij.b}`<div a=\"q\">{else}</div>{/if}`\n",
+            "{/template}"));
+  }
+
+  @Test
   public void testLiteral() throws Exception {
     assertContextualRewriting(
         join(

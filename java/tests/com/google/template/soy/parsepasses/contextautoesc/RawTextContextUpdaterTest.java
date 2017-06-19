@@ -715,17 +715,25 @@ public class RawTextContextUpdaterTest {
         "HTML_PCDATA templateNestDepth=4", "</TempLate>", "HTML_PCDATA templateNestDepth=3");
   }
 
-  private static void assertTransition(String from, String rawText, String to) throws Exception {
+  @Test
+  public void testJsTemplateStringNesting() {
+    assertTransition("JS", "`", "JS_TEMPLATE_LITERAL jsTemplateLiteralNestDepth=1");
+    assertTransition("JS", "`${`${`", "JS_TEMPLATE_LITERAL jsTemplateLiteralNestDepth=3");
+    assertTransition("JS", "`${`${`foo`}`}`", "JS REGEX");
+    assertTransition(
+        "JS", "`\\${\\`\\${\\`foo\\`}\\`}\\`", "JS_TEMPLATE_LITERAL jsTemplateLiteralNestDepth=1");
+  }
+
+  private static void assertTransition(String from, String rawText, String to) {
     assertTransition(from, rawText, to, ANY_SLICES);
   }
 
-  private static void assertTransition(String from, String rawText, String to, int numSlices)
-      throws Exception {
+  private static void assertTransition(String from, String rawText, String to, int numSlices) {
     SlicedRawTextNode node;
     try {
       node =
           RawTextContextUpdater.processRawText(
-              new RawTextNode(0, rawText, SourceLocation.UNKNOWN), parseContext(from));
+              new RawTextNode(0, rawText, SourceLocation.UNKNOWN), Context.parse(from));
     } catch (SoyAutoescapeException e) {
       if (!to.equals("ERROR")) {
         throw new AssertionError("Expected context (" + to + ") but got an exception", e);
@@ -735,15 +743,12 @@ public class RawTextContextUpdaterTest {
     }
     // Assert against the toString() for simpler test authoring -- if a developer misspells the
     // "to" context, they'll see a useful string-based diff.
-    assertWithMessage(rawText)
-        .that(node.getEndContext().toString())
-        .isEqualTo("(Context " + to + ")");
+    String endContext = node.getEndContext().toString();
+    // remove the surrounding parens and leading 'Context'
+    endContext = endContext.substring("(Context ".length(), endContext.length() - 1);
+    assertWithMessage(rawText).that(endContext).isEqualTo(to);
     if (numSlices != ANY_SLICES) {
       assertWithMessage(rawText).that(node.getSlices().size()).isEqualTo(numSlices);
     }
-  }
-
-  private static Context parseContext(String text) {
-    return Context.parse(text);
   }
 }

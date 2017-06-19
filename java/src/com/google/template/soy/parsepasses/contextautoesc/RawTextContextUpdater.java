@@ -566,6 +566,7 @@ final class RawTextContextUpdater {
         }
       };
 
+  // TODO(b/31770394): delete after finishing migration
   /** Matches the end of a special tag like {@code script}. */
   private static Transition makeEndTagTransition(String tagName) {
     return new Transition("(?i)</" + tagName + "\\b") {
@@ -805,6 +806,28 @@ final class RawTextContextUpdater {
                   makeTransitionToState("//", HtmlContext.JS_LINE_COMMENT),
                   makeTransitionToJsString("\"", HtmlContext.JS_DQ_STRING),
                   makeTransitionToJsString("'", HtmlContext.JS_SQ_STRING),
+                  new Transition(Pattern.quote("`")) {
+                    @Override
+                    Context computeNextContext(Context prior, Matcher matcher) {
+                      return prior
+                          .toBuilder()
+                          .withState(HtmlContext.JS_TEMPLATE_LITERAL)
+                          .withJsTemplateLiteralNestDepth(prior.jsTemplateLiteralNestDepth + 1)
+                          .build();
+                    }
+                  },
+                  new Transition(Pattern.quote("}")) {
+                    @Override
+                    Context computeNextContext(Context prior, Matcher matcher) {
+                      // if we are in a template, then this puts us back into the template string
+                      // e.g.  `foo${bar}`
+                      if (prior.jsTemplateLiteralNestDepth > 0) {
+                        return prior.toBuilder().withState(HtmlContext.JS_TEMPLATE_LITERAL).build();
+                      }
+                      // stay in js, this must be part of some control flow character
+                      return prior;
+                    }
+                  },
                   new Transition("/") {
                     @Override
                     Context computeNextContext(
@@ -838,8 +861,12 @@ final class RawTextContextUpdater {
                   /**
                    * Shuffle words, punctuation (besides /), and numbers off to an analyzer which
                    * does a quick and dirty check to update JsUtil.isRegexPreceder.
+                   *
+                   * <p>NOTE: every character that is matched by a transition above should be in the
+                   * negative character set in this regex. Otherwise this transition will swallow
+                   * the special characters
                    */
-                  new Transition("(?i)(?:[^</\"'\\s\\\\]+|<(?!/script))+") {
+                  new Transition("(?i)(?:[^</\"'}`\\s\\\\]+|<(?!/script))+") {
                     @Override
                     Context computeNextContext(Context prior, Matcher matcher) {
                       return prior.derive(
@@ -909,6 +936,25 @@ final class RawTextContextUpdater {
                           ")"
                           + "|<(?!/script)"
                           + ")+")))
+          .put(
+              HtmlContext.JS_TEMPLATE_LITERAL,
+              ImmutableList.of(
+                  new Transition(Pattern.quote("`")) {
+                    @Override
+                    Context computeNextContext(Context prior, Matcher matcher) {
+                      return prior
+                          .toBuilder()
+                          .withState(HtmlContext.JS)
+                          .withJsTemplateLiteralNestDepth(prior.jsTemplateLiteralNestDepth - 1)
+                          .withSlashType(Context.JsFollowingSlash.REGEX)
+                          .build();
+                    }
+                  },
+                  // ignore slash escaped '$' and ` chars
+                  makeTransitionToSelf("\\\\[$`]"),
+                  // ${ puts us into js context
+                  makeTransitionToState(Pattern.quote("${"), HtmlContext.JS),
+                  TRANSITION_TO_SELF))
           .put(
               HtmlContext.JS_REGEX,
               ImmutableList.of(
