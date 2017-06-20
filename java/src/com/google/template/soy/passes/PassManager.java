@@ -292,7 +292,7 @@ public final class PassManager {
 
   /** A builder for configuring the pass manager. */
   public static final class Builder {
-    private boolean enableHtmlRewriting;
+    private boolean enableHtmlRewriting = true;
     private SoyTypeRegistry registry;
     private ImmutableMap<String, ? extends SoyFunction> soyFunctionMap;
     private ImmutableMap<String, ? extends SoyPrintDirective> soyPrintDirectives;
@@ -369,14 +369,13 @@ public final class PassManager {
     }
 
     /**
-     * This option triggers the {@link HtmlRewritePass} and disables the {@link
-     * DesugarHtmlNodesPass}.
+     * This option can be used to enable or disable html parsing. Default is {@code true}.
      *
-     * <p>Setting this will override the normal mechanism of enabling this via {@link
-     * SoyGeneralOptions#getExperimentalFeatures() experimental features}.
+     * <p>This will be hardcoded on soon, all places where this is set to false should be for
+     * testing or should be getting migrated.
      */
-    public Builder enableHtmlRewriting() {
-      this.enableHtmlRewriting = true;
+    public Builder setEnableHtmlRewriting(boolean enableHtmlRewriting) {
+      this.enableHtmlRewriting = enableHtmlRewriting;
       return this;
     }
 

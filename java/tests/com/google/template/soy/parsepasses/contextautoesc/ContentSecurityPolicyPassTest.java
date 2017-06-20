@@ -267,7 +267,10 @@ public final class ContentSecurityPolicyPassTest {
             .setIj(ImmutableMap.of("csp_nonce", "\">alert('hello')</script><script data-foo=\""))
             .render()
             .get();
-    assertEquals("<script nonce=\"zSoyz\">var innocentJs=\"foo\"</script>", renderedValue);
+    assertEquals(
+        "<script nonce=\"&quot;&gt;alert(&#39;hello&#39;)&lt;/script&gt;&lt;script "
+            + "data-foo=&quot;\">var innocentJs=\"foo\"</script>",
+        renderedValue);
   }
 
   @Test

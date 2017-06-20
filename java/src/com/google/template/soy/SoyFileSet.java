@@ -1135,7 +1135,6 @@ public final class SoyFileSet {
     ParseResult result =
         parse(
             passManagerBuilder(SyntaxVersion.V2_0)
-                .enableHtmlRewriting()
                 .desugarHtmlNodes(false)
                 .setAutoescaperEnabled(false));
     throwIfErrorsPresent();

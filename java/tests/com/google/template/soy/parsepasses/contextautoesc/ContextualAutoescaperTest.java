@@ -150,6 +150,57 @@ public final class ContextualAutoescaperTest {
   }
 
   @Test
+  public void testRecontextualizeCall() throws Exception {
+    // a template with a call to another template in attribute value context
+    String template =
+        join(
+            "{namespace ns autoescape=\"deprecated-contextual\"}\n\n",
+            "{template .foo}\n",
+            "<a href={call .uri data=\"all\" /}>\n",
+            "{/template}\n",
+            "{template .uri}\n",
+            "  {@param foo: ?}\n",
+            "'{$foo}'\n",
+            "{/template}");
+
+    // This works in the old autoescaper but fails in the new one
+    // The reason is that the new escaper believes we are about to render an unquoted attribute
+    // containing a uri.  So when it sees the quotation marks it barfs because they aren't part
+    // of a known safe scheme
+    // The old autoescaper allowed this because it delayed deciding on the quoting for the attribute
+    // until later.
+    if (useHtmlRewriting) {
+      assertRewriteFails(
+          "In file no-path:4:9, template ns.foo: Error while re-contextualizing template ns.uri "
+              + "in context (Context URI NORMAL URI SPACE_OR_TAG_END START NORMAL):\n"
+              + "- In file no-path:8:2, template ns.uri__C1136f8: Soy can't prove this URI has a "
+              + "safe scheme at compile time. Either make sure one of ':', '/', '?', or '#' comes "
+              + "before the dynamic value (e.g. foo/{$bar}), or move the print statement to the "
+              + "start of the URI to enable runtime validation (e.g. href=\"{'foo' + $bar}\" "
+              + "instead of href=\"foo{$bar}\").",
+          template);
+    } else {
+      assertContextualRewriting(
+          join(
+              "{namespace ns autoescape=\"deprecated-contextual\"}\n\n",
+              "{template .foo}\n",
+              "<a href={call ns.uri__C1006e7 data=\"all\" /}>\n",
+              "{/template}\n",
+              "\n",
+              "{template .uri}\n",
+              "  {@param foo: ?}\n",
+              "'{$foo |escapeHtml}'\n",
+              "{/template}\n",
+              "\n",
+              "{template .uri__C1006e7 autoescape=\"deprecated-contextual\"}\n",
+              "  {@param foo: ?}\n",
+              "'{$foo |filterNormalizeUri |escapeHtmlAttribute}'\n",
+              "{/template}"),
+          template);
+    }
+  }
+
+  @Test
   public void testPrintInText() throws Exception {
     assertContextualRewriting(
         join(
@@ -313,7 +364,7 @@ public final class ContextualAutoescaperTest {
             " name='{$name}'",
             "{/if}>",
             // So now make something that looks like a script attribute but which actually
-            // appears in a PCDATA.  If the context merge has properly happened is is escaped as
+            // appears in a PCDATA.  If the context merge has properly happened is escaped as
             // PCDATA.
             " onclick='alert({$value})'\n",
             "{/template}"));
@@ -2525,31 +2576,31 @@ public final class ContextualAutoescaperTest {
               "title={$x}",
               "\n{/template}"));
     } else {
-    assertRewriteFails(
-        "In file no-path:3:1, template ns.foo: "
-            + "A strict block of kind=\"attributes\" cannot end in context "
-            + "(Context JS SCRIPT SPACE_OR_TAG_END DIV_OP). "
-            + "Likely cause is an unterminated attribute value, or ending with an unquoted "
-            + "attribute.",
-        join(
-            "{namespace ns}\n\n",
-            "{template .foo autoescape=\"strict\" kind=\"attributes\"}\n",
-            "  {@param x: ?}\n",
-            "onclick={$x}",
-            "\n{/template}"));
+      assertRewriteFails(
+          "In file no-path:3:1, template ns.foo: "
+              + "A strict block of kind=\"attributes\" cannot end in context "
+              + "(Context JS SCRIPT SPACE_OR_TAG_END DIV_OP). "
+              + "Likely cause is an unterminated attribute value, or ending with an unquoted "
+              + "attribute.",
+          join(
+              "{namespace ns}\n\n",
+              "{template .foo autoescape=\"strict\" kind=\"attributes\"}\n",
+              "  {@param x: ?}\n",
+              "onclick={$x}",
+              "\n{/template}"));
 
-    assertRewriteFails(
-        "In file no-path:3:1, template ns.foo: "
-            + "A strict block of kind=\"attributes\" cannot end in context "
-            + "(Context HTML_NORMAL_ATTR_VALUE PLAIN_TEXT SPACE_OR_TAG_END). "
-            + "Likely cause is an unterminated attribute value, or ending with an unquoted "
-            + "attribute.",
-        join(
-            "{namespace ns}\n\n",
-            "{template .foo autoescape=\"strict\" kind=\"attributes\"}\n",
-            "  {@param x: ?}\n",
-            "title={$x}",
-            "\n{/template}"));
+      assertRewriteFails(
+          "In file no-path:3:1, template ns.foo: "
+              + "A strict block of kind=\"attributes\" cannot end in context "
+              + "(Context HTML_NORMAL_ATTR_VALUE PLAIN_TEXT SPACE_OR_TAG_END). "
+              + "Likely cause is an unterminated attribute value, or ending with an unquoted "
+              + "attribute.",
+          join(
+              "{namespace ns}\n\n",
+              "{template .foo autoescape=\"strict\" kind=\"attributes\"}\n",
+              "  {@param x: ?}\n",
+              "title={$x}",
+              "\n{/template}"));
     }
   }
 

@@ -130,6 +130,8 @@ public enum EscapingMode {
    *
    * <p>Explicitly rejects values that don't comply with the definition
    * https://www.w3.org/TR/CSP2/#nonce_value
+   *
+   * <p>TODO(lukes): delete this when the ContentSecurityPolicyPass is deleted
    */
   FILTER_CSP_NONCE_VALUE(true, null, true /* internal-only */),
 

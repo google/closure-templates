@@ -224,12 +224,10 @@ public final class SoyFileSetParserBuilder {
             .desugarHtmlNodes(desugarHtmlNodes)
             .setGeneralOptions(options)
             .setConformanceConfigs(conformanceConfigs)
-            .setAutoescaperEnabled(runAutoescaper);
+            .setAutoescaperEnabled(runAutoescaper)
+            .setEnableHtmlRewriting(enableHtmlRewriting);
     if (allowUnboundGlobals) {
       passManager.allowUnknownGlobals();
-    }
-    if (enableHtmlRewriting) {
-      passManager.enableHtmlRewriting();
     }
     return new SoyFileSetParser(astCache, soyFileSuppliers, passManager.build(), errorReporter)
         .parse();
