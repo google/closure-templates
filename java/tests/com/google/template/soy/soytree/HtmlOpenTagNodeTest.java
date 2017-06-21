@@ -75,7 +75,7 @@ public final class HtmlOpenTagNodeTest {
                 "test.soy",
                 ExplodingErrorReporter.get())
             .parseSoyFile();
-    new HtmlRewritePass(true, ExplodingErrorReporter.get()).run(node, nodeIdGen);
+    new HtmlRewritePass(ExplodingErrorReporter.get()).run(node, nodeIdGen);
     new CombineConsecutiveRawTextNodesVisitor().exec(node);
     return (HtmlOpenTagNode) node.getChild(0).getChild(0);
   }

@@ -40,8 +40,8 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.extensionField;
 import static com.google.template.soy.jssrc.internal.JsRuntime.protoConstructor;
 import static com.google.template.soy.jssrc.internal.JsRuntime.protoToSanitizedContentConverterFunction;
 import static com.google.template.soy.jssrc.internal.JsRuntime.sanitizedContentToProtoConverterFunction;
-import static com.google.template.soy.parsepasses.contextautoesc.ContentSecurityPolicyPass.CSP_NONCE_VARIABLE_NAME;
 import static com.google.template.soy.passes.AddHtmlCommentsForDebugPass.DEBUG_VARIABLE_NAME;
+import static com.google.template.soy.passes.ContentSecurityPolicyNonceInjectionPass.CSP_NONCE_VARIABLE_NAME;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;

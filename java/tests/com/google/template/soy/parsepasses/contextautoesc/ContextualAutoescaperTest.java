@@ -33,7 +33,6 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import javax.annotation.Nonnull;
@@ -41,24 +40,10 @@ import javax.annotation.Nullable;
 import junit.framework.ComparisonFailure;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.runners.JUnit4;
 
-@RunWith(Parameterized.class)
+@RunWith(JUnit4.class)
 public final class ContextualAutoescaperTest {
-
-  @Parameters(name = "useHtmlRewriting {0}")
-  public static Iterable<Object[]> data() {
-    return Arrays.asList(new Object[][] {{false}, {true}});
-  }
-
-  private final boolean useHtmlRewriting;
-
-  // this constructor will be injected by the test runner
-  // note, we cannot use @Parameter because it isn't supported by our version of junit.
-  public ContextualAutoescaperTest(boolean useHtmlRewriting) {
-    this.useHtmlRewriting = useHtmlRewriting;
-  }
 
   /** Custom print directives used in tests below. */
   private static final ImmutableList<SoyPrintDirective> SOY_PRINT_DIRECTIVES =
@@ -169,35 +154,15 @@ public final class ContextualAutoescaperTest {
     // of a known safe scheme
     // The old autoescaper allowed this because it delayed deciding on the quoting for the attribute
     // until later.
-    if (useHtmlRewriting) {
-      assertRewriteFails(
-          "In file no-path:4:9, template ns.foo: Error while re-contextualizing template ns.uri "
-              + "in context (Context URI NORMAL URI SPACE_OR_TAG_END START NORMAL):\n"
-              + "- In file no-path:8:2, template ns.uri__C1136f8: Soy can't prove this URI has a "
-              + "safe scheme at compile time. Either make sure one of ':', '/', '?', or '#' comes "
-              + "before the dynamic value (e.g. foo/{$bar}), or move the print statement to the "
-              + "start of the URI to enable runtime validation (e.g. href=\"{'foo' + $bar}\" "
-              + "instead of href=\"foo{$bar}\").",
-          template);
-    } else {
-      assertContextualRewriting(
-          join(
-              "{namespace ns autoescape=\"deprecated-contextual\"}\n\n",
-              "{template .foo}\n",
-              "<a href={call ns.uri__C1006e7 data=\"all\" /}>\n",
-              "{/template}\n",
-              "\n",
-              "{template .uri}\n",
-              "  {@param foo: ?}\n",
-              "'{$foo |escapeHtml}'\n",
-              "{/template}\n",
-              "\n",
-              "{template .uri__C1006e7 autoescape=\"deprecated-contextual\"}\n",
-              "  {@param foo: ?}\n",
-              "'{$foo |filterNormalizeUri |escapeHtmlAttribute}'\n",
-              "{/template}"),
-          template);
-    }
+    assertRewriteFails(
+        "In file no-path:4:9, template ns.foo: Error while re-contextualizing template ns.uri "
+            + "in context (Context URI NORMAL URI SPACE_OR_TAG_END START NORMAL):\n"
+            + "- In file no-path:8:2, template ns.uri__C1136f8: Soy can't prove this URI has a "
+            + "safe scheme at compile time. Either make sure one of ':', '/', '?', or '#' comes "
+            + "before the dynamic value (e.g. foo/{$bar}), or move the print statement to the "
+            + "start of the URI to enable runtime validation (e.g. href=\"{'foo' + $bar}\" "
+            + "instead of href=\"foo{$bar}\").",
+        template);
   }
 
   @Test
@@ -392,9 +357,7 @@ public final class ContextualAutoescaperTest {
             "{template .bar}\n",
             "  {@param p: ?}\n",
             "  {@param p2: ?}\n",
-            useHtmlRewriting
-                ? "<input{if $p} disabled{/if}{if $p2} checked{/if}>\n"
-                : "<input {if $p}disabled{/if}{if $p2} checked{/if}>\n",
+            "<input{if $p} disabled{/if}{if $p2} checked{/if}>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
@@ -417,9 +380,7 @@ public final class ContextualAutoescaperTest {
             "{namespace ns}\n\n",
             "{template .good4}\n",
             "  {@param p: ?}\n",
-            useHtmlRewriting
-                ? "<div{if $p} onclick=foo(){/if} x=y>\n"
-                : "<div {if $p}onclick=foo() {/if} x=y>\n",
+            "<div{if $p} onclick=foo(){/if} x=y>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
@@ -433,9 +394,7 @@ public final class ContextualAutoescaperTest {
             "{namespace ns}\n\n",
             "{template .good4}\n",
             "  {@param p: ?}\n",
-            useHtmlRewriting
-                ? "<div foo=bar{if $p} onclick=foo(){/if} x=y>\n"
-                : "<div foo=bar {if $p}onclick=foo() {/if} x=y>\n",
+            "<div foo=bar{if $p} onclick=foo(){/if} x=y>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
@@ -462,13 +421,8 @@ public final class ContextualAutoescaperTest {
             "{namespace ns}\n\n",
             "{template .good4}\n",
             "  {@param p: ?}\n",
-            useHtmlRewriting
-                ? join(
-                    "<input{if $p} disabled=\"true\"{/if}>",
-                    "<input{if $p} onclick=\"foo()\"{/if}>\n")
-                : join(
-                    "<input {if $p}disabled=\"true\"{/if}>",
-                    "<input {if $p}onclick=\"foo()\"{/if}>\n"),
+            "<input{if $p} disabled=\"true\"{/if}>",
+            "<input{if $p} onclick=\"foo()\"{/if}>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
@@ -955,8 +909,7 @@ public final class ContextualAutoescaperTest {
         "In file no-path:8:5, template ns.foo: "
             + "Slash (/) cannot follow the preceding branches since it is unclear whether the slash"
             + " is a RegExp literal or division operator."
-            + "  Please add parentheses in the branches leading to `/ 2  "
-            + (useHtmlRewriting ? "`" : "</script>`"),
+            + "  Please add parentheses in the branches leading to `/ 2  `",
         join(
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"deprecated-contextual\"}\n",
@@ -1522,9 +1475,7 @@ public final class ContextualAutoescaperTest {
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"deprecated-contextual\"}\n",
             "  {@param className: ?}\n",
-            useHtmlRewriting
-                ? "<div{if $className} class=\"{$className |escapeHtmlAttribute}\"{/if} id=x>\n"
-                : "<div {if $className} class=\"{$className |escapeHtmlAttribute}\"{/if} id=x>\n",
+            "<div{if $className} class=\"{$className |escapeHtmlAttribute}\"{/if} id=x>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
@@ -1721,13 +1672,8 @@ public final class ContextualAutoescaperTest {
         join(
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"deprecated-contextual\"}\n",
-            useHtmlRewriting
-                ? join(
-                    "<input{if c} checked{/if}>",
-                    "<input{if c} id={id |customEscapeDirective}{/if}>\n")
-                : join(
-                    "<input {if c}checked{/if}>",
-                    "<input {if c}id={id |customEscapeDirective}{/if}>\n"),
+            "<input{if c} checked{/if}>",
+            "<input{if c} id={id |customEscapeDirective}{/if}>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
@@ -2545,63 +2491,35 @@ public final class ContextualAutoescaperTest {
   public void testStrictAttributesMustNotEndInUnquotedAttributeValue() {
     // Ensure that any final attribute-value pair is quoted -- otherwise, if the use site of the
     // value forgets to add spaces, the next attribute will be swallowed.
-    if (useHtmlRewriting) {
-      // The html rewriting mode allows for this since there is no way to interpolate this template
-      // into another tag attribute that creates ambiguity.
-      assertContextualRewriting(
-          join(
-              "{namespace ns}\n\n",
-              "{template .foo autoescape=\"strict\" kind=\"attributes\"}\n",
-              "  {@param x: ?}\n",
-              "onclick={$x |escapeJsValue |escapeHtmlAttributeNospace}",
-              "\n{/template}"),
-          join(
-              "{namespace ns}\n\n",
-              "{template .foo autoescape=\"strict\" kind=\"attributes\"}\n",
-              "  {@param x: ?}\n",
-              "onclick={$x}",
-              "\n{/template}"));
+    // The html rewriting mode allows for this since there is no way to interpolate this template
+    // into another tag attribute that creates ambiguity.
+    assertContextualRewriting(
+        join(
+            "{namespace ns}\n\n",
+            "{template .foo autoescape=\"strict\" kind=\"attributes\"}\n",
+            "  {@param x: ?}\n",
+            "onclick={$x |escapeJsValue |escapeHtmlAttributeNospace}",
+            "\n{/template}"),
+        join(
+            "{namespace ns}\n\n",
+            "{template .foo autoescape=\"strict\" kind=\"attributes\"}\n",
+            "  {@param x: ?}\n",
+            "onclick={$x}",
+            "\n{/template}"));
 
-      assertContextualRewriting(
-          join(
-              "{namespace ns}\n\n",
-              "{template .foo autoescape=\"strict\" kind=\"attributes\"}\n",
-              "  {@param x: ?}\n",
-              "title={$x |escapeHtmlAttributeNospace}",
-              "\n{/template}"),
-          join(
-              "{namespace ns}\n\n",
-              "{template .foo autoescape=\"strict\" kind=\"attributes\"}\n",
-              "  {@param x: ?}\n",
-              "title={$x}",
-              "\n{/template}"));
-    } else {
-      assertRewriteFails(
-          "In file no-path:3:1, template ns.foo: "
-              + "A strict block of kind=\"attributes\" cannot end in context "
-              + "(Context JS SCRIPT SPACE_OR_TAG_END DIV_OP). "
-              + "Likely cause is an unterminated attribute value, or ending with an unquoted "
-              + "attribute.",
-          join(
-              "{namespace ns}\n\n",
-              "{template .foo autoescape=\"strict\" kind=\"attributes\"}\n",
-              "  {@param x: ?}\n",
-              "onclick={$x}",
-              "\n{/template}"));
-
-      assertRewriteFails(
-          "In file no-path:3:1, template ns.foo: "
-              + "A strict block of kind=\"attributes\" cannot end in context "
-              + "(Context HTML_NORMAL_ATTR_VALUE PLAIN_TEXT SPACE_OR_TAG_END). "
-              + "Likely cause is an unterminated attribute value, or ending with an unquoted "
-              + "attribute.",
-          join(
-              "{namespace ns}\n\n",
-              "{template .foo autoescape=\"strict\" kind=\"attributes\"}\n",
-              "  {@param x: ?}\n",
-              "title={$x}",
-              "\n{/template}"));
-    }
+    assertContextualRewriting(
+        join(
+            "{namespace ns}\n\n",
+            "{template .foo autoescape=\"strict\" kind=\"attributes\"}\n",
+            "  {@param x: ?}\n",
+            "title={$x |escapeHtmlAttributeNospace}",
+            "\n{/template}"),
+        join(
+            "{namespace ns}\n\n",
+            "{template .foo autoescape=\"strict\" kind=\"attributes\"}\n",
+            "  {@param x: ?}\n",
+            "title={$x}",
+            "\n{/template}"));
   }
 
   @Test
@@ -2853,7 +2771,7 @@ public final class ContextualAutoescaperTest {
   private void assertContextualRewriting(String expectedOutput, String... inputs) {
     String source = rewrite(inputs).toSourceString();
     // remove the nonce, it is just distracting
-    source = source.replace(nonce(), "");
+    source = source.replace(NONCE, "");
     assertThat(source.trim()).isEqualTo(expectedOutput);
   }
 
@@ -2863,7 +2781,6 @@ public final class ContextualAutoescaperTest {
         SoyFileSetParserBuilder.forFileContents(inputs)
             .errorReporter(reporter)
             .allowUnboundGlobals(true)
-            .enableHtmlRewriting(useHtmlRewriting)
             .addPrintDirectives(SOY_PRINT_DIRECTIVES)
             .runAutoescaper(true)
             .parse()
@@ -2888,14 +2805,8 @@ public final class ContextualAutoescaperTest {
     return soyTree.getChild(0);
   }
 
-  private static final String OLD_NONCE =
-      "{if $ij.csp_nonce} nonce=\"{$ij.csp_nonce |filterCspNonceValue}\"{/if}";
-  private static final String STRICT_HTML_NONCE =
+  private static final String NONCE =
       "{if $ij.csp_nonce} nonce=\"{$ij.csp_nonce |escapeHtmlAttribute}\"{/if}";
-
-  private String nonce() {
-    return useHtmlRewriting ? STRICT_HTML_NONCE : OLD_NONCE;
-  }
 
   private void assertContextualRewritingNoop(String expectedOutput) throws SoyAutoescapeException {
     assertContextualRewriting(expectedOutput, expectedOutput);

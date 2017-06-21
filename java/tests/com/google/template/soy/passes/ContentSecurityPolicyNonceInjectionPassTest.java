@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.parsepasses.contextautoesc;
+package com.google.template.soy.passes;
 
 import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertEquals;
@@ -24,40 +24,16 @@ import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.SoyFileSet;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.soytree.SoyFileSetNode;
-import java.util.Arrays;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.runners.JUnit4;
 
-/**
- * Test for {@link ContentSecurityPolicyPass}.
- *
- */
-@RunWith(Parameterized.class)
-public final class ContentSecurityPolicyPassTest {
+/** Test for {@link ContentSecurityPolicyNonceInjectionPass}. */
+@RunWith(JUnit4.class)
+public final class ContentSecurityPolicyNonceInjectionPassTest {
 
-  @Parameters(name = "useHtmlRewriting {0}")
-  public static Iterable<Object[]> data() {
-    return Arrays.asList(new Object[][] {{false}, {true}});
-  }
-
-  private final boolean strictHtmlEnabled;
-
-  // this constructor will be injected by the test runner
-  // note, we cannot use @Parameter because it isn't supported by our version of junit.
-  public ContentSecurityPolicyPassTest(boolean strictHtmlEnabled) {
-    this.strictHtmlEnabled = strictHtmlEnabled;
-  }
-
-  private static final String OLD_NONCE =
-      "{if $ij.csp_nonce} nonce=\"{$ij.csp_nonce |filterCspNonceValue}\"{/if}";
-  private static final String STRICT_HTML_NONCE =
+  private static final String NONCE =
       "{if $ij.csp_nonce} nonce=\"{$ij.csp_nonce |escapeHtmlAttribute}\"{/if}";
-
-  private String nonce() {
-    return strictHtmlEnabled ? STRICT_HTML_NONCE : OLD_NONCE;
-  }
 
   @Test
   public void testTrivialTemplate() {
@@ -71,7 +47,7 @@ public final class ContentSecurityPolicyPassTest {
     assertInjected(
         join(
             "{template .foo}\n",
-            "<script" + nonce() + ">alert('Hello, World!')</script>\n",
+            "<script" + NONCE + ">alert('Hello, World!')</script>\n",
             "{/template}"),
         join("{template .foo}\n", "<script>alert('Hello, World!')</script>\n", "{/template}"));
   }
@@ -79,10 +55,7 @@ public final class ContentSecurityPolicyPassTest {
   @Test
   public void testOneSrcedScript() {
     assertInjected(
-        join(
-            "{template .foo}\n",
-            "<script src=\"app.js\"" + nonce() + "></script>\n",
-            "{/template}"),
+        join("{template .foo}\n", "<script src=\"app.js\"" + NONCE + "></script>\n", "{/template}"),
         join("{template .foo}\n", "<script src=\"app.js\"></script>\n", "{/template}"));
   }
 
@@ -94,17 +67,17 @@ public final class ContentSecurityPolicyPassTest {
     assertInjected(
         join(
             "{template .foo}\n",
-            "<script src=\"one.js\"" + nonce() + "></script>",
-            strictHtmlEnabled ? "" : "<script src=two.js" + nonce() + "></script>",
-            strictHtmlEnabled ? "" : "<script src=three.js " + nonce() + "></script>",
+            "<script src=\"one.js\"" + NONCE + "></script>",
+            "<script src=two.js" + NONCE + "></script>",
+            "<script src=three.js" + NONCE + "></script>",
             "<h1>Not a script</h1>",
-            "<script type='text/javascript'" + nonce() + ">main()</script>\n",
+            "<script type='text/javascript'" + NONCE + ">main()</script>\n",
             "{/template}"),
         join(
             "{template .foo}\n",
             "<script src=\"one.js\"></script>",
-            strictHtmlEnabled ? "" : "<script src=two.js></script>",
-            strictHtmlEnabled ? "" : "<script src=three.js ></script>",
+            "<script src=two.js></script>",
+            "<script src=three.js ></script>",
             "<h1>Not a script</h1>",
             "<script type='text/javascript'>main()</script>\n",
             "{/template}"));
@@ -119,7 +92,7 @@ public final class ContentSecurityPolicyPassTest {
             "{foreach $jsUrl in $jsUrls}",
             "<script type=\"text/javascript\" ",
             "src='{$jsUrl |filterTrustedResourceUri |escapeHtmlAttribute}'",
-            nonce() + "></script>",
+            NONCE + "></script>",
             "{/foreach}\n",
             "{/template}"),
         join(
@@ -137,11 +110,11 @@ public final class ContentSecurityPolicyPassTest {
         join(
             "{template .foo}\n",
             "<noscript></noscript>",
-            "<script" + nonce() + ">alert('Hi');</script>",
+            "<script" + NONCE + ">alert('Hi');</script>",
             "<!-- <script>notAScript()</script> -->",
             "<textarea><script>notAScript()</script></textarea>",
             "<script is-script=yes"
-                + nonce()
+                + NONCE
                 + ">document.write('<script>not()<\\/script>');</script>",
             "<a href=\"//google.com/search?q=<script>hi()</script>\">Link</a>\n",
             "{/template}"),
@@ -166,7 +139,7 @@ public final class ContentSecurityPolicyPassTest {
             "  {@param appScriptUrl: ?}\n",
             "<script src=",
             "'{$appScriptUrl |filterTrustedResourceUri |escapeHtmlAttribute}'",
-            nonce() + ">",
+            NONCE + ">",
             "alert('Hello, World!')</script>\n",
             "{/template}"),
         join(
@@ -183,7 +156,7 @@ public final class ContentSecurityPolicyPassTest {
         join(
             "{template .foo}\n",
             "<style type=text/css",
-            nonce(),
+            NONCE,
             ">",
             "p {lb} color: purple {rb}",
             "</style>\n",
@@ -199,7 +172,7 @@ public final class ContentSecurityPolicyPassTest {
     assertInjected(
         join(
             "{template .foo}\n",
-            "<script src=//example.com/unquoted/url/" + nonce() + "></script>\n",
+            "<script src=//example.com/unquoted/url/" + NONCE + "></script>\n",
             "{/template}"),
         join(
             "{template .foo}\n",
@@ -226,13 +199,13 @@ public final class ContentSecurityPolicyPassTest {
             "<a href='#' onmouseover=foo()",
             " style=color:red>",
             // stricthtml mode doesn't preserve the whitespace around the equals sign
-            "<input checked ONCHANGE" + (strictHtmlEnabled ? "=" : " = ") + "\"",
+            "<input checked ONCHANGE=\"",
             "Panic()\"",
             ">",
             // ditto
-            "<script onerror=" + (strictHtmlEnabled ? "" : " ") + "'",
+            "<script onerror='",
             "scriptError()'",
-            nonce(),
+            NONCE,
             ">baz()</script>\n",
             "{/template}"),
         join(
@@ -308,9 +281,6 @@ public final class ContentSecurityPolicyPassTest {
     String namespace = "{namespace ns autoescape=\"deprecated-contextual\"}\n\n";
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(namespace + input)
-            // The CSP pass is run as long as either 'enableHtmlRewriting' is true or
-            // 'runAutoescaper' is
-            .enableHtmlRewriting(strictHtmlEnabled)
             .runAutoescaper(true)
             .parse()
             .fileSet();

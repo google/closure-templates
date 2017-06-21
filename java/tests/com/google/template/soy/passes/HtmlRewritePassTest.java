@@ -449,7 +449,7 @@ public final class HtmlRewritePassTest {
                 errorReporter)
             .parseSoyFile();
     if (node != null) {
-      new HtmlRewritePass(true, errorReporter).run(node, nodeIdGen);
+      new HtmlRewritePass(errorReporter).run(node, nodeIdGen);
       return node.getChild(0);
     }
     return null;

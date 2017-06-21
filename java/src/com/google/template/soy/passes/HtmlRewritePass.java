@@ -27,7 +27,6 @@ import com.google.common.base.Ascii;
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
-import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -384,93 +383,21 @@ public final class HtmlRewritePass extends CompilerFilePass {
   }
 
   private final ErrorReporter errorReporter;
-  private final boolean enabled;
-  private final ImmutableList<CompilerFilePass> extraPasses;
 
-  /**
-   * @param enableRewriting If {@code true} then this will rewrite the AST to contain the new nodes
-   *     otherwise we will run in 'checking only' mode.
-   * @param errorReporter The error reporter
-   * @param extraPasses Extra passes to run on the rewritten tree. This is a temporary feature of
-   *     this pass while it is still possible to run this as a 'checking' only pass
-   */
-  public HtmlRewritePass(
-      boolean enableRewriting, ErrorReporter errorReporter, CompilerFilePass... extraPasses) {
-    this.enabled = enableRewriting;
+  /** @param errorReporter The error reporter */
+  public HtmlRewritePass(ErrorReporter errorReporter) {
     this.errorReporter = errorReporter;
-    this.extraPasses =
-        ImmutableList.<CompilerFilePass>builder()
-            .add(new ValidateCloseTagChildren(errorReporter))
-            .add(extraPasses)
-            .build();
   }
 
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-    // The basic flow
-    // 1. rewrite the tree
-    // 2. run extra passes
-    //
-    // however if we are not enabled things are more complex.  We need to:
-    // 1. rewrite a clone of the tree
-    // 2. rewrite only the msg nodes of the original tree
-    // 3. run extra passes on the clone
-    //
-    // It is somewhat wasteful to run the visitor twice, but the extra passes need the fully
-    // rewritten tree and later passes need the tags in msg nodes to be rewritten so running it
-    // twice is the easiest approach.
-    if (enabled) {
-      new Visitor(
-              nodeIdGen,
-              file.getFilePath(),
-              errorReporter,
-              false /* discardEditsOutsideOfMsgNodes */)
-          .exec(file);
-      for (CompilerFilePass extraPass : extraPasses) {
-        extraPass.run(file, nodeIdGen);
-      }
-    } else {
-      // otherwise, run on a copy of the node.
-      // this will cause all of our edits to be discarded
-      Checkpoint checkpoint = errorReporter.checkpoint();
-      SoyFileNode clone = SoyTreeUtils.cloneNode(file);
-      new Visitor(
-              nodeIdGen,
-              file.getFilePath(),
-              errorReporter,
-              false /* discardEditsOutsideOfMsgNodes */)
-          .exec(clone);
-      if (!errorReporter.errorsSince(checkpoint)) {
-        // if we parsed succesfully, go back and rewrite just the tags inside of msg blocks
-        new Visitor(
-                nodeIdGen,
-                file.getFilePath(),
-                errorReporter,
-                true /* discardEditsOutsideOfMsgNodes */)
-            .exec(file);
-      }
-      for (CompilerFilePass extraPass : extraPasses) {
-        extraPass.run(clone, nodeIdGen);
-      }
-    }
-  }
-
-  /**
-   * Validates that the only children of close tags can be {@code phname} attributes.
-   *
-   * <p>Later passes validate that phnames for close tags only appear in messages.
-   */
-  private static final class ValidateCloseTagChildren extends CompilerFilePass {
-    final ErrorReporter errorReporter;
-
-    ValidateCloseTagChildren(ErrorReporter errorReporter) {
-      this.errorReporter = errorReporter;
-    }
-
-    @Override
-    public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-      for (HtmlCloseTagNode closeTag :
-          SoyTreeUtils.getAllNodesOfType(file, HtmlCloseTagNode.class)) {
+    new Visitor(nodeIdGen, file.getFilePath(), errorReporter).exec(file);
+    /*
+     * Validates that the only children of close tags can be {@code phname} attributes.
+     *
+     * <p>Later passes validate that phnames for close tags only appear in messages.
+     */
+    for (HtmlCloseTagNode closeTag : SoyTreeUtils.getAllNodesOfType(file, HtmlCloseTagNode.class)) {
         List<StandaloneNode> children = closeTag.getChildren();
         HtmlAttributeNode phNameAttribute = closeTag.getPhNameNode();
         // the child at index 0 is the tag name
@@ -481,14 +408,9 @@ public final class HtmlRewritePass extends CompilerFilePass {
           }
           errorReporter.report(child.getSourceLocation(), UNEXPECTED_CLOSE_TAG_CONTENT);
         }
-      }
     }
   }
 
-  @Override
-  public String toString() {
-    return name() + "{enabled: " + enabled + ", extraPasses: " + extraPasses + "}";
-  }
 
   private static final class Visitor extends AbstractSoyNodeVisitor<Void> {
     /**
@@ -549,7 +471,7 @@ public final class HtmlRewritePass extends CompilerFilePass {
 
     final IdGenerator nodeIdGen;
     final String filePath;
-    final AstEdits edits;
+    final AstEdits edits = new AstEdits();
     final ErrorReporter errorReporter;
 
     // mode for the current template
@@ -574,28 +496,11 @@ public final class HtmlRewritePass extends CompilerFilePass {
      * @param nodeIdGen The id generator
      * @param filePath The current file path
      * @param errorReporter The error reporter
-     * @param discardEditsOutsideOfMsgNodes Whether to discard edits outside of message nodes. This
-     *     is a temporary parameter while parsing is still being rolled out. This allows us to only
-     *     rewrite html tags inside of msg tags, but nowhere else. Once full parsing is rolled out
-     *     this will go away.
      */
-    Visitor(
-        IdGenerator nodeIdGen,
-        String filePath,
-        ErrorReporter errorReporter,
-        boolean discardEditsOutsideOfMsgNodes) {
+    Visitor(IdGenerator nodeIdGen, String filePath, ErrorReporter errorReporter) {
       this.nodeIdGen = nodeIdGen;
       this.filePath = filePath;
       this.errorReporter = errorReporter;
-      this.edits =
-          new AstEdits(
-              discardEditsOutsideOfMsgNodes,
-              new Supplier<Boolean>() {
-                @Override
-                public Boolean get() {
-                  return inMsgNode;
-                }
-              });
     }
 
     /**
@@ -1942,18 +1847,6 @@ public final class HtmlRewritePass extends CompilerFilePass {
         MultimapBuilder.linkedHashKeys().arrayListValues().build();
     final ListMultimap<ParentSoyNode<StandaloneNode>, StandaloneNode> newChildren =
         MultimapBuilder.linkedHashKeys().arrayListValues().build();
-    final boolean discardEditsOutsideOfMsgNodes;
-    final Supplier<Boolean> inMsgNode;
-
-    /** @param discardEditsOutsideOfMsgNodes */
-    AstEdits(boolean discardEditsOutsideOfMsgNodes, Supplier<Boolean> inMsgNode) {
-      this.discardEditsOutsideOfMsgNodes = discardEditsOutsideOfMsgNodes;
-      this.inMsgNode = inMsgNode;
-    }
-
-    private boolean discardEdit() {
-      return discardEditsOutsideOfMsgNodes && !inMsgNode.get();
-    }
 
     /** Apply all edits. */
     void apply() {
@@ -1979,9 +1872,6 @@ public final class HtmlRewritePass extends CompilerFilePass {
     /** Mark a node for removal. */
     void remove(StandaloneNode node) {
       checkNotNull(node);
-      if (discardEdit()) {
-        return;
-      }
       // only record this if the node is actually in the tree already.  Sometimes we call remove
       // on new nodes that don't have parents yet.
       if (node.getParent() != null) {
@@ -1992,9 +1882,6 @@ public final class HtmlRewritePass extends CompilerFilePass {
     /** Add children to the given parent. */
     void addChildren(ParentSoyNode<StandaloneNode> parent, Iterable<StandaloneNode> children) {
       checkNotNull(parent);
-      if (discardEdit()) {
-        return;
-      }
       newChildren.putAll(parent, children);
     }
 
@@ -2002,18 +1889,12 @@ public final class HtmlRewritePass extends CompilerFilePass {
     void addChild(ParentSoyNode<StandaloneNode> parent, StandaloneNode child) {
       checkNotNull(parent);
       checkNotNull(child);
-      if (discardEdit()) {
-        return;
-      }
       newChildren.put(parent, child);
     }
 
     /** Replace a given node with the new nodes. */
     void replace(StandaloneNode oldNode, Iterable<StandaloneNode> newNodes) {
       checkState(oldNode.getParent() != null, "oldNode must be in the tree in order to replace it");
-      if (discardEdit()) {
-        return;
-      }
       remove(oldNode);
       replacements.putAll(oldNode, newNodes);
     }

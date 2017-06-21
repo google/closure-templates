@@ -63,7 +63,6 @@ public final class SoyFileSetParserBuilder {
   // disable optimization by default
   private SoyGeneralOptions options = new SoyGeneralOptions().disableOptimizer();
   private ImmutableList<CharSource> conformanceConfigs = ImmutableList.of();
-  private boolean enableHtmlRewriting;
   private boolean desugarHtmlNodes = true;
   // TODO(lukes): disabled for compatibility with unit tests.  fix tests relying on the
   // escaper not running and enable by default.  This configuration bit only really exists
@@ -176,11 +175,6 @@ public final class SoyFileSetParserBuilder {
     return this;
   }
 
-  public SoyFileSetParserBuilder enableHtmlRewriting(boolean useHtmlRewriting) {
-    this.enableHtmlRewriting = useHtmlRewriting;
-    return this;
-  }
-
   public SoyFileSetParserBuilder desugarHtmlNodes(boolean desugarHtmlNodes) {
     this.desugarHtmlNodes = desugarHtmlNodes;
     return this;
@@ -224,13 +218,11 @@ public final class SoyFileSetParserBuilder {
             .desugarHtmlNodes(desugarHtmlNodes)
             .setGeneralOptions(options)
             .setConformanceConfigs(conformanceConfigs)
-            .setAutoescaperEnabled(runAutoescaper)
-            .setEnableHtmlRewriting(enableHtmlRewriting);
+            .setAutoescaperEnabled(runAutoescaper);
     if (allowUnboundGlobals) {
       passManager.allowUnknownGlobals();
     }
     return new SoyFileSetParser(astCache, soyFileSuppliers, passManager.build(), errorReporter)
         .parse();
   }
-
 }

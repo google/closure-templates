@@ -116,7 +116,7 @@ public final class DesugarHtmlNodesPassTest {
                 "test.soy",
                 ExplodingErrorReporter.get())
             .parseSoyFile();
-    new HtmlRewritePass(true, ExplodingErrorReporter.get()).run(node, nodeIdGen);
+    new HtmlRewritePass(ExplodingErrorReporter.get()).run(node, nodeIdGen);
     new DesugarHtmlNodesPass().run(node, nodeIdGen);
     assertThat(hasHtmlNodes(node)).isFalse();
     StringBuilder sb = new StringBuilder();

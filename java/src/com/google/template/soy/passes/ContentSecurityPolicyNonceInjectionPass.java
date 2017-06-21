@@ -16,8 +16,6 @@
 
 package com.google.template.soy.passes;
 
-import static com.google.template.soy.parsepasses.contextautoesc.ContentSecurityPolicyPass.CSP_NONCE_VARIABLE_NAME;
-
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
@@ -90,17 +88,17 @@ import com.google.template.soy.soytree.defn.TemplateParam;
  * passes are shared. See {@link
  * com.google.template.soy.parsepasses.contextautoesc.ContentSecurityPolicyPassTest}.
  */
-final class ContentSecurityPolicyNonceInjectionPass extends CompilerFilePass {
+public final class ContentSecurityPolicyNonceInjectionPass extends CompilerFilePass {
+  public static final String CSP_NONCE_VARIABLE_NAME = "csp_nonce";
+
   private static final SoyErrorKind IJ_CSP_NONCE_REFERENCE =
       SoyErrorKind.of(
           "Found a use of the injected parameter ''csp_nonce''. This parameter is reserved "
               + "by the Soy compiler for Content Security Policy support.");
 
-  private final boolean insertionEnabled;
   private final ErrorReporter errorReporter;
 
-  ContentSecurityPolicyNonceInjectionPass(boolean insertionEnabled, ErrorReporter errorReporter) {
-    this.insertionEnabled = insertionEnabled;
+  ContentSecurityPolicyNonceInjectionPass(ErrorReporter errorReporter) {
     this.errorReporter = errorReporter;
   }
 
@@ -124,20 +122,18 @@ final class ContentSecurityPolicyNonceInjectionPass extends CompilerFilePass {
         errorReporter.report(var.getSourceLocation(), IJ_CSP_NONCE_REFERENCE);
       }
     }
-    if (insertionEnabled) {
-      for (HtmlOpenTagNode openTag : SoyTreeUtils.getAllNodesOfType(file, HtmlOpenTagNode.class)) {
-        RcDataTagName rcDataTagName = openTag.getTagName().getRcDataTagName();
-        if (rcDataTagName == RcDataTagName.SCRIPT || rcDataTagName == RcDataTagName.STYLE) {
-          // this should point to the character immediately before the '>' or '/>' at the end of the
-          // open tag
-          SourceLocation insertionLocation =
-              openTag
-                  .getSourceLocation()
-                  .getEndPoint()
-                  .offset(0, openTag.isSelfClosing() ? 2 : -1)
-                  .asLocation(openTag.getSourceLocation().getFileName());
-          openTag.addChild(createCspInjection(insertionLocation, nodeIdGen));
-        }
+    for (HtmlOpenTagNode openTag : SoyTreeUtils.getAllNodesOfType(file, HtmlOpenTagNode.class)) {
+      RcDataTagName rcDataTagName = openTag.getTagName().getRcDataTagName();
+      if (rcDataTagName == RcDataTagName.SCRIPT || rcDataTagName == RcDataTagName.STYLE) {
+        // this should point to the character immediately before the '>' or '/>' at the end of the
+        // open tag
+        SourceLocation insertionLocation =
+            openTag
+                .getSourceLocation()
+                .getEndPoint()
+                .offset(0, openTag.isSelfClosing() ? 2 : -1)
+                .asLocation(openTag.getSourceLocation().getFileName());
+        openTag.addChild(createCspInjection(insertionLocation, nodeIdGen));
       }
     }
   }

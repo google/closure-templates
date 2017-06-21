@@ -28,7 +28,6 @@ import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.SoyErrorKind;
-import com.google.template.soy.parsepasses.contextautoesc.ContentSecurityPolicyPass;
 import com.google.template.soy.parsepasses.contextautoesc.ContextualAutoescaper;
 import com.google.template.soy.parsepasses.contextautoesc.DerivedTemplateUtils;
 import com.google.template.soy.shared.SoyGeneralOptions;
@@ -86,7 +85,6 @@ public final class PassManager {
   private final ErrorReporter errorReporter;
   private final SyntaxVersion declaredSyntaxVersion;
   private final SoyGeneralOptions options;
-  private final boolean enableHtmlRewriting;
   private final boolean desugarHtmlNodes;
   @Nullable private final ContextualAutoescaper autoescaper;
   @Nullable private final SimplifyVisitor simplifyVisitor;
@@ -99,7 +97,6 @@ public final class PassManager {
     this.options = checkNotNull(builder.opts);
     boolean allowUnknownGlobals = builder.allowUnknownGlobals;
     boolean disableAllTypeChecking = builder.disableAllTypeChecking;
-    this.enableHtmlRewriting = builder.enableHtmlRewriting;
     this.desugarHtmlNodes = builder.desugarHtmlNodes;
     this.autoescaper =
         builder.autoescaperEnabled ? new ContextualAutoescaper(builder.soyPrintDirectives) : null;
@@ -114,19 +111,11 @@ public final class PassManager {
     // These passes perform tree rewriting and all compiler checks that don't require information
     // about callees.
 
-    HtmlRewritePass rewritePass =
-        new HtmlRewritePass(
-            // TODO(lukes): enable this unconditionally
-            strictHtmlEnabled || enableHtmlRewriting,
-            errorReporter);
-
     ImmutableList.Builder<CompilerFilePass> singleFilePassesBuilder =
         ImmutableList.<CompilerFilePass>builder()
-            .add(rewritePass)
+            .add(new HtmlRewritePass(errorReporter))
             // needs to run after htmlrewriting, before resolvenames and autoescaping
-            .add(
-                new ContentSecurityPolicyNonceInjectionPass(
-                    strictHtmlEnabled || enableHtmlRewriting, errorReporter))
+            .add(new ContentSecurityPolicyNonceInjectionPass(errorReporter))
             // Needs to run after HtmlRewritePass
             .add(new InsertMsgPlaceholderNodesPass(errorReporter))
             .add(new RewriteGendersPass())
@@ -191,9 +180,6 @@ public final class PassManager {
       beforeAutoescaperFileSetPassBuilder.add(new StrictDepsPass());
     }
     // if htmlrewriting is enabled, don't desugar because later passes want the nodes
-    if (!enableHtmlRewriting) {
-      beforeAutoescaperFileSetPassBuilder.add(new DesugarHtmlNodesPass());
-    }
     // we need to run this here, before the autoescaper because the autoescaper may choke on lots
     // of little raw text nodes.  The desguaring pass and rewrite passes above may produce empty
     // raw text nodes and lots of consecutive raw text nodes.  This will eliminate them
@@ -252,11 +238,6 @@ public final class PassManager {
       // contextual autoescaping may actually add new templates to the tree so we need to
       // reconstruct the registry
       templateRegistry = new TemplateRegistry(soyTree, errorReporter);
-      // If stricthtml is enabled, then nonces have already been injected.
-      if (!options.getExperimentalFeatures().contains("stricthtml") && !enableHtmlRewriting) {
-        // Add print directives that mark inline-scripts as safe to run.
-        ContentSecurityPolicyPass.blessAuthorSpecifiedScripts(autoescaper.getSlicedRawTextNodes());
-      }
     }
     for (CompilerFileSetPass pass : simplificationPasses) {
       pass.run(soyTree, templateRegistry);
@@ -292,7 +273,6 @@ public final class PassManager {
 
   /** A builder for configuring the pass manager. */
   public static final class Builder {
-    private boolean enableHtmlRewriting = true;
     private SoyTypeRegistry registry;
     private ImmutableMap<String, ? extends SoyFunction> soyFunctionMap;
     private ImmutableMap<String, ? extends SoyPrintDirective> soyPrintDirectives;
@@ -365,17 +345,6 @@ public final class PassManager {
      */
     public Builder allowUnknownGlobals() {
       this.allowUnknownGlobals = true;
-      return this;
-    }
-
-    /**
-     * This option can be used to enable or disable html parsing. Default is {@code true}.
-     *
-     * <p>This will be hardcoded on soon, all places where this is set to false should be for
-     * testing or should be getting migrated.
-     */
-    public Builder setEnableHtmlRewriting(boolean enableHtmlRewriting) {
-      this.enableHtmlRewriting = enableHtmlRewriting;
       return this;
     }
 

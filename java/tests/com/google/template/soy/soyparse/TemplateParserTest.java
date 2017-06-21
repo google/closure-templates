@@ -1009,11 +1009,10 @@ public final class TemplateParserTest {
   public void testParseCssStmt() throws Exception {
 
     String templateBody =
-        "{css selected-option}\n" + "{css CSS_SELECTED_OPTION}\n" + "{css %SelectedOption}";
+        "{css selected-option}" + "{css CSS_SELECTED_OPTION}" + "{css %SelectedOption}";
 
     List<StandaloneNode> nodes =
-        assertValidTemplate(ContentKind.ATTRIBUTES, "requirecss=\"foo.bar\"", templateBody)
-            .getChildren();
+        assertValidTemplate(ContentKind.TEXT, "requirecss=\"foo.bar\"", templateBody).getChildren();
     assertThat(nodes).hasSize(3);
     assertEquals("selected-option", ((CssNode) nodes.get(0)).getSelectorText());
     assertEquals("CSS_SELECTED_OPTION", ((CssNode) nodes.get(1)).getSelectorText());
