@@ -167,7 +167,7 @@ public final class SoyToJsSrcCompiler extends AbstractSoyCompiler {
             +
             " is true]"
             + " Whether to determine the bidi global direction at template runtime by"
-            + " evaluating goog.i18n.bidi.IS_RTL. Do not combine with --bidiGlobalDir."
+            + " evaluating (goog.i18n.bidi.IS_RTL). Do not combine with --bidiGlobalDir."
   )
   private boolean useGoogIsRtlForBidiGlobalDir = false;
 
@@ -188,7 +188,7 @@ public final class SoyToJsSrcCompiler extends AbstractSoyCompiler {
    * @throws IOException If there are problems reading the input files or writing the output file.
    * @throws SoySyntaxException If a syntax error is detected.
    */
-  public static void main(final String[] args) throws IOException, SoySyntaxException {
+  public static void main(final String[] args) throws IOException {
     new SoyToJsSrcCompiler().runMain(args);
   }
 

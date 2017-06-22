@@ -235,7 +235,7 @@ public final class SoyJsSrcOptions implements Cloneable {
               && !shouldProvideRequireSoyNamespaces
               && !shouldProvideRequireJsFunctions
               && !shouldProvideBothSoyNamespacesAndJsFunctions,
-          "If generating goog.modules, shouldDeclareTopLevelNamespaces, "
+          "If generating goog.module calls, shouldDeclareTopLevelNamespaces, "
               + "shouldProvideRequireSoyNamespaces, shouldProvideRequireJsFunctions and "
               + "shouldProvideBothSoyNamespacesAndJsFunctions should not be enabled.");
     }
