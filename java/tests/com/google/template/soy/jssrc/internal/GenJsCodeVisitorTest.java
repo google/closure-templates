@@ -2339,7 +2339,7 @@ public final class GenJsCodeVisitorTest {
                 .join(
                     "@typedef {{",
                     " *  moo: (!goog.soy.data.SanitizedContent|string),",
-                    " *  goo: (!goog.soy.data.SanitizedContent|null|string|undefined)",
+                    " *  goo: (!goog.soy.data.SanitizedContent|null|string|undefined),",
                     " * }}",
                     " */",
                     "boo.foo.goo.Params;"));

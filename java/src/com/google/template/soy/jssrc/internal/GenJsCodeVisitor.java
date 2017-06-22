@@ -689,6 +689,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    * </pre>
    */
   @Override protected void visitTemplateNode(TemplateNode node) {
+    // TODO(lukes): why don't we always do this?  even for old style params this would be useful
     boolean useStrongTyping = hasStrictParams(node);
 
     String templateName = node.getTemplateName();
@@ -1416,7 +1417,9 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     Map<String, String> record = new LinkedHashMap<>();
     for (TemplateParam param : node.getParams()) {
       JsType jsType = getJsType(param.type());
-      record.put(genParamAlias(param.name()), jsType.typeExprForRecordMember());
+      record.put(
+          genParamAlias(param.name()),
+          jsType.typeExprForRecordMember(/* optional= */ !param.isRequired()));
       for (GoogRequire require : jsType.getGoogRequires()) {
         jsCodeBuilder.addGoogRequire(require);
       }
@@ -1450,13 +1453,16 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         // NOTE: we do not add goog.requires for indirect types.  This is because it might introduce
         // strict deps errors.  This should be fine though since the transitive soy template that
         // actually has the param will add them.
-        record.put(genParamAlias(indirectParamName), jsType.typeExprForRecordMember());
+        record.put(
+            genParamAlias(indirectParamName), jsType.typeExprForRecordMember(/* optional= */ true));
       }
     }
     StringBuilder sb = new StringBuilder();
     sb.append("{\n *  ");
     Joiner.on(",\n *  ").withKeyValueSeparator(": ").appendTo(sb, record);
-    sb.append("\n * }");
+    // trailing comma in record is important in case the last record member is the
+    // unknown type
+    sb.append(",\n * }");
     return sb.toString();
   }
 

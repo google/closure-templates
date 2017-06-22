@@ -291,10 +291,11 @@ final class JsType {
           for (Map.Entry<String, SoyType> member : recordType.getMembers().entrySet()) {
             JsType forSoyType = forSoyType(member.getValue(), isIncrementalDom);
             builder.addRequires(forSoyType.getGoogRequires());
-            members.put(member.getKey(), forSoyType.typeExprForRecordMember());
+            members.put(member.getKey(), forSoyType.typeExprForRecordMember(/*optional=*/ false));
           }
           return builder
-              .addType("{" + Joiner.on(", ").withKeyValueSeparator(": ").join(members) + "}")
+              // trailing comma is important to prevent parsing ambiguity for the unknown type
+              .addType("{" + Joiner.on(", ").withKeyValueSeparator(": ").join(members) + ",}")
               .setPredicate(GOOG_IS_OBJECT)
               .build();
         }
@@ -395,10 +396,13 @@ final class JsType {
   /**
    * Returns a type expression for a record member. In some cases this requires additional parens.
    */
-  String typeExprForRecordMember() {
-    if (typeExpressions.size() > 1 || typeExpressions.first().equals("?")) {
+  String typeExprForRecordMember(boolean isOptional) {
+    if (typeExpressions.size() > 1 || isOptional) {
       // needs parens
-      return "(" + typeExpr() + ")";
+      return "("
+          + typeExpr()
+          + (isOptional && !typeExpressions.contains("undefined") ? "|undefined" : "")
+          + ")";
     }
     return typeExpr();
   }
