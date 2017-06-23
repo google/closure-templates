@@ -20,6 +20,8 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.error.ErrorReporter;
@@ -87,6 +89,19 @@ import java.util.Set;
  *
  */
 final class InferenceEngine {
+  // States in which it is illegal to recontextualize a template.
+  // This is because the autoescaper relies on AST nodes produced by the parser for
+  // kind="attributes" and kind="html" templates.  So if we recontextualize a template into an
+  // analagous state escaping will fail since the html nodes will not be present.
+  private static final ImmutableSet<HtmlContext> ILLEGAL_RECONTEXTUALIZATIONS =
+      Sets.immutableEnumSet(
+          HtmlContext.HTML_TAG,
+          HtmlContext.HTML_TAG_NAME,
+          HtmlContext.HTML_PCDATA,
+          HtmlContext.HTML_COMMENT,
+          HtmlContext.HTML_ATTRIBUTE_NAME,
+          HtmlContext.HTML_BEFORE_OPEN_TAG_NAME,
+          HtmlContext.HTML_BEFORE_CLOSE_TAG_NAME);
 
   /**
    * Infer an end context for the given template and, if requested, choose escaping directives for
@@ -800,6 +815,17 @@ final class InferenceEngine {
 
       // Clone the templates for this new context if needed.
       if (inferences.lookupTemplates(newCalleeName) == null) {
+        if (ILLEGAL_RECONTEXTUALIZATIONS.contains(startContext.state)) {
+          throw SoyAutoescapeException.createWithNode(
+              "Attempting to call non-strict template '"
+                  + baseName
+                  + "' in context '"
+                  + startContext.state
+                  + "'.  This is no longer allowed, please migrate the callee to strict and "
+                  + "specify a content kind by adding a "
+                  + "kind=\"(html|attributes|js|css|uri)\" attribute to the callee",
+              callNode);
+        }
         inferences.cloneTemplates(baseName, newCalleeName);
       }
 
