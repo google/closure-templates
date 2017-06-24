@@ -218,9 +218,7 @@ public final class SoyFileSetParserBuilder {
             .desugarHtmlNodes(desugarHtmlNodes)
             .setGeneralOptions(options)
             .setConformanceConfigs(conformanceConfigs)
-            .setAutoescaperEnabled(runAutoescaper)
-            // This pass modifies AST and should not be enabled for testing envrionments.
-            .setAddHtmlCommentsForDebugPassEnabled(false);
+            .setAutoescaperEnabled(runAutoescaper);
     if (allowUnboundGlobals) {
       passManager.allowUnknownGlobals();
     }

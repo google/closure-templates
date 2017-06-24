@@ -123,14 +123,9 @@ public final class PassManager {
             // Needs to run after inserting msg placeholders to ensure that genders="..."
             // expressions do not introduce extra placeholders for call and print nodes.
             .add(new StrictHtmlValidationPass(options.getExperimentalFeatures(), errorReporter))
-            .add(new RewriteGlobalsPass(registry, options.getCompileTimeGlobals(), errorReporter));
-
-    if (builder.addHtmlCommentsForDebugPassEnabled) {
-      // This needs to be run before ResolveNamesPass since it creates VarRefNode.
-      singleFilePassesBuilder.add(new AddHtmlCommentsForDebugPass(errorReporter));
-    }
-
-    singleFilePassesBuilder.add(new ResolveNamesPass()).add(new ResolveFunctionsPass());
+            .add(new RewriteGlobalsPass(registry, options.getCompileTimeGlobals(), errorReporter))
+            .add(new ResolveNamesPass())
+            .add(new ResolveFunctionsPass());
     if (!disableAllTypeChecking) {
       singleFilePassesBuilder.add(new ResolveExpressionTypesPass());
     }
@@ -292,7 +287,6 @@ public final class PassManager {
     private ImmutableList<CharSource> conformanceConfigs = ImmutableList.of();
     private boolean autoescaperEnabled = true;
     private SoyValueConverter valueConverter = SoyValueConverter.UNCUSTOMIZED_INSTANCE;
-    private boolean addHtmlCommentsForDebugPassEnabled = true;
 
     public Builder setErrorReporter(ErrorReporter errorReporter) {
       this.errorReporter = checkNotNull(errorReporter);
@@ -398,20 +392,6 @@ public final class PassManager {
      */
     public Builder setAutoescaperEnabled(boolean autoescaperEnabled) {
       this.autoescaperEnabled = autoescaperEnabled;
-      return this;
-    }
-
-    /**
-     * Can be used to enable/disable the {@code AddHtmlCommentsForDebugPass}. This pass is to
-     * support inspecting soy template information in rendered pages.
-     *
-     * <p>This option should only be used in testing environment. There are many tests that rely on
-     * the structure of AST; since {@code AddHtmlCommentsForDebugPass} modifies the AST by adding
-     * some {@code IfNode} instances, we should not enable this pass.
-     */
-    public Builder setAddHtmlCommentsForDebugPassEnabled(
-        boolean addHtmlCommentsForDebugPassEnabled) {
-      this.addHtmlCommentsForDebugPassEnabled = addHtmlCommentsForDebugPassEnabled;
       return this;
     }
 
