@@ -85,6 +85,9 @@ public final class ContextualAutoescaper {
   /** The conclusions drawn by the last {@link #rewrite}. */
   private Inferences inferences;
 
+  /** Raw text nodes sliced by context. */
+  private ImmutableList<SlicedRawTextNode> slicedRawTextNodes;
+
   /**
    * This injected ctor provides a blank constructor that is filled, in normal compiler operation,
    * with the core and basic directives defined in com.google.template.soy.{basic,core}directives,
@@ -145,6 +148,7 @@ public final class ContextualAutoescaper {
     Inferences inferences =
         new Inferences(
             autoescapeCancellingDirectives, fileSet.getNodeIdGenerator(), templatesByName);
+    ImmutableList.Builder<SlicedRawTextNode> slicedRawTextNodesBuilder = ImmutableList.builder();
 
     Collection<TemplateNode> allTemplates = inferences.getAllTemplates();
     TemplateCallGraph callGraph = new TemplateCallGraph(templatesByName);
@@ -174,6 +178,7 @@ public final class ContextualAutoescaper {
             startContext,
             inferences,
             autoescapeCancellingDirectives,
+            slicedRawTextNodesBuilder,
             errorReporter);
       } catch (SoyAutoescapeException e) {
         reportError(errorReporter, errorLocations, e);
@@ -188,6 +193,9 @@ public final class ContextualAutoescaper {
     // Store inferences so that after processing, clients can access the output contexts for
     // templates.
     this.inferences = inferences;
+
+    // Store context boundaries so that later passes can make use of element/attribute boundaries.
+    this.slicedRawTextNodes = slicedRawTextNodesBuilder.build();
 
     runVisitorOnAllTemplatesIncludingNewOnes(
         inferences, new NonContextualTypedRenderUnitNodesVisitor(errorReporter));
@@ -232,6 +240,14 @@ public final class ContextualAutoescaper {
    */
   public Context getTemplateEndContext(String templateName) {
     return inferences.getTemplateEndContext(templateName);
+  }
+
+  /**
+   * Maps ranges of text-nodes to contexts so that later parse passes can add attributes or
+   * elements.
+   */
+  public ImmutableList<SlicedRawTextNode> getSlicedRawTextNodes() {
+    return slicedRawTextNodes;
   }
 
   /** Reports an autoescape exception. */
@@ -350,12 +366,15 @@ public final class ContextualAutoescaper {
         // automatically go into the children.
         // Secondly, CheckEscapingSanityVisitor makes sure that all the children {let} or {param}
         // blocks of a strict {let} or {param} block are also strict.
+        ImmutableList.Builder<SlicedRawTextNode> slicedRawTextNodesBuilder =
+            ImmutableList.builder();
         InferenceEngine.inferStrictRenderUnitNode(
             // As this visitor visits only non-contextual templates.
             AutoescapeMode.NONCONTEXTUAL,
             node,
             inferences,
             autoescapeCancellingDirectives,
+            slicedRawTextNodesBuilder,
             errorReporter);
       } else {
         visitChildren(node);

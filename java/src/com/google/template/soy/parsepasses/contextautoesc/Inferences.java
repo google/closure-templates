@@ -16,7 +16,6 @@
 
 package com.google.template.soy.parsepasses.contextautoesc;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -49,17 +48,20 @@ import javax.annotation.Nullable;
 /**
  * Encapsulates information inferred about a Soy file and decisions made to change it.
  *
- * <p>The mutator methods on this class do not change the Soy file. All changes are delayed until
+ * <p>
+ * The mutator methods on this class do not change the Soy file.  All changes are delayed until
  * after all inference has been done so that we can safely try a variety of speculative techniques.
  *
- * <p>To make it easier to do speculative inference, this class cascades : each instance has a
- * parent, and it delegates to that when it does not have info itself. And there is a {@link
- * Inferences#foldIntoParent()} method that propagates all decisions into the parent when a set of
- * inference decisions are considered final.
+ * <p>
+ * To make it easier to do speculative inference, this class cascades : each instance has a parent,
+ * and it delegates to that when it does not have info itself.
+ * And there is a {@link Inferences#foldIntoParent()} method that propagates all decisions into the
+ * parent when a set of inference decisions are considered final.
  *
- * <p>The {@link ContextualAutoescaper} creates a single root instance and its passes fold
- * successful inferences into the parent until it ends up with a final set of rewriting decisions
- * that the {@link Rewriter} applies to the input Soy parse tree.
+ * <p>
+ * The {@link ContextualAutoescaper} creates a single root instance and its passes fold successful
+ * inferences into the parent until it ends up with a final set of rewriting decisions that the
+ * {@link Rewriter} applies to the input Soy parse tree.
  *
  */
 final class Inferences {
@@ -81,12 +83,9 @@ final class Inferences {
   /** The types of templates. */
   private final Map<String, Context> templateNameToEndContext = Maps.newLinkedHashMap();
 
-  /** Maps print, msg and call commands to the inferred escaping modes. */
+  /** Maps IDs of print and call commands to the inferred escaping modes. */
   private final Map<SoyNode, ImmutableList<EscapingMode>> nodeToEscapingModes =
       Maps.newIdentityHashMap();
-
-  /** Maps print, msg and call commands to the context. */
-  private final Map<SoyNode, Context> nodeToContext = Maps.newIdentityHashMap();
 
   /** Maps IDs of <code>{call}</code> commands to the derived template they should use. */
   private final Map<CallNode, String> callNodeToDerivedCalleeName = Maps.newIdentityHashMap();
@@ -187,8 +186,7 @@ final class Inferences {
   }
 
   /** Records inferred escaping modes so a directive can be later added to the Soy parse tree. */
-  public void setEscapingDirectives(
-      SoyNode node, Context context, List<EscapingMode> escapingModes) {
+  public void setEscapingDirectives(SoyNode node, List<EscapingMode> escapingModes) {
     Preconditions.checkArgument(
         (node instanceof PrintNode)
             || (node instanceof CallNode)
@@ -197,7 +195,6 @@ final class Inferences {
     if (escapingModes != null) {
       nodeToEscapingModes.put(node, ImmutableList.copyOf(escapingModes));
     }
-    nodeToContext.put(node, context);
   }
 
   /**
@@ -214,10 +211,6 @@ final class Inferences {
     return modes;
   }
 
-  @VisibleForTesting
-  Context getContextForNode(SoyNode node) {
-    return nodeToContext.get(node);
-  }
   /**
    * Derives a <code>{call}</code> site so that it uses a version of the template appropriate to the
    * start context.
@@ -264,10 +257,8 @@ final class Inferences {
       TemplateNode clone;
 
       if (tn instanceof TemplateBasicNode) {
-        String derivedPartialName =
-            (tn.getPartialTemplateName() != null)
-                ? derivedName.substring(soyFileHeaderInfo.namespace.length())
-                : null;
+        String derivedPartialName = (tn.getPartialTemplateName() != null) ?
+            derivedName.substring(soyFileHeaderInfo.namespace.length()) : null;
         clone =
             new TemplateBasicNodeBuilder(soyFileHeaderInfo, ExplodingErrorReporter.get())
                 .setId(cloneId)
@@ -282,8 +273,8 @@ final class Inferences {
                 .addParams(trivialClonedTemplate.getAllParams())
                 .build();
 
-        if (!(derivedName.equals(clone.getTemplateName())
-            && Objects.equals(derivedPartialName, clone.getPartialTemplateName()))) {
+        if (! (derivedName.equals(clone.getTemplateName()) &&
+            Objects.equals(derivedPartialName, clone.getPartialTemplateName()))) {
           throw new AssertionError();
         }
 
@@ -302,7 +293,7 @@ final class Inferences {
                     tn.getRequiredCssNamespaces())
                 .addParams(trivialClonedTemplate.getAllParams())
                 .build();
-        if (!(derivedName.equals(((TemplateDelegateNode) clone).getDelTemplateName()))) {
+        if (! (derivedName.equals(((TemplateDelegateNode) clone).getDelTemplateName()))) {
           throw new AssertionError();
         }
 

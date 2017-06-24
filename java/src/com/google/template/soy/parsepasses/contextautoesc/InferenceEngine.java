@@ -120,6 +120,7 @@ final class InferenceEngine {
       Context startContext,
       Inferences inferences,
       Set<String> autoescapeCancellingDirectives,
+      ImmutableList.Builder<SlicedRawTextNode> slicedRawTextNodesBuilder,
       ErrorReporter errorReporter) {
     Context endContext;
     try {
@@ -130,6 +131,7 @@ final class InferenceEngine {
               autoescapeMode,
               inferences,
               autoescapeCancellingDirectives,
+              slicedRawTextNodesBuilder,
               errorReporter);
       // Context started off as startContext and we have propagated context through all of
       // template's children, so now context is the template's end context.
@@ -172,6 +174,7 @@ final class InferenceEngine {
       RenderUnitNode node,
       Inferences inferences,
       Set<String> autoescapeCancellingDirectives,
+      ImmutableList.Builder<SlicedRawTextNode> slicedRawTextNodesBuilder,
       ErrorReporter errorReporter) {
     InferenceEngine inferenceEngine =
         new InferenceEngine(
@@ -179,6 +182,7 @@ final class InferenceEngine {
             templateAutoescapeMode,
             inferences,
             autoescapeCancellingDirectives,
+            slicedRawTextNodesBuilder,
             errorReporter);
     // Context started off as startContext and we have propagated context through all of
     // node's children, so now context is the node's end context.
@@ -207,6 +211,9 @@ final class InferenceEngine {
    */
   private final Set<String> autoescapeCancellingDirectives;
 
+  /** Records context transitions found by the raw text node escaper. */
+  private final ImmutableList.Builder<SlicedRawTextNode> slicedRawTextNodesBuilder;
+
   /** For reporting errors. */
   private final ErrorReporter errorReporter;
 
@@ -215,11 +222,13 @@ final class InferenceEngine {
       AutoescapeMode templateAutoescapeMode,
       Inferences inferences,
       Set<String> autoescapeCancellingDirectives,
+      ImmutableList.Builder<SlicedRawTextNode> slicedRawTextNodesBuilder,
       ErrorReporter errorReporter) {
     this.autoescapeMode = autoescapeMode;
     this.templateAutoescapeMode = templateAutoescapeMode;
     this.inferences = inferences;
     this.autoescapeCancellingDirectives = autoescapeCancellingDirectives;
+    this.slicedRawTextNodesBuilder = slicedRawTextNodesBuilder;
     this.defaultEscapingMode = EscapingMode.ESCAPE_HTML;
     this.errorReporter = errorReporter;
   }
@@ -287,7 +296,9 @@ final class InferenceEngine {
     protected void visitRawTextNode(RawTextNode rawTextNode) {
       Context newContext;
       try {
-        newContext = RawTextContextUpdater.processRawText(rawTextNode, context);
+        SlicedRawTextNode sliced = RawTextContextUpdater.processRawText(rawTextNode, context);
+        newContext = sliced.getEndContext();
+        slicedRawTextNodesBuilder.add(sliced);
       } catch (SoyAutoescapeException ex) {
         throw ex.maybeAssociateNode(rawTextNode);
       }
@@ -309,7 +320,7 @@ final class InferenceEngine {
               node);
         }
         Context.MsgEscapingStrategy strategy = maybeStrategy.get();
-        inferences.setEscapingDirectives(node, context, strategy.escapingModesForFullMessage);
+        inferences.setEscapingDirectives(node, strategy.escapingModesForFullMessage);
 
         // (2) Run the inference engine on the parts of the message in that context.
         Context msgEndContext =
@@ -318,6 +329,7 @@ final class InferenceEngine {
                     templateAutoescapeMode,
                     inferences,
                     autoescapeCancellingDirectives,
+                    slicedRawTextNodesBuilder,
                     errorReporter)
                 .inferChildren(node, strategy.childContext);
 
@@ -476,6 +488,9 @@ final class InferenceEngine {
         Context afterBody = context;
         if (neNode != null) {
           afterBody = infer(neNode, context);
+          // This causes duplicate rawtextslices to be produced.  rather than fix just ignore
+          // (see SlicedRawTextNode::find) since all the sliced raw text node infrastructure will
+          // soon be deleted.
           // Make sure that repeated invocations of the body end up in the same state.
           Context elseContext = infer(neNode, afterBody);
           Optional<Context> combined = Context.union(elseContext, afterBody);
@@ -551,7 +566,7 @@ final class InferenceEngine {
         }
 
         List<EscapingMode> escapingModes = inferences.getEscapingMode(printNode);
-        Context prev = context;
+
         context = context.getContextBeforeDynamicValue();
         if (escapingModes.isEmpty()) { // None specified.
           // The inferences set below specify which nodes to change. In the non-contextual modes,
@@ -568,7 +583,7 @@ final class InferenceEngine {
               escapingModes = ImmutableList.of(defaultEscapingMode);
               break;
           }
-          inferences.setEscapingDirectives(printNode, prev, escapingModesToSet);
+          inferences.setEscapingDirectives(printNode, escapingModesToSet);
         } else if (!context.isCompatibleWith(escapingModes.get(0))) {
           String msg =
               String.format("Escaping modes %s not compatible with %s.", escapingModes, context);
@@ -586,7 +601,8 @@ final class InferenceEngine {
           // doing and simulate an innocuous value.
           context =
               RawTextContextUpdater.processRawText(
-                  new RawTextNode(-1, "z", printNode.getSourceLocation()), context);
+                      new RawTextNode(-1, "z", printNode.getSourceLocation()), context)
+                  .getEndContext();
         }
       } catch (SoyAutoescapeException ex) {
         throw ex.maybeAssociateNode(printNode);
@@ -731,7 +747,6 @@ final class InferenceEngine {
           // bad existing templates.
           inferences.setEscapingDirectives(
               callNode,
-              callContext,
               callContext.getEscapingModes(ImmutableList.<PrintDirectiveNode>of()));
           return Pair.of(templateName, getContextAfterDynamicValue(callNode, startContext));
         } else if (startContext.state == HtmlContext.TEXT) {
@@ -911,6 +926,7 @@ final class InferenceEngine {
                 startContext,
                 inferences,
                 autoescapeCancellingDirectives,
+                slicedRawTextNodesBuilder,
                 errorReporter));
       }
       Optional<Context> combined = Context.union(endContexts);
@@ -979,6 +995,7 @@ final class InferenceEngine {
           node,
           inferences,
           autoescapeCancellingDirectives,
+          slicedRawTextNodesBuilder,
           errorReporter);
     }
 
@@ -992,6 +1009,7 @@ final class InferenceEngine {
                   templateAutoescapeMode,
                   inferences,
                   autoescapeCancellingDirectives,
+                  slicedRawTextNodesBuilder,
                   errorReporter)
               .inferChildren(node, Context.HTML_PCDATA);
       if (!paramContentNodeEndContext.equals(Context.HTML_PCDATA)) {
