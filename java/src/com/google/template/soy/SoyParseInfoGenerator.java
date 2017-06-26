@@ -19,9 +19,12 @@ package com.google.template.soy;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.io.CharSource;
 import com.google.common.io.Files;
 import com.google.template.soy.base.internal.BaseUtils;
+import com.google.template.soy.base.internal.SoyJarFileWriter;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Map;
 import org.kohsuke.args4j.Option;
@@ -47,12 +50,21 @@ public final class SoyParseInfoGenerator extends AbstractSoyCompiler {
 
   @Option(
     name = "--outputDirectory",
-    required = true,
     usage =
-        "[Required] The path to the output directory. If files with the same names"
-            + " already exist at this location, they will be overwritten."
+        "[Optional] The path to the output directory. If files with the same names"
+            + " already exist at this location, they will be overwritten. "
+            + "Either --outputDirectory or --outputJar must be set"
   )
   private String outputDirectory = "";
+
+  @Option(
+    name = "--outputSrcJar",
+    usage =
+        "[Optional] The path to the source jar to write. If a file with the same name"
+            + " already exist at this location, it will be overwritten. "
+            + "Either --outputDirectory or --outputJar must be set"
+  )
+  private File outputSrcJar;
 
   @Option(
     name = "--javaPackage",
@@ -89,8 +101,8 @@ public final class SoyParseInfoGenerator extends AbstractSoyCompiler {
 
   @Override
   void validateFlags() {
-    if (outputDirectory.length() == 0) {
-      exitWithError("Must provide output directory.");
+    if (outputDirectory.isEmpty() == (outputSrcJar == null)) {
+      exitWithError("Must provide exactly one of --outputDirectory or --outputSrcJar");
     }
     if (javaPackage.length() == 0) {
       exitWithError("Must provide Java package.");
@@ -108,11 +120,20 @@ public final class SoyParseInfoGenerator extends AbstractSoyCompiler {
 
     ImmutableMap<String, String> parseInfo =
         sfs.generateParseInfo(javaPackage, javaClassNameSource);
-
-    for (Map.Entry<String, String> entry : parseInfo.entrySet()) {
-      File outputFile = new File(outputDirectory, entry.getKey());
-      BaseUtils.ensureDirsExistInPath(outputFile.getPath());
-      Files.write(entry.getValue(), outputFile, UTF_8);
+    if (outputSrcJar == null) {
+      for (Map.Entry<String, String> entry : parseInfo.entrySet()) {
+        File outputFile = new File(outputDirectory, entry.getKey());
+        BaseUtils.ensureDirsExistInPath(outputFile.getPath());
+        Files.asCharSink(outputFile, UTF_8).write(entry.getValue());
+      }
+    } else {
+      String resourcePath = javaPackage.replace('.', '/') + "/";
+      try (SoyJarFileWriter writer = new SoyJarFileWriter(new FileOutputStream(outputSrcJar))) {
+        for (Map.Entry<String, String> entry : parseInfo.entrySet()) {
+          writer.writeEntry(
+              resourcePath + entry.getKey(), CharSource.wrap(entry.getValue()).asByteSource(UTF_8));
+        }
+      }
     }
   }
 }

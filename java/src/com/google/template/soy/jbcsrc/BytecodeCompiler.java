@@ -16,14 +16,17 @@
 
 package com.google.template.soy.jbcsrc;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import com.google.common.base.Optional;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.ByteSink;
-import com.google.common.io.CharStreams;
+import com.google.common.io.ByteSource;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
+import com.google.template.soy.base.internal.SoyJarFileWriter;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
@@ -33,19 +36,12 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.Reader;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.jar.Attributes;
-import java.util.jar.JarOutputStream;
-import java.util.jar.Manifest;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.zip.ZipEntry;
 
 /** The entry point to the {@code jbcsrc} compiler. */
 public final class BytecodeCompiler {
@@ -166,17 +162,15 @@ public final class BytecodeCompiler {
     if (reporter.errorsSince(checkpoint)) {
       return;
     }
-    try (OutputStream stream = sink.openStream();
-        JarOutputStream jarOutput = new DeterministicJarOutputStream(stream, getJarManifest())) {
+    try (final SoyJarFileWriter writer = new SoyJarFileWriter(sink.openStream())) {
       compileTemplates(
           compilerRegistry,
           reporter,
           new CompilerListener<Void>() {
             @Override
             void onCompile(ClassData clazz) throws IOException {
-              jarOutput.putNextEntry(new ZipEntry(clazz.type().internalName() + ".class"));
-              jarOutput.write(clazz.data());
-              jarOutput.closeEntry();
+              writer.writeEntry(
+                  clazz.type().internalName() + ".class", ByteSource.wrap(clazz.data()));
             }
           });
     }
@@ -200,60 +194,18 @@ public final class BytecodeCompiler {
       TemplateRegistry registry, ImmutableMap<String, SoyFileSupplier> files, ByteSink sink)
       throws IOException {
     Set<SoyFileNode> seenFiles = new HashSet<>();
-    try (OutputStream stream = sink.openStream();
-        JarOutputStream jarOutput = new DeterministicJarOutputStream(stream, getJarManifest())) {
+    try (SoyJarFileWriter writer = new SoyJarFileWriter(sink.openStream())) {
       for (TemplateNode template : registry.getAllTemplates()) {
         SoyFileNode file = template.getParent();
         if (file.getSoyFileKind() == SoyFileKind.SRC && seenFiles.add(file)) {
           String namespace = file.getNamespace();
           String fileName = file.getFileName();
-          jarOutput.putNextEntry(new ZipEntry(Names.javaFileName(namespace, fileName)));
-          copyFileToOutput(files.get(file.getFilePath()), jarOutput);
-          jarOutput.closeEntry();
+          writer.writeEntry(
+              Names.javaFileName(namespace, fileName),
+              files.get(file.getFilePath()).asCharSource().asByteSource(UTF_8));
         }
       }
     }
-  }
-
-  private static final class DeterministicJarOutputStream extends JarOutputStream {
-    DeterministicJarOutputStream(OutputStream outputStream, Manifest manifest) throws IOException {
-      super(outputStream, manifest);
-    }
-
-    @Override
-    public void putNextEntry(ZipEntry ze) throws IOException {
-      ze.setTime(0); // set an explicit timestamp to zero so we generate deterministic outputs
-      super.putNextEntry(ze);
-    }
-  }
-
-  /** Copies the file to the output stream */
-  private static void copyFileToOutput(SoyFileSupplier from, OutputStream to) throws IOException {
-    // 'from' contains a Reader which allows streaming reads of characters and 'to' is an
-    // OutputStream which allows for streaming writes of bytes.  This disconnect means we need to do
-    // some character encoding.  The classic way to do this is to use OutputStreamWriter to wrap the
-    // outputStream and apply an encoder.  This introduces some wierdness because OutputStreamWriter
-    // can hold on to a few bytes to deal with unmatched surrogate pairs.  So we would need to
-    // close/flush it inorder to not corrupt the files.  This is undesirable since the output is
-    // actually a JarOutputStream and we are writing multiple files (we would over flush).  So
-    // instead we do the naive thing and read the whole file as a string, convert the whole string
-    // to a byte array and then write the whole byte array.
-    //
-    // The real fix is to avoid the Reader and add methods to SoyFileSupplier to give us a
-    // ByteSource then we can avoid the error prone decode/encode dance.
-    String file;
-    try (Reader contents = from.open()) {
-      file = CharStreams.toString(contents);
-    }
-    to.write(file.getBytes(StandardCharsets.UTF_8));
-  }
-
-  /** Returns a simple jar manifest. */
-  private static Manifest getJarManifest() {
-    Manifest mf = new Manifest();
-    mf.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
-    mf.getMainAttributes().put(new Attributes.Name("Created-By"), "soy");
-    return mf;
   }
 
   private static void checkForUnsupportedFeatures(

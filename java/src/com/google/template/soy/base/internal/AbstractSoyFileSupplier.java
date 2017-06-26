@@ -17,6 +17,9 @@
 package com.google.template.soy.base.internal;
 
 import com.google.common.base.Preconditions;
+import com.google.common.io.CharSource;
+import java.io.IOException;
+import java.io.Reader;
 import java.util.Objects;
 
 /**
@@ -25,7 +28,7 @@ import java.util.Objects;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public abstract class AbstractSoyFileSupplier implements SoyFileSupplier {
+public abstract class AbstractSoyFileSupplier extends CharSource implements SoyFileSupplier {
 
   /** Whether this input file is only included because it's a dependency. */
   protected final SoyFileKind soyFileKind;
@@ -42,6 +45,16 @@ public abstract class AbstractSoyFileSupplier implements SoyFileSupplier {
     Preconditions.checkState(
         filePath != null && !filePath.isEmpty(), "Soy file path must be non-null and non-empty.");
     this.filePath = filePath;
+  }
+
+  @Override
+  public final CharSource asCharSource() {
+    return this;
+  }
+
+  @Override
+  public final Reader openStream() throws IOException {
+    return open();
   }
 
   @Override

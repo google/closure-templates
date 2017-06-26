@@ -64,6 +64,9 @@ public interface SoyFileSupplier {
     Version STABLE_VERSION = new Version() {};
   }
 
+  /** View this supplier as a {@link CharSource}. */
+  CharSource asCharSource();
+
   /**
    * Returns a {@link Reader} for the Soy file content.
    *
