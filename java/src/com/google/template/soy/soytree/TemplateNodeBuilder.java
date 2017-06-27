@@ -70,6 +70,11 @@ public abstract class TemplateNodeBuilder {
   private static final SoyErrorKind PARAM_ALREADY_DECLARED =
       SoyErrorKind.of("Param ''{0}'' already declared.");
 
+  private static final SoyErrorKind MIXED_PARAM_STYLES =
+      SoyErrorKind.of(
+          "Cannot mix SoyDoc params and header params in the same template. Please "
+              + " migrate to the '''{@param <name>: <type>}''' syntax.");
+
   /** Info from the containing Soy file's header declarations. */
   protected final SoyFileHeaderInfo soyFileHeaderInfo;
 
@@ -206,26 +211,37 @@ public abstract class TemplateNodeBuilder {
    *
    * @param params The params to add.
    */
-  public TemplateNodeBuilder addParams(Iterable<? extends TemplateParam> params) {
+  public TemplateNodeBuilder addParams(Iterable<? extends TemplateParam> newParams) {
 
     Set<String> seenParamKeys = new HashSet<>();
+    boolean hasTemplateHeaderParams = false;
     if (this.params == null) {
-      this.params = ImmutableList.copyOf(params);
+      this.params = ImmutableList.copyOf(newParams);
     } else {
       for (TemplateParam oldParam : this.params) {
         seenParamKeys.add(oldParam.name());
+        hasTemplateHeaderParams |= oldParam.declLoc() == TemplateParam.DeclLoc.HEADER;
       }
       this.params =
-          ImmutableList.<TemplateParam>builder().addAll(this.params).addAll(params).build();
+          ImmutableList.<TemplateParam>builder().addAll(this.params).addAll(newParams).build();
     }
 
     // Check new params.
-    for (TemplateParam param : params) {
+    for (TemplateParam param : newParams) {
+      hasTemplateHeaderParams |= param.declLoc() == TemplateParam.DeclLoc.HEADER;
       if (param.name().equals("ij")) {
         errorReporter.report(param.nameLocation(), INVALID_PARAM_NAMED_IJ);
       }
       if (!seenParamKeys.add(param.name())) {
         errorReporter.report(param.nameLocation(), PARAM_ALREADY_DECLARED, param.name());
+      }
+    }
+    // if the template has any header params, report an error on each soydoc param
+    if (hasTemplateHeaderParams) {
+      for (TemplateParam param : this.params) {
+        if (param.declLoc() == TemplateParam.DeclLoc.SOY_DOC) {
+          errorReporter.report(param.nameLocation(), MIXED_PARAM_STYLES);
+        }
       }
     }
     return this;

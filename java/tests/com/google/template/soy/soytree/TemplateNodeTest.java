@@ -146,9 +146,11 @@ public class TemplateNodeTest {
     errorReporter = new FormattingErrorReporter();
     parse(
         "{namespace ns}\n"
-            + "/** @param foo a soydoc param */\n"
+            + "/**\n"
+            + " * @param foo a soydoc param \n"
+            + " * @param foo a soydoc param \n"
+            + "*/\n"
             + "{template .boo}\n"
-            + "{@param foo : string}\n"
             + "{/template}",
         errorReporter);
     assertThat(errorReporter.getErrorMessages()).containsExactly("Param 'foo' already declared.");
@@ -359,31 +361,29 @@ public class TemplateNodeTest {
                 "{namespace ns}",
                 "/**",
                 " * Test template.",
-                " *",
-                " * @param foo Foo to print.",
-                " * @param goo",
-                " *     Goo to print.",
                 " */",
                 "{template .boo}",
+                "  /** Foo to print. */",
+                "  {@param foo : ?}",
+                "  /** Goo to print. */",
+                "  {@param goo : ?}",
                 "  /** Something milky. */",
                 "  {@param moo : bool}",
                 "  {@param? too : string}",
                 "{sp}{sp}{$foo}{$goo}{$moo ? 'moo' : ''}{$too}\n",
                 "{/template}"));
     assertEquals(
-        ""
-            + "/**\n"
-            + " * Test template.\n"
-            + " *\n"
-            + " * @param foo Foo to print.\n"
-            + " * @param goo\n"
-            + " *     Goo to print.\n"
-            + " */\n"
-            + "{template .boo}\n"
-            + "  {@param moo: bool}  /** Something milky. */\n"
-            + "  {@param? too: null|string}\n"
-            + "{sp} {$foo}{$goo}{$moo ? 'moo' : ''}{$too}\n"
-            + "{/template}\n",
+        join(
+            "/**",
+            " * Test template.",
+            " */",
+            "{template .boo}",
+            "  {@param foo: ?}  /** Foo to print. */",
+            "  {@param goo: ?}  /** Goo to print. */",
+            "  {@param moo: bool}  /** Something milky. */",
+            "  {@param? too: null|string}",
+            "{sp} {$foo}{$goo}{$moo ? 'moo' : ''}{$too}",
+            "{/template}\n"),
         tn.toSourceString());
   }
 
