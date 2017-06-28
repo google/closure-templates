@@ -36,7 +36,7 @@ import com.google.template.soy.soytree.defn.TemplateParam;
 abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprNodeVisitor<T> {
 
   @Override
-  protected final T visit(ExprNode node) {
+  protected T visit(ExprNode node) {
     try {
       return super.visit(node);
     } catch (UnexpectedCompilerFailureException e) {

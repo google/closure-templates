@@ -165,6 +165,9 @@ abstract class Statement extends BytecodeProducer {
   /** Returns a new {@link Statement} with the source location attached. */
   final Statement withSourceLocation(SourceLocation location) {
     checkNotNull(location);
+    if (location.equals(this.location)) {
+      return this;
+    }
     return new Statement(location) {
       @Override
       void doGen(CodeBuilder adapter) {

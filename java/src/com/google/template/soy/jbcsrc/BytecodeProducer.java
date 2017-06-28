@@ -16,7 +16,8 @@
 
 package com.google.template.soy.jbcsrc;
 
-import com.google.common.base.Optional;
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.google.errorprone.annotations.ForOverride;
 import com.google.template.soy.base.SourceLocation;
 import java.io.PrintWriter;
@@ -50,22 +51,15 @@ abstract class BytecodeProducer {
           }
           : null;
 
-  // Optional because there will be many situations where having a source location is not possible
-  // e.g. NULL_STATEMENT, exprnodes (currently).  In general we should attempt to associate source
-  // locations whenever we have one.
-  private final Optional<SourceLocation> location;
+  protected final SourceLocation location;
 
   BytecodeProducer() {
-    this(Optional.<SourceLocation>absent());
+    this(SourceLocation.UNKNOWN);
   }
 
   // when UNKNOWN source locations go away, so can this use of isKnown
   @SuppressWarnings("deprecation")
   BytecodeProducer(SourceLocation location) {
-    this(location.isKnown() ? Optional.of(location) : Optional.<SourceLocation>absent());
-  }
-
-  private BytecodeProducer(Optional<SourceLocation> location) {
     if (Flags.DEBUG && isGenerating.get()) {
       throw new IllegalStateException(
           "All bytecode producers should be constructed prior to code generation (.gen()) being "
@@ -73,7 +67,7 @@ abstract class BytecodeProducer {
               + "Statement/Expression construction routines interact with mutable compiler data "
               + "structures");
     }
-    this.location = location;
+    this.location = checkNotNull(location);
   }
 
   /** Writes the bytecode to the adapter. */
@@ -84,23 +78,23 @@ abstract class BytecodeProducer {
       shouldClearIsGeneratingBit = true;
     }
     try {
-      if (location.isPresent()) {
+      if (location.isKnown()) {
         // These add entries to the line number tables that are associated with the current method.
-        // The line number table is just a mapping of of bytecode offset (aka 'pc') to line number,
+        // The line number table is just a mapping of bytecode offset (aka 'pc') to line number,
         // http://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.7.12
         // It is used by the JVM to add source data to stack traces and by debuggers to highlight
         // source files.
         Label start = new Label();
         adapter.mark(start);
-        adapter.visitLineNumber(location.get().getBeginLine(), start);
+        adapter.visitLineNumber(location.getBeginLine(), start);
       }
 
       doGen(adapter);
 
-      if (location.isPresent()) {
+      if (location.isKnown()) {
         Label end = new Label();
         adapter.mark(end);
-        adapter.visitLineNumber(location.get().getEndLine(), end);
+        adapter.visitLineNumber(location.getEndLine(), end);
       }
     } finally {
       if (shouldClearIsGeneratingBit) {

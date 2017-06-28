@@ -21,6 +21,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import com.google.template.soy.base.SourceLocation;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -196,6 +197,11 @@ abstract class Expression extends BytecodeProducer {
   }
 
   Expression(Type resultType, Features features) {
+    this(resultType, features, SourceLocation.UNKNOWN);
+  }
+
+  Expression(Type resultType, Features features, SourceLocation location) {
+    super(location);
     this.resultType = checkNotNull(resultType);
     this.features = Features.forType(resultType, features);
   }
@@ -208,6 +214,20 @@ abstract class Expression extends BytecodeProducer {
    */
   @Override
   abstract void doGen(CodeBuilder adapter);
+
+  /** Returns an identical {@link Expression} with the given source location. */
+  Expression withSourceLocation(SourceLocation location) {
+    checkNotNull(location);
+    if (location.equals(this.location)) {
+      return this;
+    }
+    return new Expression(resultType, features, location) {
+      @Override
+      void doGen(CodeBuilder adapter) {
+        Expression.this.gen(adapter);
+      }
+    };
+  }
 
   /** The type of the expression. */
   final Type resultType() {

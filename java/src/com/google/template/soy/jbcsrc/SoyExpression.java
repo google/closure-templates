@@ -26,6 +26,7 @@ import static com.google.template.soy.jbcsrc.BytecodeUtils.logicalNot;
 
 import com.google.common.base.Optional;
 import com.google.protobuf.Message;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.soytree.CallNode;
@@ -53,10 +54,10 @@ import org.objectweb.asm.Type;
  * <p>SoyExpressions can be {@link #box() boxed} into SoyValue subtypes and they also support some
  * implicit conversions.
  *
- * <p>All soy expressions are convertable to {@code boolean} or {@link String} valued expressions,
+ * <p>All soy expressions are convertible to {@code boolean} or {@link String} valued expressions,
  * but depending on the type they may also support additional unboxing conversions.
  */
-class SoyExpression extends Expression {
+final class SoyExpression extends Expression {
 
   static SoyExpression forSoyValue(SoyType type, Expression delegate) {
     return new SoyExpression(SoyRuntimeType.getBoxedType(type), delegate);
@@ -123,29 +124,9 @@ class SoyExpression extends Expression {
             }
           });
 
-  static final SoyExpression TRUE =
-      new SoyExpression(getUnboxedType(BoolType.getInstance()), BytecodeUtils.constant(true)) {
-        @Override
-        SoyExpression box() {
-          return new DefaultBoxed(
-              SoyRuntimeType.getBoxedType(BoolType.getInstance()),
-              this,
-              FieldRef.BOOLEAN_DATA_TRUE.accessor(),
-              Optional.<Expression>absent());
-        }
-      };
+  static final SoyExpression TRUE = forBool(BytecodeUtils.constant(true));
 
-  static final SoyExpression FALSE =
-      new SoyExpression(getUnboxedType(BoolType.getInstance()), BytecodeUtils.constant(false)) {
-        @Override
-        SoyExpression box() {
-          return new DefaultBoxed(
-              SoyRuntimeType.getBoxedType(BoolType.getInstance()),
-              this,
-              FieldRef.BOOLEAN_DATA_FALSE.accessor(),
-              Optional.<Expression>absent());
-        }
-      };
+  static final SoyExpression FALSE = forBool(BytecodeUtils.constant(false));
 
   private static SoyRuntimeType getUnboxedType(SoyType soyType) {
     return SoyRuntimeType.getUnboxedType(soyType).get();
@@ -185,6 +166,11 @@ class SoyExpression extends Expression {
   @Override
   final void doGen(CodeBuilder adapter) {
     delegate.gen(adapter);
+  }
+
+  @Override
+  SoyExpression withSourceLocation(SourceLocation location) {
+    return withSource(delegate.withSourceLocation(location));
   }
 
   boolean assignableToNullableInt() {
@@ -283,8 +269,8 @@ class SoyExpression extends Expression {
     throw new IllegalStateException("Can't box soy expression of type " + soyRuntimeType);
   }
 
-  private DefaultBoxed asBoxed(Expression expr) {
-    return new DefaultBoxed(soyRuntimeType.box(), this, expr, renderContext);
+  private SoyExpression asBoxed(Expression expr) {
+    return new SoyExpression(soyRuntimeType.box(), expr, renderContext);
   }
 
   /** Coerce this expression to a boolean value. */
@@ -435,7 +421,7 @@ class SoyExpression extends Expression {
               + soyRuntimeType
               + ") into "
               + asType
-              + " doesn't make sense. Should you be using a type coercion? e.g. .coerceToBoolean()");
+              + " doesn't make sense. Should you be using a type coercion? e.g. coerceToBoolean()");
     }
 
     if (asType.equals(boolean.class)) {
@@ -506,6 +492,9 @@ class SoyExpression extends Expression {
 
   /** Returns a new {@link SoyExpression} with the same type but a new delegate expression. */
   SoyExpression withSource(Expression expr) {
+    if (expr == delegate) {
+      return this;
+    }
     return new SoyExpression(soyRuntimeType, expr, renderContext);
   }
 
@@ -563,44 +552,5 @@ class SoyExpression extends Expression {
   @Override
   SoyExpression labelEnd(Label label) {
     return withSource(delegate.labelEnd(label));
-  }
-
-  /** Default subtype of {@link SoyExpression} used by our core expression implementations. */
-  private static final class DefaultBoxed extends SoyExpression {
-    private final SoyExpression unboxed;
-
-    DefaultBoxed(
-        SoyRuntimeType soyRuntimeType,
-        SoyExpression unboxed,
-        Expression delegate,
-        Optional<Expression> renderContext) {
-      super(soyRuntimeType, delegate, renderContext);
-      this.unboxed = unboxed;
-    }
-
-    @Override
-    final SoyExpression unboxAs(Class<?> asType) {
-      return unboxed.unboxAs(asType);
-    }
-
-    @Override
-    SoyExpression coerceToBoolean() {
-      return unboxed.coerceToBoolean();
-    }
-
-    @Override
-    SoyExpression coerceToString() {
-      return unboxed.coerceToString();
-    }
-
-    @Override
-    SoyExpression coerceToDouble() {
-      return unboxed.coerceToDouble();
-    }
-
-    @Override
-    final SoyExpression box() {
-      return this;
-    }
   }
 }

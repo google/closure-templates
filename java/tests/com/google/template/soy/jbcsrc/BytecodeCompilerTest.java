@@ -19,6 +19,7 @@ package com.google.template.soy.jbcsrc;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.data.SoyValueConverter.EMPTY_DICT;
 import static com.google.template.soy.data.SoyValueConverter.EMPTY_LIST;
+import static com.google.template.soy.jbcsrc.TemplateTester.asRecord;
 import static com.google.template.soy.jbcsrc.TemplateTester.assertThatFile;
 import static com.google.template.soy.jbcsrc.TemplateTester.assertThatTemplateBody;
 import static com.google.template.soy.jbcsrc.TemplateTester.getDefaultContext;
@@ -32,6 +33,8 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SanitizedContents;
@@ -883,6 +886,108 @@ public class BytecodeCompilerTest {
     // By passing an alternate context, we ensure the deltemplate selector contains the delegate
     assertThat(renderWithContext(caller, getDefaultContext(templatesWithDeltemplate)))
         .isEqualTo("<span>Hello</span>");
+  }
+
+  @Test
+  public void testExpressionLineNumbers() throws Exception {
+    CompiledTemplates templates =
+        TemplateTester.compileFile(
+            Joiner.on("\n")
+                .join(
+                    "{namespace ns}",
+                    "",
+                    "{template .foo}",
+                    "  {@param p1 : ?}",
+                    "  {@param p2 : ?}",
+                    "  {@param p3 : ?}",
+                    "  {@param p4 : ?}",
+                    // This is a single expression split across multiple lines
+                    "{$p1",
+                    " + $p2",
+                    " + $p3",
+                    " + $p4",
+                    "}",
+                    "{/template}"));
+    assertThat(
+            render(
+                templates, asRecord(ImmutableMap.of("p1", 1, "p2", 2, "p3", 3, "p4", 4)), "ns.foo"))
+        .isEqualTo("10");
+    ListenableFuture<?> failed = Futures.immediateFailedFuture(new RuntimeException("boom"));
+    // since each parameter is on a different source line, depending on which one is assigned the
+    // failed future, the template should show a different line number
+    try {
+      render(
+          templates, asRecord(ImmutableMap.of("p1", failed, "p2", 2, "p3", 3, "p4", 4)), "ns.foo");
+      fail();
+    } catch (Throwable t) {
+      assertThat(getTemplateLineNumber("ns.foo", t)).isEqualTo(8);
+    }
+    try {
+      render(
+          templates, asRecord(ImmutableMap.of("p1", 1, "p2", failed, "p3", 3, "p4", 4)), "ns.foo");
+      fail();
+    } catch (Throwable t) {
+      assertThat(getTemplateLineNumber("ns.foo", t)).isEqualTo(9);
+    }
+    try {
+      render(
+          templates, asRecord(ImmutableMap.of("p1", 1, "p2", 2, "p3", failed, "p4", 4)), "ns.foo");
+      fail();
+    } catch (Throwable t) {
+      assertThat(getTemplateLineNumber("ns.foo", t)).isEqualTo(10);
+    }
+    try {
+      render(
+          templates, asRecord(ImmutableMap.of("p1", 1, "p2", 2, "p3", 3, "p4", failed)), "ns.foo");
+      fail();
+    } catch (Throwable t) {
+      assertThat(getTemplateLineNumber("ns.foo", t)).isEqualTo(11);
+    }
+  }
+
+  // There used to be missing information from the line numbers assigned to the list expressions
+  // in foreach loop which would 'blame' the previous statement, causing much confusion.  Make sure
+  // it is accurate.
+  @Test
+  public void testForeachLoopLineNumbers() throws Exception {
+    CompiledTemplates templates =
+        TemplateTester.compileFile(
+            Joiner.on("\n")
+                .join(
+                    "{namespace ns}",
+                    "",
+                    "{template .foo}",
+                    "  {@param list : ?}",
+                    "  {@param? opt : ?}",
+                    "{if not $opt}",
+                    // failures on the foreach loop used to get assigned the line number of the
+                    // if statement.
+                    "  {foreach $foo in $list}",
+                    "    {$foo}{if not isLast($foo)}{sp}{/if}",
+                    "  {/foreach}",
+                    "{/if}",
+                    "{/template}"));
+    assertThat(
+            render(templates, asRecord(ImmutableMap.of("list", ImmutableList.of(1, 2))), "ns.foo"))
+        .isEqualTo("1 2");
+    ListenableFuture<?> failed = Futures.immediateFailedFuture(new RuntimeException("boom"));
+    // since each parameter is on a different source line, depending on which one is assigned the
+    // failed future, the template should show a different line number
+    try {
+      render(templates, asRecord(ImmutableMap.of("list", failed)), "ns.foo");
+      fail();
+    } catch (Throwable t) {
+      assertThat(getTemplateLineNumber("ns.foo", t)).isEqualTo(7);
+    }
+  }
+
+  private static int getTemplateLineNumber(String templateName, Throwable t) {
+    for (StackTraceElement ste : t.getStackTrace()) {
+      if (ste.getClassName().endsWith(templateName) && ste.getMethodName().equals("render")) {
+        return ste.getLineNumber();
+      }
+    }
+    throw new AssertionError("couldn't template: " + templateName + " in", t);
   }
 
   private static final class FakeRenamingMap implements SoyCssRenamingMap {

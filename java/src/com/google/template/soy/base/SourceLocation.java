@@ -46,10 +46,11 @@ public final class SourceLocation implements Comparable<SourceLocation> {
   /**
    * A nullish source location.
    *
-   * @deprecated There is no reason to use this other than laziness. Soy has complete source
-   *     location information.
+   * <p>This is useful for default initialization of field values or when dealing with situations
+   * when you may or may not have a location. Obviously, associating real locations is always
+   * preferred when possible.
    */
-  @Deprecated public static final SourceLocation UNKNOWN = new SourceLocation("unknown");
+  public static final SourceLocation UNKNOWN = new SourceLocation("unknown");
 
   /** Extracts the file name from a path. */
   public static String fileNameFromPath(String filePath) {
@@ -145,12 +146,9 @@ public final class SourceLocation implements Comparable<SourceLocation> {
 
   /**
    * True iff this location is known, i.e. not the special value {@link #UNKNOWN}.
-   *
-   * @deprecated For the same reason that {@link #UNKNOWN} is.
    */
-  @Deprecated
   public boolean isKnown() {
-    return !this.equals(UNKNOWN);
+    return this != UNKNOWN;
   }
 
   @Override

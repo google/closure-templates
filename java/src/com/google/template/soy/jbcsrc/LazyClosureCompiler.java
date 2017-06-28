@@ -45,8 +45,6 @@ import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import com.google.template.soy.jbcsrc.runtime.DetachableContentProvider;
 import com.google.template.soy.jbcsrc.runtime.DetachableSoyValueProvider;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
-import com.google.template.soy.soytree.CallParamContentNode;
-import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.RawTextNode;
@@ -273,10 +271,7 @@ final class LazyClosureCompiler {
       SoyExpression compile =
           ExpressionCompiler.createBasicCompiler(lookup, variableSet).compile(exprNode);
       SoyExpression expression = compile.box();
-      final Statement storeExpr =
-          RESOLVED_VALUE
-              .putInstanceField(thisVar, expression)
-              .withSourceLocation(exprNode.getSourceLocation());
+      final Statement storeExpr = RESOLVED_VALUE.putInstanceField(thisVar, expression);
       final Statement returnDone = Statement.returnExpression(RENDER_RESULT_DONE.invoke());
       Statement doResolveImpl =
           new Statement() {

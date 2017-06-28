@@ -195,7 +195,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   @Override
   protected Statement visit(SoyNode node) {
     try {
-      return super.visit(node);
+      return super.visit(node).withSourceLocation(node.getSourceLocation());
     } catch (UnexpectedCompilerFailureException e) {
       e.addLocation(node);
       throw e;
@@ -216,7 +216,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     Statement leave = currentScope.exitScope();
     children.add(leave);
     currentScope = prev;
-    return Statement.concat(children).withSourceLocation(node.getSourceLocation());
+    return Statement.concat(children);
   }
 
   @Override
@@ -234,7 +234,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         elseBlock = Optional.of(visitChildrenInNewScope(ien));
       }
     }
-    return ControlFlow.ifElseChain(ifs, elseBlock).withSourceLocation(node.getSourceLocation());
+    return ControlFlow.ifElseChain(ifs, elseBlock);
   }
 
   @Override
@@ -287,8 +287,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     // is typed to int/string we should consider implementing via the tableswitch/lookupswitch
     // instruction which would be way way way faster.  cglib has some helpers for string switch
     // generation that we could maybe use
-    return Statement.concat(initializer, ControlFlow.ifElseChain(cases, defaultBlock), exitScope)
-        .withSourceLocation(node.getSourceLocation());
+    return Statement.concat(initializer, ControlFlow.ifElseChain(cases, defaultBlock), exitScope);
   }
 
   @Override
@@ -309,7 +308,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     // maintain a sequence of statements and then all statements would be added to Scope which would
     // return a statement for the whole thing at the end... would that be clearer?
     final Statement exitScope = scope.exitScope();
-    return new Statement(node.getSourceLocation()) {
+    return new Statement() {
       @Override
       void doGen(CodeBuilder adapter) {
         for (Statement initializer : rangeArgs.initStatements()) {
@@ -499,7 +498,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       Optional<Expression> asSoyValueProvider =
           expressionToSoyValueProviderCompiler.compileAvoidingBoxing(expr, reattachPoint);
       if (asSoyValueProvider.isPresent()) {
-        return renderIncrementally(node, asSoyValueProvider.get(), reattachPoint);
+        return renderIncrementally(asSoyValueProvider.get(), reattachPoint);
       }
     }
 
@@ -517,7 +516,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       stmt = renderSoyValue.toStatement();
     }
 
-    return stmt.withSourceLocation(node.getSourceLocation());
+    return stmt;
   }
 
   private SoyExpression compilePrintNodeAsExpression(PrintNode node, Label reattachPoint) {
@@ -552,8 +551,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
    * to actually do this we could add a mechanism similar to the SaveStrategy enum for expressions,
    * kind of like {@link Expression#isCheap()} which isn't that useful in practice.
    */
-  private Statement renderIncrementally(
-      PrintNode node, Expression soyValueProvider, Label reattachPoint) {
+  private Statement renderIncrementally(Expression soyValueProvider, Label reattachPoint) {
     // In this case we want to render the SoyValueProvider via renderAndResolve which will
     // enable incremental rendering of parameters for lazy transclusions!
     // This actually ends up looking a lot like how calls work so we use the same strategy.
@@ -573,8 +571,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     Statement doCall = detachState.detachForRender(callRenderAndResolve);
     Statement clearRenderee =
         currentRendereeField.putInstanceField(thisVar, constantNull(SOY_VALUE_PROVIDER_TYPE));
-    return Statement.concat(initRenderee, doCall, clearRenderee)
-        .withSourceLocation(node.getSourceLocation());
+    return Statement.concat(initRenderee, doCall, clearRenderee);
   }
 
   /**
@@ -609,14 +606,14 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     // ideas:
     // * never try to detach in certain 'contexts' (e.g. attribute context)
     // * never detach after rendering small chunks (< 128 bytes?)
-    return detachState.detachLimited(render).withSourceLocation(node.getSourceLocation());
+    return detachState.detachLimited(render);
   }
 
   @Override
   protected Statement visitDebuggerNode(DebuggerNode node) {
     // intentional no-op.  java has no 'breakpoint' equivalent.  But we can add a label + line
     // number.  Which may be useful for debugging :)
-    return NULL_STATEMENT.withSourceLocation(node.getSourceLocation());
+    return NULL_STATEMENT;
   }
 
   // Note: xid and css translations are expected to be very short, so we do _not_ generate detaches
@@ -629,8 +626,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
             parameterLookup
                 .getRenderContext()
                 .invoke(MethodRef.RENDER_CONTEXT_RENAME_XID, constant(node.getText())))
-        .toStatement()
-        .withSourceLocation(node.getSourceLocation());
+        .toStatement();
   }
 
   // TODO(lukes):  The RenderVisitor optimizes css/xid renaming by stashing a one element cache in
@@ -658,13 +654,9 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
           .appendChar(constant('-'))
           .appendString(renamedSelector)
           .labelStart(reattachPoint)
-          .toStatement()
-          .withSourceLocation(node.getSourceLocation());
+          .toStatement();
     }
-    return appendableExpression
-        .appendString(renamedSelector)
-        .toStatement()
-        .withSourceLocation(node.getSourceLocation());
+    return appendableExpression.appendString(renamedSelector).toStatement();
   }
 
   /**
@@ -767,7 +759,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
             MethodRef.RUNTIME_APPLY_ESCAPERS_DYNAMIC.invoke(calleeExpression, directives);
       }
     }
-    return visitCallNodeHelper(node, reattachPoint, calleeExpression);
+    return visitCallNodeHelper(reattachPoint, calleeExpression);
   }
 
   @Override
@@ -786,11 +778,10 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
               BytecodeUtils.constant(callee.node().getContentKind()),
               getEscapingDirectivesList(node));
     }
-    return visitCallNodeHelper(node, reattachPoint, calleeExpression);
+    return visitCallNodeHelper(reattachPoint, calleeExpression);
   }
 
-  private Statement visitCallNodeHelper(
-      CallNode node, Label reattachPoint, Expression calleeExpression) {
+  private Statement visitCallNodeHelper(Label reattachPoint, Expression calleeExpression) {
     FieldRef currentCalleeField = variables.getCurrentCalleeField();
     Statement initCallee =
         currentCalleeField.putInstanceField(thisVar, calleeExpression).labelStart(reattachPoint);
@@ -806,8 +797,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     Statement clearCallee =
         currentCalleeField.putInstanceField(
             thisVar, BytecodeUtils.constantNull(COMPILED_TEMPLATE_TYPE));
-    return Statement.concat(initCallee, callCallee, clearCallee)
-        .withSourceLocation(node.getSourceLocation());
+    return Statement.concat(initCallee, callCallee, clearCallee);
   }
 
   private Expression getEscapingDirectivesList(CallNode node) {
@@ -899,7 +889,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   @Override
   protected Statement visitMsgHtmlTagNode(MsgHtmlTagNode node) {
     // trivial node that is just a number of children surrounded by raw text nodes.
-    return Statement.concat(visitChildren(node)).withSourceLocation(node.getSourceLocation());
+    return Statement.concat(visitChildren(node));
   }
 
   @Override

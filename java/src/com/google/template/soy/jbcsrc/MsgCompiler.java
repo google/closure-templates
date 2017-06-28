@@ -246,7 +246,7 @@ final class MsgCompiler {
   private Statement handleBasicTranslation(
       List<String> escapingDirectives, Expression soyMsgParts) {
     // optimize for simple constant translations (very common)
-    // this becomes: renderContext.getSoyMessge(<id>).getParts().get(o).getRawText()
+    // this becomes: renderContext.getSoyMessge(<id>).getParts().get(0).getRawText()
     SoyExpression text =
         SoyExpression.forString(
             soyMsgParts

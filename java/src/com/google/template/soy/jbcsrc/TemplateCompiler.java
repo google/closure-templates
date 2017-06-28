@@ -42,8 +42,6 @@ import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.TemplateMetadata;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
-import com.google.template.soy.soytree.CallParamContentNode;
-import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.SoyNode;
@@ -284,7 +282,7 @@ final class TemplateCompiler {
     assignments.add(fieldInitializers); // for other fields needed by the compiler.
     assignments.add(paramsField.putInstanceField(thisVar, paramsVar));
     assignments.add(ijField.putInstanceField(thisVar, ijVar));
-    for (final TemplateParam param : template.node().getAllParams()) {
+    for (TemplateParam param : template.node().getAllParams()) {
       Expression paramProvider = getParam(paramsVar, ijVar, param);
       assignments.add(paramFields.get(param.name()).putInstanceField(thisVar, paramProvider));
     }

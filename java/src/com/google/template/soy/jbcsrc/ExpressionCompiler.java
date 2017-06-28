@@ -258,6 +258,11 @@ final class ExpressionCompiler {
     }
 
     @Override
+    protected final SoyExpression visit(ExprNode node) {
+      return super.visit(node).withSourceLocation(node.getSourceLocation());
+    }
+
+    @Override
     protected final SoyExpression visitExprRootNode(ExprRootNode node) {
       return visit(node.getRoot());
     }
@@ -985,9 +990,11 @@ final class ExpressionCompiler {
               baseExpr = baseExpr.asNonNullable();
             }
             if (node.getKind() == ExprNode.Kind.FIELD_ACCESS_NODE) {
-              return visitNullSafeFieldAccess(baseExpr, (FieldAccessNode) node);
+              return visitNullSafeFieldAccess(baseExpr, (FieldAccessNode) node)
+                  .withSourceLocation(node.getSourceLocation());
             } else {
-              return visitNullSafeItemAccess(baseExpr, (ItemAccessNode) node);
+              return visitNullSafeItemAccess(baseExpr, (ItemAccessNode) node)
+                  .withSourceLocation(node.getSourceLocation());
             }
           default:
             return CompilerVisitor.this.visit(node);
