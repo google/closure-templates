@@ -17,12 +17,15 @@
 package com.google.template.soy.types.proto;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.protobuf.DescriptorProtos.DescriptorProto;
+import com.google.protobuf.DescriptorProtos.EnumDescriptorProto;
+import com.google.protobuf.DescriptorProtos.FileDescriptorProto;
 import com.google.protobuf.DescriptorProtos.FileOptions;
+import com.google.protobuf.DescriptorProtos.ServiceDescriptorProto;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.EnumDescriptor;
 import com.google.protobuf.Descriptors.FileDescriptor;
-import com.google.protobuf.Descriptors.ServiceDescriptor;
 
 /**
  * Helper class for generating fully qualified Java/GWT identfiers for descriptors.
@@ -170,6 +173,10 @@ public final class JavaQualifiedNames {
   }
 
   static String getPackage(FileDescriptor file, ProtoFlavor flavor) {
+    return getPackage(file.toProto(), flavor);
+  }
+
+  static String getPackage(FileDescriptorProto file, ProtoFlavor flavor) {
     FileOptions fileOptions = file.getOptions();
     StringBuilder sb = new StringBuilder();
     if (fileOptions.hasJavaPackage()) {
@@ -206,6 +213,10 @@ public final class JavaQualifiedNames {
   }
 
   private static boolean multipleJavaFiles(FileDescriptor fd, ProtoFlavor flavor) {
+    return multipleJavaFiles(fd.toProto(), flavor);
+  }
+
+  private static boolean multipleJavaFiles(FileDescriptorProto fd, ProtoFlavor flavor) {
     FileOptions options = fd.getOptions();
     switch (flavor) {
       case PROTO2:
@@ -215,7 +226,13 @@ public final class JavaQualifiedNames {
     }
   }
 
+  /** Derives the outer class name based on the protobuf (.proto) file name. */
   static String getFileClassName(FileDescriptor file, ProtoFlavor flavor) {
+    return getFileClassName(file.toProto(), flavor);
+  }
+
+  /** Derives the outer class name based on the protobuf (.proto) file name. */
+  static String getFileClassName(FileDescriptorProto file, ProtoFlavor flavor) {
     switch (flavor) {
       case PROTO2:
         return getFileImmutableClassName(file);
@@ -224,7 +241,7 @@ public final class JavaQualifiedNames {
     }
   }
 
-  private static String getFileImmutableClassName(FileDescriptor file) {
+  private static String getFileImmutableClassName(FileDescriptorProto file) {
     if (file.getOptions().hasJavaOuterClassname()) {
       return file.getOptions().getJavaOuterClassname();
     }
@@ -235,7 +252,7 @@ public final class JavaQualifiedNames {
     return className;
   }
 
-  private static String getFileDefaultImmutableClassName(FileDescriptor file) {
+  private static String getFileDefaultImmutableClassName(FileDescriptorProto file) {
     String name = file.getName();
     int lastSlash = name.lastIndexOf('/');
     String basename;
@@ -260,16 +277,16 @@ public final class JavaQualifiedNames {
   }
 
   /** Used by the other overload, descends recursively into messages. */
-  private static boolean hasConflictingClassName(Descriptor messageDesc, String name) {
+  private static boolean hasConflictingClassName(DescriptorProto messageDesc, String name) {
     if (name.equals(messageDesc.getName())) {
       return true;
     }
-    for (EnumDescriptor enumDesc : messageDesc.getEnumTypes()) {
+    for (EnumDescriptorProto enumDesc : messageDesc.getEnumTypeList()) {
       if (name.equals(enumDesc.getName())) {
         return true;
       }
     }
-    for (Descriptor nestedMessageDesc : messageDesc.getNestedTypes()) {
+    for (DescriptorProto nestedMessageDesc : messageDesc.getNestedTypeList()) {
       if (hasConflictingClassName(nestedMessageDesc, name)) {
         return true;
       }
@@ -278,18 +295,18 @@ public final class JavaQualifiedNames {
   }
 
   /** Checks whether any generated classes conflict with the given name. */
-  private static boolean hasConflictingClassName(FileDescriptor file, String name) {
-    for (EnumDescriptor enumDesc : file.getEnumTypes()) {
+  private static boolean hasConflictingClassName(FileDescriptorProto file, String name) {
+    for (EnumDescriptorProto enumDesc : file.getEnumTypeList()) {
       if (name.equals(enumDesc.getName())) {
         return true;
       }
     }
-    for (ServiceDescriptor serviceDesc : file.getServices()) {
+    for (ServiceDescriptorProto serviceDesc : file.getServiceList()) {
       if (name.equals(serviceDesc.getName())) {
         return true;
       }
     }
-    for (Descriptor messageDesc : file.getMessageTypes()) {
+    for (DescriptorProto messageDesc : file.getMessageTypeList()) {
       if (hasConflictingClassName(messageDesc, name)) {
         return true;
       }
