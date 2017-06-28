@@ -17,7 +17,6 @@
 package com.google.template.soy;
 
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -26,9 +25,7 @@ import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.template.soy.SoyFileSet.Builder;
 import com.google.template.soy.base.internal.SoyFileKind;
-import com.google.template.soy.error.SoyCompilationException;
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -45,14 +42,6 @@ import org.kohsuke.args4j.spi.Setter;
  *
  */
 final class MainClassUtils {
-
-  /**
-   * Represents a top-level entry point into the Soy codebase. Used by {@link #run} to catch
-   * unexpected exceptions and print errors.
-   */
-  interface Main {
-    void main() throws IOException, SoyCompilationException;
-  }
 
   private MainClassUtils() {}
 
@@ -238,26 +227,6 @@ final class MainClassUtils {
     }
 
     return cmdLineParser;
-  }
-
-  @VisibleForTesting
-  static int runInternal(Main method) {
-    try {
-      method.main();
-      return 0;
-    } catch (SoyCompilationException compilationException) {
-      System.err.println(compilationException.getMessage());
-      return 1;
-    } catch (Exception e) {
-      System.err.println(
-          "INTERNAL SOY ERROR.\n"
-              + "Please open an issue at "
-              + "https://github.com/google/closure-templates/issues"
-              + " with this stack trace and repro steps"
-          );
-      e.printStackTrace(System.err);
-      return 1;
-    }
   }
 
   /**

@@ -21,7 +21,7 @@ import com.google.common.base.Optional;
 import com.google.errorprone.annotations.ForOverride;
 import com.google.inject.Injector;
 import com.google.inject.Module;
-import com.google.template.soy.MainClassUtils.Main;
+import com.google.template.soy.error.SoyCompilationException;
 import com.google.template.soy.msgs.SoyMsgPlugin;
 import java.io.File;
 import java.io.IOException;
@@ -160,14 +160,22 @@ abstract class AbstractSoyCompiler {
   @VisibleForTesting
   @CheckReturnValue
   int run(final String... args) {
-    // TODO(lukes): inline this method once all mains have been migrated to this base class.
-    return MainClassUtils.runInternal(
-        new Main() {
-          @Override
-          public void main() throws IOException {
-            doMain(args);
-          }
-        });
+    try {
+      doMain(args);
+      return 0;
+    } catch (SoyCompilationException compilationException) {
+      System.err.println(compilationException.getMessage());
+      return 1;
+    } catch (Exception e) {
+      System.err.println(
+          "INTERNAL SOY ERROR.\n"
+              + "Please open an issue at "
+              + "https://github.com/google/closure-templates/issues"
+              + " with this stack trace and repro steps"
+          );
+      e.printStackTrace(System.err);
+      return 1;
+    }
   }
 
   private void doMain(String[] args) throws IOException {
