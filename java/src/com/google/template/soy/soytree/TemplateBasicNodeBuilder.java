@@ -25,7 +25,6 @@ import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import java.util.List;
@@ -38,8 +37,6 @@ import javax.annotation.Nullable;
  *
  */
 public class TemplateBasicNodeBuilder extends TemplateNodeBuilder {
-  private static final SoyErrorKind PRIVATE_AND_VISIBILITY =
-      SoyErrorKind.of("Cannot specify both private=\"true\" and visibility=\"{0}\".");
 
   /** @param soyFileHeaderInfo Info from the containing Soy file's header declarations. */
   public TemplateBasicNodeBuilder(
@@ -64,27 +61,11 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder {
     AutoescapeMode autoescapeMode = soyFileHeaderInfo.defaultAutoescapeMode;
     ContentKind kind = null;
     SourceLocation kindLocation = null;
+    visibility = Visibility.PUBLIC;
     for (CommandTagAttribute attribute : attrs) {
       Identifier name = attribute.getName();
       switch (name.identifier()) {
-        case "private":
-          if (attribute.valueAsBoolean(errorReporter, false)) {
-            if (visibility != null) {
-              errorReporter.report(
-                  attribute.getName().location(),
-                  PRIVATE_AND_VISIBILITY,
-                  visibility.getAttributeValue());
-            }
-            // See go/soy-visibility for why this is considered "legacy private".
-            visibility = Visibility.LEGACY_PRIVATE;
-          }
-          break;
-
         case "visibility":
-          if (visibility != null) {
-            errorReporter.report(
-                attribute.getName().location(), PRIVATE_AND_VISIBILITY, attribute.getValue());
-          }
           visibility = attribute.valueAsVisibility(errorReporter);
           break;
         case "autoescape":
@@ -113,7 +94,6 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder {
               name.identifier(),
               "template",
               ImmutableList.of(
-                  "private",
                   "visibility",
                   "autoescape",
                   "kind",
@@ -124,9 +104,6 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder {
       }
     }
 
-    if (visibility == null) {
-      visibility = Visibility.PUBLIC;
-    }
     setAutoescapeInfo(autoescapeMode, kind, kindLocation);
 
     setTemplateNames(

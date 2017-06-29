@@ -32,8 +32,6 @@ import java.util.Set;
 public enum Visibility {
   // {template .foo visibility="private"}
   PRIVATE("private"),
-  // {template .foo private="true"}, or {template .foo visibility="legacy-private"}
-  LEGACY_PRIVATE("legacy-private"),
   // {template .foo visibility="public"} or just {template .foo}
   PUBLIC("public");
 
@@ -52,9 +50,6 @@ public enum Visibility {
   static {
     ImmutableMap.Builder<String, Visibility> builder = ImmutableSortedMap.naturalOrder();
     for (Visibility v : Visibility.values()) {
-      if (v == Visibility.LEGACY_PRIVATE) {
-        continue;
-      }
       builder.put(v.attributeValue, v);
     }
     attrValuesToVisibilityLevels = builder.build();
