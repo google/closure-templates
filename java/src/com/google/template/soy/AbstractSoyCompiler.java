@@ -30,7 +30,6 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.CheckReturnValue;
 import org.kohsuke.args4j.Argument;
-import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
 
 /**
@@ -42,6 +41,12 @@ import org.kohsuke.args4j.Option;
  * class.
  */
 abstract class AbstractSoyCompiler {
+  private static final class CommandLineError extends Error {
+    CommandLineError(String msg) {
+      super(msg);
+    }
+  }
+
   /** The string to prepend to the usage message. */
   private final String usagePrefix =
       "Usage:\n"
@@ -151,8 +156,6 @@ abstract class AbstractSoyCompiler {
   /** The remaining arguments after parsing command-line flags. */
   @Argument private final List<String> arguments = new ArrayList<>();
 
-  private CmdLineParser cmdLineParser;
-
   private final ClassLoader pluginClassLoader;
 
   AbstractSoyCompiler(ClassLoader pluginClassLoader) {
@@ -177,6 +180,9 @@ abstract class AbstractSoyCompiler {
     } catch (SoyCompilationException compilationException) {
       err.println(compilationException.getMessage());
       return 1;
+    } catch (CommandLineError e) {
+      err.println(e.getMessage());
+      return 1;
     } catch (Exception e) {
       err.println(
           "INTERNAL SOY ERROR.\n"
@@ -190,7 +196,7 @@ abstract class AbstractSoyCompiler {
   }
 
   private void doMain(String[] args) throws IOException {
-    this.cmdLineParser = MainClassUtils.parseFlags(this, args, usagePrefix, pluginClassLoader);
+    MainClassUtils.parseFlags(this, args, usagePrefix, pluginClassLoader);
 
     validateFlags();
     if (!arguments.isEmpty() && !acceptsSourcesAsArguments()) {
@@ -278,6 +284,6 @@ abstract class AbstractSoyCompiler {
    * @param errorMsg The error message to print.
    */
   final RuntimeException exitWithError(String errorMsg) {
-    return MainClassUtils.exitWithError(errorMsg, cmdLineParser, usagePrefix);
+    throw new CommandLineError("Error: " + errorMsg);
   }
 }
