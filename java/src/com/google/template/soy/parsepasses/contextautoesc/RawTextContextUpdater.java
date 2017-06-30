@@ -16,7 +16,6 @@
 
 package com.google.template.soy.parsepasses.contextautoesc;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
@@ -26,26 +25,51 @@ import com.google.template.soy.parsepasses.contextautoesc.Context.UriType;
 import com.google.template.soy.soytree.HtmlContext;
 import com.google.template.soy.soytree.RawTextNode;
 import java.util.List;
-import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
  * Propagates {@link Context}s across raw text chunks using a state-machine parser for HTML/CSS/JS.
  *
- * <p>Given some raw HTML text {@code "<b>Hello, World!</b>"} and the {@link Context#HTML_PCDATA
- * HTML_PCDATA} starting context, this class will decompose the rawText into a number of tokens and
- * compute follow on contexts for each.
+ * <p>Given some raw JS text {@code var x = "foo";} and the {@link Context#JS JS} starting context,
+ * this class will decompose the rawText into a number of tokens and compute follow on contexts for
+ * each.
  *
  * <table>
- * <tr><td>{@code <}</td><td>{@link HtmlContext#HTML_TAG_NAME}</td></tr>
- * <tr><td>{@code b}</td><td>{@link HtmlContext#HTML_TAG}</td></tr>
- * <tr><td>{@code >}</td><td>{@link HtmlContext#HTML_PCDATA}</td></tr>
- * <tr><td>{@code Hello, World!}</td><td>{@link HtmlContext#HTML_PCDATA}</td></tr>
- * <tr><td>{@code </}</td><td>{@link HtmlContext#HTML_TAG_NAME}</td></tr>
- * <tr><td>{@code b}</td><td>{@link HtmlContext#HTML_TAG}</td></tr>
- * <tr><td>{@code >}</td><td>{@link HtmlContext#HTML_PCDATA}</td></tr>
+ * <tr><td>{@code var x = "}</td><td>{@link HtmlContext#JS}</td></tr>
+ * <tr><td>{@code foo}</td><td>{@link HtmlContext#JS_DQ_STRING}</td></tr>
+ * <tr><td>{@code ";}</td><td>{@link HtmlContext#JS}</td></tr>
  * </table>
+ *
+ * <h2>A note on regular expressions.
+ *
+ * <p>This class uses a number of regular expressions to detect context transition boundaries and it
+ * uses the Java builtin regex engine. This is a backtracking regex engine and so has the
+ * possibility of failing with stack overflow errors on large inputs. This is normally triggered by
+ * the following:
+ *
+ * <ul>
+ *   <li>A regex containing a repeated alternation e.g. {@code (A|B)+}
+ *   <li>A large input string, that matches with many repetitions.
+ * </ul>
+ *
+ * <p>To cope with this you can do a few things
+ *
+ * <ul>
+ *   <li>Move repetition inside the alternation where possible e.g. {@code (A+|B+)+}
+ *   <li>Make the repetition quantifiers possesive e.g. {@code (A|B)++}. This causes the engine to
+ *       'commit' to a choice and thus avoid recursion.
+ * </ul>
+ *
+ * <p>The other option would be to switch to a different regex engine less prone to these issues
+ * like RE2. However, there are some downsides
+ *
+ * <ul>
+ *   <li>The java implementations are not as performant or require the use of native libraries.
+ *   <li>It would add a new open source dependency.
+ * </ul>
+ *
+ * <p>So, for the time being we should just be careful.
  *
  */
 final class RawTextContextUpdater {
@@ -53,17 +77,15 @@ final class RawTextContextUpdater {
   /**
    * @param rawTextNode A chunk of HTML/CSS/JS.
    * @param context The context before rawText.
-   * @return The input text node with context transitions marked.
+   * @return the next context transition.
    */
-  public static SlicedRawTextNode processRawText(RawTextNode rawTextNode, Context context)
+  public static Context processRawText(RawTextNode rawTextNode, Context context)
       throws SoyAutoescapeException {
-    SlicedRawTextNode slicedRawTextNode = new SlicedRawTextNode(rawTextNode, context);
     String rawText = rawTextNode.getRawText();
     int offset = 0;
     int length = rawText.length();
     while (offset < length) {
       String unprocessedRawText = rawText.substring(offset);
-      int startOffset = offset;
       int endOffset;
       Context startContext = context;
       Context endContext;
@@ -154,12 +176,10 @@ final class RawTextContextUpdater {
         }
       }
 
-      slicedRawTextNode.addSlice(startOffset, endOffset, startContext);
       context = endContext;
       offset = endOffset;
     }
-    slicedRawTextNode.setEndContext(context);
-    return slicedRawTextNode;
+    return context;
   }
 
   /**
@@ -213,7 +233,15 @@ final class RawTextContextUpdater {
     int earliestEnd = -1;
     Transition earliestTransition = null;
     Matcher earliestMatcher = null;
-    for (Transition transition : TRANSITIONS.get(context.state)) {
+    List<Transition> ts = TRANSITIONS.get(context.state);
+    if (ts == null) {
+      throw new NullPointerException(
+          "no transitions for state: "
+              + context.state
+              + " @"
+              + node.substringLocation(offset, offset + 1));
+    }
+    for (Transition transition : ts) {
       Matcher matcher = transition.pattern.matcher(text);
       try {
         // For each transition:
@@ -233,7 +261,11 @@ final class RawTextContextUpdater {
         }
       } catch (StackOverflowError soe) {
         // catch and annotate with the pattern.
-        throw new RuntimeException("StackOverflow while matching: " + transition.pattern, soe);
+        throw new RuntimeException(
+            String.format(
+                "StackOverflow while trying to match: '%s' in context %s starting @ %s",
+                transition.pattern, context, node.substringLocation(offset, offset + 1)),
+            soe);
       }
     }
 
@@ -319,71 +351,6 @@ final class RawTextContextUpdater {
       @Override
       Context computeNextContext(Context prior, Matcher matcher) {
         return prior.toBuilder().withStartKind(kind).build();
-      }
-    };
-  }
-
-  /**
-   * Transition from left angle bracket (and optional slash) to a tag name.
-   *
-   * <p>Note that this will not match things like < script because the space breaks the tag name.
-   *
-   * <p>Spec: http://www.w3.org/TR/html5/syntax.html#tag-name-state -- however, unlike the spec,
-   * which appears to allow arbitrary Unicode chars after the first char, we only parse ASCII
-   * identifier tag names.
-   */
-  private static final Transition TRANSITION_TO_TAG_NAME =
-      new Transition("(?i)^([a-z][a-z0-9:-]*)") {
-        @Override
-        Context computeNextContext(Context prior, Matcher matcher) {
-          String tagName = matcher.group(1);
-          return prior.transitionToTagName(tagName);
-        }
-      };
-
-  /** Transitions from tag name to tag body after seeing a space. */
-  private static final Transition TRANSITION_TO_TAG_BODY =
-      new Transition("^(?=[/\\s>])") {
-        @Override
-        Context computeNextContext(Context prior, Matcher matcher) {
-          // Make sure the element type was pre-determined when setting the tag name.
-          Preconditions.checkArgument(prior.elType != Context.ElementType.NONE);
-          return prior.transitionToTagBody();
-        }
-      };
-
-  /** A transition back to a context in the body of an open tag. */
-  private static Transition makeTransitionBackToTag(String regex) {
-    return new Transition(regex) {
-      @Override
-      Context computeNextContext(Context prior, Matcher matcher) {
-        return prior.transitionToTagBody();
-      }
-    };
-  }
-
-  /**
-   * A transition to a context in the name of an attribute whose type is determined from its name.
-   *
-   * @param regex A regular expression whose group 1 is a prefix of an attribute name.
-   */
-  private static Transition makeTransitionToAttrName(String regex) {
-    return new Transition(regex) {
-      @Override
-      Context computeNextContext(Context prior, Matcher matcher) {
-        String attrName = matcher.group(1);
-        return prior.transitionToAttrName(attrName);
-      }
-    };
-  }
-
-  /** A transition to a context in the name of an attribute of the given type. */
-  private static Transition makeTransitionToAttrValue(
-      String regex, final Context.AttributeEndDelimiter delim) {
-    return new Transition(regex) {
-      @Override
-      Context computeNextContext(Context prior, Matcher matcher) {
-        return prior.transitionToAttrValue(delim);
       }
     };
   }
@@ -566,30 +533,6 @@ final class RawTextContextUpdater {
         }
       };
 
-  // TODO(b/31770394): delete after finishing migration
-  /** Matches the end of a special tag like {@code script}. */
-  private static Transition makeEndTagTransition(String tagName) {
-    return new Transition("(?i)</" + tagName + "\\b") {
-      @Override
-      boolean isApplicableTo(Context prior, Matcher matcher) {
-        return prior.attrType == Context.AttributeType.NONE;
-      }
-
-      @Override
-      Context computeNextContext(Context prior, Matcher matcher) {
-        return prior
-            .toBuilder()
-            .withState(HtmlContext.HTML_TAG)
-            .withElType(Context.ElementType.NORMAL)
-            .withoutAttrContext()
-            .build();
-      }
-    };
-    // TODO: This transitions to an HTML_TAG state which can accept attributes.
-    // So we allow nonsensical constructs like </br foo="bar">.
-    // Add another HTML_END_TAG state that just accepts space and >.
-  }
-
   /** Matches the beginning of a CSS URI with the delimiter, if any, in group 1. */
   private static Transition makeCssUriTransition(String regex, final UriType uriType) {
     return new Transition(regex) {
@@ -641,87 +584,9 @@ final class RawTextContextUpdater {
           .put(
               HtmlContext.HTML_PCDATA,
               ImmutableList.of(
-                  makeTransitionToState("<!--", HtmlContext.HTML_COMMENT),
-                  // TODO(b/31770394): delete after finishing migration
-                  makeTransitionToState("<", HtmlContext.HTML_BEFORE_OPEN_TAG_NAME),
-                  makeTransitionToSelf("[^<]+")))
-
-          // TODO(b/31770394): delete after finishing migration
-          .put(
-              HtmlContext.HTML_BEFORE_OPEN_TAG_NAME,
-              ImmutableList.of(
-                  TRANSITION_TO_TAG_NAME,
-                  // Or, maybe it's a close-tag!
-                  makeTransitionToState("^/", HtmlContext.HTML_BEFORE_CLOSE_TAG_NAME),
-                  // This is for things like "I <3 Kittens" or "Styles < Scripts"
-                  makeTransitionTo("", ContentKind.HTML)))
-
-          // TODO(b/31770394): delete after finishing migration
-          .put(
-              HtmlContext.HTML_BEFORE_CLOSE_TAG_NAME,
-              ImmutableList.of(
-                  TRANSITION_TO_TAG_NAME, makeTransitionToError("", "Invalid end-tag name.")))
-
-          // TODO(b/31770394): delete after finishing migration
-          .put(
-              HtmlContext.HTML_TAG_NAME,
-              ImmutableList.of(
-                  TRANSITION_TO_TAG_BODY,
-                  // Anything else:
-                  makeTransitionToError(
-                      "\\z",
-                      "Tag names should not be split up. For example, Soy can't easily understand "
-                          + "that <s{if 1}cript{/if}> is a script tag.")))
-
-          // TODO(b/31770394): delete after finishing migration
-          .put(
-              HtmlContext.HTML_TAG,
-              ImmutableList.of(
-                  /**
-                   * Regex for allowed attribute names. Intentionally more restrictive than spec:
-                   * https://html.spec.whatwg.org/multipage/syntax.html#attribute-name-state Allows
-                   * {@code data-foo} and other dashed attribute names, but intentionally disallows
-                   * "--" as an attribute name so that a tag ending after a value-less attribute
-                   * named "--" cannot be confused with an HTML comment end ("-->"). Also prevents
-                   * unicode normalized characters. Regular expression is a case insensitive match
-                   * of any number of whitespace characters followed by a capture group for an
-                   * attribute name composed of an alphabetic character followed by any number of
-                   * alpha, numeric, underscore color and dash, ending in alpha, numeric, question
-                   * or dollar characters.
-                   */
-                  makeTransitionToAttrName("(?i)^\\s*([a-z](?:[a-z0-9_:?$\\-]*[a-z0-9?$])?)"),
-                  new Transition("^\\s*/?>") {
-                    @Override
-                    Context computeNextContext(Context prior, Matcher matcher) {
-                      return prior.transitionToAfterTag();
-                    }
-                  },
-                  makeTransitionToSelf("^\\s+\\z")))
-          // TODO(b/31770394): delete after finishing migration
-          .put(
-              HtmlContext.HTML_ATTRIBUTE_NAME,
-              ImmutableList.of(
-                  makeTransitionToState("^\\s*=", HtmlContext.HTML_BEFORE_ATTRIBUTE_VALUE),
-                  // For a value-less attribute, make an epsilon transition back to the tag body
-                  // context to look for a tag end or another attribute name.
-                  makeTransitionBackToTag("^")))
-          // TODO(b/31770394): delete after finishing migration
-          .put(
-              HtmlContext.HTML_BEFORE_ATTRIBUTE_VALUE,
-              ImmutableList.of(
-                  makeTransitionToAttrValue("^\\s*\"", Context.AttributeEndDelimiter.DOUBLE_QUOTE),
-                  makeTransitionToAttrValue("^\\s*\'", Context.AttributeEndDelimiter.SINGLE_QUOTE),
-                  makeTransitionToAttrValue(
-                      "^(?=[^\"\'\\s>])", // Matches any unquoted value part.
-                      Context.AttributeEndDelimiter.SPACE_OR_TAG_END),
-                  // Epsilon transition back if there is an empty value followed by an obvious
-                  // attribute name or a tag end.
-                  // The first branch handles the blank value in:
-                  //    <input value=>
-                  // and the second handles the blank value in:
-                  //    <input value= name=foo>
-                  makeTransitionBackToTag("^(?=>|\\s+[\\w-]+\\s*=)"),
-                  makeTransitionToSelf("^\\s+")))
+                  // TODO(user): this is already parsed in the HtmlRewritePass, consider
+                  // making a node for it
+                  makeTransitionToState("<!--", HtmlContext.HTML_COMMENT), TRANSITION_TO_SELF))
           .put(
               HtmlContext.HTML_COMMENT,
               ImmutableList.of(makeTransitionTo("-->", ContentKind.HTML), TRANSITION_TO_SELF))
@@ -749,21 +614,16 @@ final class RawTextContextUpdater {
                   // TODO(gboyer): We should treat @import, @font-face src, etc as trusted
                   // resources, once trusted URLs are implemented.
                   makeCssUriTransition("(?i)\\burl\\s*\\(\\s*(['\"]?)", UriType.NORMAL),
-                  makeEndTagTransition("style"),
                   TRANSITION_TO_SELF))
           .put(
               HtmlContext.CSS_COMMENT,
-              ImmutableList.of(
-                  makeTransitionToState("\\*/", HtmlContext.CSS),
-                  makeEndTagTransition("style"),
-                  TRANSITION_TO_SELF))
+              ImmutableList.of(makeTransitionToState("\\*/", HtmlContext.CSS), TRANSITION_TO_SELF))
           .put(
               HtmlContext.CSS_DQ_STRING,
               ImmutableList.of(
                   makeTransitionToState("\"", HtmlContext.CSS),
                   makeTransitionToSelf("\\\\(?:\r\n?|[\n\f\"])"), // Line continuation or escape.
                   makeTransitionToError("[\n\r\f]", "Newlines not permitted in string literals."),
-                  makeEndTagTransition("style"), // TODO: Make this an error transition?
                   TRANSITION_TO_SELF))
           .put(
               HtmlContext.CSS_SQ_STRING,
@@ -771,7 +631,6 @@ final class RawTextContextUpdater {
                   makeTransitionToState("'", HtmlContext.CSS),
                   makeTransitionToSelf("\\\\(?:\r\n?|[\n\f'])"), // Line continuation or escape.
                   makeTransitionToError("[\n\r\f]", "Newlines not permitted in string literals."),
-                  makeEndTagTransition("style"), // TODO: Make this an error transition?
                   TRANSITION_TO_SELF))
           .put(
               HtmlContext.CSS_URI,
@@ -779,8 +638,7 @@ final class RawTextContextUpdater {
                   makeTransitionToState("[\\)\\s]", HtmlContext.CSS),
                   URI_PART_TRANSITION,
                   URI_START_TRANSITION,
-                  makeTransitionToError("[\"']", "Quotes not permitted in CSS URIs."),
-                  makeEndTagTransition("style")))
+                  makeTransitionToError("[\"']", "Quotes not permitted in CSS URIs.")))
           .put(
               HtmlContext.CSS_SQ_URI,
               ImmutableList.of(
@@ -788,8 +646,7 @@ final class RawTextContextUpdater {
                   URI_PART_TRANSITION,
                   URI_START_TRANSITION,
                   makeTransitionToSelf("\\\\(?:\r\n?|[\n\f'])"), // Line continuation or escape.
-                  makeTransitionToError("[\n\r\f]", "Newlines not permitted in string literal."),
-                  makeEndTagTransition("style")))
+                  makeTransitionToError("[\n\r\f]", "Newlines not permitted in string literal.")))
           .put(
               HtmlContext.CSS_DQ_URI,
               ImmutableList.of(
@@ -797,8 +654,7 @@ final class RawTextContextUpdater {
                   URI_PART_TRANSITION,
                   URI_START_TRANSITION,
                   makeTransitionToSelf("\\\\(?:\r\n?|[\n\f\"])"), // Line continuation or escape.
-                  makeTransitionToError("[\n\r\f]", "Newlines not permitted in string literal."),
-                  makeEndTagTransition("style")))
+                  makeTransitionToError("[\n\r\f]", "Newlines not permitted in string literal.")))
           .put(
               HtmlContext.JS,
               ImmutableList.of(
@@ -866,7 +722,7 @@ final class RawTextContextUpdater {
                    * negative character set in this regex. Otherwise this transition will swallow
                    * the special characters
                    */
-                  new Transition("(?i)(?:[^</\"'}`\\s\\\\]+|<(?!/script))+") {
+                  new Transition("[^/\"'}`\\s\\\\]+") {
                     @Override
                     Context computeNextContext(Context prior, Matcher matcher) {
                       return prior.derive(
@@ -875,67 +731,55 @@ final class RawTextContextUpdater {
                               : Context.JsFollowingSlash.DIV_OP);
                     }
                   },
-                  makeTransitionToSelf("\\s+"), // Space
-                  makeEndTagTransition("script")))
+                  // Space
+                  makeTransitionToSelf("\\s+")))
           .put(
               HtmlContext.JS_BLOCK_COMMENT,
-              ImmutableList.of(
-                  makeTransitionToState("\\*/", HtmlContext.JS),
-                  makeEndTagTransition("script"),
-                  TRANSITION_TO_SELF))
+              ImmutableList.of(makeTransitionToState("\\*/", HtmlContext.JS), TRANSITION_TO_SELF))
           // Line continuations are not allowed in line comments.
           .put(
               HtmlContext.JS_LINE_COMMENT,
               ImmutableList.of(
                   makeTransitionToState("[" + JS_LINEBREAKS + "]", HtmlContext.JS),
-                  makeEndTagTransition("script"),
                   TRANSITION_TO_SELF))
           .put(
               HtmlContext.JS_DQ_STRING,
               ImmutableList.of(
                   makeDivPreceder("\""),
-                  makeEndTagTransition("script"),
                   makeTransitionToSelf(
                       "(?i)^(?:"
                           + // Case-insensitively, from start of string
                           "[^\"\\\\"
                           + JS_LINEBREAKS
-                          + "<]+"
+                          + "]++"
                           + // match any chars except newlines, quotes, \s;
                           "|\\\\(?:"
                           + // or backslash followed by a
                           "\\r\\n?"
                           + // line continuation
-                          "|[^\\r<]"
+                          "|[^\\r]"
                           + // or an escape
-                          "|<(?!/script)"
-                          + // or less-than that doesn't close the script.
                           ")"
-                          + "|<(?!/script)"
-                          + ")+")))
+                          + ")++")))
           .put(
               HtmlContext.JS_SQ_STRING,
               ImmutableList.of(
                   makeDivPreceder("'"),
-                  makeEndTagTransition("script"),
                   makeTransitionToSelf(
                       "(?i)^(?:"
                           + // Case-insensitively, from start of string
                           "[^'\\\\"
                           + JS_LINEBREAKS
-                          + "<]+"
+                          + "]++"
                           + // match any chars except newlines, quotes, \s;
                           "|\\\\(?:"
                           + // or a backslash followed by a
                           "\\r\\n?"
                           + // line continuation
-                          "|[^\\r<]"
+                          "|[^\\r]"
                           + // or an escape;
-                          "|<(?!/script)"
-                          + // or less-than that doesn't close the script.
                           ")"
-                          + "|<(?!/script)"
-                          + ")+")))
+                          + ")++")))
           .put(
               HtmlContext.JS_TEMPLATE_LITERAL,
               ImmutableList.of(
@@ -959,7 +803,6 @@ final class RawTextContextUpdater {
               HtmlContext.JS_REGEX,
               ImmutableList.of(
                   makeDivPreceder("/"),
-                  makeEndTagTransition("script"),
                   makeTransitionToSelf(
                       "(?i)^(?:"
                           +
@@ -967,51 +810,29 @@ final class RawTextContextUpdater {
                            * We have to handle [...] style character sets specially since in /[/]/,
                            * the second solidus doesn't end the regular expression.
                            */
-                          "[^\\[\\\\/<"
+                          "[^\\[\\\\/"
                           + JS_LINEBREAKS
-                          + "]"
+                          + "]++"
                           + // A non-charset, non-escape token;
                           "|\\\\[^"
                           + JS_LINEBREAKS
                           + "]"
-                          + // an escape;
-                          "|\\\\?<(?!/script)"
+                          // an escape;
                           + "|\\["
                           + // or a character set containing
-                          "(?:[^\\]\\\\<"
+                          "(?:[^\\]\\\\"
                           + JS_LINEBREAKS
                           + "]"
                           + // a normal character,
                           "|\\\\(?:[^"
                           + JS_LINEBREAKS
-                          + "]))*"
+                          + "]))*+"
                           + // or an escape;
-                          "|\\\\?<(?!/script)"
-                          + // or an angle bracket possibly escaped.
                           "\\]"
                           + ")+")))
           .put(HtmlContext.URI, ImmutableList.of(URI_PART_TRANSITION, URI_START_TRANSITION))
-          .put(
-              HtmlContext.HTML_RCDATA,
-              ImmutableList.of(
-                  new Transition("</(\\w+)\\b") {
-                    @Override
-                    boolean isApplicableTo(Context prior, Matcher matcher) {
-                      String tagName = matcher.group(1).toUpperCase(Locale.ENGLISH);
-                      return prior.elType.name().equals(tagName);
-                    }
-
-                    @Override
-                    Context computeNextContext(Context prior, Matcher matcher) {
-                      return prior
-                          .toBuilder()
-                          .withState(HtmlContext.HTML_TAG)
-                          .withElType(Context.ElementType.NORMAL)
-                          .withoutAttrContext()
-                          .build();
-                    }
-                  },
-                  TRANSITION_TO_SELF))
+          // All edges out of rcdata are triggered by tags which are handled in the InferenceEngine
+          .put(HtmlContext.HTML_RCDATA, ImmutableList.of(TRANSITION_TO_SELF))
           // Text context has no edges except to itself.
           .put(HtmlContext.TEXT, ImmutableList.of(TRANSITION_TO_SELF))
           .build();

@@ -26,177 +26,9 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 @RunWith(JUnit4.class)
-public class RawTextContextUpdaterTest {
+public final class RawTextContextUpdaterTest {
   // The letter 'M' repeated 1500 times.
   private static final String M1500 = Strings.repeat("M", 1500);
-  private static final int ANY_SLICES = -1;
-
-  @Test
-  public void testPcdata() throws Exception {
-    assertTransition("HTML_PCDATA", "", "HTML_PCDATA");
-    assertTransition("HTML_PCDATA", "Hello, World!", "HTML_PCDATA");
-    assertTransition("HTML_PCDATA", "Jad loves ponies <3 <3 <3 !!!", "HTML_PCDATA");
-    assertTransition("HTML_PCDATA", "OMG! Ponies, Ponies, Ponies &lt;3", "HTML_PCDATA");
-    // Entering a tag
-    assertTransition("HTML_PCDATA", "<", "HTML_BEFORE_OPEN_TAG_NAME");
-    assertTransition("HTML_PCDATA", "Hello, <", "HTML_BEFORE_OPEN_TAG_NAME");
-    assertTransition("HTML_PCDATA", "<h1", "HTML_TAG_NAME NORMAL");
-    // Make sure that encoded HTML doesn't enter TAG.
-    assertTransition("HTML_PCDATA", "&lt;a", "HTML_PCDATA");
-    assertTransition("HTML_PCDATA", "<!--", "HTML_COMMENT");
-    // Test special tags.
-    assertTransition("HTML_PCDATA", "<script type='text/javascript'", "HTML_TAG SCRIPT");
-    assertTransition("HTML_PCDATA", "<SCRIPT type='text/javascript'", "HTML_TAG SCRIPT");
-    assertTransition("HTML_PCDATA", "<style type='text/css'", "HTML_TAG STYLE");
-    assertTransition("HTML_PCDATA", "<sTyLe type='text/css'", "HTML_TAG STYLE");
-    assertTransition("HTML_PCDATA", "<textarea name='text'", "HTML_TAG TEXTAREA");
-    assertTransition("HTML_PCDATA", "<Title lang='en'", "HTML_TAG TITLE");
-    assertTransition("HTML_PCDATA", "<xmp id='x'", "HTML_TAG XMP");
-    // Into tag
-    assertTransition("HTML_PCDATA", "<script>", "JS REGEX");
-    assertTransition("HTML_PCDATA", "<script >", "JS REGEX");
-    assertTransition("HTML_PCDATA", "<script type=\"text/javascript\">", "JS REGEX");
-    assertTransition("HTML_PCDATA", "<a ", "HTML_TAG NORMAL");
-    assertTransition("HTML_PCDATA", "<a title=foo id='x'", "HTML_TAG NORMAL");
-    assertTransition("HTML_PCDATA", "<a title=\"foo\"", "HTML_TAG NORMAL");
-    assertTransition("HTML_PCDATA", "<a title='foo'", "HTML_TAG NORMAL");
-    assertTransition(
-        "HTML_PCDATA", "<a title='", "HTML_NORMAL_ATTR_VALUE NORMAL PLAIN_TEXT SINGLE_QUOTE");
-    assertTransition(
-        "HTML_PCDATA", "<a data-foo='", "HTML_NORMAL_ATTR_VALUE NORMAL PLAIN_TEXT SINGLE_QUOTE");
-    // Into attributes
-    assertTransition("HTML_PCDATA", "<a onclick=\"", "JS NORMAL SCRIPT DOUBLE_QUOTE REGEX");
-    assertTransition("HTML_PCDATA", "<a onclick=\'", "JS NORMAL SCRIPT SINGLE_QUOTE REGEX");
-    assertTransition("HTML_PCDATA", "<a onclick=", "HTML_BEFORE_ATTRIBUTE_VALUE NORMAL SCRIPT");
-    assertTransition("HTML_PCDATA", "<a ng-init=\"", "JS NORMAL SCRIPT DOUBLE_QUOTE REGEX");
-    assertTransition(
-        "HTML_PCDATA", "<a onclick=\"</script>", "JS_REGEX NORMAL SCRIPT DOUBLE_QUOTE");
-    assertTransition("HTML_PCDATA", "<xmp style=\"", "CSS XMP STYLE DOUBLE_QUOTE");
-    assertTransition("HTML_PCDATA", "<xmp style='/*", "CSS_COMMENT XMP STYLE SINGLE_QUOTE");
-    assertTransition(
-        "HTML_PCDATA", "<script src=", "HTML_BEFORE_ATTRIBUTE_VALUE SCRIPT URI TRUSTED_RESOURCE");
-    assertTransition(
-        "HTML_PCDATA",
-        "<script src=/search?q=",
-        "URI SCRIPT URI SPACE_OR_TAG_END QUERY TRUSTED_RESOURCE");
-    assertTransition(
-        "HTML_PCDATA",
-        "<script src=/foo#",
-        "URI SCRIPT URI SPACE_OR_TAG_END FRAGMENT TRUSTED_RESOURCE");
-    assertTransition("HTML_PCDATA", "<img src=", "HTML_BEFORE_ATTRIBUTE_VALUE MEDIA URI MEDIA");
-    assertTransition("HTML_PCDATA", "<img url src=", "HTML_BEFORE_ATTRIBUTE_VALUE MEDIA URI MEDIA");
-    // Make sure the URI type doesn't carry over if a URI has no attribute value.
-    assertTransition(
-        "HTML_PCDATA", "<img src href=", "HTML_BEFORE_ATTRIBUTE_VALUE MEDIA URI NORMAL");
-    assertTransition(
-        "HTML_PCDATA", "<img src alt=", "HTML_BEFORE_ATTRIBUTE_VALUE MEDIA PLAIN_TEXT");
-    // TODO(gboyer): Consider supporting video, audio, and source.
-    assertTransition("HTML_PCDATA", "<video src=", "HTML_BEFORE_ATTRIBUTE_VALUE NORMAL URI NORMAL");
-    assertTransition(
-        "HTML_PCDATA", "<video><source src=", "HTML_BEFORE_ATTRIBUTE_VALUE NORMAL URI NORMAL");
-    assertTransition("HTML_PCDATA", "<audio src=", "HTML_BEFORE_ATTRIBUTE_VALUE NORMAL URI NORMAL");
-    assertTransition(
-        "HTML_PCDATA", "<source src=", "HTML_BEFORE_ATTRIBUTE_VALUE NORMAL URI NORMAL");
-    assertTransition(
-        "HTML_PCDATA", "<image xlink:href=", "HTML_BEFORE_ATTRIBUTE_VALUE MEDIA URI MEDIA");
-    assertTransition(
-        "HTML_PCDATA",
-        "<a href=mailto:",
-        "URI NORMAL URI SPACE_OR_TAG_END AUTHORITY_OR_PATH NORMAL");
-    assertTransition(
-        "HTML_PCDATA",
-        "<input type=button value= onclick=",
-        "HTML_BEFORE_ATTRIBUTE_VALUE NORMAL SCRIPT");
-    assertTransition("HTML_PCDATA", "<input type=button value=>", "HTML_PCDATA");
-  }
-
-  @Test
-  public void testBeforeTagName() throws Exception {
-    assertTransition("HTML_BEFORE_OPEN_TAG_NAME", "", "HTML_BEFORE_OPEN_TAG_NAME");
-    assertTransition("HTML_BEFORE_OPEN_TAG_NAME", "/", "HTML_BEFORE_CLOSE_TAG_NAME");
-    assertTransition("HTML_BEFORE_OPEN_TAG_NAME", "h1", "HTML_TAG_NAME NORMAL");
-    assertTransition("HTML_BEFORE_OPEN_TAG_NAME", "svg:font-face id='x'", "HTML_TAG NORMAL");
-    assertTransition("HTML_BEFORE_OPEN_TAG_NAME", ">", "HTML_PCDATA");
-    assertTransition("HTML_BEFORE_OPEN_TAG_NAME", "><", "HTML_BEFORE_OPEN_TAG_NAME");
-    // Abort tag name if we see things that aren't really tag names.
-    assertTransition("HTML_BEFORE_OPEN_TAG_NAME", "3 Kitties!", "HTML_PCDATA");
-    assertTransition("HTML_BEFORE_OPEN_TAG_NAME", " script", "HTML_PCDATA");
-
-    assertTransition("HTML_BEFORE_CLOSE_TAG_NAME", "", "HTML_BEFORE_CLOSE_TAG_NAME");
-    assertTransition("HTML_BEFORE_CLOSE_TAG_NAME", "9", "ERROR");
-    assertTransition("HTML_BEFORE_CLOSE_TAG_NAME", "/", "ERROR");
-    assertTransition("HTML_BEFORE_CLOSE_TAG_NAME", "h1", "HTML_TAG_NAME NORMAL");
-    assertTransition("HTML_BEFORE_CLOSE_TAG_NAME", "svg:font-face", "HTML_TAG_NAME NORMAL");
-    assertTransition("HTML_BEFORE_CLOSE_TAG_NAME", "div><", "HTML_BEFORE_OPEN_TAG_NAME");
-    assertTransition("HTML_BEFORE_CLOSE_TAG_NAME", ">", "ERROR");
-    assertTransition("HTML_BEFORE_CLOSE_TAG_NAME", "><", "ERROR");
-  }
-
-  @Test
-  public void testTagName() throws Exception {
-    assertTransition("HTML_TAG_NAME NORMAL", "", "HTML_TAG_NAME NORMAL");
-    // Now, it's banned to do something like: <h{if 1}1{/if}>; instead the full tag name must be
-    // specified.
-    assertTransition("HTML_TAG_NAME NORMAL", "1", "ERROR");
-    assertTransition("HTML_TAG_NAME NORMAL", "-foo", "ERROR");
-    assertTransition("HTML_TAG_NAME NORMAL", " id='x'", "HTML_TAG NORMAL");
-    assertTransition("HTML_TAG_NAME NORMAL", "\rid='x'", "HTML_TAG NORMAL");
-    assertTransition("HTML_TAG_NAME NORMAL", "\tid='x'", "HTML_TAG NORMAL");
-    assertTransition("HTML_TAG_NAME NORMAL", ">", "HTML_PCDATA");
-    assertTransition("HTML_TAG_NAME NORMAL", "/>", "HTML_PCDATA");
-    assertTransition(
-        "HTML_TAG_NAME NORMAL", " href=", "HTML_BEFORE_ATTRIBUTE_VALUE NORMAL URI NORMAL");
-    assertTransition(
-        "HTML_TAG_NAME NORMAL", " href=\"", "URI NORMAL URI DOUBLE_QUOTE START NORMAL");
-    assertTransition("HTML_TAG_NAME NORMAL", " href='", "URI NORMAL URI SINGLE_QUOTE START NORMAL");
-    assertTransition(
-        "HTML_TAG_NAME NORMAL", " href=#", "URI NORMAL URI SPACE_OR_TAG_END FRAGMENT NORMAL");
-    assertTransition("HTML_TAG_NAME NORMAL", " href=>", "HTML_PCDATA");
-    assertTransition("HTML_TAG_NAME NORMAL", " onclick=\"", "JS NORMAL SCRIPT DOUBLE_QUOTE REGEX");
-    assertTransition("HTML_TAG_NAME NORMAL", " style=\"", "CSS NORMAL STYLE DOUBLE_QUOTE");
-    assertTransition(
-        "HTML_TAG_NAME NORMAL",
-        " stylez=\"",
-        "HTML_NORMAL_ATTR_VALUE NORMAL PLAIN_TEXT DOUBLE_QUOTE");
-    assertTransition(
-        "HTML_TAG_NAME NORMAL",
-        " title=\"",
-        "HTML_NORMAL_ATTR_VALUE NORMAL PLAIN_TEXT DOUBLE_QUOTE");
-    assertTransition("HTML_TAG_NAME NORMAL", "=foo>", "ERROR");
-  }
-
-  @Test
-  public void testTag() throws Exception {
-    assertTransition("HTML_TAG NORMAL", "", "HTML_TAG NORMAL");
-    assertTransition("HTML_TAG NORMAL", ">", "HTML_PCDATA");
-    assertTransition("HTML_TAG TEXTAREA", ">", "HTML_RCDATA TEXTAREA");
-    assertTransition("HTML_TAG TITLE", ">", "HTML_RCDATA TITLE");
-    assertTransition("HTML_TAG SCRIPT", ">", "JS REGEX");
-    assertTransition("HTML_TAG STYLE", ">", "CSS");
-    assertTransition("HTML_TAG NORMAL", "-->", "ERROR");
-    assertTransition("HTML_TAG NORMAL", " -->", "ERROR");
-    assertTransition("HTML_TAG NORMAL", "=foo>", "ERROR");
-    // As in <foo on{$handlerType}="jsHere()">
-    assertTransition("HTML_TAG NORMAL", " on", "HTML_ATTRIBUTE_NAME NORMAL SCRIPT", 1);
-    assertTransition("HTML_TAG NORMAL", " ONCLICK", "HTML_ATTRIBUTE_NAME NORMAL SCRIPT", 1);
-    assertTransition("HTML_TAG NORMAL", " style", "HTML_ATTRIBUTE_NAME NORMAL STYLE", 1);
-    assertTransition("HTML_TAG NORMAL", " HREF", "HTML_ATTRIBUTE_NAME NORMAL URI NORMAL", 1);
-    assertTransition("HTML_TAG XMP", " title", "HTML_ATTRIBUTE_NAME XMP PLAIN_TEXT", 1);
-    assertTransition("HTML_TAG NORMAL", " checked ", "HTML_TAG NORMAL", 3);
-    assertTransition("HTML_TAG NORMAL", " xlink:href", "HTML_ATTRIBUTE_NAME NORMAL URI NORMAL", 1);
-    assertTransition("HTML_TAG NORMAL", " g:url", "HTML_ATTRIBUTE_NAME NORMAL URI NORMAL", 1);
-    assertTransition("HTML_TAG NORMAL", " g:iconUri", "HTML_ATTRIBUTE_NAME NORMAL URI NORMAL", 1);
-    assertTransition("HTML_TAG NORMAL", " g:urlItem", "HTML_ATTRIBUTE_NAME NORMAL URI NORMAL", 1);
-    assertTransition("HTML_TAG NORMAL", " g:hourly", "HTML_ATTRIBUTE_NAME NORMAL PLAIN_TEXT", 1);
-    assertTransition("HTML_TAG NORMAL", " xmlns", "HTML_ATTRIBUTE_NAME NORMAL URI NORMAL", 1);
-    assertTransition("HTML_TAG NORMAL", " xmlns:foo", "HTML_ATTRIBUTE_NAME NORMAL URI NORMAL", 1);
-    assertTransition("HTML_TAG NORMAL", " xmlnsxyz", "HTML_ATTRIBUTE_NAME NORMAL PLAIN_TEXT", 1);
-    assertTransition("HTML_TAG NORMAL", " xmlnsxyz?", "HTML_ATTRIBUTE_NAME NORMAL PLAIN_TEXT", 1);
-    assertTransition("HTML_TAG NORMAL", " xml?nsxyz", "HTML_ATTRIBUTE_NAME NORMAL PLAIN_TEXT", 1);
-    assertTransition("HTML_TAG NORMAL", " xmlnsxyz$", "HTML_ATTRIBUTE_NAME NORMAL PLAIN_TEXT", 1);
-    assertTransition("HTML_TAG NORMAL", " xml$nsxyz", "HTML_ATTRIBUTE_NAME NORMAL PLAIN_TEXT", 1);
-    assertTransition("HTML_TAG NORMAL", " svg:style='", "CSS NORMAL STYLE SINGLE_QUOTE", 3);
-  }
 
   @Test
   public void testHtmlComment() throws Exception {
@@ -212,108 +44,6 @@ public class RawTextContextUpdaterTest {
     assertTransition("HTML_COMMENT", "-->", "HTML_PCDATA");
     assertTransition("HTML_COMMENT", "--->", "HTML_PCDATA");
     assertTransition("HTML_COMMENT", "<!--", "HTML_COMMENT");
-  }
-
-  @Test
-  public void testAttrName() throws Exception {
-    assertTransition(
-        "HTML_ATTRIBUTE_NAME XMP URI NORMAL", "=", "HTML_BEFORE_ATTRIBUTE_VALUE XMP URI NORMAL");
-    assertTransition(
-        "HTML_ATTRIBUTE_NAME TEXTAREA PLAIN_TEXT",
-        "=",
-        "HTML_BEFORE_ATTRIBUTE_VALUE TEXTAREA PLAIN_TEXT");
-    assertTransition(
-        "HTML_ATTRIBUTE_NAME NORMAL PLAIN_TEXT",
-        " = ",
-        "HTML_BEFORE_ATTRIBUTE_VALUE NORMAL PLAIN_TEXT");
-  }
-
-  @Test
-  public void testBeforeAttrValue() throws Exception {
-    assertTransition(
-        "HTML_BEFORE_ATTRIBUTE_VALUE NORMAL URI NORMAL",
-        "\"",
-        "URI NORMAL URI DOUBLE_QUOTE START NORMAL");
-    assertTransition(
-        "HTML_BEFORE_ATTRIBUTE_VALUE NORMAL SCRIPT", "'", "JS NORMAL SCRIPT SINGLE_QUOTE REGEX");
-    assertTransition(
-        "HTML_BEFORE_ATTRIBUTE_VALUE NORMAL STYLE", "\"", "CSS NORMAL STYLE DOUBLE_QUOTE");
-    assertTransition(
-        "HTML_BEFORE_ATTRIBUTE_VALUE TEXTAREA STYLE",
-        "color",
-        "CSS TEXTAREA STYLE SPACE_OR_TAG_END");
-    assertTransition(
-        "HTML_BEFORE_ATTRIBUTE_VALUE NORMAL URI NORMAL",
-        "/",
-        "URI NORMAL URI SPACE_OR_TAG_END AUTHORITY_OR_PATH NORMAL");
-    assertTransition(
-        "HTML_BEFORE_ATTRIBUTE_VALUE TITLE PLAIN_TEXT",
-        "\"",
-        "HTML_NORMAL_ATTR_VALUE TITLE PLAIN_TEXT DOUBLE_QUOTE");
-    assertTransition("HTML_BEFORE_ATTRIBUTE_VALUE NORMAL PLAIN_TEXT", ">", "HTML_PCDATA");
-    assertTransition("HTML_BEFORE_ATTRIBUTE_VALUE TITLE PLAIN_TEXT", ">", "HTML_RCDATA TITLE");
-  }
-
-  @Test
-  public void testAttr() throws Exception {
-    assertTransition(
-        "HTML_NORMAL_ATTR_VALUE NORMAL PLAIN_TEXT DOUBLE_QUOTE",
-        "",
-        "HTML_NORMAL_ATTR_VALUE NORMAL PLAIN_TEXT DOUBLE_QUOTE");
-    assertTransition(
-        "HTML_NORMAL_ATTR_VALUE NORMAL PLAIN_TEXT SINGLE_QUOTE",
-        "",
-        "HTML_NORMAL_ATTR_VALUE NORMAL PLAIN_TEXT SINGLE_QUOTE");
-    assertTransition(
-        "HTML_NORMAL_ATTR_VALUE NORMAL PLAIN_TEXT SPACE_OR_TAG_END",
-        "",
-        "HTML_NORMAL_ATTR_VALUE NORMAL PLAIN_TEXT SPACE_OR_TAG_END");
-    assertTransition(
-        "HTML_NORMAL_ATTR_VALUE NORMAL PLAIN_TEXT DOUBLE_QUOTE",
-        "foo",
-        "HTML_NORMAL_ATTR_VALUE NORMAL PLAIN_TEXT DOUBLE_QUOTE");
-    assertTransition(
-        "HTML_NORMAL_ATTR_VALUE NORMAL PLAIN_TEXT SINGLE_QUOTE",
-        "foo",
-        "HTML_NORMAL_ATTR_VALUE NORMAL PLAIN_TEXT SINGLE_QUOTE");
-    assertTransition(
-        "HTML_NORMAL_ATTR_VALUE NORMAL PLAIN_TEXT SPACE_OR_TAG_END",
-        "foo",
-        "HTML_NORMAL_ATTR_VALUE NORMAL PLAIN_TEXT SPACE_OR_TAG_END");
-    assertTransition(
-        "HTML_NORMAL_ATTR_VALUE NORMAL PLAIN_TEXT DOUBLE_QUOTE", "\"", "HTML_TAG NORMAL");
-    assertTransition(
-        "HTML_NORMAL_ATTR_VALUE NORMAL PLAIN_TEXT SINGLE_QUOTE", "'", "HTML_TAG NORMAL");
-    assertTransition(
-        "HTML_NORMAL_ATTR_VALUE SCRIPT PLAIN_TEXT SINGLE_QUOTE", "'", "HTML_TAG SCRIPT");
-    assertTransition(
-        "HTML_NORMAL_ATTR_VALUE NORMAL PLAIN_TEXT SPACE_OR_TAG_END",
-        " x='",
-        "HTML_NORMAL_ATTR_VALUE NORMAL PLAIN_TEXT SINGLE_QUOTE");
-    assertTransition(
-        "HTML_NORMAL_ATTR_VALUE NORMAL PLAIN_TEXT SPACE_OR_TAG_END", " x='y'", "HTML_TAG NORMAL");
-    assertTransition(
-        "HTML_NORMAL_ATTR_VALUE NORMAL PLAIN_TEXT SPACE_OR_TAG_END", ">", "HTML_PCDATA");
-    assertTransition("HTML_NORMAL_ATTR_VALUE SCRIPT PLAIN_TEXT SPACE_OR_TAG_END", ">", "JS REGEX");
-  }
-
-  @Test
-  public void testCss() throws Exception {
-    assertTransition("CSS", "", "CSS");
-    assertTransition("CSS", " p { color: red; }", "CSS");
-    assertTransition("CSS", "p.clazz#id {\r\n  border: 2px;\n}", "CSS");
-    assertTransition("CSS", "/*\nHello, World! */", "CSS");
-    assertTransition("CSS", "/*", "CSS_COMMENT");
-    assertTransition("CSS", "/**", "CSS_COMMENT");
-    assertTransition("CSS", "/** '", "CSS_COMMENT");
-    assertTransition("CSS", "/** \"foo", "CSS_COMMENT");
-    assertTransition("CSS", "'", "CSS_SQ_STRING");
-    assertTransition("CSS", "\"", "CSS_DQ_STRING");
-    assertTransition("CSS", "\" /* hello", "CSS_DQ_STRING");
-    assertTransition("CSS", "</style", "HTML_TAG NORMAL"); // Not a start tag so NORMAL.
-    assertTransition("CSS", "</Style", "HTML_TAG NORMAL");
-    // Close style tag in attribute value is not a break.  Ok to transition to ERROR.
-    assertTransition("CSS NORMAL STYLE DOUBLE_QUOTE", "</style", "CSS NORMAL STYLE DOUBLE_QUOTE");
   }
 
   @Test
@@ -339,7 +69,6 @@ public class RawTextContextUpdaterTest {
     assertTransition("CSS_DQ_STRING", "\\27", "CSS_DQ_STRING");
     assertTransition("CSS_DQ_STRING", "\r", "ERROR");
     assertTransition("CSS_DQ_STRING", "\n", "ERROR");
-    assertTransition("CSS_DQ_STRING", "</style>", "HTML_PCDATA"); // Or error.
   }
 
   @Test
@@ -353,7 +82,6 @@ public class RawTextContextUpdaterTest {
     assertTransition("CSS_SQ_STRING", "\\27", "CSS_SQ_STRING");
     assertTransition("CSS_SQ_STRING", "\r", "ERROR");
     assertTransition("CSS_SQ_STRING", "\n", "ERROR");
-    assertTransition("CSS_SQ_STRING", "</style>", "HTML_PCDATA"); // Or error.
     assertTransition(
         "CSS_SQ_STRING NORMAL STYLE SPACE_OR_TAG_END", "'", "CSS NORMAL STYLE SPACE_OR_TAG_END");
   }
@@ -463,7 +191,6 @@ public class RawTextContextUpdaterTest {
     assertTransition(
         "JS NORMAL SCRIPT SPACE_OR_TAG_END REGEX", "/", "JS_REGEX NORMAL SCRIPT SPACE_OR_TAG_END");
     assertTransition("JS REGEX", "/[xy]/", "JS DIV_OP");
-    assertTransition("JS REGEX", "</script>", "HTML_PCDATA");
   }
 
   @Test
@@ -504,7 +231,6 @@ public class RawTextContextUpdaterTest {
     assertTransition(
         "JS NORMAL SCRIPT SPACE_OR_TAG_END DIV_OP", "/", "JS NORMAL SCRIPT SPACE_OR_TAG_END REGEX");
     assertTransition("JS DIV_OP", "/[xy]/", "JS REGEX");
-    assertTransition("JS DIV_OP", "</script>", "HTML_PCDATA");
   }
 
   @Test
@@ -518,13 +244,11 @@ public class RawTextContextUpdaterTest {
         "JS_LINE_COMMENT NORMAL SCRIPT DOUBLE_QUOTE DIV_OP",
         "\n",
         "JS NORMAL SCRIPT DOUBLE_QUOTE DIV_OP");
-    assertTransition("JS_LINE_COMMENT DIV_OP", "</script>", "HTML_PCDATA");
     assertTransition("JS_LINE_COMMENT REGEX", "", "JS_LINE_COMMENT REGEX");
     assertTransition("JS_LINE_COMMENT REGEX", "*/", "JS_LINE_COMMENT REGEX");
     assertTransition("JS_LINE_COMMENT REGEX", "Hello, World!", "JS_LINE_COMMENT REGEX");
     assertTransition("JS_LINE_COMMENT REGEX", "\"'/", "JS_LINE_COMMENT REGEX");
     assertTransition("JS_LINE_COMMENT REGEX", "\n", "JS REGEX");
-    assertTransition("JS_LINE_COMMENT REGEX", "</script>", "HTML_PCDATA");
   }
 
   @Test
@@ -538,13 +262,11 @@ public class RawTextContextUpdaterTest {
         "JS_BLOCK_COMMENT NORMAL SCRIPT DOUBLE_QUOTE DIV_OP",
         "*/",
         "JS NORMAL SCRIPT DOUBLE_QUOTE DIV_OP");
-    assertTransition("JS_BLOCK_COMMENT DIV_OP", "</script>", "HTML_PCDATA");
     assertTransition("JS_BLOCK_COMMENT REGEX", "", "JS_BLOCK_COMMENT REGEX");
     assertTransition("JS_BLOCK_COMMENT REGEX", "\r\n", "JS_BLOCK_COMMENT REGEX");
     assertTransition("JS_BLOCK_COMMENT REGEX", "Hello, World!", "JS_BLOCK_COMMENT REGEX");
     assertTransition("JS_BLOCK_COMMENT REGEX", "\"'/", "JS_BLOCK_COMMENT REGEX");
     assertTransition("JS_BLOCK_COMMENT REGEX", "*/", "JS REGEX");
-    assertTransition("JS_BLOCK_COMMENT REGEX", "</script>", "HTML_PCDATA"); // Or error.
   }
 
   @Test
@@ -552,6 +274,10 @@ public class RawTextContextUpdaterTest {
     assertTransition("JS_DQ_STRING", "", "JS_DQ_STRING");
     assertTransition("JS_DQ_STRING", "Hello, World!", "JS_DQ_STRING");
     assertTransition("JS_DQ_STRING", M1500, "JS_DQ_STRING"); // Check for stack overflow
+    assertTransition(
+        "JS_DQ_STRING",
+        Strings.repeat("foo \\t bar \\r baz \\\" quux", 10_000),
+        "JS_DQ_STRING"); // Check for stack overflow
     assertTransition("JS_DQ_STRING", "\"", "JS DIV_OP");
     assertTransition(
         "JS_DQ_STRING NORMAL SCRIPT SINGLE_QUOTE",
@@ -559,7 +285,6 @@ public class RawTextContextUpdaterTest {
         "JS_DQ_STRING NORMAL SCRIPT SINGLE_QUOTE");
     assertTransition(
         "JS_DQ_STRING NORMAL SCRIPT SINGLE_QUOTE", "\"", "JS NORMAL SCRIPT SINGLE_QUOTE DIV_OP");
-    assertTransition("JS_DQ_STRING", "</script>", "HTML_PCDATA"); // Or error.
     assertTransition("JS_DQ_STRING", "</p>", "JS_DQ_STRING");
   }
 
@@ -581,7 +306,6 @@ public class RawTextContextUpdaterTest {
         "JS_SQ_STRING NORMAL SCRIPT DOUBLE_QUOTE");
     assertTransition(
         "JS_SQ_STRING NORMAL SCRIPT DOUBLE_QUOTE", "'", "JS NORMAL SCRIPT DOUBLE_QUOTE DIV_OP");
-    assertTransition("JS_SQ_STRING", "</script>", "HTML_PCDATA"); // Or error.
     assertTransition("JS_SQ_STRING", "</s>", "JS_SQ_STRING");
   }
 
@@ -603,7 +327,6 @@ public class RawTextContextUpdaterTest {
         "JS_REGEX NORMAL SCRIPT DOUBLE_QUOTE");
     assertTransition(
         "JS_REGEX NORMAL SCRIPT DOUBLE_QUOTE", "/", "JS NORMAL SCRIPT DOUBLE_QUOTE DIV_OP");
-    assertTransition("JS_REGEX", "</script>", "HTML_PCDATA"); // Or error.
   }
 
   @Test
@@ -670,19 +393,6 @@ public class RawTextContextUpdaterTest {
   }
 
   @Test
-  public void testRcdata() throws Exception {
-    assertTransition("HTML_RCDATA XMP", "", "HTML_RCDATA XMP");
-    assertTransition("HTML_RCDATA XMP", "Hello, World!", "HTML_RCDATA XMP");
-    assertTransition("HTML_RCDATA XMP", "<p", "HTML_RCDATA XMP");
-    assertTransition("HTML_RCDATA XMP", "<p ", "HTML_RCDATA XMP");
-    assertTransition("HTML_RCDATA XMP", "</textarea>", "HTML_RCDATA XMP");
-    assertTransition("HTML_RCDATA XMP", "</xmp>", "HTML_PCDATA");
-    assertTransition("HTML_RCDATA XMP", "</xMp>", "HTML_PCDATA");
-    assertTransition("HTML_RCDATA TEXTAREA", "</xmp>", "HTML_RCDATA TEXTAREA");
-    assertTransition("HTML_RCDATA TEXTAREA", "</textarea>", "HTML_PCDATA");
-  }
-
-  @Test
   public void testText() throws Exception {
     // Plain text's only edge should be back to itself.
     assertTransition("TEXT", "", "TEXT");
@@ -691,28 +401,6 @@ public class RawTextContextUpdaterTest {
     assertTransition("TEXT", "&D*(@*(#*(AW*D(J*#(J*(JS!!!''\"", "TEXT");
     assertTransition("TEXT", "<script>var x='", "TEXT");
     assertTransition("TEXT", "<a href='", "TEXT");
-  }
-
-  @Test
-  public void testTemplateElementNesting() throws Exception {
-    assertTransition("HTML_PCDATA", "<template>", "HTML_PCDATA templateNestDepth=1");
-    assertTransition("HTML_PCDATA", "<template id='i'>foo", "HTML_PCDATA templateNestDepth=1");
-    assertTransition("HTML_PCDATA", "<template>foo<template>", "HTML_PCDATA templateNestDepth=2");
-    assertTransition("HTML_PCDATA", "<template>foo</template>", "HTML_PCDATA");
-    assertTransition(
-        "HTML_PCDATA", "<template>foo<template></template>", "HTML_PCDATA templateNestDepth=1");
-    assertTransition(
-        "HTML_PCDATA",
-        "<template>foo<script>//</template></script>",
-        "HTML_PCDATA templateNestDepth=1");
-    assertTransition(
-        "HTML_PCDATA", "<template>foo<!--</template>-->", "HTML_PCDATA templateNestDepth=1");
-    assertTransition("HTML_PCDATA", "</template>", "ERROR");
-    assertTransition("HTML_PCDATA", "<template>foo</template></template>", "ERROR");
-    assertTransition(
-        "HTML_PCDATA templateNestDepth=4", "</template>", "HTML_PCDATA templateNestDepth=3");
-    assertTransition(
-        "HTML_PCDATA templateNestDepth=4", "</TempLate>", "HTML_PCDATA templateNestDepth=3");
   }
 
   @Test
@@ -725,13 +413,9 @@ public class RawTextContextUpdaterTest {
   }
 
   private static void assertTransition(String from, String rawText, String to) {
-    assertTransition(from, rawText, to, ANY_SLICES);
-  }
-
-  private static void assertTransition(String from, String rawText, String to, int numSlices) {
-    SlicedRawTextNode node;
+    Context endContext;
     try {
-      node =
+      endContext =
           RawTextContextUpdater.processRawText(
               new RawTextNode(0, rawText, SourceLocation.UNKNOWN), Context.parse(from));
     } catch (SoyAutoescapeException e) {
@@ -743,12 +427,10 @@ public class RawTextContextUpdaterTest {
     }
     // Assert against the toString() for simpler test authoring -- if a developer misspells the
     // "to" context, they'll see a useful string-based diff.
-    String endContext = node.getEndContext().toString();
+    String endContextString = endContext.toString();
     // remove the surrounding parens and leading 'Context'
-    endContext = endContext.substring("(Context ".length(), endContext.length() - 1);
-    assertWithMessage(rawText).that(endContext).isEqualTo(to);
-    if (numSlices != ANY_SLICES) {
-      assertWithMessage(rawText).that(node.getSlices().size()).isEqualTo(numSlices);
-    }
+    endContextString =
+        endContextString.substring("(Context ".length(), endContextString.length() - 1);
+    assertWithMessage(rawText).that(endContextString).isEqualTo(to);
   }
 }
