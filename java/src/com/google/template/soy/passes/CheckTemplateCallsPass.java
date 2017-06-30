@@ -95,14 +95,10 @@ final class CheckTemplateCallsPass extends CompilerFileSetPass {
           "Found call to non stricthtml template. Strict HTML template "
               + "can only call other strict HTML templates from an HTML context.");
 
-  /** Whether strict html mode is enabled for the compiler. */
-  private final boolean enabledStrictHtml;
-
   /** The error reporter that is used in this compiler pass. */
   private final ErrorReporter errorReporter;
 
-  CheckTemplateCallsPass(boolean enabledStrictHtml, ErrorReporter errorReporter) {
-    this.enabledStrictHtml = enabledStrictHtml;
+  CheckTemplateCallsPass(ErrorReporter errorReporter) {
     this.errorReporter = errorReporter;
   }
 
@@ -444,11 +440,10 @@ final class CheckTemplateCallsPass extends CompilerFileSetPass {
      * template from HTML context.
      */
     private void checkStrictHtml(CallNode caller, @Nullable TemplateNode callee) {
-      // We should only check strict html if 1) experimental feature is on; 2) the current template
-      // sets stricthtml to true, and 3) the current call node is in HTML context.
+      // We should only check strict html if 1) the current template
+      // sets stricthtml to true, and 2) the current call node is in HTML context.
       // Then we report an error if the callee is HTML but is not a strict HTML template.
-      if (enabledStrictHtml
-          && callerTemplate.isStrictHtml()
+      if (callerTemplate.isStrictHtml()
           && caller.getIsPcData()
           && callee != null
           && callee.getContentKind() == ContentKind.HTML

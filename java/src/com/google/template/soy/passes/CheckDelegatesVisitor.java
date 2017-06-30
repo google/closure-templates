@@ -80,14 +80,11 @@ final class CheckDelegatesVisitor extends AbstractSoyNodeVisitor<Void> {
   /** Current delegate package name, or null if none (during pass). */
   private String currDelPackageName;
 
-  private final boolean enabledStrictHtml;
 
   private final ErrorReporter errorReporter;
 
-  CheckDelegatesVisitor(
-      TemplateRegistry templateRegistry, boolean enabledStrictHtml, ErrorReporter errorReporter) {
+  CheckDelegatesVisitor(TemplateRegistry templateRegistry, ErrorReporter errorReporter) {
     this.templateRegistry = templateRegistry;
-    this.enabledStrictHtml = enabledStrictHtml;
     this.errorReporter = errorReporter;
   }
 
@@ -156,7 +153,7 @@ final class CheckDelegatesVisitor extends AbstractSoyNodeVisitor<Void> {
           // Check if all del templates have the same settings of strict HTML mode.
           // We do not need to check {@code ContentKind} again since we already did that earlier
           // in this pass.
-          if (enabledStrictHtml && delTemplate.isStrictHtml() != firstStrictHtml) {
+          if (delTemplate.isStrictHtml() != firstStrictHtml) {
             errorReporter.report(
                 delTemplate.getSourceLocation(),
                 DELTEMPLATES_WITH_DIFFERENT_STRICT_HTML_MODE,

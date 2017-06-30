@@ -47,10 +47,6 @@ import java.util.ArrayDeque;
 
 /** A {@link CompilerFilePass} that checks strict html mode. See go/soy-html for usages. */
 final class StrictHtmlValidationPass extends CompilerFilePass {
-  private static final SoyErrorKind STRICT_HTML_DISABLED =
-      SoyErrorKind.of(
-          "Strict HTML mode is disabled by default. In order to use stricthtml syntax in your Soy "
-              + "template, explicitly pass --enabledExperimentalFeatures=stricthtml to compiler.");
   private static final SoyErrorKind STRICT_HTML_WITHOUT_AUTOESCAPE =
       SoyErrorKind.of(
           "stricthtml=\"true\" must be used with autoescape=\"strict\".", StyleAllowance.NO_CAPS);
@@ -69,12 +65,10 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
           "Unexpected HTML close tag. Within an if or switch block, "
               + "all branches must end with unmatched open tags or unmatched close tags.");
 
-  private final boolean enabledStrictHtml;
   private final ErrorReporter errorReporter;
 
   StrictHtmlValidationPass(
       ImmutableList<String> experimentalFeatures, ErrorReporter errorReporter) {
-    this.enabledStrictHtml = experimentalFeatures.contains("stricthtml");
     this.errorReporter = errorReporter;
   }
 
@@ -83,10 +77,6 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
     // First check namespace declarations, and return if there is any violation.
     NamespaceDeclaration namespace = file.getNamespaceDeclaration();
     if (namespace.getStrictHtmlMode() != TriState.UNSET) {
-      if (!enabledStrictHtml && namespace.getStrictHtmlMode() == TriState.ENABLED) {
-        errorReporter.report(namespace.getStrictHtmlModeLocation(), STRICT_HTML_DISABLED);
-        return;
-      }
       if (namespace.getDefaultAutoescapeMode() != AutoescapeMode.STRICT
           && namespace.getStrictHtmlMode() == TriState.ENABLED) {
         errorReporter.report(namespace.getAutoescapeModeLocation(), STRICT_HTML_WITHOUT_AUTOESCAPE);
@@ -100,10 +90,6 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
   }
 
   private void checkTemplateNode(TemplateNode node) {
-    if (!enabledStrictHtml && node.isStrictHtml()) {
-      errorReporter.report(node.getSourceLocation(), STRICT_HTML_DISABLED);
-      return;
-    }
     AutoescapeMode autoescapeMode = node.getAutoescapeMode();
     if (autoescapeMode != AutoescapeMode.STRICT && node.isStrictHtml()) {
       errorReporter.report(node.getSourceLocation(), STRICT_HTML_WITHOUT_AUTOESCAPE);

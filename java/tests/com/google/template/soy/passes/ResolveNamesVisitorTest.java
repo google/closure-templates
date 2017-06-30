@@ -19,7 +19,6 @@ package com.google.template.soy.passes;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.base.Joiner;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.SoyFileSetParserBuilder;
@@ -28,7 +27,6 @@ import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.error.FormattingErrorReporter;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
-import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.soytree.ForeachNode;
 import com.google.template.soy.soytree.ForeachNonemptyNode;
 import com.google.template.soy.soytree.IfCondNode;
@@ -235,8 +233,6 @@ public final class ResolveNamesVisitorTest {
   public void testLetReferencedInsideAttributeValue() {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(constructTemplateSource("{let $t: 1 /}<{$t}>"))
-            .options(
-                new SoyGeneralOptions().setExperimentalFeatures(ImmutableList.of("stricthtml")))
             .parse()
             .fileSet();
     TemplateNode n = soyTree.getChild(0).getChild(0);

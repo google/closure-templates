@@ -166,8 +166,7 @@ public final class PassManager {
     ImmutableList.Builder<CompilerFileSetPass> beforeAutoescaperFileSetPassBuilder =
         ImmutableList.<CompilerFileSetPass>builder().add(new CheckTemplateParamsPass());
     if (!disableAllTypeChecking) {
-      beforeAutoescaperFileSetPassBuilder.add(
-          new CheckTemplateCallsPass(strictHtmlEnabled, errorReporter));
+      beforeAutoescaperFileSetPassBuilder.add(new CheckTemplateCallsPass(errorReporter));
     }
     beforeAutoescaperFileSetPassBuilder
         .add(new CheckVisibilityPass())
@@ -486,12 +485,10 @@ public final class PassManager {
   }
 
   private final class CheckDelegatesPass extends CompilerFileSetPass {
-    private final boolean enabledStrictHtml =
-        options.getExperimentalFeatures().contains("stricthtml");
 
     @Override
     public void run(SoyFileSetNode fileSet, TemplateRegistry registry) {
-      new CheckDelegatesVisitor(registry, enabledStrictHtml, errorReporter).exec(fileSet);
+      new CheckDelegatesVisitor(registry, errorReporter).exec(fileSet);
     }
   }
 
