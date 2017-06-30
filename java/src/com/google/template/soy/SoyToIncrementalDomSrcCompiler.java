@@ -61,7 +61,11 @@ public final class SoyToIncrementalDomSrcCompiler extends AbstractSoyCompiler {
     new SoyToIncrementalDomSrcCompiler().runMain(args);
   }
 
-  private SoyToIncrementalDomSrcCompiler() {}
+  SoyToIncrementalDomSrcCompiler(ClassLoader loader) {
+    super(loader);
+  }
+
+  SoyToIncrementalDomSrcCompiler() {}
 
   @Override
   void compile(SoyFileSet.Builder sfsBuilder) throws IOException {

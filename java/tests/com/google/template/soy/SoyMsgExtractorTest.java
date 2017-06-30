@@ -50,7 +50,11 @@ public class SoyMsgExtractorTest {
 
     int exitCode =
         new SoyMsgExtractor()
-            .run("--outputFile", xmlFile.toString(), soyFile1.toString(), soyFile2.toString());
+            .run(
+                new String[] {
+                  "--outputFile", xmlFile.toString(), soyFile1.toString(), soyFile2.toString()
+                },
+                System.err);
     assertThat(exitCode).isEqualTo(0);
     String xmlContent = Files.toString(xmlFile, UTF_8);
     assertThat(xmlContent).contains("<source>H\uff49</source>");

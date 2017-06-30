@@ -97,6 +97,12 @@ public final class SoyMsgPruner extends AbstractSoyCompiler {
     new SoyMsgPruner().runMain(args);
   }
 
+  SoyMsgPruner(ClassLoader loader) {
+    super(loader);
+  }
+
+  SoyMsgPruner() {}
+
   @Override
   boolean acceptsSourcesAsArguments() {
     return false;

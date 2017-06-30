@@ -93,6 +93,12 @@ public final class SoyMsgExtractor extends AbstractSoyCompiler {
     new SoyMsgExtractor().runMain(args);
   }
 
+  SoyMsgExtractor(ClassLoader loader) {
+    super(loader);
+  }
+
+  SoyMsgExtractor() {}
+
   @Override
   Optional<Module> msgPluginModule() {
     return Optional.of(messagePluginModule);

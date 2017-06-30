@@ -25,6 +25,7 @@ import com.google.template.soy.error.SoyCompilationException;
 import com.google.template.soy.msgs.SoyMsgPlugin;
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.CheckReturnValue;
@@ -152,22 +153,32 @@ abstract class AbstractSoyCompiler {
 
   private CmdLineParser cmdLineParser;
 
+  private final ClassLoader pluginClassLoader;
+
+  AbstractSoyCompiler(ClassLoader pluginClassLoader) {
+    this.pluginClassLoader = pluginClassLoader;
+  }
+
+  AbstractSoyCompiler() {
+    this(AbstractSoyCompiler.class.getClassLoader());
+  }
+
   final void runMain(String... args) {
-    int status = run(args);
+    int status = run(args, System.err);
     System.exit(status);
   }
 
   @VisibleForTesting
   @CheckReturnValue
-  int run(final String... args) {
+  int run(final String[] args, PrintStream err) {
     try {
       doMain(args);
       return 0;
     } catch (SoyCompilationException compilationException) {
-      System.err.println(compilationException.getMessage());
+      err.println(compilationException.getMessage());
       return 1;
     } catch (Exception e) {
-      System.err.println(
+      err.println(
           "INTERNAL SOY ERROR.\n"
               + "Please open an issue at "
               + "https://github.com/google/closure-templates/issues"
@@ -179,7 +190,7 @@ abstract class AbstractSoyCompiler {
   }
 
   private void doMain(String[] args) throws IOException {
-    this.cmdLineParser = MainClassUtils.parseFlags(this, args, usagePrefix);
+    this.cmdLineParser = MainClassUtils.parseFlags(this, args, usagePrefix, pluginClassLoader);
 
     validateFlags();
     if (!arguments.isEmpty() && !acceptsSourcesAsArguments()) {

@@ -16,7 +16,6 @@
 
 package com.google.template.soy;
 
-
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -42,6 +41,13 @@ import org.kohsuke.args4j.spi.Setter;
  *
  */
 final class MainClassUtils {
+
+  static {
+    CmdLineParser.registerHandler(Module.class, ModuleOptionHandler.class);
+    // overwrite the built in boolean handler
+    CmdLineParser.registerHandler(Boolean.class, BooleanOptionHandler.class);
+    CmdLineParser.registerHandler(boolean.class, BooleanOptionHandler.class);
+  }
 
   private MainClassUtils() {}
 
@@ -158,9 +164,10 @@ final class MainClassUtils {
 
     @Override
     Module parseItem(String item) {
-      return instantiatePluginModule(item);
+      return instantiatePluginModule(((SoyCmdLineParser) this.owner).pluginLoader, item);
     }
   }
+
   /** OptionHandler for args4j that handles a comma-delimited list of files. */
   public static final class FileListOptionHandler extends ListOptionHandler<File> {
 
@@ -175,7 +182,11 @@ final class MainClassUtils {
       return new File(item);
     }
   }
-  /** OptionHandler for args4j that handles a comma-delimited list of strings. */
+
+  /**
+   * OptionHandler for args4j that handles a comma-delimited list of strings referencing guice
+   * module names.
+   */
   public static final class ModuleOptionHandler extends OptionHandler<Module> {
     /** {@link ListOptionHandler#ListOptionHandler(CmdLineParser,OptionDef,Setter)} */
     public ModuleOptionHandler(
@@ -190,7 +201,8 @@ final class MainClassUtils {
       if (parameter.isEmpty()) {
         setter.addValue(null);
       } else {
-        setter.addValue(instantiatePluginModule(parameter));
+        setter.addValue(
+            instantiatePluginModule(((SoyCmdLineParser) this.owner).pluginLoader, parameter));
       }
       return 1;
     }
@@ -198,6 +210,19 @@ final class MainClassUtils {
     @Override
     public String getDefaultMetaVariable() {
       return "com.foo.bar.BazModule";
+    }
+  }
+
+  /**
+   * A subtype of {@link CmdLineParser} that allows us to pass option handlers the plugin
+   * classloader.
+   */
+  private static final class SoyCmdLineParser extends CmdLineParser {
+    final ClassLoader pluginLoader;
+
+    SoyCmdLineParser(Object bean, ClassLoader loader) {
+      super(bean);
+      this.pluginLoader = loader;
     }
   }
 
@@ -210,13 +235,10 @@ final class MainClassUtils {
    * @return The CmdLineParser that was created and used to parse the args (can be used to print
    *     usage text for flags when reporting errors).
    */
-  static CmdLineParser parseFlags(Object objWithFlags, String[] args, String usagePrefix) {
-    CmdLineParser.registerHandler(Module.class, ModuleOptionHandler.class);
-    // overwrite the built in boolean handler
-    CmdLineParser.registerHandler(Boolean.class, BooleanOptionHandler.class);
-    CmdLineParser.registerHandler(boolean.class, BooleanOptionHandler.class);
+  static CmdLineParser parseFlags(
+      Object objWithFlags, String[] args, String usagePrefix, ClassLoader pluginLoader) {
 
-    CmdLineParser cmdLineParser = new CmdLineParser(objWithFlags);
+    CmdLineParser cmdLineParser = new SoyCmdLineParser(objWithFlags, pluginLoader);
     cmdLineParser.setUsageWidth(100);
 
     try {
@@ -260,10 +282,9 @@ final class MainClassUtils {
    * @param moduleName The name of the plugin module to instantiate.
    * @return A new instance of the specified plugin module.
    */
-  private static Module instantiatePluginModule(String moduleName) {
-
+  private static Module instantiatePluginModule(ClassLoader loader, String moduleName) {
     try {
-      return (Module) Class.forName(moduleName).getConstructor().newInstance();
+      return (Module) Class.forName(moduleName, true, loader).getConstructor().newInstance();
 
     } catch (ReflectiveOperationException e) {
       throw new RuntimeException("Cannot instantiate plugin module \"" + moduleName + "\".", e);

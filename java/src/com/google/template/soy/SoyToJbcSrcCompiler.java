@@ -44,7 +44,11 @@ public final class SoyToJbcSrcCompiler extends AbstractSoyCompiler {
   )
   private File outputSrcJar;
 
-  private SoyToJbcSrcCompiler() {}
+  SoyToJbcSrcCompiler(ClassLoader loader) {
+    super(loader);
+  }
+
+  SoyToJbcSrcCompiler() {}
 
   @Override
   boolean acceptsSourcesAsArguments() {
