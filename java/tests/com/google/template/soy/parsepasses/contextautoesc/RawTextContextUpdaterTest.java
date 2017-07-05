@@ -31,22 +31,6 @@ public final class RawTextContextUpdaterTest {
   private static final String M1500 = Strings.repeat("M", 1500);
 
   @Test
-  public void testHtmlComment() throws Exception {
-    assertTransition("HTML_COMMENT", "", "HTML_COMMENT");
-    assertTransition("HTML_COMMENT", " ", "HTML_COMMENT");
-    assertTransition("HTML_COMMENT", "\r", "HTML_COMMENT");
-    assertTransition("HTML_COMMENT", "/", "HTML_COMMENT");
-    assertTransition("HTML_COMMENT", "x", "HTML_COMMENT");
-    assertTransition("HTML_COMMENT", ">", "HTML_COMMENT");
-    assertTransition("HTML_COMMENT", "-", "HTML_COMMENT");
-    assertTransition("HTML_COMMENT", "-- >", "HTML_COMMENT");
-    assertTransition("HTML_COMMENT", "->", "HTML_COMMENT");
-    assertTransition("HTML_COMMENT", "-->", "HTML_PCDATA");
-    assertTransition("HTML_COMMENT", "--->", "HTML_PCDATA");
-    assertTransition("HTML_COMMENT", "<!--", "HTML_COMMENT");
-  }
-
-  @Test
   public void testCssComment() throws Exception {
     assertTransition("CSS_COMMENT", "", "CSS_COMMENT");
     assertTransition("CSS_COMMENT", "\r\n\n\r", "CSS_COMMENT");

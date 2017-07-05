@@ -230,6 +230,23 @@ public final class InferenceEngineTest {
   }
 
   @Test
+  public void testHtmlComment() throws Exception {
+    assertTransitions(
+        ContentKind.HTML,
+        "{assert('HTML_PCDATA')}"
+            + "<!--\n"
+            + "  {assert('HTML_COMMENT')}"
+            + "  <script>\n"
+            + "    {assert('HTML_COMMENT')}"
+            + "    console.log('Hello');\n"
+            + "    {assert('HTML_COMMENT')}"
+            + "  </script>\n"
+            + "  {assert('HTML_COMMENT')}\n"
+            + "-->"
+            + "{assert('HTML_PCDATA')}");
+  }
+
+  @Test
   public void testTemplateElementNesting() throws Exception {
     assertTransitions(
         ContentKind.HTML,
@@ -260,7 +277,6 @@ public final class InferenceEngineTest {
       return ImmutableSet.of(1);
     }
   }
-
 
   private static void assertTransitions(ContentKind kind, String src) {
     TemplateNode template =

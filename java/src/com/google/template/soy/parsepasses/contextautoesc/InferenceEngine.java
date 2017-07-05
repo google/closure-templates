@@ -41,6 +41,7 @@ import com.google.template.soy.soytree.ForeachNonemptyNode;
 import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.HtmlAttributeValueNode;
 import com.google.template.soy.soytree.HtmlCloseTagNode;
+import com.google.template.soy.soytree.HtmlCommentNode;
 import com.google.template.soy.soytree.HtmlContext;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.HtmlTagNode;
@@ -603,6 +604,13 @@ final class InferenceEngine {
       visitHtmlTagNode(node);
     }
 
+    @Override
+    protected void visitHtmlCommentNode(HtmlCommentNode node) {
+      context = context.transitionToState(HtmlContext.HTML_COMMENT);
+      visitChildren(node);
+      context = context.transitionToState(HtmlContext.HTML_PCDATA);
+    }
+
     private void visitHtmlTagNode(HtmlTagNode tag) {
       context =
           context.transitionToState(
@@ -811,7 +819,7 @@ final class InferenceEngine {
                   + "kind=\"(html|attributes|js|css|uri)\" attribute to the callee",
               callNode);
         }
-        inferences.cloneTemplates(baseName, newCalleeName);
+        inferences.cloneTemplates(baseName, newCalleeName, callNode);
       }
 
       try {

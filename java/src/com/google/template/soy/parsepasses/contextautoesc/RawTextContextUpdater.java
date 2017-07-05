@@ -18,7 +18,6 @@ package com.google.template.soy.parsepasses.contextautoesc;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.internal.base.UnescapeUtils;
 import com.google.template.soy.parsepasses.contextautoesc.Context.UriPart;
 import com.google.template.soy.parsepasses.contextautoesc.Context.UriType;
@@ -345,15 +344,6 @@ final class RawTextContextUpdater {
     }
   }
 
-  /** A transition to a given context. */
-  private static Transition makeTransitionTo(String regex, final ContentKind kind) {
-    return new Transition(regex) {
-      @Override
-      Context computeNextContext(Context prior, Matcher matcher) {
-        return prior.toBuilder().withStartKind(kind).build();
-      }
-    };
-  }
 
   /** A transition to the given state. */
   private static Transition makeTransitionToState(String regex, final HtmlContext state) {
@@ -581,15 +571,10 @@ final class RawTextContextUpdater {
    */
   private static final ImmutableMap<HtmlContext, List<Transition>> TRANSITIONS =
       ImmutableMap.<HtmlContext, List<Transition>>builder()
-          .put(
-              HtmlContext.HTML_PCDATA,
-              ImmutableList.of(
-                  // TODO(user): this is already parsed in the HtmlRewritePass, consider
-                  // making a node for it
-                  makeTransitionToState("<!--", HtmlContext.HTML_COMMENT), TRANSITION_TO_SELF))
-          .put(
-              HtmlContext.HTML_COMMENT,
-              ImmutableList.of(makeTransitionTo("-->", ContentKind.HTML), TRANSITION_TO_SELF))
+          // All edges in or out of pcdata, comment or attr value are triggered by nodes and thus
+          // handled by the InferenceEngine.
+          .put(HtmlContext.HTML_PCDATA, ImmutableList.of(TRANSITION_TO_SELF))
+          .put(HtmlContext.HTML_COMMENT, ImmutableList.of(TRANSITION_TO_SELF))
           .put(HtmlContext.HTML_NORMAL_ATTR_VALUE, ImmutableList.of(TRANSITION_TO_SELF))
           // The CSS transitions below are based on http://www.w3.org/TR/css3-syntax/#lexical
           .put(

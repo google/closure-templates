@@ -76,9 +76,20 @@ public final class SoyTreeUtils {
     return v.found;
   }
 
+  /** Returns true if the given {@code node} contains any children that are HTML nodes. */
+  public static boolean hasHtmlNodes(Node node) {
+    return hasNodesOfType(
+        node,
+        HtmlOpenTagNode.class,
+        HtmlCloseTagNode.class,
+        HtmlCommentNode.class,
+        HtmlAttributeNode.class,
+        HtmlAttributeValueNode.class);
+  }
+
   /**
    * Runs the visitor on all nodes (including {@link ExprNode expr nodes}) reachable from the given
-   * node.  The order of visiting is undefined.
+   * node. The order of visiting is undefined.
    *
    * <p>If the visitor return {@code false} from {@link NodeVisitor#exec(Node)} we will short
    * circuit visiting.
@@ -115,7 +126,6 @@ public final class SoyTreeUtils {
     return getAllNodesOfType(rootSoyNode, classObject, true);
   }
 
-
   /**
    * Retrieves all nodes in a tree that are an instance of a particular class.
    *
@@ -127,7 +137,8 @@ public final class SoyTreeUtils {
    * @return The nodes in the order they appear.
    */
   public static <T extends Node> List<T> getAllNodesOfType(
-      SoyNode rootSoyNode, final Class<T> classObject,
+      SoyNode rootSoyNode,
+      final Class<T> classObject,
       final boolean doSearchSubtreesOfMatchedNodes) {
 
     final ImmutableList.Builder<T> matchedNodesBuilder = ImmutableList.builder();
@@ -136,7 +147,8 @@ public final class SoyTreeUtils {
     final AbstractNodeVisitor<ExprNode, Void> exprVisitor =
         exploreExpressions
             ? new AbstractNodeVisitor<ExprNode, Void>() {
-              @Override protected void visit(ExprNode exprNode) {
+              @Override
+              protected void visit(ExprNode exprNode) {
                 if (classObject.isInstance(exprNode)) {
                   matchedNodesBuilder.add(classObject.cast(exprNode));
                   if (!doSearchSubtreesOfMatchedNodes) {
@@ -175,24 +187,21 @@ public final class SoyTreeUtils {
     return matchedNodesBuilder.build();
   }
 
-
   // -----------------------------------------------------------------------------------------------
   // Utils for executing an ExprNode visitor on all expressions in a Soy tree.
-
 
   /**
    * Given a Soy node and a visitor for expression trees, traverses the subtree of the node and
    * executes the visitor on all expressions held by nodes in the subtree.
    *
-   * <p> Only processes expressions in V2 syntax. Ignores all expressions in V1 syntax.
+   * <p>Only processes expressions in V2 syntax. Ignores all expressions in V1 syntax.
    *
    * @param <R> The ExprNode visitor's return type.
    * @param node The root of the subtree to visit all expressions in.
    * @param exprNodeVisitor The visitor to execute on all expressions.
    */
   public static <R> void execOnAllV2Exprs(
-      SoyNode node,
-      AbstractNodeVisitor<ExprNode, R> exprNodeVisitor) {
+      SoyNode node, AbstractNodeVisitor<ExprNode, R> exprNodeVisitor) {
     new VisitAllV2ExprsVisitor<R>(exprNodeVisitor).exec(node);
   }
 
@@ -209,7 +218,8 @@ public final class SoyTreeUtils {
       this.exprNodeVisitor = exprNodeVisitor;
     }
 
-    @Override protected void visit(SoyNode node) {
+    @Override
+    protected void visit(SoyNode node) {
 
       if (node instanceof ParentSoyNode<?>) {
         visitChildren((ParentSoyNode<?>) node);
@@ -223,16 +233,14 @@ public final class SoyTreeUtils {
     }
   }
 
-
   // -----------------------------------------------------------------------------------------------
   // Utils for cloning.
-
 
   /**
    * Clones the given node and then generates and sets new ids on all the cloned nodes (by default,
    * SoyNode.copy(copyState) creates cloned nodes with the same ids as the original nodes).
    *
-   * <p> This function will use the original Soy tree's node id generator to generate the new node
+   * <p>This function will use the original Soy tree's node id generator to generate the new node
    * ids for the cloned nodes. Thus, the original node to be cloned must be part of a full Soy tree.
    * However, this does not mean that the cloned node will become part of the original tree (unless
    * it is manually attached later). The cloned node will be an independent subtree with parent set
@@ -256,12 +264,11 @@ public final class SoyTreeUtils {
     return clone;
   }
 
-
   /**
    * Clones the given list of nodes and then generates and sets new ids on all the cloned nodes (by
    * default, SoyNode.copy(copyState) creates cloned nodes with the same ids as the original nodes).
    *
-   * <p> This function will use the original Soy tree's node id generator to generate the new node
+   * <p>This function will use the original Soy tree's node id generator to generate the new node
    * ids for the cloned nodes. Thus, the original nodes to be cloned must be part of a full Soy
    * tree. However, this does not mean that the cloned nodes will become part of the original tree
    * (unless they are manually attached later). The cloned nodes will be independent subtrees with
@@ -293,7 +300,7 @@ public final class SoyTreeUtils {
    * pointing at the correct tree.
    */
   public static <T extends SoyNode> T cloneNode(T original) {
-    @SuppressWarnings("unchecked")  // this holds for all SoyNode types
+    @SuppressWarnings("unchecked") // this holds for all SoyNode types
     // TODO(lukes): eliminate this method once all logic has been moved into copy state
     T cloned = (T) original.copy(new CopyState());
 
@@ -313,7 +320,7 @@ public final class SoyTreeUtils {
     for (int i = 0; i < newLocalVarNodes.size(); i++) {
       VarDefn oldDefn = originalLocalVarNodes.get(i).getVar();
       VarDefn newDefn = newLocalVarNodes.get(i).getVar();
-      checkState(oldDefn.name().equals(newDefn.name()));  // sanity check
+      checkState(oldDefn.name().equals(newDefn.name())); // sanity check
       replacementMap.put(oldDefn, newDefn);
     }
     // limiting this to just local vars would make sense.
@@ -326,29 +333,25 @@ public final class SoyTreeUtils {
     return cloned;
   }
 
-  /**
-   * Private helper for cloneWithNewIds() to set new ids on a cloned subtree.
-   */
+  /** Private helper for cloneWithNewIds() to set new ids on a cloned subtree. */
   private static class GenNewIdsVisitor extends AbstractNodeVisitor<SoyNode, Void> {
 
     /** The generator for new node ids. */
     private IdGenerator nodeIdGen;
 
-    /**
-     * @param nodeIdGen The generator for new node ids.
-     */
+    /** @param nodeIdGen The generator for new node ids. */
     public GenNewIdsVisitor(IdGenerator nodeIdGen) {
       this.nodeIdGen = nodeIdGen;
     }
 
-    @Override protected void visit(SoyNode node) {
+    @Override
+    protected void visit(SoyNode node) {
       node.setId(nodeIdGen.genId());
       if (node instanceof ParentSoyNode<?>) {
         visitChildren((ParentSoyNode<?>) node);
       }
     }
   }
-
 
   // -----------------------------------------------------------------------------------------------
   // Miscellaneous.

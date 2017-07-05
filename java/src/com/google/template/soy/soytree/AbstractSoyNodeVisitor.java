@@ -177,6 +177,9 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
       case HTML_OPEN_TAG_NODE:
         visitHtmlOpenTagNode((HtmlOpenTagNode) node);
         break;
+      case HTML_COMMENT_NODE:
+        visitHtmlCommentNode((HtmlCommentNode) node);
+        break;
       case HTML_ATTRIBUTE_NODE:
         visitHtmlAttributeNode((HtmlAttributeNode) node);
         break;
@@ -400,6 +403,10 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
   }
 
   protected void visitHtmlAttributeValueNode(HtmlAttributeValueNode node) {
+    visitSoyNode(node);
+  }
+
+  protected void visitHtmlCommentNode(HtmlCommentNode node) {
     visitSoyNode(node);
   }
 

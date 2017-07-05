@@ -429,6 +429,98 @@ public final class HtmlRewritePassTest {
     runPass("<div $src_='foo'>");
   }
 
+  @Test
+  public void testHtmlCommentWithOnlyRawTextNode() {
+    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+    TemplateNode node;
+
+    // The most common test case.
+    node = runPass("<!--foo-->", errorReporter);
+    assertThatASTString(node)
+        .isEqualTo(Joiner.on('\n').join("HTML_COMMENT_NODE", "  RAW_TEXT_NODE", ""));
+    assertThatSourceString(node).isEqualTo("<!--foo-->");
+
+    // Empty comment is allowed.
+    node = runPass("<!---->", errorReporter);
+    assertThatASTString(node).isEqualTo(Joiner.on('\n').join("HTML_COMMENT_NODE", ""));
+    assertThatSourceString(node).isEqualTo("<!---->");
+
+    // White spaces should be preserved.
+    node = runPass("<!-- foo -->", errorReporter);
+    assertThatASTString(node)
+        .isEqualTo(Joiner.on('\n').join("HTML_COMMENT_NODE", "  RAW_TEXT_NODE", ""));
+    assertThatSourceString(node).isEqualTo("<!-- foo -->");
+
+    // script tag within HTML comment should be treated as raw text.
+    node = runPass("<!-- <script>alert(\"Hi\");</script> -->", errorReporter);
+    assertThatASTString(node)
+        .isEqualTo(Joiner.on('\n').join("HTML_COMMENT_NODE", "  RAW_TEXT_NODE", ""));
+    assertThatSourceString(node).isEqualTo("<!-- <script>alert(\"Hi\");</script> -->");
+
+    // This is fine since we never start a HTML comment, so it is treated as raw text.
+    node = runPass("-->", errorReporter);
+    assertThatASTString(node).isEqualTo(Joiner.on('\n').join("RAW_TEXT_NODE", ""));
+    assertThatSourceString(node).isEqualTo("-->");
+  }
+
+  @Test
+  public void testHtmlCommentWithPrintNode() {
+    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+    TemplateNode node;
+
+    // Print node.
+    node = runPass("<!--{$foo}-->", errorReporter);
+    assertThatASTString(node)
+        .isEqualTo(Joiner.on('\n').join("HTML_COMMENT_NODE", "  PRINT_NODE", ""));
+    assertThatSourceString(node).isEqualTo("<!--{$foo}-->");
+
+    // Mixed print node and raw text node.
+    node = runPass("<!--{$foo}hello{$bar}-->", errorReporter);
+    assertThatASTString(node)
+        .isEqualTo(
+            Joiner.on('\n')
+                .join("HTML_COMMENT_NODE", "  PRINT_NODE", "  RAW_TEXT_NODE", "  PRINT_NODE", ""));
+    assertThatSourceString(node).isEqualTo("<!--{$foo}hello{$bar}-->");
+  }
+
+  @Test
+  public void testHtmlCommentWithControlFlow() {
+    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+    TemplateNode node;
+    // Control flow structure should be preserved.
+    node = runPass("<!-- {if $foo} foo {else} bar {/if} -->", errorReporter);
+    assertThatASTString(node)
+        .isEqualTo(
+            Joiner.on('\n')
+                .join(
+                    "HTML_COMMENT_NODE",
+                    "  RAW_TEXT_NODE",
+                    "  IF_NODE",
+                    "    IF_COND_NODE",
+                    "      RAW_TEXT_NODE",
+                    "    IF_ELSE_NODE",
+                    "      RAW_TEXT_NODE",
+                    "  RAW_TEXT_NODE",
+                    ""));
+    assertThatSourceString(node).isEqualTo("<!-- {if $foo} foo {else} bar {/if} -->");
+  }
+
+  @Test
+  public void testBadHtmlComment() {
+    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+    TemplateNode node;
+    // These are examples that we haven't closed the HTML comments.
+    for (String text : new String[] {"<!--", "<!-- --", "<!--->"}) {
+      errorReporter = new FormattingErrorReporter();
+      runPass(text, errorReporter);
+      assertThat(errorReporter.getErrorMessages())
+          .named("error message for: %s", text)
+          .containsExactly(
+              "template changes context from 'pcdata' to 'html comment'. "
+                  + "Did you forget to close the html comment?");
+    }
+  }
+
   private static TemplateNode runPass(String input) {
     return runPass(input, ExplodingErrorReporter.get());
   }

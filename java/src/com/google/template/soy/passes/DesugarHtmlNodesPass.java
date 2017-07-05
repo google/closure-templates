@@ -30,6 +30,7 @@ import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.HtmlAttributeValueNode;
 import com.google.template.soy.soytree.HtmlAttributeValueNode.Quotes;
 import com.google.template.soy.soytree.HtmlCloseTagNode;
+import com.google.template.soy.soytree.HtmlCommentNode;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.HtmlTagNode;
 import com.google.template.soy.soytree.IfNode;
@@ -118,6 +119,14 @@ final class DesugarHtmlNodesPass extends CompilerFileSetPass {
     @Override
     protected void visitHtmlOpenTagNode(HtmlOpenTagNode node) {
       visitHtmlTagNode(node);
+    }
+
+    @Override
+    protected void visitHtmlCommentNode(HtmlCommentNode node) {
+      visitChildren(node);
+      replacements.add(createPrefix("<!--", node));
+      replacements.addAll(node.getChildren());
+      replacements.add(createSuffix("-->", node));
     }
 
     @Override

@@ -110,6 +110,7 @@ public interface SoyNode extends Node {
     HTML_CLOSE_TAG_NODE,
     HTML_ATTRIBUTE_NODE,
     HTML_ATTRIBUTE_VALUE_NODE,
+    HTML_COMMENT_NODE,
 
     LOG_NODE,
     DEBUGGER_NODE,

@@ -24,12 +24,7 @@ import com.google.template.soy.base.internal.IncrementingIdGenerator;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.soyparse.SoyFileParser;
-import com.google.template.soy.soytree.HtmlAttributeNode;
-import com.google.template.soy.soytree.HtmlAttributeValueNode;
-import com.google.template.soy.soytree.HtmlCloseTagNode;
-import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.SoyFileNode;
-import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.types.SoyTypeRegistry;
 import java.io.StringReader;
@@ -50,6 +45,12 @@ public final class DesugarHtmlNodesPassTest {
     assertNoOp("<div class=foo/>");
     // we used to rewrite this as foo/>, which is wrong the trailing space is important.
     assertNoOp("<div class=foo />");
+    // Html comment nodes should be no op.
+    assertNoOp("<!--foo-->");
+    assertNoOp("<!--{$foo}-->");
+    assertNoOp("<!--{$foo}hello{$bar}-->");
+    assertNoOp("<!--{if $foo}hello{/if}-->");
+    assertNoOp("<!--<script>test</script>-->");
   }
 
   // The only time we don't perfectly preserve things is in the presense of whitespace.  This is
@@ -118,18 +119,9 @@ public final class DesugarHtmlNodesPassTest {
             .parseSoyFile();
     new HtmlRewritePass(ExplodingErrorReporter.get()).run(node, nodeIdGen);
     new DesugarHtmlNodesPass().run(node, nodeIdGen);
-    assertThat(hasHtmlNodes(node)).isFalse();
+    assertThat(SoyTreeUtils.hasHtmlNodes(node)).isFalse();
     StringBuilder sb = new StringBuilder();
     node.getChild(0).appendSourceStringForChildren(sb);
     return sb.toString();
-  }
-
-  private static boolean hasHtmlNodes(SoyNode node) {
-    return SoyTreeUtils.hasNodesOfType(
-        node,
-        HtmlOpenTagNode.class,
-        HtmlCloseTagNode.class,
-        HtmlAttributeNode.class,
-        HtmlAttributeValueNode.class);
   }
 }

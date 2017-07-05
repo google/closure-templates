@@ -55,6 +55,7 @@ import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.HtmlAttributeValueNode;
 import com.google.template.soy.soytree.HtmlAttributeValueNode.Quotes;
 import com.google.template.soy.soytree.HtmlCloseTagNode;
+import com.google.template.soy.soytree.HtmlCommentNode;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfNode;
@@ -398,19 +399,18 @@ public final class HtmlRewritePass extends CompilerFilePass {
      * <p>Later passes validate that phnames for close tags only appear in messages.
      */
     for (HtmlCloseTagNode closeTag : SoyTreeUtils.getAllNodesOfType(file, HtmlCloseTagNode.class)) {
-        List<StandaloneNode> children = closeTag.getChildren();
-        HtmlAttributeNode phNameAttribute = closeTag.getPhNameNode();
-        // the child at index 0 is the tag name
-        for (int i = 1; i < children.size(); i++) {
-          StandaloneNode child = children.get(i);
-          if (child == phNameAttribute) {
-            continue; // the phname attribute is validated later
-          }
-          errorReporter.report(child.getSourceLocation(), UNEXPECTED_CLOSE_TAG_CONTENT);
+      List<StandaloneNode> children = closeTag.getChildren();
+      HtmlAttributeNode phNameAttribute = closeTag.getPhNameNode();
+      // the child at index 0 is the tag name
+      for (int i = 1; i < children.size(); i++) {
+        StandaloneNode child = children.get(i);
+        if (child == phNameAttribute) {
+          continue; // the phname attribute is validated later
         }
+        errorReporter.report(child.getSourceLocation(), UNEXPECTED_CLOSE_TAG_CONTENT);
+      }
     }
   }
-
 
   private static final class Visitor extends AbstractSoyNodeVisitor<Void> {
     /**
@@ -515,8 +515,8 @@ public final class HtmlRewritePass extends CompilerFilePass {
      *
      * <ul>
      *   <li>Precondition : They are in the given state and not at the end of the input
-     *   <li> Postcondition: They have either advanced the current index or changed states
-     *       (generally both)
+     *   <li>Postcondition: They have either advanced the current index or changed states (generally
+     *       both)
      * </ul>
      *
      * <p>NOTE: a consequence of these conditions is that they are only guaranteed to be able to
@@ -725,9 +725,19 @@ public final class HtmlRewritePass extends CompilerFilePass {
      */
     void handleHtmlComment() {
       boolean foundHyphen = advanceWhileMatches(NOT_HYPHEN);
+      // consume all raw text preceding the hyphen (or end)
+      RawTextNode remainingTextNode = consumeAsRawText();
+      if (remainingTextNode != null) {
+        context.addCommentChild(remainingTextNode);
+      }
       if (foundHyphen) {
         if (matchPrefix("-->", true)) {
-          context.setState(State.PCDATA, currentPointOrEnd());
+          // Consume the suffix here.
+          consume();
+          // At this point we haven't remove the current raw text node (which contains -->) yet.
+          edits.remove(currentRawTextNode);
+          SourceLocation.Point point = currentPointOrEnd();
+          context.setState(context.createHtmlComment(point), point);
         } else {
           advance();
         }
@@ -790,7 +800,10 @@ public final class HtmlRewritePass extends CompilerFilePass {
             errorReporter.report(
                 ltPoint.asLocation(filePath).offsetEndCol(4), HTML_COMMENT_WITHIN_MSG_BLOCK);
           }
-          context.setState(State.HTML_COMMENT, ltPoint);
+          // Consume the prefix "<!--" here.
+          // We have already advance {@link #currentRawTextIndex} in matchPrefix.
+          consume();
+          context.startComment(currentRawTextNode, ltPoint);
         } else if (matchPrefixIgnoreCase("<![cdata", true)) {
           context.setState(State.CDATA, ltPoint);
         } else if (matchPrefix("<!", true) || matchPrefix("<?", true)) {
@@ -798,7 +811,7 @@ public final class HtmlRewritePass extends CompilerFilePass {
         } else {
           // if it isn't either of those special cases, enter a tag
           boolean isCloseTag = matchPrefix("</", false);
-          context.startTag(currentRawTextNode, isCloseTag, currentPoint());
+          context.startTag(currentRawTextNode, isCloseTag, ltPoint);
           advance(); // go past the '<'
           if (isCloseTag) {
             advance(); // go past the '/'
@@ -1412,6 +1425,8 @@ public final class HtmlRewritePass extends CompilerFilePass {
           context.addAttributeValuePart(node);
           break;
         case HTML_COMMENT:
+          context.addCommentChild(node);
+          break;
         case NONE:
         case PCDATA:
         case RCDATA_SCRIPT:
@@ -1468,6 +1483,8 @@ public final class HtmlRewritePass extends CompilerFilePass {
           context.addAttributeValuePart(node);
           break;
         case HTML_COMMENT:
+          context.addCommentChild(node);
+          break;
         case NONE:
         case PCDATA:
         case RCDATA_SCRIPT:
@@ -1604,6 +1621,9 @@ public final class HtmlRewritePass extends CompilerFilePass {
           // no need to tweak any state, addAttributeValuePart doesn't modify anything
           break;
         case HTML_COMMENT:
+          context.addCommentChild(parent);
+          context.setState(endingState, endPoint);
+          break;
         case NONE:
         case PCDATA:
         case RCDATA_SCRIPT:
@@ -1745,6 +1765,8 @@ public final class HtmlRewritePass extends CompilerFilePass {
           blockCtx.reparentAttributeValueChildren(parent);
           break;
         case HTML_COMMENT:
+          blockCtx.reparentDirectCommentChildren(parent);
+          break;
         case NONE:
         case PCDATA:
         case RCDATA_SCRIPT:
@@ -1988,6 +2010,11 @@ public final class HtmlRewritePass extends CompilerFilePass {
     /** all the direct children of the attribute value. */
     final List<StandaloneNode> attributeValueChildren = new ArrayList<>();
 
+    // For tracking the HTML comment node
+    SourceLocation.Point commentStartPoint;
+    RawTextNode commentStartNode;
+    final List<StandaloneNode> directCommentChildren = new ArrayList<>();
+
     ParsingContext(
         String blockName,
         State startingState,
@@ -2030,6 +2057,12 @@ public final class HtmlRewritePass extends CompilerFilePass {
       directTagChildren.clear();
     }
 
+    /** Attaches the directCommentChildren to the parent. */
+    void reparentDirectCommentChildren(BlockNode parent) {
+      edits.addChildren(parent, directCommentChildren);
+      directCommentChildren.clear();
+    }
+
     /** Returns true if this has accumulated parts of an unquoted attribute value. */
     boolean hasUnquotedAttributeValueParts() {
       return quotedAttributeValueStart == null && !attributeValueChildren.isEmpty();
@@ -2051,6 +2084,12 @@ public final class HtmlRewritePass extends CompilerFilePass {
       directTagChildren.add(node);
       edits.remove(node);
       setState(State.AFTER_TAG_NAME_OR_ATTRIBUTE, node.getSourceLocation().getEndPoint());
+    }
+
+    void addCommentChild(StandaloneNode node) {
+      checkNotNull(node);
+      directCommentChildren.add(node);
+      edits.remove(node);
     }
 
     /** Asserts that the context is empty. */
@@ -2099,6 +2138,19 @@ public final class HtmlRewritePass extends CompilerFilePass {
       if (tagName != null) {
         error = format(error, "Expected tagName to be null, got: %s", tagName);
       }
+      if (commentStartPoint != null) {
+        error = format(error, "Expected commentStartPoint to be null, got: %s", commentStartPoint);
+      }
+      if (commentStartNode != null) {
+        error = format(error, "Expected commentStartNode to be null, got: %s", commentStartNode);
+      }
+      if (!directCommentChildren.isEmpty()) {
+        error =
+            format(
+                error,
+                "Expected directCommentChildren to be empty, got: %s",
+                directCommentChildren);
+      }
       if (error != null) {
         throw new IllegalStateException(String.format(fmt + "\n", args) + error);
       }
@@ -2120,6 +2172,7 @@ public final class HtmlRewritePass extends CompilerFilePass {
       tagName = null;
       tagStartState = null;
       directTagChildren.clear();
+      directCommentChildren.clear();
       resetAttribute();
     }
 
@@ -2161,6 +2214,16 @@ public final class HtmlRewritePass extends CompilerFilePass {
       this.tagStartPoint = checkNotNull(point);
       this.tagStartNode = checkNotNull(tagStartNode);
       this.isCloseTag = isCloseTag;
+    }
+
+    /** Records the start of an HTML comment. */
+    void startComment(RawTextNode commentStartNode, SourceLocation.Point commentStartPoint) {
+      checkState(this.commentStartPoint == null);
+      checkState(this.commentStartNode == null);
+      checkState(this.directCommentChildren.isEmpty());
+      this.commentStartPoint = checkNotNull(commentStartPoint);
+      this.commentStartNode = checkNotNull(commentStartNode);
+      setState(State.HTML_COMMENT, commentStartPoint);
     }
 
     /** Returns the tag start location, for error reporting. */
@@ -2323,6 +2386,20 @@ public final class HtmlRewritePass extends CompilerFilePass {
       tagStartNode = null;
       checkEmpty("Expected state to be empty after completing a tag");
       return nextState;
+    }
+
+    /** Creates an {code HtmlCommentNode}. */
+    State createHtmlComment(SourceLocation.Point commentEndPoint) {
+      SourceLocation sourceLocation =
+          new SourceLocation(filePath, commentStartPoint, commentEndPoint);
+      HtmlCommentNode replacement = new HtmlCommentNode(nodeIdGen.genId(), sourceLocation);
+      edits.addChildren(replacement, directCommentChildren);
+      // cast is safe because HtmlCommentNode implements StandaloneNode
+      edits.replace(commentStartNode, (StandaloneNode) replacement);
+      directCommentChildren.clear();
+      commentStartPoint = null;
+      commentStartNode = null;
+      return State.PCDATA;
     }
 
     private static State getNextState(TagName tagName) {

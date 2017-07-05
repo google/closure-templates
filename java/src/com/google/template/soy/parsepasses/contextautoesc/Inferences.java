@@ -239,10 +239,11 @@ final class Inferences {
 
   /**
    * Clones a template, changing the name.
-   * @return A copy of tn, differing semantically only in name and auto-generated IDs.
-   *     The new templates will be available via {@link #lookupTemplates} with the given name.
+   *
+   * @return A copy of tn, differing semantically only in name and auto-generated IDs. The new
+   *     templates will be available via {@link #lookupTemplates} with the given name.
    */
-  public List<TemplateNode> cloneTemplates(String baseName, String derivedName) {
+  public List<TemplateNode> cloneTemplates(String baseName, String derivedName, CallNode callNode) {
     if (lookupTemplates(derivedName) != null) {
       throw new AssertionError(derivedName);
     }
@@ -250,6 +251,16 @@ final class Inferences {
     ImmutableList.Builder<TemplateNode> b = ImmutableList.builder();
 
     for (TemplateNode tn : lookupTemplates(baseName)) {
+      if (SoyTreeUtils.hasHtmlNodes(tn)) {
+        throw SoyAutoescapeException.createWithNode(
+            "Non-strict template '"
+                + baseName
+                + "' contains HTML nodes but does not specify the kind. "
+                + "This is no longer allowed, please migrate the template to strict and "
+                + "specify a content kind by adding a "
+                + "kind=\"(html|attributes|js|css|uri)\" attribute",
+            callNode);
+      }
       SoyFileHeaderInfo soyFileHeaderInfo = tn.getSoyFileHeaderInfo();
 
       // We trivially clone the template with new ids, this ensures that all the varrefs have proper
