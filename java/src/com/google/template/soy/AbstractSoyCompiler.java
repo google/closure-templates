@@ -190,7 +190,7 @@ abstract class AbstractSoyCompiler {
               + "https://github.com/google/closure-templates/issues"
               + " with this stack trace and repro steps"
           );
-      e.printStackTrace(System.err);
+      e.printStackTrace(err);
       return 1;
     }
   }
