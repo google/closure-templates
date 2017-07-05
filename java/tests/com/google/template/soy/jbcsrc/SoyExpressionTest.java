@@ -30,12 +30,15 @@ import com.google.template.soy.data.internal.ListImpl;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
+import com.google.template.soy.data.restricted.SoyString;
 import com.google.template.soy.data.restricted.StringData;
+import com.google.template.soy.jbcsrc.runtime.JbcSrcRuntime;
 import com.google.template.soy.types.aggregate.ListType;
 import com.google.template.soy.types.primitive.AnyType;
 import com.google.template.soy.types.primitive.FloatType;
 import com.google.template.soy.types.primitive.IntType;
 import com.google.template.soy.types.primitive.StringType;
+import com.google.template.soy.types.primitive.UnknownType;
 import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -156,10 +159,27 @@ public class SoyExpressionTest {
   // invoke a StringData method next we will get a verification error.
   @Test
   public void testBoxNullable() {
-    MethodRef stringDataGetValue = MethodRef.create(StringData.class, "getValue");
+    MethodRef stringDataGetValue = MethodRef.create(SoyString.class, "stringValue");
     SoyExpression nullableString = SoyExpression.forString(constant("hello").asNullable());
     assertThatExpression(nullableString).evaluatesTo("hello");
     assertThatExpression(nullableString.box().invoke(stringDataGetValue)).evaluatesTo("hello");
+  }
+
+  @Test
+  public void testBoxAsSoyValueProvider() {
+    // primitives get boxed
+    assertThatExpression(
+            SoyExpression.forBool(BytecodeUtils.constant(false)).boxAsSoyValueProvider())
+        .evaluatesTo(BooleanData.FALSE);
+    // null boxed types get converted to NULL_PROVIDER
+    assertThatExpression(
+            SoyExpression.forSoyValue(
+                    UnknownType.getInstance(), constantNull(BytecodeUtils.SOY_VALUE_TYPE))
+                .boxAsSoyValueProvider())
+        .evaluatesTo(JbcSrcRuntime.NULL_PROVIDER);
+    // null unboxed values get converted to NULL_PROVIDER
+    assertThatExpression(SoyExpression.forString(constantNull(STRING_TYPE)).boxAsSoyValueProvider())
+        .evaluatesTo(JbcSrcRuntime.NULL_PROVIDER);
   }
 
   // similar to the above, but in the unboxing codepath

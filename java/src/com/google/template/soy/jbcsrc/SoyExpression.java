@@ -29,6 +29,7 @@ import com.google.protobuf.Message;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.PrintNode;
@@ -193,34 +194,67 @@ final class SoyExpression extends Expression {
     return soyRuntimeType.isBoxed();
   }
 
+  /** Returns an Expression of a non-null {@link SoyValueProvider} providing this value. */
+  Expression boxAsSoyValueProvider() {
+    if (soyType().equals(NullType.getInstance())) {
+      if (delegate == NULL || delegate == NULL_BOXED) {
+        return FieldRef.NULL_PROVIDER.accessor();
+      }
+      // otherwise this expression might have side effects,  evaluate it as a statement then return
+      // the NULL_PROVIDER
+      return toStatement().then(FieldRef.NULL_PROVIDER.accessor());
+    }
+    if (delegate.isNonNullable()) {
+      // Every SoyValue is-a SoyValueProvider, so if it is non-null
+      return box();
+    }
+    if (isBoxed()) {
+      return new Expression(
+          BytecodeUtils.SOY_VALUE_PROVIDER_TYPE, delegate.features().plus(Feature.NON_NULLABLE)) {
+        @Override
+        void doGen(CodeBuilder adapter) {
+          Label end = new Label();
+          delegate.gen(adapter);
+          adapter.dup();
+          adapter.ifNonNull(end);
+          adapter.pop();
+          FieldRef.NULL_PROVIDER.accessStaticUnchecked(adapter);
+          adapter.mark(end);
+        }
+      };
+    }
+    return new Expression(
+        BytecodeUtils.SOY_VALUE_PROVIDER_TYPE, delegate.features().plus(Feature.NON_NULLABLE)) {
+      @Override
+      void doGen(CodeBuilder adapter) {
+        Label end = new Label();
+        delegate.gen(adapter);
+        adapter.dup();
+        Label nonNull = new Label();
+        adapter.ifNonNull(nonNull);
+        adapter.pop(); // pop the null value and replace with the nullprovider
+        FieldRef.NULL_PROVIDER.accessStaticUnchecked(adapter);
+        adapter.goTo(end);
+        adapter.mark(nonNull);
+        doBox(adapter, soyRuntimeType, renderContext);
+        adapter.mark(end);
+      }
+    };
+  }
+
   /** Returns a SoyExpression that evaluates to a subtype of {@link SoyValue}. */
   SoyExpression box() {
     if (isBoxed()) {
       return this;
     }
     if (soyType().equals(NullType.getInstance())) {
-      return NULL_BOXED;
+      if (delegate == NULL) {
+        return NULL_BOXED;
+      }
+      return asBoxed(toStatement().then(NULL_BOXED));
     }
-    // If null is expected and it is a reference type we want to propagate null through the boxing
-    // operation
-    if (!delegate.isNonNullable()) {
-      // now prefix with a null check and then box so null is preserved via 'boxing'
-      // TODO(lukes): this violates the expression contract since we jump to a label outside the
-      // scope of the expression
-      final Label end = new Label();
-      return withSource(
-              new Expression(resultType(), features()) {
-                @Override
-                void doGen(CodeBuilder adapter) {
-                  delegate.gen(adapter);
-                  BytecodeUtils.nullCoalesce(adapter, end);
-                }
-              })
-          .asNonNullable()
-          .box()
-          .asNullable()
-          .labelEnd(end);
-    }
+    // since we aren't boxed and these must be primitives so we don't need to worry about
+    // nullability
     if (soyRuntimeType.isKnownBool()) {
       return asBoxed(MethodRef.BOOLEAN_DATA_FOR_VALUE.invoke(delegate));
     }
@@ -230,43 +264,52 @@ final class SoyExpression extends Expression {
     if (soyRuntimeType.isKnownFloat()) {
       return asBoxed(MethodRef.FLOAT_DATA_FOR_VALUE.invoke(delegate));
     }
-    if (soyRuntimeType.isKnownSanitizedContent()) {
-      return asBoxed(
-          MethodRef.ORDAIN_AS_SAFE.invoke(
-              delegate,
-              FieldRef.enumReference(((SanitizedType) soyType()).getContentKind()).accessor()));
-    }
-    if (soyRuntimeType.isKnownString()) {
-      return asBoxed(MethodRef.STRING_DATA_FOR_VALUE.invoke(delegate));
-    }
-    if (soyRuntimeType.isKnownList()) {
-      return asBoxed(MethodRef.LIST_IMPL_FOR_PROVIDER_LIST.invoke(delegate));
-    }
-    if (soyRuntimeType.isKnownProto()) {
-      // dereference the context early in case our caller screwed up and we don't have one.
-      final Expression context = renderContext.get();
-      return asBoxed(
-          new Expression(MethodRef.RENDER_CONTEXT_BOX.returnType(), delegate.features()) {
-            @Override
-            void doGen(CodeBuilder adapter) {
-              delegate.gen(adapter);
-              context.gen(adapter);
-              // swap the two top items of the stack.
-              // This ensures that the base expression is gen'd at a stack depth of zero, which is
-              // important if it contains a label for a reattach point or if this is prefixed with a
-              // null check.
-              // TODO(lukes): this is super lame and is due to the fact that we generate expressions
-              // with complex control flow that isn't completely encapsulated.   Ideas: inline all
-              // the null checks so that the control flow is more encapsulated (though this will add
-              // a lot of redundancy), promote the concept of an expression that must be gen()'d at
-              // a depth of zero to a top level concept (an Expression Feature), so that we can flag
-              // it more eagerly, something else?
-              adapter.swap();
-              MethodRef.RENDER_CONTEXT_BOX.invokeUnchecked(adapter);
+    // If null is expected and it is a reference type we want to propagate null through the boxing
+    // operation
+    final boolean isNonNullable = delegate.isNonNullable();
+    return asBoxed(
+        new Expression(soyRuntimeType.box().runtimeType(), features()) {
+          @Override
+          void doGen(CodeBuilder adapter) {
+            Label end = null;
+            delegate.gen(adapter);
+            if (!isNonNullable) {
+              end = new Label();
+              BytecodeUtils.nullCoalesce(adapter, end);
             }
-          });
+            doBox(adapter, soyRuntimeType.asNonNullable(), renderContext);
+            if (end != null) {
+              adapter.mark(end);
+            }
+          }
+        });
+  }
+
+  /**
+   * Generates code to box the expression assuming that it is non-nullable and on the top of the
+   * stack.
+   */
+  private static void doBox(
+      CodeBuilder adapter, SoyRuntimeType type, Optional<Expression> renderContext) {
+    if (type.isKnownSanitizedContent()) {
+      FieldRef.enumReference(((SanitizedType) type.soyType()).getContentKind())
+          .accessStaticUnchecked(adapter);
+      MethodRef.ORDAIN_AS_SAFE.invokeUnchecked(adapter);
+    } else if (type.isKnownString()) {
+      MethodRef.STRING_DATA_FOR_VALUE.invokeUnchecked(adapter);
+    } else if (type.isKnownList()) {
+      MethodRef.LIST_IMPL_FOR_PROVIDER_LIST.invokeUnchecked(adapter);
+    } else if (type.isKnownMap()) {
+      MethodRef.DICT_IMPL_FOR_PROVIDER_MAP.invokeUnchecked(adapter);
+    } else if (type.isKnownProto()) {
+      renderContext.get().gen(adapter);
+      // renderContext.box is an instance method, so renderContext has to come first, so we swap
+      // the two items on top of the stack.
+      adapter.swap();
+      MethodRef.RENDER_CONTEXT_BOX.invokeUnchecked(adapter);
+    } else {
+      throw new IllegalStateException("Can't box soy expression of type " + type);
     }
-    throw new IllegalStateException("Can't box soy expression of type " + soyRuntimeType);
   }
 
   private SoyExpression asBoxed(Expression expr) {

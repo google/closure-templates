@@ -217,7 +217,7 @@ final class ExpressionToSoyValueProviderCompiler {
       if (allowsBoxing()) {
         Optional<SoyExpression> compileWithNoDetaches = exprCompiler.compileWithNoDetaches(node);
         if (compileWithNoDetaches.isPresent()) {
-          return Optional.<Expression>of(compileWithNoDetaches.get().box());
+          return Optional.of(compileWithNoDetaches.get().boxAsSoyValueProvider());
         }
       }
       return Optional.absent();

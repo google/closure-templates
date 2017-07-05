@@ -43,7 +43,7 @@ import com.google.template.soy.jbcsrc.Expression.Features;
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import com.google.template.soy.jbcsrc.api.AdvisingStringBuilder;
 import com.google.template.soy.jbcsrc.api.RenderResult;
-import com.google.template.soy.jbcsrc.runtime.Runtime;
+import com.google.template.soy.jbcsrc.runtime.JbcSrcRuntime;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
@@ -183,27 +183,32 @@ abstract class MethodRef {
       create(RenderResult.class, "limited").asCheap().asNonNullable();
 
   static final MethodRef RUNTIME_APPLY_ESCAPERS_DYNAMIC =
-      create(Runtime.class, "applyEscapersDynamic", CompiledTemplate.class, List.class);
+      create(JbcSrcRuntime.class, "applyEscapersDynamic", CompiledTemplate.class, List.class);
 
   static final MethodRef RUNTIME_APPLY_ESCAPERS =
-      create(Runtime.class, "applyEscapers", CompiledTemplate.class, ContentKind.class, List.class);
+      create(
+          JbcSrcRuntime.class,
+          "applyEscapers",
+          CompiledTemplate.class,
+          ContentKind.class,
+          List.class);
 
   static final MethodRef RUNTIME_APPLY_PRINT_DIRECTIVE =
       create(
-          Runtime.class,
+          JbcSrcRuntime.class,
           "applyPrintDirective",
           SoyJavaPrintDirective.class,
           SoyValue.class,
           List.class);
 
   static final MethodRef RUNTIME_CALL_SOY_FUNCTION =
-      create(Runtime.class, "callSoyFunction", SoyJavaFunction.class, List.class);
+      create(JbcSrcRuntime.class, "callSoyFunction", SoyJavaFunction.class, List.class);
 
   static final MethodRef RUNTIME_COERCE_DOUBLE_TO_BOOLEAN =
-      create(Runtime.class, "coerceToBoolean", double.class);
+      create(JbcSrcRuntime.class, "coerceToBoolean", double.class);
 
   static final MethodRef RUNTIME_COERCE_TO_STRING =
-      create(Runtime.class, "coerceToString", SoyValue.class).asNonNullable();
+      create(JbcSrcRuntime.class, "coerceToString", SoyValue.class).asNonNullable();
 
   static final MethodRef RUNTIME_EQUAL =
       create(SharedRuntime.class, "equal", SoyValue.class, SoyValue.class);
@@ -212,16 +217,17 @@ abstract class MethodRef {
       create(SharedRuntime.class, "compareString", String.class, SoyValue.class);
 
   static final MethodRef RUNTIME_GET_FIELD_PROVIDER =
-      create(Runtime.class, "getFieldProvider", SoyRecord.class, String.class).asNonNullable();
+      create(JbcSrcRuntime.class, "getFieldProvider", SoyRecord.class, String.class)
+          .asNonNullable();
 
   static final MethodRef RUNTIME_GET_LIST_ITEM =
-      create(Runtime.class, "getSoyListItem", List.class, long.class);
+      create(JbcSrcRuntime.class, "getSoyListItem", List.class, long.class);
 
   static final MethodRef RUNTIME_GET_LIST_STATUS =
-      create(Runtime.class, "getListStatus", List.class);
+      create(JbcSrcRuntime.class, "getListStatus", List.class);
 
   static final MethodRef RUNTIME_GET_MAP_ITEM =
-      create(Runtime.class, "getSoyMapItem", SoyMap.class, SoyValue.class);
+      create(JbcSrcRuntime.class, "getSoyMapItem", SoyMap.class, SoyValue.class);
 
   static final MethodRef RUNTIME_LESS_THAN =
       create(SharedRuntime.class, "lessThan", SoyValue.class, SoyValue.class).asNonNullable();
@@ -230,7 +236,8 @@ abstract class MethodRef {
       create(SharedRuntime.class, "lessThanOrEqual", SoyValue.class, SoyValue.class)
           .asNonNullable();
 
-  static final MethodRef RUNTIME_LOGGER = create(Runtime.class, "logger").asCheap().asNonNullable();
+  static final MethodRef RUNTIME_LOGGER =
+      create(JbcSrcRuntime.class, "logger").asCheap().asNonNullable();
 
   static final MethodRef RUNTIME_MINUS =
       create(SharedRuntime.class, "minus", SoyValue.class, SoyValue.class).asNonNullable();
@@ -243,7 +250,7 @@ abstract class MethodRef {
 
   static final MethodRef RUNTIME_RENDER_SOY_MSG_PARTS_WITH_PLACEHOLDERS =
       create(
-          Runtime.class,
+          JbcSrcRuntime.class,
           "renderSoyMsgPartsWithPlaceholders",
           ImmutableList.class,
           ULocale.class,
@@ -251,13 +258,14 @@ abstract class MethodRef {
           Appendable.class);
 
   static final MethodRef RUNTIME_STRING_EQUALS_AS_NUMBER =
-      create(Runtime.class, "stringEqualsAsNumber", String.class, double.class).asNonNullable();
+      create(JbcSrcRuntime.class, "stringEqualsAsNumber", String.class, double.class)
+          .asNonNullable();
 
   static final MethodRef RUNTIME_TIMES =
       create(SharedRuntime.class, "times", SoyValue.class, SoyValue.class).asNonNullable();
 
   static final MethodRef RUNTIME_UNEXPECTED_STATE_ERROR =
-      create(Runtime.class, "unexpectedStateError", int.class).asNonNullable();
+      create(JbcSrcRuntime.class, "unexpectedStateError", int.class).asNonNullable();
 
   static final MethodRef SOY_LIST_AS_JAVA_LIST =
       create(SoyList.class, "asJavaList").asNonNullable();
@@ -291,7 +299,7 @@ abstract class MethodRef {
           .asNonNullable();
 
   static final MethodRef SOY_VALUE_PROVIDER_RESOLVE =
-      create(Runtime.class, "resolveSoyValueProvider", SoyValueProvider.class);
+      create(JbcSrcRuntime.class, "resolveSoyValueProvider", SoyValueProvider.class);
 
   static final MethodRef SOY_VALUE_PROVIDER_STATUS =
       create(SoyValueProvider.class, "status").asNonNullable();

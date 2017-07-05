@@ -24,7 +24,7 @@ import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.jbcsrc.Expression.Feature;
 import com.google.template.soy.jbcsrc.Expression.Features;
-import com.google.template.soy.jbcsrc.runtime.Runtime;
+import com.google.template.soy.jbcsrc.runtime.JbcSrcRuntime;
 import java.lang.reflect.Modifier;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Opcodes;
@@ -35,7 +35,7 @@ import org.objectweb.asm.Type;
 abstract class FieldRef {
   static final FieldRef BOOLEAN_DATA_FALSE = staticFieldReference(BooleanData.class, "FALSE");
   static final FieldRef BOOLEAN_DATA_TRUE = staticFieldReference(BooleanData.class, "TRUE");
-  static final FieldRef NULL_PROVIDER = staticFieldReference(Runtime.class, "NULL_PROVIDER");
+  static final FieldRef NULL_PROVIDER = staticFieldReference(JbcSrcRuntime.class, "NULL_PROVIDER");
   static final FieldRef EMPTY_DICT = staticFieldReference(SoyValueConverter.class, "EMPTY_DICT");
 
   static FieldRef createFinalField(TypeInfo owner, String name, Class<?> type) {
@@ -87,9 +87,7 @@ abstract class FieldRef {
         field.getName(),
         Type.getType(field.getType()),
         Opcodes.ACC_STATIC,
-        false
-        /** Assume all static field refs are non-null. */
-        );
+        /* nullable = */ false);
   }
 
   static <T extends Enum<T>> FieldRef enumReference(T enumInstance) {
@@ -180,9 +178,15 @@ abstract class FieldRef {
     return new Expression(type(), features) {
       @Override
       void doGen(CodeBuilder mv) {
-        mv.getStatic(owner().type(), FieldRef.this.name(), resultType());
+        accessStaticUnchecked(mv);
       }
     };
+  }
+
+  /** Accesses a static field. */
+  void accessStaticUnchecked(CodeBuilder mv) {
+    checkState(isStatic());
+    mv.getStatic(owner().type(), FieldRef.this.name(), type());
   }
 
   /**
@@ -204,6 +208,7 @@ abstract class FieldRef {
       }
     };
   }
+
   /**
    * Returns a {@link Statement} that stores the {@code value} in this field on the given {@code
    * instance}.

@@ -176,6 +176,17 @@ abstract class Statement extends BytecodeProducer {
     };
   }
 
+  /** Returns an Expression that evaluates this statement followed by the given expression. */
+  final Expression then(final Expression expression) {
+    return new Expression(expression.resultType(), expression.features()) {
+      @Override
+      void doGen(CodeBuilder adapter) {
+        Statement.this.gen(adapter);
+        expression.gen(adapter);
+      }
+    };
+  }
+
   @Override
   public String toString() {
     return "Statement:\n" + trace();

@@ -439,7 +439,7 @@
           <dependency>
             <groupId>com.google.security</groupId>
             <artifactId>fences-maven-enforcer-rule</artifactId>
-            <version>1.6-beta</version>
+            <version>1.9-beta</version>
           </dependency>
           <dependency>
             <groupId>org.codehaus.mojo</groupId>

@@ -26,6 +26,7 @@ import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
+import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import com.google.template.soy.jbcsrc.api.AdvisingStringBuilder;
 import com.google.template.soy.jbcsrc.api.RenderResult;
@@ -52,7 +53,8 @@ import javax.annotation.Nullable;
  * <p>This class is public so it can be be used by generated template code. Please do not use it
  * from client code.
  */
-public final class Runtime {
+@SuppressWarnings("ShortCircuitBoolean")
+public final class JbcSrcRuntime {
   public static final SoyValueProvider NULL_PROVIDER =
       new SoyValueProvider() {
         @Override
@@ -93,7 +95,11 @@ public final class Runtime {
   /** Helper function to translate NullData -> null when resolving a SoyValueProvider. */
   public static SoyValue resolveSoyValueProvider(SoyValueProvider provider) {
     SoyValue value = provider.resolve();
-    if (value instanceof NullData) {
+    return handleTofuNull(value);
+  }
+
+  private static SoyValue handleTofuNull(SoyValue value) {
+    if (value instanceof NullData | value instanceof UndefinedData) {
       return null;
     }
     return value;
@@ -126,7 +132,7 @@ public final class Runtime {
         args.set(i, NullData.INSTANCE);
       }
     }
-    return function.computeForJava(args);
+    return handleTofuNull(function.computeForJava(args));
   }
 
   /**

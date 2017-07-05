@@ -330,9 +330,12 @@ final class PluginFunctionCompiler {
         MethodRef.RENDER_CONTEXT_GET_FUNCTION.invoke(
             parameterLookup.getRenderContext(), constant(node.getFunctionName()));
     Expression list = SoyExpression.asBoxedList(args);
+    // Most soy functions don't have return types, but if they do we should enforce it
     return SoyExpression.forSoyValue(
-        UnknownType.getInstance(),
-        MethodRef.RUNTIME_CALL_SOY_FUNCTION.invoke(soyJavaFunctionExpr, list));
+        node.getType(),
+        MethodRef.RUNTIME_CALL_SOY_FUNCTION
+            .invoke(soyJavaFunctionExpr, list)
+            .checkedCast(SoyRuntimeType.getBoxedType(node.getType()).runtimeType()));
   }
 
   /** @see com.google.template.soy.basicfunctions.StrContainsFunction */

@@ -43,6 +43,7 @@ import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import com.google.template.soy.jbcsrc.api.AdvisingStringBuilder;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
+import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
@@ -124,9 +125,15 @@ final class BytecodeUtils {
                       return Optional.<Class<?>>of(float.class);
                     case Type.OBJECT:
                       try {
+                        String className = key.getClassName();
+                        if (className.startsWith(Names.CLASS_PREFIX)) {
+                          // if the class is generated, don't try to look it up.
+                          // It might actually succeed in a case where we have the class on our
+                          // classpath already!
+                          return Optional.absent();
+                        }
                         return Optional.<Class<?>>of(
-                            Class.forName(
-                                key.getClassName(), false, BytecodeUtils.class.getClassLoader()));
+                            Class.forName(className, false, BytecodeUtils.class.getClassLoader()));
                       } catch (ClassNotFoundException e) {
                         return Optional.absent();
                       }

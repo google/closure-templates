@@ -27,19 +27,23 @@ import static org.junit.Assert.assertSame;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.SettableFuture;
+import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.jbcsrc.TemplateTester.CompiledTemplateSubject;
 import com.google.template.soy.jbcsrc.api.AdvisingStringBuilder;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
+import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -225,5 +229,46 @@ public class LazyClosureCompilerTest {
     Class<?> let = Iterables.getOnlyElement(innerClasses);
     assertEquals("let_foo", let.getSimpleName());
     assertEquals(template.getClass(), let.getDeclaringClass());
+  }
+
+  private static final class IdentityFunction implements SoyJavaFunction {
+    @Override
+    public String getName() {
+      return "ident";
+    }
+
+    @Override
+    public Set<Integer> getValidArgsSizes() {
+      return ImmutableSet.of(1);
+    }
+
+    @Override
+    public SoyValue computeForJava(List<SoyValue> args) {
+      return args.get(0);
+    }
+  }
+
+  @Test
+  public void testConstantPluginFunction() {
+    // There used to be a bug where we wouldn't properly box the expression into a SoyValueProvider
+    // when it dynamically resolved to null.
+    assertThatTemplateBody("{let $foo : ident(null) /}{$foo}")
+        .withSoyFunction(new IdentityFunction())
+        .rendersAs("null");
+    assertThatTemplateBody("{let $foo : ident(1) /}{$foo}")
+        .withSoyFunction(new IdentityFunction())
+        .rendersAs("1");
+  }
+
+  @Test
+  public void testNullValue() {
+    assertThatTemplateBody(
+            "{let $null1 : null /}"
+                + "{let $null2 : $null1 /}"
+                + "{let $null3 : $null2 /}"
+                + "{let $null4 : $null3 /}"
+                + "{let $null5 : $null4 /}"
+                + "{$null5}")
+        .rendersAs("null");
   }
 }
