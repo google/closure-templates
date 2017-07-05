@@ -22,16 +22,18 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.BaseEncoding;
 import com.google.protobuf.ByteString;
+import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.EnumDescriptor;
+import com.google.protobuf.Descriptors.EnumValueDescriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor.JavaType;
 import com.google.protobuf.Descriptors.FileDescriptor.Syntax;
 import com.google.protobuf.Message;
+import com.google.protobuf.ProtocolMessageEnum;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyProtoValue;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.internal.DictImpl;
 import com.google.template.soy.data.internal.ListImpl;
@@ -40,19 +42,18 @@ import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.aggregate.MapType;
 import com.google.template.soy.types.primitive.BoolType;
 import com.google.template.soy.types.primitive.FloatType;
 import com.google.template.soy.types.primitive.IntType;
+import com.google.template.soy.types.primitive.SanitizedType;
 import com.google.template.soy.types.primitive.StringType;
 import java.util.ArrayList;
 import java.util.List;
 
 /** A collaborator for {@link SoyProtoType} that handles the interpretation of proto fields. */
 abstract class FieldInterpreter {
-
   /** Creates a {@link FieldInterpreter} for the given field. */
   static FieldInterpreter create(SoyTypeRegistry typeRegistry, FieldDescriptor fieldDescriptor) {
     FieldInterpreter field = getScalarType(typeRegistry, fieldDescriptor);
@@ -71,12 +72,12 @@ abstract class FieldInterpreter {
     final SoyType listType = typeRegistry.getOrCreateListType(local.type());
     return new FieldInterpreter() {
       @Override
-      public SoyValueProvider soyFromProto(SoyValueConverter converter, Object field) {
+      public SoyValueProvider soyFromProto(Object field) {
         @SuppressWarnings("unchecked")
         List<?> entries = (List<?>) field;
         ImmutableList.Builder<SoyValueProvider> builder = ImmutableList.builder();
         for (Object item : entries) {
-          builder.add(local.soyFromProto(converter, item));
+          builder.add(local.soyFromProto(item));
         }
         return ListImpl.forProviderList(builder.build());
       }
@@ -115,7 +116,7 @@ abstract class FieldInterpreter {
         typeRegistry.getOrCreateMapType(StringType.getInstance(), scalarImpl.type());
     return new FieldInterpreter() {
       @Override
-      public SoyValueProvider soyFromProto(SoyValueConverter converter, Object field) {
+      public SoyValueProvider soyFromProto(Object field) {
         @SuppressWarnings("unchecked")
         List<Message> entries = (List<Message>) field;
         ImmutableMap.Builder<String, SoyValueProvider> builder = ImmutableMap.builder();
@@ -125,7 +126,7 @@ abstract class FieldInterpreter {
             // Ignore empty keys.
             continue;
           }
-          builder.put(key, scalarImpl.soyFromProto(converter, message));
+          builder.put(key, scalarImpl.soyFromProto(message));
         }
         return DictImpl.forProviderMap(builder.build());
       }
@@ -200,12 +201,17 @@ abstract class FieldInterpreter {
         // circular dep between SoyProtoType and SoyProtoValue.
         // TODO(user): Remove the circular dependency.
       case ENUM:
-        return dynamicTypeField(
+        return enumTypeField(
             fieldDescriptor, typeRegistry.getType(fieldDescriptor.getEnumType().getFullName()));
 
       case MESSAGE:
-        return dynamicTypeField(
-            fieldDescriptor, typeRegistry.getType(fieldDescriptor.getMessageType().getFullName()));
+        SanitizedType sanitizedType =
+            SafeStringTypes.getSafeStringType(fieldDescriptor.getMessageType());
+        if (sanitizedType != null) {
+          return safeStringTypeField(sanitizedType, fieldDescriptor.getMessageType());
+        }
+        return messageTypeField(
+            (SoyProtoType) typeRegistry.getType(fieldDescriptor.getMessageType().getFullName()));
 
       case STRING:
         return STRING;
@@ -219,7 +225,7 @@ abstract class FieldInterpreter {
   private static final FieldInterpreter BYTES =
       new FieldInterpreter() {
         @Override
-        public SoyValueProvider soyFromProto(SoyValueConverter converter, Object field) {
+        public SoyValueProvider soyFromProto(Object field) {
           return StringData.forValue(
               BaseEncoding.base64().encode(((ByteString) field).toByteArray()));
         }
@@ -239,7 +245,7 @@ abstract class FieldInterpreter {
   private static final FieldInterpreter BOOL =
       new FieldInterpreter() {
         @Override
-        public SoyValueProvider soyFromProto(SoyValueConverter converter, Object field) {
+        public SoyValueProvider soyFromProto(Object field) {
           return BooleanData.forValue((Boolean) field);
         }
 
@@ -258,7 +264,7 @@ abstract class FieldInterpreter {
   private static final FieldInterpreter INT =
       new FieldInterpreter() {
         @Override
-        public SoyValueProvider soyFromProto(SoyValueConverter converter, Object field) {
+        public SoyValueProvider soyFromProto(Object field) {
           return IntegerData.forValue(((Number) field).longValue());
         }
 
@@ -277,7 +283,7 @@ abstract class FieldInterpreter {
   private static final FieldInterpreter LONG_AS_INT =
       new FieldInterpreter() {
         @Override
-        public SoyValueProvider soyFromProto(SoyValueConverter converter, Object field) {
+        public SoyValueProvider soyFromProto(Object field) {
           return IntegerData.forValue(((Long) field).longValue());
         }
 
@@ -296,7 +302,7 @@ abstract class FieldInterpreter {
   private static final FieldInterpreter LONG_AS_STRING =
       new FieldInterpreter() {
         @Override
-        public SoyValueProvider soyFromProto(SoyValueConverter converter, Object field) {
+        public SoyValueProvider soyFromProto(Object field) {
           return StringData.forValue(field.toString());
         }
 
@@ -315,7 +321,7 @@ abstract class FieldInterpreter {
   private static final FieldInterpreter FLOAT =
       new FieldInterpreter() {
         @Override
-        public SoyValueProvider soyFromProto(SoyValueConverter converter, Object field) {
+        public SoyValueProvider soyFromProto(Object field) {
           return FloatData.forValue(((Float) field).floatValue());
         }
 
@@ -334,7 +340,7 @@ abstract class FieldInterpreter {
   private static final FieldInterpreter DOUBLE_AS_FLOAT =
       new FieldInterpreter() {
         @Override
-        public SoyValueProvider soyFromProto(SoyValueConverter converter, Object field) {
+        public SoyValueProvider soyFromProto(Object field) {
           return FloatData.forValue(((Double) field).doubleValue());
         }
 
@@ -353,7 +359,7 @@ abstract class FieldInterpreter {
   private static final FieldInterpreter STRING =
       new FieldInterpreter() {
         @Override
-        public SoyValueProvider soyFromProto(SoyValueConverter converter, Object field) {
+        public SoyValueProvider soyFromProto(Object field) {
           return StringData.forValue(field.toString());
         }
 
@@ -372,8 +378,46 @@ abstract class FieldInterpreter {
    * Returns a {@link FieldInterpreter} that has the given type and delegates to the
    * SoyValueConverter for interpretation.
    */
-  private static final FieldInterpreter dynamicTypeField(
+  private static final FieldInterpreter enumTypeField(
       final FieldDescriptor fieldDescriptor, final SoyType type) {
+    checkNotNull(type);
+    final EnumDescriptor enumDescriptor = fieldDescriptor.getEnumType();
+    return new FieldInterpreter() {
+      @Override
+      public SoyType type() {
+        return type;
+      }
+
+      @Override
+      public SoyValueProvider soyFromProto(Object field) {
+        int value;
+        if (field instanceof ProtocolMessageEnum) {
+          value = ((ProtocolMessageEnum) field).getNumber();
+        } else {
+          // The value will be an EnumValueDescriptor when fetched via reflection or a
+          // ProtocolMessageEnum otherwise.  Who knows why.
+          value = ((EnumValueDescriptor) field).getNumber();
+        }
+        return IntegerData.forValue(value);
+      }
+
+      @Override
+      Object protoFromSoy(SoyValue field) {
+        // The proto reflection api wants the EnumValueDescriptor, not the actual enum instance
+        int value = field.integerValue();
+        // in proto3 we preserve unknown enum values (for consistency with jbcsrc), but for proto2
+        // we don't, and so if the field is unknown we will return null which will trigger an NPE
+        // again, for consistency with jbcsrc.
+        if (fieldDescriptor.getFile().getSyntax() == Syntax.PROTO3) {
+          return enumDescriptor.findValueByNumberCreatingIfUnknown(value);
+        }
+        return enumDescriptor.findValueByNumber(value);
+      }
+    };
+  }
+
+  private static final FieldInterpreter safeStringTypeField(
+      final SanitizedType type, final Descriptor fieldType) {
     checkNotNull(type);
     return new FieldInterpreter() {
       @Override
@@ -382,33 +426,33 @@ abstract class FieldInterpreter {
       }
 
       @Override
-      public SoyValueProvider soyFromProto(SoyValueConverter converter, Object field) {
-        return converter.convert(field);
+      public SoyValueProvider soyFromProto(Object field) {
+        return SafeStringTypes.convertToSoyValue(field);
       }
 
       @Override
       Object protoFromSoy(SoyValue field) {
-        if (type.getKind() == Kind.PROTO_ENUM) {
-          // The proto reflection api wants the EnumValueDescriptor, not the actual enum instance
-          EnumDescriptor enumDescriptor = fieldDescriptor.getEnumType();
-          int value = field.integerValue();
-          // in proto3 we preserve unknown enum values (for consistency with jbcsrc), but for proto2
-          // we don't, and so if the field is unknown we will return null which will trigger an NPE
-          // again, for consistency with jbcsrc.
-          if (fieldDescriptor.getFile().getSyntax() == Syntax.PROTO3) {
-            return enumDescriptor.findValueByNumberCreatingIfUnknown(value);
-          }
-          return enumDescriptor.findValueByNumber(value);
-        } else if (type.getKind() == Kind.PROTO) {
-          // We could assert that the message is the correct type, but the proto apis should do that
-          // for us
-          return ((SoyProtoValue) field).getProto();
-        } else if (type.getKind().isKnownSanitizedContent()) {
-          return SafeStringTypes.convertToProto(
-              (SanitizedContent) field, fieldDescriptor.getMessageType().getFullName());
-        }
+        return SafeStringTypes.convertToProto((SanitizedContent) field, fieldType.getFullName());
+      }
+    };
+  }
 
-        throw new AssertionError("unexpected soyType: " + type);
+  private static final FieldInterpreter messageTypeField(final SoyProtoType type) {
+    checkNotNull(type);
+    return new FieldInterpreter() {
+      @Override
+      public SoyType type() {
+        return type;
+      }
+
+      @Override
+      public SoyValueProvider soyFromProto(Object field) {
+        return new SoyProtoValueImpl(type, (Message) field);
+      }
+
+      @Override
+      Object protoFromSoy(SoyValue field) {
+        return ((SoyProtoValue) field).getProto();
       }
     };
   }
@@ -419,7 +463,7 @@ abstract class FieldInterpreter {
   abstract SoyType type();
 
   /** Returns the SoyValueProvider for the ToFu representation of the given field. */
-  abstract SoyValueProvider soyFromProto(SoyValueConverter converter, Object field);
+  abstract SoyValueProvider soyFromProto(Object field);
 
   /**
    * Returns an object that can be assigned to a proto field via the proto reflection APIs.

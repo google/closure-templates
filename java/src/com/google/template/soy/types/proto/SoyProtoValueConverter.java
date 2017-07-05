@@ -66,7 +66,7 @@ public final class SoyProtoValueConverter implements SoyCustomValueConverter {
       // was not part of the statically registered set.  So instead we use this internal helper to
       // fetch a type given a descriptor which will definitely work.
       SoyProtoType type = protoTypeProvider.getType(message.getDescriptorForType(), registry);
-      return new SoyProtoValueImpl(valueConverter, type, message);
+      return new SoyProtoValueImpl(type, message);
     }
     return null;
   }

@@ -45,9 +45,6 @@ import java.util.Collection;
  */
 public final class SoyProtoValueImpl extends SoyAbstractValue implements SoyProtoValue, SoyMap {
 
-  /** The value converter to use for internal conversions. */
-  private final SoyValueConverter valueConverter;
-
   /** The underlying proto message object. */
   private final Message proto;
 
@@ -59,8 +56,7 @@ public final class SoyProtoValueImpl extends SoyAbstractValue implements SoyProt
    * @param type The SoyType of the proto.
    * @param proto The proto message object.
    */
-  SoyProtoValueImpl(SoyValueConverter valueConverter, SoyProtoType type, Message proto) {
-    this.valueConverter = checkNotNull(valueConverter);
+  SoyProtoValueImpl(SoyProtoType type, Message proto) {
     this.type = checkNotNull(type);
     this.proto = checkNotNull(proto);
   }
@@ -91,7 +87,7 @@ public final class SoyProtoValueImpl extends SoyAbstractValue implements SoyProt
       throw new IllegalArgumentException(
           "Proto " + proto.getClass().getName() + " does not have a field of name " + name);
     }
-    return field.interpretField(valueConverter, proto).resolve();
+    return field.interpretField(proto).resolve();
   }
 
   // -----------------------------------------------------------------------------------------------
@@ -134,7 +130,7 @@ public final class SoyProtoValueImpl extends SoyAbstractValue implements SoyProt
       return null;
     }
 
-    return type.getField(name).interpretField(valueConverter, proto).resolve();
+    return type.getField(name).interpretField(proto).resolve();
   }
 
   // -----------------------------------------------------------------------------------------------
@@ -256,7 +252,7 @@ public final class SoyProtoValueImpl extends SoyAbstractValue implements SoyProt
     }
 
     public SoyProtoValueImpl build() {
-      return new SoyProtoValueImpl(valueConverter, soyProto, builder.build());
+      return new SoyProtoValueImpl(soyProto, builder.build());
     }
   }
 }

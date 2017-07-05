@@ -19,7 +19,6 @@ package com.google.template.soy.types.proto;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Message;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.types.SoyType;
 
@@ -38,7 +37,7 @@ interface Field {
   /**
    * Returns an appropriately typed {@link SoyValueProvider} for this field in the given message.
    */
-  SoyValueProvider interpretField(SoyValueConverter converter, Message owningMessage);
+  SoyValueProvider interpretField(Message owningMessage);
 
   /** Assigns the value to the field in the builder, coercing to a proto compatible type. */
   void assignField(Message.Builder builder, SoyValue value);

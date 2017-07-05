@@ -30,6 +30,7 @@ import com.google.common.html.types.SafeUrl;
 import com.google.common.html.types.SafeUrlProto;
 import com.google.common.html.types.TrustedResourceUrl;
 import com.google.common.html.types.TrustedResourceUrlProto;
+import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Message;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContents;
@@ -172,6 +173,10 @@ final class SafeStringTypes {
             cl + " is not final so there might be subclasses that aren't keyed in this map");
       }
     }
+  }
+
+  static SanitizedType getSafeStringType(Descriptor descriptor) {
+    return SAFE_PROTO_TO_SANITIZED_TYPE.get(descriptor.getFullName());
   }
 
   @Nullable

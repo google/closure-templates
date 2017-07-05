@@ -20,7 +20,6 @@ import com.google.common.base.CaseFormat;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Message;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
@@ -88,8 +87,8 @@ class NormalField implements Field {
    * Returns an appropriately typed {@link SoyValueProvider} for this field in the given message.
    */
   @Override
-  public SoyValueProvider interpretField(SoyValueConverter converter, Message message) {
-    return impl().soyFromProto(converter, message.getField(fieldDescriptor));
+  public SoyValueProvider interpretField(Message message) {
+    return impl().soyFromProto(message.getField(fieldDescriptor));
   }
 
   @Override

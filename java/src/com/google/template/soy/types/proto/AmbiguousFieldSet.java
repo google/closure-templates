@@ -22,7 +22,6 @@ import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Message;
 import com.google.protobuf.Message.Builder;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.types.SoyType;
 import java.util.Set;
@@ -83,7 +82,7 @@ final class AmbiguousFieldSet implements Field {
   }
 
   @Override
-  public SoyValueProvider interpretField(SoyValueConverter converter, Message owningMessage) {
+  public SoyValueProvider interpretField(Message owningMessage) {
     throw failure();
   }
 
