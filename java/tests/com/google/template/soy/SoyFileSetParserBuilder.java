@@ -79,7 +79,11 @@ public final class SoyFileSetParserBuilder {
 
   /** Returns a builder that gets its Soy inputs from the given {@link SoyFileSupplier}s. */
   public static SoyFileSetParserBuilder forSuppliers(SoyFileSupplier... suppliers) {
-    return new SoyFileSetParserBuilder(ImmutableList.copyOf(Arrays.asList(suppliers)));
+    return forSuppliers(Arrays.asList(suppliers));
+  }
+
+  public static SoyFileSetParserBuilder forSuppliers(Iterable<SoyFileSupplier> files) {
+    return new SoyFileSetParserBuilder(files);
   }
 
   /**
@@ -109,7 +113,7 @@ public final class SoyFileSetParserBuilder {
     this(ImmutableList.copyOf(buildTestSoyFileSuppliers(soyCode)));
   }
 
-  private SoyFileSetParserBuilder(ImmutableList<SoyFileSupplier> suppliers) {
+  private SoyFileSetParserBuilder(Iterable<SoyFileSupplier> suppliers) {
     ImmutableMap.Builder<String, SoyFileSupplier> builder = ImmutableMap.builder();
     for (SoyFileSupplier supplier : suppliers) {
       builder.put(supplier.getFilePath(), supplier);
@@ -131,9 +135,15 @@ public final class SoyFileSetParserBuilder {
   }
 
   public SoyFileSetParserBuilder addSoyFunction(SoyFunction function) {
+    return addSoyFunctions(ImmutableList.of(function));
+  }
+
+  public SoyFileSetParserBuilder addSoyFunctions(Iterable<? extends SoyFunction> soyFunctions) {
     Map<String, SoyFunction> functions = new LinkedHashMap<>();
     functions.putAll(soyFunctionMap);
-    functions.put(function.getName(), function);
+    for (SoyFunction function : soyFunctions) {
+      functions.put(function.getName(), function);
+    }
     this.soyFunctionMap = ImmutableMap.copyOf(functions);
     return this;
   }
