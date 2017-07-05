@@ -16,8 +16,6 @@
 
 package com.google.template.soy.soytree;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -59,9 +57,6 @@ public final class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
 
   private final ImmutableList<AliasDeclaration> aliasDeclarations;
 
-  private final String filePath;
-  private final String fileName;
-
   /**
    * @param id The id for this node.
    * @param filePath The path to the Soy source file.
@@ -76,9 +71,7 @@ public final class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
       SoyFileKind soyFileKind,
       NamespaceDeclaration namespaceDeclaration,
       TemplateNode.SoyFileHeaderInfo headerInfo) {
-    super(id, null /* there is no source location. */);
-    this.filePath = checkNotNull(filePath);
-    this.fileName = SourceLocation.fileNameFromPath(filePath);
+    super(id, new SourceLocation(filePath));
     this.soyFileKind = soyFileKind;
     this.delPackageName = headerInfo.delPackageName;
     this.namespaceDeclaration = namespaceDeclaration; // Immutable
@@ -94,8 +87,6 @@ public final class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
   private SoyFileNode(SoyFileNode orig, CopyState copyState) {
     super(orig, copyState);
     this.soyFileKind = orig.soyFileKind;
-    this.filePath = orig.filePath;
-    this.fileName = orig.fileName;
     this.delPackageName = orig.delPackageName;
     this.namespaceDeclaration = orig.namespaceDeclaration; // Immutable
     this.aliasDeclarations = orig.aliasDeclarations; // immutable
@@ -152,13 +143,13 @@ public final class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
 
   /** Returns the path to the source Soy file ("unknown" if not supplied). */
   public String getFilePath() {
-    return filePath;
+    return getSourceLocation().getFilePath();
   }
 
   /** Returns this Soy file's name. */
   @Nullable
   public String getFileName() {
-    return fileName;
+    return getSourceLocation().getFileName();
   }
 
   /** @deprecated SoyFileNodes don't have source locations. */

@@ -151,12 +151,18 @@ public final class SoyFileSetParser {
       SoyFileSupplier soyFileSupplier, IdGenerator nodeIdGen, SoyTypeRegistry typeRegistry)
       throws IOException {
     try (Reader soyFileReader = soyFileSupplier.open()) {
+      String filePath = soyFileSupplier.getFilePath();
+      int lastBangIndex = filePath.lastIndexOf('!');
+      if (lastBangIndex != -1) {
+        // This is a resource in a JAR file. Only keep everything after the bang.
+        filePath = filePath.substring(lastBangIndex + 1);
+      }
       return new SoyFileParser(
               typeRegistry,
               nodeIdGen,
               soyFileReader,
               soyFileSupplier.getSoyFileKind(),
-              soyFileSupplier.getFilePath(),
+              filePath,
               errorReporter)
           .parseSoyFile();
     }

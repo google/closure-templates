@@ -38,8 +38,6 @@ public final class SourceLocation implements Comparable<SourceLocation> {
   /** A file path or URI useful for error messages. */
   @Nonnull private final String filePath;
 
-  private final String fileName;
-
   private final Point begin;
   private final Point end;
 
@@ -51,16 +49,6 @@ public final class SourceLocation implements Comparable<SourceLocation> {
    * preferred when possible.
    */
   public static final SourceLocation UNKNOWN = new SourceLocation("unknown");
-
-  /** Extracts the file name from a path. */
-  public static String fileNameFromPath(String filePath) {
-    // TODO(lukes): consider using Java 7 File APIs here.
-    int lastSlashIndex = CharMatcher.anyOf("/\\").lastIndexIn(filePath);
-    if (lastSlashIndex != -1 && lastSlashIndex != filePath.length() - 1) {
-      return filePath.substring(lastSlashIndex + 1);
-    }
-    return filePath;
-  }
 
   /**
    * @param filePath A file path or URI useful for error messages.
@@ -83,14 +71,7 @@ public final class SourceLocation implements Comparable<SourceLocation> {
   }
 
   public SourceLocation(String filePath, Point begin, Point end) {
-    int lastBangIndex = filePath.lastIndexOf('!');
-    if (lastBangIndex != -1) {
-      // This is a resource in a JAR file. Only keep everything after the bang.
-      filePath = filePath.substring(lastBangIndex + 1);
-    }
-
-    this.fileName = fileNameFromPath(filePath);
-    this.filePath = filePath;
+    this.filePath = checkNotNull(filePath);
     this.begin = checkNotNull(begin);
     this.end = checkNotNull(end);
   }
@@ -111,7 +92,12 @@ public final class SourceLocation implements Comparable<SourceLocation> {
       // invalid SoyFileNode is created.
       return null;
     }
-    return fileName;
+    // TODO(lukes): consider using Java 7 File APIs here.
+    int lastSlashIndex = CharMatcher.anyOf("/\\").lastIndexIn(filePath);
+    if (lastSlashIndex != -1 && lastSlashIndex != filePath.length() - 1) {
+      return filePath.substring(lastSlashIndex + 1);
+    }
+    return filePath;
   }
 
   /** Returns the line number in the source file where this location begins (1-based). */
@@ -148,7 +134,7 @@ public final class SourceLocation implements Comparable<SourceLocation> {
    * True iff this location is known, i.e. not the special value {@link #UNKNOWN}.
    */
   public boolean isKnown() {
-    return this != UNKNOWN;
+    return !this.equals(UNKNOWN);
   }
 
   @Override

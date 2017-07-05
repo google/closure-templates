@@ -16,7 +16,6 @@
 
 package com.google.template.soy.parsepasses.contextautoesc;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.internal.IdGenerator;
@@ -84,12 +83,13 @@ final class PerformDeprecatedNonContextualAutoescapeVisitor extends AbstractSoyN
     if (autoescapeMode != AutoescapeMode.NONCONTEXTUAL) {
       // We're using one of the more modern escape modes; do a sanity check and return.  Make sure
       // that this pass is never used without first running the contextual autoescaper.
-      Preconditions.checkState(
-          !node.getChildren().isEmpty(),
-          "Internal error: A contextual or strict template has a print node that was never "
-              + "assigned any escape directives: %s at %s",
-          node.toSourceString(),
-          node.getSourceLocation());
+      if (node.getChildren().isEmpty()) {
+        throw new IllegalStateException(
+            String.format(
+                "Internal error: A contextual or strict template has a print node that was never "
+                    + "assigned any escape directives: %s at %s",
+                node.toSourceString(), node.getSourceLocation()));
+      }
       return;
     }
 

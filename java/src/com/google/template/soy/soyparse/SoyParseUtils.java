@@ -170,4 +170,25 @@ final class SoyParseUtils {
   private static boolean isOctal(char c) {
     return (c >= '0') && (c <= '7');
   }
+
+  /** Unescapes backslash-double quote sequences in an attribute value to just double quote. */
+  static String unescapeCommandAttributeValue(String s) {
+    // NOTE: we don't just use String.replace since it internally allocates/compiles a regular
+    // expression.  Instead we have a handrolled loop.
+    int index = s.indexOf("\\\"");
+    if (index == -1) {
+      return s;
+    }
+    StringBuilder buf = new StringBuilder(s.length());
+    buf.append(s);
+    boolean nextIsDQ = buf.charAt(s.length() - 1) == '"';
+    for (int i = s.length() - 2; i >= index; i--) {
+      char c = buf.charAt(i);
+      if (c == '\\' && nextIsDQ) {
+        buf.deleteCharAt(i);
+      }
+      nextIsDQ = c == '"';
+    }
+    return buf.toString();
+  }
 }

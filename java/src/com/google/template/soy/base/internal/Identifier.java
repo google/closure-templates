@@ -19,6 +19,7 @@ package com.google.template.soy.base.internal;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.auto.value.AutoValue;
+import com.google.auto.value.extension.memoized.Memoized;
 import com.google.template.soy.base.SourceLocation;
 
 /**
@@ -50,21 +51,23 @@ public abstract class Identifier {
    */
   public static Identifier create(String identifier, SourceLocation location) {
     checkArgument(!identifier.isEmpty());
-    Type type;
-    int dotIndex = identifier.indexOf('.');
-    if (dotIndex == 0) {
-      type = Type.DOT_IDENT;
-      checkArgument(BaseUtils.isIdentifierWithLeadingDot(identifier));
-    } else {
-      checkArgument(BaseUtils.isDottedIdentifier(identifier));
-      type = dotIndex == -1 ? Type.SINGLE_IDENT : Type.DOTTED_IDENT;
-    }
-    return new AutoValue_Identifier(identifier, location, type);
+    return new AutoValue_Identifier(identifier, location);
   }
 
   public abstract String identifier();
 
   public abstract SourceLocation location();
 
-  public abstract Type type();
+  // This field is only rarely accessed, memoize it.
+  @Memoized
+  public Type type() {
+    int dotIndex = identifier().indexOf('.');
+    if (dotIndex == 0) {
+      checkArgument(BaseUtils.isIdentifierWithLeadingDot(identifier()));
+      return Type.DOT_IDENT;
+    } else {
+      checkArgument(BaseUtils.isDottedIdentifier(identifier()));
+      return dotIndex == -1 ? Type.SINGLE_IDENT : Type.DOTTED_IDENT;
+    }
+  }
 }

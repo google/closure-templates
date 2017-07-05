@@ -69,24 +69,6 @@ import com.google.template.soy.soytree.defn.TemplateParam;
  *   <li>Run before the autoescaper, since it inserts print directives
  *   <li>Run after HtmlRewritePass, since it depends on the html nodes.
  * </ul>
- *
- * <p>NOTE: this pass is a reimplementation of {@link
- * com.google.template.soy.parsepasses.contextautoesc.ContentSecurityPolicyPass}. The difference is
- * that this implementation relies on things like {@link HtmlOpenTagNode} and that implementation
- * relies on the {@code SlicedRawTextNode} datastructure produced by the autoescaper. There are some
- * advantages to implementing it this way:
- *
- * <ul>
- *   <li>The implementation is simpler
- *   <li>The implementation doesn't have to concern itself with escaping directives or vardefns
- *       since it runs before (instead of after) the normal compiler passes that handle those
- *       things.
- * </ul>
- *
- * <p>The main disadvantage is that the {@link HtmlRewritePass} is not yet unconditionally enabled
- * so we need to temporarily have 2 implementation of this pass. To support that, the tests for both
- * passes are shared. See {@link
- * com.google.template.soy.parsepasses.contextautoesc.ContentSecurityPolicyPassTest}.
  */
 public final class ContentSecurityPolicyNonceInjectionPass extends CompilerFilePass {
   public static final String CSP_NONCE_VARIABLE_NAME = "csp_nonce";
@@ -132,7 +114,7 @@ public final class ContentSecurityPolicyNonceInjectionPass extends CompilerFileP
                 .getSourceLocation()
                 .getEndPoint()
                 .offset(0, openTag.isSelfClosing() ? 2 : -1)
-                .asLocation(openTag.getSourceLocation().getFileName());
+                .asLocation(openTag.getSourceLocation().getFilePath());
         openTag.addChild(createCspInjection(insertionLocation, nodeIdGen));
       }
     }

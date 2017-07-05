@@ -791,10 +791,9 @@ TOKEN_MGR_DECLS: {
     // trim off trailing quote, unescape internal quotation marks
     String value = matchedToken.image;
     value = value.substring(0, value.length() - 1);
-    value = value.replace("\\\"", "\"");
+    value = SoyParseUtils.unescapeCommandAttributeValue(value);
 
     matchedToken.image = value;
-    matchedToken.endColumn -= 1;
 
     // Return to previous state
     popState();
