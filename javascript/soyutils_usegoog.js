@@ -1838,6 +1838,31 @@ soy.asserts.assertType = function(condition, paramName, param, jsDocTypeStr) {
   return param;
 };
 
+// -----------------------------------------------------------------------------
+// Used for inspecting Soy template information from rendered pages.
+
+
+if (goog.DEBUG) {
+  /** @private {boolean} */
+  soy.debugSoyTemplateInfo_ = false;
+
+  /**
+   * Returns whether we should generate additional HTML comments.
+   * @return {boolean}
+   */
+  soy.$$getDebugSoyTemplateInfo = function() {
+    return soy.debugSoyTemplateInfo_;
+  };
+
+  /**
+   * Configures whether we should generate additional HTML comments for
+   * inspecting Soy template information from rendered pages.
+   * @param {boolean} debugSoyTemplateInfo
+   */
+  soy.setDebugSoyTemplateInfo = function(debugSoyTemplateInfo) {
+    soy.debugSoyTemplateInfo = debugSoyTemplateInfo;
+  };
+}
 
 // -----------------------------------------------------------------------------
 // Generated code.
