@@ -103,6 +103,7 @@ goog.exportSymbol('goog.isObject', goog.isObject);
 goog.exportSymbol('goog.isString', goog.isString);
 goog.exportSymbol('goog.module', goog.module);
 goog.exportSymbol('goog.object', goog.object);
+goog.exportSymbol('goog.inherits', goog.inherits);
 goog.exportSymbol('goog.provide', goog.provide);
 goog.exportSymbol('goog.require', goog.require);
 goog.exportSymbol('goog.soy.data.SanitizedContent', goog.soy.data.SanitizedContent);
