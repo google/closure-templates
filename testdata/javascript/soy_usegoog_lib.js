@@ -24031,7 +24031,6 @@ goog.string.StringBuffer.prototype.toString = function() {
  * @author Kai Huang
  * @author Aharon Lanin
  */
-
 goog.provide('soy');
 goog.provide('soy.asserts');
 goog.provide('soy.esc');
@@ -24064,7 +24063,6 @@ goog.require('goog.soy.data.SanitizedUri');
 goog.require('goog.soy.data.UnsanitizedText');
 goog.require('goog.string');
 goog.require('goog.string.Const');
-
 
 // -----------------------------------------------------------------------------
 // soydata: Defines typed strings, e.g. an HTML string {@code "a<b>c"} is
@@ -25863,7 +25861,7 @@ if (goog.DEBUG) {
    * @param {boolean} debugSoyTemplateInfo
    */
   soy.setDebugSoyTemplateInfo = function(debugSoyTemplateInfo) {
-    soy.debugSoyTemplateInfo = debugSoyTemplateInfo;
+    soy.debugSoyTemplateInfo_ = debugSoyTemplateInfo;
   };
 }
 
