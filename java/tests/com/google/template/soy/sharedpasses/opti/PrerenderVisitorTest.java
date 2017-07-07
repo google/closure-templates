@@ -25,7 +25,6 @@ import com.google.inject.Guice;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.SoyModule;
-import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.sharedpasses.render.RenderException;
 import javax.inject.Inject;
@@ -167,9 +166,7 @@ public class PrerenderVisitorTest {
 
     StringBuilder outputSb = new StringBuilder();
     PrerenderVisitor prerenderVisitor =
-        new PrerenderVisitorFactory(
-                soyJavaDirectivesMap,
-                new PreevalVisitorFactory(SoyValueConverter.UNCUSTOMIZED_INSTANCE))
+        new PrerenderVisitorFactory(soyJavaDirectivesMap, new PreevalVisitorFactory())
             .create(outputSb, result.registry());
     prerenderVisitor.exec(result.fileSet().getChild(0).getChild(0));
     return outputSb.toString();

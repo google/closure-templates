@@ -24,7 +24,6 @@ import com.google.common.io.CharSource;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.TriState;
 import com.google.template.soy.basetree.SyntaxVersion;
-import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.SoyErrorKind;
@@ -101,9 +100,7 @@ public final class PassManager {
     this.autoescaper =
         builder.autoescaperEnabled ? new ContextualAutoescaper(builder.soyPrintDirectives) : null;
     this.simplifyVisitor =
-        options.isOptimizerEnabled()
-            ? SimplifyVisitor.create(builder.soyPrintDirectives, builder.valueConverter)
-            : null;
+        options.isOptimizerEnabled() ? SimplifyVisitor.create(builder.soyPrintDirectives) : null;
 
     boolean strictHtmlEnabled = options.getExperimentalFeatures().contains("stricthtml");
 
@@ -285,7 +282,6 @@ public final class PassManager {
     private boolean optimize = true;
     private ImmutableList<CharSource> conformanceConfigs = ImmutableList.of();
     private boolean autoescaperEnabled = true;
-    private SoyValueConverter valueConverter = SoyValueConverter.UNCUSTOMIZED_INSTANCE;
 
     public Builder setErrorReporter(ErrorReporter errorReporter) {
       this.errorReporter = checkNotNull(errorReporter);
@@ -305,13 +301,6 @@ public final class PassManager {
 
     public Builder setTypeRegistry(SoyTypeRegistry registry) {
       this.registry = checkNotNull(registry);
-      return this;
-    }
-
-    public Builder setValueConverter(SoyValueConverter valueConverter) {
-      // TODO(lukes): we should be able to derive the value converter from the type registry... we
-      // should make it so UNCUSTOMIZED_INSTANCE is sufficient.
-      this.valueConverter = valueConverter;
       return this;
     }
 

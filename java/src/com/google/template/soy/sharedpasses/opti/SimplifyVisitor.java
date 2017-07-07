@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
@@ -59,9 +58,8 @@ public final class SimplifyVisitor {
 
   /** Creates a new simplify visitor. */
   public static SimplifyVisitor create(
-      ImmutableMap<String, ? extends SoyPrintDirective> soyPrintDirectives,
-      SoyValueConverter valueConverter) {
-    PreevalVisitorFactory preevalVisitor = new PreevalVisitorFactory(valueConverter);
+      ImmutableMap<String, ? extends SoyPrintDirective> soyPrintDirectives) {
+    PreevalVisitorFactory preevalVisitor = new PreevalVisitorFactory();
     ImmutableMap.Builder<String, SoyJavaPrintDirective> javaPrintDirectives =
         ImmutableMap.builder();
     for (Map.Entry<String, ? extends SoyPrintDirective> entry : soyPrintDirectives.entrySet()) {

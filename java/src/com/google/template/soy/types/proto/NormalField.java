@@ -16,6 +16,8 @@
 
 package com.google.template.soy.types.proto;
 
+import static com.google.common.base.Preconditions.checkState;
+
 import com.google.common.base.CaseFormat;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Message;
@@ -23,12 +25,13 @@ import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
+import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
 
 /** A member field of a proto type. */
-class NormalField implements Field {
+class NormalField extends Field {
 
-  private final SoyTypeRegistry typeRegistry;
+  @Nullable private final SoyTypeRegistry typeRegistry;
 
   protected final FieldDescriptor fieldDescriptor;
   protected final String name;
@@ -38,7 +41,7 @@ class NormalField implements Field {
   @GuardedBy("this")
   private volatile FieldInterpreter interpreter;
 
-  NormalField(SoyTypeRegistry typeRegistry, FieldDescriptor desc) {
+  NormalField(@Nullable SoyTypeRegistry typeRegistry, FieldDescriptor desc) {
     this.typeRegistry = typeRegistry;
     this.fieldDescriptor = desc;
     this.name = computeSoyName(desc);
@@ -51,7 +54,8 @@ class NormalField implements Field {
 
   @Override
   public SoyType getType() {
-    return impl().type();
+    checkState(typeRegistry != null, "cannot lookup types from runtime fields... why try?");
+    return impl().type(typeRegistry);
   }
 
   private FieldInterpreter impl() {
@@ -62,7 +66,7 @@ class NormalField implements Field {
       synchronized (this) {
         local = interpreter;
         if (local == null) {
-          local = FieldInterpreter.create(typeRegistry, fieldDescriptor);
+          local = FieldInterpreter.create(fieldDescriptor);
           this.interpreter = local;
         }
       }

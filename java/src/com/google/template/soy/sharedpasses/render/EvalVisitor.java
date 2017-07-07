@@ -35,7 +35,6 @@ import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.internal.DictImpl;
 import com.google.template.soy.data.internal.ListImpl;
 import com.google.template.soy.data.restricted.BooleanData;
@@ -122,9 +121,6 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
         @Nullable SoyIdRenamingMap xidRenamingMap);
   }
 
-  /** Instance of SoyValueConverter to use. */
-  private final SoyValueConverter valueConverter;
-
   /** The current environment. */
   private final Environment env;
 
@@ -142,12 +138,10 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
    * @param env The current environment.
    */
   protected EvalVisitor(
-      SoyValueConverter valueConverter,
       Environment env,
       @Nullable SoyRecord ijData,
       @Nullable SoyCssRenamingMap cssRenamingMap,
       @Nullable SoyIdRenamingMap xidRenamingMap) {
-    this.valueConverter = checkNotNull(valueConverter);
     this.env = checkNotNull(env);
     this.ijData = ijData;
     this.cssRenamingMap = (cssRenamingMap == null) ? SoyCssRenamingMap.EMPTY : cssRenamingMap;
@@ -598,7 +592,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     // The downcast is safe because if it was anything else, compilation would have already failed.
     SoyProtoType soyProto = (SoyProtoType) node.getType();
     ImmutableList<String> paramNames = node.getParamNames();
-    SoyProtoValueImpl.Builder builder = new SoyProtoValueImpl.Builder(valueConverter, soyProto);
+    SoyProtoValueImpl.Builder builder = new SoyProtoValueImpl.Builder(soyProto);
     for (int i = 0; i < node.numChildren(); i++) {
       SoyValue visit = visit(node.getChild(i));
       // null means don't assign

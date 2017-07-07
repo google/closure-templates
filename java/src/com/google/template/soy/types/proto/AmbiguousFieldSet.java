@@ -32,7 +32,7 @@ import java.util.Set;
  * represent such fields in the type but make it an error to access them. In the future we may want
  * to add alternate mechanisms to access extensions that don't rely on field names solely.
  */
-final class AmbiguousFieldSet implements Field {
+final class AmbiguousFieldSet extends Field {
 
   private final String name;
   private final ImmutableSet<ExtensionField> extensions;

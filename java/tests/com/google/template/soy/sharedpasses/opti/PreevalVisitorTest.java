@@ -127,8 +127,6 @@ public final class PreevalVisitorTest {
             SoyValueConverter.UNCUSTOMIZED_INSTANCE.newDict("boo", 8),
             ImmutableMap.<String, SoyValueProvider>of());
 
-    return new PreevalVisitorFactory(SoyValueConverter.UNCUSTOMIZED_INSTANCE)
-        .create(env)
-        .exec(expr);
+    return new PreevalVisitorFactory().create(env).exec(expr);
   }
 }

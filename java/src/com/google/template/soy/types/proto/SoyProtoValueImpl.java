@@ -22,6 +22,9 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.protobuf.Descriptors.Descriptor;
+import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Message;
 import com.google.protobuf.TextFormat;
 import com.google.template.soy.base.SoyBackendKind;
@@ -29,11 +32,12 @@ import com.google.template.soy.data.SoyAbstractValue;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyProtoValue;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.restricted.StringData;
 import java.io.IOException;
 import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 /**
  * Soy value that wraps a protocol buffer message object.
@@ -44,21 +48,39 @@ import java.util.Collection;
  *
  */
 public final class SoyProtoValueImpl extends SoyAbstractValue implements SoyProtoValue, SoyMap {
+  private static final LoadingCache<Descriptor, ImmutableMap<String, Field>> fieldCache =
+      CacheBuilder.newBuilder()
+          .weakKeys()
+          .build(
+              new CacheLoader<Descriptor, ImmutableMap<String, Field>>() {
+                @Override
+                public ImmutableMap<String, Field> load(Descriptor descriptor) {
+                  Set<FieldDescriptor> extensions = new LinkedHashSet<>();
+                  return Field.getFieldsForType(/* typeRegistry= */ null, descriptor, extensions);
+                }
+              });
+
+  public static SoyProtoValueImpl create(Message proto) {
+    return new SoyProtoValueImpl(proto);
+  }
 
   /** The underlying proto message object. */
   private final Message proto;
 
-  /** SoyType of the proto message object. */
-  private final SoyProtoType type;
+  // lazily initialized
+  private ImmutableMap<String, Field> fields;
 
-  /**
-   * @param valueConverter The value converter to use for internal conversions.
-   * @param type The SoyType of the proto.
-   * @param proto The proto message object.
-   */
-  SoyProtoValueImpl(SoyProtoType type, Message proto) {
-    this.type = checkNotNull(type);
+  private SoyProtoValueImpl(Message proto) {
     this.proto = checkNotNull(proto);
+  }
+
+  private ImmutableMap<String, Field> fields() {
+    ImmutableMap<String, Field> localFields = fields;
+    if (localFields == null) {
+      localFields = fieldCache.getUnchecked(proto.getDescriptorForType());
+      fields = localFields;
+    }
+    return localFields;
   }
 
   // -----------------------------------------------------------------------------------------------
@@ -72,7 +94,7 @@ public final class SoyProtoValueImpl extends SoyAbstractValue implements SoyProt
 
   @Override
   public boolean hasProtoField(String name) {
-    Field field = type.getField(name);
+    Field field = fields().get(name);
     if (field == null) {
       throw new IllegalArgumentException(
           "Proto " + proto.getClass().getName() + " does not have a field of name " + name);
@@ -82,7 +104,7 @@ public final class SoyProtoValueImpl extends SoyAbstractValue implements SoyProt
 
   @Override
   public SoyValue getProtoField(String name) {
-    Field field = type.getField(name);
+    Field field = fields().get(name);
     if (field == null) {
       throw new IllegalArgumentException(
           "Proto " + proto.getClass().getName() + " does not have a field of name " + name);
@@ -100,7 +122,7 @@ public final class SoyProtoValueImpl extends SoyAbstractValue implements SoyProt
     // TODO(user): hasField(name) should really be two separate checks:
     // if (type.getField(name) == null) { throw new IllegalArgumentException(); }
     // if (!type.getField(name).hasField(proto)) { return null; }
-    Field field = type.getField(name);
+    Field field = fields().get(name);
     if (field == null) {
       return false;
     }
@@ -130,7 +152,7 @@ public final class SoyProtoValueImpl extends SoyAbstractValue implements SoyProt
       return null;
     }
 
-    return type.getField(name).interpretField(proto).resolve();
+    return fields().get(name).interpretField(proto).resolve();
   }
 
   // -----------------------------------------------------------------------------------------------
@@ -148,7 +170,7 @@ public final class SoyProtoValueImpl extends SoyAbstractValue implements SoyProt
     // slowing down the common case of field access. This basically goes over all possible keys,
     // but filters ones that need to be ignored or lack a suitable value.
     ImmutableList.Builder<SoyValue> builder = ImmutableList.builder();
-    for (String key : type.getFieldNames()) {
+    for (String key : fields().keySet()) {
       if (hasField(key)) {
         builder.add(StringData.forValue(key));
       }
@@ -238,11 +260,9 @@ public final class SoyProtoValueImpl extends SoyAbstractValue implements SoyProt
 
     private final SoyProtoType soyProto;
     private final Message.Builder builder;
-    private final SoyValueConverter valueConverter;
 
-    public Builder(SoyValueConverter valueConverter, SoyProtoType soyProto) {
-      this.valueConverter = valueConverter;
-      this.soyProto = soyProto;
+    public Builder(SoyProtoType soyProto) {
+      this.soyProto = checkNotNull(soyProto);
       this.builder = defaultInstanceForType.getUnchecked(soyProto).newBuilderForType();
     }
 
@@ -252,7 +272,7 @@ public final class SoyProtoValueImpl extends SoyAbstractValue implements SoyProt
     }
 
     public SoyProtoValueImpl build() {
-      return new SoyProtoValueImpl(soyProto, builder.build());
+      return new SoyProtoValueImpl(builder.build());
     }
   }
 }

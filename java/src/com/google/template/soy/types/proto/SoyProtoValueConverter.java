@@ -16,12 +16,10 @@
 
 package com.google.template.soy.types.proto;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.Message;
 import com.google.template.soy.data.SoyCustomValueConverter;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueProvider;
-import com.google.template.soy.types.SoyTypeRegistry;
 import javax.inject.Inject;
 
 /**
@@ -31,19 +29,9 @@ import javax.inject.Inject;
 // TODO(user): Will be removed shortly. Please use SoyFileSet.Builder#addProtoDescriptors to add
 // descriptors directly to SoyFileSet.Builder.
 public final class SoyProtoValueConverter implements SoyCustomValueConverter {
-  private final SoyTypeRegistry registry;
-  private final SoyProtoTypeProvider protoTypeProvider;
-
-  @VisibleForTesting
-  public SoyProtoValueConverter() {
-    this(new SoyTypeRegistry(), SoyProtoTypeProvider.empty());
-  }
 
   @Inject
-  SoyProtoValueConverter(SoyTypeRegistry registry, SoyProtoTypeProvider protoTypeProvider) {
-    this.registry = registry;
-    this.protoTypeProvider = protoTypeProvider;
-  }
+  public SoyProtoValueConverter() {}
 
   @Override
   public SoyValueProvider convert(SoyValueConverter valueConverter, Object obj) {
@@ -62,11 +50,7 @@ public final class SoyProtoValueConverter implements SoyCustomValueConverter {
 
     if (obj instanceof Message) {
       Message message = (Message) obj;
-      // We can't just fetch the type from the type registry because it is possible that this type
-      // was not part of the statically registered set.  So instead we use this internal helper to
-      // fetch a type given a descriptor which will definitely work.
-      SoyProtoType type = protoTypeProvider.getType(message.getDescriptorForType(), registry);
-      return new SoyProtoValueImpl(type, message);
+      return SoyProtoValueImpl.create(message);
     }
     return null;
   }

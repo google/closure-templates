@@ -18,10 +18,6 @@ package com.google.template.soy.types.proto;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.MultimapBuilder;
-import com.google.common.collect.Multimaps;
-import com.google.common.collect.SetMultimap;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.template.soy.base.SoyBackendKind;
@@ -29,9 +25,7 @@ import com.google.template.soy.data.SoyProtoValue;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
-import java.util.Map;
 import java.util.Set;
-import java.util.logging.Logger;
 import javax.annotation.Nullable;
 
 /**
@@ -40,7 +34,6 @@ import javax.annotation.Nullable;
  */
 public final class SoyProtoType implements SoyType {
 
-  private static final Logger logger = Logger.getLogger(SoyProtoType.class.getName());
 
   private final Descriptor typeDescriptor;
   private final ImmutableMap<String, Field> fields;
@@ -48,45 +41,7 @@ public final class SoyProtoType implements SoyType {
   SoyProtoType(
       SoyTypeRegistry typeRegistry, Descriptor descriptor, Set<FieldDescriptor> extensions) {
     this.typeDescriptor = descriptor;
-
-    ImmutableMap.Builder<String, Field> fields = ImmutableMap.builder();
-    for (FieldDescriptor fieldDescriptor : descriptor.getFields()) {
-      if (ProtoUtils.shouldJsIgnoreField(fieldDescriptor)) {
-        continue;
-      }
-      NormalField field = new NormalField(typeRegistry, fieldDescriptor);
-      fields.put(field.getName(), field);
-    }
-
-    SetMultimap<String, ExtensionField> extensionsBySoyName =
-        MultimapBuilder.hashKeys().hashSetValues().build();
-    for (FieldDescriptor extension : extensions) {
-      ExtensionField field = new ExtensionField(typeRegistry, extension);
-      extensionsBySoyName.put(field.getName(), field);
-    }
-
-    for (Map.Entry<String, Set<ExtensionField>> group :
-        Multimaps.asMap(extensionsBySoyName).entrySet()) {
-      String fieldName = group.getKey();
-      Set<ExtensionField> ambiguousFields = group.getValue();
-      if (ambiguousFields.size() == 1) {
-        fields.put(fieldName, Iterables.getOnlyElement(ambiguousFields));
-      } else {
-        AmbiguousFieldSet value = new AmbiguousFieldSet(fieldName, ambiguousFields);
-
-        logger.severe(
-            "Proto "
-                + descriptor.getFullName()
-                + " has multiple extensions with the name \""
-                + fieldName
-                + "\": "
-                + value.getFullFieldNames()
-                + "\nThis field will not be accessible from soy");
-        fields.put(fieldName, value);
-      }
-    }
-
-    this.fields = fields.build();
+    this.fields = Field.getFieldsForType(typeRegistry, descriptor, extensions);
   }
 
   @Override

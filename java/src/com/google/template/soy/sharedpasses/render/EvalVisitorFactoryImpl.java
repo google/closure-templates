@@ -17,7 +17,6 @@
 package com.google.template.soy.sharedpasses.render;
 
 import com.google.template.soy.data.SoyRecord;
-import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.sharedpasses.render.EvalVisitor.EvalVisitorFactory;
@@ -34,13 +33,8 @@ import javax.inject.Singleton;
 @Singleton
 public final class EvalVisitorFactoryImpl implements EvalVisitorFactory {
 
-  /** Instance of SoyValueConverter to use. */
-  private final SoyValueConverter valueConverter;
-
   @Inject
-  public EvalVisitorFactoryImpl(SoyValueConverter valueConverter) {
-    this.valueConverter = valueConverter;
-  }
+  public EvalVisitorFactoryImpl() {}
 
   @Override
   public EvalVisitor create(
@@ -48,6 +42,6 @@ public final class EvalVisitorFactoryImpl implements EvalVisitorFactory {
       @Nullable SoyRecord ijData,
       @Nullable SoyCssRenamingMap cssRenamingMap,
       @Nullable SoyIdRenamingMap xidRenamingMap) {
-    return new EvalVisitor(valueConverter, env, ijData, cssRenamingMap, xidRenamingMap);
+    return new EvalVisitor(env, ijData, cssRenamingMap, xidRenamingMap);
   }
 }

@@ -38,7 +38,6 @@ import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.base.internal.TriState;
 import com.google.template.soy.base.internal.VolatileSoyFileSupplier;
 import com.google.template.soy.basetree.SyntaxVersion;
-import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.error.ErrorReporterImpl;
 import com.google.template.soy.error.PrettyErrorFactory;
 import com.google.template.soy.error.SnippetFormatter;
@@ -121,7 +120,6 @@ public final class SoyFileSet {
     private final Provider<JsSrcMain> jsSrcMainProvider;
     private final Provider<IncrementalDomSrcMain> incrementalDomSrcMainProvider;
     private final Provider<PySrcMain> pySrcMainProvider;
-    private final SoyValueConverter valueConverter;
     private final SoyTypeRegistry typeRegistry;
     private final ImmutableMap<String, ? extends SoyFunction> soyFunctionMap;
     private final ImmutableMap<String, ? extends SoyPrintDirective> printDirectives;
@@ -134,7 +132,6 @@ public final class SoyFileSet {
         Provider<JsSrcMain> jsSrcMainProvider,
         Provider<IncrementalDomSrcMain> incrementalDomSrcMainProvider,
         Provider<PySrcMain> pySrcMainProvider,
-        SoyValueConverter valueConverter,
         SoyTypeRegistry typeRegistry,
         ImmutableMap<String, ? extends SoyFunction> soyFunctionMap,
         ImmutableMap<String, ? extends SoyPrintDirective> printDirectives,
@@ -144,7 +141,6 @@ public final class SoyFileSet {
       this.jsSrcMainProvider = jsSrcMainProvider;
       this.incrementalDomSrcMainProvider = incrementalDomSrcMainProvider;
       this.pySrcMainProvider = pySrcMainProvider;
-      this.valueConverter = valueConverter;
       this.typeRegistry = typeRegistry;
       this.soyFunctionMap = soyFunctionMap;
       this.printDirectives = printDirectives;
@@ -233,7 +229,6 @@ public final class SoyFileSet {
           coreDependencies.jsSrcMainProvider,
           coreDependencies.incrementalDomSrcMainProvider,
           coreDependencies.pySrcMainProvider,
-          coreDependencies.valueConverter,
           localTypeRegistry == null ? coreDependencies.typeRegistry : localTypeRegistry,
           coreDependencies.soyFunctionMap,
           coreDependencies.printDirectives,
@@ -592,7 +587,6 @@ public final class SoyFileSet {
   private final Provider<IncrementalDomSrcMain> incrementalDomSrcMainProvider;
   private final Provider<PySrcMain> pySrcMainProvider;
 
-  private final SoyValueConverter valueConverter;
 
   private final SoyTypeRegistry typeRegistry;
   private final ImmutableMap<String, SoyFileSupplier> soyFileSuppliers;
@@ -628,7 +622,6 @@ public final class SoyFileSet {
       Provider<JsSrcMain> jsSrcMainProvider,
       Provider<IncrementalDomSrcMain> incrementalDomSrcMainProvider,
       Provider<PySrcMain> pySrcMainProvider,
-      SoyValueConverter valueConverter,
       SoyTypeRegistry typeRegistry,
       ImmutableMap<String, ? extends SoyFunction> soyFunctionMap,
       ImmutableMap<String, ? extends SoyPrintDirective> printDirectives,
@@ -643,7 +636,6 @@ public final class SoyFileSet {
     this.jsSrcMainProvider = jsSrcMainProvider;
     this.incrementalDomSrcMainProvider = incrementalDomSrcMainProvider;
     this.pySrcMainProvider = pySrcMainProvider;
-    this.valueConverter = valueConverter;
 
     Preconditions.checkArgument(
         !soyFileSuppliers.isEmpty(), "Must have non-zero number of input Soy files.");
@@ -1188,7 +1180,6 @@ public final class SoyFileSet {
             .setDeclaredSyntaxVersion(generalOptions.getDeclaredSyntaxVersion(defaultVersion))
             .setSoyFunctionMap(soyFunctionMap)
             .setSoyPrintDirectiveMap(printDirectives)
-            .setValueConverter(valueConverter)
             .setErrorReporter(errorReporter)
             .setConformanceConfigs(conformanceConfigs);
     return builder;

@@ -25,7 +25,6 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.template.soy.SoyModule;
-import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.passes.ResolveFunctionsVisitor;
 import com.google.template.soy.shared.restricted.SoyFunction;
@@ -150,8 +149,7 @@ public final class SimplifyExprVisitorTest {
     private void simplifiesTo(String expected) {
       ExprRootNode exprRoot = new ExprRootNode(SoyFileParser.parseExprOrDie(actual()));
       new ResolveFunctionsVisitor(SOY_FUNCTIONS).exec(exprRoot);
-      new SimplifyExprVisitor(new PreevalVisitorFactory(SoyValueConverter.UNCUSTOMIZED_INSTANCE))
-          .exec(exprRoot);
+      new SimplifyExprVisitor(new PreevalVisitorFactory()).exec(exprRoot);
       Truth.assertThat(exprRoot.toSourceString()).isEqualTo(expected);
     }
   }

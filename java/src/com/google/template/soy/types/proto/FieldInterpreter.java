@@ -16,8 +16,6 @@
 
 package com.google.template.soy.types.proto;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.BaseEncoding;
@@ -43,7 +41,6 @@ import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
-import com.google.template.soy.types.aggregate.MapType;
 import com.google.template.soy.types.primitive.BoolType;
 import com.google.template.soy.types.primitive.FloatType;
 import com.google.template.soy.types.primitive.IntType;
@@ -55,21 +52,19 @@ import java.util.List;
 /** A collaborator for {@link SoyProtoType} that handles the interpretation of proto fields. */
 abstract class FieldInterpreter {
   /** Creates a {@link FieldInterpreter} for the given field. */
-  static FieldInterpreter create(SoyTypeRegistry typeRegistry, FieldDescriptor fieldDescriptor) {
-    FieldInterpreter field = getScalarType(typeRegistry, fieldDescriptor);
+  static FieldInterpreter create(FieldDescriptor fieldDescriptor) {
+    FieldInterpreter field = getScalarType(fieldDescriptor);
     if (fieldDescriptor.isRepeated()) {
       if (ProtoUtils.hasJsMapKey(fieldDescriptor)) {
-        return getMapType(typeRegistry, field, fieldDescriptor);
+        return getMapType(field, fieldDescriptor);
       } else {
-        return getListType(typeRegistry, field);
+        return getListType(field);
       }
     }
     return field;
   }
 
-  private static FieldInterpreter getListType(
-      SoyTypeRegistry typeRegistry, final FieldInterpreter local) {
-    final SoyType listType = typeRegistry.getOrCreateListType(local.type());
+  private static FieldInterpreter getListType(final FieldInterpreter local) {
     return new FieldInterpreter() {
       @Override
       public SoyValueProvider soyFromProto(Object field) {
@@ -83,8 +78,8 @@ abstract class FieldInterpreter {
       }
 
       @Override
-      public SoyType type() {
-        return listType;
+      public SoyType type(SoyTypeRegistry typeRegistry) {
+        return typeRegistry.getOrCreateListType(local.type(typeRegistry));
       }
 
       @Override
@@ -100,7 +95,6 @@ abstract class FieldInterpreter {
   }
 
   private static FieldInterpreter getMapType(
-      SoyTypeRegistry typeRegistry,
       final FieldInterpreter scalarImpl,
       FieldDescriptor fieldDescriptor) {
     String keyFieldName = ProtoUtils.getJsMapKeyFieldName(fieldDescriptor);
@@ -112,8 +106,6 @@ abstract class FieldInterpreter {
       throw new IllegalArgumentException(
           "\"" + keyFieldName + "\" must be an optional/required string field.");
     }
-    final MapType type =
-        typeRegistry.getOrCreateMapType(StringType.getInstance(), scalarImpl.type());
     return new FieldInterpreter() {
       @Override
       public SoyValueProvider soyFromProto(Object field) {
@@ -132,8 +124,8 @@ abstract class FieldInterpreter {
       }
 
       @Override
-      public SoyType type() {
-        return type;
+      public SoyType type(SoyTypeRegistry registry) {
+        return registry.getOrCreateMapType(StringType.getInstance(), scalarImpl.type(registry));
       }
 
       @Override
@@ -146,8 +138,7 @@ abstract class FieldInterpreter {
     };
   }
 
-  private static FieldInterpreter getScalarType(
-      SoyTypeRegistry typeRegistry, FieldDescriptor fieldDescriptor) {
+  private static FieldInterpreter getScalarType(FieldDescriptor fieldDescriptor) {
     // Field definition includes an option that overrides normal type.
     if (ProtoUtils.hasJsType(fieldDescriptor)) {
       ProtoUtils.JsType jsType = ProtoUtils.getJsType(fieldDescriptor);
@@ -201,8 +192,7 @@ abstract class FieldInterpreter {
         // circular dep between SoyProtoType and SoyProtoValue.
         // TODO(user): Remove the circular dependency.
       case ENUM:
-        return enumTypeField(
-            fieldDescriptor, typeRegistry.getType(fieldDescriptor.getEnumType().getFullName()));
+        return enumTypeField(fieldDescriptor);
 
       case MESSAGE:
         SanitizedType sanitizedType =
@@ -210,8 +200,7 @@ abstract class FieldInterpreter {
         if (sanitizedType != null) {
           return safeStringTypeField(sanitizedType, fieldDescriptor.getMessageType());
         }
-        return messageTypeField(
-            (SoyProtoType) typeRegistry.getType(fieldDescriptor.getMessageType().getFullName()));
+        return messageTypeField(fieldDescriptor.getMessageType());
 
       case STRING:
         return STRING;
@@ -231,7 +220,7 @@ abstract class FieldInterpreter {
         }
 
         @Override
-        public SoyType type() {
+        public SoyType type(SoyTypeRegistry registry) {
           return StringType.getInstance();
         }
 
@@ -250,7 +239,7 @@ abstract class FieldInterpreter {
         }
 
         @Override
-        public SoyType type() {
+        public SoyType type(SoyTypeRegistry registry) {
           return BoolType.getInstance();
         }
 
@@ -269,7 +258,7 @@ abstract class FieldInterpreter {
         }
 
         @Override
-        public SoyType type() {
+        public SoyType type(SoyTypeRegistry registry) {
           return IntType.getInstance();
         }
 
@@ -288,7 +277,7 @@ abstract class FieldInterpreter {
         }
 
         @Override
-        public SoyType type() {
+        public SoyType type(SoyTypeRegistry registry) {
           return IntType.getInstance();
         }
 
@@ -307,7 +296,7 @@ abstract class FieldInterpreter {
         }
 
         @Override
-        public SoyType type() {
+        public SoyType type(SoyTypeRegistry registry) {
           return StringType.getInstance();
         }
 
@@ -326,7 +315,7 @@ abstract class FieldInterpreter {
         }
 
         @Override
-        public SoyType type() {
+        public SoyType type(SoyTypeRegistry registry) {
           return FloatType.getInstance();
         }
 
@@ -345,7 +334,7 @@ abstract class FieldInterpreter {
         }
 
         @Override
-        public SoyType type() {
+        public SoyType type(SoyTypeRegistry registry) {
           return FloatType.getInstance();
         }
 
@@ -364,7 +353,7 @@ abstract class FieldInterpreter {
         }
 
         @Override
-        public SoyType type() {
+        public SoyType type(SoyTypeRegistry registry) {
           return StringType.getInstance();
         }
 
@@ -378,14 +367,12 @@ abstract class FieldInterpreter {
    * Returns a {@link FieldInterpreter} that has the given type and delegates to the
    * SoyValueConverter for interpretation.
    */
-  private static final FieldInterpreter enumTypeField(
-      final FieldDescriptor fieldDescriptor, final SoyType type) {
-    checkNotNull(type);
+  private static final FieldInterpreter enumTypeField(final FieldDescriptor fieldDescriptor) {
     final EnumDescriptor enumDescriptor = fieldDescriptor.getEnumType();
     return new FieldInterpreter() {
       @Override
-      public SoyType type() {
-        return type;
+      public SoyType type(SoyTypeRegistry registry) {
+        return registry.getType(fieldDescriptor.getEnumType().getFullName());
       }
 
       @Override
@@ -418,10 +405,9 @@ abstract class FieldInterpreter {
 
   private static final FieldInterpreter safeStringTypeField(
       final SanitizedType type, final Descriptor fieldType) {
-    checkNotNull(type);
     return new FieldInterpreter() {
       @Override
-      public SoyType type() {
+      public SoyType type(SoyTypeRegistry registry) {
         return type;
       }
 
@@ -437,17 +423,16 @@ abstract class FieldInterpreter {
     };
   }
 
-  private static final FieldInterpreter messageTypeField(final SoyProtoType type) {
-    checkNotNull(type);
+  private static final FieldInterpreter messageTypeField(final Descriptor messageDescriptor) {
     return new FieldInterpreter() {
       @Override
-      public SoyType type() {
-        return type;
+      public SoyType type(SoyTypeRegistry registry) {
+        return registry.getType(messageDescriptor.getFullName());
       }
 
       @Override
       public SoyValueProvider soyFromProto(Object field) {
-        return new SoyProtoValueImpl(type, (Message) field);
+        return SoyProtoValueImpl.create((Message) field);
       }
 
       @Override
@@ -460,7 +445,7 @@ abstract class FieldInterpreter {
   private FieldInterpreter() {}
 
   /** Returns the SoyType of the field. */
-  abstract SoyType type();
+  abstract SoyType type(SoyTypeRegistry registry);
 
   /** Returns the SoyValueProvider for the ToFu representation of the given field. */
   abstract SoyValueProvider soyFromProto(Object field);

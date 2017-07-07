@@ -17,7 +17,6 @@
 package com.google.template.soy.sharedpasses.opti;
 
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.ProtoInitNode;
@@ -46,9 +45,8 @@ final class PreevalVisitor extends EvalVisitor {
    * @param valueConverter Instance of SoyValueConverter to use.
    * @param env The current environment.
    */
-  PreevalVisitor(SoyValueConverter valueConverter, Environment env) {
+  PreevalVisitor(Environment env) {
     super(
-        valueConverter,
         env,
         null /* ijData */,
         null /* cssRenamingMap */,

@@ -26,7 +26,6 @@ import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.SoyModule;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.ForNode;
@@ -259,10 +258,9 @@ public class SimplifyVisitorTest {
   }
 
   @Inject ImmutableMap<String, ? extends SoyPrintDirective> printDirectives;
-  @Inject SoyValueConverter valueConverter;
 
   private SimplifyVisitor createSimplifyVisitor() {
-    return SimplifyVisitor.create(printDirectives, valueConverter);
+    return SimplifyVisitor.create(printDirectives);
   }
 
   private List<StandaloneNode> simplifySoyCode(String soyCode) throws Exception {
