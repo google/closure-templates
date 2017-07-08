@@ -23,11 +23,8 @@ import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.protobuf.Message;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
-import com.google.template.soy.data.SoyProtoValue;
 import com.google.template.soy.data.SoyRecord;
-import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.msgs.SoyMsgBundle;
@@ -73,7 +70,6 @@ public final class RenderContext {
   private final SoyIdRenamingMap xidRenamingMap;
   private final ImmutableMap<String, SoyJavaFunction> soyJavaFunctionsMap;
   private final ImmutableMap<String, SoyJavaPrintDirective> soyJavaDirectivesMap;
-  private final SoyValueConverter converter;
   /** The bundle of translated messages */
   private final SoyMsgBundle msgBundle;
 
@@ -84,7 +80,6 @@ public final class RenderContext {
     this.xidRenamingMap = builder.xidRenamingMap;
     this.soyJavaFunctionsMap = builder.soyJavaFunctionsMap;
     this.soyJavaDirectivesMap = builder.soyJavaDirectivesMap;
-    this.converter = builder.converter;
     this.msgBundle = builder.msgBundle;
   }
   
@@ -118,24 +113,6 @@ public final class RenderContext {
           "Failed to find Soy print directive with name '" + name + "'");
     }
     return printDirective;
-  }
-
-  /**
-   * Helper for boxing protos. We cannot currently box protos without calling out to the value
-   * converter because the SoyProtoValue has a package private constructor and even if it was public
-   * it would be hard/impossible to call it.
-   *
-   * <p>The difficulty is because SoyProtoValue currently depends on its SoyType for field
-   * interpretation. In theory we could drop this and have it just use the descriptor directly
-   * (since it has a Message instance it could just call message.getDescriptor()), but this may add
-   * some overhead. This could all be made much easier if we had perfect type information (then we
-   * would ~never need to box or rely on the SoyValue implementation).
-   */
-  public SoyProtoValue box(Message proto) {
-    if (proto == null) {
-      return null;
-    }
-    return (SoyProtoValue) converter.convert(proto);
   }
 
   public CompiledTemplate getDelTemplate(
@@ -183,7 +160,6 @@ public final class RenderContext {
         .withSoyPrintDirectives(soyJavaDirectivesMap)
         .withCssRenamingMap(cssRenamingMap)
         .withXidRenamingMap(xidRenamingMap)
-        .withConverter(converter)
         .withMessageBundle(msgBundle);
   }
 
@@ -195,7 +171,6 @@ public final class RenderContext {
     private SoyIdRenamingMap xidRenamingMap = SoyCssRenamingMap.EMPTY;
     private ImmutableMap<String, SoyJavaFunction> soyJavaFunctionsMap = ImmutableMap.of();
     private ImmutableMap<String, SoyJavaPrintDirective> soyJavaDirectivesMap = ImmutableMap.of();
-    private SoyValueConverter converter = SoyValueConverter.UNCUSTOMIZED_INSTANCE;
     private SoyMsgBundle msgBundle = SoyMsgBundle.EMPTY;
 
     public Builder withCompiledTemplates(CompiledTemplates templates) {
@@ -225,11 +200,6 @@ public final class RenderContext {
 
     public Builder withSoyPrintDirectives(Map<String, ? extends SoyJavaPrintDirective> directives) {
       this.soyJavaDirectivesMap = ImmutableMap.copyOf(directives);
-      return this;
-    }
-
-    public Builder withConverter(SoyValueConverter converter) {
-      this.converter = checkNotNull(converter);
       return this;
     }
 

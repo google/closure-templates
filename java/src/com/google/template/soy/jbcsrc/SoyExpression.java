@@ -18,13 +18,11 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.OBJECT;
-import static com.google.template.soy.jbcsrc.BytecodeUtils.RENDER_CONTEXT_TYPE;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.SOY_LIST_TYPE;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.SOY_VALUE_TYPE;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.logicalNot;
 
-import com.google.common.base.Optional;
 import com.google.protobuf.Message;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
@@ -88,10 +86,9 @@ final class SoyExpression extends Expression {
     return new SoyExpression(getUnboxedType(listType), delegate);
   }
 
-  static SoyExpression forProto(
-      SoyRuntimeType type, Expression delegate, Expression renderContext) {
-    checkArgument(renderContext.resultType().equals(RENDER_CONTEXT_TYPE));
-    return new SoyExpression(type, delegate, Optional.of(renderContext));
+  static SoyExpression forProto(SoyRuntimeType type, Expression delegate) {
+    checkArgument(type.soyType().getKind() == Kind.PROTO);
+    return new SoyExpression(type, delegate);
   }
 
   /**
@@ -135,14 +132,8 @@ final class SoyExpression extends Expression {
 
   private final SoyRuntimeType soyRuntimeType;
   private final Expression delegate;
-  private final Optional<Expression> renderContext;
 
   private SoyExpression(SoyRuntimeType soyRuntimeType, Expression delegate) {
-    this(soyRuntimeType, delegate, Optional.<Expression>absent());
-  }
-
-  private SoyExpression(
-      SoyRuntimeType soyRuntimeType, Expression delegate, Optional<Expression> renderContext) {
     super(delegate.resultType(), delegate.features());
     checkArgument(
         BytecodeUtils.isPossiblyAssignableFrom(soyRuntimeType.runtimeType(), delegate.resultType()),
@@ -151,7 +142,6 @@ final class SoyExpression extends Expression {
         delegate.resultType());
     this.soyRuntimeType = soyRuntimeType;
     this.delegate = delegate;
-    this.renderContext = renderContext;
   }
 
   /** Returns the {@link SoyType} of the expression. */
@@ -236,7 +226,7 @@ final class SoyExpression extends Expression {
         FieldRef.NULL_PROVIDER.accessStaticUnchecked(adapter);
         adapter.goTo(end);
         adapter.mark(nonNull);
-        doBox(adapter, soyRuntimeType, renderContext);
+        doBox(adapter, soyRuntimeType);
         adapter.mark(end);
       }
     };
@@ -277,7 +267,7 @@ final class SoyExpression extends Expression {
               end = new Label();
               BytecodeUtils.nullCoalesce(adapter, end);
             }
-            doBox(adapter, soyRuntimeType.asNonNullable(), renderContext);
+            doBox(adapter, soyRuntimeType.asNonNullable());
             if (end != null) {
               adapter.mark(end);
             }
@@ -289,8 +279,7 @@ final class SoyExpression extends Expression {
    * Generates code to box the expression assuming that it is non-nullable and on the top of the
    * stack.
    */
-  private static void doBox(
-      CodeBuilder adapter, SoyRuntimeType type, Optional<Expression> renderContext) {
+  private static void doBox(CodeBuilder adapter, SoyRuntimeType type) {
     if (type.isKnownSanitizedContent()) {
       FieldRef.enumReference(((SanitizedType) type.soyType()).getContentKind())
           .accessStaticUnchecked(adapter);
@@ -302,18 +291,14 @@ final class SoyExpression extends Expression {
     } else if (type.isKnownMap()) {
       MethodRef.DICT_IMPL_FOR_PROVIDER_MAP.invokeUnchecked(adapter);
     } else if (type.isKnownProto()) {
-      renderContext.get().gen(adapter);
-      // renderContext.box is an instance method, so renderContext has to come first, so we swap
-      // the two items on top of the stack.
-      adapter.swap();
-      MethodRef.RENDER_CONTEXT_BOX.invokeUnchecked(adapter);
+      MethodRef.SOY_PROTO_VALUE_IMPL_CREATE.invokeUnchecked(adapter);
     } else {
       throw new IllegalStateException("Can't box soy expression of type " + type);
     }
   }
 
   private SoyExpression asBoxed(Expression expr) {
-    return new SoyExpression(soyRuntimeType.box(), expr, renderContext);
+    return new SoyExpression(soyRuntimeType.box(), expr);
   }
 
   /** Coerce this expression to a boolean value. */
@@ -494,8 +479,7 @@ final class SoyExpression extends Expression {
             runtimeType,
             delegate
                 .invoke(MethodRef.SOY_PROTO_VALUE_GET_PROTO)
-                .checkedCast(runtimeType.runtimeType()),
-            renderContext.get());
+                .checkedCast(runtimeType.runtimeType()));
       }
     } else {
       // else it must be a List/Proto/String all of which must preserve null through the unboxing
@@ -538,12 +522,7 @@ final class SoyExpression extends Expression {
     if (expr == delegate) {
       return this;
     }
-    return new SoyExpression(soyRuntimeType, expr, renderContext);
-  }
-
-  SoyExpression withRenderContext(Expression renderContext) {
-    checkArgument(renderContext.resultType().equals(RENDER_CONTEXT_TYPE));
-    return new SoyExpression(soyRuntimeType, delegate, Optional.of(renderContext));
+    return new SoyExpression(soyRuntimeType, expr);
   }
 
   /**
@@ -578,13 +557,12 @@ final class SoyExpression extends Expression {
 
   @Override
   SoyExpression asNonNullable() {
-    return new SoyExpression(
-        soyRuntimeType.asNonNullable(), delegate.asNonNullable(), renderContext);
+    return new SoyExpression(soyRuntimeType.asNonNullable(), delegate.asNonNullable());
   }
 
   @Override
   SoyExpression asNullable() {
-    return new SoyExpression(soyRuntimeType.asNullable(), delegate.asNullable(), renderContext);
+    return new SoyExpression(soyRuntimeType.asNullable(), delegate.asNullable());
   }
 
   @Override

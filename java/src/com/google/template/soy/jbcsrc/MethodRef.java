@@ -50,6 +50,7 @@ import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
 import com.google.template.soy.shared.internal.SharedRuntime;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
+import com.google.template.soy.types.proto.SoyProtoValueImpl;
 import com.ibm.icu.util.ULocale;
 import java.io.PrintStream;
 import java.lang.reflect.Modifier;
@@ -141,8 +142,8 @@ abstract class MethodRef {
 
   static final MethodRef PRINT_STREAM_PRINTLN = create(PrintStream.class, "println");
 
-  static final MethodRef RENDER_CONTEXT_BOX =
-      create(RenderContext.class, "box", Message.class).asNonNullable();
+  static final MethodRef SOY_PROTO_VALUE_IMPL_CREATE =
+      create(SoyProtoValueImpl.class, "create", Message.class).asNonNullable();
 
   static final MethodRef RENDER_CONTEXT_GET_DELTEMPLATE =
       create(

@@ -185,14 +185,10 @@ final class ProtoUtils {
    * @param protoType The type of the proto being accessed
    * @param baseExpr The proto being accessed
    * @param node The field access operation
-   * @param renderContext The render context
    */
   static SoyExpression accessField(
-      SoyProtoType protoType,
-      SoyExpression baseExpr,
-      FieldAccessNode node,
-      Expression renderContext) {
-    return new AccessorGenerator(protoType, baseExpr, node, renderContext).generate();
+      SoyProtoType protoType, SoyExpression baseExpr, FieldAccessNode node) {
+    return new AccessorGenerator(protoType, baseExpr, node).generate();
   }
 
   /**
@@ -203,19 +199,13 @@ final class ProtoUtils {
     final SoyRuntimeType unboxedRuntimeType;
     final SoyExpression baseExpr;
     final FieldAccessNode node;
-    final Expression renderContext;
     final FieldDescriptor descriptor;
     final boolean isProto3;
 
-    AccessorGenerator(
-        SoyProtoType protoType,
-        SoyExpression baseExpr,
-        FieldAccessNode node,
-        Expression renderContext) {
+    AccessorGenerator(SoyProtoType protoType, SoyExpression baseExpr, FieldAccessNode node) {
       this.unboxedRuntimeType = SoyRuntimeType.getUnboxedType(protoType).get();
       this.baseExpr = baseExpr;
       this.node = node;
-      this.renderContext = renderContext;
       this.descriptor = protoType.getFieldDescriptor(node.getFieldName());
       this.isProto3 = descriptor.getFile().getSyntax() == Syntax.PROTO3;
     }
@@ -234,8 +224,7 @@ final class ProtoUtils {
                     .invoke(MethodRef.SOY_PROTO_VALUE_GET_PROTO)
                     // this cast is required because getProto() is generic, so it basically returns
                     // 'Message'
-                    .checkedCast(unboxedRuntimeType.runtimeType()),
-                renderContext);
+                    .checkedCast(unboxedRuntimeType.runtimeType()));
       } else if (baseExpr.soyRuntimeType().equals(unboxedRuntimeType)) {
         typedBaseExpr = baseExpr;
       } else {
@@ -499,8 +488,8 @@ final class ProtoUtils {
         SoyRuntimeType protoRuntimeType = SoyRuntimeType.getUnboxedType(fieldProtoType).get();
         return SoyExpression.forProto(
             protoRuntimeType,
-            field.checkedCast(protoRuntimeType.runtimeType()), // cast needed for extensions
-            renderContext);
+            // cast needed for extensions
+            field.checkedCast(protoRuntimeType.runtimeType()));
       } else {
         // All other are special sanitized types
         ContentKind kind = ((SanitizedType) node.getType()).getContentKind();
@@ -542,22 +531,19 @@ final class ProtoUtils {
    *
    * @param node The proto initialization node
    * @param args Args for the proto initialization call
-   * @param renderContext The render context
    * @param varManager Local variables manager
    */
   static SoyExpression createProto(
       ProtoInitNode node,
       List<SoyExpression> args,
-      Expression renderContext,
       Supplier<? extends ExpressionDetacher> detacher,
       TemplateVariableManager varManager) {
-    return new ProtoInitGenerator(node, args, renderContext, detacher, varManager).generate();
+    return new ProtoInitGenerator(node, args, detacher, varManager).generate();
   }
 
   private static final class ProtoInitGenerator {
     private final ProtoInitNode node;
     private final List<SoyExpression> args;
-    private final Expression renderContext;
     private final Supplier<? extends ExpressionDetacher> detacher;
     private final TemplateVariableManager varManager;
 
@@ -567,12 +553,10 @@ final class ProtoUtils {
     ProtoInitGenerator(
         ProtoInitNode node,
         List<SoyExpression> args,
-        Expression renderContext,
         Supplier<? extends ExpressionDetacher> detacher,
         TemplateVariableManager varManager) {
       this.node = node;
       this.args = args;
-      this.renderContext = renderContext;
       this.detacher = detacher;
       this.varManager = varManager;
 
@@ -585,7 +569,7 @@ final class ProtoUtils {
       if (args.isEmpty()) {
         final Expression defaultInstance = getDefaultInstanceMethod(descriptor).invoke();
         return SoyExpression.forProto(
-            SoyRuntimeType.getUnboxedType(protoType).get(), defaultInstance, renderContext);
+            SoyRuntimeType.getUnboxedType(protoType).get(), defaultInstance);
       }
 
       final Expression newBuilderCall = getBuilderMethod(descriptor).invoke();
@@ -607,15 +591,14 @@ final class ProtoUtils {
             }
           }.asNonNullable();
 
-      return SoyExpression.forProto(
-          SoyRuntimeType.getUnboxedType(protoType).get(), expression, renderContext);
+      return SoyExpression.forProto(SoyRuntimeType.getUnboxedType(protoType).get(), expression);
     }
 
     private ImmutableList<Statement> getFieldSetters() {
       ImmutableList.Builder<Statement> setters = ImmutableList.builder();
       for (int i = 0; i < args.size(); i++) {
         FieldDescriptor field = protoType.getFieldDescriptor(node.getParamName(i));
-        SoyExpression baseArg = args.get(i).withRenderContext(renderContext);
+        SoyExpression baseArg = args.get(i);
 
         Statement setter;
         if (field.isRepeated()) {
@@ -750,7 +733,6 @@ final class ProtoUtils {
 
       SoyExpression soyValue =
           SoyExpression.forSoyValue(elementType.soyType(), getAndResolve)
-              .withRenderContext(renderContext)
               // Set soyValue as a non-nullable, even though it is possible for templates to receive
               // lists with null elements. Lists with null elements will result in a
               // NullPointerException thrown in .handleNormalSetter() / .handleExtension().

@@ -918,8 +918,7 @@ final class ExpressionCompiler {
     @Override
     protected final SoyExpression visitProtoInitNode(ProtoInitNode node) {
       List<SoyExpression> args = visitChildren(node);
-      return ProtoUtils.createProto(
-          node, args, parameters.getRenderContext(), detacher, varManager);
+      return ProtoUtils.createProto(node, args, detacher, varManager);
     }
 
     // Catch-all for unimplemented nodes
@@ -1005,7 +1004,7 @@ final class ExpressionCompiler {
         switch (baseExpr.soyType().getKind()) {
           case PROTO:
             SoyProtoType protoType = (SoyProtoType) baseExpr.soyType();
-            return ProtoUtils.accessField(protoType, baseExpr, node, parameters.getRenderContext());
+            return ProtoUtils.accessField(protoType, baseExpr, node);
           case UNKNOWN:
           case UNION:
           case RECORD:

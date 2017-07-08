@@ -139,8 +139,7 @@ public final class SoySauceImpl implements SoySauce {
         new RenderContext.Builder()
             .withCompiledTemplates(templates)
             .withSoyFunctions(functions)
-            .withSoyPrintDirectives(printDirectives)
-            .withConverter(converter);
+            .withSoyPrintDirectives(printDirectives);
 
     private SoyRecord data = SoyValueConverter.EMPTY_DICT;
     private SoyRecord ij = SoyValueConverter.EMPTY_DICT;

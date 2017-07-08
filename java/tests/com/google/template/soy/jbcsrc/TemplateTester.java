@@ -84,8 +84,7 @@ public final class TemplateTester {
                               functions, Predicates.instanceOf(SoyJavaFunction.class)));
               return new RenderContext.Builder()
                   .withSoyFunctions(soyJavaFunctions)
-                  .withSoyPrintDirectives(printDirectives)
-                  .withConverter(converter);
+                  .withSoyPrintDirectives(printDirectives);
             }
 
             @Override
@@ -168,7 +167,6 @@ public final class TemplateTester {
       classData = null;
       factory = null;
       this.converter = converter;
-      defaultContextBuilder.withConverter(converter);
       return this;
     }
 
