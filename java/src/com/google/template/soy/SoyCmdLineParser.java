@@ -16,19 +16,8 @@
 
 package com.google.template.soy;
 
-import com.google.common.base.Function;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
 import com.google.inject.Module;
-import com.google.template.soy.SoyFileSet.Builder;
-import com.google.template.soy.base.internal.SoyFileKind;
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Set;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.OptionDef;
@@ -36,12 +25,8 @@ import org.kohsuke.args4j.spi.OptionHandler;
 import org.kohsuke.args4j.spi.Parameters;
 import org.kohsuke.args4j.spi.Setter;
 
-/**
- * Utilities for classes with a {@code main()} method.
- *
- */
-final class MainClassUtils {
-
+/** A command line parser for soy, based on args4j. */
+final class SoyCmdLineParser extends CmdLineParser {
   static {
     CmdLineParser.registerHandler(Module.class, ModuleOptionHandler.class);
     // overwrite the built in boolean handler
@@ -49,7 +34,12 @@ final class MainClassUtils {
     CmdLineParser.registerHandler(boolean.class, BooleanOptionHandler.class);
   }
 
-  private MainClassUtils() {}
+  private final ClassLoader pluginLoader;
+
+  SoyCmdLineParser(Object bean, ClassLoader loader) {
+    super(bean);
+    this.pluginLoader = loader;
+  }
 
   // NOTE: all the OptionHandler types need to be public with public constructors so args4j can use
   // them.
@@ -214,69 +204,6 @@ final class MainClassUtils {
   }
 
   /**
-   * A subtype of {@link CmdLineParser} that allows us to pass option handlers the plugin
-   * classloader.
-   */
-  private static final class SoyCmdLineParser extends CmdLineParser {
-    final ClassLoader pluginLoader;
-
-    SoyCmdLineParser(Object bean, ClassLoader loader) {
-      super(bean);
-      this.pluginLoader = loader;
-    }
-  }
-
-  /**
-   * Parses command line flags written with args4j.
-   *
-   * @param objWithFlags An instance of a class containing args4j flag definitions.
-   * @param args The args string to parse.
-   * @param usagePrefix The string to prepend to the usage message (when reporting an error).
-   * @return The CmdLineParser that was created and used to parse the args (can be used to print
-   *     usage text for flags when reporting errors).
-   */
-  static CmdLineParser parseFlags(
-      Object objWithFlags, String[] args, String usagePrefix, ClassLoader pluginLoader) {
-
-    CmdLineParser cmdLineParser = new SoyCmdLineParser(objWithFlags, pluginLoader);
-    cmdLineParser.setUsageWidth(100);
-
-    try {
-      cmdLineParser.parseArgument(args);
-
-    } catch (CmdLineException cle) {
-      exitWithError(cle.getMessage(), cmdLineParser, usagePrefix);
-    }
-
-    return cmdLineParser;
-  }
-
-  /**
-   * Prints an error message and the usage string, and then exits.
-   *
-   * @param errorMsg The error message to print.
-   * @param cmdLineParser The CmdLineParser used to print usage text for flags.
-   * @param usagePrefix The string to prepend to the usage message (when reporting an error).
-   */
-  static RuntimeException exitWithError(
-      String errorMsg, CmdLineParser cmdLineParser, String usagePrefix) {
-
-    System.err.println("\nError: " + errorMsg + "\n\n");
-    System.err.println(usagePrefix);
-    cmdLineParser.printUsage(System.err);
-
-    System.exit(1);
-    throw new AssertionError(); // dead code
-  }
-
-  /** Returns a Guice injector that includes the SoyModule, and the given modules. */
-  static Injector createInjector(List<Module> modules) {
-    modules = new ArrayList<>(modules); // make a copy that we know is mutable
-    modules.add(new SoyModule());
-    return Guice.createInjector(modules); // TODO(lukes): Stage.PRODUCTION?
-  }
-
-  /**
    * Private helper for createInjector().
    *
    * @param moduleName The name of the plugin module to instantiate.
@@ -288,53 +215,6 @@ final class MainClassUtils {
 
     } catch (ReflectiveOperationException e) {
       throw new RuntimeException("Cannot instantiate plugin module \"" + moduleName + "\".", e);
-    }
-  }
-
-  /**
-   * Helper to add srcs and deps Soy files to a SoyFileSet builder. Also does sanity checks.
-   *
-   * @param sfsBuilder The SoyFileSet builder to add to.
-   * @param inputPrefix The input path prefix to prepend to all the file paths.
-   * @param srcs The srcs from the --srcs flag. Exactly one of 'srcs' and 'args' must be nonempty.
-   * @param args The old-style srcs from the command line (that's how they were specified before we
-   *     added the --srcs flag). Exactly one of 'srcs' and 'args' must be nonempty.
-   * @param deps The deps from the --deps flag, or empty list if not applicable.
-   * @param exitWithErrorFn A function that exits with an error message followed by a usage message.
-   */
-  static void addSoyFilesToBuilder(
-      Builder sfsBuilder,
-      String inputPrefix,
-      Collection<String> srcs,
-      Collection<String> args,
-      Collection<String> deps,
-      Collection<String> indirectDeps,
-      Function<String, Void> exitWithErrorFn) {
-    if (srcs.isEmpty() && args.isEmpty()) {
-      exitWithErrorFn.apply("Must provide list of source Soy files (--srcs).");
-    }
-    if (!srcs.isEmpty() && !args.isEmpty()) {
-      exitWithErrorFn.apply(
-          "Found source Soy files from --srcs and from args (please use --srcs only).");
-    }
-
-    // Create Set versions of each of the arguments, and de-dupe. If something is included as
-    // multiple file kinds, we'll keep the strongest one; a file in both srcs and deps will be a
-    // src, and one in both deps and indirect_deps will be a dep.
-    // TODO(gboyer): Maybe stop supporting old style (srcs from command line args) at some point.
-    Set<String> srcsSet = ImmutableSet.<String>builder().addAll(srcs).addAll(args).build();
-    Set<String> depsSet = Sets.difference(ImmutableSet.copyOf(deps), srcsSet);
-    Set<String> indirectDepsSet =
-        Sets.difference(ImmutableSet.copyOf(indirectDeps), Sets.union(srcsSet, depsSet));
-
-    for (String src : srcsSet) {
-      sfsBuilder.addWithKind(new File(inputPrefix + src), SoyFileKind.SRC);
-    }
-    for (String dep : depsSet) {
-      sfsBuilder.addWithKind(new File(inputPrefix + dep), SoyFileKind.DEP);
-    }
-    for (String dep : indirectDepsSet) {
-      sfsBuilder.addWithKind(new File(inputPrefix + dep), SoyFileKind.INDIRECT_DEP);
     }
   }
 }
