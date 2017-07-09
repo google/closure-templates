@@ -48,7 +48,7 @@ public final class SoyMsgPruner extends AbstractSoyCompiler {
   @Option(
     name = "--inputMessageFiles",
     usage = "[Required] The list of files to prune",
-    handler = SoyCmdLineParser.FileListOptionHandler.class
+    handler = MainClassUtils.FileListOptionHandler.class
   )
   private List<File> inputMsgFiles = new ArrayList<>();
 
@@ -57,7 +57,7 @@ public final class SoyMsgPruner extends AbstractSoyCompiler {
     usage =
         "[Required] The names of the files to output.  There should be one of these (in the same "
             + "order) for every inputMessageFile",
-    handler = SoyCmdLineParser.FileListOptionHandler.class
+    handler = MainClassUtils.FileListOptionHandler.class
   )
   private List<File> outputMsgFiles = new ArrayList<>();
 

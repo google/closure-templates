@@ -100,7 +100,7 @@ public final class SoyToJsSrcCompiler extends AbstractSoyCompiler {
         "[Required for generating localized JS] Comma-delimited list of locales for"
             + " which to generate localized JS. There will be one output JS file for each"
             + " combination of input Soy file and locale.",
-    handler = SoyCmdLineParser.StringListOptionHandler.class
+    handler = MainClassUtils.StringListOptionHandler.class
   )
   private List<String> locales = new ArrayList<>();
 
