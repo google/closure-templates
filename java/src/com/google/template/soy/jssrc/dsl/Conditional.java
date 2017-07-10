@@ -144,7 +144,7 @@ abstract class Conditional extends CodeChunk {
    */
   CodeChunk.WithValue asConditionalExpression(CodeChunk.Generator codeGenerator) {
     Preconditions.checkState(everyBranchHasAValue());
-    Declaration decl = codeGenerator.declare(WithValue.LITERAL_NULL);
+    VariableDeclaration decl = codeGenerator.declare(WithValue.LITERAL_NULL);
     CodeChunk.WithValue var = decl.ref();
     ConditionalBuilder builder = null;
     for (IfThenPair oldCondition : conditions()) {

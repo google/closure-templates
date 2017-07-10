@@ -85,7 +85,7 @@ final class FormattingContext implements AutoCloseable {
         // TODO(brndn): migrate these classes to be CodeChunks (not CodeChunk.WithValues) and
         // remove this logic.
         && !(chunk instanceof Composite)
-        && !(chunk instanceof Declaration)) {
+        && !(chunk instanceof VariableDeclaration)) {
       appendOutputExpression((CodeChunk.WithValue) chunk);
       append(";");
       endLine();

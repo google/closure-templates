@@ -47,6 +47,7 @@ import com.google.common.collect.SetMultimap;
 import com.google.common.collect.TreeMultimap;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.UniqueNameGenerator;
+import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
@@ -117,6 +118,8 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.annotation.CheckReturnValue;
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 
 /**
@@ -328,7 +331,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    * {@link JsCodeBuilder} and using the unsound {@link
    * CodeChunk#treatRawStringAsStatementLegacyOnly} API.
    */
-  private CodeChunk visitChildrenReturningCodeChunk(ParentSoyNode<?> node) {
+  protected CodeChunk visitChildrenReturningCodeChunk(ParentSoyNode<?> node) {
     return doVisitReturningCodeChunk(node, true);
   }
 
@@ -342,7 +345,8 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     jsCodeBuilder = createChildJsCodeBuilder();
 
     // Visit body.
-    jsCodeBuilder.increaseIndent();
+    // set indent to 0 since when rendering the CodeChunk, everything will get re-indented
+    jsCodeBuilder.setIndent(0);
 
     if (visitChildren) {
       visitChildren((ParentSoyNode<?>) node);
@@ -350,14 +354,10 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       visit(node);
     }
 
-    jsCodeBuilder.decreaseIndent();
-
     CodeChunk chunk =
         CodeChunk.treatRawStringAsStatementLegacyOnly(
             jsCodeBuilder.getCode(), jsCodeBuilder.googRequires());
 
-    // Swap the original JsCodeBuilder back in, but preserve indent levels.
-    original.setIndent(jsCodeBuilder.getIndent());
     jsCodeBuilder = original;
 
     return chunk;
@@ -716,81 +716,89 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     assistantForMsgs = null;
 
     String paramsRecordType = null;
-
+    String jsDoc = null;
     // ------ Generate JS Doc. ------
     if (jsSrcOptions.shouldGenerateJsdoc()) {
-      jsCodeBuilder.appendLine("/**");
-      jsCodeBuilder.append(" * @param {");
+      StringBuilder jsDocBuilder = new StringBuilder();
+      jsDocBuilder.append("/**\n");
+      jsDocBuilder.append(" * @param {");
       if (useStrongTyping) {
         paramsRecordType = genParamsRecordType(node);
-        jsCodeBuilder.append(alias + ".Params");
+        jsDocBuilder.append(alias).append(".Params");
       } else {
-        jsCodeBuilder.append("Object<string, *>=");
+        jsDocBuilder.append("Object<string, *>=");
       }
-      jsCodeBuilder.appendLine("} opt_data");
-      jsCodeBuilder.appendLine(" * @param {Object<string, *>=} opt_ijData");
-      jsCodeBuilder.appendLine(" * @param {Object<string, *>=} opt_ijData_deprecated");
+      jsDocBuilder.append("} opt_data\n");
+      jsDocBuilder.append(" * @param {Object<string, *>=} opt_ijData\n");
+      jsDocBuilder.append(" * @param {Object<string, *>=} opt_ijData_deprecated\n");
       String returnType = getTemplateReturnType(node);
-      jsCodeBuilder.appendLine(" * @return {", returnType, "}");
-      String suppressions = "checkTypes";
-      jsCodeBuilder.appendLine(" * @suppress {" + suppressions + "}");
+      jsDocBuilder.append(" * @return {").append(returnType).append("}\n");
+      jsDocBuilder.append(" * @suppress {").append("checkTypes").append("}\n");
       if (node.getVisibility() == Visibility.PRIVATE) {
-        jsCodeBuilder.appendLine(" * @private");
+        jsDocBuilder.append(" * @private\n");
       }
-      jsCodeBuilder.appendLine(" */");
+      jsDocBuilder.append(" */\n");
+      jsDoc = jsDocBuilder.toString();
     }
 
-    // ------ Generate function definition up to opening brace. ------
-    if (addToExports) {
-      jsCodeBuilder.appendLine(
-          "function ", alias, "(opt_data, opt_ijData, opt_ijData_deprecated) {");
-    } else {
-      jsCodeBuilder.appendLine(alias, " = function(opt_data, opt_ijData, opt_ijData_deprecated) {");
-    }
-    jsCodeBuilder.increaseIndent();
-    jsCodeBuilder.appendLine("opt_ijData = opt_ijData_deprecated || opt_ijData;");
+    ImmutableList.Builder<CodeChunk> bodyStatements = ImmutableList.builder();
+    bodyStatements.add(
+        CodeChunk.assign(
+            "opt_ijData",
+            CodeChunk.id("opt_ijData_deprecated").or(CodeChunk.id("opt_ijData"), codeGenerator)));
     // If there are any null coalescing operators or switch nodes then we need to generate an
     // additional temporary variable.
     if (!SoyTreeUtils.getAllNodesOfType(node, NullCoalescingOpNode.class).isEmpty()
         || !SoyTreeUtils.getAllNodesOfType(node, SwitchNode.class).isEmpty()) {
-      jsCodeBuilder.appendLine("var $$temp;");
+      bodyStatements.add(CodeChunk.declare("$$temp", null));
     }
 
     // Generate statement to ensure data is defined, if necessary.
     if (new ShouldEnsureDataIsDefinedVisitor().exec(node)) {
-      jsCodeBuilder.append(assign("opt_data", OPT_DATA.or(EMPTY_OBJECT_LITERAL, codeGenerator)));
+      bodyStatements.add(assign("opt_data", OPT_DATA.or(EMPTY_OBJECT_LITERAL, codeGenerator)));
     }
 
     // ------ Generate function body. ------
-    generateFunctionBody(node);
+    bodyStatements.add(generateFunctionBody(node));
 
-    // ------ Generate function closing brace and add to exports if necessary. ------
-    jsCodeBuilder.decreaseIndent();
+    CodeChunk.WithValue function =
+        CodeChunk.function(
+            // TODO(lukes): come up with a different abstraction for parameter names.  strings
+            // are too brittle.
+            ImmutableList.of("opt_data", "opt_ijData", "opt_ijData_deprecated"),
+            CodeChunk.statements(bodyStatements.build()));
+    ImmutableList.Builder<CodeChunk> declarations = ImmutableList.builder();
     if (addToExports) {
-      jsCodeBuilder.appendLine("}");
-      jsCodeBuilder.append(
+      declarations.add(CodeChunk.declare(alias, function));
+      declarations.add(
           assign("exports" /* partialName starts with a dot */ + partialName, id(alias)));
     } else {
-      jsCodeBuilder.appendLine("};");
+      declarations.add(CodeChunk.assign(alias, function));
     }
 
     // ------ Add the @typedef of opt_data. ------
     if (paramsRecordType != null) {
-      jsCodeBuilder.appendLine("/**");
-      jsCodeBuilder.appendLine(" * @typedef {", paramsRecordType, "}");
-      jsCodeBuilder.appendLine(" */");
-      jsCodeBuilder.appendLine(alias + ".Params;");
+      // TODO(b/35203585): find a way to represent jsdoc using code chunks
+      StringBuilder sb = new StringBuilder();
+      sb.append("/**\n");
+      sb.append(" * @typedef {").append(paramsRecordType).append("}\n");
+      sb.append(" */\n");
+      // TODO(b/35203585): find a way to represent declarations like this in codechunks
+      sb.append(alias).append(".Params");
+      declarations.add(
+          CodeChunk.treatRawStringAsStatementLegacyOnly(
+              sb.toString(), ImmutableList.<GoogRequire>of()));
     }
 
     // ------ Add the fully qualified template name to the function to use in debug code. ------
-    jsCodeBuilder.append(
+    declarations.add(
         ifStatement(GOOG_DEBUG, assign(alias + ".soyTemplateName", stringLiteral(templateName)))
             .build());
 
     // ------ If delegate template, generate a statement to register it. ------
     if (node instanceof TemplateDelegateNode) {
       TemplateDelegateNode nodeAsDelTemplate = (TemplateDelegateNode) node;
-      jsCodeBuilder.append(
+      declarations.add(
           SOY_REGISTER_DELEGATE_FN.call(
               SOY_GET_DELTEMPLATE_ID.call(
                   stringLiteral(delTemplateNamer.getDelegateName(nodeAsDelTemplate))),
@@ -798,22 +806,28 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
               number(nodeAsDelTemplate.getDelPriority().getValue()),
               dottedIdNoRequire(alias)));
     }
+
+    // TODO(b/35203585): find a way to represent jsdoc using code chunks
+    if (jsDoc != null) {
+      jsCodeBuilder.append(jsDoc);
+    }
+    jsCodeBuilder.append(CodeChunk.statements(declarations.build()));
   }
 
-  /**
-   * Generates the function body.
-   */
-  protected void generateFunctionBody(TemplateNode node) {
+  /** Generates the function body. */
+  @CheckReturnValue
+  protected CodeChunk generateFunctionBody(TemplateNode node) {
     // Type check parameters.
-    genParamTypeChecks(node);
-    CodeChunk.WithValue templateBody;
+    CodeChunk paramDeclarations = genParamTypeChecks(node);
+    ContentKind kind = node.getContentKind();
+    CodeChunk bodyAndReturn;
     if (isComputableAsJsExprsVisitor.exec(node)) {
       // Case 1: The code style is 'concat' and the whole template body can be represented as JS
       // expressions. We specially handle this case because we don't want to generate the variable
       // 'output' at all. We simply concatenate the JS expressions and return the result.
 
       List<CodeChunk.WithValue> templateBodyChunks = genJsExprsVisitor.exec(node);
-      if (node.getContentKind() == null) {
+      if (kind == null) {
         // The template is not strict. Thus, it may not apply an escaping directive to *every* print
         // command, which means that some of its print commands could produce a number. Thus, there
         // is a danger that a plus operator between two expressions in the list will do numeric
@@ -824,7 +838,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         // SanitizedContent). We thus call a method that makes sure to return an expression that
         // produces a string and is in no danger of using numeric addition when concatenating the
         // expressions in the list.
-        templateBody = CodeChunkUtils.concatChunksForceString(templateBodyChunks);
+        bodyAndReturn = return_(CodeChunkUtils.concatChunksForceString(templateBodyChunks));
       } else {
         // The template is strict. Thus, it applies an escaping directive to *every* print command,
         // which means that no print command produces a number, which means that there is no danger
@@ -833,27 +847,31 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         // get an expression that produces SanitizedContent, which is indeed possible with an
         // escaping directive that produces SanitizedContent. Thus, we do not have to be extra
         // careful when concatenating the expressions in the list.
-        templateBody = CodeChunkUtils.concatChunks(templateBodyChunks);
+        bodyAndReturn = return_(sanitize(CodeChunkUtils.concatChunks(templateBodyChunks), kind));
       }
     } else {
       // Case 2: Normal case.
 
       jsCodeBuilder.pushOutputVar("output");
-      visitChildren(node);
-      templateBody = id("output");
+      CodeChunk codeChunk = visitChildrenReturningCodeChunk(node);
       jsCodeBuilder.popOutputVar();
+      bodyAndReturn = CodeChunk.statements(codeChunk, return_(sanitize(id("output"), kind)));
     }
+    return CodeChunk.statements(paramDeclarations, bodyAndReturn);
+  }
 
-    if (node.getContentKind() != null) {
+  private CodeChunk.WithValue sanitize(
+      CodeChunk.WithValue templateBody, @Nullable ContentKind contentKind) {
+    if (contentKind != null) {
       // Templates with autoescape="strict" return the SanitizedContent wrapper for its kind:
       // - Call sites are wrapped in an escaper. Returning SanitizedContent prevents re-escaping.
       // - The topmost call into Soy returns a SanitizedContent. This will make it easy to take
       //   the result of one template and feed it to another, and also to confidently assign
       //   sanitized HTML content to innerHTML. This does not use the internal-blocks variant,
       //   and so will wrap empty strings.
-      templateBody = sanitizedContentOrdainerFunction(node.getContentKind()).call(templateBody);
+      return sanitizedContentOrdainerFunction(contentKind).call(templateBody);
     }
-    jsCodeBuilder.append(return_(templateBody));
+    return templateBody;
   }
 
   protected GenJsCodeVisitorAssistantForMsgs getAssistantForMsgs() {
@@ -1206,7 +1224,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     // Generate the loop body.
     CodeChunk data = declare(dataName, id(listName).bracketAccess(loopIndex));
     CodeChunk foreachBody = visitChildrenReturningCodeChunk(node);
-    CodeChunk body = data.concat(foreachBody);
+    CodeChunk body = CodeChunk.statements(data, foreachBody);
 
     // Create the entire for block.
     CodeChunk forChunk = forLoop(loopIndexName, limit, body);
@@ -1467,11 +1485,14 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   }
 
   /**
-   * Generate code to verify the runtime types of the input params. Also typecasts the
-   * input parameters and assigns them to local variables for use in the template.
+   * Generate code to verify the runtime types of the input params. Also typecasts the input
+   * parameters and assigns them to local variables for use in the template.
+   *
    * @param node the template node.
    */
-  protected void genParamTypeChecks(TemplateNode node) {
+  @CheckReturnValue
+  protected CodeChunk genParamTypeChecks(TemplateNode node) {
+    ImmutableList.Builder<CodeChunk> declarations = ImmutableList.builder();
     for (TemplateParam param : node.getAllParams()) {
       if (param.declLoc() != TemplateParam.DeclLoc.HEADER) {
         continue;
@@ -1506,12 +1527,13 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       }
 
       String closureTypeExpr = jsSrcOptions.shouldGenerateJsdoc() ? jsType.typeExpr() : null;
-      jsCodeBuilder.append(declare(paramAlias, value, closureTypeExpr, jsType.getGoogRequires()));
+      declarations.add(declare(paramAlias, value, closureTypeExpr, jsType.getGoogRequires()));
 
       templateTranslationContext
           .soyToJsVariableMappings()
           .put(paramName, id(paramAlias));
     }
+    return CodeChunk.statements(declarations.build());
   }
 
   private JsType getJsType(SoyType paramType) {

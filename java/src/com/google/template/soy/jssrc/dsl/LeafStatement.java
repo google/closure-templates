@@ -17,6 +17,7 @@
 package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
+import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.jssrc.restricted.JsExpr;
@@ -32,6 +33,14 @@ abstract class LeafStatement extends CodeChunk {
   abstract ImmutableSet<GoogRequire> requires();
 
   static LeafStatement create(String value, Iterable<GoogRequire> requires) {
+    // This hackery is to work around extra newlines and semi colons added by JsCodeBuilder
+    // TODO(b/35203585): this (and leafstatement) should go away when jscodebuilder does
+    while (value.endsWith("\n")) {
+      value = value.substring(0, value.length() - 1);
+    }
+    if (!value.isEmpty() && !value.endsWith("}") && !value.endsWith(";")) {
+      value += ';';
+    }
     return new AutoValue_LeafStatement(value, ImmutableSet.copyOf(requires));
   }
 
@@ -40,9 +49,9 @@ abstract class LeafStatement extends CodeChunk {
     if (value().length() == 0) {
       return;
     }
-    ctx.append(value());
-    if (!(value().endsWith(";") || value().endsWith("}"))) {
-      ctx.append(';');
+    // split and call append for each line to trigger correct indenting logic
+    for (String line : Splitter.on('\n').split(value())) {
+      ctx.append(line).endLine();
     }
   }
 

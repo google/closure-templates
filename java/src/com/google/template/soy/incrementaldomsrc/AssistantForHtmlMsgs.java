@@ -187,6 +187,7 @@ final class AssistantForHtmlMsgs extends GenJsCodeVisitorAssistantForMsgs {
     jsCodeBuilder().append(INCREMENTAL_DOM_TEXT.call(unescape));
     jsCodeBuilder().appendLine(lastIndexVar, " = ", regexVar, ".lastIndex;");
 
+    // TODO(lukes): switch to switchbuilder
     // Handle the actual placeholder.
     jsCodeBuilder().appendLine("switch (", matchVar, " && ", matchVar, "[0]) {");
     jsCodeBuilder().increaseIndent();

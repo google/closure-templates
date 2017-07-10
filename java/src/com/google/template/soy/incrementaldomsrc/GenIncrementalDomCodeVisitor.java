@@ -27,6 +27,7 @@ import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SO
 import static com.google.template.soy.jssrc.dsl.CodeChunk.LITERAL_EMPTY_STRING;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.declare;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.id;
+import static com.google.template.soy.jssrc.dsl.CodeChunk.return_;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.stringLiteral;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_ASSERTS_ASSERT;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_STRING_UNESCAPE_ENTITIES;
@@ -47,6 +48,7 @@ import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.CodeChunk.Generator;
 import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
+import com.google.template.soy.jssrc.dsl.VariableDeclaration;
 import com.google.template.soy.jssrc.internal.CanInitOutputVarVisitor;
 import com.google.template.soy.jssrc.internal.GenCallCodeUtils;
 import com.google.template.soy.jssrc.internal.GenJsCodeVisitor;
@@ -185,26 +187,27 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   }
 
   @Override
-  protected void generateFunctionBody(TemplateNode node) {
+  protected CodeChunk generateFunctionBody(TemplateNode node) {
     IncrementalDomCodeBuilder jsCodeBuilder = getJsCodeBuilder();
     boolean isTextTemplate = isTextContent(node.getContentKind());
 
+    CodeChunk typeChecks = genParamTypeChecks(node);
     // Note: we do not try to combine this into a single return statement if the content is
     // computable as a JsExpr. A JavaScript compiler, such as Closure Compiler, is able to perform
     // the transformation.
     if (isTextTemplate) {
-      jsCodeBuilder.appendLine("var output = '';");
-      // We do our own initialization, so mark it as such.
+      // We do our own initialization below, so mark it as such.
       jsCodeBuilder.pushOutputVar("output").setOutputVarInited();
     }
 
-    genParamTypeChecks(node);
-    visitChildren(node);
+    CodeChunk body = visitChildrenReturningCodeChunk(node);
 
     if (isTextTemplate) {
-      jsCodeBuilder.appendLine("return output;");
+      VariableDeclaration declare = declare("output", LITERAL_EMPTY_STRING);
+      body = CodeChunk.statements(declare, body, return_(declare.ref()));
       jsCodeBuilder.popOutputVar();
     }
+    return CodeChunk.statements(typeChecks, body);
   }
 
   /**
@@ -235,24 +238,29 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     // The html transform step, performed by HTMLTransformVisitor, ensures that
     // we always have a content kind specified.
     Preconditions.checkState(node.getContentKind() != null);
-
+    VariableDeclaration declaration;
+    CodeChunk definition;
+    CodeChunk children = visitChildrenReturningCodeChunk(node);
     switch (node.getContentKind()) {
       case HTML:
       case ATTRIBUTES:
-        jsCodeBuilder.appendLine("var " + generatedVarName, " = function() {");
-        jsCodeBuilder.increaseIndent();
-        visitChildren(node);
-        jsCodeBuilder.decreaseIndent();
-        jsCodeBuilder.appendLine("};");
+        declaration =
+            CodeChunk.declare(
+                generatedVarName, CodeChunk.function(ImmutableList.<String>of(), children));
+        definition = declaration;
         break;
       default:
-        jsCodeBuilder.append(declare(generatedVarName, LITERAL_EMPTY_STRING));
-        visitChildren(node);
+        // N.B. because incrementaldomsrc doesn't run the autoescaper, the normal |text directives
+        // are not inserted and so we can't rely on non string expressions being coerced to strings
+        // so we must start the output var off with a string.
+        declaration = declare(generatedVarName, LITERAL_EMPTY_STRING);
+        definition = CodeChunk.statements(declaration, children);
         break;
     }
 
     jsCodeBuilder.setContentKind(prevContentKind);
     jsCodeBuilder.popOutputVar();
+    jsCodeBuilder.append(definition);
   }
 
   /**
@@ -486,7 +494,6 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     } else {
       emitOpenStartEndAndVisitSubtree(node, tagName);
     }
-    jsCodeBuilder.increaseIndent();
 
     // Whether or not it is valid for this tag to be self closing has already been validated by the
     // HtmlContextVisitor.  So we just need to output the close instructions if the node is self
@@ -573,8 +580,6 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
    */
   private void emitClose(String tagName) {
     IncrementalDomCodeBuilder jsCodeBuilder = getJsCodeBuilder();
-
-    jsCodeBuilder.decreaseIndent();
     jsCodeBuilder.append(INCREMENTAL_DOM_ELEMENT_CLOSE.call(stringLiteral(tagName)));
   }
 

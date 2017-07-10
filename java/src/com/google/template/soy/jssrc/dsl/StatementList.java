@@ -17,18 +17,35 @@
 package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 
 /** Represents a sequence of statements. */
 @AutoValue
 abstract class StatementList extends CodeChunk {
+  private static final StatementList EMPTY =
+      new AutoValue_StatementList(ImmutableList.<CodeChunk>of());
+
   abstract ImmutableList<? extends CodeChunk> statements();
 
-  static StatementList of(ImmutableList<? extends CodeChunk> statements) {
-    Preconditions.checkState(
-        statements.size() > 1, "list of size %s makes no sense", statements.size());
-    return new AutoValue_StatementList(statements);
+  static StatementList of(Iterable<? extends CodeChunk> statements) {
+    if (Iterables.isEmpty(statements)) {
+      return EMPTY;
+    }
+    // unroll the statement list so it is flat
+    // otherwise ctx.appendAll will add extra newlines and semi colons.
+    // TODO(lukes): newlines and semicolons are handled in an extremely haphazard way...we should
+    // come up with some kind of coherent strategy.  Leaf nodes like this should probably be
+    // responsible for adding these things rather than FormattingContext
+    ImmutableList.Builder<CodeChunk> unrolled = ImmutableList.builder();
+    for (CodeChunk statement : statements) {
+      if (statement instanceof StatementList) {
+        unrolled.addAll(((StatementList) statement).statements());
+      } else {
+        unrolled.add(statement);
+      }
+    }
+    return new AutoValue_StatementList(unrolled.build());
   }
 
   @Override

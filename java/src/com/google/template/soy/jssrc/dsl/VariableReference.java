@@ -26,9 +26,9 @@ import com.google.template.soy.jssrc.restricted.JsExpr;
 @Immutable
 abstract class VariableReference extends CodeChunk.WithValue {
 
-  abstract Declaration declaration();
+  abstract VariableDeclaration declaration();
 
-  static VariableReference of(Declaration declaration) {
+  static VariableReference of(VariableDeclaration declaration) {
     return new AutoValue_VariableReference(ImmutableSet.<CodeChunk>of(declaration), declaration);
   }
 

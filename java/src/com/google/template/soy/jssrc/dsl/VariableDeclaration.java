@@ -24,10 +24,11 @@ import javax.annotation.concurrent.Immutable;
 /** Represents a variable declaration. */
 @AutoValue
 @Immutable
-public abstract class Declaration extends CodeChunk {
+public abstract class VariableDeclaration extends CodeChunk {
 
   abstract String varName();
 
+  @Nullable
   abstract CodeChunk.WithValue rhs();
 
   @Nullable
@@ -35,16 +36,16 @@ public abstract class Declaration extends CodeChunk {
   
   abstract ImmutableSet<GoogRequire> googRequires();
 
-  static Declaration create(String varName, CodeChunk.WithValue rhs) {
-    return new AutoValue_Declaration(varName, rhs, null, ImmutableSet.<GoogRequire>of());
+  static VariableDeclaration create(String varName, @Nullable CodeChunk.WithValue rhs) {
+    return new AutoValue_VariableDeclaration(varName, rhs, null, ImmutableSet.<GoogRequire>of());
   }
 
-  static Declaration create(
+  static VariableDeclaration create(
       String varName,
-      CodeChunk.WithValue rhs,
+      @Nullable CodeChunk.WithValue rhs,
       @Nullable String closureCompilerTypeExpression,
       Iterable<GoogRequire> googRequires) {
-    return new AutoValue_Declaration(
+    return new AutoValue_VariableDeclaration(
         varName, rhs, closureCompilerTypeExpression, ImmutableSet.copyOf(googRequires));
   }
 
@@ -70,16 +71,17 @@ public abstract class Declaration extends CodeChunk {
 
   @Override
   void doFormatInitialStatements(FormattingContext ctx) {
-    ctx.appendInitialStatements(rhs());
+    if (rhs() != null) {
+      ctx.appendInitialStatements(rhs());
+    }
     if (closureCompilerTypeExpression() != null) {
       ctx.append("/** @type {").append(closureCompilerTypeExpression()).append("} */").endLine();
     }
-    ctx.append("var ")
-        .append(varName())
-        .append(" = ")
-        .appendOutputExpression(rhs())
-        .append(";")
-        .endLine();
+    ctx.append("var ").append(varName());
+    if (rhs() != null) {
+      ctx.append(" = ").appendOutputExpression(rhs());
+    }
+    ctx.append(";").endLine();
   }
 
   @Override
@@ -87,6 +89,8 @@ public abstract class Declaration extends CodeChunk {
     for (GoogRequire require : googRequires()) {
       collector.add(require);
     }
-    rhs().collectRequires(collector);
+    if (rhs() != null) {
+      rhs().collectRequires(collector);
+    }
   }
 }
