@@ -39,6 +39,7 @@ import com.google.template.soy.soytree.TemplateRegistry;
 import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
+import java.util.Collections;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Provider;
@@ -86,14 +87,12 @@ public class IncrementalDomSrcMain {
    * @param errorReporter The Soy error reporter that collects errors during code generation.
    * @return A list of strings where each string represents the JS source code that belongs in one
    *     JS file. The generated JS files correspond one-to-one to the original Soy source files.
-   * @throws SoySyntaxException If a syntax error is found.
    */
   public List<String> genJsSrc(
       SoyFileSetNode soyTree,
       TemplateRegistry registry,
       SoyIncrementalDomSrcOptions options,
-      ErrorReporter errorReporter)
-      throws SoySyntaxException {
+      ErrorReporter errorReporter) {
 
     SoyJsSrcOptions incrementalJSSrcOptions = options.toJsSrcOptions();
 
@@ -107,9 +106,15 @@ public class IncrementalDomSrcMain {
       ApiCallScopeUtils.seedSharedParams(inScope, null /* msgBundle */, bidiGlobalDir);
 
       // Do the code generation.
+
       optimizeBidiCodeGenVisitorProvider.get().exec(soyTree);
 
       new HtmlContextVisitor(errorReporter).exec(soyTree);
+      // If any errors are reported in {@code HtmlContextVisitor}, we should not continue.
+      // Return an empty list here, {@code SoyFileSet} will throw an exception.
+      if (errorReporter.hasErrors()) {
+        return Collections.emptyList();
+      }
 
       new UnescapingVisitor().exec(soyTree);
 
@@ -141,9 +146,12 @@ public class IncrementalDomSrcMain {
       String outputPathFormat,
       ErrorReporter errorReporter)
       throws IOException {
-
     List<String> jsFileContents = genJsSrc(soyTree, templateRegistry, jsSrcOptions, errorReporter);
-
+    // If there are any errors in genJsSrc, jsFileContents will be an empty list, and we should not
+    // try to compare the size between jsFileContents and srcsToCompile.
+    if (errorReporter.hasErrors()) {
+      return;
+    }
     ImmutableList<SoyFileNode> srcsToCompile =
         ImmutableList.copyOf(
             Iterables.filter(soyTree.getChildren(), SoyFileNode.MATCH_SRC_FILENODE));

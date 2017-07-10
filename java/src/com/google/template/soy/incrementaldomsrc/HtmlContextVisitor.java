@@ -27,6 +27,7 @@ import com.google.template.soy.soytree.CssNode;
 import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.HtmlAttributeValueNode;
 import com.google.template.soy.soytree.HtmlCloseTagNode;
+import com.google.template.soy.soytree.HtmlCommentNode;
 import com.google.template.soy.soytree.HtmlContext;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.LetContentNode;
@@ -87,6 +88,11 @@ final class HtmlContextVisitor extends AbstractSoyNodeVisitor<Void> {
           "Invalid self-closing tag for \"{0}\". Self-closing tags are only valid for void tags and"
               + " SVG content (partially supported). For a list of void elements, see "
               + "https://www.w3.org/TR/html5/syntax.html#void-elements.");
+
+  private static final SoyErrorKind UNSUPPORTED_HTML_COMMENTS_FOR_IDOM =
+      SoyErrorKind.of(
+          "Found HTML comments \"{0}\". HTML comments in Soy templates are incompatible "
+              + "with Incremental DOM backend.");
 
   /**
    * The namespaces that Elements can be in, excluding MathML. Used by {@link HtmlTransformVisitor}
@@ -210,11 +216,17 @@ final class HtmlContextVisitor extends AbstractSoyNodeVisitor<Void> {
   @Override
   protected void visitHtmlAttributeValueNode(HtmlAttributeValueNode node) {
     // This is consistent with the old HtmlTransformVisitor, but doesn't really make sense, sometime
-    // this is
-    // JS, URL or CSS...
+    // this is JS, URL or CSS...
     pushState(HtmlContext.HTML_NORMAL_ATTR_VALUE);
     super.visitHtmlAttributeValueNode(node);
     popState();
+  }
+
+  @Override
+  protected void visitHtmlCommentNode(HtmlCommentNode node) {
+    // Report an error if we see HTML comments in idom backend.
+    errorReporter.report(
+        node.getSourceLocation(), UNSUPPORTED_HTML_COMMENTS_FOR_IDOM, node.toSourceString());
   }
 
   @Override
