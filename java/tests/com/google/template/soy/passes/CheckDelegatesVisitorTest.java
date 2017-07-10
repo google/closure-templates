@@ -20,7 +20,8 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.Iterables;
 import com.google.template.soy.SoyFileSetParserBuilder;
-import com.google.template.soy.error.FormattingErrorReporter;
+import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.ErrorReporterImpl;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -396,10 +397,10 @@ public final class CheckDelegatesVisitorTest {
   }
 
   private void assertInvalidSoyFiles(String expectedErrorMsgSubstr, String... soyFileContents) {
-    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+    ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
     SoyFileSetParserBuilder.forFileContents(soyFileContents).errorReporter(errorReporter).parse();
-    assertThat(errorReporter.getErrorMessages()).hasSize(1);
-    assertThat(Iterables.getOnlyElement(errorReporter.getErrorMessages()))
+    assertThat(errorReporter.getErrors()).hasSize(1);
+    assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
         .isEqualTo(expectedErrorMsgSubstr);
   }
 }

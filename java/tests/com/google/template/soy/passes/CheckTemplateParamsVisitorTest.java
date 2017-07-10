@@ -19,9 +19,12 @@ package com.google.template.soy.passes;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.basetree.SyntaxVersion;
-import com.google.template.soy.error.FormattingErrorReporter;
+import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.ErrorReporterImpl;
+import com.google.template.soy.error.SoyError;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -166,25 +169,27 @@ public final class CheckTemplateParamsVisitorTest {
 
     // This is actually not reported as an error by this visitor CheckTemplateParams doesn't check
     // calls
-    assertThat(soyDocErrorsFor(fileContent)).containsExactly("Call missing required param 'y'.");
+    assertThat(Iterables.getOnlyElement(soyDocErrorsFor(fileContent)).message())
+        .isEqualTo("Call missing required param 'y'.");
   }
 
   @Test
   public void testUndeclaredParam() {
     String soyDoc = "@param foo";
     String templateBody = "{$boo.foo}";
-    ImmutableList<String> errors = soyDocErrorsForTemplate(soyDoc, templateBody);
+    ImmutableList<SoyError> errors = soyDocErrorsForTemplate(soyDoc, templateBody);
     assertThat(errors).hasSize(2);
-    assertThat(errors.get(0)).contains("Unknown data key 'boo'. Did you mean 'foo'?");
-    assertThat(errors.get(1)).isEqualTo("Param 'foo' unused in template body.");
+    assertThat(errors.get(0).message()).contains("Unknown data key 'boo'. Did you mean 'foo'?");
+    assertThat(errors.get(1).message()).isEqualTo("Param 'foo' unused in template body.");
   }
 
   @Test
   public void testUnusedParam() {
     String soyDoc = "@param boo @param? foo";
     String templateBody = "{$boo.foo}";
-    ImmutableList<String> errors = soyDocErrorsForTemplate(soyDoc, templateBody);
-    assertThat(errors).containsExactly("Param 'foo' unused in template body.");
+    ImmutableList<SoyError> errors = soyDocErrorsForTemplate(soyDoc, templateBody);
+    assertThat(Iterables.getOnlyElement(errors).message())
+        .isEqualTo("Param 'foo' unused in template body.");
   }
 
   @Test
@@ -206,8 +211,9 @@ public final class CheckTemplateParamsVisitorTest {
             + "  {$moo}\n"
             + "{/template}\n";
 
-    ImmutableList<String> errors = soyDocErrorsFor(fileContent);
-    assertThat(errors).containsExactly("Param 'zoo' unused in template body.");
+    ImmutableList<SoyError> errors = soyDocErrorsFor(fileContent);
+    assertThat(Iterables.getOnlyElement(errors).message())
+        .isEqualTo("Param 'zoo' unused in template body.");
   }
 
   @Test
@@ -230,11 +236,10 @@ public final class CheckTemplateParamsVisitorTest {
   public void testUnusedParamWithRecursiveCall() {
     String soyDoc = "@param boo @param foo";
     String templateBody = "{call .foo data=\"all\" /}";
-    ImmutableList<String> errors = soyDocErrorsForTemplate(soyDoc, templateBody);
-    assertThat(errors)
-        .containsExactly(
-            "Param 'boo' unused in template body.", "Param 'foo' unused in template body.")
-        .inOrder();
+    ImmutableList<SoyError> errors = soyDocErrorsForTemplate(soyDoc, templateBody);
+    assertThat(errors).hasSize(2);
+    assertThat(errors.get(0).message()).isEqualTo("Param 'boo' unused in template body.");
+    assertThat(errors.get(1).message()).isEqualTo("Param 'foo' unused in template body.");
   }
 
   @Test
@@ -297,9 +302,9 @@ public final class CheckTemplateParamsVisitorTest {
             + "  {$goo2.moo2}\n"
             + "{/template}\n";
 
-    ImmutableList<String> errors = soyDocErrorsFor(fileContent0, fileContent1, fileContent2);
+    ImmutableList<SoyError> errors = soyDocErrorsFor(fileContent0, fileContent1, fileContent2);
     assertThat(errors).hasSize(1);
-    assertThat(errors.get(0)).contains("Unknown data key 'goo2'.");
+    assertThat(Iterables.getOnlyElement(errors).message()).contains("Unknown data key 'goo2'.");
   }
 
   @Test
@@ -326,14 +331,14 @@ public final class CheckTemplateParamsVisitorTest {
             + "  {@inject zoo: string}\n"
             + "{/template}\n";
 
-    ImmutableList<String> errors = soyDocErrorsFor(fileContent);
-    assertThat(errors)
-        .containsExactly(
-            "Param 'goo' unused in template body.", "Param 'zoo' unused in template body.")
-        .inOrder();
+    ImmutableList<SoyError> errors = soyDocErrorsFor(fileContent);
+    assertThat(errors).hasSize(2);
+    assertThat(errors.get(0).message()).isEqualTo("Param 'goo' unused in template body.");
+    assertThat(errors.get(1).message()).isEqualTo("Param 'zoo' unused in template body.");
   }
 
-  private static ImmutableList<String> soyDocErrorsForTemplate(String soyDoc, String templateBody) {
+  private static ImmutableList<SoyError> soyDocErrorsForTemplate(
+      String soyDoc, String templateBody) {
     String testFileContent =
         "{namespace boo autoescape=\"deprecated-noncontextual\"}\n"
             + "\n"
@@ -348,12 +353,12 @@ public final class CheckTemplateParamsVisitorTest {
     return soyDocErrorsFor(testFileContent);
   }
 
-  private static ImmutableList<String> soyDocErrorsFor(String... soyFileContents) {
-    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+  private static ImmutableList<SoyError> soyDocErrorsFor(String... soyFileContents) {
+    ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
     SoyFileSetParserBuilder.forFileContents(soyFileContents)
         .declaredSyntaxVersion(SyntaxVersion.V1_0)
         .errorReporter(errorReporter)
         .parse();
-    return errorReporter.getErrorMessages();
+    return errorReporter.getErrors();
   }
 }

@@ -19,12 +19,13 @@ package com.google.template.soy.soytree;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.base.Joiner;
+import com.google.common.collect.Iterables;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
+import com.google.template.soy.error.ErrorReporterImpl;
 import com.google.template.soy.error.ExplodingErrorReporter;
-import com.google.template.soy.error.FormattingErrorReporter;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -73,10 +74,10 @@ public final class MsgHtmlTagNodeTest {
 
   @Test
   public void testErrorNodeReturnedWhenPhNameAttrIsMalformed() {
-    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+    ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
     parseMsgHtmlTagNode("<div phname=\".+\" />", errorReporter);
-    assertThat(errorReporter.getErrorMessages())
-        .contains("'phname' attribute is not a valid identifier.");
+    assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
+        .isEqualTo("'phname' attribute is not a valid identifier.");
   }
 
   @Test

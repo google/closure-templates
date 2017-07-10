@@ -18,9 +18,11 @@ package com.google.template.soy.passes;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import com.google.common.collect.Iterables;
 import com.google.template.soy.SoyFileSetParserBuilder;
+import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.ErrorReporterImpl;
 import com.google.template.soy.error.ExplodingErrorReporter;
-import com.google.template.soy.error.FormattingErrorReporter;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -48,9 +50,9 @@ public final class VerifyPhnameAttrOnlyOnPlaceholdersVisitorTest {
   }
 
   private void assertInvalidSoyCode(String soyCode) {
-    FormattingErrorReporter errors = new FormattingErrorReporter();
+    ErrorReporter errors = ErrorReporterImpl.createForTest();
     SoyFileSetParserBuilder.forTemplateContents(soyCode).errorReporter(errors).parse();
-    assertThat(errors.getErrorMessages())
+    assertThat(Iterables.getOnlyElement(errors.getErrors()).message())
         .contains("'phname' attributes are only valid inside '{msg...' tags.");
   }
 }

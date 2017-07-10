@@ -23,8 +23,9 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.basetree.SyntaxVersion;
+import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.ErrorReporterImpl;
 import com.google.template.soy.error.ExplodingErrorReporter;
-import com.google.template.soy.error.FormattingErrorReporter;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.ForeachNode;
@@ -273,13 +274,13 @@ public final class ResolveNamesVisitorTest {
   }
 
   private void assertResolveNamesFails(String expectedError, String fileContent) {
-    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+    ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
     SoyFileSetParserBuilder.forFileContents(fileContent)
         .declaredSyntaxVersion(SyntaxVersion.V2_0)
         .errorReporter(errorReporter)
         .typeRegistry(typeRegistry)
         .parse();
-    assertThat(errorReporter.getErrorMessages()).hasSize(1);
-    assertThat(errorReporter.getErrorMessages().get(0)).isEqualTo(expectedError);
+    assertThat(errorReporter.getErrors()).hasSize(1);
+    assertThat(errorReporter.getErrors().get(0).message()).isEqualTo(expectedError);
   }
 }

@@ -23,6 +23,7 @@ import static com.google.template.soy.jssrc.dsl.CodeChunk.number;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
@@ -31,8 +32,8 @@ import com.google.template.soy.SoyModule;
 import com.google.template.soy.base.internal.UniqueNameGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
+import com.google.template.soy.error.ErrorReporterImpl;
 import com.google.template.soy.error.ExplodingErrorReporter;
-import com.google.template.soy.error.FormattingErrorReporter;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.internal.GenJsExprsVisitor.GenJsExprsVisitorFactory;
@@ -2753,20 +2754,23 @@ public final class GenJsCodeVisitorTest {
    * @param expectedErrorMsg If not null, this is checked against the exception message.
    */
   private void assertFailsInGeneratingJsCode(String soyCode, @Nullable String expectedErrorMsg) {
-    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+    ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
     String genCode = getGeneratedJsCode(soyCode, errorReporter);
-    if (errorReporter.getErrorMessages().isEmpty()) {
+    if (errorReporter.getErrors().isEmpty()) {
       throw new AssertionError(
           "Expected:\n" + soyCode + "\n to fail. But instead generated:\n" + genCode);
     }
-    if (expectedErrorMsg != null && !errorReporter.getErrorMessages().contains(expectedErrorMsg)) {
+    if (expectedErrorMsg != null
+        && !Iterables.getOnlyElement(errorReporter.getErrors())
+            .message()
+            .equals(expectedErrorMsg)) {
       throw new AssertionError(
           "Expected:\n"
               + soyCode
               + "\n to fail with error:\""
               + expectedErrorMsg
               + "\". But instead failed with:"
-              + errorReporter.getErrorMessages());
+              + errorReporter.getErrors());
     }
   }
 

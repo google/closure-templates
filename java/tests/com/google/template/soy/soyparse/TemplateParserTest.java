@@ -27,8 +27,9 @@ import com.google.common.collect.Iterables;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.ErrorReporterImpl;
 import com.google.template.soy.error.ExplodingErrorReporter;
-import com.google.template.soy.error.FormattingErrorReporter;
+import com.google.template.soy.error.SoyError;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.IntegerNode;
@@ -1178,7 +1179,7 @@ public final class TemplateParserTest {
 
   @Test
   public void testParseMsgStmtWithIf() throws Exception {
-    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+    ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
     parseTemplateContent(
         "{@param boo :?}\n"
             + "  {msg desc=\"Blah.\"}\n"
@@ -1191,7 +1192,7 @@ public final class TemplateParserTest {
             + "    .\n"
             + "  {/msg}\n",
         errorReporter);
-    assertThat(errorReporter.getErrorMessages()).isNotEmpty();
+    assertThat(errorReporter.getErrors()).isNotEmpty();
   }
 
   @Test
@@ -1932,19 +1933,19 @@ public final class TemplateParserTest {
 
   @Test
   public void testMultipleErrors() throws ParseException {
-    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+    ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
     parseTemplateContent(
         "{call 123 /}\n" // Invalid callee name
             + "{delcall 456 /}\n" // Invalid callee name
             + "{foreach foo in bar}{/foreach}\n" // Invalid foreach var
             + "{let /}\n", // Missing let var
         errorReporter);
-    List<String> errors = errorReporter.getErrorMessages();
+    List<SoyError> errors = errorReporter.getErrors();
     assertThat(errors).hasSize(4);
-    assertThat(errors.get(0)).isEqualTo("parse error at '1': expected identifier or .");
-    assertThat(errors.get(1)).isEqualTo("parse error at '4': expected identifier or .");
-    assertThat(errors.get(2)).isEqualTo("parse error at 'foo': expected variable");
-    assertThat(errors.get(3)).isEqualTo("parse error at '/}': expected variable");
+    assertThat(errors.get(0).message()).isEqualTo("parse error at '1': expected identifier or .");
+    assertThat(errors.get(1).message()).isEqualTo("parse error at '4': expected identifier or .");
+    assertThat(errors.get(2).message()).isEqualTo("parse error at 'foo': expected variable");
+    assertThat(errors.get(3).message()).isEqualTo("parse error at '/}': expected variable");
   }
 
   // -----------------------------------------------------------------------------------------------
@@ -2005,15 +2006,15 @@ public final class TemplateParserTest {
   }
 
   private static void assertInvalidTemplate(String input) {
-    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+    ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
     parseTemplateContent(input, errorReporter);
-    assertThat(errorReporter.getErrorMessages()).isNotEmpty();
+    assertThat(errorReporter.getErrors()).isNotEmpty();
   }
 
   private static void assertInvalidTemplate(String input, String expectedErrorMessage) {
-    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+    ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
     parseTemplateContent(input, errorReporter);
-    assertThat(errorReporter.getErrorMessages()).hasSize(1);
-    assertThat(errorReporter.getErrorMessages().get(0)).contains(expectedErrorMessage);
+    assertThat(errorReporter.getErrors()).hasSize(1);
+    assertThat(errorReporter.getErrors().get(0).message()).contains(expectedErrorMessage);
   }
 }

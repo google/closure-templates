@@ -22,12 +22,15 @@ import static org.junit.Assert.assertEquals;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.ErrorReporterImpl;
 import com.google.template.soy.error.ExplodingErrorReporter;
-import com.google.template.soy.error.FormattingErrorReporter;
+import com.google.template.soy.error.SoyError;
 import com.google.template.soy.msgs.internal.MsgUtils;
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
+import java.util.ArrayList;
+import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -53,13 +56,13 @@ public final class RewriteGenderMsgsVisitorTest {
             + "    {default}Reply to them\n"
             + "  {/select}\n"
             + "{/msg}\n";
-    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+    ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
     SoyFileSetParserBuilder.forTemplateContents(soyCode)
         .errorReporter(errorReporter)
         .parse()
         .fileSet();
-    assertThat(errorReporter.getErrorMessages()).hasSize(1);
-    assertThat(Iterables.getOnlyElement(errorReporter.getErrorMessages()))
+    assertThat(errorReporter.getErrors()).hasSize(1);
+    assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
         .contains("Cannot mix 'genders' attribute with 'select' command in the same message.");
   }
 
@@ -73,12 +76,16 @@ public final class RewriteGenderMsgsVisitorTest {
             + "{msg genders=\"$userGender, $gender\" desc=\"Button text.\"}\n"
             + "  You joined {$owner}'s community.\n"
             + "{/msg}\n";
-    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+    ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
     SoyFileSetParserBuilder.forTemplateContents(soyCode)
         .errorReporter(errorReporter)
         .parse()
         .fileSet();
-    assertThat(errorReporter.getErrorMessages())
+    List<String> actualMessages = new ArrayList<>();
+    for (SoyError error : errorReporter.getErrors()) {
+      actualMessages.add(error.message());
+    }
+    assertThat(actualMessages)
         .contains(
             "Cannot generate noncolliding base names for vars. "
                 + "Colliding expressions: '$gender' and '$userGender'. "
@@ -100,10 +107,10 @@ public final class RewriteGenderMsgsVisitorTest {
             + "    desc=\"...\"}\n"
             + "  You added {$targetName1} and {$targetName2} to {$groupOwnerName}'s group.\n"
             + "{/msg}\n";
-    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+    ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
     SoyFileSetParserBuilder.forTemplateContents(soyCode).errorReporter(errorReporter).parse();
-    assertThat(errorReporter.getErrorMessages())
-        .containsExactly("Attribute 'genders' should contain 1-3 expressions.");
+    assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
+        .isEqualTo("Attribute 'genders' should contain 1-3 expressions.");
   }
 
   @Test
@@ -113,6 +120,7 @@ public final class RewriteGenderMsgsVisitorTest {
             + "{@param userGender : ?}\n"
             + "{@param gender1 : ?}\n"
             + "{@param gender2 : ?}\n"
+            + "{@param numPhotos : ?}\n"
             + "{@param name1 : ?}\n"
             + "{@param name2 : ?}\n"
             + "{msg genders=\"$userGender, $gender1, $gender2\" desc=\"\"}\n"
@@ -121,13 +129,13 @@ public final class RewriteGenderMsgsVisitorTest {
             + "    {default}Find {$name1}'s face in {$name2}'s photos\n"
             + "  {/plural}\n"
             + "{/msg}\n";
-    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+    ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
     SoyFileSetParserBuilder.forTemplateContents(soyCode)
         .errorReporter(errorReporter)
         .parse()
         .fileSet();
-    assertThat(errorReporter.getErrorMessages())
-        .contains(
+    assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
+        .isEqualTo(
             "In a msg with 'plural', the 'genders' attribute can contain at most 2 expressions"
                 + " (otherwise, combinatorial explosion would cause a gigantic generated"
                 + " message).");

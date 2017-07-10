@@ -16,8 +16,9 @@
 
 package com.google.template.soy.base.internal;
 
+import static org.junit.Assert.fail;
+
 import com.google.common.truth.Truth;
-import com.google.template.soy.error.SoyCompilationException;
 import java.net.URL;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -36,14 +37,10 @@ public final class SoyFileSupplierTest {
   @Test
   public void testMalformedFileURL() throws Exception {
     URL url = new URL("file:///foo/bar|baz");
-    boolean failedWithSoyCompilationException = false;
     try {
       SoyFileSupplier.Factory.create(url, SoyFileKind.SRC, "/test/path");
-    } catch (SoyCompilationException ex) {
-      failedWithSoyCompilationException = true;
+      fail();
+    } catch (RuntimeException expected) {
     }
-    Truth.assertWithMessage(url + " should not be treated as a valid URL")
-        .that(failedWithSoyCompilationException)
-        .isTrue();
   }
 }

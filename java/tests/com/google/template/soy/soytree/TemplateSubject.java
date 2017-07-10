@@ -29,8 +29,6 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.error.ErrorReporterImpl;
-import com.google.template.soy.error.PrettyErrorFactory;
-import com.google.template.soy.error.SnippetFormatter;
 import com.google.template.soy.error.SoyError;
 import com.google.template.soy.error.SoyErrorKind;
 import javax.annotation.Nullable;
@@ -127,9 +125,7 @@ public final class TemplateSubject extends Subject<TemplateSubject, String> {
             SoyFileKind.SRC,
             "example.soy");
     ErrorReporterImpl errorReporter =
-        new ErrorReporterImpl(
-            new PrettyErrorFactory(
-                new SnippetFormatter(ImmutableMap.of(sourceFile.getFilePath(), sourceFile))));
+        ErrorReporterImpl.create(ImmutableMap.of(sourceFile.getFilePath(), sourceFile));
     SoyFileSetNode fileSet =
         SoyFileSetParserBuilder.forSuppliers(sourceFile)
             .errorReporter(errorReporter)

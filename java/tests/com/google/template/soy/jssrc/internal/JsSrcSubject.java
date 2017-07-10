@@ -37,8 +37,9 @@ import com.google.template.soy.SoyModule;
 import com.google.template.soy.base.internal.UniqueNameGenerator;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.ErrorReporterImpl;
 import com.google.template.soy.error.ExplodingErrorReporter;
-import com.google.template.soy.error.FormattingErrorReporter;
+import com.google.template.soy.error.SoyError;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
@@ -195,15 +196,15 @@ abstract class JsSrcSubject<T extends Subject<T, String>> extends Subject<T, Str
   }
 
   void causesErrors(String... expectedErrorMsgSubstrings) {
-    FormattingErrorReporter formattingErrorReporter = new FormattingErrorReporter();
-    this.errorReporter = formattingErrorReporter;
+    ErrorReporter reporter = ErrorReporterImpl.createForTest();
+    this.errorReporter = reporter;
 
     generateCode();
 
-    ImmutableList<String> errorMessages = formattingErrorReporter.getErrorMessages();
-    assertThat(errorMessages).hasSize(expectedErrorMsgSubstrings.length);
+    ImmutableList<SoyError> errors = reporter.getErrors();
+    assertThat(errors).hasSize(expectedErrorMsgSubstrings.length);
     for (int i = 0; i < expectedErrorMsgSubstrings.length; ++i) {
-      assertThat(errorMessages.get(i)).contains(expectedErrorMsgSubstrings[i]);
+      assertThat(errors.get(i).message()).contains(expectedErrorMsgSubstrings[i]);
     }
   }
 

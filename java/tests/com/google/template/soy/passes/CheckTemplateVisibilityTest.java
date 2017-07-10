@@ -22,8 +22,9 @@ import com.google.common.collect.Iterables;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
+import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.ErrorReporterImpl;
 import com.google.template.soy.error.ExplodingErrorReporter;
-import com.google.template.soy.error.FormattingErrorReporter;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -54,7 +55,7 @@ public final class CheckTemplateVisibilityTest {
 
   @Test
   public void testCallPrivateTemplateFromSameNamespaceButDifferentFile() {
-    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+    ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
     SoyFileSetParserBuilder.forFileContents(
             "{namespace ns autoescape=\"strict\"}\n"
                 + "/** Private template. */\n"
@@ -68,14 +69,14 @@ public final class CheckTemplateVisibilityTest {
                 + "{/template}")
         .errorReporter(errorReporter)
         .parse();
-    assertThat(errorReporter.getErrorMessages()).hasSize(1);
-    assertThat(Iterables.getOnlyElement(errorReporter.getErrorMessages()))
+    assertThat(errorReporter.getErrors()).hasSize(1);
+    assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
         .isEqualTo("ns.foo has private access in no-path.");
   }
 
   @Test
   public void testCallPrivateTemplateDifferentFile() {
-    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+    ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
     SoyFileSetParserBuilder.forFileContents(
             "{namespace ns autoescape=\"strict\"}\n"
                 + "/** Private template. */\n"
@@ -89,8 +90,8 @@ public final class CheckTemplateVisibilityTest {
                 + "{/template}")
         .errorReporter(errorReporter)
         .parse();
-    assertThat(errorReporter.getErrorMessages()).hasSize(1);
-    assertThat(Iterables.getOnlyElement(errorReporter.getErrorMessages()))
+    assertThat(errorReporter.getErrors()).hasSize(1);
+    assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
         .isEqualTo("ns.foo has private access in no-path.");
   }
 
@@ -98,7 +99,7 @@ public final class CheckTemplateVisibilityTest {
   // defined in a file with the same name irrespective of directory
   @Test
   public void testCallPrivateTemplateSameFileNameDifferentDirectory() {
-    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+    ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
     SoyFileSetParserBuilder.forSuppliers(
             SoyFileSupplier.Factory.create(
                 "{namespace ns autoescape=\"strict\"}\n"
@@ -118,8 +119,8 @@ public final class CheckTemplateVisibilityTest {
                 "baz/bar.soy"))
         .errorReporter(errorReporter)
         .parse();
-    assertThat(errorReporter.getErrorMessages()).hasSize(1);
-    assertThat(Iterables.getOnlyElement(errorReporter.getErrorMessages()))
+    assertThat(errorReporter.getErrors()).hasSize(1);
+    assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
         .isEqualTo("ns.foo has private access in foo/bar.soy.");
   }
 }

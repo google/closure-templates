@@ -16,6 +16,8 @@
 
 package com.google.template.soy.error;
 
+import com.google.common.collect.ImmutableList;
+import com.google.errorprone.annotations.ForOverride;
 import com.google.template.soy.base.SourceLocation;
 
 /**
@@ -23,19 +25,21 @@ import com.google.template.soy.base.SourceLocation;
  *
  * @author brndn@google.com (Brendan Linn)
  */
-public interface ErrorReporter {
+public abstract class ErrorReporter {
 
   /**
    * Reports the given {@code error}, formatted according to {@code args} and associated with the
    * given {@code sourceLocation}.
    */
-  void report(SourceLocation sourceLocation, SoyErrorKind error, Object... args);
+  public abstract void report(SourceLocation sourceLocation, SoyErrorKind error, Object... args);
 
   /**
    * Returns an opaque token (the checkpoint) that callers can later pass back into {@link
    * #errorsSince} to see if any errors have occurred in the interim.
    */
-  Checkpoint checkpoint();
+  public final Checkpoint checkpoint() {
+    return new Checkpoint(this, getCurrentNumberOfErrors());
+  }
 
   /**
    * Returns true iff errors have occurred since {@code checkpoint} was obtained from {@link
@@ -44,11 +48,39 @@ public interface ErrorReporter {
    * <p>Useful for callers whose outputs are dependent on whether some code path resulted in new
    * errors (for example, returning an error node if parsing encountered errors).
    */
-  boolean errorsSince(Checkpoint checkpoint);
+  public final boolean errorsSince(Checkpoint checkpoint) {
+    Checkpoint impl = checkpoint;
+    if (impl.owner != this) {
+      throw new IllegalArgumentException(
+          "Can only call errorsSince on a Checkpoint instance that was returned from this same "
+              + "reporter");
+    }
+    return getCurrentNumberOfErrors() > impl.errorsSoFar;
+  }
 
   /** Returns true if any errors have been reported. */
-  boolean hasErrors();
+  public final boolean hasErrors() {
+    return getCurrentNumberOfErrors() != 0;
+  }
+
+  /**
+   * Returns the current number of reported errors. Useful for detecting if an error has been
+   * reported.
+   */
+  @ForOverride
+  abstract int getCurrentNumberOfErrors();
+
+  /** Returns all the errors reported so far. */
+  public abstract ImmutableList<SoyError> getErrors();
 
   /** Opaque token, used by {@link #checkpoint} and {@link #errorsSince}. */
-  public interface Checkpoint {}
+  public static final class Checkpoint {
+    private final ErrorReporter owner;
+    private final int errorsSoFar;
+
+    private Checkpoint(ErrorReporter owner, int errorsSoFar) {
+      this.owner = owner;
+      this.errorsSoFar = errorsSoFar;
+    }
+  }
 }

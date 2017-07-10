@@ -20,12 +20,13 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
+import com.google.common.collect.Iterables;
 import com.google.common.truth.StringSubject;
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.ErrorReporterImpl;
 import com.google.template.soy.error.ExplodingErrorReporter;
-import com.google.template.soy.error.FormattingErrorReporter;
 import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.HtmlAttributeValueNode;
@@ -389,11 +390,11 @@ public final class HtmlRewritePassTest {
     // unmatched closing div is fine.
     runPass("</div>");
     for (String tag : new String[] {"</script>", "</style>", "</title>", "</textarea>", "</xmp>"}) {
-      FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+      ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
       runPass(tag, errorReporter);
-      assertThat(errorReporter.getErrorMessages())
+      assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
           .named("error message for: %s", tag)
-          .containsExactly("Unexpected close tag for context-changing tag.");
+          .isEqualTo("Unexpected close tag for context-changing tag.");
     }
   }
 
@@ -405,21 +406,22 @@ public final class HtmlRewritePassTest {
 
   @Test
   public void testBadTagName() {
-    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+    ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
     runPass("<3 >", errorReporter);
-    assertThat(errorReporter.getErrorMessages()).containsExactly("Illegal tag name character.");
+    assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
+        .isEqualTo("Illegal tag name character.");
   }
 
   @Test
   public void testBadAttributeName() {
-    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+    ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
     runPass("<div foo-->", errorReporter);
-    assertThat(errorReporter.getErrorMessages())
-        .containsExactly("Illegal attribute name character.");
-    errorReporter = new FormattingErrorReporter();
+    assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
+        .isEqualTo("Illegal attribute name character.");
+    errorReporter = ErrorReporterImpl.createForTest();
     runPass("<div 0a>", errorReporter);
-    assertThat(errorReporter.getErrorMessages())
-        .containsExactly("Illegal attribute name character.");
+    assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
+        .isEqualTo("Illegal attribute name character.");
 
     // these are fine, for weird reasons.  afaik, these characters aren't allowed by any defined
     // html attributes... but we'll allow them since some users are using them for weird reasons.
@@ -431,7 +433,7 @@ public final class HtmlRewritePassTest {
 
   @Test
   public void testHtmlCommentWithOnlyRawTextNode() {
-    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+    ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
     TemplateNode node;
 
     // The most common test case.
@@ -465,7 +467,7 @@ public final class HtmlRewritePassTest {
 
   @Test
   public void testHtmlCommentWithPrintNode() {
-    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+    ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
     TemplateNode node;
 
     // Print node.
@@ -485,7 +487,7 @@ public final class HtmlRewritePassTest {
 
   @Test
   public void testHtmlCommentWithControlFlow() {
-    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+    ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
     TemplateNode node;
     // Control flow structure should be preserved.
     node = runPass("<!-- {if $foo} foo {else} bar {/if} -->", errorReporter);
@@ -507,15 +509,14 @@ public final class HtmlRewritePassTest {
 
   @Test
   public void testBadHtmlComment() {
-    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
-    TemplateNode node;
+    ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
     // These are examples that we haven't closed the HTML comments.
     for (String text : new String[] {"<!--", "<!-- --", "<!--->"}) {
-      errorReporter = new FormattingErrorReporter();
+      errorReporter = ErrorReporterImpl.createForTest();
       runPass(text, errorReporter);
-      assertThat(errorReporter.getErrorMessages())
+      assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
           .named("error message for: %s", text)
-          .containsExactly(
+          .isEqualTo(
               "template changes context from 'pcdata' to 'html comment'. "
                   + "Did you forget to close the html comment?");
     }

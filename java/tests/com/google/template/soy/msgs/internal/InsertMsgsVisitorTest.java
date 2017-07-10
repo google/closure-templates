@@ -22,8 +22,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.ErrorReporterImpl;
 import com.google.template.soy.error.ExplodingErrorReporter;
-import com.google.template.soy.error.FormattingErrorReporter;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.restricted.SoyMsg;
 import com.google.template.soy.msgs.restricted.SoyMsgBundleImpl;
@@ -203,15 +203,15 @@ public final class InsertMsgsVisitorTest {
     assertThat(template.numChildren()).isEqualTo(2);
 
     // Execute the visitor.
-    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+    ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
     new InsertMsgsVisitor(null /* msgBundle */, errorReporter).exec(template);
 
-    assertThat(errorReporter.getErrorMessages()).hasSize(2);
-    assertThat(errorReporter.getErrorMessages().get(0))
+    assertThat(errorReporter.getErrors()).hasSize(2);
+    assertThat(errorReporter.getErrors().get(0).toString())
         .contains(
             "JS code generation currently only supports plural/select messages when "
                 + "shouldGenerateGoogMsgDefs is true.");
-    assertThat(errorReporter.getErrorMessages().get(1))
+    assertThat(errorReporter.getErrors().get(1).toString())
         .contains(
             "JS code generation currently only supports plural/select messages when "
                 + "shouldGenerateGoogMsgDefs is true.");

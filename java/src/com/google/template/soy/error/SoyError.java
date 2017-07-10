@@ -16,39 +16,23 @@
 
 package com.google.template.soy.error;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 import com.google.auto.value.AutoValue;
+import com.google.common.base.Optional;
 import com.google.common.collect.ComparisonChain;
 import com.google.template.soy.base.SourceLocation;
 
 /** A structured error object for reporting */
 @AutoValue
 public abstract class SoyError implements Comparable<SoyError> {
-  /** A factory for constructing Errors. Typically this is used to apply formatting. */
-  public interface Factory {
-    SoyError create(SourceLocation location, SoyErrorKind kind, Object... args);
-  }
 
-  /** provides a default implementation for tests. */
-  public static final Factory DEFAULT_FACTORY =
-      new Factory() {
-        @Override
-        public SoyError create(SourceLocation location, SoyErrorKind kind, Object... args) {
-          checkNotNull(location);
-          String message = kind.format(args);
-          return createError(location, kind, message, location + ": error: " + message);
-        }
-      };
-
-  static SoyError createError(
-      SourceLocation location, SoyErrorKind kind, String message, String formattedError) {
-    return new AutoValue_SoyError(location, kind, message, formattedError);
+  static SoyError create(
+      SourceLocation location, SoyErrorKind kind, String message, Optional<String> snippet) {
+    return new AutoValue_SoyError(location, kind, message, snippet);
   }
 
   SoyError() {} // package private to prevent external subclassing
 
-  /** The location where the error occured. */
+  /** The location where the error occurred. */
   public abstract SourceLocation location();
 
   /** The error kind. For classification usecases. */
@@ -62,12 +46,18 @@ public abstract class SoyError implements Comparable<SoyError> {
   public abstract String message();
 
   // Should be accessed via toString()
-  abstract String formattedMessage();
+  abstract Optional<String> snippet();
 
   /** The full formatted error. */
   @Override
   public String toString() {
-    return formattedMessage();
+    return location().getFilePath()
+        + ':'
+        + location().getBeginLine()
+        + ": error: "
+        + message()
+        + "\n"
+        + snippet().or("");
   }
 
   @Override

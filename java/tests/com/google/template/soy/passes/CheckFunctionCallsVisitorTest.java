@@ -22,7 +22,8 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.basetree.SyntaxVersion;
-import com.google.template.soy.error.FormattingErrorReporter;
+import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.ErrorReporterImpl;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -295,12 +296,13 @@ public final class CheckFunctionCallsVisitorTest {
 
   private void assertFunctionCallsInvalid(
       SyntaxVersion declaredSyntaxVersion, String errorMessage, String... lines) {
-    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+    ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
     SoyFileSetParserBuilder.forFileContents(Joiner.on('\n').join(lines))
         .declaredSyntaxVersion(declaredSyntaxVersion)
         .errorReporter(errorReporter)
         .parse();
-    assertThat(errorReporter.getErrorMessages()).hasSize(1);
-    assertThat(Iterables.getOnlyElement(errorReporter.getErrorMessages())).contains(errorMessage);
+    assertThat(errorReporter.getErrors()).hasSize(1);
+    assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
+        .contains(errorMessage);
   }
 }

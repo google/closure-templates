@@ -27,8 +27,8 @@ import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.ErrorReporterImpl;
 import com.google.template.soy.error.ExplodingErrorReporter;
-import com.google.template.soy.error.FormattingErrorReporter;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -139,11 +139,11 @@ public final class TemplateRegistryTest {
             + "/** Foo. */\n"
             + "{template .foo}\n"
             + "{/template}\n";
-    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+    ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
     SoyFileSetParserBuilder.forFileContents(file).errorReporter(errorReporter).parse();
-    assertThat(errorReporter.getErrorMessages()).hasSize(1);
-    assertThat(Iterables.getOnlyElement(errorReporter.getErrorMessages()))
-        .contains("Template 'ns.foo' already defined at no-path:3:1");
+    assertThat(errorReporter.getErrors()).hasSize(1);
+    assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
+        .isEqualTo("Template 'ns.foo' already defined at no-path:3:1.");
   }
 
   @Test
@@ -156,11 +156,11 @@ public final class TemplateRegistryTest {
             + "/** Foo. */\n"
             + "{deltemplate foo.bar}\n"
             + "{/deltemplate}\n";
-    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+    ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
     SoyFileSetParserBuilder.forFileContents(file).errorReporter(errorReporter).parse();
-    assertThat(errorReporter.getErrorMessages()).hasSize(1);
-    assertThat(Iterables.getOnlyElement(errorReporter.getErrorMessages()))
-        .contains("Delegate template 'foo.bar' already has a default defined at no-path:3:1");
+    assertThat(errorReporter.getErrors()).hasSize(1);
+    assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
+        .isEqualTo("Delegate template 'foo.bar' already has a default defined at no-path:3:1.");
   }
 
   @Test
@@ -174,11 +174,11 @@ public final class TemplateRegistryTest {
             + "/** Foo. */\n"
             + "{deltemplate foo.bar}\n"
             + "{/deltemplate}\n";
-    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+    ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
     SoyFileSetParserBuilder.forFileContents(file).errorReporter(errorReporter).parse();
-    assertThat(errorReporter.getErrorMessages()).hasSize(1);
-    assertThat(Iterables.getOnlyElement(errorReporter.getErrorMessages()))
-        .contains("Delegate template 'foo.bar' already defined in delpackage foo: no-path:4:1");
+    assertThat(errorReporter.getErrors()).hasSize(1);
+    assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
+        .isEqualTo("Delegate template 'foo.bar' already defined in delpackage foo: no-path:4:1");
   }
 
   @Test

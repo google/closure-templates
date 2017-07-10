@@ -23,7 +23,8 @@ import com.google.common.truth.FailureStrategy;
 import com.google.common.truth.Subject;
 import com.google.common.truth.SubjectFactory;
 import com.google.common.truth.Truth;
-import com.google.template.soy.error.FormattingErrorReporter;
+import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.ErrorReporterImpl;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.VarRefNode;
@@ -35,20 +36,19 @@ import com.google.template.soy.exprtree.VarRefNode;
  */
 final class ExpressionSubject extends Subject<ExpressionSubject, String> {
 
-  private final FormattingErrorReporter errorReporter;
+  private final ErrorReporter errorReporter;
 
   private static final SubjectFactory<ExpressionSubject, String> FACTORY =
       new SubjectFactory<ExpressionSubject, String>() {
         @Override
         public ExpressionSubject getSubject(FailureStrategy failureStrategy, String s) {
-          return new ExpressionSubject(failureStrategy, s, new FormattingErrorReporter());
+          return new ExpressionSubject(failureStrategy, s, ErrorReporterImpl.createForTest());
         }
       };
 
   private final ImmutableMap.Builder<String, String> aliasesBuilder = ImmutableMap.builder();
 
-  public ExpressionSubject(
-      FailureStrategy failureStrategy, String s, FormattingErrorReporter errorReporter) {
+  public ExpressionSubject(FailureStrategy failureStrategy, String s, ErrorReporter errorReporter) {
     super(failureStrategy, s);
     this.errorReporter = errorReporter;
   }
@@ -89,7 +89,7 @@ final class ExpressionSubject extends Subject<ExpressionSubject, String> {
   ExprNode isValidExpression() {
     ExprNode expr = parseExpression();
     if (errorReporter.hasErrors()) {
-      fail("is a valid expression", errorReporter.getErrorMessages());
+      fail("is a valid expression", errorReporter.getErrors());
     }
     return expr;
   }
@@ -97,7 +97,7 @@ final class ExpressionSubject extends Subject<ExpressionSubject, String> {
   void isValidGlobal() {
     ExprNode expr = parseExpression();
     if (errorReporter.hasErrors()) {
-      fail("is a valid global", errorReporter.getErrorMessages());
+      fail("is a valid global", errorReporter.getErrors());
     }
     Truth.assertThat(expr).named(actualAsString()).isInstanceOf(GlobalNode.class);
   }
@@ -105,7 +105,7 @@ final class ExpressionSubject extends Subject<ExpressionSubject, String> {
   void isValidGlobalNamed(String name) {
     GlobalNode globalNode = (GlobalNode) parseExpression();
     if (errorReporter.hasErrors()) {
-      fail("is valid global", errorReporter.getErrorMessages());
+      fail("is valid global", errorReporter.getErrors());
     }
     String actualName = globalNode.getName();
     if (!actualName.equals(name)) {
@@ -120,7 +120,7 @@ final class ExpressionSubject extends Subject<ExpressionSubject, String> {
   void isValidVar() {
     ExprNode expr = parseExpression();
     if (!(expr instanceof VarRefNode) || errorReporter.hasErrors()) {
-      fail("is a valid var", errorReporter.getErrorMessages());
+      fail("is a valid var", errorReporter.getErrors());
     }
   }
 

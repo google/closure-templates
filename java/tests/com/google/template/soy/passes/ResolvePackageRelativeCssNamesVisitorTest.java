@@ -21,8 +21,8 @@ import static com.google.common.truth.Truth.assertThat;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.ErrorReporterImpl;
 import com.google.template.soy.error.ExplodingErrorReporter;
-import com.google.template.soy.error.FormattingErrorReporter;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.shared.SharedTestUtils;
@@ -145,7 +145,7 @@ public final class ResolvePackageRelativeCssNamesVisitorTest {
 
   @Test
   public void testMissingCssBase() {
-    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+    ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
     compileTemplate(
         "{namespace boo}\n\n"
             + "/** Test template. */\n"
@@ -153,11 +153,11 @@ public final class ResolvePackageRelativeCssNamesVisitorTest {
             + "  <div class=\"{css %AAA}\">\n"
             + "{/template}\n",
         errorReporter);
-    assertThat(errorReporter.getErrorMessages()).hasSize(1);
-    assertThat(errorReporter.getErrorMessages().get(0))
+    assertThat(errorReporter.getErrors()).hasSize(1);
+    assertThat(errorReporter.getErrors().get(0).message())
         .isEqualTo("No CSS package defined for package-relative class name '%AAA'.");
 
-    errorReporter = new FormattingErrorReporter();
+    errorReporter = ErrorReporterImpl.createForTest();
     compileTemplate(
         "{namespace boo}\n\n"
             + "/** Test template. */\n"
@@ -165,14 +165,14 @@ public final class ResolvePackageRelativeCssNamesVisitorTest {
             + "  <div class=\"{css('%AAA')}\">\n"
             + "{/template}\n",
         errorReporter);
-    assertThat(errorReporter.getErrorMessages()).hasSize(1);
-    assertThat(errorReporter.getErrorMessages().get(0))
+    assertThat(errorReporter.getErrors()).hasSize(1);
+    assertThat(errorReporter.getErrors().get(0).message())
         .isEqualTo("No CSS package defined for package-relative class name '%AAA'.");
   }
 
   @Test
   public void testWithComponentName() {
-    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+    ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
     compileTemplate(
         "{namespace boo}\n\n"
             + "/** Test template. */\n"
@@ -181,10 +181,10 @@ public final class ResolvePackageRelativeCssNamesVisitorTest {
             + "  <div class=\"{css($goo, '%AAA')}\">\n"
             + "{/template}\n",
         errorReporter);
-    assertThat(errorReporter.getErrorMessages()).hasSize(2);
-    assertThat(errorReporter.getErrorMessages().get(0))
+    assertThat(errorReporter.getErrors()).hasSize(2);
+    assertThat(errorReporter.getErrors().get(0).message())
         .isEqualTo("Package-relative class name '%AAA' cannot be used with component expression.");
-    assertThat(errorReporter.getErrorMessages().get(1))
+    assertThat(errorReporter.getErrors().get(1).message())
         .isEqualTo("No CSS package defined for package-relative class name '%AAA'.");
   }
 

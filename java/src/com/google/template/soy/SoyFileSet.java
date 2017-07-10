@@ -39,8 +39,6 @@ import com.google.template.soy.base.internal.TriState;
 import com.google.template.soy.base.internal.VolatileSoyFileSupplier;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.error.ErrorReporterImpl;
-import com.google.template.soy.error.PrettyErrorFactory;
-import com.google.template.soy.error.SnippetFormatter;
 import com.google.template.soy.error.SoyCompilationException;
 import com.google.template.soy.error.SoyError;
 import com.google.template.soy.incrementaldomsrc.IncrementalDomSrcMain;
@@ -1200,8 +1198,7 @@ public final class SoyFileSet {
   private void resetErrorReporter() {
     // TODO(lukes): consider moving ErrorReporterImpl to the error package and making this a static
     // factory method there somewhere
-    errorReporter =
-        new ErrorReporterImpl(new PrettyErrorFactory(new SnippetFormatter(soyFileSuppliers)));
+    errorReporter = ErrorReporterImpl.create(soyFileSuppliers);
   }
 
   private void throwIfErrorsPresent() {

@@ -18,7 +18,9 @@ package com.google.template.soy.passes;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.SoyFileSetParserBuilder;
-import com.google.template.soy.error.FormattingErrorReporter;
+import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.ErrorReporterImpl;
+import com.google.template.soy.error.SoyError;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -89,7 +91,7 @@ public final class AssertStrictAutoescapingVisitorTest {
    * @param soyCode The input code.
    */
   private void doesntCauseStrictException(String soyCode) {
-    ImmutableList<String> errors = parseAndGetErrors(soyCode);
+    ImmutableList<SoyError> errors = parseAndGetErrors(soyCode);
     if (!errors.isEmpty()) {
       throw new AssertionError(
           "Expected:\n" + soyCode + "\n to parse successfully, but got: " + errors);
@@ -102,9 +104,11 @@ public final class AssertStrictAutoescapingVisitorTest {
    * @param soyCode The input code.
    */
   private void causesStrictException(String soyCode) {
-    ImmutableList<String> errors = parseAndGetErrors(soyCode);
-    for (String error : errors) {
-      if (!error.equals("Invalid use of non-strict when strict autoescaping is required.")) {
+    ImmutableList<SoyError> errors = parseAndGetErrors(soyCode);
+    for (SoyError error : errors) {
+      if (!error
+          .message()
+          .equals("Invalid use of non-strict when strict autoescaping is required.")) {
         throw new AssertionError("Found unexpected error message: " + error);
       }
     }
@@ -113,14 +117,14 @@ public final class AssertStrictAutoescapingVisitorTest {
     }
   }
 
-  private ImmutableList<String> parseAndGetErrors(String soyCode) {
-    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+  private ImmutableList<SoyError> parseAndGetErrors(String soyCode) {
+    ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(soyCode)
             .errorReporter(errorReporter)
             .parse()
             .fileSet();
     new AssertStrictAutoescapingVisitor(errorReporter).exec(soyTree);
-    return errorReporter.getErrorMessages();
+    return errorReporter.getErrors();
   }
 }

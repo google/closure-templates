@@ -26,7 +26,8 @@ import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContentOperator;
-import com.google.template.soy.error.FormattingErrorReporter;
+import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.ErrorReporterImpl;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -2776,7 +2777,7 @@ public final class ContextualAutoescaperTest {
   }
 
   public SoyFileNode rewrite(String... inputs) {
-    FormattingErrorReporter reporter = new FormattingErrorReporter();
+    ErrorReporter reporter = ErrorReporterImpl.createForTest();
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(inputs)
             .errorReporter(reporter)
@@ -2786,8 +2787,8 @@ public final class ContextualAutoescaperTest {
             .parse()
             .fileSet();
 
-    if (!reporter.getErrorMessages().isEmpty()) {
-      String message = reporter.getErrorMessages().get(0);
+    if (!reporter.getErrors().isEmpty()) {
+      String message = reporter.getErrors().get(0).message();
       if (message.startsWith(ContextualAutoescaper.AUTOESCAPE_ERROR_PREFIX)) {
         // Grab the part after the prefix (and the "- " used for indentation).
         message = message.substring(ContextualAutoescaper.AUTOESCAPE_ERROR_PREFIX.length() + 2);

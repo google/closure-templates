@@ -25,8 +25,9 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.basetree.SyntaxVersion;
+import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.ErrorReporterImpl;
 import com.google.template.soy.error.ExplodingErrorReporter;
-import com.google.template.soy.error.FormattingErrorReporter;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -530,7 +531,7 @@ public final class ResolveExpressionTypesVisitorTest {
 
   @Test
   public void testMapLiteralAsRecord_duplicateKeys() {
-    FormattingErrorReporter reporter = new FormattingErrorReporter();
+    ErrorReporter reporter = ErrorReporterImpl.createForTest();
     SoyFileSetParserBuilder.forFileContents(
             constructTemplateSource("{let $map: ['a': 1, 'a': 2]/}"))
         .declaredSyntaxVersion(SyntaxVersion.V2_0)
@@ -538,7 +539,7 @@ public final class ResolveExpressionTypesVisitorTest {
         .typeRegistry(TYPE_REGISTRY)
         .parse()
         .fileSet();
-    assertThat(Iterables.getOnlyElement(reporter.getErrorMessages()))
+    assertThat(Iterables.getOnlyElement(reporter.getErrors()).message())
         .isEqualTo("Record literals with duplicate keys are not allowed.  Duplicate key: 'a'");
   }
 
@@ -876,14 +877,14 @@ public final class ResolveExpressionTypesVisitorTest {
    * @param expectedError The expected failure message (a substring).
    */
   private void assertResolveExpressionTypesFails(String expectedError, String fileContent) {
-    FormattingErrorReporter errorReporter = new FormattingErrorReporter();
+    ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
     SoyFileSetParserBuilder.forFileContents(fileContent)
         .declaredSyntaxVersion(SyntaxVersion.V2_0)
         .errorReporter(errorReporter)
         .typeRegistry(TYPE_REGISTRY)
         .parse();
-    assertThat(errorReporter.getErrorMessages()).hasSize(1);
-    assertThat(errorReporter.getErrorMessages().get(0)).contains(expectedError);
+    assertThat(errorReporter.getErrors()).hasSize(1);
+    assertThat(errorReporter.getErrors().get(0).message()).contains(expectedError);
   }
 
   /**

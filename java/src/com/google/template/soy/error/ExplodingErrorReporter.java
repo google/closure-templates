@@ -18,6 +18,7 @@ package com.google.template.soy.error;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 
 /**
@@ -32,7 +33,7 @@ import com.google.template.soy.base.SourceLocation;
  *
  * @author brndn@google.com (Brendan Linn)
  */
-public final class ExplodingErrorReporter extends AbstractErrorReporter {
+public final class ExplodingErrorReporter extends ErrorReporter {
 
   private static final ErrorReporter INSTANCE = new ExplodingErrorReporter();
 
@@ -50,12 +51,12 @@ public final class ExplodingErrorReporter extends AbstractErrorReporter {
   }
 
   @Override
-  public boolean hasErrors() {
-    return false;
+  int getCurrentNumberOfErrors() {
+    return 0;
   }
 
   @Override
-  protected int getCurrentNumberOfErrors() {
-    return 0;
+  public ImmutableList<SoyError> getErrors() {
+    return ImmutableList.of();
   }
 }

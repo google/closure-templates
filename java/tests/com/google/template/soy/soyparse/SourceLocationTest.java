@@ -27,7 +27,8 @@ import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
-import com.google.template.soy.error.FormattingErrorReporter;
+import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.ErrorReporterImpl;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
@@ -216,7 +217,7 @@ public final class SourceLocationTest {
     // look for a line number and break in a way that suppresses the real error
     // message.
     // JavaCC is pretty good about never using null as a token value.
-    FormattingErrorReporter reporter = new FormattingErrorReporter();
+    ErrorReporter reporter = ErrorReporterImpl.createForTest();
     SoyFileSetParserBuilder.forSuppliers(
             SoyFileSupplier.Factory.create(
                 "{template t autoescape=\"deprecated-noncontextual\"}\nHello, World!\n",
@@ -224,7 +225,7 @@ public final class SourceLocationTest {
                 "broken.soy"))
         .errorReporter(reporter)
         .parse();
-    assertThat(reporter.getErrorMessages()).isNotEmpty();
+    assertThat(reporter.getErrors()).isNotEmpty();
   }
 
   @Test

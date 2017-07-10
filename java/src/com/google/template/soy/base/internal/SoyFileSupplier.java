@@ -18,14 +18,9 @@ package com.google.template.soy.base.internal;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.io.CharSource;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
-import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.error.SoyCompilationException;
-import com.google.template.soy.error.SoyError;
-import com.google.template.soy.error.SoyErrorKind;
 import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
@@ -93,9 +88,6 @@ public interface SoyFileSupplier {
    */
   final class Factory {
 
-    private static final SoyErrorKind FILE_URL_SYNTAX =
-        SoyErrorKind.of("File URL has invalid syntax: ''{0}''");
-
     /**
      * Creates a new {@code SoyFileSupplier} given a {@code CharSource} for the file content, as
      * well as the desired file path for messages.
@@ -136,12 +128,7 @@ public interface SoyFileSupplier {
         try {
           inputFileUri = inputFileUrl.toURI();
         } catch (URISyntaxException ex) {
-          SoyError e =
-              SoyError.DEFAULT_FACTORY.create(
-                  new SourceLocation(inputFileUrl.toString()), FILE_URL_SYNTAX, inputFileUrl);
-          SoyCompilationException sce = new SoyCompilationException(ImmutableList.of(e));
-          sce.initCause(ex);
-          throw sce;
+          throw new RuntimeException(ex);
         }
         return new VolatileSoyFileSupplier(new File(inputFileUri), soyFileKind);
       } else {
