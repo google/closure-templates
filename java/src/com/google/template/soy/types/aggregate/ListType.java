@@ -17,8 +17,6 @@
 package com.google.template.soy.types.aggregate;
 
 import com.google.common.base.Preconditions;
-import com.google.template.soy.data.SoyList;
-import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.types.SoyType;
 import java.util.Objects;
 
@@ -65,11 +63,6 @@ public final class ListType implements SoyType {
       return elementType.isAssignableFrom(srcListType.elementType);
     }
     return false;
-  }
-
-  @Override
-  public boolean isInstance(SoyValue value) {
-    return value instanceof SoyList;
   }
 
   @Override

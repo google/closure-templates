@@ -16,8 +16,6 @@
 
 package com.google.template.soy.types.primitive;
 
-import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.types.SoyType;
 
 /**
@@ -42,11 +40,6 @@ public final class IntType extends PrimitiveType {
     // enums are implicitly assignable to ints since that is the runtime representation in all
     // backends
     return kind == Kind.INT || kind == Kind.PROTO_ENUM;
-  }
-
-  @Override
-  public boolean isInstance(SoyValue value) {
-    return value instanceof IntegerData;
   }
 
   @Override

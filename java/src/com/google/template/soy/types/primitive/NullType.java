@@ -16,10 +16,6 @@
 
 package com.google.template.soy.types.primitive;
 
-import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.restricted.NullData;
-import com.google.template.soy.data.restricted.UndefinedData;
-
 /**
  * The "null" type.
  *
@@ -34,11 +30,6 @@ public final class NullType extends PrimitiveType {
   @Override
   public Kind getKind() {
     return Kind.NULL;
-  }
-
-  @Override
-  public boolean isInstance(SoyValue value) {
-    return value instanceof NullData || value instanceof UndefinedData;
   }
 
   @Override

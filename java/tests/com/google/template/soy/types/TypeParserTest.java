@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.SoyFileSetParserBuilder;
-import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.types.aggregate.ListType;
 import com.google.template.soy.types.aggregate.MapType;
@@ -52,11 +51,6 @@ public class TypeParserTest {
 
         @Override
         public boolean isAssignableFrom(SoyType srcType) {
-          return false;
-        }
-
-        @Override
-        public boolean isInstance(SoyValue value) {
           return false;
         }
       };

@@ -24,7 +24,6 @@ import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Iterables;
-import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.primitive.ErrorType;
 import java.util.Arrays;
@@ -130,16 +129,6 @@ public final class UnionType implements SoyType {
       }
       return false;
     }
-  }
-
-  @Override
-  public boolean isInstance(SoyValue value) {
-    for (SoyType memberType : members) {
-      if (memberType.isInstance(value)) {
-        return true;
-      }
-    }
-    return false;
   }
 
   /** Returns true if the union includes the null type. */

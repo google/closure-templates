@@ -21,8 +21,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.template.soy.base.SoyBackendKind;
-import com.google.template.soy.data.SoyProtoValue;
-import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.Set;
@@ -52,12 +50,6 @@ public final class SoyProtoType implements SoyType {
   @Override
   public boolean isAssignableFrom(SoyType fromType) {
     return fromType == this;
-  }
-
-  @Override
-  public boolean isInstance(SoyValue value) {
-    return value instanceof SoyProtoValue
-        && ((SoyProtoValue) value).getProto().getDescriptorForType() == typeDescriptor;
   }
 
   public Descriptor getDescriptor() {

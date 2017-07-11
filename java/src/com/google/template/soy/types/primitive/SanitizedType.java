@@ -16,9 +16,7 @@
 
 package com.google.template.soy.types.primitive;
 
-import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
-import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.types.SoyType;
 
 /**
@@ -30,12 +28,6 @@ public abstract class SanitizedType extends PrimitiveType {
 
   /** Returns the content kind for this type. Guaranteed to be non-null and also not TEXT. */
   public abstract ContentKind getContentKind();
-
-  @Override
-  public boolean isInstance(SoyValue value) {
-    return value instanceof SanitizedContent
-        && ((SanitizedContent) value).getContentKind() == getContentKind();
-  }
 
   @Override
   public String toString() {

@@ -18,8 +18,6 @@ package com.google.template.soy.types.aggregate;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedMap;
-import com.google.template.soy.data.SoyRecord;
-import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.types.SoyType;
 import java.util.Map;
 import java.util.Objects;
@@ -62,11 +60,6 @@ public final class RecordType implements SoyType {
       return true;
     }
     return false;
-  }
-
-  @Override
-  public boolean isInstance(SoyValue value) {
-    return value instanceof SoyRecord;
   }
 
   /** Return the members of this record type. */

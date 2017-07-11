@@ -16,7 +16,6 @@
 
 package com.google.template.soy.types.primitive;
 
-import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.types.SoyType;
 
 /**
@@ -38,11 +37,6 @@ public final class UnknownType extends PrimitiveType {
 
   @Override
   public boolean isAssignableFrom(SoyType srcType) {
-    return true;
-  }
-
-  @Override
-  public boolean isInstance(SoyValue value) {
     return true;
   }
 

@@ -19,8 +19,6 @@ package com.google.template.soy.types.proto;
 import com.google.protobuf.Descriptors.EnumDescriptor;
 import com.google.protobuf.Descriptors.EnumValueDescriptor;
 import com.google.template.soy.base.SoyBackendKind;
-import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.types.SoyType;
 
 /** A {@link SoyType} implementation which describes a protocol buffer enum type. */
@@ -41,13 +39,6 @@ public final class SoyProtoEnumType implements SoyType {
     return fromType == this
         || (fromType.getClass() == this.getClass()
             && ((SoyProtoEnumType) fromType).descriptor == descriptor);
-  }
-
-  @Override
-  public boolean isInstance(SoyValue value) {
-    // For now, allow integer values.
-    // TODO(user): May want to tighten this up if we ever have an enum value type.
-    return value instanceof IntegerData;
   }
 
   public String getName() {

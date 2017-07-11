@@ -16,8 +16,6 @@
 
 package com.google.template.soy.types.primitive;
 
-import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.restricted.SoyString;
 import com.google.template.soy.types.SoyType;
 
 /**
@@ -49,10 +47,5 @@ public final class StringType extends PrimitiveType {
   @Override
   public boolean isAssignableFrom(SoyType srcType) {
     return srcType.getKind().isKnownStringOrSanitizedContent();
-  }
-
-  @Override
-  public boolean isInstance(SoyValue value) {
-    return value instanceof SoyString;
   }
 }

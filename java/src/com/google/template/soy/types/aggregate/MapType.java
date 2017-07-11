@@ -17,8 +17,6 @@
 package com.google.template.soy.types.aggregate;
 
 import com.google.common.base.Preconditions;
-import com.google.template.soy.data.SoyMap;
-import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.types.SoyType;
 import java.util.Objects;
 
@@ -80,10 +78,6 @@ public final class MapType implements SoyType {
     return false;
   }
 
-  @Override
-  public boolean isInstance(SoyValue value) {
-    return value instanceof SoyMap;
-  }
 
   @Override
   public String toString() {

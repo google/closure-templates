@@ -18,7 +18,6 @@ package com.google.template.soy.types;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import com.google.template.soy.data.SoyValue;
 
 /**
  * Interface for all classes that describe a data type in Soy. These types are used to determine
@@ -135,18 +134,4 @@ public interface SoyType {
    * @return True if the assignment is valid.
    */
   boolean isAssignableFrom(SoyType srcType);
-
-  /**
-   * Returns true if the given value is an instance of this type. For generic types, this only
-   * checks the overall shape of the type (list, map, etc) since Java type erasure does not allow
-   * the type parameters to be checked. Also, in some cases the "instanceof" test may be defined
-   * somewhat loosely - for example, sanitized types may be considered instances of type string,
-   * since they are usable in any context where a string is usable, even though internally they are
-   * not implemented as subclasses of string. This test does not take into account automatic
-   * coercions, such as converting to string or boolean.
-   *
-   * @param value The value to test.
-   * @return True if the value is an instance of this type.
-   */
-  boolean isInstance(SoyValue value);
 }

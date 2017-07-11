@@ -16,9 +16,6 @@
 
 package com.google.template.soy.types.primitive;
 
-import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.restricted.FloatData;
-
 /**
  * Soy floating-point type.
  *
@@ -33,11 +30,6 @@ public final class FloatType extends PrimitiveType {
   @Override
   public Kind getKind() {
     return Kind.FLOAT;
-  }
-
-  @Override
-  public boolean isInstance(SoyValue value) {
-    return value instanceof FloatData;
   }
 
   @Override
