@@ -103,15 +103,14 @@ public final class SoyToPySrcCompiler extends AbstractSoyCompiler {
         "A list of paths to a manifest file which provides a map of soy namespaces to"
             + " their Python paths. If this is provided, direct imports will be used,"
             + " drastically improving runtime performance.",
-    handler = MainClassUtils.StringListOptionHandler.class
+    handler = SoyCmdLineParser.StringListOptionHandler.class
   )
   private List<String> namespaceManifestPaths = new ArrayList<>();
 
   @Option(
     name = "--outputNamespaceManifest",
     usage =
-        "Output a manifest file containing a map of all soy namespaces to their Python" + " paths.",
-    handler = MainClassUtils.BooleanOptionHandler.class
+        "Output a manifest file containing a map of all soy namespaces to their Python" + " paths."
   )
   private boolean outputNamespaceManifest = false;
 
