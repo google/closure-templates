@@ -193,7 +193,6 @@ abstract class AbstractSoyCompiler {
     SoyCmdLineParser cmdLineParser = new SoyCmdLineParser(this, pluginClassLoader);
     try {
       cmdLineParser.parseArgument(args);
-
     } catch (CmdLineException cle) {
       StringWriter sw = new StringWriter();
       cmdLineParser.setUsageWidth(100);
