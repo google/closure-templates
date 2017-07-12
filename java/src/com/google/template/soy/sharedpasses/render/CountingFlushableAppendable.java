@@ -16,9 +16,9 @@
 
 package com.google.template.soy.sharedpasses.render;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.template.soy.data.SoyFutureValueProvider.FutureBlockCallback;
-
 import java.io.Flushable;
 import java.io.IOException;
 import java.util.logging.Level;
@@ -27,8 +27,7 @@ import java.util.logging.Logger;
 /**
  * Counts the characters that have been appended to the wrapped appenable since it was last flushed.
  */
-public final class CountingFlushableAppendable
-    implements Appendable, Flushable, FutureBlockCallback {
+final class CountingFlushableAppendable implements Appendable, Flushable, FutureBlockCallback {
 
   private static final Logger logger = Logger.getLogger(
       CountingFlushableAppendable.class.getName());
@@ -37,8 +36,7 @@ public final class CountingFlushableAppendable
   private final Appendable appendable;
   private final Flushable flushable;
 
-
-  public CountingFlushableAppendable(Appendable appendable) {
+  CountingFlushableAppendable(Appendable appendable) {
     Preconditions.checkState(appendable instanceof Flushable);
     this.appendable = appendable;
     this.flushable = (Flushable) appendable;
@@ -49,7 +47,8 @@ public final class CountingFlushableAppendable
     this.flushable = flushable;
   }
 
-  public int getAppendedCountSinceLastFlush() {
+  @VisibleForTesting
+  int getAppendedCountSinceLastFlush() {
     return count;
   }
 
@@ -87,3 +86,4 @@ public final class CountingFlushableAppendable
     }
   }
 }
+
