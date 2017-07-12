@@ -26,21 +26,12 @@ public interface SoyProtoValue extends SoyRecord {
   Message getProto();
 
   /**
-   * Checks whether the underlying proto object has a field of the given name that is set. Not
-   * intended for general use.
+   * Gets a value for the field for the underlying proto object. Not intended for general use.
    *
    * @param name The proto field name.
-   * @return Whether the underlying proto object has a field of the given name and a set value
-   *     exists in that field.
-   */
-  boolean hasProtoField(String name);
-
-  /**
-   * Gets a set value for the field for the underlying proto object. Not intended for general use.
-   *
-   * @param name The proto field name.
-   * @return The value of the given field for the underlying proto object, or null if either the
-   *     field does not exist or the value is not set in the underlying proto.
+   * @return The value of the given field for the underlying proto object, or NullData if either the
+   *     field does not exist or the value is not set in the underlying proto (according to the jspb
+   *     semantics)
    */
   SoyValue getProtoField(String name);
 

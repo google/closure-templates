@@ -35,6 +35,7 @@ class NormalField extends Field {
 
   protected final FieldDescriptor fieldDescriptor;
   protected final String name;
+  private final boolean shouldCheckFieldPresenceToEmulateJspbNullability;
 
   // Lazily construct our impl to delay type lookups.  This enables us to resolve the types of
   // recursive proto definitions.
@@ -45,6 +46,13 @@ class NormalField extends Field {
     this.typeRegistry = typeRegistry;
     this.fieldDescriptor = desc;
     this.name = computeSoyName(desc);
+    this.shouldCheckFieldPresenceToEmulateJspbNullability =
+        ProtoUtils.shouldCheckFieldPresenceToEmulateJspbNullability(desc);
+  }
+
+  @Override
+  public boolean shouldCheckFieldPresenceToEmulateJspbNullability() {
+    return shouldCheckFieldPresenceToEmulateJspbNullability;
   }
 
   @Override
@@ -82,9 +90,7 @@ class NormalField extends Field {
     // so we can return null for a non-nullable field type.  Given the current ToFu implementation
     // this is not a problem, but modifying the field types to be nullable for non-repeated fields
     // with non explicit defaults should probably happen.
-    return fieldDescriptor.isRepeated()
-        || fieldDescriptor.hasDefaultValue()
-        || proto.hasField(fieldDescriptor);
+    return !shouldCheckFieldPresenceToEmulateJspbNullability || proto.hasField(fieldDescriptor);
   }
 
   /**

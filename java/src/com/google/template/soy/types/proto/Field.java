@@ -86,9 +86,15 @@ abstract class Field {
 
   /** Return the type of this member field. */
   abstract SoyType getType();
-
+  
   /** Returns true if the given proto has a value for this field. */
   abstract boolean hasField(Message proto);
+
+  /**
+   * Returns whether or not we need to check for field presence to handle nullability semantics on
+   * the server.
+   */
+  abstract boolean shouldCheckFieldPresenceToEmulateJspbNullability();
 
   /**
    * Returns an appropriately typed {@link SoyValueProvider} for this field in the given message.

@@ -33,6 +33,7 @@ import com.google.common.collect.Maps;
 import com.google.template.soy.data.SoyAbstractValue;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyMap;
+import com.google.template.soy.data.SoyProtoValue;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.internal.DictImpl;
@@ -83,6 +84,7 @@ import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.soytree.defn.LoopVar;
+import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.proto.SoyProtoType;
 import com.google.template.soy.types.proto.SoyProtoValueImpl;
 import java.io.IOException;
@@ -323,7 +325,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     SoyValue base = visitNullSafeNodeRecurse(fieldAccess.getBaseExprChild());
 
     // attempting field access on non-SoyRecord
-    if (!(base instanceof SoyRecord)) {
+    if (!(base instanceof SoyRecord) && !(base instanceof SoyProtoValue)) {
       if (base == NullSafetySentinel.INSTANCE) {
         // Bail out if base expression failed a null-safety check.
         return NullSafetySentinel.INSTANCE;
@@ -346,8 +348,13 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       return UndefinedData.INSTANCE;
     }
 
+    // If the static type is a proto, access it using proto semantics
+    // TODO(lukes): add warnings for accessing protos dynamically.  need to come up with a rate
+    // limiting strategy.
+    if (fieldAccess.getBaseExprChild().getType().getKind() == Kind.PROTO) {
+      return ((SoyProtoValue) base).getProtoField(fieldAccess.getFieldName());
+    }
     // base is a valid SoyRecord: get value
-
     SoyValue value = ((SoyRecord) base).getField(fieldAccess.getFieldName());
 
     // Note that this code treats value of null and value of NullData differently. Only the latter

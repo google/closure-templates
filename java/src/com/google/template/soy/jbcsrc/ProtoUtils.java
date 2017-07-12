@@ -200,14 +200,15 @@ final class ProtoUtils {
     final SoyExpression baseExpr;
     final FieldAccessNode node;
     final FieldDescriptor descriptor;
-    final boolean isProto3;
+    final boolean shouldCheckForFieldPresence;
 
     AccessorGenerator(SoyProtoType protoType, SoyExpression baseExpr, FieldAccessNode node) {
       this.unboxedRuntimeType = SoyRuntimeType.getUnboxedType(protoType).get();
       this.baseExpr = baseExpr;
       this.node = node;
       this.descriptor = protoType.getFieldDescriptor(node.getFieldName());
-      this.isProto3 = descriptor.getFile().getSyntax() == Syntax.PROTO3;
+      this.shouldCheckForFieldPresence =
+          protoType.shouldCheckFieldPresenceToEmulateJspbNullability(node.getFieldName());
     }
 
     SoyExpression generate() {
@@ -246,7 +247,7 @@ final class ProtoUtils {
       // support for protos in our integration tests.
       final MethodRef getMethodRef = getGetterMethod(descriptor);
 
-      if (!shouldCheckForFieldPresence()) {
+      if (!shouldCheckForFieldPresence) {
         // Simple case, just call .get and interpret the result
         return interpretField(typedBaseExpr.invoke(getMethodRef));
       } else {
@@ -322,21 +323,6 @@ final class ProtoUtils {
         // TODO(b/22389927): This is another place where the soy type system lies to us, so make
         // sure to mark the type as nullable.
         return interpretedField.labelEnd(endLabel).asNullable();
-      }
-    }
-
-    /**
-     * TODO(lukes): when jspb nullability semantics get fixed, we should be able to simplify this as
-     * well.
-     */
-    private boolean shouldCheckForFieldPresence() {
-      if (descriptor.hasDefaultValue()) {
-        return false; // No need to check for presence if the field has a explicit default value.
-      } else if (!isProto3) {
-        return true; // Always check for presence in proto2.
-      } else {
-        // For proto3, only check for field presence for message subtypes
-        return descriptor.getType() == FieldDescriptor.Type.MESSAGE;
       }
     }
 

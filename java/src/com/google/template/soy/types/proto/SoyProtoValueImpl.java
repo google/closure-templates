@@ -33,6 +33,7 @@ import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyProtoValue;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
+import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
 import java.io.IOException;
 import java.util.Collection;
@@ -93,21 +94,15 @@ public final class SoyProtoValueImpl extends SoyAbstractValue implements SoyProt
   }
 
   @Override
-  public boolean hasProtoField(String name) {
-    Field field = fields().get(name);
-    if (field == null) {
-      throw new IllegalArgumentException(
-          "Proto " + proto.getClass().getName() + " does not have a field of name " + name);
-    }
-    return field.hasField(proto);
-  }
-
-  @Override
   public SoyValue getProtoField(String name) {
     Field field = fields().get(name);
     if (field == null) {
       throw new IllegalArgumentException(
           "Proto " + proto.getClass().getName() + " does not have a field of name " + name);
+    }
+    if (field.shouldCheckFieldPresenceToEmulateJspbNullability()
+        && !proto.hasField(field.getDescriptor())) {
+      return NullData.INSTANCE;
     }
     return field.interpretField(proto).resolve();
   }

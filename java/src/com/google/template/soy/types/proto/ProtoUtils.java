@@ -20,8 +20,10 @@ import com.google.common.base.CaseFormat;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.EnumDescriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
+import com.google.protobuf.Descriptors.FieldDescriptor.JavaType;
 import com.google.protobuf.Descriptors.FieldDescriptor.Type;
 import com.google.protobuf.Descriptors.FileDescriptor;
+import com.google.protobuf.Descriptors.FileDescriptor.Syntax;
 import com.google.protobuf.Descriptors.GenericDescriptor;
 
 /** A collection of protobuf utility methods. */
@@ -133,6 +135,23 @@ public final class ProtoUtils {
       return jsPackage + "." + name;
     }
     return jsPackage + name.substring(protoPackage.length());
+  }
+
+  /**
+   * Returns whether or not we should check for presence to emulate jspb nullability semantics in
+   * server side soy.
+   */
+  static boolean shouldCheckFieldPresenceToEmulateJspbNullability(FieldDescriptor desc) {
+    boolean hasBrokenSemantics = false;
+    if (desc.hasDefaultValue() || desc.isRepeated()) {
+      return false;
+    } else if (desc.getFile().getSyntax() == Syntax.PROTO3 || !hasBrokenSemantics) {
+      // in proto3 or proto2 with non-broken semantics we only need to check for presence for
+      // message typed fields.
+      return desc.getJavaType() == JavaType.MESSAGE;
+    } else {
+      return true;
+    }
   }
 
   /**

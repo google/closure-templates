@@ -106,7 +106,7 @@ import java.util.Set;
  *
  * <ul>
  *   <li>{@link #isResolved(DataAccessNode)} can tell us whether or not a particular variable or
- *       field reference has already been referenced at a given point and therefore {@link
+ *       field reference has already been referenced at a given point and therefore {code
  *       SoyValueProvider#status()} has already returned {@link RenderResult#done()}.
  * </ul>
  *

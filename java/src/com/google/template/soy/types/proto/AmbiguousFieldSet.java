@@ -66,10 +66,14 @@ final class AmbiguousFieldSet extends Field {
   }
 
   @Override
-  public boolean hasField(Message proto) {
-    // We need to return true so that users observe failures instead of null.
-    for (ExtensionField field : extensions) {
-      if (field.hasField(proto)) {
+  public boolean shouldCheckFieldPresenceToEmulateJspbNullability() {
+    throw failure();
+  }
+
+  @Override
+  boolean hasField(Message proto) {
+    for (ExtensionField extension : extensions) {
+      if (extension.hasField(proto)) {
         return true;
       }
     }
