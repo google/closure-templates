@@ -63,12 +63,11 @@ final class PrerenderVisitor extends RenderVisitor {
         outputBuf,
         templateRegistry,
         SoyValueConverter.EMPTY_DICT,
-        /* ijData= */ null,
-        /* activeDelPackageNames= */ null,
-        /* msgBundle= */ null,
-        /* xidRenamingMap= */ null,
-        /* cssRenamingMap= */ null,
-        /* debugSoyTemplateInfo= */ false);
+        null /* ijData */,
+        null /* activeDelPackageNames */,
+        null /* msgBundle */,
+        null /* xidRenamingMap */,
+        null /* cssRenamingMap */);
   }
 
   @Override

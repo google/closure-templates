@@ -137,9 +137,6 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
   /** CSS renaming map. */
   protected final SoyCssRenamingMap cssRenamingMap;
 
-  /** Configures if we should render additional HTML comments for runtime insepction. */
-  protected boolean debugSoyTemplateInfo;
-
   /** The EvalVisitor for this instance (can reuse since 'data' and 'env' references stay same). */
   // Note: Don't use directly. Call eval() instead.
   private EvalVisitor evalVisitor;
@@ -186,8 +183,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       @Nullable Predicate<String> activeDelPackageSelector,
       @Nullable SoyMsgBundle msgBundle,
       @Nullable SoyIdRenamingMap xidRenamingMap,
-      @Nullable SoyCssRenamingMap cssRenamingMap,
-      boolean debugSoyTemplateInfo) {
+      @Nullable SoyCssRenamingMap cssRenamingMap) {
     Preconditions.checkNotNull(data);
 
     this.soyJavaDirectivesMap = soyJavaDirectivesMap;
@@ -199,7 +195,6 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     this.msgBundle = msgBundle;
     this.xidRenamingMap = (xidRenamingMap == null) ? SoyCssRenamingMap.EMPTY : xidRenamingMap;
     this.cssRenamingMap = (cssRenamingMap == null) ? SoyCssRenamingMap.EMPTY : cssRenamingMap;
-    this.debugSoyTemplateInfo = debugSoyTemplateInfo;
 
     this.evalVisitor = null; // lazily initialized
     this.assistantForMsgs = null; // lazily initialized
@@ -249,8 +244,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
         activeDelPackageSelector,
         msgBundle,
         xidRenamingMap,
-        cssRenamingMap,
-        debugSoyTemplateInfo);
+        cssRenamingMap);
   }
 
   /**
@@ -764,9 +758,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
     // Lazily initialize evalVisitor.
     if (evalVisitor == null) {
-      evalVisitor =
-          evalVisitorFactory.create(
-              env, ijData, cssRenamingMap, xidRenamingMap, debugSoyTemplateInfo);
+      evalVisitor = evalVisitorFactory.create(env, ijData, cssRenamingMap, xidRenamingMap);
     }
 
     try {

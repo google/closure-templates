@@ -175,9 +175,6 @@ abstract class MethodRef {
   static final MethodRef RENDER_CONTEXT_USE_PRIMARY_MSG =
       create(RenderContext.class, "usePrimaryMsg", long.class, long.class);
 
-  static final MethodRef RENDER_CONTEXT_GET_DEBUG_SOY_TEMPLATE_INFO =
-      create(RenderContext.class, "getDebugSoyTemplateInfo");
-
   static final MethodRef RENDER_RESULT_DONE =
       create(RenderResult.class, "done").asCheap().asNonNullable();
 

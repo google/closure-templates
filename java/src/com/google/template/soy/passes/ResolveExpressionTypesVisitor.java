@@ -771,7 +771,7 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
             break;
           case IS_FIRST:
           case IS_LAST:
-          case DEBUG_SOY_TEMPLATE_INFO:
+          case DEBUG_MODE:
             node.setType(BoolType.getInstance());
             break;
           case CSS:

@@ -859,11 +859,8 @@ final class ExpressionCompiler {
     }
 
     @Override
-    SoyExpression visitDebugSoyTemplateInfoFunction(FunctionNode node) {
-      return SoyExpression.forBool(
-          parameters
-              .getRenderContext()
-              .invoke(MethodRef.RENDER_CONTEXT_GET_DEBUG_SOY_TEMPLATE_INFO));
+    SoyExpression visitDebugModeFunction(FunctionNode node) {
+      return SoyExpression.TRUE;
     }
 
     // TODO(lukes):  The RenderVisitor optimizes css/xid renaming by stashing a one element cache in

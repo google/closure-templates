@@ -60,12 +60,6 @@ public interface SoySauce {
     Renderer setMsgBundle(SoyMsgBundle msgs);
 
     /**
-     * When passing a value of true, Soy compiler will render additional HTML comments for runtime
-     * inspection.
-     */
-    Renderer setDebugSoyTemplateInfo(boolean debugSoyTemplateInfo);
-
-    /**
      * Sets the expected content kind.
      *
      * <p>An attempt to render a non-strict template or a strict template with a different kind will

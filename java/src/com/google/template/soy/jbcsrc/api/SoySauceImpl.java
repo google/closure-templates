@@ -192,12 +192,6 @@ public final class SoySauceImpl implements SoySauce {
     }
 
     @Override
-    public RendererImpl setDebugSoyTemplateInfo(boolean debugSoyTemplateInfo) {
-      contextBuilder.withDebugSoyTemplateInfo(debugSoyTemplateInfo);
-      return this;
-    }
-
-    @Override
     public Renderer setExpectedContentKind(ContentKind expectedContentKind) {
       checkNotNull(contentKind);
       this.contentKindExplicitlySet = true;

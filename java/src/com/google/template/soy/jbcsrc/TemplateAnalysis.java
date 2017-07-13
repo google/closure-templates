@@ -655,7 +655,7 @@ final class TemplateAnalysis {
             return;
           case QUOTE_KEYS_IF_JS:
           case CHECK_NOT_NULL:
-          case DEBUG_SOY_TEMPLATE_INFO:
+          case DEBUG_MODE:
           case CSS:
           case XID:
             // fall through

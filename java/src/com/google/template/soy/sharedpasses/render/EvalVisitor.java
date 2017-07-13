@@ -120,8 +120,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
         Environment env,
         @Nullable SoyRecord ijData,
         @Nullable SoyCssRenamingMap cssRenamingMap,
-        @Nullable SoyIdRenamingMap xidRenamingMap,
-        boolean debugSoyTemplateInfo);
+        @Nullable SoyIdRenamingMap xidRenamingMap);
   }
 
   /** The current environment. */
@@ -136,9 +135,6 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
   /** The current XID renaming map. */
   private final SoyIdRenamingMap xidRenamingMap;
 
-  /** If we should render additional HTML comments for runtime insepction. */
-  private final boolean debugSoyTemplateInfo;
-
   /**
    * @param ijData The current injected data.
    * @param env The current environment.
@@ -147,13 +143,11 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       Environment env,
       @Nullable SoyRecord ijData,
       @Nullable SoyCssRenamingMap cssRenamingMap,
-      @Nullable SoyIdRenamingMap xidRenamingMap,
-      boolean debugSoyTemplateInfo) {
+      @Nullable SoyIdRenamingMap xidRenamingMap) {
     this.env = checkNotNull(env);
     this.ijData = ijData;
     this.cssRenamingMap = (cssRenamingMap == null) ? SoyCssRenamingMap.EMPTY : cssRenamingMap;
     this.xidRenamingMap = (xidRenamingMap == null) ? SoyCssRenamingMap.EMPTY : xidRenamingMap;
-    this.debugSoyTemplateInfo = debugSoyTemplateInfo;
   }
 
   // -----------------------------------------------------------------------------------------------
@@ -570,8 +564,8 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
           return visitIndexFunction(node);
         case QUOTE_KEYS_IF_JS:
           return visitMapLiteralNode((MapLiteralNode) node.getChild(0));
-        case DEBUG_SOY_TEMPLATE_INFO:
-          return BooleanData.forValue(debugSoyTemplateInfo);
+        case DEBUG_MODE:
+          return BooleanData.TRUE;
         case CHECK_NOT_NULL:
           return visitCheckNotNullFunction(node.getChild(0));
         case CSS:

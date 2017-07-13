@@ -42,11 +42,11 @@ final class PreevalVisitorFactory implements EvalVisitorFactory {
       Environment env,
       @Nullable SoyRecord ijData,
       @Nullable SoyCssRenamingMap cssRenamingMap,
-      @Nullable SoyIdRenamingMap xidRenamingMap,
-      boolean debugSoyTemplateInfo) {
+      @Nullable SoyIdRenamingMap xidRenamingMap) {
 
     // PreevalVisitor cannot handle ijData references.
     Preconditions.checkArgument(ijData == null);
+
     return new PreevalVisitor(env);
   }
 }

@@ -134,6 +134,14 @@ public final class TranslateExprNodeVisitorTest {
     // For normal injected data, generates code without additional protection.
     // This is expected since if users do not provide the ijData object, it should be an error.
     assertThatSoyExpr("$ij.foo").generatesCode("opt_ijData.foo;");
+    // For internal injected data, generates code with additional protection.
+    // Note that we cannot test csp_nonce here, since directly using csp_nonce is forbidden by
+    // ContentSecurityPolicyNonceInjectionPass. debug_soy_template_info is okay, because the test
+    // helper will run the PassManager via SoyFileSetParserBuilder, and by default we disable
+    // the AddHtmlCommentsDebugPass in the testing environment. We don't have similar mechanisms
+    // for csp, and it is not worth adding it.
+    assertThatSoyExpr("$ij.debug_soy_template_info")
+        .generatesCode("opt_ijData && opt_ijData.debug_soy_template_info;");
   }
 
   @Test

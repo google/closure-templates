@@ -167,8 +167,7 @@ public class EvalVisitorTest {
                 TestingEnvironment.createForTest(testData, LOCALS),
                 TEST_IJ_DATA,
                 cssRenamingMap,
-                xidRenamingMap,
-                /* debugTemplateCallTrace= */ false);
+                xidRenamingMap);
     return evalVisitor.exec(expr);
   }
 

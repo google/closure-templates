@@ -35,12 +35,12 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_DATA;
 import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_IJ_DATA;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_CHECK_MAP_KEY;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_CHECK_NOT_NULL;
-import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_GET_DEBUG_SOY_TEMPLATE_INFO;
 import static com.google.template.soy.jssrc.internal.JsRuntime.XID;
 import static com.google.template.soy.jssrc.internal.JsRuntime.extensionField;
 import static com.google.template.soy.jssrc.internal.JsRuntime.protoConstructor;
 import static com.google.template.soy.jssrc.internal.JsRuntime.protoToSanitizedContentConverterFunction;
 import static com.google.template.soy.jssrc.internal.JsRuntime.sanitizedContentToProtoConverterFunction;
+import static com.google.template.soy.passes.AddHtmlCommentsForDebugPass.DEBUG_VARIABLE_NAME;
 import static com.google.template.soy.passes.ContentSecurityPolicyNonceInjectionPass.CSP_NONCE_VARIABLE_NAME;
 
 import com.google.common.base.Joiner;
@@ -161,6 +161,9 @@ public class TranslateExprNodeVisitor
       SoyErrorKind.of(
           "Cannot access field ''{0}'' of type ''{1}'', "
               + "because the different union member types have different access methods.");
+
+  private static final ImmutableSet<String> SOY_INTERNAL_IJ_DATA =
+      ImmutableSet.of(CSP_NONCE_VARIABLE_NAME, DEBUG_VARIABLE_NAME);
 
   /** Injectable factory for creating an instance of this class. */
   public interface TranslateExprNodeVisitorFactory {
@@ -364,10 +367,10 @@ public class TranslateExprNodeVisitor
   protected CodeChunk.WithValue visitVarRefNode(VarRefNode node) {
     CodeChunk.WithValue translation;
     if (node.isDollarSignIjParameter()) {
-      // Case 0: special cases for csp_nonce. It is created by the compiler itself, and users should
-      // not need to set it. So, instead of generating opt_ij_data.csp_nonce, we generate
-      // opt_ij_data && opt_ij_data.csp_nonce.
-      if (node.getName().equals(CSP_NONCE_VARIABLE_NAME)) {
+      // Case 0: special cases for csp_nonce and debug_soy_template_info. These two are created
+      // by the compiler itself, and users should not need to set these. So, instead of generating
+      // opt_ij_data.csp_nonce, we generate opt_ij_data && opt_ij_data.csp_nonce.
+      if (SOY_INTERNAL_IJ_DATA.contains(node.getName())) {
         return OPT_IJ_DATA.and(OPT_IJ_DATA.dotAccess(node.getName()), codeGenerator);
       }
       // Case 1: Injected data reference.
@@ -588,12 +591,8 @@ public class TranslateExprNodeVisitor
           return visitIndexFunction(node);
         case QUOTE_KEYS_IF_JS:
           return visitMapLiteralNodeHelper((MapLiteralNode) node.getChild(0), true);
-        case DEBUG_SOY_TEMPLATE_INFO:
-          // This is a method defined in soyutils_usegoog.js. Client-side library can configure this
-          // and control whether the compiler should generate additional HTML comments.
-          // Note that this method does not exist for jsmode=o, since the definitions are guarded
-          // by goog.DEBUG. So this will return undefined, which should be fine.
-          return SOY_GET_DEBUG_SOY_TEMPLATE_INFO.call();
+        case DEBUG_MODE:
+          return id("goog").dotAccess("DEBUG");
         case CHECK_NOT_NULL:
           return visitCheckNotNullFunction(node);
         case CSS:

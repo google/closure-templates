@@ -52,7 +52,6 @@ public final class RenderVisitorFactory {
     this.evalVisitorFactory = evalVisitorFactory;
   }
 
-  // TODO(user): change this to a builder (maybe @AutoValue.Builder).
   /**
    * Creates a RenderVisitor.
    *
@@ -66,7 +65,6 @@ public final class RenderVisitorFactory {
    *     source.
    * @param xidRenamingMap The 'xid' renaming map, or null if not applicable.
    * @param cssRenamingMap The CSS renaming map, or null if not applicable.
-   * @param debugSoyTemplateInfo If true, renders additional HTML comments for debug usages.
    * @return The newly created RenderVisitor instance.
    */
   public RenderVisitor create(
@@ -77,8 +75,7 @@ public final class RenderVisitorFactory {
       @Nullable Predicate<String> activeDelPackageSelector,
       @Nullable SoyMsgBundle msgBundle,
       @Nullable SoyIdRenamingMap xidRenamingMap,
-      @Nullable SoyCssRenamingMap cssRenamingMap,
-      boolean debugSoyTemplateInfo) {
+      @Nullable SoyCssRenamingMap cssRenamingMap) {
 
     return new RenderVisitor(
         soyJavaDirectivesMap,
@@ -90,7 +87,6 @@ public final class RenderVisitorFactory {
         activeDelPackageSelector,
         msgBundle,
         xidRenamingMap,
-        cssRenamingMap,
-        debugSoyTemplateInfo);
+        cssRenamingMap);
   }
 }

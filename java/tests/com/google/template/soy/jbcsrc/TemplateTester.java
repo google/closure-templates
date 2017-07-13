@@ -95,30 +95,16 @@ public final class TemplateTester {
       INJECTOR.getProvider(RenderContext.Builder.class);
 
   static RenderContext getDefaultContext(CompiledTemplates templates) {
-    return getDefaultContext(
-        templates, Predicates.<String>alwaysFalse(), /* debugSoyTemplateInfo= */ false);
+    return getDefaultContext(templates, Predicates.<String>alwaysFalse());
   }
 
   static RenderContext getDefaultContext(
       CompiledTemplates templates, Predicate<String> activeDelPackages) {
-    return getDefaultContext(templates, activeDelPackages, /* debugSoyTemplateInfo= */ false);
-  }
-
-  static RenderContext getDefaultContext(
-      CompiledTemplates templates,
-      Predicate<String> activeDelPackages,
-      boolean debugSoyTemplateInfo) {
     return DEFAULT_CONTEXT_BUILDER
         .get()
         .withActiveDelPackageSelector(activeDelPackages)
         .withCompiledTemplates(templates)
-        .withDebugSoyTemplateInfo(debugSoyTemplateInfo)
         .build();
-  }
-
-  static RenderContext getDefaultContextWithDebugInfo(CompiledTemplates templates) {
-    return getDefaultContext(
-        templates, Predicates.<String>alwaysFalse(), /* debugSoyTemplateInfo= */ true);
   }
 
   private static final SubjectFactory<CompiledTemplateSubject, String> FACTORY =

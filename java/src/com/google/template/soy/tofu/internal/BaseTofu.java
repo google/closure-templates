@@ -166,8 +166,7 @@ public class BaseTofu implements SoyTofu {
       @Nullable Predicate<String> activeDelPackageNames,
       @Nullable SoyMsgBundle msgBundle,
       @Nullable SoyIdRenamingMap idRenamingMap,
-      @Nullable SoyCssRenamingMap cssRenamingMap,
-      boolean debugSoyTemplateInfo) {
+      @Nullable SoyCssRenamingMap cssRenamingMap) {
 
     if (activeDelPackageNames == null) {
       activeDelPackageNames = Predicates.alwaysFalse();
@@ -187,8 +186,7 @@ public class BaseTofu implements SoyTofu {
           activeDelPackageNames,
           msgBundle,
           idRenamingMap,
-          cssRenamingMap,
-          debugSoyTemplateInfo);
+          cssRenamingMap);
     }
   }
 
@@ -215,8 +213,7 @@ public class BaseTofu implements SoyTofu {
       Predicate<String> activeDelPackageNames,
       @Nullable SoyMsgBundle msgBundle,
       @Nullable SoyIdRenamingMap idRenamingMap,
-      @Nullable SoyCssRenamingMap cssRenamingMap,
-      boolean debugSoyTemplateInfo) {
+      @Nullable SoyCssRenamingMap cssRenamingMap) {
 
     TemplateNode template = templateRegistry.getBasicTemplate(templateName);
     if (template == null) {
@@ -242,8 +239,7 @@ public class BaseTofu implements SoyTofu {
               activeDelPackageNames,
               msgBundle,
               idRenamingMap,
-              cssRenamingMap,
-              debugSoyTemplateInfo);
+              cssRenamingMap);
       rv.exec(template);
 
     } catch (RenderException re) {
@@ -269,19 +265,22 @@ public class BaseTofu implements SoyTofu {
     private Predicate<String> activeDelPackageNames;
     private SanitizedContent.ContentKind expectedContentKind;
     private boolean contentKindExplicitlySet;
-    private boolean debugSoyTemplateInfo;
 
     /**
-     * Constructs a {@code Renderer} instance for Tofu backends. By default, the content kind should
-     * be HTML, but this can also be overridden by {@code setContentKind} method.
-     *
      * @param baseTofu The underlying BaseTofu object used to perform the rendering.
      * @param templateName The full template name (including namespace).
      */
     public RendererImpl(BaseTofu baseTofu, String templateName) {
       this.baseTofu = baseTofu;
       this.templateName = templateName;
+      this.data = null;
+      this.ijData = null;
+      this.activeDelPackageNames = null;
+      this.msgBundle = null;
+      this.cssRenamingMap = null;
+      this.idRenamingMap = null;
       this.expectedContentKind = SanitizedContent.ContentKind.HTML;
+      this.contentKindExplicitlySet = false;
     }
 
     @Override
@@ -333,12 +332,6 @@ public class BaseTofu implements SoyTofu {
     }
 
     @Override
-    public Renderer setDebugSoyTemplateInfo(boolean debugSoyTemplateInfo) {
-      this.debugSoyTemplateInfo = debugSoyTemplateInfo;
-      return this;
-    }
-
-    @Override
     public Renderer setContentKind(SanitizedContent.ContentKind contentKind) {
       this.expectedContentKind = Preconditions.checkNotNull(contentKind);
       this.contentKindExplicitlySet = true;
@@ -363,8 +356,7 @@ public class BaseTofu implements SoyTofu {
               activeDelPackageNames,
               msgBundle,
               idRenamingMap,
-              cssRenamingMap,
-              debugSoyTemplateInfo);
+              cssRenamingMap);
       if (contentKindExplicitlySet || template.getContentKind() != null) {
         // Enforce the content kind if:
         // - The caller explicitly set a content kind to validate.
@@ -387,8 +379,7 @@ public class BaseTofu implements SoyTofu {
               activeDelPackageNames,
               msgBundle,
               idRenamingMap,
-              cssRenamingMap,
-              debugSoyTemplateInfo);
+              cssRenamingMap);
       enforceContentKind(template);
       // Use the expected instead of actual content kind; that way, if an HTML template is rendered
       // as TEXT, we will return TEXT.
