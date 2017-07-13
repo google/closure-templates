@@ -68,6 +68,9 @@ public final class SoyFileSetParserBuilder {
   // escaper not running and enable by default.  This configuration bit only really exists
   // for incrementaldomsrc, not tests
   private boolean runAutoescaper = false;
+  // By default, do not modify the AST to add the HTML comments, since many unit tests depend on
+  // the order of the nodes in the AST.
+  private boolean addHtmlCommentsForDebug = false;
 
   /**
    * Returns a builder that gets its Soy inputs from the given strings, treating each string as the
@@ -195,6 +198,16 @@ public final class SoyFileSetParserBuilder {
     return this;
   }
 
+  /**
+   * Tests can use this method to force running {@code AddHtmlCommentsForDebugPass}. By default,
+   * this compiler pass is disabled for tests, since it modifies the AST structure and will break a
+   * lot of unit tests that rely on particular structure.
+   */
+  public SoyFileSetParserBuilder addHtmlCommentsForDebug(boolean addHtmlCommentsForDebug) {
+    this.addHtmlCommentsForDebug = addHtmlCommentsForDebug;
+    return this;
+  }
+
   private static List<SoyFileSupplier> buildTestSoyFileSuppliers(String... soyFileContents) {
 
     List<SoyFileSupplier> soyFileSuppliers = Lists.newArrayList();
@@ -228,7 +241,8 @@ public final class SoyFileSetParserBuilder {
             .desugarHtmlNodes(desugarHtmlNodes)
             .setGeneralOptions(options)
             .setConformanceConfigs(conformanceConfigs)
-            .setAutoescaperEnabled(runAutoescaper);
+            .setAutoescaperEnabled(runAutoescaper)
+            .addHtmlCommentsForDebug(addHtmlCommentsForDebug);
     if (allowUnboundGlobals) {
       passManager.allowUnknownGlobals();
     }

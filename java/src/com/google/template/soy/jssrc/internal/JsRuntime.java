@@ -99,6 +99,14 @@ public final class JsRuntime {
   public static final CodeChunk.WithValue SOY_GET_DELTEMPLATE_ID =
       SOY.dotAccess("$$getDelTemplateId");
 
+  /**
+   * Returns a {@code CodeChunk.WithValue} constant that represents "soy.$$getDebugSoyTemplateInfo"
+   * in Javascript. This is used in javascript code generation and guaranteed that any places that
+   * invokes this are also goog.require the desired dependencies.
+   */
+  public static final CodeChunk.WithValue SOY_GET_DEBUG_SOY_TEMPLATE_INFO =
+      SOY.dotAccess("$$getDebugSoyTemplateInfo");
+
   public static final CodeChunk.WithValue WINDOW_CONSOLE_LOG =
       dottedIdNoRequire("window.console.log");
 

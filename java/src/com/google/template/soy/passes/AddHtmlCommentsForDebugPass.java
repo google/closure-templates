@@ -16,17 +16,18 @@
 
 package com.google.template.soy.passes;
 
+import static com.google.common.html.HtmlEscapers.htmlEscaper;
+
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.FunctionNode;
-import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
-import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.AutoescapeMode;
+import com.google.template.soy.soytree.HtmlCommentNode;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.RawTextNode;
@@ -36,7 +37,6 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.defn.TemplateParam;
 
 /**
  * Prepends and appends HTML comments for every {@code TemplateNode}.
@@ -48,17 +48,10 @@ import com.google.template.soy.soytree.defn.TemplateParam;
  * VarRefNode} with null definition that will be resolved by {@code ResolveNamesPass}.
  */
 public final class AddHtmlCommentsForDebugPass extends CompilerFilePass {
-  public static final String DEBUG_VARIABLE_NAME = "debug_soy_template_info";
-
-  private static final SoyErrorKind IJ_DEBUG_REFERENCE =
+  private static final SoyErrorKind DEBUG_SOY_TEMPLATE_INFO_BANNED =
       SoyErrorKind.of(
-          "Found a use of the injected parameter ''debug_soy_template_info''. "
-              + "This parameter is reserved by the Soy compiler.");
-
-  private static final SoyErrorKind DEBUG_MODE_BANNED =
-      SoyErrorKind.of(
-          "Found a use of the reserved built-in function debugMode(). "
-              + "This is currently disallowed.");
+          "Found a use of the reserved built-in function debugSoyTemplateInfo(). "
+              + "This is disallowed.");
 
   private final ErrorReporter errorReporter;
 
@@ -72,8 +65,8 @@ public final class AddHtmlCommentsForDebugPass extends CompilerFilePass {
   }
 
   private final class AddHtmlCommentsForDebugVisitor extends AbstractSoyNodeVisitor<Void> {
-    private static final String HTML_COMMENTS_PREFIX = "<!--dta_of(%s, %s, %s)-->";
-    private static final String HTML_COMMENTS_SUFFIX = "<!--dta_cf(%s)-->";
+    private static final String HTML_COMMENTS_PREFIX = "dta_of(%s, %s, %s)";
+    private static final String HTML_COMMENTS_SUFFIX = "dta_cf(%s)";
 
     private final IdGenerator nodeIdGen;
     private String filePath = "";
@@ -90,19 +83,9 @@ public final class AddHtmlCommentsForDebugPass extends CompilerFilePass {
 
     @Override
     protected void visitTemplateNode(TemplateNode node) {
-      for (TemplateParam param : node.getAllParams()) {
-        if (param.isInjected() && param.name().equals(DEBUG_VARIABLE_NAME)) {
-          errorReporter.report(param.nameLocation(), IJ_DEBUG_REFERENCE);
-        }
-      }
-      for (VarRefNode var : SoyTreeUtils.getAllNodesOfType(node, VarRefNode.class)) {
-        if (var.isDollarSignIjParameter() && var.getName().equals(DEBUG_VARIABLE_NAME)) {
-          errorReporter.report(var.getSourceLocation(), IJ_DEBUG_REFERENCE);
-        }
-      }
       for (FunctionNode func : SoyTreeUtils.getAllNodesOfType(node, FunctionNode.class)) {
-        if (func.getFunctionName().equals(BuiltinFunction.DEBUG_MODE.getName())) {
-          errorReporter.report(func.getSourceLocation(), DEBUG_MODE_BANNED);
+        if (func.getFunctionName().equals(BuiltinFunction.DEBUG_SOY_TEMPLATE_INFO.getName())) {
+          errorReporter.report(func.getSourceLocation(), DEBUG_SOY_TEMPLATE_INFO_BANNED);
         }
       }
       // Only adds HTML comments for HTML contents.
@@ -157,15 +140,18 @@ public final class AddHtmlCommentsForDebugPass extends CompilerFilePass {
     private IfNode createSoyDebug(
         SourceLocation insertionLocation, IdGenerator nodeIdGen, String htmlComment) {
       IfNode ifNode = new IfNode(nodeIdGen.genId(), insertionLocation);
-      AndOpNode exprNode = new AndOpNode(insertionLocation);
-      exprNode.addChild(new FunctionNode(BuiltinFunction.DEBUG_MODE.getName(), insertionLocation));
-      exprNode.addChild(
-          new VarRefNode(
-              DEBUG_VARIABLE_NAME, insertionLocation, /*injected=*/ true, /*defn=*/ null));
-      IfCondNode ifCondNode = new IfCondNode(nodeIdGen.genId(), insertionLocation, "if", exprNode);
+      IfCondNode ifCondNode =
+          new IfCondNode(
+              nodeIdGen.genId(),
+              insertionLocation,
+              "if",
+              new FunctionNode(
+                  BuiltinFunction.DEBUG_SOY_TEMPLATE_INFO.getName(), insertionLocation));
       ifNode.addChild(ifCondNode);
-      RawTextNode htmlCommentNode =
-          new RawTextNode(nodeIdGen.genId(), htmlComment, insertionLocation);
+      HtmlCommentNode htmlCommentNode = new HtmlCommentNode(nodeIdGen.genId(), insertionLocation);
+      // We need to escape the input HTML comments, in cases the file location contains "-->".
+      htmlCommentNode.addChild(
+          new RawTextNode(nodeIdGen.genId(), htmlEscaper().escape(htmlComment), insertionLocation));
       ifCondNode.addChild(htmlCommentNode);
       return ifNode;
     }
