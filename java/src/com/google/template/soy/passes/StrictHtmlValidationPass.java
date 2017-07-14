@@ -28,15 +28,24 @@ import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.AutoescapeMode;
+import com.google.template.soy.soytree.CallParamContentNode;
+import com.google.template.soy.soytree.ForeachIfemptyNode;
 import com.google.template.soy.soytree.HtmlCloseTagNode;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
+import com.google.template.soy.soytree.LetContentNode;
+import com.google.template.soy.soytree.MsgNode;
+import com.google.template.soy.soytree.MsgPluralCaseNode;
+import com.google.template.soy.soytree.MsgPluralDefaultNode;
+import com.google.template.soy.soytree.MsgSelectCaseNode;
+import com.google.template.soy.soytree.MsgSelectDefaultNode;
 import com.google.template.soy.soytree.NamespaceDeclaration;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.BlockNode;
+import com.google.template.soy.soytree.SoyNode.LoopNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SwitchCaseNode;
 import com.google.template.soy.soytree.SwitchDefaultNode;
@@ -168,16 +177,14 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
         // For void tags, we don't care if they are self-closing or not. But when we visit
         // a HtmlCloseTagNode we will throw an error if it is a void tag.
         // Ignore this check if we are currently in a foreign content (svg).
-        if (!inForeignContent && !isDefinitelyVoid(node) && node.isSelfClosing()) {
+        if (!inForeignContent && !openTag.isDefinitelyVoid() && node.isSelfClosing()) {
           errorReporter.report(
-              node.getSourceLocation(),
-              INVALID_SELF_CLOSING_TAG,
-              openTag.getStaticTagName().getRawText());
+              node.getSourceLocation(), INVALID_SELF_CLOSING_TAG, openTag.getStaticTagName());
           return;
         }
       }
       // Push the node into open tag stack.
-      if (!node.isSelfClosing() && !isDefinitelyVoid(node)) {
+      if (!node.isSelfClosing() && !openTag.isDefinitelyVoid()) {
         openTagStack.addFirst(new HtmlTagEntry(openTag));
       }
     }
@@ -186,9 +193,9 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
     protected void visitHtmlCloseTagNode(HtmlCloseTagNode node) {
       TagName closeTag = node.getTagName();
       // Report an error if this node is a void tag. Void tag should never be closed.
-      if (isDefinitelyVoid(node)) {
+      if (closeTag.isDefinitelyVoid()) {
         errorReporter.report(
-            node.getSourceLocation(), INVALID_CLOSE_TAG, closeTag.getStaticTagName().getRawText());
+            node.getSourceLocation(), INVALID_CLOSE_TAG, closeTag.getStaticTagName());
         return;
       }
       // Switch back to html mode if we leave a svg tag.
@@ -321,22 +328,56 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
       HtmlTagEntry.matchOrError(openTagStack, closeTagQueue, errorReporter);
     }
 
-    private static boolean isDefinitelyVoid(HtmlOpenTagNode node) {
-      return node.getTagName().isDefinitelyVoid();
+    @Override
+    protected void visitMsgNode(MsgNode node) {
+      visitBlockChildren(node, false);
     }
 
-    private static boolean isDefinitelyVoid(HtmlCloseTagNode node) {
-      return node.getTagName().isDefinitelyVoid();
+    @Override
+    protected void visitMsgPluralCaseNode(MsgPluralCaseNode node) {
+      visitBlockChildren(node, false);
+    }
+
+    @Override
+    protected void visitMsgPluralDefaultNode(MsgPluralDefaultNode node) {
+      visitBlockChildren(node, false);
+    }
+
+    @Override
+    protected void visitMsgSelectCaseNode(MsgSelectCaseNode node) {
+      visitBlockChildren(node, false);
+    }
+
+    @Override
+    protected void visitMsgSelectDefaultNode(MsgSelectDefaultNode node) {
+      visitBlockChildren(node, false);
+    }
+
+    @Override
+    protected void visitLetContentNode(LetContentNode node) {
+      visitBlockChildren(node, false);
+    }
+
+    // TODO(user): We could do something special for ForeachIfemptyNode.
+    @Override
+    protected void visitForeachIfemptyNode(ForeachIfemptyNode node) {
+      visitBlockChildren(node, false);
+    }
+
+    @Override
+    protected void visitLoopNode(LoopNode node) {
+      visitBlockChildren(node, false);
+    }
+
+    @Override
+    protected void visitCallParamContentNode(CallParamContentNode node) {
+      visitBlockChildren(node, false);
     }
 
     @Override
     protected void visitSoyNode(SoyNode node) {
       if (node instanceof ParentSoyNode) {
-        if (node instanceof BlockNode) {
-          visitBlockChildren((BlockNode) node, false);
-        } else {
-          visitChildren((ParentSoyNode<?>) node);
-        }
+        visitChildren((ParentSoyNode<?>) node);
       }
     }
 

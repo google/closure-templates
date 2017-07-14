@@ -149,9 +149,9 @@ public final class TagName {
   }
 
   /** Returns the static name. */
-  public RawTextNode getStaticTagName() {
+  public String getStaticTagName() {
     checkState(isStatic());
-    return (RawTextNode) node;
+    return ((RawTextNode) node).getRawText();
   }
 
   /**

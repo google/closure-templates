@@ -486,7 +486,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     IncrementalDomCodeBuilder jsCodeBuilder = getJsCodeBuilder();
 
     // getStaticTagName is guaranteed to succeed since it is enforced by the HtmlContextVisitor
-    String tagName = node.getTagName().getStaticTagName().getRawText();
+    String tagName = node.getTagName().getStaticTagName();
     // the tag name is always child-0
     if (node.numChildren() == 1) {
       jsCodeBuilder.append(
@@ -567,7 +567,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   protected void visitHtmlCloseTagNode(HtmlCloseTagNode node) {
     if (!node.getTagName().isDefinitelyVoid()) {
       // getStaticTagName is guaranteed to succeed since it is enforced by the HtmlContextVisitor
-      emitClose(node.getTagName().getStaticTagName().getRawText());
+      emitClose(node.getTagName().getStaticTagName());
     }
   }
 
