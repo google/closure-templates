@@ -116,7 +116,10 @@ public class SoyMsgBundleHandler {
     }
 
     try {
-      String inputFileContent = Files.toString(inputFile, UTF_8);
+      // reading the file as a byte array and then invoking the string constructor is the fastest
+      // way to read a full file as a string.  it avoids copies incurred by CharSource and picks a
+      // faster path for charset decoding.
+      String inputFileContent = Files.asCharSource(inputFile, UTF_8).read();
       return msgPlugin.parseTranslatedMsgsFile(inputFileContent);
 
     } catch (SoyMsgException sme) {
@@ -136,7 +139,7 @@ public class SoyMsgBundleHandler {
   public SoyMsgBundle createFromResource(URL inputResource) throws IOException, SoyMsgException {
 
     try {
-      String inputFileContent = Resources.toString(inputResource, UTF_8);
+      String inputFileContent = Resources.asCharSource(inputResource, UTF_8).read();
       return msgPlugin.parseTranslatedMsgsFile(inputFileContent);
 
     } catch (SoyMsgException sme) {

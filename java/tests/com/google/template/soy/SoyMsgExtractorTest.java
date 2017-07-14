@@ -56,7 +56,7 @@ public class SoyMsgExtractorTest {
                 },
                 System.err);
     assertThat(exitCode).isEqualTo(0);
-    String xmlContent = Files.toString(xmlFile, UTF_8);
+    String xmlContent = Files.asCharSource(xmlFile, UTF_8).read();
     assertThat(xmlContent).contains("<source>H\uff49</source>");
     assertThat(xmlContent).contains("<source>World</source>");
   }

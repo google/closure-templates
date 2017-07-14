@@ -100,7 +100,7 @@ public final class SoyUtils {
     Builder<String, PrimitiveData> compileTimeGlobalsBuilder = ImmutableMap.builder();
     ErrorReporter errorReporter = ExplodingErrorReporter.get();
 
-    try (BufferedReader reader = new BufferedReader(inputSource.openStream())) {
+    try (BufferedReader reader = inputSource.openBufferedStream()) {
       int lineNum = 1;
       for (String line = reader.readLine(); line != null; line = reader.readLine(), ++lineNum) {
 
