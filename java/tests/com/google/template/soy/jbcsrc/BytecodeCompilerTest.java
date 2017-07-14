@@ -23,6 +23,7 @@ import static com.google.template.soy.jbcsrc.TemplateTester.asRecord;
 import static com.google.template.soy.jbcsrc.TemplateTester.assertThatFile;
 import static com.google.template.soy.jbcsrc.TemplateTester.assertThatTemplateBody;
 import static com.google.template.soy.jbcsrc.TemplateTester.getDefaultContext;
+import static com.google.template.soy.jbcsrc.TemplateTester.getDefaultContextWithDebugInfo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
@@ -58,6 +59,7 @@ import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
+import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateRegistry;
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -156,6 +158,44 @@ public class BytecodeCompilerTest {
     activePackages = Predicates.equalTo("NonexistentFeature");
     assertThat(renderWithContext(factory, getDefaultContext(templates, activePackages)))
         .isEqualTo("default");
+  }
+
+  @Test
+  public void testDebugSoyTemplateInfo() throws IOException {
+    String soyFileContent =
+        Joiner.on("\n")
+            .join(
+                "{namespace ns}",
+                "",
+                "{template .html}",
+                "  foo",
+                "{/template}",
+                "",
+                "{template .text kind=\"text\"}",
+                "  foo",
+                "{/template}",
+                "");
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(soyFileContent)
+            .addHtmlCommentsForDebug(true)
+            .parse()
+            .fileSet();
+    TemplateRegistry templateRegistry = new TemplateRegistry(soyTree, ExplodingErrorReporter.get());
+    CompiledTemplates templates =
+        BytecodeCompiler.compile(templateRegistry, false, ExplodingErrorReporter.get()).get();
+
+    // HTML templates
+    CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.html");
+    assertThat(renderWithContext(factory, getDefaultContext(templates))).isEqualTo("foo");
+    // If debugSoyTemplateInfo is enabled, we should render additional HTML comments.
+    assertThat(renderWithContext(factory, getDefaultContextWithDebugInfo(templates)))
+        .isEqualTo("<!--dta_of(ns.html, no-path, 3)-->foo<!--dta_cf(ns.html)-->");
+
+    // We should never render these comments for templates with kind="text".
+    factory = templates.getTemplateFactory("ns.text");
+    assertThat(renderWithContext(factory, getDefaultContext(templates))).isEqualTo("foo");
+    assertThat(renderWithContext(factory, getDefaultContextWithDebugInfo(templates)))
+        .isEqualTo("foo");
   }
 
   private static String renderWithContext(CompiledTemplate.Factory factory, RenderContext context)
@@ -857,7 +897,8 @@ public class BytecodeCompilerTest {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(soyFileContent1).parse().fileSet();
     // apply an escaping directive to the callsite, just like the autoescaper would
-    CallDelegateNode cdn = (CallDelegateNode) soyTree.getChild(0).getChild(0).getChild(0);
+    CallDelegateNode cdn =
+        SoyTreeUtils.getAllNodesOfType(soyTree.getChild(0), CallDelegateNode.class).get(0);
     cdn.setEscapingDirectiveNames(ImmutableList.of("|escapeHtml"));
     TemplateRegistry templateRegistry = new TemplateRegistry(soyTree, ExplodingErrorReporter.get());
     CompiledTemplates templates =

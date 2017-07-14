@@ -374,8 +374,6 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
       case QUOTE_KEYS_IF_JS:
         // 'quoteKeysIfJs' is ignored in Python.
         return visitMapLiteralNode((MapLiteralNode) node.getChild(0));
-      case DEBUG_MODE:
-        return new PyExpr("True", Integer.MAX_VALUE);
       case CHECK_NOT_NULL:
         return visitCheckNotNullFunction(node);
       case CSS:

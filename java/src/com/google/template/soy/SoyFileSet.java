@@ -1119,14 +1119,14 @@ public final class SoyFileSet {
         declaredSyntaxVersion.num >= SyntaxVersion.V2_0.num,
         "Incremental DOM code generation only supports syntax version of V2 or higher.");
     requireStrictAutoescaping();
-    // incremental dom requires the html rewriting pass.  It is currently incompatible with the
-    // other backends though because of issues with the autoescaper.  When that is fixed this will
-    // be come the default behavior.
+    // For incremental dom backend, we don't deguar HTML nodes since it requires HTML context.
+    // Also, we don't add HTML comments, since idom library does not support HTML comments.
     ParseResult result =
         parse(
             passManagerBuilder(SyntaxVersion.V2_0)
                 .desugarHtmlNodes(false)
-                .setAutoescaperEnabled(false));
+                .setAutoescaperEnabled(false)
+                .addHtmlCommentsForDebug(false));
     throwIfErrorsPresent();
     return result;
   }

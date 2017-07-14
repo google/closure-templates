@@ -30,6 +30,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.template.soy.basicfunctions.DebugSoyTemplateInfoFunction;
 import com.google.template.soy.data.SoyAbstractValue;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyMap;
@@ -120,7 +121,8 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
         Environment env,
         @Nullable SoyRecord ijData,
         @Nullable SoyCssRenamingMap cssRenamingMap,
-        @Nullable SoyIdRenamingMap xidRenamingMap);
+        @Nullable SoyIdRenamingMap xidRenamingMap,
+        boolean debugSoyTemplateInfo);
   }
 
   /** The current environment. */
@@ -135,6 +137,9 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
   /** The current XID renaming map. */
   private final SoyIdRenamingMap xidRenamingMap;
 
+  /** If we should render additional HTML comments for runtime insepction. */
+  private final boolean debugSoyTemplateInfo;
+
   /**
    * @param ijData The current injected data.
    * @param env The current environment.
@@ -143,11 +148,13 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       Environment env,
       @Nullable SoyRecord ijData,
       @Nullable SoyCssRenamingMap cssRenamingMap,
-      @Nullable SoyIdRenamingMap xidRenamingMap) {
+      @Nullable SoyIdRenamingMap xidRenamingMap,
+      boolean debugSoyTemplateInfo) {
     this.env = checkNotNull(env);
     this.ijData = ijData;
     this.cssRenamingMap = (cssRenamingMap == null) ? SoyCssRenamingMap.EMPTY : cssRenamingMap;
     this.xidRenamingMap = (xidRenamingMap == null) ? SoyCssRenamingMap.EMPTY : xidRenamingMap;
+    this.debugSoyTemplateInfo = debugSoyTemplateInfo;
   }
 
   // -----------------------------------------------------------------------------------------------
@@ -564,8 +571,6 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
           return visitIndexFunction(node);
         case QUOTE_KEYS_IF_JS:
           return visitMapLiteralNode((MapLiteralNode) node.getChild(0));
-        case DEBUG_MODE:
-          return BooleanData.TRUE;
         case CHECK_NOT_NULL:
           return visitCheckNotNullFunction(node.getChild(0));
         case CSS:
@@ -630,7 +635,12 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
    */
   protected SoyValue computeFunctionHelper(
       SoyJavaFunction fn, List<SoyValue> args, FunctionNode fnNode) {
-
+    if (fn instanceof DebugSoyTemplateInfoFunction) {
+      // DebugSoyTemplateInfoFunction is a special plugin. We should not call computeForJava method
+      // on it; instead we should directly return a boolean here, based on debugSoyTemplateInfo that
+      // is not visible to the plugin.
+      return BooleanData.forValue(debugSoyTemplateInfo);
+    }
     try {
       return fn.computeForJava(args);
     } catch (Exception e) {

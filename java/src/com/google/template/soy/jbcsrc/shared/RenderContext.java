@@ -73,6 +73,8 @@ public final class RenderContext {
   /** The bundle of translated messages */
   private final SoyMsgBundle msgBundle;
 
+  private final boolean debugSoyTemplateInfo;
+
   private RenderContext(Builder builder) {
     this.activeDelPackageSelector = checkNotNull(builder.activeDelPackageSelector);
     this.templates = checkNotNull(builder.templates);
@@ -81,8 +83,9 @@ public final class RenderContext {
     this.soyJavaFunctionsMap = builder.soyJavaFunctionsMap;
     this.soyJavaDirectivesMap = builder.soyJavaDirectivesMap;
     this.msgBundle = builder.msgBundle;
+    this.debugSoyTemplateInfo = builder.debugSoyTemplateInfo;
   }
-  
+
   @Nullable
   public ULocale getLocale() {
     return msgBundle.getLocale();
@@ -113,6 +116,14 @@ public final class RenderContext {
           "Failed to find Soy print directive with name '" + name + "'");
     }
     return printDirective;
+  }
+
+  /**
+   * Returns a boolean that is used by other parts of the compiler. In particular, if this returns
+   * true, Soy compiler will render additional HTML comments for runtime inspections (debug only).
+   */
+  public boolean getDebugSoyTemplateInfo() {
+    return debugSoyTemplateInfo;
   }
 
   public CompiledTemplate getDelTemplate(
@@ -172,6 +183,7 @@ public final class RenderContext {
     private ImmutableMap<String, SoyJavaFunction> soyJavaFunctionsMap = ImmutableMap.of();
     private ImmutableMap<String, SoyJavaPrintDirective> soyJavaDirectivesMap = ImmutableMap.of();
     private SoyMsgBundle msgBundle = SoyMsgBundle.EMPTY;
+    private boolean debugSoyTemplateInfo = false;
 
     public Builder withCompiledTemplates(CompiledTemplates templates) {
       this.templates = checkNotNull(templates);
@@ -205,6 +217,11 @@ public final class RenderContext {
 
     public Builder withMessageBundle(SoyMsgBundle msgBundle) {
       this.msgBundle = checkNotNull(msgBundle);
+      return this;
+    }
+
+    public Builder withDebugSoyTemplateInfo(boolean debugSoyTemplateInfo) {
+      this.debugSoyTemplateInfo = debugSoyTemplateInfo;
       return this;
     }
 

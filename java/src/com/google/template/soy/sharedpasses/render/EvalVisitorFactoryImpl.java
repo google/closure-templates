@@ -41,7 +41,8 @@ public final class EvalVisitorFactoryImpl implements EvalVisitorFactory {
       Environment env,
       @Nullable SoyRecord ijData,
       @Nullable SoyCssRenamingMap cssRenamingMap,
-      @Nullable SoyIdRenamingMap xidRenamingMap) {
-    return new EvalVisitor(env, ijData, cssRenamingMap, xidRenamingMap);
+      @Nullable SoyIdRenamingMap xidRenamingMap,
+      boolean debugSoyTemplateInfo) {
+    return new EvalVisitor(env, ijData, cssRenamingMap, xidRenamingMap, debugSoyTemplateInfo);
   }
 }

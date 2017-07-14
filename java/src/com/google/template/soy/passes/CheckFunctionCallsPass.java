@@ -126,9 +126,6 @@ final class CheckFunctionCallsPass extends CompilerFilePass {
     }
 
     private void visitNonpluginFunction(BuiltinFunction nonpluginFn, FunctionNode node) {
-      if (nonpluginFn == BuiltinFunction.DEBUG_MODE) {
-        return;
-      }
       // Most non-plugin functions have exactly 1 arg
       ExprNode arg1 = node.getChild(0);
 

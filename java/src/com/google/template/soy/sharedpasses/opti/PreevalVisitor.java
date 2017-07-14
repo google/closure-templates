@@ -41,16 +41,13 @@ import java.util.List;
  */
 final class PreevalVisitor extends EvalVisitor {
 
-  /**
-   * @param valueConverter Instance of SoyValueConverter to use.
-   * @param env The current environment.
-   */
   PreevalVisitor(Environment env) {
     super(
         env,
-        null /* ijData */,
-        null /* cssRenamingMap */,
-        null /* xidRenamingMap */);
+        /* ijData= */ null,
+        /* cssRenamingMap= */ null,
+        /* xidRenamingMap= */ null,
+        /* debugSoyTemplateInfo= */ false);
   }
 
   // -----------------------------------------------------------------------------------------------

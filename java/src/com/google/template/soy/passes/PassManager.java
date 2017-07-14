@@ -102,8 +102,6 @@ public final class PassManager {
     this.simplifyVisitor =
         options.isOptimizerEnabled() ? SimplifyVisitor.create(builder.soyPrintDirectives) : null;
 
-    boolean strictHtmlEnabled = options.getExperimentalFeatures().contains("stricthtml");
-
     // Single file passes
     // These passes perform tree rewriting and all compiler checks that don't require information
     // about callees.
@@ -121,8 +119,8 @@ public final class PassManager {
             // expressions do not introduce extra placeholders for call and print nodes.
             .add(new StrictHtmlValidationPass(options.getExperimentalFeatures(), errorReporter))
             .add(new RewriteGlobalsPass(registry, options.getCompileTimeGlobals(), errorReporter))
-            .add(new ResolveNamesPass())
-            .add(new ResolveFunctionsPass());
+            .add(new ResolveNamesPass());
+    singleFilePassesBuilder.add(new ResolveFunctionsPass());
     if (!disableAllTypeChecking) {
       singleFilePassesBuilder.add(new ResolveExpressionTypesPass());
     }
@@ -151,6 +149,9 @@ public final class PassManager {
     // If requiring strict autoescaping, check and enforce it.
     if (options.isStrictAutoescapingRequired() == TriState.ENABLED) {
       singleFilePassesBuilder.add(new EnforceStrictAutoescapingPass());
+    }
+    if (builder.addHtmlCommentsForDebug) {
+      singleFilePassesBuilder.add(new AddHtmlCommentsForDebugPass());
     }
     this.singleFilePasses = singleFilePassesBuilder.build();
 
@@ -282,6 +283,7 @@ public final class PassManager {
     private boolean optimize = true;
     private ImmutableList<CharSource> conformanceConfigs = ImmutableList.of();
     private boolean autoescaperEnabled = true;
+    private boolean addHtmlCommentsForDebug = false;
 
     public Builder setErrorReporter(ErrorReporter errorReporter) {
       this.errorReporter = checkNotNull(errorReporter);
@@ -353,6 +355,11 @@ public final class PassManager {
      */
     public Builder optimize(boolean optimize) {
       this.optimize = optimize;
+      return this;
+    }
+
+    public Builder addHtmlCommentsForDebug(boolean addHtmlCommentsForDebug) {
+      this.addHtmlCommentsForDebug = addHtmlCommentsForDebug;
       return this;
     }
 

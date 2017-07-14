@@ -50,38 +50,55 @@ public final class AddHtmlCommentsForDebugPassTest {
     // Templates that explicitly set ContentKind and/or AutoescapeMode.
     assertThat(runPass("{template .t kind=\"html\"}{/template}"))
         .isEqualTo(
-            "{if debugMode() and $ij.debug_soy_template_info}<!--dta_of(ns.t, test.soy, 1)-->{/if}"
-                + "{if debugMode() and $ij.debug_soy_template_info}<!--dta_cf(ns.t)-->{/if}");
+            "{if $$debugSoyTemplateInfo()}<!--dta_of(ns.t, test.soy, 1)-->{/if}"
+                + "{if $$debugSoyTemplateInfo()}<!--dta_cf(ns.t)-->{/if}");
     assertThat(runPass("{template .t kind=\"html\" autoescape=\"strict\"}{/template}"))
         .isEqualTo(
-            "{if debugMode() and $ij.debug_soy_template_info}<!--dta_of(ns.t, test.soy, 1)-->{/if}"
-                + "{if debugMode() and $ij.debug_soy_template_info}<!--dta_cf(ns.t)-->{/if}");
+            "{if $$debugSoyTemplateInfo()}<!--dta_of(ns.t, test.soy, 1)-->{/if}"
+                + "{if $$debugSoyTemplateInfo()}<!--dta_cf(ns.t)-->{/if}");
 
     assertThat(runPass("{template .t}{/template}"))
         .isEqualTo(
-            "{if debugMode() and $ij.debug_soy_template_info}<!--dta_of(ns.t, test.soy, 1)-->{/if}"
-                + "{if debugMode() and $ij.debug_soy_template_info}<!--dta_cf(ns.t)-->{/if}");
+            "{if $$debugSoyTemplateInfo()}<!--dta_of(ns.t, test.soy, 1)-->{/if}"
+                + "{if $$debugSoyTemplateInfo()}<!--dta_cf(ns.t)-->{/if}");
     assertThat(runPass("{template .t}foo{/template}"))
         .isEqualTo(
-            "{if debugMode() and $ij.debug_soy_template_info}<!--dta_of(ns.t, test.soy, 1)-->{/if}"
+            "{if $$debugSoyTemplateInfo()}<!--dta_of(ns.t, test.soy, 1)-->{/if}"
                 + "foo"
-                + "{if debugMode() and $ij.debug_soy_template_info}<!--dta_cf(ns.t)-->{/if}");
+                + "{if $$debugSoyTemplateInfo()}<!--dta_cf(ns.t)-->{/if}");
     assertThat(runPass("{template .t}{if $foo}bar{/if}{/template}"))
         .isEqualTo(
-            "{if debugMode() and $ij.debug_soy_template_info}<!--dta_of(ns.t, test.soy, 1)-->{/if}"
+            "{if $$debugSoyTemplateInfo()}<!--dta_of(ns.t, test.soy, 1)-->{/if}"
                 + "{if $foo}bar{/if}"
-                + "{if debugMode() and $ij.debug_soy_template_info}<!--dta_cf(ns.t)-->{/if}");
+                + "{if $$debugSoyTemplateInfo()}<!--dta_cf(ns.t)-->{/if}");
+  }
+
+  @Test
+  public void testFilePathIsEscaped() {
+    assertThat(runPass("{template .t kind=\"html\"}{/template}", "-->.soy"))
+        .isEqualTo(
+            "{if $$debugSoyTemplateInfo()}<!--dta_of(ns.t, --&gt;.soy, 1)-->{/if}"
+                + "{if $$debugSoyTemplateInfo()}<!--dta_cf(ns.t)-->{/if}");
+
+    assertThat(runPass("{template .t kind=\"html\"}{/template}", "<!--.soy"))
+        .isEqualTo(
+            "{if $$debugSoyTemplateInfo()}<!--dta_of(ns.t, &lt;!--.soy, 1)-->{/if}"
+                + "{if $$debugSoyTemplateInfo()}<!--dta_cf(ns.t)-->{/if}");
   }
 
   private static void assertNoOp(String input) {
     assertThat(runPass(input)).isEmpty();
   }
 
+  private static String runPass(String input) {
+    return runPass(input, "test.soy");
+  }
+
   /**
    * Parses the given input as a template content, runs the AddHtmlCommentsForDebug pass and returns
    * the resulting source string of the template body.
    */
-  private static String runPass(String input) {
+  private static String runPass(String input, String fileName) {
     String soyFile = "{namespace ns}" + input;
     IncrementingIdGenerator nodeIdGen = new IncrementingIdGenerator();
     SoyFileNode node =
@@ -90,10 +107,10 @@ public final class AddHtmlCommentsForDebugPassTest {
                 nodeIdGen,
                 new StringReader(soyFile),
                 SoyFileKind.SRC,
-                "test.soy",
+                fileName,
                 ExplodingErrorReporter.get())
             .parseSoyFile();
-    new AddHtmlCommentsForDebugPass(ExplodingErrorReporter.get()).run(node, nodeIdGen);
+    new AddHtmlCommentsForDebugPass().run(node, nodeIdGen);
     StringBuilder sb = new StringBuilder();
     node.getChild(0).appendSourceStringForChildren(sb);
     return sb.toString();

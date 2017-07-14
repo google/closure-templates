@@ -156,6 +156,9 @@ public interface SoyTofu {
     /** Sets the CSS renaming map. */
     Renderer setCssRenamingMap(SoyCssRenamingMap cssRenamingMap);
 
+    /** Configures if we should render additional HTML comments for runtime inspection. */
+    Renderer setDebugSoyTemplateInfo(boolean debugSoyTemplateInfo);
+
     /**
      * Sets the expected content kind.
      *

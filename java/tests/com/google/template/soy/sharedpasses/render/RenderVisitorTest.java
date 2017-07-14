@@ -60,6 +60,7 @@ import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
+import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import java.io.ByteArrayOutputStream;
@@ -289,10 +290,61 @@ public class RenderVisitorTest {
                 Predicates.<String>alwaysFalse(),
                 msgBundle,
                 xidRenamingMap,
-                cssRenamingMap);
+                cssRenamingMap,
+                false);
     for (SoyNode node : templateNode.getChildren()) {
       new RewriteRemaindersVisitor(boom).exec(node);
     }
+    rv.exec(templateNode);
+    return outputSb.toString();
+  }
+
+  private String renderTemplateInFile(
+      String soyFileContent,
+      String templateName,
+      SoyRecord data,
+      SoyRecord ijData,
+      Predicate<String> activeDelPackageNames) {
+    return renderTemplateInFile(
+        SoyFileSetParserBuilder.forFileContents(soyFileContent).errorReporter(FAIL).parse(),
+        templateName,
+        data,
+        ijData,
+        activeDelPackageNames);
+  }
+
+  private String renderTemplateInFile(
+      ParseResult parseResult,
+      String templateName,
+      SoyRecord data,
+      SoyRecord ijData,
+      Predicate<String> activeDelPackageNames) {
+    return renderTemplateInFile(
+        parseResult, templateName, data, ijData, activeDelPackageNames, new StringBuilder());
+  }
+
+  private String renderTemplateInFile(
+      ParseResult parseResult,
+      String templateName,
+      SoyRecord data,
+      SoyRecord ijData,
+      Predicate<String> activeDelPackageNames,
+      StringBuilder outputSb) {
+    TemplateRegistry templateRegistry = parseResult.registry();
+    RenderVisitor rv =
+        INJECTOR
+            .getInstance(RenderVisitorFactory.class)
+            .create(
+                outputSb,
+                templateRegistry,
+                data,
+                ijData,
+                activeDelPackageNames,
+                null,
+                xidRenamingMap,
+                cssRenamingMap,
+                false);
+    TemplateNode templateNode = templateRegistry.getBasicTemplate(templateName);
     rv.exec(templateNode);
     return outputSb.toString();
   }
@@ -392,8 +444,9 @@ public class RenderVisitorTest {
             .fileSet()
             .getChild(0);
 
-    MsgNode fallbackMsg =
-        ((MsgFallbackGroupNode) file.getChildren().get(0).getChildren().get(0)).getChild(1);
+    MsgFallbackGroupNode msgGroup =
+        SoyTreeUtils.getAllNodesOfType(file.getChild(0), MsgFallbackGroupNode.class).get(0);
+    MsgNode fallbackMsg = msgGroup.getChild(1);
     SoyMsg translatedFallbackMsg =
         SoyMsg.builder()
             .setId(MsgUtils.computeMsgIdForDualFormat(fallbackMsg))
@@ -860,29 +913,8 @@ public class RenderVisitorTest {
             + "  {foreach $n in $goo} {$n}{/foreach}{\\n}\n"
             + "{/template}\n";
 
-    TemplateRegistry templateRegistry =
-        SoyFileSetParserBuilder.forFileContents(soyFileContent)
-            .errorReporter(FAIL)
-            .parse()
-            .registry();
-
     SoyDict foo = CONVERTER.newDict("boo", "foo", "goo", CONVERTER.newList(3, 2, 1));
     SoyDict data = CONVERTER.newDict("boo", "boo", "foo", foo, "goo", CONVERTER.newList(1, 2, 3));
-
-    StringBuilder outputSb = new StringBuilder();
-    RenderVisitor rv =
-        INJECTOR
-            .getInstance(RenderVisitorFactory.class)
-            .create(
-                outputSb,
-                templateRegistry,
-                data,
-                TEST_IJ_DATA,
-                Predicates.<String>alwaysFalse(),
-                null,
-                xidRenamingMap,
-                cssRenamingMap);
-    rv.exec(templateRegistry.getBasicTemplate("ns.callerTemplate"));
 
     String expectedOutput =
         "boo 1 2 3\n"
@@ -892,7 +924,14 @@ public class RenderVisitorTest {
             + "moo 3 2 1\n"
             + "zoo 3 2 1\n";
 
-    assertThat(outputSb.toString()).isEqualTo(expectedOutput);
+    assertThat(
+            renderTemplateInFile(
+                soyFileContent,
+                "ns.callerTemplate",
+                data,
+                TEST_IJ_DATA,
+                Predicates.<String>alwaysFalse()))
+        .isEqualTo(expectedOutput);
   }
 
   private static class TestFuture extends AbstractFuture<String> {
@@ -1000,7 +1039,8 @@ public class RenderVisitorTest {
                 Predicates.<String>alwaysFalse(),
                 null,
                 xidRenamingMap,
-                cssRenamingMap);
+                cssRenamingMap,
+                false);
     rv.exec(templateRegistry.getBasicTemplate("ns.callerTemplate"));
 
     String expectedOutput =
@@ -1062,114 +1102,55 @@ public class RenderVisitorTest {
             + "  {$boo} {$ij.ijStr}\n"
             + "{/template}\n";
 
-    TemplateRegistry templateRegistry =
+    final ParseResult parseResult =
         SoyFileSetParserBuilder.forFileContents(
                 soyFileContent1, soyFileContent2, soyFileContent3, soyFileContent4)
             .errorReporter(FAIL)
-            .parse()
-            .registry();
-    TemplateNode callerTemplate = templateRegistry.getBasicTemplate("ns1.callerTemplate");
+            .parse();
+    final SoyRecord data = CONVERTER.newDict();
 
     Predicate<String> activeDelPackageNames = Predicates.alwaysFalse();
-    StringBuilder outputSb = new StringBuilder();
-    INJECTOR
-        .getInstance(RenderVisitorFactory.class)
-        .create(
-            outputSb,
-            templateRegistry,
-            CONVERTER.newDict(),
-            TEST_IJ_DATA,
-            activeDelPackageNames,
-            null,
-            xidRenamingMap,
-            cssRenamingMap)
-        .exec(callerTemplate);
-    assertThat(outputSb.toString()).isEqualTo("000");
+    assertThat(
+            renderTemplateInFile(
+                parseResult, "ns1.callerTemplate", data, TEST_IJ_DATA, activeDelPackageNames))
+        .isEqualTo("000");
 
     activeDelPackageNames = Predicates.equalTo("SecretFeature");
-    outputSb = new StringBuilder();
-    INJECTOR
-        .getInstance(RenderVisitorFactory.class)
-        .create(
-            outputSb,
-            templateRegistry,
-            CONVERTER.newDict(),
-            TEST_IJ_DATA,
-            activeDelPackageNames,
-            null,
-            xidRenamingMap,
-            cssRenamingMap)
-        .exec(callerTemplate);
-    assertThat(outputSb.toString()).isEqualTo("111 aaaaaah");
+    assertThat(
+            renderTemplateInFile(
+                parseResult, "ns1.callerTemplate", data, TEST_IJ_DATA, activeDelPackageNames))
+        .isEqualTo("111 aaaaaah");
 
     activeDelPackageNames = Predicates.equalTo("AlternateSecretFeature");
-    outputSb = new StringBuilder();
-    INJECTOR
-        .getInstance(RenderVisitorFactory.class)
-        .create(
-            outputSb,
-            templateRegistry,
-            CONVERTER.newDict(),
-            TEST_IJ_DATA,
-            activeDelPackageNames,
-            null,
-            xidRenamingMap,
-            cssRenamingMap)
-        .exec(callerTemplate);
-    assertThat(outputSb.toString()).isEqualTo("222 aaaaaah injected");
+    assertThat(
+            renderTemplateInFile(
+                parseResult, "ns1.callerTemplate", data, TEST_IJ_DATA, activeDelPackageNames))
+        .isEqualTo("222 aaaaaah injected");
 
     activeDelPackageNames = Predicates.equalTo("NonexistentFeature");
-    outputSb = new StringBuilder();
-    INJECTOR
-        .getInstance(RenderVisitorFactory.class)
-        .create(
-            outputSb,
-            templateRegistry,
-            CONVERTER.newDict(),
-            TEST_IJ_DATA,
-            activeDelPackageNames,
-            null,
-            xidRenamingMap,
-            cssRenamingMap)
-        .exec(callerTemplate);
-    assertThat(outputSb.toString()).isEqualTo("000");
+    assertThat(
+            renderTemplateInFile(
+                parseResult, "ns1.callerTemplate", data, TEST_IJ_DATA, activeDelPackageNames))
+        .isEqualTo("000");
 
     activeDelPackageNames =
         Predicates.in(ImmutableSet.of("NonexistentFeature", "AlternateSecretFeature"));
-    outputSb = new StringBuilder();
-    INJECTOR
-        .getInstance(RenderVisitorFactory.class)
-        .create(
-            outputSb,
-            templateRegistry,
-            CONVERTER.newDict(),
-            TEST_IJ_DATA,
-            activeDelPackageNames,
-            null,
-            xidRenamingMap,
-            cssRenamingMap)
-        .exec(callerTemplate);
-    assertThat(outputSb.toString()).isEqualTo("222 aaaaaah injected");
+    assertThat(
+            renderTemplateInFile(
+                parseResult, "ns1.callerTemplate", data, TEST_IJ_DATA, activeDelPackageNames))
+        .isEqualTo("222 aaaaaah injected");
 
-    activeDelPackageNames =
-        Predicates.in(ImmutableSet.of("SecretFeature", "AlternateSecretFeature"));
-    outputSb = new StringBuilder();
     try {
-      INJECTOR
-          .getInstance(RenderVisitorFactory.class)
-          .create(
-              outputSb,
-              templateRegistry,
-              CONVERTER.newDict(),
-              TEST_IJ_DATA,
-              activeDelPackageNames,
-              null,
-              xidRenamingMap,
-              cssRenamingMap)
-          .exec(callerTemplate);
-      fail();
+      renderTemplateInFile(
+          parseResult,
+          "ns1.callerTemplate",
+          data,
+          TEST_IJ_DATA,
+          Predicates.in(ImmutableSet.of("SecretFeature", "AlternateSecretFeature")));
+      fail("expected RenderException");
     } catch (RenderException e) {
-      assertThat(e.getMessage())
+      assertThat(e)
+          .hasMessageThat()
           .contains(
               "For delegate template 'myApp.myDelegate', found two active implementations with"
                   + " equal priority");
@@ -1282,112 +1263,51 @@ public class RenderVisitorTest {
             .options(options)
             .errorReporter(FAIL)
             .parse();
-    TemplateRegistry templateRegistry = result.registry();
-    TemplateNode callerTemplate = templateRegistry.getBasicTemplate("ns1.callerTemplate");
 
     Predicate<String> activeDelPackageNames = Predicates.alwaysFalse();
-    StringBuilder outputSb = new StringBuilder();
-    INJECTOR
-        .getInstance(RenderVisitorFactory.class)
-        .create(
-            outputSb,
-            templateRegistry,
-            TEST_DATA,
-            TEST_IJ_DATA,
-            activeDelPackageNames,
-            null,
-            xidRenamingMap,
-            cssRenamingMap)
-        .exec(callerTemplate);
-    assertThat(outputSb.toString()).isEqualTo("000alpha000beta000empty000global");
+    assertThat(
+            renderTemplateInFile(
+                result, "ns1.callerTemplate", TEST_DATA, TEST_IJ_DATA, activeDelPackageNames))
+        .isEqualTo("000alpha000beta000empty000global");
 
     activeDelPackageNames = Predicates.equalTo("SecretFeature");
-    outputSb = new StringBuilder();
-    INJECTOR
-        .getInstance(RenderVisitorFactory.class)
-        .create(
-            outputSb,
-            templateRegistry,
-            TEST_DATA,
-            TEST_IJ_DATA,
-            activeDelPackageNames,
-            null,
-            xidRenamingMap,
-            cssRenamingMap)
-        .exec(callerTemplate);
-    assertThat(outputSb.toString()).isEqualTo("111alpha111beta111empty111global");
+    assertThat(
+            renderTemplateInFile(
+                result, "ns1.callerTemplate", TEST_DATA, TEST_IJ_DATA, activeDelPackageNames))
+        .isEqualTo("111alpha111beta111empty111global");
 
     activeDelPackageNames = Predicates.equalTo("AlternateSecretFeature");
-    outputSb = new StringBuilder();
-    INJECTOR
-        .getInstance(RenderVisitorFactory.class)
-        .create(
-            outputSb,
-            templateRegistry,
-            TEST_DATA,
-            TEST_IJ_DATA,
-            activeDelPackageNames,
-            null,
-            xidRenamingMap,
-            cssRenamingMap)
-        .exec(callerTemplate);
-    assertThat(outputSb.toString()).isEqualTo("222alpha000beta222empty222global");
+    assertThat(
+            renderTemplateInFile(
+                result, "ns1.callerTemplate", TEST_DATA, TEST_IJ_DATA, activeDelPackageNames))
+        .isEqualTo("222alpha000beta222empty222global");
 
     activeDelPackageNames = Predicates.equalTo("NonexistentFeature");
-    outputSb = new StringBuilder();
-    INJECTOR
-        .getInstance(RenderVisitorFactory.class)
-        .create(
-            outputSb,
-            templateRegistry,
-            TEST_DATA,
-            TEST_IJ_DATA,
-            activeDelPackageNames,
-            null,
-            xidRenamingMap,
-            cssRenamingMap)
-        .exec(callerTemplate);
-    assertThat(outputSb.toString()).isEqualTo("000alpha000beta000empty000global");
+    assertThat(
+            renderTemplateInFile(
+                result, "ns1.callerTemplate", TEST_DATA, TEST_IJ_DATA, activeDelPackageNames))
+        .isEqualTo("000alpha000beta000empty000global");
 
     activeDelPackageNames =
         Predicates.in(ImmutableSet.of("NonexistentFeature", "AlternateSecretFeature"));
-    outputSb = new StringBuilder();
-    INJECTOR
-        .getInstance(RenderVisitorFactory.class)
-        .create(
-            outputSb,
-            templateRegistry,
-            TEST_DATA,
-            TEST_IJ_DATA,
-            activeDelPackageNames,
-            null,
-            xidRenamingMap,
-            cssRenamingMap)
-        .exec(callerTemplate);
-    assertThat(outputSb.toString()).isEqualTo("222alpha000beta222empty222global");
-
-    activeDelPackageNames =
-        Predicates.in(ImmutableSet.of("SecretFeature", "AlternateSecretFeature"));
-    outputSb = new StringBuilder();
+    assertThat(
+            renderTemplateInFile(
+                result, "ns1.callerTemplate", TEST_DATA, TEST_IJ_DATA, activeDelPackageNames))
+        .isEqualTo("222alpha000beta222empty222global");
     try {
-      INJECTOR
-          .getInstance(RenderVisitorFactory.class)
-          .create(
-              outputSb,
-              templateRegistry,
-              TEST_DATA,
-              TEST_IJ_DATA,
-              activeDelPackageNames,
-              null,
-              xidRenamingMap,
-              cssRenamingMap)
-          .exec(callerTemplate);
-      fail();
+      renderTemplateInFile(
+          result,
+          "ns1.callerTemplate",
+          TEST_DATA,
+          TEST_IJ_DATA,
+          Predicates.in(ImmutableSet.of("SecretFeature", "AlternateSecretFeature")));
+      fail("expected RenderException");
     } catch (RenderException e) {
-      assertThat(e.getMessage())
+      assertThat(e)
+          .hasMessageThat()
           .contains(
-              "For delegate template 'myApp.myDelegate:alpha', found two active implementations with"
-                  + " equal priority");
+              "For delegate template 'myApp.myDelegate:alpha', found two active implementations "
+                  + "with equal priority");
     }
   }
 
@@ -1423,187 +1343,91 @@ public class RenderVisitorTest {
             "  111 {$boo}\n"
             + "{/deltemplate}\n";
 
+    SoyRecord data = CONVERTER.newDict();
+    ParseResult parseResult;
+
     // ------ Test with only file 1a in bundle. ------
 
-    TemplateRegistry templateRegistry =
-        SoyFileSetParserBuilder.forFileContents(soyFileContent1a).parse().registry();
-    TemplateNode callerTemplate = templateRegistry.getBasicTemplate("ns1.callerTemplate");
+    parseResult = SoyFileSetParserBuilder.forFileContents(soyFileContent1a).parse();
 
     Predicate<String> activeDelPackageNames = Predicates.alwaysFalse();
-    StringBuilder outputSb = new StringBuilder();
-    INJECTOR
-        .getInstance(RenderVisitorFactory.class)
-        .create(
-            outputSb,
-            templateRegistry,
-            CONVERTER.newDict(),
-            null,
-            activeDelPackageNames,
-            null,
-            xidRenamingMap,
-            cssRenamingMap)
-        .exec(callerTemplate);
-    assertThat(outputSb.toString()).isEmpty();
+    assertThat(
+            renderTemplateInFile(
+                parseResult, "ns1.callerTemplate", data, null, activeDelPackageNames))
+        .isEmpty();
 
     activeDelPackageNames = Predicates.equalTo("SecretFeature");
-    outputSb = new StringBuilder();
-    INJECTOR
-        .getInstance(RenderVisitorFactory.class)
-        .create(
-            outputSb,
-            templateRegistry,
-            CONVERTER.newDict(),
-            null,
-            activeDelPackageNames,
-            null,
-            xidRenamingMap,
-            cssRenamingMap)
-        .exec(callerTemplate);
-    assertThat(outputSb.toString()).isEmpty();
+    assertThat(
+            renderTemplateInFile(
+                parseResult, "ns1.callerTemplate", data, null, activeDelPackageNames))
+        .isEmpty();
 
     // ------ Test with both files 1a and 2 in bundle. ------
 
-    templateRegistry =
-        SoyFileSetParserBuilder.forFileContents(soyFileContent1a, soyFileContent2)
-            .parse()
-            .registry();
-    callerTemplate = templateRegistry.getBasicTemplate("ns1.callerTemplate");
+    parseResult =
+        SoyFileSetParserBuilder.forFileContents(soyFileContent1a, soyFileContent2).parse();
 
     activeDelPackageNames = Predicates.alwaysFalse();
-    outputSb = new StringBuilder();
-    INJECTOR
-        .getInstance(RenderVisitorFactory.class)
-        .create(
-            outputSb,
-            templateRegistry,
-            CONVERTER.newDict(),
-            null,
-            activeDelPackageNames,
-            null,
-            xidRenamingMap,
-            cssRenamingMap)
-        .exec(callerTemplate);
-    assertThat(outputSb.toString()).isEmpty();
+    assertThat(
+            renderTemplateInFile(
+                parseResult, "ns1.callerTemplate", data, null, activeDelPackageNames))
+        .isEmpty();
 
     activeDelPackageNames = Predicates.equalTo("SecretFeature");
-    outputSb = new StringBuilder();
-    INJECTOR
-        .getInstance(RenderVisitorFactory.class)
-        .create(
-            outputSb,
-            templateRegistry,
-            CONVERTER.newDict(),
-            null,
-            activeDelPackageNames,
-            null,
-            xidRenamingMap,
-            cssRenamingMap)
-        .exec(callerTemplate);
-    assertThat(outputSb.toString()).isEqualTo("111 aaaaaah");
+    assertThat(
+            renderTemplateInFile(
+                parseResult, "ns1.callerTemplate", data, null, activeDelPackageNames))
+        .isEqualTo("111 aaaaaah");
 
     activeDelPackageNames = Predicates.equalTo("NonexistentFeature");
-    outputSb = new StringBuilder();
-    INJECTOR
-        .getInstance(RenderVisitorFactory.class)
-        .create(
-            outputSb,
-            templateRegistry,
-            CONVERTER.newDict(),
-            null,
-            activeDelPackageNames,
-            null,
-            xidRenamingMap,
-            cssRenamingMap)
-        .exec(callerTemplate);
-    assertThat(outputSb.toString()).isEmpty();
+    assertThat(
+            renderTemplateInFile(
+                parseResult, "ns1.callerTemplate", data, null, activeDelPackageNames))
+        .isEmpty();
 
     activeDelPackageNames = Predicates.in(ImmutableSet.of("NonexistentFeature", "SecretFeature"));
-    outputSb = new StringBuilder();
-    INJECTOR
-        .getInstance(RenderVisitorFactory.class)
-        .create(
-            outputSb,
-            templateRegistry,
-            CONVERTER.newDict(),
-            null,
-            activeDelPackageNames,
-            null,
-            xidRenamingMap,
-            cssRenamingMap)
-        .exec(callerTemplate);
-    assertThat(outputSb.toString()).isEqualTo("111 aaaaaah");
+    assertThat(
+            renderTemplateInFile(
+                parseResult, "ns1.callerTemplate", data, null, activeDelPackageNames))
+        .isEqualTo("111 aaaaaah");
 
     // ------ Test with only file 1b in bundle. ------
-
-    templateRegistry =
-        SoyFileSetParserBuilder.forFileContents(soyFileContent1b)
-            .errorReporter(FAIL)
-            .parse()
-            .registry();
-    callerTemplate = templateRegistry.getBasicTemplate("ns1.callerTemplate");
-
     activeDelPackageNames = Predicates.alwaysFalse();
     try {
-      INJECTOR
-          .getInstance(RenderVisitorFactory.class)
-          .create(
-              new StringBuilder(),
-              templateRegistry,
-              CONVERTER.newDict(),
-              null,
-              activeDelPackageNames,
-              null,
-              xidRenamingMap,
-              cssRenamingMap)
-          .exec(callerTemplate);
-      fail();
-    } catch (RenderException re) {
-      assertThat(re.getMessage()).contains("Found no active impl for delegate call");
+      renderTemplateInFile(
+          SoyFileSetParserBuilder.forFileContents(soyFileContent1b).parse(),
+          "ns1.callerTemplate",
+          data,
+          null,
+          activeDelPackageNames);
+      fail("expected RenderException");
+    } catch (RenderException e) {
+      assertThat(e).hasMessageThat().contains("Found no active impl for delegate call");
     }
 
     // ------ Test with both files 1b and 2 in bundle. ------
 
-    templateRegistry =
-        SoyFileSetParserBuilder.forFileContents(soyFileContent1b, soyFileContent2)
-            .errorReporter(FAIL)
-            .parse()
-            .registry();
-    callerTemplate = templateRegistry.getBasicTemplate("ns1.callerTemplate");
-
-    activeDelPackageNames = Predicates.alwaysFalse();
     try {
-      INJECTOR
-          .getInstance(RenderVisitorFactory.class)
-          .create(
-              new StringBuilder(),
-              templateRegistry,
-              CONVERTER.newDict(),
-              null,
-              activeDelPackageNames,
-              null,
-              xidRenamingMap,
-              cssRenamingMap)
-          .exec(callerTemplate);
-      fail();
-    } catch (RenderException re) {
-      assertThat(re.getMessage()).contains("Found no active impl for delegate call");
+      renderTemplateInFile(
+          SoyFileSetParserBuilder.forFileContents(soyFileContent1b, soyFileContent2).parse(),
+          "ns1.callerTemplate",
+          data,
+          null,
+          activeDelPackageNames);
+      fail("expected RenderException");
+    } catch (RenderException e) {
+      assertThat(e).hasMessageThat().contains("Found no active impl for delegate call");
     }
 
     activeDelPackageNames = Predicates.equalTo("SecretFeature");
-    outputSb = new StringBuilder();
-    INJECTOR
-        .getInstance(RenderVisitorFactory.class)
-        .create(
-            outputSb,
-            templateRegistry,
-            CONVERTER.newDict(),
-            null,
-            activeDelPackageNames,
-            null,
-            xidRenamingMap,
-            cssRenamingMap)
-        .exec(callerTemplate);
-    assertThat(outputSb.toString()).isEqualTo("111 aaaaaah");
+    assertThat(
+            renderTemplateInFile(
+                SoyFileSetParserBuilder.forFileContents(soyFileContent1b, soyFileContent2).parse(),
+                "ns1.callerTemplate",
+                data,
+                null,
+                activeDelPackageNames))
+        .isEqualTo("111 aaaaaah");
   }
 
   @Test
@@ -1673,33 +1497,18 @@ public class RenderVisitorTest {
             + "  callee{log}callee{/log}\n"
             + "  {sp}{$foo}{sp}{$foo}\n"
             + "{/template}\n";
-
-    TemplateRegistry templateRegistry =
-        SoyFileSetParserBuilder.forFileContents(soyFileContent)
-            .errorReporter(FAIL)
-            .parse()
-            .registry();
-
-    StringBuilder outputSb = new StringBuilder();
     // Send stdout to my own buffer.
 
     ByteArrayOutputStream buffer = new ByteArrayOutputStream();
     System.setOut(new PrintStream(buffer));
-    RenderVisitor rv =
-        INJECTOR
-            .getInstance(RenderVisitorFactory.class)
-            .create(
-                outputSb,
-                templateRegistry,
+    assertThat(
+            renderTemplateInFile(
+                soyFileContent,
+                "ns.callerTemplate",
                 CONVERTER.newDict(),
                 null,
-                Predicates.<String>alwaysFalse(),
-                null,
-                xidRenamingMap,
-                cssRenamingMap);
-    rv.exec(templateRegistry.getBasicTemplate("ns.callerTemplate"));
-
-    assertThat(outputSb.toString()).isEqualTo("callee param param");
+                Predicates.<String>alwaysFalse()))
+        .isEqualTo("callee param param");
     assertThat(buffer.toString()).isEqualTo("callee\nparam\n");
     // Restore stdout.
     System.setOut(new PrintStream(new FileOutputStream(FileDescriptor.out)));
@@ -1742,13 +1551,6 @@ public class RenderVisitorTest {
             + "  {@param foo: int}\n"
             + "  Before: {$foo}\n"
             + "{/template}\n";
-    ErrorReporter boom = ExplodingErrorReporter.get();
-    TemplateRegistry templateRegistry =
-        SoyFileSetParserBuilder.forFileContents(soyFileContent)
-            .errorReporter(boom)
-            .parse()
-            .registry();
-    TemplateNode callerTemplate = templateRegistry.getBasicTemplate("ns.template");
     final StringBuilder outputSb = new StringBuilder();
     final AtomicReference<String> outputAtFutureGetTime = new AtomicReference<>();
     AbstractFuture<Integer> fooFuture =
@@ -1764,21 +1566,16 @@ public class RenderVisitorTest {
           }
         };
     SoyRecord data = CONVERTER.newDict("foo", fooFuture);
-    RenderVisitor rv =
-        INJECTOR
-            .getInstance(RenderVisitorFactory.class)
-            .create(
-                outputSb,
-                templateRegistry,
+    assertThat(
+            renderTemplateInFile(
+                SoyFileSetParserBuilder.forFileContents(soyFileContent).parse(),
+                "ns.template",
                 data,
                 TEST_IJ_DATA,
                 Predicates.<String>alwaysFalse(),
-                null,
-                xidRenamingMap,
-                cssRenamingMap);
-    rv.exec(callerTemplate);
+                outputSb))
+        .isEqualTo("Before: 1");
     assertThat(outputAtFutureGetTime.get()).isEqualTo("Before: ");
-    assertThat(outputSb.toString()).isEqualTo("Before: 1");
   }
 
   @Test
@@ -1790,32 +1587,20 @@ public class RenderVisitorTest {
             + "  {@param foo: int}\n"
             + "  Before: {$foo}\n"
             + "{/template}\n";
-    TemplateRegistry templateRegistry =
-        SoyFileSetParserBuilder.forFileContents(soyFileContent)
-            .errorReporter(FAIL)
-            .parse()
-            .registry();
-    TemplateNode callerTemplate = templateRegistry.getBasicTemplate("ns.template");
     final StringBuilder outputSb = new StringBuilder();
-    SoyRecord data = CONVERTER.newDict("foo", Futures.immediateFuture("hello world"));
-    RenderVisitor rv =
-        INJECTOR
-            .getInstance(RenderVisitorFactory.class)
-            .create(
-                outputSb,
-                templateRegistry,
-                data,
-                TEST_IJ_DATA,
-                Predicates.<String>alwaysFalse(),
-                null,
-                xidRenamingMap,
-                cssRenamingMap);
     try {
-      rv.exec(callerTemplate);
-      fail();
-    } catch (RenderException exception) {
+      renderTemplateInFile(
+          SoyFileSetParserBuilder.forFileContents(soyFileContent).errorReporter(FAIL).parse(),
+          "ns.template",
+          CONVERTER.newDict("foo", Futures.immediateFuture("hello world")),
+          TEST_IJ_DATA,
+          Predicates.<String>alwaysFalse(),
+          outputSb);
+      fail("expected RenderException");
+    } catch (RenderException e) {
       assertThat(outputSb.toString()).isEqualTo("Before: ");
-      assertThat(exception.getMessage())
+      assertThat(e)
+          .hasMessageThat()
           .contains(
               "Parameter type mismatch: attempt to bind value 'hello world' to parameter "
                   + "'foo' which has declared type 'int'");
@@ -1845,12 +1630,6 @@ public class RenderVisitorTest {
                 "    {/param}",
                 "  {/call}",
                 "{/template}");
-    TemplateRegistry templateRegistry =
-        SoyFileSetParserBuilder.forFileContents(soyFileContent)
-            .errorReporter(FAIL)
-            .parse()
-            .registry();
-    TemplateNode callerTemplate = templateRegistry.getBasicTemplate("ns.caller");
     final StringBuilder outputSb = new StringBuilder();
     final AtomicReference<String> outputAtFutureGetTime = new AtomicReference<>();
     AbstractFuture<String> future =
@@ -1866,21 +1645,16 @@ public class RenderVisitorTest {
           }
         };
     SoyRecord data = CONVERTER.newDict("future", future);
-    RenderVisitor rv =
-        INJECTOR
-            .getInstance(RenderVisitorFactory.class)
-            .create(
-                outputSb,
-                templateRegistry,
+    assertThat(
+            renderTemplateInFile(
+                SoyFileSetParserBuilder.forFileContents(soyFileContent).parse(),
+                "ns.caller",
                 data,
                 TEST_IJ_DATA,
                 Predicates.<String>alwaysFalse(),
-                null,
-                xidRenamingMap,
-                cssRenamingMap);
-    rv.exec(callerTemplate);
+                outputSb))
+        .isEqualTo("<div>static-content future-content</div>");
     assertThat(outputAtFutureGetTime.get()).isEqualTo("<div>static-content ");
-    assertThat(outputSb.toString()).isEqualTo("<div>static-content future-content</div>");
   }
 
   @Test

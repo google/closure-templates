@@ -43,10 +43,6 @@ public enum BuiltinFunction implements SoyFunction {
    */
   CSS("css"),
   XID("xid"),
-  /**
-   * Function that will resolve to goog.DEBUG in JS backends, and to true for all other backends.
-   */
-  DEBUG_MODE("debugMode"),
   V1_EXPRESSION("v1Expression"),
   ;
 
@@ -86,8 +82,6 @@ public enum BuiltinFunction implements SoyFunction {
   @Override
   public Set<Integer> getValidArgsSizes() {
     switch (this) {
-      case DEBUG_MODE:
-        return ImmutableSet.of(0);
       case CSS:
         return ImmutableSet.of(1, 2);
       default:
