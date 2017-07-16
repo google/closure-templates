@@ -16,6 +16,7 @@
 
 package com.google.template.soy.passes;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSortedSet;
@@ -46,22 +47,22 @@ import java.util.Set;
  * results from previous calls to exec.
  *
  */
-public class FindIjParamsVisitor {
+public final class FindIjParamsVisitor {
 
   /** Return value for {@code FindIjParamsVisitor}. */
-  public static class IjParamsInfo {
+  public static final class IjParamsInfo {
 
     /** Sorted set of inject params (i.e. the keys of the multimap below). */
     public final ImmutableSortedSet<String> ijParamSet;
 
     /** Multimap from injected param key to transitive callees that use the param. */
-    public final ImmutableMultimap<String, TemplateNode> ijParamToCalleesMultimap;
+    @VisibleForTesting final ImmutableMultimap<String, TemplateNode> ijParamToCalleesMultimap;
 
     /**
      * @param ijParamToCalleesMultimap Multimap from injected param key to transitive callees that
      *     use the param.
      */
-    public IjParamsInfo(ImmutableMultimap<String, TemplateNode> ijParamToCalleesMultimap) {
+    private IjParamsInfo(ImmutableMultimap<String, TemplateNode> ijParamToCalleesMultimap) {
       this.ijParamToCalleesMultimap = ijParamToCalleesMultimap;
       this.ijParamSet = ImmutableSortedSet.copyOf(ijParamToCalleesMultimap.keySet());
     }
