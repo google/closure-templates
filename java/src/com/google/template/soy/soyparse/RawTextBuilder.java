@@ -218,10 +218,10 @@ final class RawTextBuilder {
         // 2. if we are stripping trailing whitespace, the previously assigned location should be
         //    preserved
         // 3. if we are in the middle, then our location is irrelevant
+        offsets.delete(basicStartOfWhitespace);
         if (basicStart == basicStartOfWhitespace || next == null) {
           // leading or trailing whitespace, remove it all
-          buffer.delete(basicStartOfWhitespace, buffer.length());
-          offsets.delete(basicStartOfWhitespace);
+          buffer.setLength(basicStartOfWhitespace);
           if (next == null && endColumnAtStartOfWhitespace != -1) {
             // if this is trailing whitespace, then our end location will be wrong, so restore it to
             // what it was when we started accumulating whitespace (assuming we had one).
@@ -234,12 +234,11 @@ final class RawTextBuilder {
           // reasons.
           if (next.charAt(0) == '<' || buffer.charAt(basicStartOfWhitespace - 1) == '>') {
             // we are immediately before or after an html tag.
-            buffer.delete(basicStartOfWhitespace, buffer.length());
-            offsets.delete(basicStartOfWhitespace);
+            buffer.setLength(basicStartOfWhitespace);
           } else {
             // Otherwise, collapse to a single whitespace character.
-            buffer.replace(basicStartOfWhitespace, buffer.length(), " ");
-            offsets.delete(basicStartOfWhitespace);
+            buffer.setLength(basicStartOfWhitespace);
+            buffer.append(' ');
           }
         }
         discontinuityReason = Reason.WHITESPACE;

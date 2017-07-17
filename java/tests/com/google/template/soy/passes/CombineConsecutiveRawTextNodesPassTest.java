@@ -18,6 +18,7 @@ package com.google.template.soy.passes;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import com.google.common.base.Strings;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SourceLocation.Point;
 import com.google.template.soy.error.ErrorReporter;
@@ -32,11 +33,11 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 /**
- * Unit tests for CombineConsecutiveRawTextNodesVisitor.
+ * Unit tests for CombineConsecutiveRawTextNodesPass.
  *
  */
 @RunWith(JUnit4.class)
-public final class CombineConsecutiveRawTextNodesVisitorTest {
+public final class CombineConsecutiveRawTextNodesPassTest {
 
   @Test
   public void testCombineConsecutiveRawTextNodes() {
@@ -60,13 +61,12 @@ public final class CombineConsecutiveRawTextNodesVisitorTest {
 
     assertThat(template.numChildren()).isEqualTo(5);
 
-    new CombineConsecutiveRawTextNodesVisitor().exec(soyTree);
+    new CombineConsecutiveRawTextNodesPass().run(soyTree);
 
     assertThat(template.numChildren()).isEqualTo(3);
     assertThat(((RawTextNode) template.getChild(0)).getRawText()).isEqualTo("Blah");
     assertThat(((RawTextNode) template.getChild(2)).getRawText()).isEqualTo("blahblehbluh");
   }
-
 
   @Test
   public void testCombineConsecutiveRawTextNodes_preserveSourceLocations() {
@@ -100,7 +100,7 @@ public final class CombineConsecutiveRawTextNodesVisitorTest {
 
     assertThat(template.numChildren()).isEqualTo(4);
 
-    new CombineConsecutiveRawTextNodesVisitor().exec(soyTree);
+    new CombineConsecutiveRawTextNodesPass().run(soyTree);
 
     assertThat(template.numChildren()).isEqualTo(1);
     node = (RawTextNode) template.getChild(0);
@@ -109,5 +109,40 @@ public final class CombineConsecutiveRawTextNodesVisitorTest {
     assertThat(node.getSourceLocation().getBeginPoint()).isEqualTo(Point.create(2, 1));
     assertThat(node.getSourceLocation().getEndPoint()).isEqualTo(Point.create(2, 9));
     assertThat(node.locationOf(2)).isEqualTo(Point.create(2, 8));
+  }
+
+  // There used to be a pathological performance issue when merging many raw text nodes, this stress
+  // test would have timed out under the old implementation but now succeeds quickly.
+  // Before the fix this test took > 2 minutes
+  // After the fix it was down to about 1.5s
+  @Test
+  public void testPathologicalPerformance() {
+    String testFileContent = "{namespace boo}{template .foo}{/template}\n";
+
+    ErrorReporter boom = ExplodingErrorReporter.get();
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(testFileContent)
+            .errorReporter(boom)
+            .parse()
+            .fileSet();
+    TemplateNode template = soyTree.getChild(0).getChild(0);
+    // Things like this like this could happen in templates with a large number of html tags (e.g.
+    // in a literal block). since this is how they would be desugared.
+    final int numCopies = 100_000;
+    for (int i = 0; i < numCopies; i++) {
+      template.addChild(new RawTextNode(0, "<", template.getSourceLocation()));
+      template.addChild(new RawTextNode(0, "div", template.getSourceLocation()));
+      template.addChild(new RawTextNode(0, " ", template.getSourceLocation()));
+      template.addChild(new RawTextNode(0, "class", template.getSourceLocation()));
+      template.addChild(new RawTextNode(0, "=", template.getSourceLocation()));
+      template.addChild(new RawTextNode(0, "'", template.getSourceLocation()));
+      template.addChild(new RawTextNode(0, "foo", template.getSourceLocation()));
+      template.addChild(new RawTextNode(0, "'", template.getSourceLocation()));
+      template.addChild(new RawTextNode(0, ">", template.getSourceLocation()));
+    }
+    new CombineConsecutiveRawTextNodesPass().run(soyTree);
+    assertThat(template.numChildren()).isEqualTo(1);
+    assertThat(((RawTextNode) template.getChild(0)).getRawText())
+        .isEqualTo(Strings.repeat("<div class='foo'>", numCopies));
   }
 }

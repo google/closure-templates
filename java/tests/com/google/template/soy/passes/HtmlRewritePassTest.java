@@ -558,7 +558,7 @@ public final class HtmlRewritePassTest {
 
   private static StringSubject assertThatASTString(TemplateNode node) {
     SoyFileNode parent = SoyTreeUtils.cloneNode(node.getParent());
-    new CombineConsecutiveRawTextNodesVisitor().exec(parent);
+    new CombineConsecutiveRawTextNodesPass().run(parent);
     return assertThat(buildAstString(parent.getChild(0), 0, new StringBuilder()).toString());
   }
 

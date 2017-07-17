@@ -28,7 +28,7 @@ import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.internal.i18n.SoyBidiUtils;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.internal.OptimizeBidiCodeGenVisitor;
-import com.google.template.soy.passes.CombineConsecutiveRawTextNodesVisitor;
+import com.google.template.soy.passes.CombineConsecutiveRawTextNodesPass;
 import com.google.template.soy.shared.internal.ApiCallScopeUtils;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
 import com.google.template.soy.shared.internal.MainEntryPointUtils;
@@ -121,7 +121,7 @@ public class IncrementalDomSrcMain {
       // Must happen after HtmlContextVisitor, so it can infer context for {msg} nodes.
       new IncrementalDomExtractMsgVariablesVisitor().exec(soyTree);
       // some of the above passes may slice up raw text nodes, recombine them.
-      new CombineConsecutiveRawTextNodesVisitor().exec(soyTree);
+      new CombineConsecutiveRawTextNodesPass().run(soyTree);
       return genIncrementalDomCodeVisitorProvider.get().gen(soyTree, registry, errorReporter);
     }
   }

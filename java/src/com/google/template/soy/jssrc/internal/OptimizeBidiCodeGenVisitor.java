@@ -21,7 +21,7 @@ import com.google.template.soy.coredirectives.CoreDirectiveUtils;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
-import com.google.template.soy.passes.CombineConsecutiveRawTextNodesVisitor;
+import com.google.template.soy.passes.CombineConsecutiveRawTextNodesPass;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.PrintDirectiveNode;
@@ -87,7 +87,7 @@ public class OptimizeBidiCodeGenVisitor extends AbstractSoyNodeVisitor<Void> {
 
     // If we made any replacements, we may have created consecutive RawTextNodes, so clean them up.
     if (madeReplacement) {
-      new CombineConsecutiveRawTextNodesVisitor().exec(node);
+      new CombineConsecutiveRawTextNodesPass().run(node);
     }
   }
 

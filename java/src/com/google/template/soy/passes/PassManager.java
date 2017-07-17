@@ -180,7 +180,7 @@ public final class PassManager {
     // we need to run this here, before the autoescaper because the autoescaper may choke on lots
     // of little raw text nodes.  The desguaring pass and rewrite passes above may produce empty
     // raw text nodes and lots of consecutive raw text nodes.  This will eliminate them
-    beforeAutoescaperFileSetPassBuilder.add(new CombinedRawTextNodesPass());
+    beforeAutoescaperFileSetPassBuilder.add(new CombineConsecutiveRawTextNodesPass());
     this.crossTemplateCheckingPasses = beforeAutoescaperFileSetPassBuilder.build();
 
     // Simplification passes
@@ -198,7 +198,7 @@ public final class PassManager {
     // A number of the passes above (desuagar, htmlrewrite), may chop up raw text nodes in ways
     // that can be later stitched together.  Do that here.  This also drops empty RawTextNodes,
     // which some of the backends don't like (incremental dom can generate bad code in some cases).
-    simplificationPassesBuilder.add(new CombinedRawTextNodesPass());
+    simplificationPassesBuilder.add(new CombineConsecutiveRawTextNodesPass());
     this.simplificationPasses = simplificationPassesBuilder.build();
   }
 
@@ -500,15 +500,6 @@ public final class PassManager {
     @Override
     public void run(SoyFileSetNode fileSet, TemplateRegistry registry) {
       new StrictDepsVisitor(registry, errorReporter).exec(fileSet);
-    }
-  }
-
-  // TODO(lukes): this pass should maybe be run after any time the tree is modified.  Some of the
-  // code generators choke on extra empty raw text nodes
-  private static final class CombinedRawTextNodesPass extends CompilerFileSetPass {
-    @Override
-    public void run(SoyFileSetNode fileSet, TemplateRegistry registry) {
-      new CombineConsecutiveRawTextNodesVisitor().exec(fileSet);
     }
   }
 

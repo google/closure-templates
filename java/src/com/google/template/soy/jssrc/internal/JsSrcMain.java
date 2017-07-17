@@ -30,7 +30,7 @@ import com.google.template.soy.internal.i18n.SoyBidiUtils;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.internal.InsertMsgsVisitor;
-import com.google.template.soy.passes.CombineConsecutiveRawTextNodesVisitor;
+import com.google.template.soy.passes.CombineConsecutiveRawTextNodesPass;
 import com.google.template.soy.shared.internal.ApiCallScopeUtils;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
 import com.google.template.soy.shared.internal.MainEntryPointUtils;
@@ -126,7 +126,7 @@ public class JsSrcMain {
             bidiGlobalDir == null || bidiGlobalDir.isStaticValue(),
             "If using bidiGlobalIsRtlCodeSnippet, must also enable shouldGenerateGoogMsgDefs.");
         new InsertMsgsVisitor(msgBundle, errorReporter).exec(soyTree);
-        new CombineConsecutiveRawTextNodesVisitor().exec(soyTree);
+        new CombineConsecutiveRawTextNodesPass().run(soyTree);
       }
 
       // Do the code generation.

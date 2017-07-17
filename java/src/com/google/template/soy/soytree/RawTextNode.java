@@ -22,11 +22,14 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SourceLocation.Point;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.soytree.RawTextNode.SourceOffsets.Reason;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import java.util.Arrays;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
@@ -203,19 +206,88 @@ public final class RawTextNode extends AbstractSoyNode implements StandaloneNode
     return new RawTextNode(newId, newText, newLocation, newOffsets);
   }
 
-  /**
-   * Concatenates this RawTextNode with the given node (like {@link String#concat}), preserving
-   * source location information.
-   */
-  public RawTextNode concat(int newId, RawTextNode node) {
-    checkNotNull(node);
-    String newText = rawText.concat(node.getRawText());
-    SourceOffsets newOffsets = null;
-    SourceLocation newLocation = getSourceLocation().extend(node.getSourceLocation());
-    if (offsets != null && node.offsets != null) {
-      newOffsets = offsets.concat(node.offsets);
+  /** Concatenates the non-empty set of RawTextNodes, preserving source location information. */
+  public static RawTextNode concat(List<RawTextNode> nodes) {
+    checkArgument(!nodes.isEmpty());
+    if (nodes.size() == 1) {
+      return nodes.get(0);
     }
-    return new RawTextNode(newId, newText, newLocation, newOffsets);
+    int id = nodes.get(0).getId();
+    int numChars = 0;
+    int numOffsets = 0;
+    for (RawTextNode node : nodes) {
+      numChars += node.getRawText().length();
+      // if any of the offsets are null don't try to merge offsets
+      // offsets are most often null when SourceLocation.UNKNOWN is in use
+      if (numOffsets != -1 && node.offsets != null) {
+        // since the last index in the array refers to a pseudo end location, we drop it when
+        // joining the arrays
+        // we don't preserve offsets from empty nodes.
+        numOffsets += node.isEmpty() ? 0 : node.offsets.indexes.length - 1;
+      } else {
+        numOffsets = -1;
+      }
+    }
+    char[] chars = new char[numChars];
+    int charsIndex = 0;
+
+    int[] indexes = null;
+    int[] lines = null;
+    int[] columns = null;
+    Reason[] reasons = null;
+    // the current index into the offsets arrays
+    int offsetsIndex = 0;
+    // the length of the string so far
+
+    if (numOffsets > 0) {
+      // +1 because we want to preserve the end location of the last node.
+      indexes = new int[numOffsets + 1];
+      lines = new int[numOffsets + 1];
+      columns = new int[numOffsets + 1];
+      reasons = new Reason[numOffsets + 1];
+    }
+
+    for (int i = 0; i < nodes.size(); i++) {
+      RawTextNode node = nodes.get(i);
+      String text = node.getRawText();
+      text.getChars(0, text.length(), chars, charsIndex);
+      if (indexes != null && !text.isEmpty()) {
+        // To concatenate we need to approximately just cat the arrays
+        // since the last slot in the array corresponds to a pseudo location (the end of the string)
+        // we should drop it when splicing.
+        // we also need to modify all the indexes in other to be offset by the length of this
+        // offset's string.
+        SourceOffsets offsets = node.offsets;
+        int amountToCopy = offsets.indexes.length;
+        if (i < nodes.size() - 1) {
+          amountToCopy--;
+        }
+        System.arraycopy(offsets.lines, 0, lines, offsetsIndex, amountToCopy);
+        System.arraycopy(offsets.columns, 0, columns, offsetsIndex, amountToCopy);
+        System.arraycopy(offsets.reasons, 0, reasons, offsetsIndex, amountToCopy);
+
+        // do some special handling for the 'reason' of the join point.
+        // If the new begin reason is NONE, then use the old end reason.
+        if (offsets.reasons[0] == Reason.NONE && i > 0) {
+          Reason[] prevReasons = nodes.get(i - 1).offsets.reasons;
+          reasons[offsetsIndex] = prevReasons[prevReasons.length - 1];
+        }
+        // manually copy the indexes over so we can apply the current character index
+        for (int indexIndex = 0; indexIndex < amountToCopy; indexIndex++) {
+          indexes[indexIndex + offsetsIndex] = offsets.indexes[indexIndex] + charsIndex;
+        }
+        offsetsIndex += amountToCopy;
+      }
+      charsIndex += text.length();
+    }
+    String text = new String(chars);
+    SourceLocation location =
+        nodes.get(0).getSourceLocation().extend(Iterables.getLast(nodes).getSourceLocation());
+    return new RawTextNode(
+        id,
+        text,
+        location,
+        indexes == null ? null : new SourceOffsets(indexes, lines, columns, reasons));
   }
 
   @Override
@@ -443,37 +515,6 @@ public final class RawTextNode extends AbstractSoyNode implements StandaloneNode
       return builder.build(substringLength, endReason);
     }
 
-    /** Concatenates this SourceOffsets array with {@code other}. */
-    SourceOffsets concat(SourceOffsets other) {
-      // To concatenate we need to approximately just cat the arrays
-      // since the last slot in the array corresponds to a psuedo location (the end of the string)
-      // we should drop it when splicing.
-      // we also need to modify all the indexes in other to be offset by the length of this offset's
-      // string.
-
-      int sizeToPreserve = indexes.length - 1;
-      int lengthOfThis = indexes[indexes.length - 1];
-      int newSize = sizeToPreserve + other.indexes.length;
-      int[] newIndexes = Arrays.copyOf(indexes, newSize);
-      int[] newLines = Arrays.copyOf(lines, newSize);
-      int[] newColumns = Arrays.copyOf(columns, newSize);
-      Reason[] newReasons = Arrays.copyOf(reasons, newSize);
-      System.arraycopy(other.lines, 0, newLines, sizeToPreserve, other.lines.length);
-      System.arraycopy(other.columns, 0, newColumns, sizeToPreserve, other.columns.length);
-      System.arraycopy(other.reasons, 0, newReasons, sizeToPreserve, other.reasons.length);
-      // do some special handling for the 'reason' of the join point.
-      // If the new begin reason is NONE, then use the old end reason.
-      Reason newBeginReason = other.reasons[0];
-      if (newBeginReason == Reason.NONE) {
-        newReasons[sizeToPreserve] = reasons[sizeToPreserve];
-      }
-      // manually copy the indexes over so we can apply the offset
-      for (int i = 0; i < other.indexes.length; i++) {
-        newIndexes[i + sizeToPreserve] = other.indexes[i] + lengthOfThis;
-      }
-      return new SourceOffsets(newIndexes, newLines, newColumns, newReasons);
-    }
-
     /** Returns the sourcelocation for the whole span. */
     public SourceLocation getSourceLocation(String filePath) {
       return new SourceLocation(
@@ -522,7 +563,7 @@ public final class RawTextNode extends AbstractSoyNode implements StandaloneNode
 
       /** Delete all the offsets starting from the {@code from} index. */
       public Builder delete(int from) {
-        // since we store end indexes in the list, we really just want to delete everything stricly
+        // since we store end indexes in the list, we really just want to delete everything strictly
         // after 'from', this way if we leave 'from' as an end point
         int location = Arrays.binarySearch(indexes, 0, size, from);
         // if 'from' isn't in the list it returns (-insertion_point -1) so if we want to know the

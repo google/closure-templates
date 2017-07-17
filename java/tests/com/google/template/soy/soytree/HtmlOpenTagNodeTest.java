@@ -22,7 +22,7 @@ import com.google.common.base.Joiner;
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.error.ExplodingErrorReporter;
-import com.google.template.soy.passes.CombineConsecutiveRawTextNodesVisitor;
+import com.google.template.soy.passes.CombineConsecutiveRawTextNodesPass;
 import com.google.template.soy.passes.HtmlRewritePass;
 import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.types.SoyTypeRegistry;
@@ -76,7 +76,9 @@ public final class HtmlOpenTagNodeTest {
                 ExplodingErrorReporter.get())
             .parseSoyFile();
     new HtmlRewritePass(ExplodingErrorReporter.get()).run(node, nodeIdGen);
-    new CombineConsecutiveRawTextNodesVisitor().exec(node);
+    new CombineConsecutiveRawTextNodesPass().run(node);
+
+    new CombineConsecutiveRawTextNodesPass().run(node);
     return (HtmlOpenTagNode) node.getChild(0).getChild(0);
   }
 }
