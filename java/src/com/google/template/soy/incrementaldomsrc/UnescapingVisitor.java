@@ -15,6 +15,7 @@
  */
 package com.google.template.soy.incrementaldomsrc;
 
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.internal.base.UnescapeUtils;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
@@ -88,8 +89,8 @@ final class UnescapingVisitor extends AbstractSoyNodeVisitor<Void> {
   }
 
   private void visitRenderUnitNode(RenderUnitNode node) {
-    if (node.getContentKind() == ContentKind.HTML
-        || node.getContentKind() == ContentKind.ATTRIBUTES) {
+    if (node.getContentKind() == SanitizedContentKind.HTML
+        || node.getContentKind() == SanitizedContentKind.ATTRIBUTES) {
       visitSoyNode(node);
     }
   }

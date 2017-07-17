@@ -35,7 +35,7 @@ import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.Sets;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
-import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.SoyErrorKind;
@@ -277,7 +277,7 @@ public final class HtmlRewritePass extends CompilerFilePass {
     ;
 
     /** Gets the {@link State} for the given kind. */
-    static State fromKind(@Nullable ContentKind kind) {
+    static State fromKind(@Nullable SanitizedContentKind kind) {
       if (kind == null) {
         return NONE;
       }
@@ -1515,7 +1515,7 @@ public final class HtmlRewritePass extends CompilerFilePass {
     }
 
     /** Visits a block whose content is in an entirely separate content scope. */
-    void visitScopedBlock(@Nullable ContentKind blockKind, BlockNode parent, String name) {
+    void visitScopedBlock(@Nullable SanitizedContentKind blockKind, BlockNode parent, String name) {
       // blockKind will be null if
       // * This is a non-strict template
       // * this is a let/param block without a kind parameter (these are only legal in non-strict
@@ -1524,7 +1524,7 @@ public final class HtmlRewritePass extends CompilerFilePass {
         switch (autoescapeMode) {
           case CONTEXTUAL:
           case NONCONTEXTUAL:
-            blockKind = ContentKind.HTML;
+            blockKind = SanitizedContentKind.HTML;
             break;
           case STRICT:
             // TODO(lukes): in this case an error will be reported by a later part of the compiler.

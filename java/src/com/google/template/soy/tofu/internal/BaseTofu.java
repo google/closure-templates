@@ -23,11 +23,11 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.inject.assistedinject.Assisted;
 import com.google.inject.assistedinject.AssistedInject;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
-import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.parseinfo.SoyTemplateInfo;
 import com.google.template.soy.shared.SoyCssRenamingMap;
@@ -372,7 +372,9 @@ public class BaseTofu implements SoyTofu {
         // place where HTML was implicitly expected.
         enforceContentKind(template);
       }
-      return template.getContentKind();
+      return template.getContentKind() != null
+          ? SanitizedContent.ContentKind.valueOf(template.getContentKind().name())
+          : null;
     }
 
     @Override
@@ -409,12 +411,14 @@ public class BaseTofu implements SoyTofu {
                 + "\": "
                 + template.getTemplateName());
       }
-      if (expectedContentKind != template.getContentKind()) {
+      SanitizedContentKind expectedAsSanitizedContentKind =
+          SanitizedContentKind.valueOf(expectedContentKind.name());
+      if (expectedAsSanitizedContentKind != template.getContentKind()) {
         throw new SoyTofuException(
             "Expected template to be kind=\""
-                + NodeContentKinds.toAttributeValue(expectedContentKind)
+                + expectedAsSanitizedContentKind.asAttributeValue()
                 + "\" but was kind=\""
-                + NodeContentKinds.toAttributeValue(template.getContentKind())
+                + template.getContentKind().asAttributeValue()
                 + "\": "
                 + template.getTemplateName());
       }

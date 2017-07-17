@@ -27,7 +27,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.errorprone.annotations.Immutable;
-import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.soytree.EscapingMode;
 import com.google.template.soy.soytree.HtmlContext;
 import com.google.template.soy.soytree.PrintDirectiveNode;
@@ -906,14 +906,14 @@ public final class Context {
 
   /**
    * Returns the autoescape {@link Context} that produces sanitized content of the given {@link
-   * ContentKind}.
+   * SanitizedContentKind}.
    *
-   * <p>Given a {@link ContentKind}, returns the corresponding {@link Context} such that contextual
-   * autoescaping of a block of Soy code with that context as the start context results in a value
-   * that adheres to the contract of {@link com.google.template.soy.data.SanitizedContent} of the
-   * given kind.
+   * <p>Given a {@link SanitizedContentKind}, returns the corresponding {@link Context} such that
+   * contextual autoescaping of a block of Soy code with that context as the start context results
+   * in a value that adheres to the contract of {@link
+   * com.google.template.soy.data.SanitizedContent} of the given kind.
    */
-  public static Context getStartContextForContentKind(ContentKind contentKind) {
+  public static Context getStartContextForContentKind(SanitizedContentKind contentKind) {
     return HTML_PCDATA.toBuilder().withStartKind(contentKind).build();
   }
 
@@ -921,7 +921,7 @@ public final class Context {
    * Determines whether a particular context is valid at the start of a block of a particular
    * content kind.
    */
-  public boolean isValidStartContextForContentKind(ContentKind contentKind) {
+  public boolean isValidStartContextForContentKind(SanitizedContentKind contentKind) {
     if (templateNestDepth != 0) {
       return false;
     }
@@ -943,7 +943,7 @@ public final class Context {
    * <p>This is slightly more relaxed, and used to help piecemeal transition of templates from
    * contextual to strict.
    */
-  public boolean isValidStartContextForContentKindLoose(ContentKind contentKind) {
+  public boolean isValidStartContextForContentKindLoose(SanitizedContentKind contentKind) {
     switch (contentKind) {
       case URI:
         // Allow contextual templates directly call URI templates, even if we technically need to
@@ -957,16 +957,16 @@ public final class Context {
     }
   }
 
-  private static final ImmutableMap<HtmlContext, ContentKind> STATE_TO_CONTENT_KIND;
+  private static final ImmutableMap<HtmlContext, SanitizedContentKind> STATE_TO_CONTENT_KIND;
 
   static {
-    Map<HtmlContext, ContentKind> stateToContextKind = new EnumMap<>(HtmlContext.class);
-    stateToContextKind.put(HtmlContext.CSS, ContentKind.CSS);
-    stateToContextKind.put(HtmlContext.HTML_PCDATA, ContentKind.HTML);
-    stateToContextKind.put(HtmlContext.HTML_TAG, ContentKind.ATTRIBUTES);
-    stateToContextKind.put(HtmlContext.JS, ContentKind.JS);
-    stateToContextKind.put(HtmlContext.URI, ContentKind.URI);
-    stateToContextKind.put(HtmlContext.TEXT, ContentKind.TEXT);
+    Map<HtmlContext, SanitizedContentKind> stateToContextKind = new EnumMap<>(HtmlContext.class);
+    stateToContextKind.put(HtmlContext.CSS, SanitizedContentKind.CSS);
+    stateToContextKind.put(HtmlContext.HTML_PCDATA, SanitizedContentKind.HTML);
+    stateToContextKind.put(HtmlContext.HTML_TAG, SanitizedContentKind.ATTRIBUTES);
+    stateToContextKind.put(HtmlContext.JS, SanitizedContentKind.JS);
+    stateToContextKind.put(HtmlContext.URI, SanitizedContentKind.URI);
+    stateToContextKind.put(HtmlContext.TEXT, SanitizedContentKind.TEXT);
     STATE_TO_CONTENT_KIND = ImmutableMap.copyOf(stateToContextKind);
   }
 
@@ -976,19 +976,19 @@ public final class Context {
    * <p>This is primarily for error messages, indicating to the user what content kind can be used
    * to mostly null out the escaping. Returns TEXT if no useful match was detected.
    */
-  public ContentKind getMostAppropriateContentKind() {
-    ContentKind kind = STATE_TO_CONTENT_KIND.get(state);
+  public SanitizedContentKind getMostAppropriateContentKind() {
+    SanitizedContentKind kind = STATE_TO_CONTENT_KIND.get(state);
     if (kind != null && isValidStartContextForContentKindLoose(kind)) {
       return kind;
     }
-    return ContentKind.TEXT;
+    return SanitizedContentKind.TEXT;
   }
 
   /**
    * Determines whether a particular context is valid for the end of a block of a particular content
    * kind.
    */
-  public final boolean isValidEndContextForContentKind(ContentKind contentKind) {
+  public final boolean isValidEndContextForContentKind(SanitizedContentKind contentKind) {
     if (templateNestDepth != 0) {
       return false;
     }
@@ -1024,9 +1024,9 @@ public final class Context {
    * <p>This assumes that the provided context is an invalid end context for the particular content
    * kind.
    */
-  public final String getLikelyEndContextMismatchCause(ContentKind contentKind) {
+  public final String getLikelyEndContextMismatchCause(SanitizedContentKind contentKind) {
     Preconditions.checkArgument(!isValidEndContextForContentKind(contentKind));
-    if (contentKind == ContentKind.ATTRIBUTES) {
+    if (contentKind == SanitizedContentKind.ATTRIBUTES) {
       // Special error message for ATTRIBUTES since it has some specific logic.
       return "an unterminated attribute value, or ending with an unquoted attribute";
     }
@@ -1608,7 +1608,7 @@ public final class Context {
      * corresponding {@link ContentKind} results in a value that adheres to the contract of {@link
      * com.google.template.soy.data.SanitizedContent} of this kind.
      */
-    Builder withStartKind(ContentKind contentKind) {
+    Builder withStartKind(SanitizedContentKind contentKind) {
       boolean inTag = false;
       withoutAttrContext();
       switch (contentKind) {

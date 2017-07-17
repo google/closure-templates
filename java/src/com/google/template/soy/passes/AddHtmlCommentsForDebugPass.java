@@ -20,8 +20,8 @@ import static com.google.common.html.HtmlEscapers.htmlEscaper;
 
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.basicfunctions.DebugSoyTemplateInfoFunction;
-import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.AutoescapeMode;
@@ -69,7 +69,7 @@ public final class AddHtmlCommentsForDebugPass extends CompilerFilePass {
     @Override
     protected void visitTemplateNode(TemplateNode node) {
       // Only adds HTML comments for HTML contents.
-      if (node.getContentKind() != ContentKind.HTML) {
+      if (node.getContentKind() != SanitizedContentKind.HTML) {
         return;
       }
       // Only adds HTML comments for strict auto escape mode.

@@ -20,7 +20,7 @@ import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
@@ -32,11 +32,11 @@ import javax.annotation.Nullable;
 final class CompiledTemplateRegistry {
   private final ImmutableBiMap<String, CompiledTemplateMetadata> templateNameToMetadata;
   private final ImmutableBiMap<String, CompiledTemplateMetadata> classNameToMetadata;
-  private final ImmutableMap<String, Optional<ContentKind>> deltemplateNameToContentKind;
+  private final ImmutableMap<String, Optional<SanitizedContentKind>> deltemplateNameToContentKind;
   private final ImmutableSet<String> delegateTemplateNames;
 
   CompiledTemplateRegistry(TemplateRegistry registry) {
-    Map<String, Optional<ContentKind>> deltemplateNameToContentKind = new HashMap<>();
+    Map<String, Optional<SanitizedContentKind>> deltemplateNameToContentKind = new HashMap<>();
     ImmutableBiMap.Builder<String, CompiledTemplateMetadata> templateToMetadata =
         ImmutableBiMap.builder();
     ImmutableBiMap.Builder<String, CompiledTemplateMetadata> classToMetadata =
@@ -82,13 +82,13 @@ final class CompiledTemplateRegistry {
   }
 
   /**
-   * Returns the {@link ContentKind} (if any) of a deltemplate.
+   * Returns the {@link SanitizedContentKind} (if any) of a deltemplate.
    *
    * @throws IllegalArgumentException if it is unknown because there are no implementations of the
    *     delegate available at compile time.
    */
   @Nullable
-  ContentKind getDelTemplateContentKind(String delTemplateName) {
+  SanitizedContentKind getDelTemplateContentKind(String delTemplateName) {
     return deltemplateNameToContentKind.get(delTemplateName).orNull();
   }
 

@@ -45,9 +45,9 @@ import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.TreeMultimap;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.UniqueNameGenerator;
-import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
@@ -818,7 +818,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   protected CodeChunk generateFunctionBody(TemplateNode node) {
     // Type check parameters.
     CodeChunk paramDeclarations = genParamTypeChecks(node);
-    ContentKind kind = node.getContentKind();
+    SanitizedContentKind kind = node.getContentKind();
     CodeChunk bodyAndReturn;
     if (isComputableAsJsExprsVisitor.exec(node)) {
       // Case 1: The code style is 'concat' and the whole template body can be represented as JS
@@ -860,7 +860,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   }
 
   private CodeChunk.WithValue sanitize(
-      CodeChunk.WithValue templateBody, @Nullable ContentKind contentKind) {
+      CodeChunk.WithValue templateBody, @Nullable SanitizedContentKind contentKind) {
     if (contentKind != null) {
       // Templates with autoescape="strict" return the SanitizedContent wrapper for its kind:
       // - Call sites are wrapped in an escaper. Returning SanitizedContent prevents re-escaping.

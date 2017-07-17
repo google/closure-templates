@@ -19,6 +19,7 @@ package com.google.template.soy.jssrc.restricted;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.exprtree.Operator;
@@ -142,13 +143,19 @@ public class JsExprUtils {
    *
    * @param contentKind The kind of sanitized content.
    * @param jsExpr The expression to wrap.
+   * @deprecated This method is not safe to use without a security review, please migrate away from
+   *     it.
    */
+  @Deprecated
   public static JsExpr maybeWrapAsSanitizedContent(
       @Nullable ContentKind contentKind, JsExpr jsExpr) {
     if (contentKind == null) {
       return jsExpr;
     } else {
-      return wrapWithFunction(NodeContentKinds.toJsSanitizedContentOrdainer(contentKind), jsExpr);
+      return wrapWithFunction(
+          NodeContentKinds.toJsSanitizedContentOrdainer(
+              SanitizedContentKind.valueOf(contentKind.name())),
+          jsExpr);
     }
   }
 }

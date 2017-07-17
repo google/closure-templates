@@ -717,7 +717,8 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       pyCodeBuilder.appendLine(
           generatedVarName,
           " = ",
-          PyExprUtils.wrapAsSanitizedContent(node.getContentKind(), generatedContent).getText());
+          InternalPyExprUtils.wrapAsSanitizedContent(node.getContentKind(), generatedContent)
+              .getText());
 
       // Add a mapping for generating future references to this local var.
       localVarExprs.addVariable(node.getVarName(), new PyExpr(generatedVarName, Integer.MAX_VALUE));
@@ -923,7 +924,8 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       // - The topmost call into Soy returns a SanitizedContent. This will make it easy to take
       // the result of one template and feed it to another, and also to confidently assign sanitized
       // HTML content to innerHTML. This does not use the internal-blocks variant.
-      resultPyExpr = PyExprUtils.wrapAsSanitizedContent(node.getContentKind(), resultPyExpr);
+      resultPyExpr =
+          InternalPyExprUtils.wrapAsSanitizedContent(node.getContentKind(), resultPyExpr);
 
       pyCodeBuilder.appendLine("return ", resultPyExpr.getText());
 

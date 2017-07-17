@@ -22,8 +22,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.Identifier;
-import com.google.template.soy.data.SanitizedContent.ContentKind;
-import com.google.template.soy.data.internalutils.NodeContentKinds;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 import com.google.template.soy.soytree.defn.TemplateParam;
@@ -59,7 +58,7 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder {
       Identifier templateName, List<CommandTagAttribute> attrs) {
     this.cmdText = templateName.identifier() + " " + Joiner.on(' ').join(attrs);
     AutoescapeMode autoescapeMode = soyFileHeaderInfo.defaultAutoescapeMode;
-    ContentKind kind = null;
+    SanitizedContentKind kind = null;
     SourceLocation kindLocation = null;
     visibility = Visibility.PUBLIC;
     for (CommandTagAttribute attribute : attrs) {
@@ -132,7 +131,7 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder {
       @Nullable String partialTemplateName,
       Visibility visibility,
       AutoescapeMode autoescapeMode,
-      ContentKind contentKind,
+      SanitizedContentKind contentKind,
       ImmutableList<String> requiredCssNamespaces) {
 
     Preconditions.checkState(this.sourceLocation != null);
@@ -152,10 +151,7 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder {
     cmdTextBuilder.append((partialTemplateName != null) ? partialTemplateName : templateName);
     cmdTextBuilder.append(" autoescape=\"").append(autoescapeMode.getAttributeValue()).append('"');
     if (contentKind != null) {
-      cmdTextBuilder
-          .append(" kind=\"")
-          .append(NodeContentKinds.toAttributeValue(contentKind))
-          .append('"');
+      cmdTextBuilder.append(" kind=\"").append(contentKind.asAttributeValue()).append('"');
     }
     // public is the default, don't generate code for it
     if (visibility != Visibility.PUBLIC) {

@@ -20,11 +20,10 @@ import static com.google.template.soy.soytree.CommandTagAttribute.UNSUPPORTED_AT
 
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.MixinParentNode;
 import com.google.template.soy.basetree.Node;
-import com.google.template.soy.data.SanitizedContent.ContentKind;
-import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 import java.util.List;
@@ -42,7 +41,7 @@ public final class CallParamContentNode extends CallParamNode implements RenderU
   private final MixinParentNode<StandaloneNode> parentMixin;
 
   /** The param's content kind, or null if no 'kind' attribute was present. */
-  @Nullable private final ContentKind contentKind;
+  @Nullable private final SanitizedContentKind contentKind;
 
   public CallParamContentNode(
       int id,
@@ -83,7 +82,7 @@ public final class CallParamContentNode extends CallParamNode implements RenderU
 
   @Override
   @Nullable
-  public ContentKind getContentKind() {
+  public SanitizedContentKind getContentKind() {
     return contentKind;
   }
 
@@ -91,10 +90,7 @@ public final class CallParamContentNode extends CallParamNode implements RenderU
   public String getCommandText() {
     return (contentKind == null)
         ? getKey().identifier()
-        : getKey().identifier()
-            + " kind=\""
-            + NodeContentKinds.toAttributeValue(contentKind)
-            + "\"";
+        : getKey().identifier() + " kind=\"" + contentKind.asAttributeValue() + "\"";
   }
 
   @Override

@@ -25,7 +25,6 @@ import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyStringExpr;
 import com.google.template.soy.shared.AbstractSoyPrintDirectiveTestCase;
-import com.google.template.soy.shared.AbstractSoyPrintDirectiveTestCase.JsSrcPrintDirectiveTestBuilder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;

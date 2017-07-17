@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.template.soy.jbcsrc.shared.Names.rewriteStackTrace;
 
+import com.google.common.base.Ascii;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
@@ -30,7 +31,6 @@ import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueConverter;
-import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
@@ -259,15 +259,15 @@ public final class SoySauceImpl implements SoySauce {
       if (!contentKind.isPresent()) {
         throw new IllegalStateException(
             "Cannot render a non strict template as '"
-                + NodeContentKinds.toAttributeValue(expectedContentKind)
+                + Ascii.toLowerCase(expectedContentKind.name())
                 + "'");
       }
       if (expectedContentKind != contentKind.get()) {
         throw new IllegalStateException(
             "Expected template to be kind=\""
-                + NodeContentKinds.toAttributeValue(expectedContentKind)
+                + Ascii.toLowerCase(expectedContentKind.name())
                 + "\" but was kind=\""
-                + NodeContentKinds.toAttributeValue(contentKind.get())
+                + Ascii.toLowerCase(contentKind.get().name())
                 + "\": "
                 + templateName);
       }

@@ -16,7 +16,7 @@
 
 package com.google.template.soy.types.primitive;
 
-import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.types.SoyType;
 
 /**
@@ -27,7 +27,7 @@ import com.google.template.soy.types.SoyType;
 public abstract class SanitizedType extends PrimitiveType {
 
   /** Returns the content kind for this type. Guaranteed to be non-null and also not TEXT. */
-  public abstract ContentKind getContentKind();
+  public abstract SanitizedContentKind getContentKind();
 
   @Override
   public String toString() {
@@ -37,10 +37,10 @@ public abstract class SanitizedType extends PrimitiveType {
   /**
    * Given a content kind, return the corresponding soy type.
    *
-   * <p>For {@link ContentKind#TEXT} this returns {@link StringType}, for all other types it is a
-   * {@link SanitizedType}.
+   * <p>For {@link SanitizedContentKind#TEXT} this returns {@link StringType}, for all other types
+   * it is a {@link SanitizedType}.
    */
-  public static SoyType getTypeForContentKind(ContentKind contentKind) {
+  public static SoyType getTypeForContentKind(SanitizedContentKind contentKind) {
     switch (contentKind) {
       case ATTRIBUTES:
         return AttributesType.getInstance();
@@ -85,8 +85,8 @@ public abstract class SanitizedType extends PrimitiveType {
     }
 
     @Override
-    public ContentKind getContentKind() {
-      return ContentKind.HTML;
+    public SanitizedContentKind getContentKind() {
+      return SanitizedContentKind.HTML;
     }
 
     /** Return the single instance of this type. */
@@ -109,8 +109,8 @@ public abstract class SanitizedType extends PrimitiveType {
     }
 
     @Override
-    public ContentKind getContentKind() {
-      return ContentKind.ATTRIBUTES;
+    public SanitizedContentKind getContentKind() {
+      return SanitizedContentKind.ATTRIBUTES;
     }
 
     /** Return the single instance of this type. */
@@ -133,8 +133,8 @@ public abstract class SanitizedType extends PrimitiveType {
     }
 
     @Override
-    public ContentKind getContentKind() {
-      return ContentKind.URI;
+    public SanitizedContentKind getContentKind() {
+      return SanitizedContentKind.URI;
     }
 
     /** Return the single instance of this type. */
@@ -157,8 +157,8 @@ public abstract class SanitizedType extends PrimitiveType {
     }
 
     @Override
-    public ContentKind getContentKind() {
-      return ContentKind.TRUSTED_RESOURCE_URI;
+    public SanitizedContentKind getContentKind() {
+      return SanitizedContentKind.TRUSTED_RESOURCE_URI;
     }
 
     /** Return the single instance of this type. */
@@ -181,8 +181,8 @@ public abstract class SanitizedType extends PrimitiveType {
     }
 
     @Override
-    public ContentKind getContentKind() {
-      return ContentKind.CSS;
+    public SanitizedContentKind getContentKind() {
+      return SanitizedContentKind.CSS;
     }
 
     /** Return the single instance of this type. */
@@ -205,8 +205,8 @@ public abstract class SanitizedType extends PrimitiveType {
     }
 
     @Override
-    public ContentKind getContentKind() {
-      return ContentKind.JS;
+    public SanitizedContentKind getContentKind() {
+      return SanitizedContentKind.JS;
     }
 
     /** Return the single instance of this type. */

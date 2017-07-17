@@ -27,6 +27,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.SoyFileSetParserBuilder;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SanitizedContents;
@@ -465,7 +466,7 @@ public class ExpressionCompilerTest {
     variables.put("p2", SoyExpression.forString(constant("a")).box());
     assertExpression("$p1 ?: $p2").evaluatesTo("a");
 
-    SoyType htmlType = SanitizedType.getTypeForContentKind(ContentKind.HTML);
+    SoyType htmlType = SanitizedType.getTypeForContentKind(SanitizedContentKind.HTML);
     variables.put(
         "p1",
         SoyExpression.forSoyValue(

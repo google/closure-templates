@@ -25,7 +25,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.data.SanitizedContent;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SanitizedContentOperator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -80,7 +80,7 @@ public final class ContextualAutoescaper {
   private final ImmutableSet<String> autoescapeCancellingDirectives;
 
   /** Maps print directive names to the content kinds they consume and produce. */
-  private final Map<String, SanitizedContent.ContentKind> sanitizedContentOperators;
+  private final Map<String, SanitizedContentKind> sanitizedContentOperators;
 
   /** The conclusions drawn by the last {@link #rewrite}. */
   private Inferences inferences;
@@ -118,7 +118,7 @@ public final class ContextualAutoescaper {
    */
   public ContextualAutoescaper(
       Iterable<String> autoescapeCancellingDirectives,
-      Map<String, SanitizedContent.ContentKind> sanitizedContentOperators) {
+      Map<String, SanitizedContentKind> sanitizedContentOperators) {
     this.autoescapeCancellingDirectives = ImmutableSet.copyOf(autoescapeCancellingDirectives);
     this.sanitizedContentOperators = ImmutableMap.copyOf(sanitizedContentOperators);
   }
@@ -304,14 +304,16 @@ public final class ContextualAutoescaper {
         }
       };
 
-  private static Map<String, SanitizedContent.ContentKind> makeOperatorKindMap(
+  private static Map<String, SanitizedContentKind> makeOperatorKindMap(
       final ImmutableMap<String, ? extends SoyPrintDirective> soyDirectivesMap) {
-    ImmutableMap.Builder<String, SanitizedContent.ContentKind> operatorKindMapBuilder =
+    ImmutableMap.Builder<String, SanitizedContentKind> operatorKindMapBuilder =
         ImmutableMap.builder();
     for (SoyPrintDirective directive : soyDirectivesMap.values()) {
       if (directive instanceof SanitizedContentOperator) {
         operatorKindMapBuilder.put(
-            directive.getName(), ((SanitizedContentOperator) directive).getContentKind());
+            directive.getName(),
+            SanitizedContentKind.valueOf(
+                ((SanitizedContentOperator) directive).getContentKind().name()));
       }
     }
     return operatorKindMapBuilder.build();

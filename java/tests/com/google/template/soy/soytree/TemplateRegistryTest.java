@@ -23,9 +23,9 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
-import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporterImpl;
 import com.google.template.soy.error.ExplodingErrorReporter;
@@ -196,7 +196,7 @@ public final class TemplateRegistryTest {
             .registry();
     CallBasicNode node =
         new CallBasicNode(0, SourceLocation.UNKNOWN, "ns.foo", "ns.foo", NO_ATTRS, FAIL);
-    assertThat(registry.getCallContentKind(node)).hasValue(ContentKind.ATTRIBUTES);
+    assertThat(registry.getCallContentKind(node)).hasValue(SanitizedContentKind.ATTRIBUTES);
   }
 
   @Test
@@ -232,7 +232,7 @@ public final class TemplateRegistryTest {
             .registry();
     CallDelegateNode node =
         new CallDelegateNode(0, SourceLocation.UNKNOWN, "ns.foo", NO_ATTRS, FAIL);
-    assertThat(registry.getCallContentKind(node)).hasValue(ContentKind.ATTRIBUTES);
+    assertThat(registry.getCallContentKind(node)).hasValue(SanitizedContentKind.ATTRIBUTES);
   }
 
   @Test

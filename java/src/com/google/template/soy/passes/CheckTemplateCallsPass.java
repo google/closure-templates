@@ -24,8 +24,8 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.basicfunctions.FloatFunction;
-import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
@@ -205,7 +205,7 @@ final class CheckTemplateCallsPass extends CompilerFileSetPass {
             argType = maybeCoerceType(node, expr.getType(), declaredParamTypes);
           }
         } else if (callerParam.getKind() == SoyNode.Kind.CALL_PARAM_CONTENT_NODE) {
-          ContentKind contentKind = ((CallParamContentNode) callerParam).getContentKind();
+          SanitizedContentKind contentKind = ((CallParamContentNode) callerParam).getContentKind();
           argType =
               contentKind == null
                   ? StringType.getInstance()
@@ -446,7 +446,7 @@ final class CheckTemplateCallsPass extends CompilerFileSetPass {
       if (callerTemplate.isStrictHtml()
           && caller.getIsPcData()
           && callee != null
-          && callee.getContentKind() == ContentKind.HTML
+          && callee.getContentKind() == SanitizedContentKind.HTML
           && !callee.isStrictHtml()) {
         errorReporter.report(caller.getSourceLocation(), STRICT_HTML);
       }

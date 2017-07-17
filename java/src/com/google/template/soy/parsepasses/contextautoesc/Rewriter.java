@@ -19,7 +19,7 @@ package com.google.template.soy.parsepasses.contextautoesc;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
-import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
@@ -55,9 +55,9 @@ final class Rewriter {
   private final Set<String> visitedTemplateNames = Sets.newHashSet();
 
   /** Maps print directive names to the content kinds they consume and produce. */
-  private final Map<String, ContentKind> sanitizedContentOperators;
+  private final Map<String, SanitizedContentKind> sanitizedContentOperators;
 
-  Rewriter(Inferences inferences, Map<String, ContentKind> sanitizedContentOperators) {
+  Rewriter(Inferences inferences, Map<String, SanitizedContentKind> sanitizedContentOperators) {
     this.inferences = inferences;
     this.sanitizedContentOperators = sanitizedContentOperators;
   }
@@ -113,7 +113,7 @@ final class Rewriter {
         int newPrintDirectiveIndex = printNode.numChildren();
         while (newPrintDirectiveIndex > 0) {
           String printDirectiveName = printNode.getChild(newPrintDirectiveIndex - 1).getName();
-          ContentKind contentKind = sanitizedContentOperators.get(printDirectiveName);
+          SanitizedContentKind contentKind = sanitizedContentOperators.get(printDirectiveName);
           if (contentKind == null || contentKind != escapingMode.contentKind) {
             break;
           }

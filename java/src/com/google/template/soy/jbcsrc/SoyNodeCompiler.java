@@ -22,6 +22,7 @@ import static com.google.template.soy.jbcsrc.BytecodeUtils.SOY_VALUE_PROVIDER_TY
 import static com.google.template.soy.jbcsrc.BytecodeUtils.compareSoyEquals;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.constantNull;
+import static com.google.template.soy.jbcsrc.BytecodeUtils.constantSanitizedContentKindAsContentKind;
 import static com.google.template.soy.jbcsrc.Statement.NULL_STATEMENT;
 import static com.google.template.soy.jbcsrc.TemplateVariableManager.SaveStrategy.DERIVED;
 import static com.google.template.soy.jbcsrc.TemplateVariableManager.SaveStrategy.STORE;
@@ -30,7 +31,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Ints;
-import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.restricted.IntegerData;
@@ -749,10 +750,10 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     if (!node.getEscapingDirectiveNames().isEmpty()) {
       Expression directives = getEscapingDirectivesList(node);
       if (registry.hasDelTemplateDefinition(node.getDelCalleeName())) {
-        ContentKind kind = registry.getDelTemplateContentKind(node.getDelCalleeName());
+        SanitizedContentKind kind = registry.getDelTemplateContentKind(node.getDelCalleeName());
         calleeExpression =
             MethodRef.RUNTIME_APPLY_ESCAPERS.invoke(
-                calleeExpression, BytecodeUtils.constant(kind), directives);
+                calleeExpression, constantSanitizedContentKindAsContentKind(kind), directives);
       } else {
         // only use dynamic resolution if we need to, to avoid runtime kind checks
         calleeExpression =
@@ -775,7 +776,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       calleeExpression =
           MethodRef.RUNTIME_APPLY_ESCAPERS.invoke(
               calleeExpression,
-              BytecodeUtils.constant(callee.node().getContentKind()),
+              constantSanitizedContentKindAsContentKind(callee.node().getContentKind()),
               getEscapingDirectivesList(node));
     }
     return visitCallNodeHelper(reattachPoint, calleeExpression);

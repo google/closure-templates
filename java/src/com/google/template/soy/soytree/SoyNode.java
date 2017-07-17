@@ -17,10 +17,10 @@
 package com.google.template.soy.soytree;
 
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.Node;
 import com.google.template.soy.basetree.ParentNode;
-import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.VarDefn;
 import javax.annotation.Nullable;
@@ -214,7 +214,7 @@ public interface SoyNode extends Node {
      * Returns the content kind for strict autoescape, or null if not specified or not applicable.
      */
     @Nullable
-    ContentKind getContentKind();
+    SanitizedContentKind getContentKind();
   }
 
 

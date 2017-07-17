@@ -22,7 +22,7 @@ import static org.junit.Assert.assertTrue;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
-import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.types.aggregate.ListType;
 import com.google.template.soy.types.aggregate.MapType;
 import com.google.template.soy.types.aggregate.RecordType;
@@ -336,9 +336,9 @@ public class SoyTypesTest {
   @Test
   public void testAllContentKindsCovered() {
     Set<SoyType> types = Sets.newIdentityHashSet();
-    for (ContentKind kind : ContentKind.values()) {
+    for (SanitizedContentKind kind : SanitizedContentKind.values()) {
       SoyType typeForContentKind = SanitizedType.getTypeForContentKind(kind);
-      if (kind == ContentKind.TEXT) {
+      if (kind == SanitizedContentKind.TEXT) {
         assertEquals(StringType.getInstance(), typeForContentKind);
       } else {
         assertEquals(kind, ((SanitizedType) typeForContentKind).getContentKind());

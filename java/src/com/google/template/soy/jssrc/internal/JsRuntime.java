@@ -21,7 +21,7 @@ import static com.google.template.soy.jssrc.dsl.CodeChunk.id;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.template.soy.base.SoyBackendKind;
-import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
@@ -133,7 +133,7 @@ public final class JsRuntime {
    * Returns an 'ordainer' function that can be used wrap a {@code string} in a {@code
    * SanitizedContent} object with no escaping.
    */
-  public static CodeChunk.WithValue sanitizedContentOrdainerFunction(ContentKind kind) {
+  public static CodeChunk.WithValue sanitizedContentOrdainerFunction(SanitizedContentKind kind) {
     return symbolWithNamespace(
         NodeContentKinds.getJsImportForOrdainersFunctions(kind),
         NodeContentKinds.toJsSanitizedContentOrdainer(kind));
@@ -144,7 +144,7 @@ public final class JsRuntime {
    * SanitizedContent} object with no escaping.
    */
   public static CodeChunk.WithValue sanitizedContentOrdainerFunctionForInternalBlocks(
-      ContentKind kind) {
+      SanitizedContentKind kind) {
     return symbolWithNamespace(
         NodeContentKinds.getJsImportForOrdainersFunctions(kind),
         NodeContentKinds.toJsSanitizedContentOrdainerForInternalBlocks(kind));
@@ -158,7 +158,7 @@ public final class JsRuntime {
   /**
    * Returns the js type for the sanitized content object corresponding to the given ContentKind.
    */
-  public static CodeChunk.WithValue sanitizedContentType(ContentKind kind) {
+  public static CodeChunk.WithValue sanitizedContentType(SanitizedContentKind kind) {
     return GoogRequire.create(NodeContentKinds.toJsSanitizedContentCtorName(kind)).reference();
   }
 

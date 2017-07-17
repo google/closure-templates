@@ -23,7 +23,7 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Multimap;
-import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
@@ -195,7 +195,7 @@ public final class TemplateRegistry {
    * @param node The {@link CallBasicNode} or {@link CallDelegateNode}.
    * @return The kind of content that the call results in.
    */
-  public Optional<ContentKind> getCallContentKind(CallNode node) {
+  public Optional<SanitizedContentKind> getCallContentKind(CallNode node) {
     TemplateNode templateNode = null;
 
     if (node instanceof CallBasicNode) {

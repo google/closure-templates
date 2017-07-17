@@ -19,7 +19,6 @@ package com.google.template.soy.msgs.restricted;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.msgs.restricted.SoyMsgPart.Case;
 import com.ibm.icu.text.PluralRules;
 import com.ibm.icu.util.ULocale;
 import java.util.Objects;

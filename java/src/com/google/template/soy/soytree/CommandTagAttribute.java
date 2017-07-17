@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
+import com.google.common.base.Optional;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -27,9 +28,8 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.Identifier.Type;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.TriState;
-import com.google.template.soy.data.SanitizedContent.ContentKind;
-import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
@@ -215,18 +215,18 @@ public final class CommandTagAttribute {
   }
 
   @Nullable
-  public ContentKind valueAsContentKind(ErrorReporter errorReporter) {
+  public SanitizedContentKind valueAsContentKind(ErrorReporter errorReporter) {
     checkState(valueExprList == null);
 
-    ContentKind contentKind = NodeContentKinds.forAttributeValue(value);
-    if (contentKind == null) {
+    Optional<SanitizedContentKind> contentKind = SanitizedContentKind.fromAttributeValue(value);
+    if (!contentKind.isPresent()) {
       errorReporter.report(
           valueLocation,
           INVALID_ATTRIBUTE_LIST,
           key.identifier(),
-          ImmutableList.copyOf(NodeContentKinds.getAttributeValues()));
+          SanitizedContentKind.attributeValues().asList());
     }
-    return contentKind;
+    return contentKind.orNull();
   }
 
   String valueAsCssBase(ErrorReporter errorReporter) {

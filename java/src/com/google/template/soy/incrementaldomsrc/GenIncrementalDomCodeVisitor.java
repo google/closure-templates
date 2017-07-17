@@ -36,7 +36,7 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_ESCAPE_HTML;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
@@ -172,7 +172,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     // TODO(sparhami) need to deal with URI types properly (like the JS code gen does) so that the
     // usage is safe. For now, don't include any return type so compilation will fail if someone
     // tries to create a template of kind="uri".
-    if (node.getContentKind() == ContentKind.TEXT) {
+    if (node.getContentKind() == SanitizedContentKind.TEXT) {
       return "string";
     }
 
@@ -229,7 +229,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
    */
   private void visitLetParamContentNode(RenderUnitNode node, String generatedVarName) {
     IncrementalDomCodeBuilder jsCodeBuilder = getJsCodeBuilder();
-    ContentKind prevContentKind = jsCodeBuilder.getContentKind();
+    SanitizedContentKind prevContentKind = jsCodeBuilder.getContentKind();
 
     // We do our own initialization, so mark it as such.
     jsCodeBuilder.pushOutputVar(generatedVarName).setOutputVarInited();
@@ -302,7 +302,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
         getJsCodeBuilder().append(call);
         break;
       case HTML:
-        Optional<ContentKind> kind = templateRegistry.getCallContentKind(node);
+        Optional<SanitizedContentKind> kind = templateRegistry.getCallContentKind(node);
         // We are in a type of compilation where we don't have information on external templates
         // such as dynamic recompilation.
         if (!kind.isPresent()) {
@@ -331,9 +331,9 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   @Override
   protected void visitIfNode(IfNode node) {
     IncrementalDomCodeBuilder jsCodeBuilder = getJsCodeBuilder();
-    ContentKind currentContentKind = jsCodeBuilder.getContentKind();
+    SanitizedContentKind currentContentKind = jsCodeBuilder.getContentKind();
 
-    if (currentContentKind == ContentKind.ATTRIBUTES || currentContentKind == ContentKind.HTML) {
+    if (!isTextContent(currentContentKind)) {
       super.generateNonExpressionIfNode(node);
     } else {
       super.visitIfNode(node);
@@ -372,8 +372,9 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
    * @param contentKind The kind of content to check.
    * @return True if the content represents text, false otherwise.
    */
-  private boolean isTextContent(ContentKind contentKind) {
-    return contentKind != ContentKind.HTML && contentKind != ContentKind.ATTRIBUTES;
+  private boolean isTextContent(SanitizedContentKind contentKind) {
+    return contentKind != SanitizedContentKind.HTML
+        && contentKind != SanitizedContentKind.ATTRIBUTES;
   }
 
   /**

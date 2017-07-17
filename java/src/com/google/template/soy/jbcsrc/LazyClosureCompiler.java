@@ -20,6 +20,7 @@ import static com.google.common.base.Predicates.notNull;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.ADVISING_APPENDABLE_TYPE;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.NULLARY_INIT;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
+import static com.google.template.soy.jbcsrc.BytecodeUtils.constantSanitizedContentKindAsContentKind;
 import static com.google.template.soy.jbcsrc.FieldRef.createField;
 import static com.google.template.soy.jbcsrc.LocalVariable.createLocal;
 import static com.google.template.soy.jbcsrc.LocalVariable.createThisVar;
@@ -35,6 +36,7 @@ import static java.util.Arrays.asList;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Optional;
 import com.google.common.collect.Iterables;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.UniqueNameGenerator;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
@@ -45,8 +47,6 @@ import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import com.google.template.soy.jbcsrc.runtime.DetachableContentProvider;
 import com.google.template.soy.jbcsrc.runtime.DetachableSoyValueProvider;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
-import com.google.template.soy.soytree.LetContentNode;
-import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
@@ -231,13 +231,14 @@ final class LazyClosureCompiler {
     }
     // TODO(lukes): ideally this would be a static final StringData field rather than reboxing each
     // time, but we don't (yet) have a good mechanism for that.
-    ContentKind kind = renderUnit.getContentKind();
+    SanitizedContentKind kind = renderUnit.getContentKind();
     Expression constant = constant(builder == null ? "" : builder.toString(), parentVariables);
     if (kind == null) {
       return Optional.<Expression>of(MethodRef.STRING_DATA_FOR_VALUE.invoke(constant));
     } else {
       return Optional.<Expression>of(
-          MethodRef.ORDAIN_AS_SAFE.invoke(constant, FieldRef.enumReference(kind).accessor()));
+          MethodRef.ORDAIN_AS_SAFE.invoke(
+              constant, constantSanitizedContentKindAsContentKind(kind)));
     }
   }
 
@@ -343,8 +344,8 @@ final class LazyClosureCompiler {
               variableSet.generateTableEntries(adapter);
             }
           };
-      ContentKind kind = renderUnit.getContentKind();
-      final Expression contentKind = BytecodeUtils.constant(kind);
+      SanitizedContentKind kind = renderUnit.getContentKind();
+      final Expression contentKind = constantSanitizedContentKindAsContentKind(kind);
       variableSet.defineStaticFields(writer);
       Statement fieldInitializers = variableSet.defineFields(writer);
       Statement superClassContstructor =

@@ -22,8 +22,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.Identifier;
-import com.google.template.soy.data.SanitizedContent.ContentKind;
-import com.google.template.soy.data.internalutils.NodeContentKinds;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
@@ -87,7 +86,7 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
 
     this.delTemplateName = templateName.identifier();
     AutoescapeMode autoescapeMode = soyFileHeaderInfo.defaultAutoescapeMode;
-    ContentKind kind = null;
+    SanitizedContentKind kind = null;
     SourceLocation kindLocation = null;
     this.delTemplateVariant = "";
     for (CommandTagAttribute attribute : attrs) {
@@ -181,7 +180,7 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
       String delTemplateVariant,
       Priority delPriority,
       AutoescapeMode autoescapeMode,
-      ContentKind contentKind,
+      SanitizedContentKind contentKind,
       ImmutableList<String> requiredCssNamespaces) {
 
     Preconditions.checkState(this.sourceLocation != null);
@@ -205,7 +204,7 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder {
             + autoescapeMode.getAttributeValue()
             + "\"";
     if (contentKind != null) {
-      cmdText += " kind=\"" + NodeContentKinds.toAttributeValue(contentKind) + '"';
+      cmdText += " kind=\"" + contentKind.asAttributeValue() + '"';
     }
     if (!requiredCssNamespaces.isEmpty()) {
       cmdText += " requirecss=\"" + Joiner.on(", ").join(requiredCssNamespaces) + "\"";

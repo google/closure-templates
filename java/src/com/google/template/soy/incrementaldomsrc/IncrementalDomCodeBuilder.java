@@ -16,7 +16,7 @@
 
 package com.google.template.soy.incrementaldomsrc;
 
-import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.internal.JsCodeBuilder;
 import com.google.template.soy.jssrc.restricted.JsExpr;
@@ -26,7 +26,7 @@ import java.util.List;
 final class IncrementalDomCodeBuilder extends JsCodeBuilder {
 
   /** Used to track what kind of content is currently being processed. */
-  private ContentKind contentKind;
+  private SanitizedContentKind contentKind;
 
   IncrementalDomCodeBuilder() {
     super();
@@ -56,7 +56,8 @@ final class IncrementalDomCodeBuilder extends JsCodeBuilder {
   @Override
   public IncrementalDomCodeBuilder addChunksToOutputVar(
       List<? extends CodeChunk.WithValue> codeChunks) {
-    if (getContentKind() == ContentKind.HTML || getContentKind() == ContentKind.ATTRIBUTES) {
+    if (getContentKind() == SanitizedContentKind.HTML
+        || getContentKind() == SanitizedContentKind.ATTRIBUTES) {
       for (CodeChunk.WithValue chunk : codeChunks) {
         append(chunk);
       }
@@ -66,17 +67,13 @@ final class IncrementalDomCodeBuilder extends JsCodeBuilder {
     return this;
   }
 
-  /**
-   * @param contentKind The current kind of content being processed.
-   */
-  void setContentKind(ContentKind contentKind) {
+  /** @param contentKind The current kind of content being processed. */
+  void setContentKind(SanitizedContentKind contentKind) {
     this.contentKind = contentKind;
   }
 
-  /**
-   * @return The current kind of content being processed.
-   */
-  ContentKind getContentKind() {
+  /** @return The current kind of content being processed. */
+  SanitizedContentKind getContentKind() {
     return contentKind;
   }
 }

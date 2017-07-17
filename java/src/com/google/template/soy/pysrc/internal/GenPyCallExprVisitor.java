@@ -234,7 +234,8 @@ final class GenPyCallExprVisitor extends AbstractReturningSoyNodeVisitor<PyExpr>
         // Param content nodes require a content kind in strict autoescaping, so the content must be
         // wrapped as SanitizedContent.
         valuePyExpr =
-            PyExprUtils.wrapAsSanitizedContent(cpcn.getContentKind(), valuePyExpr.toPyString());
+            InternalPyExprUtils.wrapAsSanitizedContent(
+                cpcn.getContentKind(), valuePyExpr.toPyString());
 
         additionalParams.put(key, valuePyExpr);
       }

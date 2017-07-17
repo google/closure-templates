@@ -17,7 +17,7 @@
 package com.google.template.soy.jssrc.internal;
 
 import com.google.template.soy.base.internal.IdGenerator;
-import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.msgs.internal.MsgUtils;
 import com.google.template.soy.passes.BuildAllDependeesMapVisitor;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
@@ -117,12 +117,12 @@ public class ExtractMsgVariablesVisitor extends AbstractSoyNodeVisitor<Void> {
 
     // Find the actual content kind that this node prints in.
     RenderUnitNode container = msgFbGrpNode.getNearestAncestor(RenderUnitNode.class);
-    ContentKind kind = container.getContentKind();
+    SanitizedContentKind kind = container.getContentKind();
     HtmlAttributeNode containingAttribute =
         msgFbGrpNode.getNearestAncestor(HtmlAttributeNode.class);
     if (containingAttribute != null
         && SoyTreeUtils.isDescendantOf(containingAttribute, container)) {
-      kind = ContentKind.TEXT;
+      kind = SanitizedContentKind.TEXT;
     }
 
     // In traditional JS codegen, we will not infer a meaningful ContentKind (other than text).  But

@@ -54,8 +54,8 @@ import com.google.protobuf.GeneratedMessage.ExtendableMessage;
 import com.google.protobuf.GeneratedMessage.GeneratedExtension;
 import com.google.protobuf.Message;
 import com.google.protobuf.ProtocolMessageEnum;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SanitizedContent;
-import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.jbcsrc.Expression.Feature;
@@ -478,7 +478,7 @@ final class ProtoUtils {
             field.checkedCast(protoRuntimeType.runtimeType()));
       } else {
         // All other are special sanitized types
-        ContentKind kind = ((SanitizedType) node.getType()).getContentKind();
+        SanitizedContentKind kind = ((SanitizedType) node.getType()).getContentKind();
         Descriptor messageType = descriptor.getMessageType();
         MethodRef methodRef = SAFE_PROTO_TO_ACCESSOR.get(messageType.getFullName());
         return SoyExpression.forSanitizedString(

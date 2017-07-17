@@ -25,6 +25,7 @@ import static com.google.template.soy.jbcsrc.BytecodeUtils.logicalNot;
 
 import com.google.protobuf.Message;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
@@ -78,7 +79,7 @@ final class SoyExpression extends Expression {
     return new SoyExpression(getUnboxedType(StringType.getInstance()), delegate);
   }
 
-  static SoyExpression forSanitizedString(Expression delegate, ContentKind kind) {
+  static SoyExpression forSanitizedString(Expression delegate, SanitizedContentKind kind) {
     return new SoyExpression(getUnboxedType(SanitizedType.getTypeForContentKind(kind)), delegate);
   }
 
@@ -281,7 +282,8 @@ final class SoyExpression extends Expression {
    */
   private static void doBox(CodeBuilder adapter, SoyRuntimeType type) {
     if (type.isKnownSanitizedContent()) {
-      FieldRef.enumReference(((SanitizedType) type.soyType()).getContentKind())
+      FieldRef.enumReference(
+              ContentKind.valueOf(((SanitizedType) type.soyType()).getContentKind().name()))
           .accessStaticUnchecked(adapter);
       MethodRef.ORDAIN_AS_SAFE.invokeUnchecked(adapter);
     } else if (type.isKnownString()) {

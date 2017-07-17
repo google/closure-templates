@@ -21,6 +21,7 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.LazySanitizedContents;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyAbstractCachingValueProvider;
@@ -659,7 +660,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       SoyValue resultData =
           (callee.getContentKind() != null)
               ? UnsafeSanitizedContentOrdainer.ordainAsSafe(
-                  calleeBuilder.toString(), callee.getContentKind())
+                  calleeBuilder.toString(), ContentKind.valueOf(callee.getContentKind().name()))
               : StringData.forValue(calleeBuilder.toString());
       for (String directiveName : node.getEscapingDirectiveNames()) {
         resultData = applyDirective(directiveName, resultData, ImmutableList.<SoyValue>of(), node);
@@ -743,9 +744,9 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
             renderBlock(renderUnitNode, appendable);
           }
         };
-    ContentKind contentKind = renderUnitNode.getContentKind();
+    SanitizedContentKind contentKind = renderUnitNode.getContentKind();
     if (contentKind != null) {
-      return LazySanitizedContents.forThunk(thunk, contentKind);
+      return LazySanitizedContents.forThunk(thunk, ContentKind.valueOf(contentKind.name()));
     } else {
       return StringData.forThunk(thunk);
     }

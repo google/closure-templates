@@ -19,6 +19,7 @@ package com.google.template.soy.pysrc.restricted;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.exprtree.Operator;
@@ -159,9 +160,13 @@ public final class PyExprUtils {
    *
    * @param contentKind The kind of sanitized content.
    * @param pyExpr The expression to wrap.
+   * @deprecated this method is not safe to use without a security review. Do not use it.
    */
+  @Deprecated
   public static PyExpr wrapAsSanitizedContent(ContentKind contentKind, PyExpr pyExpr) {
-    String sanitizer = NodeContentKinds.toPySanitizedContentOrdainer(contentKind);
+    String sanitizer =
+        NodeContentKinds.toPySanitizedContentOrdainer(
+            SanitizedContentKind.valueOf(contentKind.name()));
     String approval =
         "sanitize.IActuallyUnderstandSoyTypeSafetyAndHaveSecurityApproval("
             + "'Internally created Sanitization.')";

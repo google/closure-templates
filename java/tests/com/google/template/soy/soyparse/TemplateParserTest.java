@@ -25,7 +25,7 @@ import static org.junit.Assert.assertTrue;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.SoyFileSetParserBuilder;
-import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporterImpl;
 import com.google.template.soy.error.ExplodingErrorReporter;
@@ -159,7 +159,7 @@ public final class TemplateParserTest {
   @Test
   public void testRecognizeRawText() throws Exception {
     // prevent parsing as tags by setting content kind to text
-    assertValidTemplate(ContentKind.TEXT, "blah>blah<blah<blah>blah>blah>blah>blah<blah");
+    assertValidTemplate(SanitizedContentKind.TEXT, "blah>blah<blah<blah>blah>blah>blah>blah<blah");
     assertValidTemplate("{sp}{nil}{\\n}{\\r}{\\t}{lb}{rb}");
     assertValidTemplate("blah{literal}{ {{{ } }{ {}} { }}}}}}}\n" + "}}}}}}}}}{ { {{/literal}blah");
 
@@ -1013,7 +1013,8 @@ public final class TemplateParserTest {
         "{css selected-option}" + "{css CSS_SELECTED_OPTION}" + "{css %SelectedOption}";
 
     List<StandaloneNode> nodes =
-        assertValidTemplate(ContentKind.TEXT, "requirecss=\"foo.bar\"", templateBody).getChildren();
+        assertValidTemplate(SanitizedContentKind.TEXT, "requirecss=\"foo.bar\"", templateBody)
+            .getChildren();
     assertThat(nodes).hasSize(3);
     assertEquals("selected-option", ((CssNode) nodes.get(0)).getSelectorText());
     assertEquals("CSS_SELECTED_OPTION", ((CssNode) nodes.get(1)).getSelectorText());
@@ -1248,15 +1249,15 @@ public final class TemplateParserTest {
     LetContentNode betaNode = (LetContentNode) nodes.get(1);
     assertEquals("beta", betaNode.getVarName());
     assertEquals("Boo!", ((RawTextNode) betaNode.getChild(0)).getRawText());
-    assertEquals(ContentKind.HTML, betaNode.getContentKind());
+    assertEquals(SanitizedContentKind.HTML, betaNode.getContentKind());
     LetContentNode gammaNode = (LetContentNode) nodes.get(2);
     assertEquals("gamma", gammaNode.getVarName());
     assertTrue(gammaNode.getChild(0) instanceof ForNode);
-    assertEquals(ContentKind.HTML, gammaNode.getContentKind());
+    assertEquals(SanitizedContentKind.HTML, gammaNode.getContentKind());
     LetContentNode deltaNode = (LetContentNode) nodes.get(3);
     assertEquals("delta", deltaNode.getVarName());
     assertEquals("Boo!", ((RawTextNode) betaNode.getChild(0)).getRawText());
-    assertEquals(ContentKind.HTML, deltaNode.getContentKind());
+    assertEquals(SanitizedContentKind.HTML, deltaNode.getContentKind());
 
     // Test error case.
     TemplateSubject.assertThatTemplateContent("{let $alpha /}{/let}")
@@ -1507,7 +1508,7 @@ public final class TemplateParserTest {
     {
       final CallParamContentNode cn4cpcn1 = (CallParamContentNode) cn3.getChild(1);
       assertEquals("woo", cn4cpcn1.getKey().identifier());
-      assertEquals(ContentKind.HTML, cn4cpcn1.getContentKind());
+      assertEquals(SanitizedContentKind.HTML, cn4cpcn1.getContentKind());
       assertEquals("poo", ((RawTextNode) cn4cpcn1.getChild(0)).getRawText());
     }
 
@@ -1521,7 +1522,7 @@ public final class TemplateParserTest {
       final CallParamContentNode cn4cpcn3 = (CallParamContentNode) cn3.getChild(3);
       assertEquals("doo", cn4cpcn3.getKey().identifier());
       assertNotNull(cn4cpcn3.getContentKind());
-      assertEquals(ContentKind.HTML, cn4cpcn3.getContentKind());
+      assertEquals(SanitizedContentKind.HTML, cn4cpcn3.getContentKind());
       assertEquals("doopoo", ((RawTextNode) cn4cpcn3.getChild(0)).getRawText());
     }
   }
@@ -1977,15 +1978,15 @@ public final class TemplateParserTest {
    * @param input The input string to parse.
    */
   private static TemplateNode assertValidTemplate(String input) {
-    return assertValidTemplate(ContentKind.HTML, input);
+    return assertValidTemplate(SanitizedContentKind.HTML, input);
   }
 
-  private static TemplateNode assertValidTemplate(ContentKind kind, String input) {
+  private static TemplateNode assertValidTemplate(SanitizedContentKind kind, String input) {
     return assertValidTemplate(kind, "", input);
   }
 
   private static TemplateNode assertValidTemplate(
-      ContentKind kind, String namespaceAttrs, String input) {
+      SanitizedContentKind kind, String namespaceAttrs, String input) {
     StringBuilder soyFileContentBuilder = new StringBuilder();
     soyFileContentBuilder
         .append("{namespace brittle.test.ns autoescape=\"")

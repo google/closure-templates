@@ -24,6 +24,7 @@ import static com.google.template.soy.jbcsrc.SoyExpression.forList;
 import static com.google.template.soy.jbcsrc.SoyExpression.forSanitizedString;
 import static com.google.template.soy.jbcsrc.SoyExpression.forString;
 
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.internal.ListImpl;
@@ -107,10 +108,10 @@ public class SoyExpressionTest {
 
   @Test
   public void testSanitizedExpressions() {
-    assertThatExpression(forSanitizedString(constant("foo"), ContentKind.ATTRIBUTES).box())
+    assertThatExpression(forSanitizedString(constant("foo"), SanitizedContentKind.ATTRIBUTES).box())
         .evaluatesTo(UnsafeSanitizedContentOrdainer.ordainAsSafe("foo", ContentKind.ATTRIBUTES));
     assertThatExpression(
-            forSanitizedString(constant("foo"), ContentKind.ATTRIBUTES).coerceToBoolean())
+            forSanitizedString(constant("foo"), SanitizedContentKind.ATTRIBUTES).coerceToBoolean())
         .evaluatesTo(true);
   }
 

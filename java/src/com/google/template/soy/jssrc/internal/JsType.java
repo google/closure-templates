@@ -38,7 +38,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.template.soy.base.SoyBackendKind;
-import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.CodeChunk.Generator;
@@ -167,14 +167,14 @@ final class JsType {
               })
           .build();
 
-  private static final ImmutableMap<ContentKind, JsType> STRICT_TYPES;
+  private static final ImmutableMap<SanitizedContentKind, JsType> STRICT_TYPES;
 
   private static final JsType IDOM_HTML_AND_ATTRIBUTES =
       builder().addType("function()").setPredicate(GOOG_IS_FUNCTION).build();
 
   static {
-    EnumMap<ContentKind, JsType> types = new EnumMap<>(ContentKind.class);
-    for (ContentKind kind : ContentKind.values()) {
+    EnumMap<SanitizedContentKind, JsType> types = new EnumMap<>(SanitizedContentKind.class);
+    for (SanitizedContentKind kind : SanitizedContentKind.values()) {
       types.put(kind, createSanitized(kind));
     }
     STRICT_TYPES = Maps.immutableEnumMap(types);
@@ -433,7 +433,7 @@ final class JsType {
         : coercion;
   }
 
-  private static JsType createSanitized(final ContentKind kind) {
+  private static JsType createSanitized(final SanitizedContentKind kind) {
     String type = NodeContentKinds.toJsSanitizedContentCtorName(kind);
     // All the sanitized types have an .isCompatibleWith method for testing for allowed types
     // NOTE: this actually allows 'string' to be passed, which is inconsistent with other backends

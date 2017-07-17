@@ -26,7 +26,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SoySyntaxException;
-import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporterImpl;
 import com.google.template.soy.error.ExplodingErrorReporter;
@@ -198,14 +198,14 @@ public class TemplateNodeTest {
             "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
                 + "{template .boo kind=\"text\" autoescape=\"strict\"}{/template}");
     assertEquals(AutoescapeMode.STRICT, node.getAutoescapeMode());
-    assertEquals(ContentKind.TEXT, node.getContentKind());
+    assertEquals(SanitizedContentKind.TEXT, node.getContentKind());
 
     node =
         parse(
             "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
                 + "{template .boo kind=\"html\" autoescape=\"strict\"}{/template}");
     assertEquals(AutoescapeMode.STRICT, node.getAutoescapeMode());
-    assertEquals(ContentKind.HTML, node.getContentKind());
+    assertEquals(SanitizedContentKind.HTML, node.getContentKind());
 
     // "kind" is optional, defaults to HTML
     node =
@@ -213,7 +213,7 @@ public class TemplateNodeTest {
             "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
                 + "{template .boo autoescape=\"strict\"}{/template}");
     assertEquals(AutoescapeMode.STRICT, node.getAutoescapeMode());
-    assertEquals(ContentKind.HTML, node.getContentKind());
+    assertEquals(SanitizedContentKind.HTML, node.getContentKind());
   }
 
   @Test

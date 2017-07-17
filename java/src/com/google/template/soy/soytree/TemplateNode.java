@@ -25,9 +25,9 @@ import com.google.common.collect.Maps;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.Identifier;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.TriState;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
@@ -194,7 +194,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
   private final AutoescapeMode autoescapeMode;
 
   /** Strict mode context. Nonnull iff autoescapeMode is strict. */
-  @Nullable private final ContentKind contentKind;
+  @Nullable private final SanitizedContentKind contentKind;
 
   /** Required CSS namespaces. */
   private final ImmutableList<String> requiredCssNamespaces;
@@ -255,7 +255,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
       // use the value that is explicitly set in template.
       this.strictHtml = nodeBuilder.getStrictHtmlMode() == TriState.ENABLED;
     } else if (soyFileHeaderInfo.strictHtmlMode != TriState.UNSET
-        && contentKind == ContentKind.HTML) {
+        && contentKind == SanitizedContentKind.HTML) {
       // If the value is not set, HTML templates will inherit from namespace declaration.
       this.strictHtml = soyFileHeaderInfo.strictHtmlMode == TriState.ENABLED;
     } else {
@@ -351,7 +351,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode implements R
   /** Returns the content kind for strict autoescaping. Nonnull iff autoescapeMode is strict. */
   @Override
   @Nullable
-  public ContentKind getContentKind() {
+  public SanitizedContentKind getContentKind() {
     return contentKind;
   }
 

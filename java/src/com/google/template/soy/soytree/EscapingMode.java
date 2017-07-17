@@ -17,7 +17,7 @@ package com.google.template.soy.soytree;
 
 import com.google.common.base.CaseFormat;
 import com.google.common.collect.ImmutableMap;
-import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import java.util.Map;
 import javax.annotation.Nullable;
 
@@ -29,7 +29,7 @@ import javax.annotation.Nullable;
 public enum EscapingMode {
 
   /** Encodes HTML special characters. */
-  ESCAPE_HTML(true, ContentKind.HTML),
+  ESCAPE_HTML(true, SanitizedContentKind.HTML),
 
   /** Escapes HTML except preserves ampersands and entities. */
   NORMALIZE_HTML(true, null),
@@ -91,14 +91,14 @@ public enum EscapingMode {
    * expected, otherwise if it is a valid CSS identifier, outputs it without escaping, otherwise
    * replaces with "zSoyz" to indicate the value was rejected.
    */
-  FILTER_CSS_VALUE(false, ContentKind.CSS),
+  FILTER_CSS_VALUE(false, SanitizedContentKind.CSS),
 
   /**
    * Percent encode all URI special characters and characters that cannot appear unescaped in a URI
    * such as spaces. Make sure to encode pluses and parentheses. This corresponds to the JavaScript
    * function {@code encodeURIComponent}.
    */
-  ESCAPE_URI(true, ContentKind.URI),
+  ESCAPE_URI(true, SanitizedContentKind.URI),
 
   /**
    * Percent encode non-URI characters that cannot appear unescaped in a URI such as spaces, and
@@ -110,12 +110,12 @@ public enum EscapingMode {
    *
    * <p>This is not necessarily HTML embeddable because we want ampersands to get HTML-escaped.
    */
-  NORMALIZE_URI(false, ContentKind.URI),
+  NORMALIZE_URI(false, SanitizedContentKind.URI),
 
   /**
    * Like {@link #NORMALIZE_URI}, but filters out everything except relative and http/https URIs.
    */
-  FILTER_NORMALIZE_URI(false, ContentKind.URI),
+  FILTER_NORMALIZE_URI(false, SanitizedContentKind.URI),
 
   /**
    * Like {@link #FILTER_NORMALIZE_URI}, but also accepts some {@code data:} URIs, since image
@@ -123,7 +123,7 @@ public enum EscapingMode {
    * discovered from time to time, a templating language can't realistically try to protect against
    * such a thing.
    */
-  FILTER_NORMALIZE_MEDIA_URI(false, ContentKind.URI),
+  FILTER_NORMALIZE_MEDIA_URI(false, SanitizedContentKind.URI),
 
   /**
    * A special filter for csp nonce values.
@@ -143,14 +143,14 @@ public enum EscapingMode {
   FILTER_TRUSTED_RESOURCE_URI(false, null),
 
   /** The explicit rejection of escaping. */
-  NO_AUTOESCAPE(false, ContentKind.TEXT),
+  NO_AUTOESCAPE(false, SanitizedContentKind.TEXT),
 
   /**
    * Outputs plain text and performs no escaping. Unlike noAutoescape, this will not fail if passed
    * SanitizedContent of kind TEXT, but this may never be used manually by the developer. This has
    * no escaping.
    */
-  TEXT(false, ContentKind.TEXT, true /* internal-only */);
+  TEXT(false, SanitizedContentKind.TEXT, true /* internal-only */);
 
   /** The Soy <code>{print}</code> directive that specifies this escaping mode. */
   public final String directiveName;
@@ -159,19 +159,20 @@ public enum EscapingMode {
   public final boolean isHtmlEmbeddable;
 
   /** The kind of content produced by the escaping directive associated with this escaping mode. */
-  @Nullable public final ContentKind contentKind;
+  @Nullable public final SanitizedContentKind contentKind;
 
   /** Whether this directive is only for internal use by the contextual autoescaper. */
   public final boolean isInternalOnly;
 
-  EscapingMode(boolean escapesQuotes, @Nullable ContentKind contentKind, boolean internalOnly) {
+  EscapingMode(
+      boolean escapesQuotes, @Nullable SanitizedContentKind contentKind, boolean internalOnly) {
     this.directiveName = "|" + CaseFormat.UPPER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, name());
     this.isHtmlEmbeddable = escapesQuotes;
     this.contentKind = contentKind;
     this.isInternalOnly = internalOnly;
   }
 
-  EscapingMode(boolean escapesQuotes, @Nullable ContentKind contentKind) {
+  EscapingMode(boolean escapesQuotes, @Nullable SanitizedContentKind contentKind) {
     this(escapesQuotes, contentKind, false /* internal-only */);
   }
 

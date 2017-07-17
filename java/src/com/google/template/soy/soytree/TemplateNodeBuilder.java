@@ -27,10 +27,10 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.TriState;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.basetree.SyntaxVersionUpperBound;
-import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
@@ -124,7 +124,7 @@ public abstract class TemplateNodeBuilder {
    * Strict mode context. Nonnull iff autoescapeMode is strict. This is private instead of protected
    * to enforce use of setAutoescapeInfo().
    */
-  private ContentKind contentKind;
+  private SanitizedContentKind contentKind;
 
   /** The full SoyDoc, including the start/end tokens, or null. */
   protected String soyDoc;
@@ -265,7 +265,7 @@ public abstract class TemplateNodeBuilder {
 
   protected void setAutoescapeInfo(
       AutoescapeMode autoescapeMode,
-      @Nullable ContentKind contentKind,
+      @Nullable SanitizedContentKind contentKind,
       @Nullable SourceLocation kindLocation) {
 
     Preconditions.checkArgument(autoescapeMode != null);
@@ -273,7 +273,7 @@ public abstract class TemplateNodeBuilder {
 
     if (contentKind == null && autoescapeMode == AutoescapeMode.STRICT) {
       // Default mode is HTML.
-      contentKind = ContentKind.HTML;
+      contentKind = SanitizedContentKind.HTML;
     } else if (contentKind != null && autoescapeMode != AutoescapeMode.STRICT) {
       // TODO: Perhaps this could imply strict escaping?
       errorReporter.report(kindLocation, KIND_BUT_NOT_STRICT);
@@ -314,7 +314,7 @@ public abstract class TemplateNodeBuilder {
 
   /** @return Strict mode context. Nonnull iff autoescapeMode is strict. */
   @Nullable
-  public ContentKind getContentKind() {
+  public SanitizedContentKind getContentKind() {
     checkState(autoescapeMode != null); // make sure setAutoescapeInfo was called
     return contentKind;
   }

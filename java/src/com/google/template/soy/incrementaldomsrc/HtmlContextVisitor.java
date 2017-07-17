@@ -18,7 +18,7 @@ package com.google.template.soy.incrementaldomsrc;
 
 import static com.google.common.base.Preconditions.checkState;
 
-import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
@@ -124,7 +124,7 @@ final class HtmlContextVisitor extends AbstractSoyNodeVisitor<Void> {
   @Override
   protected void visitTemplateNode(TemplateNode node) {
     checkState(stateStack.isEmpty());
-    ContentKind contentKind = node.getContentKind();
+    SanitizedContentKind contentKind = node.getContentKind();
     pushState(contextForKind(contentKind));
     visitChildren(node);
     popState();
@@ -309,7 +309,7 @@ final class HtmlContextVisitor extends AbstractSoyNodeVisitor<Void> {
     return stateStack.peek();
   }
 
-  private HtmlContext contextForKind(ContentKind contentKind) {
+  private HtmlContext contextForKind(SanitizedContentKind contentKind) {
     switch (contentKind) {
       case HTML:
         return HtmlContext.HTML_PCDATA;

@@ -18,7 +18,7 @@ package com.google.template.soy.passes;
 
 import com.google.common.base.Equivalence;
 import com.google.common.base.Preconditions;
-import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.shared.internal.DelTemplateSelector;
@@ -112,7 +112,7 @@ final class CheckDelegatesVisitor extends AbstractSoyNodeVisitor<Void> {
         selector.delTemplateNameToValues().asMap().values()) {
       TemplateDelegateNode firstDelTemplate = null;
       Set<Equivalence.Wrapper<TemplateParam>> firstRequiredParamSet = null;
-      ContentKind firstContentKind = null;
+      SanitizedContentKind firstContentKind = null;
       boolean firstStrictHtml = false;
 
       // loop over all members of the deltemplate group.
@@ -122,7 +122,8 @@ final class CheckDelegatesVisitor extends AbstractSoyNodeVisitor<Void> {
           firstDelTemplate = delTemplate;
           firstRequiredParamSet = getRequiredParamSet(delTemplate);
           firstContentKind = delTemplate.getContentKind();
-          firstStrictHtml = delTemplate.isStrictHtml() && firstContentKind == ContentKind.HTML;
+          firstStrictHtml =
+              delTemplate.isStrictHtml() && firstContentKind == SanitizedContentKind.HTML;
         } else {
           // Not first template encountered.
           Set<Equivalence.Wrapper<TemplateParam>> currRequiredParamSet =

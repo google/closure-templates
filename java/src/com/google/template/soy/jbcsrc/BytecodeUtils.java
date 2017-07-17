@@ -28,6 +28,7 @@ import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Ints;
 import com.google.protobuf.Message;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyList;
@@ -343,6 +344,16 @@ final class BytecodeUtils {
     return (kind == null)
         ? BytecodeUtils.constantNull(CONTENT_KIND_TYPE)
         : FieldRef.enumReference(kind).accessor();
+  }
+
+  /**
+   * Returns an {@link Expression} that evaluates to the {@link ContentKind} value that is
+   * equivalent to the given {@link SanitizedContentKind}, or null.
+   */
+  static Expression constantSanitizedContentKindAsContentKind(@Nullable SanitizedContentKind kind) {
+    return (kind == null)
+        ? BytecodeUtils.constantNull(CONTENT_KIND_TYPE)
+        : FieldRef.enumReference(ContentKind.valueOf(kind.name())).accessor();
   }
 
   /** Returns an {@link Expression} with the given type that always returns null. */

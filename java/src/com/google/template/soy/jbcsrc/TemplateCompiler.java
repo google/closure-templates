@@ -21,6 +21,7 @@ import static com.google.template.soy.jbcsrc.BytecodeUtils.NULLARY_INIT;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.OBJECT;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.RENDER_CONTEXT_TYPE;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.SOY_RECORD_TYPE;
+import static com.google.template.soy.jbcsrc.BytecodeUtils.constantSanitizedContentKindAsContentKind;
 import static com.google.template.soy.jbcsrc.FieldRef.createField;
 import static com.google.template.soy.jbcsrc.FieldRef.createFinalField;
 import static com.google.template.soy.jbcsrc.LocalVariable.createLocal;
@@ -32,8 +33,8 @@ import static com.google.template.soy.soytree.SoyTreeUtils.getAllNodesOfType;
 
 import com.google.auto.value.AutoAnnotation;
 import com.google.common.collect.ImmutableMap;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.UniqueNameGenerator;
-import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.exprtree.VarRefNode;
@@ -155,14 +156,15 @@ final class TemplateCompiler {
   }
 
   private void generateKindMethod() {
-    Statement.returnExpression(BytecodeUtils.constant(template.node().getContentKind()))
+    Statement.returnExpression(
+            constantSanitizedContentKindAsContentKind(template.node().getContentKind()))
         .writeMethod(
             Opcodes.ACC_PUBLIC | Opcodes.ACC_FINAL, template.kindMethod().method(), writer);
   }
 
   /** Writes a {@link TemplateMetadata} to the generated class. */
   private void generateTemplateMetadata() {
-    ContentKind contentKind = template.node().getContentKind();
+    SanitizedContentKind contentKind = template.node().getContentKind();
     String kind = contentKind == null ? "" : contentKind.name();
 
     // using linked hash sets below for determinism

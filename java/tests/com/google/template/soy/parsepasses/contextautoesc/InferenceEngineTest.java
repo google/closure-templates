@@ -25,7 +25,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
-import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.StringNode;
@@ -43,88 +43,98 @@ public final class InferenceEngineTest {
   @Test
   public void testPcData() {
     assertTransitions(
-        ContentKind.HTML,
+        SanitizedContentKind.HTML,
         "Hello <{assert('HTML_BEFORE_OPEN_TAG_NAME')} {assert('HTML_TAG NORMAL')}> "
             + "{assert('HTML_PCDATA')}");
     // Test special tags.
     assertTransitions(
-        ContentKind.HTML,
+        SanitizedContentKind.HTML,
         "<script type='text/javascript' {assert('HTML_TAG SCRIPT')}>{assert('JS REGEX')}</script>");
     assertTransitions(
-        ContentKind.HTML, "<ScRipt type='text/javascript' {assert('HTML_TAG SCRIPT')}></script>");
+        SanitizedContentKind.HTML,
+        "<ScRipt type='text/javascript' {assert('HTML_TAG SCRIPT')}></script>");
     assertTransitions(
-        ContentKind.HTML, "<style type='text/css' {assert('HTML_TAG STYLE')}></style>");
+        SanitizedContentKind.HTML, "<style type='text/css' {assert('HTML_TAG STYLE')}></style>");
     assertTransitions(
-        ContentKind.HTML, "<sTyLe type='text/css' {assert('HTML_TAG STYLE')}></style>");
+        SanitizedContentKind.HTML, "<sTyLe type='text/css' {assert('HTML_TAG STYLE')}></style>");
     assertTransitions(
-        ContentKind.HTML, "<textarea name='text' {assert('HTML_TAG TEXTAREA')}></textarea>");
-    assertTransitions(ContentKind.HTML, "<title lang='en' {assert('HTML_TAG TITLE')}></title>");
-    assertTransitions(ContentKind.HTML, "<xmp id='en' {assert('HTML_TAG XMP')}></xmp>");
+        SanitizedContentKind.HTML,
+        "<textarea name='text' {assert('HTML_TAG TEXTAREA')}></textarea>");
+    assertTransitions(
+        SanitizedContentKind.HTML, "<title lang='en' {assert('HTML_TAG TITLE')}></title>");
+    assertTransitions(SanitizedContentKind.HTML, "<xmp id='en' {assert('HTML_TAG XMP')}></xmp>");
 
     // attributes
     assertTransitions(
-        ContentKind.HTML,
+        SanitizedContentKind.HTML,
         "<a title='{assert('HTML_NORMAL_ATTR_VALUE NORMAL PLAIN_TEXT SINGLE_QUOTE')}' "
             + "data-foo='{assert('HTML_NORMAL_ATTR_VALUE NORMAL PLAIN_TEXT SINGLE_QUOTE')}' "
             + "onclick=\"{assert('JS NORMAL SCRIPT DOUBLE_QUOTE REGEX')}\" "
             + "ng-init=\"{assert('JS NORMAL SCRIPT DOUBLE_QUOTE REGEX')}\">");
 
     assertTransitions(
-        ContentKind.HTML,
+        SanitizedContentKind.HTML,
         "<a onclick=\"</script>{assert('JS_REGEX NORMAL SCRIPT DOUBLE_QUOTE')}\">");
     assertTransitions(
-        ContentKind.HTML, "<xmp style=\"{assert('CSS XMP STYLE DOUBLE_QUOTE')}\"></xmp>");
+        SanitizedContentKind.HTML, "<xmp style=\"{assert('CSS XMP STYLE DOUBLE_QUOTE')}\"></xmp>");
     assertTransitions(
-        ContentKind.HTML,
+        SanitizedContentKind.HTML,
         "<xmp style=\'/*{assert('CSS_COMMENT XMP STYLE SINGLE_QUOTE')}*/\'></xmp>");
     assertTransitions(
-        ContentKind.HTML,
+        SanitizedContentKind.HTML,
         "<script src={assert('URI SCRIPT URI SPACE_OR_TAG_END START TRUSTED_RESOURCE')}></script>");
     assertTransitions(
-        ContentKind.HTML,
+        SanitizedContentKind.HTML,
         "<script src='/search?q={assert('URI SCRIPT URI SINGLE_QUOTE QUERY TRUSTED_RESOURCE')}'>"
             + "</script>");
 
     assertTransitions(
-        ContentKind.HTML,
+        SanitizedContentKind.HTML,
         "<script src='/foo#{assert('URI SCRIPT URI SINGLE_QUOTE FRAGMENT TRUSTED_RESOURCE')}'>"
             + "</script>");
     assertTransitions(
-        ContentKind.HTML, "<img src={assert('URI MEDIA URI SPACE_OR_TAG_END START MEDIA')}>");
+        SanitizedContentKind.HTML,
+        "<img src={assert('URI MEDIA URI SPACE_OR_TAG_END START MEDIA')}>");
     assertTransitions(
-        ContentKind.HTML, "<img url src={assert('URI MEDIA URI SPACE_OR_TAG_END START MEDIA')}>");
+        SanitizedContentKind.HTML,
+        "<img url src={assert('URI MEDIA URI SPACE_OR_TAG_END START MEDIA')}>");
     // Make sure the URI type doesn't carry over if a URI has no attribute value.
     assertTransitions(
-        ContentKind.HTML, "<img src href={assert('URI MEDIA URI SPACE_OR_TAG_END START NORMAL')}>");
+        SanitizedContentKind.HTML,
+        "<img src href={assert('URI MEDIA URI SPACE_OR_TAG_END START NORMAL')}>");
     assertTransitions(
-        ContentKind.HTML,
+        SanitizedContentKind.HTML,
         "<img src alt={assert('HTML_NORMAL_ATTR_VALUE MEDIA PLAIN_TEXT SPACE_OR_TAG_END')}>");
     // TODO(gboyer): Consider supporting video, audio, and source.
     assertTransitions(
-        ContentKind.HTML, "<video src={assert('URI NORMAL URI SPACE_OR_TAG_END START NORMAL')}>");
+        SanitizedContentKind.HTML,
+        "<video src={assert('URI NORMAL URI SPACE_OR_TAG_END START NORMAL')}>");
     assertTransitions(
-        ContentKind.HTML,
+        SanitizedContentKind.HTML,
         "<video><source src={assert('URI NORMAL URI SPACE_OR_TAG_END START NORMAL')}>");
     assertTransitions(
-        ContentKind.HTML, "<audio src={assert('URI NORMAL URI SPACE_OR_TAG_END START NORMAL')}>");
+        SanitizedContentKind.HTML,
+        "<audio src={assert('URI NORMAL URI SPACE_OR_TAG_END START NORMAL')}>");
     assertTransitions(
-        ContentKind.HTML, "<source src={assert('URI NORMAL URI SPACE_OR_TAG_END START NORMAL')}>");
+        SanitizedContentKind.HTML,
+        "<source src={assert('URI NORMAL URI SPACE_OR_TAG_END START NORMAL')}>");
     assertTransitions(
-        ContentKind.HTML,
+        SanitizedContentKind.HTML,
         "<image xlink:href={assert('URI MEDIA URI SPACE_OR_TAG_END START MEDIA')}>");
     assertTransitions(
-        ContentKind.HTML,
+        SanitizedContentKind.HTML,
         "<a href=mailto:{assert('URI NORMAL URI SPACE_OR_TAG_END AUTHORITY_OR_PATH NORMAL')}>");
     assertTransitions(
-        ContentKind.HTML,
+        SanitizedContentKind.HTML,
         "<input type=button value='' onclick={assert('JS NORMAL SCRIPT SPACE_OR_TAG_END REGEX')}>");
-    assertTransitions(ContentKind.HTML, "<input type=button value=''>{assert('HTML_PCDATA')}");
+    assertTransitions(
+        SanitizedContentKind.HTML, "<input type=button value=''>{assert('HTML_PCDATA')}");
   }
 
   @Test
   public void testTags() throws Exception {
     assertTransitions(
-        ContentKind.HTML,
+        SanitizedContentKind.HTML,
         join(
             "<{assert('HTML_BEFORE_OPEN_TAG_NAME')}>",
             "</{assert('HTML_BEFORE_CLOSE_TAG_NAME')}>",
@@ -136,7 +146,7 @@ public final class InferenceEngineTest {
             "<style>{assert('CSS')}</style>",
             "<xmp>{assert('HTML_RCDATA XMP')}</xmp>"));
     assertTransitions(
-        ContentKind.ATTRIBUTES,
+        SanitizedContentKind.ATTRIBUTES,
         join(
             "{assert('HTML_TAG')} ",
             "checked ",
@@ -163,7 +173,7 @@ public final class InferenceEngineTest {
   @Test
   public void testAttrName() throws Exception {
     assertTransitions(
-        ContentKind.HTML,
+        SanitizedContentKind.HTML,
         join(
             "<xmp xml:url={assert('URI XMP URI SPACE_OR_TAG_END START NORMAL')}></xmp>",
             "<xmp {assert('HTML_TAG XMP')}='foo'></xmp>",
@@ -175,7 +185,7 @@ public final class InferenceEngineTest {
   @Test
   public void testAttrValue() throws Exception {
     assertTransitions(
-        ContentKind.HTML,
+        SanitizedContentKind.HTML,
         join(
             "<a href={assert('URI NORMAL URI SPACE_OR_TAG_END START NORMAL')}>",
             "<a href='{assert('URI NORMAL URI SINGLE_QUOTE START NORMAL')}'>",
@@ -196,7 +206,7 @@ public final class InferenceEngineTest {
   @Test
   public void testCss() throws Exception {
     assertTransitions(
-        ContentKind.CSS,
+        SanitizedContentKind.CSS,
         join(
             "{assert('CSS')} p {lb} color: red; {rb} {assert('CSS')} ",
             "p.clazz#id {lb}{\\n}  border: 2px;{\\n}{rb} {assert('CSS')}",
@@ -207,7 +217,7 @@ public final class InferenceEngineTest {
   @Test
   public void testJs() {
     assertTransitions(
-        ContentKind.HTML,
+        SanitizedContentKind.HTML,
         join(
             "<script>'{assert('JS_SQ_STRING')}</script>{assert('HTML_PCDATA')}",
             "<script>\"{assert('JS_DQ_STRING')}</script>{assert('HTML_PCDATA')}",
@@ -219,7 +229,7 @@ public final class InferenceEngineTest {
   @Test
   public void testRcdata() throws Exception {
     assertTransitions(
-        ContentKind.HTML,
+        SanitizedContentKind.HTML,
         "<xmp>"
             + "{assert('HTML_RCDATA XMP')} foo {assert('HTML_RCDATA XMP')} "
             + "<div class='{assert('HTML_RCDATA XMP')}'>"
@@ -232,7 +242,7 @@ public final class InferenceEngineTest {
   @Test
   public void testHtmlComment() throws Exception {
     assertTransitions(
-        ContentKind.HTML,
+        SanitizedContentKind.HTML,
         "{assert('HTML_PCDATA')}"
             + "<!--\n"
             + "  {assert('HTML_COMMENT')}"
@@ -249,7 +259,7 @@ public final class InferenceEngineTest {
   @Test
   public void testTemplateElementNesting() throws Exception {
     assertTransitions(
-        ContentKind.HTML,
+        SanitizedContentKind.HTML,
         join(
             "<template>",
             "{assert('HTML_PCDATA templateNestDepth=1')}",
@@ -278,7 +288,7 @@ public final class InferenceEngineTest {
     }
   }
 
-  private static void assertTransitions(ContentKind kind, String src) {
+  private static void assertTransitions(SanitizedContentKind kind, String src) {
     TemplateNode template =
         SoyFileSetParserBuilder.forFileContents(
                 "{namespace ns}\n{template .foo kind=\""

@@ -22,8 +22,8 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
-import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
@@ -152,7 +152,7 @@ final class InferenceEngine {
       String msg =
           String.format(
               "A strict block of kind=\"%s\" cannot end in context %s. Likely cause is %s.",
-              NodeContentKinds.toAttributeValue(node.getContentKind()),
+              node.getContentKind().asAttributeValue(),
               endContext,
               endContext.getLikelyEndContextMismatchCause(node.getContentKind()));
       throw SoyAutoescapeException.createWithNode(msg, node);
@@ -525,11 +525,11 @@ final class InferenceEngine {
               // - It deserves a more useful error message.
               if (templateAutoescapeMode == AutoescapeMode.STRICT) {
                 // Help the user figure out the best content kind to use, using existing heuristics.
-                ContentKind recommendedKind = context.getMostAppropriateContentKind();
+                SanitizedContentKind recommendedKind = context.getMostAppropriateContentKind();
                 String recommendedKindStr =
-                    (recommendedKind == ContentKind.TEXT)
+                    (recommendedKind == SanitizedContentKind.TEXT)
                         ? "appropriate kind=\"...\""
-                        : ("kind=\"" + NodeContentKinds.toAttributeValue(recommendedKind) + "\"");
+                        : ("kind=\"" + recommendedKind.asAttributeValue() + "\"");
                 throw SoyAutoescapeException.createWithNode(
                     "noAutoescape is not allowed in strict autoescaping mode. Instead, pass in a "
                         + "{param} with "
@@ -689,11 +689,11 @@ final class InferenceEngine {
      * <p>This relies on CheckDelegatesVisitor to print friendly messages if the deltemplates differ
      * in content kind.
      */
-    private ContentKind getCommonContentKindIfStrict(List<TemplateNode> templates) {
+    private SanitizedContentKind getCommonContentKindIfStrict(List<TemplateNode> templates) {
       if (templates == null || templates.isEmpty()) {
         return null;
       }
-      ContentKind contentKind = templates.get(0).getContentKind();
+      SanitizedContentKind contentKind = templates.get(0).getContentKind();
       for (TemplateNode template : templates) {
         Preconditions.checkArgument(template.getContentKind() == contentKind);
       }
@@ -718,7 +718,7 @@ final class InferenceEngine {
         throws SoyAutoescapeException {
       inferences.recordTemplateChecked(templateName);
       List<TemplateNode> targets = inferences.lookupTemplates(templateName);
-      ContentKind calleeStrictContentKind = getCommonContentKindIfStrict(targets);
+      SanitizedContentKind calleeStrictContentKind = getCommonContentKindIfStrict(targets);
 
       if (autoescapeMode == AutoescapeMode.STRICT) {
         // We're currently in a strict mode template. Check what kind of template is being called.
@@ -776,9 +776,7 @@ final class InferenceEngine {
                     "Cannot call strictly autoescaped template %s of kind=\"%s\" from "
                         + "incompatible context %s. Strict templates generate extra code to safely "
                         + "call templates of other content kinds, but non-strict templates do not.",
-                    templateName,
-                    NodeContentKinds.toAttributeValue(calleeStrictContentKind),
-                    startContext);
+                    templateName, calleeStrictContentKind.asAttributeValue(), startContext);
             throw SoyAutoescapeException.createWithNode(msg, callNode);
           }
           return Pair.of(templateName, startContext);

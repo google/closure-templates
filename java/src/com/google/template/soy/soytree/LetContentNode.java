@@ -19,11 +19,10 @@ package com.google.template.soy.soytree;
 import static com.google.template.soy.soytree.CommandTagAttribute.UNSUPPORTED_ATTRIBUTE_KEY_SINGLE;
 
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.MixinParentNode;
 import com.google.template.soy.basetree.Node;
-import com.google.template.soy.data.SanitizedContent.ContentKind;
-import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 import com.google.template.soy.types.SoyType;
@@ -46,7 +45,10 @@ public final class LetContentNode extends LetNode implements RenderUnitNode {
    */
   // TODO(user): Delete.
   public static LetContentNode forVariable(
-      int id, SourceLocation sourceLocation, String varName, @Nullable ContentKind contentKind) {
+      int id,
+      SourceLocation sourceLocation,
+      String varName,
+      @Nullable SanitizedContentKind contentKind) {
     LetContentNode node = new LetContentNode(id, sourceLocation, varName, contentKind);
     SoyType type =
         (contentKind != null)
@@ -60,7 +62,7 @@ public final class LetContentNode extends LetNode implements RenderUnitNode {
   private final MixinParentNode<StandaloneNode> parentMixin;
 
   /** The let node's content kind, or null if no 'kind' attribute was present. */
-  @Nullable private final ContentKind contentKind;
+  @Nullable private final SanitizedContentKind contentKind;
 
   public LetContentNode(
       int id,
@@ -84,7 +86,7 @@ public final class LetContentNode extends LetNode implements RenderUnitNode {
   }
 
   private LetContentNode(
-      int id, SourceLocation location, String varName, @Nullable ContentKind contentKind) {
+      int id, SourceLocation location, String varName, @Nullable SanitizedContentKind contentKind) {
     super(id, location, varName);
     this.parentMixin = new MixinParentNode<>(this);
     this.contentKind = contentKind;
@@ -108,7 +110,7 @@ public final class LetContentNode extends LetNode implements RenderUnitNode {
 
   @Override
   @Nullable
-  public ContentKind getContentKind() {
+  public SanitizedContentKind getContentKind() {
     return contentKind;
   }
 
@@ -116,7 +118,7 @@ public final class LetContentNode extends LetNode implements RenderUnitNode {
   public String getCommandText() {
     return (contentKind == null)
         ? "$" + getVarName()
-        : "$" + getVarName() + " kind=\"" + NodeContentKinds.toAttributeValue(contentKind) + "\"";
+        : "$" + getVarName() + " kind=\"" + contentKind.asAttributeValue() + "\"";
   }
 
   @Override

@@ -19,8 +19,8 @@ package com.google.template.soy.passes;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.TriState;
-import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.SoyErrorKind;
@@ -105,8 +105,8 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
       return;
     }
     // ContentKind is guaranteed to be non-null if AutoescapeMode is strict.
-    ContentKind contentKind = node.getContentKind();
-    if (contentKind != ContentKind.HTML && node.isStrictHtml()) {
+    SanitizedContentKind contentKind = node.getContentKind();
+    if (contentKind != SanitizedContentKind.HTML && node.isStrictHtml()) {
       errorReporter.report(node.getSourceLocation(), STRICT_HTML_WITH_NON_HTML);
       return;
     }

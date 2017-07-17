@@ -17,7 +17,7 @@
 package com.google.template.soy.passes;
 
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.data.SanitizedContent;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
@@ -116,7 +116,7 @@ final class CheckEscapingSanityFileSetPass extends CompilerFileSetPass {
         // It's possible that the callee template is in another file, and Soy is being used to
         // compile one file at a time without context (not recommended, but supported). In this case
         // callee will be null.
-        if (callee != null && callee.getContentKind() == SanitizedContent.ContentKind.TEXT) {
+        if (callee != null && callee.getContentKind() == SanitizedContentKind.TEXT) {
           errorReporter.report(
               node.getSourceLocation(), STRICT_TEXT_CALL_FROM_NONCONTEXTUAL_TEMPLATE);
         }
@@ -136,7 +136,7 @@ final class CheckEscapingSanityFileSetPass extends CompilerFileSetPass {
           // As the callee is required only to know the kind of the content and as all templates in
           // delPackage are of the same kind it is sufficient to choose only the first template.
           TemplateNode callee = divisions.get(0);
-          if (callee.getContentKind() == SanitizedContent.ContentKind.TEXT) {
+          if (callee.getContentKind() == SanitizedContentKind.TEXT) {
             errorReporter.report(
                 node.getSourceLocation(), STRICT_TEXT_CALL_FROM_NONCONTEXTUAL_TEMPLATE);
           }

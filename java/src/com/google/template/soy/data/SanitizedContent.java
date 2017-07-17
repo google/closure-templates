@@ -78,6 +78,8 @@ public abstract class SanitizedContent extends SoyData implements SoyString {
 
   /** A kind of textual content. */
   public enum ContentKind {
+    // NOTE: internally in the compiler we use a parallel enum SanitizedContentKind.  That should
+    // be preferred for all compiler usecases and this should only be used for public interfaces.
 
     /**
      * A snippet of HTML that does not start or end inside a tag, comment, entity, or DOCTYPE; and
