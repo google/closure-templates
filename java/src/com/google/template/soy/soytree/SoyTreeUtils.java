@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkState;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.basetree.AbstractNodeVisitor;
@@ -185,6 +186,54 @@ public final class SoyTreeUtils {
 
     visitor.exec(rootSoyNode);
     return matchedNodesBuilder.build();
+  }
+
+  /**
+   * Given a Soy node, returns a {@code StringBuilder} that can be used to pretty print the AST
+   * structure.
+   *
+   * <p>For example, for the following soy source <code><pre>
+   * {for i in range(5)}
+   *   {if $i % 2 == 0}
+   *     foo
+   *   {/if}
+   * {/for}
+   * </pre></code> This method prints the AST string as follow: <code><pre>
+   * FOR_NODE
+   *   IF_NODE
+   *     IF_COND_NODE
+   *       PRINT_NODE
+   * </pre></code>
+   *
+   * @param node The root of the AST.
+   * @param indent The indentation for each level.
+   * @param sb The StringBuilder instance used for recursion.
+   * @return The StringBuilder instance.
+   */
+  public static StringBuilder buildAstString(ParentSoyNode<?> node, int indent, StringBuilder sb) {
+    for (SoyNode child : node.getChildren()) {
+      sb.append(Strings.repeat("  ", indent)).append(child.getKind()).append('\n');
+      if (child instanceof ParentSoyNode) {
+        buildAstString((ParentSoyNode<?>) child, indent + 1, sb);
+      }
+    }
+    return sb;
+  }
+
+  /** Similar to {@link buildAstString}, but also print the source string for debug usages. */
+  public static StringBuilder buildAstStringWithPreview(
+      ParentSoyNode<?> node, int indent, StringBuilder sb) {
+    for (SoyNode child : node.getChildren()) {
+      sb.append(Strings.repeat("  ", indent))
+          .append(child.getKind())
+          .append(": ")
+          .append(child.toSourceString())
+          .append('\n');
+      if (child instanceof ParentSoyNode) {
+        buildAstString((ParentSoyNode<?>) child, indent + 1, sb);
+      }
+    }
+    return sb;
   }
 
   // -----------------------------------------------------------------------------------------------

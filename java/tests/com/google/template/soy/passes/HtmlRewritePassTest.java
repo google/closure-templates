@@ -19,7 +19,6 @@ package com.google.template.soy.passes;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.base.Joiner;
-import com.google.common.base.Strings;
 import com.google.common.collect.Iterables;
 import com.google.common.truth.StringSubject;
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
@@ -32,8 +31,6 @@ import com.google.template.soy.soytree.HtmlCloseTagNode;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileNode;
-import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.types.SoyTypeRegistry;
@@ -557,16 +554,7 @@ public final class HtmlRewritePassTest {
   private static StringSubject assertThatASTString(TemplateNode node) {
     SoyFileNode parent = SoyTreeUtils.cloneNode(node.getParent());
     new CombineConsecutiveRawTextNodesPass().run(parent);
-    return assertThat(buildAstString(parent.getChild(0), 0, new StringBuilder()).toString());
-  }
-
-  private static StringBuilder buildAstString(ParentSoyNode<?> node, int indent, StringBuilder sb) {
-    for (SoyNode child : node.getChildren()) {
-      sb.append(Strings.repeat("  ", indent)).append(child.getKind()).append('\n');
-      if (child instanceof ParentSoyNode) {
-        buildAstString((ParentSoyNode<?>) child, indent + 1, sb);
-      }
-    }
-    return sb;
+    return assertThat(
+        SoyTreeUtils.buildAstString(parent.getChild(0), 0, new StringBuilder()).toString());
   }
 }

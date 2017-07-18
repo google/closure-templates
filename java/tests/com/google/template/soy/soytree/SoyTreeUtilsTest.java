@@ -17,6 +17,9 @@
 package com.google.template.soy.soytree;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertSame;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.Iterables;
@@ -37,19 +40,21 @@ import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.types.SoyTypeRegistry;
 import java.io.StringReader;
 import java.util.List;
-import junit.framework.TestCase;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for SoyTreeUtils.
  *
  */
-public final class SoyTreeUtilsTest extends TestCase {
-
+@RunWith(JUnit4.class)
+public final class SoyTreeUtilsTest {
 
   // -----------------------------------------------------------------------------------------------
   // Tests for executing an ExprNode visitor on all expressions in a Soy tree.
 
-
+  @Test
   public void testVisitAllExprs() {
 
     String testFileContent =
@@ -77,12 +82,11 @@ public final class SoyTreeUtilsTest extends TestCase {
     assertEquals(10, counts.numVisitedNodes);
   }
 
-
   /**
    * Visitor that counts the number of times {@code exec()} is called and the total number of nodes
    * visited over all of those calls.
    *
-   * <p> Helper class for {@code testVisitAllExprs()}.
+   * <p>Helper class for {@code testVisitAllExprs()}.
    */
   private static class CountingVisitor extends AbstractExprNodeVisitor<Void> {
 
@@ -97,12 +101,14 @@ public final class SoyTreeUtilsTest extends TestCase {
       return counts;
     }
 
-    @Override public Void exec(ExprNode node) {
+    @Override
+    public Void exec(ExprNode node) {
       counts.numExecs++;
       return super.exec(node);
     }
 
-    @Override protected void visitExprNode(ExprNode node) {
+    @Override
+    protected void visitExprNode(ExprNode node) {
       counts.numVisitedNodes++;
       if (node instanceof ParentExprNode) {
         visitChildren((ParentExprNode) node);
@@ -167,6 +173,7 @@ public final class SoyTreeUtilsTest extends TestCase {
               "  {$local}",
               "{/template}");
 
+  @Test
   public final void testClone() throws Exception {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(SOY_SOURCE_FOR_TESTING_CLONING)
@@ -208,7 +215,7 @@ public final class SoyTreeUtilsTest extends TestCase {
     }
   }
 
-
+  @Test
   public final void testCloneWithNewIds() throws Exception {
 
     IdGenerator nodeIdGen = new IncrementingIdGenerator();
@@ -231,7 +238,7 @@ public final class SoyTreeUtilsTest extends TestCase {
     assertEquals(clone.getChild(0).toSourceString(), soyFile.toSourceString());
   }
 
-
+  @Test
   public final void testCloneListWithNewIds() throws Exception {
 
     IdGenerator nodeIdGen = new IncrementingIdGenerator();
@@ -262,20 +269,21 @@ public final class SoyTreeUtilsTest extends TestCase {
     }
   }
 
-
+  @Test
   public final void testMsgHtmlTagNode() throws Exception {
 
     IdGenerator nodeIdGen = new IncrementingIdGenerator();
     SoyFileSetNode soyTree = new SoyFileSetNode(nodeIdGen.genId(), nodeIdGen);
     ErrorReporter boom = ErrorReporter.exploding();
-    SoyFileNode soyFile = new SoyFileParser(
-        new SoyTypeRegistry(),
-        nodeIdGen,
-        new StringReader(SOY_SOURCE_FOR_TESTING_CLONING),
-        SoyFileKind.SRC,
-        "test.soy",
-        boom)
-        .parseSoyFile();
+    SoyFileNode soyFile =
+        new SoyFileParser(
+                new SoyTypeRegistry(),
+                nodeIdGen,
+                new StringReader(SOY_SOURCE_FOR_TESTING_CLONING),
+                SoyFileKind.SRC,
+                "test.soy",
+                boom)
+            .parseSoyFile();
     soyTree.addChild(soyFile);
 
     List<MsgHtmlTagNode> msgHtmlTagNodes =
@@ -291,4 +299,42 @@ public final class SoyTreeUtilsTest extends TestCase {
     }
   }
 
+  @Test
+  public final void testBuildAstString() throws Exception {
+    String testFileContent =
+        "{namespace ns}\n"
+            + "\n"
+            + "{template .t}\n"
+            + "  {@param foo: string}\n"
+            + "  {@param bar: string}\n"
+            + "  {for $i in range(5)}\n"
+            + "    {if $i % 2 == 0}\n"
+            + "      {$foo}\n"
+            + "    {else}\n"
+            + "      {$bar}\n"
+            + "    {/if}\n"
+            + "  {/for}\n"
+            + "  foo\n"
+            + "{/template}\n";
+
+    ErrorReporter boom = ErrorReporter.exploding();
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(testFileContent)
+            .errorReporter(boom)
+            .parse()
+            .fileSet();
+
+    assertThat(SoyTreeUtils.buildAstString(soyTree, 2, new StringBuilder()).toString())
+        .isEqualTo(
+            ""
+                + "    SOY_FILE_NODE\n"
+                + "      TEMPLATE_BASIC_NODE\n"
+                + "        FOR_NODE\n"
+                + "          IF_NODE\n"
+                + "            IF_COND_NODE\n"
+                + "              PRINT_NODE\n"
+                + "            IF_ELSE_NODE\n"
+                + "              PRINT_NODE\n"
+                + "        RAW_TEXT_NODE\n");
+  }
 }
