@@ -85,14 +85,6 @@ final class ResolvePackageRelativeCssNamesVisitor extends AbstractSoyNodeVisitor
       return;
     }
 
-    // Don't apply renaming to nodes with a component name.
-    if (node.getComponentNameExpr() != null) {
-      errorReporter.report(
-          node.getSourceLocation(),
-          PACKAGE_RELATIVE_CLASS_NAME_USED_WITH_COMPONENT_NAME,
-          selectorText);
-    }
-
     if (packagePrefix == null) {
       errorReporter.report(node.getSourceLocation(), NO_CSS_PACKAGE, selectorText);
     }

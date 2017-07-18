@@ -350,13 +350,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
   @Override
   protected void visitCssNode(CssNode node) {
-    ExprRootNode componentNameExpr = node.getComponentNameExpr();
-    if (componentNameExpr != null) {
-      append(currOutputBuf, eval(componentNameExpr, node), node);
-      append(currOutputBuf, "-");
-    }
-
-    // CSS statements are of the form {css selector} or {css $component, selector}.
+    // CSS statements are of the form {css selector}.
     // We only rename the selector text. The component must derive from a previous
     // css expression and thus is already renamed.
     //
@@ -373,8 +367,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     //     {css $base, hover}
     //   {/template}
 
-    String className = node.getRenamedSelectorText(cssRenamingMap);
-    append(currOutputBuf, className);
+    append(currOutputBuf, node.getRenamedSelectorText(cssRenamingMap));
   }
 
   @Override

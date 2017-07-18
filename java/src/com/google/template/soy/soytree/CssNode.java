@@ -18,17 +18,12 @@ package com.google.template.soy.soytree;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.exprtree.ExprNode;
-import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.shared.SoyCssRenamingMap;
-import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
-import javax.annotation.Nullable;
 
 /**
  * Node representing a 'css' statement.
@@ -36,14 +31,7 @@ import javax.annotation.Nullable;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public final class CssNode extends AbstractCommandNode
-    implements StandaloneNode, StatementNode, ExprHolderNode {
-
-  /**
-   * Component name expression of a CSS command. Null if CSS command has no expression. In the
-   * example <code>{css $componentName, SUFFIX}</code>, this would be $componentName.
-   */
-  @Nullable private final ExprRootNode componentNameExpr;
+public final class CssNode extends AbstractCommandNode implements StandaloneNode, StatementNode {
 
   /**
    * The selector text. Either the entire command text of the CSS command, or the suffix if you are
@@ -63,10 +51,8 @@ public final class CssNode extends AbstractCommandNode
    */
   private Pair<SoyCssRenamingMap, String> renameCache;
 
-  public CssNode(
-      int id, SourceLocation location, @Nullable ExprNode componentName, String selectorText) {
+  public CssNode(int id, SourceLocation location, String selectorText) {
     super(id, location, "css");
-    this.componentNameExpr = (componentName == null) ? null : new ExprRootNode(componentName);
     this.selectorText = checkNotNull(selectorText);
   }
 
@@ -77,8 +63,6 @@ public final class CssNode extends AbstractCommandNode
    */
   private CssNode(CssNode orig, CopyState copyState) {
     super(orig, copyState);
-    this.componentNameExpr =
-        (orig.componentNameExpr != null) ? orig.componentNameExpr.copy(copyState) : null;
     this.selectorText = orig.selectorText;
   }
 
@@ -89,21 +73,12 @@ public final class CssNode extends AbstractCommandNode
    */
   public CssNode(CssNode orig, String newSelectorText, CopyState copyState) {
     super(orig, copyState);
-    //noinspection ConstantConditions IntelliJ
-    this.componentNameExpr =
-        (orig.componentNameExpr != null) ? orig.componentNameExpr.copy(copyState) : null;
     this.selectorText = newSelectorText;
   }
 
   @Override
   public Kind getKind() {
     return Kind.CSS_NODE;
-  }
-
-  /** Returns the parsed component name expression, or null if this node has no expression. */
-  @Nullable
-  public ExprRootNode getComponentNameExpr() {
-    return componentNameExpr;
   }
 
   /** Returns the selector text from this command. */
@@ -133,16 +108,7 @@ public final class CssNode extends AbstractCommandNode
 
   @Override
   public String getCommandText() {
-    return (componentNameExpr != null)
-        ? componentNameExpr.toSourceString() + ", " + selectorText
-        : selectorText;
-  }
-
-  @Override
-  public ImmutableList<ExprRootNode> getExprList() {
-    return (componentNameExpr != null)
-        ? ImmutableList.of(componentNameExpr)
-        : ImmutableList.<ExprRootNode>of();
+    return selectorText;
   }
 
   @SuppressWarnings("unchecked")

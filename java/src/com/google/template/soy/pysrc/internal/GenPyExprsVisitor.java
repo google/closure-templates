@@ -268,15 +268,6 @@ public class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>> {
   @Override
   protected void visitCssNode(CssNode node) {
     StringBuilder sb = new StringBuilder("runtime.get_css_name(");
-
-    ExprRootNode componentNameExpr = node.getComponentNameExpr();
-    if (componentNameExpr != null) {
-      TranslateToPyExprVisitor translator =
-          new TranslateToPyExprVisitor(localVarExprs, errorReporter);
-      PyExpr basePyExpr = translator.exec(componentNameExpr);
-      sb.append(basePyExpr.getText()).append(", ");
-    }
-
     sb.append("'").append(node.getSelectorText()).append("')");
     pyExprs.add(new PyExpr(sb.toString(), Integer.MAX_VALUE));
   }

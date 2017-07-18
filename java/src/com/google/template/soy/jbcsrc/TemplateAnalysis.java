@@ -432,9 +432,7 @@ final class TemplateAnalysis {
 
     @Override
     protected void visitCssNode(CssNode node) {
-      if (node.getComponentNameExpr() != null) {
-        evalInline(node.getComponentNameExpr());
-      }
+      // do nothing, css nodes only contain constants.
     }
 
     @Override

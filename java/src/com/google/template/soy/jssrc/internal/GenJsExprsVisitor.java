@@ -265,26 +265,15 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<CodeChunk.Wit
    * Example:
    * <pre>
    *   {css selected-option}
-   *   {css $foo, bar}
    * </pre>
    * might generate
    * <pre>
    *   goog.getCssName('selected-option')
-   *   goog.getCssName(opt_data.foo, 'bar')
    * </pre>
    * </p>
    */
   @Override protected void visitCssNode(CssNode node) {
-    List<CodeChunk.WithValue> args = new ArrayList<>();
-    ExprRootNode componentName = node.getComponentNameExpr();
-    if (componentName != null) {
-      args.add(
-          jsExprTranslator.translateToCodeChunk(componentName, translationContext, errorReporter));
-    }
-    args.add(stringLiteral(node.getSelectorText()));
-
-
-    chunks.add(GOOG_GET_CSS_NAME.call(args));
+    chunks.add(GOOG_GET_CSS_NAME.call(stringLiteral(node.getSelectorText())));
   }
 
   /**

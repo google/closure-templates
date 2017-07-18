@@ -2313,7 +2313,7 @@ private CssNode CssStmt() :
     tagEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END);
   }
 
-  { return new CssNode(nodeIdGen.genId(), createSrcLoc(tagBegin, tagEnd), null, selector.image); }
+  { return new CssNode(nodeIdGen.genId(), createSrcLoc(tagBegin, tagEnd), selector.image); }
 }
 
 

@@ -992,7 +992,7 @@ public final class GenerateParseInfoVisitor
     public SortedMap<String, CssTagsPrefixPresence> exec(SoyNode node) {
       List<CssNode> cssNodes = SoyTreeUtils.getAllNodesOfType(node, CssNode.class);
       for (CssNode css : cssNodes) {
-        collectSelector(css.getSelectorText(), css.getComponentNameExpr() != null);
+        collectSelector(css.getSelectorText(), /* hasSelector= */ false);
       }
 
       List<FunctionNode> fnNodes = SoyTreeUtils.getAllNodesOfType(node, FunctionNode.class);

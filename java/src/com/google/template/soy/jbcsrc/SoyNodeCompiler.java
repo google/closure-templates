@@ -645,18 +645,6 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         parameterLookup
             .getRenderContext()
             .invoke(MethodRef.RENDER_CONTEXT_RENAME_CSS_SELECTOR, constant(node.getSelectorText()));
-
-    if (node.getComponentNameExpr() != null) {
-      Label reattachPoint = new Label();
-      SoyExpression compiledComponent =
-          exprCompiler.compile(node.getComponentNameExpr(), reattachPoint).coerceToString();
-      return appendableExpression
-          .appendString(compiledComponent)
-          .appendChar(constant('-'))
-          .appendString(renamedSelector)
-          .labelStart(reattachPoint)
-          .toStatement();
-    }
     return appendableExpression.appendString(renamedSelector).toStatement();
   }
 
