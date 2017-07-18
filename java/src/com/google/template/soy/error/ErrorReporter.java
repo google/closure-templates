@@ -32,6 +32,14 @@ public abstract class ErrorReporter {
    * given {@code sourceLocation}.
    */
   public abstract void report(SourceLocation sourceLocation, SoyErrorKind error, Object... args);
+  /**
+   * Reports a warning.
+   *
+   * <p>The formatting is identical to {@link #report}, but it will not cause the build to fail.
+   * This should be used sparingly, the best usecase is to add warnings as part of a migration to
+   * stop temporary backsliding.
+   */
+  public abstract void warn(SourceLocation sourceLocation, SoyErrorKind error, Object... args);
 
   /**
    * Returns an opaque token (the checkpoint) that callers can later pass back into {@link
@@ -72,6 +80,9 @@ public abstract class ErrorReporter {
 
   /** Returns all the errors reported so far. */
   public abstract ImmutableList<SoyError> getErrors();
+
+  /** Returns all the warnings reported so far. */
+  public abstract ImmutableList<SoyError> getWarnings();
 
   /** Opaque token, used by {@link #checkpoint} and {@link #errorsSince}. */
   public static final class Checkpoint {

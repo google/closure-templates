@@ -26,8 +26,12 @@ import com.google.template.soy.base.SourceLocation;
 public abstract class SoyError implements Comparable<SoyError> {
 
   static SoyError create(
-      SourceLocation location, SoyErrorKind kind, String message, Optional<String> snippet) {
-    return new AutoValue_SoyError(location, kind, message, snippet);
+      SourceLocation location,
+      SoyErrorKind kind,
+      String message,
+      Optional<String> snippet,
+      boolean isWarning) {
+    return new AutoValue_SoyError(location, kind, message, snippet, isWarning);
   }
 
   SoyError() {} // package private to prevent external subclassing
@@ -48,13 +52,18 @@ public abstract class SoyError implements Comparable<SoyError> {
   // Should be accessed via toString()
   abstract Optional<String> snippet();
 
+  /** Whether or not this error should be considered a warning (i.e., don't fail the build). */
+  public abstract boolean isWarning();
+
   /** The full formatted error. */
   @Override
   public String toString() {
     return location().getFilePath()
         + ':'
         + location().getBeginLine()
-        + ": error: "
+        + ": "
+        + (isWarning() ? "warning" : "error")
+        + ": "
         + message()
         + "\n"
         + snippet().or("");

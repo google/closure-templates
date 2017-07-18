@@ -169,7 +169,7 @@ abstract class AbstractSoyCompiler {
   @CheckReturnValue
   int run(final String[] args, PrintStream err) {
     try {
-      doMain(args);
+      doMain(args, err);
       return 0;
     } catch (SoyCompilationException compilationException) {
       err.println(compilationException.getMessage());
@@ -189,7 +189,7 @@ abstract class AbstractSoyCompiler {
     }
   }
 
-  private void doMain(String[] args) throws IOException {
+  private void doMain(String[] args, PrintStream err) throws IOException {
     SoyCmdLineParser cmdLineParser = new SoyCmdLineParser(this, pluginClassLoader);
     try {
       cmdLineParser.parseArgument(args);
@@ -219,6 +219,8 @@ abstract class AbstractSoyCompiler {
     // TODO(lukes): Stage.PRODUCTION?
     Injector injector = Guice.createInjector(modules);
     SoyFileSet.Builder sfsBuilder = injector.getInstance(SoyFileSet.Builder.class);
+    sfsBuilder.setWarningSink(err);
+
     if (!protoFileDescriptors.isEmpty()) {
       sfsBuilder.addProtoDescriptorsFromFiles(protoFileDescriptors);
     }

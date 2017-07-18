@@ -16,6 +16,8 @@
 
 package com.google.template.soy;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
@@ -23,6 +25,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.io.ByteSink;
 import com.google.common.io.CharSource;
@@ -87,6 +90,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Logger;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -98,6 +102,7 @@ import javax.annotation.Nullable;
  *
  */
 public final class SoyFileSet {
+  private static final Logger logger = Logger.getLogger(SoyFileSet.class.getName());
 
   /**
    * Creates a builder with the standard set of Soy directives, functions, and types.
@@ -169,6 +174,8 @@ public final class SoyFileSet {
     /** The SoyProtoTypeProvider builder that will be built for local type registry. */
     private final SoyProtoTypeProvider.Builder protoTypeProviderBuilder;
 
+    @Nullable private Appendable warningSink;
+
     private ImmutableList<CharSource> conformanceConfigs = ImmutableList.of();
 
     Builder(CoreDependencies coreDependencies) {
@@ -234,7 +241,8 @@ public final class SoyFileSet {
           getGeneralOptions(),
           cache,
           coreDependencies.msgBundleHandlerProvider,
-          conformanceConfigs);
+          conformanceConfigs,
+          warningSink);
     }
 
     /**
@@ -574,6 +582,17 @@ public final class SoyFileSet {
       filesBuilder.put(supplier.getFilePath(), supplier);
       return this;
     }
+
+    /**
+     * Configures a place to write warnings for successful compilations.
+     *
+     * <p>For compilation failures warnings are reported along with the errors, by throwing an
+     * exception. The default is to report warnings to the logger for SoyFileSet.
+     */
+    Builder setWarningSink(Appendable warningSink) {
+      this.warningSink = checkNotNull(warningSink);
+      return this;
+    }
   }
 
   /** Provider for getting an instance of SoyMsgBundleHandler. */
@@ -605,6 +624,8 @@ public final class SoyFileSet {
   /** For reporting errors during parsing. */
   private ErrorReporterImpl errorReporter;
 
+  @Nullable private final Appendable warningSink;
+
   /**
    * @param baseTofuFactory Factory for creating an instance of BaseTofu.
    * @param jsSrcMainProvider Provider for getting an instance of JsSrcMain.
@@ -627,7 +648,8 @@ public final class SoyFileSet {
       SoyGeneralOptions generalOptions,
       @Nullable SoyAstCache cache,
       Provider<SoyMsgBundleHandler> msgBundleHandlerProvider,
-      ImmutableList<CharSource> conformanceConfigs) {
+      ImmutableList<CharSource> conformanceConfigs,
+      @Nullable Appendable warningSink) {
     // Default value is optionally replaced using method injection.
     this.soyTemplatesFactory = soyTemplatesFactory;
     this.baseTofuFactory = baseTofuFactory;
@@ -645,6 +667,7 @@ public final class SoyFileSet {
     this.printDirectives = printDirectives;
     this.msgBundleHandlerProvider = msgBundleHandlerProvider;
     this.conformanceConfigs = conformanceConfigs;
+    this.warningSink = warningSink;
   }
 
   /** Returns the list of suppliers for the input Soy files. For testing use only! */
@@ -692,6 +715,7 @@ public final class SoyFileSet {
     ImmutableMap<String, String> parseInfo =
         new GenerateParseInfoVisitor(javaPackage, javaClassNameSource, registry).exec(soyTree);
     throwIfErrorsPresent();
+    reportWarnings();
     return parseInfo;
   }
 
@@ -719,6 +743,7 @@ public final class SoyFileSet {
     throwIfErrorsPresent();
     SoyMsgBundle bundle = new ExtractMsgsVisitor().exec(soyTree);
     throwIfErrorsPresent();
+    reportWarnings();
     return bundle;
   }
 
@@ -804,7 +829,10 @@ public final class SoyFileSet {
     resetErrorReporter();
     ServerCompilationPrimitives primitives = compileForServerRendering();
     throwIfErrorsPresent();
-    return doCompileToTofu(primitives);
+    SoyTofu tofu = doCompileToTofu(primitives);
+
+    reportWarnings();
+    return tofu;
   }
 
   /** Helper method to compile SoyTofu from {@link ServerCompilationPrimitives} */
@@ -831,7 +859,10 @@ public final class SoyFileSet {
     disallowExternalCalls();
     ServerCompilationPrimitives primitives = compileForServerRendering();
     throwIfErrorsPresent();
-    return doCompileSoySauce(primitives);
+    SoySauce sauce = doCompileSoySauce(primitives);
+
+    reportWarnings();
+    return sauce;
   }
 
   /**
@@ -849,6 +880,7 @@ public final class SoyFileSet {
       BytecodeCompiler.writeSrcJar(primitives.registry, soyFileSuppliers, srcJarTarget.get());
     }
     throwIfErrorsPresent();
+    reportWarnings();
   }
 
   /** Helper method to compile SoySauce from {@link ServerCompilationPrimitives} */
@@ -970,6 +1002,7 @@ public final class SoyFileSet {
                 msgBundle,
                 errorReporter);
     throwIfErrorsPresent();
+    reportWarnings();
     return generatedSrcs;
   }
 
@@ -1055,6 +1088,7 @@ public final class SoyFileSet {
       }
     }
     throwIfErrorsPresent();
+    reportWarnings();
   }
 
   /**
@@ -1078,6 +1112,7 @@ public final class SoyFileSet {
                 jsSrcOptions,
                 errorReporter);
     throwIfErrorsPresent();
+    reportWarnings();
     return generatedSrcs;
   }
 
@@ -1107,6 +1142,7 @@ public final class SoyFileSet {
             errorReporter);
 
     throwIfErrorsPresent();
+    reportWarnings();
   }
 
   /** Prepares the parsed result for use in generating Incremental DOM source code. */
@@ -1163,6 +1199,7 @@ public final class SoyFileSet {
             errorReporter);
 
     throwIfErrorsPresent();
+    reportWarnings();
   }
 
   // Parse the current file set with the given default syntax version.
@@ -1191,22 +1228,45 @@ public final class SoyFileSet {
    * This method resets the error reporter field in preparation to a new compiler invocation.
    *
    * <p>This method should be called at the beginning of every entry point into SoyFileSet.
-   *
-   * <p>TODO(lukes): instead of resetting, consider making it an error to call a compiler method on
-   * the same SoyFileSet object more than once.
    */
   private void resetErrorReporter() {
-    // TODO(lukes): consider moving ErrorReporterImpl to the error package and making this a static
-    // factory method there somewhere
     errorReporter = ErrorReporterImpl.create(soyFileSuppliers);
   }
 
   private void throwIfErrorsPresent() {
     if (errorReporter.hasErrors()) {
-      Iterable<SoyError> errors = errorReporter.getErrors();
+      // if we are reporting errors we should report warnings at the same time.
+      Iterable<SoyError> errors =
+          Iterables.concat(errorReporter.getErrors(), errorReporter.getWarnings());
       // clear the field to ensure that error reporters can't leak between compilations
       errorReporter = null;
       throw new SoyCompilationException(errors);
+    }
+  }
+
+  /**
+   * Reports warnings ot the user configured warning sink. Should be called at the end of successful
+   * compiles.
+   */
+  private void reportWarnings() {
+    ImmutableList<SoyError> warnings = errorReporter.getWarnings();
+    if (warnings.isEmpty()) {
+      return;
+    }
+    StringBuilder formattedWarnings = new StringBuilder();
+    formattedWarnings.append("Warnings during Soy Compilation\n");
+    for (SoyError error : errorReporter.getWarnings()) {
+      formattedWarnings.append(error.toString()).append('\n');
+    }
+    if (warningSink != null) {
+      try {
+        warningSink.append(formattedWarnings);
+      } catch (IOException ioe) {
+        System.err.println("error while printing warnings");
+        ioe.printStackTrace();
+      }
+    } else {
+      logger.warning(formattedWarnings.toString());
     }
   }
 }

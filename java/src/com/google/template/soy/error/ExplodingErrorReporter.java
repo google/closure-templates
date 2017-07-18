@@ -47,7 +47,14 @@ public final class ExplodingErrorReporter extends ErrorReporter {
   public void report(SourceLocation sourceLocation, SoyErrorKind error, Object... args) {
     checkNotNull(sourceLocation);
     throw new AssertionError(
-        String.format("Unexpected SoyError: %s at %s", error.format(args), sourceLocation));
+        String.format("Unexpected error: %s at %s", error.format(args), sourceLocation));
+  }
+
+  @Override
+  public void warn(SourceLocation sourceLocation, SoyErrorKind error, Object... args) {
+    checkNotNull(sourceLocation);
+    throw new AssertionError(
+        String.format("Unexpected warning: %s at %s", error.format(args), sourceLocation));
   }
 
   @Override
@@ -57,6 +64,11 @@ public final class ExplodingErrorReporter extends ErrorReporter {
 
   @Override
   public ImmutableList<SoyError> getErrors() {
+    return ImmutableList.of();
+  }
+
+  @Override
+  public ImmutableList<SoyError> getWarnings() {
     return ImmutableList.of();
   }
 }

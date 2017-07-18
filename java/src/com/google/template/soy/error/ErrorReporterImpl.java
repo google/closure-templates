@@ -47,6 +47,7 @@ public final class ErrorReporterImpl extends ErrorReporter {
   }
 
   private final List<SoyError> errors = new ArrayList<>();
+  private final List<SoyError> warnings = new ArrayList<>();
   private final ImmutableMap<String, SoyFileSupplier> filePathsToSuppliers;
 
   private ErrorReporterImpl(ImmutableMap<String, SoyFileSupplier> filePathsToSuppliers) {
@@ -56,12 +57,25 @@ public final class ErrorReporterImpl extends ErrorReporter {
   @Override
   public void report(SourceLocation location, SoyErrorKind kind, Object... args) {
     String message = kind.format(args);
-    errors.add(SoyError.create(location, kind, message, getSnippet(location)));
+    errors.add(
+        SoyError.create(location, kind, message, getSnippet(location), /* isWarning= */ false));
+  }
+
+  @Override
+  public void warn(SourceLocation location, SoyErrorKind kind, Object... args) {
+    String message = kind.format(args);
+    warnings.add(
+        SoyError.create(location, kind, message, getSnippet(location), /* isWarning= */ true));
   }
 
   @Override
   public ImmutableList<SoyError> getErrors() {
     return ImmutableList.copyOf(errors);
+  }
+
+  @Override
+  public ImmutableList<SoyError> getWarnings() {
+    return ImmutableList.copyOf(warnings);
   }
 
   @Override
