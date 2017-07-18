@@ -29,7 +29,7 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.SoyModule;
-import com.google.template.soy.error.ExplodingErrorReporter;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
@@ -118,7 +118,7 @@ public final class SoyExprForPySubject extends Subject<SoyExprForPySubject, Stri
     GenPyExprsVisitor genPyExprsVisitor =
         injector
             .getInstance(GenPyExprsVisitorFactory.class)
-            .create(localVarExprs, ExplodingErrorReporter.get());
+            .create(localVarExprs, ErrorReporter.exploding());
     List<PyExpr> actualPyExprs = genPyExprsVisitor.exec(node);
 
     assertThat(actualPyExprs).hasSize(expectedPyExprs.size());
@@ -166,7 +166,7 @@ public final class SoyExprForPySubject extends Subject<SoyExprForPySubject, Stri
     ExprNode exprNode = node.getExpr();
 
     PyExpr actualPyExpr =
-        new TranslateToPyExprVisitor(localVarExprs, ExplodingErrorReporter.get()).exec(exprNode);
+        new TranslateToPyExprVisitor(localVarExprs, ErrorReporter.exploding()).exec(exprNode);
     assertThat(actualPyExpr.getText()).isEqualTo(expectedPyExpr.getText());
     assertThat(actualPyExpr.getPrecedence()).isEqualTo(expectedPyExpr.getPrecedence());
 

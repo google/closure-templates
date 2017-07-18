@@ -47,7 +47,7 @@ import com.google.template.soy.data.internal.BasicParamStore;
 import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.StringData;
-import com.google.template.soy.error.ExplodingErrorReporter;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jbcsrc.TemplateTester.CompiledTemplateSubject;
 import com.google.template.soy.jbcsrc.api.AdvisingStringBuilder;
 import com.google.template.soy.jbcsrc.api.RenderResult;
@@ -138,9 +138,9 @@ public class BytecodeCompilerTest {
                 soyFileContent1, soyFileContent2, soyFileContent3, soyFileContent4)
             .parse()
             .fileSet();
-    TemplateRegistry templateRegistry = new TemplateRegistry(soyTree, ExplodingErrorReporter.get());
+    TemplateRegistry templateRegistry = new TemplateRegistry(soyTree, ErrorReporter.exploding());
     CompiledTemplates templates =
-        BytecodeCompiler.compile(templateRegistry, false, ExplodingErrorReporter.get()).get();
+        BytecodeCompiler.compile(templateRegistry, false, ErrorReporter.exploding()).get();
     CompiledTemplate.Factory factory = templates.getTemplateFactory("ns1.callerTemplate");
     Predicate<String> activePackages = Predicates.alwaysFalse();
 
@@ -180,9 +180,9 @@ public class BytecodeCompilerTest {
             .addHtmlCommentsForDebug(true)
             .parse()
             .fileSet();
-    TemplateRegistry templateRegistry = new TemplateRegistry(soyTree, ExplodingErrorReporter.get());
+    TemplateRegistry templateRegistry = new TemplateRegistry(soyTree, ErrorReporter.exploding());
     CompiledTemplates templates =
-        BytecodeCompiler.compile(templateRegistry, false, ExplodingErrorReporter.get()).get();
+        BytecodeCompiler.compile(templateRegistry, false, ErrorReporter.exploding()).get();
 
     // HTML templates
     CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.html");
@@ -900,9 +900,9 @@ public class BytecodeCompilerTest {
     CallDelegateNode cdn =
         SoyTreeUtils.getAllNodesOfType(soyTree.getChild(0), CallDelegateNode.class).get(0);
     cdn.setEscapingDirectiveNames(ImmutableList.of("|escapeHtml"));
-    TemplateRegistry templateRegistry = new TemplateRegistry(soyTree, ExplodingErrorReporter.get());
+    TemplateRegistry templateRegistry = new TemplateRegistry(soyTree, ErrorReporter.exploding());
     CompiledTemplates templates =
-        BytecodeCompiler.compile(templateRegistry, false, ExplodingErrorReporter.get()).get();
+        BytecodeCompiler.compile(templateRegistry, false, ErrorReporter.exploding()).get();
     CompiledTemplate.Factory caller = templates.getTemplateFactory("ns.callerTemplate");
     try {
       renderWithContext(caller, getDefaultContext(templates));
@@ -1048,9 +1048,9 @@ public class BytecodeCompilerTest {
   private CompiledTemplates compileFiles(String... soyFileContents) {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(soyFileContents).parse().fileSet();
-    TemplateRegistry templateRegistry = new TemplateRegistry(soyTree, ExplodingErrorReporter.get());
+    TemplateRegistry templateRegistry = new TemplateRegistry(soyTree, ErrorReporter.exploding());
     CompiledTemplates templates =
-        BytecodeCompiler.compile(templateRegistry, false, ExplodingErrorReporter.get()).get();
+        BytecodeCompiler.compile(templateRegistry, false, ErrorReporter.exploding()).get();
     return templates;
   }
 }

@@ -22,7 +22,6 @@ import com.google.common.base.Joiner;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -35,7 +34,7 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public final class AbstractSoyNodeVisitorTest {
 
-  private static final ErrorReporter FAIL = ExplodingErrorReporter.get();
+  private static final ErrorReporter FAIL = ErrorReporter.exploding();
 
   @Test
   public void testUsingIncompleteOutputVisitor() throws SoySyntaxException {

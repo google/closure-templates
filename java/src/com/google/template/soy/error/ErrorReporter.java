@@ -17,8 +17,11 @@
 package com.google.template.soy.error;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.errorprone.annotations.ForOverride;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.SoyFileSupplier;
+import java.util.Map;
 
 /**
  * Collects errors during parsing.
@@ -26,6 +29,25 @@ import com.google.template.soy.base.SourceLocation;
  * @author brndn@google.com (Brendan Linn)
  */
 public abstract class ErrorReporter {
+
+  /** Creates a new ErrorReporter which can create source snippets from the given files. */
+  public static ErrorReporter create(Map<String, SoyFileSupplier> filePathsToSuppliers) {
+    return new ErrorReporterImpl(ImmutableMap.copyOf(filePathsToSuppliers));
+  }
+
+  /** Creates a new ErrorReporter suitable for asserting on messages in tests. */
+  public static ErrorReporter createForTest() {
+    return new ErrorReporterImpl(ImmutableMap.<String, SoyFileSupplier>of());
+  }
+
+  /**
+   * Returns an ErrorReporter that throws an assertion error on every error and warning.
+   *
+   * <p>Useful for tests.
+   */
+  public static ErrorReporter exploding() {
+    return ExplodingErrorReporter.get();
+  }
 
   /**
    * Reports the given {@code error}, formatted according to {@code args} and associated with the

@@ -24,7 +24,6 @@ import static com.google.template.soy.soytree.TemplateSubject.assertThatTemplate
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.exprtree.VarRefNode;
 import java.util.List;
 import org.junit.Test;
@@ -38,7 +37,7 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public final class PrintNodeTest {
 
-  private static final ErrorReporter FAIL = ExplodingErrorReporter.get();
+  private static final ErrorReporter FAIL = ErrorReporter.exploding();
   private static final SourceLocation X = SourceLocation.UNKNOWN;
 
   @Test

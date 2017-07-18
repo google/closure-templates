@@ -22,7 +22,7 @@ import com.google.common.base.Joiner;
 import com.google.common.truth.StringSubject;
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
 import com.google.template.soy.base.internal.SoyFileKind;
-import com.google.template.soy.error.ExplodingErrorReporter;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
@@ -115,9 +115,9 @@ public final class DesugarHtmlNodesPassTest {
                 new StringReader(soyFile),
                 SoyFileKind.SRC,
                 "test.soy",
-                ExplodingErrorReporter.get())
+                ErrorReporter.exploding())
             .parseSoyFile();
-    new HtmlRewritePass(ExplodingErrorReporter.get()).run(node, nodeIdGen);
+    new HtmlRewritePass(ErrorReporter.exploding()).run(node, nodeIdGen);
     new DesugarHtmlNodesPass().run(node, nodeIdGen);
     assertThat(SoyTreeUtils.hasHtmlNodes(node)).isFalse();
     StringBuilder sb = new StringBuilder();

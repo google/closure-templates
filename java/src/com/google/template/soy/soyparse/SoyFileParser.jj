@@ -58,7 +58,6 @@ import com.google.template.soy.base.internal.LegacyInternalSyntaxException;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.exprtree.BooleanNode;
@@ -463,7 +462,7 @@ public class SoyFileParser {
 
   /** Attempts to parse the given input as a Soy expression. */
   public static ExprNode parseExprOrDie(String exprText) {
-    return parseExpression(exprText, ExplodingErrorReporter.get());
+    return parseExpression(exprText, ErrorReporter.exploding());
   }
 
   /** Attempts to parse the given input as a Soy expression. Returns null if parsing fails. */

@@ -42,7 +42,6 @@ import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.internal.MsgUtils;
@@ -150,7 +149,7 @@ public class RenderVisitorTest {
         }
       };
 
-  private static final ErrorReporter FAIL = ExplodingErrorReporter.get();
+  private static final ErrorReporter FAIL = ErrorReporter.exploding();
 
   private SoyIdRenamingMap xidRenamingMap = null;
   private SoyCssRenamingMap cssRenamingMap = null;
@@ -270,7 +269,7 @@ public class RenderVisitorTest {
   private String renderWithDataAndMsgBundle(
       String templateBody, SoyRecord data, @Nullable SoyMsgBundle msgBundle) throws Exception {
 
-    ErrorReporter boom = ExplodingErrorReporter.get();
+    ErrorReporter boom = ErrorReporter.exploding();
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forTemplateContents(templateBody)
             .errorReporter(boom)

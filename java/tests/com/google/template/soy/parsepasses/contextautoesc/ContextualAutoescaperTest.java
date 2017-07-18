@@ -27,7 +27,6 @@ import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContentOperator;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ErrorReporterImpl;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -2777,7 +2776,7 @@ public final class ContextualAutoescaperTest {
   }
 
   public SoyFileNode rewrite(String... inputs) {
-    ErrorReporter reporter = ErrorReporterImpl.createForTest();
+    ErrorReporter reporter = ErrorReporter.createForTest();
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(inputs)
             .errorReporter(reporter)

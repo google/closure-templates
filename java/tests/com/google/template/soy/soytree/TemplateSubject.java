@@ -28,7 +28,7 @@ import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
-import com.google.template.soy.error.ErrorReporterImpl;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyError;
 import com.google.template.soy.error.SoyErrorKind;
 import javax.annotation.Nullable;
@@ -60,7 +60,7 @@ public final class TemplateSubject extends Subject<TemplateSubject, String> {
   }
 
   public TemplateSubject causesError(SoyErrorKind error) {
-    ErrorReporterImpl errorReporter = doParse();
+    ErrorReporter errorReporter = doParse();
     SoyError report = getFirstReport(error, errorReporter);
     if (report == null) {
       failWithRawMessage(
@@ -72,7 +72,7 @@ public final class TemplateSubject extends Subject<TemplateSubject, String> {
   }
 
   public TemplateSubject causesError(String message) {
-    ErrorReporterImpl errorReporter = doParse();
+    ErrorReporter errorReporter = doParse();
     SoyError report = getFirstReport(message, errorReporter);
     if (report == null) {
       failWithRawMessage(
@@ -105,16 +105,16 @@ public final class TemplateSubject extends Subject<TemplateSubject, String> {
   }
 
   public void isWellFormed() {
-    ErrorReporterImpl errorReporter = doParse();
+    ErrorReporter errorReporter = doParse();
     assertThat(errorReporter.getErrors()).named("the template parsed successfully").isEmpty();
   }
 
   public void isNotWellFormed() {
-    ErrorReporterImpl errorReporter = doParse();
+    ErrorReporter errorReporter = doParse();
     Truth.assertThat(errorReporter.hasErrors()).isTrue();
   }
 
-  private ErrorReporterImpl doParse() {
+  private ErrorReporter doParse() {
     SoyFileSupplier sourceFile =
         SoyFileSupplier.Factory.create(
             "{namespace test}\n"
@@ -124,8 +124,8 @@ public final class TemplateSubject extends Subject<TemplateSubject, String> {
                 + "{/template}",
             SoyFileKind.SRC,
             "example.soy");
-    ErrorReporterImpl errorReporter =
-        ErrorReporterImpl.create(ImmutableMap.of(sourceFile.getFilePath(), sourceFile));
+    ErrorReporter errorReporter =
+        ErrorReporter.create(ImmutableMap.of(sourceFile.getFilePath(), sourceFile));
     SoyFileSetNode fileSet =
         SoyFileSetParserBuilder.forSuppliers(sourceFile)
             .errorReporter(errorReporter)
@@ -136,7 +136,7 @@ public final class TemplateSubject extends Subject<TemplateSubject, String> {
   }
 
   @Nullable
-  private static SoyError getFirstReport(SoyErrorKind errorKind, ErrorReporterImpl reporter) {
+  private static SoyError getFirstReport(SoyErrorKind errorKind, ErrorReporter reporter) {
     for (SoyError error : reporter.getErrors()) {
       if (error.errorKind().equals(errorKind)) {
         return error;
@@ -146,7 +146,7 @@ public final class TemplateSubject extends Subject<TemplateSubject, String> {
   }
 
   @Nullable
-  private static SoyError getFirstReport(String message, ErrorReporterImpl reporter) {
+  private static SoyError getFirstReport(String message, ErrorReporter reporter) {
     for (SoyError error : reporter.getErrors()) {
       if (error.message().equals(message)) {
         return error;

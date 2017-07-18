@@ -22,8 +22,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ErrorReporterImpl;
-import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.restricted.SoyMsg;
 import com.google.template.soy.msgs.restricted.SoyMsgBundleImpl;
@@ -51,7 +49,7 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public final class InsertMsgsVisitorTest {
 
-  private static final ErrorReporter FAIL = ExplodingErrorReporter.get();
+  private static final ErrorReporter FAIL = ErrorReporter.exploding();
 
   // -----------------------------------------------------------------------------------------------
   // Test basic messages.
@@ -203,7 +201,7 @@ public final class InsertMsgsVisitorTest {
     assertThat(template.numChildren()).isEqualTo(2);
 
     // Execute the visitor.
-    ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.createForTest();
     new InsertMsgsVisitor(null /* msgBundle */, errorReporter).exec(template);
 
     assertThat(errorReporter.getErrors()).hasSize(2);

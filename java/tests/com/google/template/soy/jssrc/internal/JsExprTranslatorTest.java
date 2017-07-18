@@ -25,7 +25,7 @@ import com.google.inject.Key;
 import com.google.template.soy.SoyModule;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.UniqueNameGenerator;
-import com.google.template.soy.error.ExplodingErrorReporter;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.NullNode;
@@ -78,7 +78,7 @@ public final class JsExprTranslatorTest {
                           SoyToJsVariableMappings.forNewTemplate(),
                           CodeChunk.Generator.create(nameGenerator),
                           nameGenerator),
-                      ExplodingErrorReporter.get())
+                      ErrorReporter.exploding())
                   .getCode())
           .isEqualTo("3 * (userFn(5));");
 
@@ -93,7 +93,7 @@ public final class JsExprTranslatorTest {
                           SoyToJsVariableMappings.forNewTemplate(),
                           CodeChunk.Generator.create(nameGenerator),
                           nameGenerator),
-                      ExplodingErrorReporter.get())
+                      ErrorReporter.exploding())
                   .getCode())
           .isEqualTo("3 * (Math.floor(Math.random() * 4));");
     }

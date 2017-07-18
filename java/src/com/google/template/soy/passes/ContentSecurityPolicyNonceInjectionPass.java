@@ -19,7 +19,6 @@ package com.google.template.soy.passes;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.HtmlAttributeNode;
@@ -152,7 +151,7 @@ public final class ContentSecurityPolicyNonceInjectionPass extends CompilerFileP
             true, // Implicit.  {$ij.csp_nonce} not {print $ij.csp_nonce}
             referenceCspNonce(insertionLocation),
             null, // phname
-            ExplodingErrorReporter.get());
+            ErrorReporter.exploding());
     attributeValue.addChild(printNode);
     return ifNode;
   }

@@ -22,7 +22,6 @@ import com.google.common.base.Function;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -73,7 +72,7 @@ public final class FindCalleesNotInFileVisitorTest {
             + // not defined in this file
             "{/deltemplate}\n";
 
-    ErrorReporter boom = ExplodingErrorReporter.get();
+    ErrorReporter boom = ErrorReporter.exploding();
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(testFileContent)
             .errorReporter(boom)

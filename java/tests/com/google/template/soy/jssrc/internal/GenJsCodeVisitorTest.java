@@ -32,8 +32,6 @@ import com.google.template.soy.SoyModule;
 import com.google.template.soy.base.internal.UniqueNameGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
-import com.google.template.soy.error.ErrorReporterImpl;
-import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.internal.GenJsExprsVisitor.GenJsExprsVisitorFactory;
@@ -161,7 +159,7 @@ public final class GenJsCodeVisitorTest {
 
     List<String> jsFilesContents =
         genJsCodeVisitor.gen(
-            parseResult.fileSet(), parseResult.registry(), ExplodingErrorReporter.get());
+            parseResult.fileSet(), parseResult.registry(), ErrorReporter.exploding());
     assertThat(jsFilesContents.get(0)).startsWith(expectedJsFileContentStart);
 
     // ------ Using Closure, provide/require Soy namespaces ------
@@ -182,7 +180,7 @@ public final class GenJsCodeVisitorTest {
     jsSrcOptions.setShouldProvideRequireSoyNamespaces(true);
     jsFilesContents =
         genJsCodeVisitor.gen(
-            parseResult.fileSet(), parseResult.registry(), ExplodingErrorReporter.get());
+            parseResult.fileSet(), parseResult.registry(), ErrorReporter.exploding());
     assertThat(jsFilesContents.get(0)).startsWith(expectedJsFileContentStart);
 
     // ------ Using Closure, provide/require JS functions ------
@@ -204,7 +202,7 @@ public final class GenJsCodeVisitorTest {
     jsSrcOptions.setShouldProvideRequireJsFunctions(true);
     jsFilesContents =
         genJsCodeVisitor.gen(
-            parseResult.fileSet(), parseResult.registry(), ExplodingErrorReporter.get());
+            parseResult.fileSet(), parseResult.registry(), ErrorReporter.exploding());
     assertThat(jsFilesContents.get(0)).startsWith(expectedJsFileContentStart);
 
     // ------ Using Closure, provide both Soy namespaces and JS functions ------
@@ -228,7 +226,7 @@ public final class GenJsCodeVisitorTest {
     jsSrcOptions.setShouldProvideBothSoyNamespacesAndJsFunctions(true);
     jsFilesContents =
         genJsCodeVisitor.gen(
-            parseResult.fileSet(), parseResult.registry(), ExplodingErrorReporter.get());
+            parseResult.fileSet(), parseResult.registry(), ErrorReporter.exploding());
     assertThat(jsFilesContents.get(0)).startsWith(expectedJsFileContentStart);
   }
 
@@ -266,7 +264,7 @@ public final class GenJsCodeVisitorTest {
     jsSrcOptions.setShouldProvideRequireSoyNamespaces(true);
     List<String> jsFilesContents =
         genJsCodeVisitor.gen(
-            parseResult.fileSet(), parseResult.registry(), ExplodingErrorReporter.get());
+            parseResult.fileSet(), parseResult.registry(), ErrorReporter.exploding());
     assertThat(jsFilesContents.get(0)).startsWith(expectedJsFileContentStart);
   }
 
@@ -306,7 +304,7 @@ public final class GenJsCodeVisitorTest {
     jsSrcOptions.setShouldProvideRequireSoyNamespaces(true);
     List<String> jsFilesContents =
         genJsCodeVisitor.gen(
-            parseResult.fileSet(), parseResult.registry(), ExplodingErrorReporter.get());
+            parseResult.fileSet(), parseResult.registry(), ErrorReporter.exploding());
     assertThat(jsFilesContents.get(0)).startsWith(expectedJsFileContentStart);
   }
 
@@ -342,7 +340,7 @@ public final class GenJsCodeVisitorTest {
 
     List<String> jsFilesContents =
         genJsCodeVisitor.gen(
-            parseResult.fileSet(), parseResult.registry(), ExplodingErrorReporter.get());
+            parseResult.fileSet(), parseResult.registry(), ErrorReporter.exploding());
     assertThat(jsFilesContents.get(0)).startsWith(expectedJsFileContentStart);
   }
 
@@ -392,7 +390,7 @@ public final class GenJsCodeVisitorTest {
 
     jsSrcOptions.setShouldProvideRequireSoyNamespaces(true);
     List<String> jsFilesContents =
-        genJsCodeVisitor.gen(parse.fileSet(), parse.registry(), ExplodingErrorReporter.get());
+        genJsCodeVisitor.gen(parse.fileSet(), parse.registry(), ErrorReporter.exploding());
     assertThat(jsFilesContents.get(0)).isEqualTo(expectedJsFileContent);
   }
 
@@ -439,7 +437,7 @@ public final class GenJsCodeVisitorTest {
 
     jsSrcOptions.setShouldProvideRequireSoyNamespaces(true);
     List<String> jsFilesContents =
-        genJsCodeVisitor.gen(parse.fileSet(), parse.registry(), ExplodingErrorReporter.get());
+        genJsCodeVisitor.gen(parse.fileSet(), parse.registry(), ErrorReporter.exploding());
     assertThat(jsFilesContents.get(0)).isEqualTo(expectedJsFileContent);
   }
 
@@ -473,7 +471,7 @@ public final class GenJsCodeVisitorTest {
     // Setup the GenJsCodeVisitor's state before the template is visited.
     genJsCodeVisitor.jsCodeBuilder = new JsCodeBuilder();
 
-    genJsCodeVisitor.visitForTesting(template, ExplodingErrorReporter.get());
+    genJsCodeVisitor.visitForTesting(template, ErrorReporter.exploding());
     assertThat(genJsCodeVisitor.jsCodeBuilder.getCode()).isEqualTo(expectedJsCode);
   }
 
@@ -506,7 +504,7 @@ public final class GenJsCodeVisitorTest {
     // Setup the GenJsCodeVisitor's state before the template is visited.
     genJsCodeVisitor.jsCodeBuilder = new JsCodeBuilder();
 
-    genJsCodeVisitor.visitForTesting(template, ExplodingErrorReporter.get());
+    genJsCodeVisitor.visitForTesting(template, ErrorReporter.exploding());
     assertThat(genJsCodeVisitor.jsCodeBuilder.getCode()).isEqualTo(expectedJsCode);
 
     // ------ Should not generate extra statement for injected and local var data refs. ------
@@ -542,7 +540,7 @@ public final class GenJsCodeVisitorTest {
     genJsCodeVisitor.jsCodeBuilder = new JsCodeBuilder();
     genJsCodeVisitor.templateAliases = TEMPLATE_ALIASES;
 
-    genJsCodeVisitor.visitForTesting(template, ExplodingErrorReporter.get());
+    genJsCodeVisitor.visitForTesting(template, ErrorReporter.exploding());
     assertThat(genJsCodeVisitor.jsCodeBuilder.getCode()).isEqualTo(expectedJsCode);
   }
 
@@ -585,7 +583,7 @@ public final class GenJsCodeVisitorTest {
     // Setup the GenJsCodeVisitor's state before the template is visited.
     genJsCodeVisitor.jsCodeBuilder = new JsCodeBuilder();
 
-    genJsCodeVisitor.visitForTesting(template, ExplodingErrorReporter.get());
+    genJsCodeVisitor.visitForTesting(template, ErrorReporter.exploding());
     assertThat(genJsCodeVisitor.jsCodeBuilder.getCode()).isEqualTo(expectedJsCode);
   }
 
@@ -628,7 +626,7 @@ public final class GenJsCodeVisitorTest {
     // Setup the GenJsCodeVisitor's state before the template is visited.
     genJsCodeVisitor.jsCodeBuilder = new JsCodeBuilder();
 
-    genJsCodeVisitor.visitForTesting(template, ExplodingErrorReporter.get());
+    genJsCodeVisitor.visitForTesting(template, ErrorReporter.exploding());
     assertThat(genJsCodeVisitor.jsCodeBuilder.getCode()).isEqualTo(expectedJsCode);
   }
 
@@ -671,7 +669,7 @@ public final class GenJsCodeVisitorTest {
     // Setup the GenJsCodeVisitor's state before the template is visited.
     String file =
         genJsCodeVisitor
-            .gen(parseResult.fileSet(), parseResult.registry(), ExplodingErrorReporter.get())
+            .gen(parseResult.fileSet(), parseResult.registry(), ErrorReporter.exploding())
             .get(0);
     assertThat(file).endsWith(expectedJsCode);
   }
@@ -714,7 +712,7 @@ public final class GenJsCodeVisitorTest {
     // Setup the GenJsCodeVisitor's state before the template is visited.
     genJsCodeVisitor.jsCodeBuilder = new JsCodeBuilder();
 
-    genJsCodeVisitor.visitForTesting(template, ExplodingErrorReporter.get());
+    genJsCodeVisitor.visitForTesting(template, ErrorReporter.exploding());
     assertThat(genJsCodeVisitor.jsCodeBuilder.getCode()).isEqualTo(expectedJsCode);
   }
 
@@ -828,7 +826,7 @@ public final class GenJsCodeVisitorTest {
             + "var msg_s = goog.getMsgWithFallback(MSG_UNNAMED, MSG_UNNAMED$$1);\n"
             + "output += msg_s;\n";
     // Note: Using getGeneratedJsCode() directly so that ids are not replaced with ###.
-    assertThat(getGeneratedJsCode(soyCode, ExplodingErrorReporter.get())).isEqualTo(expectedJsCode);
+    assertThat(getGeneratedJsCode(soyCode, ErrorReporter.exploding())).isEqualTo(expectedJsCode);
   }
 
   @Test
@@ -1081,7 +1079,7 @@ public final class GenJsCodeVisitorTest {
         SoyFileSetParserBuilder.forTemplateContents(AutoEscapingType.STRICT, soyNodeCode).parse();
     String jsFilesContents =
         genJsCodeVisitor
-            .gen(parseResult.fileSet(), parseResult.registry(), ExplodingErrorReporter.get())
+            .gen(parseResult.fileSet(), parseResult.registry(), ErrorReporter.exploding())
             .get(0);
     assertThat(jsFilesContents).contains("goog.require('soydata')");
     assertThat(jsFilesContents).contains("goog.require('soydata.VERY_UNSAFE')");
@@ -1413,7 +1411,7 @@ public final class GenJsCodeVisitorTest {
     jsSrcOptions.setShouldProvideRequireSoyNamespaces(true);
     List<String> jsFilesContents =
         genJsCodeVisitor.gen(
-            parseResult.fileSet(), parseResult.registry(), ExplodingErrorReporter.get());
+            parseResult.fileSet(), parseResult.registry(), ErrorReporter.exploding());
     assertThat(jsFilesContents.get(0)).contains("goog.require('xid');");
   }
 
@@ -1649,7 +1647,7 @@ public final class GenJsCodeVisitorTest {
             + "}\n"
             + "output += msg_s;\n";
     // Note: Using getGeneratedJsCode() directly so that ids are not replaced with ###.
-    assertThat(getGeneratedJsCode(soyCode, ExplodingErrorReporter.get())).isEqualTo(expectedJsCode);
+    assertThat(getGeneratedJsCode(soyCode, ErrorReporter.exploding())).isEqualTo(expectedJsCode);
   }
 
   @Test
@@ -2304,7 +2302,7 @@ public final class GenJsCodeVisitorTest {
     // Setup the GenJsCodeVisitor's state before the template is visited.
     genJsCodeVisitor.jsCodeBuilder = new JsCodeBuilder();
 
-    genJsCodeVisitor.visitForTesting(template, ExplodingErrorReporter.get());
+    genJsCodeVisitor.visitForTesting(template, ErrorReporter.exploding());
     assertThat(genJsCodeVisitor.jsCodeBuilder.getCode()).isEqualTo(expectedJsCode);
   }
 
@@ -2330,7 +2328,7 @@ public final class GenJsCodeVisitorTest {
     jsSrcOptions.setShouldGenerateJsdoc(true);
     List<String> jsFilesContents =
         genJsCodeVisitor.gen(
-            parseResult.fileSet(), parseResult.registry(), ExplodingErrorReporter.get());
+            parseResult.fileSet(), parseResult.registry(), ErrorReporter.exploding());
 
     // Ensure that the use of header params generates a record type for opt_data.
     assertThat(jsFilesContents.get(0)).contains("@param {boo.foo.goo.Params} opt_data");
@@ -2423,7 +2421,7 @@ public final class GenJsCodeVisitorTest {
     // Setup the GenJsCodeVisitor's state before the template is visited.
     genJsCodeVisitor.jsCodeBuilder = new JsCodeBuilder();
 
-    genJsCodeVisitor.visitForTesting(template, ExplodingErrorReporter.get());
+    genJsCodeVisitor.visitForTesting(template, ErrorReporter.exploding());
     assertThat(genJsCodeVisitor.jsCodeBuilder.getCode()).isEqualTo(expectedJsCode);
   }
 
@@ -2458,7 +2456,7 @@ public final class GenJsCodeVisitorTest {
     // Setup the GenJsCodeVisitor's state before the template is visited.
     genJsCodeVisitor.jsCodeBuilder = new JsCodeBuilder();
 
-    genJsCodeVisitor.visitForTesting(template, ExplodingErrorReporter.get());
+    genJsCodeVisitor.visitForTesting(template, ErrorReporter.exploding());
     assertThat(genJsCodeVisitor.jsCodeBuilder.getCode()).isEqualTo(expectedJsCode);
   }
 
@@ -2495,7 +2493,7 @@ public final class GenJsCodeVisitorTest {
     // Setup the GenJsCodeVisitor's state before the template is visited.
     genJsCodeVisitor.jsCodeBuilder = new JsCodeBuilder();
 
-    genJsCodeVisitor.visitForTesting(template, ExplodingErrorReporter.get());
+    genJsCodeVisitor.visitForTesting(template, ErrorReporter.exploding());
     assertThat(genJsCodeVisitor.jsCodeBuilder.getCode()).isEqualTo(expectedJsCode);
   }
 
@@ -2529,7 +2527,7 @@ public final class GenJsCodeVisitorTest {
     // Setup the GenJsCodeVisitor's state before the template is visited.
     genJsCodeVisitor.jsCodeBuilder = new JsCodeBuilder();
 
-    genJsCodeVisitor.visitForTesting(template, ExplodingErrorReporter.get());
+    genJsCodeVisitor.visitForTesting(template, ErrorReporter.exploding());
     assertThat(genJsCodeVisitor.jsCodeBuilder.getCode()).isEqualTo(expectedJsCode);
   }
 
@@ -2564,7 +2562,7 @@ public final class GenJsCodeVisitorTest {
     // Setup the GenJsCodeVisitor's state before the template is visited.
     genJsCodeVisitor.jsCodeBuilder = new JsCodeBuilder();
 
-    genJsCodeVisitor.visitForTesting(template, ExplodingErrorReporter.get());
+    genJsCodeVisitor.visitForTesting(template, ErrorReporter.exploding());
     assertThat(genJsCodeVisitor.jsCodeBuilder.getCode()).isEqualTo(expectedJsCode);
   }
 
@@ -2599,7 +2597,7 @@ public final class GenJsCodeVisitorTest {
     // Setup the GenJsCodeVisitor's state before the template is visited.
     genJsCodeVisitor.jsCodeBuilder = new JsCodeBuilder();
 
-    genJsCodeVisitor.visitForTesting(template, ExplodingErrorReporter.get());
+    genJsCodeVisitor.visitForTesting(template, ErrorReporter.exploding());
     assertThat(genJsCodeVisitor.jsCodeBuilder.getCode()).isEqualTo(expectedJsCode);
   }
 
@@ -2636,7 +2634,7 @@ public final class GenJsCodeVisitorTest {
     genJsCodeVisitor.jsCodeBuilder = new JsCodeBuilder();
     genJsCodeVisitor.templateAliases = TEMPLATE_ALIASES;
 
-    genJsCodeVisitor.visitForTesting(template, ExplodingErrorReporter.get());
+    genJsCodeVisitor.visitForTesting(template, ErrorReporter.exploding());
     assertThat(genJsCodeVisitor.jsCodeBuilder.getCode()).isEqualTo(expectedJsCode);
   }
 
@@ -2678,7 +2676,7 @@ public final class GenJsCodeVisitorTest {
     // Setup the GenJsCodeVisitor's state before the template is visited.
     genJsCodeVisitor.jsCodeBuilder = new JsCodeBuilder();
 
-    genJsCodeVisitor.visitForTesting(template, ExplodingErrorReporter.get());
+    genJsCodeVisitor.visitForTesting(template, ErrorReporter.exploding());
     assertThat(genJsCodeVisitor.jsCodeBuilder.getCode()).isEqualTo(expectedJsCode);
   }
 
@@ -2729,9 +2727,9 @@ public final class GenJsCodeVisitorTest {
     ParseResult parseResult = SoyFileSetParserBuilder.forFileContents(testFileContent).parse();
 
     assertThat(
-        genJsCodeVisitor
-            .gen(parseResult.fileSet(), parseResult.registry(), ExplodingErrorReporter.get())
-            .get(0))
+            genJsCodeVisitor
+                .gen(parseResult.fileSet(), parseResult.registry(), ErrorReporter.exploding())
+                .get(0))
         .isEqualTo(expectedJsCode);
   }
 
@@ -2743,7 +2741,7 @@ public final class GenJsCodeVisitorTest {
    * @param expectedJsCode JavaScript code expected to be generated from the Soy code.
    */
   private void assertGeneratedJsCode(String soyCode, String expectedJsCode) {
-    String genCode = getGeneratedJsCode(soyCode, ExplodingErrorReporter.get());
+    String genCode = getGeneratedJsCode(soyCode, ErrorReporter.exploding());
     assertThat(genCode).isEqualTo(expectedJsCode);
   }
 
@@ -2754,7 +2752,7 @@ public final class GenJsCodeVisitorTest {
    * @param expectedErrorMsg If not null, this is checked against the exception message.
    */
   private void assertFailsInGeneratingJsCode(String soyCode, @Nullable String expectedErrorMsg) {
-    ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.createForTest();
     String genCode = getGeneratedJsCode(soyCode, errorReporter);
     if (errorReporter.getErrors().isEmpty()) {
       throw new AssertionError(
@@ -2824,7 +2822,7 @@ public final class GenJsCodeVisitorTest {
     jsSrcOptions.setShouldGenerateJsdoc(true);
     List<String> jsFilesContents =
         genJsCodeVisitor.gen(
-            parseResult.fileSet(), parseResult.registry(), ExplodingErrorReporter.get());
+            parseResult.fileSet(), parseResult.registry(), ErrorReporter.exploding());
     Pattern googRequire = Pattern.compile("goog.require\\('(.*)'\\);");
     ImmutableSet.Builder<String> requires = ImmutableSet.builder();
     for (String file : jsFilesContents) {

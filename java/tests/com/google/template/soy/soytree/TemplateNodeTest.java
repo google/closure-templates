@@ -28,8 +28,6 @@ import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ErrorReporterImpl;
-import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.GlobalNode;
@@ -112,12 +110,12 @@ public class TemplateNodeTest {
 
   @Test
   public void testInvalidParamNames() {
-    ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.createForTest();
     parse("{namespace ns}\n" + "/**@param ij */\n" + "{template .boo}{/template}", errorReporter);
     assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
         .isEqualTo("Invalid param name 'ij' ('ij' is for injected data).");
 
-    errorReporter = ErrorReporterImpl.createForTest();
+    errorReporter = ErrorReporter.createForTest();
     parse(
         "{namespace ns}\n" + "{template .boo}\n" + "{@param ij : int}\n" + "{/template}",
         errorReporter);
@@ -127,7 +125,7 @@ public class TemplateNodeTest {
 
   @Test
   public void testParamsAlreadyDeclared() {
-    ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.createForTest();
     parse(
         "{namespace ns}\n"
             + "/**@param foo @param goo @param? foo */\n"
@@ -136,7 +134,7 @@ public class TemplateNodeTest {
     assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
         .isEqualTo("Param 'foo' already declared.");
 
-    errorReporter = ErrorReporterImpl.createForTest();
+    errorReporter = ErrorReporter.createForTest();
     parse(
         "{namespace ns}\n"
             + "{template .boo}\n"
@@ -146,7 +144,7 @@ public class TemplateNodeTest {
     assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
         .isEqualTo("Param 'foo' already declared.");
 
-    errorReporter = ErrorReporterImpl.createForTest();
+    errorReporter = ErrorReporter.createForTest();
     parse(
         "{namespace ns}\n"
             + "/**\n"
@@ -162,7 +160,7 @@ public class TemplateNodeTest {
 
   @Test
   public void testCommandTextErrors() {
-    ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.createForTest();
     parse("{namespace ns}\n{template autoescape=\"strict\"}{/template}", errorReporter);
     assertThat(errorReporter.getErrors()).hasSize(2);
     assertThat(errorReporter.getErrors().get(0).message())
@@ -173,12 +171,12 @@ public class TemplateNodeTest {
     assertThat(errorReporter.getErrors().get(1).message())
         .isEqualTo("parse error at '=': expected attribute name, }, identifier, or .");
 
-    errorReporter = ErrorReporterImpl.createForTest();
+    errorReporter = ErrorReporter.createForTest();
     parse("{namespace ns}\n{template .foo autoescape=\"}{/template}", errorReporter);
     assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
         .isEqualTo(
             "Unexpected end of file.  Did you forget to close an attribute value or a comment?");
-    errorReporter = ErrorReporterImpl.createForTest();
+    errorReporter = ErrorReporter.createForTest();
     parse("{namespace ns}\n{template .foo autoescape=\"false\"}{/template}", errorReporter);
     assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
         .isEqualTo(
@@ -218,7 +216,7 @@ public class TemplateNodeTest {
 
   @Test
   public void testInvalidStrictTemplates() {
-    ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.createForTest();
     parse(
         "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
             + "{template .boo kind=\"text\"}{/template}",
@@ -339,22 +337,22 @@ public class TemplateNodeTest {
 
   @Test
   public void testInvalidRequiredCss() {
-    ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.createForTest();
     parse("{namespace ns}\n{template .boo requirecss=\"\"}{/template}", errorReporter);
     assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
         .isEqualTo("Invalid required CSS namespace name '', expected an identifier.");
 
-    errorReporter = ErrorReporterImpl.createForTest();
+    errorReporter = ErrorReporter.createForTest();
     parse("{namespace ns}\n{template .boo requirecss=\"foo boo\"}{/template}", errorReporter);
     assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
         .isEqualTo("Invalid required CSS namespace name 'foo boo', expected an identifier.");
 
-    errorReporter = ErrorReporterImpl.createForTest();
+    errorReporter = ErrorReporter.createForTest();
     parse("{namespace ns}\n{template .boo requirecss=\"9vol\"}{/template}", errorReporter);
     assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
         .isEqualTo("Invalid required CSS namespace name '9vol', expected an identifier.");
 
-    errorReporter = ErrorReporterImpl.createForTest();
+    errorReporter = ErrorReporter.createForTest();
     parse("{namespace ns}\n{deltemplate foo.boo requirecss=\"5ham\"}{/deltemplate}", errorReporter);
     assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
         .isEqualTo("Invalid required CSS namespace name '5ham', expected an identifier.");
@@ -399,7 +397,7 @@ public class TemplateNodeTest {
   }
 
   private static TemplateNode parse(String file) {
-    return parse(file, ExplodingErrorReporter.get());
+    return parse(file, ErrorReporter.exploding());
   }
 
   private static TemplateNode parse(String file, ErrorReporter errorReporter) {

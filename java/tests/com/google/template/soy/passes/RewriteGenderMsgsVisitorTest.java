@@ -22,8 +22,6 @@ import static org.junit.Assert.assertEquals;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ErrorReporterImpl;
-import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.error.SoyError;
 import com.google.template.soy.msgs.internal.MsgUtils;
 import com.google.template.soy.shared.SharedTestUtils;
@@ -56,7 +54,7 @@ public final class RewriteGenderMsgsVisitorTest {
             + "    {default}Reply to them\n"
             + "  {/select}\n"
             + "{/msg}\n";
-    ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.createForTest();
     SoyFileSetParserBuilder.forTemplateContents(soyCode)
         .errorReporter(errorReporter)
         .parse()
@@ -76,7 +74,7 @@ public final class RewriteGenderMsgsVisitorTest {
             + "{msg genders=\"$userGender, $gender\" desc=\"Button text.\"}\n"
             + "  You joined {$owner}'s community.\n"
             + "{/msg}\n";
-    ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.createForTest();
     SoyFileSetParserBuilder.forTemplateContents(soyCode)
         .errorReporter(errorReporter)
         .parse()
@@ -107,7 +105,7 @@ public final class RewriteGenderMsgsVisitorTest {
             + "    desc=\"...\"}\n"
             + "  You added {$targetName1} and {$targetName2} to {$groupOwnerName}'s group.\n"
             + "{/msg}\n";
-    ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.createForTest();
     SoyFileSetParserBuilder.forTemplateContents(soyCode).errorReporter(errorReporter).parse();
     assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
         .isEqualTo("Attribute 'genders' should contain 1-3 expressions.");
@@ -129,7 +127,7 @@ public final class RewriteGenderMsgsVisitorTest {
             + "    {default}Find {$name1}'s face in {$name2}'s photos\n"
             + "  {/plural}\n"
             + "{/msg}\n";
-    ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.createForTest();
     SoyFileSetParserBuilder.forTemplateContents(soyCode)
         .errorReporter(errorReporter)
         .parse()
@@ -151,7 +149,7 @@ public final class RewriteGenderMsgsVisitorTest {
             + "  Save\n"
             + "{/msg}\n";
 
-    ErrorReporter boom = ExplodingErrorReporter.get();
+    ErrorReporter boom = ErrorReporter.exploding();
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forTemplateContents(soyCode).errorReporter(boom).parse().fileSet();
 
@@ -193,7 +191,7 @@ public final class RewriteGenderMsgsVisitorTest {
             + "  {plural $num}{case 1}Send it{default}Send {$num}{/plural}\n"
             + "{/msg}\n";
 
-    ErrorReporter boom = ExplodingErrorReporter.get();
+    ErrorReporter boom = ErrorReporter.exploding();
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forTemplateContents(soyCode).errorReporter(boom).parse().fileSet();
     // After.
@@ -239,7 +237,7 @@ public final class RewriteGenderMsgsVisitorTest {
             + "  You starred {$target[0].name}'s photo in {$target[1].name}'s album.\n"
             + "{/msg}\n";
 
-    ErrorReporter boom = ExplodingErrorReporter.get();
+    ErrorReporter boom = ErrorReporter.exploding();
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forTemplateContents(soyCode).errorReporter(boom).parse().fileSet();
     // After.

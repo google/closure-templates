@@ -23,7 +23,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.error.ExplodingErrorReporter;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
@@ -98,7 +98,7 @@ public final class MsgFallbackGroupNode extends AbstractParentSoyNode<MsgNode>
             true /* implicit */,
             new VarRefNode(var.name(), getSourceLocation(), false /* not ij */, var),
             null /* phname */,
-            ExplodingErrorReporter.get());
+            ErrorReporter.exploding());
     printNode.setHtmlContext(htmlContext);
 
     for (String escapingDirective : getEscapingDirectiveNames()) {

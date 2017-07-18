@@ -41,7 +41,7 @@ import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.base.internal.TriState;
 import com.google.template.soy.base.internal.VolatileSoyFileSupplier;
 import com.google.template.soy.basetree.SyntaxVersion;
-import com.google.template.soy.error.ErrorReporterImpl;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyCompilationException;
 import com.google.template.soy.error.SoyError;
 import com.google.template.soy.incrementaldomsrc.IncrementalDomSrcMain;
@@ -622,7 +622,7 @@ public final class SoyFileSet {
   private final ImmutableMap<String, ? extends SoyPrintDirective> printDirectives;
 
   /** For reporting errors during parsing. */
-  private ErrorReporterImpl errorReporter;
+  private ErrorReporter errorReporter;
 
   @Nullable private final Appendable warningSink;
 
@@ -1230,7 +1230,7 @@ public final class SoyFileSet {
    * <p>This method should be called at the beginning of every entry point into SoyFileSet.
    */
   private void resetErrorReporter() {
-    errorReporter = ErrorReporterImpl.create(soyFileSuppliers);
+    errorReporter = ErrorReporter.create(soyFileSuppliers);
   }
 
   private void throwIfErrorsPresent() {

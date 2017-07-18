@@ -21,7 +21,6 @@ import static com.google.common.truth.Truth.assertThat;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.basetree.ParentNode;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForeachIfemptyNode;
 import com.google.template.soy.soytree.ForeachNode;
@@ -53,7 +52,7 @@ import org.junit.runners.JUnit4;
 public final class ExtractMsgVariablesVisitorTest {
 
   private static TemplateNode parseTemplate(String soyCode) {
-    ErrorReporter boom = ExplodingErrorReporter.get();
+    ErrorReporter boom = ErrorReporter.exploding();
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forTemplateContents(soyCode).errorReporter(boom).parse().fileSet();
     new ExtractMsgVariablesVisitor().exec(soyTree);

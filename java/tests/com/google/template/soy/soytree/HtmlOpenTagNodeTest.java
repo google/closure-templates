@@ -21,7 +21,7 @@ import static com.google.common.truth.Truth.assertThat;
 import com.google.common.base.Joiner;
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
 import com.google.template.soy.base.internal.SoyFileKind;
-import com.google.template.soy.error.ExplodingErrorReporter;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.passes.CombineConsecutiveRawTextNodesPass;
 import com.google.template.soy.passes.HtmlRewritePass;
 import com.google.template.soy.soyparse.SoyFileParser;
@@ -73,9 +73,9 @@ public final class HtmlOpenTagNodeTest {
                 new StringReader(soyFile),
                 SoyFileKind.SRC,
                 "test.soy",
-                ExplodingErrorReporter.get())
+                ErrorReporter.exploding())
             .parseSoyFile();
-    new HtmlRewritePass(ExplodingErrorReporter.get()).run(node, nodeIdGen);
+    new HtmlRewritePass(ErrorReporter.exploding()).run(node, nodeIdGen);
     new CombineConsecutiveRawTextNodesPass().run(node);
 
     new CombineConsecutiveRawTextNodesPass().run(node);

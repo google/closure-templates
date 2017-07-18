@@ -24,8 +24,6 @@ import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
-import com.google.template.soy.error.ErrorReporterImpl;
-import com.google.template.soy.error.ExplodingErrorReporter;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -74,7 +72,7 @@ public final class MsgHtmlTagNodeTest {
 
   @Test
   public void testErrorNodeReturnedWhenPhNameAttrIsMalformed() {
-    ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.createForTest();
     parseMsgHtmlTagNode("<div phname=\".+\" />", errorReporter);
     assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
         .isEqualTo("'phname' attribute is not a valid identifier.");
@@ -97,7 +95,7 @@ public final class MsgHtmlTagNodeTest {
   }
 
   private static MsgHtmlTagNode parseMsgHtmlTagNode(String htmlTag, String... params) {
-    return parseMsgHtmlTagNode(htmlTag, ExplodingErrorReporter.get(), params);
+    return parseMsgHtmlTagNode(htmlTag, ErrorReporter.exploding(), params);
   }
 
   private static MsgHtmlTagNode parseMsgHtmlTagNode(

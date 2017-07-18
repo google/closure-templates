@@ -29,7 +29,7 @@ import com.google.inject.Key;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.SoyModule;
 import com.google.template.soy.basetree.SyntaxVersion;
-import com.google.template.soy.error.ExplodingErrorReporter;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.pysrc.SoyPySrcOptions;
 import com.google.template.soy.pysrc.internal.GenPyExprsVisitor.GenPyExprsVisitorFactory;
@@ -177,7 +177,7 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
     SoyFileSetNode node = SoyFileSetParserBuilder.forFileContents(actual()).parse().fileSet();
     try (GuiceSimpleScope.InScope inScope = enterScope()) {
       List<String> fileContents =
-          injector.getInstance(GenPyCodeVisitor.class).gen(node, ExplodingErrorReporter.get());
+          injector.getInstance(GenPyCodeVisitor.class).gen(node, ErrorReporter.exploding());
       return fileContents.get(0).replaceAll("([a-zA-Z]+)\\d+", "$1###");
     }
   }
@@ -202,9 +202,9 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
       genPyCodeVisitor.genPyExprsVisitor =
           injector
               .getInstance(GenPyExprsVisitorFactory.class)
-              .create(genPyCodeVisitor.localVarExprs, ExplodingErrorReporter.get());
+              .create(genPyCodeVisitor.localVarExprs, ErrorReporter.exploding());
 
-      genPyCodeVisitor.visitForTesting(node, ExplodingErrorReporter.get());
+      genPyCodeVisitor.visitForTesting(node, ErrorReporter.exploding());
 
       return genPyCodeVisitor.pyCodeBuilder.getCode().replaceAll("([a-zA-Z]+)\\d+", "$1###");
     }

@@ -33,11 +33,11 @@ import com.google.template.soy.base.SourceLocation;
  *
  * @author brndn@google.com (Brendan Linn)
  */
-public final class ExplodingErrorReporter extends ErrorReporter {
+final class ExplodingErrorReporter extends ErrorReporter {
 
   private static final ErrorReporter INSTANCE = new ExplodingErrorReporter();
 
-  public static ErrorReporter get() {
+  static ErrorReporter get() {
     return INSTANCE;
   }
 

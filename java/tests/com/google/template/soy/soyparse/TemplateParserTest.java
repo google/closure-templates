@@ -27,8 +27,6 @@ import com.google.common.collect.Iterables;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ErrorReporterImpl;
-import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.error.SoyError;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FunctionNode;
@@ -89,7 +87,7 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public final class TemplateParserTest {
 
-  private static final ErrorReporter FAIL = ExplodingErrorReporter.get();
+  private static final ErrorReporter FAIL = ErrorReporter.exploding();
 
   // -----------------------------------------------------------------------------------------------
   // Tests for recognition only.
@@ -1180,7 +1178,7 @@ public final class TemplateParserTest {
 
   @Test
   public void testParseMsgStmtWithIf() throws Exception {
-    ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.createForTest();
     parseTemplateContent(
         "{@param boo :?}\n"
             + "  {msg desc=\"Blah.\"}\n"
@@ -1934,7 +1932,7 @@ public final class TemplateParserTest {
 
   @Test
   public void testMultipleErrors() throws ParseException {
-    ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.createForTest();
     parseTemplateContent(
         "{call 123 /}\n" // Invalid callee name
             + "{delcall 456 /}\n" // Invalid callee name
@@ -2007,13 +2005,13 @@ public final class TemplateParserTest {
   }
 
   private static void assertInvalidTemplate(String input) {
-    ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.createForTest();
     parseTemplateContent(input, errorReporter);
     assertThat(errorReporter.getErrors()).isNotEmpty();
   }
 
   private static void assertInvalidTemplate(String input, String expectedErrorMessage) {
-    ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.createForTest();
     parseTemplateContent(input, errorReporter);
     assertThat(errorReporter.getErrors()).hasSize(1);
     assertThat(errorReporter.getErrors().get(0).message()).contains(expectedErrorMessage);

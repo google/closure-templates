@@ -24,7 +24,6 @@ import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.data.internalutils.InternalValueUtils;
 import com.google.template.soy.data.restricted.PrimitiveData;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
@@ -98,7 +97,7 @@ public final class SoyUtils {
   public static ImmutableMap<String, PrimitiveData> parseCompileTimeGlobals(CharSource inputSource)
       throws IOException {
     Builder<String, PrimitiveData> compileTimeGlobalsBuilder = ImmutableMap.builder();
-    ErrorReporter errorReporter = ExplodingErrorReporter.get();
+    ErrorReporter errorReporter = ErrorReporter.exploding();
 
     try (BufferedReader reader = inputSource.openBufferedStream()) {
       int lineNum = 1;

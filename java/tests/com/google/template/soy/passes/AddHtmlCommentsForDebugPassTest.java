@@ -19,7 +19,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
 import com.google.template.soy.base.internal.SoyFileKind;
-import com.google.template.soy.error.ExplodingErrorReporter;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.types.SoyTypeRegistry;
@@ -108,7 +108,7 @@ public final class AddHtmlCommentsForDebugPassTest {
                 new StringReader(soyFile),
                 SoyFileKind.SRC,
                 fileName,
-                ExplodingErrorReporter.get())
+                ErrorReporter.exploding())
             .parseSoyFile();
     new AddHtmlCommentsForDebugPass().run(node, nodeIdGen);
     StringBuilder sb = new StringBuilder();

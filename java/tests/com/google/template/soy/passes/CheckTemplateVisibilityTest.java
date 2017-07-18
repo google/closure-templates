@@ -23,8 +23,6 @@ import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ErrorReporterImpl;
-import com.google.template.soy.error.ExplodingErrorReporter;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -49,13 +47,13 @@ public final class CheckTemplateVisibilityTest {
                 + "{template .bar}\n"
                 + "{call .foo /}\n"
                 + "{/template}")
-        .errorReporter(ExplodingErrorReporter.get())
+        .errorReporter(ErrorReporter.exploding())
         .parse();
   }
 
   @Test
   public void testCallPrivateTemplateFromSameNamespaceButDifferentFile() {
-    ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.createForTest();
     SoyFileSetParserBuilder.forFileContents(
             "{namespace ns autoescape=\"strict\"}\n"
                 + "/** Private template. */\n"
@@ -76,7 +74,7 @@ public final class CheckTemplateVisibilityTest {
 
   @Test
   public void testCallPrivateTemplateDifferentFile() {
-    ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.createForTest();
     SoyFileSetParserBuilder.forFileContents(
             "{namespace ns autoescape=\"strict\"}\n"
                 + "/** Private template. */\n"
@@ -99,7 +97,7 @@ public final class CheckTemplateVisibilityTest {
   // defined in a file with the same name irrespective of directory
   @Test
   public void testCallPrivateTemplateSameFileNameDifferentDirectory() {
-    ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.createForTest();
     SoyFileSetParserBuilder.forSuppliers(
             SoyFileSupplier.Factory.create(
                 "{namespace ns autoescape=\"strict\"}\n"

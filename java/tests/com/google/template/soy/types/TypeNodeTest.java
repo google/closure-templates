@@ -22,7 +22,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.error.ExplodingErrorReporter;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.HeaderParam;
 import com.google.template.soy.types.ast.GenericTypeNode;
@@ -171,7 +171,7 @@ public final class TypeNodeTest {
         SoyFileSetParserBuilder.forTemplateContents(
                 "{@param p : " + typeString + "}\n{$p ? 't' : 'f'}")
             .typeRegistry(new SoyTypeRegistry())
-            .errorReporter(ExplodingErrorReporter.get()) // ignore parse errors
+            .errorReporter(ErrorReporter.exploding()) // ignore parse errors
             .parse()
             .fileSet()
             .getChild(0)

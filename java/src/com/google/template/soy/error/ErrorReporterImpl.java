@@ -32,25 +32,13 @@ import java.util.List;
  *
  * @author brndn@google.com (Brendan Linn)
  */
-public final class ErrorReporterImpl extends ErrorReporter {
-
-  /** Creates an instance suitable for tests. Doesn't render snippets. */
-  public static ErrorReporterImpl createForTest() {
-    // by passing an empty map we prevent snippets from being formatted... which is fine for tests.
-    return create(ImmutableMap.<String, SoyFileSupplier>of());
-  }
-
-  /** Create an error reporter that can format source file render. */
-  public static ErrorReporterImpl create(
-      ImmutableMap<String, SoyFileSupplier> filePathsToSuppliers) {
-    return new ErrorReporterImpl(filePathsToSuppliers);
-  }
+final class ErrorReporterImpl extends ErrorReporter {
 
   private final List<SoyError> errors = new ArrayList<>();
   private final List<SoyError> warnings = new ArrayList<>();
   private final ImmutableMap<String, SoyFileSupplier> filePathsToSuppliers;
 
-  private ErrorReporterImpl(ImmutableMap<String, SoyFileSupplier> filePathsToSuppliers) {
+  ErrorReporterImpl(ImmutableMap<String, SoyFileSupplier> filePathsToSuppliers) {
     this.filePathsToSuppliers = filePathsToSuppliers;
   }
 

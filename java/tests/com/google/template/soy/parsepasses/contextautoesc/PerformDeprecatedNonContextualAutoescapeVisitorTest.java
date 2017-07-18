@@ -26,7 +26,6 @@ import com.google.template.soy.coredirectives.EscapeHtmlDirective;
 import com.google.template.soy.coredirectives.IdDirective;
 import com.google.template.soy.coredirectives.NoAutoescapeDirective;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -47,7 +46,7 @@ public final class PerformDeprecatedNonContextualAutoescapeVisitorTest {
   private static final ImmutableSet<String> AUTOESCAPE_CANCELLING_DIRECTIVE_NAMES =
       ImmutableSet.of(EscapeHtmlDirective.NAME, NoAutoescapeDirective.NAME, IdDirective.NAME);
 
-  private static final ErrorReporter FAIL = ExplodingErrorReporter.get();
+  private static final ErrorReporter FAIL = ErrorReporter.exploding();
 
   private static void performAutoescape(SoyFileSetNode soyTree) {
     new PerformDeprecatedNonContextualAutoescapeVisitor(

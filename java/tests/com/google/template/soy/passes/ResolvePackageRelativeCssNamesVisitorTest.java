@@ -21,8 +21,6 @@ import static com.google.common.truth.Truth.assertThat;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ErrorReporterImpl;
-import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.shared.SharedTestUtils;
@@ -145,7 +143,7 @@ public final class ResolvePackageRelativeCssNamesVisitorTest {
 
   @Test
   public void testMissingCssBase() {
-    ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.createForTest();
     compileTemplate(
         "{namespace boo}\n\n"
             + "/** Test template. */\n"
@@ -157,7 +155,7 @@ public final class ResolvePackageRelativeCssNamesVisitorTest {
     assertThat(errorReporter.getErrors().get(0).message())
         .isEqualTo("No CSS package defined for package-relative class name '%AAA'.");
 
-    errorReporter = ErrorReporterImpl.createForTest();
+    errorReporter = ErrorReporter.createForTest();
     compileTemplate(
         "{namespace boo}\n\n"
             + "/** Test template. */\n"
@@ -172,7 +170,7 @@ public final class ResolvePackageRelativeCssNamesVisitorTest {
 
   @Test
   public void testWithComponentName() {
-    ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.createForTest();
     compileTemplate(
         "{namespace boo}\n\n"
             + "/** Test template. */\n"
@@ -189,7 +187,7 @@ public final class ResolvePackageRelativeCssNamesVisitorTest {
   }
 
   private static TemplateNode compileTemplate(String templateText) {
-    return compileTemplate(templateText, ExplodingErrorReporter.get());
+    return compileTemplate(templateText, ErrorReporter.exploding());
   }
 
   private static TemplateNode compileTemplate(String templateText, ErrorReporter errorReporter) {

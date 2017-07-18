@@ -38,7 +38,7 @@ import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.SoyModule;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueConverter;
-import com.google.template.soy.error.ExplodingErrorReporter;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.jbcsrc.api.AdvisingStringBuilder;
 import com.google.template.soy.jbcsrc.api.RenderResult;
@@ -308,10 +308,10 @@ public final class TemplateTester {
             builder
                 .typeRegistry(typeRegistry)
                 .options(generalOptions)
-                .errorReporter(ExplodingErrorReporter.get())
+                .errorReporter(ErrorReporter.exploding())
                 .parse()
                 .fileSet();
-        new UnsupportedFeatureReporter(ExplodingErrorReporter.get()).check(fileSet);
+        new UnsupportedFeatureReporter(ErrorReporter.exploding()).check(fileSet);
         // Clone the tree, there tend to be bugs in the AST clone implementations that don't show
         // up until development time when we do a lot of AST cloning, so clone here to try to flush
         // them out.
@@ -326,7 +326,7 @@ public final class TemplateTester {
 
         // N.B. we are reproducing some of BytecodeCompiler here to make it easier to look at
         // intermediate data structures.
-        TemplateRegistry registry = new TemplateRegistry(fileSet, ExplodingErrorReporter.get());
+        TemplateRegistry registry = new TemplateRegistry(fileSet, ErrorReporter.exploding());
         CompiledTemplateRegistry compilerRegistry = new CompiledTemplateRegistry(registry);
         String templateName = Iterables.getOnlyElement(registry.getBasicTemplatesMap().keySet());
         classData =
@@ -402,7 +402,7 @@ public final class TemplateTester {
     return BytecodeCompiler.compile(
             SoyFileSetParserBuilder.forFileContents(file).parse().registry(),
             false,
-            ExplodingErrorReporter.get())
+            ErrorReporter.exploding())
         .get();
   }
 }

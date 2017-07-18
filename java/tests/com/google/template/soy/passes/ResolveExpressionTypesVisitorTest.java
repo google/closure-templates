@@ -26,8 +26,6 @@ import com.google.common.collect.Iterables;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ErrorReporterImpl;
-import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -91,9 +89,7 @@ public final class ResolveExpressionTypesVisitorTest {
   private static ResolveExpressionTypesVisitor createResolveExpressionTypesVisitor(
       SyntaxVersion declaredSyntaxVersion) {
     return new ResolveExpressionTypesVisitor(
-        TYPE_REGISTRY,
-        declaredSyntaxVersion,
-        ExplodingErrorReporter.get());
+        TYPE_REGISTRY, declaredSyntaxVersion, ErrorReporter.exploding());
   }
 
   @Test
@@ -331,7 +327,7 @@ public final class ResolveExpressionTypesVisitorTest {
             .addSoyFunction(CAPTURE_TYPE_FUNCTION)
             .parse()
             .fileSet();
-    new ResolveNamesVisitor(ExplodingErrorReporter.get()).exec(soyTree);
+    new ResolveNamesVisitor(ErrorReporter.exploding()).exec(soyTree);
     createResolveExpressionTypesVisitor(SyntaxVersion.V2_0).exec(soyTree);
     List<SoyType> types = getCapturedTypes(soyTree);
     assertThat(types.get(0)).isEqualTo(UnknownType.getInstance());
@@ -351,7 +347,7 @@ public final class ResolveExpressionTypesVisitorTest {
             .addSoyFunction(CAPTURE_TYPE_FUNCTION)
             .parse()
             .fileSet();
-    new ResolveNamesVisitor(ExplodingErrorReporter.get()).exec(soyTree);
+    new ResolveNamesVisitor(ErrorReporter.exploding()).exec(soyTree);
     createResolveExpressionTypesVisitor(SyntaxVersion.V2_3).exec(soyTree);
     types = getCapturedTypes(soyTree);
     assertThat(types.get(0)).isEqualTo(BoolType.getInstance());
@@ -531,7 +527,7 @@ public final class ResolveExpressionTypesVisitorTest {
 
   @Test
   public void testMapLiteralAsRecord_duplicateKeys() {
-    ErrorReporter reporter = ErrorReporterImpl.createForTest();
+    ErrorReporter reporter = ErrorReporter.createForTest();
     SoyFileSetParserBuilder.forFileContents(
             constructTemplateSource("{let $map: ['a': 1, 'a': 2]/}"))
         .declaredSyntaxVersion(SyntaxVersion.V2_0)
@@ -877,7 +873,7 @@ public final class ResolveExpressionTypesVisitorTest {
    * @param expectedError The expected failure message (a substring).
    */
   private void assertResolveExpressionTypesFails(String expectedError, String fileContent) {
-    ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.createForTest();
     SoyFileSetParserBuilder.forFileContents(fileContent)
         .declaredSyntaxVersion(SyntaxVersion.V2_0)
         .errorReporter(errorReporter)

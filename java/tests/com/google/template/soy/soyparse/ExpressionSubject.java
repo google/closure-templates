@@ -24,7 +24,6 @@ import com.google.common.truth.Subject;
 import com.google.common.truth.SubjectFactory;
 import com.google.common.truth.Truth;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ErrorReporterImpl;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.VarRefNode;
@@ -42,7 +41,7 @@ final class ExpressionSubject extends Subject<ExpressionSubject, String> {
       new SubjectFactory<ExpressionSubject, String>() {
         @Override
         public ExpressionSubject getSubject(FailureStrategy failureStrategy, String s) {
-          return new ExpressionSubject(failureStrategy, s, ErrorReporterImpl.createForTest());
+          return new ExpressionSubject(failureStrategy, s, ErrorReporter.createForTest());
         }
       };
 

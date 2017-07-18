@@ -26,7 +26,7 @@ import com.google.inject.Injector;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.SoyModule;
 import com.google.template.soy.base.internal.UniqueNameGenerator;
-import com.google.template.soy.error.ExplodingErrorReporter;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
@@ -223,7 +223,7 @@ public final class GenCallCodeUtilsTest {
                   SoyToJsVariableMappings.forNewTemplate(),
                   CodeChunk.Generator.create(nameGenerator),
                   nameGenerator),
-              ExplodingErrorReporter.get());
+              ErrorReporter.exploding());
       return call.getCode();
     }
   }

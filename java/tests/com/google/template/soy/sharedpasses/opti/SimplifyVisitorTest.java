@@ -26,7 +26,7 @@ import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.SoyModule;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.error.ExplodingErrorReporter;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
@@ -68,7 +68,7 @@ public class SimplifyVisitorTest {
     assertEquals(5, forNode.numChildren());
 
     SimplifyVisitor simplifyVisitor = createSimplifyVisitor();
-    simplifyVisitor.simplify(soyTree, new TemplateRegistry(soyTree, ExplodingErrorReporter.get()));
+    simplifyVisitor.simplify(soyTree, new TemplateRegistry(soyTree, ErrorReporter.exploding()));
 
     assertEquals(4, template.numChildren());
     assertEquals(3, forNode.numChildren());

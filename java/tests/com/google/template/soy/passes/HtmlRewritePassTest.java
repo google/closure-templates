@@ -25,8 +25,6 @@ import com.google.common.truth.StringSubject;
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ErrorReporterImpl;
-import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.HtmlAttributeValueNode;
@@ -390,7 +388,7 @@ public final class HtmlRewritePassTest {
     // unmatched closing div is fine.
     runPass("</div>");
     for (String tag : new String[] {"</script>", "</style>", "</title>", "</textarea>", "</xmp>"}) {
-      ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
+      ErrorReporter errorReporter = ErrorReporter.createForTest();
       runPass(tag, errorReporter);
       assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
           .named("error message for: %s", tag)
@@ -406,7 +404,7 @@ public final class HtmlRewritePassTest {
 
   @Test
   public void testBadTagName() {
-    ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.createForTest();
     runPass("<3 >", errorReporter);
     assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
         .isEqualTo("Illegal tag name character.");
@@ -414,11 +412,11 @@ public final class HtmlRewritePassTest {
 
   @Test
   public void testBadAttributeName() {
-    ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.createForTest();
     runPass("<div foo-->", errorReporter);
     assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
         .isEqualTo("Illegal attribute name character.");
-    errorReporter = ErrorReporterImpl.createForTest();
+    errorReporter = ErrorReporter.createForTest();
     runPass("<div 0a>", errorReporter);
     assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
         .isEqualTo("Illegal attribute name character.");
@@ -433,7 +431,7 @@ public final class HtmlRewritePassTest {
 
   @Test
   public void testHtmlCommentWithOnlyRawTextNode() {
-    ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.createForTest();
     TemplateNode node;
 
     // The most common test case.
@@ -467,7 +465,7 @@ public final class HtmlRewritePassTest {
 
   @Test
   public void testHtmlCommentWithPrintNode() {
-    ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.createForTest();
     TemplateNode node;
 
     // Print node.
@@ -487,7 +485,7 @@ public final class HtmlRewritePassTest {
 
   @Test
   public void testHtmlCommentWithControlFlow() {
-    ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.createForTest();
     TemplateNode node;
     // Control flow structure should be preserved.
     node = runPass("<!-- {if $foo} foo {else} bar {/if} -->", errorReporter);
@@ -509,10 +507,10 @@ public final class HtmlRewritePassTest {
 
   @Test
   public void testBadHtmlComment() {
-    ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.createForTest();
     // These are examples that we haven't closed the HTML comments.
     for (String text : new String[] {"<!--", "<!-- --", "<!--->"}) {
-      errorReporter = ErrorReporterImpl.createForTest();
+      errorReporter = ErrorReporter.createForTest();
       runPass(text, errorReporter);
       assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
           .named("error message for: %s", text)
@@ -523,7 +521,7 @@ public final class HtmlRewritePassTest {
   }
 
   private static TemplateNode runPass(String input) {
-    return runPass(input, ExplodingErrorReporter.get());
+    return runPass(input, ErrorReporter.exploding());
   }
 
   /** Parses the given input as a template content. */

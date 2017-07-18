@@ -26,7 +26,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
 import com.google.template.soy.base.internal.SanitizedContentKind;
-import com.google.template.soy.error.ExplodingErrorReporter;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.shared.restricted.SoyFunction;
@@ -315,7 +315,7 @@ public final class InferenceEngineTest {
         Context.getStartContextForContentKind(kind),
         inferences,
         ImmutableSet.<String>of(),
-        ExplodingErrorReporter.get());
+        ErrorReporter.exploding());
     for (PrintNode print : SoyTreeUtils.getAllNodesOfType(template, PrintNode.class)) {
       if (print.getExpr().getChild(0) instanceof FunctionNode) {
         FunctionNode fn = (FunctionNode) print.getExpr().getChild(0);

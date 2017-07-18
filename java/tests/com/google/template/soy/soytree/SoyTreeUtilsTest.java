@@ -26,7 +26,6 @@ import com.google.template.soy.base.internal.IncrementingIdGenerator;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
@@ -64,7 +63,7 @@ public final class SoyTreeUtilsTest extends TestCase {
             + "  {/foreach}\n"
             + "{/template}\n";
 
-    ErrorReporter boom = ExplodingErrorReporter.get();
+    ErrorReporter boom = ErrorReporter.exploding();
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(testFileContent)
             .errorReporter(boom)
@@ -214,14 +213,15 @@ public final class SoyTreeUtilsTest extends TestCase {
 
     IdGenerator nodeIdGen = new IncrementingIdGenerator();
     SoyFileSetNode soyTree = new SoyFileSetNode(nodeIdGen.genId(), nodeIdGen);
-    SoyFileNode soyFile = new SoyFileParser(
-        new SoyTypeRegistry(),
-        nodeIdGen,
-        new StringReader(SOY_SOURCE_FOR_TESTING_CLONING),
-        SoyFileKind.SRC,
-        "test.soy",
-        ExplodingErrorReporter.get())
-        .parseSoyFile();
+    SoyFileNode soyFile =
+        new SoyFileParser(
+                new SoyTypeRegistry(),
+                nodeIdGen,
+                new StringReader(SOY_SOURCE_FOR_TESTING_CLONING),
+                SoyFileKind.SRC,
+                "test.soy",
+                ErrorReporter.exploding())
+            .parseSoyFile();
     soyTree.addChild(soyFile);
 
     SoyFileSetNode clone = SoyTreeUtils.cloneWithNewIds(soyTree, nodeIdGen);
@@ -236,14 +236,15 @@ public final class SoyTreeUtilsTest extends TestCase {
 
     IdGenerator nodeIdGen = new IncrementingIdGenerator();
     SoyFileSetNode soyTree = new SoyFileSetNode(nodeIdGen.genId(), nodeIdGen);
-    SoyFileNode soyFile = new SoyFileParser(
-        new SoyTypeRegistry(),
-        nodeIdGen,
-         new StringReader(SOY_SOURCE_FOR_TESTING_CLONING),
-        SoyFileKind.SRC,
-        "test.soy",
-        ExplodingErrorReporter.get())
-        .parseSoyFile();
+    SoyFileNode soyFile =
+        new SoyFileParser(
+                new SoyTypeRegistry(),
+                nodeIdGen,
+                new StringReader(SOY_SOURCE_FOR_TESTING_CLONING),
+                SoyFileKind.SRC,
+                "test.soy",
+                ErrorReporter.exploding())
+            .parseSoyFile();
     soyTree.addChild(soyFile);
 
     TemplateNode template = soyFile.getChild(0);
@@ -266,7 +267,7 @@ public final class SoyTreeUtilsTest extends TestCase {
 
     IdGenerator nodeIdGen = new IncrementingIdGenerator();
     SoyFileSetNode soyTree = new SoyFileSetNode(nodeIdGen.genId(), nodeIdGen);
-    ErrorReporter boom = ExplodingErrorReporter.get();
+    ErrorReporter boom = ErrorReporter.exploding();
     SoyFileNode soyFile = new SoyFileParser(
         new SoyTypeRegistry(),
         nodeIdGen,

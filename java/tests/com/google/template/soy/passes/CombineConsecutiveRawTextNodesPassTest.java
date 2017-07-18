@@ -22,7 +22,6 @@ import com.google.common.base.Strings;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SourceLocation.Point;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -49,7 +48,7 @@ public final class CombineConsecutiveRawTextNodesPassTest {
             + "  Blah{$goo}blah\n"
             + "{/template}\n";
 
-    ErrorReporter boom = ExplodingErrorReporter.get();
+    ErrorReporter boom = ErrorReporter.exploding();
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(testFileContent)
             .errorReporter(boom)
@@ -72,7 +71,7 @@ public final class CombineConsecutiveRawTextNodesPassTest {
   public void testCombineConsecutiveRawTextNodes_preserveSourceLocations() {
     String testFileContent = "{namespace boo}{template .foo}\nbl{nil}ah\n{/template}";
 
-    ErrorReporter boom = ExplodingErrorReporter.get();
+    ErrorReporter boom = ErrorReporter.exploding();
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(testFileContent)
             .errorReporter(boom)
@@ -119,7 +118,7 @@ public final class CombineConsecutiveRawTextNodesPassTest {
   public void testPathologicalPerformance() {
     String testFileContent = "{namespace boo}{template .foo}{/template}\n";
 
-    ErrorReporter boom = ExplodingErrorReporter.get();
+    ErrorReporter boom = ErrorReporter.exploding();
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(testFileContent)
             .errorReporter(boom)

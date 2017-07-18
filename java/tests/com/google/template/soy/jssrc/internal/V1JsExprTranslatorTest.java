@@ -21,7 +21,7 @@ import static com.google.template.soy.jssrc.dsl.CodeChunk.id;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.error.ExplodingErrorReporter;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.restricted.JsExpr;
@@ -80,7 +80,7 @@ public final class V1JsExprTranslatorTest {
             soyExpr,
             SourceLocation.UNKNOWN,
             SoyToJsVariableMappings.startingWith(LOCAL_VAR_TRANSLATIONS),
-            ExplodingErrorReporter.get());
+            ErrorReporter.exploding());
     assertThat(actualJsExpr.getText()).isEqualTo(expectedJsExpr.getText());
     if (shouldBeLenient) {
       assertThat(actualJsExpr.getPrecedence() < expectedJsExpr.getPrecedence()).isTrue();

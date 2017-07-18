@@ -28,7 +28,6 @@ import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.passes.PassManager;
 import com.google.template.soy.shared.AutoEscapingType;
 import com.google.template.soy.shared.SharedTestUtils;
@@ -56,7 +55,7 @@ public final class SoyFileSetParserBuilder {
   private SoyTypeRegistry typeRegistry = new SoyTypeRegistry();
   private SyntaxVersion declaredSyntaxVersion = SyntaxVersion.V2_0;
   @Nullable private SoyAstCache astCache = null;
-  private ErrorReporter errorReporter = ExplodingErrorReporter.get(); // See #parse for discussion.
+  private ErrorReporter errorReporter = ErrorReporter.exploding(); // See #parse for discussion.
   private boolean allowUnboundGlobals;
   @Inject private ImmutableMap<String, ? extends SoyFunction> soyFunctionMap;
   @Inject private ImmutableMap<String, ? extends SoyPrintDirective> soyPrintDirectiveMap;

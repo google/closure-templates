@@ -24,8 +24,6 @@ import com.google.common.collect.Iterables;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ErrorReporterImpl;
-import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.ForeachNode;
@@ -74,7 +72,7 @@ public final class ResolveNamesVisitorTest {
                 constructTemplateSource("{@param pa: bool}", "{$pa ? 1 : 0}"))
             .parse()
             .fileSet();
-    new ResolveNamesVisitor(ExplodingErrorReporter.get()).exec(soyTree);
+    new ResolveNamesVisitor(ErrorReporter.exploding()).exec(soyTree);
     TemplateNode n = soyTree.getChild(0).getChild(0);
     assertThat(n.getMaxLocalVariableTableSize()).isEqualTo(1);
     assertThat(n.getParams().get(0).localVariableIndex()).isEqualTo(0);
@@ -87,7 +85,7 @@ public final class ResolveNamesVisitorTest {
                 constructTemplateSource("{@inject pa: bool}", "{$pa ? 1 : 0}"))
             .parse()
             .fileSet();
-    new ResolveNamesVisitor(ExplodingErrorReporter.get()).exec(soyTree);
+    new ResolveNamesVisitor(ErrorReporter.exploding()).exec(soyTree);
     TemplateNode n = soyTree.getChild(0).getChild(0);
     assertThat(n.getMaxLocalVariableTableSize()).isEqualTo(1);
     assertThat(n.getInjectedParams().get(0).localVariableIndex()).isEqualTo(0);
@@ -99,7 +97,7 @@ public final class ResolveNamesVisitorTest {
         SoyFileSetParserBuilder.forFileContents(constructTemplateSource("{let $pa: 1 /}", "{$pa}"))
             .parse()
             .fileSet();
-    new ResolveNamesVisitor(ExplodingErrorReporter.get()).exec(soyTree);
+    new ResolveNamesVisitor(ErrorReporter.exploding()).exec(soyTree);
     TemplateNode n = soyTree.getChild(0).getChild(0);
     assertThat(n.getMaxLocalVariableTableSize()).isEqualTo(1);
     assertThat(((LetValueNode) n.getChild(0)).getVar().localVariableIndex()).isEqualTo(0);
@@ -119,7 +117,7 @@ public final class ResolveNamesVisitorTest {
                     "{let $lb: 1 /}"))
             .parse()
             .fileSet();
-    new ResolveNamesVisitor(ExplodingErrorReporter.get()).exec(soyTree);
+    new ResolveNamesVisitor(ErrorReporter.exploding()).exec(soyTree);
     TemplateNode n = soyTree.getChild(0).getChild(0);
     // 6 because we have 2 params, 1 let and a foreach loop var which needs 3 slots (variable,
     // index, lastIndex) active within the foreach loop.  the $lb can reuse a slot for the foreach
@@ -144,7 +142,7 @@ public final class ResolveNamesVisitorTest {
                 constructTemplateSource("{let $la: 1 /}", "{let $lb: $la /}", "{let $lc: $lb /}"))
             .parse()
             .fileSet();
-    new ResolveNamesVisitor(ExplodingErrorReporter.get()).exec(soyTree);
+    new ResolveNamesVisitor(ErrorReporter.exploding()).exec(soyTree);
     TemplateNode n = soyTree.getChild(0).getChild(0);
     // 3 because each new $la binding is a 'new variable'
     assertThat(n.getMaxLocalVariableTableSize()).isEqualTo(3);
@@ -219,7 +217,7 @@ public final class ResolveNamesVisitorTest {
                     "{$a}"))
             .parse()
             .fileSet();
-    new ResolveNamesVisitor(ExplodingErrorReporter.get()).exec(soyTree);
+    new ResolveNamesVisitor(ErrorReporter.exploding()).exec(soyTree);
     TemplateNode n = soyTree.getChild(0).getChild(0);
     // 1 because each new $la binding overwrites the prior one
     assertThat(n.getMaxLocalVariableTableSize()).isEqualTo(2);
@@ -274,7 +272,7 @@ public final class ResolveNamesVisitorTest {
   }
 
   private void assertResolveNamesFails(String expectedError, String fileContent) {
-    ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.createForTest();
     SoyFileSetParserBuilder.forFileContents(fileContent)
         .declaredSyntaxVersion(SyntaxVersion.V2_0)
         .errorReporter(errorReporter)

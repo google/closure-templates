@@ -19,7 +19,6 @@ package com.google.template.soy.passes;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ErrorReporterImpl;
 import com.google.template.soy.error.SoyError;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import org.junit.Test;
@@ -118,7 +117,7 @@ public final class AssertStrictAutoescapingVisitorTest {
   }
 
   private ImmutableList<SoyError> parseAndGetErrors(String soyCode) {
-    ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.createForTest();
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(soyCode)
             .errorReporter(errorReporter)

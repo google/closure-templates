@@ -23,7 +23,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.template.soy.base.internal.IdGenerator;
-import com.google.template.soy.error.ExplodingErrorReporter;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.EscapingMode;
@@ -280,7 +280,7 @@ final class Inferences {
                 ? derivedName.substring(soyFileHeaderInfo.namespace.length())
                 : null;
         clone =
-            new TemplateBasicNodeBuilder(soyFileHeaderInfo, ExplodingErrorReporter.get())
+            new TemplateBasicNodeBuilder(soyFileHeaderInfo, ErrorReporter.exploding())
                 .setId(cloneId)
                 .setSourceLocation(tn.getSourceLocation())
                 .setCmdTextInfo(
@@ -301,7 +301,7 @@ final class Inferences {
       } else if (tn instanceof TemplateDelegateNode) {
         TemplateDelegateNode tdn = (TemplateDelegateNode) tn;
         clone =
-            new TemplateDelegateNodeBuilder(soyFileHeaderInfo, ExplodingErrorReporter.get())
+            new TemplateDelegateNodeBuilder(soyFileHeaderInfo, ErrorReporter.exploding())
                 .setId(cloneId)
                 .setSourceLocation(tn.getSourceLocation())
                 .setCmdTextInfo(

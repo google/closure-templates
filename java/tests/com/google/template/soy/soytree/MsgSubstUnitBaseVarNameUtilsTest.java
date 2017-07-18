@@ -22,8 +22,6 @@ import static org.junit.Assert.assertEquals;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ErrorReporterImpl;
-import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.soyparse.SoyFileParser;
 import java.util.ArrayList;
@@ -146,7 +144,7 @@ public final class MsgSubstUnitBaseVarNameUtilsTest {
 
     List<String> actual =
         MsgSubstUnitBaseVarNameUtils.genNoncollidingBaseNamesForExprs(
-            exprs, "FALLBACK", ExplodingErrorReporter.get());
+            exprs, "FALLBACK", ErrorReporter.exploding());
     assertEquals(expected, actual);
   }
 
@@ -157,7 +155,7 @@ public final class MsgSubstUnitBaseVarNameUtilsTest {
       exprs.add(parse(exprText));
     }
 
-    ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.createForTest();
     MsgSubstUnitBaseVarNameUtils.genNoncollidingBaseNamesForExprs(exprs, "FALLBACK", errorReporter);
     assertThat(errorReporter.getErrors()).hasSize(1);
     assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())

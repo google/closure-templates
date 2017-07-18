@@ -19,7 +19,7 @@ package com.google.template.soy.soytree;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.error.ExplodingErrorReporter;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.VarRefNode;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -41,7 +41,7 @@ public final class HtmlCloseTagNodeTest {
             true,
             new VarRefNode("tag", SourceLocation.UNKNOWN, false, null),
             null,
-            ExplodingErrorReporter.get());
+            ErrorReporter.exploding());
     closeTag = new HtmlCloseTagNode(1, new TagName(dynamicTagName), SourceLocation.UNKNOWN);
     closeTag.addChild(dynamicTagName);
     assertThat(closeTag.toSourceString()).isEqualTo("</{$tag}>");

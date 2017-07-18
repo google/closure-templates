@@ -23,7 +23,6 @@ import com.google.common.collect.Iterables;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ErrorReporterImpl;
 import com.google.template.soy.error.SoyError;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -354,7 +353,7 @@ public final class CheckTemplateParamsVisitorTest {
   }
 
   private static ImmutableList<SoyError> soyDocErrorsFor(String... soyFileContents) {
-    ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.createForTest();
     SoyFileSetParserBuilder.forFileContents(soyFileContents)
         .declaredSyntaxVersion(SyntaxVersion.V1_0)
         .errorReporter(errorReporter)

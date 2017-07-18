@@ -26,7 +26,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.IndentedLinesBuilder;
 import com.google.template.soy.base.internal.SoyFileKind;
-import com.google.template.soy.error.ExplodingErrorReporter;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.soytree.CommandTagAttribute;
 import com.google.template.soy.soytree.NamespaceDeclaration;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -110,7 +110,7 @@ public final class GenerateParseInfoVisitorTest {
         new NamespaceDeclaration(
             Identifier.create(namespace, SourceLocation.UNKNOWN),
             ImmutableList.<CommandTagAttribute>of(),
-            ExplodingErrorReporter.get()),
+            ErrorReporter.exploding()),
         new TemplateNode.SoyFileHeaderInfo(namespace));
   }
 }

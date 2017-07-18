@@ -27,8 +27,6 @@ import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ErrorReporterImpl;
-import com.google.template.soy.error.ExplodingErrorReporter;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -42,7 +40,7 @@ import org.junit.runners.JUnit4;
 public final class TemplateRegistryTest {
 
   private static final ImmutableList<CommandTagAttribute> NO_ATTRS = ImmutableList.of();
-  private static final ErrorReporter FAIL = ExplodingErrorReporter.get();
+  private static final ErrorReporter FAIL = ErrorReporter.exploding();
 
   @Test
   public void testSimple() {
@@ -139,7 +137,7 @@ public final class TemplateRegistryTest {
             + "/** Foo. */\n"
             + "{template .foo}\n"
             + "{/template}\n";
-    ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.createForTest();
     SoyFileSetParserBuilder.forFileContents(file).errorReporter(errorReporter).parse();
     assertThat(errorReporter.getErrors()).hasSize(1);
     assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
@@ -156,7 +154,7 @@ public final class TemplateRegistryTest {
             + "/** Foo. */\n"
             + "{deltemplate foo.bar}\n"
             + "{/deltemplate}\n";
-    ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.createForTest();
     SoyFileSetParserBuilder.forFileContents(file).errorReporter(errorReporter).parse();
     assertThat(errorReporter.getErrors()).hasSize(1);
     assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
@@ -174,7 +172,7 @@ public final class TemplateRegistryTest {
             + "/** Foo. */\n"
             + "{deltemplate foo.bar}\n"
             + "{/deltemplate}\n";
-    ErrorReporter errorReporter = ErrorReporterImpl.createForTest();
+    ErrorReporter errorReporter = ErrorReporter.createForTest();
     SoyFileSetParserBuilder.forFileContents(file).errorReporter(errorReporter).parse();
     assertThat(errorReporter.getErrors()).hasSize(1);
     assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())

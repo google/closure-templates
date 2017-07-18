@@ -37,8 +37,6 @@ import com.google.template.soy.SoyModule;
 import com.google.template.soy.base.internal.UniqueNameGenerator;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.ErrorReporterImpl;
-import com.google.template.soy.error.ExplodingErrorReporter;
 import com.google.template.soy.error.SoyError;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.Operator;
@@ -86,7 +84,7 @@ abstract class JsSrcSubject<T extends Subject<T, String>> extends Subject<T, Str
   private SoyGeneralOptions generalOptions = new SoyGeneralOptions().disableOptimizer();
   SoyJsSrcOptions jsSrcOptions = new SoyJsSrcOptions();
   private SoyTypeRegistry typeRegistry = new SoyTypeRegistry();
-  ErrorReporter errorReporter = ExplodingErrorReporter.get();
+  ErrorReporter errorReporter = ErrorReporter.exploding();
   private final List<SoyFunction> soyFunctions = new ArrayList<>();
   private SyntaxVersion syntaxVersion = SyntaxVersion.V2_0;
 
@@ -196,7 +194,7 @@ abstract class JsSrcSubject<T extends Subject<T, String>> extends Subject<T, Str
   }
 
   void causesErrors(String... expectedErrorMsgSubstrings) {
-    ErrorReporter reporter = ErrorReporterImpl.createForTest();
+    ErrorReporter reporter = ErrorReporter.createForTest();
     this.errorReporter = reporter;
 
     generateCode();
