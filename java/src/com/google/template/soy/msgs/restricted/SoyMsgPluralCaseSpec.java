@@ -18,10 +18,10 @@ package com.google.template.soy.msgs.restricted;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.google.common.base.Ascii;
 import com.google.template.soy.msgs.SoyMsgException;
 import java.util.EnumMap;
 import java.util.EnumSet;
-import java.util.Locale;
 import java.util.Objects;
 
 /**
@@ -50,7 +50,7 @@ public class SoyMsgPluralCaseSpec {
 
   static {
     for (Type t : EnumSet.allOf(Type.class)) {
-      TYPE_TO_STRING.put(t, t.name().toLowerCase(Locale.ENGLISH));
+      TYPE_TO_STRING.put(t, Ascii.toLowerCase(t.name()));
     }
   }
 
@@ -68,7 +68,7 @@ public class SoyMsgPluralCaseSpec {
    *     with any of the enum types.
    */
   public SoyMsgPluralCaseSpec(String typeStr) {
-    this(Type.valueOf(typeStr.toUpperCase(Locale.ENGLISH)));
+    this(Type.valueOf(Ascii.toUpperCase(typeStr)));
   }
 
   /** Constructs an object from a non-numeric value. */

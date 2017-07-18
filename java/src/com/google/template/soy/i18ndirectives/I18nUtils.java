@@ -16,6 +16,7 @@
 
 package com.google.template.soy.i18ndirectives;
 
+import com.google.common.base.Ascii;
 import com.ibm.icu.util.ULocale;
 import java.util.Locale;
 
@@ -42,9 +43,9 @@ class I18nUtils {
       case 1:
         return new Locale(groups[0]);
       case 2:
-        return new Locale(groups[0], groups[1].toUpperCase());
+        return new Locale(groups[0], Ascii.toUpperCase(groups[1]));
       case 3:
-        return new Locale(groups[0], groups[1].toUpperCase(), groups[2]);
+        return new Locale(groups[0], Ascii.toUpperCase(groups[1]), groups[2]);
       default:
         throw new IllegalArgumentException("Malformed localeString: " + localeString);
     }

@@ -16,6 +16,7 @@
 
 package com.google.template.soy.types.primitive;
 
+import com.google.common.base.Ascii;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.types.SoyType;
 
@@ -31,7 +32,7 @@ public abstract class SanitizedType extends PrimitiveType {
 
   @Override
   public String toString() {
-    return getContentKind().toString().toLowerCase();
+    return Ascii.toLowerCase(getContentKind().toString());
   }
 
   /**

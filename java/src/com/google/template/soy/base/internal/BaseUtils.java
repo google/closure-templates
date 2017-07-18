@@ -16,6 +16,7 @@
 
 package com.google.template.soy.base.internal;
 
+import com.google.common.base.Ascii;
 import com.google.common.collect.Sets;
 import java.io.File;
 import java.util.Set;
@@ -158,7 +159,7 @@ public class BaseUtils {
     ident = LEADING_OR_TRAILING_UNDERSCORE_PATTERN.matcher(ident).replaceAll("");
     ident = WORD_BOUNDARY_IN_IDENT_PATTERN.matcher(ident).replaceAll("_");
     ident = CONSECUTIVE_UNDERSCORES_PATTERN.matcher(ident).replaceAll("_");
-    return ident.toUpperCase();
+    return Ascii.toUpperCase(ident);
   }
 
   /**

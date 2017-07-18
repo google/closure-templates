@@ -18,6 +18,7 @@ package com.google.template.soy.shared.restricted;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+import com.google.common.base.Ascii;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.escape.Escaper;
@@ -145,7 +146,7 @@ public final class EscapingConventions {
       String simpleName = getClass().getSimpleName();
       // EscapeHtml -> |escapeHtml
       this.directiveName =
-          ("|" + Character.toLowerCase(simpleName.charAt(0)) + simpleName.substring(1));
+          ("|" + Ascii.toLowerCase(simpleName.charAt(0)) + simpleName.substring(1));
 
       this.valueFilter = valueFilter;
       this.escapes = defineEscapes();

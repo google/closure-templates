@@ -16,6 +16,7 @@
 
 package com.google.template.soy.shared.restricted;
 
+import com.google.common.base.Ascii;
 import com.google.common.base.Function;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableMap;
@@ -25,7 +26,6 @@ import com.google.common.collect.Sets;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumSet;
-import java.util.Locale;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -103,8 +103,10 @@ public final class TagWhitelist {
     return safeTagNames.contains(tagName);
   }
 
+  // No need to handle uper case characters, the assertion below already requires that they are
+  // all lower case ascii
   private static final Pattern VALID_TAG_NAME =
-      Pattern.compile("^[A-Za-z][A-Za-z0-9]*(?:-[A-Za-z][A-Za-z0-9]*)*\\z");
+      Pattern.compile("^[a-z][a-z0-9]*(?:-[a-z][a-z0-9]*)*\\z");
 
   // Any changes to this must be reviewed by ise-team@.
   /** A white-list of common formatting tags used by jslayout. */
@@ -120,8 +122,7 @@ public final class TagWhitelist {
 
   private static boolean requireLowerCaseTagNames(Iterable<String> strs) {
     for (String str : strs) {
-      assert str.equals(str.toLowerCase(Locale.ENGLISH)) && VALID_TAG_NAME.matcher(str).matches()
-          : str;
+      assert str.equals(Ascii.toLowerCase(str)) && VALID_TAG_NAME.matcher(str).matches() : str;
     }
     // We assert above instead of returning false so that the assertion error contains the
     // offending tag name.
