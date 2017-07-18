@@ -27,7 +27,6 @@ import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Message;
 import com.google.protobuf.TextFormat;
-import com.google.template.soy.base.SoyBackendKind;
 import com.google.template.soy.data.SoyAbstractValue;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyProtoValue;
@@ -36,6 +35,7 @@ import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -49,17 +49,36 @@ import java.util.Set;
  *
  */
 public final class SoyProtoValueImpl extends SoyAbstractValue implements SoyProtoValue, SoyMap {
-  private static final LoadingCache<Descriptor, ImmutableMap<String, Field>> fieldCache =
+  private static final class ProtoClass {
+    final ImmutableMap<String, Field> fields;
+    final Message defaultInstance;
+
+    ProtoClass(Message defaultInstance, ImmutableMap<String, Field> fields) {
+      this.defaultInstance = checkNotNull(defaultInstance);
+      this.fields = checkNotNull(fields);
+    }
+  }
+
+  private static final LoadingCache<Descriptor, ProtoClass> classCache =
       CacheBuilder.newBuilder()
           .weakKeys()
           .build(
-              new CacheLoader<Descriptor, ImmutableMap<String, Field>>() {
+              new CacheLoader<Descriptor, ProtoClass>() {
                 @Override
-                public ImmutableMap<String, Field> load(Descriptor descriptor) {
+                public ProtoClass load(Descriptor descriptor) throws Exception {
                   Set<FieldDescriptor> extensions = new LinkedHashSet<>();
-                  return Field.getFieldsForType(/* typeRegistry= */ null, descriptor, extensions);
+                  return new ProtoClass(
+                      getDefaultInstance(descriptor),
+                      Field.getFieldsForType(/* typeRegistry= */ null, descriptor, extensions));
                 }
               });
+
+  private static Message getDefaultInstance(Descriptor key)
+      throws ClassNotFoundException, IllegalAccessException, InvocationTargetException,
+          NoSuchMethodException {
+    Class<?> messageClass = Class.forName(JavaQualifiedNames.getClassName(key));
+    return (Message) messageClass.getMethod("getDefaultInstance").invoke(null);
+  }
 
   public static SoyProtoValueImpl create(Message proto) {
     return new SoyProtoValueImpl(proto);
@@ -69,19 +88,21 @@ public final class SoyProtoValueImpl extends SoyAbstractValue implements SoyProt
   private final Message proto;
 
   // lazily initialized
-  private ImmutableMap<String, Field> fields;
+  private ProtoClass clazz;
 
   private SoyProtoValueImpl(Message proto) {
     this.proto = checkNotNull(proto);
   }
 
-  private ImmutableMap<String, Field> fields() {
-    ImmutableMap<String, Field> localFields = fields;
-    if (localFields == null) {
-      localFields = fieldCache.getUnchecked(proto.getDescriptorForType());
-      fields = localFields;
+  // lazy accessor for clazz, in jbcsrc we often will not need this metadata. so avoid calculating
+  // it if we can
+  private ProtoClass clazz() {
+    ProtoClass localClazz = clazz;
+    if (localClazz == null) {
+      localClazz = classCache.getUnchecked(proto.getDescriptorForType());
+      clazz = localClazz;
     }
-    return localFields;
+    return localClazz;
   }
 
   // -----------------------------------------------------------------------------------------------
@@ -95,7 +116,7 @@ public final class SoyProtoValueImpl extends SoyAbstractValue implements SoyProt
 
   @Override
   public SoyValue getProtoField(String name) {
-    Field field = fields().get(name);
+    Field field = clazz().fields.get(name);
     if (field == null) {
       throw new IllegalArgumentException(
           "Proto " + proto.getClass().getName() + " does not have a field of name " + name);
@@ -117,7 +138,7 @@ public final class SoyProtoValueImpl extends SoyAbstractValue implements SoyProt
     // TODO(user): hasField(name) should really be two separate checks:
     // if (type.getField(name) == null) { throw new IllegalArgumentException(); }
     // if (!type.getField(name).hasField(proto)) { return null; }
-    Field field = fields().get(name);
+    Field field = clazz().fields.get(name);
     if (field == null) {
       return false;
     }
@@ -147,7 +168,7 @@ public final class SoyProtoValueImpl extends SoyAbstractValue implements SoyProt
       return null;
     }
 
-    return fields().get(name).interpretField(proto).resolve();
+    return clazz().fields.get(name).interpretField(proto).resolve();
   }
 
   // -----------------------------------------------------------------------------------------------
@@ -165,7 +186,7 @@ public final class SoyProtoValueImpl extends SoyAbstractValue implements SoyProt
     // slowing down the common case of field access. This basically goes over all possible keys,
     // but filters ones that need to be ignored or lack a suitable value.
     ImmutableList.Builder<SoyValue> builder = ImmutableList.builder();
-    for (String key : fields().keySet()) {
+    for (String key : clazz().fields.keySet()) {
       if (hasField(key)) {
         builder.add(StringData.forValue(key));
       }
@@ -238,36 +259,23 @@ public final class SoyProtoValueImpl extends SoyAbstractValue implements SoyProt
    * <p>Not for use by Soy users.
    */
   public static final class Builder {
-    private static final LoadingCache<SoyProtoType, Message> defaultInstanceForType =
-        CacheBuilder.newBuilder()
-            .weakKeys()
-            .build(
-                new CacheLoader<SoyProtoType, Message>() {
-                  @Override
-                  public Message load(SoyProtoType key) throws Exception {
-                    // every proto has a public static method getDefaultInstance() which returns
-                    // the default empty instance
-                    String nameForBackend = key.getNameForBackend(SoyBackendKind.TOFU);
-                    Class<?> messageClass = Class.forName(nameForBackend);
-                    return (Message) messageClass.getMethod("getDefaultInstance").invoke(null);
-                  }
-                });
-
-    private final SoyProtoType soyProto;
+    private final ProtoClass clazz;
     private final Message.Builder builder;
 
-    public Builder(SoyProtoType soyProto) {
-      this.soyProto = checkNotNull(soyProto);
-      this.builder = defaultInstanceForType.getUnchecked(soyProto).newBuilderForType();
+    public Builder(Descriptor soyProto) {
+      this.clazz = classCache.getUnchecked(soyProto);
+      this.builder = clazz.defaultInstance.newBuilderForType();
     }
 
     public Builder setField(String field, SoyValue value) {
-      soyProto.getField(field).assignField(builder, value);
+      clazz.fields.get(field).assignField(builder, value);
       return this;
     }
 
     public SoyProtoValueImpl build() {
-      return new SoyProtoValueImpl(builder.build());
+      SoyProtoValueImpl soyProtoValueImpl = new SoyProtoValueImpl(builder.build());
+      soyProtoValueImpl.clazz = clazz;
+      return soyProtoValueImpl;
     }
   }
 }

@@ -604,7 +604,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     // The downcast is safe because if it was anything else, compilation would have already failed.
     SoyProtoType soyProto = (SoyProtoType) node.getType();
     ImmutableList<String> paramNames = node.getParamNames();
-    SoyProtoValueImpl.Builder builder = new SoyProtoValueImpl.Builder(soyProto);
+    SoyProtoValueImpl.Builder builder = new SoyProtoValueImpl.Builder(soyProto.getDescriptor());
     for (int i = 0; i < node.numChildren(); i++) {
       SoyValue visit = visit(node.getChild(i));
       // null means don't assign
