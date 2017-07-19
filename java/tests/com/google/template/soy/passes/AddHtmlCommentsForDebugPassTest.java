@@ -44,6 +44,37 @@ public final class AddHtmlCommentsForDebugPassTest {
   }
 
   @Test
+  public void testForTextCallHtml() throws Exception {
+    ImmutableMap<String, String> result =
+        runPass(
+            "{template .t kind=\"text\"}{call .t2 /}{/template}\n" + "{template .t2}{/template}");
+    // Both templates should not be rewritten
+    assertThat(result.get("ns.t")).isEqualTo("{call .t2 /}");
+    assertThat(result.get("ns.t2")).isEmpty();
+
+    result =
+        runPass(
+            "{template .t kind=\"text\"}{call .t2 /}{/template}\n"
+                + "{template .t2 kind=\"attributes\"}{/template}");
+    // Both templates should not be rewritten
+    assertThat(result.get("ns.t")).isEqualTo("{call .t2 /}");
+    assertThat(result.get("ns.t2")).isEmpty();
+
+    result =
+        runPass(
+            "{template .t kind=\"text\"}{call .t2 /}{/template}\n"
+                + "{template .t2 kind=\"html\"}<div>foo</div>{/template}");
+    // ns.t should not be rewritten since it has kind="text"
+    assertThat(result.get("ns.t")).isEqualTo("{call .t2 /}");
+    // ns.t2 should still be rewritten
+    assertThat(result.get("ns.t2"))
+        .isEqualTo(
+            "{if $$debugSoyTemplateInfo()}<!--dta_of(ns.t2, test.soy, 2)-->{/if}"
+                + "<div>foo</div>"
+                + "{if $$debugSoyTemplateInfo()}<!--dta_cf(ns.t2)-->{/if}");
+  }
+
+  @Test
   public void testNoOpForNonStrictAutoEscapeMode() throws Exception {
     assertTemplate("{template .t autoescape=\"deprecated-contextual\"}{/template}").isEmpty();
     assertTemplate("{template .t autoescape=\"deprecated-noncontextual\"}{/template}").isEmpty();

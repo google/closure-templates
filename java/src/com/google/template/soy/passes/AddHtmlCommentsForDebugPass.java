@@ -79,6 +79,9 @@ public final class AddHtmlCommentsForDebugPass extends CompilerFileSetPass {
   private Multimap<TemplateNode, TemplateNode> buildStrictHtmlCallers(TemplateRegistry registry) {
     Multimap<TemplateNode, TemplateNode> strictHtmlCallers = LinkedHashMultimap.create();
     for (TemplateNode template : registry.getAllTemplates()) {
+      if (!isStrictAndKindHtml(template)) {
+        continue;
+      }
       // Updates callers map.
       for (CallNode callNode : SoyTreeUtils.getAllNodesOfType(template, CallNode.class)) {
         if (callNode instanceof CallBasicNode) {
