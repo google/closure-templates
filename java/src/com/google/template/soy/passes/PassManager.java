@@ -150,9 +150,6 @@ public final class PassManager {
     if (options.isStrictAutoescapingRequired() == TriState.ENABLED) {
       singleFilePassesBuilder.add(new EnforceStrictAutoescapingPass());
     }
-    if (builder.addHtmlCommentsForDebug) {
-      singleFilePassesBuilder.add(new AddHtmlCommentsForDebugPass());
-    }
     this.singleFilePasses = singleFilePassesBuilder.build();
 
     // Cross template checking passes
@@ -181,6 +178,10 @@ public final class PassManager {
     // of little raw text nodes.  The desguaring pass and rewrite passes above may produce empty
     // raw text nodes and lots of consecutive raw text nodes.  This will eliminate them
     beforeAutoescaperFileSetPassBuilder.add(new CombineConsecutiveRawTextNodesPass());
+
+    if (builder.addHtmlCommentsForDebug) {
+      beforeAutoescaperFileSetPassBuilder.add(new AddHtmlCommentsForDebugPass());
+    }
     this.crossTemplateCheckingPasses = beforeAutoescaperFileSetPassBuilder.build();
 
     // Simplification passes

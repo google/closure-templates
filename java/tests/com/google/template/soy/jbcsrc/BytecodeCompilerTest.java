@@ -168,13 +168,16 @@ public class BytecodeCompilerTest {
                 "{namespace ns}",
                 "",
                 "{template .html}",
-                "  foo",
+                "  <div>foo</div>",
                 "{/template}",
                 "",
                 "{template .text kind=\"text\"}",
                 "  foo",
                 "{/template}",
-                "");
+                "",
+                "{template .htmlNoTag}",
+                "  foo",
+                "{/template}");
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(soyFileContent)
             .addHtmlCommentsForDebug(true)
@@ -186,13 +189,19 @@ public class BytecodeCompilerTest {
 
     // HTML templates
     CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.html");
-    assertThat(renderWithContext(factory, getDefaultContext(templates))).isEqualTo("foo");
+    assertThat(renderWithContext(factory, getDefaultContext(templates)))
+        .isEqualTo("<div>foo</div>");
     // If debugSoyTemplateInfo is enabled, we should render additional HTML comments.
     assertThat(renderWithContext(factory, getDefaultContextWithDebugInfo(templates)))
-        .isEqualTo("<!--dta_of(ns.html, no-path, 3)-->foo<!--dta_cf(ns.html)-->");
+        .isEqualTo("<!--dta_of(ns.html, no-path, 3)--><div>foo</div><!--dta_cf(ns.html)-->");
 
     // We should never render these comments for templates with kind="text".
     factory = templates.getTemplateFactory("ns.text");
+    assertThat(renderWithContext(factory, getDefaultContext(templates))).isEqualTo("foo");
+    assertThat(renderWithContext(factory, getDefaultContextWithDebugInfo(templates)))
+        .isEqualTo("foo");
+
+    factory = templates.getTemplateFactory("ns.htmlNoTag");
     assertThat(renderWithContext(factory, getDefaultContext(templates))).isEqualTo("foo");
     assertThat(renderWithContext(factory, getDefaultContextWithDebugInfo(templates)))
         .isEqualTo("foo");
