@@ -76,8 +76,7 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
 
   private final ErrorReporter errorReporter;
 
-  StrictHtmlValidationPass(
-      ImmutableList<String> experimentalFeatures, ErrorReporter errorReporter) {
+  StrictHtmlValidationPass(ErrorReporter errorReporter) {
     this.errorReporter = errorReporter;
   }
 

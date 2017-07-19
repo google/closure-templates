@@ -117,7 +117,7 @@ public final class PassManager {
             .add(new RewriteRemaindersPass())
             // Needs to run after inserting msg placeholders to ensure that genders="..."
             // expressions do not introduce extra placeholders for call and print nodes.
-            .add(new StrictHtmlValidationPass(options.getExperimentalFeatures(), errorReporter))
+            .add(new StrictHtmlValidationPass(errorReporter))
             .add(new RewriteGlobalsPass(registry, options.getCompileTimeGlobals(), errorReporter))
             .add(new ResolveNamesPass());
     singleFilePassesBuilder.add(new ResolveFunctionsPass());
