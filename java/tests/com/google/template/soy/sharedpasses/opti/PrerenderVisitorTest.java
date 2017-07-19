@@ -16,6 +16,7 @@
 
 package com.google.template.soy.sharedpasses.opti;
 
+import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -85,26 +86,17 @@ public class PrerenderVisitorTest {
       assertTrue(re.getMessage().contains("Cannot prerender MsgFallbackGroupNode."));
     }
 
-    // Cannot prerender CssNode.
-    templateBody =
-        "{let $boo: 8 /}\n"
-            + "{if $boo > 4}\n"
-            + "  <div class=\"{css foo}\">blah</div>\n"
-            + "{/if}\n";
+    // Cannot prerender Debugger.
+    templateBody = "{let $boo: 8 /}\n" + "{if $boo > 4}\n" + "{debugger}" + "{/if}\n";
     try {
       prerender(templateBody);
       fail();
     } catch (RenderException re) {
-      assertTrue(re.getMessage().contains("Cannot prerender CssNode."));
+      assertThat(re.getMessage()).contains("Cannot prerender DebuggerNode.");
     }
 
-    // This should work because the if-condition is false, thus skipping the CssNode.
-    templateBody =
-        "{let $boo: 8 /}\n"
-            + "{$boo}\n"
-            + "{if $boo < 4}\n"
-            + "  <div class=\"{css foo}\">blah</div>\n"
-            + "{/if}\n";
+    // This should work because the if-condition is false, thus skipping the DebuggerNode.
+    templateBody = "{let $boo: 8 /}\n" + "{$boo}\n" + "{if $boo < 4}\n" + "{debugger}" + "{/if}\n";
     assertEquals("8", prerender(templateBody));
   }
 

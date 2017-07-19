@@ -42,7 +42,6 @@ import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamValueNode;
-import com.google.template.soy.soytree.CssNode;
 import com.google.template.soy.soytree.DebuggerNode;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForeachIfemptyNode;
@@ -73,7 +72,6 @@ import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateSubject;
-import com.google.template.soy.soytree.XidNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import java.util.List;
 import org.junit.Test;
@@ -416,8 +414,8 @@ public final class TemplateParserTest {
     assertValidTemplate(
         "{@param aaa : ?}{@param bbb : ?}{@param ddd : ?}\n"
             + "{$aaa + 1}{print $bbb.ccc[$ddd] |noescape}");
-    assertValidTemplate("{css selected-option}{css CSS_SELECTED_OPTION}");
-    assertValidTemplate("{xid selected-option}{xid SELECTED_OPTION_ID}");
+    assertValidTemplate("{css('selected-option')}{css('CSS_SELECTED_OPTION')}");
+    assertValidTemplate("{xid('selected-option')}{xid('SELECTED_OPTION_ID')}");
     assertValidTemplate(
         "{@param boo : ?}{@param goo : ?}" + "{if $boo}foo{elseif $goo}moo{else}zoo{/if}");
     assertValidTemplate(
@@ -1002,34 +1000,6 @@ public final class TemplateParserTest {
     assertFalse(pn0.genSamenessKey().equals(pn1.genSamenessKey()));
     assertTrue(pn1.genSamenessKey().equals(pn2.genSamenessKey()));
     assertFalse(pn1.genSamenessKey().equals(pn3.genSamenessKey()));
-  }
-
-  @Test
-  public void testParseCssStmt() throws Exception {
-
-    String templateBody =
-        "{css selected-option}" + "{css CSS_SELECTED_OPTION}" + "{css %SelectedOption}";
-
-    List<StandaloneNode> nodes =
-        assertValidTemplate(SanitizedContentKind.TEXT, "requirecss=\"foo.bar\"", templateBody)
-            .getChildren();
-    assertThat(nodes).hasSize(3);
-    assertEquals("selected-option", ((CssNode) nodes.get(0)).getSelectorText());
-    assertEquals("CSS_SELECTED_OPTION", ((CssNode) nodes.get(1)).getSelectorText());
-    assertEquals("fooBarSelectedOption", ((CssNode) nodes.get(2)).getSelectorText());
-  }
-
-  @Test
-  public void testParseXidStmt() throws Exception {
-
-    String templateBody =
-        "{xid selected-option}\n" + "{xid selected.option}\n" + "{xid XID_SELECTED_OPTION}";
-
-    List<StandaloneNode> nodes = parseTemplateContent(templateBody, FAIL).getChildren();
-    assertEquals(3, nodes.size());
-    assertEquals("selected-option", ((XidNode) nodes.get(0)).getText());
-    assertEquals("selected.option", ((XidNode) nodes.get(1)).getText());
-    assertEquals("XID_SELECTED_OPTION", ((XidNode) nodes.get(2)).getText());
   }
 
   @Test

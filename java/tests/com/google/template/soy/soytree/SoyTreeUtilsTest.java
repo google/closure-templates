@@ -156,7 +156,6 @@ public final class SoyTreeUtilsTest {
               "  {literal}",
               "     {interpreted literally/}",
               "  {/literal}",
-              "  <style>{css bar} {lb}color: red{rb}</style>",
               "  <style>{css($foo, 'bar')} {lb}color: red{rb}</style>",
               "  {msg desc=\"test\"}<h1 class=\"howdy\">Hello, {$world}!</h1>{/msg}",
               "  <ol>",

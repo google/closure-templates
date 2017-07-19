@@ -637,11 +637,11 @@ public class RenderVisitorTest {
             + "         Notify people via email &rsaquo;\n"
             + "     {case 1}\n"
             + "         Notify{sp}\n"
-            + "         <span class=\"{css sharebox-id-email-number}\">{$num}</span>{sp}\n"
+            + "         <span class=\"{css('sharebox-id-email-number')}\">{$num}</span>{sp}\n"
             + "         person via email &rsaquo;\n"
             + "     {default}\n"
             + "         Notify{sp}\n"
-            + "         <span class=\"{css sharebox-id-email-number}\">{$num}</span>{sp}\n"
+            + "         <span class=\"{css('sharebox-id-email-number')}\">{$num}</span>{sp}\n"
             + "         people via email &rsaquo;\n"
             + "   {/plural}\n"
             + " {/msg}\n";
@@ -840,27 +840,29 @@ public class RenderVisitorTest {
   @Test
   public void testRenderWithXidRenaming() throws Exception {
     xidRenamingMap = TEST_XID_RENAMING_MAP;
-    String templateBody = "..{xid ident}";
+    String templateBody = "..{xid('ident')}";
     assertRender(templateBody, "..ident_id_renamed");
   }
 
   @Test
   public void testRenderWithoutXidRenaming() throws Exception {
-    String templateBody = "..{xid ident}";
+    String templateBody = "..{xid('ident')}";
     assertRender(templateBody, "..ident_");
   }
 
   @Test
   public void testRenderWithCssRenaming() throws Exception {
     cssRenamingMap = TEST_CSS_RENAMING_MAP;
-    String templateBody = "{@param component : ? }\n" + "{css class} {css($component, 'selector')}";
+    String templateBody =
+        "{@param component : ? }\n" + "{css('class')} {css($component, 'selector')}";
 
     assertRender(templateBody, "class_renamed comp-selector_renamed");
   }
 
   @Test
   public void testRenderWithoutCssRenaming() throws Exception {
-    String templateBody = "{@param component : ? }\n" + "{css class} {css($component, 'selector')}";
+    String templateBody =
+        "{@param component : ? }\n" + "{css('class')} {css($component, 'selector')}";
 
     assertRender(templateBody, "class comp-selector");
   }

@@ -44,9 +44,9 @@ public final class IsComputableAsJsExprsVisitorTest {
 
     runTestHelper("{@param boo: ?}\n{$boo.foo}", true);
 
-    runTestHelper("{xid selected-option}", true);
+    runTestHelper("{xid('selected-option')}", true);
 
-    runTestHelper("{css selected-option}", true);
+    runTestHelper("{css('selected-option')}", true);
   }
 
   @Test

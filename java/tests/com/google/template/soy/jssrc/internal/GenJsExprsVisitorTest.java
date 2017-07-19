@@ -153,15 +153,12 @@ public final class GenJsExprsVisitorTest {
   @Test
   public void testXid() {
 
-    assertGeneratedChunks("{xid selected-option}", "xid('selected-option');");
-    assertGeneratedChunks("{xid selected.option}", "xid('selected.option');");
+    assertGeneratedChunks("{xid('selected-option')}", "xid('selected-option');");
+    assertGeneratedChunks("{xid('selected.option')}", "xid('selected.option');");
   }
 
   @Test
   public void testCss() {
-
-    assertGeneratedChunks("{css selected-option}", "goog.getCssName('selected-option');");
-
     assertGeneratedChunks("{css('selected-option')}", "goog.getCssName('selected-option');");
 
     assertGeneratedChunks(

@@ -46,7 +46,12 @@ public abstract class ErrorReporter {
    * <p>Useful for tests.
    */
   public static ErrorReporter exploding() {
-    return ExplodingErrorReporter.get();
+    return ExplodingErrorReporter.EXPLODING;
+  }
+
+  /** Returns an ErrorReporter that throws assertion error on every error but ignores warnings. */
+  public static ErrorReporter explodeOnErrorsAndIgnoreWarnings() {
+    return ExplodingErrorReporter.EXPLODING_IGNORE_WARNINGS;
   }
 
   /**

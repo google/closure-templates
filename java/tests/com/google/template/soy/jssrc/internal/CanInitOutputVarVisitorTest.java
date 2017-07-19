@@ -71,9 +71,9 @@ public class CanInitOutputVarVisitorTest {
 
     runTestHelper("{@param boo: ? }\n{$boo.foo}", true);
 
-    runTestHelper("{xid selected-option}", true);
+    runTestHelper("{xid('selected-option')}", true);
 
-    runTestHelper("{css selected-option}", true);
+    runTestHelper("{css('selected-option')}", true);
 
     runTestHelper(
         "{@param boo: ? }\n{switch $boo}{case 0}Blah{case 1}Bleh{default}Bluh{/switch}", true);

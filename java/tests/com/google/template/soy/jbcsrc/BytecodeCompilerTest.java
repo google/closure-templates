@@ -557,13 +557,6 @@ public class BytecodeCompilerTest {
   }
 
   @Test
-  public void testCssNode() {
-    FakeRenamingMap renamingMap = new FakeRenamingMap(ImmutableMap.of("foo", "bar"));
-    assertThatTemplateBody("{css foo}").withCssRenamingMap(renamingMap).rendersAs("bar");
-    assertThatTemplateBody("{css foo2}").withCssRenamingMap(renamingMap).rendersAs("foo2");
-  }
-
-  @Test
   public void testCssFunction() {
     FakeRenamingMap renamingMap = new FakeRenamingMap(ImmutableMap.of("foo", "bar"));
     assertThatTemplateBody("{css('foo')}").withCssRenamingMap(renamingMap).rendersAs("bar");
@@ -572,13 +565,6 @@ public class BytecodeCompilerTest {
     assertThatTemplateBody("{css(1+2, 'foo2')}")
         .withCssRenamingMap(renamingMap)
         .rendersAs("3-foo2");
-  }
-
-  @Test
-  public void testXidNode() {
-    FakeRenamingMap renamingMap = new FakeRenamingMap(ImmutableMap.of("foo", "bar"));
-    assertThatTemplateBody("{xid foo}").withXidRenamingMap(renamingMap).rendersAs("bar");
-    assertThatTemplateBody("{xid foo2}").withXidRenamingMap(renamingMap).rendersAs("foo2_");
   }
 
   @Test

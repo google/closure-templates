@@ -1396,14 +1396,14 @@ public final class GenJsCodeVisitorTest {
   @Test
   public void testXid() {
 
-    assertGeneratedJsCode("{xid some-id}\n", "output += xid('some-id');\n");
+    assertGeneratedJsCode("{xid('some-id')}\n", "output += xid('some-id');\n");
 
     String testFileContent =
         "{namespace boo.foo autoescape=\"deprecated-noncontextual\"}\n"
             + "\n"
             + "/** Test template. */\n"
             + "{template .goo}\n"
-            + "  {xid some-id}\n"
+            + "  {xid('some-id')}\n"
             + "{/template}\n";
 
     ParseResult parseResult = SoyFileSetParserBuilder.forFileContents(testFileContent).parse();
@@ -2172,7 +2172,7 @@ public final class GenJsCodeVisitorTest {
         "{@param num : ?}\n"
             + "{msg desc=\"\"}\n"
             + "  Notify \n"
-            + "  {sp}<span class=\"{css sharebox-id-email-number}\">{$num}</span>{sp}\n"
+            + "  {sp}<span class=\"{css('sharebox-id-email-number')}\">{$num}</span>{sp}\n"
             + " people via email &rsaquo;"
             + "{/msg}\n";
     String expectedJsCode =
@@ -2194,10 +2194,10 @@ public final class GenJsCodeVisitorTest {
             + "    {case 0}"
             + "      Notify people via email &rsaquo;\n"
             + "    {case 1}"
-            + "      Notify{sp}<span class=\"{css sharebox-id-email-number}\">{$num}</span>{sp}\n"
+            + "      Notify{sp}<span class=\"{css('sharebox-id-email-number')}\">{$num}</span> "
             + "person via email &rsaquo;\n"
             + "    {default}\n"
-            + "Notify{sp}\n<span class=\"{css sharebox-id-email-number}\">"
+            + "Notify{sp}\n<span class=\"{css('sharebox-id-email-number')}\">"
             + "{$num}</span>{sp}\npeople via email &rsaquo;\n"
             + "  {/plural}\n"
             + "{/msg}\n";

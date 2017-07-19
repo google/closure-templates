@@ -34,14 +34,14 @@ import com.google.template.soy.base.SourceLocation;
  * @author brndn@google.com (Brendan Linn)
  */
 final class ExplodingErrorReporter extends ErrorReporter {
+  static final ErrorReporter EXPLODING = new ExplodingErrorReporter(false);
+  static final ErrorReporter EXPLODING_IGNORE_WARNINGS = new ExplodingErrorReporter(true);
 
-  private static final ErrorReporter INSTANCE = new ExplodingErrorReporter();
+  private final boolean ignoreWarnings;
 
-  static ErrorReporter get() {
-    return INSTANCE;
+  private ExplodingErrorReporter(boolean ignoreWarnings) {
+    this.ignoreWarnings = ignoreWarnings;
   }
-
-  private ExplodingErrorReporter() {}
 
   @Override
   public void report(SourceLocation sourceLocation, SoyErrorKind error, Object... args) {
@@ -53,8 +53,10 @@ final class ExplodingErrorReporter extends ErrorReporter {
   @Override
   public void warn(SourceLocation sourceLocation, SoyErrorKind error, Object... args) {
     checkNotNull(sourceLocation);
-    throw new AssertionError(
-        String.format("Unexpected warning: %s at %s", error.format(args), sourceLocation));
+    if (!ignoreWarnings) {
+      throw new AssertionError(
+          String.format("Unexpected warning: %s at %s", error.format(args), sourceLocation));
+    }
   }
 
   @Override

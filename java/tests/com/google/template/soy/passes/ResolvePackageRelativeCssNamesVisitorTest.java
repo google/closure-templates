@@ -24,7 +24,6 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.shared.SharedTestUtils;
-import com.google.template.soy.soytree.CssNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
@@ -44,17 +43,6 @@ public final class ResolvePackageRelativeCssNamesVisitorTest {
             "{namespace boo cssbase=\"some.test.package\"}\n\n"
                 + "/** Test template.*/\n"
                 + "{template .foo}\n"
-                + "  <div class=\"{css %AAA}\">\n"
-                + "{/template}\n");
-    CssNode cssNode =
-        Iterables.getOnlyElement(SoyTreeUtils.getAllNodesOfType(template, CssNode.class));
-    assertThat(cssNode.getSelectorText()).isEqualTo("someTestPackageAAA");
-
-    template =
-        compileTemplate(
-            "{namespace boo cssbase=\"some.test.package\"}\n\n"
-                + "/** Test template.*/\n"
-                + "{template .foo}\n"
                 + "  <div class=\"{css('%AAA')}\">\n"
                 + "{/template}\n");
     PrintNode printNode =
@@ -66,17 +54,6 @@ public final class ResolvePackageRelativeCssNamesVisitorTest {
   @Test
   public void testBaseCssOnTemplate() {
     TemplateNode template =
-        compileTemplate(
-            "{namespace boo}\n\n"
-                + "/** Test template.  */\n"
-                + "{template .foo cssbase=\"some.test.package\"}\n"
-                + "  <div class=\"{css %AAA}\">\n"
-                + "{/template}\n");
-    CssNode cssNode =
-        Iterables.getOnlyElement(SoyTreeUtils.getAllNodesOfType(template, CssNode.class));
-    assertThat(cssNode.getSelectorText()).isEqualTo("someTestPackageAAA");
-
-    template =
         compileTemplate(
             "{namespace boo}\n\n"
                 + "/** Test template.  */\n"
@@ -96,17 +73,6 @@ public final class ResolvePackageRelativeCssNamesVisitorTest {
             "{namespace boo requirecss=\"some.test.package,some.other.package\"}\n\n"
                 + "/** Test template. */\n"
                 + "{template .foo}\n"
-                + "  <div class=\"{css %AAA}\">\n"
-                + "{/template}\n");
-    CssNode cssNode =
-        Iterables.getOnlyElement(SoyTreeUtils.getAllNodesOfType(template, CssNode.class));
-    assertThat(cssNode.getSelectorText()).isEqualTo("someTestPackageAAA");
-
-    template =
-        compileTemplate(
-            "{namespace boo requirecss=\"some.test.package,some.other.package\"}\n\n"
-                + "/** Test template. */\n"
-                + "{template .foo}\n"
                 + "  <div class=\"{css('%AAA')}\">\n"
                 + "{/template}\n");
     PrintNode printNode =
@@ -122,17 +88,6 @@ public final class ResolvePackageRelativeCssNamesVisitorTest {
             "{namespace boo cssbase=\"some.test.package\"}\n\n"
                 + "/** Test template. */\n"
                 + "{template .foo}\n"
-                + "  <div class=\"{css AAA}\">\n"
-                + "{/template}\n");
-    CssNode cssNode =
-        Iterables.getOnlyElement(SoyTreeUtils.getAllNodesOfType(template, CssNode.class));
-    assertThat(cssNode.getSelectorText()).isEqualTo("AAA");
-
-    template =
-        compileTemplate(
-            "{namespace boo cssbase=\"some.test.package\"}\n\n"
-                + "/** Test template. */\n"
-                + "{template .foo}\n"
                 + "  <div class=\"{css('AAA')}\">\n"
                 + "{/template}\n");
     PrintNode printNode =
@@ -144,18 +99,6 @@ public final class ResolvePackageRelativeCssNamesVisitorTest {
   @Test
   public void testMissingCssBase() {
     ErrorReporter errorReporter = ErrorReporter.createForTest();
-    compileTemplate(
-        "{namespace boo}\n\n"
-            + "/** Test template. */\n"
-            + "{template .foo}\n"
-            + "  <div class=\"{css %AAA}\">\n"
-            + "{/template}\n",
-        errorReporter);
-    assertThat(errorReporter.getErrors()).hasSize(1);
-    assertThat(errorReporter.getErrors().get(0).message())
-        .isEqualTo("No CSS package defined for package-relative class name '%AAA'.");
-
-    errorReporter = ErrorReporter.createForTest();
     compileTemplate(
         "{namespace boo}\n\n"
             + "/** Test template. */\n"

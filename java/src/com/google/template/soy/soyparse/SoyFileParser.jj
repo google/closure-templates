@@ -433,6 +433,9 @@ public class SoyFileParser {
       SoyErrorKind.of("Unexpected content after ''{0}'', expected only comments or whitespace.");
   private static final SoyErrorKind UNEXPECTED_CONTENT_BEFORE =
       SoyErrorKind.of("Unexpected content before ''{0}'', expected only comments or whitespace.");
+  private static final SoyErrorKind CSS_XID_IS_DEPRECATED =
+      SoyErrorKind.of("The ''{0}'' command is deprecated, please switch to using the {0} function."
+  );
 
   // Expression errors:
   private static final SoyErrorKind DUPLICATE_PARAM_NAME =
@@ -2284,9 +2287,10 @@ private XidNode XidStmt() :
   }
 
   {
-
     String xid = (ident != null) ? ident.identifier() : tok.image;
-    return new XidNode(nodeIdGen.genId(), createSrcLoc(tagBegin, tagEnd), xid);
+    SourceLocation location = createSrcLoc(tagBegin, tagEnd);
+    errorReporter.warn(location, CSS_XID_IS_DEPRECATED, "xid");
+    return new XidNode(nodeIdGen.genId(), location, xid);
   }
 }
 
@@ -2313,7 +2317,11 @@ private CssNode CssStmt() :
     tagEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END);
   }
 
-  { return new CssNode(nodeIdGen.genId(), createSrcLoc(tagBegin, tagEnd), selector.image); }
+  {
+    SourceLocation location = createSrcLoc(tagBegin, tagEnd);
+    errorReporter.warn(location, CSS_XID_IS_DEPRECATED, "css");
+    return new CssNode(nodeIdGen.genId(), location, selector.image);
+  }
 }
 
 

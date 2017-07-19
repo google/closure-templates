@@ -40,7 +40,7 @@ public final class GenPyExprsVisitorTest {
 
   @Test
   public void testCss() {
-    assertThatSoyExpr("{css primary}")
+    assertThatSoyExpr("{css('primary')}")
         .compilesTo(new PyExpr("runtime.get_css_name('primary')", Integer.MAX_VALUE));
 
     assertThatSoyExpr("{@param foo:?}\n{css($foo, 'bar')}")
@@ -49,7 +49,7 @@ public final class GenPyExprsVisitorTest {
 
   @Test
   public void testXid() {
-    assertThatSoyExpr("{xid primary}")
+    assertThatSoyExpr("{xid('primary')}")
         .compilesTo(new PyExpr("runtime.get_xid_name('primary')", Integer.MAX_VALUE));
   }
 
