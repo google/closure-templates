@@ -23,6 +23,7 @@ import static com.google.template.soy.jssrc.dsl.CodeChunk.LITERAL_NULL;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.LITERAL_TRUE;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.arrayLiteral;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.dontTrustPrecedenceOf;
+import static com.google.template.soy.jssrc.dsl.CodeChunk.fromExpr;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.id;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.mapLiteral;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.new_;
@@ -51,6 +52,7 @@ import com.google.inject.assistedinject.Assisted;
 import com.google.inject.assistedinject.AssistedInject;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.template.soy.base.internal.BaseUtils;
+import com.google.template.soy.basicfunctions.DebugSoyTemplateInfoFunction;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.AbstractReturningExprNodeVisitor;
@@ -148,6 +150,8 @@ public class TranslateExprNodeVisitor
     extends AbstractReturningExprNodeVisitor<CodeChunk.WithValue> {
 
   private static final Joiner COMMA_JOINER = Joiner.on(", ");
+  private static final ImmutableSet<String> TRUST_PRECEDENCE_PLUGINS =
+      ImmutableSet.of(DebugSoyTemplateInfoFunction.NAME);
 
   private static final SoyErrorKind CONSTANT_USED_AS_KEY_IN_MAP_LITERAL =
       SoyErrorKind.of("Keys in map literals cannot be constants (found constant ''{0}'').");
@@ -626,8 +630,13 @@ public class TranslateExprNodeVisitor
           collector.add(GoogRequire.create(name));
         }
       }
+
+      JsExpr outputExpr = soyJsSrcFunction.computeForJsSrc(functionInputs);
       CodeChunk.WithValue functionOutput =
-          dontTrustPrecedenceOf(soyJsSrcFunction.computeForJsSrc(functionInputs), collector.get());
+          TRUST_PRECEDENCE_PLUGINS.contains(soyJsSrcFunction.getName())
+              ? fromExpr(outputExpr, collector.get())
+              : dontTrustPrecedenceOf(outputExpr, collector.get());
+
       return functionOutput.withInitialStatements(initialStatements);
     }
   }
