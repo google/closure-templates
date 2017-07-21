@@ -1275,21 +1275,31 @@ public final class ContextualAutoescaperTest {
 
   @Test
   public void testCss() throws Exception {
-    assertContextualRewritingNoop(
+    assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"deprecated-contextual\"}\n",
-            "{css foo}\n",
+            "{css('foo') |escapeHtml}\n",
+            "{/template}"),
+        join(
+            "{namespace ns}\n\n",
+            "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "{css('foo')}\n",
             "{/template}"));
   }
 
   @Test
   public void testXid() throws Exception {
-    assertContextualRewritingNoop(
+    assertContextualRewriting(
         join(
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"deprecated-contextual\"}\n",
-            "{xid foo}\n",
+            "{xid('foo') |escapeHtml}\n",
+            "{/template}"),
+        join(
+            "{namespace ns}\n\n",
+            "{template .foo autoescape=\"deprecated-contextual\"}\n",
+            "{xid('foo')}\n",
             "{/template}"));
   }
 
