@@ -57,7 +57,6 @@ public class BasicDirectivesModule extends AbstractModule {
         .toInstance(new BasicEscapeDirective.FilterTrustedResourceUri());
     soyDirectivesSetBinder.addBinding().toInstance(new BasicEscapeDirective.NormalizeUri());
     soyDirectivesSetBinder.addBinding().toInstance(new BasicEscapeDirective.EscapeUri());
-    soyDirectivesSetBinder.addBinding().toInstance(new BasicEscapeDirective.FilterCspNonceValue());
 
     // Other directives.
     soyDirectivesSetBinder.addBinding().to(ChangeNewlineToBrDirective.class);

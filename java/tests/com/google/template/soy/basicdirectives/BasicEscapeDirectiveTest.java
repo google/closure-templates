@@ -221,24 +221,6 @@ public class BasicEscapeDirectiveTest extends AbstractSoyPrintDirectiveTestCase 
   }
 
   @Test
-  public final void testFilterCspNonce() {
-    BasicEscapeDirective filterCspNonceValue = new BasicEscapeDirective.FilterCspNonceValue();
-    assertTofuOutput("zSoyz", "", filterCspNonceValue);
-    assertTofuOutput("green", "green", filterCspNonceValue);
-    assertTofuOutput("Z3JlZW4NCg==", "Z3JlZW4NCg==", filterCspNonceValue);
-    assertTofuOutput("zSoyz", "color:expression('foo')", filterCspNonceValue);
-    assertTofuOutput("zSoyz", "\"", filterCspNonceValue);
-
-    new JsSrcPrintDirectiveTestBuilder()
-        .addTest("zSoyz", "''", filterCspNonceValue)
-        .addTest("green", "'green'", filterCspNonceValue)
-        .addTest("Z3JlZW4NCg==", "'Z3JlZW4NCg=='", filterCspNonceValue)
-        .addTest("zSoyz", "'color:expression(\\'foo\\')'", filterCspNonceValue)
-        .addTest("zSoyz", "'\"'", filterCspNonceValue)
-        .runTests();
-  }
-
-  @Test
   public final void testPySrc() {
     PyExpr data = new PyStringExpr("'data'");
 

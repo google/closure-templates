@@ -356,23 +356,4 @@ public abstract class BasicEscapeDirective
       return kind == ContentKind.TRUSTED_RESOURCE_URI;
     }
   }
-
-  /**
-   * Implements the |filterCspNonceValue directive.
-   *
-   * <p>See https://www.w3.org/TR/CSP2/#nonce_value
-   */
-  @Singleton
-  @SoyPurePrintDirective
-  static final class FilterCspNonceValue extends BasicEscapeDirective {
-
-    FilterCspNonceValue() {
-      super("|filterCspNonceValue");
-    }
-
-    @Override
-    protected String escape(SoyValue value) {
-      return Sanitizers.filterCspNonceValue(value);
-    }
-  }
 }

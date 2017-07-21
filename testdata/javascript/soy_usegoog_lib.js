@@ -25491,18 +25491,6 @@ soy.$$filterCssValue = function(value) {
 
 
 /**
- * Encodes a value as a CSP nonce value.
- *
- * @param {?} value The value to escape. May not be a string, but the value
- *     will be coerced to a string.
- * @return {string} A safe CSP nonce value.
- */
-soy.$$filterCspNonceValue = function(value) {
-  return soy.esc.$$filterCspNonceValueHelper(value);
-};
-
-
-/**
  * Sanity-checks noAutoescape input for explicitly tainted content.
  *
  * SanitizedContentKind.TEXT is used to explicitly mark input that was never
@@ -26186,12 +26174,6 @@ soy.esc.$$FILTER_FOR_FILTER_CSS_VALUE_ = /^(?!-*(?:expression|(?:moz-)?binding))
  * A pattern that vets values produced by the named directives.
  * @private {!RegExp}
  */
-soy.esc.$$FILTER_FOR_FILTER_CSP_NONCE_VALUE_ = /^[a-zA-Z0-9+\/]+=*$/;
-
-/**
- * A pattern that vets values produced by the named directives.
- * @private {!RegExp}
- */
 soy.esc.$$FILTER_FOR_FILTER_NORMALIZE_URI_ = /^(?![^#?]*\/(?:\.|%2E){2}(?:[\/?#]|$))(?:(?:https?|mailto):|[^&:\/?#]*(?:[\/?#]|$))/i;
 
 /**
@@ -26320,20 +26302,6 @@ soy.esc.$$normalizeUriHelper = function(value) {
   return str.replace(
       soy.esc.$$MATCHER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI_,
       soy.esc.$$REPLACER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI_);
-};
-
-/**
- * A helper for the Soy directive |filterCspNonceValue
- * @param {*} value Can be of any type but will be coerced to a string.
- * @return {string} The escaped text.
- */
-soy.esc.$$filterCspNonceValueHelper = function(value) {
-  var str = String(value);
-  if (!soy.esc.$$FILTER_FOR_FILTER_CSP_NONCE_VALUE_.test(str)) {
-    goog.asserts.fail('Bad value `%s` for |filterCspNonceValue', [str]);
-    return 'zSoyz';
-  }
-  return str;
 };
 
 /**
