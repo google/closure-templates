@@ -735,10 +735,11 @@ public final class SoyFileSet {
                 passManagerBuilder(SyntaxVersion.V1_0)
                     .allowUnknownGlobals()
                     .allowUnknownFunctions()
-                    // override the type registry so that the parser doesn't report errors when it
-                    // can't resolve strict types
                     .setTypeRegistry(SoyTypeRegistry.DEFAULT_UNKNOWN)
-                    .disableAllTypeChecking())
+                    .disableAllTypeChecking(),
+                // override the type registry so that the parser doesn't report errors when it
+                // can't resolve strict types
+                SoyTypeRegistry.DEFAULT_UNKNOWN)
             .fileSet();
     throwIfErrorsPresent();
     SoyMsgBundle bundle = new ExtractMsgsVisitor().exec(soyTree);
@@ -770,12 +771,12 @@ public final class SoyFileSet {
       ParseResult result =
           parse(
               passManagerBuilder(SyntaxVersion.V1_0)
-                  // override the type registry so that the parser doesn't report errors when it
-                  // can't resolve strict types
-                  .setTypeRegistry(SoyTypeRegistry.DEFAULT_UNKNOWN)
                   .allowUnknownGlobals()
                   .allowUnknownFunctions()
-                  .disableAllTypeChecking());
+                  .disableAllTypeChecking(),
+              // override the type registry so that the parser doesn't report errors when it
+              // can't resolve strict types
+              SoyTypeRegistry.DEFAULT_UNKNOWN);
 
       SoyFileSetNode soyTree = result.fileSet();
       TemplateRegistry registry = result.registry();
@@ -1210,7 +1211,6 @@ public final class SoyFileSet {
   private PassManager.Builder passManagerBuilder(SyntaxVersion defaultVersion) {
     PassManager.Builder builder =
         new PassManager.Builder()
-            .setTypeRegistry(typeRegistry)
             .setGeneralOptions(generalOptions)
             .setDeclaredSyntaxVersion(generalOptions.getDeclaredSyntaxVersion(defaultVersion))
             .setSoyFunctionMap(soyFunctionMap)
@@ -1221,7 +1221,17 @@ public final class SoyFileSet {
   }
 
   private ParseResult parse(PassManager.Builder builder) {
-    return new SoyFileSetParser(cache, soyFileSuppliers, builder.build(), errorReporter).parse();
+    return parse(builder, typeRegistry);
+  }
+
+  private ParseResult parse(PassManager.Builder builder, SoyTypeRegistry typeRegistry) {
+    return new SoyFileSetParser(
+            cache,
+            soyFileSuppliers,
+            typeRegistry,
+            builder.setTypeRegistry(typeRegistry).build(),
+            errorReporter)
+        .parse();
   }
 
   /**

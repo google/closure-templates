@@ -65,6 +65,8 @@ public final class SoyFileSetParser {
 
   private final ErrorReporter errorReporter;
 
+  private final SoyTypeRegistry typeRegistry;
+
   /**
    * @param astCache The AST cache to use, if any.
    * @param soyFileSuppliers The suppliers for the Soy files. Each must have a unique file name.
@@ -72,12 +74,14 @@ public final class SoyFileSetParser {
   public SoyFileSetParser(
       @Nullable SoyAstCache astCache,
       ImmutableMap<String, ? extends SoyFileSupplier> soyFileSuppliers,
+      SoyTypeRegistry typeRegistry,
       PassManager passManager,
       ErrorReporter errorReporter) {
     this.cache = astCache;
     this.soyFileSuppliers = checkNotNull(soyFileSuppliers);
     this.errorReporter = checkNotNull(errorReporter);
     this.passManager = checkNotNull(passManager);
+    this.typeRegistry = checkNotNull(typeRegistry);
   }
 
   /** Parses a set of Soy files, returning a structure containing the parse tree and any errors. */
@@ -109,7 +113,7 @@ public final class SoyFileSetParser {
             cache != null ? cache.get(fileSupplier.getFilePath(), version) : null;
         SoyFileNode node;
         if (cachedFile == null) {
-          node = parseSoyFileHelper(fileSupplier, nodeIdGen, passManager.getTypeRegistry());
+          node = parseSoyFileHelper(fileSupplier, nodeIdGen, typeRegistry);
           // TODO(user): implement error recovery and keep on trucking in order to display
           // as many errors as possible. Currently, the later passes just spew NPEs if run on
           // a malformed parse tree.

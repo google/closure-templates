@@ -203,10 +203,6 @@ public final class PassManager {
     this.simplificationPasses = simplificationPassesBuilder.build();
   }
 
-  public SoyTypeRegistry getTypeRegistry() {
-    return registry;
-  }
-
   public void runSingleFilePasses(SoyFileNode file, IdGenerator nodeIdGen) {
     for (CompilerFilePass pass : singleFilePasses) {
       pass.run(file, nodeIdGen);

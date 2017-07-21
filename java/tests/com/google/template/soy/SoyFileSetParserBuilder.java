@@ -245,7 +245,8 @@ public final class SoyFileSetParserBuilder {
     if (allowUnboundGlobals) {
       passManager.allowUnknownGlobals();
     }
-    return new SoyFileSetParser(astCache, soyFileSuppliers, passManager.build(), errorReporter)
+    return new SoyFileSetParser(
+            astCache, soyFileSuppliers, typeRegistry, passManager.build(), errorReporter)
         .parse();
   }
 }
