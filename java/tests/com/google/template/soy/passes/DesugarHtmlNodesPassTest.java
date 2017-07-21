@@ -20,14 +20,9 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.base.Joiner;
 import com.google.common.truth.StringSubject;
-import com.google.template.soy.base.internal.IncrementingIdGenerator;
-import com.google.template.soy.base.internal.SoyFileKind;
-import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.soyparse.SoyFileParser;
+import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
-import com.google.template.soy.types.SoyTypeRegistry;
-import java.io.StringReader;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -47,9 +42,9 @@ public final class DesugarHtmlNodesPassTest {
     assertNoOp("<div class=foo />");
     // Html comment nodes should be no op.
     assertNoOp("<!--foo-->");
-    assertNoOp("<!--{$foo}-->");
-    assertNoOp("<!--{$foo}hello{$bar}-->");
-    assertNoOp("<!--{if $foo}hello{/if}-->");
+    assertNoOp("{let $foo : '' /}<!--{$foo}-->");
+    assertNoOp("{let $foo : '' /}{let $bar : '' /}<!--{$foo}hello{$bar}-->");
+    assertNoOp("{let $foo : '' /}<!--{if $foo}hello{/if}-->");
     assertNoOp("<!--<script>test</script>-->");
   }
 
@@ -107,18 +102,12 @@ public final class DesugarHtmlNodesPassTest {
    */
   private static String runPass(String input) {
     String soyFile = Joiner.on('\n').join("{namespace ns}", "{template .t}", input, "{/template}");
-    IncrementingIdGenerator nodeIdGen = new IncrementingIdGenerator();
     SoyFileNode node =
-        new SoyFileParser(
-                new SoyTypeRegistry(),
-                nodeIdGen,
-                new StringReader(soyFile),
-                SoyFileKind.SRC,
-                "test.soy",
-                ErrorReporter.exploding())
-            .parseSoyFile();
-    new HtmlRewritePass(ErrorReporter.exploding()).run(node, nodeIdGen);
-    new DesugarHtmlNodesPass().run(node, nodeIdGen);
+        SoyFileSetParserBuilder.forFileContents(soyFile)
+            .desugarHtmlNodes(true)
+            .parse()
+            .fileSet()
+            .getChild(0);
     assertThat(SoyTreeUtils.hasHtmlNodes(node)).isFalse();
     StringBuilder sb = new StringBuilder();
     node.getChild(0).appendSourceStringForChildren(sb);

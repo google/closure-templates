@@ -21,10 +21,9 @@ import static com.google.common.truth.Truth.assertThat;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Iterables;
 import com.google.common.truth.StringSubject;
+import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
-import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.HtmlAttributeValueNode;
 import com.google.template.soy.soytree.HtmlCloseTagNode;
@@ -33,8 +32,6 @@ import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.types.SoyTypeRegistry;
-import java.io.StringReader;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -45,9 +42,8 @@ public final class HtmlRewritePassTest {
   @Test
   public void testTags() {
     TemplateNode node = runPass("<div></div>");
-    assertThat(node.getChild(0)).isInstanceOf(RawTextNode.class);
-    assertThat(node.getChild(1)).isInstanceOf(HtmlOpenTagNode.class);
-    assertThat(node.getChild(2)).isInstanceOf(HtmlCloseTagNode.class);
+    assertThat(node.getChild(0)).isInstanceOf(HtmlOpenTagNode.class);
+    assertThat(node.getChild(1)).isInstanceOf(HtmlCloseTagNode.class);
     assertThatSourceString(node).isEqualTo("<div></div>");
     assertThatASTString(node)
         .isEqualTo(
@@ -86,9 +82,9 @@ public final class HtmlRewritePassTest {
     assertThatASTString(node).isEqualTo(structure);
 
     // This is a tricky case, according to the spec the '/' belongs to the attribute, not the tag
-    node = runPass("<div class=foo/>");
-    assertThatSourceString(node).isEqualTo("<div class=foo/>");
-    HtmlOpenTagNode openTag = (HtmlOpenTagNode) node.getChild(1);
+    node = runPass("<input class=foo/>");
+    assertThatSourceString(node).isEqualTo("<input class=foo/>");
+    HtmlOpenTagNode openTag = (HtmlOpenTagNode) node.getChild(0);
     assertThat(openTag.isSelfClosing()).isFalse();
     HtmlAttributeValueNode attributeValue =
         (HtmlAttributeValueNode) ((HtmlAttributeNode) openTag.getChild(1)).getChild(1);
@@ -144,12 +140,12 @@ public final class HtmlRewritePassTest {
 
   @Test
   public void testUnquotedAttributeValue() {
-    TemplateNode node = runPass("<div class=foo />");
-    assertThat(((HtmlOpenTagNode) node.getChild(1)).isSelfClosing()).isTrue();
-    node = runPass("<div class=foo/>");
-    assertThat(((HtmlOpenTagNode) node.getChild(1)).isSelfClosing()).isFalse();
-    node = runPass("<div class/>");
-    assertThat(((HtmlOpenTagNode) node.getChild(1)).isSelfClosing()).isTrue();
+    TemplateNode node = runPass("<img class=foo />");
+    assertThat(((HtmlOpenTagNode) node.getChild(0)).isSelfClosing()).isTrue();
+    node = runPass("<img class=foo/>");
+    assertThat(((HtmlOpenTagNode) node.getChild(0)).isSelfClosing()).isFalse();
+    node = runPass("<img class/>");
+    assertThat(((HtmlOpenTagNode) node.getChild(0)).isSelfClosing()).isTrue();
   }
 
   @Test
@@ -396,7 +392,8 @@ public final class HtmlRewritePassTest {
   // regression test for a bug where we would drop rcdata content.
   @Test
   public void testRcDataTags() {
-    assertThatSourceString(runPass("<script>xxx</script>")).isEqualTo("<script>xxx</script>");
+    assertThatSourceString(runPass("<script>xxx</script>"))
+        .isEqualTo("<script{if $ij.csp_nonce} nonce=\"{$ij.csp_nonce}\"{/if}>xxx</script>");
   }
 
   @Test
@@ -525,19 +522,15 @@ public final class HtmlRewritePassTest {
   private static TemplateNode runPass(String input, ErrorReporter errorReporter) {
     String soyFile =
         Joiner.on('\n')
-            .join("{namespace ns}", "", "{template .t stricthtml=\"true\"}", input, "{/template}");
-    IncrementingIdGenerator nodeIdGen = new IncrementingIdGenerator();
+            .join("{namespace ns}", "", "{template .t stricthtml=\"false\"}", input, "{/template}");
     SoyFileNode node =
-        new SoyFileParser(
-                new SoyTypeRegistry(),
-                nodeIdGen,
-                new StringReader(soyFile),
-                SoyFileKind.SRC,
-                "test.soy",
-                errorReporter)
-            .parseSoyFile();
+        SoyFileSetParserBuilder.forFileContents(soyFile)
+            .desugarHtmlNodes(false)
+            .errorReporter(errorReporter)
+            .parse()
+            .fileSet()
+            .getChild(0);
     if (node != null) {
-      new HtmlRewritePass(errorReporter).run(node, nodeIdGen);
       return node.getChild(0);
     }
     return null;

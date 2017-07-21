@@ -19,14 +19,7 @@ package com.google.template.soy.soytree;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.base.Joiner;
-import com.google.template.soy.base.internal.IncrementingIdGenerator;
-import com.google.template.soy.base.internal.SoyFileKind;
-import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.passes.CombineConsecutiveRawTextNodesPass;
-import com.google.template.soy.passes.HtmlRewritePass;
-import com.google.template.soy.soyparse.SoyFileParser;
-import com.google.template.soy.types.SoyTypeRegistry;
-import java.io.StringReader;
+import com.google.template.soy.SoyFileSetParserBuilder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -65,20 +58,12 @@ public final class HtmlOpenTagNodeTest {
 
   private static HtmlOpenTagNode parseTag(String input) {
     String soyFile = Joiner.on('\n').join("{namespace ns}", "{template .t}", input, "{/template}");
-    IncrementingIdGenerator nodeIdGen = new IncrementingIdGenerator();
     SoyFileNode node =
-        new SoyFileParser(
-                new SoyTypeRegistry(),
-                nodeIdGen,
-                new StringReader(soyFile),
-                SoyFileKind.SRC,
-                "test.soy",
-                ErrorReporter.exploding())
-            .parseSoyFile();
-    new HtmlRewritePass(ErrorReporter.exploding()).run(node, nodeIdGen);
-    new CombineConsecutiveRawTextNodesPass().run(node);
-
-    new CombineConsecutiveRawTextNodesPass().run(node);
+        SoyFileSetParserBuilder.forFileContents(soyFile)
+            .desugarHtmlNodes(false)
+            .parse()
+            .fileSet()
+            .getChild(0);
     return (HtmlOpenTagNode) node.getChild(0).getChild(0);
   }
 }
