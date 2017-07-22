@@ -27,6 +27,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import javax.annotation.Nullable;
 
 /**
  * An abstract representation of an {@code IfNode} or a {@code SwitchNode} in a Soy template.
@@ -130,7 +131,7 @@ final class ConditionalBranches {
       // Remove optional tags that do not match the desired tag.
       while (entry.hasTagName()
           && !entry.getTagName().equals(tag)
-          && entry.isDefinitelyOptional()) {
+          && TagName.checkOptionalTagShouldBePopped(entry.getTagName(), tag)) {
         branch.deque().poll();
         entry = branch.deque().peek();
         if (entry == null) {
@@ -172,9 +173,9 @@ final class ConditionalBranches {
    * Removes optional tags from all branches. This method should only be called for removing the
    * optional open tags from the top of the open tag stack.
    */
-  void popOptionalTags() {
+  void popOptionalTags(@Nullable TagName closeTag) {
     for (ConditionalBranch branch : branches) {
-      HtmlTagEntry.popOptionalTags(branch.deque());
+      HtmlTagEntry.popOptionalTags(branch.deque(), closeTag);
     }
     removeEmptyDeque();
   }

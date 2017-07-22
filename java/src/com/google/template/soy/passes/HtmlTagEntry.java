@@ -98,10 +98,6 @@ final class HtmlTagEntry {
     return SourceLocation.UNKNOWN;
   }
 
-  boolean isDefinitelyOptional() {
-    return hasTagName() && tagName.isDefinitelyOptional();
-  }
-
   @Override
   public String toString() {
     return hasTagName() ? tagName.toString() : branches.toString();
@@ -140,11 +136,13 @@ final class HtmlTagEntry {
           continue;
         } else {
           // This logic is similar to popOptionalTag(), but there is no good way to extract this.
-          if (openTag.isDefinitelyOptional()) {
+          if (openTag.hasTagName()
+              && TagName.checkOptionalTagShouldBePopped(
+                  openTag.getTagName(), closeTag.getTagName())) {
             openStack.pollFirst();
             continue;
           } else if (!openTag.hasTagName()) {
-            openTag.getBranches().popOptionalTags();
+            openTag.getBranches().popOptionalTags(closeTag.getTagName());
             if (openTag.getBranches().isEmpty()) {
               openStack.pollFirst();
               continue;
@@ -160,7 +158,7 @@ final class HtmlTagEntry {
           }
         }
         // Remove optional tags from the open stack before we try to match the current close tag.
-        openTag = popOptionalTags(openStack);
+        openTag = popOptionalTags(openStack, closeTag.getTagName());
       }
       if (matchOrError(openTag, closeTag, errorReporter)) {
         openStack.pollFirst();
@@ -177,16 +175,34 @@ final class HtmlTagEntry {
   /**
    * A helper method that recursively pops optional start tags from a stack. Returns the top of the
    * deque.
+   *
+   * <p>If {@code closeTag} is present, this method will try to check if the top of the deque is a
+   * poppable optional tag. The rule is every optional open tag can only be popped by a certain
+   * subset of close tags. For example, {@code <li>} can only be popped by {@code </ul>} or {@code
+   * </ol>}, and we will report an error when we see any other close tags.
+   *
+   * <p>If {@code closeTag} is null, this method pops out all optional tags in the deque. This is
+   * useful for the cases where we are at the end of a template, and want to check if the deque is
+   * empty before reporting an error.
    */
-  static HtmlTagEntry popOptionalTags(ArrayDeque<HtmlTagEntry> deque) {
+  static HtmlTagEntry popOptionalTags(ArrayDeque<HtmlTagEntry> deque, @Nullable TagName closeTag) {
     HtmlTagEntry entry = null;
     while (!deque.isEmpty()) {
       entry = deque.peekFirst();
-      if (entry.isDefinitelyOptional()) {
-        deque.pollFirst();
-        continue;
-      } else if (!entry.hasTagName()) {
-        entry.getBranches().popOptionalTags();
+      if (entry.hasTagName()) {
+        if (entry.getTagName().equals(closeTag)) {
+          // We should not poll the deque here, since we will use the current entry for matching.
+          // The deque will be updated in matchOrError method.
+          break;
+        }
+        if ((closeTag == null && entry.getTagName().isDefinitelyOptional())
+            || (closeTag != null
+                && TagName.checkOptionalTagShouldBePopped(entry.getTagName(), closeTag))) {
+          deque.pollFirst();
+          continue;
+        }
+      } else {
+        entry.getBranches().popOptionalTags(closeTag);
         if (entry.getBranches().isEmpty()) {
           deque.pollFirst();
           continue;
@@ -209,7 +225,8 @@ final class HtmlTagEntry {
       return false;
     }
     // Try to remove any remaining optional tags or tags with empty branches in the open stack.
-    HtmlTagEntry openTag = popOptionalTags(openStack);
+    // At this point we should unconditionally pop any optional tags.
+    HtmlTagEntry openTag = popOptionalTags(openStack, null);
     if (!openStack.isEmpty()) {
       errorReporter.report(openTag.getSourceLocation(), OPEN_TAG_NOT_CLOSED);
       return false;
@@ -314,7 +331,7 @@ final class HtmlTagEntry {
     while (openTag != null
         && openTag.hasTagName()
         && !openTag.getTagName().equals(closeTag)
-        && openTag.isDefinitelyOptional()) {
+        && TagName.checkOptionalTagShouldBePopped(openTag.getTagName(), closeTag)) {
       openStack.pollFirst();
       openTag = openStack.peekFirst();
     }

@@ -16,11 +16,13 @@
 
 package com.google.template.soy.soytree;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
 import com.google.common.base.Ascii;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSetMultimap;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.exprtree.ExprEquivalence;
 import com.google.template.soy.exprtree.ExprNode;
@@ -65,31 +67,48 @@ public final class TagName {
           "area", "base", "br", "col", "command", "embed", "hr", "img", "input", "keygen", "link",
           "meta", "param", "source", "track", "wbr");
 
+  /**
+   * A map that is used to check whether a particular optional tag can be popped (auto closed) by a
+   * following close tag. See {@link checkOptionalTagShouldBePopped} method for more information.
+   *
+   * <p>In particular, the keys of this map are all optional tags defined in
+   * https://www.w3.org/TR/html5/syntax.html#optional-tags. The values of this map are names for
+   * close tag that can auto-close the optional tag. For example, {@code <li>} is an optional tag
+   * and whenever we see {@code </ul>} and {@code </ol>} we believe the last {@code <li>} is auto
+   * closed.
+   *
+   * <p>This map defines the rules for strict HTML validation: whenever we see a open tag that is in
+   * this map, only a subset of close tags can auto-close it. There are two optional tags that are
+   * not include in this map: {@code <p>} tags can be auto-closed by everyone (almost), and {@code
+   * <html>} tags should never be auto-closed. While {@code <html>} is an optional tag, it must be
+   * kept in the stack; we can only close it when we are at the end of a soy template.
+   */
+  private static final ImmutableSetMultimap<String, String> OPTIONAL_TAG_POPPING_RULES =
+      new ImmutableSetMultimap.Builder<String, String>()
+          .putAll("head", "body", "html")
+          .put("body", "html")
+          .putAll("li", "ul", "ol")
+          .put("dt", "dl")
+          .put("dd", "dl")
+          .put("rb", "ruby")
+          .put("rt", "ruby")
+          .put("rtc", "ruby")
+          .put("rp", "ruby")
+          .put("optgroup", "select")
+          .putAll("option", "select", "datalist", "optgroup")
+          .put("colgroup", "table")
+          .put("thead", "table")
+          .put("tbody", "table")
+          .put("tfoot", "table")
+          .putAll("tr", "thead", "tbody", "tfoot", "table")
+          .putAll("td", "tr", "thead", "tbody", "tfoot", "table")
+          .putAll("th", "tr", "thead", "tbody", "tfoot", "table")
+          .build();
+
   // According to https://www.w3.org/TR/html5/syntax.html#optional-tags, this is a list of tags
-  // that can potentially omit the end tags. We are not supporting cases that start tags might be
-  // omitted.
-  private static final ImmutableSet<String> OPTIONAL_TAG_NAMES =
-      ImmutableSet.of(
-          "body",
-          "colgroup",
-          "dd",
-          "dt",
-          "head",
-          "html",
-          "li",
-          "optgroup",
-          "option",
-          "p",
-          "rb",
-          "rp",
-          "rt",
-          "rtc",
-          "tbody",
-          "td",
-          "tfoot",
-          "th",
-          "thead",
-          "tr");
+  // that can potentially omit the end tags.
+  private static final ImmutableSet<String> SPECIAL_OPTIONAL_TAG_NAMES =
+      ImmutableSet.of("html", "p");
 
   private final StandaloneNode node;
   @Nullable private final String nameAsLowerCase;
@@ -135,7 +154,38 @@ public final class TagName {
   }
 
   public boolean isDefinitelyOptional() {
-    return OPTIONAL_TAG_NAMES.contains(nameAsLowerCase);
+    return SPECIAL_OPTIONAL_TAG_NAMES.contains(nameAsLowerCase)
+        || OPTIONAL_TAG_POPPING_RULES.containsKey(nameAsLowerCase);
+  }
+
+  /**
+   * Checks if the an open tag can be auto-closed by a following close tag.
+   *
+   * <p>We throws an {@code IllegalArgumentException} if two inputs have the same tag names, since
+   * this should never happen (should be handled by previous logic in {@code
+   * StrictHtmlValidationPass}).
+   *
+   * <p>This implements half of the content model described in
+   * https://www.w3.org/TR/html5/syntax.html#optional-tags. Notably we do nothing when we see cases
+   * like "li element is immediately followed by another li element". The validation logic relies on
+   * auto-closing open tags when we see close tags. Since only {@code </ul>} and {@code </ol>} are
+   * allowed to pop {@code <li>}, we believe this should still give us a confident error message. We
+   * might consider adding support for popping open tags when we visit open tags in the future.
+   */
+  public static boolean checkOptionalTagShouldBePopped(TagName openTag, TagName closeTag) {
+    if (!openTag.isStatic() || !openTag.isDefinitelyOptional()) {
+      return false;
+    }
+    if (!closeTag.isStatic()) {
+      return true;
+    }
+    String openTagName = openTag.getStaticTagNameAsLowerCase();
+    String closeTagName = closeTag.getStaticTagNameAsLowerCase();
+    checkArgument(!openTagName.equals(closeTagName));
+    if (SPECIAL_OPTIONAL_TAG_NAMES.contains(openTagName)) {
+      return openTagName.equals("p");
+    }
+    return OPTIONAL_TAG_POPPING_RULES.containsEntry(openTagName, closeTagName);
   }
 
   public boolean isForeignContent() {
