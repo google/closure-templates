@@ -316,6 +316,35 @@ final class HtmlTagEntry {
   }
 
   /**
+   * Pops all optional tags in the openStack that can be popped by the current close tag. Returns
+   * the top of the stack after popping.
+   */
+  private static HtmlTagEntry popOptionalTagInStack(
+      ArrayDeque<HtmlTagEntry> openStack, TagName closeTag) {
+    HtmlTagEntry openTag = openStack.peekFirst();
+    while (openTag != null) {
+      if (openTag.hasTagName()
+          && !openTag.getTagName().equals(closeTag)
+          && TagName.checkOptionalTagShouldBePopped(openTag.getTagName(), closeTag)) {
+        openStack.pollFirst();
+        openTag = openStack.peekFirst();
+        continue;
+      } else if (!openTag.hasTagName()) {
+        // For Conditional branches, we also need to pop optional tags.
+        openTag.getBranches().popOptionalTags(closeTag);
+        if (openTag.getBranches().isEmpty()) {
+          openStack.pollFirst();
+          openTag = openStack.peekFirst();
+          continue;
+        }
+      }
+      // At this point we should break.
+      break;
+    }
+    return openTag;
+  }
+
+  /**
    * Try to match a close tag with a stack of open tags, and report errors accordingly.
    *
    * <p>Return false if openStack is empty or we cannot find a common prefix for the current close
@@ -327,14 +356,7 @@ final class HtmlTagEntry {
   static boolean tryMatchCloseTag(
       ArrayDeque<HtmlTagEntry> openStack, TagName closeTag, ErrorReporter errorReporter) {
     // Pop out every optional tags that does not match the current close tag.
-    HtmlTagEntry openTag = openStack.peekFirst();
-    while (openTag != null
-        && openTag.hasTagName()
-        && !openTag.getTagName().equals(closeTag)
-        && TagName.checkOptionalTagShouldBePopped(openTag.getTagName(), closeTag)) {
-      openStack.pollFirst();
-      openTag = openStack.peekFirst();
-    }
+    HtmlTagEntry openTag = popOptionalTagInStack(openStack, closeTag);
     if (openTag == null) {
       return false;
     } else if (openTag.hasTagName()) {
