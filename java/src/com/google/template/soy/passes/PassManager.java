@@ -20,7 +20,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.io.CharSource;
+import com.google.common.io.ByteSource;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.TriState;
 import com.google.template.soy.basetree.SyntaxVersion;
@@ -281,7 +281,7 @@ public final class PassManager {
     private boolean disableAllTypeChecking;
     private boolean desugarHtmlNodes = true;
     private boolean optimize = true;
-    private ImmutableList<CharSource> conformanceConfigs = ImmutableList.of();
+    private ImmutableList<ByteSource> conformanceConfigs = ImmutableList.of();
     private boolean autoescaperEnabled = true;
     private boolean addHtmlCommentsForDebug = false;
 
@@ -374,8 +374,8 @@ public final class PassManager {
       return this;
     }
 
-    /** Configures this passmanager to run the given conformance pass using these configs */
-    public Builder setConformanceConfigs(ImmutableList<CharSource> conformanceConfigs) {
+    /** Configures this passmanager to run the given conformance pass using these config protos. */
+    public Builder setConformanceConfigs(ImmutableList<ByteSource> conformanceConfigs) {
       this.conformanceConfigs = checkNotNull(conformanceConfigs);
       return this;
     }

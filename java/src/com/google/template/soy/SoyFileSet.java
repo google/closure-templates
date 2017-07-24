@@ -28,6 +28,7 @@ import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.io.ByteSink;
+import com.google.common.io.ByteSource;
 import com.google.common.io.CharSource;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
@@ -176,7 +177,7 @@ public final class SoyFileSet {
 
     @Nullable private Appendable warningSink;
 
-    private ImmutableList<CharSource> conformanceConfigs = ImmutableList.of();
+    private ImmutableList<ByteSource> conformanceConfigs = ImmutableList.of();
 
     Builder(CoreDependencies coreDependencies) {
       this.coreDependencies = coreDependencies;
@@ -613,7 +614,7 @@ public final class SoyFileSet {
 
   private final SoyGeneralOptions generalOptions;
 
-  private final ImmutableList<CharSource> conformanceConfigs;
+  private final ImmutableList<ByteSource> conformanceConfigs;
 
   /** For private use by pruneTranslatedMsgs(). */
   private ImmutableSet<Long> memoizedExtractedMsgIdsForPruning;
@@ -648,7 +649,7 @@ public final class SoyFileSet {
       SoyGeneralOptions generalOptions,
       @Nullable SoyAstCache cache,
       Provider<SoyMsgBundleHandler> msgBundleHandlerProvider,
-      ImmutableList<CharSource> conformanceConfigs,
+      ImmutableList<ByteSource> conformanceConfigs,
       @Nullable Appendable warningSink) {
     // Default value is optionally replaced using method injection.
     this.soyTemplatesFactory = soyTemplatesFactory;

@@ -3065,8 +3065,8 @@ goog.addDependency('db/objectstore.js', ['goog.db.ObjectStore'], ['goog.async.De
 goog.addDependency('db/transaction.js', ['goog.db.Transaction', 'goog.db.Transaction.TransactionMode'], ['goog.async.Deferred', 'goog.db.Error', 'goog.db.ObjectStore', 'goog.events', 'goog.events.EventHandler', 'goog.events.EventTarget'], {});
 goog.addDependency('debug/console.js', ['goog.debug.Console'], ['goog.debug.LogManager', 'goog.debug.Logger', 'goog.debug.TextFormatter'], {});
 goog.addDependency('debug/console_test.js', ['goog.debug.ConsoleTest'], ['goog.debug.Console', 'goog.debug.LogRecord', 'goog.debug.Logger', 'goog.testing.jsunit', 'goog.testing.recordFunction'], {});
-goog.addDependency('debug/debug.js', ['goog.debug'], ['goog.array', 'goog.debug.errorcontext', 'goog.userAgent'], {});
-goog.addDependency('debug/debug_test.js', ['goog.debugTest'], ['goog.debug', 'goog.debug.errorcontext', 'goog.structs.Set', 'goog.testing.jsunit'], {});
+goog.addDependency('debug/debug.js', ['goog.debug'], ['goog.array', 'goog.userAgent'], {});
+goog.addDependency('debug/debug_test.js', ['goog.debugTest'], ['goog.debug', 'goog.structs.Set', 'goog.testing.jsunit'], {});
 goog.addDependency('debug/debugwindow.js', ['goog.debug.DebugWindow'], ['goog.debug.HtmlFormatter', 'goog.debug.LogManager', 'goog.debug.Logger', 'goog.dom.safe', 'goog.html.SafeHtml', 'goog.html.SafeStyleSheet', 'goog.string.Const', 'goog.structs.CircularBuffer', 'goog.userAgent'], {});
 goog.addDependency('debug/debugwindow_test.js', ['goog.debug.DebugWindowTest'], ['goog.debug.DebugWindow', 'goog.testing.jsunit'], {});
 goog.addDependency('debug/devcss/devcss.js', ['goog.debug.DevCss', 'goog.debug.DevCss.UserAgent'], ['goog.asserts', 'goog.cssom', 'goog.dom.classlist', 'goog.events', 'goog.events.EventType', 'goog.string', 'goog.userAgent'], {});
@@ -8282,64 +8282,6 @@ goog.array.concatMap = function(arr, f, opt_obj) {
   return goog.array.concat.apply([], goog.array.map(arr, f, opt_obj));
 };
 
-//javascript/closure/debug/errorcontext.js
-goog.loadModule(function(exports) {'use strict';// Copyright 2017 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-/**
- * @fileoverview Provides methods dealing with context on error objects.
- */
-
-goog.module('goog.debug.errorcontext');
-
-
-/**
- * Adds key-value context to the error.
- * @param {!Error} err The error to add context to.
- * @param {string} contextKey Key for the context to be added.
- * @param {string} contextValue Value for the context to be added.
- */
-function addErrorContext(err, contextKey, contextValue) {
-  if (!err[CONTEXT_KEY]) {
-    err[CONTEXT_KEY] = {};
-  }
-  err[CONTEXT_KEY][contextKey] = contextValue;
-}
-
-
-/**
- * @param {!Error} err The error to get context from.
- * @return {!Object<string, string>} The context of the provided error.
- */
-function getErrorContext(err) {
-  return err[CONTEXT_KEY] || {};
-}
-
-
-// TODO(user): convert this to a Symbol once goog.debug.ErrorReporter is
-// able to use ES6.
-/** @const {string} */
-var CONTEXT_KEY = '__closure__error__context__984382';
-
-
-exports = {
-  addErrorContext: addErrorContext,
-  getErrorContext: getErrorContext,
-};
-
-;return exports;});
-
 //javascript/closure/labs/useragent/util.js
 // Copyright 2013 The Closure Library Authors. All Rights Reserved.
 //
@@ -10648,7 +10590,6 @@ goog.userAgent.DOCUMENT_MODE = (function() {
 goog.provide('goog.debug');
 
 goog.require('goog.array');
-goog.require('goog.debug.errorcontext');
 goog.require('goog.userAgent');
 
 
@@ -10951,28 +10892,6 @@ goog.debug.enhanceError = function(err, opt_message) {
       ++x;
     }
     error['message' + x] = String(opt_message);
-  }
-  return error;
-};
-
-
-/**
- * Converts an object to an Error using the object's toString if it's not
- * already an Error, adds a stacktrace if there isn't one, and optionally adds
- * context to the Error, which is reported by the closure error reporter.
- * @param {*} err The original thrown error, object, or string.
- * @param {!Object<string, string>=} opt_context Key-value context to add to the
- *     Error.
- * @return {!Error} If err is an Error, it is enhanced and returned. Otherwise,
- *     it is converted to an Error which is enhanced and returned.
- */
-goog.debug.enhanceErrorWithContext = function(err, opt_context) {
-  var errorcontext = goog.module.get('goog.debug.errorcontext');
-  var error = goog.debug.enhanceError(err);
-  if (opt_context) {
-    for (var key in opt_context) {
-      errorcontext.addErrorContext(error, key, opt_context[key]);
-    }
   }
   return error;
 };

@@ -21,7 +21,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import com.google.common.io.CharSource;
+import com.google.common.io.ByteSource;
 import com.google.inject.Guice;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.base.internal.SoyFileKind;
@@ -61,7 +61,7 @@ public final class SoyFileSetParserBuilder {
   @Inject private ImmutableMap<String, ? extends SoyPrintDirective> soyPrintDirectiveMap;
   // disable optimization by default
   private SoyGeneralOptions options = new SoyGeneralOptions().disableOptimizer();
-  private ImmutableList<CharSource> conformanceConfigs = ImmutableList.of();
+  private ImmutableList<ByteSource> conformanceConfigs = ImmutableList.of();
   private boolean desugarHtmlNodes = true;
   // TODO(lukes): disabled for compatibility with unit tests.  fix tests relying on the
   // escaper not running and enable by default.  This configuration bit only really exists
@@ -182,7 +182,7 @@ public final class SoyFileSetParserBuilder {
     return this;
   }
 
-  public SoyFileSetParserBuilder setConformanceConfigs(Iterable<CharSource> configs) {
+  public SoyFileSetParserBuilder setConformanceConfigs(Iterable<ByteSource> configs) {
     this.conformanceConfigs = ImmutableList.copyOf(configs);
     return this;
   }
