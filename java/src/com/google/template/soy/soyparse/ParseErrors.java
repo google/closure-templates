@@ -138,6 +138,10 @@ final class ParseErrors {
 
     ImmutableSet.Builder<String> expectedTokenImages = ImmutableSet.builder();
     for (int[] expected : e.expectedTokenSequences) {
+      // TODO(lukes): scrub foolog from error messages until it is released
+      if (expected[0] == SoyFileParserConstants.CMD_BEGIN_FOOLOG) {
+        continue;
+      }
       // We only display the first token of any expected sequence
       expectedTokenImages.add(getSoyFileParserTokenDisplayName(expected[0]));
     }
@@ -210,6 +214,8 @@ final class ParseErrors {
       case SoyFileParserConstants.DATA_ATTR:
       case SoyFileParserConstants.VARIANT_ATTR:
       case SoyFileParserConstants.GENDERS_ATTR:
+      case SoyFileParserConstants.LOGONLY_ATTR:
+      case SoyFileParserConstants.CONFIG_ATTR:
         return "attribute name";
       case SoyFileParserConstants.ATTRIBUTE_VALUE:
       case SoyFileParserConstants.EQ_QUOTE:

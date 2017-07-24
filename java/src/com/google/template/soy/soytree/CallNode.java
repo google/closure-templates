@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.GlobalNode;
@@ -71,7 +72,11 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
 
   /** Protected constructor for use by subclasses. */
   protected CallNode(
-      int id, SourceLocation location, String commandName, List<CommandTagAttribute> attributes) {
+      int id,
+      SourceLocation location,
+      String commandName,
+      List<CommandTagAttribute> attributes,
+      ErrorReporter reporter) {
     super(id, location, commandName);
 
     String phname = null;
@@ -81,7 +86,7 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
 
       switch (name) {
         case "data":
-          ExprNode dataExpr = attr.valueAsExpr();
+          ExprNode dataExpr = attr.valueAsExpr(reporter);
           if ((dataExpr instanceof GlobalNode) && ((GlobalNode) dataExpr).getName().equals("all")) {
             this.isPassingAllData = true;
             this.dataExpr = null;

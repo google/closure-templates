@@ -68,7 +68,7 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
       ExprNode expr,
       @Nullable CommandTagAttribute phname,
       ErrorReporter errorReporter) {
-    super(id, location, "print");
+    super(id, location, isImplicit ? "" : "print");
     this.isImplicit = isImplicit;
     this.expr = new ExprRootNode(expr);
 
@@ -157,11 +157,6 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
   @Override
   public ImmutableList<ExprRootNode> getExprList() {
     return ImmutableList.of(expr);
-  }
-
-  @Override
-  public String getCommandName() {
-    return isImplicit ? "" : "print";
   }
 
   @Override

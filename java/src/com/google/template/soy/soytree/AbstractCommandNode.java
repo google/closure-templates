@@ -72,7 +72,7 @@ abstract class AbstractCommandNode extends AbstractSoyNode implements CommandNod
     return getTagString(false);
   }
 
-  protected String getTagString(boolean selfEnding) {
+  protected final String getTagString(boolean selfEnding) {
     String base = selfEnding ? TAG_STRING_SELF_ENDING : TAG_STRING;
     String commandName = getCommandName();
     String commandText = getCommandText();

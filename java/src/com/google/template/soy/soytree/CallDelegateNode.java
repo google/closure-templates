@@ -89,7 +89,7 @@ public final class CallDelegateNode extends CallNode {
       String delCalleeName,
       List<CommandTagAttribute> attributes,
       ErrorReporter errorReporter) {
-    super(id, location, "delcall", attributes);
+    super(id, location, "delcall", attributes, errorReporter);
     this.delCalleeName = delCalleeName;
 
     ExprRootNode variantExpr = null;
@@ -104,7 +104,7 @@ public final class CallDelegateNode extends CallNode {
           // Parsed in CallNode.
           break;
         case "variant":
-          ExprNode value = attr.valueAsExpr();
+          ExprNode value = attr.valueAsExpr(errorReporter);
           // Do some sanity checks on the variant expression.
           if (value instanceof StringNode) {
             // If the variant is a fixed string, it evaluate to an identifier.

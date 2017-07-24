@@ -143,6 +143,8 @@ public abstract class AbstractReturningSoyNodeVisitor<R>
       case HTML_ATTRIBUTE_VALUE_NODE:
         return visitHtmlAttributeValueNode((HtmlAttributeValueNode) node);
 
+      case FOO_LOG_NODE:
+        return visitFooLogNode((FooLogNode) node);
       case LOG_NODE:
         return visitLogNode((LogNode) node);
       case DEBUGGER_NODE:
@@ -333,6 +335,10 @@ public abstract class AbstractReturningSoyNodeVisitor<R>
   }
 
   protected R visitHtmlAttributeValueNode(HtmlAttributeValueNode node) {
+    return visitSoyNode(node);
+  }
+
+  protected R visitFooLogNode(FooLogNode node) {
     return visitSoyNode(node);
   }
 

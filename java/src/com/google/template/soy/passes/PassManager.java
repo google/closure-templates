@@ -119,7 +119,10 @@ public final class PassManager {
             // expressions do not introduce extra placeholders for call and print nodes.
             .add(new StrictHtmlValidationPass(errorReporter))
             .add(new RewriteGlobalsPass(registry, options.getCompileTimeGlobals(), errorReporter))
-            .add(new ResolveNamesPass());
+            .add(new ResolveNamesPass())
+            // Can run whenever
+            // May eventually need to run after resolvetypes
+            .add(new FooLogValidationPass(errorReporter, options.getExperimentalFeatures()));
     singleFilePassesBuilder.add(new ResolveFunctionsPass());
     if (!disableAllTypeChecking) {
       singleFilePassesBuilder.add(new ResolveExpressionTypesPass());

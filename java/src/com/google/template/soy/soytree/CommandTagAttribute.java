@@ -57,6 +57,8 @@ public final class CommandTagAttribute {
       SoyErrorKind.of("Unsupported attribute ''{0}'' for ''{1}'' tag, expected one of {2}.");
   public static final SoyErrorKind UNSUPPORTED_ATTRIBUTE_KEY_SINGLE =
       SoyErrorKind.of("Unsupported attribute ''{0}'' for ''{1}'' tag, expected ''{2}''.");
+  private static final SoyErrorKind EXPECTED_A_SINGLE_EXPRESSION =
+      SoyErrorKind.of("Expected a single expression for a {0} attribute.");
 
   private static final Splitter SPLITTER = Splitter.on(',').trimResults();
 
@@ -96,6 +98,7 @@ public final class CommandTagAttribute {
 
   public CommandTagAttribute(Identifier key, ImmutableList<ExprNode> valueExprList) {
     checkArgument(key.type() == Type.SINGLE_IDENT, "expected a single identifier, got: %s", key);
+    checkArgument(valueExprList.size() >= 1);
     this.key = checkNotNull(key);
     this.valueLocation =
         valueExprList
@@ -103,7 +106,7 @@ public final class CommandTagAttribute {
             .getSourceLocation()
             .extend(Iterables.getLast(valueExprList).getSourceLocation());
     this.value = null;
-    this.valueExprList = checkNotNull(valueExprList);
+    this.valueExprList = valueExprList;
   }
 
   /** Returns the name. It is guaranteed to be a single identifier. */
@@ -239,8 +242,13 @@ public final class CommandTagAttribute {
   }
 
   /** Returns the value as an expression. Only call on an expression attribute. */
-  public ExprNode valueAsExpr() {
+  public ExprNode valueAsExpr(ErrorReporter reporter) {
     checkState(value == null);
+    if (valueExprList.size() > 1) {
+      reporter.report(
+          valueExprList.get(1).getSourceLocation(), EXPECTED_A_SINGLE_EXPRESSION, key.identifier());
+      return null;
+    }
     return Iterables.getOnlyElement(valueExprList);
   }
 

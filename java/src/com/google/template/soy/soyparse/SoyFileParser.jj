@@ -100,6 +100,7 @@ import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.LogNode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.MsgNode;
+import com.google.template.soy.soytree.FooLogNode;
 import com.google.template.soy.soytree.MsgPluralCaseNode;
 import com.google.template.soy.soytree.MsgPluralDefaultNode;
 import com.google.template.soy.soytree.MsgPluralNode;
@@ -294,6 +295,7 @@ import javax.annotation.Nullable;
  *    {delcall ...}{param ... /}{param ...}...{/param}{/delcall}
  *    {log}...{/log}
  *    {debugger}
+ *    {foolog ...}....{/foolog}
  *
  * 5. Misc:
  *    + The following commands are not allowed to appear in a template:
@@ -780,6 +782,8 @@ TOKEN_MGR_DECLS: {
 | < DATA_ATTR: "data" ( <WS> )* "=" ( <WS> )* "\"" > : EXPR
 | < VARIANT_ATTR: "variant" ( <WS> )* "=" ( <WS> )* "\"" > : EXPR
 | < GENDERS_ATTR: "genders" ( <WS> )* "=" ( <WS> )* "\"" > : EXPR
+| < LOGONLY_ATTR: "logonly" ( <WS> )* "=" ( <WS> )* "\"" > : EXPR
+| < CONFIG_ATTR: "config" ( <WS> )* "=" ( <WS> )* "\"" > : EXPR
 }
 
 <EXPR> TOKEN: {
@@ -904,6 +908,9 @@ TOKEN_MGR_DECLS: {
 
 | < CMD_BEGIN_PRINT              : "{print" <WS>    > : EXPR
 | < CMD_BEGIN_IMPLICIT_PRINT     : "{"              > : EXPR
+
+| < CMD_BEGIN_FOOLOG                : "{foolog" <WS>      > : IN_CMD_TAG
+| < CMD_CLOSE_FOOLOG                : "{/foolog}"         >
 }
 
 
@@ -1263,7 +1270,8 @@ private CommandTagAttribute Attribute() :
 {
   Token name, value, attrTag;
   String attrName;
-  ImmutableList<ExprNode> exprList;
+  ImmutableList<ExprNode> exprList = ImmutableList.of();
+  Token dqToken;
 }
 {
   (
@@ -1287,17 +1295,28 @@ private CommandTagAttribute Attribute() :
     |
       attrTag = <GENDERS_ATTR>
       { attrName = "genders"; }
+    |
+      attrTag = <LOGONLY_ATTR>
+      { attrName = "logonly"; }
     )
 
     try {
-      exprList = ExprList()
-      <DOUBLE_QUOTE>
+      // Allow this to be optional to yeild a better error message below.  Otherwise we will report
+      // that double quotes aren't usable as soy strings.
+      [
+        exprList = ExprList()
+      ]
+      dqToken = <DOUBLE_QUOTE>
     } catch (ParseException e) {
       exprList = ImmutableList.<ExprNode>of(errorExpr(e.currentToken));
-      reportTemplateBodyErrorAndSkipTo(e, DOUBLE_QUOTE);
+      dqToken = reportTemplateBodyErrorAndSkipTo(e, DOUBLE_QUOTE);
     }
 
     {
+      if (exprList.isEmpty()) {
+        errorReporter.report(createSrcLoc(dqToken), PARSER_ERROR, "\"", "an expression");
+        exprList = ImmutableList.<ExprNode>of(errorExpr(dqToken));
+      }
       token_source.SwitchTo(IN_CMD_TAG);
       return new CommandTagAttribute(Identifier.create(attrName, createSrcLoc(attrTag)), exprList);
     }
@@ -1760,6 +1779,7 @@ private StatementNode NonPrintableStmt() :
     stmt = LetStmt()
   | stmt = LogStmt()
   | stmt = DebuggerStmt()
+  | stmt = FooLogStmt()
   )
 
   { return stmt; }
@@ -2461,6 +2481,53 @@ private IfNode IfStmt() :
   <CMD_CLOSE_IF>
 
   { return ifNode; }
+}
+
+
+
+/**
+ * FooLogStmt
+ */
+private FooLogNode FooLogStmt() :
+{
+  Identifier name = null;
+  Token tagBegin, tagEnd;
+  ExprNode protoExpr = null;
+  ExprNode logonlyExpr = null;
+  List<CommandTagAttribute> attributes = null;
+  List<StandaloneNode> templateBlock;
+}
+{
+  tagBegin = <CMD_BEGIN_FOOLOG>
+  try {
+    name = DottedIdent()
+    attributes = Attributes()
+    tagEnd = <CMD_END>
+  } catch (ParseException e) {
+    if (name == null) {
+      name = Identifier.create("error", createSrcLoc(tagBegin));
+    }
+    if (attributes == null) {
+      attributes = ImmutableList.of();
+    }
+    tagEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END);
+  }
+
+
+  templateBlock = TemplateBlock()
+
+  <CMD_CLOSE_FOOLOG>
+
+  {
+    FooLogNode node = new FooLogNode(
+        nodeIdGen.genId(),
+        createSrcLoc(tagBegin, tagEnd),
+        name,
+        attributes,
+        errorReporter);
+    node.addChildren(templateBlock);
+    return node;
+  }
 }
 
 

@@ -19,8 +19,8 @@ package com.google.template.soy.shared;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
 import com.google.template.soy.SoyUtils;
@@ -31,7 +31,6 @@ import com.google.template.soy.data.restricted.PrimitiveData;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
-import java.util.List;
 import java.util.Map;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -55,7 +54,7 @@ public final class SoyGeneralOptions implements Cloneable {
   private ImmutableMap<String, PrimitiveData> compileTimeGlobals;
 
   /** A list of experimental features that are not generally available. */
-  private ImmutableList<String> experimentalFeatures = ImmutableList.of();
+  private ImmutableSet<String> experimentalFeatures = ImmutableSet.of();
 
   /** Whether we should run optimizer. */
   private boolean enabledOptimizer = true;
@@ -67,7 +66,7 @@ public final class SoyGeneralOptions implements Cloneable {
     this.allowExternalCalls = orig.allowExternalCalls;
     this.strictAutoescapingRequired = orig.strictAutoescapingRequired;
     this.compileTimeGlobals = orig.compileTimeGlobals;
-    this.experimentalFeatures = ImmutableList.copyOf(orig.experimentalFeatures);
+    this.experimentalFeatures = ImmutableSet.copyOf(orig.experimentalFeatures);
     this.enabledOptimizer = orig.isOptimizerEnabled();
   }
 
@@ -82,18 +81,14 @@ public final class SoyGeneralOptions implements Cloneable {
     return this.enabledOptimizer;
   }
 
-  /**
-   * Sets experimental features. These features are unreleased and are not generally available.
-   *
-   * @param experimentalFeatures
-   */
-  public SoyGeneralOptions setExperimentalFeatures(List<String> experimentalFeatures) {
-    this.experimentalFeatures = ImmutableList.copyOf(experimentalFeatures);
+  /** Sets experimental features. These features are unreleased and are not generally available. */
+  public SoyGeneralOptions setExperimentalFeatures(Iterable<String> experimentalFeatures) {
+    this.experimentalFeatures = ImmutableSet.copyOf(experimentalFeatures);
     return this;
   }
 
-  /** Returns a list of experimental features. */
-  public ImmutableList<String> getExperimentalFeatures() {
+  /** Returns the set of enabled experimental features. */
+  public ImmutableSet<String> getExperimentalFeatures() {
     return experimentalFeatures;
   }
 

@@ -187,6 +187,10 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
         visitHtmlAttributeValueNode((HtmlAttributeValueNode) node);
         break;
 
+      case FOO_LOG_NODE:
+        visitFooLogNode((FooLogNode) node);
+        break;
+
       case LOG_NODE:
         visitLogNode((LogNode) node);
         break;
@@ -407,6 +411,10 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
   }
 
   protected void visitHtmlCommentNode(HtmlCommentNode node) {
+    visitSoyNode(node);
+  }
+
+  protected void visitFooLogNode(FooLogNode node) {
     visitSoyNode(node);
   }
 

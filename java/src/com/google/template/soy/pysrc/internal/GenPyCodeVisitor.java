@@ -40,6 +40,7 @@ import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.DebuggerNode;
+import com.google.template.soy.soytree.FooLogNode;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForeachIfemptyNode;
 import com.google.template.soy.soytree.ForeachNode;
@@ -758,6 +759,12 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       pyCodeBuilder.initOutputVarIfNecessary();
       visitChildren(node);
       pyCodeBuilder.popOutputVar();
+    }
+
+    @Override
+    protected void visitFooLogNode(FooLogNode node) {
+      // TODO(lukes): stub implementation, fix!
+      pyCodeBuilder.appendLine("raise 'soy_py doesn't support foolog yet'");
     }
 
     @Override
