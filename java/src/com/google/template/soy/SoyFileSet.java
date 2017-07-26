@@ -30,6 +30,7 @@ import com.google.common.collect.Lists;
 import com.google.common.io.ByteSink;
 import com.google.common.io.ByteSource;
 import com.google.common.io.CharSource;
+import com.google.common.io.Files;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
@@ -570,6 +571,16 @@ public final class SoyFileSet {
      */
     public Builder addProtoDescriptors(Iterable<? extends GenericDescriptor> descriptors) {
       protoTypeProviderBuilder.addDescriptors(descriptors);
+      return this;
+    }
+
+    /** Registers conformance config binary protos. */
+    Builder addConformanceConfigPaths(List<File> conformanceConfigPaths) {
+      ImmutableList.Builder<ByteSource> builder = ImmutableList.builder();
+      for (File file : conformanceConfigPaths) {
+        builder.add(Files.asByteSource(file));
+      }
+      this.conformanceConfigs = builder.build();
       return this;
     }
 

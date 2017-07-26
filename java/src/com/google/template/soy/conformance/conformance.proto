@@ -1,0 +1,76 @@
+syntax = "proto2";
+
+package soy;
+
+option java_package = "com.google.template.soy.conformance";
+option java_multiple_files = true;
+
+// A container to describe code requirements.
+message ConformanceConfig {
+  repeated Requirement requirement = 1;
+}
+
+// A specification of code requirements.
+message Requirement {
+  message BannedCssSelector {
+    // The banned CSS selectors.
+    repeated string selector = 1;
+  }
+
+  message BannedDirective {
+    // The banned directive names.
+    repeated string directive = 1;
+  }
+
+  message BannedFunction {
+    // The banned function names.
+    repeated string function = 1;
+  }
+
+  message BannedRawText {
+    // The banned text.
+    repeated string text = 1;
+  }
+
+  message BannedHtmlTag {
+    // The banned HTML tag (lowercase).
+    repeated string tag = 1;
+  }
+
+  message BannedTextEverywhereExceptComments {
+    // The banned text.
+    repeated string text = 1;
+  }
+
+  message Custom {
+    // Required: the fully-qualified name of the Java class providing the
+    // custom conformance check. The class must implement
+    // com.google.template.soy.conformance.Rule.
+    optional string java_class = 1;
+  }
+
+  reserved 1;
+  oneof requirement_type {
+    BannedCssSelector banned_css_selector = 2;
+    BannedFunction banned_function = 3;
+    BannedDirective banned_directive = 4;
+    BannedRawText banned_raw_text = 5;
+    BannedTextEverywhereExceptComments banned_text_everywhere_except_comments =
+        6;
+    Custom custom = 7;
+    BannedHtmlTag banned_html_tag = 11;
+  }
+
+  // Required: The message to report when a requirement is violated.
+  // This should reference a document describing the reason for the requirement
+  // and contacts.
+  optional string error_message = 8;
+
+  // Optional: A list of whitelisted substrings. Any source path that contains
+  // a whitelisted substring is exempt from the requirement.
+  repeated string whitelist = 9;
+
+  // Optional: A list of source paths regexes that are exempt
+  // from this requirement.
+  repeated string whitelist_regexp = 10;
+};

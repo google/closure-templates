@@ -77,6 +77,7 @@
     <guava.version>20.0</guava.version>
     <asm.version>5.0.3</asm.version>
     <autovalue.version>1.4</autovalue.version>
+    <proto.version>3.3.0</proto.version>
     <soy.examples>${project.basedir}/examples</soy.examples>
     <soy.examples.out>${project.build.directory}/examples</soy.examples.out>
   </properties>
@@ -184,6 +185,10 @@
           <groupId>com.google.guava</groupId>
           <artifactId>guava</artifactId>
         </exclusion>
+        <exclusion>
+          <groupId>com.google.protobuf</groupId>
+          <artifactId>protobuf-java</artifactId>
+        </exclusion>
       </exclusions>
     </dependency>
 
@@ -198,7 +203,7 @@
     <dependency>
       <groupId>com.google.protobuf</groupId>
       <artifactId>protobuf-java</artifactId>
-      <version>3.0.0-beta-2</version>
+      <version>${proto.version}</version>
     </dependency>
 
     <dependency>
@@ -826,6 +831,23 @@
           </dependency>
         </dependencies>
       </plugin>
+      <plugin>
+        <groupId>com.comoyo.maven.plugins</groupId>
+        <artifactId>protoc-bundled-plugin</artifactId>
+        <version>1.4.61</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>run</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-help-plugin</artifactId>
+          <version>2.2</version>
+        </plugin>
       <plugin>
         <!-- Allow publishing to Maven Central via
           `mvn -P release clean deploy`.

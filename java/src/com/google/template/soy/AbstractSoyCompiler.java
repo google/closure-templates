@@ -128,6 +128,13 @@ abstract class AbstractSoyCompiler {
   private static final List<File> protoFileDescriptors = new ArrayList<>();
 
   @Option(
+    name = "--conformanceConfigPaths",
+    usage = "Location of conformance config protos in binary proto format.",
+    handler = SoyCmdLineParser.FileListOptionHandler.class
+  )
+  private static final List<File> conformanceConfigPaths = new ArrayList<>();
+
+  @Option(
     name = "--enableExperimentalFeatures",
     usage =
         "Enable experimental features that are not generally available. "
@@ -223,6 +230,9 @@ abstract class AbstractSoyCompiler {
 
     if (!protoFileDescriptors.isEmpty()) {
       sfsBuilder.addProtoDescriptorsFromFiles(protoFileDescriptors);
+    }
+    if (!conformanceConfigPaths.isEmpty()) {
+      sfsBuilder.addConformanceConfigPaths(conformanceConfigPaths);
     }
     addSoyFilesToBuilder(
         sfsBuilder,
