@@ -62,7 +62,8 @@ public final class SoyConformance {
       config = ConformanceConfig.parseFrom(stream);
     }
     for (Requirement r : config.getRequirementList()) {
-      Preconditions.checkArgument(r.hasErrorMessage(), "requirement missing error message");
+      Preconditions.checkArgument(
+          !r.getErrorMessage().isEmpty(), "requirement missing error message");
       Preconditions.checkArgument(
           r.getRequirementTypeCase() != RequirementTypeCase.REQUIREMENTTYPE_NOT_SET,
           "requirement missing type");

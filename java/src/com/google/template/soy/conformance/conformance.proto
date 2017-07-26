@@ -1,4 +1,4 @@
-syntax = "proto2";
+syntax = "proto3";
 
 package soy;
 
@@ -46,7 +46,7 @@ message Requirement {
     // Required: the fully-qualified name of the Java class providing the
     // custom conformance check. The class must implement
     // com.google.template.soy.conformance.Rule.
-    optional string java_class = 1;
+    string java_class = 1;
   }
 
   reserved 1;
@@ -64,13 +64,11 @@ message Requirement {
   // Required: The message to report when a requirement is violated.
   // This should reference a document describing the reason for the requirement
   // and contacts.
-  optional string error_message = 8;
+  string error_message = 8;
 
   // Optional: A list of whitelisted substrings. Any source path that contains
   // a whitelisted substring is exempt from the requirement.
   repeated string whitelist = 9;
 
-  // Optional: A list of source paths regexes that are exempt
-  // from this requirement.
-  repeated string whitelist_regexp = 10;
+  reserved 10;
 };
