@@ -1,0 +1,44 @@
+/*
+ * Copyright 2017 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+syntax = "proto3";
+
+package soy;
+option java_package = "com.google.template.soy.logging";
+option java_multiple_files = true;
+
+// The logging configuration for the compiler.  Defines all the valid FooLog
+// names and identifiers.
+// It is an error for there to be duplicate names or ids.
+message LoggingConfig {
+  // All the logging elements that are configured for the current compilation
+  // unit.
+  repeated LoggableElement element = 1;
+}
+  // Defines a loggable element
+message LoggableElement {
+  // The name specified by users in the soy file.  This should be a valid
+  // soy identifier (it should match:
+  // '[a-zA-Z_][a-zA-Z_0-9]*([.][a-zA-Z_][a-zA-Z_0-9]*)*' )
+  // Must be unique.
+  string name = 1;
+  // The id that will be logged.  Must be unique.
+  int64 id = 2;
+  // The fully qualified name of the protocol buffer that
+  // will be used to specify metadata for the element.  Allowed to be the empty
+  // string if there is no such proto.
+  string proto_type = 3;
+}
