@@ -42,82 +42,53 @@ import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.internal.ApiCallScopeUtils;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
-import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.ApiCall;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import java.io.IOException;
 import java.util.Map;
-import javax.inject.Inject;
-import javax.inject.Provider;
 
 /** Main entry point for rendering Soy templates on the server. */
 public final class SoySauceImpl implements SoySauce {
-  public static final class Factory {
-    // TODO(lukes): switch all of soy to @AutoFactory when its opensource situation is cleaned up
-    private final GuiceSimpleScope apiCallScopeProvider;
-    private final Provider<SoyValueConverter> converterProvider;
-
-    @Inject
-    Factory(
-        @ApiCall GuiceSimpleScope apiCallScopeProvider,
-        Provider<SoyValueConverter> converterProvider) {
-      this.apiCallScopeProvider = apiCallScopeProvider;
-      this.converterProvider = converterProvider;
-    }
-
-    public SoySauceImpl create(
-        CompiledTemplates templates,
-        ImmutableMap<String, ? extends SoyFunction> soyFunctionMap,
-        ImmutableMap<String, ? extends SoyPrintDirective> printDirectives) {
-      // SoySauce has no need for SoyFunctions that are not SoyJavaFunctions
-      // (it generates Java source code implementing BuiltinFunctions).
-      // Filter them out.
-      ImmutableMap.Builder<String, SoyJavaFunction> soyJavaFunctions = ImmutableMap.builder();
-      for (Map.Entry<String, ? extends SoyFunction> entry : soyFunctionMap.entrySet()) {
-        SoyFunction function = entry.getValue();
-        if (function instanceof SoyJavaFunction) {
-          soyJavaFunctions.put(entry.getKey(), (SoyJavaFunction) function);
-        }
-      }
-
-      // SoySauce has no need for SoyPrintDirectives that are not SoyJavaPrintDirectives.
-      // Filter them out.
-      ImmutableMap.Builder<String, SoyJavaPrintDirective> soyJavaPrintDirectives =
-          ImmutableMap.builder();
-      for (Map.Entry<String, ? extends SoyPrintDirective> entry : printDirectives.entrySet()) {
-        SoyPrintDirective printDirective = entry.getValue();
-        if (printDirective instanceof SoyJavaPrintDirective) {
-          soyJavaPrintDirectives.put(entry.getKey(), (SoyJavaPrintDirective) printDirective);
-        }
-      }
-      return new SoySauceImpl(
-          templates,
-          apiCallScopeProvider,
-          converterProvider.get(),
-          soyJavaFunctions.build(),
-          soyJavaPrintDirectives.build());
-    }
-  }
-
   private final CompiledTemplates templates;
   private final GuiceSimpleScope apiCallScope;
   private final SoyValueConverter converter;
   private final ImmutableMap<String, SoyJavaFunction> functions;
   private final ImmutableMap<String, SoyJavaPrintDirective> printDirectives;
 
-  private SoySauceImpl(
+  public SoySauceImpl(
       CompiledTemplates templates,
       GuiceSimpleScope apiCallScope,
       SoyValueConverter converter,
-      ImmutableMap<String, ? extends SoyJavaFunction> functions,
-      ImmutableMap<String, ? extends SoyJavaPrintDirective> printDirectives) {
+      ImmutableMap<String, ? extends SoyFunction> functions,
+      ImmutableMap<String, ? extends SoyPrintDirective> printDirectives) {
     this.templates = checkNotNull(templates);
     this.apiCallScope = checkNotNull(apiCallScope);
     this.converter = checkNotNull(converter);
-    this.functions = ImmutableMap.copyOf(functions);
-    this.printDirectives = ImmutableMap.copyOf(printDirectives);
+    // SoySauce has no need for SoyFunctions that are not SoyJavaFunctions
+    // (it generates Java source code implementing BuiltinFunctions).
+    // Filter them out.
+    ImmutableMap.Builder<String, SoyJavaFunction> soyJavaFunctions = ImmutableMap.builder();
+    for (Map.Entry<String, ? extends SoyFunction> entry : functions.entrySet()) {
+      SoyFunction function = entry.getValue();
+      if (function instanceof SoyJavaFunction) {
+        soyJavaFunctions.put(entry.getKey(), (SoyJavaFunction) function);
+      }
+    }
+
+    // SoySauce has no need for SoyPrintDirectives that are not SoyJavaPrintDirectives.
+    // Filter them out.
+    ImmutableMap.Builder<String, SoyJavaPrintDirective> soyJavaPrintDirectives =
+        ImmutableMap.builder();
+    for (Map.Entry<String, ? extends SoyPrintDirective> entry : printDirectives.entrySet()) {
+      SoyPrintDirective printDirective = entry.getValue();
+      if (printDirective instanceof SoyJavaPrintDirective) {
+        soyJavaPrintDirectives.put(entry.getKey(), (SoyJavaPrintDirective) printDirective);
+      }
+    }
+    this.functions = soyJavaFunctions.build();
+    this.printDirectives = soyJavaPrintDirectives.build();
   }
 
   @Override

@@ -22,7 +22,6 @@ import com.google.inject.Provides;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.OptionalBinder;
 import com.google.template.soy.incrementaldomsrc.IncrementalDomSrcModule;
-import com.google.template.soy.jbcsrc.api.SoySauceImpl;
 import com.google.template.soy.jssrc.internal.JsSrcModule;
 import com.google.template.soy.msgs.SoyMsgBundleHandler;
 import com.google.template.soy.msgs.SoyMsgPlugin;
@@ -56,9 +55,6 @@ public final class SoyModule extends AbstractModule {
     Multibinder.newSetBinder(binder(), SoyTypeProvider.class);
     bind(SoyTypeRegistry.class).in(Singleton.class);
 
-    // Bindings for when explicit dependencies are required.
-    // Note: We don't promise to support this. We actually frown upon requireExplicitBindings.
-    bind(SoySauceImpl.Factory.class);
     // optionally depend on a user supplied msg plugin
     OptionalBinder.newOptionalBinder(binder(), SoyMsgPlugin.class);
   }

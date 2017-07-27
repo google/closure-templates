@@ -26,14 +26,16 @@ import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.util.concurrent.Futures;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.google.inject.Key;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.SoyModule;
 import com.google.template.soy.data.SoyDict;
 import com.google.template.soy.data.SoyFutureException;
 import com.google.template.soy.data.SoyValueConverter;
+import com.google.template.soy.shared.internal.GuiceSimpleScope;
+import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.ApiCall;
 import com.google.template.soy.tofu.SoyTofu;
 import com.google.template.soy.tofu.SoyTofuException;
-import com.google.template.soy.tofu.internal.BaseTofu.BaseTofuFactory;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -78,11 +80,11 @@ public final class TofuExceptionsTest {
   @Before
   public void setUp() throws Exception {
     tofu =
-        INJECTOR
-            .getInstance(BaseTofuFactory.class)
-            .create(
-                SoyFileSetParserBuilder.forFileContents(SOY_FILE).parse().registry(),
-                ImmutableMap.<String, ImmutableSortedSet<String>>of());
+        new BaseTofu(
+            INJECTOR.getInstance(SoyValueConverter.class),
+            INJECTOR.getInstance(Key.get(GuiceSimpleScope.class, ApiCall.class)),
+            SoyFileSetParserBuilder.forFileContents(SOY_FILE).parse().registry(),
+            ImmutableMap.<String, ImmutableSortedSet<String>>of());
   }
 
   @Test

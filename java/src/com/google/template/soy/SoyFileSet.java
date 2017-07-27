@@ -42,6 +42,7 @@ import com.google.template.soy.base.internal.TriState;
 import com.google.template.soy.base.internal.VolatileSoyFileSupplier;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.conformance.ValidatedConformanceConfig;
+import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyCompilationException;
 import com.google.template.soy.error.SoyError;
@@ -73,7 +74,9 @@ import com.google.template.soy.pysrc.SoyPySrcOptions;
 import com.google.template.soy.pysrc.internal.PySrcMain;
 import com.google.template.soy.shared.SoyAstCache;
 import com.google.template.soy.shared.SoyGeneralOptions;
+import com.google.template.soy.shared.internal.GuiceSimpleScope;
 import com.google.template.soy.shared.internal.MainEntryPointUtils;
+import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.ApiCall;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soyparse.PluginResolver;
@@ -84,7 +87,7 @@ import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.tofu.SoyTofu;
-import com.google.template.soy.tofu.internal.BaseTofu.BaseTofuFactory;
+import com.google.template.soy.tofu.internal.BaseTofu;
 import com.google.template.soy.types.SoyTypeProvider;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.proto.SoyProtoTypeProvider;
@@ -123,8 +126,8 @@ public final class SoyFileSet {
   // Implementation detail of SoyFileSet.Builder.
   // having it as its own 'parameter' class removes a small amount of boilerplate.
   static final class CoreDependencies {
-    private final BaseTofuFactory baseTofuFactory;
-    private final SoySauceImpl.Factory soyTemplatesFactory;
+    private final SoyValueConverter soyValueConverter;
+    private final GuiceSimpleScope apiCallScope;
     private final Provider<JsSrcMain> jsSrcMainProvider;
     private final Provider<IncrementalDomSrcMain> incrementalDomSrcMainProvider;
     private final Provider<PySrcMain> pySrcMainProvider;
@@ -135,8 +138,8 @@ public final class SoyFileSet {
 
     @Inject
     CoreDependencies(
-        BaseTofuFactory baseTofuFactory,
-        SoySauceImpl.Factory soyTemplatesFactory,
+        SoyValueConverter soyValueConverter,
+        @ApiCall GuiceSimpleScope apiCallScope,
         Provider<JsSrcMain> jsSrcMainProvider,
         Provider<IncrementalDomSrcMain> incrementalDomSrcMainProvider,
         Provider<PySrcMain> pySrcMainProvider,
@@ -144,8 +147,8 @@ public final class SoyFileSet {
         ImmutableMap<String, ? extends SoyFunction> soyFunctionMap,
         ImmutableMap<String, ? extends SoyPrintDirective> printDirectives,
         Provider<SoyMsgBundleHandler> msgBundleHandlerProvider) {
-      this.baseTofuFactory = baseTofuFactory;
-      this.soyTemplatesFactory = soyTemplatesFactory;
+      this.soyValueConverter = soyValueConverter;
+      this.apiCallScope = apiCallScope;
       this.jsSrcMainProvider = jsSrcMainProvider;
       this.incrementalDomSrcMainProvider = incrementalDomSrcMainProvider;
       this.pySrcMainProvider = pySrcMainProvider;
@@ -236,8 +239,8 @@ public final class SoyFileSet {
         throw new RuntimeException("Malformed descriptor set", ex);
       }
       return new SoyFileSet(
-          coreDependencies.baseTofuFactory,
-          coreDependencies.soyTemplatesFactory,
+          coreDependencies.apiCallScope,
+          coreDependencies.soyValueConverter,
           coreDependencies.jsSrcMainProvider,
           coreDependencies.incrementalDomSrcMainProvider,
           coreDependencies.pySrcMainProvider,
@@ -629,8 +632,9 @@ public final class SoyFileSet {
   /** Provider for getting an instance of SoyMsgBundleHandler. */
   private final Provider<SoyMsgBundleHandler> msgBundleHandlerProvider;
 
-  private final BaseTofuFactory baseTofuFactory;
-  private final SoySauceImpl.Factory soyTemplatesFactory;
+  private final GuiceSimpleScope apiCallScopeProvider;
+  private final SoyValueConverter soyValueConverter;
+
   private final Provider<JsSrcMain> jsSrcMainProvider;
   private final Provider<IncrementalDomSrcMain> incrementalDomSrcMainProvider;
   private final Provider<PySrcMain> pySrcMainProvider;
@@ -658,19 +662,9 @@ public final class SoyFileSet {
 
   @Nullable private final Appendable warningSink;
 
-  /**
-   * @param baseTofuFactory Factory for creating an instance of BaseTofu.
-   * @param jsSrcMainProvider Provider for getting an instance of JsSrcMain.
-   * @param incrementalDomSrcMainProvider Provider for getting an instance of IncrementalDomSrcMain.
-   * @param pySrcMainProvider Provider for getting an instance of PySrcMain.
-   * @param typeRegistry The type registry to resolve parameter type names.
-   * @param soyFileSuppliers The suppliers for the input Soy files.
-   * @param generalOptions The general compiler options.
-   * @param loggingConfig
-   */
   SoyFileSet(
-      BaseTofuFactory baseTofuFactory,
-      SoySauceImpl.Factory soyTemplatesFactory,
+      GuiceSimpleScope apiCallScopeProvider,
+      SoyValueConverter soyValueConverter,
       Provider<JsSrcMain> jsSrcMainProvider,
       Provider<IncrementalDomSrcMain> incrementalDomSrcMainProvider,
       Provider<PySrcMain> pySrcMainProvider,
@@ -684,9 +678,8 @@ public final class SoyFileSet {
       ValidatedConformanceConfig conformanceConfig,
       ValidatedLoggingConfig loggingConfig,
       @Nullable Appendable warningSink) {
-    // Default value is optionally replaced using method injection.
-    this.soyTemplatesFactory = soyTemplatesFactory;
-    this.baseTofuFactory = baseTofuFactory;
+    this.apiCallScopeProvider = apiCallScopeProvider;
+    this.soyValueConverter = soyValueConverter;
     this.jsSrcMainProvider = jsSrcMainProvider;
     this.incrementalDomSrcMainProvider = incrementalDomSrcMainProvider;
     this.pySrcMainProvider = pySrcMainProvider;
@@ -907,8 +900,11 @@ public final class SoyFileSet {
 
   /** Helper method to compile SoyTofu from {@link ServerCompilationPrimitives} */
   private SoyTofu doCompileToTofu(ServerCompilationPrimitives primitives) {
-    return baseTofuFactory.create(
-        primitives.registry, getTransitiveIjs(primitives.soyTree, primitives.registry));
+    return new BaseTofu(
+        soyValueConverter,
+        apiCallScopeProvider,
+        primitives.registry,
+        getTransitiveIjs(primitives.soyTree, primitives.registry));
   }
 
   /**
@@ -964,7 +960,8 @@ public final class SoyFileSet {
 
     throwIfErrorsPresent();
 
-    return soyTemplatesFactory.create(templates.get(), soyFunctionMap, printDirectives);
+    return new SoySauceImpl(
+        templates.get(), apiCallScopeProvider, soyValueConverter, soyFunctionMap, printDirectives);
   }
 
   /**
