@@ -28,9 +28,7 @@ import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.io.ByteSink;
-import com.google.common.io.ByteSource;
 import com.google.common.io.CharSource;
-import com.google.common.io.Files;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
@@ -43,6 +41,7 @@ import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.base.internal.TriState;
 import com.google.template.soy.base.internal.VolatileSoyFileSupplier;
 import com.google.template.soy.basetree.SyntaxVersion;
+import com.google.template.soy.conformance.ValidatedConformanceConfig;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyCompilationException;
 import com.google.template.soy.error.SoyError;
@@ -178,7 +177,7 @@ public final class SoyFileSet {
 
     @Nullable private Appendable warningSink;
 
-    private ImmutableList<ByteSource> conformanceConfigs = ImmutableList.of();
+    private ValidatedConformanceConfig conformanceConfig = ValidatedConformanceConfig.EMPTY;
 
     Builder(CoreDependencies coreDependencies) {
       this.coreDependencies = coreDependencies;
@@ -243,7 +242,7 @@ public final class SoyFileSet {
           getGeneralOptions(),
           cache,
           coreDependencies.msgBundleHandlerProvider,
-          conformanceConfigs,
+          conformanceConfig,
           warningSink);
     }
 
@@ -574,13 +573,9 @@ public final class SoyFileSet {
       return this;
     }
 
-    /** Registers conformance config binary protos. */
-    Builder addConformanceConfigPaths(List<File> conformanceConfigPaths) {
-      ImmutableList.Builder<ByteSource> builder = ImmutableList.builder();
-      for (File file : conformanceConfigPaths) {
-        builder.add(Files.asByteSource(file));
-      }
-      this.conformanceConfigs = builder.build();
+    /** Registers a conformance config proto. */
+    Builder setConformanceConfig(ValidatedConformanceConfig config) {
+      this.conformanceConfig = config;
       return this;
     }
 
@@ -625,7 +620,7 @@ public final class SoyFileSet {
 
   private final SoyGeneralOptions generalOptions;
 
-  private final ImmutableList<ByteSource> conformanceConfigs;
+  private final ValidatedConformanceConfig conformanceConfig;
 
   /** For private use by pruneTranslatedMsgs(). */
   private ImmutableSet<Long> memoizedExtractedMsgIdsForPruning;
@@ -660,7 +655,7 @@ public final class SoyFileSet {
       SoyGeneralOptions generalOptions,
       @Nullable SoyAstCache cache,
       Provider<SoyMsgBundleHandler> msgBundleHandlerProvider,
-      ImmutableList<ByteSource> conformanceConfigs,
+      ValidatedConformanceConfig conformanceConfig,
       @Nullable Appendable warningSink) {
     // Default value is optionally replaced using method injection.
     this.soyTemplatesFactory = soyTemplatesFactory;
@@ -678,7 +673,7 @@ public final class SoyFileSet {
     this.soyFunctionMap = soyFunctionMap;
     this.printDirectives = printDirectives;
     this.msgBundleHandlerProvider = msgBundleHandlerProvider;
-    this.conformanceConfigs = conformanceConfigs;
+    this.conformanceConfig = checkNotNull(conformanceConfig);
     this.warningSink = warningSink;
   }
 
@@ -1228,7 +1223,7 @@ public final class SoyFileSet {
             .setSoyFunctionMap(soyFunctionMap)
             .setSoyPrintDirectiveMap(printDirectives)
             .setErrorReporter(errorReporter)
-            .setConformanceConfigs(conformanceConfigs);
+            .setConformanceConfig(conformanceConfig);
     return builder;
   }
 

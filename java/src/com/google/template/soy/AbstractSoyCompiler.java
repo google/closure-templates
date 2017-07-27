@@ -22,11 +22,16 @@ import com.google.errorprone.annotations.ForOverride;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.template.soy.base.internal.SoyFileKind;
+import com.google.template.soy.conformance.ConformanceConfig;
+import com.google.template.soy.conformance.ValidatedConformanceConfig;
 import com.google.template.soy.error.SoyCompilationException;
 import com.google.template.soy.msgs.SoyMsgPlugin;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintStream;
 import java.io.StringWriter;
 import java.util.ArrayList;
@@ -125,14 +130,13 @@ abstract class AbstractSoyCompiler {
             + "access support for proto types.",
     handler = SoyCmdLineParser.FileListOptionHandler.class
   )
-  private static final List<File> protoFileDescriptors = new ArrayList<>();
+  private final List<File> protoFileDescriptors = new ArrayList<>();
 
   @Option(
-    name = "--conformanceConfigPaths",
-    usage = "Location of conformance config protos in binary proto format.",
-    handler = SoyCmdLineParser.FileListOptionHandler.class
+    name = "--conformanceConfig",
+    usage = "Location of conformance config protos in binary proto format."
   )
-  private static final List<File> conformanceConfigPaths = new ArrayList<>();
+  private File conformanceConfig = null;
 
   @Option(
     name = "--enableExperimentalFeatures",
@@ -143,7 +147,7 @@ abstract class AbstractSoyCompiler {
             + "experiments on. Please proceed with caution at your own risk.",
     handler = SoyCmdLineParser.StringListOptionHandler.class
   )
-  private static final List<String> experimentalFeatures = new ArrayList<>();
+  private final List<String> experimentalFeatures = new ArrayList<>();
 
   @Option(
     name = "--disableOptimizerForTestingUseOnly",
@@ -231,9 +235,7 @@ abstract class AbstractSoyCompiler {
     if (!protoFileDescriptors.isEmpty()) {
       sfsBuilder.addProtoDescriptorsFromFiles(protoFileDescriptors);
     }
-    if (!conformanceConfigPaths.isEmpty()) {
-      sfsBuilder.addConformanceConfigPaths(conformanceConfigPaths);
-    }
+    sfsBuilder.setConformanceConfig(parseConformanceConfig());
     addSoyFilesToBuilder(
         sfsBuilder,
         inputPrefix,
@@ -250,6 +252,25 @@ abstract class AbstractSoyCompiler {
       sfsBuilder.disableOptimizer();
     }
     compile(sfsBuilder, injector);
+  }
+
+  private ValidatedConformanceConfig parseConformanceConfig() {
+    if (conformanceConfig != null) {
+      try (InputStream stream = new FileInputStream(conformanceConfig)) {
+        return ValidatedConformanceConfig.create(ConformanceConfig.parseFrom(stream));
+      } catch (IllegalArgumentException e) {
+        throw new CommandLineError(
+            "Error parsing conformance proto: " + conformanceConfig + ": " + e.getMessage());
+      } catch (InvalidProtocolBufferException e) {
+        throw new CommandLineError(
+            "Invalid conformance proto: " + conformanceConfig + ": " + e.getMessage());
+      } catch (IOException e) {
+        throw new CommandLineError(
+            "Unable to read conformance proto: " + conformanceConfig + ": " + e.getMessage());
+      }
+    } else {
+      return ValidatedConformanceConfig.EMPTY;
+    }
   }
 
   /**

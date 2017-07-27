@@ -16,10 +16,9 @@
 
 package com.google.template.soy.passes;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.io.ByteSource;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.conformance.SoyConformance;
+import com.google.template.soy.conformance.ValidatedConformanceConfig;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.soytree.SoyFileNode;
 
@@ -28,8 +27,8 @@ final class SoyConformancePass extends CompilerFilePass {
   private final SoyConformance conformance;
   private final ErrorReporter errorReporter;
 
-  SoyConformancePass(ImmutableList<ByteSource> conformanceConfigs, ErrorReporter errorReporter) {
-    this.conformance = SoyConformance.create(conformanceConfigs);
+  SoyConformancePass(ValidatedConformanceConfig conformanceConfig, ErrorReporter errorReporter) {
+    this.conformance = SoyConformance.create(conformanceConfig);
     this.errorReporter = errorReporter;
   }
 

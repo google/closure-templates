@@ -21,12 +21,12 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import com.google.common.io.ByteSource;
 import com.google.inject.Guice;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.basetree.SyntaxVersion;
+import com.google.template.soy.conformance.ValidatedConformanceConfig;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.passes.PassManager;
 import com.google.template.soy.shared.AutoEscapingType;
@@ -61,7 +61,7 @@ public final class SoyFileSetParserBuilder {
   @Inject private ImmutableMap<String, ? extends SoyPrintDirective> soyPrintDirectiveMap;
   // disable optimization by default
   private SoyGeneralOptions options = new SoyGeneralOptions().disableOptimizer();
-  private ImmutableList<ByteSource> conformanceConfigs = ImmutableList.of();
+  private ValidatedConformanceConfig conformanceConfig = ValidatedConformanceConfig.EMPTY;
   private boolean desugarHtmlNodes = true;
   // TODO(lukes): disabled for compatibility with unit tests.  fix tests relying on the
   // escaper not running and enable by default.  This configuration bit only really exists
@@ -182,8 +182,8 @@ public final class SoyFileSetParserBuilder {
     return this;
   }
 
-  public SoyFileSetParserBuilder setConformanceConfigs(Iterable<ByteSource> configs) {
-    this.conformanceConfigs = ImmutableList.copyOf(configs);
+  public SoyFileSetParserBuilder setConformanceConfig(ValidatedConformanceConfig config) {
+    this.conformanceConfig = checkNotNull(config);
     return this;
   }
 
@@ -239,7 +239,7 @@ public final class SoyFileSetParserBuilder {
             .setTypeRegistry(typeRegistry)
             .desugarHtmlNodes(desugarHtmlNodes)
             .setGeneralOptions(options)
-            .setConformanceConfigs(conformanceConfigs)
+            .setConformanceConfig(conformanceConfig)
             .setAutoescaperEnabled(runAutoescaper)
             .addHtmlCommentsForDebug(addHtmlCommentsForDebug);
     if (allowUnboundGlobals) {

@@ -19,7 +19,6 @@ package com.google.template.soy.conformance;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.io.ByteSource;
 import com.google.common.io.CharSource;
 import com.google.protobuf.TextFormat;
 import com.google.protobuf.TextFormat.ParseException;
@@ -593,26 +592,26 @@ public class SoyConformanceTest {
   private ImmutableList<SoyError> getViolations(String textProto, SoyFileSupplier... suppliers) {
     ErrorReporter errorReporter = ErrorReporter.createForTest();
     SoyFileSetParserBuilder.forSuppliers(suppliers)
-        .setConformanceConfigs(ImmutableList.of(configTextAsByteSource(textProto)))
+        .setConformanceConfig(parseConfigProto(textProto))
         .errorReporter(errorReporter)
         .parse();
     return errorReporter.getErrors();
   }
 
-  private ByteSource configTextAsByteSource(String textProto) {
+  private ValidatedConformanceConfig parseConfigProto(String textProto) {
     ConformanceConfig.Builder builder = ConformanceConfig.newBuilder();
     try {
       TextFormat.merge(textProto, builder);
     } catch (ParseException pe) {
       throw new RuntimeException(pe);
     }
-    return ByteSource.wrap(builder.build().toByteArray());
+    return ValidatedConformanceConfig.create(builder.build());
   }
 
   private ImmutableList<SoyError> getViolations(String textProto, String input) {
     ErrorReporter errorReporter = ErrorReporter.createForTest();
     SoyFileSetParserBuilder.forFileContents(input)
-        .setConformanceConfigs(ImmutableList.of(configTextAsByteSource(textProto)))
+        .setConformanceConfig(parseConfigProto(textProto))
         .errorReporter(errorReporter)
         .parse();
     return errorReporter.getErrors();

@@ -16,17 +16,12 @@
 
 package com.google.template.soy.conformance;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.common.io.ByteSource;
 import com.google.template.soy.basetree.Node;
 import com.google.template.soy.basetree.NodeVisitor;
-import com.google.template.soy.conformance.Requirement.RequirementTypeCase;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -43,32 +38,8 @@ public final class SoyConformance {
    *
    * <p>The config files are expected to be text protos of type {@link ConformanceConfig}.
    */
-  public static SoyConformance create(Iterable<ByteSource> conformanceConfigs) {
-    ImmutableList.Builder<ConformanceConfig> builder = new ImmutableList.Builder<>();
-    for (ByteSource config : conformanceConfigs) {
-      try {
-        ConformanceConfig cc = fromByteSource(config);
-        builder.add(cc);
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-    }
-    return new SoyConformance(RuleWithWhitelists.forConformanceConfigs(builder.build()));
-  }
-
-  private static ConformanceConfig fromByteSource(ByteSource configSource) throws IOException {
-    ConformanceConfig config;
-    try (InputStream stream = configSource.openStream()) {
-      config = ConformanceConfig.parseFrom(stream);
-    }
-    for (Requirement r : config.getRequirementList()) {
-      Preconditions.checkArgument(
-          !r.getErrorMessage().isEmpty(), "requirement missing error message");
-      Preconditions.checkArgument(
-          r.getRequirementTypeCase() != RequirementTypeCase.REQUIREMENTTYPE_NOT_SET,
-          "requirement missing type");
-    }
-    return config;
+  public static SoyConformance create(ValidatedConformanceConfig conformanceConfig) {
+    return new SoyConformance(conformanceConfig.getRules());
   }
 
   private final ImmutableList<RuleWithWhitelists> rules;

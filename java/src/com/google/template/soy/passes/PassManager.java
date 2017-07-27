@@ -20,10 +20,10 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.io.ByteSource;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.TriState;
 import com.google.template.soy.basetree.SyntaxVersion;
+import com.google.template.soy.conformance.ValidatedConformanceConfig;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.SoyErrorKind;
@@ -111,7 +111,7 @@ public final class PassManager {
             .add(new HtmlRewritePass(errorReporter))
             // The check conformance pass needs to run on the rewritten html nodes, so it must
             // run after HtmlRewritePass
-            .add(new SoyConformancePass(builder.conformanceConfigs, errorReporter))
+            .add(new SoyConformancePass(builder.conformanceConfig, errorReporter))
             // needs to run after htmlrewriting, before resolvenames and autoescaping
             .add(new ContentSecurityPolicyNonceInjectionPass(errorReporter))
             // Needs to run after HtmlRewritePass
@@ -284,7 +284,7 @@ public final class PassManager {
     private boolean disableAllTypeChecking;
     private boolean desugarHtmlNodes = true;
     private boolean optimize = true;
-    private ImmutableList<ByteSource> conformanceConfigs = ImmutableList.of();
+    private ValidatedConformanceConfig conformanceConfig = ValidatedConformanceConfig.EMPTY;
     private boolean autoescaperEnabled = true;
     private boolean addHtmlCommentsForDebug = false;
 
@@ -377,9 +377,9 @@ public final class PassManager {
       return this;
     }
 
-    /** Configures this passmanager to run the given conformance pass using these config protos. */
-    public Builder setConformanceConfigs(ImmutableList<ByteSource> conformanceConfigs) {
-      this.conformanceConfigs = checkNotNull(conformanceConfigs);
+    /** Configures this passmanager to run the conformance pass using the given config object. */
+    public Builder setConformanceConfig(ValidatedConformanceConfig conformanceConfig) {
+      this.conformanceConfig = checkNotNull(conformanceConfig);
       return this;
     }
 
