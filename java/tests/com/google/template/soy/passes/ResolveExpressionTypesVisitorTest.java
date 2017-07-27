@@ -31,6 +31,7 @@ import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
+import com.google.template.soy.testing.ExampleExtendable;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeProvider;
 import com.google.template.soy.types.SoyTypeRegistry;
@@ -44,6 +45,7 @@ import com.google.template.soy.types.primitive.IntType;
 import com.google.template.soy.types.primitive.NullType;
 import com.google.template.soy.types.primitive.StringType;
 import com.google.template.soy.types.primitive.UnknownType;
+import com.google.template.soy.types.proto.SoyProtoTypeProvider;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -789,6 +791,29 @@ public final class ResolveExpressionTypesVisitorTest {
     assertThat(types.get(4)).isEqualTo(IntType.getInstance());
     assertThat(types.get(5)).isEqualTo(StringType.getInstance());
     assertThat(types.get(6)).isEqualTo(StringType.getInstance());
+  }
+
+  @Test
+  public void testProtoInitTyping() {
+    SoyTypeRegistry typeRegistry =
+        new SoyTypeRegistry(
+            ImmutableSet.<SoyTypeProvider>of(
+                new SoyProtoTypeProvider.Builder()
+                    .addDescriptors(ExampleExtendable.getDescriptor())
+                    .buildNoFiles()));
+
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(
+                constructTemplateSource(
+                    "{let $proto: example.ExampleExtendable() /}", "{captureType($proto)}"))
+            .addSoyFunction(CAPTURE_TYPE_FUNCTION)
+            .typeRegistry(typeRegistry)
+            .parse()
+            .fileSet();
+
+    SoyType type = Iterables.getOnlyElement(getCapturedTypes(soyTree));
+    assertThat(type)
+        .isEqualTo(typeRegistry.getType(ExampleExtendable.getDescriptor().getFullName()));
   }
 
   @Test
