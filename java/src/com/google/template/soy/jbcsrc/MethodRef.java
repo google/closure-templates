@@ -277,8 +277,8 @@ abstract class MethodRef {
   static final MethodRef SOY_MSG_RAW_TEXT_PART_GET_RAW_TEXT =
       create(SoyMsgRawTextPart.class, "getRawText").asCheap().asNonNullable();
 
-  static final MethodRef SOY_PROTO_VALUE_GET_FIELD =
-      create(SoyProtoValue.class, "getField", String.class).asCheap().asNonNullable();
+  static final MethodRef SOY_PROTO_VALUE_GET_PROTO_FIELD =
+      create(SoyProtoValue.class, "getProtoField", String.class).asCheap().asNonNullable();
 
   static final MethodRef SOY_PROTO_VALUE_GET_PROTO =
       create(SoyProtoValue.class, "getProto").asCheap().asNonNullable();

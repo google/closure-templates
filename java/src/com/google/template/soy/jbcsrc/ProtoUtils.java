@@ -503,11 +503,10 @@ final class ProtoUtils {
       SoyRuntimeType boxedType = SoyRuntimeType.getBoxedType(node.getType());
       return SoyExpression.forSoyValue(
           node.getType(),
-          MethodRef.SOY_PROTO_VALUE_GET_FIELD
+          // NOTE: in theory this method can return NullData for missing fields, but since this
+          // field is repeated, we know that that will not happen.
+          MethodRef.SOY_PROTO_VALUE_GET_PROTO_FIELD
               .invoke(baseExpr.box(), constant(node.getFieldName()))
-              // We can immediately resolve because we know proto fields don't need detach logic.
-              // they are always immediately available.
-              .invoke(MethodRef.SOY_VALUE_PROVIDER_RESOLVE)
               .checkedCast(boxedType.runtimeType()));
     }
   }
