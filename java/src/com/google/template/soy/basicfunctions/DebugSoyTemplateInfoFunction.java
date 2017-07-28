@@ -63,11 +63,13 @@ public final class DebugSoyTemplateInfoFunction
 
   @Override
   public JsExpr computeForJsSrc(List<JsExpr> args) {
-    // This is a method defined in soyutils_usegoog.js. Client-side library can configure this
-    // and control whether the compiler should generate additional HTML comments.
-    // Note that this method does not exist for jsmode=o, since the definitions are guarded
-    // by goog.DEBUG. So this will return undefined, which should be fine.
-    return new JsExpr("soy.$$getDebugSoyTemplateInfo()", Integer.MAX_VALUE);
+    /**
+     * soy.$$debugSoyTemplateInfo is a variable defined in soyutils_usegoog.js. Client-side library
+     * can explicitly call a method to configure this and control whether the compiler should
+     * generate additional HTML comments. We also guard this condition by goog.DEBUG so that it will
+     * be stripped in optimized mode.
+     */
+    return new JsExpr("(goog.DEBUG && soy.$$debugSoyTemplateInfo)", Integer.MAX_VALUE);
   }
 
   @Override

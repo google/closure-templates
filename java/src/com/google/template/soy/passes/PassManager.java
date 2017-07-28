@@ -286,7 +286,7 @@ public final class PassManager {
     private boolean optimize = true;
     private ValidatedConformanceConfig conformanceConfig = ValidatedConformanceConfig.EMPTY;
     private boolean autoescaperEnabled = true;
-    private boolean addHtmlCommentsForDebug = false;
+    private boolean addHtmlCommentsForDebug = true;
 
     public Builder setErrorReporter(ErrorReporter errorReporter) {
       this.errorReporter = checkNotNull(errorReporter);
