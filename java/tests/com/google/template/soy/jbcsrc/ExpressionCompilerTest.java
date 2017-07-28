@@ -187,7 +187,9 @@ public class ExpressionCompilerTest {
 
     // Map values are always boxed.  SoyMaps use == for equality, so check equivalence by comparing
     // their string representations.
-    assertExpression("['a': 1, 'b': 1.0, 'c': 'asdf', 'd': false] + ''")
+    SoyExpression compile =
+        compileExpression("['a': 1, 'b': 1.0, 'c': 'asdf', 'd': false]").coerceToString();
+    ExpressionTester.assertThatExpression(compile)
         .evaluatesTo(
             DictImpl.forProviderMap(
                     ImmutableMap.<String, SoyValue>of(
@@ -276,7 +278,6 @@ public class ExpressionCompilerTest {
     variables.put("foo", untypedBoxedSoyExpression(SoyExpression.forInt(constant(1L))));
     assertExpression("$foo + 2").evaluatesTo(IntegerData.forValue(3));
     assertExpression("$foo + '2'").evaluatesTo("12");
-    assertExpression("['foo'] + ['bar']").evaluatesTo("[foo][bar]");
   }
 
   @Test

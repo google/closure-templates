@@ -112,6 +112,9 @@ public interface SoyType {
             Kind.URI,
             Kind.TRUSTED_RESOURCE_URI);
 
+    private static final ImmutableSet<Kind> ILLEGAL_OPERAND_KINDS_PLUS_OP =
+        Sets.immutableEnumSet(Kind.BOOL, Kind.LIST, Kind.MAP, Kind.RECORD, Kind.RECORD);
+
     /** Returns true for SoyTypes that are plain strings or sanitized subtypes of strings. */
     public boolean isKnownStringOrSanitizedContent() {
       return STRING_KINDS.contains(this);
@@ -120,6 +123,13 @@ public interface SoyType {
     /** Returns true for SoyTypes that are sanitized subtypes of strings. */
     public boolean isKnownSanitizedContent() {
       return this != Kind.STRING && STRING_KINDS.contains(this);
+    }
+
+    /**
+     * Returns true for SoyTypes that are not allowed to be operands of binary arithmetic operators.
+     */
+    public boolean isIllegalOperandForBinaryOps() {
+      return ILLEGAL_OPERAND_KINDS_PLUS_OP.contains(this) || STRING_KINDS.contains(this);
     }
   }
 

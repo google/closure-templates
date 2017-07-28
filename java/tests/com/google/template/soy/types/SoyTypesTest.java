@@ -17,6 +17,7 @@
 package com.google.template.soy.types;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.template.soy.types.SoyTypes.NUMBER_TYPE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -49,125 +50,126 @@ import org.junit.runners.JUnit4;
 /** Unit tests for soy types. */
 @RunWith(JUnit4.class)
 public class SoyTypesTest {
+  private static final BoolType BOOL_TYPE = BoolType.getInstance();
+  private static final IntType INT_TYPE = IntType.getInstance();
+  private static final FloatType FLOAT_TYPE = FloatType.getInstance();
+  private static final StringType STRING_TYPE = StringType.getInstance();
+  private static final HtmlType HTML_TYPE = HtmlType.getInstance();
+  private static final CssType CSS_TYPE = CssType.getInstance();
+  private static final JsType JS_TYPE = JsType.getInstance();
+  private static final AttributesType ATTRIBUTES_TYPE = AttributesType.getInstance();
+  private static final NullType NULL_TYPE = NullType.getInstance();
+  private static final AnyType ANY_TYPE = AnyType.getInstance();
+  private static final UnknownType UNKNOWN_TYPE = UnknownType.getInstance();
+  private static final TrustedResourceUriType TRUSTED_RESOURCE_URI_TYPE =
+      TrustedResourceUriType.getInstance();
+  private static final UriType URI_TYPE = UriType.getInstance();
 
   @Test
   public void testAnyType() {
-    assertThat(AnyType.getInstance().isAssignableFrom(NullType.getInstance())).isTrue();
-    assertThat(AnyType.getInstance().isAssignableFrom(AnyType.getInstance())).isTrue();
-    assertThat(AnyType.getInstance().isAssignableFrom(UnknownType.getInstance())).isTrue();
-    assertThat(AnyType.getInstance().isAssignableFrom(StringType.getInstance())).isTrue();
-    assertThat(AnyType.getInstance().isAssignableFrom(IntType.getInstance())).isTrue();
+    assertThat(ANY_TYPE.isAssignableFrom(NULL_TYPE)).isTrue();
+    assertThat(ANY_TYPE.isAssignableFrom(ANY_TYPE)).isTrue();
+    assertThat(ANY_TYPE.isAssignableFrom(UNKNOWN_TYPE)).isTrue();
+    assertThat(ANY_TYPE.isAssignableFrom(STRING_TYPE)).isTrue();
+    assertThat(ANY_TYPE.isAssignableFrom(INT_TYPE)).isTrue();
   }
 
   @Test
   public void testUnknownType() {
-    assertThat(UnknownType.getInstance().isAssignableFrom(NullType.getInstance())).isTrue();
-    assertThat(UnknownType.getInstance().isAssignableFrom(AnyType.getInstance())).isTrue();
-    assertThat(UnknownType.getInstance().isAssignableFrom(UnknownType.getInstance())).isTrue();
-    assertThat(UnknownType.getInstance().isAssignableFrom(StringType.getInstance())).isTrue();
-    assertThat(UnknownType.getInstance().isAssignableFrom(IntType.getInstance())).isTrue();
+    assertThat(UNKNOWN_TYPE.isAssignableFrom(NULL_TYPE)).isTrue();
+    assertThat(UNKNOWN_TYPE.isAssignableFrom(ANY_TYPE)).isTrue();
+    assertThat(UNKNOWN_TYPE.isAssignableFrom(UNKNOWN_TYPE)).isTrue();
+    assertThat(UNKNOWN_TYPE.isAssignableFrom(STRING_TYPE)).isTrue();
+    assertThat(UNKNOWN_TYPE.isAssignableFrom(INT_TYPE)).isTrue();
   }
 
   @Test
   public void testNullType() {
-    assertThat(NullType.getInstance().isAssignableFrom(NullType.getInstance())).isTrue();
-    assertThat(NullType.getInstance().isAssignableFrom(StringType.getInstance())).isFalse();
-    assertThat(NullType.getInstance().isAssignableFrom(IntType.getInstance())).isFalse();
-    assertThat(NullType.getInstance().isAssignableFrom(AnyType.getInstance())).isFalse();
-    assertThat(NullType.getInstance().isAssignableFrom(UnknownType.getInstance())).isFalse();
+    assertThat(NULL_TYPE.isAssignableFrom(NULL_TYPE)).isTrue();
+    assertThat(NULL_TYPE.isAssignableFrom(STRING_TYPE)).isFalse();
+    assertThat(NULL_TYPE.isAssignableFrom(INT_TYPE)).isFalse();
+    assertThat(NULL_TYPE.isAssignableFrom(ANY_TYPE)).isFalse();
+    assertThat(NULL_TYPE.isAssignableFrom(UNKNOWN_TYPE)).isFalse();
   }
 
   @Test
   public void testStringType() {
-    assertThat(StringType.getInstance().isAssignableFrom(StringType.getInstance())).isTrue();
-    assertThat(StringType.getInstance().isAssignableFrom(IntType.getInstance())).isFalse();
-    assertThat(StringType.getInstance().isAssignableFrom(NullType.getInstance())).isFalse();
-    assertThat(StringType.getInstance().isAssignableFrom(AnyType.getInstance())).isFalse();
-    assertThat(StringType.getInstance().isAssignableFrom(UnknownType.getInstance())).isFalse();
+    assertThat(STRING_TYPE.isAssignableFrom(STRING_TYPE)).isTrue();
+    assertThat(STRING_TYPE.isAssignableFrom(INT_TYPE)).isFalse();
+    assertThat(STRING_TYPE.isAssignableFrom(NULL_TYPE)).isFalse();
+    assertThat(STRING_TYPE.isAssignableFrom(ANY_TYPE)).isFalse();
+    assertThat(STRING_TYPE.isAssignableFrom(UNKNOWN_TYPE)).isFalse();
   }
 
   @Test
   public void testPrimitiveTypeEquality() {
-    assertThat(AnyType.getInstance().equals(AnyType.getInstance())).isTrue();
-    assertThat(AnyType.getInstance().equals(IntType.getInstance())).isFalse();
-    assertThat(IntType.getInstance().equals(AnyType.getInstance())).isFalse();
-    assertThat(UnknownType.getInstance().equals(UnknownType.getInstance())).isTrue();
+    assertThat(ANY_TYPE.equals(ANY_TYPE)).isTrue();
+    assertThat(ANY_TYPE.equals(INT_TYPE)).isFalse();
+    assertThat(INT_TYPE.equals(ANY_TYPE)).isFalse();
+    assertThat(UNKNOWN_TYPE.equals(UNKNOWN_TYPE)).isTrue();
   }
 
   @Test
   public void testSanitizedType() {
-    assertThat(StringType.getInstance().isAssignableFrom(HtmlType.getInstance())).isTrue();
-    assertThat(StringType.getInstance().isAssignableFrom(CssType.getInstance())).isTrue();
-    assertThat(StringType.getInstance().isAssignableFrom(UriType.getInstance())).isTrue();
-    assertThat(StringType.getInstance().isAssignableFrom(TrustedResourceUriType.getInstance()))
-        .isTrue();
-    assertThat(StringType.getInstance().isAssignableFrom(AttributesType.getInstance())).isTrue();
-    assertThat(StringType.getInstance().isAssignableFrom(JsType.getInstance())).isTrue();
+    assertThat(STRING_TYPE.isAssignableFrom(HTML_TYPE)).isTrue();
+    assertThat(STRING_TYPE.isAssignableFrom(CSS_TYPE)).isTrue();
+    assertThat(STRING_TYPE.isAssignableFrom(URI_TYPE)).isTrue();
+    assertThat(STRING_TYPE.isAssignableFrom(TRUSTED_RESOURCE_URI_TYPE)).isTrue();
+    assertThat(STRING_TYPE.isAssignableFrom(ATTRIBUTES_TYPE)).isTrue();
+    assertThat(STRING_TYPE.isAssignableFrom(JS_TYPE)).isTrue();
 
-    assertThat(HtmlType.getInstance().isAssignableFrom(HtmlType.getInstance())).isTrue();
-    assertThat(HtmlType.getInstance().isAssignableFrom(IntType.getInstance())).isFalse();
-    assertThat(HtmlType.getInstance().isAssignableFrom(CssType.getInstance())).isFalse();
+    assertThat(HTML_TYPE.isAssignableFrom(HTML_TYPE)).isTrue();
+    assertThat(HTML_TYPE.isAssignableFrom(INT_TYPE)).isFalse();
+    assertThat(HTML_TYPE.isAssignableFrom(CSS_TYPE)).isFalse();
 
-    assertThat(CssType.getInstance().isAssignableFrom(CssType.getInstance())).isTrue();
-    assertThat(CssType.getInstance().isAssignableFrom(IntType.getInstance())).isFalse();
-    assertThat(CssType.getInstance().isAssignableFrom(HtmlType.getInstance())).isFalse();
+    assertThat(CSS_TYPE.isAssignableFrom(CSS_TYPE)).isTrue();
+    assertThat(CSS_TYPE.isAssignableFrom(INT_TYPE)).isFalse();
+    assertThat(CSS_TYPE.isAssignableFrom(HTML_TYPE)).isFalse();
 
-    assertThat(UriType.getInstance().isAssignableFrom(UriType.getInstance())).isTrue();
-    assertThat(UriType.getInstance().isAssignableFrom(IntType.getInstance())).isFalse();
-    assertThat(UriType.getInstance().isAssignableFrom(HtmlType.getInstance())).isFalse();
+    assertThat(URI_TYPE.isAssignableFrom(URI_TYPE)).isTrue();
+    assertThat(URI_TYPE.isAssignableFrom(INT_TYPE)).isFalse();
+    assertThat(URI_TYPE.isAssignableFrom(HTML_TYPE)).isFalse();
 
-    assertThat(
-            TrustedResourceUriType.getInstance()
-                .isAssignableFrom(TrustedResourceUriType.getInstance()))
-        .isTrue();
-    assertThat(TrustedResourceUriType.getInstance().isAssignableFrom(IntType.getInstance()))
-        .isFalse();
-    assertThat(TrustedResourceUriType.getInstance().isAssignableFrom(HtmlType.getInstance()))
-        .isFalse();
+    assertThat(TRUSTED_RESOURCE_URI_TYPE.isAssignableFrom(TRUSTED_RESOURCE_URI_TYPE)).isTrue();
+    assertThat(TRUSTED_RESOURCE_URI_TYPE.isAssignableFrom(INT_TYPE)).isFalse();
+    assertThat(TRUSTED_RESOURCE_URI_TYPE.isAssignableFrom(HTML_TYPE)).isFalse();
 
-    assertThat(AttributesType.getInstance().isAssignableFrom(AttributesType.getInstance()))
-        .isTrue();
-    assertThat(AttributesType.getInstance().isAssignableFrom(IntType.getInstance())).isFalse();
-    assertThat(AttributesType.getInstance().isAssignableFrom(HtmlType.getInstance())).isFalse();
+    assertThat(ATTRIBUTES_TYPE.isAssignableFrom(ATTRIBUTES_TYPE)).isTrue();
+    assertThat(ATTRIBUTES_TYPE.isAssignableFrom(INT_TYPE)).isFalse();
+    assertThat(ATTRIBUTES_TYPE.isAssignableFrom(HTML_TYPE)).isFalse();
 
-    assertThat(JsType.getInstance().isAssignableFrom(JsType.getInstance())).isTrue();
-    assertThat(JsType.getInstance().isAssignableFrom(IntType.getInstance())).isFalse();
-    assertThat(JsType.getInstance().isAssignableFrom(HtmlType.getInstance())).isFalse();
+    assertThat(JS_TYPE.isAssignableFrom(JS_TYPE)).isTrue();
+    assertThat(JS_TYPE.isAssignableFrom(INT_TYPE)).isFalse();
+    assertThat(JS_TYPE.isAssignableFrom(HTML_TYPE)).isFalse();
   }
 
   @Test
   public void testUnionType() {
     // Test that it flattens properly
-    SoyType utype =
-        UnionType.of(
-            IntType.getInstance(), UnionType.of(IntType.getInstance(), NullType.getInstance()));
+    SoyType utype = UnionType.of(INT_TYPE, UnionType.of(INT_TYPE, NULL_TYPE));
     assertThat(utype.toString()).isEqualTo("int|null");
-    assertThat(utype.isAssignableFrom(IntType.getInstance())).isTrue();
-    assertThat(utype.isAssignableFrom(NullType.getInstance())).isTrue();
-    assertThat(utype.isAssignableFrom(FloatType.getInstance())).isFalse();
-    assertThat(utype.isAssignableFrom(StringType.getInstance())).isFalse();
-    assertThat(utype.isAssignableFrom(AnyType.getInstance())).isFalse();
-    assertThat(utype.isAssignableFrom(UnknownType.getInstance())).isFalse();
+    assertThat(utype.isAssignableFrom(INT_TYPE)).isTrue();
+    assertThat(utype.isAssignableFrom(NULL_TYPE)).isTrue();
+    assertThat(utype.isAssignableFrom(FLOAT_TYPE)).isFalse();
+    assertThat(utype.isAssignableFrom(STRING_TYPE)).isFalse();
+    assertThat(utype.isAssignableFrom(ANY_TYPE)).isFalse();
+    assertThat(utype.isAssignableFrom(UNKNOWN_TYPE)).isFalse();
   }
 
   @Test
   public void testUnionTypeEquality() {
-    assertThat(
-            UnionType.of(IntType.getInstance(), BoolType.getInstance())
-                .equals(UnionType.of(BoolType.getInstance(), IntType.getInstance())))
+    assertThat(UnionType.of(INT_TYPE, BOOL_TYPE).equals(UnionType.of(BOOL_TYPE, INT_TYPE)))
         .isTrue();
-    assertThat(
-            UnionType.of(IntType.getInstance(), BoolType.getInstance())
-                .equals(UnionType.of(IntType.getInstance(), StringType.getInstance())))
+    assertThat(UnionType.of(INT_TYPE, BOOL_TYPE).equals(UnionType.of(INT_TYPE, STRING_TYPE)))
         .isFalse();
   }
 
   // Test that list types are covariant over their element types.
   @Test
   public void testListCovariance() {
-    ListType listOfAny = ListType.of(AnyType.getInstance());
-    ListType listOfString = ListType.of(StringType.getInstance());
-    ListType listOfInt = ListType.of(IntType.getInstance());
+    ListType listOfAny = ListType.of(ANY_TYPE);
+    ListType listOfString = ListType.of(STRING_TYPE);
+    ListType listOfInt = ListType.of(INT_TYPE);
 
     // Legal to assign List<X> to List<X>
     assertThat(listOfAny.isAssignableFrom(listOfAny)).isTrue();
@@ -187,9 +189,9 @@ public class SoyTypesTest {
 
   @Test
   public void testListTypeEquality() {
-    ListType listOfAny = ListType.of(AnyType.getInstance());
-    ListType listOfAny2 = ListType.of(AnyType.getInstance());
-    ListType listOfString = ListType.of(StringType.getInstance());
+    ListType listOfAny = ListType.of(ANY_TYPE);
+    ListType listOfAny2 = ListType.of(ANY_TYPE);
+    ListType listOfString = ListType.of(STRING_TYPE);
 
     assertThat(listOfAny.equals(listOfAny2)).isTrue();
     assertThat(listOfAny.equals(listOfString)).isFalse();
@@ -198,9 +200,9 @@ public class SoyTypesTest {
   // Test that map types are covariant over their key types.
   @Test
   public void testMapKeyCovariance() {
-    MapType mapOfAnyToAny = MapType.of(AnyType.getInstance(), AnyType.getInstance());
-    MapType mapOfStringToAny = MapType.of(StringType.getInstance(), AnyType.getInstance());
-    MapType mapOfIntToAny = MapType.of(IntType.getInstance(), AnyType.getInstance());
+    MapType mapOfAnyToAny = MapType.of(ANY_TYPE, ANY_TYPE);
+    MapType mapOfStringToAny = MapType.of(STRING_TYPE, ANY_TYPE);
+    MapType mapOfIntToAny = MapType.of(INT_TYPE, ANY_TYPE);
 
     // Legal to assign Map<X, Y> to Map<X, Y>
     assertThat(mapOfAnyToAny.isAssignableFrom(mapOfAnyToAny)).isTrue();
@@ -221,9 +223,9 @@ public class SoyTypesTest {
   // Test that map types are covariant over their value types.
   @Test
   public void testMapValueCovariance() {
-    MapType mapOfAnyToAny = MapType.of(AnyType.getInstance(), AnyType.getInstance());
-    MapType mapOfAnyToString = MapType.of(AnyType.getInstance(), StringType.getInstance());
-    MapType mapOfAnyToInt = MapType.of(AnyType.getInstance(), IntType.getInstance());
+    MapType mapOfAnyToAny = MapType.of(ANY_TYPE, ANY_TYPE);
+    MapType mapOfAnyToString = MapType.of(ANY_TYPE, STRING_TYPE);
+    MapType mapOfAnyToInt = MapType.of(ANY_TYPE, INT_TYPE);
 
     // Legal to assign Map<X, Y> to Map<X, Y>
     assertThat(mapOfAnyToAny.isAssignableFrom(mapOfAnyToAny)).isTrue();
@@ -243,10 +245,10 @@ public class SoyTypesTest {
 
   @Test
   public void testMapTypeEquality() {
-    MapType mapOfAnyToAny = MapType.of(AnyType.getInstance(), AnyType.getInstance());
-    MapType mapOfAnyToAny2 = MapType.of(AnyType.getInstance(), AnyType.getInstance());
-    MapType mapOfStringToAny = MapType.of(StringType.getInstance(), AnyType.getInstance());
-    MapType mapOfAnyToString = MapType.of(AnyType.getInstance(), StringType.getInstance());
+    MapType mapOfAnyToAny = MapType.of(ANY_TYPE, ANY_TYPE);
+    MapType mapOfAnyToAny2 = MapType.of(ANY_TYPE, ANY_TYPE);
+    MapType mapOfStringToAny = MapType.of(STRING_TYPE, ANY_TYPE);
+    MapType mapOfAnyToString = MapType.of(ANY_TYPE, STRING_TYPE);
 
     assertThat(mapOfAnyToAny.equals(mapOfAnyToAny2)).isTrue();
     assertThat(mapOfAnyToAny.equals(mapOfStringToAny)).isFalse();
@@ -255,52 +257,36 @@ public class SoyTypesTest {
 
   @Test
   public void testRecordTypeEquality() {
-    RecordType r1 =
-        RecordType.of(
-            ImmutableMap.<String, SoyType>of(
-                "a", IntType.getInstance(), "b", AnyType.getInstance()));
+    RecordType r1 = RecordType.of(ImmutableMap.<String, SoyType>of("a", INT_TYPE, "b", ANY_TYPE));
 
     assertThat(
             r1.equals(
-                RecordType.of(
-                    ImmutableMap.<String, SoyType>of(
-                        "a", IntType.getInstance(), "b", AnyType.getInstance()))))
+                RecordType.of(ImmutableMap.<String, SoyType>of("a", INT_TYPE, "b", ANY_TYPE))))
         .isTrue();
     assertThat(
             r1.equals(
-                RecordType.of(
-                    ImmutableMap.<String, SoyType>of(
-                        "a", IntType.getInstance(), "c", AnyType.getInstance()))))
+                RecordType.of(ImmutableMap.<String, SoyType>of("a", INT_TYPE, "c", ANY_TYPE))))
         .isFalse();
     assertThat(
             r1.equals(
-                RecordType.of(
-                    ImmutableMap.<String, SoyType>of(
-                        "a", IntType.getInstance(), "b", StringType.getInstance()))))
+                RecordType.of(ImmutableMap.<String, SoyType>of("a", INT_TYPE, "b", STRING_TYPE))))
         .isFalse();
   }
 
   @Test
   public void testRecordTypeAssignment() {
-    RecordType r1 =
-        RecordType.of(
-            ImmutableMap.<String, SoyType>of(
-                "a", IntType.getInstance(), "b", AnyType.getInstance()));
+    RecordType r1 = RecordType.of(ImmutableMap.<String, SoyType>of("a", INT_TYPE, "b", ANY_TYPE));
 
     // Same
     assertThat(
             r1.isAssignableFrom(
-                RecordType.of(
-                    ImmutableMap.<String, SoyType>of(
-                        "a", IntType.getInstance(), "b", AnyType.getInstance()))))
+                RecordType.of(ImmutableMap.<String, SoyType>of("a", INT_TYPE, "b", ANY_TYPE))))
         .isTrue();
 
     // "b" is subtype
     assertThat(
             r1.isAssignableFrom(
-                RecordType.of(
-                    ImmutableMap.<String, SoyType>of(
-                        "a", IntType.getInstance(), "b", StringType.getInstance()))))
+                RecordType.of(ImmutableMap.<String, SoyType>of("a", INT_TYPE, "b", STRING_TYPE))))
         .isTrue();
 
     // Additional field
@@ -308,28 +294,19 @@ public class SoyTypesTest {
             r1.isAssignableFrom(
                 RecordType.of(
                     ImmutableMap.<String, SoyType>of(
-                        "a",
-                        IntType.getInstance(),
-                        "b",
-                        StringType.getInstance(),
-                        "c",
-                        StringType.getInstance()))))
+                        "a", INT_TYPE, "b", STRING_TYPE, "c", STRING_TYPE))))
         .isTrue();
 
     // Missing "b"
     assertThat(
             r1.isAssignableFrom(
-                RecordType.of(
-                    ImmutableMap.<String, SoyType>of(
-                        "a", IntType.getInstance(), "c", AnyType.getInstance()))))
+                RecordType.of(ImmutableMap.<String, SoyType>of("a", INT_TYPE, "c", ANY_TYPE))))
         .isFalse();
 
     // Field type mismatch
     assertThat(
             r1.isAssignableFrom(
-                RecordType.of(
-                    ImmutableMap.<String, SoyType>of(
-                        "a", StringType.getInstance(), "b", AnyType.getInstance()))))
+                RecordType.of(ImmutableMap.<String, SoyType>of("a", STRING_TYPE, "b", ANY_TYPE))))
         .isFalse();
   }
 
@@ -339,7 +316,7 @@ public class SoyTypesTest {
     for (SanitizedContentKind kind : SanitizedContentKind.values()) {
       SoyType typeForContentKind = SanitizedType.getTypeForContentKind(kind);
       if (kind == SanitizedContentKind.TEXT) {
-        assertEquals(StringType.getInstance(), typeForContentKind);
+        assertEquals(STRING_TYPE, typeForContentKind);
       } else {
         assertEquals(kind, ((SanitizedType) typeForContentKind).getContentKind());
       }
@@ -349,66 +326,180 @@ public class SoyTypesTest {
   }
 
   @Test
-  public void testLeastCommonType() {
+  public void testLowestCommonType() {
     SoyTypeRegistry typeRegistry = new SoyTypeRegistry();
 
-    assertThat(
-            SoyTypes.computeLowestCommonType(
-                typeRegistry, IntType.getInstance(), AnyType.getInstance()))
-        .isEqualTo(AnyType.getInstance());
-    assertThat(
-            SoyTypes.computeLowestCommonType(
-                typeRegistry, IntType.getInstance(), UnknownType.getInstance()))
-        .isEqualTo(UnknownType.getInstance());
-    assertThat(
-            SoyTypes.computeLowestCommonType(
-                typeRegistry, UnknownType.getInstance(), IntType.getInstance()))
-        .isEqualTo(UnknownType.getInstance());
-    assertThat(
-            SoyTypes.computeLowestCommonType(
-                typeRegistry, AnyType.getInstance(), IntType.getInstance()))
-        .isEqualTo(AnyType.getInstance());
-    assertThat(
-            SoyTypes.computeLowestCommonType(
-                typeRegistry, StringType.getInstance(), HtmlType.getInstance()))
-        .isEqualTo(StringType.getInstance());
-    assertThat(
-            SoyTypes.computeLowestCommonType(
-                typeRegistry, HtmlType.getInstance(), StringType.getInstance()))
-        .isEqualTo(StringType.getInstance());
-    assertThat(
-            SoyTypes.computeLowestCommonType(
-                typeRegistry, IntType.getInstance(), FloatType.getInstance()))
-        .isEqualTo(UnionType.of(IntType.getInstance(), FloatType.getInstance()));
-    assertThat(
-            SoyTypes.computeLowestCommonType(
-                typeRegistry, FloatType.getInstance(), IntType.getInstance()))
-        .isEqualTo(UnionType.of(IntType.getInstance(), FloatType.getInstance()));
+    assertThat(SoyTypes.computeLowestCommonType(typeRegistry, INT_TYPE, ANY_TYPE))
+        .isEqualTo(ANY_TYPE);
+    assertThat(SoyTypes.computeLowestCommonType(typeRegistry, INT_TYPE, UNKNOWN_TYPE))
+        .isEqualTo(UNKNOWN_TYPE);
+    assertThat(SoyTypes.computeLowestCommonType(typeRegistry, UNKNOWN_TYPE, INT_TYPE))
+        .isEqualTo(UNKNOWN_TYPE);
+    assertThat(SoyTypes.computeLowestCommonType(typeRegistry, ANY_TYPE, INT_TYPE))
+        .isEqualTo(ANY_TYPE);
+    assertThat(SoyTypes.computeLowestCommonType(typeRegistry, STRING_TYPE, HTML_TYPE))
+        .isEqualTo(STRING_TYPE);
+    assertThat(SoyTypes.computeLowestCommonType(typeRegistry, HTML_TYPE, STRING_TYPE))
+        .isEqualTo(STRING_TYPE);
+    assertThat(SoyTypes.computeLowestCommonType(typeRegistry, INT_TYPE, FLOAT_TYPE))
+        .isEqualTo(NUMBER_TYPE);
+    assertThat(SoyTypes.computeLowestCommonType(typeRegistry, FLOAT_TYPE, INT_TYPE))
+        .isEqualTo(NUMBER_TYPE);
   }
 
   @Test
-  public void testLeastCommonTypeArithmetic() {
-    SoyType intT = IntType.getInstance();
-    SoyType anyT = AnyType.getInstance();
-    SoyType unknownT = UnknownType.getInstance();
-    SoyType floatT = FloatType.getInstance();
-    SoyType stringT = StringType.getInstance();
-    SoyType htmlT = HtmlType.getInstance();
-    SoyType numberT = SoyTypes.NUMBER_TYPE;
+  public void testLowestCommonTypeArithmetic() {
+    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(INT_TYPE, ANY_TYPE)).isAbsent();
+    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(ANY_TYPE, INT_TYPE)).isAbsent();
+    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(STRING_TYPE, HTML_TYPE)).isAbsent();
+    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(HTML_TYPE, STRING_TYPE)).isAbsent();
+    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(ListType.of(INT_TYPE), INT_TYPE))
+        .isAbsent();
+    assertThat(
+            SoyTypes.computeLowestCommonTypeArithmetic(MapType.of(INT_TYPE, STRING_TYPE), INT_TYPE))
+        .isAbsent();
+    assertThat(
+            SoyTypes.computeLowestCommonTypeArithmetic(
+                RecordType.of(ImmutableMap.of("a", INT_TYPE, "b", FLOAT_TYPE)), INT_TYPE))
+        .isAbsent();
+    assertThat(
+            SoyTypes.computeLowestCommonTypeArithmetic(
+                UnionType.of(MapType.of(FLOAT_TYPE, STRING_TYPE), INT_TYPE), FLOAT_TYPE))
+        .isAbsent();
+    assertThat(
+            SoyTypes.computeLowestCommonTypeArithmetic(
+                UnionType.of(BOOL_TYPE, INT_TYPE, STRING_TYPE), NUMBER_TYPE))
+        .isAbsent();
+    assertThat(
+            SoyTypes.computeLowestCommonTypeArithmetic(UnionType.of(BOOL_TYPE, INT_TYPE), INT_TYPE))
+        .isAbsent();
+    assertThat(
+            SoyTypes.computeLowestCommonTypeArithmetic(
+                UnionType.of(STRING_TYPE, FLOAT_TYPE), INT_TYPE))
+        .isAbsent();
 
-    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(intT, anyT)).isAbsent();
-    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(anyT, intT)).isAbsent();
-    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(stringT, htmlT)).isAbsent();
-    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(htmlT, stringT)).isAbsent();
-    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(intT, floatT)).hasValue(floatT);
-    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(floatT, intT)).hasValue(floatT);
-    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(floatT, unknownT)).hasValue(unknownT);
-    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(unknownT, floatT)).hasValue(unknownT);
-    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(intT, intT)).hasValue(intT);
-    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(floatT, floatT)).hasValue(floatT);
-    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(floatT, numberT)).hasValue(numberT);
-    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(intT, numberT)).hasValue(numberT);
-    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(numberT, numberT)).hasValue(numberT);
+    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(INT_TYPE, FLOAT_TYPE))
+        .hasValue(FLOAT_TYPE);
+    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(FLOAT_TYPE, INT_TYPE))
+        .hasValue(FLOAT_TYPE);
+    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(FLOAT_TYPE, UNKNOWN_TYPE))
+        .hasValue(UNKNOWN_TYPE);
+    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(UNKNOWN_TYPE, FLOAT_TYPE))
+        .hasValue(UNKNOWN_TYPE);
+    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(INT_TYPE, INT_TYPE)).hasValue(INT_TYPE);
+    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(FLOAT_TYPE, FLOAT_TYPE))
+        .hasValue(FLOAT_TYPE);
+    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(FLOAT_TYPE, NUMBER_TYPE))
+        .hasValue(NUMBER_TYPE);
+    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(INT_TYPE, NUMBER_TYPE))
+        .hasValue(NUMBER_TYPE);
+    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(NUMBER_TYPE, NUMBER_TYPE))
+        .hasValue(NUMBER_TYPE);
   }
 
+  @Test
+  public void testGetSoyTypeForBinaryOperatorPlusOp() {
+    SoyTypes.SoyTypeBinaryOperator plusOp = new SoyTypes.SoyTypePlusOperator();
+    /**
+     * This is largely the same as computeLowestCommonTypeArithmetic(), but this method is slightly
+     * better. There is one difference: float + number will return float type, which is expected.
+     * Since number is basically {int|float}; float + int returns float, and float + float returns
+     * float, so we always return float. OTOH, computeLowestCommonTypeArithmetic(float, number) will
+     * return number.
+     */
+    // All number types
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(INT_TYPE, FLOAT_TYPE, plusOp))
+        .isEqualTo(FLOAT_TYPE);
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(FLOAT_TYPE, INT_TYPE, plusOp))
+        .isEqualTo(FLOAT_TYPE);
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(INT_TYPE, INT_TYPE, plusOp))
+        .isEqualTo(INT_TYPE);
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(FLOAT_TYPE, FLOAT_TYPE, plusOp))
+        .isEqualTo(FLOAT_TYPE);
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(FLOAT_TYPE, NUMBER_TYPE, plusOp))
+        .isEqualTo(FLOAT_TYPE);
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(INT_TYPE, NUMBER_TYPE, plusOp))
+        .isEqualTo(NUMBER_TYPE);
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(NUMBER_TYPE, NUMBER_TYPE, plusOp))
+        .isEqualTo(NUMBER_TYPE);
+
+    // Unknown types are fine
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(FLOAT_TYPE, UNKNOWN_TYPE, plusOp))
+        .isEqualTo(UNKNOWN_TYPE);
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(UNKNOWN_TYPE, FLOAT_TYPE, plusOp))
+        .isEqualTo(UNKNOWN_TYPE);
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(UNKNOWN_TYPE, UNKNOWN_TYPE, plusOp))
+        .isEqualTo(UNKNOWN_TYPE);
+
+    // Any string types should be resolved to string
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(INT_TYPE, STRING_TYPE, plusOp))
+        .isEqualTo(STRING_TYPE);
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(STRING_TYPE, FLOAT_TYPE, plusOp))
+        .isEqualTo(STRING_TYPE);
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(STRING_TYPE, NUMBER_TYPE, plusOp))
+        .isEqualTo(STRING_TYPE);
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(STRING_TYPE, STRING_TYPE, plusOp))
+        .isEqualTo(STRING_TYPE);
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(INT_TYPE, URI_TYPE, plusOp))
+        .isEqualTo(STRING_TYPE);
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(HTML_TYPE, STRING_TYPE, plusOp))
+        .isEqualTo(STRING_TYPE);
+
+    // Some types are definitely not allowed.
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(ListType.of(STRING_TYPE), FLOAT_TYPE, plusOp))
+        .isNull();
+    assertThat(
+            SoyTypes.getSoyTypeForBinaryOperator(
+                INT_TYPE, MapType.of(INT_TYPE, STRING_TYPE), plusOp))
+        .isNull();
+    assertThat(
+            SoyTypes.getSoyTypeForBinaryOperator(
+                INT_TYPE, RecordType.of(ImmutableMap.of("a", INT_TYPE, "b", FLOAT_TYPE)), plusOp))
+        .isNull();
+
+    // Union types should list all possible combinations
+    assertThat(
+            SoyTypes.getSoyTypeForBinaryOperator(
+                INT_TYPE, UnionType.of(INT_TYPE, STRING_TYPE), plusOp))
+        .isEqualTo(UnionType.of(INT_TYPE, STRING_TYPE));
+    assertThat(
+            SoyTypes.getSoyTypeForBinaryOperator(
+                UnionType.of(STRING_TYPE, FLOAT_TYPE), UnionType.of(INT_TYPE, STRING_TYPE), plusOp))
+        .isEqualTo(UnionType.of(STRING_TYPE, FLOAT_TYPE));
+    assertThat(
+            SoyTypes.getSoyTypeForBinaryOperator(
+                UnionType.of(STRING_TYPE, INT_TYPE), UnionType.of(INT_TYPE, STRING_TYPE), plusOp))
+        .isEqualTo(UnionType.of(STRING_TYPE, INT_TYPE));
+    assertThat(
+            SoyTypes.getSoyTypeForBinaryOperator(
+                UnionType.of(STRING_TYPE, HTML_TYPE), UnionType.of(INT_TYPE, STRING_TYPE), plusOp))
+        .isEqualTo(STRING_TYPE);
+
+    // If any of these combinations are incompatible, we should return null.
+    assertThat(
+            SoyTypes.getSoyTypeForBinaryOperator(
+                INT_TYPE, UnionType.of(BOOL_TYPE, FLOAT_TYPE, INT_TYPE), plusOp))
+        .isNull();
+    assertThat(
+            SoyTypes.getSoyTypeForBinaryOperator(
+                UnionType.of(STRING_TYPE, HTML_TYPE),
+                UnionType.of(INT_TYPE, STRING_TYPE, ListType.of(INT_TYPE)),
+                plusOp))
+        .isNull();
+
+    // Nullable types should be fine. However, null type itself is not allowed.
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(INT_TYPE, NULL_TYPE, plusOp)).isNull();
+    assertThat(
+            SoyTypes.getSoyTypeForBinaryOperator(
+                INT_TYPE, UnionType.of(NULL_TYPE, INT_TYPE), plusOp))
+        .isEqualTo(INT_TYPE);
+    assertThat(
+            SoyTypes.getSoyTypeForBinaryOperator(
+                UnionType.of(NULL_TYPE, FLOAT_TYPE), UnionType.of(NULL_TYPE, INT_TYPE), plusOp))
+        .isEqualTo(UnionType.of(NULL_TYPE, FLOAT_TYPE));
+    assertThat(
+            SoyTypes.getSoyTypeForBinaryOperator(
+                UnionType.of(NULL_TYPE, STRING_TYPE), UnionType.of(NULL_TYPE, INT_TYPE), plusOp))
+        .isEqualTo(UnionType.of(NULL_TYPE, STRING_TYPE));
+  }
 }

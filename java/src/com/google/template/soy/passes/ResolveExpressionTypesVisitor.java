@@ -158,6 +158,8 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
       SoyErrorKind.of("Missing Soy type for variable.");
   private static final SoyErrorKind TYPE_MISMATCH =
       SoyErrorKind.of("Soy types ''{0}'' and ''{1}'' are not comparable.");
+  private static final SoyErrorKind INCOMPATIBLE_AIRTHMETIC_OP =
+      SoyErrorKind.of("Using arithmetic operators on Soy types ''{0}'' and ''{1}'' is illegal.");
 
   /** User-declared syntax version. */
   private final SyntaxVersion declaredSyntaxVersion;
@@ -588,18 +590,13 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
       visitChildren(node);
       SoyType left = node.getChild(0).getType();
       SoyType right = node.getChild(1).getType();
-      Optional<SoyType> arithmeticType = SoyTypes.computeLowestCommonTypeArithmetic(left, right);
-      if (arithmeticType.isPresent()) {
-        node.setType(arithmeticType.get());
-      } else if (StringType.getInstance().isAssignableFrom(left)
-          || StringType.getInstance().isAssignableFrom(right)) {
-        // if either is a string, the whole thing will be coerced to concentation
-        node.setType(StringType.getInstance());
-      } else {
-        // This is undefined territory.  Possibly this should be made a compiler error since
-        // currently every backend does different things with '1 + true'.
-        node.setType(UnknownType.getInstance());
+      SoyType result =
+          SoyTypes.getSoyTypeForBinaryOperator(left, right, new SoyTypes.SoyTypePlusOperator());
+      if (result == null) {
+        errorReporter.report(node.getSourceLocation(), INCOMPATIBLE_AIRTHMETIC_OP, left, right);
+        result = UnknownType.getInstance();
       }
+      node.setType(result);
       tryApplySubstitution(node);
     }
 
@@ -1234,7 +1231,7 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
       // {if $var != null} but something like {if $var > 0} should not be changed.
       visit(node);
       Wrapper<ExprNode> wrapped = ExprEquivalence.get().wrap(node);
-      positiveTypeConstraints.put(wrapped, tryRemoveNull(node.getType()));
+      positiveTypeConstraints.put(wrapped, SoyTypes.tryRemoveNull(node.getType()));
       // TODO(lukes): The 'negative' type constraint here is not optimal.  What we really know is
       // that the value of the expression is 'falsy' we could use that to inform later checks but
       // for now we just assume it has its normal type.
@@ -1297,11 +1294,13 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
       if (node.getChild(1).getKind() == ExprNode.Kind.NULL_NODE) {
         Wrapper<ExprNode> wrappedExpr = ExprEquivalence.get().wrap(node.getChild(0));
         positiveTypeConstraints.put(wrappedExpr, NullType.getInstance());
-        negativeTypeConstraints.put(wrappedExpr, tryRemoveNull(wrappedExpr.get().getType()));
+        negativeTypeConstraints.put(
+            wrappedExpr, SoyTypes.tryRemoveNull(wrappedExpr.get().getType()));
       } else if (node.getChild(0).getKind() == ExprNode.Kind.NULL_NODE) {
         Wrapper<ExprNode> wrappedExpr = ExprEquivalence.get().wrap(node.getChild(1));
         positiveTypeConstraints.put(wrappedExpr, NullType.getInstance());
-        negativeTypeConstraints.put(wrappedExpr, tryRemoveNull(wrappedExpr.get().getType()));
+        negativeTypeConstraints.put(
+            wrappedExpr, SoyTypes.tryRemoveNull(wrappedExpr.get().getType()));
       }
       // Otherwise don't make any inferences (don't visit children).
     }
@@ -1310,11 +1309,13 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
     protected void visitNotEqualOpNode(NotEqualOpNode node) {
       if (node.getChild(1).getKind() == ExprNode.Kind.NULL_NODE) {
         Wrapper<ExprNode> wrappedExpr = ExprEquivalence.get().wrap(node.getChild(0));
-        positiveTypeConstraints.put(wrappedExpr, tryRemoveNull(wrappedExpr.get().getType()));
+        positiveTypeConstraints.put(
+            wrappedExpr, SoyTypes.tryRemoveNull(wrappedExpr.get().getType()));
         negativeTypeConstraints.put(wrappedExpr, NullType.getInstance());
       } else if (node.getChild(0).getKind() == ExprNode.Kind.NULL_NODE) {
         Wrapper<ExprNode> wrappedExpr = ExprEquivalence.get().wrap(node.getChild(1));
-        positiveTypeConstraints.put(wrappedExpr, tryRemoveNull(wrappedExpr.get().getType()));
+        positiveTypeConstraints.put(
+            wrappedExpr, SoyTypes.tryRemoveNull(wrappedExpr.get().getType()));
         negativeTypeConstraints.put(wrappedExpr, NullType.getInstance());
       }
       // Otherwise don't make any inferences (don't visit children).
@@ -1341,12 +1342,14 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
         return;
       } else if (node.getFunctionName().equals("isNonnull")) {
         Wrapper<ExprNode> wrappedExpr = ExprEquivalence.get().wrap(node.getChild(0));
-        positiveTypeConstraints.put(wrappedExpr, tryRemoveNull(wrappedExpr.get().getType()));
+        positiveTypeConstraints.put(
+            wrappedExpr, SoyTypes.tryRemoveNull(wrappedExpr.get().getType()));
         negativeTypeConstraints.put(wrappedExpr, NullType.getInstance());
       } else if (node.getFunctionName().equals("isNull")) {
         Wrapper<ExprNode> wrappedExpr = ExprEquivalence.get().wrap(node.getChild(0));
         positiveTypeConstraints.put(wrappedExpr, NullType.getInstance());
-        negativeTypeConstraints.put(wrappedExpr, tryRemoveNull(wrappedExpr.get().getType()));
+        negativeTypeConstraints.put(
+            wrappedExpr, SoyTypes.tryRemoveNull(wrappedExpr.get().getType()));
       }
     }
 
@@ -1422,19 +1425,6 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
       }
       return result;
     }
-  }
-
-  /**
-   * If the type is nullable, makes it non-nullable.
-   *
-   * <p>If the type is the null type, then it returns the null type. In theory if we had a 'bottom'
-   * type this would be an appropriate use of it since this likely indicates dead code.
-   */
-  private static final SoyType tryRemoveNull(SoyType soyType) {
-    if (soyType == NullType.getInstance()) {
-      return NullType.getInstance();
-    }
-    return SoyTypes.removeNull(soyType);
   }
 
   /**

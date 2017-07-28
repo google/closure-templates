@@ -886,13 +886,12 @@ public final class TemplateParserTest {
             + "  // {@param commentedOut: string}\n"
             + "  {@param moo: string}{@param too: string}\n"
             + "  {@param? woo: string}  /** Something exciting. */  {@param hoo: string}\n"
-            + "  {$boo + $foo + $goo + $moo + $too + $woo + $hoo}\n"; // use all the params
+            + "  {$boo + $goo + $moo + $too + $woo + $hoo}{$foo}\n"; // use all the params
 
     TemplateNode result = parseTemplateContent(templateHeaderAndBody, FAIL);
     assertEquals(7, Iterables.size(result.getAllParams()));
     assertEquals(
-        "{$boo + $foo + $goo + $moo + $too + $woo + $hoo}",
-        result.getChildren().get(0).toSourceString());
+        "{$boo + $goo + $moo + $too + $woo + $hoo}", result.getChildren().get(0).toSourceString());
 
     List<TemplateParam> declInfos = ImmutableList.copyOf(result.getAllParams());
     assertFalse(declInfos.get(0).isInjected());

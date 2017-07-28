@@ -279,15 +279,11 @@ public final class ResolveExpressionTypesVisitorTest {
                     "{@param ps: string}",
                     "{@param pi: int}",
                     "{@param pf: float}",
-                    "{@param pb: bool}",
                     "{captureType($ps + $ps)}",
                     "{captureType($ps + $pi)}",
                     "{captureType($ps + $pf)}",
-                    "{captureType($ps + $pb)}",
                     "{captureType($pi + $ps)}",
-                    "{captureType($pf + $ps)}",
-                    "{captureType($pb + $ps)}",
-                    "{captureType($pb + $pi)}"))
+                    "{captureType($pf + $ps)}"))
             .declaredSyntaxVersion(SyntaxVersion.V2_0)
             .typeRegistry(TYPE_REGISTRY)
             .addSoyFunction(CAPTURE_TYPE_FUNCTION)
@@ -299,10 +295,6 @@ public final class ResolveExpressionTypesVisitorTest {
     assertThat(types.get(2)).isEqualTo(StringType.getInstance());
     assertThat(types.get(3)).isEqualTo(StringType.getInstance());
     assertThat(types.get(4)).isEqualTo(StringType.getInstance());
-    assertThat(types.get(5)).isEqualTo(StringType.getInstance());
-    assertThat(types.get(6)).isEqualTo(StringType.getInstance());
-    // Actual value of this one is backend specific. aka undefined behavior
-    assertThat(types.get(7)).isEqualTo(UnknownType.getInstance());
   }
 
   @Test
