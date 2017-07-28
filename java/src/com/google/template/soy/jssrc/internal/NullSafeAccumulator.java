@@ -32,9 +32,7 @@ import javax.annotation.Nullable;
 
 /**
  * Represents a chain of (possibly null-safe) dot or bracket accesses. Used by {@link
- * TranslateExprNodeVisitor#visitNullSafeNode}. TODO(user): remove; simply emit {@link
- * CodeChunk#ifStatement conditional statements}. We can't do this yet though, because we can't
- * generate non-expression outside of test code.
+ * TranslateExprNodeVisitor#visitNullSafeNode}.
  */
 final class NullSafeAccumulator {
 
@@ -81,8 +79,9 @@ final class NullSafeAccumulator {
     if (arg instanceof CallAndUnpack) {
       Preconditions.checkState(
           unpackFunction == null, "this chain will already unpack with", unpackFunction);
-      unpackFunction = ((CallAndUnpack) arg).unpackFunctionName();
-      isRepeated = ((CallAndUnpack) arg).isRepeated();
+      CallAndUnpack callAndUnpack = (CallAndUnpack) arg;
+      unpackFunction = callAndUnpack.unpackFunctionName();
+      isRepeated = callAndUnpack.isRepeated();
     }
     chain.add(arg.toChainAccess(nullSafe));
     return this;
@@ -95,6 +94,10 @@ final class NullSafeAccumulator {
    */
   NullSafeAccumulator bracketAccess(CodeChunk.WithValue arg, boolean nullSafe) {
     chain.add(new Bracket(arg, nullSafe));
+    // if the isRepeated flag is true it is because we ended with a CallAndUnpack on a repeated
+    // field.  If that is followed by a bracket access, then we don't need to handle the repeated
+    // aspect.
+    isRepeated = false;
     return this;
   }
 

@@ -393,18 +393,24 @@ public class TranslateExprNodeVisitor
   private NullSafeAccumulator visitNullSafeNode(ExprNode node) {
     switch (node.getKind()) {
       case FIELD_ACCESS_NODE:
-        FieldAccessNode fieldAccess = (FieldAccessNode) node;
-        NullSafeAccumulator base = visitNullSafeNode(fieldAccess.getBaseExprChild());
-        FieldAccess access =
-            genCodeForFieldAccess(
-                fieldAccess.getBaseExprChild().getType(), fieldAccess, fieldAccess.getFieldName());
-        return base.dotAccess(access, fieldAccess.isNullSafe());
+        {
+          FieldAccessNode fieldAccess = (FieldAccessNode) node;
+          NullSafeAccumulator base = visitNullSafeNode(fieldAccess.getBaseExprChild());
+          FieldAccess access =
+              genCodeForFieldAccess(
+                  fieldAccess.getBaseExprChild().getType(),
+                  fieldAccess,
+                  fieldAccess.getFieldName());
+          return base.dotAccess(access, fieldAccess.isNullSafe());
+        }
 
       case ITEM_ACCESS_NODE:
-        ItemAccessNode itemAccess = (ItemAccessNode) node;
-        base = visitNullSafeNode(itemAccess.getBaseExprChild());
-        CodeChunk.WithValue key = visit(itemAccess.getKeyExprChild());
-        return base.bracketAccess(key, itemAccess.isNullSafe());
+        {
+          ItemAccessNode itemAccess = (ItemAccessNode) node;
+          NullSafeAccumulator base = visitNullSafeNode(itemAccess.getBaseExprChild());
+          CodeChunk.WithValue key = visit(itemAccess.getKeyExprChild());
+          return base.bracketAccess(key, itemAccess.isNullSafe());
+        }
 
       default:
         return new NullSafeAccumulator(visit(node));
