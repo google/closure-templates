@@ -193,7 +193,7 @@ abstract class SoyRuntimeType {
         soyType,
         Type.getType(
             'L' + soyType.getNameForBackend(SoyBackendKind.JBC_SRC).replace('.', '/') + ';'),
-        BytecodeUtils.SOY_PROTO_VALUE_IMPL_TYPE);
+        BytecodeUtils.SOY_PROTO_VALUE_TYPE);
   }
 
   private static PrimitiveSoyType sanitizedType(SanitizedType soyType) {

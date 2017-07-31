@@ -26,6 +26,7 @@ import com.google.protobuf.Message;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyMap;
+import com.google.template.soy.data.SoyProtoValue;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
@@ -277,10 +278,10 @@ abstract class MethodRef {
       create(SoyMsgRawTextPart.class, "getRawText").asCheap().asNonNullable();
 
   static final MethodRef SOY_PROTO_VALUE_GET_PROTO_FIELD =
-      create(SoyProtoValueImpl.class, "getProtoField", String.class).asCheap().asNonNullable();
+      create(SoyProtoValue.class, "getProtoField", String.class).asCheap().asNonNullable();
 
   static final MethodRef SOY_PROTO_VALUE_GET_PROTO =
-      create(SoyProtoValueImpl.class, "getProto").asCheap().asNonNullable();
+      create(SoyProtoValue.class, "getProto").asCheap().asNonNullable();
 
   static final MethodRef SOY_VALUE_COERCE_TO_BOOLEAN =
       create(SoyValue.class, "coerceToBoolean").asCheap();

@@ -20,7 +20,6 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.OBJECT;
 
-import com.google.protobuf.GeneratedMessage;
 import com.google.template.soy.jbcsrc.shared.Names;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,7 +27,6 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
 import org.objectweb.asm.util.CheckClassAdapter;
 
 /**
@@ -145,9 +143,6 @@ final class SoyClassWriter extends ClassVisitor {
   }
 
   private static final class Writer extends ClassWriter {
-    private static final String PROTO_EXTENDABLE_BUILDER =
-        Type.getInternalName(GeneratedMessage.ExtendableBuilder.class);
-
     Writer() {
       super(COMPUTE_FRAMES | COMPUTE_MAXS);
     }
@@ -158,27 +153,10 @@ final class SoyClassWriter extends ClassVisitor {
 
     @Override
     protected String getCommonSuperClass(String left, String right) {
-      // TODO(lukes): we know the names and superclasses of all the classes we generate prior to
-      // this method being called, so we could build a smarter system just by building up that
-      // graph as we generate classes.
-      // similarly for soy.data classes we could consider adding special cases. The fact that this
-      // class falls back to doing classpath lookups makes it hard to test in a unit test :(
       boolean leftIsGenerated = left.startsWith(Names.INTERNAL_CLASS_PREFIX);
       boolean rightIsGenerated = right.startsWith(Names.INTERNAL_CLASS_PREFIX);
-      if (!leftIsGenerated && !rightIsGenerated) {
-        // Test for proto extendable builders.  We need to calculate common baseclasses for these
-        // since we generate calls to methods on ExtendableBuilder
-        if ((left.equals(PROTO_EXTENDABLE_BUILDER) && right.endsWith("$Builder"))
-            || (right.equals(PROTO_EXTENDABLE_BUILDER) && left.endsWith("$Builder"))) {
-          return PROTO_EXTENDABLE_BUILDER;
-        }
-        // The only cases that should occur here should be about our runtime types (like StringData)
-        try {
-          return super.getCommonSuperClass(left, right);
-        } catch (RuntimeException re) {
-          throw new RuntimeException(
-              "unable to calculate common base class of: " + left + " and " + right);
-        }
+      if (!leftIsGenerated & !rightIsGenerated) {
+        return super.getCommonSuperClass(left, right);
       }
       // The only reason a generated type will get compared to a non-generated type is if they
       // happen to share a local variable slot.  This is because ASM doesn't know that the old

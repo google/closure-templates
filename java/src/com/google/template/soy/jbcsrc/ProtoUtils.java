@@ -16,6 +16,7 @@
 
 package com.google.template.soy.jbcsrc;
 
+import static com.google.template.soy.jbcsrc.BytecodeUtils.SANITIZED_CONTENT_TYPE;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.SOY_VALUE_PROVIDER_TYPE;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.STRING_TYPE;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
@@ -82,6 +83,7 @@ import org.objectweb.asm.commons.Method;
 final class ProtoUtils {
 
   private static final Type BYTE_STRING_TYPE = Type.getType(ByteString.class);
+  private static final Type EXTENDABLE_BUILDER_TYPE = Type.getType(ExtendableBuilder.class);
   private static final Type EXTENSION_TYPE = Type.getType(GeneratedExtension.class);
 
   private static final Type[] NO_METHOD_ARGS = {};
@@ -781,6 +783,8 @@ final class ProtoUtils {
       return new Statement() {
         @Override
         void doGen(CodeBuilder cb) {
+          cb.checkCast(EXTENDABLE_BUILDER_TYPE);
+
           // Put baseArg on stack
 
           baseArg.gen(cb);
@@ -832,7 +836,8 @@ final class ProtoUtils {
           currentType = baseArg.resultType();
         }
       } else {
-        currentType = baseArg.resultType();
+        // currently we unbox everything but safe proto fields
+        currentType = SANITIZED_CONTENT_TYPE;
       }
 
       coerce(cb, currentType, field);
@@ -898,7 +903,7 @@ final class ProtoUtils {
           BYTE_STRING_COPY_FROM.invokeUnchecked(cb);
           break;
         case MESSAGE:
-          coerceToMessage(cb, currentType, field);
+          coerceToMessage(cb, field);
           break;
         case ENUM:
           if (!currentType.equals(Type.INT_TYPE)) {
@@ -922,19 +927,13 @@ final class ProtoUtils {
       }
     }
 
-    private static void coerceToMessage(CodeBuilder cb, Type currentType, FieldDescriptor field) {
-      Type runtimeFieldType = getRuntimeType(field);
+    private static void coerceToMessage(CodeBuilder cb, FieldDescriptor field) {
       if (isSafeProto(field)) {
         MethodRef toProto = SANITIZED_CONTENT_TO_PROTO.get(field.getMessageType().getFullName());
-        if (!currentType.equals(BytecodeUtils.SANITIZED_CONTENT_TYPE)) {
-          cb.checkCast(BytecodeUtils.SANITIZED_CONTENT_TYPE);
-        }
         toProto.invokeUnchecked(cb);
-        currentType = toProto.returnType();
       }
-      if (!currentType.equals(runtimeFieldType)) {
-        cb.checkCast(runtimeFieldType);
-      }
+
+      cb.checkCast(getRuntimeType(field));
     }
 
     // TODO(user): Consider consolidating all the safe proto references to a single place.
