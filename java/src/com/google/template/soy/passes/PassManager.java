@@ -27,6 +27,7 @@ import com.google.template.soy.conformance.ValidatedConformanceConfig;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.parsepasses.contextautoesc.ContextualAutoescaper;
 import com.google.template.soy.parsepasses.contextautoesc.DerivedTemplateUtils;
 import com.google.template.soy.shared.SoyGeneralOptions;
@@ -122,13 +123,14 @@ public final class PassManager {
             // expressions do not introduce extra placeholders for call and print nodes.
             .add(new StrictHtmlValidationPass(errorReporter))
             .add(new RewriteGlobalsPass(registry, options.getCompileTimeGlobals(), errorReporter))
-            .add(new ResolveNamesPass())
-            // Can run whenever
-            // May eventually need to run after resolvetypes
-            .add(new FooLogValidationPass(errorReporter, options.getExperimentalFeatures()));
+            .add(new ResolveNamesPass());
     singleFilePassesBuilder.add(new ResolveFunctionsPass());
     if (!disableAllTypeChecking) {
       singleFilePassesBuilder.add(new ResolveExpressionTypesPass());
+      // needs to run after both resolve types and htmlrewrite pass
+      singleFilePassesBuilder.add(
+          new FooLogValidationPass(
+              errorReporter, options.getExperimentalFeatures(), builder.loggingConfig));
     }
     singleFilePassesBuilder.add(new ResolvePackageRelativeCssNamesPass());
     if (!allowUnknownGlobals) {
@@ -285,6 +287,7 @@ public final class PassManager {
     private boolean desugarHtmlNodes = true;
     private boolean optimize = true;
     private ValidatedConformanceConfig conformanceConfig = ValidatedConformanceConfig.EMPTY;
+    private ValidatedLoggingConfig loggingConfig = ValidatedLoggingConfig.EMPTY;
     private boolean autoescaperEnabled = true;
     private boolean addHtmlCommentsForDebug = false;
 
@@ -383,6 +386,10 @@ public final class PassManager {
       return this;
     }
 
+    public Builder setLoggingConfig(ValidatedLoggingConfig loggingConfig) {
+      this.loggingConfig = checkNotNull(loggingConfig);
+      return this;
+    }
     /**
      * Can be used to enable/disable the autoescaper.
      *
@@ -396,6 +403,8 @@ public final class PassManager {
     public PassManager build() {
       return new PassManager(this);
     }
+
+
   }
 
   private final class CheckSyntaxVersionPass extends CompilerFilePass {

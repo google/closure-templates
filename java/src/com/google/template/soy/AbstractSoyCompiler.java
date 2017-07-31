@@ -27,6 +27,8 @@ import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.conformance.ConformanceConfig;
 import com.google.template.soy.conformance.ValidatedConformanceConfig;
 import com.google.template.soy.error.SoyCompilationException;
+import com.google.template.soy.logging.LoggingConfig;
+import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.msgs.SoyMsgPlugin;
 import java.io.File;
 import java.io.FileInputStream;
@@ -139,6 +141,12 @@ abstract class AbstractSoyCompiler {
   private File conformanceConfig = null;
 
   @Option(
+    name = "--loggingConfigPaths",
+    usage = "Location of logging config protos in binary proto format."
+  )
+  private File loggingConfig = null;
+
+  @Option(
     name = "--enableExperimentalFeatures",
     usage =
         "Enable experimental features that are not generally available. "
@@ -229,13 +237,18 @@ abstract class AbstractSoyCompiler {
     modules.addAll(msgPluginModule().asSet());
     // TODO(lukes): Stage.PRODUCTION?
     Injector injector = Guice.createInjector(modules);
-    SoyFileSet.Builder sfsBuilder = injector.getInstance(SoyFileSet.Builder.class);
-    sfsBuilder.setWarningSink(err);
+    SoyFileSet.Builder sfsBuilder =
+        injector
+            .getInstance(SoyFileSet.Builder.class)
+            .setWarningSink(err)
+            .setConformanceConfig(parseConformanceConfig())
+            .setValidatedLoggingConfig(parseLoggingConfig())
+            // Set experimental features that are not generally available.
+            .setExperimentalFeatures(experimentalFeatures);
 
     if (!protoFileDescriptors.isEmpty()) {
       sfsBuilder.addProtoDescriptorsFromFiles(protoFileDescriptors);
     }
-    sfsBuilder.setConformanceConfig(parseConformanceConfig());
     addSoyFilesToBuilder(
         sfsBuilder,
         inputPrefix,
@@ -245,8 +258,6 @@ abstract class AbstractSoyCompiler {
     if (globalsFile != null) {
       sfsBuilder.setCompileTimeGlobals(globalsFile);
     }
-    // Set experimental features that are not generally available.
-    sfsBuilder.setExperimentalFeatures(experimentalFeatures);
     // Disable optimizer if the flag is set to true.
     if (disableOptimizer) {
       sfsBuilder.disableOptimizer();
@@ -270,6 +281,25 @@ abstract class AbstractSoyCompiler {
       }
     } else {
       return ValidatedConformanceConfig.EMPTY;
+    }
+  }
+
+  private ValidatedLoggingConfig parseLoggingConfig() {
+    if (loggingConfig != null) {
+      try (InputStream stream = new FileInputStream(loggingConfig)) {
+        return ValidatedLoggingConfig.create(LoggingConfig.parseFrom(stream));
+      } catch (IllegalArgumentException e) {
+        throw new CommandLineError(
+            "Error parsing logging config proto: " + loggingConfig + ": " + e.getMessage());
+      } catch (InvalidProtocolBufferException e) {
+        throw new CommandLineError(
+            "Invalid conformance proto: " + loggingConfig + ": " + e.getMessage());
+      } catch (IOException e) {
+        throw new CommandLineError(
+            "Unable to read conformance proto: " + loggingConfig + ": " + e.getMessage());
+      }
+    } else {
+      return ValidatedLoggingConfig.EMPTY;
     }
   }
 

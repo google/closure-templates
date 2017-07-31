@@ -54,6 +54,8 @@ import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.internal.JsSrcMain;
+import com.google.template.soy.logging.LoggingConfig;
+import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.SoyMsgBundleHandler;
 import com.google.template.soy.msgs.internal.ExtractMsgsVisitor;
@@ -179,6 +181,8 @@ public final class SoyFileSet {
 
     private ValidatedConformanceConfig conformanceConfig = ValidatedConformanceConfig.EMPTY;
 
+    private ValidatedLoggingConfig loggingConfig = ValidatedLoggingConfig.EMPTY;
+
     Builder(CoreDependencies coreDependencies) {
       this.coreDependencies = coreDependencies;
       this.filesBuilder = ImmutableMap.builder();
@@ -243,6 +247,7 @@ public final class SoyFileSet {
           cache,
           coreDependencies.msgBundleHandlerProvider,
           conformanceConfig,
+          loggingConfig,
           warningSink);
     }
 
@@ -600,6 +605,23 @@ public final class SoyFileSet {
       this.warningSink = checkNotNull(warningSink);
       return this;
     }
+
+    /**
+     * Sets the logging config to use.
+     *
+     * @throws IllegalArgumentException if the config proto is invalid. For example, if there are
+     *     multiple elements with the same {@code name} or {@code id}, or if the name not a valid
+     *     identifier.
+     */
+    public Builder setLoggingConfig(LoggingConfig config) {
+      return setValidatedLoggingConfig(ValidatedLoggingConfig.create(config));
+    }
+
+    /** Sets the validated logging config to use. */
+    Builder setValidatedLoggingConfig(ValidatedLoggingConfig parseLoggingConfigs) {
+      this.loggingConfig = checkNotNull(parseLoggingConfigs);
+      return this;
+    }
   }
 
   /** Provider for getting an instance of SoyMsgBundleHandler. */
@@ -621,6 +643,7 @@ public final class SoyFileSet {
   private final SoyGeneralOptions generalOptions;
 
   private final ValidatedConformanceConfig conformanceConfig;
+  private final ValidatedLoggingConfig loggingConfig;
 
   /** For private use by pruneTranslatedMsgs(). */
   private ImmutableSet<Long> memoizedExtractedMsgIdsForPruning;
@@ -641,6 +664,7 @@ public final class SoyFileSet {
    * @param typeRegistry The type registry to resolve parameter type names.
    * @param soyFileSuppliers The suppliers for the input Soy files.
    * @param generalOptions The general compiler options.
+   * @param loggingConfig
    */
   SoyFileSet(
       BaseTofuFactory baseTofuFactory,
@@ -656,6 +680,7 @@ public final class SoyFileSet {
       @Nullable SoyAstCache cache,
       Provider<SoyMsgBundleHandler> msgBundleHandlerProvider,
       ValidatedConformanceConfig conformanceConfig,
+      ValidatedLoggingConfig loggingConfig,
       @Nullable Appendable warningSink) {
     // Default value is optionally replaced using method injection.
     this.soyTemplatesFactory = soyTemplatesFactory;
@@ -674,6 +699,7 @@ public final class SoyFileSet {
     this.printDirectives = printDirectives;
     this.msgBundleHandlerProvider = msgBundleHandlerProvider;
     this.conformanceConfig = checkNotNull(conformanceConfig);
+    this.loggingConfig = checkNotNull(loggingConfig);
     this.warningSink = warningSink;
   }
 
@@ -1223,7 +1249,8 @@ public final class SoyFileSet {
             .setSoyFunctionMap(soyFunctionMap)
             .setSoyPrintDirectiveMap(printDirectives)
             .setErrorReporter(errorReporter)
-            .setConformanceConfig(conformanceConfig);
+            .setConformanceConfig(conformanceConfig)
+            .setLoggingConfig(loggingConfig);
     return builder;
   }
 

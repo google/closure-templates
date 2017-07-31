@@ -21,7 +21,13 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.logging.LoggableElement;
+import com.google.template.soy.logging.LoggingConfig;
+import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.shared.SoyGeneralOptions;
+import com.google.template.soy.types.SoyTypeProvider;
+import com.google.template.soy.types.SoyTypeRegistry;
+import com.google.template.soy.types.proto.SoyProtoTypeProvider;
 import java.util.Arrays;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -42,11 +48,11 @@ public final class FooLogNodeTest {
 
   @Test
   public void testParsing_configExpression() {
-    FooLogNode openTag = parseFooLog("{foolog Bar data=\"2\"}{/foolog}");
+    FooLogNode openTag = parseFooLog("{foolog Bar data=\"soy.test.Foo()\"}{/foolog}");
 
-    assertThat(openTag.toSourceString()).isEqualTo("{foolog Bar data=\"2\"}{/foolog}");
+    assertThat(openTag.toSourceString()).isEqualTo("{foolog Bar data=\"soy.test.Foo()\"}{/foolog}");
     assertThat(openTag.getName().identifier()).isEqualTo("Bar");
-    assertThat(openTag.getConfigExpression().toSourceString()).isEqualTo("2");
+    assertThat(openTag.getConfigExpression().toSourceString()).isEqualTo("soy.test.Foo()");
     assertThat(openTag.getLogonlyExpression()).isNull();
   }
 
@@ -62,12 +68,13 @@ public final class FooLogNodeTest {
 
   @Test
   public void testParsing_configAndLogonly() {
-    FooLogNode openTag = parseFooLog("{foolog Bar data=\"2\" logonly=\"false\"}{/foolog}");
+    FooLogNode openTag =
+        parseFooLog("{foolog Bar data=\"soy.test.Foo()\" logonly=\"false\"}{/foolog}");
 
     assertThat(openTag.toSourceString())
-        .isEqualTo("{foolog Bar data=\"2\" logonly=\"false\"}{/foolog}");
+        .isEqualTo("{foolog Bar data=\"soy.test.Foo()\" logonly=\"false\"}{/foolog}");
     assertThat(openTag.getName().identifier()).isEqualTo("Bar");
-    assertThat(openTag.getConfigExpression().toSourceString()).isEqualTo("2");
+    assertThat(openTag.getConfigExpression().toSourceString()).isEqualTo("soy.test.Foo()");
     assertThat(openTag.getLogonlyExpression().toSourceString()).isEqualTo("false");
   }
 
@@ -87,6 +94,22 @@ public final class FooLogNodeTest {
     return Iterables.getOnlyElement(
         SoyTreeUtils.getAllNodesOfType(
             SoyFileSetParserBuilder.forTemplateContents(fooLog)
+                .typeRegistry(
+                    new SoyTypeRegistry(
+                        ImmutableSet.<SoyTypeProvider>of(
+                            new SoyProtoTypeProvider.Builder()
+                                .addDescriptors(com.google.template.soy.testing.Foo.getDescriptor())
+                                .buildNoFiles())))
+                .setLoggingConfig(
+                    ValidatedLoggingConfig.create(
+                        LoggingConfig.newBuilder()
+                            .addElement(
+                                LoggableElement.newBuilder()
+                                    .setName("Bar")
+                                    .setId(1L)
+                                    .setProtoType("soy.test.Foo")
+                                    .build())
+                            .build()))
                 .options(
                     new SoyGeneralOptions()
                         .setExperimentalFeatures(

@@ -40,6 +40,7 @@ public final class FooLogNode extends AbstractBlockCommandNode
   @Nullable private final ExprRootNode dataExpr;
   @Nullable private final ExprRootNode logonlyExpr;
   private final Identifier name;
+  @Nullable private Long loggingId;
 
   public FooLogNode(
       int id,
@@ -83,6 +84,14 @@ public final class FooLogNode extends AbstractBlockCommandNode
   /** Returns the name associated with this log statement. */
   public Identifier getName() {
     return name;
+  }
+
+  /**
+   * Returns the logging id associated with this log statement, or {@code null} if it doesn't exist.
+   */
+  @Nullable
+  public Long getLoggingId() {
+    return loggingId;
   }
 
   /** Returns a reference to the config expression, if there is one. */
@@ -138,5 +147,9 @@ public final class FooLogNode extends AbstractBlockCommandNode
     appendSourceStringForChildren(sb);
     sb.append("{/foolog}");
     return sb.toString();
+  }
+
+  public void setLoggingId(long id) {
+    this.loggingId = id;
   }
 }

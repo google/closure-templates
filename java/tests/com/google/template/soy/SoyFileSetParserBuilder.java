@@ -28,6 +28,7 @@ import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.basetree.SyntaxVersion;
 import com.google.template.soy.conformance.ValidatedConformanceConfig;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.passes.PassManager;
 import com.google.template.soy.shared.AutoEscapingType;
 import com.google.template.soy.shared.SharedTestUtils;
@@ -62,6 +63,7 @@ public final class SoyFileSetParserBuilder {
   // disable optimization by default
   private SoyGeneralOptions options = new SoyGeneralOptions().disableOptimizer();
   private ValidatedConformanceConfig conformanceConfig = ValidatedConformanceConfig.EMPTY;
+  private ValidatedLoggingConfig loggingConfig = ValidatedLoggingConfig.EMPTY;
   private boolean desugarHtmlNodes = true;
   // TODO(lukes): disabled for compatibility with unit tests.  fix tests relying on the
   // escaper not running and enable by default.  This configuration bit only really exists
@@ -187,6 +189,11 @@ public final class SoyFileSetParserBuilder {
     return this;
   }
 
+  public SoyFileSetParserBuilder setLoggingConfig(ValidatedLoggingConfig loggingConfig) {
+    this.loggingConfig = checkNotNull(loggingConfig);
+    return this;
+  }
+
   public SoyFileSetParserBuilder desugarHtmlNodes(boolean desugarHtmlNodes) {
     this.desugarHtmlNodes = desugarHtmlNodes;
     return this;
@@ -241,7 +248,8 @@ public final class SoyFileSetParserBuilder {
             .setGeneralOptions(options)
             .setConformanceConfig(conformanceConfig)
             .setAutoescaperEnabled(runAutoescaper)
-            .addHtmlCommentsForDebug(addHtmlCommentsForDebug);
+            .addHtmlCommentsForDebug(addHtmlCommentsForDebug)
+            .setLoggingConfig(loggingConfig);
     if (allowUnboundGlobals) {
       passManager.allowUnknownGlobals();
     }
