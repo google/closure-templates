@@ -33,7 +33,6 @@ import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyMap;
-import com.google.template.soy.data.SoyProtoValue;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
@@ -46,6 +45,7 @@ import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
+import com.google.template.soy.types.proto.SoyProtoValueImpl;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -80,7 +80,7 @@ final class BytecodeUtils {
   static final Type SANITIZED_CONTENT_TYPE = Type.getType(SanitizedContent.class);
   static final Type SOY_LIST_TYPE = Type.getType(SoyList.class);
   static final Type SOY_MAP_TYPE = Type.getType(SoyMap.class);
-  static final Type SOY_PROTO_VALUE_TYPE = Type.getType(SoyProtoValue.class);
+  static final Type SOY_PROTO_VALUE_IMPL_TYPE = Type.getType(SoyProtoValueImpl.class);
   static final Type SOY_RECORD_TYPE = Type.getType(SoyRecord.class);
   static final Type SOY_VALUE_TYPE = Type.getType(SoyValue.class);
   static final Type SOY_VALUE_PROVIDER_TYPE = Type.getType(SoyValueProvider.class);
@@ -511,8 +511,10 @@ final class BytecodeUtils {
               "Type: " + comparisonType + " cannot be compared via " + Printer.OPCODES[opcode]);
         }
         return;
+      default:
+        throw new IllegalArgumentException(
+            "Unsupported opcode for comparison operation: " + opcode);
     }
-    throw new IllegalArgumentException("Unsupported opcode for comparison operation: " + opcode);
   }
 
   /**
@@ -817,8 +819,8 @@ final class BytecodeUtils {
     }
 
     if (asType.equals(Message.class)) {
-      if (!isDefinitelyAssignableFrom(SOY_PROTO_VALUE_TYPE, fromType)) {
-        cb.checkCast(SOY_PROTO_VALUE_TYPE);
+      if (!isDefinitelyAssignableFrom(SOY_PROTO_VALUE_IMPL_TYPE, fromType)) {
+        cb.checkCast(SOY_PROTO_VALUE_IMPL_TYPE);
       }
       MethodRef.SOY_PROTO_VALUE_GET_PROTO.invokeUnchecked(cb);
       return MESSAGE_TYPE;
