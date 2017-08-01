@@ -17,6 +17,7 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.StandardNames.CURRENT_CALLEE_FIELD;
 import static com.google.template.soy.jbcsrc.StandardNames.CURRENT_RENDEREE_FIELD;
@@ -325,9 +326,12 @@ final class TemplateVariableManager {
     final Label scopeExit = new Label();
     frames.push(currentFrame);
     return new Scope() {
+      boolean exited;
+
       @Override
       Variable createSynthetic(
           SyntheticVarName varName, Expression initExpr, SaveStrategy strategy) {
+        checkState(!exited, "Scope already exited");
         VarKey key = VarKey.create(Kind.SYNTHETIC, varName.name());
         // synthetics are prefixed by $ by convention
         String name = fieldNames.generateName("$" + varName.name());
@@ -336,6 +340,7 @@ final class TemplateVariableManager {
 
       @Override
       Variable createTemporary(String name, Expression initExpr) {
+        checkState(!exited, "Scope already exited");
         VarKey key = VarKey.create(Kind.TEMPORARY, name);
         name = fieldNames.generateName("$$" + name);
         return doCreate(name, new Label(), scopeExit, initExpr, key, SaveStrategy.NEVER);
@@ -343,6 +348,7 @@ final class TemplateVariableManager {
 
       @Override
       Variable create(String name, Expression initExpr, SaveStrategy strategy) {
+        checkState(!exited, "Scope already exited");
         VarKey key = VarKey.create(Kind.USER_DEFINED, name);
         name = fieldNames.generateName(name);
         return doCreate(name, new Label(), scopeExit, initExpr, key, strategy);
@@ -350,6 +356,8 @@ final class TemplateVariableManager {
 
       @Override
       Statement exitScope() {
+        checkState(!exited, "Scope already exited");
+        exited = true;
         frames.pop();
         // Use identity semantics to make sure we visit each label at most once.  visiting a label
         // more than once tends to corrupt internal asm state.
@@ -405,7 +413,11 @@ final class TemplateVariableManager {
   /** Write a local variable table entry for every registered variable. */
   void generateTableEntries(CodeBuilder ga) {
     for (Variable var : allVariables) {
-      var.local.tableEntry(ga);
+      try {
+        var.local.tableEntry(ga);
+      } catch (Throwable t) {
+        throw new RuntimeException("unable to write table entry for: " + var.local, t);
+      }
     }
   }
 

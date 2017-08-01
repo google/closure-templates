@@ -19,8 +19,10 @@ package com.google.template.soy.jbcsrc;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import com.google.errorprone.annotations.ForOverride;
 import com.google.template.soy.base.SourceLocation;
 import java.util.Arrays;
 import java.util.Collections;
@@ -291,6 +293,8 @@ abstract class Expression extends BytecodeProducer {
           case 2:
             adapter.pop2();
             break;
+          default:
+            throw new AssertionError();
         }
       }
     };
@@ -413,6 +417,10 @@ abstract class Expression extends BytecodeProducer {
     };
   }
 
+  /** Subclasses can override this to supply extra properties for the toString method. */
+  @ForOverride
+  protected void extraToStringProperties(MoreObjects.ToStringHelper helper) {}
+
   @Override
   public String toString() {
     String name = getClass().getSimpleName();
@@ -420,15 +428,15 @@ abstract class Expression extends BytecodeProducer {
       // provide a default for anonymous subclasses
       name = "Expression";
     }
-    name = name + "(" + resultType + "){";
-    boolean needsLeadingSpace = false;
-    if (features.has(Feature.CHEAP)) {
-      name += "cheap";
-      needsLeadingSpace = true;
-    }
-    if (features.has(Feature.NON_NULLABLE) && !BytecodeUtils.isPrimitive(resultType)) {
-      name += (needsLeadingSpace ? " " : "") + "non-null";
-    }
-    return name + "}<" + resultType() + ">:\n" + trace();
+    MoreObjects.ToStringHelper helper = MoreObjects.toStringHelper(name).omitNullValues();
+    helper.add("type", resultType());
+    extraToStringProperties(helper);
+    helper.add("cheap", features.has(Feature.CHEAP) ? "true" : null);
+    helper.add(
+        "non-null",
+        features.has(Feature.NON_NULLABLE) && !BytecodeUtils.isPrimitive(resultType)
+            ? "true"
+            : null);
+    return helper + ":\n" + trace();
   }
 }

@@ -693,7 +693,6 @@ final class ProtoUtils {
 
       // Enter new scope
       Scope scope = varManager.enterScope();
-      final Statement scopeExit = scope.exitScope();
 
       // Create local variables: list, loop index, list size
       final Variable list = scope.createTemporary(field.getName() + "__list", resolved);
@@ -702,6 +701,8 @@ final class ProtoUtils {
           scope.createTemporary(
               field.getName() + "__size", MethodRef.LIST_SIZE.invoke(list.local()));
 
+      // exitScope must be called after creating all the variables
+      final Statement scopeExit = scope.exitScope();
       // Expected type info of the list element
       SoyType elementSoyType = ((ListType) unboxed.soyType()).getElementType();
       SoyRuntimeType elementType = SoyRuntimeType.getBoxedType(elementSoyType);

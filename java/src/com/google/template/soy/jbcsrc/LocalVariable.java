@@ -19,6 +19,7 @@ package com.google.template.soy.jbcsrc;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Optional;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
@@ -153,5 +154,10 @@ final class LocalVariable extends Expression {
         adapter.visitVarInsn(resultType().getOpcode(Opcodes.ISTORE), index());
       }
     };
+  }
+
+  @Override
+  protected void extraToStringProperties(MoreObjects.ToStringHelper helper) {
+    helper.add("name", variableName);
   }
 }
