@@ -141,8 +141,8 @@ abstract class AbstractSoyCompiler {
   private File conformanceConfig = null;
 
   @Option(
-    name = "--loggingConfigPaths",
-    usage = "Location of logging config protos in binary proto format."
+    name = "--loggingConfig",
+    usage = "Location of logging config protos in binary proto format. Optional."
   )
   private File loggingConfig = null;
 
