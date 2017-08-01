@@ -289,7 +289,7 @@ public final class PassManager {
     private ValidatedConformanceConfig conformanceConfig = ValidatedConformanceConfig.EMPTY;
     private ValidatedLoggingConfig loggingConfig = ValidatedLoggingConfig.EMPTY;
     private boolean autoescaperEnabled = true;
-    private boolean addHtmlCommentsForDebug = false;
+    private boolean addHtmlCommentsForDebug = true;
 
     public Builder setErrorReporter(ErrorReporter errorReporter) {
       this.errorReporter = checkNotNull(errorReporter);

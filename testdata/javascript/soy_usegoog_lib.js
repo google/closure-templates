@@ -3880,13 +3880,13 @@ goog.addDependency('result/simpleresult.js', ['goog.result.SimpleResult', 'goog.
 goog.addDependency('result/simpleresult_test.js', ['goog.result.SimpleResultTest'], ['goog.Promise', 'goog.Thenable', 'goog.Timer', 'goog.result', 'goog.testing.MockClock', 'goog.testing.jsunit', 'goog.testing.recordFunction'], {});
 goog.addDependency('result/transform_test.js', ['goog.result.transformTest'], ['goog.Timer', 'goog.result', 'goog.result.SimpleResult', 'goog.testing.MockClock', 'goog.testing.jsunit', 'goog.testing.recordFunction'], {});
 goog.addDependency('result/wait_test.js', ['goog.result.waitTest'], ['goog.Timer', 'goog.result', 'goog.result.SimpleResult', 'goog.testing.MockClock', 'goog.testing.jsunit', 'goog.testing.recordFunction'], {});
-goog.addDependency('soy/data.js', ['goog.soy.data.SanitizedContent', 'goog.soy.data.SanitizedContentKind', 'goog.soy.data.SanitizedCss', 'goog.soy.data.SanitizedHtml', 'goog.soy.data.SanitizedHtmlAttribute', 'goog.soy.data.SanitizedJs', 'goog.soy.data.SanitizedTrustedResourceUri', 'goog.soy.data.SanitizedUri', 'goog.soy.data.UnsanitizedText'], ['goog.Uri', 'goog.html.SafeHtml', 'goog.html.SafeScript', 'goog.html.SafeStyle', 'goog.html.SafeUrl', 'goog.html.TrustedResourceUrl', 'goog.html.uncheckedconversions', 'goog.i18n.bidi.Dir', 'goog.string.Const'], {});
-goog.addDependency('soy/data_test.js', ['goog.soy.dataTest'], ['goog.html.SafeHtml', 'goog.html.SafeUrl', 'goog.soy.testHelper', 'goog.testing.jsunit'], {});
+goog.addDependency('soy/data.js', ['goog.soy.data.SanitizedContent', 'goog.soy.data.SanitizedContentKind', 'goog.soy.data.SanitizedCss', 'goog.soy.data.SanitizedHtml', 'goog.soy.data.SanitizedHtmlAttribute', 'goog.soy.data.SanitizedJs', 'goog.soy.data.SanitizedTrustedResourceUri', 'goog.soy.data.SanitizedUri', 'goog.soy.data.UnsanitizedText'], ['goog.Uri', 'goog.asserts', 'goog.html.SafeHtml', 'goog.html.SafeScript', 'goog.html.SafeStyle', 'goog.html.SafeStyleSheet', 'goog.html.SafeUrl', 'goog.html.TrustedResourceUrl', 'goog.html.uncheckedconversions', 'goog.i18n.bidi.Dir', 'goog.string.Const'], {});
+goog.addDependency('soy/data_test.js', ['goog.soy.dataTest'], ['goog.html.SafeHtml', 'goog.html.SafeStyleSheet', 'goog.html.SafeUrl', 'goog.soy.testHelper', 'goog.testing.jsunit'], {});
 goog.addDependency('soy/renderer.js', ['goog.soy.InjectedDataSupplier', 'goog.soy.Renderer'], ['goog.asserts', 'goog.dom', 'goog.html.uncheckedconversions', 'goog.soy', 'goog.soy.data.SanitizedContent', 'goog.soy.data.SanitizedContentKind', 'goog.string.Const'], {});
 goog.addDependency('soy/renderer_test.js', ['goog.soy.RendererTest'], ['goog.dom', 'goog.dom.NodeType', 'goog.dom.TagName', 'goog.html.SafeHtml', 'goog.i18n.bidi.Dir', 'goog.soy.Renderer', 'goog.soy.data.SanitizedContentKind', 'goog.soy.testHelper', 'goog.testing.jsunit', 'goog.testing.recordFunction'], {});
 goog.addDependency('soy/soy.js', ['goog.soy'], ['goog.asserts', 'goog.dom', 'goog.dom.NodeType', 'goog.dom.TagName', 'goog.html.legacyconversions', 'goog.soy.data.SanitizedContent', 'goog.soy.data.SanitizedContentKind', 'goog.string'], {});
 goog.addDependency('soy/soy_test.js', ['goog.soyTest'], ['goog.dom', 'goog.dom.NodeType', 'goog.dom.TagName', 'goog.functions', 'goog.soy', 'goog.soy.testHelper', 'goog.testing.PropertyReplacer', 'goog.testing.jsunit'], {});
-goog.addDependency('soy/soy_testhelper.js', ['goog.soy.testHelper'], ['goog.dom', 'goog.dom.TagName', 'goog.i18n.bidi.Dir', 'goog.soy.data.SanitizedContent', 'goog.soy.data.SanitizedContentKind', 'goog.string', 'goog.userAgent'], {});
+goog.addDependency('soy/soy_testhelper.js', ['goog.soy.testHelper'], ['goog.dom', 'goog.dom.TagName', 'goog.i18n.bidi.Dir', 'goog.soy.data.SanitizedContent', 'goog.soy.data.SanitizedContentKind', 'goog.soy.data.SanitizedCss', 'goog.string', 'goog.userAgent'], {});
 goog.addDependency('spell/spellcheck.js', ['goog.spell.SpellCheck', 'goog.spell.SpellCheck.WordChangedEvent'], ['goog.Timer', 'goog.events.Event', 'goog.events.EventTarget', 'goog.structs.Set'], {});
 goog.addDependency('spell/spellcheck_test.js', ['goog.spell.SpellCheckTest'], ['goog.spell.SpellCheck', 'goog.testing.jsunit'], {});
 goog.addDependency('stats/basicstat.js', ['goog.stats.BasicStat'], ['goog.asserts', 'goog.log', 'goog.string.format', 'goog.structs.CircularBuffer'], {});
@@ -23526,9 +23526,11 @@ goog.provide('goog.soy.data.SanitizedUri');
 goog.provide('goog.soy.data.UnsanitizedText');
 
 goog.require('goog.Uri');
+goog.require('goog.asserts');
 goog.require('goog.html.SafeHtml');
 goog.require('goog.html.SafeScript');
 goog.require('goog.html.SafeStyle');
+goog.require('goog.html.SafeStyleSheet');
 goog.require('goog.html.SafeUrl');
 goog.require('goog.html.TrustedResourceUrl');
 goog.require('goog.html.uncheckedconversions');
@@ -23933,7 +23935,31 @@ goog.soy.data.SanitizedCss.isCompatibleWith = function(value) {
   return goog.isString(value) ||
       value instanceof goog.soy.data.SanitizedCss ||
       value instanceof goog.soy.data.UnsanitizedText ||
-      value instanceof goog.html.SafeStyle;
+      value instanceof goog.html.SafeStyle ||
+      value instanceof goog.html.SafeStyleSheet;
+};
+
+
+/**
+ * Converts SanitizedCss into SafeStyleSheet.
+ * Note: SanitizedCss in Soy represents both SafeStyle and SafeStyleSheet in
+ * Closure. It's about to be split so that SanitizedCss represents only
+ * SafeStyleSheet.
+ * @return {!goog.html.SafeStyleSheet}
+ */
+goog.soy.data.SanitizedCss.prototype.toSafeStyleSheet = function() {
+  var value = this.toString();
+  // TODO(jakubvrana): Remove this check when there's a separate type for style
+  // declaration.
+  goog.asserts.assert(
+      /[@{]|^\s*$/.test(value),
+      'value doesn\'t look like style sheet: ' + value);
+  return goog.html.uncheckedconversions
+      .safeStyleSheetFromStringKnownToSatisfyTypeContract(
+          goog.string.Const.from(
+              'Soy SanitizedCss produces SafeStyleSheet-contract-compliant ' +
+              'value.'),
+          value);
 };
 
 //javascript/closure/string/stringbuffer.js
@@ -25876,26 +25902,20 @@ soy.asserts.assertType = function(condition, paramName, param, jsDocTypeStr) {
 // -----------------------------------------------------------------------------
 // Used for inspecting Soy template information from rendered pages.
 
+/**
+ * Whether we should generate additional HTML comments.
+ * @type {boolean}
+ */
+soy.$$debugSoyTemplateInfo = false;
 
 if (goog.DEBUG) {
-  /** @private {boolean} */
-  soy.debugSoyTemplateInfo_ = false;
-
-  /**
-   * Returns whether we should generate additional HTML comments.
-   * @return {boolean}
-   */
-  soy.$$getDebugSoyTemplateInfo = function() {
-    return soy.debugSoyTemplateInfo_;
-  };
-
   /**
    * Configures whether we should generate additional HTML comments for
    * inspecting Soy template information from rendered pages.
    * @param {boolean} debugSoyTemplateInfo
    */
   soy.setDebugSoyTemplateInfo = function(debugSoyTemplateInfo) {
-    soy.debugSoyTemplateInfo_ = debugSoyTemplateInfo;
+    soy.$$debugSoyTemplateInfo = debugSoyTemplateInfo;
   };
 }
 
