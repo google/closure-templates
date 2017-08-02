@@ -291,17 +291,4 @@ public final class SoyTypes {
       }
     }
   }
-
-  /**
-   * Type resolver for all arithmetic operators (except plus operator). In particular, minus,
-   * multiply, divide and modulo.
-   */
-  public static final class SoyTypeArithmeticOperator implements SoyTypeBinaryOperator {
-    @Override
-    @Nullable
-    public SoyType resolve(SoyType left, SoyType right) {
-      Optional<SoyType> arithmeticType = SoyTypes.computeLowestCommonTypeArithmetic(left, right);
-      return arithmeticType.orNull();
-    }
-  }
 }
