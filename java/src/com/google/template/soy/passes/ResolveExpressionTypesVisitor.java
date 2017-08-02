@@ -17,7 +17,6 @@
 package com.google.template.soy.passes;
 
 import com.google.common.base.Equivalence.Wrapper;
-import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import com.google.template.soy.base.SourceLocation;
@@ -566,18 +565,7 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
 
     @Override
     protected void visitDivideByOpNode(DivideByOpNode node) {
-      // division is special. it is always coerced to a float
-      visitChildren(node);
-      SoyType left = node.getChild(0).getType();
-      SoyType right = node.getChild(1).getType();
-      if (SoyTypes.isNumericOrUnknown(left) && SoyTypes.isNumericOrUnknown(right)) {
-        node.setType(FloatType.getInstance());
-      } else {
-        // TODO(b/37359174): jssrc will do some type coercions here, tofu and jbcsrc will throw
-        // exceptions.  Consider making this a compiler error
-        node.setType(UnknownType.getInstance());
-      }
-      tryApplySubstitution(node);
+      visitArithmeticOpNode(node);
     }
 
     @Override
@@ -933,18 +921,21 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
 
     private void visitArithmeticOpNode(AbstractOperatorNode node) {
       visitChildren(node);
+      boolean isDivide = node instanceof DivideByOpNode;
       SoyType left = node.getChild(0).getType();
       SoyType right = node.getChild(1).getType();
-      Optional<SoyType> arithmeticType = SoyTypes.computeLowestCommonTypeArithmetic(left, right);
-      if (arithmeticType.isPresent()) {
-        node.setType(arithmeticType.get());
-      } else {
-        // TODO(b/37359174): Be more strict about arithmetic operations as well.
-        // jssrc will do some type coercions here, tofu will throw exceptions.
-        // so the best idea is probably to add an error.
-        // 'number' is probably the most accurate (even if sometimes it will fail).
-        node.setType(SoyTypes.NUMBER_TYPE);
+      SoyType result =
+          SoyTypes.getSoyTypeForBinaryOperator(
+              left, right, new SoyTypes.SoyTypeArithmeticOperator());
+      if (result == null) {
+        errorReporter.report(node.getSourceLocation(), INCOMPATIBLE_AIRTHMETIC_OP, left, right);
+        result = UnknownType.getInstance();
       }
+      // Division is special. it is always coerced to a float. For other operators, use the value
+      // returned by getSoyTypeForBinaryOperator.
+      // TODO(b/64098780): Should we add nullability to divide operator? Probably not, but we should
+      // also consolidate the behaviors when we divide something by 0 or null.
+      node.setType(isDivide ? FloatType.getInstance() : result);
       tryApplySubstitution(node);
     }
 

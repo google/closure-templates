@@ -210,7 +210,6 @@ public final class ResolveExpressionTypesVisitorTest {
                     "{@param pa: unknown}",
                     "{@param pi: int}",
                     "{@param pf: float}",
-                    "{@param ps: string}",
                     "{captureType($pa + $pa)}",
                     "{captureType($pi + $pi)}",
                     "{captureType($pf + $pf)}",
@@ -228,11 +227,7 @@ public final class ResolveExpressionTypesVisitorTest {
                     "{captureType($pf % $pf)}",
                     "{captureType(-$pa)}",
                     "{captureType(-$pi)}",
-                    "{captureType(-$pf)}",
-                    // The remainder are all logically template errors but are not enforced by the
-                    // compiler
-                    "{captureType(-$ps)}",
-                    "{captureType($ps / $pf)}"))
+                    "{captureType(-$pf)}"))
             .declaredSyntaxVersion(SyntaxVersion.V2_0)
             .addSoyFunction(CAPTURE_TYPE_FUNCTION)
             .typeRegistry(TYPE_REGISTRY)
@@ -257,10 +252,6 @@ public final class ResolveExpressionTypesVisitorTest {
     assertThat(types.get(15)).isEqualTo(UnknownType.getInstance());
     assertThat(types.get(16)).isEqualTo(IntType.getInstance());
     assertThat(types.get(17)).isEqualTo(FloatType.getInstance());
-
-    // These are the 'error' cases
-    assertThat(types.get(18)).isEqualTo(UnknownType.getInstance());
-    assertThat(types.get(19)).isEqualTo(UnknownType.getInstance());
   }
 
   @Test
