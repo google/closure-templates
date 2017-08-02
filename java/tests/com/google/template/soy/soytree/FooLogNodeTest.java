@@ -24,6 +24,7 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.logging.LoggableElement;
 import com.google.template.soy.logging.LoggingConfig;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
+import com.google.template.soy.shared.AutoEscapingType;
 import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.types.SoyTypeProvider;
 import com.google.template.soy.types.SoyTypeRegistry;
@@ -93,7 +94,7 @@ public final class FooLogNodeTest {
   private FooLogNode parseFooLog(String fooLog, boolean enabled, ErrorReporter reporter) {
     return Iterables.getOnlyElement(
         SoyTreeUtils.getAllNodesOfType(
-            SoyFileSetParserBuilder.forTemplateContents(fooLog)
+            SoyFileSetParserBuilder.forTemplateContents(AutoEscapingType.STRICT, true, fooLog)
                 .typeRegistry(
                     new SoyTypeRegistry(
                         ImmutableSet.<SoyTypeProvider>of(

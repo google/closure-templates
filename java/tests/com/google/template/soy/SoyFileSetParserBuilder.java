@@ -104,11 +104,20 @@ public final class SoyFileSetParserBuilder {
    */
   public static SoyFileSetParserBuilder forTemplateContents(
       AutoEscapingType autoEscapingType, String... templateContents) {
+    return forTemplateContents(autoEscapingType, /* strictHtml= */ false, templateContents);
+  }
+
+  /**
+   * Returns a builder that gets its Soy inputs from the given strings, treating each string as the
+   * contents of a Soy template, and using the given {@link AutoEscapingType} and strictHtml mode.
+   */
+  public static SoyFileSetParserBuilder forTemplateContents(
+      AutoEscapingType autoEscapingType, boolean strictHtml, String... templateContents) {
     String[] fileContents = new String[templateContents.length];
     for (int i = 0; i < fileContents.length; ++i) {
       fileContents[i] =
           SharedTestUtils.buildTestSoyFileContent(
-              autoEscapingType, null /* soyDocParamNames */, templateContents[i]);
+              autoEscapingType, strictHtml, /* soyDocParamNames= */ null, templateContents[i]);
     }
     return new SoyFileSetParserBuilder(fileContents);
   }

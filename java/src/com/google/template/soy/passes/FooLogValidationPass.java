@@ -25,9 +25,12 @@ import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.error.SoyErrors;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.logging.ValidatedLoggingConfig.ValidatedLoggableElement;
+import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.FooLogNode;
 import com.google.template.soy.soytree.SoyFileNode;
-import com.google.template.soy.soytree.SoyTreeUtils;
+import com.google.template.soy.soytree.SoyNode;
+import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.primitive.BoolType;
@@ -48,6 +51,9 @@ final class FooLogValidationPass extends CompilerFilePass {
               + "Did you forget to configure it?");
   private static final SoyErrorKind WRONG_TYPE =
       SoyErrorKind.of("Expected an expression of type ''{0}'', instead got ''{1}''.");
+  private static final SoyErrorKind REQUIRE_STRICTHTML =
+      SoyErrorKind.of(
+          "The '{'foolog ...'}' command can only be used in templates with stricthtml=\"true\".");
 
   private final ErrorReporter reporter;
   private final boolean enabled;
@@ -69,51 +75,78 @@ final class FooLogValidationPass extends CompilerFilePass {
       // There is no need
       return;
     }
-    for (FooLogNode node : SoyTreeUtils.getAllNodesOfType(file, FooLogNode.class)) {
+    new FooLogVisitor().exec(file);
+  }
+
+  private final class FooLogVisitor extends AbstractSoyNodeVisitor<Void> {
+    private TemplateNode currentTemplate = null;
+
+    @Override
+    protected void visitTemplateNode(TemplateNode node) {
+      currentTemplate = node;
+      visitChildren(node);
+      currentTemplate = null;
+    }
+
+    @Override
+    protected void visitFooLogNode(FooLogNode node) {
       if (!enabled) {
         reporter.report(node.getSourceLocation(), LOGGING_IS_EXPERIMENTAL);
+      } else if (!currentTemplate.isStrictHtml()) {
+        reporter.report(node.getName().location(), REQUIRE_STRICTHTML);
       } else {
         validateNodeAgainstConfig(node);
       }
+      visitChildren(node);
     }
-  }
 
-  /** Type checks both expressions and assigns the {@link FooLogNode#getLoggingId()} field. */
-  private void validateNodeAgainstConfig(FooLogNode node) {
-    ValidatedLoggableElement config = loggingConfig.getElement(node.getName().identifier());
-
-    if (config == null) {
-      reporter.report(
-          node.getName().location(),
-          NO_CONFIG_FOR_ELEMENT,
-          SoyErrors.getDidYouMeanMessage(
-              loggingConfig.allKnownIdentifiers(), node.getName().identifier()));
-    } else {
-      node.setLoggingId(config.getId());
-      if (node.getConfigExpression() != null) {
-        SoyType type = node.getConfigExpression().getType();
-        Optional<String> protoName = config.getProtoName();
-        if (!protoName.isPresent()) {
-          reporter.report(
-              node.getConfigExpression().getSourceLocation(),
-              UNEXPECTED_CONFIG,
-              node.getName().identifier());
-        } else if (type.getKind() != Kind.ERROR
-            && (type.getKind() != Kind.PROTO
-                || !((SoyProtoType) type).getDescriptor().getFullName().equals(protoName.get()))) {
-          reporter.report(
-              node.getConfigExpression().getSourceLocation(), WRONG_TYPE, protoName.get(), type);
-        }
+    @Override
+    protected void visitSoyNode(SoyNode node) {
+      if (node instanceof ParentSoyNode) {
+        visitChildren((ParentSoyNode<?>) node);
       }
+    }
 
-      if (node.getLogonlyExpression() != null) {
-        SoyType type = node.getLogonlyExpression().getType();
-        if (type.getKind() != Kind.BOOL) {
-          reporter.report(
-              node.getLogonlyExpression().getSourceLocation(),
-              WRONG_TYPE,
-              BoolType.getInstance(),
-              type);
+    /** Type checks both expressions and assigns the {@link FooLogNode#getLoggingId()} field. */
+    private void validateNodeAgainstConfig(FooLogNode node) {
+      ValidatedLoggableElement config = loggingConfig.getElement(node.getName().identifier());
+
+      if (config == null) {
+        reporter.report(
+            node.getName().location(),
+            NO_CONFIG_FOR_ELEMENT,
+            SoyErrors.getDidYouMeanMessage(
+                loggingConfig.allKnownIdentifiers(), node.getName().identifier()));
+      } else {
+        node.setLoggingId(config.getId());
+        if (node.getConfigExpression() != null) {
+          SoyType type = node.getConfigExpression().getType();
+          Optional<String> protoName = config.getProtoName();
+          if (!protoName.isPresent()) {
+            reporter.report(
+                node.getConfigExpression().getSourceLocation(),
+                UNEXPECTED_CONFIG,
+                node.getName().identifier());
+          } else if (type.getKind() != Kind.ERROR
+              && (type.getKind() != Kind.PROTO
+                  || !((SoyProtoType) type)
+                      .getDescriptor()
+                      .getFullName()
+                      .equals(protoName.get()))) {
+            reporter.report(
+                node.getConfigExpression().getSourceLocation(), WRONG_TYPE, protoName.get(), type);
+          }
+        }
+
+        if (node.getLogonlyExpression() != null) {
+          SoyType type = node.getLogonlyExpression().getType();
+          if (type.getKind() != Kind.BOOL) {
+            reporter.report(
+                node.getLogonlyExpression().getSourceLocation(),
+                WRONG_TYPE,
+                BoolType.getInstance(),
+                type);
+          }
         }
       }
     }

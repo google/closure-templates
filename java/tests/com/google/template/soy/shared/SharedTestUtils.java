@@ -102,14 +102,32 @@ public final class SharedTestUtils {
    */
   public static String buildTestSoyFileContent(
       AutoEscapingType autoEscaping, @Nullable List<String> soyDocParamNames, String soyCode) {
+    return buildTestSoyFileContent(autoEscaping, false, soyDocParamNames, soyCode);
+  }
 
+  /**
+   * Builds a test Soy file's content from the given Soy code, which will be the body of the only
+   * template in the test Soy file.
+   *
+   * @param autoEscaping The form of autescaping to use for this namespace.
+   * @param strictHtml Whether to use strict html mode in this namespace.
+   * @param soyDocParamNames Param names to declare in SoyDoc of the single template.
+   * @param soyCode The code to parse as the full body of a template.
+   * @return The test Soy file's content.
+   */
+  public static String buildTestSoyFileContent(
+      AutoEscapingType autoEscaping,
+      boolean strictHtml,
+      @Nullable List<String> soyDocParamNames,
+      String soyCode) {
     String namespace = "brittle.test.ns";
     String templateName = ".brittleTestTemplate";
 
     StringBuilder soyFileContentBuilder = new StringBuilder();
     soyFileContentBuilder
         .append("{namespace " + namespace)
-        .append(" autoescape=\"" + autoEscaping.getKey() + "\"}\n")
+        .append(" autoescape=\"" + autoEscaping.getKey() + "\"")
+        .append(strictHtml ? " stricthtml=\"true\"}\n" : "}\n")
         .append("\n")
         .append("/** Test template.");
     if (soyDocParamNames != null) {
