@@ -37,11 +37,53 @@ public final class NullSafeAccumulatorTest {
     assertThat(accum.dotAccess(FieldAccess.id("b"), true /* nullSafe */))
         .generates("a == null ? null : a.b;");
     assertThat(accum.bracketAccess(CodeChunk.id("c"), true /* nullSafe */))
-        .generates("a == null ? null : a.b == null ? null : a.b[c];");
+        .generates(
+            "var $tmp$$1;\n"
+                + "if (a == null) {\n"
+                + "  $tmp$$1 = null;\n"
+                + "} else {\n"
+                + "  var $tmp = a.b;\n"
+                + "  $tmp$$1 = $tmp == null ? null : $tmp[c];\n"
+                + "}");
     assertThat(accum.dotAccess(FieldAccess.id("d"), true /* nullSafe */))
-        .generates("a == null ? null : a.b == null ? null : a.b[c] == null ? null : a.b[c].d;");
+        .generates(
+            "var $tmp$$3;\n"
+                + "if (a == null) {\n"
+                + "  $tmp$$3 = null;\n"
+                + "} else {\n"
+                + "  var $tmp$$2;\n"
+                + "  var $tmp = a.b;\n"
+                + "  if ($tmp == null) {\n"
+                + "    $tmp$$2 = null;\n"
+                + "  } else {\n"
+                + "    var $tmp$$1 = $tmp[c];\n"
+                + "    $tmp$$2 = $tmp$$1 == null ? null : $tmp$$1.d;\n"
+                + "  }\n"
+                + "  $tmp$$3 = $tmp$$2;\n"
+                + "}");
     assertThat(accum.bracketAccess(CodeChunk.id("e"), true /* nullSafe */))
-        .generates("a == null ? null : a.b == null ? null : a.b[c] == null ? null : a.b[c].d == null ? null : a.b[c].d[e];");
+        .generates(
+            "var $tmp$$5;\n"
+                + "if (a == null) {\n"
+                + "  $tmp$$5 = null;\n"
+                + "} else {\n"
+                + "  var $tmp$$4;\n"
+                + "  var $tmp = a.b;\n"
+                + "  if ($tmp == null) {\n"
+                + "    $tmp$$4 = null;\n"
+                + "  } else {\n"
+                + "    var $tmp$$3;\n"
+                + "    var $tmp$$1 = $tmp[c];\n"
+                + "    if ($tmp$$1 == null) {\n"
+                + "      $tmp$$3 = null;\n"
+                + "    } else {\n"
+                + "      var $tmp$$2 = $tmp$$1.d;\n"
+                + "      $tmp$$3 = $tmp$$2 == null ? null : $tmp$$2[e];\n"
+                + "    }\n"
+                + "    $tmp$$4 = $tmp$$3;\n"
+                + "  }\n"
+                + "  $tmp$$5 = $tmp$$4;\n"
+                + "}");
   }
 
   @Test
@@ -68,9 +110,23 @@ public final class NullSafeAccumulatorTest {
     assertThat(accum.bracketAccess(CodeChunk.id("c"), false /* nullSafe */))
         .generates("a == null ? null : a.b[c];");
     assertThat(accum.dotAccess(FieldAccess.id("d"), true /* nullSafe */))
-        .generates("a == null ? null : a.b[c] == null ? null : a.b[c].d;");
+        .generates(
+            "var $tmp$$1;\n"
+                + "if (a == null) {\n"
+                + "  $tmp$$1 = null;\n"
+                + "} else {\n"
+                + "  var $tmp = a.b[c];\n"
+                + "  $tmp$$1 = $tmp == null ? null : $tmp.d;\n"
+                + "}");
     assertThat(accum.bracketAccess(CodeChunk.id("e"), false /* nullSafe */))
-        .generates("a == null ? null : a.b[c] == null ? null : a.b[c].d[e];");
+        .generates(
+            "var $tmp$$1;\n"
+                + "if (a == null) {\n"
+                + "  $tmp$$1 = null;\n"
+                + "} else {\n"
+                + "  var $tmp = a.b[c];\n"
+                + "  $tmp$$1 = $tmp == null ? null : $tmp.d[e];\n"
+                + "}");
   }
 
   @Test
@@ -79,7 +135,7 @@ public final class NullSafeAccumulatorTest {
     assertThat(accum.dotAccess(FieldAccess.call("b", CodeChunk.id("c")), false /* nullSafe */))
         .generates("a.b(c);");
     assertThat(accum.dotAccess(FieldAccess.call("d", CodeChunk.id("e")), true /* nullSafe */))
-        .generates("a.b(c) == null ? null : a.b(c).d(e);");
+        .generates("var $tmp = a.b(c);\n$tmp == null ? null : $tmp.d(e);");
   }
 
   private static final SubjectFactory<AccumulatorSubject, NullSafeAccumulator> FACTORY =

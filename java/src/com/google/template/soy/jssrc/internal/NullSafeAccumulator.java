@@ -22,11 +22,11 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_ARRAY_MAP;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.ForOverride;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.CodeChunk.WithValue;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import javax.annotation.Nullable;
 
@@ -106,52 +106,51 @@ final class NullSafeAccumulator {
    * generate code to make sure the chain is non-null before performing the access.
    */
   CodeChunk.WithValue result(CodeChunk.Generator codeGenerator) {
-    // First generate a list of every partial evaluation of the chain.
-    ImmutableList<CodeChunk.WithValue> intermediateValues = buildIntermediateValues();
-    Preconditions.checkState(intermediateValues.size() == chain.size() + 1);
-
-    // Walk backwards through the intermediate values. For any null-safe link in the chain,
-    // test the intermediate value against null before dereferencing it.
-    // For example, to translate a?.b.c, the rightmost link is not null-safe, so it translates to
-    // a.b.c. The next link is null-safe, so it translates to a == null ? null : a.b.c.
-    CodeChunk.WithValue cur = intermediateValues.get(intermediateValues.size() - 1);
-    for (int i = intermediateValues.size() - 2; i >= 0; --i) {
-      CodeChunk.WithValue chunk = intermediateValues.get(i);
-      boolean nullSafe = chain.get(i).nullSafe;
-      if (nullSafe) {
-        cur = ifExpression(chunk.doubleEqualsNull(), LITERAL_NULL).else_(cur).build(codeGenerator);
-      }
-    }
+    CodeChunk.WithValue accessChain = buildAccessChain(base, codeGenerator, chain.iterator());
 
     if (unpackFunction == null) {
-      return cur;
+      return accessChain;
     } else if (!isRepeated) {
       // It's okay if the whole chain evals to null. The unpack functions accept null.
-      return unpackFunction.call(cur);
+      return unpackFunction.call(accessChain);
     } else {
-      return GOOG_ARRAY_MAP.call(cur, unpackFunction);
+      return GOOG_ARRAY_MAP.call(accessChain, unpackFunction);
     }
   }
 
   /**
-   * Builds a list of intermediate values representing partial evaluation of the chain.
-   * For example, the chain {@code a?.b?.c.d} has four intermediate values:
+   * Builds the access chain.
+   *
+   * <p>For chains with no null-safe accessses this is a simple and direct approach. However, for
+   * null safe accesses we will stash base expressions into a temporary variable so we can generate
+   * multiple references to it.
+   *
+   * <p>For example:
+   *
    * <ol>
-   *   <li>{@code a}
-   *   <li>{@code a?.b}
-   *   <li>{@code a?.b?.c}
-   *   <li>{@code a?.b?.c.d}
+   *   <li>{@code $a.b} -> {@code a.b}
+   *   <li>{@code $a?.b} -> {@code var t = a; t == null ? null : a.b}
+   *   <li>{@code a?.b?.c} -> {@code var t = a; var r;if (t== null) {var t2 = a.b; r= t2 == null ?
+   *       null : t2.c}}
+   *   <li>{@code a?.b?.c.d} {@code var t = a; var r;if (t== null) {var t2 = a.b; r= t2 == null ?
+   *       null : t2.c.d}}
    * </ol>
    */
-  private ImmutableList<CodeChunk.WithValue> buildIntermediateValues() {
-    ImmutableList.Builder<CodeChunk.WithValue> builder = ImmutableList.builder();
-    CodeChunk.WithValue prev = base;
-    builder.add(prev);
-    for (ChainAccess link : chain) {
-      prev = link.extend(prev);
-      builder.add(prev);
+  private static CodeChunk.WithValue buildAccessChain(
+      CodeChunk.WithValue base, CodeChunk.Generator generator, Iterator<ChainAccess> chain) {
+    if (!chain.hasNext()) {
+      return base; // base case
     }
-    return builder.build();
+    ChainAccess link = chain.next();
+    if (link.nullSafe) {
+      if (!base.isCheap()) {
+        base = generator.declare(base).ref();
+      }
+      return ifExpression(base.doubleEqualsNull(), LITERAL_NULL)
+          .else_(buildAccessChain(link.extend(base), generator, chain))
+          .build(generator);
+    }
+    return buildAccessChain(link.extend(base), generator, chain);
   }
 
   /**
