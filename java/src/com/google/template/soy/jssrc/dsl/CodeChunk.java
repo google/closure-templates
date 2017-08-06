@@ -63,8 +63,8 @@ public abstract class CodeChunk {
   public static final WithValue LITERAL_TRUE = id("true");
   public static final WithValue LITERAL_FALSE = id("false");
   public static final WithValue LITERAL_NULL = id("null");
-  public static final WithValue LITERAL_EMPTY_STRING = Leaf.create("''", /* isCheap= */ true);
-  public static final WithValue EMPTY_OBJECT_LITERAL = Leaf.create("{}", /* isCheap= */ false);
+  public static final WithValue LITERAL_EMPTY_STRING = Leaf.create("''");
+  public static final WithValue EMPTY_OBJECT_LITERAL = Leaf.create("{}");
 
   /** Creates a new code chunk representing the concatenation of the given chunks. */
   public static CodeChunk statements(CodeChunk first, CodeChunk... rest) {
@@ -93,7 +93,7 @@ public abstract class CodeChunk {
    * Creates a new code chunk from the given expression. The expression's precedence is preserved.
    */
   public static WithValue fromExpr(JsExpr expr, Iterable<GoogRequire> requires) {
-    return Leaf.create(expr, /* isCheap= */ false, requires);
+    return Leaf.create(expr, requires);
   }
 
   /**
@@ -103,7 +103,7 @@ public abstract class CodeChunk {
    */
   public static WithValue id(String id) {
     CodeChunkUtils.checkId(id);
-    return Leaf.create(id, /* isCheap= */ true);
+    return Leaf.create(id);
   }
   /**
    * Creates a code chunk representing a JavaScript identifier.
@@ -112,7 +112,7 @@ public abstract class CodeChunk {
    */
   static WithValue id(String id, Iterable<GoogRequire> requires) {
     CodeChunkUtils.checkId(id);
-    return Leaf.create(id, /* isCheap= */ true, requires);
+    return Leaf.create(id, requires);
   }
 
   /**
@@ -162,19 +162,19 @@ public abstract class CodeChunk {
     // forward slash in the string to get around this issue.
     escaped = escaped.replace("</script", "<\\/script");
 
-    return Leaf.create(escaped, /* isCheap= */ true);
+    return Leaf.create(escaped);
   }
 
   /** Creates a code chunk representing a JavaScript number literal. */
   public static WithValue number(long value) {
     Preconditions.checkArgument(
         IntegerNode.isInRange(value), "Number is outside JS safe integer range: %s", value);
-    return Leaf.create(Long.toString(value), /* isCheap= */ true);
+    return Leaf.create(Long.toString(value));
   }
 
   /** Creates a code chunk representing a JavaScript number literal. */
   public static WithValue number(double value) {
-    return Leaf.create(Double.toString(value), /* isCheap= */ true);
+    return Leaf.create(Double.toString(value));
   }
 
   /** Creates a code chunk that assigns value to a preexisting variable with the given name. */
@@ -489,16 +489,6 @@ public abstract class CodeChunk {
      * <p>These are direct dependencies only, not transitive.
      */
     public abstract ImmutableSet<CodeChunk> initialStatements();
-
-    /**
-     * Returns {@code true} if the expression represented by this code chunk is so trivial that it
-     * isn't worth storing it in a temporary if it needs to be referenced multiple times.
-     *
-     * <p>The default is {@code false}, only certain special code chunks return {@code true}.
-     */
-    public boolean isCheap() {
-      return false;
-    }
   }
 
   /**
@@ -674,11 +664,6 @@ public abstract class CodeChunk {
      */
     public VariableDeclaration declare(CodeChunk.WithValue rhs) {
       return CodeChunk.declare(newVarName(), rhs);
-    }
-
-    /** Creates a code chunk declaring an automatically-named variable with no initializer. */
-    public VariableDeclaration declare() {
-      return VariableDeclaration.create(newVarName(), /*initializer=*/ null);
     }
 
     /**

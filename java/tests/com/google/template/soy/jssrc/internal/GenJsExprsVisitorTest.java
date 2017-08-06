@@ -181,7 +181,7 @@ public final class GenJsExprsVisitorTest {
         "{/if}");
     String expectedJsExprText =
         JOINER.join(
-            "var $tmp;",
+            "var $tmp = null;",
             "if (opt_data.boo) {",
             "  $tmp = 'Blah';",
             "} else if (!(gooData8 != null)) {",
@@ -206,7 +206,7 @@ public final class GenJsExprsVisitorTest {
             "{/if}");
     String expectedJsExprText =
         JOINER.join(
-            "var $tmp;",
+            "var $tmp = null;",
             "if (opt_data.boo) {",
             "  $tmp = 'Blah';",
             "} else if (!(gooData8 != null)) {",

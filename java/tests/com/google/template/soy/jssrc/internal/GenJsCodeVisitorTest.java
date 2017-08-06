@@ -1113,7 +1113,7 @@ public final class GenJsCodeVisitorTest {
             "{/if}");
     expectedJsCode =
         JOINER.join(
-            "var $tmp;",
+            "var $tmp = null;",
             "if (opt_data.boo) {",
             "  $tmp = 'Blah';",
             "} else if (!(('' + gooData8).indexOf('goo') != -1)) {",

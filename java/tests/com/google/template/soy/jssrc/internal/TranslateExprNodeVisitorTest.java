@@ -153,6 +153,62 @@ public final class TranslateExprNodeVisitorTest {
         .generatesCode("opt_data.boo[opt_data.foo][gooData8 + 1];");
     assertThatSoyExpr("$class").generatesCode("opt_data.class;");
     assertThatSoyExpr("$boo.yield").generatesCode("opt_data.boo.yield;");
+
+    assertThatSoyExpr("$boo?.goo")
+        .generatesCode("opt_data.boo == null ? null : opt_data.boo.goo;")
+        .withPrecedence(CONDITIONAL);
+    assertThatSoyExpr("$goo?.boo")
+        .withInitialLocalVarTranslations(LOCAL_VAR_TRANSLATIONS)
+        .generatesCode("gooData8 == null ? null : gooData8.boo;")
+        .withPrecedence(CONDITIONAL);
+
+    // TODO(user): the gencode currently re-evaluates nested null-safe accesses,
+    // such as opt_data.boo and opt_data.boo[0] below. The correct (and simpler) solution
+    // is to emit conditional statements, but we can't generate non-expressions outside of
+    // test code yet.
+    assertThatSoyExpr("$boo?[0]?[1]")
+        .generatesCode(
+            "opt_data.boo == null"
+                + " ? null : opt_data.boo[0] == null ? null : opt_data.boo[0][1];")
+        .withPrecedence(CONDITIONAL);
+
+    assertThatSoyExpr("$a?.b.c")
+        .generatesCode("opt_data.a == null ? null : opt_data.a.b.c;")
+        .withPrecedence(CONDITIONAL);
+
+    assertThatSoyExpr("$a?.b[1]")
+        .generatesCode("opt_data.a == null ? null : opt_data.a.b[1];")
+        .withPrecedence(CONDITIONAL);
+
+    assertThatSoyExpr("$a?[1].b")
+        .generatesCode("opt_data.a == null ? null : opt_data.a[1].b;")
+        .withPrecedence(CONDITIONAL);
+
+    assertThatSoyExpr("$a?[1][2]")
+        .generatesCode("opt_data.a == null ? null : opt_data.a[1][2];")
+        .withPrecedence(CONDITIONAL);
+
+    assertThatSoyExpr("$a.b?.c")
+        .generatesCode("opt_data.a.b == null ? null : opt_data.a.b.c;")
+        .withPrecedence(CONDITIONAL);
+
+    assertThatSoyExpr("$a.b?[1]")
+        .generatesCode("opt_data.a.b == null ? null : opt_data.a.b[1];")
+        .withPrecedence(CONDITIONAL);
+
+    assertThatSoyExpr("$a[1]?.b")
+        .generatesCode("opt_data.a[1] == null ? null : opt_data.a[1].b;")
+        .withPrecedence(CONDITIONAL);
+
+    assertThatSoyExpr("$a[1]?[2]")
+        .generatesCode("opt_data.a[1] == null ? null : opt_data.a[1][2];")
+        .withPrecedence(CONDITIONAL);
+
+    assertThatSoyExpr("$a.b?.c.d?.e")
+        .generatesCode(
+            "opt_data.a.b == null "
+                + "? null : opt_data.a.b.c.d == null ? null : opt_data.a.b.c.d.e;")
+        .withPrecedence(CONDITIONAL);
   }
 
   @Test

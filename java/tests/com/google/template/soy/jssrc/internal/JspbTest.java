@@ -17,6 +17,7 @@
 package com.google.template.soy.jssrc.internal;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.template.soy.exprtree.Operator.NULL_COALESCING;
 import static com.google.template.soy.exprtree.Operator.TIMES;
 import static com.google.template.soy.jssrc.internal.JsSrcSubject.assertThatSoyExpr;
 import static com.google.template.soy.jssrc.internal.JsSrcSubject.expr;
@@ -93,6 +94,40 @@ public final class JspbTest {
     assertThatSoyExpr(expr("$proto.key").withParam("{@param proto: example.KvPair}"))
         .withTypeRegistry(REGISTRY)
         .generatesCode("opt_data.proto.getKey();");
+  }
+
+  @Test
+  public void testNullSafePrimitive() {
+    assertThatSoyExpr(expr("$proto?.anotherValue").withParam("{@param? proto : example.KvPair}"))
+        .withTypeRegistry(REGISTRY)
+        .generatesCode("opt_data.proto == null ? null : opt_data.proto.getAnotherValue();")
+        .withPrecedence(NULL_COALESCING);
+  }
+
+  @Test
+  public void testNullSafeReference() {
+    assertThatSoyExpr(
+            expr("$proto?.someEmbeddedMessage ?: 'foo'")
+                .withParam("{@param? proto : example.ExampleExtendable}"))
+        .withTypeRegistry(REGISTRY)
+        .generatesCode(
+            ""
+                + "($$temp = opt_data.proto == null ?"
+                + " null : opt_data.proto.getSomeEmbeddedMessage()) == null ? 'foo' : $$temp;")
+        .withPrecedence(NULL_COALESCING);
+  }
+
+  @Test
+  public void testMathOnNullableValues() {
+    assertThatSoyExpr(
+            expr("$proto?.someEmbeddedMessage?.someEmbeddedString")
+                .withParam("{@param? proto : example.ExampleExtendable}"))
+        .withTypeRegistry(REGISTRY)
+        .generatesCode(
+            "opt_data.proto == null ?"
+                + " null : opt_data.proto.getSomeEmbeddedMessage() == null"
+                + " ? null : opt_data.proto.getSomeEmbeddedMessage().getSomeEmbeddedString();")
+        .withPrecedence(NULL_COALESCING);
   }
 
   @Test
