@@ -353,7 +353,7 @@ public abstract class SanitizedContent extends SoyData implements SoyString {
     }
 
     @Override
-    public void render(Appendable appendable) throws IOException {
+    public void render(LoggingAdvisingAppendable appendable) throws IOException {
       appendable.append(content);
     }
 
@@ -375,7 +375,7 @@ public abstract class SanitizedContent extends SoyData implements SoyString {
     }
 
     @Override
-    public void render(Appendable appendable) throws IOException {
+    public void render(LoggingAdvisingAppendable appendable) throws IOException {
       thunk.render(appendable);
     }
 

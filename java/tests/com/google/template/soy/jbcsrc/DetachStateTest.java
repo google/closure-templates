@@ -25,9 +25,9 @@ import static org.junit.Assert.assertEquals;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.SettableFuture;
+import com.google.template.soy.data.LoggingAdvisingAppendable;
+import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
 import com.google.template.soy.data.SoyRecord;
-import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
-import com.google.template.soy.jbcsrc.api.AdvisingStringBuilder;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
@@ -41,7 +41,7 @@ import org.junit.runners.JUnit4;
 /** Tests for {@link DetachState}. */
 @RunWith(JUnit4.class)
 public final class DetachStateTest {
-  static final class TestAppendable implements AdvisingAppendable {
+  static final class TestAppendable extends LoggingAdvisingAppendable {
     private final StringBuilder delegate = new StringBuilder();
     boolean softLimitReached;
 
@@ -196,7 +196,7 @@ public final class DetachStateTest {
     CompiledTemplate template =
         factory.create(asRecord(ImmutableMap.of("foo", future)), EMPTY_DICT);
 
-    AdvisingStringBuilder output = new AdvisingStringBuilder();
+    BufferingAppendable output = LoggingAdvisingAppendable.buffering();
     RenderResult result = template.render(output, context);
     assertEquals(RenderResult.Type.DETACH, result.type());
     assertEquals(future, result.future());
@@ -236,7 +236,7 @@ public final class DetachStateTest {
     CompiledTemplate template =
         factory.create(asRecord(ImmutableMap.of("list", futures)), EMPTY_DICT);
 
-    AdvisingStringBuilder output = new AdvisingStringBuilder();
+    BufferingAppendable output = LoggingAdvisingAppendable.buffering();
     RenderResult result = template.render(output, context);
     assertEquals(RenderResult.Type.DETACH, result.type());
     assertEquals(futures.get(0), result.future());
@@ -275,7 +275,7 @@ public final class DetachStateTest {
     CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.foo");
     RenderContext context = getDefaultContext(templates);
     SoyRecord params = asRecord(ImmutableMap.of("list", ImmutableList.of(1, 2, 3, 4), "foo", 1));
-    AdvisingStringBuilder output = new AdvisingStringBuilder();
+    BufferingAppendable output = LoggingAdvisingAppendable.buffering();
     assertEquals(RenderResult.done(), factory.create(params, EMPTY_DICT).render(output, context));
     assertEquals("2345", output.toString());
   }
@@ -302,7 +302,7 @@ public final class DetachStateTest {
     SettableFuture<String> param = SettableFuture.create();
     SoyRecord params = asRecord(ImmutableMap.of("callerParam", param));
     CompiledTemplate template = factory.create(params, EMPTY_DICT);
-    AdvisingStringBuilder output = new AdvisingStringBuilder();
+    BufferingAppendable output = LoggingAdvisingAppendable.buffering();
     assertEquals(
         RenderResult.continueAfter(param), template.render(output, getDefaultContext(templates)));
     assertEquals("prefix ", output.toString());
@@ -338,7 +338,7 @@ public final class DetachStateTest {
     SettableFuture<String> param = SettableFuture.create();
     SoyRecord params = asRecord(ImmutableMap.of("callerParam", param));
     CompiledTemplate template = factory.create(params, EMPTY_DICT);
-    AdvisingStringBuilder output = new AdvisingStringBuilder();
+    BufferingAppendable output = LoggingAdvisingAppendable.buffering();
     assertEquals(RenderResult.continueAfter(param), template.render(output, context));
     assertEquals("prefix ", output.toString());
     param.set("foo");

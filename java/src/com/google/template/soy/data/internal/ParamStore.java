@@ -16,6 +16,7 @@
 
 package com.google.template.soy.data.internal;
 
+import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SoyAbstractValue;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
@@ -27,6 +28,8 @@ import javax.annotation.Nonnull;
  * Internal-use param store for passing data in subtemplate calls.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
+ *
+ * <p>TODO(lukes): there is no need for this class to implement SoyRecord...
  *
  */
 public abstract class ParamStore extends SoyAbstractValue implements SoyRecord {
@@ -59,7 +62,7 @@ public abstract class ParamStore extends SoyAbstractValue implements SoyRecord {
   }
 
   @Override
-  public void render(Appendable appendable) throws IOException {
+  public void render(LoggingAdvisingAppendable appendable) throws IOException {
     throw new UnsupportedOperationException();
   }
 

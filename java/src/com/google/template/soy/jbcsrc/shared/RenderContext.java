@@ -23,9 +23,9 @@ import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyRecord;
-import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.restricted.SoyMsg;
@@ -46,7 +46,7 @@ public final class RenderContext {
   private static final CompiledTemplate EMPTY_TEMPLATE =
       new CompiledTemplate() {
         @Override
-        public RenderResult render(AdvisingAppendable appendable, RenderContext context) {
+        public RenderResult render(LoggingAdvisingAppendable appendable, RenderContext context) {
           return RenderResult.done();
         }
 

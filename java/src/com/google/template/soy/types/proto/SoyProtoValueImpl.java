@@ -27,6 +27,7 @@ import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Message;
 import com.google.protobuf.TextFormat;
+import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SoyAbstractValue;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyProtoValue;
@@ -233,7 +234,7 @@ public final class SoyProtoValueImpl extends SoyAbstractValue implements SoyProt
   }
 
   @Override
-  public void render(Appendable appendable) throws IOException {
+  public void render(LoggingAdvisingAppendable appendable) throws IOException {
     TextFormat.print(proto, appendable);
   }
 

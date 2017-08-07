@@ -110,7 +110,7 @@ public class SoyMapData extends CollectionData implements SoyDict {
    */
   @Override
   public String toString() {
-    StringBuilder sb = new StringBuilder();
+    LoggingAdvisingAppendable sb = LoggingAdvisingAppendable.buffering();
     try {
       render(sb);
     } catch (IOException e) {
@@ -120,7 +120,7 @@ public class SoyMapData extends CollectionData implements SoyDict {
   }
 
   @Override
-  public void render(Appendable appendable) throws IOException {
+  public void render(LoggingAdvisingAppendable appendable) throws IOException {
     appendable.append('{');
     Iterator<Map.Entry<String, SoyData>> iterator = map.entrySet().iterator();
     if (iterator.hasNext()) {

@@ -16,7 +16,6 @@
 
 package com.google.template.soy.data;
 
-import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import java.io.IOException;
 import javax.annotation.Nonnull;
@@ -45,7 +44,12 @@ public abstract class SoyAbstractValue implements SoyValue {
   }
 
   @Override
-  public RenderResult renderAndResolve(AdvisingAppendable appendable, boolean isLast)
+  public final void render(Appendable appendable) throws IOException {
+    render(LoggingAdvisingAppendable.delegating(appendable));
+  }
+
+  @Override
+  public RenderResult renderAndResolve(LoggingAdvisingAppendable appendable, boolean isLast)
       throws IOException {
     render(appendable);
     return RenderResult.done();

@@ -18,6 +18,7 @@ package com.google.template.soy.jbcsrc.api;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
@@ -39,7 +40,7 @@ final class Continuations {
    * WriteContinuation}, but it is assumed that the builder is the render target.
    */
   static Continuation<String> stringContinuation(
-      WriteContinuation delegate, AdvisingStringBuilder builder) {
+      WriteContinuation delegate, LoggingAdvisingAppendable.BufferingAppendable builder) {
     if (delegate.result().isDone()) {
       return new ResultContinuation<>(builder.toString());
     }
@@ -56,7 +57,9 @@ final class Continuations {
    * {@link WriteContinuation}, but it is assumed that the builder is the render target.
    */
   static Continuation<SanitizedContent> strictContinuation(
-      WriteContinuation delegate, AdvisingStringBuilder builder, final ContentKind kind) {
+      WriteContinuation delegate,
+      LoggingAdvisingAppendable.BufferingAppendable builder,
+      final ContentKind kind) {
     if (delegate.result().isDone()) {
       return new ResultContinuation<>(
           UnsafeSanitizedContentOrdainer.ordainAsSafe(builder.toString(), kind));
@@ -75,9 +78,10 @@ final class Continuations {
    */
   private abstract static class AbstractContinuation<T> implements Continuation<T> {
     final WriteContinuation delegate;
-    final AdvisingStringBuilder builder;
+    final LoggingAdvisingAppendable.BufferingAppendable builder;
 
-    AbstractContinuation(WriteContinuation delegate, AdvisingStringBuilder builder) {
+    AbstractContinuation(
+        WriteContinuation delegate, LoggingAdvisingAppendable.BufferingAppendable builder) {
       this.delegate = delegate;
       this.builder = builder;
     }

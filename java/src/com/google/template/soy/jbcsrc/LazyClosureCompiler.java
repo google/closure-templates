@@ -17,7 +17,7 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Predicates.notNull;
-import static com.google.template.soy.jbcsrc.BytecodeUtils.ADVISING_APPENDABLE_TYPE;
+import static com.google.template.soy.jbcsrc.BytecodeUtils.LOGGING_ADVISING_APPENDABLE_TYPE;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.NULLARY_INIT;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.constantSanitizedContentKindAsContentKind;
@@ -38,12 +38,12 @@ import com.google.common.base.Optional;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.UniqueNameGenerator;
+import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.jbcsrc.SoyNodeCompiler.CompiledMethodBody;
-import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import com.google.template.soy.jbcsrc.runtime.DetachableContentProvider;
 import com.google.template.soy.jbcsrc.runtime.DetachableSoyValueProvider;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
@@ -139,7 +139,7 @@ final class LazyClosureCompiler {
       DO_RENDER =
           Method.getMethod(
               DetachableContentProvider.class.getDeclaredMethod(
-                  "doRender", AdvisingAppendable.class));
+                  "doRender", LoggingAdvisingAppendable.class));
       DETACHABLE_CONTENT_PROVIDER_INIT =
           Method.getMethod(
               DetachableContentProvider.class.getDeclaredConstructor(ContentKind.class));
@@ -311,7 +311,8 @@ final class LazyClosureCompiler {
       final Label end = new Label();
       final LocalVariable thisVar = createThisVar(type, start, end);
       final LocalVariable appendableVar =
-          createLocal("appendable", 1, ADVISING_APPENDABLE_TYPE, start, end).asNonNullable();
+          createLocal("appendable", 1, LOGGING_ADVISING_APPENDABLE_TYPE, start, end)
+              .asNonNullable();
 
       final TemplateVariableManager variableSet =
           new TemplateVariableManager(fieldNames, type, thisVar, DO_RENDER);

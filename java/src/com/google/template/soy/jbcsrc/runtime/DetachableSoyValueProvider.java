@@ -18,9 +18,9 @@ package com.google.template.soy.jbcsrc.runtime;
 
 import static com.google.common.base.Preconditions.checkState;
 
+import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
-import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.api.RenderResult.Type;
 import java.io.IOException;
@@ -51,7 +51,7 @@ public abstract class DetachableSoyValueProvider implements SoyValueProvider {
   }
 
   @Override
-  public RenderResult renderAndResolve(AdvisingAppendable appendable, boolean isLast)
+  public RenderResult renderAndResolve(LoggingAdvisingAppendable appendable, boolean isLast)
       throws IOException {
     RenderResult result = status();
     if (result.type() == Type.DONE) {

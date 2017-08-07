@@ -28,6 +28,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.internal.SanitizedContentKind;
+import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SanitizedContents;
@@ -49,7 +50,6 @@ import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.jbcsrc.ExpressionTester.ExpressionSubject;
 import com.google.template.soy.jbcsrc.TemplateTester.CompiledTemplateSubject;
-import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.shared.restricted.SoyFunction;
@@ -148,7 +148,7 @@ public class ExpressionCompilerTest {
     try {
       return Method.getMethod(
           CompiledTemplate.class.getMethod(
-              "render", AdvisingAppendable.class, RenderContext.class));
+              "render", LoggingAdvisingAppendable.class, RenderContext.class));
     } catch (Exception e) {
       throw new RuntimeException(e);
     }

@@ -33,6 +33,7 @@ import com.google.inject.Injector;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.SoyModule;
+import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyAbstractValue;
 import com.google.template.soy.data.SoyDict;
@@ -1679,7 +1680,7 @@ public class RenderVisitorTest {
       }
 
       @Override
-      public void render(Appendable appendable) throws IOException {
+      public void render(LoggingAdvisingAppendable appendable) throws IOException {
         appendable.append(coerceToString());
       }
 

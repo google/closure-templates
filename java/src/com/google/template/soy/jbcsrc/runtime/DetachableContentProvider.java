@@ -18,6 +18,7 @@ package com.google.template.soy.jbcsrc.runtime;
 
 import static com.google.common.base.Preconditions.checkState;
 
+import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
@@ -25,7 +26,6 @@ import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.restricted.SoyString;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
-import com.google.template.soy.jbcsrc.api.AdvisingStringBuilder;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import java.io.IOException;
 import javax.annotation.Nullable;
@@ -41,9 +41,9 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
   // Will be either a SanitizedContent or a StringData.
   private SoyString resolvedValue;
 
-  // Will be either an AdvisingStringBuilder or a TeeAdvisingAppendable depending on whether we are
-  // being resolved via 'status()' or via 'renderAndResolve()'
-  private AdvisingAppendable builder;
+  // Will be either an LoggingAdvisingAppendable.BufferingAppendable or a TeeAdvisingAppendable
+  // depending on whether we are being resolved via 'status()' or via 'renderAndResolve()'
+  private LoggingAdvisingAppendable builder;
 
   protected DetachableContentProvider(@Nullable ContentKind contentKind) {
     this.contentKind = contentKind;
@@ -64,15 +64,16 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
     if (resolvedValue != null) {
       return RenderResult.done();
     }
-    AdvisingStringBuilder currentBuilder = (AdvisingStringBuilder) builder;
+    LoggingAdvisingAppendable.BufferingAppendable currentBuilder =
+        (LoggingAdvisingAppendable.BufferingAppendable) builder;
     if (currentBuilder == null) {
-      builder = currentBuilder = new AdvisingStringBuilder();
+      builder = currentBuilder = LoggingAdvisingAppendable.buffering();
     }
     return doRenderIntoBufferingAppendable(currentBuilder);
   }
 
   @Override
-  public RenderResult renderAndResolve(AdvisingAppendable appendable, boolean isLast)
+  public RenderResult renderAndResolve(LoggingAdvisingAppendable appendable, boolean isLast)
       throws IOException {
     SoyValue value = resolvedValue;
     if (value != null) {
@@ -93,7 +94,7 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
     return doRenderIntoBufferingAppendable(currentBuilder);
   }
 
-  private RenderResult doRenderIntoBufferingAppendable(AdvisingAppendable target) {
+  private RenderResult doRenderIntoBufferingAppendable(LoggingAdvisingAppendable target) {
     RenderResult result = doRender(target);
     if (result.isDone()) {
       if (contentKind != null) {
@@ -106,7 +107,7 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
   }
 
   /** Overridden by generated subclasses to implement lazy detachable resolution. */
-  protected abstract RenderResult doRender(AdvisingAppendable appendable);
+  protected abstract RenderResult doRender(LoggingAdvisingAppendable appendable);
 
   /**
    * An {@link AdvisingAppendable} that forwards to a delegate appendable but also saves all the
@@ -115,30 +116,30 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
    * <p>See: <a href="http://en.wikipedia.org/wiki/Tee_%28command%29">Tee command for the unix
    * command on which this is based.
    */
-  private static final class TeeAdvisingAppendable implements AdvisingAppendable {
+  private static final class TeeAdvisingAppendable extends LoggingAdvisingAppendable {
     final StringBuilder buffer = new StringBuilder();
-    final AdvisingAppendable delegate;
+    final LoggingAdvisingAppendable delegate;
 
-    TeeAdvisingAppendable(AdvisingAppendable delegate) {
+    TeeAdvisingAppendable(LoggingAdvisingAppendable delegate) {
       this.delegate = delegate;
     }
 
     @Override
-    public AdvisingAppendable append(CharSequence csq) throws IOException {
+    public TeeAdvisingAppendable append(CharSequence csq) throws IOException {
       delegate.append(csq);
       buffer.append(csq);
       return this;
     }
 
     @Override
-    public AdvisingAppendable append(CharSequence csq, int start, int end) throws IOException {
+    public TeeAdvisingAppendable append(CharSequence csq, int start, int end) throws IOException {
       delegate.append(csq, start, end);
       buffer.append(csq, start, end);
       return this;
     }
 
     @Override
-    public AdvisingAppendable append(char c) throws IOException {
+    public TeeAdvisingAppendable append(char c) throws IOException {
       delegate.append(c);
       buffer.append(c);
       return this;

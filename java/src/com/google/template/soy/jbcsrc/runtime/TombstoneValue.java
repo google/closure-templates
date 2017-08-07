@@ -16,6 +16,7 @@
 
 package com.google.template.soy.jbcsrc.runtime;
 
+import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SoyAbstractValue;
 import com.google.template.soy.data.restricted.SoyString;
 import java.io.IOException;
@@ -29,7 +30,7 @@ final class TombstoneValue extends SoyAbstractValue implements SoyString {
   static final TombstoneValue INSTANCE = new TombstoneValue();
 
   @Override
-  public void render(Appendable appendable) throws IOException {
+  public void render(LoggingAdvisingAppendable appendable) throws IOException {
     throw new UnsupportedOperationException();
   }
 

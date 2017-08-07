@@ -16,7 +16,7 @@
 
 package com.google.template.soy.jbcsrc;
 
-import static com.google.template.soy.jbcsrc.BytecodeUtils.ADVISING_APPENDABLE_TYPE;
+import static com.google.template.soy.jbcsrc.BytecodeUtils.LOGGING_ADVISING_APPENDABLE_TYPE;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.NULLARY_INIT;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.OBJECT;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.RENDER_CONTEXT_TYPE;
@@ -43,8 +43,6 @@ import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.TemplateMetadata;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
-import com.google.template.soy.soytree.LetContentNode;
-import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
@@ -228,7 +226,7 @@ final class TemplateCompiler {
     final Label end = new Label();
     final LocalVariable thisVar = createThisVar(template.typeInfo(), start, end);
     final LocalVariable appendableVar =
-        createLocal("appendable", 1, ADVISING_APPENDABLE_TYPE, start, end).asNonNullable();
+        createLocal("appendable", 1, LOGGING_ADVISING_APPENDABLE_TYPE, start, end).asNonNullable();
     final LocalVariable contextVar =
         createLocal("context", 2, RENDER_CONTEXT_TYPE, start, end).asNonNullable();
     final TemplateVariableManager variableSet =

@@ -19,7 +19,7 @@ package com.google.template.soy.jbcsrc;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.SOY_RECORD_TYPE;
 
 import com.google.auto.value.AutoValue;
-import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
+import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
@@ -57,7 +57,7 @@ abstract class CompiledTemplateMetadata {
       RENDER_METHOD =
           Method.getMethod(
               CompiledTemplate.class.getMethod(
-                  "render", AdvisingAppendable.class, RenderContext.class));
+                  "render", LoggingAdvisingAppendable.class, RenderContext.class));
       KIND_METHOD = Method.getMethod(CompiledTemplate.class.getMethod("kind"));
     } catch (NoSuchMethodException | SecurityException e) {
       throw new RuntimeException(e);

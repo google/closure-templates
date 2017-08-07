@@ -17,9 +17,10 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.template.soy.jbcsrc.BytecodeUtils.ADVISING_APPENDABLE_TYPE;
-import static com.google.template.soy.jbcsrc.BytecodeUtils.ADVISING_BUILDER_TYPE;
+import static com.google.template.soy.jbcsrc.BytecodeUtils.LOGGING_ADVISING_APPENDABLE_TYPE;
+import static com.google.template.soy.jbcsrc.BytecodeUtils.LOGGING_ADVISING_BUILDER_TYPE;
 
+import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Type;
@@ -27,13 +28,14 @@ import org.objectweb.asm.Type;
 /** An expression for an {@link AdvisingAppendable}. */
 final class AppendableExpression extends Expression {
   private static final MethodRef APPEND =
-      MethodRef.create(AdvisingAppendable.class, "append", CharSequence.class).asNonNullable();
+      MethodRef.create(LoggingAdvisingAppendable.class, "append", CharSequence.class)
+          .asNonNullable();
 
   private static final MethodRef APPEND_CHAR =
-      MethodRef.create(AdvisingAppendable.class, "append", char.class).asNonNullable();
+      MethodRef.create(LoggingAdvisingAppendable.class, "append", char.class).asNonNullable();
 
   private static final MethodRef SOFT_LIMITED =
-      MethodRef.create(AdvisingAppendable.class, "softLimitReached").asCheap();
+      MethodRef.create(LoggingAdvisingAppendable.class, "softLimitReached").asCheap();
 
   static AppendableExpression forLocal(LocalVariable delegate) {
     return new AppendableExpression(
@@ -41,9 +43,9 @@ final class AppendableExpression extends Expression {
   }
 
   static AppendableExpression forStringBuilder(Expression delegate) {
-    checkArgument(delegate.resultType().equals(ADVISING_BUILDER_TYPE));
+    checkArgument(delegate.resultType().equals(LOGGING_ADVISING_BUILDER_TYPE));
     return new AppendableExpression(
-        ADVISING_BUILDER_TYPE,
+        BytecodeUtils.LOGGING_ADVISING_BUILDER_TYPE,
         delegate,
         false /* hasSideEffects*/,
         false /* supportsSoftLimiting */);
@@ -64,13 +66,13 @@ final class AppendableExpression extends Expression {
 
   private AppendableExpression(
       Expression delegate, boolean hasSideEffects, boolean supportsSoftLimiting) {
-    this(ADVISING_APPENDABLE_TYPE, delegate, hasSideEffects, supportsSoftLimiting);
+    this(LOGGING_ADVISING_APPENDABLE_TYPE, delegate, hasSideEffects, supportsSoftLimiting);
   }
 
   private AppendableExpression(
       Type resultType, Expression delegate, boolean hasSideEffects, boolean supportsSoftLimiting) {
     super(resultType, delegate.features());
-    delegate.checkAssignableTo(ADVISING_APPENDABLE_TYPE);
+    delegate.checkAssignableTo(LOGGING_ADVISING_APPENDABLE_TYPE);
     checkArgument(
         delegate.isNonNullable(), "advising appendable expressions should always be non null");
     this.delegate = delegate;

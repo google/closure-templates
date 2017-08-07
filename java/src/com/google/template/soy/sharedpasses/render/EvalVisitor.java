@@ -31,6 +31,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.template.soy.basicfunctions.DebugSoyTemplateInfoFunction;
+import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SoyAbstractValue;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyMap;
@@ -784,7 +785,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     }
 
     @Override
-    public void render(Appendable appendable) throws IOException {
+    public void render(LoggingAdvisingAppendable appendable) throws IOException {
       appendable.append(coerceToString());
     }
   }

@@ -18,6 +18,7 @@ package com.google.template.soy.data.internal;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SoyAbstractValue;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyList;
@@ -172,7 +173,7 @@ abstract class ListBackedList extends SoyAbstractValue implements SoyList {
   @Override
   public final String coerceToString() {
 
-    StringBuilder listStr = new StringBuilder();
+    LoggingAdvisingAppendable listStr = LoggingAdvisingAppendable.buffering();
     try {
       render(listStr);
     } catch (IOException e) {
@@ -182,7 +183,7 @@ abstract class ListBackedList extends SoyAbstractValue implements SoyList {
   }
 
   @Override
-  public void render(Appendable appendable) throws IOException {
+  public void render(LoggingAdvisingAppendable appendable) throws IOException {
     appendable.append('[');
 
     boolean isFirst = true;

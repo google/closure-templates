@@ -16,7 +16,6 @@
 
 package com.google.template.soy.data;
 
-import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import java.io.IOException;
 import javax.annotation.Nonnull;
@@ -59,7 +58,8 @@ public interface SoyValueProvider {
   RenderResult status();
 
   /**
-   * Renders this value to the given {@link AdvisingAppendable}, possibly partially.
+   * Renders this value to the given {@link com.google.template.soy.data.LoggingAdvisingAppendable},
+   * possibly partially.
    *
    * <p>This should render the exact same content as {@code resolve().render(Appendable)} but may
    * optionally detach part of the way through rendering. Note, this means that this method is
@@ -76,5 +76,6 @@ public interface SoyValueProvider {
    *     must call this method again.
    * @throws IOException If the appendable throws an IOException
    */
-  RenderResult renderAndResolve(AdvisingAppendable appendable, boolean isLast) throws IOException;
+  RenderResult renderAndResolve(LoggingAdvisingAppendable appendable, boolean isLast)
+      throws IOException;
 }

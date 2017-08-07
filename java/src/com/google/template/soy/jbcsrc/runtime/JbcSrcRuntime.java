@@ -17,6 +17,7 @@
 package com.google.template.soy.jbcsrc.runtime;
 
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyRecord;
@@ -27,8 +28,6 @@ import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
-import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
-import com.google.template.soy.jbcsrc.api.AdvisingStringBuilder;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
@@ -68,7 +67,7 @@ public final class JbcSrcRuntime {
         }
 
         @Override
-        public RenderResult renderAndResolve(AdvisingAppendable appendable, boolean isLast)
+        public RenderResult renderAndResolve(LoggingAdvisingAppendable appendable, boolean isLast)
             throws IOException {
           appendable.append("null");
           return RenderResult.done();
@@ -357,33 +356,33 @@ public final class JbcSrcRuntime {
     out.append(msgPart.getRawText());
   }
 
-  private static final AdvisingAppendable LOGGER =
-      new AdvisingAppendable() {
+  private static final LoggingAdvisingAppendable LOGGER =
+      new LoggingAdvisingAppendable() {
         @Override
         public boolean softLimitReached() {
           return false;
         }
 
         @Override
-        public AdvisingAppendable append(char c) throws IOException {
+        public LoggingAdvisingAppendable append(char c) throws IOException {
           System.out.append(c);
           return this;
         }
 
         @Override
-        public AdvisingAppendable append(CharSequence csq, int start, int end) {
+        public LoggingAdvisingAppendable append(CharSequence csq, int start, int end) {
           System.out.append(csq, start, end);
           return this;
         }
 
         @Override
-        public AdvisingAppendable append(CharSequence csq) {
+        public LoggingAdvisingAppendable append(CharSequence csq) {
           System.out.append(csq);
           return this;
         }
       };
 
-  public static AdvisingAppendable logger() {
+  public static LoggingAdvisingAppendable logger() {
     return LOGGER;
   }
 
@@ -408,7 +407,7 @@ public final class JbcSrcRuntime {
 
     // Note: render() may be called multiple times as part of a render operation that detaches
     // halfway through.  So we need to store the buffer in a field, but we never need to reset it.
-    private final AdvisingStringBuilder buffer = new AdvisingStringBuilder();
+    private final LoggingAdvisingAppendable buffer = LoggingAdvisingAppendable.buffering();
 
     EscapedCompiledTemplate(
         CompiledTemplate delegate,
@@ -420,7 +419,7 @@ public final class JbcSrcRuntime {
     }
 
     @Override
-    public RenderResult render(AdvisingAppendable appendable, RenderContext context)
+    public RenderResult render(LoggingAdvisingAppendable appendable, RenderContext context)
         throws IOException {
       RenderResult result = delegate.render(buffer, context);
       if (result.isDone()) {

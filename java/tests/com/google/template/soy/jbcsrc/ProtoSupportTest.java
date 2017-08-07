@@ -29,12 +29,13 @@ import com.google.inject.Guice;
 import com.google.inject.Provides;
 import com.google.protobuf.ByteString;
 import com.google.template.soy.SoyFileSetParserBuilder;
+import com.google.template.soy.data.LoggingAdvisingAppendable;
+import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
 import com.google.template.soy.data.SoyCustomValueConverter;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jbcsrc.TemplateTester.CompiledTemplateSubject;
-import com.google.template.soy.jbcsrc.api.AdvisingStringBuilder;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
@@ -464,7 +465,7 @@ public final class ProtoSupportTest {
 
   private String render(CompiledTemplates templates, String name, SoyRecord params) {
     CompiledTemplate caller = templates.getTemplateFactory(name).create(params, EMPTY_DICT);
-    AdvisingStringBuilder sb = new AdvisingStringBuilder();
+    BufferingAppendable sb = LoggingAdvisingAppendable.buffering();
     try {
       assertEquals(RenderResult.done(), caller.render(sb, getDefaultContext(templates)));
     } catch (IOException e) {

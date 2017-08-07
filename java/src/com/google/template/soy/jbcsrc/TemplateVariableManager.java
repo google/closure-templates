@@ -27,9 +27,9 @@ import static com.google.template.soy.jbcsrc.StandardNames.TEMP_BUFFER_FIELD;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.Sets;
 import com.google.template.soy.base.internal.UniqueNameGenerator;
+import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.jbcsrc.TemplateVariableManager.VarKey.Kind;
-import com.google.template.soy.jbcsrc.api.AdvisingStringBuilder;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -467,7 +467,7 @@ final class TemplateVariableManager {
       // this may be wasteful in the case that the buffer is only used on certain call paths, but
       // if it turns out to be expensive, this could always be solved by an author by refactoring
       // their templates (e.g. extract the conditional logic into another template)
-      final Expression newStringBuilder = ConstructorRef.ADVISING_STRING_BUILDER.construct();
+      final Expression newStringBuilder = MethodRef.LOGGING_ADVISING_APPENDABLE_BUFFERING.invoke();
       initializers.add(
           new Statement() {
             @Override
@@ -537,7 +537,8 @@ final class TemplateVariableManager {
     if (local == null) {
       local =
           tempBufferField =
-              FieldRef.createFinalField(owner, TEMP_BUFFER_FIELD, AdvisingStringBuilder.class)
+              FieldRef.createFinalField(
+                      owner, TEMP_BUFFER_FIELD, LoggingAdvisingAppendable.BufferingAppendable.class)
                   .asNonNull();
     }
     return local;

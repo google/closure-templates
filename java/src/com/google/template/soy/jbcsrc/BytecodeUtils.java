@@ -29,6 +29,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Ints;
 import com.google.protobuf.Message;
 import com.google.template.soy.base.internal.SanitizedContentKind;
+import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyList;
@@ -39,8 +40,6 @@ import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.jbcsrc.Expression.Feature;
 import com.google.template.soy.jbcsrc.Expression.Features;
-import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
-import com.google.template.soy.jbcsrc.api.AdvisingStringBuilder;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.Names;
@@ -65,8 +64,10 @@ final class BytecodeUtils {
 
   static final TypeInfo OBJECT = TypeInfo.create(Object.class);
 
-  static final Type ADVISING_APPENDABLE_TYPE = Type.getType(AdvisingAppendable.class);
-  static final Type ADVISING_BUILDER_TYPE = Type.getType(AdvisingStringBuilder.class);
+  static final Type LOGGING_ADVISING_APPENDABLE_TYPE =
+      Type.getType(LoggingAdvisingAppendable.class);
+  static final Type LOGGING_ADVISING_BUILDER_TYPE =
+      Type.getType(LoggingAdvisingAppendable.BufferingAppendable.class);
   static final Type ARRAY_LIST_TYPE = Type.getType(ArrayList.class);
   static final Type COMPILED_TEMPLATE_TYPE = Type.getType(CompiledTemplate.class);
   static final Type CONTENT_KIND_TYPE = Type.getType(ContentKind.class);

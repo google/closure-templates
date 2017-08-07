@@ -31,9 +31,10 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.SettableFuture;
+import com.google.template.soy.data.LoggingAdvisingAppendable;
+import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.jbcsrc.TemplateTester.CompiledTemplateSubject;
-import com.google.template.soy.jbcsrc.api.AdvisingStringBuilder;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
@@ -87,7 +88,7 @@ public class LazyClosureCompilerTest {
     CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.foo");
     RenderContext context = getDefaultContext(templates);
     CompiledTemplate template = factory.create(asRecord(ImmutableMap.of("bar", bar)), EMPTY_DICT);
-    AdvisingStringBuilder output = new AdvisingStringBuilder();
+    BufferingAppendable output = LoggingAdvisingAppendable.buffering();
     RenderResult result = template.render(output, context);
     assertEquals(RenderResult.Type.DETACH, result.type());
     assertSame(bar, result.future()); // we found bar!
@@ -198,7 +199,7 @@ public class LazyClosureCompilerTest {
     CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.foo");
     RenderContext context = getDefaultContext(templates);
     CompiledTemplate template = factory.create(asRecord(ImmutableMap.of("bar", bar)), EMPTY_DICT);
-    AdvisingStringBuilder output = new AdvisingStringBuilder();
+    BufferingAppendable output = LoggingAdvisingAppendable.buffering();
     RenderResult result = template.render(output, context);
     assertEquals(RenderResult.Type.DETACH, result.type());
     assertSame(bar, result.future()); // we found bar!

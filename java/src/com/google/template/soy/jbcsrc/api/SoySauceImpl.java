@@ -27,6 +27,7 @@ import com.google.common.base.Predicates;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedSet;
+import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyRecord;
@@ -210,7 +211,7 @@ public final class SoySauceImpl implements SoySauce {
       if (contentKindExplicitlySet || contentKind.isPresent()) {
         enforceContentKind();
       }
-      return startRender(out);
+      return startRender(LoggingAdvisingAppendable.delegating(out));
     }
 
     @Override
@@ -218,7 +219,7 @@ public final class SoySauceImpl implements SoySauce {
       if (contentKindExplicitlySet || contentKind.isPresent()) {
         enforceContentKind();
       }
-      AdvisingStringBuilder buf = new AdvisingStringBuilder();
+      LoggingAdvisingAppendable.BufferingAppendable buf = LoggingAdvisingAppendable.buffering();
       try {
         return Continuations.stringContinuation(startRender(buf), buf);
       } catch (IOException e) {
@@ -229,7 +230,7 @@ public final class SoySauceImpl implements SoySauce {
     @Override
     public Continuation<SanitizedContent> renderStrict() {
       enforceContentKind();
-      AdvisingStringBuilder buf = new AdvisingStringBuilder();
+      LoggingAdvisingAppendable.BufferingAppendable buf = LoggingAdvisingAppendable.buffering();
       try {
         return Continuations.strictContinuation(startRender(buf), buf, expectedContentKind);
       } catch (IOException e) {
@@ -237,7 +238,7 @@ public final class SoySauceImpl implements SoySauce {
       }
     }
 
-    private <T> WriteContinuation startRender(AdvisingAppendable out) throws IOException {
+    private <T> WriteContinuation startRender(LoggingAdvisingAppendable out) throws IOException {
       RenderContext context =
           contextBuilder
               .withMessageBundle(msgs)
@@ -275,7 +276,10 @@ public final class SoySauceImpl implements SoySauce {
   }
 
   private static WriteContinuation doRender(
-      CompiledTemplate template, Scoper scoper, AdvisingAppendable out, RenderContext context)
+      CompiledTemplate template,
+      Scoper scoper,
+      LoggingAdvisingAppendable out,
+      RenderContext context)
       throws IOException {
     RenderResult result;
     try (GuiceSimpleScope.InScope scope = scoper.enter()) {
@@ -295,7 +299,7 @@ public final class SoySauceImpl implements SoySauce {
     final RenderResult result;
     final Scoper scoper;
     final RenderContext context;
-    final AdvisingAppendable out;
+    final LoggingAdvisingAppendable out;
     final CompiledTemplate template;
     boolean hasContinueBeenCalled;
 
@@ -303,7 +307,7 @@ public final class SoySauceImpl implements SoySauce {
         RenderResult result,
         Scoper scoper,
         RenderContext context,
-        AdvisingAppendable out,
+        LoggingAdvisingAppendable out,
         CompiledTemplate template) {
       checkArgument(!result.isDone());
       this.result = checkNotNull(result);

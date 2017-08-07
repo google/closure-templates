@@ -16,9 +16,9 @@
 
 package com.google.template.soy.jbcsrc.shared;
 
+import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyRecord;
-import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import java.io.IOException;
 import javax.annotation.Nullable;
@@ -38,13 +38,14 @@ public interface CompiledTemplate {
    * @param context The rendering context
    * @return {@link RenderResult#done()} if rendering has completed successfully, {@link
    *     RenderResult#limited()} if rendering was paused because the appendable reported {@link
-   *     AdvisingAppendable#softLimitReached()} or {@link
+   *     LoggingAdvisingAppendable#softLimitReached()} or {@link
    *     RenderResult#continueAfter(java.util.concurrent.Future)} if rendering encountered a future
    *     that was not {@link java.util.concurrent.Future#isDone done}.
    * @throws IOException If the output stream throws an exception. This is a fatal error and
    *     rendering cannot be continued.
    */
-  RenderResult render(AdvisingAppendable appendable, RenderContext context) throws IOException;
+  RenderResult render(LoggingAdvisingAppendable appendable, RenderContext context)
+      throws IOException;
 
   /**
    * The content kind of the compiled template, used for making runtime content escaping decisions.

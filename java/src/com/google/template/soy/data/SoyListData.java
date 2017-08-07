@@ -78,7 +78,7 @@ public final class SoyListData extends CollectionData implements Iterable<SoyDat
    */
   @Override
   public String toString() {
-    StringBuilder sb = new StringBuilder();
+    LoggingAdvisingAppendable sb = LoggingAdvisingAppendable.buffering();
     try {
       render(sb);
     } catch (IOException e) {
@@ -88,7 +88,7 @@ public final class SoyListData extends CollectionData implements Iterable<SoyDat
   }
 
   @Override
-  public void render(Appendable appendable) throws IOException {
+  public void render(LoggingAdvisingAppendable appendable) throws IOException {
     appendable.append("[");
     int size = list.size();
     if (size != 0) {

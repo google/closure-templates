@@ -36,11 +36,12 @@ import com.google.inject.Provider;
 import com.google.inject.Provides;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.SoyModule;
+import com.google.template.soy.data.LoggingAdvisingAppendable;
+import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.FunctionNode;
-import com.google.template.soy.jbcsrc.api.AdvisingStringBuilder;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
@@ -74,7 +75,6 @@ public final class TemplateTester {
             @Provides
             RenderContext.Builder provideContext(
                 ImmutableMap<String, ? extends SoyFunction> functions,
-                SoyValueConverter converter,
                 ImmutableMap<String, ? extends SoyJavaPrintDirective> printDirectives) {
               @SuppressWarnings("unchecked")
               ImmutableMap<String, SoyJavaFunction> soyJavaFunctions =
@@ -232,7 +232,7 @@ public final class TemplateTester {
 
     CompiledTemplateSubject failsToRenderWith(
         Class<? extends Throwable> expected, Map<String, ?> params) {
-      AdvisingStringBuilder builder = new AdvisingStringBuilder();
+      BufferingAppendable builder = LoggingAdvisingAppendable.buffering();
       compile();
       try {
         factory.create(asRecord(params), EMPTY_DICT).render(builder, defaultContext);
@@ -259,7 +259,7 @@ public final class TemplateTester {
         SoyRecord ij,
         RenderContext context) {
       CompiledTemplate template = factory.create(params, ij);
-      AdvisingStringBuilder builder = new AdvisingStringBuilder();
+      BufferingAppendable builder = LoggingAdvisingAppendable.buffering();
       LogCapturer logOutput = new LogCapturer();
       RenderResult result;
       try (SystemOutRestorer restorer = logOutput.enter()) {

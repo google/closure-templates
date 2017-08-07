@@ -17,6 +17,7 @@
 package com.google.template.soy.data.restricted;
 
 import com.google.common.base.Preconditions;
+import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.internal.RenderableThunk;
 import java.io.IOException;
 import javax.annotation.concurrent.Immutable;
@@ -96,7 +97,7 @@ public abstract class StringData extends PrimitiveData implements SoyString {
     }
 
     @Override
-    public void render(Appendable appendable) throws IOException {
+    public void render(LoggingAdvisingAppendable appendable) throws IOException {
       appendable.append(content);
     }
 
@@ -117,7 +118,7 @@ public abstract class StringData extends PrimitiveData implements SoyString {
     }
 
     @Override
-    public void render(Appendable appendable) throws IOException {
+    public void render(LoggingAdvisingAppendable appendable) throws IOException {
       thunk.render(appendable);
     }
 

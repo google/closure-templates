@@ -37,6 +37,8 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.template.soy.SoyFileSetParserBuilder;
+import com.google.template.soy.data.LoggingAdvisingAppendable;
+import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SanitizedContents;
 import com.google.template.soy.data.SoyDict;
@@ -49,7 +51,6 @@ import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jbcsrc.TemplateTester.CompiledTemplateSubject;
-import com.google.template.soy.jbcsrc.api.AdvisingStringBuilder;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
@@ -209,7 +210,7 @@ public class BytecodeCompilerTest {
 
   private static String renderWithContext(CompiledTemplate.Factory factory, RenderContext context)
       throws IOException {
-    AdvisingStringBuilder builder = new AdvisingStringBuilder();
+    BufferingAppendable builder = LoggingAdvisingAppendable.buffering();
     assertEquals(
         RenderResult.done(), factory.create(EMPTY_DICT, EMPTY_DICT).render(builder, context));
     String string = builder.toString();
@@ -243,7 +244,7 @@ public class BytecodeCompilerTest {
     CompiledTemplates templates = compileFiles(soyFileContent1);
     CompiledTemplate.Factory factory = templates.getTemplateFactory("ns1.callerTemplate");
     RenderContext context = getDefaultContext(templates);
-    AdvisingStringBuilder builder = new AdvisingStringBuilder();
+    BufferingAppendable builder = LoggingAdvisingAppendable.buffering();
     assertEquals(
         RenderResult.done(),
         factory
@@ -360,9 +361,9 @@ public class BytecodeCompilerTest {
   private String render(CompiledTemplates templates, SoyRecord params, String name)
       throws IOException {
     CompiledTemplate caller = templates.getTemplateFactory(name).create(params, EMPTY_DICT);
-    AdvisingStringBuilder sb = new AdvisingStringBuilder();
-    assertEquals(RenderResult.done(), caller.render(sb, getDefaultContext(templates)));
-    String output = sb.toString();
+    BufferingAppendable builder = LoggingAdvisingAppendable.buffering();
+    assertEquals(RenderResult.done(), caller.render(builder, getDefaultContext(templates)));
+    String output = builder.toString();
     return output;
   }
 
@@ -684,7 +685,7 @@ public class BytecodeCompilerTest {
         TemplateTester.compileTemplateBody("{@param foo : int}", "{$foo ?: -1}");
     CompiledTemplate.Factory singleParam = templates.getTemplateFactory("ns.foo");
     RenderContext context = getDefaultContext(templates);
-    AdvisingStringBuilder builder = new AdvisingStringBuilder();
+    BufferingAppendable builder = LoggingAdvisingAppendable.buffering();
 
     SoyDict params =
         SoyValueConverter.UNCUSTOMIZED_INSTANCE.newDict("foo", IntegerData.forValue(1));

@@ -23,6 +23,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Ints;
 import com.google.protobuf.Message;
+import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyMap;
@@ -39,8 +40,6 @@ import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jbcsrc.Expression.Feature;
 import com.google.template.soy.jbcsrc.Expression.Features;
-import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
-import com.google.template.soy.jbcsrc.api.AdvisingStringBuilder;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.runtime.JbcSrcRuntime;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
@@ -68,7 +67,8 @@ import org.objectweb.asm.commons.Method;
 abstract class MethodRef {
 
   static final MethodRef ADVISING_STRING_BUILDER_GET_AND_CLEAR =
-      create(AdvisingStringBuilder.class, "getAndClearBuffer").asNonNullable();
+      create(LoggingAdvisingAppendable.BufferingAppendable.class, "getAndClearBuffer")
+          .asNonNullable();
 
   static final MethodRef ARRAY_LIST_ADD = create(ArrayList.class, "add", Object.class);
 
@@ -81,7 +81,7 @@ abstract class MethodRef {
       create(Boolean.class, "toString", boolean.class).asCheap().asNonNullable();
 
   static final MethodRef COMPILED_TEMPLATE_RENDER =
-      create(CompiledTemplate.class, "render", AdvisingAppendable.class, RenderContext.class)
+      create(CompiledTemplate.class, "render", LoggingAdvisingAppendable.class, RenderContext.class)
           .asNonNullable();
 
   static final MethodRef DICT_IMPL_FOR_PROVIDER_MAP =
@@ -298,7 +298,11 @@ abstract class MethodRef {
       create(SoyValue.class, "stringValue").asCheap().asNonNullable();
 
   static final MethodRef SOY_VALUE_PROVIDER_RENDER_AND_RESOLVE =
-      create(SoyValueProvider.class, "renderAndResolve", AdvisingAppendable.class, boolean.class)
+      create(
+              SoyValueProvider.class,
+              "renderAndResolve",
+              LoggingAdvisingAppendable.class,
+              boolean.class)
           .asNonNullable();
 
   static final MethodRef SOY_VALUE_PROVIDER_RESOLVE =
@@ -317,6 +321,9 @@ abstract class MethodRef {
 
   static final MethodRef STRING_DATA_FOR_VALUE =
       create(StringData.class, "forValue", String.class).asCheap().asNonNullable();
+
+  static final MethodRef LOGGING_ADVISING_APPENDABLE_BUFFERING =
+      create(LoggingAdvisingAppendable.class, "buffering").asNonNullable();
 
   static MethodRef create(Class<?> clazz, String methodName, Class<?>... params) {
     java.lang.reflect.Method m;

@@ -25,7 +25,6 @@ import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.internal.AugmentedParamStore;
 import com.google.template.soy.data.internal.BasicParamStore;
 import com.google.template.soy.jbcsrc.Expression.Feature;
-import com.google.template.soy.jbcsrc.api.AdvisingStringBuilder;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -76,7 +75,6 @@ abstract class ConstructorRef {
   static final ConstructorRef AUGMENTED_PARAM_STORE =
       create(AugmentedParamStore.class, SoyRecord.class, int.class);
   static final ConstructorRef BASIC_PARAM_STORE = create(BasicParamStore.class, int.class);
-  static final ConstructorRef ADVISING_STRING_BUILDER = create(AdvisingStringBuilder.class);
 
   abstract TypeInfo instanceClass();
 

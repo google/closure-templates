@@ -21,6 +21,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import com.google.common.base.Function;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
+import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SoyAbstractValue;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyDict;
@@ -136,7 +137,7 @@ public final class DictImpl extends SoyAbstractValue implements SoyDict {
 
   @Override
   public final String coerceToString() {
-    StringBuilder mapStr = new StringBuilder();
+    LoggingAdvisingAppendable mapStr = LoggingAdvisingAppendable.buffering();
     try {
       render(mapStr);
     } catch (IOException e) {
@@ -146,7 +147,7 @@ public final class DictImpl extends SoyAbstractValue implements SoyDict {
   }
 
   @Override
-  public void render(Appendable appendable) throws IOException {
+  public void render(LoggingAdvisingAppendable appendable) throws IOException {
     appendable.append('{');
 
     boolean isFirst = true;
