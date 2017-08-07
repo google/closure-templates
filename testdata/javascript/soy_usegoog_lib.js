@@ -3881,7 +3881,7 @@ goog.addDependency('result/simpleresult.js', ['goog.result.SimpleResult', 'goog.
 goog.addDependency('result/simpleresult_test.js', ['goog.result.SimpleResultTest'], ['goog.Promise', 'goog.Thenable', 'goog.Timer', 'goog.result', 'goog.testing.MockClock', 'goog.testing.jsunit', 'goog.testing.recordFunction'], {});
 goog.addDependency('result/transform_test.js', ['goog.result.transformTest'], ['goog.Timer', 'goog.result', 'goog.result.SimpleResult', 'goog.testing.MockClock', 'goog.testing.jsunit', 'goog.testing.recordFunction'], {});
 goog.addDependency('result/wait_test.js', ['goog.result.waitTest'], ['goog.Timer', 'goog.result', 'goog.result.SimpleResult', 'goog.testing.MockClock', 'goog.testing.jsunit', 'goog.testing.recordFunction'], {});
-goog.addDependency('soy/data.js', ['goog.soy.data.SanitizedContent', 'goog.soy.data.SanitizedContentKind', 'goog.soy.data.SanitizedCss', 'goog.soy.data.SanitizedHtml', 'goog.soy.data.SanitizedHtmlAttribute', 'goog.soy.data.SanitizedJs', 'goog.soy.data.SanitizedTrustedResourceUri', 'goog.soy.data.SanitizedUri', 'goog.soy.data.UnsanitizedText'], ['goog.Uri', 'goog.asserts', 'goog.html.SafeHtml', 'goog.html.SafeScript', 'goog.html.SafeStyle', 'goog.html.SafeStyleSheet', 'goog.html.SafeUrl', 'goog.html.TrustedResourceUrl', 'goog.html.uncheckedconversions', 'goog.i18n.bidi.Dir', 'goog.string.Const'], {});
+goog.addDependency('soy/data.js', ['goog.soy.data.SanitizedContent', 'goog.soy.data.SanitizedContentKind', 'goog.soy.data.SanitizedCss', 'goog.soy.data.SanitizedHtml', 'goog.soy.data.SanitizedHtmlAttribute', 'goog.soy.data.SanitizedJs', 'goog.soy.data.SanitizedStyle', 'goog.soy.data.SanitizedTrustedResourceUri', 'goog.soy.data.SanitizedUri', 'goog.soy.data.UnsanitizedText'], ['goog.Uri', 'goog.asserts', 'goog.html.SafeHtml', 'goog.html.SafeScript', 'goog.html.SafeStyle', 'goog.html.SafeStyleSheet', 'goog.html.SafeUrl', 'goog.html.TrustedResourceUrl', 'goog.html.uncheckedconversions', 'goog.i18n.bidi.Dir', 'goog.string.Const'], {});
 goog.addDependency('soy/data_test.js', ['goog.soy.dataTest'], ['goog.html.SafeHtml', 'goog.html.SafeStyleSheet', 'goog.html.SafeUrl', 'goog.soy.testHelper', 'goog.testing.jsunit'], {});
 goog.addDependency('soy/renderer.js', ['goog.soy.InjectedDataSupplier', 'goog.soy.Renderer'], ['goog.asserts', 'goog.dom', 'goog.soy', 'goog.soy.data.SanitizedContent', 'goog.soy.data.SanitizedContentKind'], {});
 goog.addDependency('soy/renderer_test.js', ['goog.soy.RendererTest'], ['goog.dom', 'goog.dom.NodeType', 'goog.dom.TagName', 'goog.html.SafeHtml', 'goog.i18n.bidi.Dir', 'goog.soy.Renderer', 'goog.soy.data.SanitizedContentKind', 'goog.soy.testHelper', 'goog.testing.jsunit', 'goog.testing.recordFunction'], {});
@@ -23522,6 +23522,7 @@ goog.provide('goog.soy.data.SanitizedCss');
 goog.provide('goog.soy.data.SanitizedHtml');
 goog.provide('goog.soy.data.SanitizedHtmlAttribute');
 goog.provide('goog.soy.data.SanitizedJs');
+goog.provide('goog.soy.data.SanitizedStyle');
 goog.provide('goog.soy.data.SanitizedTrustedResourceUri');
 goog.provide('goog.soy.data.SanitizedUri');
 goog.provide('goog.soy.data.UnsanitizedText');
@@ -23584,6 +23585,9 @@ goog.soy.data.SanitizedContentKind = {
    * A CSS3 declaration, property, value or group of semicolon separated
    * declarations.
    */
+  STYLE: goog.DEBUG ? {sanitizedContentStyle: true} : {},
+
+  /** A CSS3 style sheet (list of rules). */
   CSS: goog.DEBUG ? {sanitizedContentCss: true} : {},
 
   /**
@@ -23904,9 +23908,47 @@ goog.soy.data.SanitizedHtmlAttribute.isCompatibleWith = function(value) {
 
 
 /**
- * Content of type {@link goog.soy.data.SanitizedContentKind.CSS}.
+ * Content of type {@link goog.soy.data.SanitizedContentKind.STYLE}.
  *
  * The content is non-attacker-exploitable CSS, such as {@code color:#c3d9ff}.
+ * The content direction is LTR.
+ *
+ * @extends {goog.soy.data.SanitizedContent}
+ * @constructor
+ */
+goog.soy.data.SanitizedStyle = function() {
+  goog.soy.data.SanitizedStyle.base(this, 'constructor');
+};
+goog.inherits(goog.soy.data.SanitizedStyle, goog.soy.data.SanitizedContent);
+
+
+/** @override */
+goog.soy.data.SanitizedStyle.prototype.contentKind =
+    goog.soy.data.SanitizedContentKind.STYLE;
+
+
+/** @override */
+goog.soy.data.SanitizedStyle.prototype.contentDir = goog.i18n.bidi.Dir.LTR;
+
+
+/**
+ * Checks if the value could be used as the Soy type {css}.
+ * @param {*} value
+ * @return {boolean}
+ */
+goog.soy.data.SanitizedStyle.isCompatibleWith = function(value) {
+  return goog.isString(value) ||
+      value instanceof goog.soy.data.SanitizedStyle ||
+      value instanceof goog.soy.data.UnsanitizedText ||
+      value instanceof goog.html.SafeStyle;
+};
+
+
+
+/**
+ * Content of type {@link goog.soy.data.SanitizedContentKind.CSS}.
+ *
+ * The content is non-attacker-exploitable CSS, such as {@code @import url(x)}.
  * The content direction is LTR.
  *
  * @extends {goog.soy.data.SanitizedContent}
@@ -23936,7 +23978,7 @@ goog.soy.data.SanitizedCss.isCompatibleWith = function(value) {
   return goog.isString(value) ||
       value instanceof goog.soy.data.SanitizedCss ||
       value instanceof goog.soy.data.UnsanitizedText ||
-      value instanceof goog.html.SafeStyle ||
+      value instanceof goog.html.SafeStyle ||  // TODO(jakubvrana): Delete.
       value instanceof goog.html.SafeStyleSheet;
 };
 
