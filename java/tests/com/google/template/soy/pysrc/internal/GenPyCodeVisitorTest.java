@@ -47,6 +47,7 @@ public final class GenPyCodeVisitorTest {
           + "\"\"\"\n"
           + "\n"
           + "from __future__ import unicode_literals\n"
+          + "from __future__ import division\n"
           + "import collections\n"
           + "import math\n"
           + "import random\n"

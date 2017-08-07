@@ -802,6 +802,9 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     /** Helper for visitSoyFileNode(SoyFileNode) to add code to require general dependencies. */
     private void addCodeToRequireGeneralDeps() {
       pyCodeBuilder.appendLine("from __future__ import unicode_literals");
+      // In python 2, division always return integers. Using python 3 behaviors is better aligned
+      // with other backends.
+      pyCodeBuilder.appendLine("from __future__ import division");
 
       pyCodeBuilder.appendLine("import collections");
       pyCodeBuilder.appendLine("import math");

@@ -3490,8 +3490,8 @@ goog.addDependency('i18n/datetimepatterns.js', ['goog.i18n.DateTimePatterns', 'g
 goog.addDependency('i18n/datetimepatternsext.js', ['goog.i18n.DateTimePatternsExt', 'goog.i18n.DateTimePatterns_af_NA', 'goog.i18n.DateTimePatterns_af_ZA', 'goog.i18n.DateTimePatterns_agq', 'goog.i18n.DateTimePatterns_agq_CM', 'goog.i18n.DateTimePatterns_ak', 'goog.i18n.DateTimePatterns_ak_GH', 'goog.i18n.DateTimePatterns_am_ET', 'goog.i18n.DateTimePatterns_ar_001', 'goog.i18n.DateTimePatterns_ar_AE', 'goog.i18n.DateTimePatterns_ar_BH', 'goog.i18n.DateTimePatterns_ar_DJ', 'goog.i18n.DateTimePatterns_ar_EG', 'goog.i18n.DateTimePatterns_ar_EH', 'goog.i18n.DateTimePatterns_ar_ER', 'goog.i18n.DateTimePatterns_ar_IL', 'goog.i18n.DateTimePatterns_ar_IQ', 'goog.i18n.DateTimePatterns_ar_JO', 'goog.i18n.DateTimePatterns_ar_KM', 'goog.i18n.DateTimePatterns_ar_KW', 'goog.i18n.DateTimePatterns_ar_LB', 'goog.i18n.DateTimePatterns_ar_LY', 'goog.i18n.DateTimePatterns_ar_MA', 'goog.i18n.DateTimePatterns_ar_MR', 'goog.i18n.DateTimePatterns_ar_OM', 'goog.i18n.DateTimePatterns_ar_PS', 'goog.i18n.DateTimePatterns_ar_QA', 'goog.i18n.DateTimePatterns_ar_SA', 'goog.i18n.DateTimePatterns_ar_SD', 'goog.i18n.DateTimePatterns_ar_SO', 'goog.i18n.DateTimePatterns_ar_SS', 'goog.i18n.DateTimePatterns_ar_SY', 'goog.i18n.DateTimePatterns_ar_TD', 'goog.i18n.DateTimePatterns_ar_TN', 'goog.i18n.DateTimePatterns_ar_XB', 'goog.i18n.DateTimePatterns_ar_YE', 'goog.i18n.DateTimePatterns_as', 'goog.i18n.DateTimePatterns_as_IN', 'goog.i18n.DateTimePatterns_asa', 'goog.i18n.DateTimePatterns_asa_TZ', 'goog.i18n.DateTimePatterns_ast', 'goog.i18n.DateTimePatterns_ast_ES', 'goog.i18n.DateTimePatterns_az_Cyrl', 'goog.i18n.DateTimePatterns_az_Cyrl_AZ', 'goog.i18n.DateTimePatterns_az_Latn', 'goog.i18n.DateTimePatterns_az_Latn_AZ', 'goog.i18n.DateTimePatterns_bas', 'goog.i18n.DateTimePatterns_bas_CM', 'goog.i18n.DateTimePatterns_be_BY', 'goog.i18n.DateTimePatterns_bem', 'goog.i18n.DateTimePatterns_bem_ZM', 'goog.i18n.DateTimePatterns_bez', 'goog.i18n.DateTimePatterns_bez_TZ', 'goog.i18n.DateTimePatterns_bg_BG', 'goog.i18n.DateTimePatterns_bm', 'goog.i18n.DateTimePatterns_bm_ML', 'goog.i18n.DateTimePatterns_bn_BD', 'goog.i18n.DateTimePatterns_bn_IN', 'goog.i18n.DateTimePatterns_bo', 'goog.i18n.DateTimePatterns_bo_CN', 'goog.i18n.DateTimePatterns_bo_IN', 'goog.i18n.DateTimePatterns_br_FR', 'goog.i18n.DateTimePatterns_brx', 'goog.i18n.DateTimePatterns_brx_IN', 'goog.i18n.DateTimePatterns_bs_Cyrl', 'goog.i18n.DateTimePatterns_bs_Cyrl_BA', 'goog.i18n.DateTimePatterns_bs_Latn', 'goog.i18n.DateTimePatterns_bs_Latn_BA', 'goog.i18n.DateTimePatterns_ca_AD', 'goog.i18n.DateTimePatterns_ca_ES', 'goog.i18n.DateTimePatterns_ca_FR', 'goog.i18n.DateTimePatterns_ca_IT', 'goog.i18n.DateTimePatterns_ce', 'goog.i18n.DateTimePatterns_ce_RU', 'goog.i18n.DateTimePatterns_cgg', 'goog.i18n.DateTimePatterns_cgg_UG', 'goog.i18n.DateTimePatterns_chr_US', 'goog.i18n.DateTimePatterns_ckb', 'goog.i18n.DateTimePatterns_ckb_IQ', 'goog.i18n.DateTimePatterns_ckb_IR', 'goog.i18n.DateTimePatterns_cs_CZ', 'goog.i18n.DateTimePatterns_cy_GB', 'goog.i18n.DateTimePatterns_da_DK', 'goog.i18n.DateTimePatterns_da_GL', 'goog.i18n.DateTimePatterns_dav', 'goog.i18n.DateTimePatterns_dav_KE', 'goog.i18n.DateTimePatterns_de_BE', 'goog.i18n.DateTimePatterns_de_DE', 'goog.i18n.DateTimePatterns_de_IT', 'goog.i18n.DateTimePatterns_de_LI', 'goog.i18n.DateTimePatterns_de_LU', 'goog.i18n.DateTimePatterns_dje', 'goog.i18n.DateTimePatterns_dje_NE', 'goog.i18n.DateTimePatterns_dsb', 'goog.i18n.DateTimePatterns_dsb_DE', 'goog.i18n.DateTimePatterns_dua', 'goog.i18n.DateTimePatterns_dua_CM', 'goog.i18n.DateTimePatterns_dyo', 'goog.i18n.DateTimePatterns_dyo_SN', 'goog.i18n.DateTimePatterns_dz', 'goog.i18n.DateTimePatterns_dz_BT', 'goog.i18n.DateTimePatterns_ebu', 'goog.i18n.DateTimePatterns_ebu_KE', 'goog.i18n.DateTimePatterns_ee', 'goog.i18n.DateTimePatterns_ee_GH', 'goog.i18n.DateTimePatterns_ee_TG', 'goog.i18n.DateTimePatterns_el_CY', 'goog.i18n.DateTimePatterns_el_GR', 'goog.i18n.DateTimePatterns_en_001', 'goog.i18n.DateTimePatterns_en_150', 'goog.i18n.DateTimePatterns_en_AG', 'goog.i18n.DateTimePatterns_en_AI', 'goog.i18n.DateTimePatterns_en_AS', 'goog.i18n.DateTimePatterns_en_AT', 'goog.i18n.DateTimePatterns_en_BB', 'goog.i18n.DateTimePatterns_en_BE', 'goog.i18n.DateTimePatterns_en_BI', 'goog.i18n.DateTimePatterns_en_BM', 'goog.i18n.DateTimePatterns_en_BS', 'goog.i18n.DateTimePatterns_en_BW', 'goog.i18n.DateTimePatterns_en_BZ', 'goog.i18n.DateTimePatterns_en_CC', 'goog.i18n.DateTimePatterns_en_CH', 'goog.i18n.DateTimePatterns_en_CK', 'goog.i18n.DateTimePatterns_en_CM', 'goog.i18n.DateTimePatterns_en_CX', 'goog.i18n.DateTimePatterns_en_CY', 'goog.i18n.DateTimePatterns_en_DE', 'goog.i18n.DateTimePatterns_en_DG', 'goog.i18n.DateTimePatterns_en_DK', 'goog.i18n.DateTimePatterns_en_DM', 'goog.i18n.DateTimePatterns_en_ER', 'goog.i18n.DateTimePatterns_en_FI', 'goog.i18n.DateTimePatterns_en_FJ', 'goog.i18n.DateTimePatterns_en_FK', 'goog.i18n.DateTimePatterns_en_FM', 'goog.i18n.DateTimePatterns_en_GD', 'goog.i18n.DateTimePatterns_en_GG', 'goog.i18n.DateTimePatterns_en_GH', 'goog.i18n.DateTimePatterns_en_GI', 'goog.i18n.DateTimePatterns_en_GM', 'goog.i18n.DateTimePatterns_en_GU', 'goog.i18n.DateTimePatterns_en_GY', 'goog.i18n.DateTimePatterns_en_HK', 'goog.i18n.DateTimePatterns_en_IL', 'goog.i18n.DateTimePatterns_en_IM', 'goog.i18n.DateTimePatterns_en_IO', 'goog.i18n.DateTimePatterns_en_JE', 'goog.i18n.DateTimePatterns_en_JM', 'goog.i18n.DateTimePatterns_en_KE', 'goog.i18n.DateTimePatterns_en_KI', 'goog.i18n.DateTimePatterns_en_KN', 'goog.i18n.DateTimePatterns_en_KY', 'goog.i18n.DateTimePatterns_en_LC', 'goog.i18n.DateTimePatterns_en_LR', 'goog.i18n.DateTimePatterns_en_LS', 'goog.i18n.DateTimePatterns_en_MG', 'goog.i18n.DateTimePatterns_en_MH', 'goog.i18n.DateTimePatterns_en_MO', 'goog.i18n.DateTimePatterns_en_MP', 'goog.i18n.DateTimePatterns_en_MS', 'goog.i18n.DateTimePatterns_en_MT', 'goog.i18n.DateTimePatterns_en_MU', 'goog.i18n.DateTimePatterns_en_MW', 'goog.i18n.DateTimePatterns_en_MY', 'goog.i18n.DateTimePatterns_en_NA', 'goog.i18n.DateTimePatterns_en_NF', 'goog.i18n.DateTimePatterns_en_NG', 'goog.i18n.DateTimePatterns_en_NL', 'goog.i18n.DateTimePatterns_en_NR', 'goog.i18n.DateTimePatterns_en_NU', 'goog.i18n.DateTimePatterns_en_NZ', 'goog.i18n.DateTimePatterns_en_PG', 'goog.i18n.DateTimePatterns_en_PH', 'goog.i18n.DateTimePatterns_en_PK', 'goog.i18n.DateTimePatterns_en_PN', 'goog.i18n.DateTimePatterns_en_PR', 'goog.i18n.DateTimePatterns_en_PW', 'goog.i18n.DateTimePatterns_en_RW', 'goog.i18n.DateTimePatterns_en_SB', 'goog.i18n.DateTimePatterns_en_SC', 'goog.i18n.DateTimePatterns_en_SD', 'goog.i18n.DateTimePatterns_en_SE', 'goog.i18n.DateTimePatterns_en_SH', 'goog.i18n.DateTimePatterns_en_SI', 'goog.i18n.DateTimePatterns_en_SL', 'goog.i18n.DateTimePatterns_en_SS', 'goog.i18n.DateTimePatterns_en_SX', 'goog.i18n.DateTimePatterns_en_SZ', 'goog.i18n.DateTimePatterns_en_TC', 'goog.i18n.DateTimePatterns_en_TK', 'goog.i18n.DateTimePatterns_en_TO', 'goog.i18n.DateTimePatterns_en_TT', 'goog.i18n.DateTimePatterns_en_TV', 'goog.i18n.DateTimePatterns_en_TZ', 'goog.i18n.DateTimePatterns_en_UG', 'goog.i18n.DateTimePatterns_en_UM', 'goog.i18n.DateTimePatterns_en_US_POSIX', 'goog.i18n.DateTimePatterns_en_VC', 'goog.i18n.DateTimePatterns_en_VG', 'goog.i18n.DateTimePatterns_en_VI', 'goog.i18n.DateTimePatterns_en_VU', 'goog.i18n.DateTimePatterns_en_WS', 'goog.i18n.DateTimePatterns_en_XA', 'goog.i18n.DateTimePatterns_en_ZM', 'goog.i18n.DateTimePatterns_en_ZW', 'goog.i18n.DateTimePatterns_eo', 'goog.i18n.DateTimePatterns_es_AR', 'goog.i18n.DateTimePatterns_es_BO', 'goog.i18n.DateTimePatterns_es_BR', 'goog.i18n.DateTimePatterns_es_BZ', 'goog.i18n.DateTimePatterns_es_CL', 'goog.i18n.DateTimePatterns_es_CO', 'goog.i18n.DateTimePatterns_es_CR', 'goog.i18n.DateTimePatterns_es_CU', 'goog.i18n.DateTimePatterns_es_DO', 'goog.i18n.DateTimePatterns_es_EA', 'goog.i18n.DateTimePatterns_es_EC', 'goog.i18n.DateTimePatterns_es_GQ', 'goog.i18n.DateTimePatterns_es_GT', 'goog.i18n.DateTimePatterns_es_HN', 'goog.i18n.DateTimePatterns_es_IC', 'goog.i18n.DateTimePatterns_es_NI', 'goog.i18n.DateTimePatterns_es_PA', 'goog.i18n.DateTimePatterns_es_PE', 'goog.i18n.DateTimePatterns_es_PH', 'goog.i18n.DateTimePatterns_es_PR', 'goog.i18n.DateTimePatterns_es_PY', 'goog.i18n.DateTimePatterns_es_SV', 'goog.i18n.DateTimePatterns_es_UY', 'goog.i18n.DateTimePatterns_es_VE', 'goog.i18n.DateTimePatterns_et_EE', 'goog.i18n.DateTimePatterns_eu_ES', 'goog.i18n.DateTimePatterns_ewo', 'goog.i18n.DateTimePatterns_ewo_CM', 'goog.i18n.DateTimePatterns_fa_AF', 'goog.i18n.DateTimePatterns_fa_IR', 'goog.i18n.DateTimePatterns_ff', 'goog.i18n.DateTimePatterns_ff_CM', 'goog.i18n.DateTimePatterns_ff_GN', 'goog.i18n.DateTimePatterns_ff_MR', 'goog.i18n.DateTimePatterns_ff_SN', 'goog.i18n.DateTimePatterns_fi_FI', 'goog.i18n.DateTimePatterns_fil_PH', 'goog.i18n.DateTimePatterns_fo', 'goog.i18n.DateTimePatterns_fo_DK', 'goog.i18n.DateTimePatterns_fo_FO', 'goog.i18n.DateTimePatterns_fr_BE', 'goog.i18n.DateTimePatterns_fr_BF', 'goog.i18n.DateTimePatterns_fr_BI', 'goog.i18n.DateTimePatterns_fr_BJ', 'goog.i18n.DateTimePatterns_fr_BL', 'goog.i18n.DateTimePatterns_fr_CD', 'goog.i18n.DateTimePatterns_fr_CF', 'goog.i18n.DateTimePatterns_fr_CG', 'goog.i18n.DateTimePatterns_fr_CH', 'goog.i18n.DateTimePatterns_fr_CI', 'goog.i18n.DateTimePatterns_fr_CM', 'goog.i18n.DateTimePatterns_fr_DJ', 'goog.i18n.DateTimePatterns_fr_DZ', 'goog.i18n.DateTimePatterns_fr_FR', 'goog.i18n.DateTimePatterns_fr_GA', 'goog.i18n.DateTimePatterns_fr_GF', 'goog.i18n.DateTimePatterns_fr_GN', 'goog.i18n.DateTimePatterns_fr_GP', 'goog.i18n.DateTimePatterns_fr_GQ', 'goog.i18n.DateTimePatterns_fr_HT', 'goog.i18n.DateTimePatterns_fr_KM', 'goog.i18n.DateTimePatterns_fr_LU', 'goog.i18n.DateTimePatterns_fr_MA', 'goog.i18n.DateTimePatterns_fr_MC', 'goog.i18n.DateTimePatterns_fr_MF', 'goog.i18n.DateTimePatterns_fr_MG', 'goog.i18n.DateTimePatterns_fr_ML', 'goog.i18n.DateTimePatterns_fr_MQ', 'goog.i18n.DateTimePatterns_fr_MR', 'goog.i18n.DateTimePatterns_fr_MU', 'goog.i18n.DateTimePatterns_fr_NC', 'goog.i18n.DateTimePatterns_fr_NE', 'goog.i18n.DateTimePatterns_fr_PF', 'goog.i18n.DateTimePatterns_fr_PM', 'goog.i18n.DateTimePatterns_fr_RE', 'goog.i18n.DateTimePatterns_fr_RW', 'goog.i18n.DateTimePatterns_fr_SC', 'goog.i18n.DateTimePatterns_fr_SN', 'goog.i18n.DateTimePatterns_fr_SY', 'goog.i18n.DateTimePatterns_fr_TD', 'goog.i18n.DateTimePatterns_fr_TG', 'goog.i18n.DateTimePatterns_fr_TN', 'goog.i18n.DateTimePatterns_fr_VU', 'goog.i18n.DateTimePatterns_fr_WF', 'goog.i18n.DateTimePatterns_fr_YT', 'goog.i18n.DateTimePatterns_fur', 'goog.i18n.DateTimePatterns_fur_IT', 'goog.i18n.DateTimePatterns_fy', 'goog.i18n.DateTimePatterns_fy_NL', 'goog.i18n.DateTimePatterns_ga_IE', 'goog.i18n.DateTimePatterns_gd', 'goog.i18n.DateTimePatterns_gd_GB', 'goog.i18n.DateTimePatterns_gl_ES', 'goog.i18n.DateTimePatterns_gsw_CH', 'goog.i18n.DateTimePatterns_gsw_FR', 'goog.i18n.DateTimePatterns_gsw_LI', 'goog.i18n.DateTimePatterns_gu_IN', 'goog.i18n.DateTimePatterns_guz', 'goog.i18n.DateTimePatterns_guz_KE', 'goog.i18n.DateTimePatterns_gv', 'goog.i18n.DateTimePatterns_gv_IM', 'goog.i18n.DateTimePatterns_ha', 'goog.i18n.DateTimePatterns_ha_GH', 'goog.i18n.DateTimePatterns_ha_NE', 'goog.i18n.DateTimePatterns_ha_NG', 'goog.i18n.DateTimePatterns_haw_US', 'goog.i18n.DateTimePatterns_he_IL', 'goog.i18n.DateTimePatterns_hi_IN', 'goog.i18n.DateTimePatterns_hr_BA', 'goog.i18n.DateTimePatterns_hr_HR', 'goog.i18n.DateTimePatterns_hsb', 'goog.i18n.DateTimePatterns_hsb_DE', 'goog.i18n.DateTimePatterns_hu_HU', 'goog.i18n.DateTimePatterns_hy_AM', 'goog.i18n.DateTimePatterns_id_ID', 'goog.i18n.DateTimePatterns_ig', 'goog.i18n.DateTimePatterns_ig_NG', 'goog.i18n.DateTimePatterns_ii', 'goog.i18n.DateTimePatterns_ii_CN', 'goog.i18n.DateTimePatterns_is_IS', 'goog.i18n.DateTimePatterns_it_CH', 'goog.i18n.DateTimePatterns_it_IT', 'goog.i18n.DateTimePatterns_it_SM', 'goog.i18n.DateTimePatterns_it_VA', 'goog.i18n.DateTimePatterns_ja_JP', 'goog.i18n.DateTimePatterns_jgo', 'goog.i18n.DateTimePatterns_jgo_CM', 'goog.i18n.DateTimePatterns_jmc', 'goog.i18n.DateTimePatterns_jmc_TZ', 'goog.i18n.DateTimePatterns_ka_GE', 'goog.i18n.DateTimePatterns_kab', 'goog.i18n.DateTimePatterns_kab_DZ', 'goog.i18n.DateTimePatterns_kam', 'goog.i18n.DateTimePatterns_kam_KE', 'goog.i18n.DateTimePatterns_kde', 'goog.i18n.DateTimePatterns_kde_TZ', 'goog.i18n.DateTimePatterns_kea', 'goog.i18n.DateTimePatterns_kea_CV', 'goog.i18n.DateTimePatterns_khq', 'goog.i18n.DateTimePatterns_khq_ML', 'goog.i18n.DateTimePatterns_ki', 'goog.i18n.DateTimePatterns_ki_KE', 'goog.i18n.DateTimePatterns_kk_KZ', 'goog.i18n.DateTimePatterns_kkj', 'goog.i18n.DateTimePatterns_kkj_CM', 'goog.i18n.DateTimePatterns_kl', 'goog.i18n.DateTimePatterns_kl_GL', 'goog.i18n.DateTimePatterns_kln', 'goog.i18n.DateTimePatterns_kln_KE', 'goog.i18n.DateTimePatterns_km_KH', 'goog.i18n.DateTimePatterns_kn_IN', 'goog.i18n.DateTimePatterns_ko_KP', 'goog.i18n.DateTimePatterns_ko_KR', 'goog.i18n.DateTimePatterns_kok', 'goog.i18n.DateTimePatterns_kok_IN', 'goog.i18n.DateTimePatterns_ks', 'goog.i18n.DateTimePatterns_ks_IN', 'goog.i18n.DateTimePatterns_ksb', 'goog.i18n.DateTimePatterns_ksb_TZ', 'goog.i18n.DateTimePatterns_ksf', 'goog.i18n.DateTimePatterns_ksf_CM', 'goog.i18n.DateTimePatterns_ksh', 'goog.i18n.DateTimePatterns_ksh_DE', 'goog.i18n.DateTimePatterns_kw', 'goog.i18n.DateTimePatterns_kw_GB', 'goog.i18n.DateTimePatterns_ky_KG', 'goog.i18n.DateTimePatterns_lag', 'goog.i18n.DateTimePatterns_lag_TZ', 'goog.i18n.DateTimePatterns_lb', 'goog.i18n.DateTimePatterns_lb_LU', 'goog.i18n.DateTimePatterns_lg', 'goog.i18n.DateTimePatterns_lg_UG', 'goog.i18n.DateTimePatterns_lkt', 'goog.i18n.DateTimePatterns_lkt_US', 'goog.i18n.DateTimePatterns_ln_AO', 'goog.i18n.DateTimePatterns_ln_CD', 'goog.i18n.DateTimePatterns_ln_CF', 'goog.i18n.DateTimePatterns_ln_CG', 'goog.i18n.DateTimePatterns_lo_LA', 'goog.i18n.DateTimePatterns_lrc', 'goog.i18n.DateTimePatterns_lrc_IQ', 'goog.i18n.DateTimePatterns_lrc_IR', 'goog.i18n.DateTimePatterns_lt_LT', 'goog.i18n.DateTimePatterns_lu', 'goog.i18n.DateTimePatterns_lu_CD', 'goog.i18n.DateTimePatterns_luo', 'goog.i18n.DateTimePatterns_luo_KE', 'goog.i18n.DateTimePatterns_luy', 'goog.i18n.DateTimePatterns_luy_KE', 'goog.i18n.DateTimePatterns_lv_LV', 'goog.i18n.DateTimePatterns_mas', 'goog.i18n.DateTimePatterns_mas_KE', 'goog.i18n.DateTimePatterns_mas_TZ', 'goog.i18n.DateTimePatterns_mer', 'goog.i18n.DateTimePatterns_mer_KE', 'goog.i18n.DateTimePatterns_mfe', 'goog.i18n.DateTimePatterns_mfe_MU', 'goog.i18n.DateTimePatterns_mg', 'goog.i18n.DateTimePatterns_mg_MG', 'goog.i18n.DateTimePatterns_mgh', 'goog.i18n.DateTimePatterns_mgh_MZ', 'goog.i18n.DateTimePatterns_mgo', 'goog.i18n.DateTimePatterns_mgo_CM', 'goog.i18n.DateTimePatterns_mk_MK', 'goog.i18n.DateTimePatterns_ml_IN', 'goog.i18n.DateTimePatterns_mn_MN', 'goog.i18n.DateTimePatterns_mr_IN', 'goog.i18n.DateTimePatterns_ms_BN', 'goog.i18n.DateTimePatterns_ms_MY', 'goog.i18n.DateTimePatterns_ms_SG', 'goog.i18n.DateTimePatterns_mt_MT', 'goog.i18n.DateTimePatterns_mua', 'goog.i18n.DateTimePatterns_mua_CM', 'goog.i18n.DateTimePatterns_my_MM', 'goog.i18n.DateTimePatterns_mzn', 'goog.i18n.DateTimePatterns_mzn_IR', 'goog.i18n.DateTimePatterns_naq', 'goog.i18n.DateTimePatterns_naq_NA', 'goog.i18n.DateTimePatterns_nb_NO', 'goog.i18n.DateTimePatterns_nb_SJ', 'goog.i18n.DateTimePatterns_nd', 'goog.i18n.DateTimePatterns_nd_ZW', 'goog.i18n.DateTimePatterns_nds', 'goog.i18n.DateTimePatterns_nds_DE', 'goog.i18n.DateTimePatterns_nds_NL', 'goog.i18n.DateTimePatterns_ne_IN', 'goog.i18n.DateTimePatterns_ne_NP', 'goog.i18n.DateTimePatterns_nl_AW', 'goog.i18n.DateTimePatterns_nl_BE', 'goog.i18n.DateTimePatterns_nl_BQ', 'goog.i18n.DateTimePatterns_nl_CW', 'goog.i18n.DateTimePatterns_nl_NL', 'goog.i18n.DateTimePatterns_nl_SR', 'goog.i18n.DateTimePatterns_nl_SX', 'goog.i18n.DateTimePatterns_nmg', 'goog.i18n.DateTimePatterns_nmg_CM', 'goog.i18n.DateTimePatterns_nn', 'goog.i18n.DateTimePatterns_nn_NO', 'goog.i18n.DateTimePatterns_nnh', 'goog.i18n.DateTimePatterns_nnh_CM', 'goog.i18n.DateTimePatterns_nus', 'goog.i18n.DateTimePatterns_nus_SS', 'goog.i18n.DateTimePatterns_nyn', 'goog.i18n.DateTimePatterns_nyn_UG', 'goog.i18n.DateTimePatterns_om', 'goog.i18n.DateTimePatterns_om_ET', 'goog.i18n.DateTimePatterns_om_KE', 'goog.i18n.DateTimePatterns_or_IN', 'goog.i18n.DateTimePatterns_os', 'goog.i18n.DateTimePatterns_os_GE', 'goog.i18n.DateTimePatterns_os_RU', 'goog.i18n.DateTimePatterns_pa_Arab', 'goog.i18n.DateTimePatterns_pa_Arab_PK', 'goog.i18n.DateTimePatterns_pa_Guru', 'goog.i18n.DateTimePatterns_pa_Guru_IN', 'goog.i18n.DateTimePatterns_pl_PL', 'goog.i18n.DateTimePatterns_ps', 'goog.i18n.DateTimePatterns_ps_AF', 'goog.i18n.DateTimePatterns_pt_AO', 'goog.i18n.DateTimePatterns_pt_CH', 'goog.i18n.DateTimePatterns_pt_CV', 'goog.i18n.DateTimePatterns_pt_GQ', 'goog.i18n.DateTimePatterns_pt_GW', 'goog.i18n.DateTimePatterns_pt_LU', 'goog.i18n.DateTimePatterns_pt_MO', 'goog.i18n.DateTimePatterns_pt_MZ', 'goog.i18n.DateTimePatterns_pt_ST', 'goog.i18n.DateTimePatterns_pt_TL', 'goog.i18n.DateTimePatterns_qu', 'goog.i18n.DateTimePatterns_qu_BO', 'goog.i18n.DateTimePatterns_qu_EC', 'goog.i18n.DateTimePatterns_qu_PE', 'goog.i18n.DateTimePatterns_rm', 'goog.i18n.DateTimePatterns_rm_CH', 'goog.i18n.DateTimePatterns_rn', 'goog.i18n.DateTimePatterns_rn_BI', 'goog.i18n.DateTimePatterns_ro_MD', 'goog.i18n.DateTimePatterns_ro_RO', 'goog.i18n.DateTimePatterns_rof', 'goog.i18n.DateTimePatterns_rof_TZ', 'goog.i18n.DateTimePatterns_ru_BY', 'goog.i18n.DateTimePatterns_ru_KG', 'goog.i18n.DateTimePatterns_ru_KZ', 'goog.i18n.DateTimePatterns_ru_MD', 'goog.i18n.DateTimePatterns_ru_RU', 'goog.i18n.DateTimePatterns_ru_UA', 'goog.i18n.DateTimePatterns_rw', 'goog.i18n.DateTimePatterns_rw_RW', 'goog.i18n.DateTimePatterns_rwk', 'goog.i18n.DateTimePatterns_rwk_TZ', 'goog.i18n.DateTimePatterns_sah', 'goog.i18n.DateTimePatterns_sah_RU', 'goog.i18n.DateTimePatterns_saq', 'goog.i18n.DateTimePatterns_saq_KE', 'goog.i18n.DateTimePatterns_sbp', 'goog.i18n.DateTimePatterns_sbp_TZ', 'goog.i18n.DateTimePatterns_se', 'goog.i18n.DateTimePatterns_se_FI', 'goog.i18n.DateTimePatterns_se_NO', 'goog.i18n.DateTimePatterns_se_SE', 'goog.i18n.DateTimePatterns_seh', 'goog.i18n.DateTimePatterns_seh_MZ', 'goog.i18n.DateTimePatterns_ses', 'goog.i18n.DateTimePatterns_ses_ML', 'goog.i18n.DateTimePatterns_sg', 'goog.i18n.DateTimePatterns_sg_CF', 'goog.i18n.DateTimePatterns_shi', 'goog.i18n.DateTimePatterns_shi_Latn', 'goog.i18n.DateTimePatterns_shi_Latn_MA', 'goog.i18n.DateTimePatterns_shi_Tfng', 'goog.i18n.DateTimePatterns_shi_Tfng_MA', 'goog.i18n.DateTimePatterns_si_LK', 'goog.i18n.DateTimePatterns_sk_SK', 'goog.i18n.DateTimePatterns_sl_SI', 'goog.i18n.DateTimePatterns_smn', 'goog.i18n.DateTimePatterns_smn_FI', 'goog.i18n.DateTimePatterns_sn', 'goog.i18n.DateTimePatterns_sn_ZW', 'goog.i18n.DateTimePatterns_so', 'goog.i18n.DateTimePatterns_so_DJ', 'goog.i18n.DateTimePatterns_so_ET', 'goog.i18n.DateTimePatterns_so_KE', 'goog.i18n.DateTimePatterns_so_SO', 'goog.i18n.DateTimePatterns_sq_AL', 'goog.i18n.DateTimePatterns_sq_MK', 'goog.i18n.DateTimePatterns_sq_XK', 'goog.i18n.DateTimePatterns_sr_Cyrl', 'goog.i18n.DateTimePatterns_sr_Cyrl_BA', 'goog.i18n.DateTimePatterns_sr_Cyrl_ME', 'goog.i18n.DateTimePatterns_sr_Cyrl_RS', 'goog.i18n.DateTimePatterns_sr_Cyrl_XK', 'goog.i18n.DateTimePatterns_sr_Latn_BA', 'goog.i18n.DateTimePatterns_sr_Latn_ME', 'goog.i18n.DateTimePatterns_sr_Latn_RS', 'goog.i18n.DateTimePatterns_sr_Latn_XK', 'goog.i18n.DateTimePatterns_sv_AX', 'goog.i18n.DateTimePatterns_sv_FI', 'goog.i18n.DateTimePatterns_sv_SE', 'goog.i18n.DateTimePatterns_sw_CD', 'goog.i18n.DateTimePatterns_sw_KE', 'goog.i18n.DateTimePatterns_sw_TZ', 'goog.i18n.DateTimePatterns_sw_UG', 'goog.i18n.DateTimePatterns_ta_IN', 'goog.i18n.DateTimePatterns_ta_LK', 'goog.i18n.DateTimePatterns_ta_MY', 'goog.i18n.DateTimePatterns_ta_SG', 'goog.i18n.DateTimePatterns_te_IN', 'goog.i18n.DateTimePatterns_teo', 'goog.i18n.DateTimePatterns_teo_KE', 'goog.i18n.DateTimePatterns_teo_UG', 'goog.i18n.DateTimePatterns_th_TH', 'goog.i18n.DateTimePatterns_ti', 'goog.i18n.DateTimePatterns_ti_ER', 'goog.i18n.DateTimePatterns_ti_ET', 'goog.i18n.DateTimePatterns_to', 'goog.i18n.DateTimePatterns_to_TO', 'goog.i18n.DateTimePatterns_tr_CY', 'goog.i18n.DateTimePatterns_tr_TR', 'goog.i18n.DateTimePatterns_twq', 'goog.i18n.DateTimePatterns_twq_NE', 'goog.i18n.DateTimePatterns_tzm', 'goog.i18n.DateTimePatterns_tzm_MA', 'goog.i18n.DateTimePatterns_ug', 'goog.i18n.DateTimePatterns_ug_CN', 'goog.i18n.DateTimePatterns_uk_UA', 'goog.i18n.DateTimePatterns_ur_IN', 'goog.i18n.DateTimePatterns_ur_PK', 'goog.i18n.DateTimePatterns_uz_Arab', 'goog.i18n.DateTimePatterns_uz_Arab_AF', 'goog.i18n.DateTimePatterns_uz_Cyrl', 'goog.i18n.DateTimePatterns_uz_Cyrl_UZ', 'goog.i18n.DateTimePatterns_uz_Latn', 'goog.i18n.DateTimePatterns_uz_Latn_UZ', 'goog.i18n.DateTimePatterns_vai', 'goog.i18n.DateTimePatterns_vai_Latn', 'goog.i18n.DateTimePatterns_vai_Latn_LR', 'goog.i18n.DateTimePatterns_vai_Vaii', 'goog.i18n.DateTimePatterns_vai_Vaii_LR', 'goog.i18n.DateTimePatterns_vi_VN', 'goog.i18n.DateTimePatterns_vun', 'goog.i18n.DateTimePatterns_vun_TZ', 'goog.i18n.DateTimePatterns_wae', 'goog.i18n.DateTimePatterns_wae_CH', 'goog.i18n.DateTimePatterns_xog', 'goog.i18n.DateTimePatterns_xog_UG', 'goog.i18n.DateTimePatterns_yav', 'goog.i18n.DateTimePatterns_yav_CM', 'goog.i18n.DateTimePatterns_yi', 'goog.i18n.DateTimePatterns_yi_001', 'goog.i18n.DateTimePatterns_yo', 'goog.i18n.DateTimePatterns_yo_BJ', 'goog.i18n.DateTimePatterns_yo_NG', 'goog.i18n.DateTimePatterns_yue', 'goog.i18n.DateTimePatterns_yue_HK', 'goog.i18n.DateTimePatterns_zgh', 'goog.i18n.DateTimePatterns_zgh_MA', 'goog.i18n.DateTimePatterns_zh_Hans', 'goog.i18n.DateTimePatterns_zh_Hans_CN', 'goog.i18n.DateTimePatterns_zh_Hans_HK', 'goog.i18n.DateTimePatterns_zh_Hans_MO', 'goog.i18n.DateTimePatterns_zh_Hans_SG', 'goog.i18n.DateTimePatterns_zh_Hant', 'goog.i18n.DateTimePatterns_zh_Hant_HK', 'goog.i18n.DateTimePatterns_zh_Hant_MO', 'goog.i18n.DateTimePatterns_zh_Hant_TW', 'goog.i18n.DateTimePatterns_zu_ZA'], ['goog.i18n.DateTimePatterns'], {});
 goog.addDependency('i18n/datetimesymbols.js', ['goog.i18n.DateTimeSymbols', 'goog.i18n.DateTimeSymbolsType', 'goog.i18n.DateTimeSymbols_af', 'goog.i18n.DateTimeSymbols_am', 'goog.i18n.DateTimeSymbols_ar', 'goog.i18n.DateTimeSymbols_ar_DZ', 'goog.i18n.DateTimeSymbols_az', 'goog.i18n.DateTimeSymbols_be', 'goog.i18n.DateTimeSymbols_bg', 'goog.i18n.DateTimeSymbols_bn', 'goog.i18n.DateTimeSymbols_br', 'goog.i18n.DateTimeSymbols_bs', 'goog.i18n.DateTimeSymbols_ca', 'goog.i18n.DateTimeSymbols_chr', 'goog.i18n.DateTimeSymbols_cs', 'goog.i18n.DateTimeSymbols_cy', 'goog.i18n.DateTimeSymbols_da', 'goog.i18n.DateTimeSymbols_de', 'goog.i18n.DateTimeSymbols_de_AT', 'goog.i18n.DateTimeSymbols_de_CH', 'goog.i18n.DateTimeSymbols_el', 'goog.i18n.DateTimeSymbols_en', 'goog.i18n.DateTimeSymbols_en_AU', 'goog.i18n.DateTimeSymbols_en_CA', 'goog.i18n.DateTimeSymbols_en_GB', 'goog.i18n.DateTimeSymbols_en_IE', 'goog.i18n.DateTimeSymbols_en_IN', 'goog.i18n.DateTimeSymbols_en_ISO', 'goog.i18n.DateTimeSymbols_en_SG', 'goog.i18n.DateTimeSymbols_en_US', 'goog.i18n.DateTimeSymbols_en_ZA', 'goog.i18n.DateTimeSymbols_es', 'goog.i18n.DateTimeSymbols_es_419', 'goog.i18n.DateTimeSymbols_es_ES', 'goog.i18n.DateTimeSymbols_es_MX', 'goog.i18n.DateTimeSymbols_es_US', 'goog.i18n.DateTimeSymbols_et', 'goog.i18n.DateTimeSymbols_eu', 'goog.i18n.DateTimeSymbols_fa', 'goog.i18n.DateTimeSymbols_fi', 'goog.i18n.DateTimeSymbols_fil', 'goog.i18n.DateTimeSymbols_fr', 'goog.i18n.DateTimeSymbols_fr_CA', 'goog.i18n.DateTimeSymbols_ga', 'goog.i18n.DateTimeSymbols_gl', 'goog.i18n.DateTimeSymbols_gsw', 'goog.i18n.DateTimeSymbols_gu', 'goog.i18n.DateTimeSymbols_haw', 'goog.i18n.DateTimeSymbols_he', 'goog.i18n.DateTimeSymbols_hi', 'goog.i18n.DateTimeSymbols_hr', 'goog.i18n.DateTimeSymbols_hu', 'goog.i18n.DateTimeSymbols_hy', 'goog.i18n.DateTimeSymbols_id', 'goog.i18n.DateTimeSymbols_in', 'goog.i18n.DateTimeSymbols_is', 'goog.i18n.DateTimeSymbols_it', 'goog.i18n.DateTimeSymbols_iw', 'goog.i18n.DateTimeSymbols_ja', 'goog.i18n.DateTimeSymbols_ka', 'goog.i18n.DateTimeSymbols_kk', 'goog.i18n.DateTimeSymbols_km', 'goog.i18n.DateTimeSymbols_kn', 'goog.i18n.DateTimeSymbols_ko', 'goog.i18n.DateTimeSymbols_ky', 'goog.i18n.DateTimeSymbols_ln', 'goog.i18n.DateTimeSymbols_lo', 'goog.i18n.DateTimeSymbols_lt', 'goog.i18n.DateTimeSymbols_lv', 'goog.i18n.DateTimeSymbols_mk', 'goog.i18n.DateTimeSymbols_ml', 'goog.i18n.DateTimeSymbols_mn', 'goog.i18n.DateTimeSymbols_mo', 'goog.i18n.DateTimeSymbols_mr', 'goog.i18n.DateTimeSymbols_ms', 'goog.i18n.DateTimeSymbols_mt', 'goog.i18n.DateTimeSymbols_my', 'goog.i18n.DateTimeSymbols_nb', 'goog.i18n.DateTimeSymbols_ne', 'goog.i18n.DateTimeSymbols_nl', 'goog.i18n.DateTimeSymbols_no', 'goog.i18n.DateTimeSymbols_no_NO', 'goog.i18n.DateTimeSymbols_or', 'goog.i18n.DateTimeSymbols_pa', 'goog.i18n.DateTimeSymbols_pl', 'goog.i18n.DateTimeSymbols_pt', 'goog.i18n.DateTimeSymbols_pt_BR', 'goog.i18n.DateTimeSymbols_pt_PT', 'goog.i18n.DateTimeSymbols_ro', 'goog.i18n.DateTimeSymbols_ru', 'goog.i18n.DateTimeSymbols_sh', 'goog.i18n.DateTimeSymbols_si', 'goog.i18n.DateTimeSymbols_sk', 'goog.i18n.DateTimeSymbols_sl', 'goog.i18n.DateTimeSymbols_sq', 'goog.i18n.DateTimeSymbols_sr', 'goog.i18n.DateTimeSymbols_sr_Latn', 'goog.i18n.DateTimeSymbols_sv', 'goog.i18n.DateTimeSymbols_sw', 'goog.i18n.DateTimeSymbols_ta', 'goog.i18n.DateTimeSymbols_te', 'goog.i18n.DateTimeSymbols_th', 'goog.i18n.DateTimeSymbols_tl', 'goog.i18n.DateTimeSymbols_tr', 'goog.i18n.DateTimeSymbols_uk', 'goog.i18n.DateTimeSymbols_ur', 'goog.i18n.DateTimeSymbols_uz', 'goog.i18n.DateTimeSymbols_vi', 'goog.i18n.DateTimeSymbols_zh', 'goog.i18n.DateTimeSymbols_zh_CN', 'goog.i18n.DateTimeSymbols_zh_HK', 'goog.i18n.DateTimeSymbols_zh_TW', 'goog.i18n.DateTimeSymbols_zu'], [], {});
 goog.addDependency('i18n/datetimesymbolsext.js', ['goog.i18n.DateTimeSymbolsExt', 'goog.i18n.DateTimeSymbols_af_NA', 'goog.i18n.DateTimeSymbols_af_ZA', 'goog.i18n.DateTimeSymbols_agq', 'goog.i18n.DateTimeSymbols_agq_CM', 'goog.i18n.DateTimeSymbols_ak', 'goog.i18n.DateTimeSymbols_ak_GH', 'goog.i18n.DateTimeSymbols_am_ET', 'goog.i18n.DateTimeSymbols_ar_001', 'goog.i18n.DateTimeSymbols_ar_AE', 'goog.i18n.DateTimeSymbols_ar_BH', 'goog.i18n.DateTimeSymbols_ar_DJ', 'goog.i18n.DateTimeSymbols_ar_EG', 'goog.i18n.DateTimeSymbols_ar_EH', 'goog.i18n.DateTimeSymbols_ar_ER', 'goog.i18n.DateTimeSymbols_ar_IL', 'goog.i18n.DateTimeSymbols_ar_IQ', 'goog.i18n.DateTimeSymbols_ar_JO', 'goog.i18n.DateTimeSymbols_ar_KM', 'goog.i18n.DateTimeSymbols_ar_KW', 'goog.i18n.DateTimeSymbols_ar_LB', 'goog.i18n.DateTimeSymbols_ar_LY', 'goog.i18n.DateTimeSymbols_ar_MA', 'goog.i18n.DateTimeSymbols_ar_MR', 'goog.i18n.DateTimeSymbols_ar_OM', 'goog.i18n.DateTimeSymbols_ar_PS', 'goog.i18n.DateTimeSymbols_ar_QA', 'goog.i18n.DateTimeSymbols_ar_SA', 'goog.i18n.DateTimeSymbols_ar_SD', 'goog.i18n.DateTimeSymbols_ar_SO', 'goog.i18n.DateTimeSymbols_ar_SS', 'goog.i18n.DateTimeSymbols_ar_SY', 'goog.i18n.DateTimeSymbols_ar_TD', 'goog.i18n.DateTimeSymbols_ar_TN', 'goog.i18n.DateTimeSymbols_ar_XB', 'goog.i18n.DateTimeSymbols_ar_YE', 'goog.i18n.DateTimeSymbols_as', 'goog.i18n.DateTimeSymbols_as_IN', 'goog.i18n.DateTimeSymbols_asa', 'goog.i18n.DateTimeSymbols_asa_TZ', 'goog.i18n.DateTimeSymbols_ast', 'goog.i18n.DateTimeSymbols_ast_ES', 'goog.i18n.DateTimeSymbols_az_Cyrl', 'goog.i18n.DateTimeSymbols_az_Cyrl_AZ', 'goog.i18n.DateTimeSymbols_az_Latn', 'goog.i18n.DateTimeSymbols_az_Latn_AZ', 'goog.i18n.DateTimeSymbols_bas', 'goog.i18n.DateTimeSymbols_bas_CM', 'goog.i18n.DateTimeSymbols_be_BY', 'goog.i18n.DateTimeSymbols_bem', 'goog.i18n.DateTimeSymbols_bem_ZM', 'goog.i18n.DateTimeSymbols_bez', 'goog.i18n.DateTimeSymbols_bez_TZ', 'goog.i18n.DateTimeSymbols_bg_BG', 'goog.i18n.DateTimeSymbols_bm', 'goog.i18n.DateTimeSymbols_bm_ML', 'goog.i18n.DateTimeSymbols_bn_BD', 'goog.i18n.DateTimeSymbols_bn_IN', 'goog.i18n.DateTimeSymbols_bo', 'goog.i18n.DateTimeSymbols_bo_CN', 'goog.i18n.DateTimeSymbols_bo_IN', 'goog.i18n.DateTimeSymbols_br_FR', 'goog.i18n.DateTimeSymbols_brx', 'goog.i18n.DateTimeSymbols_brx_IN', 'goog.i18n.DateTimeSymbols_bs_Cyrl', 'goog.i18n.DateTimeSymbols_bs_Cyrl_BA', 'goog.i18n.DateTimeSymbols_bs_Latn', 'goog.i18n.DateTimeSymbols_bs_Latn_BA', 'goog.i18n.DateTimeSymbols_ca_AD', 'goog.i18n.DateTimeSymbols_ca_ES', 'goog.i18n.DateTimeSymbols_ca_FR', 'goog.i18n.DateTimeSymbols_ca_IT', 'goog.i18n.DateTimeSymbols_ce', 'goog.i18n.DateTimeSymbols_ce_RU', 'goog.i18n.DateTimeSymbols_cgg', 'goog.i18n.DateTimeSymbols_cgg_UG', 'goog.i18n.DateTimeSymbols_chr_US', 'goog.i18n.DateTimeSymbols_ckb', 'goog.i18n.DateTimeSymbols_ckb_IQ', 'goog.i18n.DateTimeSymbols_ckb_IR', 'goog.i18n.DateTimeSymbols_cs_CZ', 'goog.i18n.DateTimeSymbols_cy_GB', 'goog.i18n.DateTimeSymbols_da_DK', 'goog.i18n.DateTimeSymbols_da_GL', 'goog.i18n.DateTimeSymbols_dav', 'goog.i18n.DateTimeSymbols_dav_KE', 'goog.i18n.DateTimeSymbols_de_BE', 'goog.i18n.DateTimeSymbols_de_DE', 'goog.i18n.DateTimeSymbols_de_IT', 'goog.i18n.DateTimeSymbols_de_LI', 'goog.i18n.DateTimeSymbols_de_LU', 'goog.i18n.DateTimeSymbols_dje', 'goog.i18n.DateTimeSymbols_dje_NE', 'goog.i18n.DateTimeSymbols_dsb', 'goog.i18n.DateTimeSymbols_dsb_DE', 'goog.i18n.DateTimeSymbols_dua', 'goog.i18n.DateTimeSymbols_dua_CM', 'goog.i18n.DateTimeSymbols_dyo', 'goog.i18n.DateTimeSymbols_dyo_SN', 'goog.i18n.DateTimeSymbols_dz', 'goog.i18n.DateTimeSymbols_dz_BT', 'goog.i18n.DateTimeSymbols_ebu', 'goog.i18n.DateTimeSymbols_ebu_KE', 'goog.i18n.DateTimeSymbols_ee', 'goog.i18n.DateTimeSymbols_ee_GH', 'goog.i18n.DateTimeSymbols_ee_TG', 'goog.i18n.DateTimeSymbols_el_CY', 'goog.i18n.DateTimeSymbols_el_GR', 'goog.i18n.DateTimeSymbols_en_001', 'goog.i18n.DateTimeSymbols_en_150', 'goog.i18n.DateTimeSymbols_en_AG', 'goog.i18n.DateTimeSymbols_en_AI', 'goog.i18n.DateTimeSymbols_en_AS', 'goog.i18n.DateTimeSymbols_en_AT', 'goog.i18n.DateTimeSymbols_en_BB', 'goog.i18n.DateTimeSymbols_en_BE', 'goog.i18n.DateTimeSymbols_en_BI', 'goog.i18n.DateTimeSymbols_en_BM', 'goog.i18n.DateTimeSymbols_en_BS', 'goog.i18n.DateTimeSymbols_en_BW', 'goog.i18n.DateTimeSymbols_en_BZ', 'goog.i18n.DateTimeSymbols_en_CC', 'goog.i18n.DateTimeSymbols_en_CH', 'goog.i18n.DateTimeSymbols_en_CK', 'goog.i18n.DateTimeSymbols_en_CM', 'goog.i18n.DateTimeSymbols_en_CX', 'goog.i18n.DateTimeSymbols_en_CY', 'goog.i18n.DateTimeSymbols_en_DE', 'goog.i18n.DateTimeSymbols_en_DG', 'goog.i18n.DateTimeSymbols_en_DK', 'goog.i18n.DateTimeSymbols_en_DM', 'goog.i18n.DateTimeSymbols_en_ER', 'goog.i18n.DateTimeSymbols_en_FI', 'goog.i18n.DateTimeSymbols_en_FJ', 'goog.i18n.DateTimeSymbols_en_FK', 'goog.i18n.DateTimeSymbols_en_FM', 'goog.i18n.DateTimeSymbols_en_GD', 'goog.i18n.DateTimeSymbols_en_GG', 'goog.i18n.DateTimeSymbols_en_GH', 'goog.i18n.DateTimeSymbols_en_GI', 'goog.i18n.DateTimeSymbols_en_GM', 'goog.i18n.DateTimeSymbols_en_GU', 'goog.i18n.DateTimeSymbols_en_GY', 'goog.i18n.DateTimeSymbols_en_HK', 'goog.i18n.DateTimeSymbols_en_IL', 'goog.i18n.DateTimeSymbols_en_IM', 'goog.i18n.DateTimeSymbols_en_IO', 'goog.i18n.DateTimeSymbols_en_JE', 'goog.i18n.DateTimeSymbols_en_JM', 'goog.i18n.DateTimeSymbols_en_KE', 'goog.i18n.DateTimeSymbols_en_KI', 'goog.i18n.DateTimeSymbols_en_KN', 'goog.i18n.DateTimeSymbols_en_KY', 'goog.i18n.DateTimeSymbols_en_LC', 'goog.i18n.DateTimeSymbols_en_LR', 'goog.i18n.DateTimeSymbols_en_LS', 'goog.i18n.DateTimeSymbols_en_MG', 'goog.i18n.DateTimeSymbols_en_MH', 'goog.i18n.DateTimeSymbols_en_MO', 'goog.i18n.DateTimeSymbols_en_MP', 'goog.i18n.DateTimeSymbols_en_MS', 'goog.i18n.DateTimeSymbols_en_MT', 'goog.i18n.DateTimeSymbols_en_MU', 'goog.i18n.DateTimeSymbols_en_MW', 'goog.i18n.DateTimeSymbols_en_MY', 'goog.i18n.DateTimeSymbols_en_NA', 'goog.i18n.DateTimeSymbols_en_NF', 'goog.i18n.DateTimeSymbols_en_NG', 'goog.i18n.DateTimeSymbols_en_NL', 'goog.i18n.DateTimeSymbols_en_NR', 'goog.i18n.DateTimeSymbols_en_NU', 'goog.i18n.DateTimeSymbols_en_NZ', 'goog.i18n.DateTimeSymbols_en_PG', 'goog.i18n.DateTimeSymbols_en_PH', 'goog.i18n.DateTimeSymbols_en_PK', 'goog.i18n.DateTimeSymbols_en_PN', 'goog.i18n.DateTimeSymbols_en_PR', 'goog.i18n.DateTimeSymbols_en_PW', 'goog.i18n.DateTimeSymbols_en_RW', 'goog.i18n.DateTimeSymbols_en_SB', 'goog.i18n.DateTimeSymbols_en_SC', 'goog.i18n.DateTimeSymbols_en_SD', 'goog.i18n.DateTimeSymbols_en_SE', 'goog.i18n.DateTimeSymbols_en_SH', 'goog.i18n.DateTimeSymbols_en_SI', 'goog.i18n.DateTimeSymbols_en_SL', 'goog.i18n.DateTimeSymbols_en_SS', 'goog.i18n.DateTimeSymbols_en_SX', 'goog.i18n.DateTimeSymbols_en_SZ', 'goog.i18n.DateTimeSymbols_en_TC', 'goog.i18n.DateTimeSymbols_en_TK', 'goog.i18n.DateTimeSymbols_en_TO', 'goog.i18n.DateTimeSymbols_en_TT', 'goog.i18n.DateTimeSymbols_en_TV', 'goog.i18n.DateTimeSymbols_en_TZ', 'goog.i18n.DateTimeSymbols_en_UG', 'goog.i18n.DateTimeSymbols_en_UM', 'goog.i18n.DateTimeSymbols_en_US_POSIX', 'goog.i18n.DateTimeSymbols_en_VC', 'goog.i18n.DateTimeSymbols_en_VG', 'goog.i18n.DateTimeSymbols_en_VI', 'goog.i18n.DateTimeSymbols_en_VU', 'goog.i18n.DateTimeSymbols_en_WS', 'goog.i18n.DateTimeSymbols_en_XA', 'goog.i18n.DateTimeSymbols_en_ZM', 'goog.i18n.DateTimeSymbols_en_ZW', 'goog.i18n.DateTimeSymbols_eo', 'goog.i18n.DateTimeSymbols_es_AR', 'goog.i18n.DateTimeSymbols_es_BO', 'goog.i18n.DateTimeSymbols_es_BR', 'goog.i18n.DateTimeSymbols_es_BZ', 'goog.i18n.DateTimeSymbols_es_CL', 'goog.i18n.DateTimeSymbols_es_CO', 'goog.i18n.DateTimeSymbols_es_CR', 'goog.i18n.DateTimeSymbols_es_CU', 'goog.i18n.DateTimeSymbols_es_DO', 'goog.i18n.DateTimeSymbols_es_EA', 'goog.i18n.DateTimeSymbols_es_EC', 'goog.i18n.DateTimeSymbols_es_GQ', 'goog.i18n.DateTimeSymbols_es_GT', 'goog.i18n.DateTimeSymbols_es_HN', 'goog.i18n.DateTimeSymbols_es_IC', 'goog.i18n.DateTimeSymbols_es_NI', 'goog.i18n.DateTimeSymbols_es_PA', 'goog.i18n.DateTimeSymbols_es_PE', 'goog.i18n.DateTimeSymbols_es_PH', 'goog.i18n.DateTimeSymbols_es_PR', 'goog.i18n.DateTimeSymbols_es_PY', 'goog.i18n.DateTimeSymbols_es_SV', 'goog.i18n.DateTimeSymbols_es_UY', 'goog.i18n.DateTimeSymbols_es_VE', 'goog.i18n.DateTimeSymbols_et_EE', 'goog.i18n.DateTimeSymbols_eu_ES', 'goog.i18n.DateTimeSymbols_ewo', 'goog.i18n.DateTimeSymbols_ewo_CM', 'goog.i18n.DateTimeSymbols_fa_AF', 'goog.i18n.DateTimeSymbols_fa_IR', 'goog.i18n.DateTimeSymbols_ff', 'goog.i18n.DateTimeSymbols_ff_CM', 'goog.i18n.DateTimeSymbols_ff_GN', 'goog.i18n.DateTimeSymbols_ff_MR', 'goog.i18n.DateTimeSymbols_ff_SN', 'goog.i18n.DateTimeSymbols_fi_FI', 'goog.i18n.DateTimeSymbols_fil_PH', 'goog.i18n.DateTimeSymbols_fo', 'goog.i18n.DateTimeSymbols_fo_DK', 'goog.i18n.DateTimeSymbols_fo_FO', 'goog.i18n.DateTimeSymbols_fr_BE', 'goog.i18n.DateTimeSymbols_fr_BF', 'goog.i18n.DateTimeSymbols_fr_BI', 'goog.i18n.DateTimeSymbols_fr_BJ', 'goog.i18n.DateTimeSymbols_fr_BL', 'goog.i18n.DateTimeSymbols_fr_CD', 'goog.i18n.DateTimeSymbols_fr_CF', 'goog.i18n.DateTimeSymbols_fr_CG', 'goog.i18n.DateTimeSymbols_fr_CH', 'goog.i18n.DateTimeSymbols_fr_CI', 'goog.i18n.DateTimeSymbols_fr_CM', 'goog.i18n.DateTimeSymbols_fr_DJ', 'goog.i18n.DateTimeSymbols_fr_DZ', 'goog.i18n.DateTimeSymbols_fr_FR', 'goog.i18n.DateTimeSymbols_fr_GA', 'goog.i18n.DateTimeSymbols_fr_GF', 'goog.i18n.DateTimeSymbols_fr_GN', 'goog.i18n.DateTimeSymbols_fr_GP', 'goog.i18n.DateTimeSymbols_fr_GQ', 'goog.i18n.DateTimeSymbols_fr_HT', 'goog.i18n.DateTimeSymbols_fr_KM', 'goog.i18n.DateTimeSymbols_fr_LU', 'goog.i18n.DateTimeSymbols_fr_MA', 'goog.i18n.DateTimeSymbols_fr_MC', 'goog.i18n.DateTimeSymbols_fr_MF', 'goog.i18n.DateTimeSymbols_fr_MG', 'goog.i18n.DateTimeSymbols_fr_ML', 'goog.i18n.DateTimeSymbols_fr_MQ', 'goog.i18n.DateTimeSymbols_fr_MR', 'goog.i18n.DateTimeSymbols_fr_MU', 'goog.i18n.DateTimeSymbols_fr_NC', 'goog.i18n.DateTimeSymbols_fr_NE', 'goog.i18n.DateTimeSymbols_fr_PF', 'goog.i18n.DateTimeSymbols_fr_PM', 'goog.i18n.DateTimeSymbols_fr_RE', 'goog.i18n.DateTimeSymbols_fr_RW', 'goog.i18n.DateTimeSymbols_fr_SC', 'goog.i18n.DateTimeSymbols_fr_SN', 'goog.i18n.DateTimeSymbols_fr_SY', 'goog.i18n.DateTimeSymbols_fr_TD', 'goog.i18n.DateTimeSymbols_fr_TG', 'goog.i18n.DateTimeSymbols_fr_TN', 'goog.i18n.DateTimeSymbols_fr_VU', 'goog.i18n.DateTimeSymbols_fr_WF', 'goog.i18n.DateTimeSymbols_fr_YT', 'goog.i18n.DateTimeSymbols_fur', 'goog.i18n.DateTimeSymbols_fur_IT', 'goog.i18n.DateTimeSymbols_fy', 'goog.i18n.DateTimeSymbols_fy_NL', 'goog.i18n.DateTimeSymbols_ga_IE', 'goog.i18n.DateTimeSymbols_gd', 'goog.i18n.DateTimeSymbols_gd_GB', 'goog.i18n.DateTimeSymbols_gl_ES', 'goog.i18n.DateTimeSymbols_gsw_CH', 'goog.i18n.DateTimeSymbols_gsw_FR', 'goog.i18n.DateTimeSymbols_gsw_LI', 'goog.i18n.DateTimeSymbols_gu_IN', 'goog.i18n.DateTimeSymbols_guz', 'goog.i18n.DateTimeSymbols_guz_KE', 'goog.i18n.DateTimeSymbols_gv', 'goog.i18n.DateTimeSymbols_gv_IM', 'goog.i18n.DateTimeSymbols_ha', 'goog.i18n.DateTimeSymbols_ha_GH', 'goog.i18n.DateTimeSymbols_ha_NE', 'goog.i18n.DateTimeSymbols_ha_NG', 'goog.i18n.DateTimeSymbols_haw_US', 'goog.i18n.DateTimeSymbols_he_IL', 'goog.i18n.DateTimeSymbols_hi_IN', 'goog.i18n.DateTimeSymbols_hr_BA', 'goog.i18n.DateTimeSymbols_hr_HR', 'goog.i18n.DateTimeSymbols_hsb', 'goog.i18n.DateTimeSymbols_hsb_DE', 'goog.i18n.DateTimeSymbols_hu_HU', 'goog.i18n.DateTimeSymbols_hy_AM', 'goog.i18n.DateTimeSymbols_id_ID', 'goog.i18n.DateTimeSymbols_ig', 'goog.i18n.DateTimeSymbols_ig_NG', 'goog.i18n.DateTimeSymbols_ii', 'goog.i18n.DateTimeSymbols_ii_CN', 'goog.i18n.DateTimeSymbols_is_IS', 'goog.i18n.DateTimeSymbols_it_CH', 'goog.i18n.DateTimeSymbols_it_IT', 'goog.i18n.DateTimeSymbols_it_SM', 'goog.i18n.DateTimeSymbols_it_VA', 'goog.i18n.DateTimeSymbols_ja_JP', 'goog.i18n.DateTimeSymbols_jgo', 'goog.i18n.DateTimeSymbols_jgo_CM', 'goog.i18n.DateTimeSymbols_jmc', 'goog.i18n.DateTimeSymbols_jmc_TZ', 'goog.i18n.DateTimeSymbols_ka_GE', 'goog.i18n.DateTimeSymbols_kab', 'goog.i18n.DateTimeSymbols_kab_DZ', 'goog.i18n.DateTimeSymbols_kam', 'goog.i18n.DateTimeSymbols_kam_KE', 'goog.i18n.DateTimeSymbols_kde', 'goog.i18n.DateTimeSymbols_kde_TZ', 'goog.i18n.DateTimeSymbols_kea', 'goog.i18n.DateTimeSymbols_kea_CV', 'goog.i18n.DateTimeSymbols_khq', 'goog.i18n.DateTimeSymbols_khq_ML', 'goog.i18n.DateTimeSymbols_ki', 'goog.i18n.DateTimeSymbols_ki_KE', 'goog.i18n.DateTimeSymbols_kk_KZ', 'goog.i18n.DateTimeSymbols_kkj', 'goog.i18n.DateTimeSymbols_kkj_CM', 'goog.i18n.DateTimeSymbols_kl', 'goog.i18n.DateTimeSymbols_kl_GL', 'goog.i18n.DateTimeSymbols_kln', 'goog.i18n.DateTimeSymbols_kln_KE', 'goog.i18n.DateTimeSymbols_km_KH', 'goog.i18n.DateTimeSymbols_kn_IN', 'goog.i18n.DateTimeSymbols_ko_KP', 'goog.i18n.DateTimeSymbols_ko_KR', 'goog.i18n.DateTimeSymbols_kok', 'goog.i18n.DateTimeSymbols_kok_IN', 'goog.i18n.DateTimeSymbols_ks', 'goog.i18n.DateTimeSymbols_ks_IN', 'goog.i18n.DateTimeSymbols_ksb', 'goog.i18n.DateTimeSymbols_ksb_TZ', 'goog.i18n.DateTimeSymbols_ksf', 'goog.i18n.DateTimeSymbols_ksf_CM', 'goog.i18n.DateTimeSymbols_ksh', 'goog.i18n.DateTimeSymbols_ksh_DE', 'goog.i18n.DateTimeSymbols_kw', 'goog.i18n.DateTimeSymbols_kw_GB', 'goog.i18n.DateTimeSymbols_ky_KG', 'goog.i18n.DateTimeSymbols_lag', 'goog.i18n.DateTimeSymbols_lag_TZ', 'goog.i18n.DateTimeSymbols_lb', 'goog.i18n.DateTimeSymbols_lb_LU', 'goog.i18n.DateTimeSymbols_lg', 'goog.i18n.DateTimeSymbols_lg_UG', 'goog.i18n.DateTimeSymbols_lkt', 'goog.i18n.DateTimeSymbols_lkt_US', 'goog.i18n.DateTimeSymbols_ln_AO', 'goog.i18n.DateTimeSymbols_ln_CD', 'goog.i18n.DateTimeSymbols_ln_CF', 'goog.i18n.DateTimeSymbols_ln_CG', 'goog.i18n.DateTimeSymbols_lo_LA', 'goog.i18n.DateTimeSymbols_lrc', 'goog.i18n.DateTimeSymbols_lrc_IQ', 'goog.i18n.DateTimeSymbols_lrc_IR', 'goog.i18n.DateTimeSymbols_lt_LT', 'goog.i18n.DateTimeSymbols_lu', 'goog.i18n.DateTimeSymbols_lu_CD', 'goog.i18n.DateTimeSymbols_luo', 'goog.i18n.DateTimeSymbols_luo_KE', 'goog.i18n.DateTimeSymbols_luy', 'goog.i18n.DateTimeSymbols_luy_KE', 'goog.i18n.DateTimeSymbols_lv_LV', 'goog.i18n.DateTimeSymbols_mas', 'goog.i18n.DateTimeSymbols_mas_KE', 'goog.i18n.DateTimeSymbols_mas_TZ', 'goog.i18n.DateTimeSymbols_mer', 'goog.i18n.DateTimeSymbols_mer_KE', 'goog.i18n.DateTimeSymbols_mfe', 'goog.i18n.DateTimeSymbols_mfe_MU', 'goog.i18n.DateTimeSymbols_mg', 'goog.i18n.DateTimeSymbols_mg_MG', 'goog.i18n.DateTimeSymbols_mgh', 'goog.i18n.DateTimeSymbols_mgh_MZ', 'goog.i18n.DateTimeSymbols_mgo', 'goog.i18n.DateTimeSymbols_mgo_CM', 'goog.i18n.DateTimeSymbols_mk_MK', 'goog.i18n.DateTimeSymbols_ml_IN', 'goog.i18n.DateTimeSymbols_mn_MN', 'goog.i18n.DateTimeSymbols_mr_IN', 'goog.i18n.DateTimeSymbols_ms_BN', 'goog.i18n.DateTimeSymbols_ms_MY', 'goog.i18n.DateTimeSymbols_ms_SG', 'goog.i18n.DateTimeSymbols_mt_MT', 'goog.i18n.DateTimeSymbols_mua', 'goog.i18n.DateTimeSymbols_mua_CM', 'goog.i18n.DateTimeSymbols_my_MM', 'goog.i18n.DateTimeSymbols_mzn', 'goog.i18n.DateTimeSymbols_mzn_IR', 'goog.i18n.DateTimeSymbols_naq', 'goog.i18n.DateTimeSymbols_naq_NA', 'goog.i18n.DateTimeSymbols_nb_NO', 'goog.i18n.DateTimeSymbols_nb_SJ', 'goog.i18n.DateTimeSymbols_nd', 'goog.i18n.DateTimeSymbols_nd_ZW', 'goog.i18n.DateTimeSymbols_nds', 'goog.i18n.DateTimeSymbols_nds_DE', 'goog.i18n.DateTimeSymbols_nds_NL', 'goog.i18n.DateTimeSymbols_ne_IN', 'goog.i18n.DateTimeSymbols_ne_NP', 'goog.i18n.DateTimeSymbols_nl_AW', 'goog.i18n.DateTimeSymbols_nl_BE', 'goog.i18n.DateTimeSymbols_nl_BQ', 'goog.i18n.DateTimeSymbols_nl_CW', 'goog.i18n.DateTimeSymbols_nl_NL', 'goog.i18n.DateTimeSymbols_nl_SR', 'goog.i18n.DateTimeSymbols_nl_SX', 'goog.i18n.DateTimeSymbols_nmg', 'goog.i18n.DateTimeSymbols_nmg_CM', 'goog.i18n.DateTimeSymbols_nn', 'goog.i18n.DateTimeSymbols_nn_NO', 'goog.i18n.DateTimeSymbols_nnh', 'goog.i18n.DateTimeSymbols_nnh_CM', 'goog.i18n.DateTimeSymbols_nus', 'goog.i18n.DateTimeSymbols_nus_SS', 'goog.i18n.DateTimeSymbols_nyn', 'goog.i18n.DateTimeSymbols_nyn_UG', 'goog.i18n.DateTimeSymbols_om', 'goog.i18n.DateTimeSymbols_om_ET', 'goog.i18n.DateTimeSymbols_om_KE', 'goog.i18n.DateTimeSymbols_or_IN', 'goog.i18n.DateTimeSymbols_os', 'goog.i18n.DateTimeSymbols_os_GE', 'goog.i18n.DateTimeSymbols_os_RU', 'goog.i18n.DateTimeSymbols_pa_Arab', 'goog.i18n.DateTimeSymbols_pa_Arab_PK', 'goog.i18n.DateTimeSymbols_pa_Guru', 'goog.i18n.DateTimeSymbols_pa_Guru_IN', 'goog.i18n.DateTimeSymbols_pl_PL', 'goog.i18n.DateTimeSymbols_ps', 'goog.i18n.DateTimeSymbols_ps_AF', 'goog.i18n.DateTimeSymbols_pt_AO', 'goog.i18n.DateTimeSymbols_pt_CH', 'goog.i18n.DateTimeSymbols_pt_CV', 'goog.i18n.DateTimeSymbols_pt_GQ', 'goog.i18n.DateTimeSymbols_pt_GW', 'goog.i18n.DateTimeSymbols_pt_LU', 'goog.i18n.DateTimeSymbols_pt_MO', 'goog.i18n.DateTimeSymbols_pt_MZ', 'goog.i18n.DateTimeSymbols_pt_ST', 'goog.i18n.DateTimeSymbols_pt_TL', 'goog.i18n.DateTimeSymbols_qu', 'goog.i18n.DateTimeSymbols_qu_BO', 'goog.i18n.DateTimeSymbols_qu_EC', 'goog.i18n.DateTimeSymbols_qu_PE', 'goog.i18n.DateTimeSymbols_rm', 'goog.i18n.DateTimeSymbols_rm_CH', 'goog.i18n.DateTimeSymbols_rn', 'goog.i18n.DateTimeSymbols_rn_BI', 'goog.i18n.DateTimeSymbols_ro_MD', 'goog.i18n.DateTimeSymbols_ro_RO', 'goog.i18n.DateTimeSymbols_rof', 'goog.i18n.DateTimeSymbols_rof_TZ', 'goog.i18n.DateTimeSymbols_ru_BY', 'goog.i18n.DateTimeSymbols_ru_KG', 'goog.i18n.DateTimeSymbols_ru_KZ', 'goog.i18n.DateTimeSymbols_ru_MD', 'goog.i18n.DateTimeSymbols_ru_RU', 'goog.i18n.DateTimeSymbols_ru_UA', 'goog.i18n.DateTimeSymbols_rw', 'goog.i18n.DateTimeSymbols_rw_RW', 'goog.i18n.DateTimeSymbols_rwk', 'goog.i18n.DateTimeSymbols_rwk_TZ', 'goog.i18n.DateTimeSymbols_sah', 'goog.i18n.DateTimeSymbols_sah_RU', 'goog.i18n.DateTimeSymbols_saq', 'goog.i18n.DateTimeSymbols_saq_KE', 'goog.i18n.DateTimeSymbols_sbp', 'goog.i18n.DateTimeSymbols_sbp_TZ', 'goog.i18n.DateTimeSymbols_se', 'goog.i18n.DateTimeSymbols_se_FI', 'goog.i18n.DateTimeSymbols_se_NO', 'goog.i18n.DateTimeSymbols_se_SE', 'goog.i18n.DateTimeSymbols_seh', 'goog.i18n.DateTimeSymbols_seh_MZ', 'goog.i18n.DateTimeSymbols_ses', 'goog.i18n.DateTimeSymbols_ses_ML', 'goog.i18n.DateTimeSymbols_sg', 'goog.i18n.DateTimeSymbols_sg_CF', 'goog.i18n.DateTimeSymbols_shi', 'goog.i18n.DateTimeSymbols_shi_Latn', 'goog.i18n.DateTimeSymbols_shi_Latn_MA', 'goog.i18n.DateTimeSymbols_shi_Tfng', 'goog.i18n.DateTimeSymbols_shi_Tfng_MA', 'goog.i18n.DateTimeSymbols_si_LK', 'goog.i18n.DateTimeSymbols_sk_SK', 'goog.i18n.DateTimeSymbols_sl_SI', 'goog.i18n.DateTimeSymbols_smn', 'goog.i18n.DateTimeSymbols_smn_FI', 'goog.i18n.DateTimeSymbols_sn', 'goog.i18n.DateTimeSymbols_sn_ZW', 'goog.i18n.DateTimeSymbols_so', 'goog.i18n.DateTimeSymbols_so_DJ', 'goog.i18n.DateTimeSymbols_so_ET', 'goog.i18n.DateTimeSymbols_so_KE', 'goog.i18n.DateTimeSymbols_so_SO', 'goog.i18n.DateTimeSymbols_sq_AL', 'goog.i18n.DateTimeSymbols_sq_MK', 'goog.i18n.DateTimeSymbols_sq_XK', 'goog.i18n.DateTimeSymbols_sr_Cyrl', 'goog.i18n.DateTimeSymbols_sr_Cyrl_BA', 'goog.i18n.DateTimeSymbols_sr_Cyrl_ME', 'goog.i18n.DateTimeSymbols_sr_Cyrl_RS', 'goog.i18n.DateTimeSymbols_sr_Cyrl_XK', 'goog.i18n.DateTimeSymbols_sr_Latn_BA', 'goog.i18n.DateTimeSymbols_sr_Latn_ME', 'goog.i18n.DateTimeSymbols_sr_Latn_RS', 'goog.i18n.DateTimeSymbols_sr_Latn_XK', 'goog.i18n.DateTimeSymbols_sv_AX', 'goog.i18n.DateTimeSymbols_sv_FI', 'goog.i18n.DateTimeSymbols_sv_SE', 'goog.i18n.DateTimeSymbols_sw_CD', 'goog.i18n.DateTimeSymbols_sw_KE', 'goog.i18n.DateTimeSymbols_sw_TZ', 'goog.i18n.DateTimeSymbols_sw_UG', 'goog.i18n.DateTimeSymbols_ta_IN', 'goog.i18n.DateTimeSymbols_ta_LK', 'goog.i18n.DateTimeSymbols_ta_MY', 'goog.i18n.DateTimeSymbols_ta_SG', 'goog.i18n.DateTimeSymbols_te_IN', 'goog.i18n.DateTimeSymbols_teo', 'goog.i18n.DateTimeSymbols_teo_KE', 'goog.i18n.DateTimeSymbols_teo_UG', 'goog.i18n.DateTimeSymbols_th_TH', 'goog.i18n.DateTimeSymbols_ti', 'goog.i18n.DateTimeSymbols_ti_ER', 'goog.i18n.DateTimeSymbols_ti_ET', 'goog.i18n.DateTimeSymbols_to', 'goog.i18n.DateTimeSymbols_to_TO', 'goog.i18n.DateTimeSymbols_tr_CY', 'goog.i18n.DateTimeSymbols_tr_TR', 'goog.i18n.DateTimeSymbols_twq', 'goog.i18n.DateTimeSymbols_twq_NE', 'goog.i18n.DateTimeSymbols_tzm', 'goog.i18n.DateTimeSymbols_tzm_MA', 'goog.i18n.DateTimeSymbols_ug', 'goog.i18n.DateTimeSymbols_ug_CN', 'goog.i18n.DateTimeSymbols_uk_UA', 'goog.i18n.DateTimeSymbols_ur_IN', 'goog.i18n.DateTimeSymbols_ur_PK', 'goog.i18n.DateTimeSymbols_uz_Arab', 'goog.i18n.DateTimeSymbols_uz_Arab_AF', 'goog.i18n.DateTimeSymbols_uz_Cyrl', 'goog.i18n.DateTimeSymbols_uz_Cyrl_UZ', 'goog.i18n.DateTimeSymbols_uz_Latn', 'goog.i18n.DateTimeSymbols_uz_Latn_UZ', 'goog.i18n.DateTimeSymbols_vai', 'goog.i18n.DateTimeSymbols_vai_Latn', 'goog.i18n.DateTimeSymbols_vai_Latn_LR', 'goog.i18n.DateTimeSymbols_vai_Vaii', 'goog.i18n.DateTimeSymbols_vai_Vaii_LR', 'goog.i18n.DateTimeSymbols_vi_VN', 'goog.i18n.DateTimeSymbols_vun', 'goog.i18n.DateTimeSymbols_vun_TZ', 'goog.i18n.DateTimeSymbols_wae', 'goog.i18n.DateTimeSymbols_wae_CH', 'goog.i18n.DateTimeSymbols_xog', 'goog.i18n.DateTimeSymbols_xog_UG', 'goog.i18n.DateTimeSymbols_yav', 'goog.i18n.DateTimeSymbols_yav_CM', 'goog.i18n.DateTimeSymbols_yi', 'goog.i18n.DateTimeSymbols_yi_001', 'goog.i18n.DateTimeSymbols_yo', 'goog.i18n.DateTimeSymbols_yo_BJ', 'goog.i18n.DateTimeSymbols_yo_NG', 'goog.i18n.DateTimeSymbols_yue', 'goog.i18n.DateTimeSymbols_yue_HK', 'goog.i18n.DateTimeSymbols_zgh', 'goog.i18n.DateTimeSymbols_zgh_MA', 'goog.i18n.DateTimeSymbols_zh_Hans', 'goog.i18n.DateTimeSymbols_zh_Hans_CN', 'goog.i18n.DateTimeSymbols_zh_Hans_HK', 'goog.i18n.DateTimeSymbols_zh_Hans_MO', 'goog.i18n.DateTimeSymbols_zh_Hans_SG', 'goog.i18n.DateTimeSymbols_zh_Hant', 'goog.i18n.DateTimeSymbols_zh_Hant_HK', 'goog.i18n.DateTimeSymbols_zh_Hant_MO', 'goog.i18n.DateTimeSymbols_zh_Hant_TW', 'goog.i18n.DateTimeSymbols_zu_ZA'], ['goog.i18n.DateTimeSymbols'], {});
-goog.addDependency('i18n/graphemebreak.js', ['goog.i18n.GraphemeBreak'], ['goog.structs.InversionMap'], {});
-goog.addDependency('i18n/graphemebreak_test.js', ['goog.i18n.GraphemeBreakTest'], ['goog.i18n.GraphemeBreak', 'goog.testing.jsunit'], {});
+goog.addDependency('i18n/graphemebreak.js', ['goog.i18n.GraphemeBreak'], ['goog.asserts', 'goog.i18n.uChar', 'goog.structs.InversionMap'], {});
+goog.addDependency('i18n/graphemebreak_test.js', ['goog.i18n.GraphemeBreakTest'], ['goog.i18n.GraphemeBreak', 'goog.i18n.uChar', 'goog.testing.jsunit'], {});
 goog.addDependency('i18n/messageformat.js', ['goog.i18n.MessageFormat'], ['goog.array', 'goog.asserts', 'goog.i18n.CompactNumberFormatSymbols', 'goog.i18n.NumberFormat', 'goog.i18n.NumberFormatSymbols', 'goog.i18n.ordinalRules', 'goog.i18n.pluralRules'], {});
 goog.addDependency('i18n/messageformat_test.js', ['goog.i18n.MessageFormatTest'], ['goog.i18n.MessageFormat', 'goog.i18n.NumberFormatSymbols_hr', 'goog.i18n.pluralRules', 'goog.testing.PropertyReplacer', 'goog.testing.jsunit'], {});
 goog.addDependency('i18n/mime.js', ['goog.i18n.mime', 'goog.i18n.mime.encode'], ['goog.array'], {});
@@ -11179,6 +11179,300 @@ goog.debug.fnNameCache_ = {};
  */
 goog.debug.fnNameResolver_;
 
+//javascript/closure/i18n/uchar.js
+// Copyright 2009 The Closure Library Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS-IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+/**
+ * @fileoverview Collection of utility functions for Unicode character.
+ *
+ */
+
+goog.provide('goog.i18n.uChar');
+
+
+// Constants for handling Unicode supplementary characters (surrogate pairs).
+
+
+/**
+ * The minimum value for Supplementary code points.
+ * @type {number}
+ * @private
+ */
+goog.i18n.uChar.SUPPLEMENTARY_CODE_POINT_MIN_VALUE_ = 0x10000;
+
+
+/**
+ * The highest Unicode code point value (scalar value) according to the Unicode
+ * Standard.
+ * @type {number}
+ * @private
+ */
+goog.i18n.uChar.CODE_POINT_MAX_VALUE_ = 0x10FFFF;
+
+
+/**
+ * Lead surrogate minimum value.
+ * @type {number}
+ * @private
+ */
+goog.i18n.uChar.LEAD_SURROGATE_MIN_VALUE_ = 0xD800;
+
+
+/**
+ * Lead surrogate maximum value.
+ * @type {number}
+ * @private
+ */
+goog.i18n.uChar.LEAD_SURROGATE_MAX_VALUE_ = 0xDBFF;
+
+
+/**
+ * Trail surrogate minimum value.
+ * @type {number}
+ * @private
+ */
+goog.i18n.uChar.TRAIL_SURROGATE_MIN_VALUE_ = 0xDC00;
+
+
+/**
+ * Trail surrogate maximum value.
+ * @type {number}
+ * @private
+ */
+goog.i18n.uChar.TRAIL_SURROGATE_MAX_VALUE_ = 0xDFFF;
+
+
+/**
+ * The number of least significant bits of a supplementary code point that in
+ * UTF-16 become the least significant bits of the trail surrogate. The rest of
+ * the in-use bits of the supplementary code point become the least significant
+ * bits of the lead surrogate.
+ * @type {number}
+ * @private
+ */
+goog.i18n.uChar.TRAIL_SURROGATE_BIT_COUNT_ = 10;
+
+
+/**
+ * Gets the U+ notation string of a Unicode character. Ex: 'U+0041' for 'A'.
+ * @param {string} ch The given character.
+ * @return {string} The U+ notation of the given character.
+ */
+goog.i18n.uChar.toHexString = function(ch) {
+  var chCode = goog.i18n.uChar.toCharCode(ch);
+  var chCodeStr = 'U+' +
+      goog.i18n.uChar.padString_(chCode.toString(16).toUpperCase(), 4, '0');
+
+  return chCodeStr;
+};
+
+
+/**
+ * Gets a string padded with given character to get given size.
+ * @param {string} str The given string to be padded.
+ * @param {number} length The target size of the string.
+ * @param {string} ch The character to be padded with.
+ * @return {string} The padded string.
+ * @private
+ */
+goog.i18n.uChar.padString_ = function(str, length, ch) {
+  while (str.length < length) {
+    str = ch + str;
+  }
+  return str;
+};
+
+
+/**
+ * Gets Unicode value of the given character.
+ * @param {string} ch The given character, which in the case of a supplementary
+ * character is actually a surrogate pair. The remainder of the string is
+ * ignored.
+ * @return {number} The Unicode value of the character.
+ */
+goog.i18n.uChar.toCharCode = function(ch) {
+  return goog.i18n.uChar.getCodePointAround(ch, 0);
+};
+
+
+/**
+ * Gets a character from the given Unicode value. If the given code point is not
+ * a valid Unicode code point, null is returned.
+ * @param {number} code The Unicode value of the character.
+ * @return {?string} The character corresponding to the given Unicode value.
+ */
+goog.i18n.uChar.fromCharCode = function(code) {
+  if (!goog.isDefAndNotNull(code) ||
+      !(code >= 0 && code <= goog.i18n.uChar.CODE_POINT_MAX_VALUE_)) {
+    return null;
+  }
+  if (goog.i18n.uChar.isSupplementaryCodePoint(code)) {
+    // First, we split the code point into the trail surrogate part (the
+    // TRAIL_SURROGATE_BIT_COUNT_ least significant bits) and the lead surrogate
+    // part (the rest of the bits, shifted down; note that for now this includes
+    // the supplementary offset, also shifted down, to be subtracted off below).
+    var leadBits = code >> goog.i18n.uChar.TRAIL_SURROGATE_BIT_COUNT_;
+    var trailBits = code &
+        // A bit-mask to get the TRAIL_SURROGATE_BIT_COUNT_ (i.e. 10) least
+        // significant bits. 1 << 10 = 0x0400. 0x0400 - 1 = 0x03FF.
+        ((1 << goog.i18n.uChar.TRAIL_SURROGATE_BIT_COUNT_) - 1);
+
+    // Now we calculate the code point of each surrogate by adding each offset
+    // to the corresponding base code point.
+    var leadCodePoint = leadBits +
+        (goog.i18n.uChar.LEAD_SURROGATE_MIN_VALUE_ -
+         // Subtract off the supplementary offset, which had been shifted down
+         // with the rest of leadBits. We do this here instead of before the
+         // shift in order to save a separate subtraction step.
+         (goog.i18n.uChar.SUPPLEMENTARY_CODE_POINT_MIN_VALUE_ >>
+          goog.i18n.uChar.TRAIL_SURROGATE_BIT_COUNT_));
+    var trailCodePoint = trailBits + goog.i18n.uChar.TRAIL_SURROGATE_MIN_VALUE_;
+
+    // Convert the code points into a 2-character long string.
+    return String.fromCharCode(leadCodePoint) +
+        String.fromCharCode(trailCodePoint);
+  }
+  return String.fromCharCode(code);
+};
+
+
+/**
+ * Returns the Unicode code point at the specified index.
+ *
+ * If the char value specified at the given index is in the leading-surrogate
+ * range, and the following index is less than the length of {@code string}, and
+ * the char value at the following index is in the trailing-surrogate range,
+ * then the supplementary code point corresponding to this surrogate pair is
+ * returned.
+ *
+ * If the char value specified at the given index is in the trailing-surrogate
+ * range, and the preceding index is not before the start of {@code string}, and
+ * the char value at the preceding index is in the leading-surrogate range, then
+ * the negated supplementary code point corresponding to this surrogate pair is
+ * returned.
+ *
+ * The negation allows the caller to differentiate between the case where the
+ * given index is at the leading surrogate and the one where it is at the
+ * trailing surrogate, and thus deduce where the next character starts and
+ * preceding character ends.
+ *
+ * Otherwise, the char value at the given index is returned. Thus, a leading
+ * surrogate is returned when it is not followed by a trailing surrogate, and a
+ * trailing surrogate is returned when it is not preceded by a leading
+ * surrogate.
+ *
+ * @param {string} string The string.
+ * @param {number} index The index from which the code point is to be retrieved.
+ * @return {number} The code point at the given index. If the given index is
+ * that of the start (i.e. lead surrogate) of a surrogate pair, returns the code
+ * point encoded by the pair. If the given index is that of the end (i.e. trail
+ * surrogate) of a surrogate pair, returns the negated code pointed encoded by
+ * the pair.
+ */
+goog.i18n.uChar.getCodePointAround = function(string, index) {
+  var charCode = string.charCodeAt(index);
+  if (goog.i18n.uChar.isLeadSurrogateCodePoint(charCode) &&
+      index + 1 < string.length) {
+    var trail = string.charCodeAt(index + 1);
+    if (goog.i18n.uChar.isTrailSurrogateCodePoint(trail)) {
+      // Part of a surrogate pair.
+      return /** @type {number} */ (
+          goog.i18n.uChar.buildSupplementaryCodePoint(charCode, trail));
+    }
+  } else if (goog.i18n.uChar.isTrailSurrogateCodePoint(charCode) && index > 0) {
+    var lead = string.charCodeAt(index - 1);
+    if (goog.i18n.uChar.isLeadSurrogateCodePoint(lead)) {
+      // Part of a surrogate pair.
+      return /** @type {number} */ (
+          -goog.i18n.uChar.buildSupplementaryCodePoint(lead, charCode));
+    }
+  }
+  return charCode;
+};
+
+
+/**
+ * Determines the length of the string needed to represent the specified
+ * Unicode code point.
+ * @param {number} codePoint
+ * @return {number} 2 if codePoint is a supplementary character, 1 otherwise.
+ */
+goog.i18n.uChar.charCount = function(codePoint) {
+  return goog.i18n.uChar.isSupplementaryCodePoint(codePoint) ? 2 : 1;
+};
+
+
+/**
+ * Determines whether the specified Unicode code point is in the supplementary
+ * Unicode characters range.
+ * @param {number} codePoint
+ * @return {boolean} Whether then given code point is a supplementary character.
+ */
+goog.i18n.uChar.isSupplementaryCodePoint = function(codePoint) {
+  return codePoint >= goog.i18n.uChar.SUPPLEMENTARY_CODE_POINT_MIN_VALUE_ &&
+      codePoint <= goog.i18n.uChar.CODE_POINT_MAX_VALUE_;
+};
+
+
+/**
+ * Gets whether the given code point is a leading surrogate character.
+ * @param {number} codePoint
+ * @return {boolean} Whether the given code point is a leading surrogate
+ * character.
+ */
+goog.i18n.uChar.isLeadSurrogateCodePoint = function(codePoint) {
+  return codePoint >= goog.i18n.uChar.LEAD_SURROGATE_MIN_VALUE_ &&
+      codePoint <= goog.i18n.uChar.LEAD_SURROGATE_MAX_VALUE_;
+};
+
+
+/**
+ * Gets whether the given code point is a trailing surrogate character.
+ * @param {number} codePoint
+ * @return {boolean} Whether the given code point is a trailing surrogate
+ * character.
+ */
+goog.i18n.uChar.isTrailSurrogateCodePoint = function(codePoint) {
+  return codePoint >= goog.i18n.uChar.TRAIL_SURROGATE_MIN_VALUE_ &&
+      codePoint <= goog.i18n.uChar.TRAIL_SURROGATE_MAX_VALUE_;
+};
+
+
+/**
+ * Composes a supplementary Unicode code point from the given UTF-16 surrogate
+ * pair. If leadSurrogate isn't a leading surrogate code point or trailSurrogate
+ * isn't a trailing surrogate code point, null is returned.
+ * @param {number} lead The leading surrogate code point.
+ * @param {number} trail The trailing surrogate code point.
+ * @return {?number} The supplementary Unicode code point obtained by decoding
+ * the given UTF-16 surrogate pair.
+ */
+goog.i18n.uChar.buildSupplementaryCodePoint = function(lead, trail) {
+  if (goog.i18n.uChar.isLeadSurrogateCodePoint(lead) &&
+      goog.i18n.uChar.isTrailSurrogateCodePoint(trail)) {
+    var shiftedLeadOffset =
+        (lead << goog.i18n.uChar.TRAIL_SURROGATE_BIT_COUNT_) -
+        (goog.i18n.uChar.LEAD_SURROGATE_MIN_VALUE_
+         << goog.i18n.uChar.TRAIL_SURROGATE_BIT_COUNT_);
+    var trailOffset = trail - goog.i18n.uChar.TRAIL_SURROGATE_MIN_VALUE_ +
+        goog.i18n.uChar.SUPPLEMENTARY_CODE_POINT_MIN_VALUE_;
+    return shiftedLeadOffset + trailOffset;
+  }
+  return null;
+};
+
 //javascript/closure/structs/inversionmap.js
 // Copyright 2008 The Closure Library Authors. All Rights Reserved.
 //
@@ -11354,33 +11648,33 @@ goog.structs.InversionMap.prototype.getLeast = function(intKey) {
 
 /**
  * @fileoverview Detect Grapheme Cluster Break in a pair of codepoints. Follows
- * Unicode 5.1 UAX#29. Tailoring for Virama × Indic Consonants is used.
+ * Unicode 10 UAX#29. Tailoring for Virama × Indic Letters is used.
+ *
+ * Reference: http://unicode.org/reports/tr29
  *
  */
 
 goog.provide('goog.i18n.GraphemeBreak');
 
+goog.require('goog.asserts');
+goog.require('goog.i18n.uChar');
 goog.require('goog.structs.InversionMap');
-
 
 /**
  * Enum for all Grapheme Cluster Break properties.
  * These enums directly corresponds to Grapheme_Cluster_Break property values
  * mentioned in http://unicode.org/reports/tr29 table 2. VIRAMA and
- * INDIC_CONSONANT are for the Virama × Base tailoring mentioned in the notes.
+ * INDIC_LETTER are for the Virama × Base tailoring mentioned in the notes.
  *
- * CR and LF are moved to the bottom of the list because they occur only once
- * and so good candidates to take 2 decimal digit values.
- * @enum {number}
- * @protected
+ * @protected @enum {number}
  */
 goog.i18n.GraphemeBreak.property = {
-  ANY: 0,
+  OTHER: 0,
   CONTROL: 1,
   EXTEND: 2,
   PREPEND: 3,
   SPACING_MARK: 4,
-  INDIC_CONSONANT: 5,
+  INDIC_LETTER: 5,
   VIRAMA: 6,
   L: 7,
   V: 8,
@@ -11389,7 +11683,12 @@ goog.i18n.GraphemeBreak.property = {
   LVT: 11,
   CR: 12,
   LF: 13,
-  REGIONAL_INDICATOR: 14
+  REGIONAL_INDICATOR: 14,
+  ZWJ: 15,
+  E_BASE: 16,
+  GLUE_AFTER_ZWJ: 17,
+  E_MODIFIER: 18,
+  E_BASE_GAZ: 19
 };
 
 
@@ -11397,66 +11696,173 @@ goog.i18n.GraphemeBreak.property = {
  * Grapheme Cluster Break property values for all codepoints as inversion map.
  * Constructed lazily.
  *
- * @type {goog.structs.InversionMap}
- * @private
+ * @private {?goog.structs.InversionMap}
  */
 goog.i18n.GraphemeBreak.inversions_ = null;
 
 
 /**
- * There are two kinds of grapheme clusters: 1) Legacy 2)Extended. This method
- * is to check for legacy rules.
+ * Indicates if a and b form a grapheme cluster.
  *
- * @param {number} prop_a The property enum value of the first character.
- * @param {number} prop_b The property enum value of the second character.
+ * This implements the rules in:
+ * http://www.unicode.org/reports/tr29/#Grapheme_Cluster_Boundary_Rules
+ *
+ * @param {number|string} a Code point or string with the first side of
+ *     grapheme cluster.
+ * @param {number|string} b Code point or string with the second side of
+ *     grapheme cluster.
+ * @param {boolean} extended If true, indicates extended grapheme cluster;
+ *     If false, indicates legacy cluster.
  * @return {boolean} True if a & b do not form a cluster; False otherwise.
  * @private
  */
-goog.i18n.GraphemeBreak.applyLegacyBreakRules_ = function(prop_a, prop_b) {
-
+goog.i18n.GraphemeBreak.applyBreakRules_ = function(a, b, extended) {
   var prop = goog.i18n.GraphemeBreak.property;
 
-  if (prop_a == prop.CR && prop_b == prop.LF) {
+  var aCode = goog.isString(a) ?
+      goog.i18n.GraphemeBreak.getCodePoint_(a, a.length - 1) :
+      a;
+  var bCode =
+      goog.isString(b) ? goog.i18n.GraphemeBreak.getCodePoint_(b, 0) : b;
+
+  var aProp = goog.i18n.GraphemeBreak.getBreakProp_(aCode);
+  var bProp = goog.i18n.GraphemeBreak.getBreakProp_(bCode);
+
+  var isString = goog.isString(a);
+
+  // GB3.
+  if (aProp === prop.CR && bProp === prop.LF) {
     return false;
   }
-  if (prop_a == prop.CONTROL || prop_a == prop.CR || prop_a == prop.LF) {
+
+  // GB4.
+  if (aProp === prop.CONTROL || aProp === prop.CR || aProp === prop.LF) {
     return true;
   }
-  if (prop_b == prop.CONTROL || prop_b == prop.CR || prop_b == prop.LF) {
+
+  // GB5.
+  if (bProp === prop.CONTROL || bProp === prop.CR || bProp === prop.LF) {
     return true;
   }
-  if ((prop_a == prop.L) && (prop_b == prop.L || prop_b == prop.V ||
-                             prop_b == prop.LV || prop_b == prop.LVT)) {
+
+  // GB6.
+  if (aProp === prop.L &&
+      (bProp === prop.L || bProp === prop.V || bProp === prop.LV ||
+       bProp === prop.LVT)) {
     return false;
   }
-  if ((prop_a == prop.LV || prop_a == prop.V) &&
-      (prop_b == prop.V || prop_b == prop.T)) {
+
+  // GB7.
+  if ((aProp === prop.LV || aProp === prop.V) &&
+      (bProp === prop.V || bProp === prop.T)) {
     return false;
   }
-  if ((prop_a == prop.LVT || prop_a == prop.T) && (prop_b == prop.T)) {
+
+  // GB8.
+  if ((aProp === prop.LVT || aProp === prop.T) && bProp === prop.T) {
     return false;
   }
-  if (prop_b == prop.EXTEND || prop_b == prop.VIRAMA) {
+
+  // GB9.
+  if (bProp === prop.EXTEND || bProp === prop.ZWJ || bProp === prop.VIRAMA) {
     return false;
   }
-  if (prop_a == prop.VIRAMA && prop_b == prop.INDIC_CONSONANT) {
+
+  // GB9a, GB9b.
+  if (extended && (aProp === prop.PREPEND || bProp === prop.SPACING_MARK)) {
     return false;
   }
+
+  // Tailorings for basic aksara support.
+  if (extended && aProp === prop.VIRAMA && bProp === prop.INDIC_LETTER) {
+    return false;
+  }
+
+  var aStr, index, codePoint, codePointProp;
+
+  // GB10.
+  if (isString) {
+    if (bProp === prop.E_MODIFIER) {
+      // If using new API, consume the string's code points starting from the
+      // end and test the left side of: (E_Base | EBG) Extend* × E_Modifier.
+      aStr = /** @type {string} */ (a);
+      index = aStr.length - 1;
+      codePoint = aCode;
+      codePointProp = aProp;
+      while (index > 0 && codePointProp === prop.EXTEND) {
+        index -= goog.i18n.uChar.charCount(codePoint);
+        codePoint = goog.i18n.GraphemeBreak.getCodePoint_(aStr, index);
+        codePointProp = goog.i18n.GraphemeBreak.getBreakProp_(codePoint);
+      }
+      if (codePointProp === prop.E_BASE || codePointProp === prop.E_BASE_GAZ) {
+        return false;
+      }
+    }
+  } else {
+    // If using legacy API, return best effort by testing:
+    // (E_Base | EBG) × E_Modifier.
+    if ((aProp === prop.E_BASE || aProp === prop.E_BASE_GAZ) &&
+        bProp === prop.E_MODIFIER) {
+      return false;
+    }
+  }
+
+  // GB11.
+  if (aProp === prop.ZWJ &&
+      (bProp === prop.GLUE_AFTER_ZWJ || bProp === prop.E_BASE_GAZ)) {
+    return false;
+  }
+
+  // GB12, GB13.
+  if (isString) {
+    if (bProp === prop.REGIONAL_INDICATOR) {
+      // If using new API, consume the string's code points starting from the
+      // end and test the left side of these rules:
+      // - sot (RI RI)* RI × RI
+      // - [^RI] (RI RI)* RI × RI.
+      var numberOfRi = 0;
+      aStr = /** @type {string} */ (a);
+      index = aStr.length - 1;
+      codePoint = aCode;
+      codePointProp = aProp;
+      while (index > 0 && codePointProp === prop.REGIONAL_INDICATOR) {
+        numberOfRi++;
+        index -= goog.i18n.uChar.charCount(codePoint);
+        codePoint = goog.i18n.GraphemeBreak.getCodePoint_(aStr, index);
+        codePointProp = goog.i18n.GraphemeBreak.getBreakProp_(codePoint);
+      }
+      if (codePointProp === prop.REGIONAL_INDICATOR) {
+        numberOfRi++;
+      }
+      if (numberOfRi % 2 === 1) {
+        return false;
+      }
+    }
+  } else {
+    // If using legacy API, return best effort by testing: RI × RI.
+    if (aProp === prop.REGIONAL_INDICATOR &&
+        bProp === prop.REGIONAL_INDICATOR) {
+      return false;
+    }
+  }
+
+  // GB999.
   return true;
 };
 
 
 /**
- * Method to return property enum value of the codepoint. If it is Hangul LV or
+ * Method to return property enum value of the code point. If it is Hangul LV or
  * LVT, then it is computed; for the rest it is picked from the inversion map.
- * @param {number} acode The code point value of the character.
- * @return {number} Property enum value of codepoint.
+ *
+ * @param {number} codePoint The code point value of the character.
+ * @return {number} Property enum value of code point.
  * @private
  */
-goog.i18n.GraphemeBreak.getBreakProp_ = function(acode) {
-  if (0xAC00 <= acode && acode <= 0xD7A3) {
+goog.i18n.GraphemeBreak.getBreakProp_ = function(codePoint) {
+  if (0xAC00 <= codePoint && codePoint <= 0xD7A3) {
     var prop = goog.i18n.GraphemeBreak.property;
-    if (acode % 0x1C == 0x10) {
+    if (codePoint % 0x1C === 0x10) {
       return prop.LV;
     }
     return prop.LVT;
@@ -11464,125 +11870,216 @@ goog.i18n.GraphemeBreak.getBreakProp_ = function(acode) {
     if (!goog.i18n.GraphemeBreak.inversions_) {
       goog.i18n.GraphemeBreak.inversions_ = new goog.structs.InversionMap(
           [
-            0,    10,  1,      2,   1,     18,    95,  33,    13,   1,    594,
-            112,  275, 7,      263, 45,    1,     1,   1,     2,    1,    2,
-            1,    1,   56,     5,   11,    11,    48,  21,    16,   1,    101,
-            7,    1,   1,      6,   2,     2,     1,   4,     33,   1,    1,
-            1,    30,  27,     91,  11,    58,    9,   34,    4,    1,    9,
-            1,    3,   1,      5,   43,    3,     136, 31,    1,    17,   37,
-            1,    1,   1,      1,   3,     8,     4,   1,     2,    1,    7,
-            8,    2,   2,      21,  8,     1,     2,   17,    39,   1,    1,
-            1,    2,   6,      6,   1,     9,     5,   4,     2,    2,    12,
-            2,    15,  2,      1,   17,    39,    2,   3,     12,   4,    8,
-            6,    17,  2,      3,   14,    1,     17,  39,    1,    1,    3,
-            8,    4,   1,      20,  2,     29,    1,   2,     17,   39,   1,
-            1,    2,   1,      6,   6,     9,     6,   4,     2,    2,    13,
-            1,    16,  1,      18,  41,    1,     1,   1,     12,   1,    9,
-            1,    41,  3,      17,  37,    4,     3,   5,     7,    8,    3,
-            2,    8,   2,      30,  2,     17,    39,  1,     1,    1,    1,
-            2,    1,   3,      1,   5,     1,     8,   9,     1,    3,    2,
-            30,   2,   17,     38,  3,     1,     2,   5,     7,    1,    9,
-            1,    10,  2,      30,  2,     22,    48,  5,     1,    2,    6,
-            7,    19,  2,      13,  46,    2,     1,   1,     1,    6,    1,
-            12,   8,   50,     46,  2,     1,     1,   1,     9,    11,   6,
-            14,   2,   58,     2,   27,    1,     1,   1,     1,    1,    4,
-            2,    49,  14,     1,   4,     1,     1,   2,     5,    48,   9,
-            1,    57,  33,     12,  4,     1,     6,   1,     2,    2,    2,
-            1,    16,  2,      4,   2,     2,     4,   3,     1,    3,    2,
-            7,    3,   4,      13,  1,     1,     1,   2,     6,    1,    1,
-            14,   1,   98,     96,  72,    88,    349, 3,     931,  15,   2,
-            1,    14,  15,     2,   1,     14,    15,  2,     15,   15,   14,
-            35,   17,  2,      1,   7,     8,     1,   2,     9,    1,    1,
-            9,    1,   45,     3,   155,   1,     87,  31,    3,    4,    2,
-            9,    1,   6,      3,   20,    19,    29,  44,    9,    3,    2,
-            1,    69,  23,     2,   3,     4,     45,  6,     2,    1,    1,
-            1,    8,   1,      1,   1,     2,     8,   6,     13,   128,  4,
-            1,    14,  33,     1,   1,     5,     1,   1,     5,    1,    1,
-            1,    7,   31,     9,   12,    2,     1,   7,     23,   1,    4,
-            2,    2,   2,      2,   2,     11,    3,   2,     36,   2,    1,
-            1,    2,   3,      1,   1,     3,     2,   12,    36,   8,    8,
-            2,    2,   21,     3,   128,   3,     1,   13,    1,    7,    4,
-            1,    4,   2,      1,   203,   64,    523, 1,     2,    2,    24,
-            7,    49,  16,     96,  33,    3070,  3,   141,   1,    96,   32,
-            554,  6,   105,    2,   30164, 4,     1,   10,    33,   1,    80,
-            2,    272, 1,      3,   1,     4,     1,   23,    2,    2,    1,
-            24,   30,  4,      4,   3,     8,     1,   1,     13,   2,    16,
-            34,   16,  1,      27,  18,    24,    24,  4,     8,    2,    23,
-            11,   1,   1,      12,  32,    3,     1,   5,     3,    3,    36,
-            1,    2,   4,      2,   1,     3,     1,   69,    35,   6,    2,
-            2,    2,   2,      12,  1,     8,     1,   1,     18,   16,   1,
-            3,    6,   1,      5,   48,    1,     1,   3,     2,    2,    5,
-            2,    1,   1,      32,  9,     1,     2,   2,     5,    1,    1,
-            201,  14,  2,      1,   1,     9,     8,   2,     1,    2,    1,
-            2,    1,   1,      1,   18,    11184, 27,  49,    1028, 1024, 6942,
-            1,    737, 16,     16,  7,     216,   1,   158,   2,    89,   3,
-            513,  1,   2051,   15,  40,    7,     1,   1472,  1,    1,    1,
-            53,   14,  1,      57,  2,     1,     45,  3,     4,    2,    1,
-            1,    2,   1,      66,  3,     36,    5,   1,     6,    2,    75,
-            2,    1,   48,     3,   9,     1,     1,   1258,  1,    1,    1,
-            2,    6,   1,      1,   22681, 62,    4,   25042, 1,    1,    3,
-            3,    1,   5,      8,   8,     2,     7,   30,    4,    148,  3,
-            8097, 26,  790017, 255
+            0,      10,   1,     2,   1,    18,   95,    33,    13,  1,
+            594,    112,  275,   7,   263,  45,   1,     1,     1,   2,
+            1,      2,    1,     1,   56,   6,    10,    11,    1,   1,
+            46,     21,   16,    1,   101,  7,    1,     1,     6,   2,
+            2,      1,    4,     33,  1,    1,    1,     30,    27,  91,
+            11,     58,   9,     34,  4,    1,    9,     1,     3,   1,
+            5,      43,   3,     120, 14,   1,    32,    1,     17,  37,
+            1,      1,    1,     1,   3,    8,    4,     1,     2,   1,
+            7,      8,    2,     2,   21,   7,    1,     1,     2,   17,
+            39,     1,    1,     1,   2,    6,    6,     1,     9,   5,
+            4,      2,    2,     12,  2,    15,   2,     1,     17,  39,
+            2,      3,    12,    4,   8,    6,    17,    2,     3,   14,
+            1,      17,   39,    1,   1,    3,    8,     4,     1,   20,
+            2,      29,   1,     2,   17,   39,   1,     1,     2,   1,
+            6,      6,    9,     6,   4,    2,    2,     13,    1,   16,
+            1,      18,   41,    1,   1,    1,    12,    1,     9,   1,
+            40,     1,    3,     17,  31,   1,    5,     4,     3,   5,
+            7,      8,    3,     2,   8,    2,    29,    1,     2,   17,
+            39,     1,    1,     1,   1,    2,    1,     3,     1,   5,
+            1,      8,    9,     1,   3,    2,    29,    1,     2,   17,
+            38,     3,    1,     2,   5,    7,    1,     1,     8,   1,
+            10,     2,    30,    2,   22,   48,   5,     1,     2,   6,
+            7,      1,    18,    2,   13,   46,   2,     1,     1,   1,
+            6,      1,    12,    8,   50,   46,   2,     1,     1,   1,
+            9,      11,   6,     14,  2,    58,   2,     27,    1,   1,
+            1,      1,    1,     4,   2,    49,   14,    1,     4,   1,
+            1,      2,    5,     48,  9,    1,    57,    33,    12,  4,
+            1,      6,    1,     2,   2,    2,    1,     16,    2,   4,
+            2,      2,    4,     3,   1,    3,    2,     7,     3,   4,
+            13,     1,    1,     1,   2,    6,    1,     1,     14,  1,
+            98,     96,   72,    88,  349,  3,    931,   15,    2,   1,
+            14,     15,   2,     1,   14,   15,   2,     15,    15,  14,
+            35,     17,   2,     1,   7,    8,    1,     2,     9,   1,
+            1,      9,    1,     45,  3,    1,    118,   2,     34,  1,
+            87,     28,   3,     3,   4,    2,    9,     1,     6,   3,
+            20,     19,   29,    44,  84,   23,   2,     2,     1,   4,
+            45,     6,    2,     1,   1,    1,    8,     1,     1,   1,
+            2,      8,    6,     13,  48,   84,   1,     14,    33,  1,
+            1,      5,    1,     1,   5,    1,    1,     1,     7,   31,
+            9,      12,   2,     1,   7,    23,   1,     4,     2,   2,
+            2,      2,    2,     11,  3,    2,    36,    2,     1,   1,
+            2,      3,    1,     1,   3,    2,    12,    36,    8,   8,
+            2,      2,    21,    3,   128,  3,    1,     13,    1,   7,
+            4,      1,    4,     2,   1,    3,    2,     198,   64,  523,
+            1,      1,    1,     2,   24,   7,    49,    16,    96,  33,
+            1324,   1,    34,    1,   1,    1,    82,    2,     98,  1,
+            14,     1,    1,     4,   86,   1,    1418,  3,     141, 1,
+            96,     32,   554,   6,   105,  2,    30164, 4,     1,   10,
+            32,     2,    80,    2,   272,  1,    3,     1,     4,   1,
+            23,     2,    2,     1,   24,   30,   4,     4,     3,   8,
+            1,      1,    13,    2,   16,   34,   16,    1,     1,   26,
+            18,     24,   24,    4,   8,    2,    23,    11,    1,   1,
+            12,     32,   3,     1,   5,    3,    3,     36,    1,   2,
+            4,      2,    1,     3,   1,    36,   1,     32,    35,  6,
+            2,      2,    2,     2,   12,   1,    8,     1,     1,   18,
+            16,     1,    3,     6,   1,    1,    1,     3,     48,  1,
+            1,      3,    2,     2,   5,    2,    1,     1,     32,  9,
+            1,      2,    2,     5,   1,    1,    201,   14,    2,   1,
+            1,      9,    8,     2,   1,    2,    1,     2,     1,   1,
+            1,      18,   11184, 27,  49,   1028, 1024,  6942,  1,   737,
+            16,     16,   16,    207, 1,    158,  2,     89,    3,   513,
+            1,      226,  1,     149, 5,    1670, 15,    40,    7,   1,
+            165,    2,    1305,  1,   1,    1,    53,    14,    1,   56,
+            1,      2,    1,     45,  3,    4,    2,     1,     1,   2,
+            1,      66,   3,     36,  5,    1,    6,     2,     62,  1,
+            12,     2,    1,     48,  3,    9,    1,     1,     1,   2,
+            6,      3,    95,    3,   3,    2,    1,     1,     2,   6,
+            1,      160,  1,     3,   7,    1,    21,    2,     2,   56,
+            1,      1,    1,     1,   1,    12,   1,     9,     1,   10,
+            4,      15,   192,   3,   8,    2,    1,     2,     1,   1,
+            105,    1,    2,     6,   1,    1,    2,     1,     1,   2,
+            1,      1,    1,     235, 1,    2,    6,     4,     2,   1,
+            1,      1,    27,    2,   82,   3,    8,     2,     1,   1,
+            1,      1,    106,   1,   1,    1,    2,     6,     1,   1,
+            101,    3,    2,     4,   1,    4,    1,     1283,  1,   14,
+            1,      1,    82,    23,  1,    7,    1,     2,     1,   2,
+            20025,  5,    59,    7,   1050, 62,   4,     19722, 2,   1,
+            4,      5313, 1,     1,   3,    3,    1,     5,     8,   8,
+            2,      7,    30,    4,   148,  3,    1979,  55,    4,   50,
+            8,      1,    14,    1,   22,   1424, 2213,  7,     109, 7,
+            2203,   26,   264,   1,   53,   1,    52,    1,     17,  1,
+            13,     1,    16,    1,   3,    1,    25,    3,     2,   1,
+            2,      3,    30,    1,   1,    1,    13,    5,     66,  2,
+            2,      11,   21,    4,   4,    1,    1,     9,     3,   1,
+            4,      3,    1,     3,   3,    1,    30,    1,     16,  2,
+            106,    1,    4,     1,   71,   2,    4,     1,     21,  1,
+            4,      2,    81,    1,   92,   3,    3,     5,     48,  1,
+            17,     1,    16,    1,   16,   3,    9,     1,     11,  1,
+            587,    5,    1,     1,   7,    1,    9,     10,    3,   2,
+            788162, 31
           ],
           [
-            1, 13, 1, 12, 1, 0, 1, 0, 1,  0, 2, 0, 2, 0, 2, 0, 2, 0, 2, 0, 2,
-            0, 2,  0, 1,  0, 2, 0, 2, 0,  2, 0, 2, 1, 0, 2, 0, 2, 0, 2, 0, 1,
-            0, 2,  0, 2,  0, 2, 0, 2, 0,  2, 0, 2, 0, 2, 0, 2, 0, 2, 0, 2, 4,
-            0, 5,  2, 4,  2, 0, 4, 2, 4,  6, 4, 0, 2, 5, 0, 2, 0, 5, 2, 4, 0,
-            5, 2,  0, 2,  4, 2, 4, 6, 0,  2, 5, 0, 2, 0, 5, 0, 2, 4, 0, 5, 2,
-            4, 2,  6, 2,  5, 0, 2, 0, 2,  4, 0, 5, 2, 0, 4, 2, 4, 6, 0, 2, 0,
-            2, 4,  0, 5,  2, 0, 2, 4, 2,  4, 6, 2, 5, 0, 2, 0, 5, 0, 2, 0, 5,
-            2, 4,  2, 4,  6, 0, 2, 0, 4,  0, 5, 0, 2, 4, 2, 6, 2, 5, 0, 2, 0,
-            4, 0,  5, 2,  0, 4, 2, 4, 2,  4, 2, 4, 2, 6, 2, 5, 0, 2, 0, 4, 0,
-            5, 0,  2, 4,  2, 4, 6, 0, 2,  0, 2, 0, 4, 0, 5, 6, 2, 4, 2, 4, 2,
-            4, 0,  5, 0,  2, 0, 4, 2, 6,  0, 2, 0, 5, 0, 2, 0, 4, 2, 0, 2, 0,
-            5, 0,  2, 0,  2, 0, 2, 0, 2,  0, 4, 5, 2, 4, 2, 6, 0, 2, 0, 2, 0,
-            2, 0,  5, 0,  2, 4, 2, 0, 6,  4, 2, 5, 0, 5, 0, 4, 2, 5, 2, 5, 0,
-            5, 0,  5, 2,  5, 2, 0, 4, 2,  0, 2, 5, 0, 2, 0, 7, 8, 9, 0, 2, 0,
-            5, 2,  6, 0,  5, 2, 6, 0, 5,  2, 0, 5, 2, 5, 0, 2, 4, 2, 4, 2, 4,
-            2, 6,  2, 0,  2, 0, 2, 0, 2,  0, 5, 2, 4, 2, 4, 2, 4, 2, 0, 5, 0,
-            5, 0,  4, 0,  4, 0, 5, 2, 4,  0, 5, 0, 5, 4, 2, 4, 2, 6, 0, 2, 0,
-            2, 4,  2, 0,  2, 4, 0, 5, 2,  4, 2, 4, 2, 4, 2, 4, 6, 5, 0, 2, 0,
-            2, 4,  0, 5,  4, 2, 4, 2, 6,  4, 5, 0, 5, 0, 5, 0, 2, 4, 2, 4, 2,
-            4, 2,  6, 0,  5, 4, 2, 4, 2,  0, 5, 0, 2, 0, 2, 4, 2, 0, 2, 0, 4,
-            2, 0,  2, 0,  1, 2, 1, 0, 1,  0, 1, 0, 2, 0, 2, 0, 6, 0, 2, 0, 2,
-            0, 2,  0, 2,  0, 2, 0, 2, 0,  2, 0, 2, 0, 6, 5, 2, 5, 4, 2, 4, 0,
-            5, 0,  5, 0,  5, 0, 5, 0, 4,  0, 5, 4, 6, 0, 2, 0, 5, 0, 2, 0, 5,
-            2, 4,  6, 0,  7, 2, 4, 0, 5,  0, 5, 2, 4, 2, 4, 2, 4, 6, 0, 5, 2,
-            4, 2,  4, 2,  0, 2, 0, 2, 4,  0, 5, 0, 5, 0, 5, 0, 5, 2, 0, 2, 0,
-            2, 0,  2, 0,  2, 0, 5, 4, 2,  4, 0, 4, 6, 0, 5, 0, 5, 0, 5, 0, 4,
-            2, 4,  2, 4,  0, 4, 6, 0, 11, 8, 9, 0, 2, 0, 2, 0, 2, 0, 2, 0, 1,
-            0, 2,  0, 1,  0, 2, 0, 2, 0,  2, 6, 0, 4, 2, 4, 0, 2, 6, 0, 2, 4,
-            0, 4,  2, 4,  6, 2, 0, 1, 0,  2, 0, 2, 4, 2, 6, 0, 2, 4, 0, 4, 2,
-            4, 6,  0, 2,  4, 2, 4, 2, 6,  2, 0, 4, 2, 0, 2, 4, 2, 0, 4, 2, 1,
-            2, 0,  2, 0,  2, 0, 2, 0, 14, 0, 1, 2
+            1,  13, 1,  12, 1,  0, 1,  0, 1,  0,  2,  0, 2,  0, 2,  0,  2,  0,
+            2,  0,  2,  0,  2,  0, 3,  0, 2,  0,  1,  0, 2,  0, 2,  0,  2,  3,
+            0,  2,  0,  2,  0,  2, 0,  3, 0,  2,  0,  2, 0,  2, 0,  2,  0,  2,
+            0,  2,  0,  2,  0,  2, 0,  2, 0,  2,  3,  2, 4,  0, 5,  2,  4,  2,
+            0,  4,  2,  4,  6,  4, 0,  2, 5,  0,  2,  0, 5,  0, 2,  4,  0,  5,
+            2,  0,  2,  4,  2,  4, 6,  0, 2,  5,  0,  2, 0,  5, 0,  2,  4,  0,
+            5,  2,  4,  2,  6,  2, 5,  0, 2,  0,  2,  4, 0,  5, 2,  0,  4,  2,
+            4,  6,  0,  2,  0,  2, 4,  0, 5,  2,  0,  2, 4,  2, 4,  6,  2,  5,
+            0,  2,  0,  5,  0,  2, 0,  5, 2,  4,  2,  4, 6,  0, 2,  0,  2,  4,
+            0,  5,  0,  5,  0,  2, 4,  2, 6,  2,  5,  0, 2,  0, 2,  4,  0,  5,
+            2,  0,  4,  2,  4,  2, 4,  2, 4,  2,  6,  2, 5,  0, 2,  0,  2,  4,
+            0,  5,  0,  2,  4,  2, 4,  6, 3,  0,  2,  0, 2,  0, 4,  0,  5,  6,
+            2,  4,  2,  4,  2,  0, 4,  0, 5,  0,  2,  0, 4,  2, 6,  0,  2,  0,
+            5,  0,  2,  0,  4,  2, 0,  2, 0,  5,  0,  2, 0,  2, 0,  2,  0,  2,
+            0,  4,  5,  2,  4,  2, 6,  0, 2,  0,  2,  0, 2,  0, 5,  0,  2,  4,
+            2,  0,  6,  4,  2,  5, 0,  5, 0,  4,  2,  5, 2,  5, 0,  5,  0,  5,
+            2,  5,  2,  0,  4,  2, 0,  2, 5,  0,  2,  0, 7,  8, 9,  0,  2,  0,
+            5,  2,  6,  0,  5,  2, 6,  0, 5,  2,  0,  5, 2,  5, 0,  2,  4,  2,
+            4,  2,  4,  2,  6,  2, 0,  2, 0,  2,  1,  0, 2,  0, 2,  0,  5,  0,
+            2,  4,  2,  4,  2,  4, 2,  0, 5,  0,  5,  0, 5,  2, 4,  2,  0,  5,
+            0,  5,  4,  2,  4,  2, 6,  0, 2,  0,  2,  4, 2,  0, 2,  4,  0,  5,
+            2,  4,  2,  4,  2,  4, 2,  4, 6,  5,  0,  2, 0,  2, 4,  0,  5,  4,
+            2,  4,  2,  6,  2,  5, 0,  5, 0,  5,  0,  2, 4,  2, 4,  2,  4,  2,
+            6,  0,  5,  4,  2,  4, 2,  0, 5,  0,  2,  0, 2,  4, 2,  0,  2,  0,
+            4,  2,  0,  2,  0,  2, 0,  1, 2,  15, 1,  0, 1,  0, 1,  0,  2,  0,
+            16, 0,  17, 0,  17, 0, 17, 0, 16, 0,  17, 0, 16, 0, 17, 0,  2,  0,
+            6,  0,  2,  0,  2,  0, 2,  0, 2,  0,  2,  0, 2,  0, 2,  0,  2,  0,
+            6,  5,  2,  5,  4,  2, 4,  0, 5,  0,  5,  0, 5,  0, 5,  0,  4,  0,
+            5,  4,  6,  2,  0,  2, 0,  5, 0,  2,  0,  5, 2,  4, 6,  0,  7,  2,
+            4,  0,  5,  0,  5,  2, 4,  2, 4,  2,  4,  6, 0,  2, 0,  5,  2,  4,
+            2,  4,  2,  0,  2,  0, 2,  4, 0,  5,  0,  5, 0,  5, 0,  2,  0,  5,
+            2,  0,  2,  0,  2,  0, 2,  0, 2,  0,  5,  4, 2,  4, 0,  4,  6,  0,
+            5,  0,  5,  0,  5,  0, 4,  2, 4,  2,  4,  0, 4,  6, 0,  11, 8,  9,
+            0,  2,  0,  2,  0,  2, 0,  2, 0,  1,  0,  2, 0,  1, 0,  2,  0,  2,
+            0,  2,  0,  2,  0,  2, 6,  0, 2,  0,  4,  2, 4,  0, 2,  6,  0,  6,
+            2,  4,  0,  4,  2,  4, 6,  2, 0,  3,  0,  2, 0,  2, 4,  2,  6,  0,
+            2,  0,  2,  4,  0,  4, 2,  4, 6,  0,  3,  0, 2,  0, 4,  2,  4,  2,
+            6,  2,  0,  2,  0,  2, 4,  2, 6,  0,  2,  4, 0,  2, 0,  2,  4,  2,
+            4,  6,  0,  2,  0,  4, 2,  0, 4,  2,  4,  6, 2,  4, 2,  0,  2,  4,
+            2,  4,  2,  4,  2,  4, 2,  4, 6,  2,  0,  2, 4,  2, 4,  2,  4,  6,
+            2,  0,  2,  0,  4,  2, 4,  2, 4,  6,  2,  0, 2,  4, 2,  4,  2,  6,
+            2,  0,  2,  4,  2,  4, 2,  6, 0,  4,  2,  4, 6,  0, 2,  4,  2,  4,
+            2,  4,  2,  0,  2,  0, 2,  0, 4,  2,  0,  2, 0,  1, 0,  2,  4,  2,
+            0,  4,  2,  1,  2,  0, 2,  0, 2,  0,  2,  0, 2,  0, 2,  0,  2,  0,
+            2,  0,  2,  0,  2,  0, 2,  0, 14, 0,  17, 0, 17, 0, 17, 0,  16, 0,
+            17, 0,  17, 0,  17, 0, 16, 0, 16, 0,  16, 0, 17, 0, 17, 0,  18, 0,
+            16, 0,  16, 0,  19, 0, 16, 0, 16, 0,  16, 0, 16, 0, 16, 0,  17, 0,
+            16, 0,  17, 0,  17, 0, 17, 0, 16, 0,  16, 0, 16, 0, 16, 0,  17, 0,
+            16, 0,  16, 0,  17, 0, 17, 0, 16, 0,  16, 0, 16, 0, 16, 0,  16, 0,
+            16, 0,  16, 0,  16, 0, 16, 0, 1,  2
           ],
           true);
     }
     return /** @type {number} */ (
-        goog.i18n.GraphemeBreak.inversions_.at(acode));
+        goog.i18n.GraphemeBreak.inversions_.at(codePoint));
   }
 };
 
+/**
+ * Extracts a code point from a string at the specified index.
+ *
+ * @param {string} str
+ * @param {number} index
+ * @return {number} Extracted code point.
+ * @private
+ */
+goog.i18n.GraphemeBreak.getCodePoint_ = function(str, index) {
+  var codePoint = goog.i18n.uChar.getCodePointAround(str, index);
+  return (codePoint < 0) ? -codePoint : codePoint;
+};
 
 /**
- * There are two kinds of grapheme clusters: 1) Legacy 2)Extended. This method
- * is to check for both using a boolean flag to switch between them.
+ * Indicates if there is a grapheme cluster boundary between a and b.
+ *
+ * Legacy function. Does not cover cases where a sequence of code points is
+ * required in order to decide if there is a grapheme cluster boundary, such as
+ * emoji modifier sequences and emoji flag sequences. To cover all cases please
+ * use {@code hasGraphemeBreakStrings}.
+ *
+ * There are two kinds of grapheme clusters: 1) Legacy 2) Extended. This method
+ * is to check for both using a boolean flag to switch between them. If no flag
+ * is provided rules for the extended clusters will be used by default.
+ *
  * @param {number} a The code point value of the first character.
  * @param {number} b The code point value of the second character.
  * @param {boolean=} opt_extended If true, indicates extended grapheme cluster;
- *     If false, indicates legacy cluster.
- * @return {boolean} True if a & b do not form a cluster; False otherwise.
+ *     If false, indicates legacy cluster. Default value is true.
+ * @return {boolean} True if there is a grapheme cluster boundary between
+ *     a and b; False otherwise.
  */
 goog.i18n.GraphemeBreak.hasGraphemeBreak = function(a, b, opt_extended) {
+  return goog.i18n.GraphemeBreak.applyBreakRules_(a, b, opt_extended !== false);
+};
 
-  var prop_a = goog.i18n.GraphemeBreak.getBreakProp_(a);
-  var prop_b = goog.i18n.GraphemeBreak.getBreakProp_(b);
-  var prop = goog.i18n.GraphemeBreak.property;
+/**
+ * Indicates if there is a grapheme cluster boundary between a and b.
+ *
+ * There are two kinds of grapheme clusters: 1) Legacy 2) Extended. This method
+ * is to check for both using a boolean flag to switch between them. If no flag
+ * is provided rules for the extended clusters will be used by default.
+ *
+ * @param {string} a String with the first sequence of characters.
+ * @param {string} b String with the second sequence of characters.
+ * @param {boolean=} opt_extended If true, indicates extended grapheme cluster;
+ *     If false, indicates legacy cluster. Default value is true.
+ * @return {boolean} True if there is a grapheme cluster boundary between
+ *     a and b; False otherwise.
+ */
+goog.i18n.GraphemeBreak.hasGraphemeBreakStrings = function(a, b, opt_extended) {
+  goog.asserts.assert(goog.isDef(a), 'First string should be defined.');
+  goog.asserts.assert(goog.isDef(b), 'Second string should be defined.');
 
-  return goog.i18n.GraphemeBreak.applyLegacyBreakRules_(prop_a, prop_b) &&
-      !(opt_extended &&
-        (prop_a == prop.PREPEND || prop_b == prop.SPACING_MARK));
+  // Break if any of the strings is empty.
+  if (a.length === 0 || b.length === 0) {
+    return true;
+  }
+
+  return goog.i18n.GraphemeBreak.applyBreakRules_(a, b, opt_extended !== false);
 };
 
 //javascript/closure/format/format.js
