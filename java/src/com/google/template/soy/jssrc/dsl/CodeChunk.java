@@ -182,19 +182,9 @@ public abstract class CodeChunk {
     return Assignment.create(varName, rhs);
   }
 
-  /** Creates a code chunk that declares a new variable and assigns a value to it. */
-  public static VariableDeclaration declare(String varName, CodeChunk.WithValue rhs) {
-    return VariableDeclaration.create(varName, rhs);
-  }
-
   /** Creates a code chunk representing an anonymous function literal. */
   public static CodeChunk.WithValue function(Iterable<String> parameters, CodeChunk body) {
     return FunctionDeclaration.create(parameters, body);
-  }
-
-  public static VariableDeclaration declare(
-      String varName, CodeChunk.WithValue value, String typeExpr, Iterable<GoogRequire> requires) {
-    return VariableDeclaration.create(varName, value, typeExpr, requires);
   }
 
   /** Creates a code chunk representing the logical negation {@code !} of the given chunk. */
@@ -658,12 +648,9 @@ public abstract class CodeChunk {
       return nameGenerator.generateName("$tmp");
     }
 
-    /**
-     * Creates a code chunk declaring an automatically-named variable initialized to the given
-     * value.
-     */
-    public VariableDeclaration declare(CodeChunk.WithValue rhs) {
-      return CodeChunk.declare(newVarName(), rhs);
+    /** Creates a code chunk declaring an automatically-named variable with no initializer. */
+    public VariableDeclaration.Builder declarationBuilder() {
+      return VariableDeclaration.builder(newVarName());
     }
 
     /**

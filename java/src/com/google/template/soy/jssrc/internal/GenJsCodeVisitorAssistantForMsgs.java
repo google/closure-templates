@@ -16,7 +16,6 @@
 
 package com.google.template.soy.jssrc.internal;
 
-import static com.google.template.soy.jssrc.dsl.CodeChunk.declare;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.id;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.ifStatement;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.mapLiteral;
@@ -33,6 +32,7 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
+import com.google.template.soy.jssrc.dsl.VariableDeclaration;
 import com.google.template.soy.msgs.internal.IcuSyntaxUtils;
 import com.google.template.soy.msgs.internal.MsgUtils;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
@@ -202,7 +202,11 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
     // string to goog.i18n.MessageFormat for postprocessing. This postprocessing is where we're
     // handling all placeholder replacements, even ones that have nothing to do with
     // plural/select.
-    jsCodeBuilder().append(declare(tmpVarName, getMessageFormatCall(googMsgCodeGenInfo)));
+    jsCodeBuilder()
+        .append(
+            VariableDeclaration.builder(tmpVarName)
+                .setRhs(getMessageFormatCall(googMsgCodeGenInfo))
+                .build());
     return tmpVarName;
   }
 
@@ -288,34 +292,31 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
     genGoogMsgCodeForChildren(msgNode, msgNode, googMsgCodeGenInfo);
 
     // Generate JS comment (JSDoc) block for the goog.getMsg() call.
-    jsCodeBuilder().appendLineStart("/** ");
+    StringBuilder jsDocBuilder = new StringBuilder();
+    jsDocBuilder.append("/** ");
     if (msgNode.getMeaning() != null) {
-      jsCodeBuilder().appendLineEnd("@meaning ", msgNode.getMeaning());
-      jsCodeBuilder().appendLineStart(" *  ");
+      jsDocBuilder.append("@meaning ").append(msgNode.getMeaning()).append("\n *  ");
     }
-    jsCodeBuilder().append("@desc ", msgNode.getDesc());
+    jsDocBuilder.append("@desc ").append(msgNode.getDesc());
     if (msgNode.isHidden()) {
-      jsCodeBuilder().appendLineEnd();
-      jsCodeBuilder().appendLineStart(" *  @hidden");
+      jsDocBuilder.append("\n *  @hidden");
     }
-    jsCodeBuilder().appendLineEnd(" */");
+    jsDocBuilder.append(" */");
 
     // Generate goog.getMsg() call.
+    VariableDeclaration.Builder builder =
+        VariableDeclaration.builder(googMsgCodeGenInfo.googMsgVarName)
+            .setJsDoc(jsDocBuilder.toString());
     if (msgNode.isPlrselMsg() || googMsgCodeGenInfo.placeholders.isEmpty()) {
       // For plural/select msgs, we're letting goog.i18n.MessageFormat handle all placeholder
       // replacements, even ones that have nothing to do with plural/select. Therefore, this case
       // is the same as having no placeholder replacements.
-      jsCodeBuilder()
-          .append(declare(googMsgCodeGenInfo.googMsgVarName, GOOG_GET_MSG.call(googMsgContent)));
+      builder.setRhs(GOOG_GET_MSG.call(googMsgContent));
     } else {
       // If there are placeholders, pass them as an arg to goog.getMsg.
-      jsCodeBuilder()
-          .append(
-              declare(
-                  googMsgCodeGenInfo.googMsgVarName,
-                  GOOG_GET_MSG.call(googMsgContent, googMsgCodeGenInfo.placeholders.build())));
-      }
-
+      builder.setRhs(GOOG_GET_MSG.call(googMsgContent, googMsgCodeGenInfo.placeholders.build()));
+    }
+    jsCodeBuilder().append(builder.build());
     return googMsgCodeGenInfo;
   }
 

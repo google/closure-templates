@@ -25,7 +25,6 @@ import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.IN
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_PRINT;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_RENDER_DYNAMIC_CONTENT;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.LITERAL_EMPTY_STRING;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.declare;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.id;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.return_;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.stringLiteral;
@@ -203,7 +202,8 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     CodeChunk body = visitChildrenReturningCodeChunk(node);
 
     if (isTextTemplate) {
-      VariableDeclaration declare = declare("output", LITERAL_EMPTY_STRING);
+      VariableDeclaration declare =
+          VariableDeclaration.builder("output").setRhs(LITERAL_EMPTY_STRING).build();
       body = CodeChunk.statements(declare, body, return_(declare.ref()));
       jsCodeBuilder.popOutputVar();
     }
@@ -245,15 +245,17 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       case HTML:
       case ATTRIBUTES:
         declaration =
-            CodeChunk.declare(
-                generatedVarName, CodeChunk.function(ImmutableList.<String>of(), children));
+            VariableDeclaration.builder(generatedVarName)
+                .setRhs(CodeChunk.function(ImmutableList.<String>of(), children))
+                .build();
         definition = declaration;
         break;
       default:
         // N.B. because incrementaldomsrc doesn't run the autoescaper, the normal |text directives
         // are not inserted and so we can't rely on non string expressions being coerced to strings
         // so we must start the output var off with a string.
-        declaration = declare(generatedVarName, LITERAL_EMPTY_STRING);
+        declaration =
+            VariableDeclaration.builder(generatedVarName).setRhs(LITERAL_EMPTY_STRING).build();
         definition = CodeChunk.statements(declaration, children);
         break;
     }
@@ -358,7 +360,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
    */
   private CodeChunk.WithValue generateTextCall(CodeChunk.WithValue textValue) {
     Generator cg = templateTranslationContext.codeGenerator();
-    CodeChunk.WithValue var = cg.declare(textValue).ref();
+    CodeChunk.WithValue var = cg.declarationBuilder().setRhs(textValue).build().ref();
     return INCREMENTAL_DOM_TEXT
         .call(var)
         .withInitialStatements(

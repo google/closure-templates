@@ -19,7 +19,6 @@ package com.google.template.soy.jssrc.internal;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.EMPTY_OBJECT_LITERAL;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.assign;
-import static com.google.template.soy.jssrc.dsl.CodeChunk.declare;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.dottedIdNoRequire;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.forLoop;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.id;
@@ -61,6 +60,7 @@ import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
 import com.google.template.soy.jssrc.dsl.ConditionalBuilder;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
 import com.google.template.soy.jssrc.dsl.SwitchBuilder;
+import com.google.template.soy.jssrc.dsl.VariableDeclaration;
 import com.google.template.soy.jssrc.internal.GenJsExprsVisitor.GenJsExprsVisitorFactory;
 import com.google.template.soy.passes.FindIndirectParamsVisitor;
 import com.google.template.soy.passes.FindIndirectParamsVisitor.IndirectParamsInfo;
@@ -565,12 +565,17 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       String namespaceAlias = "$import" + counter++;
       String importNamespace = getGoogModuleNamespace(namespace);
       jsCodeBuilder.append(
-          declare(namespaceAlias, GOOG_REQUIRE.call(stringLiteral(importNamespace))));
+          VariableDeclaration.builder(namespaceAlias)
+              .setRhs(GOOG_REQUIRE.call(stringLiteral(importNamespace)))
+              .build());
       // Alias all the templates used from the module
       for (String fullyQualifiedName : namespaceToTemplates.get(namespace)) {
         String alias = templateAliases.get(fullyQualifiedName);
         String shortName = fullyQualifiedName.substring(fullyQualifiedName.lastIndexOf('.'));
-        jsCodeBuilder.append(declare(alias, dottedIdNoRequire(namespaceAlias + shortName)));
+        jsCodeBuilder.append(
+            VariableDeclaration.builder(alias)
+                .setRhs(dottedIdNoRequire(namespaceAlias + shortName))
+                .build());
       }
     }
   }
@@ -749,7 +754,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     // additional temporary variable.
     if (!SoyTreeUtils.getAllNodesOfType(node, NullCoalescingOpNode.class).isEmpty()
         || !SoyTreeUtils.getAllNodesOfType(node, SwitchNode.class).isEmpty()) {
-      bodyStatements.add(CodeChunk.declare("$$temp", null));
+      bodyStatements.add(VariableDeclaration.builder("$$temp").build());
     }
 
     // Generate statement to ensure data is defined, if necessary.
@@ -768,7 +773,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
             CodeChunk.statements(bodyStatements.build()));
     ImmutableList.Builder<CodeChunk> declarations = ImmutableList.builder();
     if (addToExports) {
-      declarations.add(CodeChunk.declare(alias, function));
+      declarations.add(VariableDeclaration.builder(alias).setRhs(function).build());
       declarations.add(
           assign("exports" /* partialName starts with a dot */ + partialName, id(alias)));
     } else {
@@ -920,7 +925,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     CodeChunk.WithValue value =
         jsExprTranslator.translateToCodeChunk(
             node.getExpr(), templateTranslationContext, errorReporter);
-    jsCodeBuilder.append(declare(generatedVarName, value));
+    jsCodeBuilder.append(VariableDeclaration.builder(generatedVarName).setRhs(value).build());
 
     // Add a mapping for generating future references to this local var.
     templateTranslationContext
@@ -1107,7 +1112,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         || type.equals(AnyType.getInstance())
         || type.equals(UnknownType.getInstance())) {
       CodeChunk.Generator codeGenerator = templateTranslationContext.codeGenerator();
-      CodeChunk.WithValue tmp = codeGenerator.declare(switchOn).ref();
+      CodeChunk.WithValue tmp = codeGenerator.declarationBuilder().setRhs(switchOn).build().ref();
       return CodeChunk.ifExpression(GOOG_IS_OBJECT.call(tmp), tmp.dotAccess("toString").call())
           .else_(tmp)
           .build(codeGenerator);
@@ -1158,8 +1163,11 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         jsExprTranslator.translateToCodeChunk(
             node.getExpr(), templateTranslationContext, errorReporter);
 
-    jsCodeBuilder.append(declare(listName, dataRef));
-    jsCodeBuilder.append(declare(limitName, dottedIdNoRequire(listName + ".length")));
+    jsCodeBuilder.append(VariableDeclaration.builder(listName).setRhs(dataRef).build());
+    jsCodeBuilder.append(
+        VariableDeclaration.builder(limitName)
+            .setRhs(dottedIdNoRequire(listName + ".length"))
+            .build());
 
     // Generate the foreach body as a CodeChunk.
     CodeChunk foreachBody = visitNodeReturningCodeChunk(nonEmptyNode);
@@ -1221,7 +1229,8 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         .put(varName + "__index", loopIndex);
 
     // Generate the loop body.
-    CodeChunk data = declare(dataName, id(listName).bracketAccess(loopIndex));
+    CodeChunk data =
+        VariableDeclaration.builder(dataName).setRhs(id(listName).bracketAccess(loopIndex)).build();
     CodeChunk foreachBody = visitChildrenReturningCodeChunk(node);
     CodeChunk body = CodeChunk.statements(data, foreachBody);
 
@@ -1273,10 +1282,11 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     // they are not calculated multiple times.
     // No need to do so for initial, since it is only executed once.
     if (!(range.limit().getRoot() instanceof IntegerNode)) {
-      limit = declare(localVar + "Limit", limit).ref();
+      limit = VariableDeclaration.builder(localVar + "Limit").setRhs(limit).build().ref();
     }
     if (!(range.increment().getRoot() instanceof IntegerNode)) {
-      increment = declare(localVar + "Increment", increment).ref();
+      increment =
+          VariableDeclaration.builder(localVar + "Increment").setRhs(increment).build().ref();
     }
 
     // Populate Soy to JS var mappings with this for node's local variable.
@@ -1502,7 +1512,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       CodeChunk.WithValue coerced = jsType.getValueCoercion(paramChunk, generator);
       if (coerced != null) {
         // since we have coercion logic, dump into a temporary
-        paramChunk = generator.declare(coerced).ref();
+        paramChunk = generator.declarationBuilder().setRhs(coerced).build().ref();
       }
       // The param value to assign
       CodeChunk.WithValue value;
@@ -1519,11 +1529,20 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         value = paramChunk;
       }
 
-      String closureTypeExpr = jsSrcOptions.shouldGenerateJsdoc() ? jsType.typeExpr() : null;
-      declarations.add(declare(paramAlias, value, closureTypeExpr, jsType.getGoogRequires()));
+      VariableDeclaration.Builder declarationBuilder =
+          VariableDeclaration.builder(paramAlias)
+              .setRhs(value)
+              .setGoogRequires(jsType.getGoogRequires());
+      if (jsSrcOptions.shouldGenerateJsdoc()) {
+        declarationBuilder.setJsDoc("/** @type {" + jsType.typeExpr() + "} */");
+      }
+      VariableDeclaration declaration = declarationBuilder.build();
+      declarations.add(declaration);
 
       templateTranslationContext
           .soyToJsVariableMappings()
+          // TODO(lukes): this should really be declartion.ref() but we cannot do that until
+          // everything is on the code chunk api.
           .put(paramName, id(paramAlias));
     }
     return CodeChunk.statements(declarations.build());

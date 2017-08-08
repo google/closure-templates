@@ -73,7 +73,7 @@ abstract class BinaryOperation extends Operation {
     }
     // Otherwise, generate explicit short-circuiting code.
     // rhs should be evaluated only if lhs evaluates to true.
-    CodeChunk.WithValue tmp = codeGenerator.declare(lhs).ref();
+    CodeChunk.WithValue tmp = codeGenerator.declarationBuilder().setRhs(lhs).build().ref();
     return Composite.create(
         ImmutableList.of(CodeChunk.ifStatement(tmp, tmp.assign(rhs)).build()), tmp);
   }
@@ -87,7 +87,7 @@ abstract class BinaryOperation extends Operation {
     }
     // Otherwise, generate explicit short-circuiting code.
     // rhs should be evaluated only if lhs evaluates to false.
-    CodeChunk.WithValue tmp = codeGenerator.declare(lhs).ref();
+    CodeChunk.WithValue tmp = codeGenerator.declarationBuilder().setRhs(lhs).build().ref();
     return Composite.create(
         ImmutableList.of(CodeChunk.ifStatement(not(tmp), tmp.assign(rhs)).build()), tmp);
   }

@@ -15,7 +15,6 @@
  */
 package com.google.template.soy.jssrc.dsl;
 
-import static com.google.template.soy.jssrc.dsl.CodeChunk.declare;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.dottedIdNoRequire;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.dottedIdWithRequires;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.id;
@@ -47,7 +46,10 @@ public abstract class GoogRequire implements Comparable<GoogRequire> {
   public static GoogRequire createWithAlias(String symbol, String alias) {
     CodeChunkUtils.checkId(alias);
     return new AutoValue_GoogRequire(
-        symbol, declare(alias, GOOG_REQUIRE.call(stringLiteral(symbol))));
+        symbol,
+        VariableDeclaration.builder(alias)
+            .setRhs(GOOG_REQUIRE.call(stringLiteral(symbol)))
+            .build());
   }
 
   /** The symbol to require. */

@@ -16,7 +16,6 @@
 
 package com.google.template.soy.jssrc.internal;
 
-import static com.google.template.soy.jssrc.dsl.CodeChunk.declare;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.id;
 
 import com.google.common.base.Preconditions;
@@ -26,6 +25,7 @@ import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.CodeChunk.RequiresCollector;
 import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
+import com.google.template.soy.jssrc.dsl.VariableDeclaration;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
@@ -168,7 +168,10 @@ public class JsCodeBuilder {
     } else {
       CodeChunk.WithValue rhs = CodeChunkUtils.concatChunksForceString(codeChunks);
       rhs.collectRequires(requireCollector);
-      append(declare(currOutputVar.singleExprOrName().getText(), rhs));
+      append(
+          VariableDeclaration.builder(currOutputVar.singleExprOrName().getText())
+              .setRhs(rhs)
+              .build());
       setOutputVarInited();
     }
     return this;

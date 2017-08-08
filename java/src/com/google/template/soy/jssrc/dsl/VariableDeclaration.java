@@ -26,28 +26,21 @@ import javax.annotation.concurrent.Immutable;
 @Immutable
 public abstract class VariableDeclaration extends CodeChunk {
 
+  public static Builder builder(String name) {
+    return new AutoValue_VariableDeclaration.Builder()
+        .setVarName(name)
+        .setGoogRequires(ImmutableSet.<GoogRequire>of());
+  }
+
   abstract String varName();
 
   @Nullable
   abstract CodeChunk.WithValue rhs();
 
   @Nullable
-  abstract String closureCompilerTypeExpression();
-  
+  abstract String jsDoc();
+
   abstract ImmutableSet<GoogRequire> googRequires();
-
-  static VariableDeclaration create(String varName, @Nullable CodeChunk.WithValue rhs) {
-    return new AutoValue_VariableDeclaration(varName, rhs, null, ImmutableSet.<GoogRequire>of());
-  }
-
-  static VariableDeclaration create(
-      String varName,
-      @Nullable CodeChunk.WithValue rhs,
-      @Nullable String closureCompilerTypeExpression,
-      Iterable<GoogRequire> googRequires) {
-    return new AutoValue_VariableDeclaration(
-        varName, rhs, closureCompilerTypeExpression, ImmutableSet.copyOf(googRequires));
-  }
 
   /** Returns a {@link CodeChunk.WithValue} representing a reference to this declared variable. */
   public CodeChunk.WithValue ref() {
@@ -74,8 +67,8 @@ public abstract class VariableDeclaration extends CodeChunk {
     if (rhs() != null) {
       ctx.appendInitialStatements(rhs());
     }
-    if (closureCompilerTypeExpression() != null) {
-      ctx.append("/** @type {").append(closureCompilerTypeExpression()).append("} */").endLine();
+    if (jsDoc() != null) {
+      ctx.append(jsDoc()).endLine();
     }
     ctx.append("var ").append(varName());
     if (rhs() != null) {
@@ -92,5 +85,24 @@ public abstract class VariableDeclaration extends CodeChunk {
     if (rhs() != null) {
       rhs().collectRequires(collector);
     }
+  }
+
+  /** A builder for a {@link VariableDeclaration}. */
+  @AutoValue.Builder
+  public abstract static class Builder {
+
+    abstract Builder setVarName(String name);
+
+    public abstract Builder setJsDoc(String jsDoc);
+
+    public abstract Builder setRhs(CodeChunk.WithValue value);
+
+    public Builder setGoogRequires(Iterable<GoogRequire> requires) {
+      return setGoogRequires(ImmutableSet.copyOf(requires));
+    }
+
+    abstract Builder setGoogRequires(ImmutableSet<GoogRequire> requires);
+
+    public abstract VariableDeclaration build();
   }
 }
