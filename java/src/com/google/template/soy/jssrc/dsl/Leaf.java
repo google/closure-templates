@@ -28,22 +28,24 @@ import com.google.template.soy.jssrc.restricted.JsExpr;
 @AutoValue
 @Immutable
 abstract class Leaf extends CodeChunk.WithValue {
-  static WithValue create(String text, Iterable<GoogRequire> require) {
-    return create(new JsExpr(text, Integer.MAX_VALUE), ImmutableSet.copyOf(require));
+  static WithValue create(String text, boolean isCheap, Iterable<GoogRequire> require) {
+    return create(new JsExpr(text, Integer.MAX_VALUE), isCheap, ImmutableSet.copyOf(require));
   }
 
-  static Leaf create(String text) {
-    return create(new JsExpr(text, Integer.MAX_VALUE), ImmutableSet.<GoogRequire>of());
+  static Leaf create(String text, boolean isCheap) {
+    return create(new JsExpr(text, Integer.MAX_VALUE), isCheap, ImmutableSet.<GoogRequire>of());
   }
 
-  static Leaf create(JsExpr value, Iterable<GoogRequire> requires) {
-    return new AutoValue_Leaf(value, ImmutableSet.copyOf(requires));
+  static Leaf create(JsExpr value, boolean isCheap, Iterable<GoogRequire> requires) {
+    return new AutoValue_Leaf(value, ImmutableSet.copyOf(requires), isCheap);
   }
-  
+
   abstract JsExpr value();
 
   abstract ImmutableSet<GoogRequire> requires();
 
+  @Override
+  public abstract boolean isCheap();
 
   @Override
   void doFormatInitialStatements(FormattingContext ctx) {
