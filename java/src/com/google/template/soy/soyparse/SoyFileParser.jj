@@ -100,7 +100,6 @@ import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.LogNode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.MsgNode;
-import com.google.template.soy.soytree.FooLogNode;
 import com.google.template.soy.soytree.MsgPluralCaseNode;
 import com.google.template.soy.soytree.MsgPluralDefaultNode;
 import com.google.template.soy.soytree.MsgPluralNode;
@@ -122,6 +121,7 @@ import com.google.template.soy.soytree.TemplateDelegateNodeBuilder;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateNodeBuilder;
+import com.google.template.soy.soytree.VeLogNode;
 import com.google.template.soy.soytree.XidNode;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypes;
@@ -295,7 +295,7 @@ import javax.annotation.Nullable;
  *    {delcall ...}{param ... /}{param ...}...{/param}{/delcall}
  *    {log}...{/log}
  *    {debugger}
- *    {foolog ...}....{/foolog}
+ *    {velog ...}....{/velog}
  *
  * 5. Misc:
  *    + The following commands are not allowed to appear in a template:
@@ -909,8 +909,8 @@ TOKEN_MGR_DECLS: {
 | < CMD_BEGIN_PRINT              : "{print" <WS>    > : EXPR
 | < CMD_BEGIN_IMPLICIT_PRINT     : "{"              > : EXPR
 
-| < CMD_BEGIN_FOOLOG                : "{foolog" <WS>      > : IN_CMD_TAG
-| < CMD_CLOSE_FOOLOG                : "{/foolog}"         >
+| < CMD_BEGIN_VELOG                : "{velog" <WS>      > : IN_CMD_TAG
+| < CMD_CLOSE_VELOG                : "{/velog}"         >
 }
 
 
@@ -2486,9 +2486,9 @@ private IfNode IfStmt() :
 
 
 /**
- * FooLogStmt
+ * VeLogStmt
  */
-private FooLogNode FooLogStmt() :
+private VeLogNode FooLogStmt() :
 {
   Identifier name = null;
   Token tagBegin, tagEnd;
@@ -2498,7 +2498,7 @@ private FooLogNode FooLogStmt() :
   List<StandaloneNode> templateBlock;
 }
 {
-  tagBegin = <CMD_BEGIN_FOOLOG>
+  tagBegin = <CMD_BEGIN_VELOG>
   try {
     name = DottedIdent()
     attributes = Attributes()
@@ -2516,10 +2516,10 @@ private FooLogNode FooLogStmt() :
 
   templateBlock = TemplateBlock()
 
-  <CMD_CLOSE_FOOLOG>
+  <CMD_CLOSE_VELOG>
 
   {
-    FooLogNode node = new FooLogNode(
+    VeLogNode node = new VeLogNode(
         nodeIdGen.genId(),
         createSrcLoc(tagBegin, tagEnd),
         name,

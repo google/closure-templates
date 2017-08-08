@@ -40,7 +40,6 @@ import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.DebuggerNode;
-import com.google.template.soy.soytree.FooLogNode;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForeachIfemptyNode;
 import com.google.template.soy.soytree.ForeachNode;
@@ -62,6 +61,7 @@ import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.VeLogNode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -762,9 +762,9 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     }
 
     @Override
-    protected void visitFooLogNode(FooLogNode node) {
+    protected void visitVeLogNode(VeLogNode node) {
       // TODO(lukes): stub implementation, fix!
-      pyCodeBuilder.appendLine("raise 'soy_py doesn't support foolog yet'");
+      pyCodeBuilder.appendLine("raise 'soy_py doesn't support velog yet'");
     }
 
     @Override

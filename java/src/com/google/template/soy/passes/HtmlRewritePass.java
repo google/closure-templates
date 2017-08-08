@@ -48,7 +48,6 @@ import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.CaseOrDefaultNode;
 import com.google.template.soy.soytree.CssNode;
 import com.google.template.soy.soytree.DebuggerNode;
-import com.google.template.soy.soytree.FooLogNode;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForeachNode;
 import com.google.template.soy.soytree.ForeachNonemptyNode;
@@ -81,6 +80,7 @@ import com.google.template.soy.soytree.SwitchCaseNode;
 import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TagName;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.VeLogNode;
 import com.google.template.soy.soytree.XidNode;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -227,7 +227,7 @@ public final class HtmlRewritePass extends CompilerFilePass {
 
   private static final SoyErrorKind FOOLOG_CAN_ONLY_BE_USED_IN_PCDATA =
       SoyErrorKind.of(
-          "'{'foolog ...'}' commands can only be used in pcdata context.", StyleAllowance.NO_CAPS);
+          "'{'velog ...'}' commands can only be used in pcdata context.", StyleAllowance.NO_CAPS);
 
   /** Represents features of the parser states. */
   private enum StateFeature {
@@ -1246,11 +1246,11 @@ public final class HtmlRewritePass extends CompilerFilePass {
     }
 
     @Override
-    protected void visitFooLogNode(FooLogNode node) {
+    protected void visitVeLogNode(VeLogNode node) {
       if (context.getState() != State.PCDATA) {
         errorReporter.report(node.getSourceLocation(), FOOLOG_CAN_ONLY_BE_USED_IN_PCDATA);
       }
-      visitScopedBlock(SanitizedContentKind.HTML, node, "foolog");
+      visitScopedBlock(SanitizedContentKind.HTML, node, "velog");
     }
 
     @Override

@@ -129,7 +129,7 @@ public final class PassManager {
       singleFilePassesBuilder.add(new ResolveExpressionTypesPass());
       // needs to run after both resolve types and htmlrewrite pass
       singleFilePassesBuilder.add(
-          new FooLogValidationPass(
+          new VeLogValidationPass(
               errorReporter, options.getExperimentalFeatures(), builder.loggingConfig));
     }
     singleFilePassesBuilder.add(new ResolvePackageRelativeCssNamesPass());

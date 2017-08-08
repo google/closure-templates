@@ -23,7 +23,6 @@ import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.CssNode;
 import com.google.template.soy.soytree.DebuggerNode;
-import com.google.template.soy.soytree.FooLogNode;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForeachNode;
 import com.google.template.soy.soytree.IfCondNode;
@@ -38,6 +37,7 @@ import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SwitchNode;
+import com.google.template.soy.soytree.VeLogNode;
 import com.google.template.soy.soytree.XidNode;
 import java.util.HashMap;
 import java.util.Map;
@@ -182,7 +182,7 @@ class IsComputableAsPyExprVisitor extends AbstractReturningSoyNodeVisitor<Boolea
   }
 
   @Override
-  protected Boolean visitFooLogNode(FooLogNode node) {
+  protected Boolean visitVeLogNode(VeLogNode node) {
     return false;
   }
 

@@ -26,20 +26,20 @@ import com.google.template.soy.error.SoyErrors;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.logging.ValidatedLoggingConfig.ValidatedLoggableElement;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
-import com.google.template.soy.soytree.FooLogNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.VeLogNode;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.primitive.BoolType;
 import com.google.template.soy.types.proto.SoyProtoType;
 
-/** Validates uses of the {@code foolog} command. */
-final class FooLogValidationPass extends CompilerFilePass {
+/** Validates uses of the {@code velog} command. */
+final class VeLogValidationPass extends CompilerFilePass {
   private static final SoyErrorKind LOGGING_IS_EXPERIMENTAL =
-      SoyErrorKind.of("The '{'foolog ...'}' command is disabled in this configuration.");
+      SoyErrorKind.of("The '{'velog ...'}' command is disabled in this configuration.");
   private static final SoyErrorKind NO_CONFIG_FOR_ELEMENT =
       SoyErrorKind.of(
           "Could not find logging configuration for this element.{0}",
@@ -53,13 +53,13 @@ final class FooLogValidationPass extends CompilerFilePass {
       SoyErrorKind.of("Expected an expression of type ''{0}'', instead got ''{1}''.");
   private static final SoyErrorKind REQUIRE_STRICTHTML =
       SoyErrorKind.of(
-          "The '{'foolog ...'}' command can only be used in templates with stricthtml=\"true\".");
+          "The '{'velog ...'}' command can only be used in templates with stricthtml=\"true\".");
 
   private final ErrorReporter reporter;
   private final boolean enabled;
   private final ValidatedLoggingConfig loggingConfig;
 
-  FooLogValidationPass(
+  VeLogValidationPass(
       ErrorReporter reporter,
       ImmutableSet<String> experimentalFeatures,
       ValidatedLoggingConfig loggingConfig) {
@@ -75,10 +75,10 @@ final class FooLogValidationPass extends CompilerFilePass {
       // There is no need
       return;
     }
-    new FooLogVisitor().exec(file);
+    new VeLogVisitor().exec(file);
   }
 
-  private final class FooLogVisitor extends AbstractSoyNodeVisitor<Void> {
+  private final class VeLogVisitor extends AbstractSoyNodeVisitor<Void> {
     private TemplateNode currentTemplate = null;
 
     @Override
@@ -89,7 +89,7 @@ final class FooLogValidationPass extends CompilerFilePass {
     }
 
     @Override
-    protected void visitFooLogNode(FooLogNode node) {
+    protected void visitVeLogNode(VeLogNode node) {
       if (!enabled) {
         reporter.report(node.getSourceLocation(), LOGGING_IS_EXPERIMENTAL);
       } else if (!currentTemplate.isStrictHtml()) {
@@ -107,8 +107,8 @@ final class FooLogValidationPass extends CompilerFilePass {
       }
     }
 
-    /** Type checks both expressions and assigns the {@link FooLogNode#getLoggingId()} field. */
-    private void validateNodeAgainstConfig(FooLogNode node) {
+    /** Type checks both expressions and assigns the {@link VeLogNode#getLoggingId()} field. */
+    private void validateNodeAgainstConfig(VeLogNode node) {
       ValidatedLoggableElement config = loggingConfig.getElement(node.getName().identifier());
 
       if (config == null) {

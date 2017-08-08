@@ -57,7 +57,6 @@ import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.CssNode;
 import com.google.template.soy.soytree.DebuggerNode;
-import com.google.template.soy.soytree.FooLogNode;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForNode.RangeArgs;
 import com.google.template.soy.soytree.ForeachNode;
@@ -81,6 +80,7 @@ import com.google.template.soy.soytree.SwitchCaseNode;
 import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.VeLogNode;
 import com.google.template.soy.soytree.XidNode;
 import java.util.ArrayList;
 import java.util.List;
@@ -772,12 +772,12 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   }
 
   @Override
-  protected Statement visitFooLogNode(FooLogNode node) {
+  protected Statement visitVeLogNode(VeLogNode node) {
     // TODO(lukes): fix stub implementation
     return new Statement() {
       @Override
       void doGen(CodeBuilder adapter) {
-        adapter.throwException(Type.getType(IllegalStateException.class), "foolog isn't supported");
+        adapter.throwException(Type.getType(IllegalStateException.class), "velog isn't supported");
       }
     };
   }

@@ -112,7 +112,7 @@ public interface SoyNode extends Node {
     HTML_ATTRIBUTE_VALUE_NODE,
     HTML_COMMENT_NODE,
 
-    FOO_LOG_NODE,
+    VE_LOG_NODE,
 
     LOG_NODE,
     DEBUGGER_NODE,

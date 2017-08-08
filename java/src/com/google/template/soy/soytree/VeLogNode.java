@@ -30,11 +30,11 @@ import java.util.List;
 import javax.annotation.Nullable;
 
 /**
- * Node for a <code {@literal {}foolog...}</code> statement.
+ * Node for a <code {@literal {}velog...}</code> statement.
  *
  * <p>This is an experimental feature and the name is temporary. So don't get upset!
  */
-public final class FooLogNode extends AbstractBlockCommandNode
+public final class VeLogNode extends AbstractBlockCommandNode
     implements ExprHolderNode, StatementNode, BlockNode {
 
   @Nullable private final ExprRootNode dataExpr;
@@ -42,13 +42,13 @@ public final class FooLogNode extends AbstractBlockCommandNode
   private final Identifier name;
   @Nullable private Long loggingId;
 
-  public FooLogNode(
+  public VeLogNode(
       int id,
       SourceLocation location,
       Identifier name,
       List<CommandTagAttribute> attributes,
       ErrorReporter errorReporter) {
-    super(id, location, "foolog");
+    super(id, location, "velog");
     this.name = checkNotNull(name);
     ExprRootNode configExpr = null;
     ExprRootNode logonlyExpr = null;
@@ -65,7 +65,7 @@ public final class FooLogNode extends AbstractBlockCommandNode
               attr.getName().location(),
               CommandTagAttribute.UNSUPPORTED_ATTRIBUTE_KEY,
               attr.getName().identifier(),
-              "foolog",
+              "velog",
               ImmutableList.of("logonly", "data"));
           break;
       }
@@ -74,7 +74,7 @@ public final class FooLogNode extends AbstractBlockCommandNode
     this.logonlyExpr = logonlyExpr;
   }
 
-  private FooLogNode(FooLogNode orig, CopyState copyState) {
+  private VeLogNode(VeLogNode orig, CopyState copyState) {
     super(orig, copyState);
     this.name = orig.name;
     this.dataExpr = orig.dataExpr == null ? null : orig.dataExpr.copy(copyState);
@@ -108,7 +108,7 @@ public final class FooLogNode extends AbstractBlockCommandNode
 
   @Override
   public Kind getKind() {
-    return Kind.FOO_LOG_NODE;
+    return Kind.VE_LOG_NODE;
   }
 
   @Override
@@ -125,7 +125,7 @@ public final class FooLogNode extends AbstractBlockCommandNode
 
   @Override
   public SoyNode copy(CopyState copyState) {
-    return new FooLogNode(this, copyState);
+    return new VeLogNode(this, copyState);
   }
 
   @Override
@@ -145,7 +145,7 @@ public final class FooLogNode extends AbstractBlockCommandNode
     StringBuilder sb = new StringBuilder();
     sb.append(getTagString());
     appendSourceStringForChildren(sb);
-    sb.append("{/foolog}");
+    sb.append("{/velog}");
     return sb.toString();
   }
 

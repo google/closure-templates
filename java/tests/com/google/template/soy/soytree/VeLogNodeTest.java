@@ -35,63 +35,63 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 @RunWith(JUnit4.class)
-public final class FooLogNodeTest {
+public final class VeLogNodeTest {
 
   @Test
   public void testParsing_justName() {
-    FooLogNode openTag = parseFooLog("{foolog Bar}{/foolog}");
+    VeLogNode logNode = parseVeLog("{velog Bar}{/velog}");
 
-    assertThat(openTag.toSourceString()).isEqualTo("{foolog Bar}{/foolog}");
-    assertThat(openTag.getName().identifier()).isEqualTo("Bar");
-    assertThat(openTag.getConfigExpression()).isNull();
-    assertThat(openTag.getLogonlyExpression()).isNull();
+    assertThat(logNode.toSourceString()).isEqualTo("{velog Bar}{/velog}");
+    assertThat(logNode.getName().identifier()).isEqualTo("Bar");
+    assertThat(logNode.getConfigExpression()).isNull();
+    assertThat(logNode.getLogonlyExpression()).isNull();
   }
 
   @Test
   public void testParsing_configExpression() {
-    FooLogNode openTag = parseFooLog("{foolog Bar data=\"soy.test.Foo()\"}{/foolog}");
+    VeLogNode logNode = parseVeLog("{velog Bar data=\"soy.test.Foo()\"}{/velog}");
 
-    assertThat(openTag.toSourceString()).isEqualTo("{foolog Bar data=\"soy.test.Foo()\"}{/foolog}");
-    assertThat(openTag.getName().identifier()).isEqualTo("Bar");
-    assertThat(openTag.getConfigExpression().toSourceString()).isEqualTo("soy.test.Foo()");
-    assertThat(openTag.getLogonlyExpression()).isNull();
+    assertThat(logNode.toSourceString()).isEqualTo("{velog Bar data=\"soy.test.Foo()\"}{/velog}");
+    assertThat(logNode.getName().identifier()).isEqualTo("Bar");
+    assertThat(logNode.getConfigExpression().toSourceString()).isEqualTo("soy.test.Foo()");
+    assertThat(logNode.getLogonlyExpression()).isNull();
   }
 
   @Test
   public void testParsing_logonly() {
-    FooLogNode openTag = parseFooLog("{foolog Bar logonly=\"false\"}{/foolog}");
+    VeLogNode logNode = parseVeLog("{velog Bar logonly=\"false\"}{/velog}");
 
-    assertThat(openTag.toSourceString()).isEqualTo("{foolog Bar logonly=\"false\"}{/foolog}");
-    assertThat(openTag.getName().identifier()).isEqualTo("Bar");
-    assertThat(openTag.getConfigExpression()).isNull();
-    assertThat(openTag.getLogonlyExpression().toSourceString()).isEqualTo("false");
+    assertThat(logNode.toSourceString()).isEqualTo("{velog Bar logonly=\"false\"}{/velog}");
+    assertThat(logNode.getName().identifier()).isEqualTo("Bar");
+    assertThat(logNode.getConfigExpression()).isNull();
+    assertThat(logNode.getLogonlyExpression().toSourceString()).isEqualTo("false");
   }
 
   @Test
   public void testParsing_configAndLogonly() {
-    FooLogNode openTag =
-        parseFooLog("{foolog Bar data=\"soy.test.Foo()\" logonly=\"false\"}{/foolog}");
+    VeLogNode logNode =
+        parseVeLog("{velog Bar data=\"soy.test.Foo()\" logonly=\"false\"}{/velog}");
 
-    assertThat(openTag.toSourceString())
-        .isEqualTo("{foolog Bar data=\"soy.test.Foo()\" logonly=\"false\"}{/foolog}");
-    assertThat(openTag.getName().identifier()).isEqualTo("Bar");
-    assertThat(openTag.getConfigExpression().toSourceString()).isEqualTo("soy.test.Foo()");
-    assertThat(openTag.getLogonlyExpression().toSourceString()).isEqualTo("false");
+    assertThat(logNode.toSourceString())
+        .isEqualTo("{velog Bar data=\"soy.test.Foo()\" logonly=\"false\"}{/velog}");
+    assertThat(logNode.getName().identifier()).isEqualTo("Bar");
+    assertThat(logNode.getConfigExpression().toSourceString()).isEqualTo("soy.test.Foo()");
+    assertThat(logNode.getLogonlyExpression().toSourceString()).isEqualTo("false");
   }
 
   @Test
   public void testExperimentEnforced() {
     ErrorReporter reporter = ErrorReporter.createForTest();
-    parseFooLog("{foolog Bar}{/foolog}", false, reporter);
+    parseVeLog("{velog Bar}{/velog}", false, reporter);
     assertThat(reporter.getErrors().get(0).message())
-        .isEqualTo("The {foolog ...} command is disabled in this configuration.");
+        .isEqualTo("The {velog ...} command is disabled in this configuration.");
   }
 
-  private FooLogNode parseFooLog(String fooLog) {
-    return parseFooLog(fooLog, true, ErrorReporter.exploding());
+  private VeLogNode parseVeLog(String fooLog) {
+    return parseVeLog(fooLog, true, ErrorReporter.exploding());
   }
 
-  private FooLogNode parseFooLog(String fooLog, boolean enabled, ErrorReporter reporter) {
+  private VeLogNode parseVeLog(String fooLog, boolean enabled, ErrorReporter reporter) {
     return Iterables.getOnlyElement(
         SoyTreeUtils.getAllNodesOfType(
             SoyFileSetParserBuilder.forTemplateContents(AutoEscapingType.STRICT, true, fooLog)
@@ -118,6 +118,6 @@ public final class FooLogNodeTest {
                 .errorReporter(reporter)
                 .parse()
                 .fileSet(),
-            FooLogNode.class));
+            VeLogNode.class));
   }
 }
