@@ -99,6 +99,25 @@ final class HtmlTagEntry {
   }
 
   @Override
+  public final boolean equals(@Nullable Object object) {
+    if (object instanceof HtmlTagEntry) {
+      HtmlTagEntry other = (HtmlTagEntry) object;
+      if (hasTagName() != other.hasTagName()) {
+        return false;
+      }
+      return hasTagName()
+          ? tagName.equals(other.getTagName())
+          : branches.equals(other.getBranches());
+    }
+    return false;
+  }
+
+  @Override
+  public final int hashCode() {
+    return (hasTagName() ? tagName.hashCode() : 31 * branches.hashCode()) + 1;
+  }
+
+  @Override
   public String toString() {
     return hasTagName() ? tagName.toString() : branches.toString();
   }

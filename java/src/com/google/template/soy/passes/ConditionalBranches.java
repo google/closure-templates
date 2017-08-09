@@ -82,6 +82,20 @@ final class ConditionalBranches {
   }
 
   @Override
+  public boolean equals(@Nullable Object other) {
+    if (other instanceof ConditionalBranches) {
+      ConditionalBranches otherBranches = (ConditionalBranches) other;
+      return branches.equals(otherBranches.getBranches());
+    }
+    return false;
+  }
+
+  @Override
+  public int hashCode() {
+    return branches.hashCode();
+  }
+
+  @Override
   public String toString() {
     return branches.toString();
   }

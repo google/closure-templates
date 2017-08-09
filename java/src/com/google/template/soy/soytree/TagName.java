@@ -227,21 +227,6 @@ public final class TagName {
     return node.getSourceLocation();
   }
 
-  @Override
-  public boolean equals(Object other) {
-    if (other instanceof TagName) {
-      TagName tag = (TagName) other;
-      if (isStatic() != tag.isStatic()) {
-        return false;
-      }
-      if (isStatic()) {
-        return nameAsLowerCase.equals(tag.nameAsLowerCase);
-      }
-      return comparePrintNode((PrintNode) node, (PrintNode) tag.node);
-    }
-    return false;
-  }
-
   private boolean comparePrintNode(PrintNode firstNode, PrintNode secondNode) {
     ExprEquivalence exprEquivalence = ExprEquivalence.get();
     if (!exprEquivalence.equivalent(firstNode.getExpr(), secondNode.getExpr())) {
@@ -279,6 +264,21 @@ public final class TagName {
       hc = 31 * hc + exprEquivalence.pairwise().hash(list);
     }
     return hc;
+  }
+
+  @Override
+  public boolean equals(@Nullable Object other) {
+    if (other instanceof TagName) {
+      TagName tag = (TagName) other;
+      if (isStatic() != tag.isStatic()) {
+        return false;
+      }
+      if (isStatic()) {
+        return nameAsLowerCase.equals(tag.nameAsLowerCase);
+      }
+      return comparePrintNode((PrintNode) node, (PrintNode) tag.node);
+    }
+    return false;
   }
 
   @Override
