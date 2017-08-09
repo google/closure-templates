@@ -577,4 +577,95 @@ public class SoyTypesTest {
                 UnionType.of(NULL_TYPE, FLOAT_TYPE), UnionType.of(NULL_TYPE, INT_TYPE), plusOp))
         .isEqualTo(UnionType.of(NULL_TYPE, FLOAT_TYPE));
   }
+
+  @Test
+  public void testGetSoyTypeForBinaryOperatorEqualOp() {
+    SoyTypes.SoyTypeBinaryOperator equalOp = new SoyTypes.SoyTypeEqualComparisonOp();
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(INT_TYPE, FLOAT_TYPE, equalOp)).isNotNull();
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(FLOAT_TYPE, INT_TYPE, equalOp)).isNotNull();
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(INT_TYPE, INT_TYPE, equalOp)).isNotNull();
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(FLOAT_TYPE, FLOAT_TYPE, equalOp)).isNotNull();
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(FLOAT_TYPE, NUMBER_TYPE, equalOp)).isNotNull();
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(INT_TYPE, NUMBER_TYPE, equalOp)).isNotNull();
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(NUMBER_TYPE, NUMBER_TYPE, equalOp)).isNotNull();
+
+    // Unknown types are fine
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(FLOAT_TYPE, UNKNOWN_TYPE, equalOp)).isNotNull();
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(UNKNOWN_TYPE, FLOAT_TYPE, equalOp)).isNotNull();
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(UNKNOWN_TYPE, UNKNOWN_TYPE, equalOp))
+        .isNotNull();
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(ANY_TYPE, STRING_TYPE, equalOp)).isNotNull();
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(ANY_TYPE, NULL_TYPE, equalOp)).isNotNull();
+
+    // String-number comparisons are okay.
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(INT_TYPE, STRING_TYPE, equalOp)).isNotNull();
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(STRING_TYPE, FLOAT_TYPE, equalOp)).isNotNull();
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(STRING_TYPE, NUMBER_TYPE, equalOp)).isNotNull();
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(INT_TYPE, URI_TYPE, equalOp)).isNotNull();
+
+    // String-string comparisons are okay.
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(STRING_TYPE, STRING_TYPE, equalOp)).isNotNull();
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(HTML_TYPE, STRING_TYPE, equalOp)).isNotNull();
+
+    // Aribtrary types are not okay.
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(ListType.of(STRING_TYPE), FLOAT_TYPE, equalOp))
+        .isNull();
+    assertThat(
+            SoyTypes.getSoyTypeForBinaryOperator(
+                INT_TYPE, MapType.of(INT_TYPE, STRING_TYPE), equalOp))
+        .isNull();
+    assertThat(
+            SoyTypes.getSoyTypeForBinaryOperator(
+                INT_TYPE, RecordType.of(ImmutableMap.of("a", INT_TYPE, "b", FLOAT_TYPE)), equalOp))
+        .isNull();
+
+    // Union types might be okay if all combinations are okay.
+    assertThat(
+            SoyTypes.getSoyTypeForBinaryOperator(
+                INT_TYPE, UnionType.of(INT_TYPE, STRING_TYPE), equalOp))
+        .isNotNull();
+    assertThat(
+            SoyTypes.getSoyTypeForBinaryOperator(
+                UnionType.of(STRING_TYPE, FLOAT_TYPE),
+                UnionType.of(INT_TYPE, STRING_TYPE),
+                equalOp))
+        .isNotNull();
+    assertThat(
+            SoyTypes.getSoyTypeForBinaryOperator(
+                UnionType.of(STRING_TYPE, INT_TYPE), UnionType.of(INT_TYPE, STRING_TYPE), equalOp))
+        .isNotNull();
+    assertThat(
+            SoyTypes.getSoyTypeForBinaryOperator(
+                UnionType.of(STRING_TYPE, HTML_TYPE), UnionType.of(INT_TYPE, STRING_TYPE), equalOp))
+        .isNotNull();
+
+    // If any of these combinations are incompatible, we should return null.
+    assertThat(
+            SoyTypes.getSoyTypeForBinaryOperator(
+                MapType.of(INT_TYPE, STRING_TYPE),
+                UnionType.of(BOOL_TYPE, FLOAT_TYPE, INT_TYPE),
+                equalOp))
+        .isNull();
+    assertThat(
+            SoyTypes.getSoyTypeForBinaryOperator(
+                UnionType.of(STRING_TYPE, HTML_TYPE),
+                UnionType.of(INT_TYPE, STRING_TYPE, ListType.of(INT_TYPE)),
+                equalOp))
+        .isNull();
+
+    // Nullable types and null type itself are okay.
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(INT_TYPE, NULL_TYPE, equalOp)).isNotNull();
+    assertThat(
+            SoyTypes.getSoyTypeForBinaryOperator(
+                INT_TYPE, UnionType.of(NULL_TYPE, INT_TYPE), equalOp))
+        .isNotNull();
+    assertThat(
+            SoyTypes.getSoyTypeForBinaryOperator(
+                UnionType.of(NULL_TYPE, FLOAT_TYPE), UnionType.of(NULL_TYPE, INT_TYPE), equalOp))
+        .isNotNull();
+    assertThat(
+            SoyTypes.getSoyTypeForBinaryOperator(
+                UnionType.of(NULL_TYPE, STRING_TYPE), UnionType.of(NULL_TYPE, INT_TYPE), equalOp))
+        .isNotNull();
+  }
 }

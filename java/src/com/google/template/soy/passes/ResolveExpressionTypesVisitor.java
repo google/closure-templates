@@ -815,108 +815,27 @@ final class ResolveExpressionTypesVisitor extends AbstractSoyNodeVisitor<Void> {
 
     private void visitComparisonOpNode(AbstractOperatorNode node) {
       visitChildren(node);
-      node.setType(BoolType.getInstance());
       SoyType left = node.getChild(0).getType();
       SoyType right = node.getChild(1).getType();
-      if (!checkTypeForComparisonOp(left, right)) {
+      SoyType result =
+          SoyTypes.getSoyTypeForBinaryOperator(left, right, new SoyTypes.SoyTypeComparisonOp());
+      if (result == null) {
         errorReporter.report(node.getSourceLocation(), TYPE_MISMATCH, left, right);
       }
+      node.setType(BoolType.getInstance());
     }
 
     private void visitEqualComparisonOpNode(AbstractOperatorNode node) {
       visitChildren(node);
-      node.setType(BoolType.getInstance());
       SoyType left = node.getChild(0).getType();
       SoyType right = node.getChild(1).getType();
-      if (!checkTypeForEqualComparisonOp(left, right)) {
+      SoyType result =
+          SoyTypes.getSoyTypeForBinaryOperator(
+              left, right, new SoyTypes.SoyTypeEqualComparisonOp());
+      if (result == null) {
         errorReporter.report(node.getSourceLocation(), TYPE_MISMATCH, left, right);
       }
-    }
-
-    /**
-     * For <, >, <=, and >= operations, check if two {@code SoyType}s are comparable.
-     *
-     * <p>In particular,
-     *
-     * <ul>
-     *   <li>Comparing anything with UNKNOWN and ANY is legitimate.
-     *   <li>Comparing numeric types is legitimate.
-     *   <li>Comparing string types is legtimate.
-     *   <li>All other comparisons are invalid. It causes inconsistent behaviors in different
-     *       backends.
-     * </ul>
-     *
-     * <p>Note that string-number comparisons and string-string comparisons do NOT work with Java
-     * backends (both tofu and jbcsrc). These comparisons yield to a {@code RuntimeException}. In
-     * contrast, JS backend allows these comparisons.
-     *
-     * <ul>
-     *   <li>For string-number comparisons, JS tries to convert string to number. If string is
-     *       numeric, it compares them numerically. For example, '1' < 2 is true and '1' > 2 is
-     *       false. If string is not numeric, it always return false. For example, both '1a' < 2 and
-     *       '1a' > 2 return false.
-     *   <li>For string-string comparisons, JS compares them alphabetically.
-     * </ul>
-     *
-     * TODO(b/37359174): Should we allow comparing NULL and numbers, and disallow comparing NULL and
-     * strings? NULL is essentially 0 in JS backend.
-     */
-    private boolean checkTypeForComparisonOp(SoyType left, SoyType right) {
-      if (SoyTypes.isDefiniteComparable(left) || SoyTypes.isDefiniteComparable(right)) {
-        return true;
-      }
-      left = SoyTypes.removeNull(left);
-      right = SoyTypes.removeNull(right);
-      if (SoyTypes.isNumericPrimitive(left) && SoyTypes.isNumericPrimitive(right)) {
-        return true;
-      }
-      return left.getKind().isKnownStringOrSanitizedContent()
-          && right.getKind().isKnownStringOrSanitizedContent();
-    }
-
-    /**
-     * For == and != operations, check if two {@code SoyType}s are comparable.
-     *
-     * <p>In particular,
-     *
-     * <ul>
-     *   <li>Comparing anything with UNKNOWN, ANY, and NULL is legitimate.
-     *   <li>If one is assignable from another, comparing them is legitimate.
-     *   <li>If both are primitive types, comparing them is legitimate.
-     *   <li>All other comparisons should have exactly the same types on both sides. Coercing is
-     *       unsafe, especially in JS backend. An example is a jspb message that contains a single
-     *       enum. Assuming that the enum is 1, the representation in JS is {@code [1]}, and this is
-     *       equivalent to a number.
-     * </ul>
-     */
-    private boolean checkTypeForEqualComparisonOp(SoyType left, SoyType right) {
-      if (SoyTypes.isDefiniteComparable(left) || SoyTypes.isDefiniteComparable(right)) {
-        return true;
-      }
-      left = SoyTypes.removeNull(left);
-      right = SoyTypes.removeNull(right);
-      if (SoyTypes.isDefinitePrimitive(left) && SoyTypes.isDefinitePrimitive(right)) {
-        return true;
-      }
-      if (left.equals(right)) {
-        return true;
-      }
-      // TODO(b/37359174): Investigate if we need the recursive logic for union types.
-      if (left.getKind() == SoyType.Kind.UNION) {
-        for (SoyType type : ((UnionType) left).getMembers()) {
-          if (checkTypeForEqualComparisonOp(type, right)) {
-            return true;
-          }
-        }
-      }
-      if (right.getKind() == SoyType.Kind.UNION) {
-        for (SoyType type : ((UnionType) right).getMembers()) {
-          if (checkTypeForEqualComparisonOp(left, type)) {
-            return true;
-          }
-        }
-      }
-      return false;
+      node.setType(BoolType.getInstance());
     }
 
     private void visitArithmeticOpNode(AbstractOperatorNode node) {

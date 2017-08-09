@@ -21,6 +21,7 @@ import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.template.soy.types.aggregate.UnionType;
+import com.google.template.soy.types.primitive.BoolType;
 import com.google.template.soy.types.primitive.ErrorType;
 import com.google.template.soy.types.primitive.FloatType;
 import com.google.template.soy.types.primitive.IntType;
@@ -41,28 +42,12 @@ public final class SoyTypes {
   private static final ImmutableSet<SoyType.Kind> ALWAYS_COMPARABLE_KINDS =
       Sets.immutableEnumSet(SoyType.Kind.UNKNOWN, SoyType.Kind.ANY, SoyType.Kind.NULL);
 
-  private static final ImmutableSet<SoyType.Kind> BOOLEAN_AND_NUMERIC_PRIMITIVES =
-      Sets.immutableEnumSet(
-          SoyType.Kind.BOOL, SoyType.Kind.INT, SoyType.Kind.FLOAT, SoyType.Kind.PROTO_ENUM);
+  private static final ImmutableSet<SoyType.Kind> NUMERIC_PRIMITIVES =
+      Sets.immutableEnumSet(SoyType.Kind.INT, SoyType.Kind.FLOAT, SoyType.Kind.PROTO_ENUM);
 
   /** Returns true if it is always "safe" to compare the input type to another type. */
-  public static boolean isDefiniteComparable(SoyType type) {
+  private static boolean isDefiniteComparable(SoyType type) {
     return ALWAYS_COMPARABLE_KINDS.contains(type.getKind());
-  }
-
-  /**
-   * Returns true if the input type is a numeric primitive type, such as bool, int, float, proto
-   * enum, and number.
-   */
-  public static boolean isNumericPrimitive(SoyType type) {
-    SoyType.Kind kind = type.getKind();
-    if (BOOLEAN_AND_NUMERIC_PRIMITIVES.contains(kind)) {
-      return true;
-    }
-    if (type.isAssignableFrom(NUMBER_TYPE) || NUMBER_TYPE.isAssignableFrom(type)) {
-      return true;
-    }
-    return false;
   }
 
   /**
@@ -70,8 +55,25 @@ public final class SoyTypes {
    * all sanitized contents. Two special cases are proto enum and number: these are proto or
    * aggregate type in Soy's type system, but they should really be treated as primitive types.
    */
-  public static boolean isDefinitePrimitive(SoyType type) {
-    return isNumericPrimitive(type) || type.getKind().isKnownStringOrSanitizedContent();
+  private static boolean isDefinitePrimitive(SoyType type) {
+    return type.getKind() == SoyType.Kind.BOOL
+        || isNumericPrimitive(type)
+        || type.getKind().isKnownStringOrSanitizedContent();
+  }
+
+  /**
+   * Returns true if the input type is a numeric primitive type, such as int, float, proto enum, and
+   * number.
+   */
+  public static boolean isNumericPrimitive(SoyType type) {
+    SoyType.Kind kind = type.getKind();
+    if (NUMERIC_PRIMITIVES.contains(kind)) {
+      return true;
+    }
+    if (type.isAssignableFrom(NUMBER_TYPE) || NUMBER_TYPE.isAssignableFrom(type)) {
+      return true;
+    }
+    return false;
   }
 
   public static SoyType removeNull(SoyType type) {
@@ -244,6 +246,82 @@ public final class SoyTypes {
    */
   public interface SoyTypeBinaryOperator {
     SoyType resolve(SoyType left, SoyType right);
+  }
+
+  /**
+   * Type resolver for equal (==) and not equal (!=) operators. The resolver returns null if two
+   * {@code SoyType} instances are not comparable, otherwise always return {@code BoolType}.
+   *
+   * <p>In particular,
+   *
+   * <ul>
+   *   <li>Comparing anything with UNKNOWN, ANY, and NULL is legitimate.
+   *   <li>If one is assignable from another, comparing them is legitimate.
+   *   <li>If both are primitive types, comparing them is legitimate.
+   *   <li>All other comparisons should have exactly the same types on both sides. Coercing is
+   *       unsafe, especially in JS backend. An example is a jspb message that contains a single
+   *       enum. Assuming that the enum is 1, the representation in JS is {@code [1]}, and this is
+   *       equivalent to a number.
+   * </ul>
+   */
+  public static final class SoyTypeEqualComparisonOp implements SoyTypeBinaryOperator {
+    @Override
+    @Nullable
+    public SoyType resolve(SoyType left, SoyType right) {
+      SoyType boolType = BoolType.getInstance();
+      if (isDefiniteComparable(left) || isDefiniteComparable(right)) {
+        return boolType;
+      }
+      if (isDefinitePrimitive(left) && isDefinitePrimitive(right)) {
+        return boolType;
+      }
+      return left.equals(right) ? boolType : null;
+    }
+  }
+
+  /**
+   * Type resolver for For <, >, <=, and >= operators. The resolver returns null if two {@code
+   * SoyType} instances are not comparable, otherwise always return {@code BoolType}.
+   *
+   * <p>In particular,
+   *
+   * <ul>
+   *   <li>Comparing anything with UNKNOWN and ANY is legitimate.
+   *   <li>Comparing numeric types is legitimate.
+   *   <li>Comparing string types is legtimate.
+   *   <li>All other comparisons are invalid. It causes inconsistent behaviors in different
+   *       backends.
+   * </ul>
+   *
+   * <p>Note that string-number comparisons and string-string comparisons do NOT work with Java
+   * backends (both tofu and jbcsrc). These comparisons yield to a {@code RuntimeException}. In
+   * contrast, JS backend allows these comparisons.
+   *
+   * <ul>
+   *   <li>For string-number comparisons, JS tries to convert string to number. If string is
+   *       numeric, it compares them numerically. For example, '1' < 2 is true and '1' > 2 is false.
+   *       If string is not numeric, it always return false. For example, both '1a' < 2 and '1a' > 2
+   *       return false.
+   *   <li>For string-string comparisons, JS compares them alphabetically.
+   * </ul>
+   */
+  public static final class SoyTypeComparisonOp implements SoyTypeBinaryOperator {
+    @Override
+    @Nullable
+    public SoyType resolve(SoyType left, SoyType right) {
+      SoyType boolType = BoolType.getInstance();
+      if (isDefiniteComparable(left) || isDefiniteComparable(right)) {
+        return boolType;
+      }
+      if (isNumericPrimitive(left) && isNumericPrimitive(right)) {
+        return boolType;
+      }
+      if (left.getKind().isKnownStringOrSanitizedContent()
+          && right.getKind().isKnownStringOrSanitizedContent()) {
+        return boolType;
+      }
+      return null;
+    }
   }
 
   /**
