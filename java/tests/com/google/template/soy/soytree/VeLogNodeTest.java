@@ -39,9 +39,9 @@ public final class VeLogNodeTest {
 
   @Test
   public void testParsing_justName() {
-    VeLogNode logNode = parseVeLog("{velog Bar}{/velog}");
+    VeLogNode logNode = parseVeLog("{velog Bar}<div></div>{/velog}");
 
-    assertThat(logNode.toSourceString()).isEqualTo("{velog Bar}{/velog}");
+    assertThat(logNode.toSourceString()).isEqualTo("{velog Bar}<div></div>{/velog}");
     assertThat(logNode.getName().identifier()).isEqualTo("Bar");
     assertThat(logNode.getConfigExpression()).isNull();
     assertThat(logNode.getLogonlyExpression()).isNull();
@@ -49,9 +49,10 @@ public final class VeLogNodeTest {
 
   @Test
   public void testParsing_configExpression() {
-    VeLogNode logNode = parseVeLog("{velog Bar data=\"soy.test.Foo()\"}{/velog}");
+    VeLogNode logNode = parseVeLog("{velog Bar data=\"soy.test.Foo()\"}<div></div>{/velog}");
 
-    assertThat(logNode.toSourceString()).isEqualTo("{velog Bar data=\"soy.test.Foo()\"}{/velog}");
+    assertThat(logNode.toSourceString())
+        .isEqualTo("{velog Bar data=\"soy.test.Foo()\"}<div></div>{/velog}");
     assertThat(logNode.getName().identifier()).isEqualTo("Bar");
     assertThat(logNode.getConfigExpression().toSourceString()).isEqualTo("soy.test.Foo()");
     assertThat(logNode.getLogonlyExpression()).isNull();
@@ -59,9 +60,10 @@ public final class VeLogNodeTest {
 
   @Test
   public void testParsing_logonly() {
-    VeLogNode logNode = parseVeLog("{velog Bar logonly=\"false\"}{/velog}");
+    VeLogNode logNode = parseVeLog("{velog Bar logonly=\"false\"}<div></div>{/velog}");
 
-    assertThat(logNode.toSourceString()).isEqualTo("{velog Bar logonly=\"false\"}{/velog}");
+    assertThat(logNode.toSourceString())
+        .isEqualTo("{velog Bar logonly=\"false\"}<div></div>{/velog}");
     assertThat(logNode.getName().identifier()).isEqualTo("Bar");
     assertThat(logNode.getConfigExpression()).isNull();
     assertThat(logNode.getLogonlyExpression().toSourceString()).isEqualTo("false");
@@ -70,10 +72,10 @@ public final class VeLogNodeTest {
   @Test
   public void testParsing_configAndLogonly() {
     VeLogNode logNode =
-        parseVeLog("{velog Bar data=\"soy.test.Foo()\" logonly=\"false\"}{/velog}");
+        parseVeLog("{velog Bar data=\"soy.test.Foo()\" logonly=\"false\"}<div></div>{/velog}");
 
     assertThat(logNode.toSourceString())
-        .isEqualTo("{velog Bar data=\"soy.test.Foo()\" logonly=\"false\"}{/velog}");
+        .isEqualTo("{velog Bar data=\"soy.test.Foo()\" logonly=\"false\"}<div></div>{/velog}");
     assertThat(logNode.getName().identifier()).isEqualTo("Bar");
     assertThat(logNode.getConfigExpression().toSourceString()).isEqualTo("soy.test.Foo()");
     assertThat(logNode.getLogonlyExpression().toSourceString()).isEqualTo("false");
@@ -82,7 +84,7 @@ public final class VeLogNodeTest {
   @Test
   public void testExperimentEnforced() {
     ErrorReporter reporter = ErrorReporter.createForTest();
-    parseVeLog("{velog Bar}{/velog}", false, reporter);
+    parseVeLog("{velog Bar}<div></div>{/velog}", false, reporter);
     assertThat(reporter.getErrors().get(0).message())
         .isEqualTo("The {velog ...} command is disabled in this configuration.");
   }

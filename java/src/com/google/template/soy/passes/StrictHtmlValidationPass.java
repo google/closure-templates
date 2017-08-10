@@ -52,7 +52,10 @@ import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TagName;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.VeLogNode;
 import java.util.ArrayDeque;
+import java.util.IdentityHashMap;
+import java.util.Map;
 
 /** A {@link CompilerFilePass} that checks strict html mode. See go/soy-html for usages. */
 final class StrictHtmlValidationPass extends CompilerFilePass {
@@ -73,6 +76,12 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
       SoyErrorKind.of(
           "Unexpected HTML close tag. Within an if or switch block, "
               + "all branches must end with unmatched open tags or unmatched close tags.");
+  private static final SoyErrorKind VELOG_NODE_FIRST_CHILD_NOT_TAG =
+      SoyErrorKind.of("The first child of '{velog'} must be a HTML open tag.");
+  private static final SoyErrorKind VELOG_NODE_LAST_CHILD_NOT_TAG =
+      SoyErrorKind.of("The last child of '{velog'} must be a HTML close tag.");
+  private static final SoyErrorKind VELOG_NODE_EXACTLY_ONE_TAG =
+      SoyErrorKind.of("'{velog'} must contain exactly one top-level HTML element.");
 
   private final ErrorReporter errorReporter;
 
@@ -150,6 +159,13 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
      */
     private boolean inForeignContent = false;
 
+    /**
+     * A map that records the tag matching process. The keys are open tags, and the values are the
+     * close tags that actually match the corresponding open tags.
+     */
+    // TODO(user): Change this to a multimap and use it for improving error messages.
+    private final Map<HtmlCloseTagNode, HtmlOpenTagNode> tagMatches = new IdentityHashMap<>();
+
     private SourceLocation foreignContentStartLocation = SourceLocation.UNKNOWN;
     private SourceLocation foreignContentEndLocation = SourceLocation.UNKNOWN;
 
@@ -162,6 +178,7 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
     @Override
     protected void visitHtmlOpenTagNode(HtmlOpenTagNode node) {
       TagName openTag = node.getTagName();
+      HtmlTagEntry entry = new HtmlTagEntry(node);
       // Switch to xml mode if we reach a <svg> tag.
       if (openTag.isForeignContent()) {
         if (inForeignContent) {
@@ -184,13 +201,14 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
       }
       // Push the node into open tag stack.
       if (!node.isSelfClosing() && !openTag.isDefinitelyVoid()) {
-        openTagStack.addFirst(new HtmlTagEntry(openTag));
+        openTagStack.addFirst(entry);
       }
     }
 
     @Override
     protected void visitHtmlCloseTagNode(HtmlCloseTagNode node) {
       TagName closeTag = node.getTagName();
+      HtmlTagEntry entry = new HtmlTagEntry(node);
       // Report an error if this node is a void tag. Void tag should never be closed.
       if (closeTag.isDefinitelyVoid()) {
         errorReporter.report(
@@ -204,8 +222,8 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
       }
       // If we cannot find a matching open tag in current block, put the current tag into
       // closeTagQueue and compare everything after we visit the entire template node.
-      if (!HtmlTagEntry.tryMatchCloseTag(openTagStack, closeTag, errorReporter)) {
-        closeTagQueue.addLast(new HtmlTagEntry(closeTag));
+      if (!HtmlTagEntry.tryMatchCloseTag(openTagStack, entry, tagMatches, errorReporter)) {
+        closeTagQueue.addLast(entry);
       }
     }
 
@@ -252,7 +270,7 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
     protected void visitIfCondNode(IfCondNode node) {
       Condition outerCondition = currentCondition.copy();
       currentCondition = Condition.createIfCondition(node.getExpr());
-      visitBlockChildren(node, true);
+      visitBlockChildren(node, /* inControlBlock= */ true);
       currentCondition = outerCondition.copy();
     }
 
@@ -260,7 +278,7 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
     protected void visitIfElseNode(IfElseNode node) {
       Condition outerCondition = currentCondition.copy();
       currentCondition = Condition.createIfCondition();
-      visitBlockChildren(node, true);
+      visitBlockChildren(node, /* inControlBlock= */ true);
       currentCondition = outerCondition.copy();
     }
 
@@ -300,7 +318,7 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
       Condition outerCondition = currentCondition.copy();
       SwitchNode parent = (SwitchNode) node.getParent();
       currentCondition = Condition.createSwitchCondition(parent.getExpr(), node.getExprList());
-      visitBlockChildren(node, true);
+      visitBlockChildren(node, /* inControlBlock= */ true);
       currentCondition = outerCondition.copy();
     }
 
@@ -310,8 +328,52 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
       SwitchNode parent = (SwitchNode) node.getParent();
       currentCondition =
           Condition.createSwitchCondition(parent.getExpr(), ImmutableList.<ExprRootNode>of());
-      visitBlockChildren(node, true);
+      visitBlockChildren(node, /* inControlBlock= */ true);
       currentCondition = outerCondition.copy();
+    }
+
+    @Override
+    protected void visitVeLogNode(VeLogNode node) {
+      // {velog} must contains at least one child.
+      if (node.numChildren() == 0) {
+        errorReporter.report(node.getSourceLocation(), VELOG_NODE_EXACTLY_ONE_TAG);
+        return;
+      }
+      SoyNode firstChild = node.getChild(0);
+      // The first child of {velog} must be an open tag.
+      if (firstChild.getKind() != SoyNode.Kind.HTML_OPEN_TAG_NODE) {
+        errorReporter.report(firstChild.getSourceLocation(), VELOG_NODE_FIRST_CHILD_NOT_TAG);
+        return;
+      }
+      // At this point we can safely cast it to an open tag.
+      HtmlOpenTagNode firstTag = (HtmlOpenTagNode) firstChild;
+      // If the first child is self-closing or is a void tag, reports an error if we see anything
+      // after it.
+      if (node.numChildren() > 1
+          && (firstTag.isSelfClosing() || firstTag.getTagName().isDefinitelyVoid())) {
+        errorReporter.report(node.getChild(1).getSourceLocation(), VELOG_NODE_EXACTLY_ONE_TAG);
+        return;
+      }
+      SoyNode lastChild = node.getChild(node.numChildren() - 1);
+      if (node.numChildren() > 1) {
+        // The last child (if it is not the same with the first child) must be a close tag.
+        if (lastChild.getKind() != SoyNode.Kind.HTML_CLOSE_TAG_NODE) {
+          errorReporter.report(lastChild.getSourceLocation(), VELOG_NODE_LAST_CHILD_NOT_TAG);
+          return;
+        }
+      }
+      visitBlockChildren(node, /* inControlBlock= */ false);
+      // After visiting all the children, we should have alreday built the map.
+      // At this point, we check the map and verify that the first child is actually popped by the
+      // last child. Otherwise, report an error.
+      if (node.numChildren() > 1) {
+        // At this point we can safely cast it to a close tag.
+        HtmlCloseTagNode lastTag = (HtmlCloseTagNode) lastChild;
+        if (!tagMatches.get(lastTag).equals(firstTag)) {
+          errorReporter.report(
+              tagMatches.get(lastTag).getSourceLocation(), VELOG_NODE_EXACTLY_ONE_TAG);
+        }
+      }
     }
 
     @Override
@@ -329,48 +391,48 @@ final class StrictHtmlValidationPass extends CompilerFilePass {
 
     @Override
     protected void visitMsgNode(MsgNode node) {
-      visitBlockChildren(node, false);
+      visitBlockChildren(node, /* inControlBlock= */ false);
     }
 
     @Override
     protected void visitMsgPluralCaseNode(MsgPluralCaseNode node) {
-      visitBlockChildren(node, false);
+      visitBlockChildren(node, /* inControlBlock= */ false);
     }
 
     @Override
     protected void visitMsgPluralDefaultNode(MsgPluralDefaultNode node) {
-      visitBlockChildren(node, false);
+      visitBlockChildren(node, /* inControlBlock= */ false);
     }
 
     @Override
     protected void visitMsgSelectCaseNode(MsgSelectCaseNode node) {
-      visitBlockChildren(node, false);
+      visitBlockChildren(node, /* inControlBlock= */ false);
     }
 
     @Override
     protected void visitMsgSelectDefaultNode(MsgSelectDefaultNode node) {
-      visitBlockChildren(node, false);
+      visitBlockChildren(node, /* inControlBlock= */ false);
     }
 
     @Override
     protected void visitLetContentNode(LetContentNode node) {
-      visitBlockChildren(node, false);
+      visitBlockChildren(node, /* inControlBlock= */ false);
     }
 
     // TODO(user): We could do something special for ForeachIfemptyNode.
     @Override
     protected void visitForeachIfemptyNode(ForeachIfemptyNode node) {
-      visitBlockChildren(node, false);
+      visitBlockChildren(node, /* inControlBlock= */ false);
     }
 
     @Override
     protected void visitLoopNode(LoopNode node) {
-      visitBlockChildren(node, false);
+      visitBlockChildren(node, /* inControlBlock= */ false);
     }
 
     @Override
     protected void visitCallParamContentNode(CallParamContentNode node) {
-      visitBlockChildren(node, false);
+      visitBlockChildren(node, /* inControlBlock= */ false);
     }
 
     @Override
