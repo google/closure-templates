@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.LOGGING_ADVISING_APPENDABLE_TYPE;
 import static com.google.template.soy.jbcsrc.BytecodeUtils.LOGGING_ADVISING_BUILDER_TYPE;
 
+import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import org.objectweb.asm.Label;
@@ -36,6 +37,13 @@ final class AppendableExpression extends Expression {
 
   private static final MethodRef SOFT_LIMITED =
       MethodRef.create(LoggingAdvisingAppendable.class, "softLimitReached").asCheap();
+
+  private static final MethodRef ENTER_LOGGABLE_STATEMENT =
+      MethodRef.create(LoggingAdvisingAppendable.class, "enterLoggableElement", LogStatement.class)
+          .asNonNullable();
+
+  private static final MethodRef EXIT_LOGGABLE_STATEMENT =
+      MethodRef.create(LoggingAdvisingAppendable.class, "exitLoggableElement").asNonNullable();
 
   static AppendableExpression forLocal(LocalVariable delegate) {
     return new AppendableExpression(
@@ -105,6 +113,16 @@ final class AppendableExpression extends Expression {
   Expression softLimitReached() {
     checkArgument(supportsSoftLimiting);
     return delegate.invoke(SOFT_LIMITED);
+  }
+
+  /* Invokes {@link LoggingAdvisingAppendable#enterLoggableElement} on the appendable. */
+  AppendableExpression enterLoggableElement(Expression logStatement) {
+    return withNewDelegate(delegate.invoke(ENTER_LOGGABLE_STATEMENT, logStatement), true);
+  }
+
+  /* Invokes {@link LoggingAdvisingAppendable#enterLoggableElement} on the appendable. */
+  AppendableExpression exitLoggableElement() {
+    return withNewDelegate(delegate.invoke(EXIT_LOGGABLE_STATEMENT), true);
   }
 
   @Override

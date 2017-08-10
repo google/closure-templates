@@ -36,6 +36,7 @@ import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
+import com.google.template.soy.logging.SoyLogger;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
@@ -136,6 +137,7 @@ public final class SoySauceImpl implements SoySauce {
     private final Optional<ContentKind> contentKind;
     private Predicate<String> activeDelegatePackages = Predicates.alwaysFalse();
     private SoyMsgBundle msgs = SoyMsgBundle.EMPTY;
+    private SoyLogger logger = OutputAppendable.NO_OP_LOGGER;
     private final RenderContext.Builder contextBuilder =
         new RenderContext.Builder()
             .withCompiledTemplates(templates)
@@ -199,6 +201,12 @@ public final class SoySauceImpl implements SoySauce {
     }
 
     @Override
+    public Renderer setSoyLogger(SoyLogger logger) {
+      this.logger = checkNotNull(logger);
+      return this;
+    }
+
+    @Override
     public Renderer setExpectedContentKind(ContentKind expectedContentKind) {
       checkNotNull(contentKind);
       this.contentKindExplicitlySet = true;
@@ -211,7 +219,7 @@ public final class SoySauceImpl implements SoySauce {
       if (contentKindExplicitlySet || contentKind.isPresent()) {
         enforceContentKind();
       }
-      return startRender(LoggingAdvisingAppendable.delegating(out));
+      return startRender(OutputAppendable.create(out, logger));
     }
 
     @Override
@@ -219,9 +227,10 @@ public final class SoySauceImpl implements SoySauce {
       if (contentKindExplicitlySet || contentKind.isPresent()) {
         enforceContentKind();
       }
-      LoggingAdvisingAppendable.BufferingAppendable buf = LoggingAdvisingAppendable.buffering();
+      StringBuilder sb = new StringBuilder();
+      OutputAppendable buf = OutputAppendable.create(sb, logger);
       try {
-        return Continuations.stringContinuation(startRender(buf), buf);
+        return Continuations.stringContinuation(startRender(buf), sb, buf);
       } catch (IOException e) {
         throw new AssertionError("impossible", e);
       }
@@ -230,15 +239,16 @@ public final class SoySauceImpl implements SoySauce {
     @Override
     public Continuation<SanitizedContent> renderStrict() {
       enforceContentKind();
-      LoggingAdvisingAppendable.BufferingAppendable buf = LoggingAdvisingAppendable.buffering();
+      StringBuilder sb = new StringBuilder();
+      OutputAppendable buf = OutputAppendable.create(sb, logger);
       try {
-        return Continuations.strictContinuation(startRender(buf), buf, expectedContentKind);
+        return Continuations.strictContinuation(startRender(buf), sb, buf, expectedContentKind);
       } catch (IOException e) {
         throw new AssertionError("impossible", e);
       }
     }
 
-    private <T> WriteContinuation startRender(LoggingAdvisingAppendable out) throws IOException {
+    private <T> WriteContinuation startRender(OutputAppendable out) throws IOException {
       RenderContext context =
           contextBuilder
               .withMessageBundle(msgs)

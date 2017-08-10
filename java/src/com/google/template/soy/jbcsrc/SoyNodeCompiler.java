@@ -31,6 +31,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Ints;
+import com.google.protobuf.Message;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.internal.ParamStore;
@@ -773,13 +774,32 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
 
   @Override
   protected Statement visitVeLogNode(VeLogNode node) {
-    // TODO(lukes): fix stub implementation
-    return new Statement() {
-      @Override
-      void doGen(CodeBuilder adapter) {
-        adapter.throwException(Type.getType(IllegalStateException.class), "velog isn't supported");
-      }
-    };
+    Label restartPoint = new Label();
+    Statement enterStatement =
+        appendableExpression
+            .enterLoggableElement(
+                MethodRef.LOG_STATEMENT_CREATE.invoke(
+                    BytecodeUtils.constant(node.getLoggingId()),
+                    node.getConfigExpression() == null
+                        ? BytecodeUtils.constantNull(BytecodeUtils.MESSAGE_TYPE)
+                        : exprCompiler
+                            .compile(node.getConfigExpression(), restartPoint)
+                            .unboxAs(Message.class),
+                    node.getLogonlyExpression() == null
+                        ? BytecodeUtils.constant(false)
+                        : exprCompiler
+                            .compile(node.getLogonlyExpression(), restartPoint)
+                            .unboxAs(boolean.class)))
+            .labelStart(restartPoint)
+            .toStatement();
+    List<Statement> body = visitChildren(node);
+    Statement exitStatement = appendableExpression.exitLoggableElement().toStatement();
+    return Statement.concat(
+        ImmutableList.<Statement>builder()
+            .add(enterStatement)
+            .addAll(body)
+            .add(exitStatement)
+            .build());
   }
 
   private Statement visitCallNodeHelper(Label reattachPoint, Expression calleeExpression) {

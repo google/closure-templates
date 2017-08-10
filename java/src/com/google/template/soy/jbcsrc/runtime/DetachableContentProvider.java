@@ -18,7 +18,9 @@ package com.google.template.soy.jbcsrc.runtime;
 
 import static com.google.common.base.Preconditions.checkState;
 
+import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
+import com.google.template.soy.data.LoggingFunctionInvocation;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
@@ -87,6 +89,7 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
       }
       return result;
     }
+
     TeeAdvisingAppendable currentBuilder = (TeeAdvisingAppendable) builder;
     if (currentBuilder == null) {
       builder = currentBuilder = new TeeAdvisingAppendable(appendable);
@@ -97,10 +100,13 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
   private RenderResult doRenderIntoBufferingAppendable(LoggingAdvisingAppendable target) {
     RenderResult result = doRender(target);
     if (result.isDone()) {
+      // TODO(lukes): we need a way to capture all the log events and pass them to one of these
+      // string objects
+      String string = target.toString();
       if (contentKind != null) {
-        resolvedValue = UnsafeSanitizedContentOrdainer.ordainAsSafe(target.toString(), contentKind);
+        resolvedValue = UnsafeSanitizedContentOrdainer.ordainAsSafe(string, contentKind);
       } else {
-        resolvedValue = StringData.forValue(target.toString());
+        resolvedValue = StringData.forValue(string);
       }
     }
     return result;
@@ -117,7 +123,7 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
    * command on which this is based.
    */
   private static final class TeeAdvisingAppendable extends LoggingAdvisingAppendable {
-    final StringBuilder buffer = new StringBuilder();
+    final LoggingAdvisingAppendable buffer = LoggingAdvisingAppendable.buffering();
     final LoggingAdvisingAppendable delegate;
 
     TeeAdvisingAppendable(LoggingAdvisingAppendable delegate) {
@@ -153,6 +159,28 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
     @Override
     public String toString() {
       return buffer.toString();
+    }
+
+    @Override
+    public LoggingAdvisingAppendable enterLoggableElement(LogStatement statement) {
+      delegate.enterLoggableElement(statement);
+      buffer.enterLoggableElement(statement);
+      return this;
+    }
+
+    @Override
+    public LoggingAdvisingAppendable exitLoggableElement() {
+      delegate.exitLoggableElement();
+      buffer.exitLoggableElement();
+      return this;
+    }
+
+    @Override
+    public LoggingAdvisingAppendable appendLoggingFunctionInvocation(
+        LoggingFunctionInvocation funCall) throws IOException {
+      delegate.appendLoggingFunctionInvocation(funCall);
+      buffer.appendLoggingFunctionInvocation(funCall);
+      return this;
     }
   }
 }

@@ -25,8 +25,10 @@ import static org.junit.Assert.assertEquals;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.SettableFuture;
+import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
+import com.google.template.soy.data.LoggingFunctionInvocation;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
@@ -71,6 +73,23 @@ public final class DetachStateTest {
     @Override
     public String toString() {
       return delegate.toString();
+    }
+
+    @Override
+    public LoggingAdvisingAppendable enterLoggableElement(LogStatement statement) {
+      return this;
+    }
+
+    @Override
+    public LoggingAdvisingAppendable exitLoggableElement() {
+      return this;
+    }
+
+    @Override
+    public LoggingAdvisingAppendable appendLoggingFunctionInvocation(
+        LoggingFunctionInvocation funCall) throws IOException {
+      delegate.append(funCall.placeholderValue());
+      return this;
     }
   }
 

@@ -23,6 +23,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Ints;
 import com.google.protobuf.Message;
+import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyList;
@@ -325,13 +326,18 @@ abstract class MethodRef {
   static final MethodRef LOGGING_ADVISING_APPENDABLE_BUFFERING =
       create(LoggingAdvisingAppendable.class, "buffering").asNonNullable();
 
+  static final MethodRef LOG_STATEMENT_CREATE =
+      create(LogStatement.class, "create", long.class, Message.class, boolean.class)
+          .asNonNullable();
+
   static MethodRef create(Class<?> clazz, String methodName, Class<?>... params) {
     java.lang.reflect.Method m;
     try {
       // Ensure that the method exists and is public.
       m = clazz.getMethod(methodName, params);
     } catch (Exception e) {
-      throw new RuntimeException(e);
+      throw new RuntimeException(
+          "Couldn't find the expected method among: " + Arrays.toString(clazz.getMethods()), e);
     }
     return create(m);
   }

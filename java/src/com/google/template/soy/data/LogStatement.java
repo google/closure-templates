@@ -16,7 +16,9 @@
 package com.google.template.soy.data;
 
 import com.google.auto.value.AutoValue;
+import com.google.common.base.MoreObjects;
 import com.google.protobuf.Message;
+import com.google.protobuf.TextFormat;
 import javax.annotation.Nullable;
 
 /** The value of a {@code foolog} statement. */
@@ -25,6 +27,8 @@ public abstract class LogStatement {
   public static LogStatement create(long id, @Nullable Message data, boolean logOnly) {
     return new AutoValue_LogStatement(id, data, logOnly);
   }
+
+  LogStatement() {} // prevent subclasses outside the package
 
   /** The id of the element being logged, as specified by {@link LoggableElement#getId()}. */
   public abstract long id();
@@ -40,4 +44,21 @@ public abstract class LogStatement {
    * The value of the {@code logonly="<...>"} expression. Default is {@code false} if not specified.
    */
   public abstract boolean logOnly();
+
+  @Override
+  public String toString() {
+    return MoreObjects.toStringHelper("velog")
+        .omitNullValues()
+        .add("id", id())
+        .add(
+            "data",
+            data() == null
+                ? null
+                : data().getDescriptorForType().getFullName()
+                    + "{"
+                    + TextFormat.shortDebugString(data())
+                    + "}")
+        .addValue(logOnly() ? "logonly" : null)
+        .toString();
+  }
 }

@@ -17,7 +17,9 @@
 package com.google.template.soy.jbcsrc.runtime;
 
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
+import com.google.template.soy.data.LoggingFunctionInvocation;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyRecord;
@@ -378,6 +380,23 @@ public final class JbcSrcRuntime {
         @Override
         public LoggingAdvisingAppendable append(CharSequence csq) {
           System.out.append(csq);
+          return this;
+        }
+
+        @Override
+        public LoggingAdvisingAppendable enterLoggableElement(LogStatement statement) {
+          return this;
+        }
+
+        @Override
+        public LoggingAdvisingAppendable exitLoggableElement() {
+          return this;
+        }
+
+        @Override
+        public LoggingAdvisingAppendable appendLoggingFunctionInvocation(
+            LoggingFunctionInvocation funCall) throws IOException {
+          System.out.append(funCall.placeholderValue());
           return this;
         }
       };

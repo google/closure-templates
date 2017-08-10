@@ -18,7 +18,6 @@ package com.google.template.soy.jbcsrc.api;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
@@ -40,14 +39,14 @@ final class Continuations {
    * WriteContinuation}, but it is assumed that the builder is the render target.
    */
   static Continuation<String> stringContinuation(
-      WriteContinuation delegate, LoggingAdvisingAppendable.BufferingAppendable builder) {
+      WriteContinuation delegate, final StringBuilder buffer, OutputAppendable appendable) {
     if (delegate.result().isDone()) {
-      return new ResultContinuation<>(builder.toString());
+      return new ResultContinuation<>(buffer.toString());
     }
-    return new AbstractContinuation<String>(delegate, builder) {
+    return new AbstractContinuation<String>(delegate, appendable) {
       @Override
       Continuation<String> nextContinuation(WriteContinuation next) {
-        return stringContinuation(next, builder);
+        return stringContinuation(next, buffer, appendable);
       }
     };
   }
@@ -58,16 +57,17 @@ final class Continuations {
    */
   static Continuation<SanitizedContent> strictContinuation(
       WriteContinuation delegate,
-      LoggingAdvisingAppendable.BufferingAppendable builder,
+      final StringBuilder buffer,
+      OutputAppendable appendable,
       final ContentKind kind) {
     if (delegate.result().isDone()) {
       return new ResultContinuation<>(
-          UnsafeSanitizedContentOrdainer.ordainAsSafe(builder.toString(), kind));
+          UnsafeSanitizedContentOrdainer.ordainAsSafe(buffer.toString(), kind));
     }
-    return new AbstractContinuation<SanitizedContent>(delegate, builder) {
+    return new AbstractContinuation<SanitizedContent>(delegate, appendable) {
       @Override
       Continuation<SanitizedContent> nextContinuation(WriteContinuation next) {
-        return strictContinuation(next, builder, kind);
+        return strictContinuation(next, buffer, appendable, kind);
       }
     };
   }
@@ -78,12 +78,11 @@ final class Continuations {
    */
   private abstract static class AbstractContinuation<T> implements Continuation<T> {
     final WriteContinuation delegate;
-    final LoggingAdvisingAppendable.BufferingAppendable builder;
+    final OutputAppendable appendable;
 
-    AbstractContinuation(
-        WriteContinuation delegate, LoggingAdvisingAppendable.BufferingAppendable builder) {
+    AbstractContinuation(WriteContinuation delegate, OutputAppendable appendable) {
       this.delegate = delegate;
-      this.builder = builder;
+      this.appendable = appendable;
     }
 
     @Override

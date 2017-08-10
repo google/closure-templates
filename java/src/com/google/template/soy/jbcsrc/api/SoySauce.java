@@ -20,6 +20,7 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.logging.SoyLogger;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
@@ -72,6 +73,13 @@ public interface SoySauce {
      * fail if this has been called.
      */
     Renderer setExpectedContentKind(ContentKind kind);
+
+    /**
+     * Configures the {@link SoyLogger} to use.
+     *
+     * <p>This is an experimental feature, dark and full of terrors.
+     */
+    Renderer setSoyLogger(SoyLogger logger);
 
     /**
      * Renders the configured template to the appendable returning a continuation.
