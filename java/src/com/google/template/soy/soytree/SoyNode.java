@@ -94,18 +94,6 @@ public interface SoyNode extends Node {
     CALL_PARAM_VALUE_NODE,
     CALL_PARAM_CONTENT_NODE,
 
-    // These Node types are created by the com.google.template.soy.html package. RawTextNodes that
-    // appear in an HTML or attribute context are transformed into these node types. In general,
-    // passes that do not output generated code should not need to worry about these types, other
-    // than treating them as generic parent nodes that may contain descendants they are interested
-    // in.
-    INCREMENTAL_HTML_OPEN_TAG,
-    INCREMENTAL_HTML_CLOSE_TAG,
-    INCREMENTAL_HTML_ATTRIBUTE,
-
-    // TODO(lukes): These nodes are created by the main parser and should eventually subsume the
-    // usecases of the incremental dom nodes defined above (and also MsgHtmlTagNode).  But for the
-    // time being we maintain 2 such set of nodes while under development.
     HTML_OPEN_TAG_NODE,
     HTML_CLOSE_TAG_NODE,
     HTML_ATTRIBUTE_NODE,
