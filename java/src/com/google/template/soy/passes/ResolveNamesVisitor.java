@@ -58,7 +58,7 @@ import java.util.Map;
  * declaration object.
  *
  */
-final class ResolveNamesVisitor extends AbstractSoyNodeVisitor<Void> {
+public final class ResolveNamesVisitor extends AbstractSoyNodeVisitor<Void> {
   private static final SoyErrorKind GLOBAL_MATCHES_VARIABLE =
       SoyErrorKind.of(
           "Found global reference aliasing a local variable ''{0}'', did you mean " + "''${0}''?");
@@ -220,7 +220,7 @@ final class ResolveNamesVisitor extends AbstractSoyNodeVisitor<Void> {
 
   private final ErrorReporter errorReporter;
 
-  ResolveNamesVisitor(ErrorReporter errorReporter) {
+  public ResolveNamesVisitor(ErrorReporter errorReporter) {
     this.errorReporter = errorReporter;
   }
 
