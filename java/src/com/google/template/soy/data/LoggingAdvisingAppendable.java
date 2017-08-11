@@ -67,7 +67,7 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
 
   /** A {@link LoggingAdvisingAppendable} that renders to an appendable. */
   private static class DelegatingToAppendable<T extends Appendable>
-      extends LoggingAdvisingAppendable {
+      extends AbstractLoggingAdvisingAppendable {
     final T delegate;
 
     private DelegatingToAppendable(T delegate) {
@@ -75,40 +75,31 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
     }
 
     @Override
-    public final DelegatingToAppendable append(CharSequence s) throws IOException {
+    protected final void doAppend(CharSequence s) throws IOException {
       delegate.append(s);
-      return this;
     }
 
     @Override
-    public final DelegatingToAppendable append(CharSequence s, int start, int end)
-        throws IOException {
+    protected final void doAppend(CharSequence s, int start, int end) throws IOException {
       delegate.append(s, start, end);
-      return this;
     }
 
     @Override
-    public final DelegatingToAppendable append(char c) throws IOException {
+    protected final void doAppend(char c) throws IOException {
       delegate.append(c);
-      return this;
     }
 
     @Override
-    public LoggingAdvisingAppendable appendLoggingFunctionInvocation(
-        LoggingFunctionInvocation funCall) throws IOException {
+    protected void doAppendLoggingFunctionInvocation(LoggingFunctionInvocation funCall)
+        throws IOException {
       delegate.append(funCall.placeholderValue());
-      return this;
     }
 
     @Override
-    public LoggingAdvisingAppendable enterLoggableElement(LogStatement statement) {
-      return this;
-    }
+    protected void doEnterLoggableElement(LogStatement statement) {}
 
     @Override
-    public LoggingAdvisingAppendable exitLoggableElement() {
-      return this;
-    }
+    protected void doExitLoggableElement() {}
 
     @Override
     public boolean softLimitReached() {
@@ -146,23 +137,19 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
 
     /** Called whenever a loggable element is entered. */
     @Override
-    public BufferingAppendable enterLoggableElement(LogStatement statement) {
+    protected final void doEnterLoggableElement(LogStatement statement) {
       getCommandsAndAddPendingStringData().add(statement);
-      return this;
     }
 
     /** Called whenever a loggable element is exited. */
     @Override
-    public BufferingAppendable exitLoggableElement() {
+    protected final void doExitLoggableElement() {
       getCommandsAndAddPendingStringData().add(EXIT_MARKER);
-      return this;
     }
 
     @Override
-    public LoggingAdvisingAppendable appendLoggingFunctionInvocation(
-        LoggingFunctionInvocation funCall) {
+    protected final void doAppendLoggingFunctionInvocation(LoggingFunctionInvocation funCall) {
       getCommandsAndAddPendingStringData().add(funCall);
-      return this;
     }
 
     public void clearAndReplayOn(LoggingAdvisingAppendable appendable) throws IOException {

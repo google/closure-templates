@@ -17,6 +17,7 @@
 package com.google.template.soy.jbcsrc.runtime;
 
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.data.AbstractLoggingAdvisingAppendable;
 import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingFunctionInvocation;
@@ -359,45 +360,37 @@ public final class JbcSrcRuntime {
   }
 
   private static final LoggingAdvisingAppendable LOGGER =
-      new LoggingAdvisingAppendable() {
+      new AbstractLoggingAdvisingAppendable() {
         @Override
-        public boolean softLimitReached() {
+        public final boolean softLimitReached() {
           return false;
         }
 
         @Override
-        public LoggingAdvisingAppendable append(char c) throws IOException {
+        protected final void doAppend(char c) throws IOException {
           System.out.append(c);
-          return this;
         }
 
         @Override
-        public LoggingAdvisingAppendable append(CharSequence csq, int start, int end) {
+        protected final void doAppend(CharSequence csq, int start, int end) throws IOException {
           System.out.append(csq, start, end);
-          return this;
         }
 
         @Override
-        public LoggingAdvisingAppendable append(CharSequence csq) {
+        protected final void doAppend(CharSequence csq) throws IOException {
           System.out.append(csq);
-          return this;
         }
 
         @Override
-        public LoggingAdvisingAppendable enterLoggableElement(LogStatement statement) {
-          return this;
-        }
+        protected final void doEnterLoggableElement(LogStatement statement) {}
 
         @Override
-        public LoggingAdvisingAppendable exitLoggableElement() {
-          return this;
-        }
+        protected final void doExitLoggableElement() {}
 
         @Override
-        public LoggingAdvisingAppendable appendLoggingFunctionInvocation(
-            LoggingFunctionInvocation funCall) throws IOException {
+        protected final void doAppendLoggingFunctionInvocation(LoggingFunctionInvocation funCall)
+            throws IOException {
           System.out.append(funCall.placeholderValue());
-          return this;
         }
       };
 

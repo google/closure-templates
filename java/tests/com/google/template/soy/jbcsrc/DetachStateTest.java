@@ -25,6 +25,7 @@ import static org.junit.Assert.assertEquals;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.SettableFuture;
+import com.google.template.soy.data.AbstractLoggingAdvisingAppendable;
 import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
@@ -43,26 +44,23 @@ import org.junit.runners.JUnit4;
 /** Tests for {@link DetachState}. */
 @RunWith(JUnit4.class)
 public final class DetachStateTest {
-  static final class TestAppendable extends LoggingAdvisingAppendable {
+  static final class TestAppendable extends AbstractLoggingAdvisingAppendable {
     private final StringBuilder delegate = new StringBuilder();
     boolean softLimitReached;
 
     @Override
-    public TestAppendable append(CharSequence s) {
+    protected final void doAppend(CharSequence s) {
       delegate.append(s);
-      return this;
     }
 
     @Override
-    public TestAppendable append(CharSequence s, int start, int end) {
+    protected final void doAppend(CharSequence s, int start, int end) {
       delegate.append(s, start, end);
-      return this;
     }
 
     @Override
-    public TestAppendable append(char c) {
+    protected final void doAppend(char c) {
       delegate.append(c);
-      return this;
     }
 
     @Override
@@ -76,20 +74,15 @@ public final class DetachStateTest {
     }
 
     @Override
-    public LoggingAdvisingAppendable enterLoggableElement(LogStatement statement) {
-      return this;
-    }
+    protected void doEnterLoggableElement(LogStatement statement) {}
 
     @Override
-    public LoggingAdvisingAppendable exitLoggableElement() {
-      return this;
-    }
+    protected void doExitLoggableElement() {}
 
     @Override
-    public LoggingAdvisingAppendable appendLoggingFunctionInvocation(
-        LoggingFunctionInvocation funCall) throws IOException {
+    protected final void doAppendLoggingFunctionInvocation(LoggingFunctionInvocation funCall)
+        throws IOException {
       delegate.append(funCall.placeholderValue());
-      return this;
     }
   }
 

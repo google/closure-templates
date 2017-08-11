@@ -17,8 +17,8 @@ package com.google.template.soy.jbcsrc.api;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.google.template.soy.data.AbstractLoggingAdvisingAppendable;
 import com.google.template.soy.data.LogStatement;
-import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingFunctionInvocation;
 import com.google.template.soy.logging.SoyLogger;
 import java.io.IOException;
@@ -28,7 +28,7 @@ import java.io.IOException;
  *
  * <p>This object is for soy internal use only. Do not use.
  */
-public final class OutputAppendable extends LoggingAdvisingAppendable {
+public final class OutputAppendable extends AbstractLoggingAdvisingAppendable {
   static final SoyLogger NO_OP_LOGGER =
       new SoyLogger() {
         @Override
@@ -92,39 +92,33 @@ public final class OutputAppendable extends LoggingAdvisingAppendable {
   }
 
   @Override
-  public LoggingAdvisingAppendable append(CharSequence csq) throws IOException {
+  protected void doAppend(CharSequence csq) throws IOException {
     outputAppendable.append(csq);
-    return this;
   }
 
   @Override
-  public LoggingAdvisingAppendable append(CharSequence csq, int start, int end) throws IOException {
+  protected void doAppend(CharSequence csq, int start, int end) throws IOException {
     outputAppendable.append(csq, start, end);
-    return this;
   }
 
   @Override
-  public LoggingAdvisingAppendable append(char c) throws IOException {
+  protected void doAppend(char c) throws IOException {
     outputAppendable.append(c);
-    return this;
   }
 
   @Override
-  public LoggingAdvisingAppendable appendLoggingFunctionInvocation(
-      LoggingFunctionInvocation funCall) throws IOException {
+  protected void doAppendLoggingFunctionInvocation(LoggingFunctionInvocation funCall)
+      throws IOException {
     outputAppendable.append(logger.evalLoggingFunction(funCall));
-    return this;
   }
 
   @Override
-  public LoggingAdvisingAppendable enterLoggableElement(LogStatement statement) {
+  protected void doEnterLoggableElement(LogStatement statement) {
     logger.enter(statement);
-    return this;
   }
 
   @Override
-  public LoggingAdvisingAppendable exitLoggableElement() {
+  protected void doExitLoggableElement() {
     logger.exit();
-    return this;
   }
 }

@@ -21,6 +21,7 @@ import static org.junit.Assert.assertEquals;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.data.LogStatement;
@@ -42,6 +43,7 @@ import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.proto.SoyProtoTypeProvider;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Map;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -130,9 +132,25 @@ public final class VeLoggingTest {
     renderTemplate(
         OutputAppendable.create(sb, testLogger),
         "{velog Foo logonly=\"true\"}<div id=1></div>{/velog}");
-    // TODO(b/63699313): nothing should be printed here.  we don't actually respect logonly yet
-    assertThat(sb.toString()).isEqualTo("<div id=1></div>");
+    // logonly ve's disable content generation
+    assertThat(sb.toString()).isEmpty();
     assertThat(testLogger.builder.toString()).isEqualTo("velog{id=1, logonly}");
+  }
+
+  @Test
+  public void testBasicLogging_logonly_dynamic() throws Exception {
+    StringBuilder sb = new StringBuilder();
+    TestLogger testLogger = new TestLogger();
+    renderTemplate(
+        ImmutableMap.of("t", true, "f", false),
+        OutputAppendable.create(sb, testLogger),
+        "{@param t : bool}",
+        "{@param f : bool}",
+        "{velog Foo logonly=\"$t\"}<div id=1></div>{/velog}",
+        "{velog Bar logonly=\"$f\"}<div id=2></div>{/velog}");
+    // logonly ve's disable content generation
+    assertThat(sb.toString()).isEqualTo("<div id=2></div>");
+    assertThat(testLogger.builder.toString()).isEqualTo("velog{id=1, logonly}\nvelog{id=2}");
   }
 
   @Test
@@ -148,7 +166,32 @@ public final class VeLoggingTest {
     assertThat(sb.toString()).isEqualTo("<div id=1></div><div id=1></div>");
   }
 
+  @Test
+  public void testLogging_nestedLogOnly() throws IOException {
+    StringBuilder sb = new StringBuilder();
+    TestLogger testLogger = new TestLogger();
+    renderTemplate(
+        OutputAppendable.create(sb, testLogger),
+        "{velog Foo logonly=\"true\"}<div id=1>{velog Foo logonly=\"false\"}<div id=1>"
+            + "{velog Foo logonly=\"true\"}<div id=1>"
+            + "{velog Foo logonly=\"true\"}<div id=1></div>{/velog}"
+            + "</div>{/velog}</div>{/velog}</div>{/velog}");
+    assertThat(sb.toString()).isEqualTo("");
+    assertThat(testLogger.builder.toString())
+        .isEqualTo(
+            "velog{id=1, logonly}\n"
+                + "  velog{id=1}\n"
+                + "    velog{id=1, logonly}\n"
+                + "      velog{id=1, logonly}");
+  }
+
   private void renderTemplate(OutputAppendable output, String... templateBodyLines)
+      throws IOException {
+    renderTemplate(ImmutableMap.<String, Object>of(), output, templateBodyLines);
+  }
+
+  private void renderTemplate(
+      Map<String, ?> params, OutputAppendable output, String... templateBodyLines)
       throws IOException {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
@@ -172,7 +215,10 @@ public final class VeLoggingTest {
         BytecodeCompiler.compile(templateRegistry, false, ErrorReporter.exploding()).get();
     RenderContext ctx = TemplateTester.getDefaultContext(templates);
     RenderResult result =
-        templates.getTemplateFactory("ns.foo").create(EMPTY_DICT, EMPTY_DICT).render(output, ctx);
+        templates
+            .getTemplateFactory("ns.foo")
+            .create(TemplateTester.asRecord(params), EMPTY_DICT)
+            .render(output, ctx);
     assertEquals(RenderResult.done(), result);
   }
 }
