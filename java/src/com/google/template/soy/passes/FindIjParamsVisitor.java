@@ -27,6 +27,7 @@ import com.google.template.soy.passes.FindTransitiveDepTemplatesVisitor.Transiti
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
+import com.google.template.soy.soytree.SoyTreeUtils.VisitDirective;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.defn.TemplateParam;
@@ -159,13 +160,13 @@ public final class FindIjParamsVisitor {
     final Set<String> ijs = new HashSet<>();
     SoyTreeUtils.visitAllNodes(
         soyTree,
-        new NodeVisitor<Node, Boolean>() {
+        new NodeVisitor<Node, VisitDirective>() {
           @Override
-          public Boolean exec(Node node) {
+          public VisitDirective exec(Node node) {
             if (isIj(node)) {
               ijs.add(((VarRefNode) node).getName());
             }
-            return true;
+            return VisitDirective.CONTINUE;
           }
         });
     return ijs;

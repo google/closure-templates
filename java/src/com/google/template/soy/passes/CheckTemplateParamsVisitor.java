@@ -34,6 +34,7 @@ import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
+import com.google.template.soy.soytree.SoyTreeUtils.VisitDirective;
 import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
@@ -101,14 +102,14 @@ final class CheckTemplateParamsVisitor extends AbstractSoyNodeVisitor<Void> {
     final AtomicBoolean allV2 = new AtomicBoolean(true);
     SoyTreeUtils.visitAllNodes(
         node,
-        new NodeVisitor<Node, Boolean>() {
+        new NodeVisitor<Node, VisitDirective>() {
           @Override
-          public Boolean exec(Node node) {
+          public VisitDirective exec(Node node) {
             if (!node.couldHaveSyntaxVersionAtLeast(SyntaxVersion.V2_0)) {
               allV2.set(false);
-              return false;
+              return VisitDirective.ABORT;
             }
-            return true;
+            return VisitDirective.CONTINUE;
           }
         });
     return allV2.get();

@@ -29,6 +29,7 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprEquivalence;
 import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.soytree.SoyNode.MsgPlaceholderInitialNode;
+import com.google.template.soy.soytree.SoyTreeUtils.VisitDirective;
 import javax.annotation.Nullable;
 
 /**
@@ -87,24 +88,25 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
    */
   @Nullable
   private static String getFullTagText(HtmlTagNode openTagNode) {
-    final boolean[] isConstantContent = {true};
-    SoyTreeUtils.visitAllNodes(
-        openTagNode,
-        new NodeVisitor<Node, Boolean>() {
-          @Override
-          public Boolean exec(Node node) {
-            if (node instanceof RawTextNode
-                || node instanceof HtmlAttributeNode
-                || node instanceof HtmlAttributeValueNode
-                || node instanceof HtmlOpenTagNode
-                || node instanceof HtmlCloseTagNode) {
-              return true; // keep going
-            }
-            isConstantContent[0] = false;
-            return false; // abort
-          }
-        });
-    if (isConstantContent[0]) {
+    class Visitor implements NodeVisitor<Node, VisitDirective> {
+      boolean isConstantContent = true;
+
+      @Override
+      public VisitDirective exec(Node node) {
+        if (node instanceof RawTextNode
+            || node instanceof HtmlAttributeNode
+            || node instanceof HtmlAttributeValueNode
+            || node instanceof HtmlOpenTagNode
+            || node instanceof HtmlCloseTagNode) {
+          return VisitDirective.CONTINUE;
+        }
+        isConstantContent = false;
+        return VisitDirective.ABORT;
+      }
+    }
+    Visitor visitor = new Visitor();
+    SoyTreeUtils.visitAllNodes(openTagNode, visitor);
+    if (visitor.isConstantContent) {
       // toSourceString is lame, but how this worked before
       return openTagNode.toSourceString();
     }

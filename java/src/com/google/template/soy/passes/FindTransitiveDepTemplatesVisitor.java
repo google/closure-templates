@@ -30,15 +30,16 @@ import com.google.template.soy.passes.FindTransitiveDepTemplatesVisitor.Transiti
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
+import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
-import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Deque;
 import java.util.List;
@@ -348,8 +349,10 @@ public final class FindTransitiveDepTemplatesVisitor
    */
   public ImmutableMap<TemplateNode, TransitiveDepTemplatesInfo> execOnAllTemplates(
       SoyFileSetNode soyTree) {
-    List<TemplateNode> allTemplates =
-        SoyTreeUtils.getAllNodesOfType(soyTree, TemplateNode.class, false);
+    List<TemplateNode> allTemplates = new ArrayList<>();
+    for (SoyFileNode file : soyTree.getChildren()) {
+      allTemplates.addAll(file.getChildren());
+    }
     return execOnMultipleTemplates(allTemplates);
   }
 

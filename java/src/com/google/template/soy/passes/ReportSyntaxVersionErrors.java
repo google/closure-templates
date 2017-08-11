@@ -28,6 +28,7 @@ import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
+import com.google.template.soy.soytree.SoyTreeUtils.VisitDirective;
 import com.google.template.soy.soytree.TemplateNode;
 
 /**
@@ -70,11 +71,11 @@ final class ReportSyntaxVersionErrors {
     for (final TemplateNode template : node.getChildren()) {
       SoyTreeUtils.visitAllNodes(
           template,
-          new NodeVisitor<Node, Boolean>() {
+          new NodeVisitor<Node, VisitDirective>() {
             @Override
-            public Boolean exec(Node node) {
+            public VisitDirective exec(Node node) {
               visitNode(template, node);
-              return true; // keep visiting
+              return VisitDirective.CONTINUE;
             }
           });
     }

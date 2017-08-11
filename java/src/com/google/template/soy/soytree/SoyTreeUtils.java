@@ -29,7 +29,6 @@ import com.google.template.soy.basetree.Node;
 import com.google.template.soy.basetree.NodeVisitor;
 import com.google.template.soy.basetree.ParentNode;
 import com.google.template.soy.exprtree.ExprNode;
-import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
@@ -38,7 +37,6 @@ import com.google.template.soy.soytree.SoyNode.LocalVarNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Deque;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
@@ -58,18 +56,18 @@ public final class SoyTreeUtils {
   /** Returns true if the given {@code node} contains any children of the given types. */
   @SafeVarargs
   public static boolean hasNodesOfType(Node node, final Class<? extends Node>... types) {
-    class Visitor implements NodeVisitor<Node, Boolean> {
+    class Visitor implements NodeVisitor<Node, VisitDirective> {
       boolean found;
 
       @Override
-      public Boolean exec(Node node) {
+      public VisitDirective exec(Node node) {
         for (Class type : types) {
           if (type.isInstance(node)) {
             found = true;
-            return false; // short circuit
+            return VisitDirective.ABORT;
           }
         }
-        return true; // keep going
+        return VisitDirective.CONTINUE;
       }
     }
     Visitor v = new Visitor();
@@ -88,28 +86,48 @@ public final class SoyTreeUtils {
         HtmlAttributeValueNode.class);
   }
 
+  /** An enum that allows a {#visitAllNodes} visitor to control how the AST is traversed. */
+  public enum VisitDirective {
+    /**
+     * This means that the childrent of the current node should not be visited, but traversal should
+     * continue.
+     */
+    SKIP_CHILDREN,
+    /** This means that the whole visit operation should be abrubptly halted. */
+    ABORT,
+    /** This means that traversal should continue as normal. */
+    CONTINUE;
+  }
+
   /**
    * Runs the visitor on all nodes (including {@link ExprNode expr nodes}) reachable from the given
-   * node. The order of visiting is undefined.
+   * node. The order of visiting is breadth first.
    *
    * <p>If the visitor return {@code false} from {@link NodeVisitor#exec(Node)} we will short
    * circuit visiting.
    */
-  public static void visitAllNodes(Node node, NodeVisitor<? super Node, Boolean> visitor) {
-    Deque<Node> queue = new ArrayDeque<>();
+  public static void visitAllNodes(Node node, NodeVisitor<? super Node, VisitDirective> visitor) {
+    ArrayDeque<Node> queue = new ArrayDeque<>();
     queue.add(node);
     Node current;
-    while ((current = queue.pollLast()) != null) {
-      if (!visitor.exec(current)) {
-        return;
-      }
-      if (current instanceof ParentNode<?>) {
-        queue.addAll(((ParentNode<?>) current).getChildren());
-      }
-      if (current instanceof ExprHolderNode) {
-        for (ExprRootNode union : ((ExprHolderNode) current).getExprList()) {
-          queue.add(union);
-        }
+    while ((current = queue.poll()) != null) {
+      switch (visitor.exec(current)) {
+        case ABORT:
+          return;
+        case CONTINUE:
+          if (current instanceof ParentNode<?>) {
+            queue.addAll(((ParentNode<?>) current).getChildren());
+          }
+          if (current instanceof ExprHolderNode) {
+            for (ExprRootNode union : ((ExprHolderNode) current).getExprList()) {
+              queue.add(union);
+            }
+          }
+          continue;
+        case SKIP_CHILDREN:
+          continue;
+        default:
+          throw new AssertionError();
       }
     }
   }
@@ -122,69 +140,25 @@ public final class SoyTreeUtils {
    * @param classObject The class whose instances to search for, including subclasses.
    * @return The nodes in the order they appear.
    */
-  public static <T extends Node> List<T> getAllNodesOfType(
-      SoyNode rootSoyNode, final Class<T> classObject) {
-    return getAllNodesOfType(rootSoyNode, classObject, true);
-  }
-
-  /**
-   * Retrieves all nodes in a tree that are an instance of a particular class.
-   *
-   * @param <T> The type of node to retrieve.
-   * @param rootSoyNode The parse tree to search.
-   * @param classObject The class whose instances to search for, including subclasses.
-   * @param doSearchSubtreesOfMatchedNodes Whether to keep searching subtrees of matched nodes for
-   *     more nodes of the given type.
-   * @return The nodes in the order they appear.
-   */
-  public static <T extends Node> List<T> getAllNodesOfType(
-      SoyNode rootSoyNode,
-      final Class<T> classObject,
-      final boolean doSearchSubtreesOfMatchedNodes) {
-
+  public static <T extends Node> ImmutableList<T> getAllNodesOfType(
+      Node rootSoyNode, final Class<T> classObject) {
     final ImmutableList.Builder<T> matchedNodesBuilder = ImmutableList.builder();
-
+    // optimization to avoid navigating into expr trees if we can't possibly match anything
     final boolean exploreExpressions = ExprNode.class.isAssignableFrom(classObject);
-    final AbstractNodeVisitor<ExprNode, Void> exprVisitor =
-        exploreExpressions
-            ? new AbstractNodeVisitor<ExprNode, Void>() {
-              @Override
-              protected void visit(ExprNode exprNode) {
-                if (classObject.isInstance(exprNode)) {
-                  matchedNodesBuilder.add(classObject.cast(exprNode));
-                  if (!doSearchSubtreesOfMatchedNodes) {
-                    return;
-                  }
-                }
-                if (exprNode instanceof ParentExprNode) {
-                  visitChildren((ParentExprNode) exprNode);
-                }
-              }
-            }
-            : null;
-
-    AbstractNodeVisitor<SoyNode, Void> visitor =
-        new AbstractNodeVisitor<SoyNode, Void>() {
+    visitAllNodes(
+        rootSoyNode,
+        new NodeVisitor<Node, VisitDirective>() {
           @Override
-          protected void visit(SoyNode soyNode) {
-            if (classObject.isInstance(soyNode)) {
-              matchedNodesBuilder.add(classObject.cast(soyNode));
-              if (!doSearchSubtreesOfMatchedNodes) {
-                return;
-              }
+          public VisitDirective exec(Node node) {
+            if (classObject.isInstance(node)) {
+              matchedNodesBuilder.add(classObject.cast(node));
             }
-            if (soyNode instanceof ParentSoyNode<?>) {
-              visitChildren((ParentSoyNode<?>) soyNode);
+            if (!exploreExpressions && node instanceof ExprNode) {
+              return VisitDirective.SKIP_CHILDREN;
             }
-            if (exploreExpressions && soyNode instanceof ExprHolderNode) {
-              for (ExprRootNode expr : ((ExprHolderNode) soyNode).getExprList()) {
-                exprVisitor.exec(expr);
-              }
-            }
+            return VisitDirective.CONTINUE;
           }
-        };
-
-    visitor.exec(rootSoyNode);
+        });
     return matchedNodesBuilder.build();
   }
 

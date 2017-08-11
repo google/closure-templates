@@ -22,6 +22,7 @@ import com.google.template.soy.basetree.NodeVisitor;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
+import com.google.template.soy.soytree.SoyTreeUtils.VisitDirective;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -63,14 +64,14 @@ public final class SoyConformance {
     }
     SoyTreeUtils.visitAllNodes(
         file,
-        new NodeVisitor<Node, Boolean>() {
+        new NodeVisitor<Node, VisitDirective>() {
           @Override
-          public Boolean exec(Node node) {
+          public VisitDirective exec(Node node) {
             for (Rule<?> rule : rulesForFile) {
               rule.doCheckConformance(node, errorReporter);
             }
             // always visit all children
-            return true;
+            return VisitDirective.CONTINUE;
           }
         });
   }
