@@ -297,13 +297,13 @@ goog.define('goog.ENABLE_CHROME_APP_SAFE_SCRIPT_LOADING', false);
  */
 goog.provide = function(name) {
   if (goog.isInModuleLoader_()) {
-    throw Error('goog.provide can not be used within a goog.module.');
+    throw new Error('goog.provide can not be used within a goog.module.');
   }
   if (!COMPILED) {
     // Ensure that the same namespace isn't provided twice.
     // A goog.module/goog.provide maps a goog.require to a specific file
     if (goog.isProvided_(name)) {
-      throw Error('Namespace "' + name + '" already declared.');
+      throw new Error('Namespace "' + name + '" already declared.');
     }
   }
 
@@ -379,10 +379,10 @@ goog.VALID_MODULE_RE_ = /^[a-zA-Z_$][a-zA-Z0-9._$]*$/;
 goog.module = function(name) {
   if (!goog.isString(name) || !name ||
       name.search(goog.VALID_MODULE_RE_) == -1) {
-    throw Error('Invalid module identifier');
+    throw new Error('Invalid module identifier');
   }
   if (!goog.isInModuleLoader_()) {
-    throw Error(
+    throw new Error(
         'Module ' + name + ' has been loaded incorrectly. Note, ' +
         'modules cannot be loaded as normal scripts. They require some kind of ' +
         'pre-processing step. You\'re likely trying to load a module via a ' +
@@ -391,7 +391,7 @@ goog.module = function(name) {
         'https://github.com/google/closure-library/wiki/goog.module:-an-ES6-module-like-alternative-to-goog.provide.');
   }
   if (goog.moduleLoaderState_.moduleName) {
-    throw Error('goog.module may only be called once per module.');
+    throw new Error('goog.module may only be called once per module.');
   }
 
   // Store the module name for the loader.
@@ -400,7 +400,7 @@ goog.module = function(name) {
     // Ensure that the same namespace isn't provided twice.
     // A goog.module/goog.provide maps a goog.require to a specific file
     if (goog.isProvided_(name)) {
-      throw Error('Namespace "' + name + '" already declared.');
+      throw new Error('Namespace "' + name + '" already declared.');
     }
     delete goog.implicitNamespaces_[name];
   }
@@ -468,7 +468,7 @@ goog.module.declareLegacyNamespace = function() {
         'within a goog.module');
   }
   if (!COMPILED && !goog.moduleLoaderState_.moduleName) {
-    throw Error(
+    throw new Error(
         'goog.module must be called prior to ' +
         'goog.module.declareLegacyNamespace.');
   }
@@ -490,7 +490,7 @@ goog.module.declareLegacyNamespace = function() {
 goog.setTestOnly = function(opt_message) {
   if (goog.DISALLOW_TEST_ONLY_CODE) {
     opt_message = opt_message || '';
-    throw Error(
+    throw new Error(
         'Importing test-only code into non-debug environment' +
         (opt_message ? ': ' + opt_message : '.'));
   }
@@ -709,7 +709,7 @@ goog.require = function(name) {
         var errorMessage = 'goog.require could not find: ' + name;
         goog.logToConsole_(errorMessage);
 
-        throw Error(errorMessage);
+        throw new Error(errorMessage);
       }
     }
 
@@ -771,7 +771,7 @@ goog.nullFunction = function() {};
  * @throws {Error} when invoked to indicate the method should be overridden.
  */
 goog.abstractMethod = function() {
-  throw Error('unimplemented abstract method');
+  throw new Error('unimplemented abstract method');
 };
 
 
@@ -1230,7 +1230,7 @@ if (goog.DEPENDENCIES_ENABLED) {
         if (isDeps) {
           return false;
         } else {
-          throw Error('Cannot write "' + src + '" after document load');
+          throw new Error('Cannot write "' + src + '" after document load');
         }
       }
 
@@ -1355,7 +1355,7 @@ if (goog.DEPENDENCIES_ENABLED) {
             if (requireName in deps.nameToPath) {
               visitNode(deps.nameToPath[requireName]);
             } else {
-              throw Error('Undefined nameToPath for ' + requireName);
+              throw new Error('Undefined nameToPath for ' + requireName);
             }
           }
         }
@@ -1396,7 +1396,7 @@ if (goog.DEPENDENCIES_ENABLED) {
         }
       } else {
         goog.moduleLoaderState_ = moduleState;
-        throw Error('Undefined script input');
+        throw new Error('Undefined script input');
       }
     }
 
@@ -1496,12 +1496,12 @@ goog.loadModule = function(moduleDef) {
 
       exports = goog.loadModuleFromSource_.call(undefined, moduleDef);
     } else {
-      throw Error('Invalid module definition');
+      throw new Error('Invalid module definition');
     }
 
     var moduleName = goog.moduleLoaderState_.moduleName;
     if (!goog.isString(moduleName) || !moduleName) {
-      throw Error('Invalid module name \"' + moduleName + '\"');
+      throw new Error('Invalid module name \"' + moduleName + '\"');
     }
 
     // Don't seal legacy namespaces as they may be uses as a parent of
@@ -2197,7 +2197,7 @@ goog.globalEval = function(script) {
       doc.body.removeChild(scriptElt);
     }
   } else {
-    throw Error('goog.globalEval not available');
+    throw new Error('goog.globalEval not available');
   }
 };
 
@@ -2550,7 +2550,7 @@ goog.base = function(me, opt_methodName, var_args) {
   var caller = arguments.callee.caller;
 
   if (goog.STRICT_MODE_COMPATIBLE || (goog.DEBUG && !caller)) {
-    throw Error(
+    throw new Error(
         'arguments.caller not defined.  goog.base() cannot be used ' +
         'with strict mode code. See ' +
         'http://www.ecma-international.org/ecma-262/5.1/#sec-C');
@@ -2590,7 +2590,7 @@ goog.base = function(me, opt_methodName, var_args) {
   if (me[opt_methodName] === caller) {
     return me.constructor.prototype[opt_methodName].apply(me, args);
   } else {
-    throw Error(
+    throw new Error(
         'goog.base called from a method of one name ' +
         'to a method of a different name');
   }
@@ -2610,7 +2610,7 @@ goog.base = function(me, opt_methodName, var_args) {
  */
 goog.scope = function(fn) {
   if (goog.isInModuleLoader_()) {
-    throw Error('goog.scope is not supported within a goog.module.');
+    throw new Error('goog.scope is not supported within a goog.module.');
   }
   fn.call(goog.global);
 };
@@ -2664,7 +2664,8 @@ goog.defineClass = function(superClass, def) {
   // Wrap the constructor prior to setting up the prototype and static methods.
   if (!constructor || constructor == Object.prototype.constructor) {
     constructor = function() {
-      throw Error('cannot instantiate an interface (no constructor defined).');
+      throw new Error(
+          'cannot instantiate an interface (no constructor defined).');
     };
   }
 
@@ -8891,7 +8892,7 @@ goog.object.remove = function(obj, key) {
  */
 goog.object.add = function(obj, key, val) {
   if (obj !== null && key in obj) {
-    throw Error('The object already contains the key "' + key + '"');
+    throw new Error('The object already contains the key "' + key + '"');
   }
   goog.object.set(obj, key, val);
 };
@@ -9126,7 +9127,7 @@ goog.object.create = function(var_args) {
   }
 
   if (argLength % 2) {
-    throw Error('Uneven number of arguments');
+    throw new Error('Uneven number of arguments');
   }
 
   var rv = {};
@@ -13360,7 +13361,7 @@ goog.fs.url.getUrlObject_ = function() {
   if (urlObject != null) {
     return urlObject;
   } else {
-    throw Error('This browser doesn\'t seem to support blob URLs');
+    throw new Error('This browser doesn\'t seem to support blob URLs');
   }
 };
 
@@ -15984,7 +15985,7 @@ goog.html.SafeStyle.create = function(map) {
   var style = '';
   for (var name in map) {
     if (!/^[-_a-zA-Z0-9]+$/.test(name)) {
-      throw Error('Name allows only [-_a-zA-Z0-9], got: ' + name);
+      throw new Error('Name allows only [-_a-zA-Z0-9], got: ' + name);
     }
     var value = map[name];
     if (value == null) {
@@ -16309,7 +16310,7 @@ goog.html.SafeStyleSheet.TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_ = {};
  */
 goog.html.SafeStyleSheet.createRule = function(selector, style) {
   if (goog.string.contains(selector, '<')) {
-    throw Error('Selector does not allow \'<\', got: ' + selector);
+    throw new Error('Selector does not allow \'<\', got: ' + selector);
   }
 
   // Remove strings.
@@ -16318,14 +16319,14 @@ goog.html.SafeStyleSheet.createRule = function(selector, style) {
 
   // Check characters allowed in CSS3 selectors.
   if (!/^[-_a-zA-Z0-9#.:* ,>+~[\]()=^$|]+$/.test(selectorToCheck)) {
-    throw Error(
+    throw new Error(
         'Selector allows only [-_a-zA-Z0-9#.:* ,>+~[\\]()=^$|] and ' +
         'strings, got: ' + selector);
   }
 
   // Check balanced () and [].
   if (!goog.html.SafeStyleSheet.hasBalancedBrackets_(selectorToCheck)) {
-    throw Error('() and [] in selector must be balanced, got: ' + selector);
+    throw new Error('() and [] in selector must be balanced, got: ' + selector);
   }
 
   if (!(style instanceof goog.html.SafeStyle)) {
@@ -16926,10 +16927,10 @@ goog.html.SafeHtml.create = function(tagName, opt_attributes, opt_content) {
  */
 goog.html.SafeHtml.verifyTagName = function(tagName) {
   if (!goog.html.SafeHtml.VALID_NAMES_IN_TAG_.test(tagName)) {
-    throw Error('Invalid tag name <' + tagName + '>.');
+    throw new Error('Invalid tag name <' + tagName + '>.');
   }
   if (tagName.toUpperCase() in goog.html.SafeHtml.NOT_ALLOWED_TAG_NAMES_) {
-    throw Error('Tag name <' + tagName + '> is not allowed for SafeHtml.');
+    throw new Error('Tag name <' + tagName + '> is not allowed for SafeHtml.');
   }
 };
 
@@ -17096,7 +17097,7 @@ goog.html.SafeHtml.createScript = function(script, opt_attributes) {
     var attrLower = attr.toLowerCase();
     if (attrLower == 'language' || attrLower == 'src' || attrLower == 'text' ||
         attrLower == 'type') {
-      throw Error('Cannot set "' + attrLower + '" attribute');
+      throw new Error('Cannot set "' + attrLower + '" attribute');
     }
   }
 
@@ -17211,7 +17212,7 @@ goog.html.SafeHtml.getAttrNameAndValue_ = function(tagName, name, value) {
     value = goog.html.SafeHtml.getStyleValue_(value);
   } else if (/^on/i.test(name)) {
     // TODO(jakubvrana): Disallow more attributes with a special meaning.
-    throw Error(
+    throw new Error(
         'Attribute "' + name + '" requires goog.string.Const value, "' + value +
         '" given.');
     // URL attributes handled differently according to tag.
@@ -17223,7 +17224,7 @@ goog.html.SafeHtml.getAttrNameAndValue_ = function(tagName, name, value) {
     } else if (goog.isString(value)) {
       value = goog.html.SafeUrl.sanitize(value).getTypedStringValue();
     } else {
-      throw Error(
+      throw new Error(
           'Attribute "' + name + '" on tag "' + tagName +
           '" requires goog.html.SafeUrl, goog.string.Const, or string,' +
           ' value "' + value + '" given.');
@@ -17256,7 +17257,7 @@ goog.html.SafeHtml.getAttrNameAndValue_ = function(tagName, name, value) {
  */
 goog.html.SafeHtml.getStyleValue_ = function(value) {
   if (!goog.isObject(value)) {
-    throw Error(
+    throw new Error(
         'The "style" attribute requires goog.html.SafeStyle or map ' +
         'of style properties, ' + (typeof value) + ' given: ' + value);
   }
@@ -17444,7 +17445,7 @@ goog.html.SafeHtml.stringifyAttributes = function(tagName, opt_attributes) {
   if (opt_attributes) {
     for (var name in opt_attributes) {
       if (!goog.html.SafeHtml.VALID_NAMES_IN_TAG_.test(name)) {
-        throw Error('Invalid attribute name "' + name + '".');
+        throw new Error('Invalid attribute name "' + name + '".');
       }
       var value = opt_attributes[name];
       if (!goog.isDefAndNotNull(value)) {
@@ -17485,7 +17486,7 @@ goog.html.SafeHtml.combineAttributes = function(
   for (name in opt_attributes) {
     var nameLower = name.toLowerCase();
     if (nameLower in fixedAttributes) {
-      throw Error(
+      throw new Error(
           'Cannot override "' + nameLower + '" attribute, got "' + name +
           '" with value "' + opt_attributes[name] + '"');
     }
@@ -18416,7 +18417,9 @@ goog.functions.identity = function(opt_returnValue, var_args) {
  * @return {!Function} The error-throwing function.
  */
 goog.functions.error = function(message) {
-  return function() { throw Error(message); };
+  return function() {
+    throw new Error(message);
+  };
 };
 
 
@@ -19400,7 +19403,7 @@ goog.iter.toIterator = function(iterable) {
 
 
   // TODO(arv): Should we fall back on goog.structs.getValues()?
-  throw Error('Not implemented');
+  throw new Error('Not implemented');
 };
 
 
@@ -19534,7 +19537,7 @@ goog.iter.range = function(startOrStop, opt_stop, opt_step) {
     stop = opt_stop;
   }
   if (step == 0) {
-    throw Error('Range step argument must not be zero');
+    throw new Error('Range step argument must not be zero');
   }
 
   var newIter = new goog.iter.Iterator;
@@ -20671,7 +20674,7 @@ goog.structs.Map = function(opt_map, var_args) {
 
   if (argLength > 1) {
     if (argLength % 2) {
-      throw Error('Uneven number of arguments');
+      throw new Error('Uneven number of arguments');
     }
     for (var i = 0; i < argLength; i += 2) {
       this.set(arguments[i], arguments[i + 1]);
@@ -21024,7 +21027,7 @@ goog.structs.Map.prototype.__iterator__ = function(opt_keys) {
   var newIter = new goog.iter.Iterator;
   newIter.next = function() {
     if (version != selfObj.version_) {
-      throw Error('The map has changed since the iterator was created');
+      throw new Error('The map has changed since the iterator was created');
     }
     if (i >= selfObj.keys_.length) {
       throw goog.iter.StopIteration;
@@ -22980,7 +22983,7 @@ goog.Uri.prototype.setPort = function(newPort) {
   if (newPort) {
     newPort = Number(newPort);
     if (isNaN(newPort) || newPort < 0) {
-      throw Error('Bad port number ' + newPort);
+      throw new Error('Bad port number ' + newPort);
     }
     this.port_ = newPort;
   } else {
@@ -23278,7 +23281,7 @@ goog.Uri.prototype.isReadOnly = function() {
  */
 goog.Uri.prototype.enforceReadOnly = function() {
   if (this.isReadOnly_) {
-    throw Error('Tried to modify a read-only Uri');
+    throw new Error('Tried to modify a read-only Uri');
   }
 };
 
@@ -23650,7 +23653,7 @@ goog.Uri.QueryData.prototype.ensureKeyMapInitialized_ = function() {
 goog.Uri.QueryData.createFromMap = function(map, opt_uri, opt_ignoreCase) {
   var keys = goog.structs.getKeys(map);
   if (typeof keys == 'undefined') {
-    throw Error('Keys are undefined');
+    throw new Error('Keys are undefined');
   }
 
   var queryData = new goog.Uri.QueryData(null, null, opt_ignoreCase);
@@ -23684,7 +23687,7 @@ goog.Uri.QueryData.createFromMap = function(map, opt_uri, opt_ignoreCase) {
 goog.Uri.QueryData.createFromKeysValues = function(
     keys, values, opt_uri, opt_ignoreCase) {
   if (keys.length != values.length) {
-    throw Error('Mismatched lengths for keys/values');
+    throw new Error('Mismatched lengths for keys/values');
   }
   var queryData = new goog.Uri.QueryData(null, null, opt_ignoreCase);
   for (var i = 0; i < keys.length; i++) {
@@ -24184,7 +24187,7 @@ goog.soy.data.SanitizedContentKind = {
  * @constructor
  */
 goog.soy.data.SanitizedContent = function() {
-  throw Error('Do not instantiate directly');
+  throw new Error('Do not instantiate directly');
 };
 
 
@@ -24236,7 +24239,7 @@ goog.soy.data.SanitizedContent.prototype.toSafeHtml = function() {
     return goog.html.SafeHtml.htmlEscape(this.toString());
   }
   if (this.contentKind !== goog.soy.data.SanitizedContentKind.HTML) {
-    throw Error('Sanitized content was not of kind TEXT or HTML.');
+    throw new Error('Sanitized content was not of kind TEXT or HTML.');
   }
   return goog.html.uncheckedconversions
       .safeHtmlFromStringKnownToSatisfyTypeContract(
@@ -24254,7 +24257,7 @@ goog.soy.data.SanitizedContent.prototype.toSafeHtml = function() {
  */
 goog.soy.data.SanitizedContent.prototype.toSafeUrl = function() {
   if (this.contentKind !== goog.soy.data.SanitizedContentKind.URI) {
-    throw Error('Sanitized content was not of kind URI.');
+    throw new Error('Sanitized content was not of kind URI.');
   }
   return goog.html.uncheckedconversions
       .safeUrlFromStringKnownToSatisfyTypeContract(

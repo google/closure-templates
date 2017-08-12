@@ -19,14 +19,16 @@ package com.google.template.soy.conformance;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
-import com.google.template.soy.soytree.CssNode;
+import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.exprtree.StringNode;
 
 /**
  * Conformance rule banning particular CSS selectors.
  *
  * @author brndn@google.com (Brendan Linn)
  */
-public final class BannedCssSelector extends Rule<CssNode> {
+public final class BannedCssSelector extends Rule<FunctionNode> {
 
   private final ImmutableSet<String> bannedSelectors;
 
@@ -36,9 +38,23 @@ public final class BannedCssSelector extends Rule<CssNode> {
   }
 
   @Override
-  public void checkConformance(CssNode node, ErrorReporter errorReporter) {
-    if (bannedSelectors.contains(node.getSelectorText())) {
-      errorReporter.report(node.getSourceLocation(), error);
+  public void checkConformance(FunctionNode node, ErrorReporter errorReporter) {
+    // We can't compare against the actual function name because ResolveFunctionsPass hasn't run
+    // yet.
+    // We can't delay running this until after the ResolveFunctions pass because then some
+    // conformance rules will fail due to code injected by some of the rewriting passes.
+    // TODO(lukes): all the conformance checks that blow up on the rewritten code are
+    // BanTextEverywhereExceptComments rules.  We should eliminate those rules and replace with
+    // more targeted bans which we can better control. Not only because this would yeild better
+    // error messages, but also because the BanTextEverywhereExceptComments is super slow and adds
+    // latency to compile times
+    if (node.getFunctionName().equals("css")) {
+      ExprNode selectorTextNode = node.numChildren() == 2 ? node.getChild(1) : node.getChild(0);
+      if (selectorTextNode instanceof StringNode) {
+        if (bannedSelectors.contains(((StringNode) selectorTextNode).getValue())) {
+          errorReporter.report(selectorTextNode.getSourceLocation(), error);
+        }
+      }
     }
   }
 }

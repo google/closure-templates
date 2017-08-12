@@ -28,6 +28,9 @@ import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.base.internal.StableSoyFileSupplier;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyError;
+import com.google.template.soy.error.SoyErrorKind;
+import java.util.HashSet;
+import java.util.Set;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -119,7 +122,7 @@ public class SoyConformanceTest {
             + "}",
         "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
             + "{template .foo}\n"
-            + "{css goog-inline-block}\n"
+            + "{css('goog-inline-block')}\n"
             + "{/template}\n");
   }
 
@@ -171,23 +174,6 @@ public class SoyConformanceTest {
   }
 
   @Test
-  public void testMixedParamsCauseErrorWhenSoyDocParamsAreBanned() {
-    assertViolation(
-        "requirement: {\n"
-            + "  custom: {\n"
-            + "    java_class: 'com.google.template.soy.conformance.NoSoyDocParams'\n"
-            + "  }\n"
-            + "  error_message: 'foo'"
-            + "}",
-        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
-            + "/** @param foo */\n"
-            + "{template .bar}\n"
-            + "  {@param baz: string}\n"
-            + "  {$foo}{$baz}\n"
-            + "{/template}\n");
-  }
-
-  @Test
   public void testWhitelistedFileDoesNotCauseErrors() {
     assertNoViolation(
         "requirement: {\n"
@@ -234,7 +220,7 @@ public class SoyConformanceTest {
             + "  banned_function {\n"
             + "    function: 'quoteKeysIfJs'\n"
             + "  }\n"
-            + "  error_message: 'foo'"
+            + "  error_message: 'foooo'"
             + "  whitelist: 'foo/c/bar/baz.soy'\n"
             + "}",
         new StableSoyFileSupplier(
@@ -569,6 +555,34 @@ public class SoyConformanceTest {
             + "{/template}");
   }
 
+  @Test
+  public void testBannedCssSelector() {
+    assertViolation(
+        "requirement: {\n"
+            + "  banned_css_selector {\n"
+            + "    selector: 'foo'\n"
+            + "  }\n"
+            + "  error_message: 'foo'"
+            + "}",
+        "{namespace ns}{template .bar}{css('foo')}{/template}");
+    assertViolation(
+        "requirement: {\n"
+            + "  banned_css_selector {\n"
+            + "    selector: 'foo'\n"
+            + "  }\n"
+            + "  error_message: 'foo'"
+            + "}",
+        "{namespace ns}{template .bar}{css('foo')}{/template}");
+    assertViolation(
+        "requirement: {\n"
+            + "  banned_css_selector {\n"
+            + "    selector: 'foo'\n"
+            + "  }\n"
+            + "  error_message: 'foo'"
+            + "}",
+        "{namespace ns}{template .bar}{@param foo : ?}{css($foo, 'foo')}{/template}");
+  }
+
   private void assertViolation(String textProto, String input) {
     ImmutableList<SoyError> violations = getViolations(textProto, input);
     assertThat(violations).hasSize(1);
@@ -589,13 +603,35 @@ public class SoyConformanceTest {
     assertThat(violations).isEmpty();
   }
 
+  private ImmutableList<SoyError> getViolations(String textProto, String input) {
+    return getViolations(textProto, SoyFileSetParserBuilder.forFileContents(input));
+  }
+
   private ImmutableList<SoyError> getViolations(String textProto, SoyFileSupplier... suppliers) {
+    return getViolations(textProto, SoyFileSetParserBuilder.forSuppliers(suppliers));
+  }
+
+  private ImmutableList<SoyError> getViolations(String textProto, SoyFileSetParserBuilder builder) {
+    ValidatedConformanceConfig config = parseConfigProto(textProto);
     ErrorReporter errorReporter = ErrorReporter.createForTest();
-    SoyFileSetParserBuilder.forSuppliers(suppliers)
-        .setConformanceConfig(parseConfigProto(textProto))
-        .errorReporter(errorReporter)
-        .parse();
-    return errorReporter.getErrors();
+    builder.setConformanceConfig(config).errorReporter(errorReporter).parse();
+    ImmutableList<SoyError> errors = errorReporter.getErrors();
+    Set<SoyErrorKind> expectedErrorKinds = new HashSet<>();
+    for (RuleWithWhitelists rule : config.getRules()) {
+      expectedErrorKinds.add(rule.getRule().error);
+    }
+    for (SoyError actualError : errors) {
+      if (!expectedErrorKinds.contains(actualError.errorKind())) {
+        throw new AssertionError(
+            "Found non-conformance error!: "
+                + actualError
+                + "\nexpected kind to be one of: "
+                + expectedErrorKinds
+                + " actual is: "
+                + actualError.errorKind());
+      }
+    }
+    return errors;
   }
 
   private ValidatedConformanceConfig parseConfigProto(String textProto) {
@@ -606,14 +642,5 @@ public class SoyConformanceTest {
       throw new RuntimeException(pe);
     }
     return ValidatedConformanceConfig.create(builder.build());
-  }
-
-  private ImmutableList<SoyError> getViolations(String textProto, String input) {
-    ErrorReporter errorReporter = ErrorReporter.createForTest();
-    SoyFileSetParserBuilder.forFileContents(input)
-        .setConformanceConfig(parseConfigProto(textProto))
-        .errorReporter(errorReporter)
-        .parse();
-    return errorReporter.getErrors();
   }
 }
