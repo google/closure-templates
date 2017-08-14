@@ -94,9 +94,14 @@ public final class ValidatedConformanceConfig {
             requirement.getBannedTextEverywhereExceptComments();
         return new BannedTextEverywhereExceptComments(
             ImmutableSet.copyOf(banned.getTextList()), error);
+      case REQUIRE_STRICT_AUTOESCAPING:
+        return new RequireStrictAutoescaping(error);
+      case REQUIRE_STRONGLY_TYPED_IJ_PARAMS:
+        return new RequireStronglyTypedIjParams(error);
       case REQUIREMENTTYPE_NOT_SET:
       default:
-        throw new AssertionError("requirement missing type");
+        throw new AssertionError(
+            "unexpected requirement type: " + requirement.getRequirementTypeCase());
     }
   }
 

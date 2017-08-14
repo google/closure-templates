@@ -583,6 +583,56 @@ public class SoyConformanceTest {
         "{namespace ns}{template .bar}{@param foo : ?}{css($foo, 'foo')}{/template}");
   }
 
+  @Test
+  public void testRequireStrictAutoescaping() {
+    assertNoViolation(
+        "requirement: {\n"
+            + "  require_strict_autoescaping: {}\n"
+            + "  error_message: 'foo'"
+            + " "
+            + "}",
+        "{namespace ns}\n" + "{template .foo}{/template}\n");
+    assertViolation(
+        "requirement: {\n"
+            + "  require_strict_autoescaping: {}\n"
+            + "  error_message: 'foo'"
+            + " "
+            + "}",
+        "{namespace ns autoescape=\"deprecated-contextual\"}\n" + "{template .foo}{/template}\n");
+    assertViolation(
+        "requirement: {\n"
+            + "  require_strict_autoescaping: {}\n"
+            + "  error_message: 'foo'"
+            + " "
+            + "}",
+        "{namespace ns }\n" + "{template .foo autoescape=\"deprecated-contextual\"}{/template}\n");
+  }
+
+  @Test
+  public void testRequireStrictlyTypedIjs() {
+    assertNoViolation(
+        "requirement: {\n"
+            + "  require_strongly_typed_ij_params: {}\n"
+            + "  error_message: 'foo'"
+            + " "
+            + "}",
+        "{namespace ns}\n" + "{template .foo}{/template}\n");
+    assertViolation(
+        "requirement: {\n"
+            + "  require_strongly_typed_ij_params: {}\n"
+            + "  error_message: 'foo'"
+            + " "
+            + "}",
+        "{namespace ns}{template .foo}{$ij.foo}{/template}\n");
+    assertNoViolation(
+        "requirement: {\n"
+            + "  require_strongly_typed_ij_params: {}\n"
+            + "  error_message: 'foo'"
+            + " "
+            + "}",
+        "{namespace ns}{template .foo}{@inject foo : ?}{$foo}{/template}\n");
+  }
+
   private void assertViolation(String textProto, String input) {
     ImmutableList<SoyError> violations = getViolations(textProto, input);
     assertThat(violations).hasSize(1);

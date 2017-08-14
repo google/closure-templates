@@ -57,6 +57,14 @@ message Requirement {
     repeated string text = 1;
   }
 
+  message RequireStrictAutoescaping {
+    // no customizable behavior
+  }
+
+  message RequireStronglyTypedIjParams {
+    // no customizable behavior
+  }
+
   message Custom {
     // Required: the fully-qualified name of the Java class providing the
     // custom conformance check. The class must implement
@@ -74,6 +82,8 @@ message Requirement {
         6;
     Custom custom = 7;
     BannedHtmlTag banned_html_tag = 11;
+    RequireStrictAutoescaping require_strict_autoescaping = 12;
+    RequireStronglyTypedIjParams require_strongly_typed_ij_params = 13;
   }
 
   // Required: The message to report when a requirement is violated.
