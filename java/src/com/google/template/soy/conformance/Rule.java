@@ -18,6 +18,7 @@ package com.google.template.soy.conformance;
 
 import com.google.common.base.Preconditions;
 import com.google.common.reflect.TypeToken;
+import com.google.errorprone.annotations.ForOverride;
 import com.google.template.soy.basetree.Node;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -28,7 +29,7 @@ import com.google.template.soy.soytree.SoyFileSetNode;
  *
  * @author brndn@google.com (Brendan Linn)
  */
-public abstract class Rule<T extends Node> {
+abstract class Rule<T extends Node> {
 
   @SuppressWarnings("unchecked")
   private final Class<T> nodeClass = (Class<T>) new TypeToken<T>(getClass()) {}.getRawType();
@@ -39,7 +40,7 @@ public abstract class Rule<T extends Node> {
    * Subclasses should override this constructor and use {@code
    * errorReporter.report(someSourceLocation, error)} to report conformance errors.
    */
-  protected Rule(SoyErrorKind error) {
+  Rule(SoyErrorKind error) {
     // SoyFileSetNode leaves no way to whitelist exceptions.
     if (nodeClass == SoyFileSetNode.class) {
       throw new IllegalStateException(
@@ -50,11 +51,11 @@ public abstract class Rule<T extends Node> {
 
   /**
    * Checks whether the given node is relevant for this rule, and, if so, checks whether the node
-   * conforms to the rule. Intended to be called only from {@link CheckConformance#applyRule}.
+   * conforms to the rule. Intended to be called only from {@link SoyConformance}.
    */
-  final void doCheckConformance(Node node, ErrorReporter errorReporter) {
+  final void checkConformance(Node node, ErrorReporter errorReporter) {
     if (nodeClass.isAssignableFrom(node.getClass())) {
-      checkConformance(nodeClass.cast(node), errorReporter);
+      doCheckConformance(nodeClass.cast(node), errorReporter);
     }
   }
 
@@ -65,5 +66,6 @@ public abstract class Rule<T extends Node> {
    * <p>Recursion is handled by the conformance framework; that is, implementations should not call
    * this method on the children of {@code node}.
    */
-  protected void checkConformance(T node, ErrorReporter errorReporter) {}
+  @ForOverride
+  protected abstract void doCheckConformance(T node, ErrorReporter errorReporter);
 }

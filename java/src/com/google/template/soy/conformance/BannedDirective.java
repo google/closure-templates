@@ -26,17 +26,17 @@ import com.google.template.soy.soytree.PrintDirectiveNode;
  *
  * @author brndn@google.com (Brendan Linn)
  */
-public final class BannedDirective extends Rule<PrintDirectiveNode> {
+final class BannedDirective extends Rule<PrintDirectiveNode> {
 
   private final ImmutableSet<String> bannedDirectives;
 
-  public BannedDirective(ImmutableSet<String> bannedDirectives, SoyErrorKind error) {
+  BannedDirective(ImmutableSet<String> bannedDirectives, SoyErrorKind error) {
     super(error);
     this.bannedDirectives = bannedDirectives;
   }
 
   @Override
-  public void checkConformance(PrintDirectiveNode node, ErrorReporter errorReporter) {
+  protected void doCheckConformance(PrintDirectiveNode node, ErrorReporter errorReporter) {
     if (bannedDirectives.contains(node.getName())) {
       errorReporter.report(node.getSourceLocation(), error);
     }

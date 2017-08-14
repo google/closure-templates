@@ -26,17 +26,17 @@ import com.google.template.soy.soytree.RawTextNode;
  *
  * @author brndn@google.com (Brendan Linn)
  */
-public final class BannedRawText extends Rule<RawTextNode> {
+final class BannedRawText extends Rule<RawTextNode> {
 
   private final ImmutableSet<String> bannedTexts;
 
-  public BannedRawText(ImmutableSet<String> bannedRawText, SoyErrorKind error) {
+  BannedRawText(ImmutableSet<String> bannedRawText, SoyErrorKind error) {
     super(error);
     this.bannedTexts = bannedRawText;
   }
 
   @Override
-  public void checkConformance(RawTextNode node, ErrorReporter errorReporter) {
+  protected void doCheckConformance(RawTextNode node, ErrorReporter errorReporter) {
     String rawText = node.getRawText();
     for (String bannedText : bannedTexts) {
       int indexOf = rawText.indexOf(bannedText);

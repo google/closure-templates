@@ -27,7 +27,7 @@ final class RequireStrictHtml extends Rule<TemplateNode> {
   }
 
   @Override
-  protected void checkConformance(TemplateNode node, ErrorReporter errorReporter) {
+  protected void doCheckConformance(TemplateNode node, ErrorReporter errorReporter) {
     // Ignore non-HTML templates.
     if (node.getContentKind() != SanitizedContentKind.HTML) {
       return;

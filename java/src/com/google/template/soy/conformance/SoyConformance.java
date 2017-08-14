@@ -68,7 +68,7 @@ public final class SoyConformance {
           @Override
           public VisitDirective exec(Node node) {
             for (Rule<?> rule : rulesForFile) {
-              rule.doCheckConformance(node, errorReporter);
+              rule.checkConformance(node, errorReporter);
             }
             // always visit all children
             return VisitDirective.CONTINUE;

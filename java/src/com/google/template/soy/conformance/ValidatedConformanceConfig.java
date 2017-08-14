@@ -118,7 +118,11 @@ public final class ValidatedConformanceConfig {
       throw new IllegalArgumentException("custom rule class " + javaClass + " not found", e);
     }
     try {
-      Constructor<? extends Rule<?>> ctor = customRuleClass.getConstructor(SoyErrorKind.class);
+      // It is ok for the constructor to be non-public as long as it is defined in this package
+      // if it is non public and defined in another package, this will throw an
+      // IllegalAccessException which seems about right.
+      Constructor<? extends Rule<?>> ctor =
+          customRuleClass.getDeclaredConstructor(SoyErrorKind.class);
       return ctor.newInstance(error);
     } catch (ReflectiveOperationException e) {
       throw new IllegalArgumentException(

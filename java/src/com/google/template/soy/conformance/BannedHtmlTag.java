@@ -28,11 +28,11 @@ import java.util.Collection;
  *
  * @author brndn@google.com (Brendan Linn)
  */
-public final class BannedHtmlTag extends Rule<HtmlOpenTagNode> {
+final class BannedHtmlTag extends Rule<HtmlOpenTagNode> {
 
   private final ImmutableSet<String> bannedTagNames;
 
-  public BannedHtmlTag(Collection<String> bannedTagNames, SoyErrorKind error) {
+  BannedHtmlTag(Collection<String> bannedTagNames, SoyErrorKind error) {
     super(error);
     ImmutableSet.Builder<String> builder = ImmutableSet.builder();
     for (String tagName : bannedTagNames) {
@@ -44,7 +44,7 @@ public final class BannedHtmlTag extends Rule<HtmlOpenTagNode> {
   }
 
   @Override
-  public void checkConformance(HtmlOpenTagNode node, ErrorReporter errorReporter) {
+  protected void doCheckConformance(HtmlOpenTagNode node, ErrorReporter errorReporter) {
     if (node.getTagName().isStatic()
         && bannedTagNames.contains(node.getTagName().getStaticTagNameAsLowerCase())) {
       errorReporter.report(node.getSourceLocation(), error);

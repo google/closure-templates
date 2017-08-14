@@ -30,16 +30,16 @@ import com.google.template.soy.soytree.SoyTreeUtils;
  * deploying a strong Content Security Policy, since the only way to allow inline event handlers in
  * CSP is to use <code>unsafe-inline</code>.
  *
- * @see http://www.w3.org/TR/CSP/#directive-script-src
+ * @see <a href="http://www.w3.org/TR/CSP/#directive-script-src">The CSP spec</a>
  * @author brndn@google.com (Brendan Linn)
  */
-public final class BanInlineEventHandlers extends Rule<SoyFileNode> {
-  public BanInlineEventHandlers(SoyErrorKind error) {
+final class BanInlineEventHandlers extends Rule<SoyFileNode> {
+  BanInlineEventHandlers(SoyErrorKind error) {
     super(error);
   }
 
   @Override
-  protected void checkConformance(SoyFileNode node, ErrorReporter errorReporter) {
+  protected void doCheckConformance(SoyFileNode node, ErrorReporter errorReporter) {
     for (HtmlAttributeNode attributeNode :
         SoyTreeUtils.getAllNodesOfType(node, HtmlAttributeNode.class)) {
       if (!attributeNode.hasValue()) {

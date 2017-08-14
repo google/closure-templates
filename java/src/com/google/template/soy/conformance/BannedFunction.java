@@ -26,17 +26,17 @@ import com.google.template.soy.exprtree.FunctionNode;
  *
  * @author brndn@google.com (Brendan Linn)
  */
-public final class BannedFunction extends Rule<FunctionNode> {
+final class BannedFunction extends Rule<FunctionNode> {
 
   private final ImmutableSet<String> bannedFunctions;
 
-  public BannedFunction(ImmutableSet<String> bannedFunctions, SoyErrorKind error) {
+  BannedFunction(ImmutableSet<String> bannedFunctions, SoyErrorKind error) {
     super(error);
     this.bannedFunctions = bannedFunctions;
   }
 
   @Override
-  public void checkConformance(FunctionNode node, ErrorReporter errorReporter) {
+  protected void doCheckConformance(FunctionNode node, ErrorReporter errorReporter) {
     String functionName = node.getFunctionName();
     if (bannedFunctions.contains(functionName)) {
       errorReporter.report(node.getSourceLocation(), error);

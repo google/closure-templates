@@ -28,14 +28,14 @@ import com.google.template.soy.soytree.defn.TemplateParam;
  *
  * @author brndn@google.com (Brendan Linn)
  */
-public final class NoSoyDocParams extends Rule<TemplateNode> {
+final class NoSoyDocParams extends Rule<TemplateNode> {
 
-  public NoSoyDocParams(SoyErrorKind error) {
+  NoSoyDocParams(SoyErrorKind error) {
     super(error);
   }
 
   @Override
-  public void checkConformance(TemplateNode node, ErrorReporter errorReporter) {
+  protected void doCheckConformance(TemplateNode node, ErrorReporter errorReporter) {
     for (TemplateParam param : node.getParams()) {
       if (param instanceof SoyDocParam) {
         errorReporter.report(node.getSourceLocation(), error);

@@ -28,17 +28,17 @@ import com.google.template.soy.exprtree.StringNode;
  *
  * @author brndn@google.com (Brendan Linn)
  */
-public final class BannedCssSelector extends Rule<FunctionNode> {
+final class BannedCssSelector extends Rule<FunctionNode> {
 
   private final ImmutableSet<String> bannedSelectors;
 
-  public BannedCssSelector(ImmutableSet<String> bannedSelectors, SoyErrorKind error) {
+  BannedCssSelector(ImmutableSet<String> bannedSelectors, SoyErrorKind error) {
     super(error);
     this.bannedSelectors = bannedSelectors;
   }
 
   @Override
-  public void checkConformance(FunctionNode node, ErrorReporter errorReporter) {
+  protected void doCheckConformance(FunctionNode node, ErrorReporter errorReporter) {
     // We can't compare against the actual function name because ResolveFunctionsPass hasn't run
     // yet.
     // We can't delay running this until after the ResolveFunctions pass because then some

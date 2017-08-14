@@ -31,17 +31,17 @@ import java.util.regex.Pattern;
  *
  * @author brndn@google.com (Brendan Linn)
  */
-public final class BannedTextEverywhereExceptComments extends Rule<SoyFileNode> {
+final class BannedTextEverywhereExceptComments extends Rule<SoyFileNode> {
 
   private final ImmutableSet<String> bannedTexts;
 
-  public BannedTextEverywhereExceptComments(ImmutableSet<String> bannedTexts, SoyErrorKind error) {
+  BannedTextEverywhereExceptComments(ImmutableSet<String> bannedTexts, SoyErrorKind error) {
     super(error);
     this.bannedTexts = bannedTexts;
   }
 
   @Override
-  public void checkConformance(SoyFileNode node, ErrorReporter errorReporter) {
+  protected void doCheckConformance(SoyFileNode node, ErrorReporter errorReporter) {
     // This conformance check relies on the fact that Soy (like many compilers) does not include
     // comments in its AST. Instead of writing a custom AST visitor, the check can just call
     // SoyNode#toSourceString on the root to produce a reasonable serialization, and do
