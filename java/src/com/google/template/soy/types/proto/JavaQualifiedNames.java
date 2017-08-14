@@ -74,6 +74,22 @@ public final class JavaQualifiedNames {
   }
 
   /**
+   * Returns the fully-qualified name for the message descriptor with the given flavor (uses '.'
+   * inner class seperator).
+   */
+  public static String getQualifiedName(Descriptors.Descriptor msg, ProtoFlavor flavor) {
+    return getClassName(msg, flavor).replace('$', '.');
+  }
+
+  /**
+   * Returns the fully-qualified name for the enum descriptor with the given flavor (uses '.' inner
+   * class seperator).
+   */
+  public static String getQualifiedName(Descriptors.EnumDescriptor enumType, ProtoFlavor flavor) {
+    return getClassName(enumType, flavor).replace('$', '.');
+  }
+
+  /**
    * Gets the fully qualified name for generated classes in Java convention. Nested classes will be
    * separated using '$' instead of '.'
    */
