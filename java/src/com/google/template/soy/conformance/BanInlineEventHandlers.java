@@ -21,9 +21,7 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.RawTextNode;
-import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
-import com.google.template.soy.soytree.SoyTreeUtils;
 
 /**
  * Conformance rule banning inline event handlers in Soy templates. This is useful to enforce when
@@ -33,27 +31,24 @@ import com.google.template.soy.soytree.SoyTreeUtils;
  * @see <a href="http://www.w3.org/TR/CSP/#directive-script-src">The CSP spec</a>
  * @author brndn@google.com (Brendan Linn)
  */
-final class BanInlineEventHandlers extends Rule<SoyFileNode> {
+final class BanInlineEventHandlers extends Rule<HtmlAttributeNode> {
   BanInlineEventHandlers(SoyErrorKind error) {
     super(error);
   }
 
   @Override
-  protected void doCheckConformance(SoyFileNode node, ErrorReporter errorReporter) {
-    for (HtmlAttributeNode attributeNode :
-        SoyTreeUtils.getAllNodesOfType(node, HtmlAttributeNode.class)) {
-      if (!attributeNode.hasValue()) {
-        // inline event handlers all have values
-        continue;
-      }
-      // Ban all html attributes which start with 'on'
-      // this is the same logic that the autoescaper uses to decide if a given attribute is an
-      // inline event handler.
-      StandaloneNode attrName = attributeNode.getChild(0);
-      if (attrName instanceof RawTextNode
-          && Ascii.toLowerCase(((RawTextNode) attrName).getRawText()).startsWith("on")) {
-        errorReporter.report(attributeNode.getChild(0).getSourceLocation(), error);
-      }
+  protected void doCheckConformance(HtmlAttributeNode attributeNode, ErrorReporter errorReporter) {
+    if (!attributeNode.hasValue()) {
+      // inline event handlers all have values
+      return;
+    }
+    // Ban all html attributes which start with 'on'
+    // this is the same logic that the autoescaper uses to decide if a given attribute is an
+    // inline event handler.
+    StandaloneNode attrName = attributeNode.getChild(0);
+    if (attrName instanceof RawTextNode
+        && Ascii.toLowerCase(((RawTextNode) attrName).getRawText()).startsWith("on")) {
+      errorReporter.report(attributeNode.getChild(0).getSourceLocation(), error);
     }
   }
 }
