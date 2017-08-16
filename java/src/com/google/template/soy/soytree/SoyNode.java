@@ -69,9 +69,6 @@ public interface SoyNode extends Node {
     PRINT_NODE,
     PRINT_DIRECTIVE_NODE,
 
-    XID_NODE,
-    CSS_NODE,
-
     LET_VALUE_NODE,
     LET_CONTENT_NODE,
 

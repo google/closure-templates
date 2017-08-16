@@ -58,7 +58,6 @@ import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.CallParamValueNode;
-import com.google.template.soy.soytree.CssNode;
 import com.google.template.soy.soytree.DebuggerNode;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForNode.RangeArgs;
@@ -86,7 +85,6 @@ import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateDelegateNode.DelTemplateKey;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
-import com.google.template.soy.soytree.XidNode;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.LoopVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
@@ -340,34 +338,6 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     }
 
     append(currOutputBuf, result, node);
-  }
-
-  @Override
-  protected void visitXidNode(XidNode node) {
-    String xid = node.getRenamedText(xidRenamingMap);
-    append(currOutputBuf, xid);
-  }
-
-  @Override
-  protected void visitCssNode(CssNode node) {
-    // CSS statements are of the form {css selector}.
-    // We only rename the selector text. The component must derive from a previous
-    // css expression and thus is already renamed.
-    //
-    // For example, in Javascript calling Soy:
-    //   Js: var base = goog.getCssName('goog-custom-button');
-    //   Soy: {css $base, hover}
-    //
-    // In a Soy template:
-    //   {call .helper}
-    //     {param base}{css goog-custom-button}{/param}
-    //   {/call}
-    //
-    //   {template .helper}
-    //     {css $base, hover}
-    //   {/template}
-
-    append(currOutputBuf, node.getRenamedSelectorText(cssRenamingMap));
   }
 
   @Override

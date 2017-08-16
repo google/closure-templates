@@ -46,7 +46,6 @@ import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.CaseOrDefaultNode;
-import com.google.template.soy.soytree.CssNode;
 import com.google.template.soy.soytree.DebuggerNode;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForeachNode;
@@ -81,7 +80,6 @@ import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TagName;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.VeLogNode;
-import com.google.template.soy.soytree.XidNode;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -1397,20 +1395,10 @@ public final class HtmlRewritePass extends CompilerFilePass {
     }
 
     @Override
-    protected void visitCssNode(CssNode node) {
-      processPrintableNode(node);
-    }
-
-    @Override
     protected void visitPrintNode(PrintNode node) {
       processPrintableNode(node);
       // no need to visit children. The only children are PrintDirectiveNodes which are more like
       // expressions than soy nodes.
-    }
-
-    @Override
-    protected void visitXidNode(XidNode node) {
-      processPrintableNode(node);
     }
 
     void processNonPrintableNode(StandaloneNode node) {

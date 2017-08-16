@@ -515,7 +515,7 @@ public final class TemplateParserTest {
                 + "{/msg}")
         .causesError(
             "parse error at '{fallbackmsg ': expected text, {literal}, {call, {delcall, {msg, "
-                + "{/msg}, {xid, {css, {if, {let, {for, {plural, {select, {switch, "
+                + "{/msg}, {if, {let, {for, {plural, {select, {switch, "
                 + "{foreach, {log}, {debugger}, {print, {, or whitespace");
     assertInvalidTemplate("{print $boo /}");
     assertInvalidTemplate("{if true}aaa{else/}bbb{/if}");

@@ -18,8 +18,6 @@ package com.google.template.soy.jssrc.internal;
 
 import static com.google.template.soy.jssrc.dsl.CodeChunk.LITERAL_EMPTY_STRING;
 import static com.google.template.soy.jssrc.dsl.CodeChunk.stringLiteral;
-import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_GET_CSS_NAME;
-import static com.google.template.soy.jssrc.internal.JsRuntime.XID;
 
 import com.google.common.base.Preconditions;
 import com.google.inject.assistedinject.Assisted;
@@ -35,7 +33,6 @@ import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
-import com.google.template.soy.soytree.CssNode;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
@@ -47,7 +44,6 @@ import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.XidNode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -243,37 +239,6 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<CodeChunk.Wit
     }
 
     chunks.add(expr);
-  }
-
-  /**
-   * Example:
-   * <pre>
-   *   {xid selected-option}
-   * </pre>
-   * might generate
-   * <pre>
-   *   xid('selected-option')
-   * </pre>
-   */
-  @Override protected void visitXidNode(XidNode node) {
-    chunks.add(XID.call(stringLiteral(node.getText())));
-  }
-
-  /**
-   * Note: We would only see a CssNode if the css-handling scheme is BACKEND_SPECIFIC.
-   * <p>
-   * Example:
-   * <pre>
-   *   {css selected-option}
-   * </pre>
-   * might generate
-   * <pre>
-   *   goog.getCssName('selected-option')
-   * </pre>
-   * </p>
-   */
-  @Override protected void visitCssNode(CssNode node) {
-    chunks.add(GOOG_GET_CSS_NAME.call(stringLiteral(node.getSelectorText())));
   }
 
   /**

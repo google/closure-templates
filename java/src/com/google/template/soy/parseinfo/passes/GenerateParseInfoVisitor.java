@@ -48,7 +48,6 @@ import com.google.template.soy.passes.FindIndirectParamsVisitor;
 import com.google.template.soy.passes.FindIndirectParamsVisitor.IndirectParamsInfo;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
-import com.google.template.soy.soytree.CssNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
@@ -990,11 +989,6 @@ public final class GenerateParseInfoVisitor
 
     @Override
     public SortedMap<String, CssTagsPrefixPresence> exec(SoyNode node) {
-      List<CssNode> cssNodes = SoyTreeUtils.getAllNodesOfType(node, CssNode.class);
-      for (CssNode css : cssNodes) {
-        collectSelector(css.getSelectorText(), /* hasSelector= */ false);
-      }
-
       List<FunctionNode> fnNodes = SoyTreeUtils.getAllNodesOfType(node, FunctionNode.class);
       for (FunctionNode fn : fnNodes) {
         if (fn.getSoyFunction() != BuiltinFunction.CSS) {

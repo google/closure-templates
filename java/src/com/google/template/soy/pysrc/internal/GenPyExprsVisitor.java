@@ -35,7 +35,6 @@ import com.google.template.soy.pysrc.restricted.SoyPySrcPrintDirective;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
-import com.google.template.soy.soytree.CssNode;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
@@ -45,7 +44,6 @@ import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
-import com.google.template.soy.soytree.XidNode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -256,20 +254,6 @@ public class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>> {
       msg = directive.applyForPySrc(msg, ImmutableList.<PyExpr>of());
     }
     pyExprs.add(msg);
-  }
-
-  @Override
-  protected void visitXidNode(XidNode node) {
-    StringBuilder sb =
-        new StringBuilder("runtime.get_xid_name('").append(node.getText()).append("')");
-    pyExprs.add(new PyExpr(sb.toString(), Integer.MAX_VALUE));
-  }
-
-  @Override
-  protected void visitCssNode(CssNode node) {
-    StringBuilder sb = new StringBuilder("runtime.get_css_name(");
-    sb.append("'").append(node.getSelectorText()).append("')");
-    pyExprs.add(new PyExpr(sb.toString(), Integer.MAX_VALUE));
   }
 
   /**

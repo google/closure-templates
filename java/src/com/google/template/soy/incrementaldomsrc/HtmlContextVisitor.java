@@ -23,7 +23,6 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallParamContentNode;
-import com.google.template.soy.soytree.CssNode;
 import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.HtmlAttributeValueNode;
 import com.google.template.soy.soytree.HtmlCloseTagNode;
@@ -40,7 +39,6 @@ import com.google.template.soy.soytree.SoyNode.Kind;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.XidNode;
 import java.util.ArrayDeque;
 import java.util.IdentityHashMap;
 
@@ -64,10 +62,6 @@ import java.util.IdentityHashMap;
  */
 final class HtmlContextVisitor extends AbstractSoyNodeVisitor<Void> {
 
-  private static final SoyErrorKind INVALID_NODE_LOCATION_OUTSIDE_OF_ATTRIBUTE_VALUE =
-      SoyErrorKind.of(
-          "The incremental HTML Soy backend does not allow '{'{0}'}' nodes to appear in HTML "
-              + "outside of attribute values.");
 
   // These restrictions seem arbitrary.  Remove them
   private static final SoyErrorKind DYNAMIC_TAG_NAME =
@@ -251,24 +245,6 @@ final class HtmlContextVisitor extends AbstractSoyNodeVisitor<Void> {
   @Override
   protected void visitRawTextNode(RawTextNode node) {
     node.setHtmlContext(getState());
-  }
-
-  @Override
-  protected void visitCssNode(CssNode node) {
-    if (getState() != HtmlContext.HTML_NORMAL_ATTR_VALUE && getState() != HtmlContext.TEXT) {
-      errorReporter.report(
-          node.getSourceLocation(), INVALID_NODE_LOCATION_OUTSIDE_OF_ATTRIBUTE_VALUE, "css");
-    }
-    super.visitCssNode(node);
-  }
-
-  @Override
-  protected void visitXidNode(XidNode node) {
-    if (getState() != HtmlContext.HTML_NORMAL_ATTR_VALUE && getState() != HtmlContext.TEXT) {
-      errorReporter.report(
-          node.getSourceLocation(), INVALID_NODE_LOCATION_OUTSIDE_OF_ATTRIBUTE_VALUE, "xid");
-    }
-    super.visitXidNode(node);
   }
 
   @Override

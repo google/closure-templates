@@ -25,7 +25,6 @@ import com.google.template.soy.sharedpasses.render.Environment;
 import com.google.template.soy.sharedpasses.render.RenderException;
 import com.google.template.soy.sharedpasses.render.RenderVisitor;
 import com.google.template.soy.soytree.CallDelegateNode;
-import com.google.template.soy.soytree.CssNode;
 import com.google.template.soy.soytree.DebuggerNode;
 import com.google.template.soy.soytree.LogNode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
@@ -105,11 +104,6 @@ final class PrerenderVisitor extends RenderVisitor {
   @Override
   protected void visitMsgFallbackGroupNode(MsgFallbackGroupNode node) {
     throw RenderException.create("Cannot prerender MsgFallbackGroupNode.");
-  }
-
-  @Override
-  protected void visitCssNode(CssNode node) {
-    throw RenderException.create("Cannot prerender CssNode.");
   }
 
   @Override

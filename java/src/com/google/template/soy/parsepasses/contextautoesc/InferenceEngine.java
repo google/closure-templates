@@ -32,7 +32,6 @@ import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
-import com.google.template.soy.soytree.CssNode;
 import com.google.template.soy.soytree.EscapingMode;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForeachIfemptyNode;
@@ -61,7 +60,6 @@ import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.XidNode;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -368,24 +366,6 @@ final class InferenceEngine {
     @Override
     protected void visitCallParamContentNode(CallParamContentNode node) {
       visitRenderUnitNode(node);
-    }
-
-    /** Pass over 'xid' nodes. */
-    @Override
-    protected void visitXidNode(XidNode node) {
-      context = context.getContextBeforeDynamicValue();
-
-      // TODO: Maybe check that we're in a non-string CSS context, a JS string or value context, or
-      // an attribute value context like a class, id, or for.
-    }
-
-    /** Pass over CSS nodes. */
-    @Override
-    protected void visitCssNode(CssNode node) {
-      context = context.getContextBeforeDynamicValue();
-
-      // TODO: Maybe check that we're in a non-string CSS context, a JS string or value context, or
-      // an attribute value context like a class, id, or for.
     }
 
     @Override

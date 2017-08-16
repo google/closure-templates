@@ -91,11 +91,6 @@ public abstract class AbstractReturningSoyNodeVisitor<R>
       case PRINT_DIRECTIVE_NODE:
         return visitPrintDirectiveNode((PrintDirectiveNode) node);
 
-      case CSS_NODE:
-        return visitCssNode((CssNode) node);
-      case XID_NODE:
-        return visitXidNode((XidNode) node);
-
       case LET_VALUE_NODE:
         return visitLetValueNode((LetValueNode) node);
       case LET_CONTENT_NODE:
@@ -231,14 +226,6 @@ public abstract class AbstractReturningSoyNodeVisitor<R>
   }
 
   protected R visitPrintDirectiveNode(PrintDirectiveNode node) {
-    return visitSoyNode(node);
-  }
-
-  protected R visitCssNode(CssNode node) {
-    return visitSoyNode(node);
-  }
-
-  protected R visitXidNode(XidNode node) {
     return visitSoyNode(node);
   }
 

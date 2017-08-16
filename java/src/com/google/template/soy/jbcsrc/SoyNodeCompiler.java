@@ -56,7 +56,6 @@ import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.CallParamValueNode;
-import com.google.template.soy.soytree.CssNode;
 import com.google.template.soy.soytree.DebuggerNode;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForNode.RangeArgs;
@@ -82,7 +81,6 @@ import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.VeLogNode;
-import com.google.template.soy.soytree.XidNode;
 import java.util.ArrayList;
 import java.util.List;
 import org.objectweb.asm.Label;
@@ -617,37 +615,6 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     // intentional no-op.  java has no 'breakpoint' equivalent.  But we can add a label + line
     // number.  Which may be useful for debugging :)
     return NULL_STATEMENT;
-  }
-
-  // Note: xid and css translations are expected to be very short, so we do _not_ generate detaches
-  // for them, even though they write to the output.
-
-  @Override
-  protected Statement visitXidNode(XidNode node) {
-    return appendableExpression
-        .appendString(
-            parameterLookup
-                .getRenderContext()
-                .invoke(MethodRef.RENDER_CONTEXT_RENAME_XID, constant(node.getText())))
-        .toStatement();
-  }
-
-  // TODO(lukes):  The RenderVisitor optimizes css/xid renaming by stashing a one element cache in
-  // the CSS node itself (keyed off the identity of the renaming map).  We could easily add such
-  // an optimization via a static field in the Template class. Though im not sure it makes sense
-  // as an optimization... this should just be an immutable map lookup keyed off of a constant
-  // string. If we cared a lot, we could employ a simpler (and more compact) optimization by
-  // assigning each selector a unique integer id and then instead of hashing we can just reference
-  // an array (aka perfect hashing).  This could be part of our runtime library and ids could be
-  // assigned at startup.
-
-  @Override
-  protected Statement visitCssNode(CssNode node) {
-    Expression renamedSelector =
-        parameterLookup
-            .getRenderContext()
-            .invoke(MethodRef.RENDER_CONTEXT_RENAME_CSS_SELECTOR, constant(node.getSelectorText()));
-    return appendableExpression.appendString(renamedSelector).toStatement();
   }
 
   /**

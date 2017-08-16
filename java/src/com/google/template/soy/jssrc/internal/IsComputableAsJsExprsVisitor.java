@@ -21,7 +21,6 @@ import com.google.template.soy.soytree.AbstractReturningSoyNodeVisitor;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamValueNode;
-import com.google.template.soy.soytree.CssNode;
 import com.google.template.soy.soytree.DebuggerNode;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForeachNode;
@@ -44,7 +43,6 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.VeLogNode;
-import com.google.template.soy.soytree.XidNode;
 import java.util.HashMap;
 import java.util.Map;
 import javax.inject.Inject;
@@ -130,15 +128,6 @@ public class IsComputableAsJsExprsVisitor extends AbstractReturningSoyNodeVisito
     return true;
   }
 
-  @Override
-  protected Boolean visitXidNode(XidNode node) {
-    return true;
-  }
-
-  @Override
-  protected Boolean visitCssNode(CssNode node) {
-    return true;
-  }
 
   @Override
   protected Boolean visitLetNode(LetNode node) {

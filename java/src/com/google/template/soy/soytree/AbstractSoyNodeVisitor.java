@@ -110,13 +110,6 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
         visitPrintDirectiveNode((PrintDirectiveNode) node);
         break;
 
-      case CSS_NODE:
-        visitCssNode((CssNode) node);
-        break;
-      case XID_NODE:
-        visitXidNode((XidNode) node);
-        break;
-
       case LET_VALUE_NODE:
         visitLetValueNode((LetValueNode) node);
         break;
@@ -306,13 +299,6 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
     visitSoyNode(node);
   }
 
-  protected void visitCssNode(CssNode node) {
-    visitSoyNode(node);
-  }
-
-  protected void visitXidNode(XidNode node) {
-    visitSoyNode(node);
-  }
 
   protected void visitLetValueNode(LetValueNode node) {
     visitLetNode(node);

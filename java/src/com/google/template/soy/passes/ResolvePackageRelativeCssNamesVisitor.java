@@ -18,7 +18,6 @@ package com.google.template.soy.passes;
 
 import com.google.common.base.CaseFormat;
 import com.google.common.collect.Iterables;
-import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
@@ -26,10 +25,8 @@ import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
-import com.google.template.soy.soytree.CssNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
-import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
 import java.util.List;
@@ -66,34 +63,10 @@ final class ResolvePackageRelativeCssNamesVisitor extends AbstractSoyNodeVisitor
       packagePrefix = toCamelCase(node.getParent().getRequiredCssNamespaces().get(0));
     }
 
-    // TODO(user): remove.
-    List<CssNode> cssNodes = SoyTreeUtils.getAllNodesOfType(node, CssNode.class);
-    for (CssNode css : cssNodes) {
-      resolveSelector(css);
-    }
-
     List<FunctionNode> fnNodes = SoyTreeUtils.getAllNodesOfType(node, FunctionNode.class);
     for (FunctionNode fn : fnNodes) {
       resolveSelector(fn);
     }
-  }
-
-  private void resolveSelector(CssNode node) {
-    // Determine if this is a package-relative selector, do nothing if it's not.
-    String selectorText = node.getSelectorText();
-    if (!selectorText.startsWith(RELATIVE_SELECTOR_PREFIX)) {
-      return;
-    }
-
-    if (packagePrefix == null) {
-      errorReporter.report(node.getSourceLocation(), NO_CSS_PACKAGE, selectorText);
-    }
-
-    // Replace this CssNode with a new node with the resolved selector text.
-    String prefixed = packagePrefix + selectorText.substring(RELATIVE_SELECTOR_PREFIX.length());
-    CssNode newNode = new CssNode(node, prefixed, new CopyState());
-    ParentSoyNode<StandaloneNode> parent = node.getParent();
-    parent.replaceChild(node, newNode);
   }
 
   private void resolveSelector(FunctionNode node) {

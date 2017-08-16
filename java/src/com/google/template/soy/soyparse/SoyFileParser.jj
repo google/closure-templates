@@ -85,7 +85,6 @@ import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.CommandTagAttribute;
-import com.google.template.soy.soytree.CssNode;
 import com.google.template.soy.soytree.DebuggerNode;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForeachIfemptyNode;
@@ -122,7 +121,6 @@ import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateNodeBuilder;
 import com.google.template.soy.soytree.VeLogNode;
-import com.google.template.soy.soytree.XidNode;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.ast.GenericTypeNode;
@@ -589,7 +587,10 @@ public class SoyFileParser {
   private Token reportTemplateBodyErrorAndSkipTo(ParseException error, int... kinds) {
     ParseErrors.reportSoyFileParseException(
         errorReporter, filePath, error, token_source.curLexState);
+    return skipToTemplateToken(kinds);
+  }
 
+  private Token skipToTemplateToken(int... kinds) {
     ImmutableSet<Integer> skipTo = ImmutableSet.copyOf(Ints.asList(kinds));
     Token t;
     do {
@@ -2275,72 +2276,59 @@ private PrintDirectiveNode PrintDirective() :
 }
 
 
+
 /**
- * XidStmt -> CmdBeginXid Name ( ( "." Name )+ | ( - Name )+ )? CmdEnd
+ * XidStmt -> Error
  *
- * Valid xid names are one or more identifiers, separated by either all dots or all dashes, but
- * not both in the same xid.
+ * <p>This production exists purely to issue a good error message when there is an attempt to use
+ * the legacy xid syntax
+ *
+ * <p>TODO(lukes): sometime in 2019, just delete this
+ *
+ * <p>Returns an empty LogNode as a placeholder
  */
-private XidNode XidStmt() :
+private LogNode XidStmt() :
 {
-  Token tagBegin, tagEnd, tok = null;
-  Identifier ident = null;
+  Token tagBegin, tagEnd;
 }
 {
   tagBegin = <CMD_BEGIN_XID>
-
-  try {
-    (
-      ident = DottedIdent()
-    | tok = <CSS_SELECTOR>  // valid xids are a subset of valid CSS selectors
-      {
-        if (tok.image.charAt(0) == '-' || tok.image.charAt(0) == '%') {
-          throw generateParseException();
-        }
-      }
-    )
-
-    tagEnd = <CMD_END>
-  } catch (ParseException e) {
-    tok = new Token(NAME, "error");
-    tagEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END);
+  {
+    tagEnd = skipToTemplateToken(CMD_END);
   }
 
   {
-    String xid = (ident != null) ? ident.identifier() : tok.image;
     SourceLocation location = createSrcLoc(tagBegin, tagEnd);
-    errorReporter.warn(location, CSS_XID_MIGRATION, "xid", "deprecated");
-    return new XidNode(nodeIdGen.genId(), location, xid);
+    errorReporter.report(location, CSS_XID_MIGRATION, "xid", "no longer supported");
+    return new LogNode(nodeIdGen.genId(), location);
   }
 }
 
 
 /**
- * CssStmt -> CmdBeginCss ( Name | CssSelector ) CmdEnd
+ * CssStmt -> Error
+ *
+ * <p>This production exists purely to issue a good error message when there is an attempt to use
+ * the legacy css syntax.
+ *
+ * <p>TODO(lukes): sometime in 2019, just delete this
+ *
+ * <p>Returns an empty LogNode as a placeholder
  */
-private CssNode CssStmt() :
+private LogNode CssStmt() :
 {
-  Token tagBegin, tagEnd, selector;
+  Token tagBegin, tagEnd;
 }
 {
   tagBegin = <CMD_BEGIN_CSS>
-
-  try {
-    (
-      selector = <NAME>
-    | selector = <CSS_SELECTOR>
-    )
-
-    tagEnd = <CMD_END>
-  } catch (ParseException e) {
-    selector = new Token(NAME, "error");
-    tagEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END);
+  {
+    tagEnd = skipToTemplateToken(CMD_END);
   }
 
   {
     SourceLocation location = createSrcLoc(tagBegin, tagEnd);
-    errorReporter.warn(location, CSS_XID_MIGRATION, "css", "deprecated");
-    return new CssNode(nodeIdGen.genId(), location, selector.image);
+    errorReporter.report(location, CSS_XID_MIGRATION, "css", "no longer supported");
+    return new LogNode(nodeIdGen.genId(), location);
   }
 }
 

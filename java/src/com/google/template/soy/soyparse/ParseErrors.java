@@ -143,7 +143,10 @@ final class ParseErrors {
         continue;
       }
       // We only display the first token of any expected sequence
-      expectedTokenImages.add(getSoyFileParserTokenDisplayName(expected[0]));
+      String displayName = getSoyFileParserTokenDisplayName(expected[0]);
+      if (displayName != null) {
+        expectedTokenImages.add(displayName);
+      }
     }
 
     reporter.report(
@@ -155,7 +158,8 @@ final class ParseErrors {
 
   /**
    * Returns a human friendly display name for tokens. By default we use the generated token image
-   * which is appropriate for literal tokens.
+   * which is appropriate for literal tokens. or returns {@code null} if the name shouldn't be
+   * displayed.
    */
   private static String getSoyFileParserTokenDisplayName(int tokenId) {
     switch (tokenId) {
@@ -180,9 +184,9 @@ final class ParseErrors {
       case SoyFileParserConstants.CMD_BEGIN_FALLBACK_MSG:
         return "{fallbackmsg";
       case SoyFileParserConstants.CMD_BEGIN_XID:
-        return "{xid";
+        return null;
       case SoyFileParserConstants.CMD_BEGIN_CSS:
-        return "{css";
+        return null;
       case SoyFileParserConstants.CMD_BEGIN_IF:
         return "{if";
       case SoyFileParserConstants.CMD_BEGIN_ELSEIF:

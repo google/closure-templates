@@ -56,7 +56,6 @@ import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.CallParamValueNode;
-import com.google.template.soy.soytree.CssNode;
 import com.google.template.soy.soytree.DebuggerNode;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForNode.RangeArgs;
@@ -84,7 +83,6 @@ import com.google.template.soy.soytree.SwitchCaseNode;
 import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.XidNode;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -428,16 +426,6 @@ final class TemplateAnalysis {
     @Override
     protected void visitIfElseNode(IfElseNode node) {
       visitChildren(node);
-    }
-
-    @Override
-    protected void visitCssNode(CssNode node) {
-      // do nothing, css nodes only contain constants.
-    }
-
-    @Override
-    protected void visitXidNode(XidNode node) {
-      // do nothing, xids only contain constants.
     }
 
     @Override
