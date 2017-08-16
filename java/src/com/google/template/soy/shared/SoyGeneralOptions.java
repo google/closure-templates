@@ -18,6 +18,7 @@ package com.google.template.soy.shared;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -241,5 +242,17 @@ public final class SoyGeneralOptions implements Cloneable {
   @Override
   public final SoyGeneralOptions clone() {
     return new SoyGeneralOptions(this);
+  }
+
+  @Override
+  public final String toString() {
+    return MoreObjects.toStringHelper(this)
+        .add("declaredSyntaxVersion", declaredSyntaxVersion)
+        .add("allowExternalCalls", allowExternalCalls)
+        .add("strictAutoescapingRequired", strictAutoescapingRequired)
+        .add("compileTimeGlobals", compileTimeGlobals)
+        .add("experimentalFeatures", experimentalFeatures)
+        .add("enabledOptimizer", enabledOptimizer)
+        .toString();
   }
 }

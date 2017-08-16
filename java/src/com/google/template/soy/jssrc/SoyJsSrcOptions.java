@@ -16,6 +16,7 @@
 
 package com.google.template.soy.jssrc;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
 
 /**
@@ -357,5 +358,24 @@ public final class SoyJsSrcOptions implements Cloneable {
   @Override
   public final SoyJsSrcOptions clone() {
     return new SoyJsSrcOptions(this);
+  }
+
+  @Override
+  public final String toString() {
+    return MoreObjects.toStringHelper(this)
+        .add("shouldAllowDeprecatedSyntax", shouldAllowDeprecatedSyntax)
+        .add("shouldGenerateJsdoc", shouldGenerateJsdoc)
+        .add("shouldProvideRequireSoyNamespaces", shouldProvideRequireSoyNamespaces)
+        .add("shouldProvideRequireJsFunctions", shouldProvideRequireJsFunctions)
+        .add(
+            "shouldProvideBothSoyNamespacesAndJsFunctions",
+            shouldProvideBothSoyNamespacesAndJsFunctions)
+        .add("shouldDeclareTopLevelNamespaces", shouldDeclareTopLevelNamespaces)
+        .add("shouldGenerateGoogMsgDefs", shouldGenerateGoogMsgDefs)
+        .add("shouldGenerateGoogModules", shouldGenerateGoogModules)
+        .add("googMsgsAreExternal", googMsgsAreExternal)
+        .add("bidiGlobalDir", bidiGlobalDir)
+        .add("useGoogIsRtlForBidiGlobalDir", useGoogIsRtlForBidiGlobalDir)
+        .toString();
   }
 }
