@@ -43,14 +43,6 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public class SoyConformanceTest {
 
-  private static final String FOO_BANNED_EVERYWHERE_EXCEPT_COMMENTS =
-      "requirement: {\n"
-          + "  banned_text_everywhere_except_comments: {\n"
-          + "    text: 'foo'\n"
-          + "  }\n"
-          + "  error_message: 'foo'"
-          + "}";
-
   @Test
   public void testBannedFunction() {
     assertViolation(
@@ -233,76 +225,6 @@ public class SoyConformanceTest {
             "a/b/c/foo/bar/baz.soy"));
   }
 
-  @Test
-  public void testBannedTextEverywhereIncludesTemplateBody() {
-    assertViolation(
-        FOO_BANNED_EVERYWHERE_EXCEPT_COMMENTS,
-        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
-            + "{template .bar}\n"
-            + "foo\n"
-            + "{/template}");
-  }
-
-  @Test
-  public void testBannedTextEverywhereIncludesNamespace() {
-    assertViolation(
-        FOO_BANNED_EVERYWHERE_EXCEPT_COMMENTS,
-        "{namespace foo autoescape=\"deprecated-noncontextual\"}\n"
-            + "{template .bar}\n"
-            + "{/template}");
-  }
-
-  @Test
-  public void testBannedTextEverywhereIncludesTemplateName() {
-    assertViolation(
-        FOO_BANNED_EVERYWHERE_EXCEPT_COMMENTS,
-        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
-            + "{template .foo}\n"
-            + "{/template}");
-  }
-
-  @Test
-  public void testBannedTextEverywhereIncludesBetweenComments() {
-    assertViolation(
-        FOO_BANNED_EVERYWHERE_EXCEPT_COMMENTS,
-        "{namespace ns}\n" + "{template .bar}\n" + "/** */ foo /** */" + "{/template}");
-  }
-
-  // TODO(brndn): add more testsBannedTextEverywhereIncludesXXX tests.
-
-  @Test
-  public void testBannedTextEverywhereDoesNotIncludeComments() {
-    assertNoViolation(
-        FOO_BANNED_EVERYWHERE_EXCEPT_COMMENTS,
-        "{namespace ns autoescape=\"deprecated-noncontextual\"}\n"
-            + "// foo.\n"
-            + "/** foo */\n"
-            + "/**\n"
-            + " * foo\n"
-            + " */\n"
-            + "{template .bar}\n"
-            + "Hello, world./** foo. */\n"
-            + "/* foo foo foo */\n"
-            + "{/template}\n"
-            + "/**\n"
-            + " * foo\n"
-            + " */\n"
-            + "{template .baz}\n"
-            + "/** foo foo */"
-            + "{/template}");
-  }
-
-  @Test
-  public void testBannedTextEverywhereDoesNotInterpretInputAsRegex() {
-    String noStars =
-        "requirement: {\n"
-            + "  banned_text_everywhere_except_comments: {\n"
-            + "    text: '*'\n"
-            + "  }\n"
-            + "  error_message: 'foo'"
-            + "}";
-    assertViolation(noStars, "{namespace ns}\n" + "{template .foo}*{/template}\n");
-  }
 
   @Test
   public void testBannedRawText() {
