@@ -567,7 +567,6 @@ public class TranslateExprNodeVisitor
                 : sanitizedContentPackFn.call(fieldValue);
       }
 
-      // See go/jspb for setter and getter names.  // MOE: strip_line
       if (fieldDesc.isExtension()) {
         CodeChunk.WithValue extInfo = extensionField(fieldDesc);
         initialStatements.add(protoVar.dotAccess("setExtension").call(extInfo, fieldValue));
