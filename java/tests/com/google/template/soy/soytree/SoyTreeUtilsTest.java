@@ -134,7 +134,7 @@ public final class SoyTreeUtilsTest {
               "  {@param world : ?}",
               "  {@param foo : ?}",
               "  Hello, World!",
-              "  {lb}{call foo data=\"all\"}{param x: $x /}{/call}{rb}",
+              "  {lb}{call .foo data=\"all\"}{param x: $x /}{/call}{rb}",
               "  {$x |escapeHtml}",
               "  {if $cond0}",
               "    {$a}",
@@ -206,6 +206,8 @@ public final class SoyTreeUtilsTest {
           assertSame(forNode, local.declaringNode());
           assertSame(forNode.getVar(), defn);
           break;
+        default:
+          // fall through
       }
     }
   }

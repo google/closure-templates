@@ -243,26 +243,26 @@ public final class CheckDelegatesVisitorTest {
   @Test
   public void testErrorBasicCallToDelegateTemplate() {
     assertInvalidSoyFiles(
-        "'call' to delegate template 'MagicButton' (expected 'delcall').",
+        "'call' to delegate template 'ns1.MagicButton' (expected 'delcall').",
         ""
             + "{namespace ns1 autoescape=\"deprecated-noncontextual\"}\n"
             + "\n"
             + "/***/\n"
             + "{template .boo}\n"
-            + "  {call MagicButton /}\n"
+            + "  {call .MagicButton /}\n"
             + // basic call (should be delegate call)
             "{/template}\n"
             + "\n"
             + "/** @param foo */\n"
-            + "{deltemplate MagicButton}\n"
+            + "{deltemplate ns1.MagicButton}\n"
             + "  000\n"
             + "{/deltemplate}\n",
         ""
             + "{delpackage SecretFeature}\n"
-            + "{namespace ns2 autoescape=\"deprecated-noncontextual\"}\n"
+            + "{namespace ns1 autoescape=\"deprecated-noncontextual\"}\n"
             + "\n"
             + "/** @param foo */\n"
-            + "{deltemplate MagicButton}\n"
+            + "{deltemplate ns1.MagicButton}\n"
             + "  111 {$foo}\n"
             + "{/deltemplate}\n");
   }

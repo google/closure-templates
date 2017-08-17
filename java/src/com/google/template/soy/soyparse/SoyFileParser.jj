@@ -2735,7 +2735,7 @@ private CallNode CallStmt() :
     } catch (ParseException e) {
       tagEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_SELF_CLOSE, CMD_CLOSE_CALL);
       if (calleeName == null) {
-        calleeName = Identifier.create("error", createSrcLoc(tagBegin));
+        calleeName = Identifier.create(".error", createSrcLoc(tagBegin));
       }
     }
 

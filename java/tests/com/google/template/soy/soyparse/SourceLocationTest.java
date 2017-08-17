@@ -71,7 +71,7 @@ public final class SourceLocationTest {
             "  {print $world}", // 5
             "  {rb}!", // 6
             "", // 7
-            "  {call bar /}", // 8
+            "  {call .bar /}", // 8
             "{/template}", // 9
             "{template .bar autoescape=\"deprecated-noncontextual\"}", // 10
             "  Gooodbye", // 11

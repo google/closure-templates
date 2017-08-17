@@ -33,6 +33,8 @@ final class SoyParseUtils {
       SoyErrorKind.of("Invalid unicode sequence ''{0}''.");
   private static final SoyErrorKind UNKNOWN_ESCAPE_CODE =
       SoyErrorKind.of("Unknown escape code ''{0}''.");
+  private static final SoyErrorKind MISSING_CALLEE_NAMESPACE =
+      SoyErrorKind.of("Callee ''{0}'' should be relative to a namespace. Did you mean ''.{0}''?");
 
   /** Given a template call and file header info, return the expanded callee name if possible. */
   @SuppressWarnings("unused") // called in SoyFileParser.jj
@@ -59,7 +61,12 @@ final class SoyParseUtils {
       case SINGLE_IDENT:
         // Case 3: Source callee name is a single ident (not dotted).
         if (header.aliasToNamespaceMap.containsKey(name)) {
+          // Case 3a: This callee collides with a namespace alias, which likely means the alias
+          // incorrectly references a template.
           errorReporter.report(ident.location(), CALL_COLLIDES_WITH_NAMESPACE_ALIAS, name);
+        } else {
+          // Case 3b: The callee name needs a namespace.
+          errorReporter.report(ident.location(), MISSING_CALLEE_NAMESPACE, name);
         }
         return name;
       default:

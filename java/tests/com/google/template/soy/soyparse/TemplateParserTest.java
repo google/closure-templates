@@ -319,7 +319,7 @@ public final class TemplateParserTest {
     assertValidTemplate("{let $a: '{} abc\\\\def {}' /}");
     assertValidTemplate("{let $a: '{} abc\\\\\\\\def {}' /}");
 
-    assertValidTemplate("{call blah} {param a: ['blah': '{} abc\\\\\\\\def {}' ] /} {/call}");
+    assertValidTemplate("{call .blah} {param a: ['blah': '{} abc\\\\\\\\def {}' ] /} {/call}");
 
     assertValidTemplate("{msg desc=\"\\\"\"}x{/msg}");
     assertValidTemplate("{msg desc=\"Hi! I'm short! {}\"}x{/msg}");
@@ -1903,14 +1903,14 @@ public final class TemplateParserTest {
   public void testMultipleErrors() throws ParseException {
     ErrorReporter errorReporter = ErrorReporter.createForTest();
     parseTemplateContent(
-        "{call 123 /}\n" // Invalid callee name
+        "{call .123 /}\n" // Invalid callee name
             + "{delcall 456 /}\n" // Invalid callee name
             + "{foreach foo in bar}{/foreach}\n" // Invalid foreach var
             + "{let /}\n", // Missing let var
         errorReporter);
     List<SoyError> errors = errorReporter.getErrors();
     assertThat(errors).hasSize(4);
-    assertThat(errors.get(0).message()).isEqualTo("parse error at '1': expected identifier or .");
+    assertThat(errors.get(0).message()).isEqualTo("parse error at '1': expected identifier");
     assertThat(errors.get(1).message()).isEqualTo("parse error at '4': expected identifier or .");
     assertThat(errors.get(2).message()).isEqualTo("parse error at 'foo': expected variable");
     assertThat(errors.get(3).message()).isEqualTo("parse error at '/}': expected variable");
