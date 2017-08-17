@@ -1212,7 +1212,7 @@ public final class SoyFileSet {
    * @throws IOException If there is an error in opening/reading a message file or opening/writing
    *     an output JS file.
    */
-  void compileToPySrcFiles(
+  public void compileToPySrcFiles(
       String outputPathFormat, String inputFilePathPrefix, SoyPySrcOptions pySrcOptions)
       throws IOException {
     resetErrorReporter();
