@@ -29,9 +29,9 @@
 
 /**
  * Delegate package 'alpha' implementation of 'myDelegates.foo'.
- * @param moo Note: Must list same params for all implementations, even if not all implementations
- *     use a param.
  */
 {deltemplate myDelegates.foo kind="text"}
+  {@param moo: ?}  /** Note: Must list same params for all implementations, even if not all
+                       implementations use a param. */
   myDelegates.foo from delegate package alpha (moo = {$moo}).
 {/deltemplate}

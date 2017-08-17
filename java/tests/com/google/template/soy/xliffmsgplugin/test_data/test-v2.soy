@@ -6,10 +6,10 @@
 
 /**
  * Print information about cow and moose.
- * @param cow Don't have one.
- * @param moose The moose to print info about.
  */
 {template .mooseTemplate}
+  {@param cow: ?}  /** Don't have one. */
+  {@param moose: ?}  /** The moose to print info about. */
 
   {foreach $moo in $moose}
     {if isFirst($moo)}
@@ -44,8 +44,8 @@
 {/template}
 
 
-/** @param moo One moo. */
 {template .mooHelper_ visibility="private" autoescape="deprecated-noncontextual"}
+  {@param moo: ?}  /** One moo. */
   {msg desc="Tells what a cow says."}
     Cow says {$moo |noAutoescape}.
   {/msg}{\n}
