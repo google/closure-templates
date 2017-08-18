@@ -106,9 +106,10 @@ public final class VeLoggingTest {
     TestLogger testLogger = new TestLogger();
     renderTemplate(
         OutputAppendable.create(sb, testLogger),
-        "{velog Foo}<div id=1>{velog Bar}<div id=2></div>"
-            + "{/velog}{velog Baz}<div id=3></div>{/velog}</div>{/velog}");
-    assertThat(sb.toString()).isEqualTo("<div id=1><div id=2></div><div id=3></div></div>");
+        "{velog Foo}<div data-id=1>{velog Bar}<div data-id=2></div>"
+            + "{/velog}{velog Baz}<div data-id=3></div>{/velog}</div>{/velog}");
+    assertThat(sb.toString())
+        .isEqualTo("<div data-id=1><div data-id=2></div><div data-id=3></div></div>");
     assertThat(testLogger.builder.toString())
         .isEqualTo("velog{id=1}\n" + "  velog{id=2}\n" + "  velog{id=3}");
   }
@@ -119,8 +120,8 @@ public final class VeLoggingTest {
     TestLogger testLogger = new TestLogger();
     renderTemplate(
         OutputAppendable.create(sb, testLogger),
-        "{velog Foo data=\"soy.test.Foo(intField: 123)\"}<div id=1></div>{/velog}");
-    assertThat(sb.toString()).isEqualTo("<div id=1></div>");
+        "{velog Foo data=\"soy.test.Foo(intField: 123)\"}<div data-id=1></div>{/velog}");
+    assertThat(sb.toString()).isEqualTo("<div data-id=1></div>");
     assertThat(testLogger.builder.toString())
         .isEqualTo("velog{id=1, data=soy.test.Foo{int_field: 123}}");
   }
@@ -131,7 +132,7 @@ public final class VeLoggingTest {
     TestLogger testLogger = new TestLogger();
     renderTemplate(
         OutputAppendable.create(sb, testLogger),
-        "{velog Foo logonly=\"true\"}<div id=1></div>{/velog}");
+        "{velog Foo logonly=\"true\"}<div data-id=1></div>{/velog}");
     // logonly ve's disable content generation
     assertThat(sb.toString()).isEmpty();
     assertThat(testLogger.builder.toString()).isEqualTo("velog{id=1, logonly}");
@@ -146,10 +147,10 @@ public final class VeLoggingTest {
         OutputAppendable.create(sb, testLogger),
         "{@param t : bool}",
         "{@param f : bool}",
-        "{velog Foo logonly=\"$t\"}<div id=1></div>{/velog}",
-        "{velog Bar logonly=\"$f\"}<div id=2></div>{/velog}");
+        "{velog Foo logonly=\"$t\"}<div data-id=1></div>{/velog}",
+        "{velog Bar logonly=\"$f\"}<div data-id=2></div>{/velog}");
     // logonly ve's disable content generation
-    assertThat(sb.toString()).isEqualTo("<div id=2></div>");
+    assertThat(sb.toString()).isEqualTo("<div data-id=2></div>");
     assertThat(testLogger.builder.toString()).isEqualTo("velog{id=1, logonly}\nvelog{id=2}");
   }
 
@@ -159,11 +160,11 @@ public final class VeLoggingTest {
     TestLogger testLogger = new TestLogger();
     renderTemplate(
         OutputAppendable.create(sb, testLogger),
-        "{let $foo kind=\"html\"}{velog Foo}<div id=1></div>{/velog}{/let}{$foo}{$foo}");
+        "{let $foo kind=\"html\"}{velog Foo}<div data-id=1></div>{/velog}{/let}{$foo}{$foo}");
     // TODO(b/63699313): we lost one of the log statements... fix that by changing how we coerce
     // content blocks to strings
     assertThat(testLogger.builder.toString()).isEqualTo("velog{id=1}");
-    assertThat(sb.toString()).isEqualTo("<div id=1></div><div id=1></div>");
+    assertThat(sb.toString()).isEqualTo("<div data-id=1></div><div data-id=1></div>");
   }
 
   @Test
@@ -172,9 +173,9 @@ public final class VeLoggingTest {
     TestLogger testLogger = new TestLogger();
     renderTemplate(
         OutputAppendable.create(sb, testLogger),
-        "{velog Foo logonly=\"true\"}<div id=1>{velog Foo logonly=\"false\"}<div id=1>"
-            + "{velog Foo logonly=\"true\"}<div id=1>"
-            + "{velog Foo logonly=\"true\"}<div id=1></div>{/velog}"
+        "{velog Foo logonly=\"true\"}<div data-id=1>{velog Foo logonly=\"false\"}<div data-id=1>"
+            + "{velog Foo logonly=\"true\"}<div data-id=1>"
+            + "{velog Foo logonly=\"true\"}<div data-id=1></div>{/velog}"
             + "</div>{/velog}</div>{/velog}</div>{/velog}");
     assertThat(sb.toString()).isEqualTo("");
     assertThat(testLogger.builder.toString())
