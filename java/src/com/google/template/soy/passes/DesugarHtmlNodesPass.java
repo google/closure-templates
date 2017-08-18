@@ -57,7 +57,7 @@ import java.util.List;
  *
  * <p>This pass ensures that the rest of the compiler can remain agnostic about these nodes.
  */
-final class DesugarHtmlNodesPass extends CompilerFileSetPass {
+public final class DesugarHtmlNodesPass extends CompilerFileSetPass {
 
   @Override
   public void run(SoyFileSetNode fileSet, TemplateRegistry registry) {

@@ -1012,20 +1012,9 @@ public final class SoyFileSet {
   @SuppressWarnings("deprecation")
   public List<String> compileToJsSrc(
       SoyJsSrcOptions jsSrcOptions, @Nullable SoyMsgBundle msgBundle) {
-    resetErrorReporter();
-
-    // Synchronize old and new ways to declare syntax version V1.
-    if (jsSrcOptions.shouldAllowDeprecatedSyntax()) {
-      generalOptions.setDeclaredSyntaxVersionName("1.0");
-    }
-    // JS has traditionally allowed unknown globals, as a way for soy to reference normal js enums
-    // and constants.  For consistency/reusability of templates it would be nice to not allow that
-    // but the cat is out of the bag.
-    PassManager.Builder builder = passManagerBuilder(SyntaxVersion.V2_0).allowUnknownGlobals();
-    ParseResult parseResult = parse(builder);
-    throwIfErrorsPresent();
-    TemplateRegistry registry = parseResult.registry();
-    SoyFileSetNode fileSet = parseResult.fileSet();
+    ParseResult result = preprocessJsSrcResults(jsSrcOptions);
+    TemplateRegistry registry = result.registry();
+    SoyFileSetNode fileSet = result.fileSet();
     List<String> generatedSrcs =
         jsSrcMainProvider
             .get()
@@ -1061,15 +1050,7 @@ public final class SoyFileSet {
       List<String> locales,
       @Nullable String messageFilePathFormat)
       throws IOException {
-    resetErrorReporter();
-
-    // Synchronize old and new ways to declare syntax version V1.
-    if (jsSrcOptions.shouldAllowDeprecatedSyntax()) {
-      generalOptions.setDeclaredSyntaxVersionName("1.0");
-    }
-    // Allow unknown globals for backwards compatibility
-    ParseResult result = parse(passManagerBuilder(SyntaxVersion.V2_0).allowUnknownGlobals());
-    throwIfErrorsPresent();
+    ParseResult result = preprocessJsSrcResults(jsSrcOptions);
 
     SoyFileSetNode soyTree = result.fileSet();
     TemplateRegistry registry = result.registry();
@@ -1123,6 +1104,24 @@ public final class SoyFileSet {
     }
     throwIfErrorsPresent();
     reportWarnings();
+  }
+
+  @SuppressWarnings("deprecation")
+  private ParseResult preprocessJsSrcResults(SoyJsSrcOptions jsSrcOptions) {
+    resetErrorReporter();
+
+    // Synchronize old and new ways to declare syntax version V1.
+    if (jsSrcOptions.shouldAllowDeprecatedSyntax()) {
+      generalOptions.setDeclaredSyntaxVersionName("1.0");
+    }
+    // JS has traditionally allowed unknown globals, as a way for soy to reference normal js enums
+    // and constants. For consistency/reusability of templates it would be nice to not allow that
+    // but the cat is out of the bag.
+    PassManager.Builder builder =
+        passManagerBuilder(SyntaxVersion.V2_0).allowUnknownGlobals().desugarHtmlNodes(false);
+    ParseResult parseResult = parse(builder);
+    throwIfErrorsPresent();
+    return parseResult;
   }
 
   /**

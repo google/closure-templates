@@ -31,6 +31,7 @@ import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.internal.InsertMsgsVisitor;
 import com.google.template.soy.passes.CombineConsecutiveRawTextNodesPass;
+import com.google.template.soy.passes.DesugarHtmlNodesPass;
 import com.google.template.soy.shared.internal.ApiCallScopeUtils;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
 import com.google.template.soy.shared.internal.MainEntryPointUtils;
@@ -107,6 +108,9 @@ public class JsSrcMain {
         "Do not specify useGoogIsRtlForBidiGlobalDir without either"
             + " shouldProvideRequireSoyNamespaces or shouldProvideRequireJsFunctions.");
 
+    // JsSrc disable desugaring pass in the PassManager. We need to instrument VeLogNode for JsSrc
+    // backends, and it is convenient to do that before desugaring.
+    new DesugarHtmlNodesPass().run(soyTree, templateRegistry);
     try (GuiceSimpleScope.InScope inScope = apiCallScope.enter()) {
       // Seed the scoped parameters.
       inScope.seed(SoyJsSrcOptions.class, jsSrcOptions);
@@ -126,9 +130,9 @@ public class JsSrcMain {
             bidiGlobalDir == null || bidiGlobalDir.isStaticValue(),
             "If using bidiGlobalIsRtlCodeSnippet, must also enable shouldGenerateGoogMsgDefs.");
         new InsertMsgsVisitor(msgBundle, errorReporter).exec(soyTree);
-        new CombineConsecutiveRawTextNodesPass().run(soyTree);
       }
-
+      // Combine raw text nodes before codegen.
+      new CombineConsecutiveRawTextNodesPass().run(soyTree);
       // Do the code generation.
       optimizeBidiCodeGenVisitorProvider.get().exec(soyTree);
       return genJsCodeVisitorProvider.get().gen(soyTree, templateRegistry, errorReporter);
