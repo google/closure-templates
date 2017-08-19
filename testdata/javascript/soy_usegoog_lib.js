@@ -23355,6 +23355,15 @@ class SoyMap {
   get(k) {}
 
   /**
+   * Set method is required for the runtime method that copies the content of a
+   * ES6 map to jspb map.
+   * @param {K} k
+   * @param {V} v
+   * @return {!SoyMap<K, V>}
+   */
+  set(k, v) {}
+
+  /**
    * Returns an iterator over the [key, value] pair entries of this map.
    *
    * TODO(b/69049599): structural interfaces defeat property renaming.
@@ -23401,9 +23410,25 @@ function $$legacyObjectMapToMap(obj) {
   return map;
 }
 
+/**
+ * Saves the contents of a SoyMap to another SoyMap.
+ * This is used for proto initilization in Soy. Protocol buffer in JS does not
+ * generate setters for map fields. To construct a proto map field, we use this
+ * help method to save the content of map literal to proto.
+ * @param {!SoyMap<K, V>} jspbMap
+ * @param {!SoyMap<K, V>} map
+ * @template K, V
+ */
+function $$populateMap(jspbMap, map) {
+  for (const [k, v] of map.entries()) {
+    jspbMap.set(k, v);
+  }
+}
+
 exports = {
   $$legacyObjectMapToMap,
   $$mapToLegacyObjectMap,
+  $$populateMap,
   // This is declared as SoyMap instead of Map to avoid shadowing ES6 Map, which
   // is used by $$legacyObjectMapToMap. But the external name can still be Map.
   Map: SoyMap,

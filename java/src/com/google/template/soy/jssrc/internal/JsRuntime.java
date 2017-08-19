@@ -40,6 +40,7 @@ public final class JsRuntime {
   private static final GoogRequire GOOG_STRING = GoogRequire.create("goog.string");
 
   private static final GoogRequire SOY = GoogRequire.create("soy");
+  private static final GoogRequire SOY_MAP = GoogRequire.create("soy.map");
   private static final GoogRequire SOY_ASSERTS = GoogRequire.create("soy.asserts");
 
   private static final GoogRequire XID_REQUIRE = GoogRequire.create("xid");
@@ -93,13 +94,13 @@ public final class JsRuntime {
 
   public static final CodeChunk.WithValue SOY_GET_DELEGATE_FN = SOY.dotAccess("$$getDelegateFn");
 
-  public static final CodeChunk.WithValue SOY_MAP_POPULATE = SOY.dotAccess("$$populateMap");
-
   public static final CodeChunk.WithValue SOY_REGISTER_DELEGATE_FN =
       SOY.dotAccess("$$registerDelegateFn");
 
   public static final CodeChunk.WithValue SOY_GET_DELTEMPLATE_ID =
       SOY.dotAccess("$$getDelTemplateId");
+
+  public static final CodeChunk.WithValue SOY_MAP_POPULATE = SOY_MAP.dotAccess("$$populateMap");
 
   public static final CodeChunk.WithValue WINDOW_CONSOLE_LOG =
       dottedIdNoRequire("window.console.log");
