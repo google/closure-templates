@@ -22,6 +22,8 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.StringNode;
+import com.google.template.soy.exprtree.VarRefNode;
+import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.passes.CombineConsecutiveRawTextNodesPass;
 import com.google.template.soy.passes.DesugarHtmlNodesPass;
 import com.google.template.soy.shared.internal.BuiltinFunction;
@@ -29,20 +31,28 @@ import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.HtmlAttributeValueNode;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
+import com.google.template.soy.soytree.IfCondNode;
+import com.google.template.soy.soytree.IfElseNode;
+import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
+import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.VeLogNode;
+import com.google.template.soy.soytree.defn.InjectedParam;
 
 /** Instruments {velog} commands and adds necessary data attribute to the top-level DOM node. */
 final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
   private final TemplateRegistry templateRegistry;
   /** The node id generator for the parse tree. Retrieved from the root SoyFileSetNode. */
   private IdGenerator nodeIdGen;
+
+  private static final String LOGGING_METADATA = "$$loggingMetaData";
+  private static final InjectedParam LOGGING_METADATA_IJ = new InjectedParam(LOGGING_METADATA);
 
   VeLogInstrumentationVisitor(TemplateRegistry templateRegistry) {
     this.templateRegistry = templateRegistry;
@@ -67,7 +77,9 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
             .getEndPoint()
             .offset(0, tag.isSelfClosing() ? -2 : -1)
             .asLocation(tag.getSourceLocation().getFilePath());
-    // TODO(user): Wrap this into a if node with $ij.LoggingMetadata
+    IfNode ifNode = new IfNode(nodeIdGen.genId(), insertionLocation);
+    IfCondNode ifCondNode = createIfCondForLoggingFunction(nodeIdGen.genId(), insertionLocation);
+    ifNode.addChild(ifCondNode);
     HtmlAttributeNode dataAttributeNode =
         createHtmlAttribute(
             "soylog",
@@ -75,7 +87,35 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
             new RawTextNode(nodeIdGen.genId(), "foo", insertionLocation),
             nodeIdGen,
             insertionLocation);
-    tag.addChild(dataAttributeNode);
+    ifCondNode.addChild(dataAttributeNode);
+    tag.addChild(ifNode);
+    visitChildren(node);
+  }
+
+  @Override
+  protected void visitHtmlAttributeValueNode(HtmlAttributeValueNode node) {
+    SourceLocation insertionLocation = node.getSourceLocation();
+    for (FunctionNode function : SoyTreeUtils.getAllNodesOfType(node, FunctionNode.class)) {
+      if (!(function.getSoyFunction() instanceof LoggingFunction)) {
+        continue;
+      }
+      IfNode ifNode = new IfNode(nodeIdGen.genId(), insertionLocation);
+      IfCondNode ifCondNode = createIfCondForLoggingFunction(nodeIdGen.genId(), insertionLocation);
+      // TODO(user): The value should be the logging function.
+      ifCondNode.addChild(new RawTextNode(nodeIdGen.genId(), "foo", insertionLocation));
+      IfElseNode ifElseNode = new IfElseNode(nodeIdGen.genId(), insertionLocation);
+      ifElseNode.addChild(
+          new RawTextNode(
+              nodeIdGen.genId(),
+              ((LoggingFunction) function.getSoyFunction()).getPlaceholder(),
+              insertionLocation));
+      ifNode.addChild(ifCondNode);
+      ifNode.addChild(ifElseNode);
+      node.replaceChild(0, ifNode);
+      // We can break here since VeLogValidationPass guarantees that there is exactly one
+      // logging function in a html attribute value.
+      break;
+    }
     visitChildren(node);
   }
 
@@ -108,6 +148,19 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
     attributeValueNode.addChild(attributeValue);
     dataAttributeNode.addChild(attributeValueNode);
     return dataAttributeNode;
+  }
+
+  private static IfCondNode createIfCondForLoggingFunction(
+      int nodeId, SourceLocation insertionLocation) {
+    return new IfCondNode(
+        nodeId,
+        insertionLocation,
+        "if",
+        new VarRefNode(
+            LOGGING_METADATA,
+            insertionLocation,
+            /*injected=*/ true,
+            /*defn=*/ LOGGING_METADATA_IJ));
   }
 
   @Override

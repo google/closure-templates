@@ -25,6 +25,7 @@ import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.logging.LoggableElement;
 import com.google.template.soy.logging.LoggingConfig;
+import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -32,6 +33,7 @@ import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.types.SoyTypeProvider;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.proto.SoyProtoTypeProvider;
+import java.util.Set;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -61,23 +63,66 @@ public final class VeLogInstrumentationVisitorTest {
     assertThatSourceString(runPass("")).isEqualTo("");
     assertThatSourceString(runPass("<div></div>")).isEqualTo("<div></div>");
     assertThatSourceString(runPass("{velog Bar}<div></div>{/velog}"))
-        .isEqualTo("{velog Bar}<div {'data-' + xid('soylog')}=foo></div>{/velog}");
+        .isEqualTo(
+            "{velog Bar}"
+                + "<div{if $ij.$$loggingMetaData} {'data-' + xid('soylog')}=foo{/if}></div>"
+                + "{/velog}");
     assertThatSourceString(runPass("{velog Bar}<input/>{/velog}"))
-        .isEqualTo("{velog Bar}<input {'data-' + xid('soylog')}=foo />{/velog}");
-    assertThatSourceString(runPass("{velog Bar}<input id=\"1\"/>{/velog}"))
-        .isEqualTo("{velog Bar}<input id=\"1\" {'data-' + xid('soylog')}=foo />{/velog}");
+        .isEqualTo(
+            "{velog Bar}"
+                + "<input{if $ij.$$loggingMetaData} {'data-' + xid('soylog')}=foo{/if} />"
+                + "{/velog}");
+    assertThatSourceString(runPass("{velog Bar}<div id=\"1\"></div>{/velog}"))
+        .isEqualTo(
+            "{velog Bar}"
+                + "<div id=\"1\""
+                + "{if $ij.$$loggingMetaData} {'data-' + xid('soylog')}=foo{/if}>"
+                + "</div>"
+                + "{/velog}");
     assertThatSourceString(runPass("{velog Bar logonly=\"true\"}<input id=\"1\"/>{/velog}"))
         .isEqualTo(
             "{velog Bar logonly=\"true\"}"
-                + "<input id=\"1\" {'data-' + xid('soylog')}=foo />{/velog}");
+                + "<input id=\"1\"{if $ij.$$loggingMetaData} {'data-' + xid('soylog')}=foo{/if} />"
+                + "{/velog}");
     assertThatSourceString(
             runPass(
                 "{velog Bar data=\"soy.test.Foo(intField: 123)\"}"
-                    + "<input id=\"1\" class=\"fooClass\"/>{/velog}"))
+                    + "<input id=\"1\" class=\"fooClass\"/>"
+                    + "{/velog}"))
         .isEqualTo(
             "{velog Bar data=\"soy.test.Foo(intField: 123)\"}"
-                + "<input id=\"1\" class=\"fooClass\" {'data-' + xid('soylog')}=foo />"
+                + "<input id=\"1\" class=\"fooClass\""
+                + "{if $ij.$$loggingMetaData} {'data-' + xid('soylog')}=foo{/if} />"
                 + "{/velog}");
+  }
+
+  @Test
+  public void testLoggingFunction() throws Exception {
+    assertThatSourceString(
+            runPass("{velog Bar}<div><span data-ved={currentVed()}></span></div>{/velog}"))
+        .isEqualTo(
+            "{velog Bar}"
+                + "<div{if $ij.$$loggingMetaData} {'data-' + xid('soylog')}=foo{/if}>"
+                + "<span data-ved={if $ij.$$loggingMetaData}foo{else}placeholder{/if}></span>"
+                + "</div>"
+                + "{/velog}");
+  }
+
+  private static final class TestLoggingFunction implements LoggingFunction {
+    @Override
+    public String getName() {
+      return "currentVed";
+    }
+
+    @Override
+    public Set<Integer> getValidArgsSizes() {
+      return ImmutableSet.of(0);
+    }
+
+    @Override
+    public String getPlaceholder() {
+      return "placeholder";
+    }
   }
 
   /** Parses the given input as a template content. */
@@ -96,6 +141,7 @@ public final class VeLogInstrumentationVisitorTest {
                             .addDescriptors(com.google.template.soy.testing.Foo.getDescriptor())
                             .buildNoFiles())))
             .setLoggingConfig(LOGGING_CONFIG)
+            .addSoyFunction(new TestLoggingFunction())
             .options(SOY_OPTIONS)
             .errorReporter(ErrorReporter.exploding())
             .parse();
