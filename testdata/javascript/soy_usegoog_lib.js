@@ -3984,7 +3984,7 @@ goog.addDependency('style/bidi.js', ['goog.style.bidi'], ['goog.dom', 'goog.styl
 goog.addDependency('style/bidi_test.js', ['goog.style.bidiTest'], ['goog.dom', 'goog.style', 'goog.style.bidi', 'goog.testing.jsunit', 'goog.userAgent'], {});
 goog.addDependency('style/cursor.js', ['goog.style.cursor'], ['goog.userAgent'], {});
 goog.addDependency('style/cursor_test.js', ['goog.style.cursorTest'], ['goog.style.cursor', 'goog.testing.jsunit', 'goog.userAgent'], {});
-goog.addDependency('style/style.js', ['goog.style'], ['goog.array', 'goog.asserts', 'goog.dom', 'goog.dom.NodeType', 'goog.dom.TagName', 'goog.dom.vendor', 'goog.html.SafeStyleSheet', 'goog.html.legacyconversions', 'goog.math.Box', 'goog.math.Coordinate', 'goog.math.Rect', 'goog.math.Size', 'goog.object', 'goog.reflect', 'goog.string', 'goog.userAgent'], {});
+goog.addDependency('style/style.js', ['goog.style'], ['goog.array', 'goog.asserts', 'goog.dom', 'goog.dom.NodeType', 'goog.dom.TagName', 'goog.dom.vendor', 'goog.html.SafeStyleSheet', 'goog.math.Box', 'goog.math.Coordinate', 'goog.math.Rect', 'goog.math.Size', 'goog.object', 'goog.reflect', 'goog.string', 'goog.userAgent'], {});
 goog.addDependency('style/style_document_scroll_test.js', ['goog.style.style_document_scroll_test'], ['goog.dom', 'goog.style', 'goog.testing.jsunit'], {});
 goog.addDependency('style/style_test.js', ['goog.style_test'], ['goog.array', 'goog.color', 'goog.dom', 'goog.dom.TagName', 'goog.events.BrowserEvent', 'goog.html.testing', 'goog.labs.userAgent.util', 'goog.math.Box', 'goog.math.Coordinate', 'goog.math.Rect', 'goog.math.Size', 'goog.object', 'goog.style', 'goog.testing.ExpectedFailures', 'goog.testing.MockUserAgent', 'goog.testing.TestCase', 'goog.testing.asserts', 'goog.testing.jsunit', 'goog.userAgent', 'goog.userAgentTestUtil', 'goog.userAgentTestUtil.UserAgents'], {});
 goog.addDependency('style/style_webkit_scrollbars_test.js', ['goog.style.webkitScrollbarsTest'], ['goog.asserts', 'goog.style', 'goog.styleScrollbarTester', 'goog.testing.ExpectedFailures', 'goog.testing.jsunit', 'goog.userAgent'], {});
@@ -15077,9 +15077,10 @@ goog.html.TrustedResourceUrl.BASE_URL_ =
  *     goog.string.Const values are interpolated without encoding.
  * @param {!Object<string, *>} params Parameters to add to URL. Parameters with
  *     value {@code null} or {@code undefined} are skipped. Both keys and values
- *     are encoded. Note that JavaScript doesn't guarantee the order of values
- *     in an object which might result in non-deterministic order of the
- *     parameters. However, browsers currently preserve the order.
+ *     are encoded. If the value is an array then the same parameter is added
+ *     for every element in the array. Note that JavaScript doesn't guarantee
+ *     the order of values in an object which might result in non-deterministic
+ *     order of the parameters. However, browsers currently preserve the order.
  * @return {!goog.html.TrustedResourceUrl}
  * @throws {!Error} On an invalid format string or if a label used in the
  *     the format string is not present in args.
@@ -15088,12 +15089,15 @@ goog.html.TrustedResourceUrl.formatWithParams = function(format, args, params) {
   var url = goog.html.TrustedResourceUrl.format_(format, args);
   var separator = /\?/.test(url) ? '&' : '?';
   for (var key in params) {
-    if (params[key] == null) {
-      continue;
+    var values = goog.isArray(params[key]) ? params[key] : [params[key]];
+    for (var i = 0; i < values.length; i++) {
+      if (values[i] == null) {
+        continue;
+      }
+      url += separator + encodeURIComponent(key) + '=' +
+          encodeURIComponent(String(values[i]));
+      separator = '&';
     }
-    url += separator + encodeURIComponent(key) + '=' +
-        encodeURIComponent(String(params[key]));
-    separator = '&';
   }
   return goog.html.TrustedResourceUrl
       .createTrustedResourceUrlSecurityPrivateDoNotAccessOrElse(url);
