@@ -42,6 +42,7 @@ import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.testing.ExampleExtendable;
 import com.google.template.soy.testing.KvMap;
 import com.google.template.soy.testing.KvPair;
+import com.google.template.soy.testing.Map;
 import com.google.template.soy.testing.Proto3Message;
 import com.google.template.soy.testing.SomeEmbeddedMessage;
 import com.google.template.soy.testing.SomeEnum;
@@ -89,6 +90,7 @@ public final class ProtoSupportTest {
                         ExampleExtendable.getDescriptor(),
                         KvPair.getDescriptor(),
                         KvMap.getDescriptor(),
+                        Map.getDescriptor(),
                         SomeEmbeddedMessage.getDescriptor(),
                         Proto3Message.getDescriptor(),
                         SomeExtension.getDescriptor())

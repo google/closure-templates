@@ -643,14 +643,14 @@ final class ProtoUtils {
     private Statement handleMapSetter(
         final SoyExpression keyArg, final SoyExpression valueArg, final FieldDescriptor field) {
       final MethodRef putMethod = getPutMethod(field);
+      List<FieldDescriptor> descriptors = field.getMessageType().getFields();
+      final FieldDescriptor valueDescriptor = descriptors.get(1);
       return new Statement() {
         @Override
         protected void doGen(CodeBuilder cb) {
           keyArg.gen(cb);
           valueArg.gen(cb);
-          // TODO(b/70692266): This might blow up if value is null.
-          // Find a way to reuse null-check code from handleNormalSetter.
-          unboxAndCoerce(cb, valueArg, field.getMessageType().getFields().get(1));
+          unboxAndCoerce(cb, valueArg, valueDescriptor);
           putMethod.invokeUnchecked(cb);
         }
       };
@@ -700,16 +700,17 @@ final class ProtoUtils {
 
     private Statement handleMapSetterNotNull(final SoyExpression mapArg, FieldDescriptor field) {
       Preconditions.checkArgument(mapArg.isNonNullable());
-      // TODO(b/70692266): We need to resolve all values here.
-      // That needs an additional method in ExpressionDetacher.
+      // Wait until all map values can be resolved. Since we don't box/unbox maps, directly call
+      // mapArg.asJavaStringMap() that converts SoyMapImpl to a Map<String, SoyValueProvider>.
+      Expression resolved =
+          detacher
+              .get()
+              .resolveSoyValueProviderMap(mapArg.invoke(MethodRef.SOY_MAP_IMPL_AS_JAVA_MAP));
 
       // Enter new scope
       Scope scope = varManager.enterScope();
       // Create local variables
-      // mapArg.asJavaStringMap()
-      final Variable map =
-          scope.createTemporary(
-              field.getName() + "__map", mapArg.invoke(MethodRef.SOY_MAP_IMPL_AS_JAVA_MAP));
+      final Variable map = scope.createTemporary(field.getName() + "__map", resolved);
       // map.entrySet().iterator()
       final Variable iter =
           scope.createTemporary(
@@ -733,10 +734,12 @@ final class ProtoUtils {
       final Expression iterHasNext = iter.local().invoke(MethodRef.ITERATOR_HAS_NEXT);
 
       // TODO(b/69794482): Support non-string key.
+      // In ResolveExpressionTypesVisitor we already enforce that key is not nullable.
       // (String) mapEntry.getKey()
       SoyExpression mapKey =
           SoyExpression.forString(
-              mapEntry.local().invoke(MethodRef.MAP_GET_KEY).checkedCast(STRING_TYPE));
+                  mapEntry.local().invoke(MethodRef.MAP_GET_KEY).checkedCast(STRING_TYPE))
+              .asNonNullable();
 
       // resolve() is safe since we called ExpressionDetacher at the very beginning of this method
       // (SomeType) ((SoyValueProvider) mapEntry.getValue()).resolve()
@@ -749,7 +752,10 @@ final class ProtoUtils {
               .checkedCast(valueRuntimeType.runtimeType());
 
       // Converts the soy value to java type
-      SoyExpression mapValue = SoyExpression.forSoyValue(valueType, getAndResolveMapValue);
+      // CheckProtoInitCallsPass already enforces that the value is not nullable. If the value is
+      // null, it reports a type mismatch error.
+      SoyExpression mapValue =
+          SoyExpression.forSoyValue(valueType, getAndResolveMapValue).asNonNullable();
 
       // Invokes the putFooFieldMap method in proto message builder
       final Statement putOne = handleMapSetter(mapKey, mapValue, field);

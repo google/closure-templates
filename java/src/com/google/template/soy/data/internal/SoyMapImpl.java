@@ -92,11 +92,13 @@ public final class SoyMapImpl extends SoyAbstractValue implements SoyNewMap {
   }
 
   @Nonnull
+  @Override
   public Map<String, ? extends SoyValueProvider> asJavaStringMap() {
     return Collections.unmodifiableMap(providerMap);
   }
 
   @Nonnull
+  @Override
   public Map<String, ? extends SoyValue> asResolvedJavaStringMap() {
     return Maps.transformValues(asJavaStringMap(), Transforms.RESOLVE_FUNCTION);
   }

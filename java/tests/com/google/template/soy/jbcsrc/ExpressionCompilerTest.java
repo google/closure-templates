@@ -114,6 +114,11 @@ public class ExpressionCompilerTest {
                 public Expression resolveSoyValueProviderList(Expression soyValueProviderList) {
                   throw new UnsupportedOperationException();
                 }
+
+                @Override
+                public Expression resolveSoyValueProviderMap(Expression soyValueProviderMap) {
+                  throw new UnsupportedOperationException();
+                }
               };
             }
           },

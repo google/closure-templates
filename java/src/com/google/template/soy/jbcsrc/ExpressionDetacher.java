@@ -58,6 +58,15 @@ interface ExpressionDetacher {
   Expression resolveSoyValueProviderList(Expression soyValueProviderList);
 
   /**
+   * Given a map that values are SoyValueProviders, await for all members to be resolved.
+   *
+   * @param soyValueProviderMap an expression yielding a map that values are SoyValueProviders.
+   * @return an expression yielding the soyValueProviderMap, but it is guaranteed that all values
+   *     will be ready to be resolved.
+   */
+  Expression resolveSoyValueProviderMap(Expression soyValueProviderMap);
+
+  /**
    * An {@link ExpressionDetacher} that simply returns the {@link RenderResult} returned from {@link
    * SoyValueProvider#status()} if it isn't done.
    *
@@ -130,6 +139,33 @@ interface ExpressionDetacher {
           cb.returnValue();
           cb.mark(end);
           cb.pop(); // Stack: List
+        }
+      };
+    }
+
+    @Override
+    public Expression resolveSoyValueProviderMap(final Expression soyValueProviderMap) {
+      soyValueProviderMap.checkAssignableTo(BytecodeUtils.MAP_TYPE);
+      return new Expression(soyValueProviderMap.resultType()) {
+        @Override
+        protected void doGen(CodeBuilder cb) {
+          // We use a bunch of dup() operations in order to save extra field reads and method
+          // invocations.  This makes it difficult/confusing to use the expression api. So instead
+          // call a bunch of unchecked invocations.
+          // Legend: Map = SoyValueProviderMap, RR = RenderResult, Z = boolean
+          soyValueProviderMap.gen(cb); // Stack: Map
+          cb.dup(); // Stack: Map, Map
+          MethodRef.RUNTIME_GET_MAP_STATUS.invokeUnchecked(cb); // Stack: Map, RR
+          cb.dup(); // Stack: Map, RR, RR
+          MethodRef.RENDER_RESULT_IS_DONE.invokeUnchecked(cb); // Stack: Map, RR, Z
+          Label end = new Label();
+          // if isDone go to end
+          cb.ifZCmp(Opcodes.IFNE, end); // Stack: Map, RR
+
+          saveOperation.gen(cb);
+          cb.returnValue();
+          cb.mark(end);
+          cb.pop(); // Stack: Map
         }
       };
     }
