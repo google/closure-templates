@@ -18,8 +18,10 @@ package com.google.template.soy.jssrc.internal;
 
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.basicfunctions.VeLogFunction;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
@@ -80,13 +82,19 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
     IfNode ifNode = new IfNode(nodeIdGen.genId(), insertionLocation);
     IfCondNode ifCondNode = createIfCondForLoggingFunction(nodeIdGen.genId(), insertionLocation);
     ifNode.addChild(ifCondNode);
+    FunctionNode funcNode = new FunctionNode(VeLogFunction.NAME, insertionLocation);
+    funcNode.setSoyFunction(VeLogFunction.INSTANCE);
+    funcNode.addChild(new IntegerNode(node.getLoggingId(), insertionLocation));
+    PrintNode attributeValue =
+        new PrintNode(
+            nodeIdGen.genId(),
+            insertionLocation,
+            /* isImplicit= */ true,
+            /* expr= */ funcNode,
+            /* phname */ null,
+            ErrorReporter.exploding());
     HtmlAttributeNode dataAttributeNode =
-        createHtmlAttribute(
-            "soylog",
-            // TODO(user): The value should be a built-in function.
-            new RawTextNode(nodeIdGen.genId(), "foo", insertionLocation),
-            nodeIdGen,
-            insertionLocation);
+        createHtmlAttribute("soylog", attributeValue, nodeIdGen, insertionLocation);
     ifCondNode.addChild(dataAttributeNode);
     tag.addChild(ifNode);
     visitChildren(node);

@@ -46,10 +46,12 @@ public final class VeLogInstrumentationVisitorTest {
           LoggingConfig.newBuilder()
               .addElement(
                   LoggableElement.newBuilder()
-                      .setName("Bar")
+                      .setName("Foo")
                       .setId(1L)
                       .setProtoType("soy.test.Foo")
                       .build())
+              .addElement(LoggableElement.newBuilder().setName("Bar").setId(2L).build())
+              .addElement(LoggableElement.newBuilder().setName("Baz").setId(3L).build())
               .build());
   private static final SoyGeneralOptions SOY_OPTIONS = new SoyGeneralOptions();
 
@@ -62,38 +64,69 @@ public final class VeLogInstrumentationVisitorTest {
   public void testVeLogInstrumentation() throws Exception {
     assertThatSourceString(runPass("")).isEqualTo("");
     assertThatSourceString(runPass("<div></div>")).isEqualTo("<div></div>");
-    assertThatSourceString(runPass("{velog Bar}<div></div>{/velog}"))
+    assertThatSourceString(runPass("{velog Foo}<div></div>{/velog}"))
         .isEqualTo(
-            "{velog Bar}"
-                + "<div{if $ij.$$loggingMetaData} {'data-' + xid('soylog')}=foo{/if}></div>"
+            "{velog Foo}"
+                + "<div{if $ij.$$loggingMetaData} {'data-' + xid('soylog')}={$$velog(1)}{/if}>"
+                + "</div>"
                 + "{/velog}");
     assertThatSourceString(runPass("{velog Bar}<input/>{/velog}"))
         .isEqualTo(
             "{velog Bar}"
-                + "<input{if $ij.$$loggingMetaData} {'data-' + xid('soylog')}=foo{/if} />"
+                + "<input{if $ij.$$loggingMetaData} {'data-' + xid('soylog')}={$$velog(2)}{/if} />"
                 + "{/velog}");
-    assertThatSourceString(runPass("{velog Bar}<div id=\"1\"></div>{/velog}"))
+  }
+
+  @Test
+  public void testVeLogInstrumentationWithAttributes() throws Exception {
+    assertThatSourceString(runPass("{velog Baz}<div id=\"1\"></div>{/velog}"))
         .isEqualTo(
-            "{velog Bar}"
+            "{velog Baz}"
                 + "<div id=\"1\""
-                + "{if $ij.$$loggingMetaData} {'data-' + xid('soylog')}=foo{/if}>"
+                + "{if $ij.$$loggingMetaData} {'data-' + xid('soylog')}={$$velog(3)}{/if}>"
                 + "</div>"
                 + "{/velog}");
     assertThatSourceString(runPass("{velog Bar logonly=\"true\"}<input id=\"1\"/>{/velog}"))
         .isEqualTo(
             "{velog Bar logonly=\"true\"}"
-                + "<input id=\"1\"{if $ij.$$loggingMetaData} {'data-' + xid('soylog')}=foo{/if} />"
+                + "<input id=\"1\""
+                + "{if $ij.$$loggingMetaData} {'data-' + xid('soylog')}={$$velog(2)}{/if} />"
                 + "{/velog}");
     assertThatSourceString(
             runPass(
-                "{velog Bar data=\"soy.test.Foo(intField: 123)\"}"
+                "{velog Foo data=\"soy.test.Foo(intField: 123)\"}"
                     + "<input id=\"1\" class=\"fooClass\"/>"
                     + "{/velog}"))
         .isEqualTo(
-            "{velog Bar data=\"soy.test.Foo(intField: 123)\"}"
+            "{velog Foo data=\"soy.test.Foo(intField: 123)\"}"
                 + "<input id=\"1\" class=\"fooClass\""
-                + "{if $ij.$$loggingMetaData} {'data-' + xid('soylog')}=foo{/if} />"
+                + "{if $ij.$$loggingMetaData} {'data-' + xid('soylog')}={$$velog(1)}{/if} />"
                 + "{/velog}");
+  }
+
+  @Test
+  public void testVeLogInstrumentationMultipleVeLogs() throws Exception {
+    // Multiple velogs
+    assertThatSourceString(runPass("{velog Foo}<div></div>{/velog}{velog Bar}<div></div>{/velog}"))
+        .isEqualTo(
+            "{velog Foo}"
+                + "<div{if $ij.$$loggingMetaData} {'data-' + xid('soylog')}={$$velog(1)}{/if}>"
+                + "</div>{/velog}"
+                + "{velog Bar}"
+                + "<div{if $ij.$$loggingMetaData} {'data-' + xid('soylog')}={$$velog(2)}{/if}>"
+                + "</div>{/velog}");
+  }
+
+  @Test
+  public void testVeLogInstrumentationNestedVeLogs() throws Exception {
+    // Nested
+    assertThatSourceString(runPass("{velog Bar}<div>{velog Baz}<div></div>{/velog}</div>{/velog}"))
+        .isEqualTo(
+            "{velog Bar}"
+                + "<div{if $ij.$$loggingMetaData} {'data-' + xid('soylog')}={$$velog(2)}{/if}>"
+                + "{velog Baz}"
+                + "<div{if $ij.$$loggingMetaData} {'data-' + xid('soylog')}={$$velog(3)}{/if}>"
+                + "</div>{/velog}</div>{/velog}");
   }
 
   @Test
@@ -102,7 +135,7 @@ public final class VeLogInstrumentationVisitorTest {
             runPass("{velog Bar}<div><span data-ved={currentVed()}></span></div>{/velog}"))
         .isEqualTo(
             "{velog Bar}"
-                + "<div{if $ij.$$loggingMetaData} {'data-' + xid('soylog')}=foo{/if}>"
+                + "<div{if $ij.$$loggingMetaData} {'data-' + xid('soylog')}={$$velog(2)}{/if}>"
                 + "<span data-ved={if $ij.$$loggingMetaData}foo{else}placeholder{/if}></span>"
                 + "</div>"
                 + "{/velog}");
