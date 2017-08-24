@@ -24,6 +24,7 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.GlobalNode;
+import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.MsgPlaceholderInitialNode;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
@@ -59,13 +60,13 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
   @Nullable private final String userSuppliedPlaceholderName;
 
   /**
-   * Escaping directives names (including the vertical bar) to apply to the return value. With
-   * strict autoescape, the result of each call site is escaped, which is potentially a no-op if the
-   * template's return value is the correct SanitizedContent object.
+   * Escaping directives to apply to the return value. With strict autoescaping, the result of each
+   * call site is escaped, which is potentially a no-op if the template's return value is the
+   * correct SanitizedContent object.
    *
    * <p>Set by the contextual rewriter.
    */
-  private ImmutableList<String> escapingDirectiveNames = ImmutableList.of();
+  private ImmutableList<SoyPrintDirective> escapingDirectives = ImmutableList.of();
 
   /** True if this node is within a HTML context. */
   private boolean isPcData = false;
@@ -116,7 +117,7 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
     this.isPassingAllData = orig.isPassingAllData;
     this.dataExpr = (orig.dataExpr != null) ? orig.dataExpr.copy(copyState) : null;
     this.userSuppliedPlaceholderName = orig.userSuppliedPlaceholderName;
-    this.escapingDirectiveNames = orig.escapingDirectiveNames;
+    this.escapingDirectives = orig.escapingDirectives;
     this.isPcData = orig.getIsPcData();
   }
 
@@ -202,12 +203,12 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
    *
    * <p>It is an error to call this before the contextual rewriter has been run.
    */
-  public ImmutableList<String> getEscapingDirectiveNames() {
-    return escapingDirectiveNames;
+  public ImmutableList<SoyPrintDirective> getEscapingDirectives() {
+    return escapingDirectives;
   }
 
   /** Sets the inferred escaping directives. */
-  public void setEscapingDirectiveNames(ImmutableList<String> escapingDirectiveNames) {
-    this.escapingDirectiveNames = escapingDirectiveNames;
+  public void setEscapingDirectives(ImmutableList<SoyPrintDirective> escapingDirectives) {
+    this.escapingDirectives = escapingDirectives;
   }
 }

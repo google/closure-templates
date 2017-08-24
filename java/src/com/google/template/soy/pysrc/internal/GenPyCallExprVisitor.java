@@ -18,7 +18,6 @@ package com.google.template.soy.pysrc.internal;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.pysrc.internal.GenPyExprsVisitor.GenPyExprsVisitorFactory;
@@ -28,6 +27,7 @@ import com.google.template.soy.pysrc.restricted.PyFunctionExprBuilder;
 import com.google.template.soy.pysrc.restricted.PyListExpr;
 import com.google.template.soy.pysrc.restricted.PyStringExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcPrintDirective;
+import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.AbstractReturningSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
@@ -50,8 +50,6 @@ import javax.inject.Inject;
  */
 final class GenPyCallExprVisitor extends AbstractReturningSoyNodeVisitor<PyExpr> {
 
-  private final ImmutableMap<String, SoyPySrcPrintDirective> soyPySrcDirectivesMap;
-
   private final IsComputableAsPyExprVisitor isComputableAsPyExprVisitor;
 
   private final GenPyExprsVisitorFactory genPyExprsVisitorFactory;
@@ -61,10 +59,8 @@ final class GenPyCallExprVisitor extends AbstractReturningSoyNodeVisitor<PyExpr>
 
   @Inject
   GenPyCallExprVisitor(
-      ImmutableMap<String, SoyPySrcPrintDirective> soyPySrcDirectivesMap,
       IsComputableAsPyExprVisitor isComputableAsPyExprVisitor,
       GenPyExprsVisitorFactory genPyExprsVisitorFactory) {
-    this.soyPySrcDirectivesMap = soyPySrcDirectivesMap;
     this.isComputableAsPyExprVisitor = isComputableAsPyExprVisitor;
     this.genPyExprsVisitorFactory = genPyExprsVisitorFactory;
   }
@@ -145,7 +141,7 @@ final class GenPyCallExprVisitor extends AbstractReturningSoyNodeVisitor<PyExpr>
     }
 
     String callExprText = calleeExprText + "(" + genObjToPass(node) + ", ijData)";
-    return escapeCall(callExprText, node.getEscapingDirectiveNames());
+    return escapeCall(callExprText, node.getEscapingDirectives());
   }
 
   /**
@@ -176,7 +172,7 @@ final class GenPyCallExprVisitor extends AbstractReturningSoyNodeVisitor<PyExpr>
             .build();
 
     String callExprText = calleeExprText + "(" + genObjToPass(node) + ", ijData)";
-    return escapeCall(callExprText, node.getEscapingDirectiveNames());
+    return escapeCall(callExprText, node.getEscapingDirectives());
   }
 
   /**
@@ -258,21 +254,24 @@ final class GenPyCallExprVisitor extends AbstractReturningSoyNodeVisitor<PyExpr>
    * required directives.
    *
    * @param callExpr The expression text of the call itself.
-   * @param directiveNames The list of the directive names to be applied to the call.
+   * @param directives The list of the directives to be applied to the call.
    * @return A PyExpr containing the call expression with all directives applied.
    */
-  private PyExpr escapeCall(String callExpr, ImmutableList<String> directiveNames) {
+  private PyExpr escapeCall(String callExpr, ImmutableList<SoyPrintDirective> directives) {
     PyExpr escapedExpr = new PyExpr(callExpr, Integer.MAX_VALUE);
-    if (directiveNames.isEmpty()) {
+    if (directives.isEmpty()) {
       return escapedExpr;
     }
 
     // Successively wrap each escapedExpr in various directives.
-    for (String directiveName : directiveNames) {
-      SoyPySrcPrintDirective directive = soyPySrcDirectivesMap.get(directiveName);
-      Preconditions.checkNotNull(
-          directive, "Autoescaping produced a bogus directive: %s", directiveName);
-      escapedExpr = directive.applyForPySrc(escapedExpr, ImmutableList.<PyExpr>of());
+    for (SoyPrintDirective directive : directives) {
+      Preconditions.checkState(
+          directive instanceof SoyPySrcPrintDirective,
+          "Autoescaping produced a bogus directive: %s",
+          directive.getName());
+      escapedExpr =
+          ((SoyPySrcPrintDirective) directive)
+              .applyForPySrc(escapedExpr, ImmutableList.<PyExpr>of());
     }
     return escapedExpr;
   }

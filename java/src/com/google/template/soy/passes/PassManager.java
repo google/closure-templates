@@ -100,8 +100,7 @@ public final class PassManager {
     this.desugarHtmlNodes = builder.desugarHtmlNodes;
     this.autoescaper =
         builder.autoescaperEnabled ? new ContextualAutoescaper(builder.soyPrintDirectives) : null;
-    this.simplifyVisitor =
-        options.isOptimizerEnabled() ? SimplifyVisitor.create(builder.soyPrintDirectives) : null;
+    this.simplifyVisitor = options.isOptimizerEnabled() ? SimplifyVisitor.create() : null;
 
     // Single file passes
     // These passes perform tree rewriting and all compiler checks that don't require information
@@ -125,6 +124,11 @@ public final class PassManager {
             .add(new RewriteGlobalsPass(registry, options.getCompileTimeGlobals(), errorReporter))
             .add(new ResolveNamesPass());
     singleFilePassesBuilder.add(new ResolveFunctionsPass());
+    singleFilePassesBuilder.add(
+        new ValidatePrintDirectivesPass(
+            errorReporter,
+            builder.soyPrintDirectives,
+            builder.allowUnknownFunctionsAndPrintDirectives));
     if (!disableAllTypeChecking) {
       singleFilePassesBuilder.add(new ResolveExpressionTypesPass());
       // needs to run after both resolve types and htmlrewrite pass
@@ -152,7 +156,9 @@ public final class PassManager {
           // TODO(lukes): remove!
           .add(
               new CheckFunctionCallsPass(
-                  builder.allowUnknownFunctions, declaredSyntaxVersion, errorReporter));
+                  builder.allowUnknownFunctionsAndPrintDirectives,
+                  declaredSyntaxVersion,
+                  errorReporter));
     }
     // If requiring strict autoescaping, check and enforce it.
     if (options.isStrictAutoescapingRequired() == TriState.ENABLED) {
@@ -282,7 +288,7 @@ public final class PassManager {
     private SyntaxVersion declaredSyntaxVersion;
     private SoyGeneralOptions opts;
     private boolean allowUnknownGlobals;
-    private boolean allowUnknownFunctions;
+    private boolean allowUnknownFunctionsAndPrintDirectives;
     private boolean disableAllTypeChecking;
     private boolean desugarHtmlNodes = true;
     private boolean optimize = true;
@@ -370,13 +376,13 @@ public final class PassManager {
     }
 
     /**
-     * Allows unknown functions.
+     * Allows unknown functions and print directives
      *
-     * <p>This option is only available for the parseinfo generator which historically has not had
-     * proper build dependencies and thus often references unknown functions.
+     * <p>This option is only available for the parseinfo generator and message extractor which
+     * historically has not had proper build dependencies and thus often references unknown plugins.
      */
-    public Builder allowUnknownFunctions() {
-      this.allowUnknownFunctions = true;
+    public Builder allowUnknownFunctionsAndPrintDirectives() {
+      this.allowUnknownFunctionsAndPrintDirectives = true;
       return this;
     }
 

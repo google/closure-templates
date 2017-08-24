@@ -39,6 +39,7 @@ import com.google.template.soy.jssrc.internal.GenJsExprsVisitor.GenJsExprsVisito
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
 import com.google.template.soy.jssrc.restricted.SoyLibraryAssistedJsSrcPrintDirective;
+import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallNode;
@@ -46,7 +47,6 @@ import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.CallParamValueNode;
 import java.util.List;
-import java.util.Map;
 import javax.inject.Inject;
 
 /**
@@ -54,9 +54,6 @@ import javax.inject.Inject;
  *
  */
 public class GenCallCodeUtils {
-
-  /** All registered JS print directives. */
-  private final Map<String, SoyJsSrcPrintDirective> soyJsSrcDirectivesMap;
 
   /** Instance of JsExprTranslator to use. */
   private final JsExprTranslator jsExprTranslator;
@@ -71,7 +68,6 @@ public class GenCallCodeUtils {
   private final GenJsExprsVisitorFactory genJsExprsVisitorFactory;
 
   /**
-   * @param soyJsSrcDirectivesMap Map of jssrc print directives to their names.
    * @param jsExprTranslator Instance of JsExprTranslator to use.
    * @param delTemplateNamer Renamer for delegate templates.
    * @param isComputableAsJsExprsVisitor The IsComputableAsJsExprsVisitor to be used.
@@ -79,7 +75,6 @@ public class GenCallCodeUtils {
    */
   @Inject
   protected GenCallCodeUtils(
-      Map<String, SoyJsSrcPrintDirective> soyJsSrcDirectivesMap,
       JsExprTranslator jsExprTranslator,
       DelTemplateNamer delTemplateNamer,
       IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor,
@@ -88,7 +83,6 @@ public class GenCallCodeUtils {
     this.delTemplateNamer = delTemplateNamer;
     this.isComputableAsJsExprsVisitor = isComputableAsJsExprsVisitor;
     this.genJsExprsVisitorFactory = genJsExprsVisitorFactory;
-    this.soyJsSrcDirectivesMap = soyJsSrcDirectivesMap;
   }
 
   /**
@@ -177,7 +171,7 @@ public class GenCallCodeUtils {
 
     // Generate the main call expression.
     CodeChunk.WithValue call = callee.call(objToPass, LITERAL_NULL, JsRuntime.OPT_IJ_DATA);
-    if (callNode.getEscapingDirectiveNames().isEmpty()) {
+    if (callNode.getEscapingDirectives().isEmpty()) {
       return call;
     }
 
@@ -189,11 +183,14 @@ public class GenCallCodeUtils {
     JsExpr callResult = call.singleExprOrName();
     RequiresCollector.IntoImmutableSet collector = new RequiresCollector.IntoImmutableSet();
     call.collectRequires(collector);
-    for (String directiveName : callNode.getEscapingDirectiveNames()) {
-      SoyJsSrcPrintDirective directive = soyJsSrcDirectivesMap.get(directiveName);
-      Preconditions.checkNotNull(
-          directive, "Contextual autoescaping produced a bogus directive: %s", directiveName);
-      callResult = directive.applyForJsSrc(callResult, ImmutableList.<JsExpr>of());
+    for (SoyPrintDirective directive : callNode.getEscapingDirectives()) {
+      Preconditions.checkState(
+          directive instanceof SoyJsSrcPrintDirective,
+          "Contextual autoescaping produced a bogus directive: %s",
+          directive.getName());
+      callResult =
+          ((SoyJsSrcPrintDirective) directive)
+              .applyForJsSrc(callResult, ImmutableList.<JsExpr>of());
       if (directive instanceof SoyLibraryAssistedJsSrcPrintDirective) {
         for (String name :
             ((SoyLibraryAssistedJsSrcPrintDirective) directive).getRequiredJsLibNames()) {

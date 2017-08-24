@@ -49,6 +49,7 @@ import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.msgs.internal.MsgUtils;
 import com.google.template.soy.msgs.internal.MsgUtils.MsgPartsAndIds;
 import com.google.template.soy.shared.internal.BuiltinFunction;
+import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.AbstractReturningSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
@@ -512,7 +513,6 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     Statement stmt;
     if (shouldCheckBuffer(node)) {
       stmt = detachState.detachLimited(renderSoyValue);
-      ;
     } else {
       stmt = renderSoyValue.toStatement();
     }
@@ -531,7 +531,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       value =
           value.applyPrintDirective(
               parameterLookup.getRenderContext(),
-              printDirective.getName(),
+              printDirective.getPrintDirective(),
               basic.compileToList(printDirective.getArgs()));
     }
     return value;
@@ -636,7 +636,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   protected Statement visitMsgFallbackGroupNode(MsgFallbackGroupNode node) {
     MsgNode msg = node.getMsg();
     MsgPartsAndIds idAndParts = MsgUtils.buildMsgPartsAndComputeMsgIdForDualFormat(msg);
-    ImmutableList<String> escapingDirectives = node.getEscapingDirectiveNames();
+    ImmutableList<SoyPrintDirective> escapingDirectives = node.getEscapingDirectiveNames();
     Statement renderDefault = getMsgCompiler().compileMessage(idAndParts, msg, escapingDirectives);
     // fallback groups have 1 or 2 children.  if there are 2 then the second is a fallback and we
     // need to check for presence.
@@ -704,7 +704,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
                 constant(node.allowEmptyDefault()),
                 prepareParamsHelper(node, reattachPoint),
                 parameterLookup.getIjRecord());
-    if (!node.getEscapingDirectiveNames().isEmpty()) {
+    if (!node.getEscapingDirectives().isEmpty()) {
       Expression directives = getEscapingDirectivesList(node);
       if (registry.hasDelTemplateDefinition(node.getDelCalleeName())) {
         SanitizedContentKind kind = registry.getDelTemplateContentKind(node.getDelCalleeName());
@@ -729,7 +729,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         callee
             .constructor()
             .construct(prepareParamsHelper(node, reattachPoint), parameterLookup.getIjRecord());
-    if (!node.getEscapingDirectiveNames().isEmpty()) {
+    if (!node.getEscapingDirectives().isEmpty()) {
       calleeExpression =
           MethodRef.RUNTIME_APPLY_ESCAPERS.invoke(
               calleeExpression,
@@ -789,12 +789,12 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   }
 
   private Expression getEscapingDirectivesList(CallNode node) {
-    List<Expression> directiveExprs = new ArrayList<>(node.getEscapingDirectiveNames().size());
-    for (String directive : node.getEscapingDirectiveNames()) {
+    List<Expression> directiveExprs = new ArrayList<>(node.getEscapingDirectives().size());
+    for (SoyPrintDirective directive : node.getEscapingDirectives()) {
       directiveExprs.add(
           parameterLookup
               .getRenderContext()
-              .invoke(MethodRef.RENDER_CONTEXT_GET_PRINT_DIRECTIVE, constant(directive)));
+              .invoke(MethodRef.RENDER_CONTEXT_GET_PRINT_DIRECTIVE, constant(directive.getName())));
     }
     return BytecodeUtils.asList(directiveExprs);
   }

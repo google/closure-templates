@@ -737,7 +737,7 @@ public final class SoyFileSet {
         parse(
             passManagerBuilder(SyntaxVersion.V2_0)
                 .allowUnknownGlobals()
-                .allowUnknownFunctions()
+                .allowUnknownFunctionsAndPrintDirectives()
                 .optimize(false));
     throwIfErrorsPresent();
 
@@ -767,7 +767,7 @@ public final class SoyFileSet {
         parse(
                 passManagerBuilder(SyntaxVersion.V1_0)
                     .allowUnknownGlobals()
-                    .allowUnknownFunctions()
+                    .allowUnknownFunctionsAndPrintDirectives()
                     .setTypeRegistry(SoyTypeRegistry.DEFAULT_UNKNOWN)
                     .disableAllTypeChecking(),
                 // override the type registry so that the parser doesn't report errors when it
@@ -805,7 +805,7 @@ public final class SoyFileSet {
           parse(
               passManagerBuilder(SyntaxVersion.V1_0)
                   .allowUnknownGlobals()
-                  .allowUnknownFunctions()
+                  .allowUnknownFunctionsAndPrintDirectives()
                   .disableAllTypeChecking(),
               // override the type registry so that the parser doesn't report errors when it
               // can't resolve strict types

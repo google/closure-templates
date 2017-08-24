@@ -31,7 +31,6 @@ import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.ApiCall;
 import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.LocaleString;
 import com.google.template.soy.shared.restricted.SoyFunction;
-import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.types.SoyTypeProvider;
 import com.google.template.soy.types.SoyTypeRegistry;
@@ -111,24 +110,6 @@ public final class SharedModule extends AbstractModule {
       mapBuilder.put(directive.getName(), directive);
     }
     return mapBuilder.build();
-  }
-
-  /**
-   * Builds and provides the map of SoyJavaPrintDirectives (name to directive).
-   *
-   * <p>This actually collects all SoyPrintDirectives that implement either SoyJavaPrintDirective or
-   * SoyJavaRuntimePrintDirective (deprecated). The latter are adapted to the former interface.
-   *
-   * @param soyDirectivesSet The installed set of SoyPrintDirectives (from Guice Multibinder). Each
-   *     SoyPrintDirective may or may not implement SoyJavaPrintDirective or
-   *     SoyJavaRuntimePrintDirective.
-   */
-  @Provides
-  @Singleton
-  ImmutableMap<String, ? extends SoyJavaPrintDirective> provideSoyJavaDirectivesMap(
-      Set<SoyPrintDirective> soyDirectivesSet) {
-    return FunctionAdapters.buildSpecificSoyDirectivesMap(
-        soyDirectivesSet, SoyJavaPrintDirective.class);
   }
 
   @Override

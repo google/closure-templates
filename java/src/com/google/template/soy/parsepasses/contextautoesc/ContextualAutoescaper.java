@@ -22,11 +22,8 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.internal.SanitizedContentKind;
-import com.google.template.soy.data.SanitizedContentOperator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
@@ -73,14 +70,7 @@ public final class ContextualAutoescaper {
   private static final SoyErrorKind AUTOESCAPE_ERROR =
       SoyErrorKind.of(AUTOESCAPE_ERROR_PREFIX + "{0}", StyleAllowance.NO_PUNCTUATION);
 
-  /**
-   * Soy directives that cancel autoescaping (see {@link
-   * SoyPrintDirective#shouldCancelAutoescape()}).
-   */
-  private final ImmutableSet<String> autoescapeCancellingDirectives;
-
-  /** Maps print directive names to the content kinds they consume and produce. */
-  private final Map<String, SanitizedContentKind> sanitizedContentOperators;
+  private final ImmutableMap<String, ? extends SoyPrintDirective> printDirectives;
 
   /** The conclusions drawn by the last {@link #rewrite}. */
   private Inferences inferences;
@@ -97,30 +87,7 @@ public final class ContextualAutoescaper {
   public ContextualAutoescaper(
       final ImmutableMap<String, ? extends SoyPrintDirective> soyDirectivesMap) {
     // Compute the set of directives that are escaping directives.
-    this(
-        ImmutableSet.copyOf(
-            Collections2.filter(
-                soyDirectivesMap.keySet(),
-                new Predicate<String>() {
-                  @Override
-                  public boolean apply(String directiveName) {
-                    return soyDirectivesMap.get(directiveName).shouldCancelAutoescape();
-                  }
-                })),
-        makeOperatorKindMap(soyDirectivesMap));
-  }
-
-  /**
-   * @param autoescapeCancellingDirectives The Soy directives that cancel autoescaping (see {@link
-   *     SoyPrintDirective#shouldCancelAutoescape()}).
-   * @param sanitizedContentOperators Maps print directive names to the content kinds they consume
-   *     and produce.
-   */
-  public ContextualAutoescaper(
-      Iterable<String> autoescapeCancellingDirectives,
-      Map<String, SanitizedContentKind> sanitizedContentOperators) {
-    this.autoescapeCancellingDirectives = ImmutableSet.copyOf(autoescapeCancellingDirectives);
-    this.sanitizedContentOperators = ImmutableMap.copyOf(sanitizedContentOperators);
+    this.printDirectives = soyDirectivesMap;
   }
 
   /**
@@ -142,9 +109,7 @@ public final class ContextualAutoescaper {
 
     // Inferences collects all the typing decisions we make, templates we derive, and escaping modes
     // we choose.
-    Inferences inferences =
-        new Inferences(
-            autoescapeCancellingDirectives, fileSet.getNodeIdGenerator(), templatesByName);
+    Inferences inferences = new Inferences(fileSet.getNodeIdGenerator(), templatesByName);
 
     Collection<TemplateNode> allTemplates = inferences.getAllTemplates();
     TemplateCallGraph callGraph = new TemplateCallGraph(templatesByName);
@@ -170,11 +135,7 @@ public final class ContextualAutoescaper {
                 ? Context.getStartContextForContentKind(templateNode.getContentKind())
                 : Context.HTML_PCDATA;
         InferenceEngine.inferTemplateEndContext(
-            templateNode,
-            startContext,
-            inferences,
-            autoescapeCancellingDirectives,
-            errorReporter);
+            templateNode, startContext, inferences, errorReporter);
       } catch (SoyAutoescapeException e) {
         reportError(errorReporter, errorLocations, e);
       }
@@ -193,13 +154,11 @@ public final class ContextualAutoescaper {
         inferences, new NonContextualTypedRenderUnitNodesVisitor(errorReporter));
 
     // Now that we know we don't fail with exceptions, apply the changes to the given files.
-    List<TemplateNode> extraTemplates =
-        new Rewriter(inferences, sanitizedContentOperators).rewrite(fileSet);
+    List<TemplateNode> extraTemplates = new Rewriter(inferences, printDirectives).rewrite(fileSet);
 
     runVisitorOnAllTemplatesIncludingNewOnes(
         inferences,
-        new PerformDeprecatedNonContextualAutoescapeVisitor(
-            autoescapeCancellingDirectives, errorReporter, fileSet.getNodeIdGenerator()));
+        new PerformDeprecatedNonContextualAutoescapeVisitor(fileSet.getNodeIdGenerator()));
 
     return extraTemplates;
   }
@@ -304,21 +263,6 @@ public final class ContextualAutoescaper {
         }
       };
 
-  private static Map<String, SanitizedContentKind> makeOperatorKindMap(
-      final ImmutableMap<String, ? extends SoyPrintDirective> soyDirectivesMap) {
-    ImmutableMap.Builder<String, SanitizedContentKind> operatorKindMapBuilder =
-        ImmutableMap.builder();
-    for (SoyPrintDirective directive : soyDirectivesMap.values()) {
-      if (directive instanceof SanitizedContentOperator) {
-        operatorKindMapBuilder.put(
-            directive.getName(),
-            SanitizedContentKind.valueOf(
-                ((SanitizedContentOperator) directive).getContentKind().name()));
-      }
-    }
-    return operatorKindMapBuilder.build();
-  }
-
   private final class NonContextualTypedRenderUnitNodesVisitor
       extends AbstractSoyNodeVisitor<Void> {
 
@@ -354,11 +298,7 @@ public final class ContextualAutoescaper {
         // blocks of a strict {let} or {param} block are also strict.
         InferenceEngine.inferStrictRenderUnitNode(
             // As this visitor visits only non-contextual templates.
-            AutoescapeMode.NONCONTEXTUAL,
-            node,
-            inferences,
-            autoescapeCancellingDirectives,
-            errorReporter);
+            AutoescapeMode.NONCONTEXTUAL, node, inferences, errorReporter);
       } else {
         visitChildren(node);
       }

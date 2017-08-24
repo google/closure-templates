@@ -25,12 +25,10 @@ import com.google.template.soy.jssrc.internal.GenJsExprsVisitor;
 import com.google.template.soy.jssrc.internal.JsExprTranslator;
 import com.google.template.soy.jssrc.internal.TemplateAliases;
 import com.google.template.soy.jssrc.internal.TranslationContext;
-import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyNode;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /** Overrides the base class to provide the correct helpers classes. */
 public final class GenIncrementalDomExprsVisitor extends GenJsExprsVisitor {
@@ -40,7 +38,6 @@ public final class GenIncrementalDomExprsVisitor extends GenJsExprsVisitor {
 
   @AssistedInject
   public GenIncrementalDomExprsVisitor(
-      Map<String, SoyJsSrcPrintDirective> soyJsSrcDirectivesMap,
       JsExprTranslator jsExprTranslator,
       IncrementalDomGenCallCodeUtils genCallCodeUtils,
       IsComputableAsIncrementalDomExprsVisitor isComputableAsJsExprsVisitor,
@@ -49,7 +46,6 @@ public final class GenIncrementalDomExprsVisitor extends GenJsExprsVisitor {
       @Assisted ErrorReporter errorReporter,
       @Assisted TemplateAliases templateAliases) {
     super(
-        soyJsSrcDirectivesMap,
         jsExprTranslator,
         genCallCodeUtils,
         isComputableAsJsExprsVisitor,

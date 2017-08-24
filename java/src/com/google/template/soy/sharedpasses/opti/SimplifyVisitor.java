@@ -17,14 +17,11 @@
 package com.google.template.soy.sharedpasses.opti;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
-import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
-import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.sharedpasses.render.RenderException;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.IfCondNode;
@@ -45,7 +42,6 @@ import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import java.util.List;
-import java.util.Map;
 import javax.annotation.Nullable;
 
 /**
@@ -57,19 +53,10 @@ import javax.annotation.Nullable;
 public final class SimplifyVisitor {
 
   /** Creates a new simplify visitor. */
-  public static SimplifyVisitor create(
-      ImmutableMap<String, ? extends SoyPrintDirective> soyPrintDirectives) {
+  public static SimplifyVisitor create() {
     PreevalVisitorFactory preevalVisitor = new PreevalVisitorFactory();
-    ImmutableMap.Builder<String, SoyJavaPrintDirective> javaPrintDirectives =
-        ImmutableMap.builder();
-    for (Map.Entry<String, ? extends SoyPrintDirective> entry : soyPrintDirectives.entrySet()) {
-      if (entry.getValue() instanceof SoyJavaPrintDirective) {
-        javaPrintDirectives.put(entry.getKey(), (SoyJavaPrintDirective) entry.getValue());
-      }
-    }
     return new SimplifyVisitor(
-        new SimplifyExprVisitor(preevalVisitor),
-        new PrerenderVisitorFactory(javaPrintDirectives.build(), preevalVisitor));
+        new SimplifyExprVisitor(preevalVisitor), new PrerenderVisitorFactory(preevalVisitor));
   }
 
   private final SimplifyExprVisitor simplifyExprVisitor;

@@ -27,6 +27,7 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
+import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
@@ -52,7 +53,7 @@ public final class MsgFallbackGroupNode extends AbstractParentSoyNode<MsgNode>
    * strict autoescape, the result of each call site is escaped, which is potentially a no-op if the
    * template's return value is the correct SanitizedContent object.
    */
-  private ImmutableList<String> escapingDirectiveNames = ImmutableList.of();
+  private ImmutableList<SoyPrintDirective> escapingDirectiveNames = ImmutableList.of();
 
   @Nullable private HtmlContext htmlContext;
 
@@ -101,13 +102,15 @@ public final class MsgFallbackGroupNode extends AbstractParentSoyNode<MsgNode>
             ErrorReporter.exploding());
     printNode.setHtmlContext(htmlContext);
 
-    for (String escapingDirective : getEscapingDirectiveNames()) {
-      printNode.addChild(
+    for (SoyPrintDirective escapingDirective : getEscapingDirectiveNames()) {
+      PrintDirectiveNode printDirectiveNode =
           new PrintDirectiveNode(
               nodeIdGen.genId(),
               getSourceLocation(),
-              escapingDirective,
-              ImmutableList.<ExprNode>of()));
+              escapingDirective.getName(),
+              ImmutableList.<ExprNode>of());
+      printDirectiveNode.setPrintDirective(escapingDirective);
+      printNode.addChild(printDirectiveNode);
     }
     return printNode;
   }
@@ -151,7 +154,7 @@ public final class MsgFallbackGroupNode extends AbstractParentSoyNode<MsgNode>
   }
 
   /** Sets the inferred escaping directives from the contextual engine. */
-  public void setEscapingDirectiveNames(ImmutableList<String> escapingDirectiveNames) {
+  public void setEscapingDirectiveNames(ImmutableList<SoyPrintDirective> escapingDirectiveNames) {
     this.escapingDirectiveNames = escapingDirectiveNames;
   }
 
@@ -160,7 +163,7 @@ public final class MsgFallbackGroupNode extends AbstractParentSoyNode<MsgNode>
    *
    * <p>It is an error to call this before the contextual rewriter has been run.
    */
-  public ImmutableList<String> getEscapingDirectiveNames() {
+  public ImmutableList<SoyPrintDirective> getEscapingDirectiveNames() {
     return escapingDirectiveNames;
   }
 }

@@ -17,12 +17,10 @@
 package com.google.template.soy.sharedpasses.render;
 
 import com.google.common.base.Predicate;
-import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
-import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.sharedpasses.render.EvalVisitor.EvalVisitorFactory;
 import com.google.template.soy.soytree.TemplateRegistry;
 import javax.annotation.Nullable;
@@ -38,17 +36,13 @@ import javax.inject.Singleton;
 @Singleton
 public final class RenderVisitorFactory {
 
-  /** Map of all SoyJavaPrintDirectives (name to directive). */
-  private final ImmutableMap<String, ? extends SoyJavaPrintDirective> soyJavaDirectivesMap;
 
   /** Factory for creating an instance of EvalVisitor. */
   private final EvalVisitorFactory evalVisitorFactory;
 
   @Inject
   public RenderVisitorFactory(
-      ImmutableMap<String, ? extends SoyJavaPrintDirective> soyJavaDirectivesMap,
       EvalVisitorFactory evalVisitorFactory) {
-    this.soyJavaDirectivesMap = soyJavaDirectivesMap;
     this.evalVisitorFactory = evalVisitorFactory;
   }
 
@@ -81,7 +75,6 @@ public final class RenderVisitorFactory {
       boolean debugSoyTemplateInfo) {
 
     return new RenderVisitor(
-        soyJavaDirectivesMap,
         evalVisitorFactory,
         outputBuf,
         templateRegistry,

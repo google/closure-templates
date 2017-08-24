@@ -16,13 +16,16 @@
 
 package com.google.template.soy.jssrc.internal;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.google.inject.Key;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.SoyModule;
 import com.google.template.soy.base.internal.UniqueNameGenerator;
@@ -30,6 +33,7 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.shared.internal.GuiceSimpleScope;
+import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import org.junit.Test;
@@ -210,7 +214,10 @@ public final class GenCallCodeUtilsTest {
 
     CallNode callNode = (CallNode) SharedTestUtils.getNode(soyTree, 0);
     // Manually setting the escaping directives.
-    callNode.setEscapingDirectiveNames(escapingDirectives);
+    ImmutableMap<String, ? extends SoyPrintDirective> directives =
+        INJECTOR.getInstance(new Key<ImmutableMap<String, ? extends SoyPrintDirective>>() {});
+    callNode.setEscapingDirectives(
+        escapingDirectives.stream().map(directives::get).collect(toImmutableList()));
 
     try (GuiceSimpleScope.InScope inScope = JsSrcTestUtils.simulateNewApiCall(INJECTOR)) {
       GenCallCodeUtils genCallCodeUtils = INJECTOR.getInstance(GenCallCodeUtils.class);

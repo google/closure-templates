@@ -18,7 +18,6 @@ package com.google.template.soy.pysrc.internal;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.inject.assistedinject.Assisted;
 import com.google.inject.assistedinject.AssistedInject;
 import com.google.template.soy.base.internal.BaseUtils;
@@ -32,6 +31,7 @@ import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyExprUtils;
 import com.google.template.soy.pysrc.restricted.PyStringExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcPrintDirective;
+import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
@@ -46,7 +46,6 @@ import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Visitor for generating Python expressions for parse tree nodes.
@@ -60,9 +59,6 @@ public class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>> {
   public static interface GenPyExprsVisitorFactory {
     public GenPyExprsVisitor create(LocalVariableStack localVarExprs, ErrorReporter errorReporter);
   }
-
-  /** Map of all SoyPySrcPrintDirectives (name to directive). */
-  private Map<String, SoyPySrcPrintDirective> soyPySrcDirectivesMap;
 
   private final IsComputableAsPyExprVisitor isComputableAsPyExprVisitor;
 
@@ -79,17 +75,14 @@ public class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>> {
 
   private final ErrorReporter errorReporter;
 
-  /** @param soyPySrcDirectivesMap Map of all SoyPySrcPrintDirectives (name to directive). */
   @AssistedInject
   GenPyExprsVisitor(
-      ImmutableMap<String, SoyPySrcPrintDirective> soyPySrcDirectivesMap,
       IsComputableAsPyExprVisitor isComputableAsPyExprVisitor,
       GenPyExprsVisitorFactory genPyExprsVisitorFactory,
       MsgFuncGeneratorFactory msgFuncGeneratorFactory,
       GenPyCallExprVisitor genPyCallExprVisitor,
       @Assisted LocalVariableStack localVarExprs,
       @Assisted ErrorReporter errorReporter) {
-    this.soyPySrcDirectivesMap = soyPySrcDirectivesMap;
     this.isComputableAsPyExprVisitor = isComputableAsPyExprVisitor;
     this.genPyExprsVisitorFactory = genPyExprsVisitorFactory;
     this.genPyCallExprVisitor = genPyCallExprVisitor;
@@ -171,8 +164,8 @@ public class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>> {
     for (PrintDirectiveNode directiveNode : node.getChildren()) {
 
       // Get directive.
-      SoyPySrcPrintDirective directive = soyPySrcDirectivesMap.get(directiveNode.getName());
-      if (directive == null) {
+      SoyPrintDirective directive = directiveNode.getPrintDirective();
+      if (!(directive instanceof SoyPySrcPrintDirective)) {
         throw LegacyInternalSyntaxException.createWithMetaInfo(
             "Failed to find SoyPySrcPrintDirective with name '"
                 + directiveNode.getName()
@@ -203,7 +196,7 @@ public class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>> {
       }
 
       // Apply directive.
-      pyExpr = directive.applyForPySrc(pyExpr, argsPyExprs);
+      pyExpr = ((SoyPySrcPrintDirective) directive).applyForPySrc(pyExpr, argsPyExprs);
     }
 
     pyExprs.add(pyExpr);
@@ -247,11 +240,12 @@ public class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>> {
     }
 
     // Escaping directives apply to messages, especially in attribute context.
-    for (String directiveName : node.getEscapingDirectiveNames()) {
-      SoyPySrcPrintDirective directive = soyPySrcDirectivesMap.get(directiveName);
-      Preconditions.checkNotNull(
-          directive, "Contextual autoescaping produced a bogus directive: %s", directiveName);
-      msg = directive.applyForPySrc(msg, ImmutableList.<PyExpr>of());
+    for (SoyPrintDirective directive : node.getEscapingDirectiveNames()) {
+      Preconditions.checkState(
+          directive instanceof SoyPySrcPrintDirective,
+          "Contextual autoescaping produced a bogus directive: %s",
+          directive.getName());
+      msg = ((SoyPySrcPrintDirective) directive).applyForPySrc(msg, ImmutableList.<PyExpr>of());
     }
     pyExprs.add(msg);
   }

@@ -30,6 +30,7 @@ import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
 import com.google.template.soy.jssrc.dsl.ConditionalExpressionBuilder;
 import com.google.template.soy.jssrc.dsl.SoyJsPluginUtils;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
+import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
@@ -46,7 +47,6 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.TemplateNode;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Visitor for generating JS expressions for parse tree nodes.
@@ -76,7 +76,6 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<CodeChunk.Wit
   private static final SoyErrorKind UNKNOWN_SOY_JS_SRC_PRINT_DIRECTIVE =
       SoyErrorKind.of("Unknown SoyJsSrcPrintDirective ''{0}''.");
 
-  private final Map<String, SoyJsSrcPrintDirective> soyJsSrcDirectivesMap;
   private final JsExprTranslator jsExprTranslator;
   private final GenCallCodeUtils genCallCodeUtils;
   protected final IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor;
@@ -95,7 +94,6 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<CodeChunk.Wit
   private final TemplateAliases templateAliases;
 
   /**
-   * @param soyJsSrcDirectivesMap Map of all SoyJsSrcPrintDirectives (name to directive).
    * @param jsExprTranslator Instance of JsExprTranslator to use.
    * @param genCallCodeUtils Instance of GenCallCodeUtils to use.
    * @param isComputableAsJsExprsVisitor The IsComputableAsJsExprsVisitor used by this instance
@@ -106,7 +104,6 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<CodeChunk.Wit
    */
   @AssistedInject
   public GenJsExprsVisitor(
-      Map<String, SoyJsSrcPrintDirective> soyJsSrcDirectivesMap,
       JsExprTranslator jsExprTranslator,
       GenCallCodeUtils genCallCodeUtils,
       IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor,
@@ -114,7 +111,6 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<CodeChunk.Wit
       @Assisted TranslationContext translationContext,
       @Assisted ErrorReporter errorReporter,
       @Assisted TemplateAliases templateAliases) {
-    this.soyJsSrcDirectivesMap = soyJsSrcDirectivesMap;
     this.jsExprTranslator = jsExprTranslator;
     this.genCallCodeUtils = genCallCodeUtils;
     this.isComputableAsJsExprsVisitor = isComputableAsJsExprsVisitor;
@@ -202,9 +198,8 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<CodeChunk.Wit
     for (PrintDirectiveNode directiveNode : node.getChildren()) {
 
       // Get directive.
-      SoyJsSrcPrintDirective directive = soyJsSrcDirectivesMap.get(directiveNode.getName());
-      if (directive == null) {
-        // TODO(lukes): this should be dead, delete it
+      SoyPrintDirective directive = directiveNode.getPrintDirective();
+      if (!(directive instanceof SoyJsSrcPrintDirective)) {
         errorReporter.report(
             node.getSourceLocation(), UNKNOWN_SOY_JS_SRC_PRINT_DIRECTIVE, directiveNode.getName());
         return;
@@ -231,11 +226,12 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<CodeChunk.Wit
       }
 
       // Apply directive.
-      expr = SoyJsPluginUtils.applyDirective(
-          translationContext.codeGenerator(),
-          expr,
-          directive,
-          argChunks);
+      expr =
+          SoyJsPluginUtils.applyDirective(
+              translationContext.codeGenerator(),
+              expr,
+              (SoyJsSrcPrintDirective) directive,
+              argChunks);
     }
 
     chunks.add(expr);

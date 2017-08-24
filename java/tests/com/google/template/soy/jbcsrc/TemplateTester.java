@@ -17,6 +17,7 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static com.google.template.soy.data.SoyValueConverter.EMPTY_DICT;
 
 import com.google.common.base.Joiner;
@@ -24,7 +25,6 @@ import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Maps;
 import com.google.common.truth.FailureStrategy;
 import com.google.common.truth.Subject;
 import com.google.common.truth.SubjectFactory;
@@ -53,6 +53,7 @@ import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
+import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateRegistry;
@@ -75,16 +76,24 @@ public final class TemplateTester {
             @Provides
             RenderContext.Builder provideContext(
                 ImmutableMap<String, ? extends SoyFunction> functions,
-                ImmutableMap<String, ? extends SoyJavaPrintDirective> printDirectives) {
-              @SuppressWarnings("unchecked")
-              ImmutableMap<String, SoyJavaFunction> soyJavaFunctions =
-                  ImmutableMap.copyOf(
-                      (Map<String, SoyJavaFunction>)
-                          Maps.filterValues(
-                              functions, Predicates.instanceOf(SoyJavaFunction.class)));
+                ImmutableMap<String, ? extends SoyPrintDirective> printDirectives) {
               return new RenderContext.Builder()
-                  .withSoyFunctions(soyJavaFunctions)
-                  .withSoyPrintDirectives(printDirectives);
+                  .withSoyFunctions(
+                      functions
+                          .entrySet()
+                          .stream()
+                          .filter(e -> e.getValue() instanceof SoyJavaFunction)
+                          .collect(
+                              toImmutableMap(
+                                  Map.Entry::getKey, e -> (SoyJavaFunction) e.getValue())))
+                  .withSoyPrintDirectives(
+                      printDirectives
+                          .entrySet()
+                          .stream()
+                          .filter(e -> e.getValue() instanceof SoyJavaPrintDirective)
+                          .collect(
+                              toImmutableMap(
+                                  Map.Entry::getKey, e -> (SoyJavaPrintDirective) e.getValue())));
             }
 
             @Override

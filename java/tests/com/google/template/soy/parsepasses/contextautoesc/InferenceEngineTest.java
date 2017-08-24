@@ -307,14 +307,12 @@ public final class InferenceEngineTest {
 
     Inferences inferences =
         new Inferences(
-            ImmutableSet.<String>of(),
             new IncrementingIdGenerator(),
             ImmutableMap.<String, ImmutableList<TemplateNode>>of());
     InferenceEngine.inferTemplateEndContext(
         template,
         Context.getStartContextForContentKind(kind),
         inferences,
-        ImmutableSet.<String>of(),
         ErrorReporter.exploding());
     for (PrintNode print : SoyTreeUtils.getAllNodesOfType(template, PrintNode.class)) {
       if (print.getExpr().getChild(0) instanceof FunctionNode) {

@@ -63,7 +63,6 @@ import com.google.template.soy.soytree.TemplateNode;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 
 /**
  * Chooses appropriate escaping modes for <code>{print}</code> commands and derives templates as
@@ -110,15 +109,12 @@ final class InferenceEngine {
    *     template can be reached from multiple contexts, then it should be cloned. This class
    *     automatically does that for called templates.
    * @param inferences Receives all suggested changes and inferences to tn.
-   * @param autoescapeCancellingDirectives Soy directives that cancel autoescaping (see {@link
-   *     com.google.template.soy.shared.restricted.SoyPrintDirective#shouldCancelAutoescape()}).
    * @return The end context when the given template is reached from {@code startContext}.
    */
   public static Context inferTemplateEndContext(
       TemplateNode templateNode,
       Context startContext,
       Inferences inferences,
-      Set<String> autoescapeCancellingDirectives,
       ErrorReporter errorReporter) {
     Context endContext;
     try {
@@ -128,7 +124,6 @@ final class InferenceEngine {
               autoescapeMode,
               autoescapeMode,
               inferences,
-              autoescapeCancellingDirectives,
               errorReporter);
       // Context started off as startContext and we have propagated context through all of
       // template's children, so now context is the template's end context.
@@ -170,14 +165,12 @@ final class InferenceEngine {
       AutoescapeMode templateAutoescapeMode,
       RenderUnitNode node,
       Inferences inferences,
-      Set<String> autoescapeCancellingDirectives,
       ErrorReporter errorReporter) {
     InferenceEngine inferenceEngine =
         new InferenceEngine(
             AutoescapeMode.STRICT,
             templateAutoescapeMode,
             inferences,
-            autoescapeCancellingDirectives,
             errorReporter);
     // Context started off as startContext and we have propagated context through all of
     // node's children, so now context is the node's end context.
@@ -200,12 +193,6 @@ final class InferenceEngine {
   /** The escaping mode to assume when none is specified. */
   private final EscapingMode defaultEscapingMode;
 
-  /**
-   * Soy directives that cancel autoescaping (see {@link
-   * com.google.template.soy.shared.restricted.SoyPrintDirective#shouldCancelAutoescape()}).
-   */
-  private final Set<String> autoescapeCancellingDirectives;
-
   /** For reporting errors. */
   private final ErrorReporter errorReporter;
 
@@ -213,12 +200,10 @@ final class InferenceEngine {
       AutoescapeMode autoescapeMode,
       AutoescapeMode templateAutoescapeMode,
       Inferences inferences,
-      Set<String> autoescapeCancellingDirectives,
       ErrorReporter errorReporter) {
     this.autoescapeMode = autoescapeMode;
     this.templateAutoescapeMode = templateAutoescapeMode;
     this.inferences = inferences;
-    this.autoescapeCancellingDirectives = autoescapeCancellingDirectives;
     this.defaultEscapingMode = EscapingMode.ESCAPE_HTML;
     this.errorReporter = errorReporter;
   }
@@ -316,7 +301,6 @@ final class InferenceEngine {
                     autoescapeMode,
                     templateAutoescapeMode,
                     inferences,
-                    autoescapeCancellingDirectives,
                     errorReporter)
                 .inferChildren(node, strategy.childContext);
 
@@ -517,7 +501,8 @@ final class InferenceEngine {
                         + " or SanitizedContent.",
                     printNode);
               }
-            } else if (autoescapeCancellingDirectives.contains(printDirective.getName())) {
+            } else if (printDirective.getPrintDirective() != null
+                && printDirective.getPrintDirective().shouldCancelAutoescape()) {
               throw SoyAutoescapeException.createWithNode(
                   "Autoescape-cancelling print directives like "
                       + printDirective.getName()
@@ -896,7 +881,6 @@ final class InferenceEngine {
                 templateNode,
                 startContext,
                 inferences,
-                autoescapeCancellingDirectives,
                 errorReporter));
       }
       Optional<Context> combined = Context.union(endContexts);
@@ -964,7 +948,6 @@ final class InferenceEngine {
           templateAutoescapeMode,
           node,
           inferences,
-          autoescapeCancellingDirectives,
           errorReporter);
     }
 
@@ -977,7 +960,6 @@ final class InferenceEngine {
                   AutoescapeMode.CONTEXTUAL,
                   templateAutoescapeMode,
                   inferences,
-                  autoescapeCancellingDirectives,
                   errorReporter)
               .inferChildren(node, Context.HTML_PCDATA);
       if (!paramContentNodeEndContext.equals(Context.HTML_PCDATA)) {

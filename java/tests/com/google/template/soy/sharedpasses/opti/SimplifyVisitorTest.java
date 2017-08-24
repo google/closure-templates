@@ -19,15 +19,10 @@ package com.google.template.soy.sharedpasses.opti;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.inject.Guice;
-import com.google.inject.Inject;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.SoyFileSetParserBuilder;
-import com.google.template.soy.SoyModule;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.MsgNode;
@@ -67,7 +62,7 @@ public class SimplifyVisitorTest {
     assertEquals(6, template.numChildren());
     assertEquals(5, forNode.numChildren());
 
-    SimplifyVisitor simplifyVisitor = createSimplifyVisitor();
+    SimplifyVisitor simplifyVisitor = SimplifyVisitor.create();
     simplifyVisitor.simplify(soyTree, new TemplateRegistry(soyTree, ErrorReporter.exploding()));
 
     assertEquals(4, template.numChildren());
@@ -250,30 +245,17 @@ public class SimplifyVisitorTest {
         simplifySoyCode(soyCode).get(0).toSourceString());
   }
 
-  // -----------------------------------------------------------------------------------------------
-  // Helpers.
-
-  {
-    Guice.createInjector(new SoyModule()).injectMembers(this);
-  }
-
-  @Inject ImmutableMap<String, ? extends SoyPrintDirective> printDirectives;
-
-  private SimplifyVisitor createSimplifyVisitor() {
-    return SimplifyVisitor.create(printDirectives);
-  }
-
   private List<StandaloneNode> simplifySoyCode(String soyCode) throws Exception {
 
     ParseResult parse = SoyFileSetParserBuilder.forTemplateContents(soyCode).parse();
-    SimplifyVisitor simplifyVisitor = createSimplifyVisitor();
+    SimplifyVisitor simplifyVisitor = SimplifyVisitor.create();
     simplifyVisitor.simplify(parse.fileSet(), parse.registry());
     return parse.fileSet().getChild(0).getChild(0).getChildren();
   }
 
   private SoyFileSetNode simplifySoyFiles(String... soyFileContents) throws Exception {
     ParseResult parse = SoyFileSetParserBuilder.forFileContents(soyFileContents).parse();
-    SimplifyVisitor simplifyVisitor = createSimplifyVisitor();
+    SimplifyVisitor simplifyVisitor = SimplifyVisitor.create();
     simplifyVisitor.simplify(parse.fileSet(), parse.registry());
     return parse.fileSet();
   }

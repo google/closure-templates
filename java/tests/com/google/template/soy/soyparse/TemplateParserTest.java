@@ -413,7 +413,7 @@ public final class TemplateParserTest {
             + "{/msg}");
     assertValidTemplate(
         "{@param aaa : ?}{@param bbb : ?}{@param ddd : ?}\n"
-            + "{$aaa + 1}{print $bbb.ccc[$ddd] |noescape}");
+            + "{$aaa + 1}{print $bbb.ccc[$ddd] |noAutoescape}");
     assertValidTemplate("{css('selected-option')}{css('CSS_SELECTED_OPTION')}");
     assertValidTemplate("{xid('selected-option')}{xid('SELECTED_OPTION_ID')}");
     assertValidTemplate(

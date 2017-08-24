@@ -18,14 +18,11 @@ package com.google.template.soy.parsepasses.contextautoesc;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SoySyntaxException;
 import com.google.template.soy.coredirectives.EscapeHtmlDirective;
-import com.google.template.soy.coredirectives.IdDirective;
 import com.google.template.soy.coredirectives.NoAutoescapeDirective;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.internal.base.Pair;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -43,15 +40,8 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public final class PerformDeprecatedNonContextualAutoescapeVisitorTest {
 
-  private static final ImmutableSet<String> AUTOESCAPE_CANCELLING_DIRECTIVE_NAMES =
-      ImmutableSet.of(EscapeHtmlDirective.NAME, NoAutoescapeDirective.NAME, IdDirective.NAME);
-
-  private static final ErrorReporter FAIL = ErrorReporter.exploding();
-
   private static void performAutoescape(SoyFileSetNode soyTree) {
-    new PerformDeprecatedNonContextualAutoescapeVisitor(
-            AUTOESCAPE_CANCELLING_DIRECTIVE_NAMES, FAIL, soyTree.getNodeIdGenerator())
-        .exec(soyTree);
+    new PerformDeprecatedNonContextualAutoescapeVisitor(soyTree.getNodeIdGenerator()).exec(soyTree);
   }
 
   @Test
@@ -75,21 +65,21 @@ public final class PerformDeprecatedNonContextualAutoescapeVisitorTest {
   @Test
   public void testAutoescapeOnWithOtherDirectives() throws Exception {
 
-    String testPrintTags = "{'<br>' |boo:5}";
+    String testPrintTags = "{'<br>' |truncate:5}";
     Pair<SoyFileSetNode, List<PrintNode>> helperRetVal = parseTestPrintTagsHelper(testPrintTags);
     SoyFileSetNode soyTree = helperRetVal.first;
     List<PrintNode> printNodes = helperRetVal.second;
 
     // Before.
     assertThat(printNodes.get(0).getChildren()).hasSize(1);
-    assertThat(printNodes.get(0).getChild(0).getName()).isEqualTo("|boo");
+    assertThat(printNodes.get(0).getChild(0).getName()).isEqualTo("|truncate");
 
     performAutoescape(soyTree);
 
     // After.
     assertThat(printNodes.get(0).getChildren()).hasSize(2);
     assertThat(printNodes.get(0).getChild(0).getName()).isEqualTo(EscapeHtmlDirective.NAME);
-    assertThat(printNodes.get(0).getChild(1).getName()).isEqualTo("|boo");
+    assertThat(printNodes.get(0).getChild(1).getName()).isEqualTo("|truncate");
   }
 
   @Test

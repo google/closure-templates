@@ -29,6 +29,7 @@ import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
+import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.PrintNode;
@@ -533,21 +534,24 @@ final class SoyExpression extends Expression {
    * For {@link PrintNode print nodes}, the directives may be parameterized by arbitrary soy
    * expressions.
    */
-  SoyExpression applyPrintDirective(Expression renderContext, String directive) {
+  SoyExpression applyPrintDirective(Expression renderContext, SoyPrintDirective directive) {
     return applyPrintDirective(renderContext, directive, MethodRef.IMMUTABLE_LIST_OF.invoke());
   }
 
   /** Applies a print directive to the soyValue. */
   SoyExpression applyPrintDirective(
-      Expression renderContext, String directive, Expression argsList) {
+      Expression renderContext, SoyPrintDirective directive, Expression argsList) {
     // Technically the type is either StringData or SanitizedContent depending on this type, but
     // boxed.  Consider propagating the type more accurately, currently there isn't (afaict) much
     // benefit (and strangely there is no common super type for SanitizedContent and String), this
     // is probably because after escaping, the only thing you would ever do is convert to a string.
+    // TODO(lukes): we could improve the runtime type by inspecting to see if the directive is a
+    // SanitizedContentOperator
     return SoyExpression.forSoyValue(
         UnknownType.getInstance(),
         MethodRef.RUNTIME_APPLY_PRINT_DIRECTIVE.invoke(
-            renderContext.invoke(MethodRef.RENDER_CONTEXT_GET_PRINT_DIRECTIVE, constant(directive)),
+            renderContext.invoke(
+                MethodRef.RENDER_CONTEXT_GET_PRINT_DIRECTIVE, constant(directive.getName())),
             this.box(),
             argsList));
   }

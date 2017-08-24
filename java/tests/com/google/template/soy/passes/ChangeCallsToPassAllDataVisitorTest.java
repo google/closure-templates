@@ -16,13 +16,16 @@
 
 package com.google.template.soy.passes;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.SoyFileSetParserBuilder;
+import com.google.template.soy.coredirectives.EscapeHtmlDirective;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.shared.SharedTestUtils;
+import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import org.junit.Test;
@@ -115,13 +118,18 @@ public final class ChangeCallsToPassAllDataVisitorTest {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forTemplateContents(callCode).errorReporter(FAIL).parse().fileSet();
     CallNode callNodeBeforePass = (CallNode) SharedTestUtils.getNode(soyTree, 0);
-    callNodeBeforePass.setEscapingDirectiveNames(ImmutableList.of("|escapeHtml"));
+    callNodeBeforePass.setEscapingDirectives(ImmutableList.of(new EscapeHtmlDirective()));
     new ChangeCallsToPassAllDataVisitor().exec(soyTree);
     CallNode callNodeAfterPass = (CallNode) SharedTestUtils.getNode(soyTree, 0);
     assertThat(callNodeAfterPass).isEqualTo(callNodeBeforePass);
     assertWithMessage("Escaping directives should be preserved")
-        .that(callNodeAfterPass.getEscapingDirectiveNames())
-        .isEqualTo(ImmutableList.of("|escapeHtml"));
+        .that(
+            callNodeAfterPass
+                .getEscapingDirectives()
+                .stream()
+                .map(SoyPrintDirective::getName)
+                .collect(toImmutableList()))
+        .containsExactly("|escapeHtml");
   }
 
   @Test

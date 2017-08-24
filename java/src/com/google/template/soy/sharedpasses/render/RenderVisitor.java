@@ -19,7 +19,6 @@ package com.google.template.soy.sharedpasses.render;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.LazySanitizedContents;
@@ -50,6 +49,7 @@ import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.internal.SharedRuntime;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
+import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.sharedpasses.render.EvalVisitor.EvalVisitorFactory;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
@@ -106,9 +106,6 @@ import javax.annotation.Nullable;
  */
 public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
-  /** Map of all SoyJavaPrintDirectives (name to directive). */
-  protected final ImmutableMap<String, ? extends SoyJavaPrintDirective> soyJavaDirectivesMap;
-
   /** Factory for creating an instance of EvalVisitor. */
   protected final EvalVisitorFactory evalVisitorFactory;
 
@@ -161,7 +158,6 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
   private CountingFlushableAppendable flushable;
 
   /**
-   * @param soyJavaDirectivesMap Map of all SoyJavaPrintDirectives (name to directive).
    * @param evalVisitorFactory Factory for creating an instance of EvalVisitor.
    * @param outputBuf The Appendable to append the output to.
    * @param templateRegistry A registry of all templates. Should never be null (except in some unit
@@ -176,7 +172,6 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
    * @param xidRenamingMap The 'xid' renaming map, or null if not applicable.
    */
   protected RenderVisitor(
-      ImmutableMap<String, ? extends SoyJavaPrintDirective> soyJavaDirectivesMap,
       EvalVisitorFactory evalVisitorFactory,
       Appendable outputBuf,
       @Nullable TemplateRegistry templateRegistry,
@@ -189,7 +184,6 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       boolean debugSoyTemplateInfo) {
     Preconditions.checkNotNull(data);
 
-    this.soyJavaDirectivesMap = soyJavaDirectivesMap;
     this.evalVisitorFactory = evalVisitorFactory;
     this.templateRegistry = templateRegistry;
     this.data = data;
@@ -239,7 +233,6 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
    */
   protected RenderVisitor createHelperInstance(Appendable outputBuf, SoyRecord data) {
     return new RenderVisitor(
-        soyJavaDirectivesMap,
         evalVisitorFactory,
         outputBuf,
         templateRegistry,
@@ -299,8 +292,8 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     if (!node.getEscapingDirectiveNames().isEmpty()) {
       // Escape the entire message with the required directives.
       SoyValue wholeMsg = StringData.forValue(popOutputBuf().toString());
-      for (String directiveName : node.getEscapingDirectiveNames()) {
-        wholeMsg = applyDirective(directiveName, wholeMsg, ImmutableList.<SoyValue>of(), node);
+      for (SoyPrintDirective directive : node.getEscapingDirectiveNames()) {
+        wholeMsg = applyDirective(directive, wholeMsg, ImmutableList.<SoyValue>of(), node);
       }
       append(currOutputBuf, wholeMsg.stringValue());
     }
@@ -334,7 +327,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       }
 
       // Apply directive.
-      result = applyDirective(directiveNode.getName(), result, argsSoyDatas, node);
+      result = applyDirective(directiveNode.getPrintDirective(), result, argsSoyDatas, node);
     }
 
     append(currOutputBuf, result, node);
@@ -595,7 +588,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
     // ------ Render the callee template with the callData built above. ------
 
-    if (node.getEscapingDirectiveNames().isEmpty()) {
+    if (node.getEscapingDirectives().isEmpty()) {
       // No escaping at the call site -- render directly into the output buffer.
       RenderVisitor rv = this.createHelperInstance(currOutputBuf, callData);
       try {
@@ -625,8 +618,8 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
               ? UnsafeSanitizedContentOrdainer.ordainAsSafe(
                   calleeBuilder.toString(), ContentKind.valueOf(callee.getContentKind().name()))
               : StringData.forValue(calleeBuilder.toString());
-      for (String directiveName : node.getEscapingDirectiveNames()) {
-        resultData = applyDirective(directiveName, resultData, ImmutableList.<SoyValue>of(), node);
+      for (SoyPrintDirective directive : node.getEscapingDirectives()) {
+        resultData = applyDirective(directive, resultData, ImmutableList.<SoyValue>of(), node);
       }
       append(currOutputBuf, resultData, node);
     }
@@ -796,21 +789,20 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
   /**
    * Protected helper to apply a print directive.
    *
-   * @param directiveName The name of the directive.
+   * @param directive The directive to apply
    * @param value The value to apply the directive on.
    * @param args The arguments to the directive.
    * @param node The node with the escaping. Only used for error reporting.
    * @return The result of applying the directive with the given arguments to the given value.
    */
   private SoyValue applyDirective(
-      String directiveName, SoyValue value, List<SoyValue> args, SoyNode node) {
+      SoyPrintDirective directive, SoyValue value, List<SoyValue> args, SoyNode node) {
 
     // Get directive.
-    SoyJavaPrintDirective directive = soyJavaDirectivesMap.get(directiveName);
-    if (directive == null) {
+    if (!(directive instanceof SoyJavaPrintDirective)) {
       throw RenderException.createWithSource(
           "Failed to find Soy print directive with name '"
-              + directiveName
+              + directive
               + "'"
               + " (tag "
               + node.toSourceString()
@@ -822,7 +814,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     if (!directive.getValidArgsSizes().contains(args.size())) {
       throw RenderException.createWithSource(
           "Print directive '"
-              + directiveName
+              + directive
               + "' used with the wrong number of arguments (tag "
               + node.toSourceString()
               + ").",
@@ -830,12 +822,12 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     }
 
     try {
-      return directive.applyForJava(value, args);
+      return ((SoyJavaPrintDirective) directive).applyForJava(value, args);
     } catch (RuntimeException e) {
       throw RenderException.createWithSource(
           String.format(
               "Failed in applying directive '%s' in tag \"%s\" due to exception: %s",
-              directiveName, node.toSourceString(), e.getMessage()),
+              directive, node.toSourceString(), e.getMessage()),
           e,
           node);
     }

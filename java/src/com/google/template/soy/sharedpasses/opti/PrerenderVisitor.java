@@ -16,10 +16,10 @@
 
 package com.google.template.soy.sharedpasses.opti;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
+import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.shared.restricted.SoyPurePrintDirective;
 import com.google.template.soy.sharedpasses.render.Environment;
 import com.google.template.soy.sharedpasses.render.RenderException;
@@ -46,18 +46,15 @@ import javax.annotation.Nullable;
 final class PrerenderVisitor extends RenderVisitor {
 
   /**
-   * @param soyJavaDirectivesMap Map of all SoyJavaPrintDirectives (name to directive).
    * @param preevalVisitorFactory Factory for creating an instance of PreevalVisitor.
    * @param outputBuf The Appendable to append the output to.
    * @param templateRegistry A registry of all templates.
    */
   PrerenderVisitor(
-      ImmutableMap<String, ? extends SoyJavaPrintDirective> soyJavaDirectivesMap,
       PreevalVisitorFactory preevalVisitorFactory,
       Appendable outputBuf,
       @Nullable TemplateRegistry templateRegistry) {
     super(
-        soyJavaDirectivesMap,
         preevalVisitorFactory,
         outputBuf,
         templateRegistry,
@@ -74,7 +71,6 @@ final class PrerenderVisitor extends RenderVisitor {
   protected PrerenderVisitor createHelperInstance(Appendable outputBuf, SoyRecord data) {
 
     return new PrerenderVisitor(
-        soyJavaDirectivesMap,
         (PreevalVisitorFactory) evalVisitorFactory,
         outputBuf,
         templateRegistry);
@@ -140,8 +136,8 @@ final class PrerenderVisitor extends RenderVisitor {
   }
 
   private boolean isSoyPurePrintDirective(PrintDirectiveNode node) {
-    SoyJavaPrintDirective directive = soyJavaDirectivesMap.get(node.getName());
-    return directive != null
+    SoyPrintDirective directive = node.getPrintDirective();
+    return directive instanceof SoyJavaPrintDirective
         && directive.getClass().isAnnotationPresent(SoyPurePrintDirective.class);
   }
 }

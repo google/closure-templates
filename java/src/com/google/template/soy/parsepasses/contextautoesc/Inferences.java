@@ -19,12 +19,10 @@ package com.google.template.soy.parsepasses.contextautoesc;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.EscapingMode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
@@ -67,11 +65,6 @@ final class Inferences {
   /** Null or an instance to inherit state from. */
   private final @Nullable Inferences parent;
 
-  /**
-   * Soy directives that cancel autoescaping (see {@link SoyPrintDirective#shouldCancelAutoescape}).
-   */
-  private final ImmutableSet<String> autoescapeCancellingDirectives;
-
   /** Used to generate unique IDs for cloned templates. */
   private final IdGenerator idGen;
 
@@ -99,24 +92,18 @@ final class Inferences {
    */
   public Inferences(Inferences parent) {
     this.parent = parent;
-    this.autoescapeCancellingDirectives = parent.autoescapeCancellingDirectives;
     this.idGen = parent.idGen;
   }
 
   /**
    * An instance that does not inherit from a parent.
    *
-   * @param autoescapeCancellingDirectives Soy directives that
-   *     {@link SoyPrintDirective#shouldCancelAutoescape cancel} autoescaping.
    * @param idGen Used to generate unique IDs for cloned templates.
    * @param templatesByName Map of template names to instances used to type <code>{call}</code>
    *     commands.
    */
-  public Inferences(
-      Set<String> autoescapeCancellingDirectives, IdGenerator idGen,
-      Map<String, ImmutableList<TemplateNode>> templatesByName) {
+  public Inferences(IdGenerator idGen, Map<String, ImmutableList<TemplateNode>> templatesByName) {
     this.parent = null;
-    this.autoescapeCancellingDirectives = ImmutableSet.copyOf(autoescapeCancellingDirectives);
     this.idGen = idGen;
     this.templatesByName.putAll(templatesByName);
   }
@@ -174,12 +161,12 @@ final class Inferences {
 
     // Look for an escaping mode in the existing directives.
     ImmutableList.Builder<EscapingMode> modes = ImmutableList.builder();
-    for (PrintDirectiveNode directive : printNode.getChildren()) {
-      String directiveName = directive.getName();
-      EscapingMode dirMode = EscapingMode.fromDirective(directiveName);
-      if (dirMode != null) {
-        modes.add(dirMode);
-      } else if (autoescapeCancellingDirectives.contains(directiveName)) {
+    for (PrintDirectiveNode directiveNode : printNode.getChildren()) {
+      EscapingMode mode = EscapingMode.fromDirective(directiveNode.getName());
+      if (mode != null) {
+        modes.add(mode);
+      } else if (directiveNode.getPrintDirective() != null
+          && directiveNode.getPrintDirective().shouldCancelAutoescape()) {
         modes.add(EscapingMode.NO_AUTOESCAPE);
       }
     }

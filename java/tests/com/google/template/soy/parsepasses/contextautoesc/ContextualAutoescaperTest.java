@@ -16,6 +16,7 @@
 
 package com.google.template.soy.parsepasses.contextautoesc;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 import static org.junit.Assert.fail;
@@ -229,7 +230,7 @@ public final class ContextualAutoescaperTest {
             "{namespace ns}\n\n",
             "{template .foo autoescape=\"deprecated-contextual\"}\n",
             "  {@param x: ?}\n",
-            //"<meta http-equiv=refresh content='{$x |filterNormalizeUri |escapeHtmlAttribute}'>",
+            // "<meta http-equiv=refresh content='{$x |filterNormalizeUri |escapeHtmlAttribute}'>",
             "<a xml:base='{$x |filterNormalizeUri |escapeHtmlAttribute}' href='/foo'>link</a>",
             "<button formaction='{$x |filterNormalizeUri |escapeHtmlAttribute}'>do</button>",
             "<command icon='{$x |filterNormalizeUri |escapeHtmlAttribute}'></command>",
@@ -248,7 +249,7 @@ public final class ContextualAutoescaperTest {
             // TODO(msamuel): Re-enable content since it is often (but often not) used to convey
             // URLs in place of <link rel> once we can figure out a good way to distinguish the
             // URL use-cases from others.
-            //"<meta http-equiv=refresh content='{$x}'>\n",
+            // "<meta http-equiv=refresh content='{$x}'>\n",
             "<a xml:base='{$x}' href='/foo'>link</a>\n",
             "<button formaction='{$x}'>do</button>\n",
             "<command icon='{$x}'></command>\n",
@@ -2597,17 +2598,15 @@ public final class ContextualAutoescaperTest {
     final List<CallNode> callNodes = SoyTreeUtils.getAllNodesOfType(mainTemplate, CallNode.class);
     assertThat(callNodes).hasSize(4);
     assertWithMessage("HTML->HTML escaping should be pruned")
-        .that(callNodes.get(0).getEscapingDirectiveNames())
-        .isEqualTo(ImmutableList.of());
+        .that(callNodes.get(0).getEscapingDirectives())
+        .isEmpty();
     assertWithMessage("JS -> HTML call should be escaped")
-        .that(callNodes.get(1).getEscapingDirectiveNames())
-        .isEqualTo(ImmutableList.of("|escapeJsValue"));
-    assertWithMessage("JS -> JS pruned")
-        .that(callNodes.get(2).getEscapingDirectiveNames())
-        .isEqualTo(ImmutableList.of());
+        .that(getDirectiveNames(callNodes.get(1).getEscapingDirectives()))
+        .containsExactly("|escapeJsValue");
+    assertWithMessage("JS -> JS pruned").that(callNodes.get(2).getEscapingDirectives()).isEmpty();
     assertWithMessage("HTML -> extern call should be escaped")
-        .that(callNodes.get(3).getEscapingDirectiveNames())
-        .isEqualTo(ImmutableList.of("|escapeHtml"));
+        .that(getDirectiveNames(callNodes.get(3).getEscapingDirectives()))
+        .containsExactly("|escapeHtml");
   }
 
   @Test
@@ -2632,11 +2631,16 @@ public final class ContextualAutoescaperTest {
     final List<CallNode> callNodes = SoyTreeUtils.getAllNodesOfType(mainTemplate, CallNode.class);
     assertThat(callNodes).hasSize(2);
     assertWithMessage("We're compiling a complete set; we can optimize based on usages.")
-        .that(callNodes.get(0).getEscapingDirectiveNames())
-        .isEqualTo(ImmutableList.of());
+        .that(callNodes.get(0).getEscapingDirectives())
+        .isEmpty();
     assertWithMessage("HTML -> TEXT requires escaping")
-        .that(callNodes.get(1).getEscapingDirectiveNames())
-        .isEqualTo(ImmutableList.of("|escapeHtml"));
+        .that(getDirectiveNames(callNodes.get(1).getEscapingDirectives()))
+        .containsExactly("|escapeHtml");
+  }
+
+  private ImmutableList<String> getDirectiveNames(
+      ImmutableList<SoyPrintDirective> escapingDirectives) {
+    return escapingDirectives.stream().map(SoyPrintDirective::getName).collect(toImmutableList());
   }
 
   private static String getForbiddenMsgError(String path, String template, String context) {
@@ -2769,7 +2773,6 @@ public final class ContextualAutoescaperTest {
             "<textarea></textarea>",
             "{/template}"));
   }
-
 
   // TODO: Tests for dynamic attributes: <a on{$name}="...">,
   // <div data-{$name}={$value}>

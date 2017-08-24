@@ -20,9 +20,7 @@ import com.google.template.soy.incrementaldomsrc.GenIncrementalDomExprsVisitor.G
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.internal.GenCallCodeUtils;
 import com.google.template.soy.jssrc.internal.JsExprTranslator;
-import com.google.template.soy.jssrc.restricted.SoyJsSrcPrintDirective;
 import com.google.template.soy.soytree.CallParamContentNode;
-import java.util.Map;
 import javax.inject.Inject;
 
 /**
@@ -34,13 +32,11 @@ final class IncrementalDomGenCallCodeUtils extends GenCallCodeUtils {
 
   @Inject
   IncrementalDomGenCallCodeUtils(
-      Map<String, SoyJsSrcPrintDirective> soyJsSrcDirectivesMap,
       JsExprTranslator jsExprTranslator,
       IncrementalDomDelTemplateNamer incrementalDomDelTemplateNamer,
       IsComputableAsIncrementalDomExprsVisitor isComputableAsIncrementalDomExprsVisitor,
       GenIncrementalDomExprsVisitorFactory genIncrementalDomExprsVisitorFactory) {
     super(
-        soyJsSrcDirectivesMap,
         jsExprTranslator,
         incrementalDomDelTemplateNamer,
         isComputableAsIncrementalDomExprsVisitor,

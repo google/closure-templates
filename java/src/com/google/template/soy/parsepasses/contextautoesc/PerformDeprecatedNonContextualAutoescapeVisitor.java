@@ -17,11 +17,10 @@
 package com.google.template.soy.parsepasses.contextautoesc;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.coredirectives.EscapeHtmlDirective;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.AutoescapeMode;
 import com.google.template.soy.soytree.PrintDirectiveNode;
@@ -45,25 +44,13 @@ import com.google.template.soy.soytree.TemplateNode;
  */
 final class PerformDeprecatedNonContextualAutoescapeVisitor extends AbstractSoyNodeVisitor<Void> {
 
-  /**
-   * Soy directives that cancel autoescaping (see {@link
-   * SoyPrintDirective#shouldCancelAutoescape()}).
-   */
-  private final ImmutableSet<String> autoescapeCancellingDirectives;
-
-
   /** The node id generator for the parse tree. Retrieved from the root SoyFileSetNode. */
   private final IdGenerator nodeIdGen;
 
   /** The autoescape mode of the current template. */
   private AutoescapeMode autoescapeMode;
 
-  /** @param autoescapeCancellingDirectives print directives that disable autoescape */
-  public PerformDeprecatedNonContextualAutoescapeVisitor(
-      ImmutableSet<String> autoescapeCancellingDirectives,
-      ErrorReporter errorReporter,
-      IdGenerator nodeIdGen) {
-    this.autoescapeCancellingDirectives = autoescapeCancellingDirectives;
+  public PerformDeprecatedNonContextualAutoescapeVisitor(IdGenerator nodeIdGen) {
     this.nodeIdGen = nodeIdGen;
   }
 
@@ -97,8 +84,8 @@ final class PerformDeprecatedNonContextualAutoescapeVisitor extends AbstractSoyN
     // (including 'noAutoescape' of course) and (b) remove 'noAutoescape' directives.
     boolean shouldCancelAutoescape = false;
     for (PrintDirectiveNode directiveNode : ImmutableList.copyOf(node.getChildren())) {
-      String directiveName = directiveNode.getName();
-      if (autoescapeCancellingDirectives.contains(directiveName)) {
+      SoyPrintDirective directive = directiveNode.getPrintDirective();
+      if (directive != null && directive.shouldCancelAutoescape()) {
         shouldCancelAutoescape = true;
         break;
       }
@@ -118,6 +105,7 @@ final class PerformDeprecatedNonContextualAutoescapeVisitor extends AbstractSoyN
               node.getSourceLocation(),
               EscapeHtmlDirective.NAME,
               ImmutableList.<ExprNode>of());
+      newEscapeHtmlDirectiveNode.setPrintDirective(new EscapeHtmlDirective());
       node.addChild(0, newEscapeHtmlDirectiveNode);
     }
   }

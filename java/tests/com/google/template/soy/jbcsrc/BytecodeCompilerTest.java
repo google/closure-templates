@@ -37,6 +37,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.template.soy.SoyFileSetParserBuilder;
+import com.google.template.soy.coredirectives.EscapeHtmlDirective;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
@@ -895,7 +896,7 @@ public class BytecodeCompilerTest {
     // apply an escaping directive to the callsite, just like the autoescaper would
     CallDelegateNode cdn =
         SoyTreeUtils.getAllNodesOfType(soyTree.getChild(0), CallDelegateNode.class).get(0);
-    cdn.setEscapingDirectiveNames(ImmutableList.of("|escapeHtml"));
+    cdn.setEscapingDirectives(ImmutableList.of(new EscapeHtmlDirective()));
     TemplateRegistry templateRegistry = new TemplateRegistry(soyTree, ErrorReporter.exploding());
     CompiledTemplates templates =
         BytecodeCompiler.compile(templateRegistry, false, ErrorReporter.exploding()).get();

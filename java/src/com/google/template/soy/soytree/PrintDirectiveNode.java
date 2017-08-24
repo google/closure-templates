@@ -16,6 +16,8 @@
 
 package com.google.template.soy.soytree;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -23,8 +25,10 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import java.util.List;
+import javax.annotation.Nullable;
 
 /**
  * Node representing a 'print' directive.
@@ -36,6 +40,8 @@ public final class PrintDirectiveNode extends AbstractSoyNode implements ExprHol
 
   /** The directive name (including vertical bar). */
   private final String name;
+
+  @Nullable private SoyPrintDirective printDirective;
 
   /** The parsed args. */
   private final ImmutableList<ExprRootNode> args;
@@ -61,6 +67,7 @@ public final class PrintDirectiveNode extends AbstractSoyNode implements ExprHol
       tempArgs.add(origArg.copy(copyState));
     }
     this.args = ImmutableList.copyOf(tempArgs);
+    this.printDirective = orig.printDirective;
   }
 
   @Override
@@ -91,5 +98,15 @@ public final class PrintDirectiveNode extends AbstractSoyNode implements ExprHol
   @Override
   public PrintDirectiveNode copy(CopyState copyState) {
     return new PrintDirectiveNode(this, copyState);
+  }
+
+  public void setPrintDirective(SoyPrintDirective soyPrintDirective) {
+    this.printDirective = checkNotNull(soyPrintDirective);
+  }
+
+  /** Returns the print directive for this node, or {@code null} if it hasn't been resolved yet. */
+  @Nullable
+  public SoyPrintDirective getPrintDirective() {
+    return printDirective;
   }
 }

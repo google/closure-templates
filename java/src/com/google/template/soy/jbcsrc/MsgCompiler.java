@@ -35,6 +35,7 @@ import com.google.template.soy.msgs.restricted.SoyMsgPluralPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPluralRemainderPart;
 import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
 import com.google.template.soy.msgs.restricted.SoyMsgSelectPart;
+import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.MsgHtmlTagNode;
 import com.google.template.soy.soytree.MsgNode;
@@ -145,7 +146,7 @@ final class MsgCompiler {
    * @param escapingDirectives The set of escaping directives to apply.
    */
   Statement compileMessage(
-      MsgPartsAndIds partsAndId, MsgNode msg, List<String> escapingDirectives) {
+      MsgPartsAndIds partsAndId, MsgNode msg, List<SoyPrintDirective> escapingDirectives) {
     Expression soyMsgDefaultParts = compileDefaultMessagePartsConstant(partsAndId);
     Expression soyMsgParts =
         parameterLookup
@@ -244,7 +245,7 @@ final class MsgCompiler {
 
   /** Handles a translation consisting of a single raw text node. */
   private Statement handleBasicTranslation(
-      List<String> escapingDirectives, Expression soyMsgParts) {
+      List<SoyPrintDirective> escapingDirectives, Expression soyMsgParts) {
     // optimize for simple constant translations (very common)
     // this becomes: renderContext.getSoyMessge(<id>).getParts().get(0).getRawText()
     SoyExpression text =
@@ -253,7 +254,7 @@ final class MsgCompiler {
                 .invoke(MethodRef.LIST_GET, constant(0))
                 .checkedCast(SoyMsgRawTextPart.class)
                 .invoke(MethodRef.SOY_MSG_RAW_TEXT_PART_GET_RAW_TEXT));
-    for (String directive : escapingDirectives) {
+    for (SoyPrintDirective directive : escapingDirectives) {
       text = text.applyPrintDirective(parameterLookup.getRenderContext(), directive);
     }
     return appendableExpression.appendString(text.coerceToString()).toStatement();
@@ -262,7 +263,7 @@ final class MsgCompiler {
   /** Handles a complex message with placeholders. */
   private Statement handleTranslationWithPlaceholders(
       MsgNode msg,
-      List<String> escapingDirectives,
+      List<SoyPrintDirective> escapingDirectives,
       Expression soyMsgParts,
       Expression locale,
       ImmutableList<SoyMsgPart> parts) {
@@ -290,7 +291,7 @@ final class MsgCompiler {
       SoyExpression value =
           SoyExpression.forString(
               tempBuffer().invoke(MethodRef.ADVISING_STRING_BUILDER_GET_AND_CLEAR));
-      for (String directive : escapingDirectives) {
+      for (SoyPrintDirective directive : escapingDirectives) {
         value = value.applyPrintDirective(parameterLookup.getRenderContext(), directive);
       }
       render =

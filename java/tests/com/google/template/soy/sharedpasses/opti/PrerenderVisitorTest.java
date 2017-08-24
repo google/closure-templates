@@ -21,15 +21,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.inject.Guice;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.SoyFileSetParserBuilder;
-import com.google.template.soy.SoyModule;
-import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.sharedpasses.render.RenderException;
-import javax.inject.Inject;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -140,12 +134,6 @@ public class PrerenderVisitorTest {
   // -----------------------------------------------------------------------------------------------
   // Helpers.
 
-  @Inject ImmutableMap<String, ? extends SoyJavaPrintDirective> soyJavaDirectivesMap;
-
-  @Before
-  public void setUp() {
-    Guice.createInjector(new SoyModule()).injectMembers(this);
-  }
   /**
    * Renders the given input string (should be a template body) and returns the result.
    *
@@ -158,7 +146,7 @@ public class PrerenderVisitorTest {
 
     StringBuilder outputSb = new StringBuilder();
     PrerenderVisitor prerenderVisitor =
-        new PrerenderVisitorFactory(soyJavaDirectivesMap, new PreevalVisitorFactory())
+        new PrerenderVisitorFactory(new PreevalVisitorFactory())
             .create(outputSb, result.registry());
     prerenderVisitor.exec(result.fileSet().getChild(0).getChild(0));
     return outputSb.toString();

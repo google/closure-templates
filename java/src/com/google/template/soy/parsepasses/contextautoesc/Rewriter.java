@@ -18,9 +18,12 @@ package com.google.template.soy.parsepasses.contextautoesc;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import com.google.template.soy.base.internal.SanitizedContentKind;
+import com.google.template.soy.data.SanitizedContentOperator;
 import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
@@ -36,7 +39,6 @@ import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.TemplateNode;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -54,12 +56,12 @@ final class Rewriter {
    */
   private final Set<String> visitedTemplateNames = Sets.newHashSet();
 
-  /** Maps print directive names to the content kinds they consume and produce. */
-  private final Map<String, SanitizedContentKind> sanitizedContentOperators;
+  private final ImmutableMap<String, ? extends SoyPrintDirective> printDirectives;
 
-  Rewriter(Inferences inferences, Map<String, SanitizedContentKind> sanitizedContentOperators) {
+  Rewriter(
+      Inferences inferences, ImmutableMap<String, ? extends SoyPrintDirective> printDirectives) {
     this.inferences = inferences;
-    this.sanitizedContentOperators = sanitizedContentOperators;
+    this.printDirectives = printDirectives;
   }
 
   /** @return Derived templates that should be added to the parse tree. */
@@ -105,15 +107,20 @@ final class Rewriter {
                 printNode.getSourceLocation(),
                 escapingMode.directiveName,
                 ImmutableList.<ExprNode>of());
-
+        newPrintDirective.setPrintDirective(printDirectives.get(escapingMode.directiveName));
         // Figure out where to put the new directive.
         // Normally they go at the end to ensure that the value printed is of the appropriate type,
         // but if there are SanitizedContentOperators at the end, then make sure that their input
         // is of the appropriate type since we know that they will not change the content type.
         int newPrintDirectiveIndex = printNode.numChildren();
         while (newPrintDirectiveIndex > 0) {
-          String printDirectiveName = printNode.getChild(newPrintDirectiveIndex - 1).getName();
-          SanitizedContentKind contentKind = sanitizedContentOperators.get(printDirectiveName);
+          SoyPrintDirective printDirective =
+              printNode.getChild(newPrintDirectiveIndex - 1).getPrintDirective();
+          SanitizedContentKind contentKind =
+              printDirective instanceof SanitizedContentOperator
+                  ? SanitizedContentKind.valueOf(
+                      ((SanitizedContentOperator) printDirective).getContentKind().name())
+                  : null;
           if (contentKind == null || contentKind != escapingMode.contentKind) {
             break;
           }
@@ -132,10 +139,11 @@ final class Rewriter {
     }
 
     /** Grabs the inferred escaping directives from the node in string form. */
-    private ImmutableList<String> getDirectiveNamesForNode(SoyNode node) {
-      ImmutableList.Builder<String> escapingDirectiveNames = new ImmutableList.Builder<>();
+    private ImmutableList<SoyPrintDirective> getDirectivesForNode(SoyNode node) {
+      ImmutableList.Builder<SoyPrintDirective> escapingDirectiveNames =
+          new ImmutableList.Builder<>();
       for (EscapingMode escapingMode : inferences.getEscapingModesForNode(node)) {
-        escapingDirectiveNames.add(escapingMode.directiveName);
+        escapingDirectiveNames.add(printDirectives.get(escapingMode.directiveName));
       }
       return escapingDirectiveNames.build();
     }
@@ -143,7 +151,7 @@ final class Rewriter {
     /** Sets the escaping directives we inferred on the node. */
     @Override
     protected void visitMsgFallbackGroupNode(MsgFallbackGroupNode node) {
-      node.setEscapingDirectiveNames(getDirectiveNamesForNode(node));
+      node.setEscapingDirectiveNames(getDirectivesForNode(node));
       visitChildren(node);
     }
 
@@ -161,7 +169,7 @@ final class Rewriter {
       }
 
       // For strict templates, set any necessary escaping directives.
-      node.setEscapingDirectiveNames(getDirectiveNamesForNode(node));
+      node.setEscapingDirectives(getDirectivesForNode(node));
 
       visitChildrenAllowingConcurrentModification(node);
     }

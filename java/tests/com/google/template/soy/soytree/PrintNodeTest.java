@@ -48,7 +48,7 @@ public final class PrintNodeTest {
             + "{$boo}\n" // 1
             + "{$boo.foo}\n" // 2
             + "{$boo.foo}\n" // 3
-            + "{$boo.foo |insertWordBreaks}\n" // 4
+            + "{$boo.foo |insertWordBreaks:3}\n" // 4
             + "{$boo['moo']}\n" // 5
             + "{$boo + $boo.foo}\n"; // 6
 
