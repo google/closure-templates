@@ -146,8 +146,7 @@ public class PrerenderVisitorTest {
 
     StringBuilder outputSb = new StringBuilder();
     PrerenderVisitor prerenderVisitor =
-        new PrerenderVisitorFactory(new PreevalVisitorFactory())
-            .create(outputSb, result.registry());
+        new PrerenderVisitor(new PreevalVisitorFactory(), outputSb, result.registry());
     prerenderVisitor.exec(result.fileSet().getChild(0).getChild(0));
     return outputSb.toString();
   }

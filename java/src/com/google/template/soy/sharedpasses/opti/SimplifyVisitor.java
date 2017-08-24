@@ -54,18 +54,18 @@ public final class SimplifyVisitor {
 
   /** Creates a new simplify visitor. */
   public static SimplifyVisitor create() {
-    PreevalVisitorFactory preevalVisitor = new PreevalVisitorFactory();
+    PreevalVisitorFactory preevalVisitorFactory = new PreevalVisitorFactory();
     return new SimplifyVisitor(
-        new SimplifyExprVisitor(preevalVisitor), new PrerenderVisitorFactory(preevalVisitor));
+        new SimplifyExprVisitor(preevalVisitorFactory), preevalVisitorFactory);
   }
 
   private final SimplifyExprVisitor simplifyExprVisitor;
-  private final PrerenderVisitorFactory prerenderVisitorFactory;
+  private final PreevalVisitorFactory preevalVisitorFactory;
 
   private SimplifyVisitor(
-      SimplifyExprVisitor simplifyExprVisitor, PrerenderVisitorFactory prerenderVisitorFactory) {
+      SimplifyExprVisitor simplifyExprVisitor, PreevalVisitorFactory preevalVisitorFactory) {
     this.simplifyExprVisitor = simplifyExprVisitor;
-    this.prerenderVisitorFactory = prerenderVisitorFactory;
+    this.preevalVisitorFactory = preevalVisitorFactory;
   }
 
   /** Simplifies the given file set. */
@@ -130,7 +130,7 @@ public final class SimplifyVisitor {
       StringBuilder prerenderOutputSb = new StringBuilder();
       try {
         PrerenderVisitor prerenderer =
-            prerenderVisitorFactory.create(prerenderOutputSb, templateRegistry);
+            new PrerenderVisitor(preevalVisitorFactory, prerenderOutputSb, templateRegistry);
         prerenderer.exec(node);
       } catch (RenderException pe) {
         return; // cannot prerender for some other reason not checked above
