@@ -18,15 +18,16 @@ package com.google.template.soy.jssrc.internal;
 
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basicfunctions.VeLogFunction;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.IntegerNode;
+import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.logging.LoggingFunction;
-import com.google.template.soy.passes.CombineConsecutiveRawTextNodesPass;
 import com.google.template.soy.passes.DesugarHtmlNodesPass;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
@@ -67,7 +68,6 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
     visitChildren(node);
     // Run the desugaring pass and combine raw text nodes after we instrument velog node.
     new DesugarHtmlNodesPass().run(node, templateRegistry);
-    new CombineConsecutiveRawTextNodesPass().run(node);
   }
 
   @Override
@@ -85,6 +85,10 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
     FunctionNode funcNode = new FunctionNode(VeLogFunction.NAME, insertionLocation);
     funcNode.setSoyFunction(VeLogFunction.INSTANCE);
     funcNode.addChild(new IntegerNode(node.getLoggingId(), insertionLocation));
+    funcNode.addChild(
+        node.getConfigExpression() == null
+            ? new NullNode(insertionLocation)
+            : node.getConfigExpression().copy(new CopyState()));
     PrintNode attributeValue =
         new PrintNode(
             nodeIdGen.genId(),

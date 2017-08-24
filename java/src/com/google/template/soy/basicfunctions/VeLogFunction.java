@@ -35,8 +35,6 @@ public final class VeLogFunction implements SoyLibraryAssistedJsSrcFunction {
 
   public static final VeLogFunction INSTANCE = new VeLogFunction();
 
-  private static final String JS_SRC_EXPR = "soy.%1$s(%2$s, opt_ijData.$$loggingMetadata)";
-
   // Do not @Inject; should not be used externally.
   private VeLogFunction() {}
 
@@ -47,13 +45,16 @@ public final class VeLogFunction implements SoyLibraryAssistedJsSrcFunction {
 
   @Override
   public Set<Integer> getValidArgsSizes() {
-    return ImmutableSet.of(1);
+    return ImmutableSet.of(2);
   }
 
   @Override
   public JsExpr computeForJsSrc(List<JsExpr> args) {
     return new JsExpr(
-        String.format(JS_SRC_EXPR, getName(), args.get(0).getText()), Integer.MAX_VALUE);
+        String.format(
+            "soy.$$velog(%1$s, %2$s, opt_ijData.$$loggingMetadata)",
+            args.get(0).getText(), args.get(1).getText()),
+        Integer.MAX_VALUE);
   }
 
   @Override

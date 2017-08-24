@@ -67,13 +67,15 @@ public final class VeLogInstrumentationVisitorTest {
     assertThatSourceString(runPass("{velog Foo}<div></div>{/velog}"))
         .isEqualTo(
             "{velog Foo}"
-                + "<div{if $ij.$$loggingMetaData} {'data-' + xid('soylog')}={$$velog(1)}{/if}>"
+                + "<div{if $ij.$$loggingMetaData}"
+                + " {'data-' + xid('soylog')}={$$velog(1, null)}{/if}>"
                 + "</div>"
                 + "{/velog}");
     assertThatSourceString(runPass("{velog Bar}<input/>{/velog}"))
         .isEqualTo(
             "{velog Bar}"
-                + "<input{if $ij.$$loggingMetaData} {'data-' + xid('soylog')}={$$velog(2)}{/if} />"
+                + "<input{if $ij.$$loggingMetaData}"
+                + " {'data-' + xid('soylog')}={$$velog(2, null)}{/if} />"
                 + "{/velog}");
   }
 
@@ -83,14 +85,14 @@ public final class VeLogInstrumentationVisitorTest {
         .isEqualTo(
             "{velog Baz}"
                 + "<div id=\"1\""
-                + "{if $ij.$$loggingMetaData} {'data-' + xid('soylog')}={$$velog(3)}{/if}>"
+                + "{if $ij.$$loggingMetaData} {'data-' + xid('soylog')}={$$velog(3, null)}{/if}>"
                 + "</div>"
                 + "{/velog}");
     assertThatSourceString(runPass("{velog Bar logonly=\"true\"}<input id=\"1\"/>{/velog}"))
         .isEqualTo(
             "{velog Bar logonly=\"true\"}"
                 + "<input id=\"1\""
-                + "{if $ij.$$loggingMetaData} {'data-' + xid('soylog')}={$$velog(2)}{/if} />"
+                + "{if $ij.$$loggingMetaData} {'data-' + xid('soylog')}={$$velog(2, null)}{/if} />"
                 + "{/velog}");
     assertThatSourceString(
             runPass(
@@ -100,7 +102,8 @@ public final class VeLogInstrumentationVisitorTest {
         .isEqualTo(
             "{velog Foo data=\"soy.test.Foo(intField: 123)\"}"
                 + "<input id=\"1\" class=\"fooClass\""
-                + "{if $ij.$$loggingMetaData} {'data-' + xid('soylog')}={$$velog(1)}{/if} />"
+                + "{if $ij.$$loggingMetaData}"
+                + " {'data-' + xid('soylog')}={$$velog(1, soy.test.Foo(intField: 123))}{/if} />"
                 + "{/velog}");
   }
 
@@ -110,10 +113,12 @@ public final class VeLogInstrumentationVisitorTest {
     assertThatSourceString(runPass("{velog Foo}<div></div>{/velog}{velog Bar}<div></div>{/velog}"))
         .isEqualTo(
             "{velog Foo}"
-                + "<div{if $ij.$$loggingMetaData} {'data-' + xid('soylog')}={$$velog(1)}{/if}>"
+                + "<div{if $ij.$$loggingMetaData}"
+                + " {'data-' + xid('soylog')}={$$velog(1, null)}{/if}>"
                 + "</div>{/velog}"
                 + "{velog Bar}"
-                + "<div{if $ij.$$loggingMetaData} {'data-' + xid('soylog')}={$$velog(2)}{/if}>"
+                + "<div{if $ij.$$loggingMetaData}"
+                + " {'data-' + xid('soylog')}={$$velog(2, null)}{/if}>"
                 + "</div>{/velog}");
   }
 
@@ -123,9 +128,11 @@ public final class VeLogInstrumentationVisitorTest {
     assertThatSourceString(runPass("{velog Bar}<div>{velog Baz}<div></div>{/velog}</div>{/velog}"))
         .isEqualTo(
             "{velog Bar}"
-                + "<div{if $ij.$$loggingMetaData} {'data-' + xid('soylog')}={$$velog(2)}{/if}>"
+                + "<div{if $ij.$$loggingMetaData}"
+                + " {'data-' + xid('soylog')}={$$velog(2, null)}{/if}>"
                 + "{velog Baz}"
-                + "<div{if $ij.$$loggingMetaData} {'data-' + xid('soylog')}={$$velog(3)}{/if}>"
+                + "<div{if $ij.$$loggingMetaData}"
+                + " {'data-' + xid('soylog')}={$$velog(3, null)}{/if}>"
                 + "</div>{/velog}</div>{/velog}");
   }
 
@@ -135,7 +142,8 @@ public final class VeLogInstrumentationVisitorTest {
             runPass("{velog Bar}<div><span data-ved={currentVed()}></span></div>{/velog}"))
         .isEqualTo(
             "{velog Bar}"
-                + "<div{if $ij.$$loggingMetaData} {'data-' + xid('soylog')}={$$velog(2)}{/if}>"
+                + "<div{if $ij.$$loggingMetaData}"
+                + " {'data-' + xid('soylog')}={$$velog(2, null)}{/if}>"
                 + "<span data-ved={if $ij.$$loggingMetaData}foo{else}placeholder{/if}></span>"
                 + "</div>"
                 + "{/velog}");

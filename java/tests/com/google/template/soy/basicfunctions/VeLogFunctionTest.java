@@ -30,8 +30,22 @@ public final class VeLogFunctionTest {
   @Test
   public void testComputeForJsSrc() {
     VeLogFunction function = VeLogFunction.INSTANCE;
-    JsExpr argExpr = new JsExpr("1", Integer.MAX_VALUE);
-    assertThat(function.computeForJsSrc(ImmutableList.of(argExpr)))
-        .isEqualTo(new JsExpr("soy.$$velog(1, opt_ijData.$$loggingMetadata)", Integer.MAX_VALUE));
+    JsExpr idExpr = new JsExpr("1", Integer.MAX_VALUE);
+    JsExpr dataExpr = new JsExpr("null", Integer.MAX_VALUE);
+    assertThat(function.computeForJsSrc(ImmutableList.of(idExpr, dataExpr)))
+        .isEqualTo(
+            new JsExpr("soy.$$velog(1, null, opt_ijData.$$loggingMetadata)", Integer.MAX_VALUE));
+  }
+
+  @Test
+  public void testComputeForJsSrcWithData() {
+    VeLogFunction function = VeLogFunction.INSTANCE;
+    JsExpr idExpr = new JsExpr("1", Integer.MAX_VALUE);
+    JsExpr dataExpr = new JsExpr("new proto.soy.compiler.test.Foo()", Integer.MAX_VALUE);
+    assertThat(function.computeForJsSrc(ImmutableList.of(idExpr, dataExpr)))
+        .isEqualTo(
+            new JsExpr(
+                "soy.$$velog(1, new proto.soy.compiler.test.Foo(), opt_ijData.$$loggingMetadata)",
+                Integer.MAX_VALUE));
   }
 }
